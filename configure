@@ -1772,7 +1772,7 @@ echo Using extra library directories: $withval
 
 fi;
 
-SCRATCHDIR=/tmp
+SCRATCHDIR=tmp
 
 # Check whether --with-scratchdir or --without-scratchdir was given.
 if test "${with_scratchdir+set}" = set; then

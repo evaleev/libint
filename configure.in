@@ -294,7 +294,7 @@ LDFLAGS=$withval
 echo Using extra library directories: $withval
 )
 
-SCRATCHDIR=/tmp
+SCRATCHDIR=tmp
 AC_ARG_WITH(scratchdir,
 [  --with-scratchdir       Specifies the location for the machine-generated library source and object files.],
 SCRATCHDIR=$withval
