@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <exception.h>
 
 using namespace std;
 
@@ -19,115 +20,6 @@ namespace libint2 {
   };
 
   const int Libint2_DefaultVectorLength = 64;
-
-  class GaussianShell {
-    int l_;
-    
-    public:
-    GaussianShell(int l) {l_ = l;};
-    ~GaussianShell() {};
-    
-  };
-  
-  class CartesianGaussian : public GaussianShell {
-
-    // cartesian exponents
-    int n_[3];
-
-    public:
-    CartesianGaussian(int nx, int ny, int nz);
-    ~CartesianGaussian() {};
-
-  };
-
-  class Operator {
-
-    // Described name
-    const std::string descr_;
-    // short (<20 chars) ID label
-    const std::string id_;
-    
-    // number of particles > 0
-    char np_;
-    // symmetry W.R.T. permutation of each pair of particles
-    // 1 -- symmetric, -1 -- antisymmetric, 0 -- nonsymmetric
-    // stored as a lower triangle (diagonal not included)
-    vector<char> psymm_;
-    
-    public:
-    Operator(const std::string& descr, const std::string& id, char np,
-             const vector<char>& psymm);
-    ~Operator();
-
-    /// Returns full description of the operator
-    const std::string& descr() const;
-    /// Returns short label for the operator
-    const std::string& id() const;
-    
-    /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
-        or antisymmetric with respect to permutation of particles i and j */
-    const int psymm(int i, int j) const;
-
-  };
-  
-  //extern Operator TwoERep;
-  //extern Operator TwoEDist;
-
-  class IntegralType {
-
-    // Operator
-    Operator O_;
-    
-    // number of basis functions in bra for each particle >= 0
-    vector<char> nbra_;
-    // number of basis functions in ket for each particle >= 0
-    vector<char> nket_;
-    
-    public:
-    IntegralType(const Operator& O, const vector<char>& nbra, const vector<char>& nket);
-    ~IntegralType();
-    
-  };
-
-
-  class IntegralSetType {
-
-    public:
-    IntegralSetType();
-    virtual ~IntegralSetType();
-    
-    /// Number of elements (>0 if static, 0 if determined at runtime)
-    virtual int num_elems();
-
-  };
-
-  class SingleIntegral : public IntegralSetType {
-
-    public:
-    SingleIntegral();
-
-  };
-
-  class IntegralShell : public IntegralSetType {
-
-    public:
-    IntegralShell();
-
-  };
-
-  class IntegralShellVector : public IntegralSetType {
-
-    public:
-    IntegralShellVector();
-
-  };
-
-  class IntegralVectorShell : public IntegralSetType {
-
-    public:
-    IntegralVectorShell();
-
-  };
 
   class RecurrenceRelation {
 
@@ -148,17 +40,6 @@ namespace libint2 {
     virtual std::ostream& cpp_source(std::ostream&) =0;
 
   };
-
-  class DataTypedRR : public RecurrenceRelation {
-
-    IntegralSetType ST_;
-
-    public:
-    DataTypedRR(const IntegralSetType&);
-    ~DataTypedRR();
-
-  };
-
 
   template<typename Q> class QuantumSet {
 
@@ -223,7 +104,7 @@ namespace libint2 {
   /// Set of basis functions
   class BFSet {
 
-    public:
+  public:
     BFSet() {};
     virtual ~BFSet() {};
     virtual unsigned int num_bf() const =0;
@@ -236,20 +117,12 @@ namespace libint2 {
 
   };
 
-  class InvalidDecrement : public std::logic_error {
-    
-    public:
-    InvalidDecrement(const std::string& a) :
-      logic_error(a) {};
-    
-  };
-
   /// Cartesian Gaussian Function
   class CGF : public BFSet {
 
     unsigned int qn_[3];
 
-    public:
+  public:
     CGF(unsigned int qn[3]);
     CGF(const CGF&);
     ~CGF();
@@ -269,7 +142,7 @@ namespace libint2 {
 
     unsigned int qn_[1];
 
-    public:
+  public:
     /// Default constructor creates an s-type shell
     CGShell();
     CGShell(unsigned int qn[1]);
@@ -304,7 +177,7 @@ namespace libint2 {
     DGVertex* orig_;  // Where this Arc leavs
     DGVertex* dest_;  // Where this Arc leads to
 
-    public:
+  public:
     DGArc(DGVertex* orig_, DGVertex* dest_);
     ~DGArc();
 
@@ -321,7 +194,7 @@ namespace libint2 {
 
     ArcRel* rel_;     // Relationship described by the arc
 
-    public:
+  public:
     DGArcRel(DGVertex* orig, DGVertex* dest, ArcRel* rel);
     ~DGArcRel();
     
@@ -420,7 +293,7 @@ namespace libint2 {
     /// short (<20 chars) ID label
     const std::string id_;
 
-    public:
+  public:
     Oper(const std::string& descr, const std::string& id);
     virtual ~Oper();
 
@@ -469,7 +342,7 @@ namespace libint2 {
     // stored as a lower triangle (diagonal not included)
     static const char psymm_[np*(np-1)/2];
 
-    public:
+  public:
     TwoERep();
     ~TwoERep();
 
@@ -480,10 +353,10 @@ namespace libint2 {
   };
 
   /** This template is for an integral of 1 operator over (products of) one
-      type of basis functions. Any Integral can be a DGVertex. No instances
-      of Integral can be created -- this class is intended as a base class.
+      type of basis functions. No instances of Integral can be created --
+      this class is intended as a base class.
   */
-  template <class Oper, class BFSet> class Integral : public DGVertex {
+  template <class Oper, class BFSet> class Integral {
 
     static Oper O_;
 
@@ -520,8 +393,7 @@ namespace libint2 {
   };
 
   template <class Oper, class BFSet>
-    Integral<Oper, BFSet>::Integral(const vector<BFSet> bra[Oper::np], const vector<BFSet> ket[Oper::np]) :
-    DGVertex()
+    Integral<Oper, BFSet>::Integral(const vector<BFSet> bra[Oper::np], const vector<BFSet> ket[Oper::np])
     {
       for(int p=0; p<Oper::np; p++) {
         bra_[p] = bra[p];
@@ -574,7 +446,7 @@ namespace libint2 {
 
 
   /// Standard ERI shell quartet
-  template <class BFSet> class TwoERep_2b2k : public Integral<TwoERep, BFSet> {
+  template <class BFSet> class TwoERep_2b2k : public Integral<TwoERep, BFSet>, public DGVertex {
 
     unsigned int m_;  // auxiliary index
 
@@ -604,7 +476,7 @@ namespace libint2 {
 
   template <class BFSet>
     TwoERep_2b2k<BFSet>::TwoERep_2b2k(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m) :
-    Integral<TwoERep, BFSet>(bra, ket), m_(m)
+    Integral<TwoERep, BFSet>(bra, ket), DGVertex(), m_(m)
     {
       if (bra[0].size() != 1)
         throw std::runtime_error("TwoERep_2b2k<BFSet>::TwoERep_2b2k(bra[2],ket[2]) -- dimension of bra[0] must be 1");
