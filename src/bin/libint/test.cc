@@ -75,6 +75,7 @@ int try_main (int argc, char* argv[])
   test6();
 #endif
 
+  return 0;
 }
 
 #if 0
@@ -269,7 +270,7 @@ test6()
   const unsigned int size_to_unroll = 100000;
   SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy(size_to_unroll));
-  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_d,sh_p,sh_f,sh_s,0);
   cout << xsxs_quartet->description();
   SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
   dg_xxxx3->append_target(xsxs_ptr);
