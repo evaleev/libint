@@ -109,6 +109,18 @@ DirectedGraph::~DirectedGraph()
 }
 
 void
+DirectedGraph::append_target(DGVertex* target)
+{
+  target->make_a_target();
+  try {
+    add_vertex(target);
+  }
+  catch (VertexAlreadyOnStack) {
+    return;
+  }
+}
+
+void
 DirectedGraph::add_vertex(DGVertex* vertex)
 {
   bool already_on_stack = false;
@@ -156,7 +168,6 @@ DirectedGraph::traverse()
         traverse_from(vertex_ptr->exit_arc(c));
     }
   }
-
 }
 
 void

@@ -667,6 +667,8 @@ namespace libint2 {
     VRR_ERI_2b2k(TwoERep_2b2k<BFSet>*);
     ~VRR_ERI_2b2k();
 
+    typedef TwoERep_2b2k<BFSet> TargetType;
+
     const unsigned int num_children() const { return num_actual_children_; };
     /// target() returns points to the i-th child
     TwoERep_2b2k<BFSet>* target() { return target_; };
