@@ -13,7 +13,7 @@ static void define_localv();
 
 static char **k1, **k2, **k3;
 
-int emit_vrr_build_macro()
+void emit_vrr_build_macro()
 {
   int old_am = Params.old_am;
   int new_am = Params.opt_am;
@@ -198,6 +198,8 @@ int emit_vrr_build_macro()
   }
   free(function_name);
   free(code_name);
+
+  return;
 }
 
 

@@ -3,10 +3,11 @@
  ------------------------------------------------------------------------------------------------------*/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <libint/libint.h>
 #include "mem_man.h"
-#include "build_libr12.h"
+#include <libint_config.h>
+#include <libr12/build_libr12.h>
 #define MAXNODE 3000
 #define NONODE -1000000
 #define SSR12SSNODE -1111 /* This is a special node - (ss||ss) */
@@ -48,6 +49,14 @@ static int first_vrr_to_compute = 0; /* Number of the first class to be computed
 #define LMAX_AM LIBINT_MAX_AM+1
 static int hrr_hash_table[NUMGRTTYPES][2*LMAX_AM][2*LMAX_AM][2*LMAX_AM][2*LMAX_AM];
 static int vrr_hash_table[NUMGRTTYPES][2*LMAX_AM][2*LMAX_AM][4*LMAX_AM];
+
+extern void punt(char *);
+static int mk_hrr_node(class node, class *allnodes, int new);
+static int mk_vrr_node(class node, class *allnodes, int new);
+static void mark_hrr_parents(int n, class *allnodes, int rent);
+static void mark_vrr_parents(int n, class *allnodes, int rent);
+static int alloc_mem_hrr(class *nodes);
+static int alloc_mem_vrr(class *nodes); 
 
 int emit_grt_order()
 {
@@ -1026,7 +1035,7 @@ int mk_vrr_node(class node, class *allnodes, int new)
 
 /* Make hrr_nodes[rent] a parent of hrr_nodes[n] and proceed recursively */
 
-int mark_hrr_parents(int n, class *allnodes, int rent)
+void mark_hrr_parents(int n, class *allnodes, int rent)
 {
   int i;
   int *tmp;
@@ -1063,7 +1072,7 @@ int mark_hrr_parents(int n, class *allnodes, int rent)
 
 /* Make vrr_nodes[rent] a parent of vrr_nodes[n] and proceed recursively */
 
-int mark_vrr_parents(int n, class *allnodes, int rent)
+void mark_vrr_parents(int n, class *allnodes, int rent)
 {
   int i;
   int *tmp;

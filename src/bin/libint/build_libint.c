@@ -39,11 +39,11 @@ int libint_stack_size[MAX_AM/2+1];
 LibintParams_t Params;
 
 void punt();
-int emit_vrr_build();
-int emit_vrr_build_macro();
-int emit_order();
-int emit_hrr_build();
-int emit_hrr_build_macro();
+extern void emit_vrr_build();
+extern void emit_vrr_build_macro();
+extern void emit_order();
+extern void emit_hrr_build();
+extern void emit_hrr_build_macro();
 
 int main()
 {

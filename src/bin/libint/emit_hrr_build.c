@@ -9,7 +9,7 @@ extern LibintParams_t Params;
 extern void punt(char *);
 static int hash(int a[2][3], int b[2]);
 
-int emit_hrr_build()
+void emit_hrr_build()
 {
   int new_am = Params.new_am;
   int max_class_size = Params.max_class_size;
@@ -350,6 +350,8 @@ int emit_hrr_build()
       printf("Done with %s\n",code_name);
     }
   }
+
+  return;
 }
 
 

@@ -18,10 +18,10 @@ extern void emit_deriv1_managers();
 extern void emit_deriv2_managers();
 #endif
 extern void emit_deriv12_managers();
-extern int emit_d1hrr_build();
-extern int emit_d1hrr_build_macro();
-extern int emit_deriv_build();
-extern int emit_deriv_build_macro();
+extern void emit_d1hrr_build();
+extern void emit_d1hrr_build_macro();
+extern void emit_deriv_build();
+extern void emit_deriv_build_macro();
 
 int main()
 {

@@ -50,9 +50,9 @@ static int vrr_hash_table[2*LMAX_AM][2*LMAX_AM][4*LMAX_AM];
 extern void punt(char *);
 static int mk_dhrr_node(class node, class *allnodes, int new);
 static int mk_deriv_node(class node, class *allnodes, int new);
-static int mark_dhrr_parents(int n, class *allnodes, int rent);
-static int mark_vrr_parents(int n, class *allnodes, int rent);
-static int mark_parents(int n, class *allnodes, int rent);
+static void mark_dhrr_parents(int n, class *allnodes, int rent);
+static void mark_vrr_parents(int n, class *allnodes, int rent);
+static void mark_parents(int n, class *allnodes, int rent);
 static int alloc_mem_dhrr(class *nodes);
 static int alloc_mem_vrr(class *nodes);
 
@@ -359,7 +359,7 @@ void emit_deriv1_managers()
 		child = hrr_nodes[j].children[i+2];
 		fprintf(hrr_code, " %.1lf, int_stack+%d,",
 			(double) hrr_nodes[j].deriv_ind[offset+i],
-			hrr_nodes[child].pointer, hrr_nodes[child].size);
+			hrr_nodes[child].pointer);
 	      }
 	      else
 		fprintf(hrr_code, " 0.0, zero_stack,");
@@ -384,7 +384,7 @@ void emit_deriv1_managers()
 	j = hrr_nodes[j].rlink;
       } while (j != -1);
       
-      fprintf(hrr_code,"\n}\n",target_data);
+      fprintf(hrr_code,"\n}\n");
       fclose(hrr_code);
       fclose(inline_hrr_list);
       printf("Done with %s\n",hrr_code_name);
@@ -479,9 +479,7 @@ void emit_deriv1_managers()
 	  Decide which routine to use to compute the current class
 	 ---------------------------------------------------------*/
 	if (vrr_nodes[j].deriv_lvl) { /*--- use build_deriv ---*/
-	  fprintf(vrr_code, " deriv_build_",
-		  am_letter[vrr_nodes[j].A],am_letter[vrr_nodes[j].B],
-		  am_letter[vrr_nodes[j].C],am_letter[vrr_nodes[j].D]);
+	  fprintf(vrr_code, " deriv_build_");
 	  for(i=0;i<12;i++)
 	    if (vrr_nodes[j].deriv_ind[i] != 0) {
 	      break;
@@ -1163,7 +1161,7 @@ int mk_deriv_node(class node, class *allnodes, int new)
 
 /* Make hrr_nodes[rent] a parent of hrr_nodes[n] and proceed recursively */
 
-int mark_dhrr_parents(int n, class *allnodes, int rent)
+void mark_dhrr_parents(int n, class *allnodes, int rent)
 {
   int i;
   int *tmp;
@@ -1192,7 +1190,7 @@ int mark_dhrr_parents(int n, class *allnodes, int rent)
 
 /* Make vrr_nodes[rent] a parent of vrr_nodes[n] and proceed recursively */
 
-int mark_vrr_parents(int n, class *allnodes, int rent)
+void mark_vrr_parents(int n, class *allnodes, int rent)
 {
   int i;
   int *tmp;
@@ -1221,7 +1219,7 @@ int mark_vrr_parents(int n, class *allnodes, int rent)
 }
 
 
-int mark_parents(int n, class *allnodes, int rent)
+void mark_parents(int n, class *allnodes, int rent)
 {
   int i;
   int *tmp;

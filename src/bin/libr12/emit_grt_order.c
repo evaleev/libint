@@ -53,8 +53,8 @@ static int vrr_hash_table[NUMGRTTYPES][2*LMAX_AM][2*LMAX_AM][4*LMAX_AM];
 extern void punt(char *);
 static int mk_hrr_node(class node, class *allnodes, int new);
 static int mk_vrr_node(class node, class *allnodes, int new);
-static int mark_hrr_parents(int n, class *allnodes, int rent);
-static int mark_vrr_parents(int n, class *allnodes, int rent);
+static void mark_hrr_parents(int n, class *allnodes, int rent);
+static void mark_vrr_parents(int n, class *allnodes, int rent);
 static int alloc_mem_hrr(class *nodes);
 static int alloc_mem_vrr(class *nodes); 
 
@@ -1035,7 +1035,7 @@ int mk_vrr_node(class node, class *allnodes, int new)
 
 /* Make hrr_nodes[rent] a parent of hrr_nodes[n] and proceed recursively */
 
-int mark_hrr_parents(int n, class *allnodes, int rent)
+void mark_hrr_parents(int n, class *allnodes, int rent)
 {
   int i;
   int *tmp;
@@ -1072,7 +1072,7 @@ int mark_hrr_parents(int n, class *allnodes, int rent)
 
 /* Make vrr_nodes[rent] a parent of vrr_nodes[n] and proceed recursively */
 
-int mark_vrr_parents(int n, class *allnodes, int rent)
+void mark_vrr_parents(int n, class *allnodes, int rent)
 {
   int i;
   int *tmp;

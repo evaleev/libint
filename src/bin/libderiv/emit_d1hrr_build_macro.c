@@ -7,7 +7,7 @@ extern LibderivParams_t Params;
 
 extern void punt(char *);
 
-int emit_d1hrr_build_macro()
+void emit_d1hrr_build_macro()
 {
   int new_am = Params.new_am;
   int old_am = Params.old_am;
@@ -238,6 +238,8 @@ int emit_d1hrr_build_macro()
       printf("Done with %s\n",code_name);
     }
   }
+
+  return;
 }
 
 
