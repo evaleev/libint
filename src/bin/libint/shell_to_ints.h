@@ -15,9 +15,8 @@ using namespace std;
 
 namespace libint2 {
 
-  /** CGShell_to_CGFs converts a shell to individual integrals. Although this is
+  /** CGShell_to_CGFs converts a shell set to individual integrals. Although this is
   technically not a recurrence relation, it can be treated as one.
-
   */
   template <template <class> class I>
   class CGShell_to_CGF : public RecurrenceRelation {
@@ -27,7 +26,7 @@ namespace libint2 {
 
     unsigned int num_actual_children_;
 
-public:
+  public:
     CGShell_to_CGF(I<CGShell>*);
     ~CGShell_to_CGF();
 

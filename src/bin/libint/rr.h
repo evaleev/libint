@@ -128,6 +128,9 @@ namespace libint2 {
     CGF(const BFSet*);
     ~CGF();
 
+    /// As far as SetIterator is concerned, CGF is a set of one CGF
+    typedef CGF iter_type;
+
     /// Return a compact label
     const std::string label() const;
     /// Returns the number of basis functions in the set (always 1)
@@ -151,6 +154,9 @@ namespace libint2 {
     CGShell(const BFSet*);
     ~CGShell();
     CGShell& operator=(const CGShell&);
+
+    /// As far as SetIterator is concerned, CGShell is a set of one CGF
+    typedef CGF iter_type;
 
     /// Return a compact label
     const std::string label() const;
@@ -702,6 +708,7 @@ namespace libint2 {
 #include <vrr_11_twoprep_11.h>
 #include <hrr.h>
 #include <shell_to_ints.h>
+#include <iter.h>
 
 #endif
 
