@@ -59,7 +59,7 @@ echo Could not mkdir -p $(LIBSRCDIR); \
 exit 1; \
 fi; \
 if ! $(LN_S) $(LIBSRCDIR) $(LIBSRCLINK); then \
-echo Could not ln -s $(LIBSRCDIR) $(LIBSRCLINK); \
+echo Could not $(LN_S) $(LIBSRCDIR) $(LIBSRCLINK); \
 exit 1; \
 fi;
 	echo "Last time the library source directory was created:\c" > $@
