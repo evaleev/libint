@@ -133,6 +133,13 @@ DGVertex::reset()
   precalc_.reset();
   postcalc_.reset();
 }
+
+void
+DGVertex::set_label(const std::string& label)
+{
+  label_ = label;
+}
+
 ///////////////////////////////////////////////////
 
 DirectedGraph::DirectedGraph() :
@@ -156,14 +163,15 @@ DirectedGraph::append_target(const SafePtr<DGVertex>& target)
   }
 }
 
-void
+bool
 DirectedGraph::add_vertex(const SafePtr<DGVertex>& vertex)
 {
   bool already_on_stack = false;
   for(int i=0; i<first_free_; i++) {
     if(vertex->equiv(stack_[i])) {
       already_on_stack = true;
-      break;
+      //break;
+      return false;
     }
   }
   if(!already_on_stack) {
@@ -172,7 +180,10 @@ DirectedGraph::add_vertex(const SafePtr<DGVertex>& vertex)
       cout << "Increased size of DirectedGraph's stack to "
            << stack_.size() << endl;
     }
+    char label[80];  sprintf(label,"vertex%d",first_free_);
+    vertex->set_label(label);
     stack_[first_free_++] = vertex;
+    return true;
   }
   else
     throw VertexAlreadyOnStack("DirectedGraph::add_vertex() -- vertex already on stack");
@@ -220,6 +231,8 @@ DirectedGraph::traverse_from(const SafePtr<DGArc>& arc)
 {
   SafePtr<DGVertex> orig = arc->orig();
   SafePtr<DGVertex> dest = arc->dest();
+  if (dest->precomputed())
+    return;
   const unsigned int num_tags = dest->tag();
   const unsigned int num_parents = dest->num_entry_arcs();
   /*if (num_tags == 1) {
@@ -255,8 +268,33 @@ DirectedGraph::debug_print_traversal(std::ostream& os) const
 
   do {
     current_vertex->print(os);
+    os << endl;
     current_vertex = current_vertex->postcalc();
   } while (current_vertex != 0);
+}
+
+void
+DirectedGraph::print_to_dot(std::ostream& os) const
+{
+  os << "digraph G {" << endl
+     << "  size = \"8,8\"" << endl;
+  for(int i=0; i<first_free_; i++) {
+    SafePtr<DGVertex> vertex = stack_[i];
+    os << "  " << vertex->label()
+       << " [ label = \"";
+    vertex->print(os);
+    os << "\"]" << endl;
+  }
+  for(int i=0; i<first_free_; i++) {
+    SafePtr<DGVertex> vertex = stack_[i];
+    unsigned int narcs = vertex->num_exit_arcs();
+    for(int a=0; a<narcs; a++) {
+      SafePtr<DGVertex> dest = vertex->exit_arc(a)->dest();
+      os << "  " << vertex->label() << " -> "
+         << dest->label() << endl;
+    }
+  }
+  os << "}" << endl;
 }
 
 void
@@ -440,7 +478,8 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< Alg
   typedef AlgebraicOperator<DGVertex> ExprType;
 
   SafePtr<DGVertex> expr_vertex = dynamic_pointer_cast<DGVertex,ExprType>(expr);
-  add_vertex(expr_vertex);
+  if (!add_vertex(expr_vertex))
+    return;
   SafePtr<DGArc> arc(new DGArcDirect(where,expr_vertex));
   where->add_exit_arc(arc);
 
@@ -449,7 +488,8 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< Alg
   if (left_cast)
     insert_expr_at(expr_vertex,left_cast);
   else {
-    add_vertex(expr->left());
+    if (!add_vertex(expr->left()))
+      return;
     SafePtr<DGArc> arc(new DGArcDirect(expr_vertex,expr->left()));
     expr_vertex->add_exit_arc(arc);
   }
@@ -459,7 +499,8 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< Alg
   if (right_cast)
     insert_expr_at(expr_vertex,right_cast);
   else {
-    add_vertex(expr->right());
+    if (!add_vertex(expr->right()))
+      return;
     SafePtr<DGArc> arc(new DGArcDirect(expr_vertex,expr->right()));
     expr_vertex->add_exit_arc(arc);
   }

@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <rr.h>
 #include <dg.h>
@@ -109,9 +110,12 @@ int try_main (int argc, char* argv[])
   SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
   dg_xxxx3->append_target(xsxs_ptr);
   dg_xxxx3->apply(strat);
-  dg_xxxx3->optimize_rr_out();
+  //dg_xxxx3->optimize_rr_out();
   dg_xxxx3->traverse();
   dg_xxxx3->debug_print_traversal(cout);
+  
+  std::basic_ofstream<char> dotfile("graph.dot");
+  dg_xxxx3->print_to_dot(dotfile);
   cout << "The number of vertices = " << dg_xxxx3->num_vertices() << endl;
   dg_xxxx3->reset();
 

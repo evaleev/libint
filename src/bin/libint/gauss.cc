@@ -57,9 +57,20 @@ CGF::label() const
 {
   unsigned int am = qn_[0] + qn_[1] + qn_[2];
   const char am_char = StaticDefinitions::am_letters[am];
-  char* const c_label = new char[80];
-  sprintf(c_label,"%c(x^%d y^%d z^%d)",am_char,qn_[0],qn_[1],qn_[2]);
-  return c_label;
+  char tmp[80]; sprintf(tmp,"%c_",am_char);
+  if (am == 0) {
+    tmp[1] = '\0';
+    return tmp;
+  }
+  std::string label(tmp);
+  const char xyz_char[][2] = {"x","y","z"};
+  for(int xyz=0; xyz<3; xyz++) {
+    std::string xyzlab(xyz_char[xyz]);
+    for(int i=0; i<qn_[xyz]; i++) {
+      label += xyzlab;
+    }
+  }
+  return label;
 }
 
 unsigned int
@@ -92,6 +103,12 @@ CGF::inc(unsigned int i) throw()
 {
   if (i<3)
     ++qn_[i];
+}
+
+bool
+CGF::zero() const
+{
+  return qn_[0] == 0 && qn_[1] == 0 && qn_[2] == 0;
 }
 
 void
@@ -183,6 +200,12 @@ CGShell::inc(unsigned int i) throw()
 {
   if (i == 0)
     ++qn_[0];
+}
+
+bool
+CGShell::zero() const
+{
+  return qn_[0] == 0;
 }
 
 void

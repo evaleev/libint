@@ -46,8 +46,9 @@ namespace libint2 {
     static const unsigned int default_size_ = 100;
     unsigned int first_free_;
 
-    // adds a vertex to the graph
-    void add_vertex(const SafePtr<DGVertex>&);
+    /** adds a vertex to the graph. If the vertex already found on the graph
+        then the vertex is not added and the routine returns false */
+    bool add_vertex(const SafePtr<DGVertex>&);
     // returns true if vertex if already on graph
     bool vertex_is_on(const SafePtr<DGVertex>& vertex) const;
     /** This function is used to implement (recursive) append_target().
@@ -132,6 +133,12 @@ namespace libint2 {
 
     /// Prints out call sequence
     void debug_print_traversal(ostream& os) const;
+    
+    /**
+    Prints out the graph in format understood by program "dot"
+    of package "graphviz"
+    */
+    void print_to_dot(ostream& os) const;
 
     /// Resets the graph and all vertices
     void reset();

@@ -9,6 +9,15 @@ CXXOBJ = $(CXXSRC:%.cc=%.o)
 test: $(CXXOBJ)
 	$(CXX) -o test $^
 
+graph.pdf: graph.ps
+	ps2pdf13 graph.ps
+
+graph.ps: graph.dot
+	dot -Tps2 -o graph.ps graph.dot
+
+graph.dot: test
+	./test
+
 clean::
 	-rm -rf $(CXXOBJ)
 

@@ -98,6 +98,8 @@ namespace libint2 {
       virtual const unsigned int size() const;
       /// Specialization of DGVertex's print
       virtual void print(std::ostream& os = std::cout) const;
+      /// Specialization of DGVertex::precomputed()
+      virtual bool precomputed() const { return false; }
 
       /// Obtain BFsets members
       const SafePtr<BFS> bra(unsigned int p, unsigned int i) const;
@@ -461,6 +463,9 @@ namespace libint2 {
       static const SafePtr<TwoPRep_11_11> Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
       
       unsigned int m() const { return parent_type::aux()->elem(0); };
+
+      /// Implements DGVertex::precomputed()
+      bool precomputed() const;
       
       /// Comparison operator
       bool operator==(const this_type&) const;
@@ -542,9 +547,21 @@ namespace libint2 {
     TwoPRep_11_11<BFS>::print(std::ostream& os) const
     {
       os << "TwoPRep_11_11: (" << parent_type::bra_.member(0,0)->label() << " " << parent_type::ket_.member(0,0)->label()
-         << " | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}" << endl;
+         << " | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
     };
 
+  template <class BFS>
+    bool
+    TwoPRep_11_11<BFS>::precomputed() const
+    {
+      /// (ss|ss)^{(m)} are precomputed 
+      if (bra_.member(0,0)->zero() && bra_.member(1,0)->zero() &&
+        ket_.member(0,0)->zero() && ket_.member(1,0)->zero())
+        return true;
+      else
+        return false;
+    }
+    
   /// TwoPRep_11_11_sq is a shell quartet of ERIs
   typedef TwoPRep_11_11<CGShell> TwoPRep_11_11_sq;
 

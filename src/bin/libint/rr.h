@@ -91,7 +91,9 @@ namespace libint2 {
     virtual void inc(unsigned int i) throw() =0;
     /// Decrements i-th quantum number. Do nothing is i is outside the allowed range
     virtual void dec(unsigned int i) =0;
-
+    /// Returns true if all quanta are 0
+    virtual bool zero() const =0;
+    
   protected:
     IncableBFSet() {}
 
@@ -131,6 +133,8 @@ namespace libint2 {
     void dec(unsigned int i);
     /// Implements purely virtual IncableBFSet::inc
     void inc(unsigned int i) throw();
+    /// Implements IncableBFSet::zero()
+    bool zero() const;
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
@@ -172,6 +176,8 @@ namespace libint2 {
     void dec(unsigned int i);
     /// Implements purely virtual IncableBFSet::inc
     void inc(unsigned int i) throw();
+    /// Implements IncableBFSet::zero()
+    bool zero() const;
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
@@ -286,6 +292,9 @@ namespace libint2 {
   /// This is a vertex of a Directed Graph (DG)
   class DGVertex {
 
+    /// vertex label
+    std::string label_;
+    
     /// Arcs leaving this DGVertex
     vector< SafePtr<DGArc> > children_;
     /// We also need info about Arcs entering this DGVertex
@@ -345,6 +354,10 @@ namespace libint2 {
         equivalent to *aVertex.
     */
     virtual bool equiv(const SafePtr<DGVertex>&) const =0;
+    
+    /** precomputed() returns whether this DGVertex is precomputed
+    */
+    virtual bool precomputed() const =0;
 
     /** Returns the amount of memory (in floating-point words) to be allocated for the vertex.
       */
@@ -353,6 +366,10 @@ namespace libint2 {
     /** print(std::ostream&) prints out comment-style info vertex
     */
     virtual void print(std::ostream& os = std::cout) const =0;
+    /// returns the label
+    const std::string& label() const { return label_;}
+    /// sets the label
+    void set_label(const std::string& label);
 
     /// prepare_to_traverse() must be called before traversal of the graph starts
     void prepare_to_traverse();

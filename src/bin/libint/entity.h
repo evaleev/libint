@@ -65,7 +65,12 @@ namespace libint2 {
       {
 	os << "RTimeEntity: " << id();
       }
-
+      
+      /// Implementation of DGVertex::precomputed()
+      bool precomputed() const
+      {
+        return true;
+      }
     };
 
   /**
@@ -106,6 +111,12 @@ namespace libint2 {
       void print(std::ostream& os) const
       {
 	os << "CTimeEntity: " << id() << " value = " << value_;
+      }
+      
+      /// Implementation of DGVertex::precomputed()
+      bool precomputed() const
+      {
+        return true;
       }
 
     private:

@@ -58,7 +58,15 @@ namespace libint2 {
       /// Implements DGVertex::print()
       void print(std::ostream& os) const
       {
-	os << "AlgebraicOperator: " << algebra::OperatorSymbol[OT_] << endl;
+	os << "AlgebraicOperator: ";
+        left_->print(os);
+        os << " " << algebra::OperatorSymbol[OT_] << " ";
+        right_->print(os);
+      }
+      /// Implements DGVertex::precomputed
+      bool precomputed() const
+      {
+        return false;
       }
       
     private:
