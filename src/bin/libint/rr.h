@@ -340,11 +340,11 @@ namespace libint2 {
      */
     virtual void replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B);
     /// returns the number of parents
-    const unsigned int num_entry_arcs() const;
+    unsigned int num_entry_arcs() const;
     /// returns ptr to i-th parent
     SafePtr<DGArc> entry_arc(unsigned int) const;
     /// returns the number of children
-    const unsigned int num_exit_arcs() const;
+    unsigned int num_exit_arcs() const;
     /// returns ptr to i-th child
     SafePtr<DGArc> exit_arc(unsigned int) const;
     /// return arc connecting this to v, otherwise null pointer
@@ -413,7 +413,7 @@ namespace libint2 {
     /// prepare_to_traverse() must be called before traversal of the graph starts
     void prepare_to_traverse();
     /// tag() tags the vertex and returns the total number of tags this vertex has received
-    const unsigned int tag();
+    unsigned int tag();
     /// Returns pointer to vertex to be computed before this vertex, 0 if this is the first vertex
     SafePtr<DGVertex> precalc() const { return precalc_; };
     /// Returns pointer to vertex to be computed after this vertex, 0 if this is the last vertex
@@ -494,7 +494,7 @@ namespace libint2 {
 
       /** Returns 1, 0, or -1, if each operator in the set is symmetric, nonsymmetric,
         or antisymmetric with respect to permutation of particles i and j */
-      virtual const int psymm(int i, int j) const =0;
+      virtual int psymm(int i, int j) const =0;
 
       /// Number of operators in the set
       virtual const unsigned int num_oper() const =0;
@@ -574,7 +574,7 @@ namespace libint2 {
 
     /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
         or antisymmetric with respect to permutation of particles i and j */
-    const int psymm(int i, int j) const;
+    int psymm(int i, int j) const;
 
   private:
     // symmetry W.R.T. permutation of each pair of particles

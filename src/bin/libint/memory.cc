@@ -1,5 +1,5 @@
 
-#define HAVE_STD_BINARY_COMPOSE 1
+#define HAVE_STD_BINARY_COMPOSE 0
 
 #include <algorithm>
 #include <functional>

@@ -37,7 +37,7 @@ TwoERep::~TwoERep()
 {
 }
 
-const int
+int
 TwoERep::psymm(int i, int j) const
 {
   if (i<0 || i>=Properties::np)

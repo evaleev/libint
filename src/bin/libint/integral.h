@@ -161,84 +161,84 @@ namespace libint2 {
     };
 
   // I use label() to hash GenIntegralSet. Therefore labels must be unique!
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::SingletonManagerType
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::singl_manager_(&GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::label);
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    typename GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::SingletonManagerType
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::singl_manager_(&GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::label);
   
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
-    O_(SafePtr<Oper>(new Oper(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))), size_(0)
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Op& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
+    O_(SafePtr<Op>(new Op(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))), size_(0)
     {
-      if (Oper::Properties::np != bra.num_part())
-        throw std::runtime_error("GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in bra doesn't match that in the operator");
-      if (Oper::Properties::np != ket.num_part())
-        throw std::runtime_error("GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in ket doesn't match that in the operator");
+      if (Op::Properties::np != bra.num_part())
+        throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in bra doesn't match that in the operator");
+      if (Op::Properties::np != ket.num_part())
+        throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in ket doesn't match that in the operator");
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::~GenIntegralSet()
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::~GenIntegralSet()
     {
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const SafePtr< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux)
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    const SafePtr< GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta> >
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::Instance(const Op& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux)
     {
       SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
       // Use singl_manager_ to make sure this is a new object of this type
       return singl_manager_.find(this_int);
     }
   
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const SafePtr<BFS>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::bra(unsigned int p, unsigned int i) const
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::bra(unsigned int p, unsigned int i) const
     {
       return bra_.member(p,i);
     }
     
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const SafePtr<BFS>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::ket(unsigned int p, unsigned int i) const
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::ket(unsigned int p, unsigned int i) const
     {
       return ket_.member(p,i);
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::BraType&
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::bra() const
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    const typename GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::BraType&
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::bra() const
     {
       return bra_;
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::KetType&
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::ket() const
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    const typename GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::KetType&
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::ket() const
     {
       return ket_;
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const SafePtr<Oper>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::oper() const
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    const SafePtr<Op>
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::oper() const
     {
       return O_;
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const SafePtr<AuxQuanta>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::aux() const
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::aux() const
     {
       return aux_;
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     bool
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::operator==(const this_type& a) const
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::operator==(const this_type& a) const
     {
       bool aux_equiv = PtrEquiv<AuxQuanta>::equiv(aux_,a.aux_);
       if (!aux_equiv) return false;
-      bool oper_equiv = PtrEquiv<Oper>::equiv(O_,a.O_);
+      bool oper_equiv = PtrEquiv<Op>::equiv(O_,a.O_);
       bool bra_equiv = PtrEquiv<BraSetType>::equiv(bra_,a.bra_);
       if (!bra_equiv) return false;
       bool ket_equiv = PtrEquiv<KetSetType>::equiv(ket_,a.ket_);
@@ -246,9 +246,9 @@ namespace libint2 {
       return true;
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const unsigned int
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::size() const
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::size() const
     {
       if (size_ > 0)
         return size_;
@@ -258,31 +258,31 @@ namespace libint2 {
       SafePtr< SubIteratorBase<this_type> > siter(new SubIteratorBase<this_type>(this_ptr));
       size_ = siter->num_iter();
       if (size_ == 0)
-        throw std::runtime_error("GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::size() -- size is 0");
+        throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::size() -- size is 0");
 
       return size_;
     }
     
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     void
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::set_size(unsigned int sz)
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::set_size(unsigned int sz)
     {
       size_ = sz;
     }
     
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     std::string
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::label() const
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::label() const
     {
       ostringstream os;
       os << "< ";
-      for(int p=0; p<Oper::Properties::np; p++) {
+      for(int p=0; p<Op::Properties::np; p++) {
         unsigned int nbra = bra_.num_members(p);
         for(unsigned int i=0; i<nbra; i++)
           os << bra_.member(p,i)->label() << "(" << p << ") ";
       }
       os << "| " << O_->label() << " | ";
-      for(int p=0; p<Oper::Properties::np; p++) {
+      for(int p=0; p<Op::Properties::np; p++) {
         unsigned int nket = ket_.num_members(p);
         for(unsigned int i=0; i<nket; i++)
           os << ket_.member(p,i)->label() << "(" << p << ") ";
@@ -291,16 +291,16 @@ namespace libint2 {
       return os.str();
     }
   
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     std::string
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::id() const
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::id() const
     {
       return label();
     }
   
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     std::string
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::description() const
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::description() const
     {
       ostringstream os;
       os << " GenIntegralSet: " << label();
@@ -601,14 +601,6 @@ namespace libint2 {
          << " | 1/r_{12} | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
       return os.str();
     };
-
-  template <class BFS>
-    bool
-    TwoPRep_11_11<BFS>::precomputed() const
-    {
-      // in general no quartets are precomputed
-      return false;
-    }
 
   /// TwoPRep_11_11_sq is a shell quartet of ERIs
   typedef TwoPRep_11_11<CGShell> TwoPRep_11_11_sq;

@@ -94,27 +94,6 @@ namespace libint2 {
         throw CannotAddArc("AlgebraicOperator::del_exit_arcs() -- cannot safely use del_exit_arcs on operator vertices.");
       }
       
-      /** Overloads DGVertex::replace_exit_arc(). Since for AlgebraicOperator it does matter
-          the order of exit arcs, need to make sure that B is put at the position in the list
-          occupied by A */
-      void replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B)
-      {
-        typedef DGVertex::ArcSetType ArcSetType;
-        typedef ArcSetType::iterator aiter;
-        if (!children_.empty()) {
-          aiter begin = children_.begin();
-          aiter end = children_.end();
-          aiter pos = find(begin,end,A);
-          if (pos != end) {
-            *pos = B;
-          }
-          else
-            throw std::runtime_error("AlgebraicOperator::replace_exit_arc(A,B) -- arc A is not found among exit arcs");
-        }
-        else
-          throw std::runtime_error("AlgebraicOperator::replace_exit_arc(A,B) -- there are no exit arcs to replace");
-      }
-      
     private:
       OperatorType OT_;
       SafePtr<T> left_;

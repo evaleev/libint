@@ -177,6 +177,7 @@ CGShell::operator=(const CGShell& source)
 {
   for(int i=0; i<1; i++)
     qn_[i] = source.qn_[i];
+  return *this;
 }
 
 bool

@@ -40,7 +40,7 @@ namespace libint2 {
     virtual ~SubIterator();
 
   private:
-    SubIterator operator++(int);
+    //SubIterator operator++(int);
   };
 
   /** SubIteratorBase<T> provides a base class for a sub-iterator class for T. It iterates through

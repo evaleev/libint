@@ -46,7 +46,7 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
       if (children_[i]->dest() == child)
         return;
     children_.push_back(arc);
-    arc->dest()->add_entry_arc(arc);
+    child->add_entry_arc(arc);
   }
   else
     throw CannotAddArc("DGVertex::add_entry_arc() -- cannot add arcs anymore");
@@ -58,13 +58,17 @@ DGVertex::del_exit_arc(const SafePtr<DGArc>& arc)
   typedef vector< SafePtr<DGArc> > vectype;
 
   if (can_add_arcs_) {
-    vectype::iterator pos = find(children_.begin(),children_.end(), arc);
-    if (pos != children_.end()) {
-      arc->dest()->del_entry_arc(arc);
-      children_.erase(pos);
+    if (!children_.empty()) {
+      vectype::iterator pos = find(children_.begin(),children_.end(), arc);
+      if (pos != children_.end()) {
+        arc->dest()->del_entry_arc(arc);
+        children_.erase(pos);
+      }
+      else
+        throw std::runtime_error("DGVertex::del_exit_arc() -- arc does not exist");
     }
     else
-      throw std::runtime_error("DGVertex::del_exit_arc() -- arc does not exist");
+      throw std::runtime_error("DGVertex::del_exit_arc() -- no arcs to delete");
   }
   else
     throw CannotAddArc("DGVertex::del_exit_arc() -- cannot add/remove arcs anymore");
@@ -76,10 +80,11 @@ DGVertex::del_exit_arcs()
   typedef vector< SafePtr<DGArc> > vectype;
 
   if (can_add_arcs_) {
-    for(vectype::iterator pos = children_.begin(); pos != children_.end(); pos++) {
-      (*pos)->dest()->del_entry_arc(*pos);
+    if (num_exit_arcs()) {
+      do {
+        del_exit_arc(children_[0]);
+      } while (num_exit_arcs() != 0);
     }
-    children_.resize(0);
   }
   else
     throw CannotAddArc("DGVertex::del_exit_arcs() -- cannot add/remove arcs anymore");
@@ -89,8 +94,25 @@ void
 DGVertex::replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B)
 {
   if (can_add_arcs_) {
-    del_exit_arc(A);
-    add_exit_arc(B);
+    typedef ArcSetType::iterator aiter;
+    if (!children_.empty()) {
+      aiter begin = children_.begin();
+      aiter end = children_.end();
+      aiter posB = find(begin,end,B);
+      bool B_already_exists = (posB != end);
+      if (B_already_exists)
+        throw std::runtime_error("DGVertex::replace_exit_arc(A,B) -- arc B is found among children");
+      aiter posA = find(begin,end,A);
+      if (posA != end) {
+        *posA = B;
+        A->dest()->del_entry_arc(A);
+        B->dest()->add_entry_arc(B);
+      }
+      else
+        throw std::runtime_error("DGVertex::replace_exit_arc(A,B) -- arc A is not found among exit arcs");
+    }
+    else
+      throw CannotAddArc("DGVertex::replace_exit_arc() -- no arcs to replace");
   }
   else
     throw CannotAddArc("DGVertex::replace_exit_arc() -- cannot add/remove arcs anymore");
@@ -108,8 +130,15 @@ DGVertex::add_entry_arc(const SafePtr<DGArc>& arc)
 void
 DGVertex::del_entry_arc(const SafePtr<DGArc>& arc)
 {
-  vector< SafePtr<DGArc> >::iterator location = find(parents_.begin(), parents_.end(), arc);
-  parents_.erase(location);
+  if (!parents_.empty()) {
+    vector< SafePtr<DGArc> >::iterator location = find(parents_.begin(), parents_.end(), arc);
+    if (location != parents_.end())
+      parents_.erase(location);
+    else
+      throw std::runtime_error("DGVertex::del_entry_arc() -- the arc doesn't exist");
+  }
+  else
+    throw std::runtime_error("DGVertex::del_entry_arc() -- no arcs to delete");
 }
 
 void
@@ -119,19 +148,19 @@ DGVertex::prepare_to_traverse()
   num_tagged_arcs_ = 0;
 }
 
-const unsigned int
+unsigned int
 DGVertex::tag()
 {
   return ++num_tagged_arcs_;
 }
 
-const unsigned int
+unsigned int
 DGVertex::num_entry_arcs() const
 {
   return parents_.size();
 }
 
-const unsigned int
+unsigned int
 DGVertex::num_exit_arcs() const
 {
   return children_.size();
@@ -231,7 +260,6 @@ DGVertex::address() const throw(AddressNotSet)
     if (address_)
       return *address_;
     else {
-      cerr << "DGVertex::address() failed for " << label() << endl;
       throw AddressNotSet("DGVertex::address() -- address not set");
     }
   }
@@ -491,8 +519,8 @@ DirectedGraph::optimize_rr_out()
 {
   replace_rr_with_expr();
   //remove_trivial_arithmetics();
-  //handle_trivial_nodes();
-  //remove_disconnected_vertices();
+  handle_trivial_nodes();
+  remove_disconnected_vertices();
 }
 
 // Replace recurrence relations with expressions
@@ -632,7 +660,8 @@ DirectedGraph::handle_trivial_nodes()
       if (arc_cast) {
         // remove the vertex, if possible
         try { remove_vertex_at(vertex,arc->dest()); }
-        catch (CannotPerformOperation& c) { }
+        catch (CannotPerformOperation& c) {
+        }
       }
     }
 
@@ -847,7 +876,6 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
       typedef AlgebraicOperator<DGVertex> oper;
       SafePtr<oper> ptr_cast = dynamic_pointer_cast<oper,DGVertex>(vertex);
       if (ptr_cast) {
-        cerr << vertex->description() << endl;
         vertex->set_symbol(context->unique_name<EntityTypes::FP>());
         continue;
       }
@@ -894,9 +922,6 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
     // for every vertex that has a defined symbol, hence must be defined in code
     if (current_vertex->symbol_set()) {
 
-      cerr << current_vertex->description() << endl;
-      cerr.flush();
-
       // print algebraic expression
       {
         typedef AlgebraicOperator<DGVertex> oper_type;
@@ -905,14 +930,19 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
 
           // Type declaration
           os << context->type_name<double>() << " ";
-          
-          os << current_vertex->symbol() << " = "
-          << oper_ptr->exit_arc(0)->dest()->symbol()
-          << " " << oper_ptr->label() << " "
-          << oper_ptr->exit_arc(1)->dest()->symbol()
-          << context->end_of_stat() << endl;
+
+          os << current_vertex->symbol() << " = ";
+          SafePtr<DGVertex> left_arg = current_vertex->exit_arc(0)->dest();
+          os << left_arg->symbol();
+
+          os << " " << oper_ptr->label() << " ";
+
+          SafePtr<DGVertex> right_arg = current_vertex->exit_arc(1)->dest();
+          os << right_arg->symbol();
+
+          os << context->end_of_stat() << endl;
           nflops++;
-          
+
           goto next;
         }
       }

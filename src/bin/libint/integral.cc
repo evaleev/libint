@@ -1,4 +1,5 @@
 
+#include <iostream>
 #include <stdexcept>
 #include <rr.h>
 #include <integral.h>
@@ -12,12 +13,19 @@ namespace libint2 {
 
   template <>
   bool
+  TwoPRep_11_11<CGShell>::precomputed() const
+  {
+    return false;
+  }
+    
+  template <>
+  bool
   TwoPRep_11_11<CGF>::precomputed() const
   {
     /// (ss|ss)^{(m)} are precomputed 
     if (parent_type::bra_.member(0,0)->zero() && parent_type::bra_.member(1,0)->zero() &&
       parent_type::ket_.member(0,0)->zero() && parent_type::ket_.member(1,0)->zero())
-    return true;
+      return true;
     else
       return false;
   }
