@@ -175,6 +175,7 @@ test3()
   std::basic_ofstream<char> dotfile2("graph.symb.dot");
   dg_xxxx3->print_to_dot(true,dotfile2);
 
+  cout << "Max memory used = " << memman->max_memory_used() << endl;
   dg_xxxx3->reset();
 }
 
@@ -184,7 +185,7 @@ test4()
 {
   SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy);
-  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_d,sh_s,sh_d,sh_s,0);
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_f,sh_p,sh_f,sh_p,0);
   cout << xsxs_quartet->description();
   SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
   dg_xxxx3->append_target(xsxs_ptr);
@@ -203,5 +204,6 @@ test4()
   std::basic_ofstream<char> dotfile2("graph.symb.dot");
   dg_xxxx3->print_to_dot(true,dotfile2);
 
+  cout << "Max memory used = " << memman->max_memory_used() << endl;
   dg_xxxx3->reset();
 }

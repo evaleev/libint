@@ -65,7 +65,7 @@ namespace libint2 {
         }
 
       /// Implementation of DGVertex::size()
-      const unsigned int size() const { return 0; }
+      const unsigned int size() const { return 1; }
     
       /// Implementation of DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const
@@ -123,7 +123,7 @@ namespace libint2 {
         }
 
       /// Implementation of DGVertex::size()
-      const unsigned int size() const { return 0; }
+      const unsigned int size() const { return 1; }
 
       /// Implementation of DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const

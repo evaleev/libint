@@ -14,13 +14,13 @@ DGArcRR::DGArcRR(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) :
 
 DGVertex::DGVertex() :
   parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
-  precalc_(), postcalc_(), symbol_(), address_(0)
+  precalc_(), postcalc_(), graph_label_(), symbol_(), address_()
 {
 }
 
 DGVertex::DGVertex(const vector< SafePtr<DGArc> >& parents, const vector< SafePtr<DGArc> >& children) :
   parents_(parents), children_(children), target_(false), can_add_arcs_(true),
-  num_tagged_arcs_(0), precalc_(), postcalc_(), symbol_(), address_(0)
+  num_tagged_arcs_(0), precalc_(), postcalc_(), graph_label_(), symbol_(), address_()
 {
 }
 
@@ -162,24 +162,63 @@ DGVertex::reset()
   num_tagged_arcs_ = 0;
   precalc_.reset();
   postcalc_.reset();
+  graph_label_ = SafePtr<std::string>();
+  reset_symbol();
+  address_ = SafePtr<Address>();
+}
+
+const std::string&
+DGVertex::graph_label() const throw(GraphLabelNotSet)
+{
+  if (graph_label_)
+    return *graph_label_;
+  else
+    throw GraphLabelNotSet("DGVertex::graph_label() -- graph label not set");
 }
 
 void
 DGVertex::set_graph_label(const std::string& label)
 {
-  graph_label_ = label;
+  SafePtr<std::string> graph_label(new std::string(label));
+  graph_label_ = graph_label;
+}
+
+const std::string&
+DGVertex::symbol() const throw(SymbolNotSet)
+{
+  if (symbol_)
+    return *symbol_;
+  else
+    throw SymbolNotSet("DGVertex::symbol() -- symbol not set");
 }
 
 void
 DGVertex::set_symbol(const std::string& symbol)
 {
-  symbol_ = symbol;
+  SafePtr<std::string> ptr(new std::string(symbol));
+  symbol_ = ptr;
+}
+
+void
+DGVertex::reset_symbol()
+{
+  symbol_ = SafePtr<std::string>();
+}
+
+DGVertex::Address
+DGVertex::address() const throw(AddressNotSet)
+{
+  if (address_)
+    return *address_;
+  else
+    throw AddressNotSet("DGVertex::address() -- address not set");
 }
 
 void
 DGVertex::set_address(const Address& address)
 {
-  address_ = address;
+  SafePtr<Address> ptr(new Address(address));
+  address_ = ptr;
 }
 
 ///////////////////////////////////////////////////
@@ -322,7 +361,7 @@ DirectedGraph::print_to_dot(bool symbols, std::ostream& os) const
     SafePtr<DGVertex> vertex = stack_[i];
     os << "  " << vertex->graph_label()
        << " [ label = \"";
-    if (symbols)
+    if (symbols && vertex->symbol_set())
       os << vertex->symbol();
     else
       os << vertex->label();
@@ -641,7 +680,7 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman)
     stack_[i]->prepare_to_traverse();
 
   // Second, allocate space for all targets
-#if 1
+#if 0
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
     if (vertex->is_a_target())
@@ -656,7 +695,7 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman)
   //
   SafePtr<DGVertex> vertex = first_to_compute_;
   do {
-#if 1
+#if 0
     if (!vertex->precomputed() && vertex->size() > 1 && !vertex->is_a_target()) {
 #else
     if (!vertex->precomputed() && vertex->size() > 1) {
@@ -666,12 +705,8 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman)
       for(int c=0; c<nchildren; c++) {
         SafePtr<DGVertex> child = vertex->exit_arc(c)->dest();
         const unsigned int ntags = child->tag();
-        if (ntags == child->num_entry_arcs()) {
-          // deallocate memory only if this vertex is in the traversal list
-          // NOTE : really, I should be able to detect invalid addresses to determine
-          // whether a given vertex was actually allocated
-          if (child->postcalc() != 0)
-            memman->free(child->address());
+        if (ntags == child->num_entry_arcs() && child->address_set()) {
+          memman->free(child->address());
         }
       }
     }
@@ -686,22 +721,22 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
   std::ostringstream os;
   const std::string null_str("");
 
-  // Erase all symbols
-  for(int i=0; i<first_free_; i++)
-    stack_[i]->set_symbol(null_str);
-
-  // First, set symbols for all vertices larger than 1
+  // First, set symbols for all vertices which have address assigned
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
-    if (vertex->size() > 1) {
+    if (vertex->symbol_set()) {
+      continue;
+    }
+    if (vertex->address_set()) {
       os.str(null_str);
       os << "libint->stack[" << vertex->address() << "]";
       vertex->set_symbol(os.str());
     }
   }
 
-  // Second, find all nodes which were unrolled using IntegralSet_to_Integrals --
-  // children of such nodes have symbols that depend on the parent's symbol
+  // Second, find all nodes which were unrolled using IntegralSet_to_Integrals:
+  // 1) such nodes do not need symbols generated since they never appear in the code expicitly
+  // 2) children of such nodes have symbols that depend on the parent's address
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
     if (vertex->num_exit_arcs() == 0)
@@ -715,6 +750,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
     if (iset_to_i == 0)
       continue;
     else {
+      vertex->reset_symbol();
       unsigned int nchildren = vertex->num_exit_arcs();
       for(int c=0; c<nchildren; c++) {
         os.str(null_str);
@@ -727,23 +763,38 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
   // then process all other symbols
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
-    if (vertex->symbol() != null_str) {
+    if (vertex->symbol_set()) {
       continue;
     }
+
+    // test if the vertex is an operator
+    {
+      typedef AlgebraicOperator<DGVertex> oper;
+      SafePtr<oper> ptr_cast = dynamic_pointer_cast<oper,DGVertex>(vertex);
+      if (ptr_cast) {
+        vertex->set_symbol(context->unique_name<EntityTypes::FP>());
+        continue;
+      }
+    }
+
     // test if the vertex is a static quantity, like a constant
-    typedef CTimeEntity<double> cdouble;
-    SafePtr<cdouble> ptr_cast = dynamic_pointer_cast<cdouble,DGVertex>(vertex);
-    if (ptr_cast) {
-      vertex->set_symbol(ptr_cast->label());
-      continue;
+    {
+      typedef CTimeEntity<double> cdouble;
+      SafePtr<cdouble> ptr_cast = dynamic_pointer_cast<cdouble,DGVertex>(vertex);
+      if (ptr_cast) {
+        vertex->set_symbol(ptr_cast->label());
+        continue;
+      }
     }
-    else if (vertex->precomputed()) {
+
+    if (vertex->precomputed()) {
+      // It's a runtime quantity
       std::string symbol("libint->");
       symbol += context->label_to_name(vertex->label());
       vertex->set_symbol(symbol);
       continue;
     }
-    else {
+    else if (vertex->size() == 1) {
       vertex->set_symbol(context->unique_name<EntityTypes::FP>());
       continue;
     }
@@ -757,7 +808,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
 
-    if (!current_vertex->is_a_target()) {
+    if (current_vertex->symbol_set()) {
 
       os << current_vertex->symbol() << " = ";
       

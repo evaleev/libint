@@ -296,6 +296,12 @@ namespace libint2 {
   public:
     /// The address on the stack during computation is described using this type
     typedef MemoryManager::Address Address;
+    /// Exception thrown if address is not set
+    typedef NotSet<Address> AddressNotSet;
+    /// Exception thrown if graph label is not set
+    typedef NotSet<std::string> GraphLabelNotSet;
+    /// Exception thrown if code symbol is not set
+    typedef NotSet<std::string> SymbolNotSet;
 
     DGVertex();
     DGVertex(const vector<SafePtr<DGArc> >& parents, const vector<SafePtr<DGArc> >& children);
@@ -356,18 +362,24 @@ namespace libint2 {
     virtual std::string description() const =0;
 
 
-    /// returns the graph label
-    const std::string& graph_label() const { return graph_label_;}
+    /// returns the label used for this vertex when visualizing graph
+    const std::string& graph_label() const throw(GraphLabelNotSet);
     /// sets the graph label
     void set_graph_label(const std::string& graph_label);
     /// returns the code symbol
-    const std::string& symbol() const { return symbol_;}
+    const std::string& symbol() const throw(SymbolNotSet);
     /// sets the code symbol
     void set_symbol(const std::string& symbol);
-    /// returns the address on stack
-    Address address() const { return address_;}
-    /// sets the code symbol
+    /// returns true if the symbol has been set
+    bool symbol_set() const { return symbol_ != 0; }
+    /// this function void the symbol, i.e. it is no longer set after calling this member
+    void reset_symbol();
+    /// returns the address of this quantity on Libint's stack
+    Address address() const throw(AddressNotSet);
+    /// sets the address of this quantity on Libint's stack
     void set_address(const Address& address);
+    /// returns true if the address has been set
+    bool address_set() const { return address_ != 0; }
 
     /// prepare_to_traverse() must be called before traversal of the graph starts
     void prepare_to_traverse();
@@ -387,11 +399,11 @@ namespace libint2 {
 
   private:
     /// label for the vertex within a graph
-    std::string graph_label_;    
+    SafePtr<std::string> graph_label_;    
     /// symbol used in the code
-    std::string symbol_;
+    SafePtr<std::string> symbol_;
     /// Address on the stack
-    Address address_;
+    SafePtr<Address> address_;
     
     /// Arcs leaving this DGVertex
     vector< SafePtr<DGArc> > children_;

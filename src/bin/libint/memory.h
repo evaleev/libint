@@ -1,6 +1,6 @@
 
 #include <limits.h>
-#include <vector>
+#include <list>
 #include <smart_ptr.h>
 
 #ifndef _libint2_src_bin_libint_memory_h_
@@ -18,10 +18,10 @@ namespace libint2 {
     {
     public:
       MemoryBlock(const Address& address, const Size& size, bool free,
-                  const SafePtr<MemoryBlock>& prev,
-                  const SafePtr<MemoryBlock>& next) :
+                  const SafePtr<MemoryBlock>& left,
+                  const SafePtr<MemoryBlock>& right) :
         address_(address), size_(size), free_(free),
-        prev_(prev), next_(next)
+        left_(left), right_(right)
         {
         }
 
@@ -33,6 +33,14 @@ namespace libint2 {
       Size size() const { return size_; }
       /// Returns true if the block is free
       bool free() const { return free_; }
+      /// Returns the left adjacent block
+      SafePtr<MemoryBlock> left() const { return left_; }
+      /// Returns the right adjacent block
+      SafePtr<MemoryBlock> right() const { return right_; }
+      /// Sets the left adjacent block
+      void left(const SafePtr<MemoryBlock>& l) { left_ = l; }
+      /// Sets the right adjacent block
+      void right(const SafePtr<MemoryBlock>& r) { right_ = r; }
 
       /// Sets the address
       void set_address(const Address& address) { address_ = address; }
@@ -46,10 +54,22 @@ namespace libint2 {
                                  const SafePtr<MemoryBlock>& j) {
         return i->size() < j->size();
       }
+      /** Returns true if the size of *i equals sz. Note that the arguments are 
+          not passed by reference since this function is designed to be converted
+          to std::pointer_to_binary_function, which adds references to the arguments */
+      static bool size_eq(SafePtr<MemoryBlock> i, Size sz) {
+        return i->size() == sz;
+      }
       /// Returns true if the address of *i is less than the address of *j
       static bool address_less_than(const SafePtr<MemoryBlock>& i,
                                     const SafePtr<MemoryBlock>& j) {
         return i->address() < j->address();
+      }
+      /** Returns true if the address of *i equals a. Note that the arguments are 
+          not passed by reference since this function is designed to be converted
+          to std::pointer_to_binary_function, which adds references to the arguments */
+      static bool address_eq(SafePtr<MemoryBlock> i, Address a) {
+        return i->address() == a;
       }
       /// Returns true if *i is free
       static bool is_free(const SafePtr<MemoryBlock>& i) {
@@ -60,30 +80,11 @@ namespace libint2 {
       Address address_;
       Size size_;
       bool free_;
-      SafePtr<MemoryBlock> prev_;
-      SafePtr<MemoryBlock> next_;
+      SafePtr<MemoryBlock> left_;
+      SafePtr<MemoryBlock> right_;
 
       MemoryBlock();
     };
-
-  /**
-     Class SafeInteger is a simple extension of unsigned long that provides invalid() member
-   */
-  class SafeInteger {
-  public:
-    typedef unsigned long int IntType;
-
-    SafeInteger();
-    SafeInteger(const IntType&);
-    SafeInteger& operator=(const SafeInteger&);
-    SafeInteger& operator=(const IntType&);
-    
-  private:
-    bool valid_;
-    IntType value_;
-
-  };
-  
 
   /**
      Class MemoryManager handles allocation and deallocation of raw
@@ -96,36 +97,53 @@ namespace libint2 {
     typedef unsigned long int Size;
     typedef MemoryBlock<Address,Size> MemBlock;
 
+  protected:
+    typedef std::list< SafePtr<MemBlock> > blkstore;
+
+  private:
+    /// Upper limit on the amount of memory this MemoryManager can handle
+    Size maxmem_;
+    /// manages MemBlocks
+    blkstore blks_;
+    /// This block is the guaranteed to be free until all memory is exhausted
+    SafePtr<MemBlock> superblock_;
+    /// Max amount of memory used
+    Address max_memory_used_;
+
+    SafePtr<MemBlock> merge_blocks(const SafePtr<MemBlock>& left, const SafePtr<MemBlock>& right);
+    SafePtr<MemBlock> merge_to_superblock(const SafePtr<MemBlock>& blk);
+    void update_max_memory();
+
+
+  public:
     virtual ~MemoryManager();
 
     /// Reserve a block and return its address
     virtual Address alloc(const Size& size) =0;
     /// Release a block previously reserved using alloc
-    virtual void free(const Address& address) =0;
+    virtual void free(const Address& address);
+    /// Returns the max amount of memory used up to this moment
+    Size max_memory_used() const { return max_memory_used_; }
 
   protected:
     MemoryManager(const Size& maxmem);
 
-    typedef std::vector< SafePtr<MemBlock> > blkstore;
-    // manages MemBlocks
-    blkstore blks_;
-    unsigned int last_freed_;
-
     /// Returns maxmem
     Size maxmem() const { return maxmem_; }
+    /// Returns blocks
+    blkstore& blocks() { return blks_;}
+    /// Returns the superblock
+    SafePtr<MemBlock> superblock() const { return superblock_; }
     /// steals size memory from block blk and returns the new block
     SafePtr<MemBlock> steal_from_block(const SafePtr<MemBlock>& blk, const Size& size);
     /// finds the block at Address a
     SafePtr<MemBlock> find_block(const Address& a);
 
-  private:
-    Size maxmem_;
-
   };
 
 
   /**
-     WorstFitMemoryManager is a worst-fit memory manager
+     WorstFitMemoryManager allocates memory by finding the largest-possible free block
   */
   class WorstFitMemoryManager : public MemoryManager {
   public:
@@ -134,8 +152,19 @@ namespace libint2 {
 
     /// Implementation of MemoryManager::alloc()
     Address alloc(const Size& size);
-    /// Implementation of MemoryManager::free()
-    void free(const Address& address);
+
+  };
+
+  /**
+     BestFitMemoryManager allocates memory by finding the smallest-possible free block
+  */
+  class BestFitMemoryManager : public MemoryManager {
+  public:
+    BestFitMemoryManager(const Size& maxsize = ULONG_MAX);
+    ~BestFitMemoryManager();
+
+    /// Implementation of MemoryManager::alloc()
+    Address alloc(const Size& size);
 
   };
 
