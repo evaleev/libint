@@ -1,4 +1,4 @@
-define([libint_mmm_version],[1.1.0])
+define([libint_mmm_version],[1.1.1])
 define([libint_buildid],[stable])
 define([libint_so_version],[1:0:0])
 
@@ -59,6 +59,7 @@ esac
 
 EXCLUDED_DIRS=
 
+INCLUDE_DERIV=yes
 AC_ARG_ENABLE(deriv,
 [  --enable-deriv          Compile with 1st- and 2nd-order derivative ERI support],
 [
@@ -74,7 +75,7 @@ case $enableval in
   ;;
 esac
 ],[
-    INCLUDE_DERIV=no
+    INCLUDE_DERIV=yes
 ]
 )
 if test $INCLUDE_DERIV = yes; then
@@ -83,6 +84,7 @@ else
   EXCLUDED_DIRS="-x SRC_BIN_LIBDERIV $EXCLUDED_DIRS"
 fi
 
+INCLUDE_R12=yes
 AC_ARG_ENABLE(r12,
 [  --enable-r12            Compile with linear R12 methods integrals support],
 [
@@ -98,7 +100,7 @@ case $enableval in
   ;;
 esac
 ],[
-    INCLUDE_R12=no
+    INCLUDE_R12=yes
 ]
 )
 if test $INCLUDE_R12 = yes; then
