@@ -47,12 +47,12 @@ namespace libint2 {
     virtual ~IntegralSet() {};
 
     /// Equivalence operator
-    virtual bool equiv(const IntegralSet*) const =0;
+    virtual bool equiv(const SafePtr<IntegralSet>&) const =0;
 
     /// Obtain pointers to ith BasisFunctionSet for particle p in bra
-    virtual const BasisFunctionSet* bra(unsigned int p, unsigned int i) const =0;
+    virtual const SafePtr<BasisFunctionSet> bra(unsigned int p, unsigned int i) const =0;
     /// Obtain pointers to ith BasisFunctionSet for particle p in ket
-    virtual const BasisFunctionSet* ket(unsigned int p, unsigned int i) const =0;
+    virtual const SafePtr<BasisFunctionSet> ket(unsigned int p, unsigned int i) const =0;
 
   };
 
@@ -79,14 +79,14 @@ namespace libint2 {
       virtual ~GenIntegralSet();
 
       /// Returns a pointer to a unique instance, a la Singleton
-      static GenIntegralSet* Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket);
+      static SafePtr<GenIntegralSet> Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket);
       
       /// Equivalence operator
-      virtual bool equiv(const IntegralSet<BFS>*) const;
+      virtual bool equiv(const SafePtr< IntegralSet<BFS> >&) const;
       
       /// Obtain BFsets members
-      const BFS* bra(unsigned int p, unsigned int i) const;
-      const BFS* ket(unsigned int p, unsigned int i) const;
+      const SafePtr<BFS> bra(unsigned int p, unsigned int i) const;
+      const SafePtr<BFS> ket(unsigned int p, unsigned int i) const;
       
       /// Obtain the operator
       const Oper& oper() const;
