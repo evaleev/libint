@@ -116,9 +116,12 @@ int emit_vrr_t2_build()
 
       fprintf(code,"#include <libint/libint.h>\n");
       fprintf(code,"#include \"libr12.h\"\n\n");
+
+      /* These are only used if split == 1 */
+      curr_subfunction = 0;
+      curr_count = 0;
+
       if (split == 1) {
-	curr_subfunction = 0;
-	curr_count = 0;
 	fprintf(code,"REALTYPE *%s(prim_data *Data, contr_data *ShellData, REALTYPE *vp, const REALTYPE *I0, const REALTYPE *I1, const REALTYPE *I2, const REALTYPE *I3, const REALTYPE *I4)\n{\n",
 		subfunction_name[0]);
       }
@@ -188,7 +191,7 @@ int emit_vrr_t2_build()
 
 	      t0++;
 	      curr_count++;
-	      if (curr_count == subbatch_length && split == 1) {
+	      if (split == 1 && curr_count == subbatch_length) {
 		curr_count = 0;
 		curr_subfunction++;
 		fprintf(code,"return vp;\n}\n\n");

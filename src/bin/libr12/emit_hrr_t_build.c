@@ -93,11 +93,13 @@ int emit_hrr_t_build()
       }
       fprintf(code,"void %s(REALTYPE *CD, REALTYPE *AC, REALTYPE *vp, const REALTYPE *I0, const REALTYPE *I1, ",function_name);
       fprintf(code,"const REALTYPE *I2, const REALTYPE *I3, const REALTYPE *I4, int la, int lb)\n{\n");
-      if (split == 1) {
-	curr_subfunction = 0;
-	curr_count = 0;
-      }
-      else {
+
+      /* These are only used if split == 1 */
+      curr_subfunction = 0;
+      curr_count = 0;
+
+      /* If no splitting is performed then start the body of the main function */
+      if (split == 0) {
 	fprintf(code,"  const REALTYPE CD0 = CD[0];\n");
 	fprintf(code,"  const REALTYPE CD1 = CD[1];\n");
 	fprintf(code,"  const REALTYPE CD2 = CD[2];\n");
@@ -183,7 +185,7 @@ int emit_hrr_t_build()
 		fprintf(code,"I3[(pa+%d)*bcdm1_num+%d];\n",xyz,t3);
 
 	      curr_count++;
-	      if (curr_count == subbatch_length && split == 1) {
+	      if (split == 1 && curr_count == subbatch_length) {
 		curr_count = 0;
 		curr_subfunction++;
 		fprintf(code,"  return vp;\n}\n\n");
@@ -265,11 +267,13 @@ int emit_hrr_t_build()
       fprintf(code,"void %s(REALTYPE *AB, REALTYPE *AC, REALTYPE *vp, const REALTYPE *I0, const REALTYPE *I1, ",
 	      function_name);
       fprintf(code,"const REALTYPE *I2, const REALTYPE *I3, const REALTYPE *I4, int lc, int ld)\n{\n");
-      if (split == 1) {
-	curr_subfunction = 0;
-	curr_count = 0;
-      }
-      else {
+
+      /* These are only used if split == 1 */
+      curr_subfunction = 0;
+      curr_count = 0;
+
+      /* If no splitting is performed (split == 0) start the body of the main function */
+      if (split = 0) {
 	fprintf(code,"  int cd, cd_num, c_num, cp1_num, d_num;\n");
 	fprintf(code,"  int pc, qc, d, ind_c, ind_cp1d;\n");
 	fprintf(code,"  const REALTYPE *i0, *i1, *i2, *i3, *i4;\n");
@@ -389,7 +393,7 @@ int emit_hrr_t_build()
 	      }
 
 	      curr_count++;
-	      if (curr_count == subbatch_length && split == 1) {
+	      if (split == 1 && curr_count == subbatch_length) {
 		curr_count = 0;
 		curr_subfunction++;
 		fprintf(code,"  return vp;\n}\n\n");

@@ -52,9 +52,9 @@ int emit_vrr_build_macro()
   char *cpcommand;
   int errcod;
 
-  k1 = (char **) malloc((new_am - 1)*sizeof(char *));
-  k2 = (char **) malloc((new_am - 1)*sizeof(char *));
-  k3 = (char **) malloc((new_am - 1)*sizeof(char *));
+  k1 = (char **) malloc((new_am)*sizeof(char *));
+  k2 = (char **) malloc((new_am)*sizeof(char *));
+  k3 = (char **) malloc((new_am)*sizeof(char *));
   for(i=1;i<=new_am;i++) {
     j = strlen(number[i]);
     k1[i-1] = (char*) malloc((4+j)*sizeof(char));

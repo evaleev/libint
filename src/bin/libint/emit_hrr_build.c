@@ -74,6 +74,7 @@ int emit_hrr_build()
       }
       else {
 	split = 0;
+	subbatch_length = class_size;
       }
       
       sprintf(function_name,"hrr3_build_%c%c",am_letter[am_in[0]],am_letter[am_in[1]]);
@@ -101,11 +102,13 @@ int emit_hrr_build()
       }
       fprintf(code,"void %s(const REALTYPE *CD, REALTYPE *vp, REALTYPE *I0, REALTYPE *I1, int ab_num)\n{\n",
 	      function_name);
-      if (split == 1) {
-	curr_subfunction = 0;
-	curr_count = 0;
-      }
-      else {
+
+      /* These are only used when split == 1 */
+      curr_subfunction = 0;
+      curr_count = 0;
+
+      /* Start the body of the main function if it's not split */
+      if (split == 0) {
 	fprintf(code,"  const REALTYPE CD0 = CD[0];\n");
 	fprintf(code,"  const REALTYPE CD1 = CD[1];\n");
 	fprintf(code,"  const REALTYPE CD2 = CD[2];\n");
@@ -163,7 +166,7 @@ int emit_hrr_build()
 	      fprintf(code, "    *(vp++) = I0[%d] + CD%d*I1[%d];\n",t0,xyz,t1);
 
 	      curr_count++;
-	      if (curr_count == subbatch_length && split == 1) {
+	      if (split == 1 && curr_count == subbatch_length) {
 		curr_count = 0;
 		curr_subfunction++;
 		fprintf(code,"  return vp;\n}\n\n");
@@ -212,6 +215,7 @@ int emit_hrr_build()
       }
       else {
 	split = 0;
+	subbatch_length = class_size;
       }
       
       sprintf(function_name,"hrr1_build_%c%c",am_letter[am_in[0]],am_letter[am_in[1]]);
@@ -238,11 +242,13 @@ int emit_hrr_build()
       }
       fprintf(code,"void %s(const REALTYPE *AB, REALTYPE *vp, REALTYPE *I0, REALTYPE *I1, int cd_num)\n{\n",
 	      function_name);
-      if (split == 1) {
-	curr_subfunction = 0;
-	curr_count = 0;
-      }
-      else {
+
+      /* These are used only if split == 1 */
+      curr_subfunction = 0;
+      curr_count = 0;
+
+      /* If no splitting is done (split == 0) start the body of the main function */
+      if (split == 0) {
 	fprintf(code,"  const REALTYPE AB0 = AB[0];\n");
 	fprintf(code,"  const REALTYPE AB1 = AB[1];\n");
 	fprintf(code,"  const REALTYPE AB2 = AB[2];\n");
@@ -311,7 +317,7 @@ int emit_hrr_build()
 	      fprintf(code,"    *(vp++) = *(i0++) + AB%d*(*(i1++));\n",xyz);
 
 	      curr_count++;
-	      if (curr_count == subbatch_length && split == 1) {
+	      if (split == 1 && curr_count == subbatch_length) {
 		curr_count = 0;
 		curr_subfunction++;
 		fprintf(code,"  return vp;\n}\n\n");

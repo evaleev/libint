@@ -48,9 +48,9 @@ int emit_vrr_r_build()
   char **subfunction_name;
 
 
-  k1 = (char **) malloc((new_am - 1)*sizeof(char *));
-  k2 = (char **) malloc((new_am - 1)*sizeof(char *));
-  k3 = (char **) malloc((new_am - 1)*sizeof(char *));
+  k1 = (char **) malloc((new_am)*sizeof(char *));
+  k2 = (char **) malloc((new_am)*sizeof(char *));
+  k3 = (char **) malloc((new_am)*sizeof(char *));
   for(i=1;i<=new_am;i++) {
     j = strlen(number[i]);
     k1[i-1] = (char*) malloc((4+j)*sizeof(char));
@@ -136,9 +136,12 @@ int emit_vrr_r_build()
 
       fprintf(code,"#include <libint/libint.h>\n");
       fprintf(code,"#include \"libr12.h\"\n\n");
+
+      /* These are only used if split = 1 */
+      curr_subfunction = 0;
+      curr_count = 0;
+
       if (split == 1) {
-	curr_subfunction = 0;
-	curr_count = 0;
 	fprintf(code,
 	"REALTYPE *%s(prim_data *Data, REALTYPE *vp, const REALTYPE *I0, const REALTYPE *I1, const REALTYPE *I2, const REALTYPE *I3, const REALTYPE *I4, const REALTYPE *I5)\n{\n",
 		subfunction_name[0]);
@@ -211,7 +214,7 @@ int emit_vrr_r_build()
 		
 	      t1++;
 	      curr_count++;
-	      if (curr_count == subbatch_length && split == 1) {
+	      if (split == 1 && curr_count == subbatch_length) {
 		curr_count = 0;
 		curr_subfunction++;
 		fprintf(code,"return vp;\n}\n\n");
