@@ -137,7 +137,7 @@ int emit_vrr_r_build()
       fprintf(code,"#include <libint/libint.h>\n");
       fprintf(code,"#include \"libr12.h\"\n\n");
 
-      /* These are only used if split = 1 */
+      /* These are only used if split == 1 */
       curr_subfunction = 0;
       curr_count = 0;
 

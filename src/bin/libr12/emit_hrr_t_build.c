@@ -273,7 +273,7 @@ int emit_hrr_t_build()
       curr_count = 0;
 
       /* If no splitting is performed (split == 0) start the body of the main function */
-      if (split = 0) {
+      if (split == 0) {
 	fprintf(code,"  int cd, cd_num, c_num, cp1_num, d_num;\n");
 	fprintf(code,"  int pc, qc, d, ind_c, ind_cp1d;\n");
 	fprintf(code,"  const REALTYPE *i0, *i1, *i2, *i3, *i4;\n");
