@@ -147,11 +147,6 @@ namespace libint2 {
       // Copy is not permitted
       GenIntegralSet& operator=(const GenIntegralSet& source);
 
-      // Unique instances of GenIntegralSet are placed here and obtained through Instance()
-      static std::vector< SafePtr<GenIntegralSet> > stack_;
-      // Labels of unique instances of GenIntegralSet are placed here and obtained through Instance()
-      static std::vector<std::string> label_stack_;
-
       // This is used to manage GenIntegralSet objects as singletons
       static SingletonManagerType singl_manager_;
       
@@ -165,14 +160,12 @@ namespace libint2 {
 
     };
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    std::vector< SafePtr< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> > > GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::stack_(0);
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    std::vector<std::string> GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::label_stack_(0);
+  // I use label() to hash GenIntegralSet. Therefore labels must be unique!
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::SingletonManagerType
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::singl_manager_(&GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::label);
   
+
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
     O_(SafePtr<Oper>(new Oper(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))), size_(0)
@@ -193,28 +186,7 @@ namespace libint2 {
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux)
     {
       SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
-
-      /*
-      std::string lab = this_int->label();
-      typedef std::vector<std::string>::iterator iter;
-      iter begin = label_stack_.begin();
-      iter end = label_stack_.end();
-      iter pos = find(begin,end,lab);
-      if (pos != end) {
-        this_int.reset();
-        return stack_[pos-begin];
-        }*/
-
-      /*
-      int stack_size = stack_.size();
-      for(int i=0; i<stack_size; i++) {
-        if (PtrComp::equiv(this_int,stack_[i])) {
-          this_int.reset();
-          return stack_[i];
-        }
-        }*/
-
-      //stack_.push_back(this_int);
+      // Use singl_manager_ to make sure this is a new object of this type
       return singl_manager_.find(this_int);
     }
   
@@ -529,6 +501,8 @@ namespace libint2 {
       typedef VectorBraket<BFS> KetType;
       typedef mType AuxIndexType;
       typedef TwoPRep_11_11 this_type;
+      /// This the type of the object that manages GenIntegralSet's as Singletons
+      typedef SingletonStack<TwoPRep_11_11,std::string> SingletonManagerType;
       
       /// TwoPRep_11_11 is a set of these subobjects
       typedef TwoPRep_11_11<typename BFS::iter_type> iter_type;
@@ -558,14 +532,15 @@ namespace libint2 {
       // This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
       TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
 
-      /// stack_ of pointers to objects used to check whether an object already exists
-      static vector< SafePtr<TwoPRep_11_11> > stack_;
-
+      // This is used to manage GenIntegralSet objects as singletons
+      static SingletonManagerType singl_manager_;
     };
 
+  // I use label() to hash TwoPRep_11_11. Therefore labels must be unique!
   template <class BFS>
-    vector< SafePtr< TwoPRep_11_11<BFS> > > TwoPRep_11_11<BFS>::stack_(0);
-
+    typename TwoPRep_11_11<BFS>::SingletonManagerType
+    TwoPRep_11_11<BFS>::singl_manager_(&TwoPRep_11_11<BFS>::label);
+  
   template <class BFS>
     TwoPRep_11_11<BFS>::TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket,  const AuxIndexType& aux) :
     GenIntegralSet<TwoERep, IncableBFSet, BraType, KetType, AuxIndexType>(TwoERep(),bra, ket, aux)
@@ -585,15 +560,8 @@ namespace libint2 {
     TwoPRep_11_11<BFS>::Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux)
     {
       SafePtr<TwoPRep_11_11> this_int(new TwoPRep_11_11<BFS>(bra,ket,aux));
-      int stack_size = stack_.size();
-      for(int i=0; i<stack_size; i++) {
-        if (PtrComp::equiv(this_int,stack_[i])) {
-          this_int.reset();
-          return stack_[i];
-        }
-      }
-      stack_.push_back(this_int);
-      return this_int;
+      // Use singl_manager_ to make sure this is a new object of this type
+      return singl_manager_.find(this_int);
     }
 
   template <class BFS>

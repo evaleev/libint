@@ -21,11 +21,18 @@ namespace libint2 {
     public:
       typedef std::vector< SafePtr<T> > ostack_type;
       typedef std::vector< HashType > hstack_type;
+      /// Specifies the type of callback which computes hashes
       typedef HashType (T::* HashCallback)() const;
 
+      /// callback to compute hash values is the only parameter
       SingletonStack(HashCallback callback);
       ~SingletonStack() {}
 
+      /** Returns the pointer to the unique instance of object obj.
+          find() computes obj->*callback_(), searches it in hstack_,
+          if found -- returns the pointer to the corresponding object on ostack_,
+          otherwise pushes obj to the end of ostack_ and returns obj.
+      */
       SafePtr<T> find(const SafePtr<T>& obj);
 
     private:
@@ -54,6 +61,7 @@ namespace libint2 {
       }
 
       ostack_.push_back(obj);
+      hstack_.push_back(hash);
       return obj;
     }
 
