@@ -600,6 +600,9 @@ namespace libint2 {
   };
 
   template <class BFSet>
+    vector< TwoERep_2b2k<BFSet>* > TwoERep_2b2k<BFSet>::stack_(0);
+
+  template <class BFSet>
     TwoERep_2b2k<BFSet>::TwoERep_2b2k(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m) :
     Integral<TwoERep, BFSet>(bra, ket), m_(m)
     {
@@ -682,10 +685,42 @@ namespace libint2 {
 
   };
 
+  /** HRR Recurrence Relation for 2-e ERI. part specifies for which particle
+      the angular momentum is shifted.
+   */
+  template <class BFSet, int part> class HRR_ERI_2b2k : public RecurrenceRelation {
+
+    static const unsigned int nchild_ = 2;
+
+    TwoERep_2b2k<BFSet>* target_;
+    TwoERep_2b2k<BFSet>* children_[nchild_];
+
+    unsigned int num_actual_children_;
+
+  public:
+    HRR_ERI_2b2k(TwoERep_2b2k<BFSet>*);
+    ~HRR_ERI_2b2k();
+
+    typedef TwoERep_2b2k<BFSet> TargetType;
+
+    const unsigned int num_children() const { return num_actual_children_; };
+    /// target() returns points to the i-th child
+    TwoERep_2b2k<BFSet>* target() { return target_; };
+    /// child(i) returns points i-th child
+    TwoERep_2b2k<BFSet>* child(unsigned int i);
+
+    const std::string cpp_function_name() {};
+    const std::string cpp_source_name() {};
+    const std::string cpp_header_name() {};
+    std::ostream& cpp_source(std::ostream&) {};
+
+  };
+
 
 };
 
 #include <vrr_eri_2b2k.h>
+#include <hrr_eri_2b2k.h>
 
 #endif
 

@@ -45,8 +45,8 @@ int main (int argc, char* argv[])
   sh_12[0].push_back(sh_k);
   sh_12[1].push_back(sh_k);
   vector<CGShell> sh_34[TwoERep::np];
-  sh_34[0].push_back(sh_s);
-  sh_34[1].push_back(sh_s);
+  sh_34[0].push_back(sh_k);
+  sh_34[1].push_back(sh_k);
 
   TwoERep_2b2k<CGShell>* sq1 = TwoERep_2b2k<CGShell>::Instance(sh_12,sh_34, 0);
   sq1->print();
@@ -55,13 +55,11 @@ int main (int argc, char* argv[])
   // Create a DAG for a VRR case
   DirectedGraph dg_vrr_xxxx;
 
-#if 0
-  dg_vrr_xxxx.append_target< TwoERep_2b2k<CGShell>, VRR_c_ERI_2b2k_shell>(sq1);
-#else
   dg_vrr_xxxx.append_target(sq1);
+  dg_vrr_xxxx.apply_to_all< HRR_ab_ERI_2b2k_shell >();
+  dg_vrr_xxxx.apply_to_all< HRR_cd_ERI_2b2k_shell >();
   dg_vrr_xxxx.apply_to_all< VRR_a_ERI_2b2k_shell >();
   dg_vrr_xxxx.apply_to_all< VRR_c_ERI_2b2k_shell >();
-#endif
 
   dg_vrr_xxxx.traverse();
   dg_vrr_xxxx.debug_print_traversal(cout);
