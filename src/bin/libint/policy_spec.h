@@ -12,11 +12,11 @@ using namespace std;
 namespace libint2 {
 
   /*
-    Definition of a generic StdLibintPolicy is provided in policy.h
+    Definition of a generic StdLibintTDPolicy is provided in policy.h
   */
 
   /**
-     StdLibintPolicy<CGShell>::init_subobj initializes CGFs in canonical order.
+     StdLibintTDPolicy<CGShell>::init_subobj initializes CGFs in canonical order.
      The functions in order are produced using the following C++ loop:
 
      for(int i=0; i<=am; i++) {
@@ -33,7 +33,7 @@ namespace libint2 {
   
   template <>
   void
-  StdLibintPolicy<CGShell>::init_subobj(const SafePtr<CGShell>& cgshell, vector< SafePtr<CGF> >& cgfs)
+  StdLibintTDPolicy<CGShell>::init_subobj(const SafePtr<CGShell>& cgshell, vector< SafePtr<CGF> >& cgfs)
   {
     unsigned int am = cgshell->qn();
     unsigned int qn[3];
@@ -51,11 +51,11 @@ namespace libint2 {
 
   template <>
   void
-  StdLibintPolicy<CGShell>::dealloc_subobj(vector< SafePtr<CGF> >& subobj)
+  StdLibintTDPolicy<CGShell>::dealloc_subobj(vector< SafePtr<CGF> >& subobj)
   {
   }
 
-  /** StdLibintPolicy<GenIntegralSet> describes how integral sets are composed
+  /** StdLibintTDPolicy<GenIntegralSet> describes how integral sets are composed
       of integrals in canonical order.
 
       Order integrals by iterating over BFS in BraSetType and KetSetType.
@@ -66,7 +66,7 @@ namespace libint2 {
    */
 
   template <class Oper, class BFS, class BraSetType, class KetSetType>
-    struct StdLibintPolicy< GenIntegralSet<Oper,BFS,BraSetType,KetSetType> >
+    struct StdLibintTDPolicy< GenIntegralSet<Oper,BFS,BraSetType,KetSetType> >
     {
       typedef GenIntegralSet<Oper,BFS,BraSetType,KetSetType> obj_type;
       typedef typename obj_type::iter_type subobj_type;
@@ -159,11 +159,11 @@ namespace libint2 {
     };
   
 
-  /** StdLibintPolicy<TwoPRep_11_11> should go away soon.
+  /** StdLibintTDPolicy<TwoPRep_11_11> should go away soon.
   */
 
   template <class BFS>
-    struct StdLibintPolicy< TwoPRep_11_11<BFS> >
+    struct StdLibintTDPolicy< TwoPRep_11_11<BFS> >
     {
       typedef TwoPRep_11_11<BFS> obj_type;
       typedef typename obj_type::iter_type subobj_type;

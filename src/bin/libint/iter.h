@@ -46,7 +46,7 @@ namespace libint2 {
       T as if it were a set of some data of type T::iter_type. Traits of class T (ordering of
       T::iter_type, etc.) are provided by Tr.
   */
-  template <class T, class Tr = StdLibintPolicy<T> > class SubIteratorBase : public SubIterator {
+  template <class T, class Tr = Policy<T> > class SubIteratorBase : public SubIterator {
 
   public:
     typedef typename T::iter_type iter_type;
