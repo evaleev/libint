@@ -89,6 +89,8 @@ namespace libint2 {
     void replace_rr_with_expr();
     /// This function gets rid of trivial math such as multiplication/division by 1.0, etc.
     void remove_trivial_arithmetics();
+    /// This functions removes vertices not connected to other vertices
+    void remove_disconnected_vertices();
     /** If v1 and v2 are connected by DGArcDirect and all entry arcs to v1 are of the DGArcDirect type as well,
         this function will reattach all arcs extering v1 to v2 and remove v1 from the graph alltogether. */
     void remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2) throw(CannotPerformOperation);
@@ -165,8 +167,13 @@ namespace libint2 {
     Prints out the graph in format understood by program "dot"
     of package "graphviz"
     */
-    void print_to_dot(ostream& os = std::cout) const;
-
+    void print_to_dot(std::ostream& os = std::cout) const;
+    
+    /**
+    Generates C++ code that corresponds to the graph
+    */
+    void generate_cpp_code(std::ostream& os = std::cout) const;
+    
     /// Resets the graph and all vertices
     void reset();
 

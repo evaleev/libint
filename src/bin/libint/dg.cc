@@ -61,7 +61,7 @@ DGVertex::del_exit_arc(const SafePtr<DGArc>& arc)
 
   if (can_add_arcs_) {
     vectype::iterator pos = find(children_.begin(),children_.end(), arc);
-    if (pos == children_.end()) {
+    if (pos != children_.end()) {
       arc->dest()->del_entry_arc(arc);
       children_.erase(pos);
     }
@@ -232,6 +232,7 @@ DirectedGraph::del_vertex(const SafePtr<DGVertex>& v) throw(CannotPerformOperati
     stack_.erase(pos);
   else
     throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete vertex");
+  --first_free_;
 }
 
 void
@@ -418,6 +419,7 @@ DirectedGraph::optimize_rr_out()
 {
   replace_rr_with_expr();
   remove_trivial_arithmetics();
+  remove_disconnected_vertices();
 }
 
 // Replace recurrence relations with expressions
@@ -551,7 +553,7 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
     // See if this is a direct arc -- otherwise cannot do this
     SafePtr<DGArc> arc = v1->entry_arc(i);
     SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
-    if (arc_cast)
+    if (arc_cast == 0)
       throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");
     v1_entry.push_back(v1->entry_arc(i));
   }
@@ -561,7 +563,7 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
   // See if this is a direct arc -- otherwise cannot do this
   SafePtr<DGArc> arc = v1->exit_arc(0);
   SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
-  if (arc_cast)
+  if (arc_cast == 0)
     throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");
 
   //
@@ -578,7 +580,35 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
     SafePtr<DGArcDirect> new_arc(new DGArcDirect(parent,v2));
     parent->add_exit_arc(new_arc);
   }
+}
 
-  // Finally, remove v1 from the graph
-  del_vertex(v1);
+void
+DirectedGraph::remove_disconnected_vertices()
+{
+  for(int i=0; i<first_free_; i++) {
+    SafePtr<DGVertex> vertex = stack_[i];
+    if (vertex->num_entry_arcs() == 0 && vertex->num_exit_arcs() == 0) {
+      try { del_vertex(vertex); }
+      catch (CannotPerformOperation) {
+        continue;
+      }
+      // first_free_ was decremented, so need to decrease i as well
+      --i;
+    }
+  }
+}
+
+
+//
+//
+//
+void
+DirectedGraph::generate_cpp_code(std::ostream& os) const
+{
+  os << "\#include <libint.h>" << endl << endl;
+  os << stack_[0]->cpp_comment() << endl;
+  os << "void" << endl;
+  os << "compute_" << stack_[0]->label() << "(struct Libint* libint, REALTYPE* target)" << endl;
+  os <<
+  
 }
