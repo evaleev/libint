@@ -6,6 +6,7 @@
 #include <policy_spec.h>
 #include <quanta.h>
 #include <equiv.h>
+#include <singl_stack.h>
 
 #ifndef _libint2_src_bin_libint_integral_h_
 #define _libint2_src_bin_libint_integral_h_
@@ -79,6 +80,8 @@ namespace libint2 {
       typedef IntegralSet<BFS> parent_type;
       /// This type provides comparison operations on pointers to GenIntegralSet
       typedef PtrEquiv<GenIntegralSet> PtrComp;
+      /// This the type of the object that manages GenIntegralSet's as Singletons
+      typedef SingletonStack<GenIntegralSet,std::string> SingletonManagerType;
     
       /** No constructors are public since this is a singleton-like quantity.
           Instead, access is provided through Instance().
@@ -130,6 +133,9 @@ namespace libint2 {
       BraSetType bra_;
       KetSetType ket_;
 
+      /// set size to sz
+      void set_size(unsigned int sz);
+
       private:
       //
       // All integrals are Singletons by nature, therefore they must be treated as such
@@ -142,21 +148,34 @@ namespace libint2 {
       GenIntegralSet& operator=(const GenIntegralSet& source);
 
       // Unique instances of GenIntegralSet are placed here and obtained through Instance()
-      static vector < SafePtr<GenIntegralSet> > stack_;
+      static std::vector< SafePtr<GenIntegralSet> > stack_;
+      // Labels of unique instances of GenIntegralSet are placed here and obtained through Instance()
+      static std::vector<std::string> label_stack_;
+
+      // This is used to manage GenIntegralSet objects as singletons
+      static SingletonManagerType singl_manager_;
       
       // The operator needs to be a real object rather than real type to be able to construct a SubIterator, etc.
       SafePtr<Oper> O_;
       // Same for AuxQuanta
       SafePtr<AuxQuanta> aux_;
 
+      // size of the integral set
+      mutable unsigned int size_;
+
     };
 
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    vector < SafePtr< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> > > GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::stack_(0);
+    std::vector< SafePtr< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> > > GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::stack_(0);
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    std::vector<std::string> GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::label_stack_(0);
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::SingletonManagerType
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::singl_manager_(&GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::label);
   
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
-    O_(SafePtr<Oper>(new Oper(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux)))
+    O_(SafePtr<Oper>(new Oper(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))), size_(0)
     {
       if (Oper::Properties::np != bra.num_part())
         throw std::runtime_error("GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in bra doesn't match that in the operator");
@@ -174,15 +193,29 @@ namespace libint2 {
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux)
     {
       SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
+
+      /*
+      std::string lab = this_int->label();
+      typedef std::vector<std::string>::iterator iter;
+      iter begin = label_stack_.begin();
+      iter end = label_stack_.end();
+      iter pos = find(begin,end,lab);
+      if (pos != end) {
+        this_int.reset();
+        return stack_[pos-begin];
+        }*/
+
+      /*
       int stack_size = stack_.size();
       for(int i=0; i<stack_size; i++) {
         if (PtrComp::equiv(this_int,stack_[i])) {
           this_int.reset();
           return stack_[i];
         }
-      }
-      stack_.push_back(this_int);
-      return this_int;
+        }*/
+
+      //stack_.push_back(this_int);
+      return singl_manager_.find(this_int);
     }
   
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
@@ -231,20 +264,38 @@ namespace libint2 {
     bool
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::operator==(const this_type& a) const
     {
+      bool aux_equiv = PtrEquiv<AuxQuanta>::equiv(aux_,a.aux_);
+      if (!aux_equiv) return false;
       bool oper_equiv = PtrEquiv<Oper>::equiv(O_,a.O_);
       bool bra_equiv = PtrEquiv<BraSetType>::equiv(bra_,a.bra_);
+      if (!bra_equiv) return false;
       bool ket_equiv = PtrEquiv<KetSetType>::equiv(ket_,a.ket_);
-      bool aux_equiv = PtrEquiv<AuxQuanta>::equiv(aux_,a.aux_);
-      return oper_equiv && bra_equiv && ket_equiv && aux_equiv;
+      if (!ket_equiv) return false;
+      return true;
     }
 
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const unsigned int
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::size() const
     {
+      if (size_ > 0)
+        return size_;
+
+      // compute size
       SafePtr<this_type> this_ptr = const_pointer_cast<this_type,const this_type>(EnableSafePtrFromThis<GenIntegralSet>::SafePtr_from_this());
       SafePtr< SubIteratorBase<this_type> > siter(new SubIteratorBase<this_type>(this_ptr));
-      return siter->num_iter();
+      size_ = siter->num_iter();
+      if (size_ == 0)
+        throw std::runtime_error("GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::size() -- size is 0");
+
+      return size_;
+    }
+    
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    void
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::set_size(unsigned int sz)
+    {
+      size_ = sz;
     }
     
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
@@ -430,19 +481,24 @@ namespace libint2 {
     bool
     VectorBraket<BFS>::operator==(const VectorBraket<BFS>& a) const
     {
-      if (bfs_.size() != a.bfs_.size())
+      const BFSMatrix& bfs0 = bfs_;
+      const BFSMatrix& bfs1 = a.bfs_;
+      if (bfs0.size() != bfs1.size())
         return false;
 
       // compare each row
       const int size1 = bfs_.size();
       for(int i=0; i<size1; i++) {
-        if (bfs_[i].size() != a.bfs_[i].size())
+        const BFSVector& row0 = bfs0[i];
+        const BFSVector& row1 = bfs1[i];
+
+        if (row0.size() != row1.size())
           return false;
 
         // compare each element
-        const int size2 = bfs_[i].size();
+        const int size2 = row0.size();
         for(int j=0; j<size2; j++)
-          if (!PtrEquiv<BFS>::equiv(bfs_[i][j],a.bfs_[i][j]))
+          if (!PtrEquiv<BFS>::equiv(row0[j],row1[j]))
             return false;
       }
       return true;
@@ -455,19 +511,23 @@ namespace libint2 {
   };
 
   /**
+     mType is the type that describes the auxiliary index of standard 2-body repulsion integrals
+  */
+  typedef QuantumNumbers<unsigned int,1> mType;
+  /**
      Most basic type -- TwoPRep_11_11 --
      has one bfs for each particle in bra and ket.
      Note that GenIntegralSet is initialized with an abstract type libint2::BFSet,
      from which BFS derives.
   */
   template <class BFS> class TwoPRep_11_11 :
-    public GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, QuantumNumbers<unsigned int,1> >,
+    public GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, mType >,
     public TwoPRep_11_11_base
     {
     public:
       typedef VectorBraket<BFS> BraType;
       typedef VectorBraket<BFS> KetType;
-      typedef QuantumNumbers<unsigned int,1> AuxIndexType;
+      typedef mType AuxIndexType;
       typedef TwoPRep_11_11 this_type;
       
       /// TwoPRep_11_11 is a set of these subobjects

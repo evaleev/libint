@@ -68,9 +68,13 @@ int try_main (int argc, char* argv[])
   test2();
   test3();
   test4();
-  test5();
 #endif
+
+  test5();
+
+#if 0
   test6();
+#endif
 
 }
 
@@ -220,7 +224,7 @@ test5()
 {
   
   SafePtr<Strategy> strat(new Strategy);
-  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_i,sh_s,sh_i,sh_s,0);
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_f,sh_f,sh_f,sh_f,0);
   cout << xsxs_quartet->description() << endl;
   SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
 
