@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <math.h>
 
 #include <rr.h>
 
@@ -9,7 +10,6 @@
 #include <__ss_1_over_r_12_ds___up_0.h>
 #include <__ss_1_over_r_12_fs___up_0.h>
 #include <__dp_1_over_r_12_fs___up_0.h>
-#include <__ds_1_over_r_12_fd___up_0.h>
 
 using namespace std;
 using namespace libint2;
@@ -19,7 +19,7 @@ int main(int argc, char** argv)
 
   typedef unsigned int uint;
 
-  uint am[4] = {2, 0, 3, 2};
+  uint am[4] = {2, 1, 3, 0};
   double alpha[4] = {0.5, 1.0, 1.5, 2.0};
   double A[3] = {1.0, 2.0, 3.0};
   double B[3] = {1.5, 2.5, 3.5};
@@ -51,8 +51,8 @@ int main(int argc, char** argv)
   //compute__fs_1_over_r_12_ss___up_0(libint);
   //compute__ss_1_over_r_12_fs___up_0(libint);
   //compute__ds_1_over_r_12_fs___up_0(libint);
-  //compute__dp_1_over_r_12_fs___up_0(libint);
-  compute__ds_1_over_r_12_fd___up_0(libint);
+  compute__dp_1_over_r_12_fs___up_0(libint);
+  //compute__ds_1_over_r_12_fd___up_0(libint);
 
   bool success = true;
   int ijkl = 0;
