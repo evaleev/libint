@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "build_libint.h"
 
 extern FILE *outfile, *hrr_header;

@@ -54,16 +54,16 @@ int emit_vrr_build()
   k2 = (char **) malloc((new_am)*sizeof(char *));
   k3 = (char **) malloc((new_am)*sizeof(char *));
   for(i=1;i<=new_am;i++) {
-    j = strlen(number[i]);
+    j = strlen((void *)number[i]);
     k1[i-1] = (char*) malloc((4+j)*sizeof(char));
     k2[i-1] = (char*) malloc((5+j)*sizeof(char));
     k3[i-1] = (char*) malloc((4+j)*sizeof(char));
-    strcpy(k1[i-1],number[i]);
-    strcpy(k2[i-1],number[i]);
-    strcpy(k3[i-1],number[i]);
-    strcat(k1[i-1],k1_suff);
-    strcat(k2[i-1],k2_suff);
-    strcat(k3[i-1],k3_suff);
+    strcpy(k1[i-1],(void *)number[i]);
+    strcpy(k2[i-1],(void *)number[i]);
+    strcpy(k3[i-1],(void *)number[i]);
+    strcat(k1[i-1],(void *)k1_suff);
+    strcat(k2[i-1],(void *)k2_suff);
+    strcat(k3[i-1],(void *)k3_suff);
   }
   code_name = (char *) malloc(sizeof(char)*21);
   function_name = (char *) malloc(sizeof(char)*18);

@@ -3,6 +3,7 @@
  ------------------------------------------------------------------------------------------------------*/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "mem_man.h"
 #include "build_libint.h"
@@ -54,6 +55,15 @@ static int first_vrr_to_compute = 0; /* Number of the first class to be computed
 
 static int hrr_hash_table[MAX_AM+1][MAX_AM+1][MAX_AM+1][MAX_AM+1];
 static int vrr_hash_table[MAX_AM+1][MAX_AM+1][2*MAX_AM+1];
+
+
+extern void punt (char*);
+static int mk_hrr_node(hrr_class node, hrr_class *allnodes, int new);
+static int mk_vrr_node(vrr_class node, vrr_class *allnodes, int new);
+static int mark_hrr_parents(int n, hrr_class *allnodes, int rent);
+static int mark_vrr_parents(int n, vrr_class *allnodes, int rent);
+static int alloc_mem_hrr(hrr_class *nodes);
+static int alloc_mem_vrr(vrr_class *nodes);
 
 void emit_order()
 {

@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<stdlib.h>
 #include"mem_man.h"
 #define MAXALLOC 10000
 

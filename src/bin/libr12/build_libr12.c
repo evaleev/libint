@@ -27,11 +27,12 @@ int libr12_stack_size[MAX_AM/2+1];
 Libr12Params_t Params;
 
 void punt(char *);
-void emit_vrr_r_build();
-void emit_vrr_t_build();
-void emit_grt_order();
-void emit_gr_order();
-void emit_hrr_t_build();
+extern void emit_vrr_r_build();
+extern void emit_vrr_t1_build();
+extern void emit_vrr_t2_build();
+extern void emit_grt_order();
+extern void emit_gr_order();
+extern void emit_hrr_t_build();
 
 int main()
 {

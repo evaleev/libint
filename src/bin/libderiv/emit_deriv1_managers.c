@@ -3,6 +3,7 @@
  ------------------------------------------------------------------------------------------------------*/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "mem_man.h"
 #include <libderiv/build_libderiv.h>
@@ -46,13 +47,14 @@ static int first_vrr_to_compute = 0; /* Number of the first class to be computed
 static int hrr_hash_table[2*LMAX_AM][2*LMAX_AM][2*LMAX_AM][2*LMAX_AM];
 static int vrr_hash_table[2*LMAX_AM][2*LMAX_AM][4*LMAX_AM];
 
+extern void punt(char *);
 static int mk_dhrr_node(class node, class *allnodes, int new);
 static int mk_deriv_node(class node, class *allnodes, int new);
 static int mark_dhrr_parents(int n, class *allnodes, int rent);
 static int mark_vrr_parents(int n, class *allnodes, int rent);
 static int mark_parents(int n, class *allnodes, int rent);
-static alloc_mem_dhrr(class *nodes);
-static alloc_mem_vrr(class *nodes);
+static int alloc_mem_dhrr(class *nodes);
+static int alloc_mem_vrr(class *nodes);
 
 
 void emit_deriv1_managers()
