@@ -39,7 +39,10 @@ namespace libint2 {
     virtual SafePtr<DGVertex> rr_child(unsigned int i) const =0;
     /// Returns the target
     virtual SafePtr<DGVertex> rr_target() const =0;
-    
+
+    /// Return the number of FLOPs per this recurrence relation
+    virtual unsigned int nflops() const { return 0; }
+
     virtual const std::string cpp_function_name() =0;
     virtual const std::string cpp_source_name() =0;
     virtual const std::string cpp_header_name() =0;

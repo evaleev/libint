@@ -1,6 +1,7 @@
 
 #include <rr.h>
 #include <dg.h>
+#include <strategy.h>
 
 using namespace std;
 using namespace libint2;
@@ -161,6 +162,15 @@ DirectedGraph::add_vertex(const SafePtr<DGVertex>& vertex)
 
 }
 
+bool
+DirectedGraph::vertex_is_on(const SafePtr<DGVertex>& vertex) const
+{
+  for(int i=0; i<first_free_; i++)
+    if(vertex->equiv(stack_[i]))
+      return true;
+
+  return false;
+}
 
 void
 DirectedGraph::prepare_to_traverse()
@@ -255,7 +265,8 @@ DirectedGraph::apply(const SafePtr<Strategy>& strategy)
     if (stack_[v]->num_exit_arcs() != 0)
       continue;
 
-    SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(stack_[v]);
+    SafePtr<DirectedGraph> this_ptr = SafePtr_from_this();
+    SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(this_ptr,stack_[v]);
     if (rr0 == 0)
       return;
 
@@ -287,7 +298,7 @@ DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>
     return;
   }
 
-  SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(vertex);
+  SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(SafePtr_from_this(),vertex);
   if (rr0 == 0)
     return;
 

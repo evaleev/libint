@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <rr.h>
 #include <integral.h>
+#include <flop.h>
 
 using namespace std;
 
@@ -34,15 +35,18 @@ namespace libint2 {
     VRR_11_TwoPRep_11(const SafePtr<TargetType>&, unsigned int dir = 0);
     ~VRR_11_TwoPRep_11();
 
-    const unsigned int num_children() const { return num_actual_children_; };
+    const unsigned int num_children() const { return nchildren_; };
     /// target() returns pointer to the i-th child
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer to the i-th child
     SafePtr<ChildType> child(unsigned int i) const;
-    /// Implementation of RecurrenceRelation's target()
+    /// Implementation of RecurrenceRelation::rr_target()
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
-    /// Implementation of RecurrenceRelation's child()
+    /// Implementation of RecurrenceRelation::rr_child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+
+    /// Implementation of RecurrenceRelation::nflops()
+    unsigned int nflops() const { return nflops_; }
     
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
@@ -50,16 +54,16 @@ namespace libint2 {
     std::ostream& cpp_source(std::ostream&) {}
 
   private:
-    static const unsigned int nchild_ = 5;
+    static const unsigned int max_nchildren_ = 5;
     unsigned int dir_;
 
     SafePtr<TargetType> target_;
-    SafePtr<ChildType> children_[nchild_];
+    SafePtr<ChildType> children_[max_nchildren_];
 
-    unsigned int num_actual_children_;
+    unsigned int nchildren_;
+    unsigned int nflops_;
 
   };
-
   
   template <template <class> class ERI, class F, int part, FunctionPosition where>
     VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr<ERI<F> >& Tint,
@@ -83,7 +87,7 @@ namespace libint2 {
       ket.push_back(sh_d);
 
       // Zero out children pointers
-      num_actual_children_ = 0;
+      nchildren_ = 0;
 
       // Use indirection to choose bra or ket
       vector<F>* bra_ref = &bra;
@@ -105,7 +109,8 @@ namespace libint2 {
       }
       children_[0] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
       children_[1] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
-      num_actual_children_ += 2;
+      nchildren_ += 2;
+      nflops_ += ConvertNumFlops<F>(3);
       // See if a-2 exists
       bool a_minus_2_exists = true;
       try {
@@ -118,7 +123,8 @@ namespace libint2 {
         children_[2] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
         children_[3] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
         bra_ref->operator[](p_a).inc(dir);
-        num_actual_children_ += 2;
+        nchildren_ += 2;
+        nflops_ += ConvertNumFlops<F>(5);
       }
 
       try {
@@ -128,8 +134,8 @@ namespace libint2 {
         return;
       }
       children_[4] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
-      num_actual_children_ += 1;
-
+      nchildren_ += 1;
+      nflops_ += ConvertNumFlops<F>(3);
     };
 
   template <template <class> class ERI, class F, int part, FunctionPosition where>
@@ -144,10 +150,10 @@ namespace libint2 {
     SafePtr< ERI<F> >
     VRR_11_TwoPRep_11<ERI,F,part,where>::child(unsigned int i) const
     {
-      assert(i>=0 && i<num_actual_children_);
+      assert(i>=0 && i<nchildren_);
 
       unsigned int nc=0;
-      for(int c=0; c<nchild_; c++) {
+      for(int c=0; c<max_nchildren_; c++) {
         if (children_[c] != 0) {
           if (nc == i)
             return children_[c];

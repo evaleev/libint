@@ -11,6 +11,7 @@ using namespace std;
 namespace libint2 {
 
   class DGVertex;
+  class DirectedGraph;
   
   /**
   Strategy specifies how to apply recurrence relations.
@@ -24,7 +25,7 @@ namespace libint2 {
     virtual ~Strategy() {}
 
     /// Returns the optimal recurrence relation for integral
-    virtual RR optimal_rr(const SafePtr<DGVertex>& integral);
+    virtual RR optimal_rr(const SafePtr<DirectedGraph>& graph, const SafePtr<DGVertex>& integral);
 
   protected:
 
@@ -38,8 +39,8 @@ namespace libint2 {
         return rr_cast;
       }
 
-    virtual RR optimal_rr_twoprep1111_sq(const SafePtr< TwoPRep_11_11_sq >& integral);
-    virtual RR optimal_rr_twoprep1111_int(const SafePtr< TwoPRep_11_11_int >& integral);
+    virtual RR optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph, const SafePtr< TwoPRep_11_11_sq >& integral);
+    virtual RR optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph, const SafePtr< TwoPRep_11_11_int >& integral);
 
   };
     

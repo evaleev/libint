@@ -70,7 +70,7 @@ namespace libint2 {
     public IntegralSet<BFS>, public DGVertex,
     public EnableSafePtrFromThis< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >
     {
-    public:
+      public:
       /// GenIntegralSet is a set of these subobjects
       typedef GenIntegralSet this_type;
       /// GenIntegralSet is a set of these subobjects
@@ -117,14 +117,14 @@ namespace libint2 {
       /// Obtain the auxiliary quanta
       const SafePtr<AuxQuanta> aux() const;
 
-    protected:
+      protected:
       // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
       GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
       
       BraSetType bra_;
       KetSetType ket_;
 
-    private:
+      private:
       //
       // All integrals are Singletons by nature, therefore they must be treated as such
       // 1) No public constructors are provided
@@ -236,7 +236,7 @@ namespace libint2 {
     const unsigned int
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::size() const
     {
-      SafePtr<this_type> this_ptr = const_pointer_cast<this_type,const this_type>(SafePtr_from_this());
+      SafePtr<this_type> this_ptr = const_pointer_cast<this_type,const this_type>(EnableSafePtrFromThis<GenIntegralSet>::SafePtr_from_this());
       SafePtr< SubIteratorBase<this_type> > siter(new SubIteratorBase<this_type>(this_ptr));
       return siter->num_iter();
     }

@@ -99,11 +99,21 @@ int try_main (int argc, char* argv[])
   dg_xxxx2.apply_to_all< IntegralSet_to_Integrals<TwoPRep_sh_11_11 > >();
 
   dg_xxxx2.traverse();
-  dg_xxxx2.debug_print_traversal(cout);  
+  dg_xxxx2.debug_print_traversal(cout);
+  dg_xxxx2.reset();
 
+  SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy);
-  SafePtr<DGVertex> pppp_vertex = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(pppp_ptr);
-  SafePtr<RecurrenceRelation> pppp_rr = strat->optimal_rr(pppp_vertex);
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_s,sh_p,sh_s,0);
+  xsxs_quartet->print(cout);
+  SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
+  dg_xxxx3->append_target(xsxs_ptr);
+  dg_xxxx3->apply(strat);
+  dg_xxxx3->traverse();
+  dg_xxxx3->debug_print_traversal(cout);
+  cout << "The number of vertices = " << dg_xxxx3->num_vertices() << endl;
+  dg_xxxx3->reset();
+
 }
 
 #if 0

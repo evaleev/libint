@@ -6,7 +6,6 @@
 #include <assert.h>
 #include <smart_ptr.h>
 #include <rr.h>
-#include <strategy.h>
 
 #ifndef _libint2_src_bin_libint_dg_h_
 #define _libint2_src_bin_libint_dg_h_
@@ -15,6 +14,8 @@ using namespace std;
 
 
 namespace libint2 {
+
+  class Strategy;
 
   class CannotAddArc : public std::logic_error {
     
@@ -38,7 +39,7 @@ namespace libint2 {
       vector<DGVertex*>.
   */
 
-  class DirectedGraph {
+  class DirectedGraph : public EnableSafePtrFromThis<DirectedGraph> {
 
     vector< SafePtr<DGVertex> > stack_;
 
@@ -47,6 +48,8 @@ namespace libint2 {
 
     // adds a vertex to the graph
     void add_vertex(const SafePtr<DGVertex>&);
+    // returns true if vertex if already on graph
+    bool vertex_is_on(const SafePtr<DGVertex>& vertex) const;
     /** This function is used to implement (recursive) append_target().
         vertex is appended to the graph and then RR is applied to is.
      */
@@ -74,6 +77,9 @@ namespace libint2 {
         must be done using append_target */
     DirectedGraph();
     ~DirectedGraph();
+
+    /// Returns the number of vertices
+    const unsigned int num_vertices() const { return first_free_; }
 
     /** non-template append_target appends the vertex to the graph as a target
     */
@@ -106,7 +112,7 @@ namespace libint2 {
     template <class RR> void apply_to_all();
     
     /** after all append_target's have been called, apply(const SafePtr<Strategy>&)
-      constructs a graph using a strategy. Strategy specifies how to apply recurrence relations.
+      constructs a graph using Strategy. Strategy specifies how to apply recurrence relations.
       The goal of strategies is to connect the target vertices to simpler, precomputable vertices.
       */
     void apply(const SafePtr<Strategy>&);
@@ -121,6 +127,13 @@ namespace libint2 {
 
     /// Resets the graph and all vertices
     void reset();
+
+    /** num_children_on(rr) returns the number of children of rr which
+        are already on this graph.
+    */
+    template <class RR>
+      unsigned int
+      num_children_on(const SafePtr<RR>& rr) const;
   };
 
   /// Apply RR to target
@@ -218,6 +231,20 @@ namespace libint2 {
         
         }
       }
+    }
+
+  template <class RR>
+    unsigned int
+    DirectedGraph::num_children_on(const SafePtr<RR>& rr) const
+    {
+      unsigned int nchildren = rr->num_children();
+      unsigned int nchildren_on_stack = 0;
+      for(int c=0; c<nchildren; c++) {
+        if ( vertex_is_on(rr->rr_child(c)) )
+          nchildren_on_stack++;
+      }
+
+      return nchildren_on_stack;
     }
 
 };
