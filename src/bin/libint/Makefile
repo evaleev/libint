@@ -15,8 +15,8 @@ vpath %.a $(libdir)
 
 BINOBJ = $(BUILD_SRC:%.c=%.o)
 
-$(BUILD_BINARY): $(BINOBJ) $(SYSLIBS)
-	$(LD) $^ $(LDFLAGS) -o $@
+$(BUILD_BINARY): $(BINOBJ)
+	$(LD) $^ $(LDFLAGS) $(SYSLIBS) -o $@
 
 %.$(OBJSUF): %.c $(CONFIG)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< $(OUTPUT_OPTION)
