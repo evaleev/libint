@@ -3,6 +3,7 @@
 #define _libint2_src_bin_libint_hrr_h_
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -66,6 +67,8 @@ namespace libint2 {
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
     }
+    /// Implementation of RecurrenceRelation::label()
+    std::string label() const { return label_; }
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return nflops_; }
 
@@ -87,6 +90,9 @@ namespace libint2 {
     unsigned int nexpr_;
     unsigned int nflops_;
     void oper_checks() const;
+
+    std::string label_;
+    std::string generate_label(const SafePtr<TargetType>& target) const;
   };
 
   
@@ -95,7 +101,7 @@ namespace libint2 {
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(const SafePtr<TargetType>& Tint, unsigned int dir) :
-    target_(Tint), dir_(dir), nchildren_(0), nexpr_(0), nflops_(0)
+    target_(Tint), dir_(dir), nchildren_(0), nexpr_(0), nflops_(0), label_(generate_label(Tint))
     {
       target_ = Tint;
       typename I<F>::AuxQuantaType aux = Tint->aux();
@@ -255,6 +261,48 @@ namespace libint2 {
       }
     };
 
+  template <template <class> class I, class F, int part,
+    FunctionPosition loc_a, unsigned int pos_a,
+    FunctionPosition loc_b, unsigned int pos_b>
+    std::string
+    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::generate_label(const SafePtr<TargetType>& target) const
+    {
+      ostringstream os;
+      
+      os << "HRR Part " << part << " "
+      << (loc_a == InBra ? "bra" : "ket") << " " << pos_a << "  "
+      << (loc_b == InBra ? "bra" : "ket") << " " << pos_b << " ";
+      
+      if (loc_a == InBra) {
+        F sh_a(target->bra(part,pos_a));
+        os << sh_a.label() << " ";
+        
+        if (loc_b == InBra) {
+          F sh_b(target->bra(part,pos_b));
+          os << sh_b.label();
+        }
+        else {
+          F sh_b(target->ket(part,pos_b));
+          os << sh_b.label();
+        }
+      }
+      else {
+        F sh_a(target->ket(part,pos_a));
+        os << sh_a.label() << " ";
+        
+        if (loc_b == InBra) {
+          F sh_b(target->bra(part,pos_b));
+          os << sh_b.label();
+        }
+        else {
+          F sh_b(target->ket(part,pos_b));
+          os << sh_b.label();
+        }
+      }
+      
+      return os.str();
+    }
+    
   typedef HRR<TwoPRep_11_11,CGShell,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_sh;
   typedef HRR<TwoPRep_11_11,CGShell,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_sh;
   typedef HRR<TwoPRep_11_11,CGShell,0,InKet,0,InBra,0> HRR_ba_11_TwoPRep_11_sh;

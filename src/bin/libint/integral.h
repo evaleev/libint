@@ -606,14 +606,10 @@ namespace libint2 {
     bool
     TwoPRep_11_11<BFS>::precomputed() const
     {
-      /// (ss|ss)^{(m)} are precomputed 
-      if (parent_type::bra_.member(0,0)->zero() && parent_type::bra_.member(1,0)->zero() &&
-        parent_type::ket_.member(0,0)->zero() && parent_type::ket_.member(1,0)->zero())
-        return true;
-      else
-        return false;
+      // in general no quartets are precomputed
+      return false;
     }
-    
+
   /// TwoPRep_11_11_sq is a shell quartet of ERIs
   typedef TwoPRep_11_11<CGShell> TwoPRep_11_11_sq;
 

@@ -31,6 +31,10 @@ namespace libint2 {
     virtual std::string open_block() const =0;
     /// close a code block
     virtual std::string close_block() const =0;
+    /// end a statement
+    virtual std::string end_of_stat() const =0;
+    /// converts a value to a pointer
+    virtual std::string value_to_pointer(const std::string& val) const =0;
 
     /// unique_name<T> returns a unique name for a variable of type T
     template <typename T>
@@ -90,6 +94,10 @@ namespace libint2 {
     std::string open_block() const;
     /// Implementation of CodeContext::close_block()
     std::string close_block() const;
+    /// Implementation of CodeContext::end_of_stat()
+    std::string end_of_stat() const;
+    /// Implementation of CodeContext::value_to_pointer()
+    std::string value_to_pointer(const std::string& val) const;
 
   private:
     /// Implementation of CodeContext::unique_fp_name()

@@ -91,6 +91,10 @@ namespace libint2 {
     void replace_rr_with_expr();
     /// This function gets rid of trivial math such as multiplication/division by 1.0, etc.
     void remove_trivial_arithmetics();
+    /** This function gets rid of nodes which are connected
+    to their equivalents (such as (ss|ss) shell quartet can only be connected to (ss|ss) integral)
+    */
+    void handle_trivial_nodes();
     /// This functions removes vertices not connected to other vertices
     void remove_disconnected_vertices();
     /** If v1 and v2 are connected by DGArcDirect and all entry arcs to v1 are of the DGArcDirect type as well,

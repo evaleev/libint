@@ -59,6 +59,13 @@ namespace libint2 {
     */
     virtual bool is_simple() const =0;
 
+    /**
+      label() returns a unique, short, descriptive label of this RR
+      (e.g. "VRR A (p s | 1/r_{12} | d s )" for Obara-Saika recurrence relation
+      applied to center A to compute (ps|ds) ERI)
+    */
+    virtual std::string label() const =0;
+    
     /// Return the number of FLOPs per this recurrence relation
     virtual unsigned int nflops() const { return 0; }
 
@@ -353,7 +360,7 @@ namespace libint2 {
       */
     virtual const unsigned int size() const =0;
     
-    /** label() returns a short, descriptive label of DGVertex (e.g. "( p_x s | 1/r_{12} | d_xy s )^{(1)}")
+    /** label() returns a unique, short, descriptive label of DGVertex (e.g. "( p_x s | 1/r_{12} | d_xy s )^{(1)}")
     */
     virtual std::string label() const =0;
     /** is() returns a very short label of DGVertex which is (almost)
@@ -369,6 +376,16 @@ namespace libint2 {
     const std::string& graph_label() const throw(GraphLabelNotSet);
     /// sets the graph label
     void set_graph_label(const std::string& graph_label);
+
+    //
+    // NOTE : the following functions probably belong to a separate class, such as Entity!
+    //
+    
+    /**
+    refer_this_to(V) makes this vertex act like a reference to V so that
+    calls to symbol() and address() report code symbol and stack address of V
+    */
+    void refer_this_to(const SafePtr<DGVertex>&  V) { referred_vertex_ = V; }
     /// returns the code symbol
     const std::string& symbol() const throw(SymbolNotSet);
     /// sets the code symbol
@@ -383,6 +400,7 @@ namespace libint2 {
     void set_address(const Address& address);
     /// returns true if the address has been set
     bool address_set() const { return address_ != 0; }
+    
 
     /// prepare_to_traverse() must be called before traversal of the graph starts
     void prepare_to_traverse();
@@ -403,6 +421,9 @@ namespace libint2 {
   private:
     /// label for the vertex within a graph
     SafePtr<std::string> graph_label_;    
+
+    /// if not null -- use this vertex to report address and symbol
+    SafePtr<DGVertex> referred_vertex_;
     /// symbol used in the code
     SafePtr<std::string> symbol_;
     /// Address on the stack

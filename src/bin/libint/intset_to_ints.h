@@ -56,6 +56,10 @@ namespace libint2 {
     bool is_simple() const {
       return false;
     }
+    /// Implementation of RecurrenceRelation::label()
+    std::string label() const {
+      throw std::runtime_error("IntegralSet_to_Integrals::label() -- code for this RR is never generated, so this function should never be used");
+    }
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return 0; }
 

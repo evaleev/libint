@@ -68,11 +68,10 @@ int try_main (int argc, char* argv[])
   test2();
   test3();
   test4();
+  test5();
 #endif
 
-  test5();
-
-#if 0
+#if 1
   test6();
 #endif
 
@@ -267,10 +266,10 @@ test5()
 void
 test6()
 {
-  const unsigned int size_to_unroll = 6;
+  const unsigned int size_to_unroll = 100000;
   SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy(size_to_unroll));
-  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_d,sh_s,sh_d,sh_s,0);
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
   cout << xsxs_quartet->description();
   SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
   dg_xxxx3->append_target(xsxs_ptr);
@@ -286,7 +285,14 @@ test6()
   
   SafePtr<CodeContext> context(new CppCodeContext());
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
-  dg_xxxx3->generate_code(context,memman,xsxs_quartet->label(),cout,cout);
+
+  std::string prefix("test_eri/");
+  std::string decl_filename(prefix + context->label_to_name(xsxs_quartet->label()));  decl_filename += ".h";
+  std::string src_filename(prefix + context->label_to_name(xsxs_quartet->label()));  src_filename += ".cc";
+  std::basic_ofstream<char> declfile(decl_filename.c_str());
+  std::basic_ofstream<char> srcfile(src_filename.c_str());
+  dg_xxxx3->generate_code(context,memman,xsxs_quartet->label(),declfile,srcfile);
+  
   std::basic_ofstream<char> dotfile2("graph.symb.dot");
   dg_xxxx3->print_to_dot(true,dotfile2);
 

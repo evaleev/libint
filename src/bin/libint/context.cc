@@ -174,6 +174,21 @@ CppCodeContext::close_block() const
 }
 
 std::string
+CppCodeContext::end_of_stat() const
+{
+  static const std::string ends(";");
+  return ends;
+}
+
+std::string
+CppCodeContext::value_to_pointer(const std::string& val) const
+{
+  std::string ptr("&(");
+  ptr += val; ptr += ")";
+  return ptr;
+}
+
+std::string
 CppCodeContext::unique_fp_name()
 {
   char result[80];

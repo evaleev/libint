@@ -3,6 +3,7 @@
 #define _libint2_src_bin_libint_vrr11twoprep11_h_
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -60,6 +61,8 @@ namespace libint2 {
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
     }
+    /// Implementation of RecurrenceRelation::label()
+    std::string label() const { return label_; }
 
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return nflops_; }
@@ -82,12 +85,14 @@ namespace libint2 {
     unsigned int nexpr_;
     unsigned int nflops_;
 
+    std::string label_;
+    std::string generate_label(const SafePtr<TargetType>& target) const;
   };
   
   template <template <class> class ERI, class F, int part, FunctionPosition where>
     VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr<ERI<F> >& Tint,
                                                            unsigned int dir) :
-    target_(Tint), dir_(dir), nchildren_(0), nexpr_(0), nflops_(0)
+    target_(Tint), dir_(dir), nchildren_(0), nexpr_(0), nflops_(0), label_(generate_label(Tint))
     {
       target_ = Tint;
 
@@ -221,7 +226,6 @@ namespace libint2 {
         SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr5_ptr,expr_[0]));
         expr_[0] = exprsum_ptr;
       }
-
     };
 
   template <template <class> class ERI, class F, int part, FunctionPosition where>
@@ -262,6 +266,23 @@ namespace libint2 {
       }
     };
 
+  template <template <class> class ERI, class F, int part, FunctionPosition where>
+    std::string
+    VRR_11_TwoPRep_11<ERI,F,part,where>::generate_label(const SafePtr<TargetType>& target) const
+    {
+      ostringstream os;
+      
+      os << "OS VRR Part" << part << " " <<
+      (where == InBra ? "bra" : "ket") << " ( ";
+      F sh_a(target->bra(0,0)); os << sh_a.label() << " ";
+      F sh_b(target->ket(0,0)); os << sh_b.label() << " | ";
+      F sh_c(target->bra(1,0)); os << sh_c.label() << " ";
+      F sh_d(target->ket(1,0)); os << sh_d.label() << " )";
+      
+      return os.str();
+    }
+    
+    
   typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
   typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,InBra> VRR_c_11_TwoPRep_11_sh;
   typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InKet> VRR_b_11_TwoPRep_11_sh;
