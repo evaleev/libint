@@ -1,4 +1,4 @@
-define([libint_mmm_version],[1.1.1])
+define([libint_mmm_version],[1.1.2])
 define([libint_buildid],[stable])
 define([libint_so_version],[1:0:0])
 
@@ -6,7 +6,7 @@ dnl Process this file with autoconf to produce a configure script.
 define([AC_CACHE_LOAD], )dnl for debugging configure.in
 define([AC_CACHE_SAVE], )dnl for debugging configure.in
 AC_INIT(src/bin/libint/build_libint.c)
-AC_PREREQ(2.13)
+AC_PREREQ(2.52)
 AC_CONFIG_HEADER(src/bin/libint_config.h)
 AC_CONFIG_AUX_DIR(bin)
 
