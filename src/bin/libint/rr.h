@@ -429,8 +429,6 @@ namespace libint2 {
   protected:
     /// ArcSetType is a container used to maintain entry and exit arcs
     typedef vector< SafePtr<DGArc> > ArcSetType;
-    /// Arcs leaving this DGVertex. Derived classes may need direct access to exit arcs.
-    ArcSetType children_;
 
   private:
     /// label for the vertex within a graph
@@ -445,6 +443,8 @@ namespace libint2 {
     
     /// We also need info about Arcs entering this DGVertex
     ArcSetType parents_;
+    /// Arcs leaving this DGVertex. Derived classes may need direct access to exit arcs.
+    ArcSetType children_;
 
     // Whether this is a "target" vertex, i.e. the target of a calculation
     bool target_;

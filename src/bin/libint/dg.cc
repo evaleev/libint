@@ -544,8 +544,6 @@ DirectedGraph::replace_rr_with_expr()
         unsigned int nchildren = rr->num_children();
         unsigned int nexpr = rr->num_expr();
 
-        cout << "RR: nchildren = " << nchildren << " nexpr = " << nexpr << endl;
-
         // Remove arcs connecting this vertex to children
         vertex->del_exit_arcs();
 
@@ -567,7 +565,7 @@ void
 DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr)
 {
   typedef AlgebraicOperator<DGVertex> ExprType;
-
+  
   SafePtr<DGVertex> expr_vertex = dynamic_pointer_cast<DGVertex,ExprType>(expr);
   bool new_vertex = true;
   try { add_vertex(expr_vertex); }
@@ -602,6 +600,7 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< Alg
     SafePtr<DGArc> arc(new DGArcDirect(expr_vertex,right_vertex));
     expr_vertex->add_exit_arc(arc);
   }
+
 }
 
 // Replace recurrence relations with expressions
@@ -928,6 +927,15 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
         SafePtr<oper_type> oper_ptr = dynamic_pointer_cast<oper_type,DGVertex>(current_vertex);
         if (oper_ptr) {
 
+          if (context->comments_on()) {
+            ostringstream oss;
+            oss << current_vertex->label() << " = "
+                << oper_ptr->exit_arc(0)->dest()->label()
+                << oper_ptr->label()
+                << oper_ptr->exit_arc(1)->dest()->label();
+            os << context->comment(oss.str()) << endl;
+          }
+
           // Type declaration
           os << context->type_name<double>() << " ";
 
@@ -952,6 +960,14 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
         typedef DGArcDirect arc_type;
         SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(current_vertex->exit_arc(0));
         if (arc_ptr) {
+
+          if (context->comments_on()) {
+            ostringstream oss;
+            oss << current_vertex->label() << " = "
+                << arc_ptr->dest()->label();
+            os << context->comment(oss.str()) << endl;
+          }
+
           os << current_vertex->symbol() << " = "
           << arc_ptr->dest()->symbol()
           << context->end_of_stat() << endl;
