@@ -1,5 +1,5 @@
 include $(TOPDIR)/src/lib/MakeVars
-include $(TOPDIR)/src/lib/MakeRules
+include $(TOPDIR)/src/lib/MakeSuffixRules
 VPATH = $(SRCDIR)
 
 NAME = libderiv
@@ -11,8 +11,8 @@ TARGET_HEADERS = libderiv.h
 #
 TRUESRC1 = $(shell echo `ls *.cc`)
 TRUESRC2 = $(shell echo `ls *.c`)
-LIBOBJ1 = $(TRUESRC1:%.cc=%.o)
-LIBOBJ2 = $(TRUESRC2:%.c=%.o)
+LIBOBJ1 = $(TRUESRC1:%.cc=%.$(OBJSUF))
+LIBOBJ2 = $(TRUESRC2:%.c=%.$(OBJSUF))
 LIBOBJ = $(LIBOBJ1) $(LIBOBJ2)
 
 default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h

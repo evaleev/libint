@@ -1,5 +1,5 @@
 include $(TOPDIR)/src/lib/MakeVars
-include $(TOPDIR)/src/lib/MakeRules
+include $(TOPDIR)/src/lib/MakeSuffixRules
 VPATH = $(SRCDIR)
 
 NAME = libr12
@@ -20,14 +20,14 @@ TRUESRC5 = $(shell echo `ls t2_build_*.cc`)
 TRUESRC6 = $(shell echo `ls t1hrr1_build_*.cc`)
 TRUESRC7 = $(shell echo `ls t2hrr3_build_*.cc`)
 TRUESRC8 = init_libr12.c r_vrr_build.c t1_vrr_build.c t2_vrr_build.c
-LIBOBJ1 = $(TRUESRC1:%.cc=%.o)
-LIBOBJ2 = $(TRUESRC2:%.cc=%.o)
-LIBOBJ3 = $(TRUESRC3:%.cc=%.o)
-LIBOBJ4 = $(TRUESRC4:%.cc=%.o)
-LIBOBJ5 = $(TRUESRC5:%.cc=%.o)
-LIBOBJ6 = $(TRUESRC6:%.cc=%.o)
-LIBOBJ7 = $(TRUESRC7:%.cc=%.o)
-LIBOBJ8 = $(TRUESRC8:%.c=%.o)
+LIBOBJ1 = $(TRUESRC1:%.cc=%.$(OBJSUF))
+LIBOBJ2 = $(TRUESRC2:%.cc=%.$(OBJSUF))
+LIBOBJ3 = $(TRUESRC3:%.cc=%.$(OBJSUF))
+LIBOBJ4 = $(TRUESRC4:%.cc=%.$(OBJSUF))
+LIBOBJ5 = $(TRUESRC5:%.cc=%.$(OBJSUF))
+LIBOBJ6 = $(TRUESRC6:%.cc=%.$(OBJSUF))
+LIBOBJ7 = $(TRUESRC7:%.cc=%.$(OBJSUF))
+LIBOBJ8 = $(TRUESRC8:%.c=%.$(OBJSUF))
 LIBOBJ = $(LIBOBJ1) $(LIBOBJ2) $(LIBOBJ3) $(LIBOBJ4) $(LIBOBJ5) $(LIBOBJ6) $(LIBOBJ7) $(LIBOBJ8)
 
 default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
