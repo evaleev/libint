@@ -4,78 +4,132 @@
 
 #include <rr.h>
 #include <integral.h>
+#include <policy.h>
+
+// gcc 3.4 doesn't seem to allow
+//#define ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
 
 using namespace std;
 
 
 namespace libint2 {
 
-  /** SetIterator<T> provides an iterator class for T. It iterates through
-      T as if it were a set of some data of type T::iter_type.
-      For example, it can be used to access individual elements in a shell quertet.
+  /** SubIterator provides a base class for all subiterator classes. Subiterators iterate through
+      certain types of objects as if they were sets of some other data. For example, SubIterator can
+      be implemented for iterating Gaussian functions within shells, or over integrals within shell
+      sets of integrals.
   */
-  template <class T> class SetIterator {
+  class SubIterator {
+  
+  public:
+    /// Returns a number of iterations (number of elements in a set over which to iterate).
+    virtual const unsigned int num_iter() const =0;
+    /// Initializes the iterator.
+    virtual void init() =0;
+    /// Iterates to the next element. Only prefix form is provided.
+    virtual SubIterator& operator++() =0;
+    /// This is used to check whether next element exists. Returns 1 if it does.
+    virtual operator int() const =0;
+
+  protected:
+    SubIterator();
+    ~SubIterator();
+    
+  private:
+    SubIterator operator++(int);
+  };
+
+  /** SubIteratorBase<T> provides a base class for a sub-iterator class for T. It iterates through
+      T as if it were a set of some data of type T::iter_type. Policies of class T (ordering of
+      T::iter_type, etc.) are provided by P.
+  */
+  template <class T, class P = StdLibintPolicy> class SubIteratorBase : public SubIterator {
 
   public:
-    SetIterator(const T*);
-    ~SetIterator();
-
     typedef typename T::iter_type iter_type;
+    /// the only allowed constructor
+    SubIteratorBase(const T*);
+    virtual ~SubIteratorBase();
+    
+    /// Returns current element
+    const iter_type* elem();
 
     /// Returns a number of iterations (number of elements in a set over which to iterate).
     const unsigned int num_iter() const;
-    /// Returns the first element.
-    const iter_type* first();
-    /// Returns next element.
-    const iter_type* next();
+    /// Initializes the iterator.
+    void init();
+    /// Iterates to the next element. Only prefix form is provided.
+    SubIterator& operator++();
+    /// This is used to check whether next element exists. Returns 1 if it does.
+    operator int() const;
+    
+  protected:
+    const T* obj_;
+    vector<const iter_type* > subobj_;
 
   private:
-    const T* obj_;
-    vector<const iter_type*> data_;
+    /// the iteration counter (starts at 0)
+    unsigned int iter_;
+
+    // These templates are used as a trick to make possible "partial specialization
+    // of a template with multiple template params". Default implementations are not provided
+    // so user must provide specialization for the case X=T
+    template <class X> void init_subobj();
+    template <class X> void delete_subobj();
 
   };
 
-  template <class T>
-    SetIterator<T>::SetIterator(const T* obj) :
-    obj_(obj), data_(num_elem())
+  template <class T, class P>
+    SubIteratorBase<T,P>::SubIteratorBase(const T* obj) :
+    obj_(obj), subobj_(0), iter_(0)
     {
+#ifdef ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
+      init_subobj<T>();
+#endif
     }
   
-  template <class T>
-    SetIterator<T>::~SetIterator()
+  template <class T, class P>
+    SubIteratorBase<T,P>::~SubIteratorBase()
     {
+#ifdef ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
+      delete_subobj<T>();
+#endif
     }
 
-  template <class T>
+  template <class T, class P>
     const unsigned int
-    SetIterator<T>::num_iter() const
+    SubIteratorBase<T,P>::num_iter() const
     {
-      throw std::runtime_error("SetIterator<T>::num_elem() -- no specialization is provided");
+      return subobj_.size();
     }
+  
+  template <class T, class P>
+    const typename SubIteratorBase<T,P>::iter_type*
+    SubIteratorBase<T,P>::elem()
+  {
+      return subobj_.at(iter_);
+  }
 
-  template <class T>
-    const typename SetIterator<T>::iter_type*
-    SetIterator<T>::first()
-    {
-      throw std::runtime_error("SetIterator<T>::first() -- no specialization is provided");
-    }
+  template <class T, class P>
+    void
+    SubIteratorBase<T,P>::init()
+  {
+      iter_ = 0;
+  }
 
-  template <class T>
-    const typename SetIterator<T>::iter_type*
-    SetIterator<T>::next()
-    {
-      throw std::runtime_error("SetIterator<T>::next() -- no specialization is provided");
-    }
+  template <class T, class P>
+    SubIterator&
+    SubIteratorBase<T,P>::operator++()
+  {
+      ++iter_;
+      return *this;
+  }
 
-  /** SetIterator_traits<I> is a collection of traits for SetIterator I.
-      This is what is used to obtain information about I.
-      Consider this a laundry list of what I must provide in
-      order to be useable.
-   */
-  template <class SetIter> struct SetIterator_traits {
-    typedef typename SetIter::iter_type iter_type;
-  };
-
+  template <class T, class P>
+    SubIteratorBase<T,P>::operator int() const
+  {
+    return (iter_ < num_iter()) ? 1 : 0;
+  }
 
 };
 

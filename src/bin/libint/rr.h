@@ -136,9 +136,20 @@ namespace libint2 {
     /// Returns the number of basis functions in the set (always 1)
     unsigned int num_bf() const { return 1; };
 
+    /// Returns the angular momentum
+    unsigned int qn(unsigned int xyz) const;
+
     /// Comparison operator
     bool operator==(const CGF&) const;
+    
+    /// Decrement one of quantum numbers
+    void dec();
+    /// Increment one of quantum numbers
+    void inc();
 
+    /// Print out the content
+    void print(std::ostream& os = std::cout) const;
+    
   };
 
   /// Cartesian Gaussian Shell
@@ -162,6 +173,9 @@ namespace libint2 {
     const std::string label() const;
     /// Returns the number of basis functions in the set
     unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
+
+    /// Returns the angular momentum
+    unsigned int qn() const { return qn_[0]; }
 
     /// Comparison operator
     bool operator==(const CGShell&) const;

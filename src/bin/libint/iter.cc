@@ -4,40 +4,82 @@
 using namespace std;
 using namespace libint2;
 
-
-/** SetIterator<CGShell> is a specialization of SetIterator<>.
- */
-template <>
-const unsigned int
-SetIterator<CGShell>::num_iter() const
+//
+// SubIterator
+//
+SubIterator::SubIterator()
 {
-  return obj_->num_bf();
 }
 
-/** SetIterator<CGF> is a specialization of SetIterator<>.
- */
-template <>
-const unsigned int
-SetIterator<CGF>::num_iter() const
+SubIterator::~SubIterator()
 {
-  return obj_->num_bf();
 }
 
-/** SetIterator<CGF> is a specialization of SetIterator<>.
- */
+#ifdef ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
+
+//
+// SubIteratorBase::init_subobj<CGF>
+//
+template <class T, class P>
 template <>
-const SetIterator<CGF>::iter_type*
-SetIterator<CGF>::first()
+void
+SubIteratorBase<T,P>::init_subobj<CGF>()
 {
-  return obj_;
+  subobj_.push_back(obj_);
 }
 
-/** SetIterator<CGF> is a specialization of SetIterator<>.
- */
+template <class T, class P>
 template <>
-const SetIterator<CGF>::iter_type*
-SetIterator<CGF>::next()
+void
+SubIteratorBase<T,P>::delete_subobj<CGF>()
 {
-  return 0;
 }
-  
+
+//
+// SubIteratorBase::init_subobj<CGShell>
+//
+template <class T, class P>
+template <>
+void
+SubIteratorBase<T,P>::init_subobj<CGShell>()
+{
+  P::cgshell_to_cgfvector(obj_,subobj_);
+}
+
+template <class T, class P>
+template <>
+void
+SubIteratorBase<T,P>::delete_subobj<CGShell>()
+{
+  int nelem = subobj_.size();
+  for(int i=0; i<nelem; i++)
+    subobj_[i]->~CGF();
+}
+
+#else
+
+//
+// Without partially specialization for nested templates I can only provide code working
+// with standard policy (StdLibintPolicy)
+//
+
+SubIteratorBase<CGF,StdLibintPolicy>::SubIteratorBase(const CGF* obj) :
+SubIterator(), obj_(obj), subobj_(1,obj_), iter_(0)
+{
+}
+
+SubIteratorBase<CGShell,StdLibintPolicy>::SubIteratorBase(const CGShell* obj) :
+SubIterator(), obj_(obj), subobj_(0), iter_(0)
+{
+  StdLibintPolicy::cgshell_to_cgfvector(obj_,subobj_);
+}
+
+SubIteratorBase<CGShell,StdLibintPolicy>::~SubIteratorBase()
+{
+  int nelem = subobj_.size();
+  for(int i=0; i<nelem; i++)
+    subobj_[i]->~CGF();
+}
+
+#endif
+

@@ -87,6 +87,9 @@ int try_main (int argc, char* argv[])
   dg_xxxx.debug_print_traversal(cout);
   dg_xxxx.reset();
 
+  SubIteratorBase<CGShell> siter1(&sh_i);
+  for(siter1.init(); siter1; ++siter1)
+    siter1.elem()->print(cout);
 
   // Create a DAG for a shell-quartet-to-ints case
   DirectedGraph dg_xxxx2;

@@ -40,6 +40,13 @@ CGF::label() const
   return c_label;
 }
 
+unsigned int
+CGF::qn(unsigned int i) const
+{
+  assert(i < 3);
+  return qn_[i];
+}
+
 bool
 CGF::operator==(const CGF& a) const
 {
@@ -48,6 +55,23 @@ CGF::operator==(const CGF& a) const
            qn_[2] == a.qn_[2] );
 }
 
+void
+CGF::dec()
+{
+  throw std::runtime_error("CGF::dec() -- not implemented yet");
+}
+
+void
+CGF::inc()
+{
+  throw std::runtime_error("CGF::inc() -- not implemented yet");
+}
+
+void
+CGF::print(std::ostream& os) const
+{
+  os << "CGF: " << label() << endl;
+}
 
 // By default make it an s-shell
 CGShell::CGShell()
