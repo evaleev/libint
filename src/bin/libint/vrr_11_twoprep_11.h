@@ -157,8 +157,8 @@ namespace libint2 {
         if (is_simple()) {
           SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], children_[3]));
           SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[2], expr_intmd0));
-          SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.one_o_2alpha12[part], expr_intmd1));
-          SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_a], expr_intmd2));
+          SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_a], prefactors.one_o_2alpha12[part]));
+          SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
           SafePtr<ExprType> expr012_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr2_ptr,expr_[0]));
           expr_[0] = expr012_ptr;
         }
@@ -182,8 +182,8 @@ namespace libint2 {
         if (is_simple()) {
           SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], children_[5]));
           SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[4], expr_intmd0));
-          SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.one_o_2alpha12[part], expr_intmd1));
-          SafePtr<ExprType> expr3_ptr(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_b], expr_intmd2));
+          SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_b], prefactors.one_o_2alpha12[part]));
+          SafePtr<ExprType> expr3_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
           SafePtr<ExprType> expr0123_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr3_ptr,expr_[0]));
           expr_[0] = expr0123_ptr;
         }
@@ -202,8 +202,8 @@ namespace libint2 {
       nchildren_ += 1;
       nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {
-        SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.one_o_2alphasum, children_[6]));
-        SafePtr<ExprType> expr4_ptr(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_c], expr_intmd0));
+        SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_c], prefactors.one_o_2alphasum));
+        SafePtr<ExprType> expr4_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[6]));
         SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr4_ptr,expr_[0]));
         expr_[0] = exprsum_ptr;
       }
@@ -221,8 +221,8 @@ namespace libint2 {
       nchildren_ += 1;
       nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {
-        SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.one_o_2alphasum, children_[7]));
-        SafePtr<ExprType> expr5_ptr(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_d], expr_intmd0));
+        SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_d], prefactors.one_o_2alphasum));
+        SafePtr<ExprType> expr5_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[7]));
         SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr5_ptr,expr_[0]));
         expr_[0] = exprsum_ptr;
       }
