@@ -1,9 +1,14 @@
 
-CXXFLAGS += -I. -g -I/home/tool/evaleev/src/lib/boost
+#CXXFLAGS += -I. -g -I/home/tool/evaleev/src/lib/boost
+CXXFLAGS += -I. -g -I/Users/evaleev/Development/General/src/lib/boost_1_32_0
 
-test: test.o rr.o dg.o gauss.o oper.o integral.o iter.o policy.o strategy.o policy_spec.o flop.o
+CXXSRC = test.cc rr.cc dg.cc gauss.cc oper.cc integral.cc iter.cc policy.cc \
+strategy.cc policy_spec.cc flop.cc prefactors.cc
+CXXOBJ = $(CXXSRC:%.cc=%.o)
+
+test: $(CXXOBJ)
 	$(CXX) -o test $^
 
 clean::
-	-rm -rf test.o rr.o dg.o gauss.o oper.o integral.o iter.o policy.o strategy.o policy_spec.o flop.o
+	-rm -rf $(CXXOBJ)
 
