@@ -3,8 +3,10 @@
 #ifndef _libint2_src_bin_libint_rr_h_
 #define _libint2_src_bin_libint_rr_h_
 
+#include <iostream>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 using namespace std;
 
@@ -214,6 +216,11 @@ namespace libint2 {
     virtual ~BFSet() {};
     virtual unsigned int num_bf() const =0;
 
+    /// Increments one of the quantum numbers
+    virtual void inc() =0;
+    /// Decrements one of the quantum numbers
+    virtual void dec() =0;
+
   };
 
   /// Cartesian Gaussian Function
@@ -237,27 +244,78 @@ namespace libint2 {
     unsigned int qn_[1];
 
     public:
+    /// Default constructor creates an s-type shell
+    CGShell();
     CGShell(unsigned int qn[1]);
     CGShell(const CGShell&);
     ~CGShell();
+    CGShell& operator=(const CGShell&);
 
     /// Returns the number of basis functions in the set
     unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
 
+    /// Implements purely virtual BFSet::dec
+    void dec();
+
+    /// Implements purely virtual BFSet::inc
+    void inc();
+
+    /// Print out the content
+    void print(std::ostream& os = std::cout) const;
+
   };
 
 
-  /// This is a vertex of a Directed Graph (DG)
   class DGVertex;
-  class DGVertex {
+  /** Class DGArc describes arcs in a directed graph.
+      Each arc connects vertex orig_ to vertex dest_. */
+  class DGArc {
 
-    /// Ptrs to parent vertices
-    vector<DGVertex*> parents_;
-    /// Ptrs to children vertices
-    vector<DGVertex*> children_;
+    const DGVertex* orig_;  // Where this Arc leavs
+    const DGVertex* dest_;  // Where this Arc leads to
 
     public:
-    DGVertex(const vector<DGVertex*>& parents, const vector<DGVertex*>& children);
+    DGArc(const DGVertex* orig_, const DGVertex* dest_);
+    ~DGArc();
+    
+  };
+  
+  /** Class DGArcRel describes arcs in a directed graph which is
+      represented by a relationship ArcRel. */
+  // NOTE TO SELF (11/24/2004): need to implement checks on ArcRel
+  // It obviously must implement some functions
+  template <class ArcRel> class DGArcRel : public DGArc {
+
+    ArcRel* rel_;     // Relationship described by the arc
+
+    public:
+    DGArcRel(const DGVertex* orig, const DGVertex* dest, const ArcRel* rel);
+    ~DGArcRel();
+    
+  };
+
+  template <class ArcRel>
+    DGArcRel<ArcRel>::DGArcRel(const DGVertex* orig, const DGVertex* dest, const ArcRel* rel) :
+    DGArc(orig,dest), rel_(rel)
+    {
+    };
+
+  template <class ArcRel>
+    DGArcRel<ArcRel>::~DGArcRel()
+    {
+    };
+
+  /// This is a vertex of a Directed Graph (DG)
+  class DGVertex {
+
+    /// Arcs leaving this DGVertex
+    vector<DGArc*> children_;
+    /// We also need info about Arcs entering this DGVertex
+    vector<DGArc*> parents_;
+
+    public:
+    DGVertex();
+    DGVertex(const vector<DGArc*>& parents, const vector<DGArc*>& children);
     ~DGVertex();
 
   };
@@ -265,12 +323,12 @@ namespace libint2 {
   template <unsigned int NP> class Oper {
 
     /// Described name
-    static const std::string descr_;
+    const std::string descr_;
     /// short (<20 chars) ID label
-    static const std::string id_;
+    const std::string id_;
 
     public:
-    Oper();
+    Oper(const std::string& descr, const std::string& id);
     virtual ~Oper();
 
     /// Returns full description of the operator
@@ -285,6 +343,31 @@ namespace libint2 {
     static const unsigned int np = NP;
 
   };
+
+  template <unsigned int NP>
+    Oper<NP>::Oper(const std::string& descr, const std::string& id) :
+    descr_(descr), id_(id)
+    {
+    }
+  
+  template <unsigned int NP>
+    Oper<NP>::~Oper()
+    {
+    }
+  
+  template <unsigned int NP>
+    const std::string&
+    Oper<NP>::descr() const
+    {
+      return descr_;
+    }
+  
+  template <unsigned int NP>
+    const std::string&
+    Oper<NP>::id() const
+    {
+      return id_;
+    }
 
   class TwoERep : public Oper<2> {
 
@@ -303,42 +386,131 @@ namespace libint2 {
 
   };
 
-  /// Any Integral can be on a Directed Graph
+  /** This template is for an integral of 1 operator over (products of) one
+      type of basis functions. Any Integral can be a DGVertex.
+  */
   template <class Oper, class BFSet> class Integral : public DGVertex {
 
-    Oper O_;
-    vector< vector<BFSet> > bf_;
+    static Oper O_;
+
+    protected:
+    vector<BFSet> bra_[Oper::np];
+    vector<BFSet> ket_[Oper::np];
     
     public:
-    Integral(const vector< vector<BFSet> >& bf);
+    Integral(const vector<BFSet> bra[Oper::np], const vector<BFSet> ket[Oper::np]);
     virtual ~Integral();
 
+    /// Copy is permitted
+    Integral& operator=(const Integral& source);
+
+    /// Obtain BFsets
+    const BFSet& bra(unsigned int particle, unsigned int i) const;
+    const BFSet& ket(unsigned int particle, unsigned int i) const;
+
   };
+
+  template <class Oper, class BFSet>
+    Integral<Oper, BFSet>::Integral(const vector<BFSet> bra[Oper::np], const vector<BFSet> ket[Oper::np]) :
+    DGVertex()
+    {
+      for(int p=0; p<Oper::np; p++) {
+        bra_[p] = bra[p];
+        ket_[p] = ket[p];
+      }
+    };
+
+  template <class Oper, class BFSet>
+    Integral<Oper, BFSet>::~Integral()
+    {
+    };
+
+  template <class Oper, class BFSet>
+    Integral<Oper, BFSet>&
+    Integral<Oper, BFSet>::operator=(const Integral<Oper, BFSet>& source)
+    {
+      for(int p=0; p<Oper::np; p++) {
+        bra_[p] = source.bra_[p];
+        ket_[p] = source.ket_[p];
+      }
+    };
+
+
+  template <class Oper, class BFSet>
+    const BFSet&
+    Integral<Oper, BFSet>::bra(unsigned int p, unsigned int i) const
+    {
+      return bra_[p][i];
+    };
+
+  template <class Oper, class BFSet>
+    const BFSet&
+    Integral<Oper, BFSet>::ket(unsigned int p, unsigned int i) const
+    {
+      return ket_[p][i];
+    };
+
 
   /// Standard ERI shell quartet
   template <class BFSet> class TwoERep_2b2k : public Integral<TwoERep, BFSet> {
 
-    public:
-    TwoERep_2b2k(const vector< vector<BFSet> >& bf);
+    unsigned int m_;  // auxiliary index
 
+    public:
+    TwoERep_2b2k(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m);
+
+    unsigned int m() const { return m_; };
+
+    void print(std::ostream& os = std::cout) const;
   };
+
+  template <class BFSet>
+    TwoERep_2b2k<BFSet>::TwoERep_2b2k(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m) :
+    Integral<TwoERep, BFSet>(bra, ket), m_(m)
+    {
+      if (bra[0].size() != 1)
+        throw std::runtime_error("TwoERep_2b2k<BFSet>::TwoERep_2b2k(bra[2],ket[2]) -- dimension of bra[0] must be 1");
+      if (bra[1].size() != 1)
+        throw std::runtime_error("TwoERep_2b2k<BFSet>::TwoERep_2b2k(bra[2],ket[2]) -- dimension of bra[1] must be 1");
+      if (ket[0].size() != 1)
+        throw std::runtime_error("TwoERep_2b2k<BFSet>::TwoERep_2b2k(bra[2],ket[2]) -- dimension of ket[0] must be 1");
+      if (ket[1].size() != 1)
+        throw std::runtime_error("TwoERep_2b2k<BFSet>::TwoERep_2b2k(bra[2],ket[2]) -- dimension of ket[1] must be 1");
+    };
+
+  template <class BFSet>
+    void
+    TwoERep_2b2k<BFSet>::print(std::ostream& os) const
+    {
+      os << "TwoERep_2b2k: m = " << m_ << endl;
+      os << "shell bra1:" << endl;
+      bra_[0][0].print(os);
+      os << "shell bra2:" << endl;
+      bra_[1][0].print(os);
+      os << "shell ket1:" << endl;
+      ket_[0][0].print(os);
+      os << "shell ket2:" << endl;
+      ket_[1][0].print(os);
+    };
 
   /// VRR Recurrence Relation for ERI
   template <class BFSet> class VRR_ERI_2b2k : public RecurrenceRelation {
 
-    TwoERep_2b2k<BFSet>* target_;
-    TwoERep_2b2k<BFSet>* children_[5];
+    const TwoERep_2b2k<BFSet>* target_;
+    const TwoERep_2b2k<BFSet>* children_[5];
 
     public:
-    VRR_ERI_2b2k(const TwoERep_2b2k<BFSet>&);
+    VRR_ERI_2b2k(const TwoERep_2b2k<BFSet>*);
     ~VRR_ERI_2b2k();
 
-    const std::string cpp_function_name();
-    const std::string cpp_source_name();
-    const std::string cpp_header_name();
-    std::ostream& cpp_source(std::ostream&);
+    const std::string cpp_function_name() {};
+    const std::string cpp_source_name() {};
+    const std::string cpp_header_name() {};
+    std::ostream& cpp_source(std::ostream&) {};
 
   };
+
+  #include <vrr_eri_2b2k.h>
 
 };
 

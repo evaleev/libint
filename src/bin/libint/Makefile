@@ -1,9 +1,9 @@
 
 CXXFLAGS += -I. -g
 
-test: test.o rr.o
+test: test.o rr.o dg.o gauss.o oper.o
 	$(CXX) -o test $^
 
 clean::
-	-rm -rf test.o rr.o
+	-rm -rf test.o rr.o dg.o gauss.o oper.o
 

@@ -84,5 +84,3 @@ RecurrenceRelation::~RecurrenceRelation()
 {
 }
 
-const char TwoERep::psymm_[] = {1};
-
