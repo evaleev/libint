@@ -60,6 +60,12 @@ namespace libint2 {
       static bool size_eq(SafePtr<MemoryBlock> i, Size sz) {
         return i->size() == sz;
       }
+      /** Returns true if the size of *i greater or equal than sz. Note that the arguments are 
+          not passed by reference since this function is designed to be converted
+          to std::pointer_to_binary_function, which adds references to the arguments */
+      static bool size_geq(SafePtr<MemoryBlock> i, Size sz) {
+        return i->size() >= sz;
+      }
       /// Returns true if the address of *i is less than the address of *j
       static bool address_less_than(const SafePtr<MemoryBlock>& i,
                                     const SafePtr<MemoryBlock>& j) {
@@ -143,29 +149,85 @@ namespace libint2 {
 
 
   /**
-     WorstFitMemoryManager allocates memory by finding the largest-possible free block
+     WorstFitMemoryManager allocates memory by trying to find the largest-possible free block.
+     If search_exact == true -- exact fit is sought first.
   */
   class WorstFitMemoryManager : public MemoryManager {
   public:
-    WorstFitMemoryManager(const Size& maxsize = ULONG_MAX);
+    WorstFitMemoryManager(bool search_exact = true, const Size& maxsize = ULONG_MAX);
     ~WorstFitMemoryManager();
 
     /// Implementation of MemoryManager::alloc()
     Address alloc(const Size& size);
 
+  private:
+    /// If seacrh_exact_ == true -- look for exact fit first
+    bool search_exact_;
   };
 
   /**
-     BestFitMemoryManager allocates memory by finding the smallest-possible free block
+     BestFitMemoryManager allocates memory by trying to find
+     a suitable free block, which is is larger than the requested
+     amount by at least tight_fit.
+     If search_exact == true -- exact fit is sought first.
   */
   class BestFitMemoryManager : public MemoryManager {
   public:
-    BestFitMemoryManager(const Size& maxsize = ULONG_MAX);
+    BestFitMemoryManager(bool search_exact = true, const Size& tight_fit = 0, const Size& maxsize = ULONG_MAX);
     ~BestFitMemoryManager();
 
     /// Implementation of MemoryManager::alloc()
     Address alloc(const Size& size);
 
+  private:
+    /// If seacrh_exact_ == true -- look for exact fit first
+    bool search_exact_;
+    /// If size of a block - requested size < tight_fit_ it is rejected
+    Size tight_fit_;
+  };
+
+  /**
+     FirstFitMemoryManager allocates memory by finding first suitable free block.
+     If search_exact == true -- exact fit is sought first.
+  */
+  class FirstFitMemoryManager : public MemoryManager {
+  public:
+    FirstFitMemoryManager(bool search_exact = true, const Size& maxsize = ULONG_MAX);
+    ~FirstFitMemoryManager();
+
+    /// Implementation of MemoryManager::alloc()
+    Address alloc(const Size& size);
+
+  private:
+    /// If seacrh_exact_ == true -- look for exact fit first
+    bool search_exact_;
+  };
+
+  /**
+     LastFitMemoryManager allocates memory by finding last suitable free block.
+     If search_exact == true -- exact fit is sought first (from the back of the list).
+  */
+  class LastFitMemoryManager : public MemoryManager {
+  public:
+    LastFitMemoryManager(bool search_exact = true, const Size& maxsize = ULONG_MAX);
+    ~LastFitMemoryManager();
+
+    /// Implementation of MemoryManager::alloc()
+    Address alloc(const Size& size);
+
+  private:
+    /// If seacrh_exact_ == true -- look for exact fit first
+    bool search_exact_;
+  };
+
+  /**
+     MemoryManagerFactory is a very dumb factory for MemoryManagers
+  */
+  class MemoryManagerFactory {
+  public:
+    static const unsigned int ntypes = 8;
+    SafePtr<MemoryManager> memman(unsigned int type) const;
+    std::string label(unsigned int type) const;
   };
 
 };

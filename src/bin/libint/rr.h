@@ -25,7 +25,10 @@ namespace libint2 {
   const int Libint2_DefaultVectorLength = 64;
 
   class DGVertex;
-  
+
+  /**
+     RecurrenceRelation describes all recurrence relations
+  */
   class RecurrenceRelation {
 
   public:

@@ -23,6 +23,7 @@ static void test1();
 static void test2();
 static void test3();
 static void test4();
+static void test5();
 
 int main (int argc, char* argv[])
 {
@@ -60,11 +61,14 @@ int try_main (int argc, char* argv[])
   test_typelists();
 #endif
 
+#if 0
   test0();
   test1();
   test2();
   test3();
   test4();
+#endif
+  test5();
 
 }
 
@@ -185,7 +189,7 @@ test4()
 {
   SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy);
-  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_f,sh_p,sh_f,sh_p,0);
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
   cout << xsxs_quartet->description();
   SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
   dg_xxxx3->append_target(xsxs_ptr);
@@ -199,11 +203,57 @@ test4()
   cout << "The number of vertices = " << dg_xxxx3->num_vertices() << endl;
 
   SafePtr<CodeContext> context(new CppCodeContext());
-  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+  SafePtr<MemoryManager> memman(new WorstFitMemoryManager(false));
   dg_xxxx3->generate_code(context,memman,xsxs_quartet->label(),cout,cout);
   std::basic_ofstream<char> dotfile2("graph.symb.dot");
   dg_xxxx3->print_to_dot(true,dotfile2);
 
   cout << "Max memory used = " << memman->max_memory_used() << endl;
   dg_xxxx3->reset();
+}
+
+
+void
+test5()
+{
+  
+  SafePtr<Strategy> strat(new Strategy);
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_i,sh_s,sh_i,sh_s,0);
+  cout << xsxs_quartet->description() << endl;
+  SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
+
+  SafePtr<MemoryManagerFactory> mmfactory(new MemoryManagerFactory);
+
+  for(int m = 0; m < MemoryManagerFactory::ntypes; m++) {
+    SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
+    dg_xxxx3->append_target(xsxs_ptr);
+    dg_xxxx3->apply(strat);
+    dg_xxxx3->optimize_rr_out();
+    dg_xxxx3->traverse();
+    SafePtr<CodeContext> context(new CppCodeContext());
+    SafePtr<MemoryManager> memman = mmfactory->memman(m);
+    std::basic_ofstream<char> devnull("/dev/null");
+    dg_xxxx3->generate_code(context,memman,xsxs_quartet->label(),devnull,devnull);
+    cout << "Using " << mmfactory->label(m) << ": max memory used = " << memman->max_memory_used() << endl;
+    dg_xxxx3->reset();
+  }
+
+  // Test BestFitMemoryFactory with tight_fit > 0
+  const unsigned int tf_max = 6;
+  for(int tf = 1; tf <= tf_max; tf++) {
+    for(int ex=1; ex>=0; ex--) {
+      SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
+      dg_xxxx3->append_target(xsxs_ptr);
+      dg_xxxx3->apply(strat);
+      dg_xxxx3->optimize_rr_out();
+      dg_xxxx3->traverse();
+      SafePtr<CodeContext> context(new CppCodeContext());
+      SafePtr<MemoryManager> memman(new BestFitMemoryManager(ex,tf));
+      std::basic_ofstream<char> devnull("/dev/null");
+      dg_xxxx3->generate_code(context,memman,xsxs_quartet->label(),devnull,devnull);
+      cout << "Using BestFitMemoryManager(" << (ex == 1 ? "true" : "false")
+           << "," << tf << "): max memory used = " << memman->max_memory_used() << endl;
+      dg_xxxx3->reset();
+    }
+  }
 }

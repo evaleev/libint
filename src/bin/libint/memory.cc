@@ -33,8 +33,12 @@ MemoryManager::steal_from_block(const SafePtr<MemBlock>& blk, const Size& size)
     throw std::runtime_error("MemoryManager::steal_from_block() -- block is not free");
 
   Size old_size = blk->size();
-  if (old_size <= size)
+  if (old_size < size)
     throw std::runtime_error("MemoryManager::steal_from_block() -- block is too small");
+  if (old_size == size) {
+    blk->set_free(false);
+    return blk;
+  }
 
   Size new_size = old_size - size;
   Address address = blk->address();
@@ -154,8 +158,8 @@ MemoryManager::update_max_memory()
 
 ///////////////
 
-WorstFitMemoryManager::WorstFitMemoryManager(const Size& maxsize) :
-  MemoryManager(maxsize)
+WorstFitMemoryManager::WorstFitMemoryManager(bool search_exact, const Size& maxsize) :
+  MemoryManager(maxsize), search_exact_(search_exact)
 {
 }
 
@@ -171,30 +175,32 @@ WorstFitMemoryManager::alloc(const Size& size)
   if (size == 0)
     throw std::runtime_error("WorstFitMemoryManager::alloc(size) -- size is 0");
 
-  // try to find the exact match first
   typedef blkstore::iterator iter;
   blkstore& blks = blocks();
 
+  // try to find the exact match first
+  if (search_exact_) {
 #if HAVE_STD_BINARY_COMPOSE
-  iter blk;
-  blk = find_if(blks.begin(),blks.end(),
-                compose2(logical_and<bool>(),
-                         bind2nd(ptr_fun(MemBlock::size_eq),size),
-                         &MemBlock::is_free));
-  if (blk != blks.end()) {
-    (*blk)->set_free(false);
-    return (*blk)->address();
-  }
-#else
-  iter begin = blks.begin();
-  iter end = blks.end();
-  for(iter b=begin; b!=end; b++) {
-    if((*b)->size() == size && (*b)->free()) {
-      (*b)->set_free(false);
-      return (*b)->address();
+    iter blk;
+    blk = find_if(blks.begin(),blks.end(),
+                  compose2(logical_and<bool>(),
+                           bind2nd(ptr_fun(MemBlock::size_eq),size),
+                           &MemBlock::is_free));
+    if (blk != blks.end()) {
+      (*blk)->set_free(false);
+      return (*blk)->address();
     }
-  }
+#else
+    iter begin = blks.begin();
+    iter end = blks.end();
+    for(iter b=begin; b!=end; b++) {
+      if((*b)->size() == size && (*b)->free()) {
+        (*b)->set_free(false);
+        return (*b)->address();
+      }
+    }
 #endif
+  }
 
   // find all free_blocks
   std::list< SafePtr<MemBlock> > free_blks;
@@ -221,8 +227,8 @@ WorstFitMemoryManager::alloc(const Size& size)
 
 ///////////////
 
-BestFitMemoryManager::BestFitMemoryManager(const Size& maxsize) :
-  MemoryManager(maxsize)
+BestFitMemoryManager::BestFitMemoryManager(bool search_exact, const Size& tight_fit, const Size& maxsize) :
+  MemoryManager(maxsize), search_exact_(search_exact), tight_fit_(tight_fit)
 {
 }
 
@@ -238,30 +244,32 @@ BestFitMemoryManager::alloc(const Size& size)
   if (size == 0)
     throw std::runtime_error("BestFitMemoryManager::alloc(size) -- size is 0");
 
-  // try to find the exact match first
   typedef blkstore::iterator iter;
   blkstore& blks = blocks();
 
+  // try to find the exact match first
+  if (search_exact_) {
 #if HAVE_STD_BINARY_COMPOSE
-  iter blk;
-  blk = find_if(blks.begin(),blks.end(),
-                compose2(logical_and<bool>(),
-                         bind2nd(ptr_fun(MemBlock::size_eq),size),
-                         &MemBlock::is_free));
-  if (blk != blks.end()) {
-    (*blk)->set_free(false);
-    return (*blk)->address();
-  }
-#else
-  iter begin = blks.begin();
-  iter end = blks.end();
-  for(iter b=begin; b!=end; b++) {
-    if((*b)->size() == size && (*b)->free()) {
-      (*b)->set_free(false);
-      return (*b)->address();
+    iter blk;
+    blk = find_if(blks.begin(),blks.end(),
+                  compose2(logical_and<bool>(),
+                           bind2nd(ptr_fun(MemBlock::size_eq),size),
+                           &MemBlock::is_free));
+    if (blk != blks.end()) {
+      (*blk)->set_free(false);
+      return (*blk)->address();
     }
-  }
+#else
+    iter begin = blks.begin();
+    iter end = blks.end();
+    for(iter b=begin; b!=end; b++) {
+      if((*b)->size() == size && (*b)->free()) {
+        (*b)->set_free(false);
+        return (*b)->address();
+      }
+    }
 #endif
+  }
 
   // find all free_blocks
   std::list< SafePtr<MemBlock> > free_blks;
@@ -285,7 +293,7 @@ BestFitMemoryManager::alloc(const Size& size)
 
   do {
     
-    if ((*smallest_free_block)->size() > size) {
+    if ((*smallest_free_block)->size() > size + tight_fit_) {
       SafePtr<MemBlock> result = steal_from_block(*smallest_free_block,size);
       return result->address();
     }
@@ -303,3 +311,221 @@ BestFitMemoryManager::alloc(const Size& size)
 
 }
 
+///////////////
+
+FirstFitMemoryManager::FirstFitMemoryManager(bool search_exact, const Size& maxsize) :
+  MemoryManager(maxsize), search_exact_(search_exact)
+{
+}
+
+FirstFitMemoryManager::~FirstFitMemoryManager()
+{
+}
+
+MemoryManager::Address
+FirstFitMemoryManager::alloc(const Size& size)
+{
+  if (size > maxmem())
+    throw std::runtime_error("FirstFitMemoryManager::alloc() -- requested more memory than available");
+  if (size == 0)
+    throw std::runtime_error("FirstFitMemoryManager::alloc(size) -- size is 0");
+
+  typedef blkstore::iterator iter;
+  blkstore& blks = blocks();
+
+  // try to find the exact match first
+  if (search_exact_) {
+#if HAVE_STD_BINARY_COMPOSE
+    iter blk;
+    blk = find_if(blks.begin(),blks.end(),
+                  compose2(logical_and<bool>(),
+                           bind2nd(ptr_fun(MemBlock::size_eq),size),
+                           &MemBlock::is_free));
+    if (blk != blks.end()) {
+      (*blk)->set_free(false);
+      return (*blk)->address();
+    }
+#else
+    iter begin = blks.begin();
+    iter end = blks.end();
+    for(iter b=begin; b!=end; b++) {
+      if((*b)->size() == size && (*b)->free()) {
+        (*b)->set_free(false);
+        return (*b)->address();
+      }
+    }
+#endif
+  }
+
+  // Find the first free block larger than size
+#if HAVE_STD_BINARY_COMPOSE
+    iter blk;
+    blk = find_if(blks.begin(),blks.end(),
+                  compose2(logical_and<bool>(),
+                           bind2nd(ptr_fun(MemBlock::size_geq),size),
+                           &MemBlock::is_free));
+    if (blk != blks.end()) {
+      SafePtr<MemBlock> result = steal_from_block(*blk,size);
+      return result->address();
+    }
+#else
+    iter begin = blks.begin();
+    iter end = blks.end();
+    for(iter b=begin; b!=end; b++) {
+      if((*b)->size() >= size && (*b)->free()) {
+        SafePtr<MemBlock> result = steal_from_block(*b,size);
+        return result->address();
+      }
+    }
+#endif
+
+  // Steal from superblock as a last resort
+  SafePtr<MemBlock> result = steal_from_block(superblock(),size);
+  return result->address();
+
+}
+
+///////////////
+
+LastFitMemoryManager::LastFitMemoryManager(bool search_exact, const Size& maxsize) :
+  MemoryManager(maxsize), search_exact_(search_exact)
+{
+}
+
+LastFitMemoryManager::~LastFitMemoryManager()
+{
+}
+
+MemoryManager::Address
+LastFitMemoryManager::alloc(const Size& size)
+{
+  if (size > maxmem())
+    throw std::runtime_error("LastFitMemoryManager::alloc() -- requested more memory than available");
+  if (size == 0)
+    throw std::runtime_error("LastFitMemoryManager::alloc(size) -- size is 0");
+
+  typedef blkstore::iterator iter;
+  typedef blkstore::reverse_iterator riter;
+
+  blkstore& blks = blocks();
+  riter rbegin = blks.rbegin();
+  riter rend = blks.rend();
+
+  // try to find the exact match first
+  if (search_exact_) {
+#if HAVE_STD_BINARY_COMPOSE
+    riter blk;
+    blk = find_if(rbegin,rend,
+                  compose2(logical_and<bool>(),
+                           bind2nd(ptr_fun(MemBlock::size_eq),size),
+                           &MemBlock::is_free));
+    if (blk != rend) {
+      (*blk)->set_free(false);
+      return (*blk)->address();
+    }
+#else
+    for(riter b=rbegin; b!=rend; b++) {
+      if((*b)->size() == size && (*b)->free()) {
+        (*b)->set_free(false);
+        return (*b)->address();
+      }
+    }
+#endif
+  }
+
+  // Find the first free block larger than size
+#if HAVE_STD_BINARY_COMPOSE
+    riter blk;
+    blk = find_if(rbegin,rend,
+                  compose2(logical_and<bool>(),
+                           bind2nd(ptr_fun(MemBlock::size_geq),size),
+                           &MemBlock::is_free));
+    if (blk != rend) {
+      SafePtr<MemBlock> result = steal_from_block(*blk,size);
+      return result->address();
+    }
+#else
+    for(riter b=rbegin; b!=rend; b++) {
+      if((*b)->size() >= size && (*b)->free()) {
+        SafePtr<MemBlock> result = steal_from_block(*b,size);
+        return result->address();
+      }
+    }
+#endif
+
+  // Steal from superblock as a last resort
+  SafePtr<MemBlock> result = steal_from_block(superblock(),size);
+  return result->address();
+
+}
+
+//////////////
+
+SafePtr<MemoryManager>
+MemoryManagerFactory::memman(unsigned int type) const
+{
+  switch (type) {
+  case 0:
+    {
+      SafePtr<MemoryManager> result(new WorstFitMemoryManager(true));
+      return result;
+    }
+  case 1:
+    {
+      SafePtr<MemoryManager> result(new WorstFitMemoryManager(false));
+      return result;
+    }
+  case 2:
+    {
+      SafePtr<MemoryManager> result(new BestFitMemoryManager(true));
+      return result;
+    }
+  case 3:
+    {
+      SafePtr<MemoryManager> result(new BestFitMemoryManager(false));
+      return result;
+    }
+  case 4:
+    {
+      SafePtr<MemoryManager> result(new FirstFitMemoryManager(true));
+      return result;
+    }
+  case 5:
+    {
+      SafePtr<MemoryManager> result(new FirstFitMemoryManager(false));
+      return result;
+    }
+  case 6:
+    {
+      SafePtr<MemoryManager> result(new LastFitMemoryManager(true));
+      return result;
+    }
+  case 7:
+    {
+      SafePtr<MemoryManager> result(new LastFitMemoryManager(false));
+      return result;
+    }
+  default:
+    throw std::runtime_error("MemoryManagerFactory::memman(type) -- invalid type");
+  }
+}
+
+namespace MMTypes {
+  static const char labels_[MemoryManagerFactory::ntypes][80] = {
+    "WorstFitMemoryManager(true)",
+      "WorstFitMemoryManager(false)",
+      "BestFitMemoryManager(true)",
+      "BestFitMemoryManager(false)",
+      "FirstFitMemoryManager(true)",
+      "FirstFitMemoryManager(false)",
+      "LastFitMemoryManager(true)",
+      "LastFitMemoryManager(false)"
+      };
+
+};
+
+std::string
+MemoryManagerFactory::label(unsigned int type) const
+{
+  return MMTypes::labels_[type];
+}
