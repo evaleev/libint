@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -292,8 +293,10 @@ namespace libint2 {
   /// This is a vertex of a Directed Graph (DG)
   class DGVertex {
 
-    /// vertex label
-    std::string label_;
+    /// label for the vertex within a graph
+    std::string graph_label_;    
+    /// symbol used in the code
+    std::string symbol_;
     
     /// Arcs leaving this DGVertex
     vector< SafePtr<DGArc> > children_;
@@ -368,13 +371,26 @@ namespace libint2 {
       */
     virtual const unsigned int size() const =0;
     
-    /** print(std::ostream&) prints out comment-style info vertex
+    /** label() returns a short, descriptive label of DGVertex (e.g. "( p_x s | 1/r_{12} | d_xy s )^{(1)}")
     */
-    virtual void print(std::ostream& os = std::cout) const =0;
-    /// returns the label
-    const std::string& label() const { return label_;}
-    /// sets the label
-    void set_label(const std::string& label);
+    virtual std::string label() const =0;
+    /** is() returns a very short label of DGVertex which is (almost)
+        guaranteed to be a symbol (e.g. "(p_x s|d_xy s)^1")
+    */
+    virtual std::string id() const =0;
+    /** description() returns a full, human-readable description of DGVertex (e.g. "This is a ( p_x s | 1/r_{12} | d_xy s )^{(1)} integral")
+    */
+    virtual std::string description() const =0;
+
+
+    /// returns the graph label
+    const std::string& graph_label() const { return graph_label_;}
+    /// sets the graph label
+    void set_graph_label(const std::string& graph_label);
+    /// returns the code symbol
+    const std::string& symbol() const { return symbol_;}
+    /// sets the code symbol
+    void set_symbol(const std::string& symbol);
 
     /// prepare_to_traverse() must be called before traversal of the graph starts
     void prepare_to_traverse();

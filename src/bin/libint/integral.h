@@ -92,12 +92,16 @@ namespace libint2 {
       
       /// Comparison operator
       virtual bool operator==(const GenIntegralSet&) const;
-      /// Specialization of DGVertex's equiv
+      /// Specialization of DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& v) const { return PtrComp::equiv(this,v); }
-      /// Specialization of DGVertex's size
+      /// Specialization of DGVertex::size()
       virtual const unsigned int size() const;
-      /// Specialization of DGVertex's print
-      virtual void print(std::ostream& os = std::cout) const;
+      /// Specialization of DGVertex::label()
+      virtual std::string label() const;
+      /// Specialization of DGVertex::id()
+      virtual std::string id() const;
+      /// Specialization of DGVertex::description()
+      virtual std::string description() const;
       /// Specialization of DGVertex::precomputed()
       virtual bool precomputed() const { return false; }
 
@@ -244,10 +248,11 @@ namespace libint2 {
     }
     
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    void
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::print(std::ostream& os) const
+    std::string
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::label() const
     {
-      os << "GenIntegralSet: < ";
+      ostringstream os;
+      os << "< ";
       for(int p=0; p<Oper::Properties::np; p++) {
         unsigned int nbra = bra_.num_members(p);
         for(unsigned int i=0; i<nbra; i++)
@@ -258,8 +263,25 @@ namespace libint2 {
         unsigned int nket = ket_.num_members(p);
         for(unsigned int i=0; i<nket; i++)
           os << ket_.member(p,i)->label() << "(" << p << ") ";
-        os << "> ^ { " << aux_->label() << " }" << endl;
+        os << "> ^ { " << aux_->label() << " }";
       }
+      return os.str();
+    }
+  
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    std::string
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::id() const
+    {
+      return label();
+    }
+  
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    std::string
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::description() const
+    {
+      ostringstream os;
+      os << " GenIntegralSet: " << label();
+      return os.str();
     }
   
   /** VectorBraket is a std::vector-based type that can be used as a BraSetType or a KetSetType parameter
@@ -469,8 +491,8 @@ namespace libint2 {
       
       /// Comparison operator
       bool operator==(const this_type&) const;
-      /// Specialization of GenIntegralSet's and DGVertex's print
-      void print(std::ostream& os = std::cout) const;
+      /// Specialization of GenIntegralSet::label()
+      std::string label() const;
 
     private:
       // This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
@@ -543,11 +565,13 @@ namespace libint2 {
     }
 
   template <class BFS>
-    void
-    TwoPRep_11_11<BFS>::print(std::ostream& os) const
+    std::string
+    TwoPRep_11_11<BFS>::label() const
     {
+      ostringstream os;
       os << "(" << parent_type::bra_.member(0,0)->label() << " " << parent_type::ket_.member(0,0)->label()
          << " | 1/r_{12} | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
+      return os.str();
     };
 
   template <class BFS>

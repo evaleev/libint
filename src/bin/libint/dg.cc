@@ -14,13 +14,13 @@ DGArcRR::DGArcRR(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) :
 
 DGVertex::DGVertex() :
   parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
-  precalc_(), postcalc_()
+  precalc_(), postcalc_(), symbol_()
 {
 }
 
 DGVertex::DGVertex(const vector< SafePtr<DGArc> >& parents, const vector< SafePtr<DGArc> >& children) :
   parents_(parents), children_(children), target_(false), can_add_arcs_(true),
-  num_tagged_arcs_(0), precalc_(), postcalc_()
+  num_tagged_arcs_(0), precalc_(), postcalc_(), symbol_()
 {
 }
 
@@ -45,10 +45,6 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
         return;
     children_.push_back(arc);
     arc->dest()->add_entry_arc(arc);
-
-    cout << "DGVertex::add_exit_arc:" << endl << "  ";
-    print(cout); cout << endl << "  ";
-    child->print(cout); cout << endl;
   }
   else
     throw CannotAddArc("DGVertex::add_entry_arc() -- cannot add arcs anymore");
@@ -169,9 +165,15 @@ DGVertex::reset()
 }
 
 void
-DGVertex::set_label(const std::string& label)
+DGVertex::set_graph_label(const std::string& label)
 {
-  label_ = label;
+  graph_label_ = label;
+}
+
+void
+DGVertex::set_symbol(const std::string& symbol)
+{
+  symbol_ = symbol;
 }
 
 ///////////////////////////////////////////////////
@@ -206,10 +208,8 @@ DirectedGraph::add_vertex(const SafePtr<DGVertex>& vertex) throw(VertexAlreadyOn
          << stack_.size() << endl;
   }
   char label[80];  sprintf(label,"vertex%d",first_free_);
-  vertex->set_label(label);
+  vertex->set_graph_label(label);
   stack_[first_free_++] = vertex;
-  cout << "DirectedGraph::add_vertex: " << first_free_-1 << endl << "  ";
-  vertex->print(cout); cout << endl;
   return;
 }
 
@@ -302,22 +302,24 @@ DirectedGraph::debug_print_traversal(std::ostream& os) const
   os << "Debug print of traversal order" << endl;
 
   do {
-    current_vertex->print(os);
-    os << endl;
+    os << current_vertex->label() << endl;
     current_vertex = current_vertex->postcalc();
   } while (current_vertex != 0);
 }
 
 void
-DirectedGraph::print_to_dot(std::ostream& os) const
+DirectedGraph::print_to_dot(bool symbols, std::ostream& os) const
 {
   os << "digraph G {" << endl
      << "  size = \"8,8\"" << endl;
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
-    os << "  " << vertex->label()
+    os << "  " << vertex->graph_label()
        << " [ label = \"";
-    vertex->print(os);
+    if (symbols)
+      os << vertex->symbol();
+    else
+      os << vertex->label();
     os << "\"]" << endl;
   }
   for(int i=0; i<first_free_; i++) {
@@ -325,8 +327,8 @@ DirectedGraph::print_to_dot(std::ostream& os) const
     unsigned int narcs = vertex->num_exit_arcs();
     for(int a=0; a<narcs; a++) {
       SafePtr<DGVertex> dest = vertex->exit_arc(a)->dest();
-      os << "  " << vertex->label() << " -> "
-         << dest->label() << endl;
+      os << "  " << vertex->graph_label() << " -> "
+         << dest->graph_label() << endl;
     }
   }
 
@@ -336,8 +338,8 @@ DirectedGraph::print_to_dot(std::ostream& os) const
     do {
       SafePtr<DGVertex> next = current_vertex->postcalc();
       if (current_vertex && next) {
-        os << "  " << current_vertex->label() << " -> "
-           << next->label() << " [ style = dotted ]";
+        os << "  " << current_vertex->graph_label() << " -> "
+           << next->graph_label() << " [ style = dotted ]";
       }
       current_vertex = next;
     } while (current_vertex != 0);
@@ -431,7 +433,6 @@ DirectedGraph::replace_rr_with_expr()
 
     SafePtr<DGVertex> vertex = stack_[v];
     if (vertex->num_exit_arcs()) {
-      cout << "DirectedGraph::optimize_rr_out:" << endl << "  ";  vertex->print(cout); cout << endl;
       SafePtr<DGArc> arc0 = vertex->exit_arc(0);
       SafePtr<DGArcRR> arc0_cast = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
       if (arc0_cast == 0)
@@ -467,12 +468,6 @@ void
 DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr)
 {
   typedef AlgebraicOperator<DGVertex> ExprType;
-
-  cout << "DirectedGraph::insert_expr_at:" << endl << "  ";
-  where->print(cout);
-  cout << endl << "  ";
-  expr->print(cout);
-  cout << endl;
 
   SafePtr<DGVertex> expr_vertex = dynamic_pointer_cast<DGVertex,ExprType>(expr);
   bool new_vertex = true;
@@ -521,8 +516,8 @@ DirectedGraph::remove_trivial_arithmetics()
     SafePtr< AlgebraicOperator<DGVertex> > oper_cast = dynamic_pointer_cast<AlgebraicOperator<DGVertex>,DGVertex>(vertex);
     if (oper_cast) {
 
-      SafePtr<DGVertex> left = oper_cast->left();
-      SafePtr<DGVertex> right = oper_cast->right();
+      SafePtr<DGVertex> left = oper_cast->exit_arc(0)->dest();
+      SafePtr<DGVertex> right = oper_cast->exit_arc(1)->dest();
 
       // 1.0 * x = x
       if (left->equiv(prefactors.N_i[1])) {
@@ -603,12 +598,88 @@ DirectedGraph::remove_disconnected_vertices()
 //
 //
 void
-DirectedGraph::generate_cpp_code(std::ostream& os) const
+DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const std::string& label,
+                             std::ostream& decl, std::ostream& def)
 {
-  os << "\#include <libint.h>" << endl << endl;
-  os << stack_[0]->cpp_comment() << endl;
-  os << "void" << endl;
-  os << "compute_" << stack_[0]->label() << "(struct Libint* libint, REALTYPE* target)" << endl;
-  os <<
-  
+  decl << context->std_header();
+  std::string comment("This code computes "); comment += label; comment += "\n";
+  if (context->comments_on())
+    decl << context->comment(comment) << endl;
+
+  std::string function_name("compute");  function_name += label;
+  function_name = context->label_to_name(function_name);
+
+  decl << context->type_name< double * >() << " "
+       << function_name << "(struct Libint* libint);" << endl;
+
+  //
+  // Generate function definition
+  //
+
+  def << context->std_header();
+  def << function_name << context->open_block() << endl;
+  context->reset();
+  assign_symbols(context);
+  print_def(context,def);
+  def << context->close_block() << endl;
+
+}
+
+
+void
+DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
+{
+  unsigned int ntargets = 0;
+  for(int i=0; i<first_free_; i++) {
+    SafePtr<DGVertex> vertex = stack_[i];
+    if (vertex->is_a_target()) {
+      ostringstream os;
+      os << "libint->targets[" << ntargets << "]";
+      ntargets++;
+      vertex->set_symbol(os.str());
+    }
+    else if (vertex->precomputed()) {
+      std::string symbol("libint->");
+      symbol += context->label_to_name(vertex->label());
+      vertex->set_symbol(symbol);
+    }
+    else {
+      vertex->set_symbol(context->unique_name<EntityTypes::FP>());
+    }
+  }
+}
+
+void
+DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
+{
+  unsigned int nflops = 0;
+  SafePtr<DGVertex> current_vertex = first_to_compute_;
+  do {
+    os << current_vertex->symbol() << " = ";
+
+    typedef AlgebraicOperator<DGVertex> oper_type;
+    SafePtr<oper_type> oper_ptr = dynamic_pointer_cast<oper_type,DGVertex>(current_vertex);
+    if (oper_ptr) {
+      os << oper_ptr->exit_arc(0)->dest()->symbol()
+         << " " << oper_ptr->label() << " "
+         << oper_ptr->exit_arc(1)->dest()->symbol() << endl;
+      nflops++;
+    }
+    else if (current_vertex->num_exit_arcs() == 1) {
+      typedef DGArcDirect arc_type;
+      SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(current_vertex->exit_arc(0));
+      if (arc_ptr) {
+        os << arc_ptr->dest()->symbol() << endl;
+      }
+    }
+    else {
+      //throw std::runtime_error("DirectedGraph::print_def() -- cannot handle this vertex yet");
+    }
+
+    current_vertex = current_vertex->postcalc();
+  } while (current_vertex != 0);
+
+  ostringstream oss;
+  oss << "Number of flops = " << nflops;
+  os << context->comment(oss.str()) << endl;
 }

@@ -61,7 +61,7 @@ int try_main (int argc, char* argv[])
   
   typedef TwoPRep_11_11<CGShell> TwoPRep_sh_11_11;
   SafePtr<TwoPRep_sh_11_11> pppp_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
-  pppp_quartet->print(cout);
+  cout << pppp_quartet->description();
 
   // Create a DAG for a HRR+VRR case
   DirectedGraph dg_xxxx;
@@ -88,10 +88,10 @@ int try_main (int argc, char* argv[])
     siter1.elem()->print(cout);
 
   SafePtr<TwoPRep_sh_11_11> obj(pppp_quartet);
-  obj->print(cout);
+  cout << obj->description();
   SubIteratorBase< TwoPRep_sh_11_11 > siter2(obj);
   for(siter2.init(); siter2; ++siter2)
-    siter2.elem()->print(cout);
+    cout << siter2.elem()->description();
 
   // Create a DAG for a shell-quartet-to-ints case
   DirectedGraph dg_xxxx2;
@@ -105,8 +105,8 @@ int try_main (int argc, char* argv[])
 
   SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy);
-  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_s,sh_s,sh_d,sh_s,0);
-  xsxs_quartet->print(cout);
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_s,sh_s,0);
+  cout << xsxs_quartet->description();
   SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
   dg_xxxx3->append_target(xsxs_ptr);
   dg_xxxx3->apply(strat);
@@ -115,9 +115,14 @@ int try_main (int argc, char* argv[])
   dg_xxxx3->debug_print_traversal(cout);
   
   std::basic_ofstream<char> dotfile("graph.dot");
-  dg_xxxx3->print_to_dot(dotfile);
-
+  dg_xxxx3->print_to_dot(false,dotfile);
   cout << "The number of vertices = " << dg_xxxx3->num_vertices() << endl;
+
+  SafePtr<CodeContext> context(new CppCodeContext());
+  dg_xxxx3->generate_code(context,xsxs_quartet->label(),cout,cout);
+  std::basic_ofstream<char> dotfile2("graph.symb.dot");
+  dg_xxxx3->print_to_dot(true,dotfile2);
+
   dg_xxxx3->reset();
 
 }

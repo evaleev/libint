@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <smart_ptr.h>
 #include <rr.h>
+#include <context.h>
 
 #ifndef _libint2_src_bin_libint_dg_h_
 #define _libint2_src_bin_libint_dg_h_
@@ -104,6 +105,11 @@ namespace libint2 {
     // schedule_computation(vertex) puts vertex first in the computation order
     void schedule_computation(const SafePtr<DGVertex>&);
 
+    // Assign symbols to the vertices
+    void assign_symbols(const SafePtr<CodeContext>& context);
+    // Print the code using symbols generated with assign_symbols()
+    void print_def(const SafePtr<CodeContext>& context, std::ostream& os);
+
   public:
     /** This constructor doesn't do much. Actual initialization of the graph
         must be done using append_target */
@@ -165,14 +171,17 @@ namespace libint2 {
     
     /**
     Prints out the graph in format understood by program "dot"
-    of package "graphviz"
+    of package "graphviz". If symbols is true then label vertices
+    using their symbols rather than (descriptive) labels.
     */
-    void print_to_dot(std::ostream& os = std::cout) const;
+    void print_to_dot(bool symbols, std::ostream& os = std::cout) const;
     
     /**
-    Generates C++ code that corresponds to the graph
+       Generates code using context. label specifies the tag for the computation.
+       decl specifies the stream to receive declaration code,
+       code receives the stream to receive the definition code
     */
-    void generate_cpp_code(std::ostream& os = std::cout) const;
+    void generate_code(const SafePtr<CodeContext>& context, const std::string& label, std::ostream& decl, std::ostream& code);
     
     /// Resets the graph and all vertices
     void reset();

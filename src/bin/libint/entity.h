@@ -6,13 +6,31 @@
 #define _libint2_src_bin_libint_entity_h_
 
 namespace libint2 {
+
+  /**
+     EntityTypes enumerates the types of objects Entity can represent
+  */
+  namespace EntityTypes {
+    typedef enum {fp, integer} EntityTypeEnum;
+
+    template <unsigned int TypeIndex>
+    struct EntityType {
+      static unsigned int type2int() {
+        return TypeIndex;
+      }
+    };
+
+    typedef EntityType<fp> FP;
+    typedef EntityType<integer> Int;
+
+    static const unsigned int ntypes = 2;
+  };
   
   /** 
   Entity is a base class for all objects that exist at compile or runtime of the generated code.
   */
   class Entity
   {
-    
     public:
     virtual ~Entity() {}
     /// Return id string
@@ -60,12 +78,23 @@ namespace libint2 {
 	  return false;
       }
       
-      /// Implementation of DGVertex::print()
-      void print(std::ostream& os) const
+      /// Implementation of DGVertex::label()
+      std::string label() const
       {
-	os << id();
+	return Entity::id();
       }
-      
+      /// Implementation of DGVertex::id()
+      std::string id() const
+      {
+	return label();
+      }
+      /// Implementation of DGVertex::description()
+      std::string description() const
+      {
+        ostringstream os;
+        os << "RTimeEntity: " << id();
+        return os.str();
+      }
       /// Implementation of DGVertex::precomputed()
       bool precomputed() const
       {
@@ -107,12 +136,23 @@ namespace libint2 {
 	  return false;
       }
       
-      /// Implementation of DGVertex::print()
-      void print(std::ostream& os) const
+      /// Implementation of DGVertex::label()
+      std::string label() const
       {
-	os << id();
+	return Entity::id();
       }
-      
+      /// Implementation of DGVertex::id()
+      std::string id() const
+      {
+	return label();
+      }
+      /// Implementation of DGVertex::description()
+      std::string description() const
+      {
+        ostringstream os;
+        os << "CTimeEntity: " << id();
+        return os.str();
+      }
       /// Implementation of DGVertex::precomputed()
       bool precomputed() const
       {
