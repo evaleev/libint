@@ -104,7 +104,7 @@ namespace libint2 {
         construct a heuristic order of traversal for the graph.
 
     */
-    SafePtr<DGVertex> traverse();
+    void traverse();
 
     /// Prints out call sequence
     void debug_print_traversal(ostream& os) const;

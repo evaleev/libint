@@ -5,10 +5,9 @@
 using namespace std;
 using namespace libint2;
 
-DGArc::DGArc(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest)
+DGArc::DGArc(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) :
+  orig_(orig), dest_(dest)
 {
-  orig_ = orig;
-  dest_ = dest;
 }
 
 DGArc::~DGArc()
@@ -119,15 +118,12 @@ DGVertex::reset()
 ///////////////////////////////////////////////////
 
 DirectedGraph::DirectedGraph() :
-  stack_(default_size_), first_free_(0), first_to_compute_()
+  stack_(default_size_,SafePtr<DGVertex>()), first_free_(0), first_to_compute_()
 {
 }
 
 DirectedGraph::~DirectedGraph()
 {
-  for(int i=0; i<first_free_; i++)
-    if (!stack_[i]->is_a_target())
-      stack_[i]->~DGVertex();
 }
 
 void
@@ -173,7 +169,7 @@ DirectedGraph::prepare_to_traverse()
     stack_[i]->prepare_to_traverse();
 }
 
-SafePtr<DGVertex>
+void
 DirectedGraph::traverse()
 {
   // Initialization
@@ -242,8 +238,10 @@ DirectedGraph::reset()
   // Reset each vertex, releasing all arcs
   for(int i=0; i<first_free_; i++)
     stack_[i]->reset();
+  for(int i=0; i<first_free_; i++)
+    stack_[i].reset();
   // if everything went OK then resize stack_ to 0
-  stack_.resize(0);
+  stack_.resize(default_size_);
   first_free_ = 0;
   first_to_compute_.reset();
 }
