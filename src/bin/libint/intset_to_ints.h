@@ -24,11 +24,16 @@ namespace libint2 {
   public:
     typedef I TargetType;
     typedef typename I::iter_type ChildType;
+    /// The type of expressions in which RecurrenceRelations result.
+    typedef AlgebraicOperator<DGVertex> ExprType;
 
     IntegralSet_to_Integrals(const SafePtr<I>&);
     ~IntegralSet_to_Integrals() {};
 
-    const unsigned int num_children() const { return num_actual_children_; };
+    /// Implementation of RecurrenceRelation::num_children()
+    const unsigned int num_children() const { return children_.size(); };
+    /// Implementation of RecurrenceRelation::num_expr()
+    const unsigned int num_expr() const { return 0; };
     /// target() returns pointer to target
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer i-th child
@@ -37,6 +42,12 @@ namespace libint2 {
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation's child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+    /// Implementation of RecurrenceRelation::rr_expr()
+    SafePtr<DGVertex> rr_expr(unsigned int i) const { return SafePtr<DGVertex>(); }
+    /// Implementation of RecurrenceRelation::is_simple()
+    bool is_simple() const {
+      return false;
+    }
     
     const std::string cpp_function_name() {};
     const std::string cpp_source_name() {};
@@ -47,8 +58,6 @@ namespace libint2 {
 
     SafePtr<TargetType> target_;
     vector< SafePtr<ChildType> > children_;
-
-    unsigned int num_actual_children_;
   };
   
   
@@ -66,7 +75,6 @@ namespace libint2 {
 
       // Construct a subiterator for I
       SubIteratorBase<I> siter(Tint);
-      num_actual_children_ = siter.num_iter();
       
       // Set children pointers
       for(siter.init(); siter; ++siter)
@@ -77,7 +85,6 @@ namespace libint2 {
     SafePtr<typename I::iter_type>
     IntegralSet_to_Integrals<I>::child(unsigned int i) const
     {
-      assert(i>=0 && i<num_actual_children_);
       return children_.at(i);
     };
   

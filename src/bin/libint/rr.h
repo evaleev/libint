@@ -25,6 +25,7 @@ namespace libint2 {
   class DGVertex;
   
   class RecurrenceRelation {
+
   public:
     RecurrenceRelation();
     virtual ~RecurrenceRelation();
@@ -39,6 +40,19 @@ namespace libint2 {
     virtual SafePtr<DGVertex> rr_child(unsigned int i) const =0;
     /// Returns the target
     virtual SafePtr<DGVertex> rr_target() const =0;
+    /** num_expr() returns the actual number of expressions.
+        For example, VRR for ERIs has up to 6 expressions on the right-hand side,
+    */
+    virtual const unsigned int num_expr() const =0;
+    /// Returns i-th expression
+    virtual SafePtr<DGVertex> rr_expr(unsigned int i) const =0;
+    /**
+       Returns true is this recurrence relation is simple enough to optimize away.
+       As a result of such optimization, standalone function will NOT be 
+       generated for this recurrence relation. Instead, it's source will be
+       inlined and optimized.
+    */
+    virtual bool is_simple() const =0;
 
     /// Return the number of FLOPs per this recurrence relation
     virtual unsigned int nflops() const { return 0; }
@@ -149,7 +163,7 @@ namespace libint2 {
     unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
 
     /// Returns the angular momentum
-    unsigned int qn() const { return qn_[0]; }
+    unsigned int qn(unsigned int xyz=0) const { return qn_[0]; }
 
     /// Comparison operator
     bool operator==(const CGShell&) const;
@@ -163,6 +177,22 @@ namespace libint2 {
     void print(std::ostream& os = std::cout) const;
 
   };
+
+  /**
+     TrivialBFSet<T> defines static member result, which is true if T
+     is a basis function set consisting of 1 function
+  */
+  template <class T>
+    struct TrivialBFSet;
+  template <>
+    struct TrivialBFSet<CGShell> {
+      static const bool result = false;
+    };
+  template <>
+    struct TrivialBFSet<CGF> {
+      static const bool result = true;
+    };
+
 
   /** RRTactic describes an object that specifies a tactic of how to apply
     recurrence relation

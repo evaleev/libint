@@ -35,6 +35,8 @@ namespace libint2 {
   public:
     typedef I<BFSet> TargetType;
     typedef I<BFSet> ChildType;
+    /// The type of expressions in which RecurrenceRelations result.
+    typedef AlgebraicOperator<DGVertex> ExprType;
 
     /**
       dir specifies which quantum number of a and b is shifted.
@@ -44,15 +46,26 @@ namespace libint2 {
     HRR(const SafePtr<TargetType>&, unsigned int dir = 0);
     ~HRR();
 
-    const unsigned int num_children() const { return num_actual_children_; };
+    /// Implementation of RecurrenceRelation::num_children()
+    const unsigned int num_children() const { return nchildren_; };
+    /// Implementation of RecurrenceRelation::num_expr()
+    const unsigned int num_expr() const { return nexpr_; };
     /// returns pointer to the target
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer to i-th child
     SafePtr<ChildType> child(unsigned int i) const;
+    /// expr(i) returns pointer to the expression for the i-th child
+    SafePtr<ExprType> expr(unsigned int i) const;
     /// Implementation of RecurrenceRelation's target()
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation's child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+    /// Implementation of RecurrenceRelation::rr_expr()
+    SafePtr<DGVertex> rr_expr(unsigned int i) const { return static_pointer_cast<DGVertex,ExprType>(expr(i)); }
+    /// Implementation of RecurrenceRelation::is_simple()
+    bool is_simple() const {
+      return TrivialBFSet<BFSet>::result;
+    }
     
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
@@ -60,14 +73,16 @@ namespace libint2 {
     std::ostream& cpp_source(std::ostream&) {}
 
   private:
-    static const unsigned int nchild_ = 2;
+    static const unsigned int max_nchildren_ = 2;
+    static const unsigned int max_nexpr_ = 2;
     unsigned int dir_;
 
     SafePtr<TargetType> target_;
-    SafePtr<ChildType> children_[nchild_];
+    SafePtr<ChildType> children_[max_nchildren_];
+    SafePtr<ExprType> expr_[max_nexpr_];
 
-    unsigned int num_actual_children_;
-
+    unsigned int nchildren_;
+    unsigned int nexpr_;
     void oper_checks() const;
   };
 
@@ -88,7 +103,7 @@ namespace libint2 {
       IKetType* ket = new IKetType(Tint->ket());
 
       // Zero out children pointers
-      num_actual_children_ = 0;
+      nchildren_ = 0;
 
       //
       // InBra and InKet cases have to treated explicitly since BraType and KetType don't have to match
@@ -116,7 +131,19 @@ namespace libint2 {
           ket->set_member(sh_a,part,pos_a);
         }
         children_[0] = I<F>::Instance(*bra,*ket,aux);
-        num_actual_children_ += 2;
+        nchildren_ += 2;
+
+        if (is_simple()) {
+          SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[1],children_[0]));
+          SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
+          if (loc_a == InBra && loc_b == InKet) {
+            expr_[0] = expr0_ptr;
+            expr_[1] = expr1_ptr;
+          }
+          else
+            throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
+        }
+        nexpr_ += 2;
       }
       else {
         // See if b-1 exists
@@ -141,7 +168,19 @@ namespace libint2 {
           ket->set_member(sh_a,part,pos_a);
         }
         children_[0] = I<F>::Instance(*bra,*ket,aux);
-        num_actual_children_ += 2;
+        nchildren_ += 2;
+
+        if (is_simple()) {
+          SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[1],children_[0]));
+          SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
+          if (loc_a == InBra && loc_b == InKet) {
+            expr_[0] = expr0_ptr;
+            expr_[1] = expr1_ptr;
+          }
+          else
+            throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
+        }
+        nexpr_ += 2;
       }
     }
 
@@ -186,14 +225,32 @@ namespace libint2 {
     SafePtr<typename HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::ChildType>
     HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::child(unsigned int i) const
     {
-      assert(i>=0 && i<num_actual_children_);
+      assert(i>=0 && i<nchildren_);
 
       unsigned int nc=0;
-      for(int c=0; c<nchild_; c++) {
+      for(int c=0; c<max_nchildren_; c++) {
         if (children_[c]) {
           if (nc == i)
             return children_[c];
           nc++;
+        }
+      }
+    };
+
+  template <template <class> class I, class F, int part,
+    FunctionPosition loc_a, unsigned int pos_a,
+    FunctionPosition loc_b, unsigned int pos_b>
+    SafePtr< AlgebraicOperator<DGVertex> >
+    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::expr(unsigned int i) const
+    {
+      assert(i>=0 && i<nexpr_);
+
+      unsigned int ne=0;
+      for(int e=0; e<max_nexpr_; e++) {
+        if (expr_[e]) {
+          if (ne == i)
+            return expr_[e];
+          ne++;
         }
       }
     };

@@ -8,11 +8,13 @@
 namespace libint2 {
 
   namespace algebra {
-    typedef enum {Plus, Minus, Times, Divide} OperatorType;
-
-    char[][] OperatorSymbol = { "+", "-", "*", "/" };
+    struct OperatorTypes {
+      typedef enum {Plus, Minus, Times, Divide} OperatorType;
+    };
+    static const char OperatorSymbol[][2] = { "+", "-", "*", "/" };
   };
-  
+
+
   /**
     AlgebraicOperator is an algebraic operator that
     acts on objects of type T. An algebraic operator has 2 arguments,
@@ -24,13 +26,16 @@ namespace libint2 {
     public DGVertex
     {
       
-      public:
-      AlgebraicOperator(algebra::OperatorType OT,
-      const SafePtr<T>& left,
-      const SafePtr<T>& right) :
-      OT_(OT), left_(left), right_(right)
-      {
-      }
+    public:
+      typedef algebra::OperatorTypes OperatorTypes;
+      typedef algebra::OperatorTypes::OperatorType OperatorType;
+
+      AlgebraicOperator(OperatorType OT,
+                        const SafePtr<T>& left,
+                        const SafePtr<T>& right) :
+        OT_(OT), left_(left), right_(right)
+        {
+        }
       virtual ~AlgebraicOperator() {}
       
       /// Returns the left argument
@@ -56,8 +61,8 @@ namespace libint2 {
 	os << "AlgebraicOperator: " << algebra::OperatorSymbol[OT_] << endl;
       }
       
-      private:
-      algebra::OperatorType OT_;
+    private:
+      OperatorType OT_;
       SafePtr<T> left_;
       SafePtr<T> right_;
       
