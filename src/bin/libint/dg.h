@@ -4,6 +4,7 @@
 #include <vector>
 #include <stdexcept>
 #include <assert.h>
+#include <exception.h>
 #include <smart_ptr.h>
 #include <rr.h>
 #include <context.h>
@@ -18,40 +19,6 @@ using namespace std;
 namespace libint2 {
 
   class Strategy;
-
-  class CannotAddArc : public std::logic_error {
-    
-    public:
-    CannotAddArc(const std::string& a) :
-      logic_error(a) {};
-    
-  };
-
-  /** This exception class is used to pass the pointer to the vertex on the graph
-   */
-  class VertexAlreadyOnStack : public std::logic_error {
-    
-  public:
-    VertexAlreadyOnStack(const SafePtr<DGVertex>& vertex) :
-      logic_error("DirectedGraph -- vertex already on stack"), vertex_(vertex) {}
-    ~VertexAlreadyOnStack() throw() {}
-
-    SafePtr<DGVertex> vertex() const { return vertex_; }
-
-  private:
-    // Vertex on the stack
-    SafePtr<DGVertex> vertex_;
-    
-  };
-
-  /** This exception class is used to notify that a graph operation cannot be performed
-   */
-  class CannotPerformOperation : public std::logic_error {
-  public:
-    CannotPerformOperation(const std::string& msg) :
-      logic_error(msg) {}
-    ~CannotPerformOperation() throw() {}
-  };
 
   /** DirectedGraph is an implementation of a directed graph
       composed of vertices represented by DGVertex objects. The objects

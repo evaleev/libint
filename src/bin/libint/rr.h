@@ -325,12 +325,20 @@ namespace libint2 {
         Thus, arcs are owned by their PARENTS.
       */
     void add_exit_arc(const SafePtr<DGArc>&);
-    /** del_exit_arc(arc) removes arc c (from this and corresponding child)
+    /** del_exit_arc(arc) removes arc c (from this and corresponding child).
+        NOTE: This function is virtual because for some classes order of exit arcs
+        matters (such as noncommutative AlgebraicOperator). Thus it may not be safe
+        to use del_exit_arc() to replace an arc. replace_exit_arc() should be used
+        in such instances.
       */
-    void del_exit_arc(const SafePtr<DGArc>& c);
-    /** del_exit_arcs() removes all exit arcs from this and corresponding children vertices
+    virtual void del_exit_arc(const SafePtr<DGArc>& c);
+    /** del_exit_arcs() removes all exit arcs from this and corresponding children vertices.
+        See documentation for del_exit_arc().
       */
-    void del_exit_arcs();
+    virtual void del_exit_arcs();
+    /** replace_exit_arc() replaces A with B. See documentation for del_exit_arc().
+     */
+    virtual void replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B);
     /// returns the number of parents
     const unsigned int num_entry_arcs() const;
     /// returns ptr to i-th parent
@@ -418,6 +426,12 @@ namespace libint2 {
     /// Resets the vertex, releasing all arcs
     void reset();
 
+  protected:
+    /// ArcSetType is a container used to maintain entry and exit arcs
+    typedef vector< SafePtr<DGArc> > ArcSetType;
+    /// Arcs leaving this DGVertex. Derived classes may need direct access to exit arcs.
+    ArcSetType children_;
+
   private:
     /// label for the vertex within a graph
     SafePtr<std::string> graph_label_;    
@@ -429,10 +443,8 @@ namespace libint2 {
     /// Address on the stack
     SafePtr<Address> address_;
     
-    /// Arcs leaving this DGVertex
-    vector< SafePtr<DGArc> > children_;
     /// We also need info about Arcs entering this DGVertex
-    vector< SafePtr<DGArc> > parents_;
+    ArcSetType parents_;
 
     // Whether this is a "target" vertex, i.e. the target of a calculation
     bool target_;

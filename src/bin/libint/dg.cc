@@ -67,7 +67,7 @@ DGVertex::del_exit_arc(const SafePtr<DGArc>& arc)
       throw std::runtime_error("DGVertex::del_exit_arc() -- arc does not exist");
   }
   else
-    throw CannotAddArc("DGVertex::del_entry_arc() -- cannot add/remove arcs anymore");
+    throw CannotAddArc("DGVertex::del_exit_arc() -- cannot add/remove arcs anymore");
 }
 
 void
@@ -82,7 +82,18 @@ DGVertex::del_exit_arcs()
     children_.resize(0);
   }
   else
-    throw CannotAddArc("DGVertex::del_entry_arc() -- cannot add/remove arcs anymore");
+    throw CannotAddArc("DGVertex::del_exit_arcs() -- cannot add/remove arcs anymore");
+}
+
+void
+DGVertex::replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B)
+{
+  if (can_add_arcs_) {
+    del_exit_arc(A);
+    add_exit_arc(B);
+  }
+  else
+    throw CannotAddArc("DGVertex::replace_exit_arc() -- cannot add/remove arcs anymore");
 }
 
 void
@@ -368,7 +379,7 @@ void
 DirectedGraph::print_to_dot(bool symbols, std::ostream& os) const
 {
   os << "digraph G {" << endl
-     << "  size = \"11,8.5\"" << endl;
+     << "  size = \"8,8\"" << endl;
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
     os << "  " << vertex->graph_label()
@@ -479,9 +490,9 @@ void
 DirectedGraph::optimize_rr_out()
 {
   replace_rr_with_expr();
-  remove_trivial_arithmetics();
-  handle_trivial_nodes();
-  remove_disconnected_vertices();
+  //remove_trivial_arithmetics();
+  //handle_trivial_nodes();
+  //remove_disconnected_vertices();
 }
 
 // Replace recurrence relations with expressions
@@ -679,9 +690,8 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
   // Reconnect each of v1's entry arcs to v2
   for(arcvec::iterator i=v1_entry.begin(); i != v1_entry.end(); i++) {
     SafePtr<DGVertex> parent = (*i)->orig();
-    parent->del_exit_arc(*i);
     SafePtr<DGArcDirect> new_arc(new DGArcDirect(parent,v2));
-    parent->add_exit_arc(new_arc);
+    parent->replace_exit_arc(*i,new_arc);
   }
 }
 
@@ -837,6 +847,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
       typedef AlgebraicOperator<DGVertex> oper;
       SafePtr<oper> ptr_cast = dynamic_pointer_cast<oper,DGVertex>(vertex);
       if (ptr_cast) {
+        cerr << vertex->description() << endl;
         vertex->set_symbol(context->unique_name<EntityTypes::FP>());
         continue;
       }
@@ -883,11 +894,15 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
     // for every vertex that has a defined symbol, hence must be defined in code
     if (current_vertex->symbol_set()) {
 
+      cerr << current_vertex->description() << endl;
+      cerr.flush();
+
       // print algebraic expression
       {
         typedef AlgebraicOperator<DGVertex> oper_type;
         SafePtr<oper_type> oper_ptr = dynamic_pointer_cast<oper_type,DGVertex>(current_vertex);
         if (oper_ptr) {
+
           // Type declaration
           os << context->type_name<double>() << " ";
           
