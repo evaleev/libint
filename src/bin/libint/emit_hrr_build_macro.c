@@ -33,6 +33,7 @@ int emit_hrr_build_macro()
   int ld, lc, ld_max;
   int curr_count,curr_subfunction;
   int num_subfunctions, subbatch_length;
+  int FLOP_counter;
   int f;
   static int io[] = {1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153};
   static const char am_letter[] = "0pdfghiklmnoqrtuvwxyz";
@@ -92,6 +93,8 @@ int emit_hrr_build_macro()
       i1_step = (am_in[0]+1)*(am_in[0]+2)*nl/2;
       fprintf(code,"  for(ab=0;ab<ab_num;ab++) {\\\n");
 
+      FLOP_counter = 0;
+
       for(p = 0; p <= am_in[0]; p++){
 	am[0][0] = am_in[0] - p;
 	for(q = 0; q <= p; q++){
@@ -123,6 +126,7 @@ int emit_hrr_build_macro()
 	      am_in[1] += 1;
 	      
 	      fprintf(code, "    *(target++) = i0[%d] + CD%d*i1[%d];\\\n",t0,xyz,t1);
+              FLOP_counter += 2;
 
 	      curr_count++;
 	    }
@@ -132,6 +136,7 @@ int emit_hrr_build_macro()
       fprintf(code,"    i0 += %d;\\\n    i1 += %d;\\\n",i0_step,i1_step);
       fprintf(code,"  }\\\n}\n");
       fprintf(code,"\n#endif\n"); /* end of #ifndef _libint_.... */
+      fprintf(code,"/* Total number of FLOPs = %d * ab_num */\n",FLOP_counter);
       fclose(code);
       printf("Done with %s\n",code_name);
       
@@ -163,6 +168,7 @@ int emit_hrr_build_macro()
       fprintf(code,"  REALTYPE *target = (vp);\\\n\\\n");
 
       nj = (lb*(lb+1))/2;
+      FLOP_counter = 0;
 
       for(p = 0; p <= am_in[0]; p++){
 	am[0][0] = am_in[0] - p;
@@ -205,6 +211,7 @@ int emit_hrr_build_macro()
 
 	      fprintf(code,"  for(cd=0;cd<cd_num;cd++)\\\n");
 	      fprintf(code,"    *(target++) = *(i0++) + AB%d*(*(i1++));\\\n",xyz);
+              FLOP_counter += 2;
 
 	      curr_count++;
 	    }
@@ -213,6 +220,7 @@ int emit_hrr_build_macro()
       }
       fprintf(code,"}\n");
       fprintf(code,"\n#endif\n"); /* end of #ifndef _libint_.... */
+      fprintf(code,"/* Total number of FLOPs = %d * cd_num */\n",FLOP_counter);
       fclose(code);
       printf("Done with %s\n",code_name);
     }

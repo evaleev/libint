@@ -34,6 +34,7 @@ int emit_hrr_build()
   int ld, lc, ld_max;
   int curr_count,curr_subfunction;
   int num_subfunctions, subbatch_length;
+  int FLOP_counter;
   int f;
   static int io[] = {1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153};
   static const char am_letter[] = "0pdfghiklmnoqrtuvwxyz";
@@ -134,6 +135,8 @@ int emit_hrr_build()
 	fprintf(code,"  const REALTYPE CD2 = CD[2];\n\n");
       }
 
+      FLOP_counter = 0;
+
       for(p = 0; p <= am_in[0]; p++){
 	am[0][0] = am_in[0] - p;
 	for(q = 0; q <= p; q++){
@@ -165,6 +168,7 @@ int emit_hrr_build()
 	      am_in[1] += 1;
 	      
 	      fprintf(code, "    *(vp++) = I0[%d] + CD%d*I1[%d];\n",t0,xyz,t1);
+              FLOP_counter += 2;
 
 	      curr_count++;
 	      if (split == 1 && curr_count == subbatch_length) {
@@ -188,6 +192,7 @@ int emit_hrr_build()
       else {
 	fprintf(code,"  return vp;\n}\n");
       }
+      fprintf(code,"/* Total number of FLOPs = %d * ab_num */\n",FLOP_counter);
       fclose(code);
       printf("Done with %s\n",code_name);
       
@@ -274,6 +279,7 @@ int emit_hrr_build()
       }
       
       nj = (lb*(lb+1))/2;
+      FLOP_counter = 0;
 
       for(p = 0; p <= am_in[0]; p++){
 	am[0][0] = am_in[0] - p;
@@ -316,6 +322,7 @@ int emit_hrr_build()
 
 	      fprintf(code,"  for(cd=0;cd<cd_num;cd++)\n");
 	      fprintf(code,"    *(vp++) = *(i0++) + AB%d*(*(i1++));\n",xyz);
+              FLOP_counter += 2;
 
 	      curr_count++;
 	      if (split == 1 && curr_count == subbatch_length) {
@@ -338,6 +345,7 @@ int emit_hrr_build()
 	fprintf(code,"  return vp;\n");
       }
       fprintf(code,"}\n");
+      fprintf(code,"/* Total number of FLOPs = %d * cd_num */\n",FLOP_counter);
       fclose(code);
       printf("Done with %s\n",code_name);
     }

@@ -38,6 +38,7 @@ int emit_vrr_build_macro()
   int k1max, k2max, k3max;
   int split,num_subfunctions,subbatch_length;
   int curr_count,curr_subfunction;
+  int FLOP_counter;
   static int io[] = {0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153};
   static char *k4[] = {"lpoz","lpon"};
   const char am_letter[] = "0pdfghiklmnoqrtuvwxyz";
@@ -131,6 +132,8 @@ int emit_vrr_build_macro()
       define_localv(a,foo,k1max,k2max,k3max,code);
       fprintf(code,"\\\n");
 
+      FLOP_counter = 0;
+
       for(i = 0; i <= am_in[0]; i++){
 	am[0][0] = am_in[0] - i;
 	for(j = 0; j <= i; j++){
@@ -153,6 +156,7 @@ int emit_vrr_build_macro()
 	      t2 = hash(am,am_in);
 	      fprintf(code, "*(target++) = U%d%d*i0[%d] + U%d%d*i1[%d]",
 		      a*2, b, t2, foo, b , t2); 
+              FLOP_counter += 3;
 	      if(am[a][b]){
 		am[a][b] = am[a][b] - 1;
 		am_in[a] = am_in[a] - 1;
@@ -163,6 +167,7 @@ int emit_vrr_build_macro()
 		max1 = (max1>am[a][b]+1) ? max1 : am[a][b]+1;
 		am[a][b] = am[a][b] + 1;
 		am_in[a] = am_in[a] + 1;
+                FLOP_counter += 4;
 	      }
 	      if(am[a^1][b]){
 		am[a^1][b] = am[a^1][b] - 1;
@@ -172,6 +177,7 @@ int emit_vrr_build_macro()
 		max2 = (max2>am[a^1][b]+1) ? max2 : am[a^1][b]+1;
 		am[a^1][b] = am[a^1][b] + 1;
 		am_in[a^1] = am_in[a^1] + 1;
+                FLOP_counter += 2;
 	      }
 	      fprintf(code, ";\\\n");
 	      am[a][b] = am[a][b] + 1;
@@ -185,6 +191,7 @@ int emit_vrr_build_macro()
       }
       fprintf(code,"\\\n}\n");
       fprintf(code,"\n#endif\n"); /* end of #ifndef _libint_.... */
+      fprintf(code,"/* Total number of FLOPs = %d */\n",FLOP_counter);
       fclose(code);
       printf("Done with %s\n",code_name);
     }
