@@ -24,11 +24,14 @@ $(LIBTARGET): $(LIBOBJ)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ)
 	$(RANLIB) $@
 
+%.eps: %.ps
+	ps2epsi $^ $@
+
 %.pdf: %.ps
 	ps2pdf13 $^
 
 %.ps: %.dot
-	dot -Tps2 -o $@ $^
+	dot -Tps -o $@ $^
 
 graph.dot: test
 	./$^
