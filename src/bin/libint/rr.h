@@ -41,66 +41,6 @@ namespace libint2 {
 
   };
 
-  template<typename Q> class QuantumSet {
-
-    Q quanta_;
-
-  public:
-    QuantumSet(Q quanta);
-    ~QuantumSet();
-
-    /// Increment quantum number i
-    void inc_quantum(unsigned int i) { quanta_.inc(i); };
-    /// Decrement quantum number i
-    void dec_quantum(unsigned int i) { quanta_.dec(i); };
-
-  };
-
-  template<typename T, unsigned int N> class QuantumNumbers {
-    T qn_[N];
-
-  public:
-    QuantumNumbers(T qn[N]);
-    ~QuantumNumbers();
-
-    /// Increment quantum number i
-    void inc(unsigned int i) { ++qn_[i]; };
-    /// Decrement quantum number i
-    void dec(unsigned int i) {
-      if (qn_[i] == T(0))
-        throw std::runtime_error("QuantumNumber::dec -- quantum number already zero");
-      --qn_[i];
-    };
-  };
-
-  template<typename Q>
-    QuantumSet<Q>::QuantumSet(Q quanta) :
-    quanta_(quanta)
-  {
-  };
-
-  template<typename Q>
-    QuantumSet<Q>::~QuantumSet()
-  {
-  };
-
-  template<typename T, unsigned int N>
-    QuantumNumbers<T,N>::QuantumNumbers(T qn[N])
-  {
-      for(int i=0; i<N; i++) qn_[i] = qn[i];
-  };
-
-  template<typename T, unsigned int N>
-    QuantumNumbers<T,N>::~QuantumNumbers()
-  {
-  };
-
-  typedef QuantumNumbers<unsigned int, 1> ShellQuantumNumbers;
-  typedef QuantumNumbers<unsigned int, 3> CartGaussQuantumNumbers;
-  typedef QuantumSet< ShellQuantumNumbers > GaussShell;
-  typedef QuantumSet< CartGaussQuantumNumbers > CartGauss;
-
-
   /** Set of basis functions. Sets must be constructable using
       SafePtr<BFSet> or SafePtr<ConstructablePolymorphically>.
   */
@@ -213,6 +153,9 @@ namespace libint2 {
 
   };
 
+  /** RRTactic describes an object that specifies a tactic of how to apply
+    recurrence relation
+    */
 
   class DGVertex;
   /** Class DGArc describes arcs in a directed graph.
@@ -352,7 +295,7 @@ namespace libint2 {
 
   /** OperSet is the base class for all (sets of) operators.
      OperSet's must be constructable using
-     SafePtr<BFSet> or SafePtr<ConstructablePolymorphically>.
+     SafePtr<OperSet> or SafePtr<ConstructablePolymorphically>.
   */
   class OperSet : public ConstructablePolymorphically {
     public:
@@ -361,7 +304,7 @@ namespace libint2 {
       /// Returns full description of the operator
       virtual const std::string& descr() const =0;
       /// Returns short label for the operator
-      virtual const std::string& id() const =0;
+      virtual const std::string& label() const =0;
 
       /** Returns 1, 0, or -1, if each operator in the set is symmetric, nonsymmetric,
         or antisymmetric with respect to permutation of particles i and j */
@@ -382,22 +325,24 @@ namespace libint2 {
       /// Returns full description of the operator
       const std::string& descr() const;
       /// Returns short label for the operator
-      const std::string& id() const;
+      const std::string& label() const;
+      
+      bool operator==(const Oper&) const;
 
     protected:
       /// The only declared constructor is only useable by derived classes
-      Oper(const std::string& descr, const std::string& id);
+      Oper(const std::string& descr, const std::string& label);
 
     private:
       /// Described name
       const std::string descr_;
       /// short (<20 chars) ID label
-      const std::string id_;
+      const std::string label_;
   };
 
   template <class Props>
-    Oper<Props>::Oper(const std::string& descr, const std::string& id) :
-    OperSet(), descr_(descr), id_(id)
+    Oper<Props>::Oper(const std::string& descr, const std::string& label) :
+    OperSet(), descr_(descr), label_(label)
     {
     }
   
@@ -415,14 +360,22 @@ namespace libint2 {
   
   template <class Props>
     const std::string&
-    Oper<Props>::id() const
+    Oper<Props>::label() const
     {
-      return id_;
+      return label_;
     }
-
+    
+  template <class Props>
+  bool
+    Oper<Props>::operator==(const Oper& a) const
+    {
+      return true;
+    }
+    
   typedef OperatorProperties<2,true> TwoPRep_Props;
   class TwoERep : public Oper<TwoPRep_Props> {
   public:
+    typedef Oper<TwoPRep_Props> parent_type;
     /// TwoERep is not a set
     typedef TwoERep iter_type;
     const unsigned int num_oper() const { return 1; };

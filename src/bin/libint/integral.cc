@@ -1,6 +1,7 @@
 
 #include <stdexcept>
 #include <rr.h>
+#include <integral.h>
 
 using namespace std;
 using namespace libint2;

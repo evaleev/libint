@@ -95,18 +95,21 @@ namespace libint2 {
       }
       
     public:
+    
+    /*
       typedef typename TDPol<T>::obj_type obj_type;
       typedef typename obj_type::iter_type subobj_type;
       
-      static void init_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj)
+      static void init_subobj(const SafePtr<obj_type>& obj, const vector< SafePtr<subobj_type> >& subobj)
       {
         TDPol<T>::init_subobj(obj,subobj);
       }
 
-      static void dealloc_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj)
+      static void dealloc_subobj(const vector< SafePtr<subobj_type> >& subobj)
       {
-        TDPol<T>::dealloc_subobj(obj,subobj);
+        TDPol<T>::dealloc_subobj(subobj);
       }
+     */
       
   };
 

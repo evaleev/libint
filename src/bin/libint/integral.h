@@ -3,6 +3,8 @@
 #include <rr.h>
 #include <typelist.h>
 #include <iter.h>
+#include <quanta.h>
+#include <equiv.h>
 
 #ifndef _libint2_src_bin_libint_integral_h_
 #define _libint2_src_bin_libint_integral_h_
@@ -64,19 +66,22 @@ namespace libint2 {
      BraSetType and KetSetType are types describing sets of functions.
      An example of a class that can be used as BraSetType and KetSetType
      is VectorBraket.
+     AuxQuanta describes auxiliary quantum numbers. AuxQuanta should be derived from QuantumSet.
   */
-  template <class Oper, class BFS, class BraSetType, class KetSetType> class GenIntegralSet :
-    public IntegralSet<BFS>
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta = NullQuantumSet> class GenIntegralSet :
+    public IntegralSet<BFS>, public DGVertex
     {
     public:
       /// GenIntegralSet is a set of these subobjects
       typedef GenIntegralSet this_type;
       /// GenIntegralSet is a set of these subobjects
-      typedef GenIntegralSet<typename Oper::iter_type, BFS, typename BraSetType::iter_type, typename KetSetType::iter_type> iter_type;
+      typedef GenIntegralSet<typename Oper::iter_type, BFS, typename BraSetType::iter_type, typename KetSetType::iter_type, typename AuxQuanta::iter_type> iter_type;
       /// GenIntegralSet is derived from IntegralSet
       typedef IntegralSet<BFS> parent_type;
       /// This is the class that has equiv operation
       typedef parent_type has_equiv_type;
+      /// This type provides comparison operations on pointers to GenIntegralSet
+      typedef PtrEquiv<GenIntegralSet> PtrComp;
     
       /** No constructors are public since this is a singleton-like quantity.
           Instead, access is provided through Instance().
@@ -86,30 +91,40 @@ namespace libint2 {
       virtual ~GenIntegralSet();
 
       /// Returns a pointer to a unique instance, a la Singleton
-      static const SafePtr<GenIntegralSet> Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket);
+      static const SafePtr<GenIntegralSet> Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
       
       /// Equivalence operator
-      virtual bool equiv(SafePtr< IntegralSet<BFS> > const &) const;
-      
+      virtual bool equiv(const SafePtr< this_type >&) const;
+      /// Equivalence operator
+      virtual bool equiv(const SafePtr< parent_type >&) const;
+      /// Equivalence operator
+      virtual bool operator==(const GenIntegralSet&) const;
+      /// Specialization of DGVertex's equiv
+      bool equiv(const SafePtr<DGVertex>&) const;
+      /// Specialization of DGVertex's print
+      virtual void print(std::ostream& os = std::cout) const;
+
       /// Obtain BFsets members
       const SafePtr<BFS> bra(unsigned int p, unsigned int i) const;
       const SafePtr<BFS> ket(unsigned int p, unsigned int i) const;
       
-      /// Obtain the operator
-      const SafePtr<Oper> oper() const;
-
       typedef BraSetType BraType;
       typedef KetSetType KetType;
       typedef Oper OperatorType;
+      typedef AuxQuanta AuxQuantaType;
 
+      /// Obtain the operator
+      const SafePtr<Oper> oper() const;
       /// Obtain const ref to bra
       const BraType& bra() const;
       /// Obtain const ref to bra
       const KetType& ket() const;
+      /// Obtain the auxiliary quanta
+      const SafePtr<AuxQuanta> aux() const;
 
     protected:
       // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
-      GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket);
+      GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
       
       BraSetType bra_;
       KetSetType ket_;
@@ -130,32 +145,34 @@ namespace libint2 {
       
       // The operator needs to be a real object rather than real type to be able to construct a SubIterator, etc.
       SafePtr<Oper> O_;
+      // Same for AuxQuanta
+      SafePtr<AuxQuanta> aux_;
 
     };
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType>
-    vector < SafePtr< GenIntegralSet<Oper,BFS,BraSetType,KetSetType> > > GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::stack_(0);
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    vector < SafePtr< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> > > GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::stack_(0);
   
-  template <class Oper, class BFS, class BraSetType, class KetSetType>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket) :
-    O_(SafePtr<Oper>(new Oper(oper))), bra_(bra), ket_(ket)
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
+    O_(SafePtr<Oper>(new Oper(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux)))
     {
       if (Oper::Properties::np != bra.num_part())
-        throw std::runtime_error("GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::GenIntegralSet(bra,ket) -- number of particles in bra doesn't match that in the operator");
+        throw std::runtime_error("GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in bra doesn't match that in the operator");
       if (Oper::Properties::np != ket.num_part())
-        throw std::runtime_error("GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::GenIntegralSet(bra,ket) -- number of particles in ket doesn't match that in the operator");
+        throw std::runtime_error("GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in ket doesn't match that in the operator");
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::~GenIntegralSet()
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::~GenIntegralSet()
     {
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType>
-    const SafePtr< GenIntegralSet<Oper,BFS,BraSetType,KetSetType> >
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket)
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    const SafePtr< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux)
     {
-      SafePtr<this_type> this_int(new this_type(oper,bra,ket));
+      SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
       int stack_size = stack_.size();
       for(int i=0; i<stack_size; i++) {
         if (this_int->equiv(stack_[i])) {
@@ -167,53 +184,99 @@ namespace libint2 {
       return this_int;
     }
   
-  template <class Oper, class BFS, class BraSetType, class KetSetType>
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const SafePtr<BFS>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::bra(unsigned int p, unsigned int i) const
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::bra(unsigned int p, unsigned int i) const
     {
       return bra_.member(p,i);
     }
     
-  template <class Oper, class BFS, class BraSetType, class KetSetType>
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const SafePtr<BFS>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::ket(unsigned int p, unsigned int i) const
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::ket(unsigned int p, unsigned int i) const
     {
       return ket_.member(p,i);
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType>
-    const typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::BraType&
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::bra() const
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    const typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::BraType&
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::bra() const
     {
       return bra_;
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType>
-    const typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::KetType&
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::ket() const
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    const typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::KetType&
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::ket() const
     {
       return ket_;
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType>
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const SafePtr<Oper>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::oper() const
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::oper() const
     {
       return O_;
     }
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType>
-    bool
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::equiv(SafePtr< IntegralSet<BFS> > const & a) const
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    const SafePtr<AuxQuanta>
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::aux() const
     {
-      SafePtr<this_type> a_cast = dynamic_pointer_cast< this_type,IntegralSet<BFS> >(a);
-      if (a_cast == 0)
-        assert(false);
-      bool bra_equiv = bra_.equiv(a_cast->bra_);
-      bool ket_equiv = ket_.equiv(a_cast->ket_);
+      return aux_;
+    }
+
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    bool
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::equiv(SafePtr< IntegralSet<BFS> > const & a) const
+    {
+      return PtrComp::equiv(this,a);
+    }
+
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    bool
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::equiv(SafePtr< DGVertex > const & a) const
+    {
+      return PtrComp::equiv(this,a);
+    }
+  
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    bool
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::equiv(SafePtr< this_type > const & a) const
+    {
+      return PtrComp::equiv(this,a);
+    }
+
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    bool
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::operator==(const this_type& a) const
+    {
+      bool oper_equiv = PtrEquiv<Oper>::equiv(O_,a.O_);
+      bool bra_equiv = bra_.equiv(a.bra_);
+      bool ket_equiv = ket_.equiv(a.ket_);
+      bool aux_equiv = PtrEquiv<AuxQuanta>::equiv(aux_,a.aux_);
       return bra_equiv && ket_equiv;
     }
 
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    void
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::print(std::ostream& os) const
+    {
+      os << "GenIntegralSet: < ";
+      for(int p=0; p<Oper::Properties::np; p++) {
+        unsigned int nbra = bra_.num_members(p);
+        for(unsigned int i=0; i<nbra; i++)
+          os << bra_.member(p,i)->label() << "(" << p << ") ";
+      }
+      os << "| " << O_->label() << " | ";
+      for(int p=0; p<Oper::Properties::np; p++) {
+        unsigned int nket = ket_.num_members(p);
+        for(unsigned int i=0; i<nket; i++)
+          os << ket_.member(p,i)->label() << "(" << p << ") ";
+        os << "> ^ { " << aux_->label() << " }" << endl;
+      }
+    }
+  
   /** VectorBraket is a std::vector-based type that can be used as a BraSetType or a KetSetType parameter
       to construct an instance of GenIntegralSet
   */
@@ -384,18 +447,18 @@ namespace libint2 {
      from which BFS derives.
   */
   template <class BFS> class TwoPRep_11_11 :
-    public GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS> >,
-    public DGVertex
+    public GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, QuantumNumbers<unsigned int,1> >
     {
     public:
       typedef VectorBraket<BFS> BraType;
       typedef VectorBraket<BFS> KetType;
+      typedef QuantumNumbers<unsigned int,1> AuxIndexType;
       /// GenIntegralSet is a set of these subobjects
       typedef TwoPRep_11_11 this_type;
       /// TwoPRep_11_11 is a set of these subobjects
       typedef TwoPRep_11_11<typename BFS::iter_type> iter_type;
       /// This is the immediate parent
-      typedef GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS> > parent_type;
+      typedef GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, AuxIndexType > parent_type;
       /// This is the base parent which declares an equiv operation
       typedef typename parent_type::has_equiv_type has_equiv_type;
 
@@ -404,26 +467,18 @@ namespace libint2 {
       */
       static const SafePtr<TwoPRep_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, unsigned int m);
       /// Returns a pointer to a unique instance, a la Singleton
-      static const SafePtr<TwoPRep_11_11> Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, unsigned int m);
+      static const SafePtr<TwoPRep_11_11> Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
       
-      unsigned int m() const { return m_; };
+      unsigned int m() const { return parent_type::aux()->elem(0); };
       
-      /// Specialization of DGVertex's equiv
-      bool equiv(const SafePtr<DGVertex>&) const;
-      /// Another equiv
+      /// Comparison function
       bool equiv(const SafePtr<this_type>&) const;
 
       void print(std::ostream& os = std::cout) const;
-      
 
     private:
-      unsigned int m_;  // auxiliary index
-
-      // Default and copy constructors are not allowed
-      TwoPRep_11_11();
-      TwoPRep_11_11(const TwoPRep_11_11&);      
       // This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
-      TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, unsigned int m);
+      TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
 
       /// stack_ of pointers to objects used to check whether an object already exists
       static vector< SafePtr<TwoPRep_11_11> > stack_;
@@ -434,8 +489,8 @@ namespace libint2 {
     vector< SafePtr< TwoPRep_11_11<BFS> > > TwoPRep_11_11<BFS>::stack_(0);
 
   template <class BFS>
-    TwoPRep_11_11<BFS>::TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, unsigned int m) :
-    GenIntegralSet<TwoERep, IncableBFSet, BraType, KetType>(TwoERep(),bra, ket), DGVertex(), m_(m)
+    TwoPRep_11_11<BFS>::TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket,  const AuxIndexType& aux) :
+    GenIntegralSet<TwoERep, IncableBFSet, BraType, KetType, AuxIndexType>(TwoERep(),bra, ket, aux)
     {
       if (bra.num_members(0) != 1)
         throw std::runtime_error("TwoPRep_11_11<BFS>::TwoPRep_11_11(bra,ket) -- number of BFSs in bra for particle 0 must be 1");
@@ -449,9 +504,9 @@ namespace libint2 {
 
   template <class BFS>
     const SafePtr< TwoPRep_11_11<BFS> >
-    TwoPRep_11_11<BFS>::Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, unsigned int m)
+    TwoPRep_11_11<BFS>::Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux)
     {
-      SafePtr<TwoPRep_11_11> this_int(new TwoPRep_11_11<BFS>(bra,ket,m));
+      SafePtr<TwoPRep_11_11> this_int(new TwoPRep_11_11<BFS>(bra,ket,aux));
       int stack_size = stack_.size();
       for(int i=0; i<stack_size; i++) {
         if (this_int->equiv(stack_[i])) {
@@ -480,28 +535,16 @@ namespace libint2 {
       vector< vector<BFSPtr> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
       VectorBraket<BFS> bra(vvbra);
       VectorBraket<BFS> ket(vvket);
-      return Instance(bra,ket,m);
+      AuxIndexType aux(vector<unsigned int>(1,m));
+      return Instance(bra,ket,aux);
     }
   
-  template <class BFS>
-    bool
-    TwoPRep_11_11<BFS>::equiv(const SafePtr<DGVertex>& a) const
-    {
-      // check the type first
-      const SafePtr<this_type> a_cast = dynamic_pointer_cast<this_type,DGVertex>(a);
-      if (!a_cast)
-        return false;
-
-      return equiv(a_cast);
-    }
-
   template <class BFS>
     bool
     TwoPRep_11_11<BFS>::equiv(const SafePtr<TwoPRep_11_11<BFS> >& a) const
     {
       const SafePtr<has_equiv_type> a_cast = static_pointer_cast<has_equiv_type,this_type>(a);
-      bool result = parent_type::equiv(a_cast) && (m_ == a->m_);
-      return result;
+      return parent_type::equiv(a_cast);
     }
 
   template <class BFS>
@@ -509,7 +552,7 @@ namespace libint2 {
     TwoPRep_11_11<BFS>::print(std::ostream& os) const
     {
       os << "TwoPRep_11_11: (" << parent_type::bra_.member(0,0)->label() << " " << parent_type::ket_.member(0,0)->label()
-         << " | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m_ <<"}" << endl;
+         << " | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}" << endl;
     };
 
 

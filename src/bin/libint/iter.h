@@ -31,7 +31,8 @@ namespace libint2 {
     virtual SubIterator& operator++() =0;
     /// This is used to check whether next element exists. Returns 1 if it does.
     virtual operator int() const =0;
-    /// Returns current element. Returns SafePtr<ConstructablePolymorphically> -- hence needs a dynamic_cast.
+    /** Returns pointer to current element via a pointer to base. This function can only be
+      be implemented if elements are derived rom ConstructablePolymorphically. */
     virtual const SafePtr<ConstructablePolymorphically> pelem() const =0;
 
   protected:

@@ -54,16 +54,19 @@ int try_main (int argc, char* argv[])
   sh_34[0].push_back(sh_p);
   sh_34[1].push_back(sh_p);
 
+#if 0
   test_typelists();
+#endif
   
   typedef TwoPRep_11_11<CGShell> TwoPRep_sh_11_11;
-  SafePtr<TwoPRep_sh_11_11> pppp_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_s,sh_s,0);
+  SafePtr<TwoPRep_sh_11_11> pppp_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
   pppp_quartet->print(cout);
 
   // Create a DAG for a HRR+VRR case
   DirectedGraph dg_xxxx;
 
   SafePtr<DGVertex> pppp_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(pppp_quartet);
+#if 0
   dg_xxxx.append_target(pppp_ptr);
   dg_xxxx.apply_to_all< HRR_ab_11_TwoPRep_11_sh >();
   dg_xxxx.apply_to_all< HRR_cd_11_TwoPRep_11_sh >();
@@ -75,6 +78,7 @@ int try_main (int argc, char* argv[])
   dg_xxxx.traverse();
   dg_xxxx.debug_print_traversal(cout);
   dg_xxxx.reset();
+#endif
 
   // test iterators
   SafePtr<CGShell> sh_ptr(new CGShell(sh_i));
@@ -99,7 +103,7 @@ int try_main (int argc, char* argv[])
 
 }
 
-
+#if 0
 void
 test_typelists()
 {
@@ -116,4 +120,4 @@ test_typelists()
   CGShell xx_2(xx_1);
   xx_2.inc();
 }
-
+#endif

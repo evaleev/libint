@@ -65,10 +65,10 @@ namespace libint2 {
               iterate over it's bra function sets, then ket function sets
    */
 
-  template <class Oper, class BFS, class BraSetType, class KetSetType>
-    struct StdLibintTDPolicy< GenIntegralSet<Oper,BFS,BraSetType,KetSetType> >
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    struct StdLibintTDPolicy< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >
     {
-      typedef GenIntegralSet<Oper,BFS,BraSetType,KetSetType> obj_type;
+      typedef GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> obj_type;
       typedef typename obj_type::iter_type subobj_type;
       static const unsigned int np = Oper::Properties::np;
 
@@ -83,24 +83,25 @@ namespace libint2 {
         // Obtain subiterators in order
         SubIteratorBase< Oper > oper_siter(obj->oper());
         siters_inord.push_back(&oper_siter);
-        int num_suboper = oper_siter.num_iter();
-        for(int o=0; o<num_suboper; o++) {
-          for(int p=0; p<np; p++) {
-            const unsigned int nbra = obj->bra().num_members(p);
-            bra_siters[p].resize(nbra);
-            for(int i=0; i<nbra; i++) {
-              SubIterator* iter = obj->bra().member_subiter(p,i);
-              siters_inord.push_back(iter);
-              bra_siters[p][i] = iter;
-            }
 
-            const unsigned int nket = obj->ket().num_members(p);
-            ket_siters[p].resize(nket);
-            for(int i=0; i<nket; i++) {
-              SubIterator* iter = obj->ket().member_subiter(p,i);
-              siters_inord.push_back(iter);
-              ket_siters[p][i] = iter;
-            }
+        SubIteratorBase< AuxQuanta > aux_siter(obj->aux());
+        siters_inord.push_back(&aux_siter);
+
+        for(int p=0; p<np; p++) {
+          const unsigned int nbra = obj->bra().num_members(p);
+          bra_siters[p].resize(nbra);
+          for(int i=0; i<nbra; i++) {
+            SubIterator* iter = obj->bra().member_subiter(p,i);
+            siters_inord.push_back(iter);
+            bra_siters[p][i] = iter;
+          }
+
+          const unsigned int nket = obj->ket().num_members(p);
+          ket_siters[p].resize(nket);
+          for(int i=0; i<nket; i++) {
+            SubIterator* iter = obj->ket().member_subiter(p,i);
+            siters_inord.push_back(iter);
+            ket_siters[p][i] = iter;
           }
         }
 
@@ -113,6 +114,7 @@ namespace libint2 {
         while (can_iterate) {
 
           typename Oper::iter_type oper(oper_siter.elem());
+          typename AuxQuanta::iter_type aux(aux_siter.elem());
           
           // Construct and initialize bra
           typename BraSetType::iter_type bra;
@@ -131,7 +133,7 @@ namespace libint2 {
           }
 
           // construct this subobj
-	  SafePtr<subobj_type> curr_subobj_sptr = subobj_type::Instance(oper,bra,ket);
+	  SafePtr<subobj_type> curr_subobj_sptr = subobj_type::Instance(oper,bra,ket,aux);
           subobj.push_back(curr_subobj_sptr);
 
           // update subiterators to refer to the next element
@@ -171,15 +173,13 @@ namespace libint2 {
 
       static void init_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj) {
 
-        const unsigned int m = obj->m();
-
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
         for(gis_siter.init(); gis_siter; ++gis_siter) {
           const SafePtr<typename TwoPRep_11_11<BFS>::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
-          const SafePtr<typename TwoPRep_11_11<BFS>::iter_type> curr_subobj = TwoPRep_11_11<BFS>::iter_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), m);
+          const SafePtr<subobj_type> curr_subobj =
+            subobj_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), *curr_gis_ptr->aux().get());
           subobj.push_back(curr_subobj);
-
         }
       }
 

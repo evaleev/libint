@@ -171,7 +171,7 @@ CGShell::operator==(const CGShell& a) const
 void
 CGShell::dec(unsigned int i)
 {
-  if (i == ) {
+  if (i == 0) {
     if (qn_[0] == 0)
       throw InvalidDecrement("CGShell::dec() -- angular momentum already 0");
     --qn_[0];
