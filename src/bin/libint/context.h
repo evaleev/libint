@@ -14,7 +14,7 @@ namespace libint2 {
     virtual ~CodeContext() {}
 
     /// turn comments on and off (the default is on)
-    void set_comment(bool on);
+    void turn_comments(bool on);
     /// returns true if to print comments
     bool comments_on() const;
 
@@ -23,8 +23,30 @@ namespace libint2 {
 
     /// std_header() returns declarations necessary for every source file
     virtual std::string std_header() const =0;
+    /// std_function_header() returns declarations and definitions necessary for every function
+    virtual std::string std_function_header() const =0;
     /// label_to_name(label) converts label to a name valid within the context of the language
     virtual std::string label_to_name(const std::string& label) const =0;
+    /** declare returns a statement which declares variable named 'name' of
+        type 'type'
+    */
+    virtual std::string declare(const std::string& type,
+                                const std::string& name) const =0;
+    /** assign returns a statement which assigns variable 'value'
+        to variable 'name'
+    */
+    virtual std::string assign(const std::string& name,
+                               const std::string& value) const =0;
+    /** assign_binary_expr returns a statement which assigns binary
+        expression 'left oper right' to variable 'name'
+    */
+    virtual std::string assign_binary_expr(const std::string& name,
+                                           const std::string& left,
+                                           const std::string& oper,
+                                           const std::string& right) const =0;
+    /// converts an address on the stack to its string representation
+    virtual std::string stack_address(const DGVertex::Address& a) const =0;
+
     /// comment(statement) returns commented statement
     virtual std::string comment(const std::string& statement) const =0;
     /// open a code block
@@ -81,13 +103,29 @@ namespace libint2 {
   */
   class CppCodeContext : public CodeContext {
   public:
-    CppCodeContext();
+    CppCodeContext(bool vectorize = false);
     ~CppCodeContext();
 
     /// Implementation of CodeContext::std_header()
     std::string std_header() const;
+    /// Implementation of CodeContext::std_function_header()
+    std::string std_function_header() const;
     /// Implementation of CodeContext::label_to_name(label)
     std::string label_to_name(const std::string& label) const;
+    /// Implementation of CodeContext::declare()
+    std::string declare(const std::string& type,
+                        const std::string& name) const;
+    /// Implementation of CodeContext::assign()
+    std::string assign(const std::string& name,
+                       const std::string& value) const;
+    /// Implementation of CodeContext::assign_binary_expr()
+    std::string assign_binary_expr(const std::string& name,
+                                   const std::string& left,
+                                   const std::string& oper,
+                                   const std::string& right) const;
+    /// Implementation of CodeContext::stack_address()
+    std::string stack_address(const DGVertex::Address& a) const;
+
     /// Implementation of CodeContext::comment(statement)
     std::string comment(const std::string& statement) const;
     /// Implementation of CodeContext::open_block()
@@ -100,6 +138,8 @@ namespace libint2 {
     std::string value_to_pointer(const std::string& val) const;
 
   private:
+    bool vectorize_;
+
     /// Implementation of CodeContext::unique_fp_name()
     std::string unique_fp_name();
     /// Implementation of CodeContext::unique_int_name()
@@ -110,6 +150,8 @@ namespace libint2 {
     std::string fp_type() const;
     std::string ptr_fp_type() const;
 
+    std::string start_expr() const;
+    std::string end_expr() const;
   };
 
 };

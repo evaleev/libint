@@ -124,8 +124,8 @@ namespace ForbiddenCppCharacters {
   };
 };
 
-CppCodeContext::CppCodeContext() :
-  CodeContext()
+CppCodeContext::CppCodeContext(bool vectorize) :
+  CodeContext(), vectorize_(vectorize)
 {
 }
 
@@ -141,6 +141,16 @@ CppCodeContext::std_header() const
 }
 
 std::string
+CppCodeContext::std_function_header() const
+{
+  ostringstream oss;
+  if(vectorize_) {
+    oss << "const unsigned int veclength = libint->veclength;\n";
+  }
+  return oss.str();
+}
+
+std::string
 CppCodeContext::label_to_name(const std::string& label) const
 {
   std::string str = label;
@@ -149,6 +159,91 @@ CppCodeContext::label_to_name(const std::string& label) const
   }
   return str;
 }
+
+std::string
+CppCodeContext::declare(const std::string& type,
+                        const std::string& name) const
+{
+  ostringstream oss;
+  
+  oss << type << " " << name << end_of_stat() << endl;
+
+  return oss.str();
+}
+
+std::string
+CppCodeContext::assign(const std::string& name,
+                       const std::string& value) const
+{
+  ostringstream oss;
+  
+  oss << start_expr();
+  if (vectorize_) {
+    oss << "(&(" << name << "))[v] = (&(" << value << "))[v]";
+  }
+  else {
+    oss << name << " = " << value;
+  }
+  oss << end_of_stat() << endl;
+  oss << end_expr();
+
+  return oss.str();
+}
+
+std::string
+CppCodeContext::assign_binary_expr(const std::string& name,
+                                   const std::string& left,
+                                   const std::string& oper,
+                                   const std::string& right) const
+{
+  ostringstream oss;
+  
+  oss << start_expr();
+  if (vectorize_) {
+    oss << "(&(" << name << "))[v] = (&(" << left << "))[v] "
+        << oper << " (&(" << right << "))[v]";
+  }
+  else {
+    oss << name << " = " << left << " "
+        << oper << " " << right;
+  }
+  oss << end_of_stat() << endl;
+  oss << end_expr();
+
+  return oss.str();
+}
+
+std::string
+CppCodeContext::start_expr() const
+{
+  if (vectorize_)
+    return "for(int v=0; v<veclength; v++) {\n";
+  else
+    return "";
+}
+
+
+std::string
+CppCodeContext::end_expr() const
+{
+  if (vectorize_)
+    return "}\n";
+  else
+    return "";
+}
+
+
+std::string
+CppCodeContext::stack_address(const DGVertex::Address& a) const
+{
+  ostringstream oss;
+  if (vectorize_)
+    oss << "(" << a << ")*veclength";
+  else
+    oss << a;
+  return oss.str();
+}
+
 
 std::string
 CppCodeContext::comment(const std::string& statement) const
@@ -183,9 +278,14 @@ CppCodeContext::end_of_stat() const
 std::string
 CppCodeContext::value_to_pointer(const std::string& val) const
 {
-  std::string ptr("&(");
-  ptr += val; ptr += ")";
-  return ptr;
+  if (!vectorize_) {
+    std::string ptr("&(");
+    ptr += val; ptr += ")";
+    return ptr;
+  }
+  else {
+    return val;
+  }
 }
 
 std::string
@@ -209,6 +309,12 @@ CppCodeContext::void_type() const { return "void"; }
 std::string
 CppCodeContext::int_type() const { return "int"; }
 std::string
-CppCodeContext::fp_type() const { return "REALTYPE"; }
+CppCodeContext::fp_type() const
+{
+  if (!vectorize_)
+    return "REALTYPE";
+  else
+    return ptr_fp_type();
+}
 std::string
 CppCodeContext::ptr_fp_type() const { return "REALTYPE*"; }
