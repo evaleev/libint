@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <traits_gen.h>
 
 #ifndef _libint2_src_bin_libint_iter_h_
 #define _libint2_src_bin_libint_iter_h_
@@ -38,15 +39,7 @@ namespace libint2 {
   private:
     SubIterator operator++(int);
   };
-
-  /** StdLibintTraits<T> provides traits of class T
-  */
-  template < class T>
-    struct StdLibintTraits {
-      static void init_subobj(const T* cgshell, vector<const typename T::iter_type*>& cgfs);
-      static void dealloc_subobj(vector<const typename T::iter_type*>& cgfs);
-    };
-
+  
   /** SubIteratorBase<T> provides a base class for a sub-iterator class for T. It iterates through
       T as if it were a set of some data of type T::iter_type. Traits of class T (ordering of
       T::iter_type, etc.) are provided by Tr.

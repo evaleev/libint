@@ -10,6 +10,39 @@ using namespace std;
 
 namespace libint2 {
 
+  /**
+    Definition of a generic trait is provided in traits_gen.h
+  */
+
+  //
+  // StdLibintTraits<CGShell>
+  //
+  template <>
+  void
+  StdLibintTraits<CGShell>::init_subobj(const CGShell* cgshell, vector<const CGF*>& cgfs)
+  {
+    unsigned int am = cgshell->qn();
+    unsigned int qn[3];
+    for(unsigned int i=0; i<=am; i++) {
+      qn[0] = am - i;
+      for(unsigned int j=0; j<=i; j++) {
+        qn[1] = i - j;
+        qn[2] = j;
+
+        cgfs.push_back(new CGF(qn));
+      }
+    }
+  }
+
+  template <>
+  void
+  StdLibintTraits<CGShell>::dealloc_subobj(vector<const CGF*>& subobj)
+  {
+    int nelem = subobj.size();
+    for(int i=0; i<nelem; i++)
+      subobj[i]->~CGF();
+  }
+
   template <class Oper, class BFS, class BraSetType, class KetSetType>
     struct StdLibintTraits< GenIntegralSet<Oper,BFS,BraSetType,KetSetType> >
     {
@@ -20,10 +53,10 @@ namespace libint2 {
       /**
         Order subobjects by iterating over BFS in BraSetType and KetSetType.
         Order of iteration:
-          for each particle
-            iterate over it's bra function sets, then ket function sets
+          iterate over operators
+            iterate over particles
+              iterate over it's bra function sets, then ket function sets
         
-        NOTE TO SELF : implement subiteration over Oper::iter_type
         */
       static void init_subobj(const obj_type* obj, vector<const subobj_type*>& subobj) {
         
@@ -34,21 +67,26 @@ namespace libint2 {
         ket_siters.resize(np);
 
         // Obtain subiterators in order
-        for(int p=0; p<np; p++) {
-          const unsigned int nbra = obj->bra().num_members(p);
-          bra_siters[p].resize(nbra);
-          for(int i=0; i<nbra; i++) {
-            SubIterator* iter = obj->bra().member_subiter(p,i);
-            siters_inord.push_back(iter);
-            bra_siters[p][i] = iter;
-          }
+        SubIteratorBase< Oper > oper_siter(&obj->oper());
+        siters_inord.push_back(&oper_siter);
+        int num_suboper = oper_siter.num_iter();
+        for(int o=0; o<num_suboper; o++) {
+          for(int p=0; p<np; p++) {
+            const unsigned int nbra = obj->bra().num_members(p);
+            bra_siters[p].resize(nbra);
+            for(int i=0; i<nbra; i++) {
+              SubIterator* iter = obj->bra().member_subiter(p,i);
+              siters_inord.push_back(iter);
+              bra_siters[p][i] = iter;
+            }
 
-          const unsigned int nket = obj->ket().num_members(p);
-          ket_siters[p].resize(nket);
-          for(int i=0; i<nket; i++) {
-            SubIterator* iter = obj->ket().member_subiter(p,i);
-            siters_inord.push_back(iter);
-            ket_siters[p][i] = iter;
+            const unsigned int nket = obj->ket().num_members(p);
+            ket_siters[p].resize(nket);
+            for(int i=0; i<nket; i++) {
+              SubIterator* iter = obj->ket().member_subiter(p,i);
+              siters_inord.push_back(iter);
+              ket_siters[p][i] = iter;
+            }
           }
         }
 
@@ -59,6 +97,8 @@ namespace libint2 {
         // Now iterate over contents of each subiterator
         bool can_iterate = true;
         while (can_iterate) {
+
+          typename Oper::iter_type oper(oper_siter.elem());
           
           // Construct and initialize bra
           typename BraSetType::iter_type bra;
@@ -77,7 +117,7 @@ namespace libint2 {
           }
 
           // construct this subobj
-          subobj_type* curr_subobj = subobj_type::Instance(bra,ket);
+          subobj_type* curr_subobj = subobj_type::Instance(oper,bra,ket);
           subobj.push_back(curr_subobj);
 
           // update subiterators to refer to the next element

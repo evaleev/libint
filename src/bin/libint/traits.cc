@@ -5,6 +5,9 @@
 using namespace std;
 using namespace libint2;
 
+//
+// StdLibintTraits<CGShell>
+//
 template <>
 void
 StdLibintTraits<CGShell>::init_subobj(const CGShell* cgshell, vector<const CGF*>& cgfs)
@@ -31,6 +34,9 @@ StdLibintTraits<CGShell>::dealloc_subobj(vector<const CGF*>& subobj)
     subobj[i]->~CGF();
 }
 
+//
+// StdLibintTraits<CGF>
+//
 template <>
 void
 StdLibintTraits<CGF>::init_subobj(const CGF* obj, vector<const CGF*>& subobj)
@@ -44,3 +50,20 @@ StdLibintTraits<CGF>::dealloc_subobj(vector<const CGF*>& subobj)
 {
 }
 
+//
+// StdLibintTraits<TwoERep>
+//
+/*
+template <>
+void
+StdLibintTraits<TwoERep>::init_subobj(const TwoERep* obj, vector<const TwoERep*>& subobj)
+{
+  subobj.push_back(obj);
+}
+
+template <>
+void
+StdLibintTraits<TwoERep>::dealloc_subobj(vector<const TwoERep*>& subobj)
+{
+}
+*/

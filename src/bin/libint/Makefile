@@ -2,9 +2,9 @@
 CXX = /usr/local/bin/g++
 CXXFLAGS += -I. -g
 
-test: test.o rr.o dg.o gauss.o oper.o integral.o iter.o traits.o
+test: test.o rr.o dg.o gauss.o oper.o integral.o iter.o
 	$(CXX) -o test $^
 
 clean::
-	-rm -rf test.o rr.o dg.o gauss.o oper.o integral.o iter.o traits.o
+	-rm -rf test.o rr.o dg.o gauss.o oper.o integral.o iter.o
 

@@ -12,6 +12,14 @@ TwoERep::TwoERep() :
 {
 }
 
+TwoERep::TwoERep(const OperSet* oset) :
+  Oper<TwoPRep_Props>("Two-electron repulsion operator","TwoERep")
+{
+  const TwoERep* oset_cast = dynamic_cast<const TwoERep*>(oset);
+  if (oset_cast == 0)
+    throw std::runtime_error("TwoERep::TwoERep(oset) -- oset is a pointer to an incompatible type");
+}
+
 TwoERep::~TwoERep()
 {
 }

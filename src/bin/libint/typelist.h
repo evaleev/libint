@@ -65,11 +65,11 @@ namespace libint2 {
     
 ////////////////////////////////////////////////////////////////////////////////
 // class template IsSameType
-// Return true iff two given types are the same
+// Return true if two given types are the same
 // Invocation: SameType<T, U>::value
 // where:
 // T and U are types
-// Result evaluates to true iff U == T (types equal)
+// Result evaluates to true if U == T (types equal)
 ////////////////////////////////////////////////////////////////////////////////
 
     template <typename T, typename U>
@@ -83,6 +83,17 @@ namespace libint2 {
     {
         enum { value = true };
     };
+
+////////////////////////////////////////////////////////////////////////////////
+// Helper template to prevent compiling is detected a true condition
+////////////////////////////////////////////////////////////////////////////////
+    
+    template <bool cond>
+    struct CompileTimeError;
+    template<> struct CompileTimeError<false> {};
+    
+#define IS_COMPILE_TIME_ERROR(expr) \
+      (CompileTimeError<(expr) == true>())
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helper types Small and Big - guarantee that sizeof(Small) < sizeof(Big)

@@ -74,7 +74,7 @@ namespace libint2 {
       virtual ~GenIntegralSet();
 
       /// Returns a pointer to a unique instance, a la Singleton
-      static GenIntegralSet* Instance(const BraSetType& bra, const KetSetType& ket);
+      static GenIntegralSet* Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket);
       
       /// Equivalence operator
       virtual bool equiv(const IntegralSet<BFS>*) const;
@@ -82,6 +82,9 @@ namespace libint2 {
       /// Obtain BFsets members
       const BFS* bra(unsigned int p, unsigned int i) const;
       const BFS* ket(unsigned int p, unsigned int i) const;
+      
+      /// Obtain the operator
+      const Oper& oper() const;
 
       typedef BraSetType BraType;
       typedef KetSetType KetType;
@@ -94,7 +97,7 @@ namespace libint2 {
 
     protected:
       // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
-      GenIntegralSet(const BraSetType& bra, const KetSetType& ket);
+      GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket);
       
       BraSetType bra_;
       KetSetType ket_;
@@ -112,6 +115,9 @@ namespace libint2 {
 
       // Unique instances of GenIntegralSet are placed here and obtained through Instance()
       static vector < GenIntegralSet* > stack_;
+      
+      // The operator needs to be a real object rather than real type to be able to construct a SubIterator, etc.
+      Oper O_;
 
     };
 
@@ -119,8 +125,8 @@ namespace libint2 {
     vector < GenIntegralSet<Oper,BFS,BraSetType,KetSetType>* > GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::stack_(0);
   
   template <class Oper, class BFS, class BraSetType, class KetSetType>
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::GenIntegralSet(const BraSetType& bra, const KetSetType& ket) :
-    bra_(bra), ket_(ket)
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket) :
+    O_(oper), bra_(bra), ket_(ket)
     {
       if (Oper::Properties::np != bra.num_part())
         throw std::runtime_error("GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::GenIntegralSet(bra,ket) -- number of particles in bra doesn't match that in the operator");
@@ -135,9 +141,9 @@ namespace libint2 {
 
   template <class Oper, class BFS, class BraSetType, class KetSetType>
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType>*
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::Instance(const BraSetType& bra, const KetSetType& ket)
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket)
     {
-      GenIntegralSet<Oper,BFS,BraSetType,KetSetType>* const this_int = new GenIntegralSet<Oper,BFS,BraSetType,KetSetType>(bra,ket);
+      GenIntegralSet<Oper,BFS,BraSetType,KetSetType>* const this_int = new GenIntegralSet<Oper,BFS,BraSetType,KetSetType>(oper,bra,ket);
       int stack_size = stack_.size();
       for(int i=0; i<stack_size; i++) {
         if (this_int->equiv(stack_[i])) {
@@ -176,12 +182,19 @@ namespace libint2 {
     {
       return ket_;
     }
-      
+
+  template <class Oper, class BFS, class BraSetType, class KetSetType>
+    const Oper&
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::oper() const
+    {
+      return O_;
+    }
+
   template <class Oper, class BFS, class BraSetType, class KetSetType>
     bool
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::equiv(const IntegralSet<BFS>* a) const
     {
-      const GenIntegralSet<Oper,BFS,BraSetType,KetSetType>* a_cast = static_cast< const GenIntegralSet<Oper,BFS,BraSetType,KetSetType>* >(a);
+      const GenIntegralSet<Oper,BFS,BraSetType,KetSetType>* a_cast = dynamic_cast< const GenIntegralSet<Oper,BFS,BraSetType,KetSetType>* >(a);
       if (a_cast == 0)
         assert(false);
       bool bra_equiv = bra_.equiv(a_cast->bra_);
@@ -360,7 +373,7 @@ namespace libint2 {
 
   template <class BFS>
     TwoPRep_11_11<BFS>::TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, unsigned int m) :
-    GenIntegralSet<TwoERep, BFSet, BraType, KetType>(bra, ket), DGVertex(), m_(m)
+    GenIntegralSet<TwoERep, BFSet, BraType, KetType>(TwoERep(),bra, ket), DGVertex(), m_(m)
     {
       if (bra.num_members(0) != 1)
         throw std::runtime_error("TwoPRep_11_11<BFS>::TwoPRep_11_11(bra,ket) -- number of BFSs in bra for particle 0 must be 1");

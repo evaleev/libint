@@ -316,9 +316,9 @@ namespace libint2 {
     void reset();
   };
 
-  /** OperatorProperties describes various properties of an operator
+  /** OperatorProperties describes various properties of an operator or operator set
       np -- number of particles
-      multi -- true if multiplicative      
+      multi -- true if multiplicative
     */
   template <unsigned int NP, bool multi>
     class OperatorProperties {
@@ -327,19 +327,30 @@ namespace libint2 {
       static const bool multiplicative = multi;
     };
 
-  template <class Props>
-    class Oper {
-
-      /// Described name
-      const std::string descr_;
-      /// short (<20 chars) ID label
-      const std::string id_;
-
+  /** OperSet is the base class for all (sets of) operators.
+    */
+  class OperSet {
     public:
-      /// For now consider Oper to consist of one Oper
-      typedef Oper iter_type;
-    
-      Oper(const std::string& descr, const std::string& id);
+      virtual ~OperSet() {};
+
+      /// Returns full description of the operator
+      virtual const std::string& descr() const =0;
+      /// Returns short label for the operator
+      virtual const std::string& id() const =0;
+
+      /** Returns 1, 0, or -1, if each operator in the set is symmetric, nonsymmetric,
+        or antisymmetric with respect to permutation of particles i and j */
+      virtual const int psymm(int i, int j) const =0;
+
+      /// Number of operators in the set
+      virtual const unsigned int num_oper() const =0;
+    };
+  
+
+  template <class Props>
+    class Oper : public OperSet {
+    public:
+      typedef Props Properties;      
       virtual ~Oper();
 
       /// Returns full description of the operator
@@ -347,15 +358,20 @@ namespace libint2 {
       /// Returns short label for the operator
       const std::string& id() const;
 
-      /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
-          or antisymmetric with respect to permutation of particles i and j */
-      virtual const int psymm(int i, int j) const =0;
-      typedef Props Properties;
+    protected:
+      /// The only declared constructor is only useable by derived classes
+      Oper(const std::string& descr, const std::string& id);
+
+    private:
+      /// Described name
+      const std::string descr_;
+      /// short (<20 chars) ID label
+      const std::string id_;
   };
 
   template <class Props>
     Oper<Props>::Oper(const std::string& descr, const std::string& id) :
-    descr_(descr), id_(id)
+    OperSet(), descr_(descr), id_(id)
     {
     }
   
@@ -380,19 +396,24 @@ namespace libint2 {
 
   typedef OperatorProperties<2,true> TwoPRep_Props;
   class TwoERep : public Oper<TwoPRep_Props> {
-
-    // symmetry W.R.T. permutation of each pair of particles
-    // 1 -- symmetric, -1 -- antisymmetric, 0 -- nonsymmetric
-    // stored as a lower triangle (diagonal not included)
-    static const char psymm_[Properties::np*(Properties::np-1)/2];
-
   public:
+    /// TwoERep is not a set
+    typedef TwoERep iter_type;
+    const unsigned int num_oper() const { return 1; };
+  
     TwoERep();
+    TwoERep(const OperSet*);
     ~TwoERep();
 
     /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
         or antisymmetric with respect to permutation of particles i and j */
     const int psymm(int i, int j) const;
+
+  private:
+    // symmetry W.R.T. permutation of each pair of particles
+    // 1 -- symmetric, -1 -- antisymmetric, 0 -- nonsymmetric
+    // stored as a lower triangle (diagonal not included)
+    static const char psymm_[Properties::np*(Properties::np-1)/2];
 
   };
 
