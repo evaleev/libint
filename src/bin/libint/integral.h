@@ -405,7 +405,7 @@ namespace libint2 {
         // compare each element
         const int size2 = bfs_[i].size();
         for(int j=0; j<size2; j++)
-          if (!bfs_[i][j]->operator==(*a.bfs_[i][j]))
+          if (!PtrEquiv<BFS>::equiv(bfs_[i][j],a.bfs_[i][j]))
             return false;
       }
       return true;

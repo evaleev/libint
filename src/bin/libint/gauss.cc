@@ -28,11 +28,11 @@ CGF::CGF(const SafePtr<CGF>& source)
     qn_[i] = source->qn_[i];
 }
 
-CGF::CGF(const SafePtr<BFSet>& sptr)
+CGF::CGF(const SafePtr<parent_type>& sptr)
 {
-  const SafePtr<CGF> sptr_cast = dynamic_pointer_cast<CGF,BFSet>(sptr);
+  const SafePtr<CGF> sptr_cast = dynamic_pointer_cast<CGF,parent_type>(sptr);
   if (sptr_cast == 0)
-    throw std::runtime_error("CGF::CGF(const SafePtr<BFSet>& sptr) -- type of sptr is incompatible with CGF");
+    throw std::runtime_error("CGF::CGF(const SafePtr<parent_type>& sptr) -- type of sptr is incompatible with CGF");
 
   for(int i=0; i<3; i++)
     qn_[i] = sptr_cast->qn_[i];
@@ -125,11 +125,11 @@ CGShell::CGShell(const SafePtr<CGShell>& source)
     qn_[i] = source->qn_[i];
 }
 
-CGShell::CGShell(const SafePtr<BFSet>& sptr)
+CGShell::CGShell(const SafePtr<parent_type>& sptr)
 {
-  const SafePtr<CGShell> sptr_cast = dynamic_pointer_cast<CGShell,BFSet>(sptr);
+  const SafePtr<CGShell> sptr_cast = dynamic_pointer_cast<CGShell,parent_type>(sptr);
   if (sptr_cast == 0)
-    throw std::runtime_error("CGShell::CGShell(const SafePtr<BFSet>& sptr) -- type of sptr is incompatible with CGShell");
+    throw std::runtime_error("CGShell::CGShell(const SafePtr<parent_type>& sptr) -- type of sptr is incompatible with CGShell");
 
   for(int i=0; i<1; i++)
     qn_[i] = sptr_cast->qn_[i];

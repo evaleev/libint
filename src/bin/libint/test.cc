@@ -66,7 +66,7 @@ int try_main (int argc, char* argv[])
   DirectedGraph dg_xxxx;
 
   SafePtr<DGVertex> pppp_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(pppp_quartet);
-#if 0
+#if 1
   dg_xxxx.append_target(pppp_ptr);
   dg_xxxx.apply_to_all< HRR_ab_11_TwoPRep_11_sh >();
   dg_xxxx.apply_to_all< HRR_cd_11_TwoPRep_11_sh >();

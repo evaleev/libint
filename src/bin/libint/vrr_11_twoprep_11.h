@@ -15,9 +15,52 @@ using namespace std;
 
 namespace libint2 {
 
+  /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
+  the angular momentum is raised. bool bra specifies whether the angular momentum
+  is raised in bra (true) or ket (false). Class ERI specifies which particular implementation
+  of ERI to use.
+  */
+  template <template <class> class ERI, class BFSet, int part, FunctionPosition where>
+  class VRR_11_TwoPRep_11 : public RecurrenceRelation {
+  public:
+    typedef ERI<BFSet> TargetType;
+    typedef ERI<BFSet> ChildType;
+
+    /**
+      dir specifies which quantum number is incremented.
+      For example, dir can be 0 (x), 1(y), or 2(z) if BFSet is
+      a Cartesian Gaussian.
+     */
+    VRR_11_TwoPRep_11(const SafePtr<TargetType>&, unsigned int dir = 0);
+    ~VRR_11_TwoPRep_11();
+
+    const unsigned int num_children() const { return num_actual_children_; };
+    /// target() returns pointer to the i-th child
+    SafePtr<TargetType> target() { return target_; };
+    /// child(i) returns pointer to the i-th child
+    SafePtr<ChildType> child(unsigned int i);
+
+    const std::string cpp_function_name() {}
+    const std::string cpp_source_name() {}
+    const std::string cpp_header_name() {}
+    std::ostream& cpp_source(std::ostream&) {}
+
+  private:
+    static const unsigned int nchild_ = 5;
+    unsigned int dir_;
+
+    SafePtr<TargetType> target_;
+    SafePtr<ChildType> children_[nchild_];
+
+    unsigned int num_actual_children_;
+
+  };
+
+  
   template <template <class> class ERI, class F, int part, FunctionPosition where>
-    VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr<ERI<F> >& Tint) :
-    target_(Tint)
+    VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr<ERI<F> >& Tint,
+                                                           unsigned int dir) :
+    target_(Tint), dir_(dir)
     {
       target_ = Tint;
 
@@ -51,7 +94,7 @@ namespace libint2 {
 
       // See if a-1 exists
       try {
-        bra_ref->operator[](p_a).dec();
+        bra_ref->operator[](p_a).dec(dir);
       }
       catch (InvalidDecrement) {
         return;
@@ -62,7 +105,7 @@ namespace libint2 {
       // See if a-2 exists
       bool a_minus_2_exists = true;
       try {
-        bra_ref->operator[](p_a).dec();
+        bra_ref->operator[](p_a).dec(dir);
       }
       catch (InvalidDecrement) {
         a_minus_2_exists = false;
@@ -70,12 +113,12 @@ namespace libint2 {
       if (a_minus_2_exists) {
         children_[2] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
         children_[3] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
-        bra_ref->operator[](p_a).inc();
+        bra_ref->operator[](p_a).inc(dir);
         num_actual_children_ += 2;
       }
 
       try {
-        bra_ref->operator[](p_c).dec();
+        bra_ref->operator[](p_c).dec(dir);
       }
       catch (InvalidDecrement) {
         return;

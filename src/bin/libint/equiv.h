@@ -8,16 +8,18 @@ namespace libint2 {
 
   /**
   PtrEquiv<T> provides a set of comparison functions named 'equiv' which take
-  as arguments a mix of regular and smart pointers to T and it's various expected
-  parents.
+  as arguments a mix of references, regular pointers, and smart pointers to T
+  and it's various expected relatives. T must define the type of its parent
+  publicly as 'parent_type'.
   */
   template <class T>
   class PtrEquiv {
-
-    typedef typename T::parent_type P;
   
   public:
 
+    /// A shortcut for T::parent_type
+    typedef typename T::parent_type P;
+    
     static bool equiv(const T& a, const T& b) {
       return a==b;
     }

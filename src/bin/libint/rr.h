@@ -80,17 +80,18 @@ namespace libint2 {
     unsigned int qn_[3];
 
   public:
+    /// As far as SetIterator is concerned, CGF is a set of one CGF
+    typedef CGF iter_type;
+    typedef IncableBFSet parent_type;
+
     /// Default constructor makes an s-type Gaussian
     CGF();
     CGF(unsigned int qn[3]);
     CGF(const CGF&);
     CGF(const SafePtr<CGF>&);
-    CGF(const SafePtr<BFSet>&);
+    CGF(const SafePtr<parent_type>&);
     CGF(const SafePtr<ConstructablePolymorphically>&);
     ~CGF();
-
-    /// As far as SetIterator is concerned, CGF is a set of one CGF
-    typedef CGF iter_type;
 
     /// Return a compact label
     const std::string label() const;
@@ -119,18 +120,19 @@ namespace libint2 {
     unsigned int qn_[1];
 
   public:
+    /// As far as SetIterator is concerned, CGShell is a set of one CGF
+    typedef CGF iter_type;
+    typedef IncableBFSet parent_type;
+
     /// Default constructor creates an s-type shell
     CGShell();
     CGShell(unsigned int qn[1]);
     CGShell(const CGShell&);
     CGShell(const SafePtr<CGShell>&);
-    CGShell(const SafePtr<BFSet>&);
+    CGShell(const SafePtr<parent_type>&);
     CGShell(const SafePtr<ConstructablePolymorphically>&);
     ~CGShell();
     CGShell& operator=(const CGShell&);
-
-    /// As far as SetIterator is concerned, CGShell is a set of one CGF
-    typedef CGF iter_type;
 
     /// Return a compact label
     const std::string label() const;
@@ -406,89 +408,6 @@ namespace libint2 {
     BraToKet=0, KetToBra=1
   } FunctionMovement;
   
-  /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
-      the angular momentum is raised. bool bra specifies whether the angular momentum
-      is raised in bra (true) or ket (false). Class ERI specifies which particular implementation
-      of ERI to use.
-   */
-  template <template <class> class ERI, class BFSet, int part, FunctionPosition where>
-    class VRR_11_TwoPRep_11 : public RecurrenceRelation {
-    public:
-      typedef ERI<BFSet> TargetType;
-      typedef ERI<BFSet> ChildType;
-      
-      VRR_11_TwoPRep_11(const SafePtr<TargetType>&);
-      ~VRR_11_TwoPRep_11();
-      
-      const unsigned int num_children() const { return num_actual_children_; };
-      /// target() returns points to the i-th child
-      SafePtr<TargetType> target() { return target_; };
-      /// child(i) returns points i-th child
-      SafePtr<ChildType> child(unsigned int i);
-      
-      const std::string cpp_function_name() {};
-      const std::string cpp_source_name() {};
-      const std::string cpp_header_name() {};
-      std::ostream& cpp_source(std::ostream&) {};
-      
-    private:
-
-      static const unsigned int nchild_ = 5;
-
-      SafePtr<TargetType> target_;
-      SafePtr<ChildType> children_[nchild_];
-
-      unsigned int num_actual_children_;
-
-  };
-
-  /** A generic Horizontal Recurrence Relation:
-
-      |a b) = |a+1 b-1) + AB |a b-1)
-
-      Int is the integral class. part specifies for which particle
-      the angular momentum is shifted. Function a is assumed to gain quanta,
-      function b loses quanta. loc_a and loc_b specify where
-      functions a and b are located (bra or ket). pos_a and pos_b
-      specify which function to be used (usually pos_a and pos_b are set
-      to 0 to refer to the first function for this particle in this location).
-      
-   */
-  template <template <class> class I, class BFSet, int part,
-    FunctionPosition loc_a, unsigned int pos_a,
-    FunctionPosition loc_b, unsigned int pos_b>
-    class HRR : public RecurrenceRelation {
-
-    public:
-      typedef I<BFSet> TargetType;
-      typedef I<BFSet> ChildType;
-
-      HRR(const SafePtr<TargetType>&);
-      ~HRR();
-
-      const unsigned int num_children() const { return num_actual_children_; };
-      /// target() returns points to the i-th child
-      SafePtr<TargetType> target() { return target_; };
-      /// child(i) returns points i-th child
-      SafePtr<ChildType> child(unsigned int i);
-      
-      const std::string cpp_function_name() {};
-      const std::string cpp_source_name() {};
-      const std::string cpp_header_name() {};
-      std::ostream& cpp_source(std::ostream&) {};
-      
-    private:
-      static const unsigned int nchild_ = 2;
-
-      SafePtr<TargetType> target_;
-      SafePtr<ChildType> children_[nchild_];
-      
-      unsigned int num_actual_children_;
-      
-      void oper_checks() const;
-  };
-
-
 };
 
 #include <vrr_11_twoprep_11.h>
