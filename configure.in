@@ -344,6 +344,9 @@ AC_PROG_CPP
 AC_PROG_CXXCPP
 AC_CHECK_PROG(AR,ar,ar)
 AC_CHECK_PROG(PERL,perl,perl)
+AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin)
+AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin)
+AC_PATH_PROG(BIBTEX,bibtex,,$PATH:/usr/local/bin)
 
 dnl The lack of certain tools is a show stopper
 
@@ -568,5 +571,6 @@ AC_SUBST(ENABLESHARED)
 dnl make Makefiles in object tree
 $PERL $srcdir/bin/objectdir.pl $EXCLUDED_DIRS $srcdir
 
-AC_OUTPUT(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/MakeSuffixRules)
+AC_OUTPUT(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/MakeSuffixRules
+          doc/MakeVars doc/MakeRules doc/MakeSuffixRules)
 

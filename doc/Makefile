@@ -1,11 +1,11 @@
-TOPDIR=.
+TOPDIR=..
 ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
 
 include $(TOPDIR)/Makedirlist
 
-SUBDIRS = src
+SUBDIRS = progman
 
 default::
 	for dir in $(SUBDIRS); \
@@ -17,19 +17,10 @@ ifndef DODEPEND
 DODEPENDOPT = "DODEPEND=no"
 endif
 
-doc::
-	(cd doc && $(MAKE) $(DODEPENDOPT) install) || exit 1;
-
 install::
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install) || exit 1; \
-	  done
-
-install_inc::
-	for dir in $(SUBDIRS); \
-	  do \
-	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install_inc) || exit 1; \
 	  done
 
 install_target::
@@ -42,12 +33,6 @@ clean::
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) clean) || exit 1; \
-	  done
-
-oclean::
-	for dir in $(SUBDIRS); \
-	  do \
-	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) oclean) || exit 1; \
 	  done
 
 distclean::
@@ -64,7 +49,7 @@ targetclean::
 
 realclean::
 	for dir in $(SUBDIRS); \
-	  do \
-	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) realclean) || exit 1; \
-	  done
+          do \
+            (cd $${dir} && $(MAKE) $(DODEPENDOPT) realclean) || exit 1; \
+          done
 
