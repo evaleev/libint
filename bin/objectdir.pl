@@ -52,7 +52,7 @@ else {
 }
 
 open(MAKEDIRLIST,">Makedirlist");
-open(INCDIRLIST,">src/scdirlist.h");
+open(INCDIRLIST,">src/libintdirlist.h");
 
 &dodir("$srcdir",".",$topdir);
 
