@@ -98,19 +98,287 @@ namespace libint2 {
 #endif
 
   template <class O, class BraList, class KetList>
-    class NewIntegral
+    class GenIntegral
     {
     public:
-      NewIntegral(BraList bra, KetList ket) :
-      bra_(bra), ket_(ket)
-      {}
-      virtual ~NewIntegral() {}
+      GenIntegral(BraList bra, KetList ket) :
+        bra_(bra), ket_(ket) {}
+      virtual ~GenIntegral() {}
 
-    private:      
+    private:
       static O O_;
       BraList bra_;
       KetList ket_;
 
+    };
+
+
+  /**
+     This is an abstract base for sets of all types of integrals. Functions can be of any type
+     derived from BasisFunctionSet.
+  */
+  template <class BasisFunctionSet> class IntegralSetIter;
+  template <class BasisFunctionSet> class IntegralSet {
+
+  public:
+    virtual ~IntegralSet() {};
+
+    /// Equivalence operator
+    virtual bool equiv(const IntegralSet*) const =0;
+
+    /// Obtain pointers to ith BasisFunctionSet for particle p in bra
+    virtual const BasisFunctionSet* bra(unsigned int p, unsigned int i) const =0;
+    /// Obtain pointers to ith BasisFunctionSet for particle p in ket
+    virtual const BasisFunctionSet* ket(unsigned int p, unsigned int i) const =0;
+
+  };
+
+  /**
+     GenIntegralSet uses functions derived from BFSet
+  */
+  template <class Oper, class BFS, class BraSetType, class KetSetType> class GenIntegralSet :
+    public IntegralSet<BFS>
+    {
+    public:
+      /** No constructors are public since this is a singleton-like quantity.
+          Instead, access is provided through derived class's Instance().
+      */
+      virtual ~GenIntegralSet();
+      
+      /// Equivalence operator
+      virtual bool equiv(const IntegralSet<BFS>*) const;
+        
+      /// Obtain BFsets
+      const BFS* bra(unsigned int p, unsigned int i) const;
+      const BFS* ket(unsigned int p, unsigned int i) const;
+
+
+    protected:
+      // Basic Integral constructor
+      GenIntegralSet(const BraSetType& bra, const KetSetType& ket);
+      
+      BraSetType bra_;
+      KetSetType ket_;
+
+    private:
+      typedef Oper OperatorType;
+
+      //
+      // All integrals are Singletons by nature, therefore they must be treated as such
+      // 1) No public constructors are provided
+      // 2) protected members are provided to implement Singleton-type functionality
+      //
+      GenIntegralSet();
+      GenIntegralSet(const GenIntegralSet&);
+      // Copy is not permitted
+      GenIntegralSet& operator=(const GenIntegralSet& source);
+
+    };
+
+
+  template <class Oper, class BFS, class BraSetType, class KetSetType>
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::GenIntegralSet(const BraSetType& bra, const KetSetType& ket) :
+    bra_(bra), ket_(ket)
+    {
+      if (Oper::np != bra.num_part())
+        throw std::runtime_error("TwoERep_11_11<BFSet>::TwoERep_11_11(bra,ket) -- number of particles in bra doesn't match that in the operator");
+      if (Oper::np != ket.num_part())
+        throw std::runtime_error("TwoERep_11_11<BFSet>::TwoERep_11_11(bra,ket) -- number of particles in ket doesn't match that in the operator");
+    }
+
+  template <class Oper, class BFS, class BraSetType, class KetSetType>
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::~GenIntegralSet()
+    {
+    }
+
+  template <class Oper, class BFS, class BraSetType, class KetSetType>
+    const BFS*
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::bra(unsigned int p, unsigned int i) const
+    {
+      return bra_.member(p,i);
+    }
+    
+  template <class Oper, class BFS, class BraSetType, class KetSetType>
+    const BFS*
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::ket(unsigned int p, unsigned int i) const
+    {
+      return ket_.member(p,i);
+    }
+    
+  template <class Oper, class BFS, class BraSetType, class KetSetType>
+    bool
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::equiv(const IntegralSet<BFS>* a) const
+    {
+      const GenIntegralSet<Oper,BFS,BraSetType,KetSetType>* a_cast = static_cast< const GenIntegralSet<Oper,BFS,BraSetType,KetSetType>* >(a);
+      if (a_cast == 0)
+        assert(false);
+      bool bra_equiv = bra_.equiv(a_cast->bra_);
+      bool ket_equiv = ket_.equiv(a_cast->ket_);
+      return bra_equiv && ket_equiv;
+    }
+
+  /** VectorBraket is a type that can be used as a BraSetType or a KetSetType parameter
+      in the above templates
+  */
+
+  template <class BFS> class VectorBraket {
+
+  public:
+    typedef vector<BFS> BFSVector;
+    typedef vector< BFSVector > BFSMatrix;
+
+    VectorBraket(const BFSMatrix&);
+    VectorBraket(const VectorBraket&);
+    ~VectorBraket() throw();
+
+    bool equiv(const VectorBraket&) const;
+    /// Returns pointer to the i-th function for particle p
+    const BFS* member(unsigned int p, unsigned int i) const;
+    /// Returns the number of BFS for particle p
+    const unsigned int num_members(unsigned int p) const;
+    /// Returns the number of particles
+    const unsigned int num_part() const;
+
+  private:
+    
+    BFSMatrix bfs_;
+
+  };
+
+  template <class BFS>
+    VectorBraket<BFS>::VectorBraket(const BFSMatrix& bfs) :
+    bfs_(bfs)
+    {
+    }
+
+  template <class BFS>
+    VectorBraket<BFS>::VectorBraket(const VectorBraket& a) :
+    bfs_(a.bfs_)
+    {
+    }
+
+  template <class BFS>
+    VectorBraket<BFS>::~VectorBraket() throw()
+    {
+    }
+
+  template <class BFS>
+    const BFS*
+    VectorBraket<BFS>::member(unsigned int p, unsigned int i) const
+    {
+      return &bfs_.at(p).at(i);
+    }
+
+  template <class BFS>
+    const unsigned int
+    VectorBraket<BFS>::num_members(unsigned int p) const
+    {
+      return bfs_.at(p).size();
+    }
+
+  template <class BFS>
+    const unsigned int
+    VectorBraket<BFS>::num_part() const
+    {
+      return bfs_.size();
+    }
+
+  template <class BFS>
+    bool
+    VectorBraket<BFS>::equiv(const VectorBraket<BFS>& a) const
+    {
+      return bfs_ == a.bfs_;
+    }
+
+  /**
+     Most basis type: TwoERep_11_11
+     has one bfs for each particle in bra and ket
+  */
+  template <class BFS> class TwoERep_11_11 :
+    public GenIntegralSet<TwoERep, BFS, VectorBraket<BFS>, VectorBraket<BFS> >,
+    public DGVertex
+    {
+    public:
+      typedef VectorBraket<BFS> BraType;
+      typedef VectorBraket<BFS> KetType;
+
+      /// Returns a pointer to a unique instance, a la Singleton
+      static TwoERep_11_11* Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, unsigned int m);
+      
+      unsigned int m() const { return m_; };
+      
+      /// Specialization of DGVertex's equiv
+      bool equiv(const DGVertex*) const;
+
+      void print(std::ostream& os = std::cout) const;
+      
+
+    private:
+      unsigned int m_;  // auxiliary index
+
+      // Default and copy constructors are not allowed
+      TwoERep_11_11();
+      TwoERep_11_11(const TwoERep_11_11&);
+      
+      // This constructor is private since all Integral's are Singletons. Use Instance instead.
+      TwoERep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, unsigned int m);
+      // stack_ of pointers to objects used to check whether an object already exists
+      static vector< TwoERep_11_11* > stack_;
+
+    };
+
+  template <class BFS>
+    vector< TwoERep_11_11<BFS>* > TwoERep_11_11<BFS>::stack_(0);
+
+  template <class BFSet>
+    TwoERep_11_11<BFSet>::TwoERep_11_11(const VectorBraket<BFSet>& bra, const VectorBraket<BFSet>& ket, unsigned int m) :
+    GenIntegralSet<TwoERep, BFSet, BraType, KetType>(bra, ket), DGVertex(), m_(m)
+    {
+      if (bra.num_members(0) != 1)
+        throw std::runtime_error("TwoERep_11_11<BFSet>::TwoERep_11_11(bra,ket) -- number of BFSets in bra for particle 0 must be 1");
+      if (bra.num_members(1) != 1)
+        throw std::runtime_error("TwoERep_11_11<BFSet>::TwoERep_11_11(bra,ket) -- number of BFSets in bra for particle 1 must be 1");
+      if (ket.num_members(0) != 1)
+        throw std::runtime_error("TwoERep_11_11<BFSet>::TwoERep_11_11(bra,ket) -- number of BFSets in ket for particle 0 must be 1");
+      if (ket.num_members(1) != 1)
+        throw std::runtime_error("TwoERep_11_11<BFSet>::TwoERep_11_11(bra,ket) -- number of BFSets in ket for particle 1 must be 1");
+    };
+
+  template <class BFSet>
+    TwoERep_11_11<BFSet>*
+    TwoERep_11_11<BFSet>::Instance(const VectorBraket<BFSet>& bra, const VectorBraket<BFSet>& ket, unsigned int m)
+    {
+      TwoERep_11_11* const this_int = new TwoERep_11_11<BFSet>(bra,ket,m);
+      int stack_size = stack_.size();
+      for(int i=0; i<stack_size; i++) {
+        if (this_int->equiv(stack_[i])) {
+          delete this_int;
+          return stack_[i];
+        }
+      }
+      stack_.push_back(this_int);
+      return this_int;
+    };
+
+  template <class BFSet>
+    bool
+    TwoERep_11_11<BFSet>::equiv(const DGVertex* a) const
+    {
+      // check the type first
+      const TwoERep_11_11<BFSet>* a_cast = dynamic_cast< const TwoERep_11_11<BFSet>* >(a);
+      if (!a_cast)
+        return false;
+
+      bool result = GenIntegralSet<TwoERep, BFSet, BraType, KetType>::equiv(a_cast) && (m_ == a_cast->m_);
+      return result;
+    }
+
+  template <class BFSet>
+    void
+    TwoERep_11_11<BFSet>::print(std::ostream& os) const
+    {
+      os << "TwoERep_11_11: (" << bra_.member(0,0)->label() << " " << ket_.member(0,0)->label()
+         << " | " << bra_.member(1,0)->label() << " " << ket_.member(1,0)->label() << ")^{" << m_ <<"}" << endl;
     };
 
 };

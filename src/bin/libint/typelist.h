@@ -231,7 +231,8 @@ namespace libint2 {
       typedef Param ParamType;
       typedef T Head;
       typedef U Tail;
-      /// body is here to be able to create instances of Typelist objects
+
+      /// body_ and tail_ are here to be able to create instances of Typelist objects
       Head head_;
       Tail tail_;
     };

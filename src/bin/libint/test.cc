@@ -9,7 +9,22 @@
 using namespace std;
 using namespace libint2;
 
+static int try_main (int argc, char* argv[]);
+
 int main (int argc, char* argv[])
+{
+
+  try {
+    try_main(argc,argv);
+  }
+  catch(std::exception& a) {
+    cout << endl
+         << "  WARNING! Caught a standard exception:" << endl
+         << "    " << a.what() << endl << endl;
+  }
+}
+
+int try_main (int argc, char* argv[])
 {
 
   unsigned int am[][1] = { {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}};
@@ -52,14 +67,26 @@ int main (int argc, char* argv[])
   two_shells xx;
   typedef PTYPELIST_3( Tag2, CGShell, CGShell, CGShell) three_shells;
   three_shells xxx;
-  typedef NewIntegral<TwoERep,two_shells,two_shells> NewTwoERep_2b2k;
+  typedef GenIntegral<TwoERep,two_shells,two_shells> NewTwoERep_2b2k;
   NewTwoERep_2b2k xxxx(xx,xx);
   
-  ValueAt<two_shells, 1>::ResultType xx_1 = ValueAt<two_shells, 1>::typelist_member(xx);
+  ValueAt<two_shells, 1>::ResultType xx_1 = ValueAt<two_shells,1>::typelist_member(xx);
 
   cout << "Length of my_typelist = " << Length<two_shells>::value << endl;
   CGShell xx_2(xx_1);
   xx_2.inc();
+
+  VectorBraket<CGShell>::BFSMatrix bra_pp;
+  VectorBraket<CGShell>::BFSVector one_p_shell;
+  one_p_shell.push_back(sh_p);
+  bra_pp.push_back(one_p_shell);
+  bra_pp.push_back(one_p_shell);
+  bra_pp.push_back(one_p_shell);
+
+  typedef TwoERep_11_11<CGShell> TwoERep_sh_11_11;
+  VectorBraket<CGShell> vecbra_pp(bra_pp);
+  TwoERep_sh_11_11* pppp_quartet = TwoERep_sh_11_11::Instance(vecbra_pp,vecbra_pp, 1);
+  pppp_quartet->print(cout);
 
 }
 
