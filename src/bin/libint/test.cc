@@ -25,6 +25,7 @@ static void test3();
 static void test4();
 static void test5();
 static void test6();
+static void test7();
 
 int main (int argc, char* argv[])
 {
@@ -73,6 +74,10 @@ int try_main (int argc, char* argv[])
 
 #if 1
   test6();
+#endif
+
+#if 0
+  test7();
 #endif
 
   return 0;
@@ -270,7 +275,7 @@ test6()
   const unsigned int size_to_unroll = 100000;
   SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy(size_to_unroll));
-  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_d,sh_p,sh_f,sh_s,0);
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_d,sh_s,sh_d,sh_s,0);
   cout << xsxs_quartet->description();
   SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
   dg_xxxx3->append_target(xsxs_ptr);
@@ -288,6 +293,45 @@ test6()
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
 
   std::string prefix("test_eri/");
+  std::string decl_filename(prefix + context->label_to_name(xsxs_quartet->label()));  decl_filename += ".h";
+  std::string src_filename(prefix + context->label_to_name(xsxs_quartet->label()));  src_filename += ".cc";
+  std::basic_ofstream<char> declfile(decl_filename.c_str());
+  std::basic_ofstream<char> srcfile(src_filename.c_str());
+  dg_xxxx3->generate_code(context,memman,xsxs_quartet->label(),declfile,srcfile);
+  
+  std::basic_ofstream<char> dotfile2("graph.symb.dot");
+  dg_xxxx3->print_to_dot(true,dotfile2);
+
+  cout << "Max memory used = " << memman->max_memory_used() << endl;
+  dg_xxxx3->reset();
+}
+
+
+void
+test7()
+{
+  const unsigned int size_to_unroll = 100000;
+  SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
+  SafePtr<Strategy> strat(new Strategy(size_to_unroll));
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_d,sh_s,sh_d,sh_s,0);
+  cout << xsxs_quartet->description();
+  SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
+  dg_xxxx3->append_target(xsxs_ptr);
+  dg_xxxx3->apply(strat);
+  dg_xxxx3->optimize_rr_out();
+
+  std::basic_ofstream<char> dotfile("graph.dot");
+  dg_xxxx3->print_to_dot(false,dotfile);
+  cout << "The number of vertices = " << dg_xxxx3->num_vertices() << endl;
+
+  dg_xxxx3->traverse();
+  dg_xxxx3->debug_print_traversal(cout);
+  
+  const bool to_vectorize = true;
+  SafePtr<CodeContext> context(new CppCodeContext(to_vectorize));
+  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+
+  std::string prefix("test_vector_eri/");
   std::string decl_filename(prefix + context->label_to_name(xsxs_quartet->label()));  decl_filename += ".h";
   std::string src_filename(prefix + context->label_to_name(xsxs_quartet->label()));  src_filename += ".cc";
   std::basic_ofstream<char> declfile(decl_filename.c_str());
