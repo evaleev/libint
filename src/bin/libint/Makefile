@@ -1,6 +1,5 @@
 
-CXX = /usr/local/bin/g++
-CXXFLAGS += -I. -g
+CXXFLAGS += -I. -g -I~/src/lib/boost
 
 test: test.o rr.o dg.o gauss.o oper.o integral.o iter.o
 	$(CXX) -o test $^

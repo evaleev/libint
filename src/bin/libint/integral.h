@@ -57,7 +57,12 @@ namespace libint2 {
   };
 
   /**
-     GenIntegralSet uses functions derived from BFS
+     GenIntegralSet is a set of integrals over functions derived from BFS.
+
+     Oper is an operator or a set of operators. Oper must be derived from OperSet.
+     BraSetType and KetSetType are types describing sets of functions.
+     An example of a class that can be used as BraSetType and KetSetType
+     is VectorBraket.
   */
   template <class Oper, class BFS, class BraSetType, class KetSetType> class GenIntegralSet :
     public IntegralSet<BFS>

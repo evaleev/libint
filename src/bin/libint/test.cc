@@ -6,8 +6,9 @@
 #include <typelist.h>
 #include <integral.h>
 #include <iter.h>
-#include <traits.h>
+#include <policy_spec.h>
 #include <intset_to_ints.h>
+#include <smart_ptr.h>
 
 using namespace std;
 using namespace libint2;
@@ -95,18 +96,17 @@ int try_main (int argc, char* argv[])
   for(siter1.init(); siter1; ++siter1)
     siter1.elem()->print(cout);
 
-  const TwoPRep_11_11<CGShell>* obj = pppp_quartet;
-  vector< const TwoPRep_11_11<CGShell>::iter_type* > subobj;
-  SubIteratorBase< TwoPRep_11_11<CGShell> > siter2(obj);
+  SafePtr<TwoPRep_sh_11_11> obj(pppp_quartet);
+  obj->print(cout);
+  SubIteratorBase< TwoPRep_sh_11_11 > siter2(obj.get());
   for(siter2.init(); siter2; ++siter2)
     siter2.elem()->print(cout);
-  //StdLibintTraits< TwoPRep_11_11<CGShell> >::init_subobj(obj, subobj);
 
   // Create a DAG for a shell-quartet-to-ints case
   DirectedGraph dg_xxxx2;
 
   dg_xxxx2.append_target(pppp_quartet);
-  dg_xxxx2.apply_to_all< IntegralSet_to_Integrals<TwoPRep_11_11<CGShell> > >();
+  dg_xxxx2.apply_to_all< IntegralSet_to_Integrals<TwoPRep_sh_11_11 > >();
 
   dg_xxxx2.traverse();
   dg_xxxx2.debug_print_traversal(cout);  

@@ -1,63 +1,56 @@
 
+#include <typelist.h>
+
 #ifndef _libint2_src_bin_libint_policy_h_
 #define _libint2_src_bin_libint_policy_h_
-
-#include <rr.h>
 
 using namespace std;
 
 
 namespace libint2 {
 
-  /** Policy template used to construct a policy which specifies all information
-  about assumptions of the generated code. Among such are orderings of
-  Gaussians within shells, ordering of operators within sets, etc.
-
-  The only parameter so far, CGShellOrder, is a pointer to the function
-  which generates CGFs in the canonical order for a given CGShell.
-
-  The default policy is StdLibintPolicy.
+  /**
   */
-  template <void (*CGShellOrder)(const CGShell*, std::vector< const CGF* >&) >
-  struct Policy {
-    static void cgshell_to_cgfvector(const CGShell* cgshell, std::vector< const CGF* >& cgfs) {
-      CGShellOrder(cgshell, cgfs);
-    }
-  };
+  template <class T, bool exists>
+    struct ExistsDefaultStdLibintTraits;
+  
+  template <class T>
+    struct ExistsDefaultStdLibintTraits<T,true>{
+      typedef T obj_type;
+      typedef typename obj_type::iter_type subobj_type;
 
-  /** StdLibintPolicy describes assumptions about orderings, etc. in Libint version 1.
-
-  The functions in order are produced using the following C++ loop:
-
-  for(int i=0; i<=am; i++) {
-    qn[0] = am - i;
-    for(int j=0; j<=i; j++) {
-      qn[1] = i - j;
-      qn[2] = j;
-    }
-  }
-
-  where am is the angular momentum of the shell and qn[3] are the x, y, and z
-  exponents.
-  */
-  struct StdLibint1Order {
-    static void cgshell_to_cgfs(const CGShell* cgshell, vector<const CGF*>& cgfs)
-    {
-      unsigned int am = cgshell->qn();
-      unsigned int qn[3];
-      for(int i=0; i<=am; i++) {
-        qn[0] = am - i;
-        for(int j=0; j<=i; j++) {
-          qn[1] = i - j;
-          qn[2] = j;
-
-          cgfs.push_back(new CGF(qn));
-        }
+      static void default_init_subobj(const obj_type* obj, vector<const subobj_type*>& subobj)
+      {
+        subobj.push_back(obj);
       }
-    }
-  };
+      static void default_dealloc_subobj(vector<const subobj_type*>& subobj)
+      {
+      }
+    };
+      
+    
+  /** StdLibintPolicy describes assumptions about orderings, etc. as in Libint version 1.
+      StdLibintPolicy<T> describes such assumptions about class T. For many parameters
+      there is no need to define specializations
 
-  typedef Policy<&StdLibint1Order::cgshell_to_cgfs> StdLibintPolicy;
+  */
+
+  template < class T>
+    struct StdLibintTraits {
+      typedef T obj_type;
+      typedef typename obj_type::iter_type subobj_type;
+
+      static void init_subobj(const obj_type* obj, vector<const subobj_type*>& subobj)
+      {
+        // If types are not the same then this function should not be used -- user must provide a specialization
+        ExistsDefaultStdLibintTraits< T, IsSameType<obj_type,subobj_type>::value >::default_init_subobj(obj,subobj);
+      }
+      static void dealloc_subobj(vector<const subobj_type*>& subobj)
+      {
+        // If types are not the same then this function should not be used -- user must provide a specialization
+        ExistsDefaultStdLibintTraits< T, IsSameType<obj_type,subobj_type>::value >::default_dealloc_subobj(subobj);
+      }
+    };
 
 };
 

@@ -1,6 +1,6 @@
 
 #include <vector>
-#include <traits_gen.h>
+#include <policy.h>
 
 #ifndef _libint2_src_bin_libint_iter_h_
 #define _libint2_src_bin_libint_iter_h_

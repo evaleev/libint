@@ -3,20 +3,33 @@
 #include <integral.h>
 #include <iter.h>
 
-#ifndef _libint2_src_bin_libint_traits_h_
-#define _libint2_src_bin_libint_traits_h_
+#ifndef _libint2_src_bin_libint_policyspec_h_
+#define _libint2_src_bin_libint_policyspec_h_
 
 using namespace std;
 
 namespace libint2 {
 
-  /**
-    Definition of a generic trait is provided in traits_gen.h
+  /*
+    Definition of a generic StdLibintPolicy is provided in policy.h
   */
 
-  //
-  // StdLibintTraits<CGShell>
-  //
+  /**
+     StdLibintTraits<CGShell>::init_subobj initializes CGFs in canonical order.
+     The functions in order are produced using the following C++ loop:
+
+     for(int i=0; i<=am; i++) {
+       qn[0] = am - i;
+       for(int j=0; j<=i; j++) {
+         qn[1] = i - j;
+         qn[2] = j;
+       }
+     }
+
+     where am is the angular momentum of the shell and qn[3] are the x, y, and z
+     exponents.
+  */
+  
   template <>
   void
   StdLibintTraits<CGShell>::init_subobj(const CGShell* cgshell, vector<const CGF*>& cgfs)
@@ -43,6 +56,16 @@ namespace libint2 {
       subobj[i]->~CGF();
   }
 
+  /** StdLibintTraits<GenIntegralSet> describes how integral sets are composed
+      of integrals in canonical order.
+
+      Order integrals by iterating over BFS in BraSetType and KetSetType.
+        Order of iteration:
+          iterate over operators
+            iterate over particles
+              iterate over it's bra function sets, then ket function sets
+   */
+
   template <class Oper, class BFS, class BraSetType, class KetSetType>
     struct StdLibintTraits< GenIntegralSet<Oper,BFS,BraSetType,KetSetType> >
     {
@@ -50,14 +73,6 @@ namespace libint2 {
       typedef typename obj_type::iter_type subobj_type;
       static const unsigned int np = Oper::Properties::np;
 
-      /**
-        Order subobjects by iterating over BFS in BraSetType and KetSetType.
-        Order of iteration:
-          iterate over operators
-            iterate over particles
-              iterate over it's bra function sets, then ket function sets
-        
-        */
       static void init_subobj(const obj_type* obj, vector<const subobj_type*>& subobj) {
         
         vector< SubIterator* > siters_inord; // subiterators used to iterate over each set (in the above order)
@@ -144,6 +159,9 @@ namespace libint2 {
       }
     };
   
+
+  /** StdLibintTraits<TwoPRep_11_11> should go away soon.
+  */
 
   template <class BFS>
     struct StdLibintTraits< TwoPRep_11_11<BFS> >
