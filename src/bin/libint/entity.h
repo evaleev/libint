@@ -10,21 +10,16 @@ namespace libint2 {
   /** 
   Entity is a base class for all objects that exist at compile or runtime of the generated code.
   */
-  class Entity :
-  public DGVertex
+  class Entity
   {
     
     public:
     virtual ~Entity() {}
-
-    /// Implementation of DGVertex::size()
-    const unsigned int size() const { return 0; }
-    
     /// Return id string
     std::string id() const { return id_; }
     
     protected:
-    Entity(const std::string& id) : DGVertex(), id_(id) {}
+    Entity(const std::string& id) : id_(id) {}
     
     private:
     /// Short id label
@@ -38,11 +33,12 @@ namespace libint2 {
   */
   template <class T>
     class RTimeEntity :
-    public Entity
+    public Entity,
+    public DGVertex
     {
       public:
       RTimeEntity(const std::string& id) :
-        Entity(id)
+        Entity(id),DGVertex()
         {
         }
 
@@ -50,6 +46,9 @@ namespace libint2 {
         {
         }
 
+      /// Implementation of DGVertex::size()
+      const unsigned int size() const { return 0; }
+    
       /// Implementation of DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const
       {
@@ -75,18 +74,22 @@ namespace libint2 {
   */
   template <class T>
     class CTimeEntity :
-    public Entity
+    public Entity,
+    public DGVertex
     {
 
       public:
       CTimeEntity(const std::string& id, const T& val) :
-        Entity(id), value_(val)
+        Entity(id), DGVertex(), value_(val)
         {
         }
 
       ~CTimeEntity()
         {
         }
+
+      /// Implementation of DGVertex::size()
+      const unsigned int size() const { return 0; }
 
       /// Implementation of DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const
