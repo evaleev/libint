@@ -82,7 +82,7 @@ namespace libint2 {
       catch (InvalidDecrement) {
         return;
       }
-      children_[4] = new TwoERep_2b2k<F>(bra,ket,m);
+      children_[4] = new TwoERep_2b2k<F>(bra,ket,m+1);
       num_actual_children_ += 1;
 
     };

@@ -251,6 +251,9 @@ namespace libint2 {
     /// Returns the number of basis functions in the set (always 1)
     unsigned int num_bf() const { return 1; };
 
+    /// Comparison operator
+    bool operator==(const CGF&) const;
+
   };
 
   /// Cartesian Gaussian Shell
@@ -269,9 +272,11 @@ namespace libint2 {
     /// Returns the number of basis functions in the set
     unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
 
+    /// Comparison operator
+    bool operator==(const CGShell&) const;
+
     /// Implements purely virtual BFSet::dec, may throw InvalidDecrement
     void dec();
-
     /// Implements purely virtual BFSet::inc
     void inc() throw();
 
@@ -331,6 +336,12 @@ namespace libint2 {
     /// We also need info about Arcs entering this DGVertex
     vector<DGArc*> parents_;
 
+    // These members used in traversal algorithms
+    /// Which DGVertex to be computed before this vertex (0, if this is the first vertex)
+    DGVertex* precalc_;
+    /// Which DGVertex to be computed after this vertex (0, if this is the last vertex)
+    DGVertex* postcalc_;
+
     // Whether this is a "target" vertex, i.e. the target of a calculation
     bool target_;
     /// add_entry_arc(arc) adds arc as an arc connecting parents to this vertex
@@ -343,6 +354,8 @@ namespace libint2 {
 
     /// make_a_target() marks this vertex as a target
     void make_a_target();
+    /// is_a_target() returns true if this vertex is a target
+    const bool is_a_target() const { return target_;};
     /// add_exit_arc(arc) adds arc as an arc connecting to children of this vertex
     void add_exit_arc(DGArc*);
 
@@ -350,6 +363,20 @@ namespace libint2 {
         The concrete class must implement this.
     */
     //virtual RecurrenceRelation* apply_rr() =0;
+
+    /** equiv(const DGVertex* aVertex) returns true if this vertex is
+        equivalent to *aVertex.
+    */
+    virtual bool equiv(const DGVertex*) const =0;
+
+    /// Returns pointer to vertex to be computed before this vertex, 0 if this is the first vertex
+    DGVertex* precalc() const { return precalc_; };
+    /// Returns pointer to vertex to be computed after this vertex, 0 if this is the last vertex
+    DGVertex* postcalc() const { return postcalc_; };
+    /// Sets precalc
+    void set_precalc(DGVertex* precalc) { precalc_ = precalc; };
+    /// Sets postcalc
+    void set_postcalc(DGVertex* postcalc) { postcalc_ = postcalc; };
 
   };
 
@@ -437,6 +464,9 @@ namespace libint2 {
     /// Copy is permitted
     Integral& operator=(const Integral& source);
 
+    /// Equivalence operator
+    virtual bool equiv(const Integral*) const;
+
     /// Obtain BFsets
     const BFSet& bra(unsigned int particle, unsigned int i) const;
     const BFSet& ket(unsigned int particle, unsigned int i) const;
@@ -468,6 +498,19 @@ namespace libint2 {
       }
     };
 
+  template <class Oper, class BFSet>
+    bool
+    Integral<Oper, BFSet>::equiv(const Integral<Oper,BFSet>* a) const
+    {
+      bool equiv = true;
+      for(int p=0; p<Oper::np; p++) {
+        equiv = (equiv && bra_[p] == a->bra_[p]);
+        equiv = (equiv && ket_[p] == a->ket_[p]);
+      }
+      //if (equiv)
+      //  cout << "Integral<Oper, BFSet>::equiv() returned true" << endl;
+      return equiv;
+    }
 
   template <class Oper, class BFSet>
     const BFSet&
@@ -494,6 +537,9 @@ namespace libint2 {
 
     unsigned int m() const { return m_; };
 
+    /// Overload of DGVertex's equiv
+    bool equiv(const DGVertex*) const;
+
     void print(std::ostream& os = std::cout) const;
   };
 
@@ -510,6 +556,18 @@ namespace libint2 {
       if (ket[1].size() != 1)
         throw std::runtime_error("TwoERep_2b2k<BFSet>::TwoERep_2b2k(bra[2],ket[2]) -- dimension of ket[1] must be 1");
     };
+
+  template <class BFSet>
+    bool
+    TwoERep_2b2k<BFSet>::equiv(const DGVertex* a) const
+    {
+      // check the type first
+      const TwoERep_2b2k<BFSet>* a_cast = dynamic_cast< const TwoERep_2b2k<BFSet>* >(a);
+      if (!a_cast)
+        return false;
+
+      return Integral<TwoERep, BFSet>::equiv(a_cast) && (m_ == a_cast->m_);
+    }
 
   template <class BFSet>
     void

@@ -28,14 +28,21 @@ int main (int argc, char* argv[])
   // Need to be able to compile these constructors
 
   // Make a (ds|ps) = <dp|ss> class
-  unsigned int am[][1] = { {0}, {1}, {2}, {3} };
+  unsigned int am[][1] = { {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}};
   CGShell sh_s(am[0]);
   CGShell sh_p(am[1]);
   CGShell sh_d(am[2]);
   CGShell sh_f(am[3]);
+  CGShell sh_g(am[4]);
+  CGShell sh_h(am[5]);
+  CGShell sh_i(am[6]);
+  CGShell sh_k(am[7]);
+  CGShell sh_l(am[8]);
+  CGShell sh_m(am[9]);
+  CGShell sh_n(am[10]);
   vector<CGShell> sh_12[TwoERep::np];
-  sh_12[0].push_back(sh_d);
-  sh_12[1].push_back(sh_p);
+  sh_12[0].push_back(sh_n);
+  sh_12[1].push_back(sh_n);
   vector<CGShell> sh_34[TwoERep::np];
   sh_34[0].push_back(sh_s);
   sh_34[1].push_back(sh_s);
@@ -43,10 +50,6 @@ int main (int argc, char* argv[])
   TwoERep_2b2k<CGShell> sq_a(sh_12,sh_34, 0);
   sq_a.print();
   VRR_a_ERI_2b2k_shell vrr1(&sq_a);
-
-  TwoERep_2b2k<CGShell> sq_b(sh_34,sh_34, 0);
-  sq_b.print();
-  VRR_c_ERI_2b2k_shell vrr2(&sq_b);
 
   // Create a DAG for a VRR case
   DirectedGraph dg_vrr_dsps;

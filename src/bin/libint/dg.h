@@ -21,12 +21,20 @@ namespace libint2 {
       are allocated on free store and the graph is implemented as
       vector<DGVertex*>.
   */
-  
+
+  class VertexAlreadyOnStack : public std::logic_error {
+    
+    public:
+    VertexAlreadyOnStack(const std::string& a) :
+      logic_error(a) {};
+    
+  };
+
   class DirectedGraph {
 
     vector<DGVertex*> stack_;
 
-    static const unsigned int default_size_ = 10000;
+    static const unsigned int default_size_ = 100;
     unsigned int first_free_;
 
     // adds a vertex to the graph
@@ -57,6 +65,12 @@ namespace libint2 {
     */
     template <class I, class RR> void append_target(I*);
 
+    /** after all append_target's have been called, traverse()
+        construct a heuristic order of traversal for the graph.
+
+    */
+    DGVertex* traverse();
+
   };
 
   /// Apply RR to target
@@ -73,7 +87,12 @@ namespace libint2 {
     void
     DirectedGraph::recurse(I* vertex)
     {
-      add_vertex(vertex);
+      try {
+        add_vertex(vertex);
+      }
+      catch (VertexAlreadyOnStack) {
+        return;
+      }
       
       RR* rr0 = new RR(vertex);
       const int num_children = rr0->num_children();
@@ -81,8 +100,6 @@ namespace libint2 {
       for(int c=0; c<num_children; c++) {
         
         DGVertex* child = rr0->child(c);
-        add_vertex(child);
-        
         DGArc* arc = new DGArcRel<RR>(vertex,child,rr0);
         vertex->add_exit_arc(arc);
         
