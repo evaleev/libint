@@ -49,9 +49,12 @@ int main (int argc, char* argv[])
   dg_vrr_xxxx.debug_print_traversal(cout);
 
   typedef PTYPELIST_2( Tag2, CGShell, CGShell) two_shells;
+  two_shells xx;
   
+  CGShell* xx_1 = ValueAt< TypeAt<two_shells,1>::Result , two_shells, 1>::typelist_member(xx);
 
-  cout << "Length of my_typelist = " << Length<my_typelist>::value << endl;
+  cout << "Length of my_typelist = " << Length<two_shells>::value << endl;
+  xx_1->inc();
 
 }
 

@@ -15,6 +15,7 @@ namespace libint2 {
   typedef Int2Type<2> Tag2;
   typedef Int2Type<2> Tag3;
 
+#if 0
   template < class O > struct IntegralImpl
   {
     BFSet* bra_[O::np];
@@ -93,6 +94,8 @@ namespace libint2 {
             assert(false);
         }
     };
+
+#endif
 
 };
 

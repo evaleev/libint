@@ -231,8 +231,14 @@ namespace libint2 {
       typedef Param ParamType;
       typedef T Head;
       typedef U Tail;
+      /// body is here to be able to create instances of Typelist objects
+      Head head_;
+      Tail tail_;
     };
 
+  /**
+  How to figure out the length of a typelist
+   */
   template <class TList> struct Length;
   template <class Param> struct Length< NullType<Param> >
   {
@@ -244,7 +250,50 @@ namespace libint2 {
     {
       enum { value = 1 + Length<U>::value };
     };
- 
+
+  /**
+    Return reference to value of one of the members of a typelist object
+   */
+  template <class TList, unsigned int i> struct TypeAt;
+
+  template <class Param, class T, class U>
+    struct TypeAt<Typelist<Param, T, U>, 0>
+  {
+    typedef typename Typelist<Param, T, U>::Head Result;
+  };
+
+  template <class Param, class T, class U, unsigned int i>
+    struct TypeAt<Typelist<Param, T, U>, i>
+  {
+    typedef typename TypeAt<U,i-1>::Result Result;
+  };
+  
+  /**
+    Return reference to value of one of the members of a typelist object
+   */
+  template <class PtrType, class TList, unsigned int i>
+    struct ValueAt {
+      static PtrType* typelist_member(const TList&);
+    };
+
+  template <class PtrType, class Param, class T, class U>
+    struct ValueAt<PtrType, Typelist<Param, T, U>, 0>
+    {
+      static PtrType* typelist_member(const Typelist<Param, T, U>& tlist)
+      {
+        return &tlist.head_;
+      };
+    };
+
+  template <class PtrType, class Param, class T, class U, unsigned int i>
+    struct ValueAt<PtrType, Typelist<Param, T, U>, i>
+    {
+      static PtrType* typelist_member(const Typelist<Param, T, U>& tlist)
+      {
+        return ValueAt<PtrType, U, i-1>::typelist_member(tlist.tail_);
+      };
+    };
+
   
 }
 
