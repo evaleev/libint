@@ -58,8 +58,8 @@ namespace libint2 {
       catch (InvalidDecrement) {
         return;
       }
-      children_[0] = new TwoERep_2b2k<F>(bra,ket,m);
-      children_[1] = new TwoERep_2b2k<F>(bra,ket,m+1);
+      children_[0] = TwoERep_2b2k<F>::Instance(bra,ket,m);
+      children_[1] = TwoERep_2b2k<F>::Instance(bra,ket,m+1);
       num_actual_children_ += 2;
       // See if a-2 exists
       bool a_minus_2_exists = true;
@@ -70,8 +70,8 @@ namespace libint2 {
         a_minus_2_exists = false;
       }
       if (a_minus_2_exists) {
-        children_[2] = new TwoERep_2b2k<F>(bra,ket,m);
-        children_[3] = new TwoERep_2b2k<F>(bra,ket,m+1);
+        children_[2] = TwoERep_2b2k<F>::Instance(bra,ket,m);
+        children_[3] = TwoERep_2b2k<F>::Instance(bra,ket,m+1);
         braket[p_a][0].inc();
         num_actual_children_ += 2;
       }
@@ -82,7 +82,7 @@ namespace libint2 {
       catch (InvalidDecrement) {
         return;
       }
-      children_[4] = new TwoERep_2b2k<F>(bra,ket,m+1);
+      children_[4] = TwoERep_2b2k<F>::Instance(bra,ket,m+1);
       num_actual_children_ += 1;
 
     };

@@ -20,6 +20,16 @@ CGF::~CGF()
 {
 }
 
+const std::string
+CGF::label() const
+{
+  unsigned int am = qn_[0] + qn_[1] + qn_[2];
+  const char am_char = StaticDefinitions::am_letters[am];
+  char* const c_label = new char[80];
+  sprintf(c_label,"%c(x^%d y^%d z^%d)",am_char,qn_[0],qn_[1],qn_[2]);
+  return c_label;
+}
+
 bool
 CGF::operator==(const CGF& a) const
 {
@@ -50,6 +60,12 @@ CGShell::CGShell(const CGShell& source)
 
 CGShell::~CGShell()
 {
+}
+
+const std::string
+CGShell::label() const
+{
+  return std::string(1,StaticDefinitions::am_letters[qn_[0]]);
 }
 
 CGShell&

@@ -16,11 +16,13 @@ using namespace std;
 
 namespace libint2 {
 
-  /** DirectedGraph is an implementation of a directed graph
-      composed of vertices represented by DGVertex objects. The objects
-      are allocated on free store and the graph is implemented as
-      vector<DGVertex*>.
-  */
+  class CannotAddArc : public std::logic_error {
+    
+    public:
+    CannotAddArc(const std::string& a) :
+      logic_error(a) {};
+    
+  };
 
   class VertexAlreadyOnStack : public std::logic_error {
     
@@ -29,6 +31,12 @@ namespace libint2 {
       logic_error(a) {};
     
   };
+
+  /** DirectedGraph is an implementation of a directed graph
+      composed of vertices represented by DGVertex objects. The objects
+      are allocated on free store and the graph is implemented as
+      vector<DGVertex*>.
+  */
 
   class DirectedGraph {
 
@@ -44,6 +52,14 @@ namespace libint2 {
      */
     template <class I, class RR> void recurse(I* vertex);
 
+    // Which vertex is the first to compute
+    DGVertex* first_to_compute_;
+    // prepare_to_traverse must be called before actual traversal
+    void prepare_to_traverse();
+    // traverse_from(arc) build recurively the traversal order
+    void traverse_from(DGArc*);
+    // schedule_computation(vertex) puts vertex first in the computation order
+    void schedule_computation(DGVertex*);
 
   public:
     /** This constructor doesn't do much. Actual initialization of the graph
@@ -70,6 +86,9 @@ namespace libint2 {
 
     */
     DGVertex* traverse();
+
+    /// Prints out call sequence
+    void debug_print_traversal(ostream& os) const;
 
   };
 

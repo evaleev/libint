@@ -13,6 +13,11 @@ using namespace std;
 
 namespace libint2 {
 
+  struct StaticDefinitions {
+    static const unsigned int num_am_letters = 22;
+    static const char am_letters[num_am_letters];
+  };
+
   const int Libint2_DefaultVectorLength = 64;
 
   class GaussianShell {
@@ -222,6 +227,7 @@ namespace libint2 {
     BFSet() {};
     virtual ~BFSet() {};
     virtual unsigned int num_bf() const =0;
+    virtual const std::string label() const =0;
 
     /// Increments one of the quantum numbers
     virtual void inc() =0;
@@ -248,6 +254,8 @@ namespace libint2 {
     CGF(const CGF&);
     ~CGF();
 
+    /// Return a compact label
+    const std::string label() const;
     /// Returns the number of basis functions in the set (always 1)
     unsigned int num_bf() const { return 1; };
 
@@ -269,6 +277,8 @@ namespace libint2 {
     ~CGShell();
     CGShell& operator=(const CGShell&);
 
+    /// Return a compact label
+    const std::string label() const;
     /// Returns the number of basis functions in the set
     unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
 
@@ -336,16 +346,23 @@ namespace libint2 {
     /// We also need info about Arcs entering this DGVertex
     vector<DGArc*> parents_;
 
+    // Whether this is a "target" vertex, i.e. the target of a calculation
+    bool target_;
+    // If set to true -- traversal has started and add_entry... cannot be called
+    bool can_add_arcs_;
+    /// add_entry_arc(arc) adds arc as an arc connecting parents to this vertex
+    void add_entry_arc(DGArc*);
+
+    ////////
     // These members used in traversal algorithms
+    ////////
+
+    // num_tagged_arcs keeps track of how many entry arcs have been tagged during traversal
+    unsigned int num_tagged_arcs_;
     /// Which DGVertex to be computed before this vertex (0, if this is the first vertex)
     DGVertex* precalc_;
     /// Which DGVertex to be computed after this vertex (0, if this is the last vertex)
     DGVertex* postcalc_;
-
-    // Whether this is a "target" vertex, i.e. the target of a calculation
-    bool target_;
-    /// add_entry_arc(arc) adds arc as an arc connecting parents to this vertex
-    void add_entry_arc(DGArc*);
 
   public:
     DGVertex();
@@ -358,6 +375,14 @@ namespace libint2 {
     const bool is_a_target() const { return target_;};
     /// add_exit_arc(arc) adds arc as an arc connecting to children of this vertex
     void add_exit_arc(DGArc*);
+    /// returns the number of parents
+    const unsigned int num_entry_arcs() const;
+    /// returns ptr to i-th parent
+    DGArc* entry_arc(unsigned int) const;
+    /// returns the number of children
+    const unsigned int num_exit_arcs() const;
+    /// returns ptr to i-th child
+    DGArc* exit_arc(unsigned int) const;
 
     /** apply_rr() applies the optimal recurrence relation to this particular DGVertex.
         The concrete class must implement this.
@@ -369,6 +394,14 @@ namespace libint2 {
     */
     virtual bool equiv(const DGVertex*) const =0;
 
+    /** print(std::ostream&) prints out the vertex
+    */
+    virtual void print(std::ostream& os = std::cout) const =0;
+
+    /// prepare_to_traverse() must be called before traversal of the graph starts
+    void prepare_to_traverse();
+    /// tag() tags the vertex and returns the total number of tags this vertex has received
+    const unsigned int tag();
     /// Returns pointer to vertex to be computed before this vertex, 0 if this is the first vertex
     DGVertex* precalc() const { return precalc_; };
     /// Returns pointer to vertex to be computed after this vertex, 0 if this is the last vertex
@@ -447,22 +480,35 @@ namespace libint2 {
   };
 
   /** This template is for an integral of 1 operator over (products of) one
-      type of basis functions. Any Integral can be a DGVertex.
+      type of basis functions. Any Integral can be a DGVertex. No instances
+      of Integral can be created -- this class is intended as a base class.
   */
   template <class Oper, class BFSet> class Integral : public DGVertex {
 
     static Oper O_;
 
-    protected:
+    //
+    // All integrals are Singletons by nature, therefore they must be treated as such
+    // 1) No public constructors are provided
+    // 2) protected members are provided to implement Singleton-type functionality
+    //
+    Integral();
+    Integral(const Integral&);
+    // Copy is not permitted
+    Integral& operator=(const Integral& source);
+
+  protected:
+    // Basic Integral constructor
+    Integral(const vector<BFSet> bra[Oper::np], const vector<BFSet> ket[Oper::np]);
+
     vector<BFSet> bra_[Oper::np];
     vector<BFSet> ket_[Oper::np];
     
-    public:
-    Integral(const vector<BFSet> bra[Oper::np], const vector<BFSet> ket[Oper::np]);
+  public:
+    /** No constructors are public since this is a singleton-like quantity.
+        Instead, access is provided through derived class's Instance().
+     */
     virtual ~Integral();
-
-    /// Copy is permitted
-    Integral& operator=(const Integral& source);
 
     /// Equivalence operator
     virtual bool equiv(const Integral*) const;
@@ -532,9 +578,19 @@ namespace libint2 {
 
     unsigned int m_;  // auxiliary index
 
-    public:
-    TwoERep_2b2k(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m);
+    // Default and copy constructors are not allowed
+    TwoERep_2b2k();
+    TwoERep_2b2k(const TwoERep_2b2k&);
 
+    // This constructor is private since all Integral's are Singletons. Use Instance instead.
+    TwoERep_2b2k(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m);
+    // stack_ of pointers to objects used to check whether an object already exists
+    static vector< TwoERep_2b2k* > stack_;
+
+  public:
+    /// Returns a pointer to a unique instance, a la Singleton
+    static TwoERep_2b2k* Instance(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m);
+    
     unsigned int m() const { return m_; };
 
     /// Overload of DGVertex's equiv
@@ -558,6 +614,22 @@ namespace libint2 {
     };
 
   template <class BFSet>
+    TwoERep_2b2k<BFSet>*
+    TwoERep_2b2k<BFSet>::Instance(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m)
+    {
+      TwoERep_2b2k* const this_int = new TwoERep_2b2k<BFSet>(bra,ket,m);
+      int stack_size = stack_.size();
+      for(int i=0; i<stack_size; i++) {
+        if (this_int->equiv(stack_[i])) {
+          delete this_int;
+          return stack_[i];
+        }
+      }
+      stack_.push_back(this_int);
+      return this_int;
+    };
+
+  template <class BFSet>
     bool
     TwoERep_2b2k<BFSet>::equiv(const DGVertex* a) const
     {
@@ -566,22 +638,16 @@ namespace libint2 {
       if (!a_cast)
         return false;
 
-      return Integral<TwoERep, BFSet>::equiv(a_cast) && (m_ == a_cast->m_);
+      bool result = Integral<TwoERep, BFSet>::equiv(a_cast) && (m_ == a_cast->m_);
+      return result;
     }
 
   template <class BFSet>
     void
     TwoERep_2b2k<BFSet>::print(std::ostream& os) const
     {
-      os << "TwoERep_2b2k: m = " << m_ << endl;
-      os << "shell bra1:" << endl;
-      bra_[0][0].print(os);
-      os << "shell bra2:" << endl;
-      bra_[1][0].print(os);
-      os << "shell ket1:" << endl;
-      ket_[0][0].print(os);
-      os << "shell ket2:" << endl;
-      ket_[1][0].print(os);
+      os << "TwoERep_2b2k: (" << bra_[0][0].label() << " " << ket_[0][0].label()
+         << " | " << bra_[1][0].label() << " " << ket_[1][0].label() << ")^{" << m_ <<"}" << endl;
     };
 
   /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
