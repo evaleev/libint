@@ -19,7 +19,7 @@ namespace libint2 {
   class Strategy {
 
   public:
-    static const unsigned int max_size_to_unroll = 1111;
+    static const unsigned int max_size_to_unroll = 1;
     typedef SafePtr<RecurrenceRelation> RR;
     Strategy() {}
     virtual ~Strategy() {}
@@ -41,6 +41,14 @@ namespace libint2 {
 
     virtual RR optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph, const SafePtr< TwoPRep_11_11_sq >& integral);
     virtual RR optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph, const SafePtr< TwoPRep_11_11_int >& integral);
+
+    /// Casts a smart pointer to rr of type RRType to a smart pointer to RecurrenceRelation. Utility function.
+    template <class RRType>
+      RR rr_cast(const SafePtr<RRType>& rr) const
+      {
+        RR rr_cast_ptr = static_pointer_cast<RecurrenceRelation,RRType>(rr);
+        return rr_cast_ptr;
+      }
 
   };
     

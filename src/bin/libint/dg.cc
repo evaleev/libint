@@ -1,4 +1,6 @@
 
+#define USE_CG1 1
+
 #include <rr.h>
 #include <dg.h>
 #include <strategy.h>
@@ -256,6 +258,10 @@ DirectedGraph::reset()
   first_to_compute_.reset();
 }
 
+
+
+#if USE_GC1
+
 /// Apply a strategy to all vertices not yet computed (i.e. which do not have exit arcs)
 void
 DirectedGraph::apply(const SafePtr<Strategy>& strategy)
@@ -315,4 +321,61 @@ DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>
     apply_to(child,strategy);
   }
 }
+
+#else
+
+/// Apply a strategy to all vertices not yet computed (i.e. which do not have exit arcs)
+void
+DirectedGraph::apply(const SafePtr<Strategy>& strategy)
+{
+  const int num_vertices_on_graph = first_free_;
+  for(int v=0; v<num_vertices_on_graph; v++) {
+    if (stack_[v]->num_exit_arcs() != 0)
+      continue;
+
+    SafePtr<DirectedGraph> this_ptr = SafePtr_from_this();
+    SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(this_ptr,stack_[v]);
+    if (rr0 == 0)
+      return;
+
+    // add children to the graph
+    SafePtr<DGVertex> target = rr0->rr_target();
+    const int num_children = rr0->num_children();
+    for(int c=0; c<num_children; c++) {
+      SafePtr<DGVertex> child = rr0->rr_child(c);
+      SafePtr<DGArc> arc(new DGArcRel<RecurrenceRelation>(target,child,rr0));
+      target->add_exit_arc(arc);
+      apply_to(child,strategy);
+    }
+
+  }
+}
+
+/// Add vertex to graph and apply a strategy to vertex recursively
+void
+DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>& strategy)
+{
+  try {
+    add_vertex(vertex);
+  }
+  catch (VertexAlreadyOnStack) {
+    return;
+  }
+
+  SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(SafePtr_from_this(),vertex);
+  if (rr0 == 0)
+    return;
+
+  SafePtr<DGVertex> target = rr0->rr_target();
+  const int num_children = rr0->num_children();
+  for(int c=0; c<num_children; c++) {
+    SafePtr<DGVertex> child = rr0->rr_child(c);
+    SafePtr<DGArc> arc(new DGArcRel<RecurrenceRelation>(target,child,rr0));
+    target->add_exit_arc(arc);
+    apply_to(child,strategy);
+  }
+
+}
+
+#endif
 
