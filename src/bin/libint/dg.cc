@@ -219,6 +219,7 @@ DGVertex::reset()
   graph_label_ = SafePtr<std::string>();
   reset_symbol();
   address_ = SafePtr<Address>();
+  referred_vertex_ = SafePtr<DGVertex>();
 }
 
 const std::string&
@@ -781,6 +782,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   def << context->type_name<void>() << " "
   << function_name << "(Libint_t* libint)"
   << context->open_block() << endl;
+  def << context->std_function_header();
 
   context->reset();
   allocate_mem(memman);
@@ -791,7 +793,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
 }
 
 void
-DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman)
+DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman, unsigned int min_size_to_alloc)
 {
   // First, reset tag counters
   for(int i=0; i<first_free_; i++)
@@ -813,7 +815,7 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman)
   //
   SafePtr<DGVertex> vertex = first_to_compute_;
   do {
-    if (!vertex->address_set() && !vertex->precomputed() && vertex->size() > 1) {
+    if (!vertex->address_set() && !vertex->precomputed() && vertex->size() > min_size_to_alloc) {
       vertex->set_address(memman->alloc(vertex->size()));
       const unsigned int nchildren = vertex->num_exit_arcs();
       for(int c=0; c<nchildren; c++) {
@@ -840,7 +842,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
     SafePtr<DGVertex> vertex = stack_[i];
     if (!vertex->symbol_set() && vertex->address_set()) {
       os.str(null_str);
-      os << "libint->stack[" << vertex->address() << "]";
+      os << "libint->stack[" << context->stack_address(vertex->address()) << "]";
       vertex->set_symbol(os.str());
     }
   }
@@ -869,7 +871,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
         // If a child is precomputed -- its symbol will be set as usual
         if (!child->precomputed()) {
           os.str(null_str);
-          os << "libint->stack[" << vertex->address()+c << "]";
+          os << "libint->stack[" << context->stack_address(vertex->address()+c) << "]";
           child->set_symbol(os.str());
         }
       }
@@ -928,6 +930,9 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
 void
 DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
 {
+  std::ostringstream oss;
+  const std::string null_str("");
+
   unsigned int nflops = 0;
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
@@ -942,7 +947,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
         if (oper_ptr) {
 
           if (context->comments_on()) {
-            ostringstream oss;
+            oss.str(null_str);
             oss << current_vertex->label() << " = "
                 << oper_ptr->exit_arc(0)->dest()->label()
                 << oper_ptr->label()
@@ -951,18 +956,11 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
           }
 
           // Type declaration
-          os << context->type_name<double>() << " ";
+          os << context->declare(context->type_name<double>(),
+                                 current_vertex->symbol());
+          // expression
+          os << context->assign_binary_expr(current_vertex->symbol(),left_arg->symbol(),oper_ptr->label(),right_arg->symbol());
 
-          os << current_vertex->symbol() << " = ";
-          SafePtr<DGVertex> left_arg = current_vertex->exit_arc(0)->dest();
-          os << left_arg->symbol();
-
-          os << " " << oper_ptr->label() << " ";
-
-          SafePtr<DGVertex> right_arg = current_vertex->exit_arc(1)->dest();
-          os << right_arg->symbol();
-
-          os << context->end_of_stat() << endl;
           nflops++;
 
           goto next;
@@ -976,15 +974,15 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
         if (arc_ptr) {
 
           if (context->comments_on()) {
-            ostringstream oss;
+            oss.str(null_str);
             oss << current_vertex->label() << " = "
                 << arc_ptr->dest()->label();
             os << context->comment(oss.str()) << endl;
           }
 
-          os << current_vertex->symbol() << " = "
-          << arc_ptr->dest()->symbol()
-          << context->end_of_stat() << endl;
+          os << context->assign(current_vertex->symbol(),
+                                arc_ptr->dest()->symbol());
+
           goto next;
         }
       }
@@ -1018,7 +1016,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
   } while (current_vertex != 0);
 
   // Print out the number of flops
-  ostringstream oss;
+  oss.str(null_str);
   oss << "Number of flops = " << nflops;
   os << context->comment(oss.str()) << endl;
 

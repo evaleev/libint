@@ -77,8 +77,8 @@ namespace libint2 {
     // schedule_computation(vertex) puts vertex first in the computation order
     void schedule_computation(const SafePtr<DGVertex>&);
 
-    // Compute addresses on stack
-    void allocate_mem(const SafePtr<MemoryManager>& memman);
+    // Compute addresses on stack assuming that quantities larger than min_size_to_alloc to be allocated on stack
+    void allocate_mem(const SafePtr<MemoryManager>& memman, unsigned int min_size_to_alloc = 1);
     // Assign symbols to the vertices
     void assign_symbols(const SafePtr<CodeContext>& context);
     // Print the code using symbols generated with assign_symbols()

@@ -45,7 +45,7 @@ namespace libint2 {
       SafePtr<T> right() const { return right_; }
 
       /// Implements DGVertex::size()
-      const unsigned int size() const { return 0; }
+      const unsigned int size() const { return 1; }
       /// Implements DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const
       {
