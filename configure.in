@@ -568,5 +568,5 @@ AC_SUBST(ENABLESHARED)
 dnl make Makefiles in object tree
 $PERL $srcdir/bin/objectdir.pl $EXCLUDED_DIRS $srcdir
 
-AC_OUTPUT(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules)
+AC_OUTPUT(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/MakeSuffixRules)
 
