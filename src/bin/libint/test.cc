@@ -50,11 +50,16 @@ int main (int argc, char* argv[])
 
   typedef PTYPELIST_2( Tag2, CGShell, CGShell) two_shells;
   two_shells xx;
+  typedef PTYPELIST_3( Tag2, CGShell, CGShell, CGShell) three_shells;
+  three_shells xxx;
+  typedef NewIntegral<TwoERep,two_shells,two_shells> NewTwoERep_2b2k;
+  NewTwoERep_2b2k xxxx(xx,xx);
   
-  CGShell* xx_1 = ValueAt< TypeAt<two_shells,1>::Result , two_shells, 1>::typelist_member(xx);
+  ValueAt<two_shells, 1>::ResultType xx_1 = ValueAt<two_shells, 1>::typelist_member(xx);
 
   cout << "Length of my_typelist = " << Length<two_shells>::value << endl;
-  xx_1->inc();
+  CGShell xx_2(xx_1);
+  xx_2.inc();
 
 }
 

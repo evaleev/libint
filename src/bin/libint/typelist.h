@@ -271,26 +271,25 @@ namespace libint2 {
   /**
     Return reference to value of one of the members of a typelist object
    */
-  template <class PtrType, class TList, unsigned int i>
-    struct ValueAt {
-      static PtrType* typelist_member(const TList&);
-    };
+  template <class TList, unsigned int i> struct ValueAt;
 
-  template <class PtrType, class Param, class T, class U>
-    struct ValueAt<PtrType, Typelist<Param, T, U>, 0>
+  template <class Param, class T, class U>
+    struct ValueAt<Typelist<Param, T, U>, 0>
     {
-      static PtrType* typelist_member(const Typelist<Param, T, U>& tlist)
+      typedef typename Typelist<Param, T, U>::Head ResultType;
+      static const ResultType& typelist_member(const Typelist<Param, T, U>& tlist)
       {
-        return &tlist.head_;
+        return tlist.head_;
       };
     };
 
-  template <class PtrType, class Param, class T, class U, unsigned int i>
-    struct ValueAt<PtrType, Typelist<Param, T, U>, i>
+  template <class Param, class T, class U, unsigned int i>
+    struct ValueAt<Typelist<Param, T, U>, i>
     {
-      static PtrType* typelist_member(const Typelist<Param, T, U>& tlist)
+      typedef typename TypeAt<Typelist<Param, T, U>, i>::Result ResultType;
+      static const ResultType& typelist_member(const Typelist<Param, T, U>& tlist)
       {
-        return ValueAt<PtrType, U, i-1>::typelist_member(tlist.tail_);
+        return ValueAt<U, i-1>::typelist_member(tlist.tail_);
       };
     };
 

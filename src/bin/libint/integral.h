@@ -97,6 +97,22 @@ namespace libint2 {
 
 #endif
 
+  template <class O, class BraList, class KetList>
+    class NewIntegral
+    {
+    public:
+      NewIntegral(BraList bra, KetList ket) :
+      bra_(bra), ket_(ket)
+      {}
+      virtual ~NewIntegral() {}
+
+    private:      
+      static O O_;
+      BraList bra_;
+      KetList ket_;
+
+    };
+
 };
 
 #endif
