@@ -1,4 +1,5 @@
 include $(TOPDIR)/src/lib/MakeVars
+include $(TOPDIR)/src/lib/MakeRules
 VPATH = $(SRCDIR)
 
 NAME = libderiv
@@ -16,11 +17,16 @@ LIBOBJ = $(LIBOBJ1) $(LIBOBJ2)
 
 default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
 
-$(TOPDIR)/lib/$(TARGET): $(LIBOBJ)
+# this is how static library is made
+$(TOPDIR)/lib/$(NAME).a: $(LIBOBJ)
 	/bin/rm -f $@
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ1)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ2)
 	$(RANLIB) $@
+
+# this is how shared library is made
+$(TOPDIR)/lib/$(NAME).la: $(LIBOBJ)
+	$(LTLINK) $(CXX) -o $@ $^ $(LTLINKLIBOPTS)
 
 $(TOPDIR)/include/$(NAME)/$(NAME).h: $(NAME).h
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/include/$(NAME)

@@ -1,6 +1,6 @@
-define([libint_mmm_version],[1.0.1])
+define([libint_mmm_version],[1.1.0])
 define([libint_buildid],[stable])
-define([libint_so_version],[1:0:1])
+define([libint_so_version],[1:0:0])
 
 dnl Process this file with autoconf to produce a configure script.
 define([AC_CACHE_LOAD], )dnl for debugging configure.in
@@ -30,6 +30,9 @@ changequote([, ])dnl
 AC_DEFINE_UNQUOTED(LIBINT_MAJOR_VERSION,$LIBINT_MAJOR_VERSION)
 AC_DEFINE_UNQUOTED(LIBINT_MINOR_VERSION,$LIBINT_MINOR_VERSION)
 AC_DEFINE_UNQUOTED(LIBINT_MICRO_VERSION,$LIBINT_MICRO_VERSION)
+
+LIBINT_SO_VERSION=libint_so_version
+AC_SUBST(LIBINT_SO_VERSION)
 
 dnl --------- Features ---------
 
@@ -226,8 +229,24 @@ AC_DEFINE_UNQUOTED(LIBINT_MAX_CLASS_SIZE,$MAX_CLASS_SIZE)
 AC_DEFINE_UNQUOTED(LIBR12_MAX_CLASS_SIZE,$MAX_CLASS_SIZE)
 AC_DEFINE_UNQUOTED(LONG_DOUBLE,$LONG_DOUBLE)
 
+BUILDID="libint_buildid"
+AC_ARG_WITH(build-id,
+[  --with-build-id         Gives an identifier for the build.],
+BUILDID=$withval
+)
+AC_SUBST(BUILDID)
+AC_DEFINE_UNQUOTED(LIBINT_BUILDID,"$BUILDID")
 
-ac_default_prefix="/usr/local"
+if test "$BUILDID"; then
+  LIBINT_VERSION="$LIBINT_MMM_VERSION-$BUILDID"
+else
+  LIBINT_VERSION="$LIBINT_MMM_VERSION"
+fi
+
+AC_DEFINE_UNQUOTED(LIBINT_VERSION, "$LIBINT_VERSION")
+AC_SUBST(LIBINT_VERSION)
+
+ac_default_prefix="/usr/local/libint/$LIBINT_VERSION"
 
 AC_ARG_WITH(cc,
 [  --with-cc               Gives the name of the C compiler to use.],
@@ -505,10 +524,49 @@ CC="$CC" CFLAGS="$CXXFLAGS" CPPFLAGS="$CPPFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
 LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB" \
 
-ENABLESHARED=no
+dnl --------- Shared library configuration. ---------
+
+enablelibtool=yes
+AC_ARG_ENABLE(libtool,
+[  --disable-libtool       Do not use libtool.],
+[
+case $enableval in
+  yes)
+  ;;
+  no)
+    enablelibtool=no
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --(dis|en)able-libtool ($enableval)])
+  ;;
+esac
+])
+
+if test "$enablelibtool" = yes; then
+
+dnl by default make only static libraries
+AC_DISABLE_SHARED
+AC_PROG_LIBTOOL
+
+OBJSUF=lo
+LIBSUF=la
+
+else
+
+enable_shared=no
+
+fi
+
+if test "$enable_shared" = "no"; then
+  OBJSUF=o
+  LIBSUF=a
+fi
+
+ENABLESHARED=$enable_shared
 AC_SUBST(ENABLESHARED)
 
+dnl make Makefiles in object tree
 $PERL $srcdir/bin/objectdir.pl $EXCLUDED_DIRS $srcdir
 
-AC_OUTPUT(src/bin/MakeVars src/lib/MakeVars)
+AC_OUTPUT(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules)
 

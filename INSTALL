@@ -7,3 +7,10 @@ The recommended installation procedure:
 2) make
 3) make install
 
+If you are compiling from sources obtained via CVS then prior to step 0 you need to
+run the following 2 commands:
+aclocal -I lib/autoconf
+autoconf
+
+Report all problems to edward.valeev@chemistry.gatech.edu
+

@@ -1,4 +1,5 @@
 include $(TOPDIR)/src/lib/MakeVars
+include $(TOPDIR)/src/lib/MakeRules
 VPATH = $(SRCDIR)
 
 NAME = libint
@@ -17,17 +18,18 @@ TRUESRC3 = $(shell echo `ls build_*.cc`)
 TRUESRC4 = $(shell echo `ls hrr[1,3]_build_*.cc`)
 TRUESRC5 = vrr_build.c
 TRUESRC6 = init_libint.cc
-LIBOBJ1 = $(TRUESRC1:%.cc=%.o)
-LIBOBJ2 = $(TRUESRC2:%.cc=%.o)
-LIBOBJ3 = $(TRUESRC3:%.cc=%.o)
-LIBOBJ4 = $(TRUESRC4:%.cc=%.o)
-LIBOBJ5 = $(TRUESRC5:%.c=%.o)
-LIBOBJ6 = $(TRUESRC6:%.cc=%.o)
+LIBOBJ1 = $(TRUESRC1:%.cc=%.$(OBJSUF))
+LIBOBJ2 = $(TRUESRC2:%.cc=%.$(OBJSUF))
+LIBOBJ3 = $(TRUESRC3:%.cc=%.$(OBJSUF))
+LIBOBJ4 = $(TRUESRC4:%.cc=%.$(OBJSUF))
+LIBOBJ5 = $(TRUESRC5:%.c=%.$(OBJSUF))
+LIBOBJ6 = $(TRUESRC6:%.cc=%.$(OBJSUF))
 LIBOBJ = $(LIBOBJ1) $(LIBOBJ2) $(LIBOBJ3) $(LIBOBJ4) $(LIBOBJ5) $(LIBOBJ6)
 
 default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
 
-$(TOPDIR)/lib/$(TARGET): $(LIBOBJ)
+# this is how static library is made
+$(TOPDIR)/lib/$(NAME).a: $(LIBOBJ)
 	/bin/rm -f $@
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ1)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ2)
@@ -36,6 +38,10 @@ $(TOPDIR)/lib/$(TARGET): $(LIBOBJ)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ5)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ6)
 	$(RANLIB) $@
+
+# this is how shared library is made
+$(TOPDIR)/lib/$(NAME).la: $(LIBOBJ)
+	$(LTLINK) $(CXX) -o $@ $^ $(LTLINKLIBOPTS)
 
 $(TOPDIR)/include/$(NAME)/$(NAME).h: $(NAME).h
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/include/$(NAME)
