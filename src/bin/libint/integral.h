@@ -49,9 +49,6 @@ namespace libint2 {
   public:
     virtual ~IntegralSet() {};
 
-    /// Equivalence operator
-    virtual bool equiv(const SafePtr<IntegralSet>&) const =0;
-
     /// Obtain pointers to ith BasisFunctionSet for particle p in bra
     virtual const SafePtr<BasisFunctionSet> bra(unsigned int p, unsigned int i) const =0;
     /// Obtain pointers to ith BasisFunctionSet for particle p in ket
@@ -78,8 +75,6 @@ namespace libint2 {
       typedef GenIntegralSet<typename Oper::iter_type, BFS, typename BraSetType::iter_type, typename KetSetType::iter_type, typename AuxQuanta::iter_type> iter_type;
       /// GenIntegralSet is derived from IntegralSet
       typedef IntegralSet<BFS> parent_type;
-      /// This is the class that has equiv operation
-      typedef parent_type has_equiv_type;
       /// This type provides comparison operations on pointers to GenIntegralSet
       typedef PtrEquiv<GenIntegralSet> PtrComp;
     
@@ -93,14 +88,10 @@ namespace libint2 {
       /// Returns a pointer to a unique instance, a la Singleton
       static const SafePtr<GenIntegralSet> Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
       
-      /// Equivalence operator
-      virtual bool equiv(const SafePtr< this_type >&) const;
-      /// Equivalence operator
-      virtual bool equiv(const SafePtr< parent_type >&) const;
-      /// Equivalence operator
+      /// Comparison operator
       virtual bool operator==(const GenIntegralSet&) const;
       /// Specialization of DGVertex's equiv
-      bool equiv(const SafePtr<DGVertex>&) const;
+      bool equiv(const SafePtr<DGVertex>& v) const { return PtrComp::equiv(this,v); }
       /// Specialization of DGVertex's print
       virtual void print(std::ostream& os = std::cout) const;
 
@@ -175,7 +166,7 @@ namespace libint2 {
       SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
       int stack_size = stack_.size();
       for(int i=0; i<stack_size; i++) {
-        if (this_int->equiv(stack_[i])) {
+        if (PtrComp::equiv(this_int,stack_[i])) {
           this_int.reset();
           return stack_[i];
         }
@@ -228,34 +219,13 @@ namespace libint2 {
 
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     bool
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::equiv(SafePtr< IntegralSet<BFS> > const & a) const
-    {
-      return PtrComp::equiv(this,a);
-    }
-
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    bool
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::equiv(SafePtr< DGVertex > const & a) const
-    {
-      return PtrComp::equiv(this,a);
-    }
-  
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    bool
-    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::equiv(SafePtr< this_type > const & a) const
-    {
-      return PtrComp::equiv(this,a);
-    }
-
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    bool
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::operator==(const this_type& a) const
     {
       bool oper_equiv = PtrEquiv<Oper>::equiv(O_,a.O_);
-      bool bra_equiv = bra_.equiv(a.bra_);
-      bool ket_equiv = ket_.equiv(a.ket_);
+      bool bra_equiv = PtrEquiv<BraSetType>::equiv(bra_,a.bra_);
+      bool ket_equiv = PtrEquiv<KetSetType>::equiv(ket_,a.ket_);
       bool aux_equiv = PtrEquiv<AuxQuanta>::equiv(aux_,a.aux_);
-      return bra_equiv && ket_equiv;
+      return oper_equiv && bra_equiv && ket_equiv && aux_equiv;
     }
 
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
@@ -286,6 +256,7 @@ namespace libint2 {
     typedef vector< SafePtr<BFS> > BFSVector;
     typedef vector< BFSVector > BFSMatrix;
     typedef VectorBraket<typename BFS::iter_type> iter_type;
+    typedef struct{} parent_type;
 
     /** This one is a very dangerous constructor -- do not to use it if at all possible.
       Provided only for compatibility for generic subiterator algorithms */
@@ -295,7 +266,7 @@ namespace libint2 {
     ~VectorBraket() throw();
 
     /// Comparison function
-    bool equiv(const VectorBraket&) const;
+    bool operator==(const VectorBraket&) const;
     /// Returns base pointer to the i-th function for particle p
     //const SafePtr<ConstructablePolymorphically> member(unsigned int p, unsigned int i) const;
     /// Returns pointer to the i-th function for particle p
@@ -420,7 +391,7 @@ namespace libint2 {
 
   template <class BFS>
     bool
-    VectorBraket<BFS>::equiv(const VectorBraket<BFS>& a) const
+    VectorBraket<BFS>::operator==(const VectorBraket<BFS>& a) const
     {
       if (bfs_.size() != a.bfs_.size())
         return false;
@@ -453,14 +424,14 @@ namespace libint2 {
       typedef VectorBraket<BFS> BraType;
       typedef VectorBraket<BFS> KetType;
       typedef QuantumNumbers<unsigned int,1> AuxIndexType;
-      /// GenIntegralSet is a set of these subobjects
       typedef TwoPRep_11_11 this_type;
+      
       /// TwoPRep_11_11 is a set of these subobjects
       typedef TwoPRep_11_11<typename BFS::iter_type> iter_type;
       /// This is the immediate parent
       typedef GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, AuxIndexType > parent_type;
-      /// This is the base parent which declares an equiv operation
-      typedef typename parent_type::has_equiv_type has_equiv_type;
+      /// This class provides comparison operations on pointers
+      typedef PtrEquiv<this_type> PtrComp;
 
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
@@ -471,9 +442,9 @@ namespace libint2 {
       
       unsigned int m() const { return parent_type::aux()->elem(0); };
       
-      /// Comparison function
-      bool equiv(const SafePtr<this_type>&) const;
-
+      /// Comparison operator
+      bool operator==(const this_type&) const;
+      /// Specialization of GenIntegralSet's and DGVertex's print
       void print(std::ostream& os = std::cout) const;
 
     private:
@@ -509,7 +480,7 @@ namespace libint2 {
       SafePtr<TwoPRep_11_11> this_int(new TwoPRep_11_11<BFS>(bra,ket,aux));
       int stack_size = stack_.size();
       for(int i=0; i<stack_size; i++) {
-        if (this_int->equiv(stack_[i])) {
+        if (PtrComp::equiv(this_int,stack_[i])) {
           this_int.reset();
           return stack_[i];
         }
@@ -541,10 +512,9 @@ namespace libint2 {
   
   template <class BFS>
     bool
-    TwoPRep_11_11<BFS>::equiv(const SafePtr<TwoPRep_11_11<BFS> >& a) const
+    TwoPRep_11_11<BFS>::operator==(const TwoPRep_11_11<BFS>& a) const
     {
-      const SafePtr<has_equiv_type> a_cast = static_pointer_cast<has_equiv_type,this_type>(a);
-      return parent_type::equiv(a_cast);
+      return parent_type::PtrComp::equiv(static_cast<const parent_type*>(this),a);
     }
 
   template <class BFS>

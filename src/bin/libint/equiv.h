@@ -18,6 +18,10 @@ namespace libint2 {
   
   public:
 
+    static bool equiv(const T& a, const T& b) {
+      return a==b;
+    }
+    
     static bool equiv(const SafePtr<T>& a, const SafePtr<T>& b) {
       return a->operator==(*b.get());
     }
@@ -28,6 +32,10 @@ namespace libint2 {
 
     static bool equiv(const SafePtr<T>& b, const T* a) {
       return a->operator==(*b.get());
+    }
+
+    static bool equiv(const T* a, const T& b) {
+      return a->operator==(b);
     }
 
     static bool equiv(const SafePtr<T>& a, const SafePtr<P>& b) {
