@@ -1,4 +1,5 @@
 
+#include <rr.h>
 #include <typelist.h>
 
 #ifndef _libint2_src_bin_libint_integral_h_
@@ -6,6 +7,8 @@
 
 namespace libint2 {
 
+  using namespace std;
+  
   /**
      O is an operator
      TList is a typelist TList1 that consists 2 second-level typelists: TList2 for bra and TList3 for ket
@@ -37,7 +40,6 @@ namespace libint2 {
      This is an abstract base for sets of all types of integrals. Functions can be of any type
      derived from BasisFunctionSet.
   */
-  template <class BasisFunctionSet> class IntegralSetIter;
   template <class BasisFunctionSet> class IntegralSet {
 
   public:
@@ -165,6 +167,7 @@ namespace libint2 {
   public:
     typedef vector<BFS> BFSVector;
     typedef vector< BFSVector > BFSMatrix;
+    typedef VectorBraket<typename BFS::iter_type> iter_type;
 
     VectorBraket(const BFSMatrix&);
     VectorBraket(const VectorBraket&);

@@ -63,6 +63,7 @@ SubIteratorBase<T,P>::delete_subobj<CGShell>()
 // with standard policy (StdLibintPolicy)
 //
 
+/*
 SubIteratorBase<CGF,StdLibintPolicy>::SubIteratorBase(const CGF* obj) :
 SubIterator(), obj_(obj), subobj_(1,obj_), iter_(0)
 {
@@ -80,6 +81,7 @@ SubIteratorBase<CGShell,StdLibintPolicy>::~SubIteratorBase()
   for(int i=0; i<nelem; i++)
     subobj_[i]->~CGF();
 }
+*/
 
 #endif
 

@@ -5,12 +5,13 @@
 #include <rr.h>
 #include <integral.h>
 #include <policy.h>
+#include <traits.h>
 
 // gcc 3.4 doesn't seem to allow
 //#define ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
 
-using namespace std;
 
+using namespace std;
 
 namespace libint2 {
 
@@ -76,6 +77,8 @@ namespace libint2 {
     // so user must provide specialization for the case X=T
     template <class X> void init_subobj();
     template <class X> void delete_subobj();
+    void init_subobj();
+    void delete_subobj();
 
   };
 
@@ -85,6 +88,8 @@ namespace libint2 {
     {
 #ifdef ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
       init_subobj<T>();
+#else
+      init_subobj();
 #endif
     }
   
@@ -93,6 +98,8 @@ namespace libint2 {
     {
 #ifdef ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
       delete_subobj<T>();
+#else
+      delete_subobj();
 #endif
     }
 
@@ -131,6 +138,20 @@ namespace libint2 {
     return (iter_ < num_iter()) ? 1 : 0;
   }
 
+  template <class T, class P>
+    void
+    SubIteratorBase<T,P>::init_subobj()
+  {
+      StdLibintTraits<T>::init_subobj(obj_,subobj_);
+  }
+
+  template <class T, class P>
+    void
+    SubIteratorBase<T,P>::delete_subobj()
+  {
+      StdLibintTraits<T>::dealloc_subobj(subobj_);
+  }
+  
 };
 
 #endif
