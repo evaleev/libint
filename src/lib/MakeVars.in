@@ -6,7 +6,7 @@ TARGET_TO_MAKE = $(shell basename `pwd`)
 ifndef SRCDIR
   SRCDIR = .
 endif
-SRCTOPDIR = $(SRCDIR)/$(TOPDIR)
+SRCTOPDIR = $(SRCDIR)/$(TO_TOPDIR)
 
 host = @host@
 host_cpu = @host_cpu@

@@ -7,7 +7,7 @@ TARGET = $(NAME).$(LIBSUF)
 TARGET_HEADERS = libr12.h
 
 # _vrr_build.c need to find libr12.h
-CFLAGS += -I.
+INCLUDE += -I.
 
 #
 # List all generated routines. Do it in a safe way in case the list is too long

@@ -2,7 +2,7 @@
 default:: $(TOPDIR)/lib/$(TARGET)
 
 $(TOPDIR)/lib/$(TARGET): source
-	cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR)
+	cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR)
 
 install:: install_inc install_target
 

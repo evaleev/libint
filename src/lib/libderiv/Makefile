@@ -1,4 +1,5 @@
 TOPDIR=../../..
+TO_TOPDIR=$(TOPDIR)
 ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
