@@ -217,10 +217,9 @@ namespace libint2 {
       return bra_equiv && ket_equiv;
     }
 
-  /** VectorBraket is a type that can be used as a BraSetType or a KetSetType parameter
-      in the above templates
+  /** VectorBraket is a std::vector-based type that can be used as a BraSetType or a KetSetType parameter
+      to construct an instance of GenIntegralSet
   */
-
   template <class BFS> class VectorBraket {
 
   public:
@@ -231,6 +230,7 @@ namespace libint2 {
     VectorBraket(const VectorBraket&);
     ~VectorBraket() throw();
 
+    /// Comparison function
     bool equiv(const VectorBraket&) const;
     /// Returns pointer to the i-th function for particle p
     const BFS* member(unsigned int p, unsigned int i) const;
@@ -302,8 +302,10 @@ namespace libint2 {
       typedef VectorBraket<BFS> BraType;
       typedef VectorBraket<BFS> KetType;
 
-      /// Returns a pointer to a unique instance, a la Singleton
-      static TwoERep_11_11* Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, unsigned int m);
+      /* This "constructor" takes basis function sets, in Mulliken ordering.
+         Returns a pointer to a unique instance, a la Singleton
+      */
+      static TwoERep_11_11* Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, unsigned int m);
       
       unsigned int m() const { return m_; };
       
@@ -318,11 +320,13 @@ namespace libint2 {
 
       // Default and copy constructors are not allowed
       TwoERep_11_11();
-      TwoERep_11_11(const TwoERep_11_11&);
-      
-      // This constructor is private since all Integral's are Singletons. Use Instance instead.
+      TwoERep_11_11(const TwoERep_11_11&);      
+      // This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
       TwoERep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, unsigned int m);
-      // stack_ of pointers to objects used to check whether an object already exists
+
+      /// Returns a pointer to a unique instance, a la Singleton
+      static TwoERep_11_11* Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, unsigned int m);
+      /// stack_ of pointers to objects used to check whether an object already exists
       static vector< TwoERep_11_11* > stack_;
 
     };
@@ -342,7 +346,7 @@ namespace libint2 {
         throw std::runtime_error("TwoERep_11_11<BFSet>::TwoERep_11_11(bra,ket) -- number of BFSets in ket for particle 0 must be 1");
       if (ket.num_members(1) != 1)
         throw std::runtime_error("TwoERep_11_11<BFSet>::TwoERep_11_11(bra,ket) -- number of BFSets in ket for particle 1 must be 1");
-    };
+    }
 
   template <class BFSet>
     TwoERep_11_11<BFSet>*
@@ -358,8 +362,23 @@ namespace libint2 {
       }
       stack_.push_back(this_int);
       return this_int;
-    };
+    }
 
+  template <class BFSet>
+    TwoERep_11_11<BFSet>*
+    TwoERep_11_11<BFSet>::Instance(const BFSet& bra0, const BFSet& ket0, const BFSet& bra1, const BFSet& ket1, unsigned int m)
+    {
+      vector<BFSet> vbra0;  vbra0.push_back(bra0);
+      vector<BFSet> vbra1;  vbra1.push_back(bra1);
+      vector<BFSet> vket0;  vket0.push_back(ket0);
+      vector<BFSet> vket1;  vket1.push_back(ket1);
+      vector< vector<BFSet> > vvbra;  vvbra.push_back(vbra0);  vvbra.push_back(vbra1);
+      vector< vector<BFSet> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
+      VectorBraket<BFSet> bra(vvbra);
+      VectorBraket<BFSet> ket(vvket);
+      return Instance(bra,ket,m);
+    }
+  
   template <class BFSet>
     bool
     TwoERep_11_11<BFSet>::equiv(const DGVertex* a) const
@@ -380,6 +399,84 @@ namespace libint2 {
       os << "TwoERep_11_11: (" << bra_.member(0,0)->label() << " " << ket_.member(0,0)->label()
          << " | " << bra_.member(1,0)->label() << " " << ket_.member(1,0)->label() << ")^{" << m_ <<"}" << endl;
     };
+
+
+
+  /**
+     TypelistBraket is a typelist-based type to describe a bra or a ket
+     of an integral. BFS is a base type for all members of a typelist,
+     and TList is the typelist itself.
+     
+     Unfortunately, it seems that the current standard specification does
+     not allow for this to work: templates are only processed once, not
+     recursively...
+  */
+  template <class BFS, class TList> class TypelistBraket {
+  public:
+    typedef TList BFSMatrix;
+
+    TypelistBraket(const TList&);
+    TypelistBraket(const TypelistBraket&);
+    ~TypelistBraket() throw();
+
+    bool equiv(const TypelistBraket&) const;
+    /// Returns pointer to the i-th function for particle p
+    const BFS* member(unsigned int p, unsigned int i) const;
+    /// Returns the number of BFS for particle p
+    const unsigned int num_members(unsigned int p) const;
+    /// Returns the number of particles
+    const unsigned int num_part() const;
+
+  private:
+
+    BFSMatrix bfs_;
+
+  };
+
+  /*template <class BFS, class TList>
+    TypelistBraket<BFS,TList>::TypelistBraket(const TList& bfs) :
+    bfs_(bfs)
+  {
+  }
+
+  template <class BFS, class TList>
+    TypelistBraket<BFS,TList>::TypelistBraket(const TypelistBraket<BFS,TList>& a) :
+    bfs_(a.bfs_)
+  {
+  }
+
+  template <class BFS, class TList>
+    TypelistBraket<BFS,TList>::~TypelistBraket() throw()
+  {
+  }
+
+  template <class BFS, class TList>
+    const BFS*
+    TypelistBraket<BFS,TList>::member(unsigned int p, unsigned int i) const
+  {
+    return &bfs_.at(p).at(i);
+  }
+  
+  template <class BFS, class TList>
+    const unsigned int
+    TypelistBraket<BFS,TList>::num_part() const
+  {
+    return Length<TList>::value;
+  }
+
+  template <class BFS, class TList>
+    const unsigned int
+    TypelistBraket<BFS,TList>::num_members(unsigned int p) const
+    {
+    }
+  
+  /*template <class BFS, class TList>
+    bool
+    TypelistBraket<BFS, TList>::equiv(const TypelistBraket<BFS,TList>& a) const
+  {
+    return bfs_ == a.bfs_;
+  }*/
+  
 
 };
 

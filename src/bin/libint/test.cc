@@ -76,17 +76,8 @@ int try_main (int argc, char* argv[])
   CGShell xx_2(xx_1);
   xx_2.inc();
 
-  VectorBraket<CGShell>::BFSMatrix bra_pp;
-  VectorBraket<CGShell>::BFSVector one_p_shell;
-  one_p_shell.push_back(sh_p);
-  bra_pp.push_back(one_p_shell);
-  bra_pp.push_back(one_p_shell);
-  bra_pp.push_back(one_p_shell);
-
   typedef TwoERep_11_11<CGShell> TwoERep_sh_11_11;
-  VectorBraket<CGShell> vecbra_pp(bra_pp);
-  TwoERep_sh_11_11* pppp_quartet = TwoERep_sh_11_11::Instance(vecbra_pp,vecbra_pp, 1);
-  pppp_quartet->print(cout);
-
+  TwoERep_sh_11_11* dsdp_quartet = TwoERep_sh_11_11::Instance(sh_d,sh_s,sh_d,sh_p,3);
+  dsdp_quartet->print(cout);
 }
 
