@@ -55,12 +55,11 @@ CGShell::dec()
 {
   // NOTE TO SELF : need to throw specialized exception
   if (qn_[0] == 0)
-    throw std::runtime_error("CGShell::dec() -- angular momentum already 0");
-  --qn_[0];
+    throw InvalidDecrement("CGShell::dec() -- angular momentum already 0");
 }
 
 void
-CGShell::inc()
+CGShell::inc() throw()
 {
   ++qn_[0];
 }

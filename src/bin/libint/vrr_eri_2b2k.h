@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <assert.h>
 #include <rr.h>
 
 using namespace std;
@@ -13,42 +14,88 @@ using namespace std;
 
 namespace libint2 {
 
-  template <class BFSet>
-    VRR_ERI_2b2k<BFSet>::VRR_ERI_2b2k(const TwoERep_2b2k<BFSet>* Tint)
+  template <class F, int part, bool use_bra>
+    VRR_ERI_2b2k<F,part,use_bra>::VRR_ERI_2b2k(const TwoERep_2b2k<F>* Tint)
     {
       target_ = Tint;
 
-      BFSet sh_a = Tint->bra(0,0);
-      BFSet sh_b = Tint->ket(0,0);
-      BFSet sh_c = Tint->bra(1,0);
-      BFSet sh_d = Tint->ket(1,0);
+      F sh_a = Tint->bra(0,0);
+      F sh_b = Tint->ket(0,0);
+      F sh_c = Tint->bra(1,0);
+      F sh_d = Tint->ket(1,0);
       unsigned int m = Tint->m();
 
-      vector<BFSet> bra[2];
-      vector<BFSet> ket[2];
+      vector<F> bra[2];
+      vector<F> ket[2];
 
       bra[0].push_back(sh_a);
       bra[1].push_back(sh_c);
       ket[0].push_back(sh_b);
       ket[1].push_back(sh_d);
 
-      bra[0][0].dec();
-      children_[0] = new TwoERep_2b2k<BFSet>(bra,ket,m);
-      children_[1] = new TwoERep_2b2k<BFSet>(bra,ket,m+1);
-      bra[0][0].dec();
-      children_[2] = new TwoERep_2b2k<BFSet>(bra,ket,m);
-      children_[3] = new TwoERep_2b2k<BFSet>(bra,ket,m+1);
-      bra[0][0].inc();
+      // Zero out children pointers
+      for(int i=0; i<5; i++)
+        children_[i] = 0;
 
-      bra[1][0].dec();
-      children_[4] = new TwoERep_2b2k<BFSet>(bra,ket,m);
+
+      // Use indirection to choose bra or ket
+      vector<F>* braket;
+      if (use_bra) {
+        braket = bra;
+      }
+      else {
+        braket = ket;
+      }
+      // On which particle to act
+      int p_a = part;
+      int p_c = (p_a == 0) ? 1 : 0;
+
+      // See if a-1 exists
+      try {
+        braket[p_a][0].dec();
+      }
+      catch (InvalidDecrement) {
+        return;
+      }
+      children_[0] = new TwoERep_2b2k<F>(bra,ket,m);
+      children_[1] = new TwoERep_2b2k<F>(bra,ket,m+1);
+      // See if a-2 exists
+      bool a_minus_2_exists = true;
+      try {
+        braket[p_a][0].dec();
+      }
+      catch (InvalidDecrement) {
+        a_minus_2_exists = false;
+      }
+      if (a_minus_2_exists) {
+        children_[2] = new TwoERep_2b2k<F>(bra,ket,m);
+        children_[3] = new TwoERep_2b2k<F>(bra,ket,m+1);
+        braket[p_a][0].inc();
+      }
+
+      try {
+        braket[p_c][0].dec();
+      }
+      catch (InvalidDecrement) {
+        return;
+      }
+      children_[4] = new TwoERep_2b2k<F>(bra,ket,m);
 
     };
 
-  template <class BFSet>
-    VRR_ERI_2b2k<BFSet>::~VRR_ERI_2b2k()
+  template <class F, int part, bool use_bra>
+    VRR_ERI_2b2k<F,part,use_bra>::~VRR_ERI_2b2k()
     {
+      if (part < 0 || part >= 2) {
+        assert(false);
+      }
     };
+
+  typedef VRR_ERI_2b2k<CGShell,0,true> VRR_a_ERI_2b2k_shell;
+  typedef VRR_ERI_2b2k<CGShell,1,true> VRR_c_ERI_2b2k_shell;
+  typedef VRR_ERI_2b2k<CGShell,0,false> VRR_b_ERI_2b2k_shell;
+  typedef VRR_ERI_2b2k<CGShell,1,false> VRR_d_ERI_2b2k_shell;
+
 
 };
 

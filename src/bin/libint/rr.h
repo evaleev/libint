@@ -223,6 +223,14 @@ namespace libint2 {
 
   };
 
+  class InvalidDecrement : public std::logic_error {
+    
+    public:
+    InvalidDecrement(const std::string& a) :
+      logic_error(a) {};
+    
+  };
+
   /// Cartesian Gaussian Function
   class CGF : public BFSet {
 
@@ -254,11 +262,11 @@ namespace libint2 {
     /// Returns the number of basis functions in the set
     unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
 
-    /// Implements purely virtual BFSet::dec
+    /// Implements purely virtual BFSet::dec, may throw InvalidDecrement
     void dec();
 
     /// Implements purely virtual BFSet::inc
-    void inc();
+    void inc() throw();
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
@@ -316,7 +324,7 @@ namespace libint2 {
     public:
     DGVertex();
     DGVertex(const vector<DGArc*>& parents, const vector<DGArc*>& children);
-    ~DGVertex();
+    virtual ~DGVertex();
 
   };
 
@@ -493,8 +501,11 @@ namespace libint2 {
       ket_[1][0].print(os);
     };
 
-  /// VRR Recurrence Relation for ERI
-  template <class BFSet> class VRR_ERI_2b2k : public RecurrenceRelation {
+  /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
+      the angular momentum is raised. bool bra specifies whether the angular momentum
+      is raised in bra (true) or ket (false).
+   */
+  template <class BFSet, int part, bool bra> class VRR_ERI_2b2k : public RecurrenceRelation {
 
     const TwoERep_2b2k<BFSet>* target_;
     const TwoERep_2b2k<BFSet>* children_[5];
@@ -510,9 +521,10 @@ namespace libint2 {
 
   };
 
-  #include <vrr_eri_2b2k.h>
 
 };
+
+#include <vrr_eri_2b2k.h>
 
 #endif
 
