@@ -30,13 +30,15 @@
 \vspace{2.0in}
 {\bf {\Large The \LIBINT\ Programmer's Manual}} \\
 \vspace{0.5in}
+\LIBINTv \\
+\vspace{0.5in}
 Edward F.\ Valeev \\
 \ \\
 {\em Center for Computational Molecular Science and Technology, \mbox{Georgia
 Institute of Technology,} Atlanta, Georgia 30332-0400}
 \ \\
 \vspace{0.3in}
-Version of: \today
+Created on: \today
 \end{center}
 
 \thispagestyle{empty}
@@ -185,7 +187,7 @@ The following definitions have been used throughout this work:
 \end{eqnarray}
 {\em Incomplete gamma} function is defined as
 \begin{eqnarray}
-F_m(T) & = & \int_0^{1} dt t^{2m} \exp (-Tt^2)
+F_m(T) & = & \int_0^{1} dt\ t^{2m}\ \exp (-Tt^2)
 \end{eqnarray}
 
 Evaluation of integrals over functions of non-zero angular momentum starts with the
@@ -197,10 +199,10 @@ defined as
 where ${\bf PQ} = {\bf P} - {\bf Q}$ and primitive overlaps $S_{12}$ and $S_{34}$
 are computed as
 \begin{eqnarray}
-S_{12} & = & \frac{\pi}{\zeta} \sqrt{\frac{\pi}{\zeta})}
-\exp (-\frac{\zeta_a\zeta_b}{\zeta} |{\bf AB}|^2) \\
-S_{34} & = & \frac{\pi}{\eta} \sqrt{\frac{\pi}{\eta}}
-\exp (-\frac{\zeta_c\zeta_d}{\eta} |{\bf CD}|^2)
+S_{12} & = & \Bigl( \frac{\pi}{\zeta} \Bigr)^{3/2}
+\exp \Bigl(-\frac{\zeta_a\zeta_b}{\zeta} |{\bf AB}|^2 \Bigr) \\
+S_{34} & = & \Bigl( \frac{\pi}{\eta} \Bigr)^{3/2}
+\exp \Bigl(-\frac{\zeta_c\zeta_d}{\eta} |{\bf CD}|^2 \Bigr)
 \end{eqnarray}
 In the evaluation of integrals over contracted functions it is convenient to
 use auxiliary integrals over primitives which include contraction and normalization factors of the
@@ -346,7 +348,7 @@ the following quantities are stored in {\tt U[1]} and {\tt U[3]}: {\bf QA} and {
 \end{itemize}
 Most of these quantities are simple to evaluate. Evaluation of the incomplete gamma function
 {\tt prim\_data.F} is more involved. One should consult external sources for information on how
-to compute it efficiently.\cite{Obara86,Gill89}
+to compute it efficiently.\cite{Obara86,Gill91}
 
 Once the quartet data has been computed for every unique combination of primitives and put into {\tt Libint\_t.PrimQuartet},
 ERIs can be computed. Appropriate functions are accessed via a four-dimensional array of pointers
@@ -560,7 +562,8 @@ extern void (*build_r12_grt[7][7][7][7])(Libr12_t *, int);
 \end{verbatim}
 The former computes integrals of operators $\frac{1}{r_{12}}$ ("{\em g}") and $r_{12}$ ("{\em r}") only,\footnote{As of this writing,
 these functions have not been implemented yet.}
-whereas in addition the latter computes also integrals of operators $[r_{12},\hat{T}_1]$ and $[r_{12},\hat{T}_2]$ ("{\em t}").
+whereas in addition the latter computes also integrals of operators $[r_{12},\hat{T}_1]$ and $[r_{12},\hat{T}_2]$ ("{\em t}").\footnote{Note
+that in the literature the sum of reversed commutators is usually used, i.e. $[\hat{T}_1 + \hat{T}_2,r_{12}] = - [r_{12},\hat{T}_1] - [r_{12},\hat{T}_2]$.}
 The size of each dimension of these function pointer arrays is determined by
 \begin{verbatim}
 #define LIBR12_MAX_AM 7
@@ -638,7 +641,7 @@ because integrals of both $[r_{12},\hat{T}_1]$ and $[r_{12},\hat{T}_2]$ operator
 %\end{verbatim}
 
 
-\bibliographystyle{plain}
+\bibliographystyle{unsrt}
 \bibliography{refs}
 
 \end{document}
