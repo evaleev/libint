@@ -56,32 +56,5 @@ SubIteratorBase<T,P>::delete_subobj<CGShell>()
     subobj_[i]->~CGF();
 }
 
-#else
-
-//
-// Without partially specialization for nested templates I can only provide code working
-// with standard policy (StdLibintPolicy)
-//
-
-/*
-SubIteratorBase<CGF,StdLibintPolicy>::SubIteratorBase(const CGF* obj) :
-SubIterator(), obj_(obj), subobj_(1,obj_), iter_(0)
-{
-}
-
-SubIteratorBase<CGShell,StdLibintPolicy>::SubIteratorBase(const CGShell* obj) :
-SubIterator(), obj_(obj), subobj_(0), iter_(0)
-{
-  StdLibintPolicy::cgshell_to_cgfvector(obj_,subobj_);
-}
-
-SubIteratorBase<CGShell,StdLibintPolicy>::~SubIteratorBase()
-{
-  int nelem = subobj_.size();
-  for(int i=0; i<nelem; i++)
-    subobj_[i]->~CGF();
-}
-*/
-
 #endif
 

@@ -4,6 +4,12 @@
 using namespace std;
 using namespace libint2;
 
+CGF::CGF()
+{
+  for(int i=0; i<3; i++)
+    qn_[i] = 0;
+}
+
 CGF::CGF(unsigned int qn[3])
 {
   for(int i=0; i<3; i++)

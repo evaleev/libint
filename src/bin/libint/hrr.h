@@ -26,8 +26,8 @@ namespace libint2 {
 
       typedef typename I<F>::BraType IBraType;
       typedef typename I<F>::KetType IKetType;
-      IBraType* bra = Tint->bra();
-      IKetType* ket = Tint->ket();
+      IBraType* bra = new IBraType(Tint->bra());
+      IKetType* ket = new IKetType(Tint->ket());
 
       // Zero out children pointers
       for(int i=0; i<nchild_; i++)

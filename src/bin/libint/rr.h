@@ -25,7 +25,7 @@ namespace libint2 {
 
   public:
     RecurrenceRelation();
-    ~RecurrenceRelation();
+    virtual ~RecurrenceRelation();
 
     /** num_children() returns the actual number of children.
         For example, VRR for ERIs has 5 children on the right-hand side,
@@ -64,12 +64,12 @@ namespace libint2 {
     ~QuantumNumbers();
 
     /// Increment quantum number i
-    void inc(unsigned int i) { ++qn[i]; };
+    void inc(unsigned int i) { ++qn_[i]; };
     /// Decrement quantum number i
     void dec(unsigned int i) {
-      if (qn[i] == T(0))
+      if (qn_[i] == T(0))
         throw std::runtime_error("QuantumNumber::dec -- quantum number already zero");
-      --qn[i];
+      --qn_[i];
     };
   };
 
@@ -123,6 +123,8 @@ namespace libint2 {
     unsigned int qn_[3];
 
   public:
+    /// Default constructor makes an s-type Gaussian
+    CGF();
     CGF(unsigned int qn[3]);
     CGF(const CGF&);
     CGF(const BFSet*);
@@ -334,6 +336,9 @@ namespace libint2 {
       const std::string id_;
 
     public:
+      /// For now consider Oper to consist of one Oper
+      typedef Oper iter_type;
+    
       Oper(const std::string& descr, const std::string& id);
       virtual ~Oper();
 
@@ -494,13 +499,13 @@ namespace libint2 {
     TwoERep_2b2k(const TwoERep_2b2k&);
 
     // This constructor is private since all Integral's are Singletons. Use Instance instead.
-    TwoERep_2b2k(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m);
+    TwoERep_2b2k(const vector<BFSet> bra[TwoERep::Properties::np], const vector<BFSet> ket[TwoERep::Properties::np], unsigned int m);
     // stack_ of pointers to objects used to check whether an object already exists
     static vector< TwoERep_2b2k* > stack_;
 
   public:
     /// Returns a pointer to a unique instance, a la Singleton
-    static TwoERep_2b2k* Instance(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m);
+    static TwoERep_2b2k* Instance(const vector<BFSet> bra[TwoERep::Properties::np], const vector<BFSet> ket[TwoERep::Properties::np], unsigned int m);
     
     unsigned int m() const { return m_; };
 
@@ -514,7 +519,7 @@ namespace libint2 {
     vector< TwoERep_2b2k<BFSet>* > TwoERep_2b2k<BFSet>::stack_(0);
 
   template <class BFSet>
-    TwoERep_2b2k<BFSet>::TwoERep_2b2k(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m) :
+    TwoERep_2b2k<BFSet>::TwoERep_2b2k(const vector<BFSet> bra[TwoERep::Properties::np], const vector<BFSet> ket[TwoERep::Properties::np], unsigned int m) :
     Integral<TwoERep, BFSet>(bra, ket), DGVertex(), m_(m)
     {
       if (bra[0].size() != 1)
@@ -529,7 +534,7 @@ namespace libint2 {
 
   template <class BFSet>
     TwoERep_2b2k<BFSet>*
-    TwoERep_2b2k<BFSet>::Instance(const vector<BFSet> bra[TwoERep::np], const vector<BFSet> ket[TwoERep::np], unsigned int m)
+    TwoERep_2b2k<BFSet>::Instance(const vector<BFSet> bra[TwoERep::Properties::np], const vector<BFSet> ket[TwoERep::Properties::np], unsigned int m)
     {
       TwoERep_2b2k* const this_int = new TwoERep_2b2k<BFSet>(bra,ket,m);
       int stack_size = stack_.size();
@@ -560,8 +565,8 @@ namespace libint2 {
     void
     TwoERep_2b2k<BFSet>::print(std::ostream& os) const
     {
-      os << "TwoERep_2b2k: (" << bra_[0][0].label() << " " << ket_[0][0].label()
-         << " | " << bra_[1][0].label() << " " << ket_[1][0].label() << ")^{" << m_ <<"}" << endl;
+      os << "TwoERep_2b2k: (" << Integral<TwoERep,BFSet>::bra(0,0).label() << " " << Integral<TwoERep,BFSet>::ket(0,0).label()
+         << " | " << Integral<TwoERep,BFSet>::bra(1,0).label() << " " << Integral<TwoERep,BFSet>::ket(1,0).label() << ")^{" << m_ <<"}" << endl;
     };
 
   /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
@@ -721,7 +726,7 @@ namespace libint2 {
 #include <hrr_eri_2b2k.h>
 #include <vrr_11_twoprep_11.h>
 #include <hrr.h>
-#include <shell_to_ints.h>
+//#include <shell_to_ints.h>
 //#include <iter.h>
 
 #endif

@@ -1,6 +1,7 @@
 
 #include <rr.h>
 #include <typelist.h>
+#include <iter.h>
 
 #ifndef _libint2_src_bin_libint_integral_h_
 #define _libint2_src_bin_libint_integral_h_
@@ -62,14 +63,22 @@ namespace libint2 {
     public IntegralSet<BFS>
     {
     public:
+      /// GenIntegralSet is a set of these subobjects
+      typedef GenIntegralSet<typename Oper::iter_type, BFS, typename BraSetType::iter_type, typename KetSetType::iter_type> iter_type;
+    
       /** No constructors are public since this is a singleton-like quantity.
-          Instead, access is provided through derived class's Instance().
+          Instead, access is provided through Instance().
+          
+          Derived classes do not have to be Singletons -- hence protected constructors are provided.
       */
       virtual ~GenIntegralSet();
+
+      /// Returns a pointer to a unique instance, a la Singleton
+      static GenIntegralSet* Instance(const BraSetType& bra, const KetSetType& ket);
       
       /// Equivalence operator
       virtual bool equiv(const IntegralSet<BFS>*) const;
-        
+      
       /// Obtain BFsets members
       const BFS* bra(unsigned int p, unsigned int i) const;
       const BFS* ket(unsigned int p, unsigned int i) const;
@@ -78,13 +87,13 @@ namespace libint2 {
       typedef KetSetType KetType;
       typedef Oper OperatorType;
 
-      /// Obtain a copy of bra
-      BraType* bra() const;
-      /// Obtain a copy of ket
-      KetType* ket() const;
+      /// Obtain const ref to bra
+      const BraType& bra() const;
+      /// Obtain const ref to bra
+      const KetType& ket() const;
 
     protected:
-      // Basic Integral constructor
+      // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
       GenIntegralSet(const BraSetType& bra, const KetSetType& ket);
       
       BraSetType bra_;
@@ -101,9 +110,14 @@ namespace libint2 {
       // Copy is not permitted
       GenIntegralSet& operator=(const GenIntegralSet& source);
 
+      // Unique instances of GenIntegralSet are placed here and obtained through Instance()
+      static vector < GenIntegralSet* > stack_;
+
     };
 
-
+  template <class Oper, class BFS, class BraSetType, class KetSetType>
+    vector < GenIntegralSet<Oper,BFS,BraSetType,KetSetType>* > GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::stack_(0);
+  
   template <class Oper, class BFS, class BraSetType, class KetSetType>
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::GenIntegralSet(const BraSetType& bra, const KetSetType& ket) :
     bra_(bra), ket_(ket)
@@ -120,33 +134,49 @@ namespace libint2 {
     }
 
   template <class Oper, class BFS, class BraSetType, class KetSetType>
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>*
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::Instance(const BraSetType& bra, const KetSetType& ket)
+    {
+      GenIntegralSet<Oper,BFS,BraSetType,KetSetType>* const this_int = new GenIntegralSet<Oper,BFS,BraSetType,KetSetType>(bra,ket);
+      int stack_size = stack_.size();
+      for(int i=0; i<stack_size; i++) {
+        if (this_int->equiv(stack_[i])) {
+          delete this_int;
+          return stack_[i];
+        }
+      }
+      stack_.push_back(this_int);
+      return this_int;
+    }
+  
+  template <class Oper, class BFS, class BraSetType, class KetSetType>
     const BFS*
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::bra(unsigned int p, unsigned int i) const
     {
-      return bra_.member(p,i);
+      return static_cast<const BFS*>(bra_.member(p,i));
     }
     
   template <class Oper, class BFS, class BraSetType, class KetSetType>
     const BFS*
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::ket(unsigned int p, unsigned int i) const
     {
-      return ket_.member(p,i);
+      return static_cast<const BFS*>(ket_.member(p,i));
     }
-    
+
   template <class Oper, class BFS, class BraSetType, class KetSetType>
-    typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::BraType*
+    const typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::BraType&
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::bra() const
     {
-      return new BraSetType(bra_);
+      return bra_;
     }
-    
+
   template <class Oper, class BFS, class BraSetType, class KetSetType>
-    typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::KetType*
+    const typename GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::KetType&
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::ket() const
     {
-      return new KetSetType(ket_);
+      return ket_;
     }
-    
+      
   template <class Oper, class BFS, class BraSetType, class KetSetType>
     bool
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType>::equiv(const IntegralSet<BFS>* a) const
@@ -169,6 +199,9 @@ namespace libint2 {
     typedef vector< BFSVector > BFSMatrix;
     typedef VectorBraket<typename BFS::iter_type> iter_type;
 
+    /** This one is a very dangerous constructor -- do not to use it if at all possible.
+      Provided only for compatibility for generic subiterator algorithms */
+    VectorBraket();
     VectorBraket(const BFSMatrix&);
     VectorBraket(const VectorBraket&);
     ~VectorBraket() throw();
@@ -177,8 +210,12 @@ namespace libint2 {
     bool equiv(const VectorBraket&) const;
     /// Returns pointer to the i-th function for particle p
     const BFS* member(unsigned int p, unsigned int i) const;
+    /// Returns pointer to the SubIterator for i-th BFS of particle p
+    SubIterator* member_subiter(unsigned int p, unsigned int i) const;
     /// Sets i-th function for particle p
     void set_member(const BFS&, unsigned int p, unsigned int i);
+    /// Sets i-th function for particle p (does a dynamic cast inside)
+    void set_member(const void*, unsigned int p, unsigned int i);
     /// Returns the number of BFS for particle p
     const unsigned int num_members(unsigned int p) const;
     /// Returns the number of particles
@@ -190,6 +227,12 @@ namespace libint2 {
 
   };
 
+  template <class BFS>
+    VectorBraket<BFS>::VectorBraket() :
+    bfs_(0)
+    {
+    }
+  
   template <class BFS>
     VectorBraket<BFS>::VectorBraket(const BFSMatrix& bfs) :
     bfs_(bfs)
@@ -215,12 +258,35 @@ namespace libint2 {
     }
 
   template <class BFS>
+    SubIterator*
+    VectorBraket<BFS>::member_subiter(unsigned int p, unsigned int i) const
+    {
+      return static_cast<SubIterator*>(new SubIteratorBase<BFS>( &bfs_.at(p).at(i) ) );
+    }
+  
+  template <class BFS>
     void
     VectorBraket<BFS>::set_member(const BFS& bfs, unsigned int p, unsigned int i)
     {
       bfs_.at(p).at(i) = bfs;
     }
 
+  template <class BFS>
+    void
+    VectorBraket<BFS>::set_member(const void* bfs, unsigned int p, unsigned int i)
+    {
+      // WARNING : can be VERY dangerous
+      const BFS* bfs_cast = static_cast<const BFS*>(bfs);
+      if (bfs_cast == 0)
+        throw std::runtime_error("VectorBraket<BFS>::set_member(bfs,p,i) -- bfs couldn't be casted to BFS");
+      
+      if (p >= bfs_.size())
+        bfs_.resize(p+1);
+      if (i >= bfs_[p].size())
+        bfs_[p].resize(i+1);
+      bfs_[p][i] = *bfs_cast;
+    }
+  
   template <class BFS>
     const unsigned int
     VectorBraket<BFS>::num_members(unsigned int p) const
@@ -255,6 +321,10 @@ namespace libint2 {
     public:
       typedef VectorBraket<BFS> BraType;
       typedef VectorBraket<BFS> KetType;
+      /// TwoPRep_11_11 is a set of these subobjects
+      typedef TwoPRep_11_11<typename BFS::iter_type> iter_type;
+      /// This is the parent
+      typedef GenIntegralSet<TwoERep, BFSet, VectorBraket<BFS>, VectorBraket<BFS> > parent_type;
 
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
@@ -350,8 +420,8 @@ namespace libint2 {
     void
     TwoPRep_11_11<BFS>::print(std::ostream& os) const
     {
-      os << "TwoPRep_11_11: (" << bra_.member(0,0)->label() << " " << ket_.member(0,0)->label()
-         << " | " << bra_.member(1,0)->label() << " " << ket_.member(1,0)->label() << ")^{" << m_ <<"}" << endl;
+      os << "TwoPRep_11_11: (" << parent_type::bra_.member(0,0)->label() << " " << parent_type::ket_.member(0,0)->label()
+         << " | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m_ <<"}" << endl;
     };
 
 

@@ -1,11 +1,8 @@
 
+#include <vector>
+
 #ifndef _libint2_src_bin_libint_iter_h_
 #define _libint2_src_bin_libint_iter_h_
-
-#include <rr.h>
-#include <integral.h>
-#include <policy.h>
-#include <traits.h>
 
 // gcc 3.4 doesn't seem to allow
 //#define ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
@@ -31,20 +28,30 @@ namespace libint2 {
     virtual SubIterator& operator++() =0;
     /// This is used to check whether next element exists. Returns 1 if it does.
     virtual operator int() const =0;
+    /// Returns current element. Returns void* -- hence needs a dynamic_cast.
+    virtual const void* pelem() const =0;
 
   protected:
     SubIterator();
-    ~SubIterator();
+    virtual ~SubIterator();
     
   private:
     SubIterator operator++(int);
   };
 
-  /** SubIteratorBase<T> provides a base class for a sub-iterator class for T. It iterates through
-      T as if it were a set of some data of type T::iter_type. Policies of class T (ordering of
-      T::iter_type, etc.) are provided by P.
+  /** StdLibintTraits<T> provides traits of class T
   */
-  template <class T, class P = StdLibintPolicy> class SubIteratorBase : public SubIterator {
+  template < class T>
+    struct StdLibintTraits {
+      static void init_subobj(const T* cgshell, vector<const typename T::iter_type*>& cgfs);
+      static void dealloc_subobj(vector<const typename T::iter_type*>& cgfs);
+    };
+
+  /** SubIteratorBase<T> provides a base class for a sub-iterator class for T. It iterates through
+      T as if it were a set of some data of type T::iter_type. Traits of class T (ordering of
+      T::iter_type, etc.) are provided by Tr.
+  */
+  template <class T, class Tr = StdLibintTraits<T> > class SubIteratorBase : public SubIterator {
 
   public:
     typedef typename T::iter_type iter_type;
@@ -53,7 +60,9 @@ namespace libint2 {
     virtual ~SubIteratorBase();
     
     /// Returns current element
-    const iter_type* elem();
+    const iter_type* elem() const;
+    /// Returns current element. Implements SubIterator's pelem().
+    const void* pelem() const;
 
     /// Returns a number of iterations (number of elements in a set over which to iterate).
     const unsigned int num_iter() const;
@@ -61,7 +70,7 @@ namespace libint2 {
     void init();
     /// Iterates to the next element. Only prefix form is provided.
     SubIterator& operator++();
-    /// This is used to check whether next element exists. Returns 1 if it does.
+    /// This is used to check whether current element exists. Returns 1 if it does.
     operator int() const;
     
   protected:
@@ -112,11 +121,18 @@ namespace libint2 {
   
   template <class T, class P>
     const typename SubIteratorBase<T,P>::iter_type*
-    SubIteratorBase<T,P>::elem()
+    SubIteratorBase<T,P>::elem() const
   {
       return subobj_.at(iter_);
   }
 
+  template <class T, class P>
+    const void*
+    SubIteratorBase<T,P>::pelem() const
+    {
+      return static_cast<const void*>(elem());
+    }
+  
   template <class T, class P>
     void
     SubIteratorBase<T,P>::init()
@@ -142,14 +158,14 @@ namespace libint2 {
     void
     SubIteratorBase<T,P>::init_subobj()
   {
-      StdLibintTraits<T>::init_subobj(obj_,subobj_);
+      P::init_subobj(obj_,subobj_);
   }
 
   template <class T, class P>
     void
     SubIteratorBase<T,P>::delete_subobj()
   {
-      StdLibintTraits<T>::dealloc_subobj(subobj_);
+      P::dealloc_subobj(subobj_);
   }
   
 };

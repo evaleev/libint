@@ -1,6 +1,6 @@
 
-#include <traits.h>
 #include <rr.h>
+#include <traits.h>
 
 using namespace std;
 using namespace libint2;
@@ -11,9 +11,9 @@ StdLibintTraits<CGShell>::init_subobj(const CGShell* cgshell, vector<const CGF*>
 {
   unsigned int am = cgshell->qn();
   unsigned int qn[3];
-  for(int i=0; i<=am; i++) {
+  for(unsigned int i=0; i<=am; i++) {
     qn[0] = am - i;
-    for(int j=0; j<=i; j++) {
+    for(unsigned int j=0; j<=i; j++) {
       qn[1] = i - j;
       qn[2] = j;
 
@@ -43,6 +43,4 @@ void
 StdLibintTraits<CGF>::dealloc_subobj(vector<const CGF*>& subobj)
 {
 }
-
-StdLibintTraits< VectorBraket<CGShell> > a;
 
