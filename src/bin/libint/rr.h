@@ -126,9 +126,16 @@ namespace libint2 {
 
   class RecurrenceRelation {
 
-    public:
+  public:
     RecurrenceRelation();
     ~RecurrenceRelation();
+
+    /** num_children() returns the actual number of children.
+        For example, VRR for ERIs has 5 children on the right-hand side,
+        however, for some ERI classes (ss|ps) the actual number may be
+        smaller.
+    */
+    virtual const unsigned int num_children() const =0;
     
     virtual const std::string cpp_function_name() =0;
     virtual const std::string cpp_source_name() =0;
@@ -279,12 +286,15 @@ namespace libint2 {
       Each arc connects vertex orig_ to vertex dest_. */
   class DGArc {
 
-    const DGVertex* orig_;  // Where this Arc leavs
-    const DGVertex* dest_;  // Where this Arc leads to
+    DGVertex* orig_;  // Where this Arc leavs
+    DGVertex* dest_;  // Where this Arc leads to
 
     public:
-    DGArc(const DGVertex* orig_, const DGVertex* dest_);
+    DGArc(DGVertex* orig_, DGVertex* dest_);
     ~DGArc();
+
+    DGVertex* orig() const { return orig_; };
+    DGVertex* dest() const { return dest_; };
     
   };
   
@@ -297,13 +307,13 @@ namespace libint2 {
     ArcRel* rel_;     // Relationship described by the arc
 
     public:
-    DGArcRel(const DGVertex* orig, const DGVertex* dest, const ArcRel* rel);
+    DGArcRel(DGVertex* orig, DGVertex* dest, ArcRel* rel);
     ~DGArcRel();
     
   };
 
   template <class ArcRel>
-    DGArcRel<ArcRel>::DGArcRel(const DGVertex* orig, const DGVertex* dest, const ArcRel* rel) :
+    DGArcRel<ArcRel>::DGArcRel(DGVertex* orig, DGVertex* dest, ArcRel* rel) :
     DGArc(orig,dest), rel_(rel)
     {
     };
@@ -321,10 +331,25 @@ namespace libint2 {
     /// We also need info about Arcs entering this DGVertex
     vector<DGArc*> parents_;
 
-    public:
+    // Whether this is a "target" vertex, i.e. the target of a calculation
+    bool target_;
+    /// add_entry_arc(arc) adds arc as an arc connecting parents to this vertex
+    void add_entry_arc(DGArc*);
+
+  public:
     DGVertex();
     DGVertex(const vector<DGArc*>& parents, const vector<DGArc*>& children);
     virtual ~DGVertex();
+
+    /// make_a_target() marks this vertex as a target
+    void make_a_target();
+    /// add_exit_arc(arc) adds arc as an arc connecting to children of this vertex
+    void add_exit_arc(DGArc*);
+
+    /** apply_rr() applies the optimal recurrence relation to this particular DGVertex.
+        The concrete class must implement this.
+    */
+    //virtual RecurrenceRelation* apply_rr() =0;
 
   };
 
@@ -507,12 +532,22 @@ namespace libint2 {
    */
   template <class BFSet, int part, bool bra> class VRR_ERI_2b2k : public RecurrenceRelation {
 
-    const TwoERep_2b2k<BFSet>* target_;
-    const TwoERep_2b2k<BFSet>* children_[5];
+    static const unsigned int nchild_ = 5;
 
-    public:
-    VRR_ERI_2b2k(const TwoERep_2b2k<BFSet>*);
+    TwoERep_2b2k<BFSet>* target_;
+    TwoERep_2b2k<BFSet>* children_[nchild_];
+
+    unsigned int num_actual_children_;
+
+  public:
+    VRR_ERI_2b2k(TwoERep_2b2k<BFSet>*);
     ~VRR_ERI_2b2k();
+
+    const unsigned int num_children() const { return num_actual_children_; };
+    /// target() returns points to the i-th child
+    TwoERep_2b2k<BFSet>* target() { return target_; };
+    /// child(i) returns points i-th child
+    TwoERep_2b2k<BFSet>* child(unsigned int i);
 
     const std::string cpp_function_name() {};
     const std::string cpp_source_name() {};

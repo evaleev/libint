@@ -1,10 +1,11 @@
 
 #include <rr.h>
+#include <dg.h>
 
 using namespace std;
 using namespace libint2;
 
-DGArc::DGArc(const DGVertex* orig, const DGVertex* dest)
+DGArc::DGArc(DGVertex* orig, DGVertex* dest)
 {
   orig_ = orig;
   dest_ = dest;
@@ -15,17 +16,36 @@ DGArc::~DGArc()
 }
 
 DGVertex::DGVertex() :
-  parents_(0), children_(0)
+  parents_(0), children_(0), target_(false)
 {
 }
 
 DGVertex::DGVertex(const vector<DGArc*>& parents, const vector<DGArc*>& children) :
-  parents_(parents), children_(children)
+  parents_(parents), children_(children), target_(false)
 {
 }
 
 DGVertex::~DGVertex()
 {
+}
+
+void
+DGVertex::make_a_target()
+{
+  target_ = true;
+}
+
+void
+DGVertex::add_exit_arc(DGArc* arc)
+{
+  children_.push_back(arc);
+  arc->dest()->add_entry_arc(arc);
+}
+
+void
+DGVertex::add_entry_arc(DGArc* arc)
+{
+  parents_.push_back(arc);
 }
 
 
@@ -40,29 +60,12 @@ DirectedGraph::~DirectedGraph()
 {
   int size = stack_.size();
   for(int i=0; i<size; i++)
-    stack_->~DGVertex;
+    stack_[i]->~DGVertex();
 }
 
-/// Apply RR to target
-template <class I, class RR>
-void recurse<I,RR>(const I* target)
+void
+DirectedGraph::add_vertex(DGVertex* vertex)
 {
-  add_vertex(target);
-  
-  RR* rr0 = new RR(target);
-  const int num_children = rr0->num_children();
-
-  for(int c=0; c<num_children; c++) {
-
-    const DGVertex* child = rr0->children(c);
-    add_vertex(child);
-
-    DGArc* arc = DGArcRel<RR>(target,child,rr0);
-    target->add_exit(arc);
-    child->add_entry(arc);
-
-    recurse<I,RR>(child);
-    
-  }
-
+  stack_[first_free_++] = vertex;
 }
+

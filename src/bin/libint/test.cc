@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <rr.h>
+#include <dg.h>
 
 using namespace std;
 using namespace libint2;
@@ -48,8 +49,8 @@ int main (int argc, char* argv[])
   VRR_c_ERI_2b2k_shell vrr2(&sq_b);
 
   // Create a DAG for a VRR case
-  vector<DGVertex*> vrr_stack;
-  
+  DirectedGraph dg_vrr_dsps;
+  dg_vrr_dsps.append_target< TwoERep_2b2k<CGShell>, VRR_a_ERI_2b2k_shell>(&sq_a);
 
 }
 
