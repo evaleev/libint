@@ -107,20 +107,35 @@ namespace libint2 {
   class BFSet : public ConstructablePolymorphically {
 
   public:
-    BFSet() {}
-    virtual ~BFSet() {};
+    virtual ~BFSet() {}
     virtual unsigned int num_bf() const =0;
     virtual const std::string label() const =0;
 
-    /// Increments one of the quantum numbers
-    virtual void inc() =0;
-    /// Decrements one of the quantum numbers
-    virtual void dec() =0;
+  protected:
+    BFSet() {}
+
+  };
+
+  /** Set of basis functions with incrementable/decrementable quantum numbers.
+      Sets must be constructable using SafePtr<BFSet> or SafePtr<ConstructablePolymorphically>.
+  */
+  class IncableBFSet : public BFSet {
+
+  public:
+    virtual ~IncableBFSet() {}
+
+    /// Increment i-th quantum number. Do nothing if i is outside the allowed range
+    virtual void inc(unsigned int i) throw() =0;
+    /// Decrements i-th quantum number. Do nothing is i is outside the allowed range
+    virtual void dec(unsigned int i) =0;
+
+  protected:
+    IncableBFSet() {}
 
   };
 
   /// Cartesian Gaussian Function
-  class CGF : public BFSet {
+  class CGF : public IncableBFSet {
 
     unsigned int qn_[3];
 
@@ -148,10 +163,10 @@ namespace libint2 {
     /// Comparison operator
     bool operator==(const CGF&) const;
     
-    /// Decrement one of quantum numbers
-    void dec();
-    /// Increment one of quantum numbers
-    void inc();
+    /// Implements purely virtual IncableBFSet::dec, may throw InvalidDecrement
+    void dec(unsigned int i);
+    /// Implements purely virtual IncableBFSet::inc
+    void inc(unsigned int i) throw();
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
@@ -159,7 +174,7 @@ namespace libint2 {
   };
 
   /// Cartesian Gaussian Shell
-  class CGShell : public BFSet {
+  class CGShell : public IncableBFSet {
 
     unsigned int qn_[1];
 
@@ -188,10 +203,10 @@ namespace libint2 {
     /// Comparison operator
     bool operator==(const CGShell&) const;
 
-    /// Implements purely virtual BFSet::dec, may throw InvalidDecrement
-    void dec();
-    /// Implements purely virtual BFSet::inc
-    void inc() throw();
+    /// Implements purely virtual IncableBFSet::dec, may throw InvalidDecrement
+    void dec(unsigned int i);
+    /// Implements purely virtual IncableBFSet::inc
+    void inc(unsigned int i) throw();
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
@@ -716,7 +731,7 @@ namespace libint2 {
 
       Int is the integral class. part specifies for which particle
       the angular momentum is shifted. Function a is assumed to gain quanta,
-      function a gains quanta. loc_a and loc_b specify where
+      function b loses quanta. loc_a and loc_b specify where
       functions a and b are located (bra or ket). pos_a and pos_b
       specify which function to be used (usually pos_a and pos_b are set
       to 0 to refer to the first function for this particle in this location).

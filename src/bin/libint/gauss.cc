@@ -78,15 +78,20 @@ CGF::operator==(const CGF& a) const
 }
 
 void
-CGF::dec()
+CGF::dec(unsigned int i)
 {
-  throw std::runtime_error("CGF::dec() -- not implemented yet");
+  if (i<3) {
+    if (qn_[i] == 0)
+      throw InvalidDecrement("CGF::dec() -- quantum number already 0");
+    --qn_[i];
+  }
 }
 
 void
-CGF::inc()
+CGF::inc(unsigned int i) throw()
 {
-  throw std::runtime_error("CGF::inc() -- not implemented yet");
+  if (i<3)
+    ++qn_[i];
 }
 
 void
@@ -164,18 +169,20 @@ CGShell::operator==(const CGShell& a) const
 }
 
 void
-CGShell::dec()
+CGShell::dec(unsigned int i)
 {
-  // NOTE TO SELF : need to throw specialized exception
-  if (qn_[0] == 0)
-    throw InvalidDecrement("CGShell::dec() -- angular momentum already 0");
-  --qn_[0];
+  if (i == ) {
+    if (qn_[0] == 0)
+      throw InvalidDecrement("CGShell::dec() -- angular momentum already 0");
+    --qn_[0];
+  }
 }
 
 void
-CGShell::inc() throw()
+CGShell::inc(unsigned int i) throw()
 {
-  ++qn_[0];
+  if (i == 0)
+    ++qn_[0];
 }
 
 void

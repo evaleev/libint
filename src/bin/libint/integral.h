@@ -73,6 +73,10 @@ namespace libint2 {
       typedef GenIntegralSet this_type;
       /// GenIntegralSet is a set of these subobjects
       typedef GenIntegralSet<typename Oper::iter_type, BFS, typename BraSetType::iter_type, typename KetSetType::iter_type> iter_type;
+      /// GenIntegralSet is derived from IntegralSet
+      typedef IntegralSet<BFS> parent_type;
+      /// This is the class that has equiv operation
+      typedef parent_type has_equiv_type;
     
       /** No constructors are public since this is a singleton-like quantity.
           Instead, access is provided through Instance().
@@ -380,7 +384,7 @@ namespace libint2 {
      from which BFS derives.
   */
   template <class BFS> class TwoPRep_11_11 :
-    public GenIntegralSet<TwoERep, BFSet, VectorBraket<BFS>, VectorBraket<BFS> >,
+    public GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS> >,
     public DGVertex
     {
     public:
@@ -391,9 +395,9 @@ namespace libint2 {
       /// TwoPRep_11_11 is a set of these subobjects
       typedef TwoPRep_11_11<typename BFS::iter_type> iter_type;
       /// This is the immediate parent
-      typedef GenIntegralSet<TwoERep, BFSet, VectorBraket<BFS>, VectorBraket<BFS> > parent_type;
+      typedef GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS> > parent_type;
       /// This is the base parent which declares an equiv operation
-      typedef IntegralSet<BFSet> has_equiv_type;
+      typedef typename parent_type::has_equiv_type has_equiv_type;
 
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
@@ -431,7 +435,7 @@ namespace libint2 {
 
   template <class BFS>
     TwoPRep_11_11<BFS>::TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, unsigned int m) :
-    GenIntegralSet<TwoERep, BFSet, BraType, KetType>(TwoERep(),bra, ket), DGVertex(), m_(m)
+    GenIntegralSet<TwoERep, IncableBFSet, BraType, KetType>(TwoERep(),bra, ket), DGVertex(), m_(m)
     {
       if (bra.num_members(0) != 1)
         throw std::runtime_error("TwoPRep_11_11<BFS>::TwoPRep_11_11(bra,ket) -- number of BFSs in bra for particle 0 must be 1");
