@@ -22,7 +22,7 @@ typedef struct hrr_node{
   int A, B, C, D;               /* Angular momenta on centers A and C */
   int size;               /* Class size in double words */
   int pointer;
-  int children[2];        /* Up to 5 children of the class */
+  int children[2];        /* Up to 2 children of the class */
   int parents_counter;
   int num_parents;        /* Number of parents */
   int parents[5];         /* Pointers to parents */
