@@ -70,7 +70,7 @@ Prefactors::Prefactors() :
     one_o_2alpha12[p] = oo2alpha12;
 
     char roz[20];
-    sprintf(roz,"ro2%c",alpha12_char[p]);
+    sprintf(roz,"ro%c",alpha12_char[p]);
     rdptr roz_ptr(new rdouble(roz));
     rho_o_alpha12[p] = roz_ptr;
   }

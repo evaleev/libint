@@ -1,7 +1,10 @@
 
+#ifndef _libint2_header_
+#define _libint2_header_
+
 #define REALTYPE double
-#define MAX_STACK 1000000;
-#define MAX_NTARGETS 4
+#define LIBINT_MAX_STACK 1000000
+#define LIBINT_MAX_NTARGETS 4
 
 typedef struct {
   REALTYPE __ss_1_over_r_12_ss___up_0;
@@ -22,12 +25,13 @@ typedef struct {
   REALTYPE oo2z;
   REALTYPE oo2e;
   REALTYPE oo2ze;
-  REALTYPE ro2z;
-  REALTYPE ro2e;
+  REALTYPE roz;
+  REALTYPE roe;
 
   REALTYPE* stack;
-  REALTYPE* targets[MAX_NTARGETS];
+  REALTYPE* targets[LIBINT_MAX_NTARGETS];
 
 } Libint_t;
 
+#endif
 
