@@ -10,10 +10,8 @@ TARGET_HEADERS = libderiv.h
 # List all generated routines. Do it in a safe way in case the list is too long
 #
 TRUESRC1 = $(shell echo `ls *.cc`)
-TRUESRC2 = $(shell echo `ls *.c`)
 LIBOBJ1 = $(TRUESRC1:%.cc=%.$(OBJSUF))
-LIBOBJ2 = $(TRUESRC2:%.c=%.$(OBJSUF))
-LIBOBJ = $(LIBOBJ1) $(LIBOBJ2)
+LIBOBJ = $(LIBOBJ1)
 
 default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
 
@@ -21,7 +19,6 @@ default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
 $(TOPDIR)/lib/$(NAME).a: $(LIBOBJ)
 	/bin/rm -f $@
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ1)
-	$(AR) $(ARFLAGS) $@ $(LIBOBJ2)
 	$(RANLIB) $@
 
 # this is how shared library is made
