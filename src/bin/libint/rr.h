@@ -22,6 +22,8 @@ namespace libint2 {
 
   const int Libint2_DefaultVectorLength = 64;
 
+  class DGVertex;
+  
   class RecurrenceRelation {
   public:
     RecurrenceRelation();
@@ -33,6 +35,10 @@ namespace libint2 {
         smaller.
     */
     virtual const unsigned int num_children() const =0;
+    /// Returns i-th child
+    virtual SafePtr<DGVertex> rr_child(unsigned int i) const =0;
+    /// Returns the target
+    virtual SafePtr<DGVertex> rr_target() const =0;
     
     virtual const std::string cpp_function_name() =0;
     virtual const std::string cpp_source_name() =0;
@@ -263,6 +269,10 @@ namespace libint2 {
     */
     virtual bool equiv(const SafePtr<DGVertex>&) const =0;
 
+    /** Returns the amount of memory (in floating-point words) to be allocated for the vertex.
+      */
+    virtual const unsigned int size() const =0;
+    
     /** print(std::ostream&) prints out comment-style info vertex
     */
     virtual void print(std::ostream& os = std::cout) const =0;

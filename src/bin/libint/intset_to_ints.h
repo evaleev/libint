@@ -29,11 +29,15 @@ namespace libint2 {
     ~IntegralSet_to_Integrals() {};
 
     const unsigned int num_children() const { return num_actual_children_; };
-    /// target() returns points to the i-th child
-    SafePtr<TargetType> target() { return target_; };
-    /// child(i) returns points i-th child
-    SafePtr<ChildType> child(unsigned int i);
-
+    /// target() returns pointer to target
+    SafePtr<TargetType> target() const { return target_; };
+    /// child(i) returns pointer i-th child
+    SafePtr<ChildType> child(unsigned int i) const;
+    /// Implementation of RecurrenceRelation's target()
+    SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    /// Implementation of RecurrenceRelation's child()
+    SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+    
     const std::string cpp_function_name() {};
     const std::string cpp_source_name() {};
     const std::string cpp_header_name() {};
@@ -71,7 +75,7 @@ namespace libint2 {
 
   template <class I>
     SafePtr<typename I::iter_type>
-    IntegralSet_to_Integrals<I>::child(unsigned int i)
+    IntegralSet_to_Integrals<I>::child(unsigned int i) const
     {
       assert(i>=0 && i<num_actual_children_);
       return children_.at(i);

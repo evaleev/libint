@@ -45,11 +45,15 @@ namespace libint2 {
     ~HRR();
 
     const unsigned int num_children() const { return num_actual_children_; };
-    /// target() returns points to the i-th child
-    SafePtr<TargetType> target() { return target_; };
-    /// child(i) returns points i-th child
-    SafePtr<ChildType> child(unsigned int i);
-
+    /// returns pointer to the target
+    SafePtr<TargetType> target() const { return target_; };
+    /// child(i) returns pointer to i-th child
+    SafePtr<ChildType> child(unsigned int i) const;
+    /// Implementation of RecurrenceRelation's target()
+    SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    /// Implementation of RecurrenceRelation's child()
+    SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+    
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
     const std::string cpp_header_name() {}
@@ -180,7 +184,7 @@ namespace libint2 {
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     SafePtr<typename HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::ChildType>
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::child(unsigned int i)
+    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::child(unsigned int i) const
     {
       assert(i>=0 && i<num_actual_children_);
 

@@ -8,7 +8,7 @@
 #include <iter.h>
 #include <policy_spec.h>
 #include <intset_to_ints.h>
-#include <smart_ptr.h>
+#include <strategy.h>
 
 using namespace std;
 using namespace libint2;
@@ -101,6 +101,9 @@ int try_main (int argc, char* argv[])
   dg_xxxx2.traverse();
   dg_xxxx2.debug_print_traversal(cout);  
 
+  SafePtr<Strategy> strat(new Strategy);
+  SafePtr<DGVertex> pppp_vertex = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(pppp_ptr);
+  SafePtr<RecurrenceRelation> pppp_rr = strat->optimal_rr(pppp_vertex);
 }
 
 #if 0

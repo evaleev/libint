@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <smart_ptr.h>
 #include <rr.h>
+#include <strategy.h>
 
 #ifndef _libint2_src_bin_libint_dg_h_
 #define _libint2_src_bin_libint_dg_h_
@@ -54,7 +55,11 @@ namespace libint2 {
         RR is applied to vertex and all its children.
      */
     template <class RR> void recurse(const SafePtr<DGVertex>& vertex);
-
+    /** This function is used to implement (recursive) apply().
+      strategy is applied to vertex and all its children.
+    */
+    void apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>& strategy);
+    
     // Which vertex is the first to compute
     SafePtr<DGVertex> first_to_compute_;
     // prepare_to_traverse must be called before actual traversal
@@ -99,10 +104,15 @@ namespace libint2 {
 
     */
     template <class RR> void apply_to_all();
+    
+    /** after all append_target's have been called, apply(const SafePtr<Strategy>&)
+      constructs a graph using a strategy. Strategy specifies how to apply recurrence relations.
+      The goal of strategies is to connect the target vertices to simpler, precomputable vertices.
+      */
+    void apply(const SafePtr<Strategy>&);
 
-    /** after all append_target's have been called, traverse()
+    /** after all apply's have been called, traverse()
         construct a heuristic order of traversal for the graph.
-
     */
     void traverse();
 

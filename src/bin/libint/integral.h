@@ -3,6 +3,7 @@
 #include <rr.h>
 #include <typelist.h>
 #include <iter.h>
+#include <policy_spec.h>
 #include <quanta.h>
 #include <equiv.h>
 
@@ -66,7 +67,8 @@ namespace libint2 {
      AuxQuanta describes auxiliary quantum numbers. AuxQuanta should be derived from QuantumSet.
   */
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta = NullQuantumSet> class GenIntegralSet :
-    public IntegralSet<BFS>, public DGVertex
+    public IntegralSet<BFS>, public DGVertex,
+    public EnableSafePtrFromThis< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >
     {
     public:
       /// GenIntegralSet is a set of these subobjects
@@ -92,6 +94,8 @@ namespace libint2 {
       virtual bool operator==(const GenIntegralSet&) const;
       /// Specialization of DGVertex's equiv
       bool equiv(const SafePtr<DGVertex>& v) const { return PtrComp::equiv(this,v); }
+      /// Specialization of DGVertex's size
+      virtual const unsigned int size() const;
       /// Specialization of DGVertex's print
       virtual void print(std::ostream& os = std::cout) const;
 
@@ -228,6 +232,15 @@ namespace libint2 {
       return oper_equiv && bra_equiv && ket_equiv && aux_equiv;
     }
 
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    const unsigned int
+    GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::size() const
+    {
+      SafePtr<this_type> this_ptr = const_pointer_cast<this_type,const this_type>(SafePtr_from_this());
+      SafePtr< SubIteratorBase<this_type> > siter(new SubIteratorBase<this_type>(this_ptr));
+      return siter->num_iter();
+    }
+    
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     void
     GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta>::print(std::ostream& os) const
@@ -411,6 +424,12 @@ namespace libint2 {
       return true;
     }
 
+  /** TwoPRep_11_11_base is the base for all 2-body repulsion integrals with one basis function
+    for each particle in bra and ket
+    */
+  class TwoPRep_11_11_base {
+  };
+
   /**
      Most basic type -- TwoPRep_11_11 --
      has one bfs for each particle in bra and ket.
@@ -418,7 +437,8 @@ namespace libint2 {
      from which BFS derives.
   */
   template <class BFS> class TwoPRep_11_11 :
-    public GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, QuantumNumbers<unsigned int,1> >
+    public GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, QuantumNumbers<unsigned int,1> >,
+    public TwoPRep_11_11_base
     {
     public:
       typedef VectorBraket<BFS> BraType;
@@ -525,7 +545,11 @@ namespace libint2 {
          << " | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}" << endl;
     };
 
+  /// TwoPRep_11_11_sq is a shell quartet of ERIs
+  typedef TwoPRep_11_11<CGShell> TwoPRep_11_11_sq;
 
+  /// TwoPRep_11_11_int is a single ERIs
+  typedef TwoPRep_11_11<CGF> TwoPRep_11_11_int;
 
   /**
      TypelistBraket is a typelist-based type to describe a bra or a ket

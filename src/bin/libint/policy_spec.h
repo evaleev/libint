@@ -1,8 +1,9 @@
 
 #include <vector>
 #include <smart_ptr.h>
-#include <integral.h>
 #include <iter.h>
+#include <policy.h>
+#include <integral_decl.h>
 
 #ifndef _libint2_src_bin_libint_policyspec_h_
 #define _libint2_src_bin_libint_policyspec_h_
@@ -16,44 +17,29 @@ namespace libint2 {
   */
 
   /**
-     StdLibintTDPolicy<CGShell>::init_subobj initializes CGFs in canonical order.
-     The functions in order are produced using the following C++ loop:
+  StdLibintTDPolicy<CGShell>::init_subobj initializes CGFs in canonical order.
+   The functions in order are produced using the following C++ loop:
 
-     for(int i=0; i<=am; i++) {
-       qn[0] = am - i;
-       for(int j=0; j<=i; j++) {
-         qn[1] = i - j;
-         qn[2] = j;
-       }
+   for(int i=0; i<=am; i++) {
+     qn[0] = am - i;
+     for(int j=0; j<=i; j++) {
+       qn[1] = i - j;
+       qn[2] = j;
      }
+   }
 
-     where am is the angular momentum of the shell and qn[3] are the x, y, and z
-     exponents.
-  */
-  
-  template <>
-  void
-  StdLibintTDPolicy<CGShell>::init_subobj(const SafePtr<CGShell>& cgshell, vector< SafePtr<CGF> >& cgfs)
-  {
-    unsigned int am = cgshell->qn();
-    unsigned int qn[3];
-    for(unsigned int i=0; i<=am; i++) {
-      qn[0] = am - i;
-      for(unsigned int j=0; j<=i; j++) {
-        qn[1] = i - j;
-        qn[2] = j;
-
-	SafePtr<CGF> cgf_ptr(new CGF(qn)); 
-        cgfs.push_back(cgf_ptr);
-      }
-    }
-  }
+   where am is the angular momentum of the shell and qn[3] are the x, y, and z
+   exponents.
+   */
 
   template <>
   void
-  StdLibintTDPolicy<CGShell>::dealloc_subobj(vector< SafePtr<CGF> >& subobj)
-  {
-  }
+  StdLibintTDPolicy<CGShell>::init_subobj(const SafePtr<CGShell>& cgshell, vector< SafePtr<CGF> >& cgfs);
+
+  template <>
+  void
+  StdLibintTDPolicy<CGShell>::dealloc_subobj(vector< SafePtr<CGF> >& subobj);
+  /* source is in policy_spec.cc */
 
   /** StdLibintTDPolicy<GenIntegralSet> describes how integral sets are composed
       of integrals in canonical order.
@@ -187,7 +173,7 @@ namespace libint2 {
       static void dealloc_subobj(vector< SafePtr< TwoPRep_11_11<typename BFS::iter_type> > >& subobj) {
       }
     };
-  
+
 };
 
 #endif

@@ -36,10 +36,14 @@ namespace libint2 {
 
     const unsigned int num_children() const { return num_actual_children_; };
     /// target() returns pointer to the i-th child
-    SafePtr<TargetType> target() { return target_; };
+    SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer to the i-th child
-    SafePtr<ChildType> child(unsigned int i);
-
+    SafePtr<ChildType> child(unsigned int i) const;
+    /// Implementation of RecurrenceRelation's target()
+    SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    /// Implementation of RecurrenceRelation's child()
+    SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+    
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
     const std::string cpp_header_name() {}
@@ -138,7 +142,7 @@ namespace libint2 {
 
   template <template <class> class ERI, class F, int part, FunctionPosition where>
     SafePtr< ERI<F> >
-    VRR_11_TwoPRep_11<ERI,F,part,where>::child(unsigned int i)
+    VRR_11_TwoPRep_11<ERI,F,part,where>::child(unsigned int i) const
     {
       assert(i>=0 && i<num_actual_children_);
 
