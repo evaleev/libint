@@ -15,14 +15,17 @@ int main (int argc, char* argv[])
 
   cerr << "Testing Operator ... ";
   Operator OneENucAttr("One-Electron Nuclear Attraction","1ENA",1,vector<char>(0,0));
-  cout << "Permutational symmetry of 2e repulsion = " << TwoERep.psymm(0,1) << endl;
+  //cout << "Permutational symmetry of 2e repulsion = " << TwoERep.psymm(0,1) << endl;
   cerr << "ok" << endl;
 
   cerr << "Testing GaussShell ... ";
   unsigned int a[] = {1, 0, 0};
   GaussShell A(a);
   cerr << "ok" << endl;
-  
+
+  // Need to be able to compile these constructors
+  //TwoERep_2b2k<CGShell> a();
+  //VRR_ERI_2b2k<CGShell> vrr1();
 
 }
 

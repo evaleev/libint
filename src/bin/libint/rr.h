@@ -63,8 +63,8 @@ namespace libint2 {
 
   };
   
-  extern Operator TwoERep;
-  extern Operator TwoEDist;
+  //extern Operator TwoERep;
+  //extern Operator TwoEDist;
 
   class IntegralType {
 
@@ -150,7 +150,7 @@ namespace libint2 {
 
     Q quanta_;
 
-public:
+  public:
     QuantumSet(Q quanta);
     ~QuantumSet();
 
@@ -164,7 +164,7 @@ public:
   template<typename T, unsigned int N> class QuantumNumbers {
     T qn_[N];
 
-public:
+  public:
     QuantumNumbers(T qn[N]);
     ~QuantumNumbers();
 
@@ -204,8 +204,142 @@ public:
   typedef QuantumNumbers<unsigned int, 3> CartGaussQuantumNumbers;
   typedef QuantumSet< ShellQuantumNumbers > GaussShell;
   typedef QuantumSet< CartGaussQuantumNumbers > CartGauss;
-  
-  
+
+
+  /// Set of basis functions
+  class BFSet {
+
+    public:
+    BFSet() {};
+    virtual ~BFSet() {};
+    virtual unsigned int num_bf() const =0;
+
+  };
+
+  /// Cartesian Gaussian Function
+  class CGF : public BFSet {
+
+    unsigned int qn_[3];
+
+    public:
+    CGF(unsigned int qn[3]);
+    CGF(const CGF&);
+    ~CGF();
+
+    /// Returns the number of basis functions in the set (always 1)
+    unsigned int num_bf() const { return 1; };
+
+  };
+
+  /// Cartesian Gaussian Shell
+  class CGShell : public BFSet {
+
+    unsigned int qn_[1];
+
+    public:
+    CGShell(unsigned int qn[1]);
+    CGShell(const CGShell&);
+    ~CGShell();
+
+    /// Returns the number of basis functions in the set
+    unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
+
+  };
+
+
+  /// This is a vertex of a Directed Graph (DG)
+  class DGVertex;
+  class DGVertex {
+
+    /// Ptrs to parent vertices
+    vector<DGVertex*> parents_;
+    /// Ptrs to children vertices
+    vector<DGVertex*> children_;
+
+    public:
+    DGVertex(const vector<DGVertex*>& parents, const vector<DGVertex*>& children);
+    ~DGVertex();
+
+  };
+
+  template <unsigned int NP> class Oper {
+
+    /// Described name
+    static const std::string descr_;
+    /// short (<20 chars) ID label
+    static const std::string id_;
+
+    public:
+    Oper();
+    virtual ~Oper();
+
+    /// Returns full description of the operator
+    const std::string& descr() const;
+    /// Returns short label for the operator
+    const std::string& id() const;
+    
+    /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
+        or antisymmetric with respect to permutation of particles i and j */
+    virtual const int psymm(int i, int j) const =0;
+
+    static const unsigned int np = NP;
+
+  };
+
+  class TwoERep : public Oper<2> {
+
+    // symmetry W.R.T. permutation of each pair of particles
+    // 1 -- symmetric, -1 -- antisymmetric, 0 -- nonsymmetric
+    // stored as a lower triangle (diagonal not included)
+    static const char psymm_[np*(np-1)/2];
+
+    public:
+    TwoERep();
+    ~TwoERep();
+
+    /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
+        or antisymmetric with respect to permutation of particles i and j */
+    const int psymm(int i, int j) const;
+
+  };
+
+  /// Any Integral can be on a Directed Graph
+  template <class Oper, class BFSet> class Integral : public DGVertex {
+
+    Oper O_;
+    vector< vector<BFSet> > bf_;
+    
+    public:
+    Integral(const vector< vector<BFSet> >& bf);
+    virtual ~Integral();
+
+  };
+
+  /// Standard ERI shell quartet
+  template <class BFSet> class TwoERep_2b2k : public Integral<TwoERep, BFSet> {
+
+    public:
+    TwoERep_2b2k(const vector< vector<BFSet> >& bf);
+
+  };
+
+  /// VRR Recurrence Relation for ERI
+  template <class BFSet> class VRR_ERI_2b2k : public RecurrenceRelation {
+
+    TwoERep_2b2k<BFSet>* target_;
+    TwoERep_2b2k<BFSet>* children_[5];
+
+    public:
+    VRR_ERI_2b2k(const TwoERep_2b2k<BFSet>&);
+    ~VRR_ERI_2b2k();
+
+    const std::string cpp_function_name();
+    const std::string cpp_source_name();
+    const std::string cpp_header_name();
+    std::ostream& cpp_source(std::ostream&);
+
+  };
+
 };
 
 #endif
