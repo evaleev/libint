@@ -30,6 +30,7 @@ install_target:
 clean: oclean
 
 oclean:
+	-rm -f $(BINOBJ)
 
 distclean: oclean
 
