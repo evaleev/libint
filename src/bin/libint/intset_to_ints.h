@@ -83,12 +83,6 @@ namespace libint2 {
     target_(Tint)
     {
       target_ = Tint;
-      unsigned int m = Tint->m();
-
-      typedef typename I::BraType IBraType;
-      typedef typename I::KetType IKetType;
-      IBraType* bra = new IBraType(Tint->bra());
-      IKetType* ket = new IKetType(Tint->ket());
 
       // Construct a subiterator for I
       SubIteratorBase<I> siter(Tint);

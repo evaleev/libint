@@ -121,6 +121,8 @@ namespace libint2 {
           sh_b.dec(dir_);
         }
         catch (InvalidDecrement) {
+          delete bra;
+          delete ket;
           return;
         }
         bra->set_member(sh_b,part,pos_b);
@@ -158,6 +160,8 @@ namespace libint2 {
           sh_b.dec(dir_);
         }
         catch (InvalidDecrement) {
+          delete bra;
+          delete ket;
           return;
         }
         ket->set_member(sh_b,part,pos_b);
@@ -188,6 +192,9 @@ namespace libint2 {
             throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
         }
       }
+
+      delete bra;
+      delete ket;
     }
 
   template <template <class> class I, class F, int part,
