@@ -638,6 +638,11 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
       ntargets++;
       vertex->set_symbol(os.str());
     }
+    // test if the vertex is a static quantity, like a constant
+    typedef CTimeEntity<double> cdouble;
+    SafePtr<cdouble> ptr_cast = dynamic_pointer_cast<cdouble,DGVertex>(vertex);
+    if (ptr_cast)
+      vertex->set_symbol(ptr_cast->label());
     else if (vertex->precomputed()) {
       std::string symbol("libint->");
       symbol += context->label_to_name(vertex->label());

@@ -84,6 +84,22 @@ SafePtr<RecurrenceRelation>
 Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
                                      const SafePtr<TwoPRep_11_11_int>& integral)
 {
+  // shift from B to A
+  for(int xyz = 2; xyz >= 0; xyz--) {
+    typedef HRR_ab_11_TwoPRep_11_int rr_type;
+    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+
+  // shift from D to C
+  for(int xyz = 2; xyz >= 0; xyz--) {
+    typedef HRR_cd_11_TwoPRep_11_int rr_type;
+    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+
   // decrease A
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGF,0,InBra> vrr_type;

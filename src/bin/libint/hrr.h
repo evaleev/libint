@@ -137,13 +137,13 @@ namespace libint2 {
           SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[1],children_[0]));
           SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
           if (loc_a == InBra && loc_b == InKet) {
-            expr_[0] = expr0_ptr;
-            expr_[1] = expr1_ptr;
+            SafePtr<ExprType> sum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
+            expr_[0] = sum_ptr;
+            nexpr_ += 1;
           }
           else
             throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
         }
-        nexpr_ += 2;
       }
       else {
         // See if b-1 exists
@@ -174,13 +174,13 @@ namespace libint2 {
           SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[1],children_[0]));
           SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
           if (loc_a == InBra && loc_b == InKet) {
-            expr_[0] = expr0_ptr;
-            expr_[1] = expr1_ptr;
+            SafePtr<ExprType> sum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
+            expr_[0] = sum_ptr;
+            nexpr_ += 1;
           }
           else
             throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
         }
-        nexpr_ += 2;
       }
     }
 
@@ -260,6 +260,8 @@ namespace libint2 {
   typedef HRR<TwoPRep_11_11,CGShell,0,InKet,0,InBra,0> HRR_ba_11_TwoPRep_11_sh;
   typedef HRR<TwoPRep_11_11,CGShell,1,InKet,0,InBra,0> HRR_dc_11_TwoPRep_11_sh;
 
+  typedef HRR<TwoPRep_11_11,CGF,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_int;
+  typedef HRR<TwoPRep_11_11,CGF,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_int;
 
 };
 

@@ -15,7 +15,8 @@ Prefactors::Prefactors() :
   char X[np][2][2] = { {"A", "B"},
                        {"C", "D"} };
 
-  for(int p=0; p<np; p++)
+  for(int p=0; p<np; p++) {
+
     for(int braket=0; braket<2; braket++) {
       char XY_X_str[20];
       sprintf(XY_X_str,"%s%s",XY[p],X[p][braket]);
@@ -42,6 +43,20 @@ Prefactors::Prefactors() :
 
       }
     }
+
+      char X_Y_str[20];
+      sprintf(X_Y_str,"%s%s",X[p][0],X[p][1]);
+      rdptr vX_Y_ptr(new rdouble(X_Y_str));
+      vX_Y[p] = vX_Y_ptr;
+      char xyz_str[] = "xyz";
+      for(int xyz=0; xyz<3; xyz++) {
+        char X_Y_i_str[20];
+        sprintf(X_Y_i_str,"%s_%c",X_Y_str,xyz_str[xyz]);
+        rdptr X_Y_i_ptr(new rdouble(X_Y_i_str));
+        X_Y[p][xyz] = X_Y_i_ptr;
+      }
+
+  }
 
   char alpha12_str[np][20] = { "zeta", "eta" };
   char alpha12_char[np+1] = "ze";
