@@ -1,0 +1,63 @@
+include $(TOPDIR)/src/lib/MakeVars
+VPATH = $(SRCDIR)
+
+NAME = libint
+TARGET = $(NAME).$(LIBSUF)
+TARGET_HEADERS = libint.h vrr_header.h hrr_header.h
+
+# vrr_build.c needs to find libint.h
+CFLAGS += -I.
+
+#
+# List all generated routines. Do it in a safe way in case the list is too long
+#
+TRUESRC1 = $(shell echo `ls vrr_order_*.cc`)
+TRUESRC2 = $(shell echo `ls hrr_order_*.cc`)
+TRUESRC3 = $(shell echo `ls build_*.cc`)
+TRUESRC4 = $(shell echo `ls hrr[1,3]_build_*.cc`)
+TRUESRC5 = vrr_build.c
+TRUESRC6 = init_libint.cc
+LIBOBJ1 = $(TRUESRC1:%.cc=%.o)
+LIBOBJ2 = $(TRUESRC2:%.cc=%.o)
+LIBOBJ3 = $(TRUESRC3:%.cc=%.o)
+LIBOBJ4 = $(TRUESRC4:%.cc=%.o)
+LIBOBJ5 = $(TRUESRC5:%.c=%.o)
+LIBOBJ6 = $(TRUESRC6:%.cc=%.o)
+LIBOBJ = $(LIBOBJ1) $(LIBOBJ2) $(LIBOBJ3) $(LIBOBJ4) $(LIBOBJ5) $(LIBOBJ6)
+
+default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
+
+$(TOPDIR)/lib/$(TARGET): $(LIBOBJ)
+	/bin/rm -f $@
+	$(AR) $(ARFLAGS) $@ $(LIBOBJ1)
+	$(AR) $(ARFLAGS) $@ $(LIBOBJ2)
+	$(AR) $(ARFLAGS) $@ $(LIBOBJ3)
+	$(AR) $(ARFLAGS) $@ $(LIBOBJ4)
+	$(AR) $(ARFLAGS) $@ $(LIBOBJ5)
+	$(AR) $(ARFLAGS) $@ $(LIBOBJ6)
+	$(RANLIB) $@
+
+$(TOPDIR)/include/$(NAME)/$(NAME).h: $(NAME).h
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/include/$(NAME)
+	-$(INSTALL) $(INSTALLLIBOPT) $(TARGET_HEADERS) $(TOPDIR)/include/$(NAME)
+
+install:: install_inc install_target
+
+install_inc::
+	$(INSTALL) $(INSTALLDIROPT) $(includedir)
+	-$(INSTALL) $(INSTALLLIBOPT) $(TARGET_HEADERS) $(includedir)
+
+install_target:: $(TOPDIR)/lib/$(TARGET)
+	$(INSTALL) $(INSTALLDIROPT) $(libdir)
+	$(INSTALL) $(INSTALLLIBOPT) $< $(libdir)
+
+clean:: oclean targetclean
+
+distclean:: clean
+
+oclean::
+	-rm -rf *.$(OBJSUF)
+
+targetclean::
+	-rm -f $(TOPDIR)/lib/$(TARGET)
+

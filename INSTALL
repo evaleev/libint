@@ -1,0 +1,10 @@
+The recommended installation procedure:
+0) from within the source directory $(SRCDIR) run 'autoconf'
+0) create a directory for object files $(OBJDIR) 
+1) cd $(OBJDIR)
+1) $(SRCDIR)/configure
+   Most often you will need to specify command-line options to configure.
+   To obtain a list of configure options run 'configure --help'.
+2) make
+3) make install
+

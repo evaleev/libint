@@ -1,0 +1,514 @@
+define([libint_mmm_version],[1.0.0])
+define([libint_buildid],[stable])
+define([libint_so_version],[1:0:0])
+
+dnl Process this file with autoconf to produce a configure script.
+define([AC_CACHE_LOAD], )dnl for debugging configure.in
+define([AC_CACHE_SAVE], )dnl for debugging configure.in
+AC_INIT(src/bin/libint/build_libint.c)
+AC_PREREQ(2.13)
+AC_CONFIG_HEADER(src/bin/libint_config.h)
+AC_CONFIG_AUX_DIR(bin)
+
+AC_CANONICAL_SYSTEM
+AC_SET_MAKE
+
+AC_DEFINE_UNQUOTED(HOST_ARCH, "$host")
+AC_DEFINE_UNQUOTED(TARGET_ARCH, "$target")
+
+define([default_prefix_dash],ifelse(libint_buildid, ,[],[-]))
+define([default_prefix],"/usr/local")
+
+LIBINT_MMM_VERSION=libint_mmm_version
+LIBINT_VERSION=$LIBINT_MMM_VERSION
+AC_DEFINE_UNQUOTED(LIBINT_VERSION,$LIBINT_VERSION)
+changequote(<<, >>)dnl
+LIBINT_MAJOR_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/\([0-9]*\)\.[0-9]*\.[0-9]*/\1/'`
+LIBINT_MINOR_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/[0-9]*\.\([0-9]*\)\.[0-9]*/\1/'`
+LIBINT_MICRO_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/[0-9]*\.[0-9]*\.\([0-9]*\)/\1/'`
+changequote([, ])dnl
+AC_DEFINE_UNQUOTED(LIBINT_MAJOR_VERSION,$LIBINT_MAJOR_VERSION)
+AC_DEFINE_UNQUOTED(LIBINT_MINOR_VERSION,$LIBINT_MINOR_VERSION)
+AC_DEFINE_UNQUOTED(LIBINT_MICRO_VERSION,$LIBINT_MICRO_VERSION)
+
+dnl --------- Features ---------
+
+AC_ARG_ENABLE(debug,
+[  --enable-debug          Compile with debugging options],
+[
+case $enableval in
+  yes)
+    DEBUG=yes
+  ;;
+  no)
+    DEBUG=no
+  ;;
+  opt)
+    DEBUG=opt
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --enable-debug ($enableval)])
+  ;;
+esac
+],[
+    DEBUG=no
+]
+)
+
+
+EXCLUDED_DIRS=
+
+AC_ARG_ENABLE(deriv,
+[  --enable-deriv          Compile with 1st- and 2nd-order derivative ERI support],
+[
+case $enableval in
+  yes)
+    INCLUDE_DERIV=yes
+  ;;
+  no)
+    INCLUDE_DERIV=no
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --enable-deriv ($enableval)])
+  ;;
+esac
+],[
+    INCLUDE_DERIV=no
+]
+)
+if test $INCLUDE_DERIV = yes; then
+  AC_DEFINE(INCLUDE_DERIV)
+else
+  EXCLUDED_DIRS="-x SRC_BIN_LIBDERIV $EXCLUDED_DIRS"
+fi
+
+AC_ARG_ENABLE(r12,
+[  --enable-r12            Compile with linear R12 methods integrals support],
+[
+case $enableval in
+  yes)
+    INCLUDE_R12=yes
+  ;;
+  no)
+    INCLUDE_R12=no
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --enable-r12 ($enableval)])
+  ;;
+esac
+],[
+    INCLUDE_R12=no
+]
+)
+if test $INCLUDE_R12 = yes; then
+  AC_DEFINE(INCLUDE_R12)
+else
+  EXCLUDED_DIRS="-x SRC_BIN_LIBR12 $EXCLUDED_DIRS"
+fi
+
+LIBINT_MAX_AM=4
+AC_ARG_WITH(libint-max-am,
+[  --with-libint-max-am    Gives the maximum angular momentum of ERI this library will be able to handle.],
+if test $withval -le 0; then
+  AC_MSG_ERROR([Invalid value for --with-libint-max-am ($withval)])
+else
+  LIBINT_MAX_AM=$withval
+fi
+if test $LIBINT_MAX_AM -ge 8; then
+  AC_MSG_ERROR([Value for --with-libint-max-am too high ($withval). Are you sure you know what you are doing?])
+fi
+)
+
+LIBINT_OPT_AM=$((($LIBINT_MAX_AM/2)+1))
+AC_ARG_WITH(libint-opt-am,
+[  --with-libint-opt-am    Gives the level of optimization for ERIs this library will use (opt-am <= max-am).],
+if test $withval -le $LIBINT_MAX_AM; then
+  LIBINT_OPT_AM=$withval
+fi
+)
+
+if test $LIBINT_MAX_AM -gt 3; then
+  LIBDERIV_MAX_AM1=3
+else
+  LIBDERIV_MAX_AM1=$(($LIBINT_MAX_AM-1))
+fi
+AC_ARG_WITH(libderiv-max-am1,
+[  --with-libderiv-max-am1 Gives the maximum angular momentum of 1st derivative ERI this library will be able to handle.],
+if test $withval -le 0 -o $withval -ge $LIBINT_MAX_AM; then
+  AC_MSG_ERROR([Invalid value for --with-libderiv-max-am1 ($withval)])
+else
+  LIBDERIV_MAX_AM1=$withval
+fi
+)
+
+if test $LIBDERIV_MAX_AM1 -gt 1; then
+  LIBDERIV_MAX_AM2=$(($LIBDERIV_MAX_AM1-1))
+else
+  if test $(($LIBINT_MAX_AM-$LIBDERIV_MAX_AM1)) -gt 1; then
+    LIBDERIV_MAX_AM2=$LIBDERIV_MAX_AM1
+  else
+    AC_MSG_ERROR([Value of --with-libint-max-am is too low ($LIBINT_MAX_AM) to include second-derivative integrals support.])
+  fi
+fi
+AC_ARG_WITH(libderiv-max-am2,
+[  --with-libderiv-max-am2 Gives the maximum angular momentum of 2nd derivative ERI this library will be able to handle.],
+if test $withval -le 0 -o $withval -ge $LIBDERIV_MAX_AM1; then
+  AC_MSG_ERROR([Invalid value for --with-libderiv-max-am2 ($withval)])
+else
+  LIBDERIV_MAX_AM2=$withval
+fi
+)
+
+LIBR12_MAX_AM=$(($LIBINT_MAX_AM-1))
+AC_ARG_WITH(libr12-max-am,
+[  --with-libr12-max-am    Gives the maximum angular momentum of linear R12 method integrals this library will be able to handle.],
+if test $withval -le 0 -o $withval -ge $LIBINT_MAX_AM; then
+  AC_MSG_ERROR([Invalid value for --with-libr12-max-am ($withval)])
+else
+  LIBR12_MAX_AM=$withval
+fi
+)
+
+LIBR12_OPT_AM=$((($LIBR12_MAX_AM/2)+1))
+AC_ARG_WITH(libr12-opt-am,
+[  --with-libr12-opt-am    Gives the level of optimization for linear R12 method integrals this library will use (opt-am <= max-am).],
+if test $withval -le $LIBR12_MAX_AM; then
+  LIBR12_OPT_AM=$withval
+fi
+)
+
+MAX_CLASS_SIZE=300
+AC_ARG_WITH(max-class-size,
+[  --with-max-class-size   Restricts the length of VRR build routines to avoid compiler failures.],
+if test $withval -le 10; then
+  AC_MSG_ERROR([Invalid value for --with-class-size ($withval)])
+else
+  MAX_CLASS_SIZE=$withval
+fi
+)
+
+AC_ARG_ENABLE(long-double,
+[  --enable-long-double    Compute all integrals using long double precision.],
+[
+case $enableval in
+  yes)
+    LONG_DOUBLE=1
+  ;;
+  no)
+    LONG_DOUBLE=0
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --enable-long-double ($enableval)])
+  ;;
+esac
+],[
+    LONG_DOUBLE=0
+]
+)
+
+AC_SUBST(LIBINT_MAX_AM)
+AC_SUBST(LIBINT_OPT_AM)
+AC_SUBST(LIBDERIV_MAX_AM1)
+AC_SUBST(LIBDERIV_MAX_AM2)
+AC_SUBST(LIBR12_MAX_AM)
+AC_SUBST(LIBR12_OPT_AM)
+AC_SUBST(MAX_CLASS_SIZE)
+AC_SUBST(LONG_DOUBLE)
+
+AC_DEFINE_UNQUOTED(LIBINT_MAX_AM,$LIBINT_MAX_AM)
+AC_DEFINE_UNQUOTED(LIBINT_OPT_AM,$LIBINT_OPT_AM)
+AC_DEFINE_UNQUOTED(LIBDERIV_MAX_AM1,$LIBDERIV_MAX_AM1)
+AC_DEFINE_UNQUOTED(LIBDERIV_MAX_AM2,$LIBDERIV_MAX_AM2)
+AC_DEFINE_UNQUOTED(LIBDERIV_MAX_AM12,$LIBDERIV_MAX_AM2)
+AC_DEFINE_UNQUOTED(LIBR12_MAX_AM,$LIBR12_MAX_AM)
+AC_DEFINE_UNQUOTED(LIBR12_OPT_AM,$LIBR12_OPT_AM)
+AC_DEFINE_UNQUOTED(LIBINT_MAX_CLASS_SIZE,$MAX_CLASS_SIZE)
+AC_DEFINE_UNQUOTED(LIBR12_MAX_CLASS_SIZE,$MAX_CLASS_SIZE)
+AC_DEFINE_UNQUOTED(LONG_DOUBLE,$LONG_DOUBLE)
+
+
+ac_default_prefix="/usr/local"
+
+AC_ARG_WITH(cc,
+[  --with-cc               Gives the name of the C compiler to use.],
+CC=$withval
+)
+
+AC_ARG_WITH(cxx,
+[  --with-cxx              Gives the name of the C++ compiler to use.],
+CXX=$withval
+)
+
+AC_ARG_WITH(ranlib,
+[  --with-ranlib           Gives the name of the ranlib program.],
+RANLIB=$withval
+)
+
+AC_ARG_WITH(ar,
+[  --with-ar               Names the archive creator.],
+AR=$withval
+)
+
+ARFLAGS=r
+AC_ARG_WITH(ar-flags,
+[  --with-ar-flags         Flags for the the archive creator.],
+ARFLAGS=$withval
+)
+AC_SUBST(ARFLAGS)
+
+AC_ARG_WITH(ld,
+[  --with-ld               Names the object linker.],
+LD=$withval
+)
+
+if test $prefix = $ac_default_prefix -o $prefix = NONE; then
+  libintincludedir=$includedir
+else
+  libintincludedir=$includedir/$SC_VERSION
+fi
+AC_ARG_WITH(libint-includedir,
+[  --with-libint-includedir       Specifies include file install subdir.],
+libintincludedir=$withval
+)
+AC_SUBST(libintincludedir)
+
+AC_ARG_WITH(incdirs,
+[  --with-incdirs          Specifies include directories (-Idir1 -Idir2).],
+EXTRAINCDIRS=$withval
+CPPFLAGS=$withval
+echo Using extra include directories: $withval
+)
+
+AC_ARG_WITH(libs,
+[  --with-libs             Specifies libraries (-llib1 -llib2).],
+LIBS=$withval
+echo Using extra libraries: $withval
+)
+
+LDFLAGS=
+LIBDIRS=
+AC_ARG_WITH(libdirs,
+[  --with-libdirs          Specifies library directories (-Ldir1 -Ldir2).],
+LIBDIRS=$withval
+LDFLAGS=$withval
+echo Using extra library directories: $withval
+)
+
+SCRATCHDIR=/tmp
+AC_ARG_WITH(scratchdir,
+[  --with-scratchdir       Specifies the location for the machine-generated library source and object files.],
+SCRATCHDIR=$withval
+)
+AC_SUBST(SCRATCHDIR)
+
+dnl --------- Want absolute path for srcdir, not relative. ---------
+
+if test X$ac_srcdir_defaulted = Xyes; then
+  case $srcdir in
+    ../*)
+      srcdir=`(cd $srcdir; pwd)`
+      #srcdir=`(cd $srcdir; echo $PWD)`
+      ;;
+  esac
+fi
+
+dnl --------- Checks for programs. ---------
+AC_PROG_LN_S
+AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_CC
+dnl ac_prog_cxx's order isn't what i need
+AC_CHECK_PROGS(CXX, g++ c++ gcc CC cxx xlC_r, gcc)
+dnl sees if CXX is a GNU compiler
+AC_PROG_CXX
+AC_PROG_CPP
+AC_PROG_CXXCPP
+AC_CHECK_PROG(AR,ar,ar)
+AC_CHECK_PROG(PERL,perl,perl)
+
+dnl The lack of certain tools is a show stopper
+
+changequote(<<, >>)dnl
+
+if [ X$PERL = X ]; then
+  echo "Could not find the program perl.  It can be obtained at"
+  echo "ftp://prep.ai.mit.edu/pub/gnu"
+  exit 1
+fi
+
+changequote([, ])dnl
+
+dnl -------- Checks for compiler/linker options. ----------
+
+# options needed only for optimization
+COPTIONS_OPT=-O
+# options needed only for debugging
+COPTIONS_DBG=-g
+# options that are always needed
+COPTIONS_MISC=
+
+# options needed only for optimization
+CXXOPTIONS_OPT=-O
+# options needed only for debugging
+CXXOPTIONS_DBG=-g
+# options that are always needed
+CXXOPTIONS_MISC=
+
+OBJSUF=o
+LIBSUF=a
+
+dnl -- check how dependency information is built --
+
+# The GNU compilers work with:
+CCDEPENDSUF=none
+CXXDEPENDSUF=none
+CCDEPENDFLAGS=-M
+CXXDEPENDFLAGS=-M
+
+/bin/rm -f depcheck.u depcheck.c depcheck.o
+
+# Check for an IBM visual age C compiler
+echo "#include <stdio.h>" > depcheck.c
+$CC $CPPFLAGS $CFLAGS -M depcheck.c > /dev/null 2>&1
+if test -f depcheck.u; then
+  CCDEPENDSUF=u
+fi
+/bin/rm -f depcheck.u depcheck.c depcheck.o
+
+# Check for an IBM visual age C++ compiler
+echo "#include <iostream>" > depcheck.cc
+$CXX $CPPFLAGS $CXXFLAGS -M -E depcheck.cc > /dev/null 2>&1
+if test -f depcheck.u; then
+  CXXDEPENDSUF=u
+  CXXDEPENDFLAGS="-M -E"
+fi
+/bin/rm -f depcheck.u depcheck.c depcheck.o
+
+dnl -- special optimization options --
+
+AC_MSG_CHECKING([for special optimization options])
+case $target in
+  rs6000-ibm-aix3.2.* | rs6000-ibm-aix4.* | powerpc-ibm-aix4.* | powerpc-ibm-aix5.*)
+    if test X$GCC != Xyes; then
+      COPTIONS_OPT="-O -qnolm"
+    fi
+    if test X$GXX != Xyes; then
+      CXXOPTIONS_OPT="-O -qnolm -qrtti"
+    fi
+    AC_MSG_RESULT("rs6000 or powerpc")
+  ;;
+esac
+
+dnl -- special architecture options --
+
+AC_MSG_CHECKING([for special architecture options])
+case $target in
+changequote(<<, >>)dnl
+  i[456]86-* | pentium | pentiumpro | k6 | athlon)
+changequote([, ])dnl
+    if test X$STRICT_ARCH = Xyes; then
+      cpu_arch_option="-march=$target_cpu"
+    else
+      cpu_arch_option="-mcpu=$target_cpu"
+    fi
+    if test X$GCC = Xyes; then
+      COPTIONS_MISC="$COPTIONS_MISC $cpu_arch_option"
+    fi
+    if test X$GXX = Xyes; then
+      CXXOPTIONS_MISC="$CXXOPTIONS_MISC $cpu_arch_option"
+    fi
+    AC_MSG_RESULT(IA-32: $cpu_arch_option)
+  ;;
+  *)
+    AC_MSG_RESULT("none")
+  ;;
+esac
+
+dnl ----------- check for GNU libc++-v3 prerelease bug ---------------
+
+if test X$GXX = Xyes; then
+AC_LANG_SAVE
+AC_LANG_CPLUSPLUS
+AC_MSG_CHECKING("for GNU libc++-v3 prerelease bug")
+AC_TRY_LINK([
+#include <stdio.h>
+#include <$iostream>
+],[
+],[
+AC_MSG_RESULT("no")
+],
+EXTRADEFINES="$EXTRADEFINES -D_ISOC99_SOURCE=1"
+AC_MSG_RESULT("yes")
+);
+AC_LANG_RESTORE
+fi
+
+dnl -- other options --
+
+AC_MSG_CHECKING([GNU c++ library/template flags])
+if test X$GXX = Xyes; then
+  # automatic template instantiation causes problems with libstc++-v3
+  #CXXOPTIONS_MISC="$CXXOPTIONS_MISC -fno-implicit-templates"
+  #EXPLICIT_TEMPLATE_INSTANTIATION=yes
+  #AC_DEFINE(EXPLICIT_TEMPLATE_INSTANTIATION)
+  AC_MSG_RESULT("GNU")
+else
+  case $target in
+    *)
+      AC_MSG_RESULT("generic non GNU")
+      ;;
+    esac
+fi
+
+if test $DEBUG = yes; then
+  CFLAGS="$COPTIONS_DBG $COPTIONS_MISC"
+  CXXFLAGS="$CXXOPTIONS_DBG $CXXOPTIONS_MISC"
+  LDFLAGS="$LDFLAGS -g"
+elif test $DEBUG = opt; then
+  CFLAGS="$COPTIONS_DBG $COPTIONS_OPT $COPTIONS_MISC"
+  CXXFLAGS="$CXXOPTIONS_DBG $COPTIONS_OPT $CXXOPTIONS_MISC"
+  LDFLAGS="$LDFLAGS -g"
+else
+  CFLAGS="$COPTIONS_OPT $COPTIONS_MISC"
+  CXXFLAGS="$CXXOPTIONS_OPT $CXXOPTIONS_MISC"
+fi
+
+AC_SUBST(EXTRAINCLUDE)
+
+AC_SUBST(CFLAGS)
+AC_SUBST(CXXFLAGS)
+
+AC_SUBST(LIBDIRS)
+
+AC_SUBST(OBJSUF)
+AC_SUBST(LIBSUF)
+AC_SUBST(CCDEPENDSUF)
+AC_SUBST(CXXDEPENDSUF)
+AC_SUBST(CCDEPENDFLAGS)
+AC_SUBST(CXXDEPENDFLAGS)
+
+dnl -------- Checks for architecture specific features. --------
+dnl (Doesn't work for cross compilation.)
+dnl AC_CHECK_SIZEOF(void*)
+
+AC_SUBST(EXTRADEFINES)
+
+dnl ---------- Checks for header files. -----------
+
+AC_HEADER_STDC
+
+dnl -- Checks for typedefs, structures, and compiler characteristics. --
+AC_C_CONST
+AC_TYPE_SIZE_T
+
+CC="$CC" CFLAGS="$CXXFLAGS" CPPFLAGS="$CPPFLAGS" \
+LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
+LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB" \
+
+ENABLESHARED=no
+AC_SUBST(ENABLESHARED)
+
+$PERL $srcdir/bin/objectdir.pl $EXCLUDED_DIRS $srcdir
+
+AC_OUTPUT(src/bin/MakeVars src/lib/MakeVars)
+

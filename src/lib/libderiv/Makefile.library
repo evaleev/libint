@@ -1,0 +1,48 @@
+include $(TOPDIR)/src/lib/MakeVars
+VPATH = $(SRCDIR)
+
+NAME = libderiv
+TARGET = $(NAME).$(LIBSUF)
+TARGET_HEADERS = libderiv.h
+
+#
+# List all generated routines. Do it in a safe way in case the list is too long
+#
+TRUESRC1 = $(shell echo `ls *.cc`)
+TRUESRC2 = $(shell echo `ls *.c`)
+LIBOBJ1 = $(TRUESRC1:%.cc=%.o)
+LIBOBJ2 = $(TRUESRC2:%.c=%.o)
+LIBOBJ = $(LIBOBJ1) $(LIBOBJ2)
+
+default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
+
+$(TOPDIR)/lib/$(TARGET): $(LIBOBJ)
+	/bin/rm -f $@
+	$(AR) $(ARFLAGS) $@ $(LIBOBJ1)
+	$(AR) $(ARFLAGS) $@ $(LIBOBJ2)
+	$(RANLIB) $@
+
+$(TOPDIR)/include/$(NAME)/$(NAME).h: $(NAME).h
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/include/$(NAME)
+	-$(INSTALL) $(INSTALLLIBOPT) $(TARGET_HEADERS) $(TOPDIR)/include/$(NAME)
+
+install:: install_inc install_target
+
+install_inc::
+	$(INSTALL) $(INSTALLDIROPT) $(includedir)
+	-$(INSTALL) $(INSTALLLIBOPT) $(TARGET_HEADERS) $(includedir)
+
+install_target:: $(TOPDIR)/lib/$(TARGET)
+	$(INSTALL) $(INSTALLDIROPT) $(libdir)
+	$(INSTALL) $(INSTALLLIBOPT) $< $(libdir)
+
+clean:: oclean targetclean
+
+distclean:: clean
+
+oclean::
+	-rm -rf *.$(OBJSUF)
+
+targetclean::
+	-rm -f $(TOPDIR)/lib/$(TARGET)
+
