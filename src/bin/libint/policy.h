@@ -12,10 +12,10 @@ namespace libint2 {
   /**
   */
   template <class T, bool exists>
-    struct ExistsDefaultStdLibintTraits;
+    struct ExistsDefaultStdLibintPolicy;
   
   template <class T>
-    struct ExistsDefaultStdLibintTraits<T,true>{
+    struct ExistsDefaultStdLibintPolicy<T,true>{
       typedef T obj_type;
       typedef typename obj_type::iter_type subobj_type;
 
@@ -36,19 +36,19 @@ namespace libint2 {
   */
 
   template < class T>
-    struct StdLibintTraits {
+    struct StdLibintPolicy {
       typedef T obj_type;
       typedef typename obj_type::iter_type subobj_type;
 
       static void init_subobj(const obj_type* obj, vector<const subobj_type*>& subobj)
       {
         // If types are not the same then this function should not be used -- user must provide a specialization
-        ExistsDefaultStdLibintTraits< T, IsSameType<obj_type,subobj_type>::value >::default_init_subobj(obj,subobj);
+        ExistsDefaultStdLibintPolicy< T, IsSameType<obj_type,subobj_type>::value >::default_init_subobj(obj,subobj);
       }
       static void dealloc_subobj(vector<const subobj_type*>& subobj)
       {
         // If types are not the same then this function should not be used -- user must provide a specialization
-        ExistsDefaultStdLibintTraits< T, IsSameType<obj_type,subobj_type>::value >::default_dealloc_subobj(subobj);
+        ExistsDefaultStdLibintPolicy< T, IsSameType<obj_type,subobj_type>::value >::default_dealloc_subobj(subobj);
       }
     };
 

@@ -15,7 +15,7 @@ namespace libint2 {
   */
 
   /**
-     StdLibintTraits<CGShell>::init_subobj initializes CGFs in canonical order.
+     StdLibintPolicy<CGShell>::init_subobj initializes CGFs in canonical order.
      The functions in order are produced using the following C++ loop:
 
      for(int i=0; i<=am; i++) {
@@ -32,7 +32,7 @@ namespace libint2 {
   
   template <>
   void
-  StdLibintTraits<CGShell>::init_subobj(const CGShell* cgshell, vector<const CGF*>& cgfs)
+  StdLibintPolicy<CGShell>::init_subobj(const CGShell* cgshell, vector<const CGF*>& cgfs)
   {
     unsigned int am = cgshell->qn();
     unsigned int qn[3];
@@ -49,14 +49,14 @@ namespace libint2 {
 
   template <>
   void
-  StdLibintTraits<CGShell>::dealloc_subobj(vector<const CGF*>& subobj)
+  StdLibintPolicy<CGShell>::dealloc_subobj(vector<const CGF*>& subobj)
   {
     int nelem = subobj.size();
     for(int i=0; i<nelem; i++)
       subobj[i]->~CGF();
   }
 
-  /** StdLibintTraits<GenIntegralSet> describes how integral sets are composed
+  /** StdLibintPolicy<GenIntegralSet> describes how integral sets are composed
       of integrals in canonical order.
 
       Order integrals by iterating over BFS in BraSetType and KetSetType.
@@ -67,7 +67,7 @@ namespace libint2 {
    */
 
   template <class Oper, class BFS, class BraSetType, class KetSetType>
-    struct StdLibintTraits< GenIntegralSet<Oper,BFS,BraSetType,KetSetType> >
+    struct StdLibintPolicy< GenIntegralSet<Oper,BFS,BraSetType,KetSetType> >
     {
       typedef GenIntegralSet<Oper,BFS,BraSetType,KetSetType> obj_type;
       typedef typename obj_type::iter_type subobj_type;
@@ -160,11 +160,11 @@ namespace libint2 {
     };
   
 
-  /** StdLibintTraits<TwoPRep_11_11> should go away soon.
+  /** StdLibintPolicy<TwoPRep_11_11> should go away soon.
   */
 
   template <class BFS>
-    struct StdLibintTraits< TwoPRep_11_11<BFS> >
+    struct StdLibintPolicy< TwoPRep_11_11<BFS> >
     {
       typedef TwoPRep_11_11<BFS> obj_type;
       typedef typename obj_type::iter_type subobj_type;
