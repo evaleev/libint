@@ -20,8 +20,6 @@ define([default_prefix_dash],ifelse(libint_buildid, ,[],[-]))
 define([default_prefix],"/usr/local")
 
 LIBINT_MMM_VERSION=libint_mmm_version
-LIBINT_VERSION=$LIBINT_MMM_VERSION
-AC_DEFINE_UNQUOTED(LIBINT_VERSION,$LIBINT_VERSION)
 changequote(<<, >>)dnl
 LIBINT_MAJOR_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/\([0-9]*\)\.[0-9]*\.[0-9]*/\1/'`
 LIBINT_MINOR_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/[0-9]*\.\([0-9]*\)\.[0-9]*/\1/'`
