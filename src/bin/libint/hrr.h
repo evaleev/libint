@@ -15,25 +15,17 @@ using namespace std;
 
 namespace libint2 {
 
-  template <template <class> class I, class F, int part>
-    HRR<I,F,part>::HRR(I<F>* Tint) :
+  template <template <class> class I, class F, int part, bool to_bra>
+    HRR<I,F,part,to_bra>::HRR(I<F>* Tint) :
     target_(Tint)
     {
       target_ = Tint;
-
-      F sh_a(Tint->bra(0,0));
-      F sh_b(Tint->ket(0,0));
-      F sh_c(Tint->bra(1,0));
-      F sh_d(Tint->ket(1,0));
       unsigned int m = Tint->m();
 
-      vector<F> bra;
-      vector<F> ket;
-
-      bra.push_back(sh_a);
-      bra.push_back(sh_c);
-      ket.push_back(sh_b);
-      ket.push_back(sh_d);
+      typedef typename I<F>::BraType IBraType;
+      typedef typename I<F>::KetType IKetType;
+      IBraType* bra = Tint->bra();
+      IKetType* ket = Tint->ket();
 
       // Zero out children pointers
       for(int i=0; i<nchild_; i++)
@@ -42,33 +34,58 @@ namespace libint2 {
 
       // On which particle to act
       int p_a = part;
-      int p_c = (p_a == 0) ? 1 : 0;
 
-      // See if b-1 exists
-      try {
-        ket[p_a].dec();
+      if (to_bra) {
+        // See if b-1 exists
+        F sh_b(ket->member(p_a,0));
+        try {
+          sh_b.dec();
+        }
+        catch (InvalidDecrement) {
+          return;
+        }
+        ket->set_member(sh_b,p_a,0);
+        children_[1] = I<F>::Instance(*bra,*ket,m);
+
+        F sh_a(bra->member(p_a,0));
+        sh_a.inc();
+        bra->set_member(sh_a,p_a,0);
+        children_[0] = I<F>::Instance(*bra,*ket,m);
+        num_actual_children_ += 2;
       }
-      catch (InvalidDecrement) {
-        return;
+      // to_ket
+      else {
+        // See if a-1 exists
+        F sh_a(bra->member(p_a,0));
+        try {
+          sh_a.dec();
+        }
+        catch (InvalidDecrement) {
+          return;
+        }
+        bra->set_member(sh_a,p_a,0);
+        children_[1] = I<F>::Instance(*bra,*ket,m);
+
+        F sh_b(ket->member(p_a,0));
+        sh_b.inc();
+        ket->set_member(sh_b,p_a,0);
+        children_[0] = I<F>::Instance(*bra,*ket,m);
+        num_actual_children_ += 2;
       }
-      children_[1] = I<F>::Instance(bra[p_a],ket[p_a],bra[p_c],ket[p_c],m);
-      bra[p_a].inc();
-      children_[0] = I<F>::Instance(bra[p_a],ket[p_a],bra[p_c],ket[p_c],m);
-      num_actual_children_ += 2;
 
     };
 
-  template <template <class> class I, class F, int part>
-    HRR<I,F,part>::~HRR()
+  template <template <class> class I, class F, int part, bool to_bra>
+    HRR<I,F,part,to_bra>::~HRR()
     {
       if (part < 0 || part >= 2) {
         assert(false);
       }
     };
 
-  template <template <class> class I, class F, int part>
+  template <template <class> class I, class F, int part, bool to_bra>
     I<F>*
-    HRR<I,F,part>::child(unsigned int i)
+    HRR<I,F,part,to_bra>::child(unsigned int i)
     {
       assert(i>=0 && i<num_actual_children_);
 
@@ -82,8 +99,10 @@ namespace libint2 {
       }
     };
 
-  typedef HRR<TwoERep_11_11,CGShell,0> HRR_ab_11_TwoPRep_11_sh;
-  typedef HRR<TwoERep_11_11,CGShell,1> HRR_cd_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11,CGShell,0,true> HRR_ab_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11,CGShell,1,true> HRR_cd_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11,CGShell,0,false> HRR_ba_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11,CGShell,1,false> HRR_dc_11_TwoPRep_11_sh;
 
 
 };

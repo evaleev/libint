@@ -16,10 +16,14 @@ CGF::CGF(const CGF& source)
     qn_[i] = source.qn_[i];
 }
 
-CGF::CGF(const CGF* sptr)
+CGF::CGF(const BFSet* sptr)
 {
+  const CGF* sptr_cast = dynamic_cast<const CGF*>(sptr);
+  if (sptr_cast == 0)
+    throw std::runtime_error("CGF::CGF(const BFSet* sptr) -- type of sptr is incompatible with CGF");
+
   for(int i=0; i<3; i++)
-    qn_[i] = sptr->qn_[i];
+    qn_[i] = sptr_cast->qn_[i];
 }
 
 CGF::~CGF()
@@ -64,10 +68,14 @@ CGShell::CGShell(const CGShell& source)
     qn_[i] = source.qn_[i];
 }
 
-CGShell::CGShell(const CGShell* sptr)
+CGShell::CGShell(const BFSet* sptr)
 {
+  const CGShell* sptr_cast = dynamic_cast<const CGShell*>(sptr);
+  if (sptr_cast == 0)
+    throw std::runtime_error("CGShell::CGShell(const BFSet* sptr) -- type of sptr is incompatible with CGShell");
+
   for(int i=0; i<1; i++)
-    qn_[i] = sptr->qn_[i];
+    qn_[i] = sptr_cast->qn_[i];
 }
 
 CGShell::~CGShell()

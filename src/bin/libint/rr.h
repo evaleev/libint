@@ -125,7 +125,7 @@ namespace libint2 {
   public:
     CGF(unsigned int qn[3]);
     CGF(const CGF&);
-    CGF(const CGF*);
+    CGF(const BFSet*);
     ~CGF();
 
     /// Return a compact label
@@ -148,7 +148,7 @@ namespace libint2 {
     CGShell();
     CGShell(unsigned int qn[1]);
     CGShell(const CGShell&);
-    CGShell(const CGShell*);
+    CGShell(const BFSet*);
     ~CGShell();
     CGShell& operator=(const CGShell&);
 
@@ -624,10 +624,11 @@ namespace libint2 {
 
   };
 
-  /** A generic HRR Recurrence Relation. Int is the integral class. part specifies for which particle
-      the angular momentum is shifted.
+  /** A generic Horizontal Recurrence Relation. Int is the integral class. part specifies for which particle
+      the angular momentum is shifted. to_bra specifies in which direction quantum numbers are shifted (to bra, if true;
+      to ket otherwise)
    */
-  template <template <class> class I, class BFSet, int part> class HRR : public RecurrenceRelation {
+  template <template <class> class I, class BFSet, int part, bool to_bra> class HRR : public RecurrenceRelation {
 
     static const unsigned int nchild_ = 2;
 

@@ -10,6 +10,9 @@ using namespace std;
 using namespace libint2;
 
 static int try_main (int argc, char* argv[]);
+static void test_typelists();
+static void test_old_integrals();
+static void test_integrals();
 
 int main (int argc, char* argv[])
 {
@@ -63,6 +66,33 @@ int try_main (int argc, char* argv[])
   dg_vrr_xxxx.traverse();
   dg_vrr_xxxx.debug_print_traversal(cout);
 
+  test_typelists();
+  
+  typedef TwoPRep_11_11<CGShell> TwoPRep_sh_11_11;
+  TwoPRep_sh_11_11* pppp_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
+  pppp_quartet->print(cout);
+
+  // Create a DAG for a VRR case
+  DirectedGraph dg_xxxx;
+
+  dg_xxxx.append_target(pppp_quartet);
+  dg_xxxx.apply_to_all< HRR_ba_11_TwoPRep_11_sh >();
+  dg_xxxx.apply_to_all< HRR_dc_11_TwoPRep_11_sh >();
+  dg_xxxx.apply_to_all< VRR_a_11_TwoPRep_11_sh >();
+  dg_xxxx.apply_to_all< VRR_c_11_TwoPRep_11_sh >();
+  dg_xxxx.apply_to_all< VRR_b_11_TwoPRep_11_sh >();
+  dg_xxxx.apply_to_all< VRR_d_11_TwoPRep_11_sh >();
+
+  dg_xxxx.traverse();
+  dg_xxxx.debug_print_traversal(cout);
+
+
+}
+
+
+void
+test_typelists()
+{
   typedef PTYPELIST_2( Tag2, CGShell, CGShell) two_shells;
   two_shells xx;
   typedef PTYPELIST_3( Tag2, CGShell, CGShell, CGShell) three_shells;
@@ -75,25 +105,5 @@ int try_main (int argc, char* argv[])
   cout << "Length of my_typelist = " << Length<two_shells>::value << endl;
   CGShell xx_2(xx_1);
   xx_2.inc();
-
-  typedef TwoERep_11_11<CGShell> TwoERep_sh_11_11;
-  TwoERep_sh_11_11* pppp_quartet = TwoERep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
-  pppp_quartet->print(cout);
-
-
-  // Create a DAG for a VRR case
-  DirectedGraph dg_xxxx;
-
-  dg_xxxx.append_target(pppp_quartet);
-  dg_xxxx.apply_to_all< HRR_ab_11_TwoPRep_11_sh >();
-  dg_xxxx.apply_to_all< HRR_cd_11_TwoPRep_11_sh >();
-  dg_xxxx.apply_to_all< VRR_a_11_TwoPRep_11_sh >();
-  dg_xxxx.apply_to_all< VRR_c_11_TwoPRep_11_sh >();
-
-  dg_xxxx.traverse();
-  dg_xxxx.debug_print_traversal(cout);
-
-
-
 }
 

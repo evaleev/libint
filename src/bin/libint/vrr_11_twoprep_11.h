@@ -41,11 +41,11 @@ namespace libint2 {
       num_actual_children_ = 0;
 
       // Use indirection to choose bra or ket
-      vector<F>& bra_ref = bra;
-      vector<F>& ket_ref = ket;
+      vector<F>* bra_ref = &bra;
+      vector<F>* ket_ref = &ket;
       if (!use_bra) {
-        bra_ref = ket;
-        ket_ref = bra;
+        bra_ref = &ket;
+        ket_ref = &bra;
       }
       // On which particle to act
       int p_a = part;
@@ -53,36 +53,36 @@ namespace libint2 {
 
       // See if a-1 exists
       try {
-        bra_ref[p_a].dec();
+        bra_ref->operator[](p_a).dec();
       }
       catch (InvalidDecrement) {
         return;
       }
-      children_[0] = ERI<F>::Instance(bra_ref[p_a],ket_ref[p_a],bra_ref[p_c],ket_ref[p_c],m);
-      children_[1] = ERI<F>::Instance(bra_ref[p_a],ket_ref[p_a],bra_ref[p_c],ket_ref[p_c],m+1);
+      children_[0] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
+      children_[1] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
       num_actual_children_ += 2;
       // See if a-2 exists
       bool a_minus_2_exists = true;
       try {
-        bra_ref[p_a].dec();
+        bra_ref->operator[](p_a).dec();
       }
       catch (InvalidDecrement) {
         a_minus_2_exists = false;
       }
       if (a_minus_2_exists) {
-        children_[2] = ERI<F>::Instance(bra_ref[p_a],ket_ref[p_a],bra_ref[p_c],ket_ref[p_c],m);
-        children_[3] = ERI<F>::Instance(bra_ref[p_a],ket_ref[p_a],bra_ref[p_c],ket_ref[p_c],m+1);
-        bra_ref[p_a].inc();
+        children_[2] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
+        children_[3] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
+        bra_ref->operator[](p_a).inc();
         num_actual_children_ += 2;
       }
 
       try {
-        bra_ref[p_c].dec();
+        bra_ref->operator[](p_c).dec();
       }
       catch (InvalidDecrement) {
         return;
       }
-      children_[4] = ERI<F>::Instance(bra_ref[p_a],ket_ref[p_a],bra_ref[p_c],ket_ref[p_c],m+1);
+      children_[4] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
       num_actual_children_ += 1;
 
     };
@@ -111,10 +111,10 @@ namespace libint2 {
       }
     };
 
-  typedef VRR_11_TwoPRep_11<TwoERep_11_11,CGShell,0,true> VRR_a_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<TwoERep_11_11,CGShell,1,true> VRR_c_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<TwoERep_11_11,CGShell,0,false> VRR_b_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<TwoERep_11_11,CGShell,1,false> VRR_d_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,true> VRR_a_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,true> VRR_c_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,false> VRR_b_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,false> VRR_d_11_TwoPRep_11_sh;
 
 
 };
