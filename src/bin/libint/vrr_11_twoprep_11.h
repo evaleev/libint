@@ -87,7 +87,7 @@ namespace libint2 {
   template <template <class> class ERI, class F, int part, FunctionPosition where>
     VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr<ERI<F> >& Tint,
                                                            unsigned int dir) :
-    target_(Tint), dir_(dir)
+    target_(Tint), dir_(dir), nchildren_(0), nexpr_(0), nflops_(0)
     {
       target_ = Tint;
 
@@ -104,9 +104,6 @@ namespace libint2 {
       bra.push_back(sh_c);
       ket.push_back(sh_b);
       ket.push_back(sh_d);
-
-      // Zero out children pointers
-      nchildren_ = 0;
 
       // Use indirection to choose bra or ket
       vector<F>* bra_ref = &bra;
@@ -149,8 +146,8 @@ namespace libint2 {
       if (a_minus_2_exists) {
         children_[2] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
         children_[3] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
-        const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir);
         bra_ref->operator[](p_a).inc(dir);
+        const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir);
         nchildren_ += 2;
         nflops_ += ConvertNumFlops<F>(5);
         if (is_simple()) {
@@ -174,8 +171,8 @@ namespace libint2 {
       if (b_minus_1_exists) {
         children_[4] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
         children_[5] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
-        const unsigned int ni_b = ket_ref->operator[](p_a).qn(dir);
         ket_ref->operator[](p_a).inc(dir);
+        const unsigned int ni_b = ket_ref->operator[](p_a).qn(dir);
         nchildren_ += 2;
         nflops_ += ConvertNumFlops<F>(5);
         if (is_simple()) {
@@ -196,8 +193,8 @@ namespace libint2 {
         return;
       }
       children_[6] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
-      const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir);
       bra_ref->operator[](p_c).inc(dir);
+      const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir);
       nchildren_ += 1;
       nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {
@@ -215,8 +212,8 @@ namespace libint2 {
         return;
       }
       children_[7] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
-      const unsigned int ni_d = ket_ref->operator[](p_c).qn(dir);
       ket_ref->operator[](p_c).inc(dir);
+      const unsigned int ni_d = ket_ref->operator[](p_c).qn(dir);
       nchildren_ += 1;
       nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {

@@ -48,7 +48,9 @@ namespace libint2 {
     bool is_simple() const {
       return false;
     }
-    
+    /// Implementation of RecurrenceRelation::nflops()
+    unsigned int nflops() const { return 0; }
+
     const std::string cpp_function_name() {};
     const std::string cpp_source_name() {};
     const std::string cpp_header_name() {};

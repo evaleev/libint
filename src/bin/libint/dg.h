@@ -62,6 +62,8 @@ namespace libint2 {
       strategy is applied to vertex and all its children.
     */
     void apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>& strategy);
+    /// This function insert expr of type AlgebraicOperator<DGVertex> into the graph
+    void insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr);
     
     // Which vertex is the first to compute
     SafePtr<DGVertex> first_to_compute_;
@@ -116,6 +118,12 @@ namespace libint2 {
       The goal of strategies is to connect the target vertices to simpler, precomputable vertices.
       */
     void apply(const SafePtr<Strategy>&);
+
+    /** after Strategy has been applied, simple recurrence relations need to be
+        optimized away. optimize_rr_out() will replace all simple recurrence relations
+        with code representing them.
+    */
+    void optimize_rr_out();
 
     /** after all apply's have been called, traverse()
         construct a heuristic order of traversal for the graph.

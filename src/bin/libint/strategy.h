@@ -19,7 +19,7 @@ namespace libint2 {
   class Strategy {
 
   public:
-    static const unsigned int max_size_to_unroll = 1;
+    static const unsigned int max_size_to_unroll = 1000;
     typedef SafePtr<RecurrenceRelation> RR;
     Strategy() {}
     virtual ~Strategy() {}

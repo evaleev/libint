@@ -9,13 +9,10 @@ using namespace std;
 using namespace libint2;
 
 DGArc::DGArc(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) :
-  orig_(orig), dest_(dest)
-{
-}
+  orig_(orig), dest_(dest) {}
 
-DGArc::~DGArc()
-{
-}
+DGArcRR::DGArcRR(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) :
+  DGArc(orig,dest) {}
 
 DGVertex::DGVertex() :
   parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
@@ -48,6 +45,24 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
   }
   else
     throw CannotAddArc("DGVertex::add_entry_arc() -- cannot add arcs anymore");
+}
+
+void
+DGVertex::del_exit_arc(const SafePtr<DGArc>& arc)
+{
+  typedef vector< SafePtr<DGArc> > vectype;
+
+  if (can_add_arcs_) {
+    vectype::iterator pos = find(children_.begin(),children_.end(), arc);
+    if (pos == children_.end()) {
+      arc->dest()->del_entry_arc(arc);
+      children_.erase(pos);
+    }
+    else
+      return;
+  }
+  else
+    throw CannotAddArc("DGVertex::del_entry_arc() -- cannot add/remove arcs anymore");
 }
 
 void
@@ -375,6 +390,79 @@ DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>
     apply_to(child,strategy);
   }
 
+}
+
+
+// Optimize out simple recurrence relations
+void
+DirectedGraph::optimize_rr_out()
+{
+  for(int v=0; v<first_free_; v++) {
+
+    SafePtr<DGVertex> vertex = stack_[v];
+    if (vertex->num_exit_arcs()) {
+      SafePtr<DGArc> arc0 = vertex->exit_arc(0);
+      SafePtr<DGArcRR> arc0_cast = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
+      if (arc0_cast == 0)
+        continue;
+      SafePtr<RecurrenceRelation> rr = arc0_cast->rr();
+
+      // Optimize if the recurrence relation is simple
+      if (rr->is_simple()) {
+
+        unsigned int nchildren = rr->num_children();
+        unsigned int nexpr = rr->num_expr();
+
+        cout << "RR: nchildren = " << nchildren << " nexpr = " << nexpr << endl;
+
+        // Remove arcs connecting this vertex to children
+        for(int c=0; c<nchildren; c++)
+          vertex->del_exit_arc(vertex->exit_arc(c));
+
+        // and instead insert expressions
+        for(int e=0; e<nexpr; e++) {
+          SafePtr< AlgebraicOperator<DGVertex> > rr_expr_cast = dynamic_pointer_cast<AlgebraicOperator<DGVertex>,DGVertex>(rr->rr_expr(e));
+          if (rr_expr_cast)
+            insert_expr_at(vertex,rr_expr_cast);
+          else
+            throw runtime_error("DirectedGraph::optimize_rr_out() -- expression of invalid type");
+        }
+
+      }
+    }
+  }
+}
+
+
+void
+DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr)
+{
+  typedef AlgebraicOperator<DGVertex> ExprType;
+
+  SafePtr<DGVertex> expr_vertex = dynamic_pointer_cast<DGVertex,ExprType>(expr);
+  add_vertex(expr_vertex);
+  SafePtr<DGArc> arc(new DGArcDirect(where,expr_vertex));
+  where->add_exit_arc(arc);
+
+  // See if left operand is also an operator
+  SafePtr<ExprType> left_cast = dynamic_pointer_cast<ExprType,DGVertex>(expr->left());
+  if (left_cast)
+    insert_expr_at(expr_vertex,left_cast);
+  else {
+    add_vertex(expr->left());
+    SafePtr<DGArc> arc(new DGArcDirect(expr_vertex,expr->left()));
+    expr_vertex->add_exit_arc(arc);
+  }
+
+  // See if right operand is also an operator
+  SafePtr<ExprType> right_cast = dynamic_pointer_cast<ExprType,DGVertex>(expr->right());
+  if (right_cast)
+    insert_expr_at(expr_vertex,right_cast);
+  else {
+    add_vertex(expr->right());
+    SafePtr<DGArc> arc(new DGArcDirect(expr_vertex,expr->right()));
+    expr_vertex->add_exit_arc(arc);
+  }
 }
 
 #endif

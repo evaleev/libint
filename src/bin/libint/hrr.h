@@ -66,7 +66,9 @@ namespace libint2 {
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
     }
-    
+    /// Implementation of RecurrenceRelation::nflops()
+    unsigned int nflops() const { return nflops_; }
+
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
     const std::string cpp_header_name() {}
@@ -83,6 +85,7 @@ namespace libint2 {
 
     unsigned int nchildren_;
     unsigned int nexpr_;
+    unsigned int nflops_;
     void oper_checks() const;
   };
 
@@ -92,7 +95,7 @@ namespace libint2 {
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(const SafePtr<TargetType>& Tint, unsigned int dir) :
-    target_(Tint), dir_(dir)
+    target_(Tint), dir_(dir), nchildren_(0), nexpr_(0), nflops_(0)
     {
       target_ = Tint;
       typename I<F>::AuxQuantaType aux = Tint->aux();
@@ -101,9 +104,6 @@ namespace libint2 {
       typedef typename I<F>::KetType IKetType;
       IBraType* bra = new IBraType(Tint->bra());
       IKetType* ket = new IKetType(Tint->ket());
-
-      // Zero out children pointers
-      nchildren_ = 0;
 
       //
       // InBra and InKet cases have to treated explicitly since BraType and KetType don't have to match

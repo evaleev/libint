@@ -207,19 +207,52 @@ namespace libint2 {
     SafePtr<DGVertex> dest_;  // Where this Arc leads to
 
   public:
-    DGArc(const SafePtr<DGVertex>& orig_, const SafePtr<DGVertex>& dest_);
-    ~DGArc();
+    DGArc(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest);
+    ~DGArc() {}
 
-    SafePtr<DGVertex> orig() const { return orig_; };
-    SafePtr<DGVertex> dest() const { return dest_; };
-    
+    SafePtr<DGVertex> orig() const { return orig_; }
+    SafePtr<DGVertex> dest() const { return dest_; }
+
+    /// Print out the arc
+    virtual void print(std::ostream&) const =0;
+
+  };
+  
+  /** Class DGArcDirect describes arcs that does not correspond to any relationship.
+      Each arc connects vertex orig_ to vertex dest_. */
+  class DGArcDirect : public DGArc {
+
+  public:
+    DGArcDirect(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) : DGArc(orig,dest) {}
+    ~DGArcDirect() {}
+
+    /// Overload of DGArc::print()
+    void print(std::ostream& os) const
+      {
+        os << "DGArcDirect: connects " << orig().get() << " to " << dest().get();
+      }
+  };
+  
+  /** Class DGArcRR describes arcs correspond to recurrence relations.
+      Each arc connects vertex orig_ to vertex dest_. */
+  class DGArcRR : public DGArc {
+
+  public:
+    ~DGArcRR() {}
+
+    /// rr() returns pointer to the RecurrenceRelation describing the arc
+    virtual SafePtr<RecurrenceRelation> rr() const =0;
+
+  protected:
+    DGArcRR(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest);
+
   };
   
   /** Class DGArcRel describes arcs in a directed graph which is
       represented by a relationship ArcRel. */
   // NOTE TO SELF (11/24/2004): need to implement checks on ArcRel
   // It obviously must implement some functions
-  template <class ArcRel> class DGArcRel : public DGArc {
+  template <class ArcRel> class DGArcRel : public DGArcRR {
 
     SafePtr<ArcRel> rel_;     // Relationship described by the arc
 
@@ -227,13 +260,21 @@ namespace libint2 {
     DGArcRel(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest,
 	     const SafePtr<ArcRel>& rel);
     ~DGArcRel();
+
+    /// Implementation of DGArcRR::rr()
+    SafePtr<RecurrenceRelation> rr() const { return dynamic_pointer_cast<RecurrenceRelation,ArcRel>(rel_); }
+    /// Overload of DGArc::print()
+    void print(std::ostream& os) const
+      {
+        os << "DGArcRel<T>: connects " << orig().get() << " to " << dest().get();
+      }
     
   };
 
   template <class ArcRel>
     DGArcRel<ArcRel>::DGArcRel(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest,
 			       const SafePtr<ArcRel>& rel) :
-    DGArc(orig,dest), rel_(rel)
+    DGArcRR(orig,dest), rel_(rel)
     {
     };
 
@@ -283,6 +324,9 @@ namespace libint2 {
         Thus, arcs are owned by their PARENTS.
       */
     void add_exit_arc(const SafePtr<DGArc>&);
+    /** del_exit_arc(arc) removes arc c (from this and corresponding child)
+      */
+    void del_exit_arc(const SafePtr<DGArc>&);
     /// returns the number of parents
     const unsigned int num_entry_arcs() const;
     /// returns ptr to i-th parent

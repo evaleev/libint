@@ -50,7 +50,7 @@ namespace libint2 {
       {
         SafePtr<AlgebraicOperator> a_cast = dynamic_pointer_cast<AlgebraicOperator,DGVertex>(a);
         if (a_cast) {
-          return OT_ == a_cast->OT_;
+          return OT_ == a_cast->OT_ && left_->equiv(a_cast->left()) && right_->equiv(a_cast->right());
         }
 	else
 	  return false;

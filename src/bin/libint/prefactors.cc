@@ -16,7 +16,7 @@ Prefactors::Prefactors() :
                        {"C", "D"} };
 
   for(int p=0; p<np; p++)
-    for(int braket=0; braket<1; braket++) {
+    for(int braket=0; braket<2; braket++) {
       char XY_X_str[20];
       sprintf(XY_X_str,"%s%s",XY[p],X[p][braket]);
       rdptr vXY_X_ptr(new rdouble(XY_X_str));
