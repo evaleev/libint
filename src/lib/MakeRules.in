@@ -43,8 +43,8 @@ $(RM) -f $(LIBSRCLINK); \
 $(RM) -f source; \
 $(RM) -f make_libsrcdir; \
 fi; \
-if ! mkdir -p $(LIBSRCDIR); then \
-echo Could not mkdir -p $(LIBSRCDIR); \
+if ! $(INSTALL) $(INSTALLDIROPT) $(LIBSRCDIR); then \
+echo Could not make directory $(LIBSRCDIR); \
 exit 1; \
 fi; \
 if ! $(LN_S) $(LIBSRCDIR) $(LIBSRCLINK); then \
