@@ -959,6 +959,8 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
           os << context->declare(context->type_name<double>(),
                                  current_vertex->symbol());
           // expression
+	  SafePtr<DGVertex> left_arg = oper_ptr->exit_arc(0)->dest();
+	  SafePtr<DGVertex> right_arg = oper_ptr->exit_arc(1)->dest();
           os << context->assign_binary_expr(current_vertex->symbol(),left_arg->symbol(),oper_ptr->label(),right_arg->symbol());
 
           nflops++;
