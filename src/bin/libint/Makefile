@@ -1,23 +1,42 @@
 
-#CXXFLAGS += -I. -g -I/home/tool/evaleev/src/lib/boost
-CXXFLAGS += -I. -g -I/Users/evaleev/Development/General/src/lib/boost_1_32_0
+#CXXFLAGS += -I. -pg -g -O2 -I/home/tool/evaleev/src/lib/boost
+CXXFLAGS += -g -I. -I/home/tool/evaleev/src/lib/boost
+#CXXFLAGS += -O2 -I. -I/home/tool/evaleev/src/lib/boost
+#CXXFLAGS += -I. -g -I/Users/evaleev/Development/General/src/lib/boost_1_32_0
 
-CXXSRC = test.cc rr.cc dg.cc gauss.cc oper.cc integral.cc iter.cc policy.cc \
+RANLIB = ranlib
+OBJSUF = o
+
+LIBCXXSRC = rr.cc dg.cc gauss.cc oper.cc integral.cc iter.cc policy.cc \
 strategy.cc policy_spec.cc flop.cc prefactors.cc context.cc memory.cc
-CXXOBJ = $(CXXSRC:%.cc=%.o)
+LIBCXXOBJ = $(LIBCXXSRC:%.cc=%.$(OBJSUF))
+LIBOBJ = $(LIBCXXOBJ)
+LIBTARGET = libINT.a
 
-test: $(CXXOBJ)
-	$(CXX) -o test $^
+TESTCXXSRC = test.cc
+TESTCXXOBJ = $(TESTCXXSRC:%.cc=%.$(OBJSUF))
 
-graph.pdf: graph.ps
-	ps2pdf13 graph.ps
+test: $(TESTCXXOBJ) $(LIBTARGET)
+	$(CXX) -o $@ $^
 
-graph.ps: graph.dot
-	dot -Tps2 -o graph.ps graph.dot
+$(LIBTARGET): $(LIBOBJ)
+	/bin/rm -f $@
+	$(AR) $(ARFLAGS) $@ $(LIBOBJ)
+	$(RANLIB) $@
+
+%.pdf: %.ps
+	ps2pdf13 $^
+
+%.ps: %.dot
+	dot -Tps2 -o $@ $^
 
 graph.dot: test
-	./test
+	./$^
 
-clean::
-	-rm -rf $(CXXOBJ)
+clean:: oclean targetclean
 
+oclean::
+	-rm -f *.$(OBJSUF)
+
+targetclean::
+	-rm -f $(LIBTARGET) test
