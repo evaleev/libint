@@ -20,7 +20,7 @@ namespace libint2 {
    */
   class IntegralSet_to_Integrals_base {
   protected:
-    virtual void impl_this() const =0;
+    virtual ~IntegralSet_to_Integrals_base() {}
   };
 
   /** IntegralSet_to_Integrals converts I, a set of integrals, to individual integrals. Although this is
@@ -36,7 +36,7 @@ namespace libint2 {
     typedef AlgebraicOperator<DGVertex> ExprType;
 
     IntegralSet_to_Integrals(const SafePtr<I>&);
-    ~IntegralSet_to_Integrals() {};
+    ~IntegralSet_to_Integrals() {}
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return children_.size(); };
@@ -69,12 +69,8 @@ namespace libint2 {
     std::ostream& cpp_source(std::ostream&) {};
 
   private:
-
     SafePtr<TargetType> target_;
     vector< SafePtr<ChildType> > children_;
-
-    /// Implementation of IntegralSet_to_Integrals_base::impl_this()
-    void impl_this() const {}
   };
   
   

@@ -82,12 +82,6 @@ namespace libint2 {
         return false;
       }
 
-      /// Overloads DGVertex::del_exit_arc()
-      void del_exit_arc(const SafePtr<DGArc>& arc)
-      {
-        throw CannotAddArc("AlgebraicOperator::del_exit_arc() -- cannot safely use del_exit_arc on operator vertices. Use replace_exit_arc instead.");
-      }
-      
       /// Overloads DGVertex::del_exit_arcs()
       void del_exit_arcs()
       {

@@ -142,6 +142,18 @@ DGVertex::del_entry_arc(const SafePtr<DGArc>& arc)
 }
 
 void
+DGVertex::detach() throw (CannotPerformOperation)
+{
+  // If there are no entry arcs -- then other vertices do not depend on this guy
+  // Can safely remove exit arcs
+  int narcs = num_entry_arcs();
+  if (num_entry_arcs() == 0)
+    DGVertex::del_exit_arcs();
+  else
+    throw CannotPerformOperation("DGVertex::detach() -- cannot detach a vertex if it has entry arcs");
+}
+
+void
 DGVertex::prepare_to_traverse()
 {
   can_add_arcs_ = false;
@@ -518,7 +530,7 @@ void
 DirectedGraph::optimize_rr_out()
 {
   replace_rr_with_expr();
-  //remove_trivial_arithmetics();
+  remove_trivial_arithmetics();
   handle_trivial_nodes();
   remove_disconnected_vertices();
 }
@@ -619,13 +631,11 @@ DirectedGraph::remove_trivial_arithmetics()
 
       // 1.0 * x = x
       if (left->equiv(prefactors.N_i[1])) {
-        vertex->del_exit_arc(vertex->exit_arc(left));
         remove_vertex_at(vertex,right);
       }
 
       // x * 1.0 = x
       if (right->equiv(prefactors.N_i[1])) {
-        vertex->del_exit_arc(vertex->exit_arc(right));
         remove_vertex_at(vertex,left);
       }
 
@@ -688,6 +698,7 @@ void
 DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2) throw(CannotPerformOperation)
 {
   typedef vector<SafePtr<DGArc> > arcvec;
+  typedef arcvec::iterator aiter;
   // Collect all entry arcs in a container
   arcvec v1_entry;
   // Verify that all entry arcs are DGArcDirect
@@ -699,9 +710,11 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
       throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");
     v1_entry.push_back(v1->entry_arc(i));
   }
+
   // Verify that v1 and v2 are connected by an arc and it is the only arc exiting v1
-  if (v1->num_exit_arcs() != 1 || v1->exit_arc(0)->dest() != v2)
-    throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");
+  /*if (v1->num_exit_arcs() != 1 || v1->exit_arc(0)->dest() != v2)
+    throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");*/
+
   // See if this is a direct arc -- otherwise cannot do this
   SafePtr<DGArc> arc = v1->exit_arc(0);
   SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
@@ -712,15 +725,15 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
   // OK, now do work!
   //
 
-  // Remove the exit arc from v1 to v2
-  v1->del_exit_arcs();
-
   // Reconnect each of v1's entry arcs to v2
   for(arcvec::iterator i=v1_entry.begin(); i != v1_entry.end(); i++) {
     SafePtr<DGVertex> parent = (*i)->orig();
     SafePtr<DGArcDirect> new_arc(new DGArcDirect(parent,v2));
     parent->replace_exit_arc(*i,new_arc);
   }
+
+  // and fully disconnect this vertex
+  v1->detach();
 }
 
 void
@@ -845,8 +858,9 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
       continue;
     SafePtr<RecurrenceRelation> rr = arc_rr->rr();
     SafePtr<IntegralSet_to_Integrals_base> iset_to_i = dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(rr);
-    if (iset_to_i == 0)
+    if (iset_to_i == 0) {
       continue;
+    }
     else {
       vertex->reset_symbol();
       unsigned int nchildren = vertex->num_exit_arcs();
@@ -980,6 +994,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
         typedef DGArcRR arc_type;
         SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(current_vertex->exit_arc(0));
         if (arc_ptr) {
+          
           SafePtr<RecurrenceRelation> rr = arc_ptr->rr();
           os << context->label_to_name(rr->label()) << "(libint, "
           << context->value_to_pointer(current_vertex->symbol());

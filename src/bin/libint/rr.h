@@ -325,20 +325,18 @@ namespace libint2 {
         Thus, arcs are owned by their PARENTS.
       */
     void add_exit_arc(const SafePtr<DGArc>&);
-    /** del_exit_arc(arc) removes arc c (from this and corresponding child).
-        NOTE: This function is virtual because for some classes order of exit arcs
-        matters (such as noncommutative AlgebraicOperator). Thus it may not be safe
-        to use del_exit_arc() to replace an arc. replace_exit_arc() should be used
-        in such instances.
-      */
-    virtual void del_exit_arc(const SafePtr<DGArc>& c);
     /** del_exit_arcs() removes all exit arcs from this and corresponding children vertices.
         See documentation for del_exit_arc().
       */
     virtual void del_exit_arcs();
     /** replace_exit_arc() replaces A with B. See documentation for del_exit_arc().
      */
-    virtual void replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B);
+    void replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B);
+    /** this function detaches the vertex from other vertices. It cannot safely remove
+        entry arcs, so the user must previously delete or replace them (see documentation for del_exit_arc()).
+    */
+    void detach() throw (CannotPerformOperation);
+
     /// returns the number of parents
     unsigned int num_entry_arcs() const;
     /// returns ptr to i-th parent
@@ -450,6 +448,14 @@ namespace libint2 {
     bool target_;
     // If set to true -- traversal has started and add_entry... cannot be called
     bool can_add_arcs_;
+
+    /** del_exit_arc(arc) removes arc c (from this and corresponding child).
+        NOTE: This function is private because for some classes order of exit arcs
+        matters (such as noncommutative AlgebraicOperator). Thus it may not be safe
+        to use del_exit_arc() to replace an arc. replace_exit_arc() should be used
+        in such instances.
+      */
+    void del_exit_arc(const SafePtr<DGArc>& c);
     /// add_entry_arc(arc) adds arc as an arc connecting parents to this vertex
     void add_entry_arc(const SafePtr<DGArc>&);
     /// del_entry_arc(arc) removes arc as an arc connecting parents to this vertex
