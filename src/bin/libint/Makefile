@@ -3,7 +3,7 @@
 CXXFLAGS += -I. -g -I/Users/evaleev/Development/General/src/lib/boost_1_32_0
 
 CXXSRC = test.cc rr.cc dg.cc gauss.cc oper.cc integral.cc iter.cc policy.cc \
-strategy.cc policy_spec.cc flop.cc prefactors.cc context.cc
+strategy.cc policy_spec.cc flop.cc prefactors.cc context.cc memory.cc
 CXXOBJ = $(CXXSRC:%.cc=%.o)
 
 test: $(CXXOBJ)

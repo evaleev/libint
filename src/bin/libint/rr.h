@@ -7,6 +7,7 @@
 #include <exception.h>
 #include <smart_ptr.h>
 #include <polyconstr.h>
+#include <memory.h>
 
 #ifndef _libint2_src_bin_libint_rr_h_
 #define _libint2_src_bin_libint_rr_h_
@@ -292,38 +293,10 @@ namespace libint2 {
 
   /// This is a vertex of a Directed Graph (DG)
   class DGVertex {
-
-    /// label for the vertex within a graph
-    std::string graph_label_;    
-    /// symbol used in the code
-    std::string symbol_;
-    
-    /// Arcs leaving this DGVertex
-    vector< SafePtr<DGArc> > children_;
-    /// We also need info about Arcs entering this DGVertex
-    vector< SafePtr<DGArc> > parents_;
-
-    // Whether this is a "target" vertex, i.e. the target of a calculation
-    bool target_;
-    // If set to true -- traversal has started and add_entry... cannot be called
-    bool can_add_arcs_;
-    /// add_entry_arc(arc) adds arc as an arc connecting parents to this vertex
-    void add_entry_arc(const SafePtr<DGArc>&);
-    /// del_entry_arc(arc) removes arc as an arc connecting parents to this vertex
-    void del_entry_arc(const SafePtr<DGArc>&);
-
-    ////////
-    // These members used in traversal algorithms
-    ////////
-
-    // num_tagged_arcs keeps track of how many entry arcs have been tagged during traversal
-    unsigned int num_tagged_arcs_;
-    /// Which DGVertex to be computed before this vertex (0, if this is the first vertex)
-    SafePtr<DGVertex> precalc_;
-    /// Which DGVertex to be computed after this vertex (0, if this is the last vertex)
-    SafePtr<DGVertex> postcalc_;
-
   public:
+    /// The address on the stack during computation is described using this type
+    typedef MemoryManager::Address Address;
+
     DGVertex();
     DGVertex(const vector<SafePtr<DGArc> >& parents, const vector<SafePtr<DGArc> >& children);
     virtual ~DGVertex();
@@ -391,6 +364,10 @@ namespace libint2 {
     const std::string& symbol() const { return symbol_;}
     /// sets the code symbol
     void set_symbol(const std::string& symbol);
+    /// returns the address on stack
+    const Address address() const { return address_;}
+    /// sets the code symbol
+    void set_address(Address address);
 
     /// prepare_to_traverse() must be called before traversal of the graph starts
     void prepare_to_traverse();
@@ -407,6 +384,40 @@ namespace libint2 {
 
     /// Resets the vertex, releasing all arcs
     void reset();
+
+  private:
+    /// label for the vertex within a graph
+    std::string graph_label_;    
+    /// symbol used in the code
+    std::string symbol_;
+    /// Address on the stack
+    Address address_;
+    
+    /// Arcs leaving this DGVertex
+    vector< SafePtr<DGArc> > children_;
+    /// We also need info about Arcs entering this DGVertex
+    vector< SafePtr<DGArc> > parents_;
+
+    // Whether this is a "target" vertex, i.e. the target of a calculation
+    bool target_;
+    // If set to true -- traversal has started and add_entry... cannot be called
+    bool can_add_arcs_;
+    /// add_entry_arc(arc) adds arc as an arc connecting parents to this vertex
+    void add_entry_arc(const SafePtr<DGArc>&);
+    /// del_entry_arc(arc) removes arc as an arc connecting parents to this vertex
+    void del_entry_arc(const SafePtr<DGArc>&);
+
+    ////////
+    // These members used in traversal algorithms
+    ////////
+
+    // num_tagged_arcs keeps track of how many entry arcs have been tagged during traversal
+    unsigned int num_tagged_arcs_;
+    /// Which DGVertex to be computed before this vertex (0, if this is the first vertex)
+    SafePtr<DGVertex> precalc_;
+    /// Which DGVertex to be computed after this vertex (0, if this is the last vertex)
+    SafePtr<DGVertex> postcalc_;
+
   };
 
   /** OperatorProperties describes various properties of an operator or operator set

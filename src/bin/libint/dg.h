@@ -7,6 +7,7 @@
 #include <smart_ptr.h>
 #include <rr.h>
 #include <context.h>
+#include <memory.h>
 
 #ifndef _libint2_src_bin_libint_dg_h_
 #define _libint2_src_bin_libint_dg_h_
@@ -105,6 +106,8 @@ namespace libint2 {
     // schedule_computation(vertex) puts vertex first in the computation order
     void schedule_computation(const SafePtr<DGVertex>&);
 
+    // Compute addresses on stack
+    void allocate_mem(const SafePtr<MemoryManager>& memman);
     // Assign symbols to the vertices
     void assign_symbols(const SafePtr<CodeContext>& context);
     // Print the code using symbols generated with assign_symbols()
@@ -181,7 +184,8 @@ namespace libint2 {
        decl specifies the stream to receive declaration code,
        code receives the stream to receive the definition code
     */
-    void generate_code(const SafePtr<CodeContext>& context, const std::string& label, std::ostream& decl, std::ostream& code);
+    void generate_code(const SafePtr<CodeContext>& context, const SafePtr<MemoryManager>& memman,
+                       const std::string& label, std::ostream& decl, std::ostream& code);
     
     /// Resets the graph and all vertices
     void reset();

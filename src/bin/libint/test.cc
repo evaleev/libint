@@ -105,7 +105,7 @@ int try_main (int argc, char* argv[])
 
   SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy);
-  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_s,sh_s,0);
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_s,sh_p,sh_s,0);
   cout << xsxs_quartet->description();
   SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
   dg_xxxx3->append_target(xsxs_ptr);
@@ -119,7 +119,8 @@ int try_main (int argc, char* argv[])
   cout << "The number of vertices = " << dg_xxxx3->num_vertices() << endl;
 
   SafePtr<CodeContext> context(new CppCodeContext());
-  dg_xxxx3->generate_code(context,xsxs_quartet->label(),cout,cout);
+  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+  dg_xxxx3->generate_code(context,memman,xsxs_quartet->label(),cout,cout);
   std::basic_ofstream<char> dotfile2("graph.symb.dot");
   dg_xxxx3->print_to_dot(true,dotfile2);
 

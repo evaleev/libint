@@ -16,11 +16,19 @@ using namespace std;
 
 namespace libint2 {
 
+  /** IntegralSet_to_Integrals_base is dummy class used for dynamic casts only
+   */
+  class IntegralSet_to_Integrals_base {
+  protected:
+    virtual void impl_this() const =0;
+  };
+
   /** IntegralSet_to_Integrals converts I, a set of integrals, to individual integrals. Although this is
   technically not a recurrence relation, it can be treated as one.
   */
   template <class I>
-  class IntegralSet_to_Integrals : public RecurrenceRelation {
+  class IntegralSet_to_Integrals : public RecurrenceRelation,
+    public IntegralSet_to_Integrals_base {
   public:
     typedef I TargetType;
     typedef typename I::iter_type ChildType;
@@ -60,6 +68,9 @@ namespace libint2 {
 
     SafePtr<TargetType> target_;
     vector< SafePtr<ChildType> > children_;
+
+    /// Implementation of IntegralSet_to_Integrals_base::impl_this()
+    void impl_this() const {}
   };
   
   

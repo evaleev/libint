@@ -14,13 +14,13 @@ DGArcRR::DGArcRR(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) :
 
 DGVertex::DGVertex() :
   parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
-  precalc_(), postcalc_(), symbol_()
+  precalc_(), postcalc_(), symbol_(), address_(0)
 {
 }
 
 DGVertex::DGVertex(const vector< SafePtr<DGArc> >& parents, const vector< SafePtr<DGArc> >& children) :
   parents_(parents), children_(children), target_(false), can_add_arcs_(true),
-  num_tagged_arcs_(0), precalc_(), postcalc_(), symbol_()
+  num_tagged_arcs_(0), precalc_(), postcalc_(), symbol_(), address_(0)
 {
 }
 
@@ -174,6 +174,12 @@ void
 DGVertex::set_symbol(const std::string& symbol)
 {
   symbol_ = symbol;
+}
+
+void
+DGVertex::set_address(Address address)
+{
+  address_ = address;
 }
 
 ///////////////////////////////////////////////////
@@ -598,7 +604,8 @@ DirectedGraph::remove_disconnected_vertices()
 //
 //
 void
-DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const std::string& label,
+DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<MemoryManager>& memman,
+                             const std::string& label,
                              std::ostream& decl, std::ostream& def)
 {
   decl << context->std_header();
@@ -619,37 +626,89 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const std::str
   def << context->std_header();
   def << function_name << context->open_block() << endl;
   context->reset();
+  allocate_mem(memman);
   assign_symbols(context);
   print_def(context,def);
   def << context->close_block() << endl;
 
 }
 
+void
+DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman)
+{
+  // Allocate space for all targets first
+  for(int i=0; i<first_free_; i++) {
+    SafePtr<DGVertex> vertex = stack_[i];
+    if (vertex->is_a_target())
+      vertex->set_address(memman->alloc(vertex->size()));
+  }
+}
 
 void
 DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
 {
-  unsigned int ntargets = 0;
+  ostringstream os;
+
+  // Erase all symbols
+  for(int i=0; i<first_free_; i++)
+    stack_[i]->set_symbol("");
+
+  // First, set symbols for all vertices larger than 1
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
-    if (vertex->is_a_target()) {
-      ostringstream os;
-      os << "libint->targets[" << ntargets << "]";
-      ntargets++;
+    if (vertex->size() > 1) {
+      os.flush();
+      os << "libint->stack[" << vertex->address() << "]";
       vertex->set_symbol(os.str());
+    }
+  }
+
+  // Second, find all nodes which were unrolled using IntegralSet_to_Integrals --
+  // children of such nodes have symbols that depend on the parent's symbol
+  for(int i=0; i<first_free_; i++) {
+    SafePtr<DGVertex> vertex = stack_[i];
+    if (vertex->num_exit_arcs() == 0)
+      continue;
+    SafePtr<DGArc> arc = vertex->exit_arc(0);
+    SafePtr<DGArcRR> arc_rr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
+    if (arc_rr == 0)
+      continue;
+    SafePtr<RecurrenceRelation> rr = arc_rr->rr();
+    SafePtr<IntegralSet_to_Integrals_base> iset_to_i = dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(rr);
+    if (iset_to_i == 0)
+      continue;
+    else {
+      unsigned int nchildren = vertex->num_exit_arcs();
+      for(int c=0; c<nchildren; c++) {
+        os.flush();
+        os << "libint->stack[" << vertex->address()+c << "]";
+        vertex->exit_arc(c)->dest()->set_symbol(os.str());
+      }
+    }
+  }
+
+  // then process all other symbols
+  for(int i=0; i<first_free_; i++) {
+    SafePtr<DGVertex> vertex = stack_[i];
+    if (vertex->symbol() != "") {
+      continue;
     }
     // test if the vertex is a static quantity, like a constant
     typedef CTimeEntity<double> cdouble;
     SafePtr<cdouble> ptr_cast = dynamic_pointer_cast<cdouble,DGVertex>(vertex);
-    if (ptr_cast)
+    if (ptr_cast) {
       vertex->set_symbol(ptr_cast->label());
+      continue;
+    }
     else if (vertex->precomputed()) {
       std::string symbol("libint->");
       symbol += context->label_to_name(vertex->label());
       vertex->set_symbol(symbol);
+      continue;
     }
     else {
       vertex->set_symbol(context->unique_name<EntityTypes::FP>());
+      continue;
     }
   }
 }
@@ -660,25 +719,29 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
   unsigned int nflops = 0;
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
-    os << current_vertex->symbol() << " = ";
 
-    typedef AlgebraicOperator<DGVertex> oper_type;
-    SafePtr<oper_type> oper_ptr = dynamic_pointer_cast<oper_type,DGVertex>(current_vertex);
-    if (oper_ptr) {
-      os << oper_ptr->exit_arc(0)->dest()->symbol()
-         << " " << oper_ptr->label() << " "
-         << oper_ptr->exit_arc(1)->dest()->symbol() << endl;
-      nflops++;
-    }
-    else if (current_vertex->num_exit_arcs() == 1) {
-      typedef DGArcDirect arc_type;
-      SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(current_vertex->exit_arc(0));
-      if (arc_ptr) {
-        os << arc_ptr->dest()->symbol() << endl;
+    if (!current_vertex->is_a_target()) {
+
+      os << current_vertex->symbol() << " = ";
+      
+      typedef AlgebraicOperator<DGVertex> oper_type;
+      SafePtr<oper_type> oper_ptr = dynamic_pointer_cast<oper_type,DGVertex>(current_vertex);
+      if (oper_ptr) {
+        os << oper_ptr->exit_arc(0)->dest()->symbol()
+           << " " << oper_ptr->label() << " "
+           << oper_ptr->exit_arc(1)->dest()->symbol() << endl;
+        nflops++;
       }
-    }
-    else {
-      //throw std::runtime_error("DirectedGraph::print_def() -- cannot handle this vertex yet");
+      else if (current_vertex->num_exit_arcs() == 1) {
+        typedef DGArcDirect arc_type;
+        SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(current_vertex->exit_arc(0));
+        if (arc_ptr) {
+          os << arc_ptr->dest()->symbol() << endl;
+        }
+      }
+      else {
+        //throw std::runtime_error("DirectedGraph::print_def() -- cannot handle this vertex yet");
+      }
     }
 
     current_vertex = current_vertex->postcalc();
