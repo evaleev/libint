@@ -365,9 +365,9 @@ namespace libint2 {
     /// sets the code symbol
     void set_symbol(const std::string& symbol);
     /// returns the address on stack
-    const Address address() const { return address_;}
+    Address address() const { return address_;}
     /// sets the code symbol
-    void set_address(Address address);
+    void set_address(const Address& address);
 
     /// prepare_to_traverse() must be called before traversal of the graph starts
     void prepare_to_traverse();

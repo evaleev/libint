@@ -2,16 +2,17 @@
 #include <algorithm>
 #include <list>
 #include <stdexcept>
+#include <iostream>
 #include <memory.h>
 
 using namespace std;
 using namespace libint2;
 
-MemoryManager::MemoryManager(unsigned long int maxmem) :
+MemoryManager::MemoryManager(const Size& maxmem) :
   maxmem_(maxmem), blks_()
 {
   SafePtr<MemBlock> null_ptr;
-  SafePtr<MemBlock> default_block(new MemBlock((Address)0,(Size)maxmem_,true,null_ptr,null_ptr));
+  SafePtr<MemBlock> default_block(new MemBlock(Address(0),maxmem_,true,null_ptr,null_ptr));
   blks_.push_back(default_block);
   last_freed_ = 0;
 }
@@ -21,7 +22,7 @@ MemoryManager::~MemoryManager()
 }
 
 SafePtr<MemoryManager::MemBlock>
-MemoryManager::steal_from_block(const SafePtr<MemBlock>& blk, Size size)
+MemoryManager::steal_from_block(const SafePtr<MemBlock>& blk, const Size& size)
 {
   if (!blk->free())
     throw std::runtime_error("MemoryManager::steal_from_block() -- block is not free");
@@ -41,7 +42,7 @@ MemoryManager::steal_from_block(const SafePtr<MemBlock>& blk, Size size)
 }
 
 SafePtr<MemoryManager::MemBlock>
-MemoryManager::find_block(Address address)
+MemoryManager::find_block(const Address& address)
 {
   typedef blkstore::iterator iter;
   iter begin = blks_.begin();
@@ -55,7 +56,7 @@ MemoryManager::find_block(Address address)
 
 ///////////////
 
-WorstFitMemoryManager::WorstFitMemoryManager(Size maxsize) :
+WorstFitMemoryManager::WorstFitMemoryManager(const Size& maxsize) :
   MemoryManager(maxsize)
 {
 }
@@ -65,7 +66,7 @@ WorstFitMemoryManager::~WorstFitMemoryManager()
 }
 
 MemoryManager::Address
-WorstFitMemoryManager::alloc(Size size)
+WorstFitMemoryManager::alloc(const Size& size)
 {
   if (size > maxmem())
     throw std::runtime_error("WorstFitMemoryManager::alloc() -- requested more memory than available");
@@ -88,6 +89,8 @@ WorstFitMemoryManager::alloc(Size size)
     b = find_if(b,end,&MemBlock::is_free);
     if (b != end)
       free_blks.push_back(*b);
+    else // No more blocks left
+      break;
   }
 
   // if no exact match found -- find the largest free block and grab memory from it
@@ -104,7 +107,7 @@ WorstFitMemoryManager::alloc(Size size)
 }
 
 void
-WorstFitMemoryManager::free(Address address)
+WorstFitMemoryManager::free(const Address& address)
 {
   SafePtr<MemBlock> blk = find_block(address);
   if (!blk->free())

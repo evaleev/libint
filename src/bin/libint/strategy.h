@@ -18,10 +18,12 @@ namespace libint2 {
   */
   class Strategy {
 
+    static const unsigned int default_max_size_to_unroll = 0;
+
   public:
-    static const unsigned int max_size_to_unroll = 1000;
     typedef SafePtr<RecurrenceRelation> RR;
-    Strategy() {}
+    Strategy(unsigned int max_size_to_unroll = default_max_size_to_unroll) :
+      max_size_to_unroll_(max_size_to_unroll) {}
     virtual ~Strategy() {}
 
     /// Returns the optimal recurrence relation for integral
@@ -49,6 +51,9 @@ namespace libint2 {
         RR rr_cast_ptr = static_pointer_cast<RecurrenceRelation,RRType>(rr);
         return rr_cast_ptr;
       }
+
+  private:
+    unsigned int max_size_to_unroll_;
 
   };
     

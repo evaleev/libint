@@ -17,7 +17,7 @@ namespace libint2 {
     class MemoryBlock
     {
     public:
-      MemoryBlock(Address address, Size size, bool free,
+      MemoryBlock(const Address& address, const Size& size, bool free,
                   const SafePtr<MemoryBlock>& prev,
                   const SafePtr<MemoryBlock>& next) :
         address_(address), size_(size), free_(free),
@@ -35,9 +35,9 @@ namespace libint2 {
       bool free() const { return free_; }
 
       /// Sets the address
-      void set_address(Address address) { address_ = address; }
+      void set_address(const Address& address) { address_ = address; }
       /// Sets the size
-      void set_size(Size size) { size_ = size; }
+      void set_size(const Size& size) { size_ = size; }
       /// Sets block's free status
       void set_free(bool free) { free_ = free; }
 
@@ -67,6 +67,25 @@ namespace libint2 {
     };
 
   /**
+     Class SafeInteger is a simple extension of unsigned long that provides invalid() member
+   */
+  class SafeInteger {
+  public:
+    typedef unsigned long int IntType;
+
+    SafeInteger();
+    SafeInteger(const IntType&);
+    SafeInteger& operator=(const SafeInteger&);
+    SafeInteger& operator=(const IntType&);
+    
+  private:
+    bool valid_;
+    IntType value_;
+
+  };
+  
+
+  /**
      Class MemoryManager handles allocation and deallocation of raw
      memory (stack) provided at runtime of the library.
   */
@@ -80,12 +99,12 @@ namespace libint2 {
     virtual ~MemoryManager();
 
     /// Reserve a block and return its address
-    virtual Address alloc(Size size) =0;
+    virtual Address alloc(const Size& size) =0;
     /// Release a block previously reserved using alloc
-    virtual void free(Address address) =0;
+    virtual void free(const Address& address) =0;
 
   protected:
-    MemoryManager(Size maxmem);
+    MemoryManager(const Size& maxmem);
 
     typedef std::vector< SafePtr<MemBlock> > blkstore;
     // manages MemBlocks
@@ -95,9 +114,9 @@ namespace libint2 {
     /// Returns maxmem
     Size maxmem() const { return maxmem_; }
     /// steals size memory from block blk and returns the new block
-    SafePtr<MemBlock> steal_from_block(const SafePtr<MemBlock>& blk, Size size);
+    SafePtr<MemBlock> steal_from_block(const SafePtr<MemBlock>& blk, const Size& size);
     /// finds the block at Address a
-    SafePtr<MemBlock> find_block(Address a);
+    SafePtr<MemBlock> find_block(const Address& a);
 
   private:
     Size maxmem_;
@@ -110,13 +129,13 @@ namespace libint2 {
   */
   class WorstFitMemoryManager : public MemoryManager {
   public:
-    WorstFitMemoryManager(Size maxsize = ULONG_MAX);
+    WorstFitMemoryManager(const Size& maxsize = ULONG_MAX);
     ~WorstFitMemoryManager();
 
     /// Implementation of MemoryManager::alloc()
-    Address alloc(Size size);
+    Address alloc(const Size& size);
     /// Implementation of MemoryManager::free()
-    void free(Address address);
+    void free(const Address& address);
 
   };
 

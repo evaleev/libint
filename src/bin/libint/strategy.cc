@@ -41,7 +41,7 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
   // 2) if possible apply HRR
   // 3) else apply VRR
   //
-  if (max_size_to_unroll > 1 && integral->size() <= max_size_to_unroll)
+  if (integral->size() <= max_size_to_unroll_)
     return unroll_intset<TwoPRep_11_11_sq>(integral);
 
   {

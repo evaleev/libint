@@ -177,7 +177,7 @@ DGVertex::set_symbol(const std::string& symbol)
 }
 
 void
-DGVertex::set_address(Address address)
+DGVertex::set_address(const Address& address)
 {
   address_ = address;
 }
@@ -636,28 +636,65 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
 void
 DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman)
 {
-  // Allocate space for all targets first
+  // First, reset tag counters
+  for(int i=0; i<first_free_; i++)
+    stack_[i]->prepare_to_traverse();
+
+  // Second, allocate space for all targets
+#if 1
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
     if (vertex->is_a_target())
       vertex->set_address(memman->alloc(vertex->size()));
   }
+#endif
+
+  //
+  // Go through the traversal order and at each step tag every child
+  // Once a child receives same number of tags as the number of parents,
+  // it can be deallocated
+  //
+  SafePtr<DGVertex> vertex = first_to_compute_;
+  do {
+#if 1
+    if (!vertex->precomputed() && vertex->size() > 1 && !vertex->is_a_target()) {
+#else
+    if (!vertex->precomputed() && vertex->size() > 1) {
+#endif
+      vertex->set_address(memman->alloc(vertex->size()));
+      const unsigned int nchildren = vertex->num_exit_arcs();
+      for(int c=0; c<nchildren; c++) {
+        SafePtr<DGVertex> child = vertex->exit_arc(c)->dest();
+        const unsigned int ntags = child->tag();
+        if (ntags == child->num_entry_arcs()) {
+          // deallocate memory only if this vertex is in the traversal list
+          // NOTE : really, I should be able to detect invalid addresses to determine
+          // whether a given vertex was actually allocated
+          if (child->postcalc() != 0)
+            memman->free(child->address());
+        }
+      }
+    }
+    vertex = vertex->postcalc();
+  } while (vertex != 0);
+
 }
 
 void
 DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
 {
-  ostringstream os;
+  std::ostringstream os;
+  const std::string null_str("");
 
   // Erase all symbols
   for(int i=0; i<first_free_; i++)
-    stack_[i]->set_symbol("");
+    stack_[i]->set_symbol(null_str);
 
   // First, set symbols for all vertices larger than 1
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
     if (vertex->size() > 1) {
-      os.flush();
+      os.str(null_str);
       os << "libint->stack[" << vertex->address() << "]";
       vertex->set_symbol(os.str());
     }
@@ -680,7 +717,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
     else {
       unsigned int nchildren = vertex->num_exit_arcs();
       for(int c=0; c<nchildren; c++) {
-        os.flush();
+        os.str(null_str);
         os << "libint->stack[" << vertex->address()+c << "]";
         vertex->exit_arc(c)->dest()->set_symbol(os.str());
       }
@@ -690,7 +727,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
   // then process all other symbols
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
-    if (vertex->symbol() != "") {
+    if (vertex->symbol() != null_str) {
       continue;
     }
     // test if the vertex is a static quantity, like a constant
