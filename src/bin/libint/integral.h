@@ -546,8 +546,8 @@ namespace libint2 {
     void
     TwoPRep_11_11<BFS>::print(std::ostream& os) const
     {
-      os << "TwoPRep_11_11: (" << parent_type::bra_.member(0,0)->label() << " " << parent_type::ket_.member(0,0)->label()
-         << " | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
+      os << "(" << parent_type::bra_.member(0,0)->label() << " " << parent_type::ket_.member(0,0)->label()
+         << " | 1/r_{12} | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
     };
 
   template <class BFS>
@@ -555,8 +555,8 @@ namespace libint2 {
     TwoPRep_11_11<BFS>::precomputed() const
     {
       /// (ss|ss)^{(m)} are precomputed 
-      if (bra_.member(0,0)->zero() && bra_.member(1,0)->zero() &&
-        ket_.member(0,0)->zero() && ket_.member(1,0)->zero())
+      if (parent_type::bra_.member(0,0)->zero() && parent_type::bra_.member(1,0)->zero() &&
+        parent_type::ket_.member(0,0)->zero() && parent_type::ket_.member(1,0)->zero())
         return true;
       else
         return false;

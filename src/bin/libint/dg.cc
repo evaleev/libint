@@ -1,6 +1,4 @@
 
-#define USE_CG1 1
-
 #include <rr.h>
 #include <dg.h>
 #include <strategy.h>
@@ -40,8 +38,17 @@ void
 DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
 {
   if (can_add_arcs_) {
+    SafePtr<DGVertex> child = arc->dest();
+    const unsigned int nchildren = children_.size();
+    for(int i = 0; i<nchildren; i++)
+      if (children_[i]->dest() == child)
+        return;
     children_.push_back(arc);
     arc->dest()->add_entry_arc(arc);
+
+    cout << "DGVertex::add_exit_arc:" << endl << "  ";
+    print(cout); cout << endl << "  ";
+    child->print(cout); cout << endl;
   }
   else
     throw CannotAddArc("DGVertex::add_entry_arc() -- cannot add arcs anymore");
@@ -59,7 +66,22 @@ DGVertex::del_exit_arc(const SafePtr<DGArc>& arc)
       children_.erase(pos);
     }
     else
-      return;
+      throw std::runtime_error("DGVertex::del_exit_arc() -- arc does not exist");
+  }
+  else
+    throw CannotAddArc("DGVertex::del_entry_arc() -- cannot add/remove arcs anymore");
+}
+
+void
+DGVertex::del_exit_arcs()
+{
+  typedef vector< SafePtr<DGArc> > vectype;
+
+  if (can_add_arcs_) {
+    for(vectype::iterator pos = children_.begin(); pos != children_.end(); pos++) {
+      (*pos)->dest()->del_entry_arc(*pos);
+    }
+    children_.resize(0);
   }
   else
     throw CannotAddArc("DGVertex::del_entry_arc() -- cannot add/remove arcs anymore");
@@ -118,6 +140,18 @@ DGVertex::exit_arc(unsigned int c) const
   return children_.at(c);
 }
 
+SafePtr<DGArc>
+DGVertex::exit_arc(const SafePtr<DGVertex>& v) const
+{
+  unsigned int nchildren = children_.size();
+  for(int c=0; c<nchildren; c++) {
+    SafePtr<DGArc> arc = children_[c];
+    if (arc->dest() == v)
+      return arc;
+  }
+  return SafePtr<DGArc>();
+}
+
 void
 DGVertex::reset()
 {
@@ -158,46 +192,46 @@ DirectedGraph::append_target(const SafePtr<DGVertex>& target)
   try {
     add_vertex(target);
   }
-  catch (VertexAlreadyOnStack) {
-    return;
-  }
+  catch (VertexAlreadyOnStack& e) {}
 }
 
-bool
-DirectedGraph::add_vertex(const SafePtr<DGVertex>& vertex)
+void
+DirectedGraph::add_vertex(const SafePtr<DGVertex>& vertex) throw(VertexAlreadyOnStack)
 {
-  bool already_on_stack = false;
-  for(int i=0; i<first_free_; i++) {
-    if(vertex->equiv(stack_[i])) {
-      already_on_stack = true;
-      //break;
-      return false;
-    }
-  }
-  if(!already_on_stack) {
-    if (first_free_ == stack_.size()) {
-      stack_.resize( stack_.size() + default_size_ );
-      cout << "Increased size of DirectedGraph's stack to "
-           << stack_.size() << endl;
-    }
-    char label[80];  sprintf(label,"vertex%d",first_free_);
-    vertex->set_label(label);
-    stack_[first_free_++] = vertex;
-    return true;
-  }
-  else
-    throw VertexAlreadyOnStack("DirectedGraph::add_vertex() -- vertex already on stack");
+  vertex_is_on(vertex);
 
+  if (first_free_ == stack_.size()) {
+    stack_.resize( stack_.size() + default_size_ );
+    cout << "Increased size of DirectedGraph's stack to "
+         << stack_.size() << endl;
+  }
+  char label[80];  sprintf(label,"vertex%d",first_free_);
+  vertex->set_label(label);
+  stack_[first_free_++] = vertex;
+  cout << "DirectedGraph::add_vertex: " << first_free_-1 << endl << "  ";
+  vertex->print(cout); cout << endl;
+  return;
 }
 
-bool
-DirectedGraph::vertex_is_on(const SafePtr<DGVertex>& vertex) const
+void
+DirectedGraph::vertex_is_on(const SafePtr<DGVertex>& vertex) const throw(VertexAlreadyOnStack)
 {
   for(int i=0; i<first_free_; i++)
     if(vertex->equiv(stack_[i]))
-      return true;
+      throw VertexAlreadyOnStack(stack_[i]);
+}
 
-  return false;
+void
+DirectedGraph::del_vertex(const SafePtr<DGVertex>& v) throw(CannotPerformOperation)
+{
+  vector< SafePtr<DGVertex> >::iterator pos = find(stack_.begin(),stack_.end(),v);
+  if (pos == stack_.end())
+    throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete vertex");
+
+  if (v->num_exit_arcs() == 0 && v->num_entry_arcs() == 0)
+    stack_.erase(pos);
+  else
+    throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete vertex");
 }
 
 void
@@ -294,6 +328,20 @@ DirectedGraph::print_to_dot(std::ostream& os) const
          << dest->label() << endl;
     }
   }
+
+  // Print traversal order using dotted lines
+  SafePtr<DGVertex> current_vertex = first_to_compute_;
+  if (current_vertex != 0) {
+    do {
+      SafePtr<DGVertex> next = current_vertex->postcalc();
+      if (current_vertex && next) {
+        os << "  " << current_vertex->label() << " -> "
+           << next->label() << " [ style = dotted ]";
+      }
+      current_vertex = next;
+    } while (current_vertex != 0);
+  }
+
   os << "}" << endl;
 }
 
@@ -312,9 +360,6 @@ DirectedGraph::reset()
 }
 
 
-
-#if USE_GC1
-
 /// Apply a strategy to all vertices not yet computed (i.e. which do not have exit arcs)
 void
 DirectedGraph::apply(const SafePtr<Strategy>& strategy)
@@ -334,14 +379,13 @@ DirectedGraph::apply(const SafePtr<Strategy>& strategy)
     const int num_children = rr0->num_children();
     for(int c=0; c<num_children; c++) {
       SafePtr<DGVertex> child = rr0->rr_child(c);
+      bool new_vertex = true;
+      try { add_vertex(child); }
+      catch (VertexAlreadyOnStack& e) { child = e.vertex(); new_vertex = false; }
       SafePtr<DGArc> arc(new DGArcRel<RecurrenceRelation>(target,child,rr0));
       target->add_exit_arc(arc);
-    }
-
-    // and apply strategy to the children
-    for(int c=0; c<num_children; c++) {
-      SafePtr<DGVertex> child = rr0->rr_child(c);
-      apply_to(child,strategy);
+      if (new_vertex)
+        apply_to(child,strategy);
     }
   }
 }
@@ -350,13 +394,6 @@ DirectedGraph::apply(const SafePtr<Strategy>& strategy)
 void
 DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>& strategy)
 {
-  try {
-    add_vertex(vertex);
-  }
-  catch (VertexAlreadyOnStack) {
-    return;
-  }
-
   SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(SafePtr_from_this(),vertex);
   if (rr0 == 0)
     return;
@@ -365,80 +402,34 @@ DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>
   const int num_children = rr0->num_children();
   for(int c=0; c<num_children; c++) {
     SafePtr<DGVertex> child = rr0->rr_child(c);
+    bool new_vertex = true;
+    try { add_vertex(child); }
+    catch (VertexAlreadyOnStack& e) { child = e.vertex(); new_vertex = false; }
     SafePtr<DGArc> arc(new DGArcRel<RecurrenceRelation>(target,child,rr0));
     target->add_exit_arc(arc);
-  }
-
-  for(int c=0; c<num_children; c++) {
-    SafePtr<DGVertex> child = rr0->rr_child(c);
-    apply_to(child,strategy);
-  }
-}
-
-#else
-
-/// Apply a strategy to all vertices not yet computed (i.e. which do not have exit arcs)
-void
-DirectedGraph::apply(const SafePtr<Strategy>& strategy)
-{
-  const int num_vertices_on_graph = first_free_;
-  for(int v=0; v<num_vertices_on_graph; v++) {
-    if (stack_[v]->num_exit_arcs() != 0)
-      continue;
-
-    SafePtr<DirectedGraph> this_ptr = SafePtr_from_this();
-    SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(this_ptr,stack_[v]);
-    if (rr0 == 0)
-      return;
-
-    // add children to the graph
-    SafePtr<DGVertex> target = rr0->rr_target();
-    const int num_children = rr0->num_children();
-    for(int c=0; c<num_children; c++) {
-      SafePtr<DGVertex> child = rr0->rr_child(c);
-      SafePtr<DGArc> arc(new DGArcRel<RecurrenceRelation>(target,child,rr0));
-      target->add_exit_arc(arc);
+    if (new_vertex)
       apply_to(child,strategy);
-    }
-
   }
 }
-
-/// Add vertex to graph and apply a strategy to vertex recursively
-void
-DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>& strategy)
-{
-  try {
-    add_vertex(vertex);
-  }
-  catch (VertexAlreadyOnStack) {
-    return;
-  }
-
-  SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(SafePtr_from_this(),vertex);
-  if (rr0 == 0)
-    return;
-
-  SafePtr<DGVertex> target = rr0->rr_target();
-  const int num_children = rr0->num_children();
-  for(int c=0; c<num_children; c++) {
-    SafePtr<DGVertex> child = rr0->rr_child(c);
-    SafePtr<DGArc> arc(new DGArcRel<RecurrenceRelation>(target,child,rr0));
-    target->add_exit_arc(arc);
-    apply_to(child,strategy);
-  }
-
-}
-
 
 // Optimize out simple recurrence relations
 void
 DirectedGraph::optimize_rr_out()
 {
-  for(int v=0; v<first_free_; v++) {
+  replace_rr_with_expr();
+  remove_trivial_arithmetics();
+}
+
+// Replace recurrence relations with expressions
+void
+DirectedGraph::replace_rr_with_expr()
+{
+  const unsigned int nvertices = first_free_;
+  for(int v=0; v<nvertices; v++) {
 
     SafePtr<DGVertex> vertex = stack_[v];
     if (vertex->num_exit_arcs()) {
+      cout << "DirectedGraph::optimize_rr_out:" << endl << "  ";  vertex->print(cout); cout << endl;
       SafePtr<DGArc> arc0 = vertex->exit_arc(0);
       SafePtr<DGArcRR> arc0_cast = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
       if (arc0_cast == 0)
@@ -454,8 +445,7 @@ DirectedGraph::optimize_rr_out()
         cout << "RR: nchildren = " << nchildren << " nexpr = " << nexpr << endl;
 
         // Remove arcs connecting this vertex to children
-        for(int c=0; c<nchildren; c++)
-          vertex->del_exit_arc(vertex->exit_arc(c));
+        vertex->del_exit_arcs();
 
         // and instead insert expressions
         for(int e=0; e<nexpr; e++) {
@@ -471,26 +461,36 @@ DirectedGraph::optimize_rr_out()
   }
 }
 
-
 void
 DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr)
 {
   typedef AlgebraicOperator<DGVertex> ExprType;
 
+  cout << "DirectedGraph::insert_expr_at:" << endl << "  ";
+  where->print(cout);
+  cout << endl << "  ";
+  expr->print(cout);
+  cout << endl;
+
   SafePtr<DGVertex> expr_vertex = dynamic_pointer_cast<DGVertex,ExprType>(expr);
-  if (!add_vertex(expr_vertex))
-    return;
+  bool new_vertex = true;
+  try { add_vertex(expr_vertex); }
+  catch (VertexAlreadyOnStack& e) { expr_vertex = e.vertex(); new_vertex = false; }
   SafePtr<DGArc> arc(new DGArcDirect(where,expr_vertex));
   where->add_exit_arc(arc);
+  if (!new_vertex)
+    return;
 
   // See if left operand is also an operator
   SafePtr<ExprType> left_cast = dynamic_pointer_cast<ExprType,DGVertex>(expr->left());
   if (left_cast)
     insert_expr_at(expr_vertex,left_cast);
   else {
-    if (!add_vertex(expr->left()))
-      return;
-    SafePtr<DGArc> arc(new DGArcDirect(expr_vertex,expr->left()));
+    SafePtr<DGVertex> left_vertex = expr->left();
+    bool new_vertex = true;
+    try { add_vertex(left_vertex); }
+    catch (VertexAlreadyOnStack& e) { left_vertex = e.vertex(); new_vertex = false; }
+    SafePtr<DGArc> arc(new DGArcDirect(expr_vertex,left_vertex));
     expr_vertex->add_exit_arc(arc);
   }
 
@@ -499,12 +499,86 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< Alg
   if (right_cast)
     insert_expr_at(expr_vertex,right_cast);
   else {
-    if (!add_vertex(expr->right()))
-      return;
-    SafePtr<DGArc> arc(new DGArcDirect(expr_vertex,expr->right()));
+    SafePtr<DGVertex> right_vertex = expr->right();
+    bool new_vertex = true;
+    try { add_vertex(right_vertex); }
+    catch (VertexAlreadyOnStack& e) { right_vertex = e.vertex(); new_vertex = false; }
+    SafePtr<DGArc> arc(new DGArcDirect(expr_vertex,right_vertex));
     expr_vertex->add_exit_arc(arc);
   }
 }
 
-#endif
+// Replace recurrence relations with expressions
+void
+DirectedGraph::remove_trivial_arithmetics()
+{
+  const unsigned int nvertices = first_free_;
+  for(int v=0; v<nvertices; v++) {
 
+    SafePtr<DGVertex> vertex = stack_[v];
+    SafePtr< AlgebraicOperator<DGVertex> > oper_cast = dynamic_pointer_cast<AlgebraicOperator<DGVertex>,DGVertex>(vertex);
+    if (oper_cast) {
+
+      SafePtr<DGVertex> left = oper_cast->left();
+      SafePtr<DGVertex> right = oper_cast->right();
+
+      // 1.0 * x = x
+      if (left->equiv(prefactors.N_i[1])) {
+        vertex->del_exit_arc(vertex->exit_arc(left));
+        remove_vertex_at(vertex,right);
+      }
+
+      // x * 1.0 = x
+      if (right->equiv(prefactors.N_i[1])) {
+        vertex->del_exit_arc(vertex->exit_arc(right));
+        remove_vertex_at(vertex,left);
+      }
+
+      // NOTE : more cases to come
+    }
+  }
+}
+
+// If v1 and v2 are connected by DGArcDirect and all entry arcs to v1 are of the DGArcDirect type as well,
+// this function will reattach all arcs extering v1 to v2 and remove v1 from the graph alltogether.
+void
+DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2) throw(CannotPerformOperation)
+{
+  typedef vector<SafePtr<DGArc> > arcvec;
+  // Verify that all entry arcs are DGArcDirect
+  arcvec v1_entry;
+  for(int i=0; i<v1->num_entry_arcs(); i++) {
+    // See if this is a direct arc -- otherwise cannot do this
+    SafePtr<DGArc> arc = v1->entry_arc(i);
+    SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
+    if (arc_cast)
+      throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");
+    v1_entry.push_back(v1->entry_arc(i));
+  }
+  // Verify that v1 and v2 are connected by an arc and it is the only arc exiting v1
+  if (v1->num_exit_arcs() != 1 || v1->exit_arc(0)->dest() != v2)
+    throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");
+  // See if this is a direct arc -- otherwise cannot do this
+  SafePtr<DGArc> arc = v1->exit_arc(0);
+  SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
+  if (arc_cast)
+    throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");
+
+  //
+  // OK, now do work!
+  //
+
+  // Remove the exit arc from v1 to v2
+  v1->del_exit_arcs();
+
+  // Reconnect each of v1's entry arcs to v2
+  for(arcvec::iterator i=v1_entry.begin(); i != v1_entry.end(); i++) {
+    SafePtr<DGVertex> parent = (*i)->orig();
+    parent->del_exit_arc(*i);
+    SafePtr<DGArcDirect> new_arc(new DGArcDirect(parent,v2));
+    parent->add_exit_arc(new_arc);
+  }
+
+  // Finally, remove v1 from the graph
+  del_vertex(v1);
+}

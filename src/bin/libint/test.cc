@@ -105,17 +105,18 @@ int try_main (int argc, char* argv[])
 
   SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy);
-  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_s,sh_p,sh_s,0);
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_s,sh_s,sh_d,sh_s,0);
   xsxs_quartet->print(cout);
   SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
   dg_xxxx3->append_target(xsxs_ptr);
   dg_xxxx3->apply(strat);
-  //dg_xxxx3->optimize_rr_out();
+  dg_xxxx3->optimize_rr_out();
   dg_xxxx3->traverse();
   dg_xxxx3->debug_print_traversal(cout);
   
   std::basic_ofstream<char> dotfile("graph.dot");
   dg_xxxx3->print_to_dot(dotfile);
+
   cout << "The number of vertices = " << dg_xxxx3->num_vertices() << endl;
   dg_xxxx3->reset();
 

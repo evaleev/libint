@@ -99,7 +99,6 @@ namespace libint2 {
 
       vector<F> bra;
       vector<F> ket;
-
       bra.push_back(sh_a);
       bra.push_back(sh_c);
       ket.push_back(sh_b);
@@ -128,12 +127,12 @@ namespace libint2 {
       nchildren_ += 2;
       nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {
-        SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][InKet][dir],children_[0]));
+        SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][!InKet][dir],children_[0]));
         SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.W_XY[part][dir],children_[1]));
-        expr_[0] = expr0_ptr;
-        expr_[1] = expr1_ptr;
+        SafePtr<ExprType> expr0p1_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
+        expr_[0] = expr0p1_ptr;
+        nexpr_ = 1;
       }
-      nexpr_ += 2;
 
       // See if a-2 exists
       bool a_minus_2_exists = true;
@@ -155,9 +154,9 @@ namespace libint2 {
           SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[2], expr_intmd0));
           SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.one_o_2alpha12[part], expr_intmd1));
           SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_a], expr_intmd2));
-          expr_[2] = expr2_ptr;
+          SafePtr<ExprType> expr012_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr2_ptr,expr_[0]));
+          expr_[0] = expr012_ptr;
         }
-        nexpr_ += 1;
       }
 
       // See if b-1 exists
@@ -180,9 +179,9 @@ namespace libint2 {
           SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[4], expr_intmd0));
           SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.one_o_2alpha12[part], expr_intmd1));
           SafePtr<ExprType> expr3_ptr(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_b], expr_intmd2));
-          expr_[3] = expr3_ptr;
+          SafePtr<ExprType> expr0123_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr3_ptr,expr_[0]));
+          expr_[0] = expr0123_ptr;
         }
-        nexpr_ += 1;
       }
 
       // See if c-1 exists
@@ -200,9 +199,9 @@ namespace libint2 {
       if (is_simple()) {
         SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.one_o_2alphasum, children_[6]));
         SafePtr<ExprType> expr4_ptr(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_c], expr_intmd0));
-        expr_[4] = expr4_ptr;
+        SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr4_ptr,expr_[0]));
+        expr_[0] = exprsum_ptr;
       }
-      nexpr_ += 1;
 
       // See if d-1 exists
       try {
@@ -219,9 +218,9 @@ namespace libint2 {
       if (is_simple()) {
         SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.one_o_2alphasum, children_[7]));
         SafePtr<ExprType> expr5_ptr(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_d], expr_intmd0));
-        expr_[5] = expr5_ptr;
+        SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr5_ptr,expr_[0]));
+        expr_[0] = exprsum_ptr;
       }
-      nexpr_ += 1;
 
     };
 

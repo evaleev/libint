@@ -11,8 +11,8 @@ Prefactors::Prefactors() :
   typedef SafePtr<rdouble> rdptr;
   typedef SafePtr<rdouble> cdptr;
 
-  char XY[np][3] = { "P", "Q" };
-  char X[np][2][3] = { {"A", "B"},
+  char XY[np][2] = { "P", "Q" };
+  char X[np][2][2] = { {"A", "B"},
                        {"C", "D"} };
 
   for(int p=0; p<np; p++)

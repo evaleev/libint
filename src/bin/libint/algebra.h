@@ -50,7 +50,12 @@ namespace libint2 {
       {
         SafePtr<AlgebraicOperator> a_cast = dynamic_pointer_cast<AlgebraicOperator,DGVertex>(a);
         if (a_cast) {
-          return OT_ == a_cast->OT_ && left_->equiv(a_cast->left()) && right_->equiv(a_cast->right());
+          bool result = (OT_ == a_cast->OT_ && left_->equiv(a_cast->left()) && right_->equiv(a_cast->right()));
+          cout << "AlgebraicOperator::equiv:" << endl << "  ";
+          print(cout); cout << endl << "  ";
+          a_cast->print(cout); cout << endl;
+          cout << "  " << (result ? "true" : "false") << endl;
+          return result;
         }
 	else
 	  return false;
@@ -58,10 +63,11 @@ namespace libint2 {
       /// Implements DGVertex::print()
       void print(std::ostream& os) const
       {
-	os << "AlgebraicOperator: ";
+	/*os << "AlgebraicOperator: ";
         left_->print(os);
         os << " " << algebra::OperatorSymbol[OT_] << " ";
-        right_->print(os);
+        right_->print(os);*/
+        os <<  algebra::OperatorSymbol[OT_];
       }
       /// Implements DGVertex::precomputed
       bool precomputed() const

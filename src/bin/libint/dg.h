@@ -25,12 +25,30 @@ namespace libint2 {
     
   };
 
+  /** This exception class is used to pass the pointer to the vertex on the graph
+   */
   class VertexAlreadyOnStack : public std::logic_error {
     
-    public:
-    VertexAlreadyOnStack(const std::string& a) :
-      logic_error(a) {};
+  public:
+    VertexAlreadyOnStack(const SafePtr<DGVertex>& vertex) :
+      logic_error("DirectedGraph -- vertex already on stack"), vertex_(vertex) {}
+    ~VertexAlreadyOnStack() throw() {}
+
+    SafePtr<DGVertex> vertex() const { return vertex_; }
+
+  private:
+    // Vertex on the stack
+    SafePtr<DGVertex> vertex_;
     
+  };
+
+  /** This exception class is used to notify that a graph operation cannot be performed
+   */
+  class CannotPerformOperation : public std::logic_error {
+  public:
+    CannotPerformOperation(const std::string& msg) :
+      logic_error(msg) {}
+    ~CannotPerformOperation() throw() {}
   };
 
   /** DirectedGraph is an implementation of a directed graph
@@ -47,10 +65,12 @@ namespace libint2 {
     unsigned int first_free_;
 
     /** adds a vertex to the graph. If the vertex already found on the graph
-        then the vertex is not added and the routine returns false */
-    bool add_vertex(const SafePtr<DGVertex>&);
-    // returns true if vertex if already on graph
-    bool vertex_is_on(const SafePtr<DGVertex>& vertex) const;
+        then the vertex is not added and the function returns false */
+    void add_vertex(const SafePtr<DGVertex>&) throw(VertexAlreadyOnStack);
+    /// returns true if vertex if already on graph
+    void vertex_is_on(const SafePtr<DGVertex>& vertex) const throw(VertexAlreadyOnStack);
+    /// removes vertex from the graph
+    void del_vertex(const SafePtr<DGVertex>&) throw(CannotPerformOperation);
     /** This function is used to implement (recursive) append_target().
         vertex is appended to the graph and then RR is applied to is.
      */
@@ -65,6 +85,13 @@ namespace libint2 {
     void apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>& strategy);
     /// This function insert expr of type AlgebraicOperator<DGVertex> into the graph
     void insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr);
+    /// This function replaces RecurrenceRelations with concrete arithemtical expressions
+    void replace_rr_with_expr();
+    /// This function gets rid of trivial math such as multiplication/division by 1.0, etc.
+    void remove_trivial_arithmetics();
+    /** If v1 and v2 are connected by DGArcDirect and all entry arcs to v1 are of the DGArcDirect type as well,
+        this function will reattach all arcs extering v1 to v2 and remove v1 from the graph alltogether. */
+    void remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2) throw(CannotPerformOperation);
     
     // Which vertex is the first to compute
     SafePtr<DGVertex> first_to_compute_;
@@ -138,7 +165,7 @@ namespace libint2 {
     Prints out the graph in format understood by program "dot"
     of package "graphviz"
     */
-    void print_to_dot(ostream& os) const;
+    void print_to_dot(ostream& os = std::cout) const;
 
     /// Resets the graph and all vertices
     void reset();
@@ -165,12 +192,8 @@ namespace libint2 {
     void
     DirectedGraph::recurse(const SafePtr<I>& vertex)
     {
-      try {
-        add_vertex(vertex);
-      }
-      catch (VertexAlreadyOnStack) {
-        return;
-      }
+      try { add_vertex(vertex); }
+      catch (VertexAlreadyOnStack& e) { return; }
       
       SafePtr<RR> rr0(new RR(vertex));
       const int num_children = rr0->num_children();
@@ -194,12 +217,8 @@ namespace libint2 {
     void
     DirectedGraph::recurse(const SafePtr<DGVertex>& vertex)
     {
-      try {
-        add_vertex(vertex);
-      }
-      catch (VertexAlreadyOnStack) {
-        return;
-      }
+      try { add_vertex(vertex); }
+      catch (VertexAlreadyOnStack& e) { return; }
       
       typedef typename RR::TargetType TT;
       SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(vertex);

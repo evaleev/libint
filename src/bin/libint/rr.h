@@ -335,7 +335,10 @@ namespace libint2 {
     void add_exit_arc(const SafePtr<DGArc>&);
     /** del_exit_arc(arc) removes arc c (from this and corresponding child)
       */
-    void del_exit_arc(const SafePtr<DGArc>&);
+    void del_exit_arc(const SafePtr<DGArc>& c);
+    /** del_exit_arcs() removes all exit arcs from this and corresponding children vertices
+      */
+    void del_exit_arcs();
     /// returns the number of parents
     const unsigned int num_entry_arcs() const;
     /// returns ptr to i-th parent
@@ -344,7 +347,9 @@ namespace libint2 {
     const unsigned int num_exit_arcs() const;
     /// returns ptr to i-th child
     SafePtr<DGArc> exit_arc(unsigned int) const;
-
+    /// return arc connecting this to v, otherwise null pointer
+    SafePtr<DGArc> exit_arc(const SafePtr<DGVertex>& v) const;
+ 
     /** apply_rr() applies the optimal recurrence relation to this particular DGVertex.
         The concrete class must implement this.
     */

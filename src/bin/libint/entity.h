@@ -63,7 +63,7 @@ namespace libint2 {
       /// Implementation of DGVertex::print()
       void print(std::ostream& os) const
       {
-	os << "RTimeEntity: " << id();
+	os << id();
       }
       
       /// Implementation of DGVertex::precomputed()
@@ -110,7 +110,7 @@ namespace libint2 {
       /// Implementation of DGVertex::print()
       void print(std::ostream& os) const
       {
-	os << "CTimeEntity: " << id() << " value = " << value_;
+	os << id();
       }
       
       /// Implementation of DGVertex::precomputed()
