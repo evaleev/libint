@@ -258,6 +258,18 @@ AC_ARG_WITH(cxx,
 CXX=$withval
 )
 
+COPTIONS_OPT=
+AC_ARG_WITH(cc-optflags,
+[  --with-cc-optflags      Gives optimization flags for the C compiler.],
+COPTIONS_OPT=$withval
+)
+
+CXXOPTIONS_OPT=
+AC_ARG_WITH(cxx-optflags,
+[  --with-cxx-optflags     Gives optimization flags for the C++ compiler.],
+CXXOPTIONS_OPT=$withval
+)
+
 AC_ARG_WITH(ranlib,
 [  --with-ranlib           Gives the name of the ranlib program.],
 RANLIB=$withval
@@ -363,14 +375,18 @@ changequote([, ])dnl
 dnl -------- Checks for compiler/linker options. ----------
 
 # options needed only for optimization
-COPTIONS_OPT=-O
+if test "X$COPTIONS_OPT" = X; then
+  COPTIONS_OPT=-O
+fi
 # options needed only for debugging
 COPTIONS_DBG=-g
 # options that are always needed
 COPTIONS_MISC=
 
 # options needed only for optimization
-CXXOPTIONS_OPT=-O
+if test "X$CXXOPTIONS_OPT" = X; then
+  CXXOPTIONS_OPT=-O
+fi
 # options needed only for debugging
 CXXOPTIONS_DBG=-g
 # options that are always needed
@@ -408,59 +424,46 @@ fi
 
 dnl -- special optimization options --
 
-AC_MSG_CHECKING([for special optimization options])
+AC_MSG_CHECKING([for additional optimization options])
 case $target in
   rs6000-ibm-aix3.2.* | rs6000-ibm-aix4.* | powerpc-ibm-aix4.* | powerpc-ibm-aix5.*)
     if test X$GCC != Xyes; then
-      COPTIONS_OPT="-O -qnolm"
+      COPTIONS_OPT="$COPTIONS_OPT -qnolm"
     fi
     if test X$GXX != Xyes; then
-      CXXOPTIONS_OPT="-O -qnolm -qrtti"
+      CXXOPTIONS_OPT="$CXXOPTIONS_OPT -qnolm -qrtti"
     fi
-    AC_MSG_RESULT("rs6000 or powerpc")
+    AC_MSG_RESULT([rs6000 or powerpc])
+  ;;
+  *)
+    AC_MSG_RESULT([none])
   ;;
 esac
 
 dnl -- special architecture options --
 
-AC_MSG_CHECKING([for special architecture options])
-case $target in
-changequote(<<, >>)dnl
-  i[456]86-* | pentium | pentiumpro | k6 | athlon)
-changequote([, ])dnl
-    if test X$STRICT_ARCH = Xyes; then
-      cpu_arch_option="-march=$target_cpu"
-    else
-      cpu_arch_option="-mcpu=$target_cpu"
-    fi
-    if test X$GCC = Xyes; then
-      COPTIONS_MISC="$COPTIONS_MISC $cpu_arch_option"
-    fi
-    if test X$GXX = Xyes; then
-      CXXOPTIONS_MISC="$CXXOPTIONS_MISC $cpu_arch_option"
-    fi
-    AC_MSG_RESULT(IA-32: $cpu_arch_option)
-  ;;
-  *)
-    AC_MSG_RESULT("none")
-  ;;
-esac
+if test "X$COPTIONS_OPT" = X; then
+  AC_MSG_WARN([C optimization options are not given! For optimum performance use --with-cc-opt configure option])
+fi
+if test "X$CXXOPTIONS_OPT" = X; then
+  AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxx-opt configure option])
+fi
 
 dnl ----------- check for GNU libc++-v3 prerelease bug ---------------
 
 if test X$GXX = Xyes; then
 AC_LANG_SAVE
 AC_LANG_CPLUSPLUS
-AC_MSG_CHECKING("for GNU libc++-v3 prerelease bug")
+AC_MSG_CHECKING([for GNU libc++-v3 prerelease bug])
 AC_TRY_LINK([
 #include <stdio.h>
 #include <$iostream>
 ],[
 ],[
-AC_MSG_RESULT("no")
+AC_MSG_RESULT([no])
 ],
 EXTRADEFINES="$EXTRADEFINES -D_ISOC99_SOURCE=1"
-AC_MSG_RESULT("yes")
+AC_MSG_RESULT([yes])
 );
 AC_LANG_RESTORE
 fi
@@ -473,11 +476,11 @@ if test X$GXX = Xyes; then
   #CXXOPTIONS_MISC="$CXXOPTIONS_MISC -fno-implicit-templates"
   #EXPLICIT_TEMPLATE_INSTANTIATION=yes
   #AC_DEFINE(EXPLICIT_TEMPLATE_INSTANTIATION)
-  AC_MSG_RESULT("GNU")
+  AC_MSG_RESULT([GNU])
 else
   case $target in
     *)
-      AC_MSG_RESULT("generic non GNU")
+      AC_MSG_RESULT([generic non GNU])
       ;;
     esac
 fi
