@@ -1,0 +1,644 @@
+%
+% The LIBINT Programmer's Manual
+%
+
+\documentclass[12pt]{article}
+\usepackage{html}
+\usepackage{amsmath}
+\setlength{\textheight}{9in}
+\setlength{\textwidth}{6.5in}
+\setlength{\hoffset}{0in}
+\setlength{\voffset}{0in}
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0in}
+\setlength{\topmargin}{0in}
+\setlength{\oddsidemargin}{-0.05in}
+\setlength{\evensidemargin}{-0.05in}
+\setlength{\marginparsep}{0in}
+\setlength{\marginparwidth}{0in}
+\setlength{\parsep}{0.8ex}
+\setlength{\parskip}{1ex plus \fill}
+\baselineskip 18pt
+\renewcommand{\topfraction}{.8}
+\renewcommand{\bottomfraction}{.2}
+
+\begin{document}
+\include{macros}
+
+\begin{center}
+\ \\
+\vspace{2.0in}
+{\bf {\Large The \LIBINT\ Programmer's Manual}} \\
+\vspace{0.5in}
+Edward F.\ Valeev \\
+\ \\
+{\em Center for Computational Molecular Science and Technology, \mbox{Georgia
+Institute of Technology,} Atlanta, Georgia 30332-0400}
+\ \\
+\vspace{0.3in}
+Version of: \today
+\end{center}
+
+\thispagestyle{empty}
+
+\newpage
+\section{Introduction}
+\LIBINT\ is a collection of functions to compute two-body integrals over Gaussian
+functions which appear in electronic and molecular structure theories.
+\LIBINTv \cite{Libint1}\ has three components which compute different types of integrals:
+
+\begin{itemize}
+
+\item \libint\ computes the Coulomb integrals, which in electronic structure theory
+are called electron repulsion integrals (ERIs). This is by far the most common type of
+integrals in molecular structure theory.
+
+\item \libderiv\ computes first and second derivatives of ERIs with respect to the
+coordinates of the basis function origin. This type of integrals are also very common
+in the electronic structure theory, where they appear in analytic gradient expressions.
+
+\item \librij\ computes types integrals that appear in Kutzelnigg's linear R12 theories
+for electronic structure.\cite{Kutzelnigg85,Kutzelnigg91} All linear R12 methods, such as
+MP2-R12, contain terms in the wave function that are linear in the interelectronic distances
+$r_{ij}$ (hence the name). Appearance of several types of {\em two}-body integrals
+is due to the use of the approximate resolution of the identity to reduce three- and four-body
+integrals to products of simpler integrals.
+
+\end{itemize}
+
+The components come as separate library archives, named \libinta , \libderiva , and \librija ,
+with header files named \libinth , \libderivh , and \librijh , respectively.
+Note that both \libderiv\ and \librij\ depend on functions in \libint. In that sense \libint\ is
+the central component of \LIBINT, thus we will \libint\ most often as an example in this manual.
+
+\LIBINT\ uses recursive schemes that originate in seminal Obara-Saika method\cite{Obara86} and Head-Gordon and Pople's
+variation thereof.\cite{Head-Gordon88}
+The idea of \LIBINT\ is to optimize {\em computer implementation} of such methods by implementing
+an optimizing compiler to generate automatically highly-specialized code that runs well on
+superscalar architectures. The advantages of the optimizing compiler approach are:
+\begin{itemize}
+\item it allows to achieve high-performance
+for the {\em one-quartet-at-a-time} method of computing integrals.
+Thus \LIBINT\ avoids vectorization as an approach to achieving high efficiency,
+since vectorization increases memory footprint and complicates programming. If the use of vector
+machines increases again, \LIBINT\ will be vectorized, however currently there are no firm plans
+to do that.
+\item new recurrence relations are rather easy to implement in efficient code.
+\librij\ is a good example of that.
+\end{itemize}
+
+For more details on priciples of \LIBINT\ you should consult Justin Fermann's thesis.\cite{Fermann96:PhD}
+
+\section{Notation}
+
+Following Obara and Saika,\cite{Obara86}
+we write an {\em unnormalized primitive Cartesian} Gaussian function centered at {\bf A}\ as
+\begin{eqnarray}
+\phi ({\bf r}; \zeta, \n, {\bf A}) & = & (x - A_x)^{n_x} (y - A_y)^{n_y} (z - A_z)^{n_z} \nonumber \\
+& & \times \exp [-\zeta({\bf r}-{\bf A})^2]\ ,
+\end{eqnarray}
+where {\bf r}\ is the coordinate vector of the electron, $\zeta$ is the orbital exponent, and
+\n\ is a set of non-negative integers. The sum of $n_x$, $n_y$, and $n_z$ will be denoted $\lambda(\n)$
+and be referred to as the angular momentum or orbital quantum number of the Gaussian function.
+Hereafter \n\ will be termed the angular momentum index.
+Henceforth, $n_i$ will refer to the $i$-th component of \n, where $i \in \{x, y, z\}$.
+Basic vector addition rules will apply to these vector-like triads of numbers, e.g.
+$\n + {\bf 1}_x \equiv \{ n_x+1, n_y, n_z\}$.
+
+A set of $(\lambda(\n) + 1)(\lambda(\n) + 2)/2$ functions with the same $\lambda(\n)$, $\zeta$, and centered
+at the common center
+but with different \n\ form a {\em Cartesian shell},
+or just a {\em shell}. For example, an $s$ shell ($\lambda=0$) has one function, a $p$ shell ($\lambda=1$) --
+3 functions, etc.
+The order of functions in shells that \LIBINT\ uses is as follows:
+\begin{eqnarray}
+p & : & p_x, p_y, p_z \nonumber \\
+d & : & d_{xx}, d_{xy}, d_{xz}, d_{yy}, d_{yz}, d_{zz} \nonumber \\
+f & : & f_{xxx}, f_{xxy}, f_{xxz}, f_{xyy}, f_{xyz}, f_{xzz}, f_{yyy}, f_{yyz}, f_{yzz}, f_{zzz} \nonumber \\
+{\rm etc.} \nonumber
+\end{eqnarray}
+In general, the following loop structure can be used to generate angular momentum indices in the canonical \LIBINT\ order for all
+members of a shell of angular momentum {\tt am}:
+\begin{verbatim}
+for(int i=0; i<=am; i++) {
+  int nx = am - i;  /* exponent of x */
+  for(int j=0; j<=i; j++) {
+    int ny = i-j;   /* exponent of y */
+    int nz = j;     /* exponent of z */
+  }
+}
+\end{verbatim}
+
+The normalization constant for a primitive Gaussian $\phi ({\bf r}; \zeta, \n, {\bf A})$
+\begin{eqnarray}
+N(\zeta,\n) & = & \left[ \left(\frac{2}{\pi}\right)^{3/4}\frac{2^{(\lambda(\n))}\zeta^{(2\lambda(\n)+3)/4}}
+                {[(2n_x-1)!!(2n_y-1)!!(2n_z-1)!!]^{1/2}} \right]
+\end{eqnarray}
+
+A contracted Gaussian function is just a linear combination of primitive Gaussians (also termed {\em primitives})
+centered at the same center {\bf A} and with the same momentum indices {\bf n}
+but with different exponents $\zeta_i$:
+\begin{eqnarray}
+\phi ({\bf r}; \bmath{\zeta}, {\bf C}, \n, {\bf A}) & = & (x - A_x)^{n_x} (y - A_y)^{n_y} (z - A_z)^{n_z} \nonumber \\
+& & \times \sum_{i=1}^M C_i \exp [-\zeta_i ({\bf r}-{\bf A})^2]\ ,
+\end{eqnarray}
+Contracted Gaussians form shells the same way as primitives.
+The contraction coefficients {\bf C} already include normalization constants so that the resulting combination
+is properly normalized. Published contraction coefficients {\bf c} are linear coefficients for normalized primitives,
+hence the normalization-including contraction coefficients {\bf C} have to be computed from them as
+\begin{eqnarray} \label{eq:C1}
+C_i & = & c_i N(\zeta_i,\n)
+\end{eqnarray}
+and scaled further so that the self-overlap of the contracted function is 1:
+\begin{eqnarray} \label{eq:C2}
+\frac{\pi^{3/2} (2n_x-1)!!(2n_y-1)!!(2n_z-1)!!}{2^{\lambda(\n)}}
+\sum_{i=1}^M \sum_{j=1}^M \frac{C_i C_j }{(\zeta_i+\zeta_j)^{\lambda(\n)+3/2}} & = & 1
+\end{eqnarray}
+
+If sets of orbital exponents are used to form contracted Gaussians of one angular momentum only
+then this is called a {\em segmented} contraction scheme. If there is a set of exponents that forms
+contracted Gaussians of several angular momenta then such scheme is called {\em general} contraction.
+Examples of basis sets that include general contractions include Atomic Natural Orbitals (ANO) sets.
+\LIBINT\ was not designed to handle general contractions very well. You should use either split general contractions
+into segments for each angular momentum (it's done for correlation consistent basis sets)
+or use basis sets with segmented contractions only.
+
+An integral of a two-electron operator $\hat{O}({\bf r}_1, {\bf r}_2)$ over unnormalized
+primitive Cartesian Gaussians is written as
+\begin{eqnarray}
+\int \phi({\bf r}_1; \zeta_a, {\bf a}, {\bf A}) \phi ({\bf r}_2; \zeta_c, {\bf c}, \C) \hat{O}({\bf r}_1, {\bf r}_2)
+\phi({\bf r}_1; \zeta_b, {\bf b}, \B) \phi({\bf r}_2; \zeta_d, {\bf d}, \D) d{\bf r}_1 d{\bf r}_2 \equiv ({\bf ab} |\hat{O}|{\bf cd})
+\end{eqnarray}
+A set of integrals $\{ ({\bf a} {\bf b}|\hat{O}({\bf r}_1, {\bf r}_2)|{\bf c} {\bf d}) \}$
+over all possible combinations of functions ${\bf a} \in {\rm Shell A}$, ${\bf b} \in {\rm Shell B}$, etc.
+is termed a {\em shell}, or {\em quartet}, or {\em class} of integrals. For example, a $(ps|sd)$ class consists of
+$3 \times 1 \times 1 \times 6 = 18$ integrals.
+
+The following definitions have been used throughout this work:
+\begin{eqnarray}
+\zeta & = & \zeta_a + \zeta_b \\
+\eta  & = & \zeta_c + \zeta_d \\
+\rho  & = & \frac{\zeta\eta}{\zeta+\eta} \\
+{\bf P}& = & \frac{\zeta_a {\bf A} + \zeta_b \B}{\zeta} \\
+{\bf Q}& = & \frac{\zeta_c \C + \zeta_d \D}{\eta} \\
+{\bf W}& = & \frac{\zeta {\bf P} + \eta {\bf Q}}{\zeta+\eta}
+\end{eqnarray}
+{\em Incomplete gamma} function is defined as
+\begin{eqnarray}
+F_m(T) & = & \int_0^{1} dt t^{2m} \exp (-Tt^2)
+\end{eqnarray}
+
+Evaluation of integrals over functions of non-zero angular momentum starts with the
+{\em auxiliary} integrals over primitive $s$-functions
+defined as
+\begin{eqnarray}
+({\bf 00}|{\bf 00})^{(m)} & = & 2 F_m(\rho |{\bf PQ}|^2) \sqrt{\frac{\rho}{\pi}}S_{12}S_{34}
+\end{eqnarray}
+where ${\bf PQ} = {\bf P} - {\bf Q}$ and primitive overlaps $S_{12}$ and $S_{34}$
+are computed as
+\begin{eqnarray}
+S_{12} & = & \frac{\pi}{\zeta} \sqrt{\frac{\pi}{\zeta})}
+\exp (-\frac{\zeta_a\zeta_b}{\zeta} |{\bf AB}|^2) \\
+S_{34} & = & \frac{\pi}{\eta} \sqrt{\frac{\pi}{\eta}}
+\exp (-\frac{\zeta_c\zeta_d}{\eta} |{\bf CD}|^2)
+\end{eqnarray}
+In the evaluation of integrals over contracted functions it is convenient to
+use auxiliary integrals over primitives which include contraction and normalization factors of the
+target quartet $({\bf ab}|{\bf cd})$:
+\begin{eqnarray} \label{eq:0000m}
+({\bf 00}|{\bf 00})^{(m)} & = &  2 F_m(\rho |{\bf PQ}|^2) \sqrt{\frac{\rho}{\pi}}S_{12}S_{34}
+C_1 C_2 C_3 C_4
+\end{eqnarray}
+where the coefficients $C_a$, $C_b$, $C_c$, and $C_d$ are
+normalization-including contraction coefficients (Eqs. (\ref{eq:C1})
+and (\ref{eq:C2})) for the first basis function out of each respective shell
+in the target quartet.
+
+\section{Overview of \LIBINT 's API}
+
+Prototypes for externaly accessible functions of \LIBINT's components are contained
+in header files \libinth\, \libderivh\, and \librijh . Although \LIBINT's
+machine generated source is written in C++, functions and data structures of
+the external interface are linked according to C convention, which simplifies
+its use in C and FORTRAN programs.
+
+So let's look at header file \libinth. Inside the standard header wrappers,
+library static parameters are {\tt define}d:
+\begin{verbatim}
+#define REALTYPE double
+#define LIBINT_MAX_AM 8
+#define LIBINT_OPT_AM 5
+\end{verbatim}
+These parameters depend on how library was configured before compilation (see compilation manual).
+The first macro is the basic datatype for real numbers that \LIBINT\ uses
+to compute integrals. It can be {\tt double} or {\tt long double}. With some compilers, e.g.
+IBM Visual Age C++, the latter datatype allows higher precision calculations.
+Macro {\tt LIBINT\_MAX\_AM} specifies the
+maximum angular momentum + 1 of basis functions for which
+electron repulsion integrals can be computed. Hence in this example up to $k$ functions ($L_{\rm max}=7$)
+can be handled.
+
+Before any component of \LIBINT\ can be used some static data has to be initialized
+via a corresponding function call. That function for \libint\ is
+\begin{verbatim}
+void init_libint_base();
+\end{verbatim}
+After {\tt init\_libint\_base()} has been called one has to initialize one or several corresponding
+integrals evaluator objects. Objects are ``constructed' and ``destructed'' by calling
+the following functions
+\begin{verbatim}
+int  init_libint(Libint_t *, int max_am, int max_num_prim_comb);
+void free_libint(Libint_t *);
+\end{verbatim}
+The first argument to either function is the pointer to the object.
+Second and third arguments to {\tt init\_libint()} are the maximum angular momentum
+of the basis functions to be handled by this object and the maximum number of
+combinations of primitives per shell quartet that this object will handle.
+The latter quantity can be safely computed as a fourth power of the maximum
+number of primitives per shell in the basis set. {\tt init\_libint()} returns the
+number of {\tt REALTYPE}-sized words of memory that was allocated for the object.
+The amount of memory depends heavily on {\tt max\_am} and somewhat on
+{\tt max\_num\_prim\_comb}. Memory tracking is not done by \LIBINT\ internally and
+is left to the user's code. In order to compute how much memory an evaluator object
+will require one can call the following function:
+\begin{verbatim}
+int  libint_storage_required(int max_am, int max_num_prim_comb);
+\end{verbatim}
+The return value is the number of {\tt REALTYPE}-sized words of memory that
+a {\tt Libint\_t} object will require for the given values of {\tt max\_am}
+and {\tt max\_num\_prim\_comb}.
+
+Note that integrals evaluator objects themselves are completely thread-safe and can be used
+in multiple thread environments. However, {\tt init\_libint\_base()} is not reentrant, hence proper
+locking must be ensured.
+However, it needs to be called only once in the process,
+after that all threads can use \libint .
+
+After a {\tt Libint\_t} object has been initialized,
+we are ready to compute ERIs. In order to do that user must provide
+shell quartet data to the evaluator object and call an appropriate method
+to compute the integrals.
+\LIBINT 's philosophy is to provide the leanest possible code. Thus it does not provide any functionality
+related to computing recurrence relation prerequisites, such as geometric quantities and incomplete gamma
+function values defined in the previous section. It is fully user's responsibility to compute the necessary
+data and feed it to th evaluator object.
+So let's look at the definition of {\tt Libint\_t}:
+\begin{verbatim}
+typedef struct {
+  REALTYPE *int_stack;
+  prim_data *PrimQuartet;
+  REALTYPE AB[3];
+  REALTYPE CD[3];
+  REALTYPE *vrr_classes[15][15];
+  REALTYPE *vrr_stack;
+  } Libint_t;
+\end{verbatim}
+The most important 3 members of the type are {\tt PrimQuartet}, {\tt AB}, and
+{\tt CD}. All three of these members have to be set properly before a shell quartet can be computed.
+{\tt PrimQuartet} is the array of data for each combination of primitives that
+contribute to this shell quartet. The datatype for {\tt PrimQuartet} is described below.
+{\tt AB} and {\tt CD} store quantities {\bf AB} and {\bf CD} for this shell quartet.
+The rest of the data in {\tt Libint\_t} object is not meant for external use.
+
+While {\tt Libint\_t.AB} and {\tt Libint\_.CD} are trivial to compute,
+the primitive quartet data is more involved. Let's look at definition of {\tt prim\_data}:
+\begin{verbatim}
+typedef struct pdata{
+  REALTYPE F[29];
+  REALTYPE U[6][3];
+  REALTYPE twozeta_a;
+  REALTYPE twozeta_b;
+  REALTYPE twozeta_c;
+  REALTYPE twozeta_d;
+  REALTYPE oo2z;
+  REALTYPE oo2n;
+  REALTYPE oo2zn;
+  REALTYPE poz;
+  REALTYPE pon;
+  REALTYPE oo2p;
+  REALTYPE ss_r12_ss;
+  } prim_data;
+\end{verbatim}
+Let's look at what quantities each component of {\tt prim\_data} holds:
+\begin{itemize}
+\item {\tt F} -- values of auxiliary primitive integrals $({\bf 00}|{\bf 00})^{(m)}$ (Eq. (\ref{eq:0000m}))
+for $0 \leq m \leq \lambda({\bf a}) + \lambda({\bf b}) + \lambda({\bf c}) + \lambda({\bf d}) + C$,
+where $C = 0$ when computing ERIs, $C=1$ when computing first derivative ERIs and integrals for
+linear R12 methods, and $C=2$ when computing second derivative ERIs.
+\item {\tt U} -- geometric quantities {\bf PA} ({\tt U[0]}), {\bf QC} ({\tt U[2]}),
+{\bf WP} ({\tt U[4]}), and {\bf WQ} ({\tt U[5]}). If \libderiv\ is being used then
+the following quatities are stored in {\tt U[1]} and {\tt U[3]}: {\bf PB} and {\bf QD}.
+If \librij\ is being used then
+the following quantities are stored in {\tt U[1]} and {\tt U[3]}: {\bf QA} and {\bf PC}.
+\item {\tt twozeta\_a} -- $2 \zeta_a$ (only used by \libderiv\ and \librij)
+\item {\tt twozeta\_b} -- $2 \zeta_b$ (only used by \libderiv\ and \librij)
+\item {\tt twozeta\_c} -- $2 \zeta_c$ (only used by \libderiv\ and \librij)
+\item {\tt twozeta\_d} -- $2 \zeta_d$ (only used by \libderiv\ and \librij)
+\item {\tt oo2z} -- $\frac{1}{2\zeta}$
+\item {\tt oo2n} -- $\frac{1}{2\eta}$
+\item {\tt oo2zn} -- $\frac{1}{2(\zeta+\eta)}$
+\item {\tt poz} -- $\frac{\rho}{\zeta}$
+\item {\tt pon} -- $\frac{\rho}{\eta}$
+\item {\tt oo2p} -- $\frac{1}{2\rho}$
+\item {\tt ss\_r12\_ss} -- $({\bf 00}|r_{12}|{\bf 00}) = \frac{1}{\rho} ({\bf 00}|{\bf 00})^{(0)} +
+|{\bf PQ}|^2 (({\bf 00}|{\bf 00})^{(0)} - ({\bf 00}|{\bf 00})^{(1)})$
+(only used by \librij)
+\end{itemize}
+Most of these quantities are simple to evaluate. Evaluation of the incomplete gamma function
+{\tt prim\_data.F} is more involved. One should consult external sources for information on how
+to compute it efficiently.\cite{Obara86,Gill89}
+
+Once the quartet data has been computed for every unique combination of primitives and put into {\tt Libint\_t.PrimQuartet},
+ERIs can be computed. Appropriate functions are accessed via a four-dimensional array of pointers
+called {\tt build\_eri}:
+\begin{verbatim}
+extern REALTYPE *(*build_eri[8][8][8][8])(Libint_t *, int);
+\end{verbatim}
+where the first argument is the integrals evaluator object, the second is the number of primitive quartet
+combinations that were stored in the previous step in {\tt Libint\_t.PrimQuartet}, and the array indices
+refer to the angular momenta of respective shells.
+For example, a function which evaluates a quartet of $(ps|ds)$ integrals is referred to as \linebreak
+{\tt build\_eri[1][0][2][0](inteval1,num\_prim\_comb)}. The functions return pointer to the array that holds
+target integrals. The integrals are stored in ``row major'' order.\cite{KnuthACP} For example, if
+the number of functions in each shell is $n_a$, $n_b$, $n_c$, and $n_d$, respectively,
+then the integral $(ab|cd)$ is found at position $abcd = ( (a n_b + b) n_c + c) n_d + d$.
+
+{\bf Note} that currently \LIBINT\ has a very important restriction on the angular momentum ordering of the functions
+in shell quartets that it can handle. \LIBINT\ can evaluate a shell quartet
+$({\bf ab}|{\bf cd})$ if $\lambda({\bf a}) \geq \lambda({\bf b})$,
+$\lambda({\bf c}) \geq \lambda({\bf d})$, and $\lambda({\bf c}) + \lambda({\bf d}) \geq \lambda({\bf a}) + \lambda({\bf b})$.
+If one needs to compute a quartet that doesn't conform the rule, e.g. of type $(pf|sd)$,
+permutational symmetry of integrals can be utilized to compute such quartet:\footnote{Note that some
+of the integrals that \librij\ computes possess different permutational symmetries than ERIs. One can still
+compute all desired integrals in that case.}
+\begin{eqnarray}
+(pq|rs) = (pq|sr) = (qp|rs) = (qp|sr) = (rs|pq) = (rs|qp)= (sr|pq) = (sr|qp)
+\end{eqnarray}
+In the case of $(pf|sd)$ shell quartet, one computes quartet $(ds|fp)$ instead, and then
+permutes function indices back to obtain the desired $(pf|sd)$.
+
+The final integrals that \LIBINT\ computes are not fully normalized yet. The reason is that the auxiliary
+integrals $({\bf 00}|{\bf 00})^{(m)}$ include normalization factors of the first function of each shell.
+For example, in a $(ds|fp)$ quartet computed by \LIBINT\ only integrals $(d_{xx} s|f_{xxx} p_x)$,
+$(d_{yy} s|f_{xxx} p_x)$, $(d_{xx} s|f_{yyy} p_x)$, etc.,
+will be properly normalized. In order to compute integrals in terms of functions which are all normalized to unity
+one has to multiply each integral by a ``renormalization'' prefactor:
+\begin{eqnarray}
+(ab|cd) & \equiv & \frac{N(\zeta_a,{\bf a}) N(\zeta_b,{\bf b}) N(\zeta_c,{\bf c}) N(\zeta_d,{\bf d})}
+{N(\zeta_a, \begin{pmatrix}\lambda({\bf a}) \\ 0 \\ 0 \end{pmatrix}) N(\zeta_b, \begin{pmatrix}\lambda({\bf b}) \\ 0 \\ 0 \end{pmatrix})
+N(\zeta_c, \begin{pmatrix}\lambda({\bf c}) \\ 0 \\ 0 \end{pmatrix}) N(\zeta_d, \begin{pmatrix}\lambda({\bf d}) \\ 0 \\ 0 \end{pmatrix})}
+(ab|cd)
+\end{eqnarray}
+
+\subsection{Notes on using \libderiv}
+Component \libderiv\ is used to evaluate derivatives of ERIs with respect to basis function positions.
+Using \libderiv\ is mostly similar to how \libint\ is used. Here we only concentrate on significant
+differences which have not been noted before or on aspects of use specific to \libderiv .
+
+One quartet of ERIs $({\bf ab}|{\bf cd})$ has total of 12 first derivatives
+\begin{eqnarray}
+& & \frac{\partial ({\bf ab}|{\bf cd})}{\partial A_i}, \frac{\partial ({\bf ab}|{\bf cd})}{\partial B_i},
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_i},
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial D_i} :\quad i \in \{x,y,z\} \nonumber
+\end{eqnarray}
+and $12*12=144$ second derivatives, although $12*13/2=78$ derivatives are unique because of
+permutation symmetry with respect to the order of taking the derivative:
+\begin{eqnarray}
+& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial A_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial B_j},
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial C_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_i \partial D_j} :\quad
+i \leq j \in \{x,y,z\} \nonumber \\
+& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial B_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j},
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j}, \nonumber \\
+& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial C_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial D_j},
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial D_j} : \quad i,j \in \{x,y,z\} \nonumber
+\end{eqnarray}
+Translational invariance of ERIs can be used to eliminate any 3 of 12 first derivatives
+\begin{eqnarray} \label{eqn:TId1eri}
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial B_i} & = & - \frac{\partial ({\bf ab}|{\bf cd})}{\partial A_i} -
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_i} - \frac{\partial ({\bf ab}|{\bf cd})}{\partial D_i} \quad i \in \{x,y,z\}
+\end{eqnarray}
+and
+33 of 78 second derivatives
+\begin{eqnarray} \label{eqn:TId2eri_AB}
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial B_j} & = & - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial A_j} -
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j} - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j} \quad i,j \in \{x,y,z\} \\
+\label{eqn:TId2eri_BB}
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial B_j} & = & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial A_j} +
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j} + \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j} \nonumber \\
+& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j} +
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial C_j} + \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial D_j} \nonumber \\
+& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_j \partial D_i} +
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_j \partial D_i} + \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_i \partial D_j} \quad i \leq j \in \{x,y,z\} \\
+\label{eqn:TId2eri_BC}
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial C_j} & = & - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j} -
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial C_j} - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_j \partial D_i} \quad i,j \in \{x,y,z\} \\
+\label{eqn:TId2eri_BD}
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial D_j} & = & - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j} -
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial D_j} - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_i \partial D_j} \quad i,j \in \{x,y,z\} \\
+\end{eqnarray}
+
+While \libint\ computes one target quartet at a time, \libderiv\ evaluates all
+of its possible unique derivatives. There are 2 types of ``compute'' functions in \libderiv\ (see \libderivh):
+\begin{verbatim}
+extern void (*build_deriv1_eri[5][5][5][5])(Libderiv_t *, int);
+extern void (*build_deriv12_eri[4][4][4][4])(Libderiv_t *, int);
+\end{verbatim}
+The former refers to functions which compute only first derivative ERIs, and the second
+refers to functions which compute both first and second derivative ERIs.
+The dimensions of each array are determined by the following 2 configure-time macros:
+\begin{verbatim}
+#define LIBDERIV_MAX_AM1 5
+#define LIBDERIV_MAX_AM12 4
+\end{verbatim}
+
+Note that ``compute'' functions in \libint, {\tt build\_eri}, simply return a pointer
+to the target quartet, whereas \libderiv 's functions return target data through integrals
+evaluator object, {\tt Libderiv\_t}. Such objects are initialized using one of the following functions:
+\begin{verbatim}
+int  init_libderiv1(Libderiv_t *, int max_am, int max_num_prim_quartets,
+                    int max_cart_class_size);
+int  init_libderiv12(Libderiv_t *, int max_am, int max_num_prim_quartets,
+                     int max_cart_class_size);
+\end{verbatim}
+These functions initialize objects for use with {\tt build\_deriv1\_eri} and
+{\tt build\_deriv12\_eri} compute functions, respectively. It is illegal to use
+a {\tt Libderiv\_t} object initialized by {\tt init\_libderiv1()} with
+{\tt build\_deriv12\_eri} compute functions.
+Memory requirements for initializing these two types of objects are evaluated using
+\begin{verbatim}
+int  libderiv1_storage_required(int max_am, int max_num_prim_quartets,
+                                int max_cart_class_size);
+int  libderiv12_storage_required(int max_am, int max_num_prim_quartets,
+                                 int max_cart_class_size);
+\end{verbatim}
+
+Structure of {\tt Libderiv\_t} is essentially similar to {\tt Libint\_t}:
+\begin{verbatim}
+typedef struct {
+  double *int_stack;
+  prim_data *PrimQuartet;
+  double *zero_stack;
+  double *ABCD[12+144];
+  double AB[3];
+  double CD[3];
+  double *deriv_classes[9][9][12];
+  double *deriv2_classes[9][9][144];
+  double *dvrr_classes[9][9];
+  double *dvrr_stack;
+  } Libderiv_t;
+\end{verbatim}
+User passes quartet data to \libderiv\ through {\tt PrimQuartet}, {\tt AB},
+and {\tt CD}. Data is returned through member {\tt ABCD}. The dimension of {\tt ABCD}
+is explicitly written as 12+144 which refer to the number of
+all (including nonunique) first and second derivatives of ERIs. If a derivative index runs 
+For example, {\tt ABCD[4]} and {\tt ABCD[11]} point
+to derivative quartets $\frac{\partial ({\bf ab}|{\bf cd})}{\partial B_y}$ and $\frac{\partial ({\bf ab}|{\bf cd})}{\partial D_z}$, respectively.
+Similarly, {\tt ABCD[13]} and {\tt ABCD[27]} refer to $\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial A_y}$
+and $\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial B_x}$, respectively.
+
+Due to the translation invariance relations and the permutational symmetry of the second derivative integrals,
+some derivative quartets are not computed and thus
+only some elements of this array are initialized. Eqs. (\ref{eqn:TId1eri}-\ref{eqn:TId2eri_BD})
+specify how to evaluate elements which are not computed. Thus {\tt build\_deriv1\_eri()} and {\tt build\_deriv12\_eri()}
+functions produce 9 and $9+45=54$ unique derivative quartets, respectively. The unique quartets and corresponding
+elements of {\tt Libderiv\_t.ABCD} are listed here:
+\begin{scriptsize}
+\begin{eqnarray}
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial A_x} \quad 0 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial A_y} \quad 25 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial D_x} \quad 93 \nonumber \\
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial A_y} \quad 1 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial A_z} \quad 26 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial D_y} \quad 94 \nonumber \\
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial A_z} \quad 2 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial C_x} \quad 30 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial D_z} \quad 95 \nonumber \\
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_x} \quad 6 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial C_y} \quad 31 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_y \partial C_y} \quad 103 \nonumber \\
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_y} \quad 7 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial C_z} \quad 32 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_y \partial C_z} \quad 104 \nonumber \\
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_z} \quad 8 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial D_x} \quad 33 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_y \partial D_x} \quad 105 \nonumber \\
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial D_x} \quad 9 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial D_y} \quad 34 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_y \partial D_y} \quad 106 \nonumber \\
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial D_y} \quad 10 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial D_z} \quad 35 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_y \partial D_z} \quad 107 \nonumber \\
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial D_z} \quad 11 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial A_z} \quad 38 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_z \partial C_z} \quad 116 \nonumber \\
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial A_x} \quad 12 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial C_x} \quad 42 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_z \partial D_x} \quad 117 \nonumber \\
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial A_y} \quad 13 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial C_y} \quad 43 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_z \partial D_y} \quad 118 \nonumber \\
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial A_z} \quad 14 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial C_z} \quad 44 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_z \partial D_z} \quad 119 \nonumber \\
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial C_x} \quad 18 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial D_x} \quad 45 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_x \partial D_x} \quad 129 \nonumber \\
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial C_y} \quad 19 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial D_y} \quad 46 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_x \partial D_y} \quad 130 \nonumber \\
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial C_z} \quad 20 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial D_z} \quad 47 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_x \partial D_z} \quad 131 \nonumber \\
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial D_x} \quad 21 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial C_x} \quad 90 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_y \partial D_y} \quad 142 \nonumber \\
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial D_y} \quad 22 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial C_y} \quad 91 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_y \partial D_z} \quad 143 \nonumber \\
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial D_z} \quad 23 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial C_z} \quad 92 \quad \quad 
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_z \partial D_z} \quad 155 \nonumber
+\end{eqnarray}
+\end{scriptsize}
+
+Each derivative quartet is identical in structure to a nondifferentiated
+quartet, i.e. individual integrals are arranged in a row major order. Normalization convention
+for the derivative integrals is the same as for the regular ERIs.
+
+\subsection{Notes on using \librij}
+Component \librij\ is used to evaluate integrals used in linear R12 theories\cite{Kutzelnigg85,Kutzelnigg91,Klopper92,Valeev00:r12ints}.
+over operators $\frac{1}{r_{12}}$, $r_{12}$, $[r_{12},\hat{T}_1]$, and $[r_{12},\hat{T}_2]$. 
+Using \librij\ is mostly similar to how \libint\ is used. Here we only concentrate on significant
+differences which have not been noted before or on aspects of use specific to \librij .
+
+There are two types of compute functions in \librij\ (see \librijh):
+\begin{verbatim}
+extern void (*build_r12_gr[7][7][7][7])(Libr12_t *, int);
+extern void (*build_r12_grt[7][7][7][7])(Libr12_t *, int);
+\end{verbatim}
+The former computes integrals of operators $\frac{1}{r_{12}}$ ("{\em g}") and $r_{12}$ ("{\em r}") only,\footnote{As of this writing,
+these functions have not been implemented yet.}
+whereas in addition the latter computes also integrals of operators $[r_{12},\hat{T}_1]$ and $[r_{12},\hat{T}_2]$ ("{\em t}").
+The size of each dimension of these function pointer arrays is determined by
+\begin{verbatim}
+#define LIBR12_MAX_AM 7
+\end{verbatim}
+which corresponds to the maximum angular momentum of basis functions which \librij\ can handle, incremented by one.
+
+Evaluator object type {\tt Libr12\_t} is defined as
+\begin{verbatim}
+#define NUM_TE_TYPES 4
+
+typedef struct {
+  REALTYPE *int_stack;
+  prim_data *PrimQuartet;
+  contr_data ShellQuartet;
+  REALTYPE *te_ptr[NUM_TE_TYPES];
+  REALTYPE *t1vrr_classes[13][13];
+  REALTYPE *t2vrr_classes[13][13];
+  REALTYPE *rvrr_classes[13][13];
+  REALTYPE *gvrr_classes[14][14];
+  REALTYPE *r12vrr_stack;
+  
+  } Libr12_t;
+\end{verbatim}
+The usual array of data structures {\tt PrimQuartet} is there along with a new
+data structure {\tt ShellQuartet} for shell quartet data into which {\tt Libint\_t}'s
+{\bf AB} and {\bf CD} have migrated:
+\begin{verbatim}
+typedef struct {
+  REALTYPE AB[3];
+  REALTYPE CD[3];
+  REALTYPE AC[3];
+  REALTYPE ABdotAC, CDdotCA;
+  } contr_data;
+\end{verbatim}
+Members of the data structure correspond to the following quantities:
+{\bf AB}, {\bf CD}, {\bf AC}, ${\bf AB}\cdot{\bf AC}$, and ${\bf CD}\cdot{\bf CA}$.
+Before computing a set of shell quartet, one initializes {\tt PrimQuartet} with the primitive quartet
+data and {\tt ShellQuartet} with the shell quartet data. Pointers to computed shell quartets
+are returned in {\tt Libr12\_t.te\_ptr}. {\tt te\_ptr[0]} refers to the quartet of ERIs,
+{\tt te\_ptr[1]} -- to the quartet of integrals of the ${r_{12}}$ operator,
+{\tt te\_ptr[2]} -- to the quartet of integrals of the $[r_{12},\hat{T}_1]$
+operator, {\tt te\_ptr[3]} -- to the quartet of integrals of the $[r_{12},\hat{T}_2]$
+operator. The integrals follow the aforementioned normalization convention of \LIBINT .
+
+One must remember that the commutator integrals have different permutational symmetry
+than ERIs and integrals of the $r_{12}$ operator, namely:
+\begin{eqnarray}
+(pq|[r_{12},\hat{T}_1]|rs) & = & (pq|[r_{12},\hat{T}_1]|sr) = -(qp|[r_{12},\hat{T}_1]|rs) = -(qp|[r_{12},\hat{T}_1]|sr) = \nonumber \\
+= (rs|[r_{12},\hat{T}_2]|pq) & = &(sr|[r_{12},\hat{T}_2]|pq) = -(rs|[r_{12},\hat{T}_2]|qp) = -(sr|[r_{12},\hat{T}_2]|qp)
+\end{eqnarray}
+One must keep them in mind when computing such integrals with \librij because of the required
+preordering of shells in the shell quartet according to the canonical \LIBINT\ order (see above).
+To obtain the desired integrals shells need to be reordered back, which is slightly more involved
+for the commutator integrals than for ERIs. Nevertheless, the reordering is always possible
+because integrals of both $[r_{12},\hat{T}_1]$ and $[r_{12},\hat{T}_2]$ operators are computed simultaneously.
+
+\section{Example: using \libint}
+
+%All integrals are
+%retrieved using the following loop structure:
+%\begin{verbatim}
+%int na;        /* the number of functions in first shell */
+%int nb;        /* the number of functions in second shell */
+%int nc;        /* the number of functions in third shell */
+%int nd;        /* the number of functions in fourth shell */
+%
+%REALTYPE raw_ints = build_eri[la][lb][lc][ld]
+%
+%for(int a=0; a<na; a++)
+%  for(int b=0; b<nb; b++)
+%    for(int c=0; c<nc; c++)
+%      for(int d=0; d<nd; d++)
+%        ints[a][b][c][d] = 
+%
+%\end{verbatim}
+
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}
