@@ -58,6 +58,13 @@ DGVertex::add_entry_arc(DGArc* arc)
 }
 
 void
+DGVertex::del_entry_arc(DGArc* arc)
+{
+  vector<DGArc*>::iterator location = find(parents_.begin(), parents_.end(), arc);
+  parents_.erase(location);
+}
+
+void
 DGVertex::prepare_to_traverse()
 {
   can_add_arcs_ = false;
@@ -94,6 +101,21 @@ DGVertex::exit_arc(unsigned int c) const
   return children_.at(c);
 }
 
+void
+DGVertex::reset()
+{
+  unsigned int nchildren = children_.size();
+  for(int c=0; c<nchildren; c++) {
+    children_[c]->dest()->del_entry_arc(children_[c]);
+    children_[c]->~DGArc();
+  }
+  children_.resize(0);
+  target_ = false;
+  can_add_arcs_ = true;
+  num_tagged_arcs_ = 0;
+  precalc_ = 0;
+  postcalc_ = 0;
+}
 ///////////////////////////////////////////////////
 
 DirectedGraph::DirectedGraph() :
@@ -212,4 +234,15 @@ DirectedGraph::debug_print_traversal(std::ostream& os) const
     current_vertex->print(os);
     current_vertex = current_vertex->postcalc();
   } while (current_vertex != 0);
+}
+
+void
+DirectedGraph::reset()
+{
+  // Reset each vertex, releasing all arcs
+  for(int i=0; i<first_free_; i++)
+    stack_[i]->reset();
+  // if everything went OK then resize stack_ to 0
+  stack_.resize(0);
+  first_free_ = 0;
 }

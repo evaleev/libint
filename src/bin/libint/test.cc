@@ -43,10 +43,10 @@ int try_main (int argc, char* argv[])
   CGShell sh_m(am[9]);
   CGShell sh_n(am[10]);
 
-  vector<CGShell> sh_12[TwoERep::np];
+  vector<CGShell> sh_12[TwoERep::Properties::np];
   sh_12[0].push_back(sh_p);
   sh_12[1].push_back(sh_p);
-  vector<CGShell> sh_34[TwoERep::np];
+  vector<CGShell> sh_34[TwoERep::Properties::np];
   sh_34[0].push_back(sh_p);
   sh_34[1].push_back(sh_p);
 
@@ -72,12 +72,12 @@ int try_main (int argc, char* argv[])
   TwoPRep_sh_11_11* pppp_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
   pppp_quartet->print(cout);
 
-  // Create a DAG for a VRR case
+  // Create a DAG for a HRR+VRR case
   DirectedGraph dg_xxxx;
 
   dg_xxxx.append_target(pppp_quartet);
-  dg_xxxx.apply_to_all< HRR_ba_11_TwoPRep_11_sh >();
-  dg_xxxx.apply_to_all< HRR_dc_11_TwoPRep_11_sh >();
+  dg_xxxx.apply_to_all< HRR_ab_11_TwoPRep_11_sh >();
+  dg_xxxx.apply_to_all< HRR_cd_11_TwoPRep_11_sh >();
   dg_xxxx.apply_to_all< VRR_a_11_TwoPRep_11_sh >();
   dg_xxxx.apply_to_all< VRR_c_11_TwoPRep_11_sh >();
   dg_xxxx.apply_to_all< VRR_b_11_TwoPRep_11_sh >();
@@ -85,7 +85,17 @@ int try_main (int argc, char* argv[])
 
   dg_xxxx.traverse();
   dg_xxxx.debug_print_traversal(cout);
+  dg_xxxx.reset();
 
+
+  // Create a DAG for a shell-quartet-to-ints case
+  DirectedGraph dg_xxxx2;
+
+  dg_xxxx2.append_target(pppp_quartet);
+  dg_xxxx2.apply_to_all< CGShell_to_CGF<TwoPRep_11_11> >();
+
+  dg_xxxx2.traverse();
+  dg_xxxx2.debug_print_traversal(cout);  
 
 }
 

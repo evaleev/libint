@@ -110,6 +110,8 @@ namespace libint2 {
     /// Prints out call sequence
     void debug_print_traversal(ostream& os) const;
 
+    /// Resets the graph and all vertices
+    void reset();
   };
 
   /// Apply RR to target
@@ -204,7 +206,7 @@ namespace libint2 {
         
         }
       }
-    };
+    }
 
 };
 

@@ -8,7 +8,7 @@ using namespace libint2;
 const char TwoERep::psymm_[] = { 1 };
 
 TwoERep::TwoERep() :
-  Oper<2>("Two-electron repulsion operator","TwoERep")
+  Oper<TwoPRep_Props>("Two-electron repulsion operator","TwoERep")
 {
 }
 
@@ -19,9 +19,9 @@ TwoERep::~TwoERep()
 const int
 TwoERep::psymm(int i, int j) const
 {
-  if (i<0 || i>=np)
+  if (i<0 || i>=Properties::np)
     throw std::runtime_error("TwoERep::psymm(i,j) -- index i out of bounds");
-  if (j<0 || j>=np)
+  if (j<0 || j>=Properties::np)
     throw std::runtime_error("TwoERep::psymm(i,j) -- index j out of bounds");
   if (i == j)
     return 1;

@@ -15,8 +15,8 @@ using namespace std;
 
 namespace libint2 {
 
-  template <template <class> class ERI, class F, int part, bool use_bra>
-    VRR_11_TwoPRep_11<ERI,F,part,use_bra>::VRR_11_TwoPRep_11(ERI<F>* Tint) :
+  template <template <class> class ERI, class F, int part, FunctionPosition where>
+    VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(ERI<F>* Tint) :
     target_(Tint)
     {
       target_ = Tint;
@@ -43,7 +43,7 @@ namespace libint2 {
       // Use indirection to choose bra or ket
       vector<F>* bra_ref = &bra;
       vector<F>* ket_ref = &ket;
-      if (!use_bra) {
+      if (where == InKet) {
         bra_ref = &ket;
         ket_ref = &bra;
       }
@@ -87,17 +87,17 @@ namespace libint2 {
 
     };
 
-  template <template <class> class ERI, class F, int part, bool use_bra>
-    VRR_11_TwoPRep_11<ERI,F,part,use_bra>::~VRR_11_TwoPRep_11()
+  template <template <class> class ERI, class F, int part, FunctionPosition where>
+    VRR_11_TwoPRep_11<ERI,F,part,where>::~VRR_11_TwoPRep_11()
     {
       if (part < 0 || part >= 2) {
         assert(false);
       }
     };
 
-  template <template <class> class ERI, class F, int part, bool use_bra>
+  template <template <class> class ERI, class F, int part, FunctionPosition where>
     ERI<F>*
-    VRR_11_TwoPRep_11<ERI,F,part,use_bra>::child(unsigned int i)
+    VRR_11_TwoPRep_11<ERI,F,part,where>::child(unsigned int i)
     {
       assert(i>=0 && i<num_actual_children_);
 
@@ -111,10 +111,10 @@ namespace libint2 {
       }
     };
 
-  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,true> VRR_a_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,true> VRR_c_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,false> VRR_b_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,false> VRR_d_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,InBra> VRR_c_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InKet> VRR_b_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,InKet> VRR_d_11_TwoPRep_11_sh;
 
 
 };

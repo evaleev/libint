@@ -227,6 +227,8 @@ namespace libint2 {
     bool can_add_arcs_;
     /// add_entry_arc(arc) adds arc as an arc connecting parents to this vertex
     void add_entry_arc(DGArc*);
+    /// del_entry_arc(arc) removes arc as an arc connecting parents to this vertex
+    void del_entry_arc(DGArc*);
 
     ////////
     // These members used in traversal algorithms
@@ -248,7 +250,9 @@ namespace libint2 {
     void make_a_target();
     /// is_a_target() returns true if this vertex is a target
     const bool is_a_target() const { return target_;};
-    /// add_exit_arc(arc) adds arc as an arc connecting to children of this vertex
+    /** add_exit_arc(arc) adds arc as an arc connecting to children of this vertex.
+        Thus, arcs are owned by their PARENTS.
+      */
     void add_exit_arc(DGArc*);
     /// returns the number of parents
     const unsigned int num_entry_arcs() const;
@@ -269,7 +273,7 @@ namespace libint2 {
     */
     virtual bool equiv(const DGVertex*) const =0;
 
-    /** print(std::ostream&) prints out the vertex
+    /** print(std::ostream&) prints out comment-style info vertex
     */
     virtual void print(std::ostream& os = std::cout) const =0;
 
@@ -286,63 +290,76 @@ namespace libint2 {
     /// Sets postcalc
     void set_postcalc(DGVertex* postcalc) { postcalc_ = postcalc; };
 
+    /// Resets the vertex, releasing all arcs
+    void reset();
   };
 
-  template <unsigned int NP> class Oper {
+  /** OperatorProperties describes various properties of an operator
+      np -- number of particles
+      multi -- true if multiplicative      
+    */
+  template <unsigned int NP, bool multi>
+    class OperatorProperties {
+    public:
+      static const unsigned int np = NP;
+      static const bool multiplicative = multi;
+    };
 
-    /// Described name
-    const std::string descr_;
-    /// short (<20 chars) ID label
-    const std::string id_;
+  template <class Props>
+    class Oper {
 
-  public:
-    Oper(const std::string& descr, const std::string& id);
-    virtual ~Oper();
+      /// Described name
+      const std::string descr_;
+      /// short (<20 chars) ID label
+      const std::string id_;
 
-    /// Returns full description of the operator
-    const std::string& descr() const;
-    /// Returns short label for the operator
-    const std::string& id() const;
-    
-    /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
-        or antisymmetric with respect to permutation of particles i and j */
-    virtual const int psymm(int i, int j) const =0;
+    public:
+      Oper(const std::string& descr, const std::string& id);
+      virtual ~Oper();
 
-    static const unsigned int np = NP;
+      /// Returns full description of the operator
+      const std::string& descr() const;
+      /// Returns short label for the operator
+      const std::string& id() const;
 
+      /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
+          or antisymmetric with respect to permutation of particles i and j */
+      virtual const int psymm(int i, int j) const =0;
+      typedef Props Properties;
   };
 
-  template <unsigned int NP>
-    Oper<NP>::Oper(const std::string& descr, const std::string& id) :
+  template <class Props>
+    Oper<Props>::Oper(const std::string& descr, const std::string& id) :
     descr_(descr), id_(id)
     {
     }
   
-  template <unsigned int NP>
-    Oper<NP>::~Oper()
+  template <class Props>
+    Oper<Props>::~Oper()
     {
     }
   
-  template <unsigned int NP>
+  template <class Props>
     const std::string&
-    Oper<NP>::descr() const
+    Oper<Props>::descr() const
     {
       return descr_;
     }
   
-  template <unsigned int NP>
+  template <class Props>
     const std::string&
-    Oper<NP>::id() const
+    Oper<Props>::id() const
     {
       return id_;
     }
 
-  class TwoERep : public Oper<2> {
+  typedef OperatorProperties<2,true> TwoPRep_Props;
+  class TwoERep : public Oper<TwoPRep_Props> {
 
     // symmetry W.R.T. permutation of each pair of particles
     // 1 -- symmetric, -1 -- antisymmetric, 0 -- nonsymmetric
     // stored as a lower triangle (diagonal not included)
-    static const char psymm_[np*(np-1)/2];
+    static const char psymm_[Properties::np*(Properties::np-1)/2];
 
   public:
     TwoERep();
@@ -374,10 +391,10 @@ namespace libint2 {
 
   protected:
     // Basic Integral constructor
-    Integral(const vector<BFSet> bra[Oper::np], const vector<BFSet> ket[Oper::np]);
+    Integral(const vector<BFSet> bra[Oper::Properties::np], const vector<BFSet> ket[Oper::Properties::np]);
 
-    vector<BFSet> bra_[Oper::np];
-    vector<BFSet> ket_[Oper::np];
+    vector<BFSet> bra_[Oper::Properties::np];
+    vector<BFSet> ket_[Oper::Properties::np];
     
   public:
     /** No constructors are public since this is a singleton-like quantity.
@@ -395,9 +412,9 @@ namespace libint2 {
   };
 
   template <class Oper, class BFSet>
-    Integral<Oper, BFSet>::Integral(const vector<BFSet> bra[Oper::np], const vector<BFSet> ket[Oper::np])
+    Integral<Oper, BFSet>::Integral(const vector<BFSet> bra[Oper::Properties::np], const vector<BFSet> ket[Oper::Properties::np])
     {
-      for(int p=0; p<Oper::np; p++) {
+      for(int p=0; p<Oper::Properties::np; p++) {
         bra_[p] = bra[p];
         ket_[p] = ket[p];
       }
@@ -412,7 +429,7 @@ namespace libint2 {
     Integral<Oper, BFSet>&
     Integral<Oper, BFSet>::operator=(const Integral<Oper, BFSet>& source)
     {
-      for(int p=0; p<Oper::np; p++) {
+      for(int p=0; p<Oper::Properties::np; p++) {
         bra_[p] = source.bra_[p];
         ket_[p] = source.ket_[p];
       }
@@ -423,7 +440,7 @@ namespace libint2 {
     Integral<Oper, BFSet>::equiv(const Integral<Oper,BFSet>* a) const
     {
       bool equiv = true;
-      for(int p=0; p<Oper::np; p++) {
+      for(int p=0; p<Oper::Properties::np; p++) {
         equiv = (equiv && bra_[p] == a->bra_[p]);
         equiv = (equiv && ket_[p] == a->ket_[p]);
       }
@@ -591,12 +608,20 @@ namespace libint2 {
 
   };
 
+  typedef enum {
+    InBra=0, InKet=1
+  } FunctionPosition;
+  typedef enum {
+    BraToKet=0, KetToBra=1
+  } FunctionMovement;
+  
   /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
       the angular momentum is raised. bool bra specifies whether the angular momentum
       is raised in bra (true) or ket (false). Class ERI specifies which particular implementation
       of ERI to use.
    */
-  template <template <class> class ERI, class BFSet, int part, bool bra> class VRR_11_TwoPRep_11 : public RecurrenceRelation {
+  template <template <class> class ERI, class BFSet, int part, FunctionPosition where>
+    class VRR_11_TwoPRep_11 : public RecurrenceRelation {
 
     static const unsigned int nchild_ = 5;
 
@@ -624,11 +649,22 @@ namespace libint2 {
 
   };
 
-  /** A generic Horizontal Recurrence Relation. Int is the integral class. part specifies for which particle
-      the angular momentum is shifted. to_bra specifies in which direction quantum numbers are shifted (to bra, if true;
-      to ket otherwise)
+  /** A generic Horizontal Recurrence Relation:
+
+      |a b) = |a+1 b-1) + AB |a b-1)
+
+      Int is the integral class. part specifies for which particle
+      the angular momentum is shifted. Function a is assumed to gain quanta,
+      function a gains quanta. loc_a and loc_b specify where
+      functions a and b are located (bra or ket). pos_a and pos_b
+      specify which function to be used (usually pos_a and pos_b are set
+      to 0 to refer to the first function for this particle in this location).
+      
    */
-  template <template <class> class I, class BFSet, int part, bool to_bra> class HRR : public RecurrenceRelation {
+  template <template <class> class I, class BFSet, int part,
+    FunctionPosition loc_a, unsigned int pos_a,
+    FunctionPosition loc_b, unsigned int pos_b>
+    class HRR : public RecurrenceRelation {
 
     static const unsigned int nchild_ = 2;
 
@@ -636,6 +672,8 @@ namespace libint2 {
     I<BFSet>* children_[nchild_];
 
     unsigned int num_actual_children_;
+
+    void oper_checks() const;
 
   public:
     HRR(I<BFSet>*);
@@ -663,6 +701,7 @@ namespace libint2 {
 #include <hrr_eri_2b2k.h>
 #include <vrr_11_twoprep_11.h>
 #include <hrr.h>
+#include <shell_to_ints.h>
 
 #endif
 
