@@ -104,7 +104,7 @@ namespace libint2 {
         construct a heuristic order of traversal for the graph.
 
     */
-    DGVertex* traverse();
+    SafePtr<DGVertex> traverse();
 
     /// Prints out call sequence
     void debug_print_traversal(ostream& os) const;
@@ -188,7 +188,7 @@ namespace libint2 {
     {
       typedef typename RR::TargetType TT;
       const int num_vertices_on_graph = first_free_;
-      for(int v=0; v<first_free_; v++) {
+      for(int v=0; v<num_vertices_on_graph; v++) {
         if (stack_[v]->num_exit_arcs() != 0)
           continue;
         SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(stack_[v]);

@@ -355,7 +355,22 @@ namespace libint2 {
     bool
     VectorBraket<BFS>::equiv(const VectorBraket<BFS>& a) const
     {
-      return bfs_ == a.bfs_;
+      if (bfs_.size() != a.bfs_.size())
+        return false;
+
+      // compare each row
+      const int size1 = bfs_.size();
+      for(int i=0; i<size1; i++) {
+        if (bfs_[i].size() != a.bfs_[i].size())
+          return false;
+
+        // compare each element
+        const int size2 = bfs_[i].size();
+        for(int j=0; j<size2; j++)
+          if (!bfs_[i][j]->operator==(*a.bfs_[i][j]))
+            return false;
+      }
+      return true;
     }
 
   /**
@@ -375,8 +390,10 @@ namespace libint2 {
       typedef TwoPRep_11_11 this_type;
       /// TwoPRep_11_11 is a set of these subobjects
       typedef TwoPRep_11_11<typename BFS::iter_type> iter_type;
-      /// This is the parent
+      /// This is the immediate parent
       typedef GenIntegralSet<TwoERep, BFSet, VectorBraket<BFS>, VectorBraket<BFS> > parent_type;
+      /// This is the base parent which declares an equiv operation
+      typedef IntegralSet<BFSet> has_equiv_type;
 
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
@@ -471,15 +488,14 @@ namespace libint2 {
       if (!a_cast)
         return false;
 
-      bool result = parent_type::equiv(a_cast) && (m_ == a_cast->m_);
-      return result;
+      return equiv(a_cast);
     }
 
   template <class BFS>
     bool
     TwoPRep_11_11<BFS>::equiv(const SafePtr<TwoPRep_11_11<BFS> >& a) const
     {
-      const SafePtr<parent_type> a_cast = static_pointer_cast<parent_type,this_type>(a);
+      const SafePtr<has_equiv_type> a_cast = static_pointer_cast<has_equiv_type,this_type>(a);
       bool result = parent_type::equiv(a_cast) && (m_ == a->m_);
       return result;
     }

@@ -5,7 +5,7 @@
 using namespace std;
 using namespace libint2;
 
-DGArc::DGArc(DGVertex* orig, DGVertex* dest)
+DGArc::DGArc(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest)
 {
   orig_ = orig;
   dest_ = dest;
@@ -17,13 +17,13 @@ DGArc::~DGArc()
 
 DGVertex::DGVertex() :
   parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
-  precalc_(0), postcalc_(0)
+  precalc_(), postcalc_()
 {
 }
 
-DGVertex::DGVertex(const vector<DGArc*>& parents, const vector<DGArc*>& children) :
+DGVertex::DGVertex(const vector< SafePtr<DGArc> >& parents, const vector< SafePtr<DGArc> >& children) :
   parents_(parents), children_(children), target_(false), can_add_arcs_(true),
-  num_tagged_arcs_(0), precalc_(0), postcalc_(0)
+  num_tagged_arcs_(0), precalc_(), postcalc_()
 {
 }
 
@@ -38,7 +38,7 @@ DGVertex::make_a_target()
 }
 
 void
-DGVertex::add_exit_arc(DGArc* arc)
+DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
 {
   if (can_add_arcs_) {
     children_.push_back(arc);
@@ -49,7 +49,7 @@ DGVertex::add_exit_arc(DGArc* arc)
 }
 
 void
-DGVertex::add_entry_arc(DGArc* arc)
+DGVertex::add_entry_arc(const SafePtr<DGArc>& arc)
 {
   if (can_add_arcs_)
     parents_.push_back(arc);
@@ -58,9 +58,9 @@ DGVertex::add_entry_arc(DGArc* arc)
 }
 
 void
-DGVertex::del_entry_arc(DGArc* arc)
+DGVertex::del_entry_arc(const SafePtr<DGArc>& arc)
 {
-  vector<DGArc*>::iterator location = find(parents_.begin(), parents_.end(), arc);
+  vector< SafePtr<DGArc> >::iterator location = find(parents_.begin(), parents_.end(), arc);
   parents_.erase(location);
 }
 
@@ -89,13 +89,13 @@ DGVertex::num_exit_arcs() const
   return children_.size();
 }
 
-DGArc*
+SafePtr<DGArc>
 DGVertex::entry_arc(unsigned int p) const
 {
   return parents_.at(p);
 }
 
-DGArc*
+SafePtr<DGArc>
 DGVertex::exit_arc(unsigned int c) const
 {
   return children_.at(c);
@@ -107,19 +107,19 @@ DGVertex::reset()
   unsigned int nchildren = children_.size();
   for(int c=0; c<nchildren; c++) {
     children_[c]->dest()->del_entry_arc(children_[c]);
-    children_[c]->~DGArc();
+    children_[c].reset();
   }
   children_.resize(0);
   target_ = false;
   can_add_arcs_ = true;
   num_tagged_arcs_ = 0;
-  precalc_ = 0;
-  postcalc_ = 0;
+  precalc_.reset();
+  postcalc_.reset();
 }
 ///////////////////////////////////////////////////
 
 DirectedGraph::DirectedGraph() :
-  stack_(default_size_), first_free_(0), first_to_compute_(0)
+  stack_(default_size_), first_free_(0), first_to_compute_()
 {
 }
 
@@ -131,7 +131,7 @@ DirectedGraph::~DirectedGraph()
 }
 
 void
-DirectedGraph::append_target(DGVertex* target)
+DirectedGraph::append_target(const SafePtr<DGVertex>& target)
 {
   target->make_a_target();
   try {
@@ -143,7 +143,7 @@ DirectedGraph::append_target(DGVertex* target)
 }
 
 void
-DirectedGraph::add_vertex(DGVertex* vertex)
+DirectedGraph::add_vertex(const SafePtr<DGVertex>& vertex)
 {
   bool already_on_stack = false;
   for(int i=0; i<first_free_; i++) {
@@ -173,7 +173,7 @@ DirectedGraph::prepare_to_traverse()
     stack_[i]->prepare_to_traverse();
 }
 
-DGVertex*
+SafePtr<DGVertex>
 DirectedGraph::traverse()
 {
   // Initialization
@@ -182,7 +182,7 @@ DirectedGraph::traverse()
   // Start at the targets which don't have parents
   for(int i=0; i<first_free_; i++) {
     if (stack_[i]->is_a_target() && stack_[i]->num_entry_arcs() == 0) {
-      DGVertex* vertex_ptr = stack_[i];
+      SafePtr<DGVertex> vertex_ptr = stack_[i];
       // First, since this target doesn't have parents we can schedule its computation
       schedule_computation(vertex_ptr);
       int nchildren = vertex_ptr->num_exit_arcs();
@@ -193,10 +193,10 @@ DirectedGraph::traverse()
 }
 
 void
-DirectedGraph::traverse_from(DGArc* arc)
+DirectedGraph::traverse_from(const SafePtr<DGArc>& arc)
 {
-  DGVertex* orig = arc->orig();
-  DGVertex* dest = arc->dest();
+  SafePtr<DGVertex> orig = arc->orig();
+  SafePtr<DGVertex> dest = arc->dest();
   const unsigned int num_tags = dest->tag();
   const unsigned int num_parents = dest->num_entry_arcs();
   /*if (num_tags == 1) {
@@ -213,9 +213,9 @@ DirectedGraph::traverse_from(DGArc* arc)
 }
 
 void
-DirectedGraph::schedule_computation(DGVertex* vertex)
+DirectedGraph::schedule_computation(const SafePtr<DGVertex>& vertex)
 {
-  vertex->set_precalc(0);
+  vertex->set_precalc(SafePtr<DGVertex>());
   vertex->set_postcalc(first_to_compute_);
   if (first_to_compute_ != 0)
     first_to_compute_->set_precalc(vertex);
@@ -226,7 +226,7 @@ DirectedGraph::schedule_computation(DGVertex* vertex)
 void
 DirectedGraph::debug_print_traversal(std::ostream& os) const
 {
-  DGVertex* current_vertex = first_to_compute_;
+  SafePtr<DGVertex> current_vertex = first_to_compute_;
 
   os << "Debug print of traversal order" << endl;
 
@@ -245,4 +245,5 @@ DirectedGraph::reset()
   // if everything went OK then resize stack_ to 0
   stack_.resize(0);
   first_free_ = 0;
+  first_to_compute_.reset();
 }

@@ -57,7 +57,7 @@ int try_main (int argc, char* argv[])
   test_typelists();
   
   typedef TwoPRep_11_11<CGShell> TwoPRep_sh_11_11;
-  SafePtr<TwoPRep_sh_11_11> pppp_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
+  SafePtr<TwoPRep_sh_11_11> pppp_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_s,sh_s,0);
   pppp_quartet->print(cout);
 
   // Create a DAG for a HRR+VRR case
