@@ -1,24 +1,40 @@
 
 #include <iostream>
+
+#include <rr.h>
+
 #include <libint2.h>
 #include <eri.h>
 #include <prep_libint2.h>
 #include <__ss_1_over_r_12_ds___up_0.h>
+#include <__ss_1_over_r_12_fs___up_0.h>
+#include <__ds_1_over_r_12_fs___up_0.h>
+#include <__dp_1_over_r_12_fs___up_0.h>
 
 using namespace std;
+using namespace libint2;
 
 int main(int argc, char** argv)
 {
 
   typedef unsigned int uint;
+
+  uint am[4] = {2, 1, 3, 0};
+
+  CGShell sh0(&(am[0]));
+  CGShell sh1(&(am[1]));
+  CGShell sh2(&(am[2]));
+  CGShell sh3(&(am[3]));
   
-  uint l1 = 0;
+  
+
+  uint l1 = 2;
   uint m1 = 0;
   uint n1 = 0;
-  uint l2 = 0;
+  uint l2 = 1;
   uint m2 = 0;
   uint n2 = 0;
-  uint l3 = 2;
+  uint l3 = 3;
   uint m3 = 0;
   uint n3 = 0;
   uint l4 = 0;
@@ -50,13 +66,15 @@ int main(int argc, char** argv)
   //compute__ss_1_over_r_12_ps___up_0(libint);
   //compute__ps_1_over_r_12_ps___up_0(libint);
   //compute__ds_1_over_r_12_ds___up_0(libint);
-  compute__ss_1_over_r_12_ds___up_0(libint);
+  //compute__ss_1_over_r_12_ds___up_0(libint);
   //compute__ps_1_over_r_12_ds___up_0(libint);
   //compute__ds_1_over_r_12_ps___up_0(libint);
   //compute__ds_1_over_r_12_ss___up_0(libint);
   //compute__fs_1_over_r_12_ss___up_0(libint);
   //compute__ss_1_over_r_12_fs___up_0(libint);
-  for(int i=0;i<6; i++)
+  //compute__ds_1_over_r_12_fs___up_0(libint);
+  compute__dp_1_over_r_12_fs___up_0(libint);
+  for(int i=0;i<180; i++)
     cout << "New  eri[" << i << "] = " << libint->targets[0][i] << endl;
 }
 

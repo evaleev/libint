@@ -1,5 +1,6 @@
 
 #include <cmath>
+#include <stdlib.h>
 #include <libint2.h>
 #include <eri.h>
 

@@ -4,7 +4,7 @@
 */
 
 #include <cmath>
-
+#include <stdlib.h>
 
 #define MAXFAC 100
 #define EPS 1.0E-17     /* Absolute precision in computing Fm(t)
