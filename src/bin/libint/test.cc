@@ -24,6 +24,7 @@ static void test2();
 static void test3();
 static void test4();
 static void test5();
+static void test6();
 
 int main (int argc, char* argv[])
 {
@@ -67,8 +68,9 @@ int try_main (int argc, char* argv[])
   test2();
   test3();
   test4();
-#endif
   test5();
+#endif
+  test6();
 
 }
 
@@ -257,3 +259,35 @@ test5()
     }
   }
 }
+
+void
+test6()
+{
+  const unsigned int size_to_unroll = 6;
+  SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
+  SafePtr<Strategy> strat(new Strategy(size_to_unroll));
+  SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_d,sh_s,sh_d,sh_s,0);
+  cout << xsxs_quartet->description();
+  SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
+  dg_xxxx3->append_target(xsxs_ptr);
+  dg_xxxx3->apply(strat);
+  dg_xxxx3->optimize_rr_out();
+
+  std::basic_ofstream<char> dotfile("graph.dot");
+  dg_xxxx3->print_to_dot(false,dotfile);
+  cout << "The number of vertices = " << dg_xxxx3->num_vertices() << endl;
+
+  dg_xxxx3->traverse();
+  dg_xxxx3->debug_print_traversal(cout);
+  
+  SafePtr<CodeContext> context(new CppCodeContext());
+  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+  dg_xxxx3->generate_code(context,memman,xsxs_quartet->label(),cout,cout);
+  std::basic_ofstream<char> dotfile2("graph.symb.dot");
+  dg_xxxx3->print_to_dot(true,dotfile2);
+
+  cout << "Max memory used = " << memman->max_memory_used() << endl;
+  dg_xxxx3->reset();
+}
+
+

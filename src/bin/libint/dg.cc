@@ -356,7 +356,7 @@ void
 DirectedGraph::print_to_dot(bool symbols, std::ostream& os) const
 {
   os << "digraph G {" << endl
-     << "  size = \"8,8\"" << endl;
+     << "  size = \"11,8.5\"" << endl;
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
     os << "  " << vertex->graph_label()
