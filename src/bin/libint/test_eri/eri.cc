@@ -90,7 +90,6 @@ double eri(unsigned int l1, unsigned int m1, unsigned int n1,
   K2 = exp(-alpha3*alpha4*CD2/gammaq);
   pfac = 2*pow(M_PI,2.5)*K1*K2/(gammap*gammaq*sqrt(gammap+gammaq));
 
-
   if (fac == NULL) {
     fac = init_array(MAXFAC);
     fac[0] = 1.0;
@@ -100,13 +99,6 @@ double eri(unsigned int l1, unsigned int m1, unsigned int n1,
     for(i=0;i<MAXFAC;i++)
       for(j=0;j<=i;j++)
 	bc[i][j] = fac[i]/(fac[i-j]*fac[j]);
-    df = init_array(2*MAXFAC);
-    df[0] = 1.0;  
-    df[1] = 1.0;
-    df[2] = 1.0;      
-    for(i=3; i<MAXFAC*2; i++) {
-      df[i] = (i-1)*df[i-2];
-    }
   }
 
   if (norm_flag > 0) {
@@ -278,6 +270,16 @@ void calc_f(double *F, int n, double t)
   double term1, term2;
   static double K = 1.0/M_2_SQRTPI;
   double et;
+
+  if (df == NULL) {
+    df = init_array(2*MAXFAC);
+    df[0] = 1.0;  
+    df[1] = 1.0;
+    df[2] = 1.0;      
+    for(i=3; i<MAXFAC*2; i++) {
+      df[i] = (i-1)*df[i-2];
+    }
+  }
 
 
   if (t>20.0){   /* For big t's do upward recursion */

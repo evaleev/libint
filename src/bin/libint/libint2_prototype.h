@@ -14,6 +14,12 @@ typedef struct {
   REALTYPE __ss_1_over_r_12_ss___up_4;
   REALTYPE __ss_1_over_r_12_ss___up_5;
   REALTYPE __ss_1_over_r_12_ss___up_6;
+  REALTYPE __ss_1_over_r_12_ss___up_7;
+  REALTYPE __ss_1_over_r_12_ss___up_8;
+  REALTYPE __ss_1_over_r_12_ss___up_9;
+  REALTYPE __ss_1_over_r_12_ss___up_10;
+  REALTYPE __ss_1_over_r_12_ss___up_11;
+  REALTYPE __ss_1_over_r_12_ss___up_12;
 
   REALTYPE WP_x, WP_y, WP_z;
   REALTYPE WQ_x, WQ_y, WQ_z;

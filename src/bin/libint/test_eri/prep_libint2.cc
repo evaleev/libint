@@ -11,10 +11,6 @@
                            (see recursion:calc_fij() ) */
 #define MIN(a,b) ((a)>(b) ? (b) : (a))
 
-static double *df;
-static double *fac;
-static double **bc;
-
 void prep_libint2(Libint_t* libint, unsigned int am1,
            double alpha1, double A[3],
 	   unsigned int am2, 
@@ -88,25 +84,6 @@ void prep_libint2(Libint_t* libint, unsigned int am1,
   double K2 = exp(-alpha3*alpha4*CD2/gammaq);
   double pfac = 2*pow(M_PI,2.5)*K1*K2/(gammap*gammaq*sqrt(gammap+gammaq));
 
-
-  if (fac == NULL) {
-    fac = init_array(MAXFAC);
-    fac[0] = 1.0;
-    for(int i=1;i<MAXFAC;i++)
-      fac[i] = fac[i-1]*i;
-    bc = block_matrix(MAXFAC,MAXFAC);
-    for(int i=0;i<MAXFAC;i++)
-      for(int j=0;j<=i;j++)
-	bc[i][j] = fac[i]/(fac[i-j]*fac[j]);
-    df = init_array(2*MAXFAC);
-    df[0] = 1.0;  
-    df[1] = 1.0;
-    df[2] = 1.0;      
-    for(int i=3; i<MAXFAC*2; i++) {
-      df[i] = (i-1)*df[i-2];
-    }
-  }
-
   if (norm_flag > 0) {
 /*    pfac *= norm_const(l1,m1,n1,alpha1,A);
     pfac *= norm_const(l2,m2,n2,alpha2,B);
@@ -114,9 +91,9 @@ void prep_libint2(Libint_t* libint, unsigned int am1,
     pfac *= norm_const(l4,m4,n4,alpha4,D);*/
   }
   
-
-  double* F = init_array(MAXAM+1);
-  calc_f(F,MAXAM,PQ2*gammapq);
+  unsigned int am = am1 + am2 + am3 + am4;
+  double* F = init_array(am+1);
+  calc_f(F,am,PQ2*gammapq);
   
   libint->__ss_1_over_r_12_ss___up_0 = pfac*F[0];
   libint->__ss_1_over_r_12_ss___up_1 = pfac*F[1];
@@ -125,6 +102,12 @@ void prep_libint2(Libint_t* libint, unsigned int am1,
   libint->__ss_1_over_r_12_ss___up_4 = pfac*F[4];
   libint->__ss_1_over_r_12_ss___up_5 = pfac*F[5];
   libint->__ss_1_over_r_12_ss___up_6 = pfac*F[6];
+  libint->__ss_1_over_r_12_ss___up_7 = pfac*F[7];
+  libint->__ss_1_over_r_12_ss___up_8 = pfac*F[8];
+  libint->__ss_1_over_r_12_ss___up_9 = pfac*F[9];
+  libint->__ss_1_over_r_12_ss___up_10 = pfac*F[10];
+  libint->__ss_1_over_r_12_ss___up_11 = pfac*F[11];
+  libint->__ss_1_over_r_12_ss___up_12 = pfac*F[12];
   
 }
 
