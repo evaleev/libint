@@ -1,13 +1,14 @@
 
-
-#ifndef _libint2_src_bin_libint_rr_h_
-#define _libint2_src_bin_libint_rr_h_
-
 #include <iostream>
 #include <string>
 #include <vector>
 #include <stdexcept>
 #include <exception.h>
+#include <smart_ptr.h>
+#include <polyconstr.h>
+
+#ifndef _libint2_src_bin_libint_rr_h_
+#define _libint2_src_bin_libint_rr_h_
 
 using namespace std;
 
@@ -22,7 +23,6 @@ namespace libint2 {
   const int Libint2_DefaultVectorLength = 64;
 
   class RecurrenceRelation {
-
   public:
     RecurrenceRelation();
     virtual ~RecurrenceRelation();
@@ -101,11 +101,13 @@ namespace libint2 {
   typedef QuantumSet< CartGaussQuantumNumbers > CartGauss;
 
 
-  /// Set of basis functions
-  class BFSet {
+  /** Set of basis functions. Sets must be constructable using
+      SafePtr<BFSet> or SafePtr<ConstructablePolymorphically>.
+  */
+  class BFSet : public ConstructablePolymorphically {
 
   public:
-    BFSet() {};
+    BFSet() {}
     virtual ~BFSet() {};
     virtual unsigned int num_bf() const =0;
     virtual const std::string label() const =0;
@@ -127,7 +129,9 @@ namespace libint2 {
     CGF();
     CGF(unsigned int qn[3]);
     CGF(const CGF&);
-    CGF(const BFSet*);
+    CGF(const SafePtr<CGF>&);
+    CGF(const SafePtr<BFSet>&);
+    CGF(const SafePtr<ConstructablePolymorphically>&);
     ~CGF();
 
     /// As far as SetIterator is concerned, CGF is a set of one CGF
@@ -164,7 +168,9 @@ namespace libint2 {
     CGShell();
     CGShell(unsigned int qn[1]);
     CGShell(const CGShell&);
-    CGShell(const BFSet*);
+    CGShell(const SafePtr<CGShell>&);
+    CGShell(const SafePtr<BFSet>&);
+    CGShell(const SafePtr<ConstructablePolymorphically>&);
     ~CGShell();
     CGShell& operator=(const CGShell&);
 
@@ -198,15 +204,15 @@ namespace libint2 {
       Each arc connects vertex orig_ to vertex dest_. */
   class DGArc {
 
-    DGVertex* orig_;  // Where this Arc leavs
-    DGVertex* dest_;  // Where this Arc leads to
+    SafePtr<DGVertex> orig_;  // Where this Arc leavs
+    SafePtr<DGVertex> dest_;  // Where this Arc leads to
 
   public:
-    DGArc(DGVertex* orig_, DGVertex* dest_);
+    DGArc(const SafePtr<DGVertex>& orig_, const SafePtr<DGVertex>& dest_);
     ~DGArc();
 
-    DGVertex* orig() const { return orig_; };
-    DGVertex* dest() const { return dest_; };
+    SafePtr<DGVertex> orig() const { return orig_; };
+    SafePtr<DGVertex> dest() const { return dest_; };
     
   };
   
@@ -216,16 +222,18 @@ namespace libint2 {
   // It obviously must implement some functions
   template <class ArcRel> class DGArcRel : public DGArc {
 
-    ArcRel* rel_;     // Relationship described by the arc
+    SafePtr<ArcRel> rel_;     // Relationship described by the arc
 
   public:
-    DGArcRel(DGVertex* orig, DGVertex* dest, ArcRel* rel);
+    DGArcRel(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest,
+	     const SafePtr<ArcRel>& rel);
     ~DGArcRel();
     
   };
 
   template <class ArcRel>
-    DGArcRel<ArcRel>::DGArcRel(DGVertex* orig, DGVertex* dest, ArcRel* rel) :
+    DGArcRel<ArcRel>::DGArcRel(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest,
+			       const SafePtr<ArcRel>& rel) :
     DGArc(orig,dest), rel_(rel)
     {
     };
@@ -239,18 +247,18 @@ namespace libint2 {
   class DGVertex {
 
     /// Arcs leaving this DGVertex
-    vector<DGArc*> children_;
+    vector< SafePtr<DGArc> > children_;
     /// We also need info about Arcs entering this DGVertex
-    vector<DGArc*> parents_;
+    vector< SafePtr<DGArc> > parents_;
 
     // Whether this is a "target" vertex, i.e. the target of a calculation
     bool target_;
     // If set to true -- traversal has started and add_entry... cannot be called
     bool can_add_arcs_;
     /// add_entry_arc(arc) adds arc as an arc connecting parents to this vertex
-    void add_entry_arc(DGArc*);
+    void add_entry_arc(const SafePtr<DGArc>&);
     /// del_entry_arc(arc) removes arc as an arc connecting parents to this vertex
-    void del_entry_arc(DGArc*);
+    void del_entry_arc(const SafePtr<DGArc>&);
 
     ////////
     // These members used in traversal algorithms
@@ -259,13 +267,13 @@ namespace libint2 {
     // num_tagged_arcs keeps track of how many entry arcs have been tagged during traversal
     unsigned int num_tagged_arcs_;
     /// Which DGVertex to be computed before this vertex (0, if this is the first vertex)
-    DGVertex* precalc_;
+    SafePtr<DGVertex> precalc_;
     /// Which DGVertex to be computed after this vertex (0, if this is the last vertex)
-    DGVertex* postcalc_;
+    SafePtr<DGVertex> postcalc_;
 
   public:
     DGVertex();
-    DGVertex(const vector<DGArc*>& parents, const vector<DGArc*>& children);
+    DGVertex(const vector<SafePtr<DGArc> >& parents, const vector<SafePtr<DGArc> >& children);
     virtual ~DGVertex();
 
     /// make_a_target() marks this vertex as a target
@@ -275,15 +283,15 @@ namespace libint2 {
     /** add_exit_arc(arc) adds arc as an arc connecting to children of this vertex.
         Thus, arcs are owned by their PARENTS.
       */
-    void add_exit_arc(DGArc*);
+    void add_exit_arc(const SafePtr<DGArc>&);
     /// returns the number of parents
     const unsigned int num_entry_arcs() const;
     /// returns ptr to i-th parent
-    DGArc* entry_arc(unsigned int) const;
+    SafePtr<DGArc> entry_arc(unsigned int) const;
     /// returns the number of children
     const unsigned int num_exit_arcs() const;
     /// returns ptr to i-th child
-    DGArc* exit_arc(unsigned int) const;
+    SafePtr<DGArc> exit_arc(unsigned int) const;
 
     /** apply_rr() applies the optimal recurrence relation to this particular DGVertex.
         The concrete class must implement this.
@@ -293,7 +301,7 @@ namespace libint2 {
     /** equiv(const DGVertex* aVertex) returns true if this vertex is
         equivalent to *aVertex.
     */
-    virtual bool equiv(const DGVertex*) const =0;
+    virtual bool equiv(const SafePtr<DGVertex>&) const =0;
 
     /** print(std::ostream&) prints out comment-style info vertex
     */
@@ -304,13 +312,13 @@ namespace libint2 {
     /// tag() tags the vertex and returns the total number of tags this vertex has received
     const unsigned int tag();
     /// Returns pointer to vertex to be computed before this vertex, 0 if this is the first vertex
-    DGVertex* precalc() const { return precalc_; };
+    SafePtr<DGVertex> precalc() const { return precalc_; };
     /// Returns pointer to vertex to be computed after this vertex, 0 if this is the last vertex
-    DGVertex* postcalc() const { return postcalc_; };
+    SafePtr<DGVertex> postcalc() const { return postcalc_; };
     /// Sets precalc
-    void set_precalc(DGVertex* precalc) { precalc_ = precalc; };
+    void set_precalc(const SafePtr<DGVertex>& precalc) { precalc_ = precalc; };
     /// Sets postcalc
-    void set_postcalc(DGVertex* postcalc) { postcalc_ = postcalc; };
+    void set_postcalc(const SafePtr<DGVertex>& postcalc) { postcalc_ = postcalc; };
 
     /// Resets the vertex, releasing all arcs
     void reset();
@@ -328,8 +336,10 @@ namespace libint2 {
     };
 
   /** OperSet is the base class for all (sets of) operators.
-    */
-  class OperSet {
+     OperSet's must be constructable using
+     SafePtr<BFSet> or SafePtr<ConstructablePolymorphically>.
+  */
+  class OperSet : public ConstructablePolymorphically {
     public:
       virtual ~OperSet() {};
 
@@ -346,11 +356,12 @@ namespace libint2 {
       virtual const unsigned int num_oper() const =0;
     };
   
-
+  /**
+  */
   template <class Props>
     class Oper : public OperSet {
     public:
-      typedef Props Properties;      
+      typedef Props Properties;
       virtual ~Oper();
 
       /// Returns full description of the operator
@@ -402,7 +413,9 @@ namespace libint2 {
     const unsigned int num_oper() const { return 1; };
   
     TwoERep();
-    TwoERep(const OperSet*);
+    TwoERep(const SafePtr<TwoERep>&);
+    TwoERep(const SafePtr<OperSet>&);
+    TwoERep(const SafePtr<ConstructablePolymorphically>&);
     ~TwoERep();
 
     /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
@@ -668,30 +681,32 @@ namespace libint2 {
    */
   template <template <class> class ERI, class BFSet, int part, FunctionPosition where>
     class VRR_11_TwoPRep_11 : public RecurrenceRelation {
+    public:
+      typedef ERI<BFSet> TargetType;
+      typedef ERI<BFSet> ChildType;
+      
+      VRR_11_TwoPRep_11(const SafePtr<TargetType>&);
+      ~VRR_11_TwoPRep_11();
+      
+      const unsigned int num_children() const { return num_actual_children_; };
+      /// target() returns points to the i-th child
+      SafePtr<TargetType> target() { return target_; };
+      /// child(i) returns points i-th child
+      SafePtr<ChildType> child(unsigned int i);
+      
+      const std::string cpp_function_name() {};
+      const std::string cpp_source_name() {};
+      const std::string cpp_header_name() {};
+      std::ostream& cpp_source(std::ostream&) {};
+      
+    private:
 
-    static const unsigned int nchild_ = 5;
+      static const unsigned int nchild_ = 5;
 
-    ERI<BFSet>* target_;
-    ERI<BFSet>* children_[nchild_];
+      SafePtr<TargetType> target_;
+      SafePtr<ChildType> children_[nchild_];
 
-    unsigned int num_actual_children_;
-
-  public:
-    VRR_11_TwoPRep_11(ERI<BFSet>*);
-    ~VRR_11_TwoPRep_11();
-
-    typedef ERI<BFSet> TargetType;
-
-    const unsigned int num_children() const { return num_actual_children_; };
-    /// target() returns points to the i-th child
-    ERI<BFSet>* target() { return target_; };
-    /// child(i) returns points i-th child
-    ERI<BFSet>* child(unsigned int i);
-
-    const std::string cpp_function_name() {};
-    const std::string cpp_source_name() {};
-    const std::string cpp_header_name() {};
-    std::ostream& cpp_source(std::ostream&) {};
+      unsigned int num_actual_children_;
 
   };
 
@@ -712,32 +727,33 @@ namespace libint2 {
     FunctionPosition loc_b, unsigned int pos_b>
     class HRR : public RecurrenceRelation {
 
-    static const unsigned int nchild_ = 2;
+    public:
+      typedef I<BFSet> TargetType;
+      typedef I<BFSet> ChildType;
 
-    I<BFSet>* target_;
-    I<BFSet>* children_[nchild_];
+      HRR(const SafePtr<TargetType>&);
+      ~HRR();
 
-    unsigned int num_actual_children_;
+      const unsigned int num_children() const { return num_actual_children_; };
+      /// target() returns points to the i-th child
+      SafePtr<TargetType> target() { return target_; };
+      /// child(i) returns points i-th child
+      SafePtr<ChildType> child(unsigned int i);
+      
+      const std::string cpp_function_name() {};
+      const std::string cpp_source_name() {};
+      const std::string cpp_header_name() {};
+      std::ostream& cpp_source(std::ostream&) {};
+      
+    private:
+      static const unsigned int nchild_ = 2;
 
-    void oper_checks() const;
-
-  public:
-    HRR(I<BFSet>*);
-    ~HRR();
-
-    typedef I<BFSet> TargetType;
-
-    const unsigned int num_children() const { return num_actual_children_; };
-    /// target() returns points to the i-th child
-    I<BFSet>* target() { return target_; };
-    /// child(i) returns points i-th child
-    I<BFSet>* child(unsigned int i);
-
-    const std::string cpp_function_name() {};
-    const std::string cpp_source_name() {};
-    const std::string cpp_header_name() {};
-    std::ostream& cpp_source(std::ostream&) {};
-
+      SafePtr<TargetType> target_;
+      SafePtr<ChildType> children_[nchild_];
+      
+      unsigned int num_actual_children_;
+      
+      void oper_checks() const;
   };
 
 

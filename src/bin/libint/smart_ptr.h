@@ -9,6 +9,7 @@ using namespace boost;
 // For now I'll do a cheat since templated typedefs are not standard
 // Should probably at least derive SafePtr from shared_ptr
 #define SafePtr shared_ptr
+#define WeakPtr weak_ptr
 
 
 #endif

@@ -1,15 +1,14 @@
 
-
-
-#ifndef _libint2_src_bin_libint_dg_h_
-#define _libint2_src_bin_libint_dg_h_
-
 #include <iostream>
 #include <string>
 #include <vector>
 #include <stdexcept>
 #include <assert.h>
+#include <smart_ptr.h>
 #include <rr.h>
+
+#ifndef _libint2_src_bin_libint_dg_h_
+#define _libint2_src_bin_libint_dg_h_
 
 using namespace std;
 
@@ -40,30 +39,30 @@ namespace libint2 {
 
   class DirectedGraph {
 
-    vector<DGVertex*> stack_;
+    vector< SafePtr<DGVertex> > stack_;
 
     static const unsigned int default_size_ = 100;
     unsigned int first_free_;
 
     // adds a vertex to the graph
-    void add_vertex(DGVertex*);
+    void add_vertex(const SafePtr<DGVertex>&);
     /** This function is used to implement (recursive) append_target().
         vertex is appended to the graph and then RR is applied to is.
      */
-    template <class I, class RR> void recurse(I* vertex);
+    template <class I, class RR> void recurse(const SafePtr<I>& vertex);
     /** This function is used to implement (recursive) apply_to_all().
         RR is applied to vertex and all its children.
      */
-    template <class RR> void recurse(DGVertex* vertex);
+    template <class RR> void recurse(const SafePtr<DGVertex>& vertex);
 
     // Which vertex is the first to compute
-    DGVertex* first_to_compute_;
+    SafePtr<DGVertex> first_to_compute_;
     // prepare_to_traverse must be called before actual traversal
     void prepare_to_traverse();
     // traverse_from(arc) build recurively the traversal order
-    void traverse_from(DGArc*);
+    void traverse_from(const SafePtr<DGArc>&);
     // schedule_computation(vertex) puts vertex first in the computation order
-    void schedule_computation(DGVertex*);
+    void schedule_computation(const SafePtr<DGVertex>&);
 
   public:
     /** This constructor doesn't do much. Actual initialization of the graph
@@ -73,7 +72,7 @@ namespace libint2 {
 
     /** non-template append_target appends the vertex to the graph as a target
     */
-    void append_target(DGVertex*);
+    void append_target(const SafePtr<DGVertex>&);
 
     /** append_target appends I to the graph as a target vertex and applies
         RR to it. append_target can be called multiple times on the same
@@ -87,7 +86,7 @@ namespace libint2 {
         standard Bjarne Stroustrup's approach.
 
     */
-    template <class I, class RR> void append_target(I*);
+    template <class I, class RR> void append_target(const SafePtr<I>&);
 
     /** apply_to_all applies RR to all vertices already on the graph.
 
@@ -117,7 +116,7 @@ namespace libint2 {
   /// Apply RR to target
   template <class I, class RR>
     void
-    DirectedGraph::append_target(I* target)
+    DirectedGraph::append_target(const SafePtr<I>& target)
     {
       target->make_a_target();
       recurse<I,RR>(target);
@@ -126,7 +125,7 @@ namespace libint2 {
   /// Apply RR to target
   template <class I, class RR>
     void
-    DirectedGraph::recurse(I* vertex)
+    DirectedGraph::recurse(const SafePtr<I>& vertex)
     {
       try {
         add_vertex(vertex);
@@ -135,16 +134,19 @@ namespace libint2 {
         return;
       }
       
-      RR* rr0 = new RR(vertex);
+      SafePtr<RR> rr0(new RR(vertex));
       const int num_children = rr0->num_children();
       
       for(int c=0; c<num_children; c++) {
         
-        DGVertex* child = rr0->child(c);
-        DGArc* arc = new DGArcRel<RR>(vertex,child,rr0);
+        SafePtr<DGVertex> child = rr0->child(c);
+        SafePtr<DGArc> arc(new DGArcRel<RR>(vertex,child,rr0));
         vertex->add_exit_arc(arc);
         
-        recurse<I,RR>(static_cast<I*>(child));
+	SafePtr<I> child_cast = dynamic_pointer_cast<I,DGVertex>(child);
+	if (child_cast == 0)
+	  throw std::runtime_error("DirectedGraph::recurse(const SafePtr<I>& vertex) -- dynamic cast failed, most probably this is a logic error!");
+        recurse<I,RR>(child_cast);
         
       }
     };
@@ -152,7 +154,7 @@ namespace libint2 {
   /// Apply RR recursively starting with vertex
   template <class RR>
     void
-    DirectedGraph::recurse(DGVertex* vertex)
+    DirectedGraph::recurse(const SafePtr<DGVertex>& vertex)
     {
       try {
         add_vertex(vertex);
@@ -162,17 +164,17 @@ namespace libint2 {
       }
       
       typedef typename RR::TargetType TT;
-      TT* tptr = dynamic_cast< TT* >(vertex);
+      SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(vertex);
       if (tptr == 0)
         return;
       
-      RR* rr0 = new RR(tptr);
+      SafePtr<RR> rr0(new RR(tptr));
       const int num_children = rr0->num_children();
       
       for(int c=0; c<num_children; c++) {
         
-        DGVertex* child = rr0->child(c);
-        DGArc* arc = new DGArcRel<RR>(vertex,child,rr0);
+        SafePtr<DGVertex> child = rr0->child(c);
+        SafePtr<DGArc> arc(new DGArcRel<RR>(vertex,child,rr0));
         vertex->add_exit_arc(arc);
         
         recurse<RR>(child);
@@ -189,17 +191,17 @@ namespace libint2 {
       for(int v=0; v<first_free_; v++) {
         if (stack_[v]->num_exit_arcs() != 0)
           continue;
-        TT* tptr = dynamic_cast< TT* >(stack_[v]);
+        SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(stack_[v]);
         if (tptr == 0)
           continue;
       
-        RR* rr0 = new RR(tptr);
+        SafePtr<RR> rr0(new RR(tptr));
         const int num_children = rr0->num_children();
       
         for(int c=0; c<num_children; c++) {
         
-          DGVertex* child = rr0->child(c);
-          DGArc* arc = new DGArcRel<RR>(tptr,child,rr0);
+          SafePtr<DGVertex> child = rr0->child(c);
+          SafePtr<DGArc> arc(new DGArcRel<RR>(tptr,child,rr0));
           tptr->add_exit_arc(arc);
         
           recurse<RR>(child);

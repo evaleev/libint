@@ -54,32 +54,17 @@ int try_main (int argc, char* argv[])
   sh_34[0].push_back(sh_p);
   sh_34[1].push_back(sh_p);
 
-  TwoERep_2b2k<CGShell>* sq1 = TwoERep_2b2k<CGShell>::Instance(sh_12,sh_34, 0);
-  sq1->print();
-  VRR_c_ERI_2b2k_shell vrr1(sq1);
-
-  // Create a DAG for a VRR case
-  DirectedGraph dg_vrr_xxxx;
-
-  dg_vrr_xxxx.append_target(sq1);
-  dg_vrr_xxxx.apply_to_all< HRR_ab_ERI_2b2k_shell >();
-  dg_vrr_xxxx.apply_to_all< HRR_cd_ERI_2b2k_shell >();
-  dg_vrr_xxxx.apply_to_all< VRR_a_ERI_2b2k_shell >();
-  dg_vrr_xxxx.apply_to_all< VRR_c_ERI_2b2k_shell >();
-
-  dg_vrr_xxxx.traverse();
-  dg_vrr_xxxx.debug_print_traversal(cout);
-
   test_typelists();
   
   typedef TwoPRep_11_11<CGShell> TwoPRep_sh_11_11;
-  TwoPRep_sh_11_11* pppp_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
+  SafePtr<TwoPRep_sh_11_11> pppp_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
   pppp_quartet->print(cout);
 
   // Create a DAG for a HRR+VRR case
   DirectedGraph dg_xxxx;
 
-  dg_xxxx.append_target(pppp_quartet);
+  SafePtr<DGVertex> pppp_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(pppp_quartet);
+  dg_xxxx.append_target(pppp_ptr);
   dg_xxxx.apply_to_all< HRR_ab_11_TwoPRep_11_sh >();
   dg_xxxx.apply_to_all< HRR_cd_11_TwoPRep_11_sh >();
   dg_xxxx.apply_to_all< VRR_a_11_TwoPRep_11_sh >();
@@ -92,20 +77,21 @@ int try_main (int argc, char* argv[])
   dg_xxxx.reset();
 
   // test iterators
-  SubIteratorBase<CGShell> siter1(&sh_i);
+  SafePtr<CGShell> sh_ptr(new CGShell(sh_i));
+  SubIteratorBase<CGShell> siter1(sh_ptr);
   for(siter1.init(); siter1; ++siter1)
     siter1.elem()->print(cout);
 
   SafePtr<TwoPRep_sh_11_11> obj(pppp_quartet);
   obj->print(cout);
-  SubIteratorBase< TwoPRep_sh_11_11 > siter2(obj.get());
+  SubIteratorBase< TwoPRep_sh_11_11 > siter2(obj);
   for(siter2.init(); siter2; ++siter2)
     siter2.elem()->print(cout);
 
   // Create a DAG for a shell-quartet-to-ints case
   DirectedGraph dg_xxxx2;
 
-  dg_xxxx2.append_target(pppp_quartet);
+  dg_xxxx2.append_target(pppp_ptr);
   dg_xxxx2.apply_to_all< IntegralSet_to_Integrals<TwoPRep_sh_11_11 > >();
 
   dg_xxxx2.traverse();

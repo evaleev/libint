@@ -22,6 +22,32 @@ CGF::CGF(const CGF& source)
     qn_[i] = source.qn_[i];
 }
 
+CGF::CGF(const SafePtr<CGF>& source)
+{
+  for(int i=0; i<3; i++)
+    qn_[i] = source->qn_[i];
+}
+
+CGF::CGF(const SafePtr<BFSet>& sptr)
+{
+  const SafePtr<CGF> sptr_cast = dynamic_pointer_cast<CGF,BFSet>(sptr);
+  if (sptr_cast == 0)
+    throw std::runtime_error("CGF::CGF(const SafePtr<BFSet>& sptr) -- type of sptr is incompatible with CGF");
+
+  for(int i=0; i<3; i++)
+    qn_[i] = sptr_cast->qn_[i];
+}
+
+CGF::CGF(const SafePtr<ConstructablePolymorphically>& sptr)
+{
+  const SafePtr<CGF> sptr_cast = dynamic_pointer_cast<CGF,ConstructablePolymorphically>(sptr);
+  if (sptr_cast == 0)
+    throw std::runtime_error("CGF::CGF(const SafePtr<ConstructablePolymorphically>& sptr) -- type of sptr is incompatible with CGF");
+
+  for(int i=0; i<3; i++)
+    qn_[i] = sptr_cast->qn_[i];
+}
+
 CGF::CGF(const BFSet* sptr)
 {
   const CGF* sptr_cast = dynamic_cast<const CGF*>(sptr);
@@ -96,6 +122,32 @@ CGShell::CGShell(const CGShell& source)
 {
   for(int i=0; i<1; i++)
     qn_[i] = source.qn_[i];
+}
+
+CGShell::CGShell(const SafePtr<CGShell>& source)
+{
+  for(int i=0; i<1; i++)
+    qn_[i] = source->qn_[i];
+}
+
+CGShell::CGShell(const SafePtr<BFSet>& sptr)
+{
+  const SafePtr<CGShell> sptr_cast = dynamic_pointer_cast<CGShell,BFSet>(sptr);
+  if (sptr_cast == 0)
+    throw std::runtime_error("CGShell::CGShell(const SafePtr<BFSet>& sptr) -- type of sptr is incompatible with CGShell");
+
+  for(int i=0; i<1; i++)
+    qn_[i] = sptr_cast->qn_[i];
+}
+
+CGShell::CGShell(const SafePtr<ConstructablePolymorphically>& sptr)
+{
+  const SafePtr<CGShell> sptr_cast = dynamic_pointer_cast<CGShell,ConstructablePolymorphically>(sptr);
+  if (sptr_cast == 0)
+    throw std::runtime_error("CGShell::CGShell(const SafePtr<ConstructablePolymorphically>& sptr) -- type of sptr is incompatible with CGShell");
+
+  for(int i=0; i<1; i++)
+    qn_[i] = sptr_cast->qn_[i];
 }
 
 CGShell::CGShell(const BFSet* sptr)

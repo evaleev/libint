@@ -16,7 +16,7 @@ using namespace std;
 namespace libint2 {
 
   template <template <class> class ERI, class F, int part, FunctionPosition where>
-    VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(ERI<F>* Tint) :
+    VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr<ERI<F> >& Tint) :
     target_(Tint)
     {
       target_ = Tint;
@@ -36,8 +36,6 @@ namespace libint2 {
       ket.push_back(sh_d);
 
       // Zero out children pointers
-      for(int i=0; i<nchild_; i++)
-        children_[i] = 0;
       num_actual_children_ = 0;
 
       // Use indirection to choose bra or ket
@@ -96,7 +94,7 @@ namespace libint2 {
     };
 
   template <template <class> class ERI, class F, int part, FunctionPosition where>
-    ERI<F>*
+    SafePtr< ERI<F> >
     VRR_11_TwoPRep_11<ERI,F,part,where>::child(unsigned int i)
     {
       assert(i>=0 && i<num_actual_children_);

@@ -18,7 +18,7 @@ namespace libint2 {
   template <template <class> class I, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(I<F>* Tint) :
+    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(const SafePtr<TargetType>& Tint) :
     target_(Tint)
     {
       target_ = Tint;
@@ -30,8 +30,6 @@ namespace libint2 {
       IKetType* ket = new IKetType(Tint->ket());
 
       // Zero out children pointers
-      for(int i=0; i<nchild_; i++)
-        children_[i] = 0;
       num_actual_children_ = 0;
 
       //
@@ -127,14 +125,14 @@ namespace libint2 {
   template <template <class> class I, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
-    I<F>*
+    SafePtr<typename HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::ChildType>
     HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::child(unsigned int i)
     {
       assert(i>=0 && i<num_actual_children_);
 
       unsigned int nc=0;
       for(int c=0; c<nchild_; c++) {
-        if (children_[c] != 0) {
+        if (children_[c]) {
           if (nc == i)
             return children_[c];
           nc++;

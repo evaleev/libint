@@ -25,14 +25,14 @@ namespace libint2 {
     typedef I TargetType;
     typedef typename I::iter_type ChildType;
 
-    IntegralSet_to_Integrals(I*);
+    IntegralSet_to_Integrals(const SafePtr<I>&);
     ~IntegralSet_to_Integrals() {};
 
     const unsigned int num_children() const { return num_actual_children_; };
     /// target() returns points to the i-th child
-    TargetType* target() { return target_; };
+    SafePtr<TargetType> target() { return target_; };
     /// child(i) returns points i-th child
-    ChildType* child(unsigned int i);
+    SafePtr<ChildType> child(unsigned int i);
 
     const std::string cpp_function_name() {};
     const std::string cpp_source_name() {};
@@ -41,15 +41,15 @@ namespace libint2 {
 
   private:
 
-    TargetType* target_;
-    ChildType** children_;
+    SafePtr<TargetType> target_;
+    vector< SafePtr<ChildType> > children_;
 
     unsigned int num_actual_children_;
   };
   
   
   template <class I>
-    IntegralSet_to_Integrals<I>::IntegralSet_to_Integrals(I* Tint) :
+    IntegralSet_to_Integrals<I>::IntegralSet_to_Integrals(const SafePtr<I>& Tint) :
     target_(Tint)
     {
       target_ = Tint;
@@ -65,19 +65,17 @@ namespace libint2 {
       num_actual_children_ = siter.num_iter();
       
       // Set children pointers
-      children_ = new ChildType*[num_actual_children_];
-      int i=0;
-      for(siter.init(); siter; ++siter, ++i)
-        children_[i] = const_cast<ChildType*>(siter.elem());
+      for(siter.init(); siter; ++siter)
+        children_.push_back(siter.elem());
     };
 
   template <class I>
-    typename I::iter_type*
+    SafePtr<typename I::iter_type>
     IntegralSet_to_Integrals<I>::child(unsigned int i)
-  {
+    {
       assert(i>=0 && i<num_actual_children_);
-      return children_[i];
-  };
+      return children_.at(i);
+    };
   
 
 };

@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <smart_ptr.h>
 #include <integral.h>
 #include <iter.h>
 
@@ -32,7 +33,7 @@ namespace libint2 {
   
   template <>
   void
-  StdLibintPolicy<CGShell>::init_subobj(const CGShell* cgshell, vector<const CGF*>& cgfs)
+  StdLibintPolicy<CGShell>::init_subobj(const SafePtr<CGShell>& cgshell, vector< SafePtr<CGF> >& cgfs)
   {
     unsigned int am = cgshell->qn();
     unsigned int qn[3];
@@ -42,18 +43,16 @@ namespace libint2 {
         qn[1] = i - j;
         qn[2] = j;
 
-        cgfs.push_back(new CGF(qn));
+	SafePtr<CGF> cgf_ptr(new CGF(qn)); 
+        cgfs.push_back(cgf_ptr);
       }
     }
   }
 
   template <>
   void
-  StdLibintPolicy<CGShell>::dealloc_subobj(vector<const CGF*>& subobj)
+  StdLibintPolicy<CGShell>::dealloc_subobj(vector< SafePtr<CGF> >& subobj)
   {
-    int nelem = subobj.size();
-    for(int i=0; i<nelem; i++)
-      subobj[i]->~CGF();
   }
 
   /** StdLibintPolicy<GenIntegralSet> describes how integral sets are composed
@@ -73,7 +72,7 @@ namespace libint2 {
       typedef typename obj_type::iter_type subobj_type;
       static const unsigned int np = Oper::Properties::np;
 
-      static void init_subobj(const obj_type* obj, vector<const subobj_type*>& subobj) {
+      static void init_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj) {
         
         vector< SubIterator* > siters_inord; // subiterators used to iterate over each set (in the above order)
         vector< vector< SubIterator* > > bra_siters; // subiterators for bra basis function sets (outer vector runs over particle index)
@@ -82,7 +81,7 @@ namespace libint2 {
         ket_siters.resize(np);
 
         // Obtain subiterators in order
-        SubIteratorBase< Oper > oper_siter(&obj->oper());
+        SubIteratorBase< Oper > oper_siter(obj->oper());
         siters_inord.push_back(&oper_siter);
         int num_suboper = oper_siter.num_iter();
         for(int o=0; o<num_suboper; o++) {
@@ -132,8 +131,8 @@ namespace libint2 {
           }
 
           // construct this subobj
-          subobj_type* curr_subobj = subobj_type::Instance(oper,bra,ket);
-          subobj.push_back(curr_subobj);
+	  SafePtr<subobj_type> curr_subobj_sptr = subobj_type::Instance(oper,bra,ket);
+          subobj.push_back(curr_subobj_sptr);
 
           // update subiterators to refer to the next element
           for(int it=niters-1; it>=0; it--) {
@@ -155,7 +154,7 @@ namespace libint2 {
       }
 
       // Nothing is done here because GenIntegralSet objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(vector<const subobj_type*>& subobj) {
+      static void dealloc_subobj(vector< SafePtr<subobj_type> >& subobj) {
       }
     };
   
@@ -170,22 +169,22 @@ namespace libint2 {
       typedef typename obj_type::iter_type subobj_type;
       typedef SubIteratorBase< typename TwoPRep_11_11<BFS>::parent_type > parent_siter;
 
-      static void init_subobj(const obj_type* obj, vector<const subobj_type*>& subobj) {
+      static void init_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj) {
 
         const unsigned int m = obj->m();
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
         for(gis_siter.init(); gis_siter; ++gis_siter) {
-          const typename TwoPRep_11_11<BFS>::parent_type::iter_type* curr_gis_ptr = gis_siter.elem();
-          const typename TwoPRep_11_11<BFS>::iter_type* curr_subobj = TwoPRep_11_11<BFS>::iter_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), m);
+          const SafePtr<typename TwoPRep_11_11<BFS>::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
+          const SafePtr<typename TwoPRep_11_11<BFS>::iter_type> curr_subobj = TwoPRep_11_11<BFS>::iter_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), m);
           subobj.push_back(curr_subobj);
 
         }
       }
 
       // Nothing is done here because TwoPRep_11_11 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(vector<const TwoPRep_11_11<typename BFS::iter_type>*>& subobj) {
+      static void dealloc_subobj(vector< SafePtr< TwoPRep_11_11<typename BFS::iter_type> > >& subobj) {
       }
     };
   
