@@ -16,6 +16,12 @@ CGF::CGF(const CGF& source)
     qn_[i] = source.qn_[i];
 }
 
+CGF::CGF(const CGF* sptr)
+{
+  for(int i=0; i<3; i++)
+    qn_[i] = sptr->qn_[i];
+}
+
 CGF::~CGF()
 {
 }
@@ -56,6 +62,12 @@ CGShell::CGShell(const CGShell& source)
 {
   for(int i=0; i<1; i++)
     qn_[i] = source.qn_[i];
+}
+
+CGShell::CGShell(const CGShell* sptr)
+{
+  for(int i=0; i<1; i++)
+    qn_[i] = sptr->qn_[i];
 }
 
 CGShell::~CGShell()

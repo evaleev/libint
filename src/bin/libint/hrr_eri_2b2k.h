@@ -14,8 +14,8 @@ using namespace std;
 
 namespace libint2 {
 
-  template <class F, int part>
-    HRR_ERI_2b2k<F,part>::HRR_ERI_2b2k(TwoERep_2b2k<F>* Tint) :
+  template <template <class> class I, class F, int part>
+    HRR_ERI_2b2k<I,F,part>::HRR_ERI_2b2k(I<F>* Tint) :
     target_(Tint)
     {
       target_ = Tint;
@@ -50,24 +50,24 @@ namespace libint2 {
       catch (InvalidDecrement) {
         return;
       }
-      children_[1] = TwoERep_2b2k<F>::Instance(bra,ket,m);
+      children_[1] = I<F>::Instance(bra,ket,m);
       bra[p_a][0].inc();
-      children_[0] = TwoERep_2b2k<F>::Instance(bra,ket,m);
+      children_[0] = I<F>::Instance(bra,ket,m);
       num_actual_children_ += 2;
 
     };
 
-  template <class F, int part>
-    HRR_ERI_2b2k<F,part>::~HRR_ERI_2b2k()
+  template <template <class> class I, class F, int part>
+    HRR_ERI_2b2k<I,F,part>::~HRR_ERI_2b2k()
     {
       if (part < 0 || part >= 2) {
         assert(false);
       }
     };
 
-  template <class F, int part>
-    TwoERep_2b2k<F>*
-    HRR_ERI_2b2k<F,part>::child(unsigned int i)
+  template <template <class> class I, class F, int part>
+    I<F>*
+    HRR_ERI_2b2k<I,F,part>::child(unsigned int i)
     {
       assert(i>=0 && i<num_actual_children_);
 
@@ -81,8 +81,8 @@ namespace libint2 {
       }
     };
 
-  typedef HRR_ERI_2b2k<CGShell,0> HRR_ab_ERI_2b2k_shell;
-  typedef HRR_ERI_2b2k<CGShell,1> HRR_cd_ERI_2b2k_shell;
+  typedef HRR_ERI_2b2k<TwoERep_2b2k,CGShell,0> HRR_ab_ERI_2b2k_shell;
+  typedef HRR_ERI_2b2k<TwoERep_2b2k,CGShell,1> HRR_cd_ERI_2b2k_shell;
 
 
 };

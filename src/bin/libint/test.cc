@@ -77,7 +77,23 @@ int try_main (int argc, char* argv[])
   xx_2.inc();
 
   typedef TwoERep_11_11<CGShell> TwoERep_sh_11_11;
-  TwoERep_sh_11_11* dsdp_quartet = TwoERep_sh_11_11::Instance(sh_d,sh_s,sh_d,sh_p,3);
-  dsdp_quartet->print(cout);
+  TwoERep_sh_11_11* pppp_quartet = TwoERep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
+  pppp_quartet->print(cout);
+
+
+  // Create a DAG for a VRR case
+  DirectedGraph dg_xxxx;
+
+  dg_xxxx.append_target(pppp_quartet);
+  dg_xxxx.apply_to_all< HRR_ab_11_TwoPRep_11_sh >();
+  dg_xxxx.apply_to_all< HRR_cd_11_TwoPRep_11_sh >();
+  dg_xxxx.apply_to_all< VRR_a_11_TwoPRep_11_sh >();
+  dg_xxxx.apply_to_all< VRR_c_11_TwoPRep_11_sh >();
+
+  dg_xxxx.traverse();
+  dg_xxxx.debug_print_traversal(cout);
+
+
+
 }
 

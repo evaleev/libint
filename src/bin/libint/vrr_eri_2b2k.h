@@ -14,8 +14,8 @@ using namespace std;
 
 namespace libint2 {
 
-  template <class F, int part, bool use_bra>
-    VRR_ERI_2b2k<F,part,use_bra>::VRR_ERI_2b2k(TwoERep_2b2k<F>* Tint) :
+  template <template <class> class ERI, class F, int part, bool use_bra>
+    VRR_ERI_2b2k<ERI,F,part,use_bra>::VRR_ERI_2b2k(ERI<F>* Tint) :
     target_(Tint)
     {
       target_ = Tint;
@@ -58,8 +58,8 @@ namespace libint2 {
       catch (InvalidDecrement) {
         return;
       }
-      children_[0] = TwoERep_2b2k<F>::Instance(bra,ket,m);
-      children_[1] = TwoERep_2b2k<F>::Instance(bra,ket,m+1);
+      children_[0] = ERI<F>::Instance(bra,ket,m);
+      children_[1] = ERI<F>::Instance(bra,ket,m+1);
       num_actual_children_ += 2;
       // See if a-2 exists
       bool a_minus_2_exists = true;
@@ -70,8 +70,8 @@ namespace libint2 {
         a_minus_2_exists = false;
       }
       if (a_minus_2_exists) {
-        children_[2] = TwoERep_2b2k<F>::Instance(bra,ket,m);
-        children_[3] = TwoERep_2b2k<F>::Instance(bra,ket,m+1);
+        children_[2] = ERI<F>::Instance(bra,ket,m);
+        children_[3] = ERI<F>::Instance(bra,ket,m+1);
         braket[p_a][0].inc();
         num_actual_children_ += 2;
       }
@@ -82,22 +82,22 @@ namespace libint2 {
       catch (InvalidDecrement) {
         return;
       }
-      children_[4] = TwoERep_2b2k<F>::Instance(bra,ket,m+1);
+      children_[4] = ERI<F>::Instance(bra,ket,m+1);
       num_actual_children_ += 1;
 
     };
 
-  template <class F, int part, bool use_bra>
-    VRR_ERI_2b2k<F,part,use_bra>::~VRR_ERI_2b2k()
+  template <template <class> class ERI, class F, int part, bool use_bra>
+    VRR_ERI_2b2k<ERI,F,part,use_bra>::~VRR_ERI_2b2k()
     {
       if (part < 0 || part >= 2) {
         assert(false);
       }
     };
 
-  template <class F, int part, bool use_bra>
-    TwoERep_2b2k<F>*
-    VRR_ERI_2b2k<F,part,use_bra>::child(unsigned int i)
+  template <template <class> class ERI, class F, int part, bool use_bra>
+    ERI<F>*
+    VRR_ERI_2b2k<ERI,F,part,use_bra>::child(unsigned int i)
     {
       assert(i>=0 && i<num_actual_children_);
 
@@ -111,10 +111,10 @@ namespace libint2 {
       }
     };
 
-  typedef VRR_ERI_2b2k<CGShell,0,true> VRR_a_ERI_2b2k_shell;
-  typedef VRR_ERI_2b2k<CGShell,1,true> VRR_c_ERI_2b2k_shell;
-  typedef VRR_ERI_2b2k<CGShell,0,false> VRR_b_ERI_2b2k_shell;
-  typedef VRR_ERI_2b2k<CGShell,1,false> VRR_d_ERI_2b2k_shell;
+  typedef VRR_ERI_2b2k<TwoERep_2b2k,CGShell,0,true> VRR_a_ERI_2b2k_shell;
+  typedef VRR_ERI_2b2k<TwoERep_2b2k,CGShell,1,true> VRR_c_ERI_2b2k_shell;
+  typedef VRR_ERI_2b2k<TwoERep_2b2k,CGShell,0,false> VRR_b_ERI_2b2k_shell;
+  typedef VRR_ERI_2b2k<TwoERep_2b2k,CGShell,1,false> VRR_d_ERI_2b2k_shell;
 
 
 };

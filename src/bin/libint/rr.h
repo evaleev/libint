@@ -125,6 +125,7 @@ namespace libint2 {
   public:
     CGF(unsigned int qn[3]);
     CGF(const CGF&);
+    CGF(const CGF*);
     ~CGF();
 
     /// Return a compact label
@@ -147,6 +148,7 @@ namespace libint2 {
     CGShell();
     CGShell(unsigned int qn[1]);
     CGShell(const CGShell&);
+    CGShell(const CGShell*);
     ~CGShell();
     CGShell& operator=(const CGShell&);
 
@@ -527,28 +529,29 @@ namespace libint2 {
 
   /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
       the angular momentum is raised. bool bra specifies whether the angular momentum
-      is raised in bra (true) or ket (false).
+      is raised in bra (true) or ket (false). Class ERI specifies which particular implementation
+      of ERI to use.
    */
-  template <class BFSet, int part, bool bra> class VRR_ERI_2b2k : public RecurrenceRelation {
+  template <template <class> class ERI, class BFSet, int part, bool bra> class VRR_ERI_2b2k : public RecurrenceRelation {
 
     static const unsigned int nchild_ = 5;
 
-    TwoERep_2b2k<BFSet>* target_;
-    TwoERep_2b2k<BFSet>* children_[nchild_];
+    ERI<BFSet>* target_;
+    ERI<BFSet>* children_[nchild_];
 
     unsigned int num_actual_children_;
 
   public:
-    VRR_ERI_2b2k(TwoERep_2b2k<BFSet>*);
+    VRR_ERI_2b2k(ERI<BFSet>*);
     ~VRR_ERI_2b2k();
 
-    typedef TwoERep_2b2k<BFSet> TargetType;
+    typedef ERI<BFSet> TargetType;
 
     const unsigned int num_children() const { return num_actual_children_; };
     /// target() returns points to the i-th child
-    TwoERep_2b2k<BFSet>* target() { return target_; };
+    ERI<BFSet>* target() { return target_; };
     /// child(i) returns points i-th child
-    TwoERep_2b2k<BFSet>* child(unsigned int i);
+    ERI<BFSet>* child(unsigned int i);
 
     const std::string cpp_function_name() {};
     const std::string cpp_source_name() {};
@@ -557,29 +560,93 @@ namespace libint2 {
 
   };
 
-  /** HRR Recurrence Relation for 2-e ERI. part specifies for which particle
+  /** A generic HRR Recurrence Relation. Int is the integral class. part specifies for which particle
       the angular momentum is shifted.
    */
-  template <class BFSet, int part> class HRR_ERI_2b2k : public RecurrenceRelation {
+  template <template <class> class I, class BFSet, int part> class HRR_ERI_2b2k : public RecurrenceRelation {
 
     static const unsigned int nchild_ = 2;
 
-    TwoERep_2b2k<BFSet>* target_;
-    TwoERep_2b2k<BFSet>* children_[nchild_];
+    I<BFSet>* target_;
+    I<BFSet>* children_[nchild_];
 
     unsigned int num_actual_children_;
 
   public:
-    HRR_ERI_2b2k(TwoERep_2b2k<BFSet>*);
+    HRR_ERI_2b2k(I<BFSet>*);
     ~HRR_ERI_2b2k();
 
-    typedef TwoERep_2b2k<BFSet> TargetType;
+    typedef I<BFSet> TargetType;
 
     const unsigned int num_children() const { return num_actual_children_; };
     /// target() returns points to the i-th child
-    TwoERep_2b2k<BFSet>* target() { return target_; };
+    I<BFSet>* target() { return target_; };
     /// child(i) returns points i-th child
-    TwoERep_2b2k<BFSet>* child(unsigned int i);
+    I<BFSet>* child(unsigned int i);
+
+    const std::string cpp_function_name() {};
+    const std::string cpp_source_name() {};
+    const std::string cpp_header_name() {};
+    std::ostream& cpp_source(std::ostream&) {};
+
+  };
+
+  /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
+      the angular momentum is raised. bool bra specifies whether the angular momentum
+      is raised in bra (true) or ket (false). Class ERI specifies which particular implementation
+      of ERI to use.
+   */
+  template <template <class> class ERI, class BFSet, int part, bool bra> class VRR_11_TwoPRep_11 : public RecurrenceRelation {
+
+    static const unsigned int nchild_ = 5;
+
+    ERI<BFSet>* target_;
+    ERI<BFSet>* children_[nchild_];
+
+    unsigned int num_actual_children_;
+
+  public:
+    VRR_11_TwoPRep_11(ERI<BFSet>*);
+    ~VRR_11_TwoPRep_11();
+
+    typedef ERI<BFSet> TargetType;
+
+    const unsigned int num_children() const { return num_actual_children_; };
+    /// target() returns points to the i-th child
+    ERI<BFSet>* target() { return target_; };
+    /// child(i) returns points i-th child
+    ERI<BFSet>* child(unsigned int i);
+
+    const std::string cpp_function_name() {};
+    const std::string cpp_source_name() {};
+    const std::string cpp_header_name() {};
+    std::ostream& cpp_source(std::ostream&) {};
+
+  };
+
+  /** A generic HRR Recurrence Relation. Int is the integral class. part specifies for which particle
+      the angular momentum is shifted.
+   */
+  template <template <class> class I, class BFSet, int part> class HRR : public RecurrenceRelation {
+
+    static const unsigned int nchild_ = 2;
+
+    I<BFSet>* target_;
+    I<BFSet>* children_[nchild_];
+
+    unsigned int num_actual_children_;
+
+  public:
+    HRR(I<BFSet>*);
+    ~HRR();
+
+    typedef I<BFSet> TargetType;
+
+    const unsigned int num_children() const { return num_actual_children_; };
+    /// target() returns points to the i-th child
+    I<BFSet>* target() { return target_; };
+    /// child(i) returns points i-th child
+    I<BFSet>* child(unsigned int i);
 
     const std::string cpp_function_name() {};
     const std::string cpp_source_name() {};
@@ -593,6 +660,8 @@ namespace libint2 {
 
 #include <vrr_eri_2b2k.h>
 #include <hrr_eri_2b2k.h>
+#include <vrr_11_twoprep_11.h>
+#include <hrr.h>
 
 #endif
 

@@ -1,4 +1,6 @@
 
+#include <typelist.h>
+
 #ifndef _libint2_src_bin_libint_integral_h_
 #define _libint2_src_bin_libint_integral_h_
 
@@ -134,7 +136,7 @@ namespace libint2 {
   };
 
   /**
-     GenIntegralSet uses functions derived from BFSet
+     GenIntegralSet uses functions derived from BFS
   */
   template <class Oper, class BFS, class BraSetType, class KetSetType> class GenIntegralSet :
     public IntegralSet<BFS>
@@ -295,6 +297,7 @@ namespace libint2 {
      has one bfs for each particle in bra and ket
   */
   template <class BFS> class TwoERep_11_11 :
+    /// Note that GenIntegralSet is initialized with an abstract type libint2::BFSet
     public GenIntegralSet<TwoERep, BFS, VectorBraket<BFS>, VectorBraket<BFS> >,
     public DGVertex
     {
