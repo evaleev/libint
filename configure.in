@@ -443,10 +443,10 @@ esac
 dnl -- special architecture options --
 
 if test "X$COPTIONS_OPT" = X; then
-  AC_MSG_WARN([C optimization options are not given! For optimum performance use --with-cc-opt configure option])
+  AC_MSG_WARN([C optimization options are not given! For optimum performance use --with-cc-optflags configure option])
 fi
 if test "X$CXXOPTIONS_OPT" = X; then
-  AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxx-opt configure option])
+  AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxx-optflags configure option])
 fi
 
 dnl ----------- check for GNU libc++-v3 prerelease bug ---------------
