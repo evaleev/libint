@@ -5,7 +5,7 @@ endif
 
 include $(TOPDIR)/Makedirlist
 
-SUBDIRS = progman
+SUBDIRS = progman classdoc
 
 default::
 	for dir in $(SUBDIRS); \
