@@ -59,13 +59,14 @@ esac
 
 EXCLUDED_DIRS=
 
-INCLUDE_DERIV=yes
+INCLUDE_DERIV=no
 AC_ARG_ENABLE(deriv,
 [  --enable-deriv          Compile with 1st- and 2nd-order derivative ERI support],
 [
 case $enableval in
   yes)
-    INCLUDE_DERIV=yes
+dnl    INCLUDE_DERIV=yes
+    AC_MSG_ERROR([Do not yet support --enable-deriv])
   ;;
   no)
     INCLUDE_DERIV=no
@@ -75,7 +76,7 @@ case $enableval in
   ;;
 esac
 ],[
-    INCLUDE_DERIV=yes
+    INCLUDE_DERIV=no
 ]
 )
 if test $INCLUDE_DERIV = yes; then
@@ -84,13 +85,14 @@ else
   EXCLUDED_DIRS="-x SRC_BIN_LIBDERIV $EXCLUDED_DIRS"
 fi
 
-INCLUDE_R12=yes
+INCLUDE_R12=no
 AC_ARG_ENABLE(r12,
 [  --enable-r12            Compile with linear R12 methods integrals support],
 [
 case $enableval in
   yes)
-    INCLUDE_R12=yes
+dnl    INCLUDE_R12=yes
+    AC_MSG_ERROR([Do not yet support --enable-r12])
   ;;
   no)
     INCLUDE_R12=no
@@ -100,7 +102,7 @@ case $enableval in
   ;;
 esac
 ],[
-    INCLUDE_R12=yes
+    INCLUDE_R12=no
 ]
 )
 if test $INCLUDE_R12 = yes; then
@@ -446,10 +448,10 @@ esac
 dnl -- special architecture options --
 
 if test "X$COPTIONS_OPT" = X; then
-  AC_MSG_WARN([C optimization options are not given! For optimum performance use --with-cc-opt configure option])
+  AC_MSG_WARN([C optimization options are not given! For optimum performance use --with-cc-optflags configure option])
 fi
 if test "X$CXXOPTIONS_OPT" = X; then
-  AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxx-opt configure option])
+  AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxx-optflags configure option])
 fi
 
 dnl ----------- check for GNU libc++-v3 prerelease bug ---------------
@@ -578,5 +580,5 @@ dnl make Makefiles in object tree
 $PERL $srcdir/bin/objectdir.pl $EXCLUDED_DIRS $srcdir
 
 AC_OUTPUT(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/MakeSuffixRules
-          doc/MakeVars doc/MakeRules doc/MakeSuffixRules)
+          doc/MakeVars doc/MakeRules doc/MakeSuffixRules doc/classdoc/doxygen.cfg)
 
