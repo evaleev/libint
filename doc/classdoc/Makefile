@@ -16,3 +16,7 @@ html/index.html: doxygen.cfg
 else
 default:
 endif
+
+clean:
+	-rm -rf html
+
