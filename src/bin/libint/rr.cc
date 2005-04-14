@@ -1,6 +1,4 @@
 
-#include <stdexcept>
-
 #include <rr.h>
 
 using namespace libint2;

@@ -785,7 +785,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   def << context->std_function_header();
 
   context->reset();
-  allocate_mem(memman);
+  allocate_mem(memman,0);
   assign_symbols(context);
   print_def(context,def);
   def << context->close_block() << endl;
@@ -956,11 +956,11 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
           }
 
           // Type declaration
-          os << context->declare(context->type_name<double>(),
-                                 current_vertex->symbol());
+          /*os << context->declare(context->type_name<double>(),
+                                 current_vertex->symbol());*/
           // expression
-	  SafePtr<DGVertex> left_arg = oper_ptr->exit_arc(0)->dest();
-	  SafePtr<DGVertex> right_arg = oper_ptr->exit_arc(1)->dest();
+          SafePtr<DGVertex> left_arg = oper_ptr->exit_arc(0)->dest();
+          SafePtr<DGVertex> right_arg = oper_ptr->exit_arc(1)->dest();
           os << context->assign_binary_expr(current_vertex->symbol(),left_arg->symbol(),oper_ptr->label(),right_arg->symbol());
 
           nflops++;

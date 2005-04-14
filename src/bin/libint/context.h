@@ -36,14 +36,14 @@ namespace libint2 {
         to variable 'name'
     */
     virtual std::string assign(const std::string& name,
-                               const std::string& value) const =0;
+                               const std::string& value) =0;
     /** assign_binary_expr returns a statement which assigns binary
         expression 'left oper right' to variable 'name'
     */
     virtual std::string assign_binary_expr(const std::string& name,
                                            const std::string& left,
                                            const std::string& oper,
-                                           const std::string& right) const =0;
+                                           const std::string& right) =0;
     /// converts an address on the stack to its string representation
     virtual std::string stack_address(const DGVertex::Address& a) const =0;
 
@@ -117,12 +117,12 @@ namespace libint2 {
                         const std::string& name) const;
     /// Implementation of CodeContext::assign()
     std::string assign(const std::string& name,
-                       const std::string& value) const;
+                       const std::string& value);
     /// Implementation of CodeContext::assign_binary_expr()
     std::string assign_binary_expr(const std::string& name,
                                    const std::string& left,
                                    const std::string& oper,
-                                   const std::string& right) const;
+                                   const std::string& right);
     /// Implementation of CodeContext::stack_address()
     std::string stack_address(const DGVertex::Address& a) const;
 
@@ -144,6 +144,8 @@ namespace libint2 {
     std::string unique_fp_name();
     /// Implementation of CodeContext::unique_int_name()
     std::string unique_int_name();
+    ///
+    std::string symbol_to_pointer(const std::string& symbol);
 
     std::string void_type() const;
     std::string int_type() const;

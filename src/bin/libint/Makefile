@@ -1,14 +1,12 @@
 
-#CXXFLAGS += -I. -pg -g -O2 -I/home/tool/evaleev/src/lib/boost
-CXXFLAGS += -g -I. -I/home/tool/evaleev/src/lib/boost
-#CXXFLAGS += -O2 -I. -I/home/tool/evaleev/src/lib/boost
-#CXXFLAGS += -I. -g -I/Users/evaleev/Development/General/src/lib/boost_1_32_0
+#CXXFLAGS += -I. -g -I/home/tool/evaleev/src/lib/boost
+CXXFLAGS += -I. -g -I/Users/evaleev/Development/General/src/lib/boost_1_32_0
 
 RANLIB = ranlib
 OBJSUF = o
 
-LIBCXXSRC = rr.cc dg.cc gauss.cc oper.cc integral.cc iter.cc policy.cc \
-strategy.cc policy_spec.cc flop.cc prefactors.cc context.cc memory.cc
+LIBCXXSRC = default_params.cc rr.cc dg.cc gauss.cc oper.cc integral.cc iter.cc \
+policy.cc strategy.cc policy_spec.cc flop.cc prefactors.cc context.cc memory.cc
 LIBCXXOBJ = $(LIBCXXSRC:%.cc=%.$(OBJSUF))
 LIBOBJ = $(LIBCXXOBJ)
 LIBTARGET = libINT.a

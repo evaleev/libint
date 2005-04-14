@@ -1,6 +1,7 @@
 
 #include <smart_ptr.h>
-#include <rr.h>
+#include <dgvertex.h>
+#include <oper.h>
 #include <typelist.h>
 #include <iter.h>
 #include <policy_spec.h>

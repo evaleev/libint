@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <exception.h>
 #include <smart_ptr.h>
-#include <rr.h>
+#include <dgvertex.h>
 #include <context.h>
 #include <memory.h>
 

@@ -173,15 +173,32 @@ CppCodeContext::declare(const std::string& type,
 
 std::string
 CppCodeContext::assign(const std::string& name,
-                       const std::string& value) const
+                       const std::string& value)
 {
   ostringstream oss;
   
-  oss << start_expr();
   if (vectorize_) {
-    oss << "(&(" << name << "))[v] = (&(" << value << "))[v]";
+    std::string symb0 = unique_fp_name();
+    std::string symb1 = unique_fp_name();
+    std::string ptr0 = symbol_to_pointer(name);
+    std::string ptr1 = symbol_to_pointer(value);
+    bool symb1_is_a_const = (ptr1.length() == 0);
+    oss << "REALTYPE* " << symb0 << " = "
+    << symbol_to_pointer(name) << end_of_stat() << endl;
+    oss << "__assume_aligned(" << symb0 << ", 16)" << end_of_stat() << endl;
+    if (!symb1_is_a_const) {
+      oss << "REALTYPE* " << symb1 << " = "
+      <<  symbol_to_pointer(value) << end_of_stat() << endl;
+      oss << "__assume_aligned(" << symb1 << ", 16)" << end_of_stat() << endl;
+    }
+    
+    oss << start_expr();
+    oss << symb0 << "[v] = "
+    << (symb1_is_a_const ? value : symb1)
+    << (symb1_is_a_const ? " " : "[v] ");
   }
   else {
+    oss << start_expr();
     oss << name << " = " << value;
   }
   oss << end_of_stat() << endl;
@@ -194,16 +211,43 @@ std::string
 CppCodeContext::assign_binary_expr(const std::string& name,
                                    const std::string& left,
                                    const std::string& oper,
-                                   const std::string& right) const
+                                   const std::string& right)
 {
   ostringstream oss;
   
-  oss << start_expr();
   if (vectorize_) {
-    oss << "(&(" << name << "))[v] = (&(" << left << "))[v] "
-        << oper << " (&(" << right << "))[v]";
+    std::string symb0 = unique_fp_name();
+    std::string symb1 = unique_fp_name();
+    std::string symb2 = unique_fp_name();
+    std::string ptr0 = symbol_to_pointer(name);
+    std::string ptr1 = symbol_to_pointer(left);
+    std::string ptr2 = symbol_to_pointer(right);
+    bool symb1_is_a_const = (ptr1.length() == 0);
+    bool symb2_is_a_const = (ptr2.length() == 0);
+    oss << "REALTYPE* " << symb0 << " = "
+    << symbol_to_pointer(name) << end_of_stat() << endl;
+    oss << "__assume_aligned(" << symb0 << ", 16)" << end_of_stat() << endl;
+    if (!symb1_is_a_const) {
+      oss << "REALTYPE* " << symb1 << " = "
+      <<  symbol_to_pointer(left) << end_of_stat() << endl;
+      oss << "__assume_aligned(" << symb1 << ", 16)" << end_of_stat() << endl;
+    }
+    if (!symb2_is_a_const) {
+      oss << "REALTYPE* " << symb2 << " = "
+      << symbol_to_pointer(right) << end_of_stat() << endl;
+      oss << "__assume_aligned(" << symb2 << ", 16)" << end_of_stat() << endl;
+    }
+    
+    oss << start_expr();
+    oss << symb0 << "[v] = "
+    << (symb1_is_a_const ? left : symb1)
+    << (symb1_is_a_const ? " " : "[v] ")
+    << oper << " "
+    << (symb2_is_a_const ? right : symb2)
+    << (symb2_is_a_const ? "" : "[v]");
   }
   else {
+    oss << start_expr();
     oss << name << " = " << left << " "
         << oper << " " << right;
   }
@@ -211,6 +255,26 @@ CppCodeContext::assign_binary_expr(const std::string& name,
   oss << end_expr();
 
   return oss.str();
+}
+
+std::string
+CppCodeContext::symbol_to_pointer(const std::string& symbol)
+{
+  std::string::size_type loc = symbol.find("stack");
+  // if this quantity is on stack then the symbol is a scalar
+  if (loc != std::string::npos) {
+    ostringstream oss;
+    oss << "(&(" << symbol << "))";
+    return oss.str();
+  }
+  
+  // if this quantity is a part of Libint_t then the symbol is a vector
+  // otherwise it's a constant
+  loc = symbol.find("libint");
+  if (loc != std::string::npos)
+    return symbol;
+  else
+    return "";
 }
 
 std::string

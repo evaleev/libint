@@ -1,5 +1,8 @@
 
-#include <rr.h>
+#include <bfset.h>
+#include <stdexcept>
+#include <exception.h>
+#include <default_params.h>
 
 using namespace std;
 using namespace libint2;
@@ -214,3 +217,4 @@ CGShell::print(std::ostream& os) const
 {
   os << "CGShell: am = " << qn_[0] << endl;
 }
+
