@@ -68,9 +68,10 @@ namespace libint2 {
     */
     virtual bool equiv(const SafePtr<DGVertex>&) const =0;
     
-    /** precomputed() returns whether this DGVertex is precomputed
+    /** precomputed() returns whether this DGVertex is precomputed. See
+    precomputed_this() for description.
     */
-    virtual bool precomputed() const =0;
+    bool precomputed() const;
 
     /** Returns the amount of memory (in floating-point words) to be allocated for the vertex.
       */
@@ -137,6 +138,15 @@ namespace libint2 {
   protected:
     /// ArcSetType is a container used to maintain entry and exit arcs
     typedef vector< SafePtr<DGArc> > ArcSetType;
+
+    /** this_precomputed() is used by precomputed() to determine whether this
+        object really is precomputed. E.g. (ss|ss) shell is considered not
+        precomputed, i.e. precomputed_this() will return false. But the (ss|ss)
+        integral is considered precomputed. Usually the shell vertex
+        will refer to the integral vertex. Thus calling precomputed() on it
+        will return true. 
+    */
+    virtual bool this_precomputed() const =0;
 
   private:
     /// label for the vertex within a graph

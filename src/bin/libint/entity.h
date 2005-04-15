@@ -95,11 +95,14 @@ namespace libint2 {
         os << "RTimeEntity: " << id();
         return os.str();
       }
-      /// Implementation of DGVertex::precomputed()
-      bool precomputed() const
+      
+      private:
+      /// Implementation of DGVertex::this_precomputed()
+      bool this_precomputed() const
       {
         return true;
       }
+
     };
 
   /**
@@ -153,14 +156,15 @@ namespace libint2 {
         os << "CTimeEntity: " << id();
         return os.str();
       }
-      /// Implementation of DGVertex::precomputed()
-      bool precomputed() const
-      {
-        return true;
-      }
 
     private:
       T value_;
+
+      /// Implementation of DGVertex::this_precomputed()
+      bool this_precomputed() const
+      {
+        return true;
+      }
 
     };
 

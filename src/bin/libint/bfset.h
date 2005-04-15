@@ -98,6 +98,7 @@ namespace libint2 {
 
     /// Default constructor creates an s-type shell
     CGShell();
+    CGShell(unsigned int qn);
     CGShell(unsigned int qn[1]);
     CGShell(const CGShell&);
     CGShell(const SafePtr<CGShell>&);

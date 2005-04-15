@@ -106,8 +106,6 @@ namespace libint2 {
       virtual std::string id() const;
       /// Specialization of DGVertex::description()
       virtual std::string description() const;
-      /// Specialization of DGVertex::precomputed()
-      virtual bool precomputed() const { return false; }
 
       /// Obtain BFsets members
       const SafePtr<BFS> bra(unsigned int p, unsigned int i) const;
@@ -136,6 +134,8 @@ namespace libint2 {
 
       /// set size to sz
       void set_size(unsigned int sz);
+      /// Specialization of DGVertex::this_precomputed()
+      virtual bool this_precomputed() const { return false; }
 
       private:
       //
@@ -521,9 +521,6 @@ namespace libint2 {
       
       unsigned int m() const { return parent_type::aux()->elem(0); };
 
-      /// Implements DGVertex::precomputed()
-      bool precomputed() const;
-      
       /// Comparison operator
       bool operator==(const this_type&) const;
       /// Specialization of GenIntegralSet::label()
@@ -535,6 +532,9 @@ namespace libint2 {
 
       // This is used to manage GenIntegralSet objects as singletons
       static SingletonManagerType singl_manager_;
+
+      /// Implements DGVertex::this_precomputed()
+      bool this_precomputed() const;
     };
 
   // I use label() to hash TwoPRep_11_11. Therefore labels must be unique!

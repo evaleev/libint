@@ -1,6 +1,6 @@
 
 #include <rr.h>
-#include <iostream.h>
+#include <iostream>
 #include <smart_ptr.h>
 
 #ifndef _libint2_src_bin_libint_dgarc_h_

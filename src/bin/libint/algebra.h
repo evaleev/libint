@@ -76,11 +76,6 @@ namespace libint2 {
            << right_->description();
         return os.str();
       }
-      /// Implements DGVertex::precomputed
-      bool precomputed() const
-      {
-        return false;
-      }
 
       /// Overloads DGVertex::del_exit_arcs()
       void del_exit_arcs()
@@ -92,6 +87,12 @@ namespace libint2 {
       OperatorType OT_;
       SafePtr<T> left_;
       SafePtr<T> right_;
+
+      /// Implements DGVertex::this_precomputed()
+      bool this_precomputed() const
+      {
+        return false;
+      }
       
     };
     

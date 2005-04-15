@@ -127,6 +127,11 @@ CGShell::CGShell()
     qn_[i] = 0;
 }
 
+CGShell::CGShell(unsigned int qn)
+{
+    qn_[0] = qn;
+}
+
 CGShell::CGShell(unsigned int qn[1])
 {
   for(int i=0; i<1; i++)

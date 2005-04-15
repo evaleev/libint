@@ -8,6 +8,7 @@
 #include <vector>
 #include <stdexcept>
 #include <assert.h>
+#include <dgvertex.h>
 #include <rr.h>
 #include <integral.h>
 #include <algebra.h>
