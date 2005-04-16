@@ -1,14 +1,15 @@
 
-#CXX = ~/bin/gfilt
-#CXXFLAGS += -I. -g -I/home/tool/evaleev/src/lib/boost
-CXXFLAGS += -I. -g -I/Users/evaleev/Development/General/src/lib/boost_1_32_0
+#BOOSTPATH = /home/tool/evaleev/src/lib/boost
+BOOSTPATH = /Users/evaleev/Development/General/src/lib/boost_1_32_0
+CXX = gfilt
+CXXFLAGS += -I. -g -I$(BOOSTPATH)
 
 RANLIB = ranlib
 OBJSUF = o
 
 LIBCXXSRC = default_params.cc rr.cc dg.cc dgvertex.cc dgarc.cc gauss.cc \
 oper.cc integral.cc iter.cc policy.cc strategy.cc policy_spec.cc flop.cc \
-prefactors.cc context.cc memory.cc
+prefactors.cc context.cc memory.cc tactic.cc
 LIBCXXOBJ = $(LIBCXXSRC:%.cc=%.$(OBJSUF))
 LIBOBJ = $(LIBCXXOBJ)
 LIBTARGET = libINT.a

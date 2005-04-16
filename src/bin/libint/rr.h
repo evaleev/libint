@@ -8,17 +8,17 @@
 #include <bfset.h>
 #include <smart_ptr.h>
 #include <polyconstr.h>
-#include <memory.h>
+#include <singl_stack.h>
 
 #ifndef _libint2_src_bin_libint_rr_h_
 #define _libint2_src_bin_libint_rr_h_
 
 using namespace std;
 
-
 namespace libint2 {
 
   class DGVertex;
+  class CodeContext;
 
   /**
      RecurrenceRelation describes all recurrence relations
@@ -52,6 +52,10 @@ namespace libint2 {
        inlined and optimized.
     */
     virtual bool is_simple() const =0;
+    /**
+       Returns true is the type of target and all children are exactly the same
+    */
+    virtual bool invariant_type() const =0;
 
     /**
       label() returns a unique, short, descriptive label of this RR
@@ -60,9 +64,13 @@ namespace libint2 {
     */
     virtual std::string label() const =0;
     
+    /// Generate code for the recurrence relation
+    void generate_code(const SafePtr<CodeContext>& context,
+                       std::ostream& decl, std::ostream& def);
+
     /// Return the number of FLOPs per this recurrence relation
     virtual unsigned int nflops() const { return 0; }
-
+    
     virtual const std::string cpp_function_name() =0;
     virtual const std::string cpp_source_name() =0;
     virtual const std::string cpp_header_name() =0;
@@ -81,6 +89,24 @@ namespace libint2 {
   typedef enum {
     BraToKet=0, KetToBra=1
   } FunctionMovement;
+  
+  /** RRStack implements a stack of RecurrenceRelation's which can only hold
+      one instance of a given RR. RecurrenceRelation::label() is used for hashing
+    */
+  class RRStack : public SingletonStack<RecurrenceRelation,std::string>
+  {
+    public:
+    typedef SingletonStack<RecurrenceRelation,std::string> parent_type;
+    typedef parent_type::data_type data_type;
+    typedef parent_type::iter_type iter_type;
+    typedef parent_type::citer_type citer_type;
+    
+    RRStack() : parent_type(&RecurrenceRelation::label) {}
+    ~RRStack() {}
+    
+    /// adds content of rrs to this stack
+    void add(const SafePtr<RRStack>& rrs);
+  };
   
 };
 

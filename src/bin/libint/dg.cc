@@ -1,5 +1,6 @@
 
 #include <dg.h>
+#include <fstream>
 #include <rr.h>
 #include <strategy.h>
 
@@ -7,7 +8,8 @@ using namespace std;
 using namespace libint2;
 
 DirectedGraph::DirectedGraph() :
-  stack_(default_size_,SafePtr<DGVertex>()), first_free_(0), first_to_compute_()
+  stack_(default_size_,SafePtr<DGVertex>()), rrstack_(new RRStack),
+  first_free_(0), first_to_compute_()
 {
 }
 
@@ -19,8 +21,14 @@ void
 DirectedGraph::append_target(const SafePtr<DGVertex>& target)
 {
   target->make_a_target();
+  append_vertex(target);
+}
+
+void
+DirectedGraph::append_vertex(const SafePtr<DGVertex>& vertex)
+{
   try {
-    add_vertex(target);
+    add_vertex(vertex);
   }
   catch (VertexAlreadyOnStack& e) {}
 }
@@ -193,7 +201,8 @@ DirectedGraph::reset()
 
 /// Apply a strategy to all vertices not yet computed (i.e. which do not have exit arcs)
 void
-DirectedGraph::apply(const SafePtr<Strategy>& strategy)
+DirectedGraph::apply(const SafePtr<Strategy>& strategy,
+                     const SafePtr<Tactic>& tactic)
 {
   const int num_vertices_on_graph = first_free_;
   for(int v=0; v<num_vertices_on_graph; v++) {
@@ -201,7 +210,7 @@ DirectedGraph::apply(const SafePtr<Strategy>& strategy)
       continue;
 
     SafePtr<DirectedGraph> this_ptr = SafePtr_from_this();
-    SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(this_ptr,stack_[v]);
+    SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(this_ptr,stack_[v],tactic);
     if (rr0 == 0)
       return;
 
@@ -216,18 +225,20 @@ DirectedGraph::apply(const SafePtr<Strategy>& strategy)
       SafePtr<DGArc> arc(new DGArcRel<RecurrenceRelation>(target,child,rr0));
       target->add_exit_arc(arc);
       if (new_vertex)
-        apply_to(child,strategy);
+        apply_to(child,strategy,tactic);
     }
   }
 }
 
 /// Add vertex to graph and apply a strategy to vertex recursively
 void
-DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>& strategy)
+DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex,
+                        const SafePtr<Strategy>& strategy,
+                        const SafePtr<Tactic>& tactic)
 {
   if (vertex->precomputed())
     return;
-  SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(SafePtr_from_this(),vertex);
+  SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(SafePtr_from_this(),vertex,tactic);
   if (rr0 == 0)
     return;
 
@@ -241,7 +252,7 @@ DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>
     SafePtr<DGArc> arc(new DGArcRel<RecurrenceRelation>(target,child,rr0));
     target->add_exit_arc(arc);
     if (new_vertex)
-      apply_to(child,strategy);
+      apply_to(child,strategy,tactic);
   }
 }
 
@@ -270,8 +281,9 @@ DirectedGraph::replace_rr_with_expr()
         continue;
       SafePtr<RecurrenceRelation> rr = arc0_cast->rr();
 
-      // Optimize if the recurrence relation is simple
-      if (rr->is_simple()) {
+      // Optimize if the recurrence relation is simple and the target and
+      // children are of the same type
+      if (rr->is_simple() && rr->invariant_type()) {
 
         unsigned int nchildren = rr->num_children();
         unsigned int nexpr = rr->num_expr();
@@ -494,10 +506,27 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
        << context->end_of_stat() << endl;
 
   //
-  // Generate function definition
+  // Generate function's definition
   //
 
+  // include standard headers
   def << context->std_header();
+  // include declarations for all fucntion calls:
+  // 1) extract all unresolved RecurrenceRelation's
+  // 2) include their headers into the current definition file
+  // 3) add them to rrstack_ so that later their code can be
+  //    generated
+  SafePtr<RRStack> rrstack(new RRStack);
+  extract_rr(rrstack);
+  for(RRStack::citer_type rrkey=rrstack->begin(); rrkey!=rrstack->end(); rrkey++) {
+    string function_name = (*rrkey).second->label();
+    def << "#include <"
+        << context->label_to_name(function_name)
+        << ".h>" << endl;
+  }
+  def << endl;
+  rrstack_->add(rrstack);
+  
   def << context->type_name<void>() << " "
   << function_name << "(Libint_t* libint)"
   << context->open_block() << endl;
@@ -753,3 +782,46 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
   }
 
 }
+
+
+void
+DirectedGraph::extract_rr(SafePtr<RRStack>& rrstack) const
+{
+  // Loop over all vertices
+  for(int i=0; i<first_free_; i++) {
+    ver_ptr v = stack_[i];
+    // for every vertex with children
+    if (v->num_exit_arcs() > 0) {
+      // if it must be computed using a RR
+      arc_ptr arc = v->exit_arc(0);
+      SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArc,DGArcRR>(arc);
+      if (arcrr != 0) {
+        SafePtr<RecurrenceRelation> rr = arcrr->rr();
+        // and the RR is complex (i.e. likely to result in a function call)
+        if (!rr->is_simple())
+          // add it to the RRStack
+          rrstack->find(rr);
+      }
+    }
+  }
+}
+
+void
+DirectedGraph::generate_rr_code(const SafePtr<CodeContext>& context,
+                                const std::string& prefix)
+{
+  for(RRStack::citer_type it = rrstack_->begin(); it!=rrstack_->end(); it++) {
+    SafePtr<RecurrenceRelation> rr = (*it).second;
+    std::string rrlabel = rr->label();
+    cout << " generating code for " << context->label_to_name(rrlabel) << endl;
+  
+    std::string decl_filename(prefix + context->label_to_name(rrlabel));  decl_filename += ".h";
+    std::string def_filename(prefix + context->label_to_name(rrlabel));  def_filename += ".cc";
+    std::basic_ofstream<char> declfile(decl_filename.c_str());
+    std::basic_ofstream<char> deffile(def_filename.c_str());
+
+    declfile.close();
+    deffile.close();
+  }
+}
+

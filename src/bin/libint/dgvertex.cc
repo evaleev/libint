@@ -7,14 +7,15 @@ using namespace libint2;
 DGVertex::DGVertex() :
   parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
   precalc_(), postcalc_(), graph_label_(), referred_vertex_(SafePtr<DGVertex>()),
-  symbol_(), address_()
+  symbol_(), address_(), need_to_compute_(true)
 {
 }
 
 DGVertex::DGVertex(const vector< SafePtr<DGArc> >& parents, const vector< SafePtr<DGArc> >& children) :
   parents_(parents), children_(children), target_(false), can_add_arcs_(true),
   num_tagged_arcs_(0), precalc_(), postcalc_(), graph_label_(),
-  referred_vertex_(SafePtr<DGVertex>()), symbol_(), address_()
+  referred_vertex_(SafePtr<DGVertex>()), symbol_(), address_(),
+  need_to_compute_(true)
 {
 }
 
@@ -211,6 +212,7 @@ DGVertex::reset()
   graph_label_ = SafePtr<std::string>();
   reset_symbol();
   address_ = SafePtr<Address>();
+  need_to_compute_ = true;
   referred_vertex_ = SafePtr<DGVertex>();
 }
 
@@ -275,6 +277,21 @@ DGVertex::set_address(const Address& address)
 {
   SafePtr<Address> ptr(new Address(address));
   address_ = ptr;
+}
+
+void
+DGVertex::need_to_compute(bool ntc)
+{
+  need_to_compute_ = ntc;
+}
+
+bool
+DGVertex::need_to_compute() const
+{
+  if (referred_vertex_)
+    return referred_vertex_->need_to_compute();
+  else
+    return need_to_compute_;
 }
 
 bool

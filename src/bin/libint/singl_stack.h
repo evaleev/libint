@@ -21,6 +21,10 @@ namespace libint2 {
       typedef HashType key_type;
       typedef SafePtr<T> data_type;
       typedef std::map<key_type,data_type> map_type;
+      /// use iter_type objects to iterate over the stack
+      typedef typename map_type::iterator iter_type;
+      /// const version of iter_type
+      typedef typename map_type::const_iterator citer_type;
       /// Specifies the type of callback which computes hashes
       typedef key_type (T::* HashCallback)() const;
 
@@ -34,6 +38,11 @@ namespace libint2 {
           otherwise pushes obj to the end of ostack_ and returns obj.
       */
       SafePtr<T> find(const SafePtr<T>& obj);
+      
+      /** Returns iterator to the beginning of the stack */
+      citer_type begin() const { return map_.begin(); }
+      /** Returns iterator to the end of the stack */
+      citer_type end() const { return map_.end(); }
 
     private:
       map_type map_;

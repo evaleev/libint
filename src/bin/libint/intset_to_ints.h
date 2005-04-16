@@ -54,6 +54,11 @@ namespace libint2 {
     SafePtr<DGVertex> rr_expr(unsigned int i) const { return SafePtr<DGVertex>(); }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const {
+      return true;
+    }
+    /// Implementation of RecurrenceRelation::invariant_type()
+    bool invariant_type() const {
+      // Converts from one BFSet to another!
       return false;
     }
     /// Implementation of RecurrenceRelation::label()

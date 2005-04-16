@@ -1,6 +1,6 @@
 
 #include <string>
-#include <rr.h>
+#include <dgvertex.h>
 
 #ifndef _libint2_src_bin_libint_entity_h_
 #define _libint2_src_bin_libint_entity_h_

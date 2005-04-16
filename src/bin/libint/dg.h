@@ -9,6 +9,8 @@
 #include <dgvertex.h>
 #include <context.h>
 #include <memory.h>
+#include <strategy.h>
+#include <tactic.h>
 
 #ifndef _libint2_src_bin_libint_dg_h_
 #define _libint2_src_bin_libint_dg_h_
@@ -23,12 +25,131 @@ namespace libint2 {
   /** DirectedGraph is an implementation of a directed graph
       composed of vertices represented by DGVertex objects. The objects
       are allocated on free store and the graph is implemented as
-      vector<DGVertex*>.
+      an object of type container.
   */
 
   class DirectedGraph : public EnableSafePtrFromThis<DirectedGraph> {
+  public:
+    typedef DGVertex vertex;
+    typedef DGArc arc;
+    typedef SafePtr<DGVertex> ver_ptr;
+    typedef SafePtr<DGArc> arc_ptr;
+    typedef vector<ver_ptr> container;
+    typedef container::iterator iter;
+    typedef container::const_iterator citer;
+  
+    /** This constructor doesn't do much. Actual initialization of the graph
+        must be done using append_target */
+    DirectedGraph();
+    ~DirectedGraph();
 
-    vector< SafePtr<DGVertex> > stack_;
+    /// Returns the number of vertices
+    const unsigned int num_vertices() const { return first_free_; }
+
+    /** appends v to the graph
+    */
+    void append_vertex(const SafePtr<DGVertex>& v);
+
+    /** non-template append_target appends the vertex to the graph as a target
+    */
+    void append_target(const SafePtr<DGVertex>&);
+
+    /** append_target appends I to the graph as a target vertex and applies
+        RR to it. append_target can be called multiple times on the same
+        graph if more than one target vertex is needed.
+
+        I must derive from DGVertex. RR must derive from RecurrenceRelation.
+        RR has a constructor which takes const I& as the only argument.
+        RR must have a public member const I* child(unsigned int) .
+
+        NOTE TO SELF : need to implement these restrictions using
+        standard Bjarne Stroustrup's approach.
+
+    */
+    template <class I, class RR> void append_target(const SafePtr<I>&);
+
+    /** apply_to_all applies RR to all vertices already on the graph.
+
+        RR must derive from RecurrenceRelation. RR must define TargetType
+        as a typedef.
+        RR must have a public member const DGVertex* child(unsigned int) .
+
+        NOTE TO SELF : need to implement these restrictions using
+        standard Bjarne Stroustrup's approach.
+
+    */
+    template <class RR> void apply_to_all();
+    
+    /** after all append_target's have been called, apply(strategy,tactic)
+      constructs a graph. strategy specifies how to apply recurrence relations.
+      The goal of strategies is to connect the target vertices to simpler, precomputable vertices.
+      There usually are many ways to reduce a vertex.
+      Tactic specifies which of these possibilities to choose.
+      */
+    void apply(const SafePtr<Strategy>& strategy,
+               const SafePtr<Tactic>& tactic);
+
+    /** after Strategy has been applied, simple recurrence relations need to be
+        optimized away. optimize_rr_out() will replace all simple recurrence relations
+        with code representing them.
+    */
+    void optimize_rr_out();
+
+    /** after all apply's have been called, traverse()
+        construct a heuristic order of traversal for the graph.
+    */
+    void traverse();
+    
+    /** extract all nonsimple RecurrenceRelations and put on RRStack stack
+    */
+    void extract_rr(SafePtr<RRStack>& rrstack) const;
+
+    /// Prints out call sequence
+    void debug_print_traversal(ostream& os) const;
+    
+    /**
+    Prints out the graph in format understood by program "dot"
+    of package "graphviz". If symbols is true then label vertices
+    using their symbols rather than (descriptive) labels.
+    */
+    void print_to_dot(bool symbols, std::ostream& os = std::cout) const;
+    
+    /**
+       Generates code for the current computation using context.
+       label specifies the tag for the computation.
+       decl specifies the stream to receive declaration code,
+       code receives the stream to receive the definition code
+    */
+    void generate_code(const SafePtr<CodeContext>& context, const SafePtr<MemoryManager>& memman,
+                       const std::string& label, std::ostream& decl, std::ostream& code);
+    
+    /**
+       Generates code for unresolved recurrence relations using context.
+       prefix is prepended to each file name.
+    */
+    void generate_rr_code(const SafePtr<CodeContext>& context,
+                          const std::string& prefix);
+
+    /** Resets the graph and all vertices. The stack of unresolved recurrence
+        relations is preserved.
+      */
+    void reset();
+
+    /** num_children_on(rr) returns the number of children of rr which
+        are already on this graph.
+    */
+    template <class RR>
+      unsigned int
+      num_children_on(const SafePtr<RR>& rr) const;
+
+  private:
+
+    /// contains vertices
+    container stack_;
+    /** collects all unresolved recurrence relations.
+        calling reset() does not flush this object.
+      */
+    SafePtr<RRStack> rrstack_;
 
     static const unsigned int default_size_ = 100;
     unsigned int first_free_;
@@ -49,9 +170,11 @@ namespace libint2 {
      */
     template <class RR> void recurse(const SafePtr<DGVertex>& vertex);
     /** This function is used to implement (recursive) apply().
-      strategy is applied to vertex and all its children.
+      strategy and tactic are applied to vertex and all its children.
     */
-    void apply_to(const SafePtr<DGVertex>& vertex, const SafePtr<Strategy>& strategy);
+    void apply_to(const SafePtr<DGVertex>& vertex,
+                  const SafePtr<Strategy>& strategy,
+                  const SafePtr<Tactic>& tactic);
     /// This function insert expr of type AlgebraicOperator<DGVertex> into the graph
     void insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr);
     /// This function replaces RecurrenceRelations with concrete arithemtical expressions
@@ -84,89 +207,6 @@ namespace libint2 {
     // Print the code using symbols generated with assign_symbols()
     void print_def(const SafePtr<CodeContext>& context, std::ostream& os);
 
-  public:
-    /** This constructor doesn't do much. Actual initialization of the graph
-        must be done using append_target */
-    DirectedGraph();
-    ~DirectedGraph();
-
-    /// Returns the number of vertices
-    const unsigned int num_vertices() const { return first_free_; }
-
-    /** non-template append_target appends the vertex to the graph as a target
-    */
-    void append_target(const SafePtr<DGVertex>&);
-
-    /** append_target appends I to the graph as a target vertex and applies
-        RR to it. append_target can be called multiple times on the same
-        graph if more than one target vertex is needed.
-
-        I must derive from DGVertex. RR must derive from RecurrenceRelation.
-        RR has a constructor which takes const I& as the only argument.
-        RR must have a public member const I* child(unsigned int) .
-
-        NOTE TO SELF : need to implement these restrictions using
-        standard Bjarne Stroustrup's approach.
-
-    */
-    template <class I, class RR> void append_target(const SafePtr<I>&);
-
-    /** apply_to_all applies RR to all vertices already on the graph.
-
-        RR must derive from RecurrenceRelation. RR must define TargetType
-        as a typedef.
-        RR must have a public member const DGVertex* child(unsigned int) .
-
-        NOTE TO SELF : need to implement these restrictions using
-        standard Bjarne Stroustrup's approach.
-
-    */
-    template <class RR> void apply_to_all();
-    
-    /** after all append_target's have been called, apply(const SafePtr<Strategy>&)
-      constructs a graph using Strategy. Strategy specifies how to apply recurrence relations.
-      The goal of strategies is to connect the target vertices to simpler, precomputable vertices.
-      */
-    void apply(const SafePtr<Strategy>&);
-
-    /** after Strategy has been applied, simple recurrence relations need to be
-        optimized away. optimize_rr_out() will replace all simple recurrence relations
-        with code representing them.
-    */
-    void optimize_rr_out();
-
-    /** after all apply's have been called, traverse()
-        construct a heuristic order of traversal for the graph.
-    */
-    void traverse();
-
-    /// Prints out call sequence
-    void debug_print_traversal(ostream& os) const;
-    
-    /**
-    Prints out the graph in format understood by program "dot"
-    of package "graphviz". If symbols is true then label vertices
-    using their symbols rather than (descriptive) labels.
-    */
-    void print_to_dot(bool symbols, std::ostream& os = std::cout) const;
-    
-    /**
-       Generates code using context. label specifies the tag for the computation.
-       decl specifies the stream to receive declaration code,
-       code receives the stream to receive the definition code
-    */
-    void generate_code(const SafePtr<CodeContext>& context, const SafePtr<MemoryManager>& memman,
-                       const std::string& label, std::ostream& decl, std::ostream& code);
-    
-    /// Resets the graph and all vertices
-    void reset();
-
-    /** num_children_on(rr) returns the number of children of rr which
-        are already on this graph.
-    */
-    template <class RR>
-      unsigned int
-      num_children_on(const SafePtr<RR>& rr) const;
   };
 
   /// Apply RR to target
@@ -265,8 +305,13 @@ namespace libint2 {
       unsigned int nchildren = rr->num_children();
       unsigned int nchildren_on_stack = 0;
       for(int c=0; c<nchildren; c++) {
-        if ( vertex_is_on(rr->rr_child(c)) )
-          nchildren_on_stack++;
+        try {
+          vertex_is_on(rr->rr_child(c));
+        }
+        catch (VertexAlreadyOnStack& a) {
+          continue;
+        }
+        nchildren_on_stack++;
       }
 
       return nchildren_on_stack;

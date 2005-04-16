@@ -117,6 +117,13 @@ namespace libint2 {
     void set_address(const Address& address);
     /// returns true if the address has been set
     bool address_set() const { return address_ != 0; }
+    /** indicates whether this vertex needs to be computed.
+        Even if this vertex is not precomputed, it may not be desired
+        to compute it. By default, all vertices need to be computed.
+      */
+    void need_to_compute(bool ntc);
+    /// returns true if this index needs to be computed.
+    bool need_to_compute() const;
     
 
     /// prepare_to_traverse() must be called before traversal of the graph starts
@@ -158,6 +165,8 @@ namespace libint2 {
     SafePtr<std::string> symbol_;
     /// Address on the stack
     SafePtr<Address> address_;
+    // Whether this vertex needs to be computed
+    bool need_to_compute_;
     
     /// We also need info about Arcs entering this DGVertex
     ArcSetType parents_;

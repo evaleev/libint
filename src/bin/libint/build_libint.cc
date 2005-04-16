@@ -94,6 +94,18 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
     shells.push_back(new CGShell(l));
   }
   
+  //
+  // Construct graphs for each desired target integral and
+  // 1) generate source code for the found traversal path
+  // 2) extract all remaining unresolved recurrence relations and
+  //    append them to the stack. Such unresolved RRs are RRs applied
+  //    to sets of integrals (rather than to individual integrals).
+  // 3) at the end, for each unresolved recurrence relation generate
+  //    explicit source code
+  //
+  SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
+  SafePtr<Strategy> strat(new Strategy(unroll_thresh));
+  SafePtr<Tactic> tactic(new FirstChoiceTactic());
   for(int la=0; la<=lmax; la++) {
     for(int lb=0; lb<=lmax; lb++) {
       for(int lc=0; lc<=lmax; lc++) {
@@ -102,13 +114,11 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
           if (la+lb+lc+ld == 0)
             continue;
           
-          SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
-          SafePtr<Strategy> strat(new Strategy(unroll_thresh));
           SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
           os << "building " << abcd->description() << endl;
           SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(abcd);
           dg_xxxx->append_target(abcd_ptr);
-          dg_xxxx->apply(strat);
+          dg_xxxx->apply(strat,tactic);
           dg_xxxx->optimize_rr_out();
           dg_xxxx->traverse();
           os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
@@ -124,10 +134,20 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
           
           os << "Max memory used = " << memman->max_memory_used() << endl;
           dg_xxxx->reset();
-        }
-      }
-    }
-  }
+          declfile.close();
+          srcfile.close();
+        } // end of d loop
+      } // end of c loop
+    } // end of b loop
+  } // end of a loop
   
+  //
+  // generate explicit code for all recurrence relation that were not inlined
+  //
+  SafePtr<CodeContext> context(new CppCodeContext());
+  std::string prefix("libint_eri/");
+  dg_xxxx->generate_rr_code(context,prefix);
+  
+  os << "Compilation finished. Goodbye." << endl;
 }
 

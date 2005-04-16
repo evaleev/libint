@@ -62,6 +62,10 @@ namespace libint2 {
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
     }
+    /// Implementation of RecurrenceRelation::invariant_type()
+    bool invariant_type() const {
+      return true;
+    }
     /// Implementation of RecurrenceRelation::label()
     std::string label() const { return label_; }
 
