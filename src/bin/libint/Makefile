@@ -3,27 +3,36 @@
 BOOSTPATH = /Users/evaleev/Development/General/src/lib/boost_1_32_0
 CXX = gfilt
 CXXFLAGS += -I. -g -I$(BOOSTPATH)
+CXXDEPEND = /usr/local/bin/g++
 
 RANLIB = ranlib
 OBJSUF = o
+DEPSUF = d
+CXXDEPENDSUF = none
+CXXDEPENDFLAGS = -M
 
 LIBCXXSRC = default_params.cc rr.cc dg.cc dgvertex.cc dgarc.cc gauss.cc \
 oper.cc integral.cc iter.cc policy.cc strategy.cc policy_spec.cc flop.cc \
-prefactors.cc context.cc memory.cc tactic.cc
+prefactors.cc context.cc memory.cc tactic.cc codeblock.cc dims.cc
 LIBCXXOBJ = $(LIBCXXSRC:%.cc=%.$(OBJSUF))
+LIBCXXDEP = $(LIBCXXSRC:%.cc=%.$(DEPSUF))
 LIBOBJ = $(LIBCXXOBJ)
 LIBTARGET = libINT.a
 
 BUILDCXXSRC = build_libint.cc
 BUILDCXXOBJ = $(BUILDCXXSRC:%.cc=%.$(OBJSUF))
+BUILDCXXDEP = $(BUILDCXXSRC:%.cc=%.$(DEPSUF))
 
 TESTCXXSRC = test.cc
 TESTCXXOBJ = $(TESTCXXSRC:%.cc=%.$(OBJSUF))
+TESTCXXDEP = $(TESTCXXSRC:%.cc=%.$(DEPSUF))
 
 default:: build_libint
 
 build_libint: $(BUILDCXXOBJ) $(LIBTARGET)
 	$(CXX) -o $@ $^
+
+depend:: $(TESTCXXDEP) $(BUILDCXXDEP) $(LIBCXXDEP)
 
 test: $(TESTCXXOBJ) $(LIBTARGET)
 	$(CXX) -o $@ $^
@@ -45,11 +54,28 @@ $(LIBTARGET): $(LIBOBJ)
 graph.dot: test
 	./$^
 
-clean:: oclean targetclean
+clean:: oclean targetclean dependclean
 
 oclean::
 	-rm -f *.$(OBJSUF)
 
 targetclean::
 	-rm -f $(LIBTARGET) test build_libint
+
+dependclean::
+	-rm -f *.$(DEPSUF)
+
+ifneq ($(CXXDEPENDSUF),none)
+%.d: %.cc
+	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
+	sed 's/^$*.o/$*.$(OBJSUF) $*.d/g' < $(*F).$(CXXDEPENDSUF) > $(@F)
+	/bin/rm -f $(*F).$(CXXDEPENDSUF)
+else
+%.d: %.cc
+	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< | sed 's/^$*.o/$*.$(OBJSUF) $*.d/g' > $(@F)
+endif
+
+-include $(LIBCXXDEP)
+-include $(BUILDCXXDEP)
+-include $(TESTCXXDEP)
         

@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <strategy.h>
 #include <dg.h>
+#include <hrr.h>
+#include <vrr_11_twoprep_11.h>
 
 using namespace std;
 using namespace libint2;

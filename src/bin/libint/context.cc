@@ -1,5 +1,6 @@
 
 #include <context.h>
+#include <codeblock.h>
 
 using namespace libint2;
 
@@ -25,6 +26,11 @@ namespace libint2 {
   std::string CodeContext::type_name<int>()
   {
     return int_type();
+  }
+  template <>
+  std::string CodeContext::type_name<const int>()
+  {
+    return const_modifier() + int_type();
   }
   template <>
   std::string CodeContext::type_name<double>()
@@ -167,6 +173,18 @@ CppCodeContext::declare(const std::string& type,
   ostringstream oss;
   
   oss << type << " " << name << end_of_stat() << endl;
+
+  return oss.str();
+}
+
+std::string
+CppCodeContext::decldef(const std::string& type,
+                        const std::string& name,
+                        const std::string& value)
+{
+  ostringstream oss;
+  
+  oss << type << " " << assign(name,value);
 
   return oss.str();
 }
@@ -352,6 +370,13 @@ CppCodeContext::value_to_pointer(const std::string& val) const
   }
 }
 
+SafePtr<ForLoop>
+CppCodeContext::for_loop(std::string& varname, const SafePtr<Entity>& less_than,
+                         const SafePtr<Entity>& start_at) const
+{
+  //return SafePtr<ForLoop>(new ForLoop(SafePtr_from_this(), varname, less_than, start_at));
+}
+
 std::string
 CppCodeContext::unique_fp_name()
 {
@@ -382,3 +407,6 @@ CppCodeContext::fp_type() const
 }
 std::string
 CppCodeContext::ptr_fp_type() const { return "REALTYPE*"; }
+std::string
+CppCodeContext::const_modifier() const { return "const "; }
+

@@ -1,7 +1,4 @@
 
-#ifndef _libint2_src_bin_libint_hrr_h_
-#define _libint2_src_bin_libint_hrr_h_
-
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -10,6 +7,12 @@
 #include <assert.h>
 #include <rr.h>
 #include <integral.h>
+#include <algebra.h>
+#include <dgvertex.h>
+#include <prefactors.h>
+
+#ifndef _libint2_src_bin_libint_hrr_h_
+#define _libint2_src_bin_libint_hrr_h_
 
 using namespace std;
 
@@ -75,6 +78,8 @@ namespace libint2 {
     std::string label() const { return label_; }
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return nflops_; }
+    /// Implementation of RecurrenceRelation::spfunction_call()
+    void spfunction_call(const SafePtr<CodeContext>& context, std::ostream& os) const;
 
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
@@ -312,6 +317,67 @@ namespace libint2 {
       }
       
       return os.str();
+    }
+    
+  template <template <class> class I, class F, int part,
+    FunctionPosition loc_a, unsigned int pos_a,
+    FunctionPosition loc_b, unsigned int pos_b>
+    void
+    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::spfunction_call(
+    const SafePtr<CodeContext>& context, std::ostream& os) const
+    {
+      os << context->label_to_name(label())
+         // First argument is the library object
+         << "(libint, "
+         // Second is the target
+         << context->value_to_pointer(rr_target()->symbol());
+      // then come children
+      const unsigned int nchildren = num_children();
+      for(int c=0; c<nchildren; c++) {
+        os << ", " << context->value_to_pointer(rr_child(c)->symbol());
+      }
+      // then dimensions of basis function sets not involved in the transfer
+      unsigned int hsr = 1;
+      // a cleaner way to count the number of function sets referring
+      // to some particles is to construct a dummy integral and
+      // use subiterator policy
+      // WARNING !!!
+      for(int p=0; p<part; p++) {
+        unsigned int nbra = target_->bra().num_members(p);
+        for(int i=0; i<nbra; i++) {
+          SubIterator* iter = target_->bra().member_subiter(p,i);
+          hsr *= iter->num_iter();
+        }
+        unsigned int nket = target_->ket().num_members(p);
+        for(int i=0; i<nket; i++) {
+          SubIterator* iter = target_->ket().member_subiter(p,i);
+          hsr *= iter->num_iter();
+        }
+      }
+      
+      // can only do a simple bra->ket or ket->bra transfer so far
+      unsigned int isr = 1;
+      if (loc_a == loc_b && pos_a != 0 && pos_b != 0)
+        throw CodeDoesNotExist("HRR::spfunction_call -- has not been generalized yet");
+      
+      /// WARNING !!!
+      unsigned int lsr = 1;
+      unsigned int np = I<F>::OperType::Properties::np;
+      for(int p=part+1; p<np; p++) {
+        unsigned int nbra = target_->bra().num_members(p);
+        for(int i=0; i<nbra; i++) {
+          SubIterator* iter = target_->bra().member_subiter(p,i);
+          lsr *= iter->num_iter();
+        }
+        unsigned int nket = target_->ket().num_members(p);
+        for(int i=0; i<nket; i++) {
+          SubIterator* iter = target_->ket().member_subiter(p,i);
+          lsr *= iter->num_iter();
+        }
+      }
+      
+      os << "," << hsr << "," << isr << "," << lsr;
+      os << ")" << context->end_of_stat() << endl;
     }
     
   typedef HRR<TwoPRep_11_11,CGShell,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_sh;

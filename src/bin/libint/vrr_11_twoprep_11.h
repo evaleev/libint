@@ -1,7 +1,4 @@
 
-#ifndef _libint2_src_bin_libint_vrr11twoprep11_h_
-#define _libint2_src_bin_libint_vrr11twoprep11_h_
-
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -14,6 +11,10 @@
 #include <algebra.h>
 #include <flop.h>
 #include <prefactors.h>
+#include <context.h>
+
+#ifndef _libint2_src_bin_libint_vrr11twoprep11_h_
+#define _libint2_src_bin_libint_vrr11twoprep11_h_
 
 using namespace std;
 
@@ -71,6 +72,8 @@ namespace libint2 {
 
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return nflops_; }
+    /// Implementation of RecurrenceRelation::spfunction_call()
+    void spfunction_call(const SafePtr<CodeContext>& context, std::ostream& os) const;
     
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
@@ -287,6 +290,23 @@ namespace libint2 {
       return os.str();
     }
     
+   template <template <class> class ERI, class F, int part, FunctionPosition where>
+    void
+    VRR_11_TwoPRep_11<ERI,F,part,where>::spfunction_call(
+    const SafePtr<CodeContext>& context, std::ostream& os) const
+    {
+      os << context->label_to_name(label())
+         // First argument is the library object
+         << "(libint, "
+         // Second is the target
+         << context->value_to_pointer(rr_target()->symbol());
+      // then come children
+      const unsigned int nchildren = num_children();
+      for(int c=0; c<nchildren; c++) {
+        os << ", " << context->value_to_pointer(rr_child(c)->symbol());
+      }
+      os << ")" << context->end_of_stat() << endl;
+    }
     
   typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
   typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,InBra> VRR_c_11_TwoPRep_11_sh;

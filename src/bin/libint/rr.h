@@ -64,6 +64,9 @@ namespace libint2 {
     */
     virtual std::string label() const =0;
     
+    /// Produce an expression which implements this RR by calling the specialized function
+    virtual void spfunction_call(const SafePtr<CodeContext>& context, std::ostream& os) const =0;
+    
     /// Generate code for the recurrence relation
     void generate_code(const SafePtr<CodeContext>& context,
                        std::ostream& decl, std::ostream& def);
@@ -110,8 +113,8 @@ namespace libint2 {
   
 };
 
-#include <vrr_11_twoprep_11.h>
-#include <hrr.h>
+//#include <vrr_11_twoprep_11.h>
+//#include <hrr.h>
 //#include <shell_to_ints.h>
 //#include <iter.h>
 

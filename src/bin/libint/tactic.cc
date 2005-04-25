@@ -49,3 +49,10 @@ ZeroNewVerticesTactic::optimal_rr(const rr_stack& stack) const {
     // Else return null pointer
   return RR();
 }
+
+NullTactic::RR
+NullTactic::optimal_rr(const rr_stack& stack) const {
+  return RR();
+}
+
+

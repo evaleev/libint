@@ -7,6 +7,7 @@
 #include <rr.h>
 #include <integral.h>
 #include <iter.h>
+#include <algebra.h>
 
 #ifndef _libint2_src_bin_libint_intsettoints_h_
 #define _libint2_src_bin_libint_intsettoints_h_
@@ -67,6 +68,10 @@ namespace libint2 {
     }
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return 0; }
+    /// Implementation of RecurrenceRelation::spfunction_call()
+    void spfunction_call(const SafePtr<CodeContext>& context, std::ostream& os) const {
+      throw logic_error("IntegralSet_to_Integrals::spfunction_call -- should not call this function");
+    }
 
     const std::string cpp_function_name() {};
     const std::string cpp_source_name() {};

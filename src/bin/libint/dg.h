@@ -11,6 +11,7 @@
 #include <memory.h>
 #include <strategy.h>
 #include <tactic.h>
+#include <dims.h>
 
 #ifndef _libint2_src_bin_libint_dg_h_
 #define _libint2_src_bin_libint_dg_h_
@@ -88,6 +89,12 @@ namespace libint2 {
       */
     void apply(const SafePtr<Strategy>& strategy,
                const SafePtr<Tactic>& tactic);
+    
+    typedef void (DGVertex::* DGVertexMethodPtr)();
+    /** apply_at<method>(vertex) calls method() on vertex and all of its descendants
+      */
+    template <DGVertexMethodPtr method>
+      void apply_at(const SafePtr<DGVertex>& vertex) const;
 
     /** after Strategy has been applied, simple recurrence relations need to be
         optimized away. optimize_rr_out() will replace all simple recurrence relations
@@ -121,7 +128,8 @@ namespace libint2 {
        code receives the stream to receive the definition code
     */
     void generate_code(const SafePtr<CodeContext>& context, const SafePtr<MemoryManager>& memman,
-                       const std::string& label, std::ostream& decl, std::ostream& code);
+                       const std::string& label, std::ostream& decl, std::ostream& code,
+                       const SafePtr<ImplicitDimensions>& dims = SafePtr<ImplicitDimensions>(new ImplicitDimensions(1,1)));
     
     /**
        Generates code for unresolved recurrence relations using context.
@@ -201,11 +209,14 @@ namespace libint2 {
     void schedule_computation(const SafePtr<DGVertex>&);
 
     // Compute addresses on stack assuming that quantities larger than min_size_to_alloc to be allocated on stack
-    void allocate_mem(const SafePtr<MemoryManager>& memman, unsigned int min_size_to_alloc = 1);
+    void allocate_mem(const SafePtr<MemoryManager>& memman,
+                      const SafePtr<ImplicitDimensions>& dims,
+                      unsigned int min_size_to_alloc = 1);
     // Assign symbols to the vertices
     void assign_symbols(const SafePtr<CodeContext>& context);
     // Print the code using symbols generated with assign_symbols()
-    void print_def(const SafePtr<CodeContext>& context, std::ostream& os);
+    void print_def(const SafePtr<CodeContext>& context, std::ostream& os,
+                   const SafePtr<ImplicitDimensions>& dims);
 
   };
 
@@ -316,7 +327,17 @@ namespace libint2 {
 
       return nchildren_on_stack;
     }
-
+    
+  template <DirectedGraph::DGVertexMethodPtr method>
+    void
+    DirectedGraph::apply_at(const SafePtr<DGVertex>& vertex) const
+    {
+      ((vertex.get())->*method)();
+      const unsigned int nchildren = vertex->num_exit_arcs();
+      for(int c=0; c<nchildren; c++)
+        apply_at<method>(vertex->exit_arc(c)->dest());
+    }
+    
 };
 
 

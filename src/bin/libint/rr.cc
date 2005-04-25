@@ -29,10 +29,35 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   dg->append_target(rr_target());
   for(int c=0; c<num_children(); c++)
     dg->append_vertex(rr_child(c));
+  cout << "RecurrenceRelation::generate_code -- the number of integral sets = " << dg->num_vertices() << endl;
   // Always need to unroll integral sets
   SafePtr<Strategy> strat(new Strategy(1000000000));
+  SafePtr<Tactic> ntactic(new NullTactic);
+  dg->apply(strat,ntactic);
+  cout << "RecurrenceRelation::generate_code -- the number of integral sets + integrals = " << dg->num_vertices() << endl;
+  // Mark children sets and their descendants to not compute
+  for(int c=0; c<num_children(); c++)
+    dg->apply_at<&DGVertex::not_need_to_compute>(rr_child(c));
+  // Apply recurrence relations using existing vertices on the graph (i.e.
+  // such that no new vertices appear)
   SafePtr<Tactic> ztactic(new ZeroNewVerticesTactic(dg));
   dg->apply(strat,ztactic);
+  cout << "RecurrenceRelation::generate_code -- should be same as previous = " << dg->num_vertices() << endl;
+  // Set symbols on the target and children sets
+  rr_target()->set_symbol("target");
+  for(int c=0; c<num_children(); c++) {
+    ostringstream oss;
+    oss << "src" << c;
+    rr_child(c)->set_symbol(oss.str());
+  }
+  // Traverse the graph
+  dg->optimize_rr_out();
+  dg->traverse();
+  cout << "The number of vertices = " << dg->num_vertices() << endl;
+  // Generate code
+  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+  dg->generate_code(context,memman,label(),decl,def);
+  dg->reset();
 }
 
 ///////////////

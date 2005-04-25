@@ -498,6 +498,7 @@ namespace libint2 {
     public TwoPRep_11_11_base
     {
     public:
+      typedef TwoERep OperType;
       typedef VectorBraket<BFS> BraType;
       typedef VectorBraket<BFS> KetType;
       typedef mType AuxIndexType;

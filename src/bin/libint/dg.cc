@@ -3,6 +3,8 @@
 #include <fstream>
 #include <rr.h>
 #include <strategy.h>
+#include <prefactors.h>
+#include <codeblock.h>
 
 using namespace std;
 using namespace libint2;
@@ -15,6 +17,7 @@ DirectedGraph::DirectedGraph() :
 
 DirectedGraph::~DirectedGraph()
 {
+  reset();
 }
 
 void
@@ -206,13 +209,13 @@ DirectedGraph::apply(const SafePtr<Strategy>& strategy,
 {
   const int num_vertices_on_graph = first_free_;
   for(int v=0; v<num_vertices_on_graph; v++) {
-    if (stack_[v]->num_exit_arcs() != 0 || stack_[v]->precomputed())
+    if (stack_[v]->num_exit_arcs() != 0 || stack_[v]->precomputed() || !stack_[v]->need_to_compute())
       continue;
 
     SafePtr<DirectedGraph> this_ptr = SafePtr_from_this();
     SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(this_ptr,stack_[v],tactic);
     if (rr0 == 0)
-      return;
+      continue;
 
     // add children to the graph
     SafePtr<DGVertex> target = rr0->rr_target();
@@ -236,7 +239,7 @@ DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex,
                         const SafePtr<Strategy>& strategy,
                         const SafePtr<Tactic>& tactic)
 {
-  if (vertex->precomputed())
+  if (vertex->precomputed() || !vertex->need_to_compute())
     return;
   SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(SafePtr_from_this(),vertex,tactic);
   if (rr0 == 0)
@@ -491,7 +494,8 @@ DirectedGraph::remove_disconnected_vertices()
 void
 DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<MemoryManager>& memman,
                              const std::string& label,
-                             std::ostream& decl, std::ostream& def)
+                             std::ostream& decl, std::ostream& def,
+                             const SafePtr<ImplicitDimensions>& dims)
 {
   decl << context->std_header();
   std::string comment("This code computes "); comment += label; comment += "\n";
@@ -502,8 +506,14 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   function_name = context->label_to_name(function_name);
 
   decl << context->type_name<void>() << " "
-       << function_name << "(Libint_t* libint);"
-       << context->end_of_stat() << endl;
+       << function_name << "(Libint_t* libint";
+  if (!dims->high_is_static()) {
+    decl << ", int " << dims->high()->id();
+  }
+  if (!dims->low_is_static()) {
+    decl << ", int " << dims->low()->id();
+  }
+  decl << ");" << context->end_of_stat() << endl;
 
   //
   // Generate function's definition
@@ -533,15 +543,17 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   def << context->std_function_header();
 
   context->reset();
-  allocate_mem(memman,0);
+  allocate_mem(memman,dims,1);
   assign_symbols(context);
-  print_def(context,def);
+  print_def(context,def,dims);
   def << context->close_block() << endl;
 
 }
 
 void
-DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman, unsigned int min_size_to_alloc)
+DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
+                            const SafePtr<ImplicitDimensions>& dims,
+                            unsigned int min_size_to_alloc)
 {
   // First, reset tag counters
   for(int i=0; i<first_free_; i++)
@@ -563,7 +575,8 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman, unsigned int m
   //
   SafePtr<DGVertex> vertex = first_to_compute_;
   do {
-    if (!vertex->address_set() && !vertex->precomputed() && vertex->size() > min_size_to_alloc) {
+    if (!vertex->symbol_set() && !vertex->address_set() && !vertex->precomputed() &&
+        vertex->need_to_compute() && vertex->size() > min_size_to_alloc) {
       vertex->set_address(memman->alloc(vertex->size()));
       const unsigned int nchildren = vertex->num_exit_arcs();
       for(int c=0; c<nchildren; c++) {
@@ -612,18 +625,25 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
       continue;
     }
     else {
-      vertex->reset_symbol();
       unsigned int nchildren = vertex->num_exit_arcs();
       for(int c=0; c<nchildren; c++) {
         SafePtr<DGVertex> child = vertex->exit_arc(c)->dest();
         // If a child is precomputed -- its symbol will be set as usual
         if (!child->precomputed()) {
-          os.str(null_str);
-          os << "libint->stack[" << context->stack_address(vertex->address()+c) << "]";
-          child->set_symbol(os.str());
+          if (vertex->address_set()) {
+            os.str(null_str);
+            os << "libint->stack[" << context->stack_address(vertex->address()+c) << "]";
+            child->set_symbol(os.str());
+          }
+          else {
+            os.str(null_str);
+            os << vertex->symbol() << "[" << context->stack_address(c) << "]";
+            child->set_symbol(os.str());
+          }
         }
       }
       vertex->refer_this_to(vertex->exit_arc(0)->dest());
+      vertex->reset_symbol();
     }
   }
 
@@ -676,11 +696,16 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
 }
 
 void
-DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
+DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
+                         const SafePtr<ImplicitDimensions>& dims)
 {
   std::ostringstream oss;
   const std::string null_str("");
 
+  std::string varname("hsi");
+  SafePtr<ForLoop> hsi_loop(new ForLoop(context,varname,dims->high(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
+  os << hsi_loop->open();
+  
   unsigned int nflops = 0;
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
@@ -744,13 +769,14 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
         if (arc_ptr) {
           
           SafePtr<RecurrenceRelation> rr = arc_ptr->rr();
-          os << context->label_to_name(rr->label()) << "(libint, "
+          rr->spfunction_call(context,os);
+          /*os << context->label_to_name(rr->label()) << "(libint, "
           << context->value_to_pointer(current_vertex->symbol());
           const unsigned int nchildren = rr->num_children();
           for(int c=0; c<nchildren; c++) {
             os << ", " << context->value_to_pointer(rr->rr_child(c)->symbol());
           }
-          os << ")" << context->end_of_stat() << endl;
+          os << ")" << context->end_of_stat() << endl;*/
           
           goto next;
         }
@@ -780,6 +806,8 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os)
       ++ntargets;
     }
   }
+  
+  os << hsi_loop->close();
 
 }
 
@@ -793,8 +821,11 @@ DirectedGraph::extract_rr(SafePtr<RRStack>& rrstack) const
     // for every vertex with children
     if (v->num_exit_arcs() > 0) {
       // if it must be computed using a RR
-      arc_ptr arc = v->exit_arc(0);
-      SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArc,DGArcRR>(arc);
+      SafePtr<DGArc> arc = v->exit_arc(0);
+      //SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArc,DGArcRR>(arc);
+      using namespace boost;
+      using namespace boost::detail;
+      SafePtr<DGArcRR> arcrr = boost::shared_ptr<DGArcRR>(arc,boost::detail::dynamic_cast_tag());
       if (arcrr != 0) {
         SafePtr<RecurrenceRelation> rr = arcrr->rr();
         // and the RR is complex (i.e. likely to result in a function call)
@@ -814,12 +845,14 @@ DirectedGraph::generate_rr_code(const SafePtr<CodeContext>& context,
     SafePtr<RecurrenceRelation> rr = (*it).second;
     std::string rrlabel = rr->label();
     cout << " generating code for " << context->label_to_name(rrlabel) << endl;
-  
+    
     std::string decl_filename(prefix + context->label_to_name(rrlabel));  decl_filename += ".h";
     std::string def_filename(prefix + context->label_to_name(rrlabel));  def_filename += ".cc";
     std::basic_ofstream<char> declfile(decl_filename.c_str());
     std::basic_ofstream<char> deffile(def_filename.c_str());
-
+    
+    rr->generate_code(context,declfile,deffile);
+    
     declfile.close();
     deffile.close();
   }

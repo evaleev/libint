@@ -156,6 +156,9 @@ namespace libint2 {
         os << "CTimeEntity: " << id();
         return os.str();
       }
+      
+      /// returns the value
+      T value() const { return value_; }
 
     private:
       T value_;

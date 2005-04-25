@@ -50,7 +50,7 @@ namespace libint2 {
     SafePtr<DirectedGraph> dg_;
   };
   
-  /** NoNewVerticesTactic chooses first RR which adds no new vertices on
+  /** ZeroNewVerticesTactic chooses first RR which adds no new vertices on
       DirectedGraph dg
     */
   class ZeroNewVerticesTactic : public Tactic {
@@ -59,11 +59,22 @@ namespace libint2 {
     ~ZeroNewVerticesTactic() {}
     
     RR optimal_rr(const rr_stack& stack) const;
-
+    
     private:
     SafePtr<DirectedGraph> dg_;
   };
- 
+
+  /** NullTactic always returns null RecurrenceRelation
+    */
+  class NullTactic : public Tactic {
+    public:
+    NullTactic() : Tactic() {}
+    ~NullTactic() {}
+    
+    RR optimal_rr(const rr_stack& stack) const;
+    
+  };
+
 };
 
 #endif

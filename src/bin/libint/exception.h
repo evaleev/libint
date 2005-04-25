@@ -61,6 +61,14 @@ namespace libint2 {
       logic_error(a) {};
   };
 
+  /** This exception used to indicate that some code hasn't been
+      developed or generalized yet */
+  class CodeDoesNotExist : public std::logic_error {
+
+    public:
+    CodeDoesNotExist(const std::string& a) :
+      logic_error(a) {}
+  };
 
 };
 

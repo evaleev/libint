@@ -122,6 +122,8 @@ namespace libint2 {
         to compute it. By default, all vertices need to be computed.
       */
     void need_to_compute(bool ntc);
+    /// shortcut to need_to_compute(false)
+    void not_need_to_compute() { need_to_compute(false); }
     /// returns true if this index needs to be computed.
     bool need_to_compute() const;
     

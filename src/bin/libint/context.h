@@ -5,6 +5,8 @@
 #define _libint2_src_bin_libint_codecontext_h_
 
 namespace libint2 {
+  
+  class ForLoop;
 
   /**
      CodeContext provides context for generating code
@@ -32,6 +34,12 @@ namespace libint2 {
     */
     virtual std::string declare(const std::string& type,
                                 const std::string& name) const =0;
+    /** decldef returns a statement which declares variable named 'name' of
+        type 'type' and defines its value to be 'value'
+    */
+    virtual std::string decldef(const std::string& type,
+                                const std::string& name,
+                                const std::string& value) =0;
     /** assign returns a statement which assigns variable 'value'
         to variable 'name'
     */
@@ -57,6 +65,11 @@ namespace libint2 {
     virtual std::string end_of_stat() const =0;
     /// converts a value to a pointer
     virtual std::string value_to_pointer(const std::string& val) const =0;
+    
+    /** returns a ForLoop object.
+      */
+    virtual SafePtr<ForLoop> for_loop(std::string& varname, const SafePtr<Entity>& less_than,
+                                      const SafePtr<Entity>& start_at = SafePtr<Entity>(new CTimeEntity<int>("0",0))) const =0;
 
     /// unique_name<T> returns a unique name for a variable of type T
     template <typename T>
@@ -89,6 +102,8 @@ namespace libint2 {
     virtual std::string fp_type() const =0;
     /// returns name of pointer to floating-point type
     virtual std::string ptr_fp_type() const =0;
+    /// returns the modifier for constant variables
+    virtual std::string const_modifier() const =0;
 
   private:
     unsigned int next_index_[EntityTypes::ntypes];
@@ -101,7 +116,7 @@ namespace libint2 {
   /**
      CppCodeContext is an implementation of CodeContext for C++
   */
-  class CppCodeContext : public CodeContext {
+  class CppCodeContext : public CodeContext, public EnableSafePtrFromThis<CppCodeContext> {
   public:
     CppCodeContext(bool vectorize = false);
     ~CppCodeContext();
@@ -115,6 +130,10 @@ namespace libint2 {
     /// Implementation of CodeContext::declare()
     std::string declare(const std::string& type,
                         const std::string& name) const;
+    // Implementation of CodeContext::decldef()
+    std::string decldef(const std::string& type,
+                        const std::string& name,
+                        const std::string& value);
     /// Implementation of CodeContext::assign()
     std::string assign(const std::string& name,
                        const std::string& value);
@@ -136,6 +155,10 @@ namespace libint2 {
     std::string end_of_stat() const;
     /// Implementation of CodeContext::value_to_pointer()
     std::string value_to_pointer(const std::string& val) const;
+    /// Implementation of CodeContext::for_loop()
+    SafePtr<ForLoop> for_loop(std::string& varname, const SafePtr<Entity>& less_than,
+                              const SafePtr<Entity>& start_at) const;
+
 
   private:
     bool vectorize_;
@@ -151,6 +174,7 @@ namespace libint2 {
     std::string int_type() const;
     std::string fp_type() const;
     std::string ptr_fp_type() const;
+    std::string const_modifier() const;
 
     std::string start_expr() const;
     std::string end_expr() const;
