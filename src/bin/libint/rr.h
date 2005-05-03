@@ -9,6 +9,7 @@
 #include <smart_ptr.h>
 #include <polyconstr.h>
 #include <singl_stack.h>
+#include <code.h>
 
 #ifndef _libint2_src_bin_libint_rr_h_
 #define _libint2_src_bin_libint_rr_h_
@@ -19,12 +20,13 @@ namespace libint2 {
 
   class DGVertex;
   class CodeContext;
+  class ImplicitDimensions;
+  class DirectedGraph;
 
   /**
      RecurrenceRelation describes all recurrence relations
   */
   class RecurrenceRelation {
-
   public:
     RecurrenceRelation();
     virtual ~RecurrenceRelation();
@@ -64,12 +66,14 @@ namespace libint2 {
     */
     virtual std::string label() const =0;
     
-    /// Produce an expression which implements this RR by calling the specialized function
-    virtual void spfunction_call(const SafePtr<CodeContext>& context, std::ostream& os) const =0;
+    /// Generate declaration and definition for the recurrence relation
+    virtual void generate_code(const SafePtr<CodeContext>& context,
+                               const SafePtr<ImplicitDimensions>& dims,
+                               std::ostream& decl, std::ostream& def);
     
-    /// Generate code for the recurrence relation
-    void generate_code(const SafePtr<CodeContext>& context,
-                       std::ostream& decl, std::ostream& def);
+    /// Generate a callback for this recurrence relation
+    virtual std::string spfunction_call(const SafePtr<CodeContext>& context,
+                                        const SafePtr<ImplicitDimensions>& dims) const =0;
 
     /// Return the number of FLOPs per this recurrence relation
     virtual unsigned int nflops() const { return 0; }
@@ -78,7 +82,17 @@ namespace libint2 {
     virtual const std::string cpp_source_name() =0;
     virtual const std::string cpp_header_name() =0;
     virtual std::ostream& cpp_source(std::ostream&) =0;
-
+    
+    private:
+    /** used by generate_code to create a (new) computation graph that computes sets of integrals using the RR
+    */
+    SafePtr<DirectedGraph> generate_graph_();
+    /** assigns "target" symbol to the target vertex and "src<i>" to the i-th child vertex. Also
+        appends these symbols to S. */
+    void assign_symbols_(SafePtr<CodeSymbols>& S);
+    /** given an ImplicitDimension for the computation, adapt it for this recurrence
+        relation. Default version does not do anything. */
+    virtual SafePtr<ImplicitDimensions> adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const;
   };
 
 

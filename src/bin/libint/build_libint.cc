@@ -106,6 +106,7 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy(unroll_thresh));
   SafePtr<Tactic> tactic(new FirstChoiceTactic());
+  //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
   for(int la=0; la<=lmax; la++) {
     for(int lb=0; lb<=lmax; lb++) {
       for(int lc=0; lc<=lmax; lc++) {
@@ -130,7 +131,7 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
           std::string src_filename(prefix + context->label_to_name(abcd->label()));  src_filename += ".cc";
           std::basic_ofstream<char> declfile(decl_filename.c_str());
           std::basic_ofstream<char> srcfile(src_filename.c_str());
-          dg_xxxx->generate_code(context,memman,abcd->label(),declfile,srcfile);
+          dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),abcd->label(),declfile,srcfile);
           
           os << "Max memory used = " << memman->max_memory_used() << endl;
           dg_xxxx->reset();

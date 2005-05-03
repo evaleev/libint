@@ -69,7 +69,9 @@ namespace libint2 {
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return 0; }
     /// Implementation of RecurrenceRelation::spfunction_call()
-    void spfunction_call(const SafePtr<CodeContext>& context, std::ostream& os) const {
+    std::string spfunction_call(const SafePtr<CodeContext>& context,
+                                const SafePtr<ImplicitDimensions>& dims) const
+    {
       throw logic_error("IntegralSet_to_Integrals::spfunction_call -- should not call this function");
     }
 
@@ -109,3 +111,4 @@ namespace libint2 {
 };
 
 #endif
+

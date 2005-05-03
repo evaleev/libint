@@ -12,6 +12,7 @@
 #include <flop.h>
 #include <prefactors.h>
 #include <context.h>
+#include <default_params.h>
 
 #ifndef _libint2_src_bin_libint_vrr11twoprep11_h_
 #define _libint2_src_bin_libint_vrr11twoprep11_h_
@@ -73,7 +74,8 @@ namespace libint2 {
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return nflops_; }
     /// Implementation of RecurrenceRelation::spfunction_call()
-    void spfunction_call(const SafePtr<CodeContext>& context, std::ostream& os) const;
+    std::string spfunction_call(const SafePtr<CodeContext>& context,
+                                const SafePtr<ImplicitDimensions>& dims) const;
     
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
@@ -291,11 +293,12 @@ namespace libint2 {
     }
     
    template <template <class> class ERI, class F, int part, FunctionPosition where>
-    void
+    std::string
     VRR_11_TwoPRep_11<ERI,F,part,where>::spfunction_call(
-    const SafePtr<CodeContext>& context, std::ostream& os) const
+    const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
     {
-      os << context->label_to_name(label())
+      ostringstream os;
+      os << context->label_to_name(label_to_funcname(label()))
          // First argument is the library object
          << "(libint, "
          // Second is the target
@@ -306,6 +309,7 @@ namespace libint2 {
         os << ", " << context->value_to_pointer(rr_child(c)->symbol());
       }
       os << ")" << context->end_of_stat() << endl;
+      return os.str();
     }
     
   typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;

@@ -5,6 +5,7 @@
 #include <strategy.h>
 #include <prefactors.h>
 #include <codeblock.h>
+#include <default_params.h>
 
 using namespace std;
 using namespace libint2;
@@ -493,27 +494,39 @@ DirectedGraph::remove_disconnected_vertices()
 //
 void
 DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<MemoryManager>& memman,
+                             const SafePtr<ImplicitDimensions>& dims, const SafePtr<CodeSymbols>& args,
                              const std::string& label,
-                             std::ostream& decl, std::ostream& def,
-                             const SafePtr<ImplicitDimensions>& dims)
+                             std::ostream& decl, std::ostream& def)
 {
   decl << context->std_header();
   std::string comment("This code computes "); comment += label; comment += "\n";
   if (context->comments_on())
     decl << context->comment(comment) << endl;
 
-  std::string function_name("compute");  function_name += label;
+  std::string function_name = label_to_funcname(label);
   function_name = context->label_to_name(function_name);
 
-  decl << context->type_name<void>() << " "
-       << function_name << "(Libint_t* libint";
+  std::string func_decl;
+  ostringstream oss;
+  oss << context->type_name<void>() << " "
+      << function_name << "(Libint_t* libint";
+  unsigned int nargs = args->n();
+  for(unsigned int a=0; a<nargs; a++) {
+    oss << ", " << context->type_name<double*>() << " "
+        << args->symbol(a);
+  }
   if (!dims->high_is_static()) {
-    decl << ", int " << dims->high()->id();
+    oss << ", " << context->type_name<int>() << " "
+        << dims->high()->id();
   }
   if (!dims->low_is_static()) {
-    decl << ", int " << dims->low()->id();
+    oss << ", " << context->type_name<int>() << " "
+        <<dims->low()->id();
   }
-  decl << ");" << context->end_of_stat() << endl;
+  oss << ")";
+  func_decl = oss.str();
+  
+  decl << func_decl << context->end_of_stat() << endl;
 
   //
   // Generate function's definition
@@ -537,9 +550,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   def << endl;
   rrstack_->add(rrstack);
   
-  def << context->type_name<void>() << " "
-  << function_name << "(Libint_t* libint)"
-  << context->open_block() << endl;
+  def << func_decl << context->open_block() << endl;
   def << context->std_function_header();
 
   context->reset();
@@ -706,6 +717,10 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   SafePtr<ForLoop> hsi_loop(new ForLoop(context,varname,dims->high(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
   os << hsi_loop->open();
   
+  varname = "lsi";
+  SafePtr<ForLoop> lsi_loop(new ForLoop(context,varname,dims->low(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
+  os << lsi_loop->open();
+  
   unsigned int nflops = 0;
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
@@ -769,7 +784,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
         if (arc_ptr) {
           
           SafePtr<RecurrenceRelation> rr = arc_ptr->rr();
-          rr->spfunction_call(context,os);
+          os << rr->spfunction_call(context,dims);
           /*os << context->label_to_name(rr->label()) << "(libint, "
           << context->value_to_pointer(current_vertex->symbol());
           const unsigned int nchildren = rr->num_children();
@@ -807,6 +822,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     }
   }
   
+  os << lsi_loop->close();
   os << hsi_loop->close();
 
 }
@@ -851,7 +867,7 @@ DirectedGraph::generate_rr_code(const SafePtr<CodeContext>& context,
     std::basic_ofstream<char> declfile(decl_filename.c_str());
     std::basic_ofstream<char> deffile(def_filename.c_str());
     
-    rr->generate_code(context,declfile,deffile);
+    rr->generate_code(context,ImplicitDimensions::default_dims(),declfile,deffile);
     
     declfile.close();
     deffile.close();

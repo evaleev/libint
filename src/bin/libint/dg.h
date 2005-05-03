@@ -12,6 +12,7 @@
 #include <strategy.h>
 #include <tactic.h>
 #include <dims.h>
+#include <code.h>
 
 #ifndef _libint2_src_bin_libint_dg_h_
 #define _libint2_src_bin_libint_dg_h_
@@ -123,13 +124,16 @@ namespace libint2 {
     
     /**
        Generates code for the current computation using context.
-       label specifies the tag for the computation.
+       dims specifies the implicit dimensions,
+       args specifies the code symbols for the arguments to the function,
+       label specifies the tag for the computation,
        decl specifies the stream to receive declaration code,
-       code receives the stream to receive the definition code
+       code specifies the stream to receive the definition code
     */
     void generate_code(const SafePtr<CodeContext>& context, const SafePtr<MemoryManager>& memman,
-                       const std::string& label, std::ostream& decl, std::ostream& code,
-                       const SafePtr<ImplicitDimensions>& dims = SafePtr<ImplicitDimensions>(new ImplicitDimensions(1,1)));
+                       const SafePtr<ImplicitDimensions>& dims, const SafePtr<CodeSymbols>& args,
+                       const std::string& label,
+                       std::ostream& decl, std::ostream& code);
     
     /**
        Generates code for unresolved recurrence relations using context.

@@ -2,6 +2,7 @@
 #include <rr.h>
 #include <dg.h>
 #include <strategy.h>
+#include <code.h>
 
 using namespace libint2;
 
@@ -23,7 +24,26 @@ RecurrenceRelation::~RecurrenceRelation()
 //
 void
 RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
+                                  const SafePtr<ImplicitDimensions>& dims,
                                   std::ostream& decl, std::ostream& def)
+{
+  SafePtr<DirectedGraph> dg = generate_graph_();
+  // Assign symbols for the target and source integral sets
+  SafePtr<CodeSymbols> symbols(new CodeSymbols);
+  assign_symbols_(symbols);
+  // Traverse the graph
+  dg->optimize_rr_out();
+  dg->traverse();
+  cout << "The number of vertices = " << dg->num_vertices() << endl;
+  // Generate code
+  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+  SafePtr<ImplicitDimensions> localdims = adapt_dims_(dims);
+  dg->generate_code(context,memman,localdims,symbols,label(),decl,def);
+  dg->reset();
+}
+
+SafePtr<DirectedGraph>
+RecurrenceRelation::generate_graph_()
 {
   SafePtr<DirectedGraph> dg(new DirectedGraph);
   dg->append_target(rr_target());
@@ -43,21 +63,29 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   SafePtr<Tactic> ztactic(new ZeroNewVerticesTactic(dg));
   dg->apply(strat,ztactic);
   cout << "RecurrenceRelation::generate_code -- should be same as previous = " << dg->num_vertices() << endl;
+  
+  return dg;
+}
+
+void
+RecurrenceRelation::assign_symbols_(SafePtr<CodeSymbols>& symbols)
+{
   // Set symbols on the target and children sets
   rr_target()->set_symbol("target");
+  symbols->append_symbol("target");
   for(int c=0; c<num_children(); c++) {
     ostringstream oss;
     oss << "src" << c;
-    rr_child(c)->set_symbol(oss.str());
+    string symb = oss.str();
+    rr_child(c)->set_symbol(symb);
+    symbols->append_symbol(symb);
   }
-  // Traverse the graph
-  dg->optimize_rr_out();
-  dg->traverse();
-  cout << "The number of vertices = " << dg->num_vertices() << endl;
-  // Generate code
-  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
-  dg->generate_code(context,memman,label(),decl,def);
-  dg->reset();
+}
+
+SafePtr<ImplicitDimensions>
+RecurrenceRelation::adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const
+{
+  return dims;
 }
 
 ///////////////

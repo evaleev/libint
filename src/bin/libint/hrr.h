@@ -10,6 +10,7 @@
 #include <algebra.h>
 #include <dgvertex.h>
 #include <prefactors.h>
+#include <default_params.h>
 
 #ifndef _libint2_src_bin_libint_hrr_h_
 #define _libint2_src_bin_libint_hrr_h_
@@ -79,7 +80,8 @@ namespace libint2 {
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return nflops_; }
     /// Implementation of RecurrenceRelation::spfunction_call()
-    void spfunction_call(const SafePtr<CodeContext>& context, std::ostream& os) const;
+    std::string spfunction_call(const SafePtr<CodeContext>& context,
+                                const SafePtr<ImplicitDimensions>& dims) const;
 
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
@@ -102,6 +104,14 @@ namespace libint2 {
 
     std::string label_;
     std::string generate_label(const SafePtr<TargetType>& target) const;
+    /// Overload of RecurrenceRelation::adapt_dims_()
+    SafePtr<ImplicitDimensions> adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const;
+    /** return true if the high dimension must be shown explicitly. For example,
+        cd-HRR applied (ss|pp) has high dimension of rank 1 but since the code for such
+        RR is not specific to ab=(ss|, the rank of high dimension must be shown explicitly.
+      */
+    bool expl_high_dim() const;
+    bool expl_low_dim() const;
   };
 
   
@@ -322,11 +332,12 @@ namespace libint2 {
   template <template <class> class I, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
-    void
+    std::string
     HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::spfunction_call(
-    const SafePtr<CodeContext>& context, std::ostream& os) const
+    const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
     {
-      os << context->label_to_name(label())
+      ostringstream os;
+      os << context->label_to_name(label_to_funcname(label()))
          // First argument is the library object
          << "(libint, "
          // Second is the target
@@ -376,10 +387,67 @@ namespace libint2 {
         }
       }
       
-      os << "," << hsr << "," << isr << "," << lsr;
+      if (expl_high_dim())
+        os << "," << hsr;
+      if (expl_low_dim())
+        os << "," << lsr;
       os << ")" << context->end_of_stat() << endl;
+      return os.str();
     }
-    
+  
+  template <template <class> class I, class F, int part,
+    FunctionPosition loc_a, unsigned int pos_a,
+    FunctionPosition loc_b, unsigned int pos_b>
+    bool
+    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::expl_high_dim() const
+    {
+      unsigned int np = I<F>::OperType::Properties::np;
+      bool high = true;
+      if (part == 0)
+        high = false;
+      return high;
+    }
+  
+  template <template <class> class I, class F, int part,
+    FunctionPosition loc_a, unsigned int pos_a,
+    FunctionPosition loc_b, unsigned int pos_b>
+    bool
+    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::expl_low_dim() const
+    {
+      unsigned int np = I<F>::OperType::Properties::np;
+      bool low = true;
+      if (part == np -1)
+        low = false;
+      return low;
+    }
+  
+  template <template <class> class I, class F, int part,
+    FunctionPosition loc_a, unsigned int pos_a,
+    FunctionPosition loc_b, unsigned int pos_b>
+    SafePtr<ImplicitDimensions>
+    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const
+    {
+      bool high_rank = expl_high_dim();
+      bool low_rank = expl_low_dim();
+
+      SafePtr<Entity> high_dim, low_dim;
+      if (high_rank) {
+        high_dim = SafePtr<Entity>(new RTimeEntity<EntityTypes::Int>("highdim"));
+      }
+      else {
+        high_dim = dims->high();
+      }
+      if (low_rank) {
+        low_dim = SafePtr<Entity>(new RTimeEntity<EntityTypes::Int>("lowdim"));
+      }
+      else {
+        low_dim = dims->low();
+      }
+
+      SafePtr<ImplicitDimensions> localdims(new ImplicitDimensions(high_dim,low_dim));
+      return localdims;
+    }
+  
   typedef HRR<TwoPRep_11_11,CGShell,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_sh;
   typedef HRR<TwoPRep_11_11,CGShell,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_sh;
   typedef HRR<TwoPRep_11_11,CGShell,0,InKet,0,InBra,0> HRR_ba_11_TwoPRep_11_sh;
