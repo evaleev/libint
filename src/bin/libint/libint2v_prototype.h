@@ -1,5 +1,5 @@
 
-#include <libint2v_params.h>
+#include <libint2_params.h>
 
 #ifndef _libint2_header_
 #define _libint2_header_
@@ -8,7 +8,7 @@
 #define LIBINT_MAX_STACK 1000000
 #define LIBINT_MAX_NTARGETS 4
 
-#define VECLEN LIBINT2_MAX_VECLEN
+#define VECLEN LIBINT_MAX_VECLEN
 
 typedef struct {
   REALTYPE __ss_1_over_r_12_ss___up_0[VECLEN];

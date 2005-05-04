@@ -1,8 +1,16 @@
 
+TOPDIR=../../..
+ifndef SRCDIR
+  SRCDIR=$(shell pwd)
+endif
+
+include $(TOPDIR)/src/bin/MakeVars
+vpath %.a $(libdir)
+
 #BOOSTPATH = /home/tool/evaleev/src/lib/boost
 BOOSTPATH = /Users/evaleev/Development/General/src/lib/boost_1_32_0
 CXX = gfilt
-CXXFLAGS += -I. -g -I$(BOOSTPATH)
+CXXFLAGS += -I. -I$(SRCDIR) -g -I$(BOOSTPATH)
 CXXDEPEND = /usr/local/bin/g++
 
 RANLIB = ranlib

@@ -17,12 +17,12 @@
   */
 
 //#include <libint_config.h>
-#define ERI_MAX_AM 10
-#define UNROLL_THRESH 1
+#define ERI_MAX_AM 1
 
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <default_params.h>
 #include <rr.h>
 #include <dg.h>
 #include <typelist.h>
@@ -62,7 +62,7 @@ int try_main (int argc, char* argv[])
   print_params(os);
   
   int lmax_eri = ERI_MAX_AM;
-  int unroll_thresh_eri = UNROLL_THRESH;
+  int unroll_thresh_eri = StaticDefinitions::unroll_threshold;
   
   build_TwoPRep_2b_2k(os,lmax_eri,unroll_thresh_eri);
 }
@@ -81,7 +81,7 @@ void
 print_params(std::ostream& os)
 {
   os << "ERI_MAX_AM    = " << static_cast<int>(ERI_MAX_AM) << endl;
-  os << "UNROLL_THRESH = " << static_cast<int>(UNROLL_THRESH) << endl;
+  os << "UNROLL_THRESH = " << static_cast<int>(StaticDefinitions::unroll_threshold) << endl;
   os << endl;
 }
 
@@ -107,10 +107,10 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
   SafePtr<Strategy> strat(new Strategy(unroll_thresh));
   SafePtr<Tactic> tactic(new FirstChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
-  for(int la=lmax; la<=lmax; la++) {
-    for(int lb=0; lb<=0; lb++) {
-      for(int lc=lmax; lc<=lmax; lc++) {
-        for(int ld=0; ld<=0; ld++) {
+  for(int la=0; la<=lmax; la++) {
+    for(int lb=0; lb<=lmax; lb++) {
+      for(int lc=0; lc<=lmax; lc++) {
+        for(int ld=0; ld<=lmax; ld++) {
           
           if (la+lb+lc+ld == 0)
             continue;
@@ -126,7 +126,7 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
           
           SafePtr<CodeContext> context(new CppCodeContext());
           SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
-          std::string prefix("libint_eri/");
+          std::string prefix(StaticDefinitions::source_directory);
           std::string decl_filename(prefix + context->label_to_name(abcd->label()));  decl_filename += ".h";
           std::string src_filename(prefix + context->label_to_name(abcd->label()));  src_filename += ".cc";
           std::basic_ofstream<char> declfile(decl_filename.c_str());
@@ -146,7 +146,7 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
   // generate explicit code for all recurrence relation that were not inlined
   //
   SafePtr<CodeContext> context(new CppCodeContext());
-  std::string prefix("libint_eri/");
+  std::string prefix(StaticDefinitions::source_directory);
   dg_xxxx->generate_rr_code(context,prefix);
   
   os << "Compilation finished. Goodbye." << endl;

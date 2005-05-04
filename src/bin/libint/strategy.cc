@@ -1,5 +1,5 @@
 
-#define USE_TACTIC 1
+#define USE_HRR 1
 
 #include <vector>
 #include <algorithm>
@@ -81,54 +81,9 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
 }
 
 
-#if !USE_TACTIC
 
-// This approach blindly seeks the first possible method to apply VRR
-
-SafePtr<RecurrenceRelation>
-Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
-                                     const SafePtr<TwoPRep_11_11_int>& integral,
-                                     const SafePtr<Tactic>& tactic)
-{
-  // shift from B to A
-  for(int xyz = 2; xyz >= 0; xyz--) {
-    typedef HRR_ab_11_TwoPRep_11_int rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
-    if (rr_ptr->num_children())
-      return rr_cast(rr_ptr);
-  }
-
-  // shift from D to C
-  for(int xyz = 2; xyz >= 0; xyz--) {
-    typedef HRR_cd_11_TwoPRep_11_int rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
-    if (rr_ptr->num_children())
-      return rr_cast(rr_ptr);
-  }
-
-  // decrease A
-  for(int xyz = 2; xyz >= 0; xyz--) {
-    typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGF,0,InBra> vrr_type;
-    SafePtr<vrr_type> vrr_ptr(new vrr_type(integral,xyz));
-    if (vrr_ptr->num_children())
-      return rr_cast(vrr_ptr);
-  }
-  
-  // Else decrease C
-  for(int xyz = 2; xyz >= 0; xyz--) {
-    typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGF,1,InBra> vrr_type;
-    SafePtr<vrr_type> vrr_ptr(new vrr_type(integral,xyz));
-    if (vrr_ptr->num_children())
-      return rr_cast(vrr_ptr);
-  }
-
-  return SafePtr<RecurrenceRelation>();
-}
-
-#else
-
-// This approach generates all possible recurrence relations and then
-// uses a Tactic object to decide which to use
+// Generate all possible recurrence relations and then
+// use a Tactic object to decide which to use
 
 SafePtr<RecurrenceRelation>
 Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
@@ -137,6 +92,7 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
 {
   vector<RR> rrstack;  // stack of all recurrence relations
   
+#if USE_HRR
   // shift from B to A
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef HRR_ab_11_TwoPRep_11_int rr_type;
@@ -152,6 +108,7 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
     if (rr_ptr->num_children())
       rrstack.push_back(rr_cast(rr_ptr));
   }
+#endif
 
   // decrease A
   for(int xyz = 2; xyz >= 0; xyz--) {
@@ -161,7 +118,15 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
       rrstack.push_back(rr_cast(rr_ptr));
   }
   
-  // Else decrease C
+  // decrease B
+  for(int xyz = 2; xyz >= 0; xyz--) {
+    typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGF,0,InKet> rr_type;
+    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+    if (rr_ptr->num_children())
+      rrstack.push_back(rr_cast(rr_ptr));
+  }
+  
+  // Decrease C
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGF,1,InBra> rr_type;
     SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
@@ -169,9 +134,15 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
       rrstack.push_back(rr_cast(rr_ptr));
   }
 
+  // Decrease D
+  for(int xyz = 2; xyz >= 0; xyz--) {
+    typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGF,1,InKet> rr_type;
+    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+    if (rr_ptr->num_children())
+      rrstack.push_back(rr_cast(rr_ptr));
+  }
+  
   return tactic->optimal_rr(rrstack);
 }
-
-#endif
 
 

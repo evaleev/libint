@@ -1,11 +1,12 @@
 
+#include <default_params.h>
 #include <dims.h>
 
 using namespace std;
 using namespace libint2;
 
 SafePtr<ImplicitDimensions>
-ImplicitDimensions::default_dims_(new ImplicitDimensions(1,1,64));
+ImplicitDimensions::default_dims_(new ImplicitDimensions(1,1,StaticDefinitions::default_vector_length));
 
 SafePtr<ImplicitDimensions>
 ImplicitDimensions::default_dims()
