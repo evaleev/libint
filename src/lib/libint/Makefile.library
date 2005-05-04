@@ -2,29 +2,22 @@ include $(TOPDIR)/src/lib/MakeVars
 include $(TOPDIR)/src/lib/MakeSuffixRules
 VPATH = $(SRCDIR)
 
-NAME = libint
+NAME = libint2
 TARGET = $(NAME).$(LIBSUF)
-TARGET_HEADERS = libint.h vrr_header.h hrr_header.h
+TARGET_HEADERS = libint2.h libint2_params.h
 
-# vrr_build.c needs to find libint.h
 INCLUDE += -I.
 
 #
 # List all generated routines. Do it in a safe way in case the list is too long
 #
-TRUESRC1 = $(shell echo `ls vrr_order_*.cc`)
-TRUESRC2 = $(shell echo `ls hrr_order_*.cc`)
-TRUESRC3 = $(shell echo `ls build_*.cc`)
-TRUESRC4 = $(shell echo `ls hrr[1,3]_build_*.cc`)
-TRUESRC5 = vrr_build.c
-TRUESRC6 = init_libint.cc
+TRUESRC1 = $(shell echo `ls __*.cc`)
+TRUESRC2 = $(shell echo `ls OSVRR*.cc`)
+TRUESRC3 = $(shell echo `ls HRR*.cc`)
 LIBOBJ1 = $(TRUESRC1:%.cc=%.$(OBJSUF))
 LIBOBJ2 = $(TRUESRC2:%.cc=%.$(OBJSUF))
 LIBOBJ3 = $(TRUESRC3:%.cc=%.$(OBJSUF))
-LIBOBJ4 = $(TRUESRC4:%.cc=%.$(OBJSUF))
-LIBOBJ5 = $(TRUESRC5:%.c=%.$(OBJSUF))
-LIBOBJ6 = $(TRUESRC6:%.cc=%.$(OBJSUF))
-LIBOBJ = $(LIBOBJ1) $(LIBOBJ2) $(LIBOBJ3) $(LIBOBJ4) $(LIBOBJ5) $(LIBOBJ6)
+LIBOBJ = $(LIBOBJ1) $(LIBOBJ2) $(LIBOBJ3)
 
 default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
 
@@ -34,18 +27,16 @@ $(TOPDIR)/lib/$(NAME).a: $(LIBOBJ)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ1)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ2)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ3)
-	$(AR) $(ARFLAGS) $@ $(LIBOBJ4)
-	$(AR) $(ARFLAGS) $@ $(LIBOBJ5)
-	$(AR) $(ARFLAGS) $@ $(LIBOBJ6)
 	$(RANLIB) $@
 
 # this is how shared library is made
 $(TOPDIR)/lib/$(NAME).la: $(LIBOBJ)
 	$(LTLINK) $(CXX) -o $@ $^ $(LTLINKLIBOPTS)
 
-$(TOPDIR)/include/$(NAME)/$(NAME).h: $(NAME).h
+SRC_HEADERS = $(TARGET_HEADERS:%.h=$(SRCTOPDIR)/include/%.h)
+$(TOPDIR)/include/$(NAME)/$(NAME).h: $(SRC_HEADERS)
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/include/$(NAME)
-	-$(INSTALL) $(INSTALLLIBOPT) $(TARGET_HEADERS) $(TOPDIR)/include/$(NAME)
+	-$(INSTALL) $(INSTALLLIBOPT) $^ $(TOPDIR)/include/$(NAME)
 
 install:: install_inc install_target
 
