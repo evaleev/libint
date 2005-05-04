@@ -19,47 +19,48 @@ namespace libint2 {
       Such function will require the information about the rank of the |ps) part.
       This information is encoded in ImplicitDimensions.
       
-      Another example could be vectorized code -- dimension of the vector is not
-      explicitly appear in a recurrence relation and thus the code may not need to
-      be specialized to a particular choice.
+      Another special dimension is the vector length...
   */
   
   class ImplicitDimensions {
     public:    
     /// Explicitly initialize both quantities. Their exact time is not known.
-    ImplicitDimensions(const SafePtr<Entity>& high, const SafePtr<Entity>& low) :
-    high_(high), low_(low) { init_(); }
+    ImplicitDimensions(const SafePtr<Entity>& high,
+                       const SafePtr<Entity>& low,
+                       const SafePtr<Entity>& vecdim);
     /// Default assumes runtime (dynamical) quantities
-    ImplicitDimensions() :
-    high_(SafePtr<Entity>(new RTimeEntity<EntityTypes::Int>("hsi"))),
-    low_(SafePtr<Entity>(new RTimeEntity<EntityTypes::Int>("lsi"))) { init_(); }
-    /// Handy constructor to initialize both dimensions as compile-time (static) quatities
-    ImplicitDimensions(int high, int low) :
-    high_(SafePtr<Entity>(new CTimeEntity<int>("hsi",high))),
-    low_(SafePtr<Entity>(new CTimeEntity<int>("lsi",low))) { init_(); }
+    ImplicitDimensions();
+    /// Handy constructor to initialize dimensions as compile-time (static) quatities
+    ImplicitDimensions(int high, int low, int vec);
     ~ImplicitDimensions() {}
     
     /// Returns the high dimension
     SafePtr<Entity> high() const { return high_; }
     /// Returns the low dimension
     SafePtr<Entity> low() const { return low_; }
+    /// Returns the vector dimension
+    SafePtr<Entity> vecdim() const { return vecdim_; }
     /// Returns true if the rank of high dimension is known
     bool high_is_static() const { return high_is_static_; }
     /// Returns true if the rank of low dimension is known
     bool low_is_static() const { return low_is_static_; }
+    /// Returns true if the rank of vector dimension is known
+    bool vecdim_is_static() const { return vecdim_is_static_; }
     
     /// Default ImplicitDimension object
     static SafePtr<ImplicitDimensions> default_dims();
     
     private:
-    // Both dimensions can be runtime or compile-time quantities
+    // Dimensions can be runtime or compile-time quantities
     SafePtr<Entity> high_;
     SafePtr<Entity> low_;
+    SafePtr<Entity> vecdim_;
     
     // checks if the dimensions are CTImeEntities
     void init_();
     bool high_is_static_;
     bool low_is_static_;
+    bool vecdim_is_static_;
     
     /// Default dimension
     static SafePtr<ImplicitDimensions> default_dims_;

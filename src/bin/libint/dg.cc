@@ -555,7 +555,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
 
   context->reset();
   allocate_mem(memman,dims,1);
-  assign_symbols(context);
+  assign_symbols(context,dims);
   print_def(context,def,dims);
   def << context->close_block() << endl;
 
@@ -603,19 +603,58 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
 
 }
 
+namespace {
+  std::string stack_symbol(const SafePtr<CodeContext>& ctext, const DGVertex::Address& address, unsigned int size,
+                           const std::string& low_rank, const std::string& veclen, bool yesvec,
+                           const std::string& prefix = "libint->stack")
+  {
+    ostringstream oss;
+    oss << prefix << "[((hsi*" << size << "+"
+        << ctext->stack_address(address) << ")*" << low_rank << "+lsi)*"
+        << veclen << (yesvec ? "+vi" : "") << "]";
+    return oss.str();
+  }
+};
+
 void
-DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
+DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims)
 {
   std::ostringstream os;
   const std::string null_str("");
+  
+  // Generate the label for the rank of the low dimension
+  std::string low_rank;
+  std::string veclen;
+  if (dims->low_is_static()) {
+    typedef CTimeEntity<int> ctype;
+    SafePtr<ctype> cptr = dynamic_pointer_cast<ctype,Entity>(dims->low());
+    ostringstream oss;
+    oss << cptr->value();
+    low_rank = oss.str();
+  }
+  else {
+    low_rank = dims->low()->id();
+  }
+  if (dims->vecdim_is_static()) {
+    typedef CTimeEntity<int> ctype;
+    SafePtr<ctype> cptr = dynamic_pointer_cast<ctype,Entity>(dims->vecdim());
+    ostringstream oss;
+    oss << cptr->value();
+    veclen = oss.str();
+  }
+  else {
+    veclen = dims->vecdim()->id();
+  }
 
   // First, set symbols for all vertices which have address assigned
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
     if (!vertex->symbol_set() && vertex->address_set()) {
-      os.str(null_str);
-      os << "libint->stack[" << context->stack_address(vertex->address()) << "]";
-      vertex->set_symbol(os.str());
+      //os.str(null_str);
+      //os << "libint->stack[(hsi*" << vertex->size() << "+"
+      //   << context->stack_address(vertex->address()) << ")*" << low_rank << "+lsi]";
+      //vertex->set_symbol(os.str());
+      vertex->set_symbol(stack_symbol(context,vertex->address(),vertex->size(),low_rank,veclen,false));
     }
   }
 
@@ -642,14 +681,16 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
         // If a child is precomputed -- its symbol will be set as usual
         if (!child->precomputed()) {
           if (vertex->address_set()) {
-            os.str(null_str);
-            os << "libint->stack[" << context->stack_address(vertex->address()+c) << "]";
-            child->set_symbol(os.str());
+            //os.str(null_str);
+            //os << "libint->stack[" << context->stack_address(vertex->address()+c) << "]";
+            //child->set_symbol(os.str());
+            child->set_symbol(stack_symbol(context,vertex->address()+c,vertex->size(),low_rank,veclen,true));
           }
           else {
-            os.str(null_str);
-            os << vertex->symbol() << "[" << context->stack_address(c) << "]";
-            child->set_symbol(os.str());
+            //os.str(null_str);
+            //os << vertex->symbol() << "[" << context->stack_address(c) << "]";
+            //child->set_symbol(os.str());
+            child->set_symbol(stack_symbol(context,c,vertex->size(),low_rank,veclen,true,vertex->symbol()));
           }
         }
       }
@@ -689,6 +730,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context)
     if (vertex->precomputed()) {
       std::string symbol("libint->");
       symbol += context->label_to_name(vertex->label());
+      symbol += "[vi]";
       vertex->set_symbol(symbol);
       continue;
     }
@@ -721,6 +763,10 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   SafePtr<ForLoop> lsi_loop(new ForLoop(context,varname,dims->low(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
   os << lsi_loop->open();
   
+  varname = "vi";
+  SafePtr<ForLoop> vi_loop(new ForLoop(context,varname,dims->vecdim(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
+  os << vi_loop->open();
+
   unsigned int nflops = 0;
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
@@ -744,8 +790,8 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           }
 
           // Type declaration
-          /*os << context->declare(context->type_name<double>(),
-                                 current_vertex->symbol());*/
+          os << context->declare(context->type_name<double>(),
+                                 current_vertex->symbol());
           // expression
           SafePtr<DGVertex> left_arg = oper_ptr->exit_arc(0)->dest();
           SafePtr<DGVertex> right_arg = oper_ptr->exit_arc(1)->dest();
@@ -822,6 +868,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     }
   }
   
+  os << vi_loop->close();
   os << lsi_loop->close();
   os << hsi_loop->close();
 

@@ -444,7 +444,7 @@ namespace libint2 {
         low_dim = dims->low();
       }
 
-      SafePtr<ImplicitDimensions> localdims(new ImplicitDimensions(high_dim,low_dim));
+      SafePtr<ImplicitDimensions> localdims(new ImplicitDimensions(high_dim,low_dim,dims->vecdim()));
       return localdims;
     }
   

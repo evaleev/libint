@@ -17,7 +17,7 @@
   */
 
 //#include <libint_config.h>
-#define ERI_MAX_AM 1
+#define ERI_MAX_AM 10
 #define UNROLL_THRESH 1
 
 #include <iostream>
@@ -107,10 +107,10 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
   SafePtr<Strategy> strat(new Strategy(unroll_thresh));
   SafePtr<Tactic> tactic(new FirstChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
-  for(int la=0; la<=lmax; la++) {
-    for(int lb=0; lb<=lmax; lb++) {
-      for(int lc=0; lc<=lmax; lc++) {
-        for(int ld=0; ld<=lmax; ld++) {
+  for(int la=lmax; la<=lmax; la++) {
+    for(int lb=0; lb<=0; lb++) {
+      for(int lc=lmax; lc<=lmax; lc++) {
+        for(int ld=0; ld<=0; ld++) {
           
           if (la+lb+lc+ld == 0)
             continue;

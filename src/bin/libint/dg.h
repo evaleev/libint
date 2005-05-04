@@ -217,7 +217,7 @@ namespace libint2 {
                       const SafePtr<ImplicitDimensions>& dims,
                       unsigned int min_size_to_alloc = 1);
     // Assign symbols to the vertices
-    void assign_symbols(const SafePtr<CodeContext>& context);
+    void assign_symbols(const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims);
     // Print the code using symbols generated with assign_symbols()
     void print_def(const SafePtr<CodeContext>& context, std::ostream& os,
                    const SafePtr<ImplicitDimensions>& dims);
