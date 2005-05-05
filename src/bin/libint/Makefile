@@ -1,11 +1,15 @@
 
-TOPDIR=../../..
-ifndef SRCDIR
-  SRCDIR=$(shell pwd)
+# Define LOCAL to compile directly in the source directory
+ifndef LOCAL
+  TOPDIR=../../..
+  ifndef SRCDIR
+    SRCDIR=$(shell pwd)
+  endif
+  include $(TOPDIR)/src/bin/MakeVars
+  vpath %.a $(libdir)
+else
+  SRCDIR=.
 endif
-
-include $(TOPDIR)/src/bin/MakeVars
-vpath %.a $(libdir)
 
 #BOOSTPATH = /home/tool/evaleev/src/lib/boost
 BOOSTPATH = /Users/evaleev/Development/General/src/lib/boost_1_32_0
