@@ -17,6 +17,8 @@ namespace libint2 {
     static const int unroll_threshold = 1;
     /// Where to put generated library source
     static const std::string source_directory;
+    /// Whether to use C linking
+    static const bool use_C_linking = true;
 
     /// De facto am limit
     static const unsigned int num_am_letters = 22;

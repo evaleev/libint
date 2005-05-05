@@ -506,6 +506,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   std::string function_name = label_to_funcname(label);
   function_name = context->label_to_name(function_name);
 
+  decl << context->code_prefix();
   std::string func_decl;
   ostringstream oss;
   oss << context->type_name<void>() << " "
@@ -527,6 +528,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   func_decl = oss.str();
   
   decl << func_decl << context->end_of_stat() << endl;
+  decl << context->code_postfix();
 
   //
   // Generate function's definition
@@ -550,6 +552,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   def << endl;
   rrstack_->add(rrstack);
   
+  def << context->code_prefix();
   def << func_decl << context->open_block() << endl;
   def << context->std_function_header();
 
@@ -558,7 +561,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   assign_symbols(context,dims);
   print_def(context,def,dims);
   def << context->close_block() << endl;
-
+  def << context->code_postfix();
 }
 
 void

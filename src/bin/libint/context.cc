@@ -1,6 +1,7 @@
 
 #include <context.h>
 #include <codeblock.h>
+#include <default_params.h>
 
 using namespace libint2;
 
@@ -137,6 +138,22 @@ CppCodeContext::CppCodeContext(bool vectorize) :
 
 CppCodeContext::~CppCodeContext()
 {
+}
+
+std::string
+CppCodeContext::code_prefix() const
+{
+  if (StaticDefinitions::use_C_linking) {
+    return "extern \"C\" {\n";
+  }
+}
+
+std::string
+CppCodeContext::code_postfix() const
+{
+  if (StaticDefinitions::use_C_linking) {
+    return "};";
+  }
 }
 
 std::string
