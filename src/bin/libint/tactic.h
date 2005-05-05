@@ -64,6 +64,16 @@ namespace libint2 {
     SafePtr<DirectedGraph> dg_;
   };
 
+  /** RandomChoiceTactic chooses randomly among the applicable RRs
+    */
+  class RandomChoiceTactic : public Tactic {
+    public:
+    RandomChoiceTactic();
+    ~RandomChoiceTactic() {}
+    
+    RR optimal_rr(const rr_stack& stack) const;
+  };
+  
   /** NullTactic always returns null RecurrenceRelation
     */
   class NullTactic : public Tactic {

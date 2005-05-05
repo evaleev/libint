@@ -1,4 +1,8 @@
 
+extern "C" {
+  #include <stdlib.h>
+  #include <time.h>
+};
 #include <dg.h>
 #include <tactic.h>
 
@@ -48,6 +52,27 @@ ZeroNewVerticesTactic::optimal_rr(const rr_stack& stack) const {
   else
     // Else return null pointer
   return RR();
+}
+
+RandomChoiceTactic::RandomChoiceTactic() : Tactic()
+{
+  // Initialize state randomly
+  time_t crap;
+  srandom(time(&crap));
+}
+
+RandomChoiceTactic::RR
+RandomChoiceTactic::optimal_rr(const rr_stack& stack) const {
+  if (!stack.empty()) {
+    unsigned int size = stack.size();
+    unsigned long long rand = random();
+    const unsigned long long range = 1ull<<32 - 1;
+    long choice = (long long)(rand * size - 1)/range;
+    cout << "Random choice: " << choice << endl;
+    return stack[choice];
+  }
+  else
+    return RR();
 }
 
 NullTactic::RR
