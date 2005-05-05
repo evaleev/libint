@@ -68,7 +68,6 @@ RandomChoiceTactic::optimal_rr(const rr_stack& stack) const {
     unsigned long long rand = random();
     const unsigned long long range = 1ull<<32 - 1;
     long choice = (long long)(rand * size - 1)/range;
-    cout << "Random choice: " << choice << endl;
     return stack[choice];
   }
   else
