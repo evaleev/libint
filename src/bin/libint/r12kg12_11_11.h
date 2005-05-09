@@ -1,0 +1,152 @@
+
+#include <integral.h>
+
+#ifndef _libint2_src_bin_libint_r12kg121111_h_
+#define _libint2_src_bin_libint_r12kg121111_h_
+
+using namespace std;
+
+namespace libint2 {
+  
+  /** R12kG12_11_11_base is the base for all 2-body integral over the R12_k_G12
+      operator with one basis function for each particle in bra and ket
+    */
+  class R12kG12_11_11_base {
+  };
+
+  /**
+     mType is the type that describes the auxiliary index of standard 2-body repulsion integrals
+  */
+  typedef QuantumNumbers<unsigned int,1> mType;
+  /**
+     Most basic type -- R12kG12_11_11 --
+     has one bfs for each particle in bra and ket.
+     Note that GenIntegralSet is initialized with an abstract type libint2::BFSet,
+     from which BFS derives.
+  */
+  template <class BFS, int K> class R12kG12_11_11 :
+    public GenIntegralSet< R12_k_G12<K>, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, mType >,
+    public R12kG12_11_11_base
+    {
+    public:
+      typedef R12_k_G12<K> OperType;
+      typedef VectorBraket<BFS> BraType;
+      typedef VectorBraket<BFS> KetType;
+      typedef mType AuxIndexType;
+      typedef R12kG12_11_11 this_type;
+      /// This the type of the object that manages GenIntegralSet's as Singletons
+      typedef SingletonStack<R12kG12_11_11,std::string> SingletonManagerType;
+      
+      /// R12kG12_11_11 is a set of these subobjects
+      typedef R12kG12_11_11<typename BFS::iter_type,K> iter_type;
+      /// This is the immediate parent
+      typedef GenIntegralSet< OperType, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, AuxIndexType > parent_type;
+      /// This class provides comparison operations on pointers
+      typedef PtrEquiv<this_type> PtrComp;
+
+      /* This "constructor" takes basis function sets, in Mulliken ordering.
+         Returns a pointer to a unique instance, a la Singleton
+      */
+      static const SafePtr<R12kG12_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, unsigned int m);
+      /// Returns a pointer to a unique instance, a la Singleton
+      static const SafePtr<R12kG12_11_11> Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
+      
+      unsigned int m() const { return parent_type::aux()->elem(0); };
+
+      /// Comparison operator
+      bool operator==(const this_type&) const;
+      /// Specialization of GenIntegralSet::label()
+      std::string label() const;
+
+    private:
+      // This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
+      R12kG12_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
+
+      // This is used to manage GenIntegralSet objects as singletons
+      static SingletonManagerType singl_manager_;
+
+      /// Implements DGVertex::this_precomputed()
+      bool this_precomputed() const;
+    };
+
+  // I use label() to hash R12kG12_11_11. Therefore labels must be unique!
+  template <class BFS, int K>
+    typename R12kG12_11_11<BFS,K>::SingletonManagerType
+    R12kG12_11_11<BFS,K>::singl_manager_(&R12kG12_11_11<BFS,K>::label);
+  
+  template <class BFS, int K>
+    R12kG12_11_11<BFS,K>::R12kG12_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket,  const AuxIndexType& aux) :
+    parent_type(TwoERep(),bra, ket, aux)
+    {
+      if (bra.num_members(0) != 1)
+        throw std::runtime_error("R12kG12_11_11<BFS,K>::R12kG12_11_11(bra,ket) -- number of BFSs in bra for particle 0 must be 1");
+      if (bra.num_members(1) != 1)
+        throw std::runtime_error("R12kG12_11_11<BFS,K>::R12kG12_11_11(bra,ket) -- number of BFSs in bra for particle 1 must be 1");
+      if (ket.num_members(0) != 1)
+        throw std::runtime_error("R12kG12_11_11<BFS,K>::R12kG12_11_11(bra,ket) -- number of BFSs in ket for particle 0 must be 1");
+      if (ket.num_members(1) != 1)
+        throw std::runtime_error("R12kG12_11_11<BFS,K>::R12kG12_11_11(bra,ket) -- number of BFSs in ket for particle 1 must be 1");
+    }
+
+  template <class BFS, int K>
+    const SafePtr< R12kG12_11_11<BFS,K> >
+    R12kG12_11_11<BFS,K>::Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux)
+    {
+      SafePtr<R12kG12_11_11> this_int(new R12kG12_11_11<BFS,K>(bra,ket,aux));
+      // Use singl_manager_ to make sure this is a new object of this type
+      return singl_manager_.find(this_int);
+    }
+
+  template <class BFS, int K>
+    const SafePtr< R12kG12_11_11<BFS,K> >
+    R12kG12_11_11<BFS,K>::Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, unsigned int m)
+    {
+      typedef SafePtr<BFS> BFSPtr;
+      BFSPtr bra0_ptr(new BFS(bra0));
+      BFSPtr bra1_ptr(new BFS(bra1));
+      BFSPtr ket0_ptr(new BFS(ket0));
+      BFSPtr ket1_ptr(new BFS(ket1));
+      vector<BFSPtr> vbra0;  vbra0.push_back(bra0_ptr);
+      vector<BFSPtr> vbra1;  vbra1.push_back(bra1_ptr);
+      vector<BFSPtr> vket0;  vket0.push_back(ket0_ptr);
+      vector<BFSPtr> vket1;  vket1.push_back(ket1_ptr);
+      vector< vector<BFSPtr> > vvbra;  vvbra.push_back(vbra0);  vvbra.push_back(vbra1);
+      vector< vector<BFSPtr> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
+      VectorBraket<BFS> bra(vvbra);
+      VectorBraket<BFS> ket(vvket);
+      AuxIndexType aux(vector<unsigned int>(1,m));
+      return Instance(bra,ket,aux);
+    }
+  
+  template <class BFS, int K>
+    bool
+    R12kG12_11_11<BFS,K>::operator==(const R12kG12_11_11<BFS,K>& a) const
+    {
+      return parent_type::PtrComp::equiv(static_cast<const parent_type*>(this),a);
+    }
+
+  template <class BFS, int K>
+    std::string
+    R12kG12_11_11<BFS,K>::label() const
+    {
+      ostringstream os;
+      os << "(" << parent_type::bra_.member(0,0)->label() << " "
+         << parent_type::ket_.member(0,0)->label()
+         << " | r_{12}^" << K << "*exp(-\gamma r_{12}) | "
+         << parent_type::bra_.member(1,0)->label() << " "
+         << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
+      return os.str();
+    };
+
+  /// R12_m1_G12_11_11_... is a set of integrals over g12/r12
+  typedef R12kG12_11_11<CGShell,-1> R12_m1_G12_11_11_sq;
+  typedef R12kG12_11_11<CGF,-1> R12_m1_G12_11_11_int;
+
+  /// R12_0_G12_11_11_... is a set of integrals over g12
+  typedef R12kG12_11_11<CGShell,0> R12_0_G12_11_11_sq;
+  typedef R12kG12_11_11<CGF,0> R12_0_G12_11_11_int;
+
+};
+
+#endif
+

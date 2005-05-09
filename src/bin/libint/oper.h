@@ -99,10 +99,13 @@ namespace libint2 {
 
 //////////////////////////////
   
-  typedef OperatorProperties<2,true> TwoPRep_Props;
-  class TwoERep : public Oper<TwoPRep_Props> {
+  typedef OperatorProperties<2,true> Multiplicative2Body_Props;
+  
+  /** TwoERep is the two-body repulsion operator.
+  */
+  class TwoERep : public Oper<Multiplicative2Body_Props> {
   public:
-    typedef Oper<TwoPRep_Props> parent_type;
+    typedef Oper<Multiplicative2Body_Props> parent_type;
     /// TwoERep is not a set
     typedef TwoERep iter_type;
     const unsigned int num_oper() const { return 1; };
@@ -124,6 +127,90 @@ namespace libint2 {
     static const char psymm_[Properties::np*(Properties::np-1)/2];
 
   };
+  
+//////////////
+  
+  /** R12_k_G12 is a two-body operator of form r_{12}^k * exp(-\gamma * r_{12}),
+      where k is an integer and \gamma is a positive real number.
+  */
+  template <int K>
+  class R12_k_G12 : public Oper<Multiplicative2Body_Props> {
+  public:
+    typedef Oper<Multiplicative2Body_Props> parent_type;
+    /// R12_k_G12 is not a set
+    typedef R12_k_G12 iter_type;
+    static const int k = K;
+    const unsigned int num_oper() const { return 1; };
+    
+    R12_k_G12();
+    R12_k_G12(const SafePtr<R12_k_G12>&);
+    R12_k_G12(const SafePtr<OperSet>&);
+    R12_k_G12(const SafePtr<ConstructablePolymorphically>&);
+    ~R12_k_G12();
+
+    /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
+        or antisymmetric with respect to permutation of particles i and j */
+    int psymm(int i, int j) const;
+
+  private:
+    // symmetry W.R.T. permutation of each pair of particles
+    // 1 -- symmetric, -1 -- antisymmetric, 0 -- nonsymmetric
+    // stored as a lower triangle (diagonal not included)
+    static const char psymm_[Properties::np*(Properties::np-1)/2];
+
+  };
+  
+  template <int K> const char R12_k_G12<K>::psymm_[] = { 1 };
+
+  template <int K>
+  R12_k_G12<K>::R12_k_G12() :
+  parent_type("R12^k * G12","R12_k_G12")
+  {
+  }
+  
+  template <int K>
+  R12_k_G12<K>::R12_k_G12(const SafePtr<R12_k_G12>& source) :
+  parent_type("R12^k * G12","R12_k_G12")
+  {
+  }
+  
+  template <int K>
+  R12_k_G12<K>::R12_k_G12(const SafePtr<OperSet>& oset) :
+  parent_type("R12^k * G12","R12_k_G12")
+  {
+    const SafePtr<R12_k_G12> oset_cast = dynamic_pointer_cast<R12_k_G12,OperSet>(oset);
+    if (oset_cast == 0)
+      throw std::runtime_error("R12_k_G12<K>::R12_k_G12(const SafePtr<OperSet>& oset) -- oset is a pointer to an incompatible type");
+  }
+  
+  template <int K>
+  R12_k_G12<K>::R12_k_G12(const SafePtr<ConstructablePolymorphically>& oset) :
+  parent_type("R12^k * G12","R12_k_G12")
+  {
+    const SafePtr<R12_k_G12> oset_cast = dynamic_pointer_cast<R12_k_G12,ConstructablePolymorphically>(oset);
+    if (oset_cast == 0)
+      throw std::runtime_error("R12_k_G12<K>::R12_k_G12(const SafePtr<ConstructablePolymorphically>& oset) -- oset is a pointer to an incompatible type");
+  }
+  
+  template <int K>
+  R12_k_G12<K>::~R12_k_G12()
+  {
+  }
+  
+  template <int K>
+  int
+  R12_k_G12<K>::psymm(int i, int j) const
+  {
+    if (i<0 || i>=Properties::np)
+      throw std::runtime_error("R12_k_G12<K>::psymm(i,j) -- index i out of bounds");
+    if (j<0 || j>=Properties::np)
+      throw std::runtime_error("R12_k_G12<K>::psymm(i,j) -- index j out of bounds");
+    if (i == j)
+      return 1;
+    int ii = (i > j) ? i : j;
+    int jj = (i > j) ? j : i;
+    return psymm_[ii*(ii-1)/2 + jj];
+  }
 
 
 };

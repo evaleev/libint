@@ -9,17 +9,17 @@ using namespace libint2;
 const char TwoERep::psymm_[] = { 1 };
 
 TwoERep::TwoERep() :
-  Oper<TwoPRep_Props>("Two-electron repulsion operator","TwoERep")
+  parent_type("Two-electron repulsion operator","TwoERep")
 {
 }
 
 TwoERep::TwoERep(const SafePtr<TwoERep>& source) :
-  Oper<TwoPRep_Props>("Two-electron repulsion operator","TwoERep")
+  parent_type("Two-electron repulsion operator","TwoERep")
 {
 }
 
 TwoERep::TwoERep(const SafePtr<OperSet>& oset) :
-  Oper<TwoPRep_Props>("Two-electron repulsion operator","TwoERep")
+  parent_type("Two-electron repulsion operator","TwoERep")
 {
   const SafePtr<TwoERep> oset_cast = dynamic_pointer_cast<TwoERep,OperSet>(oset);
   if (oset_cast == 0)
@@ -27,7 +27,7 @@ TwoERep::TwoERep(const SafePtr<OperSet>& oset) :
 }
 
 TwoERep::TwoERep(const SafePtr<ConstructablePolymorphically>& oset) :
-  Oper<TwoPRep_Props>("Two-electron repulsion operator","TwoERep")
+  parent_type("Two-electron repulsion operator","TwoERep")
 {
   const SafePtr<TwoERep> oset_cast = dynamic_pointer_cast<TwoERep,ConstructablePolymorphically>(oset);
   if (oset_cast == 0)
@@ -51,4 +51,6 @@ TwoERep::psymm(int i, int j) const
   int jj = (i > j) ? j : i;
   return psymm_[ii*(ii-1)/2 + jj];
 }
+
+////////////
 
