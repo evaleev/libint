@@ -32,7 +32,7 @@ realclean: make_libsrcdir
 	-rm -f source
 	-rm -f make_libsrcdir
 
-source: make_libsrcdir $(LIBSRCDIR)/Makefile $(LIBSRCDIR)/$(NAME).h
+source: make_libsrcdir $(LIBSRCDIR)/Makefile $(LIBSRCDIR)/libint2_params.h
 	echo "Last time library source was generated:\c" > $@
 	date >> $@
 
@@ -57,6 +57,6 @@ fi;
 $(LIBSRCDIR)/Makefile: make_libsrcdir $(SRCDIR)/Makefile.library
 	cp -f $(SRCDIR)/Makefile.library $@
 
-$(LIBSRCDIR)/$(NAME).h: $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER) $(LIBSRCDIR)/Makefile
+$(LIBSRCDIR)/libint2_params.h: $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER) $(LIBSRCDIR)/Makefile
 	cd $(LIBSRCLINK); $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER)
 

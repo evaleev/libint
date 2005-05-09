@@ -41,6 +41,10 @@ $(TOPDIR)/include/$(NAME)/$(NAME).h: $(TARGET_HEADERS)
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/include/$(NAME)
 	-$(INSTALL) $(INSTALLLIBOPT) $^ $(TOPDIR)/include/$(NAME)
 
+libint2_params.h:
+
+libint2_iface.h:
+
 install:: install_inc install_target
 
 install_inc::
