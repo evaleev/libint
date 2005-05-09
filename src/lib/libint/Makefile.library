@@ -1,10 +1,10 @@
 include $(TOPDIR)/src/lib/MakeVars
 include $(TOPDIR)/src/lib/MakeSuffixRules
-VPATH = $(SRCDIR)
+VPATH = $(SRCDIR) $(SRCTOPDIR)/include
 
 NAME = libint2
 TARGET = $(NAME).$(LIBSUF)
-TARGET_HEADERS = libint2.h libint2_params.h
+TARGET_HEADERS = libint2.h libint2_params.h libint2_iface.h
 
 INCLUDE += -I.
 
@@ -14,10 +14,12 @@ INCLUDE += -I.
 TRUESRC1 = $(shell echo `ls __*.cc`)
 TRUESRC2 = $(shell echo `ls OSVRR*.cc`)
 TRUESRC3 = $(shell echo `ls HRR*.cc`)
+TRUESRC4 = $(shell echo `ls libint2_*.cc`)
 LIBOBJ1 = $(TRUESRC1:%.cc=%.$(OBJSUF))
 LIBOBJ2 = $(TRUESRC2:%.cc=%.$(OBJSUF))
 LIBOBJ3 = $(TRUESRC3:%.cc=%.$(OBJSUF))
-LIBOBJ = $(LIBOBJ1) $(LIBOBJ2) $(LIBOBJ3)
+LIBOBJ4 = $(TRUESRC4:%.cc=%.$(OBJSUF))
+LIBOBJ = $(LIBOBJ1) $(LIBOBJ2) $(LIBOBJ3) $(LIBOBJ4)
 
 default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
 
@@ -27,6 +29,7 @@ $(TOPDIR)/lib/$(NAME).a: $(LIBOBJ)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ1)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ2)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ3)
+	$(AR) $(ARFLAGS) $@ $(LIBOBJ4)
 	$(RANLIB) $@
 
 # this is how shared library is made
@@ -34,7 +37,7 @@ $(TOPDIR)/lib/$(NAME).la: $(LIBOBJ)
 	$(LTLINK) $(CXX) -o $@ $^ $(LTLINKLIBOPTS)
 
 SRC_HEADERS = $(TARGET_HEADERS:%.h=$(SRCTOPDIR)/include/%.h)
-$(TOPDIR)/include/$(NAME)/$(NAME).h: $(SRC_HEADERS)
+$(TOPDIR)/include/$(NAME)/$(NAME).h: $(TARGET_HEADERS)
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/include/$(NAME)
 	-$(INSTALL) $(INSTALLLIBOPT) $^ $(TOPDIR)/include/$(NAME)
 
