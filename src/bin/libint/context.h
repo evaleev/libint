@@ -1,5 +1,6 @@
 
 #include <entity.h>
+#include <default_params.h>
 
 #ifndef _libint2_src_bin_libint_codecontext_h_
 #define _libint2_src_bin_libint_codecontext_h_
@@ -122,7 +123,7 @@ namespace libint2 {
   */
   class CppCodeContext : public CodeContext, public EnableSafePtrFromThis<CppCodeContext> {
   public:
-    CppCodeContext(bool vectorize = false);
+    CppCodeContext(const SafePtr<CompilationParameters>& cparams, bool vectorize = false);
     ~CppCodeContext();
 
     /// Implementation of CodeContext::code_prefix()
@@ -169,6 +170,7 @@ namespace libint2 {
 
 
   private:
+    SafePtr<CompilationParameters> cparams_;
     bool vectorize_;
 
     /// Implementation of CodeContext::unique_fp_name()

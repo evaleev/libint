@@ -131,8 +131,8 @@ namespace ForbiddenCppCharacters {
   };
 };
 
-CppCodeContext::CppCodeContext(bool vectorize) :
-  CodeContext(), vectorize_(vectorize)
+CppCodeContext::CppCodeContext(const SafePtr<CompilationParameters>& cparams, bool vectorize) :
+  CodeContext(), cparams_(cparams), vectorize_(vectorize)
 {
 }
 
@@ -143,7 +143,7 @@ CppCodeContext::~CppCodeContext()
 std::string
 CppCodeContext::code_prefix() const
 {
-  if (StaticDefinitions::use_C_linking) {
+  if (cparams_->use_C_linking()) {
     return "extern \"C\" {\n";
   }
 }
@@ -151,8 +151,8 @@ CppCodeContext::code_prefix() const
 std::string
 CppCodeContext::code_postfix() const
 {
-  if (StaticDefinitions::use_C_linking) {
-    return "};";
+  if (cparams_->use_C_linking()) {
+    return "};\n";
   }
 }
 

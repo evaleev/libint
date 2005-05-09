@@ -6,11 +6,20 @@ using namespace std;
 using namespace libint2;
 
 SafePtr<ImplicitDimensions>
-ImplicitDimensions::default_dims_(new ImplicitDimensions(1,1,StaticDefinitions::default_vector_length));
+ImplicitDimensions::default_dims_ = SafePtr<ImplicitDimensions>();
+
+void
+ImplicitDimensions::set_default_dims(const SafePtr<CompilationParameters>& cparams)
+{
+  SafePtr<ImplicitDimensions> new_default(new ImplicitDimensions(1,1,cparams->max_vector_length()));
+  default_dims_ = new_default;
+}
 
 SafePtr<ImplicitDimensions>
 ImplicitDimensions::default_dims()
 {
+  if (default_dims_ == 0)
+    throw std::logic_error("ImplicitDimensions::default_dims() -- set_default_dims() has not been called yet");
   return default_dims_;
 }
 

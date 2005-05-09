@@ -17,7 +17,6 @@
   */
 
 //#include <libint_config.h>
-#define ERI_MAX_AM 1
 
 #include <iostream>
 #include <fstream>
@@ -31,6 +30,7 @@
 #include <policy_spec.h>
 #include <intset_to_ints.h>
 #include <strategy.h>
+#include <iface.h>
 
 using namespace std;
 using namespace libint2;
@@ -50,21 +50,28 @@ int main(int argc, char* argv[])
 }
 
 static void print_header(std::ostream& os);
-static void print_params(std::ostream& os);
-
-static void build_TwoPRep_2b_2k(std::ostream& os,int lmax, int unroll_thresh);
+static void build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                                SafePtr<Libint2Iface>& iface);
 
 int try_main (int argc, char* argv[])
 {
   std::ostream& os = cout;
   
+  // use default parameters
+  SafePtr<CompilationParameters> cparams(new CompilationParameters);
+  cparams->max_am_eri(2);
+  // initialize code context to produce library API
+  SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
+  // make a list of computation labels
+  Libint2Iface::Comps comps;
+  comps.push_back("eri");
+  // intialize object to generate interface
+  SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext,comps));
+  
   print_header(os);
-  print_params(os);
+  cparams->print(os);
   
-  int lmax_eri = ERI_MAX_AM;
-  int unroll_thresh_eri = StaticDefinitions::unroll_threshold;
-  
-  build_TwoPRep_2b_2k(os,lmax_eri,unroll_thresh_eri);
+  build_TwoPRep_2b_2k(os,cparams,iface);
 }
 
 void
@@ -78,21 +85,18 @@ print_header(std::ostream& os)
 }
 
 void
-print_params(std::ostream& os)
-{
-  os << "ERI_MAX_AM    = " << static_cast<int>(ERI_MAX_AM) << endl;
-  os << "UNROLL_THRESH = " << static_cast<int>(StaticDefinitions::unroll_threshold) << endl;
-  os << endl;
-}
-
-void
-build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
+build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                    SafePtr<Libint2Iface>& iface)
 {
   typedef TwoPRep_11_11<CGShell> TwoPRep_sh_11_11;
   vector<CGShell*> shells;
+  unsigned int lmax = cparams->max_am_eri();
   for(int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }
+  ImplicitDimensions::set_default_dims(cparams);
+  
+  iface->to_params(iface->define("MAX_AM_ERI",lmax));
   
   //
   // Construct graphs for each desired target integral and
@@ -104,8 +108,9 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
   //    explicit source code
   //
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  SafePtr<Strategy> strat(new Strategy(unroll_thresh));
+  SafePtr<Strategy> strat(new Strategy(cparams->unroll_threshold()));
   SafePtr<Tactic> tactic(new FirstChoiceTactic());
+  //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
   for(int la=0; la<=lmax; la++) {
     for(int lb=0; lb<=lmax; lb++) {
@@ -124,14 +129,24 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
           dg_xxxx->traverse();
           os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
           
-          SafePtr<CodeContext> context(new CppCodeContext());
+          SafePtr<CodeContext> context(new CppCodeContext(cparams));
           SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
-          std::string prefix(StaticDefinitions::source_directory);
+          std::string prefix(cparams->source_directory());
           std::string decl_filename(prefix + context->label_to_name(abcd->label()));  decl_filename += ".h";
           std::string src_filename(prefix + context->label_to_name(abcd->label()));  src_filename += ".cc";
           std::basic_ofstream<char> declfile(decl_filename.c_str());
           std::basic_ofstream<char> srcfile(src_filename.c_str());
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),abcd->label(),declfile,srcfile);
+          
+          ostringstream oss;
+          oss << "  libint2_build_eri[" << la << "][" << lb << "][" << lc << "]["
+              << ld <<"] = " << context->label_to_name(label_to_funcname(abcd->label()))
+              << context->end_of_stat() << endl;
+          iface->to_static_init(oss.str());
+          
+          oss.str("");
+          oss << "#include <" << decl_filename << ">" << endl;
+          iface->to_int_iface(oss.str());
           
           os << "Max memory used = " << memman->max_memory_used() << endl;
           dg_xxxx->reset();
@@ -145,8 +160,8 @@ build_TwoPRep_2b_2k(std::ostream& os, int lmax, int unroll_thresh)
   //
   // generate explicit code for all recurrence relation that were not inlined
   //
-  SafePtr<CodeContext> context(new CppCodeContext());
-  std::string prefix(StaticDefinitions::source_directory);
+  SafePtr<CodeContext> context(new CppCodeContext(cparams));
+  std::string prefix(cparams->source_directory());
   dg_xxxx->generate_rr_code(context,prefix);
   
   os << "Compilation finished. Goodbye." << endl;

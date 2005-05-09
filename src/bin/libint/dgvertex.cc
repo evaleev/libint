@@ -235,7 +235,7 @@ DGVertex::set_graph_label(const std::string& label)
 const std::string&
 DGVertex::symbol() const throw(SymbolNotSet)
 {
-  if (referred_vertex_)
+  if (referred_vertex_ && referred_vertex_->symbol_set())
     return referred_vertex_->symbol();
   else {
     if (symbol_)

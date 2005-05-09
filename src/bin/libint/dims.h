@@ -47,6 +47,8 @@ namespace libint2 {
     /// Returns true if the rank of vector dimension is known
     bool vecdim_is_static() const { return vecdim_is_static_; }
     
+    /// Sets default ImplicitDimension object
+    static void set_default_dims(const SafePtr<CompilationParameters>& cparams);
     /// Default ImplicitDimension object
     static SafePtr<ImplicitDimensions> default_dims();
     

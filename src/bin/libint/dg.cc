@@ -581,7 +581,9 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
       vertex->set_address(memman->alloc(vertex->size()));
   }
 #endif
-
+  
+  LibraryParameters& lparams = LibraryParameters::get_library_params();
+  
   //
   // Go through the traversal order and at each step tag every child
   // Once a child receives same number of tags as the number of parents,
@@ -591,7 +593,10 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
   do {
     if (!vertex->symbol_set() && !vertex->address_set() && !vertex->precomputed() &&
         vertex->need_to_compute() && vertex->size() > min_size_to_alloc) {
-      vertex->set_address(memman->alloc(vertex->size()));
+      MemoryManager::Address addr = memman->alloc(vertex->size());
+      vertex->set_address(addr);
+      // update the max stack size
+      lparams.max_stack_size(addr + vertex->size());
       const unsigned int nchildren = vertex->num_exit_arcs();
       for(int c=0; c<nchildren; c++) {
         SafePtr<DGVertex> child = vertex->exit_arc(c)->dest();
@@ -681,8 +686,8 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
       unsigned int nchildren = vertex->num_exit_arcs();
       for(int c=0; c<nchildren; c++) {
         SafePtr<DGVertex> child = vertex->exit_arc(c)->dest();
-        // If a child is precomputed -- its symbol will be set as usual
-        if (!child->precomputed()) {
+        // If a child is precomputed and it's parent symbol is not set -- its symbol will be set as usual
+        if (!child->precomputed() || vertex->symbol_set()) {
           if (vertex->address_set()) {
             //os.str(null_str);
             //os << "libint->stack[" << context->stack_address(vertex->address()+c) << "]";
