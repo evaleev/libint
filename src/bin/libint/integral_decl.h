@@ -8,6 +8,7 @@ namespace libint2 {
   class GenIntegralSet;
   
   template <class BFS> class TwoPRep_11_11;
+  template <class BFS, int K> class R12kG12_11_11;
 
 };
 

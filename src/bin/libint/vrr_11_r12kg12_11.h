@@ -34,7 +34,7 @@ namespace libint2 {
 
   public:
     typedef I<BFSet,K> TargetType;
-    typedef I<BFSet,K> ChildType;
+    typedef R12kG12_11_11_base<BFSet> ChildType;
     /// The type of expressions in which RecurrenceRelations result.
     typedef AlgebraicOperator<DGVertex> ExprType;
 
@@ -59,7 +59,7 @@ namespace libint2 {
     /// Implementation of RecurrenceRelation::rr_target()
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation::rr_child()
-    SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+    SafePtr<DGVertex> rr_child(unsigned int i) const { return dynamic_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// Implementation of RecurrenceRelation::rr_expr()
     SafePtr<DGVertex> rr_expr(unsigned int i) const { return static_pointer_cast<DGVertex,ExprType>(expr(i)); }
     /// Implementation of RecurrenceRelation::is_simple()
@@ -88,6 +88,13 @@ namespace libint2 {
     static const unsigned int max_nchildren_ = 8;
     static const unsigned int max_nexpr_ = 6;
     unsigned int dir_;
+    
+    // Constructs the RR for K >= 0
+    void children_and_expr_Kge0(const vector<BFSet>& bra, const vector<BFSet>& ket,
+                                vector<BFSet>* bra_ptr, vector<BFSet>* ket_ptr);
+    // Constructs the RR for K == -1
+    void children_and_expr_Keqm1(const vector<BFSet>& bra, const vector<BFSet>& ket,
+                                 vector<BFSet>* bra_ptr, vector<BFSet>* ket_ptr);
 
     SafePtr<TargetType> target_;
     SafePtr<ChildType> children_[max_nchildren_];
@@ -101,18 +108,25 @@ namespace libint2 {
     std::string generate_label(const SafePtr<TargetType>& target) const;
   };
   
+  /** class VRR_11_R12kG12_11_util implements the logic of the VRR. For any
+      K >= 0 the same RR is used. K=-1 is a special case and must be handled separately (via
+      specialization of this template, see vrr_11_r12kg12_11.cc).
+  */
+  template <int K>
+    struct
+    VRR_11_R12kG12_11_util {
+      static const bool K_eq_m1 = (K==-1);
+    };
+  
   template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
     VRR_11_R12kG12_11<I,F,K,part,where>::VRR_11_R12kG12_11(const SafePtr<I<F,K> >& Tint,
                                                            unsigned int dir) :
     target_(Tint), dir_(dir), nchildren_(0), nexpr_(0), nflops_(0), label_(generate_label(Tint))
     {
-      target_ = Tint;
-
       F sh_a(Tint->bra(0,0));
       F sh_b(Tint->ket(0,0));
       F sh_c(Tint->bra(1,0));
       F sh_d(Tint->ket(1,0));
-      unsigned int m = Tint->m();
 
       vector<F> bra;
       vector<F> ket;
@@ -139,13 +153,34 @@ namespace libint2 {
       catch (InvalidDecrement) {
         return;
       }
+      // turn a-1 back to a
+      bra_ref->operator[](p_a).inc(dir);
+      
+      if (VRR_11_R12kG12_11_util<K>::K_eq_m1)
+        children_and_expr_Keqm1(bra,ket,bra_ref,ket_ref);
+      else
+        children_and_expr_Kge0(bra,ket,bra_ref,ket_ref);
+    };
+  
+  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+    void
+    VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Keqm1(const vector<F>& bra, const vector<F>& ket,
+                                                                 vector<F>* bra_ref, vector<F>* ket_ref)
+    {
+      unsigned int m = target_->m();
+      // On which particle to act
+      int p_a = part;
+      int p_c = (p_a == 0) ? 1 : 0;
+      // Get a-1
+      bra_ref->operator[](p_a).dec(dir_);
+      
       children_[0] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m);
       children_[1] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
       nchildren_ += 2;
       nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {
-        SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][!InKet][dir],children_[0]));
-        SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.W_XY[part][dir],children_[1]));
+        SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][where][dir_],rr_child(0)));
+        SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.W_XY[part][dir_],rr_child(1)));
         SafePtr<ExprType> expr0p1_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
         expr_[0] = expr0p1_ptr;
         nexpr_ = 1;
@@ -154,7 +189,7 @@ namespace libint2 {
       // See if a-2 exists
       bool a_minus_2_exists = true;
       try {
-        bra_ref->operator[](p_a).dec(dir);
+        bra_ref->operator[](p_a).dec(dir_);
       }
       catch (InvalidDecrement) {
         a_minus_2_exists = false;
@@ -162,13 +197,13 @@ namespace libint2 {
       if (a_minus_2_exists) {
         children_[2] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m);
         children_[3] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
-        bra_ref->operator[](p_a).inc(dir);
-        const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir);
+        bra_ref->operator[](p_a).inc(dir_);
+        const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir_);
         nchildren_ += 2;
         nflops_ += ConvertNumFlops<F>(5);
         if (is_simple()) {
-          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], children_[3]));
-          SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[2], expr_intmd0));
+          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], rr_child(3)));
+          SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, rr_child(2), expr_intmd0));
           SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_a], prefactors.one_o_2alpha12[part]));
           SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
           SafePtr<ExprType> expr012_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr2_ptr,expr_[0]));
@@ -179,7 +214,7 @@ namespace libint2 {
       // See if b-1 exists
       bool b_minus_1_exists = true;
       try {
-        ket_ref->operator[](p_a).dec(dir);
+        ket_ref->operator[](p_a).dec(dir_);
       }
       catch (InvalidDecrement) {
         b_minus_1_exists = false;
@@ -187,13 +222,13 @@ namespace libint2 {
       if (b_minus_1_exists) {
         children_[4] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m);
         children_[5] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
-        ket_ref->operator[](p_a).inc(dir);
-        const unsigned int ni_b = ket_ref->operator[](p_a).qn(dir);
+        ket_ref->operator[](p_a).inc(dir_);
+        const unsigned int ni_b = ket_ref->operator[](p_a).qn(dir_);
         nchildren_ += 2;
         nflops_ += ConvertNumFlops<F>(5);
         if (is_simple()) {
-          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], children_[5]));
-          SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[4], expr_intmd0));
+          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], rr_child(5)));
+          SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, rr_child(4), expr_intmd0));
           SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_b], prefactors.one_o_2alpha12[part]));
           SafePtr<ExprType> expr3_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
           SafePtr<ExprType> expr0123_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr3_ptr,expr_[0]));
@@ -203,42 +238,161 @@ namespace libint2 {
 
       // See if c-1 exists
       try {
-        bra_ref->operator[](p_c).dec(dir);
+        bra_ref->operator[](p_c).dec(dir_);
       }
       catch (InvalidDecrement) {
         return;
       }
       children_[6] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
-      bra_ref->operator[](p_c).inc(dir);
-      const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir);
+      bra_ref->operator[](p_c).inc(dir_);
+      const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir_);
       nchildren_ += 1;
       nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {
         SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_c], prefactors.one_o_2alphasum));
-        SafePtr<ExprType> expr4_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[6]));
+        SafePtr<ExprType> expr4_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, rr_child(6)));
         SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr4_ptr,expr_[0]));
         expr_[0] = exprsum_ptr;
       }
 
       // See if d-1 exists
       try {
-        ket_ref->operator[](p_c).dec(dir);
+        ket_ref->operator[](p_c).dec(dir_);
       }
       catch (InvalidDecrement) {
         return;
       }
       children_[7] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
-      ket_ref->operator[](p_c).inc(dir);
-      const unsigned int ni_d = ket_ref->operator[](p_c).qn(dir);
+      ket_ref->operator[](p_c).inc(dir_);
+      const unsigned int ni_d = ket_ref->operator[](p_c).qn(dir_);
       nchildren_ += 1;
       nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {
         SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_d], prefactors.one_o_2alphasum));
-        SafePtr<ExprType> expr5_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[7]));
+        SafePtr<ExprType> expr5_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, rr_child(7)));
         SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr5_ptr,expr_[0]));
         expr_[0] = exprsum_ptr;
       }
-    };
+    }
+  
+  template <int K>
+  struct EqualZero {
+    static const bool result = (K==0);
+  };
+  
+  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+    void
+    VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0(const vector<F>& bra, const vector<F>& ket,
+                                                                vector<F>* bra_ref, vector<F>* ket_ref)
+    {
+      unsigned int m = target_->m();
+      if (m != 0)
+        throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- nonzero auxiliary quantum detected.");
+      
+      // On which particle to act
+      int p_a = part;
+      int p_c = (p_a == 0) ? 1 : 0;
+      // Get a-1
+      bra_ref->operator[](p_a).dec(dir_);
+      
+      children_[0] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+      nchildren_ += 1;
+      nflops_ += ConvertNumFlops<F>(1);
+      if (is_simple()) {
+        SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.R12kG12VRR_pfac0[part][dir_],rr_child(0)));
+        expr_[0] = expr0_ptr;
+        nexpr_ = 1;
+      }
+
+      // See if a-2 exists
+      bool a_minus_2_exists = true;
+      try {
+        bra_ref->operator[](p_a).dec(dir_);
+      }
+      catch (InvalidDecrement) {
+        a_minus_2_exists = false;
+      }
+      if (a_minus_2_exists) {
+        children_[1] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+        bra_ref->operator[](p_a).inc(dir_);
+        const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir_);
+        nchildren_ += 1;
+        nflops_ += ConvertNumFlops<F>(3);
+        if (is_simple()) {
+          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.R12kG12VRR_pfac1[part], rr_child(1)));
+          SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_a], expr_intmd0));
+          SafePtr<ExprType> expr01_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr1_ptr,expr_[0]));
+          expr_[0] = expr01_ptr;
+        }
+      }
+
+      // See if b-1 exists
+      bool b_minus_1_exists = true;
+      try {
+        ket_ref->operator[](p_a).dec(dir_);
+      }
+      catch (InvalidDecrement) {
+        b_minus_1_exists = false;
+      }
+      if (b_minus_1_exists) {
+        throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- AM on centers b and d must be zero, general RR is not yet implemented");
+      }
+
+      // See if c-1 exists
+      bool c_minus_1_exists = true;
+      try {
+        bra_ref->operator[](p_c).dec(dir_);
+      }
+      catch (InvalidDecrement) {
+        c_minus_1_exists = false;
+      }
+      if (c_minus_1_exists) {
+        children_[2] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+        bra_ref->operator[](p_c).inc(dir_);
+        const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir_);
+        nchildren_ += 1;
+        nflops_ += ConvertNumFlops<F>(3);
+        if (is_simple()) {
+          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_c], prefactors.R12kG12VRR_pfac2));
+          SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, rr_child(2)));
+          SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr2_ptr,expr_[0]));
+          expr_[0] = exprsum_ptr;
+        }
+      }
+
+     // See if d-1 exists
+     bool d_minus_1_exists = true;
+     try {
+        ket_ref->operator[](p_c).dec(dir_);
+      }
+      catch (InvalidDecrement) {
+        d_minus_1_exists = false;
+      }
+      if (d_minus_1_exists) {
+        throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- AM on centers b and d must be zero, general RR is not yet implemented");
+      }
+      
+      if (EqualZero<K>::result == false) {
+        bra_ref->operator[](p_a).inc(dir_);
+        children_[3] = I<F,K-2>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+        bra_ref->operator[](p_a).dec(dir_);
+        bra_ref->operator[](p_c).inc(dir_);
+        children_[4] = I<F,K-2>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+        bra_ref->operator[](p_c).dec(dir_);
+        children_[5] = I<F,K-2>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+        nchildren_ += 3;
+        nflops_ += ConvertNumFlops<F>(6);
+        if (is_simple()) {
+          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Minus, rr_child(3), rr_child(4)));
+          SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Times, prefactors.R12kG12VRR_pfac4[part][dir_], rr_child(5)));
+          SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Plus, expr_intmd0, expr_intmd1));
+          SafePtr<ExprType> expr_intmd3(new ExprType(ExprType::OperatorTypes::Times, prefactors.R12kG12VRR_pfac3[part],expr_intmd2));
+          SafePtr<ExprType> expr_intmd4(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[K], expr_intmd3));
+          SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr_intmd4,expr_[0]));
+          expr_[0] = exprsum_ptr;
+        }
+      }
+    }
 
   template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
     VRR_11_R12kG12_11<I,F,K,part,where>::~VRR_11_R12kG12_11()
@@ -249,7 +403,7 @@ namespace libint2 {
     };
 
   template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
-    SafePtr< I<F,K> >
+    SafePtr< typename VRR_11_R12kG12_11<I,F,K,part,where>::ChildType >
     VRR_11_R12kG12_11<I,F,K,part,where>::child(unsigned int i) const
     {
       assert(i>=0 && i<nchildren_);

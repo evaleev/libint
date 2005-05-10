@@ -174,6 +174,32 @@ namespace libint2 {
       }
     };
 
+  /** StdLibintTDPolicy<R12kG12_11_11> should go away soon.
+  */
+
+  template <class BFS, int K>
+    struct StdLibintTDPolicy< R12kG12_11_11<BFS,K> >
+    {
+      typedef R12kG12_11_11<BFS,K> obj_type;
+      typedef typename obj_type::iter_type subobj_type;
+      typedef SubIteratorBase< typename obj_type::parent_type > parent_siter;
+
+      static void init_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj) {
+
+        // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
+        parent_siter gis_siter(obj);
+        for(gis_siter.init(); gis_siter; ++gis_siter) {
+          const SafePtr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
+          const SafePtr<subobj_type> curr_subobj =
+            subobj_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), *curr_gis_ptr->aux().get());
+          subobj.push_back(curr_subobj);
+        }
+      }
+
+      // Nothing is done here because TwoPRep_11_11 objects are Singleton-like and don't need to be destroyed
+      static void dealloc_subobj(vector< SafePtr< R12kG12_11_11<typename BFS::iter_type,K> > >& subobj) {
+      }
+    };
 };
 
 #endif

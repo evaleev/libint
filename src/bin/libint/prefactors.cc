@@ -57,6 +57,44 @@ Prefactors::Prefactors() :
       }
 
   }
+  
+  //
+  // R12_k_G12 VRR prefactors
+  //
+
+  rdptr pfac2_ptr(new rdouble("R12kG12_pfac2"));
+  R12kG12VRR_pfac2 = pfac2_ptr;
+
+  for(int p=0; p<np; p++) {
+    char tmp_str[20];
+    sprintf(tmp_str,"R12kG12_pfac0_%d",p);
+    rdptr vpfac0_ptr(new rdouble(tmp_str));
+    R12kG12VRR_vpfac0[p] = vpfac0_ptr;
+    
+    sprintf(tmp_str,"R12kG12_pfac1_%d",p);
+    rdptr pfac1_ptr(new rdouble(tmp_str));
+    R12kG12VRR_pfac1[p] = pfac1_ptr;
+    
+    sprintf(tmp_str,"R12kG12_pfac3_%d",p);
+    rdptr pfac3_ptr(new rdouble(tmp_str));
+    R12kG12VRR_pfac3[p] = pfac3_ptr;
+    
+    sprintf(tmp_str,"R12kG12_pfac4_%d",p);
+    rdptr vpfac4_ptr(new rdouble(tmp_str));
+    R12kG12VRR_vpfac4[p] = vpfac4_ptr;
+    
+    char xyz_str[] = "xyz";
+    for(int xyz=0; xyz<3; xyz++) {
+      char tmp_str[20];
+      sprintf(tmp_str,"R12kG12_pfac0_%d_%c",p,xyz_str[xyz]);
+      rdptr pfac0_ptr(new rdouble(tmp_str));
+      R12kG12VRR_pfac0[p][xyz] = pfac0_ptr;
+      
+      sprintf(tmp_str,"R12kG12_pfac4_%d_%c",p,xyz_str[xyz]);
+      rdptr pfac4_ptr(new rdouble(tmp_str));
+      R12kG12VRR_pfac4[p][xyz] = pfac4_ptr;
+    }
+  }
 
   char alpha12_str[np][20] = { "zeta", "eta" };
   char alpha12_char[np+1] = "ze";

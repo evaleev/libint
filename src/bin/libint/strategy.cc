@@ -16,19 +16,48 @@ Strategy::optimal_rr(const SafePtr<DirectedGraph>& graph,
                      const SafePtr<DGVertex>& integral,
                      const SafePtr<Tactic>& tactic)
 {
-
+  //
   // We must first determine the type of the integral
+  //
   {
     SafePtr<TwoPRep_11_11_sq> eri_ptr = dynamic_pointer_cast<TwoPRep_11_11_sq,DGVertex>(integral);
     if (eri_ptr != 0)
       return optimal_rr_twoprep1111_sq(graph,eri_ptr,tactic);
   }
-
-  // We must first determine the type of the integral
   {
     SafePtr<TwoPRep_11_11_int> eri_ptr = dynamic_pointer_cast<TwoPRep_11_11_int,DGVertex>(integral);
     if (eri_ptr != 0)
       return optimal_rr_twoprep1111_int(graph,eri_ptr,tactic);
+  }
+  {
+    typedef R12kG12_11_11_base<CGShell> base_type;
+    SafePtr<base_type> bptr = dynamic_pointer_cast<base_type,DGVertex>(integral);
+    if (bptr != 0) {
+      int k = R12kG12_11_11_Util::k<CGShell>(bptr);
+      switch (k) {
+        case 0:
+          return optimal_rr_R12kG121111_sq<0>(graph,bptr,tactic);
+        case -1:
+          return optimal_rr_R12kG121111_sq<-1>(graph,bptr,tactic);
+        default:
+          throw logic_error("Strategy::optimal_rr() unable to determine K for R12kG12_11_11<CGShell,K> class");
+      };
+    }
+  }
+  {
+    typedef R12kG12_11_11_base<CGF> base_type;
+    SafePtr<base_type> bptr = dynamic_pointer_cast<base_type,DGVertex>(integral);
+    if (bptr != 0) {
+      int k = R12kG12_11_11_Util::k<CGF>(bptr);
+      switch (k) {
+        case 0:
+          return optimal_rr_R12kG121111_int<0>(graph,bptr,tactic);
+        case -1:
+          return optimal_rr_R12kG121111_int<-1>(graph,bptr,tactic);
+        default:
+          throw logic_error("Strategy::optimal_rr() unable to determine K for R12kG12_11_11<CGF,K> class");
+      };
+    }
   }
 
   // Don't know how to apply any RR

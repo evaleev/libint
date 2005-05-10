@@ -26,6 +26,6 @@ namespace libint2 {
     else
       return false;
   }
-    
+
 };
 

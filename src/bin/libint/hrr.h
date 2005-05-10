@@ -11,6 +11,7 @@
 #include <dgvertex.h>
 #include <prefactors.h>
 #include <default_params.h>
+#include <dims.h>
 
 #ifndef _libint2_src_bin_libint_hrr_h_
 #define _libint2_src_bin_libint_hrr_h_
@@ -32,14 +33,14 @@ namespace libint2 {
   to 0 to refer to the first function for this particle in this location).
 
 */
-  template <template <class> class I, class BFSet, int part,
+  template <class IntType, class BFSet, int part,
   FunctionPosition loc_a, unsigned int pos_a,
   FunctionPosition loc_b, unsigned int pos_b>
   class HRR : public RecurrenceRelation {
 
   public:
-    typedef I<BFSet> TargetType;
-    typedef I<BFSet> ChildType;
+    typedef IntType TargetType;
+    typedef IntType ChildType;
     /// The type of expressions in which RecurrenceRelations result.
     typedef AlgebraicOperator<DGVertex> ExprType;
 
@@ -116,17 +117,17 @@ namespace libint2 {
 
   
   
-  template <template <class> class I, class F, int part,
+  template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(const SafePtr<TargetType>& Tint, unsigned int dir) :
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(const SafePtr<TargetType>& Tint, unsigned int dir) :
     target_(Tint), dir_(dir), nchildren_(0), nexpr_(0), nflops_(0), label_(generate_label(Tint))
     {
       target_ = Tint;
-      typename I<F>::AuxQuantaType aux = Tint->aux();
+      typename IntType::AuxQuantaType aux = Tint->aux();
 
-      typedef typename I<F>::BraType IBraType;
-      typedef typename I<F>::KetType IKetType;
+      typedef typename IntType::BraType IBraType;
+      typedef typename IntType::KetType IKetType;
       IBraType* bra = new IBraType(Tint->bra());
       IKetType* ket = new IKetType(Tint->ket());
 
@@ -145,7 +146,7 @@ namespace libint2 {
           return;
         }
         bra->set_member(sh_b,part,pos_b);
-        children_[1] = I<F>::Instance(*bra,*ket,aux);
+        children_[1] = IntType::Instance(*bra,*ket,aux);
 
         if (loc_a == InBra) {  // a in bra
           F sh_a(bra->member(part,pos_a));
@@ -157,7 +158,7 @@ namespace libint2 {
           sh_a.inc(dir_);
           ket->set_member(sh_a,part,pos_a);
         }
-        children_[0] = I<F>::Instance(*bra,*ket,aux);
+        children_[0] = IntType::Instance(*bra,*ket,aux);
         nchildren_ += 2;
 
         if (is_simple()) {
@@ -184,7 +185,7 @@ namespace libint2 {
           return;
         }
         ket->set_member(sh_b,part,pos_b);
-        children_[1] = I<F>::Instance(*bra,*ket,aux);
+        children_[1] = IntType::Instance(*bra,*ket,aux);
 
         if (loc_a == InBra) {  // a in bra
           F sh_a(bra->member(part,pos_a));
@@ -196,7 +197,7 @@ namespace libint2 {
           sh_a.inc(dir_);
           ket->set_member(sh_a,part,pos_a);
         }
-        children_[0] = I<F>::Instance(*bra,*ket,aux);
+        children_[0] = IntType::Instance(*bra,*ket,aux);
         nchildren_ += 2;
 
         if (is_simple()) {
@@ -216,26 +217,26 @@ namespace libint2 {
       delete ket;
     }
 
-  template <template <class> class I, class F, int part,
+  template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::~HRR()
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::~HRR()
     {
       oper_checks();
     }
 
-  template <template <class> class I, class F, int part,
+  template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     void
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::oper_checks() const
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::oper_checks() const
     {
       //
       // Here we check basic HRR applicability requirements on the integral class
       //
 
       // part is within the range
-      typedef typename I<F>::OperatorType Oper;
+      typedef typename IntType::OperatorType Oper;
       if (part < 0 || part >= Oper::Properties::np) {
         assert(false);
       }
@@ -251,11 +252,11 @@ namespace libint2 {
       }
     }
           
-  template <template <class> class I, class F, int part,
+  template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
-    SafePtr<typename HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::ChildType>
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::child(unsigned int i) const
+    SafePtr<typename HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::ChildType>
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::child(unsigned int i) const
     {
       assert(i>=0 && i<nchildren_);
 
@@ -269,11 +270,11 @@ namespace libint2 {
       }
     };
 
-  template <template <class> class I, class F, int part,
+  template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     SafePtr< AlgebraicOperator<DGVertex> >
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::expr(unsigned int i) const
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::expr(unsigned int i) const
     {
       assert(i>=0 && i<nexpr_);
 
@@ -287,11 +288,11 @@ namespace libint2 {
       }
     };
 
-  template <template <class> class I, class F, int part,
+  template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     std::string
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::generate_label(const SafePtr<TargetType>& target) const
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::generate_label(const SafePtr<TargetType>& target) const
     {
       ostringstream os;
       
@@ -329,11 +330,11 @@ namespace libint2 {
       return os.str();
     }
     
-  template <template <class> class I, class F, int part,
+  template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     std::string
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::spfunction_call(
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::spfunction_call(
     const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
     {
       ostringstream os;
@@ -373,7 +374,7 @@ namespace libint2 {
       
       /// WARNING !!!
       unsigned int lsr = 1;
-      unsigned int np = I<F>::OperType::Properties::np;
+      unsigned int np = IntType::OperType::Properties::np;
       for(int p=part+1; p<np; p++) {
         unsigned int nbra = target_->bra().num_members(p);
         for(int i=0; i<nbra; i++) {
@@ -395,37 +396,37 @@ namespace libint2 {
       return os.str();
     }
   
-  template <template <class> class I, class F, int part,
+  template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     bool
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::expl_high_dim() const
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::expl_high_dim() const
     {
-      unsigned int np = I<F>::OperType::Properties::np;
+      unsigned int np = IntType::OperType::Properties::np;
       bool high = true;
       if (part == 0)
         high = false;
       return high;
     }
   
-  template <template <class> class I, class F, int part,
+  template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     bool
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::expl_low_dim() const
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::expl_low_dim() const
     {
-      unsigned int np = I<F>::OperType::Properties::np;
+      unsigned int np = IntType::OperType::Properties::np;
       bool low = true;
       if (part == np -1)
         low = false;
       return low;
     }
   
-  template <template <class> class I, class F, int part,
+  template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     SafePtr<ImplicitDimensions>
-    HRR<I,F,part,loc_a,pos_a,loc_b,pos_b>::adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const
     {
       bool high_rank = expl_high_dim();
       bool low_rank = expl_low_dim();
@@ -448,13 +449,13 @@ namespace libint2 {
       return localdims;
     }
   
-  typedef HRR<TwoPRep_11_11,CGShell,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_sh;
-  typedef HRR<TwoPRep_11_11,CGShell,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_sh;
-  typedef HRR<TwoPRep_11_11,CGShell,0,InKet,0,InBra,0> HRR_ba_11_TwoPRep_11_sh;
-  typedef HRR<TwoPRep_11_11,CGShell,1,InKet,0,InBra,0> HRR_dc_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11<CGShell>,CGShell,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11<CGShell>,CGShell,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11<CGShell>,CGShell,0,InKet,0,InBra,0> HRR_ba_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11<CGShell>,CGShell,1,InKet,0,InBra,0> HRR_dc_11_TwoPRep_11_sh;
 
-  typedef HRR<TwoPRep_11_11,CGF,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_int;
-  typedef HRR<TwoPRep_11_11,CGF,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_int;
+  typedef HRR<TwoPRep_11_11<CGF>,CGF,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_int;
+  typedef HRR<TwoPRep_11_11<CGF>,CGF,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_int;
 
 };
 

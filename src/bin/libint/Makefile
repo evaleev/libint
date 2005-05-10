@@ -11,8 +11,8 @@ else
   SRCDIR=.
 endif
 
-BOOSTPATH = /home/tool/evaleev/src/lib/boost
-#BOOSTPATH = /Users/evaleev/Development/General/src/lib/boost_1_32_0
+#BOOSTPATH = /home/tool/evaleev/src/lib/boost
+BOOSTPATH = /Users/evaleev/Development/General/src/lib/boost_1_32_0
 CXX = gfilt
 CXXFLAGS += -I. -I$(SRCDIR) -g -I$(BOOSTPATH) $(CXXOPT)
 CXXDEPEND = /usr/local/bin/g++

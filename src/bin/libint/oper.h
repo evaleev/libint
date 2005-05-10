@@ -156,11 +156,12 @@ namespace libint2 {
     // symmetry W.R.T. permutation of each pair of particles
     // 1 -- symmetric, -1 -- antisymmetric, 0 -- nonsymmetric
     // stored as a lower triangle (diagonal not included)
-    static const char psymm_[Properties::np*(Properties::np-1)/2];
+    static const int npair = Properties::np*(Properties::np-1)/2;
+    static const vector<char> psymm_;
 
   };
   
-  template <int K> const char R12_k_G12<K>::psymm_[] = { 1 };
+  template <int K> const vector<char> R12_k_G12<K>::psymm_(npair,1);
 
   template <int K>
   R12_k_G12<K>::R12_k_G12() :

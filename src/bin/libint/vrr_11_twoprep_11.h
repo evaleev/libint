@@ -142,7 +142,7 @@ namespace libint2 {
       nchildren_ += 2;
       nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {
-        SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][!InKet][dir],children_[0]));
+        SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][where][dir],children_[0]));
         SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.W_XY[part][dir],children_[1]));
         SafePtr<ExprType> expr0p1_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
         expr_[0] = expr0p1_ptr;

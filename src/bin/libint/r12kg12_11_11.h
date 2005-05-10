@@ -11,11 +11,14 @@ namespace libint2 {
   /** R12kG12_11_11_base is the base for all 2-body integral over the R12_k_G12
       operator with one basis function for each particle in bra and ket
     */
-  class R12kG12_11_11_base {
-  };
+  template <class BFSet>
+    struct R12kG12_11_11_base {
+      virtual bool instance_of_R12kG12_11_11() =0;
+    };
 
   /**
-     mType is the type that describes the auxiliary index of standard 2-body repulsion integrals
+     mType is the type that describes the auxiliary index of
+     any 2-body integral.
   */
   typedef QuantumNumbers<unsigned int,1> mType;
   /**
@@ -26,7 +29,7 @@ namespace libint2 {
   */
   template <class BFS, int K> class R12kG12_11_11 :
     public GenIntegralSet< R12_k_G12<K>, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, mType >,
-    public R12kG12_11_11_base
+    public R12kG12_11_11_base<BFS>
     {
     public:
       typedef R12_k_G12<K> OperType;
@@ -67,6 +70,8 @@ namespace libint2 {
 
       /// Implements DGVertex::this_precomputed()
       bool this_precomputed() const;
+      /// Implements R12kG12_11_11_base::instance_of_R12kG12_11_11()
+      bool instance_of_R12kG12_11_11() { return true; }
     };
 
   // I use label() to hash R12kG12_11_11. Therefore labels must be unique!
@@ -76,7 +81,7 @@ namespace libint2 {
   
   template <class BFS, int K>
     R12kG12_11_11<BFS,K>::R12kG12_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket,  const AuxIndexType& aux) :
-    parent_type(TwoERep(),bra, ket, aux)
+    parent_type(R12_k_G12<K>(),bra, ket, aux)
     {
       if (bra.num_members(0) != 1)
         throw std::runtime_error("R12kG12_11_11<BFS,K>::R12kG12_11_11(bra,ket) -- number of BFSs in bra for particle 0 must be 1");
@@ -132,11 +137,52 @@ namespace libint2 {
       ostringstream os;
       os << "(" << parent_type::bra_.member(0,0)->label() << " "
          << parent_type::ket_.member(0,0)->label()
-         << " | r_{12}^" << K << "*exp(-\gamma r_{12}) | "
+         << " | r_{12}^" << K << "*exp(-\gamma r_{12}^2) | "
          << parent_type::bra_.member(1,0)->label() << " "
          << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
       return os.str();
     };
+  
+  template <class BFS, int K>
+    bool
+    R12kG12_11_11<BFS,K>::this_precomputed() const
+    {
+      if (TrivialBFSet<BFS>::result == false)
+        return false;
+      else {
+        if (parent_type::bra_.member(0,0)->zero() && parent_type::bra_.member(1,0)->zero() &&
+            parent_type::ket_.member(0,0)->zero() && parent_type::ket_.member(1,0)->zero())
+          return true;
+        else
+         return false;
+      }
+    }
+  
+  /** This is a collection of utility functions to extract
+      compile-time information about instances of R12kG12_11_11 at runtime.
+    */
+  namespace R12kG12_11_11_Util {
+
+    template <class BFS>
+      int k(const SafePtr< R12kG12_11_11_base<BFS> >& ints) {
+        typedef R12kG12_11_11_base<BFS> base_type;
+        // try k=0
+        {
+          typedef R12kG12_11_11<BFS,0> inst_type;
+          SafePtr<inst_type> iptr = dynamic_pointer_cast<inst_type,base_type>(ints);
+          if (iptr != 0)
+            return 0;
+        }
+        // try k=-1
+        {
+          typedef R12kG12_11_11<BFS,-1> inst_type;
+          SafePtr<inst_type> iptr = dynamic_pointer_cast<inst_type,base_type>(ints);
+          if (iptr != 0)
+            return -1;
+        }
+      };
+
+  };
 
   /// R12_m1_G12_11_11_... is a set of integrals over g12/r12
   typedef R12kG12_11_11<CGShell,-1> R12_m1_G12_11_11_sq;

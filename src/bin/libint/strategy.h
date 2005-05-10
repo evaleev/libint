@@ -2,6 +2,8 @@
 #include <smart_ptr.h>
 #include <tactic.h>
 #include <intset_to_ints.h>
+#include <vrr_11_r12kg12_11.h>
+#include <hrr.h>
 
 #ifndef _libint2_src_bin_libint_strategy_h_
 #define _libint2_src_bin_libint_strategy_h_
@@ -53,6 +55,14 @@ namespace libint2 {
     virtual RR optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
                                           const SafePtr< TwoPRep_11_11_int >& integral,
                                           const SafePtr<Tactic>& tactic);
+    template <int K>
+    RR optimal_rr_R12kG121111_sq(const SafePtr<DirectedGraph>& graph,
+                                 const SafePtr< R12kG12_11_11_base<CGShell> >& integral,
+                                 const SafePtr<Tactic>& tactic);
+    template <int K>
+    RR optimal_rr_R12kG121111_int(const SafePtr<DirectedGraph>& graph,
+                                  const SafePtr< R12kG12_11_11_base<CGF> >& integral,
+                                  const SafePtr<Tactic>& tactic);
 
     /// Casts a smart pointer to rr of type RRType to a smart pointer to RecurrenceRelation. Utility function.
     template <class RRType>
@@ -66,6 +76,61 @@ namespace libint2 {
     unsigned int max_size_to_unroll_;
 
   };
+  
+  template <int K>
+  SafePtr<RecurrenceRelation>
+  Strategy::optimal_rr_R12kG121111_sq(const SafePtr<DirectedGraph>& graph,
+                                      const SafePtr< R12kG12_11_11_base<CGShell> >& bptr,
+                                      const SafePtr<Tactic>& tactic)
+{
+  typedef R12kG12_11_11<CGShell,K> inttype;
+  const SafePtr<inttype> integral = dynamic_pointer_cast<inttype,R12kG12_11_11_base<CGShell> >(bptr);
+  
+  //
+  // This is a basic strategy for computing integral
+  // 1) first see if should convert the SafePtr<RecurrenceRelation>
+  //    set to infividual integrals
+  // 2) if possible apply HRR
+  // 3) else apply VRR
+  //
+  if (integral->size() <= max_size_to_unroll_)
+    return unroll_intset<inttype>(integral);
+
+  {
+    // AB HRR
+    typedef HRR<R12kG12_11_11<CGShell,K>,CGShell,0,InBra,0,InKet,0> rr_type;
+    SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+
+  {
+    // CD HRR
+    typedef HRR<R12kG12_11_11<CGShell,K>,CGShell,1,InBra,0,InKet,0> rr_type;
+    SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+
+  {
+    // A VRR
+    typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,K,0,InBra> rr_type;
+    SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+
+  {
+    // C VRR
+    typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,K,1,InBra> rr_type;
+    SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+
+  return SafePtr<RecurrenceRelation>();
+}
+
   
   
   //
