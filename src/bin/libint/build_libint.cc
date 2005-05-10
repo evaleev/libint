@@ -63,7 +63,7 @@ int try_main (int argc, char* argv[])
   
   // use default parameters
   SafePtr<CompilationParameters> cparams(new CompilationParameters);
-  cparams->max_am_eri(LIBINT_MAX_AM);
+  cparams->max_am_eri(1);
   // initialize code context to produce library API
   SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
   // make a list of computation labels
@@ -219,7 +219,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           }
           
           // k=-1
-          if (false) {
+          {
             typedef R12kG12_11_11<CGShell,-1> int_type;
             SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
             os << "building " << abcd->description() << endl;

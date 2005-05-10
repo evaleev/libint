@@ -137,7 +137,7 @@ namespace libint2 {
       ostringstream os;
       os << "(" << parent_type::bra_.member(0,0)->label() << " "
          << parent_type::ket_.member(0,0)->label()
-         << " | r_{12}^" << K << "*exp(-\gamma r_{12}^2) | "
+         << " | r_{12}^" << K << " * G12 | "
          << parent_type::bra_.member(1,0)->label() << " "
          << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
       return os.str();
