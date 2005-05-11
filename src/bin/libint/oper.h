@@ -213,6 +213,92 @@ namespace libint2 {
     return psymm_[ii*(ii-1)/2 + jj];
   }
 
+//////////////
+  
+  typedef OperatorProperties<2,false> Nonmultiplicative2Body_Props;
+
+  /** Ti_G12 is a two-body operator of form [T_i, G12],
+      where i is particle index (0 or 1) and G12 is a Gaussian Geminal.
+  */
+  template <int I>
+  class Ti_G12 : public Oper<Nonmultiplicative2Body_Props> {
+  public:
+    typedef Oper<Nonmultiplicative2Body_Props> parent_type;
+    /// Ti_G12 is not a set
+    typedef Ti_G12 iter_type;
+    static const int i = I;
+    const unsigned int num_oper() const { return 1; };
+    
+    Ti_G12();
+    Ti_G12(const SafePtr<Ti_G12>&);
+    Ti_G12(const SafePtr<OperSet>&);
+    Ti_G12(const SafePtr<ConstructablePolymorphically>&);
+    ~Ti_G12();
+
+    /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
+        or antisymmetric with respect to permutation of particles i and j */
+    int psymm(int i, int j) const;
+
+  private:
+    // symmetry W.R.T. permutation of each pair of particles
+    // 1 -- symmetric, -1 -- antisymmetric, 0 -- nonsymmetric
+    // stored as a lower triangle (diagonal not included)
+    static const int npair = Properties::np*(Properties::np-1)/2;
+    static const vector<char> psymm_;
+  };
+  
+  template <int I> const vector<char> Ti_G12<I>::psymm_(npair,0);
+
+  template <int I>
+  Ti_G12<I>::Ti_G12() :
+  parent_type("[T_i,G12]","Ti_G12")
+  {
+  }
+  
+  template <int I>
+  Ti_G12<I>::Ti_G12(const SafePtr<Ti_G12>& source) :
+  parent_type("[T_i,G12]","Ti_G12")
+  {
+  }
+  
+  template <int I>
+  Ti_G12<I>::Ti_G12(const SafePtr<OperSet>& oset) :
+  parent_type("[T_i,G12]","Ti_G12")
+  {
+    const SafePtr<Ti_G12> oset_cast = dynamic_pointer_cast<Ti_G12,OperSet>(oset);
+    if (oset_cast == 0)
+      throw std::runtime_error("Ti_G12<I>::Ti_G12(const SafePtr<OperSet>& oset) -- oset is a pointer to an incompatible type");
+  }
+  
+  template <int I>
+  Ti_G12<I>::Ti_G12(const SafePtr<ConstructablePolymorphically>& oset) :
+  parent_type("[T_i,G12]","Ti_G12")
+  {
+    const SafePtr<Ti_G12> oset_cast = dynamic_pointer_cast<Ti_G12,ConstructablePolymorphically>(oset);
+    if (oset_cast == 0)
+      throw std::runtime_error("Ti_G12<I>::Ti_G12(const SafePtr<ConstructablePolymorphically>& oset) -- oset is a pointer to an incompatible type");
+  }
+  
+  template <int I>
+  Ti_G12<I>::~Ti_G12()
+  {
+  }
+  
+  template <int I>
+  int
+  Ti_G12<I>::psymm(int i, int j) const
+  {
+    if (i<0 || i>=Properties::np)
+      throw std::runtime_error("Ti_G12<I>::psymm(i,j) -- index i out of bounds");
+    if (j<0 || j>=Properties::np)
+      throw std::runtime_error("Ti_G12<I>::psymm(i,j) -- index j out of bounds");
+    if (i == j)
+      return 1;
+    int ii = (i > j) ? i : j;
+    int jj = (i > j) ? j : i;
+    return psymm_[ii*(ii-1)/2 + jj];
+  }
+
 
 };
 

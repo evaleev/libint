@@ -31,8 +31,9 @@
 #include <intset_to_ints.h>
 #include <strategy.h>
 #include <iface.h>
-#include <r12kg12_11_11.h>
 #include <vrr_11_r12kg12_11.h>
+#include <r12kg12_11_11.h>
+#include <tig12_11_11.h>
 
 using namespace std;
 using namespace libint2;
@@ -210,7 +211,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             continue;
           
           // k=0
-          {
+          if (false) {
             typedef R12kG12_11_11<CGShell,0> int_type;
             SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
             os << "building " << abcd->description() << endl;
@@ -219,7 +220,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           }
           
           // k=-1
-          {
+          if (false) {
             typedef R12kG12_11_11<CGShell,-1> int_type;
             SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
             os << "building " << abcd->description() << endl;
@@ -227,6 +228,15 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             dg_xxxx->append_target(abcd_ptr);
           }
           
+          // [T_1,G12]
+          {
+            typedef TiG12_11_11<CGShell,0> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+
           dg_xxxx->apply(strat,tactic);
           dg_xxxx->optimize_rr_out();
           dg_xxxx->traverse();

@@ -9,6 +9,7 @@ namespace libint2 {
   
   template <class BFS> class TwoPRep_11_11;
   template <class BFS, int K> class R12kG12_11_11;
+  template <class BFS, int K> class TiG12_11_11;
 
 };
 

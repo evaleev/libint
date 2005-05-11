@@ -202,6 +202,9 @@ CGShell::dec(unsigned int i)
       throw InvalidDecrement("CGShell::dec() -- angular momentum already 0");
     --qn_[0];
   }
+  else {
+    throw InvalidDecrement("CGShell::dec(i) -- i must be zero");
+  }
 }
 
 void

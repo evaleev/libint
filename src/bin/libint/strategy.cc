@@ -7,6 +7,8 @@
 #include <dg.h>
 #include <hrr.h>
 #include <vrr_11_twoprep_11.h>
+#include <vrr_11_r12kg12_11.h>
+#include <comp_11_tig12_11.h>
 
 using namespace std;
 using namespace libint2;
@@ -56,6 +58,36 @@ Strategy::optimal_rr(const SafePtr<DirectedGraph>& graph,
           return optimal_rr_R12kG121111_int<-1>(graph,bptr,tactic);
         default:
           throw logic_error("Strategy::optimal_rr() unable to determine K for R12kG12_11_11<CGF,K> class");
+      };
+    }
+  }
+  {
+    typedef TiG12_11_11_base<CGShell> base_type;
+    SafePtr<base_type> bptr = dynamic_pointer_cast<base_type,DGVertex>(integral);
+    if (bptr != 0) {
+      int k = TiG12_11_11_Util::i<CGShell>(bptr);
+      switch (k) {
+        case 0:
+          return optimal_rr_TiG121111_sq<0>(graph,bptr,tactic);
+        case 1:
+          return optimal_rr_TiG121111_sq<1>(graph,bptr,tactic);
+        default:
+          throw logic_error("Strategy::optimal_rr() unable to determine K for TiG12_11_11<CGShell,K> class");
+      };
+    }
+  }
+  {
+    typedef TiG12_11_11_base<CGF> base_type;
+    SafePtr<base_type> bptr = dynamic_pointer_cast<base_type,DGVertex>(integral);
+    if (bptr != 0) {
+      int k = TiG12_11_11_Util::i<CGF>(bptr);
+      switch (k) {
+        case 0:
+          return optimal_rr_TiG121111_int<0>(graph,bptr,tactic);
+        case 1:
+          return optimal_rr_TiG121111_int<1>(graph,bptr,tactic);
+        default:
+          throw logic_error("Strategy::optimal_rr() unable to determine K for TiG12_11_11<CGF,K> class");
       };
     }
   }

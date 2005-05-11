@@ -3,6 +3,7 @@
 #include <tactic.h>
 #include <intset_to_ints.h>
 #include <vrr_11_r12kg12_11.h>
+#include <comp_11_tig12_11.h>
 #include <hrr.h>
 
 #ifndef _libint2_src_bin_libint_strategy_h_
@@ -63,6 +64,14 @@ namespace libint2 {
     RR optimal_rr_R12kG121111_int(const SafePtr<DirectedGraph>& graph,
                                   const SafePtr< R12kG12_11_11_base<CGF> >& integral,
                                   const SafePtr<Tactic>& tactic);
+    template <int K>
+    RR optimal_rr_TiG121111_sq(const SafePtr<DirectedGraph>& graph,
+                               const SafePtr< TiG12_11_11_base<CGShell> >& integral,
+                               const SafePtr<Tactic>& tactic);
+    template <int K>
+    RR optimal_rr_TiG121111_int(const SafePtr<DirectedGraph>& graph,
+                                const SafePtr< TiG12_11_11_base<CGF> >& integral,
+                                const SafePtr<Tactic>& tactic);
 
     /// Casts a smart pointer to rr of type RRType to a smart pointer to RecurrenceRelation. Utility function.
     template <class RRType>
@@ -179,6 +188,57 @@ namespace libint2 {
             rrstack.push_back(rr_cast(rr_ptr));
         }
       }
+      
+      return tactic->optimal_rr(rrstack);
+    }
+
+  
+  template <int K>
+    SafePtr<RecurrenceRelation>
+    Strategy::optimal_rr_TiG121111_sq(const SafePtr<DirectedGraph>& graph,
+                                      const SafePtr< TiG12_11_11_base<CGShell> >& bptr,
+                                      const SafePtr<Tactic>& tactic)
+    {
+      typedef TiG12_11_11<CGShell,K> inttype;
+      const SafePtr<inttype> integral = dynamic_pointer_cast<inttype,TiG12_11_11_base<CGShell> >(bptr);
+      
+      //
+      // This is a basic strategy for computing integral
+      // 1) first see if should convert the SafePtr<RecurrenceRelation>
+      //    set to infividual integrals
+      // 2) otherwise compute it
+      //
+      if (integral->size() <= max_size_to_unroll_)
+        return unroll_intset<inttype>(integral);
+      
+      typedef CR_11_TiG12_11<TiG12_11_11,CGShell,K> rr_type;
+      SafePtr<rr_type> rr_ptr(new rr_type(integral));
+      if (rr_ptr->num_children())
+        return rr_cast(rr_ptr);
+      
+      throw std::logic_error("Strategy::optimal_rr_TiG121111_sq() -- did not find a way to compute");
+    }
+
+  
+  // Generate all possible recurrence relations and then
+  // use a Tactic object to decide which to use
+  template <int K>
+    SafePtr<RecurrenceRelation>
+    Strategy::optimal_rr_TiG121111_int(const SafePtr<DirectedGraph>& graph,
+                                       const SafePtr< TiG12_11_11_base<CGF> >& bptr,
+                                       const SafePtr<Tactic>& tactic)
+    {
+      typedef TiG12_11_11<CGF,K> inttype;
+      const SafePtr<inttype> integral = dynamic_pointer_cast<inttype,TiG12_11_11_base<CGF> >(bptr);
+
+      vector<RR> rrstack;  // stack of all recurrence relations
+
+      typedef CR_11_TiG12_11<TiG12_11_11,CGF,K> rr_type;
+      SafePtr<rr_type> rr_ptr(new rr_type(integral));
+      if (rr_ptr->num_children())
+        rrstack.push_back(rr_cast(rr_ptr));
+      else
+        throw std::logic_error("Strategy::optimal_rr_TiG121111_int() -- did not find a way to compute");
       
       return tactic->optimal_rr(rrstack);
     }

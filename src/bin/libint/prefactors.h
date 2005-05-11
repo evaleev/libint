@@ -22,7 +22,7 @@ namespace libint2 {
     typedef RTimeEntity<double> rdouble;
     typedef CTimeEntity<double> cdouble;
 
-    static const unsigned int NMAX = 20;
+    static const unsigned int NMAX = 200;
     static const unsigned int np = 2;
     static const unsigned int nfunc_per_part = 1;
 
@@ -51,6 +51,11 @@ namespace libint2 {
     SafePtr<rdouble> vW_XY[np];
     /// cartesian components of W_XY vector
     SafePtr<rdouble> W_XY[np][3];
+
+    /**
+       orbital exponents
+    */
+    SafePtr<rdouble> zeta[np][2];
 
     /**
        alpha12[p] is the sum of exponents for particle p:
@@ -88,6 +93,7 @@ namespace libint2 {
     /// integers represented as doubles
     SafePtr<cdouble> N_i[NMAX];
 
+    SafePtr<cdouble> Cdouble(double a);
   };
   
   extern Prefactors prefactors;

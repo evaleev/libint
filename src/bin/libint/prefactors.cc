@@ -96,6 +96,15 @@ Prefactors::Prefactors() :
     }
   }
 
+  for(int p=0; p<np; p++) {
+    for(int braket=0; braket<2; braket++) {
+      char tmpstr[200];
+      sprintf(tmpstr,"zeta_%c",X[p][braket][0]);
+      rdptr zptr(new rdouble(tmpstr));
+      zeta[p][braket] = zptr;
+    }
+  }
+  
   char alpha12_str[np][20] = { "zeta", "eta" };
   char alpha12_char[np+1] = "ze";
   for(int p=0; p<np; p++) {
@@ -124,6 +133,15 @@ Prefactors::Prefactors() :
 
 Prefactors::~Prefactors()
 {
+}
+
+SafePtr<Prefactors::cdouble>
+Prefactors::Cdouble(double a)
+{
+  char c_str_repr[40];
+  sprintf(c_str_repr,"%.16lf", a);
+  SafePtr<cdouble> result(new cdouble(c_str_repr,a));
+  return result;
 }
 
 namespace libint2 {
