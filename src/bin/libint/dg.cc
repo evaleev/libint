@@ -591,8 +591,16 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
   //
   SafePtr<DGVertex> vertex = first_to_compute_;
   do {
-    if (!vertex->symbol_set() && !vertex->address_set() && !vertex->precomputed() &&
-        vertex->need_to_compute() && vertex->size() > min_size_to_alloc) {
+        // If symbol is set then the object is not on stack
+    if (!vertex->symbol_set() &&
+        // address may already by set
+        !vertex->address_set() &&
+        // precomputed objects don't go on stack
+        !vertex->precomputed() &&
+        // if don't need to compute ..
+        vertex->need_to_compute() &&
+        // don't put on stack if smaller than min_size_to_alloc, unless it's a target
+        (vertex->is_a_target() || vertex->size() > min_size_to_alloc)) {
       MemoryManager::Address addr = memman->alloc(vertex->size());
       vertex->set_address(addr);
       // update the max stack size

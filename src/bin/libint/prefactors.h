@@ -56,6 +56,10 @@ namespace libint2 {
        orbital exponents
     */
     SafePtr<rdouble> zeta[np][2];
+    /**
+       squared orbital exponents
+    */
+    SafePtr<rdouble> zeta2[np][2];
 
     /**
        alpha12[p] is the sum of exponents for particle p:

@@ -102,7 +102,7 @@ namespace libint2 {
     refer_this_to(V) makes this vertex act like a reference to V so that
     calls to symbol() and address() report code symbol and stack address of V
     */
-    void refer_this_to(const SafePtr<DGVertex>&  V) { referred_vertex_ = V; }
+    void refer_this_to(const SafePtr<DGVertex>&  V);
     /// returns the code symbol
     const std::string& symbol() const throw(SymbolNotSet);
     /// sets the code symbol
@@ -163,6 +163,12 @@ namespace libint2 {
 
     /// if not null -- use this vertex to report address and symbol
     SafePtr<DGVertex> referred_vertex_;
+    /// number of vertices which refer to this
+    unsigned int nrefs_;
+    /// increments number of references
+    void inc_nrefs();
+
+    
     /// symbol used in the code
     SafePtr<std::string> symbol_;
     /// Address on the stack

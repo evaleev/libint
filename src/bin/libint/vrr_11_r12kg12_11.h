@@ -450,7 +450,7 @@ namespace libint2 {
     {
       ostringstream os;
       
-      os << "OS VRR Part" << part << " " <<
+      os << "VRR Part" << part << " " <<
       (where == InBra ? "bra" : "ket") << " ( ";
       F sh_a(target->bra(0,0)); os << sh_a.label() << " ";
       F sh_b(target->ket(0,0)); os << sh_b.label() << " | R12^" << (K < 0 ? "m" : "") << abs(K) << " * G12 | ";

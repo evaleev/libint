@@ -6,7 +6,7 @@ using namespace libint2;
 
 DGVertex::DGVertex() :
   parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
-  precalc_(), postcalc_(), graph_label_(), referred_vertex_(SafePtr<DGVertex>()),
+  precalc_(), postcalc_(), graph_label_(), referred_vertex_(SafePtr<DGVertex>()), nrefs_(0),
   symbol_(), address_(), need_to_compute_(true)
 {
 }
@@ -14,7 +14,7 @@ DGVertex::DGVertex() :
 DGVertex::DGVertex(const vector< SafePtr<DGArc> >& parents, const vector< SafePtr<DGArc> >& children) :
   parents_(parents), children_(children), target_(false), can_add_arcs_(true),
   num_tagged_arcs_(0), precalc_(), postcalc_(), graph_label_(),
-  referred_vertex_(SafePtr<DGVertex>()), symbol_(), address_(),
+  referred_vertex_(SafePtr<DGVertex>()), nrefs_(0), symbol_(), address_(),
   need_to_compute_(true)
 {
 }
@@ -214,6 +214,7 @@ DGVertex::reset()
   address_ = SafePtr<Address>();
   need_to_compute_ = true;
   referred_vertex_ = SafePtr<DGVertex>();
+  nrefs_ = 0;
 }
 
 const std::string&
@@ -230,6 +231,29 @@ DGVertex::set_graph_label(const std::string& label)
 {
   SafePtr<std::string> graph_label(new std::string(label));
   graph_label_ = graph_label;
+}
+
+void
+DGVertex::refer_this_to(const SafePtr<DGVertex>& V)
+{
+  if (referred_vertex_ != 0) {
+    if (referred_vertex_->equiv(V))
+      return;
+    else
+      throw std::logic_error("DGVertex::refer_this_to() -- already referring to some other vertex");
+  }
+  cout << "Referring " << this->description() << " to " << V->description() << endl;
+  referred_vertex_ = V;
+  V->inc_nrefs();
+}
+
+void
+DGVertex::inc_nrefs()
+{
+  if (nrefs_)
+    throw std::logic_error("DGVertex::inc_nrefs() -- already referred to by another vertex");
+  else
+    ++nrefs_;
 }
 
 const std::string&
@@ -261,7 +285,7 @@ DGVertex::reset_symbol()
 DGVertex::Address
 DGVertex::address() const throw(AddressNotSet)
 {
-  if (referred_vertex_)
+  if (referred_vertex_ && referred_vertex_->address_set())
     return referred_vertex_->address();
   else {
     if (address_)

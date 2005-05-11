@@ -105,6 +105,15 @@ Prefactors::Prefactors() :
     }
   }
   
+  for(int p=0; p<np; p++) {
+    for(int braket=0; braket<2; braket++) {
+      char tmpstr[200];
+      sprintf(tmpstr,"zeta_%c_2",X[p][braket][0]);
+      rdptr zptr(new rdouble(tmpstr));
+      zeta2[p][braket] = zptr;
+    }
+  }
+  
   char alpha12_str[np][20] = { "zeta", "eta" };
   char alpha12_char[np+1] = "ze";
   for(int p=0; p<np; p++) {

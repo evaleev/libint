@@ -102,7 +102,7 @@ CodeContext::replace_chars(const std::string& S, const std::string& From, const 
 //////////////
 
 namespace ForbiddenCppCharacters {
-  static const unsigned int nchars = 11;
+  static const unsigned int nchars = 14;
   static const char chars[nchars][2] = {
     "{",
     "}",
@@ -114,7 +114,10 @@ namespace ForbiddenCppCharacters {
     "/",
     "*",
     "|",
-    "^"
+    "^",
+    "[",
+    "]",
+    ","
   };
   static const char subst_chars[nchars][20] = {
     "",
@@ -127,7 +130,10 @@ namespace ForbiddenCppCharacters {
     "_over_",
     "_times_",
     "_",
-    "_up_"
+    "_up_",
+    "_sB_",
+    "_Sb_",
+    "_c_"
   };
 };
 

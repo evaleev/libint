@@ -32,7 +32,7 @@ namespace libint2 {
 
   public:
     typedef I<BFSet,K> TargetType;
-    typedef R12kG12_11_11_base<BFSet> ChildType;
+    typedef R12kG12_11_11<BFSet,0> ChildType;
     /// The type of expressions in which RecurrenceRelations result.
     typedef AlgebraicOperator<DGVertex> ExprType;
 
@@ -120,6 +120,8 @@ namespace libint2 {
       int p_a = K;
       int p_c = (p_a == 0) ? 1 : 0;
 
+      // Keeps track of the coefficient in front of (ab|cd)
+      SafePtr<ExprType> abcd_pfac;
       for(int braket=0; braket<=1; braket++) {
         FunctionPosition where = (FunctionPosition)braket;
 
@@ -130,8 +132,6 @@ namespace libint2 {
           bra_ref = &ket;
           ket_ref = &bra;
         }
-
-        typedef R12kG12_11_11<F,0> child_type;
 
         const unsigned int ndirs = is_simple() ? 3 : 1;
         for(int xyz=0; xyz<ndirs; xyz++) {
@@ -158,7 +158,7 @@ namespace libint2 {
           
           if (am2_exists) {
             int next_child = nchildren_;
-            children_[next_child] = child_type::Instance(bra[0],ket[0],bra[1],ket[1],0);
+            children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0);
             nchildren_ += 1;
             if (is_simple()) {
               const unsigned int ni_a = bra_ref->operator[](p_a).qn(xyz) + 2;
@@ -175,41 +175,57 @@ namespace libint2 {
             bra_ref->operator[](p_a).inc(xyz);
             bra_ref->operator[](p_a).inc(xyz);
             int next_child = nchildren_;
-            children_[next_child] = child_type::Instance(bra[0],ket[0],bra[1],ket[1],0);
+            children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0);
             nchildren_ += 1;
             if (is_simple()) {
               const unsigned int ni_a = bra_ref->operator[](p_a).qn(xyz);
               unsigned int pfac = 2*(ni_a + 1);
               if (am1_exists)
                 pfac += 2*ni_a;
-              SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.zeta[K][where],prefactors.zeta[K][where]));
-              SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.Cdouble(4.0),expr0_ptr));
-              SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times,expr1_ptr,rr_child(next_child)));
-              add_expr(expr0_ptr);
+              SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.Cdouble(4.0),prefactors.zeta2[K][where]));
+              SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,expr0_ptr,rr_child(next_child)));
+              add_expr(expr1_ptr);
             }
             nflops_ += ConvertNumFlops<F>(3);
             bra_ref->operator[](p_a).dec(xyz);
             bra_ref->operator[](p_a).dec(xyz);
           }
 
+          
           // a
           {
-            int next_child = nchildren_;
-            children_[next_child] = child_type::Instance(bra[0],ket[0],bra[1],ket[1],0);
-            nchildren_ += 1;
             if (is_simple()) {
               const unsigned int ni_a = bra_ref->operator[](p_a).qn(xyz);
               unsigned int pfac = 2*(ni_a + 1);
               if (am1_exists)
                 pfac += 2*ni_a;
-              SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[pfac],prefactors.zeta[K][where]));
-              SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,expr0_ptr,rr_child(next_child)));
-              add_expr(expr0_ptr,-1);
+              SafePtr<ExprType> pfac_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[pfac],prefactors.zeta[K][where]));
+              if (abcd_pfac) {
+                abcd_pfac = pfac_ptr;
+                nflops_ += ConvertNumFlops<F>(1);
+              }
+              else {
+                SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Plus,abcd_pfac,pfac_ptr));
+                abcd_pfac = pfac_ptr;
+                nflops_ += ConvertNumFlops<F>(2);
+              }
             }
-            nflops_ += ConvertNumFlops<F>(1);
           }
         }
       }
+
+      // now add a
+      {
+        int next_child = nchildren_;
+        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0);
+        nchildren_ += 1;
+        if (is_simple()) {
+          SafePtr<ExprType> expr_ptr(new ExprType(ExprType::OperatorTypes::Times,abcd_pfac,rr_child(next_child)));
+          add_expr(expr_ptr,-1);
+        }
+        nflops_ += ConvertNumFlops<F>(1);
+      }
+
       // scale by -0.5
       SafePtr<ExprType> scaled(new ExprType(ExprType::OperatorTypes::Times,prefactors.Cdouble(-0.5),expr_[0]));
       expr_[0] = scaled;

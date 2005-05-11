@@ -206,12 +206,13 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
     for(int lb=0; lb<=lmax; lb++) {
       for(int lc=0; lc<=lmax; lc++) {
         for(int ld=0; ld<=lmax; ld++) {
-          
+
+          bool ssss = false;
           if (la+lb+lc+ld == 0)
-            continue;
+            ssss = true;
           
           // k=0
-          if (false) {
+          if (!ssss) {
             typedef R12kG12_11_11<CGShell,0> int_type;
             SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
             os << "building " << abcd->description() << endl;
@@ -220,7 +221,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           }
           
           // k=-1
-          if (false) {
+          if (!ssss) {
             typedef R12kG12_11_11<CGShell,-1> int_type;
             SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
             os << "building " << abcd->description() << endl;
@@ -229,7 +230,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           }
           
           // [T_1,G12]
-          {
+          if (true) {
             typedef TiG12_11_11<CGShell,0> int_type;
             SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
             os << "building " << abcd->description() << endl;
@@ -238,7 +239,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           }
 
           // [T_2,G12]
-          if (false) {
+          if (true) {
             typedef TiG12_11_11<CGShell,1> int_type;
             SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
             os << "building " << abcd->description() << endl;
@@ -247,7 +248,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           }
 
           // k=2
-          if (false) {
+          if (!ssss) {
             typedef R12kG12_11_11<CGShell,2> int_type;
             SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
             os << "building " << abcd->description() << endl;
