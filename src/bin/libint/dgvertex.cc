@@ -242,7 +242,6 @@ DGVertex::refer_this_to(const SafePtr<DGVertex>& V)
     else
       throw std::logic_error("DGVertex::refer_this_to() -- already referring to some other vertex");
   }
-  cout << "Referring " << this->description() << " to " << V->description() << endl;
   referred_vertex_ = V;
   V->inc_nrefs();
 }
