@@ -166,6 +166,13 @@ namespace libint2 {
     template <class BFS>
       int k(const SafePtr< R12kG12_11_11_base<BFS> >& ints) {
         typedef R12kG12_11_11_base<BFS> base_type;
+        // try k=2
+        {
+          typedef R12kG12_11_11<BFS,2> inst_type;
+          SafePtr<inst_type> iptr = dynamic_pointer_cast<inst_type,base_type>(ints);
+          if (iptr != 0)
+            return 2;
+        }
         // try k=0
         {
           typedef R12kG12_11_11<BFS,0> inst_type;
@@ -180,6 +187,7 @@ namespace libint2 {
           if (iptr != 0)
             return -1;
         }
+        throw std::logic_error("R12kG12_11_11_Util::k<BFS>() -- unknown value of k");
       };
 
   };

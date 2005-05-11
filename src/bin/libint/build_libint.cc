@@ -237,6 +237,24 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             dg_xxxx->append_target(abcd_ptr);
           }
 
+          // [T_2,G12]
+          if (false) {
+            typedef TiG12_11_11<CGShell,1> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+
+          // k=2
+          if (false) {
+            typedef R12kG12_11_11<CGShell,2> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+          
           dg_xxxx->apply(strat,tactic);
           dg_xxxx->optimize_rr_out();
           dg_xxxx->traverse();
