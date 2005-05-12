@@ -28,20 +28,25 @@ namespace libint2 {
   of ERI to use.
   */
   template <template <class> class ERI, class BFSet, int part, FunctionPosition where>
-  class VRR_11_TwoPRep_11 : public RecurrenceRelation {
+    class VRR_11_TwoPRep_11 : public RecurrenceRelation,
+                              public EnableSafePtrFromThis< VRR_11_TwoPRep_11<ERI,BFSet,part,where> >
+    {
 
   public:
+    typedef VRR_11_TwoPRep_11 ThisType;
     typedef ERI<BFSet> TargetType;
     typedef ERI<BFSet> ChildType;
     /// The type of expressions in which RecurrenceRelations result.
     typedef AlgebraicOperator<DGVertex> ExprType;
 
-    /**
-      dir specifies which quantum number is incremented.
-      For example, dir can be 0 (x), 1(y), or 2(z) if BFSet is
-      a Cartesian Gaussian.
-     */
-    VRR_11_TwoPRep_11(const SafePtr<TargetType>&, unsigned int dir = 0);
+    /** Use Instance() to obtain an instance of RR. This function is provided to avoid
+        issues with getting a SafePtr from constructor (as needed for registry to work).
+
+        dir specifies which quantum number of a and b is shifted.
+        For example, dir can be 0 (x), 1(y), or 2(z) if F is
+        a Cartesian Gaussian.
+    */
+    static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
     ~VRR_11_TwoPRep_11();
 
     /// Implementation of RecurrenceRelation::num_children()
@@ -83,6 +88,16 @@ namespace libint2 {
     std::ostream& cpp_source(std::ostream&) {}
 
   private:
+    /**
+      dir specifies which quantum number is incremented.
+      For example, dir can be 0 (x), 1(y), or 2(z) if BFSet is
+      a Cartesian Gaussian.
+     */
+    VRR_11_TwoPRep_11(const SafePtr<TargetType>&, unsigned int dir);
+
+    /// registers this RR with the stack, if needed
+    bool register_with_rrstack() const;
+
     static const unsigned int max_nchildren_ = 8;
     static const unsigned int max_nexpr_ = 6;
     unsigned int dir_;
@@ -98,6 +113,33 @@ namespace libint2 {
     std::string label_;
     std::string generate_label(const SafePtr<TargetType>& target) const;
   };
+
+  template <template <class> class ERI, class F, int part, FunctionPosition where>
+    SafePtr< VRR_11_TwoPRep_11<ERI,F,part,where> >
+    VRR_11_TwoPRep_11<ERI,F,part,where>::Instance(const SafePtr<TargetType>& Tint,
+                                                  unsigned int dir)
+    {
+      SafePtr<ThisType> this_ptr(new ThisType(Tint,dir));
+      // Do post-construction duties
+      if (this_ptr->num_children() != 0) {
+        this_ptr->register_with_rrstack();
+      }
+      return this_ptr;
+    }
+  
+  template <template <class> class ERI, class F, int part, FunctionPosition where>
+    bool
+    VRR_11_TwoPRep_11<ERI,F,part,where>::register_with_rrstack() const
+    {
+      // only register RRs with for shell sets
+      if (TrivialBFSet<F>::result)
+        return false;
+      SafePtr<RRStack> rrstack = RRStack::Instance();
+      SafePtr<ThisType> this_ptr = const_pointer_cast<ThisType,const ThisType>(EnableSafePtrFromThis<ThisType>::SafePtr_from_this());
+      rrstack->find(this_ptr);
+      return true;
+    }
+  
   
   template <template <class> class ERI, class F, int part, FunctionPosition where>
     VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr<ERI<F> >& Tint,

@@ -108,9 +108,9 @@ namespace libint2 {
     */
     void traverse();
     
-    /** extract all nonsimple RecurrenceRelations and put on RRStack stack
+    /** update func_names_
     */
-    void extract_rr(SafePtr<RRStack>& rrstack) const;
+    void update_func_names();
 
     /// Prints out call sequence
     void debug_print_traversal(ostream& os) const;
@@ -135,13 +135,6 @@ namespace libint2 {
                        const std::string& label,
                        std::ostream& decl, std::ostream& code);
     
-    /**
-       Generates code for unresolved recurrence relations using context.
-       prefix is prepended to each file name.
-    */
-    void generate_rr_code(const SafePtr<CodeContext>& context,
-                          const std::string& prefix);
-
     /** Resets the graph and all vertices. The stack of unresolved recurrence
         relations is preserved.
       */
@@ -158,11 +151,13 @@ namespace libint2 {
 
     /// contains vertices
     container stack_;
-    /** collects all unresolved recurrence relations.
-        calling reset() does not flush this object.
-      */
-    SafePtr<RRStack> rrstack_;
 
+    typedef  map<std::string,bool> FuncNameContainer;
+    /** Maintains the list of names of functions calls to which have been generated so far.
+        It is used to generate include statements.
+    */
+    FuncNameContainer func_names_;
+    
     static const unsigned int default_size_ = 100;
     unsigned int first_free_;
 

@@ -116,28 +116,28 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
 
   {
     typedef HRR_ab_11_TwoPRep_11_sh rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
     if (rr_ptr->num_children())
       return rr_cast(rr_ptr);
   }
 
   {
     typedef HRR_cd_11_TwoPRep_11_sh rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
     if (rr_ptr->num_children())
       return rr_cast(rr_ptr);
   }
 
   {
     typedef VRR_a_11_TwoPRep_11_sh rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
     if (rr_ptr->num_children())
       return rr_cast(rr_ptr);
   }
 
   {
     typedef VRR_c_11_TwoPRep_11_sh rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
     if (rr_ptr->num_children())
       return rr_cast(rr_ptr);
   }
@@ -161,7 +161,7 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
   // shift from B to A
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef HRR_ab_11_TwoPRep_11_int rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
     if (rr_ptr->num_children())
       rrstack.push_back(rr_cast(rr_ptr));
   }
@@ -169,7 +169,7 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
   // shift from D to C
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef HRR_cd_11_TwoPRep_11_int rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
     if (rr_ptr->num_children())
       rrstack.push_back(rr_cast(rr_ptr));
   }
@@ -178,7 +178,7 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
   // decrease A
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGF,0,InBra> rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
     if (rr_ptr->num_children())
       rrstack.push_back(rr_cast(rr_ptr));
   }
@@ -186,7 +186,7 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
   // decrease B
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGF,0,InKet> rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
     if (rr_ptr->num_children())
       rrstack.push_back(rr_cast(rr_ptr));
   }
@@ -194,7 +194,7 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
   // Decrease C
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGF,1,InBra> rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
     if (rr_ptr->num_children())
       rrstack.push_back(rr_cast(rr_ptr));
   }
@@ -202,7 +202,7 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
   // Decrease D
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGF,1,InKet> rr_type;
-    SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
     if (rr_ptr->num_children())
       rrstack.push_back(rr_cast(rr_ptr));
   }

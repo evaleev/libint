@@ -66,6 +66,11 @@ namespace libint2 {
     */
     virtual std::string label() const =0;
     
+    /**
+      description() returns a verbose description of this RR
+    */
+    virtual std::string description() const;
+    
     /// Generate declaration and definition for the recurrence relation
     virtual void generate_code(const SafePtr<CodeContext>& context,
                                const SafePtr<ImplicitDimensions>& dims,
@@ -117,12 +122,19 @@ namespace libint2 {
     typedef parent_type::data_type data_type;
     typedef parent_type::iter_type iter_type;
     typedef parent_type::citer_type citer_type;
-    
-    RRStack() : parent_type(&RecurrenceRelation::label) {}
+
+    /// Obtain the unique Instance of RRStack
+    static SafePtr<RRStack> Instance();
     ~RRStack() {}
     
     /// adds content of rrs to this stack
     void add(const SafePtr<RRStack>& rrs);
+
+    private:
+    // private constructor because it's a Singleton
+    RRStack() : parent_type(&RecurrenceRelation::label) {}
+
+    static SafePtr<RRStack> rrstack_;
   };
   
 };

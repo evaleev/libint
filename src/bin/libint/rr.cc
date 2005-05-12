@@ -88,7 +88,25 @@ RecurrenceRelation::adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const
   return dims;
 }
 
+std::string
+RecurrenceRelation::description() const
+{
+  return label();
+}
+
 ///////////////
+
+SafePtr<RRStack>
+RRStack::rrstack_;
+
+SafePtr<RRStack>
+RRStack::Instance() {
+  if (!rrstack_) {
+    SafePtr<RRStack> tmpstack(new RRStack);
+    rrstack_ = tmpstack;
+  }
+  return rrstack_;
+}
 
 void
 RRStack::add(const SafePtr<RRStack>& rrs)

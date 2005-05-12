@@ -30,20 +30,25 @@ namespace libint2 {
   integrals of the R12_k_G12 operator.
   */
   template <template <class,int> class I, class BFSet, int K, int part, FunctionPosition where>
-  class VRR_11_R12kG12_11 : public RecurrenceRelation {
+    class VRR_11_R12kG12_11 : public RecurrenceRelation,
+                              public EnableSafePtrFromThis< VRR_11_R12kG12_11<I,BFSet,K,part,where> >
+    {
 
   public:
+      typedef VRR_11_R12kG12_11<I,BFSet,K,part,where> ThisType;
     typedef I<BFSet,K> TargetType;
     typedef R12kG12_11_11_base<BFSet> ChildType;
     /// The type of expressions in which RecurrenceRelations result.
     typedef AlgebraicOperator<DGVertex> ExprType;
 
-    /**
-      dir specifies which quantum number is incremented.
-      For example, dir can be 0 (x), 1(y), or 2(z) if BFSet is
-      a Cartesian Gaussian.
-     */
-    VRR_11_R12kG12_11(const SafePtr<TargetType>&, unsigned int dir = 0);
+    /** Use Instance() to obtain an instance of RR. This function is provided to avoid
+        issues with getting a SafePtr from constructor (as needed for registry to work).
+
+        dir specifies which quantum number of a and b is shifted.
+        For example, dir can be 0 (x), 1(y), or 2(z) if F is
+        a Cartesian Gaussian.
+    */
+    static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
     ~VRR_11_R12kG12_11();
 
     /// Implementation of RecurrenceRelation::num_children()
@@ -85,6 +90,16 @@ namespace libint2 {
     std::ostream& cpp_source(std::ostream&) {}
 
   private:
+    /**
+      dir specifies which quantum number is incremented.
+      For example, dir can be 0 (x), 1(y), or 2(z) if BFSet is
+      a Cartesian Gaussian.
+     */
+    VRR_11_R12kG12_11(const SafePtr<TargetType>&, unsigned int dir);
+
+    /// registers this RR with the stack, if needed
+    bool register_with_rrstack() const;
+    
     static const unsigned int max_nchildren_ = 8;
     static const unsigned int max_nexpr_ = 6;
     unsigned int dir_;
@@ -117,6 +132,32 @@ namespace libint2 {
     VRR_11_R12kG12_11_util {
       static const bool K_eq_m1 = (K==-1);
     };
+
+  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+    SafePtr< VRR_11_R12kG12_11<I,F,K,part,where> >
+    VRR_11_R12kG12_11<I,F,K,part,where>::Instance(const SafePtr<I<F,K> >& Tint,
+                                                  unsigned int dir)
+    {
+      SafePtr<ThisType> this_ptr(new ThisType(Tint,dir));
+      // Do post-construction duties
+      if (this_ptr->num_children() != 0) {
+        this_ptr->register_with_rrstack();
+      }
+      return this_ptr;
+    }
+  
+  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+    bool
+    VRR_11_R12kG12_11<I,F,K,part,where>::register_with_rrstack() const
+    {
+      // only register RRs with for shell sets
+      if (TrivialBFSet<F>::result)
+        return false;
+      SafePtr<RRStack> rrstack = RRStack::Instance();
+      SafePtr<ThisType> this_ptr = const_pointer_cast<ThisType,const ThisType>(EnableSafePtrFromThis<ThisType>::SafePtr_from_this());
+      rrstack->find(this_ptr);
+      return true;
+    }
   
   template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
     VRR_11_R12kG12_11<I,F,K,part,where>::VRR_11_R12kG12_11(const SafePtr<I<F,K> >& Tint,

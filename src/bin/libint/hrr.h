@@ -36,20 +36,25 @@ namespace libint2 {
   template <class IntType, class BFSet, int part,
   FunctionPosition loc_a, unsigned int pos_a,
   FunctionPosition loc_b, unsigned int pos_b>
-  class HRR : public RecurrenceRelation {
+  class HRR : public RecurrenceRelation,
+              public EnableSafePtrFromThis< HRR<IntType,BFSet,part,loc_a,pos_a,loc_b,pos_b> >
+    {
 
   public:
+    typedef HRR<IntType,BFSet,part,loc_a,pos_a,loc_b,pos_b> ThisType;
     typedef IntType TargetType;
     typedef IntType ChildType;
     /// The type of expressions in which RecurrenceRelations result.
     typedef AlgebraicOperator<DGVertex> ExprType;
 
-    /**
-      dir specifies which quantum number of a and b is shifted.
-      For example, dir can be 0 (x), 1(y), or 2(z) if F is
-      a Cartesian Gaussian.
-      */
-    HRR(const SafePtr<TargetType>&, unsigned int dir = 0);
+    /** Use Instance() to obtain an instance of RR. This function is provided to avoid
+        issues with getting a SafePtr from constructor (as needed for registry to work).
+
+        dir specifies which quantum number of a and b is shifted.
+        For example, dir can be 0 (x), 1(y), or 2(z) if F is
+        a Cartesian Gaussian.
+    */
+    static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
     ~HRR();
 
     /// Implementation of RecurrenceRelation::num_children()
@@ -78,6 +83,8 @@ namespace libint2 {
     }
     /// Implementation of RecurrenceRelation::label()
     std::string label() const { return label_; }
+    /// Reimplementation of RecurrenceRelation::description()
+    std::string description() const { ostringstream oss; oss << label() << "   target = " << target_->label(); return oss.str(); }
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return nflops_; }
     /// Implementation of RecurrenceRelation::spfunction_call()
@@ -90,6 +97,16 @@ namespace libint2 {
     std::ostream& cpp_source(std::ostream&) {}
 
   private:
+    /**
+      dir specifies which quantum number of a and b is shifted.
+      For example, dir can be 0 (x), 1(y), or 2(z) if F is
+      a Cartesian Gaussian.
+      */
+    HRR(const SafePtr<TargetType>&, unsigned int dir);
+
+    /// registers this RR with the stack, if needed
+    bool register_with_rrstack() const;
+
     static const unsigned int max_nchildren_ = 2;
     static const unsigned int max_nexpr_ = 2;
     unsigned int dir_;
@@ -115,7 +132,19 @@ namespace libint2 {
     bool expl_low_dim() const;
   };
 
-  
+  template <class IntType, class F, int part,
+    FunctionPosition loc_a, unsigned int pos_a,
+    FunctionPosition loc_b, unsigned int pos_b>
+    SafePtr< HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b> >
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::Instance(const SafePtr<TargetType>& Tint, unsigned int dir)
+    {
+      SafePtr<ThisType> this_ptr(new ThisType(Tint,dir));
+      // Do post-construction duties
+      if (this_ptr->num_children() != 0) {
+        this_ptr->register_with_rrstack();
+      }
+      return this_ptr;
+    }
   
   template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
@@ -216,6 +245,58 @@ namespace libint2 {
       delete bra;
       delete ket;
     }
+
+  template <class IntType, class F, int part,
+    FunctionPosition loc_a, unsigned int pos_a,
+    FunctionPosition loc_b, unsigned int pos_b>
+    bool
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::register_with_rrstack() const
+    {
+      // This is an ugly hack -- add HRR's to the RRStack preemptively for targets in which all functions not involved
+      // in transfer have zero quanta. The reason is that for the HRR quartet level code to work correctly
+      // I must use these particular instances or HRR to generate the source.
+      
+      // only register RRs with for shell sets
+      if (TrivialBFSet<F>::result)
+        return false;
+      typedef typename IntType::BraType IBraType;
+      typedef typename IntType::KetType IKetType;
+      const IBraType& bra = target_->bra();
+      const IKetType& ket = target_->ket();
+      
+      //check for nonzero quanta for all particles other than part
+      bool nonzero_quanta = false;
+      unsigned const int npart = IntType::OperatorType::Properties::np;
+      for(int p=0; p<part; p++) {
+        int nfbra = bra.num_members(p);
+        for(int f=0; f<nfbra; f++)
+          if (!bra.member(p,f)->zero())
+            nonzero_quanta = true;
+        int nfket = ket.num_members(p);
+        for(int f=0; f<nfket; f++)
+          if (!ket.member(p,f)->zero())
+            nonzero_quanta = true;
+      }
+      for(int p=part+1; p<npart; p++) {
+        int nfbra = bra.num_members(p);
+        for(int f=0; f<nfbra; f++)
+          if (!bra.member(p,f)->zero())
+            nonzero_quanta = true;
+        int nfket = ket.num_members(p);
+        for(int f=0; f<nfket; f++)
+          if (!ket.member(p,f)->zero())
+            nonzero_quanta = true;
+      }
+      if (!nonzero_quanta) {
+        SafePtr<RRStack> rrstack = RRStack::Instance();
+        SafePtr<ThisType> this_ptr = const_pointer_cast<ThisType,const ThisType>(EnableSafePtrFromThis<ThisType>::SafePtr_from_this());
+        rrstack->find(this_ptr);
+        return true;
+      }
+      else
+        return false;
+    }
+
 
   template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,

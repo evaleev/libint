@@ -11,7 +11,7 @@ using namespace std;
 using namespace libint2;
 
 DirectedGraph::DirectedGraph() :
-  stack_(default_size_,SafePtr<DGVertex>()), rrstack_(new RRStack),
+  stack_(default_size_,SafePtr<DGVertex>()), func_names_(),
   first_free_(0), first_to_compute_()
 {
 }
@@ -537,20 +537,18 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   // include standard headers
   def << context->std_header();
   // include declarations for all fucntion calls:
-  // 1) extract all unresolved RecurrenceRelation's
+  // 1) update func_names_
   // 2) include their headers into the current definition file
   // 3) add them to rrstack_ so that later their code can be
   //    generated
-  SafePtr<RRStack> rrstack(new RRStack);
-  extract_rr(rrstack);
-  for(RRStack::citer_type rrkey=rrstack->begin(); rrkey!=rrstack->end(); rrkey++) {
-    string function_name = (*rrkey).second->label();
+  update_func_names();
+  for(FuncNameContainer::const_iterator fn=func_names_.begin(); fn!=func_names_.end(); fn++) {
+    string function_name = (*fn).first;
     def << "#include <"
         << context->label_to_name(function_name)
         << ".h>" << endl;
   }
   def << endl;
-  rrstack_->add(rrstack);
   
   def << context->code_prefix();
   def << func_decl << context->open_block() << endl;
@@ -892,7 +890,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 
 
 void
-DirectedGraph::extract_rr(SafePtr<RRStack>& rrstack) const
+DirectedGraph::update_func_names()
 {
   // Loop over all vertices
   for(int i=0; i<first_free_; i++) {
@@ -910,30 +908,9 @@ DirectedGraph::extract_rr(SafePtr<RRStack>& rrstack) const
         // and the RR is complex (i.e. likely to result in a function call)
         if (!rr->is_simple())
           // add it to the RRStack
-          rrstack->find(rr);
+          func_names_[rr->label()] = true;
       }
     }
-  }
-}
-
-void
-DirectedGraph::generate_rr_code(const SafePtr<CodeContext>& context,
-                                const std::string& prefix)
-{
-  for(RRStack::citer_type it = rrstack_->begin(); it!=rrstack_->end(); it++) {
-    SafePtr<RecurrenceRelation> rr = (*it).second;
-    std::string rrlabel = rr->label();
-    cout << " generating code for " << context->label_to_name(rrlabel) << endl;
-    
-    std::string decl_filename(prefix + context->label_to_name(rrlabel));  decl_filename += ".h";
-    std::string def_filename(prefix + context->label_to_name(rrlabel));  def_filename += ".cc";
-    std::basic_ofstream<char> declfile(decl_filename.c_str());
-    std::basic_ofstream<char> deffile(def_filename.c_str());
-    
-    rr->generate_code(context,ImplicitDimensions::default_dims(),declfile,deffile);
-    
-    declfile.close();
-    deffile.close();
   }
 }
 

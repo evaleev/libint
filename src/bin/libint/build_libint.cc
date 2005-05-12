@@ -53,6 +53,7 @@ int main(int argc, char* argv[])
 }
 
 static void print_header(std::ostream& os);
+static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
 static void build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
 static void build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
@@ -71,7 +72,7 @@ int try_main (int argc, char* argv[])
   Libint2Iface::Comps comps;
   comps.push_back("eri");
   comps.push_back("r12kg12");
-  // intialize object to generate interface
+  // initialize object to generate interface
   SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext,comps));
   
   print_header(os);
@@ -79,6 +80,8 @@ int try_main (int argc, char* argv[])
   
   build_TwoPRep_2b_2k(os,cparams,iface);
   build_R12kG12_2b_2k(os,cparams,iface);
+
+  generate_rr_code(os,cparams);
   
   os << "Compilation finished. Goodbye." << endl;
 }
@@ -91,6 +94,34 @@ print_header(std::ostream& os)
   os << "                by Edward F. Valeev           " << endl;
   os << "                and ideas by countless others " << endl;
   os << "----------------------------------------------" << endl << endl;
+}
+
+void
+generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams)
+{
+  //
+  // generate explicit code for all recurrence relation that were not inlined
+  //
+  SafePtr<CodeContext> context(new CppCodeContext(cparams));
+  ImplicitDimensions::set_default_dims(cparams);
+  std::string prefix(cparams->source_directory());
+
+  SafePtr<RRStack> rrstack = RRStack::Instance();
+  for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
+    SafePtr<RecurrenceRelation> rr = (*it).second;
+    std::string rrlabel = rr->label();
+    os << " generating code for " << context->label_to_name(rrlabel) << " target=" << rr->rr_target()->label() << endl;
+    
+    std::string decl_filename(prefix + context->label_to_name(rrlabel));  decl_filename += ".h";
+    std::string def_filename(prefix + context->label_to_name(rrlabel));  def_filename += ".cc";
+    std::basic_ofstream<char> declfile(decl_filename.c_str());
+    std::basic_ofstream<char> deffile(def_filename.c_str());
+    
+    rr->generate_code(context,ImplicitDimensions::default_dims(),declfile,deffile);
+    
+    declfile.close();
+    deffile.close();
+  }
 }
 
 void
@@ -164,14 +195,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
         } // end of d loop
       } // end of c loop
     } // end of b loop
-  } // end of a loop
-  
-  //
-  // generate explicit code for all recurrence relation that were not inlined
-  //
-  SafePtr<CodeContext> context(new CppCodeContext(cparams));
-  std::string prefix(cparams->source_directory());
-  dg_xxxx->generate_rr_code(context,prefix);
+  } // end of a loop  
 }
 
 
@@ -298,13 +322,6 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
         } // end of d loop
       } // end of c loop
     } // end of b loop
-  } // end of a loop
-  
-  //
-  // generate explicit code for all recurrence relation that were not inlined
-  //
-  SafePtr<CodeContext> context(new CppCodeContext(cparams));
-  std::string prefix(cparams->source_directory());
-  dg_xxxx->generate_rr_code(context,prefix);
+  } // end of a loop  
 }
 

@@ -108,7 +108,7 @@ namespace libint2 {
       {
         // AB HRR
         typedef HRR<R12kG12_11_11<CGShell,K>,CGShell,0,InBra,0,InKet,0> rr_type;
-        SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
         if (rr_ptr->num_children())
           return rr_cast(rr_ptr);
       }
@@ -116,7 +116,7 @@ namespace libint2 {
       {
         // CD HRR
         typedef HRR<R12kG12_11_11<CGShell,K>,CGShell,1,InBra,0,InKet,0> rr_type;
-        SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
         if (rr_ptr->num_children())
           return rr_cast(rr_ptr);
       }
@@ -124,7 +124,7 @@ namespace libint2 {
       {
         // A VRR
         typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,K,0,InBra> rr_type;
-        SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
         if (rr_ptr->num_children())
           return rr_cast(rr_ptr);
       }
@@ -132,7 +132,7 @@ namespace libint2 {
       {
         // C VRR
         typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,K,1,InBra> rr_type;
-        SafePtr<rr_type> rr_ptr(new rr_type(integral,0));
+        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
         if (rr_ptr->num_children())
           return rr_cast(rr_ptr);
       }
@@ -157,7 +157,7 @@ namespace libint2 {
       // shift from B to A
       for(int xyz = 2; xyz >= 0; xyz--) {
         typedef HRR<R12kG12_11_11<CGF,K>,CGF,0,InBra,0,InKet,0> rr_type;
-        SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
         if (rr_ptr->num_children())
           rrstack.push_back(rr_cast(rr_ptr));
       }
@@ -165,7 +165,7 @@ namespace libint2 {
       // shift from D to C
       for(int xyz = 2; xyz >= 0; xyz--) {
         typedef HRR<R12kG12_11_11<CGF,K>,CGF,1,InBra,0,InKet,0> rr_type;
-        SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
         if (rr_ptr->num_children())
           rrstack.push_back(rr_cast(rr_ptr));
       }
@@ -175,7 +175,7 @@ namespace libint2 {
         // decrease A
         for(int xyz = 2; xyz >= 0; xyz--) {
           typedef VRR_11_R12kG12_11<R12kG12_11_11,CGF,K,0,InBra> rr_type;
-          SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+          SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
           if (rr_ptr->num_children())
             rrstack.push_back(rr_cast(rr_ptr));
         }
@@ -183,7 +183,7 @@ namespace libint2 {
         // Decrease C
         for(int xyz = 2; xyz >= 0; xyz--) {
           typedef VRR_11_R12kG12_11<R12kG12_11_11,CGF,K,1,InBra> rr_type;
-          SafePtr<rr_type> rr_ptr(new rr_type(integral,xyz));
+          SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
           if (rr_ptr->num_children())
             rrstack.push_back(rr_cast(rr_ptr));
         }
@@ -212,7 +212,7 @@ namespace libint2 {
         return unroll_intset<inttype>(integral);
       
       typedef CR_11_TiG12_11<TiG12_11_11,CGShell,K> rr_type;
-      SafePtr<rr_type> rr_ptr(new rr_type(integral));
+      SafePtr<rr_type> rr_ptr = rr_type::Instance(integral);
       if (rr_ptr->num_children())
         return rr_cast(rr_ptr);
       
@@ -234,7 +234,7 @@ namespace libint2 {
       vector<RR> rrstack;  // stack of all recurrence relations
 
       typedef CR_11_TiG12_11<TiG12_11_11,CGF,K> rr_type;
-      SafePtr<rr_type> rr_ptr(new rr_type(integral));
+      SafePtr<rr_type> rr_ptr = rr_type::Instance(integral);
       if (rr_ptr->num_children())
         rrstack.push_back(rr_cast(rr_ptr));
       else

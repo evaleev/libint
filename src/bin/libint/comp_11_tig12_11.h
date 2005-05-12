@@ -28,20 +28,21 @@ namespace libint2 {
   integrals of the Ti_G12 operator.
   */
   template <template <class,int> class I, class BFSet, int K>
-  class CR_11_TiG12_11 : public RecurrenceRelation {
+  class CR_11_TiG12_11 : public RecurrenceRelation,
+                         public EnableSafePtrFromThis< CR_11_TiG12_11<I,BFSet,K> >
+    {
 
   public:
+    typedef CR_11_TiG12_11<I,BFSet,K> ThisType;
     typedef I<BFSet,K> TargetType;
     typedef R12kG12_11_11<BFSet,0> ChildType;
     /// The type of expressions in which RecurrenceRelations result.
     typedef AlgebraicOperator<DGVertex> ExprType;
 
-    /**
-      dir specifies which quantum number is incremented.
-      For example, dir can be 0 (x), 1(y), or 2(z) if BFSet is
-      a Cartesian Gaussian.
-     */
-    CR_11_TiG12_11(const SafePtr<TargetType>&);
+    /** Use Instance() to obtain an instance of RR. This function is provided to avoid
+        issues with getting a SafePtr from constructor (as needed for registry to work).
+    */
+    static SafePtr<ThisType> Instance(const SafePtr<TargetType>&);
     ~CR_11_TiG12_11();
 
     /// Implementation of RecurrenceRelation::num_children()
@@ -83,6 +84,16 @@ namespace libint2 {
     std::ostream& cpp_source(std::ostream&) {}
 
   private:
+    /**
+      dir specifies which quantum number is incremented.
+      For example, dir can be 0 (x), 1(y), or 2(z) if BFSet is
+      a Cartesian Gaussian.
+     */
+    CR_11_TiG12_11(const SafePtr<TargetType>&);
+
+    /// registers this RR with the stack, if needed
+    bool register_with_rrstack() const;
+    
     static const unsigned int max_nchildren_ = 18;
     static const unsigned int max_nexpr_ = 1;
     
@@ -99,6 +110,31 @@ namespace libint2 {
 
     void add_expr(const SafePtr<ExprType>&, int minus=1);
   };
+
+  template <template <class,int> class I, class F, int K>
+    SafePtr< CR_11_TiG12_11<I,F,K> >
+    CR_11_TiG12_11<I,F,K>::Instance(const SafePtr<TargetType>& Tint)
+    {
+      SafePtr<ThisType> this_ptr(new ThisType(Tint));
+      // Do post-construction duties
+      if (this_ptr->num_children() != 0) {
+        this_ptr->register_with_rrstack();
+      }
+      return this_ptr;
+    }
+
+  template <template <class,int> class I, class F, int K>
+    bool
+    CR_11_TiG12_11<I,F,K>::register_with_rrstack() const
+    {
+      // only register RRs with for shell sets
+      if (TrivialBFSet<F>::result)
+        return false;
+      SafePtr<RRStack> rrstack = RRStack::Instance();
+      SafePtr<ThisType> this_ptr = const_pointer_cast<ThisType,const ThisType>(EnableSafePtrFromThis<ThisType>::SafePtr_from_this());
+      rrstack->find(this_ptr);
+      return true;
+    }
   
   template <template <class,int> class I, class F, int K>
     CR_11_TiG12_11<I,F,K>::CR_11_TiG12_11(const SafePtr<I<F,K> >& Tint) :

@@ -1,5 +1,6 @@
 
 #include <map>
+#include <iostream>
 #include <smart_ptr.h>
 
 #ifndef _libint2_src_bin_libint_singlstack_h_
@@ -7,6 +8,8 @@
 
 namespace libint2 {
 
+  class RecurrenceRelation;
+  
   /**
      SingletonStack<T,HashType> helps to implement Singleton-like objects of type T.
      SingletonStack maintains a map of keys of type HashType to
