@@ -58,6 +58,8 @@ static void build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParam
                                 SafePtr<Libint2Iface>& iface);
 static void build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
+static void test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                 SafePtr<Libint2Iface>& iface);
 
 int try_main (int argc, char* argv[])
 {
@@ -80,6 +82,10 @@ int try_main (int argc, char* argv[])
   
   build_TwoPRep_2b_2k(os,cparams,iface);
   build_R12kG12_2b_2k(os,cparams,iface);
+
+#if 0
+  test(os,cparams,iface);
+#endif
 
   generate_rr_code(os,cparams);
   
@@ -230,6 +236,137 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
     for(int lb=0; lb<=lmax; lb++) {
       for(int lc=0; lc<=lmax; lc++) {
         for(int ld=0; ld<=lmax; ld++) {
+
+          bool ssss = false;
+          if (la+lb+lc+ld == 0)
+            ssss = true;
+          
+          // k=0
+          if (!ssss) {
+            typedef R12kG12_11_11<CGShell,0> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+          
+          // k=-1
+          if (!ssss) {
+            typedef R12kG12_11_11<CGShell,-1> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+          
+          // [T_1,G12]
+          if (true) {
+            typedef TiG12_11_11<CGShell,0> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+
+          // [T_2,G12]
+          if (true) {
+            typedef TiG12_11_11<CGShell,1> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+
+          // k=2
+          if (!ssss) {
+            typedef R12kG12_11_11<CGShell,2> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+          
+          dg_xxxx->apply(strat,tactic);
+          dg_xxxx->optimize_rr_out();
+          dg_xxxx->traverse();
+          os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
+          
+          std::string label;
+          {
+            ostringstream os;
+            os << "(" << shells[la]->label() << " "
+            << shells[lb]->label()
+            << " | r_{12}^K * exp(-g*r_{12}^2) | "
+            << shells[lc]->label() << " "
+            << shells[ld]->label() << ")";
+            label = os.str();
+          }
+          
+          SafePtr<CodeContext> context(new CppCodeContext(cparams));
+          SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+          std::string prefix(cparams->source_directory());
+          std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
+          std::string src_filename(prefix + context->label_to_name(label));  src_filename += ".cc";
+          std::basic_ofstream<char> declfile(decl_filename.c_str());
+          std::basic_ofstream<char> srcfile(src_filename.c_str());
+          dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
+          
+          ostringstream oss;
+          oss << "  libint2_build_r12kg12[" << la << "][" << lb << "][" << lc << "]["
+              << ld <<"] = " << context->label_to_name(label_to_funcname(label))
+              << context->end_of_stat() << endl;
+          iface->to_static_init(oss.str());
+          
+          oss.str("");
+          oss << "#include <" << decl_filename << ">" << endl;
+          iface->to_int_iface(oss.str());
+          
+          os << "Max memory used = " << memman->max_memory_used() << endl;
+          dg_xxxx->reset();
+          declfile.close();
+          srcfile.close();
+        } // end of d loop
+      } // end of c loop
+    } // end of b loop
+  } // end of a loop  
+}
+
+void
+test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+     SafePtr<Libint2Iface>& iface)
+{
+  vector<CGShell*> shells;
+  unsigned int lmax = cparams->max_am_eri();
+  for(int l=0; l<=lmax; l++) {
+    shells.push_back(new CGShell(l));
+  }
+  ImplicitDimensions::set_default_dims(cparams);
+  
+  iface->to_params(iface->define("MAX_AM_R12kG12",lmax));
+  
+  //
+  // Construct graphs for each desired target integral and
+  // 1) generate source code for the found traversal path
+  // 2) extract all remaining unresolved recurrence relations and
+  //    append them to the stack. Such unresolved RRs are RRs applied
+  //    to sets of integrals (rather than to individual integrals).
+  // 3) at the end, for each unresolved recurrence relation generate
+  //    explicit source code
+  //
+  SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
+  SafePtr<Strategy> strat(new Strategy(cparams->unroll_threshold()));
+  SafePtr<Tactic> tactic(new FirstChoiceTactic());
+  //SafePtr<Tactic> tactic(new RandomChoiceTactic());
+  //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
+  /*for(int la=0; la<=lmax; la++) {
+    for(int lb=0; lb<=lmax; lb++) {
+      for(int lc=0; lc<=lmax; lc++) {
+        for(int ld=0; ld<=lmax; ld++) {*/
+          {{{{
+            int la=0;
+            int lb=0;
+            int lc=1;
+            int ld=1;
 
           bool ssss = false;
           if (la+lb+lc+ld == 0)
