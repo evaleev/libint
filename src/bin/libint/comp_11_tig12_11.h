@@ -199,7 +199,10 @@ namespace libint2 {
             if (is_simple()) {
               const unsigned int ni_a = bra_ref->operator[](p_a).qn(xyz) + 2;
               SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[ni_a * (ni_a-1)],rr_child(next_child)));
-              add_expr(expr0_ptr);
+              if (where == InBra)
+                add_expr(expr0_ptr);
+              else
+                add_expr(expr0_ptr,-1);
             }
             nflops_ += ConvertNumFlops<F>(1);
             bra_ref->operator[](p_a).inc(xyz);
@@ -214,13 +217,12 @@ namespace libint2 {
             children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0);
             nchildren_ += 1;
             if (is_simple()) {
-              const unsigned int ni_a = bra_ref->operator[](p_a).qn(xyz);
-              unsigned int pfac = 2*(ni_a + 1);
-              if (am1_exists)
-                pfac += 2*ni_a;
               SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.Cdouble(4.0),prefactors.zeta2[K][where]));
               SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,expr0_ptr,rr_child(next_child)));
-              add_expr(expr1_ptr);
+              if (where == InBra)
+                add_expr(expr1_ptr);
+              else
+                add_expr(expr1_ptr,-1);
             }
             nflops_ += ConvertNumFlops<F>(3);
             bra_ref->operator[](p_a).dec(xyz);
@@ -231,7 +233,7 @@ namespace libint2 {
           // a
           {
             if (is_simple()) {
-              const unsigned int ni_a = bra_ref->operator[](p_a).qn(xyz);
+              /*const unsigned int ni_a = bra_ref->operator[](p_a).qn(xyz);
               unsigned int pfac = 2*(ni_a + 1);
               if (am1_exists)
                 pfac += 2*ni_a;
@@ -244,7 +246,7 @@ namespace libint2 {
                 SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Plus,abcd_pfac,pfac_ptr));
                 abcd_pfac = pfac_ptr;
                 nflops_ += ConvertNumFlops<F>(2);
-              }
+                }*/
             }
           }
         }
@@ -256,10 +258,25 @@ namespace libint2 {
         children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0);
         nchildren_ += 1;
         if (is_simple()) {
-          SafePtr<ExprType> expr_ptr(new ExprType(ExprType::OperatorTypes::Times,abcd_pfac,rr_child(next_child)));
+          // prefactor in front of (ab|cd) is (4*l_a+6)*zeta_a - (4*l_b+6)*zeta_b
+          unsigned int l_x[2];
+          for(int braket=0; braket<=1; braket++) {
+            FunctionPosition where = (FunctionPosition)braket;
+            l_x[braket] = 0;
+            for(int xyz=0; xyz<3; xyz++) {
+              if (where == InBra)
+                l_x[braket] += bra[p_a].qn(xyz);
+              else
+                l_x[braket] += ket[p_a].qn(xyz);
+            }
+          }
+          SafePtr<ExprType> pfaca_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.Cdouble(4*l_x[InBra]+6),prefactors.zeta[K][InBra]));
+          SafePtr<ExprType> pfacb_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.Cdouble(4*l_x[InKet]+6),prefactors.zeta[K][InKet]));
+          SafePtr<ExprType> pfac_ptr(new ExprType(ExprType::OperatorTypes::Minus,pfaca_ptr,pfacb_ptr));
+          SafePtr<ExprType> expr_ptr(new ExprType(ExprType::OperatorTypes::Times,pfac_ptr,rr_child(next_child)));
           add_expr(expr_ptr,-1);
         }
-        nflops_ += ConvertNumFlops<F>(1);
+        nflops_ += ConvertNumFlops<F>(4);
       }
 
       // scale by -0.5
@@ -355,16 +372,16 @@ namespace libint2 {
           SafePtr<ExprType> negative(new ExprType(ExprType::OperatorTypes::Times,expr,prefactors.Cdouble(-1.0)));
           expr_[0] = negative;
           nflops_ += ConvertNumFlops<F>(1);
-        }          
+        }
       }
       else {
         if (minus != -1) {
-          SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Plus,expr,expr_[0]));
+          SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Plus,expr_[0],expr));
           expr_[0] = sum;
           nflops_ += ConvertNumFlops<F>(1);
         }
         else {
-          SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Minus,expr,expr_[0]));
+          SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Minus,expr_[0],expr));
           expr_[0] = sum;
           nflops_ += ConvertNumFlops<F>(1);
         }
