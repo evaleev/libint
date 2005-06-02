@@ -34,7 +34,8 @@ namespace libint2 {
       AlgebraicOperator(OperatorType OT,
                         const SafePtr<T>& left,
                         const SafePtr<T>& right) :
-        OT_(OT), left_(left), right_(right)
+        DGVertex(ClassInfo<AlgebraicOperator>::Instance().id()), OT_(OT), left_(left), right_(right),
+        descr_(), label_(algebra::OperatorSymbol[OT_])
         {
         }
       virtual ~AlgebraicOperator() {}
@@ -49,32 +50,38 @@ namespace libint2 {
       /// Implements DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const
       {
-        SafePtr<AlgebraicOperator> a_cast = dynamic_pointer_cast<AlgebraicOperator,DGVertex>(a);
-        if (a_cast) {
-          bool result = (OT_ == a_cast->OT_ && left_->equiv(a_cast->left()) && right_->equiv(a_cast->right()));
-          return result;
+        if (typeid_ == a->typeid_) {
+          // Safe to cast statically because type of a has just been checked
+          SafePtr<AlgebraicOperator> a_cast = static_pointer_cast<AlgebraicOperator,DGVertex>(a);
+          if (OT_ == a_cast->OT_ && left_->equiv(a_cast->left()) && right_->equiv(a_cast->right()))
+            return true;
+          else
+            return false;
         }
 	else
 	  return false;
       }
       /// Implements DGVertex::label()
-      std::string label() const
+      const std::string& label() const
       {
-        return algebra::OperatorSymbol[OT_];
+        return label_;
       }
       /// Implements DGVertex::id()
-      std::string id() const
+      const std::string& id() const
       {
         return label();
       }
       /// Implements DGVertex::description()
-      std::string description() const
+      const std::string& description() const
       {
-        ostringstream os;
-        os << "AlgebraicOperator: " << left_->description() << " "
-           << algebra::OperatorSymbol[OT_] << " "
-           << right_->description();
-        return os.str();
+        if (descr_.empty()) {
+          ostringstream os;
+          os << "AlgebraicOperator: " << left_->description() << " "
+             << algebra::OperatorSymbol[OT_] << " "
+             << right_->description();
+          descr_ = os.str();
+        }
+        return descr_;
       }
 
       /// Overloads DGVertex::del_exit_arcs()
@@ -93,7 +100,9 @@ namespace libint2 {
       {
         return false;
       }
-      
+
+      std::string label_;
+      mutable std::string descr_;
     };
     
 };

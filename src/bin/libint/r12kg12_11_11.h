@@ -58,8 +58,10 @@ namespace libint2 {
 
       /// Comparison operator
       bool operator==(const this_type&) const;
+#if OVERLOAD_GENINTEGRALSET_LABEL
       /// Specialization of GenIntegralSet::label()
-      std::string label() const;
+      const std::string& label() const;
+#endif
 
     private:
       // This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
@@ -130,8 +132,9 @@ namespace libint2 {
       return parent_type::PtrComp::equiv(static_cast<const parent_type*>(this),a);
     }
 
+#if OVERLOAD_GENINTEGRALSET_LABEL
   template <class BFS, int K>
-    std::string
+    const std::string&
     R12kG12_11_11<BFS,K>::label() const
     {
       ostringstream os;
@@ -142,6 +145,7 @@ namespace libint2 {
          << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
       return os.str();
     };
+#endif
   
   template <class BFS, int K>
     bool

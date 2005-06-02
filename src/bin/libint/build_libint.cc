@@ -3,18 +3,13 @@
   This program produces optimized source code to compute matrix elements (integrals)
   over Gaussian functions. Integrals are computed using recursive schemes. Generated source code
   is low-level C++ and can be used from other languages.
+
+  Edward Valeev
+  Atlanta/Oak Ridge
+  December 2004.
   */
 
-
-/**
-  The goals:
-  1) Easier implementation of new RR :
-     o) Number of centers != 4
-     o) one-electron integrals
-  2) Fortran and other interfaces from
-  3) Vectorization
-  4) General contractions
-  */
+#define DO_TEST_ONLY 1
 
 #include <libint_config.h>
 
@@ -67,7 +62,7 @@ int try_main (int argc, char* argv[])
   
   // use default parameters
   SafePtr<CompilationParameters> cparams(new CompilationParameters);
-  cparams->max_am_eri(1);
+  cparams->max_am_eri(2);
   // initialize code context to produce library API
   SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
   // make a list of computation labels
@@ -79,11 +74,13 @@ int try_main (int argc, char* argv[])
   
   print_header(os);
   cparams->print(os);
-  
+
+#if !DO_TEST_ONLY
   build_TwoPRep_2b_2k(os,cparams,iface);
   build_R12kG12_2b_2k(os,cparams,iface);
+#endif
 
-#if 0
+#if DO_TEST_ONLY
   test(os,cparams,iface);
 #endif
 
@@ -363,10 +360,10 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
       for(int lc=0; lc<=lmax; lc++) {
         for(int ld=0; ld<=lmax; ld++) {*/
           {{{{
-            int la=0;
-            int lb=0;
-            int lc=1;
-            int ld=1;
+            int la=1;
+            int lb=1;
+            int lc=2;
+            int ld=2;
 
           bool ssss = false;
           if (la+lb+lc+ld == 0)

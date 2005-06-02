@@ -37,7 +37,7 @@ namespace libint2 {
     typedef I<BFSet,K> TargetType;
     typedef R12kG12_11_11<BFSet,0> ChildType;
     /// The type of expressions in which RecurrenceRelations result.
-    typedef AlgebraicOperator<DGVertex> ExprType;
+    typedef RecurrenceRelation::ExprType ExprType;
 
     /** Use Instance() to obtain an instance of RR. This function is provided to avoid
         issues with getting a SafePtr from constructor (as needed for registry to work).
@@ -47,20 +47,16 @@ namespace libint2 {
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return nchildren_; };
-    /// Implementation of RecurrenceRelation::num_expr()
-    const unsigned int num_expr() const { return nexpr_; };
     /// target() returns pointer to the i-th child
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer to the i-th child
     SafePtr<ChildType> child(unsigned int i) const;
-    /// expr(i) returns pointer to the expression for the i-th child
-    SafePtr<ExprType> expr(unsigned int i) const;
     /// Implementation of RecurrenceRelation::rr_target()
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation::rr_child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return dynamic_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// Implementation of RecurrenceRelation::rr_expr()
-    SafePtr<DGVertex> rr_expr(unsigned int i) const { return static_pointer_cast<DGVertex,ExprType>(expr(i)); }
+    SafePtr<ExprType> rr_expr() const { return expr_; }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
@@ -70,7 +66,7 @@ namespace libint2 {
       return true;
     }
     /// Implementation of RecurrenceRelation::label()
-    std::string label() const { return label_; }
+    const std::string& label() const { return label_; }
 
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return nflops_; }
@@ -95,11 +91,10 @@ namespace libint2 {
     bool register_with_rrstack() const;
     
     static const unsigned int max_nchildren_ = 18;
-    static const unsigned int max_nexpr_ = 1;
     
     SafePtr<TargetType> target_;
     SafePtr<ChildType> children_[max_nchildren_];
-    SafePtr<ExprType> expr_[max_nexpr_];
+    SafePtr<ExprType> expr_;
 
     unsigned int nchildren_;
     unsigned int nexpr_;
@@ -280,8 +275,8 @@ namespace libint2 {
       }
 
       // scale by -0.5
-      SafePtr<ExprType> scaled(new ExprType(ExprType::OperatorTypes::Times,prefactors.Cdouble(-0.5),expr_[0]));
-      expr_[0] = scaled;
+      SafePtr<ExprType> scaled(new ExprType(ExprType::OperatorTypes::Times,prefactors.Cdouble(-0.5),expr_));
+      expr_ = scaled;
       nflops_ += ConvertNumFlops<F>(1);
     }
   
@@ -307,21 +302,6 @@ namespace libint2 {
         }
       }
     };
-
-  template <template <class,int> class I, class F, int K>
-    SafePtr< AlgebraicOperator<DGVertex> >
-    CR_11_TiG12_11<I,F,K>::expr(unsigned int i) const
-    {
-      assert(i>=0 && i<nexpr_);
-      unsigned int ne=0;
-      for(int e=0; e<max_nexpr_; e++) {
-        if (expr_[e] != 0) {
-          if (ne == i)
-            return expr_[e];
-          ne++;
-        }
-      }
-    }
 
   template <template <class,int> class I, class F, int K>
     std::string
@@ -365,24 +345,24 @@ namespace libint2 {
     {
       if (nexpr_ == 0) {
         if (minus != -1) {
-          expr_[0] = expr;
+          expr_ = expr;
           nexpr_ = 1;
         }
         else {
           SafePtr<ExprType> negative(new ExprType(ExprType::OperatorTypes::Times,expr,prefactors.Cdouble(-1.0)));
-          expr_[0] = negative;
+          expr_ = negative;
           nflops_ += ConvertNumFlops<F>(1);
         }
       }
       else {
         if (minus != -1) {
-          SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Plus,expr_[0],expr));
-          expr_[0] = sum;
+          SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Plus,expr_,expr));
+          expr_ = sum;
           nflops_ += ConvertNumFlops<F>(1);
         }
         else {
-          SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Minus,expr_[0],expr));
-          expr_[0] = sum;
+          SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Minus,expr_,expr));
+          expr_ = sum;
           nflops_ += ConvertNumFlops<F>(1);
         }
       }

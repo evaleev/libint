@@ -34,15 +34,13 @@ namespace libint2 {
     typedef I TargetType;
     typedef typename I::iter_type ChildType;
     /// The type of expressions in which RecurrenceRelations result.
-    typedef AlgebraicOperator<DGVertex> ExprType;
+    typedef RecurrenceRelation::ExprType ExprType;
 
     IntegralSet_to_Integrals(const SafePtr<I>&);
     ~IntegralSet_to_Integrals() {}
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return children_.size(); };
-    /// Implementation of RecurrenceRelation::num_expr()
-    const unsigned int num_expr() const { return 0; };
     /// target() returns pointer to target
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer i-th child
@@ -52,7 +50,7 @@ namespace libint2 {
     /// Implementation of RecurrenceRelation's child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// Implementation of RecurrenceRelation::rr_expr()
-    SafePtr<DGVertex> rr_expr(unsigned int i) const { return SafePtr<DGVertex>(); }
+    SafePtr<ExprType> rr_expr() const { return SafePtr<ExprType>(); }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const {
       return true;
@@ -63,7 +61,7 @@ namespace libint2 {
       return false;
     }
     /// Implementation of RecurrenceRelation::label()
-    std::string label() const {
+    const std::string& label() const {
       throw std::runtime_error("IntegralSet_to_Integrals::label() -- code for this RR is never generated, so this function should never be used");
     }
     /// Implementation of RecurrenceRelation::nflops()

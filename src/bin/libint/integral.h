@@ -8,6 +8,7 @@
 #include <quanta.h>
 #include <equiv.h>
 #include <singl_stack.h>
+#include <global_macros.h>
 
 #ifndef _libint2_src_bin_libint_integral_h_
 #define _libint2_src_bin_libint_integral_h_
@@ -83,7 +84,9 @@ namespace libint2 {
       typedef PtrEquiv<GenIntegralSet> PtrComp;
       /// This the type of the object that manages GenIntegralSet's as Singletons
       typedef SingletonStack<GenIntegralSet,std::string> SingletonManagerType;
-    
+      /// This is the type of the instance index variable
+      typedef typename SingletonManagerType::InstanceID InstanceID;
+
       /** No constructors are public since this is a singleton-like quantity.
           Instead, access is provided through Instance().
           
@@ -97,15 +100,18 @@ namespace libint2 {
       /// Comparison operator
       virtual bool operator==(const GenIntegralSet&) const;
       /// Specialization of DGVertex::equiv()
-      bool equiv(const SafePtr<DGVertex>& v) const { return PtrComp::equiv(this,v); }
+      bool equiv(const SafePtr<DGVertex>& v) const
+      {
+        return PtrComp::equiv(this,v);
+      }
       /// Specialization of DGVertex::size()
       virtual const unsigned int size() const;
       /// Specialization of DGVertex::label()
-      virtual std::string label() const;
+      virtual const std::string& label() const;
       /// Specialization of DGVertex::id()
-      virtual std::string id() const;
+      virtual const std::string& id() const;
       /// Specialization of DGVertex::description()
-      virtual std::string description() const;
+      virtual const std::string& description() const;
 
       /// Obtain BFsets members
       const SafePtr<BFS> bra(unsigned int p, unsigned int i) const;
@@ -124,6 +130,11 @@ namespace libint2 {
       const KetType& ket() const;
       /// Obtain the auxiliary quanta
       const SafePtr<AuxQuanta> aux() const;
+
+      /// Return instance id
+      const InstanceID& inst_id() const { return inst_id_; }
+      /// set instance id to i
+      void inst_id(const InstanceID& i) { inst_id_ = i; }
 
       protected:
       // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
@@ -150,7 +161,10 @@ namespace libint2 {
 
       // This is used to manage GenIntegralSet objects as singletons
       static SingletonManagerType singl_manager_;
-      
+      // This is the index of this particular instance. No two distinct instances can
+      // have same inst_id_
+      InstanceID inst_id_;
+
       // The operator needs to be a real object rather than real type to be able to construct a SubIterator, etc.
       SafePtr<Oper> O_;
       // Same for AuxQuanta
@@ -159,6 +173,12 @@ namespace libint2 {
       // size of the integral set
       mutable unsigned int size_;
 
+      // unique label -- no 2 GenIntegralSet instances can have the same label!
+      std::string label_;
+      // generates label_
+      std::string generate_label() const;
+      // description
+      mutable std::string descr_;
     };
 
   // I use label() to hash GenIntegralSet. Therefore labels must be unique!
@@ -169,7 +189,8 @@ namespace libint2 {
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Op& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
-    O_(SafePtr<Op>(new Op(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))), size_(0)
+    DGVertex(ClassInfo<GenIntegralSet>::Instance().id()), O_(SafePtr<Op>(new Op(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))),
+    size_(0), label_(generate_label()), descr_()
     {
       if (Op::Properties::np != bra.num_part())
         throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in bra doesn't match that in the operator");
@@ -272,8 +293,15 @@ namespace libint2 {
     }
     
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    std::string
+    const std::string&
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::label() const
+    {
+      return label_;
+    }
+  
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    std::string
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::generate_label() const
     {
       ostringstream os;
       os << "< ";
@@ -287,25 +315,28 @@ namespace libint2 {
         unsigned int nket = ket_.num_members(p);
         for(unsigned int i=0; i<nket; i++)
           os << ket_.member(p,i)->label() << "(" << p << ") ";
-        os << "> ^ { " << aux_->label() << " }";
       }
+      os << "> ^ { " << aux_->label() << " }";
       return os.str();
     }
   
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    std::string
+    const std::string&
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::id() const
     {
       return label();
     }
   
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    std::string
+    const std::string&
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::description() const
     {
-      ostringstream os;
-      os << " GenIntegralSet: " << label();
-      return os.str();
+      if (descr_.empty()) {
+        ostringstream os;
+        os << " GenIntegralSet: " << label();
+        descr_ = os.str();
+      }
+      return descr_;
     }
   
   /** VectorBraket is a std::vector-based type that can be used as a BraSetType or a KetSetType parameter
@@ -503,6 +534,7 @@ namespace libint2 {
       typedef VectorBraket<BFS> KetType;
       typedef mType AuxIndexType;
       typedef TwoPRep_11_11 this_type;
+      typedef GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, mType > parent_type;
       /// This the type of the object that manages GenIntegralSet's as Singletons
       typedef SingletonStack<TwoPRep_11_11,std::string> SingletonManagerType;
       
@@ -524,8 +556,10 @@ namespace libint2 {
 
       /// Comparison operator
       bool operator==(const this_type&) const;
+#if OVERLOAD_GENINTEGRALSET_LABEL
       /// Specialization of GenIntegralSet::label()
-      std::string label() const;
+      const std::string& label() const;
+#endif
 
     private:
       // This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
@@ -594,8 +628,9 @@ namespace libint2 {
       return parent_type::PtrComp::equiv(static_cast<const parent_type*>(this),a);
     }
 
+#if OVERLOAD_GENINTEGRALSET_LABEL
   template <class BFS>
-    std::string
+    const std::string&
     TwoPRep_11_11<BFS>::label() const
     {
       ostringstream os;
@@ -603,6 +638,7 @@ namespace libint2 {
          << " | 1/r_{12} | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
       return os.str();
     };
+#endif
 
   /// TwoPRep_11_11_sq is a shell quartet of ERIs
   typedef TwoPRep_11_11<CGShell> TwoPRep_11_11_sq;

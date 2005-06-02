@@ -290,19 +290,13 @@ DirectedGraph::replace_rr_with_expr()
       if (rr->is_simple() && rr->invariant_type()) {
 
         unsigned int nchildren = rr->num_children();
-        unsigned int nexpr = rr->num_expr();
 
         // Remove arcs connecting this vertex to children
         vertex->del_exit_arcs();
 
-        // and instead insert expressions
-        for(int e=0; e<nexpr; e++) {
-          SafePtr< AlgebraicOperator<DGVertex> > rr_expr_cast = dynamic_pointer_cast<AlgebraicOperator<DGVertex>,DGVertex>(rr->rr_expr(e));
-          if (rr_expr_cast)
-            insert_expr_at(vertex,rr_expr_cast);
-          else
-            throw runtime_error("DirectedGraph::optimize_rr_out() -- expression of invalid type");
-        }
+        // and instead insert the numerical expression
+        SafePtr<RecurrenceRelation::ExprType> rr_expr = rr->rr_expr();
+        insert_expr_at(vertex,rr_expr);
 
       }
     }
@@ -310,9 +304,9 @@ DirectedGraph::replace_rr_with_expr()
 }
 
 void
-DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr)
+DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<RecurrenceRelation::ExprType>& expr)
 {
-  typedef AlgebraicOperator<DGVertex> ExprType;
+  typedef RecurrenceRelation::ExprType ExprType;
   
   SafePtr<DGVertex> expr_vertex = dynamic_pointer_cast<DGVertex,ExprType>(expr);
   bool new_vertex = true;

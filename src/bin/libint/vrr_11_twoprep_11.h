@@ -37,7 +37,7 @@ namespace libint2 {
     typedef ERI<BFSet> TargetType;
     typedef ERI<BFSet> ChildType;
     /// The type of expressions in which RecurrenceRelations result.
-    typedef AlgebraicOperator<DGVertex> ExprType;
+    typedef RecurrenceRelation::ExprType ExprType;
 
     /** Use Instance() to obtain an instance of RR. This function is provided to avoid
         issues with getting a SafePtr from constructor (as needed for registry to work).
@@ -51,20 +51,16 @@ namespace libint2 {
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return nchildren_; };
-    /// Implementation of RecurrenceRelation::num_expr()
-    const unsigned int num_expr() const { return nexpr_; };
     /// target() returns pointer to the i-th child
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer to the i-th child
     SafePtr<ChildType> child(unsigned int i) const;
-    /// expr(i) returns pointer to the expression for the i-th child
-    SafePtr<ExprType> expr(unsigned int i) const;
     /// Implementation of RecurrenceRelation::rr_target()
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation::rr_child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// Implementation of RecurrenceRelation::rr_expr()
-    SafePtr<DGVertex> rr_expr(unsigned int i) const { return static_pointer_cast<DGVertex,ExprType>(expr(i)); }
+    SafePtr<ExprType> rr_expr() const { return expr_; }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
@@ -74,7 +70,7 @@ namespace libint2 {
       return true;
     }
     /// Implementation of RecurrenceRelation::label()
-    std::string label() const { return label_; }
+    const std::string& label() const { return label_; }
 
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return nflops_; }
@@ -99,15 +95,13 @@ namespace libint2 {
     bool register_with_rrstack() const;
 
     static const unsigned int max_nchildren_ = 8;
-    static const unsigned int max_nexpr_ = 6;
     unsigned int dir_;
 
     SafePtr<TargetType> target_;
     SafePtr<ChildType> children_[max_nchildren_];
-    SafePtr<ExprType> expr_[max_nexpr_];
+    SafePtr<ExprType> expr_;
 
     unsigned int nchildren_;
-    unsigned int nexpr_;
     unsigned int nflops_;
 
     std::string label_;
@@ -144,7 +138,7 @@ namespace libint2 {
   template <template <class> class ERI, class F, int part, FunctionPosition where>
     VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr<ERI<F> >& Tint,
                                                            unsigned int dir) :
-    target_(Tint), dir_(dir), nchildren_(0), nexpr_(0), nflops_(0), label_(generate_label(Tint))
+    target_(Tint), dir_(dir), nchildren_(0), nflops_(0), label_(generate_label(Tint))
     {
       target_ = Tint;
 
@@ -187,8 +181,7 @@ namespace libint2 {
         SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][where][dir],children_[0]));
         SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.W_XY[part][dir],children_[1]));
         SafePtr<ExprType> expr0p1_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
-        expr_[0] = expr0p1_ptr;
-        nexpr_ = 1;
+        expr_ = expr0p1_ptr;
       }
 
       // See if a-2 exists
@@ -211,8 +204,8 @@ namespace libint2 {
           SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[2], expr_intmd0));
           SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_a], prefactors.one_o_2alpha12[part]));
           SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
-          SafePtr<ExprType> expr012_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr2_ptr,expr_[0]));
-          expr_[0] = expr012_ptr;
+          SafePtr<ExprType> expr012_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr2_ptr,expr_));
+          expr_ = expr012_ptr;
         }
       }
 
@@ -236,8 +229,8 @@ namespace libint2 {
           SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[4], expr_intmd0));
           SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_b], prefactors.one_o_2alpha12[part]));
           SafePtr<ExprType> expr3_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
-          SafePtr<ExprType> expr0123_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr3_ptr,expr_[0]));
-          expr_[0] = expr0123_ptr;
+          SafePtr<ExprType> expr0123_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr3_ptr,expr_));
+          expr_ = expr0123_ptr;
         }
       }
 
@@ -256,8 +249,8 @@ namespace libint2 {
       if (is_simple()) {
         SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_c], prefactors.one_o_2alphasum));
         SafePtr<ExprType> expr4_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[6]));
-        SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr4_ptr,expr_[0]));
-        expr_[0] = exprsum_ptr;
+        SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr4_ptr,expr_));
+        expr_ = exprsum_ptr;
       }
 
       // See if d-1 exists
@@ -275,8 +268,8 @@ namespace libint2 {
       if (is_simple()) {
         SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_d], prefactors.one_o_2alphasum));
         SafePtr<ExprType> expr5_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[7]));
-        SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr5_ptr,expr_[0]));
-        expr_[0] = exprsum_ptr;
+        SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr5_ptr,expr_));
+        expr_ = exprsum_ptr;
       }
     };
 
@@ -299,21 +292,6 @@ namespace libint2 {
           if (nc == i)
             return children_[c];
           nc++;
-        }
-      }
-    };
-
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
-    SafePtr< AlgebraicOperator<DGVertex> >
-    VRR_11_TwoPRep_11<ERI,F,part,where>::expr(unsigned int i) const
-    {
-      assert(i>=0 && i<nexpr_);
-      unsigned int ne=0;
-      for(int e=0; e<max_nexpr_; e++) {
-        if (expr_[e] != 0) {
-          if (ne == i)
-            return expr_[e];
-          ne++;
         }
       }
     };

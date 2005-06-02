@@ -5,6 +5,7 @@
 #include <smart_ptr.h>
 #include <memory.h>
 #include <exception.h>
+#include <class_registry.h>
 
 #ifndef _libint2_src_bin_libint_dgvertex_h_
 #define _libint2_src_bin_libint_dgvertex_h_
@@ -22,9 +23,16 @@ namespace libint2 {
     typedef NotSet<std::string> GraphLabelNotSet;
     /// Exception thrown if code symbol is not set
     typedef NotSet<std::string> SymbolNotSet;
+    /// Type identifier
+    typedef ClassRegistry::ClassID ClassID;
 
-    DGVertex();
-    DGVertex(const vector<SafePtr<DGArc> >& parents, const vector<SafePtr<DGArc> >& children);
+    /** typeid is used to store the ClassID of the concrete type. It is used to check quickly whether
+        2 DGVertices are of the same type. Dynamic casts are too expensive. */
+    ClassID typeid_;
+    /// Sets typeid to tid 
+    DGVertex(ClassID tid);
+    /// Sets typeid to tid 
+    DGVertex(ClassID tid, const vector<SafePtr<DGArc> >& parents, const vector<SafePtr<DGArc> >& children);
     virtual ~DGVertex();
 
     /// make_a_target() marks this vertex as a target
@@ -79,14 +87,14 @@ namespace libint2 {
     
     /** label() returns a unique, short, descriptive label of DGVertex (e.g. "( p_x s | 1/r_{12} | d_xy s )^{(1)}")
     */
-    virtual std::string label() const =0;
+    virtual const std::string& label() const =0;
     /** is() returns a very short label of DGVertex which is (almost)
         guaranteed to be a symbol (e.g. "(p_x s|d_xy s)^1")
     */
-    virtual std::string id() const =0;
+    virtual const std::string& id() const =0;
     /** description() returns a full, human-readable description of DGVertex (e.g. "This is a ( p_x s | 1/r_{12} | d_xy s )^{(1)} integral")
     */
-    virtual std::string description() const =0;
+    virtual const std::string& description() const =0;
 
 
     /// returns the label used for this vertex when visualizing graph

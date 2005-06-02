@@ -11,11 +11,11 @@ namespace libint2 {
   class RecurrenceRelation;
   
   /**
-     SingletonStack<T,HashType> helps to implement Singleton-like objects of type T.
+     SingletonStack<T,HashType,P> helps to implement Singleton-like objects of type T.
      SingletonStack maintains a map of keys of type HashType to
      smart pointers to objects of type T. Keys are computed from T by
      calling a callback of type HashCallback passed to the constructor to SingletonStack -- hence
-     HashCallback is a member function of T which takes on arguments and returns HashType.
+     HashCallback is a member function T which takes no arguments and returns a const HashType&.
   */
   template <class T, class HashType>
     class SingletonStack
@@ -29,7 +29,9 @@ namespace libint2 {
       /// const version of iter_type
       typedef typename map_type::const_iterator citer_type;
       /// Specifies the type of callback which computes hashes
-      typedef key_type (T::* HashCallback)() const;
+      typedef const key_type& (T::* HashCallback)() const;
+      /// Specifies type for the instance index variables
+      typedef unsigned long int InstanceID;
 
       /// callback to compute hash values is the only parameter
       SingletonStack(HashCallback callback);
@@ -50,11 +52,12 @@ namespace libint2 {
     private:
       map_type map_;
       HashCallback callback_;
+      InstanceID next_instance_;
     };
 
   template <class T, class HashType>
     SingletonStack<T,HashType>::SingletonStack(HashCallback callback) :
-    map_(), callback_(callback)
+    map_(), callback_(callback), next_instance_(0)
     {
     }
 
@@ -71,6 +74,7 @@ namespace libint2 {
       }
       else {
         map_[key] = obj;
+	obj->inst_id(next_instance_++);
         return obj;
       }
     }

@@ -11,8 +11,8 @@ else
   SRCDIR=.
 endif
 
-#BOOSTPATH = /home/tool/evaleev/src/lib/boost
-BOOSTPATH = /Users/evaleev/Development/General/src/lib/boost_1_32_0
+BOOSTPATH = /home/tool/evaleev/src/lib/boost
+#BOOSTPATH = /Users/evaleev/Development/General/src/lib/boost_1_32_0
 CXX = gfilt
 CXXFLAGS += -I. -I$(SRCDIR) -g -I$(BOOSTPATH) $(CXXOPT)
 CXXDEPEND = /usr/local/bin/g++
@@ -26,7 +26,7 @@ CXXDEPENDFLAGS = -M
 LIBCXXSRC = default_params.cc rr.cc dg.cc dgvertex.cc dgarc.cc gauss.cc \
 oper.cc integral.cc iter.cc policy.cc strategy.cc policy_spec.cc flop.cc \
 prefactors.cc context.cc memory.cc tactic.cc codeblock.cc dims.cc code.cc \
-iface.cc
+iface.cc class_registry.cc
 LIBCXXOBJ = $(LIBCXXSRC:%.cc=%.$(OBJSUF))
 LIBCXXDEP = $(LIBCXXSRC:%.cc=%.$(DEPSUF))
 LIBOBJ = $(LIBCXXOBJ)

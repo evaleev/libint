@@ -1,5 +1,6 @@
 
 #include <smart_ptr.h>
+#include <global_macros.h>
 
 #ifndef _libint2_src_bin_libint_equiv_h_
 #define _libint2_src_bin_libint_equiv_h_
@@ -40,6 +41,8 @@ namespace libint2 {
       return a->operator==(b);
     }
 
+#if !PTREQUIV_USE_TYPEID
+    
     static bool equiv(const SafePtr<T>& a, const SafePtr<P>& b) {
       SafePtr<T> b_cast = dynamic_pointer_cast<T,P>(b);
       if (b_cast == 0)
@@ -64,8 +67,31 @@ namespace libint2 {
         return a->operator==(*b_cast.get());
     }
     
+#else
+
+    static bool equiv(const SafePtr<T>& a, const SafePtr<P>& b) {
+      if (a->typeid_ != b->typeid_)
+        return false;
+      else {
+        SafePtr<T> b_cast = static_pointer_cast<T,P>(b);
+        return a->operator==(*b_cast.get());
+      }
+    }
+
+    static bool equiv(const T* a, const SafePtr<DGVertex>& b) {
+      if (a->typeid_ != b->typeid_)
+        return false;
+      else {
+        return a->label() == b->label();
+        //SafePtr<T> b_cast = static_pointer_cast<T,DGVertex>(b);
+        //return a->operator==(*b_cast.get());
+      }
+    }
+
+#endif
+
   };
-        
+    
     /*
      static bool equiv(const SafePtr<parent_type>& b, const SafePtr<T>& a) const {
        SafePtr<T> b_cast = dynamic_pointer_cast<T,parent_type>(b);

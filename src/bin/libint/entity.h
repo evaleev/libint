@@ -34,7 +34,7 @@ namespace libint2 {
     public:
     virtual ~Entity() {}
     /// Return id string
-    std::string id() const { return id_; }
+    const std::string& id() const { return id_; }
     
     protected:
     Entity(const std::string& id) : id_(id) {}
@@ -56,7 +56,7 @@ namespace libint2 {
     {
       public:
       RTimeEntity(const std::string& id) :
-        Entity(id),DGVertex()
+        Entity(id),DGVertex(ClassInfo<RTimeEntity>::Instance().id()), descr_()
         {
         }
 
@@ -70,8 +70,8 @@ namespace libint2 {
       /// Implementation of DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const
       {
-	SafePtr<RTimeEntity> a_cast = dynamic_pointer_cast<RTimeEntity,DGVertex>(a);
-	if (a_cast) {
+	if (a->typeid_ == typeid_) {
+          SafePtr<RTimeEntity> a_cast = static_pointer_cast<RTimeEntity,DGVertex>(a);
 	  return id() == a_cast->id();
 	}
 	else
@@ -79,21 +79,24 @@ namespace libint2 {
       }
       
       /// Implementation of DGVertex::label()
-      std::string label() const
+      const std::string& label() const
       {
 	return Entity::id();
       }
       /// Implementation of DGVertex::id()
-      std::string id() const
+      const std::string& id() const
       {
 	return label();
       }
       /// Implementation of DGVertex::description()
-      std::string description() const
+      const std::string& description() const
       {
-        ostringstream os;
-        os << "RTimeEntity: " << id();
-        return os.str();
+        if (descr_.empty()) {
+          ostringstream os;
+          os << "RTimeEntity: " << id();
+          descr_ = os.str();
+        }
+        return descr_;
       }
       
       private:
@@ -102,6 +105,8 @@ namespace libint2 {
       {
         return true;
       }
+
+      mutable std::string descr_;
 
     };
 
@@ -117,7 +122,7 @@ namespace libint2 {
 
       public:
       CTimeEntity(const std::string& id, const T& val) :
-        Entity(id), DGVertex(), value_(val)
+        Entity(id), DGVertex(ClassInfo<CTimeEntity>::Instance().id()), value_(val), descr_()
         {
         }
 
@@ -131,8 +136,8 @@ namespace libint2 {
       /// Implementation of DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const
       {
-	SafePtr<CTimeEntity> a_cast = dynamic_pointer_cast<CTimeEntity,DGVertex>(a);
-	if (a_cast) {
+	if (a->typeid_ == typeid_) {
+          SafePtr<CTimeEntity> a_cast = static_pointer_cast<CTimeEntity,DGVertex>(a);
 	  return id() == a_cast->id();
 	}
 	else
@@ -140,21 +145,24 @@ namespace libint2 {
       }
       
       /// Implementation of DGVertex::label()
-      std::string label() const
+      const std::string& label() const
       {
 	return Entity::id();
       }
       /// Implementation of DGVertex::id()
-      std::string id() const
+      const std::string& id() const
       {
 	return label();
       }
       /// Implementation of DGVertex::description()
-      std::string description() const
+      const std::string& description() const
       {
-        ostringstream os;
-        os << "CTimeEntity: " << id();
-        return os.str();
+        if (descr_.empty()) {
+          ostringstream os;
+          os << "CTimeEntity: " << id();
+          descr_ = os.str();
+        }
+        return descr_;
       }
       
       /// returns the value
@@ -168,6 +176,8 @@ namespace libint2 {
       {
         return true;
       }
+
+      mutable std::string descr_;
 
     };
 

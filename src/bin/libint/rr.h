@@ -22,6 +22,7 @@ namespace libint2 {
   class CodeContext;
   class ImplicitDimensions;
   class DirectedGraph;
+  template <typename V> class AlgebraicOperator;
 
   /**
      RecurrenceRelation describes all recurrence relations
@@ -41,12 +42,13 @@ namespace libint2 {
     virtual SafePtr<DGVertex> rr_child(unsigned int i) const =0;
     /// Returns the target
     virtual SafePtr<DGVertex> rr_target() const =0;
-    /** num_expr() returns the actual number of expressions.
-        For example, VRR for ERIs has up to 6 expressions on the right-hand side,
-    */
-    virtual const unsigned int num_expr() const =0;
-    /// Returns i-th expression
-    virtual SafePtr<DGVertex> rr_expr(unsigned int i) const =0;
+
+    /** Numerical expression of a recurrence relation is always expressed as
+        an AlgebraicOperator<DGVertex> */
+    typedef AlgebraicOperator<DGVertex> ExprType;
+    /// Returns the expression
+    virtual SafePtr<ExprType> rr_expr() const =0;
+
     /**
        Returns true is this recurrence relation is simple enough to optimize away.
        As a result of such optimization, standalone function will NOT be 
@@ -64,12 +66,12 @@ namespace libint2 {
       (e.g. "VRR A (p s | 1/r_{12} | d s )" for Obara-Saika recurrence relation
       applied to center A to compute (ps|ds) ERI)
     */
-    virtual std::string label() const =0;
+    virtual const std::string& label() const =0;
     
     /**
       description() returns a verbose description of this RR
     */
-    virtual std::string description() const;
+    virtual const std::string& description() const;
     
     /// Generate declaration and definition for the recurrence relation
     virtual void generate_code(const SafePtr<CodeContext>& context,
@@ -87,8 +89,12 @@ namespace libint2 {
     virtual const std::string cpp_source_name() =0;
     virtual const std::string cpp_header_name() =0;
     virtual std::ostream& cpp_source(std::ostream&) =0;
-    
+
+    /// RecurrenceRelation is managed by SingletonStack but doesn't need to keep track of instance ID
+    void inst_id(const SingletonStack<RecurrenceRelation,string>::InstanceID& i) {}
+
     private:
+
     /** used by generate_code to create a (new) computation graph that computes sets of integrals using the RR
     */
     SafePtr<DirectedGraph> generate_graph_();

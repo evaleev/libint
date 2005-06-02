@@ -88,7 +88,7 @@ RecurrenceRelation::adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const
   return dims;
 }
 
-std::string
+const std::string&
 RecurrenceRelation::description() const
 {
   return label();

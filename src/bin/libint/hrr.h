@@ -44,8 +44,8 @@ namespace libint2 {
     typedef HRR<IntType,BFSet,part,loc_a,pos_a,loc_b,pos_b> ThisType;
     typedef IntType TargetType;
     typedef IntType ChildType;
-    /// The type of expressions in which RecurrenceRelations result.
-    typedef AlgebraicOperator<DGVertex> ExprType;
+    /// A short alias
+    typedef RecurrenceRelation::ExprType ExprType;
 
     /** Use Instance() to obtain an instance of RR. This function is provided to avoid
         issues with getting a SafePtr from constructor (as needed for registry to work).
@@ -59,20 +59,16 @@ namespace libint2 {
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return nchildren_; };
-    /// Implementation of RecurrenceRelation::num_expr()
-    const unsigned int num_expr() const { return nexpr_; };
     /// returns pointer to the target
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer to i-th child
     SafePtr<ChildType> child(unsigned int i) const;
-    /// expr(i) returns pointer to the expression for the i-th child
-    SafePtr<ExprType> expr(unsigned int i) const;
     /// Implementation of RecurrenceRelation's target()
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation's child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// Implementation of RecurrenceRelation::rr_expr()
-    SafePtr<DGVertex> rr_expr(unsigned int i) const { return static_pointer_cast<DGVertex,ExprType>(expr(i)); }
+    SafePtr<ExprType> rr_expr() const { return expr_; }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
@@ -82,9 +78,17 @@ namespace libint2 {
       return true;
     }
     /// Implementation of RecurrenceRelation::label()
-    std::string label() const { return label_; }
+    const std::string& label() const { return label_; }
     /// Reimplementation of RecurrenceRelation::description()
-    std::string description() const { ostringstream oss; oss << label() << "   target = " << target_->label(); return oss.str(); }
+    const std::string& description() const
+      {
+        if (descr_.empty()) {
+          ostringstream oss;
+          oss << label() << "   target = " << target_->label();
+          descr_ = oss.str();
+        }
+        return descr_;
+      }
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return nflops_; }
     /// Implementation of RecurrenceRelation::spfunction_call()
@@ -108,18 +112,17 @@ namespace libint2 {
     bool register_with_rrstack() const;
 
     static const unsigned int max_nchildren_ = 2;
-    static const unsigned int max_nexpr_ = 2;
     unsigned int dir_;
 
     SafePtr<TargetType> target_;
     SafePtr<ChildType> children_[max_nchildren_];
-    SafePtr<ExprType> expr_[max_nexpr_];
+    SafePtr<ExprType> expr_;
 
     unsigned int nchildren_;
-    unsigned int nexpr_;
     unsigned int nflops_;
     void oper_checks() const;
 
+    mutable std::string descr_;
     std::string label_;
     std::string generate_label(const SafePtr<TargetType>& target) const;
     /// Overload of RecurrenceRelation::adapt_dims_()
@@ -150,7 +153,7 @@ namespace libint2 {
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(const SafePtr<TargetType>& Tint, unsigned int dir) :
-    target_(Tint), dir_(dir), nchildren_(0), nexpr_(0), nflops_(0), label_(generate_label(Tint))
+    target_(Tint), dir_(dir), nchildren_(0), nflops_(0), label_(generate_label(Tint))
     {
       target_ = Tint;
       typename IntType::AuxQuantaType aux = Tint->aux();
@@ -195,8 +198,7 @@ namespace libint2 {
           SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
           if (loc_a == InBra && loc_b == InKet) {
             SafePtr<ExprType> sum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
-            expr_[0] = sum_ptr;
-            nexpr_ += 1;
+            expr_ = sum_ptr;
           }
           else
             throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
@@ -234,8 +236,7 @@ namespace libint2 {
           SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
           if (loc_a == InBra && loc_b == InKet) {
             SafePtr<ExprType> sum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
-            expr_[0] = sum_ptr;
-            nexpr_ += 1;
+            expr_ = sum_ptr;
           }
           else
             throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
@@ -347,24 +348,6 @@ namespace libint2 {
           if (nc == i)
             return children_[c];
           nc++;
-        }
-      }
-    };
-
-  template <class IntType, class F, int part,
-    FunctionPosition loc_a, unsigned int pos_a,
-    FunctionPosition loc_b, unsigned int pos_b>
-    SafePtr< AlgebraicOperator<DGVertex> >
-    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::expr(unsigned int i) const
-    {
-      assert(i>=0 && i<nexpr_);
-
-      unsigned int ne=0;
-      for(int e=0; e<max_nexpr_; e++) {
-        if (expr_[e]) {
-          if (ne == i)
-            return expr_[e];
-          ne++;
         }
       }
     };
