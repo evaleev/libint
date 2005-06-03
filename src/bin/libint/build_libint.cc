@@ -360,8 +360,8 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
       for(int lc=0; lc<=lmax; lc++) {
         for(int ld=0; ld<=lmax; ld++) {*/
           {{{{
-            int la=1;
-            int lb=1;
+            int la=2;
+            int lb=2;
             int lc=2;
             int ld=2;
 

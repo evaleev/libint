@@ -2,6 +2,8 @@
 #include <smart_ptr.h>
 #include <rr.h>
 #include <exception.h>
+#include <global_macros.h>
+#include <dgvertex.h>
 
 #ifndef _libint2_src_bin_libint_algebra_h_
 #define _libint2_src_bin_libint_algebra_h_
@@ -41,22 +43,51 @@ namespace libint2 {
       virtual ~AlgebraicOperator() {}
       
       /// Returns the left argument
-      SafePtr<T> left() const { return left_; }
+      const SafePtr<T>& left() const { return left_; }
       /// Returns the right argument
-      SafePtr<T> right() const { return right_; }
+      const SafePtr<T>& right() const { return right_; }
 
+      /// Overloads DGVertex::add_exit_arc(). The default definition is used unless T = DGVertex (see algebra.cc)
+      void add_exit_arc(const SafePtr<DGArc>& a);
       /// Implements DGVertex::size()
       const unsigned int size() const { return 1; }
       /// Implements DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const
       {
         if (typeid_ == a->typeid_) {
+#if ALGEBRAICOPERATOR_USE_KEY_TO_COMPARE
+          return description() == a->description();
+#else
           // Safe to cast statically because type of a has just been checked
           SafePtr<AlgebraicOperator> a_cast = static_pointer_cast<AlgebraicOperator,DGVertex>(a);
-          if (OT_ == a_cast->OT_ && left_->equiv(a_cast->left()) && right_->equiv(a_cast->right()))
+
+#if 0
+          // Find out why sometimes equivalent left_ and a_cast->left_ have non-equivalent pointers
+          if (left_->equiv(a_cast->left()) && left_ != a_cast->left_) {
+            cout << "Left arguments are equivalent but pointers differ!" << endl;
+            cout << left_->description() << endl;
+            cout << a_cast->left_->description() << endl;
+          }
+          // Find out why sometimes equivalent right_ and a_cast->right_ have non-equivalent pointers
+          if (right_->equiv(a_cast->right()) && right_ != a_cast->right_) {
+            cout << "Left arguments are equivalent but pointers differ!" << endl;
+            cout << right_->description() << endl;
+            cout << a_cast->right_->description() << endl;
+          }
+#endif
+          if (OT_ == a_cast->OT_) {
+  #if ALGEBRAICOPERATOR_USE_SAFEPTR
+            if (left_ == a_cast->left_ && right_ == a_cast->right_)
+  #else
+            if (OT_ == a_cast->OT_ && left_->equiv(a_cast->left()) && right_->equiv(a_cast->right()))
+  #endif
             return true;
           else
             return false;
+          }
+          else
+            return false;
+#endif
         }
 	else
 	  return false;
@@ -104,7 +135,22 @@ namespace libint2 {
       std::string label_;
       mutable std::string descr_;
     };
-    
+
+  /*
+  template <>
+    void
+    AlgebraicOperator<DGVertex>::add_exit_arc(const SafePtr<DGArc>& a)
+    {
+      DGVertex::add_exit_arc(a);
+      if (left_->equiv(a->dest()))
+        left_ = a->dest();
+      else if (right_->equiv(a->dest()))
+        right_ = a->dest();
+      else
+        throw std::runtime_error("AlgebraicOperator<DGVertex>::add_exit_arc -- trying to add an arc to a vertex not equivalent to either argument.");
+    }
+  */
+  
 };
 
 #endif

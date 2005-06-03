@@ -82,9 +82,16 @@ namespace libint2 {
       if (a->typeid_ != b->typeid_)
         return false;
       else {
+#if PTREQUIV_USE_KEY_TO_COMPARE
+  #if PTREQUIV_USE_INSTID
+        return a->instid_ == b->instid_;
+  #else
         return a->label() == b->label();
-        //SafePtr<T> b_cast = static_pointer_cast<T,DGVertex>(b);
-        //return a->operator==(*b_cast.get());
+  #endif
+#else
+        SafePtr<T> b_cast = static_pointer_cast<T,DGVertex>(b);
+        return a->operator==(*b_cast.get());
+#endif
       }
     }
 

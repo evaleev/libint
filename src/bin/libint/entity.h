@@ -166,7 +166,7 @@ namespace libint2 {
       }
       
       /// returns the value
-      T value() const { return value_; }
+      const T& value() const { return value_; }
 
     private:
       T value_;

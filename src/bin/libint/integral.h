@@ -589,7 +589,9 @@ namespace libint2 {
     {
       SafePtr<TwoPRep_11_11> this_int(new TwoPRep_11_11<BFS>(bra,ket,aux));
       // Use singl_manager_ to make sure this is a new object of this type
-      return singl_manager_.find(this_int).second;
+      const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
+      val.second->instid_ = val.first;
+      return val.second;
     }
 
   template <class BFS>

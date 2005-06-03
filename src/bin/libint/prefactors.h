@@ -14,8 +14,7 @@ namespace libint2 {
   */
   
   class Prefactors {
-    
-    public:
+  public:
     Prefactors();
     ~Prefactors();
     
@@ -97,7 +96,13 @@ namespace libint2 {
     /// integers represented as doubles
     SafePtr<cdouble> N_i[NMAX];
 
-    SafePtr<cdouble> Cdouble(double a);
+    const SafePtr<cdouble> Cdouble(double a);
+
+  private:
+    /// SingletonStack is used to manage dynamically created floating-point constants
+    typedef SingletonStack<cdouble,double> cdoubleSingletonManager;
+    cdoubleSingletonManager cd_singl_man_;
+    
   };
   
   extern Prefactors prefactors;
