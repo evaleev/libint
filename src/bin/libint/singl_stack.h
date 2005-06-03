@@ -10,6 +10,11 @@ namespace libint2 {
 
   class RecurrenceRelation;
   
+  /// This is used to maintain some information about Generalized Singletons
+  struct GSingletonTrait {
+    typedef unsigned long int InstanceID;
+  };
+  
   /**
      SingletonStack<T,HashType,P> helps to implement Singleton-like objects of type T.
      SingletonStack maintains a map of keys of type HashType to
@@ -23,15 +28,16 @@ namespace libint2 {
     public:
       typedef HashType key_type;
       typedef SafePtr<T> data_type;
-      typedef std::map<key_type,data_type> map_type;
+      /// Specifies type for the instance index variables
+      typedef GSingletonTrait::InstanceID InstanceID;
+      typedef std::pair<InstanceID,SafePtr<T> > value_type;
+      typedef std::map<key_type,value_type> map_type;
       /// use iter_type objects to iterate over the stack
       typedef typename map_type::iterator iter_type;
       /// const version of iter_type
       typedef typename map_type::const_iterator citer_type;
       /// Specifies the type of callback which computes hashes
       typedef const key_type& (T::* HashCallback)() const;
-      /// Specifies type for the instance index variables
-      typedef unsigned long int InstanceID;
 
       /// callback to compute hash values is the only parameter
       SingletonStack(HashCallback callback);
@@ -42,7 +48,7 @@ namespace libint2 {
           if found -- returns the pointer to the corresponding object on ostack_,
           otherwise pushes obj to the end of ostack_ and returns obj.
       */
-      SafePtr<T> find(const SafePtr<T>& obj);
+      const value_type& find(const SafePtr<T>& obj);
       
       /** Returns iterator to the beginning of the stack */
       citer_type begin() const { return map_.begin(); }
@@ -62,7 +68,7 @@ namespace libint2 {
     }
 
   template <class T, class HashType>
-    SafePtr<T>
+    const typename SingletonStack<T,HashType>::value_type&
     SingletonStack<T,HashType>::find(const SafePtr<T>& obj)
     {
       key_type key = ((obj.get())->*callback_)();
@@ -73,9 +79,9 @@ namespace libint2 {
         return (*pos).second;
       }
       else {
-        map_[key] = obj;
-	obj->inst_id(next_instance_++);
-        return obj;
+        value_type result(next_instance_++,obj);
+        map_[key] = result;
+        return map_[key];
       }
     }
 

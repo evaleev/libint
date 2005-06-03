@@ -112,7 +112,7 @@ void
 RRStack::add(const SafePtr<RRStack>& rrs)
 {
   for(citer_type it=rrs->begin(); it != rrs->end(); it++) {
-    find((*it).second);
+    find((*it).second.second);
   }
 }
 

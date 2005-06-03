@@ -7,10 +7,11 @@ using namespace libint2;
 DGVertex::DGVertex(ClassID tid) :
   typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
   precalc_(), postcalc_(), graph_label_(), referred_vertex_(SafePtr<DGVertex>()), nrefs_(0),
-  symbol_(), address_(), need_to_compute_(true)
+  symbol_(), address_(), need_to_compute_(true), instid_()
 {
 }
 
+/*
 DGVertex::DGVertex(ClassID tid, const vector< SafePtr<DGArc> >& parents, const vector< SafePtr<DGArc> >& children) :
   typeid_(tid), parents_(parents), children_(children), target_(false), can_add_arcs_(true),
   num_tagged_arcs_(0), precalc_(), postcalc_(), graph_label_(),
@@ -18,6 +19,7 @@ DGVertex::DGVertex(ClassID tid, const vector< SafePtr<DGArc> >& parents, const v
   need_to_compute_(true)
 {
 }
+*/
 
 DGVertex::~DGVertex()
 {

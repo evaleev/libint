@@ -111,7 +111,7 @@ generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams
 
   SafePtr<RRStack> rrstack = RRStack::Instance();
   for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
-    SafePtr<RecurrenceRelation> rr = (*it).second;
+    SafePtr<RecurrenceRelation> rr = (*it).second.second;
     std::string rrlabel = rr->label();
     os << " generating code for " << context->label_to_name(rrlabel) << " target=" << rr->rr_target()->label() << endl;
     

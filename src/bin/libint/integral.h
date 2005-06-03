@@ -84,8 +84,6 @@ namespace libint2 {
       typedef PtrEquiv<GenIntegralSet> PtrComp;
       /// This the type of the object that manages GenIntegralSet's as Singletons
       typedef SingletonStack<GenIntegralSet,std::string> SingletonManagerType;
-      /// This is the type of the instance index variable
-      typedef typename SingletonManagerType::InstanceID InstanceID;
 
       /** No constructors are public since this is a singleton-like quantity.
           Instead, access is provided through Instance().
@@ -131,11 +129,6 @@ namespace libint2 {
       /// Obtain the auxiliary quanta
       const SafePtr<AuxQuanta> aux() const;
 
-      /// Return instance id
-      const InstanceID& inst_id() const { return inst_id_; }
-      /// set instance id to i
-      void inst_id(const InstanceID& i) { inst_id_ = i; }
-
       protected:
       // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
       GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
@@ -161,9 +154,6 @@ namespace libint2 {
 
       // This is used to manage GenIntegralSet objects as singletons
       static SingletonManagerType singl_manager_;
-      // This is the index of this particular instance. No two distinct instances can
-      // have same inst_id_
-      InstanceID inst_id_;
 
       // The operator needs to be a real object rather than real type to be able to construct a SubIterator, etc.
       SafePtr<Oper> O_;
@@ -209,7 +199,9 @@ namespace libint2 {
     {
       SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
       // Use singl_manager_ to make sure this is a new object of this type
-      return singl_manager_.find(this_int);
+      const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
+      val.second->instid_ = val.first;
+      return val.second;
     }
   
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
@@ -597,7 +589,7 @@ namespace libint2 {
     {
       SafePtr<TwoPRep_11_11> this_int(new TwoPRep_11_11<BFS>(bra,ket,aux));
       // Use singl_manager_ to make sure this is a new object of this type
-      return singl_manager_.find(this_int);
+      return singl_manager_.find(this_int).second;
     }
 
   template <class BFS>

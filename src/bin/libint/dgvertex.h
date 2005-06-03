@@ -6,6 +6,7 @@
 #include <memory.h>
 #include <exception.h>
 #include <class_registry.h>
+#include <singl_stack.h>
 
 #ifndef _libint2_src_bin_libint_dgvertex_h_
 #define _libint2_src_bin_libint_dgvertex_h_
@@ -25,10 +26,15 @@ namespace libint2 {
     typedef NotSet<std::string> SymbolNotSet;
     /// Type identifier
     typedef ClassRegistry::ClassID ClassID;
+    /// Instance identifier
+    typedef GSingletonTrait::InstanceID InstanceID;
 
-    /** typeid is used to store the ClassID of the concrete type. It is used to check quickly whether
+    /** typeid stores the ClassID of the concrete type. It is used to check quickly whether
         2 DGVertices are of the same type. Dynamic casts are too expensive. */
     ClassID typeid_;
+    /** instid stores the InstanceID of the object. Only makes sense for Singletons.
+        For other objects it's zero. Can be used to compare objects quickly. */
+    InstanceID instid_;
     /// Sets typeid to tid 
     DGVertex(ClassID tid);
     /// Sets typeid to tid 

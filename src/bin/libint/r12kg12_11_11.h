@@ -101,7 +101,7 @@ namespace libint2 {
     {
       SafePtr<R12kG12_11_11> this_int(new R12kG12_11_11<BFS,K>(bra,ket,aux));
       // Use singl_manager_ to make sure this is a new object of this type
-      return singl_manager_.find(this_int);
+      return singl_manager_.find(this_int).second;
     }
 
   template <class BFS, int K>
