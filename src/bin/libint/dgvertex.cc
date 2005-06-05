@@ -1,11 +1,12 @@
 
 #include <dgvertex.h>
+#include <global_macros.h>
 
 using namespace std;
 using namespace libint2;
 
 DGVertex::DGVertex(ClassID tid) :
-  typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
+  dg_(), typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
   precalc_(), postcalc_(), graph_label_(), referred_vertex_(SafePtr<DGVertex>()), nrefs_(0),
   symbol_(), address_(), need_to_compute_(true), instid_()
 {
@@ -20,6 +21,15 @@ DGVertex::DGVertex(ClassID tid, const vector< SafePtr<DGArc> >& parents, const v
 {
 }
 */
+
+DGVertex::DGVertex(const DGVertex& v) :
+  dg_(v.dg_), typeid_(v.typeid_), parents_(v.parents_), children_(v.children_), target_(v.target_),
+  can_add_arcs_(v.can_add_arcs_), num_tagged_arcs_(v.num_tagged_arcs_),
+  precalc_(v.precalc_), postcalc_(v.postcalc_), graph_label_(v.graph_label_),
+  referred_vertex_(v.referred_vertex_), nrefs_(v.nrefs_),
+  symbol_(v.symbol_), address_(v.address_), need_to_compute_(v.need_to_compute_), instid_(v.instid_)
+{
+}
 
 DGVertex::~DGVertex()
 {
@@ -200,6 +210,7 @@ DGVertex::exit_arc(const SafePtr<DGVertex>& v) const
 void
 DGVertex::reset()
 {
+  dg_.reset();
   unsigned int nchildren = children_.size();
   for(int c=0; c<nchildren; c++) {
     children_[c]->dest()->del_entry_arc(children_[c]);
@@ -211,11 +222,11 @@ DGVertex::reset()
   num_tagged_arcs_ = 0;
   precalc_.reset();
   postcalc_.reset();
-  graph_label_ = SafePtr<std::string>();
+  graph_label_.reset();
   reset_symbol();
-  address_ = SafePtr<Address>();
+  address_.reset();
   need_to_compute_ = true;
-  referred_vertex_ = SafePtr<DGVertex>();
+  referred_vertex_.reset();
   nrefs_ = 0;
 }
 
@@ -265,8 +276,12 @@ DGVertex::symbol() const throw(SymbolNotSet)
   else {
     if (symbol_)
       return *symbol_;
-    else
+    else {
+#if DEBUG
+      cout << "DGVertex::symbol() -- symbol not set for " << description() << endl;
+#endif
       throw SymbolNotSet("DGVertex::symbol() -- symbol not set");
+    }
   }
 }
 
@@ -275,6 +290,9 @@ DGVertex::set_symbol(const std::string& symbol)
 {
   SafePtr<std::string> ptr(new std::string(symbol));
   symbol_ = ptr;
+#if DEBUG
+  cout << "Set symbol for " << description() << " to " << symbol << endl;
+#endif
 }
 
 void

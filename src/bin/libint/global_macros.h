@@ -2,6 +2,8 @@
 #ifndef _libint2_src_bin_libint_globalmacros_h_
 #define _libint2_src_bin_libint_globalmacros_h_
 
+#define DEBUG 0
+
 /// Controls whether classes derived from GenIntegralSet overload its label()
 #define OVERLOAD_GENINTEGRALSET_LABEL 0
 
@@ -17,7 +19,7 @@
 
 /** Controls whether AlgebraicOperator avoids using operator== to compare vertices in favor of a comparing keys associated with each object --
     thus avoiding static cast + comparison code */
-#define ALGEBRAICOPERATOR_USE_KEY_TO_COMPARE 0
+#define ALGEBRAICOPERATOR_USE_KEY_TO_COMPARE 1
 
 /** If 1 then AlgebraicOperator compares left and right arguments directly (comparing pointers), else DGVertex::equiv() is used */
 #define ALGEBRAICOPERATOR_USE_SAFEPTR 0

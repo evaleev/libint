@@ -1,4 +1,5 @@
 
+#include <dg.h>
 #include <dgarc.h>
 #include <iostream>
 #include <string>
@@ -12,8 +13,8 @@
 #define _libint2_src_bin_libint_dgvertex_h_
 
 namespace libint2 {
-  
-    /// This is a vertex of a Directed Graph (DG)
+
+  /// This is a vertex of a Directed Graph (DG)
   class DGVertex {
   public:
     /// The address on the stack during computation is described using this type
@@ -39,6 +40,8 @@ namespace libint2 {
     DGVertex(ClassID tid);
     /// Sets typeid to tid 
     DGVertex(ClassID tid, const vector<SafePtr<DGArc> >& parents, const vector<SafePtr<DGArc> >& children);
+    /// This is a copy constructor
+    DGVertex(const DGVertex& v);
     virtual ~DGVertex();
 
     /// make_a_target() marks this vertex as a target
@@ -106,6 +109,8 @@ namespace libint2 {
     virtual const std::string& description() const =0;
 
 
+    /// Returns pointer to the DirectedGraph to which this DGVertex belongs to
+    const SafePtr<DirectedGraph>& dg() const { return dg_; }
     /// returns the label used for this vertex when visualizing graph
     const std::string& graph_label() const throw(GraphLabelNotSet);
     /// sets the graph label
@@ -175,8 +180,14 @@ namespace libint2 {
     virtual bool this_precomputed() const =0;
 
   private:
-    /// label for the vertex within a graph
-    SafePtr<std::string> graph_label_;    
+    /// the pointer to the graph to which this vertex belongs (can be null)
+    SafePtr<DirectedGraph> dg_;
+    /// Sets pointer to the DirectedGraph to which this DGVertex belongs to
+    void dg(const SafePtr<DirectedGraph>& d) { dg_ = d; }
+    /// Only DirectedGraph::append_vertex can change dg_
+    friend void DirectedGraph::append_vertex(const SafePtr<DGVertex>& vertex) throw(VertexAlreadyOnStack);
+    /// label for the vertex within the graph
+    SafePtr<std::string> graph_label_;
 
     /// if not null -- use this vertex to report address and symbol
     SafePtr<DGVertex> referred_vertex_;

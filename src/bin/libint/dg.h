@@ -2,17 +2,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 #include <stdexcept>
 #include <assert.h>
 #include <exception.h>
 #include <smart_ptr.h>
-#include <dgvertex.h>
-#include <context.h>
-#include <memory.h>
-#include <strategy.h>
-#include <tactic.h>
-#include <dims.h>
-#include <code.h>
 
 #ifndef _libint2_src_bin_libint_dg_h_
 #define _libint2_src_bin_libint_dg_h_
@@ -22,7 +16,16 @@ using namespace std;
 
 namespace libint2 {
 
+  class DGVertex;
+  class DGArc;
+  template <class T> class DGArcRel;
+  template <class T> class AlgebraicOperator;
   class Strategy;
+  class Tactic;
+  class CodeContext;
+  class MemoryManager;
+  class ImplicitDimensions;
+  class CodeSymbols;
 
   /** DirectedGraph is an implementation of a directed graph
       composed of vertices represented by DGVertex objects. The objects
@@ -50,7 +53,7 @@ namespace libint2 {
 
     /** appends v to the graph
     */
-    void append_vertex(const SafePtr<DGVertex>& v);
+    void append_vertex(const SafePtr<DGVertex>& v) throw(VertexAlreadyOnStack);
 
     /** non-template append_target appends the vertex to the graph as a target
     */
@@ -152,7 +155,7 @@ namespace libint2 {
     /// contains vertices
     container stack_;
 
-    typedef  map<std::string,bool> FuncNameContainer;
+    typedef std::map<std::string,bool> FuncNameContainer;
     /** Maintains the list of names of functions calls to which have been generated so far.
         It is used to generate include statements.
     */
@@ -164,6 +167,8 @@ namespace libint2 {
     /** adds a vertex to the graph. If the vertex already found on the graph
         then the vertex is not added and the function returns false */
     void add_vertex(const SafePtr<DGVertex>&) throw(VertexAlreadyOnStack);
+    /** same as add_vertex(), only assumes that there's no equivalent vertex on the graph (see vertex_is_on) */
+    void add_new_vertex(const SafePtr<DGVertex>&);
     /// returns true if vertex if already on graph
     void vertex_is_on(const SafePtr<DGVertex>& vertex) const throw(VertexAlreadyOnStack);
     /// removes vertex from the graph
@@ -183,7 +188,7 @@ namespace libint2 {
                   const SafePtr<Strategy>& strategy,
                   const SafePtr<Tactic>& tactic);
     /// This function insert expr of type AlgebraicOperator<DGVertex> into the graph
-    void insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr);
+    void insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr) throw(VertexAlreadyOnStack);
     /// This function replaces RecurrenceRelations with concrete arithemtical expressions
     void replace_rr_with_expr();
     /// This function gets rid of trivial math such as multiplication/division by 1.0, etc.
@@ -219,124 +224,6 @@ namespace libint2 {
 
   };
 
-  /// Apply RR to target
-  template <class I, class RR>
-    void
-    DirectedGraph::append_target(const SafePtr<I>& target)
-    {
-      target->make_a_target();
-      recurse<I,RR>(target);
-    };
-
-  /// Apply RR to target
-  template <class I, class RR>
-    void
-    DirectedGraph::recurse(const SafePtr<I>& vertex)
-    {
-      try { add_vertex(vertex); }
-      catch (VertexAlreadyOnStack& e) { return; }
-      
-      SafePtr<RR> rr0(new RR(vertex));
-      const int num_children = rr0->num_children();
-      
-      for(int c=0; c<num_children; c++) {
-        
-        SafePtr<DGVertex> child = rr0->child(c);
-        SafePtr<DGArc> arc(new DGArcRel<RR>(vertex,child,rr0));
-        vertex->add_exit_arc(arc);
-        
-	SafePtr<I> child_cast = dynamic_pointer_cast<I,DGVertex>(child);
-	if (child_cast == 0)
-	  throw std::runtime_error("DirectedGraph::recurse(const SafePtr<I>& vertex) -- dynamic cast failed, most probably this is a logic error!");
-        recurse<I,RR>(child_cast);
-        
-      }
-    };
-
-  /// Apply RR recursively starting with vertex
-  template <class RR>
-    void
-    DirectedGraph::recurse(const SafePtr<DGVertex>& vertex)
-    {
-      try { add_vertex(vertex); }
-      catch (VertexAlreadyOnStack& e) { return; }
-      
-      typedef typename RR::TargetType TT;
-      SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(vertex);
-      if (tptr == 0)
-        return;
-      
-      SafePtr<RR> rr0(new RR(tptr));
-      const int num_children = rr0->num_children();
-      
-      for(int c=0; c<num_children; c++) {
-        
-        SafePtr<DGVertex> child = rr0->child(c);
-        SafePtr<DGArc> arc(new DGArcRel<RR>(vertex,child,rr0));
-        vertex->add_exit_arc(arc);
-        
-        recurse<RR>(child);
-      }
-    };
-
-  /// Apply RR to all classes already on the graph
-  template <class RR>
-    void
-    DirectedGraph::apply_to_all()
-    {
-      typedef typename RR::TargetType TT;
-      const int num_vertices_on_graph = first_free_;
-      for(int v=0; v<num_vertices_on_graph; v++) {
-        if (stack_[v]->num_exit_arcs() != 0)
-          continue;
-        SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(stack_[v]);
-        if (tptr == 0)
-          continue;
-      
-        SafePtr<RR> rr0(new RR(tptr));
-        const int num_children = rr0->num_children();
-      
-        for(int c=0; c<num_children; c++) {
-        
-          SafePtr<DGVertex> child = rr0->child(c);
-          SafePtr<DGArc> arc(new DGArcRel<RR>(tptr,child,rr0));
-          tptr->add_exit_arc(arc);
-        
-          recurse<RR>(child);
-        
-        }
-      }
-    }
-
-  template <class RR>
-    unsigned int
-    DirectedGraph::num_children_on(const SafePtr<RR>& rr) const
-    {
-      unsigned int nchildren = rr->num_children();
-      unsigned int nchildren_on_stack = 0;
-      for(int c=0; c<nchildren; c++) {
-        try {
-          vertex_is_on(rr->rr_child(c));
-        }
-        catch (VertexAlreadyOnStack& a) {
-          continue;
-        }
-        nchildren_on_stack++;
-      }
-
-      return nchildren_on_stack;
-    }
-    
-  template <DirectedGraph::DGVertexMethodPtr method>
-    void
-    DirectedGraph::apply_at(const SafePtr<DGVertex>& vertex) const
-    {
-      ((vertex.get())->*method)();
-      const unsigned int nchildren = vertex->num_exit_arcs();
-      for(int c=0; c<nchildren; c++)
-        apply_at<method>(vertex->exit_arc(c)->dest());
-    }
-    
 };
 
 

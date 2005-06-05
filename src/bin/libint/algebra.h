@@ -41,6 +41,25 @@ namespace libint2 {
         {
         }
       virtual ~AlgebraicOperator() {}
+
+      /// Clone A but replace operands with left and right
+      AlgebraicOperator(const SafePtr<AlgebraicOperator>& A,
+                        const SafePtr<T>& left,
+                        const SafePtr<T>& right) :
+        DGVertex(static_cast<DGVertex&>(*A)), OT_(A->OT_),
+        left_(left), right_(right), descr_(), label_(A->label_)
+        {
+#if DEBUG
+          if (num_exit_arcs() != 2)
+            cout << "AlgebraicOperator<DGVertex> copy constructor: number of children != 2" << endl;
+          else {
+            if (left_ != exit_arc(0)->dest() && left_ != exit_arc(1)->dest())
+              cout << "AlgebraicOperator<DGVertex> copy constructor: invalid left operand given" << endl; 
+            if (right_ != exit_arc(0)->dest() && right_ != exit_arc(1)->dest())
+              cout << "AlgebraicOperator<DGVertex> copy constructor: invalid right operand given" << endl;
+          }
+#endif
+        }
       
       /// Returns the left argument
       const SafePtr<T>& left() const { return left_; }
@@ -61,7 +80,7 @@ namespace libint2 {
           // Safe to cast statically because type of a has just been checked
           SafePtr<AlgebraicOperator> a_cast = static_pointer_cast<AlgebraicOperator,DGVertex>(a);
 
-#if 0
+#if 1
           // Find out why sometimes equivalent left_ and a_cast->left_ have non-equivalent pointers
           if (left_->equiv(a_cast->left()) && left_ != a_cast->left_) {
             cout << "Left arguments are equivalent but pointers differ!" << endl;
@@ -79,7 +98,7 @@ namespace libint2 {
   #if ALGEBRAICOPERATOR_USE_SAFEPTR
             if (left_ == a_cast->left_ && right_ == a_cast->right_)
   #else
-            if (OT_ == a_cast->OT_ && left_->equiv(a_cast->left()) && right_->equiv(a_cast->right()))
+            if (left_->equiv(a_cast->left()) && right_->equiv(a_cast->right()))
   #endif
             return true;
           else

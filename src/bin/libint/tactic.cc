@@ -4,6 +4,7 @@ extern "C" {
   #include <time.h>
 };
 #include <dg.h>
+#include <dg.templ.h>
 #include <tactic.h>
 
 using namespace std;
