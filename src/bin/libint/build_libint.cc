@@ -33,7 +33,7 @@
 using namespace std;
 using namespace libint2;
 
-static int try_main (int argc, char* argv[]);
+static void try_main (int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
@@ -56,7 +56,7 @@ static void build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParam
 static void test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                  SafePtr<Libint2Iface>& iface);
 
-int try_main (int argc, char* argv[])
+void try_main (int argc, char* argv[])
 {
   std::ostream& os = cout;
   
