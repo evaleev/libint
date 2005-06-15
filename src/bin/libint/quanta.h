@@ -118,10 +118,14 @@ namespace libint2 {
     const std::string
     QuantumNumbers<T,N>::label() const
     {
-      std::string result = " ";
-      for(int i=0; i<qn_.size(); i++)
-        result += qn_[i];
-      return result;
+      std::ostringstream oss;
+      oss << "{";
+      if (qn_.size() > 0)
+	oss << qn_[0];
+      for(int i=1; i<qn_.size(); i++)
+        oss << "," << qn_[i];
+      oss << "}";
+      return oss.str();
     }
   
   typedef QuantumNumbers<unsigned int,0> NullQuantumSet;
