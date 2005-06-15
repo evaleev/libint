@@ -272,6 +272,12 @@ AC_ARG_WITH(cxx-optflags,
 CXXOPTIONS_OPT=$withval
 )
 
+AC_ARG_WITH(cxxdepend,
+[  --with-cxxdepend        Gives the name of the C++ compiler with which to extract dependency information.],
+CXXDEPEND=$withval,CXXDEPEND=$CXX
+)
+AC_SUBST(CXXDEPEND)
+
 AC_ARG_WITH(ranlib,
 [  --with-ranlib           Gives the name of the ranlib program.],
 RANLIB=$withval
@@ -381,7 +387,7 @@ dnl -------- Checks for compiler/linker options. ----------
 
 # options needed only for optimization
 if test "X$COPTIONS_OPT" = X; then
-  COPTIONS_OPT=-O
+  COPTIONS_OPT=-O2
 fi
 # options needed only for debugging
 COPTIONS_DBG=-g
@@ -390,7 +396,7 @@ COPTIONS_MISC=
 
 # options needed only for optimization
 if test "X$CXXOPTIONS_OPT" = X; then
-  CXXOPTIONS_OPT=-O
+  CXXOPTIONS_OPT=-O2
 fi
 # options needed only for debugging
 CXXOPTIONS_DBG=-g
