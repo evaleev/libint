@@ -9,7 +9,7 @@ CXXFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/bin/libint
 # include generated headers from the current directory
 CXXFLAGS += -I.
 
-CXXGENSRC = $(shell echo `ls _aB*.cc`)
+CXXGENSRC = $(COMPUTE_XX_ERI_XX_SRC)
 CXXGENOBJ = $(CXXGENSRC:%.cc=%.o)
 LIBINT = $(TOPDIR)/src/bin/libint/libINT.a
 
@@ -35,6 +35,9 @@ $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(LIBINT)
 $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ) $(LIBINT)
 	$(CXX) -o $@ $^
 
+$(CXXTESTOBJ):: test_eri_conf.h
+$(CXXERICOMPOBJ):: $(TOPDIR)/src/bin/libint/buildtest.h
+
 clean::
-	-rm -rf $(ERICOMP) $(TEST) $(TIME) $(ERICOMPOBJ) $(CXXTESTOBJ) $(CXXTIMEOBJ) $(CXXGENOBJ)
+	-rm -rf $(ERICOMP) $(TEST) $(TIME) *.o *.d
 

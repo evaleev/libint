@@ -1,0 +1,56 @@
+#!/usr/bin/perl
+
+#
+# Generates and tests code for ERIs
+#
+
+(usage() and die) if $#ARGV != 4;
+
+my $max_am = 5;
+my $ericomp = "generate_eri_code";
+
+my $la = $ARGV[0];
+my $lb = $ARGV[1];
+my $lc = $ARGV[2];
+my $ld = $ARGV[3];
+my $size_to_unroll = $ARGV[4];
+
+system("make $ericomp") && die("make $ericomp failed");
+printf STDOUT "Generating source ... ";
+system("./$ericomp $la $lb $lc $ld $size_to_unroll | tee $ericomp.log") 
+  && die("$ericomp failed");
+printf STDOUT "done\n";
+
+# parse in file names of the header and source, and the name of the function
+open CFILE, ">test_eri_conf.h" || die("Could not open test_eri_conf.h");
+$_ = `grep "Generated header:" $ericomp.log`;
+my @hstr = split;
+printf CFILE "#include <$hstr[2]>\n";
+$_ = `grep "Generated sources:" $ericomp.log`;
+@hstr = split;
+my $nsrc = $#hstr - 1;
+my $source_filename = "";
+for(my $i=0; $i<$nsrc; $i++) {
+  $source_filename .= " $hstr[2+$i]";
+}
+$_ = `grep "Top compute function:" $ericomp.log`;
+@hstr = split;
+printf CFILE "#define COMPUTE_XX_ERI_XX $hstr[3]\n";
+printf CFILE "unsigned int am[4] = { $la, $lb, $lc, $ld};\n";
+close CFILE;
+
+# now make test program and run it
+system("make test_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"") && die("make test_eri failed");
+system("./test_eri") && die("./test_eri failed");
+
+exit(0);
+
+sub usage {
+
+  printf STDERR "USAGE: test_eri.pl a b c d size_to_unroll\n";
+  printf STDERR "         a,b,c,d -- angular momenta of shells in (ab|cd)\n";
+  printf STDERR "         size_to_unroll -- quartets of this (or smaller) size are unrolled\n";
+
+}
+
+

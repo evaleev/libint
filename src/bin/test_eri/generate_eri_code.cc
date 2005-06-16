@@ -79,7 +79,7 @@ namespace {
     ImplicitDimensions::set_default_dims(cparams);
 
     BuildTest<ERIQtet,true>(quartet,cparams,size_to_unroll);
- 
+
     return 0;
   }
 };
