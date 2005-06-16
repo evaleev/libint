@@ -9,28 +9,30 @@
 
 #define VECLEN LIBINT2_MAX_VECLEN
 
+#define  LIBINT_T_SS_EREP_SS(mValue) _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_##mValue
+
 typedef struct {
-  REALTYPE __ss_1_over_r_12_ss___up_0[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_1[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_2[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_3[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_4[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_5[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_6[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_7[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_8[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_9[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_10[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_11[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_12[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_13[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_14[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_15[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_16[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_17[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_18[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_19[VECLEN];
-  REALTYPE __ss_1_over_r_12_ss___up_20[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(0)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(1)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(2)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(3)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(4)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(5)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(6)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(7)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(8)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(9)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(10)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(11)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(12)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(13)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(14)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(15)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(16)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(17)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(18)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(19)[VECLEN];
+  REALTYPE LIBINT_T_SS_EREP_SS(20)[VECLEN];
 
   //
   // Prefactors for recurrence relations from Weber and Daul, Comp. Phys. Comm. 158, 1 (2004).
