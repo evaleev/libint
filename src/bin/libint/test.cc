@@ -195,7 +195,7 @@ namespace {
     {
       std::string descr("build ");
       descr += Integral::Instance(f1,f2,f3,f4,m)->label();
-      RunTest(boost::bind(BuildTest<Integral>, Integral::Instance(f1,f2,f3,f4,m), cparams,
+      RunTest(boost::bind(BuildTest<Integral,false>, Integral::Instance(f1,f2,f3,f4,m), cparams,
 			  size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic),
 			  SafePtr<MemoryManager>(new WorstFitMemoryManager)), descr);
     }

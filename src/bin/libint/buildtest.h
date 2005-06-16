@@ -1,23 +1,31 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <dg.h>
 #include <strategy.h>
+#include <iface.h>
 
 #ifndef _libint2_src_bin_libint_buildtest_h_
 #define _libint2_src_bin_libint_buildtest_h_
 
 namespace libint2 {
 
-  // This is a generic test of building an Integral using specified cparams, memman, size_to_unroll, default strategy and specified tactic
-  template <class Integral>
+  // defined in buildtest.cc
+  void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
+
+  /** This is a generic test of building an Integral using specified cparams, memman, size_to_unroll,
+      default strategy and specified tactic. GenAllCode should be set to true if compilable code
+      to be produced (i.e. include header files + set-level recurrence relations code)
+   */
+  template <class Integral, bool GenAllCode>
     void BuildTest(const SafePtr<Integral>& target, const SafePtr<CompilationParameters>& cparams,
 		   unsigned int size_to_unroll, std::ostream& os = std::cout,
 		   const SafePtr<Tactic>& tactic = SafePtr<Tactic>(new FirstChoiceTactic),
 		   const SafePtr<MemoryManager>& memman = SafePtr<MemoryManager>(new WorstFitMemoryManager));
 
-  template <class Integral>
+  template <class Integral, bool GenAllCode>
     void
     BuildTest(const SafePtr<Integral>& target, const SafePtr<CompilationParameters>& cparams,
 	      unsigned int size_to_unroll, std::ostream& os,
@@ -26,7 +34,7 @@ namespace libint2 {
       const std::string label = target->label();
       SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
       SafePtr<Strategy> strat(new Strategy(size_to_unroll));
-      os << "Building " << target->description() << endl;
+      os << "Building " << target->description() << std::endl;
       SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,Integral>(target);
       dg_xxxx->append_target(xsxs_ptr);
       dg_xxxx->apply(strat,tactic);
@@ -34,7 +42,7 @@ namespace libint2 {
       
       std::basic_ofstream<char> dotfile("graph.dot");
       dg_xxxx->print_to_dot(false,dotfile);
-      os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
+      os << "The number of vertices = " << dg_xxxx->num_vertices() << std::endl;
       
       dg_xxxx->traverse();
       //dg_xxxx->debug_print_traversal(cout);
@@ -49,8 +57,26 @@ namespace libint2 {
       std::basic_ofstream<char> dotfile2("graph.symb.dot");
       dg_xxxx->print_to_dot(true,dotfile2);
       
-      os << "Max memory used = " << memman->max_memory_used() << endl;
+      os << "Max memory used = " << memman->max_memory_used() << std::endl;
       dg_xxxx->reset();
+
+      if (GenAllCode) {
+	  // initialize code context to produce library API
+	SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
+	// make a list of computation labels
+	Libint2Iface::Comps comps;
+	comps.push_back("general_integral");
+	// initialize object to generate interface
+	SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext,comps));
+
+	// generate interface
+	std::ostringstream oss;
+	oss << "#include <" << decl_filename << ">" << std::endl;
+	iface->to_int_iface(oss.str());
+
+	// Generate set-level RR code
+	generate_rr_code(os,cparams);
+      }
     }
 
 

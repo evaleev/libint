@@ -43,7 +43,7 @@ build_libint: $(BUILDCXXOBJ) $(LIBTARGET)
 
 depend:: $(TESTCXXDEP) $(BUILDCXXDEP) $(LIBCXXDEP)
 
-test: $(TESTCXXOBJ) $(LIBTARGET)
+test: $(TESTCXXOBJ) $(LIBTARGET) buildtest.o
 	$(CXX) -o $@ $^
 
 $(LIBTARGET): $(LIBOBJ)
