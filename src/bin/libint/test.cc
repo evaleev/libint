@@ -16,6 +16,7 @@
 #include <policy_spec.h>
 #include <intset_to_ints.h>
 #include <strategy.h>
+#include <buildtest.h>
 
 using namespace std;
 using namespace libint2;
@@ -28,10 +29,6 @@ namespace {
 
   template <class Callback>
     void RunTest(Callback test, const std::string& descr, std::ostream& os = std::cout);
-  // This is a generic test of building an Integral
-  template <class Integral>
-    void BuildTest(const SafePtr<Integral>& target, unsigned int size_to_unroll);
-  // Uses TestBuild and RunTest to test building Integral::Instance(f1,f2,f3,f4,m)
   template <class Integral, class BFS>
     void RunBuildTest(const BFS& f1, const BFS& f2, const BFS& f3, const BFS& f4, unsigned int m,
 		      unsigned int size_to_unroll);
@@ -193,44 +190,14 @@ namespace {
     }
   }
 
-  template <class Integral>
-    void
-    BuildTest(const SafePtr<Integral>& target, unsigned int size_to_unroll)
-    {
-      SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
-      SafePtr<Strategy> strat(new Strategy(size_to_unroll));
-      SafePtr<Tactic> tactic(new FirstChoiceTactic);
-      cout << "Building " << target->description() << endl;
-      SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(target);
-      dg_xxxx3->append_target(xsxs_ptr);
-      dg_xxxx3->apply(strat,tactic);
-      dg_xxxx3->optimize_rr_out();
-      
-      std::basic_ofstream<char> dotfile("graph.dot");
-      dg_xxxx3->print_to_dot(false,dotfile);
-      cout << "The number of vertices = " << dg_xxxx3->num_vertices() << endl;
-      
-      dg_xxxx3->traverse();
-      //dg_xxxx3->debug_print_traversal(cout);
-      
-      SafePtr<CodeContext> context(new CppCodeContext(cparams));
-      SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
-      
-      dg_xxxx3->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),target->label(),cout,cout);
-      
-      std::basic_ofstream<char> dotfile2("graph.symb.dot");
-      dg_xxxx3->print_to_dot(true,dotfile2);
-      
-      cout << "Max memory used = " << memman->max_memory_used() << endl;
-      dg_xxxx3->reset();
-    }
-
   template <class Integral, class BFS>
     void RunBuildTest(const BFS& f1, const BFS& f2, const BFS& f3, const BFS& f4, unsigned int m, unsigned int size_to_unroll)
     {
       std::string descr("build ");
       descr += Integral::Instance(f1,f2,f3,f4,m)->label();
-      RunTest(boost::bind(BuildTest<Integral>,Integral::Instance(f1,f2,f3,f4,m),size_to_unroll),descr);
+      RunTest(boost::bind(BuildTest<Integral>, Integral::Instance(f1,f2,f3,f4,m), cparams,
+			  size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic),
+			  SafePtr<MemoryManager>(new WorstFitMemoryManager)), descr);
     }
 
 };
