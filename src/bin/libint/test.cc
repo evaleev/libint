@@ -1,4 +1,6 @@
 
+#define TEST_TYPELIST 1
+
 #include <boost/bind.hpp>
 #include <iostream>
 #include <fstream>
@@ -76,7 +78,7 @@ namespace {
     // set default dims
     ImplicitDimensions::set_default_dims(cparams);
  
-#if 0
+#if TEST_TYPELIST
     RunTest(test_typelists,"typelists");
 #endif
 #if 1
@@ -105,7 +107,7 @@ namespace {
       os << hrule << endl << endl;
     }
 
-#if 0
+#if TEST_TYPELIST
   void
   test_typelists()
   {
@@ -120,7 +122,7 @@ namespace {
 
     cout << "Length of my_typelist = " << Length<two_shells>::value << endl;
     CGShell xx_2(xx_1);
-    xx_2.inc();
+    xx_2.inc(0);
   }
 #endif
 
