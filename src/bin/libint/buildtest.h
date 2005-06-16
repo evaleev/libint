@@ -61,7 +61,7 @@ namespace libint2 {
       dg_xxxx->reset();
 
       if (GenAllCode) {
-	  // initialize code context to produce library API
+	// initialize code context to produce library API
 	SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
 	// make a list of computation labels
 	Libint2Iface::Comps comps;
@@ -76,6 +76,18 @@ namespace libint2 {
 
 	// Generate set-level RR code
 	generate_rr_code(os,cparams);
+
+	// Print log
+	std::cout << "Generated header: " << decl_filename << std::endl;
+	std::cout << "Generated sources: " << def_filename;
+	SafePtr<RRStack> rrstack = RRStack::Instance();
+	for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
+	  SafePtr<RecurrenceRelation> rr = (*it).second.second;
+	  std::string rrlabel = rr->label();
+	  std::cout << " " << context->label_to_name(rrlabel) << ".cc";
+	}
+	std::cout << std::endl << "Top compute function: compute" << context->label_to_name(label) << std::endl;
+
       }
     }
 
