@@ -562,6 +562,9 @@ namespace libint2 {
 
       /// Implements DGVertex::this_precomputed()
       bool this_precomputed() const;
+#if OVERLOAD_GENINTEGRALSET_LABEL
+      mutable std::string label_;
+#endif
     };
 
   // I use label() to hash TwoPRep_11_11. Therefore labels must be unique!
@@ -627,10 +630,13 @@ namespace libint2 {
     const std::string&
     TwoPRep_11_11<BFS>::label() const
     {
-      ostringstream os;
-      os << "(" << parent_type::bra_.member(0,0)->label() << " " << parent_type::ket_.member(0,0)->label()
-         << " | 1/r_{12} | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
-      return os.str();
+      if (label_.empty()) {
+	ostringstream os;
+	os << "(" << parent_type::bra_.member(0,0)->label() << " " << parent_type::ket_.member(0,0)->label()
+	   << " | 1/r_{12} | " << parent_type::bra_.member(1,0)->label() << " " << parent_type::ket_.member(1,0)->label() << ")^{" << m() <<"}";
+	label_ = os.str();
+      }
+      return label_;
     };
 #endif
 

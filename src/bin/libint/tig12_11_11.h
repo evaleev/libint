@@ -71,6 +71,9 @@ namespace libint2 {
       bool this_precomputed() const;
       /// Implements TiG12_11_11_base::instance_of_TiG12_11_11()
       bool instance_of_TiG12_11_11() { return true; }
+#if OVERLOAD_GENINTEGRALSET_LABEL
+      mutable std::string label_;
+#endif
     };
 
   // I use label() to hash TiG12_11_11. Therefore labels must be unique!
@@ -133,16 +136,19 @@ namespace libint2 {
 
 #if OVERLOAD_GENINTEGRALSET_LABEL
   template <class BFS, int I>
-    std::string
+    const std::string&
     TiG12_11_11<BFS,I>::label() const
     {
-      ostringstream os;
-      os << "(" << parent_type::bra_.member(0,0)->label() << " "
-         << parent_type::ket_.member(0,0)->label()
-         << " | [T_" << I+1 << ", G12] | "
-         << parent_type::bra_.member(1,0)->label() << " "
-         << parent_type::ket_.member(1,0)->label() << ")";
-      return os.str();
+      if (label_.empty()) {
+	ostringstream os;
+	os << "(" << parent_type::bra_.member(0,0)->label() << " "
+	   << parent_type::ket_.member(0,0)->label()
+	   << " | [T_" << I+1 << ", G12] | "
+	   << parent_type::bra_.member(1,0)->label() << " "
+	   << parent_type::ket_.member(1,0)->label() << ")";
+	label_ = os.str();
+      }
+      return label_;
     };
 #endif
   
