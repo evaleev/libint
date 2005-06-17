@@ -43,6 +43,10 @@ close CFILE;
 system("make test_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"") && die("make test_eri failed");
 system("./test_eri") && die("./test_eri failed");
 
+# prepare timing program too
+system("make time_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"") && die("make time_eri failed");
+printf STDOUT "Test finished. Timing program compiled.\n";
+
 exit(0);
 
 sub usage {

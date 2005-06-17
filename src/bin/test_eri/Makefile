@@ -36,6 +36,7 @@ $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ) $(LIBINT)
 	$(CXX) -o $@ $^
 
 $(CXXTESTOBJ):: test_eri_conf.h
+$(CXXTIMEOBJ):: test_eri_conf.h
 $(CXXERICOMPOBJ):: $(TOPDIR)/src/bin/libint/buildtest.h
 
 clean::
