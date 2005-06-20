@@ -11,7 +11,8 @@ CXXFLAGS += -I.
 
 CXXGENSRC = $(COMPUTE_XX_ERI_XX_SRC)
 CXXGENOBJ = $(CXXGENSRC:%.cc=%.o)
-LIBINT = $(TOPDIR)/src/bin/libint/libINT.a
+LIBINTDIR = $(TOPDIR)/src/bin/libint
+LIBINT = $(LIBINTDIR)/libINT.a
 
 ERICOMP = generate_eri_code
 CXXERICOMPSRC = $(ERICOMP).cc
@@ -26,7 +27,7 @@ TIME = time_eri
 CXXTIMESRC = $(TIME).cc $(AUXSRC)
 CXXTIMEOBJ = $(CXXTIMESRC:%.cc=%.o)
 
-$(ERICOMP): $(CXXERICOMPOBJ) $(TOPDIR)/src/bin/libint/buildtest.o $(LIBINT)
+$(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	$(LD) -o $@ $^
 
 $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(LIBINT)
@@ -37,7 +38,7 @@ $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ) $(LIBINT)
 
 $(CXXTESTOBJ):: test_eri_conf.h
 $(CXXTIMEOBJ):: test_eri_conf.h
-$(CXXERICOMPOBJ):: $(TOPDIR)/src/bin/libint/buildtest.h
+$(CXXERICOMPOBJ):: $(LIBINTDIR)/buildtest.h
 
 clean::
 	-rm -rf $(ERICOMP) $(TEST) $(TIME) *.o *.d
