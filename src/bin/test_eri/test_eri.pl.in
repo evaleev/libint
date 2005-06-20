@@ -9,7 +9,7 @@ use Getopt::Long;
 my $scpexportdest = "";
 &GetOptions("scpexport=s" => \$scpexportdest);
 
-(usage() and die) if $#ARGV != 4;
+(usage() and die) if ($#ARGV < 4 || $#ARGV > 5);
 
 my $max_am = 5;
 my $ericomp = "generate_eri_code";
@@ -19,10 +19,14 @@ my $lb = $ARGV[1];
 my $lc = $ARGV[2];
 my $ld = $ARGV[3];
 my $size_to_unroll = $ARGV[4];
+my $veclen = 1;
+if ($#ARGV == 5) {
+  $veclen = $ARGV[5];
+}
 
 system("make $ericomp") && die("make $ericomp failed");
 printf STDOUT "Generating source ... ";
-system("./$ericomp $la $lb $lc $ld $size_to_unroll | tee $ericomp.log") 
+system("./$ericomp $la $lb $lc $ld $size_to_unroll $veclen | tee $ericomp.log") 
   && die("$ericomp failed");
 printf STDOUT "done\n";
 
@@ -78,9 +82,10 @@ exit(0);
 
 sub usage {
 
-  printf STDERR "USAGE: test_eri.pl [options] a b c d size_to_unroll\n";
+  printf STDERR "USAGE: test_eri.pl [options] a b c d size_to_unroll <veclen>\n";
   printf STDERR "         a,b,c,d -- angular momenta of shells in (ab|cd)\n";
   printf STDERR "         size_to_unroll -- quartets of this (or smaller) size are unrolled\n";
+  printf STDERR "         veclen  -- (optional) vector length. Defaults to 1.\n";
   printf STDERR "       Options:\n";
   printf STDERR "         --scpexport=dest  -- generate source and scp to dest.\n";
   printf STDERR "                              dest must be in host:dir format.\n";

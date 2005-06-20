@@ -106,7 +106,7 @@ typedef struct {
   REALTYPE roe[VECLEN];
   
   /// Stack of the intermediates is here
-  REALTYPE stack[LIBINT2_MAX_STACK_SIZE];
+  REALTYPE stack[LIBINT2_MAX_STACK_SIZE * VECLEN];
   /// On completion, this contains pointers to computed targets
   REALTYPE* targets[LIBINT2_MAX_NTARGETS];
   

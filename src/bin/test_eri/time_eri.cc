@@ -29,22 +29,36 @@ int main(int argc, char** argv)
 
   uint niter = atoi(argv[1]);
 
+  const uint veclen = LIBINT2_MAX_VECLEN;
   double alpha[4] = {0.5, 1.0, 1.5, 2.0};
   double A[3] = {1.0, 2.0, 3.0};
   double B[3] = {1.5, 2.5, 3.5};
   double C[3] = {4.0, 2.0, 0.0};
   double D[3] = {3.0, 3.0, 1.0};
 
+  const double ratio = 1.5;
+  std::vector<double> alpha1;
+  std::vector<double> alpha2;
+  std::vector<double> alpha3;
+  std::vector<double> alpha4;
+  for(uint v=0; v<veclen; v++) {
+    const double scale = pow(ratio,static_cast<double>(v));
+    alpha1.push_back(alpha[0]*scale);
+    alpha2.push_back(alpha[1]*scale);
+    alpha3.push_back(alpha[2]*scale);
+    alpha4.push_back(alpha[3]*scale);
+  }
+  
   SafePtr<CGShell> sh0(new CGShell(&(am[0])));
   SafePtr<CGShell> sh1(new CGShell(&(am[1])));
   SafePtr<CGShell> sh2(new CGShell(&(am[2])));
   SafePtr<CGShell> sh3(new CGShell(&(am[3])));
   
   Libint_t* libint = new Libint_t;
-  prep_libint2(libint,am[0],alpha[0],A,
-	       am[1],alpha[1],B,
-	       am[2],alpha[2],C,
-	       am[3],alpha[3],D,0);
+  prep_libint2(libint,am[0],alpha1,A,
+	       am[1],alpha2,B,
+	       am[2],alpha3,C,
+	       am[3],alpha4,D,0,veclen);
   libint->nflops = 0;
   
   cout << "Computing (" << sh0->label() << sh1->label()
