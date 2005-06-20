@@ -526,7 +526,6 @@ namespace libint2 {
       typedef VectorBraket<BFS> KetType;
       typedef mType AuxIndexType;
       typedef TwoPRep_11_11 this_type;
-      typedef GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, mType > parent_type;
       /// This the type of the object that manages GenIntegralSet's as Singletons
       typedef SingletonStack<TwoPRep_11_11,std::string> SingletonManagerType;
       

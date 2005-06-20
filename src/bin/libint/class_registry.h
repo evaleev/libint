@@ -3,8 +3,6 @@
 #ifndef _libint2_src_bin_libint_classregistry_h_
 #define _libint2_src_bin_libint_classregistry_h_
 
-using namespace std;
-
 namespace libint2 {
 
   /** This is a unique registry of classes. */

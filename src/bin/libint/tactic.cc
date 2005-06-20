@@ -1,8 +1,6 @@
 
-extern "C" {
-  #include <stdlib.h>
-  #include <time.h>
-};
+#include <cstdlib>
+#include <ctime>
 #include <dg.h>
 #include <dg.templ.h>
 #include <tactic.h>
@@ -66,9 +64,9 @@ RandomChoiceTactic::RR
 RandomChoiceTactic::optimal_rr(const rr_stack& stack) const {
   if (!stack.empty()) {
     unsigned int size = stack.size();
-    unsigned long long rand = random();
-    const unsigned long long range = 1ull<<32 - 1;
-    long choice = (long long)(rand * size - 1)/range;
+    unsigned long rand = random();
+    const unsigned long range = 1ul<<32 - 1;
+    long choice = (long)(rand * size - 1)/range;
     return stack[choice];
   }
   else

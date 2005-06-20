@@ -1,7 +1,6 @@
 
 #include <class_registry.h>
 
-using namespace std;
 using namespace libint2;
 
 ClassRegistry::ClassRegistry() :
