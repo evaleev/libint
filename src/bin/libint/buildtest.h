@@ -78,9 +78,14 @@ namespace libint2 {
 	generate_rr_code(os,cparams);
 
 	// Print log
-	std::cout << "Generated header: " << decl_filename << std::endl;
-	std::cout << "Generated sources: " << def_filename;
+	std::cout << "Generated headers: " << decl_filename;
 	SafePtr<RRStack> rrstack = RRStack::Instance();
+	for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
+	  SafePtr<RecurrenceRelation> rr = (*it).second.second;
+	  std::string rrlabel = rr->label();
+	  std::cout << " " << context->label_to_name(rrlabel) << ".h";
+	}
+	std::cout << std::endl << "Generated sources: " << def_filename;
 	for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
 	  SafePtr<RecurrenceRelation> rr = (*it).second.second;
 	  std::string rrlabel = rr->label();
