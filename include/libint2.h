@@ -11,6 +11,10 @@
 
 #define  LIBINT_T_SS_EREP_SS(mValue) _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_##mValue
 
+/** Libint_t is the integrals evaluator object. Libint's evaluator functions take
+    pointer to Libint_t as their first argument. The evaluator functions are not reentrant,
+    thus each thread should have its own evaluator object. */
+
 typedef struct {
   REALTYPE LIBINT_T_SS_EREP_SS(0)[VECLEN];
   REALTYPE LIBINT_T_SS_EREP_SS(1)[VECLEN];
@@ -71,14 +75,14 @@ typedef struct {
   REALTYPE R12kG12_pfac4_1_x[VECLEN];
   REALTYPE R12kG12_pfac4_1_y[VECLEN];
   REALTYPE R12kG12_pfac4_1_z[VECLEN];
-
+  
   REALTYPE WP_x[VECLEN], WP_y[VECLEN], WP_z[VECLEN];
   REALTYPE WQ_x[VECLEN], WQ_y[VECLEN], WQ_z[VECLEN];
   REALTYPE PA_x[VECLEN], PA_y[VECLEN], PA_z[VECLEN];
   REALTYPE QC_x[VECLEN], QC_y[VECLEN], QC_z[VECLEN];
   REALTYPE AB_x[VECLEN], AB_y[VECLEN], AB_z[VECLEN];
   REALTYPE CD_x[VECLEN], CD_y[VECLEN], CD_z[VECLEN];
-
+  
   /// Exponents
   REALTYPE zeta_A[VECLEN];
   REALTYPE zeta_B[VECLEN];
@@ -90,17 +94,30 @@ typedef struct {
   REALTYPE zeta_C_2[VECLEN];
   REALTYPE zeta_D_2[VECLEN];
   
+  /// One over 2.0*zeta
   REALTYPE oo2z[VECLEN];
+  /// One over 2.0*eta
   REALTYPE oo2e[VECLEN];
+  /// One over 2.0*(zeta+eta)
   REALTYPE oo2ze[VECLEN];
+  /// rho over zeta
   REALTYPE roz[VECLEN];
+  /// rho over eta
   REALTYPE roe[VECLEN];
-
+  
+  /// Stack of the intermediates is here
   REALTYPE stack[LIBINT2_MAX_STACK_SIZE];
+  /// On completion, this contains pointers to computed targets
   REALTYPE* targets[LIBINT2_MAX_NTARGETS];
-
+  
+  /** Actual vector length. Not to exceed VECLEN! If VECLEN is 1 then
+      veclength is not used */
   unsigned int veclength;
-
+  /** FLOP counter. Libint must be configured with --enable-flop-counter
+      to allow FLOp counting. It is user's reponsibility to set zero nflops before
+      computing integrals. */
+  unsigned long int nflops;
+  
 } Libint_t;
 
 #endif

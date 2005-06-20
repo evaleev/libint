@@ -24,7 +24,7 @@ namespace libint2 {
   
   class ImplicitDimensions {
     public:    
-    /// Explicitly initialize both quantities. Their exact time is not known.
+    /// Explicitly initialize both quantities. Their exact type is not known.
     ImplicitDimensions(const SafePtr<Entity>& high,
                        const SafePtr<Entity>& low,
                        const SafePtr<Entity>& vecdim);
@@ -46,6 +46,12 @@ namespace libint2 {
     bool low_is_static() const { return low_is_static_; }
     /// Returns true if the rank of vector dimension is known
     bool vecdim_is_static() const { return vecdim_is_static_; }
+    /// Returns the label of the high dimension
+    const std::string& high_label() const { return high_label_; }
+    /// Returns the label of the low dimension
+    const std::string& low_label() const { return low_label_; }
+    /// Returns the label of the vector dimension
+    const std::string& vecdim_label() const { return vecdim_label_; }
     
     /// Sets default ImplicitDimension object
     static void set_default_dims(const SafePtr<CompilationParameters>& cparams);
@@ -54,15 +60,19 @@ namespace libint2 {
     
     private:
     // Dimensions can be runtime or compile-time quantities
-    SafePtr<Entity> high_;
-    SafePtr<Entity> low_;
-    SafePtr<Entity> vecdim_;
+    const SafePtr<Entity> high_;
+    const SafePtr<Entity> low_;
+    const SafePtr<Entity> vecdim_;
     
     // checks if the dimensions are CTImeEntities
     void init_();
     bool high_is_static_;
     bool low_is_static_;
     bool vecdim_is_static_;
+    // Cached labels for 
+    std::string high_label_;
+    std::string low_label_;
+    std::string vecdim_label_;
     
     /// Default dimension
     static SafePtr<ImplicitDimensions> default_dims_;

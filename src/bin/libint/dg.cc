@@ -684,7 +684,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   def << context->code_prefix();
   def << func_decl << context->open_block() << endl;
   def << context->std_function_header();
-
+  
   context->reset();
   allocate_mem(memman,dims,1);
   assign_symbols(context,dims);
@@ -1014,6 +1014,13 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   oss.str(null_str);
   oss << "Number of flops = " << nflops;
   os << context->comment(oss.str()) << endl;
+#if UPDATE_FLOP_COUNTER
+  oss.str(null_str);
+  oss << nflops << " * " << dims->high_label() << " * "
+      << dims->low_label() << " * "
+      << dims->vecdim_label();
+  os << context->assign_binary_expr("libint->nflops","libint->nflops","+",oss.str());
+#endif
 
   // Now pass back all targets through the Libint_t object
   unsigned int ntargets = 0;

@@ -97,6 +97,11 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   sc_ << sc_fdec << ctext_->open_block();
   li_ << li_fdec << ctext_->open_block();
   lc_ << lc_fdec << ctext_->open_block();
+  
+#if UPDATE_FLOP_COUNTER
+  // set the counter to zero
+  li_ << "libint->nflops = 0;" << endl;
+#endif
 }
 
 Libint2Iface::~Libint2Iface()

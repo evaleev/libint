@@ -52,19 +52,40 @@ void
 ImplicitDimensions::init_()
 {
   SafePtr< CTimeEntity<int> > cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(high_);
-  if (cptr != 0)
+  if (cptr != 0) {
     high_is_static_ = true;
-  else
+    ostringstream oss;
+    oss << cptr->value();
+    high_label_ = oss.str();
+  }
+  else {
     high_is_static_ = false;
+    SafePtr<DGVertex> dptr = dynamic_pointer_cast<DGVertex,Entity>(high_);
+    high_label_ = dptr->label();
+  }
   cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(low_);
-  if (cptr != 0)
+  if (cptr != 0) {
     low_is_static_ = true;
-  else
+    ostringstream oss;
+    oss << cptr->value();
+    low_label_ = oss.str();
+  }
+  else {
     low_is_static_ = false;
+    SafePtr<DGVertex> dptr = dynamic_pointer_cast<DGVertex,Entity>(low_);
+    low_label_ = dptr->label();
+  }
   cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(vecdim_);
-  if (cptr != 0)
+  if (cptr != 0) {
     vecdim_is_static_ = true;
-  else
+    ostringstream oss;
+    oss << cptr->value();
+    vecdim_label_ = oss.str();
+  }
+  else {
     vecdim_is_static_ = false;
+    SafePtr<DGVertex> dptr = dynamic_pointer_cast<DGVertex,Entity>(vecdim_);
+    vecdim_label_ = dptr->label();
+  }
 }
 
