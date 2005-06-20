@@ -9,10 +9,15 @@ CXXFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/bin/libint
 # include generated headers from the current directory
 CXXFLAGS += -I.
 
+ifndef COMPUTE_XX_ERI_XX_SRC
+  -include Make.compute_eri
+endif
 CXXGENSRC = $(COMPUTE_XX_ERI_XX_SRC)
 CXXGENOBJ = $(CXXGENSRC:%.cc=%.o)
 LIBINTDIR = $(TOPDIR)/src/bin/libint
 LIBINT = $(LIBINTDIR)/libINT.a
+CGSHELLOBJ = $(LIBINTDIR)/gauss.o $(LIBINTDIR)/iter.o $(LIBINTDIR)/policy.o \
+$(LIBINTDIR)/policy_spec.o $(LIBINTDIR)/default_params.o
 
 ERICOMP = generate_eri_code
 CXXERICOMPSRC = $(ERICOMP).cc
@@ -30,10 +35,10 @@ CXXTIMEOBJ = $(CXXTIMESRC:%.cc=%.o)
 $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	$(LD) -o $@ $^
 
-$(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(LIBINT)
+$(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
 	$(CXX) -o $@ $^
 
-$(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ) $(LIBINT)
+$(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
 	$(CXX) -o $@ $^
 
 $(CXXTESTOBJ):: test_eri_conf.h
@@ -42,4 +47,7 @@ $(CXXERICOMPOBJ):: $(LIBINTDIR)/buildtest.h
 
 clean::
 	-rm -rf $(ERICOMP) $(TEST) $(TIME) *.o *.d
+
+realclean:: clean
+	-rm -rf Make.compute_eri *.h *.cc *.dot *.log
 

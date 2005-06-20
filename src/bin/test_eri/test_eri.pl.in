@@ -4,6 +4,11 @@
 # Generates and tests code for ERIs
 #
 
+use Getopt::Long;
+
+my $scpexportdest = "";
+&GetOptions("scpexport=s" => \$scpexportdest);
+
 (usage() and die) if $#ARGV != 4;
 
 my $max_am = 5;
@@ -23,9 +28,14 @@ printf STDOUT "done\n";
 
 # parse in file names of the header and source, and the name of the function
 open CFILE, ">test_eri_conf.h" || die("Could not open test_eri_conf.h");
-$_ = `grep "Generated header:" $ericomp.log`;
+$_ = `grep "Generated headers:" $ericomp.log`;
 my @hstr = split;
 printf CFILE "#include <$hstr[2]>\n";
+my $nhead = $#hstr - 1;
+my $header_filename = "";
+for(my $i=0; $i<$nhead; $i++) {
+  $header_filename .= " $hstr[2+$i]";
+}
 $_ = `grep "Generated sources:" $ericomp.log`;
 @hstr = split;
 my $nsrc = $#hstr - 1;
@@ -39,21 +49,41 @@ printf CFILE "#define COMPUTE_XX_ERI_XX $hstr[3]\n";
 printf CFILE "unsigned int am[4] = { $la, $lb, $lc, $ld};\n";
 close CFILE;
 
-# now make test program and run it
-system("make test_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"") && die("make test_eri failed");
-system("./test_eri") && die("./test_eri failed");
+# create a file to be included into Makefile which determines which C++ source
+# files to be compiled in
+open MFILE, ">Make.compute_eri" || die("Could not open Make.compute_eri");
+printf MFILE "COMPUTE_XX_ERI_XX_SRC = $source_filename\n";
+close MFILE;
 
-# prepare timing program too
-system("make time_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"") && die("make time_eri failed");
-printf STDOUT "Test finished. Timing program compiled.\n";
+#
+# if only need to export the source -- do not compile test_eri and time_eri
+#
+if ($scpexportdest eq "") {
+  # now make test program and run it
+  system("make test_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"") && die("make test_eri failed");
+  system("./test_eri") && die("./test_eri failed");
+  
+  # prepare timing program too
+  system("make time_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"") && die("make time_eri failed");
+  printf STDOUT "Test finished. Timing program compiled.\n";
+}
+else {
+  printf STDOUT "Exporting generated source to $scpexportdest using the following command:\n";
+  my $cmd = "scp $source_filename $header_filename libint2_params.h libint2_iface.h libint2_iface_internal.h test_eri_conf.h Make.compute_eri $scpexportdest";
+  printf STDOUT "$cmd\n";
+  system("scp $cmd");
+}
 
 exit(0);
 
 sub usage {
 
-  printf STDERR "USAGE: test_eri.pl a b c d size_to_unroll\n";
+  printf STDERR "USAGE: test_eri.pl [options] a b c d size_to_unroll\n";
   printf STDERR "         a,b,c,d -- angular momenta of shells in (ab|cd)\n";
   printf STDERR "         size_to_unroll -- quartets of this (or smaller) size are unrolled\n";
+  printf STDERR "       Options:\n";
+  printf STDERR "         --scpexport=dest  -- generate source and scp to dest.\n";
+  printf STDERR "                              dest must be in host:dir format.\n";
 
 }
 
