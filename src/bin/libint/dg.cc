@@ -1015,6 +1015,10 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     current_vertex = current_vertex->postcalc();
   } while (current_vertex != 0);
 
+  os << vi_loop->close();
+  os << lsi_loop->close();
+  os << hsi_loop->close();
+
   // Print out the number of flops
   oss.str(null_str);
   oss << "Number of flops = " << nflops;
@@ -1027,6 +1031,14 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   os << context->assign_binary_expr("libint->nflops","libint->nflops","+",oss.str());
 #endif
 
+  // Outside of loops stack symbols don't make sense, so we must define loop variables hsi, lsi, and vi to 0
+  if (dims->high_is_static())
+    os << context->decldef(context->type_name<const int>(), "hsi", "0");
+  if (dims->low_is_static())
+    os << context->decldef(context->type_name<const int>(), "lsi", "0");
+  if (dims->vecdim_is_static())
+    os << context->decldef(context->type_name<const int>(), "vi", "0");
+
   // Now pass back all targets through the Libint_t object
   unsigned int ntargets = 0;
   for(int i=0; i<first_free_; i++) {
@@ -1038,10 +1050,6 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     }
   }
   
-  os << vi_loop->close();
-  os << lsi_loop->close();
-  os << hsi_loop->close();
-
 }
 
 

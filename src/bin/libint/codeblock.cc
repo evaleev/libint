@@ -58,26 +58,24 @@ std::string
 ForLoop::open()
 {
   SafePtr<CodeContext> ctext = context();
+  ostringstream oss;
+
   if (dummy_loop_) {
-      return ctext->decldef(ctext->type_name<const int>(), varname_, sa_expr_);
+    oss << "{" << endl
+        << ctext->decldef(ctext->type_name<const int>(), varname_, sa_expr_);
   }
   else {
-    ostringstream oss;
     oss << "for(" << ctext->type_name<int>() << " " << varname_ << " = " << sa_expr_ << ctext->end_of_stat()
     << " " << varname_ << "<" << lt_expr_ << ctext->end_of_stat() << " " << varname_ << "++) {" << endl;
-    return oss.str();
   }
+  return oss.str();
 }
 
 std::string
 ForLoop::close()
 {
   ostringstream oss;
-  if (dummy_loop_)
-    oss << "";
-  else
-    oss << "}";
-  oss << endl;
+  oss << "}" << endl;
   return oss.str();
 }
 

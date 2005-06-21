@@ -97,8 +97,9 @@ int main(int argc, char** argv)
             double new_eri = libint->targets[0][ijkl*veclen+v];
           
             if ( fabs((ref_eri-new_eri)/new_eri) > 1.0E-12) {
-              std::cout << "Elem ijkl : eri.cc = " << ref_eri
-              << " libint = " << new_eri << endl;
+              std::cout << "Elem " << ijkl << " v=" << v
+                        << " : eri.cc = " << ref_eri
+                        << " libint = " << new_eri << endl;
               success = false;
             }
           } // end of vector loop
