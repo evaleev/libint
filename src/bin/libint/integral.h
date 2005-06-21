@@ -90,6 +90,8 @@ namespace libint2 {
           
           Derived classes do not have to be Singletons -- hence protected constructors are provided.
       */
+
+      /// GenIntegralSet objects can be handled through the base pointer -- hence the destructor is virtual
       virtual ~GenIntegralSet();
 
       /// Returns a pointer to a unique instance, a la Singleton
@@ -132,7 +134,7 @@ namespace libint2 {
       protected:
       // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
       GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
-      
+
       BraSetType bra_;
       KetSetType ket_;
 
