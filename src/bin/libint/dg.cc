@@ -763,14 +763,32 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
 
 namespace {
   std::string stack_symbol(const SafePtr<CodeContext>& ctext, const DGVertex::Address& address, unsigned int size,
-                           const std::string& low_rank, const std::string& veclen, bool yesvec,
+                           const std::string& low_rank, const std::string& veclen,
                            const std::string& prefix = "libint->stack")
   {
     ostringstream oss;
     oss << prefix << "[((hsi*" << size << "+"
         << ctext->stack_address(address) << ")*" << low_rank << "+lsi)*"
-        << veclen << (yesvec ? "+vi" : "") << "]";
+        << veclen << "]";
     return oss.str();
+  }
+  
+  /// Returns a "vector" form of stack symbol, e.g. converts libint->stack[x] to libint->stack[x+vi]
+  inline std::string to_vector_symbol(const SafePtr<DGVertex>& v)
+  {
+    std::string symb = v->symbol();
+    const std::string stack_prefix("libint->stack[");
+    int where = symb.find(stack_prefix,0);
+    // if the prefix indicating a stack symbol found, replace "]" with "+vi]"
+    if (where != std::string::npos) {
+      const std::string right_braket("]");
+      const std::string what_to_add("+vi");
+      int where = symb.find(right_braket,0);
+      if (where == std::string::npos)
+        throw logic_error("to_vector_symbol() -- address is set but no right braket found");
+      symb.insert(where,what_to_add);
+    }
+    return symb;
   }
 };
 
@@ -812,7 +830,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
       //os << "libint->stack[(hsi*" << vertex->size() << "+"
       //   << context->stack_address(vertex->address()) << ")*" << low_rank << "+lsi]";
       //vertex->set_symbol(os.str());
-      vertex->set_symbol(stack_symbol(context,vertex->address(),vertex->size(),low_rank,veclen,false));
+      vertex->set_symbol(stack_symbol(context,vertex->address(),vertex->size(),low_rank,veclen));
     }
   }
 
@@ -842,13 +860,13 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
             //os.str(null_str);
             //os << "libint->stack[" << context->stack_address(vertex->address()+c) << "]";
             //child->set_symbol(os.str());
-            child->set_symbol(stack_symbol(context,vertex->address()+c,vertex->size(),low_rank,veclen,true));
+            child->set_symbol(stack_symbol(context,vertex->address()+c,vertex->size(),low_rank,veclen));
           }
           else {
             //os.str(null_str);
             //os << vertex->symbol() << "[" << context->stack_address(c) << "]";
             //child->set_symbol(os.str());
-            child->set_symbol(stack_symbol(context,c,vertex->size(),low_rank,veclen,true,vertex->symbol()));
+            child->set_symbol(stack_symbol(context,c,vertex->size(),low_rank,veclen,vertex->symbol()));
           }
         }
       }
@@ -930,6 +948,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   // and
   // 2) this is a purely int-unit code, i.e. there are no explicit RRs on sets in the body
   // Otherwise, I create a dummy vector loop with the vector loop index set to 0
+  const bool vectorize = (context->cparams()->max_vector_length() != 1);
   const bool vectorize_by_line = context->cparams()->vectorize_by_line();
   const bool create_outer_vector_loop = !vectorize_by_line && !contains_nontrivial_rr();
   varname = "vi";
@@ -988,9 +1007,20 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           cout << "         left_arg = " << left_arg->description() << endl;
           cout << "        right_arg = " << right_arg->description() << endl;
 #endif
+          
+          // convert symbols to their vector form if needed
+          std::string curr_symbol = current_vertex->symbol();
+          std::string left_symbol = left_arg->symbol();
+          std::string right_symbol = right_arg->symbol();
+          if (vectorize) {
+            curr_symbol = to_vector_symbol(current_vertex);
+            left_symbol = to_vector_symbol(left_arg);
+            right_symbol = to_vector_symbol(right_arg);
+          }
+          
           if (vectorize_by_line)
             os << line_vloop->open();
-          os << context->assign_binary_expr(current_vertex->symbol(),left_arg->symbol(),oper_ptr->label(),right_arg->symbol());
+          os << context->assign_binary_expr(curr_symbol,left_symbol,oper_ptr->label(),right_symbol);
           if (vectorize_by_line)
             os << line_vloop->close();
 
@@ -1013,10 +1043,18 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
             os << context->comment(oss.str()) << endl;
           }
 
+          // convert symbols to their vector form if needed
+          std::string curr_symbol = current_vertex->symbol();
+          std::string rhs_symbol = arc_ptr->dest()->symbol();
+          if (vectorize) {
+            curr_symbol = to_vector_symbol(current_vertex);
+            rhs_symbol = to_vector_symbol(arc_ptr->dest());
+          }
+          
           if (vectorize_by_line)
             os << line_vloop->open();
-          os << context->assign(current_vertex->symbol(),
-                                arc_ptr->dest()->symbol());
+          os << context->assign(curr_symbol,
+                                rhs_symbol);
           if (vectorize_by_line)
             os << line_vloop->close();
 
