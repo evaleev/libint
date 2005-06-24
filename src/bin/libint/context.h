@@ -15,6 +15,9 @@ namespace libint2 {
   class CodeContext {
   public:
     virtual ~CodeContext() {}
+    
+    /// Returns the CompilationParameters used to create this context
+    const SafePtr<CompilationParameters>& cparams() const;
 
     /// turn comments on and off (the default is on)
     void turn_comments(bool on);
@@ -84,7 +87,8 @@ namespace libint2 {
       std::string type_name();
 
   protected:
-    CodeContext();
+    /// Lone constructor takes CompilationParams
+    CodeContext(const SafePtr<CompilationParameters>& cparams);
     /// generates a unique name for a floating-point variable
     virtual std::string unique_fp_name() =0;
     /// generates a unique name for an integer
@@ -111,6 +115,7 @@ namespace libint2 {
     virtual std::string const_modifier() const =0;
 
   private:
+    SafePtr<CompilationParameters> cparams_;
     unsigned int next_index_[EntityTypes::ntypes];
     void zero_out_counters();
     bool comments_on_;
@@ -170,7 +175,6 @@ namespace libint2 {
 
 
   private:
-    SafePtr<CompilationParameters> cparams_;
     bool vectorize_;
 
     /// Implementation of CodeContext::unique_fp_name()

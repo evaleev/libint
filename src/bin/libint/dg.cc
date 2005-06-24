@@ -691,7 +691,12 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   def << context->std_function_header();
   
   context->reset();
-  allocate_mem(memman,dims,1);
+  // if we vectorize by-line then all data is allocated on Libint's stack
+  if (context->cparams()->vectorize_by_line())
+    allocate_mem(memman,dims,0);
+  // otherwise only arrays go on Libint's stack (scalars are handled by the compiler)
+  else
+    allocate_mem(memman,dims,1);
   assign_symbols(context,dims);
   print_def(context,def,dims);
   def << context->close_block() << endl;
@@ -920,9 +925,32 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   SafePtr<ForLoop> lsi_loop(new ForLoop(context,varname,dims->low(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
   os << lsi_loop->open();
   
+  // the vector loop is created outside of the body of the function if
+  // 1) vectorization by-body is requested
+  // and
+  // 2) this is a purely int-unit code, i.e. there are no explicit RRs on sets in the body
+  // Otherwise, I create a dummy vector loop with the vector loop index set to 0
+  const bool vectorize_by_line = context->cparams()->vectorize_by_line();
+  const bool create_outer_vector_loop = !vectorize_by_line && !contains_nontrivial_rr();
   varname = "vi";
-  SafePtr<ForLoop> vi_loop(new ForLoop(context,varname,dims->vecdim(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
-  os << vi_loop->open();
+  // outer vector loop
+  SafePtr<ForLoop> outer_vloop;
+  // vector loop for each code line
+  SafePtr<ForLoop> line_vloop;
+  if (create_outer_vector_loop) {
+    SafePtr<ForLoop> tmp_vi_loop(new ForLoop(context,varname,dims->vecdim(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
+    outer_vloop = tmp_vi_loop;
+  }
+  else {
+    SafePtr<Entity> unit_dim(new CTimeEntity<int>("vecdim",1));
+    SafePtr<ForLoop> tmp_vi_loop(new ForLoop(context,varname,unit_dim,SafePtr<Entity>(new CTimeEntity<int>("0",0))));
+    outer_vloop = tmp_vi_loop;
+    SafePtr<ForLoop> tmp2_vi_loop(new ForLoop(context,varname,dims->vecdim(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
+    line_vloop = tmp2_vi_loop;
+    // note that both loops use same variable name -- standard C++ scoping rules allow it -- but the outer
+    // loop will become a declaration of a constant variable
+  }
+  os << outer_vloop->open();
 
   unsigned int nflops = 0;
   SafePtr<DGVertex> current_vertex = first_to_compute_;
@@ -946,9 +974,11 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
             os << context->comment(oss.str()) << endl;
           }
 
-          // Type declaration
-          os << context->declare(context->type_name<double>(),
-                                 current_vertex->symbol());
+          // Type declaration if this is an automatic variable (i.e. not on Libint's stack)
+          if (!current_vertex->address_set())
+            os << context->declare(context->type_name<double>(),
+                                   current_vertex->symbol());
+          
           // expression
           SafePtr<DGVertex> left_arg = oper_ptr->exit_arc(0)->dest();
           SafePtr<DGVertex> right_arg = oper_ptr->exit_arc(1)->dest();
@@ -958,7 +988,11 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           cout << "         left_arg = " << left_arg->description() << endl;
           cout << "        right_arg = " << right_arg->description() << endl;
 #endif
+          if (vectorize_by_line)
+            os << line_vloop->open();
           os << context->assign_binary_expr(current_vertex->symbol(),left_arg->symbol(),oper_ptr->label(),right_arg->symbol());
+          if (vectorize_by_line)
+            os << line_vloop->close();
 
           nflops++;
 
@@ -979,8 +1013,12 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
             os << context->comment(oss.str()) << endl;
           }
 
+          if (vectorize_by_line)
+            os << line_vloop->open();
           os << context->assign(current_vertex->symbol(),
                                 arc_ptr->dest()->symbol());
+          if (vectorize_by_line)
+            os << line_vloop->close();
 
           goto next;
         }
@@ -1015,7 +1053,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     current_vertex = current_vertex->postcalc();
   } while (current_vertex != 0);
 
-  os << vi_loop->close();
+  os << outer_vloop->close();
   os << lsi_loop->close();
   os << hsi_loop->close();
 
@@ -1076,5 +1114,28 @@ DirectedGraph::update_func_names()
       }
     }
   }
+}
+
+bool
+DirectedGraph::contains_nontrivial_rr() const
+{
+  SafePtr<DGVertex> current_vertex = first_to_compute_;
+  do {
+    const int nchildren = current_vertex->num_exit_arcs();
+    if (nchildren > 0) {
+      arc_ptr aptr = current_vertex->exit_arc(0);
+      typedef RecurrenceRelation RR;
+      SafePtr<DGArcRR> aptr_cast = dynamic_pointer_cast<DGArcRR,arc>(aptr);
+      // if this is a RR
+      if (aptr_cast != 0) {
+        // and a non-trivial one
+        if (!aptr_cast->rr()->is_simple())
+          return true;
+      }
+    }
+    current_vertex = current_vertex->postcalc();
+  } while (current_vertex != 0);
+  
+  return false;
 }
 

@@ -221,6 +221,9 @@ namespace libint2 {
     // Print the code using symbols generated with assign_symbols()
     void print_def(const SafePtr<CodeContext>& context, std::ostream& os,
                    const SafePtr<ImplicitDimensions>& dims);
+    
+    // Returns true if the traversal path contains a nontrivial RecurrenceRelation (i.e. not of IntegralSet_to_Integrals variety)
+    bool contains_nontrivial_rr() const;
 
   };
 

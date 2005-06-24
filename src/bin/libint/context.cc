@@ -45,10 +45,17 @@ namespace libint2 {
   }
 };
 
-CodeContext::CodeContext() :
+CodeContext::CodeContext(const SafePtr<CompilationParameters>& cparams) :
+  cparams_(cparams),
   comments_on_(true)
 {
   zero_out_counters();
+}
+
+const SafePtr<CompilationParameters>&
+CodeContext::cparams() const
+{
+  return cparams_;
 }
 
 bool
@@ -142,7 +149,7 @@ namespace ForbiddenCppCharacters {
 };
 
 CppCodeContext::CppCodeContext(const SafePtr<CompilationParameters>& cparams, bool vectorize) :
-  CodeContext(), cparams_(cparams), vectorize_(vectorize)
+  CodeContext(cparams), vectorize_(vectorize)
 {
 }
 
@@ -153,7 +160,7 @@ CppCodeContext::~CppCodeContext()
 std::string
 CppCodeContext::code_prefix() const
 {
-  if (cparams_->use_C_linking()) {
+  if (cparams()->use_C_linking()) {
     return "extern \"C\" {\n";
   }
 }
@@ -161,7 +168,7 @@ CppCodeContext::code_prefix() const
 std::string
 CppCodeContext::code_postfix() const
 {
-  if (cparams_->use_C_linking()) {
+  if (cparams()->use_C_linking()) {
     return "};\n";
   }
 }

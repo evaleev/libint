@@ -26,6 +26,10 @@ namespace libint2 {
     unsigned int max_vector_length() const {
       return max_vector_length_;
     }
+    /// returns whether to vectorize line-by-line
+    bool vectorize_by_line() const {
+      return vectorize_by_line_;
+    }
     /// returns unroll threshold
     unsigned int unroll_threshold() const {
       return unroll_threshold_;
@@ -46,6 +50,10 @@ namespace libint2 {
     /// set max vector length
     void max_vector_length(unsigned int a) {
       max_vector_length_ = a;
+    }
+    /// set vectorize_by_line flag
+    void vectorize_by_line(bool flag) {
+      vectorize_by_line_ = flag;
     }
     /// set unroll threshold
     void unroll_threshold(unsigned int a) {
@@ -69,6 +77,8 @@ namespace libint2 {
       static const unsigned int max_am_eri = 1;
       /// Do not vectorize by default
       static const unsigned int max_vector_length = 1;
+      /// Vectorize all body by default
+      static const bool vectorize_by_line = false;
       /// Produce quartet-level code by default
       static const unsigned int unroll_threshold = 1;
       /// Where to put generated library source
@@ -81,6 +91,8 @@ namespace libint2 {
     unsigned int max_am_eri_;
     /// max vector length
     unsigned int max_vector_length_;
+    /// whether to vectorize line-by-line
+    bool vectorize_by_line_;
     /// unroll threshold
     unsigned int unroll_threshold_;
     /// source directory
