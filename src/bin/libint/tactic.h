@@ -1,7 +1,6 @@
 
 
 #include <smart_ptr.h>
-#include <rr.h>
 
 #ifndef _libint2_src_bin_libint_tactic_h_
 #define _libint2_src_bin_libint_tactic_h_
@@ -11,6 +10,7 @@ using namespace std;
 namespace libint2 {
 
   class DirectedGraph;
+  class RecurrenceRelation;
   
   /** Tactic is used to choose the optimal (in some sense) recurrence relation to reduce
       a vertex.
