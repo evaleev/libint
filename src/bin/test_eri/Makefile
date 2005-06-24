@@ -32,6 +32,10 @@ TIME = time_eri
 CXXTIMESRC = $(TIME).cc $(AUXSRC)
 CXXTIMEOBJ = $(CXXTIMESRC:%.cc=%.o)
 
+TESTV = test_vecops
+CXXTESTVSRC = $(TESTV).cc
+CXXTESTVOBJ = $(CXXTESTVSRC:%.cc=%.o)
+
 $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	$(LD) -o $@ $^
 
@@ -41,12 +45,15 @@ $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
 $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
 	$(CXX) -o $@ $^
 
+$(TESTV): $(CXXTESTVOBJ)
+	$(CXX) -o $@ $^
+
 $(CXXTESTOBJ):: test_eri_conf.h
 $(CXXTIMEOBJ):: test_eri_conf.h
 $(CXXERICOMPOBJ):: $(LIBINTDIR)/buildtest.h
 
 clean::
-	-rm -rf $(ERICOMP) $(TEST) $(TIME) *.o *.d
+	-rm -rf $(ERICOMP) $(TEST) $(TIME) $(TESTV) *.o *.d
 
 realclean:: clean
 	-rm -rf Make.compute_eri *.h *.cc *.dot *.log
