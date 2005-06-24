@@ -22,10 +22,11 @@ int main (int argc, char* argv[])
     std::cerr << std::endl
          << "  WARNING! Caught a standard exception:" << std::endl
          << "    " << a.what() << std::endl << std::endl;
-    std::cout << "Usage: generate_eri_code a b c d size_to_unroll <vector_length>" << std::endl
+    std::cout << "Usage: generate_eri_code a b c d size_to_unroll <vector_length> <vector_method>" << std::endl
 	 << "       a,b,c,d -- angular momenta of functions in (ab|cd)" << std::endl
 	 << "       size_to_unroll -- size of the largest quartet to be unrolled" << std::endl
-	 << "       vector_length  -- (optional) max vector length. Defaults to 1." << std::endl << std::endl;
+	 << "       vector_length  -- (optional) max vector length. Defaults to 1." << std::endl << std::endl
+	 << "       vector_method  -- (optional) vectorization method. Valid choices are 0 (by-block) and 1 (by-line). Defaults to 0." << std::endl << std::endl;
   }
   catch(std::exception& a) {
     std::cerr << std::endl
@@ -54,7 +55,7 @@ namespace {
 
   int try_main (int argc, char* argv[])
   {
-    if (argc < 6 || argc > 7)
+    if (argc < 6 || argc > 8)
       throw PrintUsageAndDie("incorrect number of command-line arguments");
     unsigned int la = atoi(argv[1]);
     unsigned int lb = atoi(argv[2]);
@@ -62,8 +63,14 @@ namespace {
     unsigned int ld = atoi(argv[4]);
     unsigned int size_to_unroll = atoi(argv[5]);
     unsigned int veclen = 1;
-    if (argc == 7)
+    if (argc >= 7)
       veclen = atoi(argv[6]);
+    bool vec_by_line = false;
+    if (argc >= 8) {
+      int vecmeth = atoi(argv[7]);
+      if (vecmeth == 1)
+        vec_by_line = true;
+    }
     
     if (la >= max_am || lb >= max_am || lc >= max_am || ld >= max_am)
       throw PrintUsageAndDie("Maximum angular momentum exceeded");
@@ -79,6 +86,7 @@ namespace {
     SafePtr<CompilationParameters> cparams(new CompilationParameters);
     cparams->max_am_eri(max_am);
     cparams->max_vector_length(veclen);
+    cparams->vectorize_by_line(vec_by_line);
 
     // set default dims
     ImplicitDimensions::set_default_dims(cparams);
