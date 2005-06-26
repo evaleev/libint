@@ -586,6 +586,8 @@ dnl make Makefiles in object tree
 $PERL $srcdir/bin/objectdir.pl $EXCLUDED_DIRS $srcdir
 
 AC_CONFIG_FILES([src/bin/test_eri/test_eri.pl],[chmod +x src/bin/test_eri/test_eri.pl])
+AC_CONFIG_FILES([src/bin/test_eri/time_eri.pl],[chmod +x src/bin/test_eri/time_eri.pl])
+AC_CONFIG_FILES([src/bin/test_eri/run_time_eri.pl],[chmod +x src/bin/test_eri/run_time_eri.pl])
 AC_OUTPUT(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/MakeSuffixRules
           doc/MakeVars doc/MakeRules doc/MakeSuffixRules doc/classdoc/doxygen.cfg)
 
