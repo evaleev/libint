@@ -6,8 +6,11 @@
 
 use Getopt::Long;
 
+# get optional command-line arguments
 my $scpexportdest = "";
-&GetOptions("scpexport=s" => \$scpexportdest);
+my $timencycles = 0;
+&GetOptions("scpexport=s" => \$scpexportdest,
+            "timencycles=i" => \$timencycles);
 
 (usage() and die) if ($#ARGV < 4 || $#ARGV > 6);
 
@@ -73,7 +76,14 @@ if ($scpexportdest eq "") {
   
   # prepare timing program too
   system("make time_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"") && die("make time_eri failed");
-  printf STDOUT "Test finished. Timing program compiled.\n";
+  printf STDOUT "Timing program compiled.\n";
+  
+  if ($timencycles gt 0) {
+    printf STDOUT "Running timing program\n";
+    system("./run_time_eri.pl");
+  }
+  printf STDOUT "Test finished.\n";
+  
 }
 else {
   printf STDOUT "Exporting generated source to $scpexportdest using the following command:\n";
@@ -94,6 +104,7 @@ sub usage {
   printf STDERR "       Options:\n";
   printf STDERR "         --scpexport=dest  -- generate source and scp to dest.\n";
   printf STDERR "                              dest must be in host:dir format.\n";
+  printf STDERR "         --timencycles=A   -- run \"time_eri A\". Only valid if scpexport is not given\n";
 
 }
 

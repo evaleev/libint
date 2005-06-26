@@ -1,0 +1,29 @@
+#!/usr/bin/perl
+
+my $timencycles = 10;
+
+my $nflops;
+my $utime = 0.0;
+while ($utime < 1.0 || $utime > 10.0) {
+  printf "$timencycles\n";
+  my $time_output = `/usr/bin/time -p ./time_eri $timencycles 2>&1`;
+  ($nflops) = ($time_output =~ /nflops = (\d*)/g);
+  ($utime) = ($time_output =~ /user\s*(\d*\.\d*)/g);
+  if ($utime < 0.2) {
+    $timencycles *= 10;
+    next;
+  }
+  if ($utime < 1.0) {
+    $timencycles *= 2;
+    next;
+  }
+  if ($utime > 10.0) {
+    $timencycles /= 2;
+    next;
+  }
+}
+
+my $floprate = $nflops / $utime;
+printf STDOUT "FLOP rate = $floprate\n";
+
+
