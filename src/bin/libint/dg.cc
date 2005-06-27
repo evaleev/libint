@@ -712,16 +712,12 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
   for(int i=0; i<first_free_; i++)
     stack_[i]->prepare_to_traverse();
 
-// Enable this block if all target blocks need to be allocated at
-// the beginning of the stack
-#if 0
-  // Second, allocate space for all targets
+  // Second, MUST allocate space for all targets
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
     if (vertex->is_a_target())
       vertex->set_address(memman->alloc(vertex->size()));
   }
-#endif
   
   LibraryParameters& lparams = LibraryParameters::get_library_params();
   
