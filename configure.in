@@ -192,24 +192,12 @@ else
 fi
 )
 
-AC_ARG_ENABLE(long-double,
-[  --enable-long-double    Compute all integrals using long double precision.],
+AC_ARG_WITH(float-type,
+[  --with-float-type       Compute all integrals using the given float type.],
 [
-case $enableval in
-  yes)
-    LONG_DOUBLE=1
-  ;;
-  no)
-    LONG_DOUBLE=0
-  ;;
-  *)
-    AC_MSG_ERROR([Invalid value for --enable-long-double ($enableval)])
-  ;;
-esac
-],[
-    LONG_DOUBLE=0
-]
-)
+AC_DEFINE_UNQUOTED(LIBINT2_USER_DEFINED_FLOAT,${withval})
+echo Using floating-point type: $withval
+])
 
 AC_SUBST(LIBINT_MAX_AM)
 AC_SUBST(LIBINT_OPT_AM)
@@ -218,7 +206,6 @@ AC_SUBST(LIBDERIV_MAX_AM2)
 AC_SUBST(LIBR12_MAX_AM)
 AC_SUBST(LIBR12_OPT_AM)
 AC_SUBST(MAX_CLASS_SIZE)
-AC_SUBST(LONG_DOUBLE)
 
 AC_DEFINE_UNQUOTED(LIBINT_MAX_AM,$LIBINT_MAX_AM)
 AC_DEFINE_UNQUOTED(LIBINT_OPT_AM,$LIBINT_OPT_AM)

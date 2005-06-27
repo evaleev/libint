@@ -53,8 +53,8 @@
 /* Max length of level 0 r12 and [T,r12] build routines (node build) */
 #undef LIBR12_MAX_CLASS_SIZE
 
-/* Compute integrals in long double precision */
-#undef LONG_DOUBLE
+/* User-defined float type */
+#undef LIBINT2_USER_DEFINED_FLOAT
 
 /* have stdint.h ? */
 #undef HAVE_STDINT_H

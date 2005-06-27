@@ -1,6 +1,6 @@
 
 #include <libint2_types.h>
-#include "libint2_params.h"
+#include <libint2_params.h>
 
 #ifndef _libint2_header_
 #define _libint2_header_

@@ -8,8 +8,12 @@
   Define LIBINT2 data types here
 */
 
-/* default LIBINT2 floating-point type */
+/* default LIBINT2 floating-point type is double, but user can specify a different type to use with configure */
+#ifdef LIBINT2_USER_DEFINED_FLOAT
+typedef LIBINT2_USER_DEFINED_FLOAT LIBINT2_FLOAT;
+#else
 typedef double LIBINT2_FLOAT;
+#endif
 
 /* default LIBINT2 64-bit integer */
 #ifdef HAVE_STDINT_H

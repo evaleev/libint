@@ -4,6 +4,8 @@ ifndef SRCDIR
 endif
 include $(TOPDIR)/src/bin/MakeVars
 
+# include headers the object include directory
+CXXFLAGS += -I$(TOPDIR)/include
 # include headers from the compiler directory (should go away soon)
 CXXFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/bin/libint
 # include generated headers from the current directory
