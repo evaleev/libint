@@ -708,8 +708,6 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
                             const SafePtr<ImplicitDimensions>& dims,
                             unsigned int min_size_to_alloc)
 {
-  LibraryParameters& lparams = LibraryParameters::get_library_params();
-  
   // First, reset tag counters
   for(int i=0; i<first_free_; i++)
     stack_[i]->prepare_to_traverse();
@@ -720,7 +718,6 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
     if (vertex->is_a_target())
       vertex->set_address(memman->alloc(vertex->size()));
   }
-  lparams.max_stack_size(memman->max_memory_used());
   
   //
   // Go through the traversal order and at each step tag every child
@@ -729,7 +726,7 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
   //
   SafePtr<DGVertex> vertex = first_to_compute_;
   do {
-        // If symbol is set then the object is not on stack
+    // If symbol is set then the object is not on stack
     if (!vertex->symbol_set() &&
         // address may already by set
         !vertex->address_set() &&
@@ -741,8 +738,6 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
         (vertex->is_a_target() || vertex->size() > min_size_to_alloc)) {
       MemoryManager::Address addr = memman->alloc(vertex->size());
       vertex->set_address(addr);
-      // update the max stack size
-      lparams.max_stack_size(addr + vertex->size());
       const unsigned int nchildren = vertex->num_exit_arcs();
       for(int c=0; c<nchildren; c++) {
         SafePtr<DGVertex> child = vertex->exit_arc(c)->dest();
@@ -755,7 +750,9 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
     }
     vertex = vertex->postcalc();
   } while (vertex != 0);
-
+  
+  LibraryParameters& lparams = LibraryParameters::get_library_params();
+  lparams.max_stack_size(memman->max_memory_used());
 }
 
 namespace {
