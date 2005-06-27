@@ -708,6 +708,8 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
                             const SafePtr<ImplicitDimensions>& dims,
                             unsigned int min_size_to_alloc)
 {
+  LibraryParameters& lparams = LibraryParameters::get_library_params();
+  
   // First, reset tag counters
   for(int i=0; i<first_free_; i++)
     stack_[i]->prepare_to_traverse();
@@ -718,8 +720,7 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
     if (vertex->is_a_target())
       vertex->set_address(memman->alloc(vertex->size()));
   }
-  
-  LibraryParameters& lparams = LibraryParameters::get_library_params();
+  lparams.max_stack_size(memman->max_memory_used());
   
   //
   // Go through the traversal order and at each step tag every child
