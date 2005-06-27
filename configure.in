@@ -7,7 +7,7 @@ define([AC_CACHE_LOAD], )dnl for debugging configure.in
 define([AC_CACHE_SAVE], )dnl for debugging configure.in
 AC_INIT(src/bin/libint/rr.h)
 AC_PREREQ(2.52)
-AC_CONFIG_HEADER(src/bin/libint_config.h)
+AC_CONFIG_HEADER(include/libint2_config.h)
 AC_CONFIG_AUX_DIR(bin)
 
 AC_CANONICAL_SYSTEM
@@ -532,6 +532,7 @@ AC_SUBST(EXTRADEFINES)
 dnl ---------- Checks for header files. -----------
 
 AC_HEADER_STDC
+AC_CHECK_HEADERS(limits.h stdint.h)
 
 dnl -- Checks for typedefs, structures, and compiler characteristics. --
 AC_C_CONST

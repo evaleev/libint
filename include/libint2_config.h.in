@@ -1,6 +1,6 @@
 
-#ifndef libint_config_h_
-#define libint_config_h_
+#ifndef _libint2_include_libint2config_h_
+#define _libint2_include_libint2config_h_
 
 /* The host architecture. */
 #undef HOST_ARCH
@@ -55,5 +55,8 @@
 
 /* Compute integrals in long double precision */
 #undef LONG_DOUBLE
+
+/* have stdint.h ? */
+#undef HAVE_STDINT_H
 
 #endif 

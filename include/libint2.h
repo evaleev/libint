@@ -1,4 +1,5 @@
 
+#include <libint2_types.h>
 #include "libint2_params.h"
 
 #ifndef _libint2_header_
@@ -114,9 +115,9 @@ typedef struct {
       veclength is not used */
   unsigned int veclength;
   /** FLOP counter. Libint must be configured with --enable-flop-counter
-      to allow FLOp counting. It is user's reponsibility to set zero nflops before
+      to allow FLOP counting. It is user's reponsibility to set zero nflops before
       computing integrals. */
-  unsigned long int nflops;
+  LIBINT2_UINT_LEAST64 nflops;
   
 } Libint_t;
 
