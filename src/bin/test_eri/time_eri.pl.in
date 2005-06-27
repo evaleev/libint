@@ -28,8 +28,8 @@ add_job(0,0,3,3);
 add_job(0,0,4,4);
 add_job(1,1,1,1);
 
-#add_case_veclen(1);
 add_case_vecmeth(1);
+add_case_veclen(1);
 
 my ($comphost,$compdir) = ($compdest =~ /(\w):(\w)/g);
 my ($runhost,$rundir) = ($rundest =~ /(\w):(\w)/g);
@@ -45,7 +45,6 @@ foreach my $job (@jobs) {
   my $vecmeth = $job->{VECMETH};
   
   printf STDOUT "$la $lb $lc $ld $veclen $vecmeth\n";
-  next;
   
   if ($rundest eq "") {
     if ($compdest eq "") {
