@@ -1133,10 +1133,7 @@ DirectedGraph::update_func_names()
     if (v->num_exit_arcs() > 0) {
       // if it must be computed using a RR
       SafePtr<DGArc> arc = v->exit_arc(0);
-      //SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArc,DGArcRR>(arc);
-      using namespace boost;
-      using namespace boost::detail;
-      SafePtr<DGArcRR> arcrr = boost::shared_ptr<DGArcRR>(arc,boost::detail::dynamic_cast_tag());
+      SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
       if (arcrr != 0) {
         SafePtr<RecurrenceRelation> rr = arcrr->rr();
         // and the RR is complex (i.e. likely to result in a function call)

@@ -20,11 +20,10 @@ void
 ForLoop::init_()
 {
   SafePtr<CodeContext> ctext = context();
-  /// Why in the hell is dynamic_pointer_cast broken?
-  SafePtr< CTimeEntity<int> > lt_cptr = boost::shared_ptr< CTimeEntity<int> >(less_than_,boost::detail::dynamic_cast_tag());
-  SafePtr< CTimeEntity<int> > sa_cptr = boost::shared_ptr< CTimeEntity<int> >(start_at_,boost::detail::dynamic_cast_tag());
-  SafePtr< RTimeEntity<EntityTypes::Int> > lt_rptr = boost::shared_ptr< RTimeEntity<EntityTypes::Int> >(less_than_,boost::detail::dynamic_cast_tag());
-  SafePtr< RTimeEntity<EntityTypes::Int> > sa_rptr = boost::shared_ptr< RTimeEntity<EntityTypes::Int> >(start_at_,boost::detail::dynamic_cast_tag());
+  SafePtr< CTimeEntity<int> > lt_cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(less_than_);
+  SafePtr< CTimeEntity<int> > sa_cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(start_at_);
+  SafePtr< RTimeEntity<EntityTypes::Int> > lt_rptr = dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(less_than_);
+  SafePtr< RTimeEntity<EntityTypes::Int> > sa_rptr = dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(start_at_);
   
   if (lt_cptr != 0) {
     ostringstream oss;
