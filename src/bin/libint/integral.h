@@ -10,6 +10,10 @@
 #include <singl_stack.h>
 #include <global_macros.h>
 
+#if USE_BRAKET_H
+#  include <braket.h>
+#endif
+
 #ifndef _libint2_src_bin_libint_integral_h_
 #define _libint2_src_bin_libint_integral_h_
 
@@ -53,11 +57,21 @@ namespace libint2 {
   public:
     virtual ~IntegralSet() {};
 
+#if USE_BRAKET_H
+    /// Obtain pointers to ith BasisFunctionSet for particle p in bra
+    virtual const BasisFunctionSet& bra(unsigned int p, unsigned int i) const =0;
+    /// Obtain pointers to ith BasisFunctionSet for particle p in ket
+    virtual const BasisFunctionSet& ket(unsigned int p, unsigned int i) const =0;
+    /// Obtain pointers to ith BasisFunctionSet for particle p in bra
+    virtual BasisFunctionSet& bra(unsigned int p, unsigned int i) =0;
+    /// Obtain pointers to ith BasisFunctionSet for particle p in ket
+    virtual BasisFunctionSet& ket(unsigned int p, unsigned int i) =0;
+#else
     /// Obtain pointers to ith BasisFunctionSet for particle p in bra
     virtual const SafePtr<BasisFunctionSet> bra(unsigned int p, unsigned int i) const =0;
     /// Obtain pointers to ith BasisFunctionSet for particle p in ket
     virtual const SafePtr<BasisFunctionSet> ket(unsigned int p, unsigned int i) const =0;
-
+#endif
   };
 
   /**
@@ -113,9 +127,14 @@ namespace libint2 {
       /// Specialization of DGVertex::description()
       virtual const std::string& description() const;
 
-      /// Obtain BFsets members
-      const SafePtr<BFS> bra(unsigned int p, unsigned int i) const;
-      const SafePtr<BFS> ket(unsigned int p, unsigned int i) const;
+      /// Implementation of IntegralSet::bra() const
+      typename BraSetType::bfs_cref bra(unsigned int p, unsigned int i) const;
+      /// Implementation of IntegralSet::ket() const
+      typename KetSetType::bfs_cref ket(unsigned int p, unsigned int i) const;
+      /// Implementation of IntegralSet::bra()
+      typename BraSetType::bfs_ref bra(unsigned int p, unsigned int i);
+      /// Implementation of IntegralSet::ket()
+      typename KetSetType::bfs_ref ket(unsigned int p, unsigned int i);
       
       typedef BraSetType BraType;
       typedef KetSetType KetType;
@@ -166,7 +185,7 @@ namespace libint2 {
       mutable unsigned int size_;
 
       // unique label -- no 2 GenIntegralSet instances can have the same label!
-      std::string label_;
+      mutable std::string label_;
       // generates label_
       std::string generate_label() const;
       // description
@@ -182,7 +201,7 @@ namespace libint2 {
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Op& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
     DGVertex(ClassInfo<GenIntegralSet>::Instance().id()), O_(SafePtr<Op>(new Op(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))),
-    size_(0), label_(generate_label()), descr_()
+    size_(0), label_(), descr_()
     {
       if (Op::Properties::np != bra.num_part())
         throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in bra doesn't match that in the operator");
@@ -207,19 +226,33 @@ namespace libint2 {
     }
   
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const SafePtr<BFS>
+    typename BraSetType::bfs_cref
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::bra(unsigned int p, unsigned int i) const
     {
       return bra_.member(p,i);
     }
     
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const SafePtr<BFS>
+    typename KetSetType::bfs_cref
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::ket(unsigned int p, unsigned int i) const
     {
       return ket_.member(p,i);
     }
-
+    
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    typename BraSetType::bfs_ref
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::bra(unsigned int p, unsigned int i)
+    {
+      return bra_.member(p,i);
+    }
+    
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    typename KetSetType::bfs_ref
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::ket(unsigned int p, unsigned int i)
+    {
+      return ket_.member(p,i);
+    }
+    
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const typename GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::BraType&
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::bra() const
@@ -290,6 +323,8 @@ namespace libint2 {
     const std::string&
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::label() const
     {
+      if (label_.empty())
+        label_ = generate_label();
       return label_;
     }
   
@@ -302,13 +337,21 @@ namespace libint2 {
       for(int p=0; p<Op::Properties::np; p++) {
         unsigned int nbra = bra_.num_members(p);
         for(unsigned int i=0; i<nbra; i++)
+#if USE_BRAKET_H
+          os << bra_.member(p,i).label() << "(" << p << ") ";
+#else
           os << bra_.member(p,i)->label() << "(" << p << ") ";
+#endif
       }
       os << "| " << O_->label() << " | ";
       for(int p=0; p<Op::Properties::np; p++) {
         unsigned int nket = ket_.num_members(p);
         for(unsigned int i=0; i<nket; i++)
+#if USE_BRAKET_H
+          os << ket_.member(p,i).label() << "(" << p << ") ";
+#else
           os << ket_.member(p,i)->label() << "(" << p << ") ";
+#endif
       }
       os << "> ^ { " << aux_->label() << " }";
       return os.str();
@@ -332,14 +375,19 @@ namespace libint2 {
       }
       return descr_;
     }
-  
+
+#if !USE_BRAKET_H
   /** VectorBraket is a std::vector-based type that can be used as a BraSetType or a KetSetType parameter
       to construct an instance of GenIntegralSet
   */
   template <class BFS> class VectorBraket {
 
   public:
-    typedef vector< SafePtr<BFS> > BFSVector;
+    typedef BFS bfs_type;
+    typedef SafePtr<BFS> bfs_stor;
+    typedef bfs_stor& bfs_ref;
+    typedef const bfs_stor& bfs_cref;
+    typedef vector< bfs_ref > BFSVector;
     typedef vector< BFSVector > BFSMatrix;
     typedef VectorBraket<typename BFS::iter_type> iter_type;
     typedef struct{} parent_type;
@@ -349,7 +397,7 @@ namespace libint2 {
     VectorBraket();
     VectorBraket(const BFSMatrix&);
     VectorBraket(const VectorBraket&);
-    ~VectorBraket() throw();
+    ~VectorBraket();
 
     /// Comparison function
     bool operator==(const VectorBraket&) const;
@@ -362,7 +410,7 @@ namespace libint2 {
     /// Sets i-th function for particle p
     void set_member(const BFS&, unsigned int p, unsigned int i);
     /// Sets i-th function for particle p
-    void set_member(const SafePtr<BFS>&, unsigned int p, unsigned int i);
+    void set_member(bfs_cref, unsigned int p, unsigned int i);
     /// Sets i-th function for particle p (does a dynamic cast inside)
     void set_member(const SafePtr<ConstructablePolymorphically>&, unsigned int p, unsigned int i);
     /// Returns the number of BFS for particle p
@@ -395,7 +443,7 @@ namespace libint2 {
     }
 
   template <class BFS>
-    VectorBraket<BFS>::~VectorBraket() throw()
+    VectorBraket<BFS>::~VectorBraket()
     {
     }
 
@@ -410,7 +458,7 @@ namespace libint2 {
   */
 
   template <class BFS>
-    const SafePtr<BFS>
+    typename VectorBraket<BFS>::bfs_cref
     VectorBraket<BFS>::member(unsigned int p, unsigned int i) const
     {
       return bfs_.at(p).at(i);
@@ -452,7 +500,7 @@ namespace libint2 {
   
   template <class BFS>
     void
-    VectorBraket<BFS>::set_member(const SafePtr<BFS>& bfs, unsigned int p, unsigned int i)
+    VectorBraket<BFS>::set_member(bfs_cref bfs, unsigned int p, unsigned int i)
     {
       if (p >= bfs_.size())
         bfs_.resize(p+1);
@@ -501,6 +549,7 @@ namespace libint2 {
       }
       return true;
     }
+#endif
 
   /** TwoPRep_11_11_base is the base for all 2-body repulsion integrals with one basis function
     for each particle in bra and ket
@@ -602,17 +651,25 @@ namespace libint2 {
     const SafePtr< TwoPRep_11_11<BFS> >
     TwoPRep_11_11<BFS>::Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, unsigned int m)
     {
-      typedef SafePtr<BFS> BFSPtr;
-      BFSPtr bra0_ptr(new BFS(bra0));
-      BFSPtr bra1_ptr(new BFS(bra1));
-      BFSPtr ket0_ptr(new BFS(ket0));
-      BFSPtr ket1_ptr(new BFS(ket1));
-      vector<BFSPtr> vbra0;  vbra0.push_back(bra0_ptr);
-      vector<BFSPtr> vbra1;  vbra1.push_back(bra1_ptr);
-      vector<BFSPtr> vket0;  vket0.push_back(ket0_ptr);
-      vector<BFSPtr> vket1;  vket1.push_back(ket1_ptr);
-      vector< vector<BFSPtr> > vvbra;  vvbra.push_back(vbra0);  vvbra.push_back(vbra1);
-      vector< vector<BFSPtr> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
+#if USE_BRAKET_H
+      typedef BFS BFSRef;
+      BFSRef bra0_ref(bra0);
+      BFSRef bra1_ref(bra1);
+      BFSRef ket0_ref(ket0);
+      BFSRef ket1_ref(ket1);
+#else
+      typedef SafePtr<BFS> BFSRef;
+      BFSRef bra0_ref(new BFS(bra0));
+      BFSRef bra1_ref(new BFS(bra1));
+      BFSRef ket0_ref(new BFS(ket0));
+      BFSRef ket1_ref(new BFS(ket1));
+#endif
+      vector<BFSRef> vbra0;  vbra0.push_back(bra0_ref);
+      vector<BFSRef> vbra1;  vbra1.push_back(bra1_ref);
+      vector<BFSRef> vket0;  vket0.push_back(ket0_ref);
+      vector<BFSRef> vket1;  vket1.push_back(ket1_ref);
+      vector< vector<BFSRef> > vvbra;  vvbra.push_back(vbra0);  vvbra.push_back(vbra1);
+      vector< vector<BFSRef> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
       VectorBraket<BFS> bra(vvbra);
       VectorBraket<BFS> ket(vvket);
       AuxIndexType aux(vector<unsigned int>(1,m));

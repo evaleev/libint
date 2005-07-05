@@ -113,17 +113,25 @@ namespace libint2 {
     const SafePtr< R12kG12_11_11<BFS,K> >
     R12kG12_11_11<BFS,K>::Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, unsigned int m)
     {
-      typedef SafePtr<BFS> BFSPtr;
-      BFSPtr bra0_ptr(new BFS(bra0));
-      BFSPtr bra1_ptr(new BFS(bra1));
-      BFSPtr ket0_ptr(new BFS(ket0));
-      BFSPtr ket1_ptr(new BFS(ket1));
-      vector<BFSPtr> vbra0;  vbra0.push_back(bra0_ptr);
-      vector<BFSPtr> vbra1;  vbra1.push_back(bra1_ptr);
-      vector<BFSPtr> vket0;  vket0.push_back(ket0_ptr);
-      vector<BFSPtr> vket1;  vket1.push_back(ket1_ptr);
-      vector< vector<BFSPtr> > vvbra;  vvbra.push_back(vbra0);  vvbra.push_back(vbra1);
-      vector< vector<BFSPtr> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
+#if USE_BRAKET_H
+      typedef BFS BFSRef;
+      BFSRef bra0_ref(bra0);
+      BFSRef bra1_ref(bra1);
+      BFSRef ket0_ref(ket0);
+      BFSRef ket1_ref(ket1);
+#else
+      typedef SafePtr<BFS> BFSRef;
+      BFSRef bra0_ref(new BFS(bra0));
+      BFSRef bra1_ref(new BFS(bra1));
+      BFSRef ket0_ref(new BFS(ket0));
+      BFSRef ket1_ref(new BFS(ket1));
+#endif
+      vector<BFSRef> vbra0;  vbra0.push_back(bra0_ref);
+      vector<BFSRef> vbra1;  vbra1.push_back(bra1_ref);
+      vector<BFSRef> vket0;  vket0.push_back(ket0_ref);
+      vector<BFSRef> vket1;  vket1.push_back(ket1_ref);
+      vector< vector<BFSRef> > vvbra;  vvbra.push_back(vbra0);  vvbra.push_back(vbra1);
+      vector< vector<BFSRef> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
       VectorBraket<BFS> bra(vvbra);
       VectorBraket<BFS> ket(vvket);
       AuxIndexType aux(vector<unsigned int>(1,m));
@@ -162,8 +170,13 @@ namespace libint2 {
       if (TrivialBFSet<BFS>::result == false)
         return false;
       else {
+#if USE_BRAKET_H
+        if (parent_type::bra_.member(0,0).zero() && parent_type::bra_.member(1,0).zero() &&
+            parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero())
+#else
         if (parent_type::bra_.member(0,0)->zero() && parent_type::bra_.member(1,0)->zero() &&
             parent_type::ket_.member(0,0)->zero() && parent_type::ket_.member(1,0)->zero())
+#endif
           return true;
         else
          return false;

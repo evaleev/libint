@@ -44,6 +44,7 @@ namespace libint2 {
     QuantumNumbers(const SafePtr<QuantumNumbers>&);
     QuantumNumbers(const SafePtr<QuantumSet>&);
     QuantumNumbers(const SafePtr<ConstructablePolymorphically>&);
+    QuantumNumbers(const ConstructablePolymorphically&);
     ~QuantumNumbers();
     
     bool operator==(const QuantumNumbers&) const;
@@ -102,6 +103,13 @@ namespace libint2 {
       qn_ = sptr_cast->qn_;
     }
     
+  template<typename T, unsigned int N>
+    QuantumNumbers<T,N>::QuantumNumbers(const ConstructablePolymorphically& sptr)
+    {
+      const QuantumNumbers<T,N>& sptr_cast = dynamic_cast<const QuantumNumbers&>(sptr);
+      qn_ = sptr_cast.qn_;
+    }
+
   template<typename T, unsigned int N>
     QuantumNumbers<T,N>::~QuantumNumbers()
     {

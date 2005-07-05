@@ -27,25 +27,26 @@ StdLibintTDPolicy<CGShell>::init_subobj initializes CGFs in canonical order.
 
 template <>
 void
-StdLibintTDPolicy<CGShell>::init_subobj(const SafePtr<CGShell>& cgshell, vector< SafePtr<CGF> >& cgfs)
+StdLibintTDPolicy<CGShell>::init_subobj(const StdLibintTDPolicy<CGShell>::obj_stype& cgshell,
+vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
 {
-  unsigned int am = cgshell->qn();
+  unsigned int am = TypeTraits<CGShell>::const_ref(cgshell).qn();
   unsigned int qn[3];
   for(unsigned int i=0; i<=am; i++) {
     qn[0] = am - i;
     for(unsigned int j=0; j<=i; j++) {
       qn[1] = i - j;
       qn[2] = j;
-
-      SafePtr<CGF> cgf_ptr(new CGF(qn));
-      cgfs.push_back(cgf_ptr);
+      
+      subobj_stype cgf(qn);
+      cgfs.push_back(cgf);
     }
   }
 }
 
 template <>
 void
-StdLibintTDPolicy<CGShell>::dealloc_subobj(vector< SafePtr<CGF> >& subobj)
+StdLibintTDPolicy<CGShell>::dealloc_subobj(vector<StdLibintTDPolicy<CGShell>::subobj_stype>& subobj)
 {
 }
 

@@ -6,15 +6,22 @@
 
 namespace libint2 {
   
+  /** Permutational symmetries: antisymmetric(anti), symmetric(symm), nonsymmetric (nonsymm),
+      some more complicated symmetry (nonstd) */
+  typedef struct {
+    typedef enum {anti=-1, symm=1, nonsymm=0, nonstd=-2} type;
+  } PermutationalSymmetry;
+  
   /** OperatorProperties describes various properties of an operator or operator set
       np -- number of particles
       multi -- true if multiplicative
     */
-  template <unsigned int NP, bool multi>
+  template <unsigned int NP, bool multi, PermutationalSymmetry::type psymmetry>
     class OperatorProperties {
     public:
       static const unsigned int np = NP;
       static const bool multiplicative = multi;
+      static const PermutationalSymmetry::type psymm = psymmetry;
     };
 
   /** OperSet is the base class for all (sets of) operators.
@@ -29,7 +36,6 @@ namespace libint2 {
       virtual const std::string& descr() const =0;
       /// Returns short label for the operator
       virtual const std::string& label() const =0;
-
       /** Returns 1, 0, or -1, if each operator in the set is symmetric, nonsymmetric,
         or antisymmetric with respect to permutation of particles i and j */
       virtual int psymm(int i, int j) const =0;
@@ -46,10 +52,12 @@ namespace libint2 {
       typedef Props Properties;
       virtual ~Oper();
 
-      /// Returns full description of the operator
+      /// Implementation of OperSet::descr()
       const std::string& descr() const;
-      /// Returns short label for the operator
+      /// Implementation of OperSet::label()
       const std::string& label() const;
+      /// Implementation of OperSet::psymm()
+      int psymm(int i, int j) const;
       
       bool operator==(const Oper&) const;
 
@@ -62,6 +70,9 @@ namespace libint2 {
       const std::string descr_;
       /// short (<20 chars) ID label
       const std::string label_;
+      
+      /// Must be overloaded by derived classes if Props::psymm == PermutationalSymmetry::nonstd
+      virtual int nonstd_psymm(int i, int j) const;
   };
 
   template <class Props>
@@ -88,6 +99,36 @@ namespace libint2 {
     {
       return label_;
     }
+  
+  template <class Props>
+    int
+    Oper<Props>::psymm(int i, int j) const
+    {
+      if (i<0 || i>=Props::np)
+        throw std::runtime_error("Oper<Props>::psymm(i,j) -- index i out of bounds");
+      if (j<0 || j>=Props::np)
+        throw std::runtime_error("Oper<Props>::psymm(i,j) -- index j out of bounds");
+      if (i == j)
+        return 1;
+      
+      switch(Props::psymm) {
+        case PermutationalSymmetry::anti:
+        return -1;
+        case PermutationalSymmetry::symm:
+        return 1;
+        case PermutationalSymmetry::nonsymm:
+        return 0;
+        case PermutationalSymmetry::nonstd:
+        return nonstd_psymm(i,j);
+      }
+    }
+  
+  template <class Props>
+    int
+    Oper<Props>::nonstd_psymm(int i, int j) const
+    {
+      throw ProgrammingError("Props::psymm == nonstd but nonstd_psymm is not overloaded");
+    }
     
   template <class Props>
   bool
@@ -96,16 +137,33 @@ namespace libint2 {
       return true;
     }
 
+//////////////////////////////
+  
+  /** GenOper is a generic operator
+  */
+  template <class Props>
+    class GenSymmOper : public Oper<Props> {
+      public:
+      typedef Oper<Props> parent_type;
+      /// GenOper is not a set
+      typedef GenSymmOper iter_type;
+      const unsigned int num_oper() const { return 1; };
+      
+      GenSymmOper() : Oper<Props>(std::string("General Symmetric Operator"),std::string("GenSymmOper")) {}
+      GenSymmOper(const SafePtr<GenSymmOper>&) : Oper<Props>(std::string("General Symmetric Operator"),std::string("GenSymmOper")) {}
+      ~GenSymmOper() {}
+      
+    };
 
 //////////////////////////////
   
-  typedef OperatorProperties<2,true> Multiplicative2Body_Props;
+  typedef OperatorProperties<2,true,PermutationalSymmetry::symm> MultiplicativeSymm2Body_Props;
   
   /** TwoERep is the two-body repulsion operator.
   */
-  class TwoERep : public Oper<Multiplicative2Body_Props> {
+  class TwoERep : public Oper<MultiplicativeSymm2Body_Props> {
   public:
-    typedef Oper<Multiplicative2Body_Props> parent_type;
+    typedef Oper<MultiplicativeSymm2Body_Props> parent_type;
     /// TwoERep is not a set
     typedef TwoERep iter_type;
     const unsigned int num_oper() const { return 1; };
@@ -114,18 +172,8 @@ namespace libint2 {
     TwoERep(const SafePtr<TwoERep>&);
     TwoERep(const SafePtr<OperSet>&);
     TwoERep(const SafePtr<ConstructablePolymorphically>&);
+    TwoERep(const ConstructablePolymorphically&);
     ~TwoERep();
-
-    /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
-        or antisymmetric with respect to permutation of particles i and j */
-    int psymm(int i, int j) const;
-
-  private:
-    // symmetry W.R.T. permutation of each pair of particles
-    // 1 -- symmetric, -1 -- antisymmetric, 0 -- nonsymmetric
-    // stored as a lower triangle (diagonal not included)
-    static const char psymm_[Properties::np*(Properties::np-1)/2];
-
   };
   
 //////////////
@@ -134,9 +182,9 @@ namespace libint2 {
       where k is an integer and \gamma is a positive real number.
   */
   template <int K>
-  class R12_k_G12 : public Oper<Multiplicative2Body_Props> {
+  class R12_k_G12 : public Oper<MultiplicativeSymm2Body_Props> {
   public:
-    typedef Oper<Multiplicative2Body_Props> parent_type;
+    typedef Oper<MultiplicativeSymm2Body_Props> parent_type;
     /// R12_k_G12 is not a set
     typedef R12_k_G12 iter_type;
     static const int k = K;
@@ -146,23 +194,10 @@ namespace libint2 {
     R12_k_G12(const SafePtr<R12_k_G12>&);
     R12_k_G12(const SafePtr<OperSet>&);
     R12_k_G12(const SafePtr<ConstructablePolymorphically>&);
+    R12_k_G12(const ConstructablePolymorphically&);
     ~R12_k_G12();
-
-    /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
-        or antisymmetric with respect to permutation of particles i and j */
-    int psymm(int i, int j) const;
-
-  private:
-    // symmetry W.R.T. permutation of each pair of particles
-    // 1 -- symmetric, -1 -- antisymmetric, 0 -- nonsymmetric
-    // stored as a lower triangle (diagonal not included)
-    static const int npair = Properties::np*(Properties::np-1)/2;
-    static const vector<char> psymm_;
-
   };
   
-  template <int K> const vector<char> R12_k_G12<K>::psymm_(npair,1);
-
   template <int K>
   R12_k_G12<K>::R12_k_G12() :
   parent_type("R12^k * G12","R12_k_G12")
@@ -194,36 +229,28 @@ namespace libint2 {
   }
   
   template <int K>
+  R12_k_G12<K>::R12_k_G12(const ConstructablePolymorphically& oset) :
+  parent_type("R12^k * G12","R12_k_G12")
+  {
+    const R12_k_G12& oset_cast = dynamic_cast<const R12_k_G12&>(oset);
+  }
+
+  template <int K>
   R12_k_G12<K>::~R12_k_G12()
   {
-  }
-  
-  template <int K>
-  int
-  R12_k_G12<K>::psymm(int i, int j) const
-  {
-    if (i<0 || i>=Properties::np)
-      throw std::runtime_error("R12_k_G12<K>::psymm(i,j) -- index i out of bounds");
-    if (j<0 || j>=Properties::np)
-      throw std::runtime_error("R12_k_G12<K>::psymm(i,j) -- index j out of bounds");
-    if (i == j)
-      return 1;
-    int ii = (i > j) ? i : j;
-    int jj = (i > j) ? j : i;
-    return psymm_[ii*(ii-1)/2 + jj];
   }
 
 //////////////
   
-  typedef OperatorProperties<2,false> Nonmultiplicative2Body_Props;
+  typedef OperatorProperties<2,false,PermutationalSymmetry::nonsymm> NonmultiplicativeNonsymm2Body_Props;
 
   /** Ti_G12 is a two-body operator of form [T_i, G12],
       where i is particle index (0 or 1) and G12 is a Gaussian Geminal.
   */
   template <int I>
-  class Ti_G12 : public Oper<Nonmultiplicative2Body_Props> {
+  class Ti_G12 : public Oper<NonmultiplicativeNonsymm2Body_Props> {
   public:
-    typedef Oper<Nonmultiplicative2Body_Props> parent_type;
+    typedef Oper<NonmultiplicativeNonsymm2Body_Props> parent_type;
     /// Ti_G12 is not a set
     typedef Ti_G12 iter_type;
     static const int i = I;
@@ -233,21 +260,10 @@ namespace libint2 {
     Ti_G12(const SafePtr<Ti_G12>&);
     Ti_G12(const SafePtr<OperSet>&);
     Ti_G12(const SafePtr<ConstructablePolymorphically>&);
+    Ti_G12(const ConstructablePolymorphically&);
     ~Ti_G12();
 
-    /** Returns 1, 0, or -1, if the operator is symmetric, nonsymmetric,
-        or antisymmetric with respect to permutation of particles i and j */
-    int psymm(int i, int j) const;
-
-  private:
-    // symmetry W.R.T. permutation of each pair of particles
-    // 1 -- symmetric, -1 -- antisymmetric, 0 -- nonsymmetric
-    // stored as a lower triangle (diagonal not included)
-    static const int npair = Properties::np*(Properties::np-1)/2;
-    static const vector<char> psymm_;
   };
-  
-  template <int I> const vector<char> Ti_G12<I>::psymm_(npair,0);
 
   template <int I>
   Ti_G12<I>::Ti_G12() :
@@ -280,25 +296,16 @@ namespace libint2 {
   }
   
   template <int I>
+  Ti_G12<I>::Ti_G12(const ConstructablePolymorphically& oset) :
+  parent_type("[T_i,G12]","Ti_G12")
+  {
+    const Ti_G12& oset_cast = dynamic_cast<const Ti_G12&>(oset);
+  }
+
+  template <int I>
   Ti_G12<I>::~Ti_G12()
   {
   }
-  
-  template <int I>
-  int
-  Ti_G12<I>::psymm(int i, int j) const
-  {
-    if (i<0 || i>=Properties::np)
-      throw std::runtime_error("Ti_G12<I>::psymm(i,j) -- index i out of bounds");
-    if (j<0 || j>=Properties::np)
-      throw std::runtime_error("Ti_G12<I>::psymm(i,j) -- index j out of bounds");
-    if (i == j)
-      return 1;
-    int ii = (i > j) ? i : j;
-    int jj = (i > j) ? j : i;
-    return psymm_[ii*(ii-1)/2 + jj];
-  }
-
 
 };
 

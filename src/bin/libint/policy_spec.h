@@ -8,8 +8,6 @@
 #ifndef _libint2_src_bin_libint_policyspec_h_
 #define _libint2_src_bin_libint_policyspec_h_
 
-using namespace std;
-
 namespace libint2 {
 
   /*
@@ -34,11 +32,12 @@ namespace libint2 {
 
   template <>
   void
-  StdLibintTDPolicy<CGShell>::init_subobj(const SafePtr<CGShell>& cgshell, vector< SafePtr<CGF> >& cgfs);
+  StdLibintTDPolicy<CGShell>::init_subobj(const StdLibintTDPolicy<CGShell>::obj_stype& cgshell,
+                                          std::vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs);
 
   template <>
   void
-  StdLibintTDPolicy<CGShell>::dealloc_subobj(vector< SafePtr<CGF> >& subobj);
+  StdLibintTDPolicy<CGShell>::dealloc_subobj(std::vector<StdLibintTDPolicy<CGShell>::subobj_stype>& subobj);
   /* source is in policy_spec.cc */
 
   /** StdLibintTDPolicy<GenIntegralSet> describes how integral sets are composed
@@ -57,12 +56,16 @@ namespace libint2 {
       typedef GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> obj_type;
       typedef typename obj_type::iter_type subobj_type;
       static const unsigned int np = Oper::Properties::np;
+      /// how these objects are stored
+      typedef typename TypeTraits<obj_type>::StorageType obj_stype;
+      /// how these subobjects are stored
+      typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
         
-        vector< SubIterator* > siters_inord; // subiterators used to iterate over each set (in the above order)
-        vector< vector< SubIterator* > > bra_siters; // subiterators for bra basis function sets (outer vector runs over particle index)
-        vector< vector< SubIterator* > > ket_siters; // subiterators for ket basis function sets (outer vector runs over particle index)
+        std::vector< SubIterator* > siters_inord; // subiterators used to iterate over each set (in the above order)
+        std::vector< std::vector< SubIterator* > > bra_siters; // subiterators for bra basis function sets (outer vector runs over particle index)
+        std::vector< std::vector< SubIterator* > > ket_siters; // subiterators for ket basis function sets (outer vector runs over particle index)
         bra_siters.resize(np);
         ket_siters.resize(np);
 
@@ -142,7 +145,7 @@ namespace libint2 {
       }
 
       // Nothing is done here because GenIntegralSet objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(vector< SafePtr<subobj_type> >& subobj) {
+      static void dealloc_subobj(std::vector< SafePtr<subobj_type> >& subobj) {
       }
     };
   
@@ -156,8 +159,12 @@ namespace libint2 {
       typedef TwoPRep_11_11<BFS> obj_type;
       typedef typename obj_type::iter_type subobj_type;
       typedef SubIteratorBase< typename TwoPRep_11_11<BFS>::parent_type > parent_siter;
+      /// how these objects are stored
+      typedef typename TypeTraits<obj_type>::StorageType obj_stype;
+      /// how these subobjects are stored
+      typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
@@ -170,7 +177,7 @@ namespace libint2 {
       }
 
       // Nothing is done here because TwoPRep_11_11 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(vector< SafePtr< TwoPRep_11_11<typename BFS::iter_type> > >& subobj) {
+      static void dealloc_subobj(std::vector< SafePtr< TwoPRep_11_11<typename BFS::iter_type> > >& subobj) {
       }
     };
 
@@ -183,8 +190,12 @@ namespace libint2 {
       typedef R12kG12_11_11<BFS,K> obj_type;
       typedef typename obj_type::iter_type subobj_type;
       typedef SubIteratorBase< typename obj_type::parent_type > parent_siter;
+      /// how these objects are stored
+      typedef typename TypeTraits<obj_type>::StorageType obj_stype;
+      /// how these subobjects are stored
+      typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
@@ -197,7 +208,7 @@ namespace libint2 {
       }
 
       // Nothing is done here because TwoPRep_11_11 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(vector< SafePtr< R12kG12_11_11<typename BFS::iter_type,K> > >& subobj) {
+      static void dealloc_subobj(std::vector< SafePtr< R12kG12_11_11<typename BFS::iter_type,K> > >& subobj) {
       }
     };
 
@@ -211,8 +222,12 @@ namespace libint2 {
       typedef TiG12_11_11<BFS,K> obj_type;
       typedef typename obj_type::iter_type subobj_type;
       typedef SubIteratorBase< typename obj_type::parent_type > parent_siter;
+      /// how these objects are stored
+      typedef typename TypeTraits<obj_type>::StorageType obj_stype;
+      /// how these subobjects are stored
+      typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
@@ -225,7 +240,7 @@ namespace libint2 {
       }
 
       // Nothing is done here because TwoPRep_11_11 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(vector< SafePtr< TiG12_11_11<typename BFS::iter_type,K> > >& subobj) {
+      static void dealloc_subobj(std::vector< SafePtr< TiG12_11_11<typename BFS::iter_type,K> > >& subobj) {
       }
     };
 };

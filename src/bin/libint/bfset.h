@@ -60,6 +60,7 @@ namespace libint2 {
     CGF(const CGF&);
     CGF(const SafePtr<CGF>&);
     CGF(const SafePtr<parent_type>&);
+    CGF(const ConstructablePolymorphically&);
     CGF(const SafePtr<ConstructablePolymorphically>&);
     ~CGF();
 
@@ -103,7 +104,6 @@ namespace libint2 {
     CGShell(const CGShell&);
     CGShell(const SafePtr<CGShell>&);
     CGShell(const SafePtr<parent_type>&);
-    CGShell(const SafePtr<ConstructablePolymorphically>&);
     ~CGShell();
     CGShell& operator=(const CGShell&);
 

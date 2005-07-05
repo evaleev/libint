@@ -15,6 +15,12 @@ SubIterator::~SubIterator()
 {
 }
 
+const ConstructablePolymorphically&
+SubIterator::pelem() const
+{
+  throw ProgrammingError("virtual ConstructablePolymorphically& SubIterator::pelem() -- used but not overloaded");
+}
+
 #ifdef ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
 
 //

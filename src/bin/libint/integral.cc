@@ -20,8 +20,13 @@ namespace libint2 {
   TwoPRep_11_11<CGF>::this_precomputed() const
   {
     /// (ss|ss)^{(m)} are precomputed 
+#if USE_BRAKET_H
+    if (parent_type::bra_.member(0,0).zero() && parent_type::bra_.member(1,0).zero() &&
+      parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero())
+#else
     if (parent_type::bra_.member(0,0)->zero() && parent_type::bra_.member(1,0)->zero() &&
       parent_type::ket_.member(0,0)->zero() && parent_type::ket_.member(1,0)->zero())
+#endif
       return true;
     else
       return false;

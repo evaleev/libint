@@ -70,6 +70,15 @@ namespace libint2 {
       logic_error(a) {}
   };
 
+  /** This exception used to indicate some programming error */
+  class ProgrammingError : public std::logic_error {
+
+    public:
+    ProgrammingError(const std::string& a) :
+      logic_error(a) {}
+  };
+  
+
 };
 
 #endif

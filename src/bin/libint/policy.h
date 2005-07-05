@@ -2,6 +2,7 @@
 #include <vector>
 #include <typelist.h>
 #include <smart_ptr.h>
+#include <traits.h>
 
 #ifndef _libint2_src_bin_libint_policy_h_
 #define _libint2_src_bin_libint_policy_h_
@@ -21,13 +22,15 @@ namespace libint2 {
   template <class T>
     struct ExistsDefaultSubobjAllocator<T,true>{
       typedef T obj_type;
+      typedef typename TypeTraits<obj_type>::StorageType obj_stype;
+      typedef typename TypeTraits<obj_type>::StorageType subobj_stype;
       typedef typename obj_type::iter_type subobj_type;
 
-      static void default_init_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj)
+      static void default_init_subobj(const obj_stype& obj, vector<subobj_stype>& subobj)
       {
         subobj.push_back(obj);
       }
-      static void default_dealloc_subobj(vector< SafePtr<subobj_type> >& subobj)
+      static void default_dealloc_subobj(vector<subobj_stype>& subobj)
       {
       }
     };
@@ -40,14 +43,18 @@ namespace libint2 {
     struct StdLibintTDPolicy {
       typedef T obj_type;
       typedef typename obj_type::iter_type subobj_type;
+      /// how these objects are stored
+      typedef typename TypeTraits<obj_type>::StorageType obj_stype;
+      /// how these subobjects are stored
+      typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
       /// This function allocates subobj of obj (e.g. basis functions contained in a shell)
-      static void init_subobj(const SafePtr<obj_type>& obj, vector< SafePtr<subobj_type> >& subobj)
+      static void init_subobj(const obj_stype& obj, vector<subobj_stype>& subobj)
       {
         // If types are not the same then this function should not be used -- user must provide a specialization
         ExistsDefaultSubobjAllocator< T, IsSameType<obj_type,subobj_type>::value >::default_init_subobj(obj,subobj);
       }
-      static void dealloc_subobj(vector< SafePtr<subobj_type> >& subobj)
+      static void dealloc_subobj(vector<subobj_stype>& subobj)
       {
         // If types are not the same then this function should not be used -- user must provide a specialization
         ExistsDefaultSubobjAllocator< T, IsSameType<obj_type,subobj_type>::value >::default_dealloc_subobj(subobj);
@@ -87,15 +94,12 @@ namespace libint2 {
   template <class T, class TIPol = StdLibintTIPolicy, template <class> class TDPol = StdLibintTDPolicy>
     class Policy : public TDPol<T>, public TIPol
     {
-
-      /// Returns whether to unroll an IntegralSet
-      bool can_unroll_intset(const SafePtr<T>& iset)
-      {
-        return iset->set_size() <= TIPol::max_set_size_to_unroll();
-      }
-      
     public:
-    
+      /// how these objects are stored
+      typedef typename TDPol<T>::obj_stype obj_stype;
+      /// how these subobjects are stored
+      typedef typename TDPol<T>::subobj_stype subobj_stype;
+
     /*
       typedef typename TDPol<T>::obj_type obj_type;
       typedef typename obj_type::iter_type subobj_type;
@@ -111,6 +115,12 @@ namespace libint2 {
       }
      */
 
+     private:
+     /// Returns whether to unroll an IntegralSet
+     bool can_unroll_intset(const SafePtr<T>& iset)
+     {
+       return iset->set_size() <= TIPol::max_set_size_to_unroll();
+     }
   };
 
   

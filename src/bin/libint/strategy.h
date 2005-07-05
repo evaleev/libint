@@ -5,6 +5,7 @@
 #include <vrr_11_r12kg12_11.h>
 #include <comp_11_tig12_11.h>
 #include <hrr.h>
+#include <global_macros.h>
 
 #ifndef _libint2_src_bin_libint_strategy_h_
 #define _libint2_src_bin_libint_strategy_h_
@@ -171,7 +172,11 @@ namespace libint2 {
       }
 
       // only apply VRR is AM on B and D is zero
+#if USE_BRAKET_H
+      if (integral->ket(0,0).zero() && integral->ket(1,0).zero()) {
+#else
       if (integral->ket(0,0)->zero() && integral->ket(1,0)->zero()) {
+#endif
         // decrease A
         for(int xyz = 2; xyz >= 0; xyz--) {
           typedef VRR_11_R12kG12_11<R12kG12_11_11,CGF,K,0,InBra> rr_type;

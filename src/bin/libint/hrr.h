@@ -63,9 +63,9 @@ namespace libint2 {
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer to i-th child
     SafePtr<ChildType> child(unsigned int i) const;
-    /// Implementation of RecurrenceRelation's target()
+    /// Implementation of RecurrenceRelation::target()
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
-    /// Implementation of RecurrenceRelation's child()
+    /// Implementation of RecurrenceRelation::child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// Implementation of RecurrenceRelation::rr_expr()
     SafePtr<ExprType> rr_expr() const { return expr_; }
@@ -255,7 +255,7 @@ namespace libint2 {
     {
       // This is an ugly hack -- add HRR's to the RRStack preemptively for targets in which all functions not involved
       // in transfer have zero quanta. The reason is that for the HRR quartet level code to work correctly
-      // I must use these particular instances or HRR to generate the source.
+      // I must use these particular instances of HRR to generate the source.
       
       // only register RRs with for shell sets
       if (TrivialBFSet<F>::result)
@@ -268,34 +268,84 @@ namespace libint2 {
       //check for nonzero quanta for all particles other than part
       bool nonzero_quanta = false;
       unsigned const int npart = IntType::OperatorType::Properties::np;
-      for(int p=0; p<part; p++) {
+      for(int p=0; p<npart; p++) {
+        if (p == part)
+          continue;
         int nfbra = bra.num_members(p);
         for(int f=0; f<nfbra; f++)
+#if USE_BRAKET_H
+          if (!bra.member(p,f).zero())
+#else
           if (!bra.member(p,f)->zero())
+#endif
             nonzero_quanta = true;
         int nfket = ket.num_members(p);
         for(int f=0; f<nfket; f++)
+#if USE_BRAKET_H
+          if (!ket.member(p,f).zero())
+#else
           if (!ket.member(p,f)->zero())
+#endif
             nonzero_quanta = true;
       }
-      for(int p=part+1; p<npart; p++) {
-        int nfbra = bra.num_members(p);
-        for(int f=0; f<nfbra; f++)
-          if (!bra.member(p,f)->zero())
-            nonzero_quanta = true;
-        int nfket = ket.num_members(p);
-        for(int f=0; f<nfket; f++)
-          if (!ket.member(p,f)->zero())
-            nonzero_quanta = true;
-      }
+      // if all bfsets not involved in transfer have zero quanta then this instance needs to be added to the stack
       if (!nonzero_quanta) {
         SafePtr<RRStack> rrstack = RRStack::Instance();
         SafePtr<ThisType> this_ptr = const_pointer_cast<ThisType,const ThisType>(EnableSafePtrFromThis<ThisType>::SafePtr_from_this());
         rrstack->find(this_ptr);
         return true;
       }
-      else
-        return false;
+      
+      //
+      // else create the needed instance of HRR
+      //
+      
+      // zero out unneeded bfs'
+      IBraType bra_zero(bra);
+      IKetType ket_zero(ket);
+      for(int p=0; p<npart; p++) {
+        if (p == part)
+          continue;
+        int nfbra = bra_zero.num_members(p);
+        for(int f=0; f<nfbra; f++) {
+          typedef typename IBraType::bfs_type bfs_type;
+          typedef typename IBraType::bfs_ref bfs_ref;
+          bfs_ref bfs = bra_zero.member(p,f);
+#if USE_BRAKET_H
+          if (!bfs.zero()) {
+#else
+          if (!bfs->zero()) {
+#endif
+            bfs_type null_bfs;
+            swap(bfs,null_bfs);
+          }
+        }
+        int nfket = ket_zero.num_members(p);
+        for(int f=0; f<nfket; f++) {
+          typedef typename IKetType::bfs_type bfs_type;
+          typedef typename IKetType::bfs_ref bfs_ref;
+          bfs_ref bfs = ket_zero.member(p,f);
+#if USE_BRAKET_H
+          if (!bfs.zero()) {
+#else
+          if (!bfs->zero()) {
+#endif
+            bfs_type null_bfs;
+            swap(bfs,null_bfs);
+          }
+        }
+      }
+      // create a generic GenIntegralSet over a multiplicative operator
+      typedef GenSymmOper< OperatorProperties<IntType::OperatorType::Properties::np,true,PermutationalSymmetry::symm> > DummyOper;
+      typedef typename IBraType::bfs_type bfs_type;
+      typedef QuantumNumbers<int,0> DummyQuanta;
+      typedef GenIntegralSet<DummyOper, IncableBFSet, IBraType, IKetType, DummyQuanta> DummyIntegral;
+      DummyOper dummy_oper;
+      DummyQuanta dummy_quanta(std::vector<int>(0,0));
+      SafePtr<DummyIntegral> dummy_integral = DummyIntegral::Instance(dummy_oper,bra_zero,ket_zero,dummy_quanta);
+      
+      // not done coding -- throw an exception for now
+      throw CodeDoesNotExist("Have not finished generalizing HRR::register with rrstack()");
     }
 
 

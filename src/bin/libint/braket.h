@@ -17,7 +17,10 @@ namespace libint2 {
 
   public:
     typedef BFS bfs_type;
-    typedef vector< BFS > BFSVector;
+    typedef BFS bfs_stor;
+    typedef bfs_stor& bfs_ref;
+    typedef const bfs_stor& bfs_cref;
+    typedef vector< bfs_stor > BFSVector;
     typedef vector< BFSVector > BFSMatrix;
     typedef VectorBraket<typename BFS::iter_type> iter_type;
     typedef struct{} parent_type;
@@ -27,16 +30,18 @@ namespace libint2 {
     VectorBraket();
     VectorBraket(const BFSMatrix&);
     VectorBraket(const VectorBraket&);
-    ~VectorBraket() throw();
+    ~VectorBraket();
 
     /// Comparison function
     bool operator==(const VectorBraket&) const;
     /// Returns pointer to the i-th function for particle p
-    const BFS& member(unsigned int p, unsigned int i) const;
+    bfs_ref member(unsigned int p, unsigned int i);
+    /// Returns pointer to the i-th function for particle p
+    bfs_cref member(unsigned int p, unsigned int i) const;
     /// Returns pointer to the SubIterator for i-th BFS of particle p
     SubIterator* member_subiter(unsigned int p, unsigned int i) const;
     /// Sets i-th function for particle p
-    void set_member(const BFS&, unsigned int p, unsigned int i);
+    void set_member(bfs_cref, unsigned int p, unsigned int i);
     /// Sets i-th function for particle p (does a dynamic cast inside)
     void set_member(const ConstructablePolymorphically&, unsigned int p, unsigned int i);
     /// Returns the number of BFS for particle p
@@ -69,12 +74,19 @@ namespace libint2 {
     }
 
   template <class BFS>
-    VectorBraket<BFS>::~VectorBraket() throw()
+    VectorBraket<BFS>::~VectorBraket()
     {
     }
 
   template <class BFS>
-    const BFS&
+    typename VectorBraket<BFS>::bfs_ref
+    VectorBraket<BFS>::member(unsigned int p, unsigned int i)
+    {
+      return bfs_.at(p).at(i);
+    }
+  
+  template <class BFS>
+    typename VectorBraket<BFS>::bfs_cref
     VectorBraket<BFS>::member(unsigned int p, unsigned int i) const
     {
       return bfs_.at(p).at(i);
@@ -89,13 +101,13 @@ namespace libint2 {
   
   template <class BFS>
     void
-    VectorBraket<BFS>::set_member(const BFS& bfs, unsigned int p, unsigned int i)
+    VectorBraket<BFS>::set_member(bfs_cref bfs, unsigned int p, unsigned int i)
     {
       if (p >= bfs_.size())
         bfs_.resize(p+1);
       if (i >= bfs_[p].size())
         bfs_[p].resize(i+1);
-      BFS bfs_tmp(bfs));
+      BFS bfs_tmp(bfs);
       bfs_[p][i] = bfs_tmp;
     }
 

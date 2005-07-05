@@ -5,6 +5,7 @@
 #include <rr.h>
 #include <iter.h>
 #include <policy_spec.h>
+#include <global_macros.h>
 
 #include <libint2.h>
 #include <test_eri/eri.h>
@@ -40,11 +41,18 @@ int main(int argc, char** argv)
     alpha4.push_back(alpha[3]*scale);
   }
   
+#if USE_BRAKET_H
+  CGShell sh0(&(am[0]));
+  CGShell sh1(&(am[1]));
+  CGShell sh2(&(am[2]));
+  CGShell sh3(&(am[3]));
+#else
   SafePtr<CGShell> sh0(new CGShell(&(am[0])));
   SafePtr<CGShell> sh1(new CGShell(&(am[1])));
   SafePtr<CGShell> sh2(new CGShell(&(am[2])));
   SafePtr<CGShell> sh3(new CGShell(&(am[3])));
-  
+#endif
+
   typedef SubIteratorBase<CGShell> iter;
   SafePtr<iter> sh0_iter(new iter(sh0));
   SafePtr<iter> sh1_iter(new iter(sh1));
@@ -57,8 +65,13 @@ int main(int argc, char** argv)
   am[2],alpha3,C,
   am[3],alpha4,D,0,veclen);
 
+#if USE_BRAKET_H
+  cout << "Testing (" << sh0.label() << sh1.label()
+  << "|" << sh2.label() << sh3.label() << ") ..." << endl;
+#else
   cout << "Testing (" << sh0->label() << sh1->label()
   << "|" << sh2->label() << sh3->label() << ") ..." << endl;
+#endif
 
   COMPUTE_XX_ERI_XX(libint);
 
@@ -69,6 +82,25 @@ int main(int argc, char** argv)
       for(sh2_iter->init(); int(*sh2_iter); ++(*sh2_iter)) {
         for(sh3_iter->init(); int(*sh3_iter); ++(*sh3_iter), ijkl++) {
 
+#if USE_BRAKET_H
+          CGF bf0 = sh0_iter->elem();
+          CGF bf1 = sh1_iter->elem();
+          CGF bf2 = sh2_iter->elem();
+          CGF bf3 = sh3_iter->elem();
+
+          uint l0 = bf0.qn(0);
+          uint m0 = bf0.qn(1);
+          uint n0 = bf0.qn(2);
+          uint l1 = bf1.qn(0);
+          uint m1 = bf1.qn(1);
+          uint n1 = bf1.qn(2);
+          uint l2 = bf2.qn(0);
+          uint m2 = bf2.qn(1);
+          uint n2 = bf2.qn(2);
+          uint l3 = bf3.qn(0);
+          uint m3 = bf3.qn(1);
+          uint n3 = bf3.qn(2);
+#else
           SafePtr<CGF> bf0 = sh0_iter->elem();
           SafePtr<CGF> bf1 = sh1_iter->elem();
           SafePtr<CGF> bf2 = sh2_iter->elem();
@@ -86,6 +118,7 @@ int main(int argc, char** argv)
           uint l3 = bf3->qn(0);
           uint m3 = bf3->qn(1);
           uint n3 = bf3->qn(2);
+#endif
           
           for(uint v=0; v<veclen; v++) {
   

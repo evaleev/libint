@@ -47,7 +47,7 @@ namespace libint2 {
 
 CodeContext::CodeContext(const SafePtr<CompilationParameters>& cparams) :
   cparams_(cparams),
-  comments_on_(true)
+  comments_on_(false)
 {
   zero_out_counters();
 }

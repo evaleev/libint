@@ -41,6 +41,13 @@ CGF::CGF(const SafePtr<parent_type>& sptr)
     qn_[i] = sptr_cast->qn_[i];
 }
 
+CGF::CGF(const ConstructablePolymorphically& sptr)
+{
+  const CGF& sptr_cast = dynamic_cast<const CGF&>(sptr);
+  for(int i=0; i<3; i++)
+    qn_[i] = sptr_cast.qn_[i];
+}
+
 CGF::CGF(const SafePtr<ConstructablePolymorphically>& sptr)
 {
   const SafePtr<CGF> sptr_cast = dynamic_pointer_cast<CGF,ConstructablePolymorphically>(sptr);
@@ -160,6 +167,7 @@ CGShell::CGShell(const SafePtr<parent_type>& sptr)
     qn_[i] = sptr_cast->qn_[i];
 }
 
+#if 0
 CGShell::CGShell(const SafePtr<ConstructablePolymorphically>& sptr)
 {
   const SafePtr<CGShell> sptr_cast = dynamic_pointer_cast<CGShell,ConstructablePolymorphically>(sptr);
@@ -169,6 +177,7 @@ CGShell::CGShell(const SafePtr<ConstructablePolymorphically>& sptr)
   for(int i=0; i<1; i++)
     qn_[i] = sptr_cast->qn_[i];
 }
+#endif
 
 CGShell::~CGShell()
 {

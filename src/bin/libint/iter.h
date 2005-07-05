@@ -3,6 +3,7 @@
 #include <smart_ptr.h>
 #include <policy.h>
 #include <polyconstr.h>
+#include <exception.h>
 
 #ifndef _libint2_src_bin_libint_iter_h_
 #define _libint2_src_bin_libint_iter_h_
@@ -15,9 +16,9 @@ using namespace std;
 
 namespace libint2 {
 
-  /** SubIterator provides a base class for all subiterator classes. Subiterators iterate through
-      certain types of objects as if they were sets of some other data. For example, SubIterator can
-      be implemented for iterating Gaussian functions within shells, or over integrals within shell
+  /** Iterator provides a base class for all object iterator classes. It iterates over
+      certain objects as if they were sets of some other data. For example, Iterator can
+      be implemented for iterating over Gaussian functions within shells, or over integrals within shell
       sets of integrals.
   */
   class SubIterator {
@@ -31,9 +32,10 @@ namespace libint2 {
     virtual SubIterator& operator++() =0;
     /// This is used to check whether next element exists. Returns 1 if it does.
     virtual operator int() const =0;
-    /** Returns pointer to current element via a pointer to base. This function can only be
-      be implemented if elements are derived rom ConstructablePolymorphically. */
-    virtual const SafePtr<ConstructablePolymorphically> pelem() const =0;
+    /** Return current element via base class. These functions can only be
+      be implemented if elements are derived from ConstructablePolymorphically.
+      Default implementation throws, thus must be overridden by SubIteratorBase<T>. */
+    virtual const ConstructablePolymorphically& pelem() const;
 
   protected:
     SubIterator();
@@ -45,20 +47,24 @@ namespace libint2 {
 
   /** SubIteratorBase<T> provides a base class for a sub-iterator class for T. It iterates through
       T as if it were a set of some data of type T::iter_type. Traits of class T (ordering of
-      T::iter_type, etc.) are provided by Tr.
+      T::iter_type, etc.) are provided by Tr<T>.
   */
-  template <class T, class Tr = Policy<T> > class SubIteratorBase : public SubIterator {
+  template <class T, template <class> class Tr = Policy > class SubIteratorBase : public SubIterator {
 
   public:
     typedef typename T::iter_type iter_type;
-    /// the only allowed constructor
-    SubIteratorBase(const SafePtr<T>&);
+    typedef Tr<T> TPolicy;
+    typedef typename TPolicy::obj_stype tref;
+    typedef typename TPolicy::subobj_stype iref;
+    /// Return reference to ConstructablePolymorphically as object of this type
+    typedef const ConstructablePolymorphically& cp_rettype;
+    SubIteratorBase(const tref&);
     virtual ~SubIteratorBase();
     
     /// Returns current element
-    const SafePtr<iter_type> elem() const;
+    const iref& elem() const;
     /// Returns current element. Implements SubIterator's pelem().
-    const SafePtr<ConstructablePolymorphically> pelem() const;
+    cp_rettype pelem() const;
 
     /// Returns a number of iterations (number of elements in a set over which to iterate).
     const unsigned int num_iter() const;
@@ -70,8 +76,8 @@ namespace libint2 {
     operator int() const;
     
   protected:
-    const SafePtr<T> obj_;
-    vector< SafePtr<iter_type> > subobj_;
+    const tref obj_;
+    vector<iref> subobj_;
 
   private:
     /// the iteration counter (starts at 0)
@@ -85,10 +91,28 @@ namespace libint2 {
     void init_subobj();
     void delete_subobj();
 
+    // implementation of pelem()
+    template <typename X, bool return_smart_ptr>
+    struct PElemImpl {
+    };
+    template <typename X>
+    struct PElemImpl<X,true> {
+      static cp_rettype pelem(const iref& elem) {
+        SafePtr<ConstructablePolymorphically> elem_cast = dynamic_pointer_cast<ConstructablePolymorphically,X>(elem);
+        return *(elem_cast.get());
+      }
+    };
+    template <typename X>
+    struct PElemImpl<X,false> {
+      static cp_rettype pelem(const iref& elem) {
+        return elem;
+      }
+    };
+    
   };
 
-  template <class T, class P>
-    SubIteratorBase<T,P>::SubIteratorBase(const SafePtr<T>& obj) :
+  template <class T, template <class> class P>
+    SubIteratorBase<T,P>::SubIteratorBase(const tref& obj) :
     obj_(obj), subobj_(0), iter_(0)
     {
 #ifdef ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
@@ -98,7 +122,7 @@ namespace libint2 {
 #endif
     }
   
-  template <class T, class P>
+  template <class T, template <class> class P>
     SubIteratorBase<T,P>::~SubIteratorBase()
     {
 #ifdef ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
@@ -108,35 +132,44 @@ namespace libint2 {
 #endif
     }
 
-  template <class T, class P>
+  template <class T, template <class> class P>
     const unsigned int
     SubIteratorBase<T,P>::num_iter() const
     {
       return subobj_.size();
     }
   
-  template <class T, class P>
-    const SafePtr<typename SubIteratorBase<T,P>::iter_type>
+  template <class T, template <class> class P>
+    const typename SubIteratorBase<T,P>::iref&
     SubIteratorBase<T,P>::elem() const
-  {
+    {
       return subobj_.at(iter_);
-  }
+    }
 
-  template <class T, class P>
+  template <class T, template <class> class P>
+    typename SubIteratorBase<T,P>::cp_rettype
+    SubIteratorBase<T,P>::pelem() const
+    {
+      return PElemImpl<iter_type,IsSafePtr<iref>::result>::pelem(elem());
+    }
+
+#if 0
+  template <class T, template <class> class P>
     const SafePtr<ConstructablePolymorphically>
     SubIteratorBase<T,P>::pelem() const
     {
       return dynamic_pointer_cast<ConstructablePolymorphically,iter_type>(elem());
     }
+#endif
   
-  template <class T, class P>
+  template <class T, template <class> class P>
     void
     SubIteratorBase<T,P>::init()
   {
       iter_ = 0;
   }
 
-  template <class T, class P>
+  template <class T, template <class> class P>
     SubIterator&
     SubIteratorBase<T,P>::operator++()
   {
@@ -144,24 +177,24 @@ namespace libint2 {
       return *this;
   }
 
-  template <class T, class P>
+  template <class T, template <class> class P>
     SubIteratorBase<T,P>::operator int() const
   {
     return (iter_ < num_iter()) ? 1 : 0;
   }
 
-  template <class T, class P>
+  template <class T, template <class> class P>
     void
     SubIteratorBase<T,P>::init_subobj()
   {
-      P::init_subobj(obj_,subobj_);
+      P<T>::init_subobj(obj_,subobj_);
   }
 
-  template <class T, class P>
+  template <class T, template <class> class P>
     void
     SubIteratorBase<T,P>::delete_subobj()
   {
-      P::dealloc_subobj(subobj_);
+      P<T>::dealloc_subobj(subobj_);
   }
   
 };
