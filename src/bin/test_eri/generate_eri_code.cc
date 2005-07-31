@@ -91,7 +91,10 @@ namespace {
     // set default dims
     ImplicitDimensions::set_default_dims(cparams);
 
-    BuildTest<ERIQtet,true>(quartet,cparams,size_to_unroll);
+    //SafePtr<StdRandomizePolicy> rpolicy(new StdRandomizePolicy(0.35));
+    SafePtr<StdRandomizePolicy> rpolicy(new StdRandomizePolicy(0.00));
+    SafePtr<Tactic> tactic(new FirstChoiceTactic<StdRandomizePolicy>(rpolicy));
+    BuildTest<ERIQtet,true>(quartet,cparams,size_to_unroll,std::cout,tactic);
 
     return 0;
   }

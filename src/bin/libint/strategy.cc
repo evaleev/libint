@@ -1,5 +1,6 @@
 
-#define USE_HRR 1
+#define USE_ITR 0
+#define USE_HRR 0
 
 #include <vector>
 #include <algorithm>
@@ -7,6 +8,7 @@
 #include <dg.h>
 #include <hrr.h>
 #include <vrr_11_twoprep_11.h>
+#include <itr_11_twoprep_11.h>
 #include <vrr_11_r12kg12_11.h>
 #include <comp_11_tig12_11.h>
 
@@ -169,6 +171,16 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
   // shift from D to C
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef HRR_cd_11_TwoPRep_11_int rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
+    if (rr_ptr->num_children())
+      rrstack.push_back(rr_cast(rr_ptr));
+  }
+#endif
+
+#if USE_ITR
+  // shift from A to C
+  for(int xyz = 2; xyz >= 0; xyz--) {
+    typedef ITR_11_TwoPRep_11<TwoPRep_11_11,CGF,0,InBra> rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
     if (rr_ptr->num_children())
       rrstack.push_back(rr_cast(rr_ptr));

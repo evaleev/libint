@@ -8,6 +8,7 @@
 using namespace std;
 using namespace libint2;
 
+/*
 FirstChoiceTactic::RR
 FirstChoiceTactic::optimal_rr(const rr_stack& stack) const {
   if (!stack.empty())
@@ -15,6 +16,7 @@ FirstChoiceTactic::optimal_rr(const rr_stack& stack) const {
   else
     return RR();
 }
+*/
 
 FewestNewVerticesTactic::RR
 FewestNewVerticesTactic::optimal_rr(const rr_stack& stack) const {

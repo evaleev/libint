@@ -74,6 +74,18 @@ namespace libint2 {
     SafePtr<rdouble> rho_o_alpha12[np];
     /// 1/(2*(zeta+eta))
     SafePtr<rdouble> one_o_2alphasum;
+
+    /**
+    Prefactors for the ITR relation for TwoPRep integrals (a+1 0|c0):
+    */
+    /// prefactor in front of (a0|c0) = (PA_i + QC_i rho/zeta)
+    SafePtr<rdouble> TwoPRepITR_vpfac0[np];
+    /// cartesian components of pfac0 vector
+    SafePtr<rdouble> TwoPRepITR_pfac0[np][3];
+    /// prefactor in front of (a0|c+1 0) = -alpha12[1]/alpha12[0]
+    SafePtr<rdouble> TwoPRepITR_pfac1[np];
+    /// prefactor in front of (a-1 0|c0) is one_o_2alpha12[0]
+    /// prefactor in front of (a0|c-1 0) is one_o_2alpha12[0]
     
     /**
        Prefactors for the VRR relation for R12_k_G12 integrals (k>=0):

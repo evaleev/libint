@@ -54,6 +54,16 @@ typedef struct {
   REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_6[VECLEN];
   REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_7[VECLEN];
   REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_8[VECLEN];
+  /// LRL1991, Eq. 30, prefactor in front of (a0|c0)
+  REALTYPE TwoPRepITR_pfac0_0_x[VECLEN];
+  REALTYPE TwoPRepITR_pfac0_0_y[VECLEN];
+  REALTYPE TwoPRepITR_pfac0_0_z[VECLEN];
+  REALTYPE TwoPRepITR_pfac0_1_x[VECLEN];
+  REALTYPE TwoPRepITR_pfac0_1_y[VECLEN];
+  REALTYPE TwoPRepITR_pfac0_1_z[VECLEN];
+  /// LRL1991, Eq. 30, prefactor in front of (a0|c+10)
+  REALTYPE TwoPRepITR_pfac1_0[VECLEN];
+  REALTYPE TwoPRepITR_pfac1_1[VECLEN];
   /// WD2004, Eq. 30, prefactor in front of (a0|k|c0)
   REALTYPE R12kG12_pfac0_0_x[VECLEN];
   REALTYPE R12kG12_pfac0_0_y[VECLEN];

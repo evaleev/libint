@@ -60,6 +60,29 @@ Prefactors::Prefactors() :
   }
   
   //
+  // TwoPRep ITR prefactors
+  //
+
+  for(int p=0; p<np; p++) {
+    char tmp_str[40];
+    sprintf(tmp_str,"TwoPRepITR_pfac0_%d",p);
+    rdptr vpfac0_ptr(new rdouble(tmp_str));
+    TwoPRepITR_vpfac0[p] = vpfac0_ptr;
+    
+    sprintf(tmp_str,"TwoPRepITR_pfac1_%d",p);
+    rdptr pfac1_ptr(new rdouble(tmp_str));
+    TwoPRepITR_pfac1[p] = pfac1_ptr;
+    
+    char xyz_str[] = "xyz";
+    for(int xyz=0; xyz<3; xyz++) {
+      char tmp_str[40];
+      sprintf(tmp_str,"TwoPRepITR_pfac0_%d_%c",p,xyz_str[xyz]);
+      rdptr pfac0_ptr(new rdouble(tmp_str));
+      TwoPRepITR_pfac0[p][xyz] = pfac0_ptr;
+    }
+  }
+
+  //
   // R12_k_G12 VRR prefactors
   //
 

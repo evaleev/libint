@@ -1,5 +1,6 @@
 
-
+#include <cmath>
+#include <cstdlib>
 #include <smart_ptr.h>
 
 #ifndef _libint2_src_bin_libint_tactic_h_
@@ -11,6 +12,9 @@ namespace libint2 {
 
   class DirectedGraph;
   class RecurrenceRelation;
+  
+  class DummyRandomizePolicy;
+  class StdRandomizePolicy;
   
   /** Tactic is used to choose the optimal (in some sense) recurrence relation to reduce
       a vertex.
@@ -28,12 +32,21 @@ namespace libint2 {
   
   /** FirstChoiceTactic simply chooses the first RR
     */
-  class FirstChoiceTactic : public Tactic {
+  template <class RandomizePolicy = DummyRandomizePolicy>
+    class FirstChoiceTactic : public Tactic {
     public:
-    FirstChoiceTactic() : Tactic() {}
+    FirstChoiceTactic(const SafePtr<RandomizePolicy>& rpolicy = SafePtr<RandomizePolicy>(new RandomizePolicy)) : Tactic(), rpolicy_(rpolicy) {}
     ~FirstChoiceTactic() {}
     
-    RR optimal_rr(const rr_stack& stack) const;
+    RR optimal_rr(const rr_stack& stack) const {
+      if (!stack.empty())
+        return stack[0 + rpolicy_->noise(stack.size())];
+      else
+        return RR();
+    }
+
+    private:
+    SafePtr<RandomizePolicy> rpolicy_;
   };
   
   /** FewestNewVerticesTactic chooses RR which adds fewest new vertices to
@@ -84,6 +97,38 @@ namespace libint2 {
     RR optimal_rr(const rr_stack& stack) const;
     
   };
+  
+  
+  /////////////////////////////////
+  
+  struct DummyRandomizePolicy {
+    unsigned int noise(unsigned int nrrs) const { return 0; }
+  };
+  
+  /** The shift parameter is computed as follows:
+      delta = floor(nrrs*scale*random()/RAND_MAX)
+      where nrrs is the number of possibilities, scale
+      is the user-specified parameter.
+  */
+  class StdRandomizePolicy {
+    public:
+    StdRandomizePolicy(double scale) : scale_(scale) {
+      // Initialize state randomly
+      time_t crap;
+      srandom(time(&crap));
+    }
+
+    unsigned int noise(unsigned int nrrs) const {
+      unsigned long rand = random();
+      const unsigned long range = 1ul<<32 - 1;
+      const unsigned int result = static_cast<unsigned int>(std::floor(nrrs*scale_*rand/range));
+      return result;
+    }
+    
+    private:
+    double scale_;
+  };
+
 
 };
 

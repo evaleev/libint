@@ -22,7 +22,7 @@ namespace libint2 {
   template <class Integral, bool GenAllCode>
     void BuildTest(const SafePtr<Integral>& target, const SafePtr<CompilationParameters>& cparams,
 		   unsigned int size_to_unroll, std::ostream& os = std::cout,
-		   const SafePtr<Tactic>& tactic = SafePtr<Tactic>(new FirstChoiceTactic),
+		   const SafePtr<Tactic>& tactic = SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
 		   const SafePtr<MemoryManager>& memman = SafePtr<MemoryManager>(new WorstFitMemoryManager));
 
   template <class Integral, bool GenAllCode>

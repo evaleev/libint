@@ -64,6 +64,24 @@ void prep_libint2(Libint_t* libint, unsigned int am1,
     libint->CD_z[v] = C[2] - D[2];
     libint->oo2e[v] = 0.5/gammaq;
     
+    // Prefactors for interelecttron transfer relation
+    /*
+    libint->TwoPRepITR_pfac0_0_x[v] = (PAx+QCx*gammapq/gammap);
+    libint->TwoPRepITR_pfac0_0_y[v] = (PAy+QCy*gammapq/gammap);
+    libint->TwoPRepITR_pfac0_0_z[v] = (PAz+QCz*gammapq/gammap);
+    libint->TwoPRepITR_pfac0_1_x[v] = (QCx+PAx*gammapq/gammaq);
+    libint->TwoPRepITR_pfac0_1_y[v] = (QCy+PAy*gammapq/gammaq);
+    libint->TwoPRepITR_pfac0_1_z[v] = (QCz+PAz*gammapq/gammaq);
+    */
+    libint->TwoPRepITR_pfac0_0_x[v] = - (alpha2[v]*libint->AB_x[v] + alpha4[v]*libint->CD_x[v])/gammap;
+    libint->TwoPRepITR_pfac0_0_y[v] = - (alpha2[v]*libint->AB_y[v] + alpha4[v]*libint->CD_y[v])/gammap;
+    libint->TwoPRepITR_pfac0_0_z[v] = - (alpha2[v]*libint->AB_z[v] + alpha4[v]*libint->CD_z[v])/gammap;
+    libint->TwoPRepITR_pfac0_1_x[v] = - (alpha2[v]*libint->AB_x[v] + alpha4[v]*libint->CD_x[v])/gammaq;
+    libint->TwoPRepITR_pfac0_1_y[v] = - (alpha2[v]*libint->AB_y[v] + alpha4[v]*libint->CD_y[v])/gammaq;
+    libint->TwoPRepITR_pfac0_1_z[v] = - (alpha2[v]*libint->AB_z[v] + alpha4[v]*libint->CD_z[v])/gammaq;
+    libint->TwoPRepITR_pfac1_0[v] = -gammaq/gammap;
+    libint->TwoPRepITR_pfac1_1[v] = -gammap/gammaq;
+    
     const double PQx = Px - Qx;
     const double PQy = Py - Qy;
     const double PQz = Pz - Qz;
