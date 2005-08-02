@@ -11,7 +11,7 @@
 
 #define DO_TEST_ONLY 1
 
-#include <include/libint_config.h>
+#include <include/libint2_config.h>
 
 #include <iostream>
 #include <fstream>
@@ -152,7 +152,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   //
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy(cparams->unroll_threshold()));
-  SafePtr<Tactic> tactic(new FirstChoiceTactic);
+  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
   for(int la=0; la<=lmax; la++) {
@@ -226,7 +226,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   //
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy(cparams->unroll_threshold()));
-  SafePtr<Tactic> tactic(new FirstChoiceTactic);
+  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
   for(int la=0; la<=lmax; la++) {
@@ -352,7 +352,7 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
   //
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy(cparams->unroll_threshold()));
-  SafePtr<Tactic> tactic(new FirstChoiceTactic);
+  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
   /*for(int la=0; la<=lmax; la++) {
