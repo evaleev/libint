@@ -1,6 +1,6 @@
 
 #define USE_ITR 0
-#define USE_HRR 0
+#define USE_HRR 1
 
 #include <vector>
 #include <algorithm>
