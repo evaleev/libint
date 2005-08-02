@@ -78,7 +78,7 @@ namespace libint2 {
     /**
     Prefactors for the ITR relation for TwoPRep integrals (a+1 0|c0):
     */
-    /// prefactor in front of (a0|c0) = (PA_i + QC_i rho/zeta)
+    /// prefactor in front of (a0|c0) = -(zeta[0][1] AB + zeta[1][1] CD)/alpha12[0]
     SafePtr<rdouble> TwoPRepITR_vpfac0[np];
     /// cartesian components of pfac0 vector
     SafePtr<rdouble> TwoPRepITR_pfac0[np][3];
