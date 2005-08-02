@@ -3,6 +3,8 @@
 #include <iostream>
 #include <smart_ptr.h>
 
+#define LOCAL_DEBUG 0
+
 #ifndef _libint2_src_bin_libint_singlstack_h_
 #define _libint2_src_bin_libint_singlstack_h_
 
@@ -76,11 +78,17 @@ namespace libint2 {
       typedef typename map_type::iterator miter;
       miter pos = map_.find(key);
       if (pos != map_.end()) {
+#if DEBUG || LOCAL_DEBUG
+        std::cout << "SingletonStack::find -- " << obj->label() << " already found" << std::endl;
+#endif
         return (*pos).second;
       }
       else {
         value_type result(next_instance_++,obj);
         map_[key] = result;
+#if DEBUG || LOCAL_DEBUG
+        std::cout << "SingletonStack::find -- " << obj->label() << " is new (instid_ = " << next_instance_-1 << ")" << std::endl;
+#endif
         return map_[key];
       }
     }
