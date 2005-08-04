@@ -77,11 +77,6 @@ namespace libint2 {
     SafePtr<DGArc> exit_arc(unsigned int) const;
     /// return arc connecting this to v, otherwise null pointer
     SafePtr<DGArc> exit_arc(const SafePtr<DGVertex>& v) const;
- 
-    /** apply_rr() applies the optimal recurrence relation to this particular DGVertex.
-        The concrete class must implement this.
-    */
-    //virtual RecurrenceRelation* apply_rr() =0;
 
     /** equiv(const DGVertex* aVertex) returns true if this vertex is
         equivalent to *aVertex.
@@ -149,7 +144,6 @@ namespace libint2 {
     /// returns true if this index needs to be computed.
     bool need_to_compute() const;
     
-
     /// prepare_to_traverse() must be called before traversal of the graph starts
     void prepare_to_traverse();
     /// tag() tags the vertex and returns the total number of tags this vertex has received

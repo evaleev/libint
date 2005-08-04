@@ -126,7 +126,7 @@ int main(int argc, char** argv)
             l1,m1,n1,alpha2[v],B,
             l2,m2,n2,alpha3[v],C,
             l3,m3,n3,alpha4[v],D,0);
-  
+            
             double new_eri = libint->targets[0][ijkl*veclen+v];
           
             if ( fabs((ref_eri-new_eri)/new_eri) > 1.0E-12) {

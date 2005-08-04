@@ -73,6 +73,7 @@ RecurrenceRelation::assign_symbols_(SafePtr<CodeSymbols>& symbols)
 {
   // Set symbols on the target and children sets
   rr_target()->set_symbol("target");
+  std::cout << "RecurrenceRelation::assign_symbols_() -- target set to: " << rr_target()->symbol() << std::endl;
   symbols->append_symbol("target");
   for(int c=0; c<num_children(); c++) {
     ostringstream oss;
