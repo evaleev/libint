@@ -5,6 +5,8 @@
 using namespace std;
 using namespace libint2;
 
+#define LOCAL_DEBUG 0
+
 DGVertex::DGVertex(ClassID tid) :
   dg_(), typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
   precalc_(), postcalc_(), graph_label_(), referred_vertex_(SafePtr<DGVertex>()), nrefs_(0),
@@ -347,3 +349,22 @@ DGVertex::precomputed() const
   }
 }
 
+void
+DGVertex::print(std::ostream& os) const
+{
+  using std::endl;
+  std::string prefix("DGVertex::print: ");
+  os << prefix << "label = " << label() << endl;
+#if DEBUG || LOCAL_DEBUG
+  os << prefix << "this = " << this << endl;
+  if (referred_vertex_ != 0) {
+    os << prefix << "refers_to = " << referred_vertex_.get() << endl;
+  }
+  else {
+    if (symbol_set())
+      os << prefix << "symbol = " << symbol() << endl;
+    if (address_set())
+      os << prefix << "address = " << address() << endl;
+  }
+#endif
+}

@@ -102,7 +102,8 @@ namespace libint2 {
     /** description() returns a full, human-readable description of DGVertex (e.g. "This is a ( p_x s | 1/r_{12} | d_xy s )^{(1)} integral")
     */
     virtual const std::string& description() const =0;
-
+    /** print(os) prints vertex info to os */
+    void print(std::ostream& os) const;
 
     /// Returns pointer to the DirectedGraph to which this DGVertex belongs to
     const SafePtr<DirectedGraph>& dg() const { return dg_; }

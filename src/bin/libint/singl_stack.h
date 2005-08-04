@@ -3,7 +3,6 @@
 #include <iostream>
 #include <smart_ptr.h>
 
-#define LOCAL_DEBUG 0
 
 #ifndef _libint2_src_bin_libint_singlstack_h_
 #define _libint2_src_bin_libint_singlstack_h_

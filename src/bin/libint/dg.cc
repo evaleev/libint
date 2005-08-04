@@ -161,7 +161,7 @@ DirectedGraph::debug_print_traversal(std::ostream& os) const
   os << "Debug print of traversal order" << endl;
 
   do {
-    os << current_vertex->label() << endl;
+    current_vertex->print(os);
     current_vertex = current_vertex->postcalc();
   } while (current_vertex != 0);
 }
@@ -712,11 +712,14 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
   for(int i=0; i<first_free_; i++)
     stack_[i]->prepare_to_traverse();
 
-  // Second, MUST allocate space for all targets
+  // Second, MUST allocate space for all targets whose symbols are not set explicitly
+  // If a symbol is set means the object is not on stack (e.g. if location of target
+  // is passed as an argument to set-level function)
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
-    if (vertex->is_a_target())
+    if (vertex->is_a_target() && !vertex->symbol_set()) {
       vertex->set_address(memman->alloc(vertex->size()));
+    }
   }
   
   //
@@ -771,16 +774,23 @@ namespace {
   inline std::string to_vector_symbol(const SafePtr<DGVertex>& v)
   {
     std::string symb = v->symbol();
-    const std::string stack_prefix("libint->stack[");
-    int where = symb.find(stack_prefix,0);
-    // if the prefix indicating a stack symbol found, replace "]" with "+vi]"
+    // find "[" first
+    const std::string left_braket("[");
+    int where = symb.find(left_braket,0);
+    // if the prefix indicating a stack symbol found:
+    // 1) make sure vi doesn't appear in the rest of the string
+    // 2) replace "]" with "+vi]"
     if (where != std::string::npos) {
-      const std::string right_braket("]");
-      const std::string what_to_add("+vi");
-      int where = symb.find(right_braket,0);
-      if (where == std::string::npos)
-        throw logic_error("to_vector_symbol() -- address is set but no right braket found");
-      symb.insert(where,what_to_add);
+      const std::string forbidden("vi");
+      int pos = symb.find(forbidden,where);
+      if (pos == std::string::npos) {
+	const std::string right_braket("]");
+	const std::string what_to_add("+vi");
+	int where = symb.find(right_braket,0);
+	if (where == std::string::npos)
+	  throw logic_error("to_vector_symbol() -- address is set but no right braket found");
+	symb.insert(where,what_to_add);
+      }
     }
     return symb;
   }
@@ -820,10 +830,6 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
     if (!vertex->symbol_set() && vertex->address_set()) {
-      //os.str(null_str);
-      //os << "libint->stack[(hsi*" << vertex->size() << "+"
-      //   << context->stack_address(vertex->address()) << ")*" << low_rank << "+lsi]";
-      //vertex->set_symbol(os.str());
       vertex->set_symbol(stack_symbol(context,vertex->address(),vertex->size(),low_rank,veclen));
     }
   }
@@ -851,15 +857,9 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
         // If a child is precomputed and it's parent symbol is not set -- its symbol will be set as usual
         if (!child->precomputed() || vertex->symbol_set()) {
           if (vertex->address_set()) {
-            //os.str(null_str);
-            //os << "libint->stack[" << context->stack_address(vertex->address()+c) << "]";
-            //child->set_symbol(os.str());
             child->set_symbol(stack_symbol(context,vertex->address()+c,vertex->size(),low_rank,veclen));
           }
           else {
-            //os.str(null_str);
-            //os << vertex->symbol() << "[" << context->stack_address(c) << "]";
-            //child->set_symbol(os.str());
             child->set_symbol(stack_symbol(context,c,vertex->size(),low_rank,veclen,vertex->symbol()));
           }
         }
@@ -924,7 +924,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
 
 void
 DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
-                         const SafePtr<ImplicitDimensions>& dims)
+                        const SafePtr<ImplicitDimensions>& dims)
 {
   std::ostringstream oss;
   const std::string null_str("");
@@ -942,7 +942,8 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   // and
   // 2) this is a purely int-unit code, i.e. there are no explicit RRs on sets in the body
   // Otherwise, I create a dummy vector loop with the vector loop index set to 0
-  const bool vectorize = (context->cparams()->max_vector_length() != 1);
+  const unsigned int max_vector_length = context->cparams()->max_vector_length();
+  const bool vectorize = (max_vector_length != 1);
   const bool vectorize_by_line = context->cparams()->vectorize_by_line();
   const bool create_outer_vector_loop = !vectorize_by_line && !contains_nontrivial_rr();
   varname = "vi";
@@ -1102,12 +1103,9 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 #endif
 
   // Outside of loops stack symbols don't make sense, so we must define loop variables hsi, lsi, and vi to 0
-  if (dims->high_is_static())
-    os << context->decldef(context->type_name<const int>(), "hsi", "0");
-  if (dims->low_is_static())
-    os << context->decldef(context->type_name<const int>(), "lsi", "0");
-  if (dims->vecdim_is_static())
-    os << context->decldef(context->type_name<const int>(), "vi", "0");
+  os << context->decldef(context->type_name<const int>(), "hsi", "0");
+  os << context->decldef(context->type_name<const int>(), "lsi", "0");
+  os << context->decldef(context->type_name<const int>(), "vi", "0");
 
   // Now pass back all targets through the Libint_t object
   unsigned int ntargets = 0;

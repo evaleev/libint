@@ -39,6 +39,7 @@ CXXTIMEVSRC = $(TIMEV).cc
 CXXTIMEVOBJ = $(CXXTIMEVSRC:%.cc=%.o)
 
 $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
+	cd ../libint; $(MAKE) $(LIBINT)
 	$(LD) -o $@ $^
 
 $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
