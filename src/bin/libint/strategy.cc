@@ -288,7 +288,7 @@ Strategy::optimal_rr_Dummy1111_int(const SafePtr<DirectedGraph>& graph,
   }
 #endif
 
-  return SafePtr<RecurrenceRelation>();
+  return tactic->optimal_rr(rrstack);
 }
 
 
