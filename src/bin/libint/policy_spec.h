@@ -122,7 +122,7 @@ namespace libint2 {
           }
 
           // construct this subobj
-	  SafePtr<subobj_type> curr_subobj_sptr = subobj_type::Instance(oper,bra,ket,aux);
+	  SafePtr<subobj_type> curr_subobj_sptr = subobj_type::Instance(bra,ket,aux,oper);
           subobj.push_back(curr_subobj_sptr);
 
           // update subiterators to refer to the next element

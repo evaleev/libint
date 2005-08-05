@@ -74,6 +74,13 @@ namespace libint2 {
                                 const SafePtr< TiG12_11_11_base<CGF> >& integral,
                                 const SafePtr<Tactic>& tactic);
 
+    virtual RR optimal_rr_Dummy1111_sq(const SafePtr<DirectedGraph>& graph,
+				       const SafePtr<DummySymmIntegral_11_11_sq>& integral,
+				       const SafePtr<Tactic>& tactic);
+    virtual RR optimal_rr_Dummy1111_int(const SafePtr<DirectedGraph>& graph,
+					const SafePtr<DummySymmIntegral_11_11_int>& integral,
+					const SafePtr<Tactic>& tactic);
+
     /// Casts a smart pointer to rr of type RRType to a smart pointer to RecurrenceRelation. Utility function.
     template <class RRType>
       RR rr_cast(const SafePtr<RRType>& rr) const

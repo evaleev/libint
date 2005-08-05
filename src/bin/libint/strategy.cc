@@ -11,6 +11,7 @@
 #include <itr_11_twoprep_11.h>
 #include <vrr_11_r12kg12_11.h>
 #include <comp_11_tig12_11.h>
+#include <dummyintegral.h>
 
 using namespace std;
 using namespace libint2;
@@ -96,6 +97,20 @@ Strategy::optimal_rr(const SafePtr<DirectedGraph>& graph,
           throw logic_error("Strategy::optimal_rr() unable to determine K for TiG12_11_11<CGF,K> class");
       };
     }
+  }
+
+  // Type insensitive RR can be applied to almost any integral
+  {
+    typedef DummySymmIntegral_11_11_sq int_type;
+    SafePtr<int_type> int_ptr = dynamic_pointer_cast<int_type,DGVertex>(integral);
+    if (int_ptr != 0)
+      return optimal_rr_Dummy1111_sq(graph,int_ptr,tactic);
+  }
+  {
+    typedef DummySymmIntegral_11_11_int int_type;
+    SafePtr<int_type> int_ptr = dynamic_pointer_cast<int_type,DGVertex>(integral);
+    if (int_ptr != 0)
+      return optimal_rr_Dummy1111_int(graph,int_ptr,tactic);
   }
 
   // Don't know how to apply any RR
@@ -220,6 +235,60 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
   }
   
   return tactic->optimal_rr(rrstack);
+}
+
+
+SafePtr<RecurrenceRelation>
+Strategy::optimal_rr_Dummy1111_sq(const SafePtr<DirectedGraph>& graph,
+				  const SafePtr<DummySymmIntegral_11_11_sq>& integral,
+				  const SafePtr<Tactic>& tactic)
+{
+  if (integral->size() <= max_size_to_unroll_)
+    return unroll_intset<DummySymmIntegral_11_11_sq>(integral);
+
+  {
+    typedef HRR_ab_11_Dummy_11_sh rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+
+  {
+    typedef HRR_cd_11_Dummy_11_sh rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+
+  return SafePtr<RecurrenceRelation>();
+}
+
+SafePtr<RecurrenceRelation>
+Strategy::optimal_rr_Dummy1111_int(const SafePtr<DirectedGraph>& graph,
+				   const SafePtr<DummySymmIntegral_11_11_int>& integral,
+				   const SafePtr<Tactic>& tactic)
+{
+  vector<RR> rrstack;  // stack of all recurrence relations
+  
+#if USE_HRR
+  // shift from B to A
+  for(int xyz = 2; xyz >= 0; xyz--) {
+    typedef HRR_ab_11_Dummy_11_int rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
+    if (rr_ptr->num_children())
+      rrstack.push_back(rr_cast(rr_ptr));
+  }
+
+  // shift from D to C
+  for(int xyz = 2; xyz >= 0; xyz--) {
+    typedef HRR_cd_11_Dummy_11_int rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
+    if (rr_ptr->num_children())
+      rrstack.push_back(rr_cast(rr_ptr));
+  }
+#endif
+
+  return SafePtr<RecurrenceRelation>();
 }
 
 

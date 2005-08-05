@@ -98,6 +98,8 @@ namespace libint2 {
       typedef PtrEquiv<GenIntegralSet> PtrComp;
       /// This the type of the object that manages GenIntegralSet's as Singletons
       typedef SingletonStack<GenIntegralSet,std::string> SingletonManagerType;
+      /// This is the type of the operator
+      typedef Oper OperType;
 
       /** No constructors are public since this is a singleton-like quantity.
           Instead, access is provided through Instance().
@@ -109,7 +111,7 @@ namespace libint2 {
       virtual ~GenIntegralSet();
 
       /// Returns a pointer to a unique instance, a la Singleton
-      static const SafePtr<GenIntegralSet> Instance(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
+      static const SafePtr<GenIntegralSet> Instance(const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux, const Oper& oper=Oper());
       
       /// Comparison operator
       virtual bool operator==(const GenIntegralSet&) const;
@@ -216,7 +218,7 @@ namespace libint2 {
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const SafePtr< GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta> >
-    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::Instance(const Op& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux)
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::Instance(const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux, const Op& oper)
     {
       SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
       // Use singl_manager_ to make sure this is a new object of this type
@@ -624,7 +626,7 @@ namespace libint2 {
   
   template <class BFS>
     TwoPRep_11_11<BFS>::TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket,  const AuxIndexType& aux) :
-    GenIntegralSet<TwoERep, IncableBFSet, BraType, KetType, AuxIndexType>(TwoERep(),bra, ket, aux)
+    GenIntegralSet<TwoERep, IncableBFSet, BraType, KetType, AuxIndexType>(TwoERep(), bra, ket, aux)
     {
       if (bra.num_members(0) != 1)
         throw std::runtime_error("TwoPRep_11_11<BFS>::TwoPRep_11_11(bra,ket) -- number of BFSs in bra for particle 0 must be 1");

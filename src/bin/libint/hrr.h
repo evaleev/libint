@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <rr.h>
 #include <integral.h>
+#include <dummyintegral.h>
 #include <algebra.h>
 #include <dgvertex.h>
 #include <prefactors.h>
@@ -342,8 +343,14 @@ namespace libint2 {
       typedef GenIntegralSet<DummyOper, IncableBFSet, IBraType, IKetType, DummyQuanta> DummyIntegral;
       DummyOper dummy_oper;
       DummyQuanta dummy_quanta(std::vector<int>(0,0));
-      SafePtr<DummyIntegral> dummy_integral = DummyIntegral::Instance(dummy_oper,bra_zero,ket_zero,dummy_quanta);
+      SafePtr<DummyIntegral> dummy_integral = DummyIntegral::Instance(bra_zero,ket_zero,dummy_quanta,dummy_oper);
       
+      // Construct generic HRR and add it to the stack instead of this HRR
+      typedef HRR<DummyIntegral,F,part,loc_a,pos_a,loc_b,pos_b> DummyHRR;
+      SafePtr<DummyHRR> dummy_hrr = DummyHRR::Instance(dummy_integral,dir_);
+      SafePtr<RRStack> rrstack = RRStack::Instance();
+      rrstack->find(dummy_hrr);
+      return true;
       // not done coding -- throw an exception for now
       throw CodeDoesNotExist("Have not finished generalizing HRR::register with rrstack()");
     }
@@ -570,6 +577,11 @@ namespace libint2 {
 
   typedef HRR<TwoPRep_11_11<CGF>,CGF,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_int;
   typedef HRR<TwoPRep_11_11<CGF>,CGF,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_int;
+
+  typedef HRR<DummySymmIntegral_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_Dummy_11_sh;
+  typedef HRR<DummySymmIntegral_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_Dummy_11_sh;
+  typedef HRR<DummySymmIntegral_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_Dummy_11_int;
+  typedef HRR<DummySymmIntegral_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_Dummy_11_int;
 
 };
 
