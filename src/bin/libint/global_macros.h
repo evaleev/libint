@@ -30,4 +30,7 @@
 /// Use VectorBraket from braket.h
 #define USE_BRAKET_H 1
 
+/// Use integer key to hash integrals, rather than string label -- this should reduce memory consumption
+#define USE_INT_KEY_TO_HASH 1
+
 #endif

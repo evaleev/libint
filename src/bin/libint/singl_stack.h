@@ -2,6 +2,7 @@
 #include <map>
 #include <iostream>
 #include <smart_ptr.h>
+#include <hashable.h>
 
 
 #ifndef _libint2_src_bin_libint_singlstack_h_
@@ -37,8 +38,10 @@ namespace libint2 {
       typedef typename map_type::iterator iter_type;
       /// const version of iter_type
       typedef typename map_type::const_iterator citer_type;
+      /// hashing function returns keys as key_return_type
+      typedef typename KeyTraits<key_type>::ReturnType key_return_type;
       /// Specifies the type of callback which computes hashes
-      typedef const key_type& (T::* HashCallback)() const;
+      typedef key_return_type (T::* HashCallback)() const;
 
       /// callback to compute hash values is the only parameter
       SingletonStack(HashCallback callback);

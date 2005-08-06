@@ -1,5 +1,6 @@
 
 #include <string>
+#include <hashable.h>
 
 #ifndef _libint2_src_bin_libint_oper_h_
 #define _libint2_src_bin_libint_oper_h_
@@ -142,12 +143,16 @@ namespace libint2 {
   /** GenOper is a generic operator
   */
   template <class Props>
-    class GenSymmOper : public Oper<Props> {
+    class GenSymmOper : public Oper<Props>, public Hashable<unsigned,ComputeKey> {
       public:
       typedef Oper<Props> parent_type;
       /// GenOper is not a set
       typedef GenSymmOper iter_type;
       const unsigned int num_oper() const { return 1; };
+      /// Implementation of Hashable::key()
+      unsigned key() const { return 0; }
+      /// Range of key is [0,1)
+      static const unsigned max_key = 1;
       
       GenSymmOper() : Oper<Props>(std::string("General Symmetric Operator"),std::string("GenSymmOper")) {}
       GenSymmOper(const SafePtr<GenSymmOper>&) : Oper<Props>(std::string("General Symmetric Operator"),std::string("GenSymmOper")) {}
@@ -161,12 +166,17 @@ namespace libint2 {
   
   /** TwoERep is the two-body repulsion operator.
   */
-  class TwoERep : public Oper<MultiplicativeSymm2Body_Props> {
+  class TwoERep : public Oper<MultiplicativeSymm2Body_Props>,
+                  public Hashable<unsigned,ComputeKey> {
   public:
     typedef Oper<MultiplicativeSymm2Body_Props> parent_type;
     /// TwoERep is not a set
     typedef TwoERep iter_type;
     const unsigned int num_oper() const { return 1; };
+    /// Implementation of Hashable::key()
+    unsigned key() const { return 0; }
+    /// key is in range [0,1)
+    static const unsigned max_key = 1;
   
     TwoERep();
     TwoERep(const SafePtr<TwoERep>&);
@@ -182,13 +192,18 @@ namespace libint2 {
       where k is an integer and \gamma is a positive real number.
   */
   template <int K>
-  class R12_k_G12 : public Oper<MultiplicativeSymm2Body_Props> {
+  class R12_k_G12 : public Oper<MultiplicativeSymm2Body_Props>,
+                    public Hashable<unsigned,ComputeKey> {
   public:
     typedef Oper<MultiplicativeSymm2Body_Props> parent_type;
     /// R12_k_G12 is not a set
     typedef R12_k_G12 iter_type;
     static const int k = K;
-    const unsigned int num_oper() const { return 1; };
+    const unsigned int num_oper() const { return 1; }
+    /// Implementation of Hashable::key()
+    unsigned key() const { return 0; }
+    /// key is in range [0,1)
+    static const unsigned max_key = 1;
     
     R12_k_G12();
     R12_k_G12(const SafePtr<R12_k_G12>&);
@@ -248,13 +263,18 @@ namespace libint2 {
       where i is particle index (0 or 1) and G12 is a Gaussian Geminal.
   */
   template <int I>
-  class Ti_G12 : public Oper<NonmultiplicativeNonsymm2Body_Props> {
+  class Ti_G12 : public Oper<NonmultiplicativeNonsymm2Body_Props>,
+                 public Hashable<unsigned,ComputeKey> {
   public:
     typedef Oper<NonmultiplicativeNonsymm2Body_Props> parent_type;
     /// Ti_G12 is not a set
     typedef Ti_G12 iter_type;
     static const int i = I;
-    const unsigned int num_oper() const { return 1; };
+    const unsigned int num_oper() const { return 1; }
+    /// Implementation of Hashable::key()
+    unsigned key() const { return 0; }
+    /// key is in range [0,1)
+    static const unsigned max_key = 1;
     
     Ti_G12();
     Ti_G12(const SafePtr<Ti_G12>&);

@@ -83,9 +83,11 @@ namespace libint2 {
      is VectorBraket.
      AuxQuanta describes auxiliary quantum numbers. AuxQuanta should be derived from QuantumSet.
   */
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta = NullQuantumSet> class GenIntegralSet :
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta = NullQuantumSet>
+    class GenIntegralSet :
     public IntegralSet<BFS>, public DGVertex,
-    public EnableSafePtrFromThis< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >
+    public EnableSafePtrFromThis< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >,
+    public Hashable<LIBINT2_UINT_LEAST64,CacheKey>
     {
       public:
       /// GenIntegralSet is a set of these subobjects
@@ -96,8 +98,14 @@ namespace libint2 {
       typedef IntegralSet<BFS> parent_type;
       /// This type provides comparison operations on pointers to GenIntegralSet
       typedef PtrEquiv<GenIntegralSet> PtrComp;
+#if  USE_INT_KEY_TO_HASH
+      typedef LIBINT2_UINT_LEAST64 key_type;
+      /// This the type of the object that manages GenIntegralSet's as Singletons
+      typedef SingletonStack<GenIntegralSet,key_type> SingletonManagerType;
+#else
       /// This the type of the object that manages GenIntegralSet's as Singletons
       typedef SingletonStack<GenIntegralSet,std::string> SingletonManagerType;
+#endif
       /// This is the type of the operator
       typedef Oper OperType;
 
@@ -152,6 +160,11 @@ namespace libint2 {
       /// Obtain the auxiliary quanta
       const SafePtr<AuxQuanta> aux() const;
 
+      /// Implements Hashable::key()
+      LIBINT2_UINT_LEAST64 key() const {
+        return key_.value;
+      }
+
       protected:
       // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
       GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
@@ -192,13 +205,27 @@ namespace libint2 {
       std::string generate_label() const;
       // description
       mutable std::string descr_;
+
+      /// computes and caches key
+      void compute_key() const {
+        LIBINT2_UINT_LEAST64 key;
+        key = ( (O_->key()*bra_.max_key() + bra_.key() ) * ket_.max_key() +
+                ket_.key() ) * aux_->max_key() + aux_->key();
+        key_.value = key;
+      }
     };
 
+#if USE_INT_KEY_TO_HASH
+  // I use label() to hash GenIntegralSet. Therefore labels must be unique!
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    typename GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::SingletonManagerType
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::singl_manager_(&GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::key);
+#else
   // I use label() to hash GenIntegralSet. Therefore labels must be unique!
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     typename GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::SingletonManagerType
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::singl_manager_(&GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::label);
-  
+#endif  
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Op& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
@@ -209,6 +236,7 @@ namespace libint2 {
         throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in bra doesn't match that in the operator");
       if (Op::Properties::np != ket.num_part())
         throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in ket doesn't match that in the operator");
+      compute_key();
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
@@ -579,9 +607,6 @@ namespace libint2 {
       typedef VectorBraket<BFS> KetType;
       typedef mType AuxIndexType;
       typedef TwoPRep_11_11 this_type;
-      /// This the type of the object that manages GenIntegralSet's as Singletons
-      typedef SingletonStack<TwoPRep_11_11,std::string> SingletonManagerType;
-      
       /// TwoPRep_11_11 is a set of these subobjects
       typedef TwoPRep_11_11<typename BFS::iter_type> iter_type;
       /// This is the immediate parent
@@ -589,6 +614,15 @@ namespace libint2 {
       /// This class provides comparison operations on pointers
       typedef PtrEquiv<this_type> PtrComp;
 
+#if USE_INT_KEY_TO_HASH
+      typedef typename parent_type::key_type key_type;
+      /// This the type of the object that manages GenIntegralSet's as Singletons
+      typedef SingletonStack<TwoPRep_11_11,key_type> SingletonManagerType;
+#else
+      /// This the type of the object that manages GenIntegralSet's as Singletons
+      typedef SingletonStack<TwoPRep_11_11,std::string> SingletonManagerType;
+#endif
+      
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
       */
@@ -619,10 +653,16 @@ namespace libint2 {
 #endif
     };
 
+#if USE_INT_KEY_TO_HASH
+  template <class BFS>
+    typename TwoPRep_11_11<BFS>::SingletonManagerType
+    TwoPRep_11_11<BFS>::singl_manager_(&TwoPRep_11_11<BFS>::key);
+#else
   // I use label() to hash TwoPRep_11_11. Therefore labels must be unique!
   template <class BFS>
     typename TwoPRep_11_11<BFS>::SingletonManagerType
     TwoPRep_11_11<BFS>::singl_manager_(&TwoPRep_11_11<BFS>::label);
+#endif
   
   template <class BFS>
     TwoPRep_11_11<BFS>::TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket,  const AuxIndexType& aux) :

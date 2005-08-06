@@ -3,6 +3,7 @@
 #include <string>
 #include <smart_ptr.h>
 #include <polyconstr.h>
+#include <hashable.h>
 
 #ifndef _libint2_src_bin_libint_bfset_h_
 #define _libint2_src_bin_libint_bfset_h_
@@ -44,51 +45,10 @@ namespace libint2 {
 
   };
 
-  /// Cartesian Gaussian Function
-  class CGF : public IncableBFSet {
-
-    unsigned int qn_[3];
-
-  public:
-    /// As far as SetIterator is concerned, CGF is a set of one CGF
-    typedef CGF iter_type;
-    typedef IncableBFSet parent_type;
-
-    /// Default constructor makes an s-type Gaussian
-    CGF();
-    CGF(unsigned int qn[3]);
-    CGF(const CGF&);
-    CGF(const SafePtr<CGF>&);
-    CGF(const SafePtr<parent_type>&);
-    CGF(const ConstructablePolymorphically&);
-    CGF(const SafePtr<ConstructablePolymorphically>&);
-    ~CGF();
-
-    /// Return a compact label
-    const std::string label() const;
-    /// Returns the number of basis functions in the set (always 1)
-    unsigned int num_bf() const { return 1; };
-
-    /// Returns the angular momentum
-    unsigned int qn(unsigned int xyz) const;
-
-    /// Comparison operator
-    bool operator==(const CGF&) const;
-    
-    /// Implements purely virtual IncableBFSet::dec, may throw InvalidDecrement
-    void dec(unsigned int i);
-    /// Implements purely virtual IncableBFSet::inc
-    void inc(unsigned int i) throw();
-    /// Implements IncableBFSet::zero()
-    bool zero() const;
-
-    /// Print out the content
-    void print(std::ostream& os = std::cout) const;
-    
-  };
-
+  class CGF;
+  
   /// Cartesian Gaussian Shell
-  class CGShell : public IncableBFSet {
+  class CGShell : public IncableBFSet, public Hashable<unsigned,ReferToKey> {
 
     unsigned int qn_[1];
 
@@ -124,10 +84,72 @@ namespace libint2 {
     void inc(unsigned int i) throw();
     /// Implements IncableBFSet::zero()
     bool zero() const;
+    /// Implements Hashable<unsigned>::key()
+    unsigned key() const { return qn_[0]; }
+    /// The range of keys is [0,max_key]
+    const static unsigned max_key = 19;
+    //const static unsigned max_key = LIBINT_MAX_AM;
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
 
+  };
+
+  /// Cartesian Gaussian Function
+  class CGF : public IncableBFSet, public Hashable<unsigned,ComputeKey> {
+
+    unsigned int qn_[3];
+
+  public:
+    /// As far as SetIterator is concerned, CGF is a set of one CGF
+    typedef CGF iter_type;
+    typedef IncableBFSet parent_type;
+    /// How to return key
+    //typedef typename Hashable<unsigned,ComputeKey>::KeyReturnType KeyReturnType;
+
+    /// Default constructor makes an s-type Gaussian
+    CGF();
+    CGF(unsigned int qn[3]);
+    CGF(const CGF&);
+    CGF(const SafePtr<CGF>&);
+    CGF(const SafePtr<parent_type>&);
+    CGF(const ConstructablePolymorphically&);
+    CGF(const SafePtr<ConstructablePolymorphically>&);
+    ~CGF();
+
+    /// Return a compact label
+    const std::string label() const;
+    /// Returns the number of basis functions in the set (always 1)
+    unsigned int num_bf() const { return 1; };
+
+    /// Returns the angular momentum
+    unsigned int qn(unsigned int xyz) const;
+
+    /// Comparison operator
+    bool operator==(const CGF&) const;
+    
+    /// Implements purely virtual IncableBFSet::dec, may throw InvalidDecrement
+    void dec(unsigned int i);
+    /// Implements purely virtual IncableBFSet::inc
+    void inc(unsigned int i) throw();
+    /// Implements IncableBFSet::zero()
+    bool zero() const;
+    /// Implements Hashable<unsigned>::key()
+    unsigned key() const {
+      unsigned nxy = qn_[1] + qn_[2];
+      unsigned l = nxy + qn_[0];
+      unsigned key = nxy*(nxy+1)/2 + qn_[2];
+      return key + key_l_offset[l];
+    }
+    /// The range of keys is [0,max_key). The formula is easily derived by summing (L+1)(L+2)/2 up to CGShell::max_key
+    const static unsigned max_key = 1 + CGShell::max_key*CGShell::max_key + CGShell::max_key*(CGShell::max_key*CGShell::max_key + 11*CGShell::max_key)/6;
+
+    /// Print out the content
+    void print(std::ostream& os = std::cout) const;
+
+  private:
+    /// key_l_offset[L] is the number of all possible CGFs with angular momentum less than L
+    static unsigned key_l_offset[CGShell::max_key+2];
   };
 
   /**

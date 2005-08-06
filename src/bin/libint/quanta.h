@@ -15,10 +15,13 @@ namespace libint2 {
       QuantumSet's must be constructable using
       SafePtr<QuantumSet> or SafePtr<ConstructablePolymorphically>.
   */
-  class QuantumSet : public ConstructablePolymorphically {
+  class QuantumSet : public ConstructablePolymorphically,
+                     public Hashable<LIBINT2_UINT_LEAST64,ComputeKey> {
   public:
-    virtual ~QuantumSet() {}
+    /// Quantum numbers lie in range [0,max_quantum_number)
+    static const LIBINT2_UINT_LEAST64 max_quantum_number = 100;
     
+    virtual ~QuantumSet() {}
     virtual const std::string label() const =0;
 
     /// Number of quantum numbers in the set
@@ -69,6 +72,28 @@ namespace libint2 {
       return qn_.size();
     }
 
+    /// Implements Hashable::key()
+    LIBINT2_UINT_LEAST64 key() const {
+      LIBINT2_UINT_LEAST64 key = 0;
+      LIBINT2_UINT_LEAST64 pfac = 1;
+      const int maxi = ((int)num_quanta()) - 1;
+      for(int i=maxi; i>=0; i--) {
+        key += pfac*qn_[i];
+        pfac *= QuantumSet::max_quantum_number;
+      }
+      return key;
+    }
+
+    /// key is in range [0,max_key())
+    LIBINT2_UINT_LEAST64 max_key() const {
+      LIBINT2_UINT_LEAST64 max_key = 1;
+      const int maxi = ((int)num_quanta()) - 1;
+      for(int i=maxi; i>=0; i--) {
+        max_key *= QuantumSet::max_quantum_number;
+      }
+      return max_key;
+    }
+    
   };
 
   template<typename T, unsigned int N>
@@ -181,6 +206,28 @@ namespace libint2 {
       return N;
     }
 
+    /// Implements Hashable::key()
+    LIBINT2_UINT_LEAST64 key() const {
+      LIBINT2_UINT_LEAST64 key = 0;
+      LIBINT2_UINT_LEAST64 pfac = 1;
+      const int maxi = ((int)num_quanta()) - 1;
+      for(int i=maxi; i>=0; i--) {
+        key += pfac*qn_[i];
+        pfac *= QuantumSet::max_quantum_number;
+      }
+      return key;
+    }
+
+    /// key is in range [0,max_key())
+    LIBINT2_UINT_LEAST64 max_key() const {
+      LIBINT2_UINT_LEAST64 max_key = 1;
+      const int maxi = ((int)num_quanta()) - 1;
+      for(int i=maxi; i>=0; i--) {
+        max_key *= QuantumSet::max_quantum_number;
+      }
+      return max_key;
+    }
+    
   };
 
   template<typename T, unsigned int N>

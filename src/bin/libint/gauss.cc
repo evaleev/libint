@@ -7,6 +7,9 @@
 using namespace std;
 using namespace libint2;
 
+unsigned CGF::key_l_offset[] = { 0, 1, 4, 10, 20, 35, 56, 84, 120, 165, 220, 286, 364, 455, 560, 680, 816, 969, 1140, 1330, 1540};
+
+
 CGF::CGF()
 {
   for(int i=0; i<3; i++)

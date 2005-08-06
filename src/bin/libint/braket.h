@@ -1,6 +1,7 @@
 
 #include <polyconstr.h>
 #include <bfset.h>
+#include <libint2_types.h>
 
 #ifndef _libint2_src_bin_libint_braket_h_
 #define _libint2_src_bin_libint_braket_h_
@@ -13,7 +14,7 @@ namespace libint2 {
       to construct an instance of GenIntegralSet. VectorBraket is the most general implementation of Braket
       concept, but is fairly heavy. For better efficiency use ArrayBraket.
   */
-  template <class BFS> class VectorBraket {
+  template <class BFS> class VectorBraket: public Hashable<LIBINT2_UINT_LEAST64,ComputeKey> {
 
   public:
     typedef BFS bfs_type;
@@ -48,6 +49,10 @@ namespace libint2 {
     const unsigned int num_members(unsigned int p) const;
     /// Returns the number of particles
     const unsigned int num_part() const;
+    /// Implements Hashable::key()
+    inline LIBINT2_UINT_LEAST64 key() const;
+    /// key lies in range [0,max_key())
+    LIBINT2_UINT_LEAST64 max_key() const;
 
   private:
     
@@ -165,6 +170,40 @@ namespace libint2 {
             return false;
       }
       return true;
+    }
+
+  template <class BFS>
+    LIBINT2_UINT_LEAST64
+    VectorBraket<BFS>::key() const
+    {
+      LIBINT2_UINT_LEAST64 pfac = 1;
+      LIBINT2_UINT_LEAST64 key = 0;
+      const int np = bfs_.size();
+      for(int p=np-1; p>=0; p--) {
+        const BFSVector& row = bfs_[p];
+        const int nf = row.size();
+        for(int f=nf-1; f>=0; f--) {
+          key += pfac*row[f].key();
+          pfac *= BFS::max_key;
+        }
+      }
+      return key;
+    }
+
+  template <class BFS>
+    LIBINT2_UINT_LEAST64
+    VectorBraket<BFS>::max_key() const
+    {
+      LIBINT2_UINT_LEAST64 max_key = 1;
+      const int np = bfs_.size();
+      for(int p=np-1; p>=0; p--) {
+        const BFSVector& row = bfs_[p];
+        const int nf = row.size();
+        for(int f=nf-1; f>=0; f--) {
+          max_key *= BFS::max_key;
+        }
+      }
+      return max_key;
     }
 
   //////////////////////////////////
