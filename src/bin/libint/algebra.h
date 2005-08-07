@@ -75,7 +75,8 @@ namespace libint2 {
       {
         if (typeid_ == a->typeid_) {
 #if ALGEBRAICOPERATOR_USE_KEY_TO_COMPARE
-          return description() == a->description();
+          //return description() == a->description();
+          return key() == a->key();
 #else
           // Safe to cast statically because type of a has just been checked
           SafePtr<AlgebraicOperator> a_cast = static_pointer_cast<AlgebraicOperator,DGVertex>(a);

@@ -8,6 +8,8 @@
 #include <exception.h>
 #include <class_registry.h>
 #include <singl_stack.h>
+#include <hashable.h>
+#include <libint2_types.h>
 
 #ifndef _libint2_src_bin_libint_dgvertex_h_
 #define _libint2_src_bin_libint_dgvertex_h_
@@ -15,7 +17,7 @@
 namespace libint2 {
 
   /// This is a vertex of a Directed Graph (DG)
-  class DGVertex {
+  class DGVertex : public Hashable<LIBINT2_UINT_LEAST64,ComputeKey> {
   public:
     /// The address on the stack during computation is described using this type
     typedef MemoryManager::Address Address;
@@ -29,6 +31,10 @@ namespace libint2 {
     typedef ClassRegistry::ClassID ClassID;
     /// Instance identifier
     typedef GSingletonTrait::InstanceID InstanceID;
+    /** DGVertex provides function key() which computes key of type KeyType and
+        returns it using KeyReturnType */
+    typedef LIBINT2_UINT_LEAST64 KeyType;
+    typedef Hashable<KeyType,ComputeKey>::KeyReturnType KeyReturnType;
 
     /** typeid stores the ClassID of the concrete type. It is used to check quickly whether
         2 DGVertices are of the same type. Dynamic casts are too expensive. */
@@ -78,6 +84,8 @@ namespace libint2 {
     /// return arc connecting this to v, otherwise null pointer
     SafePtr<DGArc> exit_arc(const SafePtr<DGVertex>& v) const;
 
+    /// computes key
+    virtual KeyReturnType key() const =0;
     /** equiv(const DGVertex* aVertex) returns true if this vertex is
         equivalent to *aVertex.
     */

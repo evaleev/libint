@@ -58,6 +58,8 @@ namespace libint2 {
       RTimeEntity(const std::string& id) :
         Entity(id),DGVertex(ClassInfo<RTimeEntity>::Instance().id()), descr_()
         {
+          FNVStringHash SH;
+          key_ = SH.hash(id);
         }
 
       ~RTimeEntity()
@@ -98,6 +100,10 @@ namespace libint2 {
         }
         return descr_;
       }
+      /// Implements Hashable::key()
+      typename DGVertex::KeyReturnType key() const {
+        return key_;
+      }
       
       private:
       /// Implementation of DGVertex::this_precomputed()
@@ -107,7 +113,7 @@ namespace libint2 {
       }
 
       mutable std::string descr_;
-
+      typename FNVStringHash::KeyType key_;
     };
 
   /**
@@ -119,7 +125,6 @@ namespace libint2 {
     public Entity,
     public DGVertex
     {
-
       public:
       CTimeEntity(const std::string& id, const T& val) :
         Entity(id), DGVertex(ClassInfo<CTimeEntity>::Instance().id()), value_(val), descr_()
@@ -167,6 +172,11 @@ namespace libint2 {
       
       /// returns the value
       const T& value() const { return value_; }
+
+      /// Implements Hashable::key()
+      typename DGVertex::KeyReturnType key() const {
+        return static_cast<typename DGVertex::KeyReturnType>(value());
+      }
 
     private:
       T value_;

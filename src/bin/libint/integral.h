@@ -86,8 +86,7 @@ namespace libint2 {
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta = NullQuantumSet>
     class GenIntegralSet :
     public IntegralSet<BFS>, public DGVertex,
-    public EnableSafePtrFromThis< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >,
-    public Hashable<LIBINT2_UINT_LEAST64,CacheKey>
+    public EnableSafePtrFromThis< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >
     {
       public:
       /// GenIntegralSet is a set of these subobjects
@@ -162,7 +161,7 @@ namespace libint2 {
 
       /// Implements Hashable::key()
       LIBINT2_UINT_LEAST64 key() const {
-        return key_.value;
+        return key_;
       }
 
       protected:
@@ -205,13 +204,15 @@ namespace libint2 {
       std::string generate_label() const;
       // description
       mutable std::string descr_;
+      // key
+      key_type key_;
 
       /// computes and caches key
       void compute_key() const {
         LIBINT2_UINT_LEAST64 key;
         key = ( (O_->key()*bra_.max_key() + bra_.key() ) * ket_.max_key() +
                 ket_.key() ) * aux_->max_key() + aux_->key();
-        key_.value = key;
+        key_ = key;
       }
     };
 

@@ -26,24 +26,21 @@ namespace libint2 {
 
   /** KeyTraits<T> describes following properties of type T:
       1) how to return objects of type T
+
+      By default, objects are returned by value.
   */
   template <typename T>
-    struct KeyTraits;
-  template <>
-    struct KeyTraits<unsigned>
+    struct KeyTraits
     {
-      typedef unsigned ReturnType;
+      typedef T ReturnType;
     };
-  template <>
-    struct KeyTraits<LIBINT2_UINT_LEAST64>
-    {
-      typedef LIBINT2_UINT_LEAST64 ReturnType;
-    };
+  /// std::string should be returned by const reference
   template <>
     struct KeyTraits<std::string>
     {
       typedef const std::string& ReturnType;
     };
+  /// double should be returned by value, but mismatches in existing code force return by const ref (for now).
   template <>
     struct KeyTraits<double>
     {
@@ -68,6 +65,42 @@ namespace libint2 {
       KeyStore<KeyType,OwnKey<KeyMP>::result> key_;
     };
 
+  /// FNVStringHash uses Fowler/Noll/Vo algorithm to hash a char string to a 64-bit integer
+  class FNVStringHash {
+  public:
+    /// The type of key computed using this hash
+    typedef LIBINT2_UINT_LEAST64 KeyType;
+    FNVStringHash():
+      hval_(hval_init) {}
+    ~FNVStringHash() {}
+
+    /// Returns 64-bit integer hash of S
+    inline LIBINT2_UINT_LEAST64 hash(const std::string& S);
+
+  private:
+#if __WORDSIZE == 64
+    static const LIBINT2_UINT_LEAST64 hval_init = 0xcbf29ce484222325UL;
+    static const LIBINT2_UINT_LEAST64 fnv_prime64 = 0x100000001b3UL;
+#else
+    static const LIBINT2_UINT_LEAST64 hval_init = 0xcbf29ce484222325ULL;
+    static const LIBINT2_UINT_LEAST64 fnv_prime64 = 0x100000001b3ULL;
+#endif
+    LIBINT2_UINT_LEAST64 hval_;
+  };
+
+  LIBINT2_UINT_LEAST64
+  FNVStringHash::hash(const std::string& S) {
+    const unsigned char* cS = reinterpret_cast<const unsigned char*>(S.c_str());
+    const unsigned char* cptr = cS;
+    while (*cptr) {
+      hval_ ^= (LIBINT2_UINT_LEAST64)*cptr;
+      cptr++;
+      hval_ *= fnv_prime64;
+    }
+
+    return hval_;
+  }
+  
 };
 
 #endif
