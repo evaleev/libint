@@ -316,6 +316,9 @@ namespace libint2 {
     bool
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::operator==(const this_type& a) const
     {
+#if USE_INT_KEY_TO_COMPARE
+      return key() == a.key();
+#else
       bool aux_equiv = PtrEquiv<AuxQuanta>::equiv(aux_,a.aux_);
       if (!aux_equiv) return false;
       bool oper_equiv = PtrEquiv<Op>::equiv(O_,a.O_);
@@ -324,6 +327,7 @@ namespace libint2 {
       bool ket_equiv = PtrEquiv<KetSetType>::equiv(ket_,a.ket_);
       if (!ket_equiv) return false;
       return true;
+#endif
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>

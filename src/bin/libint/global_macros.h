@@ -33,4 +33,7 @@
 /// Use integer key to hash integrals, rather than string label -- this should reduce memory consumption
 #define USE_INT_KEY_TO_HASH 1
 
+/// Use integer key to compare
+#define USE_INT_KEY_TO_COMPARE 1
+
 #endif

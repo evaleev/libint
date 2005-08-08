@@ -73,8 +73,12 @@ namespace libint2 {
       bool equiv(const SafePtr<DGVertex>& a) const
       {
 	if (a->typeid_ == typeid_) {
+#if USE_INT_KEY_TO_COMPARE
+          return key() == a->key() && label() == a->label();
+#else
           SafePtr<RTimeEntity> a_cast = static_pointer_cast<RTimeEntity,DGVertex>(a);
 	  return id() == a_cast->id();
+#endif
 	}
 	else
 	  return false;
@@ -142,8 +146,12 @@ namespace libint2 {
       bool equiv(const SafePtr<DGVertex>& a) const
       {
 	if (a->typeid_ == typeid_) {
+#if USE_INT_KEY_TO_COMPARE
+          return key() == a->key();
+#else
           SafePtr<CTimeEntity> a_cast = static_pointer_cast<CTimeEntity,DGVertex>(a);
 	  return id() == a_cast->id();
+#endif
 	}
 	else
 	  return false;

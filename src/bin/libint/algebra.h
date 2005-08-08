@@ -75,11 +75,14 @@ namespace libint2 {
       {
         if (typeid_ == a->typeid_) {
 #if ALGEBRAICOPERATOR_USE_KEY_TO_COMPARE
-          //return description() == a->description();
+#if USE_INT_KEY_TO_COMPARE
           if (key() == a->key())
             return *this == static_pointer_cast<AlgebraicOperator,DGVertex>(a);
           else
             return false;
+#else
+          return description() == a->description();
+#endif
 #else
           return *this == static_pointer_cast<AlgebraicOperator,DGVertex>(a);
 #endif
