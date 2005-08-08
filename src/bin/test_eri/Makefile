@@ -40,16 +40,16 @@ CXXTIMEVOBJ = $(CXXTIMEVSRC:%.cc=%.o)
 
 $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	cd ../libint; $(MAKE) $(LIBINT)
-	$(LD) -o $@ $^
+	$(LD) -o $@ $(LDFLAGS) $^
 
 $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $(LDFLAGS) $^
 
 $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $(LDFLAGS) $^
 
 $(TIMEV): $(CXXTIMEVOBJ)
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $(LDFLAGS) $^
 
 $(CXXTESTOBJ):: test_eri_conf.h
 $(CXXTIMEOBJ):: test_eri_conf.h

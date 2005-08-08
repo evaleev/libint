@@ -205,7 +205,7 @@ namespace libint2 {
       // description
       mutable std::string descr_;
       // key
-      key_type key_;
+      mutable key_type key_;
 
       /// computes and caches key
       void compute_key() const {

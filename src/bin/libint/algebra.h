@@ -76,42 +76,48 @@ namespace libint2 {
         if (typeid_ == a->typeid_) {
 #if ALGEBRAICOPERATOR_USE_KEY_TO_COMPARE
           //return description() == a->description();
-          return key() == a->key();
+          if (key() == a->key())
+            return *this == static_pointer_cast<AlgebraicOperator,DGVertex>(a);
+          else
+            return false;
 #else
-          // Safe to cast statically because type of a has just been checked
-          SafePtr<AlgebraicOperator> a_cast = static_pointer_cast<AlgebraicOperator,DGVertex>(a);
-
-#if 1
-          // Find out why sometimes equivalent left_ and a_cast->left_ have non-equivalent pointers
-          if (left_->equiv(a_cast->left()) && left_ != a_cast->left_) {
-            cout << "Left arguments are equivalent but pointers differ!" << endl;
-            cout << left_->description() << endl;
-            cout << a_cast->left_->description() << endl;
-          }
-          // Find out why sometimes equivalent right_ and a_cast->right_ have non-equivalent pointers
-          if (right_->equiv(a_cast->right()) && right_ != a_cast->right_) {
-            cout << "Left arguments are equivalent but pointers differ!" << endl;
-            cout << right_->description() << endl;
-            cout << a_cast->right_->description() << endl;
-          }
-#endif
-          if (OT_ == a_cast->OT_) {
-  #if ALGEBRAICOPERATOR_USE_SAFEPTR
-            if (left_ == a_cast->left_ && right_ == a_cast->right_)
-  #else
-            if (left_->equiv(a_cast->left()) && right_->equiv(a_cast->right()))
-  #endif
-            return true;
-          else
-            return false;
-          }
-          else
-            return false;
+          return *this == static_pointer_cast<AlgebraicOperator,DGVertex>(a);
 #endif
         }
 	else
 	  return false;
       }
+
+      /// laboriously compare 2 operators element by element
+      bool operator==(const SafePtr<AlgebraicOperator>& a) const {
+#if 1
+        // Find out why sometimes equivalent left_ and a->left_ have non-equivalent pointers
+        if (left_->equiv(a->left()) && left_ != a->left_) {
+          cout << "Left arguments are equivalent but pointers differ!" << endl;
+          cout << left_->description() << endl;
+          cout << a->left_->description() << endl;
+        }
+        // Find out why sometimes equivalent right_ and a->right_ have non-equivalent pointers
+        if (right_->equiv(a->right()) && right_ != a->right_) {
+          cout << "Left arguments are equivalent but pointers differ!" << endl;
+          cout << right_->description() << endl;
+          cout << a->right_->description() << endl;
+        }
+#endif
+        if (OT_ == a->OT_) {
+#if ALGEBRAICOPERATOR_USE_SAFEPTR
+          if (left_ == a->left_ && right_ == a->right_)
+#else
+          if (left_->equiv(a->left()) && right_->equiv(a->right()))
+#endif
+          return true;
+          else
+            return false;
+        }
+        else
+          return false;
+      }
+      
       /// Implements DGVertex::label()
       const std::string& label() const
       {
@@ -140,6 +146,9 @@ namespace libint2 {
       {
         throw CannotAddArc("AlgebraicOperator::del_exit_arcs() -- cannot safely use del_exit_arcs on operator vertices.");
       }
+      
+      /// Implements Hashable::key()
+      typename DGVertex::KeyReturnType key() const { return 0; }
       
     private:
       OperatorType OT_;

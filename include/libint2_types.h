@@ -2,7 +2,7 @@
 #ifndef _libint2_include_libint2types_h_
 #define _libint2_include_libint2types_h_
 
-#include <libint2_config.h>
+#include <include/libint2_config.h>
 
 /*
   Define LIBINT2 data types here

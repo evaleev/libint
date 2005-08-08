@@ -39,12 +39,12 @@ TESTCXXDEP = $(TESTCXXSRC:%.cc=%.$(DEPSUF))
 default:: build_libint
 
 build_libint: $(BUILDCXXOBJ) $(LIBTARGET)
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $(LDFLAGS) $^
 
 depend:: $(TESTCXXDEP) $(BUILDCXXDEP) $(LIBCXXDEP)
 
 test: $(TESTCXXOBJ) $(LIBTARGET) buildtest.o
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $(LDFLAGS) $^
 
 $(LIBTARGET): $(LIBOBJ)
 	/bin/rm -f $@
