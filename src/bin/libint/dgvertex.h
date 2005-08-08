@@ -114,7 +114,7 @@ namespace libint2 {
     void print(std::ostream& os) const;
 
     /// Returns pointer to the DirectedGraph to which this DGVertex belongs to
-    const SafePtr<DirectedGraph>& dg() const { return dg_; }
+    const DirectedGraph* dg() const { return dg_; }
     /// returns the label used for this vertex when visualizing graph
     const std::string& graph_label() const throw(GraphLabelNotSet);
     /// sets the graph label
@@ -134,7 +134,7 @@ namespace libint2 {
     /// sets the code symbol
     void set_symbol(const std::string& symbol);
     /// returns true if the symbol has been set
-    bool symbol_set() const { return symbol_ != 0; }
+    bool symbol_set() const { return !symbol_.empty(); }
     /// this function void the symbol, i.e. it is no longer set after calling this member
     void reset_symbol();
     /// returns the address of this quantity on Libint's stack
@@ -142,7 +142,7 @@ namespace libint2 {
     /// sets the address of this quantity on Libint's stack
     void set_address(const Address& address);
     /// returns true if the address has been set
-    bool address_set() const { return address_ != 0; }
+    bool address_set() const { return address_ >= 0; }
     /** indicates whether this vertex needs to be computed.
         Even if this vertex is not precomputed, it may not be desired
         to compute it. By default, all vertices need to be computed.
@@ -157,12 +157,8 @@ namespace libint2 {
     void prepare_to_traverse();
     /// tag() tags the vertex and returns the total number of tags this vertex has received
     unsigned int tag();
-    /// Returns pointer to vertex to be computed before this vertex, 0 if this is the first vertex
-    SafePtr<DGVertex> precalc() const { return precalc_; };
     /// Returns pointer to vertex to be computed after this vertex, 0 if this is the last vertex
     SafePtr<DGVertex> postcalc() const { return postcalc_; };
-    /// Sets precalc
-    void set_precalc(const SafePtr<DGVertex>& precalc) { precalc_ = precalc; };
     /// Sets postcalc
     void set_postcalc(const SafePtr<DGVertex>& postcalc) { postcalc_ = postcalc; };
 
@@ -184,26 +180,25 @@ namespace libint2 {
 
   private:
     /// the pointer to the graph to which this vertex belongs (can be null)
-    SafePtr<DirectedGraph> dg_;
+    const DirectedGraph* dg_;
     /// Sets pointer to the DirectedGraph to which this DGVertex belongs to
-    void dg(const SafePtr<DirectedGraph>& d) { dg_ = d; }
+    void dg(const DirectedGraph* d) { dg_ = d; }
     /// Only DirectedGraph::append_vertex can change dg_
     friend void DirectedGraph::append_vertex(const SafePtr<DGVertex>& vertex) throw(VertexAlreadyOnStack);
     /// label for the vertex within the graph
-    SafePtr<std::string> graph_label_;
+    std::string graph_label_;
 
     /// if not null -- use this vertex to report address and symbol
-    SafePtr<DGVertex> referred_vertex_;
+    const DGVertex* referred_vertex_;
     /// number of vertices which refer to this
     unsigned int nrefs_;
     /// increments number of references
     void inc_nrefs();
-
     
     /// symbol used in the code
-    SafePtr<std::string> symbol_;
+    std::string symbol_;
     /// Address on the stack
-    SafePtr<Address> address_;
+    Address address_;
     // Whether this vertex needs to be computed
     bool need_to_compute_;
     
@@ -235,8 +230,6 @@ namespace libint2 {
 
     // num_tagged_arcs keeps track of how many entry arcs have been tagged during traversal
     unsigned int num_tagged_arcs_;
-    /// Which DGVertex to be computed before this vertex (0, if this is the first vertex)
-    SafePtr<DGVertex> precalc_;
     /// Which DGVertex to be computed after this vertex (0, if this is the last vertex)
     SafePtr<DGVertex> postcalc_;
 

@@ -38,7 +38,7 @@ DirectedGraph::append_vertex(const SafePtr<DGVertex>& vertex) throw(VertexAlread
   try {
     add_vertex(vertex);
     // If this is a new vertex -- tell the vertex who its owner is now
-    vertex->dg(SafePtr_from_this());
+    vertex->dg(this);
   }
   // Handle the trivial case when this exact object is already on graph -- there's no reason to throw the exception then
   catch (VertexAlreadyOnStack& e) {
@@ -145,10 +145,7 @@ DirectedGraph::traverse_from(const SafePtr<DGArc>& arc)
 void
 DirectedGraph::schedule_computation(const SafePtr<DGVertex>& vertex)
 {
-  vertex->set_precalc(SafePtr<DGVertex>());
   vertex->set_postcalc(first_to_compute_);
-  if (first_to_compute_ != 0)
-    first_to_compute_->set_precalc(vertex);
   first_to_compute_ = vertex;
 }
 
@@ -342,7 +339,7 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<Recu
   cout << "insert_expr_at: " << expr->description() << endl;
 #endif
   // If it's already on then throw an exception
-  if (expr->dg() == SafePtr_from_this())
+  if (expr->dg() == this)
     throw VertexAlreadyOnStack(expr);
 
   typedef RecurrenceRelation::ExprType ExprType;

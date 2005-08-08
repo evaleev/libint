@@ -99,9 +99,12 @@ namespace libint2 {
 
   class MemoryManager {
   public:
-    typedef unsigned long int Address;
-    typedef unsigned long int Size;
+    /// Negative Address is used denote invalid address -- hence signed integer
+    typedef int Address;
+    typedef unsigned int Size;
     typedef MemoryBlock<Address,Size> MemBlock;
+
+    static const Address InvalidAddress = -1;
 
   protected:
     typedef std::list< SafePtr<MemBlock> > blkstore;
@@ -114,7 +117,7 @@ namespace libint2 {
     /// This block is the guaranteed to be free until all memory is exhausted
     SafePtr<MemBlock> superblock_;
     /// Max amount of memory used
-    Address max_memory_used_;
+    Size max_memory_used_;
 
     SafePtr<MemBlock> merge_blocks(const SafePtr<MemBlock>& left, const SafePtr<MemBlock>& right);
     SafePtr<MemBlock> merge_to_superblock(const SafePtr<MemBlock>& blk);

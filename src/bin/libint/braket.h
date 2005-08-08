@@ -147,27 +147,7 @@ namespace libint2 {
     bool
     VectorBraket<BFS>::operator==(const VectorBraket<BFS>& a) const
     {
-      const BFSMatrix& bfs0 = bfs_;
-      const BFSMatrix& bfs1 = a.bfs_;
-      if (bfs0.size() != bfs1.size())
-        return false;
-
-      // compare each row
-      const int size1 = bfs_.size();
-      for(int i=0; i<size1; i++) {
-        const BFSVector& row0 = bfs0[i];
-        const BFSVector& row1 = bfs1[i];
-
-        if (row0.size() != row1.size())
-          return false;
-
-        // compare each element
-        const int size2 = row0.size();
-        for(int j=0; j<size2; j++)
-          if (!PtrEquiv<BFS>::equiv(row0[j],row1[j]))
-            return false;
-      }
-      return true;
+      return bfs_ == a.bfs_;
     }
 
   template <class BFS>

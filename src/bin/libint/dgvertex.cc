@@ -8,26 +8,16 @@ using namespace libint2;
 #define LOCAL_DEBUG 0
 
 DGVertex::DGVertex(ClassID tid) :
-  dg_(), typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
-  precalc_(), postcalc_(), graph_label_(), referred_vertex_(SafePtr<DGVertex>()), nrefs_(0),
-  symbol_(), address_(), need_to_compute_(true), instid_()
+  dg_(0), typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
+  postcalc_(), graph_label_(), referred_vertex_(0), nrefs_(0),
+  symbol_(), address_(MemoryManager::InvalidAddress), need_to_compute_(true), instid_()
 {
 }
-
-/*
-DGVertex::DGVertex(ClassID tid, const vector< SafePtr<DGArc> >& parents, const vector< SafePtr<DGArc> >& children) :
-  typeid_(tid), parents_(parents), children_(children), target_(false), can_add_arcs_(true),
-  num_tagged_arcs_(0), precalc_(), postcalc_(), graph_label_(),
-  referred_vertex_(SafePtr<DGVertex>()), nrefs_(0), symbol_(), address_(),
-  need_to_compute_(true)
-{
-}
-*/
 
 DGVertex::DGVertex(const DGVertex& v) :
   dg_(v.dg_), typeid_(v.typeid_), parents_(v.parents_), children_(v.children_), target_(v.target_),
   can_add_arcs_(v.can_add_arcs_), num_tagged_arcs_(v.num_tagged_arcs_),
-  precalc_(v.precalc_), postcalc_(v.postcalc_), graph_label_(v.graph_label_),
+  postcalc_(v.postcalc_), graph_label_(v.graph_label_),
   referred_vertex_(v.referred_vertex_), nrefs_(v.nrefs_),
   symbol_(v.symbol_), address_(v.address_), need_to_compute_(v.need_to_compute_), instid_(v.instid_)
 {
@@ -212,7 +202,7 @@ DGVertex::exit_arc(const SafePtr<DGVertex>& v) const
 void
 DGVertex::reset()
 {
-  dg_.reset();
+  dg_ = 0;
   unsigned int nchildren = children_.size();
   for(int c=0; c<nchildren; c++) {
     children_[c]->dest()->del_entry_arc(children_[c]);
@@ -222,21 +212,20 @@ DGVertex::reset()
   target_ = false;
   can_add_arcs_ = true;
   num_tagged_arcs_ = 0;
-  precalc_.reset();
   postcalc_.reset();
-  graph_label_.reset();
+  graph_label_.clear();
   reset_symbol();
-  address_.reset();
+  address_ = MemoryManager::InvalidAddress;
   need_to_compute_ = true;
-  referred_vertex_.reset();
+  referred_vertex_ = 0;
   nrefs_ = 0;
 }
 
 const std::string&
 DGVertex::graph_label() const throw(GraphLabelNotSet)
 {
-  if (graph_label_)
-    return *graph_label_;
+  if (!graph_label_.empty())
+    return graph_label_;
   else
     throw GraphLabelNotSet("DGVertex::graph_label() -- graph label not set");
 }
@@ -244,8 +233,7 @@ DGVertex::graph_label() const throw(GraphLabelNotSet)
 void
 DGVertex::set_graph_label(const std::string& label)
 {
-  SafePtr<std::string> graph_label(new std::string(label));
-  graph_label_ = graph_label;
+  graph_label_ = label;
 }
 
 void
@@ -257,7 +245,7 @@ DGVertex::refer_this_to(const SafePtr<DGVertex>& V)
     else
       throw std::logic_error("DGVertex::refer_this_to() -- already referring to some other vertex");
   }
-  referred_vertex_ = V;
+  referred_vertex_ = V.get();
   V->inc_nrefs();
 }
 
@@ -276,8 +264,8 @@ DGVertex::symbol() const throw(SymbolNotSet)
   if (referred_vertex_ && referred_vertex_->symbol_set())
     return referred_vertex_->symbol();
   else {
-    if (symbol_)
-      return *symbol_;
+    if (!symbol_.empty())
+      return symbol_;
     else {
 #if DEBUG
       cout << "DGVertex::symbol() -- symbol not set for " << description() << endl;
@@ -290,8 +278,7 @@ DGVertex::symbol() const throw(SymbolNotSet)
 void
 DGVertex::set_symbol(const std::string& symbol)
 {
-  SafePtr<std::string> ptr(new std::string(symbol));
-  symbol_ = ptr;
+  symbol_ = symbol;
 #if DEBUG
   cout << "Set symbol for " << description() << " to " << symbol << endl;
 #endif
@@ -300,7 +287,7 @@ DGVertex::set_symbol(const std::string& symbol)
 void
 DGVertex::reset_symbol()
 {
-  symbol_ = SafePtr<std::string>();
+  symbol_.clear();
 }
 
 DGVertex::Address
@@ -309,8 +296,8 @@ DGVertex::address() const throw(AddressNotSet)
   if (referred_vertex_ && referred_vertex_->address_set())
     return referred_vertex_->address();
   else {
-    if (address_)
-      return *address_;
+    if (address_ != MemoryManager::InvalidAddress)
+      return address_;
     else {
       throw AddressNotSet("DGVertex::address() -- address not set");
     }
@@ -320,8 +307,7 @@ DGVertex::address() const throw(AddressNotSet)
 void
 DGVertex::set_address(const Address& address)
 {
-  SafePtr<Address> ptr(new Address(address));
-  address_ = ptr;
+  address_ = address;
 }
 
 void
@@ -358,7 +344,7 @@ DGVertex::print(std::ostream& os) const
 #if DEBUG || LOCAL_DEBUG
   os << prefix << "this = " << this << endl;
   if (referred_vertex_ != 0) {
-    os << prefix << "refers_to = " << referred_vertex_.get() << endl;
+    os << prefix << "refers_to = " << referred_vertex_ << endl;
   }
   else {
     if (symbol_set())
