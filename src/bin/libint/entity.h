@@ -60,10 +60,16 @@ namespace libint2 {
         {
           FNVStringHash SH;
           key_ = SH.hash(id);
+#if DEBUG
+          std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
+#endif
         }
 
       ~RTimeEntity()
         {
+#if DEBUG
+          std::cout << "Deallocated RTimeEntity id = " << this->id() << std::endl;
+#endif
         }
 
       /// Implementation of DGVertex::size()
@@ -133,10 +139,16 @@ namespace libint2 {
       CTimeEntity(const std::string& id, const T& val) :
         Entity(id), DGVertex(ClassInfo<CTimeEntity>::Instance().id()), value_(val), descr_()
         {
+#if DEBUG
+          std::cout << "Allocated CTimeEntity id = " << this->id() << " value = " << value() << std::endl;
+#endif
         }
 
       ~CTimeEntity()
         {
+#if DEBUG
+          std::cout << "Deallocated CTimeEntity id = " << this->id() << " value = " << value() << std::endl;
+#endif
         }
 
       /// Implementation of DGVertex::size()

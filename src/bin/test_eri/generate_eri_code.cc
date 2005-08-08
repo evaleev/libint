@@ -82,6 +82,8 @@ namespace {
 
     std::cout << "generating code to compute " << quartet->label() << std::endl;
     std::cout << "size of ERI quartet representation = " << sizeof(ERIQtet) << std::endl;
+    std::cout << "size of braket representation = " << sizeof(VectorBraket<CGShell>) << std::endl;
+    std::cout << "size of DGVertex representation = " << sizeof(DGVertex) << std::endl;
 
     // initialize cparams
     SafePtr<CompilationParameters> cparams(new CompilationParameters);

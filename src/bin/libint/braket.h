@@ -1,12 +1,10 @@
 
 #include <polyconstr.h>
 #include <bfset.h>
-#include <include/libint2_types.h>
+#include <libint2_types.h>
 
 #ifndef _libint2_src_bin_libint_braket_h_
 #define _libint2_src_bin_libint_braket_h_
-
-
 
 namespace libint2 {
 

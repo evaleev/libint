@@ -1,5 +1,5 @@
 
-#include <include/libint2_config.h>
+#include <libint2_config.h>
 
 #ifndef _libint2_include_libint2types_h_
 #define _libint2_include_libint2types_h_

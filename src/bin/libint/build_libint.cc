@@ -11,7 +11,7 @@
 
 #define DO_TEST_ONLY 0
 
-#include <include/libint2_config.h>
+#include <libint2_config.h>
 
 #include <iostream>
 #include <fstream>
