@@ -253,6 +253,7 @@ namespace libint2 {
       // Use singl_manager_ to make sure this is a new object of this type
       const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
       val.second->instid_ = val.first;
+      this_int.reset();
       return val.second;
     }
   
@@ -691,6 +692,7 @@ namespace libint2 {
       // Use singl_manager_ to make sure this is a new object of this type
       const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
       val.second->instid_ = val.first;
+      this_int.reset();
       return val.second;
     }
 

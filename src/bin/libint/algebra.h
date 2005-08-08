@@ -93,7 +93,7 @@ namespace libint2 {
 
       /// laboriously compare 2 operators element by element
       bool operator==(const SafePtr<AlgebraicOperator>& a) const {
-#if 1
+#if ALGEBRAICOPERATOR_USE_SAFEPTR
         // Find out why sometimes equivalent left_ and a->left_ have non-equivalent pointers
         if (left_->equiv(a->left()) && left_ != a->left_) {
           cout << "Left arguments are equivalent but pointers differ!" << endl;

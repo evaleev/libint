@@ -212,22 +212,27 @@ namespace libint2 {
     R12_k_G12(const ConstructablePolymorphically&);
     ~R12_k_G12();
   };
-  
+
+  namespace R12kG12 {
+    std::string label(int K);
+    std::string symbol(int K);
+  };
+
   template <int K>
   R12_k_G12<K>::R12_k_G12() :
-  parent_type("R12^k * G12","R12_k_G12")
+  parent_type(R12kG12::label(K),R12kG12::symbol(K))
   {
   }
   
   template <int K>
   R12_k_G12<K>::R12_k_G12(const SafePtr<R12_k_G12>& source) :
-  parent_type("R12^k * G12","R12_k_G12")
+  parent_type(R12kG12::label(K),R12kG12::symbol(K))
   {
   }
   
   template <int K>
   R12_k_G12<K>::R12_k_G12(const SafePtr<OperSet>& oset) :
-  parent_type("R12^k * G12","R12_k_G12")
+  parent_type(R12kG12::label(K),R12kG12::symbol(K))
   {
     const SafePtr<R12_k_G12> oset_cast = dynamic_pointer_cast<R12_k_G12,OperSet>(oset);
     if (oset_cast == 0)
@@ -236,7 +241,7 @@ namespace libint2 {
   
   template <int K>
   R12_k_G12<K>::R12_k_G12(const SafePtr<ConstructablePolymorphically>& oset) :
-  parent_type("R12^k * G12","R12_k_G12")
+  parent_type(R12kG12::label(K),R12kG12::symbol(K))
   {
     const SafePtr<R12_k_G12> oset_cast = dynamic_pointer_cast<R12_k_G12,ConstructablePolymorphically>(oset);
     if (oset_cast == 0)
@@ -245,7 +250,7 @@ namespace libint2 {
   
   template <int K>
   R12_k_G12<K>::R12_k_G12(const ConstructablePolymorphically& oset) :
-  parent_type("R12^k * G12","R12_k_G12")
+  parent_type(R12kG12::label(K),R12kG12::symbol(K))
   {
     const R12_k_G12& oset_cast = dynamic_cast<const R12_k_G12&>(oset);
   }

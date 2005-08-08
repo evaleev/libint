@@ -11,6 +11,9 @@
 #define VECLEN LIBINT2_MAX_VECLEN
 
 #define  LIBINT_T_SS_EREP_SS(mValue) _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_##mValue
+#define  LIBINT_T_SS_Km1G12_SS(mValue) _aB_s__0__s__1___R12_minus_1_G12_s__0__s__1___Ab__up_##mValue
+#define LIBINT_T_SS_K0G12_SS_0 _aB_s__0__s__1___R12_0_G12_s__0__s__1___Ab__up_0
+#define LIBINT_T_SS_K2G12_SS_0 _aB_s__0__s__1___R12_2_G12_s__0__s__1___Ab__up_0
 
 /** Libint_t is the integrals evaluator object. Libint's evaluator functions take
     pointer to Libint_t as their first argument. The evaluator functions are not reentrant,
@@ -43,17 +46,22 @@ typedef struct {
   // Prefactors for recurrence relations from Weber and Daul, Comp. Phys. Comm. 158, 1 (2004).
   //
 
-  REALTYPE __ss_r_12_up_2_times_G12_ss___up_0[VECLEN];
-  REALTYPE __ss_r_12_up_0_times_G12_ss___up_0[VECLEN];
-  REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_0[VECLEN];
-  REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_1[VECLEN];
-  REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_2[VECLEN];
-  REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_3[VECLEN];
-  REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_4[VECLEN];
-  REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_5[VECLEN];
-  REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_6[VECLEN];
-  REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_7[VECLEN];
-  REALTYPE __ss_r_12_up__minus_1_times_G12_ss___up_8[VECLEN];
+  REALTYPE LIBINT_T_SS_K0G12_SS_0[VECLEN];
+  REALTYPE LIBINT_T_SS_K2G12_SS_0[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(0)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(1)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(2)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(3)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(4)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(5)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(6)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(7)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(8)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(9)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(10)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(11)[VECLEN];
+  REALTYPE LIBINT_T_SS_Km1G12_SS(12)[VECLEN];
+
   /// LRL1991, Eq. 30, prefactor in front of (a0|c0)
   REALTYPE TwoPRepITR_pfac0_0_x[VECLEN];
   REALTYPE TwoPRepITR_pfac0_0_y[VECLEN];

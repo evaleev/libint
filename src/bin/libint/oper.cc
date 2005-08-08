@@ -1,5 +1,6 @@
 
 #include <stdexcept>
+#include <cmath>
 #include <rr.h>
 #include <oper.h>
 
@@ -37,4 +38,20 @@ TwoERep::~TwoERep()
 }
 
 ////////////
+
+std::string
+R12kG12::label(int K)
+{
+  ostringstream oss;
+  oss << "R12^" << K << " * G12";
+  return oss.str();
+}
+
+std::string
+R12kG12::symbol(int K)
+{
+  ostringstream oss;
+  oss << "R12_" << (K<0 ? "minus_" : "") << std::abs(K) << "_G12";
+  return oss.str();
+}
 

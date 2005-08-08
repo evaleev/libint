@@ -81,6 +81,7 @@ namespace {
 						       0);
 
     std::cout << "generating code to compute " << quartet->label() << std::endl;
+    std::cout << "size of ERI quartet representation = " << sizeof(ERIQtet) << std::endl;
 
     // initialize cparams
     SafePtr<CompilationParameters> cparams(new CompilationParameters);

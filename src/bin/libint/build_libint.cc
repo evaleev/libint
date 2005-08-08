@@ -9,7 +9,7 @@
   December 2004.
   */
 
-#define DO_TEST_ONLY 1
+#define DO_TEST_ONLY 0
 
 #include <include/libint2_config.h>
 
@@ -62,7 +62,7 @@ void try_main (int argc, char* argv[])
   
   // use default parameters
   SafePtr<CompilationParameters> cparams(new CompilationParameters);
-  cparams->max_am_eri(2);
+  cparams->max_am_eri(3);
   // initialize code context to produce library API
   SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
   // make a list of computation labels
@@ -162,7 +162,9 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           
           if (la+lb+lc+ld == 0)
             continue;
-          
+          if (la < lb || lc < ld || la+lb > lc+ld)
+	    continue;
+
           SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
           os << "building " << abcd->description() << endl;
           SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(abcd);
@@ -234,6 +236,8 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
       for(int lc=0; lc<=lmax; lc++) {
         for(int ld=0; ld<=lmax; ld++) {
 
+          if (la < lb || lc < ld || la+lb > lc+ld)
+	    continue;
           bool ssss = false;
           if (la+lb+lc+ld == 0)
             ssss = true;

@@ -12,7 +12,7 @@ using namespace std;
 using namespace libint2;
 
 #define ONLY_CLONE_IF_DIFF 1
-#define DETECT_COMMON_SUBEXPR 1
+#define DETECT_COMMON_SUBEXPR 0
 
 DirectedGraph::DirectedGraph() :
   stack_(default_size_,SafePtr<DGVertex>()), func_names_(),
