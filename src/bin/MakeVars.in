@@ -63,7 +63,7 @@ UNCOMPRESS = gzip -d
 
 # first check for generated include files in the machine dependent directories
 # and then for include files in the src directory
-INCLUDE = -I$(TOPDIR)/src/bin -I$(TOPDIR) -I$(SRCTOPDIR)/include \
+INCLUDE = -I$(TOPDIR)/src/bin -I$(TOPDIR) -I$(SRCTOPDIR) \
           -I$(SRCTOPDIR)/src/bin @CPPFLAGS@
 DEFINES = @DEFS@ @EXTRADEFINES@
 
