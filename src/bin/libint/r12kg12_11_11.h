@@ -17,11 +17,6 @@ namespace libint2 {
     };
 
   /**
-     mType is the type that describes the auxiliary index of
-     any 2-body integral.
-  */
-  typedef QuantumNumbers<unsigned int,1> mType;
-  /**
      Most basic type -- R12kG12_11_11 --
      has one bfs for each particle in bra and ket.
      Note that GenIntegralSet is initialized with an abstract type libint2::BFSet,

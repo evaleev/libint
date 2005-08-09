@@ -339,7 +339,7 @@ namespace libint2 {
       // create a generic GenIntegralSet over a multiplicative operator
       typedef GenSymmOper< OperatorProperties<IntType::OperatorType::Properties::np,true,PermutationalSymmetry::symm> > DummyOper;
       typedef typename IBraType::bfs_type bfs_type;
-      typedef QuantumNumbers<int,0> DummyQuanta;
+      typedef EmptySet DummyQuanta;
       typedef GenIntegralSet<DummyOper, IncableBFSet, IBraType, IKetType, DummyQuanta> DummyIntegral;
       DummyOper dummy_oper;
       DummyQuanta dummy_quanta(std::vector<int>(0,0));

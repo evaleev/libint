@@ -418,19 +418,31 @@ namespace libint2 {
   class TwoPRep_11_11_base {
   };
 
-  /**
-     mType is the type that describes the auxiliary index of standard 2-body repulsion integrals
-  */
-  typedef QuantumNumbers<unsigned int,1> mType;
-  
   /// This is the implementation of the Braket concept used by TwoPrep_11_11
-  // really need to have typedef template
+  // really need to have typedef template!
   template <typename BFS>
     struct DefaultTwoPBraket {
       /// This defines which Braket implementation to use
       //typedef VectorBraket<BFS> Result;
       typedef ArrayBraket<BFS,2> Result;
     };
+  
+  /// This is the implementation of the QuantumNumbers concept used by TwoPrep_11_11
+  // really need to have typedef template!
+  template <typename T, unsigned int N>
+    struct DefaultQuantumNumbers {
+      /// This defines which QuantumNumbers implementation to use
+      typedef QuantumNumbers<T,N> Result;
+      //typedef QuantumNumbersA<T,N> Result;
+    };
+  /**
+     mType is the type that describes the auxiliary index of standard 2-body repulsion integrals
+  */
+  typedef DefaultQuantumNumbers<unsigned int,1>::Result mType;
+  /**
+     EmptySet is the type that describes null set of auxiliary indices
+  */
+  typedef DefaultQuantumNumbers<int,0>::Result EmptySet;
   
   /**
      Most basic type -- TwoPRep_11_11 --

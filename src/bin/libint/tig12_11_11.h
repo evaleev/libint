@@ -17,10 +17,6 @@ namespace libint2 {
     };
 
   /**
-     EmptySet is the type that describes null set of auxiliary indices
-  */
-  typedef QuantumNumbers<int,0> EmptySet;
-  /**
      Most basic type -- TiG12_11_11 --
      has one bfs for each particle in bra and ket.
      Note that GenIntegralSet is initialized with an abstract type libint2::BFSet,
