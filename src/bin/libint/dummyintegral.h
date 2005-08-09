@@ -7,15 +7,15 @@
 namespace libint2 {
   typedef GenIntegralSet< GenSymmOper< OperatorProperties<2,true,PermutationalSymmetry::symm> >,
     IncableBFSet,
-    VectorBraket<CGShell>,
-    VectorBraket<CGShell>,
+    DefaultTwoPBraket<CGShell>::Result,
+    DefaultTwoPBraket<CGShell>::Result,
     QuantumNumbers<int,0> >
   DummySymmIntegral_11_11_sq;
 
   typedef GenIntegralSet< GenSymmOper< OperatorProperties<2,true,PermutationalSymmetry::symm> >,
     IncableBFSet,
-    VectorBraket<CGF>,
-    VectorBraket<CGF>,
+    DefaultTwoPBraket<CGF>::Result,
+    DefaultTwoPBraket<CGF>::Result,
     QuantumNumbers<int,0> >
   DummySymmIntegral_11_11_int;
 };
