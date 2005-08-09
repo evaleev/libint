@@ -28,13 +28,13 @@ namespace libint2 {
      from which BFS derives.
   */
   template <class BFS, int K> class R12kG12_11_11 :
-    public GenIntegralSet< R12_k_G12<K>, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, mType >,
+    public GenIntegralSet< R12_k_G12<K>, IncableBFSet, typename DefaultTwoPBraket<BFS>::Result, typename DefaultTwoPBraket<BFS>::Result, mType >,
     public R12kG12_11_11_base<BFS>
     {
     public:
       typedef R12_k_G12<K> OperType;
-      typedef VectorBraket<BFS> BraType;
-      typedef VectorBraket<BFS> KetType;
+      typedef typename DefaultTwoPBraket<BFS>::Result BraType;
+      typedef typename DefaultTwoPBraket<BFS>::Result KetType;
       typedef mType AuxIndexType;
       typedef R12kG12_11_11 this_type;
       /// This the type of the object that manages GenIntegralSet's as Singletons
@@ -43,7 +43,7 @@ namespace libint2 {
       /// R12kG12_11_11 is a set of these subobjects
       typedef R12kG12_11_11<typename BFS::iter_type,K> iter_type;
       /// This is the immediate parent
-      typedef GenIntegralSet< OperType, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, AuxIndexType > parent_type;
+      typedef GenIntegralSet< OperType, IncableBFSet, BraType, KetType, AuxIndexType > parent_type;
       /// This class provides comparison operations on pointers
       typedef PtrEquiv<this_type> PtrComp;
 
@@ -52,7 +52,7 @@ namespace libint2 {
       */
       static const SafePtr<R12kG12_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, unsigned int m);
       /// Returns a pointer to a unique instance, a la Singleton
-      static const SafePtr<R12kG12_11_11> Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
+      static const SafePtr<R12kG12_11_11> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
       
       unsigned int m() const { return parent_type::aux()->elem(0); };
 
@@ -65,7 +65,7 @@ namespace libint2 {
 
     private:
       // This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
-      R12kG12_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
+      R12kG12_11_11(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
 
       // This is used to manage GenIntegralSet objects as singletons
       static SingletonManagerType singl_manager_;
@@ -85,7 +85,7 @@ namespace libint2 {
     R12kG12_11_11<BFS,K>::singl_manager_(&R12kG12_11_11<BFS,K>::label);
   
   template <class BFS, int K>
-    R12kG12_11_11<BFS,K>::R12kG12_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket,  const AuxIndexType& aux) :
+    R12kG12_11_11<BFS,K>::R12kG12_11_11(const BraType& bra, const KetType& ket,  const AuxIndexType& aux) :
     parent_type(R12_k_G12<K>(),bra, ket, aux)
     {
       if (bra.num_members(0) != 1)
@@ -100,7 +100,7 @@ namespace libint2 {
 
   template <class BFS, int K>
     const SafePtr< R12kG12_11_11<BFS,K> >
-    R12kG12_11_11<BFS,K>::Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux)
+    R12kG12_11_11<BFS,K>::Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux)
     {
       SafePtr<R12kG12_11_11> this_int(new R12kG12_11_11<BFS,K>(bra,ket,aux));
       // Use singl_manager_ to make sure this is a new object of this type
@@ -132,8 +132,8 @@ namespace libint2 {
       vector<BFSRef> vket1;  vket1.push_back(ket1_ref);
       vector< vector<BFSRef> > vvbra;  vvbra.push_back(vbra0);  vvbra.push_back(vbra1);
       vector< vector<BFSRef> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
-      VectorBraket<BFS> bra(vvbra);
-      VectorBraket<BFS> ket(vvket);
+      BraType bra(vvbra);
+      KetType ket(vvket);
       AuxIndexType aux(vector<unsigned int>(1,m));
       return Instance(bra,ket,aux);
     }

@@ -27,13 +27,13 @@ namespace libint2 {
      from which BFS derives.
   */
   template <class BFS, int I> class TiG12_11_11 :
-    public GenIntegralSet< Ti_G12<I>, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, EmptySet >,
+    public GenIntegralSet< Ti_G12<I>, IncableBFSet, typename DefaultTwoPBraket<BFS>::Result, typename DefaultTwoPBraket<BFS>::Result, EmptySet >,
     public TiG12_11_11_base<BFS>
     {
     public:
       typedef Ti_G12<I> OperType;
-      typedef VectorBraket<BFS> BraType;
-      typedef VectorBraket<BFS> KetType;
+      typedef typename DefaultTwoPBraket<BFS>::Result BraType;
+      typedef typename DefaultTwoPBraket<BFS>::Result KetType;
       typedef EmptySet AuxIndexType;
       typedef TiG12_11_11 this_type;
       /// This the type of the object that manages GenIntegralSet's as Singletons
@@ -42,7 +42,7 @@ namespace libint2 {
       /// TiG12_11_11 is a set of these subobjects
       typedef TiG12_11_11<typename BFS::iter_type,I> iter_type;
       /// This is the immediate parent
-      typedef GenIntegralSet< OperType, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, AuxIndexType > parent_type;
+      typedef GenIntegralSet< OperType, IncableBFSet, BraType, KetType, AuxIndexType > parent_type;
       /// This class provides comparison operations on pointers
       typedef PtrEquiv<this_type> PtrComp;
 
@@ -51,7 +51,7 @@ namespace libint2 {
       */
       static const SafePtr<TiG12_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1);
       /// Returns a pointer to a unique instance, a la Singleton
-      static const SafePtr<TiG12_11_11> Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
+      static const SafePtr<TiG12_11_11> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
       
       /// Comparison operator
       bool operator==(const this_type&) const;
@@ -62,7 +62,7 @@ namespace libint2 {
 
     private:
       // This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
-      TiG12_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
+      TiG12_11_11(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
 
       // This is used to manage GenIntegralSet objects as singletons
       static SingletonManagerType singl_manager_;
@@ -82,7 +82,7 @@ namespace libint2 {
     TiG12_11_11<BFS,I>::singl_manager_(&TiG12_11_11<BFS,I>::label);
   
   template <class BFS, int I>
-    TiG12_11_11<BFS,I>::TiG12_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket,  const AuxIndexType& aux) :
+    TiG12_11_11<BFS,I>::TiG12_11_11(const BraType& bra, const KetType& ket,  const AuxIndexType& aux) :
     parent_type(Ti_G12<I>(),bra, ket, aux)
     {
       if (bra.num_members(0) != 1)
@@ -97,7 +97,7 @@ namespace libint2 {
 
   template <class BFS, int I>
     const SafePtr< TiG12_11_11<BFS,I> >
-    TiG12_11_11<BFS,I>::Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux)
+    TiG12_11_11<BFS,I>::Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux)
     {
       SafePtr<TiG12_11_11> this_int(new TiG12_11_11<BFS,I>(bra,ket,aux));
       // Use singl_manager_ to make sure this is a new object of this type
@@ -129,8 +129,8 @@ namespace libint2 {
       vector<BFSRef> vket1;  vket1.push_back(ket1_ref);
       vector< vector<BFSRef> > vvbra;  vvbra.push_back(vbra0);  vvbra.push_back(vbra1);
       vector< vector<BFSRef> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
-      VectorBraket<BFS> bra(vvbra);
-      VectorBraket<BFS> ket(vvket);
+      BraType bra(vvbra);
+      KetType ket(vvket);
       AuxIndexType aux(vector<int>(0));
       return Instance(bra,ket,aux);
     }

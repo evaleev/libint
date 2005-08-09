@@ -412,181 +412,6 @@ namespace libint2 {
       return descr_;
     }
 
-#if !USE_BRAKET_H
-  /** VectorBraket is a std::vector-based type that can be used as a BraSetType or a KetSetType parameter
-      to construct an instance of GenIntegralSet
-  */
-  template <class BFS> class VectorBraket {
-
-  public:
-    typedef BFS bfs_type;
-    typedef SafePtr<BFS> bfs_stor;
-    typedef bfs_stor& bfs_ref;
-    typedef const bfs_stor& bfs_cref;
-    typedef vector< bfs_ref > BFSVector;
-    typedef vector< BFSVector > BFSMatrix;
-    typedef VectorBraket<typename BFS::iter_type> iter_type;
-    typedef struct{} parent_type;
-
-    /** This one is a very dangerous constructor -- do not to use it if at all possible.
-      Provided only for compatibility for generic subiterator algorithms */
-    VectorBraket();
-    VectorBraket(const BFSMatrix&);
-    VectorBraket(const VectorBraket&);
-    ~VectorBraket();
-
-    /// Comparison function
-    bool operator==(const VectorBraket&) const;
-    /// Returns base pointer to the i-th function for particle p
-    //const SafePtr<ConstructablePolymorphically> member(unsigned int p, unsigned int i) const;
-    /// Returns pointer to the i-th function for particle p
-    const SafePtr<BFS> member(unsigned int p, unsigned int i) const;
-    /// Returns pointer to the SubIterator for i-th BFS of particle p
-    SubIterator* member_subiter(unsigned int p, unsigned int i) const;
-    /// Sets i-th function for particle p
-    void set_member(const BFS&, unsigned int p, unsigned int i);
-    /// Sets i-th function for particle p
-    void set_member(bfs_cref, unsigned int p, unsigned int i);
-    /// Sets i-th function for particle p (does a dynamic cast inside)
-    void set_member(const SafePtr<ConstructablePolymorphically>&, unsigned int p, unsigned int i);
-    /// Returns the number of BFS for particle p
-    const unsigned int num_members(unsigned int p) const;
-    /// Returns the number of particles
-    const unsigned int num_part() const;
-
-  private:
-    
-    BFSMatrix bfs_;
-
-  };
-
-  template <class BFS>
-    VectorBraket<BFS>::VectorBraket() :
-    bfs_(0)
-    {
-    }
-  
-  template <class BFS>
-    VectorBraket<BFS>::VectorBraket(const BFSMatrix& bfs) :
-    bfs_(bfs)
-    {
-    }
-
-  template <class BFS>
-    VectorBraket<BFS>::VectorBraket(const VectorBraket& a) :
-    bfs_(a.bfs_)
-    {
-    }
-
-  template <class BFS>
-    VectorBraket<BFS>::~VectorBraket()
-    {
-    }
-
-  /*
-  template <class BFS>
-    const SafePtr<ConstructablePolymorphically>
-    VectorBraket<BFS>::member(unsigned int p, unsigned int i) const
-    {
-      const SafePtr<ConstructablePolymorphically> ptr = dynamic_pointer_cast<ConstructablePolymorphically,BFS>(bfs_.at(p).at(i));
-      return ptr;
-    }
-  */
-
-  template <class BFS>
-    typename VectorBraket<BFS>::bfs_cref
-    VectorBraket<BFS>::member(unsigned int p, unsigned int i) const
-    {
-      return bfs_.at(p).at(i);
-    }
-
-  template <class BFS>
-    SubIterator*
-    VectorBraket<BFS>::member_subiter(unsigned int p, unsigned int i) const
-    {
-      return static_cast<SubIterator*>(new SubIteratorBase<BFS>( member(p,i) ) );
-    }
-  
-  template <class BFS>
-    void
-    VectorBraket<BFS>::set_member(const BFS& bfs, unsigned int p, unsigned int i)
-    {
-      if (p >= bfs_.size())
-        bfs_.resize(p+1);
-      if (i >= bfs_[p].size())
-        bfs_[p].resize(i+1);
-      SafePtr<BFS> bfs_ptr(new BFS(bfs));
-      bfs_[p][i] = bfs_ptr;
-    }
-
-  template <class BFS>
-    void
-    VectorBraket<BFS>::set_member(const SafePtr<ConstructablePolymorphically>& bfs, unsigned int p, unsigned int i)
-    {
-      // WARNING : can be VERY dangerous
-      // try constructing BFS from bfs.
-      SafePtr<BFS> bfs_cast(new BFS(bfs));
-      
-      if (p >= bfs_.size())
-        bfs_.resize(p+1);
-      if (i >= bfs_[p].size())
-        bfs_[p].resize(i+1);
-      bfs_[p][i] = bfs_cast;
-    }
-  
-  template <class BFS>
-    void
-    VectorBraket<BFS>::set_member(bfs_cref bfs, unsigned int p, unsigned int i)
-    {
-      if (p >= bfs_.size())
-        bfs_.resize(p+1);
-      if (i >= bfs_[p].size())
-        bfs_[p].resize(i+1);
-      bfs_[p][i] = bfs;
-    }
-  
-  template <class BFS>
-    const unsigned int
-    VectorBraket<BFS>::num_members(unsigned int p) const
-    {
-      return bfs_.at(p).size();
-    }
-
-  template <class BFS>
-    const unsigned int
-    VectorBraket<BFS>::num_part() const
-    {
-      return bfs_.size();
-    }
-
-  template <class BFS>
-    bool
-    VectorBraket<BFS>::operator==(const VectorBraket<BFS>& a) const
-    {
-      const BFSMatrix& bfs0 = bfs_;
-      const BFSMatrix& bfs1 = a.bfs_;
-      if (bfs0.size() != bfs1.size())
-        return false;
-
-      // compare each row
-      const int size1 = bfs_.size();
-      for(int i=0; i<size1; i++) {
-        const BFSVector& row0 = bfs0[i];
-        const BFSVector& row1 = bfs1[i];
-
-        if (row0.size() != row1.size())
-          return false;
-
-        // compare each element
-        const int size2 = row0.size();
-        for(int j=0; j<size2; j++)
-          if (!PtrEquiv<BFS>::equiv(row0[j],row1[j]))
-            return false;
-      }
-      return true;
-    }
-#endif
-
   /** TwoPRep_11_11_base is the base for all 2-body repulsion integrals with one basis function
     for each particle in bra and ket
     */
@@ -597,6 +422,16 @@ namespace libint2 {
      mType is the type that describes the auxiliary index of standard 2-body repulsion integrals
   */
   typedef QuantumNumbers<unsigned int,1> mType;
+  
+  /// This is the implementation of the Braket concept used by TwoPrep_11_11
+  // really need to have typedef template
+  template <typename BFS>
+    struct DefaultTwoPBraket {
+      /// This defines which Braket implementation to use
+      //typedef VectorBraket<BFS> Result;
+      typedef ArrayBraket<BFS,2> Result;
+    };
+  
   /**
      Most basic type -- TwoPRep_11_11 --
      has one bfs for each particle in bra and ket.
@@ -604,19 +439,19 @@ namespace libint2 {
      from which BFS derives.
   */
   template <class BFS> class TwoPRep_11_11 :
-    public GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, mType >,
+    public GenIntegralSet<TwoERep, IncableBFSet, typename DefaultTwoPBraket<BFS>::Result, typename DefaultTwoPBraket<BFS>::Result, mType >,
     public TwoPRep_11_11_base
     {
     public:
       typedef TwoERep OperType;
-      typedef VectorBraket<BFS> BraType;
-      typedef VectorBraket<BFS> KetType;
+      typedef typename DefaultTwoPBraket<BFS>::Result BraType;
+      typedef typename DefaultTwoPBraket<BFS>::Result KetType;
       typedef mType AuxIndexType;
       typedef TwoPRep_11_11 this_type;
       /// TwoPRep_11_11 is a set of these subobjects
       typedef TwoPRep_11_11<typename BFS::iter_type> iter_type;
       /// This is the immediate parent
-      typedef GenIntegralSet<TwoERep, IncableBFSet, VectorBraket<BFS>, VectorBraket<BFS>, AuxIndexType > parent_type;
+      typedef GenIntegralSet<TwoERep, IncableBFSet, BraType, KetType, AuxIndexType > parent_type;
       /// This class provides comparison operations on pointers
       typedef PtrEquiv<this_type> PtrComp;
 
@@ -634,7 +469,7 @@ namespace libint2 {
       */
       static const SafePtr<TwoPRep_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, unsigned int m);
       /// Returns a pointer to a unique instance, a la Singleton
-      static const SafePtr<TwoPRep_11_11> Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
+      static const SafePtr<TwoPRep_11_11> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
       
       unsigned int m() const { return parent_type::aux()->elem(0); };
 
@@ -647,7 +482,7 @@ namespace libint2 {
 
     private:
       // This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
-      TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux);
+      TwoPRep_11_11(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
 
       // This is used to manage GenIntegralSet objects as singletons
       static SingletonManagerType singl_manager_;
@@ -671,7 +506,7 @@ namespace libint2 {
 #endif
   
   template <class BFS>
-    TwoPRep_11_11<BFS>::TwoPRep_11_11(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket,  const AuxIndexType& aux) :
+    TwoPRep_11_11<BFS>::TwoPRep_11_11(const BraType& bra, const KetType& ket,  const AuxIndexType& aux) :
     GenIntegralSet<TwoERep, IncableBFSet, BraType, KetType, AuxIndexType>(TwoERep(), bra, ket, aux)
     {
       if (bra.num_members(0) != 1)
@@ -686,7 +521,7 @@ namespace libint2 {
 
   template <class BFS>
     const SafePtr< TwoPRep_11_11<BFS> >
-    TwoPRep_11_11<BFS>::Instance(const VectorBraket<BFS>& bra, const VectorBraket<BFS>& ket, const AuxIndexType& aux)
+    TwoPRep_11_11<BFS>::Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux)
     {
       SafePtr<TwoPRep_11_11> this_int(new TwoPRep_11_11<BFS>(bra,ket,aux));
       // Use singl_manager_ to make sure this is a new object of this type
@@ -719,8 +554,8 @@ namespace libint2 {
       vector<BFSRef> vket1;  vket1.push_back(ket1_ref);
       vector< vector<BFSRef> > vvbra;  vvbra.push_back(vbra0);  vvbra.push_back(vbra1);
       vector< vector<BFSRef> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
-      VectorBraket<BFS> bra(vvbra);
-      VectorBraket<BFS> ket(vvket);
+      BraType bra(vvbra);
+      KetType ket(vvket);
       AuxIndexType aux(vector<unsigned int>(1,m));
       return Instance(bra,ket,aux);
     }

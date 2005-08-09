@@ -188,27 +188,34 @@ namespace libint2 {
 
   /** ArrayBraket is a lightweight implementation of Braket concept.
       BFS specifies the BasisFunctionSet. NP is the number of particles (>= 1).
-      ArrayBraket assumes 1 BFS per particle per bra/ket.
+      ArrayBraket assumes 1 BFS per particle.
   */
   template <class BFS, unsigned int NP> class ArrayBraket {
   public:
     /// This type
     typedef ArrayBraket<BFS,NP> this_type;
     /// There's no parent
-    typedef struct{} parent_type; 
+    typedef struct{} parent_type;
     /// The iterator through ArrayBraket
     typedef ArrayBraket<typename BFS::iter_type,NP> iter_type;
+    
+    typedef BFS bfs_type;
+    typedef bfs_type& bfs_ref;
+    typedef const BFS& bfs_cref;
 
     /** This one is a very dangerous constructor -- do not to use it if at all possible.
         Provided only for compatibility for generic subiterator algorithms */
     ArrayBraket();
-    ArrayBraket(const BFS* bra, const BFS* ket);
-    ~ArrayBraket() throw();
+    ArrayBraket(const BFS* braket);
+    ArrayBraket(const vector<vector<BFS> >& braket);
+    ~ArrayBraket();
 
     /// Comparison function
     bool operator==(const this_type&) const;
-    /// Returns pointer to the i-th function for particle p
-    const BFS& member(unsigned int p, unsigned int i=0) const;
+    /// Returns cref to the i-th function for particle p
+    bfs_cref member(unsigned int p, unsigned int i=0) const;
+    /// Returns ref to the i-th function for particle p
+    bfs_ref member(unsigned int p, unsigned int i=0);
     /// Returns pointer to the SubIterator for i-th BFS of particle p
     SubIterator* member_subiter(unsigned int p, unsigned int i=0) const;
     /// Sets i-th function for particle p
@@ -216,17 +223,106 @@ namespace libint2 {
     /// Sets i-th function for particle p (does a dynamic cast inside)
     void set_member(const ConstructablePolymorphically&, unsigned int p, unsigned int i=0);
     /// Returns the number of BFS for particle p
-    const unsigned int num_members(unsigned int p) const { return 1; }
+    const unsigned int num_members(unsigned int p) const { assert(p<NP); return 1; }
     /// Returns the number of particles
     const unsigned int num_part() const { return NP; }
-    
+    /// Implements Hashable::key()
+    inline LIBINT2_UINT_LEAST64 key() const;
+    /// key lies in range [0,max_key())
+    LIBINT2_UINT_LEAST64 max_key() const;
 
   private:
-    BFS bra_[NP];
-    BFS ket_[NP];
+    BFS bfs_[NP];
     
   };
   
+  template <class BFS, unsigned int NP>
+  ArrayBraket<BFS,NP>::ArrayBraket() {}
+  
+  template <class BFS, unsigned int NP>
+  ArrayBraket<BFS,NP>::ArrayBraket(const BFS* braket) {
+    for(int i=0; i<NP; i++)
+      bfs_[i] = braket[i];
+  }
+  
+  template <class BFS, unsigned int NP>
+  ArrayBraket<BFS,NP>::ArrayBraket(const vector<vector<BFS> >& braket) {
+    assert(braket.size()==NP);
+    for(int i=0; i<NP; i++) {
+      assert(braket[i].size()==1);
+      bfs_[i] = braket[i][0];
+    }
+  }
+  
+  template <class BFS, unsigned int NP>
+  ArrayBraket<BFS,NP>::~ArrayBraket() {}
+  
+  template <class BFS, unsigned int NP>
+  bool
+  ArrayBraket<BFS,NP>::operator==(const ArrayBraket<BFS,NP>& a) const {
+    for(int i=0; i<NP; i++)
+      if (bfs_[i] != a[i])
+        return false;
+    return true;
+  }
+  
+  template <class BFS, unsigned int NP>
+  typename ArrayBraket<BFS,NP>::bfs_cref
+  ArrayBraket<BFS,NP>::member(unsigned int p, unsigned int i) const {
+    assert(i==0 && p<NP);
+    return bfs_[p];
+  }
+  
+  template <class BFS, unsigned int NP>
+  typename ArrayBraket<BFS,NP>::bfs_ref
+  ArrayBraket<BFS,NP>::member(unsigned int p, unsigned int i) {
+    assert(i==0 && p<NP);
+    return bfs_[p];
+  }
+  
+  template <class BFS, unsigned int NP>
+  SubIterator*
+  ArrayBraket<BFS,NP>::member_subiter(unsigned int p, unsigned int i) const {
+    assert(i==0 && p<NP);
+    return static_cast<SubIterator*>(new SubIteratorBase<BFS>( member(p,0) ) );
+  }
+  
+  template <class BFS, unsigned int NP>
+  void
+  ArrayBraket<BFS,NP>::set_member(const BFS& f, unsigned int p, unsigned int i) {
+    assert(i==0 && p<NP);
+    bfs_[p] = f;
+  }
+  
+  template <class BFS, unsigned int NP>
+  void
+  ArrayBraket<BFS,NP>::set_member(const ConstructablePolymorphically& f, unsigned int p, unsigned int i) {
+    assert(i==0 && p<NP);
+    bfs_[p] = f;
+  }
+  
+  template <class BFS, unsigned int NP>
+  LIBINT2_UINT_LEAST64
+  ArrayBraket<BFS,NP>::key() const {
+    LIBINT2_UINT_LEAST64 pfac = 1;
+    LIBINT2_UINT_LEAST64 key = 0;
+    for(int p=NP-1; p>=0; p--) {
+      key += pfac*bfs_[p].key();
+      pfac *= BFS::max_key;
+    }
+    return key;
+  }
+  
+  template <class BFS, unsigned int NP>
+  LIBINT2_UINT_LEAST64
+  ArrayBraket<BFS,NP>::max_key() const {
+    LIBINT2_UINT_LEAST64 max_key = 1;
+    for(int p=NP-1; p>=0; p--) {
+      max_key *= BFS::max_key;
+    }
+    return max_key;
+  }
+
 };
 
 #endif
