@@ -11,25 +11,28 @@ INCLUDE += -I.
 #
 # List all generated routines. Do it in a safe way in case the list is too long
 #
-TRUESRC1 = $(shell echo `ls __*.cc`)
+TRUESRC0 = $(shell echo `ls __*.cc`)
+TRUESRC1 = $(shell echo `ls _aB*.cc`)
 TRUESRC2 = $(shell echo `ls OSVRR*.cc`)
 TRUESRC3 = $(shell echo `ls HRR*.cc`)
 TRUESRC4 = $(shell echo `ls libint2_*.cc`)
 TRUESRC5 = $(shell echo `ls VRR*.cc`)
 TRUESRC6 = $(shell echo `ls RR*.cc`)
+LIBOBJ0 = $(TRUESRC0:%.cc=%.$(OBJSUF))
 LIBOBJ1 = $(TRUESRC1:%.cc=%.$(OBJSUF))
 LIBOBJ2 = $(TRUESRC2:%.cc=%.$(OBJSUF))
 LIBOBJ3 = $(TRUESRC3:%.cc=%.$(OBJSUF))
 LIBOBJ4 = $(TRUESRC4:%.cc=%.$(OBJSUF))
 LIBOBJ5 = $(TRUESRC5:%.cc=%.$(OBJSUF))
 LIBOBJ6 = $(TRUESRC6:%.cc=%.$(OBJSUF))
-LIBOBJ = $(LIBOBJ1) $(LIBOBJ2) $(LIBOBJ3) $(LIBOBJ4) $(LIBOBJ5) $(LIBOBJ6)
+LIBOBJ = $(LIBOBJ0) $(LIBOBJ1) $(LIBOBJ2) $(LIBOBJ3) $(LIBOBJ4) $(LIBOBJ5) $(LIBOBJ6)
 
 default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
 
 # this is how static library is made
 $(TOPDIR)/lib/$(NAME).a: $(LIBOBJ)
 	/bin/rm -f $@
+	$(AR) $(ARFLAGS) $@ $(LIBOBJ0)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ1)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ2)
 	$(AR) $(ARFLAGS) $@ $(LIBOBJ3)

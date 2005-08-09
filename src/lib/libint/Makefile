@@ -6,7 +6,8 @@ endif
 TOPOBJDIR = $(shell ls -d `pwd`/$(TOPDIR))
 
 NAME = libint
-TARGET = $(NAME).$(LIBSUF)
+VERSION = 2
+TARGET = $(NAME)$(VERSION).$(LIBSUF)
 COMPILER = build_$(NAME)
 
 include $(TOPDIR)/src/lib/MakeVars
