@@ -163,6 +163,9 @@ namespace libint2 {
       LIBINT2_UINT_LEAST64 key() const {
         return key_;
       }
+      
+      /// Reimplements DGVertex::unregister()
+      void unregister() const;
 
       protected:
       // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
@@ -243,6 +246,7 @@ namespace libint2 {
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::~GenIntegralSet()
     {
+      std::cout << "Destructed " << label() << std::endl;
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
@@ -330,7 +334,14 @@ namespace libint2 {
       return true;
 #endif
     }
-
+  
+  template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
+    void
+    GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::unregister() const
+    {
+      singl_manager_.remove(const_pointer_cast<this_type,const this_type>(EnableSafePtrFromThis<this_type>::SafePtr_from_this()));
+    }
+  
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const unsigned int
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::size() const
@@ -432,8 +443,8 @@ namespace libint2 {
   template <typename T, unsigned int N>
     struct DefaultQuantumNumbers {
       /// This defines which QuantumNumbers implementation to use
-      typedef QuantumNumbers<T,N> Result;
-      //typedef QuantumNumbersA<T,N> Result;
+      //typedef QuantumNumbers<T,N> Result;
+      typedef QuantumNumbersA<T,N> Result;
     };
   /**
      mType is the type that describes the auxiliary index of standard 2-body repulsion integrals
@@ -452,6 +463,7 @@ namespace libint2 {
   */
   template <class BFS> class TwoPRep_11_11 :
     public GenIntegralSet<TwoERep, IncableBFSet, typename DefaultTwoPBraket<BFS>::Result, typename DefaultTwoPBraket<BFS>::Result, mType >,
+    //public EnableSafePtrFromThis< TwoPRep_11_11<BFS> >,
     public TwoPRep_11_11_base
     {
     public:
@@ -491,6 +503,8 @@ namespace libint2 {
       /// Specialization of GenIntegralSet::label()
       const std::string& label() const;
 #endif
+      /// Reimplements DGVertex::unregister()
+      void unregister() const;
 
     private:
       // This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
@@ -578,7 +592,21 @@ namespace libint2 {
     {
       return parent_type::PtrComp::equiv(static_cast<const parent_type*>(this),a);
     }
-
+  
+  template <class BFS>
+    void
+    TwoPRep_11_11<BFS>::unregister() const
+    {
+      singl_manager_.remove(
+        const_pointer_cast<this_type,const this_type>(
+          static_pointer_cast<const this_type, const parent_type>(
+            EnableSafePtrFromThis<parent_type>::SafePtr_from_this()
+          )
+        )
+      );
+      parent_type::unregister();
+    }
+  
 #if OVERLOAD_GENINTEGRALSET_LABEL
   template <class BFS>
     const std::string&

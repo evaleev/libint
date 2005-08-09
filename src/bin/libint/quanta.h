@@ -162,7 +162,7 @@ namespace libint2 {
     }
   
   typedef QuantumNumbers<unsigned int,0> NullQuantumSet;
-
+  
   
   /**
      QuantumNumbersA<T,N> is a set of N quantum numbers of type T implemented in terms of a C-style array.
@@ -298,12 +298,57 @@ namespace libint2 {
     const std::string
     QuantumNumbersA<T,N>::label() const
     {
-      std::string result = " ";
-      for(int i=0; i<N; i++)
-        result += qn_[i];
-      return result;
+      std::ostringstream oss;
+      oss << "{";
+      if (N > 0)
+	oss << qn_[0];
+      for(int i=1; i<N; i++)
+        oss << "," << qn_[i];
+      oss << "}";
+      return oss.str();
     }
   
+  /** partial specialization of QuantumNumbersA for the case N=0 */
+    /**
+     QuantumNumbersA<T,N> is a set of N quantum numbers of type T implemented in terms of a C-style array.
+     QuantumNumbersA is faster than QuantumNumbers but is not as safe!
+  */
+  template<typename T> class QuantumNumbersA<T,0> : public QuantumSet {
+
+  public:
+    typedef QuantumSet parent_type;
+    /// QuantumSet is a set of one QuantumSet
+    typedef QuantumNumbersA iter_type;
+
+    QuantumNumbersA(const T* qn) {}
+    QuantumNumbersA(const vector<T>& qn) {}
+    QuantumNumbersA(const SafePtr<QuantumNumbersA>&) {}
+    QuantumNumbersA(const SafePtr<QuantumSet>&) {}
+    QuantumNumbersA(const SafePtr<ConstructablePolymorphically>&) {}
+    ~QuantumNumbersA() {}
+    
+    bool operator==(const QuantumNumbersA&) const { return true; }
+    const std::string label() const { return "{}"; }
+
+    /// Increment quantum number i
+    void inc(unsigned int i) { throw std::runtime_error("QuantumNumbersA<T,0>::inc -- no quantum numbers to increment"); }
+    /// Decrement quantum number i
+    void dec(unsigned int i) {
+      throw std::runtime_error("QuantumNumbersA<T,0>::inc -- no quantum numbers to decrement");
+    }
+    /// Return i-th quantum number
+    const T elem(unsigned int i) const { throw std::runtime_error("QuantumNumbersA<T,0>::inc -- no quantum numbers to return"); }
+    /// Implementation of QuantumSet::num_quanta()
+    const unsigned int num_quanta() const { return 0; }
+
+    /// Implements Hashable::key()
+    LIBINT2_UINT_LEAST64 key() const { return 0; }
+
+    /// key is in range [0,max_key())
+    LIBINT2_UINT_LEAST64 max_key() const { return 1; }
+    
+  };
+
 };
 
 #endif

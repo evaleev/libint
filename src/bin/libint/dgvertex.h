@@ -164,6 +164,8 @@ namespace libint2 {
 
     /// Resets the vertex, releasing all arcs
     void reset();
+    /// If vertex is a singleton then remove it from the SingletonManager. Must be reimplemented in derived singleton class
+    virtual void unregister() const;
 
   protected:
     /// ArcSetType is a container used to maintain entry and exit arcs

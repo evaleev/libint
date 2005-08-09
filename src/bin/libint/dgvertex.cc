@@ -354,3 +354,9 @@ DGVertex::print(std::ostream& os) const
   }
 #endif
 }
+
+void
+DGVertex::unregister() const
+{
+}
+

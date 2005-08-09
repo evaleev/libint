@@ -55,6 +55,10 @@ namespace libint2 {
       */
       const value_type& find(const SafePtr<T>& obj);
       
+      /** Searches for obj on the stack and, if found, removes the unique instance
+      */
+      void remove(const SafePtr<T>& obj);
+      
       /** Returns iterator to the beginning of the stack */
       citer_type begin() const { return map_.begin(); }
       /** Returns iterator to the end of the stack */
@@ -93,6 +97,19 @@ namespace libint2 {
         std::cout << "SingletonStack::find -- " << obj->label() << " is new (instid_ = " << next_instance_-1 << ")" << std::endl;
 #endif
         return map_[key];
+      }
+    }
+    
+  template <class T, class HashType>
+    void
+    SingletonStack<T,HashType>::remove(const SafePtr<T>& obj)
+    {
+      key_type key = ((obj.get())->*callback_)();
+
+      typedef typename map_type::iterator miter;
+      miter pos = map_.find(key);
+      if (pos != map_.end()) {
+        map_.erase(pos);
       }
     }
 

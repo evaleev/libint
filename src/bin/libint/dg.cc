@@ -208,8 +208,10 @@ void
 DirectedGraph::reset()
 {
   // Reset each vertex, releasing all arcs
-  for(int i=0; i<first_free_; i++)
+  for(int i=0; i<first_free_; i++) {
+    stack_[i]->unregister();
     stack_[i]->reset();
+  }
   for(int i=0; i<first_free_; i++)
     stack_[i].reset();
   // if everything went OK then resize stack_ to 0
