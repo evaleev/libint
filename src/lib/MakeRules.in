@@ -37,20 +37,14 @@ source: make_libsrcdir $(LIBSRCDIR)/Makefile $(LIBSRCDIR)/$(NAME).h
 	date >> $@
 
 make_libsrcdir: $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER)
-	if [ -e $@ ]; then \
+	if test -f "$@"; then \
 $(RM) -rf $(LIBSRCDIR); \
 $(RM) -f $(LIBSRCLINK); \
 $(RM) -f source; \
 $(RM) -f make_libsrcdir; \
 fi; \
-if ! $(INSTALL) $(INSTALLDIROPT) $(LIBSRCDIR); then \
-echo Could not make directory $(LIBSRCDIR); \
-exit 1; \
-fi; \
-if ! $(LN_S) $(LIBSRCDIR) $(LIBSRCLINK); then \
-echo Could not $(LN_S) $(LIBSRCDIR) $(LIBSRCLINK); \
-exit 1; \
-fi;
+$(INSTALL) $(INSTALLDIROPT) $(LIBSRCDIR) || exit 1; \
+$(LN_S) $(LIBSRCDIR) $(LIBSRCLINK) || exit 1; \
 	echo "Last time the library source directory was created:\c" > $@
 	date >> $@
 
