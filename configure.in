@@ -516,8 +516,34 @@ else
   AC_MSG_RESULT([[yes]])
   CXX_COMPATIBLE_WITH_CXXGEN=yes
 fi
-AC_SUBST(CXX_COMPATIBLE_WITH_CXXGEN)
 /bin/rm -f linkcheck linkcheck1.cc linkcheck2.cc linkcheck1.o linkcheck2.o
+
+dnl --------- Check if either compiler will allow template template parameter
+dnl           to be specialized using fewer params (i.e. due to default template params) ---------
+echo "template <typename A, typename B = int> class T1 {};" > compcheck.cc
+echo "template <typename C, template <typename D> class E = T1 > class T2 {};" >> compcheck.cc
+echo "void f() { T2<int> x; }" >> compcheck.cc
+AC_MSG_CHECKING([[if cxx allows template with default params as template template parameter]])
+$CXX $CPPFLAGS $CXXFLAGS -c compcheck.cc > /dev/null 2>&1
+if test ! -f compcheck.o; then
+  AC_MSG_RESULT([[no]])
+  AC_MSG_ERROR([[C++ compiler (cxx) cannot be used to compile Libint. Try gcc-3.4.]])
+else
+  AC_MSG_RESULT([[yes]])
+fi
+rm -f compcheck.o
+AC_MSG_CHECKING([[if cxxgen allows template with default params as template template parameter]])
+$CXXGEN $CPPFLAGS $CXXGENFLAGS -c compcheck.cc > /dev/null 2>&1
+if test ! -f compcheck.o; then
+  AC_MSG_RESULT([[no]])
+  AC_MSG_WARN([[You will not be able to test generated code.]])
+  CXX_COMPATIBLE_WITH_CXXGEN=no
+else
+  AC_MSG_RESULT([[yes]])
+fi
+rm -f compcheck.cc compcheck.o
+
+AC_SUBST(CXX_COMPATIBLE_WITH_CXXGEN)
 
 dnl -------- Checks for architecture specific features. --------
 dnl (Doesn't work for cross compilation.)
