@@ -45,6 +45,12 @@ $(TOPDIR)/lib/$(NAME).a: $(LIBOBJ)
 $(TOPDIR)/lib/$(NAME).la: $(LIBOBJ)
 	$(LTLINK) $(CXX) -o $@ $^ $(LTLINKLIBOPTS)
 
+# the library is to be compiled using cxxgen
+$(TOPDIR)/lib/$(NAME).a: CXX=$(CXXGEN)
+$(TOPDIR)/lib/$(NAME).a: CXXFLAGS=$(CXXGENFLAGS)
+$(TOPDIR)/lib/$(NAME).la: CXX=$(CXXGEN)
+$(TOPDIR)/lib/$(NAME).la: CXXFLAGS=$(CXXGENFLAGS)
+
 SRC_HEADERS = $(TARGET_HEADERS:%.h=$(SRCTOPDIR)/include/%.h)
 $(TOPDIR)/include/$(NAME)/$(NAME).h: $(TARGET_HEADERS)
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/include/$(NAME)

@@ -62,7 +62,7 @@ void try_main (int argc, char* argv[])
   
   // use default parameters
   SafePtr<CompilationParameters> cparams(new CompilationParameters);
-  cparams->max_am_eri(3);
+  cparams->max_am_eri(LIBINT_MAX_AM);
   // initialize code context to produce library API
   SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
   // make a list of computation labels

@@ -74,6 +74,8 @@ targetclean::
 dependclean::
 	-rm -f *.$(DEPSUF)
 
+realclean:: clean
+
 ifneq ($(CXXDEPENDSUF),none)
 %.d: %.cc
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
