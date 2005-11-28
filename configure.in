@@ -357,6 +357,9 @@ AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin)
 AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin)
 AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin)
 AC_PATH_PROG(BIBTEX,bibtex,,$PATH:/usr/local/bin)
+if test X$LD = X; then
+  LD=$CXX
+fi
 
 dnl The lack of certain tools is a show stopper
 
