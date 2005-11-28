@@ -44,7 +44,7 @@ $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	cd ../libint; $(MAKE) $(LIBINT)
 	$(LD) -o $@ $(LDFLAGS) $^
 
-ifeq (CXX_COMPATIBLE_WITH_CXXGEN,yes)
+ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
 	$(CXX) -o $@ $(LDFLAGS) $^
 else
