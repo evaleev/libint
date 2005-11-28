@@ -1,4 +1,8 @@
 
+11/28/2005:	Test if cxx and cxxgen allow templates with default parameters to match template
+		template parameters with fewer arguments. libint2::Policy requires
+		such an extension (e.g. gcc-3.4). -EFV
+
 11/28/2005:	Added cxxgen options to configure. Timing code is now compiled
                 using cxxgen. -EFV
 
