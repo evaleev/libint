@@ -135,6 +135,8 @@ if test $withval -le $LIBINT_MAX_AM; then
 fi
 )
 
+# check max am for derivative integrals, if needed
+if test $INCLUDE_DERIV = yes; then
 if test $LIBINT_MAX_AM -gt 3; then
   LIBDERIV_MAX_AM1=3
 else
@@ -166,7 +168,10 @@ else
   LIBDERIV_MAX_AM2=$withval
 fi
 )
+fi
 
+# check max am for R12 integrals, if needed
+if test $INCLUDE_R12 = yes; then
 LIBR12_MAX_AM=$(($LIBINT_MAX_AM-1))
 AC_ARG_WITH(libr12-max-am,
 [  --with-libr12-max-am    Gives the maximum angular momentum of linear R12 method integrals this library will be able to handle.],
@@ -184,6 +189,7 @@ if test $withval -le $LIBR12_MAX_AM; then
   LIBR12_OPT_AM=$withval
 fi
 )
+fi
 
 MAX_CLASS_SIZE=300
 AC_ARG_WITH(max-class-size,
