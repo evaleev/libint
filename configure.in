@@ -2,17 +2,20 @@ define([libint_mmm_version],[2.0.0])
 define([libint_buildid],[prealpha])
 define([libint_so_version],[2:0:0])
 
+dnl --------- Begin ---------
 dnl Process this file with autoconf to produce a configure script.
 define([AC_CACHE_LOAD], )dnl for debugging configure.in
 define([AC_CACHE_SAVE], )dnl for debugging configure.in
-AC_INIT(src/bin/libint/rr.h)
-AC_PREREQ(2.52)
+AC_PREREQ(2.57)
+AC_INIT([Libint2],[libint_mmm_version],[edward.valeev@gatech.edu],[libint2])
+AC_CONFIG_SRCDIR(src/bin/libint/rr.h)
 AC_CONFIG_HEADER(include/libint2_config.h)
 AC_CONFIG_AUX_DIR(bin)
 
-AC_CANONICAL_SYSTEM
-AC_SET_MAKE
+dnl --- Compiling C++ only ---
+AC_LANG(C++)
 
+AC_CANONICAL_TARGET
 AC_DEFINE_UNQUOTED(HOST_ARCH, "$host")
 AC_DEFINE_UNQUOTED(TARGET_ARCH, "$target")
 
@@ -237,26 +240,26 @@ AC_SUBST(LIBINT_VERSION)
 
 ac_default_prefix="/usr/local/libint/$LIBINT_VERSION"
 
-AC_ARG_WITH(cc,
-[  --with-cc               Gives the name of the C compiler to use.],
-CC=$withval
-)
-
 AC_ARG_WITH(cxx,
 [  --with-cxx              Gives the name of the C++ compiler to use.],
 CXX=$withval
-)
-
-COPTIONS_OPT=
-AC_ARG_WITH(cc-optflags,
-[  --with-cc-optflags      Gives optimization flags for the C compiler.],
-COPTIONS_OPT=$withval
 )
 
 CXXOPTIONS_OPT=
 AC_ARG_WITH(cxx-optflags,
 [  --with-cxx-optflags     Gives optimization flags for the C++ compiler.],
 CXXOPTIONS_OPT=$withval
+)
+
+AC_ARG_WITH(cxxgen,
+[  --with-cxxgen           Gives the name of the C++ compiler to compile generated code.],
+CXXGEN=$withval
+)
+
+CXXGENOPTIONS_OPT=
+AC_ARG_WITH(cxxgen-optflags,
+[  --with-cxxgen-optflags  Gives optimization flags for the C++ compiler for generated source.],
+CXXGENOPTIONS_OPT=$withval
 )
 
 AC_ARG_WITH(cxxdepend,
@@ -339,15 +342,14 @@ if test X$ac_srcdir_defaulted = Xyes; then
 fi
 
 dnl --------- Checks for programs. ---------
+AC_PROG_MAKE_SET
 AC_PROG_LN_S
 AC_PROG_INSTALL
 AC_PROG_RANLIB
-AC_PROG_CC
 dnl ac_prog_cxx's order isn't what i need
 AC_CHECK_PROGS(CXX, g++ c++ gcc CC cxx xlC_r, gcc)
 dnl sees if CXX is a GNU compiler
 AC_PROG_CXX
-AC_PROG_CPP
 AC_PROG_CXXCPP
 AC_CHECK_PROG(AR,ar,ar)
 AC_CHECK_PROG(PERL,perl,perl)
@@ -373,15 +375,6 @@ changequote([, ])dnl
 dnl -------- Checks for compiler/linker options. ----------
 
 # options needed only for optimization
-if test "X$COPTIONS_OPT" = X; then
-  COPTIONS_OPT=-O2
-fi
-# options needed only for debugging
-COPTIONS_DBG=-g
-# options that are always needed
-COPTIONS_MISC=
-
-# options needed only for optimization
 if test "X$CXXOPTIONS_OPT" = X; then
   CXXOPTIONS_OPT=-O2
 fi
@@ -396,19 +389,9 @@ LIBSUF=a
 dnl -- check how dependency information is built --
 
 # The GNU compilers work with:
-CCDEPENDSUF=none
 CXXDEPENDSUF=none
-CCDEPENDFLAGS=-M
 CXXDEPENDFLAGS=-M
 
-/bin/rm -f depcheck.u depcheck.c depcheck.o
-
-# Check for an IBM visual age C compiler
-echo "#include <stdio.h>" > depcheck.c
-$CC $CPPFLAGS $CFLAGS -M depcheck.c > /dev/null 2>&1
-if test -f depcheck.u; then
-  CCDEPENDSUF=u
-fi
 /bin/rm -f depcheck.u depcheck.c depcheck.o
 
 # Check for an IBM visual age C++ compiler
@@ -425,9 +408,6 @@ dnl -- special optimization options --
 AC_MSG_CHECKING([for additional optimization options])
 case $target in
   rs6000-ibm-aix3.2.* | rs6000-ibm-aix4.* | powerpc-ibm-aix4.* | powerpc-ibm-aix5.*)
-    if test X$GCC != Xyes; then
-      COPTIONS_OPT="$COPTIONS_OPT -qnolm"
-    fi
     if test X$GXX != Xyes; then
       CXXOPTIONS_OPT="$CXXOPTIONS_OPT -qnolm -qrtti"
     fi
@@ -440,30 +420,24 @@ esac
 
 dnl -- special architecture options --
 
-if test "X$COPTIONS_OPT" = X; then
-  AC_MSG_WARN([C optimization options are not given! For optimum performance use --with-cc-optflags configure option])
-fi
-if test "X$CXXOPTIONS_OPT" = X; then
-  AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxx-optflags configure option])
+if test "X$CXXGENOPTIONS_OPT" = X; then
+  AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxxgen-optflags configure option])
 fi
 
 dnl ----------- check for GNU libc++-v3 prerelease bug ---------------
 
 if test X$GXX = Xyes; then
-AC_LANG_SAVE
-AC_LANG_CPLUSPLUS
 AC_MSG_CHECKING([for GNU libc++-v3 prerelease bug])
-AC_TRY_LINK([
-#include <stdio.h>
+AC_LINK_IFELSE([AC_LANG_SOURCE(
+[[#include <stdio.h>
 #include <$iostream>
-],[
-],[
+]],[[
+]])],[
 AC_MSG_RESULT([no])
 ],
 EXTRADEFINES="$EXTRADEFINES -D_ISOC99_SOURCE=1"
 AC_MSG_RESULT([yes])
 );
-AC_LANG_RESTORE
 fi
 
 dnl -- other options --
@@ -484,31 +458,57 @@ else
 fi
 
 if test $DEBUG = yes; then
-  CFLAGS="$COPTIONS_DBG $COPTIONS_MISC"
   CXXFLAGS="$CXXOPTIONS_DBG $CXXOPTIONS_MISC"
   LDFLAGS="$LDFLAGS -g"
 elif test $DEBUG = opt; then
-  CFLAGS="$COPTIONS_DBG $COPTIONS_OPT $COPTIONS_MISC"
   CXXFLAGS="$CXXOPTIONS_DBG $COPTIONS_OPT $CXXOPTIONS_MISC"
   LDFLAGS="$LDFLAGS -g"
 else
-  CFLAGS="$COPTIONS_OPT $COPTIONS_MISC"
   CXXFLAGS="$CXXOPTIONS_OPT $CXXOPTIONS_MISC"
 fi
 
 AC_SUBST(EXTRAINCLUDE)
 
-AC_SUBST(CFLAGS)
 AC_SUBST(CXXFLAGS)
-
 AC_SUBST(LIBDIRS)
-
 AC_SUBST(OBJSUF)
 AC_SUBST(LIBSUF)
-AC_SUBST(CCDEPENDSUF)
 AC_SUBST(CXXDEPENDSUF)
-AC_SUBST(CCDEPENDFLAGS)
 AC_SUBST(CXXDEPENDFLAGS)
+
+
+dnl --------- configure compiler for generated source ---------
+if test X$CXXGEN = X; then
+  CXXGEN=CXX
+  CXXGENOPTIONS_OPT=CXXOPTIONS_OPT
+fi
+if test $DEBUG = yes; then
+  CXXGENFLAGS="$CXXOPTIONS_DBG $CXXGENOPTIONS_MISC"
+elif test $DEBUG = opt; then
+  CXXGENFLAGS="$CXXOPTIONS_DBG $CXXGENOPTIONS_OPT $CXXGENOPTIONS_MISC"
+else
+  CXXGENFLAGS="$CXXGENOPTIONS_OPT $CXXGENOPTIONS_MISC"
+fi
+AC_SUBST(CXXGEN)
+AC_SUBST(CXXGENFLAGS)
+
+dnl Check if sources compiled with CXX and CXXGEN can be linked together
+AC_MSG_CHECKING([[for compatible cxx and cxxgen compilers]])
+echo "extern void func1(); int main(int argc, char**argv) { func1(); } " > linkcheck1.cc
+echo "void func1() {}" > linkcheck2.cc
+$CXX $CPPFLAGS $CXXFLAGS -c linkcheck1.cc > /dev/null 2>&1
+$CXXGEN $CPPFLAGS $CXXGENFLAGS -c linkcheck2.cc > /dev/null 2>&1
+$LD $LDFLAGS -o linkcheck linkcheck1.o linkcheck2.o > /dev/null 2>&1
+if test ! -f linkcheck; then
+  AC_MSG_RESULT([[no]])
+  AC_MSG_WARN([[Compilers cxx and cxxgen produce incompatible code! You will not be able to test generated code.]])
+  CXX_COMPATIBLE_WITH_CXXGEN=no
+else
+  AC_MSG_RESULT([[yes]])
+  CXX_COMPATIBLE_WITH_CXXGEN=yes
+fi
+AC_SUBST(CXX_COMPATIBLE_WITH_CXXGEN)
+/bin/rm -f linkcheck linkcheck1.cc linkcheck2.cc linkcheck1.o linkcheck2.o
 
 dnl -------- Checks for architecture specific features. --------
 dnl (Doesn't work for cross compilation.)
@@ -522,10 +522,9 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(limits.h stdint.h)
 
 dnl -- Checks for typedefs, structures, and compiler characteristics. --
-AC_C_CONST
 AC_TYPE_SIZE_T
 
-CC="$CC" CFLAGS="$CXXFLAGS" CPPFLAGS="$CPPFLAGS" \
+CPPFLAGS="$CPPFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
 LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB" \
 
@@ -576,6 +575,9 @@ $PERL $srcdir/bin/objectdir.pl $EXCLUDED_DIRS $srcdir
 AC_CONFIG_FILES([src/bin/test_eri/test_eri.pl],[chmod +x src/bin/test_eri/test_eri.pl])
 AC_CONFIG_FILES([src/bin/test_eri/time_eri.pl],[chmod +x src/bin/test_eri/time_eri.pl])
 AC_CONFIG_FILES([src/bin/test_eri/run_time_eri.pl],[chmod +x src/bin/test_eri/run_time_eri.pl])
-AC_OUTPUT(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/MakeSuffixRules
-          doc/MakeVars doc/MakeRules doc/MakeSuffixRules doc/classdoc/doxygen.cfg)
+AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/MakeSuffixRules
+                doc/MakeVars doc/MakeRules doc/MakeSuffixRules doc/classdoc/doxygen.cfg)
+
+dnl --------- Done! ---------
+AC_OUTPUT
 

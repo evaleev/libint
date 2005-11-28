@@ -71,19 +71,28 @@ close MFILE;
 #
 if ($scpexportdest eq "") {
   # now make test program and run it
-  system("make test_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"") && die("make test_eri failed");
-  system("./test_eri") && die("./test_eri failed");
-  
-  # prepare timing program too
-  system("make time_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"") && die("make time_eri failed");
-  printf STDOUT "Timing program compiled.\n";
-  
-  if ($timencycles gt 0) {
-    printf STDOUT "Running timing program\n";
-    system("./run_time_eri.pl");
+  my $errcod = system("make test_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"");
+  if ($errcod == 0) {
+    printf STDOUT "make test_eri failed!\n";
   }
+  else {
+    system("./test_eri") && die("./test_eri failed");
+  }
+
+  # prepare timing program too
+  $errcod = system("make time_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"");
+  if ($errcod) {
+    printf STDOUT "make time_eri failed!\n";
+  }
+  else {
+    printf STDOUT "Timing program compiled.\n";
+    if ($timencycles gt 0) {
+      printf STDOUT "Running timing program\n";
+      system("./run_time_eri.pl");
+    }
+  }
+
   printf STDOUT "Test finished.\n";
-  
 }
 else {
   printf STDOUT "Exporting generated source to $scpexportdest using the following command:\n";

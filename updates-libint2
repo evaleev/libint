@@ -1,0 +1,10 @@
+
+11/28/2005:	Added cxxgen options to configure. Timing code is now compiled
+                using cxxgen. -EFV
+
+11/27-28/2005:	Updated configure.in for autoconf 2.57. -EFV
+
+11/27/2005:	Upgraded to libtool-1.5.20. -EFV
+
+11/27/2005:	Started updates-libint2 file. -EFV
+
