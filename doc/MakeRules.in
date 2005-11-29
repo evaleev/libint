@@ -1,13 +1,13 @@
 
-default: $(TARGET)
+default:: $(TARGET)
 
 install:: install_target
 
-install_target:: $(TARGET)
+install_target:: default
 	$(INSTALL) $(INSTALLDIROPT) $(docdir)
-	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) $< $(docdir)
+	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) $(TARGET) $(docdir)
 
-clean: $(SRCDIR)/Makefile
+clean:: $(SRCDIR)/Makefile
 	-rm -f $(TEXGARBAGE)
 
 distclean:: clean
