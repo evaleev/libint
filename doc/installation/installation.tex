@@ -1,0 +1,167 @@
+%
+% The Libint Installation Manual
+%
+
+\documentclass[12pt]{article}
+\usepackage{html}
+
+\begin{document}
+\include{../macros}
+
+\begin{center}
+\ \\
+\vspace{2.0in}
+{\bf {\Large Installation Manual for the \LIBINT\ Program Package}} \\
+\vspace{0.5in}
+Edward F.\ Valeev \\
+\ \\
+{\em Oak Ridge National Laboratory, Oak Ridge, Tennessee}\\
+\vspace{0.1in}
+{\em Center for Computational Molecular Science and Technology, \mbox{Georgia 
+Institute of Technology,} Atlanta, Georgia 30332-0400} 
+\ \\
+\vspace{0.3in}
+\LIBINTv \\
+Created on: \today
+\end{center}
+
+\thispagestyle{empty}
+
+\newpage
+\section{Compilation Prerequisites}
+
+The following software is needed to compile \LIBINTv:
+\begin{itemize}
+\item GNU C++ compiler (version 3.4 is recommended) to compile the library compiler.
+\item (Optional) optimizing C++ compiler
+to compile generated source. GNU C++ compiler does not produce most efficient code on many platforms.
+Thus a vendor compiler is recommended (e.g. Intel compiler on x86 and x86\_64 architectures, etc.).
+\item Perl interpreter (version 5.005 or higher)
+\item Various GNU utilies: \htmladdnormallink{{\tt
+www.gnu.org}}{http://www.gnu.org}
+\begin{itemize}
+\item {\tt autoconf (version 2.57 or higher)}
+\item {\tt make}
+\item {\tt fileutils} (esp.\ {\tt install})
+\end{itemize}
+\item For documentation:
+\begin{itemize}
+\item {\tt LaTeX}
+\item {\tt Doxygen}
+\end{itemize}
+\end{itemize}
+
+\section{Basic Configuration and Installation}
+
+Issue the following series of commands in the source directory to configure and build the \LIBINT\
+library using default parameters and install under /usr/local:
+
+\begin{enumerate}
+\item {\tt aclocal -I lib/autoconf}
+\item {\tt autoconf}
+\item {\tt mkdir objdir}
+\item {\tt cd objdir}
+\item {\tt ../configure}
+\item {\tt make}
+\item {\tt make tests} (optional, but recommended)
+\item {\tt make install}
+\item {\tt make doc} (optional)
+\end{enumerate}
+
+\noindent
+You may need to make use of one or more of the following options to
+the {\tt configure} script:
+\begin{itemize}
+\item {\tt -}{\tt -prefix=directory} --- Use this option if you wish to
+  install the \LIBINT\ library somewhere other than the default
+  directory, {\tt /usr/local}.
+\item {\tt -}{\tt -with-cxx=compiler} --- Use this option to specify the location
+  of the GNU C++
+  compiler.
+\item {\tt -}{\tt -with-cxx-optflags=....} --- Specifies the optimization flags for
+  the GNU C++ compiler.
+\item {\tt -}{\tt -with-cxxgen=compiler} --- Use this option to specify a C++ compiler
+  which will compile generated library source (see Prerequisites). By default, the GNU C++
+  compiler specified with {\tt -}{\tt -with-cxx} option will be used.
+\item {\tt -}{\tt -with-cxxgen-optflags=....} --- Specifies the optimization flags to be
+  used for compiling the generated library source. 
+\item {\tt -}{\tt -with-ranlib=ranlib} --- Use this option to specify
+  a ranlib program. The default behavior is to detect an appropriate
+  choice automatically.
+\item {\tt -}{\tt -with-ar=archiver} --- Use this option to specify an
+  archiver.  The default is to look for {\tt ar} automatically.
+\item {\tt -}{\tt -with-ar-flags=options} --- Use this option to specify
+  archiver command-line flags. The default is {\tt r}.
+\item {\tt -}{\tt -with-perl=perl} --- Use this option to specify a
+  Perl interpreter.  The default is to look for {\tt perl} automatically.
+\item {\tt -}{\tt -with-libint-max-am=integer} --- Specifies the maximum
+  angular momentum level for the primitive Gaussian basis functions
+  when computing electron repulsion integrals.  This is set to
+  $d$-type functions (AM=2) by default.
+\item {\tt -}{\tt -with-debug=option} --- This option turns on debugging
+  options.  If the argument is omitted, ``{\tt -g}'' will be used by default.
+\item {\tt -}{\tt -with-scratchdir=directory} --- This option specifies the location
+  under which the library source will be generated and compiled. The higher the angular
+  momentum the more disk space will be needed. In general, this directory should be
+  on a large local disk, e.g. {\tt /tmp} or {\tt /scratch}. Default is to compile
+  in a subdirectory of {\tt \$objdir}.
+\end{itemize}
+
+\section{Detailed Installation Instructions}
+
+This section provides detailed instructions for compiling and
+installing the \LIBINT\ library.  
+
+\subsection{Step 1: Configuration}
+
+After unpacking the code, you may need to run {\tt aclocal -I lib/autoconf; autoconf}
+in order to create configure file, if you have obtained the source from CVS repository.
+Next, you should create a directory to which the library will be installed.
+I find it most convenient to assign a descriptive name to this diectory, e.g.
+{\tt x86\_64-linux-icc90-debug}. Lastly, in the newly created directory
+create a subdirectory in which compilation will occur, e.g.
+{\tt x86\_64-linux-icc90-debug/obj}. The compilation directory will be referred to as {\tt \$objdir}
+for the remainder of these instructions.
+
+In {\tt \$objdir}, run the configure script found in \LIBINT\
+top-level source directory.  This script will scan your system to locate
+certain libraries, header files, etc. needed for complete compilation.
+The script accepts a number of options, all of which are listed above.
+The most important of these is the {\tt --prefix} option, which selects the
+installation directory for the library, i.e. {\tt x86\_64-linux-icc90-debug} in our example.
+The default {\tt -}{\tt -prefix} is {\tt /usr/local}.
+
+$\bullet$ The configure script's {\tt -}{\tt -prefix} directory will be referred
+to as {\tt \$prefix} for the remainder of these instructions.
+
+\subsection{Step 2: Compilation}
+
+Running {\tt make} (which must be GNU's {\tt 'make'} utility) in {\tt
+\$objdir} will compile the \LIBINT\ library.
+
+\subsection{Step 3: Testing}
+
+\subsection{Step 4: Installation}
+
+Once testing is complete, installation into \$prefix is accomplished by
+running {\tt make install} in {\tt \$objdir}.  The library will be
+installed under {\tt \$prefix/lib} and header files under {\tt \$prefix/include}.
+
+\subsection{Step 5: Documentation}
+
+If your system has the appropriate utilities, you may build the package
+documentation from the top-level {\tt \$objdir} by running {\tt make doc}.  
+The resulting files will appear in the {\tt \$prefix/doc} area.
+
+\subsection{Step 6: Cleaning}
+
+All compilation-area object files can be removed to save
+disk space by running {\tt make clean} in {\tt \$objdir}.
+
+\section{Miscellaneous architecture-specific notes}
+\begin{itemize}
+\item None yet.
+\end{itemize}
+
+
+\end{document}

@@ -23,6 +23,9 @@ define([default_prefix_dash],ifelse(libint_buildid, ,[],[-]))
 define([default_prefix],"/usr/local")
 
 LIBINT_MMM_VERSION=libint_mmm_version
+LIBINT_BUILDID=libint_buildid
+AC_SUBST(LIBINT_MMM_VERSION)
+AC_SUBST(LIBINT_BUILDID)
 changequote(<<, >>)dnl
 LIBINT_MAJOR_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/\([0-9]*\)\.[0-9]*\.[0-9]*/\1/'`
 LIBINT_MINOR_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/[0-9]*\.\([0-9]*\)\.[0-9]*/\1/'`
@@ -31,6 +34,10 @@ changequote([, ])dnl
 AC_DEFINE_UNQUOTED(LIBINT_MAJOR_VERSION,$LIBINT_MAJOR_VERSION)
 AC_DEFINE_UNQUOTED(LIBINT_MINOR_VERSION,$LIBINT_MINOR_VERSION)
 AC_DEFINE_UNQUOTED(LIBINT_MICRO_VERSION,$LIBINT_MICRO_VERSION)
+AC_SUBST(LIBINT_MAJOR_VERSION)
+AC_SUBST(LIBINT_MINOR_VERSION)
+AC_SUBST(LIBINT_MICRO_VERSION)
+
 
 LIBINT_SO_VERSION=libint_so_version
 AC_SUBST(LIBINT_SO_VERSION)
@@ -114,7 +121,7 @@ else
   EXCLUDED_DIRS="-x SRC_BIN_LIBR12 $EXCLUDED_DIRS"
 fi
 
-LIBINT_MAX_AM=4
+LIBINT_MAX_AM=2
 AC_ARG_WITH(libint-max-am,
 [  --with-libint-max-am    Gives the maximum angular momentum of ERI this library will be able to handle.],
 if test $withval -le 0; then
@@ -502,6 +509,8 @@ AC_SUBST(CXXGEN)
 AC_SUBST(CXXGENFLAGS)
 
 dnl Check if sources compiled with CXX and CXXGEN can be linked together
+CXX_COMPATIBLE_WITH_CXXGEN=yes
+if test $CXX != $CXXGEN; then
 AC_MSG_CHECKING([[for compatible cxx and cxxgen compilers]])
 echo "extern void func1(); int main(int argc, char**argv) { func1(); } " > linkcheck1.cc
 echo "void func1() {}" > linkcheck2.cc
@@ -514,9 +523,9 @@ if test ! -f linkcheck; then
   CXX_COMPATIBLE_WITH_CXXGEN=no
 else
   AC_MSG_RESULT([[yes]])
-  CXX_COMPATIBLE_WITH_CXXGEN=yes
 fi
 /bin/rm -f linkcheck linkcheck1.cc linkcheck2.cc linkcheck1.o linkcheck2.o
+fi
 
 dnl --------- Check if either compiler will allow template template parameter
 dnl           to be specialized using fewer params (i.e. due to default template params) ---------
@@ -532,6 +541,7 @@ else
   AC_MSG_RESULT([[yes]])
 fi
 rm -f compcheck.o
+if test $CXX != $CXXGEN; then
 AC_MSG_CHECKING([[if cxxgen allows template with default params as template template parameter]])
 $CXXGEN $CPPFLAGS $CXXGENFLAGS -c compcheck.cc > /dev/null 2>&1
 if test ! -f compcheck.o; then
@@ -542,6 +552,7 @@ else
   AC_MSG_RESULT([[yes]])
 fi
 rm -f compcheck.cc compcheck.o
+fi
 
 AC_SUBST(CXX_COMPATIBLE_WITH_CXXGEN)
 
@@ -611,7 +622,7 @@ AC_CONFIG_FILES([src/bin/test_eri/test_eri.pl],[chmod +x src/bin/test_eri/test_e
 AC_CONFIG_FILES([src/bin/test_eri/time_eri.pl],[chmod +x src/bin/test_eri/time_eri.pl])
 AC_CONFIG_FILES([src/bin/test_eri/run_time_eri.pl],[chmod +x src/bin/test_eri/run_time_eri.pl])
 AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/MakeSuffixRules
-                doc/MakeVars doc/MakeRules doc/MakeSuffixRules doc/classdoc/doxygen.cfg)
+                doc/MakeVars doc/MakeRules doc/MakeSuffixRules doc/macros.tex doc/classdoc/doxygen.cfg)
 
 dnl --------- Done! ---------
 AC_OUTPUT

@@ -1,6 +1,9 @@
 
 \newcommand{\LIBINT}{{\tt LIBINT}}
-\newcommand{\LIBINTv}{{\tt LIBINT} Version 1.1}
+\newcommand{\LIBINTversion}{@LIBINT_MMM_VERSION@ (@LIBINT_BUILDID@)}
+\newcommand{\LIBINTmmmversion}{@LIBINT_MMM_VERSION@}
+\newcommand{\LIBINTbuildid}{@LIBINT_BUILDID@}
+\newcommand{\LIBINTv}{\LIBINT\ Version \LIBINTversion}
 
 \newcommand{\libint}{{\tt libint}}
 \newcommand{\libderiv}{{\tt libderiv}}
@@ -22,3 +25,6 @@
 
 \def\bmath#1{\mbox{\boldmath$#1$}}
 
+\newcommand{\FormatPage}{
+
+}

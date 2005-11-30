@@ -4,8 +4,13 @@ ifndef SRCDIR
 endif
 
 include $(TOPDIR)/Makedirlist
+include $(TOPDIR)/doc/MakeVars
 
-SUBDIRS = progman classdoc
+ifeq ($(LIBINT_MAJOR_VERSION),2)
+SUBDIRS = classdoc installation
+else
+SUBDIRS = progman
+endif
 
 default::
 	for dir in $(SUBDIRS); \
