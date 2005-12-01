@@ -496,8 +496,8 @@ AC_SUBST(CXXDEPENDFLAGS)
 
 dnl --------- configure compiler for generated source ---------
 if test X$CXXGEN = X; then
-  CXXGEN=CXX
-  CXXGENOPTIONS_OPT=CXXOPTIONS_OPT
+  CXXGEN=$CXX
+  CXXGENOPTIONS_OPT=$CXXOPTIONS_OPT
 fi
 if test $DEBUG = yes; then
   CXXGENFLAGS="$CXXOPTIONS_DBG $CXXGENOPTIONS_MISC"
