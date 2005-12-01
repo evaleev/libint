@@ -372,6 +372,7 @@ AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin)
 AC_PATH_PROG(BIBTEX,bibtex,,$PATH:/usr/local/bin)
 if test X$LD = X; then
   LD=$CXX
+  AC_SUBST(LD)
 fi
 
 dnl The lack of certain tools is a show stopper
@@ -516,15 +517,17 @@ echo "extern void func1(); int main(int argc, char**argv) { func1(); } " > linkc
 echo "void func1() {}" > linkcheck2.cc
 $CXX $CPPFLAGS $CXXFLAGS -c linkcheck1.cc > /dev/null 2>&1
 $CXXGEN $CPPFLAGS $CXXGENFLAGS -c linkcheck2.cc > /dev/null 2>&1
-$LD $LDFLAGS -o linkcheck linkcheck1.o linkcheck2.o > /dev/null 2>&1
-if test ! -f linkcheck; then
+$LD $LDFLAGS -o linkcheck1 linkcheck1.o linkcheck2.o > /dev/null 2>&1
+$CXX $LDFLAGS -o linkcheck2 linkcheck1.o linkcheck2.o > /dev/null 2>&1
+$CXXGEN $LDFLAGS -o linkcheck3 linkcheck1.o linkcheck2.o > /dev/null 2>&1
+if test (-f linkcheck1) -a (-f linkcheck2) -a (-f linkcheck3); then
+  AC_MSG_RESULT([[yes]])
+else
   AC_MSG_RESULT([[no]])
   AC_MSG_WARN([[Compilers cxx and cxxgen produce incompatible code! You will not be able to test generated code.]])
   CXX_COMPATIBLE_WITH_CXXGEN=no
-else
-  AC_MSG_RESULT([[yes]])
 fi
-/bin/rm -f linkcheck linkcheck1.cc linkcheck2.cc linkcheck1.o linkcheck2.o
+/bin/rm -f linkcheck1 linkcheck2 linkcheck3  linkcheck1.cc linkcheck2.cc linkcheck1.o linkcheck2.o
 fi
 
 dnl --------- Check if either compiler will allow template template parameter
