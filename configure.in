@@ -520,7 +520,7 @@ $CXXGEN $CPPFLAGS $CXXGENFLAGS -c linkcheck2.cc > /dev/null 2>&1
 $LD $LDFLAGS -o linkcheck1 linkcheck1.o linkcheck2.o > /dev/null 2>&1
 $CXX $LDFLAGS -o linkcheck2 linkcheck1.o linkcheck2.o > /dev/null 2>&1
 $CXXGEN $LDFLAGS -o linkcheck3 linkcheck1.o linkcheck2.o > /dev/null 2>&1
-if test (-f linkcheck1) -a (-f linkcheck2) -a (-f linkcheck3); then
+if test -f linkcheck1 -a -f linkcheck2 -a -f linkcheck3; then
   AC_MSG_RESULT([[yes]])
 else
   AC_MSG_RESULT([[no]])
