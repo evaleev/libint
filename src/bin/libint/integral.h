@@ -246,7 +246,7 @@ namespace libint2 {
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::~GenIntegralSet()
     {
-      std::cout << "Destructed " << label() << std::endl;
+      //std::cout << "Destructed " << label() << std::endl;
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>

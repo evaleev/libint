@@ -6,12 +6,6 @@ endif
 include $(TOPDIR)/Makedirlist
 
 SUBDIRS = libint
-ifeq ($(HAVE_LIBINT_SRC_BIN_LIBR12),yes)
-SUBDIRS := $(SUBDIRS) libr12
-endif
-ifeq ($(HAVE_LIBINT_SRC_BIN_LIBDERIV),yes)
-SUBDIRS := $(SUBDIRS) libderiv
-endif
 
 default::
 	for dir in $(SUBDIRS); \

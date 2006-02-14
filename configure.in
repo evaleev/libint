@@ -66,173 +66,152 @@ esac
 ]
 )
 
-
+# can be used in the future to exclude source directories
 EXCLUDED_DIRS=
 
-INCLUDE_DERIV=no
-AC_ARG_ENABLE(deriv,
-[  --enable-deriv          Compile with 1st- and 2nd-order derivative ERI support],
+AC_ARG_ENABLE(eri,
+[  --enable-eri=N          Compile with support for up to N-th ERI derivatives],
 [
+if test $enableval -le 0; then
+  AC_MSG_ERROR([Invalid value for --enable-eri ($withval)])
+fi
 case $enableval in
   yes)
-dnl    INCLUDE_DERIV=yes
-    AC_MSG_ERROR([Do not yet support --enable-deriv])
+    INCLUDE_ERI=0
   ;;
   no)
-    INCLUDE_DERIV=no
+    INCLUDE_ERI=no
   ;;
   *)
-    AC_MSG_ERROR([Invalid value for --enable-deriv ($enableval)])
+    INCLUDE_ERI=$enableval
   ;;
 esac
 ],[
-    INCLUDE_DERIV=no
+    INCLUDE_ERI=0
 ]
 )
-if test $INCLUDE_DERIV = yes; then
-  AC_DEFINE(INCLUDE_DERIV)
-else
-  EXCLUDED_DIRS="-x SRC_BIN_LIBDERIV $EXCLUDED_DIRS"
-fi
 
-INCLUDE_R12=no
-AC_ARG_ENABLE(r12,
-[  --enable-r12            Compile with linear R12 methods integrals support],
+AC_ARG_ENABLE(G12,
+[  --enable-g12=N           Compile with support for N-th derivatives of linear G12 energies],
 [
+if test $enableval -le 0; then
+  AC_MSG_ERROR([Invalid value for --enable-g12 ($withval)])
+fi
 case $enableval in
   yes)
-dnl    INCLUDE_R12=yes
-    AC_MSG_ERROR([Do not yet support --enable-r12])
+    INCLUDE_G12=0
   ;;
   no)
-    INCLUDE_R12=no
+    INCLUDE_G12=no
   ;;
   *)
-    AC_MSG_ERROR([Invalid value for --enable-r12 ($enableval)])
+    INCLUDE_G12=$enableval
   ;;
 esac
 ],[
-    INCLUDE_R12=no
+    INCLUDE_G12=no
 ]
 )
-if test $INCLUDE_R12 = yes; then
-  AC_DEFINE(INCLUDE_R12)
-else
-  EXCLUDED_DIRS="-x SRC_BIN_LIBR12 $EXCLUDED_DIRS"
-fi
 
-LIBINT_MAX_AM=2
-AC_ARG_WITH(libint-max-am,
-[  --with-libint-max-am    Gives the maximum angular momentum of ERI this library will be able to handle.],
+ERI_MAX_AM=4
+AC_ARG_WITH(eri-max-am,
+[  --with-eri-max-am=N      Support ERIs for Gaussians of angular momentum up to N.],
 if test $withval -le 0; then
-  AC_MSG_ERROR([Invalid value for --with-libint-max-am ($withval)])
+  AC_MSG_ERROR([Invalid value for --with-eri-max-am ($withval)])
 else
-  LIBINT_MAX_AM=$withval
+  ERI_MAX_AM=$withval
 fi
-if test $LIBINT_MAX_AM -ge 8; then
-  AC_MSG_ERROR([Value for --with-libint-max-am too high ($withval). Are you sure you know what you are doing?])
-fi
-)
-
-LIBINT_OPT_AM=$((($LIBINT_MAX_AM/2)+1))
-AC_ARG_WITH(libint-opt-am,
-[  --with-libint-opt-am    Gives the level of optimization for ERIs this library will use (opt-am <= max-am).],
-if test $withval -le $LIBINT_MAX_AM; then
-  LIBINT_OPT_AM=$withval
+if test $ERI_MAX_AM -ge 8; then
+  AC_MSG_ERROR([Value for --with-eri-max-am too high ($withval). Are you sure you know what you are doing?])
 fi
 )
 
+ERI_OPT_AM=$((($ERI_MAX_AM/2)+1))
+AC_ARG_WITH(eri-opt-am,
+[  --with-eri-opt-am=N       Optimize ERIs maximally for up to angular momentum N (N <= max-am).],
+if test $withval -le $ERI_MAX_AM; then
+  ERI_OPT_AM=$withval
+fi
+)
+
+if test X$INCLUDE_ERI != Xno; then
+  AC_DEFINE_UNQUOTED(INCLUDE_ERI,$INCLUDE_ERI)
+  AC_SUBST(ERI_MAX_AM)
+  AC_SUBST(ERI_OPT_AM)
+  AC_DEFINE_UNQUOTED(ERI_MAX_AM,$ERI_MAX_AM)
+  AC_DEFINE_UNQUOTED(ERI_OPT_AM,$ERI_OPT_AM)
+fi
+
+# check max am for G12 integrals, if needed
+G12_MAX_AM=$ERI_MAX_AM
+AC_ARG_WITH(g12-max-am,
+[  --with-g12-max-am=N       Support integrals for linear G12 methods of angular momentum up to N.],
+if test $withval -le 0 -o $withval -ge $ERI_MAX_AM; then
+  AC_MSG_ERROR([Invalid value for --with-g12-max-am ($withval)])
+else
+  G12_MAX_AM=$withval
+fi
+)
+
+G12_OPT_AM=$((($G12_MAX_AM/2)+1))
+AC_ARG_WITH(g12-opt-am,
+[  --with-g12-opt-am=N       Optimize G12 integrals for up to angular momentum N (N <= max-am).],
+if test $withval -le $G12_MAX_AM; then
+  G12_OPT_AM=$withval
+fi
+)
+
+if test X$INCLUDE_G12 != Xno; then
+  AC_DEFINE_UNQUOTED(INCLUDE_G12,$INCLUDE_G12)
+  AC_SUBST(G12_MAX_AM)
+  AC_SUBST(G12_OPT_AM)
+  AC_DEFINE_UNQUOTED(G12_MAX_AM,$G12_MAX_AM)
+  AC_DEFINE_UNQUOTED(G12_OPT_AM,$G12_OPT_AM)
+fi
+
+#######
 # check max am for derivative integrals, if needed
-if test $INCLUDE_DERIV = yes; then
-if test $LIBINT_MAX_AM -gt 3; then
-  LIBDERIV_MAX_AM1=3
+#######
+if test $INCLUDE_ERI -gt 0; then
+
+if test $ERI_MAX_AM -gt 3; then
+  D1ERI_MAX_AM=3
 else
-  LIBDERIV_MAX_AM1=$(($LIBINT_MAX_AM-1))
+  D1ERI_MAX_AM=$ERI_MAX_AM
 fi
-AC_ARG_WITH(libderiv-max-am1,
-[  --with-libderiv-max-am1 Gives the maximum angular momentum of 1st derivative ERI this library will be able to handle.],
-if test $withval -le 0 -o $withval -ge $LIBINT_MAX_AM; then
-  AC_MSG_ERROR([Invalid value for --with-libderiv-max-am1 ($withval)])
+AC_ARG_WITH(d1eri-max-am,
+[  --with-d1eri-max-am=N     Support first-order derivative ERIs for Gaussians of angular momentum up to N.],
+if test $withval -le 0 -o $withval -ge $ERI_MAX_AM; then
+  AC_MSG_ERROR([Invalid value for --with-d1eri-max-am ($withval)])
 else
-  LIBDERIV_MAX_AM1=$withval
+  D1ERI_MAX_AM=$withval
 fi
 )
 
-if test $LIBDERIV_MAX_AM1 -gt 1; then
-  LIBDERIV_MAX_AM2=$(($LIBDERIV_MAX_AM1-1))
+D2ERI_MAX_AM=$D1ERI_MAX_AM
+AC_ARG_WITH(d2eri-max-am,
+[  --with-d2eri-max-am=N     Support second-order derivative ERIs for Gaussians of angular momentum up to N.],
+if test $withval -le 0 -o $withval -ge $D2ERI_MAX_AM; then
+  AC_MSG_ERROR([Invalid value for --with-d2eri-max-am ($withval)])
 else
-  if test $(($LIBINT_MAX_AM-$LIBDERIV_MAX_AM1)) -gt 1; then
-    LIBDERIV_MAX_AM2=$LIBDERIV_MAX_AM1
-  else
-    AC_MSG_ERROR([Value of --with-libint-max-am is too low ($LIBINT_MAX_AM) to include second-derivative integrals support.])
-  fi
-fi
-AC_ARG_WITH(libderiv-max-am2,
-[  --with-libderiv-max-am2 Gives the maximum angular momentum of 2nd derivative ERI this library will be able to handle.],
-if test $withval -le 0 -o $withval -ge $LIBDERIV_MAX_AM1; then
-  AC_MSG_ERROR([Invalid value for --with-libderiv-max-am2 ($withval)])
-else
-  LIBDERIV_MAX_AM2=$withval
-fi
-)
-fi
-
-# check max am for R12 integrals, if needed
-if test $INCLUDE_R12 = yes; then
-LIBR12_MAX_AM=$(($LIBINT_MAX_AM-1))
-AC_ARG_WITH(libr12-max-am,
-[  --with-libr12-max-am    Gives the maximum angular momentum of linear R12 method integrals this library will be able to handle.],
-if test $withval -le 0 -o $withval -ge $LIBINT_MAX_AM; then
-  AC_MSG_ERROR([Invalid value for --with-libr12-max-am ($withval)])
-else
-  LIBR12_MAX_AM=$withval
+  D2ERI_MAX_AM=$withval
 fi
 )
 
-LIBR12_OPT_AM=$((($LIBR12_MAX_AM/2)+1))
-AC_ARG_WITH(libr12-opt-am,
-[  --with-libr12-opt-am    Gives the level of optimization for linear R12 method integrals this library will use (opt-am <= max-am).],
-if test $withval -le $LIBR12_MAX_AM; then
-  LIBR12_OPT_AM=$withval
-fi
-)
-fi
+AC_SUBST(D1ERI_MAX_AM)
+AC_SUBST(D2ERI_MAX_AM)
+AC_DEFINE_UNQUOTED(D1ERI_MAX_AM,$D1ERI_MAX_AM)
+AC_DEFINE_UNQUOTED(D2ERI_MAX_AM,$D2ERI_MAX_AM)
 
-MAX_CLASS_SIZE=300
-AC_ARG_WITH(max-class-size,
-[  --with-max-class-size   Restricts the length of VRR build routines to avoid compiler failures.],
-if test $withval -le 10; then
-  AC_MSG_ERROR([Invalid value for --with-class-size ($withval)])
-else
-  MAX_CLASS_SIZE=$withval
 fi
-)
 
 AC_ARG_WITH(float-type,
 [  --with-float-type       Compute all integrals using the given float type.],
 [
-AC_DEFINE_UNQUOTED(LIBINT2_USER_DEFINED_FLOAT,${withval})
+AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_FLOAT,${withval})
 echo Using floating-point type: $withval
 ])
 
-AC_SUBST(LIBINT_MAX_AM)
-AC_SUBST(LIBINT_OPT_AM)
-AC_SUBST(LIBDERIV_MAX_AM1)
-AC_SUBST(LIBDERIV_MAX_AM2)
-AC_SUBST(LIBR12_MAX_AM)
-AC_SUBST(LIBR12_OPT_AM)
-AC_SUBST(MAX_CLASS_SIZE)
-
-AC_DEFINE_UNQUOTED(LIBINT_MAX_AM,$LIBINT_MAX_AM)
-AC_DEFINE_UNQUOTED(LIBINT_OPT_AM,$LIBINT_OPT_AM)
-AC_DEFINE_UNQUOTED(LIBDERIV_MAX_AM1,$LIBDERIV_MAX_AM1)
-AC_DEFINE_UNQUOTED(LIBDERIV_MAX_AM2,$LIBDERIV_MAX_AM2)
-AC_DEFINE_UNQUOTED(LIBDERIV_MAX_AM12,$LIBDERIV_MAX_AM2)
-AC_DEFINE_UNQUOTED(LIBR12_MAX_AM,$LIBR12_MAX_AM)
-AC_DEFINE_UNQUOTED(LIBR12_OPT_AM,$LIBR12_OPT_AM)
-AC_DEFINE_UNQUOTED(LIBINT_MAX_CLASS_SIZE,$MAX_CLASS_SIZE)
-AC_DEFINE_UNQUOTED(LIBR12_MAX_CLASS_SIZE,$MAX_CLASS_SIZE)
-AC_DEFINE_UNQUOTED(LONG_DOUBLE,$LONG_DOUBLE)
 
 BUILDID="libint_buildid"
 AC_ARG_WITH(build-id,
@@ -306,7 +285,7 @@ LD=$withval
 if test $prefix = $ac_default_prefix -o $prefix = NONE; then
   libintincludedir=$includedir
 else
-  libintincludedir=$includedir/$SC_VERSION
+  libintincludedir=$includedir/$LIBINT_VERSION
 fi
 AC_ARG_WITH(libint-includedir,
 [  --with-libint-includedir       Specifies include file install subdir.],

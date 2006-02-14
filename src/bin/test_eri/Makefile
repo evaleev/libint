@@ -46,17 +46,17 @@ $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
-	$(CXX) -o $@ $(LDFLAGS) $^
+	$(LD) -o $@ $(LDFLAGS) $^
 else
 $(TEST):
 	@echo "Cannot test generated code! $(CXXGEN) is not compatible with $(CXXCOMP)"
 endif
 
 $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)
-	$(CXX) -o $@ $(LDFLAGS) $^
+	$(LD) -o $@ $(LDFLAGS) $^
 
 $(TIMEV): $(CXXTIMEVOBJ)
-	$(CXX) -o $@ $(LDFLAGS) $^
+	$(LD) -o $@ $(LDFLAGS) $^
 
 # Source files for timer and tester are to be complied using CXXGEN
 $(TEST): CXX=$(CXXGEN)

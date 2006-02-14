@@ -22,6 +22,10 @@ namespace libint2 {
     unsigned int max_am_eri() const {
       return max_am_eri_;
     }
+    /// returns max AM for G12 integrals
+    unsigned int max_am_g12() const {
+      return max_am_g12_;
+    }
     /// returns max vector length
     unsigned int max_vector_length() const {
       return max_vector_length_;
@@ -46,6 +50,10 @@ namespace libint2 {
     /// set max AM for ERI
     void max_am_eri(unsigned int a) {
       max_am_eri_ = a;
+    }
+    /// set max AM for G12
+    void max_am_g12(unsigned int a) {
+      max_am_g12_ = a;
     }
     /// set max vector length
     void max_vector_length(unsigned int a) {
@@ -75,6 +83,8 @@ namespace libint2 {
     struct Defaults {
       /// By default compile for p-functions
       static const unsigned int max_am_eri = 1;
+      /// By default compile for p-functions
+      static const unsigned int max_am_g12 = 1;
       /// Do not vectorize by default
       static const unsigned int max_vector_length = 1;
       /// Vectorize all body by default
@@ -89,6 +99,8 @@ namespace libint2 {
     
     /// max AM for ERI
     unsigned int max_am_eri_;
+    /// max AM for G12
+    unsigned int max_am_g12_;
     /// max vector length
     unsigned int max_vector_length_;
     /// whether to vectorize line-by-line

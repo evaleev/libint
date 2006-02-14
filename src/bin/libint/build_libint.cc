@@ -48,6 +48,7 @@ int main(int argc, char* argv[])
 }
 
 static void print_header(std::ostream& os);
+static void print_config(std::ostream& os);
 static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
 static void build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
@@ -62,22 +63,36 @@ void try_main (int argc, char* argv[])
   
   // use default parameters
   SafePtr<CompilationParameters> cparams(new CompilationParameters);
-  cparams->max_am_eri(LIBINT_MAX_AM);
+#ifdef INCLUDE_ERI
+  cparams->max_am_eri(ERI_MAX_AM);
+#endif
+#ifdef INCLUDE_G12
+  cparams->max_am_g12(G12_MAX_AM);
+#endif
   // initialize code context to produce library API
   SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
   // make a list of computation labels
   Libint2Iface::Comps comps;
+#ifdef INCLUDE_ERI
   comps.push_back("eri");
+#endif
+#ifdef INCLUDE_G12
   comps.push_back("r12kg12");
+#endif
   // initialize object to generate interface
   SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext,comps));
   
   print_header(os);
+  print_config(os);
   cparams->print(os);
 
 #if !DO_TEST_ONLY
+#ifdef INCLUDE_ERI
   build_TwoPRep_2b_2k(os,cparams,iface);
+#endif
+#ifdef INCLUDE_G12
   build_R12kG12_2b_2k(os,cparams,iface);
+#endif
 #endif
 
 #if DO_TEST_ONLY
@@ -97,6 +112,17 @@ print_header(std::ostream& os)
   os << "                by Edward F. Valeev           " << endl;
   os << "                and ideas by countless others " << endl;
   os << "----------------------------------------------" << endl << endl;
+}
+
+void
+print_config(std::ostream& os)
+{
+#ifdef INCLUDE_ERI
+  os << "Will support ERI" << endl;
+#endif
+#ifdef INCLUDE_G12
+  os << "Will support linear G12" << endl;
+#endif
 }
 
 void
@@ -127,6 +153,7 @@ generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams
   }
 }
 
+#ifdef INCLUDE_ERI
 void
 build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface)
@@ -202,14 +229,15 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
     } // end of b loop
   } // end of a loop  
 }
+#endif // INCLUDE_ERI
 
-
+#ifdef INCLUDE_G12
 void
 build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface)
 {
   vector<CGShell*> shells;
-  unsigned int lmax = cparams->max_am_eri();
+  unsigned int lmax = cparams->max_am_g12();
   for(int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }
@@ -331,6 +359,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
     } // end of b loop
   } // end of a loop  
 }
+#endif // INCLUDE_G12
 
 void
 test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,

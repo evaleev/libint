@@ -9,7 +9,7 @@ ClassRegistry::ClassRegistry() :
 }
 
 ClassRegistry*
-ClassRegistry::registry_ = new ClassRegistry;
+ClassRegistry::registry_ = 0;
 
 ClassRegistry&
 ClassRegistry::Instance()

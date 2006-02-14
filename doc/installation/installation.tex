@@ -34,8 +34,8 @@ The following software is needed to compile \LIBINTv:
 \begin{itemize}
 \item GNU C++ compiler (version 3.4 is recommended) to compile the library compiler.
 \item (Optional) optimizing C++ compiler
-to compile generated source. GNU C++ compiler does not produce most efficient code on many platforms.
-Thus a vendor compiler is recommended (e.g. Intel compiler on x86 and x86\_64 architectures, etc.).
+to compile generated source. GNU C++ compiler may produce less than optimal code on some platforms.
+Thus a vendor compiler is recommended (see architecture-specific notes at the end of this document).
 \item Perl interpreter (version 5.005 or higher)
 \item Various GNU utilies: \htmladdnormallink{{\tt
 www.gnu.org}}{http://www.gnu.org}
@@ -65,19 +65,38 @@ library using default parameters and install under /usr/local:
 \item {\tt make}
 \item {\tt make tests} (optional, but recommended)
 \item {\tt make install}
-\item {\tt make doc} (optional)
+\item Optional: {\tt make doc}
 \end{enumerate}
 
 \noindent
 You may need to make use of one or more of the following options to
 the {\tt configure} script:
 \begin{itemize}
+\item {\tt -}{\tt -enable-eri=N} --- Use this option to enable support for
+  N-th order derivatives of electron repulsion integrals. To
+  disable support for ERIs set N to 'no', or use the {\tt -}{\tt -disable-eri} option.
+  By default, N=0 (i.e. no derivatives are requested).
+  WARNING: No ERI derivatives can be computed yet. This functionality is forthcoming.
+\item {\tt -}{\tt -enable-g12=N} --- Use this option to enable support for
+  N-th order derivatives of integrals for linear G12 methods. To
+  disable support for such integrals set N to 'no', or use the {\tt -}{\tt -disable-g12} option.
+  By default, no linear G12 integrals are produced.
+  WARNING: No derivatives can be computed yet. This functionality is forthcoming.
+\item {\tt -}{\tt -with-eri-max-am=L} --- Specifies the maximum
+  angular momentum level for the Gaussian basis functions
+  when computing electron repulsion integrals.  By default,
+  ERIs over $g$-type functions (L=4) are supported.
+\item {\tt -}{\tt -with-g12-max-am=L} --- Specifies the maximum
+  angular momentum level for the Gaussian basis functions
+  when computing linear G12 integrals.  By default,
+  integrals over $p$-type functions (L=1) are supported.
+\item {\tt -}{\tt -with-float-type=TYPE} --- Specifies the C++ floating-point type
+  used for integral computation. The default is to use {\tt double}.
 \item {\tt -}{\tt -prefix=directory} --- Use this option if you wish to
   install the \LIBINT\ library somewhere other than the default
   directory, {\tt /usr/local}.
 \item {\tt -}{\tt -with-cxx=compiler} --- Use this option to specify the location
-  of the GNU C++
-  compiler.
+  of the GNU C++ compiler.
 \item {\tt -}{\tt -with-cxx-optflags=....} --- Specifies the optimization flags for
   the GNU C++ compiler.
 \item {\tt -}{\tt -with-cxxgen=compiler} --- Use this option to specify a C++ compiler
@@ -94,12 +113,9 @@ the {\tt configure} script:
   archiver command-line flags. The default is {\tt r}.
 \item {\tt -}{\tt -with-perl=perl} --- Use this option to specify a
   Perl interpreter.  The default is to look for {\tt perl} automatically.
-\item {\tt -}{\tt -with-libint-max-am=integer} --- Specifies the maximum
-  angular momentum level for the primitive Gaussian basis functions
-  when computing electron repulsion integrals.  This is set to
-  $d$-type functions (AM=2) by default.
 \item {\tt -}{\tt -with-debug=option} --- This option turns on debugging
   options.  If the argument is omitted, ``{\tt -g}'' will be used by default.
+  To compile with optimization and debugging options, specify {\tt -}{\tt -with-debug=opt}.
 \item {\tt -}{\tt -with-scratchdir=directory} --- This option specifies the location
   under which the library source will be generated and compiled. The higher the angular
   momentum the more disk space will be needed. In general, this directory should be
@@ -140,6 +156,9 @@ Running {\tt make} (which must be GNU's {\tt 'make'} utility) in {\tt
 \$objdir} will compile the \LIBINT\ library.
 
 \subsection{Step 3: Testing}
+
+There is no formal test of the generated library. There are some validation
+and timing tests for ERI code under {\tt src/bin/test_eri}.
 
 \subsection{Step 4: Installation}
 

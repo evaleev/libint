@@ -20,41 +20,32 @@
 /* The micro version number. */
 #undef LIBINT_MICRO_VERSION
 
-/* Whether to include derivative ERI support */
-#undef INCLUDE_DERIV
+/* Support ERI derivatives up to this order */
+#undef INCLUDE_ERI
 
-/* Whether to include linear R12 method integrals support */
-#undef INCLUDE_R12
+/* Support G12 derivatives up to this order */
+#undef INCLUDE_G12
 
 /* Max AM for ERI */
-#undef LIBINT_MAX_AM
+#undef ERI_MAX_AM
 
 /* Max optimized AM for ERI */
-#undef LIBINT_OPT_AM
+#undef ERI_OPT_AM
 
 /* Max AM for 1st-order derivative ERI */
-#undef LIBDERIV_MAX_AM1
+#undef D1ERI_MAX_AM
 
 /* Max AM for 2nd-order derivative ERI */
-#undef LIBDERIV_MAX_AM2
+#undef D2ERI_MAX_AM
 
-/* Max AM for 1st- and 2nd-order derivative ERI */
-#undef LIBDERIV_MAX_AM12
+/* Max AM for linear G12 method integrals */
+#undef G12_MAX_AM
 
-/* Max AM for linear R12 method integrals */
-#undef LIBR12_MAX_AM
-
-/* Max optimized AM for linear R12 method integrals */
-#undef LIBR12_OPT_AM
-
-/* Max length of level 0 build routines (node build) */
-#undef LIBINT_MAX_CLASS_SIZE
-
-/* Max length of level 0 r12 and [T,r12] build routines (node build) */
-#undef LIBR12_MAX_CLASS_SIZE
+/* Max optimized AM for linear G12 method integrals */
+#undef G12_OPT_AM
 
 /* User-defined float type */
-#undef LIBINT2_USER_DEFINED_FLOAT
+#undef LIBINT_USER_DEFINED_FLOAT
 
 /* have stdint.h ? */
 #undef HAVE_STDINT_H

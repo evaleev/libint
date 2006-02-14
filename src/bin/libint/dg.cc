@@ -209,6 +209,7 @@ DirectedGraph::reset()
 {
   // Reset each vertex, releasing all arcs
   for(int i=0; i<first_free_; i++) {
+    // remove this vertex from its SingletonManager
     stack_[i]->unregister();
     stack_[i]->reset();
   }
