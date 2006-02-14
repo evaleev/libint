@@ -490,7 +490,7 @@ AC_SUBST(CXXGENFLAGS)
 
 dnl Check if sources compiled with CXX and CXXGEN can be linked together
 CXX_COMPATIBLE_WITH_CXXGEN=yes
-if test $CXX != $CXXGEN; then
+if test "X$CXX" != "X$CXXGEN"; then
 AC_MSG_CHECKING([[for compatible cxx and cxxgen compilers]])
 echo "extern void func1(); int main(int argc, char**argv) { func1(); } " > linkcheck1.cc
 echo "void func1() {}" > linkcheck2.cc
@@ -523,7 +523,7 @@ else
   AC_MSG_RESULT([[yes]])
 fi
 rm -f compcheck.o
-if test $CXX != $CXXGEN; then
+if test "X$CXX" != "X$CXXGEN"; then
 AC_MSG_CHECKING([[if cxxgen allows template with default params as template template parameter]])
 $CXXGEN $CPPFLAGS $CXXGENFLAGS -c compcheck.cc > /dev/null 2>&1
 if test ! -f compcheck.o; then
