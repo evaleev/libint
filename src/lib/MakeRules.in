@@ -38,7 +38,7 @@ source: make_libsrcdir $(LIBSRCDIR)/Makefile $(LIBSRCDIR)/libint2_params.h
 	echo "Last time library source was generated:\c" > $@
 	date >> $@
 
-make_libsrcdir: $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER)
+make_libsrcdir:
 	@if [ -e $@ ]; then \
 $(RM) -rf $(LIBSRCDIR); \
 $(RM) -f $(LIBSRCLINK); \
