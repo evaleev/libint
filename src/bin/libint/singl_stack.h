@@ -19,17 +19,17 @@ namespace libint2 {
   };
   
   /**
-     SingletonStack<T,HashType,P> helps to implement Singleton-like objects of type T.
-     SingletonStack maintains a map of keys of type HashType to
+     SingletonStack<T,KeyType> helps to implement Singleton-like objects of type T.
+     SingletonStack maintains a map of keys of type KeyType to
      smart pointers to objects of type T. Keys are computed from T by
-     calling a callback of type HashCallback passed to the constructor to SingletonStack -- hence
-     HashCallback is a member function T which takes no arguments and returns a const HashType&.
+     calling a callback of type HashingFunction passed to the constructor to SingletonStack -- hence
+     HashingFunction is a member function T which takes no arguments and returns a const KeyType&.
   */
-  template <class T, class HashType>
+  template <class T, class KeyType>
     class SingletonStack
     {
     public:
-      typedef HashType key_type;
+      typedef KeyType key_type;
       typedef SafePtr<T> data_type;
       /// Specifies type for the instance index variables
       typedef GSingletonTrait::InstanceID InstanceID;
@@ -42,10 +42,10 @@ namespace libint2 {
       /// hashing function returns keys as key_return_type
       typedef typename KeyTraits<key_type>::ReturnType key_return_type;
       /// Specifies the type of callback which computes hashes
-      typedef key_return_type (T::* HashCallback)() const;
+      typedef key_return_type (T::* HashingFunction)() const;
 
       /// callback to compute hash values is the only parameter
-      SingletonStack(HashCallback callback);
+      SingletonStack(HashingFunction callback);
       ~SingletonStack() {}
 
       /** Returns the pointer to the unique instance of object obj.
@@ -66,19 +66,19 @@ namespace libint2 {
 
     private:
       map_type map_;
-      HashCallback callback_;
+      HashingFunction callback_;
       InstanceID next_instance_;
     };
 
-  template <class T, class HashType>
-    SingletonStack<T,HashType>::SingletonStack(HashCallback callback) :
+  template <class T, class KeyType>
+    SingletonStack<T,KeyType>::SingletonStack(HashingFunction callback) :
     map_(), callback_(callback), next_instance_(0)
     {
     }
 
-  template <class T, class HashType>
-    const typename SingletonStack<T,HashType>::value_type&
-    SingletonStack<T,HashType>::find(const SafePtr<T>& obj)
+  template <class T, class KeyType>
+    const typename SingletonStack<T,KeyType>::value_type&
+    SingletonStack<T,KeyType>::find(const SafePtr<T>& obj)
     {
       key_type key = ((obj.get())->*callback_)();
 
@@ -100,9 +100,9 @@ namespace libint2 {
       }
     }
     
-  template <class T, class HashType>
+  template <class T, class KeyType>
     void
-    SingletonStack<T,HashType>::remove(const SafePtr<T>& obj)
+    SingletonStack<T,KeyType>::remove(const SafePtr<T>& obj)
     {
       key_type key = ((obj.get())->*callback_)();
 
@@ -110,6 +110,7 @@ namespace libint2 {
       miter pos = map_.find(key);
       if (pos != map_.end()) {
         map_.erase(pos);
+        std::cout << "Removed from stack " << obj->label() << std::endl;
       }
     }
 

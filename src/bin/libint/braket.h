@@ -2,6 +2,7 @@
 #include <polyconstr.h>
 #include <bfset.h>
 #include <libint2_types.h>
+#include <global_macros.h>
 
 #ifndef _libint2_src_bin_libint_braket_h_
 #define _libint2_src_bin_libint_braket_h_
@@ -230,19 +231,33 @@ namespace libint2 {
     inline LIBINT2_UINT_LEAST64 key() const;
     /// key lies in range [0,max_key())
     LIBINT2_UINT_LEAST64 max_key() const;
+#if COMPUTE_SIZE_DIRECTLY
+    unsigned int size() const;
+#endif
 
   private:
     BFS bfs_[NP];
     
+#if COMPUTE_SIZE_DIRECTLY
+    mutable unsigned int size_;
+#endif
   };
   
   template <class BFS, unsigned int NP>
-  ArrayBraket<BFS,NP>::ArrayBraket() {}
+  ArrayBraket<BFS,NP>::ArrayBraket()
+  {
+#if COMPUTE_SIZE_DIRECTLY
+    size_ = 0;
+#endif
+  }
   
   template <class BFS, unsigned int NP>
   ArrayBraket<BFS,NP>::ArrayBraket(const BFS* braket) {
     for(int i=0; i<NP; i++)
       bfs_[i] = braket[i];
+#if COMPUTE_SIZE_DIRECTLY
+    size_ = 0;
+#endif
   }
   
   template <class BFS, unsigned int NP>
@@ -252,6 +267,9 @@ namespace libint2 {
       assert(braket[i].size()==1);
       bfs_[i] = braket[i][0];
     }
+#if COMPUTE_SIZE_DIRECTLY
+    size_ = 0;
+#endif
   }
   
   template <class BFS, unsigned int NP>
@@ -322,6 +340,21 @@ namespace libint2 {
     }
     return max_key;
   }
+
+#if COMPUTE_SIZE_DIRECTLY
+  template <class BFS, unsigned int NP>
+  unsigned int
+  ArrayBraket<BFS,NP>::size() const {
+    if (size_ > 0) return size_;
+    size_ = 1;
+    if (!TrivialBFSet<BFS>::result) {
+      for(int p=NP-1; p>=0; p--) {
+        size_ *= bfs_[p].num_bf();
+      }
+    }
+    return size_;
+  }
+#endif
 
 };
 

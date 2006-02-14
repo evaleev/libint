@@ -136,7 +136,8 @@ generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams
   std::string prefix(cparams->source_directory());
 
   SafePtr<RRStack> rrstack = RRStack::Instance();
-  for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
+  RRStack::citer_type it = rrstack->begin();
+  while (it != rrstack->end()) {
     SafePtr<RecurrenceRelation> rr = (*it).second.second;
     std::string rrlabel = rr->label();
     os << " generating code for " << context->label_to_name(rrlabel) << " target=" << rr->rr_target()->label() << endl;
@@ -150,6 +151,11 @@ generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams
     
     declfile.close();
     deffile.close();
+    
+    // Remove RR to save resources
+    rrstack->remove(rr);
+    // next RR
+    it = rrstack->begin();
   }
 }
 

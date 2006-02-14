@@ -220,7 +220,7 @@ namespace libint2 {
     };
 
 #if USE_INT_KEY_TO_HASH
-  // I use label() to hash GenIntegralSet. Therefore labels must be unique!
+  // I use key() to hash GenIntegralSet. Therefore compute_key() must return unique keys!
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     typename GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::SingletonManagerType
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::singl_manager_(&GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::key);
@@ -241,12 +241,13 @@ namespace libint2 {
       if (Op::Properties::np != ket.num_part())
         throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in ket doesn't match that in the operator");
       compute_key();
+      std::cout << "Constructed " << label() << std::endl;
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::~GenIntegralSet()
     {
-      //std::cout << "Destructed " << label() << std::endl;
+      std::cout << "Destructed " << label() << std::endl;
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
@@ -349,12 +350,18 @@ namespace libint2 {
       if (size_ > 0)
         return size_;
 
+#if COMPUTE_SIZE_DIRECTLY
+    // WARNING: will not work if aux_ includes "sets" of numbers, i.e. when a quantum number can be a set of numbers
+    // but I don't at the moment see why this would be needed
+    size_ = bra_.size() * ket_.size() * O_->num_oper();
+#else
       // compute size
       SafePtr<this_type> this_ptr = const_pointer_cast<this_type,const this_type>(EnableSafePtrFromThis<GenIntegralSet>::SafePtr_from_this());
       SafePtr< SubIteratorBase<this_type> > siter(new SubIteratorBase<this_type>(this_ptr));
       size_ = siter->num_iter();
       if (size_ == 0)
         throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::size() -- size is 0");
+#endif
 
       return size_;
     }
@@ -488,6 +495,9 @@ namespace libint2 {
       typedef SingletonStack<TwoPRep_11_11,std::string> SingletonManagerType;
 #endif
       
+      // Destructor only to track object's death
+      ~TwoPRep_11_11();
+      
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
       */
@@ -543,8 +553,14 @@ namespace libint2 {
         throw std::runtime_error("TwoPRep_11_11<BFS>::TwoPRep_11_11(bra,ket) -- number of BFSs in ket for particle 0 must be 1");
       if (ket.num_members(1) != 1)
         throw std::runtime_error("TwoPRep_11_11<BFS>::TwoPRep_11_11(bra,ket) -- number of BFSs in ket for particle 1 must be 1");
+      std::cout << "Constructed TwoPRep_11_11 " << this->label() << std::endl;
     }
-
+  
+  template <class BFS>
+    TwoPRep_11_11<BFS>::~TwoPRep_11_11() {
+      std::cout << "Destructed TwoPRep_11_11 " << this->label() << std::endl;
+    }
+  
   template <class BFS>
     const SafePtr< TwoPRep_11_11<BFS> >
     TwoPRep_11_11<BFS>::Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux)

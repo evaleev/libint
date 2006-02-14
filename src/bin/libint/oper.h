@@ -1,6 +1,7 @@
 
 #include <string>
 #include <hashable.h>
+#include <global_macros.h>
 
 #ifndef _libint2_src_bin_libint_oper_h_
 #define _libint2_src_bin_libint_oper_h_

@@ -36,4 +36,7 @@
 /// Use integer key to compare
 #define USE_INT_KEY_TO_COMPARE 1
 
+/// If set to 1 then avoid using SubIterator to compute size
+#define COMPUTE_SIZE_DIRECTLY 1
+
 #endif

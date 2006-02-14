@@ -125,7 +125,7 @@ namespace libint2 {
     bool
     VRR_11_TwoPRep_11<ERI,F,part,where>::register_with_rrstack() const
     {
-      // only register RRs with for shell sets
+      // only register RRs for shell sets
       if (TrivialBFSet<F>::result)
         return false;
       SafePtr<RRStack> rrstack = RRStack::Instance();

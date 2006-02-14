@@ -135,7 +135,9 @@ namespace libint2 {
     
     /// adds content of rrs to this stack
     void add(const SafePtr<RRStack>& rrs);
-
+    /// removes rr from the stack
+    void remove(const data_type& rr);
+    
     private:
     // private constructor because it's a Singleton
     RRStack() : parent_type(&RecurrenceRelation::label) {}

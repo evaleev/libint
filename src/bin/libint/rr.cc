@@ -120,3 +120,9 @@ RRStack::add(const SafePtr<RRStack>& rrs)
   }
 }
 
+void
+RRStack::remove(const data_type& rr)
+{
+  parent_type::remove(rr);
+}
+

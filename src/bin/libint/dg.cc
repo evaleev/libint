@@ -209,6 +209,7 @@ DirectedGraph::reset()
 {
   // Reset each vertex, releasing all arcs
   for(int i=0; i<first_free_; i++) {
+    std::cout << "DGStack::reset: will unregister " << stack_[i]->label() << std::endl;
     // remove this vertex from its SingletonManager
     stack_[i]->unregister();
     stack_[i]->reset();
@@ -672,7 +673,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
 
   // include standard headers
   def << context->std_header();
-  // include declarations for all fucntion calls:
+  // include declarations for all function calls:
   // 1) update func_names_
   // 2) include their headers into the current definition file
   // 3) add them to rrstack_ so that later their code can be

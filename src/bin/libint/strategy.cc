@@ -131,6 +131,7 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
   if (integral->size() <= max_size_to_unroll_)
     return unroll_intset<TwoPRep_11_11_sq>(integral);
 
+#if USE_HRR
   {
     typedef HRR_ab_11_TwoPRep_11_sh rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
@@ -144,21 +145,45 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
     if (rr_ptr->num_children())
       return rr_cast(rr_ptr);
   }
-
+#endif
+  
+#if USE_ITR
+  {
+    typedef ITR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InBra> rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+#endif
+  
   {
     typedef VRR_a_11_TwoPRep_11_sh rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
     if (rr_ptr->num_children())
       return rr_cast(rr_ptr);
   }
-
+  
+  {
+    typedef VRR_b_11_TwoPRep_11_sh rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+  
   {
     typedef VRR_c_11_TwoPRep_11_sh rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
     if (rr_ptr->num_children())
       return rr_cast(rr_ptr);
   }
-
+  
+  {
+    typedef VRR_d_11_TwoPRep_11_sh rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+  
   return SafePtr<RecurrenceRelation>();
 }
 
