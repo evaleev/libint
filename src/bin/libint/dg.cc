@@ -1099,13 +1099,14 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   oss.str(null_str);
   oss << "Number of flops = " << nflops;
   os << context->comment(oss.str()) << endl;
-#if UPDATE_FLOP_COUNTER
-  oss.str(null_str);
-  oss << nflops << " * " << dims->high_label() << " * "
-      << dims->low_label() << " * "
-      << dims->vecdim_label();
-  os << context->assign_binary_expr("libint->nflops","libint->nflops","+",oss.str());
-#endif
+  
+  if (context->cparams()->count_flops()) {
+    oss.str(null_str);
+    oss << nflops << " * " << dims->high_label() << " * "
+        << dims->low_label() << " * "
+        << dims->vecdim_label();
+    os << context->assign_binary_expr("libint->nflops","libint->nflops","+",oss.str());
+  }
 
   // Outside of loops stack symbols don't make sense, so we must define loop variables hsi, lsi, and vi to 0
   os << context->decldef(context->type_name<const int>(), "hsi", "0");

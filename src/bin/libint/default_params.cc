@@ -4,12 +4,14 @@
 using namespace libint2;
 
 const std::string CompilationParameters::Defaults::source_directory("./");
+const std::string CompilationParameters::Defaults::realtype("double");
 
 CompilationParameters::CompilationParameters() :
   max_am_eri_(Defaults::max_am_eri), max_am_g12_(Defaults::max_am_g12),
   max_vector_length_(Defaults::max_vector_length),
   vectorize_by_line_(Defaults::vectorize_by_line), unroll_threshold_(Defaults::unroll_threshold),
-  source_directory_(Defaults::source_directory), use_C_linking_(Defaults::use_C_linking)
+  source_directory_(Defaults::source_directory), use_C_linking_(Defaults::use_C_linking),
+  count_flops_(Defaults::count_flops), realtype_(Defaults::realtype)
 {
 }
 
@@ -33,6 +35,8 @@ CompilationParameters::print(std::ostream& os) const
   os << "UNROLL_THRESH        = " << unroll_threshold() << endl;
   os << "SOURCE_DIRECTORY     = " << source_directory() << endl;
   os << "USE_C_LINKING        = " << (use_C_linking() ? "true" : "false") << endl;
+  os << "COUNT_FLOPS          = " << (count_flops() ? "true" : "false") << endl;
+  os << "REALTYPE             = " << (realtype()) << endl;
   os << endl;
 }
 

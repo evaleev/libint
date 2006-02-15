@@ -49,11 +49,13 @@ int main(int argc, char* argv[])
 
 static void print_header(std::ostream& os);
 static void print_config(std::ostream& os);
-static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
+// Put all configuration-specific API elements in here
+static void config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface);
 static void build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
 static void build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
+static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
 static void test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                  SafePtr<Libint2Iface>& iface);
 
@@ -63,12 +65,23 @@ void try_main (int argc, char* argv[])
   
   // use default parameters
   SafePtr<CompilationParameters> cparams(new CompilationParameters);
+  
 #ifdef INCLUDE_ERI
   cparams->max_am_eri(ERI_MAX_AM);
 #endif
 #ifdef INCLUDE_G12
   cparams->max_am_g12(G12_MAX_AM);
 #endif
+#if LIBINT_FLOP_COUNT
+  cparams->count_flops(true);
+#endif
+#ifdef LIBINT_USER_DEFINED_FLOAT
+  {
+    const std::string realtype(LIBINT_USER_DEFINED_FLOAT);
+    cparams->realtype(realtype);
+  }
+#endif
+  
   // initialize code context to produce library API
   SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
   // make a list of computation labels
@@ -98,8 +111,12 @@ void try_main (int argc, char* argv[])
 #if DO_TEST_ONLY
   test(os,cparams,iface);
 #endif
-
+  
+  // Generate code for the set-level RRs
   generate_rr_code(os,cparams);
+  
+  // transfer some library configuration to library API
+  config_to_api(cparams,iface);
   
   os << "Compilation finished. Goodbye." << endl;
 }
@@ -504,5 +521,18 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
       } // end of c loop
     } // end of b loop
   } // end of a loop  
+}
+
+void
+config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface)
+{
+#ifdef INCLUDE_ERI
+  iface->to_params(iface->define("SUPPORT_ERI",1));
+  iface->to_params(iface->define("DERIV_ERI_ORDER",INCLUDE_ERI));
+#endif
+#ifdef INCLUDE_G12
+  iface->to_params(iface->define("SUPPORT_G12",1));
+  iface->to_params(iface->define("DERIV_G12_ORDER",INCLUDE_G12));
+#endif
 }
 

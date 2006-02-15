@@ -24,9 +24,6 @@
 /** If 1 then AlgebraicOperator compares left and right arguments directly (comparing pointers), else DGVertex::equiv() is used */
 #define ALGEBRAICOPERATOR_USE_SAFEPTR 0
 
-/** If 1 then Libint_t's flop counter is updated at runtime to get an accurate FLOP count */
-#define UPDATE_FLOP_COUNTER 1
-
 /// Use VectorBraket from braket.h
 #define USE_BRAKET_H 1
 

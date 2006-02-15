@@ -1,4 +1,9 @@
 
+/* This file is automatically processed by configure script.
+   It MUST NOT be changed manually after configuration, otherwise
+   the library will likely fail to compile or produce erroneous results
+ */
+
 #ifndef _libint2_include_libint2config_h_
 #define _libint2_include_libint2config_h_
 
@@ -46,6 +51,12 @@
 
 /* User-defined float type */
 #undef LIBINT_USER_DEFINED_FLOAT
+
+/* Whether FLOP counting is supported */
+#undef LIBINT_FLOP_COUNT
+
+/* Strategy for ERI evaluation */
+#undef LIBINT_ERI_STRATEGY
 
 /* have stdint.h ? */
 #undef HAVE_STDINT_H

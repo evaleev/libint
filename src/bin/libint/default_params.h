@@ -46,6 +46,14 @@ namespace libint2 {
     bool use_C_linking() const {
       return use_C_linking_;
     }
+    /// whether FLOP counting is enabled
+    bool count_flops() const {
+      return count_flops_;
+    }
+    /// name of the floating-point type
+    const std::string& realtype() const {
+      return realtype_;
+    }
     
     /// set max AM for ERI
     void max_am_eri(unsigned int a) {
@@ -75,6 +83,14 @@ namespace libint2 {
     void use_C_linking(bool a) {
       use_C_linking_ = a;
     }
+    /// set whether to count FLOPs
+    void count_flops(bool a) {
+      count_flops_ = a;
+    }
+    /// which floating-point type to use
+    void realtype(const std::string& realtype) {
+      realtype_ = realtype;
+    }
     
     /// print params out
     void print(std::ostream& os) const;
@@ -95,6 +111,10 @@ namespace libint2 {
       static const std::string source_directory;
       /// Use C-style linking convention by default
       static const bool use_C_linking = true;
+      /// Do not count FLOPs by default
+      static const bool count_flops = false;
+      /// Use double for computations
+      static const std::string realtype;
     };
     
     /// max AM for ERI
@@ -111,6 +131,10 @@ namespace libint2 {
     std::string source_directory_;
     /// whether to use C linking
     bool use_C_linking_;
+    /// whether to count FLOPs
+    bool count_flops_;
+    /// name of the floating-point type
+    std::string realtype_;
   };
   
   /** The class maintains various parameters that are computed in the process of compilation

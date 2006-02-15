@@ -72,7 +72,7 @@ EXCLUDED_DIRS=
 AC_ARG_ENABLE(eri,
 [  --enable-eri=N          Compile with support for up to N-th ERI derivatives],
 [
-if test $enableval -le 0; then
+if test $enableval -lt 0; then
   AC_MSG_ERROR([Invalid value for --enable-eri ($withval)])
 fi
 case $enableval in
@@ -91,10 +91,10 @@ esac
 ]
 )
 
-AC_ARG_ENABLE(G12,
+AC_ARG_ENABLE(g12,
 [  --enable-g12=N           Compile with support for N-th derivatives of linear G12 energies],
 [
-if test $enableval -le 0; then
+if test $enableval -lt 0; then
   AC_MSG_ERROR([Invalid value for --enable-g12 ($withval)])
 fi
 case $enableval in
@@ -161,7 +161,7 @@ if test $withval -le $G12_MAX_AM; then
 fi
 )
 
-if test X$INCLUDE_G12 != Xno; then
+if test "X$INCLUDE_G12" != "Xno"; then
   AC_DEFINE_UNQUOTED(INCLUDE_G12,$INCLUDE_G12)
   AC_SUBST(G12_MAX_AM)
   AC_SUBST(G12_OPT_AM)
@@ -208,9 +208,38 @@ fi
 AC_ARG_WITH(float-type,
 [  --with-float-type       Compute all integrals using the given float type.],
 [
-AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_FLOAT,${withval})
+AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_FLOAT,"$withval")
 echo Using floating-point type: $withval
 ])
+
+AC_ARG_ENABLE(flop-counter,
+[  --enable-flop-counter   Support FLOP counting by the library.],
+[
+AC_DEFINE(LIBINT_FLOP_COUNT)
+AC_MSG_RESULT([FLOP counter will be supported])
+])
+
+dnl
+dnl Preferred strategies for evaluation
+dnl
+AC_ARG_WITH(eri-strategy,
+[  --with-eri-strategy     Compute ERIs using the following strategy. This option is for experts ONLY.],
+[
+  case $withval in
+    OS)
+      AC_DEFINE_UNQUOTED(LIBINT_ERI_STRATEGY,0)
+    ;;
+    HGP)
+      AC_DEFINE_UNQUOTED(LIBINT_ERI_STRATEGY,1)
+    ;;
+    HL)
+      AC_DEFINE_UNQUOTED(LIBINT_ERI_STRATEGY,2)
+    ;;
+  esac
+AC_MSG_RESULT([Using ERI strategy: $withval])
+],
+[AC_DEFINE(LIBINT_ERI_STRATEGY,1)]
+)
 
 
 BUILDID="libint_buildid"

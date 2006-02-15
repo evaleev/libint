@@ -235,11 +235,11 @@ CppCodeContext::assign(const std::string& name,
     std::string ptr0 = symbol_to_pointer(name);
     std::string ptr1 = symbol_to_pointer(value);
     bool symb1_is_a_const = (ptr1.length() == 0);
-    oss << "REALTYPE* " << symb0 << " = "
+    oss << "LIBINT2_REALTYPE* " << symb0 << " = "
     << symbol_to_pointer(name) << end_of_stat() << endl;
     oss << "__assume_aligned(" << symb0 << ", 16)" << end_of_stat() << endl;
     if (!symb1_is_a_const) {
-      oss << "REALTYPE* " << symb1 << " = "
+      oss << "LIBINT2_REALTYPE* " << symb1 << " = "
       <<  symbol_to_pointer(value) << end_of_stat() << endl;
       oss << "__assume_aligned(" << symb1 << ", 16)" << end_of_stat() << endl;
     }
@@ -276,16 +276,16 @@ CppCodeContext::assign_binary_expr(const std::string& name,
     std::string ptr2 = symbol_to_pointer(right);
     bool symb1_is_a_const = (ptr1.length() == 0);
     bool symb2_is_a_const = (ptr2.length() == 0);
-    oss << "REALTYPE* " << symb0 << " = "
+    oss << "LIBINT2_REALTYPE* " << symb0 << " = "
     << symbol_to_pointer(name) << end_of_stat() << endl;
     oss << "__assume_aligned(" << symb0 << ", 16)" << end_of_stat() << endl;
     if (!symb1_is_a_const) {
-      oss << "REALTYPE* " << symb1 << " = "
+      oss << "LIBINT2_REALTYPE* " << symb1 << " = "
       <<  symbol_to_pointer(left) << end_of_stat() << endl;
       oss << "__assume_aligned(" << symb1 << ", 16)" << end_of_stat() << endl;
     }
     if (!symb2_is_a_const) {
-      oss << "REALTYPE* " << symb2 << " = "
+      oss << "LIBINT2_REALTYPE* " << symb2 << " = "
       << symbol_to_pointer(right) << end_of_stat() << endl;
       oss << "__assume_aligned(" << symb2 << ", 16)" << end_of_stat() << endl;
     }
@@ -435,12 +435,12 @@ std::string
 CppCodeContext::fp_type() const
 {
   if (!vectorize_)
-    return "REALTYPE";
+    return "LIBINT2_REALTYPE";
   else
     return ptr_fp_type();
 }
 std::string
-CppCodeContext::ptr_fp_type() const { return "REALTYPE*"; }
+CppCodeContext::ptr_fp_type() const { return "LIBINT2_REALTYPE*"; }
 std::string
 CppCodeContext::const_modifier() const { return "const "; }
 

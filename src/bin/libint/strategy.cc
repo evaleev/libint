@@ -1,5 +1,4 @@
 
-#define USE_ITR 0
 #define USE_HRR 1
 
 #include <vector>
@@ -131,7 +130,7 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
   if (integral->size() <= max_size_to_unroll_)
     return unroll_intset<TwoPRep_11_11_sq>(integral);
 
-#if USE_HRR
+#if LIBINT_ERI_STRATEGY == 1 || LIBINT_ERI_STRATEGY == 2
   {
     typedef HRR_ab_11_TwoPRep_11_sh rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
@@ -147,7 +146,7 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
   }
 #endif
   
-#if USE_ITR
+#if LIBINT_ERI_STRATEGY == 2
   {
     typedef ITR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InBra> rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
@@ -199,7 +198,7 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
 {
   vector<RR> rrstack;  // stack of all recurrence relations
   
-#if USE_HRR
+#if LIBINT_ERI_STRATEGY == 1 || LIBINT_ERI_STRATEGY == 2
   // shift from B to A
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef HRR_ab_11_TwoPRep_11_int rr_type;
@@ -217,7 +216,7 @@ Strategy::optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
   }
 #endif
 
-#if USE_ITR
+#if LIBINT_ERI_STRATEGY == 2
   // shift from A to C
   for(int xyz = 2; xyz >= 0; xyz--) {
     typedef ITR_11_TwoPRep_11<TwoPRep_11_11,CGF,0,InBra> rr_type;

@@ -43,6 +43,10 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   header_guard_open(ii_,"libint2ifaceint");
   
   ph_ << define("MAX_VECLEN",cparams_->max_vector_length());
+  if (cparams_->count_flops())
+    ph_ << define("FLOP_COUNT",1);
+  const std::string realtype(cparams_->realtype());
+  ph_ << define("REALTYPE",realtype);
   
   ih_ << ctext_->code_prefix();
 
@@ -98,10 +102,10 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   li_ << li_fdec << ctext_->open_block();
   lc_ << lc_fdec << ctext_->open_block();
   
-#if UPDATE_FLOP_COUNTER
-  // set the counter to zero
-  li_ << "libint->nflops = 0;" << endl;
-#endif
+  if (cparams->count_flops()) {
+    // set the counter to zero
+    li_ << "libint->nflops = 0;" << endl;
+  }
 }
 
 Libint2Iface::~Libint2Iface()

@@ -1,4 +1,18 @@
 
+02/15/2006:     1) Added --enable-flop-counter configure option
+                2) --with-float-type option now has the advertised effect
+                3) Added --with-eri-strategy configure option
+                4) Added API elements to configure Libint2-MPQC interface
+                -EFV
+
+02/14/2006:     1) GenIntegralSet computes size directly instead of using SubIterator.
+                   This reduces dramatically the memory requirements.
+                2) Remove RR from RRStack when generating code. This frees up a ton
+                   of memory too.
+                Now ERI code can be generated for up to i-functions in a few
+                hundred megs of RAM.
+                -EFV
+
 02/14/2006:     Revamped configure.in for version 2 production. Minor fixes
                 all over the place. Updated installation manual. -EFV
 
