@@ -311,11 +311,7 @@ AC_ARG_WITH(ld,
 LD=$withval
 )
 
-if test $prefix = $ac_default_prefix -o $prefix = NONE; then
-  libintincludedir=$includedir
-else
-  libintincludedir=$includedir/$LIBINT_VERSION
-fi
+libintincludedir=$includedir
 AC_ARG_WITH(libint-includedir,
 [  --with-libint-includedir       Specifies include file install subdir.],
 libintincludedir=$withval
