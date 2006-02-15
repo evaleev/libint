@@ -63,6 +63,8 @@ $(LIBTARGET): $(LIBOBJ)
 graph.dot: test
 	./$^
 
+install::
+
 clean:: oclean targetclean dependclean
 
 oclean::
