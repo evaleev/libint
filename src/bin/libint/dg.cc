@@ -60,8 +60,10 @@ DirectedGraph::add_new_vertex(const SafePtr<DGVertex>& vertex)
 {
   if (first_free_ == stack_.size()) {
     stack_.resize( stack_.size() + default_size_ );
+#if DEBUG
     cout << "Increased size of DirectedGraph's stack to "
          << stack_.size() << endl;
+#endif
   }
   char label[80];  sprintf(label,"vertex%d",first_free_);
   vertex->set_graph_label(label);
@@ -209,7 +211,9 @@ DirectedGraph::reset()
 {
   // Reset each vertex, releasing all arcs
   for(int i=0; i<first_free_; i++) {
+#if DEBUG
     std::cout << "DGStack::reset: will unregister " << stack_[i]->label() << std::endl;
+#endif
     // remove this vertex from its SingletonManager
     stack_[i]->unregister();
     stack_[i]->reset();

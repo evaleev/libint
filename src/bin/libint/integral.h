@@ -241,13 +241,17 @@ namespace libint2 {
       if (Op::Properties::np != ket.num_part())
         throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in ket doesn't match that in the operator");
       compute_key();
+#if DEBUG
       std::cout << "Constructed " << label() << std::endl;
+#endif
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::~GenIntegralSet()
     {
+#if DEBUG
       std::cout << "Destructed " << label() << std::endl;
+#endif
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
@@ -553,12 +557,16 @@ namespace libint2 {
         throw std::runtime_error("TwoPRep_11_11<BFS>::TwoPRep_11_11(bra,ket) -- number of BFSs in ket for particle 0 must be 1");
       if (ket.num_members(1) != 1)
         throw std::runtime_error("TwoPRep_11_11<BFS>::TwoPRep_11_11(bra,ket) -- number of BFSs in ket for particle 1 must be 1");
+#if DEBUG
       std::cout << "Constructed TwoPRep_11_11 " << this->label() << std::endl;
+#endif
     }
   
   template <class BFS>
     TwoPRep_11_11<BFS>::~TwoPRep_11_11() {
+#if DEBUG
       std::cout << "Destructed TwoPRep_11_11 " << this->label() << std::endl;
+#endif
     }
   
   template <class BFS>

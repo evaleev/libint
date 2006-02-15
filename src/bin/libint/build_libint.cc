@@ -205,8 +205,10 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           dg_xxxx->apply(strat,tactic);
           dg_xxxx->optimize_rr_out();
           dg_xxxx->traverse();
+#if DEBUG
           os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
-          
+#endif
+
           SafePtr<CodeContext> context(new CppCodeContext(cparams));
           SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
           std::string prefix(cparams->source_directory());
@@ -225,8 +227,10 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           oss.str("");
           oss << "#include <" << decl_filename << ">" << endl;
           iface->to_int_iface(oss.str());
-          
+
+#if DEBUG          
           os << "Max memory used = " << memman->max_memory_used() << endl;
+#endif
           dg_xxxx->reset();
           declfile.close();
           srcfile.close();
@@ -324,8 +328,10 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           dg_xxxx->apply(strat,tactic);
           dg_xxxx->optimize_rr_out();
           dg_xxxx->traverse();
+#if DEBUG
           os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
-          
+#endif
+
           std::string label;
           {
             ostringstream os;
@@ -355,8 +361,10 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           oss.str("");
           oss << "#include <" << decl_filename << ">" << endl;
           iface->to_int_iface(oss.str());
-          
+
+#if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
+#endif
           dg_xxxx->reset();
           declfile.close();
           srcfile.close();

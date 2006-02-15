@@ -110,7 +110,9 @@ namespace libint2 {
       miter pos = map_.find(key);
       if (pos != map_.end()) {
         map_.erase(pos);
+#if DEBUG || LOCAL_DEBUG
         std::cout << "Removed from stack " << obj->label() << std::endl;
+#endif
       }
     }
 
