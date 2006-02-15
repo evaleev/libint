@@ -37,8 +37,8 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   dg->traverse();
 #if DEBUG
   dg->debug_print_traversal(std::cout);
-#endif
   cout << "The number of vertices = " << dg->num_vertices() << endl;
+#endif
   // Generate code
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
   SafePtr<ImplicitDimensions> localdims = adapt_dims_(dims);
@@ -53,12 +53,16 @@ RecurrenceRelation::generate_graph_()
   dg->append_target(rr_target());
   for(int c=0; c<num_children(); c++)
     dg->append_vertex(rr_child(c));
+#if DEBUG
   cout << "RecurrenceRelation::generate_code -- the number of integral sets = " << dg->num_vertices() << endl;
+#endif
   // Always need to unroll integral sets
   SafePtr<Strategy> strat(new Strategy(1000000000));
   SafePtr<Tactic> ntactic(new NullTactic);
   dg->apply(strat,ntactic);
+#if DEBUG
   cout << "RecurrenceRelation::generate_code -- the number of integral sets + integrals = " << dg->num_vertices() << endl;
+#endif
   // Mark children sets and their descendants to not compute
   for(int c=0; c<num_children(); c++)
     dg->apply_at<&DGVertex::not_need_to_compute>(rr_child(c));
@@ -66,7 +70,9 @@ RecurrenceRelation::generate_graph_()
   // such that no new vertices appear)
   SafePtr<Tactic> ztactic(new ZeroNewVerticesTactic(dg));
   dg->apply(strat,ztactic);
+#if DEBUG
   cout << "RecurrenceRelation::generate_code -- should be same as previous = " << dg->num_vertices() << endl;
+#endif
   
   return dg;
 }

@@ -157,7 +157,7 @@ generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams
   while (it != rrstack->end()) {
     SafePtr<RecurrenceRelation> rr = (*it).second.second;
     std::string rrlabel = rr->label();
-    os << " generating code for " << context->label_to_name(rrlabel) << " target=" << rr->rr_target()->label() << endl;
+    os << "generating code for " << context->label_to_name(rrlabel) << " target=" << rr->rr_target()->label() << endl;
     
     std::string decl_filename(prefix + context->label_to_name(rrlabel));  decl_filename += ".h";
     std::string def_filename(prefix + context->label_to_name(rrlabel));  def_filename += ".cc";
