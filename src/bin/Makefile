@@ -18,6 +18,7 @@ DODEPENDOPT = "DODEPEND=no"
 endif
 
 export::
+	(cd libint && $(MAKE) $(DODEPENDOPT)) || exit 1;
 
 install::
 	for dir in $(SUBDIRS); \
