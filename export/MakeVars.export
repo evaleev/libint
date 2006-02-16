@@ -1,8 +1,5 @@
 # Emacs should use -*- Makefile -*- mode.
 
-# this is usually overridden
-TARGET_TO_MAKE = $(shell basename `pwd`)
-
 ifndef SRCDIR
   SRCDIR = .
 endif
@@ -21,11 +18,6 @@ target_os = @target_os@
 LIBINT_VERSION = @LIBINT_VERSION@
 LIBINT_SO_VERSION = @LIBINT_SO_VERSION@
 BUILDID = @BUILDID@
-
-# The scratch directory
-SCRATCHDIR = @SCRATCHDIR@
-LIBSRCDIR = $(SCRATCHDIR)/$(NAME)
-LIBSRCLINK = src
 
 # The object code suffix
 OBJSUF = @OBJSUF@
@@ -61,9 +53,6 @@ CXXDEPENDSUF = @CXXDEPENDSUF@
 CXXDEPENDFLAGS = @CXXDEPENDFLAGS@
 
 CXX = @CXX@
-CXXCOMP = @CXX@
-CXXGEN = @CXXGEN@
-
 CXXDEPEND = @CXX@
 
 AR = @AR@
@@ -75,8 +64,6 @@ INSTALLLIBOPT = -m 0644
 INSTALLBINOPT = -m 0755
 INSTALLSCRIPTOPT = -m 0755
 
-EXPORTDIR = @EXPORTDIR@
-
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
@@ -86,11 +73,10 @@ includedir=@libintincludedir@
 RANLIB = @RANLIB@
 COMPRESS = gzip
 UNCOMPRESS = gzip -d
-LN_S = @LN_S@
 
 # first check for generated include files in the machine dependent directories
 # and then for include files in the src directory
-INCLUDE = -I$(TOPDIR)/src/bin -I$(TOPDIR)/include -I$(SRCTOPDIR)/include -I$(SRCTOPDIR)/src/bin \
+INCLUDE = -I$(TOPDIR)/include -I$(SRCTOPDIR)/include \
 	  @CPPFLAGS@
 DEFINES = @DEFS@ @EXTRADEFINES@
 
@@ -100,8 +86,5 @@ CXXFLAGS = @CXXFLAGS@
 HIGHOPT_CXXFLAGS = $(CXXFLAGS)
 NOALIAS_CXXFLAGS = $(NOALIAS_CFLAGS)
 
-CXXGENFLAGS = @CXXGENFLAGS@
-
 SYSLIBS = @LIBS@
 
-TARGET_HEADERS = $(HEADERS:%=$(top_objdir)/include/libint/%)

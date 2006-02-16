@@ -17,6 +17,8 @@ ifndef DODEPEND
 DODEPENDOPT = "DODEPEND=no"
 endif
 
+export::
+
 install::
 	for dir in $(SUBDIRS); \
 	  do \

@@ -1,0 +1,9 @@
+The recommended installation procedure:
+1) ./configure
+   Most often you will need to specify command-line options to configure.
+   To obtain a list of configure options run 'configure --help'.
+2) make
+3) make install
+
+Report all problems to edward.valeev@gatech.edu
+

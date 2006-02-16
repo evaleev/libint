@@ -318,6 +318,13 @@ libintincludedir=$withval
 )
 AC_SUBST(libintincludedir)
 
+EXPORTDIR=libint-$LIBINT_VERSION
+AC_ARG_WITH(libint-exportdir,
+[  --with-libint-exportdir Specifies export directory name. Default is libint-<version>.],
+EXPORTDIR=$withval
+)
+AC_SUBST(EXPORTDIR)
+
 AC_ARG_WITH(incdirs,
 [  --with-incdirs          Specifies include directories (-Idir1 -Idir2).],
 EXTRAINCDIRS=$withval

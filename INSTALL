@@ -1,16 +1,16 @@
 The recommended installation procedure:
 0) create a directory for object files $(OBJDIR) 
 1) cd $(OBJDIR)
-1) $(SRCDIR)/configure
+2) $(SRCDIR)/configure
    Most often you will need to specify command-line options to configure.
    To obtain a list of configure options run 'configure --help'.
-2) make
-3) make install
+3) make
+4) make install
 
 If you are compiling from sources obtained via CVS then prior to step 0 you need to
 run the following 2 commands:
 aclocal -I lib/autoconf
 autoconf
 
-Report all problems to edward.valeev@chemistry.gatech.edu
+Report all problems to edward.valeev@gatech.edu
 

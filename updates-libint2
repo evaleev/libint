@@ -1,4 +1,7 @@
 
+02/16/2006:	Library can now be exported. Do 'make export'. This creates a .tgz
+                file in the top object directory. -EFV
+
 02/15/2006:     1) Added --enable-flop-counter configure option
                 2) --with-float-type option now has the advertised effect
                 3) Added --with-eri-strategy configure option

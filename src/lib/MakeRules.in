@@ -1,5 +1,13 @@
 
+.PHONY: default export install install_inc install_target clean oclean distclean targetclean realclean
+
 default:: $(TOPDIR)/lib/$(TARGET)
+
+export:: source
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/src
+	-$(INSTALL) $(INSTALLLIBOPT) $(LIBSRCDIR)/*.cc $(TOPDIR)/$(EXPORTDIR)/src
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include
+	-$(INSTALL) $(INSTALLLIBOPT) $(LIBSRCDIR)/*.h $(TOPDIR)/$(EXPORTDIR)/include
 
 $(TOPDIR)/lib/$(TARGET): source
 	cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR)

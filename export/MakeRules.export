@@ -1,0 +1,26 @@
+
+default:: $(TOPDIR)/lib/$(TARGET)
+
+install:: install_inc install_target
+
+install_inc:: $(TOPDIR)/lib/$(TARGET)
+	$(INSTALL) $(INSTALLDIROPT) $(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2.h $(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_iface.h $(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_params.h $(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2_config.h $(includedir)/$(NAME)$(VERSION)
+
+install_target:: $(TOPDIR)/lib/$(TARGET)
+	$(INSTALL) $(INSTALLDIROPT) $(libdir)
+	$(LTINST) $(INSTALL) $(INSTALLLIBOPT) $< $(libdir)
+
+clean:: oclean targetclean
+
+distclean:: clean
+
+oclean::
+	-rm -rf *.$(OBJSUF)
+
+targetclean::
+	-rm -f $(TOPDIR)/lib/$(TARGET)
+

@@ -20,6 +20,13 @@ endif
 doc::
 	(cd doc && $(MAKE) $(DODEPENDOPT) install) || exit 1;
 
+export::
+	for dir in $(SUBDIRS); \
+	  do \
+	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) export) || exit 1; \
+	  done
+	(cd export && $(MAKE) $(DODEPENDOPT) export) || exit 1;
+
 install::
 	for dir in $(SUBDIRS); \
 	  do \
