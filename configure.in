@@ -146,7 +146,7 @@ fi
 G12_MAX_AM=$ERI_MAX_AM
 AC_ARG_WITH(g12-max-am,
 [  --with-g12-max-am=N       Support integrals for linear G12 methods of angular momentum up to N.],
-if test $withval -le 0 -o $withval -ge $ERI_MAX_AM; then
+if test $withval -le 0 -o $withval -gt $ERI_MAX_AM; then
   AC_MSG_ERROR([Invalid value for --with-g12-max-am ($withval)])
 else
   G12_MAX_AM=$withval
