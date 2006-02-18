@@ -1,4 +1,9 @@
 
+02/18/2006:     1) eri-opt-am and g12-opt-am are properly takes into account.
+                   introduced GraphRegistry to do that.
+                2) vector length can be set via configure script.
+                -EFV
+
 02/16/2006:	Library can now be exported. Do 'make export'. This creates a .tgz
                 file in the top object directory. -EFV
 

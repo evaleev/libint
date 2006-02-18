@@ -29,6 +29,7 @@
 #include <vrr_11_r12kg12_11.h>
 #include <r12kg12_11_11.h>
 #include <tig12_11_11.h>
+#include <graph_registry.h>
 
 using namespace std;
 using namespace libint2;
@@ -71,6 +72,12 @@ void try_main (int argc, char* argv[])
 #endif
 #ifdef INCLUDE_G12
   cparams->max_am_g12(G12_MAX_AM);
+#endif
+#if LIBINT_ENABLE_UNROLLING
+  cparams->unroll_threshold(1000000000);
+#endif
+#ifdef LIBINT_VECTOR_LENGTH
+  cparams->max_vector_length(LIBINT_VECTOR_LENGTH);
 #endif
 #if LIBINT_FLOP_COUNT
   cparams->count_flops(true);
@@ -214,7 +221,12 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             continue;
           if (la < lb || lc < ld || la+lb > lc+ld)
 	    continue;
-
+          
+          // unroll only if max_am <= ERI_OPT_AM
+          using std::max;
+          const unsigned int max_am = max(max(la,lb),max(lc,ld));
+          dg_xxxx->registry()->can_unroll(max_am <= ERI_OPT_AM);
+          
           SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
           os << "building " << abcd->description() << endl;
           SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(abcd);
@@ -296,6 +308,11 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           bool ssss = false;
           if (la+lb+lc+ld == 0)
             ssss = true;
+          
+          // unroll only if max_am <= G12_OPT_AM
+          using std::max;
+          const unsigned int max_am = max(max(la,lb),max(lc,ld));
+          dg_xxxx->registry()->can_unroll(max_am <= G12_OPT_AM);
           
           // k=0
           if (!ssss) {

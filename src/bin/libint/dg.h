@@ -26,6 +26,7 @@ namespace libint2 {
   class MemoryManager;
   class ImplicitDimensions;
   class CodeSymbols;
+  class GraphRegistry;
 
   /** DirectedGraph is an implementation of a directed graph
       composed of vertices represented by DGVertex objects. The objects
@@ -42,7 +43,7 @@ namespace libint2 {
     typedef vector<ver_ptr> container;
     typedef container::iterator iter;
     typedef container::const_iterator citer;
-  
+    
     /** This constructor doesn't do much. Actual initialization of the graph
         must be done using append_target */
     DirectedGraph();
@@ -50,7 +51,7 @@ namespace libint2 {
 
     /// Returns the number of vertices
     const unsigned int num_vertices() const { return first_free_; }
-
+    
     /** appends v to the graph
     */
     void append_vertex(const SafePtr<DGVertex>& v) throw(VertexAlreadyOnStack);
@@ -149,7 +150,11 @@ namespace libint2 {
     template <class RR>
       unsigned int
       num_children_on(const SafePtr<RR>& rr) const;
-
+    
+    /// Returns the registry
+    SafePtr<GraphRegistry>& registry() { return registry_; }
+    const SafePtr<GraphRegistry>& registry() const { return registry_; }
+    
   private:
 
     /// contains vertices
@@ -163,7 +168,10 @@ namespace libint2 {
     
     static const unsigned int default_size_ = 100;
     unsigned int first_free_;
-
+    
+    // maintains data about the graph which does not belong IN the graph
+    SafePtr<GraphRegistry> registry_;
+    
     /** adds a vertex to the graph. If the vertex already found on the graph
         then the vertex is not added and the function returns false */
     void add_vertex(const SafePtr<DGVertex>&) throw(VertexAlreadyOnStack);

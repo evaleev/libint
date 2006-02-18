@@ -7,6 +7,7 @@
 #include <prefactors.h>
 #include <codeblock.h>
 #include <default_params.h>
+#include <graph_registry.h>
 
 using namespace std;
 using namespace libint2;
@@ -16,7 +17,7 @@ using namespace libint2;
 
 DirectedGraph::DirectedGraph() :
   stack_(default_size_,SafePtr<DGVertex>()), func_names_(),
-  first_free_(0), first_to_compute_()
+  first_free_(0), first_to_compute_(), registry_(SafePtr<GraphRegistry>(new GraphRegistry))
 {
 }
 

@@ -205,6 +205,23 @@ AC_DEFINE_UNQUOTED(D2ERI_MAX_AM,$D2ERI_MAX_AM)
 
 fi
 
+AC_ARG_ENABLE(unrolling,
+[  --enable-unrolling      Allow computation in terms of integrals rather than sets of integrals.],
+[
+AC_DEFINE(LIBINT_ENABLE_UNROLLING)
+AC_MSG_RESULT([Integral sets can be unrolled])
+])
+
+AC_ARG_WITH(vector-length,
+[  --with-vector-length=N  Compute integrals in vectors of length N.],
+[
+if test $withval -gt 0; then
+  LIBINT_VECTOR_LENGTH=$withval
+  AC_DEFINE_UNQUOTED(LIBINT_VECTOR_LENGTH,$withval)
+  AC_MSG_RESULT([Using vector length: $withval])
+fi
+])
+
 AC_ARG_WITH(float-type,
 [  --with-float-type       Compute all integrals using the given float type.],
 [

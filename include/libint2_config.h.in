@@ -49,6 +49,12 @@
 /* Max optimized AM for linear G12 method integrals */
 #undef G12_OPT_AM
 
+/* Whether integral sets can be unrolled */
+#undef LIBINT_ENABLE_UNROLLING
+
+/* maximum length of vectors */
+#undef LIBINT_VECTOR_LENGTH
+
 /* User-defined float type */
 #undef LIBINT_USER_DEFINED_FLOAT
 

@@ -11,6 +11,7 @@
 #include <vrr_11_r12kg12_11.h>
 #include <comp_11_tig12_11.h>
 #include <dummyintegral.h>
+#include <graph_registry.h>
 
 using namespace std;
 using namespace libint2;
@@ -127,7 +128,8 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
   // 2) if possible apply HRR
   // 3) else apply VRR
   //
-  if (integral->size() <= max_size_to_unroll_)
+  const unsigned int size = integral->size();
+  if (size == 1 || (size <= max_size_to_unroll_ && graph->registry()->can_unroll()))
     return unroll_intset<TwoPRep_11_11_sq>(integral);
 
 #if LIBINT_ERI_STRATEGY == 1 || LIBINT_ERI_STRATEGY == 2
@@ -267,7 +269,8 @@ Strategy::optimal_rr_Dummy1111_sq(const SafePtr<DirectedGraph>& graph,
 				  const SafePtr<DummySymmIntegral_11_11_sq>& integral,
 				  const SafePtr<Tactic>& tactic)
 {
-  if (integral->size() <= max_size_to_unroll_)
+  const unsigned int size = integral->size();
+  if (size == 1 || (size <= max_size_to_unroll_ && graph->registry()->can_unroll()))
     return unroll_intset<DummySymmIntegral_11_11_sq>(integral);
 
   {
