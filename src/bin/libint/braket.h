@@ -238,6 +238,8 @@ namespace libint2 {
   private:
     BFS bfs_[NP];
     
+    // this function resets all cached values
+    void reset_cache();
 #if COMPUTE_SIZE_DIRECTLY
     mutable unsigned int size_;
 #endif
@@ -295,6 +297,7 @@ namespace libint2 {
   typename ArrayBraket<BFS,NP>::bfs_ref
   ArrayBraket<BFS,NP>::member(unsigned int p, unsigned int i) {
     assert(i==0 && p<NP);
+    reset_cache();
     return bfs_[p];
   }
   
@@ -309,6 +312,7 @@ namespace libint2 {
   void
   ArrayBraket<BFS,NP>::set_member(const BFS& f, unsigned int p, unsigned int i) {
     assert(i==0 && p<NP);
+    reset_cache();
     bfs_[p] = f;
   }
   
@@ -316,6 +320,7 @@ namespace libint2 {
   void
   ArrayBraket<BFS,NP>::set_member(const ConstructablePolymorphically& f, unsigned int p, unsigned int i) {
     assert(i==0 && p<NP);
+    reset_cache();
     bfs_[p] = f;
   }
   
@@ -340,7 +345,7 @@ namespace libint2 {
     }
     return max_key;
   }
-
+  
 #if COMPUTE_SIZE_DIRECTLY
   template <class BFS, unsigned int NP>
   unsigned int
@@ -355,7 +360,13 @@ namespace libint2 {
     return size_;
   }
 #endif
-
+  
+  template <class BFS, unsigned int NP>
+  void
+  ArrayBraket<BFS,NP>::reset_cache() {
+    size_ = 0;
+  }
+  
 };
 
 #endif

@@ -161,6 +161,7 @@ namespace libint2 {
 
       /// Implements Hashable::key()
       LIBINT2_UINT_LEAST64 key() const {
+        if (key_ == 0) compute_key();
         return key_;
       }
       
@@ -178,6 +179,8 @@ namespace libint2 {
       void set_size(unsigned int sz);
       /// Specialization of DGVertex::this_precomputed()
       virtual bool this_precomputed() const { return false; }
+      /// Resets all cached values
+      void reset_cache() { key_ = 0; size_ = 0; }
 
       private:
       //
@@ -229,8 +232,8 @@ namespace libint2 {
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     typename GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::SingletonManagerType
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::singl_manager_(&GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::label);
-#endif  
-
+#endif
+  
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Op& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
     DGVertex(ClassInfo<GenIntegralSet>::Instance().id()), O_(SafePtr<Op>(new Op(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))),
@@ -245,7 +248,7 @@ namespace libint2 {
       std::cout << "Constructed " << label() << std::endl;
 #endif
     }
-
+  
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::~GenIntegralSet()
     {
@@ -284,6 +287,7 @@ namespace libint2 {
     typename BraSetType::bfs_ref
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::bra(unsigned int p, unsigned int i)
     {
+      reset_cache();
       return bra_.member(p,i);
     }
     
@@ -291,6 +295,7 @@ namespace libint2 {
     typename KetSetType::bfs_ref
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::ket(unsigned int p, unsigned int i)
     {
+      reset_cache();
       return ket_.member(p,i);
     }
     
