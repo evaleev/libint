@@ -351,6 +351,7 @@ DGVertex::print(std::ostream& os) const
       os << prefix << "symbol = " << symbol() << endl;
     if (address_set())
       os << prefix << "address = " << address() << endl;
+    os << prefix << "size = " << size() << endl;
   }
 #endif
 }
