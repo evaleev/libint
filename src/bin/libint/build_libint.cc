@@ -232,7 +232,9 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           // unroll only if max_am <= ERI_OPT_AM
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
-          dg_xxxx->registry()->can_unroll(max_am <= ERI_OPT_AM);
+          const bool need_to_optimize = (max_am <= ERI_OPT_AM);
+          dg_xxxx->registry()->can_unroll(need_to_optimize);
+          dg_xxxx->registry()->do_cse(need_to_optimize);
           
           SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
           os << "building " << abcd->description() << endl;
@@ -319,7 +321,9 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           // unroll only if max_am <= G12_OPT_AM
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
-          dg_xxxx->registry()->can_unroll(max_am <= G12_OPT_AM);
+          const bool need_to_optimize = (max_am <= G12_OPT_AM);
+          dg_xxxx->registry()->can_unroll(need_to_optimize);
+          dg_xxxx->registry()->do_cse(need_to_optimize);
           
           // k=0
           if (!ssss) {

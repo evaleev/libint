@@ -13,7 +13,6 @@ using namespace std;
 using namespace libint2;
 
 #define ONLY_CLONE_IF_DIFF 1
-#define DETECT_COMMON_SUBEXPR 0
 
 DirectedGraph::DirectedGraph() :
   stack_(default_size_,SafePtr<DGVertex>()), func_names_(),
@@ -443,11 +442,15 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<Recu
   if (new_left || new_right)
     add_new_vertex(expr_vertex);
   else {
-#if DETECT_COMMON_SUBEXPR
-    try { append_vertex(expr_vertex); }
-#else
-    try { add_new_vertex(expr_vertex); }
-#endif
+    const bool do_cse = registry()->do_cse();
+    try {
+      if (do_cse) {
+        append_vertex(expr_vertex);
+      }
+      else {
+        add_new_vertex(expr_vertex);
+      }
+    }
     catch (VertexAlreadyOnStack& e) {
       if (new_left || new_right) {
         cout << "Problem detected: AlgebraicOperator is found on the stack but one of its operands was new" << endl;
