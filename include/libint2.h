@@ -136,7 +136,7 @@ typedef struct {
       veclength is not used */
   unsigned int veclength;
 
-#if LIBINT2_FLOP_COUNT
+#if LIBINT2_FLOP_COUNT || LIBINT_FLOP_COUNT
   /** FLOP counter. Libint must be configured with --enable-flop-counter
       to allow FLOP counting. It is user's reponsibility to set zero nflops before
       computing integrals. */
