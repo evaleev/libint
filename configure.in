@@ -212,6 +212,7 @@ AC_DEFINE(LIBINT_ENABLE_UNROLLING)
 AC_MSG_RESULT([Integral sets can be unrolled])
 ])
 
+LIBINT_VECTOR_LENGTH=1
 AC_ARG_WITH(vector-length,
 [  --with-vector-length=N  Compute integrals in vectors of length N.],
 [
@@ -221,6 +222,26 @@ if test $withval -gt 0; then
   AC_MSG_RESULT([Using vector length: $withval])
 fi
 ])
+
+if test $LIBINT_VECTOR_LENGTH -gt 1; then
+  LIBINT_VECTOR_METHOD=block
+  AC_ARG_WITH(vector-method,
+  [  --with-vector-method    Specifies how to vectorize integrals. Allowed values are 'block' (default) and 'line'.],
+  [
+  LIBINT_VECTOR_METHOD=$withval
+  ])
+  case $LIBINT_VECTOR_METHOD in
+    block)
+    ;;
+    line)
+    ;;
+    *)
+    AC_MSG_ERROR([Unrecognized vector method: $LIBINT_VECTOR_METHOD])
+    ;;
+  esac
+  AC_DEFINE_UNQUOTED(LIBINT_VECTOR_METHOD,"$LIBINT_VECTOR_METHOD")
+  AC_MSG_RESULT([Using vector method: $LIBINT_VECTOR_METHOD])
+fi
 
 AC_ARG_WITH(float-type,
 [  --with-float-type       Compute all integrals using the given float type.],

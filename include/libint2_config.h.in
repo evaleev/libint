@@ -55,6 +55,9 @@
 /* maximum length of vectors */
 #undef LIBINT_VECTOR_LENGTH
 
+/* how to vectorize */
+#undef LIBINT_VECTOR_METHOD
+
 /* User-defined float type */
 #undef LIBINT_USER_DEFINED_FLOAT
 

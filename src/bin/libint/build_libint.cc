@@ -79,6 +79,13 @@ void try_main (int argc, char* argv[])
 #ifdef LIBINT_VECTOR_LENGTH
   cparams->max_vector_length(LIBINT_VECTOR_LENGTH);
 #endif
+#ifdef LIBINT_VECTOR_METHOD
+  {
+    const std::string token("line");
+    const bool vectorize_by_line = (token == LIBINT_VECTOR_METHOD);
+    cparams->vectorize_by_line(vectorize_by_line);
+  }
+#endif
 #if LIBINT_FLOP_COUNT
   cparams->count_flops(true);
 #endif
