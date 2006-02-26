@@ -1,6 +1,4 @@
 
-#define USE_HRR 1
-
 #include <vector>
 #include <algorithm>
 #include <strategy.h>
@@ -12,6 +10,9 @@
 #include <comp_11_tig12_11.h>
 #include <dummyintegral.h>
 #include <graph_registry.h>
+
+#define USE_HRR 1
+#define LOCAL_DEBUG 0
 
 using namespace std;
 using namespace libint2;
@@ -133,18 +134,34 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
     return unroll_intset<TwoPRep_11_11_sq>(integral);
 
 #if LIBINT_ERI_STRATEGY == 1 || LIBINT_ERI_STRATEGY == 2
+  //
+  // Particle 0 is most significant for storage, hence want to perform HRR on it last,
+  // when functions of particle 1 are ready. This will maximize the length of the loops
+  // in HRRPart0... code.
+  //
+
+  // shift from B to A
   {
     typedef HRR_ab_11_TwoPRep_11_sh rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
-    if (rr_ptr->num_children())
+    if (rr_ptr->num_children()) {
+#if LOCAL_DEBUG
+      std::cout << "Applying HRR(ab) to ";  integral->print(std::cout);  std::cout << std::endl;
+#endif
       return rr_cast(rr_ptr);
+    }
   }
 
+  // shift from D to C
   {
     typedef HRR_cd_11_TwoPRep_11_sh rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
-    if (rr_ptr->num_children())
+    if (rr_ptr->num_children()) {
+#if LOCAL_DEBUG
+      std::cout << "Applying HRR(cd) to ";  integral->print(std::cout);  std::cout << std::endl;
+#endif
       return rr_cast(rr_ptr);
+    }
   }
 #endif
   
@@ -160,30 +177,50 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
   {
     typedef VRR_a_11_TwoPRep_11_sh rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
-    if (rr_ptr->num_children())
+    if (rr_ptr->num_children()) {
+#if LOCAL_DEBUG
+      std::cout << "Applying VRR(a) to ";  integral->print(std::cout);  std::cout << std::endl;
+#endif
       return rr_cast(rr_ptr);
+    }
   }
-  
+
+#if !USE_HRR
   {
     typedef VRR_b_11_TwoPRep_11_sh rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
-    if (rr_ptr->num_children())
+    if (rr_ptr->num_children()) {
+#if LOCAL_DEBUG
+      std::cout << "Applying VRR(b) to ";  integral->print(std::cout);  std::cout << std::endl;
+#endif
       return rr_cast(rr_ptr);
+    }
   }
+#endif
   
   {
     typedef VRR_c_11_TwoPRep_11_sh rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
-    if (rr_ptr->num_children())
+    if (rr_ptr->num_children()) {
+#if LOCAL_DEBUG
+      std::cout << "Applying VRR(c) to ";  integral->print(std::cout);  std::cout << std::endl;
+#endif
       return rr_cast(rr_ptr);
+    }
   }
   
+#if !USE_HRR
   {
     typedef VRR_d_11_TwoPRep_11_sh rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
-    if (rr_ptr->num_children())
+    if (rr_ptr->num_children()) {
+#if LOCAL_DEBUG
+      std::cout << "Applying VRR(d) to ";  integral->print(std::cout);  std::cout << std::endl;
+#endif
       return rr_cast(rr_ptr);
+    }
   }
+#endif
   
   return SafePtr<RecurrenceRelation>();
 }
