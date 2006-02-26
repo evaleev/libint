@@ -256,6 +256,10 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           std::basic_ofstream<char> srcfile(src_filename.c_str());
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),abcd->label(),declfile,srcfile);
           
+          // update max stack size
+          LibraryParameters& lparams = LibraryParameters::get_library_params();
+          lparams.max_stack_size(memman->max_memory_used());
+          
           ostringstream oss;
           oss << "  libint2_build_eri[" << la << "][" << lb << "][" << lc << "]["
               << ld <<"] = " << context->label_to_name(label_to_funcname(abcd->label()))
@@ -397,6 +401,10 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           std::basic_ofstream<char> srcfile(src_filename.c_str());
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
           
+          // update max stack size
+          LibraryParameters& lparams = LibraryParameters::get_library_params();
+          lparams.max_stack_size(memman->max_memory_used());
+
           ostringstream oss;
           oss << "  libint2_build_r12kg12[" << la << "][" << lb << "][" << lc << "]["
               << ld <<"] = " << context->label_to_name(label_to_funcname(label))
@@ -530,6 +538,10 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
           std::basic_ofstream<char> declfile(decl_filename.c_str());
           std::basic_ofstream<char> srcfile(src_filename.c_str());
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
+          
+          // update max stack size
+          LibraryParameters& lparams = LibraryParameters::get_library_params();
+          lparams.max_stack_size(memman->max_memory_used());
           
           ostringstream oss;
           oss << "  libint2_build_r12kg12[" << la << "][" << lb << "][" << lc << "]["

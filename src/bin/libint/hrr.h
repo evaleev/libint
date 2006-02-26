@@ -487,6 +487,9 @@ namespace libint2 {
           hsr *= iter->num_iter();
         }
       }
+      // Use LibraryParameters to keep track of maximum hsr
+      LibraryParameters& lparams = LibraryParameters::get_library_params();
+      lparams.max_hrr_hsrank(hsr);
       
       // can only do a simple bra->ket or ket->bra transfer so far
       unsigned int isr = 1;
@@ -508,6 +511,8 @@ namespace libint2 {
           lsr *= iter->num_iter();
         }
       }
+      // Use LibraryParameters to keep track of maximum hsr
+      lparams.max_hrr_lsrank(lsr);
       
       if (expl_high_dim())
         os << "," << hsr;

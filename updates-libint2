@@ -1,5 +1,10 @@
 
-02/18/2006:     1) eri-opt-am and g12-opt-am are properly takes into account.
+02/18-26/2006:  1) with-vector-method configure option specifies how to vectorize.
+                2) linewise-vectorized set-level RR codes were not correct. Such
+                   functions now use special stack to keep intermediates.
+                -EFV
+
+02/18/2006:     1) eri-opt-am and g12-opt-am are properly taken into account.
                    introduced GraphRegistry to do that.
                 2) vector length can be set via configure script.
                 -EFV

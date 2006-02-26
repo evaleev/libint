@@ -112,6 +112,11 @@ Libint2Iface::~Libint2Iface()
 {
   LibraryParameters& lparams = LibraryParameters::get_library_params();
   ph_ << define("MAX_STACK_SIZE",lparams.max_stack_size());
+  const unsigned int max_vector_stack_size = lparams.max_vector_stack_size();
+  if (max_vector_stack_size)
+    ph_ << define("MAX_VECTOR_STACK_SIZE",max_vector_stack_size);
+  ph_ << define("MAX_HRR_HSRANK",lparams.max_hrr_hsrank());
+  ph_ << define("MAX_HRR_LSRANK",lparams.max_hrr_lsrank());
   
   header_guard_close(ph_);
   header_guard_close(ih_);

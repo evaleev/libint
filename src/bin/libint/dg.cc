@@ -762,15 +762,12 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
     }
     vertex = vertex->postcalc();
   } while (vertex != 0);
-  
-  LibraryParameters& lparams = LibraryParameters::get_library_params();
-  lparams.max_stack_size(memman->max_memory_used());
 }
 
 namespace {
   std::string stack_symbol(const SafePtr<CodeContext>& ctext, const DGVertex::Address& address, unsigned int size,
                            const std::string& low_rank, const std::string& veclen,
-                           const std::string& prefix = "libint->stack")
+                           const std::string& prefix)
   {
     ostringstream oss;
     oss << prefix << "[((hsi*" << size << "+"
@@ -810,6 +807,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
 {
   std::ostringstream os;
   const std::string null_str("");
+  const std::string& stack_name = registry()->stack_name();
   
   // Generate the label for the rank of the low dimension
   std::string low_rank;
@@ -839,7 +837,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
     if (!vertex->symbol_set() && vertex->address_set()) {
-      vertex->set_symbol(stack_symbol(context,vertex->address(),vertex->size(),low_rank,veclen));
+      vertex->set_symbol(stack_symbol(context,vertex->address(),vertex->size(),low_rank,veclen,stack_name));
     }
   }
 
@@ -866,7 +864,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
         // If a child is precomputed and it's parent symbol is not set -- its symbol will be set as usual
         if (!child->precomputed() || vertex->symbol_set()) {
           if (vertex->address_set()) {
-            child->set_symbol(stack_symbol(context,vertex->address()+c,vertex->size(),low_rank,veclen));
+            child->set_symbol(stack_symbol(context,vertex->address()+c,vertex->size(),low_rank,veclen,stack_name));
           }
           else {
             child->set_symbol(stack_symbol(context,c,vertex->size(),low_rank,veclen,vertex->symbol()));

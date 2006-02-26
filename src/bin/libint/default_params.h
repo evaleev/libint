@@ -149,6 +149,25 @@ namespace libint2 {
     unsigned int max_stack_size() const {
       return max_stack_size_;
     }
+    /** returns max vector stack size.
+        vector stack is only used to hold intermediate quantities
+        in set-level RR code. This is only needed when doing linewise vectorization.
+      */
+    unsigned int max_vector_stack_size() const {
+      return max_vector_stack_size_;
+    }
+    /** returns max rank of high-significance functions in a HRR call.
+        This is only needed when doing linewise vectorization.
+      */
+    unsigned int max_hrr_hsrank() const {
+      return max_hrr_hsrank_;
+    }
+    /** returns max rank of low-significance functions in a HRR call.
+        This is only needed when doing linewise vectorization.
+      */
+    unsigned int max_hrr_lsrank() const {
+      return max_hrr_lsrank_;
+    }
     
     /// if max_stack_size_ < size then set max_stack_size_=size
     void max_stack_size(unsigned int size) {
@@ -156,10 +175,31 @@ namespace libint2 {
         max_stack_size_ = size;
     }
     
+    /// if max_vector_stack_size_ < size then set max_vector_stack_size_=size
+    void max_vector_stack_size(unsigned int size) {
+      if (max_vector_stack_size_ < size)
+        max_vector_stack_size_ = size;
+    }
+
+    /// if max_hrr_hsrank_ < rank then set max_hrr_hsrank_=rank
+    void max_hrr_hsrank(unsigned int rank) {
+      if (max_hrr_hsrank_ < rank)
+        max_hrr_hsrank_ = rank;
+    }
+    
+    /// if max_hrr_lsrank_ < rank then set max_hrr_lsrank_=rank
+    void max_hrr_lsrank(unsigned int rank) {
+      if (max_hrr_lsrank_ < rank)
+        max_hrr_lsrank_ = rank;
+    }
+    
     private:
     LibraryParameters();
     
     unsigned int max_stack_size_;
+    unsigned int max_vector_stack_size_;
+    unsigned int max_hrr_hsrank_;
+    unsigned int max_hrr_lsrank_;
     
     static LibraryParameters LP_obj_;
   };

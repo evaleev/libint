@@ -4,6 +4,7 @@
 #include <dg.templ.h>
 #include <strategy.h>
 #include <code.h>
+#include <graph_registry.h>
 
 using namespace libint2;
 
@@ -29,6 +30,10 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
                                   std::ostream& decl, std::ostream& def)
 {
   SafePtr<DirectedGraph> dg = generate_graph_();
+  
+  // Intermediates in RR code are either are automatic variables or have to go on vstack
+  dg->registry()->stack_name("libint->vstack");
+  
   // Assign symbols for the target and source integral sets
   SafePtr<CodeSymbols> symbols(new CodeSymbols);
   assign_symbols_(symbols);
@@ -43,6 +48,11 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
   SafePtr<ImplicitDimensions> localdims = adapt_dims_(dims);
   dg->generate_code(context,memman,localdims,symbols,label(),decl,def);
+  
+  // update max stack size
+  LibraryParameters& lparams = LibraryParameters::get_library_params();
+  lparams.max_vector_stack_size(memman->max_memory_used());
+  
   dg->reset();
 }
 

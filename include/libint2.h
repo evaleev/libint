@@ -129,6 +129,9 @@ typedef struct {
   
   /// Stack of the intermediates is here
   LIBINT2_REALTYPE stack[LIBINT2_MAX_STACK_SIZE * VECLEN];
+  /// Stack of the vector intermediates is here. Only used by set-level RR
+  /// code if it is vectorized linewise
+  LIBINT2_REALTYPE vstack[LIBINT2_MAX_VECTOR_STACK_SIZE * VECLEN * (LIBINT2_MAX_HRR_HSRANK > LIBINT2_MAX_HRR_LSRANK ? LIBINT2_MAX_HRR_HSRANK : LIBINT2_MAX_HRR_LSRANK)];
   /// On completion, this contains pointers to computed targets
   LIBINT2_REALTYPE* targets[LIBINT2_MAX_NTARGETS];
   

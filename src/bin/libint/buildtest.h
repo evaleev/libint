@@ -54,6 +54,10 @@ namespace libint2 {
       dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),
 			     label,declfile,deffile);
       
+      // update max stack size
+      LibraryParameters& lparams = LibraryParameters::get_library_params();
+      lparams.max_stack_size(memman->max_memory_used());
+      
       std::basic_ofstream<char> dotfile2("graph.symb.dot");
       dg_xxxx->print_to_dot(true,dotfile2);
       
