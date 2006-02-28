@@ -1,4 +1,12 @@
 
+02/28/2006:     Added ability to condense multiple statements into one, provided
+                that no reusable quantities appear. The current version generates
+                correct for fully-unrolled code, but FLOP counts are not correct
+                and the degree of "condensation" is not adjustable yet.
+                This development is important
+                for generating efficient linewise vectorized code.
+                -EFV
+
 02/18-26/2006:  1) with-vector-method configure option specifies how to vectorize.
                 2) linewise-vectorized set-level RR codes were not correct. Such
                    functions now use special stack to keep intermediates.
