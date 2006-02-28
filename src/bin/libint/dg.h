@@ -207,6 +207,13 @@ namespace libint2 {
     void handle_trivial_nodes();
     /// This functions removes vertices not connected to other vertices
     void remove_disconnected_vertices();
+    /** Finds (binary) subtrees. The subtrees correspond to a single-line code (no intermediates
+        are used in other expressions)
+    */
+    void find_subtrees();
+    /** Finds (binary) subtrees starting (recursively) at v.
+    */
+    void find_subtrees_from(const SafePtr<DGVertex>& v);
     /** If v1 and v2 are connected by DGArcDirect and all entry arcs to v1 are of the DGArcDirect type as well,
         this function will reattach all arcs extering v1 to v2 and remove v1 from the graph alltogether. */
     void remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2) throw(CannotPerformOperation);
@@ -226,6 +233,8 @@ namespace libint2 {
                       unsigned int min_size_to_alloc = 1);
     // Assign symbols to the vertices
     void assign_symbols(const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims);
+    // If v is an AlgebraicOperator, assign (recursively) symbol to the operator. All other must have been already assigned
+    void assign_oper_symbol(const SafePtr<CodeContext>& context, SafePtr<DGVertex>& v);
     // Print the code using symbols generated with assign_symbols()
     void print_def(const SafePtr<CodeContext>& context, std::ostream& os,
                    const SafePtr<ImplicitDimensions>& dims);

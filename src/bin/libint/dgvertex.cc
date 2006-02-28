@@ -8,14 +8,14 @@ using namespace libint2;
 #define LOCAL_DEBUG 0
 
 DGVertex::DGVertex(ClassID tid) :
-  dg_(0), typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
+  dg_(0), subtree_(SafePtr<DRTree>()), typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
   postcalc_(), graph_label_(), referred_vertex_(0), nrefs_(0),
   symbol_(), address_(MemoryManager::InvalidAddress), need_to_compute_(true), instid_()
 {
 }
 
 DGVertex::DGVertex(const DGVertex& v) :
-  dg_(v.dg_), typeid_(v.typeid_), parents_(v.parents_), children_(v.children_), target_(v.target_),
+  dg_(v.dg_), subtree_(v.subtree_), typeid_(v.typeid_), parents_(v.parents_), children_(v.children_), target_(v.target_),
   can_add_arcs_(v.can_add_arcs_), num_tagged_arcs_(v.num_tagged_arcs_),
   postcalc_(v.postcalc_), graph_label_(v.graph_label_),
   referred_vertex_(v.referred_vertex_), nrefs_(v.nrefs_),
@@ -203,6 +203,7 @@ void
 DGVertex::reset()
 {
   dg_ = 0;
+  subtree_ = SafePtr<DRTree>();
   unsigned int nchildren = children_.size();
   for(int c=0; c<nchildren; c++) {
     children_[c]->dest()->del_entry_arc(children_[c]);

@@ -13,6 +13,8 @@ using namespace std;
 using namespace libint2;
 
 #define ONLY_CLONE_IF_DIFF 1
+// Set to 1 to disable subtrees
+#define DISABLE_SUBTREES 0
 
 DirectedGraph::DirectedGraph() :
   stack_(default_size_,SafePtr<DGVertex>()), func_names_(),
@@ -127,17 +129,24 @@ DirectedGraph::traverse_from(const SafePtr<DGArc>& arc)
 {
   SafePtr<DGVertex> orig = arc->orig();
   SafePtr<DGVertex> dest = arc->dest();
+  // no need to compute if precomputed
   if (dest->precomputed())
     return;
+  // if has been hit by all parents ...
   const unsigned int num_tags = dest->tag();
   const unsigned int num_parents = dest->num_entry_arcs();
-  /*if (num_tags == 1) {
-    int nchildren = dest->num_exit_arcs();
-    for(int c=0; c<nchildren; c++)
-      traverse_from(dest->exit_arc(c));
-      }*/
   if (num_tags == num_parents) {
-    schedule_computation(dest);
+
+    // ... check if it is on a subtree ...
+    if (SafePtr<DRTree> stree = dest->subtree()) {
+      // ... if yes, schedule only if it is a root of a subtree
+      if (stree->root() == dest)
+        schedule_computation(dest);
+    }
+    // else schedule
+    else
+      schedule_computation(dest);
+    
     int nchildren = dest->num_exit_arcs();
     for(int c=0; c<nchildren; c++)
       traverse_from(dest->exit_arc(c));
@@ -292,6 +301,7 @@ DirectedGraph::optimize_rr_out()
   remove_trivial_arithmetics();
   handle_trivial_nodes();
   remove_disconnected_vertices();
+  find_subtrees();
 }
 
 // Replace recurrence relations with expressions
@@ -779,25 +789,36 @@ namespace {
   /// Returns a "vector" form of stack symbol, e.g. converts libint->stack[x] to libint->stack[x+vi]
   inline std::string to_vector_symbol(const SafePtr<DGVertex>& v)
   {
+    int current_pos = 0;
     std::string symb = v->symbol();
-    // find "[" first
-    const std::string left_braket("[");
-    int where = symb.find(left_braket,0);
-    // if the prefix indicating a stack symbol found:
-    // 1) make sure vi doesn't appear in the rest of the string
-    // 2) replace "]" with "+vi]"
-    if (where != std::string::npos) {
-      const std::string forbidden("vi");
-      int pos = symb.find(forbidden,where);
-      if (pos == std::string::npos) {
-	const std::string right_braket("]");
-	const std::string what_to_add("+vi");
-	int where = symb.find(right_braket,0);
-	if (where == std::string::npos)
-	  throw logic_error("to_vector_symbol() -- address is set but no right braket found");
-	symb.insert(where,what_to_add);
+    // replace repeatedly until the string is exhausted
+    while(current_pos != std::string::npos) {
+
+      // find "[" first
+      const std::string left_braket("[");
+      int where = symb.find(left_braket,current_pos);
+      current_pos = where;
+      // if the prefix indicating a stack symbol found:
+      // 1) make sure vi doesn't appear between the brakets
+      // 2) replace "]" with "+vi]"
+      if (where != std::string::npos) {
+        const std::string right_braket("]");
+        int where = symb.find(right_braket,current_pos);
+        if (where == std::string::npos)
+          throw logic_error("to_vector_symbol() -- address is set but no right braket found");
+        
+        const std::string forbidden("vi");
+        int pos = symb.find(forbidden,current_pos);
+        if (pos == std::string::npos || pos > where) {
+          const std::string what_to_add("+vi");
+          symb.insert(where,what_to_add);
+          current_pos = where + 4;
+        }
+        else {
+          current_pos = where + 1;
+        }
       }
-    }
+    } // end of while
     return symb;
   }
 };
@@ -876,7 +897,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
     }
   }
 
-  // then process all other symbols
+  // then process all other symbols, EXCEPT operators
   for(int i=0; i<first_free_; i++) {
 
     SafePtr<DGVertex> vertex = stack_[i];
@@ -887,6 +908,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
       continue;
     }
 
+#if 0
     // test if the vertex is an operator
     {
       typedef AlgebraicOperator<DGVertex> oper;
@@ -896,6 +918,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
         continue;
       }
     }
+#endif
 
     // test if the vertex is a static quantity, like a constant
     {
@@ -926,6 +949,52 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
       }
     }
 
+  } // done with everything BUT operators
+  
+  // finally, process all operators (start with most recently added vertices since those are
+  // much more likely to be on the bottom of the graph).
+  for(int i=first_free_-1; i>=0; --i) {
+
+    SafePtr<DGVertex> vertex = stack_[i];
+#if DEBUG
+    cout << "Trying to assign symbol to " << vertex->description() << endl;
+#endif
+    assign_oper_symbol(context,vertex);
+  }
+
+}
+
+void
+DirectedGraph::assign_oper_symbol(const SafePtr<CodeContext>& context, SafePtr<DGVertex>& vertex)
+{
+  // do nothing if the vertex has a symbol or is not an operator
+  if (vertex->symbol_set())
+    return;
+  
+  {
+    typedef AlgebraicOperator<DGVertex> oper;
+    SafePtr<oper> ptr_cast = dynamic_pointer_cast<oper,DGVertex>(vertex);
+    if (ptr_cast) {
+      // is it in a subtree?
+      const bool on_a_subtree = (vertex->subtree());
+      
+      // If no -- it will be an automatic variable
+      if (!on_a_subtree)
+        vertex->set_symbol(context->unique_name<EntityTypes::FP>());
+      // else assign symbols to left and right arguments
+      else {
+        SafePtr<DGVertex> left = ptr_cast->exit_arc(0)->dest();
+        SafePtr<DGVertex> right = ptr_cast->exit_arc(1)->dest();
+        assign_oper_symbol(context,left);
+        assign_oper_symbol(context,right);
+        
+        std::ostringstream oss;
+        oss << "( " << left->symbol() << " ) "
+            << ptr_cast->label()
+            << " ( " << right->symbol() << " )";
+        vertex->set_symbol(oss.str());
+      }
+    }
   }
 }
 
@@ -1172,5 +1241,62 @@ DirectedGraph::contains_nontrivial_rr() const
   } while (current_vertex != 0);
   
   return false;
+}
+
+void
+DirectedGraph::find_subtrees()
+{
+  // Find subtrees by starting from the targets and moving down ...
+  for(int i=0; i<first_free_; i++) {
+    SafePtr<DGVertex> v = stack_[i];
+    
+    if (v->is_a_target() && v->num_entry_arcs() == 0) {
+      find_subtrees_from(v);
+    }
+  }
+}
+
+void
+DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
+{
+  // is not on a subtree already
+  if (!v->subtree()) {
+    
+    bool useless_subtree = false;
+    
+    //
+    // Subtrees are useless in the following cases:
+    // 1) root is computed via RRs, not explicitly
+    //
+    {
+      SafePtr<DGArc> arc = v->exit_arc(0);
+      SafePtr<DGArcRR> arc_rr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
+      if (arc_rr)
+        useless_subtree = true;
+    }
+    
+    // create subtree
+    if (!useless_subtree) {
+      const SafePtr<DRTree> stree = DRTree::CreateRootedAt(v);
+      
+      // Remove all trivial subtrees
+      if (SafePtr<DRTree> stree = v->subtree()) {
+#if DISABLE_SUBTREES
+        if (stree->nvertices() >= 0) {
+          stree->detach();
+        }
+#else
+        if (stree->nvertices() < 3) {
+          stree->detach();
+        }
+#endif
+      }
+    }
+    
+    // move on to children
+    const unsigned int nchildren = v->num_exit_arcs();
+    for(unsigned int c=0; c<nchildren; c++)
+      find_subtrees_from(v->exit_arc(c)->dest());
+  }
 }
 

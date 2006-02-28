@@ -1,5 +1,6 @@
 
 #include <dg.h>
+#include <drtree.h>
 #include <dgarc.h>
 #include <iostream>
 #include <string>
@@ -119,6 +120,9 @@ namespace libint2 {
     const std::string& graph_label() const throw(GraphLabelNotSet);
     /// sets the graph label
     void set_graph_label(const std::string& graph_label);
+    
+    /// Returns the subtree to which this vertex belongs
+    const SafePtr<DRTree>& subtree() const { return subtree_; }
 
     //
     // NOTE : the following functions probably belong to a separate class, such as Entity!
@@ -230,11 +234,25 @@ namespace libint2 {
     // These members used in traversal algorithms
     ////////
 
-    // num_tagged_arcs keeps track of how many entry arcs have been tagged during traversal
+    /// num_tagged_arcs keeps track of how many entry arcs have been tagged during traversal
     unsigned int num_tagged_arcs_;
     /// Which DGVertex to be computed after this vertex (0, if this is the last vertex)
     SafePtr<DGVertex> postcalc_;
-
+    
+    
+    ///////
+    // Refback to subtree which contains this vertex
+    ///////
+    
+    // note that this is a refback (back reference to the "owning" object) so changing it
+    // does not change class invariant -- hence mutable
+    
+    /// the subtree which contains this vertex (may be null). subtree is a directed rooted tree.
+    mutable SafePtr<DRTree> subtree_;
+    /// Only DRTree::set_subtree and DRTree::detach_from can change subtree_
+    friend void DRTree::add_vertex(const SafePtr<DGVertex>& vertex);
+    friend void DRTree::detach_from(const SafePtr<DGVertex>& v);
+    
   };
   
 };
