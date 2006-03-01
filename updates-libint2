@@ -1,7 +1,7 @@
 
 02/28/2006:     Added ability to condense multiple statements into one, provided
                 that no reusable quantities appear. The current version generates
-                correct for fully-unrolled code, but FLOP counts are not correct
+                correct code, but FLOP counts are not correct
                 and the degree of "condensation" is not adjustable yet.
                 This development is important
                 for generating efficient linewise vectorized code.

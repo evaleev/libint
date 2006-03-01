@@ -1269,10 +1269,12 @@ DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
     // 1) root is computed via RRs, not explicitly
     //
     {
-      SafePtr<DGArc> arc = v->exit_arc(0);
-      SafePtr<DGArcRR> arc_rr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
-      if (arc_rr)
-        useless_subtree = true;
+      if (v->num_exit_arcs() > 0) {
+        SafePtr<DGArc> arc = v->exit_arc(0);
+        SafePtr<DGArcRR> arc_rr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
+        if (arc_rr)
+          useless_subtree = true;
+      }
     }
     
     // create subtree
