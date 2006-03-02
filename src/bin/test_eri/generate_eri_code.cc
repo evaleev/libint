@@ -91,6 +91,7 @@ namespace {
     cparams->max_am_eri(max_am);
     cparams->max_vector_length(veclen);
     cparams->vectorize_by_line(vec_by_line);
+    cparams->count_flops(true);
 
     // set default dims
     ImplicitDimensions::set_default_dims(cparams);
