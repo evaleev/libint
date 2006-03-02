@@ -26,7 +26,8 @@ int main (int argc, char* argv[])
 	 << "       a,b,c,d -- angular momenta of functions in (ab|cd)" << std::endl
 	 << "       size_to_unroll -- size of the largest quartet to be unrolled" << std::endl
 	 << "       vector_length  -- (optional) max vector length. Defaults to 1." << std::endl << std::endl
-	 << "       vector_method  -- (optional) vectorization method. Valid choices are 0 (by-block) and 1 (by-line). Defaults to 0." << std::endl << std::endl;
+	 << "       vector_method  -- (optional) vectorization method. Valid choices are 0 (by-block) and 1 (by-line). Defaults to 0." << std::endl
+	 << "       do_cse  -- (optional) do Common Subexpression Elimination? Valid choices are 0 (no) and 1 (yes). Defaults to 0." << std::endl << std::endl;
   }
   catch(std::exception& a) {
     std::cerr << std::endl
@@ -55,7 +56,7 @@ namespace {
 
   int try_main (int argc, char* argv[])
   {
-    if (argc < 6 || argc > 8)
+    if (argc < 6 || argc > 9)
       throw PrintUsageAndDie("incorrect number of command-line arguments");
     unsigned int la = atoi(argv[1]);
     unsigned int lb = atoi(argv[2]);
@@ -70,6 +71,12 @@ namespace {
       int vecmeth = atoi(argv[7]);
       if (vecmeth == 1)
         vec_by_line = true;
+    }
+    bool do_cse = false;
+    if (argc >= 9) {
+      int docse = atoi(argv[8]);
+      if (docse == 1)
+        do_cse = true;
     }
     
     if (la >= max_am || lb >= max_am || lc >= max_am || ld >= max_am)
@@ -92,6 +99,12 @@ namespace {
     cparams->max_vector_length(veclen);
     cparams->vectorize_by_line(vec_by_line);
     cparams->count_flops(true);
+    if (do_cse) {
+      cparams->max_am_opt(max_am);
+    }
+    else {
+      cparams->max_am_opt(0);
+    }
 
     // set default dims
     ImplicitDimensions::set_default_dims(cparams);

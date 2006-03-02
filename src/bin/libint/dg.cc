@@ -997,6 +997,45 @@ DirectedGraph::assign_oper_symbol(const SafePtr<CodeContext>& context, SafePtr<D
   }
 }
 
+
+namespace {
+  /// returns how many times token appears in str
+  unsigned int nfind(const std::string& str, const std::string& token)
+  {
+    unsigned int nfinds = 0;
+    typedef std::string::size_type size_type;
+    size_type current_pos = 0;
+    while(1) {
+      current_pos = str.find(token,current_pos);
+      if (current_pos != std::string::npos) {
+        ++nfinds;
+        ++current_pos;
+      }
+      else
+        return nfinds;
+    }
+  }
+  
+#define DO_NOT_COUNT_DIV 1
+  /// Returns the number of FLOPs in an expression
+  unsigned int nflops(const std::string& expr)
+  {
+    static const std::string mul(" * ");
+    static const std::string div(" / ");
+    static const std::string plus(" + ");
+    static const std::string minus(" - ");
+    const unsigned int nflops =
+      nfind(expr,mul) +
+      nfind(expr,plus) +
+      nfind(expr,minus)
+#if !DO_NOT_COUNT_DIV
+      + nfind(expr,div)
+#endif
+      ;
+    return nflops;
+  }
+}
+
 void
 DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
                         const SafePtr<ImplicitDimensions>& dims)
@@ -1041,7 +1080,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   }
   os << outer_vloop->open();
 
-  unsigned int nflops = 0;
+  unsigned int nflops_total = 0;
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
 
@@ -1094,7 +1133,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           if (vectorize_by_line)
             os << line_vloop->close();
 
-          nflops++;
+          nflops_total += (1 + nflops(left_symbol) + nflops(right_symbol));
 
           goto next;
         }
@@ -1127,7 +1166,9 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
                                 rhs_symbol);
           if (vectorize_by_line)
             os << line_vloop->close();
-
+          
+          nflops_total += nflops(rhs_symbol);
+          
           goto next;
         }
       }
@@ -1167,12 +1208,12 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 
   // Print out the number of flops
   oss.str(null_str);
-  oss << "Number of flops = " << nflops;
+  oss << "Number of flops = " << nflops_total;
   os << context->comment(oss.str()) << endl;
   
   if (context->cparams()->count_flops()) {
     oss.str(null_str);
-    oss << nflops << " * " << dims->high_label() << " * "
+    oss << nflops_total << " * " << dims->high_label() << " * "
         << dims->low_label() << " * "
         << dims->vecdim_label();
     os << context->assign_binary_expr("libint->nflops","libint->nflops","+",oss.str());
@@ -1195,7 +1236,6 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   }
   
 }
-
 
 void
 DirectedGraph::update_func_names()

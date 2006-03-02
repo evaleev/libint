@@ -69,9 +69,11 @@ void try_main (int argc, char* argv[])
   
 #ifdef INCLUDE_ERI
   cparams->max_am_eri(ERI_MAX_AM);
+  cparams->max_am_eri_opt(ERI_OPT_AM);
 #endif
 #ifdef INCLUDE_G12
   cparams->max_am_g12(G12_MAX_AM);
+  cparams->max_am_g12_opt(G12_OPT_AM);
 #endif
 #if LIBINT_ENABLE_UNROLLING
   cparams->unroll_threshold(1000000000);
@@ -229,10 +231,10 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (la < lb || lc < ld || la+lb > lc+ld)
 	    continue;
           
-          // unroll only if max_am <= ERI_OPT_AM
+          // unroll only if max_am <= cparams->max_am_eri_opt()
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
-          const bool need_to_optimize = (max_am <= ERI_OPT_AM);
+          const bool need_to_optimize = (max_am <= cparams->max_am_eri_opt());
           dg_xxxx->registry()->can_unroll(need_to_optimize);
           dg_xxxx->registry()->do_cse(need_to_optimize);
           
@@ -322,10 +324,10 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (la+lb+lc+ld == 0)
             ssss = true;
           
-          // unroll only if max_am <= G12_OPT_AM
+          // unroll only if max_am <= cparams->max_am_g12_opt()
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
-          const bool need_to_optimize = (max_am <= G12_OPT_AM);
+          const bool need_to_optimize = (max_am <= cparams->max_am_g12_opt());
           dg_xxxx->registry()->can_unroll(need_to_optimize);
           dg_xxxx->registry()->do_cse(need_to_optimize);
           

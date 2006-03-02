@@ -7,7 +7,9 @@ const std::string CompilationParameters::Defaults::source_directory("./");
 const std::string CompilationParameters::Defaults::realtype("double");
 
 CompilationParameters::CompilationParameters() :
-  max_am_eri_(Defaults::max_am_eri), max_am_g12_(Defaults::max_am_g12),
+  max_am_(Defaults::max_am), max_am_opt_(Defaults::max_am),
+  max_am_eri_(Defaults::max_am_eri), max_am_eri_opt_(Defaults::max_am_eri),
+  max_am_g12_(Defaults::max_am_g12), max_am_g12_opt_(Defaults::max_am_g12),
   max_vector_length_(Defaults::max_vector_length),
   vectorize_by_line_(Defaults::vectorize_by_line), unroll_threshold_(Defaults::unroll_threshold),
   source_directory_(Defaults::source_directory), use_C_linking_(Defaults::use_C_linking),
@@ -23,11 +25,15 @@ void
 CompilationParameters::print(std::ostream& os) const
 {
   using namespace std;
+  os << "MAX_AM           = " << max_am() << endl;
+  os << "OPT_AM           = " << max_am_opt() << endl;
 #ifdef INCLUDE_ERI
   os << "ERI_MAX_AM           = " << max_am_eri() << endl;
+  os << "ERI_OPT_AM           = " << max_am_eri_opt() << endl;
 #endif
 #ifdef INCLUDE_G12
-  os << "ERI_MAX_G12          = " << max_am_g12() << endl;
+  os << "G12_MAX_AM           = " << max_am_g12() << endl;
+  os << "G12_OPT_AM           = " << max_am_g12_opt() << endl;
 #endif
   os << "MAX_VECTOR_LENGTH    = " << max_vector_length() << endl;
   if (max_vector_length() > 1)

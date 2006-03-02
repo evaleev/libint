@@ -6,6 +6,7 @@
 #include <dg.h>
 #include <strategy.h>
 #include <iface.h>
+#include <graph_registry.h>
 
 #ifndef _libint2_src_bin_libint_buildtest_h_
 #define _libint2_src_bin_libint_buildtest_h_
@@ -36,6 +37,35 @@ namespace libint2 {
       SafePtr<Strategy> strat(new Strategy(size_to_unroll));
       os << "Building " << target->description() << std::endl;
       SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,Integral>(target);
+      
+      //
+      // do CSE only if max_am <= cparams->max_am_opt()
+      //
+      const unsigned int np = target->bra().num_part();
+      unsigned int max_am = 0;
+      // bra
+      for(unsigned int p=0; p<np; p++) {
+        const unsigned int nf = target->bra().num_members(p);
+        for(unsigned int f=0; f<nf; f++) {
+          // Assuming shells here
+          const unsigned int am = target->bra(p,f).qn();
+          using std::max;
+          max_am = max(max_am,am);
+        }
+      }
+      // ket
+      for(unsigned int p=0; p<np; p++) {
+        const unsigned int nf = target->ket().num_members(p);
+        for(unsigned int f=0; f<nf; f++) {
+          // Assuming shells here
+          const unsigned int am = target->ket(p,f).qn();
+          using std::max;
+          max_am = max(max_am,am);
+        }
+      }
+      const bool need_to_optimize = (max_am <= cparams->max_am_opt());
+      dg_xxxx->registry()->do_cse(need_to_optimize);
+      
       dg_xxxx->append_target(xsxs_ptr);
       dg_xxxx->apply(strat,tactic);
       dg_xxxx->optimize_rr_out();

@@ -12,7 +12,7 @@ my $timencycles = 0;
 &GetOptions("scpexport=s" => \$scpexportdest,
             "timencycles=i" => \$timencycles);
 
-(usage() and die) if ($#ARGV < 4 || $#ARGV > 6);
+(usage() and die) if ($#ARGV < 4 || $#ARGV > 7);
 
 my $max_am = 5;
 my $ericomp = "generate_eri_code";
@@ -30,10 +30,14 @@ my $vecmethod = 0;
 if ($#ARGV >= 6) {
   $vecmethod = $ARGV[6];
 }
+my $do_cse = 0;
+if ($#ARGV >= 7) {
+  $do_cse = $ARGV[7];
+}
 
 system("make $ericomp") && die("make $ericomp failed");
 printf STDOUT "Generating source ... ";
-system("./$ericomp $la $lb $lc $ld $size_to_unroll $veclen $vecmethod | tee $ericomp.log") 
+system("./$ericomp $la $lb $lc $ld $size_to_unroll $veclen $vecmethod $do_cse | tee $ericomp.log") 
   && die("$ericomp failed");
 printf STDOUT "done\n";
 
@@ -105,11 +109,12 @@ exit(0);
 
 sub usage {
 
-  printf STDERR "USAGE: test_eri.pl [options] a b c d size_to_unroll <veclen> <vecmeth>\n";
+  printf STDERR "USAGE: test_eri.pl [options] a b c d size_to_unroll <veclen> <vecmeth> <do_cse>\n";
   printf STDERR "         a,b,c,d -- angular momenta of shells in (ab|cd)\n";
   printf STDERR "         size_to_unroll -- quartets of this (or smaller) size are unrolled\n";
   printf STDERR "         veclen  -- (optional) vector length. Defaults to 1.\n";
   printf STDERR "         vecmeth -- (optional) vectorization method. Valid choices are 0 (block-wise) and 1 (linewise). Defaults to 0.\n";
+  printf STDERR "         do_cse  -- (optional) whether to do Common Subexpression Elimination. Valid choices are 0 (no) and 1 (yes). Defaults to 0.\n";
   printf STDERR "       Options:\n";
   printf STDERR "         --scpexport=dest  -- generate source and scp to dest.\n";
   printf STDERR "                              dest must be in host:dir format.\n";
