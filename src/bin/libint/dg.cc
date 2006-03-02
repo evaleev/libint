@@ -8,13 +8,12 @@
 #include <codeblock.h>
 #include <default_params.h>
 #include <graph_registry.h>
+#include <global_macros.h>
 
 using namespace std;
 using namespace libint2;
 
 #define ONLY_CLONE_IF_DIFF 1
-// Set to 1 to disable subtrees
-#define DISABLE_SUBTREES 0
 
 DirectedGraph::DirectedGraph() :
   stack_(default_size_,SafePtr<DGVertex>()), func_names_(),

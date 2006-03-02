@@ -36,4 +36,8 @@
 /// If set to 1 then avoid using SubIterator to compute size
 #define COMPUTE_SIZE_DIRECTLY 1
 
+/// If set to 0 then complex expressions will be condensed into single-line
+/// expressions, which should help linewise vectorization
+#define DISABLE_SUBTREES 0
+
 #endif

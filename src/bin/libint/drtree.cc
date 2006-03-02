@@ -2,7 +2,7 @@
 #include <drtree.h>
 #include <dgvertex.h>
 
-#define LOCAL_DEBUG 1
+#define LOCAL_DEBUG 0
 
 using namespace libint2;
 
