@@ -61,10 +61,13 @@ $(TIMEV): $(CXXTIMEVOBJ)
 # Source files for timer and tester are to be complied using CXXGEN
 $(TEST): CXX=$(CXXGEN)
 $(TEST): CXXFLAGS=$(CXXGENFLAGS)
+$(TEST): LD=$(CXXGEN)
 $(TIME): CXX=$(CXXGEN)
 $(TIME): CXXFLAGS=$(CXXGENFLAGS)
+$(TIME): LD=$(CXXGEN)
 $(TIMEV): CXX=$(CXXGEN)
 $(TIMEV): CXXFLAGS=$(CXXGENFLAGS)
+$(TIMEV): LD=$(CXXGEN)
 
 $(CXXTESTOBJ): test_eri_conf.h
 $(CXXTIMEOBJ): test_eri_conf.h
