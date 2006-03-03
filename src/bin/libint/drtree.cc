@@ -9,14 +9,16 @@ using namespace libint2;
 SafePtr<DRTree>
 DRTree::CreateRootedAt(const SafePtr<DGVertex>& v)
 {
-  if (!v->subtree()) {
+  SafePtr<DRTree> stree = v->subtree();
+  if (!stree) {
     SafePtr<DRTree> result(new DRTree(v));
     // Ugly that I have to add the vertex outside the constructor,
     // but enable_shared_from_this requires that a valid shared_ptr to this already exists
     result->grow();
+    return result;
   }
   else
-    return v->subtree();
+    return stree;
 }
 
 DRTree::DRTree(const SafePtr<DGVertex>& r) :

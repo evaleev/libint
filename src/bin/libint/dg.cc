@@ -1318,10 +1318,10 @@ DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
     
     // create subtree
     if (!useless_subtree) {
-      const SafePtr<DRTree> stree = DRTree::CreateRootedAt(v);
+      SafePtr<DRTree> stree = DRTree::CreateRootedAt(v);
       
       // Remove all trivial subtrees
-      if (SafePtr<DRTree> stree = v->subtree()) {
+      if (stree) {
 #if DISABLE_SUBTREES
         if (stree->nvertices() >= 0) {
           stree->detach();
