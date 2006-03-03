@@ -76,7 +76,7 @@ close MFILE;
 if ($scpexportdest eq "") {
   # now make test program and run it
   my $errcod = system("make test_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"");
-  if ($errcod == 0) {
+  if ($errcod != 0) {
     printf STDOUT "make test_eri failed!\n";
   }
   else {
