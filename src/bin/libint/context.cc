@@ -29,6 +29,11 @@ namespace libint2 {
     return int_type();
   }
   template <>
+  std::string CodeContext::type_name<size_t>()
+  {
+    return size_type();
+  }
+  template <>
   std::string CodeContext::type_name<const int>()
   {
     return const_modifier() + int_type();
@@ -431,6 +436,8 @@ std::string
 CppCodeContext::void_type() const { return "void"; }
 std::string
 CppCodeContext::int_type() const { return "int"; }
+std::string
+CppCodeContext::size_type() const { return "size_t"; }
 std::string
 CppCodeContext::fp_type() const
 {

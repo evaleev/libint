@@ -49,13 +49,9 @@ namespace libint2 {
         sc_ << s << endl;
       }
       /// Writes string s to the Libint_t init code
-      void to_libint_init(const std::string& s) {
-        li_ << s << endl;
-      }
-      /// Writes string s to the Libint_t cleanup code
-      void to_libint_cleanup(const std::string& s) {
-        lc_ << s << endl;
-      }
+      //void to_libint_init(const std::string& s) {
+      //  li_ << s << endl;
+      //}
       
       template <typename T> const std::string define(const std::string& label, const T& value) {
         oss_ .str(null_str_);
@@ -69,6 +65,12 @@ namespace libint2 {
       SafePtr<CompilationParameters> cparams_;
       SafePtr<CodeContext> ctext_;
       Comps comps_;
+
+      // computation-specific functions are libint2_init_xxx, libint2_cleanup_xxx, etc. -- these are their declarations,
+      // e.g. "libint2_init_xxx(Libint_t* libint, int max_am, LIBINT2_REALTYPE* buf)"
+      std::vector<std::string> li_decls_;   // _init_
+      std::vector<std::string> lm_decls_;   // _need_memory_
+      std::vector<std::string> lc_decls_;   // _cleanup_
       
       typedef std::basic_ofstream<char> fstream;
       
@@ -78,7 +80,6 @@ namespace libint2 {
       fstream si_;
       fstream sc_;
       fstream li_;
-      fstream lc_;
       
     };
 };

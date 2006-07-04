@@ -1,4 +1,5 @@
 
+#include <libint2_config.h>
 #include <default_params.h>
 
 using namespace libint2;
@@ -68,7 +69,11 @@ const char libint2::StaticDefinitions::am_letters[StaticDefinitions::num_am_lett
 std::string
 libint2::label_to_funcname(const std::string& label)
 {
+#ifdef LIBINT_API_PREFIX
+  std::string result(LIBINT_API_PREFIX "compute");
+#else
   std::string result("compute");
+#endif
   result += label;
   return result;
 }

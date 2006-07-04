@@ -25,6 +25,9 @@
 /* The micro version number. */
 #undef LIBINT_MICRO_VERSION
 
+/* Prefix for all names in API */
+#undef LIBINT_API_PREFIX
+
 /* Support ERI derivatives up to this order */
 #undef INCLUDE_ERI
 
@@ -60,6 +63,9 @@
 
 /* User-defined float type */
 #undef LIBINT_USER_DEFINED_FLOAT
+
+/* Accumulate integrals to the buffer? */
+#undef LIBINT_ACCUM_INTS
 
 /* Whether FLOP counting is supported */
 #undef LIBINT_FLOP_COUNT

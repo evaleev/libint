@@ -261,18 +261,20 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           // update max stack size
           LibraryParameters& lparams = LibraryParameters::get_library_params();
           lparams.max_stack_size(memman->max_memory_used());
-          
+
+	  // set pointer to the top-level evaluator function
           ostringstream oss;
           oss << "  libint2_build_eri[" << la << "][" << lb << "][" << lc << "]["
               << ld <<"] = " << context->label_to_name(label_to_funcname(abcd->label()))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
-          
+
+	  // need to declare this function internally
           oss.str("");
           oss << "#include <" << decl_filename << ">" << endl;
           iface->to_int_iface(oss.str());
 
-#if DEBUG          
+#if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
 #endif
           dg_xxxx->reset();

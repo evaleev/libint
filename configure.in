@@ -44,6 +44,13 @@ AC_SUBST(LIBINT_SO_VERSION)
 
 dnl --------- Features ---------
 
+AC_ARG_WITH(api-prefix,
+[  --with-api-prefix      Prepend this string to every interface name.],
+[
+AC_DEFINE_UNQUOTED(LIBINT_API_PREFIX,"$withval")
+echo Using API prefix: $withval
+])
+
 AC_ARG_ENABLE(debug,
 [  --enable-debug          Compile with debugging options],
 [
@@ -248,6 +255,16 @@ AC_ARG_WITH(float-type,
 [
 AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_FLOAT,"$withval")
 echo Using floating-point type: $withval
+])
+
+AC_ARG_ENABLE(accum-ints,
+[  --enable-accum-ints     Accumulate integrals to the buffer, rather than copy.],
+[
+AC_DEFINE(LIBINT_ACCUM_INTS)
+AC_MSG_RESULT([Will accumulate integrals to the buffer])
+],
+[
+AC_MSG_RESULT([Will copy integrals to the buffer])
 ])
 
 AC_ARG_ENABLE(flop-counter,

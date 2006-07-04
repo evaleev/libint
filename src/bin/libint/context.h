@@ -107,6 +107,8 @@ namespace libint2 {
     virtual std::string void_type() const =0;
     /// returns name of integer type
     virtual std::string int_type() const =0;
+    /// returns name of array size type (e.g. size_t)
+    virtual std::string size_type() const =0;
     /// returns name of floating-point type
     virtual std::string fp_type() const =0;
     /// returns name of pointer to floating-point type
@@ -186,6 +188,7 @@ namespace libint2 {
 
     std::string void_type() const;
     std::string int_type() const;
+    std::string size_type() const;
     std::string fp_type() const;
     std::string ptr_fp_type() const;
     std::string const_modifier() const;
