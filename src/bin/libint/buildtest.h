@@ -24,13 +24,15 @@ namespace libint2 {
     void BuildTest(const SafePtr<Integral>& target, const SafePtr<CompilationParameters>& cparams,
 		   unsigned int size_to_unroll, std::ostream& os = std::cout,
 		   const SafePtr<Tactic>& tactic = SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
-		   const SafePtr<MemoryManager>& memman = SafePtr<MemoryManager>(new WorstFitMemoryManager));
+		   const SafePtr<MemoryManager>& memman = SafePtr<MemoryManager>(new WorstFitMemoryManager),
+		   const std::string& complabel = "general_integral");
 
   template <class Integral, bool GenAllCode>
     void
     BuildTest(const SafePtr<Integral>& target, const SafePtr<CompilationParameters>& cparams,
 	      unsigned int size_to_unroll, std::ostream& os,
-	      const SafePtr<Tactic>& tactic, const SafePtr<MemoryManager>& memman)
+	      const SafePtr<Tactic>& tactic, const SafePtr<MemoryManager>& memman,
+	      const std::string& complabel)
     {
       const std::string label = target->label();
       SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
@@ -99,7 +101,7 @@ namespace libint2 {
 	SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
 	// make a list of computation labels
 	Libint2Iface::Comps comps;
-	comps.push_back("general_integral");
+	comps.push_back(complabel);
 	// initialize object to generate interface
 	SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext,comps));
 

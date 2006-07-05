@@ -49,6 +49,8 @@ int main(int argc, char** argv)
   }
   
   Libint_t* libint = new Libint_t;
+  const int max_am = max(max(am[0],am[1]),max(am[2],am[3]));
+  libint2_init_eri(libint,max_am,0);
   prep_libint2(libint,am[0],alpha1,A,
 	       am[1],alpha2,B,
 	       am[2],alpha3,C,
@@ -62,6 +64,8 @@ int main(int argc, char** argv)
     COMPUTE_XX_ERI_XX(libint);
   
   cout << "nflops = " << libint->nflops << endl;
+
+  libint2_cleanup_eri(libint);
 
   exit(0);
 }

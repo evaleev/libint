@@ -112,7 +112,9 @@ namespace {
     //SafePtr<StdRandomizePolicy> rpolicy(new StdRandomizePolicy(0.35));
     SafePtr<StdRandomizePolicy> rpolicy(new StdRandomizePolicy(0.00));
     SafePtr<Tactic> tactic(new FirstChoiceTactic<StdRandomizePolicy>(rpolicy));
-    BuildTest<ERIQtet,true>(quartet,cparams,size_to_unroll,std::cout,tactic);
+    const SafePtr<MemoryManager> memman(new WorstFitMemoryManager);
+    const std::string complabel("eri");
+    BuildTest<ERIQtet,true>(quartet,cparams,size_to_unroll,std::cout,tactic,memman,complabel);
 
     return 0;
   }

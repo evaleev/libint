@@ -684,12 +684,19 @@ fi
 ENABLESHARED=$enable_shared
 AC_SUBST(ENABLESHARED)
 
-dnl make Makefiles in object tree
+dnl -- configure tester --
+TESTER_ARGS="(\"1 0 1 0 1\", \"1 0 1 0 10000\", \"1 1 1 1 1\", \"1 1 1 1 10000\", \"2 0 2 0 1\", \"2 1 2 0 10000\", \"1 1 1 1 10000 16 0\", \"1 1 1 1 10000 16 1\", \"1 1 1 1 10000 1 1\", \"1 1 1 1 1 16 0\", \"1 1 1 1 1 16 1\", \"1 1 1 1 1 1 1\", \"1 1 1 1 10000 16 0 1\")"
+TESTER_ARGS_LONG="(\"3 0 3 0 10000\", \"4 0 4 0 10000\", \"2 2 2 2 1\", \"2 2 2 2 10000\")"
+AC_SUBST(TESTER_ARGS)
+AC_SUBST(TESTER_ARGS_LONG)
+
+dnl -- make Makefiles in object tree --
 $PERL $srcdir/bin/objectdir.pl $EXCLUDED_DIRS $srcdir
 
 AC_CONFIG_FILES([src/bin/test_eri/test_eri.pl],[chmod +x src/bin/test_eri/test_eri.pl])
 AC_CONFIG_FILES([src/bin/test_eri/time_eri.pl],[chmod +x src/bin/test_eri/time_eri.pl])
 AC_CONFIG_FILES([src/bin/test_eri/run_time_eri.pl],[chmod +x src/bin/test_eri/run_time_eri.pl])
+AC_CONFIG_FILES([src/bin/test_eri/stdtests.pl],[chmod +x src/bin/test_eri/stdtests.pl])
 AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/MakeSuffixRules
                 doc/MakeVars doc/MakeRules doc/MakeSuffixRules doc/macros.tex doc/classdoc/doxygen.cfg)
 

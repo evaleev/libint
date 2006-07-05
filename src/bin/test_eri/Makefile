@@ -14,7 +14,7 @@ CPPFLAGS += -I.
 ifndef COMPUTE_XX_ERI_XX_SRC
   -include Make.compute_eri
 endif
-CXXGENSRC = $(COMPUTE_XX_ERI_XX_SRC)
+CXXGENSRC = libint2_init.cc $(COMPUTE_XX_ERI_XX_SRC)
 CXXGENOBJ = $(CXXGENSRC:%.cc=%.o)
 LIBINTDIR = $(TOPDIR)/src/bin/libint
 LIBINT = $(LIBINTDIR)/libINT.a
