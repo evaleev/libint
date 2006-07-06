@@ -1,10 +1,15 @@
 
+07/05/2006:     Created a standard set of tests for most combinations of code generation
+                features (vectorization, etc.)
+                -EFV
+
 07/04/2006:     1) Added --with-api-prefix and --enable-accum-ints configure options (the latter
                    doesn't work yet).
                 2) libint2_init_XXX, libint2_need_memory_XXX, and libint2_cleanup_XXX functions
                    manage allocation of stack. libint2_init_XXX takes an optional external buffer
                    as an argument.
                 3) libint2_cleanup.cc is not longer produced -- its contents are in libint2_init.cc
+                -EFV
 
 03/01/2006:     1) test_eri.pl can generate code with or without CSE
                 2) correct FLOP counts are produced even for the condensed code
