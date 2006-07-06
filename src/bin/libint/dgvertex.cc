@@ -362,3 +362,34 @@ DGVertex::unregister() const
 {
 }
 
+////
+
+bool
+UnrolledIntegralSet::operator()(const SafePtr<DGVertex>& V)
+{
+  const unsigned int outdegree = V->num_exit_arcs();
+  if (outdegree == 0) return false;
+  
+  const SafePtr<DGArc> arc0 = V->exit_arc(0);
+  // Is this DGArcRR?
+  const SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
+  if (arcrr == 0) return false;
+  // Is this DGArcRR<IntegralSet_to_Integral>? If invariant_type() is false, then yes
+  return !arcrr->rr()->invariant_type();
+}
+
+bool
+NotUnrolledIntegralSet::operator()(const SafePtr<DGVertex>& V)
+{
+  return !UnrolledIntegralSet()(V);
+}
+
+bool
+IntegralInTargetIntegralSet::operator()(const SafePtr<DGVertex>& V)
+{
+  const unsigned int indegree = V->num_entry_arcs();
+  if (indegree != 1) return false;
+  const SafePtr<DGVertex>& parent = V->entry_arc(0)->orig();
+  if (parent->is_a_target()) return UnrolledIntegralSet()(parent);
+  return false;
+}

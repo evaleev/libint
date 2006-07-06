@@ -1,7 +1,8 @@
 
+#include <functional>
+#include <fstream>
 #include <dg.h>
 #include <dg.templ.h>
-#include <fstream>
 #include <rr.h>
 #include <strategy.h>
 #include <prefactors.h>
@@ -16,8 +17,9 @@ using namespace libint2;
 #define ONLY_CLONE_IF_DIFF 1
 
 DirectedGraph::DirectedGraph() :
-  stack_(default_size_,SafePtr<DGVertex>()), func_names_(),
-  first_free_(0), first_to_compute_(), registry_(SafePtr<GraphRegistry>(new GraphRegistry))
+  stack_(default_size_,SafePtr<DGVertex>()), targets_(0), func_names_(),
+  first_free_(0), first_to_compute_(), registry_(SafePtr<GraphRegistry>(new GraphRegistry)),
+  iregistry_(SafePtr<InternalGraphRegistry>(new InternalGraphRegistry))
 {
 }
 
@@ -31,6 +33,7 @@ DirectedGraph::append_target(const SafePtr<DGVertex>& target)
 {
   target->make_a_target();
   append_vertex(target);
+  targets_.push_back(target);
 }
 
 void
@@ -86,6 +89,10 @@ DirectedGraph::vertex_is_on(const SafePtr<DGVertex>& vertex) const throw(VertexA
 void
 DirectedGraph::del_vertex(const SafePtr<DGVertex>& v) throw(CannotPerformOperation)
 {
+  // Cannot delete targets. Should I be able to? Probably not
+  if (v->is_a_target())
+    throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete targets");
+
   vector< SafePtr<DGVertex> >::iterator pos = find(stack_.begin(),stack_.end(),v);
   if (pos == stack_.end())
     throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete vertex");
@@ -228,8 +235,9 @@ DirectedGraph::reset()
   }
   for(int i=0; i<first_free_; i++)
     stack_[i].reset();
-  // if everything went OK then resize stack_ to 0
+  // if everything went OK then resize stack_ to default and targets_ to 0
   stack_.resize(default_size_);
+  targets_.resize(0);
   first_free_ = 0;
   first_to_compute_.reset();
 }
@@ -726,13 +734,54 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
                             const SafePtr<ImplicitDimensions>& dims,
                             unsigned int min_size_to_alloc)
 {
+  // NOTE does this belong here?
   // First, reset tag counters
   for(int i=0; i<first_free_; i++)
     stack_[i]->prepare_to_traverse();
 
+  //
+  // If need to accumulate targets, special events must happen here.
+  //
+  // NOTES on how to handle accumulation
+  // 1) if all targets are unrolled then need to identify which integrals are part of target sets and use += instead of =
+  // 2) if no targets are unrolled then allocate extra space for the target quartets and, after code has been generated,
+  //    accumulate target sets into those
+  // 3) if some targets are not unrolled then still need the extra space. The targets which were not unrolled should be handled
+  //    as usual, i.e. not accumulated -- accumulation happens at the end
+  if (registry()->accumulate_targets()) {
+    // need extra buffers for targets if some are unrolled
+    const bool need_copies_of_targets = nonunrolled_targets(targets_);
+    iregistry()->accumulate_targets_directly(need_copies_of_targets);
+
+    if (need_copies_of_targets) {
+
+      // compute the aggregate size of all targets and allocate all space at once
+      ver_citer end = targets_.end();
+      size size_of_targets(0);
+      for(ver_iter t=targets_.begin(); t!=end; ++t) {
+	size_of_targets += (*t)->size();
+      }
+      const address targets_buffer = memman->alloc(size_of_targets);
+      iregistry()->size_of_target_accum(size_of_targets);
+
+      // make sure that the space is at the beginning of stack
+      if (targets_buffer != 0)
+	throw ProgrammingError("DirectedGraph::allocate_mem() -- buffer for targets accumulation is not at the beginning of stack, need MemoryManager::alloc_at");
+
+      // allocate every target accumulator manually
+      address curr_ptr(0);
+      for(ver_iter t=targets_.begin(); t!=end; ++t) {
+	target_accums_.push_back(curr_ptr);
+	curr_ptr += (*t)->size();
+      }
+
+    } // need copies of targets
+  } // need to accumulate targets
+
   // Second, MUST allocate space for all targets whose symbols are not set explicitly
   // If a symbol is set means the object is not on stack (e.g. if location of target
   // is passed as an argument to set-level function)
+  // This code ensures that target quartets are persistent, i.e. never overwritten, and can be accumulated into
   for(int i=0; i<first_free_; i++) {
     SafePtr<DGVertex> vertex = stack_[i];
     if (vertex->is_a_target() && !vertex->symbol_set()) {
@@ -1052,7 +1101,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   os << lsi_loop->open();
   
   // the vector loop is created outside of the body of the function if
-  // 1) vectorization by-body is requested
+  // 1) blockwise vectorization is requested
   // and
   // 2) this is a purely int-unit code, i.e. there are no explicit RRs on sets in the body
   // Otherwise, I create a dummy vector loop with the vector loop index set to 0
@@ -1080,6 +1129,10 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   }
   os << outer_vloop->open();
 
+  //
+  // generate code for vertices
+  //
+  const bool accumulate_targets_directly = iregistry()->accumulate_targets_directly();
   unsigned int nflops_total = 0;
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
@@ -1087,26 +1140,32 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     // for every vertex that has a defined symbol, hence must be defined in code
     if (current_vertex->symbol_set()) {
 
+      const bool address_set = current_vertex->address_set();
+
       // print algebraic expression
       {
         typedef AlgebraicOperator<DGVertex> oper_type;
         SafePtr<oper_type> oper_ptr = dynamic_pointer_cast<oper_type,DGVertex>(current_vertex);
         if (oper_ptr) {
 
+          // Type declaration if this is an automatic variable (i.e. not on Libint's stack)
+          if (!address_set)
+            os << context->declare(context->type_name<double>(),
+                                   current_vertex->symbol());
+          
+	  // If this is an Integral in a target IntegralSet AND
+	  // can accumulate targets directly -- use '+=' instead of '='
+	  const bool accumulate_not_assign = accumulate_targets_directly && address_set && IntegralInTargetIntegralSet()(current_vertex);
+
           if (context->comments_on()) {
             oss.str(null_str);
-            oss << current_vertex->label() << " = "
+            oss << current_vertex->label() << (accumulate_not_assign ? " += " : " = ")
                 << oper_ptr->exit_arc(0)->dest()->label()
                 << oper_ptr->label()
                 << oper_ptr->exit_arc(1)->dest()->label();
             os << context->comment(oss.str()) << endl;
           }
 
-          // Type declaration if this is an automatic variable (i.e. not on Libint's stack)
-          if (!current_vertex->address_set())
-            os << context->declare(context->type_name<double>(),
-                                   current_vertex->symbol());
-          
           // expression
           SafePtr<DGVertex> left_arg = oper_ptr->exit_arc(0)->dest();
           SafePtr<DGVertex> right_arg = oper_ptr->exit_arc(1)->dest();
@@ -1129,7 +1188,13 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           
           if (vectorize_by_line)
             os << line_vloop->open();
-          os << context->assign_binary_expr(curr_symbol,left_symbol,oper_ptr->label(),right_symbol);
+	  // the statement that does the work
+	  {
+	    if (accumulate_not_assign)
+	      os << context->accumulate_binary_expr(curr_symbol,left_symbol,oper_ptr->label(),right_symbol);
+	    else
+	      os << context->assign_binary_expr(curr_symbol,left_symbol,oper_ptr->label(),right_symbol);
+	  }
           if (vectorize_by_line)
             os << line_vloop->close();
 
@@ -1145,9 +1210,13 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
         SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(current_vertex->exit_arc(0));
         if (arc_ptr) {
 
+	  // If this is an Integral in a target IntegralSet AND
+	  // can accumulate targets directly -- use '+=' instead of '='
+	  const bool accumulate_not_assign = accumulate_targets_directly && address_set && IntegralInTargetIntegralSet()(current_vertex);
+
           if (context->comments_on()) {
             oss.str(null_str);
-            oss << current_vertex->label() << " = "
+            oss << current_vertex->label() << (accumulate_not_assign ? " += " : " = ")
                 << arc_ptr->dest()->label();
             os << context->comment(oss.str()) << endl;
           }
@@ -1162,8 +1231,12 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           
           if (vectorize_by_line)
             os << line_vloop->open();
-          os << context->assign(curr_symbol,
-                                rhs_symbol);
+	  if (accumulate_not_assign)
+	    os << context->accumulate(curr_symbol,
+				      rhs_symbol);
+	  else
+	    os << context->assign(curr_symbol,
+				  rhs_symbol);
           if (vectorize_by_line)
             os << line_vloop->close();
           
@@ -1341,3 +1414,18 @@ DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
   }
 }
 
+////
+
+namespace libint2 {
+
+  bool
+  nonunrolled_targets(const DirectedGraph::vertices& targets) {
+    typedef DirectedGraph::ver_citer citer;
+    citer end = targets.end();
+    if (end != find_if(targets.begin(),end,NotUnrolledIntegralSet()))
+      return true;
+    else
+      return false;
+  }
+
+};

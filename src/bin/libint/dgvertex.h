@@ -254,6 +254,22 @@ namespace libint2 {
     friend void DRTree::detach_from(const SafePtr<DGVertex>& v);
     
   };
+
+  //
+  // Nonmember predicates
+  //
+  /// return true if V is an unrolled IntegralSet
+  struct UnrolledIntegralSet : public std::unary_function<const SafePtr<DGVertex>&,bool> {
+    bool operator()(const SafePtr<DGVertex>& V);
+  };
+  /// return false if V is an unrolled IntegralSet
+  struct NotUnrolledIntegralSet : public std::unary_function<const SafePtr<DGVertex>&,bool> {
+    bool operator()(const SafePtr<DGVertex>& V);
+  };
+  /// return true if V is an Integral in an unrolled target IntegralSet
+  struct IntegralInTargetIntegralSet : public std::unary_function<const SafePtr<DGVertex>&,bool> {
+    bool operator()(const SafePtr<DGVertex>& V);
+  };
   
 };
 

@@ -53,6 +53,11 @@ namespace libint2 {
     */
     virtual std::string assign(const std::string& name,
                                const std::string& value) =0;
+    /** accumulate returns a statement which assigns variable 'value'
+        to variable 'name'
+    */
+    virtual std::string accumulate(const std::string& name,
+				   const std::string& value) =0;
     /** assign_binary_expr returns a statement which assigns binary
         expression 'left oper right' to variable 'name'
     */
@@ -60,6 +65,13 @@ namespace libint2 {
                                            const std::string& left,
                                            const std::string& oper,
                                            const std::string& right) =0;
+    /** accumulate_binary_expr returns a statement which accumulates binary
+        expression 'left oper right' to variable 'name'
+    */
+    virtual std::string accumulate_binary_expr(const std::string& name,
+					       const std::string& left,
+					       const std::string& oper,
+					       const std::string& right) =0;
     /// converts an address on the stack to its string representation
     virtual std::string stack_address(const DGVertex::Address& a) const =0;
 
@@ -153,11 +165,19 @@ namespace libint2 {
     /// Implementation of CodeContext::assign()
     std::string assign(const std::string& name,
                        const std::string& value);
+    /// Implementation of CodeContext::accumulate()
+    std::string accumulate(const std::string& name,
+			   const std::string& value);
     /// Implementation of CodeContext::assign_binary_expr()
     std::string assign_binary_expr(const std::string& name,
                                    const std::string& left,
                                    const std::string& oper,
                                    const std::string& right);
+    /// Implementation of CodeContext::accumulate_binary_expr()
+    std::string accumulate_binary_expr(const std::string& name,
+				       const std::string& left,
+				       const std::string& oper,
+				       const std::string& right);
     /// Implementation of CodeContext::stack_address()
     std::string stack_address(const DGVertex::Address& a) const;
 
@@ -195,6 +215,18 @@ namespace libint2 {
 
     std::string start_expr() const;
     std::string end_expr() const;
+
+    /// assign/accumulate if accum=false/true
+    std::string assign_(const std::string& name,
+			const std::string& value,
+			bool accum);
+    /// assign/accumulate if accum=false/true
+    std::string assign_binary_expr_(const std::string& name,
+				    const std::string& left,
+				    const std::string& oper,
+				    const std::string& right,
+				    bool accum);
+
   };
 
 };

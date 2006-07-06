@@ -237,6 +237,12 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const bool need_to_optimize = (max_am <= cparams->max_am_eri_opt());
           dg_xxxx->registry()->can_unroll(need_to_optimize);
           dg_xxxx->registry()->do_cse(need_to_optimize);
+	  // Need to accumulate integrals?
+#if LIBINT_ACCUM_INTS
+	  dg_xxxx->registry()->accumulate_targets(true);
+#else
+	  dg_xxxx->registry()->accumulate_targets(false);
+#endif
           
           SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
           os << "building " << abcd->description() << endl;
@@ -332,6 +338,12 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const bool need_to_optimize = (max_am <= cparams->max_am_g12_opt());
           dg_xxxx->registry()->can_unroll(need_to_optimize);
           dg_xxxx->registry()->do_cse(need_to_optimize);
+	  // Need to accumulate integrals?
+#if LIBINT_ACCUM_INTS
+	  dg_xxxx->registry()->accumulate_targets(true);
+#else
+	  dg_xxxx->registry()->accumulate_targets(false);
+#endif
           
           // k=0
           if (!ssss) {

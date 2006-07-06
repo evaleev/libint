@@ -1,4 +1,7 @@
 
+#ifndef _libint2_src_bin_libint_dg_h_
+#define _libint2_src_bin_libint_dg_h_
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -7,9 +10,6 @@
 #include <assert.h>
 #include <exception.h>
 #include <smart_ptr.h>
-
-#ifndef _libint2_src_bin_libint_dg_h_
-#define _libint2_src_bin_libint_dg_h_
 
 using namespace std;
 
@@ -27,11 +27,12 @@ namespace libint2 {
   class ImplicitDimensions;
   class CodeSymbols;
   class GraphRegistry;
+  class InternalGraphRegistry;
 
   /** DirectedGraph is an implementation of a directed graph
       composed of vertices represented by DGVertex objects. The objects
       are allocated on free store and the graph is implemented as
-      an object of type container.
+      an object of type 'vertices'.
   */
 
   class DirectedGraph : public EnableSafePtrFromThis<DirectedGraph> {
@@ -40,9 +41,14 @@ namespace libint2 {
     typedef DGArc arc;
     typedef SafePtr<DGVertex> ver_ptr;
     typedef SafePtr<DGArc> arc_ptr;
-    typedef vector<ver_ptr> container;
-    typedef container::iterator iter;
-    typedef container::const_iterator citer;
+    typedef vector<ver_ptr> vertices;
+    typedef vertices::iterator ver_iter;
+    typedef vertices::const_iterator ver_citer;
+    //not possible: typedef vertex::Address address;
+    typedef int address;
+    //not possible: typedef vertex::Size size;
+    typedef unsigned int size;
+    typedef vector<address> addresses;
     
     /** This constructor doesn't do much. Actual initialization of the graph
         must be done using append_target */
@@ -51,6 +57,10 @@ namespace libint2 {
 
     /// Returns the number of vertices
     const unsigned int num_vertices() const { return first_free_; }
+    /// Returns all vertices
+    const vertices& all_vertices() const { return stack_; }
+    /// Returns all targets
+    const vertices& all_targets() const { return targets_; }
     
     /** appends v to the graph
     */
@@ -158,7 +168,11 @@ namespace libint2 {
   private:
 
     /// contains vertices
-    container stack_;
+    vertices stack_;
+    /// refers to targets
+    vertices targets_;
+    /// addresses of blocks which accumulate targets
+    addresses target_accums_;
 
     typedef std::map<std::string,bool> FuncNameContainer;
     /** Maintains the list of names of functions calls to which have been generated so far.
@@ -171,6 +185,12 @@ namespace libint2 {
     
     // maintains data about the graph which does not belong IN the graph
     SafePtr<GraphRegistry> registry_;
+    // maintains private data about the graph which does not belong IN the graph
+    SafePtr<InternalGraphRegistry> iregistry_;
+
+    /// Access the internal registry
+    SafePtr<InternalGraphRegistry>& iregistry() { return iregistry_; }
+    const SafePtr<InternalGraphRegistry>& iregistry() const { return iregistry_; }
     
     /** adds a vertex to the graph. If the vertex already found on the graph
         then the vertex is not added and the function returns false */
@@ -243,6 +263,14 @@ namespace libint2 {
     bool contains_nontrivial_rr() const;
 
   };
+
+
+  //
+  // Nonmember predicates
+  //
+
+  /// return true if there are non-unrolled targets
+  bool nonunrolled_targets(const DirectedGraph::vertices& targets);
 
 };
 

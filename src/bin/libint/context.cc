@@ -232,6 +232,21 @@ std::string
 CppCodeContext::assign(const std::string& name,
                        const std::string& value)
 {
+  assign_(name,value,false);
+}
+
+std::string
+CppCodeContext::accumulate(const std::string& name,
+			   const std::string& value)
+{
+  assign_(name,value,true);
+}
+
+std::string
+CppCodeContext::assign_(const std::string& name,
+			const std::string& value,
+			bool accum)
+{
   ostringstream oss;
   
   if (vectorize_) {
@@ -250,13 +265,13 @@ CppCodeContext::assign(const std::string& name,
     }
     
     oss << start_expr();
-    oss << symb0 << "[v] = "
+    oss << symb0 << "[v]" << (accum ? " += " : " = ")
     << (symb1_is_a_const ? value : symb1)
     << (symb1_is_a_const ? " " : "[v] ");
   }
   else {
     oss << start_expr();
-    oss << name << " = " << value;
+    oss << name << (accum ? " += " : " = ") << value;
   }
   oss << end_of_stat() << endl;
   oss << end_expr();
@@ -269,6 +284,25 @@ CppCodeContext::assign_binary_expr(const std::string& name,
                                    const std::string& left,
                                    const std::string& oper,
                                    const std::string& right)
+{
+  assign_binary_expr_(name,left,oper,right,false);
+}
+
+std::string
+CppCodeContext::accumulate_binary_expr(const std::string& name,
+				       const std::string& left,
+				       const std::string& oper,
+				       const std::string& right)
+{
+  assign_binary_expr_(name,left,oper,right,true);
+}
+
+std::string
+CppCodeContext::assign_binary_expr_(const std::string& name,
+				    const std::string& left,
+				    const std::string& oper,
+				    const std::string& right,
+				    bool accum)
 {
   ostringstream oss;
   
@@ -296,7 +330,7 @@ CppCodeContext::assign_binary_expr(const std::string& name,
     }
     
     oss << start_expr();
-    oss << symb0 << "[v] = "
+    oss << symb0 << "[v]" << (accum ? " += " : " = ")
     << (symb1_is_a_const ? left : symb1)
     << (symb1_is_a_const ? " " : "[v] ")
     << oper << " "
@@ -305,7 +339,7 @@ CppCodeContext::assign_binary_expr(const std::string& name,
   }
   else {
     oss << start_expr();
-    oss << name << " = " << left << " "
+    oss << name << (accum ? " += " : " = ") << left << " "
         << oper << " " << right;
   }
   oss << end_of_stat() << endl;
