@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <libint2_config.h>
 #include <libint/buildtest.h>
 #include <libint/bfset.h>
 
@@ -99,6 +100,18 @@ namespace {
     cparams->max_vector_length(veclen);
     cparams->vectorize_by_line(vec_by_line);
     cparams->count_flops(true);
+#if LIBINT_ACCUM_INTS
+    cparams->accumulate_targets(true);
+#else
+    cparams->accumulate_targets(false);
+#endif
+#ifdef LIBINT_API_PREFIX
+  {
+    const std::string api_prefix(LIBINT_API_PREFIX);
+    cparams->api_prefix(api_prefix);
+  }
+#endif
+
     if (do_cse) {
       cparams->max_am_opt(max_am);
     }

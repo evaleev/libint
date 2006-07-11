@@ -5,6 +5,7 @@
 using namespace libint2;
 
 const std::string CompilationParameters::Defaults::source_directory("./");
+const std::string CompilationParameters::Defaults::api_prefix("");
 const std::string CompilationParameters::Defaults::realtype("double");
 
 CompilationParameters::CompilationParameters() :
@@ -13,8 +14,11 @@ CompilationParameters::CompilationParameters() :
   max_am_g12_(Defaults::max_am_g12), max_am_g12_opt_(Defaults::max_am_g12),
   max_vector_length_(Defaults::max_vector_length),
   vectorize_by_line_(Defaults::vectorize_by_line), unroll_threshold_(Defaults::unroll_threshold),
-  source_directory_(Defaults::source_directory), use_C_linking_(Defaults::use_C_linking),
-  count_flops_(Defaults::count_flops), realtype_(Defaults::realtype)
+  source_directory_(Defaults::source_directory), api_prefix_(Defaults::api_prefix),
+  use_C_linking_(Defaults::use_C_linking),
+  count_flops_(Defaults::count_flops),
+  accumulate_targets_(Defaults::accumulate_targets),
+  realtype_(Defaults::realtype)
 {
 }
 
@@ -41,8 +45,10 @@ CompilationParameters::print(std::ostream& os) const
     os << "VECTORIZE_BY_LINE    = " << (vectorize_by_line() ? "true" : "false") << endl;
   os << "UNROLL_THRESH        = " << unroll_threshold() << endl;
   os << "SOURCE_DIRECTORY     = " << source_directory() << endl;
+  os << "API_PREFIX           = " << api_prefix() << endl;
   os << "USE_C_LINKING        = " << (use_C_linking() ? "true" : "false") << endl;
   os << "COUNT_FLOPS          = " << (count_flops() ? "true" : "false") << endl;
+  os << "ACCUMULATE_TARGETS   = " << (accumulate_targets() ? "true" : "false") << endl;
   os << "REALTYPE             = " << (realtype()) << endl;
   os << endl;
 }
@@ -69,11 +75,7 @@ const char libint2::StaticDefinitions::am_letters[StaticDefinitions::num_am_lett
 std::string
 libint2::label_to_funcname(const std::string& label)
 {
-#ifdef LIBINT_API_PREFIX
-  std::string result(LIBINT_API_PREFIX "compute");
-#else
   std::string result("compute");
-#endif
   result += label;
   return result;
 }

@@ -27,12 +27,15 @@ RecurrenceRelation::~RecurrenceRelation()
 void
 RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
                                   const SafePtr<ImplicitDimensions>& dims,
+				  const std::string& funcname,
                                   std::ostream& decl, std::ostream& def)
 {
   SafePtr<DirectedGraph> dg = generate_graph_();
   
   // Intermediates in RR code are either are automatic variables or have to go on vstack
   dg->registry()->stack_name("libint->vstack");
+  // No need to return the targets via Libint_t::targets
+  dg->registry()->return_targets(false);
   
   // Assign symbols for the target and source integral sets
   SafePtr<CodeSymbols> symbols(new CodeSymbols);
@@ -47,7 +50,7 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   // Generate code
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
   SafePtr<ImplicitDimensions> localdims = adapt_dims_(dims);
-  dg->generate_code(context,memman,localdims,symbols,label(),decl,def);
+  dg->generate_code(context,memman,localdims,symbols,funcname,decl,def);
   
   // update max stack size
   LibraryParameters& lparams = LibraryParameters::get_library_params();

@@ -232,14 +232,14 @@ std::string
 CppCodeContext::assign(const std::string& name,
                        const std::string& value)
 {
-  assign_(name,value,false);
+  return assign_(name,value,false);
 }
 
 std::string
 CppCodeContext::accumulate(const std::string& name,
 			   const std::string& value)
 {
-  assign_(name,value,true);
+  return assign_(name,value,true);
 }
 
 std::string
@@ -285,7 +285,7 @@ CppCodeContext::assign_binary_expr(const std::string& name,
                                    const std::string& oper,
                                    const std::string& right)
 {
-  assign_binary_expr_(name,left,oper,right,false);
+  return assign_binary_expr_(name,left,oper,right,false);
 }
 
 std::string
@@ -294,7 +294,7 @@ CppCodeContext::accumulate_binary_expr(const std::string& name,
 				       const std::string& oper,
 				       const std::string& right)
 {
-  assign_binary_expr_(name,left,oper,right,true);
+  return assign_binary_expr_(name,left,oper,right,true);
 }
 
 std::string

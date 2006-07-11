@@ -41,9 +41,9 @@ ImplicitDimensions::ImplicitDimensions() :
   }
 
 ImplicitDimensions::ImplicitDimensions(int high, int low, int vec) :
-  high_(SafePtr<Entity>(new CTimeEntity<int>("highdim",high))),
-  low_(SafePtr<Entity>(new CTimeEntity<int>("lowdim",low))),
-  vecdim_(SafePtr<Entity>(new CTimeEntity<int>("vecdim",vec)))
+  high_(SafePtr<Entity>(new CTimeEntity<int>(high))),
+  low_(SafePtr<Entity>(new CTimeEntity<int>(low))),
+  vecdim_(SafePtr<Entity>(new CTimeEntity<int>(vec)))
   {
     init_();
   }

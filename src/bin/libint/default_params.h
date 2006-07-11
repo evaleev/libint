@@ -58,6 +58,10 @@ namespace libint2 {
     const std::string& source_directory() const {
       return source_directory_;
     }
+    /// the API prefix
+    const std::string& api_prefix() const {
+      return api_prefix_;
+    }
     /// returns whether to use C-style linking
     bool use_C_linking() const {
       return use_C_linking_;
@@ -65,6 +69,10 @@ namespace libint2 {
     /// whether FLOP counting is enabled
     bool count_flops() const {
       return count_flops_;
+    }
+    /// whether target integrals are accumulated
+    bool accumulate_targets() const {
+      return accumulate_targets_;
     }
     /// name of the floating-point type
     const std::string& realtype() const {
@@ -111,6 +119,10 @@ namespace libint2 {
     void source_directory(const std::string& a) {
       source_directory_ = a;
     }
+    /// API prefix
+    void api_prefix(const std::string& a) {
+      api_prefix_ = a;
+    }
     /// set whether to use C style linking
     void use_C_linking(bool a) {
       use_C_linking_ = a;
@@ -118,6 +130,10 @@ namespace libint2 {
     /// set whether to count FLOPs
     void count_flops(bool a) {
       count_flops_ = a;
+    }
+    /// accumulate targets?
+    void accumulate_targets(bool a) {
+      accumulate_targets_ = a;
     }
     /// which floating-point type to use
     void realtype(const std::string& realtype) {
@@ -143,10 +159,14 @@ namespace libint2 {
       static const unsigned int unroll_threshold = 1;
       /// Where to put generated library source
       static const std::string source_directory;
+      /// API prefix
+      static const std::string api_prefix;
       /// Use C-style linking convention by default
       static const bool use_C_linking = true;
       /// Do not count FLOPs by default
       static const bool count_flops = false;
+      /// Do not accumulate targets by default
+      static const bool accumulate_targets = false;
       /// Use double for computations
       static const std::string realtype;
     };
@@ -171,10 +191,14 @@ namespace libint2 {
     unsigned int unroll_threshold_;
     /// source directory
     std::string source_directory_;
+    /// API prefix
+    std::string api_prefix_;
     /// whether to use C linking
     bool use_C_linking_;
     /// whether to count FLOPs
     bool count_flops_;
+    /// whether to accumulate targets
+    bool accumulate_targets_;
     /// name of the floating-point type
     std::string realtype_;
   };

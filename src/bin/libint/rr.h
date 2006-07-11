@@ -76,6 +76,7 @@ namespace libint2 {
     /// Generate declaration and definition for the recurrence relation
     virtual void generate_code(const SafePtr<CodeContext>& context,
                                const SafePtr<ImplicitDimensions>& dims,
+			       const std::string& funcname,
                                std::ostream& decl, std::ostream& def);
     
     /// Generate a callback for this recurrence relation

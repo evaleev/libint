@@ -1,9 +1,9 @@
 
-#include <libint2_types.h>
-#include <libint2_params.h>
-
 #ifndef _libint2_header_
 #define _libint2_header_
+
+#include <libint2_types.h>
+#include <libint2_params.h>
 
 #define LIBINT2_MAX_NTARGETS 10
 
@@ -141,14 +141,29 @@ typedef struct {
       veclength is not used */
   unsigned int veclength;
 
-#if LIBINT2_FLOP_COUNT || LIBINT_FLOP_COUNT
+#if LIBINT2_FLOP_COUNT
   /** FLOP counter. Libint must be configured with --enable-flop-counter
       to allow FLOP counting. It is user's reponsibility to set zero nflops before
       computing integrals. */
   LIBINT2_UINT_LEAST64 nflops;
 #endif // LIBINT2_FLOP_COUNT
+
+#if LIBINT2_ACCUM_INTS
+  /// Set to nonzero to zero out accumulated target integrals before computing
+  int zero_out_targets;
+#endif
   
 } Libint_t;
+
+//
+// these macros define bzero, copy, and inc operations:
+//
+/// X[i] = 0
+#define _libint2_static_api_bzero_short_(X,nelem) for(int i=0; i < (nelem); ++i) { (X)[i] = 0; }
+/// X[i] = Y[i]
+#define _libint2_static_api_copy_short_(X,Y,nelem) for(int i=0; i < (nelem); ++i) { (X)[i] = (Y)[i]; }
+/// X[i] += a*Y[i]
+#define _libint2_static_api_inc_short_(X,Y,nelem,a) for(int i=0; i < (nelem); ++i) { (X)[i] += (a) * (Y)[i]; }
 
 #endif
 

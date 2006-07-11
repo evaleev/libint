@@ -157,9 +157,7 @@ Prefactors::Prefactors() :
 
   for(int i=0; i<NMAX; i++) {
     double i_fp = (double) i;
-    char c_str_repr[20];
-    sprintf(c_str_repr,"%.2lf", i_fp);
-    SafePtr<cdouble> N_ptr(new cdouble(c_str_repr,i_fp));
+    SafePtr<cdouble> N_ptr(new cdouble(i_fp));
     N_i[i] = N_ptr;
   }
 }
@@ -171,9 +169,7 @@ Prefactors::~Prefactors()
 const SafePtr<Prefactors::cdouble>
 Prefactors::Cdouble(double a)
 {
-  char c_str_repr[40];
-  sprintf(c_str_repr,"%.16lf", a);
-  SafePtr<cdouble> tmp(new cdouble(c_str_repr,a));
+  SafePtr<cdouble> tmp(new cdouble(a));
   const cdoubleSingletonManager::value_type& result = cd_singl_man_.find(tmp);
   return result.second;
 }

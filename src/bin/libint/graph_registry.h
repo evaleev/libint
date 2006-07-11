@@ -22,6 +22,9 @@ namespace libint2 {
     /// Accumulate (true) or assign (false) target vertices? The default is to assign.
     bool accumulate_targets() const { return accumulate_targets_; }
     void accumulate_targets(bool at) { accumulate_targets_ = at; }
+    /// Return pointers to targets via Libint_t::targets? Default is true.
+    bool return_targets() const { return return_targets_; }
+    void return_targets(bool rt) { return_targets_ = rt; }
     /// Can unroll the integral sets? The default is yes.
     bool can_unroll() const { return can_unroll_; }
     void can_unroll(bool cu) { can_unroll_ = cu; }
@@ -34,6 +37,7 @@ namespace libint2 {
     
     private:
     bool accumulate_targets_;
+    bool return_targets_;
     bool can_unroll_;
     bool do_cse_;
     std::string stack_name_;

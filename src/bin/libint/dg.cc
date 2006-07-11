@@ -751,7 +751,7 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
   if (registry()->accumulate_targets()) {
     // need extra buffers for targets if some are unrolled
     const bool need_copies_of_targets = nonunrolled_targets(targets_);
-    iregistry()->accumulate_targets_directly(need_copies_of_targets);
+    iregistry()->accumulate_targets_directly(!need_copies_of_targets);
 
     if (need_copies_of_targets) {
 
@@ -823,7 +823,7 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
 }
 
 namespace {
-  std::string stack_symbol(const SafePtr<CodeContext>& ctext, const DGVertex::Address& address, unsigned int size,
+  std::string stack_symbol(const SafePtr<CodeContext>& ctext, const DGVertex::Address& address, const DGVertex::Size& size,
                            const std::string& low_rank, const std::string& veclen,
                            const std::string& prefix)
   {
@@ -879,28 +879,8 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
   const std::string& stack_name = registry()->stack_name();
   
   // Generate the label for the rank of the low dimension
-  std::string low_rank;
-  std::string veclen;
-  if (dims->low_is_static()) {
-    typedef CTimeEntity<int> ctype;
-    SafePtr<ctype> cptr = dynamic_pointer_cast<ctype,Entity>(dims->low());
-    ostringstream oss;
-    oss << cptr->value();
-    low_rank = oss.str();
-  }
-  else {
-    low_rank = dims->low()->id();
-  }
-  if (dims->vecdim_is_static()) {
-    typedef CTimeEntity<int> ctype;
-    SafePtr<ctype> cptr = dynamic_pointer_cast<ctype,Entity>(dims->vecdim());
-    ostringstream oss;
-    oss << cptr->value();
-    veclen = oss.str();
-  }
-  else {
-    veclen = dims->vecdim()->id();
-  }
+  std::string low_rank = dims->low_label();
+  std::string veclen = dims->vecdim_label();
 
   // First, set symbols for all vertices which have address assigned
   for(int i=0; i<first_free_; i++) {
@@ -1085,19 +1065,99 @@ namespace {
   }
 }
 
+namespace {
+  SafePtr<MemBlockSet>
+  to_memoryblks(DirectedGraph::vertices& vertices) {
+    SafePtr<MemBlockSet> result(new MemBlockSet);
+    typedef DirectedGraph::ver_citer citer;
+    typedef DirectedGraph::ver_iter iter;
+    citer end(vertices.end());
+    for(iter v=vertices.begin(); v!=end; ++v) {
+      result->push_back(MemBlock((*v)->address(),(*v)->size(),false,SafePtr<MemBlock>(),SafePtr<MemBlock>()));
+    }
+    return result;
+  }
+};
+
 void
 DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
                         const SafePtr<ImplicitDimensions>& dims)
 {
   std::ostringstream oss;
   const std::string null_str("");
+  SafePtr<Entity > ctimeconst_zero(new CTimeEntity<int>(0));
+
+  const bool accumulate_targets_directly = registry()->accumulate_targets() && iregistry()->accumulate_targets_directly();
+  const bool accumulate_targets_indirectly = registry()->accumulate_targets() && !accumulate_targets_directly;
+
+  //
+  // To optimize accumulation and setting blocks to zero, need to merge maximally the targets (the accumulation area is one block)
+  //
+  SafePtr<MemBlockSet> targetblks;
+  if (registry()->accumulate_targets()) {
+    if (accumulate_targets_directly) {
+      targetblks = to_memoryblks(targets_);
+      merge(*targetblks);
+    }
+    else {
+      targetblks = SafePtr<MemBlockSet>(new MemBlockSet);
+      targetblks->push_back(MemBlock(0,iregistry()->size_of_target_accum(),false,SafePtr<MemBlock>(),SafePtr<MemBlock>()));
+    }
+  }
+
+  //
+  // If accumulating integrals, check Libint_t::zero_out_targets. If set to 1 -- zero out accumulated targets
+  //
+  if (registry()->accumulate_targets()) {
+
+    const bool vecdim_is_static = dims->vecdim_is_static();
+
+    os << "if (libint->zero_out_targets) {" << std::endl;
+
+    typedef MemBlockSet::const_iterator citer;
+    typedef MemBlockSet::iterator iter;
+    const citer end = targetblks->end();
+    for(iter b=targetblks->begin(); b!=end; ++b) {
+
+      size s = b->size();
+      SafePtr<CTimeEntity<int> > bdim(new CTimeEntity<int>(s));
+
+      SafePtr<Entity> bvecdim;
+      if (!vecdim_is_static) {
+	SafePtr< RTimeEntity<EntityTypes::Int> > vecdim = dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(dims->vecdim());
+	bvecdim = vecdim * bdim;
+      }
+      else {
+	SafePtr< CTimeEntity<int> > vecdim = dynamic_pointer_cast<CTimeEntity<int>,Entity>(dims->vecdim());
+	bvecdim = vecdim * bdim;
+      }
+
+#if 0
+      std::string loopvar("i");
+      ForLoop loop(context,loopvar,bvecdim,ctimeconst_zero);
+      os << loop.open();
+      {
+	ostringstream oss;
+	oss << registry()->stack_name() << "[" << loopvar << "]";
+	const std::string zero("0");
+	os << context->assign(oss.str(),zero);
+      }
+      os << loop.close();
+#endif
+      os << "_libint2_static_api_bzero_short_(" << registry()->stack_name() << "+"
+	 << b->address() << "*" << dims->vecdim()->id() << "," << bvecdim->id() << ")" << endl;
+
+    }
+
+    os << "libint->zero_out_targets = 0;" << std::endl << "}" << std::endl;
+  }
 
   std::string varname("hsi");
-  SafePtr<ForLoop> hsi_loop(new ForLoop(context,varname,dims->high(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
+  SafePtr<ForLoop> hsi_loop(new ForLoop(context,varname,dims->high(),SafePtr<Entity>(new CTimeEntity<int>(0))));
   os << hsi_loop->open();
   
   varname = "lsi";
-  SafePtr<ForLoop> lsi_loop(new ForLoop(context,varname,dims->low(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
+  SafePtr<ForLoop> lsi_loop(new ForLoop(context,varname,dims->low(),SafePtr<Entity>(new CTimeEntity<int>(0))));
   os << lsi_loop->open();
   
   // the vector loop is created outside of the body of the function if
@@ -1115,14 +1175,14 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   // vector loop for each code line
   SafePtr<ForLoop> line_vloop;
   if (create_outer_vector_loop) {
-    SafePtr<ForLoop> tmp_vi_loop(new ForLoop(context,varname,dims->vecdim(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
+    SafePtr<ForLoop> tmp_vi_loop(new ForLoop(context,varname,dims->vecdim(),SafePtr<Entity>(new CTimeEntity<int>(0))));
     outer_vloop = tmp_vi_loop;
   }
   else {
-    SafePtr<Entity> unit_dim(new CTimeEntity<int>("vecdim",1));
-    SafePtr<ForLoop> tmp_vi_loop(new ForLoop(context,varname,unit_dim,SafePtr<Entity>(new CTimeEntity<int>("0",0))));
+    SafePtr<Entity> unit_dim(new CTimeEntity<int>(1));
+    SafePtr<ForLoop> tmp_vi_loop(new ForLoop(context,varname,unit_dim,SafePtr<Entity>(new CTimeEntity<int>(0))));
     outer_vloop = tmp_vi_loop;
-    SafePtr<ForLoop> tmp2_vi_loop(new ForLoop(context,varname,dims->vecdim(),SafePtr<Entity>(new CTimeEntity<int>("0",0))));
+    SafePtr<ForLoop> tmp2_vi_loop(new ForLoop(context,varname,dims->vecdim(),SafePtr<Entity>(new CTimeEntity<int>(0))));
     line_vloop = tmp2_vi_loop;
     // note that both loops use same variable name -- standard C++ scoping rules allow it -- but the outer
     // loop will become a declaration of a constant variable
@@ -1132,7 +1192,6 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   //
   // generate code for vertices
   //
-  const bool accumulate_targets_directly = iregistry()->accumulate_targets_directly();
   unsigned int nflops_total = 0;
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
@@ -1155,7 +1214,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           
 	  // If this is an Integral in a target IntegralSet AND
 	  // can accumulate targets directly -- use '+=' instead of '='
-	  const bool accumulate_not_assign = accumulate_targets_directly && address_set && IntegralInTargetIntegralSet()(current_vertex);
+	  const bool accumulate_not_assign = accumulate_targets_directly && IntegralInTargetIntegralSet()(current_vertex);
 
           if (context->comments_on()) {
             oss.str(null_str);
@@ -1190,15 +1249,18 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
             os << line_vloop->open();
 	  // the statement that does the work
 	  {
-	    if (accumulate_not_assign)
+	    if (accumulate_not_assign) {
 	      os << context->accumulate_binary_expr(curr_symbol,left_symbol,oper_ptr->label(),right_symbol);
-	    else
+	      nflops_total += (1 + nflops(left_symbol) + nflops(right_symbol)) + 1;
+	    }
+	    else {
 	      os << context->assign_binary_expr(curr_symbol,left_symbol,oper_ptr->label(),right_symbol);
+	      nflops_total += (1 + nflops(left_symbol) + nflops(right_symbol));
+	    }
 	  }
           if (vectorize_by_line)
             os << line_vloop->close();
 
-          nflops_total += (1 + nflops(left_symbol) + nflops(right_symbol));
 
           goto next;
         }
@@ -1212,7 +1274,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 
 	  // If this is an Integral in a target IntegralSet AND
 	  // can accumulate targets directly -- use '+=' instead of '='
-	  const bool accumulate_not_assign = accumulate_targets_directly && address_set && IntegralInTargetIntegralSet()(current_vertex);
+	  const bool accumulate_not_assign = accumulate_targets_directly && IntegralInTargetIntegralSet()(current_vertex);
 
           if (context->comments_on()) {
             oss.str(null_str);
@@ -1231,16 +1293,19 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           
           if (vectorize_by_line)
             os << line_vloop->open();
-	  if (accumulate_not_assign)
+	  if (accumulate_not_assign) {
 	    os << context->accumulate(curr_symbol,
 				      rhs_symbol);
-	  else
+	    nflops_total += nflops(rhs_symbol) + 1;   // +1 due to +=
+	  }
+	  else {
 	    os << context->assign(curr_symbol,
 				  rhs_symbol);
+	    nflops_total += nflops(rhs_symbol);
+	  }
           if (vectorize_by_line)
             os << line_vloop->close();
           
-          nflops_total += nflops(rhs_symbol);
           
           goto next;
         }
@@ -1279,6 +1344,107 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   os << lsi_loop->close();
   os << hsi_loop->close();
 
+  //
+  // Accumulate targets
+  //
+  if (accumulate_targets_indirectly) {
+    os << context->comment("Accumulate target integral sets") << std::endl;
+    const std::string& stack_name = registry()->stack_name();
+    const bool vecdim_is_static = dims->vecdim_is_static();
+#if 0
+    unsigned int vecdim_rank;
+    if (vecdim_is_static) {
+      SafePtr<CTimeEntity<int> > cptr = dynamic_pointer_cast<CTimeEntity<int> ,Entity >(dims->vecdim());
+      vecdim_rank = cptr->value();
+    }
+    const std::string times_vecdim("*" + dims->vecdim_label());
+#endif
+
+    // Loop over targets
+    unsigned int curr_target = 0;
+    const ver_iter end = targets_.end();
+    for(ver_iter t=targets_.begin(); t!=targets_.end(); ++t, ++curr_target) {
+
+      size s = (*t)->size();
+      SafePtr<CTimeEntity<int> > bdim(new CTimeEntity<int>(s));
+
+      SafePtr<Entity> bvecdim;
+      if (!vecdim_is_static) {
+	SafePtr< RTimeEntity<EntityTypes::Int> > vecdim = dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(dims->vecdim());
+	bvecdim = vecdim * bdim;
+      }
+      else {
+	SafePtr< CTimeEntity<int> > vecdim = dynamic_pointer_cast<CTimeEntity<int>,Entity>(dims->vecdim());
+	bvecdim = vecdim * bdim;
+      }
+
+      // For now write an explicit loop for each target. In the future should:
+      // 1) check if all computed targets are adjacent (accumulated targets are adjacent by the virtue of the allocation mechanism)
+      // 2) check the sizes and insert optimized calls, if possible
+
+      // form a single loop over integrals and vector dimension
+      // NOTE: single loop suffices because if outer/inner strides are not 1 this block of code should not be executed
+
+#if 0
+      SafePtr<Entity> loopmax;
+      if (vecdim_is_static) {
+	const int loopmax_value = s*vecdim_rank;
+	loopmax = SafePtr<Entity>(new CTimeEntity<int>(loopmax_value));
+      }
+      else {
+	ostringstream oss;  oss << s << times_vecdim;
+	loopmax = SafePtr<Entity>(new RTimeEntity<EntityTypes::Int>(oss.str()));
+      }
+
+      std::string loopvar("i");
+      ForLoop loop(context,loopvar,loopmax,ctimeconst_zero);
+      os << loop.open();
+      std::string acctarget;
+      {
+	ostringstream oss;
+	oss << stack_name << "[" << target_accums_[curr_target] << times_vecdim << "+" << loopvar << "]";
+	acctarget = oss.str();
+      }
+      std::string target;
+      {
+	ostringstream oss;
+	oss << stack_name << "[" << (*t)->address() << times_vecdim << "+" << loopvar << "]";
+	target = oss.str();
+      }
+      os << context->accumulate(acctarget,target);
+      os << loop.close();
+#endif
+      os << "_libint2_static_api_inc_short_("
+	 << registry()->stack_name() << "+" << target_accums_[curr_target] << "*" << dims->vecdim()->id() << ","
+	 << registry()->stack_name() << "+" << (*t)->address() << "*" << dims->vecdim()->id() << ","
+	 << bvecdim->id() << ","
+	 << "1.0)" << endl;
+
+      nflops_total += s;
+    }
+  }
+
+  // Outside of loops stack symbols don't make sense, so we must define loop variables hsi, lsi, and vi to 0
+  os << context->decldef(context->type_name<const int>(), "hsi", "0");
+  os << context->decldef(context->type_name<const int>(), "lsi", "0");
+  os << context->decldef(context->type_name<const int>(), "vi", "0");
+  
+  //
+  // Now pass back all targets through the Libint_t object, if needed.
+  //
+  if (registry()->return_targets()) {
+    unsigned int curr_target = 0;
+    const ver_iter end = targets_.end();
+    for(ver_iter t=targets_.begin(); t!=targets_.end(); ++t, ++curr_target) {
+      const std::string& symbol = (accumulate_targets_indirectly
+				   //                                                                    is this correct?         ???
+				   ? stack_symbol(context,target_accums_[curr_target],(*t)->size(),dims->low_label(),dims->vecdim_label(),registry()->stack_name())
+				   : (*t)->symbol());
+      os << "libint->targets[" << curr_target << "] = "
+	 << context->value_to_pointer(symbol) << context->end_of_stat() << endl;
+    }
+  }
+  
   // Print out the number of flops
   oss.str(null_str);
   oss << "Number of flops = " << nflops_total;
@@ -1292,22 +1458,6 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     os << context->assign_binary_expr("libint->nflops","libint->nflops","+",oss.str());
   }
 
-  // Outside of loops stack symbols don't make sense, so we must define loop variables hsi, lsi, and vi to 0
-  os << context->decldef(context->type_name<const int>(), "hsi", "0");
-  os << context->decldef(context->type_name<const int>(), "lsi", "0");
-  os << context->decldef(context->type_name<const int>(), "vi", "0");
-
-  // Now pass back all targets through the Libint_t object
-  unsigned int ntargets = 0;
-  for(int i=0; i<first_free_; i++) {
-    SafePtr<DGVertex> vertex = stack_[i];
-    if (vertex->is_a_target()) {
-      os << "libint->targets[" << ntargets << "] = "
-      << context->value_to_pointer(vertex->symbol()) << context->end_of_stat() << endl;
-      ++ntargets;
-    }
-  }
-  
 }
 
 void

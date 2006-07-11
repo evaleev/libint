@@ -91,10 +91,21 @@ void try_main (int argc, char* argv[])
 #if LIBINT_FLOP_COUNT
   cparams->count_flops(true);
 #endif
+#if LIBINT_ACCUM_TARGETS
+  cparams->accumulate_targets(true);
+#else
+  cparams->accumulate_targets(false);
+#endif
 #ifdef LIBINT_USER_DEFINED_FLOAT
   {
     const std::string realtype(LIBINT_USER_DEFINED_FLOAT);
     cparams->realtype(realtype);
+  }
+#endif
+#ifdef LIBINT_API_PREFIX
+  {
+    const std::string api_prefix(LIBINT_API_PREFIX);
+    cparams->api_prefix(api_prefix);
   }
 #endif
   
@@ -172,7 +183,7 @@ generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams
   RRStack::citer_type it = rrstack->begin();
   while (it != rrstack->end()) {
     SafePtr<RecurrenceRelation> rr = (*it).second.second;
-    std::string rrlabel = rr->label();
+    std::string rrlabel = cparams->api_prefix() + rr->label();
     os << "generating code for " << context->label_to_name(rrlabel) << " target=" << rr->rr_target()->label() << endl;
     
     std::string decl_filename(prefix + context->label_to_name(rrlabel));  decl_filename += ".h";
@@ -180,7 +191,7 @@ generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams
     std::basic_ofstream<char> declfile(decl_filename.c_str());
     std::basic_ofstream<char> deffile(def_filename.c_str());
     
-    rr->generate_code(context,ImplicitDimensions::default_dims(),declfile,deffile);
+    rr->generate_code(context,ImplicitDimensions::default_dims(),rrlabel,declfile,deffile);
     
     declfile.close();
     deffile.close();
@@ -238,11 +249,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           dg_xxxx->registry()->can_unroll(need_to_optimize);
           dg_xxxx->registry()->do_cse(need_to_optimize);
 	  // Need to accumulate integrals?
-#if LIBINT_ACCUM_INTS
-	  dg_xxxx->registry()->accumulate_targets(true);
-#else
-	  dg_xxxx->registry()->accumulate_targets(false);
-#endif
+	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
           
           SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
           os << "building " << abcd->description() << endl;
@@ -258,11 +265,12 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           SafePtr<CodeContext> context(new CppCodeContext(cparams));
           SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
           std::string prefix(cparams->source_directory());
-          std::string decl_filename(prefix + context->label_to_name(abcd->label()));  decl_filename += ".h";
-          std::string src_filename(prefix + context->label_to_name(abcd->label()));  src_filename += ".cc";
+	  std::string label(cparams->api_prefix() + abcd->label());
+          std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
+          std::string src_filename(prefix + context->label_to_name(label));  src_filename += ".cc";
           std::basic_ofstream<char> declfile(decl_filename.c_str());
           std::basic_ofstream<char> srcfile(src_filename.c_str());
-          dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),abcd->label(),declfile,srcfile);
+          dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
           
           // update max stack size
           LibraryParameters& lparams = LibraryParameters::get_library_params();
@@ -271,7 +279,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 	  // set pointer to the top-level evaluator function
           ostringstream oss;
           oss << "  libint2_build_eri[" << la << "][" << lb << "][" << lc << "]["
-              << ld <<"] = " << context->label_to_name(label_to_funcname(abcd->label()))
+              << ld <<"] = " << context->label_to_name(label_to_funcname(label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
 
@@ -339,11 +347,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           dg_xxxx->registry()->can_unroll(need_to_optimize);
           dg_xxxx->registry()->do_cse(need_to_optimize);
 	  // Need to accumulate integrals?
-#if LIBINT_ACCUM_INTS
-	  dg_xxxx->registry()->accumulate_targets(true);
-#else
-	  dg_xxxx->registry()->accumulate_targets(false);
-#endif
+	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
           
           // k=0
           if (!ssss) {
@@ -535,7 +539,7 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
           dg_xxxx->traverse();
           os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
           
-          std::string label;
+          std::string label(cparams->api_prefix());
           {
             ostringstream os;
             os << "(" << shells[la]->label() << " "
@@ -543,7 +547,7 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
             << " | r_{12}^K * exp(-g*r_{12}^2) | "
             << shells[lc]->label() << " "
             << shells[ld]->label() << ")";
-            label = os.str();
+            label += os.str();
           }
           
           SafePtr<CodeContext> context(new CppCodeContext(cparams));

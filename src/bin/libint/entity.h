@@ -25,6 +25,32 @@ namespace libint2 {
 
     static const unsigned int ntypes = 2;
   };
+
+  /// Product of 2 types
+  template <typename T, typename U>
+    struct ProductType;
+  template <> struct ProductType<int,int>         { typedef int result; };
+  template <> struct ProductType<int,double>      { typedef double result; };
+  template <> struct ProductType<double,int>      { typedef double result; };
+  template <> struct ProductType<double,double>   { typedef double result; };
+  template <> struct ProductType<EntityTypes::Int,int>     { typedef EntityTypes::Int result; };
+  template <> struct ProductType<EntityTypes::Int,double>  { typedef EntityTypes::FP result; };
+  template <> struct ProductType<EntityTypes::FP,int>      { typedef EntityTypes::FP result; };
+  template <> struct ProductType<EntityTypes::FP,double>   { typedef EntityTypes::FP result; };
+  template <> struct ProductType<int,EntityTypes::Int>     { typedef EntityTypes::Int result; };
+  template <> struct ProductType<double,EntityTypes::Int>  { typedef EntityTypes::FP result; };
+  template <> struct ProductType<int,EntityTypes::FP>      { typedef EntityTypes::FP result; };
+  template <> struct ProductType<double,EntityTypes::FP>   { typedef EntityTypes::FP result; };
+  template <> struct ProductType<EntityTypes::Int,EntityTypes::Int>     { typedef EntityTypes::Int result; };
+  template <> struct ProductType<EntityTypes::Int,EntityTypes::FP>      { typedef EntityTypes::FP result; };
+  template <> struct ProductType<EntityTypes::FP,EntityTypes::Int>      { typedef EntityTypes::FP result; };
+  template <> struct ProductType<EntityTypes::FP,EntityTypes::FP>       { typedef EntityTypes::FP result; };
+
+  /// Converts x to its string representation
+  template <typename T>
+    std::string to_string(const T& x) {
+    std::ostringstream oss;  oss << x;  return oss.str();
+  }
   
   /** 
   Entity is a base class for all objects that exist at compile or runtime of the generated code.
@@ -136,8 +162,8 @@ namespace libint2 {
     public DGVertex
     {
       public:
-      CTimeEntity(const std::string& id, const T& val) :
-        Entity(id), DGVertex(ClassInfo<CTimeEntity>::Instance().id()), value_(val), descr_()
+      CTimeEntity(const T& val) :
+        Entity(to_string(val)), DGVertex(ClassInfo<CTimeEntity>::Instance().id()), value_(val), descr_()
         {
 #if DEBUG
           std::cout << "Allocated CTimeEntity id = " << this->id() << " value = " << value() << std::endl;
@@ -210,6 +236,35 @@ namespace libint2 {
       mutable std::string descr_;
 
     };
+    
+  /** Creates product A*B. Exact type depends on type of A -- if A is a runtime-entity,
+      then the result is a runtime entity as well. Otherwise the result is a compile-time entity.
+  */
+  template <typename T>
+    SafePtr<Entity>
+    operator*(const SafePtr<Entity>& A, const SafePtr< CTimeEntity<T> >& B);
+
+  /** Creates product A*B.
+  */
+  template <typename T, typename U>
+    SafePtr< CTimeEntity< typename ProductType<T,U>::result > >
+    operator*(const SafePtr< CTimeEntity<T> >& A, const SafePtr< CTimeEntity<U> >& B)
+    {
+      typedef CTimeEntity< typename ProductType<T,U>::result > prodtype;
+      return SafePtr<prodtype>(new prodtype(A->value()*B->value()));
+    }
+
+  /** Creates product A*B.
+  */
+  template <typename T, typename U>
+    SafePtr< RTimeEntity< typename ProductType<T,U>::result > >
+    operator*(const SafePtr< RTimeEntity<T> >& A, const SafePtr< CTimeEntity<U> >& B)
+    {
+      typedef RTimeEntity< typename ProductType<T,U>::result > prodtype;
+      ostringstream oss;
+      oss << A->id() << "*" << B->id();
+      return SafePtr<prodtype>(new prodtype(oss.str()));
+    }
 
 };
 

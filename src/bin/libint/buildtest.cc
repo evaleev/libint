@@ -22,7 +22,7 @@ generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams
   SafePtr<RRStack> rrstack = RRStack::Instance();
   for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
     SafePtr<RecurrenceRelation> rr = (*it).second.second;
-    std::string rrlabel = rr->label();
+    std::string rrlabel = cparams->api_prefix() + rr->label();
     os << " generating code for " << context->label_to_name(rrlabel) << " target=" << rr->rr_target()->label() << endl;
     
     std::string decl_filename(prefix + context->label_to_name(rrlabel));  decl_filename += ".h";
@@ -30,7 +30,7 @@ generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams
     std::basic_ofstream<char> declfile(decl_filename.c_str());
     std::basic_ofstream<char> deffile(def_filename.c_str());
     
-    rr->generate_code(context,ImplicitDimensions::default_dims(),declfile,deffile);
+    rr->generate_code(context,ImplicitDimensions::default_dims(),rrlabel,declfile,deffile);
     
     declfile.close();
     deffile.close();

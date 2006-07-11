@@ -89,7 +89,7 @@ namespace libint2 {
     /** returns a ForLoop object.
       */
     virtual SafePtr<ForLoop> for_loop(std::string& varname, const SafePtr<Entity>& less_than,
-                                      const SafePtr<Entity>& start_at = SafePtr<Entity>(new CTimeEntity<int>("0",0))) const =0;
+                                      const SafePtr<Entity>& start_at = SafePtr<Entity>(new CTimeEntity<int>(0))) const =0;
 
     /// unique_name<T> returns a unique name for a variable of type T
     template <typename T>

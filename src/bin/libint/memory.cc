@@ -59,7 +59,7 @@ MemoryManager::steal_from_block(const SafePtr<MemBlock>& blk, const Size& size)
 SafePtr<MemoryManager::MemBlock>
 MemoryManager::find_block(const Address& address)
 {
-  typedef blkstore::iterator iter;
+  typedef memblkset::iterator iter;
   iter blk = find_if(blks_.begin(),blks_.end(),bind2nd(ptr_fun(MemBlock::address_eq),address));
   if (blk == blks_.end())
     throw std::runtime_error("MemoryManager::find_block() -- didn't find a block at this address");
@@ -104,7 +104,7 @@ MemoryManager::merge_blocks(const SafePtr<MemBlock>& left, const SafePtr<MemBloc
     SafePtr<MemBlock> lleft = left->left();
     SafePtr<MemBlock> rright = right->right();
     
-    typedef blkstore::iterator iter;
+    typedef memblkset::iterator iter;
     iter liter = find(blks_.begin(),blks_.end(),left);
     if (liter != blks_.end())
       blks_.erase(liter);
@@ -133,7 +133,7 @@ SafePtr<MemoryManager::MemBlock>
 MemoryManager::merge_to_superblock(const SafePtr<MemBlock>& blk)
 {
   SafePtr<MemBlock> sblk = superblock();
-  typedef blkstore::iterator iter;
+  typedef memblkset::iterator iter;
   iter biter = find(blks_.begin(),blks_.end(),blk);
   if (biter != blks_.end())
     blks_.erase(biter);
@@ -175,8 +175,8 @@ WorstFitMemoryManager::alloc(const Size& size)
   if (size == 0)
     throw std::runtime_error("WorstFitMemoryManager::alloc(size) -- size is 0");
 
-  typedef blkstore::iterator iter;
-  blkstore& blks = blocks();
+  typedef memblkset::iterator iter;
+  memblkset& blks = blocks();
 
   // try to find the exact match first
   if (search_exact_) {
@@ -244,8 +244,8 @@ BestFitMemoryManager::alloc(const Size& size)
   if (size == 0)
     throw std::runtime_error("BestFitMemoryManager::alloc(size) -- size is 0");
 
-  typedef blkstore::iterator iter;
-  blkstore& blks = blocks();
+  typedef memblkset::iterator iter;
+  memblkset& blks = blocks();
 
   // try to find the exact match first
   if (search_exact_) {
@@ -330,8 +330,8 @@ FirstFitMemoryManager::alloc(const Size& size)
   if (size == 0)
     throw std::runtime_error("FirstFitMemoryManager::alloc(size) -- size is 0");
 
-  typedef blkstore::iterator iter;
-  blkstore& blks = blocks();
+  typedef memblkset::iterator iter;
+  memblkset& blks = blocks();
 
   // try to find the exact match first
   if (search_exact_) {
@@ -404,10 +404,10 @@ LastFitMemoryManager::alloc(const Size& size)
   if (size == 0)
     throw std::runtime_error("LastFitMemoryManager::alloc(size) -- size is 0");
 
-  typedef blkstore::iterator iter;
-  typedef blkstore::reverse_iterator riter;
+  typedef memblkset::iterator iter;
+  typedef memblkset::reverse_iterator riter;
 
-  blkstore& blks = blocks();
+  memblkset& blks = blocks();
   riter rbegin = blks.rbegin();
   riter rend = blks.rend();
 
@@ -529,3 +529,52 @@ MemoryManagerFactory::label(unsigned int type) const
 {
   return MMTypes::labels_[type];
 }
+
+////
+
+namespace libint2 {
+
+  bool size_lessthan(const MemoryManager::MemBlock& A, const MemoryManager::MemBlock& B) {
+    return A.size() < B.size();
+  }
+  bool address_lessthan(const MemoryManager::MemBlock& A, const MemoryManager::MemBlock& B) {
+    return A.address() < B.address();
+  }
+
+  bool can_merge(const MemoryManager::MemBlock& A, const MemoryManager::MemBlock& B) {
+    if (A.address() < B.address()) {
+      return (A.free() == B.free()) && (A.address() + A.size() == B.address());
+    }
+    else {
+      return (A.free() == B.free()) && (B.address() + B.size() == A.address());
+    }
+  }
+
+  void
+  merge(MemBlockSet& blocks) {
+    typedef MemBlockSet::const_iterator citer;
+    typedef MemBlockSet::iterator iter;
+
+    if (blocks.size() <= 1) return;
+    
+    // Sort by increasing address
+    //sort(blocks.begin(),blocks.end(),libint2::address_lessthan);
+    blocks.sort(address_lessthan);
+
+    // Iterate over pais of adjacent blocks and merge, if possible
+    const citer end = blocks.end();
+    iter b = blocks.begin();
+    iter bp1(b);  ++bp1;
+    while (bp1 != end) {
+      if (can_merge(*b,*bp1)) {
+	b->merge(*bp1);
+	bp1 = blocks.erase(bp1);
+      }
+      else {
+	++b;
+	++bp1;
+      }
+    }
+  }
+
+};

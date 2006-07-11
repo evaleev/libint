@@ -39,10 +39,13 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   header_guard_open(ph_,"libint2params");
   header_guard_open(ih_,"libint2iface");
   header_guard_open(ii_,"libint2ifaceint");
-  
+
+  ph_ << define("API_PREFIX", cparams_->api_prefix());
   ph_ << define("MAX_VECLEN",cparams_->max_vector_length());
   if (cparams_->count_flops())
     ph_ << define("FLOP_COUNT",1);
+  if (cparams_->accumulate_targets())
+    ph_ << define("ACCUM_INTS",1);
   const std::string realtype(cparams_->realtype());
   ph_ << define("REALTYPE",realtype);
   
@@ -63,7 +66,7 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   for(vstype::const_iterator ci=comps.begin(); ci <comps.end(); ci++) {
     unsigned int lmax = cparams_->max_am_eri() + 1;
     ostringstream oss;
-    oss << "void (*libint2_build_" << *ci
+    oss << "void (*" << ctext->label_to_name(cparams->api_prefix()) << "libint2_build_" << *ci
         << "[" << lmax << "][" << lmax << "][" << lmax << "]["
         << lmax << "])(Libint_t *);" << endl;
     ih_ << "extern " << oss.str();
@@ -73,12 +76,12 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   // Declare library constructor/destructor
   oss_.str(null_str_);
   oss_ << ctext_->type_name<void>() << " "
-       << ctext_->label_to_name("libint2_static_init") << "()";
+       << ctext_->label_to_name(cparams->api_prefix() + "libint2_static_init") << "()";
   std::string si_fdec(oss_.str());
   
   oss_.str(null_str_);
   oss_ << ctext_->type_name<void>() << " "
-       << ctext_->label_to_name("libint2_static_cleanup") << "()";
+       << ctext_->label_to_name(cparams->api_prefix() + "libint2_static_cleanup") << "()";
   std::string sc_fdec(oss_.str());
 
   ih_ << si_fdec << ctext_->end_of_stat() << endl;
@@ -88,19 +91,19 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   for(vstype::const_iterator ci=comps.begin(); ci <comps.end(); ci++) {
     oss_.str(null_str_);
     oss_ << ctext_->type_name<void>() << " "
-	 << ctext_->label_to_name("libint2_init_" + *ci) << "(Libint_t* libint, int max_am, LIBINT2_REALTYPE* buf)";
+	 << ctext_->label_to_name(cparams->api_prefix() + "libint2_init_" + *ci) << "(Libint_t* libint, int max_am, LIBINT2_REALTYPE* buf)";
     std::string li_fdec(oss_.str());
     li_decls_.push_back(li_fdec);
   
     oss_.str(null_str_);
     oss_ << ctext_->type_name<size_t>() << " "
-	 << ctext_->label_to_name("libint2_need_memory_" + *ci) << "(int max_am)";
+	 << ctext_->label_to_name(cparams->api_prefix() + "libint2_need_memory_" + *ci) << "(int max_am)";
     std::string lm_fdec(oss_.str());
     lm_decls_.push_back(lm_fdec);
 
     oss_.str(null_str_);
     oss_ << ctext_->type_name<void>() << " "
-	 << ctext_->label_to_name("libint2_cleanup_" + *ci) << "(Libint_t* libint)";
+	 << ctext_->label_to_name(cparams->api_prefix() + "libint2_cleanup_" + *ci) << "(Libint_t* libint)";
     std::string lc_fdec(oss_.str());
     lc_decls_.push_back(lc_fdec);
 
@@ -125,6 +128,12 @@ Libint2Iface::~Libint2Iface()
     ph_ << define("MAX_VECTOR_STACK_SIZE",max_vector_stack_size);
   ph_ << define("MAX_HRR_HSRANK",lparams.max_hrr_hsrank());
   ph_ << define("MAX_HRR_LSRANK",lparams.max_hrr_lsrank());
+
+  // libint2_iface.h needs macros to help forming prefixed names in API
+  ih_ << "/* Use LIBINT2_PREFIXED_NAME(fncname) to form properly prefixed function name from LIBINT2 API */" << std::endl;
+  ih_ << "#define LIBINT2_PREFIXED_NAME(name) __libint2_prefixed_name__(LIBINT2_API_PREFIX,name)" << std::endl;
+  ih_ << "#define __libint2_prefixed_name__(prefix,name) __prescanned_prefixed_name__(prefix,name)" << std::endl;
+  ih_ << "#define __prescanned_prefixed_name__(prefix,name) prefix##name" << std::endl << std::endl;
   
   header_guard_close(ph_);
   header_guard_close(ih_);
@@ -148,7 +157,7 @@ Libint2Iface::~Libint2Iface()
     li_ << li_decls_[i] << ctext_->open_block();
     li_ << "if (buf != 0) libint->stack = buf;" << std::endl << "else ";
     {
-      std::string tmp = ctext_->label_to_name("libint2_need_memory_" + comps_[i]) + "(max_am)";
+      std::string tmp = ctext_->label_to_name(cparams_->api_prefix() + "libint2_need_memory_" + comps_[i]) + "(max_am)";
       li_ << ctext_->assign("libint->stack","new LIBINT2_REALTYPE[" + tmp + "]");
     }
     li_ << ctext_->assign("libint->vstack","libint->stack + LIBINT2_MAX_STACK_SIZE * VECLEN");

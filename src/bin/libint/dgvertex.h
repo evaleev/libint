@@ -22,6 +22,8 @@ namespace libint2 {
   public:
     /// The address on the stack during computation is described using this type
     typedef MemoryManager::Address Address;
+    /// The size of a block the stack during computation is described using this type
+    typedef MemoryManager::Size Size;
     /// Exception thrown if address is not set
     typedef NotSet<Address> AddressNotSet;
     /// Exception thrown if graph label is not set

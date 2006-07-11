@@ -34,7 +34,7 @@ namespace libint2 {
 	      const SafePtr<Tactic>& tactic, const SafePtr<MemoryManager>& memman,
 	      const std::string& complabel)
     {
-      const std::string label = target->label();
+      const std::string label = cparams->api_prefix() + target->label();
       SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
       SafePtr<Strategy> strat(new Strategy(size_to_unroll));
       os << "Building " << target->description() << std::endl;
@@ -68,6 +68,9 @@ namespace libint2 {
       const bool need_to_optimize = (max_am <= cparams->max_am_opt());
       dg_xxxx->registry()->do_cse(need_to_optimize);
       
+      // Need to accumulate integrals?
+      dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
+
       dg_xxxx->append_target(xsxs_ptr);
       dg_xxxx->apply(strat,tactic);
       dg_xxxx->optimize_rr_out();
@@ -118,13 +121,13 @@ namespace libint2 {
 	SafePtr<RRStack> rrstack = RRStack::Instance();
 	for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
 	  SafePtr<RecurrenceRelation> rr = (*it).second.second;
-	  std::string rrlabel = rr->label();
+	  std::string rrlabel = cparams->api_prefix() + rr->label();
 	  std::cout << " " << context->label_to_name(rrlabel) << ".h";
 	}
 	std::cout << std::endl << "Generated sources: " << def_filename;
 	for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
 	  SafePtr<RecurrenceRelation> rr = (*it).second.second;
-	  std::string rrlabel = rr->label();
+	  std::string rrlabel = cparams->api_prefix() + rr->label();
 	  std::cout << " " << context->label_to_name(rrlabel) << ".cc";
 	}
 	std::cout << std::endl << "Top compute function: compute" << context->label_to_name(label) << std::endl;

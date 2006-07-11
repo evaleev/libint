@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
   Libint_t* libint = new Libint_t;
   const int max_am = max(max(am[0],am[1]),max(am[2],am[3]));
-  libint2_init_eri(libint,max_am,0);
+  LIBINT2_PREFIXED_NAME(libint2_init_eri)(libint,max_am,0);
   prep_libint2(libint,am[0],alpha1,A,
   am[1],alpha2,B,
   am[2],alpha3,C,
@@ -75,6 +75,13 @@ int main(int argc, char** argv)
   << "|" << sh2->label() << sh3->label() << ") ..." << endl;
 #endif
 
+  double scale_target = 1.0;
+#if LIBINT_ACCUM_INTS
+  // if accumulating integrals, zero out first, then compute twice
+  libint->zero_out_targets = 1;
+  scale_target = 0.5;
+  COMPUTE_XX_ERI_XX(libint);
+#endif
   COMPUTE_XX_ERI_XX(libint);
 
   bool success = true;
@@ -129,7 +136,7 @@ int main(int argc, char** argv)
             l2,m2,n2,alpha3[v],C,
             l3,m3,n3,alpha4[v],D,0);
             
-            double new_eri = libint->targets[0][ijkl*veclen+v];
+            double new_eri = scale_target * libint->targets[0][ijkl*veclen+v];
           
             if ( fabs((ref_eri-new_eri)/new_eri) > 1.0E-12) {
               std::cout << "Elem " << ijkl << " v=" << v
@@ -143,7 +150,7 @@ int main(int argc, char** argv)
     }
   }
 
-  libint2_cleanup_eri(libint);
+  LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(libint);
 
   cout << "test " << (success ? "ok" : "failed") << endl;
   

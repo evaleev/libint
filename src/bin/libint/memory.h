@@ -24,8 +24,23 @@ namespace libint2 {
         left_(left), right_(right)
         {
         }
+      MemoryBlock(const MemoryBlock& A) :
+	address_(A.address_), size_(A.size_), free_(A.free_),
+        left_(A.left_), right_(A.right_)
+        {
+        }
 
       ~MemoryBlock() {}
+
+      /// copy A to this
+      const MemoryBlock& operator=(const MemoryBlock& A) {
+	address_ = A.address_;
+	size_ = A.size_;
+	free_ = A.free_;
+	left_ = A.left_;
+	right_ = A.right_;
+	return *this;
+      }
 
       /// Returns address
       Address address() const { return address_; }
@@ -82,6 +97,15 @@ namespace libint2 {
         return i->free();
       }
 
+      /// Merge A to this (does not check if merge can happen -- can_merge(*this,*A) must be already satisfied). The left/right pointers are not changed
+      const MemoryBlock& merge(const MemoryBlock& A) {
+	if (address() > A.address()) {
+	  address_ = A.address_;
+	}
+	size_ += A.size();
+	return *this;
+      }
+
     private:
       Address address_;
       Size size_;
@@ -107,13 +131,13 @@ namespace libint2 {
     static const Address InvalidAddress = -1;
 
   protected:
-    typedef std::list< SafePtr<MemBlock> > blkstore;
+    typedef std::list< SafePtr<MemBlock> > memblkset;
 
   private:
     /// Upper limit on the amount of memory this MemoryManager can handle
     Size maxmem_;
     /// manages MemBlocks
-    blkstore blks_;
+    memblkset blks_;
     /// This block is the guaranteed to be free until all memory is exhausted
     SafePtr<MemBlock> superblock_;
     /// Max amount of memory used
@@ -140,7 +164,7 @@ namespace libint2 {
     /// Returns maxmem
     Size maxmem() const { return maxmem_; }
     /// Returns blocks
-    blkstore& blocks() { return blks_;}
+    memblkset& blocks() { return blks_;}
     /// Returns the superblock
     SafePtr<MemBlock> superblock() const { return superblock_; }
     /// steals size memory from block blk and returns the new block
@@ -232,6 +256,18 @@ namespace libint2 {
     SafePtr<MemoryManager> memman(unsigned int type) const;
     std::string label(unsigned int type) const;
   };
+
+  /**
+     Very useful nonmember functions to operate on MemBlocks and their containers
+  */
+  typedef MemoryManager::MemBlock MemBlock;
+  typedef std::list< MemoryManager::MemBlock > MemBlockSet;
+  bool size_lessthan(const MemoryManager::MemBlock& A, const MemoryManager::MemBlock& B);
+  bool address_lessthan(const MemoryManager::MemBlock& A, const MemoryManager::MemBlock& B);
+  /// True if can merge blocks
+  bool can_merge(const MemoryManager::MemBlock& A, const MemoryManager::MemBlock& B);
+  /// Merge blocks, if possible
+  void merge(MemBlockSet& blocks);
 
 };
 

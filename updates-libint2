@@ -1,4 +1,8 @@
 
+07/11/2006:     All API names can now be prefixed with the string specified with --with-api-prefix
+                configure option.
+                -EFV
+
 07/05/2006:     Created a standard set of tests for most combinations of code generation
                 features (vectorization, etc.)
                 -EFV
