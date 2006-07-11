@@ -1,4 +1,8 @@
 
+07/11/2006:     Can choose cartesian shell orderings using configure option
+                --with-cgshell-ordering.
+                -EFV
+
 07/11/2006:     All API names can now be prefixed with the string specified with --with-api-prefix
                 configure option.
                 -EFV
