@@ -26,6 +26,7 @@ namespace {
   void test_typelists();
   void test0();
   void test1();
+  void test_cgshell_iter(const CGShell& sh);
 
   template <class Callback>
     void RunTest(Callback test, const std::string& descr, std::ostream& os = std::cout);
@@ -80,6 +81,8 @@ namespace {
 #endif
 #if 1
     RunTest(test0,"iterators");
+#endif
+#if 0
     RunTest(test1,"memory managers for (ff|ff) build");
 
     const unsigned int use_integrals = 1000000000;
@@ -129,13 +132,18 @@ namespace {
     SafePtr<TwoPRep_sh_11_11> pppp_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
     SafePtr<DGVertex> pppp_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(pppp_quartet);
 
-    // test iterators
-    SafePtr<CGShell> sh_ptr(new CGShell(sh_i));
-    sh_ptr->print(cout);
-    SubIteratorBase<CGShell> siter1(sh_ptr);
-    for(siter1.init(); siter1; ++siter1)
-      siter1.elem()->print(cout);
+    // test CGShell iterator
+    test_cgshell_iter(sh_s);
+    test_cgshell_iter(sh_p);
+    test_cgshell_iter(sh_d);
+    test_cgshell_iter(sh_f);
+    test_cgshell_iter(sh_g);
+    test_cgshell_iter(sh_h);
+    test_cgshell_iter(sh_i);
+    test_cgshell_iter(sh_k);
+    test_cgshell_iter(sh_l);
 
+    // test IntegralSet iterator
     SafePtr<TwoPRep_sh_11_11> obj(pppp_quartet);
     cout << obj->description() << endl;
     SubIteratorBase< TwoPRep_sh_11_11 > siter2(obj);
@@ -149,7 +157,7 @@ namespace {
   {
   
     SafePtr<Strategy> strat(new Strategy);
-    SafePtr<Tactic> tactic(new FirstChoiceTactic);
+    SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
     SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_f,sh_f,sh_f,sh_f,0);
     cout << "Building " << xsxs_quartet->description() << endl;
     SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
@@ -196,9 +204,23 @@ namespace {
       std::string descr("build ");
       descr += Integral::Instance(f1,f2,f3,f4,m)->label();
       RunTest(boost::bind(BuildTest<Integral,false>, Integral::Instance(f1,f2,f3,f4,m), cparams,
-			  size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic),
+			  size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
 			  SafePtr<MemoryManager>(new WorstFitMemoryManager)), descr);
     }
+
+
+  void test_cgshell_iter(const CGShell& sh)
+  {
+    const unsigned int nbf = sh.num_bf();
+    SafePtr<CGShell> sh_ptr(new CGShell(sh));
+    sh_ptr->print(cout);
+    SubIteratorBase<CGShell> siter1(sh_ptr);
+    unsigned int bf = 0;
+    for(siter1.init(); siter1; ++siter1, ++bf)
+      siter1.elem().print(cout);
+    if (bf != nbf)
+      throw ProgrammingError("test::test_cgshell_iter -- number of basis functions from iterator and CGShell::num_bf do not match");
+  }
 
 };
   
