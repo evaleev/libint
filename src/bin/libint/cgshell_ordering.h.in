@@ -1,0 +1,19 @@
+
+#ifndef _libint2_src_bin_libint_cgshelordering_h_
+#define _libint2_src_bin_libint_cgshelordering_h_
+
+#define LIBINT__CGSHELL__ORDERING_STANDARD @LIBINT_CGSHELL_ORDERING_STANDARD@
+#define LIBINT__CGSHELL__ORDERING_INTV3 @LIBINT_CGSHELL_ORDERING_INTV3@
+#define LIBINT__CGSHELL__ORDERING_GAMESS @LIBINT_CGSHELL_ORDERING_GAMESS@
+
+namespace libint2 {
+
+  enum CGShellOrdering {
+    CGShellOrdering_Standard     = @LIBINT_CGSHELL_ORDERING_STANDARD@,
+    CGShellOrdering_IntV3        = @LIBINT_CGSHELL_ORDERING_INTV3@,
+    CGShellOrdering_GAMESS       = @LIBINT_CGSHELL_ORDERING_GAMESS@
+  };
+
+};
+
+#endif

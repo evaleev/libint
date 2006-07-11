@@ -61,6 +61,9 @@
 /* how to vectorize */
 #undef LIBINT_VECTOR_METHOD
 
+/* Specifies the ordering of cartesian Gaussians in a shell. Allowed values are hardcoded -- see configure.in and src/bin/policy_spec.cc */
+#undef LIBINT_CGSHELL_ORDERING
+
 /* User-defined float type */
 #undef LIBINT_USER_DEFINED_FLOAT
 
