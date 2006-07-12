@@ -31,49 +31,51 @@ Created on: \today
 \section{Introduction}
 \LIBINT\ is a collection of functions to compute two-body integrals over Gaussian
 functions which appear in electronic and molecular structure theories.
-\LIBINTv \cite{Libint1}\ has three components which compute different types of integrals:
+\LIBINTv \cite{Libint1}\ can compute many different types of integrals:
 
 \begin{itemize}
 
-\item \libint\ computes the Coulomb integrals, which in electronic structure theory
-are called electron repulsion integrals (ERIs). This is by far the most common type of
+\item Standard electron repulsion integrals (ERIs). This is by far the most common type of
 integrals in molecular structure theory.
 
-\item \libderiv\ computes first and second derivatives of ERIs with respect to the
-coordinates of the basis function origin. This type of integrals are also very common
-in the electronic structure theory, where they appear in analytic gradient expressions.
-
-\item \librij\ computes types integrals that appear in Kutzelnigg's linear R12 theories
-for electronic structure.\cite{Kutzelnigg85,Kutzelnigg91} All linear R12 methods, such as
-MP2-R12, contain terms in the wave function that are linear in the interelectronic distances
+\item Two-electron integrals which appear in explicitly correlated linear R12 methods
+with Gaussian correlation factors.\cite{Kutzelnigg85,Kutzelnigg91,Persson96} All linear R12 methods, such as
+MP2-R12, contain terms in the wave function that are depend on the interelectronic distances
 $r_{ij}$ (hence the name). Appearance of several types of {\em two}-body integrals
 is due to the use of the approximate resolution of the identity to reduce three- and four-body
 integrals to products of simpler integrals.
 
 \end{itemize}
 
-The components come as separate library archives, named \libinta , \libderiva , and \librija ,
-with header files named \libinth , \libderivh , and \librijh , respectively.
-Note that both \libderiv\ and \librij\ depend on functions in \libint. In that sense \libint\ is
-the central component of \LIBINT, thus we will \libint\ most often as an example in this manual.
-
-\LIBINT\ uses recursive schemes that originate in seminal Obara-Saika method\cite{Obara86} and Head-Gordon and Pople's
-variation thereof.\cite{Head-Gordon88}
-The idea of \LIBINT\ is to optimize {\em computer implementation} of such methods by implementing
-an optimizing compiler to generate automatically highly-specialized code that runs well on
-superscalar architectures. The advantages of the optimizing compiler approach are:
+Unlike version 1, which came as 3 separate interdependent libraries, version 2 of libint
+comes as a single library preconfigured at code-generation time.
+The following features of the library can be configured:
 \begin{itemize}
-\item it allows to achieve high-performance
-for the {\em one-quartet-at-a-time} method of computing integrals.
-Thus \LIBINT\ avoids vectorization as an approach to achieving high efficiency,
-since vectorization increases memory footprint and complicates programming. If the use of vector
-machines increases again, \LIBINT\ will be vectorized, however currently there are no firm plans
-to do that.
-\item new recurrence relations are rather easy to implement in efficient code.
-\librij\ is a good example of that.
+\item support for ERI
+\item derivative level for ERI
+\item support for G12 integrals
+\item derivative level for G12 integrals
+\item optimization features (whether shell-sets of integrals can be unrolled,
+whether to perform Common Subexpression Elimination, etc.)
+\item vectorization features
+\item algorithmic features (evaluation strategy, cartesian shell ordering)
+\item API features (name prefix, FLOP counter, whether to accumulate target integrals, floating-point type)
+\item shared library support
 \end{itemize}
+Depending on its configuration, the library may not include all features.
 
-For more details on priciples of \LIBINT\ you should consult Justin Fermann's thesis.\cite{Fermann96:PhD}
+Currently \LIBINT\ uses recursive schemes based on Obara-Saika method\cite{Obara86} and Head-Gordon and Pople's
+variation thereof.\cite{Head-Gordon88} Other recurrence relations can be implemented as needed.
+The idea of \LIBINT\ is to optimize {\em computer implementation} of such methods with
+the help of an optimizing compiler. The compiler tranlates compactly defined recurrence relations
+into a nonrecursive, highly optimized code which can also be adapated for particulars of the
+computer architecture.
+The following are pros and cons of the current approach:
+\begin{itemize}
+\item rapid implementation of existing and new recurrence relations
+\item optimization of the integrals evaluation for specific computer acrchitectures (e.g. vectorization)
+\item code footprint can be significant
+\end{itemize}
 
 \section{Notation}
 
@@ -96,7 +98,8 @@ at the common center
 but with different \n\ form a {\em Cartesian shell},
 or just a {\em shell}. For example, an $s$ shell ($\lambda=0$) has one function, a $p$ shell ($\lambda=1$) --
 3 functions, etc.
-The order of functions in shells that \LIBINT\ uses is as follows:
+There is no unique choice for the order of functions in shells.
+The standard \LIBINT\ ordering is:
 \begin{eqnarray}
 p & : & p_x, p_y, p_z \nonumber \\
 d & : & d_{xx}, d_{xy}, d_{xz}, d_{yy}, d_{yz}, d_{zz} \nonumber \\
@@ -114,6 +117,8 @@ for(int i=0; i<=am; i++) {
   }
 }
 \end{verbatim}
+Other shell orderings are supported as well, e.g., those employed by {\tt intv3} engine in {\tt MPQC} program
+or the ordering used in {\tt GAMESS} program. These can be specified when the library is generated.
 
 The normalization constant for a primitive Gaussian $\phi ({\bf r}; \zeta, \n, {\bf A})$
 \begin{eqnarray}
@@ -202,11 +207,18 @@ in the target quartet.
 
 \section{Overview of \LIBINT 's API}
 
-Prototypes for externaly accessible functions of \LIBINT's components are contained
-in header files \libinth\, \libderivh\, and \librijh . Although \LIBINT's
-machine generated source is written in C++, functions and data structures of
-the external interface are linked according to C convention, which simplifies
-its use in C and FORTRAN programs.
+\LIBINT\ library is a low-level C++ code. C linking convention is adopted to enable interoperability with other languages, such as C and FORTRAN.
+For notes on how to use \LIBINT\ library from FORTRAN code, see subsection \ref{ssec:fort}.
+
+\LIBINT\ API consists of 3 major components: type definitions, function and variable prototypes, and C preprocessor macros.
+The API is described in the following header files:
+\begin{itemize}
+\item {\tt libint2.h} -- main header file defines library evaluator type ({\tt Libint\_t}) and includes other headers (not generated).
+\item {\tt libint2_types.h} -- architecture-specific definitions for long integer types (not generated).
+\item {\tt libint2_params.h} -- C preprocessor macros for library features (generated).
+\item {\tt libint2_iface.h} -- prototypes for functions and data as well as some misc macros (generated).
+\end{itemize}
+{\tt libint2.h} is the only header to be included explicitly in the user code.
 
 So let's look at header file \libinth. Inside the standard header wrappers,
 library static parameters are {\tt define}d:
