@@ -91,7 +91,7 @@ void try_main (int argc, char* argv[])
 #if LIBINT_FLOP_COUNT
   cparams->count_flops(true);
 #endif
-#if LIBINT_ACCUM_TARGETS
+#if LIBINT_ACCUM_INTS
   cparams->accumulate_targets(true);
 #else
   cparams->accumulate_targets(false);
@@ -278,7 +278,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
 	  // set pointer to the top-level evaluator function
           ostringstream oss;
-          oss << "  libint2_build_eri[" << la << "][" << lb << "][" << lc << "]["
+          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_eri[" << la << "][" << lb << "][" << lc << "]["
               << ld <<"] = " << context->label_to_name(label_to_funcname(label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
@@ -426,7 +426,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           lparams.max_stack_size(memman->max_memory_used());
 
           ostringstream oss;
-          oss << "  libint2_build_r12kg12[" << la << "][" << lb << "][" << lc << "]["
+          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_r12kg12[" << la << "][" << lb << "][" << lc << "]["
               << ld <<"] = " << context->label_to_name(label_to_funcname(label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
