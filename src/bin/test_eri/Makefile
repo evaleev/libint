@@ -49,7 +49,8 @@ $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
 	$(LD) -o $@ $(LDFLAGS) $^
 else
 $(TEST):
-	@echo "Cannot test generated code! $(CXXGEN) is not compatible with $(CXXCOMP)"
+	echo "Cannot test generated code! $(CXXGEN) is not compatible with $(CXXCOMP)"
+	@exit 1
 endif
 
 $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)
