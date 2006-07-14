@@ -130,7 +130,7 @@ namespace libint2 {
 	  std::string rrlabel = cparams->api_prefix() + rr->label();
 	  std::cout << " " << context->label_to_name(rrlabel) << ".cc";
 	}
-	std::cout << std::endl << "Top compute function: compute" << context->label_to_name(label) << std::endl;
+	std::cout << std::endl << "Top compute function: " << context->label_to_name(label_to_funcname(label)) << std::endl;
 
       }
     }

@@ -75,8 +75,13 @@ const char libint2::StaticDefinitions::am_letters[StaticDefinitions::num_am_lett
 std::string
 libint2::label_to_funcname(const std::string& label)
 {
+  // Do not prepend compute as it messes up the API prefix functionality.
+#if 0
   std::string result("compute");
   result += label;
+#else
+  const std::string& result = label;
+#endif
   return result;
 }
 

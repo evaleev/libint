@@ -324,7 +324,7 @@ namespace libint2 {
     const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
     {
       ostringstream os;
-      os << context->label_to_name(label_to_funcname(label()))
+      os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
          // First argument is the library object
          << "(libint, "
          // Second is the target

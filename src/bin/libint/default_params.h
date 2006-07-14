@@ -277,7 +277,7 @@ namespace libint2 {
     static const char am_letters[num_am_letters];
   };
 
-  /// Converts a computation label to the name of the function
+  /// Converts a label, e.g. name of the target node, to the name of the function to compute it
   std::string label_to_funcname(const std::string& label);
 
 };

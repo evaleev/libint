@@ -707,7 +707,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   for(FuncNameContainer::const_iterator fn=func_names_.begin(); fn!=func_names_.end(); fn++) {
     string function_name = (*fn).first;
     def << "#include <"
-        << context->label_to_name(function_name)
+        << context->label_to_name(context->cparams()->api_prefix() + function_name)
         << ".h>" << endl;
   }
   def << endl;
@@ -1319,13 +1319,6 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           
           SafePtr<RecurrenceRelation> rr = arc_ptr->rr();
           os << rr->spfunction_call(context,dims);
-          /*os << context->label_to_name(rr->label()) << "(libint, "
-          << context->value_to_pointer(current_vertex->symbol());
-          const unsigned int nchildren = rr->num_children();
-          for(int c=0; c<nchildren; c++) {
-            os << ", " << context->value_to_pointer(rr->rr_child(c)->symbol());
-          }
-          os << ")" << context->end_of_stat() << endl;*/
           
           goto next;
         }
