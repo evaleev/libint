@@ -15,6 +15,7 @@ using namespace std;
 namespace {
   std::string usage();
   std::string am2label(unsigned int);
+  unsigned int am2nbf(unsigned int);
 };
 
 int main(int argc, char** argv)
@@ -62,8 +63,9 @@ int main(int argc, char** argv)
 
   for(int iter=0; iter<niter; iter++)
     COMPUTE_XX_ERI_XX(libint);
-  
-  cout << "nflops = " << libint->nflops << endl;
+
+  const unsigned int nints = am2nbf(am[0]) * am2nbf(am[1]) * am2nbf(am[2]) * am2nbf(am[3]) * LIBINT2_MAX_VECLEN;
+  cout << "nflops = " << libint->nflops << " nints = " << nints << endl;
 
   LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(libint);
 
@@ -86,6 +88,11 @@ namespace {
     std::ostringstream oss;
     oss << labels[l];
     return oss.str();
+  }
+
+  unsigned int
+  am2nbf(unsigned int l) {
+    return (l+1)*(l+2)/2;
   }
 };
 
