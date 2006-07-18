@@ -110,7 +110,8 @@ namespace libint2 {
       // 2) if possible apply HRR
       // 3) else apply VRR
       //
-      if (integral->size() <= max_size_to_unroll_)
+      const unsigned int size = integral->size();
+      if (size == 1 || (size <= max_size_to_unroll_ && graph->registry()->can_unroll()))
         return unroll_intset<inttype>(integral);
       
       {
@@ -220,7 +221,8 @@ namespace libint2 {
       //    set to infividual integrals
       // 2) otherwise compute it
       //
-      if (integral->size() <= max_size_to_unroll_)
+      const unsigned int size = integral->size();
+      if (size == 1 || (size <= max_size_to_unroll_ && graph->registry()->can_unroll()))
         return unroll_intset<inttype>(integral);
       
       typedef CR_11_TiG12_11<TiG12_11_11,CGShell,K> rr_type;
