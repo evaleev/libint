@@ -1,4 +1,6 @@
 
+07/18/2006:     Strategy for non-ERI classes did not correctly handle unrolling.  -EFV
+
 07/11/2006:     Can choose cartesian shell orderings using configure option
                 --with-cgshell-ordering.
                 -EFV
