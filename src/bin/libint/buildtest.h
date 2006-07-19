@@ -16,6 +16,37 @@ namespace libint2 {
   // defined in buildtest.cc
   void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
 
+  /// Command-line parser for the standard build tester -- N is the number of centers, i.e. 4 for 4-center ERI
+  template <unsigned int N>
+    class TesterCmdLine{
+  public:
+    TesterCmdLine(int argc, char* argv[]);
+    ~TesterCmdLine() {}
+    
+    const std::vector<unsigned int>& am() const { return am_; }
+    unsigned int size_to_unroll() const { return size_to_unroll_; }
+    unsigned int veclen() const { return veclen_; }
+    bool vectorize_by_line() const { return vectorize_by_line_; }
+    bool do_cse() const { return do_cse_; }
+
+  private:
+    static const unsigned int max_am = 10;
+    std::vector<unsigned int> am_;
+    unsigned int size_to_unroll_;
+    unsigned int veclen_;
+    bool vectorize_by_line_;
+    bool do_cse_;
+  };
+
+  /** This is a user-friendly generic test of building an Integral using specified size_to_unroll, veclen, vec_by_line, and do_cse.
+      GenAllCode should be set to true if compilable code
+      to be produced (i.e. include header files + set-level recurrence relations code)
+   */
+  template <class Integral, bool GenAllCode>
+    void BuildTest(const SafePtr<Integral>& target, unsigned int size_to_unroll, unsigned int veclen,
+		   bool vec_by_line, bool do_cse, const std::string& complabel = "buildtest",
+		   std::ostream& os = std::cout);
+
   /** This is a generic test of building an Integral using specified cparams, memman, size_to_unroll,
       default strategy and specified tactic. GenAllCode should be set to true if compilable code
       to be produced (i.e. include header files + set-level recurrence relations code)
@@ -135,6 +166,86 @@ namespace libint2 {
       }
     }
 
+
+  template <class Integral, bool GenAllCode>
+    void BuildTest(const SafePtr<Integral>& target, unsigned int size_to_unroll, unsigned int veclen,
+		   bool vec_by_line, bool do_cse, const std::string& complabel,
+		   std::ostream& os)
+  {
+    const unsigned int max_am = 10;
+    os << "generating code to compute " << target->label() << std::endl;
+
+    // initialize cparams
+    SafePtr<CompilationParameters> cparams(new CompilationParameters);
+    cparams->max_am_eri(max_am);
+    cparams->max_vector_length(veclen);
+    cparams->vectorize_by_line(vec_by_line);
+    cparams->count_flops(true);
+#if LIBINT_ACCUM_INTS
+    cparams->accumulate_targets(true);
+#else
+    cparams->accumulate_targets(false);
+#endif
+#ifdef LIBINT_API_PREFIX
+  {
+    const std::string api_prefix(LIBINT_API_PREFIX);
+    cparams->api_prefix(api_prefix);
+  }
+#endif
+
+    if (do_cse) {
+      cparams->max_am_opt(max_am);
+    }
+    else {
+      cparams->max_am_opt(0);
+    }
+
+    // set default dims
+    ImplicitDimensions::set_default_dims(cparams);
+
+    SafePtr<StdRandomizePolicy> rpolicy(new StdRandomizePolicy(0.00));
+    SafePtr<Tactic> tactic(new FirstChoiceTactic<StdRandomizePolicy>(rpolicy));
+    const SafePtr<MemoryManager> memman(new WorstFitMemoryManager);
+    BuildTest<Integral,true>(target,cparams,size_to_unroll,os,tactic,memman,complabel);
+  }
+
+  template <unsigned int N>
+    TesterCmdLine<N>::TesterCmdLine(int argc, char* argv[])
+    {
+      if (N == 0)
+	throw ProgrammingError("TesterCmdLine<N>::TesterCmdLine but N is 0");
+      const int argc_min = N + 2;
+      const int argc_max = N + 5;
+      if (argc < argc_min || argc > argc_max) {
+	std::cerr << "Usage: " << argv[0] << " <am> size_to_unroll [vector_length] [vector_method] [do_cse]" << std::endl
+		  << "       <am> -- angular momenta on each center, e.g. 4 nonnegative integers for a 4-center ERI" << std::endl
+		  << "       size_to_unroll -- size of the largest integral set to be unrolled" << std::endl
+		  << "       vector_length  -- (optional) max vector length. Defaults to 1." << std::endl
+		  << "       vector_method  -- (optional) vectorization method. Valid choices are 0 (by-block) and 1 (by-line). Defaults to 0." << std::endl
+		  << "       do_cse  -- (optional) do Common Subexpression Elimination? Valid choices are 0 (no) and 1 (yes). Defaults to 0." << std::endl << std::endl;
+	throw InputError("TesterCmdLine<N>::TesterCmdLine -- incorrect number of command-line arguments");
+      }
+      for(unsigned int i=1; i<N+1; ++i) {
+	const unsigned int am = atoi(argv[i]);
+	if (am > max_am)
+	  throw InputError("TesterCmdLine<N>::TesterCmdLine -- angular momentum limit exceeded");
+	am_.push_back(am);
+      }
+      size_to_unroll_ = atoi(argv[N+1]);
+
+      veclen_ = 1;
+      if (argc >= N+3) {
+	veclen_ = atoi(argv[N+2]);
+      }
+      vectorize_by_line_ = false;
+      if (argc >= N+4) {
+	vectorize_by_line_ = (1 == atoi(argv[N+3]));
+      }
+      do_cse_ = false;
+      if (argc >= N+5) {
+	do_cse_ = (1 == atoi(argv[N+4]));
+      }
+    }
 
 };
 

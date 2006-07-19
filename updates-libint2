@@ -1,4 +1,9 @@
 
+07/19/2006:	1) Added code to simplify testing of the compiler. Rewrote generate_eri_code using
+                   the new facilities.
+                2) Added profiling tests.
+                -EFV
+
 07/18/2006:     Strategy for non-ERI classes did not correctly handle unrolling.  -EFV
 
 07/11/2006:     Can choose cartesian shell orderings using configure option

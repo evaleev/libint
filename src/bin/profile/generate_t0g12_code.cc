@@ -24,24 +24,23 @@ int main (int argc, char* argv[])
 namespace {
 
   unsigned int am[][1] = { {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}};
-  typedef TwoPRep_11_11<CGShell> ERIQtet;
+  typedef TiG12_11_11<CGShell,0> IntegralSet;
 
   int try_main (int argc, char* argv[])
   {
     TesterCmdLine<4> cmdline(argc,argv);
-    const std::vector<unsigned int>& l = cmdline.am();
-    const SafePtr<ERIQtet> quartet = ERIQtet::Instance(CGShell(am[l[0]]),
-						       CGShell(am[l[1]]),
-						       CGShell(am[l[2]]),
-						       CGShell(am[l[3]]),
-						       0);
-    BuildTest<ERIQtet,true>(quartet,
-			    cmdline.size_to_unroll(),
-			    cmdline.veclen(),
-			    cmdline.vectorize_by_line(),
-			    cmdline.do_cse(),
-			    "eri",
-			    std::cout);
+    std::vector<unsigned int> l = cmdline.am();
+    const SafePtr<IntegralSet> integral = IntegralSet::Instance(CGShell(am[l[0]]),
+								CGShell(am[l[1]]),
+								CGShell(am[l[2]]),
+								CGShell(am[l[3]]));
+    BuildTest<IntegralSet,true>(integral,
+				cmdline.size_to_unroll(),
+				cmdline.veclen(),
+				cmdline.vectorize_by_line(),
+				cmdline.do_cse(),
+				"t0g12",
+				std::cout);
     return 0;
   }
 };

@@ -78,6 +78,14 @@ namespace libint2 {
       logic_error(a) {}
   };
   
+  /** This exception used to indicate some error in the user-provided input */
+  class InputError : public std::logic_error {
+
+    public:
+    InputError(const std::string& a) :
+      logic_error(a) {}
+  };
+  
 
 };
 
