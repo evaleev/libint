@@ -1,6 +1,6 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include"mem_man.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <libderiv/mem_man.h>
 #define MAXALLOC 10000
 
 int free_block[MAXALLOC];   /* Marks of free-occupied blocks */

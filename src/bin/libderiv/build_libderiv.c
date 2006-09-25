@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <libderiv/build_libderiv.h>
+#include <constants.h>
 #include <libint_config.h>
 
 FILE *outfile, *d1hrr_header,
@@ -32,9 +33,6 @@ int main()
   int class_size;
   int num_subfunctions;
   int max_class_size = 785;
-  const int io[] = {0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153};
-  const char am_letter[] = "0pdfghiklmnoqrtuvwxyz";
-
 
   /*-------------------------------
     Initialize files and libraries

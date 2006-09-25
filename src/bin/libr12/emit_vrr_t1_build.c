@@ -1,13 +1,13 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "build_libr12.h"
+#include <libr12/build_libr12.h>
+#include <constants.h>
 
 extern FILE *outfile, *vrr_header;
 extern Libr12Params_t Params;
 
 extern void punt(char *);
-static int hash(int a[2][3], int b[2]);
 static void declare_localv(int la, FILE *code);
 static void define_localv(int la, FILE *code);
 
@@ -36,10 +36,6 @@ void emit_vrr_t1_build()
   int k1max;
   int split,num_subfunctions,subbatch_length;
   int curr_count,curr_subfunction;
-  static int io[] = {0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153};
-  const char am_letter[] = "0pdfghiklmnoqrtuvwxyz";
-  static const char *number[] = {"zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven",
-			       "twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty"};
   static const char *k1_suff = "zboz";
   char *code_name;
   char *function_name;
@@ -221,33 +217,6 @@ void emit_vrr_t1_build()
   free(code_name);
 
   return;
-}
-
-
-/*----------------------------------------------------------------------------------
-  hash(a,b) returns a number of the (a[0] 0 | a[1] 0) type integral within a class.
-  a contains x y and z exponents of functions on centers A and C, and b contains
-  their angular momenta
- ----------------------------------------------------------------------------------*/
-
-int hash(a, b)
-  int a[2][3];
-  int b[2];
-{
-  int c[2] = {0,0};
-  int i;
-  static int io[] = {0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153};
-
-  if(b[0]){
-    i=b[0]-a[0][0];
-    c[0]=i+io[i]-a[0][1];
-    }
-  if(b[1]){
-    i=b[1]-a[1][0];
-    c[1]=i+io[i]-a[1][1];
-    }
-
-  return c[0]*io[b[1]+1]+c[1];
 }
 
 

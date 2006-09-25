@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
-#include "build_libderiv.h"
+#include <libderiv/build_libderiv.h>
+#include <constants.h>
 
 extern FILE *outfile, *libint_src, *d1hrr_header;
 extern LibderivParams_t Params;
@@ -28,8 +29,6 @@ void emit_d1hrr_build_macro()
   int curr_count,curr_subfunction;
   int current_highest_am, to_inline;
   int errcod;
-  static int io[] = {1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153};
-  static const char am_letter[] = "0pdfghiklmnoqrtuvwxyz";
   char code_name[19];
   char function_name[17];
   
@@ -84,7 +83,7 @@ void emit_d1hrr_build_macro()
 	for(q = 0; q <= p; q++){
 	  cy = p - q;
 	  cz = q;
-	  k_i1 = io[p]-p+q-1;
+	  k_i1 = io(p)-p+q-1;
 	  
 	  for(r = 0; r <= am_in[1]; r++){
 	    dx = am_in[1] - r;
@@ -94,19 +93,19 @@ void emit_d1hrr_build_macro()
 
 	      if (dx) { /* build along x */
 		k_i0 = k_i1;
-		l = io[r]-r+s-1;
+		l = io(r)-r+s-1;
 		fprintf(code, "    *(target++) = II0[%d] + CD0*II1[%d] + c2*II2[%d] - c5*II5[%d];\\\n",
 			k_i0*nl+l,k_i1*nl+l,k_i1*nl+l,k_i1*nl+l);
 	      }
 	      else if (dy) { /* build along y */
-		k_i0 = io[p+1]-p+q-2;
-		l = io[r-1]-r+s;
+		k_i0 = io(p+1)-p+q-2;
+		l = io(r-1)-r+s;
 		fprintf(code, "    *(target++) = II0[%d] + CD1*II1[%d] + c3*II3[%d] - c6*II6[%d];\\\n",
 			k_i0*nl+l,k_i1*nl+l,k_i1*nl+l,k_i1*nl+l);
 	      }
 	      else { /* build along z */
-		k_i0 = io[p+1]-p+q-1;
-		l = io[r-1]-r+s-1;
+		k_i0 = io(p+1)-p+q-1;
+		l = io(r-1)-r+s-1;
 		fprintf(code, "    *(target++) = II0[%d] + CD2*II1[%d] + c4*II4[%d] - c7*II7[%d];\\\n",
 			k_i0*nl+l,k_i1*nl+l,k_i1*nl+l,k_i1*nl+l);
 	      }
@@ -154,7 +153,7 @@ void emit_d1hrr_build_macro()
 	for(q = 0; q <= p; q++){
 	  ay = p - q;
 	  az = q;
-	  i_i1 = io[p]-p+q-1;
+	  i_i1 = io(p)-p+q-1;
 	  
 	  for(r = 0; r <= am_in[1]; r++){
 	    bx = am_in[1] - r;
@@ -164,7 +163,7 @@ void emit_d1hrr_build_macro()
 
 	      if (bx) { /* build along x */
 		i_i0 = i_i1;
-		j = io[r]-r+s-1;
+		j = io(r)-r+s-1;
 		if (i_i0*nj+j)
 		  fprintf(code,"  i0 = I0 + %d*cd_num;\\\n",i_i0*nj+j);
 		else
@@ -185,8 +184,8 @@ void emit_d1hrr_build_macro()
 		fprintf(code,"    *(target++) = *(i0++) + AB0*(*(i1++)) + c2*(*(i2++)) - c5*(*(i5++));\\\n");
 	      }
 	      else if (by) { /* build along y */
-		i_i0 = io[p+1]-p+q-2;
-		j = io[r-1]-r+s;
+		i_i0 = io(p+1)-p+q-2;
+		j = io(r-1)-r+s;
 		if (i_i0*nj+j)
 		  fprintf(code,"  i0 = I0 + %d*cd_num;\\\n",i_i0*nj+j);
 		else
@@ -207,8 +206,8 @@ void emit_d1hrr_build_macro()
 		fprintf(code,"    *(target++) = *(i0++) + AB1*(*(i1++)) + c3*(*(i3++)) - c6*(*(i6++));\\\n");
 	      }
 	      else { /* build along z */
-		i_i0 = io[p+1]-p+q-1;
-		j = io[r-1]-r+s-1;
+		i_i0 = io(p+1)-p+q-1;
+		j = io(r-1)-r+s-1;
 		if (i_i0*nj+j)
 		  fprintf(code,"  i0 = I0 + %d*cd_num;\\\n",i_i0*nj+j);
 		else

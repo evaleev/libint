@@ -5,9 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mem_man.h"
-#include "build_libint.h"
-#define MAXNODE 3000
+#include <libint/mem_man.h>
+#include <libint/build_libint.h>
+#include <constants.h>
+#define MAXNODE 20000
 #define NONODE -1000000
 #define SSSSNODE -1111
 
@@ -87,7 +88,6 @@ void emit_order()
   int max_stack_size = 0;
   int num_vrr_targets;
   int target_vrr_nodes[MAX_AM*MAX_AM];
-  const char am_letter[] = "0pdfghiklmnoqrtuvwxyz";
   char hrr_code_name[] = "hrr_order_0000.cc";
   char hrr_function_name[] = "hrr_order_0000";
   char vrr_code_name[] = "vrr_order_0000.cc";
@@ -95,7 +95,6 @@ void emit_order()
   char inline_vrr_list_name[] = "inline_vrr_order_0000.h";
   char inline_hrr_list_name[] = "inline_hrr_order_0000.h";
   FILE *hrr_code, *vrr_code, *inline_vrr_list, *inline_hrr_list;
-  static int io[] = {1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210};
 
   for(la=0;la<=new_am;la++) {
     lb_max = la/2;
@@ -257,7 +256,7 @@ void emit_order()
 		  am_letter[hrr_nodes[j].C], am_letter[hrr_nodes[j].D], hrr_nodes[j].pointer,
 		  hrr_nodes[hrr_nodes[j].children[0]].pointer);
 	  fprintf(hrr_code, "int_stack+%d,%d);\n", hrr_nodes[hrr_nodes[j].children[1]].pointer,
-		  io[hrr_nodes[j].A]*io[hrr_nodes[j].B]);
+		  io(hrr_nodes[j].A)*io(hrr_nodes[j].B));
 	  /* Add this function to the list of inlined functions if necessary */
 	  max_node_am = (hrr_nodes[j].C > hrr_nodes[j].D) ? hrr_nodes[j].C : hrr_nodes[j].D;
 	  if (to_inline_hrr && max_node_am <= Params.max_am_to_inline_hrr_worker)
@@ -268,7 +267,7 @@ void emit_order()
 		  am_letter[hrr_nodes[j].A], am_letter[hrr_nodes[j].B], hrr_nodes[j].pointer,
 		  hrr_nodes[hrr_nodes[j].children[0]].pointer);
 	  fprintf(hrr_code, "int_stack+%d,%d);\n", hrr_nodes[hrr_nodes[j].children[1]].pointer,
-		  io[hrr_nodes[j].C]*io[hrr_nodes[j].D]);
+		  io(hrr_nodes[j].C)*io(hrr_nodes[j].D));
 	  /* Add this function to the list of inlined functions if necessary */
 	  max_node_am = (hrr_nodes[j].A > hrr_nodes[j].B) ? hrr_nodes[j].A : hrr_nodes[j].B;
 	  if (to_inline_hrr && max_node_am <= Params.max_am_to_inline_hrr_worker)
@@ -413,7 +412,6 @@ int mk_hrr_node(hrr_class node, hrr_class *allnodes, int new)
   int thisnode;
   int rlink, llink;
   int made = 0;
-  static int io[] = {1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210};
 
   /* Search for the parent node on stack
      If it's not there - we'll add it to the end of the stack */
@@ -439,7 +437,7 @@ int mk_hrr_node(hrr_class node, hrr_class *allnodes, int new)
     memset(allnodes[thisnode].parents,0,5*sizeof(int));
     allnodes[thisnode].children[0] = NONODE;
     allnodes[thisnode].children[1] = NONODE;
-    allnodes[thisnode].size = io[node.A]*io[node.B]*io[node.C]*io[node.D];
+    allnodes[thisnode].size = io(node.A)*io(node.B)*io(node.C)*io(node.D);
     allnodes[thisnode].target = 0;
     /* We just added a node ..*/
     last_hrr_node++;
@@ -505,7 +503,6 @@ int mk_vrr_node(vrr_class node, vrr_class *allnodes, int new)
   int thisnode;
   int rlink, llink;
   int made = 0;
-  static int io[] = {1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210};
 
   /* Are there any children? */
   if(node.A+node.C == 0) return (-1)*node.m;
@@ -537,7 +534,7 @@ int mk_vrr_node(vrr_class node, vrr_class *allnodes, int new)
     allnodes[thisnode].children[2] = NONODE;
     allnodes[thisnode].children[3] = NONODE;
     allnodes[thisnode].children[4] = NONODE;
-    allnodes[thisnode].size = io[node.A]*io[node.C];
+    allnodes[thisnode].size = io(node.A)*io(node.C);
     /* We just added a node ..*/
     last_vrr_node++;
     /* If stack is overfull - exit */
@@ -687,7 +684,6 @@ int alloc_mem_hrr(hrr_class *nodes)
   int size;
   int child;
   int free_it;
-  static int io[] = {1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210};
 
   j = first_hrr_to_compute;
   do{
@@ -727,7 +723,6 @@ int alloc_mem_vrr(vrr_class *nodes)
   int size;
   int child;
   int free_it;
-  static int io[] = {1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210};
 
   /* Mark all nodes as not computed */
   for(i=0; i<last_vrr_node; i++)
