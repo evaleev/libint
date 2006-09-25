@@ -319,13 +319,13 @@ int emit_grt_order()
 	    if (hrr_nodes[j].grt_type == 3)
 	      fprintf(hrr_code, " %d, %d);\n", hrr_nodes[j].A,hrr_nodes[j].B);
 	    else
-	      fprintf(hrr_code, " %d);\n", io(hrr_nodes[j].A)*io(hrr_nodes[j].B));
+	      fprintf(hrr_code, " %d);\n", io(1+hrr_nodes[j].A)*io(1+hrr_nodes[j].B));
 	  }
 	  else if (hrr_nodes[j].B != 0) {
 	    if (hrr_nodes[j].grt_type == 2)
 	      fprintf(hrr_code, " %d, %d);\n", hrr_nodes[j].C,hrr_nodes[j].D);
 	    else
-	      fprintf(hrr_code, " %d);\n", io(hrr_nodes[j].C)*io(hrr_nodes[j].D));
+	      fprintf(hrr_code, " %d);\n", io(1+hrr_nodes[j].C)*io(1+hrr_nodes[j].D));
 	  }
 	}
 	
@@ -590,7 +590,7 @@ int mk_hrr_node(class node, class *allnodes, int new)
     memset(allnodes[thisnode].parents,0,NUMPARENTS*sizeof(int));
     for(i=0;i<NUMCHILDREN;i++)
       allnodes[thisnode].children[i] = NONODE;
-    allnodes[thisnode].size = io(node.A)*io(node.B)*io(node.C)*io(node.D);
+    allnodes[thisnode].size = io(1+node.A)*io(1+node.B)*io(1+node.C)*io(1+node.D);
     allnodes[thisnode].target = 0;
     /* We just added a node ..*/
     last_hrr_node++;
@@ -746,7 +746,7 @@ int mk_vrr_node(class node, class *allnodes, int new)
     memset(allnodes[thisnode].parents,0,NUMPARENTS*sizeof(int));
     for(i=0;i<NUMCHILDREN;i++)
       allnodes[thisnode].children[i] = NONODE;
-    allnodes[thisnode].size = io(node.A)*io(node.B)*io(node.C)*io(node.D);
+    allnodes[thisnode].size = io(1+node.A)*io(1+node.B)*io(1+node.C)*io(1+node.D);
     allnodes[thisnode].llink = -1;
     allnodes[thisnode].rlink = -1;
     /* We just added a node ..*/

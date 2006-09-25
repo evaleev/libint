@@ -256,7 +256,7 @@ void emit_order()
 		  am_letter[hrr_nodes[j].C], am_letter[hrr_nodes[j].D], hrr_nodes[j].pointer,
 		  hrr_nodes[hrr_nodes[j].children[0]].pointer);
 	  fprintf(hrr_code, "int_stack+%d,%d);\n", hrr_nodes[hrr_nodes[j].children[1]].pointer,
-		  io(hrr_nodes[j].A)*io(hrr_nodes[j].B));
+		  io(1+hrr_nodes[j].A)*io(1+hrr_nodes[j].B));
 	  /* Add this function to the list of inlined functions if necessary */
 	  max_node_am = (hrr_nodes[j].C > hrr_nodes[j].D) ? hrr_nodes[j].C : hrr_nodes[j].D;
 	  if (to_inline_hrr && max_node_am <= Params.max_am_to_inline_hrr_worker)
@@ -267,7 +267,7 @@ void emit_order()
 		  am_letter[hrr_nodes[j].A], am_letter[hrr_nodes[j].B], hrr_nodes[j].pointer,
 		  hrr_nodes[hrr_nodes[j].children[0]].pointer);
 	  fprintf(hrr_code, "int_stack+%d,%d);\n", hrr_nodes[hrr_nodes[j].children[1]].pointer,
-		  io(hrr_nodes[j].C)*io(hrr_nodes[j].D));
+		  io(1+hrr_nodes[j].C)*io(1+hrr_nodes[j].D));
 	  /* Add this function to the list of inlined functions if necessary */
 	  max_node_am = (hrr_nodes[j].A > hrr_nodes[j].B) ? hrr_nodes[j].A : hrr_nodes[j].B;
 	  if (to_inline_hrr && max_node_am <= Params.max_am_to_inline_hrr_worker)
@@ -437,7 +437,7 @@ int mk_hrr_node(hrr_class node, hrr_class *allnodes, int new)
     memset(allnodes[thisnode].parents,0,5*sizeof(int));
     allnodes[thisnode].children[0] = NONODE;
     allnodes[thisnode].children[1] = NONODE;
-    allnodes[thisnode].size = io(node.A)*io(node.B)*io(node.C)*io(node.D);
+    allnodes[thisnode].size = io(1+node.A)*io(1+node.B)*io(1+node.C)*io(1+node.D);
     allnodes[thisnode].target = 0;
     /* We just added a node ..*/
     last_hrr_node++;
@@ -534,7 +534,7 @@ int mk_vrr_node(vrr_class node, vrr_class *allnodes, int new)
     allnodes[thisnode].children[2] = NONODE;
     allnodes[thisnode].children[3] = NONODE;
     allnodes[thisnode].children[4] = NONODE;
-    allnodes[thisnode].size = io(node.A)*io(node.C);
+    allnodes[thisnode].size = io(1+node.A)*io(1+node.C);
     /* We just added a node ..*/
     last_vrr_node++;
     /* If stack is overfull - exit */

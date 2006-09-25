@@ -117,7 +117,7 @@ if test $withval -le 0; then
 else
   LIBINT_MAX_AM=$withval
 fi
-if test $LIBINT_MAX_AM -ge 8; then
+if test $LIBINT_MAX_AM -ge 11; then
   AC_MSG_ERROR([Value for --with-libint-max-am too high ($withval). Are you sure you know what you are doing?])
 fi
 )

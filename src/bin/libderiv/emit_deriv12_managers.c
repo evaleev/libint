@@ -15,8 +15,6 @@
 #define NONODE -1000000
 #define NUMPARENTS 40
 
-#define INDEX(a,b) (((a) > (b)) ? io((a)) + (b) : io((b)) + (a))
-
 static int last_hrr_node = 0;      /* Global pointer to the last node on the HRR stack */
 static int last_vrr_node = 0;      /* Global pointer to the last node on the VRR stack */
 
@@ -419,9 +417,9 @@ void emit_deriv12_managers()
 	  
 	    
 	  if (hrr_nodes[j].B == 0 && hrr_nodes[j].D != 0)
-	    fprintf(hrr_code, "%d);\n", io(hrr_nodes[j].A)*io(hrr_nodes[j].B));
+	    fprintf(hrr_code, "%d);\n", io(1+hrr_nodes[j].A)*io(1+hrr_nodes[j].B));
 	  else if (hrr_nodes[j].B != 0)
-	    fprintf(hrr_code, "%d);\n", io(hrr_nodes[j].C)*io(hrr_nodes[j].D));
+	    fprintf(hrr_code, "%d);\n", io(1+hrr_nodes[j].C)*io(1+hrr_nodes[j].D));
 
 	}
 	
@@ -431,9 +429,7 @@ void emit_deriv12_managers()
 	  if (hrr_nodes[j].deriv_lvl == 1)
 	    fprintf(hrr_code,"     Libderiv->ABCD[%d] = int_stack + %d;\n",di,hrr_nodes[j].pointer);
 	  else if (hrr_nodes[j].deriv_lvl == 2)
-	    fprintf(hrr_code,"     Libderiv->ABCD[%d] = int_stack + %d;\n",12+di*12+dj
-		    /*INDEX(di,dj)*/
-,hrr_nodes[j].pointer);
+	    fprintf(hrr_code,"     Libderiv->ABCD[%d] = int_stack + %d;\n",12+di*12+dj,hrr_nodes[j].pointer);
 	  else
 	    punt("deriv_lvl = 3\n");
 	}
@@ -546,7 +542,7 @@ void emit_deriv12_managers()
 	  switch (di) {
 	  case 0: case 1: case 2:
 	      fprintf(vrr_code, "A%c_%c(Data,%d,",cart_comp[di],am_letter[vrr_nodes[j].A],
-		      io(vrr_nodes[j].B)*io(vrr_nodes[j].C)*io(vrr_nodes[j].D));
+		      io(1+vrr_nodes[j].B)*io(1+vrr_nodes[j].C)*io(1+vrr_nodes[j].D));
 	      /* Add this function to the list of inlined functions if necessary */
 	      max_node_am = vrr_nodes[j].A;
 	      if (to_inline_deriv && max_node_am <= Params.max_am_to_inline_deriv_worker)
@@ -556,7 +552,7 @@ void emit_deriv12_managers()
 
 	  case 3: case 4: case 5:
 	      fprintf(vrr_code, "B%c_%c(Data,%d,%d,",cart_comp[di-3],am_letter[vrr_nodes[j].B],
-		      io(vrr_nodes[j].A),io(vrr_nodes[j].C)*io(vrr_nodes[j].D));
+		      io(1+vrr_nodes[j].A),io(1+vrr_nodes[j].C)*io(1+vrr_nodes[j].D));
 	      /* Add this function to the list of inlined functions if necessary */
 	      max_node_am = vrr_nodes[j].B;
 	      if (to_inline_deriv && max_node_am <= Params.max_am_to_inline_deriv_worker)
@@ -566,7 +562,7 @@ void emit_deriv12_managers()
 
 	  case 6: case 7: case 8:
 	      fprintf(vrr_code, "C%c_%c(Data,%d,%d,",cart_comp[di-6],am_letter[vrr_nodes[j].C],
-		      io(vrr_nodes[j].A)*io(vrr_nodes[j].B),io(vrr_nodes[j].D));
+		      io(1+vrr_nodes[j].A)*io(1+vrr_nodes[j].B),io(1+vrr_nodes[j].D));
 	      /* Add this function to the list of inlined functions if necessary */
 	      max_node_am = vrr_nodes[j].C;
 	      if (to_inline_deriv && max_node_am <= Params.max_am_to_inline_deriv_worker)
@@ -576,7 +572,7 @@ void emit_deriv12_managers()
 
 	  case 9: case 10: case 11:
 	      fprintf(vrr_code, "D%c_%c(Data,%d,",cart_comp[di-9],am_letter[vrr_nodes[j].D],
-		      io(vrr_nodes[j].A)*io(vrr_nodes[j].B)*io(vrr_nodes[j].C));
+		      io(1+vrr_nodes[j].A)*io(1+vrr_nodes[j].B)*io(1+vrr_nodes[j].C));
 	      /* Add this function to the list of inlined functions if necessary */
 	      max_node_am = vrr_nodes[j].D;
 	      if (to_inline_deriv && max_node_am <= Params.max_am_to_inline_deriv_worker)
@@ -603,9 +599,9 @@ void emit_deriv12_managers()
 		    vrr_nodes[vrr_nodes[j].children[0]].pointer);
 	    if (vrr_nodes[j].children[1] > 0)
 	      fprintf(vrr_code, "dvrr_stack+%d,%d);\n\n", vrr_nodes[vrr_nodes[j].children[1]].pointer,
-		      io(vrr_nodes[j].A)*io(vrr_nodes[j].B));
+		      io(1+vrr_nodes[j].A)*io(1+vrr_nodes[j].B));
 	    else
-	      fprintf(vrr_code, "Data->F,%d);\n\n", io(vrr_nodes[j].A)*io(vrr_nodes[j].B));
+	      fprintf(vrr_code, "Data->F,%d);\n\n", io(1+vrr_nodes[j].A)*io(1+vrr_nodes[j].B));
 	    /* Add this function to the list of inlined functions if necessary */
 	    max_node_am = (vrr_nodes[j].C > vrr_nodes[j].D) ? vrr_nodes[j].C : vrr_nodes[j].D;
 	    if (to_inline_hrr && max_node_am <= Params.max_am_to_inline_hrr_worker)
@@ -617,9 +613,9 @@ void emit_deriv12_managers()
 		    vrr_nodes[vrr_nodes[j].children[0]].pointer);
 	    if (vrr_nodes[j].children[1] > 0)
 	      fprintf(vrr_code, "dvrr_stack+%d,%d);\n\n", vrr_nodes[vrr_nodes[j].children[1]].pointer,
-		      io(vrr_nodes[j].C)*io(vrr_nodes[j].D));
+		      io(1+vrr_nodes[j].C)*io(1+vrr_nodes[j].D));
 	    else
-	      fprintf(vrr_code, "Data->F,%d);\n", io(vrr_nodes[j].C)*io(vrr_nodes[j].D));
+	      fprintf(vrr_code, "Data->F,%d);\n", io(1+vrr_nodes[j].C)*io(1+vrr_nodes[j].D));
 	    /* Add this function to the list of inlined functions if necessary */
 	    max_node_am = (vrr_nodes[j].A > vrr_nodes[j].B) ? vrr_nodes[j].A : vrr_nodes[j].B;
 	    if (to_inline_hrr && max_node_am <= Params.max_am_to_inline_hrr_worker)
@@ -775,7 +771,7 @@ static int mk_dhrr_node(class node, class *allnodes, int new)
     allnodes[thisnode].children[5] = NONODE;
     allnodes[thisnode].children[6] = NONODE;
     allnodes[thisnode].children[7] = NONODE;
-    allnodes[thisnode].size = io(node.A)*io(node.B)*io(node.C)*io(node.D);
+    allnodes[thisnode].size = io(1+node.A)*io(1+node.B)*io(1+node.C)*io(1+node.D);
     allnodes[thisnode].target = 0;
     /* We just added a node ..*/
     last_hrr_node++;
@@ -967,7 +963,7 @@ static int mk_deriv_node(class node, class *allnodes, int new)
     allnodes[thisnode].children[2] = NONODE;
     allnodes[thisnode].children[3] = NONODE;
     allnodes[thisnode].children[4] = NONODE;
-    allnodes[thisnode].size = io(node.A)*io(node.B)*io(node.C)*io(node.D);
+    allnodes[thisnode].size = io(1+node.A)*io(1+node.B)*io(1+node.C)*io(1+node.D);
     /* We just added a node ..*/
     last_vrr_node++;
     /* If stack is overfull - exit */

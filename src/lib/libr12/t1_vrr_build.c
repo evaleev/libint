@@ -16,7 +16,6 @@ REALTYPE *t1_vrr_build_xxxx(int am_in[2], prim_data *Data, contr_data *ShellData
   int xyz;
   int la, lc;
   REALTYPE AC[3], U1[3], U0, lzboz, r12t1int;
-  static int io[] = {0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153};
 
   la = am_in[0];
   lc = am_in[1];
@@ -97,7 +96,7 @@ int hash(a, b)
 {
   int c[2] = {0,0};
   int i;
-  static int io[] = {0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153};
+  static int io[] = {0,1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210,231,253,276,300,325,351,378,406,435,465};
 
   if(b[0]){
     i=b[0]-a[0][0];
