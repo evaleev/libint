@@ -1,12 +1,11 @@
+/*
+  Define intrinsic data types here
+*/
+
+#ifndef _libint2_include_libint2intrinsictypes_h_
+#define _libint2_include_libint2intrinsictypes_h_
 
 #include <libint2_config.h>
-
-#ifndef _libint2_include_libint2types_h_
-#define _libint2_include_libint2types_h_
-
-/*
-  Define LIBINT2 data types here
-*/
 
 /* default LIBINT2 floating-point type is double, but user can specify a different type to use with configure */
 #ifdef LIBINT2_USER_DEFINED_FLOAT

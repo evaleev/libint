@@ -5,8 +5,9 @@
   is low-level C++ and can be used from other languages.
 
   Edward Valeev
-  Atlanta/Oak Ridge
-  December 2004.
+
+  Atlanta/Oak Ridge (December 2004 - August 2006)
+  Blacksburg (August 2006 - ... )
   */
 
 #define DO_TEST_ONLY 0
@@ -19,6 +20,7 @@
 #include <default_params.h>
 #include <rr.h>
 #include <dg.h>
+#include <dg.templ.h>
 #include <typelist.h>
 #include <integral.h>
 #include <iter.h>
@@ -30,6 +32,8 @@
 #include <r12kg12_11_11.h>
 #include <tig12_11_11.h>
 #include <graph_registry.h>
+#include <task.h>
+#include <extract.h>
 
 using namespace std;
 using namespace libint2;
@@ -111,16 +115,15 @@ void try_main (int argc, char* argv[])
   
   // initialize code context to produce library API
   SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
-  // make a list of computation labels
-  Libint2Iface::Comps comps;
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
 #ifdef INCLUDE_ERI
-  comps.push_back("eri");
+  taskmgr.add("eri");
 #endif
 #ifdef INCLUDE_G12
-  comps.push_back("r12kg12");
+  taskmgr.add("r12kg12");
 #endif
   // initialize object to generate interface
-  SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext,comps));
+  SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext));
   
   print_header(os);
   print_config(os);
@@ -215,7 +218,9 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
     shells.push_back(new CGShell(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
-  
+
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  taskmgr.current("eri");
   iface->to_params(iface->define("MAX_AM_ERI",lmax));
   
   //
@@ -273,8 +278,8 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
           
           // update max stack size
-          LibraryParameters& lparams = LibraryParameters::get_library_params();
-          lparams.max_stack_size(memman->max_memory_used());
+          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
+          tparams->max_stack_size(memman->max_memory_used());
 
 	  // set pointer to the top-level evaluator function
           ostringstream oss;
@@ -287,6 +292,25 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           oss.str("");
           oss << "#include <" << decl_filename << ">" << endl;
           iface->to_int_iface(oss.str());
+
+	  // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
+	  if (la == lmax &&
+	      lb == lmax &&
+	      lc == lmax &&
+	      ld == lmax) {
+
+	    // extractor
+	    SafePtr<ExtractPrecomputedLabels> extractor(new ExtractPrecomputedLabels);
+	    dg_xxxx->foreach(*extractor);
+	    const ExtractPrecomputedLabels::Labels& labels = extractor->labels();
+	    // print out the labels
+	    std::cout << "Recovered labels from DirectedGraph for " << abcd->label() << std::endl;
+	    typedef ExtractPrecomputedLabels::Labels::const_iterator citer;
+	    citer end = labels.end();
+	    for(citer t=labels.begin(); t!=end; ++t)
+	      std::cout << *t << std::endl;
+
+	  }
 
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
@@ -313,6 +337,8 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   }
   ImplicitDimensions::set_default_dims(cparams);
   
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  taskmgr.current("r12kg12");
   iface->to_params(iface->define("MAX_AM_R12kG12",lmax));
   
   //
@@ -422,8 +448,8 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
           
           // update max stack size
-          LibraryParameters& lparams = LibraryParameters::get_library_params();
-          lparams.max_stack_size(memman->max_memory_used());
+          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
+          tparams->max_stack_size(memman->max_memory_used());
 
           ostringstream oss;
           oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_r12kg12[" << la << "][" << lb << "][" << lc << "]["
@@ -459,6 +485,8 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
   }
   ImplicitDimensions::set_default_dims(cparams);
   
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  taskmgr.current("r12kg12");
   iface->to_params(iface->define("MAX_AM_R12kG12",lmax));
   
   //
@@ -560,8 +588,8 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
           
           // update max stack size
-          LibraryParameters& lparams = LibraryParameters::get_library_params();
-          lparams.max_stack_size(memman->max_memory_used());
+          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
+          tparams->max_stack_size(memman->max_memory_used());
           
           ostringstream oss;
           oss << "  libint2_build_r12kg12[" << la << "][" << lb << "][" << lc << "]["

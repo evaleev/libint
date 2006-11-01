@@ -55,18 +55,11 @@ CompilationParameters::print(std::ostream& os) const
 
 //////////
 
-LibraryParameters::LibraryParameters() :
+TaskParameters::TaskParameters() :
   max_stack_size_(1), max_vector_stack_size_(1),
   max_hrr_hsrank_(1), max_hrr_lsrank_(1)
 {
 }
-
-LibraryParameters&
-LibraryParameters::get_library_params() {
-  return LP_obj_;
-}
-
-LibraryParameters LibraryParameters::LP_obj_;
 
 //////////
 

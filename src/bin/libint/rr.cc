@@ -5,6 +5,7 @@
 #include <strategy.h>
 #include <code.h>
 #include <graph_registry.h>
+#include <extract.h>
 
 using namespace libint2;
 
@@ -53,8 +54,20 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   dg->generate_code(context,memman,localdims,symbols,funcname,decl,def);
   
   // update max stack size
-  LibraryParameters& lparams = LibraryParameters::get_library_params();
-  lparams.max_vector_stack_size(memman->max_memory_used());
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  taskmgr.current().params()->max_vector_stack_size(memman->max_memory_used());
+
+  // extract all precomputed quantities -- these will be members of the evaluator structure
+  // extractor
+  SafePtr<ExtractPrecomputedLabels> extractor(new ExtractPrecomputedLabels);
+  dg->foreach(*extractor);
+  const ExtractPrecomputedLabels::Labels& labels = extractor->labels();
+  // print out the labels
+  std::cout << "Recovered labels from DirectedGraph for " << label() << std::endl;
+  typedef ExtractPrecomputedLabels::Labels::const_iterator citer;
+  citer end = labels.end();
+  for(citer t=labels.begin(); t!=end; ++t)
+    std::cout << *t << std::endl;
   
   dg->reset();
 }

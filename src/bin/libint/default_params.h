@@ -11,7 +11,8 @@
 */
 
 namespace libint2 {
-  
+
+  /// These are the parameters received by the compiler
   class CompilationParameters {
     public:
     /// Use default parameters
@@ -203,13 +204,14 @@ namespace libint2 {
     std::string realtype_;
   };
   
-  /** The class maintains various parameters that are computed in the process of compilation
-      (max stack size, etc.). Obviously, this is a Singleton.
+  /** This class maintains various parameters for each task type
+      which can only be determined during the source generation
+      (max stack size, etc.).
     */
-  class LibraryParameters {
+  class TaskParameters {
     public:
-    static LibraryParameters& get_library_params();
-    ~LibraryParameters() {}
+    TaskParameters();
+    ~TaskParameters() {}
     
     /// returns max stack size
     unsigned int max_stack_size() const {
@@ -260,16 +262,13 @@ namespace libint2 {
     }
     
     private:
-    LibraryParameters();
-    
     unsigned int max_stack_size_;
     unsigned int max_vector_stack_size_;
     unsigned int max_hrr_hsrank_;
     unsigned int max_hrr_lsrank_;
-    
-    static LibraryParameters LP_obj_;
   };
-  
+
+  /// Static parameters
   struct StaticDefinitions {
     /// De facto am limit
     static const unsigned int num_am_letters = 22;

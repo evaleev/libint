@@ -111,6 +111,10 @@ namespace libint2 {
     template <DGVertexMethodPtr method>
       void apply_at(const SafePtr<DGVertex>& vertex) const;
 
+    /** calls Method(v) for each v */
+    template <class Method>
+      void foreach(Method& m);
+
     /** after Strategy has been applied, simple recurrence relations need to be
         optimized away. optimize_rr_out() will replace all simple recurrence relations
         with code representing them.

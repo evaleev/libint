@@ -9,7 +9,10 @@
 \newcommand{\libderiv}{{\tt libderiv}}
 \newcommand{\librij}{{\tt libr12}}
 
-\newcommand{\libinth}{{\tt libint.h}}
+\newcommand{\libinth}{{\tt libint2.h}}
+\newcommand{\libinttypesh}{{\tt libint2\_types.h}}
+\newcommand{\libintparamsh}{{\tt libint2\_params.h}}
+\newcommand{\libintifaceh}{{\tt libint2\_iface.h}}
 \newcommand{\libderivh}{{\tt libderiv.h}}
 \newcommand{\librijh}{{\tt libr12.h}}
 

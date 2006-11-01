@@ -133,8 +133,7 @@ namespace libint2 {
       if (GenAllCode) {
 	// initialize code context to produce library API
 	SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
-	// make a list of computation labels
-	Libint2Iface::Comps comps;
+	LibraryTaskManager::Instance().add(complabel);
 	comps.push_back(complabel);
 	// initialize object to generate interface
 	SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext,comps));
@@ -175,6 +174,7 @@ namespace libint2 {
     const unsigned int max_am = 10;
     os << "generating code to compute " << target->label() << std::endl;
 
+    LibraryTaskManager::Instance().current(complabel);
     // initialize cparams
     SafePtr<CompilationParameters> cparams(new CompilationParameters);
     cparams->max_am_eri(max_am);

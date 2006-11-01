@@ -1,4 +1,7 @@
 
+#ifndef _libint2_src_bin_libint_hrr_h_
+#define _libint2_src_bin_libint_hrr_h_
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -13,9 +16,7 @@
 #include <prefactors.h>
 #include <default_params.h>
 #include <dims.h>
-
-#ifndef _libint2_src_bin_libint_hrr_h_
-#define _libint2_src_bin_libint_hrr_h_
+#include <task.h>
 
 using namespace std;
 
@@ -487,9 +488,9 @@ namespace libint2 {
           hsr *= iter->num_iter();
         }
       }
-      // Use LibraryParameters to keep track of maximum hsr
-      LibraryParameters& lparams = LibraryParameters::get_library_params();
-      lparams.max_hrr_hsrank(hsr);
+      // Use TaskParameters to keep track of maximum hsr
+      LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+      taskmgr.current().params()->max_hrr_hsrank(hsr);
       
       // can only do a simple bra->ket or ket->bra transfer so far
       unsigned int isr = 1;
@@ -511,8 +512,8 @@ namespace libint2 {
           lsr *= iter->num_iter();
         }
       }
-      // Use LibraryParameters to keep track of maximum hsr
-      lparams.max_hrr_lsrank(lsr);
+      // Use TaskParameters to keep track of maximum hsr
+      taskmgr.current().params()->max_hrr_hsrank(hsr);
       
       if (expl_high_dim())
         os << "," << hsr;

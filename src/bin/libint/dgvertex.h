@@ -1,4 +1,7 @@
 
+#ifndef _libint2_src_bin_libint_dgvertex_h_
+#define _libint2_src_bin_libint_dgvertex_h_
+
 #include <dg.h>
 #include <drtree.h>
 #include <dgarc.h>
@@ -10,10 +13,7 @@
 #include <class_registry.h>
 #include <singl_stack.h>
 #include <hashable.h>
-#include <libint2_types.h>
-
-#ifndef _libint2_src_bin_libint_dgvertex_h_
-#define _libint2_src_bin_libint_dgvertex_h_
+#include <libint2_intrinsic_types.h>
 
 namespace libint2 {
 

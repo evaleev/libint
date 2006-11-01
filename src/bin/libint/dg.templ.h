@@ -127,7 +127,17 @@ namespace libint2 {
       for(int c=0; c<nchildren; c++)
         apply_at<method>(vertex->exit_arc(c)->dest());
     }
-    
+
+  template <class Method>
+    void
+    DirectedGraph::foreach(Method& m)
+    {
+      const int num_vertices_on_graph = first_free_;
+      for(int v=0; v<num_vertices_on_graph; v++) {
+	m(stack_[v]);
+      }
+    }
+
 };
 
 
