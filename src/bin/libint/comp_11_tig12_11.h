@@ -28,11 +28,11 @@ namespace libint2 {
   integrals of the Ti_G12 operator.
   */
   template <template <class,int> class I, class BFSet, int K>
-  class CR_11_TiG12_11 : public RecurrenceRelation,
-                         public EnableSafePtrFromThis< CR_11_TiG12_11<I,BFSet,K> >
+  class CR_11_TiG12_11 : public RecurrenceRelation
     {
 
   public:
+    typedef RecurrenceRelation ParentType;
     typedef CR_11_TiG12_11<I,BFSet,K> ThisType;
     typedef I<BFSet,K> TargetType;
     typedef R12kG12_11_11<BFSet,0> ChildType;
@@ -126,7 +126,12 @@ namespace libint2 {
       if (TrivialBFSet<F>::result)
         return false;
       SafePtr<RRStack> rrstack = RRStack::Instance();
-      SafePtr<ThisType> this_ptr = const_pointer_cast<ThisType,const ThisType>(EnableSafePtrFromThis<ThisType>::SafePtr_from_this());
+      SafePtr<ThisType> this_ptr =
+	const_pointer_cast<ThisType,const ThisType>(
+	  static_pointer_cast<const ThisType, const ParentType>(
+	    EnableSafePtrFromThis<ParentType>::SafePtr_from_this()
+	  )
+	);
       rrstack->find(this_ptr);
       return true;
     }
@@ -326,7 +331,7 @@ namespace libint2 {
       ostringstream os;
       os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
          // First argument is the library object
-         << "(libint, "
+         << "(inteval, "
          // Second is the target
          << context->value_to_pointer(rr_target()->symbol());
       // then come children

@@ -190,7 +190,7 @@ CppCodeContext::std_function_header() const
 {
   ostringstream oss;
   if(vectorize_) {
-    oss << "const unsigned int veclength = libint->veclength;\n";
+    oss << "const int veclen = inteval->veclen;\n";
   }
   return oss.str();
 }
@@ -212,6 +212,18 @@ CppCodeContext::declare(const std::string& type,
   ostringstream oss;
   
   oss << type << " " << name << end_of_stat() << endl;
+
+  return oss.str();
+}
+
+std::string
+CppCodeContext::declare_v(const std::string& type,
+			  const std::string& name,
+			  const std::string& nelem) const
+{
+  ostringstream oss;
+  
+  oss << type << " " << name << "[" << nelem << "]" << end_of_stat() << endl;
 
   return oss.str();
 }
@@ -361,7 +373,7 @@ CppCodeContext::symbol_to_pointer(const std::string& symbol)
   
   // if this quantity is a part of Libint_t then the symbol is a vector
   // otherwise it's a constant
-  loc = symbol.find("libint");
+  loc = symbol.find("inteval");
   if (loc != std::string::npos)
     return symbol;
   else
@@ -372,7 +384,7 @@ std::string
 CppCodeContext::start_expr() const
 {
   if (vectorize_)
-    return "for(int v=0; v<veclength; v++) {\n";
+    return "for(int v=0; v<veclen; v++) {\n";
   else
     return "";
 }
@@ -393,22 +405,60 @@ CppCodeContext::stack_address(const DGVertex::Address& a) const
 {
   ostringstream oss;
   if (vectorize_)
-    oss << "(" << a << ")*veclength";
+    oss << "(" << a << ")*veclen";
   else
     oss << a;
   return oss.str();
 }
 
+std::string
+CppCodeContext::macro_define(const std::string& name) const
+{
+  ostringstream oss;
+  oss << "#define " << name << endl;
+  return oss.str();
+}
+
+std::string
+CppCodeContext::macro_define(const std::string& name,
+			     const std::string& value) const
+{
+  ostringstream oss;
+  oss << "#define " << name << " " << value << endl;
+  return oss.str();
+}
+
+std::string
+CppCodeContext::macro_if(const std::string& name) const
+{
+  ostringstream oss;
+  oss << "#if " << name << endl;
+  return oss.str();
+}
+
+std::string
+CppCodeContext::macro_ifdef(const std::string& name) const
+{
+  ostringstream oss;
+  oss << "#ifdef " << name << endl;
+  return oss.str();
+}
+
+std::string
+CppCodeContext::macro_endif() const
+{
+  ostringstream oss;
+  oss << "#endif" << endl;
+  return oss.str();
+}
 
 std::string
 CppCodeContext::comment(const std::string& statement) const
 {
-  const char endl_str[] = "\n";
-  const char comment_str1[] = "/// ";
-  const char comment_str2[] = "\n/// ";
-  std::string result(comment_str1);
+  std::string result("/** ");
   result += statement;
-  return replace_chars(result,endl_str,comment_str2);
+  result += " */";
+  return result;
 }
 
 std::string
@@ -485,3 +535,10 @@ CppCodeContext::ptr_fp_type() const { return "LIBINT2_REALTYPE*"; }
 std::string
 CppCodeContext::const_modifier() const { return "const "; }
 
+std::string
+CppCodeContext::inteval_type_name(const std::string& tlabel) const
+{
+  ostringstream oss;
+  oss << "Libint_" << tlabel << "_t";
+  return oss.str();
+}

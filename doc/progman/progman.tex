@@ -217,14 +217,18 @@ in the target shell of integrals.
 
 \section{Overview of \LIBINT 's API}
 
+({\bf Note}: Depending on configuration, \LIBINT\ may also support computation of other, non-ERI types of integrals. Here I will describe
+the parts of the interface which deals with ERIs only. The rest of the API is very similar to what's described here.)
+
 \LIBINT\ library is a low-level C++ code. C linking convention is adopted to enable interoperability with other languages, such as C and FORTRAN.
 For notes on how to use \LIBINT\ library from FORTRAN code, see subsection \ref{ssec:fort}.
 
 \LIBINT\ API consists of 3 major components: type definitions, function and variable prototypes, and C preprocessor macros.
 The API is described in the following header files:
 \begin{itemize}
-\item \libinth\ -- main header file defines library evaluator type ({\tt Libint\_t}) and includes other headers (not generated).
-\item \libinttypesh\ -- architecture-specific definitions for long integer types (not generated).
+\item \libinth\ -- main header file, it includes all other headers (not generated).
+\item \libintinttypesh\ -- architecture-specific definitions for long integer types (not generated).
+\item \libinttypesh\ -- definitions for the integral evaluator types (generated).
 \item \libintparamsh\ -- C preprocessor macros for library features (generated).
 \item \libintifaceh\ -- prototypes for functions and data as well as some misc macros (generated).
 \end{itemize}
@@ -276,10 +280,10 @@ void libint2_static_init();
 void libint2_static_cleanup();
 
 /* ERI-specific API */
-void libint2_init_eri(Libint_t* libint, int max_am, LIBINT2_REALTYPE* buf);
-void libint2_cleanup_eri(Libint_t* libint);
+void libint2_init_eri(Libint_eri_t* libint, int max_am, LIBINT2_REALTYPE* buf);
+void libint2_cleanup_eri(Libint_eri_t* libint);
 size_t libint2_need_memory_eri(int max_am);
-void (*libint2_build_eri[N][N][N][N])(Libint_t *);
+void (*libint2_build_eri[N][N][N][N])(Libint_eri_t *);
 \end{verbatim}
 \end{minipage}
 \end{center}
@@ -307,9 +311,9 @@ with {\tt libint2\_init\_eri}).
 where the basis set data is stored. This is because \LIBINT\ does not maintain the basis set information.
 As part of \LIBINT 's philosophy to provide the leanest possible code, the user code
 is in charge of precomputing basis set data and Boys function values and then feeding it to the evaluator object
-of type {\tt Libint\_t}.
+of type {\tt Libint\_eri\_t}.
 
-The definition of {\tt Libint\_t} is shown in Figure \ref{fig:libintt}.
+The definition of {\tt Libint\_eri\_t} is shown in Figure \ref{fig:libintt}.
 \begin{figure}
 \caption{\label{fig:libintt} ``External'' parts of the definition of the \LIBINT\ integral evaluator type. }
 \begin{center}
@@ -321,40 +325,43 @@ typedef struct {
   _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_2[VECLEN];
   _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_3[VECLEN];
   _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_4[VECLEN];
-  /* and so on until _up_20 */
+  /* and so on until 4 * LIBINT2_MAX_AM_ERI */
 
-  LIBINT2_REALTYPE oo2z[VECLEN];
-  LIBINT2_REALTYPE oo2e[VECLEN];
-  LIBINT2_REALTYPE oo2ze[VECLEN];
-  LIBINT2_REALTYPE roz[VECLEN];
-  LIBINT2_REALTYPE roe[VECLEN];
   LIBINT2_REALTYPE WP_x[VECLEN], WP_y[VECLEN], WP_z[VECLEN];
   LIBINT2_REALTYPE WQ_x[VECLEN], WQ_y[VECLEN], WQ_z[VECLEN];
   LIBINT2_REALTYPE PA_x[VECLEN], PA_y[VECLEN], PA_z[VECLEN];
   LIBINT2_REALTYPE QC_x[VECLEN], QC_y[VECLEN], QC_z[VECLEN];
   LIBINT2_REALTYPE AB_x[VECLEN], AB_y[VECLEN], AB_z[VECLEN];
   LIBINT2_REALTYPE CD_x[VECLEN], CD_y[VECLEN], CD_z[VECLEN];
+
+  LIBINT2_REALTYPE oo2z[VECLEN];
+  LIBINT2_REALTYPE oo2e[VECLEN];
+  LIBINT2_REALTYPE oo2ze[VECLEN];
+  LIBINT2_REALTYPE roz[VECLEN];
+  LIBINT2_REALTYPE roe[VECLEN];
   
-  LIBINT2_REALTYPE* targets[LIBINT2_MAX_NTARGETS];
-  unsigned int veclength;
+  LIBINT2_REALTYPE* stack;   /* used internally */
+  LIBINT2_REALTYPE* vstack;  /* used internally */
+  LIBINT2_REALTYPE* targets[LIBINT2_MAX_NTARGETS_eri];
+  int veclen;
 
   LIBINT2_UINT_LEAST64 nflops;
   int zero_out_targets;
-} Libint_t;
+} Libint_eri_t;
 \end{verbatim}
 \end{minipage}
 \end{center}
 \end{figure}
-{\tt Libint\_t} is a C structure, i.e., its members can be manipulated directly.
-This is done to allow direct manipulation of {\tt Libint\_t} from
+{\tt Libint\_eri\_t} is a C structure, i.e., its members can be manipulated directly.
+This is done to allow direct manipulation of {\tt Libint\_eri\_t} from
 Fortran and other languages.
-Note that only ERI-specific parts of the actual definition {\tt Libint\_t} are shown in Figure \ref{fig:libintt}.
+Note that only ERI-specific parts of the actual definition {\tt Libint\_eri\_t} are shown in Figure \ref{fig:libintt}.
 Currently, the same data structure is used for all types of evaluators (i.e. for ERI evaluators
-and Gaussian geminal type evaluators), i.e. {\tt Libint\_t} contains also members which are only used
+and Gaussian geminal type evaluators), i.e. {\tt Libint\_eri\_t} contains also members which are only used
 for evaluation of Gaussian geminal integrals also. In the future the evaluator types will be generated
 automatically and will be specific to each type of computation.
 
-Let's look in detail at the members of {\tt Libint\_t} which must be precomputed before
+Let's look in detail at the members of {\tt Libint\_eri\_t} which must be precomputed before
 calling the relevant {\tt libint2\_build\_eri} function:
 \begin{itemize}
 \item {\tt \_aB\_s\_\_0\_\_s\_\_1\_\_\_TwoERep\_s\_\_0\_\_s\_\_1\_\_\_Ab\_\_up\_m} --
@@ -389,7 +396,7 @@ Shell-sets of integrals contain integrals in ``row major'' order.\cite{KnuthACP}
 the number of functions in each shell is $n_a$, $n_b$, $n_c$, and $n_d$, respectively,
 then the integral $(ab|cd)$ is found at position $abcd = ( (a n_b + b) n_c + c) n_d + d$.
 
-The rest of {\tt Libint\_t} is used to control various aspects of its behavior:
+The rest of {\tt Libint\_eri\_t} is used to control various aspects of its behavior:
 \begin{itemize}
 \item {\tt veclength} is used in vectorized computation of integrals.
 \item {\tt nflops} is used to count the total number of FLOPs (the library must have been configured
@@ -443,7 +450,7 @@ void compute_eri(unsigned int am1, double alpha1, double A[3],
 
     // The ERI evaluator would normally be allocated once per calculation,
     // not once every integral shell-set
-    Libint_t erieval;
+    Libint_eri_t erieval;
     const unsigned int max_am = max(max(am1,am2),max(am3,am4));
     libint2_init_eri(&erieval,max_am,0);
 
@@ -573,36 +580,36 @@ seems to have the best support for interoperability with C programs, but its com
 Unfortunately, the most popular standard, Fortran 77, is also the most restrictive.
 
 In general, C functions can be easily called from Fortran programs, but sharing data structures
-is not straightforward. Thus the main culprit is how to modify  {\tt Libint\_t} objects
+is not straightforward. Thus the main culprit is how to modify  {\tt Libint\_eri\_t} objects
 from Fortran. Fortran 2003 provides direct support for binding C data structures to
 Fortran types. Older Fortran standards can access C data structures indirectly, via
-common blocks. An (non-working) example of how a Fortran subroutine can manipulate {\tt Libint\_t}
+common blocks. An (non-working) example of how a Fortran subroutine can manipulate {\tt Libint\_eri\_t}
 is shown in Listing 2.
 
 \begin{footnotesize}
-Listing 2: Accesing {\tt Libint\_t} structure from a Fortran code.
+Listing 2: Accesing {\tt Libint\_eri\_t} structure from a Fortran code.
 
 {\bf C++ code}
 \begin{verbatim}
-      extern Libint_t erieval;
+      extern Libint_eri_t erieval;
 \end{verbatim}
 
 {\bf Fortran code}
 \begin{verbatim}
        c assuming that LIBINT2_REALTYPE is 8-bytes long
-       real(8) _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_0(1)
-       real(8) _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_1(1)
-       real(8) _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_2(1)
-       real(8) _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_3(1)
-       real(8) _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_4(1)
+       real(8) F0(1)
+       real(8) F1(1)
+       real(8) F2(1)
+       real(8) F3(1)
+       real(8) F4(1)
        etc.
-       real(8) oo2z(1), oo2e(1), oo2ze(1), roz(1), roe(1)
        real(8) WP_x(1), WP_y(1), WP_z(1)
        real(8) WQ_x(1), WQ_y(1), WQ_z(1)
        real(8) PA_x(1), PA_y(1), PA_z(1)
        real(8) QC_x(1), QC_y(1), QC_z(1)
        real(8) AB_x(1), AB_y(1), AB_z(1)
        real(8) CD_x(1), CD_y(1), CD_z(1)
+       real(8) oo2z(1), oo2e(1), oo2ze(1), roz(1), roe(1)
        c in 64-bit environment pointers are 8-bytes long
        c assuming LIBINT2_MAX_NTARGETS is 10
        integer(8) targets(10)
@@ -610,7 +617,7 @@ Listing 2: Accesing {\tt Libint\_t} structure from a Fortran code.
        integer(8) nflops
        integer(4) zero_out_targets
        c common erieval represents the C object erieval
-       common/erieval/ _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_0(1), _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_1(1), etc.
+       common/erieval/ F0, F1, ... , WP_x, WP_y, etc.
 
        c now can access elements of erieval
        AB_x[0] = Ax[0] - Bx[0]
@@ -619,8 +626,8 @@ Listing 2: Accesing {\tt Libint\_t} structure from a Fortran code.
 \end{footnotesize}
 
 The caveat of accessing C data structures from Fortran programs is that the members of the data structure must be
-declared in the common block in the exact order in which they appear in the definition of {\tt Libint\_t}.
-The actual definition of {\tt Libint\_t} in \libinth\ must be consulted.
+declared in the common block in the exact order in which they appear in the definition of {\tt Libint\_eri\_t}.
+The actual definition of {\tt Libint\_eri\_t} in \libinttypesh\ must always be consulted.
 
 Calling \LIBINT\ functions from Fortran should be straightforward. Using the function pointer array {\tt libint2\_build\_eri} is probably
 not feasible in older Fortran standards, but perhaps can be accomplished in Fortran 2003. Actual function names must be used instead, i.e.,
@@ -635,7 +642,7 @@ _aB_p__0__d__1___TwoERep_s__0__s__1___Ab__up_0()
 where {\tt \_aB\_p\_\_0\_\_d\_\_1\_\_\_TwoERep\_s\_\_0\_\_s\_\_1\_\_\_Ab\_\_up\_0} is the name of the function
 to which {\tt libint2\_build\_eri[1][0][2][0]} points.
 
-Please send your comments on how to actually make \LIBINT\ work from Fortran.
+Please send in your comments on how to actually make \LIBINT\ work from Fortran.
 
 \bibliographystyle{unsrt}
 \bibliography{refs}

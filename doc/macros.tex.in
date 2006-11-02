@@ -10,6 +10,7 @@
 \newcommand{\librij}{{\tt libr12}}
 
 \newcommand{\libinth}{{\tt libint2.h}}
+\newcommand{\libintinttypesh}{{\tt libint2\_intrinsic\_types.h}}
 \newcommand{\libinttypesh}{{\tt libint2\_types.h}}
 \newcommand{\libintparamsh}{{\tt libint2\_params.h}}
 \newcommand{\libintifaceh}{{\tt libint2\_iface.h}}

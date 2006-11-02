@@ -213,6 +213,10 @@ namespace libint2 {
     TaskParameters();
     ~TaskParameters() {}
     
+    /// returns the max number of targets
+    unsigned int max_ntarget() const {
+      return max_ntarget_;
+    }
     /// returns max stack size
     unsigned int max_stack_size() const {
       return max_stack_size_;
@@ -235,6 +239,12 @@ namespace libint2 {
       */
     unsigned int max_hrr_lsrank() const {
       return max_hrr_lsrank_;
+    }
+    
+    /// if max_ntarget_ < ntarget then set max_ntarget_=ntarget
+    void max_ntarget(unsigned int ntarget) {
+      if (max_ntarget_ < ntarget)
+        max_ntarget_ = ntarget;
     }
     
     /// if max_stack_size_ < size then set max_stack_size_=size
@@ -262,6 +272,7 @@ namespace libint2 {
     }
     
     private:
+    unsigned int max_ntarget_;
     unsigned int max_stack_size_;
     unsigned int max_vector_stack_size_;
     unsigned int max_hrr_hsrank_;

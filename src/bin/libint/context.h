@@ -42,6 +42,12 @@ namespace libint2 {
     */
     virtual std::string declare(const std::string& type,
                                 const std::string& name) const =0;
+    /** declare_v returns a statement which declares a vector 'name' of 'nelem' elements of
+        type 'type'
+    */
+    virtual std::string declare_v(const std::string& type,
+				  const std::string& name,
+				  const std::string& nelem) const =0;
     /** decldef returns a statement which declares variable named 'name' of
         type 'type' and defines its value to be 'value'
     */
@@ -75,6 +81,17 @@ namespace libint2 {
     /// converts an address on the stack to its string representation
     virtual std::string stack_address(const DGVertex::Address& a) const =0;
 
+    /// #define a macro
+    virtual std::string macro_define(const std::string& name) const =0;
+    /// #define a macro
+    virtual std::string macro_define(const std::string& name, const std::string& value) const =0;
+    /// #if macro
+    virtual std::string macro_if(const std::string& name) const =0;
+    /// #ifdef macro
+    virtual std::string macro_ifdef(const std::string& name) const =0;
+    /// #endif
+    virtual std::string macro_endif() const =0;
+
     /// comment(statement) returns commented statement
     virtual std::string comment(const std::string& statement) const =0;
     /// open a code block
@@ -97,6 +114,8 @@ namespace libint2 {
     /// type_name<T> returns name for type T
     template <typename T>
       std::string type_name();
+    /// inteval_type_name returns the name of the evaluator type for task 'task'
+    virtual std::string inteval_type_name(const std::string& task) const =0;
 
   protected:
     /// Lone constructor takes CompilationParams
@@ -158,6 +177,10 @@ namespace libint2 {
     /// Implementation of CodeContext::declare()
     std::string declare(const std::string& type,
                         const std::string& name) const;
+    /// Implementation of CodeContext::declare_v()
+    std::string declare_v(const std::string& type,
+			  const std::string& name,
+			  const std::string& nelem) const;
     // Implementation of CodeContext::decldef()
     std::string decldef(const std::string& type,
                         const std::string& name,
@@ -181,6 +204,17 @@ namespace libint2 {
     /// Implementation of CodeContext::stack_address()
     std::string stack_address(const DGVertex::Address& a) const;
 
+    /// Implementation of CodeContext::macro_define()
+    std::string macro_define(const std::string& name) const;
+    /// Implementation of CodeContext::macro_define()
+    std::string macro_define(const std::string& name, const std::string& value) const;
+    /// Implementation of CodeContext::macro_if()
+    virtual std::string macro_if(const std::string& name) const;
+    /// Implementation of CodeContext::macro_ifdef()
+    virtual std::string macro_ifdef(const std::string& name) const;
+    /// Implementation of CodeContext::macro_endif()
+    virtual std::string macro_endif() const;
+
     /// Implementation of CodeContext::comment(statement)
     std::string comment(const std::string& statement) const;
     /// Implementation of CodeContext::open_block()
@@ -195,6 +229,8 @@ namespace libint2 {
     SafePtr<ForLoop> for_loop(std::string& varname, const SafePtr<Entity>& less_than,
                               const SafePtr<Entity>& start_at) const;
 
+    /// Implementation of CodeContext::inteval_type_name()
+    std::string inteval_type_name(const std::string& task) const;
 
   private:
     bool vectorize_;

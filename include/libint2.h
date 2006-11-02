@@ -11,6 +11,7 @@
 #include <libint2_params.h>
 #include <libint2_types.h>
 
+#if 0
 #define VECLEN LIBINT2_MAX_VECLEN
 
 /** Libint_t is the integrals evaluator object. Libint's evaluator functions take
@@ -162,6 +163,7 @@ typedef struct {
 #endif /* LIBINT2_ACCUM_INTS */
   
 } Libint_t;
+#endif
 
 /**
    these macros define bzero, copy, and inc operations:

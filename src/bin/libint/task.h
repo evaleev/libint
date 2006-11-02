@@ -4,9 +4,14 @@
 
 #include <string>
 #include <vector>
+#include <list>
+#include <map>
+#include <rr.h>
 #include <default_params.h>
 
 namespace libint2 {
+
+  class TaskExternSymbols;
 
   /**
      A key idea introduced here is that of "task". By task I mean a
@@ -20,16 +25,19 @@ namespace libint2 {
   */
   class LibraryTask {
   public:
-    LibraryTask(const std::string& l, const SafePtr<TaskParameters>& p) : label_(l), params_(p) {
+    LibraryTask(const std::string& l, const SafePtr<TaskParameters>& p, const SafePtr<TaskExternSymbols>& s) :
+      label_(l), params_(p), symbols_(s) {
     }
     ~LibraryTask() {
     }
     const std::string& label() const { return label_; }
     const SafePtr<TaskParameters>& params() const { return params_; }
+    const SafePtr<TaskExternSymbols>& symbols() const { return symbols_; }
 
   private:
     std::string label_;
     SafePtr<TaskParameters> params_;
+    SafePtr<TaskExternSymbols> symbols_;
   };
 
   /// Manages tasks. This is a Singleton.
@@ -66,6 +74,41 @@ namespace libint2 {
     int current_;
 
     static LibraryTaskManager LTM_obj_;
+  };
+
+  /** This class maintains code symbols provided by the user, e.g. recurrence relation geometric and basis set prefactors.
+      Also needs to maintain references to recurrence relations used by this task -- since their code is generated
+      at the end of the compilation, must be able to recover the symbols somehow.
+   */
+  class TaskExternSymbols {
+  public:
+    typedef std::list<std::string> SymbolList;
+    /// Recurrence relations are maintained by RRStack and characterized by their unique numeric ID
+    typedef RRStack::InstanceID RRid;
+    typedef std::list<RRid> RRList;
+
+    TaskExternSymbols() {}
+    ~TaskExternSymbols() {}
+
+    /// Add the symbols
+    void add(const SymbolList& symbols);
+    /// Return the symbols
+    const SymbolList& symbols() const;
+    /// Add the RRs
+    void add(const RRList& rrlist);
+    /// Is this RR found in the list?
+    bool find(const RRid& rrid) const;
+
+  private:
+    // Maintain symbols as a map since each symbol only needs to appear once
+    typedef std::map<std::string,bool> Symbols;
+    Symbols symbols_;
+    mutable SymbolList symbollist_; // only used to return a list
+
+    // Maintain RR list as a map, although RRStack already handles them that way -- hopefully this will speed up searching somewhat
+    typedef std::map<RRid,bool> RRmap;
+    RRmap rrmap_;
+
   };
 
 };

@@ -63,21 +63,25 @@ namespace libint2 {
       }
       
       const std::string macro(const std::string& task_label, const std::string& label) {
-	std::string result("LIBINT2_");  result += task_label;  result += "_";  result += label;
+	std::string result("LIBINT2_");  result += label;  result += "_";  result += task_label;
         return result;
       }
       
-      template <typename T> const std::string define(const std::string& label, const T& value) {
+      template <typename T> const std::string macro_define(const std::string& label, const T& value) {
         oss_ .str(null_str_);
         oss_ << "#define " << macro(label) << " " << value << endl;
         return oss_.str();
       }
       
-      template <typename T> const std::string define(const std::string& task_label, const std::string& label, const T& value) {
+      template <typename T> const std::string macro_define(const std::string& task_label, const std::string& label, const T& value) {
         oss_ .str(null_str_);
         oss_ << "#define " << macro(task_label,label) << " " << value << endl;
         return oss_.str();
       }
+      
+      template <typename T> const std::string var_declare_v(const std::string& label) {
+        return ctext_->declare_v(ctext_->type_name<T>(),ctext_->label_to_name(label),macro("MAX_VECLEN"));
+      }      
       
       private:
       std::string null_str_;
@@ -100,6 +104,8 @@ namespace libint2 {
       fstream si_;
       fstream sc_;
       fstream li_;
+
+      void generate_inteval_type(std::ostream& os);
       
     };
 };

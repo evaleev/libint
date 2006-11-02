@@ -4,7 +4,7 @@ VPATH = $(SRCDIR) $(SRCTOPDIR)/include
 
 NAME = libint2
 TARGET = $(NAME).$(LIBSUF)
-TARGET_HEADERS = libint2.h libint2_params.h libint2_iface.h
+TARGET_HEADERS = libint2.h libint2_params.h libint2_types.h libint2_iface.h
 
 INCLUDE += -I.
 

@@ -30,12 +30,12 @@ namespace libint2 {
   integrals of the R12_k_G12 operator.
   */
   template <template <class,int> class I, class BFSet, int K, int part, FunctionPosition where>
-    class VRR_11_R12kG12_11 : public RecurrenceRelation,
-                              public EnableSafePtrFromThis< VRR_11_R12kG12_11<I,BFSet,K,part,where> >
-    {
+    class VRR_11_R12kG12_11 : public RecurrenceRelation
+  {
 
   public:
-      typedef VRR_11_R12kG12_11<I,BFSet,K,part,where> ThisType;
+    typedef RecurrenceRelation ParentType;
+    typedef VRR_11_R12kG12_11<I,BFSet,K,part,where> ThisType;
     typedef I<BFSet,K> TargetType;
     typedef R12kG12_11_11_base<BFSet> ChildType;
     /// The type of expressions in which RecurrenceRelations result.
@@ -148,7 +148,12 @@ namespace libint2 {
       if (TrivialBFSet<F>::result)
         return false;
       SafePtr<RRStack> rrstack = RRStack::Instance();
-      SafePtr<ThisType> this_ptr = const_pointer_cast<ThisType,const ThisType>(EnableSafePtrFromThis<ThisType>::SafePtr_from_this());
+      SafePtr<ThisType> this_ptr =
+	const_pointer_cast<ThisType,const ThisType>(
+	  static_pointer_cast<const ThisType, const ParentType>(
+	    EnableSafePtrFromThis<ParentType>::SafePtr_from_this()
+	  )
+	);
       rrstack->find(this_ptr);
       return true;
     }
@@ -486,7 +491,7 @@ namespace libint2 {
       ostringstream os;
       os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
          // First argument is the library object
-         << "(libint, "
+         << "(inteval, "
          // Second is the target
          << context->value_to_pointer(rr_target()->symbol());
       // then come children

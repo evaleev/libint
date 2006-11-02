@@ -27,8 +27,10 @@ namespace libint2 {
   /**
      RecurrenceRelation describes all recurrence relations
   */
-  class RecurrenceRelation {
+  class RecurrenceRelation : public EnableSafePtrFromThis<RecurrenceRelation> {
   public:
+    typedef RecurrenceRelation this_type;
+
     RecurrenceRelation();
     virtual ~RecurrenceRelation();
 
@@ -127,11 +129,13 @@ namespace libint2 {
     public:
     typedef SingletonStack<RecurrenceRelation,std::string> parent_type;
     typedef parent_type::data_type data_type;
+    typedef parent_type::value_type value_type;
     typedef parent_type::iter_type iter_type;
     typedef parent_type::citer_type citer_type;
+    typedef parent_type::InstanceID InstanceID;
 
     /// Obtain the unique Instance of RRStack
-    static SafePtr<RRStack> Instance();
+    static SafePtr<RRStack>& Instance();
     ~RRStack() {}
     
     /// adds content of rrs to this stack

@@ -660,6 +660,9 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
                              const std::string& label,
                              std::ostream& decl, std::ostream& def)
 {
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  const std::string tlabel = taskmgr.current().label();
+
   decl << context->std_header();
   std::string comment("This code computes "); comment += label; comment += "\n";
   if (context->comments_on())
@@ -672,7 +675,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   std::string func_decl;
   ostringstream oss;
   oss << context->type_name<void>() << " "
-      << function_name << "(Libint_t* libint";
+      << function_name << "(" << context->inteval_type_name(tlabel) << "* inteval";
   unsigned int nargs = args->n();
   for(unsigned int a=0; a<nargs; a++) {
     oss << ", " << context->type_name<double*>() << " "
@@ -701,8 +704,6 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   // include declarations for all function calls:
   // 1) update func_names_
   // 2) include their headers into the current definition file
-  // 3) add them to rrstack_ so that later their code can be
-  //    generated
   update_func_names();
   for(FuncNameContainer::const_iterator fn=func_names_.begin(); fn!=func_names_.end(); fn++) {
     string function_name = (*fn).first;
@@ -960,7 +961,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
 
     // test if the vertex is precomputed runtime quantity, like a geometric parameter
     if (vertex->precomputed()) {
-      std::string symbol("libint->");
+      std::string symbol("inteval->");
       symbol += context->label_to_name(vertex->label());
       symbol += "[vi]";
       vertex->set_symbol(symbol);
@@ -1106,13 +1107,13 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   }
 
   //
-  // If accumulating integrals, check Libint_t::zero_out_targets. If set to 1 -- zero out accumulated targets
+  // If accumulating integrals, check inteval's zero_out_targets. If set to 1 -- zero out accumulated targets
   //
   if (registry()->accumulate_targets()) {
 
     const bool vecdim_is_static = dims->vecdim_is_static();
 
-    os << "if (libint->zero_out_targets) {" << std::endl;
+    os << "if (inteval->zero_out_targets) {" << std::endl;
 
     typedef MemBlockSet::const_iterator citer;
     typedef MemBlockSet::iterator iter;
@@ -1149,7 +1150,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 
     }
 
-    os << "libint->zero_out_targets = 0;" << std::endl << "}" << std::endl;
+    os << "inteval->zero_out_targets = 0;" << std::endl << "}" << std::endl;
   }
 
   std::string varname("hsi");
@@ -1423,7 +1424,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   os << context->decldef(context->type_name<const int>(), "vi", "0");
   
   //
-  // Now pass back all targets through the Libint_t object, if needed.
+  // Now pass back all targets through the inteval object, if needed.
   //
   if (registry()->return_targets()) {
     unsigned int curr_target = 0;
@@ -1433,7 +1434,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 				   //                                                                    is this correct?         ???
 				   ? stack_symbol(context,target_accums_[curr_target],(*t)->size(),dims->low_label(),dims->vecdim_label(),registry()->stack_name())
 				   : (*t)->symbol());
-      os << "libint->targets[" << curr_target << "] = "
+      os << "inteval->targets[" << curr_target << "] = "
 	 << context->value_to_pointer(symbol) << context->end_of_stat() << endl;
     }
   }
@@ -1448,7 +1449,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     oss << nflops_total << " * " << dims->high_label() << " * "
         << dims->low_label() << " * "
         << dims->vecdim_label();
-    os << context->assign_binary_expr("libint->nflops","libint->nflops","+",oss.str());
+    os << context->assign_binary_expr("inteval->nflops","inteval->nflops","+",oss.str());
   }
 
 }

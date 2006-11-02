@@ -34,8 +34,8 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   SafePtr<DirectedGraph> dg = generate_graph_();
   
   // Intermediates in RR code are either are automatic variables or have to go on vstack
-  dg->registry()->stack_name("libint->vstack");
-  // No need to return the targets via Libint_t::targets
+  dg->registry()->stack_name("inteval->vstack");
+  // No need to return the targets via inteval's targets
   dg->registry()->return_targets(false);
   
   // Assign symbols for the target and source integral sets
@@ -53,22 +53,41 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   SafePtr<ImplicitDimensions> localdims = adapt_dims_(dims);
   dg->generate_code(context,memman,localdims,symbols,funcname,decl,def);
   
-  // update max stack size
-  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current().params()->max_vector_stack_size(memman->max_memory_used());
-
-  // extract all precomputed quantities -- these will be members of the evaluator structure
-  // extractor
-  SafePtr<ExtractPrecomputedLabels> extractor(new ExtractPrecomputedLabels);
+  // extract all external symbols -- these will be members of the evaluator structure
+  SafePtr<ExtractExternSymbols> extractor(new ExtractExternSymbols);
   dg->foreach(*extractor);
-  const ExtractPrecomputedLabels::Labels& labels = extractor->labels();
-  // print out the labels
-  std::cout << "Recovered labels from DirectedGraph for " << label() << std::endl;
-  typedef ExtractPrecomputedLabels::Labels::const_iterator citer;
-  citer end = labels.end();
-  for(citer t=labels.begin(); t!=end; ++t)
+  const ExtractExternSymbols::Symbols& externsymbols = extractor->symbols();
+
+#if 0
+  // print out the symbols
+  std::cout << "Recovered symbols from DirectedGraph for " << label() << std::endl;
+  typedef ExtractExternSymbols::Symbols::const_iterator citer;
+  citer end = externsymbols.end();
+  for(citer t=externsymbols.begin(); t!=end; ++t)
     std::cout << *t << std::endl;
+#endif
+
+  // get this RR InstanceID
+  RRStack::InstanceID myid = RRStack::Instance()->find(EnableSafePtrFromThis<this_type>::SafePtr_from_this()).first;
+
+  // For each task which requires this RR:
+  // 1) update max stack size
+  // 2) append external symbols from this RR to its list
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  typedef LibraryTaskManager::TasksCIter tciter;
+  const tciter tend = taskmgr.last();
+  for(tciter t=taskmgr.first(); t!=tend; ++t) {
+    const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
+    if (tsymbols->find(myid)) {
+      // update max stack size
+      t->params()->max_vector_stack_size(memman->max_memory_used());
+      // add external symbols
+      tsymbols->add(externsymbols);
+    }
+  }
   
+
+    
   dg->reset();
 }
 
@@ -135,7 +154,7 @@ RecurrenceRelation::description() const
 SafePtr<RRStack>
 RRStack::rrstack_;
 
-SafePtr<RRStack>
+SafePtr<RRStack>&
 RRStack::Instance() {
   if (!rrstack_) {
     SafePtr<RRStack> tmpstack(new RRStack);

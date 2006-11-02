@@ -5,7 +5,7 @@ using namespace libint2;
 
 GraphRegistry::GraphRegistry() :
   accumulate_targets_(false), return_targets_(true), can_unroll_(true), do_cse_(false),
-  stack_name_("libint->stack")
+  stack_name_("inteval->stack")
 {
 }
 

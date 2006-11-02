@@ -28,11 +28,11 @@ namespace libint2 {
   of ERI to use.
   */
   template <template <class> class ERI, class BFSet, int part, FunctionPosition where>
-    class ITR_11_TwoPRep_11 : public RecurrenceRelation,
-                              public EnableSafePtrFromThis< ITR_11_TwoPRep_11<ERI,BFSet,part,where> >
+    class ITR_11_TwoPRep_11 : public RecurrenceRelation
     {
 
   public:
+    typedef RecurrenceRelation ParentType;
     typedef ITR_11_TwoPRep_11 ThisType;
     typedef ERI<BFSet> TargetType;
     typedef ERI<BFSet> ChildType;
@@ -129,7 +129,12 @@ namespace libint2 {
       if (TrivialBFSet<F>::result)
         return false;
       SafePtr<RRStack> rrstack = RRStack::Instance();
-      SafePtr<ThisType> this_ptr = const_pointer_cast<ThisType,const ThisType>(EnableSafePtrFromThis<ThisType>::SafePtr_from_this());
+      SafePtr<ThisType> this_ptr =
+	const_pointer_cast<ThisType,const ThisType>(
+	  static_pointer_cast<const ThisType, const ParentType>(
+	    EnableSafePtrFromThis<ParentType>::SafePtr_from_this()
+	  )
+	);
       rrstack->find(this_ptr);
       return true;
     }
@@ -286,7 +291,7 @@ namespace libint2 {
       ostringstream os;
       os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
          // First argument is the library object
-         << "(libint, "
+         << "(inteval, "
          // Second is the target
          << context->value_to_pointer(rr_target()->symbol());
       // then come children

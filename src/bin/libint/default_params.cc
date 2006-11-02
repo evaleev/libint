@@ -56,7 +56,7 @@ CompilationParameters::print(std::ostream& os) const
 //////////
 
 TaskParameters::TaskParameters() :
-  max_stack_size_(1), max_vector_stack_size_(1),
+  max_ntarget_(1), max_stack_size_(1), max_vector_stack_size_(1),
   max_hrr_hsrank_(1), max_hrr_lsrank_(1)
 {
 }

@@ -63,6 +63,7 @@ static void build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParam
 static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
 static void test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                  SafePtr<Libint2Iface>& iface);
+static void extract_symbols(const SafePtr<DirectedGraph>& dg);
 
 void try_main (int argc, char* argv[])
 {
@@ -144,7 +145,22 @@ void try_main (int argc, char* argv[])
   
   // Generate code for the set-level RRs
   generate_rr_code(os,cparams);
-  
+
+  // print out the external symbols found for each task
+  typedef LibraryTaskManager::TasksCIter tciter;
+  const tciter tend = taskmgr.last();
+  for(tciter t=taskmgr.first(); t!=tend; ++t) {
+    const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
+    typedef TaskExternSymbols::SymbolList SymbolList;
+    const SymbolList& symbols = tsymbols->symbols();
+    // print out the labels
+    std::cout << "Recovered labels for task " << t->label() << std::endl;
+    typedef SymbolList::const_iterator citer;
+    citer end = symbols.end();
+    for(citer s=symbols.begin(); s!=end; ++s)
+      std::cout << *s << std::endl;
+  }
+
   // transfer some library configuration to library API
   config_to_api(cparams,iface);
   
@@ -221,7 +237,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current("eri");
-  iface->to_params(iface->define("MAX_AM_ERI",lmax));
+  iface->to_params(iface->macro_define("MAX_AM_ERI",lmax));
   
   //
   // Construct graphs for each desired target integral and
@@ -277,9 +293,10 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           std::basic_ofstream<char> srcfile(src_filename.c_str());
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
           
-          // update max stack size
+          // update max stack size and # of targets
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(memman->max_memory_used());
+	  tparams->max_ntarget(1);
 
 	  // set pointer to the top-level evaluator function
           ostringstream oss;
@@ -294,21 +311,13 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           iface->to_int_iface(oss.str());
 
 	  // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
+	  // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
 	  if (la == lmax &&
 	      lb == lmax &&
 	      lc == lmax &&
 	      ld == lmax) {
 
-	    // extractor
-	    SafePtr<ExtractPrecomputedLabels> extractor(new ExtractPrecomputedLabels);
-	    dg_xxxx->foreach(*extractor);
-	    const ExtractPrecomputedLabels::Labels& labels = extractor->labels();
-	    // print out the labels
-	    std::cout << "Recovered labels from DirectedGraph for " << abcd->label() << std::endl;
-	    typedef ExtractPrecomputedLabels::Labels::const_iterator citer;
-	    citer end = labels.end();
-	    for(citer t=labels.begin(); t!=end; ++t)
-	      std::cout << *t << std::endl;
+	    extract_symbols(dg_xxxx);
 
 	  }
 
@@ -339,7 +348,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current("r12kg12");
-  iface->to_params(iface->define("MAX_AM_R12kG12",lmax));
+  iface->to_params(iface->macro_define("MAX_AM_R12kG12",lmax));
   
   //
   // Construct graphs for each desired target integral and
@@ -487,7 +496,7 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
   
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current("r12kg12");
-  iface->to_params(iface->define("MAX_AM_R12kG12",lmax));
+  iface->to_params(iface->macro_define("MAX_AM_R12kG12",lmax));
   
   //
   // Construct graphs for each desired target integral and
@@ -615,12 +624,41 @@ void
 config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface)
 {
 #ifdef INCLUDE_ERI
-  iface->to_params(iface->define("SUPPORT_ERI",1));
-  iface->to_params(iface->define("DERIV_ERI_ORDER",INCLUDE_ERI));
+  iface->to_params(iface->macro_define("SUPPORT_ERI",1));
+  iface->to_params(iface->macro_define("DERIV_ERI_ORDER",INCLUDE_ERI));
 #endif
 #ifdef INCLUDE_G12
-  iface->to_params(iface->define("SUPPORT_G12",1));
-  iface->to_params(iface->define("DERIV_G12_ORDER",INCLUDE_G12));
+  iface->to_params(iface->macro_define("SUPPORT_G12",1));
+  iface->to_params(iface->macro_define("DERIV_G12_ORDER",INCLUDE_G12));
 #endif
 }
 
+void
+extract_symbols(const SafePtr<DirectedGraph>& dg)
+{
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  // symbol extractor
+  {
+    SafePtr<ExtractExternSymbols> extractor(new ExtractExternSymbols);
+    dg->foreach(*extractor);
+    const ExtractExternSymbols::Symbols& symbols = extractor->symbols();
+    // pass on to the symbol maintainer of the current task
+    taskmgr.current().symbols()->add(symbols);
+#if 0
+    // print out the symbols
+    std::cout << "Recovered symbols from DirectedGraph for " << abcd->label() << std::endl;
+    typedef ExtractExternSymbols::Symbols::const_iterator citer;
+    citer end = symbols.end();
+    for(citer t=symbols.begin(); t!=end; ++t)
+      std::cout << *t << std::endl;
+#endif
+  }
+  // RR extractor
+  {
+    SafePtr<ExtractRR> extractor(new ExtractRR);
+    dg->foreach(*extractor);
+    const ExtractRR::RRList& rrlist = extractor->rrlist();
+    // pass on to the symbol maintainer of the current task
+    taskmgr.current().symbols()->add(rrlist);
+  }
+}

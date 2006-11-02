@@ -2,13 +2,15 @@
 #include <map>
 #include <dgvertex.h>
 #include <entity.h>
+#include <rr.h>
+#include <intset_to_ints.h>
 #include <extract.h>
 
 using namespace std;
 using namespace libint2;
 
 void
-ExtractPrecomputedLabels::operator()(const VertexPtr& v)
+ExtractExternSymbols::operator()(const VertexPtr& v)
 {
   if (v->precomputed()) {
 
@@ -26,15 +28,51 @@ ExtractPrecomputedLabels::operator()(const VertexPtr& v)
 
 }
 
-const ExtractPrecomputedLabels::Labels&
-ExtractPrecomputedLabels::labels()
+const ExtractExternSymbols::Symbols&
+ExtractExternSymbols::symbols() const
 {
-  labels_.clear();
+  symbols_.clear();
   typedef LabelMap::const_iterator citer;
   citer end = map_.end();
   for(citer l=map_.begin(); l!=end; ++l) {
-    labels_.push_back(l->first);
+    symbols_.push_back(l->first);
   }
-  labels_.sort();
-  return labels_;
+  //symbols_.sort();
+  return symbols_;
+}
+
+////
+
+void
+ExtractRR::operator()(const VertexPtr& v)
+{
+  if (v->num_exit_arcs() != 0) {
+    SafePtr<DGArc> arc = v->exit_arc(0);
+    SafePtr<DGArcRR> arc_rr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
+    if (arc_rr != 0) {
+      SafePtr<RecurrenceRelation> rr = arc_rr->rr();
+      SafePtr<IntegralSet_to_Integrals_base> iset_to_i = dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(rr);
+      if (iset_to_i == 0) {
+	const SafePtr<RRStack>& rrstack = RRStack::Instance();
+	// RRStack must be guaranteed to have this rr
+	const RRStack::value_type rrstackvalue = rrstack->find(rr);
+	const RRid rrid = rrstackvalue.first;
+	map_[rrid] = true;
+      }
+    }
+  }
+
+}
+
+const ExtractRR::RRList&
+ExtractRR::rrlist() const
+{
+  rrlist_.clear();
+  typedef RRMap::const_iterator citer;
+  citer end = map_.end();
+  for(citer rr=map_.begin(); rr!=end; ++rr) {
+    rrlist_.push_back(rr->first);
+  }
+  //rrlist_.sort();
+  return rrlist_;
 }

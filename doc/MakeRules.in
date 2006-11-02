@@ -7,11 +7,12 @@ install_target:: default
 	$(INSTALL) $(INSTALLDIROPT) $(docdir)
 	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) $(TARGET) $(docdir)
 
-clean:: $(SRCDIR)/Makefile
-	-rm -f $(TEXGARBAGE)
+clean::
+	-rm -rf $(TARGET)
 
 distclean:: clean
 
 targetclean:: clean
 
 realclean:: clean
+	-rm -f $(TEXGARBAGE)

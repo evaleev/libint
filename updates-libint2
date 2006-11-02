@@ -1,4 +1,8 @@
 
+11/01/2006:	1) All header files are now generated automatically, including integral evluator types.
+		2) Documentation almost fully updated.
+                -EFV
+
 07/19/2006:	1) Added code to simplify testing of the compiler. Rewrote generate_eri_code using
                    the new facilities.
                 2) Added profiling tests.

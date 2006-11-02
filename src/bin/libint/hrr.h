@@ -38,11 +38,11 @@ namespace libint2 {
   template <class IntType, class BFSet, int part,
   FunctionPosition loc_a, unsigned int pos_a,
   FunctionPosition loc_b, unsigned int pos_b>
-  class HRR : public RecurrenceRelation,
-              public EnableSafePtrFromThis< HRR<IntType,BFSet,part,loc_a,pos_a,loc_b,pos_b> >
+  class HRR : public RecurrenceRelation
     {
 
   public:
+    typedef RecurrenceRelation ParentType;
     typedef HRR<IntType,BFSet,part,loc_a,pos_a,loc_b,pos_b> ThisType;
     typedef IntType TargetType;
     typedef IntType ChildType;
@@ -293,7 +293,12 @@ namespace libint2 {
       // if all bfsets not involved in transfer have zero quanta then this instance needs to be added to the stack
       if (!nonzero_quanta) {
         SafePtr<RRStack> rrstack = RRStack::Instance();
-        SafePtr<ThisType> this_ptr = const_pointer_cast<ThisType,const ThisType>(EnableSafePtrFromThis<ThisType>::SafePtr_from_this());
+	SafePtr<ThisType> this_ptr =
+	  const_pointer_cast<ThisType,const ThisType>(
+	    static_pointer_cast<const ThisType, const ParentType>(
+	      EnableSafePtrFromThis<ParentType>::SafePtr_from_this()
+	    )
+	  );
         rrstack->find(this_ptr);
         return true;
       }
@@ -462,7 +467,7 @@ namespace libint2 {
       ostringstream os;
       os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
          // First argument is the library object
-         << "(libint, "
+         << "(inteval, "
          // Second is the target
          << context->value_to_pointer(rr_target()->symbol());
       // then come children
