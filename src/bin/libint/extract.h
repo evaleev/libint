@@ -59,7 +59,6 @@ namespace libint2 {
     RRMap map_;
   };
 
-
 };
 
 #endif // header guard

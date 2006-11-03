@@ -149,10 +149,16 @@ Libint2Iface::~Libint2Iface()
   generate_inteval_type(th_);
 
   // libint2_iface.h needs macros to help forming prefixed names in API
-  ih_ << "/* Use LIBINT2_PREFIXED_NAME(fncname) to form properly prefixed function name from LIBINT2 API */" << std::endl;
+  ih_ << ctext_->comment("Use LIBINT2_PREFIXED_NAME(fncname) to form properly prefixed function name from LIBINT2 API") << std::endl;
   ih_ << "#define LIBINT2_PREFIXED_NAME(name) __libint2_prefixed_name__(LIBINT2_API_PREFIX,name)" << std::endl;
   ih_ << "#define __libint2_prefixed_name__(prefix,name) __prescanned_prefixed_name__(prefix,name)" << std::endl;
-  ih_ << "#define __prescanned_prefixed_name__(prefix,name) prefix##name" << std::endl << std::endl;
+  ih_ << "#define __prescanned_prefixed_name__(prefix,name) prefix##name" << std::endl;
+  // also need macros to test what's in the evaluator
+  ih_ << ctext_->comment("Use LIBINT2_PREFIXED_NAME(fncname) to form properly prefixed function name from LIBINT2 API") << std::endl;
+  ih_ << "#define LIBINT2_DEFINED(taskname,symbol) __prescanned_libint2_defined__(taskname,symbol)" << std::endl;
+  ih_ << "#define __prescanned_libint2_defined__(taskname,symbol) LIBINT2_DEFINED_##symbol##_##taskname" << std::endl << std::endl;
+
+
   
   header_guard_close(th_);
   header_guard_close(ph_);
@@ -248,6 +254,9 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
     typedef SymbolList::const_iterator citer;
     citer end = symbols.end();
     for(citer s=symbols.begin(); s!=end; ++s) {
+      // for each extrnal symbol #define a macro
+      std::string tmplabel("DEFINED_"); tmplabel += ctext_->label_to_name(*s);
+      os << macro_define(tlabel,tmplabel,1);
       // all symbols are doubles
       os << var_declare_v<double>(*s);
     }

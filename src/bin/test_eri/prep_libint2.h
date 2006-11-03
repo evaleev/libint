@@ -1,6 +1,6 @@
 #include <vector>
 
-void prep_libint2(Libint_t* libint, unsigned int am1,
+void prep_libint2(Libint_eri_t* erieval, unsigned int am1,
            const std::vector<double>& alpha1, double A[3],
 	   unsigned int am2, 
            const std::vector<double>& alpha2, double B[3],

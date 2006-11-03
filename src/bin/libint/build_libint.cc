@@ -63,7 +63,6 @@ static void build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParam
 static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
 static void test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                  SafePtr<Libint2Iface>& iface);
-static void extract_symbols(const SafePtr<DirectedGraph>& dg);
 
 void try_main (int argc, char* argv[])
 {
@@ -633,32 +632,3 @@ config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Ifac
 #endif
 }
 
-void
-extract_symbols(const SafePtr<DirectedGraph>& dg)
-{
-  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  // symbol extractor
-  {
-    SafePtr<ExtractExternSymbols> extractor(new ExtractExternSymbols);
-    dg->foreach(*extractor);
-    const ExtractExternSymbols::Symbols& symbols = extractor->symbols();
-    // pass on to the symbol maintainer of the current task
-    taskmgr.current().symbols()->add(symbols);
-#if 0
-    // print out the symbols
-    std::cout << "Recovered symbols from DirectedGraph for " << abcd->label() << std::endl;
-    typedef ExtractExternSymbols::Symbols::const_iterator citer;
-    citer end = symbols.end();
-    for(citer t=symbols.begin(); t!=end; ++t)
-      std::cout << *t << std::endl;
-#endif
-  }
-  // RR extractor
-  {
-    SafePtr<ExtractRR> extractor(new ExtractRR);
-    dg->foreach(*extractor);
-    const ExtractRR::RRList& rrlist = extractor->rrlist();
-    // pass on to the symbol maintainer of the current task
-    taskmgr.current().symbols()->add(rrlist);
-  }
-}

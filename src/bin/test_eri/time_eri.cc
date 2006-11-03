@@ -49,25 +49,25 @@ int main(int argc, char** argv)
     alpha4.push_back(alpha[3]*scale);
   }
   
-  Libint_t* libint = new Libint_t;
+  Libint_eri_t* erieval = new Libint_eri_t;
   const int max_am = max(max(am[0],am[1]),max(am[2],am[3]));
-  LIBINT2_PREFIXED_NAME(libint2_init_eri)(libint,max_am,0);
-  prep_libint2(libint,am[0],alpha1,A,
+  LIBINT2_PREFIXED_NAME(libint2_init_eri)(erieval,max_am,0);
+  prep_libint2(erieval,am[0],alpha1,A,
 	       am[1],alpha2,B,
 	       am[2],alpha3,C,
 	       am[3],alpha4,D,0,veclen);
-  libint->nflops = 0;
+  erieval->nflops = 0;
   
   cout << "Computing (" << am2label(am[0]) << am2label(am[1])
        << "|" << am2label(am[2]) << am2label(am[3]) << ") " << niter << " times" << endl;
 
   for(int iter=0; iter<niter; iter++)
-    COMPUTE_XX_ERI_XX(libint);
+    COMPUTE_XX_ERI_XX(erieval);
 
   const unsigned int nints = am2nbf(am[0]) * am2nbf(am[1]) * am2nbf(am[2]) * am2nbf(am[3]) * LIBINT2_MAX_VECLEN;
-  cout << "nflops = " << libint->nflops << " nints = " << nints << endl;
+  cout << "nflops = " << erieval->nflops << " nints = " << nints << endl;
 
-  LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(libint);
+  LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(erieval);
 
   exit(0);
 }

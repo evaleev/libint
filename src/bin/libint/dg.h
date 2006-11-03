@@ -276,6 +276,9 @@ namespace libint2 {
   /// return true if there are non-unrolled targets
   bool nonunrolled_targets(const DirectedGraph::vertices& targets);
 
+  /// extracts external symbols and RRs from the graph
+  void extract_symbols(const SafePtr<DirectedGraph>& dg);
+
 };
 
 

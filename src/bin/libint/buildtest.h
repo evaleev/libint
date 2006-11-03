@@ -70,6 +70,10 @@ namespace libint2 {
       SafePtr<Strategy> strat(new Strategy(size_to_unroll));
       os << "Building " << target->description() << std::endl;
       SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,Integral>(target);
+
+      LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+      taskmgr.add(complabel);
+      taskmgr.current(complabel);
       
       //
       // do CSE only if max_am <= cparams->max_am_opt()
@@ -121,9 +125,10 @@ namespace libint2 {
 			     label,declfile,deffile);
       
       // update max stack size
-      LibraryParameters& lparams = LibraryParameters::get_library_params();
-      lparams.max_stack_size(memman->max_memory_used());
-      
+      taskmgr.current().params()->max_stack_size(memman->max_memory_used());
+      // extract all extrnal symbols
+      extract_symbols(dg_xxxx);
+
       std::basic_ofstream<char> dotfile2("graph.symb.dot");
       dg_xxxx->print_to_dot(true,dotfile2);
       
@@ -133,10 +138,8 @@ namespace libint2 {
       if (GenAllCode) {
 	// initialize code context to produce library API
 	SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
-	LibraryTaskManager::Instance().add(complabel);
-	comps.push_back(complabel);
 	// initialize object to generate interface
-	SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext,comps));
+	SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext));
 
 	// generate interface
 	std::ostringstream oss;
@@ -174,7 +177,10 @@ namespace libint2 {
     const unsigned int max_am = 10;
     os << "generating code to compute " << target->label() << std::endl;
 
-    LibraryTaskManager::Instance().current(complabel);
+    LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+    taskmgr.add(complabel);
+    taskmgr.current(complabel);
+      
     // initialize cparams
     SafePtr<CompilationParameters> cparams(new CompilationParameters);
     cparams->max_am_eri(max_am);
