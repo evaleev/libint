@@ -38,9 +38,6 @@ void prep_libint2(Libint_eri_t* erieval, unsigned int am1,
     const double AB_z = A[2] - B[2];
     const double AB2 = AB_x*AB_x + AB_y*AB_y + AB_z*AB_z;
 
-#define LIBINT2_DEFINED(taskname,symbol) __prescanned_libint2_defined__(taskname,symbol)
-#define __prescanned_libint2_defined__(taskname,symbol) LIBINT2_DEFINED_##symbol##_##taskname
-
 #if LIBINT2_DEFINED(eri,PA_x)
     erieval->PA_x[v] = PAx;
 #endif

@@ -1,4 +1,9 @@
 
+11/03/2006:     1) Each non-default symbol in the evaluator type also has a macro
+                   which can be checked in the code which computes quartet info.
+                2) Updated test_eri/
+                -EFV
+
 11/01/2006:	1) All header files are now generated automatically, including integral evluator types.
 		2) Documentation almost fully updated.
                 -EFV
