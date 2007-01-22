@@ -287,6 +287,27 @@ AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_FLOAT,"$withval")
 echo Using floating-point type: $withval
 ])
 
+AC_ARG_ENABLE(single-evaltype,
+ AS_HELP_STRING([--enable-single-evaltype],[Generate single evaluator type (i.e. all tasks use the same evaluator)]),
+ [
+  if test X$enableval = Xyes; then
+    enable_single_evaltype=1
+  else
+    enable_single_evaltype=0
+  fi
+ ],
+ [
+  enable_single_evaltype=1
+ ]
+)
+if test X$enable_single_evaltype = X1; then
+  AC_DEFINE(LIBINT_SINGLE_EVALTYPE)
+  AC_MSG_RESULT([Will generate single evaluator type])
+else
+  AC_MSG_RESULT([Will generate specialized evaluator types for each task])
+  AC_MSG_ERROR([Cannot generate specialized evaluator types yet])
+fi
+
 AC_ARG_ENABLE(accum-ints,
 [  --enable-accum-ints     Accumulate integrals to the buffer, rather than copy.],
 [

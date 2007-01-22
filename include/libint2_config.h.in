@@ -73,6 +73,9 @@
 /* Whether FLOP counting is supported */
 #undef LIBINT_FLOP_COUNT
 
+/* Generate single evaluator type? */
+#undef LIBINT_SINGLE_EVALTYPE
+
 /* Strategy for ERI evaluation */
 #undef LIBINT_ERI_STRATEGY
 

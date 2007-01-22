@@ -1584,9 +1584,9 @@ namespace libint2 {
       const ExtractExternSymbols::Symbols& symbols = extractor->symbols();
       // pass on to the symbol maintainer of the current task
       taskmgr.current().symbols()->add(symbols);
-#if 0
+#if 1
       // print out the symbols
-      std::cout << "Recovered symbols from DirectedGraph for " << abcd->label() << std::endl;
+      std::cout << "Recovered symbols from DirectedGraph for " << dg << std::endl;
       typedef ExtractExternSymbols::Symbols::const_iterator citer;
       citer end = symbols.end();
       for(citer t=symbols.begin(); t!=end; ++t)

@@ -114,8 +114,12 @@ namespace libint2 {
     /// type_name<T> returns name for type T
     template <typename T>
       std::string type_name();
-    /// inteval_type_name returns the name of the evaluator type for task 'task'
+    /// returns the name of the evaluator type for task 'task'
     virtual std::string inteval_type_name(const std::string& task) const =0;
+    /// returns the name of the specialized evaluator type for task 'task'
+    virtual std::string inteval_spec_type_name(const std::string& task) const =0;
+    /// returns the name of the generic evaluator type (works for any task)
+    virtual std::string inteval_gen_type_name() const =0;
 
   protected:
     /// Lone constructor takes CompilationParams
@@ -231,6 +235,10 @@ namespace libint2 {
 
     /// Implementation of CodeContext::inteval_type_name()
     std::string inteval_type_name(const std::string& task) const;
+    /// Implementation of CodeContext::inteval_spec_type_name()
+    std::string inteval_spec_type_name(const std::string& task) const;
+    /// Implementation of CodeContext::inteval_spec_type_name()
+    std::string inteval_gen_type_name() const;
 
   private:
     bool vectorize_;

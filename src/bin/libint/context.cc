@@ -538,7 +538,22 @@ CppCodeContext::const_modifier() const { return "const "; }
 std::string
 CppCodeContext::inteval_type_name(const std::string& tlabel) const
 {
+  if (cparams()->single_evaltype())
+    return inteval_gen_type_name();
+  else
+    return inteval_spec_type_name(tlabel);
+}
+
+std::string
+CppCodeContext::inteval_spec_type_name(const std::string& tlabel) const
+{
   ostringstream oss;
   oss << "Libint_" << tlabel << "_t";
   return oss.str();
+}
+
+std::string
+CppCodeContext::inteval_gen_type_name() const
+{
+  return "Libint_t";
 }

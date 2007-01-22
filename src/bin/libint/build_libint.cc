@@ -7,7 +7,7 @@
   Edward Valeev
 
   Atlanta/Oak Ridge (December 2004 - August 2006)
-  Blacksburg (August 2006 - ... )
+  Blacksburg (August 2006 - present)
   */
 
 #define DO_TEST_ONLY 0
@@ -111,6 +111,13 @@ void try_main (int argc, char* argv[])
     const std::string api_prefix(LIBINT_API_PREFIX);
     cparams->api_prefix(api_prefix);
   }
+#endif
+#ifdef LIBINT_SINGLE_EVALTYPE
+  {
+    cparams->single_evaltype(true);
+  }
+#else
+  throw std::runtime_error("Cannot generate specialized evaluator types yet");
 #endif
   
   // initialize code context to produce library API
@@ -468,6 +475,17 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           oss.str("");
           oss << "#include <" << decl_filename << ">" << endl;
           iface->to_int_iface(oss.str());
+
+	  // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
+	  // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
+	  if (la == lmax &&
+	      lb == lmax &&
+	      lc == lmax &&
+	      ld == lmax) {
+
+	    extract_symbols(dg_xxxx);
+
+	  }
 
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;

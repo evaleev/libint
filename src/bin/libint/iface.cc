@@ -156,7 +156,10 @@ Libint2Iface::~Libint2Iface()
   // also need macros to test what's in the evaluator
   ih_ << ctext_->comment("Use LIBINT2_PREFIXED_NAME(fncname) to form properly prefixed function name from LIBINT2 API") << std::endl;
   ih_ << "#define LIBINT2_DEFINED(taskname,symbol) __prescanned_libint2_defined__(taskname,symbol)" << std::endl;
-  ih_ << "#define __prescanned_libint2_defined__(taskname,symbol) LIBINT2_DEFINED_##symbol##_##taskname" << std::endl << std::endl;
+  if (cparams_->single_evaltype())
+    ih_ << "#define __prescanned_libint2_defined__(taskname,symbol) LIBINT2_DEFINED_##symbol" << std::endl << std::endl;
+  else
+    ih_ << "#define __prescanned_libint2_defined__(taskname,symbol) LIBINT2_DEFINED_##symbol##_##taskname" << std::endl << std::endl;
 
 
   
@@ -240,17 +243,39 @@ void
 Libint2Iface::generate_inteval_type(std::ostream& os)
 {
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+
+  //
+  // If need to generate single type for all tasks, take a union of all symbols
+  // else process each task separately
+  //
   typedef LibraryTaskManager::TasksCIter tciter;
-  for(tciter t=taskmgr.first(); t!=taskmgr.last(); ++t) {
-    const std::string& tlabel = t->label();
+  const tciter tend = cparams_->single_evaltype() ? taskmgr.first()+1 : taskmgr.last();
+  for(tciter t=taskmgr.first(); t!=tend; ++t) {
     const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
     
     // Prologue
     os << "typedef struct {" << std::endl;
 
+    //
     // Declare external symbols
+    //
     typedef TaskExternSymbols::SymbolList SymbolList;
-    const SymbolList& symbols = tsymbols->symbols();
+    std::string tlabel;
+    SymbolList symbols;
+    if (cparams_->single_evaltype()) {
+      TaskExternSymbols composite_symbols;
+      const tciter tend = taskmgr.last();
+      for(tciter t=taskmgr.first(); t!=tend; ++t) {
+	const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
+	composite_symbols.add(tsymbols->symbols());
+      }
+      symbols = composite_symbols.symbols();
+      tlabel = "";
+    }
+    else {
+      symbols = tsymbols->symbols();
+      tlabel = t->label();
+    }
     typedef SymbolList::const_iterator citer;
     citer end = symbols.end();
     for(citer s=symbols.begin(); s!=end; ++s) {
@@ -269,7 +294,21 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
     os << ctext_->declare(ctext_->type_name<double*>(),std::string("vstack"));
 
     os << ctext_->comment("On completion, this contains pointers to computed targets") << std::endl;
-    os << ctext_->declare_v(ctext_->type_name<double*>(),std::string("targets"),macro(tlabel,"NUM_TARGETS"));
+    if (cparams_->single_evaltype()) {
+      // figure out the maximum number of targets
+      unsigned int max_ntargets = 0;
+      const tciter tend = taskmgr.last();
+      for(tciter t=taskmgr.first(); t!=tend; ++t) {
+	SafePtr<TaskParameters> tparams = t->params();
+	max_ntargets = std::max(max_ntargets,tparams->max_ntarget());
+      }
+      ostringstream oss;
+      oss << max_ntargets;
+      os << ctext_->declare_v(ctext_->type_name<double*>(),std::string("targets"),oss.str());
+    }
+    else {
+      os << ctext_->declare_v(ctext_->type_name<double*>(),std::string("targets"),macro(tlabel,"NUM_TARGETS"));
+    }
 
     os << ctext_->comment("Actual vector length. Not to exceed MAX_VECLEN! If MAX_VECLEN is 1 then veclen is not used") << std::endl;
     os << ctext_->declare(ctext_->type_name<int>(),std::string("veclen"));
@@ -288,5 +327,18 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
     os << "} " << ctext_->inteval_type_name(tlabel) << ctext_->end_of_stat() << std::endl;
     
   }
+
+  // If generating single evaluator type, create aliases from the specialized types to the actual type
+  if (cparams_->single_evaltype()) {
+    const tciter tend = taskmgr.last();
+    for(tciter t=taskmgr.first(); t!=tend; ++t) {
+      const std::string& tlabel = t->label();
+      os << "typedef "
+	 << ctext_->inteval_gen_type_name() << " "
+	 << ctext_->inteval_spec_type_name(tlabel)
+	 << ctext_->end_of_stat() << std::endl;
+    }
+  }
+
 }
 

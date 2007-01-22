@@ -1,4 +1,9 @@
 
+01/22/2007:     There are 2 ways to generate integral evaluator types: single type for all tasks, or
+		task-specific types. Currently Libint will only generate the single type, although the
+		second mode should be easy to implement.
+                -EFV
+
 11/03/2006:     1) Each non-default symbol in the evaluator type also has a macro
                    which can be checked in the code which computes quartet info.
                 2) Updated test_eri/

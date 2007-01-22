@@ -63,7 +63,7 @@ namespace libint2 {
       }
       
       const std::string macro(const std::string& task_label, const std::string& label) {
-	std::string result("LIBINT2_");  result += label;  result += "_";  result += task_label;
+	std::string result("LIBINT2_");  result += label;  if (task_label != "") { result += "_";  result += task_label; }
         return result;
       }
       

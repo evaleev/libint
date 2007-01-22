@@ -63,6 +63,10 @@ namespace libint2 {
     const std::string& api_prefix() const {
       return api_prefix_;
     }
+    /// generate single evaluator type (i.e. not specific to each task)?
+    bool single_evaltype() const {
+      return single_evaltype_;
+    }
     /// returns whether to use C-style linking
     bool use_C_linking() const {
       return use_C_linking_;
@@ -124,6 +128,10 @@ namespace libint2 {
     void api_prefix(const std::string& a) {
       api_prefix_ = a;
     }
+    /// generate a single evaluator type (i.e. not specific to each task)?
+    void single_evaltype(bool se) {
+      single_evaltype_ = se;
+    }
     /// set whether to use C style linking
     void use_C_linking(bool a) {
       use_C_linking_ = a;
@@ -162,6 +170,8 @@ namespace libint2 {
       static const std::string source_directory;
       /// API prefix
       static const std::string api_prefix;
+      /// generate single evaltype?
+      static const bool single_evaltype_ = true;
       /// Use C-style linking convention by default
       static const bool use_C_linking = true;
       /// Do not count FLOPs by default
@@ -194,6 +204,8 @@ namespace libint2 {
     std::string source_directory_;
     /// API prefix
     std::string api_prefix_;
+    /// generate single evaluator type?
+    bool single_evaltype_;
     /// whether to use C linking
     bool use_C_linking_;
     /// whether to count FLOPs
