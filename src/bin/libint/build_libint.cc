@@ -465,6 +465,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           // update max stack size
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(memman->max_memory_used());
+	  tparams->max_ntarget(5);
 
           ostringstream oss;
           oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_r12kg12[" << la << "][" << lb << "][" << lc << "]["

@@ -1,4 +1,8 @@
 
+01/31/2007:     Libint evaluators which included support for G12 integrals had a bug -- # of targets was not
+		set properly.
+                -EFV
+
 01/22/2007:     There are 2 ways to generate integral evaluator types: single type for all tasks, or
 		task-specific types. Currently Libint will only generate the single type, although the
 		second mode should be easy to implement.
