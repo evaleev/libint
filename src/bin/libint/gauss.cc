@@ -112,7 +112,7 @@ CGF::dec(unsigned int i)
 }
 
 void
-CGF::inc(unsigned int i) throw()
+CGF::inc(unsigned int i)
 {
   if (i<3)
     ++qn_[i];
@@ -220,7 +220,7 @@ CGShell::dec(unsigned int i)
 }
 
 void
-CGShell::inc(unsigned int i) throw()
+CGShell::inc(unsigned int i)
 {
   if (i == 0)
     ++qn_[0];

@@ -672,7 +672,7 @@ namespace libint2 {
 
     TypelistBraket(const TList&);
     TypelistBraket(const TypelistBraket&);
-    ~TypelistBraket() throw();
+    ~TypelistBraket();
 
     bool equiv(const TypelistBraket&) const;
     /// Returns pointer to the i-th function for particle p
@@ -701,7 +701,7 @@ namespace libint2 {
   }
 
   template <class BFS, class TList>
-    TypelistBraket<BFS,TList>::~TypelistBraket() throw()
+    TypelistBraket<BFS,TList>::~TypelistBraket()
   {
   }
 
