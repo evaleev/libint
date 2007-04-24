@@ -682,10 +682,30 @@ dnl AC_CHECK_SIZEOF(void*)
 
 AC_SUBST(EXTRADEFINES)
 
-dnl ---------- Checks for header files. -----------
+dnl ---------- Checks for "standard" header files. -----------
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS(limits.h stdint.h)
+
+dnl ------------------ Check for Boost -----------------------
+
+AC_MSG_CHECKING([for Boost shared_ptr])
+AC_COMPILE_IFELSE(
+  [AC_LANG_SOURCE(
+    [[#include <boost/shared_ptr.hpp>
+    ]],
+    [[
+      shared_ptr<int> a(new int);
+      shared_ptr<int> b = a;
+    ]]
+   )],
+  [AC_MSG_RESULT([yes])],
+  [
+    AC_MSG_RESULT([no])
+    AC_MSG_ERROR([Boost shared_ptr is required. Please download Boost from boost.org.])
+  ]
+)
+
 
 dnl -- Checks for typedefs, structures, and compiler characteristics. --
 AC_TYPE_SIZE_T
