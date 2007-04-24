@@ -32,6 +32,10 @@
 
 /// Use integer key to compare
 #define USE_INT_KEY_TO_COMPARE 1
+// GenIntegralSet use unique integer keys to hash integrals and avoid creating temporaries
+#if !USE_INT_KEY_TO_COMPARE
+# error "For now USE_INT_KEY_TO_COMPARE must be 1"
+#endif
 
 /// If set to 1 then avoid using SubIterator to compute size
 #define COMPUTE_SIZE_DIRECTLY 1

@@ -24,8 +24,9 @@ namespace libint2 {
     void
     DirectedGraph::recurse(const SafePtr<I>& vertex)
     {
-      try { add_vertex(vertex); }
-      catch (VertexAlreadyOnStack& e) { return; }
+      SafePtr<DGVertex> dgvertex = add_vertex(vertex);
+      if (dgvertex != vertex)
+	return;
       
       SafePtr<RR> rr0(new RR(vertex));
       const int num_children = rr0->num_children();
@@ -49,8 +50,9 @@ namespace libint2 {
     void
     DirectedGraph::recurse(const SafePtr<DGVertex>& vertex)
     {
-      try { add_vertex(vertex); }
-      catch (VertexAlreadyOnStack& e) { return; }
+      SafePtr<DGVertex> dgvertex = add_vertex(vertex);
+      if (dgvertex != vertex)
+	return;
       
       typedef typename RR::TargetType TT;
       SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(vertex);
@@ -106,13 +108,10 @@ namespace libint2 {
       unsigned int nchildren = rr->num_children();
       unsigned int nchildren_on_stack = 0;
       for(int c=0; c<nchildren; c++) {
-        try {
-          vertex_is_on(rr->rr_child(c));
-        }
-        catch (VertexAlreadyOnStack& a) {
+	if (!vertex_is_on(rr->rr_child(c)))
           continue;
-        }
-        nchildren_on_stack++;
+	else
+	  nchildren_on_stack++;
       }
 
       return nchildren_on_stack;

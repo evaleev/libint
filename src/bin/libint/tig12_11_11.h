@@ -32,9 +32,7 @@ namespace libint2 {
       typedef typename DefaultTwoPBraket<BFS>::Result KetType;
       typedef EmptySet AuxIndexType;
       typedef TiG12_11_11 this_type;
-      /// This the type of the object that manages GenIntegralSet's as Singletons
-      typedef SingletonStack<TiG12_11_11,std::string> SingletonManagerType;
-      
+
       /// TiG12_11_11 is a set of these subobjects
       typedef TiG12_11_11<typename BFS::iter_type,I> iter_type;
       /// This is the immediate parent
@@ -42,12 +40,17 @@ namespace libint2 {
       /// This class provides comparison operations on pointers
       typedef PtrEquiv<this_type> PtrComp;
 
+      typedef typename parent_type::key_type key_type;
+      /// This the type of the object that manages GenIntegralSet's as Singletons
+      typedef SingletonStack<TiG12_11_11,key_type> SingletonManagerType;
+      
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
       */
       static const SafePtr<TiG12_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1);
       /// Returns a pointer to a unique instance, a la Singleton
       static const SafePtr<TiG12_11_11> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
+      ~TiG12_11_11();
       
       /// Comparison operator
       bool operator==(const this_type&) const;
@@ -72,10 +75,16 @@ namespace libint2 {
 #endif
     };
 
+#if USE_INT_KEY_TO_HASH
+  template <class BFS, int I>
+    typename TiG12_11_11<BFS,I>::SingletonManagerType
+    TiG12_11_11<BFS,I>::singl_manager_(&TiG12_11_11<BFS,I>::key);
+#else
   // I use label() to hash TiG12_11_11. Therefore labels must be unique!
   template <class BFS, int I>
     typename TiG12_11_11<BFS,I>::SingletonManagerType
     TiG12_11_11<BFS,I>::singl_manager_(&TiG12_11_11<BFS,I>::label);
+#endif
   
   template <class BFS, int I>
     TiG12_11_11<BFS,I>::TiG12_11_11(const BraType& bra, const KetType& ket,  const AuxIndexType& aux) :
@@ -89,16 +98,33 @@ namespace libint2 {
         throw std::runtime_error("TiG12_11_11<BFS,I>::TiG12_11_11(bra,ket) -- number of BFSs in ket for particle 0 must be 1");
       if (ket.num_members(1) != 1)
         throw std::runtime_error("TiG12_11_11<BFS,I>::TiG12_11_11(bra,ket) -- number of BFSs in ket for particle 1 must be 1");
+#if DEBUG
+      std::cout << "TiG12_11_11: constructed " << this->label() << std::endl;
+#endif
+    }
+
+  template <class BFS, int I>
+    TiG12_11_11<BFS,I>::~TiG12_11_11()
+    {
+#if DEBUG
+      std::cout << "TiG12_11_11: destructed " << this->label() << std::endl;
+#endif
     }
 
   template <class BFS, int I>
     const SafePtr< TiG12_11_11<BFS,I> >
     TiG12_11_11<BFS,I>::Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux)
     {
-      SafePtr<TiG12_11_11> this_int(new TiG12_11_11<BFS,I>(bra,ket,aux));
-      // Use singl_manager_ to make sure this is a new object of this type
-      const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
-      val.second->instid_ = val.first;
+      typedef typename SingletonManagerType::value_type map_value_type;
+      key_type key = compute_key(OperType(),bra,ket,aux);
+      const map_value_type& val = singl_manager_.find(key);
+      if (!val.second) {
+	SafePtr<TiG12_11_11> this_int(new TiG12_11_11<BFS,I>(bra,ket,aux));
+	// Use singl_manager_ to make sure this is a new object of this type
+	const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
+	val.second->instid_ = val.first;
+	return val.second;
+      }
       return val.second;
     }
 

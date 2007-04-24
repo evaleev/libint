@@ -32,8 +32,6 @@ namespace libint2 {
       typedef typename DefaultTwoPBraket<BFS>::Result KetType;
       typedef mType AuxIndexType;
       typedef R12kG12_11_11 this_type;
-      /// This the type of the object that manages GenIntegralSet's as Singletons
-      typedef SingletonStack<R12kG12_11_11,std::string> SingletonManagerType;
       
       /// R12kG12_11_11 is a set of these subobjects
       typedef R12kG12_11_11<typename BFS::iter_type,K> iter_type;
@@ -42,13 +40,18 @@ namespace libint2 {
       /// This class provides comparison operations on pointers
       typedef PtrEquiv<this_type> PtrComp;
 
+      typedef typename parent_type::key_type key_type;
+      /// This the type of the object that manages GenIntegralSet's as Singletons
+      typedef SingletonStack<R12kG12_11_11,key_type> SingletonManagerType;
+      
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
       */
       static const SafePtr<R12kG12_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, unsigned int m);
       /// Returns a pointer to a unique instance, a la Singleton
       static const SafePtr<R12kG12_11_11> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
-      
+      ~R12kG12_11_11();
+
       unsigned int m() const { return parent_type::aux()->elem(0); };
 
       /// Comparison operator
@@ -72,12 +75,19 @@ namespace libint2 {
 #if OVERLOAD_GENINTEGRALSET_LABEL
       mutable std::string label_;
 #endif
+
     };
 
+#if USE_INT_KEY_TO_HASH
+  template <class BFS, int K>
+    typename R12kG12_11_11<BFS,K>::SingletonManagerType
+    R12kG12_11_11<BFS,K>::singl_manager_(&R12kG12_11_11<BFS,K>::key);
+#else
   // I use label() to hash R12kG12_11_11. Therefore labels must be unique!
   template <class BFS, int K>
     typename R12kG12_11_11<BFS,K>::SingletonManagerType
     R12kG12_11_11<BFS,K>::singl_manager_(&R12kG12_11_11<BFS,K>::label);
+#endif
   
   template <class BFS, int K>
     R12kG12_11_11<BFS,K>::R12kG12_11_11(const BraType& bra, const KetType& ket,  const AuxIndexType& aux) :
@@ -91,16 +101,33 @@ namespace libint2 {
         throw std::runtime_error("R12kG12_11_11<BFS,K>::R12kG12_11_11(bra,ket) -- number of BFSs in ket for particle 0 must be 1");
       if (ket.num_members(1) != 1)
         throw std::runtime_error("R12kG12_11_11<BFS,K>::R12kG12_11_11(bra,ket) -- number of BFSs in ket for particle 1 must be 1");
+#if DEBUG
+      std::cout << "R12kG12_11_11: constructed " << this->label() << std::endl;
+#endif
+    }
+
+  template <class BFS, int K>
+    R12kG12_11_11<BFS,K>::~R12kG12_11_11()
+    {
+#if DEBUG
+      std::cout << "R12kG12_11_11: destructed " << this->label() << std::endl;
+#endif
     }
 
   template <class BFS, int K>
     const SafePtr< R12kG12_11_11<BFS,K> >
     R12kG12_11_11<BFS,K>::Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux)
     {
-      SafePtr<R12kG12_11_11> this_int(new R12kG12_11_11<BFS,K>(bra,ket,aux));
-      // Use singl_manager_ to make sure this is a new object of this type
-      const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
-      val.second->instid_ = val.first;
+      typedef typename SingletonManagerType::value_type map_value_type;
+      key_type key = compute_key(OperType(),bra,ket,aux);
+      const map_value_type& val = singl_manager_.find(key);
+      if (!val.second) {
+	SafePtr<R12kG12_11_11> this_int(new R12kG12_11_11<BFS,K>(bra,ket,aux));
+	// Use singl_manager_ to make sure this is a new object of this type
+	const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
+	val.second->instid_ = val.first;
+	return val.second;
+      }
       return val.second;
     }
 

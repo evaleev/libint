@@ -54,6 +54,11 @@ namespace libint2 {
           otherwise pushes obj to the end of ostack_ and returns obj.
       */
       const value_type& find(const SafePtr<T>& obj);
+      /** Returns the pointer to the unique instance of object corresponding to key.
+          if found returns the pointer to the corresponding object on ostack_,
+          else returns a null value_type.
+      */
+      const value_type& find(const key_type& key);
       
       /** Searches for obj on the stack and, if found, removes the unique instance
       */
@@ -97,6 +102,21 @@ namespace libint2 {
         std::cout << "SingletonStack::find -- " << obj->label() << " is new (instid_ = " << next_instance_-1 << ")" << std::endl;
 #endif
         return map_[key];
+      }
+    }
+
+  template <class T, class KeyType>
+    const typename SingletonStack<T,KeyType>::value_type&
+    SingletonStack<T,KeyType>::find(const key_type& key)
+    {
+      static value_type null_value(make_pair(InstanceID(0),SafePtr<T>()));
+      typedef typename map_type::iterator miter;
+      miter pos = map_.find(key);
+      if (pos != map_.end()) {
+        return (*pos).second;
+      }
+      else {
+	return null_value;
       }
     }
     

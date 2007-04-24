@@ -174,19 +174,13 @@ namespace libint2 {
           
           bool am1_exists = true;
           bool am2_exists = true;
-          try {
-            bra_ref->operator[](p_a).dec(xyz);
-          }
-          catch (InvalidDecrement) {
+	  if (!bra_ref->operator[](p_a).dec(xyz)) {
             am1_exists = false;
             am2_exists = false;
           }
           
           if (am1_exists) {
-            try {
-              bra_ref->operator[](p_a).dec(xyz);
-            }
-            catch (InvalidDecrement) {
+	    if (!bra_ref->operator[](p_a).dec(xyz)) {
               am2_exists = false;
               bra_ref->operator[](p_a).inc(xyz);
             }

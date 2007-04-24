@@ -187,10 +187,7 @@ namespace libint2 {
       int p_c = (p_a == 0) ? 1 : 0;
 
       // See if a-1 exists
-      try {
-        bra_ref->operator[](p_a).dec(dir);
-      }
-      catch (InvalidDecrement) {
+      if (!bra_ref->operator[](p_a).dec(dir)) {
         return;
       }
       // turn a-1 back to a
@@ -227,10 +224,7 @@ namespace libint2 {
 
       // See if a-2 exists
       bool a_minus_2_exists = true;
-      try {
-        bra_ref->operator[](p_a).dec(dir_);
-      }
-      catch (InvalidDecrement) {
+      if (!bra_ref->operator[](p_a).dec(dir_)) {
         a_minus_2_exists = false;
       }
       if (a_minus_2_exists) {
@@ -253,10 +247,7 @@ namespace libint2 {
 
       // See if b-1 exists
       bool b_minus_1_exists = true;
-      try {
-        ket_ref->operator[](p_a).dec(dir_);
-      }
-      catch (InvalidDecrement) {
+      if (!ket_ref->operator[](p_a).dec(dir_)) {
         b_minus_1_exists = false;
       }
       if (b_minus_1_exists) {
@@ -279,10 +270,7 @@ namespace libint2 {
 
       // See if c-1 exists
       bool c_minus_1_exists = true;
-      try {
-        bra_ref->operator[](p_c).dec(dir_);
-      }
-      catch (InvalidDecrement) {
+      if (!bra_ref->operator[](p_c).dec(dir_)) {
         c_minus_1_exists = false;
       }
       if (c_minus_1_exists) {
@@ -302,10 +290,7 @@ namespace libint2 {
 
       // See if d-1 exists
       bool d_minus_1_exists = true;
-      try {
-        ket_ref->operator[](p_c).dec(dir_);
-      }
-      catch (InvalidDecrement) {
+      if (!ket_ref->operator[](p_c).dec(dir_)) {
         d_minus_1_exists = false;
       }
       if (d_minus_1_exists) {
@@ -354,10 +339,7 @@ namespace libint2 {
 
       // See if a-2 exists
       bool a_minus_2_exists = true;
-      try {
-        bra_ref->operator[](p_a).dec(dir_);
-      }
-      catch (InvalidDecrement) {
+      if (!bra_ref->operator[](p_a).dec(dir_)) {
         a_minus_2_exists = false;
       }
       if (a_minus_2_exists) {
@@ -376,10 +358,7 @@ namespace libint2 {
 
       // See if b-1 exists
       bool b_minus_1_exists = true;
-      try {
-        ket_ref->operator[](p_a).dec(dir_);
-      }
-      catch (InvalidDecrement) {
+      if (!ket_ref->operator[](p_a).dec(dir_)) {
         b_minus_1_exists = false;
       }
       if (b_minus_1_exists) {
@@ -388,10 +367,7 @@ namespace libint2 {
 
       // See if c-1 exists
       bool c_minus_1_exists = true;
-      try {
-        bra_ref->operator[](p_c).dec(dir_);
-      }
-      catch (InvalidDecrement) {
+      if (!bra_ref->operator[](p_c).dec(dir_)) {
         c_minus_1_exists = false;
       }
       if (c_minus_1_exists) {
@@ -409,16 +385,13 @@ namespace libint2 {
         }
       }
 
-     // See if d-1 exists
-     bool d_minus_1_exists = true;
-     try {
-        ket_ref->operator[](p_c).dec(dir_);
-      }
-      catch (InvalidDecrement) {
-        d_minus_1_exists = false;
+      // See if d-1 exists
+      bool d_minus_1_exists = true;
+      if (!ket_ref->operator[](p_c).dec(dir_)) {
+	d_minus_1_exists = false;
       }
       if (d_minus_1_exists) {
-        throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- AM on centers b and d must be zero, general RR is not yet implemented");
+	throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- AM on centers b and d must be zero, general RR is not yet implemented");
       }
       
       if (EqualZero<K>::result == false) {

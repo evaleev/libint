@@ -62,9 +62,10 @@ namespace libint2 {
     /// Returns all targets
     const vertices& all_targets() const { return targets_; }
     
-    /** appends v to the graph
+    /** appends v to the graph. If v's copy is already on the graph, return the pointer
+	to the copy. Else return pointer to *v.
     */
-    void append_vertex(const SafePtr<DGVertex>& v) throw(VertexAlreadyOnStack);
+    SafePtr<DGVertex> append_vertex(const SafePtr<DGVertex>& v);
 
     /** non-template append_target appends the vertex to the graph as a target
     */
@@ -198,13 +199,13 @@ namespace libint2 {
     
     /** adds a vertex to the graph. If the vertex already found on the graph
         then the vertex is not added and the function returns false */
-    void add_vertex(const SafePtr<DGVertex>&) throw(VertexAlreadyOnStack);
+    SafePtr<DGVertex> add_vertex(const SafePtr<DGVertex>&);
     /** same as add_vertex(), only assumes that there's no equivalent vertex on the graph (see vertex_is_on) */
     void add_new_vertex(const SafePtr<DGVertex>&);
     /// returns true if vertex if already on graph
-    void vertex_is_on(const SafePtr<DGVertex>& vertex) const throw(VertexAlreadyOnStack);
-    /// removes vertex from the graph
-    void del_vertex(const SafePtr<DGVertex>&) throw(CannotPerformOperation);
+    SafePtr<DGVertex> vertex_is_on(const SafePtr<DGVertex>& vertex) const;
+    /// removes vertex from the graph. may throw CannotPerformOperation
+    void del_vertex(const SafePtr<DGVertex>&);
     /** This function is used to implement (recursive) append_target().
         vertex is appended to the graph and then RR is applied to is.
      */
@@ -220,7 +221,7 @@ namespace libint2 {
                   const SafePtr<Strategy>& strategy,
                   const SafePtr<Tactic>& tactic);
     /// This function insert expr of type AlgebraicOperator<DGVertex> into the graph
-    void insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr) throw(VertexAlreadyOnStack);
+    SafePtr<DGVertex> insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr);
     /// This function replaces RecurrenceRelations with concrete arithemtical expressions
     void replace_rr_with_expr();
     /// This function gets rid of trivial math such as multiplication/division by 1.0, etc.
@@ -239,8 +240,10 @@ namespace libint2 {
     */
     void find_subtrees_from(const SafePtr<DGVertex>& v);
     /** If v1 and v2 are connected by DGArcDirect and all entry arcs to v1 are of the DGArcDirect type as well,
-        this function will reattach all arcs extering v1 to v2 and remove v1 from the graph alltogether. */
-    void remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2) throw(CannotPerformOperation);
+        this function will reattach all arcs extering v1 to v2 and remove v1 from the graph altogether.
+	May throw CannotPerformOperation.
+    */
+    void remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2);
     
     // Which vertex is the first to compute
     SafePtr<DGVertex> first_to_compute_;

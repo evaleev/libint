@@ -26,6 +26,7 @@ namespace libint2 {
     
   };
 
+#if 0
   /** This exception class is used to pass the pointer to the vertex on the graph
    */
   class VertexAlreadyOnStack : public std::logic_error {
@@ -42,6 +43,7 @@ namespace libint2 {
     SafePtr<DGVertex> vertex_;
     
   };
+#endif
 
   /** This exception class is used to notify that a graph operation cannot be performed
    */

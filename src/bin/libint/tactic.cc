@@ -43,9 +43,20 @@ ZeroNewVerticesTactic::optimal_rr(const rr_stack& stack) const {
   if (!stack.empty()) {
     // Loop over all RRs and find the one with zero children
     for(unsigned int i=0; i<stack.size(); i++) {
-      unsigned int nchildren = dg_->num_children_on(stack[i]);
-      if (nchildren == 0) {
-        return stack[i];
+      const RR& rr = stack[i];
+      const unsigned int nchildren = rr->num_children();
+      unsigned int nchildren_on_dg = dg_->num_children_on(rr);
+      if (nchildren == nchildren_on_dg) {
+        return rr;
+      }
+      else {
+	std::cout << "ZeroNewVerticesTactic::optimal_rr: not optimal: " << stack[i]->label() << std::endl;
+	SafePtr<DGVertex> target = stack[i]->rr_target();
+	const unsigned int nchildren = stack[i]->num_children();
+	for(unsigned int c=0; c<nchildren; ++c) {
+	  SafePtr<DGVertex> child = stack[i]->rr_child(c);
+	  std::cout << "  child " << c << ": " << child->label() << std::endl;
+	}
       }
     }
     throw std::logic_error("ZeroNewVerticesTactic -- no RRs found that add zero new vertices. Probably used by mistake");

@@ -37,27 +37,33 @@ DirectedGraph::append_target(const SafePtr<DGVertex>& target)
   targets_.push_back(target);
 }
 
-void
-DirectedGraph::append_vertex(const SafePtr<DGVertex>& vertex) throw(VertexAlreadyOnStack)
+SafePtr<DGVertex>
+DirectedGraph::append_vertex(const SafePtr<DGVertex>& vertex)
 {
-  try {
-    add_vertex(vertex);
-    // If this is a new vertex -- tell the vertex who its owner is now
+  // If this vertex is owned by this graph, return it immediately
+  if (vertex->dg() == this) {
+#if DEBUG
+    std::cout << "append_vertex: vertex " << vertex->label() << " is already on" << endl;
+#endif
+    return vertex;
+  }
+  const SafePtr<DGVertex>& vcopy_on_graph = add_vertex(vertex);
+  // If this is a new vertex -- tell the vertex who its owner is now
+  if (vcopy_on_graph == vertex)
     vertex->dg(this);
-  }
-  // Handle the trivial case when this exact object is already on graph -- there's no reason to throw the exception then
-  catch (VertexAlreadyOnStack& e) {
-    //    if (e.vertex() != vertex)
-      throw;
-  }
+  return vcopy_on_graph;
 }
 
-void
-DirectedGraph::add_vertex(const SafePtr<DGVertex>& vertex) throw(VertexAlreadyOnStack)
+SafePtr<DGVertex>
+DirectedGraph::add_vertex(const SafePtr<DGVertex>& vertex)
 {
-  vertex_is_on(vertex);
-  add_new_vertex(vertex);
-  return;
+  SafePtr<DGVertex> vcopy_on_graph = vertex_is_on(vertex);
+  if (vcopy_on_graph)
+    return vcopy_on_graph;
+  else {
+    add_new_vertex(vertex);
+    return vertex;
+  }
 }
 
 void
@@ -74,21 +80,28 @@ DirectedGraph::add_new_vertex(const SafePtr<DGVertex>& vertex)
   vertex->set_graph_label(label);
   stack_[first_free_++] = vertex;
 #if DEBUG
-  cout << "Added vertex " << vertex->description() << endl;
+  cout << "add_new_vertex: added vertex " << vertex->description() << endl;
 #endif
   return;
 }
 
-void
-DirectedGraph::vertex_is_on(const SafePtr<DGVertex>& vertex) const throw(VertexAlreadyOnStack)
+SafePtr<DGVertex>
+DirectedGraph::vertex_is_on(const SafePtr<DGVertex>& vertex) const
 {
-  for(int i=0; i<first_free_; i++)
-    if(vertex->equiv(stack_[i]))
-      throw VertexAlreadyOnStack(stack_[i]);
+  for(int i=0; i<first_free_; i++) {
+    const SafePtr<DGVertex>& vi = stack_[i];
+    if(vertex->equiv(vi)) {
+#if DEBUG
+      std::cout << "vertex_is_on: " << vertex->label() << std::endl;
+#endif
+      return vi;
+    }
+  }
+  return SafePtr<DGVertex>();
 }
 
 void
-DirectedGraph::del_vertex(const SafePtr<DGVertex>& v) throw(CannotPerformOperation)
+DirectedGraph::del_vertex(const SafePtr<DGVertex>& v)
 {
   // Cannot delete targets. Should I be able to? Probably not
   if (v->is_a_target())
@@ -265,8 +278,11 @@ DirectedGraph::apply(const SafePtr<Strategy>& strategy,
     for(int c=0; c<num_children; c++) {
       SafePtr<DGVertex> child = rr0->rr_child(c);
       bool new_vertex = true;
-      try { append_vertex(child); }
-      catch (VertexAlreadyOnStack& e) { child = e.vertex(); new_vertex = false; }
+      SafePtr<DGVertex> dgchild = append_vertex(child);
+      if (dgchild != child) {
+	child = dgchild;
+	new_vertex = false;
+      }
       SafePtr<DGArc> arc(new DGArcRel<RecurrenceRelation>(target,child,rr0));
       target->add_exit_arc(arc);
       if (new_vertex)
@@ -292,8 +308,11 @@ DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex,
   for(int c=0; c<num_children; c++) {
     SafePtr<DGVertex> child = rr0->rr_child(c);
     bool new_vertex = true;
-    try { append_vertex(child); }
-    catch (VertexAlreadyOnStack& e) { child = e.vertex(); new_vertex = false; }
+      SafePtr<DGVertex> dgchild = append_vertex(child);
+      if (dgchild != child) {
+	child = dgchild;
+	new_vertex = false;
+      }
     SafePtr<DGArc> arc(new DGArcRel<RecurrenceRelation>(target,child,rr0));
     target->add_exit_arc(arc);
     if (new_vertex)
@@ -339,10 +358,7 @@ DirectedGraph::replace_rr_with_expr()
         // and instead insert the numerical expression
         SafePtr<RecurrenceRelation::ExprType> rr_expr = rr->rr_expr();
         SafePtr<DGVertex> expr_vertex = static_pointer_cast<RecurrenceRelation::ExprType,DGVertex>(rr_expr);
-	try {
-          insert_expr_at(vertex,rr_expr);
-	}
-	catch (VertexAlreadyOnStack& e) { expr_vertex = e.vertex(); }
+        expr_vertex = insert_expr_at(vertex,rr_expr);
         SafePtr<DGArc> arc(new DGArcDirect(vertex,expr_vertex));
         vertex->add_exit_arc(arc);
 
@@ -358,97 +374,72 @@ DirectedGraph::replace_rr_with_expr()
 // can simply compare operand pointers and the operator type (very cheap operations compared
 // to the fully recursive explicit comparison).
 //
-void
-DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<RecurrenceRelation::ExprType>& expr) throw(VertexAlreadyOnStack)
+SafePtr<DGVertex>
+DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<RecurrenceRelation::ExprType>& expr)
 {
 #if DEBUG
   cout << "insert_expr_at: " << expr->description() << endl;
 #endif
-  // If it's already on then throw an exception
-  if (expr->dg() == this)
-    throw VertexAlreadyOnStack(expr);
 
   typedef RecurrenceRelation::ExprType ExprType;
   SafePtr<DGVertex> expr_vertex = static_pointer_cast<DGVertex,ExprType>(expr);
 
-  bool new_left = true;
-  bool new_right = true;
-  bool need_to_clone = false;
+  // If the expression is already on then return it
+  if (expr->dg() == this)
+    return expr_vertex;
+
   SafePtr<DGVertex> left_oper = expr->left();
   SafePtr<DGVertex> right_oper = expr->right();
+  bool new_left =  (left_oper->dg()  != this);       // 
+  bool new_right = (right_oper->dg() != this);       // 
+  bool need_to_clone = false;  // clone expression if (parts of) the expression was found on the graph
 
   // See if left operand is also an operator
-  SafePtr<ExprType> left_cast = dynamic_pointer_cast<ExprType,DGVertex>(left_oper);
+  const SafePtr<ExprType> left_cast = dynamic_pointer_cast<ExprType,DGVertex>(left_oper);
   // if yes -- add it to the graph recursively
   if (left_cast) {
-    try { insert_expr_at(expr_vertex,left_cast); }
-#if ONLY_CLONE_IF_DIFF
-    catch (VertexAlreadyOnStack& e) {
-      if (left_oper != e.vertex()) {
-        need_to_clone = true;
-        left_oper = e.vertex();
-      }
-      new_left = false;
-    }
-#else
-    catch (VertexAlreadyOnStack& e) { left_oper = e.vertex(); new_left = false; need_to_clone = true;}
-#endif 
+    left_oper = insert_expr_at(expr_vertex,left_cast);
   }
   // else add it directly
   else {
-    try { append_vertex(left_oper); }
-#if ONLY_CLONE_IF_DIFF
-    catch (VertexAlreadyOnStack& e) {
-      if (left_oper != e.vertex()) {
-        need_to_clone = true;
-        left_oper = e.vertex();
-      }
-      new_left = false;
-    }
-#else
-    catch (VertexAlreadyOnStack& e) { left_oper = e.vertex(); new_left = false; need_to_clone = true; }
-#endif
+    left_oper = append_vertex(left_oper);
   }
+#if ONLY_CLONE_IF_DIFF
+  if (left_oper != expr->left()) {
+    std::cout << "insert_expr_at: append(left) != left" << std::endl;
+    need_to_clone = true;
+    new_left = false;
+  }
+#else
+#error "ONLY_CLONE_IF_DIFF must be true"
+#endif 
 
   // See if right operand is also an operator
   SafePtr<ExprType> right_cast = dynamic_pointer_cast<ExprType,DGVertex>(right_oper);
   // if yes -- add it to the graph recursively
   if (right_cast) {
-    try { insert_expr_at(expr_vertex,right_cast); }
-#if ONLY_CLONE_IF_DIFF
-    catch (VertexAlreadyOnStack& e) {
-      if (right_oper != e.vertex()) {
-        need_to_clone = true;
-        right_oper = e.vertex();
-      }
-      new_right = false;
-    }
-#else
-    catch (VertexAlreadyOnStack& e) { right_oper = e.vertex(); new_right = false; need_to_clone = true; }
-#endif
+    right_oper = insert_expr_at(expr_vertex,right_cast);
   }
   // else add it directly
   else {
-    try { append_vertex(right_oper); }
-#if ONLY_CLONE_IF_DIFF
-    catch (VertexAlreadyOnStack& e) {
-      if (right_oper != e.vertex()) {
-        need_to_clone = true;
-        right_oper = e.vertex();
-      }
-      new_right = false;
-    }
-#else
-    catch (VertexAlreadyOnStack& e) { right_oper = e.vertex(); new_right = false; need_to_clone = true; }
-#endif 
+    right_oper = append_vertex(right_oper);
   }
+#if ONLY_CLONE_IF_DIFF
+  if (right_oper != expr->right()) {
+    std::cout << "insert_expr_at: append(right) != right" << std::endl;
+    need_to_clone = true;
+    new_right = false;
+  }
+#else
+#error "ONLY_CLONE_IF_DIFF must be true"
+#endif
 
   if (need_to_clone) {
     SafePtr<ExprType> expr_new(new ExprType(expr,left_oper,right_oper));
     expr_vertex = static_pointer_cast<DGVertex,ExprType>(expr_new);
     int nchildren = expr->num_exit_arcs();
 #if DEBUG
-    cout << "Cloned AlgebraicOperator with " << expr->num_exit_arcs() << " children" << endl;
+    cout << "insert_expr_at: cloned AlgebraicOperator with " << expr->num_exit_arcs() << " children" << endl;
     if (nchildren) {
       cout << "Left:  " << expr->left()->description() << endl;
       cout << "Right: " << expr->right()->description() << endl;
@@ -456,43 +447,37 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<Recu
 #endif
   }
 
-  bool new_vertex = true;
+  SafePtr<DGVertex> dgexpr_vertex = expr_vertex;
   if (new_left || new_right)
     add_new_vertex(expr_vertex);
   else {
     const bool do_cse = registry()->do_cse();
-    try {
-      if (do_cse) {
-        append_vertex(expr_vertex);
-      }
-      else {
-        add_new_vertex(expr_vertex);
-      }
+    if (do_cse) {
+      std::cout << "insert_expr_at: appending vertex " << expr_vertex->description() << std::endl;
+      dgexpr_vertex = append_vertex(expr_vertex);
     }
-    catch (VertexAlreadyOnStack& e) {
+    else {
+      add_new_vertex(expr_vertex);
+    }
+    if (expr_vertex != dgexpr_vertex) {
       if (new_left || new_right) {
         cout << "Problem detected: AlgebraicOperator is found on the stack but one of its operands was new" << endl;
         cout << expr_vertex->description() << endl;
-        cout << e.vertex()->description() << endl;
+        cout << dgexpr_vertex->description() << endl;
         throw std::runtime_error("DirectedGraph::insert_expr_at() -- vertex is not new but one of the operands is");
       }
-      expr_vertex = e.vertex(); new_vertex = false;
-      throw;
     }
+    expr_vertex = dgexpr_vertex;
   }
   SafePtr<DGArc> left_arc(new DGArcDirect(expr_vertex,left_oper));
   expr_vertex->add_exit_arc(left_arc);
   SafePtr<DGArc> right_arc(new DGArcDirect(expr_vertex,right_oper));
   expr_vertex->add_exit_arc(right_arc);
-  //SafePtr<DGArc> arc(new DGArcDirect(where,expr_vertex));
-  //where->add_exit_arc(arc);
 #if DEBUG
   cout << "insert_expr_at: added arc between " << where << " and " << expr_vertex << endl;
 #endif
 
-  // throw if the added expression was a cloned copy of the original
-  if (need_to_clone)
-    throw VertexAlreadyOnStack(expr_vertex);
+  return expr_vertex;
 }
 
 // Replace recurrence relations with expressions
@@ -581,7 +566,7 @@ DirectedGraph::handle_trivial_nodes()
 // If v1 and v2 are connected by DGArcDirect and all entry arcs to v1 are of the DGArcDirect type as well,
 // this function will reattach all arcs extering v1 to v2 and remove v1 from the graph alltogether.
 void
-DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2) throw(CannotPerformOperation)
+DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2)
 {
   typedef vector<SafePtr<DGArc> > arcvec;
   typedef arcvec::iterator aiter;
@@ -1584,7 +1569,7 @@ namespace libint2 {
       const ExtractExternSymbols::Symbols& symbols = extractor->symbols();
       // pass on to the symbol maintainer of the current task
       taskmgr.current().symbols()->add(symbols);
-#if 1
+#if DEBUG
       // print out the symbols
       std::cout << "Recovered symbols from DirectedGraph for " << dg << std::endl;
       typedef ExtractExternSymbols::Symbols::const_iterator citer;

@@ -101,13 +101,17 @@ CGF::operator==(const CGF& a) const
            qn_[2] == a.qn_[2] );
 }
 
-void
+bool
 CGF::dec(unsigned int i)
 {
   if (i<3) {
     if (qn_[i] == 0)
-      throw InvalidDecrement("CGF::dec() -- quantum number already 0");
+      return false;
     --qn_[i];
+    return true;
+  }
+  else {
+    return false;
   }
 }
 
@@ -206,16 +210,17 @@ CGShell::operator==(const CGShell& a) const
   return ( qn_[0] == a.qn_[0] );
 }
 
-void
+bool
 CGShell::dec(unsigned int i)
 {
   if (i == 0) {
     if (qn_[0] == 0)
-      throw InvalidDecrement("CGShell::dec() -- angular momentum already 0");
+      return false;
     --qn_[0];
+    return true;
   }
   else {
-    throw InvalidDecrement("CGShell::dec(i) -- i must be zero");
+    return false;
   }
 }
 

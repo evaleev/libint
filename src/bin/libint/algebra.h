@@ -136,9 +136,9 @@ namespace libint2 {
       {
         if (descr_.empty()) {
           ostringstream os;
-          os << "AlgebraicOperator: " << left_->description() << " "
-             << algebra::OperatorSymbol[OT_] << " "
-             << right_->description();
+          os << "( ( " << left_->description() << " ) "
+             << algebra::OperatorSymbol[OT_] << " ( "
+             << right_->description() << " ) )";
           descr_ = os.str();
         }
         return descr_;

@@ -99,12 +99,11 @@ namespace libint2 {
       typedef PtrEquiv<GenIntegralSet> PtrComp;
 #if  USE_INT_KEY_TO_HASH
       typedef LIBINT2_UINT_LEAST64 key_type;
+#else
+      typedef std::string key_type;
+#endif
       /// This the type of the object that manages GenIntegralSet's as Singletons
       typedef SingletonStack<GenIntegralSet,key_type> SingletonManagerType;
-#else
-      /// This the type of the object that manages GenIntegralSet's as Singletons
-      typedef SingletonStack<GenIntegralSet,std::string> SingletonManagerType;
-#endif
       /// This is the type of the operator
       typedef Oper OperType;
 
@@ -171,6 +170,12 @@ namespace libint2 {
       protected:
       // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
       GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
+      /// computes a key. it's protected so that derived classes can use it to implement smart caching in constructors
+      static key_type compute_key(const Oper& O, const BraType& bra, const KetType& ket, const AuxQuanta& aux) {
+        key_type key = ( (O.key()*bra.max_key() + bra.key() ) * ket.max_key() +
+			 ket.key() ) * aux.max_key() + aux.key();
+	return key;
+      }
 
       BraSetType bra_;
       KetSetType ket_;
@@ -215,11 +220,9 @@ namespace libint2 {
 
       /// computes and caches key
       void compute_key() const {
-        LIBINT2_UINT_LEAST64 key;
-        key = ( (O_->key()*bra_.max_key() + bra_.key() ) * ket_.max_key() +
-                ket_.key() ) * aux_->max_key() + aux_->key();
-        key_ = key;
+        key_ = compute_key(*(O_.get()),bra_,ket_,*(aux_.get()));
       }
+
     };
 
 #if USE_INT_KEY_TO_HASH
@@ -245,7 +248,7 @@ namespace libint2 {
         throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in ket doesn't match that in the operator");
       compute_key();
 #if DEBUG
-      std::cout << "Constructed " << label() << std::endl;
+      std::cout << "GenIntegralSet: constructed " << label() << std::endl;
 #endif
     }
   
@@ -253,7 +256,7 @@ namespace libint2 {
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::~GenIntegralSet()
     {
 #if DEBUG
-      std::cout << "Destructed " << label() << std::endl;
+      std::cout << "GenIntegralSet: destructed " << label() << std::endl;
 #endif
     }
 
@@ -261,11 +264,17 @@ namespace libint2 {
     const SafePtr< GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta> >
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::Instance(const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux, const Op& oper)
     {
-      SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
-      // Use singl_manager_ to make sure this is a new object of this type
-      const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
-      val.second->instid_ = val.first;
-      this_int.reset();
+      typedef typename SingletonManagerType::value_type map_value_type;
+      key_type key = compute_key(oper,bra,ket,aux);
+      const map_value_type& val = singl_manager_.find(key);
+      if (!val.second) {
+	SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
+	// Use singl_manager_ to make sure this is a new object of this type
+	const map_value_type& val = singl_manager_.find(this_int);
+	val.second->instid_ = val.first;
+	this_int.reset();
+	return val.second;
+      }
       return val.second;
     }
   
@@ -495,14 +504,9 @@ namespace libint2 {
       /// This class provides comparison operations on pointers
       typedef PtrEquiv<this_type> PtrComp;
 
-#if USE_INT_KEY_TO_HASH
       typedef typename parent_type::key_type key_type;
       /// This the type of the object that manages GenIntegralSet's as Singletons
       typedef SingletonStack<TwoPRep_11_11,key_type> SingletonManagerType;
-#else
-      /// This the type of the object that manages GenIntegralSet's as Singletons
-      typedef SingletonStack<TwoPRep_11_11,std::string> SingletonManagerType;
-#endif
       
       // Destructor only to track object's death
       ~TwoPRep_11_11();
@@ -563,14 +567,14 @@ namespace libint2 {
       if (ket.num_members(1) != 1)
         throw std::runtime_error("TwoPRep_11_11<BFS>::TwoPRep_11_11(bra,ket) -- number of BFSs in ket for particle 1 must be 1");
 #if DEBUG
-      std::cout << "Constructed TwoPRep_11_11 " << this->label() << std::endl;
+      std::cout << "TwoPRep_11_11: constructed " << this->label() << std::endl;
 #endif
     }
   
   template <class BFS>
     TwoPRep_11_11<BFS>::~TwoPRep_11_11() {
 #if DEBUG
-      std::cout << "Destructed TwoPRep_11_11 " << this->label() << std::endl;
+      std::cout << "TwoPRep_11_11: destructed  " << this->label() << std::endl;
 #endif
     }
   
@@ -578,11 +582,17 @@ namespace libint2 {
     const SafePtr< TwoPRep_11_11<BFS> >
     TwoPRep_11_11<BFS>::Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux)
     {
-      SafePtr<TwoPRep_11_11> this_int(new TwoPRep_11_11<BFS>(bra,ket,aux));
-      // Use singl_manager_ to make sure this is a new object of this type
-      const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
-      val.second->instid_ = val.first;
-      this_int.reset();
+      typedef typename SingletonManagerType::value_type map_value_type;
+      key_type key = compute_key(TwoERep(),bra,ket,aux);
+      const map_value_type& val = singl_manager_.find(key);
+      if (!val.second) {
+	SafePtr<TwoPRep_11_11> this_int(new TwoPRep_11_11<BFS>(bra,ket,aux));
+	// Use singl_manager_ to make sure this is a new object of this type
+	const map_value_type& val = singl_manager_.find(this_int);
+	val.second->instid_ = val.first;
+	this_int.reset();
+	return val.second;
+      }
       return val.second;
     }
 

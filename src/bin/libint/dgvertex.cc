@@ -139,7 +139,7 @@ DGVertex::del_entry_arc(const SafePtr<DGArc>& arc)
 }
 
 void
-DGVertex::detach() throw (CannotPerformOperation)
+DGVertex::detach()
 {
   // If there are no entry arcs -- then other vertices do not depend on this guy
   // Can safely remove exit arcs
@@ -223,7 +223,7 @@ DGVertex::reset()
 }
 
 const std::string&
-DGVertex::graph_label() const throw(GraphLabelNotSet)
+DGVertex::graph_label() const
 {
   if (!graph_label_.empty())
     return graph_label_;
@@ -260,7 +260,7 @@ DGVertex::inc_nrefs()
 }
 
 const std::string&
-DGVertex::symbol() const throw(SymbolNotSet)
+DGVertex::symbol() const
 {
   if (referred_vertex_ && referred_vertex_->symbol_set())
     return referred_vertex_->symbol();
@@ -292,7 +292,7 @@ DGVertex::reset_symbol()
 }
 
 DGVertex::Address
-DGVertex::address() const throw(AddressNotSet)
+DGVertex::address() const
 {
   if (referred_vertex_ && referred_vertex_->address_set())
     return referred_vertex_->address();

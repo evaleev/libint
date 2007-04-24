@@ -34,9 +34,9 @@ namespace libint2 {
     virtual ~IncableBFSet() {}
 
     /// Increment i-th quantum number. Do nothing if i is outside the allowed range.
-    virtual void inc(unsigned int i) =0;  // throw()
-    /// Decrements i-th quantum number. Do nothing is i is outside the allowed range
-    virtual void dec(unsigned int i) =0;
+    virtual void inc(unsigned int i) =0;
+    /// Decrements i-th quantum number. Return false and do nothing is i is outside the allowed range, else return true.
+    virtual bool dec(unsigned int i) =0;
     /// Returns true if all quanta are 0
     virtual bool zero() const =0;
     
@@ -78,10 +78,10 @@ namespace libint2 {
     /// Comparison operator
     bool operator==(const CGShell&) const;
 
-    /// Implements purely virtual IncableBFSet::dec, may throw InvalidDecrement
-    void dec(unsigned int i);
+    /// Implements purely virtual IncableBFSet::dec
+    bool dec(unsigned int i);
     /// Implements purely virtual IncableBFSet::inc
-    void inc(unsigned int i); // throw()
+    void inc(unsigned int i);
     /// Implements IncableBFSet::zero()
     bool zero() const;
     /// Implements Hashable<unsigned>::key()
@@ -128,10 +128,10 @@ namespace libint2 {
     /// Comparison operator
     bool operator==(const CGF&) const;
     
-    /// Implements purely virtual IncableBFSet::dec, may throw InvalidDecrement
-    void dec(unsigned int i);
+    /// Implements purely virtual IncableBFSet::dec
+    bool dec(unsigned int i);
     /// Implements purely virtual IncableBFSet::inc
-    void inc(unsigned int i); // throw()
+    void inc(unsigned int i);
     /// Implements IncableBFSet::zero()
     bool zero() const;
     /// Implements Hashable<unsigned>::key()

@@ -73,8 +73,9 @@ namespace libint2 {
     void replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B);
     /** this function detaches the vertex from other vertices. It cannot safely remove
         entry arcs, so the user must previously delete or replace them (see documentation for del_exit_arc()).
+	can throw CannotPerformOperation.
     */
-    void detach() throw (CannotPerformOperation);
+    void detach();
 
     /// returns the number of parents
     unsigned int num_entry_arcs() const;
@@ -118,8 +119,8 @@ namespace libint2 {
 
     /// Returns pointer to the DirectedGraph to which this DGVertex belongs to
     const DirectedGraph* dg() const { return dg_; }
-    /// returns the label used for this vertex when visualizing graph
-    const std::string& graph_label() const throw(GraphLabelNotSet);
+    /// returns the label used for this vertex when visualizing graph. can throw GraphLabelNotSet.
+    const std::string& graph_label() const;
     /// sets the graph label
     void set_graph_label(const std::string& graph_label);
     
@@ -135,16 +136,16 @@ namespace libint2 {
     calls to symbol() and address() report code symbol and stack address of V
     */
     void refer_this_to(const SafePtr<DGVertex>&  V);
-    /// returns the code symbol
-    const std::string& symbol() const throw(SymbolNotSet);
+    /// returns the code symbol. can throw SymbolNotSet
+    const std::string& symbol() const;
     /// sets the code symbol
     void set_symbol(const std::string& symbol);
     /// returns true if the symbol has been set
     bool symbol_set() const { return !symbol_.empty(); }
     /// this function void the symbol, i.e. it is no longer set after calling this member
     void reset_symbol();
-    /// returns the address of this quantity on Libint's stack
-    Address address() const throw(AddressNotSet);
+    /// returns the address of this quantity on Libint's stack. can throw AddressNotSet
+    Address address() const;
     /// sets the address of this quantity on Libint's stack
     void set_address(const Address& address);
     /// returns true if the address has been set
@@ -192,7 +193,7 @@ namespace libint2 {
     /// Sets pointer to the DirectedGraph to which this DGVertex belongs to
     void dg(const DirectedGraph* d) { dg_ = d; }
     /// Only DirectedGraph::append_vertex can change dg_
-    friend void DirectedGraph::append_vertex(const SafePtr<DGVertex>& vertex) throw(VertexAlreadyOnStack);
+    friend SafePtr<DGVertex> DirectedGraph::append_vertex(const SafePtr<DGVertex>& vertex);
     /// label for the vertex within the graph
     std::string graph_label_;
 

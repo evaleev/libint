@@ -159,12 +159,14 @@ void try_main (int argc, char* argv[])
     const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
     typedef TaskExternSymbols::SymbolList SymbolList;
     const SymbolList& symbols = tsymbols->symbols();
+#if DEBUG
     // print out the labels
     std::cout << "Recovered labels for task " << t->label() << std::endl;
     typedef SymbolList::const_iterator citer;
     citer end = symbols.end();
     for(citer s=symbols.begin(); s!=end; ++s)
       std::cout << *s << std::endl;
+#endif
   }
 
   // transfer some library configuration to library API

@@ -176,10 +176,7 @@ namespace libint2 {
       int p_c = (p_a == 0) ? 1 : 0;
 
       // See if a-1 exists
-      try {
-        bra_ref->operator[](p_a).dec(dir);
-      }
-      catch (InvalidDecrement) {
+      if (!bra_ref->operator[](p_a).dec(dir)) {
         return;
       }
       children_[0] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
@@ -205,10 +202,7 @@ namespace libint2 {
 
       // See if a-2 exists
       bool a_minus_2_exists = true;
-      try {
-        bra_ref->operator[](p_a).dec(dir);
-      }
-      catch (InvalidDecrement) {
+      if (!bra_ref->operator[](p_a).dec(dir)) {
         a_minus_2_exists = false;
       }
       if (a_minus_2_exists) {
@@ -226,10 +220,7 @@ namespace libint2 {
       }
 
       // See if c-1 exists
-      try {
-        bra_ref->operator[](p_c).dec(dir);
-      }
-      catch (InvalidDecrement) {
+      if (!bra_ref->operator[](p_c).dec(dir)) {
         return;
       }
       children_[3] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
