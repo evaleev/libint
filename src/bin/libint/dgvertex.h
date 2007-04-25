@@ -14,6 +14,7 @@
 #include <singl_stack.h>
 #include <hashable.h>
 #include <libint2_intrinsic_types.h>
+#include <key.h>
 
 namespace libint2 {
 
@@ -45,7 +46,7 @@ namespace libint2 {
     /** instid stores the InstanceID of the object. Only makes sense for Singletons.
         For other objects it's zero. Can be used to compare objects quickly. */
     InstanceID instid_;
-    /// Sets typeid to tid 
+    /// Sets typeid to tid
     DGVertex(ClassID tid);
     /// Sets typeid to tid 
     DGVertex(ClassID tid, const vector<SafePtr<DGArc> >& parents, const vector<SafePtr<DGArc> >& children);
@@ -119,6 +120,8 @@ namespace libint2 {
 
     /// Returns pointer to the DirectedGraph to which this DGVertex belongs to
     const DirectedGraph* dg() const { return dg_; }
+    /// Sets pointer to the DirectedGraph to which this DGVertex belongs to. Should be used with utmost caution
+    void dg(const DirectedGraph* d) { dg_ = d; }
     /// returns the label used for this vertex when visualizing graph. can throw GraphLabelNotSet.
     const std::string& graph_label() const;
     /// sets the graph label
@@ -190,10 +193,6 @@ namespace libint2 {
   private:
     /// the pointer to the graph to which this vertex belongs (can be null)
     const DirectedGraph* dg_;
-    /// Sets pointer to the DirectedGraph to which this DGVertex belongs to
-    void dg(const DirectedGraph* d) { dg_ = d; }
-    /// Only DirectedGraph::append_vertex can change dg_
-    friend SafePtr<DGVertex> DirectedGraph::append_vertex(const SafePtr<DGVertex>& vertex);
     /// label for the vertex within the graph
     std::string graph_label_;
 
@@ -273,6 +272,12 @@ namespace libint2 {
   struct IntegralInTargetIntegralSet : public std::unary_function<const SafePtr<DGVertex>&,bool> {
     bool operator()(const SafePtr<DGVertex>& V);
   };
+
+  /// this composite hashing key works for DGVertex
+  typedef TypeAndInstance<DGVertex::ClassID,DGVertex::InstanceID> DGVertexKey;
+  inline DGVertexKey key(const DGVertex& v) {
+    return DGVertexKey(v.typeid_,v.instid_);
+  }
   
 };
 

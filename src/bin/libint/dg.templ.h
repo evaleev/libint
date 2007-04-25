@@ -78,11 +78,12 @@ namespace libint2 {
     DirectedGraph::apply_to_all()
     {
       typedef typename RR::TargetType TT;
-      const int num_vertices_on_graph = first_free_;
-      for(int v=0; v<num_vertices_on_graph; v++) {
-        if (stack_[v]->num_exit_arcs() != 0)
+      typedef vertices::const_iterator citer;
+      typedef vertices::iterator iter;
+      for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
+        if ((*v)->num_exit_arcs() != 0)
           continue;
-        SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(stack_[v]);
+        SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(v);
         if (tptr == 0)
           continue;
       
@@ -131,9 +132,43 @@ namespace libint2 {
     void
     DirectedGraph::foreach(Method& m)
     {
-      const int num_vertices_on_graph = first_free_;
-      for(int v=0; v<num_vertices_on_graph; v++) {
-	m(stack_[v]);
+      typedef vertices::const_iterator citer;
+      typedef vertices::iterator iter;
+      for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
+	m(*v);
+      }
+    }
+
+  template <class Method>
+    void
+    DirectedGraph::foreach(Method& m) const
+    {
+      typedef vertices::const_iterator citer;
+      typedef vertices::iterator iter;
+      for(citer v=stack_.begin(); v!=stack_.end(); ++v) {
+	m(*v);
+      }
+    }
+
+  template <class Method>
+    void
+    DirectedGraph::rforeach(Method& m)
+    {
+      typedef vertices::const_reverse_iterator criter;
+      typedef vertices::reverse_iterator riter;
+      for(riter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
+	m(*v);
+      }
+    }
+
+  template <class Method>
+    void
+    DirectedGraph::rforeach(Method& m) const
+    {
+      typedef vertices::const_reverse_iterator criter;
+      typedef vertices::reverse_iterator riter;
+      for(criter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
+	m(*v);
       }
     }
 

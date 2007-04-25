@@ -4,6 +4,9 @@
 
 #define DEBUG 0
 
+/// DirectedGraph uses std::multimap to store vertices?
+#define USE_MULTIMAP_BASED_DIRECTEDGRAPH 0
+
 /// Controls whether classes derived from GenIntegralSet overload its label()
 #define OVERLOAD_GENINTEGRALSET_LABEL 0
 

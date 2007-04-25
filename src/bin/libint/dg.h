@@ -5,14 +5,12 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <list>
 #include <map>
 #include <stdexcept>
 #include <assert.h>
 #include <exception.h>
 #include <smart_ptr.h>
-
-using namespace std;
-
 
 namespace libint2 {
 
@@ -41,14 +39,19 @@ namespace libint2 {
     typedef DGArc arc;
     typedef SafePtr<DGVertex> ver_ptr;
     typedef SafePtr<DGArc> arc_ptr;
-    typedef vector<ver_ptr> vertices;
+#if USE_MULTIMAP_BASED_DIRECTEDGRAPH
+    typedef DGVertexKey key_type;
+    typedef std::multimap<key_type,ver_ptr> vertices;
+#else
+    typedef std::list<ver_ptr> vertices;
+#endif
     typedef vertices::iterator ver_iter;
     typedef vertices::const_iterator ver_citer;
     //not possible: typedef vertex::Address address;
     typedef int address;
     //not possible: typedef vertex::Size size;
     typedef unsigned int size;
-    typedef vector<address> addresses;
+    typedef std::vector<address> addresses;
     
     /** This constructor doesn't do much. Actual initialization of the graph
         must be done using append_target */
@@ -56,11 +59,15 @@ namespace libint2 {
     ~DirectedGraph();
 
     /// Returns the number of vertices
-    const unsigned int num_vertices() const { return first_free_; }
+    const unsigned int num_vertices() const { return stack_.size(); }
+#if 0
     /// Returns all vertices
     const vertices& all_vertices() const { return stack_; }
     /// Returns all targets
     const vertices& all_targets() const { return targets_; }
+#endif
+    /// Find vertex v or it's equivalent on the graph. Return null pointer if not found. Computational cost for a graph based on a nonassociative container may be high
+    const SafePtr<DGVertex>& find(const SafePtr<DGVertex>& v) const { return vertex_is_on(v); }
     
     /** appends v to the graph. If v's copy is already on the graph, return the pointer
 	to the copy. Else return pointer to *v.
@@ -112,9 +119,18 @@ namespace libint2 {
     template <DGVertexMethodPtr method>
       void apply_at(const SafePtr<DGVertex>& vertex) const;
 
-    /** calls Method(v) for each v */
+    /** calls Method(v) for each v, iterating in forward direction */
     template <class Method>
       void foreach(Method& m);
+    /** calls Method(v) for each v, iterating in forward direction */
+    template <class Method>
+      void foreach(Method& m) const;
+    /** calls Method(v) for each v, iterating in reverse direction */
+    template <class Method>
+      void rforeach(Method& m);
+    /** calls Method(v) for each v, iterating in reverse direction */
+    template <class Method>
+      void rforeach(Method& m) const;
 
     /** after Strategy has been applied, simple recurrence relations need to be
         optimized away. optimize_rr_out() will replace all simple recurrence relations
@@ -132,7 +148,7 @@ namespace libint2 {
     void update_func_names();
 
     /// Prints out call sequence
-    void debug_print_traversal(ostream& os) const;
+    void debug_print_traversal(std::ostream& os) const;
     
     /**
     Prints out the graph in format understood by program "dot"
@@ -184,9 +200,11 @@ namespace libint2 {
         It is used to generate include statements.
     */
     FuncNameContainer func_names_;
-    
+
+#if USE_MULTIMAP_BASED_DIRECTEDGRAPH
+#else
     static const unsigned int default_size_ = 100;
-    unsigned int first_free_;
+#endif
     
     // maintains data about the graph which does not belong IN the graph
     SafePtr<GraphRegistry> registry_;
@@ -203,7 +221,7 @@ namespace libint2 {
     /** same as add_vertex(), only assumes that there's no equivalent vertex on the graph (see vertex_is_on) */
     void add_new_vertex(const SafePtr<DGVertex>&);
     /// returns true if vertex if already on graph
-    SafePtr<DGVertex> vertex_is_on(const SafePtr<DGVertex>& vertex) const;
+    const SafePtr<DGVertex>& vertex_is_on(const SafePtr<DGVertex>& vertex) const;
     /// removes vertex from the graph. may throw CannotPerformOperation
     void del_vertex(const SafePtr<DGVertex>&);
     /** This function is used to implement (recursive) append_target().
