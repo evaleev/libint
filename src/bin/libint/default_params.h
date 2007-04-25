@@ -171,7 +171,7 @@ namespace libint2 {
       /// API prefix
       static const std::string api_prefix;
       /// generate single evaltype?
-      static const bool single_evaltype_ = true;
+      static const bool single_evaltype = true;
       /// Use C-style linking convention by default
       static const bool use_C_linking = true;
       /// Do not count FLOPs by default

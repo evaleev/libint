@@ -15,6 +15,7 @@ CompilationParameters::CompilationParameters() :
   max_vector_length_(Defaults::max_vector_length),
   vectorize_by_line_(Defaults::vectorize_by_line), unroll_threshold_(Defaults::unroll_threshold),
   source_directory_(Defaults::source_directory), api_prefix_(Defaults::api_prefix),
+  single_evaltype_(Defaults::single_evaltype),
   use_C_linking_(Defaults::use_C_linking),
   count_flops_(Defaults::count_flops),
   accumulate_targets_(Defaults::accumulate_targets),

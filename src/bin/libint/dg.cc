@@ -27,6 +27,7 @@ DirectedGraph::DirectedGraph() :
   stack_.reserve(default_size_);
 #endif
 #endif
+  stack_.resize(0);
 }
 
 DirectedGraph::~DirectedGraph()
@@ -311,8 +312,8 @@ DirectedGraph::reset()
   foreach(rptr);
 
   // if everything went OK then empty out stack_ and targets_
-  stack_.empty();
-  targets_.empty();
+  stack_.clear();
+  targets_.clear();
   first_to_compute_.reset();
 }
 
@@ -599,9 +600,7 @@ DirectedGraph::handle_trivial_nodes()
         // remove the vertex, if possible
         try { remove_vertex_at((*v),arc->dest()); }
         catch (CannotPerformOperation& c) {
-	  ++v;
         }
-	--v;
       }
     }
 
@@ -684,15 +683,16 @@ DirectedGraph::remove_disconnected_vertices()
 #if DEBUG
       cout << "Trying to erase disconnected vertex " << (*v)->description() << " num_vertices = " << num_vertices() << endl;
 #endif
+      iter vprev = v; --vprev;
       try { del_vertex((*v)); }
       catch (CannotPerformOperation) {
 #if DEBUG
         cout << "But couldn't!!!" << endl;
 #endif
-	++v;
+	++vprev;
       }
       // current vertex was erased, so need to decrease the iterator as well
-      --v;
+      v = vprev;
     }
   }
 }
