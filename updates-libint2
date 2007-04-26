@@ -10,6 +10,7 @@
 		2) GenIntegralSet::Instance() and analogs precompute the key to avoid constructing
 		   dummy integrals.
                 3) R12kG12_11_11 and TiG12_11_11 use integers to hash.
+                4) configure now checks for boost::shared_ptr<T>.
                 -EFV
 
 01/31/2007:     Libint evaluators which included support for G12 integrals had a bug -- # of targets was not
