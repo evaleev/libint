@@ -4,7 +4,6 @@
 #include <cgshell_ordering.h>
 
 using namespace std;
-using namespace libint2;
 
 /*
  Definition of a generic StdLibintTDPolicy is provided in policy.h
@@ -32,6 +31,8 @@ namespace {
   /// returns an ordered pair of xyz (i.e. xy, not yx) which is not a
   std::pair<int,int> notxyz(int a);
 }
+
+namespace libint2 {
 
 #if LIBINT_CGSHELL_ORDERING == LIBINT__CGSHELL__ORDERING_STANDARD
 template <>
@@ -143,6 +144,8 @@ void
 StdLibintTDPolicy<CGShell>::dealloc_subobj(vector<StdLibintTDPolicy<CGShell>::subobj_stype>& subobj)
 {
 }
+
+};
 
 ////
 

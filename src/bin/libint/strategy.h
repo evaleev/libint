@@ -6,6 +6,7 @@
 #include <comp_11_tig12_11.h>
 #include <hrr.h>
 #include <global_macros.h>
+#include <graph_registry.h>
 
 #ifndef _libint2_src_bin_libint_strategy_h_
 #define _libint2_src_bin_libint_strategy_h_

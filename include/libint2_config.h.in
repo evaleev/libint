@@ -82,4 +82,7 @@
 /* have stdint.h ? */
 #undef HAVE_STDINT_H
 
+/* C++ compiler allows template with default params as template template parameter */
+#undef CXX_ALLOWS_DEFPARAMTEMPLATE_AS_TEMPTEMPPARAM
+
 #endif 

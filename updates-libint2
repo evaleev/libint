@@ -1,4 +1,9 @@
 
+04/25/2007:     1) Converted DirectedGraph to use std::list.
+		2) Removed the need to use template class with default arguments as a template template parameter
+		   (gcc 4.3 does not support this).
+                -EFV
+
 04/24/2007:     1) Removed all use of exceptions in normal workflow except for CannotPerformOperation
 		   thrown when cleaning up. Removed all exception specifications except in exception classes
 		   derived from standard exceptions.

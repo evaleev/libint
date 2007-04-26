@@ -656,9 +656,10 @@ AC_MSG_CHECKING([[if cxx allows template with default params as template templat
 $CXX $CPPFLAGS $CXXFLAGS -c compcheck.cc > /dev/null 2>&1
 if test ! -f compcheck.o; then
   AC_MSG_RESULT([[no]])
-  AC_MSG_ERROR([[C++ compiler (cxx) cannot be used to compile Libint. Try gcc-3.4.]])
+ # AC_MSG_ERROR([[C++ compiler (cxx) cannot be used to compile Libint. Try gcc-3.4.]])
 else
   AC_MSG_RESULT([[yes]])
+  AC_SUBST(CXX_ALLOWS_DEFPARAMTEMPLATE_AS_TEMPTEMPPARAM)
 fi
 rm -f compcheck.o
 if test "X$CXX" != "X$CXXGEN"; then
