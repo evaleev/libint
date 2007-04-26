@@ -91,9 +91,17 @@ namespace libint2 {
     Policy<T, TDPol, TIPol> defines a policy for type T as a combination of type-independent (TIPol) policies
    and type-specific (TDPol) policies.
    */
+#if CXX_ALLOWS_DEFPARAMTEMPLATE_AS_TEMPTEMPPARAM
   template <class T, class TIPol = StdLibintTIPolicy, template <class> class TDPol = StdLibintTDPolicy>
     class Policy : public TDPol<T>, public TIPol
     {
+#else
+#define TDPol StdLibintTDPolicy
+#define TIPol StdLibintTIPolicy
+  template <class T>
+    class Policy : public TDPol<T>, public TIPol
+    {
+#endif
     public:
       /// how these objects are stored
       typedef typename TDPol<T>::obj_stype obj_stype;
