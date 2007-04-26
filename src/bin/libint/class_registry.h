@@ -3,12 +3,14 @@
 #ifndef _libint2_src_bin_libint_classregistry_h_
 #define _libint2_src_bin_libint_classregistry_h_
 
+#include <key.h>
+
 namespace libint2 {
 
   /** This is a unique registry of classes. */
   class ClassRegistry {
   public:
-    typedef unsigned int ClassID;
+    typedef KeyTypes::ClassID ClassID;
     static ClassRegistry& Instance();
     ClassID next_id() { return nclasses_++; }
 

@@ -18,16 +18,12 @@ using namespace libint2;
 #define ONLY_CLONE_IF_DIFF 1
 
 DirectedGraph::DirectedGraph() :
-  stack_(), targets_(0), func_names_(),
+  stack_(), targets_(), func_names_(),
   first_to_compute_(), registry_(SafePtr<GraphRegistry>(new GraphRegistry)),
   iregistry_(SafePtr<InternalGraphRegistry>(new InternalGraphRegistry))
 {
-#if 0
-#if !USE_MULTIMAP_BASED_DIRECTEDGRAPH
-  stack_.reserve(default_size_);
-#endif
-#endif
-  stack_.resize(0);
+  stack_.clear();
+  targets_.clear();
 }
 
 DirectedGraph::~DirectedGraph()
@@ -40,7 +36,7 @@ DirectedGraph::append_target(const SafePtr<DGVertex>& target)
 {
   target->make_a_target();
   append_vertex(target);
-  targets_.push_back(target);
+  push(targets_,target);
 }
 
 SafePtr<DGVertex>
@@ -77,7 +73,7 @@ DirectedGraph::add_new_vertex(const SafePtr<DGVertex>& vertex)
 {
 #if 0
   // Resize if using std::vector
-#if !USE_MULTIMAP_BASED_DIRECTEDGRAPH
+#if !USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
   if (num_vertices() == stack_.capacity()) {
     stack_.resize( stack_.capacity() + default_size_ );
 #if DEBUG
@@ -92,12 +88,7 @@ DirectedGraph::add_new_vertex(const SafePtr<DGVertex>& vertex)
   vertex->set_graph_label(label);
   vertex->dg(this);
 
-#if USE_MULTIMAP_BASED_DIRECTEDGRAPH
-  stack_[key(vertex)] = vertex;
-#else
-  stack_.push_back(vertex);
-#endif
-
+  push(stack_,vertex);
 #if DEBUG
   cout << "add_new_vertex: added vertex " << vertex->description() << endl;
 #endif
@@ -111,30 +102,30 @@ DirectedGraph::vertex_is_on(const SafePtr<DGVertex>& vertex) const
   static SafePtr<DGVertex> null_ptr;
   typedef vertices::const_reverse_iterator criter;
   typedef vertices::reverse_iterator riter;
-  for(criter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
-    if(vertex->equiv(*v)) {
+  const criter rend = stack_.rend();
+  for(criter v=stack_.rbegin(); v!=rend; ++v) {
+    const ver_ptr& vptr = vertex_ptr(*v);
+    if(vertex->equiv(vptr)) {
 #if DEBUG
-      std::cout << "vertex_is_on: " << (*v)->label() << std::endl;
+      std::cout << "vertex_is_on: " << (vptr)->label() << std::endl;
 #endif
-      return *v;
+      return vptr;
     }
   }
   return null_ptr;
 }
 
 void
-DirectedGraph::del_vertex(const SafePtr<DGVertex>& v)
+DirectedGraph::del_vertex(vertices::iterator& v)
 {
-  // Cannot delete targets. Should I be able to? Probably not
-  if (v->is_a_target())
-    throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete targets");
-
-  vertices::iterator pos = std::find(stack_.begin(),stack_.end(),v);
-  if (pos == stack_.end())
+  if (v == stack_.end())
     throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete vertex");
-
-  if (v->num_exit_arcs() == 0 && v->num_entry_arcs() == 0)
-    stack_.erase(pos);
+  ver_ptr& vptr = vertex_ptr(*v);
+  // Cannot delete targets. Should I be able to? Probably not
+  if (vptr->is_a_target())
+    throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete targets");
+  if (vptr->num_exit_arcs() == 0 && vptr->num_entry_arcs() == 0)
+    stack_.erase(v);
   else
     throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete vertex");
 }
@@ -164,12 +155,13 @@ DirectedGraph::traverse()
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-    if ((*v)->is_a_target() && (*v)->num_entry_arcs() == 0) {
+    const ver_ptr& vptr = vertex_ptr(*v);
+    if ((vptr)->is_a_target() && (vptr)->num_entry_arcs() == 0) {
       // First, since this target doesn't have parents we can schedule its computation
-      schedule_computation(*v);
-      int nchildren = (*v)->num_exit_arcs();
+      schedule_computation(vptr);
+      int nchildren = (vptr)->num_exit_arcs();
       for(int c=0; c<nchildren; c++)
-        traverse_from((*v)->exit_arc(c));
+        traverse_from((vptr)->exit_arc(c));
     }
   }
 }
@@ -327,10 +319,11 @@ DirectedGraph::apply(const SafePtr<Strategy>& strategy,
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-    if ((*v)->num_exit_arcs() != 0 || (*v)->precomputed() || !(*v)->need_to_compute())
+    const ver_ptr& vptr = vertex_ptr(*v);
+    if ((vptr)->num_exit_arcs() != 0 || (vptr)->precomputed() || !(vptr)->need_to_compute())
       continue;
 
-    SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(this_ptr,(*v),tactic);
+    SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(this_ptr,(vptr),tactic);
     if (rr0 == 0)
       continue;
 
@@ -400,8 +393,9 @@ DirectedGraph::replace_rr_with_expr()
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-    if ((*v)->num_exit_arcs()) {
-      SafePtr<DGArc> arc0 = (*v)->exit_arc(0);
+    const ver_ptr& vptr = vertex_ptr(*v);
+    if ((vptr)->num_exit_arcs()) {
+      SafePtr<DGArc> arc0 = (vptr)->exit_arc(0);
       SafePtr<DGArcRR> arc0_cast = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
       if (arc0_cast == 0)
         continue;
@@ -414,14 +408,14 @@ DirectedGraph::replace_rr_with_expr()
         unsigned int nchildren = rr->num_children();
 
         // Remove arcs connecting this vertex to children
-        (*v)->del_exit_arcs();
+        (vptr)->del_exit_arcs();
 
         // and instead insert the numerical expression
         SafePtr<RecurrenceRelation::ExprType> rr_expr = rr->rr_expr();
         SafePtr<DGVertex> expr_vertex = static_pointer_cast<RecurrenceRelation::ExprType,DGVertex>(rr_expr);
-        expr_vertex = insert_expr_at((*v),rr_expr);
-        SafePtr<DGArc> arc(new DGArcDirect((*v),expr_vertex));
-        (*v)->add_exit_arc(arc);
+        expr_vertex = insert_expr_at((vptr),rr_expr);
+        SafePtr<DGArc> arc(new DGArcDirect((vptr),expr_vertex));
+        (vptr)->add_exit_arc(arc);
 
       }
     }
@@ -548,7 +542,8 @@ DirectedGraph::remove_trivial_arithmetics()
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-    SafePtr< AlgebraicOperator<DGVertex> > oper_cast = dynamic_pointer_cast<AlgebraicOperator<DGVertex>,DGVertex>((*v));
+    const ver_ptr& vptr = vertex_ptr(*v);
+    SafePtr< AlgebraicOperator<DGVertex> > oper_cast = dynamic_pointer_cast<AlgebraicOperator<DGVertex>,DGVertex>((vptr));
     if (oper_cast) {
 
       SafePtr<DGVertex> left = oper_cast->exit_arc(0)->dest();
@@ -556,17 +551,17 @@ DirectedGraph::remove_trivial_arithmetics()
 
       // 1.0 * x = x
       if (left->equiv(prefactors.N_i[1])) {
-        remove_vertex_at((*v),right);
+        remove_vertex_at((vptr),right);
 #if DEBUG
-        cout << "Removed vertex " << (*v)->description() << endl;
+        cout << "Removed vertex " << (vptr)->description() << endl;
 #endif
       }
 
       // x * 1.0 = x
       if (right->equiv(prefactors.N_i[1])) {
-        remove_vertex_at((*v),left);
+        remove_vertex_at((vptr),left);
 #if DEBUG
-        cout << "Removed vertex " << (*v)->description() << endl;
+        cout << "Removed vertex " << (vptr)->description() << endl;
 #endif
       }
 
@@ -589,30 +584,31 @@ DirectedGraph::handle_trivial_nodes()
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-    if ((*v)->num_exit_arcs() != 1)
+    const ver_ptr& vptr = vertex_ptr(*v);
+    if ((vptr)->num_exit_arcs() != 1)
       continue;
-    SafePtr<DGArc> arc = (*v)->exit_arc(0);
+    SafePtr<DGArc> arc = (vptr)->exit_arc(0);
 
     // Is the exit arc DGArcDirect?
     {
       SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
       if (arc_cast) {
         // remove the vertex, if possible
-        try { remove_vertex_at((*v),arc->dest()); }
+        try { remove_vertex_at((vptr),arc->dest()); }
         catch (CannotPerformOperation& c) {
         }
       }
     }
 
-    // Is the exit arc DGArcRel<IntegralSet_to_Integrals> and (*v)->size() == 1?
+    // Is the exit arc DGArcRel<IntegralSet_to_Integrals> and (vptr)->size() == 1?
     {
-      if ((*v)->size() == 1) {
+      if ((vptr)->size() == 1) {
         SafePtr<DGArcRR> arc_cast = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
         if (arc_cast) {
           SafePtr<RecurrenceRelation> rr = arc_cast->rr();
           SafePtr<IntegralSet_to_Integrals_base> rr_cast = dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(rr);
           if (rr_cast)
-            (*v)->refer_this_to(arc->dest());
+            (vptr)->refer_this_to(arc->dest());
         }
       }
     }
@@ -679,12 +675,13 @@ DirectedGraph::remove_disconnected_vertices()
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-    if ((*v)->num_entry_arcs() == 0 && (*v)->num_exit_arcs() == 0) {
+    const ver_ptr& vptr = vertex_ptr(*v);
+    if ((vptr)->num_entry_arcs() == 0 && (vptr)->num_exit_arcs() == 0) {
 #if DEBUG
-      cout << "Trying to erase disconnected vertex " << (*v)->description() << " num_vertices = " << num_vertices() << endl;
+      cout << "Trying to erase disconnected vertex " << (vptr)->description() << " num_vertices = " << num_vertices() << endl;
 #endif
       iter vprev = v; --vprev;
-      try { del_vertex((*v)); }
+      try { del_vertex(v); }
       catch (CannotPerformOperation) {
 #if DEBUG
         cout << "But couldn't!!!" << endl;
@@ -806,7 +803,8 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
       ver_citer end = targets_.end();
       size size_of_targets(0);
       for(ver_iter t=targets_.begin(); t!=end; ++t) {
-	size_of_targets += (*t)->size();
+	const ver_ptr& tptr = vertex_ptr(*t);
+	size_of_targets += (tptr)->size();
       }
       const address targets_buffer = memman->alloc(size_of_targets);
       iregistry()->size_of_target_accum(size_of_targets);
@@ -818,8 +816,9 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
       // allocate every target accumulator manually
       address curr_ptr(0);
       for(ver_iter t=targets_.begin(); t!=end; ++t) {
+	const ver_ptr& tptr = vertex_ptr(*t);
 	target_accums_.push_back(curr_ptr);
-	curr_ptr += (*t)->size();
+	curr_ptr += (tptr)->size();
       }
 
     } // need copies of targets
@@ -832,8 +831,9 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-    if ((*v)->is_a_target() && !(*v)->symbol_set()) {
-      (*v)->set_address(memman->alloc((*v)->size()));
+    const ver_ptr& vptr = vertex_ptr(*v);
+    if ((vptr)->is_a_target() && !(vptr)->symbol_set()) {
+      (vptr)->set_address(memman->alloc((vptr)->size()));
     }
   }
   
@@ -925,8 +925,10 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
 {
   std::ostringstream os;
   const std::string null_str("");
-  const std::string& stack_name = registry()->stack_name();
-  
+  //const std::string stack_name = registry()->stack_name();
+  // There must be a compiler/library/bug on OS X? The above fails... Valgrind under Linux shows no memory problems...
+  const std::string stack_name("inteval->stack");
+
   // Generate the label for the rank of the low dimension
   std::string low_rank = dims->low_label();
   std::string veclen = dims->vecdim_label();
@@ -935,8 +937,9 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-    if (!(*v)->symbol_set() && (*v)->address_set()) {
-      (*v)->set_symbol(stack_symbol(context,(*v)->address(),(*v)->size(),low_rank,veclen,stack_name));
+    const ver_ptr& vptr = vertex_ptr(*v);
+    if (!(vptr)->symbol_set() && (vptr)->address_set()) {
+      (vptr)->set_symbol(stack_symbol(context,(vptr)->address(),(vptr)->size(),low_rank,veclen,stack_name));
     }
   }
 
@@ -944,9 +947,10 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
   // 1) such nodes do not need symbols generated since they never appear in the code expicitly
   // 2) children of such nodes have symbols that depend on the parent's address
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-    if ((*v)->num_exit_arcs() == 0)
+    const ver_ptr& vptr = vertex_ptr(*v);
+    if ((vptr)->num_exit_arcs() == 0)
       continue;
-    SafePtr<DGArc> arc = (*v)->exit_arc(0);
+    SafePtr<DGArc> arc = (vptr)->exit_arc(0);
     SafePtr<DGArcRR> arc_rr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
     if (arc_rr == 0)
       continue;
@@ -956,31 +960,31 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
       continue;
     }
     else {
-      unsigned int nchildren = (*v)->num_exit_arcs();
+      unsigned int nchildren = (vptr)->num_exit_arcs();
       for(int c=0; c<nchildren; c++) {
-        SafePtr<DGVertex> child = (*v)->exit_arc(c)->dest();
+        SafePtr<DGVertex> child = (vptr)->exit_arc(c)->dest();
         // If a child is precomputed and it's parent symbol is not set -- its symbol will be set as usual
-        if (!child->precomputed() || (*v)->symbol_set()) {
-          if ((*v)->address_set()) {
-            child->set_symbol(stack_symbol(context,(*v)->address()+c,(*v)->size(),low_rank,veclen,stack_name));
+        if (!child->precomputed() || (vptr)->symbol_set()) {
+          if ((vptr)->address_set()) {
+            child->set_symbol(stack_symbol(context,(vptr)->address()+c,(vptr)->size(),low_rank,veclen,stack_name));
           }
           else {
-            child->set_symbol(stack_symbol(context,c,(*v)->size(),low_rank,veclen,(*v)->symbol()));
+            child->set_symbol(stack_symbol(context,c,(vptr)->size(),low_rank,veclen,(vptr)->symbol()));
           }
         }
       }
-      (*v)->refer_this_to((*v)->exit_arc(0)->dest());
-      (*v)->reset_symbol();
+      (vptr)->refer_this_to((vptr)->exit_arc(0)->dest());
+      (vptr)->reset_symbol();
     }
   }
 
   // then process all other symbols, EXCEPT operators
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-
+    const ver_ptr& vptr = vertex_ptr(*v);
 #if DEBUG
-    cout << "Trying to assign symbol to " << (*v)->description() << endl;
+    cout << "Trying to assign symbol to " << (vptr)->description() << endl;
 #endif
-    if ((*v)->symbol_set()) {
+    if ((vptr)->symbol_set()) {
       continue;
     }
 
@@ -988,9 +992,9 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
     // test if the vertex is an operator
     {
       typedef AlgebraicOperator<DGVertex> oper;
-      SafePtr<oper> ptr_cast = dynamic_pointer_cast<oper,DGVertex>((*v));
+      SafePtr<oper> ptr_cast = dynamic_pointer_cast<oper,DGVertex>((vptr));
       if (ptr_cast) {
-        (*v)->set_symbol(context->unique_name<EntityTypes::FP>());
+        (vptr)->set_symbol(context->unique_name<EntityTypes::FP>());
         continue;
       }
     }
@@ -999,28 +1003,28 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
     // test if the vertex is a static quantity, like a constant
     {
       typedef CTimeEntity<double> cdouble;
-      SafePtr<cdouble> ptr_cast = dynamic_pointer_cast<cdouble,DGVertex>((*v));
+      SafePtr<cdouble> ptr_cast = dynamic_pointer_cast<cdouble,DGVertex>((vptr));
       if (ptr_cast) {
-        (*v)->set_symbol(ptr_cast->label());
+        (vptr)->set_symbol(ptr_cast->label());
         continue;
       }
     }
 
     // test if the vertex is precomputed runtime quantity, like a geometric parameter
-    if ((*v)->precomputed()) {
+    if ((vptr)->precomputed()) {
       std::string symbol("inteval->");
-      symbol += context->label_to_name((*v)->label());
+      symbol += context->label_to_name((vptr)->label());
       symbol += "[vi]";
-      (*v)->set_symbol(symbol);
+      (vptr)->set_symbol(symbol);
       continue;
     }
 
     // test if the vertex is other runtime quantity
     {
       typedef RTimeEntity<double> cdouble;
-      SafePtr<cdouble> ptr_cast = dynamic_pointer_cast<cdouble,DGVertex>((*v));
+      SafePtr<cdouble> ptr_cast = dynamic_pointer_cast<cdouble,DGVertex>((vptr));
       if (ptr_cast) {
-        (*v)->set_symbol(ptr_cast->label());
+        (vptr)->set_symbol(ptr_cast->label());
         continue;
       }
     }
@@ -1032,10 +1036,11 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
   typedef vertices::const_reverse_iterator criter;
   typedef vertices::reverse_iterator riter;
   for(riter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
+    ver_ptr& vptr = vertex_ptr(*v);
 #if DEBUG
-    cout << "Trying to assign symbol to " << (*v)->description() << endl;
+    cout << "Trying to assign symbol to " << (vptr)->description() << endl;
 #endif
-    assign_oper_symbol(context,(*v));
+    assign_oper_symbol(context,(vptr));
   }
 
 }
@@ -1121,7 +1126,8 @@ namespace {
     typedef DirectedGraph::ver_iter iter;
     citer end(vertices.end());
     for(iter v=vertices.begin(); v!=end; ++v) {
-      result->push_back(MemBlock((*v)->address(),(*v)->size(),false,SafePtr<MemBlock>(),SafePtr<MemBlock>()));
+      const DirectedGraph::ver_ptr& vptr = vertex_ptr(*v);
+      result->push_back(MemBlock((vptr)->address(),(vptr)->size(),false,SafePtr<MemBlock>(),SafePtr<MemBlock>()));
     }
     return result;
   }
@@ -1405,8 +1411,9 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     unsigned int curr_target = 0;
     const ver_iter end = targets_.end();
     for(ver_iter t=targets_.begin(); t!=targets_.end(); ++t, ++curr_target) {
+      const ver_ptr& tptr = vertex_ptr(*t);
 
-      size s = (*t)->size();
+      size s = (tptr)->size();
       SafePtr<CTimeEntity<int> > bdim(new CTimeEntity<int>(s));
 
       SafePtr<Entity> bvecdim;
@@ -1449,7 +1456,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
       std::string target;
       {
 	ostringstream oss;
-	oss << stack_name << "[" << (*t)->address() << times_vecdim << "+" << loopvar << "]";
+	oss << stack_name << "[" << (tptr)->address() << times_vecdim << "+" << loopvar << "]";
 	target = oss.str();
       }
       os << context->accumulate(acctarget,target);
@@ -1457,7 +1464,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 #endif
       os << "_libint2_static_api_inc_short_("
 	 << registry()->stack_name() << "+" << target_accums_[curr_target] << "*" << dims->vecdim()->id() << ","
-	 << registry()->stack_name() << "+" << (*t)->address() << "*" << dims->vecdim()->id() << ","
+	 << registry()->stack_name() << "+" << (tptr)->address() << "*" << dims->vecdim()->id() << ","
 	 << bvecdim->id() << ","
 	 << "1.0)" << endl;
 
@@ -1477,10 +1484,11 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     unsigned int curr_target = 0;
     const ver_iter end = targets_.end();
     for(ver_iter t=targets_.begin(); t!=targets_.end(); ++t, ++curr_target) {
+      const ver_ptr& tptr = vertex_ptr(*t);
       const std::string& symbol = (accumulate_targets_indirectly
 				   //                                                                    is this correct?         ???
-				   ? stack_symbol(context,target_accums_[curr_target],(*t)->size(),dims->low_label(),dims->vecdim_label(),registry()->stack_name())
-				   : (*t)->symbol());
+				   ? stack_symbol(context,target_accums_[curr_target],(tptr)->size(),dims->low_label(),dims->vecdim_label(),registry()->stack_name())
+				   : (tptr)->symbol());
       os << "inteval->targets[" << curr_target << "] = "
 	 << context->value_to_pointer(symbol) << context->end_of_stat() << endl;
     }
@@ -1508,10 +1516,11 @@ DirectedGraph::update_func_names()
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
+    const ver_ptr& vptr = vertex_ptr(*v);
     // for every vertex with children
-    if ((*v)->num_exit_arcs() > 0) {
+    if ((vptr)->num_exit_arcs() > 0) {
       // if it must be computed using a RR
-      SafePtr<DGArc> arc = (*v)->exit_arc(0);
+      SafePtr<DGArc> arc = (vptr)->exit_arc(0);
       SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
       if (arcrr != 0) {
         SafePtr<RecurrenceRelation> rr = arcrr->rr();
@@ -1554,8 +1563,9 @@ DirectedGraph::find_subtrees()
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {    
-    if ((*v)->is_a_target() && (*v)->num_entry_arcs() == 0) {
-      find_subtrees_from(*v);
+    const ver_ptr& vptr = vertex_ptr(*v);
+    if ((vptr)->is_a_target() && (vptr)->num_entry_arcs() == 0) {
+      find_subtrees_from(vptr);
     }
   }
 }
@@ -1610,11 +1620,26 @@ DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
 
 namespace libint2 {
 
+  namespace {
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+    typedef DirectedGraph::vertices::value_type value_type;
+    struct __NotUnrolledIntegralSet : public std::unary_function<const value_type&,bool> {
+      bool operator()(const value_type& v) {
+	return NotUnrolledIntegralSet()(v.second);
+      }
+    };
+#endif
+  };
+
   bool
   nonunrolled_targets(const DirectedGraph::vertices& targets) {
     typedef DirectedGraph::ver_citer citer;
     citer end = targets.end();
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+    if (end != find_if(targets.begin(),end,__NotUnrolledIntegralSet()))
+#else
     if (end != find_if(targets.begin(),end,NotUnrolledIntegralSet()))
+#endif
       return true;
     else
       return false;

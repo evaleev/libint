@@ -1,12 +1,13 @@
 
+#ifndef _libint2_src_bin_libint_algebra_h_
+#define _libint2_src_bin_libint_algebra_h_
+
 #include <smart_ptr.h>
 #include <rr.h>
 #include <exception.h>
 #include <global_macros.h>
 #include <dgvertex.h>
-
-#ifndef _libint2_src_bin_libint_algebra_h_
-#define _libint2_src_bin_libint_algebra_h_
+#include <class_registry.h>
 
 namespace libint2 {
 

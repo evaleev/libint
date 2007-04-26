@@ -2,10 +2,10 @@
 #ifndef _libint2_src_bin_libint_globalmacros_h_
 #define _libint2_src_bin_libint_globalmacros_h_
 
-#define DEBUG 0
+#define DEBUG 1
 
-/// DirectedGraph uses std::multimap to store vertices?
-#define USE_MULTIMAP_BASED_DIRECTEDGRAPH 0
+/// DirectedGraph uses an associated container (multimap) to store vertices? If not, use a simple container (list)
+#define USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH 1
 
 /// Controls whether classes derived from GenIntegralSet overload its label()
 #define OVERLOAD_GENINTEGRALSET_LABEL 0

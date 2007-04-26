@@ -8,6 +8,7 @@
 #include <quanta.h>
 #include <equiv.h>
 #include <singl_stack.h>
+#include <class_registry.h>
 #include <global_macros.h>
 
 #if USE_BRAKET_H

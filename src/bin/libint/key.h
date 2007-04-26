@@ -2,6 +2,8 @@
 #ifndef _libint2_src_bin_libint_key_h_
 #define _libint2_src_bin_libint_key_h_
 
+#include <libint2_intrinsic_types.h>
+
 namespace libint2 {
 
   /// Type/Instance combination serves as a key to quickly compare 2 polymorphic Singletons
@@ -15,8 +17,8 @@ namespace libint2 {
     TypeAndInstance(const TypeAndInstance& i) : t_(i.t_), i_(i.i_) {}
     const TypeAndInstance& operator=(const TypeAndInstance& i) { t_ = i.t_; i_ = i.i_; return *this; }
 
-    const Type& type() { return t_; }
-    const Instance& instance() { return i_; }
+    const Type& type() const { return t_; }
+    const Instance& instance() const { return i_; }
     
   private:
     Type t_;
@@ -45,6 +47,19 @@ namespace libint2 {
       );
     return result;
   }
+
+
+  ///
+  /// Collection of types used for constructing keys in libint2
+  ///
+  struct KeyTypes {
+    /// distinct classes have unique ClassID's
+    typedef unsigned int ClassID;
+    /// some classes need to have distinct instances to have unique InstanceID's, e.g. generalized Singletons
+    typedef LIBINT2_UINT_LEAST64 InstanceID;
+  };
+  /// this composite hashing key works for DGVertex
+  typedef TypeAndInstance<KeyTypes::ClassID,KeyTypes::InstanceID> DGVertexKey;
 
 };
 

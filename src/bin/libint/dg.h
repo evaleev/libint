@@ -7,10 +7,14 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <algorithm>
 #include <stdexcept>
 #include <assert.h>
+
+#include <global_macros.h>
 #include <exception.h>
 #include <smart_ptr.h>
+#include <key.h>
 
 namespace libint2 {
 
@@ -39,7 +43,7 @@ namespace libint2 {
     typedef DGArc arc;
     typedef SafePtr<DGVertex> ver_ptr;
     typedef SafePtr<DGArc> arc_ptr;
-#if USE_MULTIMAP_BASED_DIRECTEDGRAPH
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
     typedef DGVertexKey key_type;
     typedef std::multimap<key_type,ver_ptr> vertices;
 #else
@@ -66,7 +70,8 @@ namespace libint2 {
     /// Returns all targets
     const vertices& all_targets() const { return targets_; }
 #endif
-    /// Find vertex v or it's equivalent on the graph. Return null pointer if not found. Computational cost for a graph based on a nonassociative container may be high
+    /// Find vertex v or it's equivalent on the graph. Return null pointer if not found.
+    /// Computational cost for a graph based on a nonassociative container may be high
     const SafePtr<DGVertex>& find(const SafePtr<DGVertex>& v) const { return vertex_is_on(v); }
     
     /** appends v to the graph. If v's copy is already on the graph, return the pointer
@@ -201,8 +206,7 @@ namespace libint2 {
     */
     FuncNameContainer func_names_;
 
-#if USE_MULTIMAP_BASED_DIRECTEDGRAPH
-#else
+#if !USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
     static const unsigned int default_size_ = 100;
 #endif
     
@@ -223,7 +227,7 @@ namespace libint2 {
     /// returns true if vertex if already on graph
     const SafePtr<DGVertex>& vertex_is_on(const SafePtr<DGVertex>& vertex) const;
     /// removes vertex from the graph. may throw CannotPerformOperation
-    void del_vertex(const SafePtr<DGVertex>&);
+    void del_vertex(vertices::iterator&);
     /** This function is used to implement (recursive) append_target().
         vertex is appended to the graph and then RR is applied to is.
      */
@@ -289,6 +293,37 @@ namespace libint2 {
 
   };
 
+  //
+  // Nonmember utilities
+  //
+
+  /// converts what is stored in the container to a smart ptr to the vertex
+  inline const DirectedGraph::ver_ptr& vertex_ptr(const DirectedGraph::vertices::value_type& v) {
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+    return v.second;
+#else
+    return v;
+#endif
+  }
+  /// converts what is stored in the container to a smart ptr to the vertex
+  inline DirectedGraph::ver_ptr& vertex_ptr(DirectedGraph::vertices::value_type& v) {
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+    return v.second;
+#else
+    return v;
+#endif
+  }
+
+  inline DirectedGraph::key_type key(const DGVertex& v);
+  /// puts a vertex into a container
+  inline void push(DirectedGraph::vertices& vertices, const DirectedGraph::ver_ptr& v) {
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+    DirectedGraph::key_type vkey = libint2::key(*v);
+    vertices.insert(std::make_pair(vkey,v));
+#else
+    vertices.push_back(v);
+#endif
+  }
 
   //
   // Nonmember predicates

@@ -1,9 +1,10 @@
 
-#include <string>
-#include <dgvertex.h>
-
 #ifndef _libint2_src_bin_libint_entity_h_
 #define _libint2_src_bin_libint_entity_h_
+
+#include <string>
+#include <dgvertex.h>
+#include <class_registry.h>
 
 namespace libint2 {
 

@@ -2,6 +2,7 @@
 #include <map>
 #include <iostream>
 #include <smart_ptr.h>
+#include <key.h>
 #include <hashable.h>
 
 #define LOCAL_DEBUG 0
@@ -12,11 +13,6 @@
 namespace libint2 {
 
   class RecurrenceRelation;
-  
-  /// This is used to maintain some information about Generalized Singletons
-  struct GSingletonTrait {
-    typedef unsigned long int InstanceID;
-  };
   
   /**
      SingletonStack<T,KeyType> helps to implement Singleton-like objects of type T.
@@ -32,7 +28,7 @@ namespace libint2 {
       typedef KeyType key_type;
       typedef SafePtr<T> data_type;
       /// Specifies type for the instance index variables
-      typedef GSingletonTrait::InstanceID InstanceID;
+      typedef KeyTypes::InstanceID InstanceID;
       typedef std::pair<InstanceID,SafePtr<T> > value_type;
       typedef std::map<key_type,value_type> map_type;
       /// use iter_type objects to iterate over the stack

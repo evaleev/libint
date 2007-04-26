@@ -10,16 +10,13 @@
 #include <smart_ptr.h>
 #include <memory.h>
 #include <exception.h>
-#include <class_registry.h>
-#include <singl_stack.h>
 #include <hashable.h>
-#include <libint2_intrinsic_types.h>
 #include <key.h>
 
 namespace libint2 {
 
   /// This is a vertex of a Directed Graph (DG)
-  class DGVertex : public Hashable<LIBINT2_UINT_LEAST64,ComputeKey> {
+  class DGVertex : public Hashable<KeyTypes::InstanceID,ComputeKey> {
   public:
     /// The address on the stack during computation is described using this type
     typedef MemoryManager::Address Address;
@@ -32,12 +29,12 @@ namespace libint2 {
     /// Exception thrown if code symbol is not set
     typedef NotSet<std::string> SymbolNotSet;
     /// Type identifier
-    typedef ClassRegistry::ClassID ClassID;
+    typedef KeyTypes::ClassID ClassID;
     /// Instance identifier
-    typedef GSingletonTrait::InstanceID InstanceID;
+    typedef KeyTypes::InstanceID InstanceID;
     /** DGVertex provides function key() which computes key of type KeyType and
         returns it using KeyReturnType */
-    typedef LIBINT2_UINT_LEAST64 KeyType;
+    typedef KeyTypes::InstanceID KeyType;
     typedef Hashable<KeyType,ComputeKey>::KeyReturnType KeyReturnType;
 
     /** typeid stores the ClassID of the concrete type. It is used to check quickly whether
@@ -273,8 +270,6 @@ namespace libint2 {
     bool operator()(const SafePtr<DGVertex>& V);
   };
 
-  /// this composite hashing key works for DGVertex
-  typedef TypeAndInstance<DGVertex::ClassID,DGVertex::InstanceID> DGVertexKey;
   inline DGVertexKey key(const DGVertex& v) {
     return DGVertexKey(v.typeid_,v.instid_);
   }

@@ -81,7 +81,8 @@ namespace libint2 {
       typedef vertices::const_iterator citer;
       typedef vertices::iterator iter;
       for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-        if ((*v)->num_exit_arcs() != 0)
+	ver_ptr& vptr = vertex_ptr(*v);
+        if ((vptr)->num_exit_arcs() != 0)
           continue;
         SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(v);
         if (tptr == 0)
@@ -135,7 +136,8 @@ namespace libint2 {
       typedef vertices::const_iterator citer;
       typedef vertices::iterator iter;
       for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
-	m(*v);
+	ver_ptr& vptr = vertex_ptr(*v);
+	m(vptr);
       }
     }
 
@@ -146,7 +148,8 @@ namespace libint2 {
       typedef vertices::const_iterator citer;
       typedef vertices::iterator iter;
       for(citer v=stack_.begin(); v!=stack_.end(); ++v) {
-	m(*v);
+	const ver_ptr& vptr = vertex_ptr(*v);
+	m(vptr);
       }
     }
 
@@ -157,7 +160,8 @@ namespace libint2 {
       typedef vertices::const_reverse_iterator criter;
       typedef vertices::reverse_iterator riter;
       for(riter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
-	m(*v);
+	ver_ptr& vptr = vertex_ptr(*v);
+	m(vptr);
       }
     }
 
@@ -168,7 +172,8 @@ namespace libint2 {
       typedef vertices::const_reverse_iterator criter;
       typedef vertices::reverse_iterator riter;
       for(criter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
-	m(*v);
+	const ver_ptr& vptr = vertex_ptr(*v);
+	m(vptr);
       }
     }
 
