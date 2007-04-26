@@ -1,4 +1,8 @@
 
+04/26/2007:     Converted DirectedGraph to use std::multimap. Many improvements to speed-up DirectedGraph remain, but this
+		is the first major step.
+                -EFV
+
 04/25/2007:     1) Converted DirectedGraph to use std::list.
 		2) Removed the need to use template class with default arguments as a template template parameter
 		   (gcc 4.3 does not support this).

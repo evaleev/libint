@@ -99,7 +99,31 @@ DirectedGraph::add_new_vertex(const SafePtr<DGVertex>& vertex)
 const SafePtr<DGVertex>&
 DirectedGraph::vertex_is_on(const SafePtr<DGVertex>& vertex) const
 {
+  if (vertex->dg() == this)
+    return vertex;
+
   static SafePtr<DGVertex> null_ptr;
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+  typedef vertices::const_iterator citer;
+  typedef vertices::value_type value_type;
+  key_type vkey = key(*vertex);
+  // find the first elemnt with this key and iterate until vertex is found or key changes
+  citer vpos = stack_.find(vkey);
+  const citer end = stack_.end();
+  if (vpos != end) {
+    bool can_find = true;
+    while(can_find) {
+      if (can_find && (vpos->second)->equiv(vertex)) {
+#if DEBUG
+	std::cout << "vertex_is_on: " << (vpos->second)->label() << std::endl;
+#endif
+	return vpos->second;
+      }
+      ++vpos;
+      can_find = (vpos->first == vkey) && (vpos != end);
+    }
+  }
+#else
   typedef vertices::const_reverse_iterator criter;
   typedef vertices::reverse_iterator riter;
   const criter rend = stack_.rend();
@@ -112,6 +136,10 @@ DirectedGraph::vertex_is_on(const SafePtr<DGVertex>& vertex) const
       return vptr;
     }
   }
+#endif
+#if DEBUG
+  std::cout << "vertex_is_on: NOT " << (vertex)->label() << std::endl;
+#endif
   return null_ptr;
 }
 

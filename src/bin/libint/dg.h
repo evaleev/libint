@@ -4,9 +4,9 @@
 
 #include <iostream>
 #include <string>
-#include <vector>
 #include <list>
 #include <map>
+#include <vector>
 #include <algorithm>
 #include <stdexcept>
 #include <assert.h>
@@ -314,7 +314,9 @@ namespace libint2 {
 #endif
   }
 
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
   inline DirectedGraph::key_type key(const DGVertex& v);
+#endif
   /// puts a vertex into a container
   inline void push(DirectedGraph::vertices& vertices, const DirectedGraph::ver_ptr& v) {
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
