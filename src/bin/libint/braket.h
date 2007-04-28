@@ -305,7 +305,7 @@ namespace libint2 {
   SubIterator*
   ArrayBraket<BFS,NP>::member_subiter(unsigned int p, unsigned int i) const {
     assert(i==0 && p<NP);
-    return static_cast<SubIterator*>(new SubIteratorBase<BFS>( member(p,0) ) );
+    return static_cast<SubIterator*>(new SubIteratorBase<BFS>( member(p,i) ) );
   }
   
   template <class BFS, unsigned int NP>

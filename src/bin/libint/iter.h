@@ -36,10 +36,10 @@ namespace libint2 {
       be implemented if elements are derived from ConstructablePolymorphically.
       Default implementation throws, thus must be overridden by SubIteratorBase<T>. */
     virtual const ConstructablePolymorphically& pelem() const;
+    virtual ~SubIterator();
 
   protected:
     SubIterator();
-    virtual ~SubIterator();
 
   private:
     //SubIterator operator++(int);
@@ -59,7 +59,7 @@ namespace libint2 {
     /// Return reference to ConstructablePolymorphically as object of this type
     typedef const ConstructablePolymorphically& cp_rettype;
     SubIteratorBase(const tref&);
-    virtual ~SubIteratorBase();
+    ~SubIteratorBase();
     
     /// Returns current element
     const iref& elem() const;

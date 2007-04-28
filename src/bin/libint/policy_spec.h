@@ -64,8 +64,10 @@ namespace libint2 {
       static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
         
         std::vector< SubIterator* > siters_inord; // subiterators used to iterate over each set (in the above order)
-        std::vector< std::vector< SubIterator* > > bra_siters; // subiterators for bra basis function sets (outer vector runs over particle index)
-        std::vector< std::vector< SubIterator* > > ket_siters; // subiterators for ket basis function sets (outer vector runs over particle index)
+	typedef std::vector< std::vector< SubIterator* > > bra_siters_type;
+	typedef std::vector< std::vector< SubIterator* > > ket_siters_type;
+        bra_siters_type bra_siters; // subiterators for bra basis function sets (outer vector runs over particle index)
+        ket_siters_type ket_siters; // subiterators for ket basis function sets (outer vector runs over particle index)
         bra_siters.resize(np);
         ket_siters.resize(np);
 
@@ -142,6 +144,33 @@ namespace libint2 {
           }
 
         }
+
+	// Deallocate bra and ket subiterators
+	{
+	  typedef bra_siters_type::iterator bra_iter;
+	  typedef ket_siters_type::iterator ket_iter;
+	  typedef bra_siters_type::value_type::iterator bra_elem_iter;
+	  typedef bra_siters_type::value_type::iterator ket_elem_iter;
+
+	  const bra_iter bi_end = bra_siters.end();
+	  for(bra_iter bi=bra_siters.begin(); bi != bi_end; ++bi) {
+	    const bra_elem_iter bij_end = bi->end();
+	    for(bra_elem_iter bij=bi->begin(); bij != bij_end; ++bij) {
+	      delete *bij;
+	    }
+	  }
+	  bra_siters.clear();
+	  
+	  const ket_iter ki_end = ket_siters.end();
+	  for(ket_iter ki=ket_siters.begin(); ki != ki_end; ++ki) {
+	    const ket_elem_iter kij_end = ki->end();
+	    for(ket_elem_iter kij=ki->begin(); kij != kij_end; ++kij) {
+	      delete *kij;
+	    }
+	  }
+	  ket_siters.clear();
+	}
+
       }
 
       // Nothing is done here because GenIntegralSet objects are Singleton-like and don't need to be destroyed
