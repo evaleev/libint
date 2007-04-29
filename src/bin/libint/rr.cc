@@ -31,13 +31,49 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
 				  const std::string& funcname,
                                   std::ostream& decl, std::ostream& def)
 {
+  const SafePtr<CompilationParameters>& cparams = context->cparams();
   SafePtr<DirectedGraph> dg = generate_graph_();
   
   // Intermediates in RR code are either are automatic variables or have to go on vstack
   dg->registry()->stack_name("inteval->vstack");
   // No need to return the targets via inteval's targets
   dg->registry()->return_targets(false);
-  
+
+  // check if CSE to be performed
+  typedef IntegralSet<IncableBFSet> ISet;
+  SafePtr<DGVertex> target_vptr = rr_target();
+  std::cout << "RecurrenceRelation::generate_code: target = " << target_vptr->label() << std::endl;
+  SafePtr<ISet> target = dynamic_pointer_cast<ISet,DGVertex>(target_vptr);
+  if (target) {
+    //
+    // do CSE only if max_am <= cparams->max_am_opt()
+    //
+    const unsigned int np = target->num_part();
+    unsigned int max_am = 0;
+    // bra
+    for(unsigned int p=0; p<np; p++) {
+      const unsigned int nf = target->num_func_bra(p);
+      for(unsigned int f=0; f<nf; f++) {
+	// Assuming shells here
+	const unsigned int am = target->bra(p,f).norm();
+	using std::max;
+	max_am = max(max_am,am);
+      }
+    }
+    // ket
+    for(unsigned int p=0; p<np; p++) {
+      const unsigned int nf = target->num_func_ket(p);
+      for(unsigned int f=0; f<nf; f++) {
+	// Assuming shells here
+	const unsigned int am = target->ket(p,f).norm();
+	using std::max;
+	max_am = max(max_am,am);
+      }
+    }
+    const bool need_to_optimize = (max_am <= cparams->max_am_opt());
+    dg->registry()->do_cse(need_to_optimize);
+  }
+
   // Assign symbols for the target and source integral sets
   SafePtr<CodeSymbols> symbols(new CodeSymbols);
   assign_symbols_(symbols);

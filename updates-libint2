@@ -1,4 +1,8 @@
 
+04/27-29/2007:  1) Plugged memory leaks from ArrayBraket::member_subiter().
+		2) RecurrenceRelation::generate_code() can determine whether to use CSE.
+                -EFV
+
 04/26/2007:     Converted DirectedGraph to use std::multimap. Many improvements to speed-up DirectedGraph remain, but this
 		is the first major step.
                 -EFV
