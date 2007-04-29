@@ -37,9 +37,11 @@ namespace libint2 {
     virtual void inc(unsigned int i) =0;
     /// Decrements i-th quantum number. Return false and do nothing is i is outside the allowed range, else return true.
     virtual bool dec(unsigned int i) =0;
-    /// Returns true if all quanta are 0
-    virtual bool zero() const =0;
-    
+    /// Returns the norm of the quantum numbers
+    virtual unsigned int norm() const =0;
+    /// norm() == 0
+    bool zero() const { return norm() == 0; }
+
   protected:
     IncableBFSet() {}
 
@@ -82,8 +84,8 @@ namespace libint2 {
     bool dec(unsigned int i);
     /// Implements purely virtual IncableBFSet::inc
     void inc(unsigned int i);
-    /// Implements IncableBFSet::zero()
-    bool zero() const;
+    /// Implements IncableBFSet::norm()
+    unsigned int norm() const;
     /// Implements Hashable<unsigned>::key()
     unsigned key() const { return qn_[0]; }
     /// The range of keys is [0,max_key]
@@ -132,8 +134,8 @@ namespace libint2 {
     bool dec(unsigned int i);
     /// Implements purely virtual IncableBFSet::inc
     void inc(unsigned int i);
-    /// Implements IncableBFSet::zero()
-    bool zero() const;
+    /// Implements IncableBFSet::norm()
+    unsigned int norm() const;
     /// Implements Hashable<unsigned>::key()
     unsigned key() const {
       unsigned nxy = qn_[1] + qn_[2];

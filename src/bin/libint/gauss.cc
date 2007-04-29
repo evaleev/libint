@@ -122,10 +122,10 @@ CGF::inc(unsigned int i)
     ++qn_[i];
 }
 
-bool
-CGF::zero() const
+unsigned int
+CGF::norm() const
 {
-  return qn_[0] == 0 && qn_[1] == 0 && qn_[2] == 0;
+  return qn_[0] + qn_[1] + qn_[2];
 }
 
 void
@@ -231,10 +231,10 @@ CGShell::inc(unsigned int i)
     ++qn_[0];
 }
 
-bool
-CGShell::zero() const
+unsigned int
+CGShell::norm() const
 {
-  return qn_[0] == 0;
+  return qn_[0];
 }
 
 void
