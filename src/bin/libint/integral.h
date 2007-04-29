@@ -59,6 +59,12 @@ namespace libint2 {
     virtual ~IntegralSet() {};
 
 #if USE_BRAKET_H
+    /// Return the number of particles
+    virtual unsigned int num_part() const =0;
+    /// Return the number of functions for particle p
+    virtual unsigned int num_func_bra(unsigned int p) const =0;
+    /// Return the number of functions for particle p
+    virtual unsigned int num_func_ket(unsigned int p) const =0;
     /// Obtain pointers to ith BasisFunctionSet for particle p in bra
     virtual const BasisFunctionSet& bra(unsigned int p, unsigned int i) const =0;
     /// Obtain pointers to ith BasisFunctionSet for particle p in ket
@@ -68,6 +74,8 @@ namespace libint2 {
     /// Obtain pointers to ith BasisFunctionSet for particle p in ket
     virtual BasisFunctionSet& ket(unsigned int p, unsigned int i) =0;
 #else
+    /// Return the number of particles
+    virtual unsigned int np() const =0;
     /// Obtain pointers to ith BasisFunctionSet for particle p in bra
     virtual const SafePtr<BasisFunctionSet> bra(unsigned int p, unsigned int i) const =0;
     /// Obtain pointers to ith BasisFunctionSet for particle p in ket
@@ -136,6 +144,12 @@ namespace libint2 {
       /// Specialization of DGVertex::description()
       virtual const std::string& description() const;
 
+      /// Implementation of IntegralSet::num_part
+      unsigned int num_part() const { return OperType::Properties::np; }
+      /// Implementation of IntegralSet::num_func_bra
+      virtual unsigned int num_func_bra(unsigned int p) const { return bra_.num_members(p); }
+      /// Implementation of IntegralSet::num_func_ket
+      virtual unsigned int num_func_ket(unsigned int p) const { return ket_.num_members(p); }
       /// Implementation of IntegralSet::bra() const
       typename BraSetType::bfs_cref bra(unsigned int p, unsigned int i) const;
       /// Implementation of IntegralSet::ket() const
