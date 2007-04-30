@@ -102,9 +102,14 @@ namespace libint2 {
       }
       const bool need_to_optimize = (max_am <= cparams->max_am_opt());
       dg_xxxx->registry()->do_cse(need_to_optimize);
+      dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
       
       // Need to accumulate integrals?
       dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
+
+      // Only build using shell-sets?
+      if (size_to_unroll == 0)
+	dg_xxxx->registry()->can_unroll(false);
 
       dg_xxxx->append_target(xsxs_ptr);
       dg_xxxx->apply(strat,tactic);

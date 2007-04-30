@@ -79,3 +79,9 @@ libint2::label_to_funcname(const std::string& label)
   return result;
 }
 
+bool
+libint2::condense_expr(unsigned int unroll_threshold, bool vectorize)
+{
+  bool condense_expr = unroll_threshold > 1 && vectorize;
+  return condense_expr;
+}

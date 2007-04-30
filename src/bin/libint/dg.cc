@@ -1588,6 +1588,10 @@ DirectedGraph::contains_nontrivial_rr() const
 void
 DirectedGraph::find_subtrees()
 {
+  // need to condense expressions?
+  if (!registry()->condense_expr())
+    return;
+
   // Find subtrees by starting from the targets and moving down ...
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;

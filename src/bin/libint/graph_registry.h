@@ -34,12 +34,16 @@ namespace libint2 {
     /// Names the primary scratch space for the intermediates. The default is "libint->stack".
     const std::string& stack_name() const { return stack_name_; }
     void stack_name(const std::string& stack_name) { stack_name_ = stack_name; }
+    /// Condense expressions? The default is false.
+    bool condense_expr() const { return condense_expr_; }
+    void condense_expr(bool ce) { condense_expr_ = ce; }
     
     private:
     bool accumulate_targets_;
     bool return_targets_;
     bool can_unroll_;
     bool do_cse_;
+    bool condense_expr_;
     std::string stack_name_;
   };
   

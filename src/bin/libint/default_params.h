@@ -302,6 +302,9 @@ namespace libint2 {
   /// Converts a label, e.g. name of the target node, to the name of the function to compute it
   std::string label_to_funcname(const std::string& label);
 
+  /// need to condense expressions? Makes sense if vectorizing the code or the compiler somehow prefers long expressions
+  /// It does not make sense if there will be only set-level RR calls
+  bool condense_expr(unsigned int unroll_threshold, bool vectorize);
 };
 
 #endif

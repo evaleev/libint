@@ -73,6 +73,7 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
     const bool need_to_optimize = (max_am <= cparams->max_am_opt());
     dg->registry()->do_cse(need_to_optimize);
   }
+  dg->registry()->condense_expr(condense_expr(1000000000,cparams->max_vector_length()>1));
 
   // Assign symbols for the target and source integral sets
   SafePtr<CodeSymbols> symbols(new CodeSymbols);

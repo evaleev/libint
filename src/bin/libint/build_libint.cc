@@ -277,6 +277,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const bool need_to_optimize = (max_am <= cparams->max_am_eri_opt());
           dg_xxxx->registry()->can_unroll(need_to_optimize);
           dg_xxxx->registry()->do_cse(need_to_optimize);
+	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
 	  // Need to accumulate integrals?
 	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
           
@@ -389,6 +390,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const bool need_to_optimize = (max_am <= cparams->max_am_g12_opt());
           dg_xxxx->registry()->can_unroll(need_to_optimize);
           dg_xxxx->registry()->do_cse(need_to_optimize);
+	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
 	  // Need to accumulate integrals?
 	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
           
