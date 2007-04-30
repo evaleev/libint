@@ -12,6 +12,7 @@ namespace libint2 {
   bool
   TwoPRep_11_11<CGShell>::this_precomputed() const
   {
+    // (ss|ss) shell quartet is not precomputed, but the integral is
     return false;
   }
     

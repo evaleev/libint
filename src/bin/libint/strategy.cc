@@ -123,6 +123,11 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
                                     const SafePtr<TwoPRep_11_11_sq>& integral,
                                     const SafePtr<Tactic>& tactic)
 {
+  static SafePtr<RecurrenceRelation> nullptr;
+#if DEBUG
+  std::cout << "Strategy::optimal_rr_twoprep1111_sq: called for " << integral->label() << std::endl;
+#endif
+
   //
   // This is a basic strategy for computing integral
   // 1) first see if should convert the set to infividual integrals
@@ -130,8 +135,22 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
   // 3) else apply VRR
   //
   const unsigned int size = integral->size();
-  if (size == 1 || (size <= max_size_to_unroll_ && graph->registry()->can_unroll()))
-    return unroll_intset<TwoPRep_11_11_sq>(integral);
+  const bool can_unroll = graph->registry()->can_unroll();
+
+#if 0
+  // Can only unroll an (ss|ss)...
+  if (size == 1 && !can_unroll)
+    return nullptr;
+#endif
+
+  if (can_unroll) {
+    if (size == 1 || size <= max_size_to_unroll_) {
+#if DEBUG
+      std::cout << "Strategy::optimal_rr_twoprep1111_sq: " << integral->label() << " to be unrolled" << std::endl;
+#endif
+      return unroll_intset<TwoPRep_11_11_sq>(integral);
+    }
+  }
 
 #if LIBINT_ERI_STRATEGY == 1 || LIBINT_ERI_STRATEGY == 2
   //

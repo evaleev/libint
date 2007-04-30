@@ -30,6 +30,8 @@ namespace libint2 {
     typedef SafePtr<RecurrenceRelation> RR;
     Strategy(unsigned int max_size_to_unroll = default_max_size_to_unroll) :
       max_size_to_unroll_(max_size_to_unroll) {
+	// if max_size_to_unroll == 0, shell quartet (ss|ss) can never be unrolled, but it is not classified as precomputed quantity (the integral (ss|ss) is).
+	// this subtle point is a result of poor design, but I'm not sure if its impact will be significant enough to warrant redesign
         if (max_size_to_unroll == 0)
           throw std::runtime_error("Strategy::Strategy() -- max_size_to_unroll must be >= 1");
       }

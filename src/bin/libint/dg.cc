@@ -380,7 +380,8 @@ DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex,
                         const SafePtr<Strategy>& strategy,
                         const SafePtr<Tactic>& tactic)
 {
-  if (vertex->precomputed() || !vertex->need_to_compute())
+  bool not_yet_computed = !vertex->precomputed() && vertex->need_to_compute() && (vertex->num_exit_arcs() == 0);
+  if (!not_yet_computed)
     return;
   SafePtr<RecurrenceRelation> rr0 = strategy->optimal_rr(SafePtr_from_this(),vertex,tactic);
   if (rr0 == 0)

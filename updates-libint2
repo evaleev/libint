@@ -1,4 +1,8 @@
 
+04/30/2007:	DirectedGraph::apply_to can check whether outgoing arcs exist to avoid further work.
+		This should speed up graph generation significantly.
+		-EFV
+
 04/27-29/2007:  1) Plugged memory leaks from ArrayBraket::member_subiter().
 		2) RecurrenceRelation::generate_code() can determine whether to use CSE.
                 -EFV
