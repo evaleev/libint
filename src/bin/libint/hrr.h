@@ -480,13 +480,13 @@ namespace libint2 {
         for(int i=0; i<nbra; i++) {
           SubIterator* iter = target_->bra().member_subiter(p,i);
           hsr *= iter->num_iter();
-	  delete iter;
+          delete iter;
         }
         unsigned int nket = target_->ket().num_members(p);
         for(int i=0; i<nket; i++) {
           SubIterator* iter = target_->ket().member_subiter(p,i);
           hsr *= iter->num_iter();
-	  delete iter;
+          delete iter;
         }
       }
       // Use TaskParameters to keep track of maximum hsr
@@ -506,13 +506,13 @@ namespace libint2 {
         for(int i=0; i<nbra; i++) {
           SubIterator* iter = target_->bra().member_subiter(p,i);
           lsr *= iter->num_iter();
-	  delete iter;
+          delete iter;
         }
         unsigned int nket = target_->ket().num_members(p);
         for(int i=0; i<nket; i++) {
           SubIterator* iter = target_->ket().member_subiter(p,i);
           lsr *= iter->num_iter();
-	  delete iter;
+          delete iter;
         }
       }
       // Use TaskParameters to keep track of maximum hsr
