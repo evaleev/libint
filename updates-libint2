@@ -2,6 +2,8 @@
 04/30/2007:	1) DirectedGraph::apply_to can check whether outgoing arcs exist to avoid further work.
 		   This should speed up graph generation significantly.
 		2) DirectedGraph::find_subtrees should use hints to avoid doing pointless work.
+		3) Changed storage of arcs in DGVertex to more efficient std::list + remove/turn-off unnecessary
+		   safety checks.
 		-EFV
 
 04/27-29/2007:  1) Plugged memory leaks from ArrayBraket::member_subiter().

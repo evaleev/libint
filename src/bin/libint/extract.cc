@@ -47,7 +47,7 @@ void
 ExtractRR::operator()(const VertexPtr& v)
 {
   if (v->num_exit_arcs() != 0) {
-    SafePtr<DGArc> arc = v->exit_arc(0);
+    SafePtr<DGArc> arc = *(v->first_exit_arc());
     SafePtr<DGArcRR> arc_rr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
     if (arc_rr != 0) {
       SafePtr<RecurrenceRelation> rr = arc_rr->rr();

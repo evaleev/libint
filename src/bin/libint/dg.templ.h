@@ -124,9 +124,11 @@ namespace libint2 {
     DirectedGraph::apply_at(const SafePtr<DGVertex>& vertex) const
     {
       ((vertex.get())->*method)();
-      const unsigned int nchildren = vertex->num_exit_arcs();
-      for(int c=0; c<nchildren; c++)
-        apply_at<method>(vertex->exit_arc(c)->dest());
+      typedef DGVertex::ArcSetType::const_iterator aciter;
+      const aciter abegin = vertex->first_exit_arc();
+      const aciter aend = vertex->plast_exit_arc();
+      for(aciter a=abegin; a!=aend; ++a)
+        apply_at<method>((*a)->dest());
     }
 
   template <class Method>

@@ -2,6 +2,7 @@
 #ifndef _libint2_src_bin_libint_dgvertex_h_
 #define _libint2_src_bin_libint_dgvertex_h_
 
+#include <list>
 #include <dg.h>
 #include <drtree.h>
 #include <dgarc.h>
@@ -36,6 +37,8 @@ namespace libint2 {
         returns it using KeyReturnType */
     typedef KeyTypes::InstanceID KeyType;
     typedef Hashable<KeyType,ComputeKey>::KeyReturnType KeyReturnType;
+    /// ArcSetType is a container used to maintain entry and exit arcs
+    typedef std::list< SafePtr<DGArc> > ArcSetType;
 
     /** typeid stores the ClassID of the concrete type. It is used to check quickly whether
         2 DGVertices are of the same type. Dynamic casts are too expensive. */
@@ -77,14 +80,18 @@ namespace libint2 {
 
     /// returns the number of parents
     unsigned int num_entry_arcs() const;
-    /// returns ptr to i-th parent
-    SafePtr<DGArc> entry_arc(unsigned int) const;
+    /// returns parents::begin()
+    ArcSetType::const_iterator first_entry_arc() const { return parents_.begin(); }
+    /// returns parents::end()
+    ArcSetType::const_iterator plast_entry_arc() const { return parents_.end(); }
     /// returns the number of children
     unsigned int num_exit_arcs() const;
-    /// returns ptr to i-th child
-    SafePtr<DGArc> exit_arc(unsigned int) const;
+    /// returns children::begin()
+    ArcSetType::const_iterator first_exit_arc() const { return children_.begin(); }
+    /// returns children::end()
+    ArcSetType::const_iterator plast_exit_arc() const { return children_.end(); }
     /// return arc connecting this to v, otherwise null pointer
-    SafePtr<DGArc> exit_arc(const SafePtr<DGVertex>& v) const;
+    const SafePtr<DGArc>& exit_arc(const SafePtr<DGVertex>& v) const;
 
     /// computes key
     virtual KeyReturnType key() const =0;
@@ -175,8 +182,6 @@ namespace libint2 {
     virtual void unregister() const;
 
   protected:
-    /// ArcSetType is a container used to maintain entry and exit arcs
-    typedef vector< SafePtr<DGArc> > ArcSetType;
 
     /** this_precomputed() is used by precomputed() to determine whether this
         object really is precomputed. E.g. (ss|ss) shell is considered not

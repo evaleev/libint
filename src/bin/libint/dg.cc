@@ -187,9 +187,13 @@ DirectedGraph::traverse()
     if ((vptr)->is_a_target() && (vptr)->num_entry_arcs() == 0) {
       // First, since this target doesn't have parents we can schedule its computation
       schedule_computation(vptr);
-      int nchildren = (vptr)->num_exit_arcs();
-      for(int c=0; c<nchildren; c++)
-        traverse_from((vptr)->exit_arc(c));
+
+      typedef DGVertex::ArcSetType::const_iterator aciter;
+      const aciter abegin = (vptr)->first_exit_arc();
+      const aciter aend = (vptr)->plast_exit_arc();
+      for(aciter a=abegin; a!=aend; ++a) {
+        traverse_from(*a);
+      }
     }
   }
 }
@@ -217,9 +221,11 @@ DirectedGraph::traverse_from(const SafePtr<DGArc>& arc)
     else
       schedule_computation(dest);
     
-    int nchildren = dest->num_exit_arcs();
-    for(int c=0; c<nchildren; c++)
-      traverse_from(dest->exit_arc(c));
+      typedef DGVertex::ArcSetType::const_iterator aciter;
+      const aciter abegin = dest->first_exit_arc();
+      const aciter aend = dest->plast_exit_arc();
+      for(aciter a=abegin; a!=aend; ++a)
+	traverse_from(*a);
   }
 }
 
@@ -265,9 +271,11 @@ namespace {
     std::ostream& os;
     __print_arcs_to_dot(std::ostream& o) : os(o) {}
     void operator()(const SafePtr<DGVertex>& v) {
-      unsigned int narcs = v->num_exit_arcs();
-      for(int a=0; a<narcs; a++) {
-	SafePtr<DGVertex> dest = v->exit_arc(a)->dest();
+      typedef DGVertex::ArcSetType::const_iterator aciter;
+      const aciter abegin = v->first_exit_arc();
+      const aciter aend = v->plast_exit_arc();
+      for(aciter a=abegin; a!=aend; ++a) {
+	SafePtr<DGVertex> dest = (*a)->dest();
 	os << "  " << v->graph_label() << " -> "
 	   << dest->graph_label() << endl;
       }
@@ -424,7 +432,7 @@ DirectedGraph::replace_rr_with_expr()
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
     if ((vptr)->num_exit_arcs()) {
-      SafePtr<DGArc> arc0 = (vptr)->exit_arc(0);
+      SafePtr<DGArc> arc0 = *((vptr)->first_exit_arc());
       SafePtr<DGArcRR> arc0_cast = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
       if (arc0_cast == 0)
         continue;
@@ -575,8 +583,10 @@ DirectedGraph::remove_trivial_arithmetics()
     SafePtr< AlgebraicOperator<DGVertex> > oper_cast = dynamic_pointer_cast<AlgebraicOperator<DGVertex>,DGVertex>((vptr));
     if (oper_cast) {
 
-      SafePtr<DGVertex> left = oper_cast->exit_arc(0)->dest();
-      SafePtr<DGVertex> right = oper_cast->exit_arc(1)->dest();
+      typedef DGVertex::ArcSetType::const_iterator aciter;
+      aciter a = oper_cast->first_exit_arc();
+      SafePtr<DGVertex> left = (*a)->dest();  ++a;
+      SafePtr<DGVertex> right = (*a)->dest();
 
       // 1.0 * x = x
       if (left->equiv(prefactors.N_i[1])) {
@@ -616,7 +626,7 @@ DirectedGraph::handle_trivial_nodes()
     const ver_ptr& vptr = vertex_ptr(*v);
     if ((vptr)->num_exit_arcs() != 1)
       continue;
-    SafePtr<DGArc> arc = (vptr)->exit_arc(0);
+    SafePtr<DGArc> arc = *((vptr)->first_exit_arc());
 
     // Is the exit arc DGArcDirect?
     {
@@ -652,18 +662,27 @@ DirectedGraph::handle_trivial_nodes()
 void
 DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2)
 {
-  typedef vector<SafePtr<DGArc> > arcvec;
-  typedef arcvec::iterator aiter;
+#if DEBUG
+    cout << "remove_vertex_at: replacing " << v1->description() << " with " << v2->description() << endl;
+#endif
+
   // Collect all entry arcs in a container
-  arcvec v1_entry;
+  DGVertex::ArcSetType v1_entry;
+  typedef DGVertex::ArcSetType::iterator aiter;
+  typedef DGVertex::ArcSetType::const_iterator aciter;
+  const aciter abegin = v1->first_entry_arc();
+  const aciter aend = v1->plast_entry_arc();
   // Verify that all entry arcs are DGArcDirect
-  for(int i=0; i<v1->num_entry_arcs(); i++) {
+  for(aciter a=abegin; a!=aend; ++a) {
     // See if this is a direct arc -- otherwise cannot do this
-    SafePtr<DGArc> arc = v1->entry_arc(i);
+    SafePtr<DGArc> arc = (*a);
     SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
     if (arc_cast == 0)
       throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");
-    v1_entry.push_back(v1->entry_arc(i));
+    v1_entry.push_back(*a);
+#if DEBUG
+    std::cout << "remove_vertex_at: examined v1 entry arc: from " << (*a)->orig()->description() << " to " << (*a)->dest()->description() << std::endl;
+#endif
   }
 
   // Verify that v1 and v2 are connected by an arc and it is the only arc exiting v1
@@ -671,7 +690,7 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
     throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");*/
 
   // See if this is a direct arc -- otherwise cannot do this
-  SafePtr<DGArc> arc = v1->exit_arc(0);
+  SafePtr<DGArc> arc = *(v1->first_exit_arc());
   SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
   if (arc_cast == 0)
     throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");
@@ -681,16 +700,25 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
   //
 
   // Reconnect each of v1's entry arcs to v2
-  for(arcvec::iterator i=v1_entry.begin(); i != v1_entry.end(); i++) {
+  unsigned int c = 0;
+  for(aiter i=v1_entry.begin(); i != v1_entry.end(); ++i, ++c) {
     SafePtr<DGVertex> parent = (*i)->orig();
+#if DEBUG
+    cout << "remove_vertex_at: replacing arc " << c << " connecting " << parent->description() << " to " << (*i)->dest()->description() << endl;
+#endif
     SafePtr<DGArcDirect> new_arc(new DGArcDirect(parent,v2));
     parent->replace_exit_arc(*i,new_arc);
 #if DEBUG
     cout << "Replaced arcs: parent " << parent->description() << " now connected to " << new_arc->dest()->description() << endl;
     cout << "                ptr = " << parent << endl;
-    cout << "               parent has " << parent->num_exit_arcs() << " children" << endl;
-    cout << "               child 0 " << parent->exit_arc(0)->dest()->description() << endl;
-    cout << "               child 1 " << parent->exit_arc(1)->dest()->description() << endl;
+    const unsigned int nchildren = parent->num_exit_arcs();
+    cout << "               parent has " << nchildren << " children" << endl;
+    aciter a = parent->first_exit_arc();
+    cout << "               child 0 " << (*a)->dest()->description() << endl;
+    if (nchildren > 1) {
+      ++a;
+      cout << "               child 1 " << (*a)->dest()->description() << endl;
+    }
 #endif
   }
 
@@ -885,9 +913,13 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
         (vertex->is_a_target() || vertex->size() > min_size_to_alloc)) {
       MemoryManager::Address addr = memman->alloc(vertex->size());
       vertex->set_address(addr);
-      const unsigned int nchildren = vertex->num_exit_arcs();
-      for(int c=0; c<nchildren; c++) {
-        SafePtr<DGVertex> child = vertex->exit_arc(c)->dest();
+
+      typedef DGVertex::ArcSetType::const_iterator aciter;
+      const aciter abegin = vertex->first_exit_arc();
+      const aciter aend = vertex->plast_exit_arc();
+      // Verify that all entry arcs are DGArcDirect
+      for(aciter a=abegin; a!=aend; ++a) {
+        SafePtr<DGVertex> child = (*a)->dest();
         const unsigned int ntags = child->tag();
         // Do NOT deallocate if it's a target!
         if (ntags == child->num_entry_arcs() && child->address_set() && !child->is_a_target()) {
@@ -979,7 +1011,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
     const ver_ptr& vptr = vertex_ptr(*v);
     if ((vptr)->num_exit_arcs() == 0)
       continue;
-    SafePtr<DGArc> arc = (vptr)->exit_arc(0);
+    SafePtr<DGArc> arc = *((vptr)->first_exit_arc());
     SafePtr<DGArcRR> arc_rr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
     if (arc_rr == 0)
       continue;
@@ -989,9 +1021,13 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
       continue;
     }
     else {
-      unsigned int nchildren = (vptr)->num_exit_arcs();
-      for(int c=0; c<nchildren; c++) {
-        SafePtr<DGVertex> child = (vptr)->exit_arc(c)->dest();
+      typedef DGVertex::ArcSetType::const_iterator aciter;
+      const aciter abegin = (vptr)->first_exit_arc();
+      const aciter aend = (vptr)->plast_exit_arc();
+      unsigned int c = 0;
+      // Verify that all entry arcs are DGArcDirect
+      for(aciter a=abegin; a!=aend; ++a, ++c) {
+        SafePtr<DGVertex> child = (*a)->dest();
         // If a child is precomputed and it's parent symbol is not set -- its symbol will be set as usual
         if (!child->precomputed() || (vptr)->symbol_set()) {
           if ((vptr)->address_set()) {
@@ -1002,7 +1038,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
           }
         }
       }
-      (vptr)->refer_this_to((vptr)->exit_arc(0)->dest());
+      (vptr)->refer_this_to((*((vptr)->first_exit_arc()))->dest());
       (vptr)->reset_symbol();
     }
   }
@@ -1093,8 +1129,10 @@ DirectedGraph::assign_oper_symbol(const SafePtr<CodeContext>& context, SafePtr<D
         vertex->set_symbol(context->unique_name<EntityTypes::FP>());
       // else assign symbols to left and right arguments
       else {
-        SafePtr<DGVertex> left = ptr_cast->exit_arc(0)->dest();
-        SafePtr<DGVertex> right = ptr_cast->exit_arc(1)->dest();
+	typedef DGVertex::ArcSetType::const_iterator aciter;
+	aciter arc = ptr_cast->first_exit_arc();
+        SafePtr<DGVertex> left = (*arc)->dest(); ++arc;
+        SafePtr<DGVertex> right = (*arc)->dest();
         assign_oper_symbol(context,left);
         assign_oper_symbol(context,right);
         
@@ -1299,18 +1337,22 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 	  // can accumulate targets directly -- use '+=' instead of '='
 	  const bool accumulate_not_assign = accumulate_targets_directly && IntegralInTargetIntegralSet()(current_vertex);
 
+	  typedef DGVertex::ArcSetType::const_iterator aciter;
+	  aciter a = oper_ptr->first_exit_arc();
+	  const SafePtr<DGVertex>& left_arg = (*a)->dest();  ++a;
+	  const SafePtr<DGVertex>& right_arg = (*a)->dest();
+	  
           if (context->comments_on()) {
+
             oss.str(null_str);
             oss << current_vertex->label() << (accumulate_not_assign ? " += " : " = ")
-                << oper_ptr->exit_arc(0)->dest()->label()
+                << left_arg->label()
                 << oper_ptr->label()
-                << oper_ptr->exit_arc(1)->dest()->label();
+                << right_arg->label();
             os << context->comment(oss.str()) << endl;
           }
 
           // expression
-          SafePtr<DGVertex> left_arg = oper_ptr->exit_arc(0)->dest();
-          SafePtr<DGVertex> right_arg = oper_ptr->exit_arc(1)->dest();
 #if DEBUG
           cout << "Generating code for " << current_vertex->description() << endl;
           cout << "              ptr = " << current_vertex << endl;
@@ -1352,7 +1394,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
       // print simple assignment statement
       if (current_vertex->num_exit_arcs() == 1) {
         typedef DGArcDirect arc_type;
-        SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(current_vertex->exit_arc(0));
+        SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(*(current_vertex->first_exit_arc()));
         if (arc_ptr) {
 
 	  // If this is an Integral in a target IntegralSet AND
@@ -1397,7 +1439,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
       // print out a recurrence relation
       {
         typedef DGArcRR arc_type;
-        SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(current_vertex->exit_arc(0));
+        SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(*(current_vertex->first_exit_arc()));
         if (arc_ptr) {
           
           SafePtr<RecurrenceRelation> rr = arc_ptr->rr();
@@ -1549,7 +1591,7 @@ DirectedGraph::update_func_names()
     // for every vertex with children
     if ((vptr)->num_exit_arcs() > 0) {
       // if it must be computed using a RR
-      SafePtr<DGArc> arc = (vptr)->exit_arc(0);
+      SafePtr<DGArc> arc = *((vptr)->first_exit_arc());
       SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
       if (arcrr != 0) {
         SafePtr<RecurrenceRelation> rr = arcrr->rr();
@@ -1569,7 +1611,7 @@ DirectedGraph::contains_nontrivial_rr() const
   do {
     const int nchildren = current_vertex->num_exit_arcs();
     if (nchildren > 0) {
-      arc_ptr aptr = current_vertex->exit_arc(0);
+      arc_ptr aptr = *(current_vertex->first_exit_arc());
       typedef RecurrenceRelation RR;
       SafePtr<DGArcRR> aptr_cast = dynamic_pointer_cast<DGArcRR,arc>(aptr);
       // if this is a RR
@@ -1617,7 +1659,7 @@ DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
     //
     {
       if (v->num_exit_arcs() > 0) {
-        SafePtr<DGArc> arc = v->exit_arc(0);
+        SafePtr<DGArc> arc = *(v->first_exit_arc());
         SafePtr<DGArcRR> arc_rr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
         if (arc_rr)
           useless_subtree = true;
@@ -1643,9 +1685,12 @@ DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
     }
     
     // move on to children
-    const unsigned int nchildren = v->num_exit_arcs();
-    for(unsigned int c=0; c<nchildren; c++)
-      find_subtrees_from(v->exit_arc(c)->dest());
+    typedef DGVertex::ArcSetType::const_iterator aciter;
+    const aciter abegin = v->first_exit_arc();
+    const aciter aend = v->plast_exit_arc();
+    for(aciter a=abegin; a!=aend; ++a) {
+      find_subtrees_from((*a)->dest());
+    }
   }
 }
 

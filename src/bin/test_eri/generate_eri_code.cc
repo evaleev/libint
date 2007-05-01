@@ -35,6 +35,10 @@ namespace {
 						       CGShell(am[l[2]]),
 						       CGShell(am[l[3]]),
 						       0);
+    SafePtr<DirectedGraph> pg1(new DirectedGraph);
+    SafePtr<DirectedGraph> pg2(new DirectedGraph);
+    SafePtr<DirectedGraph> pg3(new DirectedGraph);
+    DirectedGraph g4;
     BuildTest<ERIQtet,true>(quartet,
 			    cmdline.size_to_unroll(),
 			    cmdline.veclen(),

@@ -1,4 +1,5 @@
 
+#include <algorithm>
 #include <dgvertex.h>
 #include <global_macros.h>
 
@@ -6,6 +7,7 @@ using namespace std;
 using namespace libint2;
 
 #define LOCAL_DEBUG 0
+#define SAFE_DGVERTEX 0
 
 DGVertex::DGVertex(ClassID tid) :
   dg_(0), subtree_(SafePtr<DRTree>()), typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
@@ -38,12 +40,22 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
 {
   if (can_add_arcs_) {
     SafePtr<DGVertex> child = arc->dest();
-    const unsigned int nchildren = children_.size();
-    for(int i = 0; i<nchildren; i++)
-      if (children_[i]->dest() == child)
-        return;
+#if SAFE_DGVERTEX
+    typedef ArcSetType::const_iterator aciter;
+    if (!children_.empty()) {
+      const aciter abegin = children_.begin();
+      const aciter aend = children_.end();
+      for(aciter a=abegin; a!=aend; ++a) { 
+	if ((*a)->dest() == child)
+	  throw ProgrammingError("DGVertex::add_exit_arc() -- arc already exists");
+      }
+    }
+#endif
     children_.push_back(arc);
     child->add_entry_arc(arc);
+#if DEBUG
+    std::cout << "add_exit_arc: added arc from " << arc->orig()->description() << " to " << arc->dest()->description() << std::endl;
+#endif
   }
   else
     throw CannotAddArc("DGVertex::add_entry_arc() -- cannot add arcs anymore");
@@ -52,11 +64,9 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
 void
 DGVertex::del_exit_arc(const SafePtr<DGArc>& arc)
 {
-  typedef vector< SafePtr<DGArc> > vectype;
-
   if (can_add_arcs_) {
     if (!children_.empty()) {
-      vectype::iterator pos = find(children_.begin(),children_.end(), arc);
+      ArcSetType::iterator pos = find(children_.begin(),children_.end(), arc);
       if (pos != children_.end()) {
         arc->dest()->del_entry_arc(arc);
         children_.erase(pos);
@@ -74,12 +84,10 @@ DGVertex::del_exit_arc(const SafePtr<DGArc>& arc)
 void
 DGVertex::del_exit_arcs()
 {
-  typedef vector< SafePtr<DGArc> > vectype;
-
   if (can_add_arcs_) {
     if (num_exit_arcs()) {
       do {
-        del_exit_arc(children_[0]);
+        del_exit_arc(*(children_.begin()));
       } while (num_exit_arcs() != 0);
     }
   }
@@ -93,8 +101,8 @@ DGVertex::replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B)
   if (can_add_arcs_) {
     typedef ArcSetType::iterator aiter;
     if (!children_.empty()) {
-      aiter begin = children_.begin();
-      aiter end = children_.end();
+      const aiter begin = children_.begin();
+      const aiter end = children_.end();
       aiter posB = find(begin,end,B);
       bool B_already_exists = (posB != end);
       if (B_already_exists)
@@ -128,7 +136,7 @@ void
 DGVertex::del_entry_arc(const SafePtr<DGArc>& arc)
 {
   if (!parents_.empty()) {
-    vector< SafePtr<DGArc> >::iterator location = find(parents_.begin(), parents_.end(), arc);
+    ArcSetType::iterator location = find(parents_.begin(), parents_.end(), arc);
     if (location != parents_.end())
       parents_.erase(location);
     else
@@ -175,28 +183,25 @@ DGVertex::num_exit_arcs() const
   return children_.size();
 }
 
-SafePtr<DGArc>
-DGVertex::entry_arc(unsigned int p) const
-{
-  return parents_.at(p);
+namespace {
+  struct __ArcDestEqual {
+    __ArcDestEqual(const SafePtr<DGVertex>& v) : v_(v) {}
+    bool operator()(const SafePtr<DGArc>& a) { return a->dest() == v_; }
+    const SafePtr<DGVertex>& v_;
+  };
 }
 
-SafePtr<DGArc>
-DGVertex::exit_arc(unsigned int c) const
-{
-  return children_.at(c);
-}
-
-SafePtr<DGArc>
+const SafePtr<DGArc>&
 DGVertex::exit_arc(const SafePtr<DGVertex>& v) const
 {
-  unsigned int nchildren = children_.size();
-  for(int c=0; c<nchildren; c++) {
-    SafePtr<DGArc> arc = children_[c];
-    if (arc->dest() == v)
-      return arc;
-  }
-  return SafePtr<DGArc>();
+  static SafePtr<DGArc> nullptr;
+  __ArcDestEqual predicate(v);
+  const ArcSetType::const_iterator end = children_.end();
+  const ArcSetType::const_iterator pos = find_if(children_.begin(),children_.end(),predicate);
+  if (pos != end)
+    return *pos;
+  else 
+    return nullptr;
 }
 
 void
@@ -204,12 +209,16 @@ DGVertex::reset()
 {
   dg_ = 0;
   subtree_ = SafePtr<DRTree>();
-  unsigned int nchildren = children_.size();
-  for(int c=0; c<nchildren; c++) {
-    children_[c]->dest()->del_entry_arc(children_[c]);
-    children_[c].reset();
+
+  typedef ArcSetType::const_iterator citer;
+  typedef ArcSetType::iterator iter;
+  const citer end = children_.end();
+  for(iter a=children_.begin(); a!=end; ++a) {
+    (*a)->dest()->del_entry_arc(*a);
+    (*a).reset();
   }
-  children_.resize(0);
+  children_.clear();
+
   target_ = false;
   can_add_arcs_ = true;
   num_tagged_arcs_ = 0;
@@ -370,7 +379,7 @@ UnrolledIntegralSet::operator()(const SafePtr<DGVertex>& V)
   const unsigned int outdegree = V->num_exit_arcs();
   if (outdegree == 0) return false;
   
-  const SafePtr<DGArc> arc0 = V->exit_arc(0);
+  const SafePtr<DGArc> arc0 = *(V->first_exit_arc());
   // Is this DGArcRR?
   const SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
   if (arcrr == 0) return false;
@@ -389,7 +398,7 @@ IntegralInTargetIntegralSet::operator()(const SafePtr<DGVertex>& V)
 {
   const unsigned int indegree = V->num_entry_arcs();
   if (indegree != 1) return false;
-  const SafePtr<DGVertex>& parent = V->entry_arc(0)->orig();
+  const SafePtr<DGVertex>& parent = (*(V->first_entry_arc()))->orig();
   if (parent->is_a_target()) return UnrolledIntegralSet()(parent);
   return false;
 }

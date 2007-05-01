@@ -54,9 +54,15 @@ namespace libint2 {
           if (num_exit_arcs() != 2)
             cout << "AlgebraicOperator<DGVertex> copy constructor: number of children != 2" << endl;
           else {
-            if (left_ != exit_arc(0)->dest() && left_ != exit_arc(1)->dest())
+
+	    typedef DGVertex::ArcSetType::const_iterator aciter;
+	    aciter a = this->first_exit_arc();
+	    const SafePtr<DGVertex>& left_arg = (*a)->dest();  ++a;
+	    const SafePtr<DGVertex>& right_arg = (*a)->dest();
+
+            if (left_ != left_arg && left_ != right_arg)
               cout << "AlgebraicOperator<DGVertex> copy constructor: invalid left operand given" << endl; 
-            if (right_ != exit_arc(0)->dest() && right_ != exit_arc(1)->dest())
+            if (right_ != left_arg && right_ != right_arg)
               cout << "AlgebraicOperator<DGVertex> copy constructor: invalid right operand given" << endl;
           }
 #endif

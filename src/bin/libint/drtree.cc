@@ -56,9 +56,12 @@ DRTree::add_vertex(const SafePtr<DGVertex>& vertex)
     std::cout << "  Root = " << root()->label() << std::endl;
     std::cout << "  nvertices = " << nvertices_ << std::endl;
 #endif
-    const unsigned int nchildren = vertex->num_exit_arcs();
-    for(unsigned int c=0; c<nchildren; c++) {
-      add_vertex(vertex->exit_arc(c)->dest());
+
+    typedef DGVertex::ArcSetType::const_iterator aciter;
+    const aciter abegin = vertex->first_exit_arc();
+    const aciter aend = vertex->plast_exit_arc();
+    for(aciter a=abegin; a!=aend; ++a) {
+      add_vertex((*a)->dest());
     }
   }
 }
@@ -76,9 +79,12 @@ DRTree::detach_from(const SafePtr<DGVertex>& v)
     return;
   else {
     v->subtree_ = SafePtr<DRTree>();
-    const unsigned int nchildren = v->num_exit_arcs();
-    for(unsigned int c=0; c<nchildren; c++)
-      detach_from(v->exit_arc(c)->dest());
+    typedef DGVertex::ArcSetType::const_iterator aciter;
+    const aciter abegin = v->first_exit_arc();
+    const aciter aend = v->plast_exit_arc();
+    for(aciter a=abegin; a!=aend; ++a) {
+      detach_from((*a)->dest());
+    }
   }
 }
 
