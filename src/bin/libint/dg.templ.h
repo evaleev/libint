@@ -80,7 +80,7 @@ namespace libint2 {
       typedef typename RR::TargetType TT;
       typedef vertices::const_iterator citer;
       typedef vertices::iterator iter;
-      for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
+      for(citer v=stack_.begin(); v!=stack_.end(); ++v) {
 	ver_ptr& vptr = vertex_ptr(*v);
         if ((vptr)->num_exit_arcs() != 0)
           continue;

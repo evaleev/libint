@@ -7,7 +7,6 @@ using namespace std;
 using namespace libint2;
 
 #define LOCAL_DEBUG 0
-#define SAFE_DGVERTEX 0
 
 DGVertex::DGVertex(ClassID tid) :
   dg_(0), subtree_(SafePtr<DRTree>()), typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
@@ -40,7 +39,7 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
 {
   if (can_add_arcs_) {
     SafePtr<DGVertex> child = arc->dest();
-#if SAFE_DGVERTEX
+#if CHECK_SAFETY
     typedef ArcSetType::const_iterator aciter;
     if (!children_.empty()) {
       const aciter abegin = children_.begin();
@@ -103,10 +102,12 @@ DGVertex::replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B)
     if (!children_.empty()) {
       const aiter begin = children_.begin();
       const aiter end = children_.end();
+#if CHECK_SAFETY
       aiter posB = find(begin,end,B);
       bool B_already_exists = (posB != end);
       if (B_already_exists)
         throw std::runtime_error("DGVertex::replace_exit_arc(A,B) -- arc B is found among children");
+#endif
       aiter posA = find(begin,end,A);
       if (posA != end) {
         *posA = B;

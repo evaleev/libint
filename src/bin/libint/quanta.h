@@ -2,6 +2,7 @@
 #include <vector>
 #include <typelist.h>
 #include <smart_ptr.h>
+#include <global_macros.h>
 
 #ifndef _libint2_src_bin_libint_quanta_h_
 #define _libint2_src_bin_libint_quanta_h_
@@ -57,8 +58,10 @@ namespace libint2 {
     void inc(unsigned int i) { ++qn_.at(i); }
     /// Decrement quantum number i
     void dec(unsigned int i) {
+#if CHECK_SAFETY
       if (qn_.at(i) == T(0))
         throw std::runtime_error("QuantumNumbers::dec -- quantum number already zero");
+#endif
       --qn_.at(i);
     }
     
@@ -112,8 +115,10 @@ namespace libint2 {
     QuantumNumbers<T,N>::QuantumNumbers(const SafePtr<QuantumSet>& sptr)
     {
       const SafePtr< QuantumNumbers<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbers,QuantumSet>(sptr);
+#if CHECK_SAFETY
       if (sptr_cast == 0)
         throw std::runtime_error("QuantumNumbers<T,N>::QuantumNumbers(const SafePtr<QuantumSet>& sptr) -- type of sptr is incompatible with QuantumNumbers");
+#endif
 
       qn_ = sptr_cast->qn_;
     }
@@ -122,8 +127,10 @@ namespace libint2 {
     QuantumNumbers<T,N>::QuantumNumbers(const SafePtr<ConstructablePolymorphically>& sptr)
     {
       const SafePtr< QuantumNumbers<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbers,ConstructablePolymorphically>(sptr);
+#if CHECK_SAFETY
       if (sptr_cast == 0)
         throw std::runtime_error("QuantumNumbers<T,N>::QuantumNumbers(const SafePtr<ConstructablePolymorphically>& sptr) -- type of sptr is incompatible with QuantumNumbers");
+#endif
 
       qn_ = sptr_cast->qn_;
     }
@@ -191,8 +198,10 @@ namespace libint2 {
     void inc(unsigned int i) { ++qn_[i]; }
     /// Decrement quantum number i
     void dec(unsigned int i) {
+#if CHECK_SAFETY
       if (qn_[i] == T(0))
         throw std::runtime_error("QuantumNumbersA::dec -- quantum number already zero");
+#endif
       --qn_[i];
     }
     
@@ -256,8 +265,10 @@ namespace libint2 {
     QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<QuantumSet>& sptr)
     {
       const SafePtr< QuantumNumbersA<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbersA,QuantumSet>(sptr);
+#if CHECK_SAFETY
       if (sptr_cast == 0)
         throw std::runtime_error("QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<QuantumSet>& sptr) -- type of sptr is incompatible with QuantumNumbersA");
+#endif
 
       T* qn = sptr_cast->qn_;
       for(int i=0; i<N; i++)
@@ -268,9 +279,10 @@ namespace libint2 {
     QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<ConstructablePolymorphically>& sptr)
     {
       const SafePtr< QuantumNumbersA<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbersA,ConstructablePolymorphically>(sptr);
+#if CHECK_SAFETY
       if (sptr_cast == 0)
         throw std::runtime_error("QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<ConstructablePolymorphically>& sptr) -- type of sptr is incompatible with QuantumNumbersA");
-
+#endif
       T* qn = sptr_cast->qn_;
       for(int i=0; i<N; i++)
         qn_[i] = qn[i];
