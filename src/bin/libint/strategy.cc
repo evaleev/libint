@@ -143,13 +143,11 @@ Strategy::optimal_rr_twoprep1111_sq(const SafePtr<DirectedGraph>& graph,
     return nullptr;
 #endif
 
-  if (can_unroll) {
-    if (size == 1 || size <= max_size_to_unroll_) {
+  if (size == 1 || (can_unroll && size <= max_size_to_unroll_)) {
 #if DEBUG
-      std::cout << "Strategy::optimal_rr_twoprep1111_sq: " << integral->label() << " to be unrolled" << std::endl;
+    std::cout << "Strategy::optimal_rr_twoprep1111_sq: " << integral->label() << " to be unrolled" << std::endl;
 #endif
-      return unroll_intset<TwoPRep_11_11_sq>(integral);
-    }
+    return unroll_intset<TwoPRep_11_11_sq>(integral);
   }
 
 #if LIBINT_ERI_STRATEGY == 1 || LIBINT_ERI_STRATEGY == 2

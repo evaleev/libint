@@ -143,17 +143,41 @@ DirectedGraph::vertex_is_on(const SafePtr<DGVertex>& vertex) const
   return null_ptr;
 }
 
+namespace {
+  struct __reset_dgvertex {
+    void operator()(SafePtr<DGVertex>& v) {
+      v->reset();
+      // remove this vertex from its SingletonManager
+      v->unregister();
+#if DEBUG
+      std::cout << "DirectedGraph::reset: will unregister " << v->label() << std::endl;
+#endif
+    }
+  };
+  struct __reset_safeptr {
+    void operator()(SafePtr<DGVertex>& v) {
+      v.reset();
+    }
+  };
+}
+
 void
 DirectedGraph::del_vertex(vertices::iterator& v)
 {
+  static __reset_dgvertex rv;
   if (v == stack_.end())
     throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete vertex");
   ver_ptr& vptr = vertex_ptr(*v);
   // Cannot delete targets. Should I be able to? Probably not
   if (vptr->is_a_target())
     throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete targets");
-  if (vptr->num_exit_arcs() == 0 && vptr->num_entry_arcs() == 0)
+  if (vptr->num_exit_arcs() == 0 && vptr->num_entry_arcs() == 0) {
     stack_.erase(v);
+    rv(vertex_ptr(*v));
+#if DEBUG
+    std::cout << "del_vertex: removed " << (vertex_ptr(*v))->label() << std::endl;
+#endif
+  }
   else
     throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete vertex");
 }
@@ -310,24 +334,6 @@ DirectedGraph::print_to_dot(bool symbols, std::ostream& os) const
   }
 
   os << "}" << endl;
-}
-
-namespace {
-  struct __reset_dgvertex {
-    void operator()(SafePtr<DGVertex>& v) {
-#if DEBUG
-      std::cout << "DirectedGraph::reset: will unregister " << v->label() << std::endl;
-#endif
-      // remove this vertex from its SingletonManager
-      v->unregister();
-      v->reset();
-    }
-  };
-  struct __reset_safeptr {
-    void operator()(SafePtr<DGVertex>& v) {
-      v.reset();
-    }
-  };
 }
 
 void
@@ -498,7 +504,9 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<Recu
   }
 #if ONLY_CLONE_IF_DIFF
   if (left_oper != expr->left()) {
+#if DEBUG
     std::cout << "insert_expr_at: append(left) != left" << std::endl;
+#endif
     need_to_clone = true;
     new_left = false;
   }
@@ -518,7 +526,9 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<Recu
   }
 #if ONLY_CLONE_IF_DIFF
   if (right_oper != expr->right()) {
+#if DEBUG
     std::cout << "insert_expr_at: append(right) != right" << std::endl;
+#endif
     need_to_clone = true;
     new_right = false;
   }
@@ -545,7 +555,9 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<Recu
   else {
     const bool do_cse = registry()->do_cse();
     if (do_cse) {
+#if DEBUG
       std::cout << "insert_expr_at: appending vertex " << expr_vertex->description() << std::endl;
+#endif
       dgexpr_vertex = append_vertex(expr_vertex);
     }
     else {

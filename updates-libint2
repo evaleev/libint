@@ -1,4 +1,7 @@
 
+05/02/2007:	Fixed a few bugs which affected build_libint (not test_eri...).
+		-EFV
+
 04/30/2007:	1) DirectedGraph::apply_to can check whether outgoing arcs exist to avoid further work.
 		   This should speed up graph generation significantly.
 		2) DirectedGraph::find_subtrees should use hints to avoid doing pointless work.

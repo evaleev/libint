@@ -39,17 +39,18 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
 {
   if (can_add_arcs_) {
     SafePtr<DGVertex> child = arc->dest();
-#if CHECK_SAFETY
-    typedef ArcSetType::const_iterator aciter;
+
+    // check if such arc exists already 
     if (!children_.empty()) {
+      typedef ArcSetType::const_iterator aciter;
       const aciter abegin = children_.begin();
       const aciter aend = children_.end();
       for(aciter a=abegin; a!=aend; ++a) { 
 	if ((*a)->dest() == child)
-	  throw ProgrammingError("DGVertex::add_exit_arc() -- arc already exists");
+	  return;
       }
     }
-#endif
+
     children_.push_back(arc);
     child->add_entry_arc(arc);
 #if DEBUG
