@@ -12,9 +12,13 @@
 #include <dg.templ.h>
 #include <typelist.h>
 #include <integral.h>
+#include <r1dotr1g12_11_11.h>
+#include <r1dotr2g12_11_11.h>
 #include <iter.h>
 #include <policy_spec.h>
 #include <intset_to_ints.h>
+#include <comp_11_r1dotr1g12_11.h>
+#include <comp_11_r1dotr2g12_11.h>
 #include <strategy.h>
 #include <buildtest.h>
 
@@ -26,6 +30,8 @@ namespace {
   void test_typelists();
   void test0();
   void test1();
+  void test2();
+  void test3();
   void test_cgshell_iter(const CGShell& sh);
 
   template <class Callback>
@@ -90,6 +96,12 @@ namespace {
     RunBuildTest<TwoPRep_sh_11_11,CGShell>(sh_p,sh_s,sh_p,sh_s,0,use_quartets);
     RunBuildTest<TwoPRep_sh_11_11,CGShell>(sh_p,sh_p,sh_p,sh_p,0,use_quartets);
     RunBuildTest<TwoPRep_sh_11_11,CGShell>(sh_p,sh_p,sh_p,sh_p,0,use_integrals);
+#endif
+#if 1
+    RunTest(test2,"integrals types");
+#endif
+#if 1
+    RunTest(test3,"recurrence relations");
 #endif
 
     return 0;
@@ -220,6 +232,45 @@ namespace {
       siter1.elem().print(cout);
     if (bf != nbf)
       throw ProgrammingError("test::test_cgshell_iter -- number of basis functions from iterator and CGShell::num_bf do not match");
+  }
+
+  void
+  test2()
+  {
+    {
+      typedef TwoPRep_11_11_sq IType;
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0);
+      std::cout << "Created integral set " << iset->label() << std::endl;
+    }
+    {
+      typedef R12_m1_G12_11_11_sq IType;
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0);
+      std::cout << "Created integral set " << iset->label() << std::endl;
+    }
+    {
+      typedef R1dotR1G12_11_11_sq IType;
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0);
+      std::cout << "Created integral set " << iset->label() << std::endl;
+    }
+  }
+
+  void
+  test3()
+  {
+    {
+      typedef R1dotR1G12_11_11_sq IType;
+      typedef CR_11_R1dotR1G12_11_sq RRType;
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0);
+      SafePtr<RRType> rr = RRType::Instance(iset);
+      std::cout << "Created recurrence relation " << rr->label() << std::endl;
+    }
+    {
+      typedef R1dotR2G12_11_11_sq IType;
+      typedef CR_11_R1dotR2G12_11_sq RRType;
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0);
+      SafePtr<RRType> rr = RRType::Instance(iset);
+      std::cout << "Created recurrence relation " << rr->label() << std::endl;
+    }
   }
 
 };

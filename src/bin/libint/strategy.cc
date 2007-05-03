@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <strategy.h>
 #include <dg.h>
+#include <rr.h>
+#include <rr.templ.h>
 #include <hrr.h>
 #include <vrr_11_twoprep_11.h>
 #include <itr_11_twoprep_11.h>

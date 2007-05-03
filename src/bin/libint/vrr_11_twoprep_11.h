@@ -33,6 +33,7 @@ namespace libint2 {
 
   public:
     typedef RecurrenceRelation ParentType;
+    typedef BFSet BasisFunctionType;
     typedef VRR_11_TwoPRep_11 ThisType;
     typedef ERI<BFSet> TargetType;
     typedef ERI<BFSet> ChildType;
@@ -59,25 +60,11 @@ namespace libint2 {
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation::rr_child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
-    /// Implementation of RecurrenceRelation::rr_expr()
-    SafePtr<ExprType> rr_expr() const { return expr_; }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
     }
-    /// Implementation of RecurrenceRelation::invariant_type()
-    bool invariant_type() const {
-      return true;
-    }
-    /// Implementation of RecurrenceRelation::label()
-    const std::string& label() const { return label_; }
 
-    /// Implementation of RecurrenceRelation::nflops()
-    unsigned int nflops() const { return nflops_; }
-    /// Implementation of RecurrenceRelation::spfunction_call()
-    std::string spfunction_call(const SafePtr<CodeContext>& context,
-                                const SafePtr<ImplicitDimensions>& dims) const;
-    
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
     const std::string cpp_header_name() {}
@@ -91,21 +78,14 @@ namespace libint2 {
      */
     VRR_11_TwoPRep_11(const SafePtr<TargetType>&, unsigned int dir);
 
-    /// registers this RR with the stack, if needed
-    bool register_with_rrstack() const;
-
-    static const unsigned int max_nchildren_ = 8;
     unsigned int dir_;
-
     SafePtr<TargetType> target_;
-    SafePtr<ChildType> children_[max_nchildren_];
-    SafePtr<ExprType> expr_;
-
+    static const unsigned int max_nchildren_ = 8;
     unsigned int nchildren_;
-    unsigned int nflops_;
+    SafePtr<ChildType> children_[max_nchildren_];
 
-    std::string label_;
-    std::string generate_label(const SafePtr<TargetType>& target) const;
+    /// Implementation of RecurrenceRelation::generate_label()
+    std::string generate_label() const;
   };
 
   template <template <class> class ERI, class F, int part, FunctionPosition where>
@@ -116,34 +96,16 @@ namespace libint2 {
       SafePtr<ThisType> this_ptr(new ThisType(Tint,dir));
       // Do post-construction duties
       if (this_ptr->num_children() != 0) {
-        this_ptr->register_with_rrstack();
+        this_ptr->register_with_rrstack<ThisType>();
       }
       return this_ptr;
-    }
-  
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
-    bool
-    VRR_11_TwoPRep_11<ERI,F,part,where>::register_with_rrstack() const
-    {
-      // only register RRs for shell sets
-      if (TrivialBFSet<F>::result)
-        return false;
-      SafePtr<RRStack> rrstack = RRStack::Instance();
-      SafePtr<ThisType> this_ptr =
-	const_pointer_cast<ThisType,const ThisType>(
-	  static_pointer_cast<const ThisType, const ParentType>(
-	    EnableSafePtrFromThis<ParentType>::SafePtr_from_this()
-	  )
-	);
-      rrstack->find(this_ptr);
-      return true;
     }
   
   
   template <template <class> class ERI, class F, int part, FunctionPosition where>
     VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr<ERI<F> >& Tint,
                                                            unsigned int dir) :
-    target_(Tint), dir_(dir), nchildren_(0), nflops_(0), label_(generate_label(Tint))
+    target_(Tint), dir_(dir), nchildren_(0)
     {
       target_ = Tint;
 
@@ -178,12 +140,12 @@ namespace libint2 {
       children_[0] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
       children_[1] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
       nchildren_ += 2;
-      nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {
         SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][where][dir],children_[0]));
         SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.W_XY[part][dir],children_[1]));
         SafePtr<ExprType> expr0p1_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
-        expr_ = expr0p1_ptr;
+	nflops_ += 3;
+        add_expr(expr0p1_ptr);
       }
 
       // See if a-2 exists
@@ -197,14 +159,13 @@ namespace libint2 {
         bra_ref->operator[](p_a).inc(dir);
         const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir);
         nchildren_ += 2;
-        nflops_ += ConvertNumFlops<F>(5);
         if (is_simple()) {
           SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], children_[3]));
           SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[2], expr_intmd0));
           SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_a], prefactors.one_o_2alpha12[part]));
           SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
-          SafePtr<ExprType> expr012_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr2_ptr,expr_));
-          expr_ = expr012_ptr;
+	  nflops_ += 5;
+	  add_expr(expr2_ptr);
         }
       }
 
@@ -219,14 +180,13 @@ namespace libint2 {
         ket_ref->operator[](p_a).inc(dir);
         const unsigned int ni_b = ket_ref->operator[](p_a).qn(dir);
         nchildren_ += 2;
-        nflops_ += ConvertNumFlops<F>(5);
         if (is_simple()) {
           SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], children_[5]));
           SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[4], expr_intmd0));
           SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_b], prefactors.one_o_2alpha12[part]));
           SafePtr<ExprType> expr3_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
-          SafePtr<ExprType> expr0123_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr3_ptr,expr_));
-          expr_ = expr0123_ptr;
+	  nflops_ += 5;
+	  add_expr(expr3_ptr);
         }
       }
 
@@ -238,12 +198,11 @@ namespace libint2 {
       bra_ref->operator[](p_c).inc(dir);
       const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir);
       nchildren_ += 1;
-      nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {
         SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_c], prefactors.one_o_2alphasum));
         SafePtr<ExprType> expr4_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[6]));
-        SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr4_ptr,expr_));
-        expr_ = exprsum_ptr;
+	nflops_ += 3;
+        add_expr(expr4_ptr);
       }
 
       // See if d-1 exists
@@ -254,12 +213,11 @@ namespace libint2 {
       ket_ref->operator[](p_c).inc(dir);
       const unsigned int ni_d = ket_ref->operator[](p_c).qn(dir);
       nchildren_ += 1;
-      nflops_ += ConvertNumFlops<F>(3);
       if (is_simple()) {
         SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_d], prefactors.one_o_2alphasum));
         SafePtr<ExprType> expr5_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[7]));
-        SafePtr<ExprType> exprsum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr5_ptr,expr_));
-        expr_ = exprsum_ptr;
+	nflops_ += 3;
+        add_expr(expr5_ptr);
       }
     };
 
@@ -288,37 +246,17 @@ namespace libint2 {
 
   template <template <class> class ERI, class F, int part, FunctionPosition where>
     std::string
-    VRR_11_TwoPRep_11<ERI,F,part,where>::generate_label(const SafePtr<TargetType>& target) const
+    VRR_11_TwoPRep_11<ERI,F,part,where>::generate_label() const
     {
       ostringstream os;
       
       os << "OS VRR Part" << part << " " <<
       (where == InBra ? "bra" : "ket") << " ( ";
-      F sh_a(target->bra(0,0)); os << sh_a.label() << " ";
-      F sh_b(target->ket(0,0)); os << sh_b.label() << " | ";
-      F sh_c(target->bra(1,0)); os << sh_c.label() << " ";
-      F sh_d(target->ket(1,0)); os << sh_d.label() << " )";
+      F sh_a(target_->bra(0,0)); os << sh_a.label() << " ";
+      F sh_b(target_->ket(0,0)); os << sh_b.label() << " | ";
+      F sh_c(target_->bra(1,0)); os << sh_c.label() << " ";
+      F sh_d(target_->ket(1,0)); os << sh_d.label() << " )";
       
-      return os.str();
-    }
-    
-   template <template <class> class ERI, class F, int part, FunctionPosition where>
-    std::string
-    VRR_11_TwoPRep_11<ERI,F,part,where>::spfunction_call(
-    const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
-    {
-      ostringstream os;
-      os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
-         // First argument is the library object
-         << "(inteval, "
-         // Second is the target
-         << context->value_to_pointer(rr_target()->symbol());
-      // then come children
-      const unsigned int nchildren = num_children();
-      for(int c=0; c<nchildren; c++) {
-        os << ", " << context->value_to_pointer(rr_child(c)->symbol());
-      }
-      os << ")" << context->end_of_stat() << endl;
       return os.str();
     }
     

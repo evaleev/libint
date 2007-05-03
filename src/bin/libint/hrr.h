@@ -43,6 +43,7 @@ namespace libint2 {
 
   public:
     typedef RecurrenceRelation ParentType;
+    typedef BFSet BasisFunctionType;
     typedef HRR<IntType,BFSet,part,loc_a,pos_a,loc_b,pos_b> ThisType;
     typedef IntType TargetType;
     typedef IntType ChildType;
@@ -69,30 +70,10 @@ namespace libint2 {
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation::child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
-    /// Implementation of RecurrenceRelation::rr_expr()
-    SafePtr<ExprType> rr_expr() const { return expr_; }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
     }
-    /// Implementation of RecurrenceRelation::invariant_type()
-    bool invariant_type() const {
-      return true;
-    }
-    /// Implementation of RecurrenceRelation::label()
-    const std::string& label() const { return label_; }
-    /// Reimplementation of RecurrenceRelation::description()
-    const std::string& description() const
-      {
-        if (descr_.empty()) {
-          ostringstream oss;
-          oss << label() << "   target = " << target_->label();
-          descr_ = oss.str();
-        }
-        return descr_;
-      }
-    /// Implementation of RecurrenceRelation::nflops()
-    unsigned int nflops() const { return nflops_; }
     /// Implementation of RecurrenceRelation::spfunction_call()
     std::string spfunction_call(const SafePtr<CodeContext>& context,
                                 const SafePtr<ImplicitDimensions>& dims) const;
@@ -110,25 +91,21 @@ namespace libint2 {
       */
     HRR(const SafePtr<TargetType>&, unsigned int dir);
 
-    /// registers this RR with the stack, if needed
-    bool register_with_rrstack() const;
-
-    static const unsigned int max_nchildren_ = 2;
     unsigned int dir_;
-
     SafePtr<TargetType> target_;
+    static const unsigned int max_nchildren_ = 2;
     SafePtr<ChildType> children_[max_nchildren_];
-    SafePtr<ExprType> expr_;
-
     unsigned int nchildren_;
-    unsigned int nflops_;
+
     void oper_checks() const;
 
     mutable std::string descr_;
-    std::string label_;
-    std::string generate_label(const SafePtr<TargetType>& target) const;
-    /// Overload of RecurrenceRelation::adapt_dims_()
+    /// Implementation of RecurrenceRelation::label()
+    std::string generate_label() const;
+    /// Reimplementation of RecurrenceRelation::adapt_dims_()
     SafePtr<ImplicitDimensions> adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const;
+    /// Use instead of RecurrenceRelation::register_with_rrstack()
+    bool register_with_rrstack() const;
     /** return true if the high dimension must be shown explicitly. For example,
         cd-HRR applied (ss|pp) has high dimension of rank 1 but since the code for such
         RR is not specific to ab=(ss|, the rank of high dimension must be shown explicitly.
@@ -155,7 +132,7 @@ namespace libint2 {
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(const SafePtr<TargetType>& Tint, unsigned int dir) :
-    target_(Tint), dir_(dir), nchildren_(0), nflops_(0), label_(generate_label(Tint))
+    target_(Tint), dir_(dir), nchildren_(0)
     {
       target_ = Tint;
       typename IntType::AuxQuantaType aux = Tint->aux();
@@ -413,7 +390,7 @@ namespace libint2 {
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     std::string
-    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::generate_label(const SafePtr<TargetType>& target) const
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::generate_label() const
     {
       ostringstream os;
       
@@ -422,28 +399,28 @@ namespace libint2 {
       << (loc_b == InBra ? "bra" : "ket") << " " << pos_b << " ";
       
       if (loc_a == InBra) {
-        F sh_a(target->bra(part,pos_a));
+        F sh_a(target_->bra(part,pos_a));
         os << sh_a.label() << " ";
         
         if (loc_b == InBra) {
-          F sh_b(target->bra(part,pos_b));
+          F sh_b(target_->bra(part,pos_b));
           os << sh_b.label();
         }
         else {
-          F sh_b(target->ket(part,pos_b));
+          F sh_b(target_->ket(part,pos_b));
           os << sh_b.label();
         }
       }
       else {
-        F sh_a(target->ket(part,pos_a));
+        F sh_a(target_->ket(part,pos_a));
         os << sh_a.label() << " ";
         
         if (loc_b == InBra) {
-          F sh_b(target->bra(part,pos_b));
+          F sh_b(target_->bra(part,pos_b));
           os << sh_b.label();
         }
         else {
-          F sh_b(target->ket(part,pos_b));
+          F sh_b(target_->ket(part,pos_b));
           os << sh_b.label();
         }
       }

@@ -49,7 +49,7 @@ namespace libint2 {
         an AlgebraicOperator<DGVertex> */
     typedef AlgebraicOperator<DGVertex> ExprType;
     /// Returns the expression
-    virtual SafePtr<ExprType> rr_expr() const =0;
+    const SafePtr<ExprType>& rr_expr() const { return expr_; }
 
     /**
        Returns true is this recurrence relation is simple enough to optimize away.
@@ -61,14 +61,14 @@ namespace libint2 {
     /**
        Returns true is the type of target and all children are exactly the same
     */
-    virtual bool invariant_type() const =0;
+    virtual bool invariant_type() const;
 
     /**
       label() returns a unique, short, descriptive label of this RR
       (e.g. "VRR A (p s | 1/r_{12} | d s )" for Obara-Saika recurrence relation
       applied to center A to compute (ps|ds) ERI)
     */
-    virtual const std::string& label() const =0;
+    const std::string& label() const { if (label_.empty()) label_ = generate_label(); return label_; }
     
     /**
       description() returns a verbose description of this RR
@@ -83,10 +83,10 @@ namespace libint2 {
     
     /// Generate a callback for this recurrence relation
     virtual std::string spfunction_call(const SafePtr<CodeContext>& context,
-                                        const SafePtr<ImplicitDimensions>& dims) const =0;
+                                        const SafePtr<ImplicitDimensions>& dims) const;
 
     /// Return the number of FLOPs per this recurrence relation
-    virtual unsigned int nflops() const { return 0; }
+    unsigned int nflops() const { return nflops_; }
     
     virtual const std::string cpp_function_name() =0;
     virtual const std::string cpp_source_name() =0;
@@ -95,6 +95,17 @@ namespace libint2 {
 
     /// RecurrenceRelation is managed by SingletonStack but doesn't need to keep track of instance ID
     void inst_id(const SingletonStack<RecurrenceRelation,string>::InstanceID& i) {}
+
+    protected:
+    unsigned int nflops_;
+    mutable std::string label_;
+    SafePtr<ExprType> expr_;
+    /// Adds a (or -a, if minus = -1) to expr_.
+    void add_expr(const SafePtr<ExprType>& a, int minus=1);
+    /// Generates the label
+    virtual std::string generate_label() const =0;
+    /// Registers with the stack
+    template <class RR> bool register_with_rrstack() const;
 
     private:
 

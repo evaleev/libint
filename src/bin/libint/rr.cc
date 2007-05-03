@@ -9,7 +9,8 @@
 
 using namespace libint2;
 
-RecurrenceRelation::RecurrenceRelation()
+RecurrenceRelation::RecurrenceRelation() :
+  expr_(), nflops_(0)
 {
 }
 
@@ -185,6 +186,59 @@ RecurrenceRelation::description() const
 {
   return label();
 }
+
+void
+RecurrenceRelation::add_expr(const SafePtr<ExprType>& expr, int minus)
+{
+  if (expr_ == 0) {
+    if (minus != -1) {
+      expr_ = expr;
+    }
+    else {
+      SafePtr<ExprType> negative(new ExprType(ExprType::OperatorTypes::Times,expr,prefactors.Cdouble(-1.0)));
+      expr_ = negative;
+      ++nflops_;
+    }
+  }
+  else {
+    if (minus != -1) {
+      SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Plus,expr_,expr));
+      expr_ = sum;
+      ++nflops_;
+    }
+    else {
+      SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Minus,expr_,expr));
+      expr_ = sum;
+      ++nflops_;
+    }
+  }
+}
+
+
+bool
+RecurrenceRelation::invariant_type() const {
+  // By default, recurrence relations do not change the type of the functions, i.e. VRR applied to an integral over shells will produce integrals over shells
+  return true;
+}
+
+std::string
+RecurrenceRelation::spfunction_call(const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
+{
+  ostringstream os;
+  os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
+    // First argument is the library object
+     << "(inteval, "
+    // Second is the target
+     << context->value_to_pointer(rr_target()->symbol());
+  // then come children
+  const unsigned int nchildren = num_children();
+  for(int c=0; c<nchildren; c++) {
+    os << ", " << context->value_to_pointer(rr_child(c)->symbol());
+  }
+  os << ")" << context->end_of_stat() << endl;
+  return os.str();
+}
+
 
 ///////////////
 

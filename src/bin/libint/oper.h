@@ -164,6 +164,7 @@ namespace libint2 {
 //////////////////////////////
   
   typedef OperatorProperties<2,true,PermutationalSymmetry::symm> MultiplicativeSymm2Body_Props;
+  typedef OperatorProperties<2,true,PermutationalSymmetry::nonsymm> MultiplicativeNonsymm2Body_Props;
   
   /** TwoERep is the two-body repulsion operator.
   */
@@ -332,6 +333,52 @@ namespace libint2 {
   Ti_G12<I>::~Ti_G12()
   {
   }
+
+//////////////
+
+  /** r_1.r_1 x g12 is a result of differentiation of exp( - a r_1^2 - a r_2^2 - c r_{12}^2) geminal .
+  */
+  class R1dotR1_G12 : public Oper<MultiplicativeNonsymm2Body_Props>,
+                      public Hashable<unsigned,ComputeKey> {
+  public:
+    typedef Oper<MultiplicativeNonsymm2Body_Props> parent_type;
+    /// R1dotR1_G12 is not a set
+    typedef R1dotR1_G12 iter_type;
+    const unsigned int num_oper() const { return 1; };
+    /// Implementation of Hashable::key()
+    unsigned key() const { return 0; }
+    /// key is in range [0,1)
+    static const unsigned max_key = 1;
+  
+    R1dotR1_G12();
+    R1dotR1_G12(const SafePtr<R1dotR1_G12>&);
+    R1dotR1_G12(const SafePtr<OperSet>&);
+    R1dotR1_G12(const SafePtr<ConstructablePolymorphically>&);
+    R1dotR1_G12(const ConstructablePolymorphically&);
+    ~R1dotR1_G12();
+  };
+
+  /** r_1.r_2 x g12 is a result of differentiation of exp( - a r_1^2 - a r_2^2 - c r_{12}^2) geminal .
+  */
+  class R1dotR2_G12 : public Oper<MultiplicativeSymm2Body_Props>,
+                      public Hashable<unsigned,ComputeKey> {
+  public:
+    typedef Oper<MultiplicativeSymm2Body_Props> parent_type;
+    /// R1dotR2_G12 is not a set
+    typedef R1dotR2_G12 iter_type;
+    const unsigned int num_oper() const { return 1; };
+    /// Implementation of Hashable::key()
+    unsigned key() const { return 0; }
+    /// key is in range [0,1)
+    static const unsigned max_key = 1;
+  
+    R1dotR2_G12();
+    R1dotR2_G12(const SafePtr<R1dotR2_G12>&);
+    R1dotR2_G12(const SafePtr<OperSet>&);
+    R1dotR2_G12(const SafePtr<ConstructablePolymorphically>&);
+    R1dotR2_G12(const ConstructablePolymorphically&);
+    ~R1dotR2_G12();
+  };
 
 };
 

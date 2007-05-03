@@ -33,6 +33,7 @@ namespace libint2 {
 
   public:
     typedef RecurrenceRelation ParentType;
+    typedef BFSet BasisFunctionType;
     typedef CR_11_TiG12_11<I,BFSet,K> ThisType;
     typedef I<BFSet,K> TargetType;
     typedef R12kG12_11_11<BFSet,0> ChildType;
@@ -43,7 +44,11 @@ namespace libint2 {
         issues with getting a SafePtr from constructor (as needed for registry to work).
     */
     static SafePtr<ThisType> Instance(const SafePtr<TargetType>&);
-    ~CR_11_TiG12_11();
+    ~CR_11_TiG12_11() {
+      if (K < 0 || K >= 2) {
+        assert(false);
+      }
+    }
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return nchildren_; };
@@ -55,24 +60,10 @@ namespace libint2 {
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation::rr_child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return dynamic_pointer_cast<DGVertex,ChildType>(child(i)); }
-    /// Implementation of RecurrenceRelation::rr_expr()
-    SafePtr<ExprType> rr_expr() const { return expr_; }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
     }
-    /// Implementation of RecurrenceRelation::invariant_type()
-    bool invariant_type() const {
-      return true;
-    }
-    /// Implementation of RecurrenceRelation::label()
-    const std::string& label() const { return label_; }
-
-    /// Implementation of RecurrenceRelation::nflops()
-    unsigned int nflops() const { return nflops_; }
-    /// Implementation of RecurrenceRelation::spfunction_call()
-    std::string spfunction_call(const SafePtr<CodeContext>& context,
-                                const SafePtr<ImplicitDimensions>& dims) const;
     
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
@@ -87,23 +78,17 @@ namespace libint2 {
      */
     CR_11_TiG12_11(const SafePtr<TargetType>&);
 
-    /// registers this RR with the stack, if needed
-    bool register_with_rrstack() const;
-    
-    static const unsigned int max_nchildren_ = 18;
-    
     SafePtr<TargetType> target_;
+    static const unsigned int max_nchildren_ = 18;
     SafePtr<ChildType> children_[max_nchildren_];
-    SafePtr<ExprType> expr_;
-
     unsigned int nchildren_;
-    unsigned int nexpr_;
-    unsigned int nflops_;
- 
-    std::string label_;
-    std::string generate_label(const SafePtr<TargetType>& target) const;
 
-    void add_expr(const SafePtr<ExprType>&, int minus=1);
+    std::string generate_label() const
+    {
+      ostringstream os;
+      os << "RR ( " << rr_target()->label() << " )";
+      return os.str();
+    }
   };
 
   template <template <class,int> class I, class F, int K>
@@ -113,32 +98,14 @@ namespace libint2 {
       SafePtr<ThisType> this_ptr(new ThisType(Tint));
       // Do post-construction duties
       if (this_ptr->num_children() != 0) {
-        this_ptr->register_with_rrstack();
+        this_ptr->register_with_rrstack<ThisType>();
       }
       return this_ptr;
     }
 
   template <template <class,int> class I, class F, int K>
-    bool
-    CR_11_TiG12_11<I,F,K>::register_with_rrstack() const
-    {
-      // only register RRs with for shell sets
-      if (TrivialBFSet<F>::result)
-        return false;
-      SafePtr<RRStack> rrstack = RRStack::Instance();
-      SafePtr<ThisType> this_ptr =
-	const_pointer_cast<ThisType,const ThisType>(
-	  static_pointer_cast<const ThisType, const ParentType>(
-	    EnableSafePtrFromThis<ParentType>::SafePtr_from_this()
-	  )
-	);
-      rrstack->find(this_ptr);
-      return true;
-    }
-  
-  template <template <class,int> class I, class F, int K>
     CR_11_TiG12_11<I,F,K>::CR_11_TiG12_11(const SafePtr<I<F,K> >& Tint) :
-    target_(Tint), nchildren_(0), nexpr_(0), nflops_(0), label_(generate_label(Tint))
+    target_(Tint), nchildren_(0)
     {
       F sh_a(Tint->bra(0,0));
       F sh_b(Tint->ket(0,0));
@@ -156,8 +123,6 @@ namespace libint2 {
       int p_a = K;
       int p_c = (p_a == 0) ? 1 : 0;
 
-      // Keeps track of the coefficient in front of (ab|cd)
-      SafePtr<ExprType> abcd_pfac;
       for(int braket=0; braket<=1; braket++) {
         FunctionPosition where = (FunctionPosition)braket;
 
@@ -182,6 +147,7 @@ namespace libint2 {
           if (am1_exists) {
 	    if (!bra_ref->operator[](p_a).dec(xyz)) {
               am2_exists = false;
+	      // return to a
               bra_ref->operator[](p_a).inc(xyz);
             }
           }
@@ -197,8 +163,8 @@ namespace libint2 {
                 add_expr(expr0_ptr);
               else
                 add_expr(expr0_ptr,-1);
+	      nflops_ += (1);
             }
-            nflops_ += ConvertNumFlops<F>(1);
             bra_ref->operator[](p_a).inc(xyz);
             bra_ref->operator[](p_a).inc(xyz);
           }
@@ -217,32 +183,12 @@ namespace libint2 {
                 add_expr(expr1_ptr);
               else
                 add_expr(expr1_ptr,-1);
+	      nflops_ += (3);
             }
-            nflops_ += ConvertNumFlops<F>(3);
             bra_ref->operator[](p_a).dec(xyz);
             bra_ref->operator[](p_a).dec(xyz);
           }
 
-          
-          // a
-          {
-            if (is_simple()) {
-              /*const unsigned int ni_a = bra_ref->operator[](p_a).qn(xyz);
-              unsigned int pfac = 2*(ni_a + 1);
-              if (am1_exists)
-                pfac += 2*ni_a;
-              SafePtr<ExprType> pfac_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[pfac],prefactors.zeta[K][where]));
-              if (abcd_pfac) {
-                abcd_pfac = pfac_ptr;
-                nflops_ += ConvertNumFlops<F>(1);
-              }
-              else {
-                SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Plus,abcd_pfac,pfac_ptr));
-                abcd_pfac = pfac_ptr;
-                nflops_ += ConvertNumFlops<F>(2);
-                }*/
-            }
-          }
         }
       }
 
@@ -269,24 +215,18 @@ namespace libint2 {
           SafePtr<ExprType> pfac_ptr(new ExprType(ExprType::OperatorTypes::Minus,pfaca_ptr,pfacb_ptr));
           SafePtr<ExprType> expr_ptr(new ExprType(ExprType::OperatorTypes::Times,pfac_ptr,rr_child(next_child)));
           add_expr(expr_ptr,-1);
+	  nflops_ += (4);
         }
-        nflops_ += ConvertNumFlops<F>(4);
       }
 
-      // scale by -0.5
-      SafePtr<ExprType> scaled(new ExprType(ExprType::OperatorTypes::Times,prefactors.Cdouble(-0.5),expr_));
-      expr_ = scaled;
-      nflops_ += ConvertNumFlops<F>(1);
+      if (is_simple()) {
+	// scale by -0.5
+	SafePtr<ExprType> scaled(new ExprType(ExprType::OperatorTypes::Times,prefactors.Cdouble(-0.5),expr_));
+	expr_ = scaled;
+	nflops_ += (1);
+      }
     }
   
-  template <template <class,int> class I, class F, int K>
-    CR_11_TiG12_11<I,F,K>::~CR_11_TiG12_11()
-    {
-      if (K < 0 || K >= 2) {
-        assert(false);
-      }
-    };
-
   template <template <class,int> class I, class F, int K>
     SafePtr< typename CR_11_TiG12_11<I,F,K>::ChildType >
     CR_11_TiG12_11<I,F,K>::child(unsigned int i) const
@@ -301,78 +241,6 @@ namespace libint2 {
         }
       }
     };
-
-  template <template <class,int> class I, class F, int K>
-    std::string
-    CR_11_TiG12_11<I,F,K>::generate_label(const SafePtr<TargetType>& target) const
-    {
-      ostringstream os;
-      
-      os << "RR ( ";
-      F sh_a(target->bra(0,0)); os << sh_a.label() << " ";
-      F sh_b(target->ket(0,0)); os << sh_b.label() << " | [T_" << K << ", G12] | ";
-      F sh_c(target->bra(1,0)); os << sh_c.label() << " ";
-      F sh_d(target->ket(1,0)); os << sh_d.label() << " )";
-      
-      return os.str();
-    }
-    
-   template <template <class,int> class I, class F, int K>
-    std::string
-    CR_11_TiG12_11<I,F,K>::spfunction_call(
-    const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
-    {
-      ostringstream os;
-      os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
-         // First argument is the library object
-         << "(inteval, "
-         // Second is the target
-         << context->value_to_pointer(rr_target()->symbol());
-      // then come children
-      const unsigned int nchildren = num_children();
-      for(int c=0; c<nchildren; c++) {
-        os << ", " << context->value_to_pointer(rr_child(c)->symbol());
-      }
-      os << ")" << context->end_of_stat() << endl;
-      return os.str();
-    }
-    
-
-  template <template <class,int> class I, class F, int K>
-    void
-    CR_11_TiG12_11<I,F,K>::add_expr(const SafePtr<ExprType>& expr, int minus)
-    {
-      if (nexpr_ == 0) {
-        if (minus != -1) {
-          expr_ = expr;
-          nexpr_ = 1;
-        }
-        else {
-          SafePtr<ExprType> negative(new ExprType(ExprType::OperatorTypes::Times,expr,prefactors.Cdouble(-1.0)));
-          expr_ = negative;
-          nflops_ += ConvertNumFlops<F>(1);
-        }
-      }
-      else {
-        if (minus != -1) {
-          SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Plus,expr_,expr));
-          expr_ = sum;
-          nflops_ += ConvertNumFlops<F>(1);
-        }
-        else {
-          SafePtr<ExprType> sum(new ExprType(ExprType::OperatorTypes::Minus,expr_,expr));
-          expr_ = sum;
-          nflops_ += ConvertNumFlops<F>(1);
-        }
-      }
-    }
-    
-  /*
-  typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
-  typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,1,InBra> VRR_c_11_TwoPRep_11_sh;
-  typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,0,InKet> VRR_b_11_TwoPRep_11_sh;
-  typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,1,InKet> VRR_d_11_TwoPRep_11_sh;
-  */
 
 };
 

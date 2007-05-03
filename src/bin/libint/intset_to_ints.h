@@ -49,28 +49,14 @@ namespace libint2 {
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation's child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
-    /// Implementation of RecurrenceRelation::rr_expr()
-    SafePtr<ExprType> rr_expr() const { return SafePtr<ExprType>(); }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const {
       return true;
     }
-    /// Implementation of RecurrenceRelation::invariant_type()
+    /// Reimplementation of RecurrenceRelation::invariant_type()
     bool invariant_type() const {
       // Converts from one BFSet to another!
       return false;
-    }
-    /// Implementation of RecurrenceRelation::label()
-    const std::string& label() const {
-      throw std::runtime_error("IntegralSet_to_Integrals::label() -- code for this RR is never generated, so this function should never be used");
-    }
-    /// Implementation of RecurrenceRelation::nflops()
-    unsigned int nflops() const { return 0; }
-    /// Implementation of RecurrenceRelation::spfunction_call()
-    std::string spfunction_call(const SafePtr<CodeContext>& context,
-                                const SafePtr<ImplicitDimensions>& dims) const
-    {
-      throw logic_error("IntegralSet_to_Integrals::spfunction_call -- should not call this function");
     }
 
     const std::string cpp_function_name() {};
@@ -81,6 +67,18 @@ namespace libint2 {
   private:
     SafePtr<TargetType> target_;
     vector< SafePtr<ChildType> > children_;
+
+    /// Implementation of RecurrenceRelation::generate_label()
+    std::string generate_label() const {
+      throw std::runtime_error("IntegralSet_to_Integrals::label() -- code for this RR is never generated, so this function should never be used");
+    }
+    /// Reimplementation of RecurrenceRelation::spfunction_call()
+    std::string spfunction_call(const SafePtr<CodeContext>& context,
+                                const SafePtr<ImplicitDimensions>& dims) const
+    {
+      throw logic_error("IntegralSet_to_Integrals::spfunction_call -- should not call this function");
+    }
+
   };
   
   
