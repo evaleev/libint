@@ -1,4 +1,9 @@
 
+05/03/2007:	1) Built in many services needed by RecurrenceRelation's derived classes into the base class.
+		2) Introduced operators r_1 . r_1 * G12 and r_1 . r_2 * G12 and their integrals.
+		3) Updated test.
+		-EFV
+
 05/02/2007:	Fixed a few bugs which affected build_libint (not test_eri...).
 		-EFV
 
