@@ -27,6 +27,7 @@ namespace libint2 {
     public R12kG12_11_11_base<BFS>
     {
     public:
+      typedef BFS BasisFunctionType;
       typedef R12_k_G12<K> OperType;
       typedef typename DefaultTwoPBraket<BFS>::Result BraType;
       typedef typename DefaultTwoPBraket<BFS>::Result KetType;

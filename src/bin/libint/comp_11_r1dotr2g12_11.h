@@ -9,7 +9,7 @@
 #include <rr.h>
 #include <rr.templ.h>
 #include <integral.h>
-#include <tig12_11_11.h>
+#include <r1dotr2g12_11_11.h>
 #include <algebra.h>
 #include <flop.h>
 #include <prefactors.h>

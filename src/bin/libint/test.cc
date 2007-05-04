@@ -32,12 +32,23 @@ namespace {
   void test1();
   void test2();
   void test3();
+  void test4();
   void test_cgshell_iter(const CGShell& sh);
 
   template <class Callback>
     void RunTest(Callback test, const std::string& descr, std::ostream& os = std::cout);
-  template <class Integral, class BFS>
-    void RunBuildTest(const BFS& f1, const BFS& f2, const BFS& f3, const BFS& f4, unsigned int m,
+  template <class Integral>
+    void RunBuildTest(const typename Integral::BasisFunctionType& f1,
+		      const typename Integral::BasisFunctionType& f2,
+		      const typename Integral::BasisFunctionType& f3,
+		      const typename Integral::BasisFunctionType& f4,
+		      unsigned int size_to_unroll);
+  template <class Integral>
+    void RunBuildTest(const typename Integral::BasisFunctionType& f1,
+		      const typename Integral::BasisFunctionType& f2,
+		      const typename Integral::BasisFunctionType& f3,
+		      const typename Integral::BasisFunctionType& f4,
+		      unsigned int m,
 		      unsigned int size_to_unroll);
 };
 
@@ -93,15 +104,18 @@ namespace {
 
     const unsigned int use_integrals = 1000000000;
     const unsigned int use_quartets = 1;
-    RunBuildTest<TwoPRep_sh_11_11,CGShell>(sh_p,sh_s,sh_p,sh_s,0,use_quartets);
-    RunBuildTest<TwoPRep_sh_11_11,CGShell>(sh_p,sh_p,sh_p,sh_p,0,use_quartets);
-    RunBuildTest<TwoPRep_sh_11_11,CGShell>(sh_p,sh_p,sh_p,sh_p,0,use_integrals);
+    RunBuildTest<TwoPRep_sh_11_11>(sh_p,sh_s,sh_p,sh_s,0,use_quartets);
+    RunBuildTest<TwoPRep_sh_11_11>(sh_p,sh_p,sh_p,sh_p,0,use_quartets);
+    RunBuildTest<TwoPRep_sh_11_11>(sh_p,sh_p,sh_p,sh_p,0,use_integrals);
 #endif
 #if 1
     RunTest(test2,"integrals types");
 #endif
 #if 1
     RunTest(test3,"recurrence relations");
+#endif
+#if 1
+    RunTest(test4,"r1.ri * G12 build");
 #endif
 
     return 0;
@@ -210,14 +224,34 @@ namespace {
     }
   }
 
-  template <class Integral, class BFS>
-    void RunBuildTest(const BFS& f1, const BFS& f2, const BFS& f3, const BFS& f4, unsigned int m, unsigned int size_to_unroll)
+  template <class Integral>
+    void RunBuildTest(const typename Integral::BasisFunctionType& f1,
+		      const typename Integral::BasisFunctionType& f2,
+		      const typename Integral::BasisFunctionType& f3,
+		      const typename Integral::BasisFunctionType& f4,
+		      unsigned int size_to_unroll)
     {
       std::string descr("build ");
-      descr += Integral::Instance(f1,f2,f3,f4,m)->label();
-      RunTest(boost::bind(BuildTest<Integral,false>, Integral::Instance(f1,f2,f3,f4,m), cparams,
+      SafePtr<Integral> i = Integral::Instance(f1,f2,f3,f4);
+      descr += i->label();
+      RunTest(boost::bind(__BuildTest<Integral,false>, i, cparams,
 			  size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
-			  SafePtr<MemoryManager>(new WorstFitMemoryManager)), descr);
+			  SafePtr<MemoryManager>(new WorstFitMemoryManager), descr), descr);
+    }
+
+  template <class Integral>
+    void RunBuildTest(const typename Integral::BasisFunctionType& f1,
+		      const typename Integral::BasisFunctionType& f2,
+		      const typename Integral::BasisFunctionType& f3,
+		      const typename Integral::BasisFunctionType& f4,
+		      unsigned int m, unsigned int size_to_unroll)
+    {
+      std::string descr("build ");
+      SafePtr<Integral> i = Integral::Instance(f1,f2,f3,f4,m);
+      descr += i->label();
+      RunTest(boost::bind(__BuildTest<Integral,false>, i, cparams,
+			  size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
+			  SafePtr<MemoryManager>(new WorstFitMemoryManager), descr), descr);
     }
 
 
@@ -249,7 +283,7 @@ namespace {
     }
     {
       typedef R1dotR1G12_11_11_sq IType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0);
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p);
       std::cout << "Created integral set " << iset->label() << std::endl;
     }
   }
@@ -260,17 +294,26 @@ namespace {
     {
       typedef R1dotR1G12_11_11_sq IType;
       typedef CR_11_R1dotR1G12_11_sq RRType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0);
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p);
       SafePtr<RRType> rr = RRType::Instance(iset);
       std::cout << "Created recurrence relation " << rr->label() << std::endl;
     }
     {
       typedef R1dotR2G12_11_11_sq IType;
       typedef CR_11_R1dotR2G12_11_sq RRType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0);
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p);
       SafePtr<RRType> rr = RRType::Instance(iset);
       std::cout << "Created recurrence relation " << rr->label() << std::endl;
     }
+  }
+
+  void
+  test4()
+  {
+    const unsigned int use_integrals = 1000000000;
+    const unsigned int use_quartets = 1;
+    RunBuildTest<R1dotR1G12_11_11_sq>(sh_s,sh_s,sh_s,sh_s,use_quartets);
+    RunBuildTest<R1dotR2G12_11_11_sq>(sh_s,sh_s,sh_s,sh_s,use_quartets);
   }
 
 };

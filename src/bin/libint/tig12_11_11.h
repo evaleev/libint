@@ -27,6 +27,7 @@ namespace libint2 {
     public TiG12_11_11_base<BFS>
     {
     public:
+      typedef BFS BasisFunctionType;
       typedef Ti_G12<I> OperType;
       typedef typename DefaultTwoPBraket<BFS>::Result BraType;
       typedef typename DefaultTwoPBraket<BFS>::Result KetType;

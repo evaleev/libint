@@ -507,6 +507,7 @@ namespace libint2 {
     public TwoPRep_11_11_base
     {
     public:
+      typedef BFS BasisFunctionType;
       typedef TwoERep OperType;
       typedef typename DefaultTwoPBraket<BFS>::Result BraType;
       typedef typename DefaultTwoPBraket<BFS>::Result KetType;

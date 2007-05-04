@@ -52,18 +52,18 @@ namespace libint2 {
       to be produced (i.e. include header files + set-level recurrence relations code)
    */
   template <class Integral, bool GenAllCode>
-    void BuildTest(const SafePtr<Integral>& target, const SafePtr<CompilationParameters>& cparams,
-		   unsigned int size_to_unroll, std::ostream& os = std::cout,
-		   const SafePtr<Tactic>& tactic = SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
-		   const SafePtr<MemoryManager>& memman = SafePtr<MemoryManager>(new WorstFitMemoryManager),
-		   const std::string& complabel = "general_integral");
+    void __BuildTest(const SafePtr<Integral>& target, const SafePtr<CompilationParameters>& cparams,
+		     unsigned int size_to_unroll, std::ostream& os = std::cout,
+		     const SafePtr<Tactic>& tactic = SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
+		     const SafePtr<MemoryManager>& memman = SafePtr<MemoryManager>(new WorstFitMemoryManager),
+		     const std::string& complabel = "general_integral");
 
   template <class Integral, bool GenAllCode>
     void
-    BuildTest(const SafePtr<Integral>& target, const SafePtr<CompilationParameters>& cparams,
-	      unsigned int size_to_unroll, std::ostream& os,
-	      const SafePtr<Tactic>& tactic, const SafePtr<MemoryManager>& memman,
-	      const std::string& complabel)
+    __BuildTest(const SafePtr<Integral>& target, const SafePtr<CompilationParameters>& cparams,
+		unsigned int size_to_unroll, std::ostream& os,
+		const SafePtr<Tactic>& tactic, const SafePtr<MemoryManager>& memman,
+		const std::string& complabel)
     {
       const std::string label = cparams->api_prefix() + target->label();
       SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
@@ -217,7 +217,7 @@ namespace libint2 {
     SafePtr<StdRandomizePolicy> rpolicy(new StdRandomizePolicy(0.00));
     SafePtr<Tactic> tactic(new FirstChoiceTactic<StdRandomizePolicy>(rpolicy));
     const SafePtr<MemoryManager> memman(new WorstFitMemoryManager);
-    BuildTest<Integral,true>(target,cparams,size_to_unroll,os,tactic,memman,complabel);
+    __BuildTest<Integral,true>(target,cparams,size_to_unroll,os,tactic,memman,complabel);
   }
 
   template <unsigned int N>

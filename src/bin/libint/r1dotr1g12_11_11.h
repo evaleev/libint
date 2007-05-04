@@ -16,6 +16,7 @@ namespace libint2 {
     public GenIntegralSet< R1dotR1_G12, IncableBFSet, typename DefaultTwoPBraket<BFS>::Result, typename DefaultTwoPBraket<BFS>::Result, EmptySet >
     {
     public:
+      typedef BFS BasisFunctionType;
       typedef R1dotR1_G12 OperType;
       typedef typename DefaultTwoPBraket<BFS>::Result BraType;
       typedef typename DefaultTwoPBraket<BFS>::Result KetType;
@@ -36,7 +37,7 @@ namespace libint2 {
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
       */
-      static const SafePtr<R1dotR1G12_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, unsigned int m);
+      static const SafePtr<R1dotR1G12_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1);
       /// Returns a pointer to a unique instance, a la Singleton
       static const SafePtr<R1dotR1G12_11_11> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
       ~R1dotR1G12_11_11();
@@ -115,7 +116,7 @@ namespace libint2 {
 
   template <class BFS>
     const SafePtr< R1dotR1G12_11_11<BFS> >
-    R1dotR1G12_11_11<BFS>::Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, unsigned int m)
+    R1dotR1G12_11_11<BFS>::Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1)
     {
 #if USE_BRAKET_H
       typedef BFS BFSRef;
