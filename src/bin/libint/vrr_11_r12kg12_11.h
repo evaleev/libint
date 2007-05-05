@@ -179,8 +179,9 @@ namespace libint2 {
       if (is_simple()) {
         SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][where][dir_],rr_child(0)));
         SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.W_XY[part][dir_],rr_child(1)));
+	SafePtr<ExprType> expr0p1_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
 	nflops_ += (3);
-        add_expr(expr1_ptr);
+        add_expr(expr0p1_ptr);
       }
 
       // See if a-2 exists
