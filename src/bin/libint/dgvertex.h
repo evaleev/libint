@@ -166,6 +166,10 @@ namespace libint2 {
     void not_need_to_compute() { need_to_compute(false); }
     /// returns true if this index needs to be computed.
     bool need_to_compute() const;
+#if CHECK_SAFETY
+    bool declared() const { return  precomputed() ? true : declared_; }
+    void declared(bool d) { declared_ = d; }
+#endif
     
     /// prepare_to_traverse() must be called before traversal of the graph starts
     void prepare_to_traverse();
@@ -211,6 +215,10 @@ namespace libint2 {
     Address address_;
     // Whether this vertex needs to be computed
     bool need_to_compute_;
+#if CHECK_SAFETY
+    // has the symbol been declared in the code?
+    bool declared_;
+#endif
     
     /// We also need info about Arcs entering this DGVertex
     ArcSetType parents_;

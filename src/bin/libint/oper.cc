@@ -57,6 +57,24 @@ R12kG12::symbol(int K)
 
 ////////////
 
+std::string
+TiG12::label(int K)
+{
+  ostringstream oss;
+  oss << "[T_" << K << ",G12]";
+  return oss.str();
+}
+
+std::string
+TiG12::symbol(int K)
+{
+  ostringstream oss;
+  oss << "T" << K << "_G12";
+  return oss.str();
+}
+
+////////////
+
 R1dotR1_G12::R1dotR1_G12() :
   parent_type("r_1.r_1 x G12","R1dotR1_G12")
 {

@@ -11,6 +11,9 @@ using namespace libint2;
 DGVertex::DGVertex(ClassID tid) :
   dg_(0), subtree_(SafePtr<DRTree>()), typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
   postcalc_(), graph_label_(), referred_vertex_(0), nrefs_(0),
+#if CHECK_SAFETY
+  declared_(false),
+#endif
   symbol_(), address_(MemoryManager::InvalidAddress), need_to_compute_(true), instid_()
 {
 }
@@ -19,6 +22,9 @@ DGVertex::DGVertex(const DGVertex& v) :
   dg_(v.dg_), subtree_(v.subtree_), typeid_(v.typeid_), parents_(v.parents_), children_(v.children_), target_(v.target_),
   can_add_arcs_(v.can_add_arcs_), num_tagged_arcs_(v.num_tagged_arcs_),
   postcalc_(v.postcalc_), graph_label_(v.graph_label_),
+#if CHECK_SAFETY
+  declared_(v.declared_),
+#endif
   referred_vertex_(v.referred_vertex_), nrefs_(v.nrefs_),
   symbol_(v.symbol_), address_(v.address_), need_to_compute_(v.need_to_compute_), instid_(v.instid_)
 {
@@ -109,6 +115,10 @@ DGVertex::replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B)
       if (B_already_exists)
         throw std::runtime_error("DGVertex::replace_exit_arc(A,B) -- arc B is found among children");
 #endif
+#if DEBUG || DEBUG_RESTRUCTURE
+      std::cout << "replace_exit_arc: replacing arc from " << A->orig().get() << " to " << A->dest().get() << endl;
+      std::cout << "replace_exit_arc:      with arc from " << B->orig().get() << " to " << B->dest().get() << endl;
+#endif
       aiter posA = find(begin,end,A);
       if (posA != end) {
         *posA = B;
@@ -132,6 +142,11 @@ DGVertex::add_entry_arc(const SafePtr<DGArc>& arc)
     parents_.push_back(arc);
   else
     throw CannotAddArc("DGVertex::add_entry_arc() -- cannot add arcs anymore");
+#if DEBUG || DEBUG_RESTRUCTURE
+  std::cout << "add_entry_arc: from " << arc->orig() << " to " << arc->dest() << std::endl;
+  std::cout << "add_entry_arc: v" << std::endl;
+  print(std::cout);
+#endif
 }
 
 void
@@ -139,8 +154,12 @@ DGVertex::del_entry_arc(const SafePtr<DGArc>& arc)
 {
   if (!parents_.empty()) {
     ArcSetType::iterator location = find(parents_.begin(), parents_.end(), arc);
-    if (location != parents_.end())
+    if (location != parents_.end()) {
       parents_.erase(location);
+#if DEBUG || DEBUG_RESTRUCTURE
+      std::cout << "del_entry_arc: removed arc from " << (*location)->orig() << " to " << (*location)->dest() << endl;
+#endif
+    }
     else
       throw std::runtime_error("DGVertex::del_entry_arc() -- the arc doesn't exist");
   }
@@ -353,19 +372,28 @@ DGVertex::print(std::ostream& os) const
   using std::endl;
   std::string prefix("DGVertex::print: ");
   os << prefix << "label = " << label() << endl;
-#if DEBUG || LOCAL_DEBUG
   os << prefix << "this = " << this << endl;
   if (referred_vertex_ != 0) {
     os << prefix << "refers_to = " << referred_vertex_ << endl;
   }
   else {
+    os << prefix << "precomputed = " << precomputed() << endl;
     if (symbol_set())
       os << prefix << "symbol = " << symbol() << endl;
     if (address_set())
       os << prefix << "address = " << address() << endl;
     os << prefix << "size = " << size() << endl;
+    os << prefix << "next to compute = " << postcalc() << endl;
+    os << prefix << "nparents = " << num_entry_arcs() << endl;
+    unsigned int i=0;
+    for(ArcSetType::const_iterator p=first_entry_arc(); p!=plast_entry_arc(); ++i,++p)
+      os << prefix << "  parent " << i << ": " << (*p)->orig() << endl;
+    os << prefix << "nchildren = " << num_exit_arcs() << endl;
+    i=0;
+    for(ArcSetType::const_iterator c=first_exit_arc(); c!=plast_exit_arc(); ++i,++c)
+      os << prefix << "  child " << i << ": " << (*c)->dest() << endl;
+    os << prefix << "ntags = " << num_tagged_arcs_ << endl;
   }
-#endif
 }
 
 void

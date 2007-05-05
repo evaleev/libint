@@ -68,9 +68,9 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   // print out declarations for the array of pointers to evaluator functions
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   typedef LibraryTaskManager::TasksCIter tciter;
-  for(tciter t=taskmgr.first(); t!=taskmgr.last(); ++t) {
+  for(tciter t=taskmgr.first(); t!=taskmgr.plast(); ++t) {
     const std::string& tlabel = t->label();
-    const unsigned int lmax = cparams_->max_am_eri() + 1;
+    const unsigned int lmax = cparams_->max_am(tlabel) + 1;
 
     ostringstream oss;
     oss << "void (*" << ctext->label_to_name(cparams->api_prefix()) << "libint2_build_" << tlabel
@@ -95,7 +95,7 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   ih_ << sc_fdec << ctext_->end_of_stat() << endl;
 
   // Declare evaluator constructor/destructor (specific to the type of computation)
-  for(tciter t=taskmgr.first(); t!=taskmgr.last(); ++t) {
+  for(tciter t=taskmgr.first(); t!=taskmgr.plast(); ++t) {
     const std::string& tlabel = t->label();
 
     oss_.str(null_str_);
@@ -133,7 +133,7 @@ Libint2Iface::~Libint2Iface()
   // For each task, print out defines for stack dimensions
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   typedef LibraryTaskManager::TasksCIter tciter;
-  for(tciter t=taskmgr.first(); t!=taskmgr.last(); ++t) {
+  for(tciter t=taskmgr.first(); t!=taskmgr.plast(); ++t) {
     SafePtr<TaskParameters> tparams = t->params();
     const std::string& tlabel = t->label();
     ph_ << macro_define(tlabel,"NUM_TARGETS",tparams->max_ntarget());
@@ -178,7 +178,7 @@ Libint2Iface::~Libint2Iface()
   // Define Libint_t constructor/destructor (specific to the type of computation)
   {
     unsigned int i = 0;
-    for(tciter t=taskmgr.first(); t!=taskmgr.last(); ++t,++i) {
+    for(tciter t=taskmgr.first(); t!=taskmgr.plast(); ++t,++i) {
       const std::string& tlabel = t->label();
 
       li_ << lm_decls_[i] << ctext_->open_block();
@@ -190,7 +190,7 @@ Libint2Iface::~Libint2Iface()
     }
 
     i = 0;
-    for(tciter t=taskmgr.first(); t!=taskmgr.last(); ++t,++i) {
+    for(tciter t=taskmgr.first(); t!=taskmgr.plast(); ++t,++i) {
       const std::string& tlabel = t->label();
 
       li_ << li_decls_[i] << ctext_->open_block();
@@ -214,7 +214,7 @@ Libint2Iface::~Libint2Iface()
     }
 
     i = 0;
-    for(tciter t=taskmgr.first(); t!=taskmgr.last(); ++t,++i) {
+    for(tciter t=taskmgr.first(); t!=taskmgr.plast(); ++t,++i) {
       li_ << lc_decls_[i] << ctext_->open_block();
       li_ << "delete[] inteval->stack;" << std::endl;
       li_ << ctext_->assign("inteval->stack","0");
@@ -249,7 +249,7 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
   // else process each task separately
   //
   typedef LibraryTaskManager::TasksCIter tciter;
-  const tciter tend = cparams_->single_evaltype() ? taskmgr.first()+1 : taskmgr.last();
+  const tciter tend = cparams_->single_evaltype() ? taskmgr.first()+1 : taskmgr.plast();
   for(tciter t=taskmgr.first(); t!=tend; ++t) {
     const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
     
@@ -264,7 +264,7 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
     SymbolList symbols;
     if (cparams_->single_evaltype()) {
       TaskExternSymbols composite_symbols;
-      const tciter tend = taskmgr.last();
+      const tciter tend = taskmgr.plast();
       for(tciter t=taskmgr.first(); t!=tend; ++t) {
 	const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
 	composite_symbols.add(tsymbols->symbols());
@@ -297,7 +297,7 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
     if (cparams_->single_evaltype()) {
       // figure out the maximum number of targets
       unsigned int max_ntargets = 0;
-      const tciter tend = taskmgr.last();
+      const tciter tend = taskmgr.plast();
       for(tciter t=taskmgr.first(); t!=tend; ++t) {
 	SafePtr<TaskParameters> tparams = t->params();
 	max_ntargets = std::max(max_ntargets,tparams->max_ntarget());
@@ -330,7 +330,7 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
 
   // If generating single evaluator type, create aliases from the specialized types to the actual type
   if (cparams_->single_evaltype()) {
-    const tciter tend = taskmgr.last();
+    const tciter tend = taskmgr.plast();
     for(tciter t=taskmgr.first(); t!=tend; ++t) {
       const std::string& tlabel = t->label();
       os << "typedef "

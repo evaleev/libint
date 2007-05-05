@@ -113,7 +113,7 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   // 2) append external symbols from this RR to its list
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   typedef LibraryTaskManager::TasksCIter tciter;
-  const tciter tend = taskmgr.last();
+  const tciter tend = taskmgr.plast();
   for(tciter t=taskmgr.first(); t!=tend; ++t) {
     const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
     if (tsymbols->find(myid)) {

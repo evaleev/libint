@@ -100,7 +100,7 @@ namespace libint2 {
           max_am = max(max_am,am);
         }
       }
-      const bool need_to_optimize = (max_am <= cparams->max_am_opt());
+      const bool need_to_optimize = (max_am <= cparams->max_am_opt(complabel));
       dg_xxxx->registry()->do_cse(need_to_optimize);
       dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
       
@@ -188,7 +188,7 @@ namespace libint2 {
       
     // initialize cparams
     SafePtr<CompilationParameters> cparams(new CompilationParameters);
-    cparams->max_am_eri(max_am);
+    cparams->max_am(complabel,max_am);
     cparams->max_vector_length(veclen);
     cparams->vectorize_by_line(vec_by_line);
     cparams->count_flops(true);
@@ -205,10 +205,10 @@ namespace libint2 {
 #endif
 
     if (do_cse) {
-      cparams->max_am_opt(max_am);
+      cparams->max_am_opt(complabel,max_am);
     }
     else {
-      cparams->max_am_opt(0);
+      cparams->max_am_opt(complabel,0);
     }
 
     // set default dims

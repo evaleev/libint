@@ -1,6 +1,8 @@
 
-05/04/2007:	1) First take on computing integrals over exp(-a(r1+r2)-g(r12)).
+05/05/2007:	1) First take on computing integrals over exp(-a(r1+r2)-g(r12)).
 		2) Updated test.
+		3) Treat geng12 as an independent task. Task management much improved, especially in CompilationParameters.
+		4) Fixed a bug in VRR_11_R12kG12_11.
 		-EFV
 
 05/03/2007:	1) Built in many services needed by RecurrenceRelation's derived classes into the base class.

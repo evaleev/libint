@@ -71,17 +71,33 @@ static void test(std::ostream& os, const SafePtr<CompilationParameters>& cparams
 void try_main (int argc, char* argv[])
 {
   std::ostream& os = cout;
+
+  // First must declare the tasks
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+#ifdef INCLUDE_ERI
+  taskmgr.add("eri");
+#endif
+#ifdef INCLUDE_G12
+  taskmgr.add("r12kg12");
+#endif
+#ifdef INCLUDE_GENG12
+  taskmgr.add("geng12");
+#endif
   
   // use default parameters
   SafePtr<CompilationParameters> cparams(new CompilationParameters);
   
 #ifdef INCLUDE_ERI
-  cparams->max_am_eri(ERI_MAX_AM);
-  cparams->max_am_eri_opt(ERI_OPT_AM);
+  cparams->max_am("eri",ERI_MAX_AM);
+  cparams->max_am_opt("eri",ERI_OPT_AM);
 #endif
 #ifdef INCLUDE_G12
-  cparams->max_am_g12(G12_MAX_AM);
-  cparams->max_am_g12_opt(G12_OPT_AM);
+  cparams->max_am("r12kg12",G12_MAX_AM);
+  cparams->max_am_opt("r12kg12",G12_OPT_AM);
+#endif
+#ifdef INCLUDE_GENG12
+  cparams->max_am("geng12",G12_MAX_AM);
+  cparams->max_am_opt("geng12",G12_OPT_AM);
 #endif
 #if LIBINT_ENABLE_UNROLLING
   cparams->unroll_threshold(1000000000);
@@ -126,14 +142,6 @@ void try_main (int argc, char* argv[])
   
   // initialize code context to produce library API
   SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
-  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-#ifdef INCLUDE_ERI
-  taskmgr.add("eri");
-#endif
-#ifdef INCLUDE_G12
-  taskmgr.add("r12kg12");
-  taskmgr.add("geng12");
-#endif
   // initialize object to generate interface
   SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext));
   
@@ -147,6 +155,8 @@ void try_main (int argc, char* argv[])
 #endif
 #ifdef INCLUDE_G12
   build_R12kG12_2b_2k(os,cparams,iface);
+#endif
+#ifdef INCLUDE_GENG12
   build_GenG12_2b_2k(os,cparams,iface);
 #endif
 #endif
@@ -160,7 +170,7 @@ void try_main (int argc, char* argv[])
 
   // print out the external symbols found for each task
   typedef LibraryTaskManager::TasksCIter tciter;
-  const tciter tend = taskmgr.last();
+  const tciter tend = taskmgr.plast();
   for(tciter t=taskmgr.first(); t!=tend; ++t) {
     const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
     typedef TaskExternSymbols::SymbolList SymbolList;
@@ -199,6 +209,8 @@ print_config(std::ostream& os)
 #endif
 #ifdef INCLUDE_G12
   os << "Will support G12" << endl;
+#endif
+#ifdef INCLUDE_GENG12
   os << "Will support generalized G12" << endl;
 #endif
 }
@@ -242,16 +254,17 @@ void
 build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface)
 {
+  const std::string task("eri");
   typedef TwoPRep_11_11<CGShell> TwoPRep_sh_11_11;
   vector<CGShell*> shells;
-  unsigned int lmax = cparams->max_am_eri();
+  unsigned int lmax = cparams->max_am(task);
   for(int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
 
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current("eri");
+  taskmgr.current(task);
   iface->to_params(iface->macro_define("MAX_AM_ERI",lmax));
   
   //
@@ -278,10 +291,10 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (la < lb || lc < ld || la+lb > lc+ld)
 	    continue;
           
-          // unroll only if max_am <= cparams->max_am_eri_opt()
+          // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
-          const bool need_to_optimize = (max_am <= cparams->max_am_eri_opt());
+          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
           dg_xxxx->registry()->can_unroll(need_to_optimize);
           dg_xxxx->registry()->do_cse(need_to_optimize);
 	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
@@ -355,15 +368,16 @@ void
 build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface)
 {
+  const std::string task("r12kg12");
   vector<CGShell*> shells;
-  unsigned int lmax = cparams->max_am_g12();
+  unsigned int lmax = cparams->max_am(task);
   for(int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
   
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current("r12kg12");
+  taskmgr.current(task);
   iface->to_params(iface->macro_define("MAX_AM_R12kG12",lmax));
   
   //
@@ -390,11 +404,14 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           bool ssss = false;
           if (la+lb+lc+ld == 0)
             ssss = true;
+
+	  //if (la != 1 || lb != 0 || lc != 1 || ld != 1)
+	  //  continue;
           
-          // unroll only if max_am <= cparams->max_am_g12_opt()
+          // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
-          const bool need_to_optimize = (max_am <= cparams->max_am_g12_opt());
+          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
           dg_xxxx->registry()->can_unroll(need_to_optimize);
           dg_xxxx->registry()->do_cse(need_to_optimize);
 	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
@@ -511,19 +528,23 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   } // end of a loop  
 }
 
+#endif // INCLUDE_G12
+
+#if INCLUDE_GENG12
 void
 build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface)
 {
+  const std::string task("geng12");
   vector<CGShell*> shells;
-  unsigned int lmax = cparams->max_am_g12();
+  unsigned int lmax = cparams->max_am(task);
   for(int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
   
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current("geng12");
+  taskmgr.current(task);
   iface->to_params(iface->macro_define("MAX_AM_GENG12",lmax));
   
   //
@@ -551,10 +572,10 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           if (la+lb+lc+ld == 0)
             ssss = true;
           
-          // unroll only if max_am <= cparams->max_am_g12_opt()
+          // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
-          const bool need_to_optimize = (max_am <= cparams->max_am_g12_opt());
+          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
           dg_xxxx->registry()->can_unroll(need_to_optimize);
           dg_xxxx->registry()->do_cse(need_to_optimize);
 	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
@@ -662,21 +683,22 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
   } // end of a loop  
 }
 
-#endif // INCLUDE_G12
+#endif // INCLUDE_GENG12
 
 void
 test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
      SafePtr<Libint2Iface>& iface)
 {
+  const std::string task("r12kg12");
   vector<CGShell*> shells;
-  unsigned int lmax = cparams->max_am_eri();
+  unsigned int lmax = cparams->max_am(task);
   for(int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
   
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current("r12kg12");
+  taskmgr.current(task);
   iface->to_params(iface->macro_define("MAX_AM_R12kG12",lmax));
   
   //

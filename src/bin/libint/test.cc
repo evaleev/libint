@@ -84,11 +84,13 @@ namespace {
 
   int try_main (int argc, char* argv[])
   {
-
+    LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+    taskmgr.add("test");
+    
     // initialize cparams
     SafePtr<CompilationParameters> tmpcparams(new CompilationParameters);
     cparams = tmpcparams;
-    cparams->max_am_eri(2);
+    cparams->max_am("test",2);
 
     // set default dims
     ImplicitDimensions::set_default_dims(cparams);

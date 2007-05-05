@@ -227,11 +227,21 @@ DirectedGraph::traverse_from(const SafePtr<DGArc>& arc)
 {
   SafePtr<DGVertex> orig = arc->orig();
   SafePtr<DGVertex> dest = arc->dest();
+#if DEBUG_TRAVERSAL
+  std::cout << "traverse_from: orig = " << orig << " dest = " << dest << endl;
+#endif
   // no need to compute if precomputed
-  if (dest->precomputed())
+  if (dest->precomputed()) {
+#if DEBUG_TRAVERSAL
+    std::cout << "traverse from: dest is precomputed" << std::endl;
+#endif
     return;
+  }
   // if has been hit by all parents ...
   const unsigned int num_tags = dest->tag();
+#if DEBUG_TRAVERSAL
+  std::cout << "traverse from: tagged dest, ntags = " << num_tags << std::endl;
+#endif
   const unsigned int num_parents = dest->num_entry_arcs();
   if (num_tags == num_parents) {
 
@@ -258,6 +268,10 @@ DirectedGraph::schedule_computation(const SafePtr<DGVertex>& vertex)
 {
   vertex->set_postcalc(first_to_compute_);
   first_to_compute_ = vertex;
+#if DEBUG || DEBUG_TRAVERSAL
+  std::cout << "schedule_computation: " << vertex << endl;
+  vertex->print(std::cout);
+#endif
 }
 
 
@@ -448,7 +462,14 @@ DirectedGraph::replace_rr_with_expr()
       // children are of the same type
       if (rr->is_simple() && rr->invariant_type()) {
 
-        unsigned int nchildren = rr->num_children();
+#if DEBUG || DEBUG_RESTRUCTURE
+	std::cout << "replace_rr_with_expr: replacing " << rr->label() << endl;
+	std::cout << "replace_rr_with_expr:      with " << rr->rr_expr()->description() << endl;
+	std::cout << "replace_rr_with_expr: nchildren = " << rr->num_children() << endl;
+	for(unsigned int c=0; c<rr->num_children(); ++c) {
+	  std::cout << "replace_rr_with_expr: child " << c << " " << rr->rr_child(c)->description() << endl;
+	}
+#endif
 
         // Remove arcs connecting this vertex to children
         (vptr)->del_exit_arcs();
@@ -711,28 +732,42 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
   // OK, now do work!
   //
 
+#if DEBUG || DEBUG_RESTRUCTURE
+  std::cout << "remove_vertex_at: v1" << endl;  v1->print(std::cout);
+  std::cout << "remove_vertex_at: v2" << endl;  v2->print(std::cout);
+#endif
+
   // Reconnect each of v1's entry arcs to v2
   unsigned int c = 0;
   for(aiter i=v1_entry.begin(); i != v1_entry.end(); ++i, ++c) {
     SafePtr<DGVertex> parent = (*i)->orig();
-#if DEBUG
+#if DEBUG || DEBUG_RESTRUCTURE
     cout << "remove_vertex_at: replacing arc " << c << " connecting " << parent->description() << " to " << (*i)->dest()->description() << endl;
+    cout << "remove_vertex_at: replacing arc " << c << " connecting " << parent << " to " << (*i)->dest() << endl;
 #endif
     SafePtr<DGArcDirect> new_arc(new DGArcDirect(parent,v2));
+#if DEBUG || DEBUG_RESTRUCTURE
+    cout << "remove_vertex_at:      with arc " << " connecting " << parent->description() << " to " << v2->description() << endl;
+    cout << "remove_vertex_at:      with arc " << " connecting " << parent << " to " << v2 << endl;
+#endif
     parent->replace_exit_arc(*i,new_arc);
-#if DEBUG
+#if DEBUG || DEBUG_RESTRUCTURE
     cout << "Replaced arcs: parent " << parent->description() << " now connected to " << new_arc->dest()->description() << endl;
     cout << "                ptr = " << parent << endl;
     const unsigned int nchildren = parent->num_exit_arcs();
     cout << "               parent has " << nchildren << " children" << endl;
-    aciter a = parent->first_exit_arc();
-    cout << "               child 0 " << (*a)->dest()->description() << endl;
-    if (nchildren > 1) {
-      ++a;
-      cout << "               child 1 " << (*a)->dest()->description() << endl;
+    unsigned int i=0;
+    for(aciter a = parent->first_exit_arc(); a!=parent->plast_exit_arc(); ++a, ++i) {
+      cout << "               child " << i << " " << (*a)->dest()->description() << endl;
+      cout << "               child " << i << " ptr = " << (*a)->dest() << endl;
     }
 #endif
   }
+
+#if DEBUG || DEBUG_RESTRUCTURE
+  std::cout << "remove_vertex_at: v1" << endl;  v1->print(std::cout);
+  std::cout << "remove_vertex_at: v2" << endl;  v2->print(std::cout);
+#endif
 
   // and fully disconnect this vertex
   v1->detach();
@@ -1341,9 +1376,14 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
         if (oper_ptr) {
 
           // Type declaration if this is an automatic variable (i.e. not on Libint's stack)
-          if (!address_set)
+          if (!address_set) {
             os << context->declare(context->type_name<double>(),
                                    current_vertex->symbol());
+#if CHECK_SAFETY
+	    current_vertex->declared(true);
+#endif
+	  }
+	  
           
 	  // If this is an Integral in a target IntegralSet AND
 	  // can accumulate targets directly -- use '+=' instead of '='
@@ -1381,7 +1421,18 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
             left_symbol = to_vector_symbol(left_arg);
             right_symbol = to_vector_symbol(right_arg);
           }
-          
+#if CHECK_SAFETY
+	  bool left_not_declared = left_arg->need_to_compute() && !left_arg->declared();
+	  bool right_not_declared = right_arg->need_to_compute() && !right_arg->declared();
+	  if (left_not_declared || right_not_declared) {
+	    std::cout << "Current vertex:" << endl;  current_vertex->print(std::cout);
+	    std::cout << "left arg      :" << endl;  left_arg->print(std::cout);
+	    std::cout << "right arg     :" << endl;  right_arg->print(std::cout);
+	    if (left_not_declared) throw ProgrammingError("DirectedGraph::print_def() -- left_arg not declared");
+	    if (right_not_declared) throw ProgrammingError("DirectedGraph::print_def() -- right_arg not declared");
+	  }
+#endif
+
           if (vectorize_by_line)
             os << line_vloop->open();
 	  // the statement that does the work
@@ -1408,6 +1459,17 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
         typedef DGArcDirect arc_type;
         SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(*(current_vertex->first_exit_arc()));
         if (arc_ptr) {
+
+#if CHECK_SAFETY
+	    current_vertex->declared(true);
+
+	    SafePtr<DGVertex> rhs_arg = arc_ptr->dest();
+	    if (!rhs_arg->declared() && rhs_arg->need_to_compute()) {
+	      std::cout << "Current vertex:" << endl;  current_vertex->print(std::cout);
+	      std::cout << "rhs_arg      :" << endl;  rhs_arg->print(std::cout);
+	      throw ProgrammingError("DirectedGraph::print_def() -- rhs_arg not declared");
+	    }
+#endif
 
 	  // If this is an Integral in a target IntegralSet AND
 	  // can accumulate targets directly -- use '+=' instead of '='

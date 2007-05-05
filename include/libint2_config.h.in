@@ -34,6 +34,9 @@
 /* Support G12 derivatives up to this order */
 #undef INCLUDE_G12
 
+/* Support general G12 derivatives up to this order */
+#undef INCLUDE_GENG12
+
 /* Max AM for ERI */
 #undef ERI_MAX_AM
 
@@ -51,6 +54,12 @@
 
 /* Max optimized AM for linear G12 method integrals */
 #undef G12_OPT_AM
+
+/* Max AM for G12 method integrals */
+#undef GENG12_MAX_AM
+
+/* Max optimized AM for G12 method integrals */
+#undef GENG12_OPT_AM
 
 /* Whether integral sets can be unrolled */
 #undef LIBINT_ENABLE_UNROLLING

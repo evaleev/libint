@@ -1,6 +1,7 @@
 
 #include <ostream>
 #include <string>
+#include <map>
 #include <smart_ptr.h>
 
 #ifndef _libint2_src_bin_libint_defaultparams_h_
@@ -14,35 +15,18 @@ namespace libint2 {
 
   /// These are the parameters received by the compiler
   class CompilationParameters {
+    static const std::string default_task_name;
+
     public:
+
     /// Use default parameters
     CompilationParameters();
     ~CompilationParameters();
     
-    /// returns max AM for general integrals
-    unsigned int max_am() const {
-      return max_am_;
-    }
-    /// returns max AM of general integrals for which to produce optimal code
-    unsigned int max_am_opt() const {
-      return max_am_opt_;
-    }
-    /// returns max AM for ERI
-    unsigned int max_am_eri() const {
-      return max_am_eri_;
-    }
-    /// returns max AM of ERI for which to produce optimal code
-    unsigned int max_am_eri_opt() const {
-      return max_am_eri_opt_;
-    }
-    /// returns max AM for G12 integrals
-    unsigned int max_am_g12() const {
-      return max_am_g12_;
-    }
-    /// returns max AM of G12 ints for which to produce optimal code
-    unsigned int max_am_g12_opt() const {
-      return max_am_g12_opt_;
-    }
+    /// returns max AM for task t
+    unsigned int max_am(const std::string& t = "__default__") const;
+    /// returns max AM for which to produce optimal code for task t
+    unsigned int max_am_opt(const std::string& t = "__default__") const;
     /// returns max vector length
     unsigned int max_vector_length() const {
       return max_vector_length_;
@@ -84,30 +68,10 @@ namespace libint2 {
       return realtype_;
     }
     
-    /// set max AM for general integrals
-    void max_am(unsigned int a) {
-      max_am_ = a;
-    }
-    /// set max AM for "optimized" integrals
-    void max_am_opt(unsigned int a) {
-      max_am_opt_ = a;
-    }
-    /// set max AM for ERI
-    void max_am_eri(unsigned int a) {
-      max_am_eri_ = a;
-    }
-    /// set max AM for "optimized" ERI
-    void max_am_eri_opt(unsigned int a) {
-      max_am_eri_opt_ = a;
-    }
-    /// set max AM for G12
-    void max_am_g12(unsigned int a) {
-      max_am_g12_ = a;
-    }
-    /// set max AM for "optimized" G12
-    void max_am_g12_opt(unsigned int a) {
-      max_am_g12_opt_ = a;
-    }
+    /// set max AM for task t
+    void max_am(const std::string& t, unsigned int a);
+    /// set max AM for task t
+    void max_am_opt(const std::string& t, unsigned int a);
     /// set max vector length
     void max_vector_length(unsigned int a) {
       max_vector_length_ = a;
@@ -156,10 +120,8 @@ namespace libint2 {
     struct Defaults {
       /// By default compile general integrals for p-functions
       static const unsigned int max_am = 1;
-      /// By default compile ERI for p-functions
-      static const unsigned int max_am_eri = 1;
-      /// By default compile G12 integrals for p-functions
-      static const unsigned int max_am_g12 = 1;
+      /// By default optimize general integrals for up to p-functions
+      static const unsigned int max_am_opt = 1;
       /// Do not vectorize by default
       static const unsigned int max_vector_length = 1;
       /// Vectorize all body by default
@@ -181,19 +143,20 @@ namespace libint2 {
       /// Use double for computations
       static const std::string realtype;
     };
-    
-    /// max AM for general integrals
-    unsigned int max_am_;
-    /// max AM for "optimized" general integrals
-    unsigned int max_am_opt_;
-    /// max AM for ERI
-    unsigned int max_am_eri_;
-    /// max AM for "optimized" ERI
-    unsigned int max_am_eri_opt_;
-    /// max AM for G12
-    unsigned int max_am_g12_;
-    /// max AM for "optimized" G12
-    unsigned int max_am_g12_opt_;
+
+    struct TaskParameters {
+      /// max AM
+      unsigned int max_am;
+      /// max AM for "optimized" integrals
+      unsigned int max_am_opt;
+    };
+    /// Parameters for tasks
+    std::map<std::string,TaskParameters> task_params_;
+    /// tests if task t is known globally (i.e. to LibraryTaskManager). Throws if not.
+    void task_exists(const std::string& t) const;
+    /// adds a task using default task params
+    void add_task(const std::string& t);
+
     /// max vector length
     unsigned int max_vector_length_;
     /// whether to vectorize line-by-line

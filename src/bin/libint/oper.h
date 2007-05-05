@@ -292,21 +292,26 @@ namespace libint2 {
 
   };
 
+  namespace TiG12 {
+    std::string label(int K);
+    std::string symbol(int K);
+  };
+
   template <int I>
   Ti_G12<I>::Ti_G12() :
-  parent_type("[T_i,G12]","Ti_G12")
+  parent_type(TiG12::label(I),TiG12::symbol(I))
   {
   }
   
   template <int I>
   Ti_G12<I>::Ti_G12(const SafePtr<Ti_G12>& source) :
-  parent_type("[T_i,G12]","Ti_G12")
+  parent_type(TiG12::label(I),TiG12::symbol(I))
   {
   }
   
   template <int I>
   Ti_G12<I>::Ti_G12(const SafePtr<OperSet>& oset) :
-  parent_type("[T_i,G12]","Ti_G12")
+  parent_type(TiG12::label(I),TiG12::symbol(I))
   {
     const SafePtr<Ti_G12> oset_cast = dynamic_pointer_cast<Ti_G12,OperSet>(oset);
     if (oset_cast == 0)
@@ -315,7 +320,7 @@ namespace libint2 {
   
   template <int I>
   Ti_G12<I>::Ti_G12(const SafePtr<ConstructablePolymorphically>& oset) :
-  parent_type("[T_i,G12]","Ti_G12")
+  parent_type(TiG12::label(I),TiG12::symbol(I))
   {
     const SafePtr<Ti_G12> oset_cast = dynamic_pointer_cast<Ti_G12,ConstructablePolymorphically>(oset);
     if (oset_cast == 0)
@@ -324,7 +329,7 @@ namespace libint2 {
   
   template <int I>
   Ti_G12<I>::Ti_G12(const ConstructablePolymorphically& oset) :
-  parent_type("[T_i,G12]","Ti_G12")
+  parent_type(TiG12::label(I),TiG12::symbol(I))
   {
     const Ti_G12& oset_cast = dynamic_cast<const Ti_G12&>(oset);
   }
