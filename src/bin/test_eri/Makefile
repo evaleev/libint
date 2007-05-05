@@ -21,7 +21,7 @@ LIBINT = $(LIBINTDIR)/libINT.a
 #CGSHELLOBJ = $(LIBINTDIR)/gauss.o $(LIBINTDIR)/iter.o $(LIBINTDIR)/policy.o \
 #$(LIBINTDIR)/policy_spec.o $(LIBINTDIR)/default_params.o
 CGSHELLOBJ = $(LIBINTDIR)/gauss.o $(LIBINTDIR)/iter.o $(LIBINTDIR)/policy.o \
-$(LIBINTDIR)/policy_spec.o $(LIBINTDIR)/default_params.o
+$(LIBINTDIR)/policy_spec.o $(LIBINTDIR)/default_params.o $(LIBINTDIR)/task.o
 
 ERICOMP = generate_eri_code
 CXXERICOMPSRC = $(ERICOMP).cc
