@@ -52,5 +52,6 @@
 #define DEBUG 0
 #define DEBUG_RESTRUCTURE 0
 #define DEBUG_TRAVERSAL 0
+#define DEBUG_CONSTRUCTION 0
 
 #endif

@@ -1,4 +1,7 @@
 
+05/06/2007:	Use HRR to compute integral over [T_i,G12].
+		-EFV
+
 05/05/2007:	1) First take on computing integrals over exp(-a(r1+r2)-g(r12)).
 		2) Updated test.
 		3) Treat geng12 as an independent task. Task management much improved, especially in CompilationParameters.

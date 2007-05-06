@@ -3,6 +3,7 @@
 #define _libint2_src_bin_libint_rrtemplh_h_
 
 #include <rr.h>
+#include <global_macros.h>
 
 using namespace libint2;
 
@@ -19,6 +20,9 @@ RecurrenceRelation::register_with_rrstack() const {
       )
     );
   rrstack->find(this_ptr);
+#if DEBUG || DEBUG_CONSTRUCTION
+  std::cout << "register_with_rrstack: registered " << this_ptr->label() << std::endl;
+#endif
   return true;
 }
 

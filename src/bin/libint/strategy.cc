@@ -387,21 +387,22 @@ Strategy::optimal_rr_R1dotR1G121111_int(const SafePtr<DirectedGraph>& graph,
 {
 #define __IType_tmpl2 R1dotR1G12_11_11
   typedef R1dotR1G12_11_11_int IType;
+  vector<RR> rrstack;  // stack of all recurrence relations
 
-  {
-    // AB HRR
+  // shift from B to A
+  for(int xyz = 2; xyz >= 0; xyz--) {
     typedef HRR<IType,IType::BasisFunctionType,0,InBra,0,InKet,0> rr_type;
-    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
     if (rr_ptr->num_children())
-      return rr_cast(rr_ptr);
+      rrstack.push_back(rr_cast(rr_ptr));
   }
 
-  {
-    // CD HRR
+  // shift from D to C
+  for(int xyz = 2; xyz >= 0; xyz--) {
     typedef HRR<IType,IType::BasisFunctionType,1,InBra,0,InKet,0> rr_type;
-    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
     if (rr_ptr->num_children())
-      return rr_cast(rr_ptr);
+      rrstack.push_back(rr_cast(rr_ptr));
   }
 
   {
@@ -409,10 +410,10 @@ Strategy::optimal_rr_R1dotR1G121111_int(const SafePtr<DirectedGraph>& graph,
     typedef CR_11_R1dotR1G12_11<__IType_tmpl2,IType::BasisFunctionType> rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral);
     if (rr_ptr->num_children())
-      return rr_cast(rr_ptr);
+      rrstack.push_back(rr_cast(rr_ptr));
   }
 
-  return SafePtr<RecurrenceRelation>();
+  return tactic->optimal_rr(rrstack);
 }
 
 SafePtr<RecurrenceRelation>
@@ -465,21 +466,22 @@ Strategy::optimal_rr_R1dotR2G121111_int(const SafePtr<DirectedGraph>& graph,
 {
 #define __IType_tmpl4 R1dotR2G12_11_11
   typedef R1dotR2G12_11_11_int IType;
+  vector<RR> rrstack;  // stack of all recurrence relations
 
-  {
-    // AB HRR
+  // shift from B to A
+  for(int xyz = 2; xyz >= 0; xyz--) {
     typedef HRR<IType,IType::BasisFunctionType,0,InBra,0,InKet,0> rr_type;
-    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
     if (rr_ptr->num_children())
-      return rr_cast(rr_ptr);
+      rrstack.push_back(rr_cast(rr_ptr));
   }
 
-  {
-    // CD HRR
+  // shift from D to C
+  for(int xyz = 2; xyz >= 0; xyz--) {
     typedef HRR<IType,IType::BasisFunctionType,1,InBra,0,InKet,0> rr_type;
-    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
     if (rr_ptr->num_children())
-      return rr_cast(rr_ptr);
+      rrstack.push_back(rr_cast(rr_ptr));
   }
 
   {
@@ -487,10 +489,10 @@ Strategy::optimal_rr_R1dotR2G121111_int(const SafePtr<DirectedGraph>& graph,
     typedef CR_11_R1dotR2G12_11<__IType_tmpl4,IType::BasisFunctionType> rr_type;
     SafePtr<rr_type> rr_ptr = rr_type::Instance(integral);
     if (rr_ptr->num_children())
-      return rr_cast(rr_ptr);
+      rrstack.push_back(rr_cast(rr_ptr));
   }
 
-  return SafePtr<RecurrenceRelation>();
+  return tactic->optimal_rr(rrstack);
 }
 
 SafePtr<RecurrenceRelation>

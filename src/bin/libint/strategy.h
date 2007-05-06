@@ -241,13 +241,31 @@ namespace libint2 {
       const unsigned int size = integral->size();
       if (size == 1 || (size <= max_size_to_unroll_ && graph->registry()->can_unroll()))
         return unroll_intset<inttype>(integral);
-      
-      typedef CR_11_TiG12_11<TiG12_11_11,CGShell,K> rr_type;
-      SafePtr<rr_type> rr_ptr = rr_type::Instance(integral);
-      if (rr_ptr->num_children())
-        return rr_cast(rr_ptr);
-      
-      throw std::logic_error("Strategy::optimal_rr_TiG121111_sq() -- did not find a way to compute");
+
+      if (K == 1) {
+	// shift from B to A
+	typedef HRR<inttype,typename inttype::BasisFunctionType,0,InBra,0,InKet,0> rr_type;
+	SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+	if (rr_ptr->num_children())
+	  return rr_cast(rr_ptr);
+      }
+
+      if (K == 0) {
+	// shift from D to C
+	typedef HRR<inttype,typename inttype::BasisFunctionType,1,InBra,0,InKet,0> rr_type;
+	SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+	if (rr_ptr->num_children())
+	  return rr_cast(rr_ptr);
+      }
+
+      {
+	typedef CR_11_TiG12_11<TiG12_11_11,CGShell,K> rr_type;
+	SafePtr<rr_type> rr_ptr = rr_type::Instance(integral);
+	if (rr_ptr->num_children())
+	  return rr_cast(rr_ptr);
+      }
+
+      return SafePtr<RecurrenceRelation>();
     }
 
   
@@ -261,15 +279,30 @@ namespace libint2 {
     {
       typedef TiG12_11_11<CGF,K> inttype;
       const SafePtr<inttype> integral = dynamic_pointer_cast<inttype,TiG12_11_11_base<CGF> >(bptr);
-
       vector<RR> rrstack;  // stack of all recurrence relations
+
+      if (K == 1)
+	// shift from B to A
+	for(int xyz = 2; xyz >= 0; xyz--) {
+	  typedef HRR<inttype,typename inttype::BasisFunctionType,0,InBra,0,InKet,0> rr_type;
+	  SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
+	  if (rr_ptr->num_children())
+	    rrstack.push_back(rr_cast(rr_ptr));
+	}
+
+      if (K == 0)
+	// shift from D to C
+	for(int xyz = 2; xyz >= 0; xyz--) {
+	  typedef HRR<inttype,typename inttype::BasisFunctionType,1,InBra,0,InKet,0> rr_type;
+	  SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
+	  if (rr_ptr->num_children())
+	    rrstack.push_back(rr_cast(rr_ptr));
+	}
 
       typedef CR_11_TiG12_11<TiG12_11_11,CGF,K> rr_type;
       SafePtr<rr_type> rr_ptr = rr_type::Instance(integral);
       if (rr_ptr->num_children())
         rrstack.push_back(rr_cast(rr_ptr));
-      else
-        throw std::logic_error("Strategy::optimal_rr_TiG121111_int() -- did not find a way to compute");
       
       return tactic->optimal_rr(rrstack);
     }

@@ -351,6 +351,7 @@ namespace libint2 {
       // Here we check basic HRR applicability requirements on the integral class
       //
 
+#if CHECK_SAFETY
       // part is within the range
       typedef typename IntType::OperatorType Oper;
       if (part < 0 || part >= Oper::Properties::np) {
@@ -366,6 +367,7 @@ namespace libint2 {
       if (loc_a == loc_b && pos_a == pos_b) {
         assert(false);
       }
+#endif
     }
           
   template <class IntType, class F, int part,
