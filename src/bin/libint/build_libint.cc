@@ -530,7 +530,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
 #endif // INCLUDE_G12
 
-#if INCLUDE_GENG12
+#ifdef INCLUDE_GENG12
 void
 build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface)
