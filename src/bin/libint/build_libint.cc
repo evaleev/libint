@@ -96,8 +96,8 @@ void try_main (int argc, char* argv[])
   cparams->max_am_opt("r12kg12",G12_OPT_AM);
 #endif
 #ifdef INCLUDE_GENG12
-  cparams->max_am("geng12",G12_MAX_AM);
-  cparams->max_am_opt("geng12",G12_OPT_AM);
+  cparams->max_am("geng12",GENG12_MAX_AM);
+  cparams->max_am_opt("geng12",GENG12_OPT_AM);
 #endif
 #if LIBINT_ENABLE_UNROLLING
   cparams->unroll_threshold(1000000000);
