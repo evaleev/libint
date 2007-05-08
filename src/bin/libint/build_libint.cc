@@ -618,6 +618,15 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
             dg_xxxx->append_target(abcd_ptr);
           }
           
+          // k=2
+          if (!ssss) {
+            typedef R12kG12_11_11<CGShell,2> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+          
           dg_xxxx->apply(strat,tactic);
           dg_xxxx->optimize_rr_out();
           dg_xxxx->traverse();
@@ -833,6 +842,10 @@ config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Ifac
 #ifdef INCLUDE_G12
   iface->to_params(iface->macro_define("SUPPORT_G12",1));
   iface->to_params(iface->macro_define("DERIV_G12_ORDER",INCLUDE_G12));
+#endif
+#ifdef INCLUDE_GENG12
+  iface->to_params(iface->macro_define("SUPPORT_GENG12",1));
+  iface->to_params(iface->macro_define("DERIV_GENG12_ORDER",INCLUDE_GENG12));
 #endif
 }
 
