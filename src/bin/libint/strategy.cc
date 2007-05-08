@@ -114,6 +114,18 @@ Strategy::optimal_rr(const SafePtr<DirectedGraph>& graph,
       return optimal_rr_R1dotR1G121111_int(graph,iptr,tactic);
   }
   {
+    typedef R2dotR2G12_11_11_sq IType;
+    SafePtr<IType> iptr = dynamic_pointer_cast<IType,DGVertex>(integral);
+    if (iptr != 0)
+      return optimal_rr_R2dotR2G121111_sq(graph,iptr,tactic);
+  }
+  {
+    typedef R2dotR2G12_11_11_int IType;
+    SafePtr<IType> iptr = dynamic_pointer_cast<IType,DGVertex>(integral);
+    if (iptr != 0)
+      return optimal_rr_R2dotR2G121111_int(graph,iptr,tactic);
+  }
+  {
     typedef R1dotR2G12_11_11_sq IType;
     SafePtr<IType> iptr = dynamic_pointer_cast<IType,DGVertex>(integral);
     if (iptr != 0)
@@ -348,7 +360,7 @@ Strategy::optimal_rr_R1dotR1G121111_sq(const SafePtr<DirectedGraph>& graph,
   const unsigned int size = integral->size();
   if (size == 1 || (graph->registry()->can_unroll() && size <= max_size_to_unroll_)) {
 #if DEBUG
-    std::cout << "Strategy::optimal_rr_twoprep1111_sq: " << integral->label() << " to be unrolled" << std::endl;
+    std::cout << "Strategy::optimal_rr_r1dotr1g121111_sq: " << integral->label() << " to be unrolled" << std::endl;
 #endif
     return unroll_intset<IType>(integral);
   }
@@ -417,6 +429,85 @@ Strategy::optimal_rr_R1dotR1G121111_int(const SafePtr<DirectedGraph>& graph,
 }
 
 SafePtr<RecurrenceRelation>
+Strategy::optimal_rr_R2dotR2G121111_sq(const SafePtr<DirectedGraph>& graph,
+				       const SafePtr<R2dotR2G12_11_11_sq>& integral,
+				       const SafePtr<Tactic>& tactic)
+{
+#define __IType_tmpl5 R2dotR2G12_11_11
+  typedef R2dotR2G12_11_11_sq IType;
+
+  const unsigned int size = integral->size();
+  if (size == 1 || (graph->registry()->can_unroll() && size <= max_size_to_unroll_)) {
+#if DEBUG
+    std::cout << "Strategy::optimal_rr_r2dotr2g121111_sq: " << integral->label() << " to be unrolled" << std::endl;
+#endif
+    return unroll_intset<IType>(integral);
+  }
+
+  {
+    // AB HRR
+    typedef HRR<IType,IType::BasisFunctionType,0,InBra,0,InKet,0> rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+
+  {
+    // CD HRR
+    typedef HRR<IType,IType::BasisFunctionType,1,InBra,0,InKet,0> rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+
+  {
+    // Build relation
+    typedef CR_11_R2dotR2G12_11<__IType_tmpl5,IType::BasisFunctionType> rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral);
+    if (rr_ptr->num_children())
+      return rr_cast(rr_ptr);
+  }
+
+  return SafePtr<RecurrenceRelation>();
+}
+
+SafePtr<RecurrenceRelation>
+Strategy::optimal_rr_R2dotR2G121111_int(const SafePtr<DirectedGraph>& graph,
+					const SafePtr<R2dotR2G12_11_11_int>& integral,
+					const SafePtr<Tactic>& tactic)
+{
+#define __IType_tmpl6 R2dotR2G12_11_11
+  typedef R2dotR2G12_11_11_int IType;
+  vector<RR> rrstack;  // stack of all recurrence relations
+
+  // shift from B to A
+  for(int xyz = 2; xyz >= 0; xyz--) {
+    typedef HRR<IType,IType::BasisFunctionType,0,InBra,0,InKet,0> rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
+    if (rr_ptr->num_children())
+      rrstack.push_back(rr_cast(rr_ptr));
+  }
+
+  // shift from D to C
+  for(int xyz = 2; xyz >= 0; xyz--) {
+    typedef HRR<IType,IType::BasisFunctionType,1,InBra,0,InKet,0> rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
+    if (rr_ptr->num_children())
+      rrstack.push_back(rr_cast(rr_ptr));
+  }
+
+  {
+    // Build relation
+    typedef CR_11_R2dotR2G12_11<__IType_tmpl6,IType::BasisFunctionType> rr_type;
+    SafePtr<rr_type> rr_ptr = rr_type::Instance(integral);
+    if (rr_ptr->num_children())
+      rrstack.push_back(rr_cast(rr_ptr));
+  }
+
+  return tactic->optimal_rr(rrstack);
+}
+
+SafePtr<RecurrenceRelation>
 Strategy::optimal_rr_R1dotR2G121111_sq(const SafePtr<DirectedGraph>& graph,
 				       const SafePtr<R1dotR2G12_11_11_sq>& integral,
 				       const SafePtr<Tactic>& tactic)
@@ -427,7 +518,7 @@ Strategy::optimal_rr_R1dotR2G121111_sq(const SafePtr<DirectedGraph>& graph,
   const unsigned int size = integral->size();
   if (size == 1 || (graph->registry()->can_unroll() && size <= max_size_to_unroll_)) {
 #if DEBUG
-    std::cout << "Strategy::optimal_rr_twoprep1111_sq: " << integral->label() << " to be unrolled" << std::endl;
+    std::cout << "Strategy::optimal_rr_r1dotr2g121111_sq: " << integral->label() << " to be unrolled" << std::endl;
 #endif
     return unroll_intset<IType>(integral);
   }

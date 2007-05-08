@@ -5,6 +5,7 @@
 #include <vrr_11_r12kg12_11.h>
 #include <comp_11_tig12_11.h>
 #include <comp_11_r1dotr1g12_11.h>
+#include <comp_11_r2dotr2g12_11.h>
 #include <comp_11_r1dotr2g12_11.h>
 #include <hrr.h>
 #include <global_macros.h>
@@ -83,6 +84,12 @@ namespace libint2 {
 				    const SafePtr<Tactic>& tactic);
     RR optimal_rr_R1dotR1G121111_int(const SafePtr<DirectedGraph>& graph,
 				     const SafePtr<R1dotR1G12_11_11_int>& integral,
+				     const SafePtr<Tactic>& tactic);
+    RR optimal_rr_R2dotR2G121111_sq(const SafePtr<DirectedGraph>& graph,
+				    const SafePtr<R2dotR2G12_11_11_sq>& integral,
+				    const SafePtr<Tactic>& tactic);
+    RR optimal_rr_R2dotR2G121111_int(const SafePtr<DirectedGraph>& graph,
+				     const SafePtr<R2dotR2G12_11_11_int>& integral,
 				     const SafePtr<Tactic>& tactic);
     RR optimal_rr_R1dotR2G121111_sq(const SafePtr<DirectedGraph>& graph,
 				    const SafePtr<R1dotR2G12_11_11_sq>& integral,

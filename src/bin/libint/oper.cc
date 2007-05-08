@@ -107,6 +107,38 @@ R1dotR1_G12::~R1dotR1_G12()
 
 ////////////
 
+R2dotR2_G12::R2dotR2_G12() :
+  parent_type("r_1.r_1 x G12","R2dotR2_G12")
+{
+}
+
+R2dotR2_G12::R2dotR2_G12(const SafePtr<R2dotR2_G12>& source) :
+  parent_type("r_1.r_1 x G12","R2dotR2_G12")
+{
+}
+
+R2dotR2_G12::R2dotR2_G12(const SafePtr<OperSet>& oset) :
+  parent_type("r_1.r_1 x G12","R2dotR2_G12")
+{
+  const SafePtr<R2dotR2_G12> oset_cast = dynamic_pointer_cast<R2dotR2_G12,OperSet>(oset);
+  if (oset_cast == 0)
+    throw std::runtime_error("R2dotR2_G12::R2dotR2_G12(const SafePtr<OperSet>& oset) -- oset is a pointer to an incompatible type");
+}
+
+R2dotR2_G12::R2dotR2_G12(const SafePtr<ConstructablePolymorphically>& oset) :
+  parent_type("r_1.r_1 x G12","R2dotR2_G12")
+{
+  const SafePtr<R2dotR2_G12> oset_cast = dynamic_pointer_cast<R2dotR2_G12,ConstructablePolymorphically>(oset);
+  if (oset_cast == 0)
+    throw std::runtime_error("R2dotR2_G12::R2dotR2_G12(const SafePtr<ConstructablePolymorphically>& oset) -- oset is a pointer to an incompatible type");
+}
+
+R2dotR2_G12::~R2dotR2_G12()
+{
+}
+
+////////////
+
 R1dotR2_G12::R1dotR2_G12() :
   parent_type("r_1.r_2 x G12","R1dotR2_G12")
 {

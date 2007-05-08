@@ -11,6 +11,7 @@ namespace libint2 {
   template <class BFS, int K> class R12kG12_11_11;
   template <class BFS, int K> class TiG12_11_11;
   template <class BFS> class R1dotR1G12_11_11;
+  template <class BFS> class R2dotR2G12_11_11;
   template <class BFS> class R1dotR2G12_11_11;
 
 };
