@@ -17,6 +17,19 @@ using namespace libint2;
 
 #define ONLY_CLONE_IF_DIFF 1
 
+//// utils first
+
+namespace {
+  void push(DirectedGraph::VPtrAssociativeContainer& vertices, const DirectedGraph::ver_ptr& v) {
+    DirectedGraph::key_type vkey = libint2::key(*v);
+    vertices.insert(std::make_pair(vkey,v));
+  }
+  void push(DirectedGraph::VPtrSequenceContainer& vertices, const DirectedGraph::ver_ptr& v) {
+    vertices.push_back(v);
+  }
+}
+
+
 DirectedGraph::DirectedGraph() :
   stack_(), targets_(), func_names_(),
   first_to_compute_(), registry_(SafePtr<GraphRegistry>(new GraphRegistry)),
@@ -904,9 +917,9 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
     if (need_copies_of_targets) {
 
       // compute the aggregate size of all targets and allocate all space at once
-      ver_citer end = targets_.end();
+      target_citer end = targets_.end();
       size size_of_targets(0);
-      for(ver_iter t=targets_.begin(); t!=end; ++t) {
+      for(target_iter t=targets_.begin(); t!=end; ++t) {
 	const ver_ptr& tptr = vertex_ptr(*t);
 	size_of_targets += (tptr)->size();
       }
@@ -919,7 +932,7 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
 
       // allocate every target accumulator manually
       address curr_ptr(0);
-      for(ver_iter t=targets_.begin(); t!=end; ++t) {
+      for(target_iter t=targets_.begin(); t!=end; ++t) {
 	const ver_ptr& tptr = vertex_ptr(*t);
 	target_accums_.push_back(curr_ptr);
 	curr_ptr += (tptr)->size();
@@ -932,13 +945,10 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
   // If a symbol is set means the object is not on stack (e.g. if location of target
   // is passed as an argument to set-level function)
   // This code ensures that target quartets are persistent, i.e. never overwritten, and can be accumulated into
-  typedef vertices::const_iterator citer;
-  typedef vertices::iterator iter;
-  for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
+  for(target_iter v=targets_.begin(); v!=targets_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
-    if ((vptr)->is_a_target() && !(vptr)->symbol_set()) {
+    if (!(vptr)->symbol_set())
       (vptr)->set_address(memman->alloc((vptr)->size()));
-    }
   }
   
   //
@@ -1233,11 +1243,12 @@ namespace {
 }
 
 namespace {
+  template <class Container>
   SafePtr<MemBlockSet>
-  to_memoryblks(DirectedGraph::vertices& vertices) {
+  to_memoryblks(Container& vertices) {
     SafePtr<MemBlockSet> result(new MemBlockSet);
-    typedef DirectedGraph::ver_citer citer;
-    typedef DirectedGraph::ver_iter iter;
+    typedef typename Container::const_iterator citer;
+    typedef typename Container::iterator iter;
     citer end(vertices.end());
     for(iter v=vertices.begin(); v!=end; ++v) {
       const DirectedGraph::ver_ptr& vptr = vertex_ptr(*v);
@@ -1554,8 +1565,8 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 
     // Loop over targets
     unsigned int curr_target = 0;
-    const ver_iter end = targets_.end();
-    for(ver_iter t=targets_.begin(); t!=targets_.end(); ++t, ++curr_target) {
+    const target_iter end = targets_.end();
+    for(target_iter t=targets_.begin(); t!=targets_.end(); ++t, ++curr_target) {
       const ver_ptr& tptr = vertex_ptr(*t);
 
       size s = (tptr)->size();
@@ -1627,8 +1638,8 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   //
   if (registry()->return_targets()) {
     unsigned int curr_target = 0;
-    const ver_iter end = targets_.end();
-    for(ver_iter t=targets_.begin(); t!=targets_.end(); ++t, ++curr_target) {
+    const target_iter end = targets_.end();
+    for(target_iter t=targets_.begin(); t!=targets_.end(); ++t, ++curr_target) {
       const ver_ptr& tptr = vertex_ptr(*t);
       const std::string& symbol = (accumulate_targets_indirectly
 				   //                                                                    is this correct?         ???
@@ -1774,18 +1785,18 @@ namespace libint2 {
 
   namespace {
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
-    typedef DirectedGraph::vertices::value_type value_type;
+    typedef DirectedGraph::targets::value_type value_type;
     struct __NotUnrolledIntegralSet : public std::unary_function<const value_type&,bool> {
       bool operator()(const value_type& v) {
-	return NotUnrolledIntegralSet()(v.second);
+	return NotUnrolledIntegralSet()(v);
       }
     };
 #endif
   };
 
   bool
-  nonunrolled_targets(const DirectedGraph::vertices& targets) {
-    typedef DirectedGraph::ver_citer citer;
+  nonunrolled_targets(const DirectedGraph::targets& targets) {
+    typedef DirectedGraph::target_citer citer;
     citer end = targets.end();
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
     if (end != find_if(targets.begin(),end,__NotUnrolledIntegralSet()))

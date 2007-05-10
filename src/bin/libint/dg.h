@@ -43,12 +43,18 @@ namespace libint2 {
     typedef DGArc arc;
     typedef SafePtr<DGVertex> ver_ptr;
     typedef SafePtr<DGArc> arc_ptr;
-#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
     typedef DGVertexKey key_type;
-    typedef std::multimap<key_type,ver_ptr> vertices;
+    typedef std::multimap<key_type,ver_ptr> VPtrAssociativeContainer;
+    typedef std::list<ver_ptr> VPtrSequenceContainer;
+
+    typedef VPtrSequenceContainer targets;
+#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+    typedef VPtrAssociativeContainer vertices;
 #else
-    typedef std::list<ver_ptr> vertices;
+    typedef VPtrSequenceContainer vertices;
 #endif
+    typedef targets::iterator target_iter;
+    typedef targets::const_iterator target_citer;
     typedef vertices::iterator ver_iter;
     typedef vertices::const_iterator ver_citer;
     //not possible: typedef vertex::Address address;
@@ -68,7 +74,7 @@ namespace libint2 {
     /// Returns all vertices
     const vertices& all_vertices() const { return stack_; }
     /// Returns all targets
-    const vertices& all_targets() const { return targets_; }
+    const targets& all_targets() const { return targets_; }
 #endif
     /// Find vertex v or it's equivalent on the graph. Return null pointer if not found.
     /// Computational cost for a graph based on a nonassociative container may be high
@@ -195,8 +201,8 @@ namespace libint2 {
 
     /// contains vertices
     vertices stack_;
-    /// refers to targets
-    vertices targets_;
+    /// refers to targets, cannot be an associative container -- order of iteration over targets is important
+    targets targets_;
     /// addresses of blocks which accumulate targets
     addresses target_accums_;
 
@@ -298,41 +304,30 @@ namespace libint2 {
   //
 
   /// converts what is stored in the container to a smart ptr to the vertex
-  inline const DirectedGraph::ver_ptr& vertex_ptr(const DirectedGraph::vertices::value_type& v) {
-#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+  inline const DirectedGraph::ver_ptr& vertex_ptr(const DirectedGraph::VPtrAssociativeContainer::value_type& v) {
     return v.second;
-#else
+  }
+  inline const DirectedGraph::ver_ptr& vertex_ptr(const DirectedGraph::VPtrSequenceContainer::value_type& v) {
     return v;
-#endif
   }
   /// converts what is stored in the container to a smart ptr to the vertex
-  inline DirectedGraph::ver_ptr& vertex_ptr(DirectedGraph::vertices::value_type& v) {
-#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
+  inline DirectedGraph::ver_ptr& vertex_ptr(DirectedGraph::VPtrAssociativeContainer::value_type& v) {
     return v.second;
-#else
+  }
+  inline DirectedGraph::ver_ptr& vertex_ptr(DirectedGraph::VPtrSequenceContainer::value_type& v) {
     return v;
-#endif
   }
 
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
   inline DirectedGraph::key_type key(const DGVertex& v);
 #endif
-  /// puts a vertex into a container
-  inline void push(DirectedGraph::vertices& vertices, const DirectedGraph::ver_ptr& v) {
-#if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
-    DirectedGraph::key_type vkey = libint2::key(*v);
-    vertices.insert(std::make_pair(vkey,v));
-#else
-    vertices.push_back(v);
-#endif
-  }
 
   //
   // Nonmember predicates
   //
 
   /// return true if there are non-unrolled targets
-  bool nonunrolled_targets(const DirectedGraph::vertices& targets);
+  bool nonunrolled_targets(const DirectedGraph::targets& targets);
 
   /// extracts external symbols and RRs from the graph
   void extract_symbols(const SafePtr<DirectedGraph>& dg);
