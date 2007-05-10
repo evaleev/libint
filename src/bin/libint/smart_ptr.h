@@ -1,9 +1,9 @@
 
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
 #ifndef _libint2_src_bin_libint_smartptr_h_
 #define _libint2_src_bin_libint_smartptr_h_
+
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 using namespace boost;
 

@@ -14,6 +14,8 @@
 #ifndef _libint2_src_bin_libint_strategy_h_
 #define _libint2_src_bin_libint_strategy_h_
 
+#define USE_HRR_FOR_TiG12 1
+
 using namespace std;
 
 
@@ -249,6 +251,7 @@ namespace libint2 {
       if (size == 1 || (size <= max_size_to_unroll_ && graph->registry()->can_unroll()))
         return unroll_intset<inttype>(integral);
 
+#if USE_HRR_FOR_TiG12
       if (K == 1) {
 	// shift from B to A
 	typedef HRR<inttype,typename inttype::BasisFunctionType,0,InBra,0,InKet,0> rr_type;
@@ -264,6 +267,7 @@ namespace libint2 {
 	if (rr_ptr->num_children())
 	  return rr_cast(rr_ptr);
       }
+#endif
 
       {
 	typedef CR_11_TiG12_11<TiG12_11_11,CGShell,K> rr_type;
@@ -288,6 +292,7 @@ namespace libint2 {
       const SafePtr<inttype> integral = dynamic_pointer_cast<inttype,TiG12_11_11_base<CGF> >(bptr);
       vector<RR> rrstack;  // stack of all recurrence relations
 
+#if USE_HRR_FOR_TiG12
       if (K == 1)
 	// shift from B to A
 	for(int xyz = 2; xyz >= 0; xyz--) {
@@ -305,6 +310,7 @@ namespace libint2 {
 	  if (rr_ptr->num_children())
 	    rrstack.push_back(rr_cast(rr_ptr));
 	}
+#endif
 
       typedef CR_11_TiG12_11<TiG12_11_11,CGF,K> rr_type;
       SafePtr<rr_type> rr_ptr = rr_type::Instance(integral);

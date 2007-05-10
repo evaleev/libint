@@ -1,8 +1,8 @@
 
-#include <smart_ptr.h>
-
 #ifndef _libint2_src_bin_libint_drtree_h_
 #define _libint2_src_bin_libint_drtree_h_
+
+#include <smart_ptr.h>
 
 namespace libint2 {
   
