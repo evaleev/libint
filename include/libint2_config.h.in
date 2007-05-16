@@ -49,11 +49,14 @@
 /* Max AM for 2nd-order derivative ERI */
 #undef D2ERI_MAX_AM
 
-/* Max AM for linear G12 method integrals */
+/* Max AM for G12 method integrals */
 #undef G12_MAX_AM
 
-/* Max optimized AM for linear G12 method integrals */
+/* Max optimized AM for G12 method integrals */
 #undef G12_OPT_AM
+
+/* Support [Ti,G12] ? */
+#undef SUPPORT_T1G12
 
 /* Max AM for G12 method integrals */
 #undef GENG12_MAX_AM

@@ -1,4 +1,7 @@
 
+05/14/2007:	Added configure option '--disable-t1g12-support' to turn off support for [T1,G12] integrals.
+		-EFV
+
 05/10/2007:	Fixed serious bug: DirectedGraph needs to use a Sequence container to hold target references.
 		-EFV
 

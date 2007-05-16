@@ -379,6 +379,11 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
   iface->to_params(iface->macro_define("MAX_AM_R12kG12",lmax));
+#if SUPPORT_T1G12
+  iface->to_params(iface->macro_define("SUPPORT_T1G12",1));
+#else
+  iface->to_params(iface->macro_define("SUPPORT_T1G12",0));
+#endif
   
   //
   // Construct graphs for each desired target integral and
@@ -404,6 +409,9 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           bool ssss = false;
           if (la+lb+lc+ld == 0)
             ssss = true;
+#if !SUPPORT_T1G12
+	  if (ssss) continue;
+#endif
 
 	  //if (la != 1 || lb != 0 || lc != 1 || ld != 1)
 	  //  continue;
@@ -435,7 +443,8 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
-          
+
+#if SUPPORT_T1G12          
           // [T_1,G12]
           if (true) {
             typedef TiG12_11_11<CGShell,0> int_type;
@@ -453,6 +462,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
+#endif
 
           // k=2
           if (!ssss) {
