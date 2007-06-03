@@ -1,4 +1,6 @@
 
+06/03/2007:  Upgraded to libtool-1.5.23b . -EFV
+
 12/05/2003:  Added programmer's documentation. -EFV
 
 12/05/2003:  Fixed Makefiles to avoid compilation errors. -EFV
