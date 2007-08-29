@@ -22,23 +22,13 @@ $(BUILD_BINARY): $(BINOBJ)
 %.$(OBJSUF): %.c $(CONFIG)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< $(OUTPUT_OPTION)
 
-install:
-
-install_inc:
-
-install_target:
-
-uninstall:
-
-clean: oclean
+include $(SRCDIR)/$(TOPDIR)/lib/MakeRules
+clean:: oclean
 	-rm -f $(BUILD_BINARY)
 
-oclean:
+oclean::
 	-rm -f $(BINOBJ)
 
-distclean: clean
+distclean:: clean
 
-targetclean:
-
-realclean: clean
-
+realclean:: clean

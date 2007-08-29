@@ -1,4 +1,6 @@
 
+HAVE_MAKERULES = yes
+
 .PHONY: default install install_inc install_target uninstall clean oclean distclean targetclean realclean rm_libsrcdir
 
 default:: $(TOPDIR)/lib/$(TARGET)

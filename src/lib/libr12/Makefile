@@ -13,4 +13,5 @@ INC = libr12.h
 -include $(TOPDIR)/src/lib/MakeVars
 -include $(TOPDIR)/src/lib/MakeRules
 -include $(TOPDIR)/src/lib/MakeSuffixRules
+include $(SRCDIR)/$(TOPDIR)/lib/MakeRules
 

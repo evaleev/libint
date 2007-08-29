@@ -6,6 +6,7 @@ TOPOBJDIR = $(shell ls -d `pwd`/$(TOPDIR))
 
 TARGET = progman.$(DOCSUF)
 
-include $(TOPDIR)/doc/MakeVars
-include $(TOPDIR)/doc/MakeRules
-include $(TOPDIR)/doc/MakeSuffixRules
+-include $(TOPDIR)/doc/MakeVars
+-include $(TOPDIR)/doc/MakeRules
+-include $(TOPDIR)/doc/MakeSuffixRules
+include $(SRCDIR)/$(TOPDIR)/lib/MakeRules
