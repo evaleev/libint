@@ -38,6 +38,12 @@ install_target::
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install_target) || exit 1; \
 	  done
 
+uninstall::
+	for dir in $(SUBDIRS); \
+	  do \
+	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) uninstall) || exit 1; \
+	  done
+
 clean::
 	for dir in $(SUBDIRS); \
 	  do \
@@ -55,6 +61,7 @@ distclean::
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
+	-rm -rf autom4te.cache config.status config.log depcheck* libtool Makedirlist
 
 targetclean::
 	for dir in $(SUBDIRS); \

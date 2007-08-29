@@ -41,6 +41,12 @@ install_target::
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install_target) || exit 1; \
 	  done
 
+uninstall::
+	for dir in $(SUBDIRS); \
+	  do \
+	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) uninstall) || exit 1; \
+	  done
+
 clean::
 	for dir in $(SUBDIRS); \
 	  do \

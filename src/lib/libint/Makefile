@@ -8,6 +8,7 @@ TOPOBJDIR = $(shell ls -d `pwd`/$(TOPDIR))
 NAME = libint
 TARGET = $(NAME).$(LIBSUF)
 COMPILER = build_$(NAME)
+INC = libint.h vrr_header.h hrr_header.h
 
 include $(TOPDIR)/src/lib/MakeVars
 include $(TOPDIR)/src/lib/MakeRules

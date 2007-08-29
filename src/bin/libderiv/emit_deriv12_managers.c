@@ -319,7 +319,7 @@ void emit_deriv12_managers()
 	  }
 	}
       }
-      fprintf(hrr_code," memset(int_stack,0,%d);\n\n",get_total_memory()*sizeof(double));
+      fprintf(hrr_code," memset(int_stack,0,%ld);\n\n",get_total_memory()*sizeof(double));
 
       
       /*----------------------------
@@ -1421,7 +1421,7 @@ static void get_deriv_indices(class *node,int *di, int *dj)
 
   case 2:
     for(i=0;i<12;i++)
-      if (node->deriv_ind[i] != 0)
+      if (node->deriv_ind[i] != 0) {
 	if (node->deriv_ind[i] == 2) {
 	  j = i;
 	  break;
@@ -1432,6 +1432,7 @@ static void get_deriv_indices(class *node,int *di, int *dj)
 	      break;
 	  break;
 	}
+      }
     break;
   }
   

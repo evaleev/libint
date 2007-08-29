@@ -268,7 +268,7 @@ void emit_deriv1_managers()
 	  }
 	}
       }
-      fprintf(hrr_code," memset(int_stack,0,%d);\n\n",get_total_memory()*sizeof(double));
+      fprintf(hrr_code," memset(int_stack,0,%ld);\n\n",get_total_memory()*sizeof(double));
 
       
       /*----------------------------

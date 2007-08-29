@@ -28,15 +28,17 @@ install_inc:
 
 install_target:
 
+uninstall:
+
 clean: oclean
+	-rm -f $(BUILD_BINARY)
 
 oclean:
 	-rm -f $(BINOBJ)
 
-distclean: oclean
+distclean: clean
 
 targetclean:
-	-rm -f $(BUILD_BINARY)
 
-realclean: oclean
+realclean: clean
 

@@ -79,13 +79,13 @@ void emit_deriv_build()
 	      az = q;
 	  
 	      if (xyz == 0) { /* build along x */
-		i_i0 = io(p)-p+q-1;
+		i_i0 = iop1(p)-p+q-1;
 		if (i_i0)
 		  fprintf(code,"  i0 = I0 + %d*bcd_num;\n",i_i0);
 		else
 		  fprintf(code,"  i0 = I0;\n");
 		if (ax) {
-		  i_i1 = io(p)-p+q-1;
+		  i_i1 = iop1(p)-p+q-1;
 		  if (i_i1)
 		    fprintf(code,"  i1 = I1 + %d*bcd_num;\n",i_i1);
 		  else
@@ -99,13 +99,13 @@ void emit_deriv_build()
 		  fprintf(code,";\n");
 	      }
 	      else if (xyz == 1) { /* build along y */
-		i_i0 = io(p+1)-p+q-2;
+		i_i0 = iop1(p+1)-p+q-2;
 		if (i_i0)
 		  fprintf(code,"  i0 = I0 + %d*bcd_num;\n",i_i0);
 		else
 		  fprintf(code,"  i0 = I0;\n");
 		if (ay) {
-		  i_i1 = io(p-1)-p+q;
+		  i_i1 = iop1(p-1)-p+q;
 		  if (i_i1)
 		    fprintf(code,"  i1 = I1 + %d*bcd_num;\n",i_i1);
 		  else
@@ -119,13 +119,13 @@ void emit_deriv_build()
 		  fprintf(code,";\n");
 	      }
 	      else { /* build along z */
-		i_i0 = io(p+1)-p+q-1;
+		i_i0 = iop1(p+1)-p+q-1;
 		if (i_i0)
 		  fprintf(code,"  i0 = I0 + %d*bcd_num;\n",i_i0);
 		else
 		  fprintf(code,"  i0 = I0;\n");
 		if (az) {
-		  i_i1 = io(p-1)-p+q-1;
+		  i_i1 = iop1(p-1)-p+q-1;
 		  if (i_i1)
 		    fprintf(code,"  i1 = I1 + %d*bcd_num;\n",i_i1);
 		  else
@@ -185,13 +185,13 @@ void emit_deriv_build()
 	      bz = q;
 	  
 	      if (xyz == 0) { /* build along x */
-		i_i0 = io(p)-p+q-1;
+		i_i0 = iop1(p)-p+q-1;
 		if (i_i0)
 		  fprintf(code,"  i0 = I0 + %d*cd_num;\n",i_i0);
 		else
 		  fprintf(code,"  i0 = I0;\n");
 		if (bx) {
-		  i_i1 = io(p)-p+q-1;
+		  i_i1 = iop1(p)-p+q-1;
 		  if (i_i1)
 		      fprintf(code,"  i1 = I1 + %d*cd_num;\n",i_i1);
 		  else
@@ -205,13 +205,13 @@ void emit_deriv_build()
 		  fprintf(code,";\n");
 	      }
 	      else if (xyz == 1) { /* build along y */
-		i_i0 = io(p+1)-p+q-2;
+		i_i0 = iop1(p+1)-p+q-2;
 		if (i_i0)
 		  fprintf(code,"  i0 = I0 + %d*cd_num;\n",i_i0);
 		else
 		  fprintf(code,"  i0 = I0;\n");
 		if (by) {
-		  i_i1 = io(p-1)-p+q;
+		  i_i1 = iop1(p-1)-p+q;
 		  if (i_i1)
 		    fprintf(code,"  i1 = I1 + %d*cd_num;\n",i_i1);
 		  else
@@ -225,13 +225,13 @@ void emit_deriv_build()
 		  fprintf(code,";\n");
 	      }
 	      else { /* build along z */
-		i_i0 = io(p+1)-p+q-1;
+		i_i0 = iop1(p+1)-p+q-1;
 		if (i_i0)
 		  fprintf(code,"  i0 = I0 + %d*cd_num;\n",i_i0);
 		else
 		  fprintf(code,"  i0 = I0;\n");
 		if (bz) {
-		  i_i1 = io(p-1)-p+q-1;
+		  i_i1 = iop1(p-1)-p+q-1;
 		  if (i_i1)
 		    fprintf(code,"  i1 = I1 + %d*cd_num;\n",i_i1);
 		  else
@@ -292,13 +292,13 @@ void emit_deriv_build()
 	      cz = q;
 	  
 	      if (xyz == 0) { /* build along x */
-		i_i0 = io(p)-p+q-1;
+		i_i0 = iop1(p)-p+q-1;
 		if (i_i0)
 		  fprintf(code,"  i0 = I0 + %d*d_num;\n",i_i0);
 		else
 		  fprintf(code,"  i0 = I0;\n");
 		if (cx) {
-		  i_i1 = io(p)-p+q-1;
+		  i_i1 = iop1(p)-p+q-1;
 		  if (i_i1)
 		      fprintf(code,"  i1 = I1 + %d*d_num;\n",i_i1);
 		  else
@@ -312,13 +312,13 @@ void emit_deriv_build()
 		  fprintf(code,";\n");
 	      }
 	      else if (xyz == 1) { /* build along y */
-		i_i0 = io(p+1)-p+q-2;
+		i_i0 = iop1(p+1)-p+q-2;
 		if (i_i0)
 		  fprintf(code,"  i0 = I0 + %d*d_num;\n",i_i0);
 		else
 		  fprintf(code,"  i0 = I0;\n");
 		if (cy) {
-		  i_i1 = io(p-1)-p+q;
+		  i_i1 = iop1(p-1)-p+q;
 		  if (i_i1)
 		    fprintf(code,"  i1 = I1 + %d*d_num;\n",i_i1);
 		  else
@@ -332,13 +332,13 @@ void emit_deriv_build()
 		  fprintf(code,";\n");
 	      }
 	      else { /* build along z */
-		i_i0 = io(p+1)-p+q-1;
+		i_i0 = iop1(p+1)-p+q-1;
 		if (i_i0)
 		  fprintf(code,"  i0 = I0 + %d*d_num;\n",i_i0);
 		else
 		  fprintf(code,"  i0 = I0;\n");
 		if (cz) {
-		  i_i1 = io(p-1)-p+q-1;
+		  i_i1 = iop1(p-1)-p+q-1;
 		  if (i_i1)
 		    fprintf(code,"  i1 = I1 + %d*d_num;\n",i_i1);
 		  else
@@ -398,9 +398,9 @@ void emit_deriv_build()
 	      dz = q;
 	  
 	      if (xyz == 0) { /* build along x */
-		i_i0 = io(p)-p+q-1;
+		i_i0 = iop1(p)-p+q-1;
 		if (dx) {
-		  i_i1 = io(p)-p+q-1;
+		  i_i1 = iop1(p)-p+q-1;
 		}
 		fprintf(code,"    *(vp++) = twotzeta*I0[%d] ", i_i0);
 		if (dx)
@@ -409,9 +409,9 @@ void emit_deriv_build()
 		  fprintf(code,";\n");
 	      }
 	      else if (xyz == 1) { /* build along y */
-		i_i0 = io(p+1)-p+q-2;
+		i_i0 = iop1(p+1)-p+q-2;
 		if (dy) {
-		  i_i1 = io(p-1)-p+q;
+		  i_i1 = iop1(p-1)-p+q;
 		}
 		fprintf(code,"    *(vp++) = twotzeta*I0[%d] ", i_i0);
 		if (dy)
@@ -420,9 +420,9 @@ void emit_deriv_build()
 		  fprintf(code,";\n");
 	      }
 	      else { /* build along z */
-		i_i0 = io(p+1)-p+q-1;
+		i_i0 = iop1(p+1)-p+q-1;
 		if (dz) {
-		  i_i1 = io(p-1)-p+q-1;
+		  i_i1 = iop1(p-1)-p+q-1;
 		}
 		fprintf(code,"    *(vp++) = twotzeta*I0[%d] ", i_i0);
 		if (dz)

@@ -10,6 +10,7 @@ static const char *number[] = {"zero","one","two","three","four","five","six","s
                                "twentyeight", "twentynine", "thirty"};
 
 static inline int io(int i) { return i*(i+1)/2; }
+static inline int iop1(int i) { return (i+1)*(i+2)/2; }
 
 /*----------------------------------------------------------------------------------
   hash(a,b) returns the index of the (a[0] a[1]) type product within a doublet.

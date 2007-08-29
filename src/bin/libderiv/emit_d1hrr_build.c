@@ -81,7 +81,7 @@ void emit_d1hrr_build()
 	for(q = 0; q <= p; q++){
 	  cy = p - q;
 	  cz = q;
-	  k_i1 = io(p)-p+q-1;
+	  k_i1 = iop1(p)-p+q-1;
 	  
 	  for(r = 0; r <= am_in[1]; r++){
 	    dx = am_in[1] - r;
@@ -91,19 +91,19 @@ void emit_d1hrr_build()
 
 	      if (dx) { /* build along x */
 		k_i0 = k_i1;
-		l = io(r)-r+s-1;
+		l = iop1(r)-r+s-1;
 		fprintf(code, "    *(vp++) = I0[%d] + CD0*I1[%d] + c2*I2[%d] - c5*I5[%d];\n",
 			k_i0*nl+l,k_i1*nl+l,k_i1*nl+l,k_i1*nl+l);
 	      }
 	      else if (dy) { /* build along y */
-		k_i0 = io(p+1)-p+q-2;
-		l = io(r-1)-r+s;
+		k_i0 = iop1(p+1)-p+q-2;
+		l = iop1(r-1)-r+s;
 		fprintf(code, "    *(vp++) = I0[%d] + CD1*I1[%d] + c3*I3[%d] - c6*I6[%d];\n",
 			k_i0*nl+l,k_i1*nl+l,k_i1*nl+l,k_i1*nl+l);
 	      }
 	      else { /* build along z */
-		k_i0 = io(p+1)-p+q-1;
-		l = io(r-1)-r+s-1;
+		k_i0 = iop1(p+1)-p+q-1;
+		l = iop1(r-1)-r+s-1;
 		fprintf(code, "    *(vp++) = I0[%d] + CD2*I1[%d] + c4*I4[%d] - c7*I7[%d];\n",
 			k_i0*nl+l,k_i1*nl+l,k_i1*nl+l,k_i1*nl+l);
 	      }
@@ -158,7 +158,7 @@ void emit_d1hrr_build()
 	for(q = 0; q <= p; q++){
 	  ay = p - q;
 	  az = q;
-	  i_i1 = io(p)-p+q-1;
+	  i_i1 = iop1(p)-p+q-1;
 	  
 	  for(r = 0; r <= am_in[1]; r++){
 	    bx = am_in[1] - r;
@@ -168,7 +168,7 @@ void emit_d1hrr_build()
 
 	      if (bx) { /* build along x */
 		i_i0 = i_i1;
-		j = io(r)-r+s-1;
+		j = iop1(r)-r+s-1;
 		if (i_i0*nj+j)
 		  fprintf(code,"  i0 = I0 + %d*cd_num;\n",i_i0*nj+j);
 		else
@@ -189,8 +189,8 @@ void emit_d1hrr_build()
 		fprintf(code,"    *(vp++) = *(i0++) + AB0*(*(i1++)) + c2*(*(i2++)) - c5*(*(i5++));\n");
 	      }
 	      else if (by) { /* build along y */
-		i_i0 = io(p+1)-p+q-2;
-		j = io(r-1)-r+s;
+		i_i0 = iop1(p+1)-p+q-2;
+		j = iop1(r-1)-r+s;
 		if (i_i0*nj+j)
 		  fprintf(code,"  i0 = I0 + %d*cd_num;\n",i_i0*nj+j);
 		else
@@ -211,8 +211,8 @@ void emit_d1hrr_build()
 		fprintf(code,"    *(vp++) = *(i0++) + AB1*(*(i1++)) + c3*(*(i3++)) - c6*(*(i6++));\n");
 	      }
 	      else { /* build along z */
-		i_i0 = io(p+1)-p+q-1;
-		j = io(r-1)-r+s-1;
+		i_i0 = iop1(p+1)-p+q-1;
+		j = iop1(r-1)-r+s-1;
 		if (i_i0*nj+j)
 		  fprintf(code,"  i0 = I0 + %d*cd_num;\n",i_i0*nj+j);
 		else

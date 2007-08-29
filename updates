@@ -1,4 +1,13 @@
 
+08/29/2007:  1) Fixed a severe bug in libderiv
+             2) Fixed build issues pointed out by Daniel Leidert:
+                - DESTDIR is now prepended to location of every install
+                - uninstall make target added
+                - prototypes for strlen, strcat, strcpy added
+                - fixed targetclean
+                - fixed distclean
+             -EFV
+
 06/03/2007:  Upgraded to libtool-1.5.23b . -EFV
 
 12/05/2003:  Added programmer's documentation. -EFV

@@ -1,4 +1,6 @@
 
+.PHONY: default install install_inc install_target uninstall clean oclean distclean targetclean realclean rm_libsrcdir
+
 default:: $(TOPDIR)/lib/$(TARGET)
 
 $(TOPDIR)/lib/$(TARGET): source
@@ -7,26 +9,48 @@ $(TOPDIR)/lib/$(TARGET): source
 install:: install_inc install_target
 
 install_inc:: $(TOPDIR)/lib/$(TARGET)
-	$(INSTALL) $(INSTALLDIROPT) $(includedir)/$(NAME)
-	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)/*.h $(includedir)/$(NAME)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)
+	for inc in $(INC); \
+	do \
+	  $(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)/$${inc} $(DESTDIR)$(includedir)/$(NAME); \
+	done
 
 install_target:: $(TOPDIR)/lib/$(TARGET)
-	$(INSTALL) $(INSTALLDIROPT) $(libdir)
-	$(LTINST) $(INSTALL) $(INSTALLLIBOPT) $< $(libdir)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)
+	$(LTINST) $(INSTALL) $(INSTALLLIBOPT) $< $(DESTDIR)$(libdir)
 
-clean: make_libsrcdir $(LIBSRCDIR)/Makefile
-	cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) clean
+uninstall::
+	-rm -f $(DESTDIR)$(libdir)/$(TARGET)
+	for inc in $(INC); \
+	do \
+	  rm -f $(DESTDIR)$(includedir)/$(NAME)/$${inc}; \
+	done
+	-rm -rf $(DESTDIR)$(includedir)/$(NAME)
 
-oclean: make_libsrcdir $(LIBSRCDIR)/Makefile
-	cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) oclean
+clean:
+	if test -f source; then \
+cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) clean; \
+fi
 
-distclean: make_libsrcdir $(LIBSRCDIR)/Makefile
-	cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) distclean
+oclean:
+	if test -f source; then \
+cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) oclean; \
+fi
 
-targetclean: make_libsrcdir $(LIBSRCDIR)/Makefile
-	cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) targetclean
+distclean:
+	if test -f source; then \
+cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) distclean; \
+fi
+	$(MAKE) realclean
 
-realclean: make_libsrcdir
+targetclean:
+	if test -f source; then \
+cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) targetclean; \
+fi
+
+realclean: rm_libsrcdir
+
+rm_libsrcdir:
 	-rm -rf $(LIBSRCDIR)
 	-rm -f $(LIBSRCLINK)
 	-rm -f source
@@ -36,12 +60,9 @@ source: make_libsrcdir $(LIBSRCDIR)/Makefile $(LIBSRCDIR)/$(NAME).h
 	echo "Last time library source was generated:\c" > $@
 	date >> $@
 
-make_libsrcdir: $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER)
+make_libsrcdir:
 	if test -f "$@"; then \
-$(RM) -rf $(LIBSRCDIR); \
-$(RM) -f $(LIBSRCLINK); \
-$(RM) -f source; \
-$(RM) -f make_libsrcdir; \
+$(MAKE) rm_libsrcdir; \
 fi; \
 $(INSTALL) $(INSTALLDIROPT) $(LIBSRCDIR) || exit 1; \
 $(LN_S) $(LIBSRCDIR) $(LIBSRCLINK) || exit 1; \
