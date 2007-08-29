@@ -3,32 +3,15 @@ ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
 
--include $(TOPDIR)/src/bin/MakeVars
-
 BUILD_BINARY = build_libint
-BUILD_SRC = build_libint.c emit_vrr_build.c emit_hrr_build.c mem_man.c \
+BUILD_CSRC = build_libint.c emit_vrr_build.c emit_hrr_build.c mem_man.c \
 emit_order.c emit_vrr_build_macro.c emit_hrr_build_macro.c
 CONFIG = ../libint_config.h
 
-LD = $(CC)
-vpath %.a $(libdir)
-
-BINOBJ = $(BUILD_SRC:%.c=%.o)
-
-$(BUILD_BINARY): $(BINOBJ)
-	$(LD) $^ $(LDFLAGS) $(SYSLIBS) -o $@
-
-%.$(OBJSUF): %.c $(CONFIG)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< $(OUTPUT_OPTION)
-
-
+-include $(TOPDIR)/src/bin/MakeVars
+-include $(TOPDIR)/src/bin/MakeRules
 include $(SRCDIR)/$(TOPDIR)/lib/MakeRules
-clean:: oclean
-	-rm -f $(BUILD_BINARY)
+include $(SRCDIR)/$(TOPDIR)/lib/MakeSuffixRules
 
-oclean::
-	-rm -f $(BINOBJ)
+%.$(OBJSUF):: $(CONFIG)
 
-distclean:: clean
-
-realclean:: clean

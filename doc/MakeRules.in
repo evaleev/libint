@@ -1,4 +1,6 @@
 
+HAVE_MAKERULES = yes
+
 default: $(TARGET)
 
 install:: install_target

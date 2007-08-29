@@ -31,23 +31,23 @@ uninstall::
 
 clean:
 	if test -f source; then \
-cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) clean; \
+cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) clean; \
 fi
 
 oclean:
 	if test -f source; then \
-cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) oclean; \
+cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) oclean; \
 fi
 
 distclean:
 	if test -f source; then \
-cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) distclean; \
+cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) distclean; \
 fi
 	$(MAKE) realclean
 
 targetclean:
 	if test -f source; then \
-cd $(LIBSRCLINK); $(MAKE) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) targetclean; \
+cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) targetclean; \
 fi
 
 realclean: rm_libsrcdir

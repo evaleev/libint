@@ -1,0 +1,27 @@
+
+HAVE_MAKERULES = yes
+
+BINOBJ = $(BUILD_CSRC:%.c=%.$(OBJSUF))  $(BUILD_CXXSRC:%.cc=%.$(OBJSUF))
+$(BUILD_BINARY): $(BINOBJ)
+	$(LD) $^ $(LDFLAGS) $(SYSLIBS) -o $@
+
+.PHONY: install install_inc install_target uninstall clean oclean distclean targetclean realclean
+install::
+
+install_inc::
+
+install_target::
+
+uninstall::
+
+clean:: oclean
+	-rm -f $(BUILD_BINARY)
+
+oclean::
+	-rm -f $(BINOBJ)
+
+distclean:: clean
+
+targetclean::
+
+realclean:: clean

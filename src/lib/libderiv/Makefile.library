@@ -1,5 +1,5 @@
 include $(TOPDIR)/src/lib/MakeVars
-include $(TOPDIR)/src/lib/MakeSuffixRules
+include $(SRCDIR)/$(TO_TOPDIR)/lib/MakeSuffixRules
 VPATH = $(SRCDIR)
 
 NAME = libderiv

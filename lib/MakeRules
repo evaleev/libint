@@ -1,0 +1,21 @@
+ifneq ($(HAVE_MAKERULES),yes)
+.PHONY: install install_inc install_target uninstall clean oclean distclean targetclean realclean
+install::
+
+install_inc::
+
+install_target::
+
+uninstall::
+
+clean::
+
+oclean::
+
+distclean::
+
+targetclean::
+
+realclean::
+
+endif

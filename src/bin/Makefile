@@ -64,7 +64,7 @@ distclean::
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
-	-rm -rf MakeVars libint_config.h
+	-rm -rf MakeVars MakeRules MakeSuffixRules libint_config.h
 
 targetclean::
 	for dir in $(SUBDIRS); \

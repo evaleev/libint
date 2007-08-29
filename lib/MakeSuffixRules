@@ -1,7 +1,19 @@
 
+%.o:: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< $(OUTPUT_OPTION)
+
+%.o:: %.cc
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< $(OUTPUT_OPTION)
+
+%.lo:: %.cc
+	$(LTCOMP) $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< $(OUTPUT_OPTION)
+
+%.lo:: %.c
+	$(LTCOMP) $(CC) $(CPPFLAGS) $(CFLAGS) -c $< $(OUTPUT_OPTION)
+
 ifdef BIBTEX
 ifdef PDFLATEX
-%.pdf: $(SRCDIR)/%.tex
+%.pdf:: $(SRCDIR)/%.tex
 	TEXINPUTS=$(TEXINPUTS) $(PDFLATEX) $<
 	BIBINPUTS=$(BIBINPUTS) $(BIBTEX) $(@:%.pdf=%)
 	TEXINPUTS=$(TEXINPUTS) $(PDFLATEX) $<
@@ -10,7 +22,7 @@ ifdef PDFLATEX
 endif
 
 ifdef PSLATEX
-%.ps: $(SRCDIR)/%.tex
+%.ps:: $(SRCDIR)/%.tex
 	TEXINPUTS=$(TEXINPUTS) $(PSLATEX) $<
 	BIBINPUTS=$(BIBINPUTS) $(BIBTEX) $(@:%.ps=%)
 	TEXINPUTS=$(TEXINPUTS) $(PSLATEX) $<
