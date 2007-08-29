@@ -3,7 +3,7 @@ ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
 
-include $(TOPDIR)/Makedirlist
+-include $(TOPDIR)/Makedirlist
 
 SUBDIRS = libint
 ifeq ($(HAVE_LIBINT_SRC_BIN_LIBR12),yes)
@@ -64,6 +64,7 @@ distclean::
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
+	-rm -rf MakeRules MakeSuffixRules MakeVars
 
 targetclean::
 	for dir in $(SUBDIRS); \

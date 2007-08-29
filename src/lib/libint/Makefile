@@ -10,7 +10,7 @@ TARGET = $(NAME).$(LIBSUF)
 COMPILER = build_$(NAME)
 INC = libint.h vrr_header.h hrr_header.h
 
-include $(TOPDIR)/src/lib/MakeVars
-include $(TOPDIR)/src/lib/MakeRules
-include $(TOPDIR)/src/lib/MakeSuffixRules
+-include $(TOPDIR)/src/lib/MakeVars
+-include $(TOPDIR)/src/lib/MakeRules
+-include $(TOPDIR)/src/lib/MakeSuffixRules
 

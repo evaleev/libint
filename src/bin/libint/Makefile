@@ -3,7 +3,7 @@ ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
 
-include $(TOPDIR)/src/bin/MakeVars
+-include $(TOPDIR)/src/bin/MakeVars
 
 BUILD_BINARY = build_libint
 BUILD_SRC = build_libint.c emit_vrr_build.c emit_hrr_build.c mem_man.c \

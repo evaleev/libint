@@ -3,7 +3,7 @@ ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
 
-include $(TOPDIR)/Makedirlist
+-include $(TOPDIR)/Makedirlist
 
 SUBDIRS = bin lib
 
@@ -58,6 +58,7 @@ distclean::
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
+	-rm -rf libintdirlist.h
 
 targetclean::
 	for dir in $(SUBDIRS); \

@@ -3,9 +3,10 @@ ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
 
-include $(TOPDIR)/Makedirlist
+-include $(TOPDIR)/Makedirlist
 
 SUBDIRS = src
+ALLSUBDIRS = $(SUBDIRS) doc
 
 default::
 	for dir in $(SUBDIRS); \
@@ -57,11 +58,12 @@ oclean::
 	  done
 
 distclean::
-	for dir in $(SUBDIRS); \
+	for dir in $(ALLSUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
-	-rm -rf autom4te.cache config.status config.log depcheck* libtool Makedirlist
+	-rm -rf autom4te.cache config.status config.log depcheck* libtool \
+Makedirlist include
 
 targetclean::
 	for dir in $(SUBDIRS); \

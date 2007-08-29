@@ -3,7 +3,7 @@ ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
 
-include $(TOPDIR)/Makedirlist
+-include $(TOPDIR)/Makedirlist
 
 SUBDIRS = progman
 
@@ -40,6 +40,7 @@ distclean::
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
+	-rm -f MakeRules MakeSuffixRules MakeVars
 
 targetclean::
 	for dir in $(SUBDIRS); \
