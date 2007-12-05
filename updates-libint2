@@ -1,4 +1,7 @@
 
+06/03/2007:     Upgraded to libtool-1.5.23b.
+                -EFV
+
 05/14/2007:	Added configure option '--disable-t1g12-support' to turn off support for [T1,G12] integrals.
 		-EFV
 

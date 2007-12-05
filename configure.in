@@ -16,8 +16,8 @@ dnl --- Compiling C++ only ---
 AC_LANG(C++)
 
 AC_CANONICAL_TARGET
-AC_DEFINE_UNQUOTED(HOST_ARCH, "$host")
-AC_DEFINE_UNQUOTED(TARGET_ARCH, "$target")
+AC_DEFINE_UNQUOTED(LIBINT_HOST_ARCH, "$host")
+AC_DEFINE_UNQUOTED(LIBINT_TARGET_ARCH, "$target")
 
 define([default_prefix_dash],ifelse(libint_buildid, ,[],[-]))
 define([default_prefix],"/usr/local")

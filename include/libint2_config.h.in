@@ -8,10 +8,10 @@
 #define _libint2_include_libint2config_h_
 
 /* The host architecture. */
-#undef HOST_ARCH
+#undef LIBINT_HOST_ARCH
 
 /* The target architecture. */
-#undef TARGET_ARCH
+#undef LIBINT_TARGET_ARCH
 
 /* The version number. */
 #undef LIBINT_VERSION
