@@ -1,4 +1,6 @@
 
+12/05/2007:  Upgraded to libtool-1.5.24, which works on Darwin/gcc. -EFV
+
 08/29/2007:  1) Fixed a severe bug in libderiv
              2) Fixed build issues pointed out by Daniel Leidert:
                 - DESTDIR is now prepended to location of every install
