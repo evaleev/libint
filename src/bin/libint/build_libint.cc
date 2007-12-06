@@ -147,6 +147,8 @@ void try_main (int argc, char* argv[])
   
   print_header(os);
   print_config(os);
+  // add static configuration parameters to the API
+  iface->to_params(iface->macro_define("CGSHELL_ORDERING",LIBINT_CGSHELL_ORDERING));
   cparams->print(os);
 
 #if !DO_TEST_ONLY
