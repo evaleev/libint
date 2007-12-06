@@ -1,4 +1,7 @@
 
+12/05/2007:     Upgraded to libtool-1.5.24, which works on Darwin/gcc.
+		-EFV
+
 06/03/2007:     Upgraded to libtool-1.5.23b.
                 -EFV
 
