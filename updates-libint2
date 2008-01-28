@@ -1,4 +1,7 @@
 
+01/28/2007:     Added G12DKH capability.
+		-EFV
+
 12/05/2007:     Upgraded to libtool-1.5.24, which works on Darwin/gcc.
 		-EFV
 

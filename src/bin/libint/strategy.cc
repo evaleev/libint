@@ -43,6 +43,8 @@ Strategy::optimal_rr(const SafePtr<DirectedGraph>& graph,
     if (bptr != 0) {
       int k = R12kG12_11_11_Util::k<CGShell>(bptr);
       switch (k) {
+        case 4:
+          return optimal_rr_R12kG121111_sq<4>(graph,bptr,tactic);
         case 2:
           return optimal_rr_R12kG121111_sq<2>(graph,bptr,tactic);
         case 0:
@@ -60,6 +62,8 @@ Strategy::optimal_rr(const SafePtr<DirectedGraph>& graph,
     if (bptr != 0) {
       int k = R12kG12_11_11_Util::k<CGF>(bptr);
       switch (k) {
+        case 4:
+          return optimal_rr_R12kG121111_int<4>(graph,bptr,tactic);
         case 2:
           return optimal_rr_R12kG121111_int<2>(graph,bptr,tactic);
         case 0:

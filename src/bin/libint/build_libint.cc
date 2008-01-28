@@ -764,10 +764,11 @@ build_R12_24_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& c
         for(int ld=0; ld<=lmax; ld++) {
 
           if (la < lb || lc < ld || la+lb > lc+ld)
-        continue;
+            continue;
           bool ssss = false;
           if (la+lb+lc+ld == 0)
             ssss = true;
+          if (ssss) continue;
 
       //if (la != 1 || lb != 0 || lc != 1 || ld != 1)
       //  continue;
