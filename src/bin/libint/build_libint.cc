@@ -64,6 +64,8 @@ static void build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParam
                                 SafePtr<Libint2Iface>& iface);
 static void build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
 			       SafePtr<Libint2Iface>& iface);
+static void build_R12_24_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                                SafePtr<Libint2Iface>& iface);
 static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
 static void test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                  SafePtr<Libint2Iface>& iface);
@@ -83,6 +85,9 @@ void try_main (int argc, char* argv[])
 #ifdef INCLUDE_GENG12
   taskmgr.add("geng12");
 #endif
+#ifdef INCLUDE_G12DKH
+  taskmgr.add("r12_24_g12");
+#endif
   
   // use default parameters
   SafePtr<CompilationParameters> cparams(new CompilationParameters);
@@ -98,6 +103,10 @@ void try_main (int argc, char* argv[])
 #ifdef INCLUDE_GENG12
   cparams->max_am("geng12",GENG12_MAX_AM);
   cparams->max_am_opt("geng12",GENG12_OPT_AM);
+#endif
+#ifdef INCLUDE_G12DKH
+  cparams->max_am("r12_24_g12",G12DKH_MAX_AM);
+  cparams->max_am_opt("r12_24_g12",G12DKH_OPT_AM);
 #endif
 #if LIBINT_ENABLE_UNROLLING
   cparams->unroll_threshold(1000000000);
@@ -161,6 +170,9 @@ void try_main (int argc, char* argv[])
 #ifdef INCLUDE_GENG12
   build_GenG12_2b_2k(os,cparams,iface);
 #endif
+#ifdef INCLUDE_G12DKH
+  build_R12_24_G12_2b_2k(os,cparams,iface);
+#endif
 #endif
 
 #if DO_TEST_ONLY
@@ -210,10 +222,19 @@ print_config(std::ostream& os)
   os << "Will support ERI" << endl;
 #endif
 #ifdef INCLUDE_G12
-  os << "Will support G12" << endl;
+  os << "Will support G12 (commutators = ";
+# if SUPPORT_T1G12
+  os << "yes";
+# else
+  os << "false";
+# endif
+  os << ")" << endl;
 #endif
 #ifdef INCLUDE_GENG12
   os << "Will support generalized G12" << endl;
+#endif
+#ifdef INCLUDE_G12DKH
+  os << "Will support G12DKH" << endl;
 #endif
 }
 
@@ -706,6 +727,145 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 
 #endif // INCLUDE_GENG12
 
+#ifdef INCLUDE_G12DKH
+void
+build_R12_24_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                    SafePtr<Libint2Iface>& iface)
+{
+  const std::string task("r12_24_g12");
+  vector<CGShell*> shells;
+  unsigned int lmax = cparams->max_am(task);
+  for(int l=0; l<=lmax; l++) {
+    shells.push_back(new CGShell(l));
+  }
+  ImplicitDimensions::set_default_dims(cparams);
+  
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  taskmgr.current(task);
+  iface->to_params(iface->macro_define("MAX_AM_R12_24_G12",lmax));
+  
+  //
+  // Construct graphs for each desired target integral and
+  // 1) generate source code for the found traversal path
+  // 2) extract all remaining unresolved recurrence relations and
+  //    append them to the stack. Such unresolved RRs are RRs applied
+  //    to sets of integrals (rather than to individual integrals).
+  // 3) at the end, for each unresolved recurrence relation generate
+  //    explicit source code
+  //
+  SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
+  SafePtr<Strategy> strat(new Strategy(cparams->unroll_threshold()));
+  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
+  //SafePtr<Tactic> tactic(new RandomChoiceTactic());
+  //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
+  for(int la=0; la<=lmax; la++) {
+    for(int lb=0; lb<=lmax; lb++) {
+      for(int lc=0; lc<=lmax; lc++) {
+        for(int ld=0; ld<=lmax; ld++) {
+
+          if (la < lb || lc < ld || la+lb > lc+ld)
+        continue;
+          bool ssss = false;
+          if (la+lb+lc+ld == 0)
+            ssss = true;
+
+      //if (la != 1 || lb != 0 || lc != 1 || ld != 1)
+      //  continue;
+          
+          // unroll only if max_am <= cparams->max_am_opt(task)
+          using std::max;
+          const unsigned int max_am = max(max(la,lb),max(lc,ld));
+          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
+          dg_xxxx->registry()->can_unroll(need_to_optimize);
+          dg_xxxx->registry()->do_cse(need_to_optimize);
+          dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
+          // Need to accumulate integrals?
+          dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
+          
+          // k=2
+          if (!ssss) {
+            typedef R12kG12_11_11<CGShell,2> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+          // k=4
+          if (!ssss) {
+            typedef R12kG12_11_11<CGShell,4> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+          
+          dg_xxxx->apply(strat,tactic);
+          dg_xxxx->optimize_rr_out();
+          dg_xxxx->traverse();
+#if DEBUG
+          os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
+#endif
+
+          std::string label;
+          {
+            ostringstream os;
+            os << "(" << shells[la]->label() << " "
+            << shells[lb]->label()
+            << " | r_{12}^(2,4) * exp(-g*r_{12}^2) | "
+            << shells[lc]->label() << " "
+            << shells[ld]->label() << ")";
+            label = os.str();
+          }
+          
+          SafePtr<CodeContext> context(new CppCodeContext(cparams));
+          SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+          std::string prefix(cparams->source_directory());
+          std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
+          std::string src_filename(prefix + context->label_to_name(label));  src_filename += ".cc";
+          std::basic_ofstream<char> declfile(decl_filename.c_str());
+          std::basic_ofstream<char> srcfile(src_filename.c_str());
+          dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
+          
+          // update max stack size
+          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
+          tparams->max_stack_size(memman->max_memory_used());
+          tparams->max_ntarget(2);
+
+          ostringstream oss;
+          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_r12_24_g12[" << la << "][" << lb << "][" << lc << "]["
+              << ld <<"] = " << context->label_to_name(label_to_funcname(label))
+              << context->end_of_stat() << endl;
+          iface->to_static_init(oss.str());
+          
+          oss.str("");
+          oss << "#include <" << decl_filename << ">" << endl;
+          iface->to_int_iface(oss.str());
+
+      // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
+      // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
+      if (la == lmax &&
+          lb == lmax &&
+          lc == lmax &&
+          ld == lmax) {
+
+        extract_symbols(dg_xxxx);
+
+      }
+
+#if DEBUG
+          os << "Max memory used = " << memman->max_memory_used() << endl;
+#endif
+          dg_xxxx->reset();
+          declfile.close();
+          srcfile.close();
+        } // end of d loop
+      } // end of c loop
+    } // end of b loop
+  } // end of a loop  
+}
+
+#endif // INCLUDE_G12DKH
+
 void
 test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
      SafePtr<Libint2Iface>& iface)
@@ -858,6 +1018,10 @@ config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Ifac
 #ifdef INCLUDE_GENG12
   iface->to_params(iface->macro_define("SUPPORT_GENG12",1));
   iface->to_params(iface->macro_define("DERIV_GENG12_ORDER",INCLUDE_GENG12));
+#endif
+#ifdef INCLUDE_G12DKH
+  iface->to_params(iface->macro_define("SUPPORT_G12DKH",1));
+  iface->to_params(iface->macro_define("DERIV_G12DKH_ORDER",INCLUDE_G12DKH));
 #endif
 }
 

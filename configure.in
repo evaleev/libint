@@ -172,6 +172,27 @@ esac
 ]
 )
 
+AC_ARG_ENABLE(g12dkh,
+[  --enable-g12dkh=N           Compile with support for N-th derivatives],
+[
+if test $enableval -lt 0; then
+  AC_MSG_ERROR([Invalid value for --enable-g12dkh ($withval)])
+fi
+case $enableval in
+  yes)
+    INCLUDE_G12DKH=0
+  ;;
+  no)
+    INCLUDE_G12DKH=no
+  ;;
+  *)
+    INCLUDE_G12DKH=$enableval
+  ;;
+esac
+],[
+    INCLUDE_G12DKH=no
+]
+)
 
 ERI_MAX_AM=4
 AC_ARG_WITH(eri-max-am,
@@ -206,7 +227,7 @@ fi
 G12_MAX_AM=$ERI_MAX_AM
 AC_ARG_WITH(g12-max-am,
 [  --with-g12-max-am=N       Support integrals for G12 methods of angular momentum up to N.],
-if test $withval -le 0 -o $withval -gt $ERI_MAX_AM; then
+if test $withval -le 0; then
   AC_MSG_ERROR([Invalid value for --with-g12-max-am ($withval)])
 else
   G12_MAX_AM=$withval
@@ -257,7 +278,7 @@ fi
 GENG12_MAX_AM=$ERI_MAX_AM
 AC_ARG_WITH(geng12-max-am,
 [  --with-geng12-max-am=N    Support integrals for general G12 methods of angular momentum up to N.],
-if test $withval -le 0 -o $withval -gt $ERI_MAX_AM; then
+if test $withval -le 0; then
   AC_MSG_ERROR([Invalid value for --with-geng12-max-am ($withval)])
 else
   GENG12_MAX_AM=$withval
@@ -278,6 +299,33 @@ if test "X$INCLUDE_GENG12" != "Xno"; then
   AC_SUBST(GENG12_OPT_AM)
   AC_DEFINE_UNQUOTED(GENG12_MAX_AM,$GENG12_MAX_AM)
   AC_DEFINE_UNQUOTED(GENG12_OPT_AM,$GENG12_OPT_AM)
+fi
+
+# check max am for G12DKH integrals, if needed
+G12DKH_MAX_AM=$ERI_MAX_AM
+AC_ARG_WITH(g12dkh-max-am,
+[  --with-g12dkh-max-am=N    Support integrals for relativistic G12 methods of angular momentum up to N.],
+if test $withval -le 0; then
+  AC_MSG_ERROR([Invalid value for --with-g12dkh-max-am ($withval)])
+else
+  G12DKH_MAX_AM=$withval
+fi
+)
+
+G12DKH_OPT_AM=$((($G12DKH_MAX_AM/2)+1))
+AC_ARG_WITH(g12dkh-opt-am,
+[  --with-g12dkh-opt-am=N    Optimize G12DKH integrals for up to angular momentum N (N <= max-am).],
+if test $withval -le $G12DKH_MAX_AM; then
+  G12DKH_OPT_AM=$withval
+fi
+)
+
+if test "X$INCLUDE_G12DKH" != "Xno"; then
+  AC_DEFINE_UNQUOTED(INCLUDE_G12DKH,$INCLUDE_G12DKH)
+  AC_SUBST(G12DKH_MAX_AM)
+  AC_SUBST(G12DKH_OPT_AM)
+  AC_DEFINE_UNQUOTED(G12DKH_MAX_AM,$G12DKH_MAX_AM)
+  AC_DEFINE_UNQUOTED(G12DKH_OPT_AM,$G12DKH_OPT_AM)
 fi
 
 #######
