@@ -64,7 +64,7 @@ static void build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParam
                                 SafePtr<Libint2Iface>& iface);
 static void build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
 			       SafePtr<Libint2Iface>& iface);
-static void build_R12_24_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+static void build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
 static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
 static void test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
@@ -86,7 +86,7 @@ void try_main (int argc, char* argv[])
   taskmgr.add("geng12");
 #endif
 #ifdef INCLUDE_G12DKH
-  taskmgr.add("r12_24_g12");
+  taskmgr.add("r12_024_g12");
 #endif
   
   // use default parameters
@@ -105,8 +105,8 @@ void try_main (int argc, char* argv[])
   cparams->max_am_opt("geng12",GENG12_OPT_AM);
 #endif
 #ifdef INCLUDE_G12DKH
-  cparams->max_am("r12_24_g12",G12DKH_MAX_AM);
-  cparams->max_am_opt("r12_24_g12",G12DKH_OPT_AM);
+  cparams->max_am("r12_024_g12",G12DKH_MAX_AM);
+  cparams->max_am_opt("r12_024_g12",G12DKH_OPT_AM);
 #endif
 #if LIBINT_ENABLE_UNROLLING
   cparams->unroll_threshold(1000000000);
@@ -171,7 +171,7 @@ void try_main (int argc, char* argv[])
   build_GenG12_2b_2k(os,cparams,iface);
 #endif
 #ifdef INCLUDE_G12DKH
-  build_R12_24_G12_2b_2k(os,cparams,iface);
+  build_R12_024_G12_2b_2k(os,cparams,iface);
 #endif
 #endif
 
@@ -729,10 +729,10 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 
 #ifdef INCLUDE_G12DKH
 void
-build_R12_24_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface)
 {
-  const std::string task("r12_24_g12");
+  const std::string task("r12_024_g12");
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
   for(int l=0; l<=lmax; l++) {
@@ -742,7 +742,7 @@ build_R12_24_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& c
   
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
-  iface->to_params(iface->macro_define("MAX_AM_R12_24_G12",lmax));
+  iface->to_params(iface->macro_define("MAX_AM_R12_024_G12",lmax));
   
   //
   // Construct graphs for each desired target integral and
@@ -783,6 +783,14 @@ build_R12_24_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& c
           // Need to accumulate integrals?
           dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
           
+          // k=0
+          if (!ssss) {
+            typedef R12kG12_11_11<CGShell,0> int_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
           // k=2
           if (!ssss) {
             typedef R12kG12_11_11<CGShell,2> int_type;
@@ -812,7 +820,7 @@ build_R12_24_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& c
             ostringstream os;
             os << "(" << shells[la]->label() << " "
             << shells[lb]->label()
-            << " | r_{12}^(2,4) * exp(-g*r_{12}^2) | "
+            << " | r_{12}^(0,2,4) * exp(-g*r_{12}^2) | "
             << shells[lc]->label() << " "
             << shells[ld]->label() << ")";
             label = os.str();
@@ -830,10 +838,10 @@ build_R12_24_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& c
           // update max stack size
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(memman->max_memory_used());
-          tparams->max_ntarget(2);
+          tparams->max_ntarget(3);
 
           ostringstream oss;
-          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_r12_24_g12[" << la << "][" << lb << "][" << lc << "]["
+          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_r12_024_g12[" << la << "][" << lb << "][" << lc << "]["
               << ld <<"] = " << context->label_to_name(label_to_funcname(label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
