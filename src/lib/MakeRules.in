@@ -5,9 +5,13 @@ default:: $(TOPDIR)/lib/$(TARGET)
 
 export:: source
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/src
-	-$(INSTALL) $(INSTALLLIBOPT) $(LIBSRCDIR)/*.cc $(TOPDIR)/$(EXPORTDIR)/src
+	for i in $(LIBSRCDIR)/*.cc; do \
+	 $(INSTALL) $(INSTALLLIBOPT) $${i} $(TOPDIR)/$(EXPORTDIR)/src; \
+        done
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include
-	-$(INSTALL) $(INSTALLLIBOPT) $(LIBSRCDIR)/*.h $(TOPDIR)/$(EXPORTDIR)/include
+	for i in $(LIBSRCDIR)/*.h; do \
+	 $(INSTALL) $(INSTALLLIBOPT) $${i} $(TOPDIR)/$(EXPORTDIR)/include; \
+        done
 
 $(TOPDIR)/lib/$(TARGET): source
 	cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR)
@@ -16,7 +20,9 @@ install:: install_inc install_target
 
 install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)$(VERSION)/*.h $(includedir)/$(NAME)$(VERSION)
+	for i in $(LIBSRCDIR)/*.cc; do \
+	 $(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)$(VERSION)/*.h $(includedir)/$(NAME)$(VERSION); \
+        done
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2_config.h $(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_intrinsic_types.h $(includedir)/$(NAME)$(VERSION)
 
