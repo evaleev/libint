@@ -328,8 +328,6 @@ namespace libint2 {
       SafePtr<RRStack> rrstack = RRStack::Instance();
       rrstack->find(dummy_hrr);
       return true;
-      // not done coding -- throw an exception for now
-      throw CodeDoesNotExist("Have not finished generalizing HRR::register with rrstack()");
     }
 
 
