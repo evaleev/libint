@@ -34,6 +34,7 @@ namespace {
 
 namespace libint2 {
 
+#if 0
 #if LIBINT_CGSHELL_ORDERING == LIBINT__CGSHELL__ORDERING_STANDARD
 template <>
 void
@@ -78,6 +79,11 @@ vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
   }
 }
 #endif
+#endif // 0
+
+//
+// GAMESS ordering does not yet have FOR_CART macros defined in cgshell_ordering.h, hence must handle manually
+//
 #if LIBINT_CGSHELL_ORDERING == LIBINT__CGSHELL__ORDERING_GAMESS
 template <>
 void
@@ -136,6 +142,23 @@ vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
     }
   }
 
+}
+#else
+template <>
+void
+StdLibintTDPolicy<CGShell>::init_subobj(const StdLibintTDPolicy<CGShell>::obj_stype& cgshell,
+vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
+{
+  unsigned int am = TypeTraits<CGShell>::const_ref(cgshell).qn();
+  unsigned int qn[3] = {0, 0, 0};
+  unsigned int lx, ly, lz;
+  FOR_CART(lx,ly,lz,am)
+    qn[0] = lx;
+    qn[1] = ly;
+    qn[2] = lz;
+    subobj_stype cgf(qn);
+    cgfs.push_back(cgf);
+  END_FOR_CART
 }
 #endif
 
