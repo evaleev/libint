@@ -16,4 +16,90 @@ namespace libint2 {
 
 };
 
-#endif
+//
+// Macros common to all orderings
+//
+
+/* Computes the number of Cartesian function in a shell given
+ * am = total angular momentum
+ * formula: (am*(am+1))/2 + am+1;
+ */
+#define INT_NCART(am) ((((am)+2)*((am)+1))>>1)
+
+/* For a given ang. mom., am, with n cartesian functions, compute the
+ * number of cartesian functions for am+1 or am-1
+ */
+#define INT_NCART_DEC(am,n) ((n)-(am)-1)
+#define INT_NCART_INC(am,n) ((n)+(am)+2)
+
+//
+// Macros that define orderings
+//
+
+#if LIBINT_CGSHELL_ORDERING == LIBINT__CGSHELL__ORDERING_STANDARD
+// this piece of code is from MPQC:src/lib/chemistry/cca/int/macros.h
+// Copyright Edward Valeev
+
+/* Computes an index to a Cartesian function within a shell given
+ * am = total angular momentum
+ * i = the exponent of x (i is used twice in the macro--beware side effects)
+ * j = the exponent of y
+ * formula: (am - i + 1)*(am - i)/2 + am - i - j unless i==am, then 0
+ * The following loop will generate indices in the proper order:
+ *  cartindex = 0;
+ *  for (i=am; i>=0; i--) {
+ *    for (j=am-i; j>=0; j--) {
+ *      do_it_with(cartindex);
+ *      cartindex++;
+ *      }
+ *    }
+ */
+#define INT_CARTINDEX(am,i,j) (((i) == (am))? 0 : (((((am) - (i) + 1)*((am) - (i)))>>1) + (am) - (i) - (j)))
+
+/* This sets up the above loop over cartesian exponents as follows
+ * int i, j, k;
+ * FOR_CART(i,j,k,am)
+ *   Stuff using i,j,k.
+ *   END_FOR_CART
+ */
+#define FOR_CART(i,j,k,am) for((i)=(am);(i)>=0;(i)--) {\
+                           for((j)=(am)-(i);(j)>=0;(j)--) \
+                           { (k) = (am) - (i) - (j);
+#define END_FOR_CART }}
+
+#endif // STANDARD ordering
+
+#if LIBINT_CGSHELL_ORDERING == LIBINT__CGSHELL__ORDERING_INTV3
+// this piece of code is from MPQC:src/lib/chemistry/qc/intv3/macros.h
+// Copyright Curtis Janssen
+
+/* Computes an index to a Cartesian function within a shell given
+ * am = total angular momentum
+ * i = the exponent of x (i is used twice in the macro--beware side effects)
+ * j = the exponent of y
+ * formula: am*(i+1) - (i*(i+1))/2 + i+1 - j - 1
+ * The following loop will generate indices in the proper order:
+ *  cartindex = 0;
+ *  for (i=0; i<=am; i++) {
+ *    for (k=0; k<=am-i; k++) {
+ *      j = am - i - k;
+ *      do_it_with(cartindex); // cartindex == INT_CARTINDEX(am,i,j)
+ *      cartindex++;
+ *      }
+ *    }
+ */
+#define INT_CARTINDEX(am,i,j) (((((((am)+1)<<1)-(i))*((i)+1))>>1)-(j)-1)
+
+/* This sets up the above loop over cartesian exponents as follows
+ * FOR_CART(i,j,k,am)
+ *   Stuff using i,j,k.
+ *   END_FOR_CART
+ */
+#define FOR_CART(i,j,k,am) for((i)=0;(i)<=(am);(i)++) {\
+                           for((k)=0;(k)<=(am)-(i);(k)++) \
+                           { (j) = (am) - (i) - (k);
+#define END_FOR_CART }}
+
+#endif // INTV3 ordering
+
+#endif // header guard
