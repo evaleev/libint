@@ -315,7 +315,7 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
 
     os << ctext_->macro_if(macro("FLOP_COUNT"));
     os << ctext_->comment("FLOP counter. Libint must be configured with --enable-flop-counter to allow FLOP counting. It is user's reponsibility to set zero nflops before computing integrals.") << std::endl;
-    os << ctext_->declare(macro("UINT_LEAST64"),std::string("nflops"));
+    os << ctext_->declare(std::string("mutable ") + macro("UINT_LEAST64"),std::string("nflops"));
     os << ctext_->macro_endif();
 
     os << ctext_->macro_if(macro("ACCUM_INTS"));
