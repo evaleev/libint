@@ -288,10 +288,10 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
 
     // Declare members common to all evaluators
     os << ctext_->comment("Scratch buffer to hold intermediates") << std::endl;
-    os << ctext_->declare(ctext_->type_name<double*>(),std::string("stack"));
+    os << ctext_->declare(ctext_->mutable_modifier() + ctext_->type_name<double*>(),std::string("stack"));
 
     os << ctext_->comment("Buffer to hold vector intermediates. Only used by set-level RR code if it is vectorized linewise") << std::endl;
-    os << ctext_->declare(ctext_->type_name<double*>(),std::string("vstack"));
+    os << ctext_->declare(ctext_->mutable_modifier() + ctext_->type_name<double*>(),std::string("vstack"));
 
     os << ctext_->comment("On completion, this contains pointers to computed targets") << std::endl;
     if (cparams_->single_evaltype()) {
@@ -304,10 +304,10 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
       }
       ostringstream oss;
       oss << max_ntargets;
-      os << ctext_->declare_v(ctext_->type_name<double*>(),std::string("targets"),oss.str());
+      os << ctext_->declare_v(ctext_->mutable_modifier() + ctext_->type_name<double*>(),std::string("targets"),oss.str());
     }
     else {
-      os << ctext_->declare_v(ctext_->type_name<double*>(),std::string("targets"),macro(tlabel,"NUM_TARGETS"));
+      os << ctext_->declare_v(ctext_->mutable_modifier() + ctext_->type_name<double*>(),std::string("targets"),macro(tlabel,"NUM_TARGETS"));
     }
 
     os << ctext_->comment("Actual vector length. Not to exceed MAX_VECLEN! If MAX_VECLEN is 1 then veclen is not used") << std::endl;
@@ -315,7 +315,7 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
 
     os << ctext_->macro_if(macro("FLOP_COUNT"));
     os << ctext_->comment("FLOP counter. Libint must be configured with --enable-flop-counter to allow FLOP counting. It is user's reponsibility to set zero nflops before computing integrals.") << std::endl;
-    os << ctext_->declare(std::string("mutable ") + macro("UINT_LEAST64"),std::string("nflops"));
+    os << ctext_->declare(ctext_->mutable_modifier() + macro("UINT_LEAST64"),std::string("nflops"));
     os << ctext_->macro_endif();
 
     os << ctext_->macro_if(macro("ACCUM_INTS"));
@@ -341,4 +341,3 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
   }
 
 }
-
