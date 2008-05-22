@@ -22,6 +22,7 @@ void prep_libint2(Libint_eri_t* erieval, unsigned int am1,
 		  const std::vector<double>& alpha4, double D[3], int norm_flag,
                   unsigned int veclen)
 {
+  erieval->veclen = veclen;
   for(int v=0; v<veclen; v++) {
     const double gammap = alpha1[v] + alpha2[v];
     const double Px = (alpha1[v]*A[0] + alpha2[v]*B[0])/gammap;
