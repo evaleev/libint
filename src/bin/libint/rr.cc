@@ -35,7 +35,7 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   //
   // Check if there is a generic equivalent that can be used
   //
-  if (this->has_generic()) {
+  if (this->has_generic(context->cparams())) {
     generate_generic_code(context,dims,funcname,decl,def);
     return;
   }
@@ -182,7 +182,7 @@ RecurrenceRelation::generate_generic_code(const SafePtr<CodeContext>& context,
   def << context->std_function_header();
 
   // ... fill the body
-  def << this->generic_instance(symbols) << endl;
+  def << this->generic_instance(context,symbols) << endl;
   
   // ... end the body
   def << context->close_block() << endl;
@@ -300,7 +300,9 @@ RecurrenceRelation::spfunction_call(const SafePtr<CodeContext>& context, const S
 }
 
 bool
-RecurrenceRelation::has_generic() const { return false; }
+RecurrenceRelation::has_generic(const SafePtr<CompilationParameters>& cparams) const {
+  return false;
+}
 
 std::string
 RecurrenceRelation::generic_header() const {
@@ -308,7 +310,7 @@ RecurrenceRelation::generic_header() const {
 }
 
 std::string
-RecurrenceRelation::generic_instance(const SafePtr<CodeSymbols>& args) const {
+RecurrenceRelation::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const {
   throw std::logic_error("RecurrenceRelation::generic_instance() -- should not be called! Check if DerivedRecurrenceRelation::generic_instance() is implemented");
 }
 

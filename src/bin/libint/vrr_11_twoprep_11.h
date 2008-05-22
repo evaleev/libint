@@ -88,11 +88,11 @@ namespace libint2 {
     /// Implementation of RecurrenceRelation::generate_label()
     std::string generate_label() const;
     /// Implementation of RecurrenceRelation::has_generic()
-    bool has_generic() const;
+    bool has_generic(const SafePtr<CompilationParameters>& cparams) const;
     /// Implementation of RecurrenceRelation::generic_header()
     std::string generic_header() const;
     /// Implementation of RecurrenceRelation::generic_instance()
-    std::string generic_instance(const SafePtr<CodeSymbols>& args) const;
+    std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const;
   };
 
   template <template <class> class ERI, class F, int part, FunctionPosition where>
@@ -269,13 +269,13 @@ namespace libint2 {
 
   template <template <class> class ERI, class F, int part, FunctionPosition where>
     bool
-    VRR_11_TwoPRep_11<ERI,F,part,where>::has_generic() const
+    VRR_11_TwoPRep_11<ERI,F,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
     {
       F sh_a(target_->bra(0,0));
       F sh_b(target_->ket(0,0));
       F sh_c(target_->bra(1,0));
       F sh_d(target_->ket(1,0));
-      const unsigned int max_opt_am = ERI_OPT_AM;
+      const unsigned int max_opt_am = cparams->max_am_opt();
       if (!TrivialBFSet<F>::result &&
           sh_b.zero() && sh_d.zero() &&
           sh_a.norm() > std::max(max_opt_am,2u) && sh_c.norm() > std::max(max_opt_am,2u))
@@ -293,7 +293,7 @@ namespace libint2 {
 
   template <template <class> class ERI, class F, int part, FunctionPosition where>
     std::string
-    VRR_11_TwoPRep_11<ERI,F,part,where>::generic_instance(const SafePtr<CodeSymbols>& args) const
+    VRR_11_TwoPRep_11<ERI,F,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
     {
       std::ostringstream oss;
       F sh_a(target_->bra(0,0));
@@ -301,11 +301,7 @@ namespace libint2 {
 
       oss << "using namespace libint2;" << endl;
       oss << "libint2::OSVRR_xs_xs<" << part << "," << to_string(where) << "," << sh_a.norm() << "," << sh_c.norm() << ",";
-#ifdef LIBINT_VECTOR_LENGTH
-      oss << (LIBINT_VECTOR_LENGTH == 1) ? "false" : "true";
-#else
-      oss << "false";
-#endif
+      oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
       oss << ">::compute(inteval";
       
       

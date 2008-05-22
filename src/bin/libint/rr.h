@@ -10,6 +10,7 @@
 #include <polyconstr.h>
 #include <singl_stack.h>
 #include <code.h>
+#include <default_params.h>
 
 #ifndef _libint2_src_bin_libint_rr_h_
 #define _libint2_src_bin_libint_rr_h_
@@ -127,11 +128,11 @@ namespace libint2 {
     virtual SafePtr<ImplicitDimensions> adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const;
 
     /// does this recurrent relation have a generic equivalent? Default is no.
-    virtual bool has_generic() const;
+    virtual bool has_generic(const SafePtr<CompilationParameters>& cparams) const;
     /// return the name of a header file with the declaration of the generic code
     virtual std::string generic_header() const;
     /// return the implementation of this recurrence relation in terms of generic code
-    virtual std::string generic_instance(const SafePtr<CodeSymbols>& args) const;
+    virtual std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const;
     
   };
 
