@@ -74,9 +74,6 @@ namespace libint2 {
 
     /// Implementation of RecurrenceRelation::nflops()
     unsigned int nflops() const { return nflops_; }
-    /// Implementation of RecurrenceRelation::spfunction_call()
-    std::string spfunction_call(const SafePtr<CodeContext>& context,
-                                const SafePtr<ImplicitDimensions>& dims) const;
     
     const std::string cpp_function_name() {}
     const std::string cpp_source_name() {}
@@ -271,26 +268,6 @@ namespace libint2 {
       F sh_c(target->bra(1,0)); os << sh_c.label() << " ";
       F sh_d(target->ket(1,0)); os << sh_d.label() << " )";
       
-      return os.str();
-    }
-    
-   template <template <class> class ERI, class F, int part, FunctionPosition where>
-    std::string
-    ITR_11_TwoPRep_11<ERI,F,part,where>::spfunction_call(
-    const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
-    {
-      ostringstream os;
-      os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
-         // First argument is the library object
-         << "(inteval, "
-         // Second is the target
-         << context->value_to_pointer(rr_target()->symbol());
-      // then come children
-      const unsigned int nchildren = num_children();
-      for(int c=0; c<nchildren; c++) {
-        os << ", " << context->value_to_pointer(rr_child(c)->symbol());
-      }
-      os << ")" << context->end_of_stat() << endl;
       return os.str();
     }
     
