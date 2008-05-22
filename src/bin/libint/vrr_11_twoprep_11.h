@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <algorithm>
 #include <assert.h>
 #include <dgvertex.h>
 #include <rr.h>
@@ -86,6 +87,12 @@ namespace libint2 {
 
     /// Implementation of RecurrenceRelation::generate_label()
     std::string generate_label() const;
+    /// Implementation of RecurrenceRelation::has_generic()
+    bool has_generic() const;
+    /// Implementation of RecurrenceRelation::generic_header()
+    std::string generic_header() const;
+    /// Implementation of RecurrenceRelation::generic_instance()
+    std::string generic_instance(const SafePtr<CodeSymbols>& args) const;
   };
 
   template <template <class> class ERI, class F, int part, FunctionPosition where>
@@ -259,7 +266,58 @@ namespace libint2 {
       
       return os.str();
     }
-    
+
+  template <template <class> class ERI, class F, int part, FunctionPosition where>
+    bool
+    VRR_11_TwoPRep_11<ERI,F,part,where>::has_generic() const
+    {
+      F sh_a(target_->bra(0,0));
+      F sh_b(target_->ket(0,0));
+      F sh_c(target_->bra(1,0));
+      F sh_d(target_->ket(1,0));
+      const unsigned int max_opt_am = ERI_OPT_AM;
+      if (!TrivialBFSet<F>::result &&
+          sh_b.zero() && sh_d.zero() &&
+          sh_a.norm() > std::max(max_opt_am,2u) && sh_c.norm() > std::max(max_opt_am,2u))
+        return true;
+      else
+        return false;
+    }
+  
+  template <template <class> class ERI, class F, int part, FunctionPosition where>
+    std::string
+    VRR_11_TwoPRep_11<ERI,F,part,where>::generic_header() const
+    {
+      return std::string("OSVRR_xs_xs.h");
+    }
+
+  template <template <class> class ERI, class F, int part, FunctionPosition where>
+    std::string
+    VRR_11_TwoPRep_11<ERI,F,part,where>::generic_instance(const SafePtr<CodeSymbols>& args) const
+    {
+      std::ostringstream oss;
+      F sh_a(target_->bra(0,0));
+      F sh_c(target_->bra(1,0));
+
+      oss << "using namespace libint2;" << endl;
+      oss << "libint2::OSVRR_xs_xs<" << part << "," << to_string(where) << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+#ifdef LIBINT_VECTOR_LENGTH
+      oss << (LIBINT_VECTOR_LENGTH == 1) ? "false" : "true";
+#else
+      oss << "false";
+#endif
+      oss << ">::compute(inteval";
+      
+      
+      const unsigned int nargs = args->n();
+      for(unsigned int a=0; a<nargs; a++) {
+        oss << "," << args->symbol(a);
+      }
+      oss << ");";
+      
+      return oss.str();
+    }
+
   typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
   typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,InBra> VRR_c_11_TwoPRep_11_sh;
   typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InKet> VRR_b_11_TwoPRep_11_sh;
