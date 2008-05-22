@@ -376,6 +376,7 @@ DirectedGraph::reset()
   stack_.clear();
   targets_.clear();
   first_to_compute_.reset();
+  func_names_.clear();
 }
 
 
@@ -811,6 +812,50 @@ DirectedGraph::remove_disconnected_vertices()
   }
 }
 
+// generate_code uses this helper function. It's declared in libint2 namespace because
+// it's also used elsewhere
+namespace libint2 {
+  std::string
+  declare_function(const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims,
+                   const SafePtr<CodeSymbols>& args, const std::string& tlabel, const std::string& function_descr,
+                   std::ostream& decl) {
+    
+    std::string function_name = label_to_funcname(function_descr);
+    function_name = context->label_to_name(function_name);
+    
+    decl << context->code_prefix();
+    std::string func_decl;
+    std::ostringstream oss;
+    oss << context->type_name<void>() << " "
+        << function_name << "(" << context->const_modifier()
+        << context->inteval_type_name(tlabel) << "* inteval";
+    const unsigned int nargs = args->n();
+    if (nargs > 0) {
+      // first argument is always the target, which is never a const
+      oss << ", " << context->type_name<double*>() << " "
+          << args->symbol(0);
+      for(unsigned int a=1; a<nargs; a++) {
+        oss << ", " << context->type_name<const double*>() << " "
+            << args->symbol(a);
+      }
+    }
+    if (!dims->high_is_static()) {
+      oss << ", " << context->type_name<int>() << " "
+          << dims->high()->id();
+    }
+    if (!dims->low_is_static()) {
+      oss << ", " << context->type_name<int>() << " "
+          <<dims->low()->id();
+    }
+    oss << ")";
+    func_decl = oss.str();
+    
+    decl << func_decl << context->end_of_stat() << endl;
+    decl << context->code_postfix();
+
+    return func_decl;
+  }
+}
 
 //
 //
@@ -829,33 +874,8 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   if (context->comments_on())
     decl << context->comment(comment) << endl;
 
-  std::string function_name = label_to_funcname(label);
-  function_name = context->label_to_name(function_name);
-
-  decl << context->code_prefix();
-  std::string func_decl;
-  ostringstream oss;
-  oss << context->type_name<void>() << " "
-      << function_name << "(" << context->inteval_type_name(tlabel) << "* inteval";
-  unsigned int nargs = args->n();
-  for(unsigned int a=0; a<nargs; a++) {
-    oss << ", " << context->type_name<double*>() << " "
-        << args->symbol(a);
-  }
-  if (!dims->high_is_static()) {
-    oss << ", " << context->type_name<int>() << " "
-        << dims->high()->id();
-  }
-  if (!dims->low_is_static()) {
-    oss << ", " << context->type_name<int>() << " "
-        <<dims->low()->id();
-  }
-  oss << ")";
-  func_decl = oss.str();
+  const std::string func_decl = declare_function(context,dims,args,tlabel,label,decl);
   
-  decl << func_decl << context->end_of_stat() << endl;
-  decl << context->code_postfix();
-
   //
   // Generate function's definition
   //
