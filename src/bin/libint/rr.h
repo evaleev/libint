@@ -78,9 +78,16 @@ namespace libint2 {
     /// Generate declaration and definition for the recurrence relation
     virtual void generate_code(const SafePtr<CodeContext>& context,
                                const SafePtr<ImplicitDimensions>& dims,
-			       const std::string& funcname,
+                               const std::string& funcname,
                                std::ostream& decl, std::ostream& def);
-    
+
+    /// Generate declaration and definition for the recurrence relation
+    /// using generic code (typically, a manually written code)
+    virtual void generate_generic_code(const SafePtr<CodeContext>& context,
+                                       const SafePtr<ImplicitDimensions>& dims,
+                                       const std::string& funcname,
+                                       std::ostream& decl, std::ostream& def);
+
     /// Generate a callback for this recurrence relation
     virtual std::string spfunction_call(const SafePtr<CodeContext>& context,
                                         const SafePtr<ImplicitDimensions>& dims) const;
@@ -118,6 +125,14 @@ namespace libint2 {
     /** given an ImplicitDimension for the computation, adapt it for this recurrence
         relation. Default version does not do anything. */
     virtual SafePtr<ImplicitDimensions> adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const;
+
+    /// does this recurrent relation have a generic equivalent? Default is no.
+    virtual bool has_generic() const;
+    /// return the name of a header file with the declaration of the generic code
+    virtual std::string generic_header() const;
+    /// return the implementation of this recurrence relation in terms of generic code
+    virtual std::string generic_instance(const SafePtr<CodeSymbols>& args) const;
+    
   };
 
 
@@ -131,6 +146,8 @@ namespace libint2 {
   typedef enum {
     BraToKet=0, KetToBra=1
   } FunctionMovement;
+  
+  std::string to_string(FunctionPosition pos);
   
   /** RRStack implements a stack of RecurrenceRelation's which can only hold
       one instance of a given RR. RecurrenceRelation::label() is used for hashing

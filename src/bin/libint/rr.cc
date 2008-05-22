@@ -19,7 +19,7 @@ RecurrenceRelation::~RecurrenceRelation()
 }
 
 //
-// Generate code for this recurrence relation:
+// If there is no generic equivalent, generate explicit code for this recurrence relation:
 // 1) append target and children to a DirectedGraph dg
 // 2) set their code symbols
 // 3) apply IntSet_to_Ints
@@ -29,9 +29,20 @@ RecurrenceRelation::~RecurrenceRelation()
 void
 RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
                                   const SafePtr<ImplicitDimensions>& dims,
-				  const std::string& funcname,
+                                  const std::string& funcname,
                                   std::ostream& decl, std::ostream& def)
 {
+  //
+  // Check if there is a generic equivalent that can be used
+  //
+  if (this->has_generic()) {
+    generate_generic_code(context,dims,funcname,decl,def);
+    return;
+  }
+  
+  const SafePtr<DGVertex> target_vptr = rr_target();
+  std::cout << "RecurrenceRelation::generate_code: target = " << target_vptr->label() << std::endl;
+  
   const SafePtr<CompilationParameters>& cparams = context->cparams();
   SafePtr<DirectedGraph> dg = generate_graph_();
   
@@ -42,8 +53,6 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
 
   // check if CSE to be performed
   typedef IntegralSet<IncableBFSet> ISet;
-  SafePtr<DGVertex> target_vptr = rr_target();
-  std::cout << "RecurrenceRelation::generate_code: target = " << target_vptr->label() << std::endl;
   SafePtr<ISet> target = dynamic_pointer_cast<ISet,DGVertex>(target_vptr);
   if (target) {
     //
@@ -127,6 +136,57 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
 
     
   dg->reset();
+}
+
+namespace libint2 {
+  // generate_generic_code reuses this function from dg.cc:
+  extern std::string declare_function(const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims,
+                                      const SafePtr<CodeSymbols>& args, const std::string& tlabel, const std::string& function_descr,
+                                      std::ostream& decl);
+}
+
+void
+RecurrenceRelation::generate_generic_code(const SafePtr<CodeContext>& context,
+                                          const SafePtr<ImplicitDimensions>& dims,
+                                          const std::string& funcname,
+                                          std::ostream& decl, std::ostream& def)
+{
+  const SafePtr<DGVertex> target_vptr = rr_target();
+  std::cout << "RecurrenceRelation::generate_generic_code: target = " << target_vptr->label() << std::endl;
+
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  const std::string tlabel = taskmgr.current().label();
+  SafePtr<ImplicitDimensions> localdims = adapt_dims_(dims);
+  // Assign symbols for the target and source integral sets
+  SafePtr<CodeSymbols> symbols(new CodeSymbols);
+  assign_symbols_(symbols);
+
+  // declare function
+  const std::string func_decl = declare_function(context,localdims,symbols,tlabel,funcname,decl);
+  
+  //
+  // Generate function's definition
+  //
+
+  // include standard headers
+  def << context->std_header();
+  //         + generic code declaration
+  def << "#include <"
+      << this->generic_header()
+      << ">" << endl;
+  def << endl;
+
+  // start the body ...
+  def << context->code_prefix();
+  def << func_decl << context->open_block() << endl;
+  def << context->std_function_header();
+
+  // ... fill the body
+  def << this->generic_instance(symbols) << endl;
+  
+  // ... end the body
+  def << context->close_block() << endl;
+  def << context->code_postfix();
 }
 
 SafePtr<DirectedGraph>
@@ -239,6 +299,18 @@ RecurrenceRelation::spfunction_call(const SafePtr<CodeContext>& context, const S
   return os.str();
 }
 
+bool
+RecurrenceRelation::has_generic() const { return false; }
+
+std::string
+RecurrenceRelation::generic_header() const {
+  throw std::logic_error("RecurrenceRelation::generic_header() -- should not be called! Check if DerivedRecurrenceRelation::generic_header() is implemented");
+}
+
+std::string
+RecurrenceRelation::generic_instance(const SafePtr<CodeSymbols>& args) const {
+  throw std::logic_error("RecurrenceRelation::generic_instance() -- should not be called! Check if DerivedRecurrenceRelation::generic_instance() is implemented");
+}
 
 ///////////////
 
@@ -268,3 +340,13 @@ RRStack::remove(const data_type& rr)
   parent_type::remove(rr);
 }
 
+///////////////
+
+std::string libint2::to_string(FunctionPosition pos) {
+  switch (pos) {
+    case InBra:
+      return "InBra";
+    case InKet:
+      return "InKet";
+  }
+}
