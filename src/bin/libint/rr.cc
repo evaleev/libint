@@ -343,12 +343,3 @@ RRStack::remove(const data_type& rr)
 }
 
 ///////////////
-
-std::string libint2::to_string(FunctionPosition pos) {
-  switch (pos) {
-    case InBra:
-      return "InBra";
-    case InKet:
-      return "InKet";
-  }
-}

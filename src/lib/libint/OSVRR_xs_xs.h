@@ -2,9 +2,10 @@
 #ifndef _libint2_src_lib_libint_osvrrxsxs_h_
 #define _libint2_src_lib_libint_osvrrxsxs_h_
 
+#include <cstdlib>
 #include <libint2.h>
-#include <libint/rr.h>
-#include <libint/cgshell_ordering.h>
+#include <util_types.h>
+#include <cgshell_ordering.h>
 
 namespace libint2 {
 

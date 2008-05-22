@@ -8,6 +8,8 @@ include $(TOPDIR)/src/bin/MakeVars
 CPPFLAGS += -I$(TOPDIR)/include
 # include headers from the compiler directory (should go away soon)
 CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/bin/libint
+# include processed headers from the compiler directory (should go away soon)
+CPPFLAGS += -I$(TOPDIR)/src/bin/libint
 # include headers from the library directory
 CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/lib/libint
 # include generated headers from the current directory

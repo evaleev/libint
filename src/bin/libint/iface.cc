@@ -75,7 +75,7 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
     ostringstream oss;
     oss << "void (*" << ctext->label_to_name(cparams->api_prefix()) << "libint2_build_" << tlabel
         << "[" << lmax << "][" << lmax << "][" << lmax << "]["
-        << lmax << "])(" << ctext_->inteval_type_name(tlabel) << "*);" << endl;
+        << lmax << "])(" << ctext_->const_modifier() << ctext_->inteval_type_name(tlabel) << "*);" << endl;
     ih_ << "extern " << oss.str();
     si_ << oss.str();
   }

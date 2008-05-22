@@ -141,8 +141,9 @@ typedef struct {
       code if it is vectorized linewise
   */
   LIBINT2_REALTYPE *vstack;
-  /** On completion, this contains pointers to computed targets */
-  LIBINT2_REALTYPE* targets[LIBINT2_MAX_NTARGETS];
+  /** On completion, this contains pointers to computed targets.
+      It's modified when library is called, hence should be mutable. */
+  mutable LIBINT2_REALTYPE* targets[LIBINT2_MAX_NTARGETS];
   
   /** Actual vector length. Not to exceed VECLEN! If VECLEN is 1 then
       veclength is not used */

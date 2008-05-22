@@ -14,6 +14,7 @@
 #include <prefactors.h>
 #include <context.h>
 #include <default_params.h>
+#include <util.h>
 
 #ifndef _libint2_src_bin_libint_vrr11twoprep11_h_
 #define _libint2_src_bin_libint_vrr11twoprep11_h_

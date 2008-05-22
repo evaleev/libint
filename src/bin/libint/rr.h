@@ -1,4 +1,7 @@
 
+#ifndef _libint2_src_bin_libint_rr_h_
+#define _libint2_src_bin_libint_rr_h_
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -11,9 +14,7 @@
 #include <singl_stack.h>
 #include <code.h>
 #include <default_params.h>
-
-#ifndef _libint2_src_bin_libint_rr_h_
-#define _libint2_src_bin_libint_rr_h_
+#include <util_types.h>
 
 using namespace std;
 
@@ -137,19 +138,6 @@ namespace libint2 {
   };
 
 
-  /** RRTactic describes an object that specifies a tactic of how to apply
-    recurrence relation
-    */
-
-  typedef enum {
-    InBra=0, InKet=1
-  } FunctionPosition;
-  typedef enum {
-    BraToKet=0, KetToBra=1
-  } FunctionMovement;
-  
-  std::string to_string(FunctionPosition pos);
-  
   /** RRStack implements a stack of RecurrenceRelation's which can only hold
       one instance of a given RR. RecurrenceRelation::label() is used for hashing
     */
