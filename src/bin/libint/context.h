@@ -110,29 +110,33 @@ namespace libint2 {
 
     /// unique_name<T> returns a unique name for a variable of type T
     template <typename T>
-      std::string unique_name();
+      std::string unique_name() const;
     /// type_name<T> returns name for type T
     template <typename T>
-      std::string type_name();
+      std::string type_name() const;
     /// returns the name of the evaluator type for task 'task'
     virtual std::string inteval_type_name(const std::string& task) const =0;
     /// returns the name of the specialized evaluator type for task 'task'
     virtual std::string inteval_spec_type_name(const std::string& task) const =0;
     /// returns the name of the generic evaluator type (works for any task)
     virtual std::string inteval_gen_type_name() const =0;
+    /// returns the modifier for constant variables
+    virtual std::string const_modifier() const =0;
+    /// returns the modifier for mutable variables
+    virtual std::string mutable_modifier() const =0;
 
   protected:
     /// Lone constructor takes CompilationParams
     CodeContext(const SafePtr<CompilationParameters>& cparams);
     /// generates a unique name for a floating-point variable
-    virtual std::string unique_fp_name() =0;
+    virtual std::string unique_fp_name() const =0;
     /// generates a unique name for an integer
-    virtual std::string unique_int_name() =0;
+    virtual std::string unique_int_name() const =0;
 
     /// next fp index
-    unsigned int next_fp_index();
+    unsigned int next_fp_index() const;
     /// next int index
-    unsigned int next_int_index();
+    unsigned int next_int_index() const;
     /// replaces every appearance of From with To in S
     static std::string replace_chars(const std::string& S,
                                      const std::string& From,
@@ -148,13 +152,11 @@ namespace libint2 {
     virtual std::string fp_type() const =0;
     /// returns name of pointer to floating-point type
     virtual std::string ptr_fp_type() const =0;
-    /// returns the modifier for constant variables
-    virtual std::string const_modifier() const =0;
 
   private:
     SafePtr<CompilationParameters> cparams_;
-    unsigned int next_index_[EntityTypes::ntypes];
-    void zero_out_counters();
+    mutable unsigned int next_index_[EntityTypes::ntypes];
+    void zero_out_counters() const;
     bool comments_on_;
 
   };
@@ -244,9 +246,9 @@ namespace libint2 {
     bool vectorize_;
 
     /// Implementation of CodeContext::unique_fp_name()
-    std::string unique_fp_name();
+    std::string unique_fp_name() const;
     /// Implementation of CodeContext::unique_int_name()
-    std::string unique_int_name();
+    std::string unique_int_name() const;
     ///
     std::string symbol_to_pointer(const std::string& symbol);
 
@@ -256,6 +258,7 @@ namespace libint2 {
     std::string fp_type() const;
     std::string ptr_fp_type() const;
     std::string const_modifier() const;
+    std::string mutable_modifier() const;
 
     std::string start_expr() const;
     std::string end_expr() const;

@@ -8,45 +8,50 @@ using namespace libint2;
 namespace libint2 {
 
   template <>
-  std::string CodeContext::unique_name<EntityTypes::FP>()
+  std::string CodeContext::unique_name<EntityTypes::FP>() const
   {
     return unique_fp_name();
   }
   template <>
-  std::string CodeContext::unique_name<EntityTypes::Int>()
+  std::string CodeContext::unique_name<EntityTypes::Int>() const
   {
     return unique_int_name();
   }
 
   template <>
-  std::string CodeContext::type_name<void>()
+  std::string CodeContext::type_name<void>() const
   {
     return void_type();
   }
   template <>
-  std::string CodeContext::type_name<int>()
+  std::string CodeContext::type_name<int>() const
   {
     return int_type();
   }
   template <>
-  std::string CodeContext::type_name<size_t>()
+  std::string CodeContext::type_name<size_t>() const
   {
     return size_type();
   }
   template <>
-  std::string CodeContext::type_name<const int>()
+  std::string CodeContext::type_name<const int>() const
   {
     return const_modifier() + int_type();
   }
   template <>
-  std::string CodeContext::type_name<double>()
+  std::string CodeContext::type_name<double>() const
   {
     return fp_type();
   }
   template <>
-  std::string CodeContext::type_name<double*>()
+  std::string CodeContext::type_name<double*>() const
   {
     return ptr_fp_type();
+  }
+  template <>
+  std::string CodeContext::type_name<const double*>() const
+  {
+    return const_modifier() + ptr_fp_type();
   }
 };
 
@@ -67,19 +72,19 @@ bool
 CodeContext::comments_on() const { return comments_on_; }
 
 unsigned int
-CodeContext::next_fp_index()
+CodeContext::next_fp_index() const
 {
   return next_index_[EntityTypes::FP::type2int()]++;
 }
 
 unsigned int
-CodeContext::next_int_index()
+CodeContext::next_int_index() const
 {
   return next_index_[EntityTypes::Int::type2int()]++;
 }
 
 void
-CodeContext::zero_out_counters()
+CodeContext::zero_out_counters() const
 {
   for(int i=0; i<EntityTypes::ntypes; i++)
     next_index_[i] = 0;
@@ -501,7 +506,7 @@ CppCodeContext::for_loop(std::string& varname, const SafePtr<Entity>& less_than,
 }
 
 std::string
-CppCodeContext::unique_fp_name()
+CppCodeContext::unique_fp_name() const
 {
   char result[80];
   sprintf(result,"fp%d", next_fp_index());
@@ -509,7 +514,7 @@ CppCodeContext::unique_fp_name()
 }
 
 std::string
-CppCodeContext::unique_int_name()
+CppCodeContext::unique_int_name() const
 {
   char result[80];
   sprintf(result,"i%d", next_int_index());
@@ -534,6 +539,8 @@ std::string
 CppCodeContext::ptr_fp_type() const { return "LIBINT2_REALTYPE*"; }
 std::string
 CppCodeContext::const_modifier() const { return "const "; }
+std::string
+CppCodeContext::mutable_modifier() const { return "mutable "; }
 
 std::string
 CppCodeContext::inteval_type_name(const std::string& tlabel) const
