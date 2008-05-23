@@ -19,6 +19,13 @@ namespace libint2 {
         const LIBINT2_REALTYPE* src4);
   };
 
+  /** builds (a 0|c0)^(m)
+      src0 = (a-10|c0)^(m)
+      src1 = (a-10|c0)^(m+1)
+      src2 = (a-20|c0)^(m)
+      src3 = (a-20|c0)^(m+1)
+      src4 = (a-10|c-10)^(m+1)
+   **/
   template <int La, int Lc, bool vectorize> struct OSVRR_xs_xs<0,InBra,La,Lc,vectorize> {
 
     static void compute(const Libint_t* inteval,
@@ -66,15 +73,17 @@ namespace libint2 {
             WP = inteval->WP_z;
             break;
         }
-      
-        const unsigned int am10c0_offset = INT_CARTINDEX(La-1,a[0],a[1]) * NcV;
+
+        const unsigned int nam1 = INT_CARTINDEX(La-1,a[0],a[1]);
+        const unsigned int am10c0_offset = nam1 * NcV;
         const LIBINT2_REALTYPE* src0_ptr = src0 + am10c0_offset;
         const LIBINT2_REALTYPE* src1_ptr = src1 + am10c0_offset;
 
         // if a-2_xyz exists, include (a-2_xyz 0 | c 0)
         if (a[xyz] > 0) {
           --a[xyz];
-          const unsigned int am20c0_offset = INT_CARTINDEX(La-2,a[0],a[1]) * NcV;
+          const unsigned int nam2 = INT_CARTINDEX(La-2,a[0],a[1]);
+          const unsigned int am20c0_offset = nam2 * NcV;
           ++a[xyz];
           const LIBINT2_REALTYPE* src2_ptr = src2 + am20c0_offset;
           const LIBINT2_REALTYPE* src3_ptr = src3 + am20c0_offset;          
@@ -106,7 +115,7 @@ namespace libint2 {
         {
           const unsigned int Ncm1 = INT_NCART(Lc-1);
           const unsigned int Ncm1V = Ncm1 * veclen;
-          const unsigned int am10cm10_offset = INT_CARTINDEX(La-1,a[0],a[1]) * Ncm1V;
+          const unsigned int am10cm10_offset = nam1 * Ncm1V;
           const LIBINT2_REALTYPE* src4_ptr = src4 + am10cm10_offset;
           
           // loop over c-1 shell and include (a-1_xyz 0 | c-1_xyz 0) to (a 0 | c 0)
