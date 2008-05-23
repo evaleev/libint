@@ -88,7 +88,7 @@ namespace libint2 {
         // if a-2_xyz exists, include (a-2_xyz 0 | c 0)
         if (a[xyz] > 0) {
           --a[xyz];
-          const unsigned int iam2 = INT_CARTINDEX(La-2,a[0],a[1])
+          const unsigned int iam2 = INT_CARTINDEX(La-2,a[0],a[1]);
           const unsigned int am20c0_offset = iam2 * NcV;
           ++a[xyz];
           const LIBINT2_REALTYPE* src1_ptr = src1 + am20c0_offset;
@@ -97,7 +97,7 @@ namespace libint2 {
           unsigned int cv = 0;
           for(unsigned int c = 0; c < Nc; ++c) {
             for(unsigned int v=0; v<veclen; ++v, ++cv) {
-              target[cv] = pfac0_0[v] * src0_ptr[cv] + axyz * inteval->R12kG12_pfac1_0 * src1_ptr[cv];
+              target[cv] = pfac0_0[v] * src0_ptr[cv] + axyz * inteval->R12kG12_pfac1_0[v] * src1_ptr[cv];
             }
           }
 #if LIBINT2_FLOP_COUNT

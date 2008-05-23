@@ -14,6 +14,7 @@
 #include <prefactors.h>
 #include <context.h>
 #include <default_params.h>
+#include <util.h>
 
 #ifndef _libint2_src_bin_libint_vrr11r12kg1211_h_
 #define _libint2_src_bin_libint_vrr11r12kg1211_h_
@@ -470,6 +471,14 @@ namespace libint2 {
       for(unsigned int a=0; a<nargs; a++) {
         oss << "," << args->symbol(a);
       }
+      
+      // if K == 0 add dummy arguments so that the same generic function can be used for all K>=0 cases
+      if (K == 0) {
+        for(unsigned int a=0; a<3; ++a) {
+          oss << ",(LIBINT2_REALTYPE*)0";
+        }
+      }
+      
       oss << ");";
       
       return oss.str();
