@@ -38,7 +38,7 @@ namespace libint2 {
       const unsigned int Nc = INT_NCART(Lc);
       const unsigned int NcV = Nc * veclen;
             
-      unsigned int ax, ay, az;
+      int ax, ay, az;
       FOR_CART(ax, ay, az, La)
 
         unsigned int a[3]; a[0] = ax;  a[1] = ay;  a[2] = az;
@@ -110,7 +110,7 @@ namespace libint2 {
           const LIBINT2_REALTYPE* src4_ptr = src4 + am10cm10_offset;
           
           // loop over c-1 shell and include (a-1_xyz 0 | c-1_xyz 0) to (a 0 | c 0)
-          unsigned int cx, cy, cz;
+          int cx, cy, cz;
           FOR_CART(cx, cy, cz, Lc-1)
 
             unsigned int c[3]; c[0] = cx;  c[1] = cy;  c[2] = cz;
