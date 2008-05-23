@@ -151,7 +151,7 @@ vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
 {
   unsigned int am = TypeTraits<CGShell>::const_ref(cgshell).qn();
   unsigned int qn[3] = {0, 0, 0};
-  unsigned int lx, ly, lz;
+  int lx, ly, lz;
   FOR_CART(lx,ly,lz,am)
     qn[0] = lx;
     qn[1] = ly;
