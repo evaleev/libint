@@ -60,7 +60,7 @@ namespace libint2 {
  *      }
  *    }
  */
-#define INT_CARTINDEX(am,i,j) (((i) == (am))? 0 : (((((am) - (i) + 1)*((am) - (i)))>>1) + (am) - (i) - (j)))
+#define INT_CARTINDEX(am,i,j) ( (((((am) - (i) + 1)*((am) - (i)))>>1) + (am) - (i) - (j)) )
 
 /* This sets up the above loop over cartesian exponents as follows
  * int i, j, k;
