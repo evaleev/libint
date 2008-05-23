@@ -48,7 +48,7 @@ namespace libint2 {
       int ax, ay, az;
       FOR_CART(ax, ay, az, La)
 
-        unsigned int a[3]; a[0] = ax;  a[1] = ay;  a[2] = az;
+        int a[3]; a[0] = ax;  a[1] = ay;  a[2] = az;
         
         enum XYZ {x=0, y=1, z=2};
         // Build along x, if possible
@@ -74,16 +74,16 @@ namespace libint2 {
             break;
         }
 
-        const unsigned int nam1 = INT_CARTINDEX(La-1,a[0],a[1]);
-        const unsigned int am10c0_offset = nam1 * NcV;
+        const unsigned int iam1 = INT_CARTINDEX(La-1,a[0],a[1]);
+        const unsigned int am10c0_offset = iam1 * NcV;
         const LIBINT2_REALTYPE* src0_ptr = src0 + am10c0_offset;
         const LIBINT2_REALTYPE* src1_ptr = src1 + am10c0_offset;
 
         // if a-2_xyz exists, include (a-2_xyz 0 | c 0)
         if (a[xyz] > 0) {
           --a[xyz];
-          const unsigned int nam2 = INT_CARTINDEX(La-2,a[0],a[1]);
-          const unsigned int am20c0_offset = nam2 * NcV;
+          const unsigned int iam2 = INT_CARTINDEX(La-2,a[0],a[1]);
+          const unsigned int am20c0_offset = iam2 * NcV;
           ++a[xyz];
           const LIBINT2_REALTYPE* src2_ptr = src2 + am20c0_offset;
           const LIBINT2_REALTYPE* src3_ptr = src3 + am20c0_offset;          
@@ -115,14 +115,14 @@ namespace libint2 {
         {
           const unsigned int Ncm1 = INT_NCART(Lc-1);
           const unsigned int Ncm1V = Ncm1 * veclen;
-          const unsigned int am10cm10_offset = nam1 * Ncm1V;
+          const unsigned int am10cm10_offset = iam1 * Ncm1V;
           const LIBINT2_REALTYPE* src4_ptr = src4 + am10cm10_offset;
           
           // loop over c-1 shell and include (a-1_xyz 0 | c-1_xyz 0) to (a 0 | c 0)
           int cx, cy, cz;
           FOR_CART(cx, cy, cz, Lc-1)
 
-            unsigned int c[3]; c[0] = cx;  c[1] = cy;  c[2] = cz;
+            int c[3]; c[0] = cx;  c[1] = cy;  c[2] = cz;
             ++c[xyz];
             
             const unsigned int cc = INT_CARTINDEX(Lc,c[0],c[1]);
