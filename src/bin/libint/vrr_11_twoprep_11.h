@@ -277,9 +277,11 @@ namespace libint2 {
       F sh_c(target_->bra(1,0));
       F sh_d(target_->ket(1,0));
       const unsigned int max_opt_am = cparams->max_am_opt();
+      // generic code works for a0c0 classes where am(a) > 1 and am(c) > 1
+      // to generate optimized code for xxxx integral need to generate specialized code for up to (x+x)0(x+x)0 integrals
       if (!TrivialBFSet<F>::result &&
           sh_b.zero() && sh_d.zero() &&
-          sh_a.norm() > std::max(max_opt_am,2u) && sh_c.norm() > std::max(max_opt_am,2u))
+          sh_a.norm() > std::max(2*max_opt_am,1u) && sh_c.norm() > std::max(2*max_opt_am,1u))
         return true;
       else
         return false;
