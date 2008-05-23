@@ -94,7 +94,14 @@ namespace libint2 {
     SafePtr<ChildType> children_[max_nchildren_];
     unsigned int nchildren_;
 
+    /// Implementation of RecurrenceRelation::generate_label()
     std::string generate_label() const;
+    /// Implementation of RecurrenceRelation::has_generic()
+    bool has_generic(const SafePtr<CompilationParameters>& cparams) const;
+    /// Implementation of RecurrenceRelation::generic_header()
+    std::string generic_header() const;
+    /// Implementation of RecurrenceRelation::generic_instance()
+    std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const;
   };
   
   /** class VRR_11_R12kG12_11_util implements the logic of the VRR. For any
@@ -410,7 +417,64 @@ namespace libint2 {
       
       return os.str();
     }
-    
+
+  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+    bool
+    VRR_11_R12kG12_11<I,F,K,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
+    {
+      F sh_a(target_->bra(0,0));
+      F sh_b(target_->ket(0,0));
+      F sh_c(target_->bra(1,0));
+      F sh_d(target_->ket(1,0));
+      const unsigned int max_opt_am = cparams->max_am_opt();
+      // generic code works for a0c0 classes where am(a) > 1 and am(c) > 1
+      // to generate optimized code for xxxx integral need to generate specialized code for up to (x+x)0(x+x)0 integrals
+      if (!TrivialBFSet<F>::result &&
+          sh_b.zero() && sh_d.zero() &&
+          sh_a.norm() > std::max(2*max_opt_am,1u) && sh_c.norm() > std::max(2*max_opt_am,1u))
+        return true;
+      else
+        return false;
+    }
+
+  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+    std::string
+    VRR_11_R12kG12_11<I,F,K,part,where>::generic_header() const
+    {
+      if (K == -1)
+        return std::string("OSVRR_xs_xs.h");
+      else
+        return std::string("VRR_r12kg12_xs_xs.h");
+    }
+
+  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+    std::string
+    VRR_11_R12kG12_11<I,F,K,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
+    {
+      std::ostringstream oss;
+      F sh_a(target_->bra(0,0));
+      F sh_c(target_->bra(1,0));
+
+      oss << "using namespace libint2;" << endl;
+      if (K == -1) {
+        oss << "libint2::OSVRR_xs_xs<" << part << "," << to_string(where) << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+        oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
+      }
+      else {
+        oss << "libint2::VRR_r12kg12_xs_xs<" << part << "," << to_string(where) << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+        oss << K << "," << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
+      }
+      oss << ">::compute(inteval";
+      
+      const unsigned int nargs = args->n();
+      for(unsigned int a=0; a<nargs; a++) {
+        oss << "," << args->symbol(a);
+      }
+      oss << ");";
+      
+      return oss.str();
+    }
+
   /*
   typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
   typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,1,InBra> VRR_c_11_TwoPRep_11_sh;
