@@ -90,7 +90,7 @@ LN_S = @LN_S@
 
 # first check for generated include files in the machine dependent directories
 # and then for include files in the src directory
-INCLUDE = -I$(TOPDIR)/src/bin -I$(TOPDIR)/include -I$(SRCTOPDIR)/include -I$(SRCTOPDIR)/src/bin \
+INCLUDE = -I$(TOPDIR)/src/bin -I$(TOPDIR)/src/bin/libint -I$(TOPDIR)/include -I$(SRCTOPDIR)/include -I$(SRCTOPDIR)/src/bin \
 	  @CPPFLAGS@ -I$(SRCTOPDIR)/src/lib/libint -I$(SRCTOPDIR)/src/bin/libint
 DEFINES = @DEFS@ @EXTRADEFINES@
 
