@@ -371,6 +371,13 @@ AC_DEFINE(LIBINT_ENABLE_UNROLLING)
 AC_MSG_RESULT([Integral sets can be unrolled])
 ])
 
+AC_ARG_ENABLE(generic-code,
+[  --enable-generic-code   Use manually-written generic code.],
+[
+AC_DEFINE(LIBINT_ENABLE_GENERIC_CODE)
+AC_MSG_RESULT([Use generic code])
+])
+
 LIBINT_VECTOR_LENGTH=1
 AC_ARG_WITH(vector-length,
 [  --with-vector-length=N  Compute integrals in vectors of length N.],

@@ -1,4 +1,8 @@
 
+05/25/2007:     Added generic VRR codes for ERI and G12 integrals. This helps to reduce dramatically the size of generated code.
+                Use --enable-generic-code configure flag.
+                -EFV
+
 01/28/2007:     Added G12DKH capability.
 		-EFV
 

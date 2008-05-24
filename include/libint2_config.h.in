@@ -76,6 +76,9 @@
 /* Whether integral sets can be unrolled */
 #undef LIBINT_ENABLE_UNROLLING
 
+/* Whether generic code can be used */
+#undef LIBINT_ENABLE_GENERIC_CODE
+
 /* maximum length of vectors */
 #undef LIBINT_VECTOR_LENGTH
 

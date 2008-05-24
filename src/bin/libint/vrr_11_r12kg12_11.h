@@ -97,12 +97,14 @@ namespace libint2 {
 
     /// Implementation of RecurrenceRelation::generate_label()
     std::string generate_label() const;
+#if LIBINT_ENABLE_GENERIC_CODE
     /// Implementation of RecurrenceRelation::has_generic()
     bool has_generic(const SafePtr<CompilationParameters>& cparams) const;
     /// Implementation of RecurrenceRelation::generic_header()
     std::string generic_header() const;
     /// Implementation of RecurrenceRelation::generic_instance()
     std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const;
+#endif
   };
   
   /** class VRR_11_R12kG12_11_util implements the logic of the VRR. For any
@@ -419,6 +421,7 @@ namespace libint2 {
       return os.str();
     }
 
+#if LIBINT_ENABLE_GENERIC_CODE
   template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
     bool
     VRR_11_R12kG12_11<I,F,K,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
@@ -483,6 +486,7 @@ namespace libint2 {
       
       return oss.str();
     }
+#endif // #if !LIBINT_ENABLE_GENERIC_CODE
 
   /*
   typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
