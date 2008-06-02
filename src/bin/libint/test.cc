@@ -14,6 +14,7 @@
 #include <integral.h>
 #include <r1dotr1g12_11_11.h>
 #include <r1dotr2g12_11_11.h>
+#include <divg12primextx_11_11.h>
 #include <iter.h>
 #include <policy_spec.h>
 #include <intset_to_ints.h>
@@ -143,8 +144,8 @@ namespace {
     two_shells xx;
     typedef PTYPELIST_3( Tag2, CGShell, CGShell, CGShell) three_shells;
     three_shells xxx;
-    typedef GenIntegral<TwoERep,two_shells,two_shells> NewTwoERep_2b2k;
-    NewTwoERep_2b2k xxxx(xx,xx);
+    typedef GenIntegral<TwoPRep,two_shells,two_shells> NewTwoPRep_2b2k;
+    NewTwoPRep_2b2k xxxx(xx,xx);
   
     ValueAt<two_shells, 1>::ResultType xx_1 = ValueAt<two_shells,1>::typelist_member(xx);
 
@@ -285,6 +286,11 @@ namespace {
     }
     {
       typedef R1dotR1G12_11_11_sq IType;
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p);
+      std::cout << "Created integral set " << iset->label() << std::endl;
+    }
+    {
+      typedef DivG12prime_xTx_11_11_sq IType;
       SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p);
       std::cout << "Created integral set " << iset->label() << std::endl;
     }

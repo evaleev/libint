@@ -7,40 +7,10 @@
 using namespace std;
 using namespace libint2;
 
-TwoERep::TwoERep() :
-  parent_type("Two-electron repulsion operator","TwoERep")
-{
-}
-
-TwoERep::TwoERep(const SafePtr<TwoERep>& source) :
-  parent_type("Two-electron repulsion operator","TwoERep")
-{
-}
-
-TwoERep::TwoERep(const SafePtr<OperSet>& oset) :
-  parent_type("Two-electron repulsion operator","TwoERep")
-{
-  const SafePtr<TwoERep> oset_cast = dynamic_pointer_cast<TwoERep,OperSet>(oset);
-  if (oset_cast == 0)
-    throw std::runtime_error("TwoERep::TwoERep(const SafePtr<OperSet>& oset) -- oset is a pointer to an incompatible type");
-}
-
-TwoERep::TwoERep(const SafePtr<ConstructablePolymorphically>& oset) :
-  parent_type("Two-electron repulsion operator","TwoERep")
-{
-  const SafePtr<TwoERep> oset_cast = dynamic_pointer_cast<TwoERep,ConstructablePolymorphically>(oset);
-  if (oset_cast == 0)
-    throw std::runtime_error("TwoERep::TwoERep(const SafePtr<ConstructablePolymorphically>& oset) -- oset is a pointer to an incompatible type");
-}
-
-TwoERep::~TwoERep()
-{
-}
-
 ////////////
 
 std::string
-R12kG12::label(int K)
+R12_k_G12_Descr::label_(int K)
 {
   ostringstream oss;
   oss << "R12^" << K << " * G12";
@@ -48,7 +18,7 @@ R12kG12::label(int K)
 }
 
 std::string
-R12kG12::symbol(int K)
+R12_k_G12_Descr::symbol_(int K)
 {
   ostringstream oss;
   oss << "R12_" << (K<0 ? "minus_" : "") << std::abs(K) << "_G12";
@@ -58,7 +28,7 @@ R12kG12::symbol(int K)
 ////////////
 
 std::string
-TiG12::label(int K)
+Ti_G12_Descr::label_(int K)
 {
   ostringstream oss;
   oss << "[T_" << K << ",G12]";
@@ -66,107 +36,9 @@ TiG12::label(int K)
 }
 
 std::string
-TiG12::symbol(int K)
+Ti_G12_Descr::symbol_(int K)
 {
   ostringstream oss;
   oss << "T" << K << "_G12";
   return oss.str();
 }
-
-////////////
-
-R1dotR1_G12::R1dotR1_G12() :
-  parent_type("r_1.r_1 x G12","R1dotR1_G12")
-{
-}
-
-R1dotR1_G12::R1dotR1_G12(const SafePtr<R1dotR1_G12>& source) :
-  parent_type("r_1.r_1 x G12","R1dotR1_G12")
-{
-}
-
-R1dotR1_G12::R1dotR1_G12(const SafePtr<OperSet>& oset) :
-  parent_type("r_1.r_1 x G12","R1dotR1_G12")
-{
-  const SafePtr<R1dotR1_G12> oset_cast = dynamic_pointer_cast<R1dotR1_G12,OperSet>(oset);
-  if (oset_cast == 0)
-    throw std::runtime_error("R1dotR1_G12::R1dotR1_G12(const SafePtr<OperSet>& oset) -- oset is a pointer to an incompatible type");
-}
-
-R1dotR1_G12::R1dotR1_G12(const SafePtr<ConstructablePolymorphically>& oset) :
-  parent_type("r_1.r_1 x G12","R1dotR1_G12")
-{
-  const SafePtr<R1dotR1_G12> oset_cast = dynamic_pointer_cast<R1dotR1_G12,ConstructablePolymorphically>(oset);
-  if (oset_cast == 0)
-    throw std::runtime_error("R1dotR1_G12::R1dotR1_G12(const SafePtr<ConstructablePolymorphically>& oset) -- oset is a pointer to an incompatible type");
-}
-
-R1dotR1_G12::~R1dotR1_G12()
-{
-}
-
-////////////
-
-R2dotR2_G12::R2dotR2_G12() :
-  parent_type("r_1.r_1 x G12","R2dotR2_G12")
-{
-}
-
-R2dotR2_G12::R2dotR2_G12(const SafePtr<R2dotR2_G12>& source) :
-  parent_type("r_1.r_1 x G12","R2dotR2_G12")
-{
-}
-
-R2dotR2_G12::R2dotR2_G12(const SafePtr<OperSet>& oset) :
-  parent_type("r_1.r_1 x G12","R2dotR2_G12")
-{
-  const SafePtr<R2dotR2_G12> oset_cast = dynamic_pointer_cast<R2dotR2_G12,OperSet>(oset);
-  if (oset_cast == 0)
-    throw std::runtime_error("R2dotR2_G12::R2dotR2_G12(const SafePtr<OperSet>& oset) -- oset is a pointer to an incompatible type");
-}
-
-R2dotR2_G12::R2dotR2_G12(const SafePtr<ConstructablePolymorphically>& oset) :
-  parent_type("r_1.r_1 x G12","R2dotR2_G12")
-{
-  const SafePtr<R2dotR2_G12> oset_cast = dynamic_pointer_cast<R2dotR2_G12,ConstructablePolymorphically>(oset);
-  if (oset_cast == 0)
-    throw std::runtime_error("R2dotR2_G12::R2dotR2_G12(const SafePtr<ConstructablePolymorphically>& oset) -- oset is a pointer to an incompatible type");
-}
-
-R2dotR2_G12::~R2dotR2_G12()
-{
-}
-
-////////////
-
-R1dotR2_G12::R1dotR2_G12() :
-  parent_type("r_1.r_2 x G12","R1dotR2_G12")
-{
-}
-
-R1dotR2_G12::R1dotR2_G12(const SafePtr<R1dotR2_G12>& source) :
-  parent_type("r_1.r_2 x G12","R1dotR2_G12")
-{
-}
-
-R1dotR2_G12::R1dotR2_G12(const SafePtr<OperSet>& oset) :
-  parent_type("r_1.r_2 x G12","R1dotR2_G12")
-{
-  const SafePtr<R1dotR2_G12> oset_cast = dynamic_pointer_cast<R1dotR2_G12,OperSet>(oset);
-  if (oset_cast == 0)
-    throw std::runtime_error("R1dotR2_G12::R1dotR2_G12(const SafePtr<OperSet>& oset) -- oset is a pointer to an incompatible type");
-}
-
-R1dotR2_G12::R1dotR2_G12(const SafePtr<ConstructablePolymorphically>& oset) :
-  parent_type("r_1.r_2 x G12","R1dotR2_G12")
-{
-  const SafePtr<R1dotR2_G12> oset_cast = dynamic_pointer_cast<R1dotR2_G12,ConstructablePolymorphically>(oset);
-  if (oset_cast == 0)
-    throw std::runtime_error("R1dotR2_G12::R1dotR2_G12(const SafePtr<ConstructablePolymorphically>& oset) -- oset is a pointer to an incompatible type");
-}
-
-R1dotR2_G12::~R1dotR2_G12()
-{
-}
-
-////////////

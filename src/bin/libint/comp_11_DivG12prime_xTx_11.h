@@ -1,6 +1,6 @@
 
-#ifndef _libint2_src_bin_libint_cr11r2dotr2g1211_h_
-#define _libint2_src_bin_libint_cr11r2dotr2g1211_h_
+#ifndef _libint2_src_bin_libint_cr11divg12primextx11_h_
+#define _libint2_src_bin_libint_cr11divg12primextx11_h_
 
 #include <iostream>
 #include <sstream>
@@ -12,7 +12,7 @@
 #include <rr.h>
 #include <rr.templ.h>
 #include <integral.h>
-#include <r2dotr2g12_11_11.h>
+#include <divg12primexTx_11_11.h>
 #include <algebra.h>
 #include <flop.h>
 #include <prefactors.h>
@@ -21,21 +21,21 @@
 
 using namespace std;
 
-
 namespace libint2 {
 
-  /** Compute relation for 2-e integrals of the r2.r2 x G12 operators.
-  I<BFSet> is the integral set specialization that describes the
-  integrals of the R2dotR2_G12 operator.
+  /** Compute relation integrals of the
+      \f$ \left( \nabla \cdot g12' \right) \left( g12' \cdot \nabla \right) \f$ operators.
+      I<BFSet> is the integral set specialization that describes the
+      integrals of the this operator operator.
   */
   template <template <class> class I, class BFSet>
-  class CR_11_R2dotR2G12_11 : public RecurrenceRelation
+  class CR_11_DivG12prime_xTx_11 : public RecurrenceRelation
     {
 
   public:
     typedef RecurrenceRelation ParentType;
     typedef BFSet BasisFunctionType;
-    typedef CR_11_R2dotR2G12_11<I,BFSet> ThisType;
+    typedef CR_11_DivG12prime_xTx_11<I,BFSet> ThisType;
     typedef I<BFSet> TargetType;
     typedef R12kG12_11_11<BFSet,0> ChildType;
     /// The type of expressions in which RecurrenceRelations result.
@@ -45,7 +45,7 @@ namespace libint2 {
         issues with getting a SafePtr from constructor (as needed for registry to work).
     */
     static SafePtr<ThisType> Instance(const SafePtr<TargetType>&);
-    ~CR_11_R2dotR2G12_11() {}
+    ~CR_11_DivG12prime_xTx_11() {}
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return nchildren_; };
@@ -73,14 +73,14 @@ namespace libint2 {
       For example, dir can be 0 (x), 1(y), or 2(z) if BFSet is
       a Cartesian Gaussian.
      */
-    CR_11_R2dotR2G12_11(const SafePtr<TargetType>&);
+    CR_11_DivG12prime_xTx_11(const SafePtr<TargetType>&);
 
 #if 0
     /// registers this RR with the stack, if needed
     bool register_with_rrstack() const;
 #endif
     
-    static const unsigned int max_nchildren_ = 3;
+    static const unsigned int max_nchildren_ = 18;    
     SafePtr<TargetType> target_;
     SafePtr<ChildType> children_[max_nchildren_];
     unsigned int nchildren_;
@@ -96,8 +96,8 @@ namespace libint2 {
   };
 
   template <template <class> class I, class F>
-    SafePtr< CR_11_R2dotR2G12_11<I,F> >
-    CR_11_R2dotR2G12_11<I,F>::Instance(const SafePtr<TargetType>& Tint)
+    SafePtr< CR_11_DivG12prime_xTx_11<I,F> >
+    CR_11_DivG12prime_xTx_11<I,F>::Instance(const SafePtr<TargetType>& Tint)
     {
       SafePtr<ThisType> this_ptr(new ThisType(Tint));
       // Do post-construction duties
@@ -108,7 +108,7 @@ namespace libint2 {
     }
 
   template <template <class> class I, class F>
-    CR_11_R2dotR2G12_11<I,F>::CR_11_R2dotR2G12_11(const SafePtr<I<F> >& Tint) :
+    CR_11_DivG12prime_xTx_11<I,F>::CR_11_DivG12prime_xTx_11(const SafePtr<I<F> >& Tint) :
     ParentType(), target_(Tint), nchildren_(0)
     {
       F sh_a(Tint->bra(0,0));
@@ -129,9 +129,9 @@ namespace libint2 {
       const unsigned int ndirs = is_simple() ? 3 : 1;
       for(int xyz=0; xyz<ndirs; xyz++) {
         
-	// c+1_i d+1_i
+	// a+1_i c+1_i
+	bra_ref->operator[](0).inc(xyz);
 	bra_ref->operator[](1).inc(xyz);
-	ket_ref->operator[](1).inc(xyz);
 	int next_child = nchildren_;
 	children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0);
 	++nchildren_;
@@ -141,14 +141,14 @@ namespace libint2 {
 	  add_expr(expr0_ptr);
 	  nflops_ += 1;
 	}
+	bra_ref->operator[](0).dec(xyz);
 	bra_ref->operator[](1).dec(xyz);
-	ket_ref->operator[](1).dec(xyz);
       }
     }
   
   template <template <class> class I, class F>
-    SafePtr< typename CR_11_R2dotR2G12_11<I,F>::ChildType >
-    CR_11_R2dotR2G12_11<I,F>::child(unsigned int i) const
+    SafePtr< typename CR_11_DivG12prime_xTx_11<I,F>::ChildType >
+    CR_11_DivG12prime_xTx_11<I,F>::child(unsigned int i) const
     {
       assert(i>=0 && i<nchildren_);
       unsigned int nc=0;
@@ -162,8 +162,8 @@ namespace libint2 {
     };
 
   /// Useful typedefs
-  typedef CR_11_R2dotR2G12_11<R2dotR2G12_11_11,CGShell> CR_11_R2dotR2G12_11_sq;
-  typedef CR_11_R2dotR2G12_11<R2dotR2G12_11_11,CGF> CR_11_R2dotR2G12_11_int;
+  typedef CR_11_DivG12prime_xTx_11<DivG12prime_xTx_11_11,CGShell> CR_11_DivG12prime_xTx_11_sq;
+  typedef CR_11_DivG12prime_xTx_11<DivG12prime_xTx_11_11,CGF> CR_11_DivG12prime_xTx_11_int;
 
 };
 

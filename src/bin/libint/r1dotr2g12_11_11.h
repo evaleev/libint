@@ -1,17 +1,26 @@
 
-#include <integral.h>
-
 #ifndef _libint2_src_bin_libint_r1dotr2g121111_h_
 #define _libint2_src_bin_libint_r1dotr2g121111_h_
+
+#include <integral.h>
+#include <integral_11_11.h>
 
 using namespace std;
 
 namespace libint2 {
   
   /**
-     R1dotR2G12_11_11 --
-     integral over R1dotR2_G12 operator with one bfs for each particle in bra and ket.
+     RidotRjG12_11_11 --
+     integral over RidotRj_G12 operator with one bfs for each particle in bra and ket.
   */
+  typedef GenIntegralSet_11_11<CGShell,R1dotR1_G12,EmptySet> R1dotR1G12_11_11_sq;
+  typedef GenIntegralSet_11_11<CGF,R1dotR1_G12,EmptySet> R1dotR1G12_11_11_int;
+  typedef GenIntegralSet_11_11<CGShell,R2dotR2_G12,EmptySet> R2dotR2G12_11_11_sq;
+  typedef GenIntegralSet_11_11<CGF,R2dotR2_G12,EmptySet> R2dotR2G12_11_11_int;
+  typedef GenIntegralSet_11_11<CGShell,R1dotR2_G12,EmptySet> R1dotR2G12_11_11_sq;
+  typedef GenIntegralSet_11_11<CGF,R1dotR2_G12,EmptySet> R1dotR2G12_11_11_int;
+  
+#if 0
   template <class BFS> class R1dotR2G12_11_11 :
     public GenIntegralSet< R1dotR2_G12, IncableBFSet, typename DefaultTwoPBraket<BFS>::Result, typename DefaultTwoPBraket<BFS>::Result, EmptySet >
     {
@@ -159,7 +168,7 @@ namespace libint2 {
 	ostringstream os;
 	os << "(" << parent_type::bra_.member(0,0)->label() << " "
 	   << parent_type::ket_.member(0,0)->label()
-	   << " | r_1^2 * G12 | "
+	   << " | r_1.r_2 * G12 | "
 	   << parent_type::bra_.member(1,0)->label() << " "
 	   << parent_type::ket_.member(1,0)->label() << ")";
 	label_ = os.str();
@@ -178,7 +187,8 @@ namespace libint2 {
   /// the following typedefs are useful
   typedef R1dotR2G12_11_11<CGShell> R1dotR2G12_11_11_sq;
   typedef R1dotR2G12_11_11<CGF> R1dotR2G12_11_11_int;
-
+#endif
+  
 };
 
 #endif

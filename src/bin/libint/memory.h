@@ -10,9 +10,9 @@ using namespace std;
 
 namespace libint2 {
 
-    /**
-       MemoryBlock<Address,Size> describes a block of raw memory addressed via Address and size described by Size
-     */
+  /**
+     MemoryBlock<Address,Size> describes a block of raw memory addressed via Address and size described by Size
+   */
   template <typename Address, typename Size>
     class MemoryBlock
     {
@@ -110,7 +110,8 @@ namespace libint2 {
       Address address_;
       Size size_;
       bool free_;
-      SafePtr<MemoryBlock> left_;
+      typedef MemoryBlock<Address,Size> this_type;
+      SafePtr<this_type> left_;
       SafePtr<MemoryBlock> right_;
 
       MemoryBlock();

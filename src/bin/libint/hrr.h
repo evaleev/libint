@@ -135,7 +135,8 @@ namespace libint2 {
     target_(Tint), dir_(dir), nchildren_(0)
     {
       target_ = Tint;
-      typename IntType::AuxQuantaType aux = Tint->aux();
+      const typename IntType::AuxQuantaType& aux = Tint->aux();
+      const typename IntType::OperType& oper = Tint->oper();
 
       typedef typename IntType::BraType IBraType;
       typedef typename IntType::KetType IKetType;
@@ -154,7 +155,7 @@ namespace libint2 {
           return;
         }
         bra->set_member(sh_b,part,pos_b);
-        children_[1] = IntType::Instance(*bra,*ket,aux);
+        children_[1] = IntType::Instance(*bra,*ket,aux,oper);
 
         if (loc_a == InBra) {  // a in bra
           F sh_a(bra->member(part,pos_a));
@@ -166,7 +167,7 @@ namespace libint2 {
           sh_a.inc(dir_);
           ket->set_member(sh_a,part,pos_a);
         }
-        children_[0] = IntType::Instance(*bra,*ket,aux);
+        children_[0] = IntType::Instance(*bra,*ket,aux,oper);
         nchildren_ += 2;
 
         if (is_simple()) {
@@ -189,7 +190,7 @@ namespace libint2 {
           return;
         }
         ket->set_member(sh_b,part,pos_b);
-        children_[1] = IntType::Instance(*bra,*ket,aux);
+        children_[1] = IntType::Instance(*bra,*ket,aux,oper);
 
         if (loc_a == InBra) {  // a in bra
           F sh_a(bra->member(part,pos_a));
@@ -201,7 +202,7 @@ namespace libint2 {
           sh_a.inc(dir_);
           ket->set_member(sh_a,part,pos_a);
         }
-        children_[0] = IntType::Instance(*bra,*ket,aux);
+        children_[0] = IntType::Instance(*bra,*ket,aux,oper);
         nchildren_ += 2;
 
         if (is_simple()) {
@@ -314,7 +315,7 @@ namespace libint2 {
         }
       }
       // create a generic GenIntegralSet over a multiplicative operator
-      typedef GenSymmOper< OperatorProperties<IntType::OperatorType::Properties::np,true,PermutationalSymmetry::symm> > DummyOper;
+      typedef GenOper< GenMultSymmOper_Descr<IntType::OperatorType::Properties::np> > DummyOper;
       typedef typename IBraType::bfs_type bfs_type;
       typedef EmptySet DummyQuanta;
       typedef GenIntegralSet<DummyOper, IncableBFSet, IBraType, IKetType, DummyQuanta> DummyIntegral;
@@ -556,13 +557,13 @@ namespace libint2 {
       return localdims;
     }
   
-  typedef HRR<TwoPRep_11_11<CGShell>,CGShell,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_sh;
-  typedef HRR<TwoPRep_11_11<CGShell>,CGShell,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_sh;
-  typedef HRR<TwoPRep_11_11<CGShell>,CGShell,0,InKet,0,InBra,0> HRR_ba_11_TwoPRep_11_sh;
-  typedef HRR<TwoPRep_11_11<CGShell>,CGShell,1,InKet,0,InBra,0> HRR_dc_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11_sq,CGShell,0,InKet,0,InBra,0> HRR_ba_11_TwoPRep_11_sh;
+  typedef HRR<TwoPRep_11_11_sq,CGShell,1,InKet,0,InBra,0> HRR_dc_11_TwoPRep_11_sh;
 
-  typedef HRR<TwoPRep_11_11<CGF>,CGF,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_int;
-  typedef HRR<TwoPRep_11_11<CGF>,CGF,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_int;
+  typedef HRR<TwoPRep_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_int;
+  typedef HRR<TwoPRep_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_int;
 
   typedef HRR<DummySymmIntegral_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_Dummy_11_sh;
   typedef HRR<DummySymmIntegral_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_Dummy_11_sh;

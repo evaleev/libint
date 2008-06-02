@@ -1,10 +1,11 @@
 
+#ifndef _libint2_src_bin_libint_oper_h_
+#define _libint2_src_bin_libint_oper_h_
+
 #include <string>
 #include <hashable.h>
 #include <global_macros.h>
-
-#ifndef _libint2_src_bin_libint_oper_h_
-#define _libint2_src_bin_libint_oper_h_
+#include <util.h>
 
 namespace libint2 {
   
@@ -17,6 +18,7 @@ namespace libint2 {
   /** OperatorProperties describes various properties of an operator or operator set
       np -- number of particles
       multi -- true if multiplicative
+      psymmetry -- symmetry with respect to permutation of bra and ket
     */
   template <unsigned int NP, bool multi, PermutationalSymmetry::type psymmetry>
     class OperatorProperties {
@@ -34,10 +36,10 @@ namespace libint2 {
     public:
       virtual ~OperSet() {};
 
-      /// Returns full description of the operator
-      virtual const std::string& descr() const =0;
+      /// Returns full human-readable description of the operator
+      virtual std::string description() const =0;
       /// Returns short label for the operator
-      virtual const std::string& label() const =0;
+      virtual std::string label() const =0;
       /** Returns 1, 0, or -1, if each operator in the set is symmetric, nonsymmetric,
         or antisymmetric with respect to permutation of particles i and j */
       virtual int psymm(int i, int j) const =0;
@@ -46,18 +48,14 @@ namespace libint2 {
       virtual const unsigned int num_oper() const =0;
     };
   
-  /**
+  /** Oper is OperSet characterized by properties Props
   */
   template <class Props>
     class Oper : public OperSet {
     public:
       typedef Props Properties;
-      virtual ~Oper();
+      virtual ~Oper() {}
 
-      /// Implementation of OperSet::descr()
-      const std::string& descr() const;
-      /// Implementation of OperSet::label()
-      const std::string& label() const;
       /// Implementation of OperSet::psymm()
       int psymm(int i, int j) const;
       
@@ -65,43 +63,13 @@ namespace libint2 {
 
     protected:
       /// The only declared constructor is only useable by derived classes
-      Oper(const std::string& descr, const std::string& label);
+      Oper() {}
 
     private:
-      /// Described name
-      const std::string descr_;
-      /// short (<20 chars) ID label
-      const std::string label_;
-      
       /// Must be overloaded by derived classes if Props::psymm == PermutationalSymmetry::nonstd
       virtual int nonstd_psymm(int i, int j) const;
   };
 
-  template <class Props>
-    Oper<Props>::Oper(const std::string& descr, const std::string& label) :
-    OperSet(), descr_(descr), label_(label)
-    {
-    }
-  
-  template <class Props>
-    Oper<Props>::~Oper()
-    {
-    }
-  
-  template <class Props>
-    const std::string&
-    Oper<Props>::descr() const
-    {
-      return descr_;
-    }
-  
-  template <class Props>
-    const std::string&
-    Oper<Props>::label() const
-    {
-      return label_;
-    }
-  
   template <class Props>
     int
     Oper<Props>::psymm(int i, int j) const
@@ -140,24 +108,38 @@ namespace libint2 {
     }
 
 //////////////////////////////
-  
-  /** GenOper is a generic operator
+
+  /** GenOper is a single operator described by descriptor Descr
   */
-  template <class Props>
-    class GenSymmOper : public Oper<Props>, public Hashable<unsigned,ComputeKey> {
-      public:
-      typedef Oper<Props> parent_type;
+  template <class Descr>
+    class GenOper : public Oper<typename Descr::Properties>, public Hashable<unsigned,ComputeKey> {
+    public:
+      typedef typename Descr::Properties Properties;
+      typedef Oper<Properties> parent_type;
       /// GenOper is not a set
-      typedef GenSymmOper iter_type;
+      typedef GenOper iter_type;
+      
       const unsigned int num_oper() const { return 1; };
       /// Implementation of Hashable::key()
-      unsigned key() const { return 0; }
-      /// Range of key is [0,1)
-      static const unsigned max_key = 1;
+      unsigned int key() const { return descr_.key(); }
+      /// Range of key is [0,Descr::max_key)
+      static const unsigned int max_key = Descr::max_key;
+      /// Implementation of OperSet::description()
+      std::string description() const { return descr_.description(); }
+      /// Implementation of OperSet::label()
+      std::string label() const { return descr_.label(); }
+      /// Return the descriptor object
+      Descr descr() const { return descr_; }
       
-      GenSymmOper() : Oper<Props>(std::string("General Symmetric Operator"),std::string("GenSymmOper")) {}
-      GenSymmOper(const SafePtr<GenSymmOper>&) : Oper<Props>(std::string("General Symmetric Operator"),std::string("GenSymmOper")) {}
-      ~GenSymmOper() {}
+      GenOper(Descr descr = Descr()) : descr_(descr) {}
+      GenOper(const SafePtr<GenOper>& o) : descr_(o->descr_) {}
+      GenOper(const SafePtr<OperSet>& o) : descr_(require_dynamic_cast<GenOper,OperSet>(o)->descr_) {}
+      GenOper(const SafePtr<ConstructablePolymorphically>& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(o)->descr_) {}
+      GenOper(const ConstructablePolymorphically& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(&o)->descr_) {}
+      ~GenOper() {}
+      
+    private:
+      Descr descr_;
       
     };
 
@@ -165,248 +147,120 @@ namespace libint2 {
   
   typedef OperatorProperties<2,true,PermutationalSymmetry::symm> MultiplicativeSymm2Body_Props;
   typedef OperatorProperties<2,true,PermutationalSymmetry::nonsymm> MultiplicativeNonsymm2Body_Props;
-  
-  /** TwoERep is the two-body repulsion operator.
+  typedef OperatorProperties<2,false,PermutationalSymmetry::symm> NonmultiplicativeSymm2Body_Props;
+  typedef OperatorProperties<2,false,PermutationalSymmetry::nonsymm> NonmultiplicativeNonsymm2Body_Props;
+
+  /** GenMultSymmOper is a generic multiplicative symmetric N-body operator
   */
-  class TwoERep : public Oper<MultiplicativeSymm2Body_Props>,
-                  public Hashable<unsigned,ComputeKey> {
-  public:
-    typedef Oper<MultiplicativeSymm2Body_Props> parent_type;
-    /// TwoERep is not a set
-    typedef TwoERep iter_type;
-    const unsigned int num_oper() const { return 1; };
-    /// Implementation of Hashable::key()
-    unsigned key() const { return 0; }
-    /// key is in range [0,1)
-    static const unsigned max_key = 1;
-  
-    TwoERep();
-    TwoERep(const SafePtr<TwoERep>&);
-    TwoERep(const SafePtr<OperSet>&);
-    TwoERep(const SafePtr<ConstructablePolymorphically>&);
-    TwoERep(const ConstructablePolymorphically&);
-    ~TwoERep();
+  template <unsigned int N>
+  struct GenMultSymmOper_Descr {
+    typedef OperatorProperties<N,true,PermutationalSymmetry::symm> Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "generic multiplicative symmetric operator"; }
+    std::string label() const { return "GenMultSymmOper"; }
   };
+  typedef GenOper< GenMultSymmOper_Descr<2>  > GenMultSymm2BodyOper;
   
-//////////////
-  
+  /** TwoPRep is the two-body repulsion operator.
+  */
+  struct TwoPRep_Descr {
+    typedef MultiplicativeSymm2Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "1/r_{12}"; }
+    std::string label() const { return "TwoPRep"; }
+  };
+  typedef GenOper<TwoPRep_Descr> TwoPRep;
+
   /** R12_k_G12 is a two-body operator of form r_{12}^k * exp(-\gamma * r_{12}),
       where k is an integer and \gamma is a positive real number.
   */
-  template <int K>
-  class R12_k_G12 : public Oper<MultiplicativeSymm2Body_Props>,
-                    public Hashable<unsigned,ComputeKey> {
+  class R12_k_G12_Descr {
   public:
-    typedef Oper<MultiplicativeSymm2Body_Props> parent_type;
-    /// R12_k_G12 is not a set
-    typedef R12_k_G12 iter_type;
-    static const int k = K;
-    const unsigned int num_oper() const { return 1; }
-    /// Implementation of Hashable::key()
-    unsigned key() const { return 0; }
-    /// key is in range [0,1)
-    static const unsigned max_key = 1;
-    
-    R12_k_G12();
-    R12_k_G12(const SafePtr<R12_k_G12>&);
-    R12_k_G12(const SafePtr<OperSet>&);
-    R12_k_G12(const SafePtr<ConstructablePolymorphically>&);
-    R12_k_G12(const ConstructablePolymorphically&);
-    ~R12_k_G12();
+    typedef MultiplicativeSymm2Body_Props Properties;
+    /// K can range from -1 to 4
+    R12_k_G12_Descr(int K) : K_(K) { assert(K >= -1 && K <= 4); }
+    R12_k_G12_Descr(const R12_k_G12_Descr& a) : K_(a.K_) {}
+    static const unsigned int max_key = 5;
+    unsigned int key() const { return K_ + 1; }
+    std::string description() const { return label_(K_); }
+    std::string label() const { return symbol_(K_); }
+    int K() const { return K_; }
+  private:
+    R12_k_G12_Descr();
+    static std::string label_(int K);
+    static std::string symbol_(int K);
+    int K_;
   };
-
-  namespace R12kG12 {
-    std::string label(int K);
-    std::string symbol(int K);
-  };
-
-  template <int K>
-  R12_k_G12<K>::R12_k_G12() :
-  parent_type(R12kG12::label(K),R12kG12::symbol(K))
-  {
-  }
-  
-  template <int K>
-  R12_k_G12<K>::R12_k_G12(const SafePtr<R12_k_G12>& source) :
-  parent_type(R12kG12::label(K),R12kG12::symbol(K))
-  {
-  }
-  
-  template <int K>
-  R12_k_G12<K>::R12_k_G12(const SafePtr<OperSet>& oset) :
-  parent_type(R12kG12::label(K),R12kG12::symbol(K))
-  {
-    const SafePtr<R12_k_G12> oset_cast = dynamic_pointer_cast<R12_k_G12,OperSet>(oset);
-    if (oset_cast == 0)
-      throw std::runtime_error("R12_k_G12<K>::R12_k_G12(const SafePtr<OperSet>& oset) -- oset is a pointer to an incompatible type");
-  }
-  
-  template <int K>
-  R12_k_G12<K>::R12_k_G12(const SafePtr<ConstructablePolymorphically>& oset) :
-  parent_type(R12kG12::label(K),R12kG12::symbol(K))
-  {
-    const SafePtr<R12_k_G12> oset_cast = dynamic_pointer_cast<R12_k_G12,ConstructablePolymorphically>(oset);
-    if (oset_cast == 0)
-      throw std::runtime_error("R12_k_G12<K>::R12_k_G12(const SafePtr<ConstructablePolymorphically>& oset) -- oset is a pointer to an incompatible type");
-  }
-  
-  template <int K>
-  R12_k_G12<K>::R12_k_G12(const ConstructablePolymorphically& oset) :
-  parent_type(R12kG12::label(K),R12kG12::symbol(K))
-  {
-    const R12_k_G12& oset_cast = dynamic_cast<const R12_k_G12&>(oset);
-  }
-
-  template <int K>
-  R12_k_G12<K>::~R12_k_G12()
-  {
-  }
-
-//////////////
-  
-  typedef OperatorProperties<2,false,PermutationalSymmetry::nonsymm> NonmultiplicativeNonsymm2Body_Props;
+  typedef GenOper<R12_k_G12_Descr> R12kG12;
 
   /** Ti_G12 is a two-body operator of form [T_i, G12],
       where i is particle index (0 or 1) and G12 is a Gaussian Geminal.
   */
-  template <int I>
-  class Ti_G12 : public Oper<NonmultiplicativeNonsymm2Body_Props>,
-                 public Hashable<unsigned,ComputeKey> {
+  class Ti_G12_Descr {
   public:
-    typedef Oper<NonmultiplicativeNonsymm2Body_Props> parent_type;
-    /// Ti_G12 is not a set
-    typedef Ti_G12 iter_type;
-    static const int i = I;
-    const unsigned int num_oper() const { return 1; }
-    /// Implementation of Hashable::key()
-    unsigned key() const { return 0; }
-    /// key is in range [0,1)
-    static const unsigned max_key = 1;
-    
-    Ti_G12();
-    Ti_G12(const SafePtr<Ti_G12>&);
-    Ti_G12(const SafePtr<OperSet>&);
-    Ti_G12(const SafePtr<ConstructablePolymorphically>&);
-    Ti_G12(const ConstructablePolymorphically&);
-    ~Ti_G12();
-
+    typedef NonmultiplicativeNonsymm2Body_Props Properties;
+    /// K can range from 0 to 1
+    static const unsigned int max_key = 2;
+    Ti_G12_Descr(int K) : K_(K) { assert(K >= 0 && K <= 1); }
+    Ti_G12_Descr(const Ti_G12_Descr& a) : K_(a.K_) {}
+    unsigned int key() const { return K_; }
+    std::string description() const { return label_(K_); }
+    std::string label() const { return symbol_(K_); }
+    int K() const { return K_; }
+  private:
+    Ti_G12_Descr();
+    static std::string label_(int K);
+    static std::string symbol_(int K);
+    int K_;
   };
-
-  namespace TiG12 {
-    std::string label(int K);
-    std::string symbol(int K);
-  };
-
-  template <int I>
-  Ti_G12<I>::Ti_G12() :
-  parent_type(TiG12::label(I),TiG12::symbol(I))
-  {
-  }
-  
-  template <int I>
-  Ti_G12<I>::Ti_G12(const SafePtr<Ti_G12>& source) :
-  parent_type(TiG12::label(I),TiG12::symbol(I))
-  {
-  }
-  
-  template <int I>
-  Ti_G12<I>::Ti_G12(const SafePtr<OperSet>& oset) :
-  parent_type(TiG12::label(I),TiG12::symbol(I))
-  {
-    const SafePtr<Ti_G12> oset_cast = dynamic_pointer_cast<Ti_G12,OperSet>(oset);
-    if (oset_cast == 0)
-      throw std::runtime_error("Ti_G12<I>::Ti_G12(const SafePtr<OperSet>& oset) -- oset is a pointer to an incompatible type");
-  }
-  
-  template <int I>
-  Ti_G12<I>::Ti_G12(const SafePtr<ConstructablePolymorphically>& oset) :
-  parent_type(TiG12::label(I),TiG12::symbol(I))
-  {
-    const SafePtr<Ti_G12> oset_cast = dynamic_pointer_cast<Ti_G12,ConstructablePolymorphically>(oset);
-    if (oset_cast == 0)
-      throw std::runtime_error("Ti_G12<I>::Ti_G12(const SafePtr<ConstructablePolymorphically>& oset) -- oset is a pointer to an incompatible type");
-  }
-  
-  template <int I>
-  Ti_G12<I>::Ti_G12(const ConstructablePolymorphically& oset) :
-  parent_type(TiG12::label(I),TiG12::symbol(I))
-  {
-    const Ti_G12& oset_cast = dynamic_cast<const Ti_G12&>(oset);
-  }
-
-  template <int I>
-  Ti_G12<I>::~Ti_G12()
-  {
-  }
-
-//////////////
+  typedef GenOper<Ti_G12_Descr> TiG12;
 
   /** r_1.r_1 x g12 is a result of differentiation of exp( - a r_1^2 - a r_2^2 - c r_{12}^2) geminal .
   */
-  class R1dotR1_G12 : public Oper<MultiplicativeNonsymm2Body_Props>,
-                      public Hashable<unsigned,ComputeKey> {
-  public:
-    typedef Oper<MultiplicativeNonsymm2Body_Props> parent_type;
-    /// R1dotR1_G12 is not a set
-    typedef R1dotR1_G12 iter_type;
-    const unsigned int num_oper() const { return 1; };
-    /// Implementation of Hashable::key()
-    unsigned key() const { return 0; }
-    /// key is in range [0,1)
-    static const unsigned max_key = 1;
-  
-    R1dotR1_G12();
-    R1dotR1_G12(const SafePtr<R1dotR1_G12>&);
-    R1dotR1_G12(const SafePtr<OperSet>&);
-    R1dotR1_G12(const SafePtr<ConstructablePolymorphically>&);
-    R1dotR1_G12(const ConstructablePolymorphically&);
-    ~R1dotR1_G12();
+  struct R1dotR1_G12_Descr {
+    typedef MultiplicativeNonsymm2Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "r_1.r_1 x G12"; }
+    std::string label() const { return "R1dotR1_G12"; }
   };
+  typedef GenOper< R1dotR1_G12_Descr > R1dotR1_G12;
 
   /** r_2.r_2 x g12 is a result of differentiation of exp( - a r_1^2 - a r_2^2 - c r_{12}^2) geminal .
   */
-  class R2dotR2_G12 : public Oper<MultiplicativeNonsymm2Body_Props>,
-                      public Hashable<unsigned,ComputeKey> {
-  public:
-    typedef Oper<MultiplicativeNonsymm2Body_Props> parent_type;
-    /// R2dotR2_G12 is not a set
-    typedef R2dotR2_G12 iter_type;
-    const unsigned int num_oper() const { return 1; };
-    /// Implementation of Hashable::key()
-    unsigned key() const { return 0; }
-    /// key is in range [0,1)
-    static const unsigned max_key = 1;
-  
-    R2dotR2_G12();
-    R2dotR2_G12(const SafePtr<R2dotR2_G12>&);
-    R2dotR2_G12(const SafePtr<OperSet>&);
-    R2dotR2_G12(const SafePtr<ConstructablePolymorphically>&);
-    R2dotR2_G12(const ConstructablePolymorphically&);
-    ~R2dotR2_G12();
+  struct R2dotR2_G12_Descr {
+    typedef MultiplicativeNonsymm2Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "r_2.r_2 x G12"; }
+    std::string label() const { return "R2dotR2_G12"; }
   };
-
+  typedef GenOper< R2dotR2_G12_Descr > R2dotR2_G12;
+  
   /** r_1.r_2 x g12 is a result of differentiation of exp( - a r_1^2 - a r_2^2 - c r_{12}^2) geminal .
   */
-  class R1dotR2_G12 : public Oper<MultiplicativeSymm2Body_Props>,
-                      public Hashable<unsigned,ComputeKey> {
-  public:
-    typedef Oper<MultiplicativeSymm2Body_Props> parent_type;
-    /// R1dotR2_G12 is not a set
-    typedef R1dotR2_G12 iter_type;
-    const unsigned int num_oper() const { return 1; };
-    /// Implementation of Hashable::key()
-    unsigned key() const { return 0; }
-    /// key is in range [0,1)
-    static const unsigned max_key = 1;
-  
-    R1dotR2_G12();
-    R1dotR2_G12(const SafePtr<R1dotR2_G12>&);
-    R1dotR2_G12(const SafePtr<OperSet>&);
-    R1dotR2_G12(const SafePtr<ConstructablePolymorphically>&);
-    R1dotR2_G12(const ConstructablePolymorphically&);
-    ~R1dotR2_G12();
+  struct R1dotR2_G12_Descr {
+    typedef MultiplicativeSymm2Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "r_1.r_2 x G12"; }
+    std::string label() const { return "R1dotR2_G12"; }
   };
-
+  typedef GenOper< R1dotR2_G12_Descr > R1dotR2_G12;
+  
+  /** \f$ (\nabla \cdot g_{12}') (g_{12}' \cdot \nabla) \f$ is a component of \f$ [g_{12}, [\nabla^4, g_{12}]] \f$ integral .
+  */
+  struct DivG12prime_xTx_Descr {
+    typedef NonmultiplicativeNonsymm2Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "(\\nabla \\cdot g_{12}') (g_{12}' \\cdot \\nabla)"; }
+    std::string label() const { return "DivG12prime_xTx"; }
+  };
+  typedef GenOper< DivG12prime_xTx_Descr > DivG12prime_xTx;
+  
 };
 
 #endif

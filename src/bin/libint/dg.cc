@@ -1555,6 +1555,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
       }
 
       {
+        current_vertex->print(std::cout);
         throw std::runtime_error("DirectedGraph::print_def() -- cannot handle this vertex yet");
       }
     }

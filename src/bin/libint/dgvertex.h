@@ -112,7 +112,7 @@ namespace libint2 {
     /** label() returns a unique, short, descriptive label of DGVertex (e.g. "( p_x s | 1/r_{12} | d_xy s )^{(1)}")
     */
     virtual const std::string& label() const =0;
-    /** is() returns a very short label of DGVertex which is (almost)
+    /** id() returns a very short label of DGVertex which is (almost)
         guaranteed to be a symbol (e.g. "(p_x s|d_xy s)^1")
     */
     virtual const std::string& id() const =0;

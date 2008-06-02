@@ -1,4 +1,7 @@
 
+#ifndef _libint2_src_bin_libint_cr11r1dotr1g1211_h_
+#define _libint2_src_bin_libint_cr11r1dotr1g1211_h_
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -15,9 +18,6 @@
 #include <prefactors.h>
 #include <context.h>
 #include <default_params.h>
-
-#ifndef _libint2_src_bin_libint_cr11r1dotr1g1211_h_
-#define _libint2_src_bin_libint_cr11r1dotr1g1211_h_
 
 using namespace std;
 

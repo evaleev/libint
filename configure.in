@@ -817,28 +817,72 @@ dnl ---------- Checks for "standard" header files. -----------
 AC_HEADER_STDC
 AC_CHECK_HEADERS(limits.h stdint.h)
 
-dnl ------------------ Check for Boost -----------------------
+dnl ------------------ Check for shared_ptr -----------------------
 
-AC_MSG_CHECKING([for Boost shared_ptr])
+HAVE_SHARED_PTR=no
+  AC_MSG_CHECKING([for shared_ptr in Boost])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_SOURCE(
+      [[#include <boost/shared_ptr.hpp>
+      ]],
+      [[
+        shared_ptr<int> a(new int);
+        shared_ptr<int> b = a;
+      ]]
+     )
+    ],
+    [AC_MSG_RESULT([yes])
+     HAVE_SHARED_PTR=boost
+     AC_DEFINE(HAVE_SHARED_PTR_IN_BOOST)
+    ],
+    [
+      AC_MSG_RESULT([no])
+    ]
+  )
+
+if test "X$HAVE_SHARED_PTR" = "Xno"; then
+  AC_MSG_CHECKING([for shared_ptr in standard C++ library])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_SOURCE(
+      [[#include <memory>
+      ]],
+      [[
+        shared_ptr<int> a(new int);
+        shared_ptr<int> b = a;
+      ]]
+     )
+    ],
+    [AC_MSG_RESULT([yes])
+     HAVE_SHARED_PTR=std
+    ],
+    [
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([shared_ptr is required. Please download Boost from boost.org or use C++ compiler that supports shard_ptr.])
+    ]
+  )
+fi
+
+dnl -- Checks for typedefs, structures, and compiler characteristics. --
+AC_TYPE_SIZE_T
+
+dnl ------------------ Check for variadic templates -----------------------
+
+AC_MSG_CHECKING([for variadic templates])
 AC_COMPILE_IFELSE(
   [AC_LANG_SOURCE(
-    [[#include <boost/shared_ptr.hpp>
+    [[
+      template <typename...> struct A;
     ]],
     [[
-      shared_ptr<int> a(new int);
-      shared_ptr<int> b = a;
+      A<int,double> a;
     ]]
    )],
   [AC_MSG_RESULT([yes])],
   [
     AC_MSG_RESULT([no])
-    AC_MSG_ERROR([Boost shared_ptr is required. Please download Boost from boost.org.])
+    AC_MSG_ERROR([Support for variadic templates is required. Please use a compiler that supports C++0x standard.])
   ]
 )
-
-
-dnl -- Checks for typedefs, structures, and compiler characteristics. --
-AC_TYPE_SIZE_T
 
 CPPFLAGS="$CPPFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \

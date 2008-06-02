@@ -168,7 +168,7 @@ namespace libint2 {
       return oss.str();
     }
   
-  typedef QuantumNumbers<unsigned int,0> NullQuantumSet;
+  //typedef QuantumNumbers<unsigned int,0> NullQuantumSet;
   
   
   /**
@@ -184,6 +184,8 @@ namespace libint2 {
     /// QuantumSet is a set of one QuantumSet
     typedef QuantumNumbersA iter_type;
 
+    // Set all quanta to val
+    QuantumNumbersA(const T& val);
     QuantumNumbersA(const T* qn);
     QuantumNumbersA(const vector<T>& qn);
     QuantumNumbersA(const SafePtr<QuantumNumbersA>&);
@@ -238,6 +240,13 @@ namespace libint2 {
     }
     
   };
+
+  template<typename T, unsigned int N>
+    QuantumNumbersA<T,N>::QuantumNumbersA(const T& val)
+    {
+      for(int i=0; i<N; i++)
+        qn_[i] = val;
+    }
 
   template<typename T, unsigned int N>
     QuantumNumbersA<T,N>::QuantumNumbersA(const T* qn)
@@ -321,10 +330,6 @@ namespace libint2 {
     }
   
   /** partial specialization of QuantumNumbersA for the case N=0 */
-    /**
-     QuantumNumbersA<T,N> is a set of N quantum numbers of type T implemented in terms of a C-style array.
-     QuantumNumbersA is faster than QuantumNumbers but is not as safe!
-  */
   template<typename T> class QuantumNumbersA<T,0> : public QuantumSet {
 
   public:
@@ -332,6 +337,7 @@ namespace libint2 {
     /// QuantumSet is a set of one QuantumSet
     typedef QuantumNumbersA iter_type;
 
+    QuantumNumbersA() {}
     QuantumNumbersA(const T* qn) {}
     QuantumNumbersA(const vector<T>& qn) {}
     QuantumNumbersA(const SafePtr<QuantumNumbersA>&) {}
@@ -361,6 +367,24 @@ namespace libint2 {
     
   };
 
+  /// This is the implementation of the QuantumNumbers concept used by TwoPrep_11_11
+  // really need to have typedef template!
+  template <typename T, unsigned int N>
+    struct DefaultQuantumNumbers {
+      /// This defines which QuantumNumbers implementation to use
+      //typedef QuantumNumbers<T,N> Result;
+      typedef QuantumNumbersA<T,N> Result;
+    };
+  /**
+     EmptySet is the type that describes null set of auxiliary indices
+  */
+  typedef DefaultQuantumNumbers<int,0>::Result EmptySet;
+  /**
+     mType is the type that describes the auxiliary index of standard 2-body repulsion integrals
+  */
+  typedef DefaultQuantumNumbers<unsigned int,1>::Result mType;
+  
+  
 };
 
 #endif

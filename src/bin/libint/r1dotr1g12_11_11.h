@@ -8,6 +8,7 @@ using namespace std;
 
 namespace libint2 {
   
+#if 0
   /**
      R1dotR1G12_11_11 --
      integral over R1dotR1_G12 operator with one bfs for each particle in bra and ket.
@@ -178,7 +179,7 @@ namespace libint2 {
   /// the following typedefs are useful
   typedef R1dotR1G12_11_11<CGShell> R1dotR1G12_11_11_sq;
   typedef R1dotR1G12_11_11<CGF> R1dotR1G12_11_11_int;
-
+#endif
 };
 
 #endif

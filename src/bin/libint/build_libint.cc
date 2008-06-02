@@ -278,7 +278,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
                     SafePtr<Libint2Iface>& iface)
 {
   const std::string task("eri");
-  typedef TwoPRep_11_11<CGShell> TwoPRep_sh_11_11;
+  typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
   for(int l=0; l<=lmax; l++) {
@@ -324,7 +324,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 	  // Need to accumulate integrals?
 	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
           
-          SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+          SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],mType(0u));
           os << "building " << abcd->description() << endl;
           SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(abcd);
           dg_xxxx->append_target(abcd_ptr);
@@ -449,10 +449,11 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 	  // Need to accumulate integrals?
 	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
           
+      typedef R12kG12_11_11_sq int_type;
+      typedef R12kG12 oper_type;
           // k=0
           if (!ssss) {
-            typedef R12kG12_11_11<CGShell,0> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(0));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -460,8 +461,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           
           // k=-1
           if (!ssss) {
-            typedef R12kG12_11_11<CGShell,-1> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(-1));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -489,8 +489,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
           // k=2
           if (!ssss) {
-            typedef R12kG12_11_11<CGShell,2> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(2));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -563,6 +562,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
 #endif // INCLUDE_G12
 
+#if 0
 #ifdef INCLUDE_GENG12
 void
 build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
@@ -874,11 +874,13 @@ build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& 
 }
 
 #endif // INCLUDE_G12DKH
+#endif
 
 void
 test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
      SafePtr<Libint2Iface>& iface)
 {
+#if 0
   const std::string task("r12kg12");
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
@@ -1011,6 +1013,7 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
       } // end of c loop
     } // end of b loop
   } // end of a loop  
+#endif
 }
 
 void

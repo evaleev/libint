@@ -1,18 +1,18 @@
 
-#include <integral.h>
-
 #ifndef _libint2_src_bin_libint_dummyintegral_h_
 #define _libint2_src_bin_libint_dummyintegral_h_
 
+#include <integral.h>
+
 namespace libint2 {
-  typedef GenIntegralSet< GenSymmOper< OperatorProperties<2,true,PermutationalSymmetry::symm> >,
+  typedef GenIntegralSet< GenMultSymm2BodyOper,
     IncableBFSet,
     DefaultTwoPBraket<CGShell>::Result,
     DefaultTwoPBraket<CGShell>::Result,
     EmptySet >
   DummySymmIntegral_11_11_sq;
 
-  typedef GenIntegralSet< GenSymmOper< OperatorProperties<2,true,PermutationalSymmetry::symm> >,
+  typedef GenIntegralSet< GenMultSymm2BodyOper,
     IncableBFSet,
     DefaultTwoPBraket<CGF>::Result,
     DefaultTwoPBraket<CGF>::Result,

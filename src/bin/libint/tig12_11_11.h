@@ -8,6 +8,7 @@ using namespace std;
 
 namespace libint2 {
   
+#if 0
   /** TiG12_11_11_base is the base for all 2-body integral over the Ti_G12
       operator with one basis function for each particle in bra and ket
     */
@@ -216,7 +217,8 @@ namespace libint2 {
       };
 
   };
-
+#endif
+  
 };
 
 #endif

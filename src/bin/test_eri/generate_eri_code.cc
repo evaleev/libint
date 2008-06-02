@@ -24,7 +24,7 @@ int main (int argc, char* argv[])
 namespace {
 
   unsigned int am[][1] = { {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}};
-  typedef TwoPRep_11_11<CGShell> ERIQtet;
+  typedef TwoPRep_11_11_sq ERIQtet;
 
   int try_main (int argc, char* argv[])
   {
@@ -34,7 +34,7 @@ namespace {
 						       CGShell(am[l[1]]),
 						       CGShell(am[l[2]]),
 						       CGShell(am[l[3]]),
-						       0);
+						       0u);
     SafePtr<DirectedGraph> pg1(new DirectedGraph);
     SafePtr<DirectedGraph> pg2(new DirectedGraph);
     SafePtr<DirectedGraph> pg3(new DirectedGraph);

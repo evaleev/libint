@@ -1,4 +1,7 @@
 
+#ifndef _libint2_src_bin_libint_cr11r1dotr2g1211_h_
+#define _libint2_src_bin_libint_cr11r1dotr2g1211_h_
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -16,19 +19,16 @@
 #include <context.h>
 #include <default_params.h>
 
-#ifndef _libint2_src_bin_libint_cr11r1dotr2g1211_h_
-#define _libint2_src_bin_libint_cr11r1dotr2g1211_h_
-
 using namespace std;
 
 
 namespace libint2 {
 
-  /** Compute relation for 2-e integrals of the r1.r1 x G12 operators.
+  /** Compute relation for 2-e integrals of the r1.r2 x G12 operators.
   I<BFSet> is the integral set specialization that describes the
   integrals of the R1dotR2_G12 operator.
   */
-  template <template <class> class I, class BFSet>
+  template <template <typename...> class I, class BFSet>
   class CR_11_R1dotR2G12_11 : public RecurrenceRelation
     {
 
@@ -36,7 +36,7 @@ namespace libint2 {
     typedef RecurrenceRelation ParentType;
     typedef BFSet BasisFunctionType;
     typedef CR_11_R1dotR2G12_11<I,BFSet> ThisType;
-    typedef I<BFSet> TargetType;
+    typedef I<BFSet,R1dotR2_G12,EmptySet> TargetType;
     typedef R12kG12_11_11<BFSet,0> ChildType;
     /// The type of expressions in which RecurrenceRelations result.
     typedef RecurrenceRelation::ExprType ExprType;
@@ -95,7 +95,7 @@ namespace libint2 {
 
   };
 
-  template <template <class> class I, class F>
+  template <template <typename...> class I, class F>
     SafePtr< CR_11_R1dotR2G12_11<I,F> >
     CR_11_R1dotR2G12_11<I,F>::Instance(const SafePtr<TargetType>& Tint)
     {
@@ -107,8 +107,8 @@ namespace libint2 {
       return this_ptr;
     }
 
-  template <template <class> class I, class F>
-    CR_11_R1dotR2G12_11<I,F>::CR_11_R1dotR2G12_11(const SafePtr<I<F> >& Tint) :
+  template <template <typename...> class I, class F>
+    CR_11_R1dotR2G12_11<I,F>::CR_11_R1dotR2G12_11(const SafePtr<TargetType>& Tint) :
     ParentType(), target_(Tint), nchildren_(0)
     {
       F sh_a(Tint->bra(0,0));
@@ -146,7 +146,7 @@ namespace libint2 {
       }
     }
   
-  template <template <class> class I, class F>
+  template <template <typename...> class I, class F>
     SafePtr< typename CR_11_R1dotR2G12_11<I,F>::ChildType >
     CR_11_R1dotR2G12_11<I,F>::child(unsigned int i) const
     {
@@ -162,8 +162,8 @@ namespace libint2 {
     };
 
   /// Useful typedefs
-  typedef CR_11_R1dotR2G12_11<R1dotR2G12_11_11,CGShell> CR_11_R1dotR2G12_11_sq;
-  typedef CR_11_R1dotR2G12_11<R1dotR2G12_11_11,CGF> CR_11_R1dotR2G12_11_int;
+  typedef CR_11_R1dotR2G12_11<GenIntegralSet_11_11,CGShell> CR_11_R1dotR2G12_11_sq;
+  typedef CR_11_R1dotR2G12_11<GenIntegralSet_11_11,CGF> CR_11_R1dotR2G12_11_int;
 
 };
 

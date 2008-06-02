@@ -8,6 +8,7 @@ using namespace libint2;
 
 namespace libint2 {
 
+#if 0
   template <>
   bool
   TwoPRep_11_11<CGShell>::this_precomputed() const
@@ -32,6 +33,7 @@ namespace libint2 {
     else
       return false;
   }
+#endif
 
 };
 

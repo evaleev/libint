@@ -109,4 +109,7 @@
 /* C++ compiler allows template with default params as template template parameter */
 #undef CXX_ALLOWS_DEFPARAMTEMPLATE_AS_TEMPTEMPPARAM
 
+/* is shared_ptr in boost? */
+#undef HAVE_SHARED_PTR_IN_BOOST
+
 #endif 

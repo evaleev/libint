@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <dgvertex.h>
 #include <rr.h>
-#include <integral.h>
+#include <twoprep_11_11.h>
 #include <algebra.h>
 #include <flop.h>
 #include <prefactors.h>
@@ -29,7 +29,7 @@ namespace libint2 {
   is raised in bra (true) or ket (false). Class ERI specifies which particular implementation
   of ERI to use.
   */
-  template <template <class> class ERI, class BFSet, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class BFSet, int part, FunctionPosition where>
     class VRR_11_TwoPRep_11 : public RecurrenceRelation
     {
 
@@ -37,8 +37,8 @@ namespace libint2 {
     typedef RecurrenceRelation ParentType;
     typedef BFSet BasisFunctionType;
     typedef VRR_11_TwoPRep_11 ThisType;
-    typedef ERI<BFSet> TargetType;
-    typedef ERI<BFSet> ChildType;
+    typedef ERI<BFSet,TwoPRep,mType> TargetType;
+    typedef TargetType ChildType;
     /// The type of expressions in which RecurrenceRelations result.
     typedef RecurrenceRelation::ExprType ExprType;
 
@@ -98,7 +98,7 @@ namespace libint2 {
 #endif
   };
 
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
     SafePtr< VRR_11_TwoPRep_11<ERI,F,part,where> >
     VRR_11_TwoPRep_11<ERI,F,part,where>::Instance(const SafePtr<TargetType>& Tint,
                                                   unsigned int dir)
@@ -112,18 +112,46 @@ namespace libint2 {
     }
   
   
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
-    VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr<ERI<F> >& Tint,
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+    VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr< TargetType >& Tint,
                                                            unsigned int dir) :
     target_(Tint), dir_(dir), nchildren_(0)
     {
-      target_ = Tint;
+      const unsigned int m = Tint->aux()->elem(0);
+      
+#if 0
+      //
+      // The code ideally should look like this:
+      if (exists(a - _1)) {
+        children_[0] = TargetType::Instance(a-_1,b,c,d,m);
+        children_[1] = TargetType::Instance(a-_1,b,c,d,m+1);
+        add_expr(Vector("PA")[dir] * children_[0] + Vector("WP")[dir] * children_[1]);
 
+        if (exists(a - _2)) {
+          children_[2] = TargetType::Instance(a-_2,b,c,d,m);
+          children_[3] = TargetType::Instance(a-_2,b,c,d,m+1);
+          add_expr( Scalar((a-_1).qn(dir)) * (children_[2] - Scalar("roz") * children_[3]) );
+        }
+        if (exists(b - _1)) {
+          children_[4] = TargetType::Instance(a-_1,b-_1,c,d,m+1);
+          add_expr( children_[4] );
+        }
+        if (exists(c - _1)) {
+          children_[4] = TargetType::Instance(a-_1,b,c-_1,d,m+1);
+          add_expr( children_[4] );
+        }
+        if (exists(d - _1)) {
+          children_[4] = TargetType::Instance(a-_1,b,c,d-_1,m+1);
+          add_expr( children_[4] );
+        }
+
+#endif
+      
+      
       F sh_a(Tint->bra(0,0));
       F sh_b(Tint->ket(0,0));
       F sh_c(Tint->bra(1,0));
       F sh_d(Tint->ket(1,0));
-      unsigned int m = Tint->m();
 
       vector<F> bra;
       vector<F> ket;
@@ -147,8 +175,8 @@ namespace libint2 {
       if (!bra_ref->operator[](p_a).dec(dir)) {
         return;
       }
-      children_[0] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
-      children_[1] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
+      children_[0] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m);
+      children_[1] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
       nchildren_ += 2;
       if (is_simple()) {
         SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][where][dir],children_[0]));
@@ -164,8 +192,8 @@ namespace libint2 {
         a_minus_2_exists = false;
       }
       if (a_minus_2_exists) {
-        children_[2] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
-        children_[3] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
+        children_[2] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m);
+        children_[3] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
         bra_ref->operator[](p_a).inc(dir);
         const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir);
         nchildren_ += 2;
@@ -185,8 +213,8 @@ namespace libint2 {
         b_minus_1_exists = false;
       }
       if (b_minus_1_exists) {
-        children_[4] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
-        children_[5] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
+        children_[4] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m);
+        children_[5] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
         ket_ref->operator[](p_a).inc(dir);
         const unsigned int ni_b = ket_ref->operator[](p_a).qn(dir);
         nchildren_ += 2;
@@ -204,7 +232,7 @@ namespace libint2 {
       if (!bra_ref->operator[](p_c).dec(dir)) {
         return;
       }
-      children_[6] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
+      children_[6] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
       bra_ref->operator[](p_c).inc(dir);
       const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir);
       nchildren_ += 1;
@@ -219,7 +247,7 @@ namespace libint2 {
       if (!ket_ref->operator[](p_c).dec(dir)) {
         return;
       }
-      children_[7] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
+      children_[7] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
       ket_ref->operator[](p_c).inc(dir);
       const unsigned int ni_d = ket_ref->operator[](p_c).qn(dir);
       nchildren_ += 1;
@@ -231,7 +259,7 @@ namespace libint2 {
       }
     };
 
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
     VRR_11_TwoPRep_11<ERI,F,part,where>::~VRR_11_TwoPRep_11()
     {
       if (part < 0 || part >= 2) {
@@ -239,8 +267,8 @@ namespace libint2 {
       }
     };
 
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
-    SafePtr< ERI<F> >
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+    SafePtr< typename VRR_11_TwoPRep_11<ERI,F,part,where>::ChildType >
     VRR_11_TwoPRep_11<ERI,F,part,where>::child(unsigned int i) const
     {
       assert(i>=0 && i<nchildren_);
@@ -254,7 +282,7 @@ namespace libint2 {
       }
     };
 
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
     std::string
     VRR_11_TwoPRep_11<ERI,F,part,where>::generate_label() const
     {
@@ -271,7 +299,7 @@ namespace libint2 {
     }
 
 #if LIBINT_ENABLE_GENERIC_CODE
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
     bool
     VRR_11_TwoPRep_11<ERI,F,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
     {
@@ -290,14 +318,14 @@ namespace libint2 {
         return false;
     }
   
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
     std::string
     VRR_11_TwoPRep_11<ERI,F,part,where>::generic_header() const
     {
       return std::string("OSVRR_xs_xs.h");
     }
 
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
     std::string
     VRR_11_TwoPRep_11<ERI,F,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
     {
@@ -321,10 +349,10 @@ namespace libint2 {
     }
 #endif // #if !LIBINT_ENABLE_GENERIC_CODE
 
-  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,InBra> VRR_c_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InKet> VRR_b_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,InKet> VRR_d_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,1,InBra> VRR_c_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,0,InKet> VRR_b_11_TwoPRep_11_sh;
+  typedef VRR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,1,InKet> VRR_d_11_TwoPRep_11_sh;
 
 
 };

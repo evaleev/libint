@@ -366,6 +366,15 @@ namespace libint2 {
   ArrayBraket<BFS,NP>::reset_cache() {
     size_ = 0;
   }
+
+  /// This is the implementation of the Braket concept used by GenIntegralSet_11_11
+  // really need to have typedef template!
+  template <typename BFS>
+    struct DefaultTwoPBraket {
+      /// This defines which Braket implementation to use
+      //typedef VectorBraket<BFS> Result;
+      typedef ArrayBraket<BFS,2> Result;
+    };
   
 };
 

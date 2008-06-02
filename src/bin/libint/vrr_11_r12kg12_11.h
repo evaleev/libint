@@ -30,16 +30,16 @@ namespace libint2 {
   ket (false). I<BFSet,K> is the integral set specialization that describes the
   integrals of the R12_k_G12 operator.
   */
-  template <template <class,int> class I, class BFSet, int K, int part, FunctionPosition where>
+  template <template <typename...> class I, class BFSet, int part, FunctionPosition where>
     class VRR_11_R12kG12_11 : public RecurrenceRelation
   {
 
   public:
     typedef RecurrenceRelation ParentType;
     typedef BFSet BasisFunctionType;
-    typedef VRR_11_R12kG12_11<I,BFSet,K,part,where> ThisType;
-    typedef I<BFSet,K> TargetType;
-    typedef R12kG12_11_11_base<BFSet> ChildType;
+    typedef VRR_11_R12kG12_11<I,BFSet,part,where> ThisType;
+    typedef I<BFSet,R12kG12,mType> TargetType;
+    typedef TargetType ChildType;
     /// The type of expressions in which RecurrenceRelations result.
     typedef RecurrenceRelation::ExprType ExprType;
 
@@ -107,19 +107,9 @@ namespace libint2 {
 #endif
   };
   
-  /** class VRR_11_R12kG12_11_util implements the logic of the VRR. For any
-      K >= 0 the same RR is used. K=-1 is a special case and must be handled separately (via
-      specialization of this template, see vrr_11_r12kg12_11.cc).
-  */
-  template <int K>
-    struct
-    VRR_11_R12kG12_11_util {
-      static const bool K_eq_m1 = (K==-1);
-    };
-
-  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
-    SafePtr< VRR_11_R12kG12_11<I,F,K,part,where> >
-    VRR_11_R12kG12_11<I,F,K,part,where>::Instance(const SafePtr<I<F,K> >& Tint,
+  template <template <typename...> class I, class F, int part, FunctionPosition where>
+    SafePtr< VRR_11_R12kG12_11<I,F,part,where> >
+    VRR_11_R12kG12_11<I,F,part,where>::Instance(const SafePtr< TargetType >& Tint,
                                                   unsigned int dir)
     {
       SafePtr<ThisType> this_ptr(new ThisType(Tint,dir));
@@ -130,11 +120,12 @@ namespace libint2 {
       return this_ptr;
     }
   
-  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
-    VRR_11_R12kG12_11<I,F,K,part,where>::VRR_11_R12kG12_11(const SafePtr<I<F,K> >& Tint,
+  template <template <typename...> class I, class F, int part, FunctionPosition where>
+    VRR_11_R12kG12_11<I,F,part,where>::VRR_11_R12kG12_11(const SafePtr< TargetType >& Tint,
                                                            unsigned int dir) :
     target_(Tint), dir_(dir), nchildren_(0)
     {
+      const int K = target_->oper()->descr().K();
       F sh_a(Tint->bra(0,0));
       F sh_b(Tint->ket(0,0));
       F sh_c(Tint->bra(1,0));
@@ -165,26 +156,29 @@ namespace libint2 {
       // turn a-1 back to a
       bra_ref->operator[](p_a).inc(dir);
       
-      if (VRR_11_R12kG12_11_util<K>::K_eq_m1)
+      if (K == -1)
         children_and_expr_Keqm1(bra,ket,bra_ref,ket_ref);
       else
         children_and_expr_Kge0(bra,ket,bra_ref,ket_ref);
     };
   
-  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+  template <template <typename...> class I, class F, int part, FunctionPosition where>
     void
-    VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Keqm1(const vector<F>& bra, const vector<F>& ket,
-                                                                 vector<F>* bra_ref, vector<F>* ket_ref)
+    VRR_11_R12kG12_11<I,F,part,where>::children_and_expr_Keqm1(const vector<F>& bra, const vector<F>& ket,
+                                                               vector<F>* bra_ref, vector<F>* ket_ref)
     {
-      unsigned int m = target_->m();
+      typedef typename TargetType::OperType OperType;
+      const int K = target_->oper()->descr().K();
+      const OperType K_oper = OperType(K);
+      const unsigned int m = target_->aux()->elem(0);
       // On which particle to act
       int p_a = part;
       int p_c = (p_a == 0) ? 1 : 0;
       // Get a-1
       bra_ref->operator[](p_a).dec(dir_);
       
-      children_[0] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m);
-      children_[1] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
+      children_[0] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],mType(m),K_oper);
+      children_[1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],mType(m+1),K_oper);
       nchildren_ += 2;
       if (is_simple()) {
         SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][where][dir_],rr_child(0)));
@@ -201,8 +195,8 @@ namespace libint2 {
       }
       if (a_minus_2_exists) {
         int next_child = nchildren_;
-        children_[next_child] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m);
-        children_[next_child+1] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
+        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m,K_oper);
+        children_[next_child+1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
         bra_ref->operator[](p_a).inc(dir_);
         const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir_);
         nchildren_ += 2;
@@ -223,8 +217,8 @@ namespace libint2 {
       }
       if (b_minus_1_exists) {
         int next_child = nchildren_;
-        children_[next_child] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m);
-        children_[next_child+1] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
+        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m,K_oper);
+        children_[next_child+1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
         ket_ref->operator[](p_a).inc(dir_);
         const unsigned int ni_b = ket_ref->operator[](p_a).qn(dir_);
         nchildren_ += 2;
@@ -245,7 +239,7 @@ namespace libint2 {
       }
       if (c_minus_1_exists) {
         int next_child = nchildren_;
-        children_[next_child] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
+        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
         bra_ref->operator[](p_c).inc(dir_);
         const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir_);
         nchildren_ += 1;
@@ -264,7 +258,7 @@ namespace libint2 {
       }
       if (d_minus_1_exists) {
         int next_child = nchildren_;
-        children_[next_child] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
+        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
         ket_ref->operator[](p_c).inc(dir_);
         const unsigned int ni_d = ket_ref->operator[](p_c).qn(dir_);
         nchildren_ += 1;
@@ -277,17 +271,16 @@ namespace libint2 {
       }
     }
   
-  template <int K>
-  struct EqualZero {
-    static const bool result = (K==0);
-  };
-  
-  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+  template <template <typename...> class I, class F, int part, FunctionPosition where>
     void
-    VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0(const vector<F>& bra, const vector<F>& ket,
+    VRR_11_R12kG12_11<I,F,part,where>::children_and_expr_Kge0(const vector<F>& bra, const vector<F>& ket,
                                                                 vector<F>* bra_ref, vector<F>* ket_ref)
     {
-      unsigned int m = target_->m();
+      typedef typename TargetType::OperType OperType;
+      const int K = target_->oper()->descr().K();
+      const OperType K_oper = OperType(K);
+      const OperType Km2_oper = OperType(K-2);
+      const unsigned int m = target_->aux()->elem(0);
       if (m != 0)
         throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- nonzero auxiliary quantum detected.");
       
@@ -297,7 +290,7 @@ namespace libint2 {
       // Get a-1
       bra_ref->operator[](p_a).dec(dir_);
       
-      children_[0] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+      children_[0] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,K_oper);
       nchildren_ += 1;
       if (is_simple()) {
         SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.R12kG12VRR_pfac0[part][dir_],rr_child(0)));
@@ -311,7 +304,7 @@ namespace libint2 {
         a_minus_2_exists = false;
       }
       if (a_minus_2_exists) {
-        children_[1] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+        children_[1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,K_oper);
         bra_ref->operator[](p_a).inc(dir_);
         const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir_);
         nchildren_ += 1;
@@ -339,7 +332,7 @@ namespace libint2 {
       }
       if (c_minus_1_exists) {
         int next_child = nchildren_;
-        children_[next_child] = I<F,K>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,K_oper);
         bra_ref->operator[](p_c).inc(dir_);
         const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir_);
         nchildren_ += 1;
@@ -360,15 +353,15 @@ namespace libint2 {
 	throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- AM on centers b and d must be zero, general RR is not yet implemented");
       }
       
-      if (EqualZero<K>::result == false) {
+      if (K != 0) {
         int next_child = nchildren_;
         bra_ref->operator[](p_a).inc(dir_);
-        children_[next_child] = I<F,K-2>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,Km2_oper);
         bra_ref->operator[](p_a).dec(dir_);
         bra_ref->operator[](p_c).inc(dir_);
-        children_[next_child+1] = I<F,K-2>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+        children_[next_child+1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,Km2_oper);
         bra_ref->operator[](p_c).dec(dir_);
-        children_[next_child+2] = I<F,K-2>::Instance(bra[0],ket[0],bra[1],ket[1],0);
+        children_[next_child+2] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,Km2_oper);
         nchildren_ += 3;
         if (is_simple()) {
           SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Minus, rr_child(next_child), rr_child(next_child+1)));
@@ -382,17 +375,17 @@ namespace libint2 {
       }
     }
 
-  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
-    VRR_11_R12kG12_11<I,F,K,part,where>::~VRR_11_R12kG12_11()
+  template <template <typename...> class I, class F, int part, FunctionPosition where>
+    VRR_11_R12kG12_11<I,F,part,where>::~VRR_11_R12kG12_11()
     {
       if (part < 0 || part >= 2) {
         assert(false);
       }
     };
 
-  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
-    SafePtr< typename VRR_11_R12kG12_11<I,F,K,part,where>::ChildType >
-    VRR_11_R12kG12_11<I,F,K,part,where>::child(unsigned int i) const
+  template <template <typename...> class I, class F, int part, FunctionPosition where>
+    SafePtr< typename VRR_11_R12kG12_11<I,F,part,where>::ChildType >
+    VRR_11_R12kG12_11<I,F,part,where>::child(unsigned int i) const
     {
       assert(i>=0 && i<nchildren_);
       unsigned int nc=0;
@@ -405,10 +398,11 @@ namespace libint2 {
       }
     };
 
-  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+  template <template <typename...> class I, class F, int part, FunctionPosition where>
     std::string
-    VRR_11_R12kG12_11<I,F,K,part,where>::generate_label() const
+    VRR_11_R12kG12_11<I,F,part,where>::generate_label() const
     {
+      const int K = target_->oper()->descr().K();
       ostringstream os;
       
       os << "VRR Part" << part << " " <<
@@ -422,9 +416,9 @@ namespace libint2 {
     }
 
 #if LIBINT_ENABLE_GENERIC_CODE
-  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+  template <template <typename...> class I, class F, int part, FunctionPosition where>
     bool
-    VRR_11_R12kG12_11<I,F,K,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
+    VRR_11_R12kG12_11<I,F,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
     {
       F sh_a(target_->bra(0,0));
       F sh_b(target_->ket(0,0));
@@ -441,20 +435,22 @@ namespace libint2 {
         return false;
     }
 
-  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+  template <template <typename...> class I, class F, int part, FunctionPosition where>
     std::string
-    VRR_11_R12kG12_11<I,F,K,part,where>::generic_header() const
+    VRR_11_R12kG12_11<I,F,part,where>::generic_header() const
     {
+      const int K = target_->oper()->descr().K();
       if (K == -1)
         return std::string("OSVRR_xs_xs.h");
       else
         return std::string("VRR_r12kg12_xs_xs.h");
     }
 
-  template <template <class,int> class I, class F, int K, int part, FunctionPosition where>
+  template <template <typename...> class I, class F, int part, FunctionPosition where>
     std::string
-    VRR_11_R12kG12_11<I,F,K,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
+    VRR_11_R12kG12_11<I,F,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
     {
+      const int K = target_->oper()->descr().K();
       std::ostringstream oss;
       F sh_a(target_->bra(0,0));
       F sh_c(target_->bra(1,0));
@@ -494,7 +490,7 @@ namespace libint2 {
   typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,0,InKet> VRR_b_11_TwoPRep_11_sh;
   typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,1,InKet> VRR_d_11_TwoPRep_11_sh;
   */
-
+    
 };
 
 #endif

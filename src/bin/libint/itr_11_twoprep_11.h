@@ -8,6 +8,7 @@
 #include <dgvertex.h>
 #include <rr.h>
 #include <integral.h>
+#include <twoprep_11_11.h>
 #include <algebra.h>
 #include <flop.h>
 #include <prefactors.h>
@@ -27,15 +28,15 @@ namespace libint2 {
   is shifted in bra or ket. Class ERI specifies which particular implementation
   of ERI to use.
   */
-  template <template <class> class ERI, class BFSet, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class BFSet, int part, FunctionPosition where>
     class ITR_11_TwoPRep_11 : public RecurrenceRelation
     {
 
   public:
     typedef RecurrenceRelation ParentType;
     typedef ITR_11_TwoPRep_11 ThisType;
-    typedef ERI<BFSet> TargetType;
-    typedef ERI<BFSet> ChildType;
+    typedef ERI<BFSet,TwoPRep,mType> TargetType;
+    typedef ERI<BFSet,TwoPRep,mType> ChildType;
     /// The type of expressions in which RecurrenceRelations result.
     typedef RecurrenceRelation::ExprType ExprType;
 
@@ -105,7 +106,7 @@ namespace libint2 {
     std::string generate_label(const SafePtr<TargetType>& target) const;
   };
 
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
     SafePtr< ITR_11_TwoPRep_11<ERI,F,part,where> >
     ITR_11_TwoPRep_11<ERI,F,part,where>::Instance(const SafePtr<TargetType>& Tint,
                                                   unsigned int dir)
@@ -118,7 +119,7 @@ namespace libint2 {
       return this_ptr;
     }
   
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
     bool
     ITR_11_TwoPRep_11<ERI,F,part,where>::register_with_rrstack() const
     {
@@ -137,8 +138,8 @@ namespace libint2 {
     }
   
   
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
-    ITR_11_TwoPRep_11<ERI,F,part,where>::ITR_11_TwoPRep_11(const SafePtr<ERI<F> >& Tint,
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+    ITR_11_TwoPRep_11<ERI,F,part,where>::ITR_11_TwoPRep_11(const SafePtr<TargetType>& Tint,
                                                            unsigned int dir) :
     target_(Tint), dir_(dir), nchildren_(0), nflops_(0), label_(generate_label(Tint))
     {
@@ -176,7 +177,7 @@ namespace libint2 {
       if (!bra_ref->operator[](p_a).dec(dir)) {
         return;
       }
-      children_[0] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
+      children_[0] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m);
       nchildren_ += 1;
       nflops_ += ConvertNumFlops<F>(1);
       if (is_simple()) {
@@ -186,7 +187,7 @@ namespace libint2 {
 
       // c+1
       bra_ref->operator[](p_c).inc(dir);
-      children_[1] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
+      children_[1] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m);
       bra_ref->operator[](p_c).dec(dir);
       const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir);
       nchildren_ += 1;
@@ -203,7 +204,7 @@ namespace libint2 {
         a_minus_2_exists = false;
       }
       if (a_minus_2_exists) {
-        children_[2] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
+        children_[2] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m);
         bra_ref->operator[](p_a).inc(dir);
         const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir);
         nchildren_ += 1;
@@ -220,7 +221,7 @@ namespace libint2 {
       if (!bra_ref->operator[](p_c).dec(dir)) {
         return;
       }
-      children_[3] = ERI<F>::Instance(bra[0],ket[0],bra[1],ket[1],m);
+      children_[3] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m);
       bra_ref->operator[](p_c).inc(dir);
       nchildren_ += 1;
       nflops_ += ConvertNumFlops<F>(3);
@@ -232,7 +233,7 @@ namespace libint2 {
       }
     };
 
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
     ITR_11_TwoPRep_11<ERI,F,part,where>::~ITR_11_TwoPRep_11()
     {
       if (part < 0 || part >= 2) {
@@ -240,8 +241,8 @@ namespace libint2 {
       }
     };
 
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
-    SafePtr< ERI<F> >
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+    SafePtr< typename ITR_11_TwoPRep_11<ERI,F,part,where>::ChildType >
     ITR_11_TwoPRep_11<ERI,F,part,where>::child(unsigned int i) const
     {
       assert(i>=0 && i<nchildren_);
@@ -255,7 +256,7 @@ namespace libint2 {
       }
     };
 
-  template <template <class> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
     std::string
     ITR_11_TwoPRep_11<ERI,F,part,where>::generate_label(const SafePtr<TargetType>& target) const
     {
@@ -271,10 +272,10 @@ namespace libint2 {
       return os.str();
     }
     
-  typedef ITR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InBra> ITR_a_11_TwoPRep_11_sh;
-  typedef ITR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,InBra> ITR_c_11_TwoPRep_11_sh;
-  typedef ITR_11_TwoPRep_11<TwoPRep_11_11,CGShell,0,InKet> ITR_b_11_TwoPRep_11_sh;
-  typedef ITR_11_TwoPRep_11<TwoPRep_11_11,CGShell,1,InKet> ITR_d_11_TwoPRep_11_sh;
+  typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,0,InBra> ITR_a_11_TwoPRep_11_sh;
+  typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,1,InBra> ITR_c_11_TwoPRep_11_sh;
+  typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,0,InKet> ITR_b_11_TwoPRep_11_sh;
+  typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,1,InKet> ITR_d_11_TwoPRep_11_sh;
 
 
 };

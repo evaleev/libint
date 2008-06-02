@@ -1,13 +1,34 @@
 
-#include <integral.h>
-
 #ifndef _libint2_src_bin_libint_r12kg121111_h_
 #define _libint2_src_bin_libint_r12kg121111_h_
+
+#include <integral.h>
+#include <integral_11_11.h>
 
 using namespace std;
 
 namespace libint2 {
-  
+
+  typedef GenIntegralSet_11_11<CGShell,R12kG12,mType> R12kG12_11_11_sq;
+  typedef GenIntegralSet_11_11<CGF,R12kG12,mType> R12kG12_11_11_int;
+
+  template <>
+  inline bool
+    R12kG12_11_11_int::this_precomputed() const
+    {
+#if USE_BRAKET_H
+      if (parent_type::bra_.member(0,0).zero() && parent_type::bra_.member(1,0).zero() &&
+          parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero())
+#else
+      if (parent_type::bra_.member(0,0)->zero() && parent_type::bra_.member(1,0)->zero() &&
+          parent_type::ket_.member(0,0)->zero() && parent_type::ket_.member(1,0)->zero())
+#endif
+        return true;
+      else
+         return false;
+    }
+
+#if 0
   /** R12kG12_11_11_base is the base for all 2-body integral over the R12_k_G12
       operator with one basis function for each particle in bra and ket
     */
@@ -254,7 +275,8 @@ namespace libint2 {
   /// R12_0_G12_11_11_... is a set of integrals over g12
   typedef R12kG12_11_11<CGShell,0> R12_0_G12_11_11_sq;
   typedef R12kG12_11_11<CGF,0> R12_0_G12_11_11_int;
-
+#endif
+  
 };
 
 #endif

@@ -92,7 +92,7 @@ namespace libint2 {
      is VectorBraket.
      AuxQuanta describes auxiliary quantum numbers. AuxQuanta should be derived from QuantumSet.
   */
-  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta = NullQuantumSet>
+  template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta = EmptySet>
     class GenIntegralSet :
     public IntegralSet<BFS>, public DGVertex,
     public EnableSafePtrFromThis< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >
@@ -189,7 +189,7 @@ namespace libint2 {
       static key_type compute_key(const Oper& O, const BraType& bra, const KetType& ket, const AuxQuanta& aux) {
         key_type key = ( (O.key()*bra.max_key() + bra.key() ) * ket.max_key() +
 			 ket.key() ) * aux.max_key() + aux.key();
-	return key;
+        return key;
       }
 
       BraSetType bra_;
@@ -202,7 +202,7 @@ namespace libint2 {
       /// Resets all cached values
       void reset_cache() { key_ = 0; size_ = 0; }
 
-      private:
+    private:
       //
       // All integrals are Singletons by nature, therefore they must be treated as such
       // 1) No public constructors are provided
@@ -463,48 +463,16 @@ namespace libint2 {
       return descr_;
     }
 
-  /** TwoPRep_11_11_base is the base for all 2-body repulsion integrals with one basis function
-    for each particle in bra and ket
-    */
-  class TwoPRep_11_11_base {
-  };
-
-  /// This is the implementation of the Braket concept used by TwoPrep_11_11
-  // really need to have typedef template!
-  template <typename BFS>
-    struct DefaultTwoPBraket {
-      /// This defines which Braket implementation to use
-      //typedef VectorBraket<BFS> Result;
-      typedef ArrayBraket<BFS,2> Result;
-    };
-  
-  /// This is the implementation of the QuantumNumbers concept used by TwoPrep_11_11
-  // really need to have typedef template!
-  template <typename T, unsigned int N>
-    struct DefaultQuantumNumbers {
-      /// This defines which QuantumNumbers implementation to use
-      //typedef QuantumNumbers<T,N> Result;
-      typedef QuantumNumbersA<T,N> Result;
-    };
-  /**
-     mType is the type that describes the auxiliary index of standard 2-body repulsion integrals
-  */
-  typedef DefaultQuantumNumbers<unsigned int,1>::Result mType;
-  /**
-     EmptySet is the type that describes null set of auxiliary indices
-  */
-  typedef DefaultQuantumNumbers<int,0>::Result EmptySet;
-  
   /**
      Most basic type -- TwoPRep_11_11 --
      has one bfs for each particle in bra and ket.
      Note that GenIntegralSet is initialized with an abstract type libint2::BFSet,
      from which BFS derives.
   */
+#if 0
   template <class BFS> class TwoPRep_11_11 :
-    public GenIntegralSet<TwoERep, IncableBFSet, typename DefaultTwoPBraket<BFS>::Result, typename DefaultTwoPBraket<BFS>::Result, mType >,
-    //public EnableSafePtrFromThis< TwoPRep_11_11<BFS> >,
-    public TwoPRep_11_11_base
+    public GenIntegralSet<TwoERep, IncableBFSet, typename DefaultTwoPBraket<BFS>::Result, typename DefaultTwoPBraket<BFS>::Result, mType >
+    //public EnableSafePtrFromThis< TwoPRep_11_11<BFS> >
     {
     public:
       typedef BFS BasisFunctionType;
@@ -676,12 +644,13 @@ namespace libint2 {
       return label_;
     };
 #endif
-
+  
   /// TwoPRep_11_11_sq is a shell quartet of ERIs
-  typedef TwoPRep_11_11<CGShell> TwoPRep_11_11_sq;
+  //typedef TwoPRep_11_11<CGShell> TwoPRep_11_11_sq;
 
   /// TwoPRep_11_11_int is a single ERIs
-  typedef TwoPRep_11_11<CGF> TwoPRep_11_11_int;
+  //typedef TwoPRep_11_11<CGF> TwoPRep_11_11_int;
+#endif
 
   /**
      TypelistBraket is a typelist-based type to describe a bra or a ket

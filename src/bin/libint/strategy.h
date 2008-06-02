@@ -2,6 +2,7 @@
 #include <smart_ptr.h>
 #include <tactic.h>
 #include <intset_to_ints.h>
+#include <vrr_11_twoprep_11.h>
 #include <vrr_11_r12kg12_11.h>
 #include <comp_11_tig12_11.h>
 #include <comp_11_r1dotr1g12_11.h>
@@ -65,14 +66,13 @@ namespace libint2 {
     virtual RR optimal_rr_twoprep1111_int(const SafePtr<DirectedGraph>& graph,
                                           const SafePtr< TwoPRep_11_11_int >& integral,
                                           const SafePtr<Tactic>& tactic);
-    template <int K>
-    RR optimal_rr_R12kG121111_sq(const SafePtr<DirectedGraph>& graph,
-                                 const SafePtr< R12kG12_11_11_base<CGShell> >& integral,
-                                 const SafePtr<Tactic>& tactic);
-    template <int K>
-    RR optimal_rr_R12kG121111_int(const SafePtr<DirectedGraph>& graph,
-                                  const SafePtr< R12kG12_11_11_base<CGF> >& integral,
-                                  const SafePtr<Tactic>& tactic);
+    virtual RR optimal_rr_R12kG121111_sq(const SafePtr<DirectedGraph>& graph,
+                                         const SafePtr< R12kG12_11_11_sq >& integral,
+                                         const SafePtr<Tactic>& tactic);
+    virtual RR optimal_rr_R12kG121111_int(const SafePtr<DirectedGraph>& graph,
+                                          const SafePtr< R12kG12_11_11_int >& integral,
+                                          const SafePtr<Tactic>& tactic);
+#if 0
     template <int K>
     RR optimal_rr_TiG121111_sq(const SafePtr<DirectedGraph>& graph,
                                const SafePtr< TiG12_11_11_base<CGShell> >& integral,
@@ -93,13 +93,14 @@ namespace libint2 {
     RR optimal_rr_R2dotR2G121111_int(const SafePtr<DirectedGraph>& graph,
 				     const SafePtr<R2dotR2G12_11_11_int>& integral,
 				     const SafePtr<Tactic>& tactic);
+#endif
     RR optimal_rr_R1dotR2G121111_sq(const SafePtr<DirectedGraph>& graph,
 				    const SafePtr<R1dotR2G12_11_11_sq>& integral,
 				    const SafePtr<Tactic>& tactic);
     RR optimal_rr_R1dotR2G121111_int(const SafePtr<DirectedGraph>& graph,
 				     const SafePtr<R1dotR2G12_11_11_int>& integral,
 				     const SafePtr<Tactic>& tactic);
-
+    
     virtual RR optimal_rr_Dummy1111_sq(const SafePtr<DirectedGraph>& graph,
 				       const SafePtr<DummySymmIntegral_11_11_sq>& integral,
 				       const SafePtr<Tactic>& tactic);
@@ -120,118 +121,8 @@ namespace libint2 {
 
   };
   
-  template <int K>
-    SafePtr<RecurrenceRelation>
-    Strategy::optimal_rr_R12kG121111_sq(const SafePtr<DirectedGraph>& graph,
-                                        const SafePtr< R12kG12_11_11_base<CGShell> >& bptr,
-                                        const SafePtr<Tactic>& tactic)
-    {
-      typedef R12kG12_11_11<CGShell,K> inttype;
-      const SafePtr<inttype> integral = dynamic_pointer_cast<inttype,R12kG12_11_11_base<CGShell> >(bptr);
-      
-      //
-      // This is a basic strategy for computing integral
-      // 1) first see if should convert the SafePtr<RecurrenceRelation>
-      //    set to infividual integrals
-      // 2) if possible apply HRR
-      // 3) else apply VRR
-      //
-      const unsigned int size = integral->size();
-      if (size == 1 || (size <= max_size_to_unroll_ && graph->registry()->can_unroll()))
-        return unroll_intset<inttype>(integral);
-      
-      {
-        // AB HRR
-        typedef HRR<R12kG12_11_11<CGShell,K>,CGShell,0,InBra,0,InKet,0> rr_type;
-        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
-        if (rr_ptr->num_children())
-          return rr_cast(rr_ptr);
-      }
-      
-      {
-        // CD HRR
-        typedef HRR<R12kG12_11_11<CGShell,K>,CGShell,1,InBra,0,InKet,0> rr_type;
-        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
-        if (rr_ptr->num_children())
-          return rr_cast(rr_ptr);
-      }
-      
-      {
-        // A VRR
-        typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,K,0,InBra> rr_type;
-        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
-        if (rr_ptr->num_children())
-          return rr_cast(rr_ptr);
-      }
-      
-      {
-        // C VRR
-        typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,K,1,InBra> rr_type;
-        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,0);
-        if (rr_ptr->num_children())
-          return rr_cast(rr_ptr);
-      }
-      
-      return SafePtr<RecurrenceRelation>();
-    }
 
-  
-  // Generate all possible recurrence relations and then
-  // use a Tactic object to decide which to use
-  template <int K>
-    SafePtr<RecurrenceRelation>
-    Strategy::optimal_rr_R12kG121111_int(const SafePtr<DirectedGraph>& graph,
-                                         const SafePtr< R12kG12_11_11_base<CGF> >& bptr,
-                                         const SafePtr<Tactic>& tactic)
-    {
-      typedef R12kG12_11_11<CGF,K> inttype;
-      const SafePtr<inttype> integral = dynamic_pointer_cast<inttype,R12kG12_11_11_base<CGF> >(bptr);
-
-      vector<RR> rrstack;  // stack of all recurrence relations
-      
-      // shift from B to A
-      for(int xyz = 2; xyz >= 0; xyz--) {
-        typedef HRR<R12kG12_11_11<CGF,K>,CGF,0,InBra,0,InKet,0> rr_type;
-        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
-        if (rr_ptr->num_children())
-          rrstack.push_back(rr_cast(rr_ptr));
-      }
-      
-      // shift from D to C
-      for(int xyz = 2; xyz >= 0; xyz--) {
-        typedef HRR<R12kG12_11_11<CGF,K>,CGF,1,InBra,0,InKet,0> rr_type;
-        SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
-        if (rr_ptr->num_children())
-          rrstack.push_back(rr_cast(rr_ptr));
-      }
-
-      // only apply VRR is AM on B and D is zero
-#if USE_BRAKET_H
-      if (integral->ket(0,0).zero() && integral->ket(1,0).zero()) {
-#else
-      if (integral->ket(0,0)->zero() && integral->ket(1,0)->zero()) {
-#endif
-        // decrease A
-        for(int xyz = 2; xyz >= 0; xyz--) {
-          typedef VRR_11_R12kG12_11<R12kG12_11_11,CGF,K,0,InBra> rr_type;
-          SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
-          if (rr_ptr->num_children())
-            rrstack.push_back(rr_cast(rr_ptr));
-        }
-        
-        // Decrease C
-        for(int xyz = 2; xyz >= 0; xyz--) {
-          typedef VRR_11_R12kG12_11<R12kG12_11_11,CGF,K,1,InBra> rr_type;
-          SafePtr<rr_type> rr_ptr = rr_type::Instance(integral,xyz);
-          if (rr_ptr->num_children())
-            rrstack.push_back(rr_cast(rr_ptr));
-        }
-      }
-      
-      return tactic->optimal_rr(rrstack);
-    }
-
-  
+#if 0  
   template <int K>
     SafePtr<RecurrenceRelation>
     Strategy::optimal_rr_TiG121111_sq(const SafePtr<DirectedGraph>& graph,
@@ -319,6 +210,7 @@ namespace libint2 {
       
       return tactic->optimal_rr(rrstack);
     }
+#endif
   
   //
   // IntSetRRStrategy describes how to compute a set of integrals from other,

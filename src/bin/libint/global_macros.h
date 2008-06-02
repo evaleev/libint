@@ -3,7 +3,7 @@
 #define _libint2_src_bin_libint_globalmacros_h_
 
 /// Set to 1 to enable various safety checks which are normally too expensive to perform
-#define CHECK_SAFETY 0
+#define CHECK_SAFETY 1
 
 /// DirectedGraph uses an associated container (multimap) to store vertices? If not, use a simple container (list)
 #define USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH 1
