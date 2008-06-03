@@ -1,9 +1,11 @@
 
-#include <smart_ptr.h>
-#include <entity.h>
-
 #ifndef _libint2_src_bin_libint_prefactors_h_
 #define _libint2_src_bin_libint_prefactors_h_
+
+#include <cstring>
+#include <smart_ptr.h>
+#include <entity.h>
+#include <bfset.h>
 
 namespace libint2 {
   
@@ -108,17 +110,119 @@ namespace libint2 {
     /// integers represented as doubles
     SafePtr<cdouble> N_i[NMAX];
 
-    const SafePtr<cdouble> Cdouble(double a);
+    SafePtr<cdouble> Cdouble(double a);
 
   private:
-    /// SingletonStack is used to manage dynamically created floating-point constants
-    typedef SingletonStack<cdouble,double> cdoubleSingletonManager;
-    cdoubleSingletonManager cd_singl_man_;
     
   };
-  
+
   extern Prefactors prefactors;
-  
+
+  namespace prefactor {
+    
+    template <typename T> struct RTimeSingletons {
+      typedef SingletonStack<RTimeEntity<T>,typename RTimeEntity<T>::key_type> ManagerType;
+      static SafePtr<ManagerType>& Manager() {
+        if (manager_ == 0) {
+          manager_ = SafePtr<ManagerType>(new ManagerType(&RTimeEntity<T>::key));
+        }
+        return manager_;
+      }
+      static SafePtr<ManagerType> manager_;
+    };
+
+    template <typename T> struct CTimeSingletons {
+      typedef SingletonStack<CTimeEntity<T>,T> ManagerType;
+      static SafePtr<ManagerType>& Manager() {
+        if (manager_ == 0) {
+          manager_ = SafePtr<ManagerType>(new ManagerType(&CTimeEntity<T>::value));
+        }
+        return manager_;
+      }
+      static SafePtr<ManagerType> manager_;
+    };
+
+    template <typename T> SafePtr<typename RTimeSingletons<T>::ManagerType> RTimeSingletons<T>::manager_;
+    template <typename T> SafePtr<typename CTimeSingletons<T>::ManagerType> CTimeSingletons<T>::manager_;
+    
+    /// make a runtime quantity
+    template <class T = double> SafePtr< RTimeEntity<T> > Scalar(const char* id) {
+      typedef RTimeEntity<T> return_type;
+      typedef RTimeSingletons<T> singletons_type;
+      typedef typename singletons_type::ManagerType ManagerType;
+      SafePtr<return_type> tmp(new return_type(id));
+      const typename ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
+      return result.second;
+    }
+    /// make a runtime quantity
+    template <class T = double> SafePtr< RTimeEntity<T> > Scalar(const std::string& id) {
+      typedef RTimeEntity<T> return_type;
+      typedef RTimeSingletons<T> singletons_type;
+      typedef typename singletons_type::ManagerType ManagerType;
+      SafePtr<return_type> tmp(new return_type(id));
+      const typename ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
+      return result.second;
+    }
+    /// make a compile-time quantity
+    template <class T = double> SafePtr< CTimeEntity<T> > Scalar(const T& a) {
+      typedef CTimeEntity<T> return_type;
+      typedef CTimeSingletons<T> singletons_type;
+      typedef typename singletons_type::ManagerType ManagerType;
+      SafePtr<return_type> tmp(new return_type(a));
+      const typename ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
+      return result.second;
+    }
+    
+    /// auxiliary class that write expressions with runtime cartesian vectors
+    template <class T> class RTimeVector3 {
+    public:
+      RTimeVector3(const char* id) : id_(id) { }
+      RTimeVector3(const std::string& id) : id_(id) { }
+      SafePtr< RTimeEntity<T> > operator[](unsigned int xyz) {
+        return Scalar<T>(id_ + "_" + dirchar[xyz]);
+      }
+      private:
+        static const char* dirchar;
+        std::string id_;
+    };
+    template <class T> const char* RTimeVector3<T>::dirchar(strdup("xyz"));
+    
+    /// auxiliary class that write expressions with compile-time cartesian vectors
+    template <class T> class CTimeVector3 {
+    public:
+      CTimeVector3(const T* val) {
+        for(int xyz=0; xyz<3; ++xyz) val_[xyz] = val[xyz];
+      }
+      SafePtr< CTimeEntity<T> > operator[](unsigned int xyz) {
+        return Scalar<T>(val_[xyz]);
+      }
+      private:
+        T val_[3];
+    };
+
+    /// make a runtime quantity
+    template <class T = double> RTimeVector3<T> Vector(const char* id)
+    {
+      return RTimeVector3<T>(id);
+    }
+    /// make a runtime quantity
+    template <class T = double> RTimeVector3<T> Vector(const std::string& id)
+    {
+      return RTimeVector3<T>(id);
+    }
+    /// make a compile-time quantity
+    template <class T = double> CTimeVector3<T> Vector(const T* a)
+    {
+      return CTimeVector3<T>(a);
+    }
+    /// make a compile-time quantity
+    inline CTimeVector3<double> Vector(const CGF& bf)
+    {
+      double qn[3]; for(unsigned int xyz=0; xyz<3; ++xyz) qn[xyz] = bf.qn(xyz);
+      return CTimeVector3<double>(qn);
+    }
+    
+  }
 };
 
 #endif

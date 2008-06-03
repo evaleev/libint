@@ -5,7 +5,6 @@
 using namespace libint2;
 
 Prefactors::Prefactors() :
-  cd_singl_man_(&cdouble::value),
   rho(new rdouble("rho")),
   one_o_2alphasum(new rdouble("oo2ze"))
 {
@@ -166,12 +165,16 @@ Prefactors::~Prefactors()
 {
 }
 
-const SafePtr<Prefactors::cdouble>
+SafePtr<Prefactors::cdouble>
 Prefactors::Cdouble(double a)
 {
+  return prefactor::Scalar(a);
+#if 0
   SafePtr<cdouble> tmp(new cdouble(a));
-  const cdoubleSingletonManager::value_type& result = cd_singl_man_.find(tmp);
+  typedef CTimeSingletons<double>::ManagerType ManagerType;
+  const ManagerType::value_type& result = CTimeSingletons<double>::Manager()->find(tmp);
   return result.second;
+#endif
 }
 
 namespace libint2 {

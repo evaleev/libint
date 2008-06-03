@@ -82,6 +82,8 @@ namespace libint2 {
     public DGVertex
     {
       public:
+      typedef typename FNVStringHash::KeyType key_type;
+        
       RTimeEntity(const std::string& id) :
         Entity(id),DGVertex(ClassInfo<RTimeEntity>::Instance().id()), descr_()
         {
@@ -150,7 +152,7 @@ namespace libint2 {
       }
 
       mutable std::string descr_;
-      typename FNVStringHash::KeyType key_;
+      key_type key_;
     };
 
   /**
@@ -237,6 +239,7 @@ namespace libint2 {
       mutable std::string descr_;
 
     };
+
     
   /** Creates product A*B. Exact type depends on type of A -- if A is a runtime-entity,
       then the result is a runtime entity as well. Otherwise the result is a compile-time entity.
