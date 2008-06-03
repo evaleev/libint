@@ -117,36 +117,37 @@ namespace libint2 {
                                                            unsigned int dir) :
     target_(Tint), dir_(dir), nchildren_(0)
     {
+      using namespace libint2::algebra;
       const unsigned int m = Tint->aux()->elem(0);
-      const F _1 = unit<F>(dir);
+      const F& _1 = unit<F>(dir);
+      const F& _2 = _1 + _1;
 #if 0
-      const F _2 = _1 + _1;
       //
       // The code ideally should look like this:
       if (part == 1 && where == InKet) {
-        const F am1 = a - _1;
+        const F& am1 = a - _1;
         if (exists(am1)) {
           children_[0] = TargetType::Instance(am1,b,c,d,m);
           children_[1] = TargetType::Instance(am1,b,c,d,m+1);
-          add_expr(Vector("PA")[dir] * children_[0] + Vector("WP")[dir] * children_[1]);
+          if (is_simple()) { expr_ = Vector("PA")[dir] * children_[0] + Vector("WP")[dir] * children_[1];  nflops_+=3; }
 
-          const F am2 = a - _2;
+          const F& am2 = a - _2;
           if (exists(am2)) {
             children_[2] = TargetType::Instance(am2,b,c,d,m);
             children_[3] = TargetType::Instance(am2,b,c,d,m+1);
-            add_expr( Scalar((a-_1).qn(dir)) * (children_[2] - Scalar("roz") * children_[3]) );
+            if (is_simple()) { expr_ += Scalar((a-_1).qn(dir)) * (children_[2] - Scalar("roz") * children_[3];  nflops_+=3; }
           }
-          const F bm1 = b - _1;
+          const F& bm1 = b - _1;
           if (exists(bm1)) {
             children_[4] = TargetType::Instance(am1,bm1,c,d,m+1);
             add_expr( children_[4] );
           }
-          const F cm1 = c - _1;
+          const F& cm1 = c - _1;
           if (exists(cm1)) {
             children_[4] = TargetType::Instance(am1,b,cm1,d,m+1);
             add_expr( children_[4] );
           }
-          const F dm1 = d - _1;
+          const F& dm1 = d - _1;
           if (exists(dm1)) {
             children_[4] = TargetType::Instance(am1,b,c,dm1,m+1);
             add_expr( children_[4] );
@@ -189,11 +190,14 @@ namespace libint2 {
       children_[1] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
       nchildren_ += 2;
       if (is_simple()) {
-        SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][where][dir],children_[0]));
-        SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.W_XY[part][dir],children_[1]));
-        SafePtr<ExprType> expr0p1_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
-	nflops_ += 3;
-        add_expr(expr0p1_ptr);
+#if 0
+        //SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][where][dir],children_[0]));
+        //SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.W_XY[part][dir],children_[1]));
+        //SafePtr<ExprType> expr0p1_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
+#endif
+        expr_ = prefactors.XY_X[part][where][dir] * children_[0] + prefactors.W_XY[part][dir] * children_[1];
+        nflops_ += 3;
+        //add_expr(expr0p1_ptr);
       }
 
       // See if a-2 exists
@@ -207,12 +211,15 @@ namespace libint2 {
         const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir);
         nchildren_ += 2;
         if (is_simple()) {
+#if 0
           SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], children_[3]));
           SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[2], expr_intmd0));
           SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_a], prefactors.one_o_2alpha12[part]));
           SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
-	  nflops_ += 5;
-	  add_expr(expr2_ptr);
+#endif
+          expr_ += prefactors.N_i[ni_a] * prefactors.one_o_2alpha12[part] * (children_[2] - prefactors.rho_o_alpha12[part] * children_[3]);
+          nflops_ += 5;
+          //add_expr(expr2_ptr);
         }
       }
 
@@ -227,12 +234,15 @@ namespace libint2 {
         const unsigned int ni_b = ket_ref->operator[](p_a).qn(dir);
         nchildren_ += 2;
         if (is_simple()) {
+#if 0
           SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], children_[5]));
           SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[4], expr_intmd0));
           SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_b], prefactors.one_o_2alpha12[part]));
           SafePtr<ExprType> expr3_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
-	  nflops_ += 5;
-	  add_expr(expr3_ptr);
+#endif
+          expr_ += prefactors.N_i[ni_b] * prefactors.one_o_2alpha12[part] * (children_[4] - prefactors.rho_o_alpha12[part] * children_[5]);
+          nflops_ += 5;
+          //add_expr(expr3_ptr);
         }
       }
 
@@ -246,10 +256,13 @@ namespace libint2 {
       const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir);
       nchildren_ += 1;
       if (is_simple()) {
+#if 0
         SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_c], prefactors.one_o_2alphasum));
         SafePtr<ExprType> expr4_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[6]));
-	nflops_ += 3;
-        add_expr(expr4_ptr);
+#endif
+        expr_ += prefactors.N_i[ni_c] * prefactors.one_o_2alphasum * children_[6];
+        nflops_ += 3;
+        //add_expr(expr4_ptr);
       }
       }
       
@@ -263,10 +276,13 @@ namespace libint2 {
       const unsigned int ni_d = ket_ref->operator[](p_c).qn(dir);
       nchildren_ += 1;
       if (is_simple()) {
+#if 0
         SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_d], prefactors.one_o_2alphasum));
         SafePtr<ExprType> expr5_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[7]));
-	nflops_ += 3;
-        add_expr(expr5_ptr);
+#endif
+        expr_ += prefactors.N_i[ni_d] * prefactors.one_o_2alphasum * children_[7];
+        nflops_ += 3;
+        //add_expr(expr5_ptr);
       }
       }
     };

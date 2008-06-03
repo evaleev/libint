@@ -137,6 +137,25 @@ namespace libint2 {
     
   };
 
+  namespace algebra {
+    /// these operators are extremely useful to write compact expressions
+    SafePtr<RecurrenceRelation::ExprType> operator+(const SafePtr<DGVertex>& A,
+                                                    const SafePtr<DGVertex>& B);
+    SafePtr<RecurrenceRelation::ExprType> operator-(const SafePtr<DGVertex>& A,
+                                                    const SafePtr<DGVertex>& B);
+    SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<DGVertex>& A,
+                                                    const SafePtr<DGVertex>& B);
+    SafePtr<RecurrenceRelation::ExprType> operator/(const SafePtr<DGVertex>& A,
+                                                    const SafePtr<DGVertex>& B);
+    const SafePtr<RecurrenceRelation::ExprType>& operator+=(SafePtr<RecurrenceRelation::ExprType>& A,
+                                                            const SafePtr<DGVertex>& B);
+    const SafePtr<RecurrenceRelation::ExprType>& operator-=(SafePtr<RecurrenceRelation::ExprType>& A,
+                                                            const SafePtr<DGVertex>& B);
+    const SafePtr<RecurrenceRelation::ExprType>& operator*=(SafePtr<RecurrenceRelation::ExprType>& A,
+                                                            const SafePtr<DGVertex>& B);
+    const SafePtr<RecurrenceRelation::ExprType>& operator/=(SafePtr<RecurrenceRelation::ExprType>& A,
+                                                            const SafePtr<DGVertex>& B);
+  };
 
   /** RRStack implements a stack of RecurrenceRelation's which can only hold
       one instance of a given RR. RecurrenceRelation::label() is used for hashing

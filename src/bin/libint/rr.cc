@@ -314,6 +314,58 @@ RecurrenceRelation::generic_instance(const SafePtr<CodeContext>& context, const 
   throw std::logic_error("RecurrenceRelation::generic_instance() -- should not be called! Check if DerivedRecurrenceRelation::generic_instance() is implemented");
 }
 
+namespace libint2 { namespace algebra {
+  /// these operators are extremely useful to write compact expressions
+  SafePtr<RecurrenceRelation::ExprType> operator+(const SafePtr<DGVertex>& A,
+                                                  const SafePtr<DGVertex>& B) {
+    typedef RecurrenceRelation::ExprType Oper;
+    return SafePtr<Oper>(new Oper(Oper::OperatorTypes::Plus,A,B));
+  }
+  SafePtr<RecurrenceRelation::ExprType> operator-(const SafePtr<DGVertex>& A,
+                                                  const SafePtr<DGVertex>& B) {
+    typedef RecurrenceRelation::ExprType Oper;
+    return SafePtr<Oper>(new Oper(Oper::OperatorTypes::Minus,A,B));
+  }
+  SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<DGVertex>& A,
+                                                  const SafePtr<DGVertex>& B) {
+    typedef RecurrenceRelation::ExprType Oper;
+    return SafePtr<Oper>(new Oper(Oper::OperatorTypes::Times,A,B));
+  }
+  SafePtr<RecurrenceRelation::ExprType> operator/(const SafePtr<DGVertex>& A,
+                                                  const SafePtr<DGVertex>& B) {
+    typedef RecurrenceRelation::ExprType Oper;
+    return SafePtr<Oper>(new Oper(Oper::OperatorTypes::Divide,A,B));
+  }
+  const SafePtr<RecurrenceRelation::ExprType>& operator+=(SafePtr<RecurrenceRelation::ExprType>& A,
+                                                          const SafePtr<DGVertex>& B) {
+    typedef RecurrenceRelation::ExprType Oper;
+    const SafePtr<Oper>& Sum = A + B;
+    A = Sum;
+    return A;
+  }
+  const SafePtr<RecurrenceRelation::ExprType>& operator-=(SafePtr<RecurrenceRelation::ExprType>& A,
+                                                          const SafePtr<DGVertex>& B) {
+    typedef RecurrenceRelation::ExprType Oper;
+    const SafePtr<Oper>& Diff = A - B;
+    A = Diff;
+    return A;
+  }
+  const SafePtr<RecurrenceRelation::ExprType>& operator*=(SafePtr<RecurrenceRelation::ExprType>& A,
+                                                          const SafePtr<DGVertex>& B) {
+    typedef RecurrenceRelation::ExprType Oper;
+    const SafePtr<Oper>& Product = A * B;
+    A = Product;
+    return A;
+  }
+  const SafePtr<RecurrenceRelation::ExprType>& operator/=(SafePtr<RecurrenceRelation::ExprType>& A,
+                                                          const SafePtr<DGVertex>& B) {
+    typedef RecurrenceRelation::ExprType Oper;
+    const SafePtr<Oper>& Quotient = A / B;
+    A = Quotient;
+    return A;
+  }
+} } // namespace libint2::algebra
+
 ///////////////
 
 SafePtr<RRStack>
