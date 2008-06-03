@@ -126,6 +126,7 @@ namespace libint2 {
     target_(Tint), dir_(dir), nchildren_(0)
     {
       const int K = target_->oper()->descr().K();
+      const F _1 = unit<F>(dir);
       F sh_a(Tint->bra(0,0));
       F sh_b(Tint->ket(0,0));
       F sh_c(Tint->bra(1,0));
@@ -150,11 +151,10 @@ namespace libint2 {
       int p_c = (p_a == 0) ? 1 : 0;
 
       // See if a-1 exists
-      if (!bra_ref->operator[](p_a).dec(dir)) {
+      const F& sh_am1 = bra_ref->operator[](p_a) - _1;
+      if (!exists(sh_am1)) {
         return;
       }
-      // turn a-1 back to a
-      bra_ref->operator[](p_a).inc(dir);
       
       if (K == -1)
         children_and_expr_Keqm1(bra,ket,bra_ref,ket_ref);
@@ -171,6 +171,7 @@ namespace libint2 {
       const int K = target_->oper()->descr().K();
       const OperType K_oper = OperType(K);
       const unsigned int m = target_->aux()->elem(0);
+      const F _1 = unit<F>(dir_);
       // On which particle to act
       int p_a = part;
       int p_c = (p_a == 0) ? 1 : 0;
@@ -189,11 +190,10 @@ namespace libint2 {
       }
 
       // See if a-2 exists
-      bool a_minus_2_exists = true;
-      if (!bra_ref->operator[](p_a).dec(dir_)) {
-        a_minus_2_exists = false;
-      }
+      const F& sh_am2 = bra_ref->operator[](p_a) - _1;
+      const bool a_minus_2_exists = exists(sh_am2);
       if (a_minus_2_exists) {
+        bra_ref->operator[](p_a).dec(dir_);
         int next_child = nchildren_;
         children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m,K_oper);
         children_[next_child+1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
@@ -211,11 +211,10 @@ namespace libint2 {
       }
 
       // See if b-1 exists
-      bool b_minus_1_exists = true;
-      if (!ket_ref->operator[](p_a).dec(dir_)) {
-        b_minus_1_exists = false;
-      }
+      const F& sh_bm1 = ket_ref->operator[](p_a) - _1;
+      const bool b_minus_1_exists = exists(sh_bm1);
       if (b_minus_1_exists) {
+        ket_ref->operator[](p_a).dec(dir_);
         int next_child = nchildren_;
         children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m,K_oper);
         children_[next_child+1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
@@ -233,11 +232,10 @@ namespace libint2 {
       }
 
       // See if c-1 exists
-      bool c_minus_1_exists = true;
-      if (!bra_ref->operator[](p_c).dec(dir_)) {
-        c_minus_1_exists = false;
-      }
+      const F& sh_cm1 = bra_ref->operator[](p_c) - _1;
+      const bool c_minus_1_exists = exists(sh_cm1);
       if (c_minus_1_exists) {
+        bra_ref->operator[](p_c).dec(dir_);
         int next_child = nchildren_;
         children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
         bra_ref->operator[](p_c).inc(dir_);
@@ -252,11 +250,10 @@ namespace libint2 {
       }
 
       // See if d-1 exists
-      bool d_minus_1_exists = true;
-      if (!ket_ref->operator[](p_c).dec(dir_)) {
-        d_minus_1_exists = false;
-      }
+      const F& sh_dm1 = ket_ref->operator[](p_c) - _1;
+      const bool d_minus_1_exists = exists(sh_dm1);
       if (d_minus_1_exists) {
+        ket_ref->operator[](p_c).dec(dir_);
         int next_child = nchildren_;
         children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
         ket_ref->operator[](p_c).inc(dir_);
@@ -281,6 +278,7 @@ namespace libint2 {
       const OperType K_oper = OperType(K);
       const OperType Km2_oper = OperType(K-2);
       const unsigned int m = target_->aux()->elem(0);
+      const F _1 = unit<F>(dir_);
       if (m != 0)
         throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- nonzero auxiliary quantum detected.");
       
@@ -299,11 +297,10 @@ namespace libint2 {
       }
 
       // See if a-2 exists
-      bool a_minus_2_exists = true;
-      if (!bra_ref->operator[](p_a).dec(dir_)) {
-        a_minus_2_exists = false;
-      }
+      const F& sh_am2 = bra_ref->operator[](p_a) - _1;
+      const bool a_minus_2_exists = exists(sh_am2);
       if (a_minus_2_exists) {
+        bra_ref->operator[](p_a).dec(dir_);
         children_[1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,K_oper);
         bra_ref->operator[](p_a).inc(dir_);
         const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir_);
@@ -317,20 +314,17 @@ namespace libint2 {
       }
 
       // See if b-1 exists
-      bool b_minus_1_exists = true;
-      if (!ket_ref->operator[](p_a).dec(dir_)) {
-        b_minus_1_exists = false;
-      }
+      const F& sh_bm1 = ket_ref->operator[](p_a) - _1;
+      const bool b_minus_1_exists = exists(sh_bm1);
       if (b_minus_1_exists) {
         throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- AM on centers b and d must be zero, general RR is not yet implemented");
       }
 
       // See if c-1 exists
-      bool c_minus_1_exists = true;
-      if (!bra_ref->operator[](p_c).dec(dir_)) {
-        c_minus_1_exists = false;
-      }
+      const F& sh_cm1 = bra_ref->operator[](p_c) - _1;
+      const bool c_minus_1_exists = exists(sh_cm1);
       if (c_minus_1_exists) {
+        bra_ref->operator[](p_c).dec(dir_);
         int next_child = nchildren_;
         children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,K_oper);
         bra_ref->operator[](p_c).inc(dir_);
@@ -345,12 +339,10 @@ namespace libint2 {
       }
 
       // See if d-1 exists
-      bool d_minus_1_exists = true;
-      if (!ket_ref->operator[](p_c).dec(dir_)) {
-	d_minus_1_exists = false;
-      }
+      const F& sh_dm1 = ket_ref->operator[](p_c) - _1;
+      const bool d_minus_1_exists = exists(sh_dm1);
       if (d_minus_1_exists) {
-	throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- AM on centers b and d must be zero, general RR is not yet implemented");
+        throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- AM on centers b and d must be zero, general RR is not yet implemented");
       }
       
       if (K != 0) {

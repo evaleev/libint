@@ -27,26 +27,44 @@ namespace libint2 {
 
   /** Set of basis functions with incrementable/decrementable quantum numbers.
       Sets must be constructable using SafePtr<BFSet> or SafePtr<ConstructablePolymorphically>.
+      
+      Call to dec() may invalidate the object. No further
+      modification of such object's state is possible.
+      Assignment of such object to another preserves the invalid state,
+      but copy construction of a valid object is possible.
   */
   class IncableBFSet : public BFSet {
 
   public:
     virtual ~IncableBFSet() {}
 
-    /// Increment i-th quantum number. Do nothing if i is outside the allowed range.
-    virtual void inc(unsigned int i) =0;
-    /// Decrements i-th quantum number. Return false and do nothing is i is outside the allowed range, else return true.
-    virtual bool dec(unsigned int i) =0;
+    /// Add c quanta along xyz.
+    virtual void inc(unsigned int xyz, unsigned int c = 1u) =0;
+    /// Subtract c quanta along xyz. If impossible, invalidate the object, but do not change its quanta!
+    virtual void dec(unsigned int xyz, unsigned int c = 1u) =0;
     /// Returns the norm of the quantum numbers
     virtual unsigned int norm() const =0;
     /// norm() == 0
     bool zero() const { return norm() == 0; }
+    /// Return false if this object is invalid
+    bool valid() const { return valid_; }
 
   protected:
-    IncableBFSet() {}
-
+    IncableBFSet() : valid_(true) {}
+    
+    /// make this object invalid
+    void invalidate() { valid_ = false; }
+    
+  private:
+    bool valid_;
   };
 
+  /// BF with unit quantum along X. F must behave like IncableBFSet
+  template <typename F>
+  F unit(unsigned int X) { F tmp; tmp.inc(X,1); return tmp; }
+  /// Return true if A is valid
+  inline bool exists(const IncableBFSet& A) { return A.valid(); }
+  
   class CGF;
   
   /// Cartesian Gaussian Shell
@@ -80,10 +98,10 @@ namespace libint2 {
     /// Comparison operator
     bool operator==(const CGShell&) const;
 
-    /// Implements purely virtual IncableBFSet::dec
-    bool dec(unsigned int i);
-    /// Implements purely virtual IncableBFSet::inc
-    void inc(unsigned int i);
+    /// Implementation of IncableBFSet::inc().
+    void inc(unsigned int xyz, unsigned int c = 1u);
+    /// Implementation of IncableBFSet::dec().
+    void dec(unsigned int xyz, unsigned int c = 1u);
     /// Implements IncableBFSet::norm()
     unsigned int norm() const;
     /// Implements Hashable<unsigned>::key()
@@ -96,6 +114,9 @@ namespace libint2 {
     void print(std::ostream& os = std::cout) const;
 
   };
+  
+  CGShell operator+(const CGShell& A, const CGShell& B);
+  CGShell operator-(const CGShell& A, const CGShell& B);
 
   /// Cartesian Gaussian Function
   class CGF : public IncableBFSet, public Hashable<unsigned,ComputeKey> {
@@ -118,6 +139,8 @@ namespace libint2 {
     CGF(const ConstructablePolymorphically&);
     CGF(const SafePtr<ConstructablePolymorphically>&);
     ~CGF();
+    /// assignment
+    CGF& operator=(const CGF&);
 
     /// Return a compact label
     const std::string label() const;
@@ -129,11 +152,11 @@ namespace libint2 {
 
     /// Comparison operator
     bool operator==(const CGF&) const;
-    
-    /// Implements purely virtual IncableBFSet::dec
-    bool dec(unsigned int i);
-    /// Implements purely virtual IncableBFSet::inc
-    void inc(unsigned int i);
+
+    /// Implementation of IncableBFSet::inc().
+    void inc(unsigned int xyz, unsigned int c = 1u);
+    /// Implementation of IncableBFSet::dec().
+    void dec(unsigned int xyz, unsigned int c = 1u);
     /// Implements IncableBFSet::norm()
     unsigned int norm() const;
     /// Implements Hashable<unsigned>::key()
@@ -153,6 +176,9 @@ namespace libint2 {
     /// key_l_offset[L] is the number of all possible CGFs with angular momentum less than L
     static unsigned key_l_offset[CGShell::max_key+2];
   };
+
+  CGF operator+(const CGF& A, const CGF& B);
+  CGF operator-(const CGF& A, const CGF& B);
 
   /**
      TrivialBFSet<T> defines static member result, which is true if T

@@ -118,33 +118,41 @@ namespace libint2 {
     target_(Tint), dir_(dir), nchildren_(0)
     {
       const unsigned int m = Tint->aux()->elem(0);
-      
+      const F _1 = unit<F>(dir);
 #if 0
+      const F _2 = _1 + _1;
       //
       // The code ideally should look like this:
-      if (exists(a - _1)) {
-        children_[0] = TargetType::Instance(a-_1,b,c,d,m);
-        children_[1] = TargetType::Instance(a-_1,b,c,d,m+1);
-        add_expr(Vector("PA")[dir] * children_[0] + Vector("WP")[dir] * children_[1]);
+      if (part == 1 && where == InKet) {
+        const F am1 = a - _1;
+        if (exists(am1)) {
+          children_[0] = TargetType::Instance(am1,b,c,d,m);
+          children_[1] = TargetType::Instance(am1,b,c,d,m+1);
+          add_expr(Vector("PA")[dir] * children_[0] + Vector("WP")[dir] * children_[1]);
 
-        if (exists(a - _2)) {
-          children_[2] = TargetType::Instance(a-_2,b,c,d,m);
-          children_[3] = TargetType::Instance(a-_2,b,c,d,m+1);
-          add_expr( Scalar((a-_1).qn(dir)) * (children_[2] - Scalar("roz") * children_[3]) );
+          const F am2 = a - _2;
+          if (exists(am2)) {
+            children_[2] = TargetType::Instance(am2,b,c,d,m);
+            children_[3] = TargetType::Instance(am2,b,c,d,m+1);
+            add_expr( Scalar((a-_1).qn(dir)) * (children_[2] - Scalar("roz") * children_[3]) );
+          }
+          const F bm1 = b - _1;
+          if (exists(bm1)) {
+            children_[4] = TargetType::Instance(am1,bm1,c,d,m+1);
+            add_expr( children_[4] );
+          }
+          const F cm1 = c - _1;
+          if (exists(cm1)) {
+            children_[4] = TargetType::Instance(am1,b,cm1,d,m+1);
+            add_expr( children_[4] );
+          }
+          const F dm1 = d - _1;
+          if (exists(dm1)) {
+            children_[4] = TargetType::Instance(am1,b,c,dm1,m+1);
+            add_expr( children_[4] );
+          }
         }
-        if (exists(b - _1)) {
-          children_[4] = TargetType::Instance(a-_1,b-_1,c,d,m+1);
-          add_expr( children_[4] );
-        }
-        if (exists(c - _1)) {
-          children_[4] = TargetType::Instance(a-_1,b,c-_1,d,m+1);
-          add_expr( children_[4] );
-        }
-        if (exists(d - _1)) {
-          children_[4] = TargetType::Instance(a-_1,b,c,d-_1,m+1);
-          add_expr( children_[4] );
-        }
-
+      }
 #endif
       
       
@@ -172,9 +180,11 @@ namespace libint2 {
       int p_c = (p_a == 0) ? 1 : 0;
 
       // See if a-1 exists
-      if (!bra_ref->operator[](p_a).dec(dir)) {
+      const F& sh_am1 = bra_ref->operator[](p_a) - _1;
+      if (!exists(sh_am1)) {
         return;
       }
+      bra_ref->operator[](p_a).dec(dir);
       children_[0] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m);
       children_[1] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
       nchildren_ += 2;
@@ -187,11 +197,10 @@ namespace libint2 {
       }
 
       // See if a-2 exists
-      bool a_minus_2_exists = true;
-      if (!bra_ref->operator[](p_a).dec(dir)) {
-        a_minus_2_exists = false;
-      }
+      const F& sh_am2 = bra_ref->operator[](p_a) - _1;
+      const bool a_minus_2_exists = exists(sh_am2);
       if (a_minus_2_exists) {
+        bra_ref->operator[](p_a).dec(dir);
         children_[2] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m);
         children_[3] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
         bra_ref->operator[](p_a).inc(dir);
@@ -208,11 +217,10 @@ namespace libint2 {
       }
 
       // See if b-1 exists
-      bool b_minus_1_exists = true;
-      if (!ket_ref->operator[](p_a).dec(dir)) {
-        b_minus_1_exists = false;
-      }
+      const F& sh_bm1 = ket_ref->operator[](p_a) - _1;
+      const bool b_minus_1_exists = exists(sh_bm1);
       if (b_minus_1_exists) {
+        ket_ref->operator[](p_a).dec(dir);
         children_[4] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m);
         children_[5] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
         ket_ref->operator[](p_a).inc(dir);
@@ -229,9 +237,10 @@ namespace libint2 {
       }
 
       // See if c-1 exists
-      if (!bra_ref->operator[](p_c).dec(dir)) {
-        return;
-      }
+      const F& sh_cm1 = bra_ref->operator[](p_c) - _1;
+      const bool c_minus_1_exists = exists(sh_cm1);
+      if (c_minus_1_exists) {
+      bra_ref->operator[](p_c).dec(dir);
       children_[6] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
       bra_ref->operator[](p_c).inc(dir);
       const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir);
@@ -242,11 +251,13 @@ namespace libint2 {
 	nflops_ += 3;
         add_expr(expr4_ptr);
       }
-
-      // See if d-1 exists
-      if (!ket_ref->operator[](p_c).dec(dir)) {
-        return;
       }
+      
+      // See if d-1 exists
+      const F& sh_dm1 = ket_ref->operator[](p_c) - _1;
+      const bool d_minus_1_exists = exists(sh_dm1);
+      if (d_minus_1_exists) {
+      ket_ref->operator[](p_c).dec(dir);
       children_[7] = TargetType::Instance(bra[0],ket[0],bra[1],ket[1],m+1);
       ket_ref->operator[](p_c).inc(dir);
       const unsigned int ni_d = ket_ref->operator[](p_c).qn(dir);
@@ -256,6 +267,7 @@ namespace libint2 {
         SafePtr<ExprType> expr5_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[7]));
 	nflops_ += 3;
         add_expr(expr5_ptr);
+      }
       }
     };
 

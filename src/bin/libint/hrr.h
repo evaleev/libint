@@ -149,7 +149,8 @@ namespace libint2 {
       if (loc_b == InBra) {
         // See if b-1 exists
         F sh_b(bra->member(part,pos_b));
-	if (!sh_b.dec(dir_)) {
+        sh_b.dec(dir_);
+        if (!exists(sh_b)) {
           delete bra;
           delete ket;
           return;
@@ -184,7 +185,8 @@ namespace libint2 {
       else {
         // See if b-1 exists
         F sh_b(ket->member(part,pos_b));
-	if (!sh_b.dec(dir_)) {
+        sh_b.dec(dir_);
+        if (!exists(sh_b)) {
           delete bra;
           delete ket;
           return;

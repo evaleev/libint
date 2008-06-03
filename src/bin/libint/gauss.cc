@@ -101,25 +101,32 @@ CGF::operator==(const CGF& a) const
            qn_[2] == a.qn_[2] );
 }
 
-bool
-CGF::dec(unsigned int i)
+CGF&
+CGF::operator=(const CGF& source)
 {
-  if (i<3) {
-    if (qn_[i] == 0)
-      return false;
-    --qn_[i];
-    return true;
-  }
-  else {
-    return false;
+  for(int i=0; i<3; i++)
+    qn_[i] = source.qn_[i];
+  if (!source.valid()) invalidate();
+  return *this;
+}
+
+void
+CGF::dec(unsigned int i, unsigned int c)
+{
+  if (i<3 && valid()) {
+    if (qn_[i] < c) {
+      invalidate();
+      return;
+    }
+    qn_[i] -= c;
   }
 }
 
 void
-CGF::inc(unsigned int i)
+CGF::inc(unsigned int i, unsigned int c)
 {
-  if (i<3)
-    ++qn_[i];
+  if (i<3 && valid())
+    qn_[i] += c;
 }
 
 unsigned int
@@ -132,6 +139,22 @@ void
 CGF::print(std::ostream& os) const
 {
   os << "CGF: " << label() << endl;
+}
+
+CGF
+libint2::operator+(const CGF& A, const CGF& B) {
+  CGF Sum(A);
+  for(unsigned int xyz=0; xyz<3; ++xyz)
+    Sum.inc(xyz,B.qn(xyz));
+  return Sum;
+}
+
+CGF
+libint2::operator-(const CGF& A, const CGF& B) {
+  CGF Diff(A);
+  for(unsigned int xyz=0; xyz<3; ++xyz)
+    Diff.dec(xyz,B.qn(xyz));
+  return Diff;
 }
 
 // By default make it an s-shell
@@ -201,6 +224,7 @@ CGShell::operator=(const CGShell& source)
 {
   for(int i=0; i<1; i++)
     qn_[i] = source.qn_[i];
+  if (!source.valid()) invalidate();
   return *this;
 }
 
@@ -210,25 +234,23 @@ CGShell::operator==(const CGShell& a) const
   return ( qn_[0] == a.qn_[0] );
 }
 
-bool
-CGShell::dec(unsigned int i)
+void
+CGShell::dec(unsigned int i, unsigned int c)
 {
-  if (i == 0) {
-    if (qn_[0] == 0)
-      return false;
-    --qn_[0];
-    return true;
-  }
-  else {
-    return false;
+  if (i == 0 && valid()) {
+    if (qn_[0] < c) {
+      invalidate();
+      return;
+    }
+    qn_[0] -= c;
   }
 }
 
 void
-CGShell::inc(unsigned int i)
+CGShell::inc(unsigned int i, unsigned int c)
 {
-  if (i == 0)
-    ++qn_[0];
+  if (i == 0 && valid())
+    qn_[0] += c;
 }
 
 unsigned int
@@ -243,3 +265,16 @@ CGShell::print(std::ostream& os) const
   os << "CGShell: am = " << qn_[0] << endl;
 }
 
+CGShell
+libint2::operator+(const CGShell& A, const CGShell& B) {
+  CGShell Sum(A);
+  Sum.inc(0,B.qn(0));
+  return Sum;
+}
+
+CGShell
+libint2::operator-(const CGShell& A, const CGShell& B) {
+  CGShell Diff(A);
+  Diff.dec(0,B.qn(0));
+  return Diff;
+}
