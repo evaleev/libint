@@ -174,7 +174,7 @@ namespace libint2 {
       std::string label_;
       mutable std::string descr_;
     };
-
+    
   /*
   template <>
     void

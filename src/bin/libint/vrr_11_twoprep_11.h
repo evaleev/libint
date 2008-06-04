@@ -1,4 +1,7 @@
 
+#ifndef _libint2_src_bin_libint_vrr11twoprep11_h_
+#define _libint2_src_bin_libint_vrr11twoprep11_h_
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -15,9 +18,6 @@
 #include <context.h>
 #include <default_params.h>
 #include <util.h>
-
-#ifndef _libint2_src_bin_libint_vrr11twoprep11_h_
-#define _libint2_src_bin_libint_vrr11twoprep11_h_
 
 using namespace std;
 
@@ -50,7 +50,7 @@ namespace libint2 {
         a Cartesian Gaussian.
     */
     static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
-    ~VRR_11_TwoPRep_11();
+    ~VRR_11_TwoPRep_11() { assert(part == 0 || part == 1); }
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return children_.size(); };
@@ -87,7 +87,17 @@ namespace libint2 {
     }
 
     /// Implementation of RecurrenceRelation::generate_label()
-    std::string generate_label() const;
+    std::string generate_label() const
+    {
+      typedef typename TargetType::AuxIndexType mType;
+      static SafePtr<mType> aux0(new mType(0u));
+      ostringstream os;
+      // OS VRR recurrence relation code is independent of m (it never appears anywhere in equations), hence
+      // to avoid generating identical code make sure that the (unique) label does not contain m
+      os << "OS VRR Part" << part << " " << to_string(where) << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
+      return os.str();
+    }
+
 #if LIBINT_ENABLE_GENERIC_CODE
     /// Implementation of RecurrenceRelation::has_generic()
     bool has_generic(const SafePtr<CompilationParameters>& cparams) const;
@@ -123,7 +133,6 @@ namespace libint2 {
       const unsigned int m = Tint->aux()->elem(0);
       const F& _1 = unit<F>(dir);
 
-#if 1
       // Build on A
       if (part == 0 && where == InBra) {
         F a(Tint->bra(0,0) - _1);
@@ -197,149 +206,6 @@ namespace libint2 {
         return;
       }
       return;
-#else
-      
-      F sh_a(Tint->bra(0,0));
-      F sh_b(Tint->ket(0,0));
-      F sh_c(Tint->bra(1,0));
-      F sh_d(Tint->ket(1,0));
-      
-      vector<F> bra;
-      vector<F> ket;
-      bra.push_back(sh_a);
-      bra.push_back(sh_c);
-      ket.push_back(sh_b);
-      ket.push_back(sh_d);
-
-      // Use indirection to choose bra or ket
-      vector<F>* bra_ref = &bra;
-      vector<F>* ket_ref = &ket;
-      if (where == InKet) {
-        bra_ref = &ket;
-        ket_ref = &bra;
-      }
-      // On which particle to act
-      int p_a = part;
-      int p_c = (p_a == 0) ? 1 : 0;
-
-      // See if a-1 exists
-      const F& sh_am1 = bra_ref->operator[](p_a) - _1;
-      if (!exists(sh_am1)) {
-        return;
-      }
-      bra_ref->operator[](p_a).dec(dir);
-      const SafePtr<ChildType>& ABCD_m = make_child(bra[0],ket[0],bra[1],ket[1],m);
-      const SafePtr<ChildType>& ABCD_mp1 = make_child(bra[0],ket[0],bra[1],ket[1],m+1);
-      if (is_simple()) {
-#if 0
-        //SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][where][dir],children_[0]));
-        //SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.W_XY[part][dir],children_[1]));
-        //SafePtr<ExprType> expr0p1_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
-#endif
-        expr_ = prefactors.XY_X[part][where][dir] * ABCD_m + prefactors.W_XY[part][dir] * ABCD_mp1;
-        nflops_ += 3;
-        //add_expr(expr0p1_ptr);
-      }
-
-      // See if a-2 exists
-      const F& sh_am2 = bra_ref->operator[](p_a) - _1;
-      const bool a_minus_2_exists = exists(sh_am2);
-      if (a_minus_2_exists) {
-        bra_ref->operator[](p_a).dec(dir);
-        const SafePtr<ChildType>& Am1BCD_m = make_child(bra[0],ket[0],bra[1],ket[1],m);
-        const SafePtr<ChildType>& Am1BCD_mp1 = make_child(bra[0],ket[0],bra[1],ket[1],m+1);
-        bra_ref->operator[](p_a).inc(dir);
-        const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir);
-        if (is_simple()) {
-#if 0
-          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], children_[3]));
-          SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[2], expr_intmd0));
-          SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_a], prefactors.one_o_2alpha12[part]));
-          SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
-#endif
-          expr_ += prefactors.N_i[ni_a] * prefactors.one_o_2alpha12[part] * (Am1BCD_m - prefactors.rho_o_alpha12[part] * Am1BCD_mp1);
-          nflops_ += 5;
-          //add_expr(expr2_ptr);
-        }
-      }
-
-      // See if b-1 exists
-      const F& sh_bm1 = ket_ref->operator[](p_a) - _1;
-      const bool b_minus_1_exists = exists(sh_bm1);
-      if (b_minus_1_exists) {
-        ket_ref->operator[](p_a).dec(dir);
-        const SafePtr<ChildType>& ABm1CD_m = make_child(bra[0],ket[0],bra[1],ket[1],m);
-        const SafePtr<ChildType>& ABm1CD_mp1 = make_child(bra[0],ket[0],bra[1],ket[1],m+1);
-        ket_ref->operator[](p_a).inc(dir);
-        const unsigned int ni_b = ket_ref->operator[](p_a).qn(dir);
-        if (is_simple()) {
-#if 0
-          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], children_[5]));
-          SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, children_[4], expr_intmd0));
-          SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_b], prefactors.one_o_2alpha12[part]));
-          SafePtr<ExprType> expr3_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
-#endif
-          expr_ += prefactors.N_i[ni_b] * prefactors.one_o_2alpha12[part] * (ABm1CD_m - prefactors.rho_o_alpha12[part] * ABm1CD_mp1);
-          nflops_ += 5;
-          //add_expr(expr3_ptr);
-        }
-      }
-
-      // See if c-1 exists
-      const F& sh_cm1 = bra_ref->operator[](p_c) - _1;
-      const bool c_minus_1_exists = exists(sh_cm1);
-      if (c_minus_1_exists) {
-      bra_ref->operator[](p_c).dec(dir);
-      const SafePtr<ChildType>& ABCm1D_mp1 = make_child(bra[0],ket[0],bra[1],ket[1],m+1);
-      bra_ref->operator[](p_c).inc(dir);
-      const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir);
-      if (is_simple()) {
-#if 0
-        SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_c], prefactors.one_o_2alphasum));
-        SafePtr<ExprType> expr4_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[6]));
-#endif
-        expr_ += prefactors.N_i[ni_c] * prefactors.one_o_2alphasum * ABCm1D_mp1;
-        nflops_ += 3;
-        //add_expr(expr4_ptr);
-      }
-      }
-      
-      // See if d-1 exists
-      const F& sh_dm1 = ket_ref->operator[](p_c) - _1;
-      const bool d_minus_1_exists = exists(sh_dm1);
-      if (d_minus_1_exists) {
-      ket_ref->operator[](p_c).dec(dir);
-      const SafePtr<ChildType>& ABCDm1_mp1 = make_child(bra[0],ket[0],bra[1],ket[1],m+1);
-      ket_ref->operator[](p_c).inc(dir);
-      const unsigned int ni_d = ket_ref->operator[](p_c).qn(dir);
-      if (is_simple()) {
-#if 0
-        SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_d], prefactors.one_o_2alphasum));
-        SafePtr<ExprType> expr5_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, children_[7]));
-#endif
-        expr_ += prefactors.N_i[ni_d] * prefactors.one_o_2alphasum * ABCDm1_mp1;
-        nflops_ += 3;
-        //add_expr(expr5_ptr);
-      }
-      }
-#endif // old algorithm
-    }
-
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
-    VRR_11_TwoPRep_11<ERI,F,part,where>::~VRR_11_TwoPRep_11()
-    {
-      if (part < 0 || part >= 2) {
-        assert(false);
-      }
-    };
-
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
-    std::string
-    VRR_11_TwoPRep_11<ERI,F,part,where>::generate_label() const
-    {
-      ostringstream os;
-      os << "OS VRR Part" << part << " " << to_string(where) << target_->label();
-      return os.str();
     }
 
 #if LIBINT_ENABLE_GENERIC_CODE

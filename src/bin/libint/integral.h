@@ -406,6 +406,35 @@ namespace libint2 {
       size_ = sz;
     }
     
+  template <class BraSetType, class KetSetType, class AuxQuanta, class Op>
+    std::string
+    genintegralset_label(const BraSetType& bra, const KetSetType& ket, const SafePtr<AuxQuanta>& aux, const SafePtr<Op>& O)
+    {
+      ostringstream os;
+      os << "< ";
+      for(int p=0; p<Op::Properties::np; p++) {
+        unsigned int nbra = bra.num_members(p);
+        for(unsigned int i=0; i<nbra; i++)
+#if USE_BRAKET_H
+          os << bra.member(p,i).label() << "(" << p << ") ";
+#else
+          os << bra.member(p,i)->label() << "(" << p << ") ";
+#endif
+      }
+      os << "| " << O->label() << " | ";
+      for(int p=0; p<Op::Properties::np; p++) {
+        unsigned int nket = ket.num_members(p);
+        for(unsigned int i=0; i<nket; i++)
+#if USE_BRAKET_H
+          os << ket.member(p,i).label() << "(" << p << ") ";
+#else
+          os << ket.member(p,i)->label() << "(" << p << ") ";
+#endif
+      }
+      os << "> ^ { " << aux->label() << " }";
+      return os.str();
+    }
+  
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const std::string&
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::label() const
@@ -419,29 +448,7 @@ namespace libint2 {
     std::string
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::generate_label() const
     {
-      ostringstream os;
-      os << "< ";
-      for(int p=0; p<Op::Properties::np; p++) {
-        unsigned int nbra = bra_.num_members(p);
-        for(unsigned int i=0; i<nbra; i++)
-#if USE_BRAKET_H
-          os << bra_.member(p,i).label() << "(" << p << ") ";
-#else
-          os << bra_.member(p,i)->label() << "(" << p << ") ";
-#endif
-      }
-      os << "| " << O_->label() << " | ";
-      for(int p=0; p<Op::Properties::np; p++) {
-        unsigned int nket = ket_.num_members(p);
-        for(unsigned int i=0; i<nket; i++)
-#if USE_BRAKET_H
-          os << ket_.member(p,i).label() << "(" << p << ") ";
-#else
-          os << ket_.member(p,i)->label() << "(" << p << ") ";
-#endif
-      }
-      os << "> ^ { " << aux_->label() << " }";
-      return os.str();
+      return genintegralset_label(bra_,ket_,aux_,O_);
     }
   
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>

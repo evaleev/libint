@@ -21,6 +21,7 @@
 
 using namespace std;
 
+#define USE_OLD_VRRR12kG12_CODE 0
 
 namespace libint2 {
 
@@ -51,18 +52,14 @@ namespace libint2 {
         a Cartesian Gaussian.
     */
     static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
-    ~VRR_11_R12kG12_11();
+    ~VRR_11_R12kG12_11() { assert(part == 0 || part == 1); }
 
     /// Implementation of RecurrenceRelation::num_children()
-    const unsigned int num_children() const { return nchildren_; };
-    /// target() returns pointer to the i-th child
-    SafePtr<TargetType> target() const { return target_; };
-    /// child(i) returns pointer to the i-th child
-    SafePtr<ChildType> child(unsigned int i) const;
+    const unsigned int num_children() const { return children_.size(); };
     /// Implementation of RecurrenceRelation::rr_target()
-    SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target_); }
     /// Implementation of RecurrenceRelation::rr_child()
-    SafePtr<DGVertex> rr_child(unsigned int i) const { return dynamic_pointer_cast<DGVertex,ChildType>(child(i)); }
+    SafePtr<DGVertex> rr_child(unsigned int i) const { return dynamic_pointer_cast<DGVertex,ChildType>(children_.at(i)); }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
@@ -92,11 +89,27 @@ namespace libint2 {
     
     SafePtr<TargetType> target_;
     static const unsigned int max_nchildren_ = 8;
-    SafePtr<ChildType> children_[max_nchildren_];
-    unsigned int nchildren_;
+    std::vector< SafePtr<ChildType> > children_;
+    const SafePtr<ChildType>& make_child(const BFSet& A, const BFSet& B, const BFSet& C, const BFSet& D, unsigned int m, int K = -1) {
+      typedef typename TargetType::OperType OperType;
+      const OperType K_oper = OperType(K);
+      const SafePtr<ChildType>& i = ChildType::Instance(A,B,C,D,m,K_oper);
+      children_.push_back(i);
+      return *(children_.end()-1);
+    }
 
     /// Implementation of RecurrenceRelation::generate_label()
-    std::string generate_label() const;
+    std::string generate_label() const
+    {
+      typedef typename TargetType::AuxIndexType mType;
+      static SafePtr<mType> aux0(new mType(0u));
+      ostringstream os;
+      // R12kG12 VRR recurrence relations codes are independent of m (it never appears anywhere in equations), hence
+      // to avoid generating identical code make sure that the (unique) label does not contain m
+      os << "VRR Part" << part << " " << to_string(where) << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
+      return os.str();
+    }
+
 #if LIBINT_ENABLE_GENERIC_CODE
     /// Implementation of RecurrenceRelation::has_generic()
     bool has_generic(const SafePtr<CompilationParameters>& cparams) const;
@@ -123,10 +136,167 @@ namespace libint2 {
   template <template <typename...> class I, class F, int part, FunctionPosition where>
     VRR_11_R12kG12_11<I,F,part,where>::VRR_11_R12kG12_11(const SafePtr< TargetType >& Tint,
                                                            unsigned int dir) :
-    target_(Tint), dir_(dir), nchildren_(0)
+    target_(Tint), dir_(dir)
     {
+      using namespace libint2::algebra;
+      using namespace libint2::prefactor;
+      children_.reserve(max_nchildren_);
       const int K = target_->oper()->descr().K();
+      const unsigned int m = target_->aux()->elem(0);
       const F _1 = unit<F>(dir);
+
+#if !USE_OLD_VRRR12kG12_CODE
+      // if K is -1, the recurrence relation looks exactly as it would for ERI
+      // thus generate the same code, and remember to use appropriate prefactors
+      if (K == -1) {
+        // Build on A
+        if (part == 0 && where == InBra) {
+          F a(Tint->bra(0,0) - _1);
+          if (!exists(a)) return;
+          F b(Tint->ket(0,0));
+          F c(Tint->bra(1,0));
+          F d(Tint->ket(1,0));
+
+          const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
+          const SafePtr<ChildType>& ABCD_mp1 = make_child(a,b,c,d,m+1);
+          if (is_simple()) { expr_ = Vector("PA")[dir] * ABCD_m + Vector("WP")[dir] * ABCD_mp1;  nflops_+=3; }
+
+          const F& am1 = a - _1;
+          if (exists(am1)) {
+            const SafePtr<ChildType>& Am1BCD_m = make_child(am1,b,c,d,m);
+            const SafePtr<ChildType>& Am1BCD_mp1 = make_child(am1,b,c,d,m+1);
+            if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
+          }
+          const F& bm1 = b - _1;
+          if (exists(bm1)) {
+            const SafePtr<ChildType>& ABm1CD_m = make_child(a,bm1,c,d,m);
+            const SafePtr<ChildType>& ABm1CD_mp1 = make_child(a,bm1,c,d,m+1);
+            if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
+          }
+          const F& cm1 = c - _1;
+          if (exists(cm1)) {
+            const SafePtr<ChildType>& ABCm1D_mp1 = make_child(a,b,cm1,d,m+1);
+            if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
+          }
+          const F& dm1 = d - _1;
+          if (exists(dm1)) {
+            const SafePtr<ChildType>& ABCDm1_mp1 = make_child(a,b,c,dm1,m+1);
+            if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
+          }
+          return;
+        }
+        // Build on C
+        if (part == 1 && where == InBra) {
+          F a(Tint->bra(0,0));
+          F b(Tint->ket(0,0));
+          F c(Tint->bra(1,0) - _1);
+          if (!exists(c)) return;
+          F d(Tint->ket(1,0));
+
+          const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
+          const SafePtr<ChildType>& ABCD_mp1 = make_child(a,b,c,d,m+1);
+          if (is_simple()) { expr_ = Vector("QC")[dir] * ABCD_m + Vector("WQ")[dir] * ABCD_mp1;  nflops_+=3; }
+
+          const F& cm1 = c - _1;
+          if (exists(cm1)) {
+            const SafePtr<ChildType>& ABCm1D_m = make_child(a,b,cm1,d,m);
+            const SafePtr<ChildType>& ABCm1D_mp1 = make_child(a,b,cm1,d,m+1);
+            if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
+          }
+          const F& dm1 = d - _1;
+          if (exists(dm1)) {
+            const SafePtr<ChildType>& ABCDm1_m = make_child(a,b,c,dm1,m);
+            const SafePtr<ChildType>& ABCDm1_mp1 = make_child(a,b,c,dm1,m+1);
+            if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
+          }
+          const F& am1 = a - _1;
+          if (exists(am1)) {
+            const SafePtr<ChildType>& Am1BCD_mp1 = make_child(am1,b,c,d,m+1);
+            if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
+          }
+          const F& bm1 = b - _1;
+          if (exists(bm1)) {
+            const SafePtr<ChildType>& ABm1CD_mp1 = make_child(a,bm1,c,d,m+1);
+            if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
+          }
+          return;
+        }
+        return;
+      } // K == -1?
+      else {
+        // K != -1, the auxiliary quantum number is not used
+        if (m != 0)
+          throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- nonzero auxiliary quantum detected.");
+        // B and D must be s functions -- general RR not implemented yet
+        {
+          F b(Tint->ket(0,0) - _1);
+          F d(Tint->ket(1,0) - _1);
+          if (exists(b) || exists(d))
+            throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where> -- AM on centers b and d must be zero, general RR is not yet implemented");
+        }
+        
+        // Build on A
+        if (part == 0 && where == InBra) {
+          F a(Tint->bra(0,0) - _1);
+          if (!exists(a)) return;
+          F b(Tint->ket(0,0));
+          F c(Tint->bra(1,0));
+          F d(Tint->ket(1,0));
+
+          const SafePtr<ChildType>& ABCD_K = make_child(a,b,c,d,0u,K);
+          if (is_simple()) { expr_ = Vector("R12kG12_pfac0_0")[dir] * ABCD_K;  nflops_+=1; }
+          const F& am1 = a - _1;
+          if (exists(am1)) {
+            const SafePtr<ChildType>& Am1BCD_K = make_child(am1,b,c,d,0u,K);
+            if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("R12kG12_pfac1_0") * Am1BCD_K;  nflops_+=3; }
+          }
+          const F& cm1 = c - _1;
+          if (exists(cm1)) {
+            const SafePtr<ChildType>& ABCm1D_K = make_child(a,b,cm1,d,0u,K);
+            if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("R12kG12_pfac2") * ABCm1D_K;  nflops_+=3; }
+          }
+          if (K != 0) {
+            const SafePtr<ChildType>& Ap1BCD_Km2 = make_child(a+_1,b,c,d,0u,K-2);
+            const SafePtr<ChildType>& ABCp1D_Km2 = make_child(a,b,c+_1,d,0u,K-2);
+            const SafePtr<ChildType>& ABCD_Km2 = make_child(a,b,c,d,0u,K-2);
+            if (is_simple()) { expr_ += Scalar((double)K) * Scalar("R12kG12_pfac3_0")
+                                        * (Ap1BCD_Km2 - ABCp1D_Km2 + Vector("R12kG12_pfac4_0")[dir] * ABCD_Km2);  nflops_+=6; }
+          }
+          return;
+        }
+        
+        // Build on C
+        if (part == 1 && where == InBra) {
+          F a(Tint->bra(0,0));
+          F b(Tint->ket(0,0));
+          F c(Tint->bra(1,0) - _1);
+          if (!exists(c)) return;
+          F d(Tint->ket(1,0));
+
+          const SafePtr<ChildType>& ABCD_K = make_child(a,b,c,d,0u,K);
+          if (is_simple()) { expr_ = Vector("R12kG12_pfac0_1")[dir] * ABCD_K;  nflops_+=1; }
+          const F& cm1 = c - _1;
+          if (exists(cm1)) {
+            const SafePtr<ChildType>& ABCm1D_K = make_child(a,b,cm1,d,0u,K);
+            if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("R12kG12_pfac1_1") * ABCm1D_K;  nflops_+=3; }
+          }
+          const F& am1 = a - _1;
+          if (exists(am1)) {
+            const SafePtr<ChildType>& Am1BCD_K = make_child(am1,b,c,d,0u,K);
+            if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("R12kG12_pfac2") * Am1BCD_K;  nflops_+=3; }
+          }
+          if (K != 0) {
+            const SafePtr<ChildType>& ABCp1D_Km2 = make_child(a,b,c+_1,d,0u,K-2);
+            const SafePtr<ChildType>& Ap1BCD_Km2 = make_child(a+_1,b,c,d,0u,K-2);
+            const SafePtr<ChildType>& ABCD_Km2 = make_child(a,b,c,d,0u,K-2);
+            if (is_simple()) { expr_ += Scalar((double)K) * Scalar("R12kG12_pfac3_1")
+                                        * (ABCp1D_Km2 - Ap1BCD_Km2 + Vector("R12kG12_pfac4_1")[dir] * ABCD_Km2);  nflops_+=6; }
+          }
+          return;
+        }
+        return;
+      } // K >= 0
+#else
       F sh_a(Tint->bra(0,0));
       F sh_b(Tint->ket(0,0));
       F sh_c(Tint->bra(1,0));
@@ -160,13 +330,15 @@ namespace libint2 {
         children_and_expr_Keqm1(bra,ket,bra_ref,ket_ref);
       else
         children_and_expr_Kge0(bra,ket,bra_ref,ket_ref);
-    };
-  
+#endif
+    }
+
   template <template <typename...> class I, class F, int part, FunctionPosition where>
     void
     VRR_11_R12kG12_11<I,F,part,where>::children_and_expr_Keqm1(const vector<F>& bra, const vector<F>& ket,
                                                                vector<F>* bra_ref, vector<F>* ket_ref)
     {
+#if USE_OLD_VRRR12kG12_CODE
       typedef typename TargetType::OperType OperType;
       const int K = target_->oper()->descr().K();
       const OperType K_oper = OperType(K);
@@ -266,13 +438,15 @@ namespace libint2 {
           add_expr(expr5_ptr);
         }
       }
+#endif
     }
-  
+    
   template <template <typename...> class I, class F, int part, FunctionPosition where>
     void
     VRR_11_R12kG12_11<I,F,part,where>::children_and_expr_Kge0(const vector<F>& bra, const vector<F>& ket,
                                                                 vector<F>* bra_ref, vector<F>* ket_ref)
     {
+#if USE_OLD_VRRR12kG12_CODE
       typedef typename TargetType::OperType OperType;
       const int K = target_->oper()->descr().K();
       const OperType K_oper = OperType(K);
@@ -365,46 +539,7 @@ namespace libint2 {
           add_expr(expr_intmd4);
         }
       }
-    }
-
-  template <template <typename...> class I, class F, int part, FunctionPosition where>
-    VRR_11_R12kG12_11<I,F,part,where>::~VRR_11_R12kG12_11()
-    {
-      if (part < 0 || part >= 2) {
-        assert(false);
-      }
-    };
-
-  template <template <typename...> class I, class F, int part, FunctionPosition where>
-    SafePtr< typename VRR_11_R12kG12_11<I,F,part,where>::ChildType >
-    VRR_11_R12kG12_11<I,F,part,where>::child(unsigned int i) const
-    {
-      assert(i>=0 && i<nchildren_);
-      unsigned int nc=0;
-      for(int c=0; c<max_nchildren_; c++) {
-        if (children_[c] != 0) {
-          if (nc == i)
-            return children_[c];
-          nc++;
-        }
-      }
-    };
-
-  template <template <typename...> class I, class F, int part, FunctionPosition where>
-    std::string
-    VRR_11_R12kG12_11<I,F,part,where>::generate_label() const
-    {
-      const int K = target_->oper()->descr().K();
-      ostringstream os;
-      
-      os << "VRR Part" << part << " " <<
-      (where == InBra ? "bra" : "ket") << " ( ";
-      F sh_a(target_->bra(0,0)); os << sh_a.label() << " ";
-      F sh_b(target_->ket(0,0)); os << sh_b.label() << " | R12^" << (K < 0 ? "m" : "") << abs(K) << " * G12 | ";
-      F sh_c(target_->bra(1,0)); os << sh_c.label() << " ";
-      F sh_d(target_->ket(1,0)); os << sh_d.label() << " )";
-      
-      return os.str();
+#endif
     }
 
 #if LIBINT_ENABLE_GENERIC_CODE
