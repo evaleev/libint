@@ -232,7 +232,7 @@ namespace libint2 {
           F b(Tint->ket(0,0) - _1);
           F d(Tint->ket(1,0) - _1);
           if (exists(b) || exists(d))
-            throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where> -- AM on centers b and d must be zero, general RR is not yet implemented");
+            return;
         }
         
         // Build on A

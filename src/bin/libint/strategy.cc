@@ -10,24 +10,35 @@
 
 #include <master.h>
 
-#if 1
 #include <boost/mpl/list.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/placeholders.hpp>
-#endif
 
 #define USE_HRR 1
 #define LOCAL_DEBUG 0
 
 using namespace std;
 using namespace libint2;
+
 namespace libint2 {
-  
+
+  //
+  // Particle 0 is most significant for storage, hence want to perform HRR on it last,
+  // when functions of particle 1 are ready. This will maximize the length of the loops
+  // in HRRPart0... code.
+  //
+
+#if LIBINT_ERI_STRATEGY == 0
+# error "Not all recurrence relations are implemented yet for pure OS scheme (have 5 minutes to fix this?)"
+#endif
   template <class T> struct MasterStrategy;
   template <> struct MasterStrategy<TwoPRep_11_11_sq> {
     typedef mpl::list<
     HRR_ab_11_TwoPRep_11_sh,
     HRR_cd_11_TwoPRep_11_sh,
+#if LIBINT_ERI_STRATEGY == 2
+    ITR_a_11_TwoPRep_11_sq,
+#endif
     VRR_a_11_TwoPRep_11_sh,
     VRR_c_11_TwoPRep_11_sh
     > value;
@@ -36,6 +47,9 @@ namespace libint2 {
     typedef mpl::list<
     HRR_ab_11_TwoPRep_11_int,
     HRR_cd_11_TwoPRep_11_int,
+#if LIBINT_ERI_STRATEGY == 2
+    ITR_a_11_TwoPRep_11_int,
+#endif
     VRR_a_11_TwoPRep_11_int,
     VRR_c_11_TwoPRep_11_int
     > value;
@@ -277,17 +291,15 @@ Strategy::optimal_rr(const SafePtr<DirectedGraph>& graph,
   }
 #endif
 
-#if 1
   using namespace boost;
   using namespace boost::mpl::placeholders;
 
   // by iterate over the master typelist determine to the type of this integral
-  // use the type to search through the type-specific strategy (see apply_strategy<T>)
+  // matcher then uses the type to search through the type-specific strategy (see apply_strategy<T>)
   SafePtr<match_first_inttype::Impl> matcher_impl(new match_first_inttype::Impl(graph,integral,tactic));
   match_first_inttype matcher(matcher_impl);
   mpl::for_each<MasterIntegralTypeList, match_first_inttype_transform<_1>, match_first_inttype& >(matcher);
   return matcher_impl->rr();
-#endif
 
 #if 0
   //

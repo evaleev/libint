@@ -2,6 +2,7 @@
 #include <iostream>
 #include <libint/buildtest.h>
 #include <libint/bfset.h>
+#include <libint/master.h>
 
 using namespace libint2;
 
