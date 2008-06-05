@@ -15,11 +15,6 @@ namespace libint2 {
      Note that GenIntegralSet is initialized with an abstract type libint2::BFSet,
      from which BFS derives.
   */
-  /// TwoPRep_11_11_sq is a shell quartet of ERIs
-  typedef GenIntegralSet_11_11<CGShell,TwoPRep,mType> TwoPRep_11_11_sq;
-
-  /// TwoPRep_11_11_int is a single ERIs
-  typedef GenIntegralSet_11_11<CGF,TwoPRep,mType> TwoPRep_11_11_int;
 
   /// (ss|ss) shell quartet is not precomputed, but the integral is
   template <>

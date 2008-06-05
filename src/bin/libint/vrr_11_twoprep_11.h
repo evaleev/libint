@@ -29,7 +29,7 @@ namespace libint2 {
   is raised in bra (true) or ket (false). Class ERI specifies which particular implementation
   of ERI to use.
   */
-  template <template <typename...> class ERI, class BFSet, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class BFSet, int part, FunctionPosition where>
     class VRR_11_TwoPRep_11 : public RecurrenceRelation
     {
 
@@ -108,7 +108,7 @@ namespace libint2 {
 #endif
   };
 
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     SafePtr< VRR_11_TwoPRep_11<ERI,F,part,where> >
     VRR_11_TwoPRep_11<ERI,F,part,where>::Instance(const SafePtr<TargetType>& Tint,
                                                   unsigned int dir)
@@ -122,7 +122,7 @@ namespace libint2 {
     }
   
   
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     VRR_11_TwoPRep_11<ERI,F,part,where>::VRR_11_TwoPRep_11(const SafePtr< TargetType >& Tint,
                                                            unsigned int dir) :
     target_(Tint), dir_(dir)
@@ -209,7 +209,7 @@ namespace libint2 {
     }
 
 #if LIBINT_ENABLE_GENERIC_CODE
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     bool
     VRR_11_TwoPRep_11<ERI,F,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
     {
@@ -228,14 +228,14 @@ namespace libint2 {
         return false;
     }
   
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     std::string
     VRR_11_TwoPRep_11<ERI,F,part,where>::generic_header() const
     {
       return std::string("OSVRR_xs_xs.h");
     }
 
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     std::string
     VRR_11_TwoPRep_11<ERI,F,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
     {
@@ -258,12 +258,6 @@ namespace libint2 {
       return oss.str();
     }
 #endif // #if !LIBINT_ENABLE_GENERIC_CODE
-
-  typedef VRR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,1,InBra> VRR_c_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,0,InKet> VRR_b_11_TwoPRep_11_sh;
-  typedef VRR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,1,InKet> VRR_d_11_TwoPRep_11_sh;
-
 
 };
 

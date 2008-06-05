@@ -199,9 +199,10 @@ RecurrenceRelation::generate_graph_()
 #if DEBUG
   cout << "RecurrenceRelation::generate_code -- the number of integral sets = " << dg->num_vertices() << endl;
 #endif
-  // Always need to unroll integral sets first
-  SafePtr<Strategy> strat(new Strategy(1000000000));
+  SafePtr<Strategy> strat(new Strategy);
   SafePtr<Tactic> ntactic(new NullTactic);
+  // Always need to unroll integral sets first
+  dg->registry()->unroll_threshold(1000000000);
   dg->apply(strat,ntactic);
 #if DEBUG
   cout << "RecurrenceRelation::generate_code -- the number of integral sets + integrals = " << dg->num_vertices() << endl;

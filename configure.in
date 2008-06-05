@@ -691,7 +691,7 @@ dnl ----------- check for GNU libc++-v3 prerelease bug ---------------
 
 if test X$GXX = Xyes; then
 AC_MSG_CHECKING([for GNU libc++-v3 prerelease bug])
-AC_LINK_IFELSE([AC_LANG_SOURCE(
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
 [[#include <stdio.h>
 #include <$iostream>
 ]],[[
@@ -820,35 +820,35 @@ AC_CHECK_HEADERS(limits.h stdint.h)
 dnl ------------------ Check for shared_ptr -----------------------
 
 HAVE_SHARED_PTR=no
-  AC_MSG_CHECKING([for shared_ptr in Boost])
-  AC_COMPILE_IFELSE(
-    [AC_LANG_SOURCE(
-      [[#include <boost/shared_ptr.hpp>
-      ]],
-      [[
-        shared_ptr<int> a(new int);
-        shared_ptr<int> b = a;
-      ]]
-     )
-    ],
-    [AC_MSG_RESULT([yes])
-     HAVE_SHARED_PTR=boost
-     AC_DEFINE(HAVE_SHARED_PTR_IN_BOOST)
-    ],
-    [
-      AC_MSG_RESULT([no])
-    ]
-  )
+AC_MSG_CHECKING([for Boost::shared_ptr])
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM(
+    [[#include <boost/shared_ptr.hpp>
+    ]],
+    [[
+     boost::shared_ptr<int> a(new int);
+     boost::shared_ptr<int> b = a;
+    ]]
+   )
+  ],
+  [AC_MSG_RESULT([yes])
+   HAVE_SHARED_PTR=boost
+   AC_DEFINE(HAVE_SHARED_PTR_IN_BOOST)
+  ],
+  [
+    AC_MSG_RESULT([no])
+  ]
+)
 
 if test "X$HAVE_SHARED_PTR" = "Xno"; then
-  AC_MSG_CHECKING([for shared_ptr in standard C++ library])
+  AC_MSG_CHECKING([for std::shared_ptr])
   AC_COMPILE_IFELSE(
-    [AC_LANG_SOURCE(
+    [AC_LANG_PROGRAM(
       [[#include <memory>
       ]],
       [[
-        shared_ptr<int> a(new int);
-        shared_ptr<int> b = a;
+        std::shared_ptr<int> a(new int);
+        std::shared_ptr<int> b = a;
       ]]
      )
     ],
@@ -857,32 +857,37 @@ if test "X$HAVE_SHARED_PTR" = "Xno"; then
     ],
     [
       AC_MSG_RESULT([no])
-      AC_MSG_ERROR([shared_ptr is required. Please download Boost from boost.org or use C++ compiler that supports shard_ptr.])
+      AC_MSG_ERROR([shared_ptr is required. Please download Boost from boost.org or use C++ compiler that supports shared_ptr.])
     ]
   )
 fi
 
-dnl -- Checks for typedefs, structures, and compiler characteristics. --
-AC_TYPE_SIZE_T
-
-dnl ------------------ Check for variadic templates -----------------------
-
-AC_MSG_CHECKING([for variadic templates])
+AC_MSG_CHECKING([for Boost::mpl::for_each])
 AC_COMPILE_IFELSE(
-  [AC_LANG_SOURCE(
-    [[
-      template <typename...> struct A;
+  [AC_LANG_PROGRAM(
+    [[#include <boost/mpl/list.hpp>
+      #include <boost/mpl/for_each.hpp>
+      #include <iostream>
+      struct P {
+      template <class T> void operator()(T x) const { std::cout << x << std::endl; }
+      };
     ]],
     [[
-      A<int,double> a;
+      typedef boost::mpl::list<int,double,char> tlist;
+      boost::mpl::for_each<tlist>(P());
     ]]
-   )],
-  [AC_MSG_RESULT([yes])],
+   )
+  ],
+  [AC_MSG_RESULT([yes])
+  ],
   [
     AC_MSG_RESULT([no])
-    AC_MSG_ERROR([Support for variadic templates is required. Please use a compiler that supports C++0x standard.])
+    AC_MSG_ERROR([Boost::mpl is required. Please use the latest Boost library from boost.org and/or most standard-compliant C++ compiler.])
   ]
 )
+
+dnl -- Checks for typedefs, structures, and compiler characteristics. --
+AC_TYPE_SIZE_T
 
 CPPFLAGS="$CPPFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \

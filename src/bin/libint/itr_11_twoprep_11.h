@@ -28,7 +28,7 @@ namespace libint2 {
   is shifted in bra or ket. Class ERI specifies which particular implementation
   of ERI to use.
   */
-  template <template <typename...> class ERI, class BFSet, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class BFSet, int part, FunctionPosition where>
     class ITR_11_TwoPRep_11 : public RecurrenceRelation
     {
 
@@ -106,7 +106,7 @@ namespace libint2 {
     std::string generate_label(const SafePtr<TargetType>& target) const;
   };
 
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     SafePtr< ITR_11_TwoPRep_11<ERI,F,part,where> >
     ITR_11_TwoPRep_11<ERI,F,part,where>::Instance(const SafePtr<TargetType>& Tint,
                                                   unsigned int dir)
@@ -119,7 +119,7 @@ namespace libint2 {
       return this_ptr;
     }
   
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     bool
     ITR_11_TwoPRep_11<ERI,F,part,where>::register_with_rrstack() const
     {
@@ -138,7 +138,7 @@ namespace libint2 {
     }
   
   
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     ITR_11_TwoPRep_11<ERI,F,part,where>::ITR_11_TwoPRep_11(const SafePtr<TargetType>& Tint,
                                                            unsigned int dir) :
     target_(Tint), dir_(dir), nchildren_(0), nflops_(0), label_(generate_label(Tint))
@@ -233,7 +233,7 @@ namespace libint2 {
       }
     };
 
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     ITR_11_TwoPRep_11<ERI,F,part,where>::~ITR_11_TwoPRep_11()
     {
       if (part < 0 || part >= 2) {
@@ -241,7 +241,7 @@ namespace libint2 {
       }
     };
 
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     SafePtr< typename ITR_11_TwoPRep_11<ERI,F,part,where>::ChildType >
     ITR_11_TwoPRep_11<ERI,F,part,where>::child(unsigned int i) const
     {
@@ -256,7 +256,7 @@ namespace libint2 {
       }
     };
 
-  template <template <typename...> class ERI, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     std::string
     ITR_11_TwoPRep_11<ERI,F,part,where>::generate_label(const SafePtr<TargetType>& target) const
     {

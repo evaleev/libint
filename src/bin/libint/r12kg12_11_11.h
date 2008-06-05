@@ -9,12 +9,9 @@ using namespace std;
 
 namespace libint2 {
 
-  typedef GenIntegralSet_11_11<CGShell,R12kG12,mType> R12kG12_11_11_sq;
-  typedef GenIntegralSet_11_11<CGF,R12kG12,mType> R12kG12_11_11_int;
-
   template <>
   inline bool
-    R12kG12_11_11_int::this_precomputed() const
+    GenIntegralSet_11_11<CGF,R12kG12,mType>::this_precomputed() const
     {
 #if USE_BRAKET_H
       if (parent_type::bra_.member(0,0).zero() && parent_type::bra_.member(1,0).zero() &&

@@ -31,7 +31,7 @@ namespace libint2 {
   ket (false). I<BFSet,K> is the integral set specialization that describes the
   integrals of the R12_k_G12 operator.
   */
-  template <template <typename...> class I, class BFSet, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class I, class BFSet, int part, FunctionPosition where>
     class VRR_11_R12kG12_11 : public RecurrenceRelation
   {
 
@@ -120,7 +120,7 @@ namespace libint2 {
 #endif
   };
   
-  template <template <typename...> class I, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
     SafePtr< VRR_11_R12kG12_11<I,F,part,where> >
     VRR_11_R12kG12_11<I,F,part,where>::Instance(const SafePtr< TargetType >& Tint,
                                                   unsigned int dir)
@@ -133,7 +133,7 @@ namespace libint2 {
       return this_ptr;
     }
   
-  template <template <typename...> class I, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
     VRR_11_R12kG12_11<I,F,part,where>::VRR_11_R12kG12_11(const SafePtr< TargetType >& Tint,
                                                            unsigned int dir) :
     target_(Tint), dir_(dir)
@@ -333,7 +333,7 @@ namespace libint2 {
 #endif
     }
 
-  template <template <typename...> class I, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
     void
     VRR_11_R12kG12_11<I,F,part,where>::children_and_expr_Keqm1(const vector<F>& bra, const vector<F>& ket,
                                                                vector<F>* bra_ref, vector<F>* ket_ref)
@@ -441,7 +441,7 @@ namespace libint2 {
 #endif
     }
     
-  template <template <typename...> class I, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
     void
     VRR_11_R12kG12_11<I,F,part,where>::children_and_expr_Kge0(const vector<F>& bra, const vector<F>& ket,
                                                                 vector<F>* bra_ref, vector<F>* ket_ref)
@@ -543,7 +543,7 @@ namespace libint2 {
     }
 
 #if LIBINT_ENABLE_GENERIC_CODE
-  template <template <typename...> class I, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
     bool
     VRR_11_R12kG12_11<I,F,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
     {
@@ -562,7 +562,7 @@ namespace libint2 {
         return false;
     }
 
-  template <template <typename...> class I, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
     std::string
     VRR_11_R12kG12_11<I,F,part,where>::generic_header() const
     {
@@ -573,7 +573,7 @@ namespace libint2 {
         return std::string("VRR_r12kg12_xs_xs.h");
     }
 
-  template <template <typename...> class I, class F, int part, FunctionPosition where>
+  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
     std::string
     VRR_11_R12kG12_11<I,F,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
     {
@@ -610,13 +610,6 @@ namespace libint2 {
       return oss.str();
     }
 #endif // #if !LIBINT_ENABLE_GENERIC_CODE
-
-  /*
-  typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
-  typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,1,InBra> VRR_c_11_TwoPRep_11_sh;
-  typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,0,InKet> VRR_b_11_TwoPRep_11_sh;
-  typedef VRR_11_R12kG12_11<R12kG12_11_11,CGShell,1,InKet> VRR_d_11_TwoPRep_11_sh;
-  */
     
 };
 

@@ -67,7 +67,7 @@ namespace libint2 {
     {
       const std::string label = cparams->api_prefix() + target->label();
       SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
-      SafePtr<Strategy> strat(new Strategy(size_to_unroll));
+      SafePtr<Strategy> strat(new Strategy);
       os << "Building " << target->description() << std::endl;
       SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,Integral>(target);
 
@@ -107,9 +107,7 @@ namespace libint2 {
       // Need to accumulate integrals?
       dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
 
-      // Only build using shell-sets?
-      if (size_to_unroll == 0)
-	dg_xxxx->registry()->can_unroll(false);
+      dg_xxxx->registry()->unroll_threshold(size_to_unroll);
 
       dg_xxxx->append_target(xsxs_ptr);
       dg_xxxx->apply(strat,tactic);

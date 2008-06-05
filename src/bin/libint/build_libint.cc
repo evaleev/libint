@@ -28,14 +28,14 @@
 #include <intset_to_ints.h>
 #include <strategy.h>
 #include <iface.h>
-#include <vrr_11_r12kg12_11.h>
-#include <r12kg12_11_11.h>
 #include <r1dotr1g12_11_11.h>
 #include <r1dotr2g12_11_11.h>
 #include <tig12_11_11.h>
 #include <graph_registry.h>
 #include <task.h>
 #include <extract.h>
+
+#include <master.h>
 
 using namespace std;
 using namespace libint2;
@@ -300,7 +300,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   //    explicit source code
   //
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  SafePtr<Strategy> strat(new Strategy(cparams->unroll_threshold()));
+  SafePtr<Strategy> strat(new Strategy());
   SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
@@ -318,7 +318,8 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          dg_xxxx->registry()->can_unroll(need_to_optimize);
+          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 1;
+          dg_xxxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxxx->registry()->do_cse(need_to_optimize);
 	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
 	  // Need to accumulate integrals?
@@ -418,7 +419,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   //    explicit source code
   //
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  SafePtr<Strategy> strat(new Strategy(cparams->unroll_threshold()));
+  SafePtr<Strategy> strat(new Strategy);
   SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
@@ -443,7 +444,8 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          dg_xxxx->registry()->can_unroll(need_to_optimize);
+          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 0;
+          dg_xxxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxxx->registry()->do_cse(need_to_optimize);
 	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
 	  // Need to accumulate integrals?
@@ -590,7 +592,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
   //    explicit source code
   //
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  SafePtr<Strategy> strat(new Strategy(cparams->unroll_threshold()));
+  SafePtr<Strategy> strat(new Strategy);
   SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
@@ -609,7 +611,8 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          dg_xxxx->registry()->can_unroll(need_to_optimize);
+          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 1;
+          dg_xxxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxxx->registry()->do_cse(need_to_optimize);
 	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
 	  // Need to accumulate integrals?
@@ -754,7 +757,7 @@ build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& 
   //    explicit source code
   //
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  SafePtr<Strategy> strat(new Strategy(cparams->unroll_threshold()));
+  SafePtr<Strategy> strat(new Strategy);
   SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
@@ -777,7 +780,8 @@ build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& 
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          dg_xxxx->registry()->can_unroll(need_to_optimize);
+          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 0;
+          dg_xxxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxxx->registry()->do_cse(need_to_optimize);
           dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
           // Need to accumulate integrals?
@@ -903,7 +907,7 @@ test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
   //    explicit source code
   //
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  SafePtr<Strategy> strat(new Strategy(cparams->unroll_threshold()));
+  SafePtr<Strategy> strat(new Strategy);
   SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));

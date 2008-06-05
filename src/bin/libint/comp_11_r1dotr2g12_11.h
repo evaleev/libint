@@ -28,7 +28,7 @@ namespace libint2 {
   I<BFSet> is the integral set specialization that describes the
   integrals of the R1dotR2_G12 operator.
   */
-  template <template <typename...> class I, class BFSet>
+  template <template <typename,typename,typename> class I, class BFSet>
   class CR_11_R1dotR2G12_11 : public RecurrenceRelation
     {
 
@@ -95,7 +95,7 @@ namespace libint2 {
 
   };
 
-  template <template <typename...> class I, class F>
+  template <template <typename,typename,typename> class I, class F>
     SafePtr< CR_11_R1dotR2G12_11<I,F> >
     CR_11_R1dotR2G12_11<I,F>::Instance(const SafePtr<TargetType>& Tint)
     {
@@ -107,7 +107,7 @@ namespace libint2 {
       return this_ptr;
     }
 
-  template <template <typename...> class I, class F>
+  template <template <typename,typename,typename> class I, class F>
     CR_11_R1dotR2G12_11<I,F>::CR_11_R1dotR2G12_11(const SafePtr<TargetType>& Tint) :
     ParentType(), target_(Tint), nchildren_(0)
     {
@@ -146,7 +146,7 @@ namespace libint2 {
       }
     }
   
-  template <template <typename...> class I, class F>
+  template <template <typename,typename,typename> class I, class F>
     SafePtr< typename CR_11_R1dotR2G12_11<I,F>::ChildType >
     CR_11_R1dotR2G12_11<I,F>::child(unsigned int i) const
     {

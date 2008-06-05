@@ -25,9 +25,10 @@ namespace libint2 {
     /// Return pointers to targets via Libint_t::targets? Default is true.
     bool return_targets() const { return return_targets_; }
     void return_targets(bool rt) { return_targets_ = rt; }
-    /// Can unroll the integral sets? The default is yes.
-    bool can_unroll() const { return can_unroll_; }
-    void can_unroll(bool cu) { can_unroll_ = cu; }
+    /// Will unroll the integral sets with size < unroll_threshold. Default is 1 (no unrolling).
+    unsigned int unroll_threshold() const { return unroll_threshold_; }
+    void unroll_threshold(unsigned int ut) { unroll_threshold_ = std::max(ut,1u); }
+    /// Minimum size when can unroll
     /// Do Common Subexpression Elimination (CSE)? The default is false.
     bool do_cse() const { return do_cse_; }
     void do_cse(bool dc) { do_cse_ = dc; }
@@ -41,7 +42,7 @@ namespace libint2 {
     private:
     bool accumulate_targets_;
     bool return_targets_;
-    bool can_unroll_;
+    unsigned int unroll_threshold_;
     bool do_cse_;
     bool condense_expr_;
     std::string stack_name_;

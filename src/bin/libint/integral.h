@@ -98,7 +98,6 @@ namespace libint2 {
     public EnableSafePtrFromThis< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >
     {
       public:
-      /// GenIntegralSet is a set of these subobjects
       typedef GenIntegralSet this_type;
       /// GenIntegralSet is a set of these subobjects
       typedef GenIntegralSet<typename Oper::iter_type, BFS, typename BraSetType::iter_type, typename KetSetType::iter_type, typename AuxQuanta::iter_type> iter_type;
@@ -115,6 +114,8 @@ namespace libint2 {
       typedef SingletonStack<GenIntegralSet,key_type> SingletonManagerType;
       /// This is the type of the operator
       typedef Oper OperType;
+      /// This is the real type of basis functions
+      typedef typename BraSetType::bfs_type BasisFunctionType;
 
       /** No constructors are public since this is a singleton-like quantity.
           Instead, access is provided through Instance().

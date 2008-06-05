@@ -10,7 +10,6 @@
 #include <assert.h>
 #include <rr.h>
 #include <integral.h>
-#include <dummyintegral.h>
 #include <algebra.h>
 #include <dgvertex.h>
 #include <prefactors.h>
@@ -559,19 +558,6 @@ namespace libint2 {
       return localdims;
     }
   
-  typedef HRR<TwoPRep_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_sh;
-  typedef HRR<TwoPRep_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_sh;
-  typedef HRR<TwoPRep_11_11_sq,CGShell,0,InKet,0,InBra,0> HRR_ba_11_TwoPRep_11_sh;
-  typedef HRR<TwoPRep_11_11_sq,CGShell,1,InKet,0,InBra,0> HRR_dc_11_TwoPRep_11_sh;
-
-  typedef HRR<TwoPRep_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_int;
-  typedef HRR<TwoPRep_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_int;
-
-  typedef HRR<DummySymmIntegral_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_Dummy_11_sh;
-  typedef HRR<DummySymmIntegral_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_Dummy_11_sh;
-  typedef HRR<DummySymmIntegral_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_Dummy_11_int;
-  typedef HRR<DummySymmIntegral_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_Dummy_11_int;
-
 };
 
 #endif
