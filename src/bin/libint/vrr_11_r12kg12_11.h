@@ -28,8 +28,7 @@ namespace libint2 {
   /** VRR Recurrence Relation for 2-e integrals of the R12_k_G12 operators.
   part specifies the angular momentum of which particle is raised.
   bool bra specifies whether the angular momentum is raised in bra (true) or
-  ket (false). I<BFSet,K> is the integral set specialization that describes the
-  integrals of the R12_k_G12 operator.
+  ket (false).
   */
   template <template <typename,typename,typename> class I, class BFSet, int part, FunctionPosition where>
     class VRR_11_R12kG12_11 : public RecurrenceRelation
@@ -78,15 +77,7 @@ namespace libint2 {
      */
     VRR_11_R12kG12_11(const SafePtr<TargetType>&, unsigned int dir);
 
-    // Constructs the RR for K >= 0
-    void children_and_expr_Kge0(const vector<BFSet>& bra, const vector<BFSet>& ket,
-                                vector<BFSet>* bra_ptr, vector<BFSet>* ket_ptr);
-    // Constructs the RR for K == -1
-    void children_and_expr_Keqm1(const vector<BFSet>& bra, const vector<BFSet>& ket,
-                                 vector<BFSet>* bra_ptr, vector<BFSet>* ket_ptr);
-
     unsigned int dir_;
-    
     SafePtr<TargetType> target_;
     static const unsigned int max_nchildren_ = 8;
     std::vector< SafePtr<ChildType> > children_;
@@ -145,7 +136,6 @@ namespace libint2 {
       const unsigned int m = target_->aux()->elem(0);
       const F _1 = unit<F>(dir);
 
-#if !USE_OLD_VRRR12kG12_CODE
       // if K is -1, the recurrence relation looks exactly as it would for ERI
       // thus generate the same code, and remember to use appropriate prefactors
       if (K == -1) {
@@ -296,250 +286,6 @@ namespace libint2 {
         }
         return;
       } // K >= 0
-#else
-      F sh_a(Tint->bra(0,0));
-      F sh_b(Tint->ket(0,0));
-      F sh_c(Tint->bra(1,0));
-      F sh_d(Tint->ket(1,0));
-
-      vector<F> bra;
-      vector<F> ket;
-      bra.push_back(sh_a);
-      bra.push_back(sh_c);
-      ket.push_back(sh_b);
-      ket.push_back(sh_d);
-
-      // Use indirection to choose bra or ket
-      vector<F>* bra_ref = &bra;
-      vector<F>* ket_ref = &ket;
-      if (where == InKet) {
-        bra_ref = &ket;
-        ket_ref = &bra;
-      }
-      // On which particle to act
-      int p_a = part;
-      int p_c = (p_a == 0) ? 1 : 0;
-
-      // See if a-1 exists
-      const F& sh_am1 = bra_ref->operator[](p_a) - _1;
-      if (!exists(sh_am1)) {
-        return;
-      }
-      
-      if (K == -1)
-        children_and_expr_Keqm1(bra,ket,bra_ref,ket_ref);
-      else
-        children_and_expr_Kge0(bra,ket,bra_ref,ket_ref);
-#endif
-    }
-
-  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
-    void
-    VRR_11_R12kG12_11<I,F,part,where>::children_and_expr_Keqm1(const vector<F>& bra, const vector<F>& ket,
-                                                               vector<F>* bra_ref, vector<F>* ket_ref)
-    {
-#if USE_OLD_VRRR12kG12_CODE
-      typedef typename TargetType::OperType OperType;
-      const int K = target_->oper()->descr().K();
-      const OperType K_oper = OperType(K);
-      const unsigned int m = target_->aux()->elem(0);
-      const F _1 = unit<F>(dir_);
-      // On which particle to act
-      int p_a = part;
-      int p_c = (p_a == 0) ? 1 : 0;
-      // Get a-1
-      bra_ref->operator[](p_a).dec(dir_);
-      
-      children_[0] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],mType(m),K_oper);
-      children_[1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],mType(m+1),K_oper);
-      nchildren_ += 2;
-      if (is_simple()) {
-        SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.XY_X[part][where][dir_],rr_child(0)));
-        SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.W_XY[part][dir_],rr_child(1)));
-	SafePtr<ExprType> expr0p1_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
-	nflops_ += (3);
-        add_expr(expr0p1_ptr);
-      }
-
-      // See if a-2 exists
-      const F& sh_am2 = bra_ref->operator[](p_a) - _1;
-      const bool a_minus_2_exists = exists(sh_am2);
-      if (a_minus_2_exists) {
-        bra_ref->operator[](p_a).dec(dir_);
-        int next_child = nchildren_;
-        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m,K_oper);
-        children_[next_child+1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
-        bra_ref->operator[](p_a).inc(dir_);
-        const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir_);
-        nchildren_ += 2;
-        if (is_simple()) {
-          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], rr_child(next_child+1)));
-          SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, rr_child(next_child), expr_intmd0));
-          SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_a], prefactors.one_o_2alpha12[part]));
-          SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
-	  nflops_ += (5);
-          add_expr(expr2_ptr);
-        }
-      }
-
-      // See if b-1 exists
-      const F& sh_bm1 = ket_ref->operator[](p_a) - _1;
-      const bool b_minus_1_exists = exists(sh_bm1);
-      if (b_minus_1_exists) {
-        ket_ref->operator[](p_a).dec(dir_);
-        int next_child = nchildren_;
-        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m,K_oper);
-        children_[next_child+1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
-        ket_ref->operator[](p_a).inc(dir_);
-        const unsigned int ni_b = ket_ref->operator[](p_a).qn(dir_);
-        nchildren_ += 2;
-        if (is_simple()) {
-          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.rho_o_alpha12[part], rr_child(next_child+1)));
-          SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Minus, rr_child(next_child), expr_intmd0));
-          SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_b], prefactors.one_o_2alpha12[part]));
-          SafePtr<ExprType> expr3_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd2, expr_intmd1));
-	  nflops_ += (5);
-          add_expr(expr3_ptr);
-        }
-      }
-
-      // See if c-1 exists
-      const F& sh_cm1 = bra_ref->operator[](p_c) - _1;
-      const bool c_minus_1_exists = exists(sh_cm1);
-      if (c_minus_1_exists) {
-        bra_ref->operator[](p_c).dec(dir_);
-        int next_child = nchildren_;
-        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
-        bra_ref->operator[](p_c).inc(dir_);
-        const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir_);
-        nchildren_ += 1;
-        if (is_simple()) {
-          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_c], prefactors.one_o_2alphasum));
-          SafePtr<ExprType> expr4_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, rr_child(next_child)));
-	  nflops_ += (3);
-          add_expr(expr4_ptr);
-        }
-      }
-
-      // See if d-1 exists
-      const F& sh_dm1 = ket_ref->operator[](p_c) - _1;
-      const bool d_minus_1_exists = exists(sh_dm1);
-      if (d_minus_1_exists) {
-        ket_ref->operator[](p_c).dec(dir_);
-        int next_child = nchildren_;
-        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],m+1,K_oper);
-        ket_ref->operator[](p_c).inc(dir_);
-        const unsigned int ni_d = ket_ref->operator[](p_c).qn(dir_);
-        nchildren_ += 1;
-        if (is_simple()) {
-          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_d], prefactors.one_o_2alphasum));
-          SafePtr<ExprType> expr5_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, rr_child(next_child)));
-	  nflops_ += (3);
-          add_expr(expr5_ptr);
-        }
-      }
-#endif
-    }
-    
-  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
-    void
-    VRR_11_R12kG12_11<I,F,part,where>::children_and_expr_Kge0(const vector<F>& bra, const vector<F>& ket,
-                                                                vector<F>* bra_ref, vector<F>* ket_ref)
-    {
-#if USE_OLD_VRRR12kG12_CODE
-      typedef typename TargetType::OperType OperType;
-      const int K = target_->oper()->descr().K();
-      const OperType K_oper = OperType(K);
-      const OperType Km2_oper = OperType(K-2);
-      const unsigned int m = target_->aux()->elem(0);
-      const F _1 = unit<F>(dir_);
-      if (m != 0)
-        throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- nonzero auxiliary quantum detected.");
-      
-      // On which particle to act
-      int p_a = part;
-      int p_c = (p_a == 0) ? 1 : 0;
-      // Get a-1
-      bra_ref->operator[](p_a).dec(dir_);
-      
-      children_[0] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,K_oper);
-      nchildren_ += 1;
-      if (is_simple()) {
-        SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.R12kG12VRR_pfac0[part][dir_],rr_child(0)));
-	nflops_ += (1);
-        add_expr(expr0_ptr);
-      }
-
-      // See if a-2 exists
-      const F& sh_am2 = bra_ref->operator[](p_a) - _1;
-      const bool a_minus_2_exists = exists(sh_am2);
-      if (a_minus_2_exists) {
-        bra_ref->operator[](p_a).dec(dir_);
-        children_[1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,K_oper);
-        bra_ref->operator[](p_a).inc(dir_);
-        const unsigned int ni_a = bra_ref->operator[](p_a).qn(dir_);
-        nchildren_ += 1;
-        if (is_simple()) {
-          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.R12kG12VRR_pfac1[part], rr_child(1)));
-          SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_a], expr_intmd0));
-	  nflops_ += (3);
-          add_expr(expr1_ptr);
-        }
-      }
-
-      // See if b-1 exists
-      const F& sh_bm1 = ket_ref->operator[](p_a) - _1;
-      const bool b_minus_1_exists = exists(sh_bm1);
-      if (b_minus_1_exists) {
-        throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- AM on centers b and d must be zero, general RR is not yet implemented");
-      }
-
-      // See if c-1 exists
-      const F& sh_cm1 = bra_ref->operator[](p_c) - _1;
-      const bool c_minus_1_exists = exists(sh_cm1);
-      if (c_minus_1_exists) {
-        bra_ref->operator[](p_c).dec(dir_);
-        int next_child = nchildren_;
-        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,K_oper);
-        bra_ref->operator[](p_c).inc(dir_);
-        const unsigned int ni_c = bra_ref->operator[](p_c).qn(dir_);
-        nchildren_ += 1;
-        if (is_simple()) {
-          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[ni_c], prefactors.R12kG12VRR_pfac2));
-          SafePtr<ExprType> expr2_ptr(new ExprType(ExprType::OperatorTypes::Times, expr_intmd0, rr_child(next_child)));
-	  nflops_ += (3);
-          add_expr(expr2_ptr);
-        }
-      }
-
-      // See if d-1 exists
-      const F& sh_dm1 = ket_ref->operator[](p_c) - _1;
-      const bool d_minus_1_exists = exists(sh_dm1);
-      if (d_minus_1_exists) {
-        throw std::logic_error("VRR_11_R12kG12_11<I,F,K,part,where>::children_and_expr_Kge0() -- AM on centers b and d must be zero, general RR is not yet implemented");
-      }
-      
-      if (K != 0) {
-        int next_child = nchildren_;
-        bra_ref->operator[](p_a).inc(dir_);
-        children_[next_child] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,Km2_oper);
-        bra_ref->operator[](p_a).dec(dir_);
-        bra_ref->operator[](p_c).inc(dir_);
-        children_[next_child+1] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,Km2_oper);
-        bra_ref->operator[](p_c).dec(dir_);
-        children_[next_child+2] = ChildType::Instance(bra[0],ket[0],bra[1],ket[1],0u,Km2_oper);
-        nchildren_ += 3;
-        if (is_simple()) {
-          SafePtr<ExprType> expr_intmd0(new ExprType(ExprType::OperatorTypes::Minus, rr_child(next_child), rr_child(next_child+1)));
-          SafePtr<ExprType> expr_intmd1(new ExprType(ExprType::OperatorTypes::Times, prefactors.R12kG12VRR_pfac4[part][dir_], rr_child(next_child+2)));
-          SafePtr<ExprType> expr_intmd2(new ExprType(ExprType::OperatorTypes::Plus, expr_intmd0, expr_intmd1));
-          SafePtr<ExprType> expr_intmd3(new ExprType(ExprType::OperatorTypes::Times, prefactors.R12kG12VRR_pfac3[part],expr_intmd2));
-          SafePtr<ExprType> expr_intmd4(new ExprType(ExprType::OperatorTypes::Times, prefactors.N_i[K], expr_intmd3));
-	  nflops_ += (6);
-          add_expr(expr_intmd4);
-        }
-      }
-#endif
     }
 
 #if LIBINT_ENABLE_GENERIC_CODE

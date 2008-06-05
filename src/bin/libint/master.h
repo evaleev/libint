@@ -21,6 +21,8 @@ namespace libint2 {
   typedef GenIntegralSet_11_11<CGF,TwoPRep,mType> TwoPRep_11_11_int;
   typedef GenIntegralSet_11_11<CGShell,R12kG12,mType> R12kG12_11_11_sq;
   typedef GenIntegralSet_11_11<CGF,R12kG12,mType> R12kG12_11_11_int;
+  typedef GenIntegralSet_11_11<CGShell,TiG12,mType> TiG12_11_11_sq;
+  typedef GenIntegralSet_11_11<CGF,TiG12,mType> TiG12_11_11_int;
   typedef GenIntegralSet< GenMultSymm2BodyOper,
     IncableBFSet,
     DefaultTwoPBraket<CGShell>::Result,
@@ -34,12 +36,16 @@ namespace libint2 {
     EmptySet >
   DummySymmIntegral_11_11_int;
 
-  /// All known types go into this typelist
+  /** All known types go into this typelist
+      Every type must have a corresponding instantiation of MasterStrategy in strategy.cc
+    */
   typedef mpl::list<
   TwoPRep_11_11_sq,
   TwoPRep_11_11_int,
   R12kG12_11_11_sq,
   R12kG12_11_11_int,
+  TiG12_11_11_sq,
+  TiG12_11_11_int,
   DummySymmIntegral_11_11_sq,
   DummySymmIntegral_11_11_int> MasterIntegralTypeList;
   
@@ -71,6 +77,9 @@ namespace libint2 {
   typedef VRR_11_R12kG12_11<GenIntegralSet_11_11,CGF,0,InBra> VRR_a_11_R12kG12_11_int;
   typedef VRR_11_R12kG12_11<GenIntegralSet_11_11,CGF,1,InBra> VRR_c_11_R12kG12_11_int;
 
+  typedef CR_11_TiG12_11<GenIntegralSet_11_11,CGShell> CR_11_TiG12_11_sq;
+  typedef CR_11_TiG12_11<GenIntegralSet_11_11,CGF> CR_11_TiG12_11_int;
+  
   typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,0,InBra> ITR_a_11_TwoPRep_11_sq;
   typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGF,0,InBra> ITR_a_11_TwoPRep_11_int;
 
