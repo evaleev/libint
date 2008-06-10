@@ -56,16 +56,16 @@ namespace libint2 {
     typedef mpl::list<
     HRR_ab_11_R12kG12_11_sh,
     HRR_cd_11_R12kG12_11_sh,
-    VRR_new_a_11_R12kG12_11_sh,
-    VRR_new_c_11_R12kG12_11_sh
+    VRR_a_11_R12kG12_11_sh,
+    VRR_c_11_R12kG12_11_sh
     > value;
   };
   template <> struct MasterStrategy<R12kG12_11_11_int> {
     typedef mpl::list<
     HRR_ab_11_R12kG12_11_int,
     HRR_cd_11_R12kG12_11_int,
-    VRR_new_a_11_R12kG12_11_int,
-    VRR_new_c_11_R12kG12_11_int
+    VRR_a_11_R12kG12_11_int,
+    VRR_c_11_R12kG12_11_int
     > value;
   };
   // TODO teach HRR to handle nonHermitian integrals automatically
