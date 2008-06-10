@@ -79,8 +79,8 @@ namespace libint2 {
   typedef VRR_11_R12kG12_11<CGF,0,InBra> VRR_a_11_R12kG12_11_int;
   typedef VRR_11_R12kG12_11<CGF,1,InBra> VRR_c_11_R12kG12_11_int;
 
-  typedef CR_11_TiG12_11<GenIntegralSet_11_11,CGShell> CR_11_TiG12_11_sq;
-  typedef CR_11_TiG12_11<GenIntegralSet_11_11,CGF> CR_11_TiG12_11_int;
+  typedef CR_11_TiG12_11<CGShell> CR_11_TiG12_11_sq;
+  typedef CR_11_TiG12_11<CGF> CR_11_TiG12_11_int;
   
   typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,0,InBra> ITR_a_11_TwoPRep_11_sq;
   typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGF,0,InBra> ITR_a_11_TwoPRep_11_int;
