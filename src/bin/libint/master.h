@@ -74,11 +74,13 @@ namespace libint2 {
   typedef VRR_11_TwoPRep_11<GenIntegralSet_11_11,CGF,0,InBra> VRR_a_11_TwoPRep_11_int;
   typedef VRR_11_TwoPRep_11<GenIntegralSet_11_11,CGF,1,InBra> VRR_c_11_TwoPRep_11_int;
 
+#if 0
   typedef VRR_11_R12kG12_11<GenIntegralSet_11_11,CGShell,0,InBra> VRR_a_11_R12kG12_11_sh;
   typedef VRR_11_R12kG12_11<GenIntegralSet_11_11,CGShell,1,InBra> VRR_c_11_R12kG12_11_sh;
   typedef VRR_11_R12kG12_11<GenIntegralSet_11_11,CGF,0,InBra> VRR_a_11_R12kG12_11_int;
   typedef VRR_11_R12kG12_11<GenIntegralSet_11_11,CGF,1,InBra> VRR_c_11_R12kG12_11_int;
-
+#endif
+  
   typedef VRR_new_11_R12kG12_11<CGShell,0,InBra> VRR_new_a_11_R12kG12_11_sh;
   typedef VRR_new_11_R12kG12_11<CGShell,1,InBra> VRR_new_c_11_R12kG12_11_sh;
   typedef VRR_new_11_R12kG12_11<CGF,0,InBra> VRR_new_a_11_R12kG12_11_int;

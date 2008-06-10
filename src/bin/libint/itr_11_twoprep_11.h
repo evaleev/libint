@@ -111,6 +111,9 @@ namespace libint2 {
                                                            unsigned int dir) :
     target_(Tint), dir_(dir)
     {
+      /// TODO debbug this RR, it seems broken (MPQC libint2 tests fail in HF)
+      throw ProgrammingError("ITR_11_TwoPRep_11 is broken");
+      
       /// InKet
       if (where == InKet)
         throw ProgrammingError("ITR_11_TwoPRep_11<ERI,F,part,where>::ITR_11_TwoPRep_11() -- where=InKet not implementd yet");
