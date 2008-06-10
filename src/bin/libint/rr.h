@@ -97,11 +97,6 @@ namespace libint2 {
     /// Return the number of FLOPs per this recurrence relation
     unsigned int nflops() const { return nflops_; }
     
-    virtual const std::string cpp_function_name() =0;
-    virtual const std::string cpp_source_name() =0;
-    virtual const std::string cpp_header_name() =0;
-    virtual std::ostream& cpp_source(std::ostream&) =0;
-
     /// RecurrenceRelation is managed by SingletonStack but doesn't need to keep track of instance ID
     void inst_id(const SingletonStack<RecurrenceRelation,string>::InstanceID& i) {}
 

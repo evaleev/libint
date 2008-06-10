@@ -59,11 +59,6 @@ namespace libint2 {
       return false;
     }
 
-    const std::string cpp_function_name() {};
-    const std::string cpp_source_name() {};
-    const std::string cpp_header_name() {};
-    std::ostream& cpp_source(std::ostream&) {};
-
   private:
     SafePtr<TargetType> target_;
     vector< SafePtr<ChildType> > children_;

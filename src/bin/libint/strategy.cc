@@ -5,7 +5,6 @@
 #include <dg.h>
 #include <rr.h>
 #include <rr.templ.h>
-#include <comp_11_tig12_11.h>
 #include <graph_registry.h>
 
 #include <master.h>

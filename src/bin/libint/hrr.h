@@ -16,6 +16,7 @@
 #include <default_params.h>
 #include <dims.h>
 #include <task.h>
+#include <context.h>
 
 using namespace std;
 
@@ -76,11 +77,6 @@ namespace libint2 {
     /// Implementation of RecurrenceRelation::spfunction_call()
     std::string spfunction_call(const SafePtr<CodeContext>& context,
                                 const SafePtr<ImplicitDimensions>& dims) const;
-
-    const std::string cpp_function_name() {}
-    const std::string cpp_source_name() {}
-    const std::string cpp_header_name() {}
-    std::ostream& cpp_source(std::ostream&) {}
 
   private:
     /**

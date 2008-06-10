@@ -1,4 +1,7 @@
 
+#ifndef _libint2_src_bin_libint_genericrr_h_
+#define _libint2_src_bin_libint_genericrr_h_
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -16,70 +19,107 @@
 #include <default_params.h>
 #include <util.h>
 
-#ifndef _libint2_src_bin_libint_vrr11r12kg1211_h_
-#define _libint2_src_bin_libint_vrr11r12kg1211_h_
-
 using namespace std;
 
 namespace libint2 {
 
-  /** VRR Recurrence Relation for 2-e integrals of the R12_k_G12 operators.
-  part specifies the angular momentum of which particle is raised.
-  bool bra specifies whether the angular momentum is raised in bra (true) or
-  ket (false).
-  */
-  template <template <typename,typename,typename> class I, class BFSet, int part, FunctionPosition where>
-    class VRR_11_R12kG12_11 : public RecurrenceRelation
+  /// RRImpl must inherit GenericRecurrenceRelation<RRImpl>
+  template <typename RRImpl, typename F, typename Target, typename Child>
+  class GenericRecurrenceRelation : public RecurrenceRelation {
+    public:
+      typedef F BasisFunctionType;
+      typedef Target TargetType;
+      typedef Child ChildType;
+      typedef RecurrenceRelation ParentType;
+      typedef ParentType::ExprType ExprType;
+      
+      static SafePtr<RRImpl> Instance(const SafePtr<TargetType>& Tint, unsigned int dir) {
+        SafePtr<RRImpl> this_ptr(new RRImpl(Tint,dir));
+        // Do post-construction duties
+        if (this_ptr->num_children() != 0) {
+          this_ptr->register_with_rrstack<RRImpl>();
+        }
+        return this_ptr;
+      }
+
+      /// Implementation of RecurrenceRelation::num_children()
+      const unsigned int num_children() const { return children_.size(); };
+      /// Implementation of RecurrenceRelation::rr_target()
+      SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target_); }
+      /// Implementation of RecurrenceRelation::rr_child()
+      SafePtr<DGVertex> rr_child(unsigned int i) const { return dynamic_pointer_cast<DGVertex,ChildType>(children_.at(i)); }
+      /// Implementation of RecurrenceRelation::is_simple()
+      bool is_simple() const {
+        return TrivialBFSet<BasisFunctionType>::result;
+      }
+      
+      /// Implementation of RecurrenceRelation::generate_label()
+      std::string generate_label() const
+      {
+        ostringstream os;
+        os << RRImpl::descr() << " " << target_->label();
+        return os.str();
+      }
+
+    protected:
+      GenericRecurrenceRelation(const SafePtr<TargetType>& Tint, unsigned int dir) :
+        target_(Tint), dir_(dir) {
+        children_.reserve(RRImpl::max_nchildren);
+      }
+
+      /// add child
+      const SafePtr<ChildType>& add_child(const SafePtr<ChildType>& child) {
+        typedef std::vector< SafePtr<ChildType> > cvector;
+        typedef typename cvector::const_iterator citer;
+        const citer pos = std::find(children_.begin(),children_.end(),child);
+        if (pos == children_.end())
+          children_.push_back(child);
+        return *(children_.rbegin());
+      }
+
+      SafePtr<TargetType> target_;
+      
+    private:
+      unsigned int dir_;
+      std::vector< SafePtr<ChildType> > children_;
+
+  };
+  
+  template <class BFSet, int part, FunctionPosition where>
+    class VRR_new_11_R12kG12_11 : public GenericRecurrenceRelation< VRR_new_11_R12kG12_11<BFSet,part,where>,
+                                                                    BFSet,
+                                                                    GenIntegralSet_11_11<BFSet,R12kG12,mType>,
+                                                                    GenIntegralSet_11_11<BFSet,R12kG12,mType> >
   {
-
   public:
-    typedef RecurrenceRelation ParentType;
     typedef BFSet BasisFunctionType;
-    typedef VRR_11_R12kG12_11<I,BFSet,part,where> ThisType;
-    typedef I<BFSet,R12kG12,mType> TargetType;
+    typedef GenIntegralSet_11_11<BFSet,R12kG12,mType> TargetType;
     typedef TargetType ChildType;
-    /// The type of expressions in which RecurrenceRelations result.
-    typedef RecurrenceRelation::ExprType ExprType;
+    typedef GenericRecurrenceRelation<VRR_new_11_R12kG12_11,BFSet,TargetType,ChildType> ParentType;
+    friend class GenericRecurrenceRelation<VRR_new_11_R12kG12_11,BFSet,TargetType,ChildType>;
+    static const unsigned int max_nchildren = 8;
 
-    /** Use Instance() to obtain an instance of RR. This function is provided to avoid
-        issues with getting a SafePtr from constructor (as needed for registry to work).
+    using ParentType::Instance;
+    static std::string descr() { return "VRR"; }
 
-        dir specifies which quantum number of a and b is shifted.
-        For example, dir can be 0 (x), 1(y), or 2(z) if F is
-        a Cartesian Gaussian.
-    */
-    static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
-    ~VRR_11_R12kG12_11() { assert(part == 0 || part == 1); }
-
-    /// Implementation of RecurrenceRelation::num_children()
-    const unsigned int num_children() const { return children_.size(); };
-    /// Implementation of RecurrenceRelation::rr_target()
-    SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target_); }
-    /// Implementation of RecurrenceRelation::rr_child()
-    SafePtr<DGVertex> rr_child(unsigned int i) const { return dynamic_pointer_cast<DGVertex,ChildType>(children_.at(i)); }
-    /// Implementation of RecurrenceRelation::is_simple()
-    bool is_simple() const {
-      return TrivialBFSet<BFSet>::result;
-    }
-    
   private:
+    using RecurrenceRelation::expr_;
+    using RecurrenceRelation::nflops_;
+    using ParentType::target_;
+    using ParentType::is_simple;
+
     /**
       dir specifies which quantum number is incremented.
       For example, dir can be 0 (x), 1(y), or 2(z) if BFSet is
       a Cartesian Gaussian.
      */
-    VRR_11_R12kG12_11(const SafePtr<TargetType>&, unsigned int dir);
-
-    unsigned int dir_;
-    SafePtr<TargetType> target_;
-    static const unsigned int max_nchildren_ = 8;
-    std::vector< SafePtr<ChildType> > children_;
+    VRR_new_11_R12kG12_11(const SafePtr<TargetType>&, unsigned int dir);
+    
     const SafePtr<ChildType>& make_child(const BFSet& A, const BFSet& B, const BFSet& C, const BFSet& D, unsigned int m, int K = -1) {
       typedef typename TargetType::OperType OperType;
       const OperType K_oper = OperType(K);
       const SafePtr<ChildType>& i = ChildType::Instance(A,B,C,D,m,K_oper);
-      children_.push_back(i);
-      return *(children_.end()-1);
+      return add_child(i);
     }
 
     /// Implementation of RecurrenceRelation::generate_label()
@@ -90,7 +130,8 @@ namespace libint2 {
       ostringstream os;
       // R12kG12 VRR recurrence relations codes are independent of m (it never appears anywhere in equations), hence
       // to avoid generating identical code make sure that the (unique) label does not contain m
-      os << "VRR Part" << part << " " << to_string(where) << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
+      os << descr() << part << to_string(where)
+         << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
       return os.str();
     }
 
@@ -104,29 +145,15 @@ namespace libint2 {
 #endif
   };
   
-  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
-    SafePtr< VRR_11_R12kG12_11<I,F,part,where> >
-    VRR_11_R12kG12_11<I,F,part,where>::Instance(const SafePtr< TargetType >& Tint,
-                                                  unsigned int dir)
-    {
-      SafePtr<ThisType> this_ptr(new ThisType(Tint,dir));
-      // Do post-construction duties
-      if (this_ptr->num_children() != 0) {
-        this_ptr->register_with_rrstack<ThisType>();
-      }
-      return this_ptr;
-    }
-  
-  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
-    VRR_11_R12kG12_11<I,F,part,where>::VRR_11_R12kG12_11(const SafePtr< TargetType >& Tint,
-                                                           unsigned int dir) :
-    target_(Tint), dir_(dir)
+  template <class F, int part, FunctionPosition where>
+    VRR_new_11_R12kG12_11<F,part,where>::VRR_new_11_R12kG12_11(const SafePtr< TargetType >& Tint,
+                                                               unsigned int dir) :
+    ParentType(Tint,dir)
     {
       using namespace libint2::algebra;
       using namespace libint2::prefactor;
-      children_.reserve(max_nchildren_);
-      const int K = target_->oper()->descr().K();
-      const unsigned int m = target_->aux()->elem(0);
+      const int K = Tint->oper()->descr().K();
+      const unsigned int m = Tint->aux()->elem(0);
       const F _1 = unit<F>(dir);
 
       // if K is -1, the recurrence relation looks exactly as it would for ERI
@@ -282,9 +309,9 @@ namespace libint2 {
     }
 
 #if LIBINT_ENABLE_GENERIC_CODE
-  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
+  template <class F, int part, FunctionPosition where>
     bool
-    VRR_11_R12kG12_11<I,F,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
+    VRR_new_11_R12kG12_11<F,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
     {
       F sh_a(target_->bra(0,0));
       F sh_b(target_->ket(0,0));
@@ -301,9 +328,9 @@ namespace libint2 {
         return false;
     }
 
-  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
+  template <class F, int part, FunctionPosition where>
     std::string
-    VRR_11_R12kG12_11<I,F,part,where>::generic_header() const
+    VRR_new_11_R12kG12_11<F,part,where>::generic_header() const
     {
       const int K = target_->oper()->descr().K();
       if (K == -1)
@@ -312,9 +339,9 @@ namespace libint2 {
         return std::string("VRR_r12kg12_xs_xs.h");
     }
 
-  template <template <typename,typename,typename> class I, class F, int part, FunctionPosition where>
+  template <class F, int part, FunctionPosition where>
     std::string
-    VRR_11_R12kG12_11<I,F,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
+    VRR_new_11_R12kG12_11<F,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
     {
       const int K = target_->oper()->descr().K();
       std::ostringstream oss;

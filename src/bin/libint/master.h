@@ -7,6 +7,8 @@
 #include <vrr_11_twoprep_11.h>
 #include <vrr_11_r12kg12_11.h>
 #include <itr_11_twoprep_11.h>
+#include <comp_11_tig12_11.h>
+#include <generic_rr.h>
 
 // master list of types and typedefs that describe capabilities of Libint2
 // should not be used unless absolutely necessary.
@@ -76,6 +78,11 @@ namespace libint2 {
   typedef VRR_11_R12kG12_11<GenIntegralSet_11_11,CGShell,1,InBra> VRR_c_11_R12kG12_11_sh;
   typedef VRR_11_R12kG12_11<GenIntegralSet_11_11,CGF,0,InBra> VRR_a_11_R12kG12_11_int;
   typedef VRR_11_R12kG12_11<GenIntegralSet_11_11,CGF,1,InBra> VRR_c_11_R12kG12_11_int;
+
+  typedef VRR_new_11_R12kG12_11<CGShell,0,InBra> VRR_new_a_11_R12kG12_11_sh;
+  typedef VRR_new_11_R12kG12_11<CGShell,1,InBra> VRR_new_c_11_R12kG12_11_sh;
+  typedef VRR_new_11_R12kG12_11<CGF,0,InBra> VRR_new_a_11_R12kG12_11_int;
+  typedef VRR_new_11_R12kG12_11<CGF,1,InBra> VRR_new_c_11_R12kG12_11_int;
 
   typedef CR_11_TiG12_11<GenIntegralSet_11_11,CGShell> CR_11_TiG12_11_sq;
   typedef CR_11_TiG12_11<GenIntegralSet_11_11,CGF> CR_11_TiG12_11_int;

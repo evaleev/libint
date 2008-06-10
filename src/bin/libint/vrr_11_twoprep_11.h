@@ -63,11 +63,6 @@ namespace libint2 {
       return TrivialBFSet<BFSet>::result;
     }
 
-    const std::string cpp_function_name() {}
-    const std::string cpp_source_name() {}
-    const std::string cpp_header_name() {}
-    std::ostream& cpp_source(std::ostream&) {}
-
   private:
     /**
       dir specifies which quantum number is incremented.

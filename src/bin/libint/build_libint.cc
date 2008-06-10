@@ -729,6 +729,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 }
 
 #endif // INCLUDE_GENG12
+#endif
 
 #ifdef INCLUDE_G12DKH
 void
@@ -878,7 +879,6 @@ build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& 
 }
 
 #endif // INCLUDE_G12DKH
-#endif
 
 void
 test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
