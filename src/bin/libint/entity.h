@@ -220,7 +220,7 @@ namespace libint2 {
       }
       
       /// returns the value
-      const T& value() const { return value_; }
+      typename KeyTraits<T>::ReturnType value() const { return value_; }
 
       /// Implements Hashable::key()
       typename DGVertex::KeyReturnType key() const {

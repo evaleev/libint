@@ -472,8 +472,9 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 #if SUPPORT_T1G12          
           // [T_1,G12]
           if (true) {
-            typedef TiG12_11_11<CGShell,0> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
+            typedef TiG12_11_11_sq int_type;
+            typedef int_type::OperType oper_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(0));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -481,8 +482,9 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
           // [T_2,G12]
           if (true) {
-            typedef TiG12_11_11<CGShell,1> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
+            typedef TiG12_11_11_sq int_type;
+            typedef int_type::OperType oper_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(1));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);

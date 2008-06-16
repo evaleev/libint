@@ -70,7 +70,7 @@ namespace libint2 {
       (e.g. "VRR A (p s | 1/r_{12} | d s )" for Obara-Saika recurrence relation
       applied to center A to compute (ps|ds) ERI)
     */
-    const std::string& label() const { if (label_.empty()) label_ = generate_label(); return label_; }
+    const std::string& label() const;
     
     /**
       description() returns a verbose description of this RR

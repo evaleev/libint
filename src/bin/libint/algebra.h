@@ -190,6 +190,77 @@ namespace libint2 {
     }
   */
   
+  /** represents linear combination of objects of type T with coefficients of type C
+   */
+  template <class C, class T>
+  class LinearCombination {
+    public:
+      typedef std::pair<C,T> term_t;
+      typedef std::vector<term_t> data_t;
+      
+      LinearCombination() {}
+      // shallow copy constructor -- used by operator^
+      LinearCombination(data_t* data) { swap(*data,data_); delete data; }
+      
+      LinearCombination& operator+=(const term_t& t) {
+        data_.push_back(t);
+      }
+      size_t size() const { return data_.size(); }
+      const term_t& operator[](unsigned int i) const { return data_[i]; }
+
+    private:
+      data_t data_;
+  };
+  
+  namespace algebra {
+    /// Wedge is a typeholder for the result of a wedge product
+    template <class L, class R>
+    struct Wedge {
+      Wedge(const L& l, const R& r) : left(l), right(r) {}
+      L left;
+      R right;
+    };
+    template <class L, class R> Wedge<L,R> make_wedge(const L& l, const R& r) { return Wedge<L,R>(l,r); }
+
+    /// what it means to wedge terms in LinearCombination
+    template <class C, class Tl, class Tr>
+    typename LinearCombination<C, Wedge<Tl,Tr> >::term_t
+    wedge(const std::pair<C,Tl>& L,
+          const std::pair<C,Tr>& R) {
+      return make_pair(L.first*R.first,
+                       L.second ^ R.second
+                      );
+    }
+  }
+
+  template <class C, class Tl, class Tr>
+  typename LinearCombination<C, algebra::Wedge<Tl,Tr> >::data_t*
+  operator^(const LinearCombination<C,Tl>& L,
+            const LinearCombination<C,Tr>& R) {
+    typedef typename LinearCombination<C, algebra::Wedge<Tl,Tr> >::data_t data_t;
+    data_t* result = new data_t;
+    const size_t nL = L.size();
+    const size_t nR = R.size();
+    for(unsigned int l=0; l<nL; ++l)
+      for(unsigned int r=0; r<nR; ++r) {
+        result->push_back(algebra::wedge(L[l],R[r]));
+      }
+    return result;
+  }
+  
+  template <class C, class Tl, class Tr>
+  typename LinearCombination<C, algebra::Wedge<Tl,Tr> >::data_t*
+  operator^(const Tl& L,
+            const LinearCombination<C,Tr>& R) {
+    typedef typename LinearCombination<C, algebra::Wedge<Tl,Tr> >::data_t data_t;
+    data_t* result = new data_t;
+    const size_t nR = R.size();
+    for(unsigned int r=0; r<nR; ++r) {
+      result->push_back(L ^ R[r]);
+    }
+    return result;
+  }
+  
 };
 
 #endif

@@ -4,6 +4,7 @@
 
 #include <polyconstr.h>
 #include <bfset.h>
+#include <algebra.h>
 #include <libint2_intrinsic_types.h>
 #include <global_macros.h>
 
@@ -375,7 +376,67 @@ namespace libint2 {
       //typedef VectorBraket<BFS> Result;
       typedef ArrayBraket<BFS,2> Result;
     };
+
+  ///////////
+  /** enumerates types of brakets used for describing two-electron integrals:
+      CBra and CKet are bra and ket in chemists' notation,
+      PBra and PKet are bra and ket in physicists' notation.
+   */
+  enum BraketType {CBra, CKet, PBra, PKet};
+  /** BraketPair is a trimmed down version of ArrayBraket specialized for same-particle or
+      different-particle pairs of functions. It is not meant to be ArrayBraket replacement.
+  */
+  template <class BFS, BraketType BKType> class BraketPair {
+  public:
+    /// This type
+    typedef BraketPair<BFS,BKType> this_type;
+    typedef BFS bfs_type;
+
+    /** This one is a very dangerous constructor -- do not to use it if at all possible.
+        Provided only for compatibility for generic subiterator algorithms */
+    BraketPair(const BFS& f1, const BFS& f2) : bfs_(f1,f2) {}
+    BraketPair(const BraketPair& source) : bfs_(source.bfs_) {}
+    const BraketPair& operator=(const BraketPair& rhs) { bfs_ = rhs.bfs_; }
+    const BFS& operator[](unsigned int i) const {
+      if (i == 0) return bfs_.first;
+      if (i == 1) return bfs_.second;
+      throw std::logic_error("BraketPair::operator[] -- argument out of range");
+    }
+    /// Comparison function
+    bool operator==(const this_type& rhs) const {
+      return rhs.bfs_ == bfs_;
+    }
+
+  private:
+    std::pair<BFS,BFS> bfs_;
+  };
   
+  /// these objects help to construct BraketPairs
+  namespace braket {
+    /// Physicists bra
+    template <class F> BraketPair<F,PBra> _pbra(const F& f1, const F& f2) {
+      return BraketPair<F,PBra>(f1,f2);
+    }
+    /// Physicists ket
+    template <class F> BraketPair<F,PKet> _pket(const F& f1, const F& f2) {
+      return BraketPair<F,PKet>(f1,f2);
+    }
+    /// Chemists bra
+    template <class F> BraketPair<F,CBra> _cbra(const F& f1, const F& f2) {
+      return BraketPair<F,CBra>(f1,f2);
+    }
+    /// Chemists ket
+    template <class F> BraketPair<F,CKet> _cket(const F& f1, const F& f2) {
+      return BraketPair<F,CKet>(f1,f2);
+    }
+  };
+  
+  template <class BFS, BraketType BKTypeL,  BraketType BKTypeR>
+  algebra::Wedge< BraketPair<BFS,BKTypeL>, BraketPair<BFS,BKTypeR> >
+  operator^(const BraketPair<BFS,BKTypeL>& L, const BraketPair<BFS,BKTypeR>& R) {
+    return algebra::make_wedge(L,R);
+  }
+
 };
 
 #endif

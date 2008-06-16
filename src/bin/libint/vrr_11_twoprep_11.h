@@ -36,11 +36,6 @@ namespace libint2 {
 
       /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
       VRR_11_TwoPRep_11(const SafePtr<TargetType>&, unsigned int dir);
-      /// helper function that makes writing the contructor easier
-      const SafePtr<ChildType>& make_child(const BFSet& A, const BFSet& B, const BFSet& C, const BFSet& D, unsigned int m) {
-        const SafePtr<ChildType>& i = ChildType::Instance(A,B,C,D,m);
-        return add_child(i);
-      }
 
       static std::string descr() { return "OSVRR"; }
       /** Re-Implementation of GenericRecurrenceRelation::generate_label():
@@ -73,6 +68,7 @@ namespace libint2 {
     {
       using namespace libint2::algebra;
       using namespace libint2::prefactor;
+      using namespace libint2::braket;
       const unsigned int m = Tint->aux()->elem(0);
       const F& _1 = unit<F>(dir);
 
@@ -84,7 +80,9 @@ namespace libint2 {
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
-        const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
+        //const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
+        const SafePtr<ChildType>& ABCD_m = make_child( _cbra(a,b) ^ _cket(c,d),m);
+        //const SafePtr<ChildType>& ABCD_m = make_child( _pbra(a,c) ^ _pket(b,d),m);
         const SafePtr<ChildType>& ABCD_mp1 = make_child(a,b,c,d,m+1);
         if (is_simple()) { expr_ = Vector("PA")[dir] * ABCD_m + Vector("WP")[dir] * ABCD_mp1;  nflops_+=3; }
 

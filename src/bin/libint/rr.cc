@@ -243,6 +243,13 @@ RecurrenceRelation::adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const
 }
 
 const std::string&
+RecurrenceRelation::label() const {
+  if (label_.empty())
+    label_ = generate_label();
+  return label_;
+}
+
+const std::string&
 RecurrenceRelation::description() const
 {
   return label();

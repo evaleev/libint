@@ -40,13 +40,7 @@ namespace libint2 {
     {
       typedef const std::string& ReturnType;
     };
-  /// double should be returned by value, but mismatches in existing code force return by const ref (for now).
-  template <>
-    struct KeyTraits<double>
-    {
-      typedef const double& ReturnType;
-    };
-  
+    
   /** Objects of Hashable<T> class provide hashing function key() which computes keys of type KeyType.
       key() returns KeyTraits<KeyType>::ReturnType.
    */

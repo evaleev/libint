@@ -66,6 +66,29 @@ namespace libint2 {
         children_.reserve(RRImpl::max_nchildren);
       }
 
+      /// make a child
+      const SafePtr<ChildType>& make_child(const F& A, const F& B, const F& C, const F& D,
+                                           const typename ChildType::AuxIndexType& aux = typename ChildType::AuxIndexType(),
+                                           const typename ChildType::OperType& oper = typename ChildType::OperType()) {
+        const SafePtr<ChildType>& i = ChildType::Instance(A,B,C,D,aux,oper);
+        return add_child(i);
+      }
+      /// make a child from a wedge of physicists' brackets
+      const SafePtr<ChildType>&
+      make_child(const algebra::Wedge< BraketPair<F,PBra>, BraketPair<F,PKet> >& braket_wedge,
+                 const typename ChildType::AuxIndexType& aux = typename ChildType::AuxIndexType(),
+                 const typename ChildType::OperType& oper = typename ChildType::OperType()) {
+        const SafePtr<ChildType>& i = ChildType::Instance(braket_wedge,aux,oper);
+        return add_child(i);
+      }
+      /// make a child from a wedge of chemists' brackets
+      const SafePtr<ChildType>&
+      make_child(const algebra::Wedge< BraketPair<F,CBra>, BraketPair<F,CKet> >& braket_wedge,
+                 const typename ChildType::AuxIndexType& aux = typename ChildType::AuxIndexType(),
+                 const typename ChildType::OperType& oper = typename ChildType::OperType()) {
+        const SafePtr<ChildType>& i = ChildType::Instance(braket_wedge,aux,oper);
+        return add_child(i);
+      }
       /// add child
       const SafePtr<ChildType>& add_child(const SafePtr<ChildType>& child) {
         typedef std::vector< SafePtr<ChildType> > cvector;
@@ -75,7 +98,50 @@ namespace libint2 {
           children_.push_back(child);
         return *(children_.rbegin());
       }
-
+      
+      /// take a wedge product of various (linear combinations of) brakets
+      void wedge(const LinearCombination< SafePtr<DGVertex>, BraketPair<F,PBra> >& bra_lc,
+                 const LinearCombination< SafePtr<DGVertex>, BraketPair<F,PKet> >& ket_lc,
+                 const typename ChildType::AuxIndexType& aux = typename ChildType::AuxIndexType(),
+                 const typename ChildType::OperType& oper = typename ChildType::OperType()) {
+        using namespace libint2::algebra;
+        typedef LinearCombination< SafePtr<DGVertex>,
+                                   Wedge< BraketPair<F,PBra>,
+                                          BraketPair<F,PKet>
+                                        >
+                                 > ProductLC;
+        const ProductLC& product_lc = bra_lc ^ ket_lc;
+        const size_t nprod = product_lc.size();
+        for(unsigned int t=0; t<nprod; ++t) {
+          const typename ProductLC::term_t& term = product_lc[t];
+          const SafePtr<ChildType>& child = make_child(term.second,aux,oper);
+          if (is_simple()) {
+            if (expr_)
+              expr_ += term.first * child;
+            else
+              expr_  = term.first * child;
+          }
+        }
+      }
+      void wedge(const BraketPair<F,PBra>& bra,
+                 const LinearCombination< SafePtr<DGVertex>, BraketPair<F,PKet> >& ket_lc,
+                 const typename ChildType::AuxIndexType& aux = typename ChildType::AuxIndexType(),
+                 const typename ChildType::OperType& oper = typename ChildType::OperType()) {
+        using namespace libint2::prefactor;
+        LinearCombination< SafePtr<DGVertex>, BraketPair<F,PBra> > bra_lc;
+        bra_lc += make_pair(Scalar(1.0),bra);
+        wedge(bra_lc,ket_lc,aux,oper);
+      }
+      void wedge(const LinearCombination< SafePtr<DGVertex>, BraketPair<F,PBra> >& bra_lc,
+                 const BraketPair<F,PKet>& ket,
+                 const typename ChildType::AuxIndexType& aux = typename ChildType::AuxIndexType(),
+                 const typename ChildType::OperType& oper = typename ChildType::OperType()) {
+        using namespace libint2::prefactor;
+        LinearCombination< SafePtr<DGVertex>, BraketPair<F,PKet> > ket_lc;
+        ket_lc += make_pair(Scalar(1.0),ket);
+        wedge(bra_lc,ket_lc,aux,oper);
+      }
+      
       SafePtr<TargetType> target_;
       
     private:

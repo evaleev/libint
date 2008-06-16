@@ -37,6 +37,30 @@ namespace libint2 {
           but in fact corresponds to their practical (rather than logical) importance.
       */
       static const SafePtr<this_type> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1, const AuxIndexType& aux = AuxIndexType(), const OperType& oper = OperType());
+      /** This "constructor" uses a wedge of 2 physicists brakets.
+      */
+      static const SafePtr<this_type>
+      Instance(const algebra::Wedge< BraketPair<BFS,PBra>, BraketPair<BFS,PKet> >& braket_wedge,
+               const AuxIndexType& aux = AuxIndexType(), const OperType& oper = OperType()) {
+        return Instance(braket_wedge.left[0],
+                        braket_wedge.right[0],
+                        braket_wedge.left[1],
+                        braket_wedge.right[1],
+                        aux,
+                        oper);
+      }
+      /** This "constructor" uses a wedge of 2 chemists brakets.
+      */
+      static const SafePtr<this_type>
+      Instance(const algebra::Wedge< BraketPair<BFS,CBra>, BraketPair<BFS,CKet> >& braket_wedge,
+               const AuxIndexType& aux = AuxIndexType(), const OperType& oper = OperType()) {
+        return Instance(braket_wedge.left[0],
+                        braket_wedge.left[1],
+                        braket_wedge.right[0],
+                        braket_wedge.right[1],
+                        aux,
+                        oper);
+      }
       /** Returns a pointer to a unique instance, a la Singleton.
           Note that the ordering of arguments is a bit counterintuitive,
           but in fact corresponds to their practical (rather than logical) importance.
