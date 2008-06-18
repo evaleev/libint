@@ -94,9 +94,12 @@ namespace libint2 {
         typedef std::vector< SafePtr<ChildType> > cvector;
         typedef typename cvector::const_iterator citer;
         const citer pos = std::find(children_.begin(),children_.end(),child);
-        if (pos == children_.end())
+        if (pos == children_.end()) {
           children_.push_back(child);
-        return *(children_.rbegin());
+          return *(children_.rbegin());
+        }
+        else
+          return *pos;
       }
       
       /// take a wedge product of various (linear combinations of) brakets
