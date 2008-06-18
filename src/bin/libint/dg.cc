@@ -451,7 +451,10 @@ void
 DirectedGraph::optimize_rr_out()
 {
   replace_rr_with_expr();
+  // TODO remove_trivial_arithmetics() seems to be broken when working with [Ti,G12], fix!
+#if 0
   remove_trivial_arithmetics();
+#endif
   handle_trivial_nodes();
   remove_disconnected_vertices();
   find_subtrees();
@@ -613,7 +616,7 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<Recu
   SafePtr<DGArc> right_arc(new DGArcDirect(expr_vertex,right_oper));
   expr_vertex->add_exit_arc(right_arc);
 #if DEBUG
-  cout << "insert_expr_at: added arc between " << where << " and " << expr_vertex << endl;
+  cout << "insert_expr_at: added arc between " << where->description() << " and " << expr_vertex->description() << endl;
 #endif
 
   return expr_vertex;
@@ -658,7 +661,8 @@ DirectedGraph::remove_trivial_arithmetics()
 
 //
 // Handles "trivial" nodes. A node is trivial is it satisfies the following conditions:
-// 1) it has only one child
+// 0) not a target
+// 1) has only one child
 // 2) the exit arc is of a trivial type (DGArvDirect or IntegralSet_to_Integral applied to node of size 1)
 //
 // By "handling" I mean either removing the node from the graph or making a node refer to another node so that
@@ -671,6 +675,10 @@ DirectedGraph::handle_trivial_nodes()
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
+    // if this is a target -- cannot remove
+    if ((vptr)->is_a_target())
+      continue;
+    // or if has more than 1 child
     if ((vptr)->num_exit_arcs() != 1)
       continue;
     SafePtr<DGArc> arc = *((vptr)->first_exit_arc());
@@ -687,15 +695,13 @@ DirectedGraph::handle_trivial_nodes()
     }
 
     // Is the exit arc DGArcRel<IntegralSet_to_Integrals> and (vptr)->size() == 1?
-    {
-      if ((vptr)->size() == 1) {
-        SafePtr<DGArcRR> arc_cast = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
-        if (arc_cast) {
-          SafePtr<RecurrenceRelation> rr = arc_cast->rr();
-          SafePtr<IntegralSet_to_Integrals_base> rr_cast = dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(rr);
-          if (rr_cast)
-            (vptr)->refer_this_to(arc->dest());
-        }
+    if ((vptr)->size() == 1) {
+      SafePtr<DGArcRR> arc_cast = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
+      if (arc_cast) {
+        SafePtr<RecurrenceRelation> rr = arc_cast->rr();
+        SafePtr<IntegralSet_to_Integrals_base> rr_cast = dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(rr);
+        if (rr_cast)
+          (vptr)->refer_this_to(arc->dest());
       }
     }
     
@@ -800,11 +806,12 @@ DirectedGraph::remove_disconnected_vertices()
 #endif
       iter vprev = v; --vprev;
       try { del_vertex(v); }
-      catch (CannotPerformOperation) {
+      catch (CannotPerformOperation& v) {
 #if DEBUG
         cout << "But couldn't!!!" << endl;
 #endif
-	++vprev;
+        ++vprev;
+        throw v;
       }
       // current vertex was erased, so need to decrease the iterator as well
       v = vprev;
@@ -1130,18 +1137,6 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
       continue;
     }
 
-#if 0
-    // test if the vertex is an operator
-    {
-      typedef AlgebraicOperator<DGVertex> oper;
-      SafePtr<oper> ptr_cast = dynamic_pointer_cast<oper,DGVertex>((vptr));
-      if (ptr_cast) {
-        (vptr)->set_symbol(context->unique_name<EntityTypes::FP>());
-        continue;
-      }
-    }
-#endif
-
     // test if the vertex is a static quantity, like a constant
     {
       typedef CTimeEntity<double> cdouble;
@@ -1180,7 +1175,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
   for(riter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
     ver_ptr& vptr = vertex_ptr(*v);
 #if DEBUG
-    cout << "Trying to assign symbol to " << (vptr)->description() << endl;
+    cout << "Trying to assign symbol to operator " << (vptr)->description() << endl;
 #endif
     assign_oper_symbol(context,(vptr));
   }
