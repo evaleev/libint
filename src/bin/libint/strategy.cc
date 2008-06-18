@@ -222,6 +222,7 @@ namespace libint2 {
           typedef IntegralSet_to_Integrals<T> ISet2I;
           SafePtr<ISet2I> x(new ISet2I(tptr));
           rr = static_pointer_cast<RecurrenceRelation,ISet2I>(x);
+          std::cout << "Unrolled " << tptr->label() << std::endl;
         }
         // else: apply the known strategy
         else {
