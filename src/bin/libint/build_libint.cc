@@ -10,8 +10,6 @@
   Blacksburg (August 2006 - present)
   */
 
-#define DO_TEST_ONLY 0
-
 #include <libint2_config.h>
 
 #include <iostream>
@@ -67,8 +65,6 @@ static void build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParame
 static void build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
 static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
-static void test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                 SafePtr<Libint2Iface>& iface);
 
 void try_main (int argc, char* argv[])
 {
@@ -160,7 +156,6 @@ void try_main (int argc, char* argv[])
   iface->to_params(iface->macro_define("CGSHELL_ORDERING",LIBINT_CGSHELL_ORDERING));
   cparams->print(os);
 
-#if !DO_TEST_ONLY
 #ifdef INCLUDE_ERI
   build_TwoPRep_2b_2k(os,cparams,iface);
 #endif
@@ -172,11 +167,6 @@ void try_main (int argc, char* argv[])
 #endif
 #ifdef INCLUDE_G12DKH
   build_R12_024_G12_2b_2k(os,cparams,iface);
-#endif
-#endif
-
-#if DO_TEST_ONLY
-  test(os,cparams,iface);
 #endif
   
   // Generate code for the set-level RRs
@@ -437,9 +427,6 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 	  if (ssss) continue;
 #endif
 
-	  //if (la != 1 || lb != 0 || lc != 1 || ld != 1)
-	  //  continue;
-          
           // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
@@ -881,146 +868,6 @@ build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& 
 }
 
 #endif // INCLUDE_G12DKH
-
-void
-test(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-     SafePtr<Libint2Iface>& iface)
-{
-#if 0
-  const std::string task("r12kg12");
-  vector<CGShell*> shells;
-  unsigned int lmax = cparams->max_am(task);
-  for(int l=0; l<=lmax; l++) {
-    shells.push_back(new CGShell(l));
-  }
-  ImplicitDimensions::set_default_dims(cparams);
-  
-  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current(task);
-  iface->to_params(iface->macro_define("MAX_AM_R12kG12",lmax));
-  
-  //
-  // Construct graphs for each desired target integral and
-  // 1) generate source code for the found traversal path
-  // 2) extract all remaining unresolved recurrence relations and
-  //    append them to the stack. Such unresolved RRs are RRs applied
-  //    to sets of integrals (rather than to individual integrals).
-  // 3) at the end, for each unresolved recurrence relation generate
-  //    explicit source code
-  //
-  SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  SafePtr<Strategy> strat(new Strategy);
-  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-  //SafePtr<Tactic> tactic(new RandomChoiceTactic());
-  //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
-  /*for(int la=0; la<=lmax; la++) {
-    for(int lb=0; lb<=lmax; lb++) {
-      for(int lc=0; lc<=lmax; lc++) {
-        for(int ld=0; ld<=lmax; ld++) {*/
-          {{{{
-            int la=2;
-            int lb=2;
-            int lc=2;
-            int ld=2;
-
-          bool ssss = false;
-          if (la+lb+lc+ld == 0)
-            ssss = true;
-          
-          // k=0
-          if (!ssss) {
-            typedef R12kG12_11_11<CGShell,0> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
-            os << "building " << abcd->description() << endl;
-            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-          
-          // k=-1
-          if (!ssss) {
-            typedef R12kG12_11_11<CGShell,-1> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
-            os << "building " << abcd->description() << endl;
-            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-          
-          // [T_1,G12]
-          if (true) {
-            typedef TiG12_11_11<CGShell,0> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
-            os << "building " << abcd->description() << endl;
-            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-
-          // [T_2,G12]
-          if (true) {
-            typedef TiG12_11_11<CGShell,1> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
-            os << "building " << abcd->description() << endl;
-            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-
-          // k=2
-          if (!ssss) {
-            typedef R12kG12_11_11<CGShell,2> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
-            os << "building " << abcd->description() << endl;
-            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-          
-          dg_xxxx->apply(strat,tactic);
-          dg_xxxx->optimize_rr_out();
-          dg_xxxx->traverse();
-          os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
-          
-          std::string label(cparams->api_prefix());
-          {
-            ostringstream os;
-            os << "(" << shells[la]->label() << " "
-            << shells[lb]->label()
-            << " | r_{12}^K * exp(-g*r_{12}^2) | "
-            << shells[lc]->label() << " "
-            << shells[ld]->label() << ")";
-            label += os.str();
-          }
-          
-          SafePtr<CodeContext> context(new CppCodeContext(cparams));
-          SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
-          std::string prefix(cparams->source_directory());
-          std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
-          std::string src_filename(prefix + context->label_to_name(label));  src_filename += ".cc";
-          std::basic_ofstream<char> declfile(decl_filename.c_str());
-          std::basic_ofstream<char> srcfile(src_filename.c_str());
-          dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
-          
-          // update max stack size
-          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
-          tparams->max_stack_size(memman->max_memory_used());
-          
-          ostringstream oss;
-          oss << "  libint2_build_r12kg12[" << la << "][" << lb << "][" << lc << "]["
-              << ld <<"] = " << context->label_to_name(label_to_funcname(label))
-              << context->end_of_stat() << endl;
-          iface->to_static_init(oss.str());
-          
-          oss.str("");
-          oss << "#include <" << decl_filename << ">" << endl;
-          iface->to_int_iface(oss.str());
-          
-          os << "Max memory used = " << memman->max_memory_used() << endl;
-          dg_xxxx->reset();
-          declfile.close();
-          srcfile.close();
-        } // end of d loop
-      } // end of c loop
-    } // end of b loop
-  } // end of a loop  
-#endif
-}
 
 void
 config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface)
