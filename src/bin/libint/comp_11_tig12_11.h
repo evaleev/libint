@@ -50,6 +50,8 @@ namespace libint2 {
       using namespace libint2::braket;
       // kinetic energy of which electron?
       const int i = target_->oper()->descr().K();
+      const R12kG12 G0(0);
+      const R12kG12 G2(2);
       
       F a(Tint->bra(0,0));
       F b(Tint->ket(0,0));
@@ -62,11 +64,21 @@ namespace libint2 {
       // [T1,G12]
       if (i == 0) {
         ParentType::wedge(_pbra(a,c) , R12vec_dot_Nabla1(_pket(b,d)), mType(0u), R12kG12(0));
+        if (is_simple()) expr_ *= Scalar(2.0) * Scalar("gamma");
       }
       // [T2,G12]
       if (i == 1) {
         ParentType::wedge(_pbra(a,c) , R12vec_dot_Nabla2(_pket(b,d)), mType(0u), R12kG12(0));
+        if (is_simple()) expr_ *= Scalar(-2.0) * Scalar("gamma");
       }
+
+      const SafePtr<ChildType>& ab_G0_cd = make_child(a,b,c,d,0u,G0);
+      if (is_simple())
+        expr_ += Scalar(3.0) * Scalar("gamma") * ab_G0_cd;
+
+      const SafePtr<ChildType>& ab_G2_cd = make_child(a,b,c,d,0u,G2);
+      if (is_simple())
+        expr_ += Scalar(-2.0) * Scalar("gamma") * Scalar("gamma") * ab_G2_cd;
       
     }
   
