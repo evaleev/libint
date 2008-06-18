@@ -155,9 +155,7 @@ Prefactors::Prefactors() :
   }
 
   for(int i=0; i<NMAX; i++) {
-    double i_fp = (double) i;
-    SafePtr<cdouble> N_ptr(new cdouble(i_fp));
-    N_i[i] = N_ptr;
+    N_i[i] = prefactor::Scalar((double)i);
   }
 }
 
