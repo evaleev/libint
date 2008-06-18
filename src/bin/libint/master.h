@@ -58,11 +58,15 @@ namespace libint2 {
   typedef HRR<TwoPRep_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_sh;
   typedef HRR<R12kG12_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_R12kG12_11_sh;
   typedef HRR<R12kG12_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_R12kG12_11_sh;
+  typedef HRR<TiG12_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_TiG12_11_sh;
+  typedef HRR<TiG12_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_TiG12_11_sh;
 
   typedef HRR<TwoPRep_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_TwoPRep_11_int;
   typedef HRR<TwoPRep_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_TwoPRep_11_int;
   typedef HRR<R12kG12_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_R12kG12_11_int;
   typedef HRR<R12kG12_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_R12kG12_11_int;
+  typedef HRR<TiG12_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_TiG12_11_int;
+  typedef HRR<TiG12_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_TiG12_11_int;
 
   typedef HRR<DummySymmIntegral_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_Dummy_11_sh;
   typedef HRR<DummySymmIntegral_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_Dummy_11_sh;
