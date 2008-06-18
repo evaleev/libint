@@ -1,39 +1,31 @@
 
-#define TEST_TYPELIST 1
-
 #include <boost/bind.hpp>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 #include <rr.h>
-#include <vrr_11_twoprep_11.h>
 #include <dg.h>
 #include <dg.templ.h>
-#include <typelist.h>
 #include <integral.h>
-#include <r1dotr1g12_11_11.h>
-#include <r1dotr2g12_11_11.h>
-#include <divg12primextx_11_11.h>
 #include <iter.h>
 #include <policy_spec.h>
 #include <intset_to_ints.h>
-#include <comp_11_r1dotr1g12_11.h>
-#include <comp_11_r1dotr2g12_11.h>
 #include <strategy.h>
 #include <buildtest.h>
+#include <master.h>
 
 using namespace std;
 using namespace libint2;
 
 namespace {
   int try_main (int argc, char* argv[]);
-  void test_typelists();
   void test0();
   void test1();
   void test2();
   void test3();
   void test4();
+  void test5();
   void test_cgshell_iter(const CGShell& sh);
 
   template <class Callback>
@@ -80,7 +72,6 @@ namespace {
   CGShell sh_l(am[8]);
   CGShell sh_m(am[9]);
   CGShell sh_n(am[10]);
-  typedef TwoPRep_11_11<CGShell> TwoPRep_sh_11_11;
   SafePtr<CompilationParameters> cparams;
 
   int try_main (int argc, char* argv[])
@@ -96,20 +87,11 @@ namespace {
     // set default dims
     ImplicitDimensions::set_default_dims(cparams);
  
-#if TEST_TYPELIST
-    RunTest(test_typelists,"typelists");
-#endif
 #if 1
     RunTest(test0,"iterators");
 #endif
-#if 0
-    RunTest(test1,"memory managers for (ff|ff) build");
-
-    const unsigned int use_integrals = 1000000000;
-    const unsigned int use_quartets = 1;
-    RunBuildTest<TwoPRep_sh_11_11>(sh_p,sh_s,sh_p,sh_s,0,use_quartets);
-    RunBuildTest<TwoPRep_sh_11_11>(sh_p,sh_p,sh_p,sh_p,0,use_quartets);
-    RunBuildTest<TwoPRep_sh_11_11>(sh_p,sh_p,sh_p,sh_p,0,use_integrals);
+#if 1
+    RunTest(test1,"memory managers");
 #endif
 #if 1
     RunTest(test2,"integrals types");
@@ -118,7 +100,7 @@ namespace {
     RunTest(test3,"recurrence relations");
 #endif
 #if 1
-    RunTest(test4,"r1.ri * G12 build");
+    RunTest(test4,"ERI build");
 #endif
 
     return 0;
@@ -136,30 +118,11 @@ namespace {
       os << hrule << endl << endl;
     }
 
-#if TEST_TYPELIST
-  void
-  test_typelists()
-  {
-    typedef PTYPELIST_2( Tag2, CGShell, CGShell) two_shells;
-    two_shells xx;
-    typedef PTYPELIST_3( Tag2, CGShell, CGShell, CGShell) three_shells;
-    three_shells xxx;
-    typedef GenIntegral<TwoPRep,two_shells,two_shells> NewTwoPRep_2b2k;
-    NewTwoPRep_2b2k xxxx(xx,xx);
-  
-    ValueAt<two_shells, 1>::ResultType xx_1 = ValueAt<two_shells,1>::typelist_member(xx);
-
-    cout << "Length of my_typelist = " << Length<two_shells>::value << endl;
-    CGShell xx_2(xx_1);
-    xx_2.inc(0);
-  }
-#endif
-
   void
   test0()
   {
-    SafePtr<TwoPRep_sh_11_11> pppp_quartet = TwoPRep_sh_11_11::Instance(sh_p,sh_p,sh_p,sh_p,0);
-    SafePtr<DGVertex> pppp_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(pppp_quartet);
+    SafePtr<TwoPRep_11_11_sq> pppp_quartet = TwoPRep_11_11_sq::Instance(sh_p,sh_p,sh_p,sh_p,0u);
+    SafePtr<DGVertex> pppp_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_11_11_sq>(pppp_quartet);
 
     // test CGShell iterator
     test_cgshell_iter(sh_s);
@@ -173,9 +136,9 @@ namespace {
     test_cgshell_iter(sh_l);
 
     // test IntegralSet iterator
-    SafePtr<TwoPRep_sh_11_11> obj(pppp_quartet);
+    SafePtr<TwoPRep_11_11_sq> obj(pppp_quartet);
     cout << obj->description() << endl;
-    SubIteratorBase< TwoPRep_sh_11_11 > siter2(obj);
+    SubIteratorBase< TwoPRep_11_11_sq > siter2(obj);
     for(siter2.init(); siter2; ++siter2)
       cout << siter2.elem()->description() << endl;
   }
@@ -187,9 +150,9 @@ namespace {
   
     SafePtr<Strategy> strat(new Strategy);
     SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-    SafePtr<TwoPRep_sh_11_11> xsxs_quartet = TwoPRep_sh_11_11::Instance(sh_f,sh_f,sh_f,sh_f,0);
+    SafePtr<TwoPRep_11_11_sq> xsxs_quartet = TwoPRep_11_11_sq::Instance(sh_f,sh_f,sh_f,sh_f,0u);
     cout << "Building " << xsxs_quartet->description() << endl;
-    SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(xsxs_quartet);
+    SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_11_11_sq>(xsxs_quartet);
 
     SafePtr<MemoryManagerFactory> mmfactory(new MemoryManagerFactory);
 
@@ -276,22 +239,12 @@ namespace {
   {
     {
       typedef TwoPRep_11_11_sq IType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0);
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
       std::cout << "Created integral set " << iset->label() << std::endl;
     }
     {
-      typedef R12_m1_G12_11_11_sq IType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0);
-      std::cout << "Created integral set " << iset->label() << std::endl;
-    }
-    {
-      typedef R1dotR1G12_11_11_sq IType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p);
-      std::cout << "Created integral set " << iset->label() << std::endl;
-    }
-    {
-      typedef DivG12prime_xTx_11_11_sq IType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p);
+      typedef R12kG12_11_11_sq IType;
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u,IType::OperType(-1));
       std::cout << "Created integral set " << iset->label() << std::endl;
     }
   }
@@ -300,17 +253,17 @@ namespace {
   test3()
   {
     {
-      typedef R1dotR1G12_11_11_sq IType;
-      typedef CR_11_R1dotR1G12_11_sq RRType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p);
-      SafePtr<RRType> rr = RRType::Instance(iset);
+      typedef TwoPRep_11_11_sq IType;
+      typedef VRR_a_11_TwoPRep_11_sh RRType;
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
+      SafePtr<RRType> rr = RRType::Instance(iset,0);
       std::cout << "Created recurrence relation " << rr->label() << std::endl;
     }
     {
-      typedef R1dotR2G12_11_11_sq IType;
-      typedef CR_11_R1dotR2G12_11_sq RRType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p);
-      SafePtr<RRType> rr = RRType::Instance(iset);
+      typedef TwoPRep_11_11_sq IType;
+      typedef VRR_c_11_TwoPRep_11_sh RRType;
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
+      SafePtr<RRType> rr = RRType::Instance(iset,0);
       std::cout << "Created recurrence relation " << rr->label() << std::endl;
     }
   }
@@ -320,9 +273,9 @@ namespace {
   {
     const unsigned int use_integrals = 1000000000;
     const unsigned int use_quartets = 1;
-    RunBuildTest<R1dotR1G12_11_11_sq>(sh_s,sh_s,sh_s,sh_s,use_quartets);
-    RunBuildTest<R1dotR2G12_11_11_sq>(sh_s,sh_s,sh_s,sh_s,use_quartets);
+    RunBuildTest<TwoPRep_11_11_sq>(sh_p,sh_s,sh_p,sh_s,0,use_quartets);
+    RunBuildTest<TwoPRep_11_11_sq>(sh_p,sh_p,sh_p,sh_p,0,use_quartets);
+    RunBuildTest<TwoPRep_11_11_sq>(sh_p,sh_p,sh_p,sh_p,0,use_integrals);
   }
-
 };
   
