@@ -75,6 +75,9 @@ DGVertex::del_exit_arc(const SafePtr<DGArc>& arc)
       ArcSetType::iterator pos = find(children_.begin(),children_.end(), arc);
       if (pos != children_.end()) {
         arc->dest()->del_entry_arc(arc);
+#if DEBUG
+    std::cout << "del_exit_arc: removed arc from " << arc->orig()->description() << " to " << arc->dest()->description() << std::endl;
+#endif
         children_.erase(pos);
       }
       else
