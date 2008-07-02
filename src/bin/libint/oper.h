@@ -6,6 +6,7 @@
 #include <hashable.h>
 #include <global_macros.h>
 #include <util.h>
+#include <boost/tuple/tuple.hpp>
 
 namespace libint2 {
 
@@ -227,6 +228,33 @@ namespace libint2 {
   };
   typedef GenOper<R12_k_G12_Descr> R12kG12;
 
+  /** R12k_R12l_G12 is a two-body operator of form ( r_{12x}^kx * r_{12y}^ky * r_{12z}^kz ) * (r_{12x}^lx * r_{12y}^ly * r_{12z}^lz ) * G12
+      The following restrictions are imposed: 0 <= kx+ky+kz <= 4, 0 <= lx+ly+lz <= 4
+    */
+  class R12k_R12l_G12_Descr {
+  public:
+    typedef MultiplicativeSymm2Body_Props Properties;
+    typedef boost::tuple<int,int,int> IntVec3;
+    static const int kmax = 4;
+    R12k_R12l_G12_Descr(const IntVec3& K, const IntVec3& L) : K_(K), L_(L) { }
+    R12k_R12l_G12_Descr(const R12k_R12l_G12_Descr& a) : K_(a.K_), L_(a.L_) {}
+    static const unsigned int max_key = kmax * kmax * kmax * kmax * kmax * kmax;
+    unsigned int key() const;
+    std::string description() const { return label_(K_,L_); }
+    std::string label() const { return symbol_(K_,L_); }
+    int K(int xyz) const;
+    int L(int xyz) const;
+    int psymm(int i, int j) const;
+    int hermitian(int i) const;
+  private:
+    R12k_R12l_G12_Descr();
+    static std::string label_(const IntVec3& K, const IntVec3& L);
+    static std::string symbol_(const IntVec3& K, const IntVec3& L);
+    IntVec3 K_;
+    IntVec3 L_;
+  };
+  typedef GenOper<R12k_R12l_G12_Descr> R12kR12lG12;
+  
   /** Ti_G12 is a two-body operator of form [T_i, G12],
       where i is particle index (0 or 1) and G12 is a Gaussian Geminal.
   */
