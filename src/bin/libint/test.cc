@@ -266,6 +266,13 @@ namespace {
       SafePtr<RRType> rr = RRType::Instance(iset,0);
       std::cout << "Created recurrence relation " << rr->label() << std::endl;
     }
+    {
+      typedef DivG12prime_xTx_11_11_sq IType;
+      typedef CR_11_DivG12prime_xTx_11_sh RRType;
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
+      SafePtr<RRType> rr = RRType::Instance(iset,0);
+      std::cout << "Created recurrence relation " << rr->label() << std::endl;
+    }
   }
 
   void

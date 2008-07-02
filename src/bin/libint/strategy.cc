@@ -35,7 +35,7 @@ namespace libint2 {
     HRR_ab_11_TwoPRep_11_sh,
     HRR_cd_11_TwoPRep_11_sh,
 #if LIBINT_ERI_STRATEGY == 2
-    ITR_a_11_TwoPRep_11_sq,
+    ITR_a_11_TwoPRep_11_sh,
 #endif
     VRR_a_11_TwoPRep_11_sh,
     VRR_c_11_TwoPRep_11_sh
@@ -71,12 +71,28 @@ namespace libint2 {
   // TODO teach HRR to handle nonHermitian integrals automatically
   template <> struct MasterStrategy<TiG12_11_11_sq> {
     typedef mpl::list<
-    CR_11_TiG12_11_sq
+    HRR_ab_11_TiG12_11_sh,
+    HRR_cd_11_TiG12_11_sh,
+    CR_11_TiG12_11_sh
     > value;
   };
   template <> struct MasterStrategy<TiG12_11_11_int> {
     typedef mpl::list<
+    HRR_ab_11_TiG12_11_int,
+    HRR_cd_11_TiG12_11_int,
     CR_11_TiG12_11_int
+    > value;
+  };
+  template <> struct MasterStrategy<DivG12prime_xTx_11_11_sq> {
+    typedef mpl::list<
+    HRR_cd_11_DivG12prime_xTx_sh,
+    CR_11_DivG12prime_xTx_11_sh
+    > value;
+  };
+  template <> struct MasterStrategy<DivG12prime_xTx_11_11_int> {
+    typedef mpl::list<
+    HRR_cd_11_DivG12prime_xTx_int,
+    CR_11_DivG12prime_xTx_11_int
     > value;
   };
   template <> struct MasterStrategy<DummySymmIntegral_11_11_sq> {
@@ -137,7 +153,7 @@ namespace libint2 {
         return false;
       }
 
-    
+
   };
 
   /** This type helps with processing lists of integral types via mpl::for_each.
@@ -155,7 +171,7 @@ namespace libint2 {
              const SafePtr<Tactic>& tactic) :
                dg_(dg), integral_(integral), tactic_(tactic), done_(false) {
             }
-            
+
             const SafePtr<RecurrenceRelation>& rr() {
               // if rr() is called then we should no longer do any processing
               done_ = true;
@@ -164,7 +180,7 @@ namespace libint2 {
                 postprocess_rr_cgf(tactic_, rr_, rrstack_);
               return rr_;
             }
-            
+
             SafePtr<DirectedGraph> dg_;
             SafePtr<IntType> integral_;
             SafePtr<Tactic> tactic_;
@@ -178,24 +194,24 @@ namespace libint2 {
                                     const Tactic::rr_stack& rrstack) {
               rr = tactic->optimal_rr(rrstack);
             }
-            
+
         };
-      
+
     apply_strategy(const SafePtr<Impl>& impl) : impl_(impl) {}
     apply_strategy(const apply_strategy& app) : impl_(app.impl_) {}
     const apply_strategy& operator=(const apply_strategy& app) {
       impl_ = app.impl_;
       return *this;
     }
-    
+
     template <class Visitor>
     void operator()(const Visitor&) {
       if (!impl_->done_)
         impl_->done_ = Visitor::visit(impl_->dg_, impl_->integral_, impl_->tactic_, impl_->rr_, impl_->rrstack_);
     }
-    
+
     const SafePtr<Impl>& impl() const { return impl_; }
-    
+
     private:
       SafePtr<Impl> impl_;
   };
@@ -204,7 +220,7 @@ namespace libint2 {
   /// it's used by operator()<T> via mpl::for_each
   template <class T>
   struct match_first_inttype_transform {
-    
+
     static bool visit(const SafePtr<DirectedGraph>& dg,
                       const SafePtr<DGVertex>& integral,
                       const SafePtr<Tactic>& tactic,
@@ -238,7 +254,7 @@ namespace libint2 {
         return true;
       }
     }
-    
+
   };
 
   /** This type helps with processing lists of integral types via mpl::for_each.
@@ -261,7 +277,7 @@ namespace libint2 {
                    }
 
       const SafePtr<RecurrenceRelation>& rr() const { return rr_; }
-      
+
       SafePtr<DirectedGraph> dg_;
       SafePtr<DGVertex> integral_;
       SafePtr<Tactic> tactic_;
@@ -275,7 +291,7 @@ namespace libint2 {
       impl_ = x.impl_;
       return *this;
     }
-    
+
     template <class Visitor>
     void operator()(const Visitor&) {
       if (!impl_->found_this_type_)
@@ -283,11 +299,11 @@ namespace libint2 {
     }
 
     const SafePtr<Impl>& impl() const { return impl_; }
-    
+
     private:
       SafePtr<Impl> impl_;
 };
-  
+
 
 }
 

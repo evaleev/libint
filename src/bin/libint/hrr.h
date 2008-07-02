@@ -122,7 +122,7 @@ namespace libint2 {
       }
       return this_ptr;
     }
-  
+
   template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
@@ -137,6 +137,11 @@ namespace libint2 {
       typedef typename IntType::KetType IKetType;
       IBraType* bra = new IBraType(Tint->bra());
       IKetType* ket = new IKetType(Tint->ket());
+
+      // can move across operator only if it's multiplicative
+      if (loc_a != loc_b && oper.hermitian(part) != +1) {
+        return;
+      }
 
       //
       // InBra and InKet cases have to treated explicitly since BraType and KetType don't have to match
@@ -227,7 +232,7 @@ namespace libint2 {
       // This is an ugly hack -- add HRR's to the RRStack preemptively for targets in which all functions not involved
       // in transfer have zero quanta. The reason is that for the HRR quartet level code to work correctly
       // I must use these particular instances of HRR to generate the source.
-      
+
       // only register RRs with for shell sets
       if (TrivialBFSet<F>::result)
         return false;
@@ -235,7 +240,7 @@ namespace libint2 {
       typedef typename IntType::KetType IKetType;
       const IBraType& bra = target_->bra();
       const IKetType& ket = target_->ket();
-      
+
       //check for nonzero quanta for all particles other than part
       bool nonzero_quanta = false;
       unsigned const int npart = IntType::OperatorType::Properties::np;
@@ -271,11 +276,11 @@ namespace libint2 {
         rrstack->find(this_ptr);
         return true;
       }
-      
+
       //
       // else create the needed instance of HRR
       //
-      
+
       // zero out unneeded bfs'
       IBraType bra_zero(bra);
       IKetType ket_zero(ket);
@@ -319,7 +324,7 @@ namespace libint2 {
       DummyOper dummy_oper;
       DummyQuanta dummy_quanta(std::vector<int>(0,0));
       SafePtr<DummyIntegral> dummy_integral = DummyIntegral::Instance(bra_zero,ket_zero,dummy_quanta,dummy_oper);
-      
+
       // Construct generic HRR and add it to the stack instead of this HRR
       typedef HRR<DummyIntegral,F,part,loc_a,pos_a,loc_b,pos_b> DummyHRR;
       SafePtr<DummyHRR> dummy_hrr = DummyHRR::Instance(dummy_integral,dir_);
@@ -354,18 +359,13 @@ namespace libint2 {
         assert(false);
       }
 
-      // can move across operator only if it's multiplicative
-      if (loc_a != loc_b && !Oper::Properties::multiplicative) {
-        assert(false);
-      }
-
       // Cannot apply when a and b are the same
       if (loc_a == loc_b && pos_a == pos_b) {
         assert(false);
       }
 #endif
     }
-          
+
   template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
@@ -391,15 +391,15 @@ namespace libint2 {
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::generate_label() const
     {
       ostringstream os;
-      
+
       os << "HRR Part " << part << " "
       << (loc_a == InBra ? "bra" : "ket") << " " << pos_a << "  "
       << (loc_b == InBra ? "bra" : "ket") << " " << pos_b << " ";
-      
+
       if (loc_a == InBra) {
         F sh_a(target_->bra(part,pos_a));
         os << sh_a.label() << " ";
-        
+
         if (loc_b == InBra) {
           F sh_b(target_->bra(part,pos_b));
           os << sh_b.label();
@@ -412,7 +412,7 @@ namespace libint2 {
       else {
         F sh_a(target_->ket(part,pos_a));
         os << sh_a.label() << " ";
-        
+
         if (loc_b == InBra) {
           F sh_b(target_->bra(part,pos_b));
           os << sh_b.label();
@@ -422,10 +422,10 @@ namespace libint2 {
           os << sh_b.label();
         }
       }
-      
+
       return os.str();
     }
-    
+
   template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
@@ -467,12 +467,12 @@ namespace libint2 {
       // Use TaskParameters to keep track of maximum hsr
       LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
       taskmgr.current().params()->max_hrr_hsrank(hsr);
-      
+
       // can only do a simple bra->ket or ket->bra transfer so far
       unsigned int isr = 1;
       if (loc_a == loc_b && pos_a != 0 && pos_b != 0)
         throw CodeDoesNotExist("HRR::spfunction_call -- has not been generalized yet");
-      
+
       /// WARNING !!!
       unsigned int lsr = 1;
       unsigned int np = IntType::OperType::Properties::np;
@@ -492,7 +492,7 @@ namespace libint2 {
       }
       // Use TaskParameters to keep track of maximum hsr
       taskmgr.current().params()->max_hrr_hsrank(hsr);
-      
+
       if (expl_high_dim())
         os << "," << hsr;
       if (expl_low_dim())
@@ -500,7 +500,7 @@ namespace libint2 {
       os << ")" << context->end_of_stat() << endl;
       return os.str();
     }
-  
+
   template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
@@ -513,7 +513,7 @@ namespace libint2 {
         high = false;
       return high;
     }
-  
+
   template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
@@ -526,7 +526,7 @@ namespace libint2 {
         low = false;
       return low;
     }
-  
+
   template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
@@ -553,7 +553,7 @@ namespace libint2 {
       SafePtr<ImplicitDimensions> localdims(new ImplicitDimensions(high_dim,low_dim,dims->vecdim()));
       return localdims;
     }
-  
+
 };
 
 #endif

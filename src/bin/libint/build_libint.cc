@@ -62,7 +62,7 @@ static void build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParam
                                 SafePtr<Libint2Iface>& iface);
 static void build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
 			       SafePtr<Libint2Iface>& iface);
-static void build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+static void build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
 static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
 
@@ -82,7 +82,7 @@ void try_main (int argc, char* argv[])
   taskmgr.add("geng12");
 #endif
 #ifdef INCLUDE_G12DKH
-  taskmgr.add("r12_024_g12");
+  taskmgr.add("g12dkh");
 #endif
   
   // use default parameters
@@ -101,8 +101,8 @@ void try_main (int argc, char* argv[])
   cparams->max_am_opt("geng12",GENG12_OPT_AM);
 #endif
 #ifdef INCLUDE_G12DKH
-  cparams->max_am("r12_024_g12",G12DKH_MAX_AM);
-  cparams->max_am_opt("r12_024_g12",G12DKH_OPT_AM);
+  cparams->max_am("g12dkh",G12DKH_MAX_AM);
+  cparams->max_am_opt("g12dkh",G12DKH_OPT_AM);
 #endif
 #if LIBINT_ENABLE_UNROLLING
   cparams->unroll_threshold(1000000000);
@@ -166,7 +166,7 @@ void try_main (int argc, char* argv[])
   build_GenG12_2b_2k(os,cparams,iface);
 #endif
 #ifdef INCLUDE_G12DKH
-  build_R12_024_G12_2b_2k(os,cparams,iface);
+  build_G12DKH_2b_2k(os,cparams,iface);
 #endif
   
   // Generate code for the set-level RRs
@@ -722,10 +722,10 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 
 #ifdef INCLUDE_G12DKH
 void
-build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface)
 {
-  const std::string task("r12_024_g12");
+  const std::string task("g12dkh");
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
   for(int l=0; l<=lmax; l++) {
@@ -735,7 +735,7 @@ build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& 
   
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
-  iface->to_params(iface->macro_define("MAX_AM_R12_024_G12",lmax));
+  iface->to_params(iface->macro_define("MAX_AM_G12DKH",lmax));
   
   //
   // Construct graphs for each desired target integral and
@@ -761,11 +761,7 @@ build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& 
           bool ssss = false;
           if (la+lb+lc+ld == 0)
             ssss = true;
-          if (ssss) continue;
 
-      //if (la != 1 || lb != 0 || lc != 1 || ld != 1)
-      //  continue;
-          
           // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
@@ -779,24 +775,36 @@ build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& 
           
           // k=0
           if (!ssss) {
-            typedef R12kG12_11_11<CGShell,0> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            typedef R12kG12_11_11_sq int_type;
+            typedef R12kG12 oper_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(0));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
           // k=2
           if (!ssss) {
-            typedef R12kG12_11_11<CGShell,2> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            typedef R12kG12_11_11_sq int_type;
+            typedef R12kG12 oper_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(2));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
           // k=4
           if (!ssss) {
-            typedef R12kG12_11_11<CGShell,4> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
+            typedef R12kG12_11_11_sq int_type;
+            typedef R12kG12 oper_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(4));
+            os << "building " << abcd->description() << endl;
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+          // (G12prime.Div)^2
+          if (true) {
+            typedef DivG12prime_xTx_11_11_sq int_type;
+            typedef int_type::OperType oper_type;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u);
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -835,7 +843,7 @@ build_R12_024_G12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& 
           tparams->max_ntarget(3);
 
           ostringstream oss;
-          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_r12_024_g12[" << la << "][" << lb << "][" << lc << "]["
+          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_g12dkh[" << la << "][" << lb << "][" << lc << "]["
               << ld <<"] = " << context->label_to_name(label_to_funcname(label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());

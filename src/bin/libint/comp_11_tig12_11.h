@@ -25,7 +25,7 @@ namespace libint2 {
       typedef GenIntegralSet_11_11<BFSet,R12kG12,mType> ChildType;
       typedef GenericRecurrenceRelation<ThisType,BFSet,TargetType,ChildType> ParentType;
       friend class GenericRecurrenceRelation<ThisType,BFSet,TargetType,ChildType>;
-      static const unsigned int max_nchildren = 19;
+      static const unsigned int max_nchildren = 16;
 
       using ParentType::Instance;
     private:
@@ -58,9 +58,6 @@ namespace libint2 {
       F c(Tint->bra(1,0));
       F d(Tint->ket(1,0));
 
-      // TODO rederive compute relationship as [Ti,G12] = -1/2 [\nabla,[\nabla,G12]] - [\nabla,G12] \cdot \nabla
-      //throw std::logic_error("CR_11_TiG12_11 has not yet been re-implemented");
-      
       // [T1,G12]
       if (i == 0) {
         ParentType::wedge(_pbra(a,c) , R12vec_dot_Nabla1(_pket(b,d)), mType(0u), R12kG12(0));
