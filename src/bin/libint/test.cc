@@ -13,7 +13,8 @@
 #include <intset_to_ints.h>
 #include <strategy.h>
 #include <buildtest.h>
-#include <master.h>
+#include <master_ints_list.h>
+#include <master_rrs_list.h>
 
 using namespace std;
 using namespace libint2;

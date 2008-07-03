@@ -1,11 +1,11 @@
 
-#include <vector>
-#include <typelist.h>
-#include <smart_ptr.h>
-#include <global_macros.h>
-
 #ifndef _libint2_src_bin_libint_quanta_h_
 #define _libint2_src_bin_libint_quanta_h_
+
+#include <vector>
+#include <smart_ptr.h>
+#include <global_macros.h>
+#include <iter.h>
 
 using namespace std;
 
@@ -19,6 +19,7 @@ namespace libint2 {
   class QuantumSet : public ConstructablePolymorphically,
                      public Hashable<LIBINT2_UINT_LEAST64,ComputeKey> {
   public:
+    typedef DummyIterator iter_type;
     /// Quantum numbers lie in range [0,max_quantum_number)
     static const LIBINT2_UINT_LEAST64 max_quantum_number = 100;
     
@@ -367,12 +368,10 @@ namespace libint2 {
     
   };
 
-  /// This is the implementation of the QuantumNumbers concept used by TwoPrep_11_11
-  // really need to have typedef template!
+  /// Default implementation of QuantumNumbers
   template <typename T, unsigned int N>
     struct DefaultQuantumNumbers {
       /// This defines which QuantumNumbers implementation to use
-      //typedef QuantumNumbers<T,N> Result;
       typedef QuantumNumbersA<T,N> Result;
     };
   /**

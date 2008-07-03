@@ -6,7 +6,8 @@
 #include <hashable.h>
 #include <global_macros.h>
 #include <util.h>
-#include <boost/tuple/tuple.hpp>
+#include <iter.h>
+#include <vectorn.h>
 
 namespace libint2 {
 
@@ -35,6 +36,7 @@ namespace libint2 {
   */
   class OperSet : public ConstructablePolymorphically {
     public:
+      typedef DummyIterator iter_type;
       virtual ~OperSet() {};
 
       /// Returns full human-readable description of the operator
@@ -234,16 +236,15 @@ namespace libint2 {
   class R12k_R12l_G12_Descr {
   public:
     typedef MultiplicativeSymm2Body_Props Properties;
-    typedef boost::tuple<int,int,int> IntVec3;
     static const int kmax = 4;
     R12k_R12l_G12_Descr(const IntVec3& K, const IntVec3& L) : K_(K), L_(L) { }
     R12k_R12l_G12_Descr(const R12k_R12l_G12_Descr& a) : K_(a.K_), L_(a.L_) {}
+    const IntVec3& K() const { return K_; }
+    const IntVec3& L() const { return L_; }
     static const unsigned int max_key = kmax * kmax * kmax * kmax * kmax * kmax;
     unsigned int key() const;
     std::string description() const { return label_(K_,L_); }
     std::string label() const { return symbol_(K_,L_); }
-    int K(int xyz) const;
-    int L(int xyz) const;
     int psymm(int i, int j) const;
     int hermitian(int i) const;
   private:

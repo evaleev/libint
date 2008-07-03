@@ -16,6 +16,8 @@ using namespace std;
 
 namespace libint2 {
 
+  struct DummyIterator;
+  
   /** Iterator provides a base class for all object iterator classes. It iterates over
       certain objects as if they were sets of some other data. For example, Iterator can
       be implemented for iterating over Gaussian functions within shells, or over integrals within shell

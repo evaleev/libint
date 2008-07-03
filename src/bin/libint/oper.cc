@@ -28,49 +28,27 @@ R12_k_G12_Descr::symbol_(int K)
 
 ////////////
 
-int
-R12k_R12l_G12_Descr::K(int xyz) const {
-  switch(xyz) {
-    case 0: return get<0>(K_);
-    case 1: return get<1>(K_);
-    case 2: return get<2>(K_);
-    default: throw ProgrammingError("R12k_R12l_G12_Descr::K -- argument out of range");
-  }
-  return 0;
-}
-
-int
-R12k_R12l_G12_Descr::L(int xyz) const {
-  switch(xyz) {
-    case 0: return get<0>(L_);
-    case 1: return get<1>(L_);
-    case 2: return get<2>(L_);
-    default: throw ProgrammingError("R12k_R12l_G12_Descr::L -- argument out of range");
-  }
-  return 0;
-}
-
 unsigned int
 R12k_R12l_G12_Descr::key() const {
   unsigned int k =  
-    (((((get<0>(K_)*kmax
-    +get<1>(K_))*kmax
-    +get<2>(K_))*kmax
-    +get<0>(L_))*kmax
-    +get<1>(L_))*kmax
-    +get<2>(L_));
+    (((((K_[0]*kmax
+    +K_[1])*kmax
+    +K_[2])*kmax
+    +L_[0])*kmax
+    +L_[1])*kmax
+    +L_[2]);
 }
 
 std::string
 R12k_R12l_G12_Descr::label_(const IntVec3& K, const IntVec3& L)
 {
   ostringstream oss;
-  oss << "(R12x^" << get<0>(K)
-      << "*R12y^" << get<1>(K)
-      << "*R12z^" << get<2>(K) << ")*"
-      << "(R12x^" << get<0>(L)
-      << "*R12y^" << get<1>(L)
-      << "*R12z^" << get<2>(L) << ") * G12";
+  oss << "(R12x^" << K[0]
+      << "*R12y^" << K[1]
+      << "*R12z^" << K[2] << ")*"
+      << "(R12x^" << L[0]
+      << "*R12y^" << L[1]
+      << "*R12z^" << L[2] << ") * G12";
   return oss.str();
 }
 
@@ -78,12 +56,12 @@ std::string
 R12k_R12l_G12_Descr::symbol_(const IntVec3& K, const IntVec3& L)
 {
   ostringstream oss;
-  oss << "(R12x" << get<0>(K)
-      << "_R12y" << get<1>(K)
-      << "_R12z" << get<2>(K) << "__"
-      << "R12x" << get<0>(L)
-      << "_R12y" << get<1>(L)
-      << "_R12z" << get<2>(L) << "__G12";
+  oss << "(R12x" << K[0]
+      << "_R12y" << K[1]
+      << "_R12z" << K[2] << "__"
+      << "R12x" << L[0]
+      << "_R12y" << L[1]
+      << "_R12z" << L[2] << "__G12";
   return oss.str();
 }
 

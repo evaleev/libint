@@ -102,8 +102,9 @@ namespace libint2 {
       // Do post-construction duties
       if (this_ptr->num_children() != 0) {
         this_ptr->register_with_rrstack<ThisType>();
+        return this_ptr;
       }
-      return this_ptr;
+      return SafePtr<ThisType>();
     }
   
   template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>

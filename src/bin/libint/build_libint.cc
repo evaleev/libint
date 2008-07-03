@@ -19,21 +19,17 @@
 #include <rr.h>
 #include <dg.h>
 #include <dg.templ.h>
-#include <typelist.h>
 #include <integral.h>
 #include <iter.h>
 #include <policy_spec.h>
-#include <intset_to_ints.h>
 #include <strategy.h>
 #include <iface.h>
-#include <r1dotr1g12_11_11.h>
-#include <r1dotr2g12_11_11.h>
-#include <tig12_11_11.h>
 #include <graph_registry.h>
 #include <task.h>
 #include <extract.h>
+#include <dims.h>
 
-#include <master.h>
+#include <master_ints_list.h>
 
 using namespace std;
 using namespace libint2;

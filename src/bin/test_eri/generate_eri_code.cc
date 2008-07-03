@@ -2,7 +2,7 @@
 #include <iostream>
 #include <libint/buildtest.h>
 #include <libint/bfset.h>
-#include <libint/master.h>
+#include <libint/master_ints_list.h>
 
 using namespace libint2;
 

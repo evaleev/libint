@@ -15,16 +15,14 @@ namespace libint2 {
   template <class BFSet>
     class CR_11_DivG12prime_xTx_11 : public GenericRecurrenceRelation< CR_11_DivG12prime_xTx_11<BFSet>,
                                                              BFSet,
-                                                             GenIntegralSet_11_11<BFSet,DivG12prime_xTx,mType>,
-                                                             GenIntegralSet_11_11<BFSet,R12kG12,mType> >
+                                                             GenIntegralSet_11_11<BFSet,DivG12prime_xTx,mType> >
     {
     public:
       typedef CR_11_DivG12prime_xTx_11 ThisType;
       typedef BFSet BasisFunctionType;
       typedef GenIntegralSet_11_11<BFSet,DivG12prime_xTx,mType> TargetType;
-      typedef GenIntegralSet_11_11<BFSet,R12kG12,mType> ChildType;
-      typedef GenericRecurrenceRelation<ThisType,BFSet,TargetType,ChildType> ParentType;
-      friend class GenericRecurrenceRelation<ThisType,BFSet,TargetType,ChildType>;
+      typedef GenericRecurrenceRelation<ThisType,BFSet,TargetType> ParentType;
+      friend class GenericRecurrenceRelation<ThisType,BFSet,TargetType>;
       static const unsigned int max_nchildren = 100;
 
       using ParentType::Instance;
@@ -36,6 +34,8 @@ namespace libint2 {
 
       /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
       CR_11_DivG12prime_xTx_11(const SafePtr<TargetType>&, unsigned int dir);
+      /// This relation is not directional
+      static bool directional() { return false; }
       static std::string descr() { return "CR"; }
 
     };
@@ -54,9 +54,11 @@ namespace libint2 {
       F c(Tint->bra(1,0));
       F d(Tint->ket(1,0));
 
-      // |Nabla1.G12' ac ) |Nabla1.G12' bd )
+      // |Nabla1.G12' ac ) ^ |Nabla1.G12' bd )
       {
-        ParentType::wedge( R12vec_dot_Nabla1(_pbra(a,c)) , R12vec_dot_Nabla1(_pket(b,d)), mType(0u), R12kG12(0));
+        typedef GenIntegralSet_11_11<BasisFunctionType,R12kG12,mType> R12kG12Integral;
+        ChildFactory<ThisType,R12kG12Integral> factory(this);
+        factory.wedge( R12vec_dot_Nabla1(_pbra(a,c)) , R12vec_dot_Nabla1(_pket(b,d)), mType(0u), R12kG12(0));
         if (is_simple()) expr_ *= Scalar(4.0) * Scalar("gamma_bra") * Scalar("gamma_ket");
       }
 

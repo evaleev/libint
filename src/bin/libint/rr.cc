@@ -6,6 +6,11 @@
 #include <code.h>
 #include <graph_registry.h>
 #include <extract.h>
+#include <algebra.h>
+#include <context.h>
+#include <integral.h>
+#include <task.h>
+#include <prefactors.h>
 
 using namespace libint2;
 

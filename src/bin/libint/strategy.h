@@ -1,14 +1,6 @@
 
 #include <smart_ptr.h>
 #include <tactic.h>
-#include <intset_to_ints.h>
-#include <vrr_11_twoprep_11.h>
-#include <vrr_11_r12kg12_11.h>
-#include <comp_11_tig12_11.h>
-#include <comp_11_r1dotr1g12_11.h>
-#include <comp_11_r2dotr2g12_11.h>
-#include <comp_11_r1dotr2g12_11.h>
-#include <hrr.h>
 #include <global_macros.h>
 #include <graph_registry.h>
 

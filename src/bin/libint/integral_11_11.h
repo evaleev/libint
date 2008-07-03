@@ -176,7 +176,7 @@ namespace libint2 {
     {
       return false;
     }
-  
+
 };
 
 #endif

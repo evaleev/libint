@@ -6,6 +6,7 @@
 #include <dg.h>
 #include <strategy.h>
 #include <iface.h>
+#include <dims.h>
 #include <graph_registry.h>
 
 #ifndef _libint2_src_bin_libint_buildtest_h_

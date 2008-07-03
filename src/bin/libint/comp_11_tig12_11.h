@@ -15,17 +15,15 @@ namespace libint2 {
   template <class BFSet>
     class CR_11_TiG12_11 : public GenericRecurrenceRelation< CR_11_TiG12_11<BFSet>,
                                                              BFSet,
-                                                             GenIntegralSet_11_11<BFSet,TiG12,mType>,
-                                                             GenIntegralSet_11_11<BFSet,R12kG12,mType> >
+                                                             GenIntegralSet_11_11<BFSet,TiG12,mType> >
     {
     public:
       typedef CR_11_TiG12_11 ThisType;
       typedef BFSet BasisFunctionType;
       typedef GenIntegralSet_11_11<BFSet,TiG12,mType> TargetType;
-      typedef GenIntegralSet_11_11<BFSet,R12kG12,mType> ChildType;
-      typedef GenericRecurrenceRelation<ThisType,BFSet,TargetType,ChildType> ParentType;
-      friend class GenericRecurrenceRelation<ThisType,BFSet,TargetType,ChildType>;
-      static const unsigned int max_nchildren = 16;
+      typedef GenericRecurrenceRelation<ThisType,BFSet,TargetType> ParentType;
+      friend class GenericRecurrenceRelation<ThisType,BFSet,TargetType>;
+      static const unsigned int max_nchildren = 8;
 
       using ParentType::Instance;
     private:
@@ -36,6 +34,8 @@ namespace libint2 {
 
       /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
       CR_11_TiG12_11(const SafePtr<TargetType>&, unsigned int dir);
+      /// This relation is not directional
+      static bool directional() { return false; }
       static std::string descr() { return "CR"; }
 
     };
@@ -45,6 +45,8 @@ namespace libint2 {
                                       unsigned int dir) :
     ParentType(Tint,dir)
     {
+      if (dir != 0)
+        return;
       using namespace libint2::algebra;
       using namespace libint2::prefactor;
       using namespace libint2::braket;
@@ -60,20 +62,32 @@ namespace libint2 {
 
       // [T1,G12]
       if (i == 0) {
-        ParentType::wedge(_pbra(a,c) , R12vec_dot_Nabla1(_pket(b,d)), mType(0u), R12kG12(0));
+        typedef GenIntegralSet_11_11<BasisFunctionType,R12kR12lG12,EmptySet> R12kR12lG12Integral;
+        ChildFactory<ThisType,R12kR12lG12Integral> make_r12kr12lg12(this);
+        for(int xyz=0; xyz<3; ++xyz) {
+          R12k_R12l_G12_Descr descr(IntVec3(),unit_intvec3(xyz));
+          make_r12kr12lg12.wedge(_pbra(a,c) , Nabla1(_pket(b,d),xyz), EmptySet(), R12kR12lG12(descr));
+        }
         if (is_simple()) expr_ *= Scalar(2.0) * Scalar("gamma");
       }
       // [T2,G12]
       if (i == 1) {
-        ParentType::wedge(_pbra(a,c) , R12vec_dot_Nabla2(_pket(b,d)), mType(0u), R12kG12(0));
+        typedef GenIntegralSet_11_11<BasisFunctionType,R12kR12lG12,EmptySet> R12kR12lG12Integral;
+        ChildFactory<ThisType,R12kR12lG12Integral> make_r12kr12lg12(this);
+        for(int xyz=0; xyz<3; ++xyz) {
+          R12k_R12l_G12_Descr descr(IntVec3(),unit_intvec3(xyz));
+          make_r12kr12lg12.wedge(_pbra(a,c) , Nabla2(_pket(b,d),xyz), EmptySet(), R12kR12lG12(descr));
+        }
         if (is_simple()) expr_ *= Scalar(-2.0) * Scalar("gamma");
       }
-
-      const SafePtr<ChildType>& ab_G0_cd = make_child(a,b,c,d,0u,G0);
+      
+      typedef GenIntegralSet_11_11<BasisFunctionType,R12kG12,mType> R12kG12Integral;
+      ChildFactory<ThisType,R12kG12Integral> make_r12kg12(this);
+      const SafePtr<DGVertex>& ab_G0_cd = make_r12kg12.make_child(a,b,c,d,0u,G0);
       if (is_simple())
         expr_ += Scalar(3.0) * Scalar("gamma") * ab_G0_cd;
 
-      const SafePtr<ChildType>& ab_G2_cd = make_child(a,b,c,d,0u,G2);
+      const SafePtr<DGVertex>& ab_G2_cd = make_r12kg12.make_child(a,b,c,d,0u,G2);
       if (is_simple())
         expr_ += Scalar(-2.0) * Scalar("gamma") * Scalar("gamma") * ab_G2_cd;
       

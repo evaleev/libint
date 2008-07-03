@@ -11,6 +11,11 @@
 #include <graph_registry.h>
 #include <global_macros.h>
 #include <extract.h>
+#include <algebra.h>
+#include <task.h>
+#include <context.h>
+#include <intset_to_ints.h>
+#include <dims.h>
 
 using namespace std;
 using namespace libint2;

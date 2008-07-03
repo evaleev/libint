@@ -119,8 +119,9 @@ namespace libint2 {
       // Do post-construction duties
       if (this_ptr->num_children() != 0) {
         this_ptr->register_with_rrstack();
+        return this_ptr;
       }
-      return this_ptr;
+      return SafePtr<ThisType>();
     }
 
   template <class IntType, class F, int part,

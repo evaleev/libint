@@ -1,14 +1,14 @@
 
-#include <vector>
-#include <typelist.h>
-#include <smart_ptr.h>
-#include <traits.h>
-
 #ifndef _libint2_src_bin_libint_policy_h_
 #define _libint2_src_bin_libint_policy_h_
 
-using namespace std;
+#include <vector>
+#include <smart_ptr.h>
+#include <traits.h>
 
+#include <boost/type_traits/is_same.hpp>
+
+using namespace std;
 
 namespace libint2 {
 
@@ -52,12 +52,12 @@ namespace libint2 {
       static void init_subobj(const obj_stype& obj, vector<subobj_stype>& subobj)
       {
         // If types are not the same then this function should not be used -- user must provide a specialization
-        ExistsDefaultSubobjAllocator< T, IsSameType<obj_type,subobj_type>::value >::default_init_subobj(obj,subobj);
+        ExistsDefaultSubobjAllocator< T, boost::is_same<obj_type,subobj_type>::value >::default_init_subobj(obj,subobj);
       }
       static void dealloc_subobj(vector<subobj_stype>& subobj)
       {
         // If types are not the same then this function should not be used -- user must provide a specialization
-        ExistsDefaultSubobjAllocator< T, IsSameType<obj_type,subobj_type>::value >::default_dealloc_subobj(subobj);
+        ExistsDefaultSubobjAllocator< T, boost::is_same<obj_type,subobj_type>::value >::default_dealloc_subobj(subobj);
       }
     };
 

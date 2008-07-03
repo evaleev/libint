@@ -15,16 +15,14 @@ namespace libint2 {
     template <class BFSet, int part, FunctionPosition where>
       class VRR_11_TwoPRep_11 : public GenericRecurrenceRelation< VRR_11_TwoPRep_11<BFSet,part,where>,
                                                                   BFSet,
-                                                                  GenIntegralSet_11_11<BFSet,TwoPRep,mType>,
                                                                   GenIntegralSet_11_11<BFSet,TwoPRep,mType> >
     {
     public:
       typedef VRR_11_TwoPRep_11 ThisType;
       typedef BFSet BasisFunctionType;
       typedef GenIntegralSet_11_11<BFSet,TwoPRep,mType> TargetType;
-      typedef TargetType ChildType;
-      typedef GenericRecurrenceRelation<ThisType,BFSet,TargetType,ChildType> ParentType;
-      friend class GenericRecurrenceRelation<ThisType,BFSet,TargetType,ChildType>;
+      typedef GenericRecurrenceRelation<ThisType,BFSet,TargetType> ParentType;
+      friend class GenericRecurrenceRelation<ThisType,BFSet,TargetType>;
       static const unsigned int max_nchildren = 8;
 
       using ParentType::Instance;
@@ -36,6 +34,8 @@ namespace libint2 {
 
       /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
       VRR_11_TwoPRep_11(const SafePtr<TargetType>&, unsigned int dir);
+      /// Default directionality
+      static bool directional() { return ParentType::default_directional(); }
 
       static std::string descr() { return "OSVRR"; }
       /** Re-Implementation of GenericRecurrenceRelation::generate_label():
@@ -72,6 +72,9 @@ namespace libint2 {
       const unsigned int m = Tint->aux()->elem(0);
       const F& _1 = unit<F>(dir);
 
+      typedef TargetType ChildType;
+      ChildFactory<ThisType,ChildType> factory(this);
+
       // Build on A
       if (part == 0 && where == InBra) {
         F a(Tint->bra(0,0) - _1);
@@ -80,32 +83,32 @@ namespace libint2 {
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
-        //const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
-        const SafePtr<ChildType>& ABCD_m = make_child( _cbra(a,b) ^ _cket(c,d),m);
-        //const SafePtr<ChildType>& ABCD_m = make_child( _pbra(a,c) ^ _pket(b,d),m);
-        const SafePtr<ChildType>& ABCD_mp1 = make_child(a,b,c,d,m+1);
+        const SafePtr<DGVertex>& ABCD_m = factory.make_child(a,b,c,d,m);
+        //const SafePtr<DGVertex>& ABCD_m = factory.make_child( _cbra(a,b) ^ _cket(c,d),m);
+        //const SafePtr<DGVertex>& ABCD_m = factory.make_child( _pbra(a,c) ^ _pket(b,d),m);
+        const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
         if (is_simple()) { expr_ = Vector("PA")[dir] * ABCD_m + Vector("WP")[dir] * ABCD_mp1;  nflops_+=3; }
 
         const F& am1 = a - _1;
         if (exists(am1)) {
-          const SafePtr<ChildType>& Am1BCD_m = make_child(am1,b,c,d,m);
-          const SafePtr<ChildType>& Am1BCD_mp1 = make_child(am1,b,c,d,m+1);
+          const SafePtr<DGVertex>& Am1BCD_m = factory.make_child(am1,b,c,d,m);
+          const SafePtr<DGVertex>& Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
           if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
-          const SafePtr<ChildType>& ABm1CD_m = make_child(a,bm1,c,d,m);
-          const SafePtr<ChildType>& ABm1CD_mp1 = make_child(a,bm1,c,d,m+1);
+          const SafePtr<DGVertex>& ABm1CD_m = factory.make_child(a,bm1,c,d,m);
+          const SafePtr<DGVertex>& ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
           if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
         }
         const F& cm1 = c - _1;
         if (exists(cm1)) {
-          const SafePtr<ChildType>& ABCm1D_mp1 = make_child(a,b,cm1,d,m+1);
+          const SafePtr<DGVertex>& ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
           if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
-          const SafePtr<ChildType>& ABCDm1_mp1 = make_child(a,b,c,dm1,m+1);
+          const SafePtr<DGVertex>& ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
           if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
         }
         return;
@@ -118,30 +121,30 @@ namespace libint2 {
         if (!exists(c)) return;
         F d(Tint->ket(1,0));
 
-        const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
-        const SafePtr<ChildType>& ABCD_mp1 = make_child(a,b,c,d,m+1);
+        const SafePtr<DGVertex>& ABCD_m = factory.make_child(a,b,c,d,m);
+        const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
         if (is_simple()) { expr_ = Vector("QC")[dir] * ABCD_m + Vector("WQ")[dir] * ABCD_mp1;  nflops_+=3; }
 
         const F& cm1 = c - _1;
         if (exists(cm1)) {
-          const SafePtr<ChildType>& ABCm1D_m = make_child(a,b,cm1,d,m);
-          const SafePtr<ChildType>& ABCm1D_mp1 = make_child(a,b,cm1,d,m+1);
+          const SafePtr<DGVertex>& ABCm1D_m = factory.make_child(a,b,cm1,d,m);
+          const SafePtr<DGVertex>& ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
           if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
-          const SafePtr<ChildType>& ABCDm1_m = make_child(a,b,c,dm1,m);
-          const SafePtr<ChildType>& ABCDm1_mp1 = make_child(a,b,c,dm1,m+1);
+          const SafePtr<DGVertex>& ABCDm1_m = factory.make_child(a,b,c,dm1,m);
+          const SafePtr<DGVertex>& ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
           if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
         }
         const F& am1 = a - _1;
         if (exists(am1)) {
-          const SafePtr<ChildType>& Am1BCD_mp1 = make_child(am1,b,c,d,m+1);
+          const SafePtr<DGVertex>& Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
           if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
-          const SafePtr<ChildType>& ABm1CD_mp1 = make_child(a,bm1,c,d,m+1);
+          const SafePtr<DGVertex>& ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
           if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
         }
         return;
