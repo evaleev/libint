@@ -44,6 +44,9 @@ build_libint: $(BUILDCXXOBJ) $(LIBTARGET)
 
 depend:: $(TESTCXXDEP) $(BUILDCXXDEP) $(LIBCXXDEP)
 
+run_test:: test
+	./test
+
 test: $(TESTCXXOBJ) $(LIBTARGET) buildtest.o
 	$(CXX) -o $@ $(LDFLAGS) $^
 
