@@ -148,8 +148,11 @@ void try_main (int argc, char* argv[])
   
   print_header(os);
   print_config(os);
-  // add static configuration parameters to the API
+  // transfer some configuration parameters to the generated library API
   iface->to_params(iface->macro_define("CGSHELL_ORDERING",LIBINT_CGSHELL_ORDERING));
+  iface->to_params(iface->macro_define("CGSHELL_ORDERING_STANDARD",LIBINT_CGSHELL_ORDERING_STANDARD));
+  iface->to_params(iface->macro_define("CGSHELL_ORDERING_INTV3",LIBINT_CGSHELL_ORDERING_INTV3));
+  iface->to_params(iface->macro_define("CGSHELL_ORDERING_GAMESS",LIBINT_CGSHELL_ORDERING_GAMESS));
   cparams->print(os);
 
 #ifdef INCLUDE_ERI

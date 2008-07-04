@@ -18,8 +18,8 @@ namespace libint2 {
     if (BKType == CBra || BKType == CKet)
       throw std::logic_error("R12vec_dot_Nabla1 can only be applied to physicists brakets");
 
-    const char* zeta = (BKType == CBra) ? "zeta_A" : "zeta_B";
-    const char* XY = (BKType == CBra) ? "AC" : "BD";
+    const char* zeta = (BKType == PBra) ? "zeta_A" : "zeta_B";
+    const char* XY = (BKType == PBra) ? "AC" : "BD";
     
     const F& f = bkt[0];
     const F& g = bkt[1];
@@ -66,8 +66,8 @@ namespace libint2 {
     if (BKType == CBra || BKType == CKet)
       throw std::logic_error("R12vec_dot_Nabla2 can only be applied to physicists brakets");
 
-    const char* zeta = (BKType == CBra) ? "zeta_C" : "zeta_D";
-    const char* XY = (BKType == CBra) ? "AC" : "BD";
+    const char* zeta = (BKType == PBra) ? "zeta_C" : "zeta_D";
+    const char* XY = (BKType == PBra) ? "AC" : "BD";
     
     const F& f = bkt[0];
     const F& g = bkt[1];
@@ -114,7 +114,7 @@ namespace libint2 {
     if (BKType == CBra || BKType == CKet)
       throw std::logic_error("Nabla1 can only be applied to physicists brakets");
 
-    const char* zeta = (BKType == CBra) ? "zeta_A" : "zeta_B";
+    const char* zeta = (BKType == PBra) ? "zeta_A" : "zeta_B";
     
     const F& f = bkt[0];
     const F& g = bkt[1];
@@ -147,7 +147,7 @@ namespace libint2 {
     if (BKType == CBra || BKType == CKet)
       throw std::logic_error("Nabla2 can only be applied to physicists brakets");
 
-    const char* zeta = (BKType == CBra) ? "zeta_C" : "zeta_D";
+    const char* zeta = (BKType == PBra) ? "zeta_C" : "zeta_D";
     
     const F& f = bkt[0];
     const F& g = bkt[1];
@@ -181,7 +181,7 @@ namespace libint2 {
     if (BKType == CBra || BKType == CKet)
       throw std::logic_error("R12v can only be applied to physicists brakets");
 
-    const char* XY = (BKType == CBra) ? "AC" : "BD";
+    const char* XY = (BKType == PBra) ? "AC" : "BD";
     
     const F& f = bkt[0];
     const F& g = bkt[1];

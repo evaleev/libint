@@ -9,75 +9,27 @@ TOPOBJDIR = $(shell ls -d `pwd`/$(TOPDIR))
 NAME = libint
 VERSION = 2
 NAMEV = $(NAME)$(VERSION)
-TARGET = $(NAME)$(VERSION).$(LIBSUF)
+TARGET = $(NAMEV).$(LIBSUF)
 
 include $(TOPDIR)/MakeVars
 include $(TOPDIR)/MakeRules
 include $(TOPDIR)/MakeSuffixRules
 VPATH = $(SRCTOPDIR)/src $(SRCTOPDIR)/include
 
-#
-# List all generated routines. Do it in a safe way in case the list is too long
-#
-TRUESRC0 = $(shell echo `ls src/__*.cc`)
-TRUESRC1 = $(shell echo `ls src/_aB*.cc`)
-TRUESRC2 = $(shell echo `ls src/OSVRR*.cc`)
-TRUESRC3 = $(shell echo `ls src/HRR*.cc`)
-TRUESRC4 = $(shell echo `ls src/libint2_*.cc`)
-TRUESRC5 = $(shell echo `ls src/VRR*.cc`)
-TRUESRC6 = $(shell echo `ls src/RR*.cc`)
-NSRC0 = $(shell echo $(TRUESRC0) | wc -w)
-NSRC1 = $(shell echo $(TRUESRC1) | wc -w)
-NSRC2 = $(shell echo $(TRUESRC2) | wc -w)
-NSRC3 = $(shell echo $(TRUESRC3) | wc -w)
-NSRC4 = $(shell echo $(TRUESRC4) | wc -w)
-NSRC5 = $(shell echo $(TRUESRC5) | wc -w)
-NSRC6 = $(shell echo $(TRUESRC6) | wc -w)
-LIBOBJ0 = $(TRUESRC0:%.cc=%.$(OBJSUF))
-LIBOBJ1 = $(TRUESRC1:%.cc=%.$(OBJSUF))
-LIBOBJ2 = $(TRUESRC2:%.cc=%.$(OBJSUF))
-LIBOBJ3 = $(TRUESRC3:%.cc=%.$(OBJSUF))
-LIBOBJ4 = $(TRUESRC4:%.cc=%.$(OBJSUF))
-LIBOBJ5 = $(TRUESRC5:%.cc=%.$(OBJSUF))
-LIBOBJ6 = $(TRUESRC6:%.cc=%.$(OBJSUF))
-LIBOBJ = $(LIBOBJ0) $(LIBOBJ1) $(LIBOBJ2) $(LIBOBJ3) $(LIBOBJ4) $(LIBOBJ5) $(LIBOBJ6)
+TRUESRC = $(shell echo `ls src/*.cc`)
+LIBOBJ = $(TRUESRC:%.cc=%.$(OBJSUF))
 
 default:: $(TOPDIR)/lib/$(TARGET)
 
 # this is how the static library is made
+# NOTE: add files to the archive one by one to avoid command-line overflow
 $(TOPDIR)/lib/$(NAMEV).a: $(LIBOBJ)
 	/bin/rm -f $@
-	@if test $(NSRC0) -gt 0; then \
-$(AR) $(ARFLAGS) $@ $(LIBOBJ0); \
-echo Added the following files to the library: $(LIBOBJ0); \
-fi
-	@if test $(NSRC1) -gt 0; then \
-$(AR) $(ARFLAGS) $@ $(LIBOBJ1); \
-echo Added the following files to the library: $(LIBOBJ1); \
-fi
-	@if test $(NSRC2) -gt 0; then \
-$(AR) $(ARFLAGS) $@ $(LIBOBJ2); \
-echo Added the following files to the library: $(LIBOBJ2); \
-fi
-	@if test $(NSRC3) -gt 0; then \
-$(AR) $(ARFLAGS) $@ $(LIBOBJ3); \
-echo Added the following files to the library: $(LIBOBJ3); \
-fi
-	@if test $(NSRC4) -gt 0; then \
-$(AR) $(ARFLAGS) $@ $(LIBOBJ4); \
-echo Added the following files to the library: $(LIBOBJ4); \
-fi
-	@if test $(NSRC5) -gt 0; then \
-$(AR) $(ARFLAGS) $@ $(LIBOBJ5); \
-echo Added the following files to the library: $(LIBOBJ5); \
-fi
-	@if test $(NSRC6) -gt 0; then \
-$(AR) $(ARFLAGS) $@ $(LIBOBJ6); \
-echo Added the following files to the library: $(LIBOBJ6); \
-fi
+	for i in $^; do \
+	  $(AR) $(ARFLAGS) $@ $${i}; \
+        done
 	$(RANLIB) $@
 
 # this is how shared library is made
 $(TOPDIR)/lib/$(NAMEV).la: $(LIBOBJ)
 	$(LTLINK) $(CXX) -o $@ $^ $(LTLINKLIBOPTS)
-

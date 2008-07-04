@@ -85,7 +85,7 @@
 /* how to vectorize */
 #undef LIBINT_VECTOR_METHOD
 
-/* Specifies the ordering of cartesian Gaussians in a shell. Allowed values are hardcoded -- see configure.in and src/bin/policy_spec.cc */
+/* Specifies the ordering of cartesian Gaussians in a shell. Allowed values are defined at the bottom of this file -- also see configure.in*/
 #undef LIBINT_CGSHELL_ORDERING
 
 /* User-defined float type */
@@ -111,5 +111,12 @@
 
 /* is shared_ptr in boost? */
 #undef HAVE_SHARED_PTR_IN_BOOST
+
+/*
+  Known orderings of cartesian functions
+*/
+#undef LIBINT_CGSHELL_ORDERING_STANDARD
+#undef LIBINT_CGSHELL_ORDERING_INTV3
+#undef LIBINT_CGSHELL_ORDERING_GAMESS
 
 #endif 

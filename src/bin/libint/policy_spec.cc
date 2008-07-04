@@ -35,7 +35,7 @@ namespace {
 namespace libint2 {
 
 #if 0
-#if LIBINT_CGSHELL_ORDERING == LIBINT__CGSHELL__ORDERING_STANDARD
+#if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_STANDARD
 template <>
 void
 StdLibintTDPolicy<CGShell>::init_subobj(const StdLibintTDPolicy<CGShell>::obj_stype& cgshell,
@@ -55,7 +55,7 @@ vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
   }
 }
 #endif
-#if LIBINT_CGSHELL_ORDERING == LIBINT__CGSHELL__ORDERING_INTV3
+#if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_INTV3
 template <>
 void
 StdLibintTDPolicy<CGShell>::init_subobj(const StdLibintTDPolicy<CGShell>::obj_stype& cgshell,
@@ -84,7 +84,7 @@ vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
 //
 // GAMESS ordering does not yet have FOR_CART macros defined in cgshell_ordering.h, hence must handle manually
 //
-#if LIBINT_CGSHELL_ORDERING == LIBINT__CGSHELL__ORDERING_GAMESS
+#if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_GAMESS
 template <>
 void
 StdLibintTDPolicy<CGShell>::init_subobj(const StdLibintTDPolicy<CGShell>::obj_stype& cgshell,
