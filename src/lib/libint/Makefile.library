@@ -8,18 +8,16 @@ TARGET_HEADERS = libint2.h libint2_params.h libint2_types.h libint2_iface.h
 
 INCLUDE += -I.
 
-TRUESRC = $(shell echo `ls *.cc`)
+TRUESRC = $(shell echo `find src -name '*.cc' -exec echo -n '{} ' \;`)
 LIBOBJ = $(TRUESRC:%.cc=%.$(OBJSUF))
 
 default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
 
 # this is how the static library is made
-# NOTE: add files to the archive one by one to avoid command-line overflow
+# NOTE: the library is made from scratch every time and the prerequisite variable is not used to avoid overflow
 $(TOPDIR)/lib/$(NAME).a: $(LIBOBJ)
 	/bin/rm -f $@
-	for i in $^; do \
-	  $(AR) $(ARFLAGS) $@ $${i}; \
-        done
+	find src -name '*.$(OBJSUF)' -print0 | xargs -0 $(AR) $(ARFLAGS) $@
 	$(RANLIB) $@
 
 # this is how shared library is made

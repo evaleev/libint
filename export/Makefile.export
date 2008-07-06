@@ -16,18 +16,16 @@ include $(TOPDIR)/MakeRules
 include $(TOPDIR)/MakeSuffixRules
 VPATH = $(SRCTOPDIR)/src $(SRCTOPDIR)/include
 
-TRUESRC = $(shell echo `ls src/*.cc`)
+TRUESRC = $(shell echo `find src -name '*.cc' -exec echo -n '{} ' \;`)
 LIBOBJ = $(TRUESRC:%.cc=%.$(OBJSUF))
 
 default:: $(TOPDIR)/lib/$(TARGET)
 
 # this is how the static library is made
-# NOTE: add files to the archive one by one to avoid command-line overflow
+# NOTE: the library is made from scratch every time and the prerequisite variable is not used to avoid overflow
 $(TOPDIR)/lib/$(NAMEV).a: $(LIBOBJ)
 	/bin/rm -f $@
-	for i in $^; do \
-	  $(AR) $(ARFLAGS) $@ $${i}; \
-        done
+	find src -name '*.$(OBJSUF)' -print0 | xargs -0 $(AR) $(ARFLAGS) $@
 	$(RANLIB) $@
 
 # this is how shared library is made
