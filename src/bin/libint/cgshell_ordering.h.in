@@ -3,6 +3,14 @@
 #define _libint2_src_bin_libint_cgshelordering_h_
 
 #include <libint2_config.h>
+/* if this is not defined, then using exported source -- redefine using macro from libint2_params.h */
+#ifndef LIBINT_CGSHELL_ORDERING
+# include <libint2_params.h>
+# define LIBINT_CGSHELL_ORDERING LIBINT2_CGSHELL_ORDERING
+# define LIBINT_CGSHELL_ORDERING_STANDARD LIBINT2_CGSHELL_ORDERING_STANDARD
+# define LIBINT_CGSHELL_ORDERING_INTV3 LIBINT2_CGSHELL_ORDERING_INTV3
+# define LIBINT_CGSHELL_ORDERING_GAMESS LIBINT2_CGSHELL_ORDERING_GAMESS
+#endif
 
 namespace libint2 {
 
@@ -13,12 +21,6 @@ namespace libint2 {
   };
 
 };
-
-/* if this is not defined, then using exported source -- redefine using macro from libint2_params.h */
-#ifndef LIBINT_CGSHELL_ORDERING
-# include <libint2_params.h>
-# define LIBINT_CGSHELL_ORDERING LIBINT2_CGSHELL_ORDERING
-#endif
 
 //
 // Macros common to all orderings
