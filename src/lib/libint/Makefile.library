@@ -8,7 +8,7 @@ TARGET_HEADERS = libint2.h libint2_params.h libint2_types.h libint2_iface.h
 
 INCLUDE += -I.
 
-TRUESRC = $(shell echo `find src -name '*.cc' -exec echo -n '{} ' \;`)
+TRUESRC = $(shell echo `find . -name '*.cc' -exec echo -n '{} ' \;`)
 LIBOBJ = $(TRUESRC:%.cc=%.$(OBJSUF))
 
 default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
@@ -17,7 +17,7 @@ default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
 # NOTE: the library is made from scratch every time and the prerequisite variable is not used to avoid overflow
 $(TOPDIR)/lib/$(NAME).a: $(LIBOBJ)
 	/bin/rm -f $@
-	find src -name '*.$(OBJSUF)' -print0 | xargs -0 $(AR) $(ARFLAGS) $@
+	find . -name '*.$(OBJSUF)' -print0 | xargs -0 $(AR) $(ARFLAGS) $@
 	$(RANLIB) $@
 
 # this is how shared library is made
