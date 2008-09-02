@@ -6,7 +6,7 @@
 #include <integral_11_11.h>
 #include <gaussoper.h>
 
-#define USE_R12kR12lG12 1
+#define USE_R12kR12lG12 0
 
 using namespace std;
 
@@ -51,32 +51,28 @@ namespace libint2 {
       using namespace libint2::prefactor;
       using namespace libint2::braket;
       
+      // kinetic energy of which electron?
+      const int i = target_->oper()->descr().I();
       F a(Tint->bra(0,0));
       F b(Tint->ket(0,0));
       F c(Tint->bra(1,0));
       F d(Tint->ket(1,0));
 
-#if USE_R12kR12lG12
-      {
-        typedef GenIntegralSet_11_11<BasisFunctionType,R12kR12lG12,EmptySet> ChildType;
-        ChildFactory<ThisType,ChildType> factory(this);
-        for(int i=0; i<3; ++i) {
-          for(int j=0; j<3; ++j) {
-            R12k_R12l_G12_Descr descr(unit_intvec3(i),unit_intvec3(j));
-            factory.wedge( Nabla1(_pbra(a,c),i) , Nabla1(_pket(b,d),j), EmptySet(), R12kR12lG12(descr));
-          }
-        }
-        if (is_simple()) expr_ *= Scalar(4.0) * Scalar("gamma_bra") * Scalar("gamma_ket");
-      }
-#else
       // |Nabla1.G12' ac ) ^ |Nabla1.G12' bd )
+      if (i == 0)
       {
         typedef GenIntegralSet_11_11<BasisFunctionType,R12kG12,mType> ChildType;
         ChildFactory<ThisType,ChildType> factory(this);
         factory.wedge( R12vec_dot_Nabla1(_pbra(a,c)) , R12vec_dot_Nabla1(_pket(b,d)), mType(0u), R12kG12(0));
-        if (is_simple()) expr_ *= Scalar(4.0) * Scalar("gamma_bra") * Scalar("gamma_ket");
       }
-#endif
+      // |Nabla2.G12' ac ) ^ |Nabla2.G12' bd )
+      if (i == 1)
+      {
+        typedef GenIntegralSet_11_11<BasisFunctionType,R12kG12,mType> ChildType;
+        ChildFactory<ThisType,ChildType> factory(this);
+        factory.wedge( R12vec_dot_Nabla2(_pbra(a,c)) , R12vec_dot_Nabla2(_pket(b,d)), mType(0u), R12kG12(0));
+      }
+      if (is_simple()) expr_ *= Scalar(-4.0) * Scalar("gamma_bra") * Scalar("gamma_ket");
       
     }
   

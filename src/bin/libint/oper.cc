@@ -82,3 +82,21 @@ Ti_G12_Descr::symbol_(int K)
   oss << "T" << K << "_G12";
   return oss.str();
 }
+
+////////////
+
+std::string
+DivG12prime_xTx_Descr::label_(int I)
+{
+  ostringstream oss;
+  oss << "(\\nabla_" << I << " \\cdot g_{12}') (g_{12}' \\cdot \\nabla_" << I << ")";
+  return oss.str();
+}
+
+std::string
+DivG12prime_xTx_Descr::symbol_(int I)
+{
+  ostringstream oss;
+  oss << "Div" << I << "G12prime_xTx";
+  return oss.str();
+}

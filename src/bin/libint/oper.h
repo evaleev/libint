@@ -319,16 +319,25 @@ namespace libint2 {
   };
   typedef GenOper< R1dotR2_G12_Descr > R1dotR2_G12;
 
-  /** \f$ (\nabla_1 \cdot g_{12}') (g_{12}' \cdot \nabla_1) \f$ is a component of \f$ [g_{12}, [\nabla_1^4, g_{12}]] \f$ integral .
+  /** \f$ (\nabla_I \cdot g_{12}') (g_{12}' \cdot \nabla_K) \f$ is a component of \f$ [g_{12}, [\nabla_I^4, g_{12}]] \f$ integral
+     where I = 1 or 2.
   */
   struct DivG12prime_xTx_Descr {
     typedef NonmultiplicativeNonsymm2Body_Props Properties;
-    static const unsigned int max_key = 1;
-    unsigned int key() const { return 0; }
-    std::string description() const { return "(\\nabla \\cdot g_{12}') (g_{12}' \\cdot \\nabla)"; }
-    std::string label() const { return "DivG12prime_xTx"; }
+    static const unsigned int max_key = 2;
+    DivG12prime_xTx_Descr(int I) : I_(I) { assert(I >= 0 && I <= 1); }
+    DivG12prime_xTx_Descr(const DivG12prime_xTx_Descr& a) : I_(a.I_) {}
+    unsigned int key() const { return I_; }
+    std::string description() const { return label_(I_); }
+    std::string label() const { return symbol_(I_); }
+    int I() const { return I_; }
     int psymm(int i, int j) const;
-    int hermitian(int i) const { if (i != 0) return +1; else return -1; }
+    int hermitian(int i) const { if (i != I_) return +1; else return -1; }
+    private:
+      DivG12prime_xTx_Descr();
+      static std::string label_(int I);
+      static std::string symbol_(int I);
+      int I_;
   };
   typedef GenOper< DivG12prime_xTx_Descr > DivG12prime_xTx;
 

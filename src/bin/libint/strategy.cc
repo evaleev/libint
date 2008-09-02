@@ -102,12 +102,14 @@ namespace libint2 {
   };
   template <> struct MasterStrategy<DivG12prime_xTx_11_11_sq> {
     typedef mpl::list<
+    HRR_ab_11_DivG12prime_xTx_sh,
     HRR_cd_11_DivG12prime_xTx_sh,
     CR_11_DivG12prime_xTx_11_sh
     > value;
   };
   template <> struct MasterStrategy<DivG12prime_xTx_11_11_int> {
     typedef mpl::list<
+    HRR_ab_11_DivG12prime_xTx_int,
     HRR_cd_11_DivG12prime_xTx_int,
     CR_11_DivG12prime_xTx_11_int
     > value;
