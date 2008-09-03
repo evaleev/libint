@@ -71,8 +71,9 @@ CGF::label() const
   unsigned int am = qn_[0] + qn_[1] + qn_[2];
   const char am_char = StaticDefinitions::am_letters[am];
   char tmp[80]; sprintf(tmp,"%c_",am_char);
+  // to differentiate s-type CGF from s-type CGShell, use "s_"
   if (am == 0) {
-    tmp[1] = '\0';
+    tmp[2] = '\0';
     return tmp;
   }
   std::string label(tmp);
