@@ -1,5 +1,6 @@
 
 #include <map>
+#include <iostream>
 #include <dgvertex.h>
 #include <entity.h>
 #include <rr.h>
@@ -12,6 +13,9 @@ using namespace libint2;
 void
 ExtractExternSymbols::operator()(const VertexPtr& v)
 {
+#if DEBUG
+  std::cout << "ExtractExternSymbols::operator() -- v = " << v->description() << std::endl;
+#endif
   if (v->precomputed()) {
 
     // discard compile-time entities
@@ -19,7 +23,20 @@ ExtractExternSymbols::operator()(const VertexPtr& v)
       typedef CTimeEntity<double> cdouble;
       SafePtr<cdouble> ptr_cast = dynamic_pointer_cast<cdouble,DGVertex>(v);
       if (ptr_cast) {
-	return;
+        return;
+      }
+    }
+    
+    // discard unrolled integral sets composed of precomputed integrals
+    {
+      SafePtr<DGArcRR> arcrr;
+      if (v->size() == 1 && v->num_exit_arcs() == 1 &&
+          ( (arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(*(v->first_exit_arc()))) != 0 ?
+              dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(arcrr->rr()) != 0 :
+              false ) &&
+          (*(v->first_exit_arc()))->dest()->precomputed()
+         ) {
+        return;
       }
     }
 

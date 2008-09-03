@@ -2,11 +2,11 @@
 #ifndef _libint2_header_
 #define _libint2_header_
 
-#define LIBINT_T_SS_EREP_SS(mValue) _aB_s__0__s__1___TwoPRep_s__0__s__1___Ab__up_##mValue
-#define LIBINT_T_SS_Km1G12_SS(mValue) _aB_s__0__s__1___R12_minus_1_G12_s__0__s__1___Ab__up_##mValue
-#define LIBINT_T_SS_K0G12_SS_0 _aB_s__0__s__1___R12_0_G12_s__0__s__1___Ab__up_0
-#define LIBINT_T_SS_K2G12_SS_0 _aB_s__0__s__1___R12_2_G12_s__0__s__1___Ab__up_0
-#define LIBINT_T_SS_K4G12_SS_0 _aB_s__0__s__1___R12_4_G12_s__0__s__1___Ab__up_0
+#define LIBINT_T_SS_EREP_SS(mValue) _aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_##mValue
+#define LIBINT_T_SS_Km1G12_SS(mValue) _aB_s___0__s___1___R12_minus_1_G12_s___0__s___1___Ab__up_##mValue
+#define LIBINT_T_SS_K0G12_SS_0 _aB_s___0__s___1___R12_0_G12_s___0__s___1___Ab__up_0
+#define LIBINT_T_SS_K2G12_SS_0 _aB_s___0__s___1___R12_2_G12_s___0__s___1___Ab__up_0
+#define LIBINT_T_SS_K4G12_SS_0 _aB_s___0__s___1___R12_4_G12_s___0__s___1___Ab__up_0
 
 #include <libint2_intrinsic_types.h>
 #include <libint2_params.h>
