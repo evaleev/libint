@@ -277,7 +277,7 @@ DirectedGraph::traverse_from(const SafePtr<DGArc>& arc)
       const aciter abegin = dest->first_exit_arc();
       const aciter aend = dest->plast_exit_arc();
       for(aciter a=abegin; a!=aend; ++a)
-	traverse_from(*a);
+        traverse_from(*a);
   }
 }
 
@@ -645,17 +645,19 @@ DirectedGraph::remove_trivial_arithmetics()
 
       // 1.0 * x = x
       if (left->equiv(prefactors.N_i[1])) {
-        remove_vertex_at((vptr),right);
+        const bool success = remove_vertex_at((vptr),right);
 #if DEBUG
-        cout << "Removed vertex " << (vptr)->description() << endl;
+        if (success)
+          cout << "Removed vertex " << (vptr)->description() << endl;
 #endif
       }
 
       // x * 1.0 = x
       if (right->equiv(prefactors.N_i[1])) {
-        remove_vertex_at((vptr),left);
+        const bool success = remove_vertex_at((vptr),left);
 #if DEBUG
-        cout << "Removed vertex " << (vptr)->description() << endl;
+        if (success)
+          cout << "Removed vertex " << (vptr)->description() << endl;
 #endif
       }
 
@@ -693,9 +695,7 @@ DirectedGraph::handle_trivial_nodes()
       SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
       if (arc_cast) {
         // remove the vertex, if possible
-        try { remove_vertex_at((vptr),arc->dest()); }
-        catch (CannotPerformOperation& c) {
-        }
+        remove_vertex_at((vptr),arc->dest());
       }
     }
 
@@ -717,7 +717,8 @@ DirectedGraph::handle_trivial_nodes()
 
 // If v1 and v2 are connected by DGArcDirect and all entry arcs to v1 are of the DGArcDirect type as well,
 // this function will reattach all arcs extering v1 to v2 and remove v1 from the graph alltogether.
-void
+// return true if successful, false otherwise
+bool
 DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2)
 {
 #if DEBUG
@@ -736,7 +737,7 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
     SafePtr<DGArc> arc = (*a);
     SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
     if (arc_cast == 0)
-      throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");
+      return false;
     v1_entry.push_back(*a);
 #if DEBUG
     std::cout << "remove_vertex_at: examined v1 entry arc: from " << (*a)->orig()->description() << " to " << (*a)->dest()->description() << std::endl;
@@ -745,13 +746,13 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
 
   // Verify that v1 and v2 are connected by an arc and it is the only arc exiting v1
   /*if (v1->num_exit_arcs() != 1 || v1->exit_arc(0)->dest() != v2)
-    throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");*/
+    return false;*/
 
   // See if this is a direct arc -- otherwise cannot do this
   SafePtr<DGArc> arc = *(v1->first_exit_arc());
   SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
   if (arc_cast == 0)
-    throw CannotPerformOperation("DirectedGraph::remove_vertex_at() -- cannot remove vertex");
+    return false;
 
   //
   // OK, now do work!
@@ -796,6 +797,11 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
 
   // and fully disconnect this vertex
   v1->detach();
+#if DEBUG || DEBUG_RESTRUCTURE
+  std::cout << "remove_vertex_at: detached " << v1->description() << endl;
+#endif
+  
+  return true;
 }
 
 void
@@ -984,22 +990,43 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
   }
   
   //
+  // How memory management happens:
   // Go through the traversal order and at each step tag every child
   // Once a child receives same number of tags as the number of parents,
   // it can be deallocated
   //
   SafePtr<DGVertex> vertex = first_to_compute_;
   do {
-    // If symbol is set then the object is not on stack
-    if (!vertex->symbol_set() &&
-        // address may already by set
+    SafePtr<DGArcRR> arcrr;
+    // memory only needs to be managed for some quantities:
+    // this conditional decides whether this vertex is on the stack
+    if (
+        // If symbol is set then the object is not on stack
+        !vertex->symbol_set() &&
+        // if address is already set, no need to manage
         !vertex->address_set() &&
         // precomputed objects don't go on stack
         !vertex->precomputed() &&
-        // if don't need to compute ..
+        // manage only if need to compute ..
         vertex->need_to_compute() &&
-        // don't put on stack if smaller than min_size_to_alloc, unless it's a target
-        (vertex->is_a_target() || vertex->size() > min_size_to_alloc)) {
+        // don't put on stack if smaller than min_size_to_alloc
+        // two exceptions, however:
+        // 1) it's a target
+        // 2) it's an unrolled integral set of size 1, whose only member is not a precomputed quantity
+        //    typically integral sets of size 1 are precomputed and don't need to be on stack,
+        //    however if they are not the integral will need to be stored somewhere and the rule for
+        //    assigning code symbols to members of unrolled integral sets requires the integral set
+        //    to have an address assigned
+        (vertex->size() > min_size_to_alloc ||
+         vertex->is_a_target() ||
+         (vertex->size() == 1 && vertex->num_exit_arcs() == 1 &&
+          ( (arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(*(vertex->first_exit_arc()))) != 0 ?
+              dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(arcrr->rr()) != 0 :
+              false ) &&
+          !(*(vertex->first_exit_arc()))->dest()->precomputed()
+         )
+        )
+       ) {
       MemoryManager::Address addr = memman->alloc(vertex->size());
       vertex->set_address(addr);
 

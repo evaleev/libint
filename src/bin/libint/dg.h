@@ -271,7 +271,7 @@ namespace libint2 {
         this function will reattach all arcs extering v1 to v2 and remove v1 from the graph altogether.
 	May throw CannotPerformOperation.
     */
-    void remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2);
+    bool remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2);
     
     // Which vertex is the first to compute
     SafePtr<DGVertex> first_to_compute_;
