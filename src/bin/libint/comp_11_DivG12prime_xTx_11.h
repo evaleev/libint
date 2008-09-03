@@ -6,7 +6,7 @@
 #include <integral_11_11.h>
 #include <gaussoper.h>
 
-#define USE_R12kR12lG12 0
+#define USE_R12kR12lG12 1
 
 using namespace std;
 
@@ -58,6 +58,30 @@ namespace libint2 {
       F c(Tint->bra(1,0));
       F d(Tint->ket(1,0));
 
+#if USE_R12kR12lG12
+      if (i == 0)
+      {
+        typedef GenIntegralSet_11_11<BasisFunctionType,R12kR12lG12,EmptySet> ChildType;
+        ChildFactory<ThisType,ChildType> factory(this);
+        for(int bxyz=0; bxyz<3; ++bxyz) {
+          for(int kxyz=0; kxyz<3; ++kxyz) {
+            R12k_R12l_G12_Descr descr(unit_intvec3(bxyz),unit_intvec3(kxyz));
+            factory.wedge( Nabla1(_pbra(a,c),bxyz) , Nabla1(_pket(b,d),kxyz), EmptySet(), R12kR12lG12(descr));
+          }
+        }
+      }
+      if (i == 1)
+      {
+        typedef GenIntegralSet_11_11<BasisFunctionType,R12kR12lG12,EmptySet> ChildType;
+        ChildFactory<ThisType,ChildType> factory(this);
+        for(int bxyz=0; bxyz<3; ++bxyz) {
+          for(int kxyz=0; kxyz<3; ++kxyz) {
+            R12k_R12l_G12_Descr descr(unit_intvec3(bxyz),unit_intvec3(kxyz));
+            factory.wedge( Nabla2(_pbra(a,c),bxyz) , Nabla2(_pket(b,d),kxyz), EmptySet(), R12kR12lG12(descr));
+          }
+        }
+      }
+#else
       // |Nabla1.G12' ac ) ^ |Nabla1.G12' bd )
       if (i == 0)
       {
@@ -72,6 +96,7 @@ namespace libint2 {
         ChildFactory<ThisType,ChildType> factory(this);
         factory.wedge( R12vec_dot_Nabla2(_pbra(a,c)) , R12vec_dot_Nabla2(_pket(b,d)), mType(0u), R12kG12(0));
       }
+#endif
       if (is_simple()) expr_ *= Scalar(-4.0) * Scalar("gamma_bra") * Scalar("gamma_ket");
       
     }
