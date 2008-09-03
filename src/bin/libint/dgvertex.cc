@@ -279,6 +279,9 @@ DGVertex::refer_this_to(const SafePtr<DGVertex>& V)
     else
       throw std::logic_error("DGVertex::refer_this_to() -- already referring to some other vertex");
   }
+#if DEBUG
+      cout << "DGVertex::refer_this_to() -- vertex " << description() << " will refer to " << V->description() << endl;
+#endif
   referred_vertex_ = V.get();
   V->inc_nrefs();
 }
@@ -303,6 +306,8 @@ DGVertex::symbol() const
     else {
 #if DEBUG
       cout << "DGVertex::symbol() -- symbol not set for " << description() << endl;
+      if (referred_vertex_)
+        cout << "DGVertex::symbol() -- referred_vertex_ = " << referred_vertex_->description() << endl;
 #endif
       throw SymbolNotSet("DGVertex::symbol() -- symbol not set");
     }
