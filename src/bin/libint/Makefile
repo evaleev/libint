@@ -20,7 +20,7 @@ CXXDEPENDSUF = none
 CXXDEPENDFLAGS = -M
 
 LIBCXXSRC = default_params.cc rr.cc dg.cc dgvertex.cc dgarc.cc gauss.cc \
-oper.cc integral.cc iter.cc policy.cc strategy.cc policy_spec.cc flop.cc \
+oper.cc iter.cc policy.cc strategy.cc policy_spec.cc flop.cc \
 prefactors.cc context.cc memory.cc tactic.cc codeblock.cc dims.cc code.cc \
 iface.cc class_registry.cc algebra.cc graph_registry.cc drtree.cc task.cc \
 extract.cc util.cc
