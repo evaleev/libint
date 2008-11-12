@@ -75,7 +75,7 @@ namespace libint2 {
     /**
       description() returns a verbose description of this RR
     */
-    virtual const std::string& description() const;
+    virtual std::string description() const;
     
     /// Generate declaration and definition for the recurrence relation
     virtual void generate_code(const SafePtr<CodeContext>& context,

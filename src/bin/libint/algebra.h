@@ -38,7 +38,7 @@ namespace libint2 {
                         const SafePtr<T>& left,
                         const SafePtr<T>& right) :
         DGVertex(ClassInfo<AlgebraicOperator>::Instance().id()), OT_(OT), left_(left), right_(right),
-        descr_(), label_(algebra::OperatorSymbol[OT_])
+        label_(algebra::OperatorSymbol[OT_])
         {
         }
       virtual ~AlgebraicOperator() {}
@@ -48,7 +48,7 @@ namespace libint2 {
                         const SafePtr<T>& left,
                         const SafePtr<T>& right) :
         DGVertex(static_cast<DGVertex&>(*A)), OT_(A->OT_),
-        left_(left), right_(right), descr_(), label_(A->label_)
+        left_(left), right_(right), label_(A->label_)
         {
 #if DEBUG
           if (num_exit_arcs() != 2)
@@ -139,16 +139,14 @@ namespace libint2 {
         return label();
       }
       /// Implements DGVertex::description()
-      const std::string& description() const
+      std::string description() const
       {
-        if (descr_.empty()) {
-          ostringstream os;
-          os << "( ( " << left_->description() << " ) "
-             << algebra::OperatorSymbol[OT_] << " ( "
-             << right_->description() << " ) )";
-          descr_ = os.str();
-        }
-        return descr_;
+        ostringstream os;
+        os << "( ( " << left_->description() << " ) "
+           << algebra::OperatorSymbol[OT_] << " ( "
+           << right_->description() << " ) )";
+        const std::string descr = os.str();
+        return descr;
       }
 
       /// Overloads DGVertex::del_exit_arcs()
@@ -172,7 +170,6 @@ namespace libint2 {
       }
 
       std::string label_;
-      mutable std::string descr_;
     };
     
   /*

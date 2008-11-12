@@ -115,7 +115,7 @@ namespace libint2 {
       /// Specialization of DGVertex::id()
       virtual const std::string& id() const;
       /// Specialization of DGVertex::description()
-      virtual const std::string& description() const;
+      virtual std::string description() const;
 
       /// Implementation of IntegralSet::num_part
       unsigned int num_part() const { return OperType::Properties::np; }
@@ -201,8 +201,6 @@ namespace libint2 {
       mutable std::string label_;
       // generates label_
       std::string generate_label() const;
-      // description
-      mutable std::string descr_;
       // key
       mutable key_type key_;
 
@@ -228,7 +226,7 @@ namespace libint2 {
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Op& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
     DGVertex(ClassInfo<GenIntegralSet>::Instance().id()), O_(SafePtr<Op>(new Op(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))),
-    size_(0), label_(), descr_()
+    size_(0), label_()
     {
       if (Op::Properties::np != bra.num_part())
         throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(bra,ket) -- number of particles in bra doesn't match that in the operator");
@@ -432,15 +430,13 @@ namespace libint2 {
     }
   
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const std::string&
+    std::string
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::description() const
     {
-      if (descr_.empty()) {
-        ostringstream os;
-        os << " GenIntegralSet: " << label();
-        descr_ = os.str();
-      }
-      return descr_;
+    ostringstream os;
+    os << " GenIntegralSet: " << label();
+    const std::string descr = os.str();
+    return descr;
     }
 
 };

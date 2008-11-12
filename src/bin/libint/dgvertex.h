@@ -116,9 +116,10 @@ namespace libint2 {
         guaranteed to be a symbol (e.g. "(p_x s|d_xy s)^1")
     */
     virtual const std::string& id() const =0;
-    /** description() returns a full, human-readable description of DGVertex (e.g. "This is a ( p_x s | 1/r_{12} | d_xy s )^{(1)} integral")
+    /** description() returns a full, human-readable description of DGVertex (e.g. "This is a ( p_x s | 1/r_{12} | d_xy s )^{(1)} integral").
+        returned by value since not guaranteed to be cached.
     */
-    virtual const std::string& description() const =0;
+    virtual std::string description() const =0;
     /** print(os) prints vertex info to os */
     void print(std::ostream& os) const;
 

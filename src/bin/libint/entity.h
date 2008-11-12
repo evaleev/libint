@@ -85,7 +85,7 @@ namespace libint2 {
       typedef typename FNVStringHash::KeyType key_type;
         
       RTimeEntity(const std::string& id) :
-        Entity(id),DGVertex(ClassInfo<RTimeEntity>::Instance().id()), descr_()
+        Entity(id),DGVertex(ClassInfo<RTimeEntity>::Instance().id())
         {
           FNVStringHash SH;
           key_ = SH.hash(id);
@@ -130,14 +130,12 @@ namespace libint2 {
 	return label();
       }
       /// Implementation of DGVertex::description()
-      const std::string& description() const
+      std::string description() const
       {
-        if (descr_.empty()) {
-          ostringstream os;
-          os << "RTimeEntity: " << id();
-          descr_ = os.str();
-        }
-        return descr_;
+        ostringstream os;
+        os << "RTimeEntity: " << id();
+        const std::string descr = os.str();
+        return descr;
       }
       /// Implements Hashable::key()
       typename DGVertex::KeyReturnType key() const {
@@ -151,7 +149,6 @@ namespace libint2 {
         return true;
       }
 
-      mutable std::string descr_;
       key_type key_;
     };
 
@@ -166,7 +163,7 @@ namespace libint2 {
     {
       public:
       CTimeEntity(const T& val) :
-        Entity(to_string(val)), DGVertex(ClassInfo<CTimeEntity>::Instance().id()), value_(val), descr_()
+        Entity(to_string(val)), DGVertex(ClassInfo<CTimeEntity>::Instance().id()), value_(val)
         {
 #if DEBUG
           std::cout << "Allocated CTimeEntity id = " << this->id() << " value = " << value() << std::endl;
@@ -209,14 +206,12 @@ namespace libint2 {
 	return label();
       }
       /// Implementation of DGVertex::description()
-      const std::string& description() const
+      std::string description() const
       {
-        if (descr_.empty()) {
-          ostringstream os;
-          os << "CTimeEntity: " << id();
-          descr_ = os.str();
-        }
-        return descr_;
+        ostringstream os;
+        os << "CTimeEntity: " << id();
+        const std::string descr = os.str();
+        return descr;
       }
       
       /// returns the value
@@ -235,8 +230,6 @@ namespace libint2 {
       {
         return true;
       }
-
-      mutable std::string descr_;
 
     };
 

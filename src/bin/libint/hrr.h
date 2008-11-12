@@ -94,7 +94,6 @@ namespace libint2 {
 
     void oper_checks() const;
 
-    mutable std::string descr_;
     /// Implementation of RecurrenceRelation::label()
     std::string generate_label() const;
     /// Reimplementation of RecurrenceRelation::adapt_dims_()

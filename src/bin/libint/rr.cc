@@ -254,10 +254,11 @@ RecurrenceRelation::label() const {
   return label_;
 }
 
-const std::string&
+std::string
 RecurrenceRelation::description() const
 {
-  return label();
+  const std::string descr = label();
+  return descr;
 }
 
 void
