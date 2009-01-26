@@ -56,7 +56,7 @@ std::string
 R12k_R12l_G12_Descr::symbol_(const IntVec3& K, const IntVec3& L)
 {
   ostringstream oss;
-  oss << "(R12x" << K[0]
+  oss << "R12x" << K[0]
       << "_R12y" << K[1]
       << "_R12z" << K[2] << "__"
       << "R12x" << L[0]
