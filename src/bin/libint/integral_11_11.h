@@ -71,6 +71,9 @@ namespace libint2 {
       /// Comparison operator
       bool operator==(const this_type&) const;
 
+      /// Reimplements DGVertex::unregister()
+      void unregister() const;
+
     private:
       /// This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
       GenIntegralSet_11_11(const OperType& oper, const BraType& bra, const KetType& ket, const AuxIndexType& aux);
@@ -168,6 +171,15 @@ namespace libint2 {
     GenIntegralSet_11_11<BFS,Oper,AuxQuanta>::operator==(const this_type& a) const
     {
       return parent_type::PtrComp::equiv(static_cast<const parent_type*>(this),a);
+    }
+
+  template <class BFS, class Oper, class AuxQuanta>
+    void
+    GenIntegralSet_11_11<BFS,Oper,AuxQuanta>::unregister() const
+    {
+      SafePtr<parent_type> this_parent_ptr = const_pointer_cast<parent_type,const parent_type>(EnableSafePtrFromThis<parent_type>::SafePtr_from_this());
+      SafePtr<this_type> this_ptr = static_pointer_cast<this_type>(this_parent_ptr);
+      singl_manager_.remove(this_ptr);
     }
 
   template <class BFS, class Oper, class AuxQuanta>
