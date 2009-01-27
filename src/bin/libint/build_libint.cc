@@ -29,11 +29,15 @@
 #include <extract.h>
 #include <dims.h>
 #include <singl_stack.timpl.h>
+#include <purgeable.h>
 
 #include <master_ints_list.h>
 
 using namespace std;
 using namespace libint2;
+
+#define STUDY_MEMORY_USAGE 0
+long living_count = 0;
 
 static void try_main (int argc, char* argv[]);
 
@@ -257,6 +261,8 @@ generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams
 
     // Remove RR to save resources
     rrstack->remove(rr);
+    // purge SingletonStacks, to save resources
+    PurgeableStacks::Instance()->purge();
     // next RR
     it = rrstack->begin();
   }
@@ -303,7 +309,13 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             continue;
           if (la < lb || lc < ld || la+lb > lc+ld)
 	    continue;
-
+  
+#if STUDY_MEMORY_USAGE
+          const int lim = 1;
+          if (! (la == lim && lb == lim && lc == lim && ld == lim) )
+            continue;
+#endif
+        
           // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
@@ -761,6 +773,12 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           bool ssss = false;
           if (la+lb+lc+ld == 0)
             ssss = true;
+
+#if STUDY_MEMORY_USAGE
+          const int lim = 5;
+          if (! (la == lim && lb == lim && lc == lim && ld == lim) )
+            continue;
+#endif
 
           // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
