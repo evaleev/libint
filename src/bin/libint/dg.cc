@@ -165,11 +165,11 @@ namespace {
   struct __reset_dgvertex {
     void operator()(SafePtr<DGVertex>& v) {
       v->reset();
-      // remove this vertex from its SingletonManager
-      v->unregister();
 #if DEBUG
       std::cout << "DirectedGraph::reset: will unregister " << v->label() << std::endl;
 #endif
+      // remove this vertex from its SingletonManager
+      v->unregister();
     }
   };
   struct __reset_safeptr {
