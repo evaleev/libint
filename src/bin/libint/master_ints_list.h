@@ -38,7 +38,6 @@ namespace libint2 {
   /** All known types go into this typelist
       Every type must have a corresponding instantiation of MasterStrategy in strategy.cc
     */
-#if 1
   typedef mpl::list<
   TwoPRep_11_11_sq,
   TwoPRep_11_11_int,
@@ -53,12 +52,6 @@ namespace libint2 {
   DummySymmIntegral_11_11_sq,
   DummySymmIntegral_11_11_int
   > MasterIntegralTypeList;
-#else
-  typedef mpl::list<
-  TwoPRep_11_11_sq,
-  TwoPRep_11_11_int
-  > MasterIntegralTypeList;
-#endif
 
 };
 
