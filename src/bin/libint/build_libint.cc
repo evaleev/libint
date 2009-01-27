@@ -28,6 +28,7 @@
 #include <task.h>
 #include <extract.h>
 #include <dims.h>
+#include <singl_stack.timpl.h>
 
 #include <master_ints_list.h>
 
@@ -80,10 +81,10 @@ void try_main (int argc, char* argv[])
 #ifdef INCLUDE_G12DKH
   taskmgr.add("g12dkh");
 #endif
-  
+
   // use default parameters
   SafePtr<CompilationParameters> cparams(new CompilationParameters);
-  
+
 #ifdef INCLUDE_ERI
   cparams->max_am("eri",ERI_MAX_AM);
   cparams->max_am_opt("eri",ERI_OPT_AM);
@@ -140,12 +141,12 @@ void try_main (int argc, char* argv[])
 #else
   throw std::runtime_error("Cannot generate specialized evaluator types yet");
 #endif
-  
+
   // initialize code context to produce library API
   SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
   // initialize object to generate interface
   SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext));
-  
+
   print_header(os);
   print_config(os);
   // transfer some configuration parameters to the generated library API
@@ -167,7 +168,7 @@ void try_main (int argc, char* argv[])
 #ifdef INCLUDE_G12DKH
   build_G12DKH_2b_2k(os,cparams,iface);
 #endif
-  
+
   // Generate code for the set-level RRs
   generate_rr_code(os,cparams);
 
@@ -190,7 +191,7 @@ void try_main (int argc, char* argv[])
 
   // transfer some library configuration to library API
   config_to_api(cparams,iface);
-  
+
   os << "Compilation finished. Goodbye." << endl;
 }
 
@@ -243,17 +244,17 @@ generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams
     SafePtr<RecurrenceRelation> rr = (*it).second.second;
     std::string rrlabel = cparams->api_prefix() + rr->label();
     os << "generating code for " << context->label_to_name(rrlabel) << " target=" << rr->rr_target()->label() << endl;
-    
+
     std::string decl_filename(prefix + context->label_to_name(rrlabel));  decl_filename += ".h";
     std::string def_filename(prefix + context->label_to_name(rrlabel));  def_filename += ".cc";
     std::basic_ofstream<char> declfile(decl_filename.c_str());
     std::basic_ofstream<char> deffile(def_filename.c_str());
-    
+
     rr->generate_code(context,ImplicitDimensions::default_dims(),rrlabel,declfile,deffile);
-    
+
     declfile.close();
     deffile.close();
-    
+
     // Remove RR to save resources
     rrstack->remove(rr);
     // next RR
@@ -278,7 +279,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
   iface->to_params(iface->macro_define("MAX_AM_ERI",lmax));
-  
+
   //
   // Construct graphs for each desired target integral and
   // 1) generate source code for the found traversal path
@@ -297,12 +298,12 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
     for(int lb=0; lb<=lmax; lb++) {
       for(int lc=0; lc<=lmax; lc++) {
         for(int ld=0; ld<=lmax; ld++) {
-          
+
           if (la+lb+lc+ld == 0)
             continue;
           if (la < lb || lc < ld || la+lb > lc+ld)
 	    continue;
-          
+
           // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
@@ -313,7 +314,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
 	  // Need to accumulate integrals?
 	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
-          
+
           SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],mType(0u));
           os << "building " << abcd->description() << endl;
           SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(abcd);
@@ -334,7 +335,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           std::basic_ofstream<char> declfile(decl_filename.c_str());
           std::basic_ofstream<char> srcfile(src_filename.c_str());
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
-          
+
           // update max stack size and # of targets
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(memman->max_memory_used());
@@ -372,7 +373,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
         } // end of d loop
       } // end of c loop
     } // end of b loop
-  } // end of a loop  
+  } // end of a loop
 }
 #endif // INCLUDE_ERI
 
@@ -388,7 +389,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
     shells.push_back(new CGShell(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
-  
+
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
   iface->to_params(iface->macro_define("MAX_AM_R12kG12",lmax));
@@ -397,7 +398,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 #else
   iface->to_params(iface->macro_define("SUPPORT_T1G12",0));
 #endif
-  
+
   //
   // Construct graphs for each desired target integral and
   // 1) generate source code for the found traversal path
@@ -436,7 +437,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
 	  // Need to accumulate integrals?
 	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
-          
+
       typedef R12kG12_11_11_sq int_type;
       typedef R12kG12 oper_type;
           // k=0
@@ -446,7 +447,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
-          
+
           // k=-1
           if (!ssss) {
             SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(-1));
@@ -455,7 +456,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             dg_xxxx->append_target(abcd_ptr);
           }
 
-#if SUPPORT_T1G12          
+#if SUPPORT_T1G12
           // [T_1,G12]
           if (true) {
             typedef TiG12_11_11_sq int_type;
@@ -484,7 +485,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
-          
+
           dg_xxxx->apply(strat,tactic);
           dg_xxxx->optimize_rr_out();
           dg_xxxx->traverse();
@@ -502,7 +503,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             << shells[ld]->label() << ")";
             label = os.str();
           }
-          
+
           SafePtr<CodeContext> context(new CppCodeContext(cparams));
           SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
           std::string prefix(cparams->source_directory());
@@ -511,7 +512,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           std::basic_ofstream<char> declfile(decl_filename.c_str());
           std::basic_ofstream<char> srcfile(src_filename.c_str());
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
-          
+
           // update max stack size
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(memman->max_memory_used());
@@ -522,7 +523,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
               << ld <<"] = " << context->label_to_name(label_to_funcname(label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
-          
+
           oss.str("");
           oss << "#include <" << decl_filename << ">" << endl;
           iface->to_int_iface(oss.str());
@@ -547,7 +548,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
         } // end of d loop
       } // end of c loop
     } // end of b loop
-  } // end of a loop  
+  } // end of a loop
 }
 
 #endif // INCLUDE_G12
@@ -565,11 +566,11 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
     shells.push_back(new CGShell(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
-  
+
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
   iface->to_params(iface->macro_define("MAX_AM_GENG12",lmax));
-  
+
   //
   // Construct graphs for each desired target integral and
   // 1) generate source code for the found traversal path
@@ -594,7 +595,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           bool ssss = false;
           if (la+lb+lc+ld == 0)
             ssss = true;
-          
+
           // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
@@ -605,7 +606,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
 	  // Need to accumulate integrals?
 	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
-          
+
           // k=0
           if (!ssss) {
             typedef R12kG12_11_11<CGShell,0> int_type;
@@ -614,7 +615,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
-          
+
           // k=-1
           if (!ssss) {
             typedef R12kG12_11_11<CGShell,-1> int_type;
@@ -623,7 +624,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
-          
+
           // r1.r1 G12
           if (true) {
             typedef R1dotR1G12_11_11_sq int_type;
@@ -641,7 +642,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
-          
+
           // k=2
           if (!ssss) {
             typedef R12kG12_11_11<CGShell,2> int_type;
@@ -650,7 +651,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
-          
+
           dg_xxxx->apply(strat,tactic);
           dg_xxxx->optimize_rr_out();
           dg_xxxx->traverse();
@@ -668,7 +669,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
             << shells[ld]->label() << ")";
             label = os.str();
           }
-          
+
           SafePtr<CodeContext> context(new CppCodeContext(cparams));
           SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
           std::string prefix(cparams->source_directory());
@@ -677,7 +678,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           std::basic_ofstream<char> declfile(decl_filename.c_str());
           std::basic_ofstream<char> srcfile(src_filename.c_str());
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
-          
+
           // update max stack size
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(memman->max_memory_used());
@@ -688,7 +689,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
               << ld <<"] = " << context->label_to_name(label_to_funcname(label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
-          
+
           oss.str("");
           oss << "#include <" << decl_filename << ">" << endl;
           iface->to_int_iface(oss.str());
@@ -713,7 +714,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
         } // end of d loop
       } // end of c loop
     } // end of b loop
-  } // end of a loop  
+  } // end of a loop
 }
 
 #endif // INCLUDE_GENG12
@@ -731,11 +732,11 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
     shells.push_back(new CGShell(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
-  
+
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
   iface->to_params(iface->macro_define("MAX_AM_G12DKH",lmax));
-  
+
   //
   // Construct graphs for each desired target integral and
   // 1) generate source code for the found traversal path
@@ -771,7 +772,7 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
           // Need to accumulate integrals?
           dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
-          
+
           // k=0
           if (!ssss) {
             typedef R12kG12_11_11_sq int_type;
@@ -817,7 +818,7 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
-          
+
           dg_xxxx->apply(strat,tactic);
           dg_xxxx->optimize_rr_out();
           dg_xxxx->traverse();
@@ -835,7 +836,7 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
             << shells[ld]->label() << ")";
             label = os.str();
           }
-          
+
           SafePtr<CodeContext> context(new CppCodeContext(cparams));
           SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
           std::string prefix(cparams->source_directory());
@@ -844,7 +845,7 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           std::basic_ofstream<char> declfile(decl_filename.c_str());
           std::basic_ofstream<char> srcfile(src_filename.c_str());
           dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
-          
+
           // update max stack size
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(memman->max_memory_used());
@@ -855,7 +856,7 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
               << ld <<"] = " << context->label_to_name(label_to_funcname(label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
-          
+
           oss.str("");
           oss << "#include <" << decl_filename << ">" << endl;
           iface->to_int_iface(oss.str());
@@ -880,7 +881,7 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
         } // end of d loop
       } // end of c loop
     } // end of b loop
-  } // end of a loop  
+  } // end of a loop
 }
 
 #endif // INCLUDE_G12DKH

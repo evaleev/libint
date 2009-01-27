@@ -11,6 +11,7 @@
 #include <rr.templ.h>
 #include <graph_registry.h>
 #include <intset_to_ints.h>
+#include <singl_stack.timpl.h>
 
 #include <master_ints_list.h>
 #include <master_rrs_list.h>
@@ -166,6 +167,7 @@ namespace libint2 {
         // in CGF case collect all rrs on rrstack
         for (int xyz = 2; xyz >= 0; xyz--) {
           SafePtr<RRType> rr_ptr = RRType::Instance(integral, xyz);
+          // TODO: can I use the knowledge of Tactic behavior to skip some iteration?
           if (rr_ptr != 0)
             rrstack.push_back(static_pointer_cast<RecurrenceRelation, RRType>(rr_ptr));
         }

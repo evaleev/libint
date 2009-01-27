@@ -11,6 +11,7 @@
 #include <integral.h>
 #include <task.h>
 #include <prefactors.h>
+#include <singl_stack.timpl.h>
 
 using namespace libint2;
 
@@ -44,13 +45,13 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
     generate_generic_code(context,dims,funcname,decl,def);
     return;
   }
-  
+
   const SafePtr<DGVertex> target_vptr = rr_target();
   std::cout << "RecurrenceRelation::generate_code: target = " << target_vptr->label() << std::endl;
-  
+
   const SafePtr<CompilationParameters>& cparams = context->cparams();
   SafePtr<DirectedGraph> dg = generate_graph_();
-  
+
   // Intermediates in RR code are either are automatic variables or have to go on vstack
   dg->registry()->stack_name("inteval->vstack");
   // No need to return the targets via inteval's targets
@@ -104,7 +105,7 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
   SafePtr<ImplicitDimensions> localdims = adapt_dims_(dims);
   dg->generate_code(context,memman,localdims,symbols,funcname,decl,def);
-  
+
   // extract all external symbols -- these will be members of the evaluator structure
   SafePtr<ExtractExternSymbols> extractor(new ExtractExternSymbols);
   dg->foreach(*extractor);
@@ -137,9 +138,9 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
       tsymbols->add(externsymbols);
     }
   }
-  
 
-    
+
+
   dg->reset();
 }
 
@@ -168,7 +169,7 @@ RecurrenceRelation::generate_generic_code(const SafePtr<CodeContext>& context,
 
   // declare function
   const std::string func_decl = declare_function(context,localdims,symbols,tlabel,funcname,decl);
-  
+
   //
   // Generate function's definition
   //
@@ -188,7 +189,7 @@ RecurrenceRelation::generate_generic_code(const SafePtr<CodeContext>& context,
 
   // ... fill the body
   def << this->generic_instance(context,symbols) << endl;
-  
+
   // ... end the body
   def << context->close_block() << endl;
   def << context->code_postfix();
@@ -222,7 +223,7 @@ RecurrenceRelation::generate_graph_()
 #if DEBUG
   cout << "RecurrenceRelation::generate_code -- should be same as previous = " << dg->num_vertices() << endl;
 #endif
-  
+
   return dg;
 }
 

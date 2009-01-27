@@ -1,19 +1,18 @@
 
+#ifndef _libint2_src_bin_libint_singlstack_h_
+#define _libint2_src_bin_libint_singlstack_h_
+
 #include <map>
 #include <iostream>
 #include <smart_ptr.h>
 #include <key.h>
 #include <hashable.h>
-
-#define LOCAL_DEBUG 0
-
-#ifndef _libint2_src_bin_libint_singlstack_h_
-#define _libint2_src_bin_libint_singlstack_h_
+#include <purgeable.h>
 
 namespace libint2 {
 
   class RecurrenceRelation;
-  
+
   /**
      SingletonStack<T,KeyType> helps to implement Singleton-like objects of type T.
      SingletonStack maintains a map of keys of type KeyType to
@@ -22,7 +21,7 @@ namespace libint2 {
      HashingFunction is a member function T which takes no arguments and returns a const KeyType&.
   */
   template <class T, class KeyType>
-    class SingletonStack
+    class SingletonStack : public PurgeableStack<T>
     {
     public:
       typedef KeyType key_type;
@@ -39,6 +38,9 @@ namespace libint2 {
       typedef typename KeyTraits<key_type>::ReturnType key_return_type;
       /// Specifies the type of callback which computes hashes
       typedef key_return_type (T::* HashingFunction)() const;
+      /// PurgingPolicy determines whether and which objects on this stack are obsolete and can be removed
+      typedef typename PurgeableStack<T>::PurgingPolicy PurgingPolicy;
+
 
       /// callback to compute hash values is the only parameter
       SingletonStack(HashingFunction callback);
@@ -55,82 +57,24 @@ namespace libint2 {
           else returns a null value_type.
       */
       const value_type& find(const key_type& key);
-      
+
       /** Searches for obj on the stack and, if found, removes the unique instance
       */
       void remove(const SafePtr<T>& obj);
-      
+
       /** Returns iterator to the beginning of the stack */
       citer_type begin() const { return map_.begin(); }
       /** Returns iterator to the end of the stack */
       citer_type end() const { return map_.end(); }
+
+      // Implementation of PurgeableStack::purge()
+      void purge();
 
     private:
       map_type map_;
       HashingFunction callback_;
       InstanceID next_instance_;
     };
-
-  template <class T, class KeyType>
-    SingletonStack<T,KeyType>::SingletonStack(HashingFunction callback) :
-    map_(), callback_(callback), next_instance_(0)
-    {
-    }
-
-  template <class T, class KeyType>
-    const typename SingletonStack<T,KeyType>::value_type&
-    SingletonStack<T,KeyType>::find(const SafePtr<T>& obj)
-    {
-      key_type key = ((obj.get())->*callback_)();
-
-      typedef typename map_type::iterator miter;
-      miter pos = map_.find(key);
-      if (pos != map_.end()) {
-#if DEBUG || LOCAL_DEBUG
-        std::cout << "SingletonStack::find -- " << obj->label() << " already found" << std::endl;
-#endif
-        return (*pos).second;
-      }
-      else {
-        value_type result(next_instance_++,obj);
-        map_[key] = result;
-#if DEBUG || LOCAL_DEBUG
-        std::cout << "SingletonStack::find -- " << obj->label() << " is new (instid_ = " << next_instance_-1 << ")" << std::endl;
-#endif
-        return map_[key];
-      }
-    }
-
-  template <class T, class KeyType>
-    const typename SingletonStack<T,KeyType>::value_type&
-    SingletonStack<T,KeyType>::find(const key_type& key)
-    {
-      static value_type null_value(make_pair(InstanceID(0),SafePtr<T>()));
-      typedef typename map_type::iterator miter;
-      miter pos = map_.find(key);
-      if (pos != map_.end()) {
-        return (*pos).second;
-      }
-      else {
-	return null_value;
-      }
-    }
-    
-  template <class T, class KeyType>
-    void
-    SingletonStack<T,KeyType>::remove(const SafePtr<T>& obj)
-    {
-      key_type key = ((obj.get())->*callback_)();
-
-      typedef typename map_type::iterator miter;
-      miter pos = map_.find(key);
-      if (pos != map_.end()) {
-        map_.erase(pos);
-#if DEBUG || LOCAL_DEBUG
-        std::cout << "Removed from stack " << obj->label() << std::endl;
-#endif
-      }
-    }
 
 };
 
