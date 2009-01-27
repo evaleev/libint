@@ -19,6 +19,8 @@
 
 using namespace std;
 
+extern long living_count;
+
 namespace libint2 {
 
   /**
@@ -222,7 +224,7 @@ namespace libint2 {
     typename GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::SingletonManagerType
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::singl_manager_(&GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::label);
 #endif
-  
+ 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Op& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
     DGVertex(ClassInfo<GenIntegralSet>::Instance().id()), O_(SafePtr<Op>(new Op(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))),
@@ -235,6 +237,7 @@ namespace libint2 {
       compute_key();
 #if DEBUG
       std::cout << "GenIntegralSet: constructed " << label() << std::endl;
+      std::cout << "GenIntegralSet: living_count = " << ++living_count << std::endl;
 #endif
     }
   
@@ -243,13 +246,16 @@ namespace libint2 {
     {
 #if DEBUG
       std::cout << "GenIntegralSet: destructed " << label() << std::endl;
+      std::cout << "GenIntegralSet: living_count = " << --living_count << std::endl;
 #endif
     }
 
+#define GENINTEGRALSET_IS_SINGLETON 0
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     const SafePtr< GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta> >
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::Instance(const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux, const Op& oper)
     {
+#if GENINTEGRALSET_IS_SINGLETON
       typedef typename SingletonManagerType::value_type map_value_type;
       key_type key = compute_key(oper,bra,ket,aux);
       const map_value_type& val = singl_manager_.find(key);
@@ -262,6 +268,10 @@ namespace libint2 {
 	return val.second;
       }
       return val.second;
+#else
+     SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
+     return this_int;
+#endif
     }
   
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
