@@ -2,6 +2,8 @@
 #ifndef _libint2_src_bin_libint_singlstacktimpl_h_
 #define _libint2_src_bin_libint_singlstacktimpl_h_
 
+#define LOCAL_DEBUG 0
+
 #include <singl_stack.h>
 #include <purgeable.timpl.h>
 
@@ -75,10 +77,13 @@ namespace libint2 {
     void
     SingletonStack<T,KeyType>::purge()
     {
-      for(iter_type i = map_.begin(); i!=map_.end(); ++i) {
+      for(iter_type i = map_.begin(); i!=map_.end();) {
         const T* v = i->second.second.get();
         if (PurgingPolicy::purge(v))
-          map_.erase(i);
+          // map::erase invalidates the iterator, increment it beforehand
+          map_.erase(i++);
+        else
+          ++i;
       }
     }
 
