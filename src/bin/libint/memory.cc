@@ -24,6 +24,13 @@ MemoryManager::MemoryManager(const Size& maxmem) :
 
 MemoryManager::~MemoryManager()
 {
+  // for each block reset left and right pointers to break up cyclic dependencies that prevent automatic destruction of SafePtr-managed MemBlock objects
+  superblock_->left(SafePtr<MemBlock>());
+  superblock_->right(SafePtr<MemBlock>());
+  for(memblkset::iterator b=blks_.begin(); b!=blks_.end(); ++b) {
+    (*b)->left(SafePtr<MemBlock>());
+    (*b)->right(SafePtr<MemBlock>());
+  }
 }
 
 SafePtr<MemoryManager::MemBlock>
@@ -103,7 +110,7 @@ MemoryManager::merge_blocks(const SafePtr<MemBlock>& left, const SafePtr<MemBloc
   else {
     SafePtr<MemBlock> lleft = left->left();
     SafePtr<MemBlock> rright = right->right();
-    
+
     typedef memblkset::iterator iter;
     iter liter = find(blks_.begin(),blks_.end(),left);
     if (liter != blks_.end())
@@ -115,7 +122,7 @@ MemoryManager::merge_blocks(const SafePtr<MemBlock>& left, const SafePtr<MemBloc
       blks_.erase(riter);
     else
       throw std::runtime_error("MemoryManager::merge_block() -- right block is not found");
-  
+
     SafePtr<MemBlock> newblk(new MemBlock(address,size,free,lleft,rright));
     blks_.push_back(newblk);
     if (lleft) {
@@ -292,7 +299,7 @@ BestFitMemoryManager::alloc(const Size& size)
   fiter smallest_free_block = min_element(free_blks.begin(),free_blks.end(),&MemBlock::size_less_than);
 
   do {
-    
+
     if ((*smallest_free_block)->size() > size + tight_fit_) {
       SafePtr<MemBlock> result = steal_from_block(*smallest_free_block,size);
       return result->address();
@@ -300,9 +307,9 @@ BestFitMemoryManager::alloc(const Size& size)
     else {
       free_blks.erase(smallest_free_block);
     }
-    
+
     smallest_free_block = min_element(free_blks.begin(),free_blks.end(),&MemBlock::size_less_than);
-    
+
   } while (smallest_free_block != free_blks.end());
 
   // Steal from superblock as a last resort
@@ -556,7 +563,7 @@ namespace libint2 {
     typedef MemBlockSet::iterator iter;
 
     if (blocks.size() <= 1) return;
-    
+
     // Sort by increasing address
     //sort(blocks.begin(),blocks.end(),libint2::address_lessthan);
     blocks.sort(address_lessthan);
