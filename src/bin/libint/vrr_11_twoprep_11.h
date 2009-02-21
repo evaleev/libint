@@ -8,7 +8,7 @@
 using namespace std;
 
 namespace libint2 {
-    
+
   /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
   the angular momentum is raised. where specifies whether angular momentus is decreased in bra or ket.
   */
@@ -75,7 +75,7 @@ namespace libint2 {
       typedef TargetType ChildType;
       ChildFactory<ThisType,ChildType> factory(this);
 
-      // Build on A
+      // Build on A or B
       if (part == 0 && where == InBra) {
         F a(Tint->bra(0,0) - _1);
         if (!exists(a)) return;
@@ -84,10 +84,44 @@ namespace libint2 {
         F d(Tint->ket(1,0));
 
         const SafePtr<DGVertex>& ABCD_m = factory.make_child(a,b,c,d,m);
-        //const SafePtr<DGVertex>& ABCD_m = factory.make_child( _cbra(a,b) ^ _cket(c,d),m);
-        //const SafePtr<DGVertex>& ABCD_m = factory.make_child( _pbra(a,c) ^ _pket(b,d),m);
         const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
         if (is_simple()) { expr_ = Vector("PA")[dir] * ABCD_m + Vector("WP")[dir] * ABCD_mp1;  nflops_+=3; }
+
+        const F& am1 = a - _1;
+        if (exists(am1)) {
+          const SafePtr<DGVertex>& Am1BCD_m = factory.make_child(am1,b,c,d,m);
+          const SafePtr<DGVertex>& Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
+          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
+        }
+        const F& bm1 = b - _1;
+        if (exists(bm1)) {
+          const SafePtr<DGVertex>& ABm1CD_m = factory.make_child(a,bm1,c,d,m);
+          const SafePtr<DGVertex>& ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
+          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
+        }
+        const F& cm1 = c - _1;
+        if (exists(cm1)) {
+          const SafePtr<DGVertex>& ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
+          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
+        }
+        const F& dm1 = d - _1;
+        if (exists(dm1)) {
+          const SafePtr<DGVertex>& ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
+          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
+        }
+        return;
+      }
+      // Build on B
+      if (part == 0 && where == InKet) {
+        F a(Tint->bra(0,0));
+        F b(Tint->ket(0,0) - _1);
+        if (!exists(b)) return;
+        F c(Tint->bra(1,0));
+        F d(Tint->ket(1,0));
+
+        const SafePtr<DGVertex>& ABCD_m = factory.make_child(a,b,c,d,m);
+        const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+        if (is_simple()) { expr_ = Vector("PB")[dir] * ABCD_m + Vector("WP")[dir] * ABCD_mp1;  nflops_+=3; }
 
         const F& am1 = a - _1;
         if (exists(am1)) {
@@ -149,6 +183,42 @@ namespace libint2 {
         }
         return;
       }
+      // Build on D
+      if (part == 1 && where == InKet) {
+        F a(Tint->bra(0,0));
+        F b(Tint->ket(0,0));
+        F c(Tint->bra(1,0));
+        F d(Tint->ket(1,0) - _1);
+        if (!exists(d)) return;
+
+        const SafePtr<DGVertex>& ABCD_m = factory.make_child(a,b,c,d,m);
+        const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+        if (is_simple()) { expr_ = Vector("QD")[dir] * ABCD_m + Vector("WQ")[dir] * ABCD_mp1;  nflops_+=3; }
+
+        const F& cm1 = c - _1;
+        if (exists(cm1)) {
+          const SafePtr<DGVertex>& ABCm1D_m = factory.make_child(a,b,cm1,d,m);
+          const SafePtr<DGVertex>& ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
+          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
+        }
+        const F& dm1 = d - _1;
+        if (exists(dm1)) {
+          const SafePtr<DGVertex>& ABCDm1_m = factory.make_child(a,b,c,dm1,m);
+          const SafePtr<DGVertex>& ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
+          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
+        }
+        const F& am1 = a - _1;
+        if (exists(am1)) {
+          const SafePtr<DGVertex>& Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
+          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
+        }
+        const F& bm1 = b - _1;
+        if (exists(bm1)) {
+          const SafePtr<DGVertex>& ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
+          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
+        }
+        return;
+      }
       return;
     }
 
@@ -171,7 +241,7 @@ namespace libint2 {
       else
         return false;
     }
-  
+
   template <class F, int part, FunctionPosition where>
     std::string
     VRR_11_TwoPRep_11<F,part,where>::generic_header() const
@@ -191,14 +261,14 @@ namespace libint2 {
       oss << "libint2::OSVRR_xs_xs<" << part << "," << to_string(where) << "," << sh_a.norm() << "," << sh_c.norm() << ",";
       oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
       oss << ">::compute(inteval";
-      
-      
+
+
       const unsigned int nargs = args->n();
       for(unsigned int a=0; a<nargs; a++) {
         oss << "," << args->symbol(a);
       }
       oss << ");";
-      
+
       return oss.str();
     }
 #endif // #if !LIBINT_ENABLE_GENERIC_CODE

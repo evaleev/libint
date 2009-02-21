@@ -35,6 +35,7 @@ namespace libint2 {
 # error "Not all recurrence relations are implemented yet for pure OS scheme (have 5 minutes to fix this?)"
 #endif
   template <class T> struct MasterStrategy;
+#if !GENERATE_FOR_ORCA
   template <> struct MasterStrategy<TwoPRep_11_11_sq> {
     typedef mpl::list<
     HRR_ab_11_TwoPRep_11_sh,
@@ -57,6 +58,25 @@ namespace libint2 {
     VRR_c_11_TwoPRep_11_int
     > value;
   };
+#else
+  template <> struct MasterStrategy<TwoPRep_11_11_sq> {
+    typedef mpl::list<
+    HRR_ba_11_TwoPRep_11_sh,
+    HRR_dc_11_TwoPRep_11_sh,
+    VRR_b_11_TwoPRep_11_sh,
+    VRR_d_11_TwoPRep_11_sh
+    > value;
+  };
+  template <> struct MasterStrategy<TwoPRep_11_11_int> {
+    typedef mpl::list<
+    HRR_ba_11_TwoPRep_11_int,
+    HRR_dc_11_TwoPRep_11_int,
+    VRR_b_11_TwoPRep_11_int,
+    VRR_d_11_TwoPRep_11_int
+    > value;
+  };
+#endif
+
   template <> struct MasterStrategy<R12kG12_11_11_sq> {
     typedef mpl::list<
     HRR_ab_11_R12kG12_11_sh,

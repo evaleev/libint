@@ -54,4 +54,7 @@
 #define DEBUG_TRAVERSAL 0
 #define DEBUG_CONSTRUCTION 0
 
+/// generate for ORCA?
+#define GENERATE_FOR_ORCA 0
+
 #endif

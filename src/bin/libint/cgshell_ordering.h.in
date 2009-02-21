@@ -1,6 +1,6 @@
 
-#ifndef _libint2_src_bin_libint_cgshelordering_h_
-#define _libint2_src_bin_libint_cgshelordering_h_
+#ifndef _libint2_src_bin_libint_cgshellordering_h_
+#define _libint2_src_bin_libint_cgshellordering_h_
 
 #include <libint2_config.h>
 /* if this is not defined, then using exported source -- redefine using macro from libint2_params.h */
@@ -10,6 +10,7 @@
 # define LIBINT_CGSHELL_ORDERING_STANDARD LIBINT2_CGSHELL_ORDERING_STANDARD
 # define LIBINT_CGSHELL_ORDERING_INTV3 LIBINT2_CGSHELL_ORDERING_INTV3
 # define LIBINT_CGSHELL_ORDERING_GAMESS LIBINT2_CGSHELL_ORDERING_GAMESS
+# define LIBINT_CGSHELL_ORDERING_ORCA LIBINT2_CGSHELL_ORDERING_ORCA
 #endif
 
 namespace libint2 {
@@ -17,10 +18,13 @@ namespace libint2 {
   enum CGShellOrdering {
     CGShellOrdering_Standard     = LIBINT_CGSHELL_ORDERING_STANDARD,
     CGShellOrdering_IntV3        = LIBINT_CGSHELL_ORDERING_INTV3,
-    CGShellOrdering_GAMESS       = LIBINT_CGSHELL_ORDERING_GAMESS
+    CGShellOrdering_GAMESS       = LIBINT_CGSHELL_ORDERING_GAMESS,
+    CGShellOrdering_ORCA         = LIBINT_CGSHELL_ORDERING_ORCA
   };
 
 };
+
+#include <cgshellinfo.h>
 
 //
 // Macros common to all orderings
@@ -107,5 +111,49 @@ namespace libint2 {
 #define END_FOR_CART }}
 
 #endif // INTV3 ordering
+
+#if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_GAMESS
+// for definition of the ordering see CGShellInfo
+
+/* Computes an index to a Cartesian function within a shell given
+ * am = total angular momentum
+ * i = the exponent of x (i is used twice in the macro--beware side effects)
+ * j = the exponent of y
+ * for this ordering there is no formula
+ */
+#define INT_CARTINDEX(am,i,j) CGShellInfo< CGShellOrderingData<CGShellOrdering_GAMESS,10> >::cartindex(am,i,j)
+
+/* This sets up the above loop over cartesian exponents as follows
+ * FOR_CART(i,j,k,am)
+ *   Stuff using i,j,k.
+ *   END_FOR_CART
+ */
+#define FOR_CART(i,j,k,am) for(int xyz=0; xyz<INT_NCART(am); ++xyz) { \
+                             CGShellInfo< CGShellOrderingData<CGShellOrdering_GAMESS,10> >::cartindex_to_ijk(am,xyz,i,j,k);
+#define END_FOR_CART }}
+
+#endif // GAMESS ordering
+
+#if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_ORCA
+// for definition of the ordering see CGShellInfo
+
+/* Computes an index to a Cartesian function within a shell given
+ * am = total angular momentum
+ * i = the exponent of x (i is used twice in the macro--beware side effects)
+ * j = the exponent of y
+ * for this ordering there is no formula
+ */
+#define INT_CARTINDEX(am,i,j) CGShellInfo< CGShellOrderingData<CGShellOrdering_ORCA,10> >::cartindex(am,i,j)
+
+/* This sets up the above loop over cartesian exponents as follows
+ * FOR_CART(i,j,k,am)
+ *   Stuff using i,j,k.
+ *   END_FOR_CART
+ */
+#define FOR_CART(i,j,k,am) for(int xyz=0; xyz<INT_NCART(am); ++xyz) { \
+                             CGShellInfo< CGShellOrderingData<CGShellOrdering_ORCA,10> >::cartindex_to_ijk(am,xyz,i,j,k);
+#define END_FOR_CART }
+
+#endif // ORCA ordering
 
 #endif // header guard

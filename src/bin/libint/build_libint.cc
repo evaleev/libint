@@ -158,6 +158,7 @@ void try_main (int argc, char* argv[])
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_STANDARD",LIBINT_CGSHELL_ORDERING_STANDARD));
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_INTV3",LIBINT_CGSHELL_ORDERING_INTV3));
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_GAMESS",LIBINT_CGSHELL_ORDERING_GAMESS));
+  iface->to_params(iface->macro_define("CGSHELL_ORDERING_ORCA",LIBINT_CGSHELL_ORDERING_ORCA));
   cparams->print(os);
 
 #ifdef INCLUDE_ERI
@@ -307,15 +308,21 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
           if (la+lb+lc+ld == 0)
             continue;
+
+#if !GENERATE_FOR_ORCA
           if (la < lb || lc < ld || la+lb > lc+ld)
-	    continue;
-  
+            continue;
+#else
+          if (la > lb || lc > ld || la+lb < lc+ld)
+            continue;
+#endif
+
 #if STUDY_MEMORY_USAGE
           const int lim = 1;
           if (! (la == lim && lb == lim && lc == lim && ld == lim) )
             continue;
 #endif
-        
+
           // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
