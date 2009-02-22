@@ -135,6 +135,7 @@ namespace libint2 {
     CR_11_DivG12prime_xTx_11_int
     > value;
   };
+#if !GENERATE_FOR_ORCA
   template <> struct MasterStrategy<DummySymmIntegral_11_11_sq> {
     typedef mpl::list<
     HRR_ab_11_Dummy_11_sh,
@@ -147,6 +148,20 @@ namespace libint2 {
     HRR_cd_11_Dummy_11_int
     > value;
   };
+#else
+  template <> struct MasterStrategy<DummySymmIntegral_11_11_sq> {
+    typedef mpl::list<
+    HRR_ba_11_Dummy_11_sh,
+    HRR_dc_11_Dummy_11_sh
+    > value;
+  };
+  template <> struct MasterStrategy<DummySymmIntegral_11_11_int> {
+    typedef mpl::list<
+    HRR_ba_11_Dummy_11_int,
+    HRR_dc_11_Dummy_11_int
+    > value;
+  };
+#endif
 
   /// transform<RRType> encapsulates RRType and the action associated with RRType
   /// it's used by apply_strategy::operator()<RRType> via mpl::for_each

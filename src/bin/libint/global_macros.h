@@ -49,12 +49,12 @@
 #define DISABLE_SUBTREES 0
 
 /// Produce massive amounts of debugging info
-#define DEBUG 0
-#define DEBUG_RESTRUCTURE 0
-#define DEBUG_TRAVERSAL 0
-#define DEBUG_CONSTRUCTION 0
+#define DEBUG 1
+#define DEBUG_RESTRUCTURE 1
+#define DEBUG_TRAVERSAL 1
+#define DEBUG_CONSTRUCTION 1
 
 /// generate for ORCA?
-#define GENERATE_FOR_ORCA 0
+#define GENERATE_FOR_ORCA 1
 
 #endif

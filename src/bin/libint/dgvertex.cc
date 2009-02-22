@@ -46,12 +46,12 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
   if (can_add_arcs_) {
     SafePtr<DGVertex> child = arc->dest();
 
-    // check if such arc exists already 
+    // check if such arc exists already
     if (!children_.empty()) {
       typedef ArcSetType::const_iterator aciter;
       const aciter abegin = children_.begin();
       const aciter aend = children_.end();
-      for(aciter a=abegin; a!=aend; ++a) { 
+      for(aciter a=abegin; a!=aend; ++a) {
 	if ((*a)->dest() == child)
 	  return;
       }
@@ -141,6 +141,9 @@ DGVertex::replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B)
 void
 DGVertex::add_entry_arc(const SafePtr<DGArc>& arc)
 {
+  if (arc->orig() == arc->dest())
+    throw CannotAddArc("DGVertex::add_entry_arc() -- arc connects node to itself");
+
   if (can_add_arcs_)
     parents_.push_back(arc);
   else
@@ -224,7 +227,7 @@ DGVertex::exit_arc(const SafePtr<DGVertex>& v) const
   const ArcSetType::const_iterator pos = find_if(children_.begin(),children_.end(),predicate);
   if (pos != end)
     return *pos;
-  else 
+  else
     return nullptr;
 }
 
@@ -416,7 +419,7 @@ UnrolledIntegralSet::operator()(const SafePtr<DGVertex>& V)
 {
   const unsigned int outdegree = V->num_exit_arcs();
   if (outdegree == 0) return false;
-  
+
   const SafePtr<DGArc> arc0 = *(V->first_exit_arc());
   // Is this DGArcRR?
   const SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
