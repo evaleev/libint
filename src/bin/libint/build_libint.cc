@@ -313,7 +313,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (la < lb || lc < ld || la+lb > lc+ld)
             continue;
 #else
-          if (la > lb || lc > ld || la+lb > lc+ld)
+          if (la > lb || lc > ld || la > lc || (la == lc && lb > ld))
             continue;
 #endif
 
