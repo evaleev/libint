@@ -199,6 +199,11 @@ namespace libint2 {
                       const SafePtr<Tactic>& tactic,
                       SafePtr<RecurrenceRelation>& rr,
                       Tactic::rr_stack& rrstack) {
+        // If given NullTactic -- skip
+        SafePtr<NullTactic> ntactic = dynamic_pointer_cast<NullTactic,Tactic>(tactic);
+        if (ntactic)
+          return false;
+
         // in CGF case collect all rrs on rrstack
         for (int xyz = 2; xyz >= 0; xyz--) {
           SafePtr<RRType> rr_ptr = RRType::Instance(integral, xyz);
@@ -306,6 +311,10 @@ namespace libint2 {
           apply_strategy_t applier(applier_impl);
           mpl::for_each<typename MasterStrategy<T>::value, apply_strategy_transform<_1>, apply_strategy_t& >(applier);
           rr = applier_impl->rr();
+#if DEBUG
+          if (rr != 0)
+            std::cout << "Selected the following RR: " << rr->label() << std::endl;
+#endif
         }
         return true;
       }

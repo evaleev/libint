@@ -75,8 +75,8 @@ namespace libint2 {
     }
 
   };
-  
-  
+
+
   template <class I>
     IntegralSet_to_Integrals<I>::IntegralSet_to_Integrals(const SafePtr<I>& Tint) :
     target_(Tint)
@@ -85,7 +85,7 @@ namespace libint2 {
 
       // Construct a subiterator for I
       SubIteratorBase<I> siter(Tint);
-      
+
       // Set children pointers
       for(siter.init(); siter; ++siter)
         children_.push_back(siter.elem());
@@ -97,7 +97,7 @@ namespace libint2 {
     {
       return children_.at(i);
     };
-  
+
 
 };
 
