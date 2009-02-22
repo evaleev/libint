@@ -32,7 +32,7 @@ CXXERICOMPSRC = $(ERICOMP).cc
 CXXERICOMPOBJ = $(CXXERICOMPSRC:%.cc=%.o)
 
 TEST = test_eri
-AUXSRC = prep_libint2.cc eri.cc
+AUXSRC = eri.cc
 CXXTESTSRC = $(TEST).cc $(AUXSRC)
 CXXTESTOBJ = $(CXXTESTSRC:%.cc=%.o)
 

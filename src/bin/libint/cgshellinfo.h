@@ -3,18 +3,11 @@
 #define _libint2_src_bin_libint_cgshellinfo_h_
 
 #include <libint2_config.h>
+#include <exception.h>
 #include <utility>
+#include <algorithm>
 
 namespace libint2 {
-
-#if 0
-  enum CGShellOrdering {
-    CGShellOrdering_Standard     = LIBINT_CGSHELL_ORDERING_STANDARD,
-    CGShellOrdering_IntV3        = LIBINT_CGSHELL_ORDERING_INTV3,
-    CGShellOrdering_GAMESS       = LIBINT_CGSHELL_ORDERING_GAMESS,
-    CGShellOrdering_ORCA         = LIBINT_CGSHELL_ORDERING_ORCA
-  };
-#endif
 
   namespace detail {
     int notxyz(int a, int b) {

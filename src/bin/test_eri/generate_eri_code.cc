@@ -6,6 +6,8 @@
 
 using namespace libint2;
 
+long living_count = 0;
+
 namespace {
   int try_main (int argc, char* argv[]);
 };

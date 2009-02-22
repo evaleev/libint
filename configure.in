@@ -54,12 +54,14 @@ echo Using API prefix: $withval
 LIBINT_CGSHELL_ORDERING_STANDARD=1   AC_SUBST(LIBINT_CGSHELL_ORDERING_STANDARD)
 LIBINT_CGSHELL_ORDERING_INTV3=2      AC_SUBST(LIBINT_CGSHELL_ORDERING_INTV3)
 LIBINT_CGSHELL_ORDERING_GAMESS=3     AC_SUBST(LIBINT_CGSHELL_ORDERING_GAMESS)
+LIBINT_CGSHELL_ORDERING_ORCA=4       AC_SUBST(LIBINT_CGSHELL_ORDERING_ORCA)
 libint_cgshell_ordering=standard
 AC_ARG_WITH(cartgauss-ordering,
 [  --with-cartgauss-ordering   Use one of the following known orderings for shells of cartesian Gaussians:
                                libint -- standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...)
                                intv3  -- intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx)
                                gamess -- GAMESS ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
+                               orca -- same as GAMESS ordering except for p-type shells
                                The default is libint.],
 [
 libint_cgshell_ordering=$withval
@@ -75,6 +77,9 @@ case $libint_cgshell_ordering in
   gamess)
     libint_cgshell_ordering=$LIBINT_CGSHELL_ORDERING_GAMESS
   ;;
+  orca)
+    libint_cgshell_ordering=$LIBINT_CGSHELL_ORDERING_ORCA
+  ;;
   *)
     AC_MSG_ERROR([Invalid value for --with-cartgauss-ordering ($withval)])
   ;;
@@ -83,6 +88,7 @@ AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING,$libint_cgshell_ordering)
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_STANDARD,$LIBINT_CGSHELL_ORDERING_STANDARD)
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_INTV3,$LIBINT_CGSHELL_ORDERING_INTV3)
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_GAMESS,$LIBINT_CGSHELL_ORDERING_GAMESS)
+AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_ORCA,$LIBINT_CGSHELL_ORDERING_ORCA)
 
 AC_ARG_ENABLE(debug,
 [  --enable-debug          Compile with debugging options],

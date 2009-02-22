@@ -20,14 +20,14 @@ int main(int argc, char** argv)
 {
 
   typedef unsigned int uint;
-  
+
   const uint veclen = LIBINT2_MAX_VECLEN;
   double alpha[4] = {0.5, 1.0, 1.5, 2.0};
   double A[3] = {1.0, 2.0, 3.0};
   double B[3] = {1.5, 2.5, 3.5};
   double C[3] = {4.0, 2.0, 0.0};
   double D[3] = {3.0, 3.0, 1.0};
-  
+
   const double ratio = 1.5;
   std::vector<double> alpha1;
   std::vector<double> alpha2;
@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     alpha3.push_back(alpha[2]*scale);
     alpha4.push_back(alpha[3]*scale);
   }
-  
+
 #if USE_BRAKET_H
   CGShell sh0(&(am[0]));
   CGShell sh1(&(am[1]));
@@ -128,16 +128,16 @@ int main(int argc, char** argv)
           uint m3 = bf3->qn(1);
           uint n3 = bf3->qn(2);
 #endif
-          
+
           for(uint v=0; v<veclen; v++) {
-  
+
             double ref_eri = eri(l0,m0,n0,alpha1[v],A,
             l1,m1,n1,alpha2[v],B,
             l2,m2,n2,alpha3[v],C,
             l3,m3,n3,alpha4[v],D,0);
-            
+
             double new_eri = scale_target * erieval->targets[0][ijkl*veclen+v];
-          
+
             if ( fabs((ref_eri-new_eri)/new_eri) > 1.0E-8) {
               std::cout << "Elem " << ijkl << " v=" << v
                         << " : eri.cc = " << ref_eri
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
   LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(erieval);
 
   cout << "test " << (success ? "ok" : "failed") << endl;
-  
+
 }
 
 

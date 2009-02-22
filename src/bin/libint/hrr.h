@@ -178,13 +178,15 @@ namespace libint2 {
             SafePtr<ExprType> sum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
             expr_ = sum_ptr;
           }
-          else if (loc_a == InKet && loc_b == InBra) {
-            SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
-            SafePtr<ExprType> diff_ptr(new ExprType(ExprType::OperatorTypes::Minus,expr0_ptr,expr1_ptr));
-            expr_ = diff_ptr;
+          else {
+            if (loc_a == InKet && loc_b == InBra) {
+              SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
+              SafePtr<ExprType> diff_ptr(new ExprType(ExprType::OperatorTypes::Minus,expr0_ptr,expr1_ptr));
+              expr_ = diff_ptr;
+            }
+            else
+              throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
           }
-          else
-            throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
         }
       }
       else {
@@ -219,13 +221,15 @@ namespace libint2 {
             SafePtr<ExprType> sum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
             expr_ = sum_ptr;
           }
-          else if (loc_a == InKet && loc_b == InBra) {
-            SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
-            SafePtr<ExprType> diff_ptr(new ExprType(ExprType::OperatorTypes::Minus,expr0_ptr,expr1_ptr));
-            expr_ = diff_ptr;
+          else {
+            if (loc_a == InKet && loc_b == InBra) {
+              SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
+              SafePtr<ExprType> diff_ptr(new ExprType(ExprType::OperatorTypes::Minus,expr0_ptr,expr1_ptr));
+              expr_ = diff_ptr;
+            }
+            else
+              throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
           }
-          else
-            throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
         }
       }
 
