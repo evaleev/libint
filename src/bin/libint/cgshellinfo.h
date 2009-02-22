@@ -95,13 +95,201 @@ namespace libint2 {
   };
   template <unsigned int lmax> struct CGShellOrderingGenerator<CGShellOrdering_ORCA,lmax> {
     static void compute(int (&cartindex)[lmax+1][lmax+1][lmax+1]) {
-      // same as GAMESS
-      CGShellOrderingGenerator<CGShellOrdering_GAMESS,lmax>::compute(cartindex);
-      // except for p-type shells: z, x, y
-      if (lmax > 0) {
-        cartindex[1][0][0] = 0;
-        cartindex[1][1][0] = 1;
-        cartindex[1][0][1] = 2;
+
+      for (unsigned int am = 0; am <= lmax; ++am) {
+
+        if (am == 0) {
+          cartindex[0][0][0] = 0;
+          continue;
+        }
+        if (am == 1) {
+          cartindex[1][0][0] = 0;
+          cartindex[1][1][0] = 1;
+          cartindex[1][0][1] = 2;
+          continue;
+        }
+        if (am == 2) {
+          cartindex[2][2][0] = 0;
+          cartindex[2][0][2] = 1;
+          cartindex[2][0][0] = 2;
+          cartindex[2][1][1] = 3;
+          cartindex[2][1][0] = 4;
+          cartindex[2][0][1] = 5;
+          continue;
+        }
+        if (am == 3) {
+          cartindex[3][3][0] = 0;
+          cartindex[3][0][3] = 1;
+          cartindex[3][0][0] = 2;
+          cartindex[3][2][1] = 3;
+          cartindex[3][2][0] = 4;
+          cartindex[3][1][2] = 5;
+          cartindex[3][0][2] = 6;
+          cartindex[3][1][0] = 7;
+          cartindex[3][0][1] = 8;
+          cartindex[3][1][1] = 9;
+          continue;
+        }
+        if (am == 4) {
+          cartindex[4][4][0] = 0;
+          cartindex[4][0][4] = 1;
+          cartindex[4][0][0] = 2;
+          cartindex[4][3][1] = 3;
+          cartindex[4][3][0] = 4;
+          cartindex[4][1][3] = 5;
+          cartindex[4][0][3] = 6;
+          cartindex[4][1][0] = 7;
+          cartindex[4][0][1] = 8;
+          cartindex[4][2][2] = 9;
+          cartindex[4][2][0] = 10;
+          cartindex[4][0][2] = 11;
+          cartindex[4][2][1] = 12;
+          cartindex[4][1][2] = 13;
+          cartindex[4][1][1] = 14;
+          continue;
+        }
+        if (am == 5) {
+          cartindex[5][5][0] = 0;
+          cartindex[5][4][1] = 1;
+          cartindex[5][4][0] = 2;
+          cartindex[5][3][2] = 3;
+          cartindex[5][3][1] = 4;
+          cartindex[5][3][0] = 5;
+          cartindex[5][2][3] = 6;
+          cartindex[5][2][2] = 7;
+          cartindex[5][2][1] = 8;
+          cartindex[5][2][0] = 9;
+          cartindex[5][1][4] = 10;
+          cartindex[5][1][3] = 11;
+          cartindex[5][1][2] = 12;
+          cartindex[5][1][1] = 13;
+          cartindex[5][1][0] = 14;
+          cartindex[5][0][5] = 15;
+          cartindex[5][0][4] = 16;
+          cartindex[5][0][3] = 17;
+          cartindex[5][0][2] = 18;
+          cartindex[5][0][1] = 19;
+          cartindex[5][0][0] = 20;
+          continue;
+        }
+        if (am == 6) {
+          cartindex[6][6][0] = 0;
+          cartindex[6][5][1] = 1;
+          cartindex[6][5][0] = 2;
+          cartindex[6][4][2] = 3;
+          cartindex[6][4][1] = 4;
+          cartindex[6][4][0] = 5;
+          cartindex[6][3][3] = 6;
+          cartindex[6][3][2] = 7;
+          cartindex[6][3][1] = 8;
+          cartindex[6][3][0] = 9;
+          cartindex[6][2][4] = 10;
+          cartindex[6][2][3] = 11;
+          cartindex[6][2][2] = 12;
+          cartindex[6][2][1] = 13;
+          cartindex[6][2][0] = 14;
+          cartindex[6][1][5] = 15;
+          cartindex[6][1][4] = 16;
+          cartindex[6][1][3] = 17;
+          cartindex[6][1][2] = 18;
+          cartindex[6][1][1] = 19;
+          cartindex[6][1][0] = 20;
+          cartindex[6][0][6] = 21;
+          cartindex[6][0][5] = 22;
+          cartindex[6][0][4] = 23;
+          cartindex[6][0][3] = 24;
+          cartindex[6][0][2] = 25;
+          cartindex[6][0][1] = 26;
+          cartindex[6][0][0] = 27;
+          continue;
+        }
+        if (am == 7) {
+          cartindex[7][7][0] = 0;
+          cartindex[7][6][1] = 1;
+          cartindex[7][6][0] = 2;
+          cartindex[7][5][2] = 3;
+          cartindex[7][5][1] = 4;
+          cartindex[7][5][0] = 5;
+          cartindex[7][4][3] = 6;
+          cartindex[7][4][2] = 7;
+          cartindex[7][4][1] = 8;
+          cartindex[7][4][0] = 9;
+          cartindex[7][3][4] = 10;
+          cartindex[7][3][3] = 11;
+          cartindex[7][3][2] = 12;
+          cartindex[7][3][1] = 13;
+          cartindex[7][3][0] = 14;
+          cartindex[7][2][5] = 15;
+          cartindex[7][2][4] = 16;
+          cartindex[7][2][3] = 17;
+          cartindex[7][2][2] = 18;
+          cartindex[7][2][1] = 19;
+          cartindex[7][2][0] = 20;
+          cartindex[7][1][6] = 21;
+          cartindex[7][1][5] = 22;
+          cartindex[7][1][4] = 23;
+          cartindex[7][1][3] = 24;
+          cartindex[7][1][2] = 25;
+          cartindex[7][1][1] = 26;
+          cartindex[7][1][0] = 27;
+          cartindex[7][0][7] = 28;
+          cartindex[7][0][6] = 29;
+          cartindex[7][0][5] = 30;
+          cartindex[7][0][4] = 31;
+          cartindex[7][0][3] = 32;
+          cartindex[7][0][2] = 33;
+          cartindex[7][0][1] = 34;
+          cartindex[7][0][0] = 35;
+          continue;
+        }
+        if (am == 8) {
+          cartindex[8][8][0] = 0;
+          cartindex[8][7][1] = 1;
+          cartindex[8][7][0] = 2;
+          cartindex[8][6][2] = 3;
+          cartindex[8][6][1] = 4;
+          cartindex[8][6][0] = 5;
+          cartindex[8][5][3] = 6;
+          cartindex[8][5][2] = 7;
+          cartindex[8][5][1] = 8;
+          cartindex[8][5][0] = 9;
+          cartindex[8][4][4] = 10;
+          cartindex[8][4][3] = 11;
+          cartindex[8][4][2] = 12;
+          cartindex[8][4][1] = 13;
+          cartindex[8][4][0] = 14;
+          cartindex[8][3][5] = 15;
+          cartindex[8][3][4] = 16;
+          cartindex[8][3][3] = 17;
+          cartindex[8][3][2] = 18;
+          cartindex[8][3][1] = 19;
+          cartindex[8][3][0] = 20;
+          cartindex[8][2][6] = 21;
+          cartindex[8][2][5] = 22;
+          cartindex[8][2][4] = 23;
+          cartindex[8][2][3] = 24;
+          cartindex[8][2][2] = 25;
+          cartindex[8][2][1] = 26;
+          cartindex[8][2][0] = 27;
+          cartindex[8][1][7] = 28;
+          cartindex[8][1][6] = 29;
+          cartindex[8][1][5] = 30;
+          cartindex[8][1][4] = 31;
+          cartindex[8][1][3] = 32;
+          cartindex[8][1][2] = 33;
+          cartindex[8][1][1] = 34;
+          cartindex[8][1][0] = 35;
+          cartindex[8][0][8] = 36;
+          cartindex[8][0][7] = 37;
+          cartindex[8][0][6] = 38;
+          cartindex[8][0][5] = 39;
+          cartindex[8][0][4] = 40;
+          cartindex[8][0][3] = 41;
+          cartindex[8][0][2] = 42;
+          cartindex[8][0][1] = 43;
+          cartindex[8][0][0] = 44;
+          continue;
+        }
       }
 
       for(int l=0; l<=lmax; ++l) {
@@ -112,6 +300,7 @@ namespace libint2 {
           }
         }
       }
+
     }
   };
 
