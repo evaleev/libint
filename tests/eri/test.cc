@@ -43,10 +43,10 @@ int main(int argc, char** argv) {
   Libint_t inteval;
   LIBINT2_PREFIXED_NAME(libint2_init_eri)(&inteval, lmax, 0);
 
-  for (unsigned int l0 = 0; l0 < lmax; ++l0) {
-    for (unsigned int l1 = 0; l1 < lmax; ++l1) {
-      for (unsigned int l2 = 0; l2 < lmax; ++l2) {
-        for (unsigned int l3 = 0; l3 < lmax; ++l3) {
+  for (unsigned int l0 = 0; l0 <= lmax; ++l0) {
+    for (unsigned int l1 = 0; l1 <= lmax; ++l1) {
+      for (unsigned int l2 = 0; l2 <= lmax; ++l2) {
+        for (unsigned int l3 = 0; l3 <= lmax; ++l3) {
 
           // can compute this? skip, if not
           if (LIBINT2_PREFIXED_NAME(libint2_build_eri)[l0][l1][l2][l3] == 0)
