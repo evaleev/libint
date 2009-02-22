@@ -12,5 +12,5 @@ run the following 2 commands:
 aclocal -I lib/autoconf
 autoconf
 
-Report all problems to edward.valeev@gatech.edu
+Report all problems to edward.valeev@gmail.com
 
