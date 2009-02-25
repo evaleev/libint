@@ -26,6 +26,6 @@ while ($utime < 1.0 || $utime > 10.0) {
 
 my $floprate = $nflops / $utime;
 my $costperint = $utime / ($timencycles * $nints);
-printf STDOUT "FLOP rate = $floprate   Cost per integral = %15.3f nanosec\n", $costperint * 1000000000.0;
+printf STDOUT "FLOP rate = %10.3f GFLOPs Cost per integral = %15.3f nanosec\n", $floprate/1000000000, $costperint * 1000000000.0;
 
 

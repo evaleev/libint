@@ -58,11 +58,11 @@ LIBINT_CGSHELL_ORDERING_ORCA=4       AC_SUBST(LIBINT_CGSHELL_ORDERING_ORCA)
 libint_cgshell_ordering=standard
 AC_ARG_WITH(cartgauss-ordering,
 [  --with-cartgauss-ordering   Use one of the following known orderings for shells of cartesian Gaussians:
-                               libint -- standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...)
+                               standard -- standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...)
                                intv3  -- intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx)
                                gamess -- GAMESS ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
-                               orca -- same as GAMESS ordering except for p-type shells
-                               The default is libint.],
+                               orca -- ORCA ordering (hydrid between GAMESS and standard)
+                               The default is standard.],
 [
 libint_cgshell_ordering=$withval
 ])
@@ -89,6 +89,40 @@ AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_STANDARD,$LIBINT_CGSHELL_ORDERING_STA
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_INTV3,$LIBINT_CGSHELL_ORDERING_INTV3)
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_GAMESS,$LIBINT_CGSHELL_ORDERING_GAMESS)
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_ORCA,$LIBINT_CGSHELL_ORDERING_ORCA)
+
+LIBINT_SHELLQUARTET_SET_STANDARD=1   AC_SUBST(LIBINT_SHELLQUARTET_SET_STANDARD)
+LIBINT_SHELLQUARTET_SET_ORCA=2      AC_SUBST(LIBINT_SHELLQUARTET_SET_ORCA)
+libint_shellquartet_set=standard
+AC_ARG_WITH(shellquartet-set,
+[  --with-shellquartet-set     The library will support computation of shell quartets (ab|cd) sets subject to these restrictions:
+                               standard -- standard ordering:
+                                           l(a) >= l(b),
+                                           l(c) >= l(d),
+                                           l(a)+l(b) <= l(c)+l(d))
+                               orca -- ORCA ordering:
+                                           l(a) <= l(b),
+                                           l(c) <= l(d),
+                                           l(a) < l(c) || (l(a) == l(c) && l(b) < l(d))
+                               The default is standard.],
+[
+libint_shellquartet_set=$withval
+])
+AC_MSG_RESULT([Will generate $libint_shellquartet_set shell quartet sets])
+case $libint_shellquartet_set in
+  standard)
+    libint_shellquartet_set=$LIBINT_SHELLQUARTET_SET_STANDARD
+  ;;
+  orca)
+    libint_shellquartet_set=$LIBINT_SHELLQUARTET_SET_ORCA
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --with-shellquartet-set ($withval)])
+  ;;
+esac
+LIBINT_SHELLQUARTET_SET=$libint_shellquartet_set AC_SUBST(LIBINT_SHELLQUARTET_SET)
+AC_DEFINE_UNQUOTED(LIBINT_SHELLQUARTET_SET,$libint_shellquartet_set)
+AC_DEFINE_UNQUOTED(LIBINT_SHELLQUARTET_SET_STANDARD,$LIBINT_SHELLQUARTET_SET_STANDARD)
+AC_DEFINE_UNQUOTED(LIBINT_SHELLQUARTET_SET_ORCA,$LIBINT_SHELLQUARTET_SET_ORCA)
 
 AC_ARG_ENABLE(debug,
 [  --enable-debug          Compile with debugging options],
@@ -750,7 +784,7 @@ AC_SUBST(CXXDEPENDFLAGS)
 
 
 dnl --------- configure compiler for generated source ---------
-if test X$CXXGEN = X; then
+if test "X$CXXGEN" = X; then
   CXXGEN=$CXX
   CXXGENOPTIONS_OPT=$CXXOPTIONS_OPT
 fi
@@ -783,34 +817,6 @@ else
   CXX_COMPATIBLE_WITH_CXXGEN=no
 fi
 /bin/rm -f linkcheck1 linkcheck2 linkcheck3  linkcheck1.cc linkcheck2.cc linkcheck1.o linkcheck2.o
-fi
-
-dnl --------- Check if either compiler will allow template template parameter
-dnl           to be specialized using fewer params (i.e. due to default template params) ---------
-echo "template <typename A, typename B = int> class T1 {};" > compcheck.cc
-echo "template <typename C, template <typename D> class E = T1 > class T2 {};" >> compcheck.cc
-echo "void f() { T2<int> x; }" >> compcheck.cc
-AC_MSG_CHECKING([[if cxx allows template with default params as template template parameter]])
-$CXX $CPPFLAGS $CXXFLAGS -c compcheck.cc > /dev/null 2>&1
-if test ! -f compcheck.o; then
-  AC_MSG_RESULT([[no]])
- # AC_MSG_ERROR([[C++ compiler (cxx) cannot be used to compile Libint. Try gcc-3.4.]])
-else
-  AC_MSG_RESULT([[yes]])
-  AC_SUBST(CXX_ALLOWS_DEFPARAMTEMPLATE_AS_TEMPTEMPPARAM)
-fi
-rm -f compcheck.o
-if test "X$CXX" != "X$CXXGEN"; then
-AC_MSG_CHECKING([[if cxxgen allows template with default params as template template parameter]])
-$CXXGEN $CPPFLAGS $CXXGENFLAGS -c compcheck.cc > /dev/null 2>&1
-if test ! -f compcheck.o; then
-  AC_MSG_RESULT([[no]])
-  AC_MSG_WARN([[You will not be able to test generated code.]])
-  CXX_COMPATIBLE_WITH_CXXGEN=no
-else
-  AC_MSG_RESULT([[yes]])
-fi
-rm -f compcheck.cc compcheck.o
 fi
 
 AC_SUBST(CXX_COMPATIBLE_WITH_CXXGEN)
@@ -956,6 +962,7 @@ AC_CONFIG_FILES([src/bin/test_eri/test_eri.pl],[chmod +x src/bin/test_eri/test_e
 AC_CONFIG_FILES([src/bin/test_eri/time_eri.pl],[chmod +x src/bin/test_eri/time_eri.pl])
 AC_CONFIG_FILES([src/bin/test_eri/run_time_eri.pl],[chmod +x src/bin/test_eri/run_time_eri.pl])
 AC_CONFIG_FILES([src/bin/test_eri/stdtests.pl],[chmod +x src/bin/test_eri/stdtests.pl])
+AC_CONFIG_FILES([src/bin/test_eri/run_timing_suite.pl],[chmod +x src/bin/test_eri/run_timing_suite.pl])
 AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/MakeSuffixRules
                 doc/MakeVars doc/MakeRules doc/MakeSuffixRules doc/macros.tex doc/classdoc/doxygen.cfg
                 src/bin/libint/cgshell_ordering.h)

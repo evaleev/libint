@@ -17,7 +17,7 @@ COMPILER_LIB = $(TOPDIR)/src/bin/libint/libINT.a
 COMPUTE_LIB = $(TOPDIR)/lib/libint2.a
 
 TEST = test
-AUXSRC = $(SRCDIR)/$(TOPDIR)/src/bin/test_eri/eri.cc
+AUXSRC = $(TOPDIR)/src/bin/test_eri/eri.cc
 CXXTESTSRC = $(TEST).cc $(AUXSRC)
 CXXTESTOBJ = $(CXXTESTSRC:%.cc=%.o)
 

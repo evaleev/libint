@@ -36,6 +36,25 @@
 using namespace std;
 using namespace libint2;
 
+enum ShellQuartetSet {
+  ShellQuartetSet_Standard = LIBINT_SHELLQUARTET_SET_STANDARD,
+  ShellQuartetSet_ORCA     = LIBINT_SHELLQUARTET_SET_ORCA
+};
+template <ShellQuartetSet SQSet> struct ShellQuartetSetPredicate {
+  // return true if this set of angular momenta is included
+  static bool value(int la, int lb, int lc, int ld);
+};
+template <> struct ShellQuartetSetPredicate<ShellQuartetSet_Standard> {
+  static bool value(int la, int lb, int lc, int ld) {
+    return la >= lb && lc >= ld && la+lb <= lc+ld;
+  }
+};
+template <> struct ShellQuartetSetPredicate<ShellQuartetSet_ORCA> {
+  static bool value(int la, int lb, int lc, int ld) {
+    return la <= lb && lc <= ld && ( la < lc || (la == lc && lb <= ld));
+  }
+};
+
 #define STUDY_MEMORY_USAGE 0
 long living_count = 0;
 
@@ -159,6 +178,9 @@ void try_main (int argc, char* argv[])
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_INTV3",LIBINT_CGSHELL_ORDERING_INTV3));
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_GAMESS",LIBINT_CGSHELL_ORDERING_GAMESS));
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_ORCA",LIBINT_CGSHELL_ORDERING_ORCA));
+  iface->to_params(iface->macro_define("SHELLQUARTET_SET",LIBINT_SHELLQUARTET_SET));
+  iface->to_params(iface->macro_define("SHELLQUARTET_SET_STANDARD",LIBINT_SHELLQUARTET_SET_STANDARD));
+  iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELLQUARTET_SET_ORCA));
   cparams->print(os);
 
 #ifdef INCLUDE_ERI
@@ -309,13 +331,8 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (la+lb+lc+ld == 0)
             continue;
 
-#if !GENERATE_FOR_ORCA
-          if (la < lb || lc < ld || la+lb > lc+ld)
+          if (!ShellQuartetSetPredicate<static_cast<ShellQuartetSet>(LIBINT_SHELLQUARTET_SET)>::value(la,lb,lc,ld))
             continue;
-#else
-          if (la > lb || lc > ld || la > lc || (la == lc && lb > ld))
-            continue;
-#endif
 
 #if STUDY_MEMORY_USAGE
           const int lim = 1;

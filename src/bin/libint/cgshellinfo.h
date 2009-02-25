@@ -36,6 +36,21 @@ namespace libint2 {
   template <CGShellOrdering Ord, unsigned int lmax> struct CGShellOrderingGenerator {
     static void compute(int (&cartindex)[lmax+1][lmax+1][lmax+1]);
   };
+  template <unsigned int lmax> struct CGShellOrderingGenerator<CGShellOrdering_Standard,lmax> {
+    static void compute(int (&cartindex)[lmax+1][lmax+1][lmax+1]) {
+
+      // see cgshell_ordering.h
+      for (unsigned int am = 0; am <= lmax; ++am) {
+        int count = 0;
+        for(int i=(am);(i)>=0;(i)--) {
+          for(int j=(am)-(i);(j)>=0;(j)--, ++count) {
+            cartindex[am][i][j] = count;
+          }
+        }
+      }
+
+    }
+  };
   template <unsigned int lmax> struct CGShellOrderingGenerator<CGShellOrdering_GAMESS,lmax> {
     static void compute(int (&cartindex)[lmax+1][lmax+1][lmax+1]) {
 
@@ -96,7 +111,11 @@ namespace libint2 {
   template <unsigned int lmax> struct CGShellOrderingGenerator<CGShellOrdering_ORCA,lmax> {
     static void compute(int (&cartindex)[lmax+1][lmax+1][lmax+1]) {
 
-      for (unsigned int am = 0; am <= lmax; ++am) {
+      // identical to GAMESS for s through f functions, similar to GAMESS for g functions
+      // identical to standard for h and higher
+      CGShellOrderingGenerator<CGShellOrdering_Standard,lmax>::compute(cartindex);
+
+      for (unsigned int am = 0; am <= std::min(4u,lmax); ++am) {
 
         if (am == 0) {
           cartindex[0][0][0] = 0;
@@ -148,6 +167,7 @@ namespace libint2 {
           cartindex[4][1][1] = 14;
           continue;
         }
+        /*
         if (am == 5) {
           cartindex[5][5][0] = 0;
           cartindex[5][4][1] = 1;
@@ -290,8 +310,10 @@ namespace libint2 {
           cartindex[8][0][0] = 44;
           continue;
         }
+        */
       }
 
+#if 0
       for(int l=0; l<=lmax; ++l) {
         for(int i=0; i<=l; ++i) {
           for(int j=0; j<=l-i; ++j) {
@@ -300,6 +322,7 @@ namespace libint2 {
           }
         }
       }
+#endif
 
     }
   };

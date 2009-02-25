@@ -2,6 +2,9 @@
 #ifndef _libint2_src_bin_libint_globalmacros_h_
 #define _libint2_src_bin_libint_globalmacros_h_
 
+/// Feel free to adjust higher, but not yet tested
+#define LIBINT_CARTGAUSS_MAX_AM 20
+
 /// Set to 1 to enable various safety checks which are normally too expensive to perform
 #define CHECK_SAFETY 1
 
@@ -46,15 +49,12 @@
 
 /// If set to 0 then complex expressions will be condensed into single-line
 /// expressions, which should help linewise vectorization
-#define DISABLE_SUBTREES 0
+#define DISABLE_SUBTREES 1
 
 /// Produce massive amounts of debugging info
 #define DEBUG 0
 #define DEBUG_RESTRUCTURE 0
 #define DEBUG_TRAVERSAL 0
 #define DEBUG_CONSTRUCTION 0
-
-/// generate for ORCA?
-#define GENERATE_FOR_ORCA 0
 
 #endif

@@ -25,6 +25,15 @@ using namespace libint2;
 
 namespace libint2 {
 
+  // Depending on the set of shell quartets, may need to adjust the strategy
+#define LIBINT_SHELLQUARTET_STRATEGY_A0C0 1
+#define LIBINT_SHELLQUARTET_STRATEGY_0B0D 2
+#define LIBINT_SHELLQUARTET_STRATEGY LIBINT_SHELLQUARTET_STRATEGY_A0C0
+#if LIBINT_SHELLQUARTET_SET == LIBINT_SHELLQUARTET_SET_ORCA
+# undef LIBINT_SHELLQUARTET_STRATEGY
+# define LIBINT_SHELLQUARTET_STRATEGY LIBINT_SHELLQUARTET_STRATEGY_0B0D
+#endif
+
   //
   // Particle 0 is most significant for storage, hence want to perform HRR on it last,
   // when functions of particle 1 are ready. This will maximize the length of the loops
@@ -35,7 +44,7 @@ namespace libint2 {
 # error "Not all recurrence relations are implemented yet for pure OS scheme (have 5 minutes to fix this?)"
 #endif
   template <class T> struct MasterStrategy;
-#if !GENERATE_FOR_ORCA
+#if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
   template <> struct MasterStrategy<TwoPRep_11_11_sq> {
     typedef mpl::list<
     HRR_ab_11_TwoPRep_11_sh,
@@ -58,7 +67,7 @@ namespace libint2 {
     VRR_c_11_TwoPRep_11_int
     > value;
   };
-#else
+#else  // 0B0D strategy
   template <> struct MasterStrategy<TwoPRep_11_11_sq> {
     typedef mpl::list<
     HRR_ba_11_TwoPRep_11_sh,
@@ -135,7 +144,7 @@ namespace libint2 {
     CR_11_DivG12prime_xTx_11_int
     > value;
   };
-#if !GENERATE_FOR_ORCA
+#if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
   template <> struct MasterStrategy<DummySymmIntegral_11_11_sq> {
     typedef mpl::list<
     HRR_ab_11_Dummy_11_sh,
@@ -148,7 +157,7 @@ namespace libint2 {
     HRR_cd_11_Dummy_11_int
     > value;
   };
-#else
+#else // 0B0D strategy
   template <> struct MasterStrategy<DummySymmIntegral_11_11_sq> {
     typedef mpl::list<
     HRR_ba_11_Dummy_11_sh,
