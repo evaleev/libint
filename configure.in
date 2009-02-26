@@ -288,9 +288,6 @@ fi
 AC_ARG_ENABLE(t1g12-support,
 [  --disable-t1g12-support   Libint will not support [Ti,G12] integrals],
 [
-if test $enableval -lt 0; then
-  AC_MSG_ERROR([Invalid value for --enable-t1g12-support ($withval)])
-fi
 case $enableval in
   yes)
     SUPPORT_T1G12=1
