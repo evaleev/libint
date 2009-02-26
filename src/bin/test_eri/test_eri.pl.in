@@ -9,8 +9,10 @@ use Getopt::Long;
 # get optional command-line arguments
 my $scpexportdest = "";
 my $timencycles = 0;
+my $makevars = "";
 &GetOptions("scpexport=s" => \$scpexportdest,
-            "timencycles=i" => \$timencycles);
+            "timencycles=i" => \$timencycles,
+            "makevars=s" => \$makevars);
 
 (usage() and die) if ($#ARGV < 4 || $#ARGV > 7);
 
@@ -35,7 +37,8 @@ if ($#ARGV >= 7) {
   $do_cse = $ARGV[7];
 }
 
-system("make $ericomp") && die("make $ericomp failed");
+my $makecmd = "make $makevars $ericomp";
+system($makecmd) && die("$makecmd failed");
 printf STDOUT "Generating source ... ";
 system("./$ericomp $la $lb $lc $ld $size_to_unroll $veclen $vecmethod $do_cse | tee $ericomp.log") 
   && die("$ericomp failed");
@@ -75,7 +78,8 @@ close MFILE;
 #
 if ($scpexportdest eq "") {
   # now make test program and run it
-  my $errcod = system("make test_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"");
+  my $makecmd = "make $makevars test_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"";
+  my $errcod = system($makecmd);
   if ($errcod != 0) {
     printf STDOUT "make test_eri failed!\n";
   }
@@ -84,7 +88,8 @@ if ($scpexportdest eq "") {
   }
 
   # prepare timing program too
-  $errcod = system("make time_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"");
+  $makecmd = "make $makevars time_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"";
+  $errcod = system($makecmd);
   if ($errcod) {
     printf STDOUT "make time_eri failed!\n";
   }
@@ -119,6 +124,7 @@ sub usage {
   printf STDERR "         --scpexport=dest  -- generate source and scp to dest.\n";
   printf STDERR "                              dest must be in host:dir format.\n";
   printf STDERR "         --timencycles=A   -- run \"time_eri A\". Only valid if scpexport is not given\n";
+  printf STDERR "         --makevars=S      -- pass S to make command. Can be used to override make variables, etc.";
 
 }
 

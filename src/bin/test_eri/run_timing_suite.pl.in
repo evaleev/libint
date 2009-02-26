@@ -1,19 +1,28 @@
 #!/usr/bin/perl
 
 my $lmax = 3;
-my $ltotal_max = 12;
+my $ltotal_max = 10;
 my $shellquartet_set = @LIBINT_SHELLQUARTET_SET@;
 
+my @MakeVars = ("CXXGEN='icpc -m64' CXXGENFLAGS='-O3 -xSSSE3 -ansi-alias'",
+		"CXXGEN='icpc -m64' CXXGENFLAGS='-O3 -ansi-alias'",
+		"CXXGEN='/opt/local/bin/g++ -m64' CXXGENFLAGS='-O3'");
 my @UnrollingThresholds = ("100000000000", "1");
 my @VectorLengths = ("1");
 my @VectorizationMethods = ("0");
 my @DoCSE = ("0", "1");
 
+foreach my $makevars (@MakeVars) {
+
+printf STDOUT "------------------------------------------------------------\n";
+printf STDOUT "makevars: $makevars\n";
+printf STDOUT "------------------------------------------------------------\n";
+
 for($la=0; $la<=$lmax; ++$la) {
   for($lb=0; $lb<=$lmax; ++$lb) {
     for($lc=0; $lc<=$lmax; ++$lc) {
       for($ld=0; $ld<=$lmax; ++$ld) {
-
+      
         my $ltotal = $la+$lb+$lc+$ld;
         next if $ltotal == 0 || $ltotal >= $ltotal_max;
 
@@ -33,7 +42,7 @@ for($la=0; $la<=$lmax; ++$la) {
               foreach my $cse (@DoCSE) {
                 
                 my $args = "$la $lb $lc $ld $unroll_thresh $veclength $vecmethod $cse";
-                my $errcod = system("./test_eri.pl $args 1>/dev/null 2>/dev/null");
+                my $errcod = system("./test_eri.pl $args --makevars=\"$makevars\" 1>/dev/null 2>/dev/null");
                 if ($errcod == 0) {
                   my $flop_output = `./time_eri 1 | grep nflops`;
                   $flop_output =~ s/\n//;
@@ -52,6 +61,8 @@ for($la=0; $la<=$lmax; ++$la) {
       }
     }
   }
+}
+
 }
 
 exit 0;
