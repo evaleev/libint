@@ -3,7 +3,7 @@
 #define _libint2_src_bin_libint_cgshellinfo_h_
 
 #include <libint2_config.h>
-#include <exception.h>
+#include <cassert>
 #include <utility>
 #include <algorithm>
 
@@ -11,8 +11,7 @@ namespace libint2 {
 
   namespace detail {
     int notxyz(int a, int b) {
-      if (a == b)
-        throw libint2::ProgrammingError("notxyz(a,b) -- a equals b");
+      assert(a != b);
       int amax = std::max(a,b);
       int amin = std::min(a,b);
       if (amin == 0 && amax == 1)
