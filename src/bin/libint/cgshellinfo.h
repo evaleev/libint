@@ -10,7 +10,7 @@
 namespace libint2 {
 
   namespace detail {
-    int notxyz(int a, int b) {
+    inline int notxyz(int a, int b) {
       assert(a != b);
       int amax = std::max(a,b);
       int amin = std::min(a,b);
@@ -22,7 +22,7 @@ namespace libint2 {
         return 0;
     }
 
-    std::pair<int,int> notxyz(int a) {
+   inline std::pair<int,int> notxyz(int a) {
       switch(a) {
       case 0: return std::make_pair(1,2); break;
       case 1: return std::make_pair(0,2); break;
