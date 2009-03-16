@@ -37,26 +37,26 @@ namespace libint2 {
         const LIBINT2_REALTYPE* src4) {
 
       // works for (ds|ps) and higher
-      if (La < 2 && Lc < 1)
+      if (La < 2 || Lc < 1)
         abort();
-      
+
       const unsigned int veclen = vectorize ? inteval->veclen : 1;
-      
+
       const unsigned int Nc = INT_NCART(Lc);
       const unsigned int NcV = Nc * veclen;
-            
+
       int ax, ay, az;
       FOR_CART(ax, ay, az, La)
 
         int a[3]; a[0] = ax;  a[1] = ay;  a[2] = az;
-        
+
         enum XYZ {x=0, y=1, z=2};
         // Build along x, if possible
         XYZ xyz = z;
         if (ay != 0) xyz = y;
         if (ax != 0) xyz = x;
         --a[xyz];
-        
+
         // redirect
         const double *PA, *WP;
         switch(xyz) {
@@ -86,7 +86,7 @@ namespace libint2 {
           const unsigned int am20c0_offset = iam2 * NcV;
           ++a[xyz];
           const LIBINT2_REALTYPE* src2_ptr = src2 + am20c0_offset;
-          const LIBINT2_REALTYPE* src3_ptr = src3 + am20c0_offset;          
+          const LIBINT2_REALTYPE* src3_ptr = src3 + am20c0_offset;
           const LIBINT2_REALTYPE axyz = (LIBINT2_REALTYPE)a[xyz];
 
           unsigned int cv = 0;
@@ -98,7 +98,7 @@ namespace libint2 {
 #if LIBINT2_FLOP_COUNT
           inteval->nflops += 8 * NcV;
 #endif
-          
+
         }
         else {
           unsigned int cv = 0;
@@ -117,14 +117,14 @@ namespace libint2 {
           const unsigned int Ncm1V = Ncm1 * veclen;
           const unsigned int am10cm10_offset = iam1 * Ncm1V;
           const LIBINT2_REALTYPE* src4_ptr = src4 + am10cm10_offset;
-          
+
           // loop over c-1 shell and include (a-1_xyz 0 | c-1_xyz 0) to (a 0 | c 0)
           int cx, cy, cz;
           FOR_CART(cx, cy, cz, Lc-1)
 
             int c[3]; c[0] = cx;  c[1] = cy;  c[2] = cz;
             ++c[xyz];
-            
+
             const unsigned int cc = INT_CARTINDEX(Lc,c[0],c[1]);
             const unsigned int cc_offset = cc * veclen;
             LIBINT2_REALTYPE* tptr = target + cc_offset;
@@ -139,18 +139,18 @@ namespace libint2 {
 
           END_FOR_CART
         }
-        
+
         target += NcV;
 
       END_FOR_CART
-    
+
       /** Number of flops = ??? */
       //inteval->nflops = inteval->nflops + 222 * 1 * 1 * veclen;
 
     }
 
   };
-  
+
 };
 
 #endif // header guard

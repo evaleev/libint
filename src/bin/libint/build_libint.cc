@@ -173,6 +173,7 @@ void try_main (int argc, char* argv[])
   print_header(os);
   print_config(os);
   // transfer some configuration parameters to the generated library API
+  iface->to_params(iface->macro_define("CARTGAUSS_MAX_AM",LIBINT_CARTGAUSS_MAX_AM));
   iface->to_params(iface->macro_define("CGSHELL_ORDERING",LIBINT_CGSHELL_ORDERING));
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_STANDARD",LIBINT_CGSHELL_ORDERING_STANDARD));
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_INTV3",LIBINT_CGSHELL_ORDERING_INTV3));

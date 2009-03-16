@@ -4,6 +4,10 @@
 
 #include <libint2_config.h>
 /* if this is not defined, then using exported source -- redefine using macro from libint2_params.h */
+#ifndef LIBINT_CARTGAUSS_MAX_AM
+# include <libint2_params.h>
+# define LIBINT_CARTGAUSS_MAX_AM LIBINT2_CARTGAUSS_MAX_AM
+#endif
 #ifndef LIBINT_CGSHELL_ORDERING
 # include <libint2_params.h>
 # define LIBINT_CGSHELL_ORDERING LIBINT2_CGSHELL_ORDERING

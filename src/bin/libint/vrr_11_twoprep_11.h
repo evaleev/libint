@@ -232,21 +232,32 @@ namespace libint2 {
       F sh_c(target_->bra(1,0));
       F sh_d(target_->ket(1,0));
       const unsigned int max_opt_am = cparams->max_am_opt();
-      // generic code works for a0c0 classes where am(a) > 1 and am(c) > 1
+      if (TrivialBFSet<F>::result)
+        return false;
+      // generic code works for a0c0 of 0a0c classes where am(a) > 1 and am(c) > 1
       // to generate optimized code for xxxx integral need to generate specialized code for up to (x+x)0(x+x)0 integrals
-      if (!TrivialBFSet<F>::result &&
-          sh_b.zero() && sh_d.zero() &&
+      if (sh_b.zero() && sh_d.zero() &&
           sh_a.norm() > std::max(2*max_opt_am,1u) && sh_c.norm() > std::max(2*max_opt_am,1u))
         return true;
-      else
-        return false;
+      if (sh_a.zero() && sh_c.zero() &&
+          sh_b.norm() > std::max(2*max_opt_am,1u) && sh_d.norm() > std::max(2*max_opt_am,1u))
+        return true;
+      return false;
     }
 
   template <class F, int part, FunctionPosition where>
     std::string
     VRR_11_TwoPRep_11<F,part,where>::generic_header() const
     {
-      return std::string("OSVRR_xs_xs.h");
+      F sh_a(target_->bra(0,0));
+      F sh_b(target_->ket(0,0));
+      F sh_c(target_->bra(1,0));
+      F sh_d(target_->ket(1,0));
+      const bool xsxs = sh_b.zero() && sh_d.zero();
+      const bool sxsx = sh_a.zero() && sh_c.zero();
+      if (xsxs) return std::string("OSVRR_xs_xs.h");
+      if (sxsx) return std::string("OSVRR_sx_sx.h");
+      abort(); // unreachable
     }
 
   template <class F, int part, FunctionPosition where>
@@ -255,13 +266,24 @@ namespace libint2 {
     {
       std::ostringstream oss;
       F sh_a(target_->bra(0,0));
+      F sh_b(target_->ket(0,0));
       F sh_c(target_->bra(1,0));
+      F sh_d(target_->ket(1,0));
+      const bool xsxs = sh_b.zero() && sh_d.zero();
+      const bool sxsx = sh_a.zero() && sh_c.zero();
 
       oss << "using namespace libint2;" << endl;
-      oss << "libint2::OSVRR_xs_xs<" << part << "," << to_string(where) << "," << sh_a.norm() << "," << sh_c.norm() << ",";
-      oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
-      oss << ">::compute(inteval";
 
+      if(xsxs) {
+        oss << "libint2::OSVRR_xs_xs<" << part << "," << to_string(where) << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+        oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
+        oss << ">::compute(inteval";
+      }
+      if (sxsx) {
+        oss << "libint2::OSVRR_sx_sx<" << part << "," << to_string(where) << "," << sh_b.norm() << "," << sh_d.norm() << ",";
+        oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
+        oss << ">::compute(inteval";
+      }
 
       const unsigned int nargs = args->n();
       for(unsigned int a=0; a<nargs; a++) {

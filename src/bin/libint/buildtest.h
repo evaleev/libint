@@ -23,7 +23,7 @@ namespace libint2 {
   public:
     TesterCmdLine(int argc, char* argv[]);
     ~TesterCmdLine() {}
-    
+
     const std::vector<unsigned int>& am() const { return am_; }
     unsigned int size_to_unroll() const { return size_to_unroll_; }
     unsigned int veclen() const { return veclen_; }
@@ -75,7 +75,7 @@ namespace libint2 {
       LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
       taskmgr.add(complabel);
       taskmgr.current(complabel);
-      
+
       //
       // do CSE only if max_am <= cparams->max_am_opt()
       //
@@ -104,7 +104,7 @@ namespace libint2 {
       const bool need_to_optimize = (max_am <= cparams->max_am_opt(complabel));
       dg_xxxx->registry()->do_cse(need_to_optimize);
       dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
-      
+
       // Need to accumulate integrals?
       dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
 
@@ -113,11 +113,11 @@ namespace libint2 {
       dg_xxxx->append_target(xsxs_ptr);
       dg_xxxx->apply(strat,tactic);
       dg_xxxx->optimize_rr_out();
-      
+
       std::basic_ofstream<char> dotfile("graph.dot");
       dg_xxxx->print_to_dot(false,dotfile);
       os << "The number of vertices = " << dg_xxxx->num_vertices() << std::endl;
-      
+
       dg_xxxx->traverse();
       //dg_xxxx->debug_print_traversal(cout);
       SafePtr<CodeContext> context(new CppCodeContext(cparams));
@@ -127,7 +127,7 @@ namespace libint2 {
       std::basic_ofstream<char> deffile(def_filename.c_str());
       dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),
 			     label,declfile,deffile);
-      
+
       // update max stack size
       taskmgr.current().params()->max_stack_size(memman->max_memory_used());
       // extract all extrnal symbols
@@ -135,7 +135,7 @@ namespace libint2 {
 
       std::basic_ofstream<char> dotfile2("graph.symb.dot");
       dg_xxxx->print_to_dot(true,dotfile2);
-      
+
       os << "Max memory used = " << memman->max_memory_used() << std::endl;
       dg_xxxx->reset();
 
@@ -149,6 +149,17 @@ namespace libint2 {
 	std::ostringstream oss;
 	oss << "#include <" << decl_filename << ">" << std::endl;
 	iface->to_int_iface(oss.str());
+
+	// transfer some configuration parameters to the generated library API
+	iface->to_params(iface->macro_define("CARTGAUSS_MAX_AM",LIBINT_CARTGAUSS_MAX_AM));
+	iface->to_params(iface->macro_define("CGSHELL_ORDERING",LIBINT_CGSHELL_ORDERING));
+	iface->to_params(iface->macro_define("CGSHELL_ORDERING_STANDARD",LIBINT_CGSHELL_ORDERING_STANDARD));
+	iface->to_params(iface->macro_define("CGSHELL_ORDERING_INTV3",LIBINT_CGSHELL_ORDERING_INTV3));
+	iface->to_params(iface->macro_define("CGSHELL_ORDERING_GAMESS",LIBINT_CGSHELL_ORDERING_GAMESS));
+	iface->to_params(iface->macro_define("CGSHELL_ORDERING_ORCA",LIBINT_CGSHELL_ORDERING_ORCA));
+	iface->to_params(iface->macro_define("SHELLQUARTET_SET",LIBINT_SHELLQUARTET_SET));
+	iface->to_params(iface->macro_define("SHELLQUARTET_SET_STANDARD",LIBINT_SHELLQUARTET_SET_STANDARD));
+	iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELLQUARTET_SET_ORCA));
 
 	// Generate set-level RR code
 	generate_rr_code(os,cparams);
@@ -184,7 +195,7 @@ namespace libint2 {
     LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
     taskmgr.add(complabel);
     taskmgr.current(complabel);
-      
+
     // initialize cparams
     SafePtr<CompilationParameters> cparams(new CompilationParameters);
     cparams->max_am(complabel,max_am);
