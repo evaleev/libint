@@ -132,8 +132,8 @@ namespace libint2 {
  *   Stuff using i,j,k.
  *   END_FOR_CART
  */
-#define FOR_CART(i,j,k,am) for(int xyz=0; xyz<INT_NCART(am); ++xyz) { \
-                             CGShellInfo< CGShellOrderingData<CGShellOrdering_GAMESS,LIBINT_CARTGAUSS_MAX_AM> >::cartindex_to_ijk(am,xyz,i,j,k);
+#define FOR_CART(i,j,k,am) for(int __xyz=0; __xyz<INT_NCART(am); ++__xyz) { \
+                             CGShellInfo< CGShellOrderingData<CGShellOrdering_GAMESS,LIBINT_CARTGAUSS_MAX_AM> >::cartindex_to_ijk(am,__xyz,i,j,k);
 #define END_FOR_CART }}
 
 #endif // GAMESS ordering
@@ -154,8 +154,8 @@ namespace libint2 {
  *   Stuff using i,j,k.
  *   END_FOR_CART
  */
-#define FOR_CART(i,j,k,am) for(int xyz=0; xyz<INT_NCART(am); ++xyz) { \
-                             CGShellInfo< CGShellOrderingData<CGShellOrdering_ORCA,LIBINT_CARTGAUSS_MAX_AM> >::cartindex_to_ijk(am,xyz,i,j,k);
+#define FOR_CART(i,j,k,am) for(int __xyz=0; __xyz<INT_NCART(am); ++__xyz) { \
+                             CGShellInfo< CGShellOrderingData<CGShellOrdering_ORCA,LIBINT_CARTGAUSS_MAX_AM> >::cartindex_to_ijk(am,__xyz,i,j,k);
 #define END_FOR_CART }
 
 #endif // ORCA ordering
