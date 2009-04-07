@@ -6,7 +6,7 @@
 #define LIBINT_CARTGAUSS_MAX_AM 20
 
 /// Set to 1 to enable various safety checks which are normally too expensive to perform
-#define CHECK_SAFETY 1
+#define CHECK_SAFETY 0
 
 /// DirectedGraph uses an associated container (multimap) to store vertices? If not, use a simple container (list)
 #define USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH 1
@@ -49,7 +49,7 @@
 
 /// If set to 0 then complex expressions will be condensed into single-line
 /// expressions, which should help linewise vectorization
-#define DISABLE_SUBTREES 1
+#define DISABLE_SUBTREES 0
 
 /// Produce massive amounts of debugging info
 #define DEBUG 0

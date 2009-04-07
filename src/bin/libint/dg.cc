@@ -272,7 +272,7 @@ DirectedGraph::traverse_from(const SafePtr<DGArc>& arc)
     // else schedule
     else
       schedule_computation(dest);
-    
+
       typedef DGVertex::ArcSetType::const_iterator aciter;
       const aciter abegin = dest->first_exit_arc();
       const aciter aend = dest->plast_exit_arc();
@@ -457,7 +457,7 @@ DirectedGraph::optimize_rr_out()
 {
   replace_rr_with_expr();
   // TODO remove_trivial_arithmetics() seems to be broken when working with [Ti,G12], fix!
-#if 0
+#if 1
   remove_trivial_arithmetics();
 #endif
   handle_trivial_nodes();
@@ -531,8 +531,8 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<Recu
 
   SafePtr<DGVertex> left_oper = expr->left();
   SafePtr<DGVertex> right_oper = expr->right();
-  bool new_left =  (left_oper->dg()  != this);       // 
-  bool new_right = (right_oper->dg() != this);       // 
+  bool new_left =  (left_oper->dg()  != this);       //
+  bool new_right = (right_oper->dg() != this);       //
   bool need_to_clone = false;  // clone expression if (parts of) the expression was found on the graph
 
   // See if left operand is also an operator
@@ -555,7 +555,7 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<Recu
   }
 #else
 #error "ONLY_CLONE_IF_DIFF must be true"
-#endif 
+#endif
 
   // See if right operand is also an operator
   SafePtr<ExprType> right_cast = dynamic_pointer_cast<ExprType,DGVertex>(right_oper);
@@ -709,7 +709,7 @@ DirectedGraph::handle_trivial_nodes()
           (vptr)->refer_this_to(arc->dest());
       }
     }
-    
+
       // NOTE : more cases to come
   }
 }
@@ -800,7 +800,7 @@ DirectedGraph::remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVer
 #if DEBUG || DEBUG_RESTRUCTURE
   std::cout << "remove_vertex_at: detached " << v1->description() << endl;
 #endif
-  
+
   return true;
 }
 
@@ -837,10 +837,10 @@ namespace libint2 {
   declare_function(const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims,
                    const SafePtr<CodeSymbols>& args, const std::string& tlabel, const std::string& function_descr,
                    std::ostream& decl) {
-    
+
     std::string function_name = label_to_funcname(function_descr);
     function_name = context->label_to_name(function_name);
-    
+
     decl << context->code_prefix();
     std::string func_decl;
     std::ostringstream oss;
@@ -867,7 +867,7 @@ namespace libint2 {
     }
     oss << ")";
     func_decl = oss.str();
-    
+
     decl << func_decl << context->end_of_stat() << endl;
     decl << context->code_postfix();
 
@@ -893,7 +893,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
     decl << context->comment(comment) << endl;
 
   const std::string func_decl = declare_function(context,dims,args,tlabel,label,decl);
-  
+
   //
   // Generate function's definition
   //
@@ -911,11 +911,11 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
         << ".h>" << endl;
   }
   def << endl;
-  
+
   def << context->code_prefix();
   def << func_decl << context->open_block() << endl;
   def << context->std_function_header();
-  
+
   context->reset();
   // if we vectorize by-line then all data is allocated on Libint's stack
   if (context->cparams()->vectorize_by_line())
@@ -937,7 +937,7 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
   // NOTE does this belong here?
   // First, reset tag counters
   prepare_to_traverse();
-  
+
   //
   // If need to accumulate targets, special events must happen here.
   //
@@ -988,7 +988,7 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
     if (!(vptr)->symbol_set())
       (vptr)->set_address(memman->alloc((vptr)->size()));
   }
-  
+
   //
   // How memory management happens:
   // Go through the traversal order and at each step tag every child
@@ -1059,7 +1059,7 @@ namespace {
         << veclen << "]";
     return oss.str();
   }
-  
+
   /// Returns a "vector" form of stack symbol, e.g. converts libint->stack[x] to libint->stack[x+vi]
   inline std::string to_vector_symbol(const SafePtr<DGVertex>& v)
   {
@@ -1080,7 +1080,7 @@ namespace {
         int where = symb.find(right_braket,current_pos);
         if (where == std::string::npos)
           throw logic_error("to_vector_symbol() -- address is set but no right braket found");
-        
+
         const std::string forbidden("vi");
         int pos = symb.find(forbidden,current_pos);
         if (pos == std::string::npos || pos > where) {
@@ -1199,7 +1199,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
     }
 
   } // done with everything BUT operators
-  
+
   // finally, process all operators (start with most recently added vertices since those are
   // much more likely to be on the bottom of the graph).
   typedef vertices::const_reverse_iterator criter;
@@ -1220,14 +1220,14 @@ DirectedGraph::assign_oper_symbol(const SafePtr<CodeContext>& context, SafePtr<D
   // do nothing if the vertex has a symbol or is not an operator
   if (vertex->symbol_set())
     return;
-  
+
   {
     typedef AlgebraicOperator<DGVertex> oper;
     SafePtr<oper> ptr_cast = dynamic_pointer_cast<oper,DGVertex>(vertex);
     if (ptr_cast) {
       // is it in a subtree?
       const bool on_a_subtree = (vertex->subtree());
-      
+
       // If no -- it will be an automatic variable
       if (!on_a_subtree)
         vertex->set_symbol(context->unique_name<EntityTypes::FP>());
@@ -1239,7 +1239,7 @@ DirectedGraph::assign_oper_symbol(const SafePtr<CodeContext>& context, SafePtr<D
         SafePtr<DGVertex> right = (*arc)->dest();
         assign_oper_symbol(context,left);
         assign_oper_symbol(context,right);
-        
+
         std::ostringstream oss;
         oss << "( " << left->symbol() << " ) "
             << ptr_cast->label()
@@ -1268,7 +1268,7 @@ namespace {
         return nfinds;
     }
   }
-  
+
 #define DO_NOT_COUNT_DIV 1
   /// Returns the number of FLOPs in an expression
   unsigned int nflops(const std::string& expr)
@@ -1381,11 +1381,11 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   std::string varname("hsi");
   SafePtr<ForLoop> hsi_loop(new ForLoop(context,varname,dims->high(),SafePtr<Entity>(new CTimeEntity<int>(0))));
   os << hsi_loop->open();
-  
+
   varname = "lsi";
   SafePtr<ForLoop> lsi_loop(new ForLoop(context,varname,dims->low(),SafePtr<Entity>(new CTimeEntity<int>(0))));
   os << lsi_loop->open();
-  
+
   // the vector loop is created outside of the body of the function if
   // 1) blockwise vectorization is requested
   // and
@@ -1441,8 +1441,8 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 	    current_vertex->declared(true);
 #endif
 	  }
-	  
-          
+
+
 	  // If this is an Integral in a target IntegralSet AND
 	  // can accumulate targets directly -- use '+=' instead of '='
 	  const bool accumulate_not_assign = accumulate_targets_directly && IntegralInTargetIntegralSet()(current_vertex);
@@ -1451,7 +1451,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 	  aciter a = oper_ptr->first_exit_arc();
 	  const SafePtr<DGVertex>& left_arg = (*a)->dest();  ++a;
 	  const SafePtr<DGVertex>& right_arg = (*a)->dest();
-	  
+
           if (context->comments_on()) {
 
             oss.str(null_str);
@@ -1469,7 +1469,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           cout << "         left_arg = " << left_arg->description() << endl;
           cout << "        right_arg = " << right_arg->description() << endl;
 #endif
-          
+
           // convert symbols to their vector form if needed
           std::string curr_symbol = current_vertex->symbol();
           std::string left_symbol = left_arg->symbol();
@@ -1511,7 +1511,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           goto next;
         }
       }
-      
+
       // print simple assignment statement
       if (current_vertex->num_exit_arcs() == 1) {
         typedef DGArcDirect arc_type;
@@ -1547,7 +1547,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
             curr_symbol = to_vector_symbol(current_vertex);
             rhs_symbol = to_vector_symbol(arc_ptr->dest());
           }
-          
+
           if (vectorize_by_line)
             os << line_vloop->open();
 	  if (accumulate_not_assign) {
@@ -1562,8 +1562,8 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 	  }
           if (vectorize_by_line)
             os << line_vloop->close();
-          
-          
+
+
           goto next;
         }
       }
@@ -1573,10 +1573,10 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
         typedef DGArcRR arc_type;
         SafePtr<arc_type> arc_ptr = dynamic_pointer_cast<arc_type,DGArc>(*(current_vertex->first_exit_arc()));
         if (arc_ptr) {
-          
+
           SafePtr<RecurrenceRelation> rr = arc_ptr->rr();
           os << rr->spfunction_call(context,dims);
-          
+
           goto next;
         }
       }
@@ -1680,7 +1680,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   os << context->decldef(context->type_name<const int>(), "hsi", "0");
   os << context->decldef(context->type_name<const int>(), "lsi", "0");
   os << context->decldef(context->type_name<const int>(), "vi", "0");
-  
+
   //
   // Now pass back all targets through the inteval object, if needed.
   //
@@ -1697,12 +1697,12 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 	 << context->value_to_pointer(symbol) << context->end_of_stat() << endl;
     }
   }
-  
+
   // Print out the number of flops
   oss.str(null_str);
   oss << "Number of flops = " << nflops_total;
   os << context->comment(oss.str()) << endl;
-  
+
   if (context->cparams()->count_flops()) {
     oss.str(null_str);
     oss << nflops_total << " * " << dims->high_label() << " * "
@@ -1756,7 +1756,7 @@ DirectedGraph::contains_nontrivial_rr() const
     }
     current_vertex = current_vertex->postcalc();
   } while (current_vertex != 0);
-  
+
   return false;
 }
 
@@ -1770,7 +1770,7 @@ DirectedGraph::find_subtrees()
   // Find subtrees by starting from the targets and moving down ...
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
-  for(iter v=stack_.begin(); v!=stack_.end(); ++v) {    
+  for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
     if ((vptr)->is_a_target() && (vptr)->num_entry_arcs() == 0) {
       find_subtrees_from(vptr);
@@ -1783,9 +1783,9 @@ DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
 {
   // is not on a subtree already
   if (!v->subtree()) {
-    
+
     bool useless_subtree = false;
-    
+
     //
     // Subtrees are useless in the following cases:
     // 1) root is computed via RRs, not explicitly
@@ -1798,11 +1798,11 @@ DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
           useless_subtree = true;
       }
     }
-    
+
     // create subtree
     if (!useless_subtree) {
       SafePtr<DRTree> stree = DRTree::CreateRootedAt(v);
-      
+
       // Remove all trivial subtrees
       if (stree) {
 #if DISABLE_SUBTREES
@@ -1816,7 +1816,7 @@ DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
 #endif
       }
     }
-    
+
     // move on to children
     typedef DGVertex::ArcSetType::const_iterator aciter;
     const aciter abegin = v->first_exit_arc();
