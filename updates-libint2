@@ -1,4 +1,8 @@
 
+05/05/2009:     Can generate separate evaluators for each integral type in the G12 set, for now assuming no support
+                for [T,G12] integrals).
+                -EFV
+                
 03/22/2009:     Updated contact info.
                 -EFV
 

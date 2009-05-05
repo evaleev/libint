@@ -80,6 +80,8 @@ static void build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParam
                                 SafePtr<Libint2Iface>& iface);
 static void build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
+static void build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                                         SafePtr<Libint2Iface>& iface);
 static void build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
 			       SafePtr<Libint2Iface>& iface);
 static void build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
@@ -92,11 +94,17 @@ void try_main (int argc, char* argv[])
 
   // First must declare the tasks
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  taskmgr.add("default");
 #ifdef INCLUDE_ERI
   taskmgr.add("eri");
 #endif
 #ifdef INCLUDE_G12
-  taskmgr.add("r12kg12");
+   taskmgr.add("r12kg12");
+# if !LIBINT_USE_COMPOSITE_EVALUATORS
+   taskmgr.add("r12_0_g12");
+   taskmgr.add("r12_m1_g12");
+   taskmgr.add("r12_2_g12");
+# endif
 #endif
 #ifdef INCLUDE_GENG12
   taskmgr.add("geng12");
@@ -108,19 +116,39 @@ void try_main (int argc, char* argv[])
   // use default parameters
   SafePtr<CompilationParameters> cparams(new CompilationParameters);
 
+  cparams->max_am("default",LIBINT_MAX_AM);
+  cparams->max_am_opt("default",LIBINT_OPT_AM);
 #ifdef INCLUDE_ERI
   cparams->max_am("eri",ERI_MAX_AM);
   cparams->max_am_opt("eri",ERI_OPT_AM);
 #endif
 #ifdef INCLUDE_G12
+# ifndef G12_MAX_AM
+#   define LIBINT_MAX_AM G12_MAX_AM
+# endif
+# ifndef G12_OPT_AM
+#   define LIBINT_OPT_AM G12_OPT_AM
+# endif
   cparams->max_am("r12kg12",G12_MAX_AM);
   cparams->max_am_opt("r12kg12",G12_OPT_AM);
 #endif
 #ifdef INCLUDE_GENG12
+# ifndef GENG12_MAX_AM
+#   define LIBINT_MAX_AM GENG12_MAX_AM
+# endif
+# ifndef GENG12_OPT_AM
+#   define LIBINT_OPT_AM GENG12_OPT_AM
+# endif
   cparams->max_am("geng12",GENG12_MAX_AM);
   cparams->max_am_opt("geng12",GENG12_OPT_AM);
 #endif
 #ifdef INCLUDE_G12DKH
+# ifndef G12DKH_MAX_AM
+#   define LIBINT_MAX_AM G12DKH_MAX_AM
+# endif
+# ifndef G12DKH_OPT_AM
+#   define LIBINT_OPT_AM G12DKH_OPT_AM
+# endif
   cparams->max_am("g12dkh",G12DKH_MAX_AM);
   cparams->max_am_opt("g12dkh",G12DKH_OPT_AM);
 #endif
@@ -173,6 +201,7 @@ void try_main (int argc, char* argv[])
   print_header(os);
   print_config(os);
   // transfer some configuration parameters to the generated library API
+  iface->to_params(iface->macro_define("USE_COMPOSITE_EVALUATORS",LIBINT_USE_COMPOSITE_EVALUATORS));
   iface->to_params(iface->macro_define("CARTGAUSS_MAX_AM",LIBINT_CARTGAUSS_MAX_AM));
   iface->to_params(iface->macro_define("CGSHELL_ORDERING",LIBINT_CGSHELL_ORDERING));
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_STANDARD",LIBINT_CGSHELL_ORDERING_STANDARD));
@@ -188,7 +217,11 @@ void try_main (int argc, char* argv[])
   build_TwoPRep_2b_2k(os,cparams,iface);
 #endif
 #ifdef INCLUDE_G12
-  build_R12kG12_2b_2k(os,cparams,iface);
+# if LIBINT_USE_COMPOSITE_EVALUATORS
+   build_R12kG12_2b_2k(os,cparams,iface);
+# else
+   build_R12kG12_2b_2k_separate(os,cparams,iface);
+# endif
 #endif
 #ifdef INCLUDE_GENG12
   build_GenG12_2b_2k(os,cparams,iface);
@@ -586,6 +619,146 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
       } // end of c loop
     } // end of b loop
   } // end of a loop
+}
+
+#endif // INCLUDE_G12
+
+#ifdef INCLUDE_G12
+void
+build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                             SafePtr<Libint2Iface>& iface)
+{
+  // do not support this if the commutator integrals are needed
+#if SUPPORT_T1G12
+  assert(false);
+#endif
+
+  const int ntasks = 3;
+  const char* task_names[] = {"r12_0_g12", "r12_m1_g12", "r12_2_g12"};
+  const char* task_NAMES[] = {"R12_0_R12", "R12_m1_G12", "R12_2_G12"};
+
+  vector<CGShell*> shells;
+  unsigned int lmax = cparams->max_am("r12kg12");
+  for(int l=0; l<=lmax; l++) {
+    shells.push_back(new CGShell(l));
+  }
+  ImplicitDimensions::set_default_dims(cparams);
+
+  for(int task=0; task<ntasks; ++task) {
+
+    const std::string task_name(task_names[task]);
+
+    LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+    taskmgr.current(task_name);
+    iface->to_params(iface->macro_define(std::string("MAX_AM_") + task_NAMES[task],lmax));
+    iface->to_params(iface->macro_define("SUPPORT_T1G12",0));
+
+    SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
+    SafePtr<Strategy> strat(new Strategy);
+    SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
+    for(int la=0; la<=lmax; la++) {
+      for(int lb=0; lb<=lmax; lb++) {
+        for(int lc=0; lc<=lmax; lc++) {
+          for(int ld=0; ld<=lmax; ld++) {
+
+            if (la+lb+lc+ld == 0)
+              continue;
+
+            if (!ShellQuartetSetPredicate<static_cast<ShellQuartetSet>(LIBINT_SHELLQUARTET_SET)>::value(la,lb,lc,ld))
+              continue;
+
+            using std::max;
+            const unsigned int max_am = max(max(la,lb),max(lc,ld));
+            const bool need_to_optimize = (max_am <= cparams->max_am_opt("r12kg12"));
+            const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 0;
+            dg_xxxx->registry()->unroll_threshold(unroll_threshold);
+            dg_xxxx->registry()->do_cse(need_to_optimize);
+            dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
+            // Need to accumulate integrals?
+            dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
+
+            typedef R12kG12_11_11_sq int_type;
+            typedef R12kG12 oper_type;
+            std::string label;
+            // k=0
+            if (task == 0) {
+              SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(0));
+              os << "building " << abcd->description() << endl;
+              SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+              dg_xxxx->append_target(abcd_ptr);
+              label = abcd_ptr->label();
+            }
+
+            // k=-1
+            if (task == 1) {
+              SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(-1));
+              os << "building " << abcd->description() << endl;
+              SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+              dg_xxxx->append_target(abcd_ptr);
+              label = abcd_ptr->label();
+            }
+
+            // k=2
+            if (task == 2) {
+              SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(2));
+              os << "building " << abcd->description() << endl;
+              SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+              dg_xxxx->append_target(abcd_ptr);
+              label = abcd_ptr->label();
+            }
+
+            dg_xxxx->apply(strat,tactic);
+            dg_xxxx->optimize_rr_out();
+            dg_xxxx->traverse();
+#if DEBUG
+            os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
+#endif
+
+            SafePtr<CodeContext> context(new CppCodeContext(cparams));
+            SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+            std::string prefix(cparams->source_directory());
+            std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
+            std::string src_filename(prefix + context->label_to_name(label));  src_filename += ".cc";
+            std::basic_ofstream<char> declfile(decl_filename.c_str());
+            std::basic_ofstream<char> srcfile(src_filename.c_str());
+            dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
+
+            // update max stack size
+            const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
+            tparams->max_stack_size(memman->max_memory_used());
+            tparams->max_ntarget(1);
+
+            ostringstream oss;
+            oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_" << task_names[task]
+                << "[" << la << "][" << lb << "][" << lc << "]["
+                << ld <<"] = " << context->label_to_name(label_to_funcname(label))
+                << context->end_of_stat() << endl;
+            iface->to_static_init(oss.str());
+
+            oss.str("");
+            oss << "#include <" << decl_filename << ">" << endl;
+            iface->to_int_iface(oss.str());
+
+            // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
+            // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
+            if (la == lmax &&
+                lb == lmax &&
+                lc == lmax &&
+                ld == lmax) {
+              extract_symbols(dg_xxxx);
+            }
+
+#if DEBUG
+            os << "Max memory used = " << memman->max_memory_used() << endl;
+#endif
+            dg_xxxx->reset();
+            declfile.close();
+            srcfile.close();
+          } // end of d loop
+        } // end of c loop
+      } // end of b loop
+    } // end of a loop
+  } // end of task loop
 }
 
 #endif // INCLUDE_G12

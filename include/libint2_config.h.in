@@ -28,6 +28,12 @@
 /* Prefix for all names in API */
 #undef LIBINT_API_PREFIX
 
+/* Max AM */
+#undef LIBINT_MAX_AM
+
+/* Max optimized AM */
+#undef LIBINT_OPT_AM
+
 /* Support ERI derivatives up to this order */
 #undef INCLUDE_ERI
 
@@ -102,6 +108,9 @@
 
 /* Generate single evaluator type? */
 #undef LIBINT_SINGLE_EVALTYPE
+
+/* Generate composite evaluators? */
+#undef LIBINT_USE_COMPOSITE_EVALUATORS
 
 /* Strategy for ERI evaluation */
 #undef LIBINT_ERI_STRATEGY
