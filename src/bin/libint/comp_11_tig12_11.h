@@ -9,7 +9,7 @@
 using namespace std;
 
 namespace libint2 {
-    
+
   /** Compute relation for 2-e integrals of the Ti_G12 operators.
   */
   template <class BFSet>
@@ -54,11 +54,20 @@ namespace libint2 {
       const int i = target_->oper()->descr().K();
       const R12kG12 G0(0);
       const R12kG12 G2(2);
-      
+
       F a(Tint->bra(0,0));
       F b(Tint->ket(0,0));
       F c(Tint->bra(1,0));
       F d(Tint->ket(1,0));
+
+      if (i == 0) {
+        if (b.contracted() || target_->oper()->descr().contracted())
+          return;
+      }
+      if (i == 1) {
+        if (d.contracted() || target_->oper()->descr().contracted())
+          return;
+      }
 
       // [T1,G12]
       if (i == 0) {
@@ -80,7 +89,7 @@ namespace libint2 {
         }
         if (is_simple()) expr_ *= Scalar(-2.0) * Scalar("gamma");
       }
-      
+
       {
         typedef GenIntegralSet_11_11<BasisFunctionType,R12kG12,mType> ChildType;
         ChildFactory<ThisType,ChildType> factory(this);
@@ -92,9 +101,9 @@ namespace libint2 {
         if (is_simple())
           expr_ += Scalar(-2.0) * Scalar("gamma") * Scalar("gamma") * ab_G2_cd;
       }
-      
+
     }
-  
+
 };
 
 #endif

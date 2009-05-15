@@ -11,7 +11,7 @@
 using namespace std;
 
 namespace libint2 {
-    
+
   /** Compute relation for 2-e integrals of the DivG12prime_xTx operators.
   */
   template <class BFSet>
@@ -50,13 +50,20 @@ namespace libint2 {
       using namespace libint2::algebra;
       using namespace libint2::prefactor;
       using namespace libint2::braket;
-      
+
       // kinetic energy of which electron?
       const int i = target_->oper()->descr().I();
       F a(Tint->bra(0,0));
       F b(Tint->ket(0,0));
       F c(Tint->bra(1,0));
       F d(Tint->ket(1,0));
+
+      if (a.contracted() ||
+          b.contracted() ||
+          c.contracted() ||
+          d.contracted() ||
+          target_->oper()->descr().contracted())
+        return;
 
 #if USE_R12kR12lG12
       if (i == 0)
@@ -98,9 +105,9 @@ namespace libint2 {
       }
 #endif
       if (is_simple()) expr_ *= Scalar(-4.0) * Scalar("gamma_bra") * Scalar("gamma_ket");
-      
+
     }
-  
+
 };
 
 

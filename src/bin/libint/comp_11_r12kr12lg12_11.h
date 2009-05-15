@@ -9,7 +9,7 @@
 using namespace std;
 
 namespace libint2 {
-    
+
   /** Compute relation for integrals of operator R12k_R12l_G12.
       Reduce power of R12 applied to bra first, then ket.
       Children are either integrals of R12k_R12l_G12 or R12kG12 with K=0.
@@ -51,10 +51,10 @@ namespace libint2 {
       using namespace libint2::algebra;
       using namespace libint2::prefactor;
       using namespace libint2::braket;
-      
+
       //std::cout << "CR_11_R12kR12lG12_11<F> -- applying to "
       //          << Tint->label() << std::endl;
-      
+
       F a(Tint->bra(0,0));
       F b(Tint->ket(0,0));
       F c(Tint->bra(1,0));
@@ -66,7 +66,7 @@ namespace libint2 {
 
       // Try reducing r12pbra
       for(int xyz=0; xyz<3; ++xyz) {
-        
+
         const IntVec3& _1 = unit_intvec3(xyz);
         const IntVec3 r12pbra_m1 = r12pbra - _1;
 
@@ -88,7 +88,7 @@ namespace libint2 {
 
       // Try reducing r12pket
       for(int xyz=0; xyz<3; ++xyz) {
-        
+
         const IntVec3& _1 = unit_intvec3(xyz);
         const IntVec3 r12pket_m1 = r12pket - _1;
 
@@ -107,9 +107,9 @@ namespace libint2 {
           return;
         }
       }
-      
+
     }
-  
+
 };
 
 

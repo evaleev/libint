@@ -9,7 +9,7 @@
 #define _libint2_src_bin_libint_bfset_h_
 
 namespace libint2 {
-  
+
   /** Set of basis functions. Sets must be constructable using
       SafePtr<BFSet> or SafePtr<ConstructablePolymorphically>.
   */
@@ -27,7 +27,7 @@ namespace libint2 {
 
   /** Set of basis functions with incrementable/decrementable quantum numbers.
       Sets must be constructable using SafePtr<BFSet> or SafePtr<ConstructablePolymorphically>.
-      
+
       Call to dec() may invalidate the object. No further
       modification of such object's state is possible.
       Assignment of such object to another preserves the invalid state,
@@ -51,10 +51,10 @@ namespace libint2 {
 
   protected:
     IncableBFSet() : valid_(true) {}
-    
+
     /// make this object invalid
     void invalidate() { valid_ = false; }
-    
+
   private:
     bool valid_;
   };
@@ -64,13 +64,19 @@ namespace libint2 {
   F unit(unsigned int X) { F tmp; tmp.inc(X,1); return tmp; }
   /// Return true if A is valid
   inline bool exists(const IncableBFSet& A) { return A.valid(); }
-  
+
   class CGF;
-  
+
   /// Cartesian Gaussian Shell
   class CGShell : public IncableBFSet, public Hashable<unsigned,ReferToKey> {
 
     unsigned int qn_[1];
+    bool contracted_;
+    static bool default_contracted_;
+
+    struct default_values {
+      static const bool contracted = false;
+    };
 
   public:
     /// As far as SetIterator is concerned, CGShell is a set of one CGF
@@ -91,9 +97,11 @@ namespace libint2 {
     const std::string label() const;
     /// Returns the number of basis functions in the set
     unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
-
     /// Returns the angular momentum
     unsigned int qn(unsigned int xyz=0) const { return qn_[0]; }
+    /// is this a contracted Gaussian?
+    bool contracted() const { return contracted_; }
+    static void set_default_contracted(bool c) { default_contracted_ = c; }
 
     /// Comparison operator
     bool operator==(const CGShell&) const;
@@ -114,7 +122,7 @@ namespace libint2 {
     void print(std::ostream& os = std::cout) const;
 
   };
-  
+
   CGShell operator+(const CGShell& A, const CGShell& B);
   CGShell operator-(const CGShell& A, const CGShell& B);
 
@@ -122,6 +130,12 @@ namespace libint2 {
   class CGF : public IncableBFSet, public Hashable<unsigned,ComputeKey> {
 
     unsigned int qn_[3];
+    bool contracted_;
+    static bool default_contracted_;
+
+    struct default_values {
+      static const bool contracted = false;
+    };
 
   public:
     /// As far as SetIterator is concerned, CGF is a set of one CGF
@@ -146,9 +160,11 @@ namespace libint2 {
     const std::string label() const;
     /// Returns the number of basis functions in the set (always 1)
     unsigned int num_bf() const { return 1; };
-
     /// Returns the angular momentum
     unsigned int qn(unsigned int xyz) const;
+    /// is this a contracted Gaussian?
+    bool contracted() const { return contracted_; }
+    static void set_default_contracted(bool c) { default_contracted_ = c; }
 
     /// Comparison operator
     bool operator==(const CGF&) const;
@@ -194,7 +210,7 @@ namespace libint2 {
     struct TrivialBFSet<CGF> {
       static const bool result = true;
     };
-  
+
 };
 
 #endif

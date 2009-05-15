@@ -28,6 +28,8 @@ namespace libint2 {
   typedef HRR<TwoPRep_11_11_sq,CGShell,1,InKet,0,InBra,0> HRR_dc_11_TwoPRep_11_sh;
   typedef HRR<R12kG12_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_R12kG12_11_sh;
   typedef HRR<R12kG12_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_R12kG12_11_sh;
+  typedef HRR<R12kG12_11_11_sq,CGShell,0,InKet,0,InBra,0> HRR_ba_11_R12kG12_11_sh;
+  typedef HRR<R12kG12_11_11_sq,CGShell,1,InKet,0,InBra,0> HRR_dc_11_R12kG12_11_sh;
   typedef HRR<R12kR12lG12_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_R12kR12lG12_11_sh;
   typedef HRR<R12kR12lG12_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_R12kR12lG12_11_sh;
   typedef HRR<TiG12_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_TiG12_11_sh;
@@ -41,6 +43,8 @@ namespace libint2 {
   typedef HRR<TwoPRep_11_11_int,CGF,1,InKet,0,InBra,0> HRR_dc_11_TwoPRep_11_int;
   typedef HRR<R12kG12_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_R12kG12_11_int;
   typedef HRR<R12kG12_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_R12kG12_11_int;
+  typedef HRR<R12kG12_11_11_int,CGF,0,InKet,0,InBra,0> HRR_ba_11_R12kG12_11_int;
+  typedef HRR<R12kG12_11_11_int,CGF,1,InKet,0,InBra,0> HRR_dc_11_R12kG12_11_int;
   typedef HRR<R12kR12lG12_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_R12kR12lG12_11_int;
   typedef HRR<R12kR12lG12_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_R12kR12lG12_11_int;
   typedef HRR<TiG12_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_TiG12_11_int;
@@ -70,6 +74,10 @@ namespace libint2 {
   typedef VRR_11_R12kG12_11<CGShell,1,InBra> VRR_c_11_R12kG12_11_sh;
   typedef VRR_11_R12kG12_11<CGF,0,InBra> VRR_a_11_R12kG12_11_int;
   typedef VRR_11_R12kG12_11<CGF,1,InBra> VRR_c_11_R12kG12_11_int;
+  typedef VRR_11_R12kG12_11<CGShell,0,InKet> VRR_b_11_R12kG12_11_sh;
+  typedef VRR_11_R12kG12_11<CGShell,1,InKet> VRR_d_11_R12kG12_11_sh;
+  typedef VRR_11_R12kG12_11<CGF,0,InKet> VRR_b_11_R12kG12_11_int;
+  typedef VRR_11_R12kG12_11<CGF,1,InKet> VRR_d_11_R12kG12_11_int;
 
   typedef CR_11_R12kR12lG12_11<CGShell> CR_11_R12kR12lG12_11_sh;
   typedef CR_11_R12kR12lG12_11<CGF> CR_11_R12kR12lG12_11_int;

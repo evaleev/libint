@@ -9,26 +9,27 @@ using namespace libint2;
 
 unsigned CGF::key_l_offset[] = { 0, 1, 4, 10, 20, 35, 56, 84, 120, 165, 220, 286, 364, 455, 560, 680, 816, 969, 1140, 1330, 1540};
 
+bool CGF::default_contracted_ = CGF::default_values::contracted;
 
-CGF::CGF()
+CGF::CGF() : contracted_(CGF::default_contracted_)
 {
   for(int i=0; i<3; i++)
     qn_[i] = 0;
 }
 
-CGF::CGF(unsigned int qn[3])
+CGF::CGF(unsigned int qn[3]) : contracted_(CGF::default_contracted_)
 {
   for(int i=0; i<3; i++)
     qn_[i] = qn[i];
 }
 
-CGF::CGF(const CGF& source)
+CGF::CGF(const CGF& source) : contracted_(source.contracted_)
 {
   for(int i=0; i<3; i++)
     qn_[i] = source.qn_[i];
 }
 
-CGF::CGF(const SafePtr<CGF>& source)
+CGF::CGF(const SafePtr<CGF>& source) : contracted_(source->contracted_)
 {
   for(int i=0; i<3; i++)
     qn_[i] = source->qn_[i];
@@ -42,6 +43,7 @@ CGF::CGF(const SafePtr<parent_type>& sptr)
 
   for(int i=0; i<3; i++)
     qn_[i] = sptr_cast->qn_[i];
+  contracted_ = sptr_cast->contracted_;
 }
 
 CGF::CGF(const ConstructablePolymorphically& sptr)
@@ -49,6 +51,7 @@ CGF::CGF(const ConstructablePolymorphically& sptr)
   const CGF& sptr_cast = dynamic_cast<const CGF&>(sptr);
   for(int i=0; i<3; i++)
     qn_[i] = sptr_cast.qn_[i];
+  contracted_ = sptr_cast.contracted_;
 }
 
 CGF::CGF(const SafePtr<ConstructablePolymorphically>& sptr)
@@ -59,6 +62,7 @@ CGF::CGF(const SafePtr<ConstructablePolymorphically>& sptr)
 
   for(int i=0; i<3; i++)
     qn_[i] = sptr_cast->qn_[i];
+  contracted_ = sptr_cast->contracted_;
 }
 
 CGF::~CGF()
@@ -107,6 +111,7 @@ CGF::operator=(const CGF& source)
 {
   for(int i=0; i<3; i++)
     qn_[i] = source.qn_[i];
+  contracted_ = source.contracted_;
   if (!source.valid()) invalidate();
   return *this;
 }
@@ -158,31 +163,33 @@ libint2::operator-(const CGF& A, const CGF& B) {
   return Diff;
 }
 
+bool CGShell::default_contracted_ = CGShell::default_values::contracted;
+
 // By default make it an s-shell
-CGShell::CGShell()
+CGShell::CGShell() : contracted_(CGShell::default_contracted_)
 {
   for(int i=0; i<1; i++)
     qn_[i] = 0;
 }
 
-CGShell::CGShell(unsigned int qn)
+CGShell::CGShell(unsigned int qn) : contracted_(CGShell::default_contracted_)
 {
     qn_[0] = qn;
 }
 
-CGShell::CGShell(unsigned int qn[1])
+CGShell::CGShell(unsigned int qn[1]) : contracted_(CGShell::default_contracted_)
 {
   for(int i=0; i<1; i++)
     qn_[i] = qn[i];
 }
 
-CGShell::CGShell(const CGShell& source)
+CGShell::CGShell(const CGShell& source) : contracted_(source.contracted_)
 {
   for(int i=0; i<1; i++)
     qn_[i] = source.qn_[i];
 }
 
-CGShell::CGShell(const SafePtr<CGShell>& source)
+CGShell::CGShell(const SafePtr<CGShell>& source) : contracted_(source->contracted_)
 {
   for(int i=0; i<1; i++)
     qn_[i] = source->qn_[i];
@@ -196,19 +203,8 @@ CGShell::CGShell(const SafePtr<parent_type>& sptr)
 
   for(int i=0; i<1; i++)
     qn_[i] = sptr_cast->qn_[i];
+  contracted_ = sptr_cast->contracted_;
 }
-
-#if 0
-CGShell::CGShell(const SafePtr<ConstructablePolymorphically>& sptr)
-{
-  const SafePtr<CGShell> sptr_cast = dynamic_pointer_cast<CGShell,ConstructablePolymorphically>(sptr);
-  if (sptr_cast == 0)
-    throw std::runtime_error("CGShell::CGShell(const SafePtr<ConstructablePolymorphically>& sptr) -- type of sptr is incompatible with CGShell");
-
-  for(int i=0; i<1; i++)
-    qn_[i] = sptr_cast->qn_[i];
-}
-#endif
 
 CGShell::~CGShell()
 {
@@ -225,6 +221,7 @@ CGShell::operator=(const CGShell& source)
 {
   for(int i=0; i<1; i++)
     qn_[i] = source.qn_[i];
+  contracted_ = source.contracted_;
   if (!source.valid()) invalidate();
   return *this;
 }

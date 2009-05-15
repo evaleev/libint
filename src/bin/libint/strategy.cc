@@ -86,6 +86,7 @@ namespace libint2 {
   };
 #endif
 
+#if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
   template <> struct MasterStrategy<R12kG12_11_11_sq> {
     typedef mpl::list<
     HRR_ab_11_R12kG12_11_sh,
@@ -102,6 +103,25 @@ namespace libint2 {
     VRR_c_11_R12kG12_11_int
     > value;
   };
+#else // 0B0D strategy
+  template <> struct MasterStrategy<R12kG12_11_11_sq> {
+    typedef mpl::list<
+    HRR_ba_11_R12kG12_11_sh,
+    HRR_dc_11_R12kG12_11_sh,
+    VRR_b_11_R12kG12_11_sh,
+    VRR_d_11_R12kG12_11_sh
+    > value;
+  };
+  template <> struct MasterStrategy<R12kG12_11_11_int> {
+    typedef mpl::list<
+    HRR_ba_11_R12kG12_11_int,
+    HRR_dc_11_R12kG12_11_int,
+    VRR_b_11_R12kG12_11_int,
+    VRR_d_11_R12kG12_11_int
+    > value;
+  };
+#endif
+
   template <> struct MasterStrategy<R12kR12lG12_11_11_sq> {
     typedef mpl::list<
     HRR_ab_11_R12kR12lG12_11_sh,
@@ -332,7 +352,7 @@ namespace libint2 {
   };
 
   /** This type helps with processing lists of integral types via mpl::for_each.
-      It will attemp to cast integral to each T. For the first such match it will
+      It will attempt to cast integral to each T. For the first such match it will
       use Strategy<T> (a list of types also) to determine the optimal recurrence relation.
 
       This design follows section 9.1.2 of "C++ Template Metaprogramming" by Abrahams and Gurtovoy.
@@ -396,7 +416,7 @@ Strategy::optimal_rr(const SafePtr<DirectedGraph>& graph,
   using namespace boost;
   using namespace boost::mpl::placeholders;
 
-  // by iterate over the master typelist determine to the type of this integral
+  // iterate over the master typelist to determine the type of this integral
   // matcher then uses the type to search through the type-specific strategy (see apply_strategy<T>)
   SafePtr<match_first_inttype::Impl> matcher_impl(new match_first_inttype::Impl(graph,integral,tactic));
   match_first_inttype matcher(matcher_impl);

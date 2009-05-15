@@ -174,6 +174,20 @@ namespace libint2 {
 
 //////////////////////////////
 
+  /// use this as a base to add to Derived a "contracted()" attribute
+  template <typename Derived> class HasAttribute_Contractable {
+    public:
+      HasAttribute_Contractable() : value_(default_value_) {}
+      bool contracted() const { return value_; }
+      static void set_contracted_default_value(bool dv) { default_value_ = dv; }
+    private:
+      bool value_;
+      static bool default_value_;
+  };
+  template <typename Derived>
+  bool HasAttribute_Contractable<Derived>::default_value_ = false;
+
+
   typedef OperatorProperties<2,true,PermutationalSymmetry::symm> MultiplicativeSymm2Body_Props;
   typedef OperatorProperties<2,true,PermutationalSymmetry::nonsymm> MultiplicativeNonsymm2Body_Props;
   typedef OperatorProperties<2,false,PermutationalSymmetry::symm> NonmultiplicativeSymm2Body_Props;
@@ -209,7 +223,7 @@ namespace libint2 {
   /** R12_k_G12 is a two-body operator of form r_{12}^k * exp(-\gamma * r_{12}),
       where k is an integer and \gamma is a positive real number.
   */
-  class R12_k_G12_Descr {
+  class R12_k_G12_Descr : public HasAttribute_Contractable<R12_k_G12_Descr> {
   public:
     typedef MultiplicativeSymm2Body_Props Properties;
     /// K can range from -1 to 4
@@ -233,7 +247,7 @@ namespace libint2 {
   /** R12k_R12l_G12 is a two-body operator of form ( r_{12x}^kx * r_{12y}^ky * r_{12z}^kz ) * (r_{12x}^lx * r_{12y}^ly * r_{12z}^lz ) * G12
       The following restrictions are imposed: 0 <= kx+ky+kz <= 4, 0 <= lx+ly+lz <= 4
     */
-  class R12k_R12l_G12_Descr {
+  class R12k_R12l_G12_Descr : public HasAttribute_Contractable<R12k_R12l_G12_Descr> {
   public:
     typedef MultiplicativeSymm2Body_Props Properties;
     static const int kmax = 4;
@@ -255,11 +269,11 @@ namespace libint2 {
     IntVec3 L_;
   };
   typedef GenOper<R12k_R12l_G12_Descr> R12kR12lG12;
-  
+
   /** Ti_G12 is a two-body operator of form [T_i, G12],
       where i is particle index (0 or 1) and G12 is a Gaussian Geminal.
   */
-  class Ti_G12_Descr {
+  class Ti_G12_Descr : public HasAttribute_Contractable<Ti_G12_Descr> {
   public:
     typedef NonmultiplicativeNonsymm2Body_Props Properties;
     /// K can range from 0 to 1
@@ -282,7 +296,7 @@ namespace libint2 {
 
   /** r_1.r_1 x g12 is a result of differentiation of exp( - a r_1^2 - a r_2^2 - c r_{12}^2) geminal .
   */
-  struct R1dotR1_G12_Descr {
+  struct R1dotR1_G12_Descr : public HasAttribute_Contractable<R1dotR1_G12_Descr> {
     typedef MultiplicativeNonsymm2Body_Props Properties;
     static const unsigned int max_key = 1;
     unsigned int key() const { return 0; }
@@ -295,7 +309,7 @@ namespace libint2 {
 
   /** r_2.r_2 x g12 is a result of differentiation of exp( - a r_1^2 - a r_2^2 - c r_{12}^2) geminal .
   */
-  struct R2dotR2_G12_Descr {
+  struct R2dotR2_G12_Descr : public HasAttribute_Contractable<R2dotR2_G12_Descr> {
     typedef MultiplicativeNonsymm2Body_Props Properties;
     static const unsigned int max_key = 1;
     unsigned int key() const { return 0; }
@@ -308,7 +322,7 @@ namespace libint2 {
 
   /** r_1.r_2 x g12 is a result of differentiation of exp( - a r_1^2 - a r_2^2 - c r_{12}^2) geminal .
   */
-  struct R1dotR2_G12_Descr {
+  struct R1dotR2_G12_Descr : public HasAttribute_Contractable<R1dotR2_G12_Descr> {
     typedef MultiplicativeSymm2Body_Props Properties;
     static const unsigned int max_key = 1;
     unsigned int key() const { return 0; }
@@ -322,7 +336,7 @@ namespace libint2 {
   /** \f$ (\nabla_I \cdot g_{12}') (g_{12}' \cdot \nabla_K) \f$ is a component of \f$ [g_{12}, [\nabla_I^4, g_{12}]] \f$ integral
      where I = 1 or 2.
   */
-  struct DivG12prime_xTx_Descr {
+  struct DivG12prime_xTx_Descr : public HasAttribute_Contractable<DivG12prime_xTx_Descr> {
     typedef NonmultiplicativeNonsymm2Body_Props Properties;
     static const unsigned int max_key = 2;
     DivG12prime_xTx_Descr(int I) : I_(I) { assert(I >= 0 && I <= 1); }

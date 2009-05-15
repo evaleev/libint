@@ -102,7 +102,6 @@ void try_main (int argc, char* argv[])
    taskmgr.add("r12kg12");
 # if !LIBINT_USE_COMPOSITE_EVALUATORS
    taskmgr.add("r12_0_g12");
-   taskmgr.add("r12_m1_g12");
    taskmgr.add("r12_2_g12");
 # endif
 #endif
@@ -633,9 +632,10 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
   assert(false);
 #endif
 
-  const int ntasks = 3;
-  const char* task_names[] = {"r12_0_g12", "r12_m1_g12", "r12_2_g12"};
-  const char* task_NAMES[] = {"R12_0_R12", "R12_m1_G12", "R12_2_G12"};
+  // Note that because r12_-1_g12 integrals are evaluated using the same RR as ERI, no need to generate their code at all
+  const int ntasks = 2;
+  const char* task_names[] = {"r12_0_g12", "r12_2_g12"};
+  const char* task_NAMES[] = {"R12_0_R12", "R12_2_G12"};
 
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am("r12kg12");
@@ -689,17 +689,8 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
               label = abcd_ptr->label();
             }
 
-            // k=-1
-            if (task == 1) {
-              SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(-1));
-              os << "building " << abcd->description() << endl;
-              SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-              dg_xxxx->append_target(abcd_ptr);
-              label = abcd_ptr->label();
-            }
-
             // k=2
-            if (task == 2) {
+            if (task == 1) {
               SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(2));
               os << "building " << abcd->description() << endl;
               SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);

@@ -106,19 +106,31 @@ namespace libint2 {
       }
       return SafePtr<ThisType>();
     }
-  
+
   template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
     ITR_11_TwoPRep_11<ERI,F,part,where>::ITR_11_TwoPRep_11(const SafePtr<TargetType>& Tint,
                                                            unsigned int dir) :
     target_(Tint), dir_(dir)
     {
-      /// TODO debbug this RR, it seems broken (MPQC libint2 tests fail in HF)
+      /// TODO debug this RR, it seems broken (MPQC libint2 tests fail in HF)
       throw ProgrammingError("ITR_11_TwoPRep_11 is broken");
-      
+
       /// InKet
       if (where == InKet)
-        throw ProgrammingError("ITR_11_TwoPRep_11<ERI,F,part,where>::ITR_11_TwoPRep_11() -- where=InKet not implementd yet");
-      
+        throw ProgrammingError("ITR_11_TwoPRep_11<ERI,F,part,where>::ITR_11_TwoPRep_11() -- where=InKet not implemented yet");
+
+      {
+        F a(Tint->bra(0,0));
+        F b(Tint->ket(0,0));
+        F c(Tint->bra(1,0));
+        F d(Tint->ket(1,0));
+        if (a.contracted() ||
+            b.contracted() ||
+            c.contracted() ||
+            d.contracted())
+          return;
+      }
+
       children_.reserve(max_nchildren_);
       using namespace libint2::algebra;
       using namespace libint2::prefactor;

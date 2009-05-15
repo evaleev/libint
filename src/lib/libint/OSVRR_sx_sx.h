@@ -13,7 +13,7 @@
 
 namespace libint2 {
 
-  template <int part, FunctionPosition where, int Lb, int Ld, bool vectorize> struct OSVRR_sx_sx {
+  template <int part, int Lb, int Ld, bool vectorize> struct OSVRR_sx_sx {
     static void compute(const Libint_t* inteval,
         LIBINT2_REALTYPE* target,
         const LIBINT2_REALTYPE* src0,
@@ -30,7 +30,7 @@ namespace libint2 {
       src3 = (0b-2|0d)^(m+1)
       src4 = (0b-1|0d-1)^(m+1)
    **/
-  template <int Lb, int Ld, bool vectorize> struct OSVRR_sx_sx<0,InKet,Lb,Ld,vectorize> {
+  template <int Lb, int Ld, bool vectorize> struct OSVRR_sx_sx<0,Lb,Ld,vectorize> {
 
     static void compute(const Libint_t* inteval,
         LIBINT2_REALTYPE* target,
@@ -159,7 +159,7 @@ namespace libint2 {
       src3 = (0b|0d-2)^(m+1)
       src4 = (0b-1|0d-1)^(m+1)
    **/
-  template <int Lb, int Ld, bool vectorize> struct OSVRR_sx_sx<1,InKet,Lb,Ld,vectorize> {
+  template <int Lb, int Ld, bool vectorize> struct OSVRR_sx_sx<1,Lb,Ld,vectorize> {
 
     static void compute(const Libint_t* inteval,
         LIBINT2_REALTYPE* target,

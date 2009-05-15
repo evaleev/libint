@@ -72,6 +72,18 @@ namespace libint2 {
       const unsigned int m = Tint->aux()->elem(0);
       const F& _1 = unit<F>(dir);
 
+      {
+        F a(Tint->bra(0,0));
+        F b(Tint->ket(0,0));
+        F c(Tint->bra(1,0));
+        F d(Tint->ket(1,0));
+        if (a.contracted() ||
+          b.contracted() ||
+          c.contracted() ||
+          d.contracted())
+          return;
+      }
+
       typedef TargetType ChildType;
       ChildFactory<ThisType,ChildType> factory(this);
 
@@ -275,12 +287,12 @@ namespace libint2 {
       oss << "using namespace libint2;" << endl;
 
       if(xsxs) {
-        oss << "libint2::OSVRR_xs_xs<" << part << "," << to_string(where) << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+        oss << "libint2::OSVRR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
         oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
         oss << ">::compute(inteval";
       }
       if (sxsx) {
-        oss << "libint2::OSVRR_sx_sx<" << part << "," << to_string(where) << "," << sh_b.norm() << "," << sh_d.norm() << ",";
+        oss << "libint2::OSVRR_sx_sx<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
         oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
         oss << ">::compute(inteval";
       }
