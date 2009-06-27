@@ -130,6 +130,12 @@ void try_main (int argc, char* argv[])
 # endif
   cparams->max_am("r12kg12",G12_MAX_AM);
   cparams->max_am_opt("r12kg12",G12_OPT_AM);
+# if !LIBINT_USE_COMPOSITE_EVALUATORS
+    cparams->max_am("r12_0_g12",G12_MAX_AM);
+    cparams->max_am_opt("r12_0_g12",G12_OPT_AM);
+    cparams->max_am("r12_2_g12",G12_MAX_AM);
+    cparams->max_am_opt("r12_2_g12",G12_OPT_AM);
+# endif
 #endif
 #ifdef INCLUDE_GENG12
 # ifndef GENG12_MAX_AM
