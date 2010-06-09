@@ -15,11 +15,7 @@
 \vspace{0.5in}
 Edward F.\ Valeev \\
 \ \\
-{\em Oak Ridge National Laboratory, Oak Ridge, Tennessee}\\
-\vspace{0.1in}
-{\em Center for Computational Molecular Science and Technology, \mbox{Georgia 
-Institute of Technology,} Atlanta, Georgia 30332-0400} 
-\ \\
+{\em Department of Chemistry, Virginia Tech, Blacksburg VA 24061, USA}\\
 \vspace{0.3in}
 \LIBINTv \\
 Created on: \today
@@ -32,7 +28,7 @@ Created on: \today
 
 The following software is needed to compile \LIBINTv:
 \begin{itemize}
-\item GNU C++ compiler (version 3.4 is recommended) to compile the library compiler.
+\item GNU C++ compiler (version 4.4 or higher is required) to compile the library compiler.
 \item (Optional) optimizing C++ compiler
 to compile generated source. GNU C++ compiler may produce less than optimal code on some platforms.
 Thus a vendor compiler is recommended (see architecture-specific notes at the end of this document).
@@ -82,14 +78,10 @@ the {\tt configure} script:
   disable support for such integrals set N to 'no', or use the {\tt -}{\tt -disable-g12} option.
   By default, no linear G12 integrals are produced.
   WARNING: No derivatives can be computed yet. This functionality is forthcoming.
-\item {\tt -}{\tt -with-eri-max-am=L} --- Specifies the maximum
+\item {\tt -}{\tt -with-max-am=L} --- Specifies the maximum
   angular momentum level for the Gaussian basis functions
   when computing electron repulsion integrals.  By default,
-  ERIs over $g$-type functions (L=4) are supported.
-\item {\tt -}{\tt -with-g12-max-am=L} --- Specifies the maximum
-  angular momentum level for the Gaussian basis functions
-  when computing linear G12 integrals.  By default,
-  integrals over $p$-type functions (L=1) are supported.
+  integrals over $g$-type functions (L=4) are supported.
 \item {\tt -}{\tt -with-float-type=TYPE} --- Specifies the C++ floating-point type
   used for integral computation. The default is to use {\tt double}.
 \item {\tt -}{\tt -enable-flop-count} --- Specifies whether to support FLOP counting
