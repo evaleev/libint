@@ -413,7 +413,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
           // update max stack size and # of targets
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
-          tparams->max_stack_size(memman->max_memory_used());
+          tparams->max_stack_size(max_am, memman->max_memory_used());
 	  tparams->max_ntarget(1);
 
 	  // set pointer to the top-level evaluator function
@@ -590,7 +590,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
           // update max stack size
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
-          tparams->max_stack_size(memman->max_memory_used());
+          tparams->max_stack_size(max_am, memman->max_memory_used());
 	  tparams->max_ntarget(5);
 
           ostringstream oss;
@@ -722,7 +722,7 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
 
             // update max stack size
             const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
-            tparams->max_stack_size(memman->max_memory_used());
+            tparams->max_stack_size(max_am, memman->max_memory_used());
             tparams->max_ntarget(1);
 
             ostringstream oss;
@@ -888,7 +888,7 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 
           // update max stack size
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
-          tparams->max_stack_size(memman->max_memory_used());
+          tparams->max_stack_size(max_am, memman->max_memory_used());
 	  tparams->max_ntarget(5);
 
           ostringstream oss;
@@ -1061,7 +1061,7 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 
           // update max stack size
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
-          tparams->max_stack_size(memman->max_memory_used());
+          tparams->max_stack_size(max_am, memman->max_memory_used());
           tparams->max_ntarget(3);
 
           ostringstream oss;

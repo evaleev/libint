@@ -137,12 +137,18 @@ Libint2Iface::~Libint2Iface()
     SafePtr<TaskParameters> tparams = t->params();
     const std::string& tlabel = t->label();
     ph_ << macro_define(tlabel,"NUM_TARGETS",tparams->max_ntarget());
-    ph_ << macro_define(tlabel,"MAX_STACK_SIZE",tparams->max_stack_size());
-    const unsigned int max_vector_stack_size = tparams->max_vector_stack_size();
-    if (max_vector_stack_size)
-      ph_ << macro_define(tlabel,"MAX_VECTOR_STACK_SIZE",max_vector_stack_size);
-    ph_ << macro_define(tlabel,"MAX_HRR_HSRANK",tparams->max_hrr_hsrank());
-    ph_ << macro_define(tlabel,"MAX_HRR_LSRANK",tparams->max_hrr_lsrank());
+    const unsigned int max_am = tparams->max_am();
+    for(unsigned int am=0; am<max_am; ++am) {
+      { std::ostringstream oss; oss << "MAX_STACK_SIZE_" << am;
+        ph_ << macro_define(tlabel,oss.str(),tparams->max_stack_size(am)); }
+      { std::ostringstream oss; oss << "MAX_VECTOR_STACK_SIZE_" << am;
+        const unsigned int max_vector_stack_size = tparams->max_vector_stack_size(am);
+        ph_ << macro_define(tlabel,oss.str(),max_vector_stack_size); }
+      { std::ostringstream oss; oss << "MAX_HRR_HSRANK_" << am;
+        ph_ << macro_define(tlabel,oss.str(),tparams->max_hrr_hsrank(am)); }
+      { std::ostringstream oss; oss << "MAX_HRR_LSRANK_" << am;
+        ph_ << macro_define(tlabel,oss.str(),tparams->max_hrr_lsrank(am)); }
+    }
   }
 
   // For each task, generate the evaluator type
@@ -182,10 +188,24 @@ Libint2Iface::~Libint2Iface()
       const std::string& tlabel = t->label();
 
       li_ << lm_decls_[i] << ctext_->open_block();
-      li_ << "return " << macro(tlabel,"MAX_STACK_SIZE") << " * " << macro("MAX_VECLEN") << " + "
-	  << macro(tlabel,"MAX_VECTOR_STACK_SIZE") << " * " << macro("MAX_VECLEN") << " * ("
-	    << macro(tlabel,"MAX_HRR_HSRANK") << " > " << macro(tlabel,"MAX_HRR_LSRANK") << " ? "
-	      << macro(tlabel,"MAX_HRR_HSRANK") << " : " << macro(tlabel,"MAX_HRR_LSRANK") << ");" << std::endl;
+      const unsigned int max_am = t->params()->max_am();
+      for(unsigned int am=0; am<max_am; ++am) {
+        std::string ss, vss, hsr, lsr;
+        { std::ostringstream oss;
+          oss << "MAX_STACK_SIZE_" << am; ss = oss.str(); }
+        { std::ostringstream oss;
+          oss << "MAX_VECTOR_STACK_SIZE_" << am; vss = oss.str(); }
+        { std::ostringstream oss;
+          oss << "MAX_HRR_HSRANK_" << am; hsr = oss.str(); }
+        { std::ostringstream oss;
+          oss << "MAX_HRR_LSRANK_" << am; lsr = oss.str(); }
+
+        li_ << "if (max_am == " << am << ") return " << macro(tlabel,ss) << " * " << macro("MAX_VECLEN") << " + "
+            << macro(tlabel,vss) << " * " << macro("MAX_VECLEN") << " * ("
+            << macro(tlabel,hsr) << " > " << macro(tlabel,lsr) << " ? "
+            << macro(tlabel,hsr) << " : " << macro(tlabel,lsr) << ");" << std::endl;
+      }
+      li_ << "return 0; // unreachable" << std::endl;
       li_ << ctext_->close_block();
     }
 
@@ -196,19 +216,27 @@ Libint2Iface::~Libint2Iface()
       li_ << li_decls_[i] << ctext_->open_block();
       li_ << "if (buf != 0) inteval->stack = buf;" << std::endl << "else ";
       {
-	std::string tmp = ctext_->label_to_name(cparams_->api_prefix() + "libint2_need_memory_" + tlabel) + "(max_am)";
-	li_ << ctext_->assign("inteval->stack","new LIBINT2_REALTYPE[" + tmp + "]");
+        std::string tmp = ctext_->label_to_name(cparams_->api_prefix() + "libint2_need_memory_" + tlabel) + "(max_am)";
+        li_ << ctext_->assign("inteval->stack","new LIBINT2_REALTYPE[" + tmp + "]");
       }
 
-      std::string vstack_ptr("inteval->stack + ");
-      vstack_ptr += macro(tlabel,"MAX_STACK_SIZE");
-      vstack_ptr += " * ";
-      vstack_ptr += macro("MAX_VECLEN");
+      const unsigned int max_am = t->params()->max_am();
+      for(unsigned int am=0; am<max_am; ++am) {
+        std::string ss;
+        { std::ostringstream oss;
+        oss << "MAX_STACK_SIZE_" << am; ss = oss.str(); }
 
-      li_ << ctext_->assign("inteval->vstack",vstack_ptr);
+        li_ << "if (max_am == " << am << ")" << std::endl;
+        std::string vstack_ptr("inteval->stack + ");
+        vstack_ptr += macro(tlabel,ss);
+        vstack_ptr += " * ";
+        vstack_ptr += macro("MAX_VECLEN");
+        li_ << ctext_->assign("inteval->vstack",vstack_ptr);
+      }
+
       if (cparams_->count_flops()) {
-	// set the counter to zero
-	li_ << "inteval->nflops = 0;" << endl;
+        // set the counter to zero
+        li_ << "inteval->nflops = 0;" << endl;
       }
       li_ << ctext_->close_block();
     }
@@ -220,8 +248,8 @@ Libint2Iface::~Libint2Iface()
       li_ << ctext_->assign("inteval->stack","0");
       li_ << ctext_->assign("inteval->vstack","0");
       if (cparams_->count_flops()) {
-	// set the counter to zero
-	li_ << "inteval->nflops = 0;" << endl;
+        // set the counter to zero
+        li_ << "inteval->nflops = 0;" << endl;
       }
       li_ << ctext_->close_block();
     }

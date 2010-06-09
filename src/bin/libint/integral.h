@@ -60,11 +60,12 @@ namespace libint2 {
   /**
      GenIntegralSet is a set of integrals over functions derived from BFS.
 
-     Oper is an operator or a set of operators. Oper must be derived from OperSet.
-     BraSetType and KetSetType are types describing sets of functions.
-     An example of a class that can be used as BraSetType and KetSetType
+     @tparam Oper An operator or a set of operators. Oper must be derived from OperSet.
+     @tparam BraSetType Type describing a set of bra functions. An example of a class that can be used as BraSetType
      is VectorBraket.
-     AuxQuanta describes auxiliary quantum numbers. AuxQuanta should be derived from QuantumSet.
+     @tparam KetSetType Type describing a set of ket functions. An example of a class that can be used as KetSetType
+     is VectorBraket.
+     @tparam AuxQuanta Type describing a set of auxiliary quantum numbers. AuxQuanta should be derived from QuantumSet.
   */
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta = EmptySet>
     class GenIntegralSet :

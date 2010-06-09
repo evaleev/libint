@@ -2,6 +2,7 @@
 #include <ostream>
 #include <string>
 #include <map>
+#include <vector>
 #include <smart_ptr.h>
 
 #ifndef _libint2_src_bin_libint_defaultparams_h_
@@ -192,28 +193,32 @@ namespace libint2 {
     unsigned int max_ntarget() const {
       return max_ntarget_;
     }
-    /// returns max stack size
-    unsigned int max_stack_size() const {
-      return max_stack_size_;
+    /// returns the max quantum number of targets
+    unsigned int max_am() const {
+      return max_stack_size_.size() - 1;
+    }
+    /// returns max stack size needed for quantum numbers up to am
+    unsigned int max_stack_size(unsigned int am) const {
+      return max_stack_size_[am];
     }
     /** returns max vector stack size.
         vector stack is only used to hold intermediate quantities
         in set-level RR code. This is only needed when doing linewise vectorization.
       */
-    unsigned int max_vector_stack_size() const {
-      return max_vector_stack_size_;
+    unsigned int max_vector_stack_size(unsigned int am) const {
+      return max_vector_stack_size_[am];
     }
     /** returns max rank of high-significance functions in a HRR call.
         This is only needed when doing linewise vectorization.
       */
-    unsigned int max_hrr_hsrank() const {
-      return max_hrr_hsrank_;
+    unsigned int max_hrr_hsrank(unsigned int am) const {
+      return max_hrr_hsrank_[am];
     }
     /** returns max rank of low-significance functions in a HRR call.
         This is only needed when doing linewise vectorization.
       */
-    unsigned int max_hrr_lsrank() const {
-      return max_hrr_lsrank_;
+    unsigned int max_hrr_lsrank(unsigned int am) const {
+      return max_hrr_lsrank_[am];
     }
     
     /// if max_ntarget_ < ntarget then set max_ntarget_=ntarget
@@ -223,35 +228,42 @@ namespace libint2 {
     }
     
     /// if max_stack_size_ < size then set max_stack_size_=size
-    void max_stack_size(unsigned int size) {
-      if (max_stack_size_ < size)
-        max_stack_size_ = size;
+    void max_stack_size(unsigned int am, unsigned int size) {
+      extend_max_size(max_stack_size_, am, size);
     }
     
     /// if max_vector_stack_size_ < size then set max_vector_stack_size_=size
-    void max_vector_stack_size(unsigned int size) {
-      if (max_vector_stack_size_ < size)
-        max_vector_stack_size_ = size;
+    void max_vector_stack_size(unsigned int am, unsigned int size) {
+      extend_max_size(max_vector_stack_size_, am, size);
     }
 
     /// if max_hrr_hsrank_ < rank then set max_hrr_hsrank_=rank
-    void max_hrr_hsrank(unsigned int rank) {
-      if (max_hrr_hsrank_ < rank)
-        max_hrr_hsrank_ = rank;
+    void max_hrr_hsrank(unsigned int am, unsigned int rank) {
+      extend_max_size(max_hrr_hsrank_, am, rank);
     }
     
     /// if max_hrr_lsrank_ < rank then set max_hrr_lsrank_=rank
-    void max_hrr_lsrank(unsigned int rank) {
-      if (max_hrr_lsrank_ < rank)
-        max_hrr_lsrank_ = rank;
+    void max_hrr_lsrank(unsigned int am, unsigned int rank) {
+      extend_max_size(max_hrr_lsrank_, am, rank);
     }
     
     private:
     unsigned int max_ntarget_;
-    unsigned int max_stack_size_;
-    unsigned int max_vector_stack_size_;
-    unsigned int max_hrr_hsrank_;
-    unsigned int max_hrr_lsrank_;
+    std::vector<unsigned int> max_stack_size_;  //< keeps track of stack size needed to compute integrals up to a given quantum number
+    std::vector<unsigned int> max_vector_stack_size_;
+    std::vector<unsigned int> max_hrr_hsrank_;
+    std::vector<unsigned int> max_hrr_lsrank_;
+
+    static void extend_max_size(std::vector<unsigned int>& max_size, unsigned int am, unsigned int size) {
+      const int max_am = (int)max_size.size() - 1u;
+      if (max_am < (int)am) {
+        max_size.resize(am + 1);
+        for(int l = std::max(max_am+1,1); l<=am; ++l)
+          max_size[l] = max_size[l-1];
+      }
+      if (max_size[am] < size)
+        max_size[am] = size;
+    }
   };
 
   /// Static parameters

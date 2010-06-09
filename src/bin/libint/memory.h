@@ -124,7 +124,7 @@ namespace libint2 {
 
   class MemoryManager {
   public:
-    /// Negative Address is used denote invalid address -- hence signed integer
+    /// Negative Address is used to denote an invalid address -- hence signed integer
     typedef int Address;
     typedef unsigned int Size;
     typedef MemoryBlock<Address,Size> MemBlock;
@@ -139,7 +139,7 @@ namespace libint2 {
     Size maxmem_;
     /// manages MemBlocks
     memblkset blks_;
-    /// This block is the guaranteed to be free until all memory is exhausted
+    /// This block is guaranteed to be free until all memory is exhausted
     SafePtr<MemBlock> superblock_;
     /// Max amount of memory used
     Size max_memory_used_;

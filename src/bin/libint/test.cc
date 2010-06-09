@@ -61,25 +61,24 @@ int main (int argc, char* argv[])
 
 namespace {
 
-  unsigned int am[][1] = { {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}};
-  CGShell sh_s(am[0]);
-  CGShell sh_p(am[1]);
-  CGShell sh_d(am[2]);
-  CGShell sh_f(am[3]);
-  CGShell sh_g(am[4]);
-  CGShell sh_h(am[5]);
-  CGShell sh_i(am[6]);
-  CGShell sh_k(am[7]);
-  CGShell sh_l(am[8]);
-  CGShell sh_m(am[9]);
-  CGShell sh_n(am[10]);
+  CGShell sh_s(0);
+  CGShell sh_p(1);
+  CGShell sh_d(2);
+  CGShell sh_f(3);
+  CGShell sh_g(4);
+  CGShell sh_h(5);
+  CGShell sh_i(6);
+  CGShell sh_k(7);
+  CGShell sh_l(8);
+  CGShell sh_m(9);
+  CGShell sh_n(10);
   SafePtr<CompilationParameters> cparams;
 
   int try_main (int argc, char* argv[])
   {
     LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
     taskmgr.add("test");
-    
+
     // initialize cparams
     SafePtr<CompilationParameters> tmpcparams(new CompilationParameters);
     cparams = tmpcparams;
@@ -87,21 +86,24 @@ namespace {
 
     // set default dims
     ImplicitDimensions::set_default_dims(cparams);
- 
-#if 1
+
+#if 0
     RunTest(test0,"iterators");
 #endif
-#if 1
+#if 0
     RunTest(test1,"memory managers");
 #endif
-#if 1
+#if 0
     RunTest(test2,"integrals types");
 #endif
-#if 1
+#if 0
     RunTest(test3,"recurrence relations");
 #endif
 #if 1
-    RunTest(test4,"ERI build");
+    RunTest(test4,"primitive ERI build");
+#endif
+#if 1
+    RunTest(test5,"contracted ERI build");
 #endif
 
     return 0;
@@ -148,7 +150,7 @@ namespace {
   void
   test1()
   {
-  
+
     SafePtr<Strategy> strat(new Strategy);
     SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
     SafePtr<TwoPRep_11_11_sq> xsxs_quartet = TwoPRep_11_11_sq::Instance(sh_f,sh_f,sh_f,sh_f,0u);
@@ -227,7 +229,7 @@ namespace {
     const unsigned int nbf = sh.num_bf();
     SafePtr<CGShell> sh_ptr(new CGShell(sh));
     sh_ptr->print(cout);
-    SubIteratorBase<CGShell> siter1(sh_ptr);
+    SubIteratorBase<CGShell> siter1(*sh_ptr);
     unsigned int bf = 0;
     for(siter1.init(); siter1; ++siter1, ++bf)
       siter1.elem().print(cout);
@@ -270,12 +272,13 @@ namespace {
     {
       typedef DivG12prime_xTx_11_11_sq IType;
       typedef CR_11_DivG12prime_xTx_11_sh RRType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
+      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u,DivG12prime_xTx_Descr(0));
       SafePtr<RRType> rr = RRType::Instance(iset,0);
       std::cout << "Created recurrence relation " << rr->label() << std::endl;
     }
   }
 
+  // primitive ERI build
   void
   test4()
   {
@@ -285,5 +288,20 @@ namespace {
     RunBuildTest<TwoPRep_11_11_sq>(sh_p,sh_p,sh_p,sh_p,0,use_quartets);
     RunBuildTest<TwoPRep_11_11_sq>(sh_p,sh_p,sh_p,sh_p,0,use_integrals);
   }
+
+  // contracted ERI build
+  void
+  test5()
+  {
+    const unsigned int use_integrals = 1000000000;
+    const unsigned int use_quartets = 1;
+
+    CGShell::set_contracted_default_value(true);
+    CGShell csh_s(0u);
+    CGShell csh_p(1u);
+
+    //RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_s,csh_p,csh_s,0,use_quartets);
+    RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_p,csh_p,csh_p,0,use_quartets);
+  }
 };
-  
+

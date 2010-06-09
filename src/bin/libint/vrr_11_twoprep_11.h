@@ -10,7 +10,7 @@ using namespace std;
 namespace libint2 {
 
   /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
-  the angular momentum is raised. where specifies whether angular momentus is decreased in bra or ket.
+  the angular momentum is raised. where specifies whether angular momentum is decreased in bra or ket.
   */
     template <class BFSet, int part, FunctionPosition where>
       class VRR_11_TwoPRep_11 : public GenericRecurrenceRelation< VRR_11_TwoPRep_11<BFSet,part,where>,

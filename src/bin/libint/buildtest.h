@@ -129,7 +129,7 @@ namespace libint2 {
 			     label,declfile,deffile);
 
       // update max stack size
-      taskmgr.current().params()->max_stack_size(memman->max_memory_used());
+      taskmgr.current().params()->max_stack_size(max_am, memman->max_memory_used());
       // extract all extrnal symbols
       extract_symbols(dg_xxxx);
 

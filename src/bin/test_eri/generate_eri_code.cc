@@ -26,7 +26,7 @@ int main (int argc, char* argv[])
 
 namespace {
 
-  unsigned int am[][1] = { {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}};
+  unsigned int am[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
   typedef TwoPRep_11_11_sq ERIQtet;
 
   int try_main (int argc, char* argv[])

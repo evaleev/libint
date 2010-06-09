@@ -1,12 +1,13 @@
 
+#ifndef _libint2_src_bin_libint_bfset_h_
+#define _libint2_src_bin_libint_bfset_h_
+
 #include <iostream>
 #include <string>
 #include <smart_ptr.h>
 #include <polyconstr.h>
 #include <hashable.h>
-
-#ifndef _libint2_src_bin_libint_bfset_h_
-#define _libint2_src_bin_libint_bfset_h_
+#include <contractable.h>
 
 namespace libint2 {
 
@@ -68,15 +69,10 @@ namespace libint2 {
   class CGF;
 
   /// Cartesian Gaussian Shell
-  class CGShell : public IncableBFSet, public Hashable<unsigned,ReferToKey> {
+  class CGShell : public IncableBFSet, public Hashable<unsigned,ReferToKey>,
+                  public Contractable<CGShell> {
 
     unsigned int qn_[1];
-    bool contracted_;
-    static bool default_contracted_;
-
-    struct default_values {
-      static const bool contracted = false;
-    };
 
   public:
     /// As far as SetIterator is concerned, CGShell is a set of one CGF
@@ -86,10 +82,7 @@ namespace libint2 {
     /// Default constructor creates an s-type shell
     CGShell();
     CGShell(unsigned int qn);
-    CGShell(unsigned int qn[1]);
     CGShell(const CGShell&);
-    CGShell(const SafePtr<CGShell>&);
-    CGShell(const SafePtr<parent_type>&);
     ~CGShell();
     CGShell& operator=(const CGShell&);
 
@@ -99,9 +92,6 @@ namespace libint2 {
     unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
     /// Returns the angular momentum
     unsigned int qn(unsigned int xyz=0) const { return qn_[0]; }
-    /// is this a contracted Gaussian?
-    bool contracted() const { return contracted_; }
-    static void set_default_contracted(bool c) { default_contracted_ = c; }
 
     /// Comparison operator
     bool operator==(const CGShell&) const;
@@ -113,9 +103,9 @@ namespace libint2 {
     /// Implements IncableBFSet::norm()
     unsigned int norm() const;
     /// Implements Hashable<unsigned>::key()
-    unsigned key() const { return qn_[0]; }
+    unsigned key() const { return (contracted() ? 1 : 0) * max_key + qn_[0]; }
     /// The range of keys is [0,max_key]
-    const static unsigned max_key = 19;
+    const static unsigned max_key = 38;
     //const static unsigned max_key = LIBINT_MAX_AM;
 
     /// Print out the content
@@ -127,15 +117,10 @@ namespace libint2 {
   CGShell operator-(const CGShell& A, const CGShell& B);
 
   /// Cartesian Gaussian Function
-  class CGF : public IncableBFSet, public Hashable<unsigned,ComputeKey> {
+  class CGF : public IncableBFSet, public Hashable<unsigned,ComputeKey>,
+              public Contractable<CGF> {
 
     unsigned int qn_[3];
-    bool contracted_;
-    static bool default_contracted_;
-
-    struct default_values {
-      static const bool contracted = false;
-    };
 
   public:
     /// As far as SetIterator is concerned, CGF is a set of one CGF
@@ -148,10 +133,7 @@ namespace libint2 {
     CGF();
     CGF(unsigned int qn[3]);
     CGF(const CGF&);
-    CGF(const SafePtr<CGF>&);
-    CGF(const SafePtr<parent_type>&);
     CGF(const ConstructablePolymorphically&);
-    CGF(const SafePtr<ConstructablePolymorphically>&);
     ~CGF();
     /// assignment
     CGF& operator=(const CGF&);
@@ -162,9 +144,6 @@ namespace libint2 {
     unsigned int num_bf() const { return 1; };
     /// Returns the angular momentum
     unsigned int qn(unsigned int xyz) const;
-    /// is this a contracted Gaussian?
-    bool contracted() const { return contracted_; }
-    static void set_default_contracted(bool c) { default_contracted_ = c; }
 
     /// Comparison operator
     bool operator==(const CGF&) const;
@@ -180,10 +159,11 @@ namespace libint2 {
       unsigned nxy = qn_[1] + qn_[2];
       unsigned l = nxy + qn_[0];
       unsigned key = nxy*(nxy+1)/2 + qn_[2];
-      return key + key_l_offset[l];
+      return (contracted() ? 1 : 0) * max_key + key + key_l_offset[l];
     }
     /// The range of keys is [0,max_key). The formula is easily derived by summing (L+1)(L+2)/2 up to CGShell::max_key
-    const static unsigned max_key = 1 + CGShell::max_key*CGShell::max_key + CGShell::max_key*(CGShell::max_key*CGShell::max_key + 11*CGShell::max_key)/6;
+    /// The factor of 2 to account for contracted vs. uncontracted basis functions
+    const static unsigned max_key = 2*(1 + CGShell::max_key*CGShell::max_key + CGShell::max_key*(CGShell::max_key*CGShell::max_key + 11*CGShell::max_key)/6);
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
