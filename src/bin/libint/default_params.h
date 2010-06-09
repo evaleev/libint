@@ -199,26 +199,35 @@ namespace libint2 {
     }
     /// returns max stack size needed for quantum numbers up to am
     unsigned int max_stack_size(unsigned int am) const {
-      return max_stack_size_[am];
+      return max_stack_size_.at(am);
     }
     /** returns max vector stack size.
         vector stack is only used to hold intermediate quantities
         in set-level RR code. This is only needed when doing linewise vectorization.
       */
     unsigned int max_vector_stack_size(unsigned int am) const {
-      return max_vector_stack_size_[am];
+      if (am + 1 > max_vector_stack_size_.size())
+        return 0;
+      else
+        return max_vector_stack_size_[am];
     }
     /** returns max rank of high-significance functions in a HRR call.
         This is only needed when doing linewise vectorization.
       */
     unsigned int max_hrr_hsrank(unsigned int am) const {
-      return max_hrr_hsrank_[am];
+      if (am + 1 > max_hrr_hsrank_.size())
+        return 0;
+      else
+        return max_hrr_hsrank_[am];
     }
     /** returns max rank of low-significance functions in a HRR call.
         This is only needed when doing linewise vectorization.
       */
     unsigned int max_hrr_lsrank(unsigned int am) const {
-      return max_hrr_lsrank_[am];
+      if (am + 1 > max_hrr_lsrank_.size())
+        return 0;
+      else
+        return max_hrr_lsrank_[am];
     }
     
     /// if max_ntarget_ < ntarget then set max_ntarget_=ntarget
