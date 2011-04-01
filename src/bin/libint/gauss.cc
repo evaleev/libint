@@ -53,9 +53,9 @@ CGF::label() const
   }
   std::string label(tmp);
   const char xyz_char[][2] = {"x","y","z"};
-  for(int xyz=0; xyz<3; xyz++) {
+  for(unsigned int xyz=0; xyz<3u; xyz++) {
     std::string xyzlab(xyz_char[xyz]);
-    for(int i=0; i<qn_[xyz]; i++) {
+    for(unsigned int i=0; i<qn_[xyz]; i++) {
       label += xyzlab;
     }
   }

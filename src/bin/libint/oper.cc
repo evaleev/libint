@@ -37,6 +37,7 @@ R12k_R12l_G12_Descr::key() const {
     +L_[0])*kmax
     +L_[1])*kmax
     +L_[2]);
+  return k;
 }
 
 std::string

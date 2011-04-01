@@ -74,6 +74,7 @@ namespace {
       return 1;
     if (amin == 1 && amax == 2)
       return 0;
+    abort(); // unreachable
   }
 
   std::pair<int,int> notxyz(int a) {
@@ -82,5 +83,6 @@ namespace {
     case 1: return make_pair(0,2); break;
     case 2: return make_pair(0,1); break;
     }
+    abort(); // unreachable
   }
 }

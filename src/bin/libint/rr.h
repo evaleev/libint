@@ -167,7 +167,7 @@ namespace libint2 {
 
     /// Obtain the unique Instance of RRStack
     static SafePtr<RRStack>& Instance();
-    ~RRStack() {}
+    virtual ~RRStack() {}
     
     /// adds content of rrs to this stack
     void add(const SafePtr<RRStack>& rrs);

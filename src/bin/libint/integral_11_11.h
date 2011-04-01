@@ -125,7 +125,7 @@ namespace libint2 {
                                                        const AuxIndexType& aux, const OperType& oper)
     {
       typedef typename SingletonManagerType::value_type map_value_type;
-      key_type key = compute_key(oper,bra,ket,aux);
+      key_type key = parent_type::compute_key(oper,bra,ket,aux);
       const map_value_type& val = singl_manager_.find(key);
       if (!val.second) {
         SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));

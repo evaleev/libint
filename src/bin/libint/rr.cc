@@ -16,7 +16,7 @@
 using namespace libint2;
 
 RecurrenceRelation::RecurrenceRelation() :
-  expr_(), nflops_(0)
+  nflops_(0), expr_()
 {
 }
 
@@ -200,7 +200,7 @@ RecurrenceRelation::generate_graph_()
 {
   SafePtr<DirectedGraph> dg(new DirectedGraph);
   dg->append_target(rr_target());
-  for(int c=0; c<num_children(); c++)
+  for(unsigned int c=0; c<num_children(); c++)
     dg->append_vertex(rr_child(c));
 #if DEBUG
   cout << "RecurrenceRelation::generate_code -- the number of integral sets = " << dg->num_vertices() << endl;
@@ -214,7 +214,7 @@ RecurrenceRelation::generate_graph_()
   cout << "RecurrenceRelation::generate_code -- the number of integral sets + integrals = " << dg->num_vertices() << endl;
 #endif
   // Mark children sets and their descendants to not compute
-  for(int c=0; c<num_children(); c++)
+  for(unsigned int c=0; c<num_children(); c++)
     dg->apply_at<&DGVertex::not_need_to_compute>(rr_child(c));
   // Apply recurrence relations using existing vertices on the graph (i.e.
   // such that no new vertices appear)
@@ -233,7 +233,7 @@ RecurrenceRelation::assign_symbols_(SafePtr<CodeSymbols>& symbols)
   // Set symbols on the target and children sets
   rr_target()->set_symbol("target");
   symbols->append_symbol("target");
-  for(int c=0; c<num_children(); c++) {
+  for(unsigned int c=0; c<num_children(); c++) {
     ostringstream oss;
     oss << "src" << c;
     string symb = oss.str();
@@ -307,7 +307,7 @@ RecurrenceRelation::spfunction_call(const SafePtr<CodeContext>& context, const S
      << context->value_to_pointer(rr_target()->symbol());
   // then come children
   const unsigned int nchildren = num_children();
-  for(int c=0; c<nchildren; c++) {
+  for(unsigned int c=0; c<nchildren; c++) {
     os << ", " << context->value_to_pointer(rr_child(c)->symbol());
   }
   os << ")" << context->end_of_stat() << endl;

@@ -85,9 +85,9 @@ namespace libint2 {
     int
     Oper<Props>::psymm(int i, int j) const
     {
-      if (i<0 || i>=Props::np)
+      if (i<0 || i>=static_cast<int>(Props::np))
         throw std::runtime_error("Oper<Props>::psymm(i,j) -- index i out of bounds");
-      if (j<0 || j>=Props::np)
+      if (j<0 || j>=static_cast<int>(Props::np))
         throw std::runtime_error("Oper<Props>::psymm(i,j) -- index j out of bounds");
       if (i == j)
         return 1;
@@ -101,6 +101,8 @@ namespace libint2 {
         return 0;
         case PermutationalSymmetry::nonstd:
         return nonstd_psymm(i,j);
+        default:
+        abort();
       }
     }
 
@@ -150,7 +152,7 @@ namespace libint2 {
       GenOper(const SafePtr<OperSet>& o) : descr_(require_dynamic_cast<GenOper,OperSet>(o)->descr_) {}
       GenOper(const SafePtr<ConstructablePolymorphically>& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(o)->descr_) {}
       GenOper(const ConstructablePolymorphically& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(&o)->descr_) {}
-      ~GenOper() {}
+      virtual ~GenOper() {}
 
     private:
       Descr descr_;

@@ -13,10 +13,13 @@ namespace libint2 {
   /**
      MemoryBlock<Address,Size> describes a block of raw memory addressed via Address and size described by Size
    */
-  template <typename Address, typename Size>
+  template <typename A, typename S>
     class MemoryBlock
     {
     public:
+      typedef A Address;
+      typedef S Size;
+
       MemoryBlock(const Address& address, const Size& size, bool free,
                   const SafePtr<MemoryBlock>& left,
                   const SafePtr<MemoryBlock>& right) :
@@ -24,22 +27,22 @@ namespace libint2 {
         left_(left), right_(right)
         {
         }
-      MemoryBlock(const MemoryBlock& A) :
-	address_(A.address_), size_(A.size_), free_(A.free_),
-        left_(A.left_), right_(A.right_)
+      MemoryBlock(const MemoryBlock& other) :
+	    address_(other.address_), size_(other.size_), free_(other.free_),
+        left_(other.left_), right_(other.right_)
         {
         }
 
       ~MemoryBlock() {}
 
       /// copy A to this
-      const MemoryBlock& operator=(const MemoryBlock& A) {
-	address_ = A.address_;
-	size_ = A.size_;
-	free_ = A.free_;
-	left_ = A.left_;
-	right_ = A.right_;
-	return *this;
+      const MemoryBlock& operator=(const MemoryBlock& other) {
+        address_ = other.address_;
+        size_ = other.size_;
+        free_ = other.free_;
+        left_ = other.left_;
+        right_ = other.right_;
+        return *this;
       }
 
       /// Returns address
@@ -98,12 +101,12 @@ namespace libint2 {
       }
 
       /// Merge A to this (does not check if merge can happen -- can_merge(*this,*A) must be already satisfied). The left/right pointers are not changed
-      const MemoryBlock& merge(const MemoryBlock& A) {
-	if (address() > A.address()) {
-	  address_ = A.address_;
-	}
-	size_ += A.size();
-	return *this;
+      const MemoryBlock& merge(const MemoryBlock& other) {
+        if (address() > other.address()) {
+          address_ = other.address_;
+        }
+        size_ += other.size();
+        return *this;
       }
 
     private:
@@ -125,8 +128,8 @@ namespace libint2 {
   class MemoryManager {
   public:
     /// Negative Address is used to denote an invalid address -- hence signed integer
-    typedef int Address;
-    typedef unsigned int Size;
+    typedef intptr_t Address;
+    typedef size_t Size;
     typedef MemoryBlock<Address,Size> MemBlock;
 
     static const Address InvalidAddress = -1;

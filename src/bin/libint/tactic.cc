@@ -78,7 +78,7 @@ RandomChoiceTactic::optimal_rr(const rr_stack& stack) const {
   if (!stack.empty()) {
     unsigned int size = stack.size();
     unsigned long rand = random();
-    const unsigned long range = 1ul<<32 - 1;
+    const unsigned long range = RAND_MAX;
     long choice = (long)(rand * size - 1)/range;
     return stack[choice];
   }

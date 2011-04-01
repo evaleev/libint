@@ -347,6 +347,7 @@ namespace libint2 {
         }
         return true;
       }
+      return false;
     }
 
   };

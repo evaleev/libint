@@ -34,6 +34,7 @@ namespace libint2 {
       using RecurrenceRelation::nflops_;
       using ParentType::target_;
       using ParentType::is_simple;
+      template<class RR, class C> friend class ChildFactory;
 
       /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
       CR_11_R12kR12lG12_11(const SafePtr<TargetType>&, unsigned int dir);

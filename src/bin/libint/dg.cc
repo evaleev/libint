@@ -37,8 +37,9 @@ namespace {
 
 DirectedGraph::DirectedGraph() :
   stack_(), targets_(), func_names_(),
-  first_to_compute_(), registry_(SafePtr<GraphRegistry>(new GraphRegistry)),
-  iregistry_(SafePtr<InternalGraphRegistry>(new InternalGraphRegistry))
+  registry_(SafePtr<GraphRegistry>(new GraphRegistry)),
+  iregistry_(SafePtr<InternalGraphRegistry>(new InternalGraphRegistry)),
+  first_to_compute_()
 {
   stack_.clear();
   targets_.clear();
@@ -582,8 +583,8 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<Recu
   if (need_to_clone) {
     SafePtr<ExprType> expr_new(new ExprType(expr,left_oper,right_oper));
     expr_vertex = static_pointer_cast<DGVertex,ExprType>(expr_new);
-    int nchildren = expr->num_exit_arcs();
 #if DEBUG
+    int nchildren = expr->num_exit_arcs();
     cout << "insert_expr_at: cloned AlgebraicOperator with " << expr->num_exit_arcs() << " children" << endl;
     if (nchildren) {
       cout << "Left:  " << expr->left()->description() << endl;
@@ -1063,26 +1064,26 @@ namespace {
   /// Returns a "vector" form of stack symbol, e.g. converts libint->stack[x] to libint->stack[x+vi]
   inline std::string to_vector_symbol(const SafePtr<DGVertex>& v)
   {
-    int current_pos = 0;
+    std::string::size_type current_pos = 0;
     std::string symb = v->symbol();
     // replace repeatedly until the string is exhausted
     while(current_pos != std::string::npos) {
 
       // find "[" first
       const std::string left_braket("[");
-      int where = symb.find(left_braket,current_pos);
+      std::string::size_type where = symb.find(left_braket,current_pos);
       current_pos = where;
       // if the prefix indicating a stack symbol found:
       // 1) make sure vi doesn't appear between the brakets
       // 2) replace "]" with "+vi]"
       if (where != std::string::npos) {
         const std::string right_braket("]");
-        int where = symb.find(right_braket,current_pos);
+        std::string::size_type where = symb.find(right_braket,current_pos);
         if (where == std::string::npos)
           throw logic_error("to_vector_symbol() -- address is set but no right braket found");
 
         const std::string forbidden("vi");
-        int pos = symb.find(forbidden,current_pos);
+        std::string::size_type pos = symb.find(forbidden,current_pos);
         if (pos == std::string::npos || pos > where) {
           const std::string what_to_add("+vi");
           symb.insert(where,what_to_add);
@@ -1600,7 +1601,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   //
   if (accumulate_targets_indirectly) {
     os << context->comment("Accumulate target integral sets") << std::endl;
-    const std::string& stack_name = registry()->stack_name();
+    //const std::string& stack_name = registry()->stack_name();
     const bool vecdim_is_static = dims->vecdim_is_static();
 #if 0
     unsigned int vecdim_rank;

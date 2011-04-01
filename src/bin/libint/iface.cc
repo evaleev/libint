@@ -29,7 +29,7 @@ namespace {
 
 Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
                            const SafePtr<CodeContext>& ctext) :
-  cparams_(cparams), ctext_(ctext), null_str_(""),
+  null_str_(""), oss_(), cparams_(cparams), ctext_(ctext),
   th_((cparams_->source_directory() + th_name).c_str()),
   ph_((cparams_->source_directory() + ph_name).c_str()),
   ih_((cparams_->source_directory() + ih_name).c_str()),

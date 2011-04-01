@@ -267,7 +267,7 @@ namespace libint2 {
       const int max_am = (int)max_size.size() - 1u;
       if (max_am < (int)am) {
         max_size.resize(am + 1);
-        for(int l = std::max(max_am+1,1); l<=am; ++l)
+        for(int l = std::max(max_am+1,1); l<=(int)am; ++l)
           max_size[l] = max_size[l-1];
       }
       if (max_size[am] < size)

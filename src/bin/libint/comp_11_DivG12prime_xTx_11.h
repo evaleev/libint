@@ -40,6 +40,7 @@ namespace libint2 {
       static bool directional() { return false; }
       static std::string descr() { return "CR"; }
 
+      template<class RR, class C> friend class ChildFactory;
     };
 
   template <class F>

@@ -78,10 +78,10 @@ namespace libint2 {
         SubIteratorBase< AuxQuanta > aux_siter(obj->aux());
         siters_inord.push_back(&aux_siter);
 
-        for(int p=0; p<np; p++) {
+        for(unsigned int p=0; p<np; p++) {
           const unsigned int nbra = obj->bra().num_members(p);
           bra_siters[p].resize(nbra);
-          for(int i=0; i<nbra; i++) {
+          for(unsigned int i=0; i<nbra; i++) {
             SubIterator* iter = obj->bra().member_subiter(p,i);
             siters_inord.push_back(iter);
             bra_siters[p][i] = iter;
@@ -89,7 +89,7 @@ namespace libint2 {
 
           const unsigned int nket = obj->ket().num_members(p);
           ket_siters[p].resize(nket);
-          for(int i=0; i<nket; i++) {
+          for(unsigned int i=0; i<nket; i++) {
             SubIterator* iter = obj->ket().member_subiter(p,i);
             siters_inord.push_back(iter);
             ket_siters[p][i] = iter;
@@ -97,7 +97,7 @@ namespace libint2 {
         }
 
         const unsigned int niters = siters_inord.size();
-        for(int it=0; it<niters; it++)
+        for(unsigned int it=0; it<niters; it++)
           siters_inord[it]->init();
 
         // Now iterate over contents of each subiterator
@@ -109,17 +109,17 @@ namespace libint2 {
           
           // Construct and initialize bra
           typename BraSetType::iter_type bra;
-          for(int p=0; p<np; p++) {
+          for(unsigned int p=0; p<np; p++) {
             const unsigned int nbra = bra_siters[p].size();
-            for(int i=0; i<nbra; i++)
+            for(unsigned int i=0; i<nbra; i++)
               bra.set_member(bra_siters[p][i]->pelem(), p, i);
           }
 
           // Construct and initialize ket
           typename KetSetType::iter_type ket;
-          for(int p=0; p<np; p++) {
+          for(unsigned int p=0; p<np; p++) {
             const unsigned int nket = ket_siters[p].size();
-            for(int i=0; i<nket; i++)
+            for(unsigned int i=0; i<nket; i++)
               ket.set_member(ket_siters[p][i]->pelem(), p, i);
           }
 

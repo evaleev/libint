@@ -13,13 +13,15 @@ namespace libint2 {
     VectorN() { for(int i=0; i<N; ++i) data_[i] = T(); }
     VectorN(const VectorN& a) { for(int i=0; i<N; ++i) data_[i] = a.data_[i]; }
 
-    const VectorN& operator+=(const VectorN& a) {
+    VectorN& operator+=(const VectorN& a) {
       for(int i=0; i<N; ++i)
         data_[i] += a.data_[i];
+      return *this;
     }
-    const VectorN& operator-=(const VectorN& a) {
+    VectorN& operator-=(const VectorN& a) {
       for(int i=0; i<N; ++i)
         data_[i] -= a.data_[i];
+      return *this;
     }
     
     /// 1-norm

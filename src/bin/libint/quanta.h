@@ -245,7 +245,7 @@ namespace libint2 {
   template<typename T, unsigned int N>
     QuantumNumbersA<T,N>::QuantumNumbersA(const T& val)
     {
-      for(int i=0; i<N; i++)
+      for(unsigned int i=0; i<N; i++)
         qn_[i] = val;
     }
 
@@ -267,7 +267,7 @@ namespace libint2 {
     QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<QuantumNumbersA>& sptr)
     {
       T* qn = sptr->qn_;
-      for(int i=0; i<N; i++)
+      for(unsigned int i=0; i<N; i++)
         qn_[i] = qn[i];
     }
   
@@ -324,7 +324,7 @@ namespace libint2 {
       oss << "{";
       if (N > 0)
 	oss << qn_[0];
-      for(int i=1; i<N; i++)
+      for(unsigned int i=1; i<N; i++)
         oss << "," << qn_[i];
       oss << "}";
       return oss.str();

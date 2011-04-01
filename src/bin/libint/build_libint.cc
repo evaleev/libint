@@ -70,22 +70,36 @@ int main(int argc, char* argv[])
          << "  WARNING! Caught a standard exception:" << endl
          << "    " << a.what() << endl << endl;
   }
+  return 0;
 }
 
 static void print_header(std::ostream& os);
 static void print_config(std::ostream& os);
 // Put all configuration-specific API elements in here
 static void config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface);
+
+#ifdef INCLUDE_ERI
 static void build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
+#endif
+
+#ifdef INCLUDE_G12
 static void build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
 static void build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                          SafePtr<Libint2Iface>& iface);
+#endif
+
+#ifdef INCLUDE_GENG12
 static void build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
 			       SafePtr<Libint2Iface>& iface);
+#endif
+
+#ifdef INCLUDE_G12DKH
 static void build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
+#endif
+
 static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
 
 void try_main (int argc, char* argv[])
@@ -238,6 +252,7 @@ void try_main (int argc, char* argv[])
   // Generate code for the set-level RRs
   generate_rr_code(os,cparams);
 
+#if DEBUG
   // print out the external symbols found for each task
   typedef LibraryTaskManager::TasksCIter tciter;
   const tciter tend = taskmgr.plast();
@@ -245,15 +260,14 @@ void try_main (int argc, char* argv[])
     const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
     typedef TaskExternSymbols::SymbolList SymbolList;
     const SymbolList& symbols = tsymbols->symbols();
-#if DEBUG
     // print out the labels
     std::cout << "Recovered labels for task " << t->label() << std::endl;
     typedef SymbolList::const_iterator citer;
     citer end = symbols.end();
     for(citer s=symbols.begin(); s!=end; ++s)
       std::cout << *s << std::endl;
-#endif
   }
+#endif
 
   // transfer some library configuration to library API
   config_to_api(cparams,iface);
@@ -339,7 +353,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
-  for(int l=0; l<=lmax; l++) {
+  for(unsigned int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
@@ -362,10 +376,10 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
-  for(int la=0; la<=lmax; la++) {
-    for(int lb=0; lb<=lmax; lb++) {
-      for(int lc=0; lc<=lmax; lc++) {
-        for(int ld=0; ld<=lmax; ld++) {
+  for(unsigned int la=0; la<=lmax; la++) {
+    for(unsigned int lb=0; lb<=lmax; lb++) {
+      for(unsigned int lc=0; lc<=lmax; lc++) {
+        for(unsigned int ld=0; ld<=lmax; ld++) {
 
           if (la+lb+lc+ld == 0)
             continue;
@@ -460,7 +474,7 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   const std::string task("r12kg12");
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
-  for(int l=0; l<=lmax; l++) {
+  for(unsigned int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
@@ -488,10 +502,10 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
-  for(int la=0; la<=lmax; la++) {
-    for(int lb=0; lb<=lmax; lb++) {
-      for(int lc=0; lc<=lmax; lc++) {
-        for(int ld=0; ld<=lmax; ld++) {
+  for(unsigned int la=0; la<=lmax; la++) {
+    for(unsigned int lb=0; lb<=lmax; lb++) {
+      for(unsigned int lc=0; lc<=lmax; lc++) {
+        for(unsigned int ld=0; ld<=lmax; ld++) {
 
           if (la < lb || lc < ld || la+lb > lc+ld)
 	    continue;
@@ -645,7 +659,7 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
 
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am("r12kg12");
-  for(int l=0; l<=lmax; l++) {
+  for(unsigned int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
@@ -662,10 +676,10 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
     SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
     SafePtr<Strategy> strat(new Strategy);
     SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-    for(int la=0; la<=lmax; la++) {
-      for(int lb=0; lb<=lmax; lb++) {
-        for(int lc=0; lc<=lmax; lc++) {
-          for(int ld=0; ld<=lmax; ld++) {
+    for(unsigned int la=0; la<=lmax; la++) {
+      for(unsigned int lb=0; lb<=lmax; lb++) {
+        for(unsigned int lc=0; lc<=lmax; lc++) {
+          for(unsigned int ld=0; ld<=lmax; ld++) {
 
             if (la+lb+lc+ld == 0)
               continue;
@@ -760,7 +774,6 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
 
 #endif // INCLUDE_G12
 
-#if 0
 #ifdef INCLUDE_GENG12
 void
 build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
@@ -925,7 +938,6 @@ build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 }
 
 #endif // INCLUDE_GENG12
-#endif
 
 #ifdef INCLUDE_G12DKH
 void

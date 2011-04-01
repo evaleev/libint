@@ -58,7 +58,7 @@ namespace libint2 {
         a Cartesian Gaussian.
     */
     static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
-    ~HRR();
+    virtual ~HRR();
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return nchildren_; };
@@ -127,7 +127,7 @@ namespace libint2 {
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(const SafePtr<TargetType>& Tint, unsigned int dir) :
-    target_(Tint), dir_(dir), nchildren_(0)
+    dir_(dir), target_(Tint), nchildren_(0)
     {
       target_ = Tint;
       const typename IntType::AuxQuantaType& aux = Tint->aux();
@@ -258,7 +258,7 @@ namespace libint2 {
       //check for nonzero quanta for all particles other than part
       bool nonzero_quanta = false;
       unsigned const int npart = IntType::OperatorType::Properties::np;
-      for(int p=0; p<npart; p++) {
+      for(unsigned int p=0; p<npart; p++) {
         if (p == part)
           continue;
         int nfbra = bra.num_members(p);
@@ -298,7 +298,7 @@ namespace libint2 {
       // zero out unneeded bfs'
       IBraType bra_zero(bra);
       IKetType ket_zero(ket);
-      for(int p=0; p<npart; p++) {
+      for(unsigned int p=0; p<npart; p++) {
         if (p == part)
           continue;
         int nfbra = bra_zero.num_members(p);
@@ -389,14 +389,15 @@ namespace libint2 {
       assert(i>=0 && i<nchildren_);
 
       unsigned int nc=0;
-      for(int c=0; c<max_nchildren_; c++) {
+      for(unsigned int c=0; c<max_nchildren_; c++) {
         if (children_[c]) {
           if (nc == i)
             return children_[c];
           nc++;
         }
       }
-    };
+      abort(); // unreachable
+    }
 
   template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
@@ -455,7 +456,7 @@ namespace libint2 {
          << context->value_to_pointer(rr_target()->symbol());
       // then come children
       const unsigned int nchildren = num_children();
-      for(int c=0; c<nchildren; c++) {
+      for(unsigned int c=0; c<nchildren; c++) {
         os << ", " << context->value_to_pointer(rr_child(c)->symbol());
       }
       // then dimensions of basis function sets not involved in the transfer
@@ -466,13 +467,13 @@ namespace libint2 {
       // WARNING !!!
       for(int p=0; p<part; p++) {
         unsigned int nbra = target_->bra().num_members(p);
-        for(int i=0; i<nbra; i++) {
+        for(unsigned int i=0; i<nbra; i++) {
           SubIterator* iter = target_->bra().member_subiter(p,i);
           hsr *= iter->num_iter();
           delete iter;
         }
         unsigned int nket = target_->ket().num_members(p);
-        for(int i=0; i<nket; i++) {
+        for(unsigned int i=0; i<nket; i++) {
           SubIterator* iter = target_->ket().member_subiter(p,i);
           hsr *= iter->num_iter();
           delete iter;
@@ -483,22 +484,22 @@ namespace libint2 {
       taskmgr.current().params()->max_hrr_hsrank(hsr);
 
       // can only do a simple bra->ket or ket->bra transfer so far
-      unsigned int isr = 1;
+      //unsigned int isr = 1;
       if (loc_a == loc_b && pos_a != 0 && pos_b != 0)
         throw CodeDoesNotExist("HRR::spfunction_call -- has not been generalized yet");
 
       /// WARNING !!!
       unsigned int lsr = 1;
       unsigned int np = IntType::OperType::Properties::np;
-      for(int p=part+1; p<np; p++) {
+      for(unsigned int p=part+1; p<np; p++) {
         unsigned int nbra = target_->bra().num_members(p);
-        for(int i=0; i<nbra; i++) {
+        for(unsigned int i=0; i<nbra; i++) {
           SubIterator* iter = target_->bra().member_subiter(p,i);
           lsr *= iter->num_iter();
           delete iter;
         }
         unsigned int nket = target_->ket().num_members(p);
-        for(int i=0; i<nket; i++) {
+        for(unsigned int i=0; i<nket; i++) {
           SubIterator* iter = target_->ket().member_subiter(p,i);
           lsr *= iter->num_iter();
           delete iter;
@@ -521,7 +522,6 @@ namespace libint2 {
     bool
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::expl_high_dim() const
     {
-      unsigned int np = IntType::OperType::Properties::np;
       bool high = true;
       if (part == 0)
         high = false;

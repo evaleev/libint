@@ -9,24 +9,25 @@ using namespace libint2;
 #define LOCAL_DEBUG 0
 
 DGVertex::DGVertex(ClassID tid) :
-  dg_(0), subtree_(SafePtr<DRTree>()), typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
-  postcalc_(), graph_label_(), referred_vertex_(0), nrefs_(0),
+  typeid_(tid), instid_(), dg_(0), graph_label_(), referred_vertex_(0),
+  nrefs_(0), symbol_(), address_(MemoryManager::InvalidAddress), need_to_compute_(true),
 #if CHECK_SAFETY
   declared_(false),
 #endif
-  symbol_(), address_(MemoryManager::InvalidAddress), need_to_compute_(true), instid_()
+  parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
+  postcalc_(), subtree_(SafePtr<DRTree>())
 {
 }
 
 DGVertex::DGVertex(const DGVertex& v) :
-  dg_(v.dg_), subtree_(v.subtree_), typeid_(v.typeid_), parents_(v.parents_), children_(v.children_), target_(v.target_),
-  can_add_arcs_(v.can_add_arcs_), num_tagged_arcs_(v.num_tagged_arcs_),
-  postcalc_(v.postcalc_), graph_label_(v.graph_label_),
+  typeid_(v.typeid_), instid_(v.instid_), dg_(v.dg_), graph_label_(v.graph_label_), referred_vertex_(v.referred_vertex_),
+  nrefs_(v.nrefs_), symbol_(v.symbol_), address_(v.address_), need_to_compute_(v.need_to_compute_),
 #if CHECK_SAFETY
   declared_(v.declared_),
 #endif
-  referred_vertex_(v.referred_vertex_), nrefs_(v.nrefs_),
-  symbol_(v.symbol_), address_(v.address_), need_to_compute_(v.need_to_compute_), instid_(v.instid_)
+  parents_(v.parents_), children_(v.children_), target_(v.target_),
+  can_add_arcs_(v.can_add_arcs_), num_tagged_arcs_(v.num_tagged_arcs_),
+  postcalc_(v.postcalc_), subtree_(v.subtree_)
 {
 }
 
@@ -178,8 +179,8 @@ DGVertex::detach()
 {
   // If there are no entry arcs -- then other vertices do not depend on this guy
   // Can safely remove exit arcs
-  int narcs = num_entry_arcs();
-  if (num_entry_arcs() == 0)
+  const unsigned int narcs = num_entry_arcs();
+  if (narcs == 0)
     DGVertex::del_exit_arcs();
   else
     throw CannotPerformOperation("DGVertex::detach() -- cannot detach a vertex if it has entry arcs");
@@ -221,14 +222,14 @@ namespace {
 const SafePtr<DGArc>&
 DGVertex::exit_arc(const SafePtr<DGVertex>& v) const
 {
-  static SafePtr<DGArc> nullptr;
+  static SafePtr<DGArc> nullptr_;
   __ArcDestEqual predicate(v);
   const ArcSetType::const_iterator end = children_.end();
   const ArcSetType::const_iterator pos = find_if(children_.begin(),children_.end(),predicate);
   if (pos != end)
     return *pos;
   else
-    return nullptr;
+    return nullptr_;
 }
 
 void
