@@ -22,6 +22,7 @@ int main (int argc, char* argv[])
          << "  WARNING! Caught a standard exception:" << std::endl
          << "    " << a.what() << std::endl << std::endl;
   }
+  return 0;
 }
 
 namespace {

@@ -49,7 +49,7 @@ namespace libint2 {
         a Cartesian Gaussian.
     */
     static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
-    ~ITR_11_TwoPRep_11() { assert(part == 0 || part == 1); }
+    virtual ~ITR_11_TwoPRep_11() { assert(part == 0 || part == 1); }
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return children_.size(); };

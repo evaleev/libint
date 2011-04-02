@@ -94,7 +94,7 @@ namespace libint2 {
 #endif
         }
 
-      ~RTimeEntity()
+      virtual ~RTimeEntity()
         {
 #if DEBUG
           std::cout << "Deallocated RTimeEntity id = " << this->id() << std::endl;
@@ -170,7 +170,7 @@ namespace libint2 {
 #endif
         }
 
-      ~CTimeEntity()
+      virtual ~CTimeEntity()
         {
 #if DEBUG
           std::cout << "Deallocated CTimeEntity id = " << this->id() << " value = " << value() << std::endl;

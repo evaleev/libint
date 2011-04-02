@@ -168,7 +168,7 @@ namespace libint2 {
   class CppCodeContext : public CodeContext, public EnableSafePtrFromThis<CppCodeContext> {
   public:
     CppCodeContext(const SafePtr<CompilationParameters>& cparams, bool vectorize = false);
-    ~CppCodeContext();
+    virtual ~CppCodeContext();
 
     /// Implementation of CodeContext::code_prefix()
     std::string code_prefix() const;

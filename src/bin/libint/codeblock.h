@@ -32,7 +32,7 @@ namespace libint2 {
     public:
     ForLoop(const SafePtr<CodeContext>& context, std::string& varname,
             const SafePtr<Entity>& less_than, const SafePtr<Entity>& start_at);
-    ~ForLoop();
+    virtual ~ForLoop();
     
     /// Implementation of CodeBlock::open()
     std::string open();

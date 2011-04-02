@@ -61,7 +61,7 @@ namespace libint2 {
     /// Return reference to ConstructablePolymorphically as object of this type
     typedef const ConstructablePolymorphically& cp_rettype;
     SubIteratorBase(const tref&);
-    ~SubIteratorBase();
+    virtual ~SubIteratorBase();
     
     /// Returns current element
     const iref& elem() const;

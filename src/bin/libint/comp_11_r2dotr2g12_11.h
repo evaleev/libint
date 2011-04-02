@@ -45,7 +45,7 @@ namespace libint2 {
         issues with getting a SafePtr from constructor (as needed for registry to work).
     */
     static SafePtr<ThisType> Instance(const SafePtr<TargetType>&);
-    ~CR_11_R2dotR2G12_11() {}
+    virtual ~CR_11_R2dotR2G12_11() {}
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return nchildren_; };

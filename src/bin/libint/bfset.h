@@ -83,7 +83,7 @@ namespace libint2 {
     CGShell();
     CGShell(unsigned int qn);
     CGShell(const CGShell&);
-    ~CGShell();
+    virtual ~CGShell();
     CGShell& operator=(const CGShell&);
 
     /// Return a compact label
@@ -134,7 +134,7 @@ namespace libint2 {
     CGF(unsigned int qn[3]);
     CGF(const CGF&);
     CGF(const ConstructablePolymorphically&);
-    ~CGF();
+    virtual ~CGF();
     /// assignment
     CGF& operator=(const CGF&);
 

@@ -186,7 +186,7 @@ namespace libint2 {
   class WorstFitMemoryManager : public MemoryManager {
   public:
     WorstFitMemoryManager(bool search_exact = true, const Size& maxsize = ULONG_MAX);
-    ~WorstFitMemoryManager();
+    virtual ~WorstFitMemoryManager();
 
     /// Implementation of MemoryManager::alloc()
     Address alloc(const Size& size);
@@ -205,7 +205,7 @@ namespace libint2 {
   class BestFitMemoryManager : public MemoryManager {
   public:
     BestFitMemoryManager(bool search_exact = true, const Size& tight_fit = 0, const Size& maxsize = ULONG_MAX);
-    ~BestFitMemoryManager();
+    virtual ~BestFitMemoryManager();
 
     /// Implementation of MemoryManager::alloc()
     Address alloc(const Size& size);
@@ -224,7 +224,7 @@ namespace libint2 {
   class FirstFitMemoryManager : public MemoryManager {
   public:
     FirstFitMemoryManager(bool search_exact = true, const Size& maxsize = ULONG_MAX);
-    ~FirstFitMemoryManager();
+    virtual ~FirstFitMemoryManager();
 
     /// Implementation of MemoryManager::alloc()
     Address alloc(const Size& size);
@@ -241,7 +241,7 @@ namespace libint2 {
   class LastFitMemoryManager : public MemoryManager {
   public:
     LastFitMemoryManager(bool search_exact = true, const Size& maxsize = ULONG_MAX);
-    ~LastFitMemoryManager();
+    virtual ~LastFitMemoryManager();
 
     /// Implementation of MemoryManager::alloc()
     Address alloc(const Size& size);

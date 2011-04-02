@@ -57,6 +57,7 @@ int main (int argc, char* argv[])
          << "  WARNING! Caught a standard exception:" << endl
          << "    " << a.what() << endl << endl;
   }
+  return 0;
 }
 
 namespace {

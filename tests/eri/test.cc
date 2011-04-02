@@ -173,5 +173,6 @@ int main(int argc, char** argv) {
 
   LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(&inteval);
 
+  return 0;
 }
 

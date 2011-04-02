@@ -51,7 +51,7 @@ namespace libint2 {
   public:
     CannotPerformOperation(const std::string& msg) :
       logic_error(msg) {}
-    ~CannotPerformOperation() throw() {}
+    virtual ~CannotPerformOperation() throw() {}
   };
 
   /// This exception used to indicate that some property is not set
