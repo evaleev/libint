@@ -19,6 +19,8 @@
 using namespace std;
 using namespace libint2;
 
+long living_count = 0;
+
 namespace {
   int try_main (int argc, char* argv[]);
   void test0();
@@ -100,7 +102,7 @@ namespace {
 #if 0
     RunTest(test3,"recurrence relations");
 #endif
-#if 1
+#if 0
     RunTest(test4,"primitive ERI build");
 #endif
 #if 1
@@ -160,7 +162,7 @@ namespace {
 
     SafePtr<MemoryManagerFactory> mmfactory(new MemoryManagerFactory);
 
-    for(int m = 0; m < MemoryManagerFactory::ntypes; m++) {
+    for(unsigned int m = 0; m < MemoryManagerFactory::ntypes; m++) {
       SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
       dg_xxxx3->append_target(xsxs_ptr);
       dg_xxxx3->apply(strat,tactic);
@@ -176,7 +178,7 @@ namespace {
 
     // Test BestFitMemoryFactory with tight_fit > 0
     const unsigned int tf_max = 6;
-    for(int tf = 1; tf <= tf_max; tf++) {
+    for(unsigned int tf = 1; tf <= tf_max; tf++) {
       for(int ex=1; ex>=0; ex--) {
 	SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
 	dg_xxxx3->append_target(xsxs_ptr);
@@ -301,7 +303,7 @@ namespace {
     CGShell csh_s(0u);
     CGShell csh_p(1u);
 
-    //RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_s,csh_p,csh_s,0,use_quartets);
+    RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_s,csh_p,csh_s,0,use_quartets);
     RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_p,csh_p,csh_p,0,use_quartets);
   }
 };

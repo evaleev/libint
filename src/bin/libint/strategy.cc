@@ -11,6 +11,7 @@
 #include <rr.templ.h>
 #include <graph_registry.h>
 #include <intset_to_ints.h>
+#include <uncontract.h>
 #include <singl_stack.timpl.h>
 
 #include <master_ints_list.h>
@@ -332,8 +333,23 @@ namespace libint2 {
           std::cout << "Unrolled " << tptr->label() << std::endl;
 #endif
         }
-        // else: apply the known strategy
         else {
+          // if allowed to uncontract -- try that first
+          const bool can_uncontract = dg->registry()->uncontract();
+          if (can_uncontract) {
+            typedef Uncontract_Integral<T> UncI;
+            SafePtr<UncI> x(new UncI(tptr));
+            rr = static_pointer_cast<RecurrenceRelation,UncI>(x);
+            if (rr != 0) {
+#if DEBUG
+              std::cout << "Uncontracted " << tptr->label() << std::endl;
+#endif
+              if (rr->num_children() != 0)
+                return true;
+            }
+          }
+
+          // if uncontraction failed -- apply the known strategy
           typedef apply_strategy<T> apply_strategy_t;
           typedef typename apply_strategy_t::Impl apply_strategy_t_impl;
           SafePtr<apply_strategy_t_impl> applier_impl(new apply_strategy_t_impl(dg,tptr,tactic));

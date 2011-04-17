@@ -30,6 +30,7 @@
 #include <dims.h>
 #include <singl_stack.timpl.h>
 #include <purgeable.h>
+#include <buildtest.h>
 
 #include <master_ints_list.h>
 
@@ -99,8 +100,6 @@ static void build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParame
 static void build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
 #endif
-
-static void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
 
 void try_main (int argc, char* argv[])
 {
@@ -191,6 +190,13 @@ void try_main (int argc, char* argv[])
   cparams->accumulate_targets(true);
 #else
   cparams->accumulate_targets(false);
+#endif
+#if LIBINT_CONTRACTED_INTS
+  cparams->contracted_targets(true);
+  CGShell::set_contracted_default_value(true);
+#else
+  cparams->contracted_targets(false);
+  CGShell::set_contracted_default_value(false);
 #endif
 #ifdef LIBINT_USER_DEFINED_FLOAT
   {
@@ -308,42 +314,6 @@ print_config(std::ostream& os)
 #endif
 }
 
-void
-generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams)
-{
-  //
-  // generate explicit code for all recurrence relation that were not inlined
-  //
-  SafePtr<CodeContext> context(new CppCodeContext(cparams));
-  ImplicitDimensions::set_default_dims(cparams);
-  std::string prefix(cparams->source_directory());
-
-  SafePtr<RRStack> rrstack = RRStack::Instance();
-  RRStack::citer_type it = rrstack->begin();
-  while (it != rrstack->end()) {
-    SafePtr<RecurrenceRelation> rr = (*it).second.second;
-    std::string rrlabel = cparams->api_prefix() + rr->label();
-    os << "generating code for " << context->label_to_name(rrlabel) << " target=" << rr->rr_target()->label() << endl;
-
-    std::string decl_filename(prefix + context->label_to_name(rrlabel));  decl_filename += ".h";
-    std::string def_filename(prefix + context->label_to_name(rrlabel));  def_filename += ".cc";
-    std::basic_ofstream<char> declfile(decl_filename.c_str());
-    std::basic_ofstream<char> deffile(def_filename.c_str());
-
-    rr->generate_code(context,ImplicitDimensions::default_dims(),rrlabel,declfile,deffile);
-
-    declfile.close();
-    deffile.close();
-
-    // Remove RR to save resources
-    rrstack->remove(rr);
-    // purge SingletonStacks, to save resources
-    PurgeableStacks::Instance()->purge();
-    // next RR
-    it = rrstack->begin();
-  }
-}
-
 #ifdef INCLUDE_ERI
 void
 build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
@@ -376,6 +346,9 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
+  SafePtr<CodeContext> context(new CppCodeContext(cparams));
+  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+
   for(unsigned int la=0; la<=lmax; la++) {
     for(unsigned int lb=0; lb<=lmax; lb++) {
       for(unsigned int lc=0; lc<=lmax; lc++) {
@@ -400,65 +373,64 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 1;
           dg_xxxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxxx->registry()->do_cse(need_to_optimize);
-	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
-	  // Need to accumulate integrals?
-	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
+          dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
+          // Need to accumulate integrals?
+          dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
 
           SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],mType(0u));
           os << "building " << abcd->description() << endl;
           SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(abcd);
           dg_xxxx->append_target(abcd_ptr);
-          dg_xxxx->apply(strat,tactic);
-          dg_xxxx->optimize_rr_out();
-          dg_xxxx->traverse();
-#if DEBUG
-          os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
-#endif
 
-          SafePtr<CodeContext> context(new CppCodeContext(cparams));
-          SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
           std::string prefix(cparams->source_directory());
-	  std::string label(cparams->api_prefix() + abcd->label());
-          std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
-          std::string src_filename(prefix + context->label_to_name(label));  src_filename += ".cc";
-          std::basic_ofstream<char> declfile(decl_filename.c_str());
-          std::basic_ofstream<char> srcfile(src_filename.c_str());
-          dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
+          std::string label(cparams->api_prefix() + abcd->label());
+          std::deque<std::string> decl_filenames;
+          std::deque<std::string> def_filenames;
+
+          // this will generate code for this targets, and potentially generate code for its prerequisites
+          GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
+                       decl_filenames, def_filenames,
+                       prefix, label, false);
+
+          // update max stack size
+          taskmgr.current().params()->max_stack_size(max_am, memman->max_memory_used());
+          os << "Max memory used = " << memman->max_memory_used() << std::endl;
 
           // update max stack size and # of targets
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(max_am, memman->max_memory_used());
-	  tparams->max_ntarget(1);
+          tparams->max_ntarget(1);
 
-	  // set pointer to the top-level evaluator function
+          // set pointer to the top-level evaluator function
           ostringstream oss;
           oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_eri[" << la << "][" << lb << "][" << lc << "]["
               << ld <<"] = " << context->label_to_name(label_to_funcname(label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
 
-	  // need to declare this function internally
-          oss.str("");
-          oss << "#include <" << decl_filename << ">" << endl;
-          iface->to_int_iface(oss.str());
+          // need to declare this function internally
+          for(std::deque<std::string>::const_iterator i=decl_filenames.begin();
+              i != decl_filenames.end();
+              ++i) {
+            oss.str("");
+            oss << "#include <" << *i << ">" << endl;
+            iface->to_int_iface(oss.str());
+          }
 
-	  // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
-	  // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-	  if (la == lmax &&
-	      lb == lmax &&
-	      lc == lmax &&
-	      ld == lmax) {
-
-	    extract_symbols(dg_xxxx);
-
-	  }
+          // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
+          // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
+          if (la == lmax &&
+              lb == lmax &&
+              lc == lmax &&
+              ld == lmax) {
+            extract_symbols(dg_xxxx);
+          }
 
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
 #endif
           dg_xxxx->reset();
-          declfile.close();
-          srcfile.close();
+          memman->reset();
         } // end of d loop
       } // end of c loop
     } // end of b loop

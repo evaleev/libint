@@ -68,6 +68,10 @@ namespace libint2 {
     const std::string& realtype() const {
       return realtype_;
     }
+    /// whether contracted targets are supported
+    bool contracted_targets() const {
+      return contracted_targets_;
+    }
     
     /// set max AM for task t
     void max_am(const std::string& t, unsigned int a);
@@ -113,6 +117,10 @@ namespace libint2 {
     void realtype(const std::string& realtype) {
       realtype_ = realtype;
     }
+    /// support contracted targets?
+    void contracted_targets(bool c) {
+      contracted_targets_ = c;
+    }
     
     /// print params out
     void print(std::ostream& os) const;
@@ -143,6 +151,8 @@ namespace libint2 {
       static const bool accumulate_targets = false;
       /// Use double for computations
       static const std::string realtype;
+      /// Do not support contracted targets
+      static const bool contracted_targets = false;
     };
 
     struct TaskParameters {
@@ -178,6 +188,8 @@ namespace libint2 {
     bool accumulate_targets_;
     /// name of the floating-point type
     std::string realtype_;
+    /// whether to support contracted targets
+    bool contracted_targets_;
   };
   
   /** This class maintains various parameters for each task type

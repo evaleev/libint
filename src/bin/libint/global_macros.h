@@ -6,7 +6,7 @@
 #define LIBINT_CARTGAUSS_MAX_AM 20
 
 /// Set to 1 to enable various safety checks which are normally too expensive to perform
-#define CHECK_SAFETY 0
+#define CHECK_SAFETY 1
 
 /// DirectedGraph uses an associated container (multimap) to store vertices? If not, use a simple container (list)
 #define USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH 1
@@ -39,7 +39,7 @@
 
 /// Use integer key to compare
 #define USE_INT_KEY_TO_COMPARE 1
-// GenIntegralSet use unique integer keys to hash integrals and avoid creating temporaries
+/// GenIntegralSet use unique integer keys to hash integrals and avoid creating temporaries
 #if !USE_INT_KEY_TO_COMPARE
 # error "For now USE_INT_KEY_TO_COMPARE must be 1"
 #endif

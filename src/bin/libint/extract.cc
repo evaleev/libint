@@ -5,6 +5,7 @@
 #include <entity.h>
 #include <rr.h>
 #include <intset_to_ints.h>
+#include <uncontract.h>
 #include <extract.h>
 
 using namespace std;
@@ -69,12 +70,13 @@ ExtractRR::operator()(const VertexPtr& v)
     if (arc_rr != 0) {
       SafePtr<RecurrenceRelation> rr = arc_rr->rr();
       SafePtr<IntegralSet_to_Integrals_base> iset_to_i = dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(rr);
-      if (iset_to_i == 0) {
-	const SafePtr<RRStack>& rrstack = RRStack::Instance();
-	// RRStack must be guaranteed to have this rr
-	const RRStack::value_type rrstackvalue = rrstack->find(rr);
-	const RRid rrid = rrstackvalue.first;
-	map_[rrid] = true;
+      SafePtr<Uncontract_Integral_base> unc_i = dynamic_pointer_cast<Uncontract_Integral_base,RecurrenceRelation>(rr);
+      if (iset_to_i == 0 && unc_i == 0) {
+        const SafePtr<RRStack>& rrstack = RRStack::Instance();
+        // RRStack must be guaranteed to have this rr
+        const RRStack::value_type rrstackvalue = rrstack->find(rr);
+        const RRid rrid = rrstackvalue.first;
+        map_[rrid] = true;
       }
     }
   }

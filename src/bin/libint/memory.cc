@@ -24,13 +24,7 @@ MemoryManager::MemoryManager(const Size& maxmem) :
 
 MemoryManager::~MemoryManager()
 {
-  // for each block reset left and right pointers to break up cyclic dependencies that prevent automatic destruction of SafePtr-managed MemBlock objects
-  superblock_->left(SafePtr<MemBlock>());
-  superblock_->right(SafePtr<MemBlock>());
-  for(memblkset::iterator b=blks_.begin(); b!=blks_.end(); ++b) {
-    (*b)->left(SafePtr<MemBlock>());
-    (*b)->right(SafePtr<MemBlock>());
-  }
+  reset();
 }
 
 SafePtr<MemoryManager::MemBlock>
@@ -161,6 +155,21 @@ MemoryManager::update_max_memory()
   Address saddr =  superblock()->address();
   if (static_cast<Size>(saddr) > max_memory_used_)
     max_memory_used_  = saddr;
+}
+
+void
+MemoryManager::reset()
+{
+  // for each block reset left and right pointers to break up cyclic dependencies that prevent automatic destruction of SafePtr-managed MemBlock objects
+  superblock_->left(SafePtr<MemBlock>());
+  superblock_->right(SafePtr<MemBlock>());
+  for(memblkset::iterator b=blks_.begin(); b!=blks_.end(); ++b) {
+    (*b)->left(SafePtr<MemBlock>());
+    (*b)->right(SafePtr<MemBlock>());
+  }
+  memblkset empty_blks;
+  swap(blks_,empty_blks);
+  superblock_ = SafePtr<MemBlock>(new MemBlock(Address(0),maxmem_,true,SafePtr<MemBlock>(),SafePtr<MemBlock>()));
 }
 
 ///////////////

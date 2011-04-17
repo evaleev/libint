@@ -51,6 +51,8 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
     ph_ << macro_define("ACCUM_INTS",1);
   const std::string realtype(cparams_->realtype());
   ph_ << macro_define("REALTYPE",realtype);
+  if (cparams_->contracted_targets())
+    ph_ << macro_define("CONTRACTED_INTS",1);
   
   ih_ << "#include <cstddef>" << endl
       << ctext_->code_prefix();
@@ -100,19 +102,23 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
 
     oss_.str(null_str_);
     oss_ << ctext_->type_name<void>() << " "
-	 << ctext_->label_to_name(cparams->api_prefix() + "libint2_init_" + tlabel) << "(" << ctext_->inteval_type_name(tlabel) << "* inteval, int max_am, LIBINT2_REALTYPE* buf)";
+	     << ctext_->label_to_name(cparams->api_prefix() + "libint2_init_" + tlabel)
+	     << "(" << ctext_->inteval_type_name(tlabel)
+	     << "* inteval, int max_am, LIBINT2_REALTYPE* buf)";
     std::string li_fdec(oss_.str());
     li_decls_.push_back(li_fdec);
   
     oss_.str(null_str_);
     oss_ << ctext_->type_name<size_t>() << " "
-	 << ctext_->label_to_name(cparams->api_prefix() + "libint2_need_memory_" + tlabel) << "(int max_am)";
+	     << ctext_->label_to_name(cparams->api_prefix() + "libint2_need_memory_" + tlabel)
+	     << "(int max_am)";
     std::string lm_fdec(oss_.str());
     lm_decls_.push_back(lm_fdec);
 
     oss_.str(null_str_);
     oss_ << ctext_->type_name<void>() << " "
-	 << ctext_->label_to_name(cparams->api_prefix() + "libint2_cleanup_" + tlabel) << "(" << ctext_->inteval_type_name(tlabel) << "* inteval)";
+	     << ctext_->label_to_name(cparams->api_prefix() + "libint2_cleanup_" + tlabel)
+	     << "(" << ctext_->inteval_type_name(tlabel) << "* inteval)";
     std::string lc_fdec(oss_.str());
     lc_decls_.push_back(lc_fdec);
 
@@ -347,10 +353,15 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
     os << ctext_->macro_endif();
 
     os << ctext_->macro_if(macro("ACCUM_INTS"));
-    os << ctext_->comment("If libint was configured with --enable-accum-ints then the target integrals are accumulated. To zero out.the targets automatically before the computation, set this to nonzero.") << std::endl;
+    os << ctext_->comment("If libint was configured with --enable-accum-ints then the target integrals are accumulated. To zero out the targets automatically before the computation, set this to nonzero.") << std::endl;
     os << ctext_->declare(ctext_->type_name<int>(),std::string("zero_out_targets"));
     os << ctext_->macro_endif();
-    
+
+    os << ctext_->macro_if(macro("CONTRACTED_INTS"));
+    os << ctext_->comment("If libint was configured with --enable-contracted-ints then contracted integrals are supported. Set this parameter to the total number of primitive combinations.") << std::endl;
+    os << ctext_->declare(ctext_->type_name<int>(),std::string("contrdepth"));
+    os << ctext_->macro_endif();
+
     // Epilogue
     os << "} " << ctext_->inteval_type_name(tlabel) << ctext_->end_of_stat() << std::endl;
     

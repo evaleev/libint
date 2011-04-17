@@ -53,6 +53,11 @@ namespace libint2 {
   {
     return const_modifier() + ptr_fp_type();
   }
+  template <>
+  std::string CodeContext::type_name<double* const>() const
+  {
+    return ptr_fp_type() + const_modifier();
+  }
 };
 
 CodeContext::CodeContext(const SafePtr<CompilationParameters>& cparams) :
@@ -504,8 +509,8 @@ SafePtr<ForLoop>
 CppCodeContext::for_loop(std::string& varname, const SafePtr<Entity>& less_than,
                          const SafePtr<Entity>& start_at) const
 {
-  //return SafePtr<ForLoop>(new ForLoop(SafePtr_from_this(), varname, less_than, start_at));
-  return SafePtr<ForLoop>();
+  // no implemented
+  assert(false);
 }
 
 std::string

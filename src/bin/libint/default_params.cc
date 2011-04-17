@@ -53,6 +53,7 @@ CompilationParameters::print(std::ostream& os) const
   os << "COUNT_FLOPS          = " << (count_flops() ? "true" : "false") << endl;
   os << "ACCUMULATE_TARGETS   = " << (accumulate_targets() ? "true" : "false") << endl;
   os << "REALTYPE             = " << (realtype()) << endl;
+  os << "CONTRACTED_TARGETS   = " << (contracted_targets() ? "true" : "false") << endl;
   os << endl;
 }
 

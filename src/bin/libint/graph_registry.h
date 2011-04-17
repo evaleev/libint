@@ -19,6 +19,8 @@ namespace libint2 {
     GraphRegistry();
     ~GraphRegistry();
     
+    GraphRegistry* clone() const;
+
     /// Accumulate (true) or assign (false) target vertices? The default is to assign.
     bool accumulate_targets() const { return accumulate_targets_; }
     void accumulate_targets(bool at) { accumulate_targets_ = at; }
@@ -29,6 +31,12 @@ namespace libint2 {
     unsigned int unroll_threshold() const { return unroll_threshold_; }
     void unroll_threshold(unsigned int ut) { unroll_threshold_ = std::max(ut,1u); }
     /// Minimum size when can unroll
+    /// Will uncontract the integral sets if true. Default is no uncontracting
+    bool uncontract() const { return uncontract_; }
+    void uncontract(bool uc) { uncontract_ = uc; }
+    /// Ignore missing prerequisites -- generate the code as is, without egenrating code for the prerequisites. This is a hack.
+    bool ignore_missing_prereqs() const { return ignore_missing_prereqs_; }
+    void ignore_missing_prereqs(bool imp) { ignore_missing_prereqs_ = imp; }
     /// Do Common Subexpression Elimination (CSE)? The default is false.
     bool do_cse() const { return do_cse_; }
     void do_cse(bool dc) { do_cse_ = dc; }
@@ -43,6 +51,8 @@ namespace libint2 {
     bool accumulate_targets_;
     bool return_targets_;
     unsigned int unroll_threshold_;
+    bool uncontract_;
+    bool ignore_missing_prereqs_;
     bool do_cse_;
     bool condense_expr_;
     std::string stack_name_;

@@ -549,6 +549,16 @@ AC_DEFINE(LIBINT_FLOP_COUNT)
 AC_MSG_RESULT([FLOP counter will be supported])
 ])
 
+AC_ARG_ENABLE(contracted-ints,
+[  --enable-contracted-ints     Turn on support for contracted integrals.],
+[
+AC_DEFINE(LIBINT_CONTRACTED_INTS)
+AC_MSG_RESULT([Will support contracted integrals])
+],
+[
+AC_MSG_RESULT([Will not support contracted integrals])
+])
+
 dnl
 dnl Preferred strategies for evaluation
 dnl

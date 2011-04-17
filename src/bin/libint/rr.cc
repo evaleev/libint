@@ -90,6 +90,7 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
     dg->registry()->do_cse(need_to_optimize);
   }
   dg->registry()->condense_expr(condense_expr(1000000000,cparams->max_vector_length()>1));
+  dg->registry()->ignore_missing_prereqs(true);  // assume all prerequisites are available -- if some are not, something is VERY broken
 
   // Assign symbols for the target and source integral sets
   SafePtr<CodeSymbols> symbols(new CodeSymbols);

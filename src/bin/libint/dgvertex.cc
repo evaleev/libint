@@ -65,7 +65,7 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
 #endif
   }
   else
-    throw CannotAddArc("DGVertex::add_entry_arc() -- cannot add arcs anymore");
+    throw CannotAddArc("DGVertex::add_exit_arc() -- cannot add arcs anymore");
 }
 
 void
@@ -150,8 +150,7 @@ DGVertex::add_entry_arc(const SafePtr<DGArc>& arc)
   else
     throw CannotAddArc("DGVertex::add_entry_arc() -- cannot add arcs anymore");
 #if DEBUG || DEBUG_RESTRUCTURE
-  std::cout << "add_entry_arc: from " << arc->orig() << " to " << arc->dest() << std::endl;
-  std::cout << "add_entry_arc: v" << std::endl;
+  std::cout << "add_entry_arc: from " << arc->orig()->description() << " to " << arc->dest()->description() << std::endl;
   print(std::cout);
 #endif
 }
@@ -164,7 +163,8 @@ DGVertex::del_entry_arc(const SafePtr<DGArc>& arc)
     if (location != parents_.end()) {
       parents_.erase(location);
 #if DEBUG || DEBUG_RESTRUCTURE
-      std::cout << "del_entry_arc: removed arc from " << (*location)->orig() << " to " << (*location)->dest() << endl;
+      std::cout << "del_entry_arc: removed arc from " << (*location)->orig()->description()
+                << " to " << (*location)->dest()->description() << endl;
 #endif
     }
     else
@@ -189,7 +189,7 @@ DGVertex::detach()
 void
 DGVertex::prepare_to_traverse()
 {
-  can_add_arcs_ = false;
+  //can_add_arcs_ = false;
   num_tagged_arcs_ = 0;
 }
 

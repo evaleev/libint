@@ -1,21 +1,37 @@
 
+#ifndef _libint2_src_bin_libint_buildtest_h_
+#define _libint2_src_bin_libint_buildtest_h_
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <deque>
+#include <iterator>
 #include <dg.h>
 #include <strategy.h>
 #include <iface.h>
 #include <dims.h>
 #include <graph_registry.h>
 
-#ifndef _libint2_src_bin_libint_buildtest_h_
-#define _libint2_src_bin_libint_buildtest_h_
-
 namespace libint2 {
 
   // defined in buildtest.cc
   void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
+
+  // defined below
+  void
+    GenerateCode(const SafePtr<DirectedGraph>& dg,
+                 const SafePtr<CodeContext>& context,
+                 const SafePtr<CompilationParameters>& cparams,
+                 const SafePtr<Strategy>& strat,
+                 const SafePtr<Tactic>& tactic,
+                 const SafePtr<MemoryManager>& memman,
+                 std::deque<std::string>& decl_filenames,
+                 std::deque<std::string>& def_filenames,
+                 const std::string& prefix,
+                 const std::string& label,
+                 bool have_parent);
 
   /// Command-line parser for the standard build tester -- N is the number of centers, i.e. 4 for 4-center ERI
   template <unsigned int N>
@@ -66,11 +82,10 @@ namespace libint2 {
 		const SafePtr<Tactic>& tactic, const SafePtr<MemoryManager>& memman,
 		const std::string& complabel)
     {
+      const std::string prefix("");
       const std::string label = cparams->api_prefix() + target->label();
-      SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
       SafePtr<Strategy> strat(new Strategy);
-      os << "Building " << target->description() << std::endl;
-      SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,Integral>(target);
+      SafePtr<CodeContext> context(new CppCodeContext(cparams));
 
       LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
       taskmgr.add(complabel);
@@ -102,87 +117,173 @@ namespace libint2 {
         }
       }
       const bool need_to_optimize = (max_am <= cparams->max_am_opt(complabel));
+
+      std::deque<std::string> decl_filenames;
+      std::deque<std::string> def_filenames;
+
+      os << "Building " << target->description() << std::endl;
+
+      SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
+
+      // configure the graph
       dg_xxxx->registry()->do_cse(need_to_optimize);
       dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
-
       // Need to accumulate integrals?
       dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
-
       dg_xxxx->registry()->unroll_threshold(size_to_unroll);
 
-      dg_xxxx->append_target(xsxs_ptr);
-      dg_xxxx->apply(strat,tactic);
-      dg_xxxx->optimize_rr_out();
+      SafePtr<DGVertex> target_ptr = dynamic_pointer_cast<DGVertex,Integral>(target);
+      assert(target_ptr != 0);
+      dg_xxxx->append_target(target_ptr);
 
-      std::basic_ofstream<char> dotfile("graph.dot");
-      dg_xxxx->print_to_dot(false,dotfile);
-      os << "The number of vertices = " << dg_xxxx->num_vertices() << std::endl;
-
-      dg_xxxx->traverse();
-      //dg_xxxx->debug_print_traversal(cout);
-      SafePtr<CodeContext> context(new CppCodeContext(cparams));
-      std::string decl_filename(context->label_to_name(label));  decl_filename += ".h";
-      std::string def_filename(context->label_to_name(label));  def_filename += ".cc";
-      std::basic_ofstream<char> declfile(decl_filename.c_str());
-      std::basic_ofstream<char> deffile(def_filename.c_str());
-      dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),
-			     label,declfile,deffile);
+      // this will generate code for this targets, and potentially generate code for its prerequisites
+      GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
+                   decl_filenames, def_filenames,
+                   prefix, label, false);
 
       // update max stack size
       taskmgr.current().params()->max_stack_size(max_am, memman->max_memory_used());
-      // extract all extrnal symbols
-      extract_symbols(dg_xxxx);
-
-      std::basic_ofstream<char> dotfile2("graph.symb.dot");
-      dg_xxxx->print_to_dot(true,dotfile2);
-
       os << "Max memory used = " << memman->max_memory_used() << std::endl;
-      dg_xxxx->reset();
 
       if (GenAllCode) {
-	// initialize code context to produce library API
-	SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
-	// initialize object to generate interface
-	SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext));
+        // initialize code context to produce library API
+        SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
+        // initialize object to generate interface
+        SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext));
 
-	// generate interface
-	std::ostringstream oss;
-	oss << "#include <" << decl_filename << ">" << std::endl;
-	iface->to_int_iface(oss.str());
+        // generate interface
+        std::ostringstream oss;
+        for(std::deque<std::string>::const_iterator i = decl_filenames.begin(); i != decl_filenames.end(); ++i) {
+          oss << "#include <" << *i << ">" << std::endl;
+        }
+        iface->to_int_iface(oss.str());
 
-	// transfer some configuration parameters to the generated library API
-	iface->to_params(iface->macro_define("CARTGAUSS_MAX_AM",LIBINT_CARTGAUSS_MAX_AM));
-	iface->to_params(iface->macro_define("CGSHELL_ORDERING",LIBINT_CGSHELL_ORDERING));
-	iface->to_params(iface->macro_define("CGSHELL_ORDERING_STANDARD",LIBINT_CGSHELL_ORDERING_STANDARD));
-	iface->to_params(iface->macro_define("CGSHELL_ORDERING_INTV3",LIBINT_CGSHELL_ORDERING_INTV3));
-	iface->to_params(iface->macro_define("CGSHELL_ORDERING_GAMESS",LIBINT_CGSHELL_ORDERING_GAMESS));
-	iface->to_params(iface->macro_define("CGSHELL_ORDERING_ORCA",LIBINT_CGSHELL_ORDERING_ORCA));
-	iface->to_params(iface->macro_define("SHELLQUARTET_SET",LIBINT_SHELLQUARTET_SET));
-	iface->to_params(iface->macro_define("SHELLQUARTET_SET_STANDARD",LIBINT_SHELLQUARTET_SET_STANDARD));
-	iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELLQUARTET_SET_ORCA));
+        // transfer some configuration parameters to the generated library API
+        iface->to_params(iface->macro_define("CARTGAUSS_MAX_AM",LIBINT_CARTGAUSS_MAX_AM));
+        iface->to_params(iface->macro_define("CGSHELL_ORDERING",LIBINT_CGSHELL_ORDERING));
+        iface->to_params(iface->macro_define("CGSHELL_ORDERING_STANDARD",LIBINT_CGSHELL_ORDERING_STANDARD));
+        iface->to_params(iface->macro_define("CGSHELL_ORDERING_INTV3",LIBINT_CGSHELL_ORDERING_INTV3));
+        iface->to_params(iface->macro_define("CGSHELL_ORDERING_GAMESS",LIBINT_CGSHELL_ORDERING_GAMESS));
+        iface->to_params(iface->macro_define("CGSHELL_ORDERING_ORCA",LIBINT_CGSHELL_ORDERING_ORCA));
+        iface->to_params(iface->macro_define("SHELLQUARTET_SET",LIBINT_SHELLQUARTET_SET));
+        iface->to_params(iface->macro_define("SHELLQUARTET_SET_STANDARD",LIBINT_SHELLQUARTET_SET_STANDARD));
+        iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELLQUARTET_SET_ORCA));
 
-	// Generate set-level RR code
-	generate_rr_code(os,cparams);
+        // Generate set-level RR code
+        generate_rr_code(os,cparams);
 
-	// Print log
-	std::cout << "Generated headers: " << decl_filename;
-	SafePtr<RRStack> rrstack = RRStack::Instance();
-	for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
-	  SafePtr<RecurrenceRelation> rr = (*it).second.second;
-	  std::string rrlabel = cparams->api_prefix() + rr->label();
-	  std::cout << " " << context->label_to_name(rrlabel) << ".h";
-	}
-	std::cout << std::endl << "Generated sources: " << def_filename;
-	for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
-	  SafePtr<RecurrenceRelation> rr = (*it).second.second;
-	  std::string rrlabel = cparams->api_prefix() + rr->label();
-	  std::cout << " " << context->label_to_name(rrlabel) << ".cc";
-	}
-	std::cout << std::endl << "Top compute function: " << context->label_to_name(label_to_funcname(label)) << std::endl;
+        // Print log
+        std::cout << "Generated headers:";
+        std::copy(decl_filenames.begin(), decl_filenames.end(), std::ostream_iterator<std::string>(std::cout, " "));
+        SafePtr<RRStack> rrstack = RRStack::Instance();
+        for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
+          SafePtr<RecurrenceRelation> rr = (*it).second.second;
+          std::string rrlabel = cparams->api_prefix() + rr->label();
+          std::cout << " " << context->label_to_name(rrlabel) << ".h";
+        }
+        std::cout << std::endl << "Generated sources: ";
+        std::copy(def_filenames.begin(), def_filenames.end(), std::ostream_iterator<std::string>(std::cout, " "));
+        for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
+          SafePtr<RecurrenceRelation> rr = (*it).second.second;
+          std::string rrlabel = cparams->api_prefix() + rr->label();
+          std::cout << " " << context->label_to_name(rrlabel) << ".cc";
+        }
+        std::cout << std::endl << "Top compute function: " << context->label_to_name(label_to_funcname(label)) << std::endl;
 
       }
     }
 
+  void
+  GenerateCode(const SafePtr<DirectedGraph>& dg,
+               const SafePtr<CodeContext>& context,
+               const SafePtr<CompilationParameters>& cparams,
+               const SafePtr<Strategy>& strat,
+               const SafePtr<Tactic>& tactic,
+               const SafePtr<MemoryManager>& memman,
+               std::deque<std::string>& decl_filenames,
+               std::deque<std::string>& def_filenames,
+               const std::string& prefix,
+               const std::string& label,
+               bool have_parent) {
+
+    dg->apply(strat,tactic);
+    dg->optimize_rr_out();
+#if DEBUG
+    std::cout << "The number of vertices = " << dg->num_vertices() << std::endl;
+#endif
+
+    // if there are missing prerequisites -- make a list of them
+    PrerequisitesExtractor pe;
+    if (dg->missing_prerequisites()) {
+      std::cout << "missing some prerequisites!" << std::endl;
+      dg->foreach(pe);
+    }
+    std::deque< SafePtr<DGVertex> > prereq_list = pe.vertices;
+
+    dg->traverse();
+    //dg->debug_print_traversal(cout);
+
+#if DEBUG
+    std::basic_ofstream<char> dotfile("graph.dot");
+    dg->print_to_dot(false,dotfile);
+#endif
+
+    std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
+    std::string def_filename(prefix + context->label_to_name(label));  def_filename += ".cc";
+    std::basic_ofstream<char> declfile(decl_filename.c_str());
+    std::basic_ofstream<char> deffile(def_filename.c_str());
+    // if have parent graph, it will pass its stack where this graph will put its results
+    SafePtr<CodeSymbols> args(new CodeSymbols);
+    if (have_parent)
+      args->append_symbol("parent_stack");
+    dg->generate_code(context,memman,ImplicitDimensions::default_dims(),args,
+                      label,declfile,deffile);
+    declfile.close();
+    deffile.close();
+
+    // extract all external symbols
+    extract_symbols(dg);
+
+#if DEBUG
+    std::basic_ofstream<char> dotfile2("graph.symb.dot");
+    dg->print_to_dot(true,dotfile2);
+#endif
+
+    decl_filenames.push_front(decl_filename);
+    def_filenames.push_front(def_filename);
+
+    // last: missing prerequisites? create new graph computing prereqs and move them onto it
+    if (dg->missing_prerequisites()) {
+
+      SafePtr<DirectedGraph> dg_prereq(new DirectedGraph);
+      // configure identically
+      dg_prereq->registry() = SafePtr<GraphRegistry>(dg->registry()->clone());
+      // except:
+      // - allow uncontraction
+      // - no need to return targets via inteval->targets_ -- their locations are known by the parent graph (see allocate_mem)
+      dg_prereq->registry()->uncontract(true);
+      assert(cparams->contracted_targets() == true);
+      dg_prereq->registry()->return_targets(false);
+
+      // now is the "right" time to reset dg
+      // reset graph of the previous computation so that the vertices that will be targets on the new graph
+      // are not attached still to the vertices from the old graph
+      dg->reset();
+      memman->reset();
+
+      while (!prereq_list.empty()) {
+        dg_prereq->append_target(prereq_list.front());
+        prereq_list.pop_front();
+      }
+
+      const std::string label_prereq = label + "_prereq";
+      GenerateCode(dg_prereq, context, cparams, strat, tactic, memman,
+                   decl_filenames, def_filenames,
+                   prefix, label_prereq, true);
+
+    }
+
+  }
 
   template <class Integral, bool GenAllCode>
     void BuildTest(const SafePtr<Integral>& target, unsigned int size_to_unroll, unsigned int veclen,

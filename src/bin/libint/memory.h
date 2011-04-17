@@ -162,6 +162,9 @@ namespace libint2 {
     /// Returns the max amount of memory used up to this moment
     Size max_memory_used() const { return max_memory_used_; }
 
+    /// resets the state of MemoryManager; does not invalidate stats, however
+    void reset();
+
   protected:
     MemoryManager(const Size& maxmem);
 

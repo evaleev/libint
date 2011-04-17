@@ -106,6 +106,9 @@
 /* Whether FLOP counting is supported */
 #undef LIBINT_FLOP_COUNT
 
+/* Support contracted integrals? */
+#undef LIBINT_CONTRACTED_INTS
+
 /* Generate single evaluator type? */
 #undef LIBINT_SINGLE_EVALTYPE
 

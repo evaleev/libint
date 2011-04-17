@@ -130,6 +130,7 @@ namespace libint2 {
   template <class Descr>
     class GenOper : public Oper<typename Descr::Properties>, public Hashable<unsigned,ComputeKey> {
     public:
+      typedef Descr Descriptor;
       typedef typename Descr::Properties Properties;
       typedef Oper<Properties> parent_type;
       /// GenOper is not a set
@@ -185,7 +186,7 @@ namespace libint2 {
   /** GenMultSymmOper is a generic multiplicative symmetric N-body operator
   */
   template <unsigned int N>
-  struct GenMultSymmOper_Descr {
+  struct GenMultSymmOper_Descr : public Contractable<GenMultSymmOper_Descr<N> > {
     typedef OperatorProperties<N,true,PermutationalSymmetry::symm> Properties;
     static const unsigned int max_key = 1;
     unsigned int key() const { return 0; }
@@ -198,7 +199,7 @@ namespace libint2 {
 
   /** TwoPRep is the two-body repulsion operator.
   */
-  struct TwoPRep_Descr {
+  struct TwoPRep_Descr : public Contractable<TwoPRep_Descr> {
     typedef MultiplicativeSymm2Body_Props Properties;
     static const unsigned int max_key = 1;
     unsigned int key() const { return 0; }
