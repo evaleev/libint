@@ -10,6 +10,7 @@
 #include <itr_11_twoprep_11.h>
 #include <comp_11_r12kr12lg12_11.h>
 #include <comp_11_tig12_11.h>
+#include <comp_11_g12tig12_11.h>
 #include <comp_11_DivG12prime_xTx_11.h>
 #include <generic_rr.h>
 
@@ -34,6 +35,8 @@ namespace libint2 {
   typedef HRR<R12kR12lG12_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_R12kR12lG12_11_sh;
   typedef HRR<TiG12_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_TiG12_11_sh;
   typedef HRR<TiG12_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_TiG12_11_sh;
+  typedef HRR<G12TiG12_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_G12TiG12_11_sh;
+  typedef HRR<G12TiG12_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_G12TiG12_11_sh;
   typedef HRR<DivG12prime_xTx_11_11_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_11_DivG12prime_xTx_sh;
   typedef HRR<DivG12prime_xTx_11_11_sq,CGShell,1,InBra,0,InKet,0> HRR_cd_11_DivG12prime_xTx_sh;
 
@@ -49,6 +52,8 @@ namespace libint2 {
   typedef HRR<R12kR12lG12_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_R12kR12lG12_11_int;
   typedef HRR<TiG12_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_TiG12_11_int;
   typedef HRR<TiG12_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_TiG12_11_int;
+  typedef HRR<G12TiG12_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_G12TiG12_11_int;
+  typedef HRR<G12TiG12_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_G12TiG12_11_int;
   typedef HRR<DivG12prime_xTx_11_11_int,CGF,0,InBra,0,InKet,0> HRR_ab_11_DivG12prime_xTx_int;
   typedef HRR<DivG12prime_xTx_11_11_int,CGF,1,InBra,0,InKet,0> HRR_cd_11_DivG12prime_xTx_int;
 
@@ -84,6 +89,9 @@ namespace libint2 {
 
   typedef CR_11_TiG12_11<CGShell> CR_11_TiG12_11_sh;
   typedef CR_11_TiG12_11<CGF> CR_11_TiG12_11_int;
+
+  typedef CR_11_G12TiG12_11<CGShell> CR_11_G12TiG12_11_sh;
+  typedef CR_11_G12TiG12_11<CGF> CR_11_G12TiG12_11_int;
 
   typedef CR_11_DivG12prime_xTx_11<CGShell> CR_11_DivG12prime_xTx_11_sh;
   typedef CR_11_DivG12prime_xTx_11<CGF> CR_11_DivG12prime_xTx_11_int;

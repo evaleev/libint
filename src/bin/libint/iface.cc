@@ -144,7 +144,7 @@ Libint2Iface::~Libint2Iface()
     const std::string& tlabel = t->label();
     ph_ << macro_define(tlabel,"NUM_TARGETS",tparams->max_ntarget());
     const unsigned int max_am = tparams->max_am();
-    for(unsigned int am=0; am<max_am; ++am) {
+    for(unsigned int am=0; am<=max_am; ++am) {
       { std::ostringstream oss; oss << "MAX_STACK_SIZE_" << am;
         ph_ << macro_define(tlabel,oss.str(),tparams->max_stack_size(am)); }
       { std::ostringstream oss; oss << "MAX_VECTOR_STACK_SIZE_" << am;
@@ -195,7 +195,7 @@ Libint2Iface::~Libint2Iface()
 
       li_ << lm_decls_[i] << ctext_->open_block();
       const unsigned int max_am = t->params()->max_am();
-      for(unsigned int am=0; am<max_am; ++am) {
+      for(unsigned int am=0; am<=max_am; ++am) {
         std::string ss, vss, hsr, lsr;
         { std::ostringstream oss;
           oss << "MAX_STACK_SIZE_" << am; ss = oss.str(); }
@@ -227,7 +227,7 @@ Libint2Iface::~Libint2Iface()
       }
 
       const unsigned int max_am = t->params()->max_am();
-      for(unsigned int am=0; am<max_am; ++am) {
+      for(unsigned int am=0; am<=max_am; ++am) {
         std::string ss;
         { std::ostringstream oss;
         oss << "MAX_STACK_SIZE_" << am; ss = oss.str(); }

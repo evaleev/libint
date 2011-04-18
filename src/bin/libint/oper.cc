@@ -11,18 +11,18 @@ using namespace libint2;
 ////////////
 
 std::string
-R12_k_G12_Descr::label_(int K)
+R12_k_G12_Descr::label_(int K, bool contracted)
 {
   ostringstream oss;
-  oss << "R12^" << K << " * G12";
+  oss << "r12^" << K << " * " << (contracted ? "G12" : "g12");
   return oss.str();
 }
 
 std::string
-R12_k_G12_Descr::symbol_(int K)
+R12_k_G12_Descr::symbol_(int K, bool contracted)
 {
   ostringstream oss;
-  oss << "R12_" << (K<0 ? "minus_" : "") << std::abs(K) << "_G12";
+  oss << "r12_" << (K<0 ? "minus_" : "") << std::abs(K) << "_" << (contracted ? "G12" : "g12");
   return oss.str();
 }
 
@@ -41,46 +41,65 @@ R12k_R12l_G12_Descr::key() const {
 }
 
 std::string
-R12k_R12l_G12_Descr::label_(const IntVec3& K, const IntVec3& L)
+R12k_R12l_G12_Descr::label_(const IntVec3& K, const IntVec3& L, bool contracted)
 {
   ostringstream oss;
-  oss << "(R12x^" << K[0]
-      << "*R12y^" << K[1]
-      << "*R12z^" << K[2] << ")*"
-      << "(R12x^" << L[0]
-      << "*R12y^" << L[1]
-      << "*R12z^" << L[2] << ") * G12";
+  oss << "(r12x^" << K[0]
+      << "*r12y^" << K[1]
+      << "*r12z^" << K[2] << ")*"
+      << "(r12x^" << L[0]
+      << "*r12y^" << L[1]
+      << "*r12z^" << L[2] << ") * " << (contracted ? "G12" : "g12");
   return oss.str();
 }
 
 std::string
-R12k_R12l_G12_Descr::symbol_(const IntVec3& K, const IntVec3& L)
+R12k_R12l_G12_Descr::symbol_(const IntVec3& K, const IntVec3& L, bool contracted)
 {
   ostringstream oss;
-  oss << "R12x" << K[0]
-      << "_R12y" << K[1]
-      << "_R12z" << K[2] << "__"
-      << "R12x" << L[0]
-      << "_R12y" << L[1]
-      << "_R12z" << L[2] << "__G12";
+  oss << "r12x" << K[0]
+      << "_r12y" << K[1]
+      << "_r12z" << K[2] << "__"
+      << "r12x" << L[0]
+      << "_r12y" << L[1]
+      << "_r12z" << L[2] << "__" << (contracted ? "G12" : "g12");
   return oss.str();
 }
 
 ////////////
 
 std::string
-Ti_G12_Descr::label_(int K)
+Ti_G12_Descr::label_(int K, bool contracted)
 {
   ostringstream oss;
-  oss << "[T_" << K << ",G12]";
+  oss << "[T_" << K+1 << "," << (contracted ? "G12" : "g12") << "]";
   return oss.str();
 }
 
 std::string
-Ti_G12_Descr::symbol_(int K)
+Ti_G12_Descr::symbol_(int K, bool contracted)
 {
   ostringstream oss;
-  oss << "T" << K << "_G12";
+  oss << "T" << K+1 << "_" << (contracted ? "G12" : "g12");
+  return oss.str();
+}
+
+////////////
+
+std::string
+G12_Ti_G12_Descr::label_(int K, bool contracted)
+{
+  ostringstream oss;
+  oss << "[" << (contracted ? "G12" : "g12")
+      << ",[T_" << K+1 << "," << (contracted ? "G12" : "g12") << "]]";
+  return oss.str();
+}
+
+std::string
+G12_Ti_G12_Descr::symbol_(int K, bool contracted)
+{
+  ostringstream oss;
+  oss << (contracted ? "G12" : "g12") << "_" << "T" << K+1 << "_" << (contracted ? "G12" : "g12");
   return oss.str();
 }
 
@@ -90,7 +109,7 @@ std::string
 DivG12prime_xTx_Descr::label_(int I)
 {
   ostringstream oss;
-  oss << "(\\nabla_" << I << " \\cdot g_{12}') (g_{12}' \\cdot \\nabla_" << I << ")";
+  oss << "(\\nabla_" << I+1 << " \\cdot g_{12}') (g_{12}' \\cdot \\nabla_" << I+1 << ")";
   return oss.str();
 }
 
@@ -98,6 +117,6 @@ std::string
 DivG12prime_xTx_Descr::symbol_(int I)
 {
   ostringstream oss;
-  oss << "Div" << I << "G12prime_xTx";
+  oss << "Div" << I+1 << "G12prime_xTx";
   return oss.str();
 }

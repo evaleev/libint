@@ -82,7 +82,8 @@ namespace libint2 {
           if (a.contracted() ||
             b.contracted() ||
             c.contracted() ||
-            d.contracted())
+            d.contracted() ||
+            Tint->oper()->descr().contracted())
             return;
         }
 

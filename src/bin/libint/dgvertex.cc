@@ -142,8 +142,11 @@ DGVertex::replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B)
 void
 DGVertex::add_entry_arc(const SafePtr<DGArc>& arc)
 {
-  if (arc->orig() == arc->dest())
+  if (arc->orig() == arc->dest()) {
+    std::cout << "DGVertex::add_entry_arc() : arc->orig = " << arc->orig()->description() << std::endl;
+    std::cout << "DGVertex::add_entry_arc() : arc->dest = " << arc->dest()->description() << std::endl;
     throw CannotAddArc("DGVertex::add_entry_arc() -- arc connects node to itself");
+  }
 
   if (can_add_arcs_)
     parents_.push_back(arc);

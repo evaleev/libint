@@ -392,14 +392,11 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
                        decl_filenames, def_filenames,
                        prefix, label, false);
 
-          // update max stack size
-          taskmgr.current().params()->max_stack_size(max_am, memman->max_memory_used());
-          os << "Max memory used = " << memman->max_memory_used() << std::endl;
-
           // update max stack size and # of targets
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(max_am, memman->max_memory_used());
           tparams->max_ntarget(1);
+          //os << " Max memory used = " << memman->max_memory_used() << std::endl;
 
           // set pointer to the top-level evaluator function
           ostringstream oss;
@@ -474,18 +471,21 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   //SafePtr<Tactic> tactic(new RandomChoiceTactic());
   //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
+  SafePtr<CodeContext> context(new CppCodeContext(cparams));
+  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+
   for(unsigned int la=0; la<=lmax; la++) {
     for(unsigned int lb=0; lb<=lmax; lb++) {
       for(unsigned int lc=0; lc<=lmax; lc++) {
         for(unsigned int ld=0; ld<=lmax; ld++) {
 
           if (la < lb || lc < ld || la+lb > lc+ld)
-	    continue;
+            continue;
           bool ssss = false;
           if (la+lb+lc+ld == 0)
             ssss = true;
 #if !SUPPORT_T1G12
-	  if (ssss) continue;
+          if (ssss) continue;
 #endif
 
           // unroll only if max_am <= cparams->max_am_opt(task)
@@ -495,15 +495,19 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 0;
           dg_xxxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxxx->registry()->do_cse(need_to_optimize);
-	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
-	  // Need to accumulate integrals?
-	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
+          dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
+          // Need to accumulate integrals?
+          dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
 
-      typedef R12kG12_11_11_sq int_type;
-      typedef R12kG12 oper_type;
+          typedef R12kG12_11_11_sq int_type;
+          typedef R12kG12 oper_type;
           // k=0
           if (!ssss) {
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(0));
+            oper_type oper(0);
+#if LIBINT_CONTRACTED_INTS
+            oper.descr().contract();
+#endif
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -511,7 +515,11 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
           // k=-1
           if (!ssss) {
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(-1));
+            oper_type oper(-1);
+#if LIBINT_CONTRACTED_INTS
+            oper.descr().contract();
+#endif
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -522,7 +530,11 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (true) {
             typedef TiG12_11_11_sq int_type;
             typedef int_type::OperType oper_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(0));
+            oper_type oper(0);
+#if LIBINT_CONTRACTED_INTS
+            oper.descr().contract();
+#endif
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -532,29 +544,32 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (true) {
             typedef TiG12_11_11_sq int_type;
             typedef int_type::OperType oper_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(1));
+            oper_type oper(1);
+#if LIBINT_CONTRACTED_INTS
+            oper.descr().contract();
+#endif
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
 #endif
 
-          // k=2
+          // [G12,[T1,G12]]
           if (!ssss) {
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(2));
+            typedef G12TiG12_11_11_sq int_type;
+            typedef int_type::OperType oper_type;
+            oper_type oper(0); // doesn't matter whether T1 or T2 here
+#if LIBINT_CONTRACTED_INTS
+            oper.descr().contract();
+#endif
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
 
-          dg_xxxx->apply(strat,tactic);
-          dg_xxxx->optimize_rr_out();
-          dg_xxxx->traverse();
-#if DEBUG
-          os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
-#endif
-
-          std::string label;
+          std::string _label;
           {
             ostringstream os;
             os << "(" << shells[la]->label() << " "
@@ -562,22 +577,23 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             << " | r_{12}^K * exp(-g*r_{12}^2) | "
             << shells[lc]->label() << " "
             << shells[ld]->label() << ")";
-            label = os.str();
+            _label = os.str();
           }
 
-          SafePtr<CodeContext> context(new CppCodeContext(cparams));
-          SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
           std::string prefix(cparams->source_directory());
-          std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
-          std::string src_filename(prefix + context->label_to_name(label));  src_filename += ".cc";
-          std::basic_ofstream<char> declfile(decl_filename.c_str());
-          std::basic_ofstream<char> srcfile(src_filename.c_str());
-          dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
+          std::string label(cparams->api_prefix() + _label);
+          std::deque<std::string> decl_filenames;
+          std::deque<std::string> def_filenames;
+
+          // this will generate code for this targets, and potentially generate code for its prerequisites
+          GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
+                       decl_filenames, def_filenames,
+                       prefix, label, false);
 
           // update max stack size
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(max_am, memman->max_memory_used());
-	  tparams->max_ntarget(5);
+          tparams->max_ntarget(5);
 
           ostringstream oss;
           oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_r12kg12[" << la << "][" << lb << "][" << lc << "]["
@@ -585,27 +601,31 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
 
-          oss.str("");
-          oss << "#include <" << decl_filename << ">" << endl;
-          iface->to_int_iface(oss.str());
+          // need to declare this function internally
+          for(std::deque<std::string>::const_iterator i=decl_filenames.begin();
+              i != decl_filenames.end();
+              ++i) {
+            oss.str("");
+            oss << "#include <" << *i << ">" << endl;
+            iface->to_int_iface(oss.str());
+          }
 
-	  // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
-	  // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-	  if (la == lmax &&
-	      lb == lmax &&
-	      lc == lmax &&
-	      ld == lmax) {
+          // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
+          // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
+          if (la == lmax &&
+              lb == lmax &&
+              lc == lmax &&
+              ld == lmax) {
 
-	    extract_symbols(dg_xxxx);
+            extract_symbols(dg_xxxx);
 
-	  }
+          }
 
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
 #endif
           dg_xxxx->reset();
-          declfile.close();
-          srcfile.close();
+          memman->reset();
         } // end of d loop
       } // end of c loop
     } // end of b loop
@@ -626,8 +646,8 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
 
   // Note that because r12_-1_g12 integrals are evaluated using the same RR as ERI, no need to generate their code at all
   const int ntasks = 2;
-  const char* task_names[] = {"r12_0_g12", "r12_2_g12"};
-  const char* task_NAMES[] = {"R12_0_R12", "R12_2_G12"};
+  const char* task_names[] = {"r12_0_g12", "g12_T1_g12"};
+  const char* task_NAMES[] = {"R12_0_R12", "G12_T1_G12"};
 
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am("r12kg12");
@@ -648,6 +668,9 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
     SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
     SafePtr<Strategy> strat(new Strategy);
     SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
+    SafePtr<CodeContext> context(new CppCodeContext(cparams));
+    SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+
     for(unsigned int la=0; la<=lmax; la++) {
       for(unsigned int lb=0; lb<=lmax; lb++) {
         for(unsigned int lc=0; lc<=lmax; lc++) {
@@ -669,42 +692,46 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
             // Need to accumulate integrals?
             dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
 
-            typedef R12kG12_11_11_sq int_type;
-            typedef R12kG12 oper_type;
-            std::string label;
+            std::string _label;
             // k=0
             if (task == 0) {
-              SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(0));
-              os << "building " << abcd->description() << endl;
-              SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-              dg_xxxx->append_target(abcd_ptr);
-              label = abcd_ptr->label();
-            }
-
-            // k=2
-            if (task == 1) {
-              SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(2));
-              os << "building " << abcd->description() << endl;
-              SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-              dg_xxxx->append_target(abcd_ptr);
-              label = abcd_ptr->label();
-            }
-
-            dg_xxxx->apply(strat,tactic);
-            dg_xxxx->optimize_rr_out();
-            dg_xxxx->traverse();
-#if DEBUG
-            os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
+              typedef R12kG12_11_11_sq int_type;
+              typedef R12kG12 oper_type;
+              oper_type oper(0);
+#if LIBINT_CONTRACTED_INTS
+              oper.descr().contract();
 #endif
+              SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
+              os << "building " << abcd->description() << endl;
+              SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+              dg_xxxx->append_target(abcd_ptr);
+              _label = abcd_ptr->label();
+            }
 
-            SafePtr<CodeContext> context(new CppCodeContext(cparams));
-            SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+            // [G12,[T1,G12]]
+            if (task == 1) {
+              typedef G12TiG12_11_11_sq int_type;
+              typedef int_type::OperType oper_type;
+              oper_type oper(0); // doesn't matter whether T1 or T2 here
+#if LIBINT_CONTRACTED_INTS
+              oper.descr().contract();
+#endif
+              SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
+              os << "building " << abcd->description() << endl;
+              SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+              dg_xxxx->append_target(abcd_ptr);
+              _label = abcd_ptr->label();
+            }
+
             std::string prefix(cparams->source_directory());
-            std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
-            std::string src_filename(prefix + context->label_to_name(label));  src_filename += ".cc";
-            std::basic_ofstream<char> declfile(decl_filename.c_str());
-            std::basic_ofstream<char> srcfile(src_filename.c_str());
-            dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
+            std::string label(cparams->api_prefix() + _label);
+            std::deque<std::string> decl_filenames;
+            std::deque<std::string> def_filenames;
+
+            // this will generate code for this targets, and potentially generate code for its prerequisites
+            GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
+                         decl_filenames, def_filenames,
+                         prefix, label, false);
 
             // update max stack size
             const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
@@ -718,9 +745,14 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
                 << context->end_of_stat() << endl;
             iface->to_static_init(oss.str());
 
-            oss.str("");
-            oss << "#include <" << decl_filename << ">" << endl;
-            iface->to_int_iface(oss.str());
+            // need to declare this function internally
+            for(std::deque<std::string>::const_iterator i=decl_filenames.begin();
+                i != decl_filenames.end();
+                ++i) {
+              oss.str("");
+              oss << "#include <" << *i << ">" << endl;
+              iface->to_int_iface(oss.str());
+            }
 
             // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
             // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
@@ -735,8 +767,7 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
             os << "Max memory used = " << memman->max_memory_used() << endl;
 #endif
             dg_xxxx->reset();
-            declfile.close();
-            srcfile.close();
+            memman->reset();
           } // end of d loop
         } // end of c loop
       } // end of b loop
@@ -747,168 +778,7 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
 #endif // INCLUDE_G12
 
 #ifdef INCLUDE_GENG12
-void
-build_GenG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                    SafePtr<Libint2Iface>& iface)
-{
-  const std::string task("geng12");
-  vector<CGShell*> shells;
-  unsigned int lmax = cparams->max_am(task);
-  for(int l=0; l<=lmax; l++) {
-    shells.push_back(new CGShell(l));
-  }
-  ImplicitDimensions::set_default_dims(cparams);
-
-  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current(task);
-  iface->to_params(iface->macro_define("MAX_AM_GENG12",lmax));
-
-  //
-  // Construct graphs for each desired target integral and
-  // 1) generate source code for the found traversal path
-  // 2) extract all remaining unresolved recurrence relations and
-  //    append them to the stack. Such unresolved RRs are RRs applied
-  //    to sets of integrals (rather than to individual integrals).
-  // 3) at the end, for each unresolved recurrence relation generate
-  //    explicit source code
-  //
-  SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  SafePtr<Strategy> strat(new Strategy);
-  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-  //SafePtr<Tactic> tactic(new RandomChoiceTactic());
-  //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
-  for(int la=0; la<=lmax; la++) {
-    for(int lb=0; lb<=lmax; lb++) {
-      for(int lc=0; lc<=lmax; lc++) {
-        for(int ld=0; ld<=lmax; ld++) {
-
-          if (la < lb || lc < ld || la+lb > lc+ld)
-	    continue;
-          bool ssss = false;
-          if (la+lb+lc+ld == 0)
-            ssss = true;
-
-          // unroll only if max_am <= cparams->max_am_opt(task)
-          using std::max;
-          const unsigned int max_am = max(max(la,lb),max(lc,ld));
-          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 1;
-          dg_xxxx->registry()->unroll_threshold(unroll_threshold);
-          dg_xxxx->registry()->do_cse(need_to_optimize);
-	  dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
-	  // Need to accumulate integrals?
-	  dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
-
-          // k=0
-          if (!ssss) {
-            typedef R12kG12_11_11<CGShell,0> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
-            os << "building " << abcd->description() << endl;
-            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-
-          // k=-1
-          if (!ssss) {
-            typedef R12kG12_11_11<CGShell,-1> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
-            os << "building " << abcd->description() << endl;
-            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-
-          // r1.r1 G12
-          if (true) {
-            typedef R1dotR1G12_11_11_sq int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
-            os << "building " << abcd->description() << endl;
-            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-
-          // r1.r2 G12
-          if (true) {
-            typedef R1dotR2G12_11_11_sq int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld]);
-            os << "building " << abcd->description() << endl;
-            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-
-          // k=2
-          if (!ssss) {
-            typedef R12kG12_11_11<CGShell,2> int_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0);
-            os << "building " << abcd->description() << endl;
-            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
-          }
-
-          dg_xxxx->apply(strat,tactic);
-          dg_xxxx->optimize_rr_out();
-          dg_xxxx->traverse();
-#if DEBUG
-          os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
-#endif
-
-          std::string label;
-          {
-            ostringstream os;
-            os << "(" << shells[la]->label() << " "
-            << shells[lb]->label()
-            << " | exp(-a*r_1^2-a*r_2^2-g*r_{12}^2) | "
-            << shells[lc]->label() << " "
-            << shells[ld]->label() << ")";
-            label = os.str();
-          }
-
-          SafePtr<CodeContext> context(new CppCodeContext(cparams));
-          SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
-          std::string prefix(cparams->source_directory());
-          std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
-          std::string src_filename(prefix + context->label_to_name(label));  src_filename += ".cc";
-          std::basic_ofstream<char> declfile(decl_filename.c_str());
-          std::basic_ofstream<char> srcfile(src_filename.c_str());
-          dg_xxxx->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),label,declfile,srcfile);
-
-          // update max stack size
-          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
-          tparams->max_stack_size(max_am, memman->max_memory_used());
-	  tparams->max_ntarget(5);
-
-          ostringstream oss;
-          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_geng12[" << la << "][" << lb << "][" << lc << "]["
-              << ld <<"] = " << context->label_to_name(label_to_funcname(label))
-              << context->end_of_stat() << endl;
-          iface->to_static_init(oss.str());
-
-          oss.str("");
-          oss << "#include <" << decl_filename << ">" << endl;
-          iface->to_int_iface(oss.str());
-
-	  // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
-	  // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-	  if (la == lmax &&
-	      lb == lmax &&
-	      lc == lmax &&
-	      ld == lmax) {
-
-	    extract_symbols(dg_xxxx);
-
-	  }
-
-#if DEBUG
-          os << "Max memory used = " << memman->max_memory_used() << endl;
-#endif
-          dg_xxxx->reset();
-          declfile.close();
-          srcfile.close();
-        } // end of d loop
-      } // end of c loop
-    } // end of b loop
-  } // end of a loop
-}
-
+#error "GENG12 integrals are no longer supported"
 #endif // INCLUDE_GENG12
 
 #ifdef INCLUDE_G12DKH

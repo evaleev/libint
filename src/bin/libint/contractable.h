@@ -15,6 +15,7 @@ namespace libint2 {
       }
       bool contracted() const { return value_; }
       void uncontract() { value_ = false; }
+      void contract() { value_ = true; }
       static void set_contracted_default_value(bool dv) { default_value_ = dv; }
     private:
       bool value_;

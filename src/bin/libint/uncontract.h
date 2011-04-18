@@ -88,7 +88,6 @@ namespace libint2 {
       typedef typename I::OperType opertype;
       bratype bra_unc = target_->bra();
       kettype ket_unc = target_->ket();
-      SafePtr<opertype> oper_unc = target_->oper();
       // is it even contracted?
       bool target_is_contracted = false;
       {
@@ -111,8 +110,10 @@ namespace libint2 {
           }
         }
       }
-      target_is_contracted |= oper_unc->descr().contracted();
-      oper_unc->descr().uncontract();
+      opertype oper_unc = target_->oper();
+      const bool oper_contracted = oper_unc.descr().contracted();
+      target_is_contracted |= oper_contracted;
+      oper_unc.descr().uncontract();
 
       if (target_is_contracted) {
         SafePtr<ChildType> c = ChildType::Instance(bra_unc, ket_unc,

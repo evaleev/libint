@@ -437,13 +437,19 @@ DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex,
   for(int c=0; c<num_children; c++) {
     SafePtr<DGVertex> child = rr0->rr_child(c);
     bool new_vertex = true;
-      SafePtr<DGVertex> dgchild = append_vertex(child);
-      if (dgchild != child) {
-	child = dgchild;
-	new_vertex = false;
-      }
+    SafePtr<DGVertex> dgchild = append_vertex(child);
+    if (dgchild != child) {
+      child = dgchild;
+      new_vertex = false;
+    }
     SafePtr<DGArc> arc(new DGArcRel<RecurrenceRelation>(target,child,rr0));
-    target->add_exit_arc(arc);
+    try {
+      target->add_exit_arc(arc);
+    }
+    catch (...) {
+      std::cout << "failed to use RR " << rr0->label() << std::endl;
+      throw;
+    }
     if (new_vertex)
       apply_to(child,strategy,tactic);
   }
