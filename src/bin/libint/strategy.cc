@@ -54,7 +54,11 @@ namespace libint2 {
     ITR_a_11_TwoPRep_11_sh,
 #endif
     VRR_a_11_TwoPRep_11_sh,
-    VRR_c_11_TwoPRep_11_sh
+    VRR_c_11_TwoPRep_11_sh,
+    Deriv_a_11_TwoPRep_11_sh,
+    Deriv_b_11_TwoPRep_11_sh,
+    Deriv_c_11_TwoPRep_11_sh,
+    Deriv_d_11_TwoPRep_11_sh
     > value;
   };
   template <> struct MasterStrategy<TwoPRep_11_11_int> {
@@ -65,7 +69,11 @@ namespace libint2 {
     ITR_a_11_TwoPRep_11_int,
 #endif
     VRR_a_11_TwoPRep_11_int,
-    VRR_c_11_TwoPRep_11_int
+    VRR_c_11_TwoPRep_11_int,
+    Deriv_a_11_TwoPRep_11_int,
+    Deriv_b_11_TwoPRep_11_int,
+    Deriv_c_11_TwoPRep_11_int,
+    Deriv_d_11_TwoPRep_11_int
     > value;
   };
 #else  // 0B0D strategy
@@ -74,7 +82,11 @@ namespace libint2 {
     HRR_ba_11_TwoPRep_11_sh,
     HRR_dc_11_TwoPRep_11_sh,
     VRR_b_11_TwoPRep_11_sh,
-    VRR_d_11_TwoPRep_11_sh
+    VRR_d_11_TwoPRep_11_sh,
+    Deriv_a_11_TwoPRep_11_sh,
+    Deriv_b_11_TwoPRep_11_sh,
+    Deriv_c_11_TwoPRep_11_sh,
+    Deriv_d_11_TwoPRep_11_sh
     > value;
   };
   template <> struct MasterStrategy<TwoPRep_11_11_int> {
@@ -82,7 +94,11 @@ namespace libint2 {
     HRR_ba_11_TwoPRep_11_int,
     HRR_dc_11_TwoPRep_11_int,
     VRR_b_11_TwoPRep_11_int,
-    VRR_d_11_TwoPRep_11_int
+    VRR_d_11_TwoPRep_11_int,
+    Deriv_a_11_TwoPRep_11_int,
+    Deriv_b_11_TwoPRep_11_int,
+    Deriv_c_11_TwoPRep_11_int,
+    Deriv_d_11_TwoPRep_11_int
     > value;
   };
 #endif

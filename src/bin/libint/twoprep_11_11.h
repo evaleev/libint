@@ -24,10 +24,12 @@ namespace libint2 {
     /// (ss|ss)^{(m)} are precomputed 
 #if USE_BRAKET_H
     if (parent_type::bra_.member(0,0).zero() && parent_type::bra_.member(1,0).zero() &&
-      parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero())
+        parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero() &&
+        parent_type::bra_.member(0,0).deriv().zero() && parent_type::bra_.member(1,0).deriv().zero() &&
+        parent_type::ket_.member(0,0).deriv().zero() && parent_type::ket_.member(1,0).deriv().zero()
+       )
 #else
-    if (parent_type::bra_.member(0,0)->zero() && parent_type::bra_.member(1,0)->zero() &&
-      parent_type::ket_.member(0,0)->zero() && parent_type::ket_.member(1,0)->zero())
+#error "!USE_BRAKET_H no longer supported"
 #endif
       return true;
     else

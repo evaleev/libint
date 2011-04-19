@@ -29,6 +29,7 @@ namespace {
   void test3();
   void test4();
   void test5();
+  void test6();
   void test_cgshell_iter(const CGShell& sh);
 
   template <class Callback>
@@ -105,8 +106,11 @@ namespace {
 #if 0
     RunTest(test4,"primitive ERI build");
 #endif
-#if 1
+#if 0
     RunTest(test5,"contracted ERI build");
+#endif
+#if 1
+    RunTest(test6,"contracted derivative ERI build");
 #endif
 
     return 0;
@@ -300,11 +304,37 @@ namespace {
     const unsigned int use_quartets = 1;
 
     CGShell::set_contracted_default_value(true);
+    const bool contracted_targets_old_value = cparams->contracted_targets();
+    cparams->contracted_targets(true);
     CGShell csh_s(0u);
     CGShell csh_p(1u);
 
     RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_s,csh_p,csh_s,0,use_quartets);
     RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_p,csh_p,csh_p,0,use_quartets);
+
+    cparams->contracted_targets(contracted_targets_old_value);
   }
+
+  // contracted derivative ERI build
+  void
+  test6()
+  {
+    const unsigned int use_integrals = 1000000000;
+    const unsigned int use_quartets = 1;
+
+    CGShell::set_contracted_default_value(true);
+    const bool contracted_targets_old_value = cparams->contracted_targets();
+    cparams->contracted_targets(true);
+    CGShell csh_s(0u);
+    CGShell csh_p(1u);
+    CGShell csh_s_dx(0u); csh_s_dx.deriv().inc(0,1);
+    CGShell csh_p_dx(1u); csh_p_dx.deriv().inc(0,1);
+
+    //RunBuildTest<TwoPRep_11_11_sq>(csh_p_dx,csh_s,csh_p,csh_s,0,use_quartets);
+    RunBuildTest<TwoPRep_11_11_sq>(csh_s,csh_s_dx,csh_s,csh_s,0,use_quartets);
+
+    cparams->contracted_targets(contracted_targets_old_value);
+  }
+
 };
 

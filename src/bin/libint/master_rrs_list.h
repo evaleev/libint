@@ -12,6 +12,7 @@
 #include <comp_11_tig12_11.h>
 #include <comp_11_g12tig12_11.h>
 #include <comp_11_DivG12prime_xTx_11.h>
+#include <comp_deriv_gauss.h>
 #include <generic_rr.h>
 
 // master list of types and typedefs that describe capabilities of Libint2
@@ -99,6 +100,14 @@ namespace libint2 {
   typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,0,InBra> ITR_a_11_TwoPRep_11_sh;
   typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGF,0,InBra> ITR_a_11_TwoPRep_11_int;
 
+  typedef CR_DerivGauss<TwoPRep_11_11_sq,0,InBra> Deriv_a_11_TwoPRep_11_sh;
+  typedef CR_DerivGauss<TwoPRep_11_11_sq,0,InKet> Deriv_b_11_TwoPRep_11_sh;
+  typedef CR_DerivGauss<TwoPRep_11_11_sq,1,InBra> Deriv_c_11_TwoPRep_11_sh;
+  typedef CR_DerivGauss<TwoPRep_11_11_sq,1,InKet> Deriv_d_11_TwoPRep_11_sh;
+  typedef CR_DerivGauss<TwoPRep_11_11_int,0,InBra> Deriv_a_11_TwoPRep_11_int;
+  typedef CR_DerivGauss<TwoPRep_11_11_int,0,InKet> Deriv_b_11_TwoPRep_11_int;
+  typedef CR_DerivGauss<TwoPRep_11_11_int,1,InBra> Deriv_c_11_TwoPRep_11_int;
+  typedef CR_DerivGauss<TwoPRep_11_11_int,1,InKet> Deriv_d_11_TwoPRep_11_int;
 
 };
 

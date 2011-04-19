@@ -207,6 +207,12 @@ namespace libint2 {
                bool have_parent) {
 
     dg->apply(strat,tactic);
+#if DEBUG
+    {
+      std::basic_ofstream<char> dotfile("graph.dot");
+      dg->print_to_dot(false,dotfile);
+    }
+#endif
     dg->optimize_rr_out();
 #if DEBUG
     std::cout << "The number of vertices = " << dg->num_vertices() << std::endl;
@@ -224,8 +230,10 @@ namespace libint2 {
     //dg->debug_print_traversal(cout);
 
 #if DEBUG
-    std::basic_ofstream<char> dotfile("graph.dot");
-    dg->print_to_dot(false,dotfile);
+    {
+      std::basic_ofstream<char> dotfile("graph.dot");
+      dg->print_to_dot(false,dotfile);
+    }
 #endif
 
     std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
@@ -245,8 +253,10 @@ namespace libint2 {
     extract_symbols(dg);
 
 #if DEBUG
-    std::basic_ofstream<char> dotfile2("graph.symb.dot");
-    dg->print_to_dot(true,dotfile2);
+    {
+      std::basic_ofstream<char> dotfile2("graph.symb.dot");
+      dg->print_to_dot(true,dotfile2);
+    }
 #endif
 
     decl_filenames.push_front(decl_filename);

@@ -48,6 +48,7 @@ vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
     qn[1] = ly;
     qn[2] = lz;
     subobj_stype cgf(qn);
+    cgf.deriv() = cgshell.deriv();
     cgfs.push_back(cgf);
   END_FOR_CART
 }

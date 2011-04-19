@@ -221,6 +221,12 @@ namespace libint2 {
       double qn[3]; for(unsigned int xyz=0; xyz<3; ++xyz) qn[xyz] = bf.qn(xyz);
       return CTimeVector3<double>(qn);
     }
+    /// make a compile-time quantity
+    inline CTimeVector3<double> Vector(const OriginDerivative& dd)
+    {
+      double d[3]; for(unsigned int xyz=0; xyz<3; ++xyz) d[xyz] = dd.d(xyz);
+      return CTimeVector3<double>(d);
+    }
     
   }
 };

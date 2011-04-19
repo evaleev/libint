@@ -25,7 +25,7 @@ namespace libint2 {
 
   /** A generic Horizontal Recurrence Relation:
 
-  |a b) = |a+1 b-1) + AB |a b-1)
+  |a b) = |a+1_i b-1_i) + AB_i |a b-1_i) + extra terms for derivative Gaussians
 
   Int is the integral class. part specifies for which particle
   the angular momentum is shifted. Function a is assumed to gain quanta,
@@ -88,7 +88,7 @@ namespace libint2 {
 
     unsigned int dir_;
     SafePtr<TargetType> target_;
-    static const unsigned int max_nchildren_ = 2;
+    static const unsigned int max_nchildren_ = 4;
     SafePtr<ChildType> children_[max_nchildren_];
     unsigned int nchildren_;
 
@@ -133,15 +133,15 @@ namespace libint2 {
       const typename IntType::AuxQuantaType& aux = Tint->aux();
       const typename IntType::OperType& oper = Tint->oper();
 
-      typedef typename IntType::BraType IBraType;
-      typedef typename IntType::KetType IKetType;
-      IBraType* bra = new IBraType(Tint->bra());
-      IKetType* ket = new IKetType(Tint->ket());
-
       // can move across operator only if it's multiplicative
       if (loc_a != loc_b && oper.hermitian(part) != +1) {
         return;
       }
+
+      typedef typename IntType::BraType IBraType;
+      typedef typename IntType::KetType IKetType;
+      IBraType* bra = new IBraType(Tint->bra());
+      IKetType* ket = new IKetType(Tint->ket());
 
       //
       // InBra and InKet cases have to treated explicitly since BraType and KetType don't have to match
