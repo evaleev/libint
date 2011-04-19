@@ -258,12 +258,12 @@ namespace libint2 {
             const SafePtr<DGVertex>& ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
             const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
             if (is_simple()) {
-              if (part == 0 && where == InBra) // building on A
-                expr_ -= Vector(dA)[dir] * (Scalar("rho12_over_alpha1") * ABCD_m + Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);
-              if (part == 0 && where == InKet) // building on B
-                expr_ += Vector(dA)[dir] * (Scalar("rho12_over_alpha2") * ABCD_m - Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);
-              if (part == 1) // building on C or D
-                expr_ += Vector(dA)[dir] * Scalar("alpha1_over_zetapluseta") * ABCD_mp1;
+              if (part == 0 && where == InBra) { // building on A
+                expr_ -= Vector(dA)[dir] * (Scalar("rho12_over_alpha1") * ABCD_m + Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+              if (part == 0 && where == InKet) { // building on B
+                expr_ += Vector(dA)[dir] * (Scalar("rho12_over_alpha2") * ABCD_m - Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+              if (part == 1) { // building on C or D
+                expr_ += Vector(dA)[dir] * Scalar("alpha1_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
             }
             a.deriv() = dA;
           }
@@ -277,12 +277,12 @@ namespace libint2 {
             const SafePtr<DGVertex>& ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
             const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
             if (is_simple()) {
-              if (part == 0 && where == InBra) // building on A
-                expr_ += Vector(dB)[dir] * (Scalar("rho12_over_alpha1") * ABCD_m - Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);
-              if (part == 0 && where == InKet) // building on B
-                expr_ -= Vector(dB)[dir] * (Scalar("rho12_over_alpha2") * ABCD_m + Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);
-              if (part == 1) // building on C or D
-                expr_ += Vector(dB)[dir] * Scalar("alpha2_over_zetapluseta") * ABCD_mp1;
+              if (part == 0 && where == InBra) { // building on A
+                expr_ += Vector(dB)[dir] * (Scalar("rho12_over_alpha1") * ABCD_m - Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+              if (part == 0 && where == InKet) { // building on B
+                expr_ -= Vector(dB)[dir] * (Scalar("rho12_over_alpha2") * ABCD_m + Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+              if (part == 1) { // building on C or D
+                expr_ += Vector(dB)[dir] * Scalar("alpha2_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
             }
             b.deriv() = dB;
           }
@@ -296,12 +296,12 @@ namespace libint2 {
             const SafePtr<DGVertex>& ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
             const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
             if (is_simple()) {
-              if (part == 0) // building on A or B
-                expr_ += Vector(dC)[dir] * Scalar("alpha3_over_zetapluseta") * ABCD_mp1;
-              if (part == 1 && where == InBra) // building on C
-                expr_ -= Vector(dC)[dir] * (Scalar("rho34_over_alpha3") * ABCD_m + Scalar("alpha3_rho_over_eta2") * ABCD_mp1);
-              if (part == 1 && where == InKet) // building on D
-                expr_ += Vector(dC)[dir] * (Scalar("rho34_over_alpha4") * ABCD_m - Scalar("alpha3_rho_over_eta2") * ABCD_mp1);
+              if (part == 0) { // building on A or B
+                expr_ += Vector(dC)[dir] * Scalar("alpha3_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+              if (part == 1 && where == InBra) { // building on C
+                expr_ -= Vector(dC)[dir] * (Scalar("rho34_over_alpha3") * ABCD_m + Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+              if (part == 1 && where == InKet) { // building on D
+                expr_ += Vector(dC)[dir] * (Scalar("rho34_over_alpha4") * ABCD_m - Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
             }
             c.deriv() = dC;
           }
@@ -315,12 +315,12 @@ namespace libint2 {
             const SafePtr<DGVertex>& ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
             const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
             if (is_simple()) {
-              if (part == 0) // building on A or B
-                expr_ += Vector(dD)[dir] * Scalar("alpha4_over_zetapluseta") * ABCD_mp1;
-              if (part == 1 && where == InBra) // building on C
-                expr_ += Vector(dD)[dir] * (Scalar("rho34_over_alpha3") * ABCD_m - Scalar("alpha4_rho_over_eta2") * ABCD_mp1);
-              if (part == 1 && where == InKet) // building on D
-                expr_ -= Vector(dD)[dir] * (Scalar("rho34_over_alpha4") * ABCD_m + Scalar("alpha4_rho_over_eta2") * ABCD_mp1);
+              if (part == 0) { // building on A or B
+                expr_ += Vector(dD)[dir] * Scalar("alpha4_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+              if (part == 1 && where == InBra) { // building on C
+                expr_ += Vector(dD)[dir] * (Scalar("rho34_over_alpha3") * ABCD_m - Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+              if (part == 1 && where == InKet) { // building on D
+                expr_ -= Vector(dD)[dir] * (Scalar("rho34_over_alpha4") * ABCD_m + Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
             }
             d.deriv() = dD;
           }

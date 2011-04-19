@@ -61,7 +61,7 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
     children_.push_back(arc);
     child->add_entry_arc(arc);
 #if DEBUG
-    std::cout << "add_exit_arc: added arc from " << arc->orig()->description() << " to " << arc->dest()->description() << std::endl;
+    std::cout << "add_exit_arc: added arc " << arc << " from " << arc->orig()->description() << " to " << arc->dest()->description() << std::endl;
 #endif
   }
   else
@@ -97,7 +97,18 @@ DGVertex::del_exit_arcs()
   if (can_add_arcs_) {
     if (num_exit_arcs()) {
       do {
+#if DEBUG_RESTRUCTURE
+      std::cout << "DGVertex::del_exit_arcs(): num_exit_arcs = " << this->num_exit_arcs() << std::endl;
+#endif
+#if DEBUG_RESTRUCTURE
+        std::cout << "DGVertex::del_exit_arcs(): trying to delete exit arc: " << children_.front().get() << std::endl;
+        children_.front()->print(std::cout);
+        std::cout.flush();
+#endif
         del_exit_arc(*(children_.begin()));
+#if DEBUG_RESTRUCTURE
+        std::cout << "DGVertex::del_exit_arcs(): delete successful" << std::endl;
+#endif
       } while (num_exit_arcs() != 0);
     }
   }
@@ -153,7 +164,7 @@ DGVertex::add_entry_arc(const SafePtr<DGArc>& arc)
   else
     throw CannotAddArc("DGVertex::add_entry_arc() -- cannot add arcs anymore");
 #if DEBUG || DEBUG_RESTRUCTURE
-  std::cout << "add_entry_arc: from " << arc->orig()->description() << " to " << arc->dest()->description() << std::endl;
+  std::cout << "add_entry_arc: arc " << arc << " from " << arc->orig()->description() << " to " << arc->dest()->description() << std::endl;
   print(std::cout);
 #endif
 }
@@ -164,10 +175,13 @@ DGVertex::del_entry_arc(const SafePtr<DGArc>& arc)
   if (!parents_.empty()) {
     ArcSetType::iterator location = find(parents_.begin(), parents_.end(), arc);
     if (location != parents_.end()) {
+#if DEBUG || DEBUG_RESTRUCTURE
+      std::cout << "del_entry_arc: trying to remove arc " << *location << " connecting " << (*location)->orig()->description()
+                << " to " << (*location)->dest()->description() << endl;
+#endif
       parents_.erase(location);
 #if DEBUG || DEBUG_RESTRUCTURE
-      std::cout << "del_entry_arc: removed arc from " << (*location)->orig()->description()
-                << " to " << (*location)->dest()->description() << endl;
+      std::cout << "del_entry_arc: remove arc successful" << endl;
 #endif
     }
     else

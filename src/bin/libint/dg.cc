@@ -191,10 +191,14 @@ DirectedGraph::del_vertex(vertices::iterator& v)
   if (vptr->is_a_target())
     throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete targets");
   if (vptr->num_exit_arcs() == 0 && vptr->num_entry_arcs() == 0) {
-    stack_.erase(v);
-    rv(vertex_ptr(*v));
 #if DEBUG
-    std::cout << "del_vertex: removed " << (vertex_ptr(*v))->label() << std::endl;
+    std::cout << "del_vertex: trying to remove " << (vertex_ptr(*v))->label() << std::endl;
+#endif
+    SafePtr<DGVertex> vptr = vertex_ptr(*v); // keep an instance of the pointer to avoid accidental automatic destruction of the DGVertex object
+    stack_.erase(v);
+    rv(vptr);
+#if DEBUG
+    std::cout << "del_vertex: successful vertex removal " << std::endl;
 #endif
   }
   else

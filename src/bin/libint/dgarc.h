@@ -24,7 +24,7 @@ namespace libint2 {
     SafePtr<DGVertex> dest() const { return dest_; }
 
     /// Print out the arc
-    virtual void print(std::ostream&) const =0;
+    virtual void print(std::ostream& os) const =0;
 
   };
   
@@ -76,7 +76,7 @@ namespace libint2 {
     /// Overload of DGArc::print()
     void print(std::ostream& os) const
       {
-        os << "DGArcRel<T>: connects " << orig().get() << " to " << dest().get();
+        os << "DGArcRel<T>: connects " << orig().get() << " to " << dest().get() << std::endl;
       }
     
   };
