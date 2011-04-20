@@ -1,4 +1,6 @@
 
+#include <fstream>
+
 #include <rr.h>
 #include <dg.h>
 #include <dg.templ.h>
@@ -92,15 +94,24 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   dg->registry()->condense_expr(condense_expr(1000000000,cparams->max_vector_length()>1));
   dg->registry()->ignore_missing_prereqs(true);  // assume all prerequisites are available -- if some are not, something is VERY broken
 
+#if DEBUG
+    {
+      std::basic_ofstream<char> dotfile("graph_rr.strat.dot");
+      dg->print_to_dot(false,dotfile);
+    }
+#endif
+
   // Assign symbols for the target and source integral sets
   SafePtr<CodeSymbols> symbols(new CodeSymbols);
   assign_symbols_(symbols);
   // Traverse the graph
-  dg->optimize_rr_out();
+  dg->optimize_rr_out(context);
   dg->traverse();
 #if DEBUG
-  dg->debug_print_traversal(std::cout);
-  cout << "The number of vertices = " << dg->num_vertices() << endl;
+    {
+      std::basic_ofstream<char> dotfile("graph_rr.expr.dot");
+      dg->print_to_dot(false,dotfile);
+    }
 #endif
   // Generate code
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
@@ -121,6 +132,13 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
     std::cout << *t << std::endl;
 #endif
 
+#if DEBUG
+    {
+      std::basic_ofstream<char> dotfile("graph_rr.symb.dot");
+      dg->print_to_dot(false,dotfile);
+    }
+#endif
+
   // get this RR InstanceID
   RRStack::InstanceID myid = RRStack::Instance()->find(EnableSafePtrFromThis<this_type>::SafePtr_from_this()).first;
 
@@ -139,8 +157,6 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
       tsymbols->add(externsymbols);
     }
   }
-
-
 
   dg->reset();
 }

@@ -371,11 +371,12 @@ namespace libint2 {
             SafePtr<UncI> x(new UncI(tptr));
             rr = static_pointer_cast<RecurrenceRelation,UncI>(x);
             if (rr != 0) {
+              if (rr->num_children() != 0) {
 #if DEBUG
-              std::cout << "Uncontracted " << tptr->label() << std::endl;
+                std::cout << "Uncontracted " << tptr->label() << std::endl;
 #endif
-              if (rr->num_children() != 0)
                 return true;
+              }
             }
           }
 

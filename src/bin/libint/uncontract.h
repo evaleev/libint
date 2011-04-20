@@ -116,6 +116,9 @@ namespace libint2 {
       oper_unc.descr().uncontract();
 
       if (target_is_contracted) {
+#if DEBUG
+        std::cout << "Uncontract_Integral: " << target_->description() << " is contracted" << std::endl;
+#endif
         SafePtr<ChildType> c = ChildType::Instance(bra_unc, ket_unc,
                                                    target_->aux(),
                                                    oper_unc);

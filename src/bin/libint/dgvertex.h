@@ -144,12 +144,14 @@ namespace libint2 {
     calls to symbol() and address() report code symbol and stack address of V
     */
     void refer_this_to(const SafePtr<DGVertex>&  V);
+    /// refers to another vertex?
+    bool refers_to_another() const { return referred_vertex_ != 0; }
     /// returns the code symbol. can throw SymbolNotSet
     const std::string& symbol() const;
     /// sets the code symbol
     void set_symbol(const std::string& symbol);
     /// returns true if the symbol has been set
-    bool symbol_set() const { return !symbol_.empty(); }
+    bool symbol_set() const;
     /// this function void the symbol, i.e. it is no longer set after calling this member
     void reset_symbol();
     /// returns the address of this quantity on Libint's stack. can throw AddressNotSet
@@ -157,7 +159,7 @@ namespace libint2 {
     /// sets the address of this quantity on Libint's stack
     void set_address(const Address& address);
     /// returns true if the address has been set
-    bool address_set() const { return address_ >= 0; }
+    bool address_set() const;
     /** indicates whether this vertex needs to be computed.
         Even if this vertex is not precomputed, it may not be desired
         to compute it. By default, all vertices need to be computed.
@@ -205,10 +207,10 @@ namespace libint2 {
 
     /// if not null -- use this vertex to report address and symbol
     const DGVertex* referred_vertex_;
-    /// number of vertices which refer to this
-    unsigned int nrefs_;
+    /// vertices that refer to this
+    std::vector<const DGVertex*> refs_;
     /// increments number of references
-    void inc_nrefs();
+    void register_reference(const DGVertex*);
     
     /// symbol used in the code
     std::string symbol_;

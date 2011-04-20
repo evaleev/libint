@@ -137,7 +137,7 @@ namespace libint2 {
 
     const static unsigned max_deriv = 4;
     /// The range of keys is [0,max_key). The formula is easily derived by summing (L+1)(L+2)/2 up to max_deriv
-    const static unsigned max_key = (1 + max_deriv*max_deriv + max_deriv*(max_deriv*max_deriv + 11*max_deriv)/6);
+    const static unsigned max_key = (1 + max_deriv)*(2 + max_deriv)*(3 + max_deriv)/6;
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
@@ -267,13 +267,13 @@ namespace libint2 {
       unsigned nxy = qn_[1] + qn_[2];
       unsigned l = nxy + qn_[0];
       unsigned key = nxy*(nxy+1)/2 + qn_[2];
-      return ( deriv().key() * 2 + (contracted() ? 1 : 0)) * max_key/2 + key + key_l_offset[l];
+      return ( deriv().key() * 2 + (contracted() ? 1 : 0)) * max_num_qn + key + key_l_offset[l];
     }
     /// The range of keys is [0,max_key). The formula is easily derived by summing (L+1)(L+2)/2 up to CGShell::max_key
     /// The factor of 2 to account for contracted vs. uncontracted basis functions
-    /// The factor of OriginDerivative to account for derivatives
-    const static unsigned max_key = 2 * OriginDerivative::max_key *
-        ((1 + (CGShell::max_qn+1)) * (2 + (CGShell::max_qn+1)) * (3 + (CGShell::max_qn+1)) /6);
+    /// The factor of OriginDerivative::max_key to account for derivatives
+    const static unsigned max_num_qn = ((1 + (CGShell::max_qn+1)) * (2 + (CGShell::max_qn+1)) * (3 + (CGShell::max_qn+1)) /6);
+    const static unsigned max_key = 2 * OriginDerivative::max_key * max_num_qn;
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;

@@ -30,6 +30,7 @@ namespace {
   void test4();
   void test5();
   void test6();
+  void test7();
   void test_cgshell_iter(const CGShell& sh);
 
   template <class Callback>
@@ -109,8 +110,11 @@ namespace {
 #if 0
     RunTest(test5,"contracted ERI build");
 #endif
-#if 1
+#if 0
     RunTest(test6,"contracted derivative ERI build");
+#endif
+#if 1
+    RunTest(test7,"shell-set RR generation");
 #endif
 
     return 0;
@@ -168,12 +172,12 @@ namespace {
 
     for(unsigned int m = 0; m < MemoryManagerFactory::ntypes; m++) {
       SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
-      dg_xxxx3->append_target(xsxs_ptr);
-      dg_xxxx3->apply(strat,tactic);
-      dg_xxxx3->optimize_rr_out();
-      dg_xxxx3->traverse();
       SafePtr<CodeContext> context(new CppCodeContext(cparams));
       SafePtr<MemoryManager> memman = mmfactory->memman(m);
+      dg_xxxx3->append_target(xsxs_ptr);
+      dg_xxxx3->apply(strat,tactic);
+      dg_xxxx3->optimize_rr_out(context);
+      dg_xxxx3->traverse();
       std::basic_ofstream<char> devnull("/dev/null");
       dg_xxxx3->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),xsxs_quartet->label(),devnull,devnull);
       cout << "Using " << mmfactory->label(m) << ": max memory used = " << memman->max_memory_used() << endl;
@@ -185,12 +189,12 @@ namespace {
     for(unsigned int tf = 1; tf <= tf_max; tf++) {
       for(int ex=1; ex>=0; ex--) {
 	SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
+    SafePtr<CodeContext> context(new CppCodeContext(cparams));
+    SafePtr<MemoryManager> memman(new BestFitMemoryManager(ex,tf));
 	dg_xxxx3->append_target(xsxs_ptr);
 	dg_xxxx3->apply(strat,tactic);
-	dg_xxxx3->optimize_rr_out();
+	dg_xxxx3->optimize_rr_out(context);
 	dg_xxxx3->traverse();
-	SafePtr<CodeContext> context(new CppCodeContext(cparams));
-	SafePtr<MemoryManager> memman(new BestFitMemoryManager(ex,tf));
 	std::basic_ofstream<char> devnull("/dev/null");
 	dg_xxxx3->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),xsxs_quartet->label(),devnull,devnull);
 	cout << "Using BestFitMemoryManager(" << (ex == 1 ? "true" : "false")
@@ -309,8 +313,8 @@ namespace {
     CGShell csh_s(0u);
     CGShell csh_p(1u);
 
-    RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_s,csh_p,csh_s,0,use_quartets);
-    RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_p,csh_p,csh_p,0,use_quartets);
+    //RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_s,csh_p,csh_s,0,use_quartets);
+    RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_p,csh_p,csh_p,0,use_integrals);
 
     cparams->contracted_targets(contracted_targets_old_value);
   }
@@ -327,6 +331,7 @@ namespace {
     cparams->contracted_targets(true);
     CGShell csh_s(0u);
     CGShell csh_p(1u);
+    CGShell csh_d(2u);
     CGShell csh_s_dx(0u); csh_s_dx.deriv().inc(0,1);
     CGShell csh_p_dx(1u); csh_p_dx.deriv().inc(0,1);
     CGShell csh_p_dy(1u); csh_p_dy.deriv().inc(1,1);
@@ -335,10 +340,35 @@ namespace {
     CGShell csh_s_d2x(0u); csh_s_d2x.deriv().inc(0,2);
     CGShell csh_p_d2x(1u); csh_p_d2x.deriv().inc(0,2);
 
-    RunBuildTest<TwoPRep_11_11_sq>(csh_p_dxyz,csh_s,csh_s,csh_s,0,use_quartets);
-    //RunBuildTest<TwoPRep_11_11_sq>(csh_s,csh_d_dx,csh_s,csh_s,0,use_quartets);
+    RunBuildTest<TwoPRep_11_11_sq>(csh_d_dx,csh_s,csh_s,csh_s,0,use_integrals);
+    //RunBuildTest<TwoPRep_11_11_sq>(csh_d_dx,csh_s,csh_s,csh_s,0,use_quartets);
 
     cparams->contracted_targets(contracted_targets_old_value);
+  }
+
+  // testing RR generators
+  void
+  test7()
+  {
+    CGShell csh_s(0u);
+    CGShell csh_p(1u);
+    CGShell csh_d(2u);
+    CGShell csh_s_dx(0u); csh_s_dx.deriv().inc(0,1);
+    CGShell csh_p_dx(1u); csh_p_dx.deriv().inc(0,1);
+    CGShell csh_p_dy(1u); csh_p_dy.deriv().inc(1,1);
+    CGShell csh_p_dxyz(1u); csh_p_dxyz.deriv().inc(0,1); csh_p_dxyz.deriv().inc(1,1); csh_p_dxyz.deriv().inc(2,1);
+    CGShell csh_d_dx(2u); csh_d_dx.deriv().inc(0,1);
+    CGShell csh_s_d2x(0u); csh_s_d2x.deriv().inc(0,2);
+    CGShell csh_p_d2x(1u); csh_p_d2x.deriv().inc(0,2);
+
+    SafePtr<TwoPRep_11_11_sq> target = TwoPRep_11_11_sq::Instance(csh_d_dx,csh_s,csh_s,csh_s,mType(0u));
+
+    SafePtr<RecurrenceRelation> rr = VRR_11_TwoPRep_11<CGShell,0,InBra>::Instance(target,0);
+    assert(rr != 0 && rr->num_children() != 0);
+    SafePtr<RRStack> rrstack = RRStack::Instance();
+    rrstack->find(rr);
+    generate_rr_code(std::cout,cparams);
+
   }
 
 };

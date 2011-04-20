@@ -10,7 +10,7 @@ using namespace libint2;
 
 DGVertex::DGVertex(ClassID tid) :
   typeid_(tid), instid_(), dg_(0), graph_label_(), referred_vertex_(0),
-  nrefs_(0), symbol_(), address_(MemoryManager::InvalidAddress), need_to_compute_(true),
+  refs_(), symbol_(), address_(MemoryManager::InvalidAddress), need_to_compute_(true),
 #if CHECK_SAFETY
   declared_(false),
 #endif
@@ -21,7 +21,7 @@ DGVertex::DGVertex(ClassID tid) :
 
 DGVertex::DGVertex(const DGVertex& v) :
   typeid_(v.typeid_), instid_(v.instid_), dg_(v.dg_), graph_label_(v.graph_label_), referred_vertex_(v.referred_vertex_),
-  nrefs_(v.nrefs_), symbol_(v.symbol_), address_(v.address_), need_to_compute_(v.need_to_compute_),
+  refs_(v.refs_), symbol_(v.symbol_), address_(v.address_), need_to_compute_(v.need_to_compute_),
 #if CHECK_SAFETY
   declared_(v.declared_),
 #endif
@@ -273,7 +273,7 @@ DGVertex::reset()
   address_ = MemoryManager::InvalidAddress;
   need_to_compute_ = true;
   referred_vertex_ = 0;
-  nrefs_ = 0;
+  refs_.resize(0);
 }
 
 const std::string&
@@ -301,19 +301,35 @@ DGVertex::refer_this_to(const SafePtr<DGVertex>& V)
       throw std::logic_error("DGVertex::refer_this_to() -- already referring to some other vertex");
   }
 #if DEBUG
-      cout << "DGVertex::refer_this_to() -- vertex " << description() << " will refer to " << V->description() << endl;
+  cout << "DGVertex::refer_this_to() -- vertex " << description() << " will refer to " << V->description() << endl;
 #endif
+  // transfer symbols and addresses to the referred-to index
+  if (this->symbol_set() && !V->symbol_set())
+    V->set_symbol(symbol_);
+  if (this->address_set() && !V->address_set())
+    V->set_symbol(symbol_);
   referred_vertex_ = V.get();
-  V->inc_nrefs();
+  V->register_reference(this);
 }
 
 void
-DGVertex::inc_nrefs()
+DGVertex::register_reference(const DGVertex* referrer)
 {
-  if (nrefs_)
-    throw std::logic_error("DGVertex::inc_nrefs() -- already referred to by another vertex");
-  else
-    ++nrefs_;
+  const bool is_new_referrer = (std::find(refs_.begin(), refs_.end(), referrer) == refs_.end());
+  if (is_new_referrer) {
+#if DEBUG
+    std::cout << "DGVertex::register_reference() : " << this->description() << " has "
+        << refs_.size() << " referrers and added new one: " << referrer->description() << std::endl;
+#endif
+    refs_.push_back(referrer);
+  }
+  else {
+#if DEBUG
+    std::cout << "DGVertex::register_reference() : " << this->description() << " already has this referrer : "
+        << referrer->description() << std::endl;
+#endif
+  }
+  assert(refs_.size() <= 1);
 }
 
 const std::string&
@@ -335,13 +351,25 @@ DGVertex::symbol() const
   }
 }
 
+bool
+DGVertex::symbol_set() const {
+  if (referred_vertex_)
+    return referred_vertex_->symbol_set();
+  else
+    return !symbol_.empty();
+}
+
 void
 DGVertex::set_symbol(const std::string& symbol)
 {
-  symbol_ = symbol;
+  if (referred_vertex_ && referred_vertex_->symbol_set())
+    assert(referred_vertex_->symbol() == symbol);
+  else {
+    symbol_ = symbol;
 #if DEBUG
-  cout << "Set symbol for " << description() << " to " << symbol << endl;
+    cout << "Set symbol for " << description() << " to " << symbol << endl;
 #endif
+  }
 }
 
 void
@@ -362,6 +390,14 @@ DGVertex::address() const
       throw AddressNotSet("DGVertex::address() -- address not set");
     }
   }
+}
+
+bool
+DGVertex::address_set() const {
+  if (referred_vertex_)
+    return referred_vertex_->address_set();
+  else
+    return address_ >= 0;
 }
 
 void

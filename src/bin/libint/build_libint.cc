@@ -1046,8 +1046,10 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
             dg_xxxx->append_target(abcd_ptr);
           }
 
+          SafePtr<CodeContext> context(new CppCodeContext(cparams));
+          SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
           dg_xxxx->apply(strat,tactic);
-          dg_xxxx->optimize_rr_out();
+          dg_xxxx->optimize_rr_out(context);
           dg_xxxx->traverse();
 #if DEBUG
           os << "The number of vertices = " << dg_xxxx->num_vertices() << endl;
@@ -1063,9 +1065,6 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
             << shells[ld]->label() << ")";
             label = os.str();
           }
-
-          SafePtr<CodeContext> context(new CppCodeContext(cparams));
-          SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
           std::string prefix(cparams->source_directory());
           std::string decl_filename(prefix + context->label_to_name(label));  decl_filename += ".h";
           std::string src_filename(prefix + context->label_to_name(label));  src_filename += ".cc";

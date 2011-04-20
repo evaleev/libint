@@ -462,14 +462,14 @@ DirectedGraph::apply_to(const SafePtr<DGVertex>& vertex,
 
 // Optimize out simple recurrence relations
 void
-DirectedGraph::optimize_rr_out()
+DirectedGraph::optimize_rr_out(const SafePtr<CodeContext>& context)
 {
   replace_rr_with_expr();
   // TODO remove_trivial_arithmetics() seems to be broken when working with [Ti,G12], fix!
 #if 1
   remove_trivial_arithmetics();
 #endif
-  handle_trivial_nodes();
+  handle_trivial_nodes(context);
   remove_disconnected_vertices();
   find_subtrees();
 }
@@ -675,6 +675,56 @@ DirectedGraph::remove_trivial_arithmetics()
   }
 }
 
+namespace {
+  std::string stack_symbol(const SafePtr<CodeContext>& ctext, const DGVertex::Address& address, const DGVertex::Size& size,
+                           const std::string& low_rank, const std::string& veclen,
+                           const std::string& prefix)
+  {
+    ostringstream oss;
+    std::string stack_address = ctext->stack_address(address);
+    oss << prefix << "[((hsi*" << size << "+"
+        << stack_address << ")*" << low_rank << "+lsi)*"
+        << veclen << "]";
+    return oss.str();
+  }
+
+  /// Returns a "vector" form of stack symbol, e.g. converts libint->stack[x] to libint->stack[x+vi]
+  inline std::string to_vector_symbol(const SafePtr<DGVertex>& v)
+  {
+    std::string::size_type current_pos = 0;
+    std::string symb = v->symbol();
+    // replace repeatedly until the string is exhausted
+    while(current_pos != std::string::npos) {
+
+      // find "[" first
+      const std::string left_braket("[");
+      std::string::size_type where = symb.find(left_braket,current_pos);
+      current_pos = where;
+      // if the prefix indicating a stack symbol found:
+      // 1) make sure vi doesn't appear between the brakets
+      // 2) replace "]" with "+vi]"
+      if (where != std::string::npos) {
+        const std::string right_braket("]");
+        std::string::size_type where = symb.find(right_braket,current_pos);
+        if (where == std::string::npos)
+          throw logic_error("to_vector_symbol() -- address is set but no right braket found");
+
+        const std::string forbidden("vi");
+        std::string::size_type pos = symb.find(forbidden,current_pos);
+        if (pos == std::string::npos || pos > where) {
+          const std::string what_to_add("+vi");
+          symb.insert(where,what_to_add);
+          current_pos = where + 4;
+        }
+        else {
+          current_pos = where + 1;
+        }
+      }
+    } // end of while
+    return symb;
+  }
+};
+
 //
 // Handles "trivial" nodes. A node is trivial is it satisfies the following conditions:
 // 0) not a target
@@ -685,7 +735,7 @@ DirectedGraph::remove_trivial_arithmetics()
 // no code is generated for it.
 //
 void
-DirectedGraph::handle_trivial_nodes()
+DirectedGraph::handle_trivial_nodes(const SafePtr<CodeContext>& context)
 {
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
@@ -702,8 +752,25 @@ DirectedGraph::handle_trivial_nodes()
       if (arc_cast) {
         SafePtr<RecurrenceRelation> rr = arc_cast->rr();
         SafePtr<IntegralSet_to_Integrals_base> rr_cast = dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(rr);
-        if (rr_cast)
-          (vptr)->refer_this_to(arc->dest());
+        if (rr_cast) {
+          SafePtr<DGVertex> child = arc->dest();
+
+          const std::string stack_name("stack");
+          const SafePtr<ImplicitDimensions>& dims = ImplicitDimensions::default_dims();
+          std::string low_rank = dims->low_label();
+          std::string veclen = dims->vecdim_label();
+
+          if ((vptr)->address_set()) {
+            child->set_symbol(stack_symbol(context,(vptr)->address()+0,(vptr)->size(),low_rank,veclen,stack_name));
+          }
+          if ((vptr)->symbol_set()) {
+            child->set_symbol(stack_symbol(context,0,(vptr)->size(),low_rank,veclen,(vptr)->symbol()));
+          }
+
+          (vptr)->refer_this_to(child);
+          vptr->reset_symbol();
+
+        }
       }
     }
 
@@ -1158,7 +1225,7 @@ unsigned int min_size_to_alloc)
     !vertex->precomputed() &&
     // manage only if need to compute ..
     vertex->need_to_compute() &&
-    // don't put on stack if smaller than min_size_to_alloc
+    // don't put on stack if smaller than or equal to min_size_to_alloc
     // two exceptions, however:
     // 1) it's a target
     // 2) it's an unrolled integral set of size 1, whose only member is not a precomputed quantity
@@ -1166,7 +1233,6 @@ unsigned int min_size_to_alloc)
     //    however if they are not the integral will need to be stored somewhere and the rule for
     //    assigning code symbols to members of unrolled integral sets requires the integral set
     //    to have an address assigned
-    // 3) it's an integral set of size 1 that will be contracted into the target --
     (   vertex->size() > min_size_to_alloc ||
         vertex->is_a_target() ||
         (vertex->size() == 1 && vertex->num_exit_arcs() == 1 &&
@@ -1174,13 +1240,6 @@ unsigned int min_size_to_alloc)
                 dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(arcrr->rr()) != 0 :
                 false ) &&
             !(*(vertex->first_exit_arc()))->dest()->precomputed()
-        ) ||
-        (vertex->size() == 1 && vertex->num_entry_arcs() == 1 &&
-         (*(vertex->first_entry_arc()))->orig()->is_a_target() &&
-         ( (arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(*(vertex->first_entry_arc()))) != 0 ?
-                         dynamic_pointer_cast<Uncontract_Integral_base,RecurrenceRelation>(arcrr->rr()) != 0 :
-                         false
-         )
         )
     )
     ) {
@@ -1203,56 +1262,6 @@ unsigned int min_size_to_alloc)
     vertex = vertex->postcalc();
   }while (vertex != 0);
 }
-
-namespace {
-  std::string stack_symbol(const SafePtr<CodeContext>& ctext, const DGVertex::Address& address, const DGVertex::Size& size,
-                           const std::string& low_rank, const std::string& veclen,
-                           const std::string& prefix)
-  {
-    ostringstream oss;
-    std::string stack_address = ctext->stack_address(address);
-    oss << prefix << "[((hsi*" << size << "+"
-        << stack_address << ")*" << low_rank << "+lsi)*"
-        << veclen << "]";
-    return oss.str();
-  }
-
-  /// Returns a "vector" form of stack symbol, e.g. converts libint->stack[x] to libint->stack[x+vi]
-  inline std::string to_vector_symbol(const SafePtr<DGVertex>& v)
-  {
-    std::string::size_type current_pos = 0;
-    std::string symb = v->symbol();
-    // replace repeatedly until the string is exhausted
-    while(current_pos != std::string::npos) {
-
-      // find "[" first
-      const std::string left_braket("[");
-      std::string::size_type where = symb.find(left_braket,current_pos);
-      current_pos = where;
-      // if the prefix indicating a stack symbol found:
-      // 1) make sure vi doesn't appear between the brakets
-      // 2) replace "]" with "+vi]"
-      if (where != std::string::npos) {
-        const std::string right_braket("]");
-        std::string::size_type where = symb.find(right_braket,current_pos);
-        if (where == std::string::npos)
-          throw logic_error("to_vector_symbol() -- address is set but no right braket found");
-
-        const std::string forbidden("vi");
-        std::string::size_type pos = symb.find(forbidden,current_pos);
-        if (pos == std::string::npos || pos > where) {
-          const std::string what_to_add("+vi");
-          symb.insert(where,what_to_add);
-          current_pos = where + 4;
-        }
-        else {
-          current_pos = where + 1;
-        }
-      }
-    } // end of while
-    return symb;
-  }
-};
 
 void
 DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims)
@@ -1280,9 +1289,12 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
   // Second, find all nodes which were unrolled using IntegralSet_to_Integrals:
   // 1) such nodes do not need symbols generated since they never appear in the code expicitly
   // 2) children of such nodes have symbols that depend on the parent's address
+  // upstream such nodes of size one were aliased ("referred") to their children -- just skip these
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
     if ((vptr)->num_exit_arcs() == 0)
+      continue;
+    if (vptr->refers_to_another())
       continue;
     SafePtr<DGArc> arc = *((vptr)->first_exit_arc());
     SafePtr<DGArcRR> arc_rr = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
@@ -1303,6 +1315,13 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
         SafePtr<DGVertex> child = (*a)->dest();
         // If the child is precomputed and it's parent symbol is not set -- its symbol will be set as usual
         if (!child->precomputed() || (vptr)->symbol_set()) {
+
+          // check if symbol is already set ... this indicates interference with the logic upstream, it should be set here?
+          if (child->symbol_set()) {
+            std::cout << "WARNING: symbol for " << child->description() << " (unrolled integral) already set" << std::endl;
+            continue;
+          }
+
           if ((vptr)->address_set()) {
             child->set_symbol(stack_symbol(context,(vptr)->address()+c,(vptr)->size(),low_rank,veclen,stack_name));
           }
@@ -1324,7 +1343,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
 #endif
     if ((vptr)->symbol_set()) {
 #if DEBUG
-    cout << "symbol already set to " << (vptr)->symbol() << endl;
+      cout << "symbol already set to " << (vptr)->symbol() << endl;
 #endif
       continue;
     }
@@ -1358,6 +1377,20 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
       }
     }
 
+    // test if the vertex is some other data that was not allocated on stack
+#if 1
+    if (vptr->size() == 1) {
+      { // basic integral
+        typedef IntegralSet<IncableBFSet> intset;
+        SafePtr<intset> ptr_cast = dynamic_pointer_cast<intset,DGVertex>((vptr));
+        if (ptr_cast) {
+          (vptr)->set_symbol(context->unique_name<EntityTypes::FP>());
+          continue;
+        }
+      }
+    }
+#endif
+
   } // done with everything BUT operators
 
   // finally, process all operators (start with most recently added vertices since those are
@@ -1366,6 +1399,8 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
   typedef vertices::reverse_iterator riter;
   for(riter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
     ver_ptr& vptr = vertex_ptr(*v);
+    if (vptr->symbol_set())
+      continue;
 #if DEBUG
     cout << "Trying to assign symbol to operator " << (vptr)->description() << endl;
 #endif
@@ -1574,10 +1609,23 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
 
+    // skip if this is a dummy vertex (i.e. refers to someone else)
+    if (current_vertex->refers_to_another())
+      goto next;
+
     // for every vertex that has a defined symbol, hence must be defined in code
     if (current_vertex->symbol_set()) {
 
-      const bool address_set = current_vertex->address_set();
+      // Type declaration if this is an automatic variable
+      // ids for automatic variables cannot have characters '[' or ']'
+      const std::string& symbol = current_vertex->symbol();
+      if (symbol.find('[') == std::string::npos) {
+        os << context->declare(context->type_name<double> (),
+                               current_vertex->symbol());
+#if CHECK_SAFETY
+        current_vertex->declared(true);
+#endif
+      }
 
       // print algebraic expression
       {
@@ -1585,15 +1633,6 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
         SafePtr<oper_type> oper_ptr =
             dynamic_pointer_cast<oper_type, DGVertex> (current_vertex);
         if (oper_ptr) {
-
-          // Type declaration if this is an automatic variable (i.e. not on Libint's stack)
-          if (!address_set) {
-            os << context->declare(context->type_name<double> (),
-                                   current_vertex->symbol());
-#if CHECK_SAFETY
-            current_vertex->declared(true);
-#endif
-          }
 
           // If this is an Integral in a target IntegralSet AND
           // can accumulate targets directly -- use '+=' instead of '='

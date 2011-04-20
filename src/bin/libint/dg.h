@@ -148,7 +148,7 @@ namespace libint2 {
         optimized away. optimize_rr_out() will replace all simple recurrence relations
         with code representing them.
     */
-    void optimize_rr_out();
+    void optimize_rr_out(const SafePtr<CodeContext>& context);
 
     /** after all apply's have been called, traverse()
         construct a heuristic order of traversal for the graph.
@@ -261,7 +261,7 @@ namespace libint2 {
     /** This function gets rid of nodes which are connected
     to their equivalents (such as (ss|ss) shell quartet can only be connected to (ss|ss) integral)
     */
-    void handle_trivial_nodes();
+    void handle_trivial_nodes(const SafePtr<CodeContext>& context);
     /// This functions removes vertices not connected to other vertices
     void remove_disconnected_vertices();
     /** Finds (binary) subtrees. The subtrees correspond to a single-line code (no intermediates

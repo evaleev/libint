@@ -213,7 +213,7 @@ namespace libint2 {
       dg->print_to_dot(false,dotfile);
     }
 #endif
-    dg->optimize_rr_out();
+    dg->optimize_rr_out(context);
 #if DEBUG
     std::cout << "The number of vertices = " << dg->num_vertices() << std::endl;
 #endif
