@@ -355,8 +355,6 @@ namespace libint2 {
           dB.zero() == false ||
           dC.zero() == false ||
           dD.zero() == false;
-      if (deriv)
-        return false;
 
       F sh_a(target_->bra(0,0));
       F sh_b(target_->ket(0,0));
@@ -369,7 +367,8 @@ namespace libint2 {
           sh_a.norm() > std::max(2*max_opt_am,1u) && sh_c.norm() > std::max(2*max_opt_am,1u))
         return true;
       if (sh_a.zero() && sh_c.zero() &&
-          sh_b.norm() > std::max(2*max_opt_am,1u) && sh_d.norm() > std::max(2*max_opt_am,1u))
+          sh_b.norm() > std::max(2*max_opt_am,1u) && sh_d.norm() > std::max(2*max_opt_am,1u) &&
+          deriv == false) // sxsx version not yet implemented for derivatives
         return true;
       return false;
     }
@@ -384,8 +383,23 @@ namespace libint2 {
       F sh_d(target_->ket(1,0));
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
-      if (xsxs) return std::string("OSVRR_xs_xs.h");
-      if (sxsx) return std::string("OSVRR_sx_sx.h");
+
+      const OriginDerivative dA = target_->bra(0,0).deriv();
+      const OriginDerivative dB = target_->ket(0,0).deriv();
+      const OriginDerivative dC = target_->bra(1,0).deriv();
+      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const bool deriv = dA.zero() == false ||
+          dB.zero() == false ||
+          dC.zero() == false ||
+          dD.zero() == false;
+
+      if (deriv == false) {
+        if (xsxs) return std::string("OSVRR_xs_xs.h");
+        if (sxsx) return std::string("OSVRR_sx_sx.h");
+      }
+      else {
+        if (xsxs) return std::string("OSVRR_xs_xs_deriv.h");
+      }
       abort(); // unreachable
     }
 
@@ -401,24 +415,83 @@ namespace libint2 {
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
 
+      const OriginDerivative dA = target_->bra(0,0).deriv();
+      const OriginDerivative dB = target_->ket(0,0).deriv();
+      const OriginDerivative dC = target_->bra(1,0).deriv();
+      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const bool deriv = dA.zero() == false ||
+          dB.zero() == false ||
+          dC.zero() == false ||
+          dD.zero() == false;
+
       oss << "using namespace libint2;" << endl;
 
-      if(xsxs) {
-        oss << "libint2::OSVRR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
-        oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
-        oss << ">::compute(inteval";
-      }
-      if (sxsx) {
-        oss << "libint2::OSVRR_sx_sx<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
-        oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
-        oss << ">::compute(inteval";
-      }
+      if (deriv == false) { // for regular integrals I know exactly how many prerequisites I need
+        if(xsxs) {
+          oss << "libint2::OSVRR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+          oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
+          oss << ">::compute(inteval";
+        }
+        if (sxsx) {
+          oss << "libint2::OSVRR_sx_sx<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
+          oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
+          oss << ">::compute(inteval";
+        }
 
-      const unsigned int nargs = args->n();
-      for(unsigned int a=0; a<nargs; a++) {
-        oss << "," << args->symbol(a);
+        const unsigned int nargs = args->n();
+        for(unsigned int a=0; a<nargs; a++) {
+          oss << "," << args->symbol(a);
+        }
+        oss << ");";
       }
-      oss << ");";
+      else { // deriv == true -> only some arguments are needed
+        if(xsxs) {
+          oss << "libint2::OSVRR_xs_xs_deriv<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+          for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_a.deriv().d(xyz) << ",";
+          for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_b.deriv().d(xyz) << ",";
+          for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_c.deriv().d(xyz) << ",";
+          for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_d.deriv().d(xyz) << ",";
+          oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
+          oss << ">::compute(inteval";
+        }
+        // out of all 22 possible prerequisites first 5 are guaranteed to be there
+        const unsigned int nargs = args->n();
+        unsigned int arg = 0;
+        for(; arg<6; arg++) { // hence first 6 arguments are always there
+          oss << "," << args->symbol(arg);
+        }
+        for(unsigned int xyz=0; xyz<3; ++xyz) {
+          if (sh_a.deriv().d(xyz) > 0) {
+            oss << "," << args->symbol(arg++);
+            oss << "," << args->symbol(arg++);
+          }
+          else
+            oss << ",0,0";
+        }
+        for(unsigned int xyz=0; xyz<3; ++xyz) {
+          if (sh_b.deriv().d(xyz) > 0) {
+            oss << "," << args->symbol(arg++);
+            oss << "," << args->symbol(arg++);
+          }
+          else
+            oss << ",0,0";
+        }
+        for(unsigned int xyz=0; xyz<3; ++xyz) {
+          if (sh_c.deriv().d(xyz) > 0) {
+            oss << "," << args->symbol(arg++);
+          }
+          else
+            oss << ",0";
+        }
+        for(unsigned int xyz=0; xyz<3; ++xyz) {
+          if (sh_d.deriv().d(xyz) > 0) {
+            oss << "," << args->symbol(arg++);
+          }
+          else
+            oss << ",0";
+        }
+        oss << ");";
+      }
 
       return oss.str();
     }
