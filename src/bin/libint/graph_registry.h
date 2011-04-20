@@ -27,7 +27,7 @@ namespace libint2 {
     /// Return pointers to targets via Libint_t::targets? Default is true.
     bool return_targets() const { return return_targets_; }
     void return_targets(bool rt) { return_targets_ = rt; }
-    /// Will unroll the integral sets with size < unroll_threshold. Default is 1 (no unrolling).
+    /// Will unroll the integral sets with size <= unroll_threshold. Default is 1 (no unrolling).
     unsigned int unroll_threshold() const { return unroll_threshold_; }
     void unroll_threshold(unsigned int ut) { unroll_threshold_ = std::max(ut,1u); }
     /// Minimum size when can unroll

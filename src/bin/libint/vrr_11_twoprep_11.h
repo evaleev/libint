@@ -23,7 +23,7 @@ namespace libint2 {
       typedef GenIntegralSet_11_11<BFSet,TwoPRep,mType> TargetType;
       typedef GenericRecurrenceRelation<ThisType,BFSet,TargetType> ParentType;
       friend class GenericRecurrenceRelation<ThisType,BFSet,TargetType>;
-      static const unsigned int max_nchildren = 14;
+      static const unsigned int max_nchildren = 26;
 
       using ParentType::Instance;
     private:
@@ -246,83 +246,93 @@ namespace libint2 {
         F b( part == 0 && where == InKet ? Tint->ket(0,0) - _1 : Tint->ket(0,0) );
         F c( part == 1 && where == InBra ? Tint->bra(1,0) - _1 : Tint->bra(1,0) );
         F d( part == 1 && where == InKet ? Tint->ket(1,0) - _1 : Tint->ket(1,0) );
-        OriginDerivative _d1; _d1.inc(dir);
 
-        SafePtr<DGVertex> _nullptr;
+        // treatment of derivative terms differs for shell sets and integrals
+        // since in computing shell sets transfer/build will occur in all 3 directions
+        // change in up to all three derivative indices will occur
+        for(unsigned int dxyz=0; dxyz<3; ++dxyz) {
 
-        // dA - _1?
-        {
-          const OriginDerivative dAm1(dA - _d1);
-          if (exists(dAm1)) { // yes
-            a.deriv() = dAm1;
-            const SafePtr<DGVertex>& ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
-            const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-            if (is_simple()) {
-              if (part == 0 && where == InBra) { // building on A
-                expr_ -= Vector(dA)[dir] * (Scalar("rho12_over_alpha1") * ABCD_m + Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
-              if (part == 0 && where == InKet) { // building on B
-                expr_ += Vector(dA)[dir] * (Scalar("rho12_over_alpha2") * ABCD_m - Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
-              if (part == 1) { // building on C or D
-                expr_ += Vector(dA)[dir] * Scalar("alpha1_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+          if (is_simple() && dxyz != dir) // for integrals only consider derivatives in THE build direction
+            continue;
+
+          OriginDerivative _d1; _d1.inc(dxyz);
+
+          SafePtr<DGVertex> _nullptr;
+
+          // dA - _1?
+          {
+            const OriginDerivative dAm1(dA - _d1);
+            if (exists(dAm1)) { // yes
+              a.deriv() = dAm1;
+              const SafePtr<DGVertex>& ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              if (is_simple()) {
+                if (part == 0 && where == InBra) { // building on A
+                  expr_ -= Vector(dA)[dxyz] * (Scalar("rho12_over_alpha1") * ABCD_m + Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 0 && where == InKet) { // building on B
+                  expr_ += Vector(dA)[dxyz] * (Scalar("rho12_over_alpha2") * ABCD_m - Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 1) { // building on C or D
+                  expr_ += Vector(dA)[dxyz] * Scalar("alpha1_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+              }
+              a.deriv() = dA;
             }
-            a.deriv() = dA;
           }
-        }
 
-        // dB - _1?
-        {
-          const OriginDerivative dBm1(dB - _d1);
-          if (exists(dBm1)) { // yes
-            b.deriv() = dBm1;
-            const SafePtr<DGVertex>& ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
-            const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-            if (is_simple()) {
-              if (part == 0 && where == InBra) { // building on A
-                expr_ += Vector(dB)[dir] * (Scalar("rho12_over_alpha1") * ABCD_m - Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
-              if (part == 0 && where == InKet) { // building on B
-                expr_ -= Vector(dB)[dir] * (Scalar("rho12_over_alpha2") * ABCD_m + Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
-              if (part == 1) { // building on C or D
-                expr_ += Vector(dB)[dir] * Scalar("alpha2_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+          // dB - _1?
+          {
+            const OriginDerivative dBm1(dB - _d1);
+            if (exists(dBm1)) { // yes
+              b.deriv() = dBm1;
+              const SafePtr<DGVertex>& ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              if (is_simple()) {
+                if (part == 0 && where == InBra) { // building on A
+                  expr_ += Vector(dB)[dxyz] * (Scalar("rho12_over_alpha1") * ABCD_m - Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 0 && where == InKet) { // building on B
+                  expr_ -= Vector(dB)[dxyz] * (Scalar("rho12_over_alpha2") * ABCD_m + Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 1) { // building on C or D
+                  expr_ += Vector(dB)[dxyz] * Scalar("alpha2_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+              }
+              b.deriv() = dB;
             }
-            b.deriv() = dB;
           }
-        }
 
-        // dC - _1?
-        {
-          const OriginDerivative dCm1(dC - _d1);
-          if (exists(dCm1)) { // yes
-            c.deriv() = dCm1;
-            const SafePtr<DGVertex>& ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
-            const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-            if (is_simple()) {
-              if (part == 0) { // building on A or B
-                expr_ += Vector(dC)[dir] * Scalar("alpha3_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
-              if (part == 1 && where == InBra) { // building on C
-                expr_ -= Vector(dC)[dir] * (Scalar("rho34_over_alpha3") * ABCD_m + Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
-              if (part == 1 && where == InKet) { // building on D
-                expr_ += Vector(dC)[dir] * (Scalar("rho34_over_alpha4") * ABCD_m - Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+          // dC - _1?
+          {
+            const OriginDerivative dCm1(dC - _d1);
+            if (exists(dCm1)) { // yes
+              c.deriv() = dCm1;
+              const SafePtr<DGVertex>& ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              if (is_simple()) {
+                if (part == 0) { // building on A or B
+                  expr_ += Vector(dC)[dxyz] * Scalar("alpha3_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+                if (part == 1 && where == InBra) { // building on C
+                  expr_ -= Vector(dC)[dxyz] * (Scalar("rho34_over_alpha3") * ABCD_m + Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 1 && where == InKet) { // building on D
+                  expr_ += Vector(dC)[dxyz] * (Scalar("rho34_over_alpha4") * ABCD_m - Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+              }
+              c.deriv() = dC;
             }
-            c.deriv() = dC;
           }
-        }
 
-        // dD - _1?
-        {
-          const OriginDerivative dDm1(dD - _d1);
-          if (exists(dDm1)) { // yes
-            d.deriv() = dDm1;
-            const SafePtr<DGVertex>& ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
-            const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-            if (is_simple()) {
-              if (part == 0) { // building on A or B
-                expr_ += Vector(dD)[dir] * Scalar("alpha4_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
-              if (part == 1 && where == InBra) { // building on C
-                expr_ += Vector(dD)[dir] * (Scalar("rho34_over_alpha3") * ABCD_m - Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
-              if (part == 1 && where == InKet) { // building on D
-                expr_ -= Vector(dD)[dir] * (Scalar("rho34_over_alpha4") * ABCD_m + Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+          // dD - _1?
+          {
+            const OriginDerivative dDm1(dD - _d1);
+            if (exists(dDm1)) { // yes
+              d.deriv() = dDm1;
+              const SafePtr<DGVertex>& ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              if (is_simple()) {
+                if (part == 0) { // building on A or B
+                  expr_ += Vector(dD)[dxyz] * Scalar("alpha4_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+                if (part == 1 && where == InBra) { // building on C
+                  expr_ += Vector(dD)[dxyz] * (Scalar("rho34_over_alpha3") * ABCD_m - Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 1 && where == InKet) { // building on D
+                  expr_ -= Vector(dD)[dxyz] * (Scalar("rho34_over_alpha4") * ABCD_m + Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+              }
+              d.deriv() = dD;
             }
-            d.deriv() = dD;
           }
         }
       } // end of deriv

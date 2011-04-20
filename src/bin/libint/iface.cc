@@ -206,6 +206,8 @@ Libint2Iface::~Libint2Iface()
         { std::ostringstream oss;
           oss << "MAX_HRR_LSRANK_" << am; lsr = oss.str(); }
 
+        li_ << "if (max_am > " << max_am << ") abort();" << std::endl;
+
         li_ << "if (max_am == " << am << ") return " << macro(tlabel,ss) << " * " << macro("MAX_VECLEN") << " + "
             << macro(tlabel,vss) << " * " << macro("MAX_VECLEN") << " * ("
             << macro(tlabel,hsr) << " > " << macro(tlabel,lsr) << " ? "
@@ -232,6 +234,7 @@ Libint2Iface::~Libint2Iface()
         { std::ostringstream oss;
         oss << "MAX_STACK_SIZE_" << am; ss = oss.str(); }
 
+        li_ << "if (max_am > " << max_am << ") abort();" << std::endl;
         li_ << "if (max_am == " << am << ")" << std::endl;
         std::string vstack_ptr("inteval->stack + ");
         vstack_ptr += macro(tlabel,ss);
@@ -300,8 +303,8 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
       TaskExternSymbols composite_symbols;
       const tciter tend = taskmgr.plast();
       for(tciter t=taskmgr.first(); t!=tend; ++t) {
-	const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
-	composite_symbols.add(tsymbols->symbols());
+        const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
+        composite_symbols.add(tsymbols->symbols());
       }
       symbols = composite_symbols.symbols();
       tlabel = "";
@@ -333,8 +336,8 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
       unsigned int max_ntargets = 0;
       const tciter tend = taskmgr.plast();
       for(tciter t=taskmgr.first(); t!=tend; ++t) {
-	SafePtr<TaskParameters> tparams = t->params();
-	max_ntargets = std::max(max_ntargets,tparams->max_ntarget());
+        SafePtr<TaskParameters> tparams = t->params();
+        max_ntargets = std::max(max_ntargets,tparams->max_ntarget());
       }
       ostringstream oss;
       oss << max_ntargets;

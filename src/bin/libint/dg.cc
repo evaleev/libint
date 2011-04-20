@@ -690,22 +690,10 @@ DirectedGraph::handle_trivial_nodes()
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
-    // if this is a target -- cannot remove
-    if ((vptr)->is_a_target())
-      continue;
     // or if has more than 1 child
     if ((vptr)->num_exit_arcs() != 1)
       continue;
     SafePtr<DGArc> arc = *((vptr)->first_exit_arc());
-
-    // Is the exit arc DGArcDirect?
-    {
-      SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
-      if (arc_cast) {
-        // remove the vertex, if possible
-        remove_vertex_at((vptr),arc->dest());
-      }
-    }
 
     // Is the exit arc DGArcRel<IntegralSet_to_Integrals> and (vptr)->size() == 1?
     if ((vptr)->size() == 1) {
@@ -715,6 +703,18 @@ DirectedGraph::handle_trivial_nodes()
         SafePtr<IntegralSet_to_Integrals_base> rr_cast = dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(rr);
         if (rr_cast)
           (vptr)->refer_this_to(arc->dest());
+      }
+    }
+
+
+    // Is the exit arc DGArcDirect?
+    {
+      SafePtr<DGArcDirect> arc_cast = dynamic_pointer_cast<DGArcDirect,DGArc>(arc);
+      if (arc_cast) {
+        // remove the vertex, if possible
+        // if this is a target -- cannot remove
+        if ((vptr)->is_a_target() == false)
+          remove_vertex_at((vptr),arc->dest());
       }
     }
 
@@ -1019,62 +1019,61 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   def << context->code_postfix();
 }
 
-void
-DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
-                            const SafePtr<ImplicitDimensions>& dims,
-                            unsigned int min_size_to_alloc)
+void DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
+const SafePtr<ImplicitDimensions>& dims,
+unsigned int min_size_to_alloc)
 {
   // NOTE does this belong here?
   // First, reset tag counters
   prepare_to_traverse();
 
   struct TargetAllocator {
-      typedef DirectedGraph::targets::const_iterator target_citer;
-      typedef DirectedGraph::targets::iterator target_iter;
-      typedef DirectedGraph::size sz;
-      typedef DirectedGraph::address address;
+    typedef DirectedGraph::targets::const_iterator target_citer;
+    typedef DirectedGraph::targets::iterator target_iter;
+    typedef DirectedGraph::size sz;
+    typedef DirectedGraph::address address;
 
-      const DirectedGraph::targets& targets_;
-      const SafePtr<MemoryManager>& memman_;
-      bool all_targets_;
-      sz size_;
+    const DirectedGraph::targets& targets_;
+    const SafePtr<MemoryManager>& memman_;
+    bool all_targets_;
+    sz size_;
 
-      TargetAllocator(const DirectedGraph::targets& t,
-                      const SafePtr<MemoryManager>& mm,
-                      bool all_targets) :
-                        targets_(t),
-                        memman_(mm),
-                        all_targets_(all_targets)
-      {
-        // compute the aggregate size of all targets
-        target_citer end = targets_.end();
-        size_ = 0;
-        for(target_citer t=targets_.begin(); t!=end; ++t) {
-          const ver_ptr& tptr = vertex_ptr(*t);
-          if (all_targets_ ||
-              (!tptr->symbol_set() &&
-               !tptr->address_set()
-              )
-             ) {
-            size_ += (tptr)->size();
-          }
+    TargetAllocator(const DirectedGraph::targets& t,
+    const SafePtr<MemoryManager>& mm,
+    bool all_targets) :
+    targets_(t),
+    memman_(mm),
+    all_targets_(all_targets)
+    {
+      // compute the aggregate size of all targets
+      target_citer end = targets_.end();
+      size_ = 0;
+      for(target_citer t=targets_.begin(); t!=end; ++t) {
+        const ver_ptr& tptr = vertex_ptr(*t);
+        if (all_targets_ ||
+        (!tptr->symbol_set() &&
+            !tptr->address_set()
+        )
+        ) {
+          size_ += (tptr)->size();
         }
       }
+    }
 
-      sz size() const { return size_; }
+    sz size() const {return size_;}
 
-      void allocate() {
-        for(target_citer v=targets_.begin(); v!=targets_.end(); ++v) {
-          const ver_ptr& vptr = vertex_ptr(*v);
-          if (all_targets_ ||
-              (!vptr->symbol_set() &&
-               !vptr->address_set()
-              )
-             ) {
-            vptr->set_address(memman_->alloc(vptr->size()));
-          }
+    void allocate() {
+      for(target_citer v=targets_.begin(); v!=targets_.end(); ++v) {
+        const ver_ptr& vptr = vertex_ptr(*v);
+        if (all_targets_ ||
+        (!vptr->symbol_set() &&
+            !vptr->address_set()
+        )
+        ) {
+          vptr->set_address(memman_->alloc(vptr->size()));
         }
       }
+    }
   };
 
   //
@@ -1094,7 +1093,6 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
     TargetAllocator ta(prereqs, memman, all_targets);
     ta.allocate();
   }
-
 
   //
   // If need to accumulate targets, special events must happen here.
@@ -1151,31 +1149,35 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
     // memory only needs to be managed for some quantities:
     // this conditional decides whether this vertex is on the stack
     if (
-        // If symbol is set then the object is not on stack
-        !vertex->symbol_set() &&
-        // if address is already set, no need to manage
-        !vertex->address_set() &&
-        // precomputed objects don't go on stack
-        !vertex->precomputed() &&
-        // manage only if need to compute ..
-        vertex->need_to_compute() &&
-        // don't put on stack if smaller than min_size_to_alloc
-        // two exceptions, however:
-        // 1) it's a target
-        // 2) it's an unrolled integral set of size 1, whose only member is not a precomputed quantity
-        //    typically integral sets of size 1 are precomputed and don't need to be on stack,
-        //    however if they are not the integral will need to be stored somewhere and the rule for
-        //    assigning code symbols to members of unrolled integral sets requires the integral set
-        //    to have an address assigned
-        (vertex->size() > min_size_to_alloc ||
-            vertex->is_a_target() ||
-            (vertex->size() == 1 && vertex->num_exit_arcs() == 1 &&
-                ( (arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(*(vertex->first_exit_arc()))) != 0 ?
-                                                                                                   dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(arcrr->rr()) != 0 :
-    false ) &&
-    !(*(vertex->first_exit_arc()))->dest()->precomputed()
-            )
+    // If symbol is set then the object is not on stack
+    !vertex->symbol_set() &&
+    // if address is already set, no need to manage
+    !vertex->address_set() &&
+    // precomputed objects don't go on stack
+    !vertex->precomputed() &&
+    // manage only if need to compute ..
+    vertex->need_to_compute() &&
+    // don't put on stack if smaller than min_size_to_alloc
+    // two exceptions, however:
+    // 1) it's a target
+    // 2) it's an unrolled integral set of size 1, whose only member is not a precomputed quantity
+    //    typically integral sets of size 1 are precomputed and don't need to be on stack,
+    //    however if they are not the integral will need to be stored somewhere and the rule for
+    //    assigning code symbols to members of unrolled integral sets requires the integral set
+    //    to have an address assigned
+    // 3) it's an integral set of size 1 that will be contracted into the target --
+    (   vertex->size() > min_size_to_alloc ||
+        vertex->is_a_target() ||
+        (vertex->size() == 1 && vertex->num_exit_arcs() == 1 &&
+            ( (arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(*(vertex->first_exit_arc()))) != 0 ?
+                dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(arcrr->rr()) != 0 :
+                false ) &&
+            !(*(vertex->first_exit_arc()))->dest()->precomputed()
+        ) ||
+        (vertex->size() == 1 && vertex->num_entry_arcs() == 1 &&
+         (*(vertex->first_entry_arc()))->orig()->is_a_target()
         )
+    )
     ) {
       MemoryManager::Address addr = memman->alloc(vertex->size());
       vertex->set_address(addr);
@@ -1194,7 +1196,7 @@ DirectedGraph::allocate_mem(const SafePtr<MemoryManager>& memman,
       }
     }
     vertex = vertex->postcalc();
-  } while (vertex != 0);
+  }while (vertex != 0);
 }
 
 namespace {
@@ -1294,7 +1296,7 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
       // Verify that all entry arcs are DGArcDirect
       for(aciter a=abegin; a!=aend; ++a, ++c) {
         SafePtr<DGVertex> child = (*a)->dest();
-        // If a child is precomputed and it's parent symbol is not set -- its symbol will be set as usual
+        // If the child is precomputed and it's parent symbol is not set -- its symbol will be set as usual
         if (!child->precomputed() || (vptr)->symbol_set()) {
           if ((vptr)->address_set()) {
             child->set_symbol(stack_symbol(context,(vptr)->address()+c,(vptr)->size(),low_rank,veclen,stack_name));
@@ -1316,6 +1318,9 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
     cout << "Trying to assign symbol to " << (vptr)->description() << endl;
 #endif
     if ((vptr)->symbol_set()) {
+#if DEBUG
+    cout << "symbol already set to " << (vptr)->symbol() << endl;
+#endif
       continue;
     }
 
@@ -1819,11 +1824,10 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
       os << context->accumulate(acctarget,target);
       os << loop.close();
 #endif
-      os << "_libint2_static_api_inc_short_("
+      os << "_libint2_static_api_inc1_short_("
 	 << registry()->stack_name() << "+" << target_accums_[curr_target] << "*" << dims->vecdim()->id() << ","
 	 << registry()->stack_name() << "+" << (tptr)->address() << "*" << dims->vecdim()->id() << ","
-	 << bvecdim->id() << ","
-	 << "1.0)" << endl;
+	 << bvecdim->id() << ")" << endl;
 
       nflops_total += s;
     }
@@ -2013,7 +2017,7 @@ namespace libint2 {
     typedef DirectedGraph::targets::value_type value_type;
     struct __NotUnrolledIntegralSet : public std::unary_function<const value_type&,bool> {
       bool operator()(const value_type& v) {
-	return NotUnrolledIntegralSet()(v);
+        return NotUnrolledIntegralSet()(v);
       }
     };
 #endif

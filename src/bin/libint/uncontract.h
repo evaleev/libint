@@ -136,11 +136,11 @@ namespace libint2 {
                                           const SafePtr<ImplicitDimensions>& dims) const {
     ostringstream os;
     // contraction = reduction
-    os << "_libint2_static_api_inc_short_("
+    os << "_libint2_static_api_inc1_short_("
         << context->value_to_pointer(rr_target()->symbol()) << ","
         << context->value_to_pointer(rr_child(0)->symbol()) << ","
        << target_->size()
-       << ",1.0)" << context->end_of_stat() << endl;
+       << ")" << context->end_of_stat() << endl;
 
     return os.str();
   }

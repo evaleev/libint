@@ -48,7 +48,7 @@ namespace libint2 {
       using namespace libint2::prefactor;
       using namespace libint2::braket;
       typedef BasisFunctionType F;
-      //const F& _1 = unit<F>(dir);
+      const F& _1 = unit<F>(is_simple() ? dir : 0);  // for shell sets increment the first index
 
       const typename IntType::AuxQuantaType& aux = Tint->aux();
       const typename IntType::OperType& oper = Tint->oper();
@@ -78,7 +78,7 @@ namespace libint2 {
         F a(bra->member(part,0));
 
         // add a+1
-        F ap1(bra->member(part,0)); ap1.inc(dir);
+        F ap1(bra->member(part,0) + _1);
         ap1.deriv().dec(dir);
         bra->set_member(ap1,part,0);
         const SafePtr<DGVertex>& int_ap1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
@@ -90,7 +90,7 @@ namespace libint2 {
         }
 
         // See if a-1 exists
-        F am1(bra->member(part,0)); am1.dec(dir);
+        F am1(bra->member(part,0) - _1);
         if (exists(am1)) {
           am1.deriv().dec(dir);
           bra->set_member(am1,part,0);
@@ -107,7 +107,7 @@ namespace libint2 {
         F a(ket->member(part,0));
 
         // add a+1
-        F ap1(ket->member(part,0)); ap1.inc(dir);
+        F ap1(ket->member(part,0) + _1);
         ap1.deriv().dec(dir);
         ket->set_member(ap1,part,0);
         const SafePtr<DGVertex>& int_ap1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
@@ -119,7 +119,7 @@ namespace libint2 {
         }
 
         // See if a-1 exists
-        F am1(ket->member(part,0)); am1.dec(dir);
+        F am1(ket->member(part,0) - _1);
         if (exists(am1)) {
           am1.deriv().dec(dir);
           ket->set_member(am1,part,0);

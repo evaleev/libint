@@ -1,4 +1,3 @@
-
 #ifndef _libint2_src_bin_libint_hrr_h_
 #define _libint2_src_bin_libint_hrr_h_
 
@@ -20,95 +19,92 @@
 
 using namespace std;
 
-
 namespace libint2 {
 
   /** A generic Horizontal Recurrence Relation:
 
-  |a b) = |a+1_i b-1_i) + AB_i |a b-1_i) + extra terms for derivative Gaussians
+   |a b) = |a+1_i b-1_i) + AB_i |a b-1_i) + extra terms for derivative Gaussians
 
-  Int is the integral class. part specifies for which particle
-  the angular momentum is shifted. Function a is assumed to gain quanta,
-  function b loses quanta. loc_a and loc_b specify where
-  functions a and b are located (bra or ket). pos_a and pos_b
-  specify which function to be used (usually pos_a and pos_b are set
-  to 0 to refer to the first function for this particle in this location).
+   Int is the integral class. part specifies for which particle
+   the angular momentum is shifted. Function a is assumed to gain quanta,
+   function b loses quanta. loc_a and loc_b specify where
+   functions a and b are located (bra or ket). pos_a and pos_b
+   specify which function to be used (usually pos_a and pos_b are set
+   to 0 to refer to the first function for this particle in this location).
 
-*/
-  template <class IntType, class BFSet, int part,
-  FunctionPosition loc_a, unsigned int pos_a,
-  FunctionPosition loc_b, unsigned int pos_b>
-  class HRR : public RecurrenceRelation
-    {
+   */
+  template<class IntType, class BFSet, int part, FunctionPosition loc_a,
+      unsigned int pos_a, FunctionPosition loc_b, unsigned int pos_b>
+  class HRR: public RecurrenceRelation {
 
-  public:
-    typedef RecurrenceRelation ParentType;
-    typedef BFSet BasisFunctionType;
-    typedef HRR<IntType,BFSet,part,loc_a,pos_a,loc_b,pos_b> ThisType;
-    typedef IntType TargetType;
-    typedef IntType ChildType;
-    /// A short alias
-    typedef RecurrenceRelation::ExprType ExprType;
+    public:
+      typedef RecurrenceRelation ParentType;
+      typedef BFSet BasisFunctionType;
+      typedef HRR<IntType, BFSet, part, loc_a, pos_a, loc_b, pos_b> ThisType;
+      typedef IntType TargetType;
+      typedef IntType ChildType;
+      /// A short alias
+      typedef RecurrenceRelation::ExprType ExprType;
 
-    /** Use Instance() to obtain an instance of RR. This function is provided to avoid
-        issues with getting a SafePtr from constructor (as needed for registry to work).
+      /** Use Instance() to obtain an instance of RR. This function is provided to avoid
+       issues with getting a SafePtr from constructor (as needed for registry to work).
 
-        dir specifies which quantum number of a and b is shifted.
-        For example, dir can be 0 (x), 1(y), or 2(z) if F is
-        a Cartesian Gaussian.
-    */
-    static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
-    virtual ~HRR();
+       dir specifies which quantum number of a and b is shifted.
+       For example, dir can be 0 (x), 1(y), or 2(z) if F is
+       a Cartesian Gaussian.
+       */
+      static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
+      virtual ~HRR();
 
-    /// Implementation of RecurrenceRelation::num_children()
-    const unsigned int num_children() const { return nchildren_; };
-    /// returns pointer to the target
-    SafePtr<TargetType> target() const { return target_; };
-    /// child(i) returns pointer to i-th child
-    SafePtr<ChildType> child(unsigned int i) const;
-    /// Implementation of RecurrenceRelation::target()
-    SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
-    /// Implementation of RecurrenceRelation::child()
-    SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
-    /// Implementation of RecurrenceRelation::is_simple()
-    bool is_simple() const {
-      return TrivialBFSet<BFSet>::result;
-    }
-    /// Implementation of RecurrenceRelation::spfunction_call()
-    std::string spfunction_call(const SafePtr<CodeContext>& context,
-                                const SafePtr<ImplicitDimensions>& dims) const;
+      /// Implementation of RecurrenceRelation::num_children()
+      const unsigned int num_children() const {return nchildren_;};
+      /// returns pointer to the target
+      SafePtr<TargetType> target() const {return target_;};
+      /// child(i) returns pointer to i-th child
+      SafePtr<ChildType> child(unsigned int i) const;
+      /// Implementation of RecurrenceRelation::target()
+      SafePtr<DGVertex> rr_target() const {return static_pointer_cast<DGVertex,TargetType>(target());}
+      /// Implementation of RecurrenceRelation::child()
+      SafePtr<DGVertex> rr_child(unsigned int i) const {return static_pointer_cast<DGVertex,ChildType>(child(i));}
+      /// Implementation of RecurrenceRelation::is_simple()
+      bool is_simple() const {
+        return TrivialBFSet<BFSet>::result;
+      }
+      /// Implementation of RecurrenceRelation::spfunction_call()
+      std::string spfunction_call(const SafePtr<CodeContext>& context,
+          const SafePtr<ImplicitDimensions>& dims) const;
 
-  private:
-    /**
-      dir specifies which quantum number of a and b is shifted.
-      For example, dir can be 0 (x), 1(y), or 2(z) if F is
-      a Cartesian Gaussian.
-      */
-    HRR(const SafePtr<TargetType>&, unsigned int dir);
+      private:
+      /**
+       dir specifies which quantum number of a and b is shifted.
+       For example, dir can be 0 (x), 1(y), or 2(z) if F is
+       a Cartesian Gaussian.
+       */
+      HRR(const SafePtr<TargetType>&, unsigned int dir);
 
-    unsigned int dir_;
-    SafePtr<TargetType> target_;
-    static const unsigned int max_nchildren_ = 4;
-    SafePtr<ChildType> children_[max_nchildren_];
-    unsigned int nchildren_;
+      unsigned int dir_;
+      SafePtr<TargetType> target_;
+      static const unsigned int max_nchildren_ = 8;
+      SafePtr<ChildType> children_[max_nchildren_];
+      unsigned int nchildren_;
 
-    void oper_checks() const;
+      void oper_checks() const;
 
-    /// Implementation of RecurrenceRelation::label()
-    std::string generate_label() const;
-    /// Reimplementation of RecurrenceRelation::adapt_dims_()
-    SafePtr<ImplicitDimensions> adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const;
-    /// Use instead of RecurrenceRelation::register_with_rrstack()
-    bool register_with_rrstack() const;
-    /** return true if the high dimension must be shown explicitly. For example,
-        cd-HRR applied (ss|pp) has high dimension of rank 1 but since the code for such
-        RR is not specific to ab=(ss|, the rank of high dimension must be shown explicitly.
-      */
-    bool expl_high_dim() const;
-    bool expl_low_dim() const;
-  };
+      /// Implementation of RecurrenceRelation::label()
+      std::string generate_label() const;
+      /// Reimplementation of RecurrenceRelation::adapt_dims_()
+      SafePtr<ImplicitDimensions> adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const;
+      /// Use instead of RecurrenceRelation::register_with_rrstack()
+      bool register_with_rrstack() const;
+      /** return true if the high dimension must be shown explicitly. For example,
+       cd-HRR applied (ss|pp) has high dimension of rank 1 but since the code for such
+       RR is not specific to ab=(ss|, the rank of high dimension must be shown explicitly.
+       */
+      bool expl_high_dim() const;
+      bool expl_low_dim() const;
+    };
 
-  template <class IntType, class F, int part,
+    template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     SafePtr< HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b> >
@@ -123,12 +119,18 @@ namespace libint2 {
       return SafePtr<ThisType>();
     }
 
-  template <class IntType, class F, int part,
+    template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(const SafePtr<TargetType>& Tint, unsigned int dir) :
     dir_(dir), target_(Tint), nchildren_(0)
     {
+      using namespace libint2::algebra;
+      using namespace libint2::prefactor;
+
+      // assume that always transfering from Bra to Ket and vice versa
+      assert(loc_a != loc_b);
+
       target_ = Tint;
       const typename IntType::AuxQuantaType& aux = Tint->aux();
       const typename IntType::OperType& oper = Tint->oper();
@@ -146,98 +148,166 @@ namespace libint2 {
       //
       // InBra and InKet cases have to treated explicitly since BraType and KetType don't have to match
       //
-      if (loc_b == InBra) {
+      if (loc_a == InKet && loc_b == InBra) {
+        F a(ket->member(part,pos_a));
+        F b(bra->member(part,pos_b));
+
         // See if b-1 exists
-        F sh_b(bra->member(part,pos_b));
-        sh_b.dec(dir_);
-        if (!exists(sh_b)) {
+        F bm1(b); bm1.dec(dir_);
+        if (!exists(bm1)) {
           delete bra;
           delete ket;
           return;
         }
-        bra->set_member(sh_b,part,pos_b);
-        children_[1] = IntType::Instance(*bra,*ket,aux,oper);
+        bra->set_member(bm1,part,pos_b); // set b permanently to b-1_i
 
-        if (loc_a == InBra) {  // a in bra
-          F sh_a(bra->member(part,pos_a));
-          sh_a.inc(dir_);
-          bra->set_member(sh_a,part,pos_a);
+        {
+          F ap1(a); ap1.inc(dir_);
+          ket->set_member(ap1,part,pos_a);
+          children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+          ket->set_member(a,part,pos_a);
         }
-        else {  // a in ket
-          F sh_a(ket->member(part,pos_a));
-          sh_a.inc(dir_);
-          ket->set_member(sh_a,part,pos_a);
+
+        children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+
+        if (!is_simple()) { // treatment of derivative terms differs for shell sets and integrals
+                            // since in computing shell sets transfer/build will occur in all 3 directions
+                            // change in up to all three derivative indices will occur
+
+          for(unsigned int xyz=0; xyz<3; ++xyz) {
+            // is a differentiated in this direction? add another term
+            if (a.deriv().d(xyz) > 0) {
+              F a_der_m1(a);
+              a_der_m1.deriv().dec(xyz);
+              ket->set_member(a_der_m1,part,pos_a);
+              children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+              ket->set_member(a,part,pos_a);
+            }
+            // is b differentiated in this direction? add another term
+            if (bm1.deriv().d(xyz) > 0) {
+              F bm1_der_m1(bm1);
+              bm1_der_m1.deriv().dec(xyz);
+              bra->set_member(bm1_der_m1,part,pos_b);
+              children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+              bra->set_member(bm1,part,pos_b);
+            }
+          }
         }
-        children_[0] = IntType::Instance(*bra,*ket,aux,oper);
-        nchildren_ += 2;
 
         if (is_simple()) {
-          SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[1],children_[0]));
-          if (loc_a == InBra && loc_b == InKet) {
-            SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
-            SafePtr<ExprType> sum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
-            expr_ = sum_ptr;
+          // ( b | a ) = ( b-1_i | a+1_i )  - AB_i ( b-1_i | a )
+          expr_ = children_[0] - prefactors.X_Y[part][dir] * children_[1];
+
+          // is a differentiated in this direction? add another term
+          const bool aderiv = a.deriv().d(dir_) > 0;
+          if (aderiv) {
+            F a_der_m1(a);
+            a_der_m1.deriv().dec(dir_);
+            ket->set_member(a_der_m1,part,pos_a);
+            children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+            ket->set_member(a,part,pos_a);
           }
-          else {
-            if (loc_a == InKet && loc_b == InBra) {
-              SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
-              SafePtr<ExprType> diff_ptr(new ExprType(ExprType::OperatorTypes::Minus,expr0_ptr,expr1_ptr));
-              expr_ = diff_ptr;
-            }
-            else
-              throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
+
+          // is b differentiated in this direction? add another term
+          const bool bderiv = bm1.deriv().d(dir_) > 0;
+          if (bderiv) {
+            F bm1_der_m1(bm1);
+            bm1_der_m1.deriv().dec(dir_);
+            bra->set_member(bm1_der_m1,part,pos_b);
+            children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+            bra->set_member(bm1,part,pos_b);
           }
+
+          if (aderiv)
+            expr_ -= Vector(a.deriv())[dir_] * children_[2];
+          if (bderiv)
+            expr_ += Vector(b.deriv())[dir_] * children_[aderiv ? 3 : 2];
         }
-      }
-      else {
+      } // a in ket, b in bra
+
+      if (loc_a == InBra && loc_b == InKet) {
+        F a(bra->member(part,pos_a));
+        F b(ket->member(part,pos_b));
+
         // See if b-1 exists
-        F sh_b(ket->member(part,pos_b));
-        sh_b.dec(dir_);
-        if (!exists(sh_b)) {
+        F bm1(b); bm1.dec(dir_);
+        if (!exists(bm1)) {
           delete bra;
           delete ket;
           return;
         }
-        ket->set_member(sh_b,part,pos_b);
-        children_[1] = IntType::Instance(*bra,*ket,aux,oper);
+        ket->set_member(bm1,part,pos_b); // set b permanently to b-1_i
 
-        if (loc_a == InBra) {  // a in bra
-          F sh_a(bra->member(part,pos_a));
-          sh_a.inc(dir_);
-          bra->set_member(sh_a,part,pos_a);
+        {
+          F ap1(a); ap1.inc(dir_);
+          bra->set_member(ap1,part,pos_a);
+          children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+          bra->set_member(a,part,pos_a);
         }
-        else {  // a in ket
-          F sh_a(ket->member(part,pos_a));
-          sh_a.inc(dir_);
-          ket->set_member(sh_a,part,pos_a);
+
+        children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+
+        if (!is_simple()) { // treatment of derivative terms differs for shell sets and integrals
+                            // since in computing shell sets transfer/build will occur in all 3 directions
+                            // change in up to all three derivative indices will occur
+
+          for(unsigned int xyz=0; xyz<3; ++xyz) {
+            // is a differentiated in this direction? add another term
+            if (a.deriv().d(xyz) > 0) {
+              F a_der_m1(a);
+              a_der_m1.deriv().dec(xyz);
+              bra->set_member(a_der_m1,part,pos_a);
+              children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+              bra->set_member(a,part,pos_a);
+            }
+            // is b differentiated in this direction? add another term
+            if (bm1.deriv().d(xyz) > 0) {
+              F bm1_der_m1(bm1);
+              bm1_der_m1.deriv().dec(xyz);
+              ket->set_member(bm1_der_m1,part,pos_b);
+              children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+              ket->set_member(bm1,part,pos_b);
+            }
+          }
         }
-        children_[0] = IntType::Instance(*bra,*ket,aux,oper);
-        nchildren_ += 2;
 
         if (is_simple()) {
-          SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[1],children_[0]));
-          if (loc_a == InBra && loc_b == InKet) {
-            SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
-            SafePtr<ExprType> sum_ptr(new ExprType(ExprType::OperatorTypes::Plus,expr0_ptr,expr1_ptr));
-            expr_ = sum_ptr;
+          // ( a | b) = ( a+1_i | b-1_i )  + AB_i ( a | b-1_i )
+          expr_ = children_[0] + prefactors.X_Y[part][dir] * children_[1];
+
+          // is a differentiated in this direction? add another term
+          const bool aderiv = a.deriv().d(dir_) > 0;
+          if (aderiv) {
+            F a_der_m1(a);
+            a_der_m1.deriv().dec(dir_);
+            bra->set_member(a_der_m1,part,pos_a);
+            children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+            bra->set_member(a,part,pos_a);
           }
-          else {
-            if (loc_a == InKet && loc_b == InBra) {
-              SafePtr<ExprType> expr1_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.X_Y[part][dir],children_[1]));
-              SafePtr<ExprType> diff_ptr(new ExprType(ExprType::OperatorTypes::Minus,expr0_ptr,expr1_ptr));
-              expr_ = diff_ptr;
-            }
-            else
-              throw std::runtime_error("HRR::HRR() -- geometric prefactor is not general enough. Please, contact main developer.");
+
+          // is b differentiated in this direction? add another term
+          const bool bderiv = bm1.deriv().d(dir_) > 0;
+          if (bderiv) {
+            F bm1_der_m1(bm1);
+            bm1_der_m1.deriv().dec(dir_);
+            ket->set_member(bm1_der_m1,part,pos_b);
+            children_[nchildren_++] = IntType::Instance(*bra,*ket,aux,oper);
+            ket->set_member(bm1,part,pos_b);
           }
+
+          if (aderiv)
+            expr_ += Vector(a.deriv())[dir_] * children_[2];
+          if (bderiv)
+            expr_ -= Vector(b.deriv())[dir_] * children_[aderiv ? 3 : 2];
         }
-      }
+
+      } // a in bra, b in ket
 
       delete bra;
       delete ket;
     }
 
-  template <class IntType, class F, int part,
+    template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     bool
@@ -262,31 +332,25 @@ namespace libint2 {
         if (p == part)
           continue;
         int nfbra = bra.num_members(p);
+        assert(nfbra == 1);
         for(int f=0; f<nfbra; f++)
-#if USE_BRAKET_H
-          if (!bra.member(p,f).zero())
-#else
-          if (!bra.member(p,f)->zero())
-#endif
+          if (!bra.member(p,f).zero() || !bra.member(p,f).deriv().zero())
             nonzero_quanta = true;
         int nfket = ket.num_members(p);
+        assert(nfket == 1);
         for(int f=0; f<nfket; f++)
-#if USE_BRAKET_H
-          if (!ket.member(p,f).zero())
-#else
-          if (!ket.member(p,f)->zero())
-#endif
+          if (!ket.member(p,f).zero() || !ket.member(p,f).deriv().zero())
             nonzero_quanta = true;
       }
       // if all bfsets not involved in transfer have zero quanta then this instance needs to be added to the stack
       if (!nonzero_quanta) {
         SafePtr<RRStack> rrstack = RRStack::Instance();
-	SafePtr<ThisType> this_ptr =
-	  const_pointer_cast<ThisType,const ThisType>(
-	    static_pointer_cast<const ThisType, const ParentType>(
-	      EnableSafePtrFromThis<ParentType>::SafePtr_from_this()
-	    )
-	  );
+        SafePtr<ThisType> this_ptr =
+        const_pointer_cast<ThisType,const ThisType>(
+            static_pointer_cast<const ThisType, const ParentType>(
+                EnableSafePtrFromThis<ParentType>::SafePtr_from_this()
+            )
+        );
         rrstack->find(this_ptr);
         return true;
       }
@@ -306,11 +370,7 @@ namespace libint2 {
           typedef typename IBraType::bfs_type bfs_type;
           typedef typename IBraType::bfs_ref bfs_ref;
           bfs_ref bfs = bra_zero.member(p,f);
-#if USE_BRAKET_H
-          if (!bfs.zero()) {
-#else
-          if (!bfs->zero()) {
-#endif
+          if (!bfs.zero() || !bfs.deriv().zero()) {
             bfs_type null_bfs;
             swap(bfs,null_bfs);
           }
@@ -320,16 +380,13 @@ namespace libint2 {
           typedef typename IKetType::bfs_type bfs_type;
           typedef typename IKetType::bfs_ref bfs_ref;
           bfs_ref bfs = ket_zero.member(p,f);
-#if USE_BRAKET_H
-          if (!bfs.zero()) {
-#else
-          if (!bfs->zero()) {
-#endif
+          if (!bfs.zero() || !bfs.deriv().zero()) {
             bfs_type null_bfs;
             swap(bfs,null_bfs);
           }
         }
       }
+
       // create a generic GenIntegralSet over a multiplicative operator
       typedef GenOper< GenMultSymmOper_Descr<IntType::OperatorType::Properties::np> > DummyOper;
       typedef typename IBraType::bfs_type bfs_type;
@@ -347,227 +404,226 @@ namespace libint2 {
       return true;
     }
 
-
-  template <class IntType, class F, int part,
+    template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::~HRR()
     {
-      oper_checks();
+        oper_checks();
     }
 
-  template <class IntType, class F, int part,
+    template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     void
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::oper_checks() const
     {
-      //
-      // Here we check basic HRR applicability requirements on the integral class
-      //
+        //
+        // Here we check basic HRR applicability requirements on the integral class
+        //
 
 #if CHECK_SAFETY
-      // part is within the range
-      typedef typename IntType::OperatorType Oper;
-      if (part < 0 || part >= Oper::Properties::np) {
-        assert(false);
-      }
+        // part is within the range
+        typedef typename IntType::OperatorType Oper;
+        if (part < 0 || part >= Oper::Properties::np) {
+          assert(false);
+        }
 
-      // Cannot apply when a and b are the same
-      if (loc_a == loc_b && pos_a == pos_b) {
-        assert(false);
-      }
+        // Cannot apply when a and b are the same
+        if (loc_a == loc_b && pos_a == pos_b) {
+          assert(false);
+        }
 #endif
     }
 
-  template <class IntType, class F, int part,
+    template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     SafePtr<typename HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::ChildType>
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::child(unsigned int i) const
     {
-      assert(i>=0 && i<nchildren_);
+        assert(i>=0 && i<nchildren_);
 
-      unsigned int nc=0;
-      for(unsigned int c=0; c<max_nchildren_; c++) {
-        if (children_[c]) {
-          if (nc == i)
-            return children_[c];
-          nc++;
+        unsigned int nc=0;
+        for(unsigned int c=0; c<max_nchildren_; c++) {
+          if (children_[c]) {
+            if (nc == i)
+              return children_[c];
+            nc++;
+          }
         }
-      }
-      abort(); // unreachable
+        abort(); // unreachable
     }
 
-  template <class IntType, class F, int part,
+    template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     std::string
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::generate_label() const
     {
-      ostringstream os;
+        ostringstream os;
 
-      os << "HRR Part " << part << " "
-      << (loc_a == InBra ? "bra" : "ket") << " " << pos_a << "  "
-      << (loc_b == InBra ? "bra" : "ket") << " " << pos_b << " ";
+        os << "HRR Part " << part << " "
+            << (loc_a == InBra ? "bra" : "ket") << " " << pos_a << "  "
+            << (loc_b == InBra ? "bra" : "ket") << " " << pos_b << " ";
 
-      if (loc_a == InBra) {
-        F sh_a(target_->bra(part,pos_a));
-        os << sh_a.label() << " ";
+        if (loc_a == InBra) {
+          F sh_a(target_->bra(part,pos_a));
+          os << sh_a.label() << " ";
 
-        if (loc_b == InBra) {
-          F sh_b(target_->bra(part,pos_b));
-          os << sh_b.label();
+          if (loc_b == InBra) {
+            F sh_b(target_->bra(part,pos_b));
+            os << sh_b.label();
+          }
+          else {
+            F sh_b(target_->ket(part,pos_b));
+            os << sh_b.label();
+          }
         }
         else {
-          F sh_b(target_->ket(part,pos_b));
-          os << sh_b.label();
-        }
-      }
-      else {
-        F sh_a(target_->ket(part,pos_a));
-        os << sh_a.label() << " ";
+          F sh_a(target_->ket(part,pos_a));
+          os << sh_a.label() << " ";
 
-        if (loc_b == InBra) {
-          F sh_b(target_->bra(part,pos_b));
-          os << sh_b.label();
+          if (loc_b == InBra) {
+            F sh_b(target_->bra(part,pos_b));
+            os << sh_b.label();
+          }
+          else {
+            F sh_b(target_->ket(part,pos_b));
+            os << sh_b.label();
+          }
         }
-        else {
-          F sh_b(target_->ket(part,pos_b));
-          os << sh_b.label();
-        }
-      }
 
-      return os.str();
+        return os.str();
     }
 
-  template <class IntType, class F, int part,
+    template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     std::string
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::spfunction_call(
-    const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
-    {
-      ostringstream os;
-      os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
-         // First argument is the library object
-         << "(inteval, "
-         // Second is the target
-         << context->value_to_pointer(rr_target()->symbol());
-      // then come children
-      const unsigned int nchildren = num_children();
-      for(unsigned int c=0; c<nchildren; c++) {
-        os << ", " << context->value_to_pointer(rr_child(c)->symbol());
-      }
-      // then dimensions of basis function sets not involved in the transfer
-      unsigned int hsr = 1;
-      // a cleaner way to count the number of function sets referring
-      // to some particles is to construct a dummy integral and
-      // use subiterator policy
-      // WARNING !!!
-      for(int p=0; p<part; p++) {
-        unsigned int nbra = target_->bra().num_members(p);
-        for(unsigned int i=0; i<nbra; i++) {
-          SubIterator* iter = target_->bra().member_subiter(p,i);
-          hsr *= iter->num_iter();
-          delete iter;
+        const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
+        {
+        ostringstream os;
+        os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
+                  // First argument is the library object
+                  << "(inteval, "
+                  // Second is the target
+                  << context->value_to_pointer(rr_target()->symbol());
+        // then come children
+        const unsigned int nchildren = num_children();
+        for(unsigned int c=0; c<nchildren; c++) {
+          os << ", " << context->value_to_pointer(rr_child(c)->symbol());
         }
-        unsigned int nket = target_->ket().num_members(p);
-        for(unsigned int i=0; i<nket; i++) {
-          SubIterator* iter = target_->ket().member_subiter(p,i);
-          hsr *= iter->num_iter();
-          delete iter;
+        // then dimensions of basis function sets not involved in the transfer
+        unsigned int hsr = 1;
+        // a cleaner way to count the number of function sets referring
+        // to some particles is to construct a dummy integral and
+        // use subiterator policy
+        // WARNING !!!
+        for(int p=0; p<part; p++) {
+          unsigned int nbra = target_->bra().num_members(p);
+          for(unsigned int i=0; i<nbra; i++) {
+            SubIterator* iter = target_->bra().member_subiter(p,i);
+            hsr *= iter->num_iter();
+            delete iter;
+          }
+          unsigned int nket = target_->ket().num_members(p);
+          for(unsigned int i=0; i<nket; i++) {
+            SubIterator* iter = target_->ket().member_subiter(p,i);
+            hsr *= iter->num_iter();
+            delete iter;
+          }
         }
-      }
-      // Use TaskParameters to keep track of maximum hsr
-      LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-      taskmgr.current().params()->max_hrr_hsrank(hsr);
+        // Use TaskParameters to keep track of maximum hsr
+        LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+        taskmgr.current().params()->max_hrr_hsrank(hsr);
 
-      // can only do a simple bra->ket or ket->bra transfer so far
-      //unsigned int isr = 1;
-      if (loc_a == loc_b && pos_a != 0 && pos_b != 0)
-        throw CodeDoesNotExist("HRR::spfunction_call -- has not been generalized yet");
+        // can only do a simple bra->ket or ket->bra transfer so far
+        //unsigned int isr = 1;
+        if (loc_a == loc_b && pos_a != 0 && pos_b != 0)
+          throw CodeDoesNotExist("HRR::spfunction_call -- has not been generalized yet");
 
-      /// WARNING !!!
-      unsigned int lsr = 1;
-      unsigned int np = IntType::OperType::Properties::np;
-      for(unsigned int p=part+1; p<np; p++) {
-        unsigned int nbra = target_->bra().num_members(p);
-        for(unsigned int i=0; i<nbra; i++) {
-          SubIterator* iter = target_->bra().member_subiter(p,i);
-          lsr *= iter->num_iter();
-          delete iter;
+        /// WARNING !!!
+        unsigned int lsr = 1;
+        unsigned int np = IntType::OperType::Properties::np;
+        for(unsigned int p=part+1; p<np; p++) {
+          unsigned int nbra = target_->bra().num_members(p);
+          for(unsigned int i=0; i<nbra; i++) {
+            SubIterator* iter = target_->bra().member_subiter(p,i);
+            lsr *= iter->num_iter();
+            delete iter;
+          }
+          unsigned int nket = target_->ket().num_members(p);
+          for(unsigned int i=0; i<nket; i++) {
+            SubIterator* iter = target_->ket().member_subiter(p,i);
+            lsr *= iter->num_iter();
+            delete iter;
+          }
         }
-        unsigned int nket = target_->ket().num_members(p);
-        for(unsigned int i=0; i<nket; i++) {
-          SubIterator* iter = target_->ket().member_subiter(p,i);
-          lsr *= iter->num_iter();
-          delete iter;
+        // Use TaskParameters to keep track of maximum hsr
+        taskmgr.current().params()->max_hrr_hsrank(hsr);
+
+        if (expl_high_dim())
+          os << "," << hsr;
+        if (expl_low_dim())
+          os << "," << lsr;
+        os << ")" << context->end_of_stat() << endl;
+        return os.str();
         }
-      }
-      // Use TaskParameters to keep track of maximum hsr
-      taskmgr.current().params()->max_hrr_hsrank(hsr);
 
-      if (expl_high_dim())
-        os << "," << hsr;
-      if (expl_low_dim())
-        os << "," << lsr;
-      os << ")" << context->end_of_stat() << endl;
-      return os.str();
-    }
-
-  template <class IntType, class F, int part,
+    template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     bool
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::expl_high_dim() const
     {
-      bool high = true;
-      if (part == 0)
-        high = false;
-      return high;
+        bool high = true;
+        if (part == 0)
+          high = false;
+        return high;
     }
 
-  template <class IntType, class F, int part,
+    template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     bool
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::expl_low_dim() const
     {
-      unsigned int np = IntType::OperType::Properties::np;
-      bool low = true;
-      if (part == np -1)
-        low = false;
-      return low;
+        unsigned int np = IntType::OperType::Properties::np;
+        bool low = true;
+        if (part == np -1)
+          low = false;
+        return low;
     }
 
-  template <class IntType, class F, int part,
+    template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
     SafePtr<ImplicitDimensions>
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const
     {
-      bool high_rank = expl_high_dim();
-      bool low_rank = expl_low_dim();
+        bool high_rank = expl_high_dim();
+        bool low_rank = expl_low_dim();
 
-      SafePtr<Entity> high_dim, low_dim;
-      if (high_rank) {
-        high_dim = SafePtr<Entity>(new RTimeEntity<EntityTypes::Int>("highdim"));
-      }
-      else {
-        high_dim = dims->high();
-      }
-      if (low_rank) {
-        low_dim = SafePtr<Entity>(new RTimeEntity<EntityTypes::Int>("lowdim"));
-      }
-      else {
-        low_dim = dims->low();
-      }
+        SafePtr<Entity> high_dim, low_dim;
+        if (high_rank) {
+          high_dim = SafePtr<Entity>(new RTimeEntity<EntityTypes::Int>("highdim"));
+        }
+        else {
+          high_dim = dims->high();
+        }
+        if (low_rank) {
+          low_dim = SafePtr<Entity>(new RTimeEntity<EntityTypes::Int>("lowdim"));
+        }
+        else {
+          low_dim = dims->low();
+        }
 
-      SafePtr<ImplicitDimensions> localdims(new ImplicitDimensions(high_dim,low_dim,dims->vecdim()));
-      return localdims;
+        SafePtr<ImplicitDimensions> localdims(new ImplicitDimensions(high_dim,low_dim,dims->vecdim()));
+        return localdims;
     }
 
-};
+  };
 
 #endif

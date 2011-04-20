@@ -124,7 +124,7 @@ namespace libint2 {
     unsigned key() const {
       unsigned nxy = d_[1] + d_[2];
       unsigned l = nxy + d_[0];
-      unsigned key = nxy*(nxy+1)/2 + d_[0];
+      unsigned key = nxy*(nxy+1)/2 + d_[2];
       return key + key_l_offset[l];
     }
     /// Return a compact label
@@ -266,7 +266,7 @@ namespace libint2 {
     unsigned key() const {
       unsigned nxy = qn_[1] + qn_[2];
       unsigned l = nxy + qn_[0];
-      unsigned key = nxy*(nxy+1)/2 + qn_[0];
+      unsigned key = nxy*(nxy+1)/2 + qn_[2];
       return ( deriv().key() * 2 + (contracted() ? 1 : 0)) * max_key/2 + key + key_l_offset[l];
     }
     /// The range of keys is [0,max_key). The formula is easily derived by summing (L+1)(L+2)/2 up to CGShell::max_key

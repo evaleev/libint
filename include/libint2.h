@@ -178,6 +178,8 @@ typedef struct {
 #define _libint2_static_api_scale_short_(X,Y,nelem,a) for(int i=0; i < (nelem); ++i) { (X)[i] = (a) * (Y)[i]; }
 /** X[i] += a*Y[i] */
 #define _libint2_static_api_inc_short_(X,Y,nelem,a) for(int i=0; i < (nelem); ++i) { (X)[i] += (a) * (Y)[i]; }
+/** X[i] += Y[i] */
+#define _libint2_static_api_inc1_short_(X,Y,nelem) for(int i=0; i < (nelem); ++i) { (X)[i] += (Y)[i]; }
 
 #endif
 

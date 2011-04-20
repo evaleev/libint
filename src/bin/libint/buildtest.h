@@ -209,7 +209,7 @@ namespace libint2 {
     dg->apply(strat,tactic);
 #if DEBUG
     {
-      std::basic_ofstream<char> dotfile("graph.dot");
+      std::basic_ofstream<char> dotfile("graph.strat.dot");
       dg->print_to_dot(false,dotfile);
     }
 #endif
@@ -231,7 +231,7 @@ namespace libint2 {
 
 #if DEBUG
     {
-      std::basic_ofstream<char> dotfile("graph.dot");
+      std::basic_ofstream<char> dotfile("graph.expr.dot");
       dg->print_to_dot(false,dotfile);
     }
 #endif

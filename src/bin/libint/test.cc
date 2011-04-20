@@ -329,9 +329,14 @@ namespace {
     CGShell csh_p(1u);
     CGShell csh_s_dx(0u); csh_s_dx.deriv().inc(0,1);
     CGShell csh_p_dx(1u); csh_p_dx.deriv().inc(0,1);
+    CGShell csh_p_dy(1u); csh_p_dy.deriv().inc(1,1);
+    CGShell csh_p_dxyz(1u); csh_p_dxyz.deriv().inc(0,1); csh_p_dxyz.deriv().inc(1,1); csh_p_dxyz.deriv().inc(2,1);
+    CGShell csh_d_dx(2u); csh_d_dx.deriv().inc(0,1);
+    CGShell csh_s_d2x(0u); csh_s_d2x.deriv().inc(0,2);
+    CGShell csh_p_d2x(1u); csh_p_d2x.deriv().inc(0,2);
 
-    RunBuildTest<TwoPRep_11_11_sq>(csh_p_dx,csh_s,csh_p,csh_s,0,use_quartets);
-    //RunBuildTest<TwoPRep_11_11_sq>(csh_s,csh_s_dx,csh_s,csh_s,0,use_quartets);
+    RunBuildTest<TwoPRep_11_11_sq>(csh_p_dxyz,csh_s,csh_s,csh_s,0,use_quartets);
+    //RunBuildTest<TwoPRep_11_11_sq>(csh_s,csh_d_dx,csh_s,csh_s,0,use_quartets);
 
     cparams->contracted_targets(contracted_targets_old_value);
   }
