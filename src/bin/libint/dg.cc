@@ -15,6 +15,7 @@
 #include <task.h>
 #include <context.h>
 #include <intset_to_ints.h>
+#include <uncontract.h>
 #include <dims.h>
 
 using namespace std;
@@ -1175,7 +1176,11 @@ unsigned int min_size_to_alloc)
             !(*(vertex->first_exit_arc()))->dest()->precomputed()
         ) ||
         (vertex->size() == 1 && vertex->num_entry_arcs() == 1 &&
-         (*(vertex->first_entry_arc()))->orig()->is_a_target()
+         (*(vertex->first_entry_arc()))->orig()->is_a_target() &&
+         ( (arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(*(vertex->first_entry_arc()))) != 0 ?
+                         dynamic_pointer_cast<Uncontract_Integral_base,RecurrenceRelation>(arcrr->rr()) != 0 :
+                         false
+         )
         )
     )
     ) {

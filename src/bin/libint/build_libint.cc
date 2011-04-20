@@ -82,6 +82,10 @@ static void config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr
 #ifdef INCLUDE_ERI
 static void build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
+# if INCLUDE_ERI > 0
+static void build_TwoPRep_2b_2k_deriv1(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                                       SafePtr<Libint2Iface>& iface);
+# endif
 #endif
 
 #ifdef INCLUDE_G12
@@ -110,6 +114,9 @@ void try_main (int argc, char* argv[])
   taskmgr.add("default");
 #ifdef INCLUDE_ERI
   taskmgr.add("eri");
+# if INCLUDE_ERI > 0
+  taskmgr.add("eri1");
+# endif
 #endif
 #ifdef INCLUDE_G12
    taskmgr.add("r12kg12");
@@ -133,6 +140,10 @@ void try_main (int argc, char* argv[])
 #ifdef INCLUDE_ERI
   cparams->max_am("eri",ERI_MAX_AM);
   cparams->max_am_opt("eri",ERI_OPT_AM);
+# if INCLUDE_ERI > 0
+  cparams->max_am("eri1",ERI_MAX_AM);
+  cparams->max_am_opt("eri1",ERI_OPT_AM);
+# endif
 #endif
 #ifdef INCLUDE_G12
 # ifndef G12_MAX_AM
@@ -240,6 +251,9 @@ void try_main (int argc, char* argv[])
 
 #ifdef INCLUDE_ERI
   build_TwoPRep_2b_2k(os,cparams,iface);
+#if INCLUDE_ERI > 0
+  build_TwoPRep_2b_2k_deriv1(os,cparams,iface);
+# endif
 #endif
 #ifdef INCLUDE_G12
 # if LIBINT_USE_COMPOSITE_EVALUATORS
@@ -295,7 +309,10 @@ void
 print_config(std::ostream& os)
 {
 #ifdef INCLUDE_ERI
-  os << "Will support ERI" << endl;
+  os << "Will support ERI";
+  if (INCLUDE_ERI > 0)
+    os << "(deriv order = " << INCLUDE_ERI << ")";
+  os << endl;
 #endif
 #ifdef INCLUDE_G12
   os << "Will support G12 (commutators = ";
@@ -433,6 +450,149 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
     } // end of b loop
   } // end of a loop
 }
+
+# if INCLUDE_ERI > 0
+void
+build_TwoPRep_2b_2k_deriv1(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                           SafePtr<Libint2Iface>& iface)
+{
+  const std::string task("eri1");
+  typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
+  vector<CGShell*> shells;
+  unsigned int lmax = cparams->max_am(task);
+  for(unsigned int l=0; l<=lmax; l++) {
+    shells.push_back(new CGShell(l));
+  }
+  ImplicitDimensions::set_default_dims(cparams);
+
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  taskmgr.current(task);
+  iface->to_params(iface->macro_define("MAX_AM_ERI1",lmax));
+
+  //
+  // Construct graphs for each desired target integral and
+  // 1) generate source code for the found traversal path
+  // 2) extract all remaining unresolved recurrence relations and
+  //    append them to the stack. Such unresolved RRs are RRs applied
+  //    to sets of integrals (rather than to individual integrals).
+  // 3) at the end, for each unresolved recurrence relation generate
+  //    explicit source code
+  //
+  SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
+  SafePtr<Strategy> strat(new Strategy());
+  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
+  SafePtr<CodeContext> context(new CppCodeContext(cparams));
+  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+
+  for(unsigned int la=0; la<=lmax; la++) {
+    for(unsigned int lb=0; lb<=lmax; lb++) {
+      for(unsigned int lc=0; lc<=lmax; lc++) {
+        for(unsigned int ld=0; ld<=lmax; ld++) {
+
+          if (la+lb+lc+ld == 0)
+            continue;
+
+          if (!ShellQuartetSetPredicate<static_cast<ShellQuartetSet>(LIBINT_SHELLQUARTET_SET)>::value(la,lb,lc,ld))
+            continue;
+
+#if STUDY_MEMORY_USAGE
+          const int lim = 1;
+          if (! (la == lim && lb == lim && lc == lim && ld == lim) )
+            continue;
+#endif
+
+          // unroll only if max_am <= cparams->max_am_opt(task)
+          using std::max;
+          const unsigned int max_am = max(max(la,lb),max(lc,ld));
+          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
+          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 1;
+          dg_xxxx->registry()->unroll_threshold(unroll_threshold);
+          dg_xxxx->registry()->do_cse(need_to_optimize);
+          dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
+          // Need to accumulate integrals?
+          dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
+
+          // make derivative ERIs
+          // there are 12 total
+          // 12 = 4 center * 3 coords (xyz)
+          // but can eliminate 3 due to translational invariance
+          std::string abcd_label;
+          for(unsigned int deriv=0; deriv < 12; ++deriv) {
+
+            const unsigned int center = deriv / 3;
+            const unsigned int xyz = deriv % 3;
+
+            // which center to skip? -> A = 0, B = 1, C = 2, D = 3
+            const unsigned int center_to_skip = 2;
+            if (center == center_to_skip)
+              continue;
+
+            CGShell a(*shells[la]); if (center == 0) a.deriv().inc(xyz);
+            CGShell b(*shells[lb]); if (center == 1) b.deriv().inc(xyz);
+            CGShell c(*shells[lc]); if (center == 2) c.deriv().inc(xyz);
+            CGShell d(*shells[ld]); if (center == 3) d.deriv().inc(xyz);
+
+            SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(a,b,c,d,mType(0u));
+            os << "building " << abcd->description() << endl;
+            abcd_label = abcd->label();
+            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(abcd);
+            dg_xxxx->append_target(abcd_ptr);
+          }
+
+          std::string prefix(cparams->source_directory());
+          std::string label(cparams->api_prefix() + "deriv1" + abcd_label);
+          std::deque<std::string> decl_filenames;
+          std::deque<std::string> def_filenames;
+
+          // this will generate code for this targets, and potentially generate code for its prerequisites
+          GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
+                       decl_filenames, def_filenames,
+                       prefix, label, false);
+
+          // update max stack size and # of targets
+          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
+          tparams->max_stack_size(max_am, memman->max_memory_used());
+          tparams->max_ntarget(1);
+          //os << " Max memory used = " << memman->max_memory_used() << std::endl;
+
+          // set pointer to the top-level evaluator function
+          ostringstream oss;
+          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_eri[" << la << "][" << lb << "][" << lc << "]["
+              << ld <<"] = " << context->label_to_name(label_to_funcname(label))
+              << context->end_of_stat() << endl;
+          iface->to_static_init(oss.str());
+
+          // need to declare this function internally
+          for(std::deque<std::string>::const_iterator i=decl_filenames.begin();
+              i != decl_filenames.end();
+              ++i) {
+            oss.str("");
+            oss << "#include <" << *i << ">" << endl;
+            iface->to_int_iface(oss.str());
+          }
+
+          // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
+          // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
+          if (la == lmax &&
+              lb == lmax &&
+              lc == lmax &&
+              ld == lmax) {
+            extract_symbols(dg_xxxx);
+          }
+
+#if DEBUG
+          os << "Max memory used = " << memman->max_memory_used() << endl;
+#endif
+          dg_xxxx->reset();
+          memman->reset();
+
+        } // end of d loop
+      } // end of c loop
+    } // end of b loop
+  } // end of a loop
+}
+# endif // INCLUDE_ERI > 0
+
 #endif // INCLUDE_ERI
 
 #ifdef INCLUDE_G12
