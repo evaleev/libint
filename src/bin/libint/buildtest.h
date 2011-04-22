@@ -17,9 +17,11 @@
 namespace libint2 {
 
   // defined in buildtest.cc
-  void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams);
+  void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                        std::deque<std::string>& decl_filenames,
+                        std::deque<std::string>& def_filenames);
 
-  // defined below
+  /// defined below generates code for dg; dg and memman are reset at the end
   void
     GenerateCode(const SafePtr<DirectedGraph>& dg,
                  const SafePtr<CodeContext>& context,
@@ -60,7 +62,7 @@ namespace libint2 {
       to be produced (i.e. include header files + set-level recurrence relations code)
    */
   template <class Integral, bool GenAllCode>
-    void BuildTest(const SafePtr<Integral>& target, unsigned int size_to_unroll, unsigned int veclen,
+    void BuildTest(const std::vector< SafePtr<Integral> >& targets, unsigned int size_to_unroll, unsigned int veclen,
 		   bool vec_by_line, bool do_cse, const std::string& complabel = "buildtest",
 		   std::ostream& os = std::cout);
 
@@ -69,7 +71,7 @@ namespace libint2 {
       to be produced (i.e. include header files + set-level recurrence relations code)
    */
   template <class Integral, bool GenAllCode>
-    void __BuildTest(const SafePtr<Integral>& target, const SafePtr<CompilationParameters>& cparams,
+    void __BuildTest(const std::vector< SafePtr<Integral> >& targets, const SafePtr<CompilationParameters>& cparams,
 		     unsigned int size_to_unroll, std::ostream& os = std::cout,
 		     const SafePtr<Tactic>& tactic = SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
 		     const SafePtr<MemoryManager>& memman = SafePtr<MemoryManager>(new WorstFitMemoryManager),
@@ -77,13 +79,13 @@ namespace libint2 {
 
   template <class Integral, bool GenAllCode>
     void
-    __BuildTest(const SafePtr<Integral>& target, const SafePtr<CompilationParameters>& cparams,
+    __BuildTest(const std::vector< SafePtr<Integral> >& targets, const SafePtr<CompilationParameters>& cparams,
 		unsigned int size_to_unroll, std::ostream& os,
 		const SafePtr<Tactic>& tactic, const SafePtr<MemoryManager>& memman,
 		const std::string& complabel)
     {
       const std::string prefix("");
-      const std::string label = cparams->api_prefix() + target->label();
+      const std::string label = cparams->api_prefix() + complabel;
       SafePtr<Strategy> strat(new Strategy);
       SafePtr<CodeContext> context(new CppCodeContext(cparams));
 
@@ -94,26 +96,29 @@ namespace libint2 {
       //
       // do CSE only if max_am <= cparams->max_am_opt()
       //
-      const unsigned int np = target->bra().num_part();
       unsigned int max_am = 0;
-      // bra
-      for(unsigned int p=0; p<np; p++) {
-        const unsigned int nf = target->bra().num_members(p);
-        for(unsigned int f=0; f<nf; f++) {
-          // Assuming shells here
-          const unsigned int am = target->bra(p,f).qn();
-          using std::max;
-          max_am = max(max_am,am);
+      for(unsigned int t=0; t<targets.size(); ++t) {
+        const SafePtr<Integral>& target = targets[t];
+        const unsigned int np = target->bra().num_part();
+        // bra
+        for(unsigned int p=0; p<np; p++) {
+          const unsigned int nf = target->bra().num_members(p);
+          for(unsigned int f=0; f<nf; f++) {
+            // Assuming shells here
+            const unsigned int am = target->bra(p,f).qn();
+            using std::max;
+            max_am = max(max_am,am);
+          }
         }
-      }
-      // ket
-      for(unsigned int p=0; p<np; p++) {
-        const unsigned int nf = target->ket().num_members(p);
-        for(unsigned int f=0; f<nf; f++) {
-          // Assuming shells here
-          const unsigned int am = target->ket(p,f).qn();
-          using std::max;
-          max_am = max(max_am,am);
+        // ket
+        for(unsigned int p=0; p<np; p++) {
+          const unsigned int nf = target->ket().num_members(p);
+          for(unsigned int f=0; f<nf; f++) {
+            // Assuming shells here
+            const unsigned int am = target->ket(p,f).qn();
+            using std::max;
+            max_am = max(max_am,am);
+          }
         }
       }
       const bool need_to_optimize = (max_am <= cparams->max_am_opt(complabel));
@@ -121,7 +126,7 @@ namespace libint2 {
       std::deque<std::string> decl_filenames;
       std::deque<std::string> def_filenames;
 
-      os << "Building " << target->description() << std::endl;
+      os << "Building " << complabel << std::endl;
 
       SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
 
@@ -132,9 +137,12 @@ namespace libint2 {
       dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
       dg_xxxx->registry()->unroll_threshold(size_to_unroll);
 
-      SafePtr<DGVertex> target_ptr = dynamic_pointer_cast<DGVertex,Integral>(target);
-      assert(target_ptr != 0);
-      dg_xxxx->append_target(target_ptr);
+      for(unsigned int t=0; t<targets.size(); ++t) {
+        const SafePtr<Integral>& target = targets[t];
+        SafePtr<DGVertex> target_ptr = dynamic_pointer_cast<DGVertex,Integral>(target);
+        assert(target_ptr != 0);
+        dg_xxxx->append_target(target_ptr);
+      }
 
       // this will generate code for this targets, and potentially generate code for its prerequisites
       GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
@@ -143,6 +151,7 @@ namespace libint2 {
 
       // update max stack size
       taskmgr.current().params()->max_stack_size(max_am, memman->max_memory_used());
+      taskmgr.current().params()->max_ntarget(targets.size());
       os << "Max memory used = " << memman->max_memory_used() << std::endl;
 
       if (GenAllCode) {
@@ -170,10 +179,11 @@ namespace libint2 {
         iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELLQUARTET_SET_ORCA));
 
         // Generate set-level RR code
-        generate_rr_code(os,cparams);
+        generate_rr_code(os,cparams,
+                         decl_filenames, def_filenames);
 
         // Print log
-        std::cout << "Generated headers:";
+        std::cout << "Generated headers: ";
         std::copy(decl_filenames.begin(), decl_filenames.end(), std::ostream_iterator<std::string>(std::cout, " "));
         SafePtr<RRStack> rrstack = RRStack::Instance();
         for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
@@ -259,8 +269,8 @@ namespace libint2 {
     }
 #endif
 
-    decl_filenames.push_front(decl_filename);
-    def_filenames.push_front(def_filename);
+    decl_filenames.push_back(decl_filename);
+    def_filenames.push_back(def_filename);
 
     // last: missing prerequisites? create new graph computing prereqs and move them onto it
     if (dg->missing_prerequisites()) {
@@ -292,16 +302,18 @@ namespace libint2 {
                    prefix, label_prereq, true);
 
     }
+    dg->reset();
+    memman->reset();
 
   }
 
   template <class Integral, bool GenAllCode>
-    void BuildTest(const SafePtr<Integral>& target, unsigned int size_to_unroll, unsigned int veclen,
+    void BuildTest(const std::vector< SafePtr<Integral> >& targets, unsigned int size_to_unroll, unsigned int veclen,
 		   bool vec_by_line, bool do_cse, const std::string& complabel,
 		   std::ostream& os)
   {
     const unsigned int max_am = 10;
-    os << "generating code to compute " << target->label() << std::endl;
+    os << "generating code to compute " << complabel << std::endl;
 
     LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
     taskmgr.add(complabel);
@@ -319,10 +331,15 @@ namespace libint2 {
     cparams->accumulate_targets(false);
 #endif
 #ifdef LIBINT_API_PREFIX
-  {
-    const std::string api_prefix(LIBINT_API_PREFIX);
-    cparams->api_prefix(api_prefix);
-  }
+    {
+      const std::string api_prefix(LIBINT_API_PREFIX);
+      cparams->api_prefix(api_prefix);
+    }
+#endif
+#if LIBINT_CONTRACTED_INTS
+    cparams->contracted_targets(true);
+#else
+    cparams->contracted_targets(false);
 #endif
 
     if (do_cse) {
@@ -338,7 +355,7 @@ namespace libint2 {
     SafePtr<StdRandomizePolicy> rpolicy(new StdRandomizePolicy(0.00));
     SafePtr<Tactic> tactic(new FirstChoiceTactic<StdRandomizePolicy>(rpolicy));
     const SafePtr<MemoryManager> memman(new WorstFitMemoryManager);
-    __BuildTest<Integral,true>(target,cparams,size_to_unroll,os,tactic,memman,complabel);
+    __BuildTest<Integral,true>(targets,cparams,size_to_unroll,os,tactic,memman,complabel);
   }
 
   template <unsigned int N>

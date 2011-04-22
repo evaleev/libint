@@ -755,19 +755,22 @@ DirectedGraph::handle_trivial_nodes(const SafePtr<CodeContext>& context)
         if (rr_cast) {
           SafePtr<DGVertex> child = arc->dest();
 
-          const std::string stack_name("stack");
-          const SafePtr<ImplicitDimensions>& dims = ImplicitDimensions::default_dims();
-          std::string low_rank = dims->low_label();
-          std::string veclen = dims->vecdim_label();
+          //if (child->symbol_set() == false)
+          {
+            const std::string stack_name("stack");
+            const SafePtr<ImplicitDimensions>& dims = ImplicitDimensions::default_dims();
+            std::string low_rank = dims->low_label();
+            std::string veclen = dims->vecdim_label();
 
-          if ((vptr)->address_set()) {
-            child->set_symbol(stack_symbol(context,(vptr)->address()+0,(vptr)->size(),low_rank,veclen,stack_name));
-          }
-          if ((vptr)->symbol_set()) {
-            child->set_symbol(stack_symbol(context,0,(vptr)->size(),low_rank,veclen,(vptr)->symbol()));
+            if ((vptr)->address_set()) {
+              child->set_symbol(stack_symbol(context,(vptr)->address()+0,(vptr)->size(),low_rank,veclen,stack_name));
+            }
+            if ((vptr)->symbol_set()) {
+              child->set_symbol(stack_symbol(context,0,(vptr)->size(),low_rank,veclen,(vptr)->symbol()));
+            }
           }
 
-          (vptr)->refer_this_to(child);
+          vptr->refer_this_to(child);
           vptr->reset_symbol();
 
         }

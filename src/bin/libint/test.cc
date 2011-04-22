@@ -214,7 +214,8 @@ namespace {
       std::string descr("build ");
       SafePtr<Integral> i = Integral::Instance(f1,f2,f3,f4);
       descr += i->label();
-      RunTest(boost::bind(__BuildTest<Integral,false>, i, cparams,
+      std::vector<SafePtr<Integral> > targets(1,i);
+      RunTest(boost::bind(__BuildTest<Integral,false>, targets, cparams,
 			  size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
 			  SafePtr<MemoryManager>(new WorstFitMemoryManager), descr), descr);
     }
@@ -229,7 +230,8 @@ namespace {
       std::string descr("build ");
       SafePtr<Integral> i = Integral::Instance(f1,f2,f3,f4,m);
       descr += i->label();
-      RunTest(boost::bind(__BuildTest<Integral,false>, i, cparams,
+      std::vector<SafePtr<Integral> > targets(1,i);
+      RunTest(boost::bind(__BuildTest<Integral,false>, targets, cparams,
 			  size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
 			  SafePtr<MemoryManager>(new WorstFitMemoryManager), descr), descr);
     }
@@ -367,7 +369,11 @@ namespace {
     assert(rr != 0 && rr->num_children() != 0);
     SafePtr<RRStack> rrstack = RRStack::Instance();
     rrstack->find(rr);
-    generate_rr_code(std::cout,cparams);
+
+    std::deque<std::string> decl_filenames, def_filenames;
+    generate_rr_code(std::cout,
+                     cparams,
+                     decl_filenames, def_filenames);
 
   }
 

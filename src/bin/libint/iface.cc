@@ -207,7 +207,7 @@ Libint2Iface::~Libint2Iface()
         { std::ostringstream oss;
           oss << "MAX_HRR_LSRANK_" << am; lsr = oss.str(); }
 
-        li_ << "assert(max_am > " << max_am << ");" << std::endl;
+        li_ << "assert(max_am <= " << max_am << ");" << std::endl;
 
         li_ << "if (max_am == " << am << ") return " << macro(tlabel,ss) << " * " << macro("MAX_VECLEN") << " + "
             << macro(tlabel,vss) << " * " << macro("MAX_VECLEN") << " * ("
@@ -235,7 +235,7 @@ Libint2Iface::~Libint2Iface()
         { std::ostringstream oss;
         oss << "MAX_STACK_SIZE_" << am; ss = oss.str(); }
 
-        li_ << "assert(max_am > " << max_am << ");" << std::endl;
+        li_ << "assert(max_am <= " << max_am << ");" << std::endl;
         li_ << "if (max_am == " << am << ")" << std::endl;
         std::string vstack_ptr("inteval->stack + ");
         vstack_ptr += macro(tlabel,ss);

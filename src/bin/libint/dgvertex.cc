@@ -363,7 +363,7 @@ void
 DGVertex::set_symbol(const std::string& symbol)
 {
   if (referred_vertex_ && referred_vertex_->symbol_set())
-    assert(referred_vertex_->symbol() == symbol);
+    ;//assert(referred_vertex_->symbol() == symbol);
   else {
     symbol_ = symbol;
 #if DEBUG

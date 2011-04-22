@@ -270,7 +270,8 @@ void try_main (int argc, char* argv[])
 #endif
 
   // Generate code for the set-level RRs
-  generate_rr_code(os,cparams);
+  std::deque<std::string> decl_filenames, def_filenames;
+  generate_rr_code(os,cparams, decl_filenames, def_filenames);
 
 #if DEBUG
   // print out the external symbols found for each task
@@ -552,7 +553,7 @@ build_TwoPRep_2b_2k_deriv1(std::ostream& os, const SafePtr<CompilationParameters
           // update max stack size and # of targets
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(max_am, memman->max_memory_used());
-          tparams->max_ntarget(1);
+          tparams->max_ntarget(9);
           //os << " Max memory used = " << memman->max_memory_used() << std::endl;
 
           // set pointer to the top-level evaluator function

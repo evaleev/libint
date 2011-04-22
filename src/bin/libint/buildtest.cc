@@ -10,7 +10,10 @@ using namespace libint2;
 namespace libint2 {
 
   void
-  generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams)
+  generate_rr_code(std::ostream& os,
+                   const SafePtr<CompilationParameters>& cparams,
+                   std::deque<std::string>& decl_filenames,
+                   std::deque<std::string>& def_filenames)
   {
     //
     // generate explicit code for all recurrence relation that were not inlined
@@ -35,6 +38,8 @@ namespace libint2 {
 
       declfile.close();
       deffile.close();
+      decl_filenames.push_back(decl_filename);
+      def_filenames.push_back(def_filename);
 
       // Remove RR to save resources
       rrstack->remove(rr);

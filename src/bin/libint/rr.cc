@@ -95,10 +95,10 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   dg->registry()->ignore_missing_prereqs(true);  // assume all prerequisites are available -- if some are not, something is VERY broken
 
 #if DEBUG
-    {
-      std::basic_ofstream<char> dotfile("graph_rr.strat.dot");
-      dg->print_to_dot(false,dotfile);
-    }
+  {
+    std::basic_ofstream<char> dotfile("graph_rr.strat.dot");
+    dg->print_to_dot(false,dotfile);
+  }
 #endif
 
   // Assign symbols for the target and source integral sets
