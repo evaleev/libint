@@ -2117,10 +2117,64 @@ namespace libint2 {
   //////////////////////
   void
   PrerequisitesExtractor::operator()(const SafePtr<DGVertex>& v) {
+#if DEBUG
+    std::cout << "PrerequisitesExtractor: considering " << v->description() << std::endl;
+    v->print(std::cout);
+#endif
     if (v->precomputed() == false &&
         v->num_exit_arcs() == 0) {
-      std::cout << "PrerequisitesExtractor: extracted " << v->description() << std::endl;
+#if DEBUG
+      std::cout << "PrerequisitesExtractor: found candidate " << v->description() << std::endl;
+#endif
+
+#if 0 // this does not work when generating ssss sets
+      // if this is an integral that was a member of a shell set, add the parent set to the prerequisite level
+      bool member_of_shellset = false;
+      SafePtr<DGVertex> parent_shellset;
+      typedef DGVertex::ArcSetType::const_iterator citer;
+      for(citer i=v->entry_arcs().begin(); i != v->entry_arcs().end() && member_of_shellset==false; ++i) {
+        const SafePtr<DGArc>& arc = *i;
+        SafePtr<DGArcRR> arc_cast = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
+        if (arc_cast) {
+          SafePtr<RecurrenceRelation> rr = arc_cast->rr();
+          SafePtr<IntegralSet_to_Integrals_base> rr_cast = dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(rr);
+          if (rr_cast) {
+            member_of_shellset = true;
+            parent_shellset = rr->rr_target();
+          }
+        }
+      }
+      if (member_of_shellset) {
+#if DEBUG
+        std::cout << "PrerequisitesExtractor: " << v->description() << " is a member of a shell set, will add that instead"<< std::endl;
+#endif
+        if ( vertices.end() == find(vertices.begin(), vertices.end(), parent_shellset) ) {
+          vertices.push_front(parent_shellset);
+#if DEBUG
+          std::cout << "PrerequisitesExtractor: extracted " << parent_shellset->description() << std::endl;
+#endif
+        }
+        else {
+#if DEBUG
+          std::cout << "PrerequisitesExtractor: candidate's parent already extracted" << std::endl;
+#endif
+        }
+      }
+      else {
+        vertices.push_front(v);
+#if DEBUG
+        std::cout << "PrerequisitesExtractor: extracted " << v->description() << std::endl;
+#endif
+      }
+
+#else
+
       vertices.push_front(v);
+#if DEBUG
+      std::cout << "PrerequisitesExtractor: extracted " << v->description() << std::endl;
+#endif
+
+#endif
     }
   }
 

@@ -219,9 +219,9 @@ namespace libint2 {
           }
 
           if (aderiv)
-            expr_ -= Vector(a.deriv())[dir_] * children_[2];
+            expr_ += Vector(a.deriv())[dir_] * children_[2];
           if (bderiv)
-            expr_ += Vector(b.deriv())[dir_] * children_[aderiv ? 3 : 2];
+            expr_ -= Vector(b.deriv())[dir_] * children_[aderiv ? 3 : 2];
         }
       } // a in ket, b in bra
 

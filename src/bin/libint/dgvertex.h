@@ -78,6 +78,8 @@ namespace libint2 {
     */
     void detach();
 
+    const ArcSetType& exit_arcs() const { return children_; }
+    const ArcSetType& entry_arcs() const { return parents_; }
     /// returns the number of parents
     unsigned int num_entry_arcs() const;
     /// returns parents::begin()

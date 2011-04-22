@@ -30,7 +30,7 @@ int main(int argc, char** argv)
   const uint contrdepth4 = contrdepth * contrdepth * contrdepth * contrdepth;
   RandomShellQuartetSet rsqset(am, veclen, contrdepth);
 
-  const unsigned int deriv_order = 3;
+  const unsigned int deriv_order = 2;
   DerivIndexIterator<4> diter(deriv_order);
   const unsigned int nderiv = diter.range_rank();
 
@@ -69,7 +69,9 @@ int main(int argc, char** argv)
   scale_target = 0.5;
   COMPUTE_XX_ERI_XX(erieval);
 #endif
+#if LIBINT_CONTRACTED_INTS
   erieval[0].contrdepth = contrdepth4;
+#endif
   COMPUTE_XX_ERI_XX(&erieval[0]);
 
   bool success = true;

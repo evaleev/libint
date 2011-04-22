@@ -107,13 +107,13 @@ namespace {
 #if 0
     RunTest(test4,"primitive ERI build");
 #endif
-#if 0
+#if 1
     RunTest(test5,"contracted ERI build");
 #endif
 #if 0
     RunTest(test6,"contracted derivative ERI build");
 #endif
-#if 1
+#if 0
     RunTest(test7,"shell-set RR generation");
 #endif
 
@@ -316,7 +316,7 @@ namespace {
     CGShell csh_p(1u);
 
     //RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_s,csh_p,csh_s,0,use_quartets);
-    RunBuildTest<TwoPRep_11_11_sq>(csh_p,csh_p,csh_p,csh_p,0,use_integrals);
+    RunBuildTest<TwoPRep_11_11_sq>(csh_s,csh_p,csh_s,csh_s,0,use_quartets);
 
     cparams->contracted_targets(contracted_targets_old_value);
   }

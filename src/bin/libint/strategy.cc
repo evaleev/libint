@@ -355,6 +355,18 @@ namespace libint2 {
         const unsigned int size = integral->size();
         const bool can_unroll = boost::is_same<typename T::BasisFunctionType,CGShell>::value &&
                                 (size <= dg->registry()->unroll_threshold());
+#if 0
+        // for now only allow unrolling in primitive-basis code
+        // TODO solve the problem with allowing unrolling in contracted code:
+        // (ss|ps) top(HRR)-level code unrolls the quartet to integrals, but these integrals
+        // are contracted, hence their evaluation is deferred to the prerequsite step
+        // when constructing prereq graph these integrals are added and assigned addresses in
+        // arbitrary order; to avoid this "for now" do this hack
+        // for a more sound solution see PrerequisitesExtractor in dg.cc, unfortunately it doesn't seem to fully work
+        // right now I don't have time to mess with this anymore
+        const bool can_uncontract = dg->registry()->uncontract();
+        if (can_unroll && can_uncontract) {
+#endif
         if (can_unroll) {
           typedef IntegralSet_to_Integrals<T> ISet2I;
           SafePtr<ISet2I> x(new ISet2I(tptr));

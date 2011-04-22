@@ -457,7 +457,7 @@ namespace libint2 {
         // out of all 22 possible prerequisites first 5 are guaranteed to be there
         const unsigned int nargs = args->n();
         unsigned int arg = 0;
-        for(; arg<6; arg++) { // hence first 6 arguments are always there
+        for(; arg<6; arg++) { // hence first 6 arguments (target + 5) are always there
           oss << "," << args->symbol(arg);
         }
         for(unsigned int xyz=0; xyz<3; ++xyz) {
@@ -467,23 +467,17 @@ namespace libint2 {
           }
           else
             oss << ",0,0";
-        }
-        for(unsigned int xyz=0; xyz<3; ++xyz) {
           if (sh_b.deriv().d(xyz) > 0) {
             oss << "," << args->symbol(arg++);
             oss << "," << args->symbol(arg++);
           }
           else
             oss << ",0,0";
-        }
-        for(unsigned int xyz=0; xyz<3; ++xyz) {
           if (sh_c.deriv().d(xyz) > 0) {
             oss << "," << args->symbol(arg++);
           }
           else
             oss << ",0";
-        }
-        for(unsigned int xyz=0; xyz<3; ++xyz) {
           if (sh_d.deriv().d(xyz) > 0) {
             oss << "," << args->symbol(arg++);
           }
