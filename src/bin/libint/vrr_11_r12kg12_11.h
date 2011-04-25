@@ -410,11 +410,19 @@ namespace libint2 {
         // to generate optimized code for xxxx integral need to generate specialized code for up to (x+x)0(x+x)0 integrals
         if (!TrivialBFSet<F>::result &&
             sh_b.zero() && sh_d.zero() &&
-            sh_a.norm() > std::max(2*max_opt_am,1u) && sh_c.norm() > std::max(2*max_opt_am,1u))
+            (sh_a.norm() > std::max(2*max_opt_am,1u) ||
+             sh_c.norm() > std::max(2*max_opt_am,1u)
+            ) &&
+            (sh_a.norm() > 1u && sh_c.norm() > 1u)
+           )
           return true;
         if (!TrivialBFSet<F>::result &&
             sh_a.zero() && sh_c.zero() &&
-            sh_b.norm() > std::max(2*max_opt_am,1u) && sh_d.norm() > std::max(2*max_opt_am,1u))
+            (sh_b.norm() > std::max(2*max_opt_am,1u) ||
+             sh_d.norm() > std::max(2*max_opt_am,1u)
+            ) &&
+            (sh_b.norm() > 1u && sh_d.norm() > 1u)
+           )
           return true;
         return false;
       }

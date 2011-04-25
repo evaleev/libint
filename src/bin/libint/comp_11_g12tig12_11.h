@@ -94,10 +94,11 @@ namespace libint2 {
     const unsigned int max_opt_am = cparams->max_am_opt();
     // to generate optimized code for xxxx integral need to generate specialized code for up to (x+x)0(x+x)0 integrals
     if (!TrivialBFSet<F>::result &&
-        sh_a.norm() > max_opt_am &&
-        sh_b.norm() > max_opt_am &&
-        sh_c.norm() > max_opt_am &&
-        sh_d.norm() > max_opt_am
+        (sh_a.norm() > max_opt_am ||
+         sh_b.norm() > max_opt_am ||
+         sh_c.norm() > max_opt_am ||
+         sh_d.norm() > max_opt_am
+        )
        )
       return true;
     return false;
@@ -108,15 +109,19 @@ namespace libint2 {
   CR_11_G12TiG12_11<F>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const {
       std::ostringstream oss;
 
-      oss << "_libint2_static_api_scale_short_(";
+      const bool vec = (context->cparams()->max_vector_length() != 1);
+      if (vec)
+        oss << "_libint2_static_api_scale_vec_short_(";
+      else
+        oss << "_libint2_static_api_scale_short_(";
 
       const unsigned int nargs = args->n();
       for(unsigned int a=0; a<nargs; a++) {
         oss << args->symbol(a) << ",";
       }
 
-      oss << target_->size() << "*" << (context->cparams()->max_vector_length() != 1 ? "inteval->veclen" : "1")
-          << ",inteval->R12_2_G12_scale_to_G12T1G12);";
+      oss << target_->size() << "*" << (vec ? "inteval->veclen" : "1")
+          << ",inteval->R12_2_G12_scale_to_G12T1G12" << (vec ? ",inteval->veclen" : "[0]") << ");";
 
       return oss.str();
   }
