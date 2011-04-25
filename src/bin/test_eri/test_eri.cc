@@ -30,7 +30,7 @@ int main(int argc, char** argv)
   const uint contrdepth4 = contrdepth * contrdepth * contrdepth * contrdepth;
   RandomShellQuartetSet rsqset(am, veclen, contrdepth);
 
-  const unsigned int deriv_order = 2;
+  const unsigned int deriv_order = 1;
   DerivIndexIterator<4> diter(deriv_order);
   const unsigned int nderiv = diter.range_rank();
 

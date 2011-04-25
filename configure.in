@@ -416,42 +416,6 @@ if test "X$INCLUDE_G12DKH" != "Xno"; then
   AC_DEFINE_UNQUOTED(G12DKH_OPT_AM,$G12DKH_OPT_AM)
 fi
 
-#######
-# check max am for derivative integrals, if needed
-#######
-if test X$INCLUDE_ERI != Xno; then
- if test $INCLUDE_ERI -gt 0; then
- if test $ERI_MAX_AM -gt 3; then
-  D1ERI_MAX_AM=3
- else
-  D1ERI_MAX_AM=$ERI_MAX_AM
- fi
- AC_ARG_WITH(d1eri-max-am,
- [  --with-d1eri-max-am=N     Support first-order derivative ERIs for Gaussians of angular momentum up to N.],
- if test $withval -le 0 -o $withval -ge $ERI_MAX_AM; then
-  AC_MSG_ERROR([Invalid value for --with-d1eri-max-am ($withval)])
- else
-  D1ERI_MAX_AM=$withval
- fi
- )
-
- D2ERI_MAX_AM=$D1ERI_MAX_AM
- AC_ARG_WITH(d2eri-max-am,
- [  --with-d2eri-max-am=N     Support second-order derivative ERIs for Gaussians of angular momentum up to N.],
- if test $withval -le 0 -o $withval -ge $D2ERI_MAX_AM; then
-  AC_MSG_ERROR([Invalid value for --with-d2eri-max-am ($withval)])
- else
-  D2ERI_MAX_AM=$withval
- fi
- )
-
- AC_SUBST(D1ERI_MAX_AM)
- AC_SUBST(D2ERI_MAX_AM)
- AC_DEFINE_UNQUOTED(D1ERI_MAX_AM,$D1ERI_MAX_AM)
- AC_DEFINE_UNQUOTED(D2ERI_MAX_AM,$D2ERI_MAX_AM)
- fi
-fi
-
 AC_ARG_ENABLE(unrolling,
 [  --enable-unrolling      Allow computation in terms of integrals rather than sets of integrals.],
 [

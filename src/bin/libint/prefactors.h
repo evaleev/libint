@@ -6,6 +6,7 @@
 #include <smart_ptr.h>
 #include <entity.h>
 #include <bfset.h>
+#include <singl_stack.timpl.h>
 
 namespace libint2 {
   

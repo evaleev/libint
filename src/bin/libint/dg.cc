@@ -2177,5 +2177,13 @@ namespace libint2 {
 #endif
     }
   }
+  //////////////////////
+  void
+  VertexPrinter::operator()(const SafePtr<DGVertex>& v) {
+    os << "VertexPrinter: " << v->description() << std::endl;
+#if DEBUG
+    v->print(os);
+#endif
+  }
 
 };

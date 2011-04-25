@@ -77,6 +77,8 @@ namespace {
   CGShell sh_l(8);
   CGShell sh_m(9);
   CGShell sh_n(10);
+  CGShell sh_o(11);
+  CGShell sh_q(12);
   SafePtr<CompilationParameters> cparams;
 
   int try_main (int argc, char* argv[])
@@ -98,7 +100,7 @@ namespace {
 #if 0
     RunTest(test1,"memory managers");
 #endif
-#if 0
+#if 1
     RunTest(test2,"integrals types");
 #endif
 #if 0
@@ -107,7 +109,7 @@ namespace {
 #if 0
     RunTest(test4,"primitive ERI build");
 #endif
-#if 1
+#if 0
     RunTest(test5,"contracted ERI build");
 #endif
 #if 0
@@ -253,15 +255,45 @@ namespace {
   void
   test2()
   {
+    CGShell::set_contracted_default_value(true);
+    const bool contracted_targets_old_value = cparams->contracted_targets();
+    cparams->contracted_targets(true);
+    CGShell csh_s(0u);
+    CGShell csh_p(1u);
+    CGShell csh_d(2u);
+    CGShell csh_d_dx(2u); csh_d_dx.deriv().inc(0,1);
+    CGShell csh_f_dx(3u); csh_f_dx.deriv().inc(0,1);
+    CGShell csh_q(12u);
+
     {
       typedef TwoPRep_11_11_sq IType;
       SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
-      std::cout << "Created integral set " << iset->label() << std::endl;
+      std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
     }
     {
       typedef R12kG12_11_11_sq IType;
       SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u,IType::OperType(-1));
-      std::cout << "Created integral set " << iset->label() << std::endl;
+      std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
+    }
+    {
+      typedef TwoPRep_11_11_sq IType;
+      SafePtr<IType> iset = IType::Instance(csh_s,csh_q,csh_s,csh_s,0u);
+      std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
+    }
+    {
+      typedef TwoPRep_11_11_sq IType;
+      SafePtr<IType> iset = IType::Instance(csh_s,csh_d_dx,csh_s,csh_s,0u);
+      std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
+    }
+    {
+      typedef TwoPRep_11_11_sq IType;
+      SafePtr<IType> iset = IType::Instance(csh_s,csh_f_dx,csh_s,csh_s,0u);
+      std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
+    }
+    {
+      typedef TwoPRep_11_11_sq IType;
+      SafePtr<IType> iset = IType::Instance(csh_q,csh_q,csh_q,csh_q,0u);
+      std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
     }
   }
 
@@ -352,6 +384,10 @@ namespace {
   void
   test7()
   {
+    CGShell::set_contracted_default_value(true);
+    const bool contracted_targets_old_value = cparams->contracted_targets();
+    cparams->contracted_targets(true);
+
     CGShell csh_s(0u);
     CGShell csh_p(1u);
     CGShell csh_d(2u);
@@ -363,9 +399,9 @@ namespace {
     CGShell csh_s_d2x(0u); csh_s_d2x.deriv().inc(0,2);
     CGShell csh_p_d2x(1u); csh_p_d2x.deriv().inc(0,2);
 
-    SafePtr<TwoPRep_11_11_sq> target = TwoPRep_11_11_sq::Instance(csh_d_dx,csh_s,csh_s,csh_s,mType(0u));
+    SafePtr<TwoPRep_11_11_sq> target = TwoPRep_11_11_sq::Instance(csh_p,csh_d_dx,csh_s,csh_s,mType(0u));
 
-    SafePtr<RecurrenceRelation> rr = VRR_11_TwoPRep_11<CGShell,0,InBra>::Instance(target,0);
+    SafePtr<RecurrenceRelation> rr = HRR_ba_11_TwoPRep_11_sh::Instance(target,0);
     assert(rr != 0 && rr->num_children() != 0);
     SafePtr<RRStack> rrstack = RRStack::Instance();
     rrstack->find(rr);
@@ -375,6 +411,7 @@ namespace {
                      cparams,
                      decl_filenames, def_filenames);
 
+    cparams->contracted_targets(contracted_targets_old_value);
   }
 
 };

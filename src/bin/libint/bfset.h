@@ -8,6 +8,7 @@
 #include <polyconstr.h>
 #include <hashable.h>
 #include <contractable.h>
+#include <global_macros.h>
 
 namespace libint2 {
 
@@ -205,7 +206,7 @@ namespace libint2 {
     unsigned int norm() const;
     /// Implements Hashable<unsigned>::key()
     unsigned key() const { return (deriv().key() * 2 + (contracted() ? 1 : 0)) * (max_qn+1) + qn_[0]; }
-    const static unsigned max_qn = LIBINT_MAX_AM;
+    const static unsigned max_qn = LIBINT_CARTGAUSS_MAX_AM;
     // The range of keys is [0,max_key]
     const static unsigned max_key = 2 * (max_qn + 1) * OriginDerivative::max_key;
 

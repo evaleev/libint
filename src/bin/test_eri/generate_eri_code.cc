@@ -43,7 +43,7 @@ namespace {
 
     // set this to the order of deriv ERI
     // will pick up from command line eventually
-    const unsigned int deriv_order = 2;
+    const unsigned int deriv_order = 1;
     DerivIndexIterator<4u> diter(deriv_order);
 
     //

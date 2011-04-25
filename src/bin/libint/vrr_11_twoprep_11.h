@@ -367,8 +367,7 @@ namespace libint2 {
           sh_a.norm() > std::max(2*max_opt_am,1u) && sh_c.norm() > std::max(2*max_opt_am,1u))
         return true;
       if (sh_a.zero() && sh_c.zero() &&
-          sh_b.norm() > std::max(2*max_opt_am,1u) && sh_d.norm() > std::max(2*max_opt_am,1u) &&
-          deriv == false) // sxsx version not yet implemented for derivatives
+          sh_b.norm() > std::max(2*max_opt_am,1u) && sh_d.norm() > std::max(2*max_opt_am,1u))
         return true;
       return false;
     }
@@ -399,6 +398,7 @@ namespace libint2 {
       }
       else {
         if (xsxs) return std::string("OSVRR_xs_xs_deriv.h");
+        if (sxsx) return std::string("OSVRR_sx_sx_deriv.h");
       }
       abort(); // unreachable
     }
@@ -429,14 +429,12 @@ namespace libint2 {
       if (deriv == false) { // for regular integrals I know exactly how many prerequisites I need
         if(xsxs) {
           oss << "libint2::OSVRR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
-          oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
-          oss << ">::compute(inteval";
         }
         if (sxsx) {
           oss << "libint2::OSVRR_sx_sx<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
-          oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
-          oss << ">::compute(inteval";
         }
+        oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
+        oss << ">::compute(inteval";
 
         const unsigned int nargs = args->n();
         for(unsigned int a=0; a<nargs; a++) {
@@ -447,13 +445,17 @@ namespace libint2 {
       else { // deriv == true -> only some arguments are needed
         if(xsxs) {
           oss << "libint2::OSVRR_xs_xs_deriv<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
-          for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_a.deriv().d(xyz) << ",";
-          for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_b.deriv().d(xyz) << ",";
-          for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_c.deriv().d(xyz) << ",";
-          for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_d.deriv().d(xyz) << ",";
-          oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
-          oss << ">::compute(inteval";
         }
+        if(sxsx) {
+          oss << "libint2::OSVRR_sx_sx_deriv<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
+        }
+
+        for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_a.deriv().d(xyz) << ",";
+        for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_b.deriv().d(xyz) << ",";
+        for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_c.deriv().d(xyz) << ",";
+        for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_d.deriv().d(xyz) << ",";
+        oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
+        oss << ">::compute(inteval";
         // out of all 22 possible prerequisites first 5 are guaranteed to be there
         const unsigned int nargs = args->n();
         unsigned int arg = 0;

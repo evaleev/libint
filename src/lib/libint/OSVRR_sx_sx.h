@@ -79,18 +79,18 @@ namespace libint2 {
         }
 
         const unsigned int ibm1 = INT_CARTINDEX(Lb-1,b[0],b[1]);
-        const unsigned int bm10c0_offset = ibm1 * NdV;
-        const LIBINT2_REALTYPE* src0_ptr = src0 + bm10c0_offset;
-        const LIBINT2_REALTYPE* src1_ptr = src1 + bm10c0_offset;
+        const unsigned int bm10d0_offset = ibm1 * NdV;
+        const LIBINT2_REALTYPE* src0_ptr = src0 + bm10d0_offset;
+        const LIBINT2_REALTYPE* src1_ptr = src1 + bm10d0_offset;
 
         // if b-2_xyz exists, include (0 b-2_xyz | 0 d)
         if (b[xyz] > 0) {
           --b[xyz];
           const unsigned int ibm2 = INT_CARTINDEX(Lb-2,b[0],b[1]);
-          const unsigned int bm20c0_offset = ibm2 * NdV;
+          const unsigned int bm20d0_offset = ibm2 * NdV;
           ++b[xyz];
-          const LIBINT2_REALTYPE* src2_ptr = src2 + bm20c0_offset;
-          const LIBINT2_REALTYPE* src3_ptr = src3 + bm20c0_offset;
+          const LIBINT2_REALTYPE* src2_ptr = src2 + bm20d0_offset;
+          const LIBINT2_REALTYPE* src3_ptr = src3 + bm20d0_offset;
           const LIBINT2_REALTYPE bxyz = (LIBINT2_REALTYPE)b[xyz];
 
           unsigned int dv = 0;

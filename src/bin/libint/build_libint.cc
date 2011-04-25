@@ -59,6 +59,17 @@ template <> struct ShellQuartetSetPredicate<ShellQuartetSet_ORCA> {
 #define STUDY_MEMORY_USAGE 0
 long living_count = 0;
 
+std::string task_label(const std::string& prefix,
+                       unsigned int deriv_level) {
+  std::stringstream oss;
+  if (deriv_level == 0)
+    return prefix;
+  else {
+    oss << prefix << deriv_level;
+    return oss.str();
+  }
+}
+
 static void try_main (int argc, char* argv[]);
 
 int main(int argc, char* argv[])
@@ -80,11 +91,13 @@ static void print_config(std::ostream& os);
 static void config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface);
 
 #ifdef INCLUDE_ERI
+#define USE_GENERIC_ERI_BUILD 1
+# if !USE_GENERIC_ERI_BUILD
 static void build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                                 SafePtr<Libint2Iface>& iface);
-# if INCLUDE_ERI > 0
-static void build_TwoPRep_2b_2k_deriv1(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                                       SafePtr<Libint2Iface>& iface);
+# else
+static void build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                                SafePtr<Libint2Iface>& iface, unsigned int deriv_level);
 # endif
 #endif
 
@@ -113,10 +126,9 @@ void try_main (int argc, char* argv[])
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.add("default");
 #ifdef INCLUDE_ERI
-  taskmgr.add("eri");
-# if INCLUDE_ERI > 0
-  taskmgr.add("eri1");
-# endif
+  for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
+    taskmgr.add( task_label("eri",d) );
+  }
 #endif
 #ifdef INCLUDE_G12
    taskmgr.add("r12kg12");
@@ -138,12 +150,10 @@ void try_main (int argc, char* argv[])
   cparams->max_am("default",LIBINT_MAX_AM);
   cparams->max_am_opt("default",LIBINT_OPT_AM);
 #ifdef INCLUDE_ERI
-  cparams->max_am("eri",ERI_MAX_AM);
-  cparams->max_am_opt("eri",ERI_OPT_AM);
-# if INCLUDE_ERI > 0
-  cparams->max_am("eri1",ERI_MAX_AM);
-  cparams->max_am_opt("eri1",ERI_OPT_AM);
-# endif
+  for(unsigned int d=0; d<=0; ++d) {
+    cparams->max_am( task_label("eri", d) ,ERI_MAX_AM);
+    cparams->max_am_opt( task_label("eri", d) ,ERI_OPT_AM);
+  }
 #endif
 #ifdef INCLUDE_G12
 # ifndef G12_MAX_AM
@@ -250,9 +260,12 @@ void try_main (int argc, char* argv[])
   cparams->print(os);
 
 #ifdef INCLUDE_ERI
+# if !USE_GENERIC_ERI_BUILD
   build_TwoPRep_2b_2k(os,cparams,iface);
-#if INCLUDE_ERI > 0
-  build_TwoPRep_2b_2k_deriv1(os,cparams,iface);
+# else
+  for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
+    build_TwoPRep_2b_2k(os,cparams,iface,d);
+  }
 # endif
 #endif
 #ifdef INCLUDE_G12
@@ -333,6 +346,7 @@ print_config(std::ostream& os)
 }
 
 #ifdef INCLUDE_ERI
+#if !USE_GENERIC_ERI_BUILD
 void
 build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface)
@@ -451,13 +465,13 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
     } // end of b loop
   } // end of a loop
 }
-
-# if INCLUDE_ERI > 0
+#else  // USE_GENERIC_ERI_BUILD
 void
-build_TwoPRep_2b_2k_deriv1(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                           SafePtr<Libint2Iface>& iface)
+build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                    SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
 {
-  const std::string task("eri1");
+  const std::string task = task_label("eri", deriv_level);
+  const std::string task_uc = task_label("ERI", deriv_level);
   typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
@@ -468,7 +482,7 @@ build_TwoPRep_2b_2k_deriv1(std::ostream& os, const SafePtr<CompilationParameters
 
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
-  iface->to_params(iface->macro_define("MAX_AM_ERI1",lmax));
+  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
 
   //
   // Construct graphs for each desired target integral and
@@ -490,7 +504,8 @@ build_TwoPRep_2b_2k_deriv1(std::ostream& os, const SafePtr<CompilationParameters
       for(unsigned int lc=0; lc<=lmax; lc++) {
         for(unsigned int ld=0; ld<=lmax; ld++) {
 
-          if (la+lb+lc+ld == 0)
+          // skip ss|ss integrals -- no need to involve LIBINT here
+          if (deriv_level == 0 && la == 0 && lb == 0 && lc == 0 && ld == 0)
             continue;
 
           if (!ShellQuartetSetPredicate<static_cast<ShellQuartetSet>(LIBINT_SHELLQUARTET_SET)>::value(la,lb,lc,ld))
@@ -513,35 +528,72 @@ build_TwoPRep_2b_2k_deriv1(std::ostream& os, const SafePtr<CompilationParameters
           // Need to accumulate integrals?
           dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
 
-          // make derivative ERIs
-          // there are 12 total
-          // 12 = 4 center * 3 coords (xyz)
-          // but can eliminate 3 due to translational invariance
-          std::string abcd_label;
-          for(unsigned int deriv=0; deriv < 12; ++deriv) {
+          ////////////
+          // loop over unique derivative index combinations
+          ////////////
+          // skip 1 center -- all derivatives with respect to that center can be
+          // recovered using translational invariance conditions
+          // which center to skip? -> A = 0, B = 1, C = 2, D = 3
+          const unsigned int center_to_skip = 2;
+          DerivIndexIterator<3> diter(deriv_level);
+          std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
+          bool last_deriv = false;
+          do {
+            CGShell a(la);
+            CGShell b(lb);
+            CGShell c(lc);
+            CGShell d(ld);
 
-            const unsigned int center = deriv / 3;
-            const unsigned int xyz = deriv % 3;
-
-            // which center to skip? -> A = 0, B = 1, C = 2, D = 3
-            const unsigned int center_to_skip = 2;
-            if (center == center_to_skip)
-              continue;
-
-            CGShell a(*shells[la]); if (center == 0) a.deriv().inc(xyz);
-            CGShell b(*shells[lb]); if (center == 1) b.deriv().inc(xyz);
-            CGShell c(*shells[lc]); if (center == 2) c.deriv().inc(xyz);
-            CGShell d(*shells[ld]); if (center == 3) d.deriv().inc(xyz);
+            unsigned int center = 0;
+            for(unsigned int i=0; i<4; ++i) {
+              if (i == center_to_skip)
+                continue;
+              for(unsigned int xyz=0; xyz<3; ++xyz) {
+                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (i == 2) c.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (i == 3) d.deriv().inc(xyz, diter.value(3 * center + xyz));
+              }
+              ++center;
+            }
 
             SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(a,b,c,d,mType(0u));
-            os << "building " << abcd->description() << endl;
+            targets.push_back(abcd);
+            last_deriv = diter.last();
+            if (!last_deriv) diter.next();
+          } while (!last_deriv);
+          // append all derivatives as targets to the graph
+          for(std::vector< SafePtr<TwoPRep_sh_11_11> >::const_iterator t=targets.begin();
+              t != targets.end();
+              ++t) {
+            SafePtr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(*t);
+            dg_xxxx->append_target(t_ptr);
+          }
+
+          // make label that characterizes this set of targets
+          // use the label of the nondifferentiated integral as a base
+          std::string abcd_label;
+          {
+            CGShell a(la);
+            CGShell b(lb);
+            CGShell c(lc);
+            CGShell d(ld);
+            SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(a,b,c,d,mType(0u));
             abcd_label = abcd->label();
-            SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(abcd);
-            dg_xxxx->append_target(abcd_ptr);
+          }
+          // + derivative level (if deriv_level > 0)
+          std::string label;
+          {
+            label = cparams->api_prefix();
+            if (deriv_level != 0) {
+              std::ostringstream oss;
+              oss << "deriv" << deriv_level;
+              label += oss.str();
+            }
+            label += abcd_label;
           }
 
           std::string prefix(cparams->source_directory());
-          std::string label(cparams->api_prefix() + "deriv1" + abcd_label);
           std::deque<std::string> decl_filenames;
           std::deque<std::string> def_filenames;
 
@@ -553,12 +605,12 @@ build_TwoPRep_2b_2k_deriv1(std::ostream& os, const SafePtr<CompilationParameters
           // update max stack size and # of targets
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
           tparams->max_stack_size(max_am, memman->max_memory_used());
-          tparams->max_ntarget(9);
+          tparams->max_ntarget(targets.size());
           //os << " Max memory used = " << memman->max_memory_used() << std::endl;
 
           // set pointer to the top-level evaluator function
           ostringstream oss;
-          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_eri[" << la << "][" << lb << "][" << lc << "]["
+          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_" << task << "[" << la << "][" << lb << "][" << lc << "]["
               << ld <<"] = " << context->label_to_name(label_to_funcname(label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
@@ -592,7 +644,7 @@ build_TwoPRep_2b_2k_deriv1(std::ostream& os, const SafePtr<CompilationParameters
     } // end of b loop
   } // end of a loop
 }
-# endif // INCLUDE_ERI > 0
+# endif // USE_GENERIC_ERI_BUILD
 
 #endif // INCLUDE_ERI
 

@@ -342,6 +342,11 @@ namespace libint2 {
       std::deque< SafePtr<DGVertex> > vertices;
       void operator()(const SafePtr<DGVertex>& v);
   };
+  struct VertexPrinter {
+      VertexPrinter(std::ostream& ostr) : os(ostr) {}
+      std::ostream& os;
+      void operator()(const SafePtr<DGVertex>& v);
+  };
 
 };
 

@@ -52,12 +52,6 @@
 /* Max optimized AM for ERI */
 #undef ERI_OPT_AM
 
-/* Max AM for 1st-order derivative ERI */
-#undef D1ERI_MAX_AM
-
-/* Max AM for 2nd-order derivative ERI */
-#undef D2ERI_MAX_AM
-
 /* Max AM for G12 method integrals */
 #undef G12_MAX_AM
 

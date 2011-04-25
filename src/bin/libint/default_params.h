@@ -25,9 +25,9 @@ namespace libint2 {
     ~CompilationParameters();
     
     /// returns max AM for task t
-    unsigned int max_am(const std::string& t = "__default__") const;
+    unsigned int max_am(const std::string& t = "default") const;
     /// returns max AM for which to produce optimal code for task t
-    unsigned int max_am_opt(const std::string& t = "__default__") const;
+    unsigned int max_am_opt(const std::string& t = "default") const;
     /// returns max vector length
     unsigned int max_vector_length() const {
       return max_vector_length_;
