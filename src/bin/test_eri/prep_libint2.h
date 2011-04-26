@@ -54,6 +54,10 @@ void prep_libint2(std::vector<LibintEval>& erievals,
   const double* C = &(rsqset.R[2][0]);
   const double* D = &(rsqset.R[3][0]);
 
+  const uint* am = rsqset.l;
+  const unsigned int amtot = am[0] + am[1] + am[2] + am[3] + 6;
+  double* F = init_array(amtot + 1);
+
   uint p0123 = 0;
   for (uint p0 = 0; p0 < contrdepth; p0++) {
     for (uint p1 = 0; p1 < contrdepth; p1++) {
@@ -296,9 +300,6 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 //              pfac *= norm_const(l4,m4,n4,alpha3,D);
             }
 
-            const uint* am = rsqset.l;
-            const unsigned int amtot = am[0] + am[1] + am[2] + am[3] + 3;
-            double* F = init_array(amtot + 1);
             calc_f(F, amtot, PQ2 * gammapq);
 
             // using dangerous macros from libint2.h
@@ -371,5 +372,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
       }
     }
   } // end of primitive loops
+
+  free_array(F);
 }
 

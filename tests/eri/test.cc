@@ -58,17 +58,10 @@ int main(int argc, char** argv) {
           am[2] = l2;
           am[3] = l3;
 
-#if USE_BRAKET_H
-          CGShell sh0(&(am[0]));
-          CGShell sh1(&(am[1]));
-          CGShell sh2(&(am[2]));
-          CGShell sh3(&(am[3]));
-#else
-          SafePtr<CGShell> sh0(new CGShell(&(am[0])));
-          SafePtr<CGShell> sh1(new CGShell(&(am[1])));
-          SafePtr<CGShell> sh2(new CGShell(&(am[2])));
-          SafePtr<CGShell> sh3(new CGShell(&(am[3])));
-#endif
+          CGShell sh0(l0);
+          CGShell sh1(l1);
+          CGShell sh2(l2);
+          CGShell sh3(l3);
 
           typedef SubIteratorBase<CGShell> iter;
           SafePtr<iter> sh0_iter(new iter(sh0));
