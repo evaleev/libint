@@ -1,0 +1,30 @@
+This directory includes generated library for use by novice users of libint. It supports computation of standard electron repulsion integrals over Gaussians up to l=5 (h-functions). It also comes with an example that demonstrates how to use libint to compute electron repulsion integrals. This library instance was generated with libint compiler configured with the following command:
+
+../../libint2/configure '--with-cxx=clang++ -std=c++0x' '--with-cxx-optflags=-O2' '--with-incdirs=-I/Users/evaleev/Development/boost/install/include' '--prefix=/Users/evaleev/Development/workspace/install/libint2-clang' '--enable-eri=0' '--with-max-am=5' '--with-opt-am=2' '--disable-unrolling' '--enable-generic-code' '--enable-contracted-ints'
+
+To compile and install the library:
+1. tar -xvzf libint-2.0.0-prealpha.tgz
+2a. cd libint-2.0.0-prealpha
+2b. run 'configure --help' to see the list of command-line options; the most important are:
+    * --prefix
+    * --with-cxx
+    * --with-cxx-optflags
+2c. ./configure <various options>
+3. make
+4. make install
+
+To compile and run the example:
+1. $(CXX) -I[libint_prefix]/include -I[libint_prefix]/include/libint2 -L-I[libint_prefix]/include/lib -o test_eri ./test_eri.cc -lint2
+   where you need to replace [libint_prefix] with the prefix used when installing the accompanying libint library, and $(CXX) is
+   the name of the C++ compiler.
+2. ./test_eri
+3. The output should look as follows:
+Testing (ss|ps) ... ok
+Testing (ss|pp) ... ok
+Testing (ss|ds) ... ok
+Testing (ss|dp) ... ok
+etc.
+
+Platform-specific notes:
+1. Any standard compliant C++ compiler can be used to compile libint. It has been tested with gcc, Intel C++ compiler, and clang.
+2. Generally there is no particular reason to set optimization level for the C++ compiler too high because the library source is already highly optimized. Right now I recommend using optimization level of -O1. With some compilers, such as Intel, using optimization levels greater than -O1 will make compilation last too long to be practical.
