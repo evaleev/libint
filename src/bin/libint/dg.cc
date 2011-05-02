@@ -657,7 +657,7 @@ DirectedGraph::remove_trivial_arithmetics()
     SafePtr< AlgebraicOperator<DGVertex> > oper_cast = dynamic_pointer_cast<AlgebraicOperator<DGVertex>,DGVertex>((vptr));
     if (oper_cast) {
 
-      std::cout << "cast " << vptr->description() << " to " << oper_cast->description() << std::endl;
+      //std::cout << "cast " << vptr->description() << " to " << oper_cast->description() << std::endl;
       typedef DGVertex::ArcSetType::const_iterator aciter;
       aciter a = oper_cast->first_exit_arc();
       SafePtr<DGVertex> left = (*a)->dest();  ++a;
