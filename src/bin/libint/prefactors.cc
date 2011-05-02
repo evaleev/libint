@@ -154,15 +154,18 @@ Prefactors::Prefactors() :
     rho_o_alpha12[p] = roz_ptr;
   }
 
+#if CTIMEENTITIES_SINGLETONS
   for(unsigned int i=0; i<NMAX; i++) {
     N_i[i] = prefactor::Scalar((double)i);
   }
+#endif
 }
 
 Prefactors::~Prefactors()
 {
 }
 
+#if CTIMEENTITIES_SINGLETONS
 SafePtr<Prefactors::cdouble>
 Prefactors::Cdouble(double a)
 {
@@ -174,6 +177,7 @@ Prefactors::Cdouble(double a)
   return result.second;
 #endif
 }
+#endif
 
 namespace libint2 {
 Prefactors prefactors;

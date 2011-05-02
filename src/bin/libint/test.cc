@@ -31,6 +31,7 @@ namespace {
   void test5();
   void test6();
   void test7();
+  void test8();
   void test_cgshell_iter(const CGShell& sh);
 
   template <class Callback>
@@ -48,6 +49,14 @@ namespace {
 		      const typename Integral::BasisFunctionType& f4,
 		      unsigned int m,
 		      unsigned int size_to_unroll);
+  template <class Integral>
+    void RunBuildTest(const typename Integral::BasisFunctionType& f1,
+              const typename Integral::BasisFunctionType& f2,
+              const typename Integral::BasisFunctionType& f3,
+              const typename Integral::BasisFunctionType& f4,
+              unsigned int m,
+              const typename Integral::OperType::Descriptor& descr,
+              unsigned int size_to_unroll);
 };
 
 int main (int argc, char* argv[])
@@ -100,7 +109,7 @@ namespace {
 #if 0
     RunTest(test1,"memory managers");
 #endif
-#if 1
+#if 0
     RunTest(test2,"integrals types");
 #endif
 #if 0
@@ -117,6 +126,9 @@ namespace {
 #endif
 #if 0
     RunTest(test7,"shell-set RR generation");
+#endif
+#if 1
+    RunTest(test8,"congracted G12 integral build");
 #endif
 
     return 0;
@@ -236,6 +248,24 @@ namespace {
       RunTest(boost::bind(__BuildTest<Integral,false>, targets, cparams,
 			  size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
 			  SafePtr<MemoryManager>(new WorstFitMemoryManager), descr), descr);
+    }
+  template <class Integral>
+    void RunBuildTest(const typename Integral::BasisFunctionType& f1,
+              const typename Integral::BasisFunctionType& f2,
+              const typename Integral::BasisFunctionType& f3,
+              const typename Integral::BasisFunctionType& f4,
+              unsigned int m,
+              const typename Integral::OperType::Descriptor& descr, unsigned int size_to_unroll)
+    {
+      std::string descr_label("build ");
+      typedef typename Integral::OperType::Descriptor Descriptor;
+      GenOper<Descriptor> oper(descr);
+      SafePtr<Integral> i = Integral::Instance(f1,f2,f3,f4,m,oper);
+      descr_label += i->label();
+      std::vector<SafePtr<Integral> > targets(1,i);
+      RunTest(boost::bind(__BuildTest<Integral,false>, targets, cparams,
+              size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
+              SafePtr<MemoryManager>(new WorstFitMemoryManager), descr_label), descr_label);
     }
 
 
@@ -410,6 +440,25 @@ namespace {
     generate_rr_code(std::cout,
                      cparams,
                      decl_filenames, def_filenames);
+
+    cparams->contracted_targets(contracted_targets_old_value);
+  }
+
+  // contracted g12 integral build
+  void
+  test8()
+  {
+    const unsigned int use_integrals = 1000000000;
+    const unsigned int use_quartets = 1;
+
+    CGShell::set_contracted_default_value(true);
+    const bool contracted_targets_old_value = cparams->contracted_targets();
+    cparams->contracted_targets(true);
+    CGShell csh_s(0u);
+    CGShell csh_p(1u);
+
+    const Ti_G12_Descr t0g12_descr(0);
+    RunBuildTest<TiG12_11_11_sq>(csh_s,csh_s,csh_s,csh_s,0,t0g12_descr,use_quartets);
 
     cparams->contracted_targets(contracted_targets_old_value);
   }

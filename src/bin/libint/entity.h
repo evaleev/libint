@@ -77,80 +77,84 @@ namespace libint2 {
      has no value known at compile-time)
   */
   template <class T>
-    class RTimeEntity :
-    public Entity,
-    public DGVertex
+  class RTimeEntity :
+  public Entity,
+  public DGVertex
+  {
+    public:
+    typedef typename FNVStringHash::KeyType key_type;
+
+    RTimeEntity(const std::string& id, bool p = true) :
+      Entity(id), DGVertex(ClassInfo<RTimeEntity>::Instance().id()), precomputed_(p)
     {
-      public:
-      typedef typename FNVStringHash::KeyType key_type;
-        
-      RTimeEntity(const std::string& id) :
-        Entity(id),DGVertex(ClassInfo<RTimeEntity>::Instance().id())
-        {
-          FNVStringHash SH;
-          key_ = SH.hash(id);
+      FNVStringHash SH;
+      key_ = SH.hash(id);
 #if DEBUG
-          std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
+std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
 #endif
-        }
+    }
 
-      virtual ~RTimeEntity()
-        {
+    virtual ~RTimeEntity()
+    {
 #if DEBUG
-          std::cout << "Deallocated RTimeEntity id = " << this->id() << std::endl;
+      std::cout << "Deallocated RTimeEntity id = " << this->id() << std::endl;
 #endif
-        }
+    }
 
-      /// Implementation of DGVertex::size()
-      const unsigned int size() const { return 1; }
+    /// Implementation of DGVertex::size()
+    const unsigned int size() const { return 1; }
     
-      /// Implementation of DGVertex::equiv()
-      bool equiv(const SafePtr<DGVertex>& a) const
-      {
-	if (a->typeid_ == typeid_) {
+    /// Implementation of DGVertex::equiv()
+    bool equiv(const SafePtr<DGVertex>& a) const
+    {
+      if (a->typeid_ == typeid_) {
 #if USE_INT_KEY_TO_COMPARE
-          return key() == a->key() && label() == a->label();
+        return key() == a->key() && label() == a->label();
 #else
-          SafePtr<RTimeEntity> a_cast = static_pointer_cast<RTimeEntity,DGVertex>(a);
-	  return id() == a_cast->id();
+        SafePtr<RTimeEntity> a_cast = static_pointer_cast<RTimeEntity,DGVertex>(a);
+        return id() == a_cast->id();
 #endif
-	}
-	else
-	  return false;
       }
-      
-      /// Implementation of DGVertex::label()
-      const std::string& label() const
-      {
-	return Entity::id();
-      }
-      /// Implementation of DGVertex::id()
-      const std::string& id() const
-      {
-	return label();
-      }
-      /// Implementation of DGVertex::description()
-      std::string description() const
-      {
-        ostringstream os;
-        os << "RTimeEntity: " << id();
-        const std::string descr = os.str();
-        return descr;
-      }
-      /// Implements Hashable::key()
-      typename DGVertex::KeyReturnType key() const {
-        return key_;
-      }
-      
-      private:
-      /// Implementation of DGVertex::this_precomputed()
-      bool this_precomputed() const
-      {
-        return true;
-      }
+      else
+        return false;
+    }
 
-      key_type key_;
-    };
+    /// Implementation of DGVertex::label()
+    const std::string& label() const
+    {
+      return Entity::id();
+    }
+    /// Implementation of DGVertex::id()
+    const std::string& id() const
+    {
+      return label();
+    }
+    /// Implementation of DGVertex::description()
+    std::string description() const
+    {
+      ostringstream os;
+      os << "RTimeEntity: " << id();
+      const std::string descr = os.str();
+      return descr;
+    }
+    /// Implements Hashable::key()
+    typename DGVertex::KeyReturnType key() const {
+      return key_;
+    }
+
+    private:
+    /// Implementation of DGVertex::this_precomputed()
+    bool this_precomputed() const
+    {
+      return precomputed_;
+    }
+
+    key_type key_;
+    /// RTimeEntity can go either way. Example of a precomputed quartity is a quantity passed by the user to the library.
+    /// Example of a quantity that is not precomputed and thus must be evaluated explicitly by the graph is
+    /// a product of precomputed RTimeEntity with a CTimeEntity
+    bool precomputed_;
+  };
 
   /**
      CTimeEntity is an Entity of type T that exists at compile-time of the generated code (hence
@@ -260,8 +264,21 @@ namespace libint2 {
       typedef RTimeEntity< typename ProductType<T,U>::result > prodtype;
       ostringstream oss;
       oss << A->id() << "*" << B->id();
-      return SafePtr<prodtype>(new prodtype(oss.str()));
+      // TODO this should be false, but the logic of DirectedGraph construction depends on this being true
+      const bool not_precomputed = true;
+      return SafePtr<prodtype>(new prodtype(oss.str(), not_precomputed));
     }
+  // TODO should be possible to enable this, but this creates RTimeEntities that should not be precomputed, see the comment above
+#if 0
+  /** Creates product B*A.
+  */
+  template <typename T, typename U>
+    SafePtr< RTimeEntity< typename ProductType<T,U>::result > >
+    operator*(const SafePtr< CTimeEntity<U> >& B, const SafePtr< RTimeEntity<T> >& A)
+    {
+      return A * B;
+    }
+#endif
 
 };
 

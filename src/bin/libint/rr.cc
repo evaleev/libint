@@ -16,6 +16,7 @@
 #include <singl_stack.timpl.h>
 
 using namespace libint2;
+using namespace libint2::prefactor;
 
 RecurrenceRelation::RecurrenceRelation() :
   nflops_(0), expr_()
@@ -287,7 +288,8 @@ RecurrenceRelation::add_expr(const SafePtr<ExprType>& expr, int minus)
       expr_ = expr;
     }
     else {
-      SafePtr<ExprType> negative(new ExprType(ExprType::OperatorTypes::Times,expr,prefactors.Cdouble(-1.0)));
+      using libint2::prefactor::Scalar;
+      SafePtr<ExprType> negative(new ExprType(ExprType::OperatorTypes::Times,expr,Scalar(-1.0)));
       expr_ = negative;
       ++nflops_;
     }

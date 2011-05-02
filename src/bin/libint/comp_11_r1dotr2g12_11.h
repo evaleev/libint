@@ -133,7 +133,7 @@ namespace libint2 {
 	++nchildren_;
 
 	if (is_simple()) {
-	  SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[1],rr_child(next_child)));
+	  SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,Scalar(1.0),rr_child(next_child)));
 	  add_expr(expr0_ptr);
 	  nflops_ += 1;
 	}

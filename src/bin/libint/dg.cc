@@ -79,13 +79,15 @@ DirectedGraph::append_vertex(const SafePtr<DGVertex>& vertex)
 SafePtr<DGVertex>
 DirectedGraph::add_vertex(const SafePtr<DGVertex>& vertex)
 {
-  SafePtr<DGVertex> vcopy_on_graph = vertex_is_on(vertex);
-  if (vcopy_on_graph)
-    return vcopy_on_graph;
-  else {
-    add_new_vertex(vertex);
-    return vertex;
+  // if vertex is precomputed -- can replicate it without consequences
+  // else check if it's on already
+  if (vertex->precomputed() == false) {
+    SafePtr<DGVertex> vcopy_on_graph = vertex_is_on(vertex);
+    if (vcopy_on_graph)
+      return vcopy_on_graph;
   }
+  add_new_vertex(vertex);
+  return vertex;
 }
 
 void
@@ -465,6 +467,12 @@ void
 DirectedGraph::optimize_rr_out(const SafePtr<CodeContext>& context)
 {
   replace_rr_with_expr();
+#if DEBUG
+    {
+      std::basic_ofstream<char> dotfile("graph.expr0.dot");
+      this->print_to_dot(false,dotfile);
+    }
+#endif
   // TODO remove_trivial_arithmetics() seems to be broken when working with [Ti,G12], fix!
 #if 1
   remove_trivial_arithmetics();
@@ -640,6 +648,8 @@ DirectedGraph::insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr<Recu
 void
 DirectedGraph::remove_trivial_arithmetics()
 {
+  using libint2::prefactor::Scalar;
+  const SafePtr< CTimeEntity<double> > const_one_point_zero = Scalar(1.0);
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
@@ -647,13 +657,14 @@ DirectedGraph::remove_trivial_arithmetics()
     SafePtr< AlgebraicOperator<DGVertex> > oper_cast = dynamic_pointer_cast<AlgebraicOperator<DGVertex>,DGVertex>((vptr));
     if (oper_cast) {
 
+      std::cout << "cast " << vptr->description() << " to " << oper_cast->description() << std::endl;
       typedef DGVertex::ArcSetType::const_iterator aciter;
       aciter a = oper_cast->first_exit_arc();
       SafePtr<DGVertex> left = (*a)->dest();  ++a;
       SafePtr<DGVertex> right = (*a)->dest();
 
       // 1.0 * x = x
-      if (left->equiv(prefactors.N_i[1])) {
+      if (left->equiv(const_one_point_zero) && left->num_entry_arcs() == 1) {
         const bool success = remove_vertex_at((vptr),right);
 #if DEBUG
         if (success)
@@ -662,7 +673,7 @@ DirectedGraph::remove_trivial_arithmetics()
       }
 
       // x * 1.0 = x
-      if (right->equiv(prefactors.N_i[1])) {
+      if (right->equiv(const_one_point_zero) && right->num_entry_arcs() == 1) {
         const bool success = remove_vertex_at((vptr),left);
 #if DEBUG
         if (success)
