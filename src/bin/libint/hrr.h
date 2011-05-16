@@ -469,27 +469,35 @@ namespace libint2 {
 
         if (loc_a == InBra) {
           F sh_a(target_->bra(part,pos_a));
+          // HRR works for contracted and uncontracted non-differentiated functions
+          // thus only need to create the uncontracted instances
+          sh_a.uncontract();
           os << sh_a.label() << " ";
 
           if (loc_b == InBra) {
             F sh_b(target_->bra(part,pos_b));
+            sh_b.uncontract();
             os << sh_b.label();
           }
           else {
             F sh_b(target_->ket(part,pos_b));
+            sh_b.uncontract();
             os << sh_b.label();
           }
         }
         else {
           F sh_a(target_->ket(part,pos_a));
+          sh_a.uncontract();
           os << sh_a.label() << " ";
 
           if (loc_b == InBra) {
             F sh_b(target_->bra(part,pos_b));
+            sh_b.uncontract();
             os << sh_b.label();
           }
           else {
             F sh_b(target_->ket(part,pos_b));
+            sh_b.uncontract();
             os << sh_b.label();
           }
         }
