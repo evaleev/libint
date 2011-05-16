@@ -18,13 +18,13 @@ namespace libint2 {
 
   public:
     DGArc(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest);
-    ~DGArc() {}
+    virtual ~DGArc() {}
 
     SafePtr<DGVertex> orig() const { return orig_; }
     SafePtr<DGVertex> dest() const { return dest_; }
 
     /// Print out the arc
-    virtual void print(std::ostream&) const =0;
+    virtual void print(std::ostream& os) const =0;
 
   };
   
@@ -34,7 +34,7 @@ namespace libint2 {
 
   public:
     DGArcDirect(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) : DGArc(orig,dest) {}
-    ~DGArcDirect() {}
+    virtual ~DGArcDirect() {}
 
     /// Overload of DGArc::print()
     void print(std::ostream& os) const
@@ -48,7 +48,7 @@ namespace libint2 {
   class DGArcRR : public DGArc {
 
   public:
-    ~DGArcRR() {}
+    virtual ~DGArcRR() {}
 
     /// rr() returns pointer to the RecurrenceRelation describing the arc
     virtual SafePtr<RecurrenceRelation> rr() const =0;
@@ -69,14 +69,14 @@ namespace libint2 {
   public:
     DGArcRel(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest,
 	     const SafePtr<ArcRel>& rel);
-    ~DGArcRel();
+    virtual ~DGArcRel();
 
     /// Implementation of DGArcRR::rr()
     SafePtr<RecurrenceRelation> rr() const { return dynamic_pointer_cast<RecurrenceRelation,ArcRel>(rel_); }
     /// Overload of DGArc::print()
     void print(std::ostream& os) const
       {
-        os << "DGArcRel<T>: connects " << orig().get() << " to " << dest().get();
+        os << "DGArcRel<T>: connects " << orig().get() << " to " << dest().get() << std::endl;
       }
     
   };

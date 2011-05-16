@@ -36,7 +36,7 @@ namespace libint2 {
     class FirstChoiceTactic : public Tactic {
     public:
     FirstChoiceTactic(const SafePtr<RandomizePolicy>& rpolicy = SafePtr<RandomizePolicy>(new RandomizePolicy)) : Tactic(), rpolicy_(rpolicy) {}
-    ~FirstChoiceTactic() {}
+    virtual ~FirstChoiceTactic() {}
     
     RR optimal_rr(const rr_stack& stack) const {
       if (!stack.empty())
@@ -55,7 +55,7 @@ namespace libint2 {
   class FewestNewVerticesTactic : public Tactic {
     public:
     FewestNewVerticesTactic(const SafePtr<DirectedGraph>& dg) : Tactic(), dg_(dg) {}
-    ~FewestNewVerticesTactic() {}
+    virtual ~FewestNewVerticesTactic() {}
     
     RR optimal_rr(const rr_stack& stack) const;
 
@@ -69,7 +69,7 @@ namespace libint2 {
   class ZeroNewVerticesTactic : public Tactic {
     public:
     ZeroNewVerticesTactic(const SafePtr<DirectedGraph>& dg) : Tactic(), dg_(dg) {}
-    ~ZeroNewVerticesTactic() {}
+    virtual ~ZeroNewVerticesTactic() {}
     
     RR optimal_rr(const rr_stack& stack) const;
     
@@ -82,7 +82,7 @@ namespace libint2 {
   class RandomChoiceTactic : public Tactic {
     public:
     RandomChoiceTactic();
-    ~RandomChoiceTactic() {}
+    virtual ~RandomChoiceTactic() {}
     
     RR optimal_rr(const rr_stack& stack) const;
   };
@@ -92,7 +92,7 @@ namespace libint2 {
   class NullTactic : public Tactic {
     public:
     NullTactic() : Tactic() {}
-    ~NullTactic() {}
+    virtual ~NullTactic() {}
     
     RR optimal_rr(const rr_stack& stack) const;
     
@@ -120,7 +120,7 @@ namespace libint2 {
 
     unsigned int noise(unsigned int nrrs) const {
       unsigned long rand = random();
-      const unsigned long range = 1ul<<32 - 1;
+      const unsigned long range = RAND_MAX;
       const unsigned int result = static_cast<unsigned int>(std::floor(nrrs*scale_*rand/range));
       return result;
     }

@@ -7,6 +7,7 @@
 #include <list>
 #include <map>
 #include <vector>
+#include <deque>
 #include <algorithm>
 #include <stdexcept>
 #include <assert.h>
@@ -147,7 +148,7 @@ namespace libint2 {
         optimized away. optimize_rr_out() will replace all simple recurrence relations
         with code representing them.
     */
-    void optimize_rr_out();
+    void optimize_rr_out(const SafePtr<CodeContext>& context);
 
     /** after all apply's have been called, traverse()
         construct a heuristic order of traversal for the graph.
@@ -197,6 +198,9 @@ namespace libint2 {
     SafePtr<GraphRegistry>& registry() { return registry_; }
     const SafePtr<GraphRegistry>& registry() const { return registry_; }
     
+    /// return true if there are vertices with 0 children but not pre-computed
+    bool missing_prerequisites() const;
+
   private:
 
     /// contains vertices
@@ -257,7 +261,7 @@ namespace libint2 {
     /** This function gets rid of nodes which are connected
     to their equivalents (such as (ss|ss) shell quartet can only be connected to (ss|ss) integral)
     */
-    void handle_trivial_nodes();
+    void handle_trivial_nodes(const SafePtr<CodeContext>& context);
     /// This functions removes vertices not connected to other vertices
     void remove_disconnected_vertices();
     /** Finds (binary) subtrees. The subtrees correspond to a single-line code (no intermediates
@@ -292,7 +296,8 @@ namespace libint2 {
     void assign_oper_symbol(const SafePtr<CodeContext>& context, SafePtr<DGVertex>& v);
     // Print the code using symbols generated with assign_symbols()
     void print_def(const SafePtr<CodeContext>& context, std::ostream& os,
-                   const SafePtr<ImplicitDimensions>& dims);
+                   const SafePtr<ImplicitDimensions>& dims,
+                   const SafePtr<CodeSymbols>& args);
     
     // Returns true if the traversal path contains a nontrivial RecurrenceRelation (i.e. not of IntegralSet_to_Integrals variety)
     bool contains_nontrivial_rr() const;
@@ -331,6 +336,17 @@ namespace libint2 {
 
   /// extracts external symbols and RRs from the graph
   void extract_symbols(const SafePtr<DirectedGraph>& dg);
+
+  // use these functors with DirectedGraph::foreach
+  struct PrerequisitesExtractor {
+      std::deque< SafePtr<DGVertex> > vertices;
+      void operator()(const SafePtr<DGVertex>& v);
+  };
+  struct VertexPrinter {
+      VertexPrinter(std::ostream& ostr) : os(ostr) {}
+      std::ostream& os;
+      void operator()(const SafePtr<DGVertex>& v);
+  };
 
 };
 

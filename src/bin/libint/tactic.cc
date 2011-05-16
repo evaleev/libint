@@ -50,13 +50,19 @@ ZeroNewVerticesTactic::optimal_rr(const rr_stack& stack) const {
         return rr;
       }
       else {
-	std::cout << "ZeroNewVerticesTactic::optimal_rr: not optimal: " << stack[i]->label() << std::endl;
-	SafePtr<DGVertex> target = stack[i]->rr_target();
-	const unsigned int nchildren = stack[i]->num_children();
-	for(unsigned int c=0; c<nchildren; ++c) {
-	  SafePtr<DGVertex> child = stack[i]->rr_child(c);
-	  std::cout << "  child " << c << ": " << child->label() << std::endl;
-	}
+        std::cout << "ZeroNewVerticesTactic::optimal_rr: not optimal: " << stack[i]->label() << std::endl;
+        SafePtr<DGVertex> target = stack[i]->rr_target();
+        const unsigned int nchildren = stack[i]->num_children();
+        for(unsigned int c=0; c<nchildren; ++c) {
+          SafePtr<DGVertex> child = stack[i]->rr_child(c);
+          std::cout << "  child " << c << ": " << child->label() << std::endl;
+        }
+
+        {
+          VertexPrinter vp(std::cout);
+          dg_->foreach(vp);
+        }
+
       }
     }
     throw std::logic_error("ZeroNewVerticesTactic -- no RRs found that add zero new vertices. Probably used by mistake");
@@ -78,7 +84,7 @@ RandomChoiceTactic::optimal_rr(const rr_stack& stack) const {
   if (!stack.empty()) {
     unsigned int size = stack.size();
     unsigned long rand = random();
-    const unsigned long range = 1ul<<32 - 1;
+    const unsigned long range = RAND_MAX;
     long choice = (long)(rand * size - 1)/range;
     return stack[choice];
   }

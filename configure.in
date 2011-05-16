@@ -416,42 +416,6 @@ if test "X$INCLUDE_G12DKH" != "Xno"; then
   AC_DEFINE_UNQUOTED(G12DKH_OPT_AM,$G12DKH_OPT_AM)
 fi
 
-#######
-# check max am for derivative integrals, if needed
-#######
-if test X$INCLUDE_ERI != Xno; then
- if test $INCLUDE_ERI -gt 0; then
- if test $ERI_MAX_AM -gt 3; then
-  D1ERI_MAX_AM=3
- else
-  D1ERI_MAX_AM=$ERI_MAX_AM
- fi
- AC_ARG_WITH(d1eri-max-am,
- [  --with-d1eri-max-am=N     Support first-order derivative ERIs for Gaussians of angular momentum up to N.],
- if test $withval -le 0 -o $withval -ge $ERI_MAX_AM; then
-  AC_MSG_ERROR([Invalid value for --with-d1eri-max-am ($withval)])
- else
-  D1ERI_MAX_AM=$withval
- fi
- )
-
- D2ERI_MAX_AM=$D1ERI_MAX_AM
- AC_ARG_WITH(d2eri-max-am,
- [  --with-d2eri-max-am=N     Support second-order derivative ERIs for Gaussians of angular momentum up to N.],
- if test $withval -le 0 -o $withval -ge $D2ERI_MAX_AM; then
-  AC_MSG_ERROR([Invalid value for --with-d2eri-max-am ($withval)])
- else
-  D2ERI_MAX_AM=$withval
- fi
- )
-
- AC_SUBST(D1ERI_MAX_AM)
- AC_SUBST(D2ERI_MAX_AM)
- AC_DEFINE_UNQUOTED(D1ERI_MAX_AM,$D1ERI_MAX_AM)
- AC_DEFINE_UNQUOTED(D2ERI_MAX_AM,$D2ERI_MAX_AM)
- fi
-fi
-
 AC_ARG_ENABLE(unrolling,
 [  --enable-unrolling      Allow computation in terms of integrals rather than sets of integrals.],
 [
@@ -549,6 +513,16 @@ AC_DEFINE(LIBINT_FLOP_COUNT)
 AC_MSG_RESULT([FLOP counter will be supported])
 ])
 
+AC_ARG_ENABLE(contracted-ints,
+[  --enable-contracted-ints     Turn on support for contracted integrals.],
+[
+AC_DEFINE(LIBINT_CONTRACTED_INTS)
+AC_MSG_RESULT([Will support contracted integrals])
+],
+[
+AC_MSG_RESULT([Will not support contracted integrals])
+])
+
 dnl
 dnl Preferred strategies for evaluation
 dnl
@@ -596,10 +570,10 @@ AC_ARG_WITH(cxx,
 CXX=$withval
 )
 
-CXXOPTIONS_OPT=
+CXXFLAGS_OPT=
 AC_ARG_WITH(cxx-optflags,
 [  --with-cxx-optflags     Gives optimization flags for the C++ compiler.],
-CXXOPTIONS_OPT=$withval
+CXXFLAGS_OPT=$withval
 )
 
 AC_ARG_WITH(cxxgen,
@@ -607,10 +581,10 @@ AC_ARG_WITH(cxxgen,
 CXXGEN=$withval
 )
 
-CXXGENOPTIONS_OPT=
+CXXFLAGS_GEN_OPT=
 AC_ARG_WITH(cxxgen-optflags,
 [  --with-cxxgen-optflags  Gives optimization flags for the C++ compiler for generated source.],
-CXXGENOPTIONS_OPT=$withval
+CXXFLAGS_GEN_OPT=$withval
 )
 
 AC_ARG_WITH(cxxdepend,
@@ -700,11 +674,13 @@ AC_PROG_MAKE_SET
 AC_PROG_LN_S
 AC_PROG_INSTALL
 AC_PROG_RANLIB
-dnl ac_prog_cxx's order isn't what i need
-AC_CHECK_PROGS(CXX, g++ c++ gcc CC cxx xlC_r, gcc)
-dnl sees if CXX is a GNU compiler
+
+# discard CXXFLAGS provided by the C++ detection macros
+initial_CXXFLAGS="$CXXFLAGS"
 AC_PROG_CXX
 AC_PROG_CXXCPP
+CXXFLAGS="$initial_CXXFLAGS"
+
 AC_CHECK_PROG(AR,ar,ar)
 AC_CHECK_PROG(PERL,perl,perl)
 AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin)
@@ -732,14 +708,17 @@ changequote([, ])dnl
 
 dnl -------- Checks for compiler/linker options. ----------
 
-# options needed only for optimization
-if test "X$CXXOPTIONS_OPT" = X; then
-  CXXOPTIONS_OPT=-O2
+# if user provided CXXFLAGS, I'm set; else ...
+if test "X$CXXFLAGS" = X; then
+  # options needed only for optimization
+  if test "X$CXXFLAGS_OPT" = X; then
+    CXXFLAGS_OPT=-O2
+  fi
+  # options needed only for debugging
+  CXXFLAGS_DBG=-g
+  # options that are always needed
+  CXXFLAGS_MISC=
 fi
-# options needed only for debugging
-CXXOPTIONS_DBG=-g
-# options that are always needed
-CXXOPTIONS_MISC=
 
 OBJSUF=o
 LIBSUF=a
@@ -761,68 +740,20 @@ if test -f depcheck.u; then
 fi
 /bin/rm -f depcheck.u depcheck.c depcheck.o
 
-dnl -- special optimization options --
-
-AC_MSG_CHECKING([for additional optimization options])
-case $target in
-  rs6000-ibm-aix3.2.* | rs6000-ibm-aix4.* | powerpc-ibm-aix4.* | powerpc-ibm-aix5.*)
-    if test X$GXX != Xyes; then
-      CXXOPTIONS_OPT="$CXXOPTIONS_OPT -qnolm -qrtti"
-    fi
-    AC_MSG_RESULT([rs6000 or powerpc])
-  ;;
-  *)
-    AC_MSG_RESULT([none])
-  ;;
-esac
-
 dnl -- special architecture options --
 
-if test "X$CXXGENOPTIONS_OPT" = X; then
+if test "X$CXXFLAGS_GEN_OPT" = X; then
   AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxxgen-optflags configure option])
 fi
 
-dnl ----------- check for GNU libc++-v3 prerelease bug ---------------
-
-if test X$GXX = Xyes; then
-AC_MSG_CHECKING([for GNU libc++-v3 prerelease bug])
-AC_LINK_IFELSE([AC_LANG_PROGRAM(
-[[#include <stdio.h>
-#include <$iostream>
-]],[[
-]])],[
-AC_MSG_RESULT([no])
-],
-EXTRADEFINES="$EXTRADEFINES -D_ISOC99_SOURCE=1"
-AC_MSG_RESULT([yes])
-);
-fi
-
-dnl -- other options --
-
-AC_MSG_CHECKING([GNU c++ library/template flags])
-if test X$GXX = Xyes; then
-  # automatic template instantiation causes problems with libstc++-v3
-  #CXXOPTIONS_MISC="$CXXOPTIONS_MISC -fno-implicit-templates"
-  #EXPLICIT_TEMPLATE_INSTANTIATION=yes
-  #AC_DEFINE(EXPLICIT_TEMPLATE_INSTANTIATION)
-  AC_MSG_RESULT([GNU])
-else
-  case $target in
-    *)
-      AC_MSG_RESULT([generic non GNU])
-      ;;
-    esac
-fi
-
 if test $DEBUG = yes; then
-  CXXFLAGS="$CXXOPTIONS_DBG $CXXOPTIONS_MISC"
+  CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXFLAGS_MISC"
   LDFLAGS="$LDFLAGS -g"
 elif test $DEBUG = opt; then
-  CXXFLAGS="$CXXOPTIONS_DBG $COPTIONS_OPT $CXXOPTIONS_MISC"
+  CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXOPTIONS_OPT $CXXFLAGS_MISC"
   LDFLAGS="$LDFLAGS -g"
 else
-  CXXFLAGS="$CXXOPTIONS_OPT $CXXOPTIONS_MISC"
+  CXXFLAGS="$CXXFLAGS $CXXFLAGS_OPT $CXXFLAGS_MISC"
 fi
 
 AC_SUBST(EXTRAINCLUDE)
@@ -838,14 +769,14 @@ AC_SUBST(CXXDEPENDFLAGS)
 dnl --------- configure compiler for generated source ---------
 if test "X$CXXGEN" = X; then
   CXXGEN=$CXX
-  CXXGENOPTIONS_OPT=$CXXOPTIONS_OPT
+  CXXFLAGS_GEN_OPT=$CXXFLAGS_OPT
 fi
 if test $DEBUG = yes; then
-  CXXGENFLAGS="$CXXOPTIONS_DBG $CXXGENOPTIONS_MISC"
+  CXXGENFLAGS="$CXXFLAGS_DBG $CXXFLAGS_GEN_MISC"
 elif test $DEBUG = opt; then
-  CXXGENFLAGS="$CXXOPTIONS_DBG $CXXGENOPTIONS_OPT $CXXGENOPTIONS_MISC"
+  CXXGENFLAGS="$CXXFLAGS_DBG $CXXFLAGS_GEN_OPT $CXXFLAGS_GEN_MISC"
 else
-  CXXGENFLAGS="$CXXGENOPTIONS_OPT $CXXGENOPTIONS_MISC"
+  CXXGENFLAGS="$CXXFLAGS_GEN_OPT $CXXFLAGS_GEN_MISC"
 fi
 AC_SUBST(CXXGEN)
 AC_SUBST(CXXGENFLAGS)
@@ -956,7 +887,7 @@ AC_COMPILE_IFELSE(
 dnl -- Checks for typedefs, structures, and compiler characteristics. --
 AC_TYPE_SIZE_T
 
-CPPFLAGS="$CPPFLAGS" \
+CPPFLAGS="$CPPFLAGS" CXX="$CXX" CXXFLAGS="$CXXFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
 LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB" \
 

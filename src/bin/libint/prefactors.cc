@@ -15,7 +15,7 @@ Prefactors::Prefactors() :
   char X[np][2][2] = { {"A", "B"},
                        {"C", "D"} };
 
-  for(int p=0; p<np; p++) {
+  for(unsigned int p=0; p<np; p++) {
 
     for(int braket=0; braket<2; braket++) {
       char XY_X_str[20];
@@ -62,7 +62,7 @@ Prefactors::Prefactors() :
   // TwoPRep ITR prefactors
   //
 
-  for(int p=0; p<np; p++) {
+  for(unsigned int p=0; p<np; p++) {
     char tmp_str[40];
     sprintf(tmp_str,"TwoPRepITR_pfac0_%d",p);
     rdptr vpfac0_ptr(new rdouble(tmp_str));
@@ -88,7 +88,7 @@ Prefactors::Prefactors() :
   rdptr pfac2_ptr(new rdouble("R12kG12_pfac2"));
   R12kG12VRR_pfac2 = pfac2_ptr;
 
-  for(int p=0; p<np; p++) {
+  for(unsigned int p=0; p<np; p++) {
     char tmp_str[20];
     sprintf(tmp_str,"R12kG12_pfac0_%d",p);
     rdptr vpfac0_ptr(new rdouble(tmp_str));
@@ -119,7 +119,7 @@ Prefactors::Prefactors() :
     }
   }
 
-  for(int p=0; p<np; p++) {
+  for(unsigned int p=0; p<np; p++) {
     for(int braket=0; braket<2; braket++) {
       char tmpstr[200];
       sprintf(tmpstr,"zeta_%c",X[p][braket][0]);
@@ -128,7 +128,7 @@ Prefactors::Prefactors() :
     }
   }
   
-  for(int p=0; p<np; p++) {
+  for(unsigned int p=0; p<np; p++) {
     for(int braket=0; braket<2; braket++) {
       char tmpstr[200];
       sprintf(tmpstr,"zeta_%c_2",X[p][braket][0]);
@@ -139,7 +139,7 @@ Prefactors::Prefactors() :
   
   char alpha12_str[np][20] = { "zeta", "eta" };
   char alpha12_char[np+1] = "ze";
-  for(int p=0; p<np; p++) {
+  for(unsigned int p=0; p<np; p++) {
     rdptr alpha12_ptr(new rdouble(alpha12_str[p]));
     alpha12[p] = alpha12_ptr;
 
@@ -154,15 +154,18 @@ Prefactors::Prefactors() :
     rho_o_alpha12[p] = roz_ptr;
   }
 
-  for(int i=0; i<NMAX; i++) {
+#if CTIMEENTITIES_SINGLETONS
+  for(unsigned int i=0; i<NMAX; i++) {
     N_i[i] = prefactor::Scalar((double)i);
   }
+#endif
 }
 
 Prefactors::~Prefactors()
 {
 }
 
+#if CTIMEENTITIES_SINGLETONS
 SafePtr<Prefactors::cdouble>
 Prefactors::Cdouble(double a)
 {
@@ -174,6 +177,7 @@ Prefactors::Cdouble(double a)
   return result.second;
 #endif
 }
+#endif
 
 namespace libint2 {
 Prefactors prefactors;

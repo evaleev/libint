@@ -44,6 +44,8 @@ int main(int argc, char* argv[])
 #pragma _CRI ivdep
         for(long int i=0; i<n; i++)
           Y[i] += a*X[i];
+      delete[] X;
+      delete[] Y;
     }
     break;
 
@@ -56,6 +58,9 @@ int main(int argc, char* argv[])
 #pragma _CRI ivdep
         for(long int i=0; i<n; i++)
           Z[i] = X[i] * Y[i];
+      delete[] X;
+      delete[] Y;
+      delete[] Z;
     }
     break;
 
@@ -69,6 +74,8 @@ int main(int argc, char* argv[])
 #pragma _CRI ivdep
         for(long int i=0; i<n; i++)
           Y[i] += a*X[i];
+      delete[] X;
+      delete[] Y;
     }
     break;
 
@@ -82,10 +89,14 @@ int main(int argc, char* argv[])
 #pragma _CRI ivdep
         for(long int i=0; i<n; i++)
           Z[i] = X[i] * Y[i];
+      delete[] X;
+      delete[] Y;
+      delete[] Z;
     }
     break;
   }
 
+  return 0;
 }
 
 void usage()

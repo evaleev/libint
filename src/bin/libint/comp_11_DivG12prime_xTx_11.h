@@ -29,8 +29,8 @@ namespace libint2 {
 
       using ParentType::Instance;
     private:
-      using RecurrenceRelation::expr_;
-      using RecurrenceRelation::nflops_;
+      using ParentType::RecurrenceRelation::expr_;
+      using ParentType::RecurrenceRelation::nflops_;
       using ParentType::target_;
       using ParentType::is_simple;
 
@@ -40,6 +40,7 @@ namespace libint2 {
       static bool directional() { return false; }
       static std::string descr() { return "CR"; }
 
+      template<class RR, class C> friend class ChildFactory;
     };
 
   template <class F>

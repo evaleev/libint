@@ -20,6 +20,8 @@ namespace libint2 {
   typedef GenIntegralSet_11_11<CGF,R12kR12lG12,EmptySet> R12kR12lG12_11_11_int;
   typedef GenIntegralSet_11_11<CGShell,TiG12,mType> TiG12_11_11_sq;
   typedef GenIntegralSet_11_11<CGF,TiG12,mType> TiG12_11_11_int;
+  typedef GenIntegralSet_11_11<CGShell,G12TiG12,mType> G12TiG12_11_11_sq;
+  typedef GenIntegralSet_11_11<CGF,G12TiG12,mType> G12TiG12_11_11_int;
   typedef GenIntegralSet_11_11<CGShell,DivG12prime_xTx,mType> DivG12prime_xTx_11_11_sq;
   typedef GenIntegralSet_11_11<CGF,DivG12prime_xTx,mType> DivG12prime_xTx_11_11_int;
   typedef GenIntegralSet< GenMultSymm2BodyOper,
@@ -47,6 +49,8 @@ namespace libint2 {
   R12kR12lG12_11_11_int,
   TiG12_11_11_sq,
   TiG12_11_11_int,
+  G12TiG12_11_11_sq,
+  G12TiG12_11_11_int,
   DivG12prime_xTx_11_11_sq,
   DivG12prime_xTx_11_11_int,
   DummySymmIntegral_11_11_sq,

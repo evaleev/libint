@@ -201,6 +201,7 @@ namespace libint2 {
       
       LinearCombination& operator+=(const term_t& t) {
         data_.push_back(t);
+        return *this;
       }
       size_t size() const { return data_.size(); }
       const term_t& operator[](unsigned int i) const { return data_[i]; }

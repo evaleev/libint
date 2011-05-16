@@ -11,6 +11,7 @@
 #include <rr.templ.h>
 #include <graph_registry.h>
 #include <intset_to_ints.h>
+#include <uncontract.h>
 #include <singl_stack.timpl.h>
 
 #include <master_ints_list.h>
@@ -53,7 +54,11 @@ namespace libint2 {
     ITR_a_11_TwoPRep_11_sh,
 #endif
     VRR_a_11_TwoPRep_11_sh,
-    VRR_c_11_TwoPRep_11_sh
+    VRR_c_11_TwoPRep_11_sh,
+    Deriv_a_11_TwoPRep_11_sh,
+    Deriv_b_11_TwoPRep_11_sh,
+    Deriv_c_11_TwoPRep_11_sh,
+    Deriv_d_11_TwoPRep_11_sh
     > value;
   };
   template <> struct MasterStrategy<TwoPRep_11_11_int> {
@@ -64,7 +69,11 @@ namespace libint2 {
     ITR_a_11_TwoPRep_11_int,
 #endif
     VRR_a_11_TwoPRep_11_int,
-    VRR_c_11_TwoPRep_11_int
+    VRR_c_11_TwoPRep_11_int,
+    Deriv_a_11_TwoPRep_11_int,
+    Deriv_b_11_TwoPRep_11_int,
+    Deriv_c_11_TwoPRep_11_int,
+    Deriv_d_11_TwoPRep_11_int
     > value;
   };
 #else  // 0B0D strategy
@@ -73,7 +82,11 @@ namespace libint2 {
     HRR_ba_11_TwoPRep_11_sh,
     HRR_dc_11_TwoPRep_11_sh,
     VRR_b_11_TwoPRep_11_sh,
-    VRR_d_11_TwoPRep_11_sh
+    VRR_d_11_TwoPRep_11_sh,
+    Deriv_a_11_TwoPRep_11_sh,
+    Deriv_b_11_TwoPRep_11_sh,
+    Deriv_c_11_TwoPRep_11_sh,
+    Deriv_d_11_TwoPRep_11_sh
     > value;
   };
   template <> struct MasterStrategy<TwoPRep_11_11_int> {
@@ -81,7 +94,11 @@ namespace libint2 {
     HRR_ba_11_TwoPRep_11_int,
     HRR_dc_11_TwoPRep_11_int,
     VRR_b_11_TwoPRep_11_int,
-    VRR_d_11_TwoPRep_11_int
+    VRR_d_11_TwoPRep_11_int,
+    Deriv_a_11_TwoPRep_11_int,
+    Deriv_b_11_TwoPRep_11_int,
+    Deriv_c_11_TwoPRep_11_int,
+    Deriv_d_11_TwoPRep_11_int
     > value;
   };
 #endif
@@ -148,6 +165,20 @@ namespace libint2 {
     HRR_ab_11_TiG12_11_int,
     HRR_cd_11_TiG12_11_int,
     CR_11_TiG12_11_int
+    > value;
+  };
+  template <> struct MasterStrategy<G12TiG12_11_11_sq> {
+    typedef mpl::list<
+    HRR_ab_11_G12TiG12_11_sh,
+    HRR_cd_11_G12TiG12_11_sh,
+    CR_11_G12TiG12_11_sh
+    > value;
+  };
+  template <> struct MasterStrategy<G12TiG12_11_11_int> {
+    typedef mpl::list<
+    HRR_ab_11_G12TiG12_11_int,
+    HRR_cd_11_G12TiG12_11_int,
+    CR_11_G12TiG12_11_int
     > value;
   };
   template <> struct MasterStrategy<DivG12prime_xTx_11_11_sq> {
@@ -324,6 +355,18 @@ namespace libint2 {
         const unsigned int size = integral->size();
         const bool can_unroll = boost::is_same<typename T::BasisFunctionType,CGShell>::value &&
                                 (size <= dg->registry()->unroll_threshold());
+#if 0
+        // for now only allow unrolling in primitive-basis code
+        // TODO solve the problem with allowing unrolling in contracted code:
+        // (ss|ps) top(HRR)-level code unrolls the quartet to integrals, but these integrals
+        // are contracted, hence their evaluation is deferred to the prerequsite step
+        // when constructing prereq graph these integrals are added and assigned addresses in
+        // arbitrary order; to avoid this "for now" do this hack
+        // for a more sound solution see PrerequisitesExtractor in dg.cc, unfortunately it doesn't seem to fully work
+        // right now I don't have time to mess with this anymore
+        const bool can_uncontract = dg->registry()->uncontract();
+        if (can_unroll && can_uncontract) {
+#endif
         if (can_unroll) {
           typedef IntegralSet_to_Integrals<T> ISet2I;
           SafePtr<ISet2I> x(new ISet2I(tptr));
@@ -332,8 +375,24 @@ namespace libint2 {
           std::cout << "Unrolled " << tptr->label() << std::endl;
 #endif
         }
-        // else: apply the known strategy
         else {
+          // if allowed to uncontract -- try that first
+          const bool can_uncontract = dg->registry()->uncontract();
+          if (can_uncontract) {
+            typedef Uncontract_Integral<T> UncI;
+            SafePtr<UncI> x(new UncI(tptr));
+            rr = static_pointer_cast<RecurrenceRelation,UncI>(x);
+            if (rr != 0) {
+              if (rr->num_children() != 0) {
+#if DEBUG
+                std::cout << "Uncontracted " << tptr->label() << std::endl;
+#endif
+                return true;
+              }
+            }
+          }
+
+          // if uncontraction failed -- apply the known strategy
           typedef apply_strategy<T> apply_strategy_t;
           typedef typename apply_strategy_t::Impl apply_strategy_t_impl;
           SafePtr<apply_strategy_t_impl> applier_impl(new apply_strategy_t_impl(dg,tptr,tactic));
@@ -347,6 +406,7 @@ namespace libint2 {
         }
         return true;
       }
+      return false;
     }
 
   };

@@ -1,4 +1,6 @@
 
+#include <fstream>
+
 #include <rr.h>
 #include <dg.h>
 #include <dg.templ.h>
@@ -14,9 +16,10 @@
 #include <singl_stack.timpl.h>
 
 using namespace libint2;
+using namespace libint2::prefactor;
 
 RecurrenceRelation::RecurrenceRelation() :
-  expr_(), nflops_(0)
+  nflops_(0), expr_()
 {
 }
 
@@ -90,16 +93,26 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
     dg->registry()->do_cse(need_to_optimize);
   }
   dg->registry()->condense_expr(condense_expr(1000000000,cparams->max_vector_length()>1));
+  dg->registry()->ignore_missing_prereqs(true);  // assume all prerequisites are available -- if some are not, something is VERY broken
+
+#if DEBUG
+  {
+    std::basic_ofstream<char> dotfile("graph_rr.strat.dot");
+    dg->print_to_dot(false,dotfile);
+  }
+#endif
 
   // Assign symbols for the target and source integral sets
   SafePtr<CodeSymbols> symbols(new CodeSymbols);
   assign_symbols_(symbols);
   // Traverse the graph
-  dg->optimize_rr_out();
+  dg->optimize_rr_out(context);
   dg->traverse();
 #if DEBUG
-  dg->debug_print_traversal(std::cout);
-  cout << "The number of vertices = " << dg->num_vertices() << endl;
+    {
+      std::basic_ofstream<char> dotfile("graph_rr.expr.dot");
+      dg->print_to_dot(false,dotfile);
+    }
 #endif
   // Generate code
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
@@ -120,6 +133,13 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
     std::cout << *t << std::endl;
 #endif
 
+#if DEBUG
+    {
+      std::basic_ofstream<char> dotfile("graph_rr.symb.dot");
+      dg->print_to_dot(false,dotfile);
+    }
+#endif
+
   // get this RR InstanceID
   RRStack::InstanceID myid = RRStack::Instance()->find(EnableSafePtrFromThis<this_type>::SafePtr_from_this()).first;
 
@@ -138,8 +158,6 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
       tsymbols->add(externsymbols);
     }
   }
-
-
 
   dg->reset();
 }
@@ -200,7 +218,7 @@ RecurrenceRelation::generate_graph_()
 {
   SafePtr<DirectedGraph> dg(new DirectedGraph);
   dg->append_target(rr_target());
-  for(int c=0; c<num_children(); c++)
+  for(unsigned int c=0; c<num_children(); c++)
     dg->append_vertex(rr_child(c));
 #if DEBUG
   cout << "RecurrenceRelation::generate_code -- the number of integral sets = " << dg->num_vertices() << endl;
@@ -214,7 +232,7 @@ RecurrenceRelation::generate_graph_()
   cout << "RecurrenceRelation::generate_code -- the number of integral sets + integrals = " << dg->num_vertices() << endl;
 #endif
   // Mark children sets and their descendants to not compute
-  for(int c=0; c<num_children(); c++)
+  for(unsigned int c=0; c<num_children(); c++)
     dg->apply_at<&DGVertex::not_need_to_compute>(rr_child(c));
   // Apply recurrence relations using existing vertices on the graph (i.e.
   // such that no new vertices appear)
@@ -233,7 +251,7 @@ RecurrenceRelation::assign_symbols_(SafePtr<CodeSymbols>& symbols)
   // Set symbols on the target and children sets
   rr_target()->set_symbol("target");
   symbols->append_symbol("target");
-  for(int c=0; c<num_children(); c++) {
+  for(unsigned int c=0; c<num_children(); c++) {
     ostringstream oss;
     oss << "src" << c;
     string symb = oss.str();
@@ -270,7 +288,8 @@ RecurrenceRelation::add_expr(const SafePtr<ExprType>& expr, int minus)
       expr_ = expr;
     }
     else {
-      SafePtr<ExprType> negative(new ExprType(ExprType::OperatorTypes::Times,expr,prefactors.Cdouble(-1.0)));
+      using libint2::prefactor::Scalar;
+      SafePtr<ExprType> negative(new ExprType(ExprType::OperatorTypes::Times,expr,Scalar(-1.0)));
       expr_ = negative;
       ++nflops_;
     }
@@ -307,7 +326,7 @@ RecurrenceRelation::spfunction_call(const SafePtr<CodeContext>& context, const S
      << context->value_to_pointer(rr_target()->symbol());
   // then come children
   const unsigned int nchildren = num_children();
-  for(int c=0; c<nchildren; c++) {
+  for(unsigned int c=0; c<nchildren; c++) {
     os << ", " << context->value_to_pointer(rr_child(c)->symbol());
   }
   os << ")" << context->end_of_stat() << endl;

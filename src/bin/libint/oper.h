@@ -85,9 +85,9 @@ namespace libint2 {
     int
     Oper<Props>::psymm(int i, int j) const
     {
-      if (i<0 || i>=Props::np)
+      if (i<0 || i>=static_cast<int>(Props::np))
         throw std::runtime_error("Oper<Props>::psymm(i,j) -- index i out of bounds");
-      if (j<0 || j>=Props::np)
+      if (j<0 || j>=static_cast<int>(Props::np))
         throw std::runtime_error("Oper<Props>::psymm(i,j) -- index j out of bounds");
       if (i == j)
         return 1;
@@ -101,6 +101,8 @@ namespace libint2 {
         return 0;
         case PermutationalSymmetry::nonstd:
         return nonstd_psymm(i,j);
+        default:
+        abort();
       }
     }
 
@@ -128,6 +130,7 @@ namespace libint2 {
   template <class Descr>
     class GenOper : public Oper<typename Descr::Properties>, public Hashable<unsigned,ComputeKey> {
     public:
+      typedef Descr Descriptor;
       typedef typename Descr::Properties Properties;
       typedef Oper<Properties> parent_type;
       /// GenOper is not a set
@@ -143,14 +146,14 @@ namespace libint2 {
       /// Implementation of OperSet::label()
       std::string label() const { return descr_.label(); }
       /// Return the descriptor object
-      Descr descr() const { return descr_; }
+      Descr& descr() { return descr_; }
 
       GenOper(Descr descr = Descr()) : descr_(descr) {}
       GenOper(const SafePtr<GenOper>& o) : descr_(o->descr_) {}
       GenOper(const SafePtr<OperSet>& o) : descr_(require_dynamic_cast<GenOper,OperSet>(o)->descr_) {}
       GenOper(const SafePtr<ConstructablePolymorphically>& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(o)->descr_) {}
       GenOper(const ConstructablePolymorphically& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(&o)->descr_) {}
-      ~GenOper() {}
+      virtual ~GenOper() {}
 
     private:
       Descr descr_;
@@ -183,7 +186,7 @@ namespace libint2 {
   /** GenMultSymmOper is a generic multiplicative symmetric N-body operator
   */
   template <unsigned int N>
-  struct GenMultSymmOper_Descr {
+  struct GenMultSymmOper_Descr : public Contractable<GenMultSymmOper_Descr<N> > {
     typedef OperatorProperties<N,true,PermutationalSymmetry::symm> Properties;
     static const unsigned int max_key = 1;
     unsigned int key() const { return 0; }
@@ -196,7 +199,7 @@ namespace libint2 {
 
   /** TwoPRep is the two-body repulsion operator.
   */
-  struct TwoPRep_Descr {
+  struct TwoPRep_Descr : public Contractable<TwoPRep_Descr> {
     typedef MultiplicativeSymm2Body_Props Properties;
     static const unsigned int max_key = 1;
     unsigned int key() const { return 0; }
@@ -215,18 +218,18 @@ namespace libint2 {
     typedef MultiplicativeSymm2Body_Props Properties;
     /// K can range from -1 to 4
     R12_k_G12_Descr(int K) : K_(K) { assert(K >= -1 && K <= 4); }
-    R12_k_G12_Descr(const R12_k_G12_Descr& a) : K_(a.K_) {}
+    R12_k_G12_Descr(const R12_k_G12_Descr& a) : Contractable<R12_k_G12_Descr>(a), K_(a.K_) {}
     static const unsigned int max_key = 5;
     unsigned int key() const { return K_ + 1; }
-    std::string description() const { return label_(K_); }
-    std::string label() const { return symbol_(K_); }
+    std::string description() const { return label_(K_, this->contracted()); }
+    std::string label() const { return symbol_(K_, this->contracted()); }
     int K() const { return K_; }
     int psymm(int i, int j) const;
     int hermitian(int i) const;
   private:
     R12_k_G12_Descr();
-    static std::string label_(int K);
-    static std::string symbol_(int K);
+    static std::string label_(int K, bool contracted);
+    static std::string symbol_(int K, bool contracted);
     int K_;
   };
   typedef GenOper<R12_k_G12_Descr> R12kG12;
@@ -239,19 +242,19 @@ namespace libint2 {
     typedef MultiplicativeSymm2Body_Props Properties;
     static const int kmax = 4;
     R12k_R12l_G12_Descr(const IntVec3& K, const IntVec3& L) : K_(K), L_(L) { }
-    R12k_R12l_G12_Descr(const R12k_R12l_G12_Descr& a) : K_(a.K_), L_(a.L_) {}
+    R12k_R12l_G12_Descr(const R12k_R12l_G12_Descr& a) : Contractable<R12k_R12l_G12_Descr>(a), K_(a.K_), L_(a.L_) {}
     const IntVec3& K() const { return K_; }
     const IntVec3& L() const { return L_; }
     static const unsigned int max_key = kmax * kmax * kmax * kmax * kmax * kmax;
     unsigned int key() const;
-    std::string description() const { return label_(K_,L_); }
-    std::string label() const { return symbol_(K_,L_); }
+    std::string description() const { return label_(K_,L_, this->contracted()); }
+    std::string label() const { return symbol_(K_,L_, this->contracted()); }
     int psymm(int i, int j) const;
     int hermitian(int i) const;
   private:
     R12k_R12l_G12_Descr();
-    static std::string label_(const IntVec3& K, const IntVec3& L);
-    static std::string symbol_(const IntVec3& K, const IntVec3& L);
+    static std::string label_(const IntVec3& K, const IntVec3& L, bool contracted);
+    static std::string symbol_(const IntVec3& K, const IntVec3& L, bool contracted);
     IntVec3 K_;
     IntVec3 L_;
   };
@@ -266,20 +269,45 @@ namespace libint2 {
     /// K can range from 0 to 1
     static const unsigned int max_key = 2;
     Ti_G12_Descr(int K) : K_(K) { assert(K >= 0 && K <= 1); }
-    Ti_G12_Descr(const Ti_G12_Descr& a) : K_(a.K_) {}
+    Ti_G12_Descr(const Ti_G12_Descr& a) : Contractable<Ti_G12_Descr>(a), K_(a.K_) {}
     unsigned int key() const { return K_; }
-    std::string description() const { return label_(K_); }
-    std::string label() const { return symbol_(K_); }
+    std::string description() const { return label_(K_, this->contracted()); }
+    std::string label() const { return symbol_(K_, this->contracted()); }
     int K() const { return K_; }
     int psymm(int i, int j) const;
     int hermitian(int i) const { if (i != K_) return +1; else return -1; }
   private:
     Ti_G12_Descr();
-    static std::string label_(int K);
-    static std::string symbol_(int K);
+    static std::string label_(int K, bool contracted);
+    static std::string symbol_(int K, bool contracted);
     int K_;
   };
   typedef GenOper<Ti_G12_Descr> TiG12;
+
+  /** G12_Ti_G12 is a two-body operator of form [G12, [T_i, G12]] = (Nabla_i G12) \dot (Nabla_i G12)
+      where i is particle index (0 or 1) and G12 is a Gaussian Geminal.
+      It is a *multiplicative* operator!
+  */
+  class G12_Ti_G12_Descr : public Contractable<G12_Ti_G12_Descr> {
+  public:
+    typedef MultiplicativeSymm2Body_Props Properties;
+    /// K can range from 0 to 1
+    static const unsigned int max_key = 2;
+    G12_Ti_G12_Descr(int K) : K_(K) { assert(K >= 0 && K <= 1); }
+    G12_Ti_G12_Descr(const G12_Ti_G12_Descr& a) : Contractable<G12_Ti_G12_Descr>(a), K_(a.K_) {}
+    unsigned int key() const { return K_; }
+    std::string description() const { return label_(K_, this->contracted()); }
+    std::string label() const { return symbol_(K_, this->contracted()); }
+    int K() const { return K_; }
+    int psymm(int i, int j) const;
+    int hermitian(int i) const { return +1; }
+  private:
+    G12_Ti_G12_Descr();
+    static std::string label_(int K, bool contracted);
+    static std::string symbol_(int K, bool contracted);
+    int K_;
+  };
+  typedef GenOper<G12_Ti_G12_Descr> G12TiG12;
 
   /** r_1.r_1 x g12 is a result of differentiation of exp( - a r_1^2 - a r_2^2 - c r_{12}^2) geminal .
   */
@@ -327,7 +355,7 @@ namespace libint2 {
     typedef NonmultiplicativeNonsymm2Body_Props Properties;
     static const unsigned int max_key = 2;
     DivG12prime_xTx_Descr(int I) : I_(I) { assert(I >= 0 && I <= 1); }
-    DivG12prime_xTx_Descr(const DivG12prime_xTx_Descr& a) : I_(a.I_) {}
+    DivG12prime_xTx_Descr(const DivG12prime_xTx_Descr& a) : Contractable<DivG12prime_xTx_Descr>(a), I_(a.I_) {}
     unsigned int key() const { return I_; }
     std::string description() const { return label_(I_); }
     std::string label() const { return symbol_(I_); }

@@ -28,8 +28,8 @@ namespace libint2 {
 
       using ParentType::Instance;
     private:
-      using RecurrenceRelation::expr_;
-      using RecurrenceRelation::nflops_;
+      using ParentType::RecurrenceRelation::expr_;
+      using ParentType::RecurrenceRelation::nflops_;
       using ParentType::target_;
       using ParentType::is_simple;
 
@@ -82,7 +82,8 @@ namespace libint2 {
           if (a.contracted() ||
             b.contracted() ||
             c.contracted() ||
-            d.contracted())
+            d.contracted() ||
+            Tint->oper()->descr().contracted())
             return;
         }
 
@@ -409,11 +410,19 @@ namespace libint2 {
         // to generate optimized code for xxxx integral need to generate specialized code for up to (x+x)0(x+x)0 integrals
         if (!TrivialBFSet<F>::result &&
             sh_b.zero() && sh_d.zero() &&
-            sh_a.norm() > std::max(2*max_opt_am,1u) && sh_c.norm() > std::max(2*max_opt_am,1u))
+            (sh_a.norm() > std::max(2*max_opt_am,1u) ||
+             sh_c.norm() > std::max(2*max_opt_am,1u)
+            ) &&
+            (sh_a.norm() > 1u && sh_c.norm() > 1u)
+           )
           return true;
         if (!TrivialBFSet<F>::result &&
             sh_a.zero() && sh_c.zero() &&
-            sh_b.norm() > std::max(2*max_opt_am,1u) && sh_d.norm() > std::max(2*max_opt_am,1u))
+            (sh_b.norm() > std::max(2*max_opt_am,1u) ||
+             sh_d.norm() > std::max(2*max_opt_am,1u)
+            ) &&
+            (sh_b.norm() > 1u && sh_d.norm() > 1u)
+           )
           return true;
         return false;
       }

@@ -6,6 +6,9 @@
 #include <smart_ptr.h>
 #include <entity.h>
 #include <bfset.h>
+#include <singl_stack.timpl.h>
+
+#define CTIMEENTITIES_SINGLETONS 0
 
 namespace libint2 {
   
@@ -107,10 +110,12 @@ namespace libint2 {
     /// cartesian components of pfac4 vector
     SafePtr<rdouble> R12kG12VRR_pfac4[np][3];
 
+#if CTIMEENTITIES_SINGLETONS
     /// integers represented as doubles
     SafePtr<cdouble> N_i[NMAX];
 
     SafePtr<cdouble> Cdouble(double a);
+#endif
 
   private:
     
@@ -130,7 +135,10 @@ namespace libint2 {
       }
       static SafePtr<ManagerType> manager_;
     };
+    template <typename T> SafePtr<typename RTimeSingletons<T>::ManagerType> RTimeSingletons<T>::manager_;
 
+#define CTIMEENTITIES_SINGLETONS 0
+#if CTIMEENTITIES_SINGLETONS
     template <typename T> struct CTimeSingletons {
       typedef SingletonStack<CTimeEntity<T>,T> ManagerType;
       static SafePtr<ManagerType>& Manager() {
@@ -141,9 +149,8 @@ namespace libint2 {
       }
       static SafePtr<ManagerType> manager_;
     };
-
-    template <typename T> SafePtr<typename RTimeSingletons<T>::ManagerType> RTimeSingletons<T>::manager_;
     template <typename T> SafePtr<typename CTimeSingletons<T>::ManagerType> CTimeSingletons<T>::manager_;
+#endif
     
     /// make a runtime quantity
     template <class T = double> SafePtr< RTimeEntity<T> > Scalar(const char* id) {
@@ -166,11 +173,15 @@ namespace libint2 {
     /// make a compile-time quantity
     template <class T = double> SafePtr< CTimeEntity<T> > Scalar(const T& a) {
       typedef CTimeEntity<T> return_type;
+      SafePtr<return_type> tmp(new return_type(a));
+#if CTIMEENTITIES_SINGLETONS
       typedef CTimeSingletons<T> singletons_type;
       typedef typename singletons_type::ManagerType ManagerType;
-      SafePtr<return_type> tmp(new return_type(a));
       const typename ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
       return result.second;
+#else
+      return tmp;
+#endif
     }
     
     /// auxiliary class that write expressions with runtime cartesian vectors
@@ -220,6 +231,12 @@ namespace libint2 {
     {
       double qn[3]; for(unsigned int xyz=0; xyz<3; ++xyz) qn[xyz] = bf.qn(xyz);
       return CTimeVector3<double>(qn);
+    }
+    /// make a compile-time quantity
+    inline CTimeVector3<double> Vector(const OriginDerivative& dd)
+    {
+      double d[3]; for(unsigned int xyz=0; xyz<3; ++xyz) d[xyz] = dd.d(xyz);
+      return CTimeVector3<double>(d);
     }
     
   }

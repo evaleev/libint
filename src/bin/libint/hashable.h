@@ -50,7 +50,7 @@ namespace libint2 {
     public:
       typedef typename KeyTraits<KeyType>::ReturnType KeyReturnType;
       Hashable() {}
-      ~Hashable() {}
+      virtual ~Hashable() {}
 
       //// Computes key
       virtual KeyReturnType key() const =0;

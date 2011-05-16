@@ -2,13 +2,15 @@
 #include <libint2_config.h>
 #include <default_params.h>
 #include <task.h>
+#include <cassert>
 
 using namespace libint2;
+using namespace std;
 
 const std::string CompilationParameters::Defaults::source_directory("./");
 const std::string CompilationParameters::Defaults::api_prefix("");
 const std::string CompilationParameters::Defaults::realtype("double");
-const std::string CompilationParameters::default_task_name("__default__");
+const std::string CompilationParameters::default_task_name("default");
 
 CompilationParameters::CompilationParameters() :
   max_vector_length_(Defaults::max_vector_length),
@@ -53,6 +55,7 @@ CompilationParameters::print(std::ostream& os) const
   os << "COUNT_FLOPS          = " << (count_flops() ? "true" : "false") << endl;
   os << "ACCUMULATE_TARGETS   = " << (accumulate_targets() ? "true" : "false") << endl;
   os << "REALTYPE             = " << (realtype()) << endl;
+  os << "CONTRACTED_TARGETS   = " << (contracted_targets() ? "true" : "false") << endl;
   os << endl;
 }
 
@@ -95,7 +98,10 @@ CompilationParameters::max_am_opt(const std::string& t) const
 void
 CompilationParameters::add_task(const std::string& t)
 {
-  TaskParameters tp;  tp.max_am = Defaults::max_am;  tp.max_am_opt = Defaults::max_am_opt;
+  TaskParameters tp;
+  // copy defaults from the default task
+  if (t != default_task_name)
+    tp = TaskParameters( task_params_.find(default_task_name)->second );
   task_params_.insert(std::make_pair(t,tp));
 }
 

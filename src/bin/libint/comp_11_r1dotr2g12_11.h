@@ -45,7 +45,7 @@ namespace libint2 {
         issues with getting a SafePtr from constructor (as needed for registry to work).
     */
     static SafePtr<ThisType> Instance(const SafePtr<TargetType>&);
-    ~CR_11_R1dotR2G12_11() {}
+    virtual ~CR_11_R1dotR2G12_11() {}
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return nchildren_; };
@@ -133,7 +133,7 @@ namespace libint2 {
 	++nchildren_;
 
 	if (is_simple()) {
-	  SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,prefactors.N_i[1],rr_child(next_child)));
+	  SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,Scalar(1.0),rr_child(next_child)));
 	  add_expr(expr0_ptr);
 	  nflops_ += 1;
 	}

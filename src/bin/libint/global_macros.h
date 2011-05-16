@@ -39,7 +39,7 @@
 
 /// Use integer key to compare
 #define USE_INT_KEY_TO_COMPARE 1
-// GenIntegralSet use unique integer keys to hash integrals and avoid creating temporaries
+/// GenIntegralSet use unique integer keys to hash integrals and avoid creating temporaries
 #if !USE_INT_KEY_TO_COMPARE
 # error "For now USE_INT_KEY_TO_COMPARE must be 1"
 #endif

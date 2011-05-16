@@ -21,14 +21,14 @@ namespace libint2 {
   inline bool
   GenIntegralSet_11_11<CGF,TwoPRep,mType>::this_precomputed() const
   {
-    /// (ss|ss)^{(m)} are precomputed 
-#if USE_BRAKET_H
+    /// uncontracted (ss|ss)^{(m)} are precomputed
     if (parent_type::bra_.member(0,0).zero() && parent_type::bra_.member(1,0).zero() &&
-      parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero())
-#else
-    if (parent_type::bra_.member(0,0)->zero() && parent_type::bra_.member(1,0)->zero() &&
-      parent_type::ket_.member(0,0)->zero() && parent_type::ket_.member(1,0)->zero())
-#endif
+        parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero() &&
+        parent_type::bra_.member(0,0).contracted() == false && parent_type::bra_.member(1,0).contracted() == false &&
+        parent_type::ket_.member(0,0).contracted() == false && parent_type::ket_.member(1,0).contracted() == false &&
+        parent_type::bra_.member(0,0).deriv().zero() && parent_type::bra_.member(1,0).deriv().zero() &&
+        parent_type::ket_.member(0,0).deriv().zero() && parent_type::ket_.member(1,0).deriv().zero()
+       )
       return true;
     else
       return false;

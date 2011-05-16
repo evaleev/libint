@@ -163,8 +163,8 @@ namespace libint2 {
       GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
       /// computes a key. it's protected so that derived classes can use it to implement smart caching in constructors
       static key_type compute_key(const Oper& O, const BraType& bra, const KetType& ket, const AuxQuanta& aux) {
-        key_type key = ( (O.key()*bra.max_key() + bra.key() ) * ket.max_key() +
-			 ket.key() ) * aux.max_key() + aux.key();
+        key_type key = ( ((key_type)O.key() * (key_type)bra.max_key() + (key_type)bra.key() ) * (key_type)ket.max_key() +
+			 (key_type)ket.key() ) * (key_type)aux.max_key() + (key_type)aux.key();
         return key;
       }
 
@@ -228,7 +228,7 @@ namespace libint2 {
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Op& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
-    DGVertex(ClassInfo<GenIntegralSet>::Instance().id()), O_(SafePtr<Op>(new Op(oper))), bra_(bra), ket_(ket), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))),
+    DGVertex(ClassInfo<GenIntegralSet>::Instance().id()), bra_(bra), ket_(ket), O_(SafePtr<Op>(new Op(oper))), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))),
     size_(0), label_()
     {
       if (Op::Properties::np != bra.num_part())
@@ -388,7 +388,7 @@ namespace libint2 {
     {
       ostringstream os;
       os << "< ";
-      for(int p=0; p<Op::Properties::np; p++) {
+      for(unsigned int p=0; p<Op::Properties::np; p++) {
         unsigned int nbra = bra.num_members(p);
         for(unsigned int i=0; i<nbra; i++)
 #if USE_BRAKET_H
@@ -398,7 +398,7 @@ namespace libint2 {
 #endif
       }
       os << "| " << O->label() << " | ";
-      for(int p=0; p<Op::Properties::np; p++) {
+      for(unsigned int p=0; p<Op::Properties::np; p++) {
         unsigned int nket = ket.num_members(p);
         for(unsigned int i=0; i<nket; i++)
 #if USE_BRAKET_H

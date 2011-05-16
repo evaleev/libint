@@ -48,6 +48,8 @@ vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
     qn[1] = ly;
     qn[2] = lz;
     subobj_stype cgf(qn);
+    cgf.deriv() = cgshell.deriv();
+    if (cgshell.contracted()) cgf.contract();
     cgfs.push_back(cgf);
   END_FOR_CART
 }
@@ -74,6 +76,7 @@ namespace {
       return 1;
     if (amin == 1 && amax == 2)
       return 0;
+    abort(); // unreachable
   }
 
   std::pair<int,int> notxyz(int a) {
@@ -82,5 +85,6 @@ namespace {
     case 1: return make_pair(0,2); break;
     case 2: return make_pair(0,1); break;
     }
+    abort(); // unreachable
   }
 }

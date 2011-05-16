@@ -266,7 +266,7 @@ namespace libint2 {
   template <class BFS, unsigned int NP>
   ArrayBraket<BFS,NP>::ArrayBraket(const vector<vector<BFS> >& braket) {
     assert(braket.size()==NP);
-    for(int i=0; i<NP; i++) {
+    for(unsigned int i=0; i<NP; i++) {
       assert(braket[i].size()==1);
       bfs_[i] = braket[i][0];
     }
@@ -396,7 +396,7 @@ namespace libint2 {
         Provided only for compatibility for generic subiterator algorithms */
     BraketPair(const BFS& f1, const BFS& f2) : bfs_(f1,f2) {}
     BraketPair(const BraketPair& source) : bfs_(source.bfs_) {}
-    const BraketPair& operator=(const BraketPair& rhs) { bfs_ = rhs.bfs_; }
+    BraketPair& operator=(const BraketPair& rhs) { bfs_ = rhs.bfs_; return *this; }
     const BFS& operator[](unsigned int i) const {
       if (i == 0) return bfs_.first;
       if (i == 1) return bfs_.second;

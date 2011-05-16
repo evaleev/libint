@@ -80,8 +80,8 @@ namespace libint2 {
       typedef typename RR::TargetType TT;
       typedef vertices::const_iterator citer;
       typedef vertices::iterator iter;
-      for(citer v=stack_.begin(); v!=stack_.end(); ++v) {
-	ver_ptr& vptr = vertex_ptr(*v);
+      for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
+        ver_ptr& vptr = vertex_ptr(*v);
         if ((vptr)->num_exit_arcs() != 0)
           continue;
         SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(v);
@@ -109,7 +109,7 @@ namespace libint2 {
     {
       unsigned int nchildren = rr->num_children();
       unsigned int nchildren_on_stack = 0;
-      for(int c=0; c<nchildren; c++) {
+      for(unsigned int c=0; c<nchildren; c++) {
 	if (!vertex_is_on(rr->rr_child(c)))
           continue;
 	else

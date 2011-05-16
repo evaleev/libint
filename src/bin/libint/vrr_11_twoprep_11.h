@@ -23,12 +23,12 @@ namespace libint2 {
       typedef GenIntegralSet_11_11<BFSet,TwoPRep,mType> TargetType;
       typedef GenericRecurrenceRelation<ThisType,BFSet,TargetType> ParentType;
       friend class GenericRecurrenceRelation<ThisType,BFSet,TargetType>;
-      static const unsigned int max_nchildren = 8;
+      static const unsigned int max_nchildren = 26;
 
       using ParentType::Instance;
     private:
-      using RecurrenceRelation::expr_;
-      using RecurrenceRelation::nflops_;
+      using ParentType::RecurrenceRelation::expr_;
+      using ParentType::RecurrenceRelation::nflops_;
       using ParentType::target_;
       using ParentType::is_simple;
 
@@ -40,7 +40,7 @@ namespace libint2 {
       static std::string descr() { return "OSVRR"; }
       /** Re-Implementation of GenericRecurrenceRelation::generate_label():
           TwoPRep VRR recurrence relations codes are independent of m (it never appears anywhere in equations), hence
-          to avoid generating identical code make sure that the (unique) label does not contain m. */
+          to avoid generating identical code make sure that the (unique) label has m=0. */
       std::string generate_label() const
       {
         typedef typename TargetType::AuxIndexType mType;
@@ -72,7 +72,7 @@ namespace libint2 {
       const unsigned int m = Tint->aux()->elem(0);
       const F& _1 = unit<F>(dir);
 
-      {
+      { // can't apply to contracted basis functions
         F a(Tint->bra(0,0));
         F b(Tint->ket(0,0));
         F c(Tint->bra(1,0));
@@ -84,10 +84,20 @@ namespace libint2 {
           return;
       }
 
+      // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89)
+      const OriginDerivative dA = Tint->bra(0,0).deriv();
+      const OriginDerivative dB = Tint->ket(0,0).deriv();
+      const OriginDerivative dC = Tint->bra(1,0).deriv();
+      const OriginDerivative dD = Tint->ket(1,0).deriv();
+      const bool deriv = dA.zero() == false ||
+          dB.zero() == false ||
+          dC.zero() == false ||
+          dD.zero() == false;
+
       typedef TargetType ChildType;
       ChildFactory<ThisType,ChildType> factory(this);
 
-      // Build on A or B
+      // Build on A
       if (part == 0 && where == InBra) {
         F a(Tint->bra(0,0) - _1);
         if (!exists(a)) return;
@@ -121,7 +131,6 @@ namespace libint2 {
           const SafePtr<DGVertex>& ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
           if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
         }
-        return;
       }
       // Build on B
       if (part == 0 && where == InKet) {
@@ -157,7 +166,6 @@ namespace libint2 {
           const SafePtr<DGVertex>& ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
           if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
         }
-        return;
       }
       // Build on C
       if (part == 1 && where == InBra) {
@@ -193,7 +201,6 @@ namespace libint2 {
           const SafePtr<DGVertex>& ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
           if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
         }
-        return;
       }
       // Build on D
       if (part == 1 && where == InKet) {
@@ -229,8 +236,107 @@ namespace libint2 {
           const SafePtr<DGVertex>& ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
           if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
         }
-        return;
       }
+
+      // if got here, can decrement by at least 1 quantum
+      // add additional derivative terms
+      if (deriv) {
+        // bf quantum on the build center subtracted by 1
+        F a( part == 0 && where == InBra ? Tint->bra(0,0) - _1 : Tint->bra(0,0) );
+        F b( part == 0 && where == InKet ? Tint->ket(0,0) - _1 : Tint->ket(0,0) );
+        F c( part == 1 && where == InBra ? Tint->bra(1,0) - _1 : Tint->bra(1,0) );
+        F d( part == 1 && where == InKet ? Tint->ket(1,0) - _1 : Tint->ket(1,0) );
+
+        // treatment of derivative terms differs for shell sets and integrals
+        // since in computing shell sets transfer/build will occur in all 3 directions
+        // change in up to all three derivative indices will occur
+        for(unsigned int dxyz=0; dxyz<3; ++dxyz) {
+
+          if (is_simple() && dxyz != dir) // for integrals only consider derivatives in THE build direction
+            continue;
+
+          OriginDerivative _d1; _d1.inc(dxyz);
+
+          SafePtr<DGVertex> _nullptr;
+
+          // dA - _1?
+          {
+            const OriginDerivative dAm1(dA - _d1);
+            if (exists(dAm1)) { // yes
+              a.deriv() = dAm1;
+              const SafePtr<DGVertex>& ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              if (is_simple()) {
+                if (part == 0 && where == InBra) { // building on A
+                  expr_ -= Vector(dA)[dxyz] * (Scalar("rho12_over_alpha1") * ABCD_m + Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 0 && where == InKet) { // building on B
+                  expr_ += Vector(dA)[dxyz] * (Scalar("rho12_over_alpha2") * ABCD_m - Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 1) { // building on C or D
+                  expr_ += Vector(dA)[dxyz] * Scalar("alpha1_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+              }
+              a.deriv() = dA;
+            }
+          }
+
+          // dB - _1?
+          {
+            const OriginDerivative dBm1(dB - _d1);
+            if (exists(dBm1)) { // yes
+              b.deriv() = dBm1;
+              const SafePtr<DGVertex>& ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              if (is_simple()) {
+                if (part == 0 && where == InBra) { // building on A
+                  expr_ += Vector(dB)[dxyz] * (Scalar("rho12_over_alpha1") * ABCD_m - Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 0 && where == InKet) { // building on B
+                  expr_ -= Vector(dB)[dxyz] * (Scalar("rho12_over_alpha2") * ABCD_m + Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 1) { // building on C or D
+                  expr_ += Vector(dB)[dxyz] * Scalar("alpha2_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+              }
+              b.deriv() = dB;
+            }
+          }
+
+          // dC - _1?
+          {
+            const OriginDerivative dCm1(dC - _d1);
+            if (exists(dCm1)) { // yes
+              c.deriv() = dCm1;
+              const SafePtr<DGVertex>& ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              if (is_simple()) {
+                if (part == 0) { // building on A or B
+                  expr_ += Vector(dC)[dxyz] * Scalar("alpha3_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+                if (part == 1 && where == InBra) { // building on C
+                  expr_ -= Vector(dC)[dxyz] * (Scalar("rho34_over_alpha3") * ABCD_m + Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 1 && where == InKet) { // building on D
+                  expr_ += Vector(dC)[dxyz] * (Scalar("rho34_over_alpha4") * ABCD_m - Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+              }
+              c.deriv() = dC;
+            }
+          }
+
+          // dD - _1?
+          {
+            const OriginDerivative dDm1(dD - _d1);
+            if (exists(dDm1)) { // yes
+              d.deriv() = dDm1;
+              const SafePtr<DGVertex>& ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              if (is_simple()) {
+                if (part == 0) { // building on A or B
+                  expr_ += Vector(dD)[dxyz] * Scalar("alpha4_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
+                if (part == 1 && where == InBra) { // building on C
+                  expr_ += Vector(dD)[dxyz] * (Scalar("rho34_over_alpha3") * ABCD_m - Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+                if (part == 1 && where == InKet) { // building on D
+                  expr_ -= Vector(dD)[dxyz] * (Scalar("rho34_over_alpha4") * ABCD_m + Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+              }
+              d.deriv() = dD;
+            }
+          }
+        }
+      } // end of deriv
+
       return;
     }
 
@@ -239,20 +345,37 @@ namespace libint2 {
     bool
     VRR_11_TwoPRep_11<F,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
     {
+      if (TrivialBFSet<F>::result)
+        return false;
+      const OriginDerivative dA = target_->bra(0,0).deriv();
+      const OriginDerivative dB = target_->ket(0,0).deriv();
+      const OriginDerivative dC = target_->bra(1,0).deriv();
+      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const bool deriv = dA.zero() == false ||
+          dB.zero() == false ||
+          dC.zero() == false ||
+          dD.zero() == false;
+
       F sh_a(target_->bra(0,0));
       F sh_b(target_->ket(0,0));
       F sh_c(target_->bra(1,0));
       F sh_d(target_->ket(1,0));
       const unsigned int max_opt_am = cparams->max_am_opt();
-      if (TrivialBFSet<F>::result)
-        return false;
       // generic code works for a0c0 of 0a0c classes where am(a) > 1 and am(c) > 1
       // to generate optimized code for xxxx integral need to generate specialized code for up to (x+x)0(x+x)0 integrals
       if (sh_b.zero() && sh_d.zero() &&
-          sh_a.norm() > std::max(2*max_opt_am,1u) && sh_c.norm() > std::max(2*max_opt_am,1u))
+          (sh_a.norm() > std::max(2*max_opt_am,1u) ||
+           sh_c.norm() > std::max(2*max_opt_am,1u)
+          ) &&
+          (sh_a.norm() > 1u && sh_c.norm() > 1u)
+         )
         return true;
       if (sh_a.zero() && sh_c.zero() &&
-          sh_b.norm() > std::max(2*max_opt_am,1u) && sh_d.norm() > std::max(2*max_opt_am,1u))
+          (sh_b.norm() > std::max(2*max_opt_am,1u) ||
+           sh_d.norm() > std::max(2*max_opt_am,1u)
+          ) &&
+          (sh_b.norm() > 1u && sh_d.norm() > 1u)
+         )
         return true;
       return false;
     }
@@ -267,8 +390,24 @@ namespace libint2 {
       F sh_d(target_->ket(1,0));
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
-      if (xsxs) return std::string("OSVRR_xs_xs.h");
-      if (sxsx) return std::string("OSVRR_sx_sx.h");
+
+      const OriginDerivative dA = target_->bra(0,0).deriv();
+      const OriginDerivative dB = target_->ket(0,0).deriv();
+      const OriginDerivative dC = target_->bra(1,0).deriv();
+      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const bool deriv = dA.zero() == false ||
+          dB.zero() == false ||
+          dC.zero() == false ||
+          dD.zero() == false;
+
+      if (deriv == false) {
+        if (xsxs) return std::string("OSVRR_xs_xs.h");
+        if (sxsx) return std::string("OSVRR_sx_sx.h");
+      }
+      else {
+        if (xsxs) return std::string("OSVRR_xs_xs_deriv.h");
+        if (sxsx) return std::string("OSVRR_sx_sx_deriv.h");
+      }
       abort(); // unreachable
     }
 
@@ -284,24 +423,79 @@ namespace libint2 {
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
 
+      const OriginDerivative dA = target_->bra(0,0).deriv();
+      const OriginDerivative dB = target_->ket(0,0).deriv();
+      const OriginDerivative dC = target_->bra(1,0).deriv();
+      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const bool deriv = dA.zero() == false ||
+          dB.zero() == false ||
+          dC.zero() == false ||
+          dD.zero() == false;
+
       oss << "using namespace libint2;" << endl;
 
-      if(xsxs) {
-        oss << "libint2::OSVRR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+      if (deriv == false) { // for regular integrals I know exactly how many prerequisites I need
+        if(xsxs) {
+          oss << "libint2::OSVRR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+        }
+        if (sxsx) {
+          oss << "libint2::OSVRR_sx_sx<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
+        }
         oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
         oss << ">::compute(inteval";
-      }
-      if (sxsx) {
-        oss << "libint2::OSVRR_sx_sx<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
-        oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
-        oss << ">::compute(inteval";
-      }
 
-      const unsigned int nargs = args->n();
-      for(unsigned int a=0; a<nargs; a++) {
-        oss << "," << args->symbol(a);
+        const unsigned int nargs = args->n();
+        for(unsigned int a=0; a<nargs; a++) {
+          oss << "," << args->symbol(a);
+        }
+        oss << ");";
       }
-      oss << ");";
+      else { // deriv == true -> only some arguments are needed
+        if(xsxs) {
+          oss << "libint2::OSVRR_xs_xs_deriv<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+        }
+        if(sxsx) {
+          oss << "libint2::OSVRR_sx_sx_deriv<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
+        }
+
+        for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_a.deriv().d(xyz) << ",";
+        for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_b.deriv().d(xyz) << ",";
+        for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_c.deriv().d(xyz) << ",";
+        for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_d.deriv().d(xyz) << ",";
+        oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
+        oss << ">::compute(inteval";
+        // out of all 22 possible prerequisites first 5 are guaranteed to be there
+        const unsigned int nargs = args->n();
+        unsigned int arg = 0;
+        for(; arg<6; arg++) { // hence first 6 arguments (target + 5) are always there
+          oss << "," << args->symbol(arg);
+        }
+        for(unsigned int xyz=0; xyz<3; ++xyz) {
+          if (sh_a.deriv().d(xyz) > 0) {
+            oss << "," << args->symbol(arg++);
+            oss << "," << args->symbol(arg++);
+          }
+          else
+            oss << ",0,0";
+          if (sh_b.deriv().d(xyz) > 0) {
+            oss << "," << args->symbol(arg++);
+            oss << "," << args->symbol(arg++);
+          }
+          else
+            oss << ",0,0";
+          if (sh_c.deriv().d(xyz) > 0) {
+            oss << "," << args->symbol(arg++);
+          }
+          else
+            oss << ",0";
+          if (sh_d.deriv().d(xyz) > 0) {
+            oss << "," << args->symbol(arg++);
+          }
+          else
+            oss << ",0";
+        }
+        oss << ");";
+      }
 
       return oss.str();
     }

@@ -141,6 +141,7 @@ int main(int argc, char** argv)
 
   cout << "test " << (success ? "ok" : "failed") << endl;
   
+  return 0;
 }
 
 

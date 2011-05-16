@@ -37,7 +37,7 @@ namespace libint2 {
     typedef RecurrenceRelation::ExprType ExprType;
 
     IntegralSet_to_Integrals(const SafePtr<I>&);
-    ~IntegralSet_to_Integrals() {}
+    virtual ~IntegralSet_to_Integrals() {}
 
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return children_.size(); };

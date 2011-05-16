@@ -4,6 +4,8 @@
 */
 
 #include <cmath>
+#include <numeric>
+#include <cassert>
 #include <stdlib.h>
 
 #define MAXFAC 100
@@ -16,7 +18,7 @@ static double *fac;
 static double **bc;
 void calc_f(double *, int, double); 
 double norm_const(unsigned int l1, unsigned int m1, unsigned int n1,
-                  double alpha1, double A[3]);
+                  double alpha1, const double* A);
 
 double* init_array(unsigned long int size);
 double** block_matrix(unsigned long int nrow, unsigned long int ncol);
@@ -34,13 +36,13 @@ void free_array(double* array);
 */
 
 double eri(unsigned int l1, unsigned int m1, unsigned int n1, 
-           double alpha1, double A[3],
+           double alpha1, const double* A,
 	   unsigned int l2, unsigned int m2, unsigned int n2, 
-           double alpha2, double B[3],
+           double alpha2, const double* B,
 	   unsigned int l3, unsigned int m3, unsigned int n3, 
-           double alpha3, double C[3],
+           double alpha3, const double* C,
 	   unsigned int l4, unsigned int m4, unsigned int n4, 
-           double alpha4, double D[3], int norm_flag)
+           double alpha4, const double* D, int norm_flag)
 {
 
   const double gammap = alpha1 + alpha2;
@@ -250,6 +252,85 @@ double eri(unsigned int l1, unsigned int m1, unsigned int n1,
 }
 
 
+struct nonzero_t {
+    bool operator()(unsigned int val) {
+      return val > 0;
+    }
+};
+
+double eri(const unsigned int* deriv_index,
+           unsigned int l1, unsigned int m1, unsigned int n1,
+           double alpha1, const double* A,
+           unsigned int l2, unsigned int m2, unsigned int n2,
+           double alpha2, const double* B,
+           unsigned int l3, unsigned int m3, unsigned int n3,
+           double alpha3, const double* C,
+           unsigned int l4, unsigned int m4, unsigned int n4,
+           double alpha4, const double* D, int norm_flag) {
+  const unsigned int deriv_order = std::accumulate(deriv_index, deriv_index+12, 0u);
+  if (deriv_order == 0)
+    return eri(l1, m1, n1, alpha1, A,
+               l2, m2, n2, alpha2, B,
+               l3, m3, n3, alpha3, C,
+               l4, m4, n4, alpha4, D,
+               norm_flag);
+  else {
+    nonzero_t nonzero;
+    // handle one derivative at a time
+    const unsigned int* di_ptr = std::find_if(deriv_index, deriv_index+12, nonzero);
+    const unsigned int di = di_ptr - deriv_index;
+    const unsigned int dc = di / 3;
+    const unsigned int dxyz = di % 3;
+
+    unsigned int qn[4][3];
+    qn[0][0] = l1;
+    qn[0][1] = m1;
+    qn[0][2] = n1;
+    qn[1][0] = l2;
+    qn[1][1] = m2;
+    qn[1][2] = n2;
+    qn[2][0] = l3;
+    qn[2][1] = m3;
+    qn[2][2] = n3;
+    qn[3][0] = l4;
+    qn[3][1] = m4;
+    qn[3][2] = n4;
+
+    double alpha[4];
+    alpha[0] = alpha1;
+    alpha[1] = alpha2;
+    alpha[2] = alpha3;
+    alpha[3] = alpha4;
+
+    ++qn[dc][dxyz];
+    unsigned int deriv_index_minus1[12];  std::copy(deriv_index, deriv_index+12, deriv_index_minus1);
+    --deriv_index_minus1[di];
+    double result = eri(deriv_index_minus1,
+                        qn[0][0], qn[0][1], qn[0][2], alpha[0], A,
+                        qn[1][0], qn[1][1], qn[1][2], alpha[1], B,
+                        qn[2][0], qn[2][1], qn[2][2], alpha[2], C,
+                        qn[3][0], qn[3][1], qn[3][2], alpha[3], D,
+                        norm_flag) *
+                    2.0 * alpha[dc];
+    --qn[dc][dxyz];
+
+    if (qn[dc][dxyz] > 0) {
+      --qn[dc][dxyz];
+      result -= eri(deriv_index_minus1,
+                    qn[0][0], qn[0][1], qn[0][2], alpha[0], A,
+                    qn[1][0], qn[1][1], qn[1][2], alpha[1], B,
+                    qn[2][0], qn[2][1], qn[2][2], alpha[2], C,
+                    qn[3][0], qn[3][1], qn[3][2], alpha[3], D,
+                    norm_flag) *
+                    (qn[dc][dxyz] + 1);
+      ++qn[dc][dxyz];
+    }
+    return result;
+  }
+  assert(false); // unreachable;
+}
+
+
 /*!
   calc_f()
 
@@ -321,7 +402,7 @@ void calc_f(double *F, int n, double t)
   \ingroup (QT)
 */  
 double norm_const(unsigned int l1, unsigned int m1, unsigned int n1, 
-                  double alpha1, double A[3])
+                  double alpha1, const double* A)
 {
   return pow(2*alpha1/M_PI,0.75)*pow(4*alpha1,0.5*(l1+m1+n1))/sqrt(df[2*l1]*df[2*m1]*df[2*n1]);
 }

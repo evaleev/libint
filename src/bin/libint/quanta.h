@@ -213,6 +213,11 @@ namespace libint2 {
       return qn_[i];
     }
 
+    /// Return i-th quantum number
+    void set_elem(unsigned int i, const T& value) {
+      qn_[i] = value;
+    }
+
     /// Implementation of QuantumSet::num_quanta()
     const unsigned int num_quanta() const {
       return N;
@@ -245,7 +250,7 @@ namespace libint2 {
   template<typename T, unsigned int N>
     QuantumNumbersA<T,N>::QuantumNumbersA(const T& val)
     {
-      for(int i=0; i<N; i++)
+      for(unsigned int i=0; i<N; i++)
         qn_[i] = val;
     }
 
@@ -267,7 +272,7 @@ namespace libint2 {
     QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<QuantumNumbersA>& sptr)
     {
       T* qn = sptr->qn_;
-      for(int i=0; i<N; i++)
+      for(unsigned int i=0; i<N; i++)
         qn_[i] = qn[i];
     }
   
@@ -324,7 +329,7 @@ namespace libint2 {
       oss << "{";
       if (N > 0)
 	oss << qn_[0];
-      for(int i=1; i<N; i++)
+      for(unsigned int i=1; i<N; i++)
         oss << "," << qn_[i];
       oss << "}";
       return oss.str();
@@ -382,7 +387,6 @@ namespace libint2 {
      mType is the type that describes the auxiliary index of standard 2-body repulsion integrals
   */
   typedef DefaultQuantumNumbers<unsigned int,1>::Result mType;
-  
   
 };
 

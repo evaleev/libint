@@ -53,6 +53,11 @@ namespace libint2 {
   {
     return const_modifier() + ptr_fp_type();
   }
+  template <>
+  std::string CodeContext::type_name<double* const>() const
+  {
+    return ptr_fp_type() + const_modifier();
+  }
 };
 
 CodeContext::CodeContext(const SafePtr<CompilationParameters>& cparams) :
@@ -86,7 +91,7 @@ CodeContext::next_int_index() const
 void
 CodeContext::zero_out_counters() const
 {
-  for(int i=0; i<EntityTypes::ntypes; i++)
+  for(unsigned int i=0; i<EntityTypes::ntypes; i++)
     next_index_[i] = 0;
 }
 
@@ -173,6 +178,7 @@ CppCodeContext::code_prefix() const
   if (cparams()->use_C_linking()) {
     return "extern \"C\" {\n";
   }
+  return "";
 }
 
 std::string
@@ -181,6 +187,7 @@ CppCodeContext::code_postfix() const
   if (cparams()->use_C_linking()) {
     return "};\n";
   }
+  return "";
 }
 
 std::string
@@ -204,7 +211,7 @@ std::string
 CppCodeContext::label_to_name(const std::string& label) const
 {
   std::string str = label;
-  for(int c=0; c<ForbiddenCppCharacters::nchars; c++) {
+  for(unsigned int c=0; c<ForbiddenCppCharacters::nchars; c++) {
     str = replace_chars(str,ForbiddenCppCharacters::chars[c],ForbiddenCppCharacters::subst_chars[c]);
   }
   return str;
@@ -502,7 +509,8 @@ SafePtr<ForLoop>
 CppCodeContext::for_loop(std::string& varname, const SafePtr<Entity>& less_than,
                          const SafePtr<Entity>& start_at) const
 {
-  //return SafePtr<ForLoop>(new ForLoop(SafePtr_from_this(), varname, less_than, start_at));
+  // no implemented
+  assert(false);
 }
 
 std::string

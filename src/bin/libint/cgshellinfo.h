@@ -20,6 +20,7 @@ namespace libint2 {
         return 1;
       if (amin == 1 && amax == 2)
         return 0;
+      abort(); // unreachable
     }
 
    inline std::pair<int,int> notxyz(int a) {
@@ -28,6 +29,7 @@ namespace libint2 {
       case 1: return std::make_pair(0,2); break;
       case 2: return std::make_pair(0,1); break;
       }
+      abort(); // unreachable
     }
   }
 
@@ -91,8 +93,9 @@ namespace libint2 {
                   qn[xyz2] = am2;
                   const int xyz3 = detail::notxyz(xyz1, xyz2);
                   qn[xyz3] = am23 - am2;
-                  if (qn[xyz3] == qn[xyz1] && xyz3 < xyz1 || qn[xyz3] == qn[xyz2]
-                      && xyz3 < xyz2)
+                  if ((qn[xyz3] == qn[xyz1] && xyz3 < xyz1) ||
+                      (qn[xyz3] == qn[xyz2] && xyz3 < xyz2)
+                     )
                     continue;
                   {
                     cartindex[am][qn[0]][qn[1]] = current_index;
@@ -359,7 +362,7 @@ namespace libint2 {
       return data_.cartindex[am][i][j];
     }
     // computes i j k from cartindex xyz
-    static int cartindex_to_ijk(unsigned int am,
+    static void cartindex_to_ijk(unsigned int am,
                                 int xyz,
                                 int& i,
                                 int& j,

@@ -25,9 +25,9 @@ namespace libint2 {
     ~CompilationParameters();
     
     /// returns max AM for task t
-    unsigned int max_am(const std::string& t = "__default__") const;
+    unsigned int max_am(const std::string& t = "default") const;
     /// returns max AM for which to produce optimal code for task t
-    unsigned int max_am_opt(const std::string& t = "__default__") const;
+    unsigned int max_am_opt(const std::string& t = "default") const;
     /// returns max vector length
     unsigned int max_vector_length() const {
       return max_vector_length_;
@@ -67,6 +67,10 @@ namespace libint2 {
     /// name of the floating-point type
     const std::string& realtype() const {
       return realtype_;
+    }
+    /// whether contracted targets are supported
+    bool contracted_targets() const {
+      return contracted_targets_;
     }
     
     /// set max AM for task t
@@ -113,6 +117,10 @@ namespace libint2 {
     void realtype(const std::string& realtype) {
       realtype_ = realtype;
     }
+    /// support contracted targets?
+    void contracted_targets(bool c) {
+      contracted_targets_ = c;
+    }
     
     /// print params out
     void print(std::ostream& os) const;
@@ -143,6 +151,8 @@ namespace libint2 {
       static const bool accumulate_targets = false;
       /// Use double for computations
       static const std::string realtype;
+      /// Do not support contracted targets
+      static const bool contracted_targets = false;
     };
 
     struct TaskParameters {
@@ -178,6 +188,8 @@ namespace libint2 {
     bool accumulate_targets_;
     /// name of the floating-point type
     std::string realtype_;
+    /// whether to support contracted targets
+    bool contracted_targets_;
   };
   
   /** This class maintains various parameters for each task type
@@ -267,7 +279,7 @@ namespace libint2 {
       const int max_am = (int)max_size.size() - 1u;
       if (max_am < (int)am) {
         max_size.resize(am + 1);
-        for(int l = std::max(max_am+1,1); l<=am; ++l)
+        for(int l = std::max(max_am+1,1); l<=(int)am; ++l)
           max_size[l] = max_size[l-1];
       }
       if (max_size[am] < size)

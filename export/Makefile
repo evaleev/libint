@@ -4,6 +4,7 @@ ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
 TOPOBJDIR = $(shell ls -d `pwd`/$(TOPDIR))
+TAR = tar
 
 include $(TOPDIR)/src/lib/MakeVars
 
@@ -20,7 +21,7 @@ realclean::
 export:: exportdir $(TOPDIR)/$(EXPORTDIR)/configure tgz
 
 tgz:: exportdir $(TOPDIR)/$(EXPORTDIR)/configure
-	(cd $(TOPDIR) && tar -cvzf $(EXPORTDIR).tgz $(EXPORTDIR) && rm -rf $(EXPORTDIR))
+	(cd $(TOPDIR) && $(TAR) -cvzf $(EXPORTDIR).tgz $(EXPORTDIR) && rm -rf $(EXPORTDIR))
 
 $(TOPDIR)/$(EXPORTDIR)/configure:: exportdir
 	(cd $(TOPDIR)/$(EXPORTDIR) && aclocal -I lib/autoconf && autoconf)

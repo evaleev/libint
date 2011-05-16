@@ -9,24 +9,25 @@ using namespace libint2;
 #define LOCAL_DEBUG 0
 
 DGVertex::DGVertex(ClassID tid) :
-  dg_(0), subtree_(SafePtr<DRTree>()), typeid_(tid), parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
-  postcalc_(), graph_label_(), referred_vertex_(0), nrefs_(0),
+  typeid_(tid), instid_(), dg_(0), graph_label_(), referred_vertex_(0),
+  refs_(), symbol_(), address_(MemoryManager::InvalidAddress), need_to_compute_(true),
 #if CHECK_SAFETY
   declared_(false),
 #endif
-  symbol_(), address_(MemoryManager::InvalidAddress), need_to_compute_(true), instid_()
+  parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
+  postcalc_(), subtree_(SafePtr<DRTree>())
 {
 }
 
 DGVertex::DGVertex(const DGVertex& v) :
-  dg_(v.dg_), subtree_(v.subtree_), typeid_(v.typeid_), parents_(v.parents_), children_(v.children_), target_(v.target_),
-  can_add_arcs_(v.can_add_arcs_), num_tagged_arcs_(v.num_tagged_arcs_),
-  postcalc_(v.postcalc_), graph_label_(v.graph_label_),
+  typeid_(v.typeid_), instid_(v.instid_), dg_(v.dg_), graph_label_(v.graph_label_), referred_vertex_(v.referred_vertex_),
+  refs_(v.refs_), symbol_(v.symbol_), address_(v.address_), need_to_compute_(v.need_to_compute_),
 #if CHECK_SAFETY
   declared_(v.declared_),
 #endif
-  referred_vertex_(v.referred_vertex_), nrefs_(v.nrefs_),
-  symbol_(v.symbol_), address_(v.address_), need_to_compute_(v.need_to_compute_), instid_(v.instid_)
+  parents_(v.parents_), children_(v.children_), target_(v.target_),
+  can_add_arcs_(v.can_add_arcs_), num_tagged_arcs_(v.num_tagged_arcs_),
+  postcalc_(v.postcalc_), subtree_(v.subtree_)
 {
 }
 
@@ -60,11 +61,11 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
     children_.push_back(arc);
     child->add_entry_arc(arc);
 #if DEBUG
-    std::cout << "add_exit_arc: added arc from " << arc->orig()->description() << " to " << arc->dest()->description() << std::endl;
+    std::cout << "add_exit_arc: added arc " << arc << " from " << arc->orig()->description() << " to " << arc->dest()->description() << std::endl;
 #endif
   }
   else
-    throw CannotAddArc("DGVertex::add_entry_arc() -- cannot add arcs anymore");
+    throw CannotAddArc("DGVertex::add_exit_arc() -- cannot add arcs anymore");
 }
 
 void
@@ -96,7 +97,18 @@ DGVertex::del_exit_arcs()
   if (can_add_arcs_) {
     if (num_exit_arcs()) {
       do {
+#if DEBUG_RESTRUCTURE
+      std::cout << "DGVertex::del_exit_arcs(): num_exit_arcs = " << this->num_exit_arcs() << std::endl;
+#endif
+#if DEBUG_RESTRUCTURE
+        std::cout << "DGVertex::del_exit_arcs(): trying to delete exit arc: " << children_.front().get() << std::endl;
+        children_.front()->print(std::cout);
+        std::cout.flush();
+#endif
         del_exit_arc(*(children_.begin()));
+#if DEBUG_RESTRUCTURE
+        std::cout << "DGVertex::del_exit_arcs(): delete successful" << std::endl;
+#endif
       } while (num_exit_arcs() != 0);
     }
   }
@@ -141,16 +153,18 @@ DGVertex::replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B)
 void
 DGVertex::add_entry_arc(const SafePtr<DGArc>& arc)
 {
-  if (arc->orig() == arc->dest())
+  if (arc->orig() == arc->dest()) {
+    std::cout << "DGVertex::add_entry_arc() : arc->orig = " << arc->orig()->description() << std::endl;
+    std::cout << "DGVertex::add_entry_arc() : arc->dest = " << arc->dest()->description() << std::endl;
     throw CannotAddArc("DGVertex::add_entry_arc() -- arc connects node to itself");
+  }
 
   if (can_add_arcs_)
     parents_.push_back(arc);
   else
     throw CannotAddArc("DGVertex::add_entry_arc() -- cannot add arcs anymore");
 #if DEBUG || DEBUG_RESTRUCTURE
-  std::cout << "add_entry_arc: from " << arc->orig() << " to " << arc->dest() << std::endl;
-  std::cout << "add_entry_arc: v" << std::endl;
+  std::cout << "add_entry_arc: arc " << arc << " from " << arc->orig()->description() << " to " << arc->dest()->description() << std::endl;
   print(std::cout);
 #endif
 }
@@ -161,9 +175,13 @@ DGVertex::del_entry_arc(const SafePtr<DGArc>& arc)
   if (!parents_.empty()) {
     ArcSetType::iterator location = find(parents_.begin(), parents_.end(), arc);
     if (location != parents_.end()) {
+#if DEBUG || DEBUG_RESTRUCTURE
+      std::cout << "del_entry_arc: trying to remove arc " << *location << " connecting " << (*location)->orig()->description()
+                << " to " << (*location)->dest()->description() << endl;
+#endif
       parents_.erase(location);
 #if DEBUG || DEBUG_RESTRUCTURE
-      std::cout << "del_entry_arc: removed arc from " << (*location)->orig() << " to " << (*location)->dest() << endl;
+      std::cout << "del_entry_arc: remove arc successful" << endl;
 #endif
     }
     else
@@ -178,8 +196,8 @@ DGVertex::detach()
 {
   // If there are no entry arcs -- then other vertices do not depend on this guy
   // Can safely remove exit arcs
-  int narcs = num_entry_arcs();
-  if (num_entry_arcs() == 0)
+  const unsigned int narcs = num_entry_arcs();
+  if (narcs == 0)
     DGVertex::del_exit_arcs();
   else
     throw CannotPerformOperation("DGVertex::detach() -- cannot detach a vertex if it has entry arcs");
@@ -188,7 +206,7 @@ DGVertex::detach()
 void
 DGVertex::prepare_to_traverse()
 {
-  can_add_arcs_ = false;
+  //can_add_arcs_ = false;
   num_tagged_arcs_ = 0;
 }
 
@@ -221,14 +239,14 @@ namespace {
 const SafePtr<DGArc>&
 DGVertex::exit_arc(const SafePtr<DGVertex>& v) const
 {
-  static SafePtr<DGArc> nullptr;
+  static SafePtr<DGArc> nullptr_;
   __ArcDestEqual predicate(v);
   const ArcSetType::const_iterator end = children_.end();
   const ArcSetType::const_iterator pos = find_if(children_.begin(),children_.end(),predicate);
   if (pos != end)
     return *pos;
   else
-    return nullptr;
+    return nullptr_;
 }
 
 void
@@ -255,7 +273,7 @@ DGVertex::reset()
   address_ = MemoryManager::InvalidAddress;
   need_to_compute_ = true;
   referred_vertex_ = 0;
-  nrefs_ = 0;
+  refs_.resize(0);
 }
 
 const std::string&
@@ -283,19 +301,35 @@ DGVertex::refer_this_to(const SafePtr<DGVertex>& V)
       throw std::logic_error("DGVertex::refer_this_to() -- already referring to some other vertex");
   }
 #if DEBUG
-      cout << "DGVertex::refer_this_to() -- vertex " << description() << " will refer to " << V->description() << endl;
+  cout << "DGVertex::refer_this_to() -- vertex " << description() << " will refer to " << V->description() << endl;
 #endif
+  // transfer symbols and addresses to the referred-to index
+  if (this->symbol_set() && !V->symbol_set())
+    V->set_symbol(symbol_);
+  if (this->address_set() && !V->address_set())
+    V->set_symbol(symbol_);
   referred_vertex_ = V.get();
-  V->inc_nrefs();
+  V->register_reference(this);
 }
 
 void
-DGVertex::inc_nrefs()
+DGVertex::register_reference(const DGVertex* referrer)
 {
-  if (nrefs_)
-    throw std::logic_error("DGVertex::inc_nrefs() -- already referred to by another vertex");
-  else
-    ++nrefs_;
+  const bool is_new_referrer = (std::find(refs_.begin(), refs_.end(), referrer) == refs_.end());
+  if (is_new_referrer) {
+#if DEBUG
+    std::cout << "DGVertex::register_reference() : " << this->description() << " has "
+        << refs_.size() << " referrers and added new one: " << referrer->description() << std::endl;
+#endif
+    refs_.push_back(referrer);
+  }
+  else {
+#if DEBUG
+    std::cout << "DGVertex::register_reference() : " << this->description() << " already has this referrer : "
+        << referrer->description() << std::endl;
+#endif
+  }
+  assert(refs_.size() <= 1);
 }
 
 const std::string&
@@ -317,13 +351,25 @@ DGVertex::symbol() const
   }
 }
 
+bool
+DGVertex::symbol_set() const {
+  if (referred_vertex_)
+    return referred_vertex_->symbol_set();
+  else
+    return !symbol_.empty();
+}
+
 void
 DGVertex::set_symbol(const std::string& symbol)
 {
-  symbol_ = symbol;
+  if (referred_vertex_ && referred_vertex_->symbol_set())
+    ;//assert(referred_vertex_->symbol() == symbol);
+  else {
+    symbol_ = symbol;
 #if DEBUG
-  cout << "Set symbol for " << description() << " to " << symbol << endl;
+    cout << "Set symbol for " << description() << " to " << symbol << endl;
 #endif
+  }
 }
 
 void
@@ -344,6 +390,14 @@ DGVertex::address() const
       throw AddressNotSet("DGVertex::address() -- address not set");
     }
   }
+}
+
+bool
+DGVertex::address_set() const {
+  if (referred_vertex_)
+    return referred_vertex_->address_set();
+  else
+    return address_ >= 0;
 }
 
 void

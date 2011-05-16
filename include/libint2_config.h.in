@@ -52,12 +52,6 @@
 /* Max optimized AM for ERI */
 #undef ERI_OPT_AM
 
-/* Max AM for 1st-order derivative ERI */
-#undef D1ERI_MAX_AM
-
-/* Max AM for 2nd-order derivative ERI */
-#undef D2ERI_MAX_AM
-
 /* Max AM for G12 method integrals */
 #undef G12_MAX_AM
 
@@ -105,6 +99,9 @@
 
 /* Whether FLOP counting is supported */
 #undef LIBINT_FLOP_COUNT
+
+/* Support contracted integrals? */
+#undef LIBINT_CONTRACTED_INTS
 
 /* Generate single evaluator type? */
 #undef LIBINT_SINGLE_EVALTYPE
