@@ -6,7 +6,8 @@ endif
 TOPOBJDIR = $(shell ls -d `pwd`/$(TOPDIR))
 
 NAME = libint
-TARGET = $(NAME).$(LIBSUF)
+VERSION = 2
+TARGET = $(NAME)$(VERSION).$(LIBSUF)
 COMPILER = build_$(NAME)
 INC = libint.h vrr_header.h hrr_header.h
 

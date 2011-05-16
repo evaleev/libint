@@ -1,0 +1,185 @@
+
+05/05/2009:     Can generate separate evaluators for each integral type in the G12 set, for now assuming no support
+                for [T,G12] integrals).
+                -EFV
+                
+03/22/2009:     Updated contact info.
+                -EFV
+
+03/15/2009:     Added support for generic VRR code supporting ORCA.
+                -EFV
+
+02/25/2009:     Added support for ORCA ordering and ORCA conventions for shell quartet sets.
+                -EFV
+
+05/25/2007:     Added generic VRR codes for ERI and G12 integrals. This helps to reduce dramatically the size of generated code.
+                Use --enable-generic-code configure flag.
+                -EFV
+
+01/28/2007:     Added G12DKH capability.
+		-EFV
+
+12/05/2007:     Upgraded to libtool-1.5.24, which works on Darwin/gcc.
+		-EFV
+
+06/03/2007:     Upgraded to libtool-1.5.23b.
+                -EFV
+
+05/14/2007:	Added configure option '--disable-t1g12-support' to turn off support for [T1,G12] integrals.
+		-EFV
+
+05/10/2007:	Fixed serious bug: DirectedGraph needs to use a Sequence container to hold target references.
+		-EFV
+
+05/06/2007:	Use HRR to compute integral over [T_i,G12].
+		-EFV
+
+05/05/2007:	1) First take on computing integrals over exp(-a(r1+r2)-g(r12)).
+		2) Updated test.
+		3) Treat geng12 as an independent task. Task management much improved, especially in CompilationParameters.
+		4) Fixed a bug in VRR_11_R12kG12_11.
+		-EFV
+
+05/03/2007:	1) Built in many services needed by RecurrenceRelation's derived classes into the base class.
+		2) Introduced operators r_1 . r_1 * G12 and r_1 . r_2 * G12 and their integrals.
+		3) Updated test.
+		-EFV
+
+05/02/2007:	Fixed a few bugs which affected build_libint (not test_eri...).
+		-EFV
+
+04/30/2007:	1) DirectedGraph::apply_to can check whether outgoing arcs exist to avoid further work.
+		   This should speed up graph generation significantly.
+		2) DirectedGraph::find_subtrees should use hints to avoid doing pointless work.
+		3) Changed storage of arcs in DGVertex to more efficient std::list + remove/turn-off unnecessary
+		   safety checks.
+		-EFV
+
+04/27-29/2007:  1) Plugged memory leaks from ArrayBraket::member_subiter().
+		2) RecurrenceRelation::generate_code() can determine whether to use CSE.
+                -EFV
+
+04/26/2007:     Converted DirectedGraph to use std::multimap. Many improvements to speed-up DirectedGraph remain, but this
+		is the first major step.
+                -EFV
+
+04/25/2007:     1) Converted DirectedGraph to use std::list.
+		2) Removed the need to use template class with default arguments as a template template parameter
+		   (gcc 4.3 does not support this).
+                -EFV
+
+04/24/2007:     1) Removed all use of exceptions in normal workflow except for CannotPerformOperation
+		   thrown when cleaning up. Removed all exception specifications except in exception classes
+		   derived from standard exceptions.
+		2) GenIntegralSet::Instance() and analogs precompute the key to avoid constructing
+		   dummy integrals.
+                3) R12kG12_11_11 and TiG12_11_11 use integers to hash.
+                4) configure now checks for boost::shared_ptr<T>.
+                -EFV
+
+01/31/2007:     Libint evaluators which included support for G12 integrals had a bug -- # of targets was not
+		set properly.
+                -EFV
+
+01/22/2007:     There are 2 ways to generate integral evaluator types: single type for all tasks, or
+		task-specific types. Currently Libint will only generate the single type, although the
+		second mode should be easy to implement.
+                -EFV
+
+11/03/2006:     1) Each non-default symbol in the evaluator type also has a macro
+                   which can be checked in the code which computes quartet info.
+                2) Updated test_eri/
+                -EFV
+
+11/01/2006:	1) All header files are now generated automatically, including integral evluator types.
+		2) Documentation almost fully updated.
+                -EFV
+
+07/19/2006:	1) Added code to simplify testing of the compiler. Rewrote generate_eri_code using
+                   the new facilities.
+                2) Added profiling tests.
+                -EFV
+
+07/18/2006:     Strategy for non-ERI classes did not correctly handle unrolling.  -EFV
+
+07/11/2006:     Can choose cartesian shell orderings using configure option
+                --with-cgshell-ordering.
+                -EFV
+
+07/11/2006:     All API names can now be prefixed with the string specified with --with-api-prefix
+                configure option.
+                -EFV
+
+07/05/2006:     Created a standard set of tests for most combinations of code generation
+                features (vectorization, etc.)
+                -EFV
+
+07/04/2006:     1) Added --with-api-prefix and --enable-accum-ints configure options (the latter
+                   doesn't work yet).
+                2) libint2_init_XXX, libint2_need_memory_XXX, and libint2_cleanup_XXX functions
+                   manage allocation of stack. libint2_init_XXX takes an optional external buffer
+                   as an argument.
+                3) libint2_cleanup.cc is not longer produced -- its contents are in libint2_init.cc
+                -EFV
+
+03/01/2006:     1) test_eri.pl can generate code with or without CSE
+                2) correct FLOP counts are produced even for the condensed code
+                -EFV
+
+02/28/2006:     Added ability to condense multiple statements into one, provided
+                that no reusable quantities appear. The current version generates
+                correct code, but FLOP counts are not correct
+                and the degree of "condensation" is not adjustable yet.
+                This development is important
+                for generating efficient linewise vectorized code.
+                -EFV
+
+02/18-26/2006:  1) with-vector-method configure option specifies how to vectorize.
+                2) linewise-vectorized set-level RR codes were not correct. Such
+                   functions now use special stack to keep intermediates.
+                -EFV
+
+02/18/2006:     1) eri-opt-am and g12-opt-am are properly taken into account.
+                   introduced GraphRegistry to do that.
+                2) vector length can be set via configure script.
+                -EFV
+
+02/16/2006:	Library can now be exported. Do 'make export'. This creates a .tgz
+                file in the top object directory. -EFV
+
+02/15/2006:     1) Added --enable-flop-counter configure option
+                2) --with-float-type option now has the advertised effect
+                3) Added --with-eri-strategy configure option
+                4) Added API elements to configure Libint2-MPQC interface
+                -EFV
+
+02/14/2006:     1) GenIntegralSet computes size directly instead of using SubIterator.
+                   This reduces dramatically the memory requirements.
+                2) Remove RR from RRStack when generating code. This frees up a ton
+                   of memory too.
+                Now ERI code can be generated for up to i-functions in a few
+                hundred megs of RAM.
+                -EFV
+
+02/14/2006:     Revamped configure.in for version 2 production. Minor fixes
+                all over the place. Updated installation manual. -EFV
+
+02/14/2006:     Removed libderiv and libr12 sources. -EFV
+
+11/30/2005:	Added installation manual. -EFV
+
+11/29/2005:	Class documentation is installed correctly now. -EFV
+
+11/28/2005:	Test if cxx and cxxgen allow templates with default parameters to match template
+		template parameters with fewer arguments. libint2::Policy requires
+		such an extension (e.g. gcc-3.4). -EFV
+
+11/28/2005:	Added cxxgen options to configure. Timing code is now compiled
+                using cxxgen. -EFV
+
+11/27-28/2005:	Updated configure.in for autoconf 2.57. -EFV
+
+11/27/2005:	Upgraded to libtool-1.5.20. -EFV
+
+11/27/2005:	Started updates-libint2 file. -EFV
+

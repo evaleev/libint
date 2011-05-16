@@ -1,0 +1,131 @@
+#!/usr/bin/perl
+
+#
+# Generates and tests code for ERIs
+#
+
+use Getopt::Long;
+
+# get optional command-line arguments
+my $scpexportdest = "";
+my $timencycles = 0;
+my $makevars = "";
+&GetOptions("scpexport=s" => \$scpexportdest,
+            "timencycles=i" => \$timencycles,
+            "makevars=s" => \$makevars);
+
+(usage() and die) if ($#ARGV < 4 || $#ARGV > 7);
+
+my $max_am = 5;
+my $ericomp = "generate_eri_code";
+
+my $la = $ARGV[0];
+my $lb = $ARGV[1];
+my $lc = $ARGV[2];
+my $ld = $ARGV[3];
+my $size_to_unroll = $ARGV[4];
+my $veclen = 1;
+if ($#ARGV >= 5) {
+  $veclen = $ARGV[5];
+}
+my $vecmethod = 0;
+if ($#ARGV >= 6) {
+  $vecmethod = $ARGV[6];
+}
+my $do_cse = 0;
+if ($#ARGV >= 7) {
+  $do_cse = $ARGV[7];
+}
+
+my $makecmd = "make $makevars $ericomp";
+system($makecmd) && die("$makecmd failed");
+printf STDOUT "Generating source ... ";
+system("./$ericomp $la $lb $lc $ld $size_to_unroll $veclen $vecmethod $do_cse | tee $ericomp.log") 
+  && die("$ericomp failed");
+printf STDOUT "done\n";
+
+# parse in file names of the header and source, and the name of the function
+open CFILE, ">test_eri_conf.h" || die("Could not open test_eri_conf.h");
+$_ = `grep "Generated headers:" $ericomp.log`;
+my @hstr = split;
+printf CFILE "#include <$hstr[2]>\n";
+my $nhead = $#hstr - 1;
+my $header_filename = "";
+for(my $i=0; $i<$nhead; $i++) {
+  $header_filename .= " $hstr[2+$i]";
+}
+$_ = `grep "Generated sources:" $ericomp.log`;
+@hstr = split;
+my $nsrc = $#hstr - 1;
+my $source_filename = "";
+for(my $i=0; $i<$nsrc; $i++) {
+  $source_filename .= " $hstr[2+$i]";
+}
+$_ = `grep "Top compute function:" $ericomp.log`;
+@hstr = split;
+printf CFILE "#define COMPUTE_XX_ERI_XX $hstr[3]\n";
+printf CFILE "unsigned int am[4] = { $la, $lb, $lc, $ld};\n";
+close CFILE;
+
+# create a file to be included into Makefile which determines which C++ source
+# files to be compiled in
+open MFILE, ">Make.compute_eri" || die("Could not open Make.compute_eri");
+printf MFILE "COMPUTE_XX_ERI_XX_SRC = $source_filename\n";
+close MFILE;
+
+#
+# if only need to export the source -- do not compile test_eri and time_eri
+#
+if ($scpexportdest eq "") {
+  # now make test program and run it
+  my $makecmd = "make $makevars test_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"";
+  my $errcod = system($makecmd);
+  if ($errcod != 0) {
+    printf STDOUT "make test_eri failed!\n";
+  }
+  else {
+    system("./test_eri") && die("./test_eri failed");
+  }
+
+  # prepare timing program too
+  $makecmd = "make $makevars time_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"";
+  $errcod = system($makecmd);
+  if ($errcod) {
+    printf STDOUT "make time_eri failed!\n";
+  }
+  else {
+    printf STDOUT "Timing program compiled.\n";
+    if ($timencycles gt 0) {
+      printf STDOUT "Running timing program\n";
+      system("./run_time_eri.pl");
+    }
+  }
+
+  printf STDOUT "Test finished.\n";
+}
+else {
+  printf STDOUT "Exporting generated source to $scpexportdest using the following command:\n";
+  my $cmd = "scp $source_filename $header_filename libint2_params.h libint2_iface.h libint2_iface_internal.h test_eri_conf.h Make.compute_eri $scpexportdest";
+  printf STDOUT "$cmd\n";
+  system("scp $cmd");
+}
+
+exit(0);
+
+sub usage {
+
+  printf STDERR "USAGE: test_eri.pl [options] a b c d size_to_unroll <veclen> <vecmeth> <do_cse>\n";
+  printf STDERR "         a,b,c,d -- angular momenta of shells in (ab|cd)\n";
+  printf STDERR "         size_to_unroll -- quartets of this (or smaller) size are unrolled\n";
+  printf STDERR "         veclen  -- (optional) vector length. Defaults to 1.\n";
+  printf STDERR "         vecmeth -- (optional) vectorization method. Valid choices are 0 (block-wise) and 1 (linewise). Defaults to 0.\n";
+  printf STDERR "         do_cse  -- (optional) whether to do Common Subexpression Elimination. Valid choices are 0 (no) and 1 (yes). Defaults to 0.\n";
+  printf STDERR "       Options:\n";
+  printf STDERR "         --scpexport=dest  -- generate source and scp to dest.\n";
+  printf STDERR "                              dest must be in host:dir format.\n";
+  printf STDERR "         --timencycles=A   -- run \"time_eri A\". Only valid if scpexport is not given\n";
+  printf STDERR "         --makevars=S      -- pass S to make command. Can be used to override make variables, etc.";
+
+}
+
+

@@ -17,6 +17,12 @@ ifndef DODEPEND
 DODEPENDOPT = "DODEPEND=no"
 endif
 
+export::
+	for dir in $(SUBDIRS); \
+	  do \
+	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) export) || exit 1; \
+	  done
+
 install::
 	for dir in $(SUBDIRS); \
 	  do \

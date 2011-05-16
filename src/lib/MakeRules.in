@@ -1,9 +1,17 @@
 
-HAVE_MAKERULES = yes
-
-.PHONY: default install install_inc install_target uninstall clean oclean distclean targetclean realclean rm_libsrcdir
+.PHONY: default export install install_inc install_target clean oclean distclean targetclean realclean
 
 default:: $(TOPDIR)/lib/$(TARGET)
+
+export:: source
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/src
+	for i in $(LIBSRCDIR)/*.cc; do \
+	 $(INSTALL) $(INSTALLLIBOPT) $${i} $(TOPDIR)/$(EXPORTDIR)/src; \
+        done
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include
+	for i in $(LIBSRCDIR)/*.h; do \
+	 $(INSTALL) $(INSTALLLIBOPT) $${i} $(TOPDIR)/$(EXPORTDIR)/include; \
+        done
 
 $(TOPDIR)/lib/$(TARGET): source
 	cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR)
@@ -11,11 +19,12 @@ $(TOPDIR)/lib/$(TARGET): source
 install:: install_inc install_target
 
 install_inc:: $(TOPDIR)/lib/$(TARGET)
-	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)
-	for inc in $(INC); \
-	do \
-	  $(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)/$${inc} $(DESTDIR)$(includedir)/$(NAME); \
-	done
+	$(INSTALL) $(INSTALLDIROPT) $(includedir)/$(NAME)$(VERSION)
+	for i in $(LIBSRCDIR)/*.cc; do \
+	 $(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)$(VERSION)/*.h $(includedir)/$(NAME)$(VERSION); \
+        done
+	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2_config.h $(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_intrinsic_types.h $(includedir)/$(NAME)$(VERSION)
 
 install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)
@@ -58,22 +67,31 @@ rm_libsrcdir:
 	-rm -f source
 	-rm -f make_libsrcdir
 
-source: make_libsrcdir $(LIBSRCDIR)/Makefile $(LIBSRCDIR)/$(NAME).h
+source: make_libsrcdir $(LIBSRCDIR)/Makefile $(LIBSRCDIR)/libint2_params.h
 	echo "Last time library source was generated:\c" > $@
 	date >> $@
 
 make_libsrcdir:
-	if test -f "$@"; then \
-$(MAKE) rm_libsrcdir; \
+	@if [ -e $@ ]; then \
+$(RM) -rf $(LIBSRCDIR); \
+$(RM) -f $(LIBSRCLINK); \
+$(RM) -f source; \
+$(RM) -f make_libsrcdir; \
 fi; \
-$(INSTALL) $(INSTALLDIROPT) $(LIBSRCDIR) || exit 1; \
-$(LN_S) $(LIBSRCDIR) $(LIBSRCLINK) || exit 1; \
-	echo "Last time the library source directory was created:\c" > $@
-	date >> $@
+if ! $(INSTALL) $(INSTALLDIROPT) $(LIBSRCDIR); then \
+echo Could not make directory $(LIBSRCDIR); \
+exit 1; \
+fi; \
+if ! $(LN_S) $(LIBSRCDIR) $(LIBSRCLINK); then \
+echo Could not $(LN_S) $(LIBSRCDIR) $(LIBSRCLINK); \
+exit 1; \
+fi;
+	@echo "Last time the library source directory was created:\c" > $@
+	@date >> $@
 
 $(LIBSRCDIR)/Makefile: make_libsrcdir $(SRCDIR)/Makefile.library
 	cp -f $(SRCDIR)/Makefile.library $@
 
-$(LIBSRCDIR)/$(NAME).h: $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER) $(LIBSRCDIR)/Makefile
+$(LIBSRCDIR)/libint2_params.h: $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER) $(LIBSRCDIR)/Makefile
 	cd $(LIBSRCLINK); $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER)
 

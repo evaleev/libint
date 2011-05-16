@@ -1,0 +1,275 @@
+
+#include <limits.h>
+#include <list>
+#include <smart_ptr.h>
+
+#ifndef _libint2_src_bin_libint_memory_h_
+#define _libint2_src_bin_libint_memory_h_
+
+using namespace std;
+
+namespace libint2 {
+
+  /**
+     MemoryBlock<Address,Size> describes a block of raw memory addressed via Address and size described by Size
+   */
+  template <typename Address, typename Size>
+    class MemoryBlock
+    {
+    public:
+      MemoryBlock(const Address& address, const Size& size, bool free,
+                  const SafePtr<MemoryBlock>& left,
+                  const SafePtr<MemoryBlock>& right) :
+        address_(address), size_(size), free_(free),
+        left_(left), right_(right)
+        {
+        }
+      MemoryBlock(const MemoryBlock& A) :
+	address_(A.address_), size_(A.size_), free_(A.free_),
+        left_(A.left_), right_(A.right_)
+        {
+        }
+
+      ~MemoryBlock() {}
+
+      /// copy A to this
+      const MemoryBlock& operator=(const MemoryBlock& A) {
+	address_ = A.address_;
+	size_ = A.size_;
+	free_ = A.free_;
+	left_ = A.left_;
+	right_ = A.right_;
+	return *this;
+      }
+
+      /// Returns address
+      Address address() const { return address_; }
+      /// Returns size
+      Size size() const { return size_; }
+      /// Returns true if the block is free
+      bool free() const { return free_; }
+      /// Returns the left adjacent block
+      SafePtr<MemoryBlock> left() const { return left_; }
+      /// Returns the right adjacent block
+      SafePtr<MemoryBlock> right() const { return right_; }
+      /// Sets the left adjacent block
+      void left(const SafePtr<MemoryBlock>& l) { left_ = l; }
+      /// Sets the right adjacent block
+      void right(const SafePtr<MemoryBlock>& r) { right_ = r; }
+
+      /// Sets the address
+      void set_address(const Address& address) { address_ = address; }
+      /// Sets the size
+      void set_size(const Size& size) { size_ = size; }
+      /// Sets block's free status
+      void set_free(bool free) { free_ = free; }
+
+      /// Returns true if the size of *i is less than the size of *j
+      static bool size_less_than(const SafePtr<MemoryBlock>& i,
+                                 const SafePtr<MemoryBlock>& j) {
+        return i->size() < j->size();
+      }
+      /** Returns true if the size of *i equals sz. Note that the arguments are 
+          not passed by reference since this function is designed to be converted
+          to std::pointer_to_binary_function, which adds references to the arguments */
+      static bool size_eq(SafePtr<MemoryBlock> i, Size sz) {
+        return i->size() == sz;
+      }
+      /** Returns true if the size of *i greater or equal than sz. Note that the arguments are 
+          not passed by reference since this function is designed to be converted
+          to std::pointer_to_binary_function, which adds references to the arguments */
+      static bool size_geq(SafePtr<MemoryBlock> i, Size sz) {
+        return i->size() >= sz;
+      }
+      /// Returns true if the address of *i is less than the address of *j
+      static bool address_less_than(const SafePtr<MemoryBlock>& i,
+                                    const SafePtr<MemoryBlock>& j) {
+        return i->address() < j->address();
+      }
+      /** Returns true if the address of *i equals a. Note that the arguments are 
+          not passed by reference since this function is designed to be converted
+          to std::pointer_to_binary_function, which adds references to the arguments */
+      static bool address_eq(SafePtr<MemoryBlock> i, Address a) {
+        return i->address() == a;
+      }
+      /// Returns true if *i is free
+      static bool is_free(const SafePtr<MemoryBlock>& i) {
+        return i->free();
+      }
+
+      /// Merge A to this (does not check if merge can happen -- can_merge(*this,*A) must be already satisfied). The left/right pointers are not changed
+      const MemoryBlock& merge(const MemoryBlock& A) {
+	if (address() > A.address()) {
+	  address_ = A.address_;
+	}
+	size_ += A.size();
+	return *this;
+      }
+
+    private:
+      Address address_;
+      Size size_;
+      bool free_;
+      typedef MemoryBlock<Address,Size> this_type;
+      SafePtr<this_type> left_;
+      SafePtr<MemoryBlock> right_;
+
+      MemoryBlock();
+    };
+
+  /**
+     Class MemoryManager handles allocation and deallocation of raw
+     memory (stack) provided at runtime of the library.
+  */
+
+  class MemoryManager {
+  public:
+    /// Negative Address is used to denote an invalid address -- hence signed integer
+    typedef int Address;
+    typedef unsigned int Size;
+    typedef MemoryBlock<Address,Size> MemBlock;
+
+    static const Address InvalidAddress = -1;
+
+  protected:
+    typedef std::list< SafePtr<MemBlock> > memblkset;
+
+  private:
+    /// Upper limit on the amount of memory this MemoryManager can handle
+    Size maxmem_;
+    /// manages MemBlocks
+    memblkset blks_;
+    /// This block is guaranteed to be free until all memory is exhausted
+    SafePtr<MemBlock> superblock_;
+    /// Max amount of memory used
+    Size max_memory_used_;
+
+    SafePtr<MemBlock> merge_blocks(const SafePtr<MemBlock>& left, const SafePtr<MemBlock>& right);
+    SafePtr<MemBlock> merge_to_superblock(const SafePtr<MemBlock>& blk);
+    void update_max_memory();
+
+
+  public:
+    virtual ~MemoryManager();
+
+    /// Reserve a block and return its address
+    virtual Address alloc(const Size& size) =0;
+    /// Release a block previously reserved using alloc
+    virtual void free(const Address& address);
+    /// Returns the max amount of memory used up to this moment
+    Size max_memory_used() const { return max_memory_used_; }
+
+  protected:
+    MemoryManager(const Size& maxmem);
+
+    /// Returns maxmem
+    Size maxmem() const { return maxmem_; }
+    /// Returns blocks
+    memblkset& blocks() { return blks_;}
+    /// Returns the superblock
+    SafePtr<MemBlock> superblock() const { return superblock_; }
+    /// steals size memory from block blk and returns the new block
+    SafePtr<MemBlock> steal_from_block(const SafePtr<MemBlock>& blk, const Size& size);
+    /// finds the block at Address a
+    SafePtr<MemBlock> find_block(const Address& a);
+
+  };
+
+
+  /**
+     WorstFitMemoryManager allocates memory by trying to find the largest-possible free block.
+     If search_exact == true -- exact fit is sought first.
+  */
+  class WorstFitMemoryManager : public MemoryManager {
+  public:
+    WorstFitMemoryManager(bool search_exact = true, const Size& maxsize = ULONG_MAX);
+    ~WorstFitMemoryManager();
+
+    /// Implementation of MemoryManager::alloc()
+    Address alloc(const Size& size);
+
+  private:
+    /// If seacrh_exact_ == true -- look for exact fit first
+    bool search_exact_;
+  };
+
+  /**
+     BestFitMemoryManager allocates memory by trying to find
+     a suitable free block, which is is larger than the requested
+     amount by at least tight_fit.
+     If search_exact == true -- exact fit is sought first.
+  */
+  class BestFitMemoryManager : public MemoryManager {
+  public:
+    BestFitMemoryManager(bool search_exact = true, const Size& tight_fit = 0, const Size& maxsize = ULONG_MAX);
+    ~BestFitMemoryManager();
+
+    /// Implementation of MemoryManager::alloc()
+    Address alloc(const Size& size);
+
+  private:
+    /// If seacrh_exact_ == true -- look for exact fit first
+    bool search_exact_;
+    /// If size of a block - requested size < tight_fit_ it is rejected
+    Size tight_fit_;
+  };
+
+  /**
+     FirstFitMemoryManager allocates memory by finding first suitable free block.
+     If search_exact == true -- exact fit is sought first.
+  */
+  class FirstFitMemoryManager : public MemoryManager {
+  public:
+    FirstFitMemoryManager(bool search_exact = true, const Size& maxsize = ULONG_MAX);
+    ~FirstFitMemoryManager();
+
+    /// Implementation of MemoryManager::alloc()
+    Address alloc(const Size& size);
+
+  private:
+    /// If seacrh_exact_ == true -- look for exact fit first
+    bool search_exact_;
+  };
+
+  /**
+     LastFitMemoryManager allocates memory by finding last suitable free block.
+     If search_exact == true -- exact fit is sought first (from the back of the list).
+  */
+  class LastFitMemoryManager : public MemoryManager {
+  public:
+    LastFitMemoryManager(bool search_exact = true, const Size& maxsize = ULONG_MAX);
+    ~LastFitMemoryManager();
+
+    /// Implementation of MemoryManager::alloc()
+    Address alloc(const Size& size);
+
+  private:
+    /// If seacrh_exact_ == true -- look for exact fit first
+    bool search_exact_;
+  };
+
+  /**
+     MemoryManagerFactory is a very dumb factory for MemoryManagers
+  */
+  class MemoryManagerFactory {
+  public:
+    static const unsigned int ntypes = 8;
+    SafePtr<MemoryManager> memman(unsigned int type) const;
+    std::string label(unsigned int type) const;
+  };
+
+  /**
+     Very useful nonmember functions to operate on MemBlocks and their containers
+  */
+  typedef MemoryManager::MemBlock MemBlock;
+  typedef std::list< MemoryManager::MemBlock > MemBlockSet;
+  bool size_lessthan(const MemoryManager::MemBlock& A, const MemoryManager::MemBlock& B);
+  bool address_lessthan(const MemoryManager::MemBlock& A, const MemoryManager::MemBlock& B);
+  /// True if can merge blocks
+  bool can_merge(const MemoryManager::MemBlock& A, const MemoryManager::MemBlock& B);
+  /// Merge blocks, if possible
+  void merge(MemBlockSet& blocks);
+
+};
+
+#endif

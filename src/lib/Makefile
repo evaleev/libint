@@ -6,12 +6,6 @@ endif
 -include $(TOPDIR)/Makedirlist
 
 SUBDIRS = libint
-ifeq ($(HAVE_LIBINT_SRC_BIN_LIBR12),yes)
-SUBDIRS := $(SUBDIRS) libr12
-endif
-ifeq ($(HAVE_LIBINT_SRC_BIN_LIBDERIV),yes)
-SUBDIRS := $(SUBDIRS) libderiv
-endif
 
 default::
 	for dir in $(SUBDIRS); \
@@ -22,6 +16,12 @@ default::
 ifndef DODEPEND
 DODEPENDOPT = "DODEPEND=no"
 endif
+
+export::
+	for dir in $(SUBDIRS); \
+	  do \
+	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) export) || exit 1; \
+	  done
 
 install::
 	for dir in $(SUBDIRS); \
