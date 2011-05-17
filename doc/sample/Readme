@@ -3,8 +3,8 @@ This directory includes generated library for use by novice users of libint. It 
 ../../libint2/configure '--with-cxx=clang++ -std=c++0x' '--with-cxx-optflags=-O2' '--with-incdirs=-I/Users/evaleev/Development/boost/install/include' '--prefix=/Users/evaleev/Development/workspace/install/libint2-clang' '--enable-eri=0' '--with-max-am=5' '--with-opt-am=2' '--disable-unrolling' '--enable-generic-code' '--enable-contracted-ints'
 
 To compile and install the library:
-1. tar -xvzf libint-2.0.0-prealpha.tgz
-2a. cd libint-2.0.0-prealpha
+1. tar -xvzf libint-2.0.0-stable.tgz
+2a. cd libint-2.0.0-stable
 2b. run 'configure --help' to see the list of command-line options; the most important are:
     * --prefix
     * --with-cxx

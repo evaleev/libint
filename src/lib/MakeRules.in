@@ -36,28 +36,28 @@ uninstall::
 	done
 	-rm -rf $(DESTDIR)$(includedir)/$(NAME)
 
-clean:
+clean::
 	if test -f source; then \
 cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) clean; \
 fi
 
-oclean:
+oclean::
 	if test -f source; then \
 cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) oclean; \
 fi
 
-distclean:
+distclean::
 	if test -f source; then \
 cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) distclean; \
 fi
 	$(MAKE) realclean
 
-targetclean:
+targetclean::
 	if test -f source; then \
 cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR) targetclean; \
 fi
 
-realclean: rm_libsrcdir
+realclean:: rm_libsrcdir
 
 rm_libsrcdir:
 	-rm -rf $(LIBSRCDIR)

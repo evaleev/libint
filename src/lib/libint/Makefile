@@ -9,7 +9,6 @@ NAME = libint
 VERSION = 2
 TARGET = $(NAME)$(VERSION).$(LIBSUF)
 COMPILER = build_$(NAME)
-INC = libint.h vrr_header.h hrr_header.h
 
 -include $(TOPDIR)/src/lib/MakeVars
 -include $(TOPDIR)/src/lib/MakeRules

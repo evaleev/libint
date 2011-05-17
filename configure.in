@@ -662,7 +662,7 @@ dnl --------- Want absolute path for srcdir, not relative. ---------
 
 if test X$ac_srcdir_defaulted = Xyes; then
   case $srcdir in
-    ..*)
+    ../*)
       srcdir=`(cd $srcdir; pwd)`
       #srcdir=`(cd $srcdir; echo $PWD)`
       ;;
