@@ -84,3 +84,5 @@ clean::
 realclean:: clean
 	-rm -rf Make.compute_eri *.h *.cc *.dot *.log
 
+distclean:: realclean
+	-rm -rf run_time_eri.pl run_timing_suite.pl stdtests.pl test_eri.pl time_eri.pl

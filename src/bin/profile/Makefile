@@ -35,3 +35,4 @@ clean::
 realclean:: clean
 	-rm -rf *.h *.cc *.dot *.log
 
+distclean:: realclean

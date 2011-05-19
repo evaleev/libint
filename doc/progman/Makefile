@@ -8,5 +8,5 @@ TARGET = progman.$(DOCSUF)
 
 -include $(TOPDIR)/doc/MakeVars
 -include $(TOPDIR)/doc/MakeRules
--include $(TOPDIR)/doc/MakeSuffixRules
+include $(SRCDIR)/$(TOPDIR)/lib/MakeSuffixRules
 include $(SRCDIR)/$(TOPDIR)/lib/MakeRules

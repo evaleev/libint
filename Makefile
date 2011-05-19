@@ -69,7 +69,7 @@ distclean::
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
-	-rm -rf autom4te.cache config.status config.log depcheck* libtool \
+	-rm -rf autom4te.cache config.status config.log conf*.file conf*.dir *.dSYM depcheck* libtool \
 Makedirlist include
 
 targetclean::

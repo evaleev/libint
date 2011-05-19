@@ -41,7 +41,7 @@ distclean::
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
-	-rm -f MakeRules MakeSuffixRules MakeVars
+	-rm -f MakeRules MakeVars macros.tex
 
 targetclean::
 	for dir in $(SUBDIRS); \

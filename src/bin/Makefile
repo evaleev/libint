@@ -6,6 +6,7 @@ endif
 -include $(TOPDIR)/Makedirlist
 
 SUBDIRS = libint
+ALLSUBDIRS = $(SUBDIRS) test_eri profile
 
 default::
 	for dir in $(SUBDIRS); \
@@ -57,11 +58,11 @@ oclean::
 	  done
 
 distclean::
-	for dir in $(SUBDIRS); \
+	for dir in $(ALLSUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
-	-rm -rf MakeVars MakeRules MakeSuffixRules libint_config.h
+	-rm -rf MakeVars MakeRules
 
 targetclean::
 	for dir in $(SUBDIRS); \

@@ -82,6 +82,9 @@ dependclean::
 
 realclean:: clean
 
+distclean:: realclean
+	-rm -f cgshell_ordering.h
+
 ifneq ($(CXXDEPENDSUF),none)
 %.d: %.cc
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null

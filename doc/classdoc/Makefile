@@ -6,7 +6,7 @@ TOPOBJDIR = $(shell ls -d `pwd`/$(TOPDIR))
 
 include $(TOPDIR)/doc/MakeVars
 include $(TOPDIR)/doc/MakeRules
-include $(TOPDIR)/doc/MakeSuffixRules
+include $(SRCDIR)/$(TOPDIR)/lib/MakeSuffixRules
 
 ifdef DOXYGEN
 
@@ -30,3 +30,5 @@ endif
 clean::
 	-rm -rf html
 
+distclean:: clean
+	-rm -rf doxygen.cfg

@@ -1,5 +1,5 @@
 include $(TOPDIR)/src/lib/MakeVars
-include $(TOPDIR)/src/lib/MakeSuffixRules
+include $(SRCTOPDIR)/lib/MakeSuffixRules
 VPATH = $(SRCDIR) $(SRCTOPDIR)/include
 
 NAME = libint2
