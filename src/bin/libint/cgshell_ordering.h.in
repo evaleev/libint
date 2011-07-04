@@ -134,7 +134,7 @@ namespace libint2 {
  */
 #define FOR_CART(i,j,k,am) for(int __xyz=0; __xyz<INT_NCART(am); ++__xyz) { \
                              CGShellInfo< CGShellOrderingData<CGShellOrdering_GAMESS,LIBINT_CARTGAUSS_MAX_AM> >::cartindex_to_ijk(am,__xyz,i,j,k);
-#define END_FOR_CART }}
+#define END_FOR_CART }
 
 #endif // GAMESS ordering
 

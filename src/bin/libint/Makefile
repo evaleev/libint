@@ -29,6 +29,8 @@ LIBCXXDEP = $(LIBCXXSRC:%.cc=%.$(DEPSUF))
 LIBOBJ = $(LIBCXXOBJ)
 LIBTARGET = libINT.a
 
+LIBCXXINC = cgshellinfo.h cgshell_ordering.h
+
 BUILDCXXSRC = build_libint.cc
 BUILDCXXOBJ = $(BUILDCXXSRC:%.cc=%.$(OBJSUF))
 BUILDCXXDEP = $(BUILDCXXSRC:%.cc=%.$(DEPSUF))
@@ -67,7 +69,11 @@ $(LIBTARGET): $(LIBOBJ)
 graph.dot: test
 	./$^
 
-install::
+install:: install_inc
+
+install_inc:: $(LIBCXXINC)
+	$(INSTALL) $(INSTALLDIROPT) $(includedir)
+	-$(INSTALL) $(INSTALLLIBOPT) $^ $(includedir)
 
 clean:: oclean targetclean dependclean
 

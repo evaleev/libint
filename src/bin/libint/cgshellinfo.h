@@ -2,7 +2,6 @@
 #ifndef _libint2_src_bin_libint_cgshellinfo_h_
 #define _libint2_src_bin_libint_cgshellinfo_h_
 
-#include <libint2_config.h>
 #include <cassert>
 #include <utility>
 #include <algorithm>
