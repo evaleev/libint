@@ -45,7 +45,7 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/libint/cgshellinfo.h $(TOPDIR)/$(EXPORTDIR)/include
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/lib/libint/*.h $(TOPDIR)/$(EXPORTDIR)/include
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/src/bin/libint/cgshell_ordering.h $(TOPDIR)/$(EXPORTDIR)/include
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/libint2_config.export $(TOPDIR)/$(EXPORTDIR)/include/libint2_config.h.in
+	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2_config.h $(TOPDIR)/$(EXPORTDIR)/include/libint2_config.h
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/INSTALL.export $(TOPDIR)/$(EXPORTDIR)/INSTALL
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/LICENSE $(TOPDIR)/$(EXPORTDIR)/LICENSE
 

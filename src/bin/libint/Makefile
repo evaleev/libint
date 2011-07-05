@@ -11,6 +11,9 @@ else
   SRCDIR=.
 endif
 
+NAME = libint
+VERSION = 2
+
 CXXFLAGS += -I. -I$(SRCDIR)
 
 RANLIB = ranlib
@@ -72,8 +75,8 @@ graph.dot: test
 install:: install_inc
 
 install_inc:: $(LIBCXXINC)
-	$(INSTALL) $(INSTALLDIROPT) $(includedir)
-	-$(INSTALL) $(INSTALLLIBOPT) $^ $(includedir)
+	$(INSTALL) $(INSTALLDIROPT) $(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $^ $(includedir)/$(NAME)$(VERSION)
 
 clean:: oclean targetclean dependclean
 
