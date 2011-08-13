@@ -5,8 +5,6 @@
 
 using namespace libint2;
 
-AbstractPurgeableStack::~AbstractPurgeableStack() {}
-
 PurgeableStacks*
 PurgeableStacks::instance_ = 0;
 

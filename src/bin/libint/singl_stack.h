@@ -44,7 +44,7 @@ namespace libint2 {
 
       /// callback to compute hash values is the only parameter
       SingletonStack(HashingFunction callback);
-      ~SingletonStack() {}
+      virtual ~SingletonStack() {}
 
       /** Returns the pointer to the unique instance of object obj.
           find() computes obj->*callback_(), searches it in hstack_,

@@ -23,7 +23,7 @@ namespace libint2 {
      */
   class AbstractPurgeableStack {
     public:
-      virtual ~AbstractPurgeableStack();
+      virtual ~AbstractPurgeableStack() {}
       virtual void purge() =0;
   };
 
@@ -36,6 +36,8 @@ namespace libint2 {
     {
       protected:
         typedef Policy PurgingPolicy;
+
+        virtual ~PurgeableStack() {}
     };
 
   /// Collection of AbstractPurgeableStack objects
