@@ -402,30 +402,6 @@ namespace libint2 { namespace algebra {
 
 ///////////////
 
-SafePtr<RRStack>
-RRStack::rrstack_;
 
-SafePtr<RRStack>&
-RRStack::Instance() {
-  if (!rrstack_) {
-    SafePtr<RRStack> tmpstack(new RRStack);
-    rrstack_ = tmpstack;
-  }
-  return rrstack_;
-}
-
-void
-RRStack::add(const SafePtr<RRStack>& rrs)
-{
-  for(citer_type it=rrs->begin(); it != rrs->end(); it++) {
-    find((*it).second.second);
-  }
-}
-
-void
-RRStack::remove(const data_type& rr)
-{
-  parent_type::remove(rr);
-}
 
 ///////////////

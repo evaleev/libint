@@ -8,7 +8,7 @@
 #include <strategy.h>
 #include <dg.h>
 #include <rr.h>
-#include <rr.templ.h>
+#include <rr.h>
 #include <graph_registry.h>
 #include <intset_to_ints.h>
 #include <uncontract.h>

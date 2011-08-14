@@ -15,6 +15,7 @@
 #include <code.h>
 #include <default_params.h>
 #include <util_types.h>
+#include <global_macros.h>
 
 using namespace std;
 
@@ -25,6 +26,55 @@ namespace libint2 {
   class ImplicitDimensions;
   class DirectedGraph;
   template <typename V> class AlgebraicOperator;
+
+  /** RRStack implements a stack of RecurrenceRelation's which can only hold
+      one instance of a given RR. RecurrenceRelation::label() is used for hashing
+    */
+  template <typename RR>
+  class RRStackBase : public SingletonStack<RR,std::string>
+  {
+  private:
+
+    static SafePtr<RRStackBase<RR> > rrstack_;
+
+    // private constructor because it's a Singleton
+    RRStackBase() : parent_type(& RR::label) {}
+
+  public:
+    typedef SingletonStack<RR,std::string> parent_type;
+    typedef typename parent_type::data_type data_type;
+    typedef typename parent_type::value_type value_type;
+    typedef typename parent_type::iter_type iter_type;
+    typedef typename parent_type::citer_type citer_type;
+    typedef typename parent_type::InstanceID InstanceID;
+
+    /// Obtain the unique Instance of RRStack
+    static SafePtr<RRStackBase<RR> >& Instance() {
+      if (!rrstack_) {
+        SafePtr<RRStackBase<RR> > tmpstack(new RRStackBase<RR>);
+        rrstack_ = tmpstack;
+      }
+      return rrstack_;
+    }
+
+    virtual ~RRStackBase() {}
+
+    /// adds content of rrs to this stack
+    void add(const SafePtr<RRStackBase<RR> >& rrs) {
+      for(citer_type it=rrs->begin(); it != rrs->end(); it++) {
+        find((*it).second.second);
+      }
+    }
+
+    /// removes rr from the stack
+    void remove(const data_type& rr) {
+      parent_type::remove(rr);
+    }
+  };
+
+  template <typename RR>
+  SafePtr<RRStackBase<RR> > RRStackBase<RR>::rrstack_;
+
 
   /**
      RecurrenceRelation describes all recurrence relations
@@ -55,7 +105,7 @@ namespace libint2 {
 
     /**
        Returns true is this recurrence relation is simple enough to optimize away.
-       As a result of such optimization, standalone function will NOT be 
+       As a result of such optimization, standalone function will NOT be
        generated for this recurrence relation. Instead, it's source will be
        inlined and optimized.
     */
@@ -71,12 +121,12 @@ namespace libint2 {
       applied to center A to compute (ps|ds) ERI)
     */
     const std::string& label() const;
-    
+
     /**
       description() returns a verbose description of this RR
     */
     virtual std::string description() const;
-    
+
     /// Generate declaration and definition for the recurrence relation
     virtual void generate_code(const SafePtr<CodeContext>& context,
                                const SafePtr<ImplicitDimensions>& dims,
@@ -96,7 +146,7 @@ namespace libint2 {
 
     /// Return the number of FLOPs per this recurrence relation
     unsigned int nflops() const { return nflops_; }
-    
+
     /// RecurrenceRelation is managed by SingletonStack but doesn't need to keep track of instance ID
     void inst_id(const SingletonStack<RecurrenceRelation,string>::InstanceID& i) {}
 
@@ -109,8 +159,23 @@ namespace libint2 {
     /// Generates the label
     virtual std::string generate_label() const =0;
     /// Registers with the stack
-    template <class RR> bool register_with_rrstack() const;
-
+    template <class RR> bool register_with_rrstack() {
+      // only register RRs with for shell sets
+      if (TrivialBFSet<typename RR::BasisFunctionType>::result)
+        return false;
+      SafePtr<RRStackBase<RecurrenceRelation> > rrstack = RRStackBase<RecurrenceRelation>::Instance();
+      SafePtr<RR> this_ptr =
+        const_pointer_cast<RR,const RR>(
+          static_pointer_cast<const RR, const RecurrenceRelation>(
+            EnableSafePtrFromThis<RecurrenceRelation>::SafePtr_from_this()
+          )
+        );
+      rrstack->find(this_ptr);
+#if DEBUG || DEBUG_CONSTRUCTION
+      std::cout << "register_with_rrstack: registered " << this_ptr->label() << std::endl;
+#endif
+      return true;
+    }
     private:
 
     /** used by generate_code to create a (new) computation graph that computes sets of integrals using the RR
@@ -129,7 +194,7 @@ namespace libint2 {
     virtual std::string generic_header() const;
     /// return the implementation of this recurrence relation in terms of generic code
     virtual std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const;
-    
+
   };
 
   namespace algebra {
@@ -152,35 +217,9 @@ namespace libint2 {
                                                             const SafePtr<DGVertex>& B);
   };
 
-  /** RRStack implements a stack of RecurrenceRelation's which can only hold
-      one instance of a given RR. RecurrenceRelation::label() is used for hashing
-    */
-  class RRStack : public SingletonStack<RecurrenceRelation,std::string>
-  {
-    public:
-    typedef SingletonStack<RecurrenceRelation,std::string> parent_type;
-    typedef parent_type::data_type data_type;
-    typedef parent_type::value_type value_type;
-    typedef parent_type::iter_type iter_type;
-    typedef parent_type::citer_type citer_type;
-    typedef parent_type::InstanceID InstanceID;
+  // Instantiate the RRStack
+  typedef RRStackBase<RecurrenceRelation> RRStack;
 
-    /// Obtain the unique Instance of RRStack
-    static SafePtr<RRStack>& Instance();
-    virtual ~RRStack() {}
-    
-    /// adds content of rrs to this stack
-    void add(const SafePtr<RRStack>& rrs);
-    /// removes rr from the stack
-    void remove(const data_type& rr);
-    
-    private:
-    // private constructor because it's a Singleton
-    RRStack() : parent_type(&RecurrenceRelation::label) {}
-
-    static SafePtr<RRStack> rrstack_;
-  };
-  
 };
 
 //#include <vrr_11_twoprep_11.h>
