@@ -16,10 +16,11 @@
 #include <exception.h>
 #include <smart_ptr.h>
 #include <key.h>
+#include <dgvertex.h>
 
 namespace libint2 {
 
-  class DGVertex;
+//  class DGVertex;
   class DGArc;
   template <class T> class DGArcRel;
   template <class T> class AlgebraicOperator;
@@ -36,7 +37,7 @@ namespace libint2 {
       composed of vertices represented by DGVertex objects. The objects
       are allocated on free store and the graph is implemented as
       an object of type 'vertices'.
-  */
+   */
 
   class DirectedGraph : public EnableSafePtrFromThis<DirectedGraph> {
   public:
@@ -63,7 +64,25 @@ namespace libint2 {
     //not possible: typedef vertex::Size size;
     typedef unsigned int size;
     typedef std::vector<address> addresses;
-    
+
+  private:
+    /// converts what is stored in the container to a smart ptr to the vertex
+    static inline const ver_ptr& vertex_ptr(const VPtrAssociativeContainer::value_type& v) {
+      return v.second;
+    }
+    static inline const ver_ptr& vertex_ptr(const VPtrSequenceContainer::value_type& v) {
+      return v;
+    }
+    /// converts what is stored in the container to a smart ptr to the vertex
+    static inline ver_ptr& vertex_ptr(VPtrAssociativeContainer::value_type& v) {
+      return v.second;
+    }
+    static inline ver_ptr& vertex_ptr(VPtrSequenceContainer::value_type& v) {
+      return v;
+    }
+
+  public:
+
     /** This constructor doesn't do much. Actual initialization of the graph
         must be done using append_target */
     DirectedGraph();
@@ -80,14 +99,14 @@ namespace libint2 {
     /// Find vertex v or it's equivalent on the graph. Return null pointer if not found.
     /// Computational cost for a graph based on a nonassociative container may be high
     const SafePtr<DGVertex>& find(const SafePtr<DGVertex>& v) const { return vertex_is_on(v); }
-    
+
     /** appends v to the graph. If v's copy is already on the graph, return the pointer
 	to the copy. Else return pointer to *v.
-    */
+     */
     SafePtr<DGVertex> append_vertex(const SafePtr<DGVertex>& v);
 
     /** non-template append_target appends the vertex to the graph as a target
-    */
+     */
     void append_target(const SafePtr<DGVertex>&);
 
     /** append_target appends I to the graph as a target vertex and applies
@@ -101,8 +120,11 @@ namespace libint2 {
         NOTE TO SELF : need to implement these restrictions using
         standard Bjarne Stroustrup's approach.
 
-    */
-    template <class I, class RR> void append_target(const SafePtr<I>&);
+     */
+    template <class I, class RR> void append_target(const SafePtr<I>& target) {
+      target->make_a_target();
+      recurse<I,RR>(target);
+    }
 
     /** apply_to_all applies RR to all vertices already on the graph.
 
@@ -113,62 +135,124 @@ namespace libint2 {
         NOTE TO SELF : need to implement these restrictions using
         standard Bjarne Stroustrup's approach.
 
-    */
-    template <class RR> void apply_to_all();
-    
+     */
+    template <class RR> void apply_to_all() {
+      typedef typename RR::TargetType TT;
+      typedef vertices::const_iterator citer;
+      typedef vertices::iterator iter;
+      for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
+        ver_ptr& vptr = vertex_ptr(*v);
+        if ((vptr)->num_exit_arcs() != 0)
+          continue;
+        SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(v);
+        if (tptr == 0)
+          continue;
+
+        SafePtr<RR> rr0(new RR(tptr));
+        const int num_children = rr0->num_children();
+
+        for(int c=0; c<num_children; c++) {
+
+          SafePtr<DGVertex> child = rr0->child(c);
+          SafePtr<DGArc> arc(new DGArcRel<RR>(tptr,child,rr0));
+          tptr->add_exit_arc(arc);
+
+          recurse<RR>(child);
+
+        }
+      }
+    }
+
     /** after all append_target's have been called, apply(strategy,tactic)
       constructs a graph. strategy specifies how to apply recurrence relations.
       The goal of strategies is to connect the target vertices to simpler, precomputable vertices.
       There usually are many ways to reduce a vertex.
       Tactic specifies which of these possibilities to choose.
-      */
+     */
     void apply(const SafePtr<Strategy>& strategy,
-               const SafePtr<Tactic>& tactic);
-    
+        const SafePtr<Tactic>& tactic);
+
     typedef void (DGVertex::* DGVertexMethodPtr)();
     /** apply_at<method>(vertex) calls method() on vertex and all of its descendants
-      */
+     */
     template <DGVertexMethodPtr method>
-      void apply_at(const SafePtr<DGVertex>& vertex) const;
+    void apply_at(const SafePtr<DGVertex>& vertex) const {
+      ((vertex.get())->*method)();
+      typedef DGVertex::ArcSetType::const_iterator aciter;
+      const aciter abegin = vertex->first_exit_arc();
+      const aciter aend = vertex->plast_exit_arc();
+      for(aciter a=abegin; a!=aend; ++a)
+        apply_at<method>((*a)->dest());
+    }
 
     /** calls Method(v) for each v, iterating in forward direction */
     template <class Method>
-      void foreach(Method& m);
+    void foreach(Method& m) {
+      typedef vertices::const_iterator citer;
+      typedef vertices::iterator iter;
+      for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
+        ver_ptr& vptr = vertex_ptr(*v);
+        m(vptr);
+      }
+    }
+
     /** calls Method(v) for each v, iterating in forward direction */
     template <class Method>
-      void foreach(Method& m) const;
+    void foreach(Method& m) const  {
+      typedef vertices::const_iterator citer;
+      typedef vertices::iterator iter;
+      for(citer v=stack_.begin(); v!=stack_.end(); ++v) {
+        const ver_ptr& vptr = vertex_ptr(*v);
+        m(vptr);
+      }
+    }
     /** calls Method(v) for each v, iterating in reverse direction */
     template <class Method>
-      void rforeach(Method& m);
+    void rforeach(Method& m) {
+      typedef vertices::const_reverse_iterator criter;
+      typedef vertices::reverse_iterator riter;
+      for(riter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
+        ver_ptr& vptr = vertex_ptr(*v);
+        m(vptr);
+      }
+    }
+
     /** calls Method(v) for each v, iterating in reverse direction */
     template <class Method>
-      void rforeach(Method& m) const;
+    void rforeach(Method& m) const {
+      typedef vertices::const_reverse_iterator criter;
+      typedef vertices::reverse_iterator riter;
+      for(criter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
+        const ver_ptr& vptr = vertex_ptr(*v);
+        m(vptr);
+      }
+    }
 
     /** after Strategy has been applied, simple recurrence relations need to be
         optimized away. optimize_rr_out() will replace all simple recurrence relations
         with code representing them.
-    */
+     */
     void optimize_rr_out(const SafePtr<CodeContext>& context);
 
     /** after all apply's have been called, traverse()
         construct a heuristic order of traversal for the graph.
-    */
+     */
     void traverse();
-    
+
     /** update func_names_
-    */
+     */
     void update_func_names();
 
     /// Prints out call sequence
     void debug_print_traversal(std::ostream& os) const;
-    
+
     /**
     Prints out the graph in format understood by program "dot"
     of package "graphviz". If symbols is true then label vertices
     using their symbols rather than (descriptive) labels.
-    */
+     */
     void print_to_dot(bool symbols, std::ostream& os = std::cout) const;
-    
+
     /**
        Generates code for the current computation using context.
        dims specifies the implicit dimensions,
@@ -176,28 +260,39 @@ namespace libint2 {
        label specifies the tag for the computation,
        decl specifies the stream to receive declaration code,
        code specifies the stream to receive the definition code
-    */
+     */
     void generate_code(const SafePtr<CodeContext>& context, const SafePtr<MemoryManager>& memman,
-                       const SafePtr<ImplicitDimensions>& dims, const SafePtr<CodeSymbols>& args,
-                       const std::string& label,
-                       std::ostream& decl, std::ostream& code);
-    
+        const SafePtr<ImplicitDimensions>& dims, const SafePtr<CodeSymbols>& args,
+        const std::string& label,
+        std::ostream& decl, std::ostream& code);
+
     /** Resets the graph and all vertices. The stack of unresolved recurrence
         relations is preserved.
-      */
+     */
     void reset();
 
     /** num_children_on(rr) returns the number of children of rr which
         are already on this graph.
-    */
+     */
     template <class RR>
-      unsigned int
-      num_children_on(const SafePtr<RR>& rr) const;
-    
+    unsigned int
+    num_children_on(const SafePtr<RR>& rr) const {
+      unsigned int nchildren = rr->num_children();
+      unsigned int nchildren_on_stack = 0;
+      for(unsigned int c=0; c<nchildren; c++) {
+        if (!vertex_is_on(rr->rr_child(c)))
+          continue;
+        else
+          nchildren_on_stack++;
+      }
+
+      return nchildren_on_stack;
+    }
+
     /// Returns the registry
     SafePtr<GraphRegistry>& registry() { return registry_; }
     const SafePtr<GraphRegistry>& registry() const { return registry_; }
-    
+
     /// return true if there are vertices with 0 children but not pre-computed
     bool missing_prerequisites() const;
 
@@ -213,13 +308,13 @@ namespace libint2 {
     typedef std::map<std::string,bool> FuncNameContainer;
     /** Maintains the list of names of functions calls to which have been generated so far.
         It is used to generate include statements.
-    */
+     */
     FuncNameContainer func_names_;
 
 #if !USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
     static const unsigned int default_size_ = 100;
 #endif
-    
+
     // maintains data about the graph which does not belong IN the graph
     SafePtr<GraphRegistry> registry_;
     // maintains private data about the graph which does not belong IN the graph
@@ -228,7 +323,7 @@ namespace libint2 {
     /// Access the internal registry
     SafePtr<InternalGraphRegistry>& iregistry() { return iregistry_; }
     const SafePtr<InternalGraphRegistry>& iregistry() const { return iregistry_; }
-    
+
     /** adds a vertex to the graph. If the vertex already found on the graph
         then the vertex is not added and the function returns false */
     SafePtr<DGVertex> add_vertex(const SafePtr<DGVertex>&);
@@ -241,17 +336,60 @@ namespace libint2 {
     /** This function is used to implement (recursive) append_target().
         vertex is appended to the graph and then RR is applied to is.
      */
-    template <class I, class RR> void recurse(const SafePtr<I>& vertex);
+    template <class I, class RR> void recurse(const SafePtr<I>& vertex)  {
+      SafePtr<DGVertex> dgvertex = add_vertex(vertex);
+      if (dgvertex != vertex)
+        return;
+
+      SafePtr<RR> rr0(new RR(vertex));
+      const int num_children = rr0->num_children();
+
+      for(int c=0; c<num_children; c++) {
+
+        SafePtr<DGVertex> child = rr0->child(c);
+        SafePtr<DGArc> arc(new DGArcRel<RR>(vertex,child,rr0));
+        vertex->add_exit_arc(arc);
+
+        SafePtr<I> child_cast = dynamic_pointer_cast<I,DGVertex>(child);
+        if (child_cast == 0)
+          throw std::runtime_error("DirectedGraph::recurse(const SafePtr<I>& vertex) -- dynamic cast failed, most probably this is a logic error!");
+        recurse<I,RR>(child_cast);
+
+      }
+    }
+
     /** This function is used to implement (recursive) apply_to_all().
         RR is applied to vertex and all its children.
      */
-    template <class RR> void recurse(const SafePtr<DGVertex>& vertex);
+    template <class RR> void recurse(const SafePtr<DGVertex>& vertex)  {
+      SafePtr<DGVertex> dgvertex = add_vertex(vertex);
+      if (dgvertex != vertex)
+        return;
+
+      typedef typename RR::TargetType TT;
+      SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(vertex);
+      if (tptr == 0)
+        return;
+
+      SafePtr<RR> rr0(new RR(tptr));
+      const int num_children = rr0->num_children();
+
+      for(int c=0; c<num_children; c++) {
+
+        SafePtr<DGVertex> child = rr0->child(c);
+        SafePtr<DGArc> arc(new DGArcRel<RR>(vertex,child,rr0));
+        vertex->add_exit_arc(arc);
+
+        recurse<RR>(child);
+      }
+    }
+
     /** This function is used to implement (recursive) apply().
       strategy and tactic are applied to vertex and all its children.
-    */
+     */
     void apply_to(const SafePtr<DGVertex>& vertex,
-                  const SafePtr<Strategy>& strategy,
-                  const SafePtr<Tactic>& tactic);
+        const SafePtr<Strategy>& strategy,
+        const SafePtr<Tactic>& tactic);
     /// This function insert expr of type AlgebraicOperator<DGVertex> into the graph
     SafePtr<DGVertex> insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr);
     /// This function replaces RecurrenceRelations with concrete arithemtical expressions
@@ -260,23 +398,23 @@ namespace libint2 {
     void remove_trivial_arithmetics();
     /** This function gets rid of nodes which are connected
     to their equivalents (such as (ss|ss) shell quartet can only be connected to (ss|ss) integral)
-    */
+     */
     void handle_trivial_nodes(const SafePtr<CodeContext>& context);
     /// This functions removes vertices not connected to other vertices
     void remove_disconnected_vertices();
     /** Finds (binary) subtrees. The subtrees correspond to a single-line code (no intermediates
         are used in other expressions)
-    */
+     */
     void find_subtrees();
     /** Finds (binary) subtrees starting (recursively) at v.
-    */
+     */
     void find_subtrees_from(const SafePtr<DGVertex>& v);
     /** If v1 and v2 are connected by DGArcDirect and all entry arcs to v1 are of the DGArcDirect type as well,
         this function will reattach all arcs extering v1 to v2 and remove v1 from the graph altogether.
 	May throw CannotPerformOperation.
-    */
+     */
     bool remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2);
-    
+
     // Which vertex is the first to compute
     SafePtr<DGVertex> first_to_compute_;
     // prepare_to_traverse must be called before actual traversal
@@ -288,17 +426,17 @@ namespace libint2 {
 
     // Compute addresses on stack assuming that quantities larger than min_size_to_alloc to be allocated on stack
     void allocate_mem(const SafePtr<MemoryManager>& memman,
-                      const SafePtr<ImplicitDimensions>& dims,
-                      unsigned int min_size_to_alloc = 1);
+        const SafePtr<ImplicitDimensions>& dims,
+        unsigned int min_size_to_alloc = 1);
     // Assign symbols to the vertices
     void assign_symbols(const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims);
     // If v is an AlgebraicOperator, assign (recursively) symbol to the operator. All other must have been already assigned
     void assign_oper_symbol(const SafePtr<CodeContext>& context, SafePtr<DGVertex>& v);
     // Print the code using symbols generated with assign_symbols()
     void print_def(const SafePtr<CodeContext>& context, std::ostream& os,
-                   const SafePtr<ImplicitDimensions>& dims,
-                   const SafePtr<CodeSymbols>& args);
-    
+        const SafePtr<ImplicitDimensions>& dims,
+        const SafePtr<CodeSymbols>& args);
+
     // Returns true if the traversal path contains a nontrivial RecurrenceRelation (i.e. not of IntegralSet_to_Integrals variety)
     bool contains_nontrivial_rr() const;
 
@@ -339,13 +477,13 @@ namespace libint2 {
 
   // use these functors with DirectedGraph::foreach
   struct PrerequisitesExtractor {
-      std::deque< SafePtr<DGVertex> > vertices;
-      void operator()(const SafePtr<DGVertex>& v);
+    std::deque< SafePtr<DGVertex> > vertices;
+    void operator()(const SafePtr<DGVertex>& v);
   };
   struct VertexPrinter {
-      VertexPrinter(std::ostream& ostr) : os(ostr) {}
-      std::ostream& os;
-      void operator()(const SafePtr<DGVertex>& v);
+    VertexPrinter(std::ostream& ostr) : os(ostr) {}
+    std::ostream& os;
+    void operator()(const SafePtr<DGVertex>& v);
   };
 
 };

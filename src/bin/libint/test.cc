@@ -6,7 +6,6 @@
 #include <vector>
 #include <rr.h>
 #include <dg.h>
-#include <dg.templ.h>
 #include <integral.h>
 #include <iter.h>
 #include <policy_spec.h>

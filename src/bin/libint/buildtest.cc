@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <deque>
 #include <rr.h>
 #include <context.h>
 #include <dims.h>

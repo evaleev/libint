@@ -12,10 +12,10 @@ namespace libint2 {
 
   class DirectedGraph;
   class RecurrenceRelation;
-  
+
   class DummyRandomizePolicy;
   class StdRandomizePolicy;
-  
+
   /** Tactic is used to choose the optimal (in some sense) recurrence relation to reduce
       a vertex.
   */
@@ -23,13 +23,13 @@ namespace libint2 {
     public:
     typedef SafePtr<RecurrenceRelation> RR;
     typedef vector<RR> rr_stack;
-    
+
     Tactic() {}
     virtual ~Tactic() {}
-    
+
     virtual RR optimal_rr(const rr_stack& stack) const =0;
   };
-  
+
   /** FirstChoiceTactic simply chooses the first RR
     */
   template <class RandomizePolicy = DummyRandomizePolicy>
@@ -37,7 +37,7 @@ namespace libint2 {
     public:
     FirstChoiceTactic(const SafePtr<RandomizePolicy>& rpolicy = SafePtr<RandomizePolicy>(new RandomizePolicy)) : Tactic(), rpolicy_(rpolicy) {}
     virtual ~FirstChoiceTactic() {}
-    
+
     RR optimal_rr(const rr_stack& stack) const {
       if (!stack.empty())
         return stack[0 + rpolicy_->noise(stack.size())];
@@ -48,7 +48,7 @@ namespace libint2 {
     private:
     SafePtr<RandomizePolicy> rpolicy_;
   };
-  
+
   /** FewestNewVerticesTactic chooses RR which adds fewest new vertices to
       DirectedGraph dg
     */
@@ -56,13 +56,13 @@ namespace libint2 {
     public:
     FewestNewVerticesTactic(const SafePtr<DirectedGraph>& dg) : Tactic(), dg_(dg) {}
     virtual ~FewestNewVerticesTactic() {}
-    
+
     RR optimal_rr(const rr_stack& stack) const;
 
     private:
     SafePtr<DirectedGraph> dg_;
   };
-  
+
   /** ZeroNewVerticesTactic chooses first RR which adds no new vertices on
       DirectedGraph dg
     */
@@ -70,9 +70,9 @@ namespace libint2 {
     public:
     ZeroNewVerticesTactic(const SafePtr<DirectedGraph>& dg) : Tactic(), dg_(dg) {}
     virtual ~ZeroNewVerticesTactic() {}
-    
+
     RR optimal_rr(const rr_stack& stack) const;
-    
+
     private:
     SafePtr<DirectedGraph> dg_;
   };
@@ -83,28 +83,28 @@ namespace libint2 {
     public:
     RandomChoiceTactic();
     virtual ~RandomChoiceTactic() {}
-    
+
     RR optimal_rr(const rr_stack& stack) const;
   };
-  
+
   /** NullTactic always returns null RecurrenceRelation
     */
   class NullTactic : public Tactic {
     public:
     NullTactic() : Tactic() {}
     virtual ~NullTactic() {}
-    
+
     RR optimal_rr(const rr_stack& stack) const;
-    
+
   };
-  
-  
+
+
   /////////////////////////////////
-  
+
   struct DummyRandomizePolicy {
     unsigned int noise(unsigned int nrrs) const { return 0; }
   };
-  
+
   /** The shift parameter is computed as follows:
       delta = floor(nrrs*scale*random()/RAND_MAX)
       where nrrs is the number of possibilities, scale
@@ -124,7 +124,7 @@ namespace libint2 {
       const unsigned int result = static_cast<unsigned int>(std::floor(nrrs*scale_*rand/range));
       return result;
     }
-    
+
     private:
     double scale_;
   };

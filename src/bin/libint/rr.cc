@@ -3,7 +3,6 @@
 
 #include <rr.h>
 #include <dg.h>
-#include <dg.templ.h>
 #include <strategy.h>
 #include <code.h>
 #include <graph_registry.h>

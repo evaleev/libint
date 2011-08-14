@@ -3,7 +3,8 @@
 #define _libint2_src_bin_libint_dgvertex_h_
 
 #include <list>
-#include <dg.h>
+#include <vector>
+//#include <dg.h>
 #include <drtree.h>
 #include <dgarc.h>
 #include <iostream>
@@ -15,6 +16,8 @@
 #include <key.h>
 
 namespace libint2 {
+
+  class DirectedGraph;
 
   /// This is a vertex of a Directed Graph (DG)
   class DGVertex : public Hashable<KeyTypes::InstanceID,ComputeKey> {
@@ -48,8 +51,8 @@ namespace libint2 {
     InstanceID instid_;
     /// Sets typeid to tid
     DGVertex(ClassID tid);
-    /// Sets typeid to tid 
-    DGVertex(ClassID tid, const vector<SafePtr<DGArc> >& parents, const vector<SafePtr<DGArc> >& children);
+    /// Sets typeid to tid
+    DGVertex(ClassID tid, const std::vector<SafePtr<DGArc> >& parents, const std::vector<SafePtr<DGArc> >& children);
     /// This is a copy constructor
     DGVertex(const DGVertex& v);
     virtual ~DGVertex();
@@ -101,7 +104,7 @@ namespace libint2 {
         equivalent to *aVertex.
     */
     virtual bool equiv(const SafePtr<DGVertex>&) const =0;
-    
+
     /** precomputed() returns whether this DGVertex is precomputed. See
     precomputed_this() for description.
     */
@@ -110,7 +113,7 @@ namespace libint2 {
     /** Returns the amount of memory (in floating-point words) to be allocated for the vertex.
       */
     virtual const unsigned int size() const =0;
-    
+
     /** label() returns a unique, short, descriptive label of DGVertex (e.g. "( p_x s | 1/r_{12} | d_xy s )^{(1)}")
     */
     virtual const std::string& label() const =0;
@@ -133,14 +136,14 @@ namespace libint2 {
     const std::string& graph_label() const;
     /// sets the graph label
     void set_graph_label(const std::string& graph_label);
-    
+
     /// Returns the subtree to which this vertex belongs
     const SafePtr<DRTree>& subtree() const { return subtree_; }
 
     //
     // NOTE : the following functions probably belong to a separate class, such as Entity!
     //
-    
+
     /**
     refer_this_to(V) makes this vertex act like a reference to V so that
     calls to symbol() and address() report code symbol and stack address of V
@@ -175,7 +178,7 @@ namespace libint2 {
     bool declared() const { return  precomputed() ? true : declared_; }
     void declared(bool d) { declared_ = d; }
 #endif
-    
+
     /// prepare_to_traverse() must be called before traversal of the graph starts
     void prepare_to_traverse();
     /// tag() tags the vertex and returns the total number of tags this vertex has received
@@ -197,7 +200,7 @@ namespace libint2 {
         precomputed, i.e. precomputed_this() will return false. But the (ss|ss)
         integral is considered precomputed. Usually the shell vertex
         will refer to the integral vertex. Thus calling precomputed() on it
-        will return true. 
+        will return true.
     */
     virtual bool this_precomputed() const =0;
 
@@ -213,7 +216,7 @@ namespace libint2 {
     std::vector<const DGVertex*> refs_;
     /// increments number of references
     void register_reference(const DGVertex*);
-    
+
     /// symbol used in the code
     std::string symbol_;
     /// Address on the stack
@@ -224,7 +227,7 @@ namespace libint2 {
     // has the symbol been declared in the code?
     bool declared_;
 #endif
-    
+
     /// We also need info about Arcs entering this DGVertex
     ArcSetType parents_;
     /// Arcs leaving this DGVertex. Derived classes may need direct access to exit arcs.
@@ -255,21 +258,21 @@ namespace libint2 {
     unsigned int num_tagged_arcs_;
     /// Which DGVertex to be computed after this vertex (0, if this is the last vertex)
     SafePtr<DGVertex> postcalc_;
-    
-    
+
+
     ///////
     // Refback to subtree which contains this vertex
     ///////
-    
+
     // note that this is a refback (back reference to the "owning" object) so changing it
     // does not change class invariant -- hence mutable
-    
+
     /// the subtree which contains this vertex (may be null). subtree is a directed rooted tree.
     mutable SafePtr<DRTree> subtree_;
     /// Only DRTree::set_subtree and DRTree::detach_from can change subtree_
     friend void DRTree::add_vertex(const SafePtr<DGVertex>& vertex);
     friend void DRTree::detach_from(const SafePtr<DGVertex>& v);
-    
+
   };
 
   //
@@ -291,7 +294,7 @@ namespace libint2 {
   inline DGVertexKey key(const DGVertex& v) {
     return DGVertexKey(v.typeid_,v.instid_);
   }
-  
+
 };
 
 #endif

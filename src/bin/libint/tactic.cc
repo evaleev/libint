@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <dg.h>
-#include <dg.templ.h>
 #include <tactic.h>
 #include <rr.h>
 

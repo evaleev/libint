@@ -2,7 +2,6 @@
 #include <functional>
 #include <fstream>
 #include <dg.h>
-#include <dg.templ.h>
 #include <rr.h>
 #include <strategy.h>
 #include <prefactors.h>
