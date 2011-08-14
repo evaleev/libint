@@ -12,7 +12,7 @@
 #include <graph_registry.h>
 #include <intset_to_ints.h>
 #include <uncontract.h>
-#include <singl_stack.timpl.h>
+#include <singl_stack.h>
 
 #include <master_ints_list.h>
 #include <master_rrs_list.h>

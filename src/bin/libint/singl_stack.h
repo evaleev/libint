@@ -43,7 +43,14 @@ namespace libint2 {
 
 
       /// callback to compute hash values is the only parameter
-      SingletonStack(HashingFunction callback);
+      SingletonStack(HashingFunction callback) :
+        map_(), callback_(callback), next_instance_(0)
+        {
+          if (PurgingPolicy::purgeable()) { // if this stack contains objects that can be purged, add to the registry
+            PurgeableStacks::Instance()->register_stack(this);
+          }
+        }
+
       virtual ~SingletonStack() {}
 
       /** Returns the pointer to the unique instance of object obj.
@@ -51,16 +58,57 @@ namespace libint2 {
           if found -- returns the pointer to the corresponding object on ostack_,
           otherwise pushes obj to the end of ostack_ and returns obj.
       */
-      const value_type& find(const SafePtr<T>& obj);
+      const value_type& find(const SafePtr<T>& obj) {
+        key_type key = ((obj.get())->*callback_)();
+
+        typedef typename map_type::iterator miter;
+        miter pos = map_.find(key);
+        if (pos != map_.end()) {
+  #if DEBUG || LOCAL_DEBUG
+          std::cout << "SingletonStack::find -- " << obj->label() << " already found" << std::endl;
+  #endif
+          return (*pos).second;
+        }
+        else {
+          value_type result(next_instance_++,obj);
+          map_[key] = result;
+  #if DEBUG || LOCAL_DEBUG
+          std::cout << "SingletonStack::find -- " << obj->label() << " is new (instid_ = " << next_instance_-1 << ")" << std::endl;
+  #endif
+          return map_[key];
+        }
+      }
+
       /** Returns the pointer to the unique instance of object corresponding to key.
           if found returns the pointer to the corresponding object on ostack_,
           else returns a null value_type.
       */
-      const value_type& find(const key_type& key);
+      const value_type& find(const key_type& key)  {
+        static value_type null_value(make_pair(InstanceID(0),SafePtr<T>()));
+        typedef typename map_type::iterator miter;
+        miter pos = map_.find(key);
+        if (pos != map_.end()) {
+          return (*pos).second;
+        }
+        else {
+    return null_value;
+        }
+      }
 
       /** Searches for obj on the stack and, if found, removes the unique instance
       */
-      void remove(const SafePtr<T>& obj);
+      void remove(const SafePtr<T>& obj) {
+        key_type key = ((obj.get())->*callback_)();
+
+        typedef typename map_type::iterator miter;
+        miter pos = map_.find(key);
+        if (pos != map_.end()) {
+          map_.erase(pos);
+#if DEBUG || LOCAL_DEBUG
+          std::cout << "Removed from stack " << obj->label() << std::endl;
+#endif
+        }
+      }
 
       /** Returns iterator to the beginning of the stack */
       citer_type begin() const { return map_.begin(); }
@@ -68,7 +116,16 @@ namespace libint2 {
       citer_type end() const { return map_.end(); }
 
       // Implementation of PurgeableStack::purge()
-      void purge();
+      void purge() {
+        for(iter_type i = map_.begin(); i!=map_.end();) {
+          const T* v = i->second.second.get();
+          if (PurgingPolicy::purge(v))
+            // map::erase invalidates the iterator, increment it beforehand
+            map_.erase(i++);
+          else
+            ++i;
+        }
+      }
 
     private:
       map_type map_;

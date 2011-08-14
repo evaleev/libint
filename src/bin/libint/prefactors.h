@@ -6,23 +6,23 @@
 #include <smart_ptr.h>
 #include <entity.h>
 #include <bfset.h>
-#include <singl_stack.timpl.h>
+#include <singl_stack.h>
 
 #define CTIMEENTITIES_SINGLETONS 0
 
 namespace libint2 {
-  
-  /** 
+
+  /**
      Prefactors is a collection of common quantities which appear
      as prefactors in recurrence relations for Gaussian integrals.
      See Obara-Saika paper for description of the most common ones.
   */
-  
+
   class Prefactors {
   public:
     Prefactors();
     ~Prefactors();
-    
+
     typedef RTimeEntity<double> rdouble;
     typedef CTimeEntity<double> cdouble;
 
@@ -91,7 +91,7 @@ namespace libint2 {
     SafePtr<rdouble> TwoPRepITR_pfac1[np];
     /// prefactor in front of (a-1 0|c0) is one_o_2alpha12[0]
     /// prefactor in front of (a0|c-1 0) is one_o_2alpha12[0]
-    
+
     /**
        Prefactors for the VRR relation for R12_k_G12 integrals (k>=0):
     */
@@ -118,13 +118,13 @@ namespace libint2 {
 #endif
 
   private:
-    
+
   };
 
   extern Prefactors prefactors;
 
   namespace prefactor {
-    
+
     template <typename T> struct RTimeSingletons {
       typedef SingletonStack<RTimeEntity<T>,typename RTimeEntity<T>::key_type> ManagerType;
       static SafePtr<ManagerType>& Manager() {
@@ -151,7 +151,7 @@ namespace libint2 {
     };
     template <typename T> SafePtr<typename CTimeSingletons<T>::ManagerType> CTimeSingletons<T>::manager_;
 #endif
-    
+
     /// make a runtime quantity
     template <class T = double> SafePtr< RTimeEntity<T> > Scalar(const char* id) {
       typedef RTimeEntity<T> return_type;
@@ -183,7 +183,7 @@ namespace libint2 {
       return tmp;
 #endif
     }
-    
+
     /// auxiliary class that write expressions with runtime cartesian vectors
     template <class T> class RTimeVector3 {
     public:
@@ -197,7 +197,7 @@ namespace libint2 {
         std::string id_;
     };
     template <class T> const char* RTimeVector3<T>::dirchar(strdup("xyz"));
-    
+
     /// auxiliary class that write expressions with compile-time cartesian vectors
     template <class T> class CTimeVector3 {
     public:
@@ -238,7 +238,7 @@ namespace libint2 {
       double d[3]; for(unsigned int xyz=0; xyz<3; ++xyz) d[xyz] = dd.d(xyz);
       return CTimeVector3<double>(d);
     }
-    
+
   }
 };
 

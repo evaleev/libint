@@ -13,7 +13,7 @@
 #include <integral.h>
 #include <task.h>
 #include <prefactors.h>
-#include <singl_stack.timpl.h>
+#include <singl_stack.h>
 
 using namespace libint2;
 using namespace libint2::prefactor;
