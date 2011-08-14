@@ -16,12 +16,11 @@
   #define SafePtr_from_this shared_from_this
 #else
   #include <memory>
-  using namespace std;
   // For now I'll do a cheat since templated typedefs are not standard
   // Should probably at least derive SafePtr from shared_ptr
-  #define SafePtr shared_ptr
-  #define EnableSafePtrFromThis enable_shared_from_this
-  #define SafePtr_from_this shared_from_this
+  #define SafePtr std::shared_ptr
+  #define EnableSafePtrFromThis std::enable_shared_from_this
+  #define SafePtr_from_this std::shared_from_this
 #endif
 
 /** Can be used to determine whether a type is a SafePtr */
