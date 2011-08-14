@@ -5,7 +5,7 @@
 #define LOCAL_DEBUG 0
 
 #include <singl_stack.h>
-#include <purgeable.timpl.h>
+#include <purgeable.h>
 
 namespace libint2 {
 

@@ -1,5 +1,5 @@
 
-#include <rr.h>
+//#include <rr.h>
 #include <iostream>
 #include <smart_ptr.h>
 
@@ -8,6 +8,7 @@
 
 namespace libint2 {
 
+  class RecurrenceRelation;
   class DGVertex;
   /** Class DGArc describes arcs in a directed graph.
       Each arc connects vertex orig_ to vertex dest_. */
@@ -27,7 +28,7 @@ namespace libint2 {
     virtual void print(std::ostream& os) const =0;
 
   };
-  
+
   /** Class DGArcDirect describes arcs that does not correspond to any relationship.
       Each arc connects vertex orig_ to vertex dest_. */
   class DGArcDirect : public DGArc {
@@ -42,7 +43,7 @@ namespace libint2 {
         os << "DGArcDirect: connects " << orig().get() << " to " << dest().get();
       }
   };
-  
+
   /** Class DGArcRR describes arcs correspond to recurrence relations.
       Each arc connects vertex orig_ to vertex dest_. */
   class DGArcRR : public DGArc {
@@ -57,7 +58,7 @@ namespace libint2 {
     DGArcRR(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest);
 
   };
-  
+
   /** Class DGArcRel describes arcs in a directed graph which is
       represented by a relationship ArcRel. */
   // NOTE TO SELF (11/24/2004): need to implement checks on ArcRel
@@ -78,7 +79,7 @@ namespace libint2 {
       {
         os << "DGArcRel<T>: connects " << orig().get() << " to " << dest().get() << std::endl;
       }
-    
+
   };
 
   template <class ArcRel>

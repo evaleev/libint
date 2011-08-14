@@ -2,7 +2,9 @@
 #ifndef _libint2_src_bin_libint_purgeable_h_
 #define _libint2_src_bin_libint_purgeable_h_
 
+#include <dgvertex.h>
 #include <vector>
+#include <boost/type_traits.hpp>
 
 namespace libint2 {
 
@@ -12,9 +14,32 @@ namespace libint2 {
   template <typename T>
   struct DefaultPurgingPolicy {
     /// returns true if objects of this type can be purged
-    static bool purgeable();
+    static bool purgeable() {
+
+      bool result = false;
+
+      if (boost::is_base_of<DGVertex,T>::value == true) { // can only purge DGVertex objects
+        result = true;
+      }
+
+      return result;
+    }
+
     /// returns true if obj should be purged
-    static bool purge(const T* obj);
+    static bool purge(const T* ref) {
+
+      bool result = false;
+
+      try {
+        const DGVertex* dgv_ptr = dynamic_cast<const DGVertex*>(ref);
+        if (dgv_ptr->dg() == 0)
+          result = true;
+      }
+      catch(...) {
+      }
+
+      return result;
+    }
   };
 
 

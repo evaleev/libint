@@ -4,6 +4,7 @@
 #include <dg.h>
 #include <dg.templ.h>
 #include <tactic.h>
+#include <rr.templ.h>
 
 using namespace std;
 using namespace libint2;

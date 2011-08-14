@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <dgvertex.h>
 #include <global_macros.h>
+#include <rr.templ.h>
 
 using namespace std;
 using namespace libint2;

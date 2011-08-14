@@ -3,6 +3,7 @@
 #define _libint2_src_bin_libint_entity_h_
 
 #include <string>
+#include <sstream>
 #include <dgvertex.h>
 #include <class_registry.h>
 
@@ -52,8 +53,8 @@ namespace libint2 {
     std::string to_string(const T& x) {
     std::ostringstream oss;  oss << x;  return oss.str();
   }
-  
-  /** 
+
+  /**
   Entity is a base class for all objects that exist at compile or runtime of the generated code.
   */
   class Entity
@@ -62,16 +63,16 @@ namespace libint2 {
     virtual ~Entity() {}
     /// Return id string
     const std::string& id() const { return id_; }
-    
+
     protected:
     Entity(const std::string& id) : id_(id) {}
-    
+
     private:
     /// Short id label
     std::string id_;
-    
+
   };
-	
+
   /**
      RTimeEntity is an Entity of type T that exists at runtime of the generated code (hence
      has no value known at compile-time)
@@ -103,7 +104,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
 
     /// Implementation of DGVertex::size()
     const unsigned int size() const { return 1; }
-    
+
     /// Implementation of DGVertex::equiv()
     bool equiv(const SafePtr<DGVertex>& a) const
     {
@@ -198,7 +199,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
 	else
 	  return false;
       }
-      
+
       /// Implementation of DGVertex::label()
       const std::string& label() const
       {
@@ -217,7 +218,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
         const std::string descr = os.str();
         return descr;
       }
-      
+
       /// returns the value
       typename KeyTraits<T>::ReturnType value() const { return value_; }
 
@@ -237,7 +238,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
 
     };
 
-    
+
   /** Creates product A*B. Exact type depends on type of A -- if A is a runtime-entity,
       then the result is a runtime entity as well. Otherwise the result is a compile-time entity.
   */
