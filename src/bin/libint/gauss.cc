@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <bfset.h>
 #include <stdexcept>
+#include <string>
 #include <exception.h>
 #include <default_params.h>
 
