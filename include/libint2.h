@@ -153,7 +153,7 @@ typedef struct {
   /** FLOP counter. Libint must be configured with --enable-flop-counter
       to allow FLOP counting. It is user's reponsibility to set zero nflops before
       computing integrals. */
-  LIBINT2_UINT_LEAST64 nflops;
+  LIBINT2_UINT_LEAST64* nflops;
 #endif /* LIBINT2_FLOP_COUNT */
 
 #if LIBINT2_ACCUM_INTS

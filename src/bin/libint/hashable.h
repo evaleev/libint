@@ -40,6 +40,12 @@ namespace libint2 {
     {
       typedef const std::string& ReturnType;
     };
+  /// arrays should be returned by const reference also
+  template <typename T, size_t Size>
+    struct KeyTraits<T[Size]>
+    {
+      typedef const T* const ReturnType;
+    };
     
   /** Objects of Hashable<T> class provide hashing function key() which computes keys of type KeyType.
       key() returns KeyTraits<KeyType>::ReturnType.

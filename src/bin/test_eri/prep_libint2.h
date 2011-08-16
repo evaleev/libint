@@ -65,6 +65,9 @@ void prep_libint2(std::vector<LibintEval>& erievals,
         for (uint p3 = 0; p3 < contrdepth; p3++, p0123++) {
 
           LibintEval* erieval = &erievals[p0123];
+#if LIBINT2_FLOP_COUNT
+          erieval->nflops = erievals[0].nflops;
+#endif
 
           for (uint v = 0; v < veclen; v++) {
 
@@ -176,29 +179,47 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 #endif
 
     // Prefactors for interelectron transfer relation
-#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_x)
-            erieval->TwoPRepITR_pfac0_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)/gammap;
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_x)
+            erieval->TwoPRepITR_pfac0_0_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)/gammap;
 #endif
-#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_y)
-            erieval->TwoPRepITR_pfac0_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)/gammap;
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_y)
+            erieval->TwoPRepITR_pfac0_0_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)/gammap;
 #endif
-#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_z)
-            erieval->TwoPRepITR_pfac0_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)/gammap;
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_z)
+            erieval->TwoPRepITR_pfac0_0_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)/gammap;
 #endif
-#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_x)
-            erieval->TwoPRepITR_pfac0_1_x[v] = - (alpha1*AB_x + alpha3*CD_x)/gammaq;
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_x)
+            erieval->TwoPRepITR_pfac0_1_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)/gammaq;
 #endif
-#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_y)
-            erieval->TwoPRepITR_pfac0_1_y[v] = - (alpha1*AB_y + alpha3*CD_y)/gammaq;
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_y)
+            erieval->TwoPRepITR_pfac0_1_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)/gammaq;
 #endif
-#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_z)
-            erieval->TwoPRepITR_pfac0_1_z[v] = - (alpha1*AB_z + alpha3*CD_z)/gammaq;
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_z)
+            erieval->TwoPRepITR_pfac0_1_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)/gammaq;
 #endif
-#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac1_0)
-            erieval->TwoPRepITR_pfac1_0[v] = -gammaq/gammap;
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_x)
+            erieval->TwoPRepITR_pfac0_0_1_x[v] = (alpha0*AB_x + alpha2*CD_x)/gammap;
 #endif
-#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac1_1)
-            erieval->TwoPRepITR_pfac1_1[v] = -gammap/gammaq;
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_y)
+            erieval->TwoPRepITR_pfac0_0_1_y[v] = (alpha0*AB_y + alpha2*CD_y)/gammap;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_z)
+            erieval->TwoPRepITR_pfac0_0_1_z[v] = (alpha0*AB_z + alpha2*CD_z)/gammap;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_x)
+            erieval->TwoPRepITR_pfac0_1_1_x[v] = (alpha0*AB_x + alpha2*CD_x)/gammaq;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_y)
+            erieval->TwoPRepITR_pfac0_1_1_y[v] = (alpha0*AB_y + alpha2*CD_y)/gammaq;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_z)
+            erieval->TwoPRepITR_pfac0_1_1_z[v] = (alpha0*AB_z + alpha2*CD_z)/gammaq;
+#endif
+#if LIBINT2_DEFINED(eri,eoz)
+            erieval->eoz[v] = gammaq/gammap;
+#endif
+#if LIBINT2_DEFINED(eri,zoe)
+            erieval->zoe[v] = gammap/gammaq;
 #endif
 
             const double PQx = Px - Qx;

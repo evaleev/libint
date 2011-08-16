@@ -1,6 +1,6 @@
 
-#ifndef _libint2_src_lib_libint_osvrrxsxs_h_
-#define _libint2_src_lib_libint_osvrrxsxs_h_
+#ifndef _libint2_src_lib_libint_itrxsxs_h_
+#define _libint2_src_lib_libint_itrxsxs_h_
 
 #include <cstdlib>
 #include <libint2.h>
@@ -9,32 +9,29 @@
 
 namespace libint2 {
 
-  template <int part, int La, int Lc, bool vectorize> struct OSVRR_xs_xs {
+  template <int part, int La, int Lc, bool InBra, bool vectorize> struct ITR_xs_xs {
     static void compute(const Libint_t* inteval,
         LIBINT2_REALTYPE* target,
         const LIBINT2_REALTYPE* src0,
         const LIBINT2_REALTYPE* src1,
         const LIBINT2_REALTYPE* src2,
-        const LIBINT2_REALTYPE* src3,
-        const LIBINT2_REALTYPE* src4);
+        const LIBINT2_REALTYPE* src3);
   };
 
-  /** builds (a 0|c0)^(m)
-      src0 = (a-10|c0)^(m)
-      src1 = (a-10|c0)^(m+1)
-      src2 = (a-20|c0)^(m)
-      src3 = (a-20|c0)^(m+1)
-      src4 = (a-10|c-10)^(m+1)
+  /** builds (a 0|c0)
+      src0 = (a-1 0|c 0)
+      src1 = (a-1 0|c+1 0)
+      src2 = (a-2 0|c 0)
+      src3 = (a-1 0|c-1 0)
    **/
-  template <int La, int Lc, bool vectorize> struct OSVRR_xs_xs<0,La,Lc,vectorize> {
+  template <int La, int Lc, bool InBra, bool vectorize> struct ITR_xs_xs<0,La,Lc,InBra,vectorize> {
 
     static void compute(const Libint_t* inteval,
         LIBINT2_REALTYPE* target,
         const LIBINT2_REALTYPE* src0,
         const LIBINT2_REALTYPE* src1,
         const LIBINT2_REALTYPE* src2,
-        const LIBINT2_REALTYPE* src3,
-        const LIBINT2_REALTYPE* src4) {
+        const LIBINT2_REALTYPE* src3) {
 
       // works for (ds|ps) and higher
       if (La < 2 || Lc < 1)
@@ -58,26 +55,58 @@ namespace libint2 {
         --a[xyz];
 
         // redirect
-        const double *PA, *WP;
+        const double *pfac0;
         switch(xyz) {
           case x:
-            PA = inteval->PA_x;
-            WP = inteval->WP_x;
+            pfac0 = InBra ?
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_x)
+                inteval->TwoPRepITR_pfac0_0_0_x
+#else
+                0
+#endif
+                :
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_x)
+                inteval->TwoPRepITR_pfac0_0_1_x;
+#else
+                0
+#endif
+                ;
             break;
           case y:
-            PA = inteval->PA_y;
-            WP = inteval->WP_y;
+            pfac0 = InBra ?
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_y)
+                inteval->TwoPRepITR_pfac0_0_0_y
+#else
+                0
+#endif
+                :
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_y)
+                inteval->TwoPRepITR_pfac0_0_1_y;
+#else
+                0
+#endif
+                ;
             break;
           case z:
-            PA = inteval->PA_z;
-            WP = inteval->WP_z;
+            pfac0 = InBra ?
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_z)
+                inteval->TwoPRepITR_pfac0_0_0_z
+#else
+                0
+#endif
+                :
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_z)
+                inteval->TwoPRepITR_pfac0_0_1_z;
+#else
+                0
+#endif
+                ;
             break;
         }
 
         const unsigned int iam1 = INT_CARTINDEX(La-1,a[0],a[1]);
         const unsigned int am10c0_offset = iam1 * NcV;
         const LIBINT2_REALTYPE* src0_ptr = src0 + am10c0_offset;
-        const LIBINT2_REALTYPE* src1_ptr = src1 + am10c0_offset;
 
         // if a-2_xyz exists, include (a-2_xyz 0 | c 0)
         if (a[xyz] > 0) {
@@ -86,17 +115,16 @@ namespace libint2 {
           const unsigned int am20c0_offset = iam2 * NcV;
           ++a[xyz];
           const LIBINT2_REALTYPE* src2_ptr = src2 + am20c0_offset;
-          const LIBINT2_REALTYPE* src3_ptr = src3 + am20c0_offset;
           const LIBINT2_REALTYPE axyz = (LIBINT2_REALTYPE)a[xyz];
 
           unsigned int cv = 0;
           for(unsigned int c = 0; c < Nc; ++c) {
             for(unsigned int v=0; v<veclen; ++v, ++cv) {
-              target[cv] = PA[v] * src0_ptr[cv] + WP[v] * src1_ptr[cv] + axyz * inteval->oo2z[v] * (src2_ptr[cv] - inteval->roz[v] * src3_ptr[cv]);
+              target[cv] = pfac0[v] * src0_ptr[cv] + axyz * inteval->oo2z[v] * src2_ptr[cv];
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 8 * NcV;
+          inteval->nflops[0] += 4 * NcV;
 #endif
 
         }
@@ -104,19 +132,48 @@ namespace libint2 {
           unsigned int cv = 0;
           for(unsigned int c = 0; c < Nc; ++c) {
             for(unsigned int v=0; v<veclen; ++v, ++cv) {
-              target[cv] = PA[v] * src0_ptr[cv] + WP[v] * src1_ptr[cv];
+              target[cv] = pfac0[v] * src0_ptr[cv];
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 3 * NcV;
+          inteval->nflops[0] += 1 * NcV;
 #endif
         }
+
+        {
+          const unsigned int Ncp1 = INT_NCART(Lc+1);
+          const unsigned int Ncp1V = Ncp1 * veclen;
+          const unsigned int am10cp10_offset = iam1 * Ncp1V;
+          const LIBINT2_REALTYPE* src1_ptr = src1 + am10cp10_offset;
+
+          // loop over c shell and include (a-1_xyz 0 | c+1_xyz 0) to (a 0 | c 0)
+          int cx, cy, cz;
+          int cv = 0;
+          FOR_CART(cx, cy, cz, Lc)
+
+            int c[3]; c[0] = cx;  c[1] = cy;  c[2] = cz;
+            ++c[xyz];
+
+            const unsigned int cp1 = INT_CARTINDEX(Lc+1,c[0],c[1]);
+            const unsigned int cp1_offset = cp1 * veclen;
+            const LIBINT2_REALTYPE* sptr = src1_ptr + cp1_offset;
+            const LIBINT2_REALTYPE cxyz = (LIBINT2_REALTYPE)c[xyz];
+            for(unsigned int v=0; v<veclen; ++v, ++cv) {
+              target[cv] -= inteval->eoz[v] * sptr[v];
+            }
+#if LIBINT2_FLOP_COUNT
+          inteval->nflops[0] += 2 * veclen;
+#endif
+
+          END_FOR_CART
+        }
+
 
         {
           const unsigned int Ncm1 = INT_NCART(Lc-1);
           const unsigned int Ncm1V = Ncm1 * veclen;
           const unsigned int am10cm10_offset = iam1 * Ncm1V;
-          const LIBINT2_REALTYPE* src4_ptr = src4 + am10cm10_offset;
+          const LIBINT2_REALTYPE* src3_ptr = src3 + am10cm10_offset;
 
           // loop over c-1 shell and include (a-1_xyz 0 | c-1_xyz 0) to (a 0 | c 0)
           int cx, cy, cz;
@@ -130,12 +187,12 @@ namespace libint2 {
             LIBINT2_REALTYPE* tptr = target + cc_offset;
             const LIBINT2_REALTYPE cxyz = (LIBINT2_REALTYPE)c[xyz];
             for(unsigned int v=0; v<veclen; ++v) {
-              tptr[v] += cxyz * inteval->oo2ze[v] * src4_ptr[v];
+              tptr[v] += cxyz * inteval->oo2z[v] * src3_ptr[v];
             }
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * veclen;
 #endif
-            src4_ptr += veclen;
+            src3_ptr += veclen;
 
           END_FOR_CART
         }
@@ -143,9 +200,6 @@ namespace libint2 {
         target += NcV;
 
       END_FOR_CART
-
-      /** Number of flops = ??? */
-      //inteval->nflops[0] = inteval->nflops[0] + 222 * 1 * 1 * veclen;
 
     }
 

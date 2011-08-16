@@ -46,19 +46,19 @@ CXXTIMEVOBJ = $(CXXTIMEVSRC:%.cc=%.o)
 
 $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	cd ../libint; $(MAKE) $(LIBINT)
-	$(LD) -o $@ $(LDFLAGS) $^
+	$(LD) -o $@ $(LDFLAGS) $(SYSLIBS) $^
 
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
-	$(LD) -o $@ $(LDFLAGS) $^
+	$(LD) -o $@ $(LDFLAGS) $(SYSLIBS) $^
 else
 $(TEST):
 	echo "Cannot test generated code! $(CXXGEN) is not compatible with $(CXXCOMP)"
 	@exit 1
 endif
 
-$(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)
-	$(LD) -o $@ $(LDFLAGS) $^
+$(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)  $(CGSHELLOBJ)
+	$(LD) -o $@ $(LDFLAGS) $(SYSLIBS) $^
 
 $(TIMEV): $(CXXTIMEVOBJ)
 	$(LD) -o $@ $(LDFLAGS) $^

@@ -83,7 +83,7 @@ namespace libint2 {
   public DGVertex
   {
     public:
-    typedef typename FNVStringHash::KeyType key_type;
+    typedef typename DGVertex::KeyType key_type;
 
     RTimeEntity(const std::string& id, bool p = true) :
       Entity(id), DGVertex(ClassInfo<RTimeEntity>::Instance().id()), precomputed_(p)
@@ -242,9 +242,9 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
   /** Creates product A*B. Exact type depends on type of A -- if A is a runtime-entity,
       then the result is a runtime entity as well. Otherwise the result is a compile-time entity.
   */
-  template <typename T>
-    SafePtr<Entity>
-    operator*(const SafePtr<Entity>& A, const SafePtr< CTimeEntity<T> >& B);
+//  template <typename T>
+//    SafePtr<Entity>
+//    operator*(const SafePtr<Entity>& A, const SafePtr< CTimeEntity<T> >& B);
 
   /** Creates product A*B.
   */

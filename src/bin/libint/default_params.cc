@@ -145,7 +145,7 @@ TaskParameters::TaskParameters() :
 
 //////////
 
-const char libint2::StaticDefinitions::am_letters[StaticDefinitions::num_am_letters] = "spdfghiklmnoqrtuvwxyz";
+const char libint2::StaticDefinitions::am_letters[StaticDefinitions::num_am_letters+1] = "spdfghiklm";
 
 std::string
 libint2::label_to_funcname(const std::string& label)

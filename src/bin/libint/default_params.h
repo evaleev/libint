@@ -289,10 +289,12 @@ namespace libint2 {
 
   /// Static parameters
   struct StaticDefinitions {
-    /// De facto am limit
-    static const unsigned int num_am_letters = 22;
+    /// basis functions with angular momenta 0 .. 9 are represented by these letters
+    /// higher angular momenta are expressed by replacing digits in their base-10 representation
+    /// with the corresponding letters
+    static const unsigned int num_am_letters = 10;
     /// am -> char conversion
-    static const char am_letters[num_am_letters];
+    static const char am_letters[num_am_letters+1];
   };
 
   /// Converts a label, e.g. name of the target node, to the name of the function to compute it

@@ -4,6 +4,12 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <rr.h>
+#include <iter.h>
+#include <util.h>
+#include <policy_spec.h>
+#include <global_macros.h>
+
 #include <libint2_config.h>
 #include <libint2.h>
 #include <test_eri/prep_libint2.h>
@@ -11,6 +17,9 @@
 #include <test_eri_conf.h>
 
 using namespace std;
+using namespace libint2;
+
+typedef unsigned int uint;
 
 namespace {
   std::string usage();
@@ -30,44 +39,53 @@ int main(int argc, char** argv)
   uint niter = atoi(argv[1]);
 
   const uint veclen = LIBINT2_MAX_VECLEN;
-  double alpha[4] = {0.5, 1.0, 1.5, 2.0};
-  double A[3] = {1.0, 2.0, 3.0};
-  double B[3] = {1.5, 2.5, 3.5};
-  double C[3] = {4.0, 2.0, 0.0};
-  double D[3] = {3.0, 3.0, 1.0};
+#if LIBINT_CONTRACTED_INTS
+  const uint contrdepth = 3;
+#else
+  const uint contrdepth = 1;
+#endif
+  const uint contrdepth4 = contrdepth * contrdepth * contrdepth * contrdepth;
+  RandomShellQuartetSet rsqset(am, veclen, contrdepth);
 
-  const double ratio = 1.5;
-  std::vector<double> alpha1;
-  std::vector<double> alpha2;
-  std::vector<double> alpha3;
-  std::vector<double> alpha4;
-  for(uint v=0; v<veclen; v++) {
-    const double scale = pow(ratio,static_cast<double>(v));
-    alpha1.push_back(alpha[0]*scale);
-    alpha2.push_back(alpha[1]*scale);
-    alpha3.push_back(alpha[2]*scale);
-    alpha4.push_back(alpha[3]*scale);
-  }
+  const unsigned int deriv_order = 0;
+  DerivIndexIterator<4> diter(deriv_order);
+  const unsigned int nderiv = diter.range_rank();
+
+  CGShell sh0(am[0]);
+  CGShell sh1(am[1]);
+  CGShell sh2(am[2]);
+  CGShell sh3(am[3]);
+
+  const double* A = &(rsqset.R[0][0]);
+  const double* B = &(rsqset.R[1][0]);
+  const double* C = &(rsqset.R[2][0]);
+  const double* D = &(rsqset.R[3][0]);
+
+  typedef SubIteratorBase<CGShell> iter;
+  SafePtr<iter> sh0_iter(new iter(sh0));
+  SafePtr<iter> sh1_iter(new iter(sh1));
+  SafePtr<iter> sh2_iter(new iter(sh2));
+  SafePtr<iter> sh3_iter(new iter(sh3));
   
-  Libint_eri_t* erieval = new Libint_eri_t;
+  std::vector<Libint_eri0_t> erieval(contrdepth4);
   const int max_am = max(max(am[0],am[1]),max(am[2],am[3]));
-  LIBINT2_PREFIXED_NAME(libint2_init_eri)(erieval,max_am,0);
-  prep_libint2(erieval,am[0],alpha1,A,
-	       am[1],alpha2,B,
-	       am[2],alpha3,C,
-	       am[3],alpha4,D,0,veclen);
-  erieval->nflops = 0;
+  LIBINT2_PREFIXED_NAME(libint2_init_eri0)(&erieval[0],max_am,0);
+  prep_libint2(erieval,rsqset,0);
+  erieval[0].nflops[0] = 0;
   
   cout << "Computing (" << am2label(am[0]) << am2label(am[1])
        << "|" << am2label(am[2]) << am2label(am[3]) << ") " << niter << " times" << endl;
 
+#if LIBINT_CONTRACTED_INTS
+  erieval[0].contrdepth = contrdepth4;
+#endif
   for(int iter=0; iter<niter; iter++)
-    COMPUTE_XX_ERI_XX(erieval);
+    COMPUTE_XX_ERI_XX(&erieval[0]);
 
   const unsigned int nints = am2nbf(am[0]) * am2nbf(am[1]) * am2nbf(am[2]) * am2nbf(am[3]) * LIBINT2_MAX_VECLEN;
-  cout << "nflops = " << erieval->nflops << " nints = " << nints << endl;
+  cout << "nflops = " << *(erieval[0].nflops) << " nints = " << nints << endl;
 
-  LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(erieval);
+  LIBINT2_PREFIXED_NAME(libint2_cleanup_eri0)(&erieval[0]);
 
   exit(0);
 }

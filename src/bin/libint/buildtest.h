@@ -231,7 +231,7 @@ namespace libint2 {
     // if there are missing prerequisites -- make a list of them
     PrerequisitesExtractor pe;
     if (dg->missing_prerequisites()) {
-      std::cout << "missing some prerequisites!" << std::endl;
+      //std::cout << "missing some prerequisites!" << std::endl;
       dg->foreach(pe);
     }
     std::deque< SafePtr<DGVertex> > prereq_list = pe.vertices;

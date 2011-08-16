@@ -628,15 +628,15 @@ void prep_libint2(LibintEval* erieval, unsigned int am1, double alpha1,
   erieval->oo2e[0] = 0.5/gammaq;
 #endif
 
-  // Prefactors for interelecttron transfer relation
+  // Prefactors for interelectron transfer relation
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_x)
-  erieval->TwoPRepITR_pfac0_0_x[0] = - (alpha2*AB_x + alpha4*CD_x)/gammap;
+  erieval->TwoPRepITR_pfac0_0_x[0] = - (alpha1*AB_x + alpha3*CD_x)/gammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_y)
-  erieval->TwoPRepITR_pfac0_0_y[0] = - (alpha2*AB_y + alpha4*CD_y)/gammap;
+  erieval->TwoPRepITR_pfac0_0_y[0] = - (alpha1*AB_y + alpha3*CD_y)/gammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_z)
-  erieval->TwoPRepITR_pfac0_0_z[0] = - (alpha2*AB_z + alpha4*CD_z)/gammap;
+  erieval->TwoPRepITR_pfac0_0_z[0] = - (alpha1*AB_z + alpha3*CD_z)/gammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_x)
   erieval->TwoPRepITR_pfac0_1_x[0] = - (alpha2*AB_x + alpha4*CD_x)/gammaq;

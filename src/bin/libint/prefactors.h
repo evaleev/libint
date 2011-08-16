@@ -153,25 +153,27 @@ namespace libint2 {
 #endif
 
     /// make a runtime quantity
-    template <class T = double> SafePtr< RTimeEntity<T> > Scalar(const char* id) {
+    inline SafePtr< RTimeEntity<double> > Scalar(const char* id) {
+      typedef double T;
       typedef RTimeEntity<T> return_type;
       typedef RTimeSingletons<T> singletons_type;
-      typedef typename singletons_type::ManagerType ManagerType;
+      typedef singletons_type::ManagerType ManagerType;
       SafePtr<return_type> tmp(new return_type(id));
-      const typename ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
+      const ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
       return result.second;
     }
     /// make a runtime quantity
-    template <class T = double> SafePtr< RTimeEntity<T> > Scalar(const std::string& id) {
+    inline SafePtr< RTimeEntity<double> > Scalar(const std::string& id) {
+      typedef double T;
       typedef RTimeEntity<T> return_type;
       typedef RTimeSingletons<T> singletons_type;
-      typedef typename singletons_type::ManagerType ManagerType;
+      typedef singletons_type::ManagerType ManagerType;
       SafePtr<return_type> tmp(new return_type(id));
-      const typename ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
+      const ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
       return result.second;
     }
     /// make a compile-time quantity
-    template <class T = double> SafePtr< CTimeEntity<T> > Scalar(const T& a) {
+    template <typename T> SafePtr< CTimeEntity<T> > Scalar(T a) {
       typedef CTimeEntity<T> return_type;
       SafePtr<return_type> tmp(new return_type(a));
 #if CTIMEENTITIES_SINGLETONS
@@ -190,7 +192,7 @@ namespace libint2 {
       RTimeVector3(const char* id) : id_(id) { }
       RTimeVector3(const std::string& id) : id_(id) { }
       SafePtr< RTimeEntity<T> > operator[](unsigned int xyz) {
-        return Scalar<T>(id_ + "_" + dirchar[xyz]);
+        return Scalar(id_ + "_" + dirchar[xyz]);
       }
       private:
         static const char* dirchar;
@@ -205,13 +207,14 @@ namespace libint2 {
         for(int xyz=0; xyz<3; ++xyz) val_[xyz] = val[xyz];
       }
       SafePtr< CTimeEntity<T> > operator[](unsigned int xyz) {
-        return Scalar<T>(val_[xyz]);
+        return Scalar(val_[xyz]);
       }
       private:
         T val_[3];
     };
 
     /// make a runtime quantity
+#if 0 // these do not get resolved correctly by icpc 12 on OS X
     template <class T = double> RTimeVector3<T> Vector(const char* id)
     {
       return RTimeVector3<T>(id);
@@ -225,6 +228,11 @@ namespace libint2 {
     template <class T = double> CTimeVector3<T> Vector(const T* a)
     {
       return CTimeVector3<T>(a);
+    }
+#endif
+    inline RTimeVector3<double> Vector(const char* id)
+    {
+      return RTimeVector3<double>(id);
     }
     /// make a compile-time quantity
     inline CTimeVector3<double> Vector(const CGF& bf)

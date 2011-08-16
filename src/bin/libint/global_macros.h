@@ -3,7 +3,7 @@
 #define _libint2_src_bin_libint_globalmacros_h_
 
 /// Feel free to adjust higher, but not yet tested
-#define LIBINT_CARTGAUSS_MAX_AM 20
+#define LIBINT_CARTGAUSS_MAX_AM 16
 
 /// Set to 1 to enable various safety checks which are normally too expensive to perform
 #define CHECK_SAFETY 0

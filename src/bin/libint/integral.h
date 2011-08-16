@@ -1,4 +1,7 @@
 
+#ifndef _libint2_src_bin_libint_integral_h_
+#define _libint2_src_bin_libint_integral_h_
+
 #include <smart_ptr.h>
 #include <dgvertex.h>
 #include <oper.h>
@@ -13,9 +16,6 @@
 #if USE_BRAKET_H
 #  include <braket.h>
 #endif
-
-#ifndef _libint2_src_bin_libint_integral_h_
-#define _libint2_src_bin_libint_integral_h_
 
 using namespace std;
 
@@ -81,7 +81,7 @@ namespace libint2 {
       /// This type provides comparison operations on pointers to GenIntegralSet
       typedef PtrEquiv<GenIntegralSet> PtrComp;
 #if  USE_INT_KEY_TO_HASH
-      typedef LIBINT2_UINT_LEAST64 key_type;
+      typedef mpz_class key_type;
 #else
       typedef std::string key_type;
 #endif
@@ -150,7 +150,7 @@ namespace libint2 {
       const SafePtr<AuxQuanta> aux() const;
 
       /// Implements Hashable::key()
-      LIBINT2_UINT_LEAST64 key() const {
+      key_type key() const {
         if (key_ == 0) compute_key();
         return key_;
       }
@@ -163,8 +163,16 @@ namespace libint2 {
       GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
       /// computes a key. it's protected so that derived classes can use it to implement smart caching in constructors
       static key_type compute_key(const Oper& O, const BraType& bra, const KetType& ket, const AuxQuanta& aux) {
-        key_type key = ( ((key_type)O.key() * (key_type)bra.max_key() + (key_type)bra.key() ) * (key_type)ket.max_key() +
-			 (key_type)ket.key() ) * (key_type)aux.max_key() + (key_type)aux.key();
+#define TEST_KEYTYPE_SAFETY 0
+#if TEST_KEYTYPE_SAFETY
+        key_type remainder = UINT64_MAX;
+        remainder /= (key_type)aux.max_key(); assert(remainder != 0);
+        remainder /= (key_type)ket.max_key(); assert(remainder != 0);
+        remainder /= (key_type)bra.max_key(); assert(remainder != 0);
+        remainder /= (key_type)O.max_key; assert(remainder != 0);
+#endif
+        key_type key = ( (key_type(O.key()) * key_type(bra.max_key()) + key_type(bra.key()) ) * key_type(ket.max_key()) +
+			 key_type(ket.key()) ) * key_type(aux.max_key()) + key_type(aux.key());
         return key;
       }
 

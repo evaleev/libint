@@ -347,14 +347,6 @@ namespace libint2 {
     {
       if (TrivialBFSet<F>::result)
         return false;
-      const OriginDerivative dA = target_->bra(0,0).deriv();
-      const OriginDerivative dB = target_->ket(0,0).deriv();
-      const OriginDerivative dC = target_->bra(1,0).deriv();
-      const OriginDerivative dD = target_->ket(1,0).deriv();
-      const bool deriv = dA.zero() == false ||
-          dB.zero() == false ||
-          dC.zero() == false ||
-          dD.zero() == false;
 
       F sh_a(target_->bra(0,0));
       F sh_b(target_->ket(0,0));

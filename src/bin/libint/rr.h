@@ -215,11 +215,21 @@ namespace libint2 {
                                                             const SafePtr<DGVertex>& B);
     const SafePtr<RecurrenceRelation::ExprType>& operator/=(SafePtr<RecurrenceRelation::ExprType>& A,
                                                             const SafePtr<DGVertex>& B);
+
+    class Entity;
+    template <class T> class RTimeEntity;
+    template <class T> class CTimeEntity;
+    SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<Entity>& A,
+                                                    const SafePtr<DGVertex>& B);
+    template<typename T> SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<RTimeEntity<T> >& A,
+                                                                         const SafePtr<DGVertex>& B);
+    template<typename T> SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<CTimeEntity<T> >& A,
+                                                                         const SafePtr<DGVertex>& B);
   };
 
   // Instantiate the RRStack
   typedef RRStackBase<RecurrenceRelation> RRStack;
-
+  
 };
 
 //#include <vrr_11_twoprep_11.h>

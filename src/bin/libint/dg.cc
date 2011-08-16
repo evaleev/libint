@@ -207,14 +207,17 @@ DirectedGraph::del_vertex(vertices::iterator& v)
     throw CannotPerformOperation("DirectedGraph::del_vertex() cannot delete vertex");
 }
 
-void
-DirectedGraph::prepare_to_traverse()
-{
+namespace{
   struct __prepare_to_traverse {
     void operator()(SafePtr<DGVertex>& v) {
       v->prepare_to_traverse();
     }
   };
+}
+
+void
+DirectedGraph::prepare_to_traverse()
+{
   __prepare_to_traverse __ptt;
   foreach(__ptt);
 }
@@ -1790,6 +1793,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
         if (arc_ptr) {
           SafePtr<RecurrenceRelation> rr = arc_ptr->rr();
           os << rr->spfunction_call(context, dims);
+          nflops_total += rr->nflops();
 
           goto next;
         }
@@ -1921,7 +1925,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     oss << nflops_total << " * " << dims->high_label() << " * "
         << dims->low_label() << " * "
         << dims->vecdim_label();
-    os << context->assign_binary_expr("inteval->nflops","inteval->nflops","+",oss.str());
+    os << context->assign_binary_expr("inteval->nflops[0]","inteval->nflops[0]","+",oss.str());
   }
 
 }
@@ -2041,6 +2045,14 @@ DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
   }
 }
 
+namespace {
+  struct PrerequisiteNotComputed {
+      bool operator()(const DirectedGraph::vertices::value_type& v) {
+        return v.second->precomputed() == false && v.second->num_exit_arcs() == 0;
+      }
+  };
+}
+
 /// return true if there are vertices with 0 children but not pre-computed
 bool
 DirectedGraph::missing_prerequisites() const {
@@ -2052,14 +2064,9 @@ DirectedGraph::missing_prerequisites() const {
                 return v.second->precomputed() == false && v.second->num_exit_arcs() == 0;
              }) != this->stack_.end();
 #else
-  struct PrerequisiteNotComputed {
-      bool operator()(const vertices::value_type& v) {
-        return v.second->precomputed() == false && v.second->num_exit_arcs() == 0;
-      }
-  };
   PrerequisiteNotComputed pred;
   missing_prereqs =
-      find_if(this->stack_.begin(), this->stack_.end(), pred) != this->stack_.end();
+      std::find_if(stack_.begin(), stack_.end(), pred) != stack_.end();
 #endif
   }
   return missing_prereqs;

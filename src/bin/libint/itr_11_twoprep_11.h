@@ -51,6 +51,7 @@ namespace libint2 {
     static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
     virtual ~ITR_11_TwoPRep_11() { assert(part == 0 || part == 1); }
 
+#if 1
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return children_.size(); };
     /// Implementation of RecurrenceRelation::rr_target()
@@ -61,6 +62,7 @@ namespace libint2 {
     bool is_simple() const {
       return TrivialBFSet<BFSet>::result;
     }
+#endif
 
   private:
     /**
@@ -91,6 +93,14 @@ namespace libint2 {
       return os.str();
     }
 
+#if LIBINT_ENABLE_GENERIC_CODE
+    /// Implementation of RecurrenceRelation::has_generic()
+    bool has_generic(const SafePtr<CompilationParameters>& cparams) const;
+    /// Implementation of RecurrenceRelation::generic_header()
+    std::string generic_header() const;
+    /// Implementation of RecurrenceRelation::generic_instance()
+    std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const;
+#endif
   };
 
   template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
@@ -112,13 +122,7 @@ namespace libint2 {
                                                            unsigned int dir) :
     target_(Tint), dir_(dir)
     {
-      /// TODO debug this RR, it seems broken (MPQC libint2 tests fail in HF)
-      throw ProgrammingError("ITR_11_TwoPRep_11 is broken");
-
-      /// InKet
-      if (where == InKet)
-        throw ProgrammingError("ITR_11_TwoPRep_11<ERI,F,part,where>::ITR_11_TwoPRep_11() -- where=InKet not implemented yet");
-
+      // only works for primitive integrals
       {
         F a(Tint->bra(0,0));
         F b(Tint->ket(0,0));
@@ -131,19 +135,25 @@ namespace libint2 {
           return;
       }
 
+      // not yet implemented for derivative integrals
+      {
+        const OriginDerivative dA = Tint->bra(0,0).deriv();
+        const OriginDerivative dB = Tint->ket(0,0).deriv();
+        const OriginDerivative dC = Tint->bra(1,0).deriv();
+        const OriginDerivative dD = Tint->ket(1,0).deriv();
+        const bool deriv = dA.zero() == false ||
+            dB.zero() == false ||
+            dC.zero() == false ||
+            dD.zero() == false;
+        if (deriv)
+          return;
+      }
+
       children_.reserve(max_nchildren_);
       using namespace libint2::algebra;
       using namespace libint2::prefactor;
       const unsigned int m = Tint->aux()->elem(0);
       const F& _1 = unit<F>(dir);
-
-      // B and D must be s functions -- general RR not implemented yet
-      {
-        F b(Tint->ket(0,0) - _1);
-        F d(Tint->ket(1,0) - _1);
-        if (exists(b) || exists(d))
-          return;
-      }
 
       // Build on A
       if (part == 0 && where == InBra) {
@@ -154,11 +164,11 @@ namespace libint2 {
         F d(Tint->ket(1,0));
 
         const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
-        if (is_simple()) { expr_ = Vector("TwoPRepITR_pfac0_0")[dir] * ABCD_m;  nflops_+=1; }
+        if (is_simple()) { expr_ = Vector("TwoPRepITR_pfac0_0_0")[dir] * ABCD_m;  nflops_+=1; }
 
         const F& cp1 = c + _1;
         const SafePtr<ChildType>& ABCp1D_m = make_child(a,b,cp1,d,m);
-        if (is_simple()) { expr_ += Scalar("TwoPRepITR_pfac1_0") * ABCp1D_m;  nflops_+=2; }
+        if (is_simple()) { expr_ -= Scalar("eoz") * ABCp1D_m;  nflops_+=2; }
 
         const F& am1 = a - _1;
         if (exists(am1)) {
@@ -181,11 +191,11 @@ namespace libint2 {
         F d(Tint->ket(1,0));
 
         const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
-        if (is_simple()) { expr_ = Vector("TwoPRepITR_pfac0_1")[dir] * ABCD_m;  nflops_+=1; }
+        if (is_simple()) { expr_ = Vector("TwoPRepITR_pfac0_1_0")[dir] * ABCD_m;  nflops_+=1; }
 
         const F& ap1 = a + _1;
         const SafePtr<ChildType>& Ap1BCD_m = make_child(ap1,b,c,d,m);
-        if (is_simple()) { expr_ += Scalar("TwoPRepITR_pfac1_1") * Ap1BCD_m;  nflops_+=2; }
+        if (is_simple()) { expr_ -= Scalar("zoe") * Ap1BCD_m;  nflops_+=2; }
 
         const F& cm1 = c - _1;
         if (exists(cm1)) {
@@ -199,7 +209,170 @@ namespace libint2 {
         }
         return;
       }
+      // Build on B
+      if (part == 0 && where == InKet) {
+        F a(Tint->bra(0,0));
+        F b(Tint->ket(0,0) - _1);
+        if (!exists(b)) return;
+        F c(Tint->bra(1,0));
+        F d(Tint->ket(1,0));
+
+        const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
+        if (is_simple()) { expr_ = Vector("TwoPRepITR_pfac0_0_1")[dir] * ABCD_m;  nflops_+=1; }
+
+        const F& dp1 = d + _1;
+        const SafePtr<ChildType>& ABCDp1_m = make_child(a,b,c,dp1,m);
+        if (is_simple()) { expr_ -= Scalar("eoz") * ABCDp1_m;  nflops_+=2; }
+
+        const F& bm1 = b - _1;
+        if (exists(bm1)) {
+          const SafePtr<ChildType>& ABm1CD_m = make_child(a,bm1,c,d,m);
+          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * ABm1CD_m;  nflops_+=3; }
+        }
+        const F& dm1 = d - _1;
+        if (exists(dm1)) {
+          const SafePtr<ChildType>& ABCDm1_m = make_child(a,b,c,dm1,m);
+          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2z") * ABCDm1_m;  nflops_+=3; }
+        }
+        return;
+      }
+      // Build on D
+      if (part == 1 && where == InBra) {
+        F a(Tint->bra(0,0));
+        F b(Tint->ket(0,0));
+        F c(Tint->bra(1,0));
+        F d(Tint->ket(1,0) - _1);
+        if (!exists(d)) return;
+
+        const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
+        if (is_simple()) { expr_ = Vector("TwoPRepITR_pfac0_1_1")[dir] * ABCD_m;  nflops_+=1; }
+
+        const F& bp1 = b + _1;
+        const SafePtr<ChildType>& ABp1CD_m = make_child(a,bp1,c,d,m);
+        if (is_simple()) { expr_ -= Scalar("zoe") * ABp1CD_m;  nflops_+=2; }
+
+        const F& dm1 = d - _1;
+        if (exists(dm1)) {
+          const SafePtr<ChildType>& ABCDm1_m = make_child(a,b,c,dm1,m);
+          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * ABCDm1_m;  nflops_+=3; }
+        }
+        const F& bm1 = b - _1;
+        if (exists(bm1)) {
+          const SafePtr<ChildType>& ABm1CD_m = make_child(a,bm1,c,d,m);
+          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2e") * ABm1CD_m;  nflops_+=3; }
+        }
+        return;
+      }
+
     }
+
+#if LIBINT_ENABLE_GENERIC_CODE
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
+  bool
+    ITR_11_TwoPRep_11<ERI,F,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
+    {
+      if (TrivialBFSet<F>::result)
+        return false;
+
+      F sh_a(target_->bra(0,0));
+      F sh_b(target_->ket(0,0));
+      F sh_c(target_->bra(1,0));
+      F sh_d(target_->ket(1,0));
+      const unsigned int max_opt_am = cparams->max_am_opt();
+      // generic code works for a0c0 of 0a0c classes where am(a) > 1 and am(c) > 1
+      // to generate optimized code for xxxx integral need to generate specialized code for up to (x+x)0(x+x)0 integrals
+      if (sh_b.zero() && sh_d.zero() &&
+          (sh_a.norm() > std::max(2*max_opt_am,1u) ||
+           sh_c.norm() > std::max(2*max_opt_am,1u)
+          ) &&
+          (sh_a.norm() > 1u && sh_c.norm() > 1u)
+         )
+        return true;
+      if (sh_a.zero() && sh_c.zero() &&
+          (sh_b.norm() > std::max(2*max_opt_am,1u) ||
+           sh_d.norm() > std::max(2*max_opt_am,1u)
+          ) &&
+          (sh_b.norm() > 1u && sh_d.norm() > 1u)
+         )
+        return true;
+      return false;
+    }
+
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
+  std::string
+    ITR_11_TwoPRep_11<ERI,F,part,where>::generic_header() const
+    {
+      F sh_a(target_->bra(0,0));
+      F sh_b(target_->ket(0,0));
+      F sh_c(target_->bra(1,0));
+      F sh_d(target_->ket(1,0));
+      const bool xsxs = sh_b.zero() && sh_d.zero();
+      const bool sxsx = sh_a.zero() && sh_c.zero();
+
+      const OriginDerivative dA = target_->bra(0,0).deriv();
+      const OriginDerivative dB = target_->ket(0,0).deriv();
+      const OriginDerivative dC = target_->bra(1,0).deriv();
+      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const bool deriv = dA.zero() == false ||
+          dB.zero() == false ||
+          dC.zero() == false ||
+          dD.zero() == false;
+      assert(deriv == false);
+
+      if (deriv == false) {
+        return std::string("ITR_xs_xs.h");
+      }
+      else {
+        if (xsxs) return std::string("ITR_xs_xs_deriv.h");
+        if (sxsx) return std::string("ITR_sx_sx_deriv.h");
+      }
+      abort(); // unreachable
+    }
+
+  template <template <typename,typename,typename> class ERI, class F, int part, FunctionPosition where>
+  std::string
+    ITR_11_TwoPRep_11<ERI,F,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
+    {
+      std::ostringstream oss;
+      F sh_a(target_->bra(0,0));
+      F sh_b(target_->ket(0,0));
+      F sh_c(target_->bra(1,0));
+      F sh_d(target_->ket(1,0));
+      const bool xsxs = sh_b.zero() && sh_d.zero();
+      const bool sxsx = sh_a.zero() && sh_c.zero();
+
+      const OriginDerivative dA = target_->bra(0,0).deriv();
+      const OriginDerivative dB = target_->ket(0,0).deriv();
+      const OriginDerivative dC = target_->bra(1,0).deriv();
+      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const bool deriv = dA.zero() == false ||
+          dB.zero() == false ||
+          dC.zero() == false ||
+          dD.zero() == false;
+      assert(deriv == false);
+
+      oss << "using namespace libint2;" << endl;
+
+      if (deriv == false) { // for regular integrals I know exactly how many prerequisites I need
+        if(xsxs) {
+          oss << "libint2::ITR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",true,";
+        }
+        if (sxsx) {
+          oss << "libint2::ITR_xs_xs<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",false,";
+        }
+        oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
+        oss << ">::compute(inteval";
+
+        const unsigned int nargs = args->n();
+        for(unsigned int a=0; a<nargs; a++) {
+          oss << "," << args->symbol(a);
+        }
+        oss << ");";
+      }
+
+      return oss.str();
+    }
+#endif // #if !LIBINT_ENABLE_GENERIC_CODE
 
 };
 

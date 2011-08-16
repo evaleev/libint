@@ -22,7 +22,7 @@ CXXTESTSRC = $(TEST).cc $(AUXSRC)
 CXXTESTOBJ = $(CXXTESTSRC:%.cc=%.o)
 
 $(TEST): $(CXXTESTOBJ)
-	$(LD) -o $@ $(LDFLAGS) $^ $(COMPILER_LIB) $(COMPUTE_LIB)
+	$(LD) -o $@ $(LDFLAGS) $^ $(COMPILER_LIB) $(COMPUTE_LIB) $(SYSLIBS)
 
 # Source files for timer and tester are to be complied using CXXGEN
 $(TEST): CXX=$(CXXGEN)

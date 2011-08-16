@@ -144,6 +144,8 @@ namespace libint2 {
         << context->value_to_pointer(rr_child(0)->symbol()) << ","
        << target_->size()
        << ")" << context->end_of_stat() << endl;
+    unsigned int& nflops_ref = const_cast<unsigned int&>(nflops_);
+    nflops_ref += target_->size();
 
     return os.str();
   }

@@ -103,7 +103,7 @@ namespace libint2 {
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 4 * NcV;
+          inteval->nflops[0] += 4 * NcV;
 #endif
 
         }
@@ -115,7 +115,7 @@ namespace libint2 {
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += NcV;
+          inteval->nflops[0] += NcV;
 #endif
         }
 
@@ -138,7 +138,7 @@ namespace libint2 {
               tptr[v] += cxyz * inteval->R12kG12_pfac2[v] * src2_ptr[v];
             }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * veclen;
+          inteval->nflops[0] += 3 * veclen;
 #endif
             src2_ptr += veclen;
 
@@ -159,7 +159,7 @@ namespace libint2 {
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NcV;
+          inteval->nflops[0] += 5 * NcV;
 #endif
 
           // loop over c shell and include (a-1_xyz 0 | c+1_xyz 0) to (a 0 | c 0)
@@ -179,7 +179,7 @@ namespace libint2 {
               target[cv] -= K * inteval->R12kG12_pfac3_0[v] * src4_ptr[v];
             }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * veclen;
+          inteval->nflops[0] += 3 * veclen;
 #endif
 
           END_FOR_CART
@@ -191,7 +191,7 @@ namespace libint2 {
       END_FOR_CART
 
       /** Number of flops = ??? */
-      //inteval->nflops = inteval->nflops + 222 * 1 * 1 * veclen;
+      //inteval->nflops[0] = inteval->nflops[0] + 222 * 1 * 1 * veclen;
 
     }
 

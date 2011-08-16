@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <numeric>
+#include <algorithm>
 #include <cassert>
 #include <stdlib.h>
 

@@ -1,16 +1,36 @@
 
+#include <iostream>
+#include <sstream>
 #include <ctype.h>
 #include <bfset.h>
 #include <stdexcept>
 #include <string>
 #include <exception.h>
 #include <default_params.h>
+#include <string.h>
 
 using namespace std;
 using namespace libint2;
 
-unsigned CGF::key_l_offset[] = { 0, 1, 4, 10, 20, 35, 56, 84, 120, 165, 220, 286, 364, 455, 560, 680, 816, 969, 1140, 1330, 1540};
+unsigned CGF::key_l_offset[] = { 0, 1, 4, 10, 20, 35, 56, 84, 120, 165, 220, 286, 364, 455, 560, 680, 816, 969, 1140, 1330, 1540,
+                                 1771, 2024, 2300, 2600, 2925, 3276, 3654, 4060, 4495};
 unsigned OriginDerivative::key_l_offset[] = { 0, 1, 4, 10, 20};
+
+namespace {
+  std::string am_to_symbol(unsigned int l, bool contracted) {
+    std::string result;
+    do {
+      const unsigned int digit = l % 10u;
+      char letter = StaticDefinitions::am_letters[digit];
+      if (contracted)
+        letter = toupper(letter);
+      result.insert(result.begin(), letter);
+      l /= 10;
+    } while (l != 0);
+
+    return result;
+  }
+}
 
 OriginDerivative
 libint2::operator-(const OriginDerivative& A, const OriginDerivative& B) {
@@ -64,19 +84,14 @@ const std::string
 CGF::label() const
 {
   unsigned int am = qn_[0] + qn_[1] + qn_[2];
-  const char am_char = StaticDefinitions::am_letters[am];
-  const std::string deriv_label(deriv_.zero() ? "" : deriv_.label());
-  char tmp[80]; sprintf(tmp,"%c%s_",
-                        (contracted() ? toupper(am_char) : am_char),
-                        deriv_label.c_str()
-                       );
-  // to differentiate s-type CGF from s-type CGShell, use "s_"
-  if (am == 0) {
-    if (deriv_.zero()) tmp[2] = '\0';
-    else tmp[5] = '\0';
-    return tmp;
-  }
-  std::string label(tmp);
+  std::string deriv_label;
+  if (deriv_.zero() == false) deriv_label = deriv_.label();
+  const std::string am_string = am_to_symbol(am, contracted());
+  std::ostringstream oss;
+  oss << am_string << deriv_label << "_";
+  if (am == 0) return oss.str();
+
+  std::string label = oss.str();
   const char xyz_char[][2] = {"x","y","z"};
   for(unsigned int xyz=0; xyz<3u; xyz++) {
     std::string xyzlab(xyz_char[xyz]);
@@ -191,8 +206,7 @@ CGShell::~CGShell()
 const std::string
 CGShell::label() const
 {
-  const char amchar = StaticDefinitions::am_letters[qn_[0]];
-  std::string result(1,contracted() ? toupper(amchar) : amchar);
+  std::string result = am_to_symbol(qn_[0], contracted());
   if (!deriv_.zero())
     result += deriv_.label();
   return result;

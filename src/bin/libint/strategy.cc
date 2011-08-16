@@ -81,6 +81,9 @@ namespace libint2 {
     typedef mpl::list<
     HRR_ba_11_TwoPRep_11_sh,
     HRR_dc_11_TwoPRep_11_sh,
+#if LIBINT_ERI_STRATEGY == 2
+    ITR_b_11_TwoPRep_11_sh,
+#endif
     VRR_b_11_TwoPRep_11_sh,
     VRR_d_11_TwoPRep_11_sh,
     Deriv_a_11_TwoPRep_11_sh,
@@ -93,6 +96,9 @@ namespace libint2 {
     typedef mpl::list<
     HRR_ba_11_TwoPRep_11_int,
     HRR_dc_11_TwoPRep_11_int,
+#if LIBINT_ERI_STRATEGY == 2
+    ITR_b_11_TwoPRep_11_int,
+#endif
     VRR_b_11_TwoPRep_11_int,
     VRR_d_11_TwoPRep_11_int,
     Deriv_a_11_TwoPRep_11_int,

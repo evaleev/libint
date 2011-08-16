@@ -192,8 +192,8 @@ namespace libint2 {
     unsigned int key() const { return 0; }
     std::string description() const { return "generic multiplicative symmetric operator"; }
     std::string label() const { return "GenMultSymmOper"; }
-    int psymm(int i, int j) const;
-    int hermitian(int i) const;
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { assert(false); }
   };
   typedef GenOper< GenMultSymmOper_Descr<2>  > GenMultSymm2BodyOper;
 
@@ -205,8 +205,8 @@ namespace libint2 {
     unsigned int key() const { return 0; }
     std::string description() const { return "1/r_{12}"; }
     std::string label() const { return "TwoPRep"; }
-    int psymm(int i, int j) const;
-    int hermitian(int i) const;
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { assert(false); }
   };
   typedef GenOper<TwoPRep_Descr> TwoPRep;
 
@@ -224,8 +224,8 @@ namespace libint2 {
     std::string description() const { return label_(K_, this->contracted()); }
     std::string label() const { return symbol_(K_, this->contracted()); }
     int K() const { return K_; }
-    int psymm(int i, int j) const;
-    int hermitian(int i) const;
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { assert(false); }
   private:
     R12_k_G12_Descr();
     static std::string label_(int K, bool contracted);
@@ -249,8 +249,8 @@ namespace libint2 {
     unsigned int key() const;
     std::string description() const { return label_(K_,L_, this->contracted()); }
     std::string label() const { return symbol_(K_,L_, this->contracted()); }
-    int psymm(int i, int j) const;
-    int hermitian(int i) const;
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { assert(false); }
   private:
     R12k_R12l_G12_Descr();
     static std::string label_(const IntVec3& K, const IntVec3& L, bool contracted);
@@ -274,7 +274,7 @@ namespace libint2 {
     std::string description() const { return label_(K_, this->contracted()); }
     std::string label() const { return symbol_(K_, this->contracted()); }
     int K() const { return K_; }
-    int psymm(int i, int j) const;
+    int psymm(int i, int j) const { assert(false); }
     int hermitian(int i) const { if (i != K_) return +1; else return -1; }
   private:
     Ti_G12_Descr();
@@ -299,7 +299,7 @@ namespace libint2 {
     std::string description() const { return label_(K_, this->contracted()); }
     std::string label() const { return symbol_(K_, this->contracted()); }
     int K() const { return K_; }
-    int psymm(int i, int j) const;
+    int psymm(int i, int j) const { assert(false); }
     int hermitian(int i) const { return +1; }
   private:
     G12_Ti_G12_Descr();
@@ -317,8 +317,8 @@ namespace libint2 {
     unsigned int key() const { return 0; }
     std::string description() const { return "r_1.r_1 x G12"; }
     std::string label() const { return "R1dotR1_G12"; }
-    int psymm(int i, int j) const;
-    int hermitian(int i) const;
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { assert(false); }
   };
   typedef GenOper< R1dotR1_G12_Descr > R1dotR1_G12;
 
@@ -330,8 +330,8 @@ namespace libint2 {
     unsigned int key() const { return 0; }
     std::string description() const { return "r_2.r_2 x G12"; }
     std::string label() const { return "R2dotR2_G12"; }
-    int psymm(int i, int j) const;
-    int hermitian(int i) const;
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { assert(false); }
   };
   typedef GenOper< R2dotR2_G12_Descr > R2dotR2_G12;
 
@@ -343,8 +343,8 @@ namespace libint2 {
     unsigned int key() const { return 0; }
     std::string description() const { return "r_1.r_2 x G12"; }
     std::string label() const { return "R1dotR2_G12"; }
-    int psymm(int i, int j) const;
-    int hermitian(int i) const;
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { assert(false); }
   };
   typedef GenOper< R1dotR2_G12_Descr > R1dotR2_G12;
 
@@ -360,7 +360,7 @@ namespace libint2 {
     std::string description() const { return label_(I_); }
     std::string label() const { return symbol_(I_); }
     int I() const { return I_; }
-    int psymm(int i, int j) const;
+    int psymm(int i, int j) const { assert(false); }
     int hermitian(int i) const { if (i != I_) return +1; else return -1; }
     private:
       DivG12prime_xTx_Descr();

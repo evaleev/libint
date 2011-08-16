@@ -3,6 +3,7 @@
 #define _libint2_src_bin_libint_key_h_
 
 #include <libint2_intrinsic_types.h>
+#include <gmpxx.h>
 
 namespace libint2 {
 
@@ -56,7 +57,7 @@ namespace libint2 {
     /// distinct classes have unique ClassID's
     typedef unsigned int ClassID;
     /// some classes need to have distinct instances to have unique InstanceID's, e.g. generalized Singletons
-    typedef LIBINT2_UINT_LEAST64 InstanceID;
+    typedef mpz_class InstanceID;
   };
   /// this composite hashing key works for DGVertex
   typedef TypeAndInstance<KeyTypes::ClassID,KeyTypes::InstanceID> DGVertexKey;

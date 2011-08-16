@@ -18,8 +18,10 @@ typedef double LIBINT2_FLOAT;
 #ifdef HAVE_STDINT_H
 
 #include <stdint.h>
-typedef int_least64_t LIBINT2_INT_LEAST64; 
-typedef uint_least64_t LIBINT2_UINT_LEAST64; 
+//typedef int_least64_t LIBINT2_INT_LEAST64;
+//typedef uint_least64_t LIBINT2_UINT_LEAST64;
+typedef long int LIBINT2_INT_LEAST64;
+typedef unsigned long int LIBINT2_UINT_LEAST64;
 
 #else
 

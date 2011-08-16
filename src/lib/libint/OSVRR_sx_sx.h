@@ -100,7 +100,7 @@ namespace libint2 {
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 8 * NdV;
+          inteval->nflops[0] += 8 * NdV;
 #endif
 
         }
@@ -112,7 +112,7 @@ namespace libint2 {
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
 
@@ -137,7 +137,7 @@ namespace libint2 {
               tptr[v] += dxyz * inteval->oo2ze[v] * src4_ptr[v];
             }
 #if LIBINT2_FLOP_COUNT
-            inteval->nflops += 3 * veclen;
+            inteval->nflops[0] += 3 * veclen;
 #endif
             src4_ptr += veclen;
 
@@ -255,7 +255,7 @@ namespace libint2 {
             src3_ptr += Ndm2v;
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 8 * Nb * veclen;
+          inteval->nflops[0] += 8 * Nb * veclen;
 #endif
 
         }
@@ -269,7 +269,7 @@ namespace libint2 {
             src1_ptr += Ndm1v;
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * Nb * veclen;
+          inteval->nflops[0] += 3 * Nb * veclen;
 #endif
         }
 
@@ -291,7 +291,7 @@ namespace libint2 {
               target_ptr[v] += bxyz * inteval->oo2ze[v] * src4_ptr[v];
             }
 #if LIBINT2_FLOP_COUNT
-            inteval->nflops += 3 * veclen;
+            inteval->nflops[0] += 3 * veclen;
 #endif
             src4_ptr += Ndm1v;
 

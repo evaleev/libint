@@ -400,7 +400,3 @@ namespace libint2 { namespace algebra {
 } } // namespace libint2::algebra
 
 ///////////////
-
-
-
-///////////////
