@@ -57,8 +57,8 @@ namespace libint2 {
 
 	    typedef DGVertex::ArcSetType::const_iterator aciter;
 	    aciter a = this->first_exit_arc();
-	    const SafePtr<DGVertex>& left_arg = (*a)->dest();  ++a;
-	    const SafePtr<DGVertex>& right_arg = (*a)->dest();
+	    auto left_arg = (*a)->dest();  ++a;
+	    auto right_arg = (*a)->dest();
 
             if (left_ != left_arg && left_ != right_arg)
               cout << "AlgebraicOperator<DGVertex> copy constructor: invalid left operand given" << endl; 

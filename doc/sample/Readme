@@ -26,5 +26,5 @@ Testing (ss|dp) ... ok
 etc.
 
 Platform-specific notes:
-1. Any standard compliant C++ compiler can be used to compile libint. It has been tested with gcc, Intel C++ compiler, and clang.
+1. Any standard-compliant C++ compiler can be used to compile libint. It has been tested with gcc, Intel C++ compiler, and clang.
 2. Generally there is no particular reason to set optimization level for the C++ compiler too high because the library source is already highly optimized. Right now I recommend using optimization level of -O1. With some compilers, such as Intel, using optimization levels greater than -O1 will make compilation last too long to be practical.

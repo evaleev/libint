@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <vector>
 #include <libint2.h>
 
 // angular momentum labels
@@ -21,7 +22,8 @@ template<typename LibintEval>
 void prep_libint2(LibintEval* erieval, unsigned int am1, double alpha1,
                   double A[3], unsigned int am2, double alpha2, double B[3],
                   unsigned int am3, double alpha3, double C[3],
-                  unsigned int am4, double alpha4, double D[3], int norm_flag);
+                  unsigned int am4, double alpha4, double D[3], int norm_flag,
+                  double norm_prefactor = 1.0);
 
 /*!
  eri()
@@ -50,27 +52,37 @@ int main(int argc, char** argv) {
 
   // This example assumes that your library does not support for vectorization
   const uint veclen = 1;
+#if LIBINT_CONTRACTED_INTS
+  const uint contrdepth = 3;
+#else
+  const uint contrdepth = 1;
+#endif
+  const uint contrdepth4 = contrdepth * contrdepth * contrdepth * contrdepth;
 
   // These parameters define 4 primitive Gaussian basis functions
   double alpha[4] = { 0.5, 1.0, 1.5, 2.0 }; // orbital exponents for the 4 functions
+  double contrcoef[3] = {0.25, 0.45, 0.3};
+  double alphascale[3] = {0.3, 1.0, 3.0};
   double A[3] = { 1.0, 2.0, 3.0 }; // position of function 1
   double B[3] = { 1.5, 2.5, 3.5 }; // etc.
   double C[3] = { 4.0, 2.0, 0.0 };
   double D[3] = { 3.0, 3.0, 1.0 };
 
   // LIBINT2_MAX_AM_ERI is a macro defined in libint2.h that specifies the maximum angular momentum
-  // this Libint library instance can handle
+  // this Libint library instance can handle. To save time, we will only compute integrals over up to f functions here.
   // const unsigned int ammax = LIBINT2_MAX_AM_ERI;
   const unsigned int ammax = 3;
   // Libint_t is the type of a data structure used to pass basis function data to Libint
-  Libint_t inteval;
-  // Libint_t objects must be initialized prior to use
-  // your program may have several such objects to implement computation of integrals in multiple threads
-  // each thread would have its own Libint_t object
-  LIBINT2_PREFIXED_NAME( libint2_init_eri)(&inteval, ammax, 0);
+  // One Libint_t instance keeps information for one shell set of integrals (or one vector of shell sets, if using vectorization)
+  // To evaluate integrals over contracted functions, allocate an array of Libint_t objects, one for each combination of primitives
+  // Your program may have several such arrays to implement computation of integrals in multiple threads
+  // Each thread would have its own Libint_t array
+  // To hide the details of allocation/deallocation I use std::vector<> here
+  std::vector<Libint_t> inteval(contrdepth4);
+  // array of Libint_t objects must be initialized prior to use -- pass the pointer to the first element of the array
+  LIBINT2_PREFIXED_NAME( libint2_init_eri)(&inteval[0], ammax, 0);
 
-  // I will evaluate every type of integrals supported by a given library
-  // change lmax above to evaluate a subset of integrals
+  // I will evaluate shell sets of integrals of angular momentum up to ammmax
   for (uint am0 = 0; am0 <= ammax; ++am0) {
     for (uint am1 = 0; am1 <= ammax; ++am1) {
       for (uint am2 = 0; am2 <= ammax; ++am2) {
@@ -87,8 +99,22 @@ int main(int argc, char** argv) {
             continue;
 
           // this function fills in all data expected by Libint to evaluate the given integral set
-          prep_libint2(&inteval, am0, alpha[0], A, am1, alpha[1], B, am2,
-                       alpha[2], C, am3, alpha[3], D, 0);
+          // loop over every primitive combination
+          for(uint p0=0, p0123=0; p0<contrdepth; ++p0) {
+            for(uint p1=0; p1<contrdepth; ++p1) {
+              for(uint p2=0; p2<contrdepth; ++p2) {
+                for(uint p3=0; p3<contrdepth; ++p3, ++p0123) {
+                  const double contrcoef0123 = contrcoef[p0]*contrcoef[p1]*contrcoef[p2]*contrcoef[p3];
+                  prep_libint2(&inteval[p0123], // <- data for each primitive combination goes into its own evaluator object
+                               am0, alpha[0]*alphascale[p0], A,
+                               am1, alpha[1]*alphascale[p1], B,
+                               am2, alpha[2]*alphascale[p2], C,
+                               am3, alpha[3]*alphascale[p3], D,
+                               0, contrcoef0123);
+                }
+              }
+            }
+          }
 
           // announce what we are computing now
           std::cout << "Testing (" << cglabel[am0] << cglabel[am1] << "|"
@@ -98,10 +124,10 @@ int main(int argc, char** argv) {
           // these are uncontracted basis functions
           // N.B. to compute integrals over contracted functions allocate an array of Libint_t objects (one for each primitive combination)
           //      and fill each with primitive combination data. You only need to call libint2_init_eri using pointer to the first object!
-          inteval.contrdepth = 1;
+          inteval[0].contrdepth = contrdepth4;
           // this compute the shell set (quartet) of integrals
           LIBINT2_PREFIXED_NAME
-              ( libint2_build_eri)[am0][am1][am2][am3](&inteval);
+              ( libint2_build_eri)[am0][am1][am2][am3](&inteval[0]);
 
           bool success = true;
           int ijkl = 0;
@@ -131,16 +157,31 @@ int main(int argc, char** argv) {
                           const uint m3 = k3 - n3;
                           const uint l3 = am3 - k3;
 
-                          // eri() computes reference value for the ERI over 4 primitive functions
-                          // it is extremely slow and is only used here for validation of Libint output
-                          const double ref_eri =
-                              eri(l0, m0, n0, alpha[0], A, l1, m1, n1,
-                                  alpha[1], B, l2, m2, n2, alpha[2], C, l3, m3,
-                                  n3, alpha[3], D, 0);
+                          // compute the reference value of the contracted integral
+                          // contract primitive integrals to give a contracted integral
+                          double ref_eri = 0.0;
+                          for(uint p0=0, p0123=0; p0<contrdepth; ++p0) {
+                            for(uint p1=0; p1<contrdepth; ++p1) {
+                              for(uint p2=0; p2<contrdepth; ++p2) {
+                                for(uint p3=0; p3<contrdepth; ++p3, ++p0123) {
 
-                          //
-                          const double libint_eri = inteval.targets[0][ijkl];
+                                  const double contrcoef0123 = contrcoef[p0]*contrcoef[p1]*contrcoef[p2]*contrcoef[p3];
+                                  // eri() computes reference value for the ERI over 4 primitive functions
+                                  // it is extremely slow and is only used here for validation of Libint output
+                                  ref_eri +=
+                                      contrcoef0123 *
+                                      eri(l0, m0, n0, alpha[0]*alphascale[p0], A,
+                                          l1, m1, n1, alpha[1]*alphascale[p1], B,
+                                          l2, m2, n2, alpha[2]*alphascale[p2], C,
+                                          l3, m3, n3, alpha[3]*alphascale[p3], D, 0);
+                                }
+                              }
+                            }
+                          }
 
+                          // get the value of the contracted integral from Libint
+                          const double libint_eri = inteval[0].targets[0][ijkl];
+                          // and check against the reference
                           if (fabs((ref_eri - libint_eri) / libint_eri)
                               > 1.0E-8) {
 #if 1
@@ -170,7 +211,7 @@ int main(int argc, char** argv) {
   } // end of loop over angular momenta
 
   // this releases all memory that was allocated for this object
-  LIBINT2_PREFIXED_NAME( libint2_cleanup_eri)(&inteval);
+  LIBINT2_PREFIXED_NAME( libint2_cleanup_eri)(&inteval[0]);
 
   return 0;
 }
@@ -528,7 +569,8 @@ template<typename LibintEval>
 void prep_libint2(LibintEval* erieval, unsigned int am1, double alpha1,
                   double A[3], unsigned int am2, double alpha2, double B[3],
                   unsigned int am3, double alpha3, double C[3],
-                  unsigned int am4, double alpha4, double D[3], int norm_flag) {
+                  unsigned int am4, double alpha4, double D[3], int norm_flag,
+                  double norm_prefactor) {
 
   const unsigned int am = am1 + am2 + am3 + am4;
   double* F = init_array(am + 1);
@@ -694,6 +736,7 @@ void prep_libint2(LibintEval* erieval, unsigned int am1, double alpha1,
   double K2 = exp(-alpha3 * alpha4 * CD2 / gammaq);
   double pfac = 2 * pow(M_PI, 2.5) * K1 * K2 / (gammap * gammaq
       * sqrt(gammap + gammaq));
+  pfac *= norm_prefactor;
 
   if (norm_flag > 0) {
     /*    pfac *= norm_const(l1,m1,n1,alpha1,A);

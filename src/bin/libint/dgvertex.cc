@@ -494,7 +494,7 @@ IntegralInTargetIntegralSet::operator()(const SafePtr<DGVertex>& V)
 {
   const unsigned int indegree = V->num_entry_arcs();
   if (indegree != 1) return false;
-  const SafePtr<DGVertex>& parent = (*(V->first_entry_arc()))->orig();
+  auto parent = (*(V->first_entry_arc()))->orig();
   if (parent->is_a_target()) return UnrolledIntegralSet()(parent);
   return false;
 }

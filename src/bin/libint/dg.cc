@@ -68,7 +68,7 @@ DirectedGraph::append_vertex(const SafePtr<DGVertex>& vertex)
 #endif
     return vertex;
   }
-  const SafePtr<DGVertex>& vcopy_on_graph = add_vertex(vertex);
+  auto vcopy_on_graph = add_vertex(vertex);
   // If this is a new vertex -- tell the vertex who its owner is now
   if (vcopy_on_graph == vertex)
     vertex->dg(this);
@@ -1657,9 +1657,9 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 
           typedef DGVertex::ArcSetType::const_iterator aciter;
           aciter a = oper_ptr->first_exit_arc();
-          const SafePtr<DGVertex>& left_arg = (*a)->dest();
+          auto left_arg = (*a)->dest();
           ++a;
-          const SafePtr<DGVertex>& right_arg = (*a)->dest();
+          auto right_arg = (*a)->dest();
 
           if (context->comments_on()) {
 

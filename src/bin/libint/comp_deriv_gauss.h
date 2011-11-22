@@ -81,7 +81,7 @@ namespace libint2 {
         F ap1(bra->member(part,0) + _1);
         ap1.deriv().dec(dir);
         bra->set_member(ap1,part,0);
-        const SafePtr<DGVertex>& int_ap1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
+        auto int_ap1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
         bra->set_member(a,part,0);
         if (is_simple()) {
           std::ostringstream oss;
@@ -94,7 +94,7 @@ namespace libint2 {
         if (exists(am1)) {
           am1.deriv().dec(dir);
           bra->set_member(am1,part,0);
-          const SafePtr<DGVertex>& int_am1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
+          auto int_am1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
           bra->set_member(a,part,0);
           if (is_simple()) {
             expr_ -= Vector(a)[dir] * int_am1;  nflops_+=2;
@@ -110,7 +110,7 @@ namespace libint2 {
         F ap1(ket->member(part,0) + _1);
         ap1.deriv().dec(dir);
         ket->set_member(ap1,part,0);
-        const SafePtr<DGVertex>& int_ap1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
+        auto int_ap1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
         ket->set_member(a,part,0);
         if (is_simple()) {
           std::ostringstream oss;
@@ -123,7 +123,7 @@ namespace libint2 {
         if (exists(am1)) {
           am1.deriv().dec(dir);
           ket->set_member(am1,part,0);
-          const SafePtr<DGVertex>& int_am1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
+          auto int_am1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
           ket->set_member(a,part,0);
           if (is_simple()) {
             expr_ -= Vector(a)[dir] * int_am1;  nflops_+=2;

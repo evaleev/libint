@@ -105,30 +105,30 @@ namespace libint2 {
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
-        const SafePtr<DGVertex>& ABCD_m = factory.make_child(a,b,c,d,m);
-        const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+        auto ABCD_m = factory.make_child(a,b,c,d,m);
+        auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
         if (is_simple()) { expr_ = Vector("PA")[dir] * ABCD_m + Vector("WP")[dir] * ABCD_mp1;  nflops_+=3; }
 
-        const F& am1 = a - _1;
+        auto am1 = a - _1;
         if (exists(am1)) {
-          const SafePtr<DGVertex>& Am1BCD_m = factory.make_child(am1,b,c,d,m);
-          const SafePtr<DGVertex>& Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
+          auto Am1BCD_m = factory.make_child(am1,b,c,d,m);
+          auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
           if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
-          const SafePtr<DGVertex>& ABm1CD_m = factory.make_child(a,bm1,c,d,m);
-          const SafePtr<DGVertex>& ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
+          auto ABm1CD_m = factory.make_child(a,bm1,c,d,m);
+          auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
           if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
         }
         const F& cm1 = c - _1;
         if (exists(cm1)) {
-          const SafePtr<DGVertex>& ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
+          auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
           if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
-          const SafePtr<DGVertex>& ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
+          auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
           if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
         }
       }
@@ -140,30 +140,30 @@ namespace libint2 {
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
-        const SafePtr<DGVertex>& ABCD_m = factory.make_child(a,b,c,d,m);
-        const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+        auto ABCD_m = factory.make_child(a,b,c,d,m);
+        auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
         if (is_simple()) { expr_ = Vector("PB")[dir] * ABCD_m + Vector("WP")[dir] * ABCD_mp1;  nflops_+=3; }
 
         const F& am1 = a - _1;
         if (exists(am1)) {
-          const SafePtr<DGVertex>& Am1BCD_m = factory.make_child(am1,b,c,d,m);
-          const SafePtr<DGVertex>& Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
+          auto Am1BCD_m = factory.make_child(am1,b,c,d,m);
+          auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
           if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
-          const SafePtr<DGVertex>& ABm1CD_m = factory.make_child(a,bm1,c,d,m);
-          const SafePtr<DGVertex>& ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
+          auto ABm1CD_m = factory.make_child(a,bm1,c,d,m);
+          auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
           if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
         }
         const F& cm1 = c - _1;
         if (exists(cm1)) {
-          const SafePtr<DGVertex>& ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
+          auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
           if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
-          const SafePtr<DGVertex>& ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
+          auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
           if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
         }
       }
@@ -175,30 +175,30 @@ namespace libint2 {
         if (!exists(c)) return;
         F d(Tint->ket(1,0));
 
-        const SafePtr<DGVertex>& ABCD_m = factory.make_child(a,b,c,d,m);
-        const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+        auto ABCD_m = factory.make_child(a,b,c,d,m);
+        auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
         if (is_simple()) { expr_ = Vector("QC")[dir] * ABCD_m + Vector("WQ")[dir] * ABCD_mp1;  nflops_+=3; }
 
         const F& cm1 = c - _1;
         if (exists(cm1)) {
-          const SafePtr<DGVertex>& ABCm1D_m = factory.make_child(a,b,cm1,d,m);
-          const SafePtr<DGVertex>& ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
+          auto ABCm1D_m = factory.make_child(a,b,cm1,d,m);
+          auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
           if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
-          const SafePtr<DGVertex>& ABCDm1_m = factory.make_child(a,b,c,dm1,m);
-          const SafePtr<DGVertex>& ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
+          auto ABCDm1_m = factory.make_child(a,b,c,dm1,m);
+          auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
           if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
         }
         const F& am1 = a - _1;
         if (exists(am1)) {
-          const SafePtr<DGVertex>& Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
+          auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
           if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
-          const SafePtr<DGVertex>& ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
+          auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
           if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
         }
       }
@@ -210,30 +210,30 @@ namespace libint2 {
         F d(Tint->ket(1,0) - _1);
         if (!exists(d)) return;
 
-        const SafePtr<DGVertex>& ABCD_m = factory.make_child(a,b,c,d,m);
-        const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+        auto ABCD_m = factory.make_child(a,b,c,d,m);
+        auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
         if (is_simple()) { expr_ = Vector("QD")[dir] * ABCD_m + Vector("WQ")[dir] * ABCD_mp1;  nflops_+=3; }
 
         const F& cm1 = c - _1;
         if (exists(cm1)) {
-          const SafePtr<DGVertex>& ABCm1D_m = factory.make_child(a,b,cm1,d,m);
-          const SafePtr<DGVertex>& ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
+          auto ABCm1D_m = factory.make_child(a,b,cm1,d,m);
+          auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
           if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
-          const SafePtr<DGVertex>& ABCDm1_m = factory.make_child(a,b,c,dm1,m);
-          const SafePtr<DGVertex>& ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
+          auto ABCDm1_m = factory.make_child(a,b,c,dm1,m);
+          auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
           if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
         }
         const F& am1 = a - _1;
         if (exists(am1)) {
-          const SafePtr<DGVertex>& Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
+          auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
           if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
-          const SafePtr<DGVertex>& ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
+          auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
           if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
         }
       }
@@ -264,8 +264,8 @@ namespace libint2 {
             const OriginDerivative dAm1(dA - _d1);
             if (exists(dAm1)) { // yes
               a.deriv() = dAm1;
-              const SafePtr<DGVertex>& ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
-              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              auto ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
               if (is_simple()) {
                 if (part == 0 && where == InBra) { // building on A
                   expr_ -= Vector(dA)[dxyz] * (Scalar("rho12_over_alpha1") * ABCD_m + Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
@@ -283,8 +283,8 @@ namespace libint2 {
             const OriginDerivative dBm1(dB - _d1);
             if (exists(dBm1)) { // yes
               b.deriv() = dBm1;
-              const SafePtr<DGVertex>& ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
-              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              auto ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
               if (is_simple()) {
                 if (part == 0 && where == InBra) { // building on A
                   expr_ += Vector(dB)[dxyz] * (Scalar("rho12_over_alpha1") * ABCD_m - Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
@@ -302,8 +302,8 @@ namespace libint2 {
             const OriginDerivative dCm1(dC - _d1);
             if (exists(dCm1)) { // yes
               c.deriv() = dCm1;
-              const SafePtr<DGVertex>& ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
-              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              auto ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
               if (is_simple()) {
                 if (part == 0) { // building on A or B
                   expr_ += Vector(dC)[dxyz] * Scalar("alpha3_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
@@ -321,8 +321,8 @@ namespace libint2 {
             const OriginDerivative dDm1(dD - _d1);
             if (exists(dDm1)) { // yes
               d.deriv() = dDm1;
-              const SafePtr<DGVertex>& ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
-              const SafePtr<DGVertex>& ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
+              auto ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
               if (is_simple()) {
                 if (part == 0) { // building on A or B
                   expr_ += Vector(dD)[dxyz] * Scalar("alpha4_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }

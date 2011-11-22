@@ -73,7 +73,7 @@ namespace libint2 {
       {
         typedef GenIntegralSet_11_11<BasisFunctionType,R12kG12,mType> ChildType;
         ChildFactory<ThisType,ChildType> factory(this);
-        const SafePtr<DGVertex>& ab_G2_cd = factory.make_child(a,b,c,d,0u,G2);
+        auto ab_G2_cd = factory.make_child(a,b,c,d,0u,G2);
         if (is_simple()) {
           expr_ = Scalar("R12_2_G12_scale_to_G12T1G12") * ab_G2_cd;
           nflops_ += 1;

@@ -21,8 +21,8 @@ namespace libint2 {
     const char* zeta = (BKType == PBra) ? "zeta_A" : "zeta_B";
     const char* XY = (BKType == PBra) ? "AC" : "BD";
     
-    const F& f = bkt[0];
-    const F& g = bkt[1];
+    const auto& f = bkt[0];
+    const auto& g = bkt[1];
     typedef LinearCombination< SafePtr<DGVertex> ,BraketPair<F,BKType> > ResultType;
     ResultType result;
     

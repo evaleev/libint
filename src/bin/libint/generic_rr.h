@@ -140,7 +140,7 @@ namespace libint2 {
                                         const F& D,
                                         const AuxIndexType& aux = AuxIndexType(),
                                         const OperType& oper = OperType()) {
-      const SafePtr<DGVertex>& i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(A,B,C,D,aux,oper));
+      auto i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(A,B,C,D,aux,oper));
       return rr_->add_child(i);
     }
     /// make a child from a wedge of physicists' brackets
@@ -148,7 +148,7 @@ namespace libint2 {
     make_child(const algebra::Wedge< BraketPair<F,PBra>, BraketPair<F,PKet> >& braket_wedge,
                const AuxIndexType& aux = AuxIndexType(),
                const OperType& oper = OperType()) {
-      const SafePtr<DGVertex>& i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(braket_wedge,aux,oper));
+      auto i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(braket_wedge,aux,oper));
       return rr_->add_child(i);
     }
     /// make a child from a wedge of chemists' brackets
@@ -156,7 +156,7 @@ namespace libint2 {
     make_child(const algebra::Wedge< BraketPair<F,CBra>, BraketPair<F,CKet> >& braket_wedge,
                const AuxIndexType& aux = AuxIndexType(),
                const OperType& oper = OperType()) {
-      const SafePtr<DGVertex>& i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(braket_wedge,aux,oper));
+      auto i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(braket_wedge,aux,oper));
       return rr_->add_child(i);
     }
     /// take a wedge product of various (linear combinations of) brakets
@@ -174,7 +174,7 @@ namespace libint2 {
       const size_t nprod = product_lc.size();
       for(unsigned int t=0; t<nprod; ++t) {
         const typename ProductLC::term_t& term = product_lc[t];
-        const SafePtr<DGVertex>& child = make_child(term.second,aux,oper);
+        auto child = make_child(term.second,aux,oper);
         if (rr_->is_simple()) {
           if (rr_->expr_)
             rr_->expr_ += term.first * child;
