@@ -60,6 +60,25 @@ namespace libint2 {
           cartindex[0][0][0] = 0;
           continue;
         }
+        /// 12/15/2011 GAMESS ordering for g functions different from what I had assumed before (thanks to Luke Roskop)
+        if (am == 4) {
+          cartindex[4][4][0] = 0;
+          cartindex[4][0][4] = 1;
+          cartindex[4][0][0] = 2;
+          cartindex[4][3][1] = 3;
+          cartindex[4][3][0] = 4;
+          cartindex[4][1][3] = 5;
+          cartindex[4][0][3] = 6;
+          cartindex[4][1][0] = 7;
+          cartindex[4][0][1] = 8;
+          cartindex[4][2][2] = 9;
+          cartindex[4][2][0] = 10;
+          cartindex[4][0][2] = 11;
+          cartindex[4][2][1] = 12;
+          cartindex[4][1][2] = 13;
+          cartindex[4][1][1] = 14;
+          continue;
+        }
 
         unsigned int current_index = 0;
         unsigned int qn[3] = { 0, 0, 0 };
@@ -112,7 +131,7 @@ namespace libint2 {
   template <unsigned int lmax> struct CGShellOrderingGenerator<CGShellOrdering_ORCA,lmax> {
     static void compute(int (&cartindex)[lmax+1][lmax+1][lmax+1]) {
 
-      // identical to GAMESS for s through f functions, similar to GAMESS for g functions
+      // identical to GAMESS for s through g functions
       // identical to standard for h and higher
       CGShellOrderingGenerator<CGShellOrdering_Standard,lmax>::compute(cartindex);
 
