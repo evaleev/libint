@@ -149,8 +149,30 @@ esac
 # can be used in the future to exclude source directories
 EXCLUDED_DIRS=
 
+#AC_ARG_ENABLE(1body,
+#[  --enable-1body=N        Compile with support for up to N-th derivatives of 1-body integrals],
+#[
+#case $enableval in
+#  yes)
+#    INCLUDE_ONEBODY=0
+#  ;;
+#  no)
+#    INCLUDE_ONEBODY=no
+#  ;;
+#  *)
+#    if test $enableval -lt 0; then
+#      AC_MSG_ERROR([Invalid value for --enable-1body ($enableval)])
+#    fi
+#    INCLUDE_ONEBODY=$enableval
+#  ;;
+#esac
+#],[
+#    INCLUDE_ONEBODY=0
+#]
+#)
+
 AC_ARG_ENABLE(eri,
-[  --enable-eri=N          Compile with support for up to N-th ERI derivatives],
+[  --enable-eri=N          Compile with support for up to N-th derivatives of electron repulsion integrals],
 [
 case $enableval in
   yes)
@@ -161,7 +183,7 @@ case $enableval in
   ;;
   *)
     if test $enableval -lt 0; then
-      AC_MSG_ERROR([Invalid value for --enable-eri ($withval)])
+      AC_MSG_ERROR([Invalid value for --enable-eri ($enableval)])
     fi
     INCLUDE_ERI=$enableval
   ;;
@@ -171,8 +193,52 @@ esac
 ]
 )
 
+AC_ARG_ENABLE(eri3,
+[  --enable-eri3=N         Compile with support for up to N-th derivatives of 3-center electron repulsion integrals],
+[
+case $enableval in
+  yes)
+    INCLUDE_ERI3=0
+  ;;
+  no)
+    INCLUDE_ERI3=no
+  ;;
+  *)
+    if test $enableval -lt 0; then
+      AC_MSG_ERROR([Invalid value for --enable-eri3 ($enableval)])
+    fi
+    INCLUDE_ERI3=$enableval
+  ;;
+esac
+],[
+    INCLUDE_ERI3=0
+]
+)
+
+AC_ARG_ENABLE(eri2,
+[  --enable-eri3=N         Compile with support for up to N-th derivatives of 2-center electron repulsion integrals],
+[
+case $enableval in
+  yes)
+    INCLUDE_ERI2=0
+  ;;
+  no)
+    INCLUDE_ERI2=no
+  ;;
+  *)
+    if test $enableval -lt 0; then
+      AC_MSG_ERROR([Invalid value for --enable-eri2 ($enableval)])
+    fi
+    INCLUDE_ERI2=$enableval
+  ;;
+esac
+],[
+    INCLUDE_ERI2=0
+]
+)
+
 AC_ARG_ENABLE(g12,
-[  --enable-g12=N           Compile with support for N-th derivatives of MP2-F12 energies with GTG factors],
+[  --enable-g12=N           Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors],
 [
 case $enableval in
   yes)
@@ -183,7 +249,7 @@ case $enableval in
   ;;
   *)
     if test $enableval -lt 0; then
-      AC_MSG_ERROR([Invalid value for --enable-g12 ($withval)])
+      AC_MSG_ERROR([Invalid value for --enable-g12 ($enableval)])
     fi
     INCLUDE_G12=$enableval
   ;;
@@ -193,30 +259,8 @@ esac
 ]
 )
 
-AC_ARG_ENABLE(geng12,
-[  --enable-geng12=N        Compile with support for N-th derivatives of MP2-F12 energies with general GTG factors],
-[
-case $enableval in
-  yes)
-    INCLUDE_GENG12=0
-  ;;
-  no)
-    INCLUDE_GENG12=no
-  ;;
-  *)
-    if test $enableval -lt 0; then
-      AC_MSG_ERROR([Invalid value for --enable-geng12 ($withval)])
-    fi
-    INCLUDE_GENG12=$enableval
-  ;;
-esac
-],[
-    INCLUDE_GENG12=no
-]
-)
-
 AC_ARG_ENABLE(g12dkh,
-[  --enable-g12dkh=N           Compile with support for N-th derivatives],
+[  --enable-g12dkh=N           Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors],
 [
 case $enableval in
   yes)
@@ -227,7 +271,7 @@ case $enableval in
   ;;
   *)
     if test $enableval -lt 0; then
-      AC_MSG_ERROR([Invalid value for --enable-g12dkh ($withval)])
+      AC_MSG_ERROR([Invalid value for --enable-g12dkh ($enableval)])
     fi
     INCLUDE_G12DKH=$enableval
   ;;
@@ -289,6 +333,66 @@ if test X$INCLUDE_ERI != Xno; then
   AC_SUBST(ERI_OPT_AM)
   AC_DEFINE_UNQUOTED(ERI_MAX_AM,$ERI_MAX_AM)
   AC_DEFINE_UNQUOTED(ERI_OPT_AM,$ERI_OPT_AM)
+fi
+
+# check max am for 3-center ERIs, if needed
+ERI3_MAX_AM=$LIBINT_MAX_AM
+AC_ARG_WITH(eri3-max-am,
+[  --with-eri3-max-am=N     Support 3-center ERIs for Gaussians of angular momentum up to N.],
+if test $withval -le 0; then
+  AC_MSG_ERROR([Invalid value for --with-eri3-max-am ($withval)])
+else
+  ERI3_MAX_AM=$withval
+fi
+if test $ERI3_MAX_AM -ge 8; then
+  AC_MSG_ERROR([Value for --with-eri3-max-am too high ($withval). Are you sure you know what you are doing?])
+fi
+)
+
+ERI3_OPT_AM=$LIBINT_OPT_AM
+AC_ARG_WITH(eri3-opt-am,
+[  --with-eri3-opt-am=N      Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).],
+if test $withval -le $ERI3_MAX_AM; then
+  ERI3_OPT_AM=$withval
+fi
+)
+
+if test X$INCLUDE_ERI3 != Xno; then
+  AC_DEFINE_UNQUOTED(INCLUDE_ERI3,$INCLUDE_ERI3)
+  AC_SUBST(ERI3_MAX_AM)
+  AC_SUBST(ERI3_OPT_AM)
+  AC_DEFINE_UNQUOTED(ERI3_MAX_AM,$ERI3_MAX_AM)
+  AC_DEFINE_UNQUOTED(ERI3_OPT_AM,$ERI3_OPT_AM)
+fi
+
+# check max am for 2-center ERIs, if needed
+ERI2_MAX_AM=$LIBINT_MAX_AM
+AC_ARG_WITH(eri2-max-am,
+[  --with-eri2-max-am=N     Support 2-center ERIs for Gaussians of angular momentum up to N.],
+if test $withval -le 0; then
+  AC_MSG_ERROR([Invalid value for --with-eri2-max-am ($withval)])
+else
+  ERI2_MAX_AM=$withval
+fi
+if test $ERI2_MAX_AM -ge 8; then
+  AC_MSG_ERROR([Value for --with-eri2-max-am too high ($withval). Are you sure you know what you are doing?])
+fi
+)
+
+ERI2_OPT_AM=$LIBINT_OPT_AM
+AC_ARG_WITH(eri2-opt-am,
+[  --with-eri2-opt-am=N      Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am).],
+if test $withval -le $ERI2_MAX_AM; then
+  ERI2_OPT_AM=$withval
+fi
+)
+
+if test X$INCLUDE_ERI2 != Xno; then
+  AC_DEFINE_UNQUOTED(INCLUDE_ERI2,$INCLUDE_ERI2)
+  AC_SUBST(ERI2_MAX_AM)
+  AC_SUBST(ERI2_OPT_AM)
+  AC_DEFINE_UNQUOTED(ERI2_MAX_AM,$ERI2_MAX_AM)
+  AC_DEFINE_UNQUOTED(ERI2_OPT_AM,$ERI2_OPT_AM)
 fi
 
 # check max am for G12 integrals, if needed
@@ -360,33 +464,6 @@ if test "X$INCLUDE_G12" != "Xno"; then
   AC_DEFINE_UNQUOTED(G12_MAX_AM,$G12_MAX_AM)
   AC_DEFINE_UNQUOTED(G12_OPT_AM,$G12_OPT_AM)
   AC_DEFINE_UNQUOTED(SUPPORT_T1G12,$SUPPORT_T1G12)
-fi
-
-# check max am for GENG12 integrals, if needed
-GENG12_MAX_AM=$LIBINT_MAX_AM
-AC_ARG_WITH(geng12-max-am,
-[  --with-geng12-max-am=N    Support integrals for general G12 methods of angular momentum up to N.],
-if test $withval -le 0; then
-  AC_MSG_ERROR([Invalid value for --with-geng12-max-am ($withval)])
-else
-  GENG12_MAX_AM=$withval
-fi
-)
-
-GENG12_OPT_AM=$LIBINT_OPT_AM
-AC_ARG_WITH(geng12-opt-am,
-[  --with-geng12-opt-am=N    Optimize general G12 integrals for up to angular momentum N (N <= max-am).],
-if test $withval -le $GENG12_MAX_AM; then
-  GENG12_OPT_AM=$withval
-fi
-)
-
-if test "X$INCLUDE_GENG12" != "Xno"; then
-  AC_DEFINE_UNQUOTED(INCLUDE_GENG12,$INCLUDE_GENG12)
-  AC_SUBST(GENG12_MAX_AM)
-  AC_SUBST(GENG12_OPT_AM)
-  AC_DEFINE_UNQUOTED(GENG12_MAX_AM,$GENG12_MAX_AM)
-  AC_DEFINE_UNQUOTED(GENG12_OPT_AM,$GENG12_OPT_AM)
 fi
 
 # check max am for G12DKH integrals, if needed

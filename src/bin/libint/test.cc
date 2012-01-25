@@ -102,7 +102,7 @@ namespace {
     // set default dims
     ImplicitDimensions::set_default_dims(cparams);
 
-#if 0
+#if 1
     RunTest(test0,"iterators");
 #endif
 #if 0
@@ -126,7 +126,7 @@ namespace {
 #if 0
     RunTest(test7,"shell-set RR generation");
 #endif
-#if 1
+#if 0
     RunTest(test8,"congracted G12 integral build");
 #endif
 

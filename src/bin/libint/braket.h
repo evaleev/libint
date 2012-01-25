@@ -368,12 +368,19 @@ namespace libint2 {
     size_ = 0;
   }
 
+  /// This is the implementation of the Braket concept used by GenIntegralSet_1_1
+  // really need to have typedef template!
+  template <typename BFS>
+    struct DefaultOnePBraket {
+      /// This defines which Braket implementation to use
+      typedef ArrayBraket<BFS,1> Result;
+    };
+
   /// This is the implementation of the Braket concept used by GenIntegralSet_11_11
   // really need to have typedef template!
   template <typename BFS>
     struct DefaultTwoPBraket {
       /// This defines which Braket implementation to use
-      //typedef VectorBraket<BFS> Result;
       typedef ArrayBraket<BFS,2> Result;
     };
 

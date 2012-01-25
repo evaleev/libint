@@ -53,7 +53,7 @@ run_test:: test
 	./test
 
 test: $(TESTCXXOBJ) $(LIBTARGET) buildtest.o
-	$(CXX) -o $@ $(LDFLAGS) $^
+	$(CXX) -o $@ $(LDFLAGS) $(SYSLIBS) $^
 
 $(LIBTARGET): $(LIBOBJ)
 	/bin/rm -f $@

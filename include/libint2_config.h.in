@@ -34,23 +34,47 @@
 /* Max optimized AM */
 #undef LIBINT_OPT_AM
 
+/* Support 1-body derivatives up to this order */
+#undef INCLUDE_ONEBODY
+
 /* Support ERI derivatives up to this order */
 #undef INCLUDE_ERI
+
+/* Support 3-center ERI derivatives up to this order */
+#undef INCLUDE_ERI3
+
+/* Support 2-center ERI derivatives up to this order */
+#undef INCLUDE_ERI2
 
 /* Support G12 derivatives up to this order */
 #undef INCLUDE_G12
 
-/* Support general G12 derivatives up to this order */
-#undef INCLUDE_GENG12
-
 /* Support G12DKH derivatives up to this order */
 #undef INCLUDE_G12DKH
+
+/* Max AM for one-body ints */
+#undef ONEBODY_MAX_AM
+
+/* Max optimized AM for one-body ints */
+#undef ONEBODY_OPT_AM
 
 /* Max AM for ERI */
 #undef ERI_MAX_AM
 
 /* Max optimized AM for ERI */
 #undef ERI_OPT_AM
+
+/* Max AM for 3-center ERI */
+#undef ERI3_MAX_AM
+
+/* Max optimized AM for 3-center ERI */
+#undef ERI3_OPT_AM
+
+/* Max AM for 2-center ERI */
+#undef ERI2_MAX_AM
+
+/* Max optimized AM for 2-center ERI */
+#undef ERI2_OPT_AM
 
 /* Max AM for G12 method integrals */
 #undef G12_MAX_AM
@@ -60,12 +84,6 @@
 
 /* Support [Ti,G12] ? */
 #undef SUPPORT_T1G12
-
-/* Max AM for G12 method integrals */
-#undef GENG12_MAX_AM
-
-/* Max optimized AM for G12 method integrals */
-#undef GENG12_OPT_AM
 
 /* Max AM for G12DKH method integrals */
 #undef G12DKH_MAX_AM

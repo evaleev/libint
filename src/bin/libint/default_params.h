@@ -1,12 +1,12 @@
 
+#ifndef _libint2_src_bin_libint_defaultparams_h_
+#define _libint2_src_bin_libint_defaultparams_h_
+
 #include <ostream>
 #include <string>
 #include <map>
 #include <vector>
 #include <smart_ptr.h>
-
-#ifndef _libint2_src_bin_libint_defaultparams_h_
-#define _libint2_src_bin_libint_defaultparams_h_
 
 /**
   Defaults definitions for various parameters assumed by Libint
@@ -28,6 +28,8 @@ namespace libint2 {
     unsigned int max_am(const std::string& t = "default") const;
     /// returns max AM for which to produce optimal code for task t
     unsigned int max_am_opt(const std::string& t = "default") const;
+    /// returns number of basis functions in integrals for task t
+    unsigned int num_bf(const std::string& t = "default") const;
     /// returns max vector length
     unsigned int max_vector_length() const {
       return max_vector_length_;
@@ -77,6 +79,8 @@ namespace libint2 {
     void max_am(const std::string& t, unsigned int a);
     /// set max AM for task t
     void max_am_opt(const std::string& t, unsigned int a);
+    /// set num of basis functions for task t
+    void num_bf(const std::string& t, unsigned int a);
     /// set max vector length
     void max_vector_length(unsigned int a) {
       max_vector_length_ = a;
@@ -131,6 +135,8 @@ namespace libint2 {
       static const unsigned int max_am = 1;
       /// By default optimize general integrals for up to p-functions
       static const unsigned int max_am_opt = 1;
+      /// By default compute integrals with 4 basis functions
+      static const unsigned int num_bf = 4;
       /// Do not vectorize by default
       static const unsigned int max_vector_length = 1;
       /// Vectorize all body by default
@@ -160,6 +166,8 @@ namespace libint2 {
       unsigned int max_am;
       /// max AM for "optimized" integrals
       unsigned int max_am_opt;
+      /// number of basis functions
+      unsigned int num_bf;
     };
     /// Parameters for tasks
     std::map<std::string,TaskParameters> task_params_;

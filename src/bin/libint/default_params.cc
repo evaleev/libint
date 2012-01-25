@@ -43,6 +43,7 @@ CompilationParameters::print(std::ostream& os) const
     os << "Task " << tlabel << ":" << endl;
     os << "  MAX_AM         = " << max_am(tlabel) << endl;
     os << "  OPT_AM         = " << max_am_opt(tlabel) << endl;
+    os << "  NUM_BF         = " << num_bf(tlabel) << endl;
   }
 
   os << "MAX_VECTOR_LENGTH    = " << max_vector_length() << endl;
@@ -95,6 +96,19 @@ CompilationParameters::max_am_opt(const std::string& t) const
     return task_params_.find(default_task_name)->second.max_am_opt;
 }
 
+unsigned int
+CompilationParameters::num_bf(const std::string& t) const
+{
+  task_exists(t);
+
+  typedef std::map<std::string,TaskParameters>::const_iterator citer;
+  citer ti = task_params_.find(t);
+  if (ti != task_params_.end())
+    return ti->second.num_bf;
+  else
+    return task_params_.find(default_task_name)->second.num_bf;
+}
+
 void
 CompilationParameters::add_task(const std::string& t)
 {
@@ -132,6 +146,21 @@ CompilationParameters::max_am_opt(const std::string& t, unsigned int v)
   else {
     add_task(t);
     max_am_opt(t,v);
+  }
+}
+
+void
+CompilationParameters::num_bf(const std::string& t, unsigned int nbf)
+{
+  task_exists(t);
+
+  typedef std::map<std::string,TaskParameters>::iterator iter;
+  iter ti = task_params_.find(t);
+  if (ti != task_params_.end())
+    ti->second.num_bf = nbf;
+  else {
+    add_task(t);
+    num_bf(t,nbf);
   }
 }
 

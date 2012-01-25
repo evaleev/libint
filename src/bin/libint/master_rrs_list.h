@@ -67,6 +67,13 @@ namespace libint2 {
   typedef HRR<DummySymmIntegral_11_11_int,CGF,0,InKet,0,InBra,0> HRR_ba_11_Dummy_11_int;
   typedef HRR<DummySymmIntegral_11_11_int,CGF,1,InKet,0,InBra,0> HRR_dc_11_Dummy_11_int;
 
+#if LIBINT_SUPPORT_ONEBODYINTS
+  typedef VRR_1_OnePSep_1<CGShell,0,InBra> VRR_a_1_OnePSep_1_sh;
+  typedef VRR_1_OnePSep_1<CGF,0,InBra> VRR_a_1_OnePSep_1_int;
+  typedef VRR_1_OnePSep_1<CGShell,0,InKet> VRR_b_1_OnePSep_1_sh;
+  typedef VRR_1_OnePSep_1<CGF,0,InKet> VRR_b_1_OnePSep_1_int;
+#endif
+
   typedef VRR_11_TwoPRep_11<CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
   typedef VRR_11_TwoPRep_11<CGShell,1,InBra> VRR_c_11_TwoPRep_11_sh;
   typedef VRR_11_TwoPRep_11<CGF,0,InBra> VRR_a_11_TwoPRep_11_int;

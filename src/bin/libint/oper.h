@@ -178,6 +178,7 @@ namespace libint2 {
 
 //////////////////////////////
 
+  typedef OperatorProperties<1,false,PermutationalSymmetry::nonsymm> Nonmultiplicative1Body_Props;
   typedef OperatorProperties<2,true,PermutationalSymmetry::symm> MultiplicativeSymm2Body_Props;
   typedef OperatorProperties<2,true,PermutationalSymmetry::nonsymm> MultiplicativeNonsymm2Body_Props;
   typedef OperatorProperties<2,false,PermutationalSymmetry::symm> NonmultiplicativeSymm2Body_Props;
@@ -196,6 +197,33 @@ namespace libint2 {
     int hermitian(int i) const { assert(false); }
   };
   typedef GenOper< GenMultSymmOper_Descr<2>  > GenMultSymm2BodyOper;
+
+  /** OnePSep is a general one-body operator with separable (in cartesian sense) kernel
+  */
+  struct OnePSep_Descr : public Contractable<OnePSep_Descr> {
+    typedef Nonmultiplicative1Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "OnePSep"; }
+    std::string label() const { return "OnePSep"; }
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { assert(false); }
+  };
+  typedef GenOper<OnePSep_Descr> OnePSep;
+
+  /** OnePNonSep is a general one-body operator with non-separable (in cartesian sense) kernel
+  */
+  struct OnePNonSep_Descr : public Contractable<OnePNonSep_Descr> {
+    typedef Nonmultiplicative1Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "OnePNonSep"; }
+    std::string label() const { return "OnePNonSep"; }
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { assert(false); }
+  };
+  typedef GenOper<OnePNonSep_Descr> OnePNonSep;
+
 
   /** TwoPRep is the two-body repulsion operator.
   */
