@@ -174,9 +174,9 @@ namespace libint2 {
         iface->to_params(iface->macro_define("CGSHELL_ORDERING_INTV3",LIBINT_CGSHELL_ORDERING_INTV3));
         iface->to_params(iface->macro_define("CGSHELL_ORDERING_GAMESS",LIBINT_CGSHELL_ORDERING_GAMESS));
         iface->to_params(iface->macro_define("CGSHELL_ORDERING_ORCA",LIBINT_CGSHELL_ORDERING_ORCA));
-        iface->to_params(iface->macro_define("SHELLQUARTET_SET",LIBINT_SHELLQUARTET_SET));
-        iface->to_params(iface->macro_define("SHELLQUARTET_SET_STANDARD",LIBINT_SHELLQUARTET_SET_STANDARD));
-        iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELLQUARTET_SET_ORCA));
+        iface->to_params(iface->macro_define("SHELLQUARTET_SET",LIBINT_SHELL_SET));
+        iface->to_params(iface->macro_define("SHELLQUARTET_SET_STANDARD",LIBINT_SHELL_SET_STANDARD));
+        iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELL_SET_ORCA));
 
         // Generate set-level RR code
         generate_rr_code(os,cparams,

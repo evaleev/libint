@@ -2,7 +2,7 @@
 
 my $lmax = 3;
 my $ltotal_max = 10;
-my $shellquartet_set = @LIBINT_SHELLQUARTET_SET@;
+my $shellquartet_set = @LIBINT_SHELL_SET@;
 
 my @MakeVars = ("CXXGEN='icpc -m64' CXXGENFLAGS='-O3 -xSSSE3 -ansi-alias'",
 		"CXXGEN='icpc -m64' CXXGENFLAGS='-O3 -ansi-alias'",
@@ -27,10 +27,10 @@ for($la=0; $la<=$lmax; ++$la) {
         next if $ltotal == 0 || $ltotal >= $ltotal_max;
 
         my $skip;
-        if ($shellquartet_set == @LIBINT_SHELLQUARTET_SET_STANDARD@) {
+        if ($shellquartet_set == @LIBINT_SHELL_SET_STANDARD@) {
           $skip = ! ShellQuartetPredicateStandard($la,$lb,$lc,$ld);
         }
-        if ($shellquartet_set == @LIBINT_SHELLQUARTET_SET_ORCA@) {
+        if ($shellquartet_set == @LIBINT_SHELL_SET_ORCA@) {
           $skip = ! ShellQuartetPredicateOrca($la,$lb,$lc,$ld);
         }
         

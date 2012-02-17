@@ -7,10 +7,11 @@ dnl Process this file with autoconf to produce a configure script.
 define([AC_CACHE_LOAD], )dnl for debugging configure.in
 define([AC_CACHE_SAVE], )dnl for debugging configure.in
 AC_PREREQ(2.57)
-AC_INIT([Libint2],[libint_mmm_version],[eduard@valeyev.net],[libint2])
+AC_INIT([Libint2],[libint_mmm_version],[libint@valeyev.net],[libint2])
 AC_CONFIG_SRCDIR(src/bin/libint/rr.h)
 AC_CONFIG_HEADER(include/libint2_config.h)
 AC_CONFIG_AUX_DIR(bin)
+AC_CONFIG_MACRO_DIR([config])
 
 dnl --- Compiling C++ only ---
 AC_LANG(C++)
@@ -90,39 +91,45 @@ AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_INTV3,$LIBINT_CGSHELL_ORDERING_INTV3)
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_GAMESS,$LIBINT_CGSHELL_ORDERING_GAMESS)
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_ORCA,$LIBINT_CGSHELL_ORDERING_ORCA)
 
-LIBINT_SHELLQUARTET_SET_STANDARD=1   AC_SUBST(LIBINT_SHELLQUARTET_SET_STANDARD)
-LIBINT_SHELLQUARTET_SET_ORCA=2      AC_SUBST(LIBINT_SHELLQUARTET_SET_ORCA)
-libint_shellquartet_set=standard
-AC_ARG_WITH(shellquartet-set,
-[  --with-shellquartet-set     The library will support computation of shell quartets (ab|cd) sets subject to these restrictions:
+LIBINT_SHELL_SET_STANDARD=1   AC_SUBST(LIBINT_SHELL_SET_STANDARD)
+LIBINT_SHELL_SET_ORCA=2      AC_SUBST(LIBINT_SHELL_SET_ORCA)
+libint_shell_set=standard
+AC_ARG_WITH(shell-set,
+[  --with-shell-set     The library will support computation of shell sets sets subject to these restrictions:
                                standard -- standard ordering:
+                                           for (ab|cd):
                                            l(a) >= l(b),
                                            l(c) >= l(d),
-                                           l(a)+l(b) <= l(c)+l(d))
+                                           l(a)+l(b) <= l(c)+l(d)
+                                           for (b|cd):
+                                           l(c) >= l(d)
                                orca -- ORCA ordering:
+                                           for (ab|cd):
                                            l(a) <= l(b),
                                            l(c) <= l(d),
                                            l(a) < l(c) || (l(a) == l(c) && l(b) < l(d))
+                                           for (b|cd):
+                                           l(c) <= l(d)
                                The default is standard.],
 [
-libint_shellquartet_set=$withval
+libint_shell_set=$withval
 ])
-AC_MSG_RESULT([Will generate $libint_shellquartet_set shell quartet sets])
-case $libint_shellquartet_set in
+AC_MSG_RESULT([Will generate $libint_shell_set shell quartet sets])
+case $libint_shell_set in
   standard)
-    libint_shellquartet_set=$LIBINT_SHELLQUARTET_SET_STANDARD
+    libint_shell_set=$LIBINT_SHELL_SET_STANDARD
   ;;
   orca)
-    libint_shellquartet_set=$LIBINT_SHELLQUARTET_SET_ORCA
+    libint_shell_set=$LIBINT_SHELL_SET_ORCA
   ;;
   *)
-    AC_MSG_ERROR([Invalid value for --with-shellquartet-set ($withval)])
+    AC_MSG_ERROR([Invalid value for --with-shell-set ($withval)])
   ;;
 esac
-LIBINT_SHELLQUARTET_SET=$libint_shellquartet_set AC_SUBST(LIBINT_SHELLQUARTET_SET)
-AC_DEFINE_UNQUOTED(LIBINT_SHELLQUARTET_SET,$libint_shellquartet_set)
-AC_DEFINE_UNQUOTED(LIBINT_SHELLQUARTET_SET_STANDARD,$LIBINT_SHELLQUARTET_SET_STANDARD)
-AC_DEFINE_UNQUOTED(LIBINT_SHELLQUARTET_SET_ORCA,$LIBINT_SHELLQUARTET_SET_ORCA)
+LIBINT_SHELL_SET=$libint_shell_set AC_SUBST(LIBINT_SHELL_SET)
+AC_DEFINE_UNQUOTED(LIBINT_SHELL_SET,$libint_shell_set)
+AC_DEFINE_UNQUOTED(LIBINT_SHELL_SET_STANDARD,$LIBINT_SHELL_SET_STANDARD)
+AC_DEFINE_UNQUOTED(LIBINT_SHELL_SET_ORCA,$LIBINT_SHELL_SET_ORCA)
 
 AC_ARG_ENABLE(debug,
 [  --enable-debug          Compile with debugging options],

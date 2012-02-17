@@ -406,7 +406,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
   const uint contrdepth = rsqset.exp[0][0].size();
   const uint contrdepth3 = erievals.size();
 
-  const unsigned int dummy_center = (LIBINT_SHELLQUARTET_SET == LIBINT_SHELLQUARTET_SET_STANDARD) ? 1 : 0;
+  const unsigned int dummy_center = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD) ? 1 : 0;
   const double* A = &(rsqset.R[0][0]);
   const double* B = &(rsqset.R[0][0]);
   const double* C = &(rsqset.R[1][0]);
@@ -761,8 +761,8 @@ void prep_libint2(std::vector<LibintEval>& erievals,
   const uint contrdepth = rsqset.exp[0][0].size();
   const uint contrdepth2 = erievals.size();
 
-  const unsigned int dummy_center1 = (LIBINT_SHELLQUARTET_SET == LIBINT_SHELLQUARTET_SET_STANDARD) ? 1 : 0;
-  const unsigned int dummy_center2 = (LIBINT_SHELLQUARTET_SET == LIBINT_SHELLQUARTET_SET_STANDARD) ? 3 : 2;
+  const unsigned int dummy_center1 = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD) ? 1 : 0;
+  const unsigned int dummy_center2 = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD) ? 3 : 2;
   const double* A = &(rsqset.R[0][0]);
   const double* B = &(rsqset.R[0][0]);
   const double* C = &(rsqset.R[1][0]);

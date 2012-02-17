@@ -35,22 +35,36 @@
 using namespace std;
 using namespace libint2;
 
-enum ShellQuartetSet {
-  ShellQuartetSet_Standard = LIBINT_SHELLQUARTET_SET_STANDARD,
-  ShellQuartetSet_ORCA     = LIBINT_SHELLQUARTET_SET_ORCA
+enum ShellSetType {
+  ShellSetType_Standard = LIBINT_SHELL_SET_STANDARD,
+  ShellSetType_ORCA     = LIBINT_SHELL_SET_ORCA
 };
-template <ShellQuartetSet SQSet> struct ShellQuartetSetPredicate {
+template <ShellSetType ShSet> struct ShellQuartetSetPredicate {
   // return true if this set of angular momenta is included
   static bool value(int la, int lb, int lc, int ld);
 };
-template <> struct ShellQuartetSetPredicate<ShellQuartetSet_Standard> {
+template <> struct ShellQuartetSetPredicate<ShellSetType_Standard> {
   static bool value(int la, int lb, int lc, int ld) {
     return la >= lb && lc >= ld && la+lb <= lc+ld;
   }
 };
-template <> struct ShellQuartetSetPredicate<ShellQuartetSet_ORCA> {
+template <> struct ShellQuartetSetPredicate<ShellSetType_ORCA> {
   static bool value(int la, int lb, int lc, int ld) {
     return la <= lb && lc <= ld && ( la < lc || (la == lc && lb <= ld));
+  }
+};
+template <ShellSetType ShSet> struct ShellTripletSetPredicate {
+  // return true if this set of angular momenta is included
+  static bool value(int lb, int lc, int cd);
+};
+template <> struct ShellTripletSetPredicate<ShellSetType_Standard> {
+  static bool value(int lb, int lc, int ld) {
+    return lc >= ld;
+  }
+};
+template <> struct ShellTripletSetPredicate<ShellSetType_ORCA> {
+  static bool value(int lb, int lc, int ld) {
+    return lc <= ld;
   }
 };
 
@@ -188,7 +202,7 @@ void try_main (int argc, char* argv[])
   }
 #endif
 #ifdef INCLUDE_ERI3
-  for(unsigned int d=0; d<=0; ++d) {
+  for(unsigned int d=0; d<=INCLUDE_ERI3; ++d) {
     cparams->max_am( task_label("3eri", d) ,ERI3_MAX_AM);
     cparams->max_am_opt( task_label("3eri", d) ,ERI3_OPT_AM);
   }
@@ -197,7 +211,7 @@ void try_main (int argc, char* argv[])
   }
 #endif
 #ifdef INCLUDE_ERI2
-  for(unsigned int d=0; d<=0; ++d) {
+  for(unsigned int d=0; d<=INCLUDE_ERI2; ++d) {
     cparams->max_am( task_label("2eri", d) ,ERI2_MAX_AM);
     cparams->max_am_opt( task_label("2eri", d) ,ERI2_OPT_AM);
   }
@@ -294,9 +308,9 @@ void try_main (int argc, char* argv[])
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_INTV3",LIBINT_CGSHELL_ORDERING_INTV3));
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_GAMESS",LIBINT_CGSHELL_ORDERING_GAMESS));
   iface->to_params(iface->macro_define("CGSHELL_ORDERING_ORCA",LIBINT_CGSHELL_ORDERING_ORCA));
-  iface->to_params(iface->macro_define("SHELLQUARTET_SET",LIBINT_SHELLQUARTET_SET));
-  iface->to_params(iface->macro_define("SHELLQUARTET_SET_STANDARD",LIBINT_SHELLQUARTET_SET_STANDARD));
-  iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELLQUARTET_SET_ORCA));
+  iface->to_params(iface->macro_define("SHELLQUARTET_SET",LIBINT_SHELL_SET));
+  iface->to_params(iface->macro_define("SHELLQUARTET_SET_STANDARD",LIBINT_SHELL_SET_STANDARD));
+  iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELL_SET_ORCA));
   cparams->print(os);
 
 #ifdef INCLUDE_ONEBODY
@@ -623,7 +637,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (la+lb+lc+ld == 0)
             continue;
 
-          if (!ShellQuartetSetPredicate<static_cast<ShellQuartetSet>(LIBINT_SHELLQUARTET_SET)>::value(la,lb,lc,ld))
+          if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(LIBINT_SHELL_SET)>::value(la,lb,lc,ld))
             continue;
 
 #if STUDY_MEMORY_USAGE
@@ -742,7 +756,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (deriv_level == 0 && la == 0 && lb == 0 && lc == 0 && ld == 0)
             continue;
 
-          if (!ShellQuartetSetPredicate<static_cast<ShellQuartetSet>(LIBINT_SHELLQUARTET_SET)>::value(la,lb,lc,ld))
+          if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(LIBINT_SHELL_SET)>::value(la,lb,lc,ld))
             continue;
 
 #if STUDY_MEMORY_USAGE
@@ -890,9 +904,11 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 {
   const std::string task = task_label("3eri", deriv_level);
   const std::string task_uc = task_label("3ERI", deriv_level);
+  const std::string task_default("default");
   typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
   vector<CGShell*> shells;
-  unsigned int lmax = cparams->max_am(task);
+  const unsigned int lmax = cparams->max_am(task);
+  const unsigned int lmax_default = deriv_level > 0 ? cparams->max_am(task_default) : lmax;
   for(unsigned int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }
@@ -918,16 +934,20 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
 
   for(unsigned int lbra=0; lbra<=lmax; lbra++) {
-    for(unsigned int lc=0; lc<=lmax; lc++) {
-      for(unsigned int ld=0; ld<=lmax; ld++) {
+    for(unsigned int lc=0; lc<=lmax_default; lc++) {
+      for(unsigned int ld=0; ld<=lmax_default; ld++) {
 
           // skip ss|s integrals -- no need to involve LIBINT here
           if (deriv_level == 0 && lbra == 0 && lc == 0 && ld == 0)
             continue;
 
+          // eliminate some cases depending on the desired convention
+          if (!ShellTripletSetPredicate<static_cast<ShellSetType>(LIBINT_SHELL_SET)>::value(lbra,lc,ld))
+            continue;
+
           // I will use 4-center recurrence relations and integrals, and have one center carry an s function
           // unfortunately, depending on the direction in which the build goes it must be A(0) or B(1)
-          const unsigned int dummy_center = (LIBINT_SHELLQUARTET_SET == LIBINT_SHELLQUARTET_SET_ORCA) ? 0 : 1;
+          const unsigned int dummy_center = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 0 : 1;
 
 #if STUDY_MEMORY_USAGE
           const int lim = 1;
@@ -1108,8 +1128,8 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
           // I will use 4-center recurrence relations and integrals, and have two centers carry an s function
           // unfortunately, depending on the direction in which the build goes it must be A(0) and C(2) or B(1) and D(3)
-          const unsigned int dummy_center1 = (LIBINT_SHELLQUARTET_SET == LIBINT_SHELLQUARTET_SET_ORCA) ? 0 : 1;
-          const unsigned int dummy_center2 = (LIBINT_SHELLQUARTET_SET == LIBINT_SHELLQUARTET_SET_ORCA) ? 2 : 3;
+          const unsigned int dummy_center1 = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 0 : 1;
+          const unsigned int dummy_center2 = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 2 : 3;
 
 #if STUDY_MEMORY_USAGE
           const int lim = 1;
@@ -1488,7 +1508,7 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
             if (la+lb+lc+ld == 0)
               continue;
 
-            if (!ShellQuartetSetPredicate<static_cast<ShellQuartetSet>(LIBINT_SHELLQUARTET_SET)>::value(la,lb,lc,ld))
+            if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(LIBINT_SHELL_SET)>::value(la,lb,lc,ld))
               continue;
 
             using std::max;

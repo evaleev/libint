@@ -106,8 +106,8 @@
 /* Specifies the ordering of cartesian Gaussians in a shell. Allowed values are defined at the bottom of this file -- also see configure.in*/
 #undef LIBINT_CGSHELL_ORDERING
 
-/* Specifies the set of shell quartets generated. Allowed values are defined at the bottom of this file -- also see configure.in*/
-#undef LIBINT_SHELLQUARTET_SET
+/* Specifies the class of shell sets generated. Allowed values are defined at the bottom of this file -- also see configure.in*/
+#undef LIBINT_SHELL_SET
 
 /* User-defined float type */
 #undef LIBINT_USER_DEFINED_FLOAT
@@ -147,9 +147,9 @@
 #undef LIBINT_CGSHELL_ORDERING_GAMESS
 #undef LIBINT_CGSHELL_ORDERING_ORCA
 /*
-  Known sets of shell quartets
+  Known sets of shell sets
 */
-#undef LIBINT_SHELLQUARTET_SET_STANDARD
-#undef LIBINT_SHELLQUARTET_SET_ORCA
+#undef LIBINT_SHELL_SET_STANDARD
+#undef LIBINT_SHELL_SET_ORCA
 
 #endif 
