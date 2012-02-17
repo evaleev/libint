@@ -1,3 +1,6 @@
+/// This program tests Libint library by computing 2-body repulsion integrals (4, 3, and 2-center varieties)
+/// and (optionally) their derivatives using Libint and a dumb but fool-proof reference method
+
 #include <iostream>
 #include <cmath>
 
@@ -27,12 +30,15 @@ void test_3eri(unsigned int deriv_order);
 void test_2eri(unsigned int deriv_order);
 #endif
 
+/// give optional derivative order (default = 0, i.e. regular integrals)
 int main(int argc, char** argv) {
   assert(argc == 1 || argc == 2);
   const unsigned int deriv_order = (argc == 2) ? atoi(argv[1]) : 0u;
 
+  // static initialziation of the library (one needs to happen once per process)
   LIBINT2_PREFIXED_NAME(libint2_static_init)();
 
+  // run the tests
 #ifdef INCLUDE_ERI
   test_4eri(deriv_order);
 #endif
@@ -43,6 +49,7 @@ int main(int argc, char** argv) {
   test_2eri(deriv_order);
 #endif
 
+  // cleanup static library data (once per process)
   LIBINT2_PREFIXED_NAME(libint2_static_cleanup)();
 
   return 0;
@@ -85,7 +92,10 @@ void test_4eri(unsigned int deriv_order) {
       for (unsigned int l2 = 0; l2 <= lmax; ++l2) {
         for (unsigned int l3 = 0; l3 <= lmax; ++l3) {
 
-          // can compute this? skip, if not
+          // can compute this? skip, if not.
+          // there are many reason why Libint could not compute a type of integrals
+          // for example, Libint does not compute (ss|ss) integrals (although it does compute derivatives of (ss|ss)
+          // another reason is a given integral type is not unique and can be computed using other functions in Libint
           if (deriv_order == 0 && LIBINT2_PREFIXED_NAME(libint2_build_eri)[l0][l1][l2][l3] == 0)
             continue;
 #if INCLUDE_ERI >= 1
@@ -117,12 +127,7 @@ void test_4eri(unsigned int deriv_order) {
           const double* C = &(rsqset.R[2][0]);
           const double* D = &(rsqset.R[3][0]);
 
-          typedef SubIteratorBase<CGShell> iter;
-          SafePtr<iter> sh0_iter(new iter(sh0));
-          SafePtr<iter> sh1_iter(new iter(sh1));
-          SafePtr<iter> sh2_iter(new iter(sh2));
-          SafePtr<iter> sh3_iter(new iter(sh3));
-
+          // this prepares the data
           prep_libint2(inteval, rsqset, 0);
 
           cout << "Testing (" << sh0.label() << sh1.label() << "|"
@@ -132,6 +137,7 @@ void test_4eri(unsigned int deriv_order) {
           }
           cout << endl;
 
+          //  not use Libint to compute
           double scale_target = 1.0;
 #if LIBINT_ACCUM_INTS
           // if accumulating integrals, zero out first, then compute twice
@@ -165,6 +171,16 @@ void test_4eri(unsigned int deriv_order) {
                 &inteval[0]);
 #endif
 
+          // compare Libint integrals against the reference method
+          // since the reference implementation computes integrals one at a time (not one shell-set at a time)
+          // the outer loop is over the basis functions
+
+          typedef SubIteratorBase<CGShell> iter;
+          SafePtr<iter> sh0_iter(new iter(sh0));
+          SafePtr<iter> sh1_iter(new iter(sh1));
+          SafePtr<iter> sh2_iter(new iter(sh2));
+          SafePtr<iter> sh3_iter(new iter(sh3));
+
           bool success = true;
           int ijkl = 0;
           for (sh0_iter->init(); int(*sh0_iter); ++(*sh0_iter)) {
@@ -192,6 +208,9 @@ void test_4eri(unsigned int deriv_order) {
 
                   for (uint v = 0; v < veclen; v++) {
 
+                    //
+                    // compute reference integrals
+                    //
                     std::vector<double> ref_eri(nderiv, 0.0);
 
                     uint p0123 = 0;
@@ -229,6 +248,11 @@ void test_4eri(unsigned int deriv_order) {
                       }
                     }
 
+                    //
+                    // extract Libint integrals
+                    // for derivative integrals this involves
+                    // using translational invariance to reconstruct
+                    //
                     std::vector<double> new_eri;
                     if (deriv_order == 0)
                       new_eri.push_back( scale_target * inteval[0].targets[0][ijkl * veclen + v] );
@@ -303,6 +327,9 @@ void test_4eri(unsigned int deriv_order) {
                       }
                     }
 
+                    //
+                    // compare reference and libint integrals
+                    //
                     for (unsigned int di = 0; di < nderiv; ++di) {
                       if (fabs((ref_eri[di] - new_eri[di]) / new_eri[di]) > RELATIVE_DEVIATION_THRESHOLD) {
                         std::cout << "Elem " << ijkl << " di= " << di << " v="

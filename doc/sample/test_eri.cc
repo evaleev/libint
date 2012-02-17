@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 
   typedef unsigned int uint;
 
-  // this initializes internal Libint data structures -- must happen once in the program
+  // this initializes internal Libint data structures -- must happen once per process
   LIBINT2_PREFIXED_NAME(libint2_static_init)();
 
   // This example assumes that your library does not support for vectorization
@@ -80,6 +80,7 @@ int main(int argc, char** argv) {
   // To hide the details of allocation/deallocation I use std::vector<> here
   std::vector<Libint_t> inteval(contrdepth4);
   // array of Libint_t objects must be initialized prior to use -- pass the pointer to the first element of the array
+  // if you have multiple arrays (e.g. if you are using multiple threads) -- initialize each array here
   LIBINT2_PREFIXED_NAME( libint2_init_eri)(&inteval[0], ammax, 0);
 
   // I will evaluate shell sets of integrals of angular momentum up to ammmax
@@ -88,7 +89,7 @@ int main(int argc, char** argv) {
       for (uint am2 = 0; am2 <= ammax; ++am2) {
         for (uint am3 = 0; am3 <= ammax; ++am3) {
 
-          // Libint only provides code to computes a symmetry-unique subset of integrals
+          // Libint only provides code to computes a permutation-symmetry-unique subset of integrals
           // the default convention is to compute integrals (0 1|2 3) with am0 >= am1, am2 >= am3, and am2+am3 >= am0+am1
           // in general you will need to permute shells to satisfy this ordering
           // most production codes do this by precomputing "significant" shell pair lists
