@@ -1,4 +1,5 @@
 
+#include <cstdio>
 #include <functional>
 #include <fstream>
 #include <dg.h>
@@ -1154,7 +1155,12 @@ unsigned int min_size_to_alloc)
             !vptr->address_set()
         )
         ) {
-          vptr->set_address(memman_->alloc(vptr->size()));
+          const MemoryManager::Address address = memman_->alloc(vptr->size());
+          // if the vertex is just an alias, pass the address on
+          if (vptr->refers_to_another())
+            (*(vptr->first_exit_arc()))->dest()->set_address(address);
+          else
+            vptr->set_address(address);
         }
       }
     }
@@ -2144,7 +2150,8 @@ namespace libint2 {
       std::cout << "PrerequisitesExtractor: found candidate " << v->description() << std::endl;
 #endif
 
-#if 0 // this does not work when generating ssss sets
+#define EXTRACTINTEGRALSETS 1
+#if EXTRACTINTEGRALSETS
       // if this is an integral that was a member of a shell set, add the parent set to the prerequisite level
       bool member_of_shellset = false;
       SafePtr<DGVertex> parent_shellset;
