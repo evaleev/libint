@@ -322,6 +322,7 @@ namespace libint2 {
     // initialize cparams
     SafePtr<CompilationParameters> cparams(new CompilationParameters);
     cparams->max_am(complabel,max_am);
+    cparams->num_bf(complabel,4u);
     cparams->max_vector_length(veclen);
     cparams->vectorize_by_line(vec_by_line);
     cparams->count_flops(true);

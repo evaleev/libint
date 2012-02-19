@@ -168,6 +168,8 @@ namespace libint2 {
       unsigned int max_am_opt;
       /// number of basis functions
       unsigned int num_bf;
+
+      TaskParameters() : max_am(0u), max_am_opt(0u), num_bf(0u) {}
     };
     /// Parameters for tasks
     std::map<std::string,TaskParameters> task_params_;
