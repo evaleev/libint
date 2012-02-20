@@ -1191,11 +1191,29 @@ unsigned int min_size_to_alloc)
   // 1) if all targets are unrolled then need to identify which integrals are part of target sets and use += instead of =
   // 2) if no targets are unrolled then allocate extra space for the target quartets and, after code has been generated,
   //    accumulate target sets into those
+  //    EXCEPTION non new space for integral sets is needed if they are decontracted
   // 3) if some targets are not unrolled then still need the extra space. The targets which were not unrolled should be handled
   //    as usual, i.e. not accumulated -- accumulation happens at the end
   if (registry()->accumulate_targets()) {
-    // need extra buffers for targets if some are unrolled
-    const bool need_copies_of_targets = nonunrolled_targets(targets_);
+
+    // need extra buffers for targets if some are not unrolled ( and not decontracted)
+    //const bool need_copies_of_targets = nonunrolled_targets(targets_);
+#if HAVE_CXX11_LAMBDA
+    const bool need_copies_of_targets = std::find_if(targets_.begin(),
+                                                     targets_.end(),
+                                                     [](auto i){
+      return DecontractedIntegralSet()(*i) == false && UnrolledIntegralSet()(*i) == false;
+    });
+#else
+    bool need_copies_of_targets = false;
+    for(auto t=targets_.begin(); t!=targets_.end(); ++t) {
+      if (DecontractedIntegralSet()(*t) == false && UnrolledIntegralSet()(*t) == false) {
+        need_copies_of_targets = true;
+        break;
+      }
+    }
+#endif
+
     iregistry()->accumulate_targets_directly(!need_copies_of_targets);
 
     if (need_copies_of_targets) {
@@ -1238,35 +1256,52 @@ unsigned int min_size_to_alloc)
     SafePtr<DGArcRR> arcrr;
     // memory only needs to be managed for some quantities:
     // this conditional decides whether this vertex is on the stack
-    if (
+    bool need_to_allocate = true;
+
     // If symbol is set then the object is not on stack
-    !vertex->symbol_set() &&
+    need_to_allocate &=  not vertex->symbol_set();
+
     // if address is already set, no need to manage
-    !vertex->address_set() &&
+    need_to_allocate &=  not vertex->address_set();
+
     // precomputed objects don't go on stack
-    !vertex->precomputed() &&
-    // manage only if need to compute ..
-    vertex->need_to_compute() &&
-    // don't put on stack if smaller than or equal to min_size_to_alloc
+    need_to_allocate &= not vertex->precomputed();
+
+    // don't allocate on stack if smaller than or equal to min_size_to_alloc
     // two exceptions, however:
     // 1) it's a target
-    // 2) it's an unrolled integral set of size 1, whose only member is not a precomputed quantity
+    // 2) it's an unrolled integral set whose members are not precomputed quantities
     //    typically integral sets of size 1 are precomputed and don't need to be on stack,
-    //    however if they are not the integral will need to be stored somewhere and the rule for
+    //    however if they are not, the integral will need to be stored somewhere and the rule for
     //    assigning code symbols to members of unrolled integral sets requires the integral set
     //    to have an address assigned
-    (   vertex->size() > min_size_to_alloc ||
-        vertex->is_a_target() ||
-        (vertex->size() == 1 && vertex->num_exit_arcs() == 1 &&
-            ( (arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(*(vertex->first_exit_arc()))) != 0 ?
-                dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(arcrr->rr()) != 0 :
-                false ) &&
-            !(*(vertex->first_exit_arc()))->dest()->precomputed()
-        )
-    )
-    ) {
+    need_to_allocate &= ( vertex->size() > min_size_to_alloc ||
+                          vertex->is_a_target() ||
+                          (vertex->size() == vertex->num_exit_arcs() &&
+                              ( (arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(*(vertex->first_exit_arc()))) != 0 ?
+                                  dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(arcrr->rr()) != 0 :
+                                  false ) &&
+                                  !(*(vertex->first_exit_arc()))->dest()->precomputed()
+                          )
+    );
+
+    // if this is a member of unrolled integral set whose address or symbol is set, no need to allocate
+    if (need_to_allocate && vertex->num_entry_arcs() != 0) {
+      arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(*(vertex->first_entry_arc()));
+      if (arcrr) {
+        if (dynamic_pointer_cast<IntegralSet_to_Integrals_base,RecurrenceRelation>(arcrr->rr()) != 0) {
+          if (arcrr->orig()->symbol_set() || arcrr->orig()->address_set())
+            need_to_allocate = false;
+        }
+      }
+    }
+
+    if (need_to_allocate) {
       MemoryManager::Address addr = memman->alloc(vertex->size());
       vertex->set_address(addr);
+#if DEBUG
+      cout << "allocated " << vertex->description() << " at " << addr << " (size=" << vertex->size() << ")" << endl;
+#endif
 
       typedef DGVertex::ArcSetType::const_iterator aciter;
       const aciter abegin = vertex->first_exit_arc();
@@ -1290,9 +1325,9 @@ DirectedGraph::assign_symbols(const SafePtr<CodeContext>& context, const SafePtr
 {
   std::ostringstream os;
   const std::string null_str("");
-  //const std::string stack_name = registry()->stack_name();
-  // There must be a compiler/library/bug on OS X? The above fails... Valgrind under Linux shows no memory problems...
-  const std::string stack_name("stack");
+  const std::string stack_name = registry()->stack_name();
+  // There used to be a compiler/library/bug on OS X? The above failed... Valgrind under Linux shows no memory problems...
+  //const std::string stack_name("stack");
 
   // Generate the label for the rank of the low dimension
   std::string low_rank = dims->low_label();
@@ -1543,6 +1578,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   //
   // If accumulating integrals, check inteval's zero_out_targets. If set to 1 -- zero out accumulated targets
   //
+#if LIBINT_ACCUM_INTS
   if (registry()->accumulate_targets()) {
 
     const bool vecdim_is_static = dims->vecdim_is_static();
@@ -1586,6 +1622,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 
     os << "inteval->zero_out_targets = 0;" << std::endl << "}" << std::endl;
   }
+#endif
 
   std::string varname("hsi");
   SafePtr<ForLoop> hsi_loop(new ForLoop(context,varname,dims->high(),SafePtr<Entity>(new CTimeEntity<int>(0))));
@@ -1603,7 +1640,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   const unsigned int max_vector_length = context->cparams()->max_vector_length();
   const bool vectorize = (max_vector_length != 1);
   const bool vectorize_by_line = context->cparams()->vectorize_by_line();
-  const bool create_outer_vector_loop = !vectorize_by_line && !contains_nontrivial_rr();
+  const bool create_outer_vector_loop = !vectorize_by_line && !cannot_enclose_in_outer_vloop();
   varname = "vi";
   // outer vector loop
   SafePtr<ForLoop> outer_vloop;
@@ -1962,20 +1999,26 @@ DirectedGraph::update_func_names()
 }
 
 bool
-DirectedGraph::contains_nontrivial_rr() const
+DirectedGraph::cannot_enclose_in_outer_vloop() const
 {
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
     const int nchildren = current_vertex->num_exit_arcs();
     if (nchildren > 0) {
       arc_ptr aptr = *(current_vertex->first_exit_arc());
-      typedef RecurrenceRelation RR;
       SafePtr<DGArcRR> aptr_cast = dynamic_pointer_cast<DGArcRR,arc>(aptr);
       // if this is a RR
       if (aptr_cast != 0) {
         // and a non-trivial one
-        if (!aptr_cast->rr()->is_simple())
-          return true;
+        SafePtr<RecurrenceRelation> rr = aptr_cast->rr();
+        if (!rr->is_simple()) {
+          // if this is an Uncontract_Integral call, return false
+          SafePtr<Uncontract_Integral_base> rr_ucb_ptr = dynamic_pointer_cast<Uncontract_Integral_base,RecurrenceRelation>(rr);
+          if (rr_ucb_ptr)
+            return false;
+          else
+            return true;
+        }
       }
     }
     current_vertex = current_vertex->postcalc();

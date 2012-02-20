@@ -284,6 +284,8 @@ namespace libint2 {
       dg_prereq->registry()->uncontract(true);
       assert(cparams->contracted_targets() == true);
       dg_prereq->registry()->return_targets(false);
+      dg_prereq->registry()->accumulate_targets(true);
+      dg_prereq->registry()->stack_name("stack");
 
       // now is the "right" time to reset dg
       // reset graph of the previous computation so that the vertices that will be targets on the new graph

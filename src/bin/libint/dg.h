@@ -437,8 +437,11 @@ namespace libint2 {
         const SafePtr<ImplicitDimensions>& dims,
         const SafePtr<CodeSymbols>& args);
 
-    // Returns true if the traversal path contains a nontrivial RecurrenceRelation (i.e. not of IntegralSet_to_Integrals variety)
-    bool contains_nontrivial_rr() const;
+    /** Returns true if cannot enclose the code in a vector loop
+        Possible reason: the traversal path contains a RecurrenceRelation that generates a function call
+        (most do except IntegralSet_to_Integrals; \sa RecurrentRelation::is_simple() )
+        */
+    bool cannot_enclose_in_outer_vloop() const;
 
   };
 

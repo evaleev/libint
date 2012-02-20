@@ -14,6 +14,7 @@
 #include <algebra.h>
 #include <context.h>
 #include <dims.h>
+#include <bfset.h>
 
 using namespace std;
 
@@ -36,6 +37,7 @@ namespace libint2 {
   public:
     typedef I TargetType;
     typedef TargetType ChildType;
+    typedef typename I::BasisFunctionType BFSet;
     /// The type of expressions in which RecurrenceRelations result.
     typedef RecurrenceRelation::ExprType ExprType;
 
@@ -52,7 +54,8 @@ namespace libint2 {
     SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation's child()
     SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
-    // can't inline it -- will always generate a call
+    /// to inline this would require a unary operator (+=).
+    /// instead will always implement as a function call.
     bool is_simple() const {
       return false;
     }
@@ -137,18 +140,56 @@ namespace libint2 {
   std::string
   Uncontract_Integral<I>::spfunction_call(const SafePtr<CodeContext>& context,
                                           const SafePtr<ImplicitDimensions>& dims) const {
+
+    const unsigned int s = target_->size();
+    SafePtr<CTimeEntity<int> > bdim(new CTimeEntity<int>(s));
+    SafePtr<Entity> bvecdim;
+    bool vectorize = false;
+    if (!dims->vecdim_is_static()) {
+      vectorize = true;
+      SafePtr< RTimeEntity<EntityTypes::Int> > vecdim = dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(dims->vecdim());
+      bvecdim = vecdim * bdim;
+    }
+    else {
+      SafePtr< CTimeEntity<int> > vecdim = dynamic_pointer_cast<CTimeEntity<int>,Entity>(dims->vecdim());
+      vectorize = vecdim->value() == 1 ? false : true;
+      bvecdim = vecdim * bdim;
+    }
+
     ostringstream os;
     // contraction = reduction
-    os << "_libint2_static_api_inc1_short_("
-        << context->value_to_pointer(rr_target()->symbol()) << ","
-        << context->value_to_pointer(rr_child(0)->symbol()) << ","
-       << target_->size()
-       << ")" << context->end_of_stat() << endl;
+    if (vectorize == false || !TrivialBFSet<BFSet>::result || context->cparams()->vectorize_by_line()) {
+      os << "_libint2_static_api_inc1_short_("
+         << context->value_to_pointer(rr_target()->symbol()) << ","
+         << context->value_to_pointer(rr_child(0)->symbol()) << ","
+         << bvecdim->id()
+         << ")" << context->end_of_stat() << endl;
+    }
+    else { // blockwise vectorize for a single integral
+      os << "_libint2_static_api_inc1_short_("
+         << context->value_to_pointer(rr_target()->symbol()) << "+vi,"
+         << context->value_to_pointer(rr_child(0)->symbol()) << ",1)" << context->end_of_stat() << endl;
+    }
     unsigned int& nflops_ref = const_cast<unsigned int&>(nflops_);
     nflops_ref += target_->size();
 
     return os.str();
   }
+
+  /// return true if V is a decontracted IntegralSet
+  struct DecontractedIntegralSet : public std::unary_function<const SafePtr<DGVertex>&,bool> {
+    bool operator()(const SafePtr<DGVertex>& V) {
+      const unsigned int outdegree = V->num_exit_arcs();
+      if (outdegree == 0) return false;
+
+      const SafePtr<DGArc> arc0 = *(V->first_exit_arc());
+      // Is this DGArcRR?
+      const SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
+      if (arcrr == 0) return false;
+      const SafePtr<Uncontract_Integral_base> uib_ptr = dynamic_pointer_cast<Uncontract_Integral_base,RecurrenceRelation>(arcrr->rr());
+      return uib_ptr != 0;
+    }
+  };
 
 };
 

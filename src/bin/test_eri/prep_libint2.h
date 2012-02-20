@@ -66,6 +66,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
         for (uint p3 = 0; p3 < contrdepth; p3++, p0123++) {
 
           LibintEval* erieval = &erievals[p0123];
+          erieval->veclen = veclen;
 #if LIBINT2_FLOP_COUNT
           erieval->nflops = erievals[0].nflops;
 #endif
@@ -422,6 +423,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
       for (uint p2 = 0; p2 < contrdepth; p2++, p012++) {
 
           LibintEval* erieval = &erievals[p012];
+          erieval->veclen = veclen;
 #if LIBINT2_FLOP_COUNT
           erieval->nflops = erievals[0].nflops;
 #endif
@@ -777,6 +779,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
     for (uint p1 = 0; p1 < contrdepth; p1++, p01++) {
 
           LibintEval* erieval = &erievals[p01];
+          erieval->veclen = veclen;
 #if LIBINT2_FLOP_COUNT
           erieval->nflops = erievals[0].nflops;
 #endif
