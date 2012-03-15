@@ -54,7 +54,7 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   if (cparams_->contracted_targets())
     ph_ << macro_define("CONTRACTED_INTS",1);
   
-  ih_ << "#include <cstddef>" << endl
+  ih_ << "#ifdef __cplusplus\n# include <cstddef>\n#else\n# include <stddef.h>\n#endif" << endl
       << ctext_->code_prefix();
 
   oss_.str(null_str_);
