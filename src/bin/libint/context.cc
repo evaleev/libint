@@ -397,7 +397,7 @@ std::string
 CppCodeContext::start_expr() const
 {
   if (vectorize_)
-    return "for(int v=0; v<veclen; v++) {\n";
+    return "#ifdef __INTEL_COMPILER\n#pragma ivdep\n#endif\nfor(int v=0; v<veclen; v++) {\n";
   else
     return "";
 }
@@ -549,7 +549,7 @@ CppCodeContext::ptr_fp_type() const { return "LIBINT2_REALTYPE*"; }
 std::string
 CppCodeContext::const_modifier() const { return "const "; }
 std::string
-CppCodeContext::mutable_modifier() const { return "mutable "; }
+CppCodeContext::mutable_modifier() const { return "#ifdef __cplusplus\nmutable \n#endif"; }
 
 std::string
 CppCodeContext::inteval_type_name(const std::string& tlabel) const

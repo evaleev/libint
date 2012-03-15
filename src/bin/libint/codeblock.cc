@@ -64,7 +64,8 @@ ForLoop::open()
         << ctext->decldef(ctext->type_name<const int>(), varname_, sa_expr_);
   }
   else {
-    oss << "for(" << ctext->type_name<int>() << " " << varname_ << " = " << sa_expr_ << ctext->end_of_stat()
+    oss << "#ifdef __INTEL_COMPILER\n#pragma ivdep\n#endif\n"
+        << "for(" << ctext->type_name<int>() << " " << varname_ << " = " << sa_expr_ << ctext->end_of_stat()
     << " " << varname_ << "<" << lt_expr_ << ctext->end_of_stat() << " " << varname_ << "++) {" << endl;
   }
   return oss.str();
