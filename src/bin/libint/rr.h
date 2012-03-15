@@ -219,8 +219,9 @@ namespace libint2 {
     class Entity;
     template <class T> class RTimeEntity;
     template <class T> class CTimeEntity;
-    SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<Entity>& A,
-                                                    const SafePtr<DGVertex>& B);
+    // seems to confound Intel compiler on Linux?
+    //SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<Entity>& A,
+    //                                                const SafePtr<DGVertex>& B);
     template<typename T> SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<RTimeEntity<T> >& A,
                                                                          const SafePtr<DGVertex>& B);
     template<typename T> SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<CTimeEntity<T> >& A,

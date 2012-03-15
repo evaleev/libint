@@ -177,7 +177,7 @@ std::string
 CppCodeContext::code_prefix() const
 {
   if (cparams()->use_C_linking()) {
-    return "extern \"C\" {\n";
+    return "#ifdef __cplusplus\nextern \"C\" {\n#endif\n";
   }
   return "";
 }
@@ -186,7 +186,7 @@ std::string
 CppCodeContext::code_postfix() const
 {
   if (cparams()->use_C_linking()) {
-    return "};\n";
+    return "#ifdef __cplusplus\n};\n#endif\n";
   }
   return "";
 }
@@ -549,7 +549,7 @@ CppCodeContext::ptr_fp_type() const { return "LIBINT2_REALTYPE*"; }
 std::string
 CppCodeContext::const_modifier() const { return "const "; }
 std::string
-CppCodeContext::mutable_modifier() const { return "#ifdef __cplusplus\nmutable \n#endif"; }
+CppCodeContext::mutable_modifier() const { return "#ifdef __cplusplus\nmutable \n#endif\n"; }
 
 std::string
 CppCodeContext::inteval_type_name(const std::string& tlabel) const
