@@ -163,7 +163,7 @@ int main(int argc, char** argv)
 
               const double new_eri = scale_target * erieval[0].targets[di][ijkl*veclen+v];
 
-              if ( fabs(ref_eri[di]-new_eri) > 1.0E-12) {
+              if ( fabs(ref_eri[di]-new_eri) > 1.0E-10) {
                 std::cout << "Elem " << ijkl << " di= " << di << " v=" << v
                     << " : eri.cc = " << ref_eri[di]
                     << " libint = " << new_eri << endl;
