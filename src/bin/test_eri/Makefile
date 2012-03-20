@@ -22,8 +22,6 @@ CXXGENSRC = libint2_init.cc $(COMPUTE_XX_ERI_XX_SRC)
 CXXGENOBJ = $(CXXGENSRC:%.cc=%.o)
 LIBINTDIR = $(TOPDIR)/src/bin/libint
 LIBINT = $(LIBINTDIR)/libINT.a
-#CGSHELLOBJ = $(LIBINTDIR)/gauss.o $(LIBINTDIR)/iter.o $(LIBINTDIR)/policy.o \
-#$(LIBINTDIR)/policy_spec.o $(LIBINTDIR)/default_params.o
 CGSHELLOBJ = $(LIBINTDIR)/gauss.o $(LIBINTDIR)/iter.o $(LIBINTDIR)/policy.o \
 $(LIBINTDIR)/policy_spec.o $(LIBINTDIR)/default_params.o $(LIBINTDIR)/task.o
 
@@ -63,13 +61,23 @@ $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)  $(CGSHELLOBJ)
 $(TIMEV): $(CXXTIMEVOBJ)
 	$(LD) -o $@ $(LDFLAGS) $^
 
-# Source files for timer and tester are to be complied using CXXGEN
-$(TEST): CXX=$(CXXGEN)
-$(TEST): CXXFLAGS=$(CXXGENFLAGS)
-$(TEST): LD=$(CXXGEN)
-$(TIME): CXX=$(CXXGEN)
-$(TIME): CXXFLAGS=$(CXXGENFLAGS)
-$(TIME): LD=$(CXXGEN)
+# Assume that CXXGEN has a weaker frontend of the two (there is no reason to not use it then as CXX)
+# hence use it *only* to compile generated source if CXXGEN is compatible with CXX
+ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
+ # Only generated files to be complied using CXXGEN
+ $(CXXGENOBJ): CXX=$(CXXGEN)
+ $(CXXGENOBJ): CXXFLAGS=$(CXXGENFLAGS)
+ $(CXXGENOBJ): LD=$(CXXGEN)
+else
+# Tester is not needed in this case
+ #$(TEST): CXX=$(CXXGEN)
+ #$(TEST): CXXFLAGS=$(CXXGENFLAGS)
+ #$(TEST): LD=$(CXXGEN)
+ # Source files for timer are to be complied using CXXGEN
+ $(TIME): CXX=$(CXXGEN)
+ $(TIME): CXXFLAGS=$(CXXGENFLAGS)
+ $(TIME): LD=$(CXXGEN)
+endif
 $(TIMEV): CXX=$(CXXGEN)
 $(TIMEV): CXXFLAGS=$(CXXGENFLAGS)
 $(TIMEV): LD=$(CXXGEN)
