@@ -1201,9 +1201,9 @@ unsigned int min_size_to_alloc)
 #if HAVE_CXX11_LAMBDA
     const bool need_copies_of_targets = std::find_if(targets_.begin(),
                                                      targets_.end(),
-                                                     [](auto i){
-      return DecontractedIntegralSet()(*i) == false && UnrolledIntegralSet()(*i) == false;
-    });
+                                                     [](SafePtr<DGVertex> i){
+      return DecontractedIntegralSet()(i) == false && UnrolledIntegralSet()(i) == false;
+    }) != targets_.end();
 #else
     bool need_copies_of_targets = false;
     for(auto t=targets_.begin(); t!=targets_.end(); ++t) {
