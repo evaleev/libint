@@ -132,7 +132,7 @@ namespace libint2 {
 
       // configure the graph
       dg_xxxx->registry()->do_cse(need_to_optimize);
-      dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
+      dg_xxxx->registry()->condense_expr(condense_expr(size_to_unroll,cparams->max_vector_length()>1));
       // Need to accumulate integrals?
       dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
       dg_xxxx->registry()->unroll_threshold(size_to_unroll);
