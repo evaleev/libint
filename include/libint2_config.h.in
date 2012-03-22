@@ -139,6 +139,7 @@
 /* have C++ features? */
 #undef HAVE_CXX11
 #undef HAVE_CXX11_LAMBDA
+#undef HAVE_CXX11_ALIGN
 
 /* C++ compiler allows template with default params as template template parameter */
 #undef CXX_ALLOWS_DEFPARAMTEMPLATE_AS_TEMPTEMPPARAM

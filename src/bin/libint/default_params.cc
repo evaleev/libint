@@ -15,6 +15,7 @@ const std::string CompilationParameters::default_task_name("default");
 CompilationParameters::CompilationParameters() :
   max_vector_length_(Defaults::max_vector_length),
   vectorize_by_line_(Defaults::vectorize_by_line), unroll_threshold_(Defaults::unroll_threshold),
+  align_size_(Defaults::align_size),
   source_directory_(Defaults::source_directory), api_prefix_(Defaults::api_prefix),
   single_evaltype_(Defaults::single_evaltype),
   use_C_linking_(Defaults::use_C_linking),
@@ -49,6 +50,8 @@ CompilationParameters::print(std::ostream& os) const
   os << "MAX_VECTOR_LENGTH    = " << max_vector_length() << endl;
   if (max_vector_length() > 1)
     os << "VECTORIZE_BY_LINE    = " << (vectorize_by_line() ? "true" : "false") << endl;
+  if (align_size() > 0)
+    os << "ALIGN_SIZE           = " << align_size() << endl;
   os << "UNROLL_THRESH        = " << unroll_threshold() << endl;
   os << "SOURCE_DIRECTORY     = " << source_directory() << endl;
   os << "API_PREFIX           = " << api_prefix() << endl;

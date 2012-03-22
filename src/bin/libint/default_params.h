@@ -42,6 +42,14 @@ namespace libint2 {
     unsigned int unroll_threshold() const {
       return unroll_threshold_;
     }
+    /// returns alignment size (in units of sizeof(LIBINT_FLOAT))
+    unsigned int align_size() const {
+      return align_size_;
+    }
+    /// is alignment size set to default?
+    bool default_align_size() const {
+      return (align_size_ == UINT_MAX);
+    }
     /// returns directory path for the generated source
     const std::string& source_directory() const {
       return source_directory_;
@@ -88,6 +96,10 @@ namespace libint2 {
     /// set vectorize_by_line flag
     void vectorize_by_line(bool flag) {
       vectorize_by_line_ = flag;
+    }
+    /// set alignment size (in units of sizeof(LIBINT_FLOAT))
+    void align_size(unsigned int a) {
+      align_size_ = a;
     }
     /// set unroll threshold
     void unroll_threshold(unsigned int a) {
@@ -141,6 +153,8 @@ namespace libint2 {
       static const unsigned int max_vector_length = 1;
       /// Vectorize all body by default
       static const bool vectorize_by_line = false;
+      /// Use default alignment by default
+      static const unsigned int align_size = UINT_MAX;
       /// Produce quartet-level code by default
       static const unsigned int unroll_threshold = 1;
       /// Where to put generated library source
@@ -182,6 +196,10 @@ namespace libint2 {
     unsigned int max_vector_length_;
     /// whether to vectorize line-by-line
     bool vectorize_by_line_;
+    /** alignment size in units of sizeof(LIBINT2_REALTYPE).
+        UINT_MAX => standard compiler/library default for scalar code, veclen for vectorized code
+      */
+    unsigned int align_size_;
     /// unroll threshold
     unsigned int unroll_threshold_;
     /// source directory

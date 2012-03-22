@@ -902,23 +902,26 @@ AC_CHECK_HEADERS(limits.h stdint.h)
 dnl ---------- Check for posix_memalign ----------------------
 AC_CHECK_FUNC(posix_memalign,[have_posix_memalign=1],[have_posix_memalign=0])
 if test $have_posix_memalign != 0; then
- # control memory alignment if posix_memalign is found
+ # control memory alignment if posix_memalign is found 
  # if vectorization is off (default) then let the default alignment be determined by the system
  # if vectorization is on then the default alignment is veclen * sizeof(LIBINT_FLOAT)
- LIBINT_ALIGN_SIZE=0
- if test $LIBINT_VECTOR_LENGTH -gt 1; then
-  LIBINT_ALIGN_SIZE=$($LIBINT_VECTOR_LENGTH)
- fi
+ # see default_params.cc to see this logic in action
+ LIBINT_ALIGN_SIZE=default  # this will be interpreted as "use the default alignment"
  AC_ARG_WITH(align-size,
- [  --with-align-size       Specifies alignment of Libint data, in units of veclen*sizeof(LIBINT_FLOAT) bytes.],
+ [  --with-align-size       (EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT_FLOAT). Default is to use built-in heuristics.],
   [
-   LIBINT_ALIGN_SIZE=$withval
-   if test $LIBINT_ALIGN_SIZE -lt 1; then
-    AC_MSG_ERROR([Invalid alignment: $LIBINT_ALIGN_SIZE])
+   if test "X$withval" != "Xdefault"; then
+    LIBINT_ALIGN_SIZE=$withval
+    if test $LIBINT_ALIGN_SIZE -lt 1; then
+     AC_MSG_ERROR([Invalid alignment: $LIBINT_ALIGN_SIZE])
+    fi
    fi
   ]
  )
- if test $LIBINT_ALIGN_SIZE != 0; then
+ if test "X$LIBINT_ALIGN_SIZE" != "Xdefault"; then
+  AC_MSG_RESULT([will use custom memory alignment: $LIBINT_ALIGN_SIZE * sizeof(LIBINT2_REALSIZE)])
+ else
+  LIBINT_ALIGN_SIZE=0
   AC_DEFINE(LIBINT_ALIGN_SIZE)
  fi
 fi

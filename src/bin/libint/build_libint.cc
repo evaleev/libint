@@ -258,6 +258,9 @@ void try_main (int argc, char* argv[])
     cparams->vectorize_by_line(vectorize_by_line);
   }
 #endif
+#ifdef LIBINT_ALIGN_SIZE
+  cparams->align_size(LIBINT_ALIGN_SIZE);
+#endif
 #if LIBINT_FLOP_COUNT
   cparams->count_flops(true);
 #endif
