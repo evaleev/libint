@@ -111,5 +111,105 @@ namespace libint2 {
 
 #endif // QPX-only
 
+#if defined(__bgp__) || defined(__blrts__)
+
+namespace libint2 {
+
+  struct VectorDoubleHummerDouble {
+
+      typedef double T;
+      double _Complex d; //< represents 2 doubles
+
+      VectorDoubleHummerDouble() {}
+
+      VectorDoubleHummerDouble(T a) {
+        T a01[2]; a01[0] = a; a01[1] = a;
+        d = __lfpd(&a01[0]);
+      }
+
+      VectorDoubleHummerDouble& operator=(T a) {
+        T a01[2]; a01[0] = a; a01[1] = a;
+        d = __lfpd(&a01[0]);
+        return *this;
+      }
+
+      VectorDoubleHummerDouble& operator+=(VectorDoubleHummerDouble a) {
+        d = __fpadd(d, a.d);
+        return *this;
+      }
+
+      VectorDoubleHummerDouble& operator-=(VectorDoubleHummerDouble a) {
+        d = __fpsub(d, a.d);
+        return *this;
+      }
+
+      operator double() const {
+        double d0 = __creal(d);
+        return d0;
+      }
+
+  };
+
+  //@{ arithmetic operators
+  inline VectorDoubleHummerDouble operator*(double a, VectorDoubleHummerDouble b) {
+    VectorDoubleHummerDouble c;
+    c.d = __fxpmul(b.d, a);
+    return c;
+  }
+
+  inline VectorDoubleHummerDouble operator*(VectorDoubleHummerDouble a, double b) {
+    VectorDoubleHummerDouble c;
+    c.d = __fxpmul(a.d, b);
+    return c;
+  }
+
+  inline VectorDoubleHummerDouble operator*(int a, VectorDoubleHummerDouble b) {
+    if (a == 1)
+      return b;
+    else {
+      VectorDoubleHummerDouble c;
+      c.d = __fxpmul(b.d, (double)a);
+      return c;
+    }
+  }
+
+  inline VectorDoubleHummerDouble operator*(VectorDoubleHummerDouble a, int b) {
+    if (b == 1)
+      return a;
+    else {
+      VectorDoubleHummerDouble c;
+      c.d = __fxpmul(a.d, (double)b);
+      return c;
+    }
+  }
+
+  inline VectorDoubleHummerDouble operator*(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b) {
+    VectorDoubleHummerDouble c;
+    c.d = __fpmul(a.d, b.d);
+    return c;
+  }
+
+  inline VectorDoubleHummerDouble operator+(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b) {
+    VectorDoubleHummerDouble c;
+    c.d = __fpadd(a.d, b.d);
+    return c;
+  }
+
+  inline VectorDoubleHummerDouble operator-(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b) {
+    VectorDoubleHummerDouble c;
+    c.d = __fpsub(a.d, b.d);
+    return c;
+  }
+
+  /* there's no division DH instruction that I can see
+  inline VectorDoubleHummerDouble operator/(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b) {
+    VectorDoubleHummerDouble c;
+  }
+  */
+
+  //@}
+
+#endif // Double-Hummer
+
 #endif // header guard
 
