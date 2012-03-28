@@ -14,11 +14,11 @@ namespace libint2 {
       VectorQPXDouble() {}
 
       VectorQPXDouble(T a) {
-        d = vec_splats(a, a, a, a);
+        d = vec_splats(a);
       }
 
       VectorQPXDouble& operator=(T a) {
-        d = vec_splats(a, a, a, a);
+        d = vec_splats(a);
         return *this;
       }
 
