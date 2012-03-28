@@ -112,8 +112,8 @@
 /* Specifies the class of shell sets generated. Allowed values are defined at the bottom of this file -- also see configure.in*/
 #undef LIBINT_SHELL_SET
 
-/* User-defined float type */
-#undef LIBINT_USER_DEFINED_FLOAT
+/* User-defined real type */
+#undef LIBINT_USER_DEFINED_REAL
 
 /* Accumulate integrals to the buffer? */
 #undef LIBINT_ACCUM_INTS

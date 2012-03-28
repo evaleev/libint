@@ -110,7 +110,7 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
     oss_ << ctext_->type_name<void>() << " "
 	     << ctext_->label_to_name(cparams->api_prefix() + "libint2_init_" + tlabel)
 	     << "(" << ctext_->inteval_type_name(tlabel)
-	     << "* inteval, int max_am, LIBINT2_REALTYPE* buf)";
+	     << "* inteval, int max_am, void* buf)";
     std::string li_fdec(oss_.str());
     li_decls_.push_back(li_fdec);
   
@@ -164,6 +164,7 @@ Libint2Iface::~Libint2Iface()
   }
 
   // For each task, generate the evaluator type
+  th_ << "#include <vector.h>" << std::endl;
   generate_inteval_type(th_);
 
   // libint2_iface.h needs macros to help forming prefixed names in API
@@ -228,7 +229,7 @@ Libint2Iface::~Libint2Iface()
       const std::string& tlabel = t->label();
 
       li_ << li_decls_[i] << ctext_->open_block();
-      li_ << "if (buf != 0) inteval->stack = buf;" << std::endl << "else ";
+      li_ << "if (buf != 0) inteval->stack = reinterpret_cast<LIBINT2_REALTYPE*>(buf);" << std::endl << "else ";
       {
         std::string tmp = ctext_->label_to_name(cparams_->api_prefix() + "libint2_need_memory_" + tlabel) + "(max_am)";
         if (cparams_->default_align_size()) // no alignment control

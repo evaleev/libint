@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <climits>
 #include <smart_ptr.h>
 
 /**

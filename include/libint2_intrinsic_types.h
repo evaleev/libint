@@ -7,9 +7,9 @@
 
 #include <libint2_config.h>
 
-/* default LIBINT2 floating-point type is double, but user can specify a different type to use with configure */
-#ifdef LIBINT2_USER_DEFINED_FLOAT
-typedef LIBINT2_USER_DEFINED_FLOAT LIBINT2_FLOAT;
+/* default LIBINT2 real type is double, but user can specify a different type to use with configure */
+#ifdef LIBINT2_USER_DEFINED_REAL
+typedef LIBINT2_USER_DEFINED_REAL LIBINT2_FLOAT;
 #else
 typedef double LIBINT2_FLOAT;
 #endif

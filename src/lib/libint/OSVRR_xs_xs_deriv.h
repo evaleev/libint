@@ -149,7 +149,7 @@ namespace libint2 {
         --a[xyz];
 
         // redirect
-        const double *PA, *WP;
+        const LIBINT2_REALTYPE *PA, *WP;
         switch(xyz) {
           case x:
             PA = inteval->PA_x;

@@ -62,7 +62,7 @@ namespace libint2 {
         --b[xyz];
 
         // redirect
-        const double *PB, *WP;
+        const LIBINT2_REALTYPE *PB, *WP;
         switch(xyz) {
           case x:
             PB = inteval->PB_x;
@@ -210,7 +210,7 @@ namespace libint2 {
         --d[xyz];
 
         // redirect
-        const double *QD, *WQ;
+        const LIBINT2_REALTYPE *QD, *WQ;
         switch(xyz) {
           case x:
             QD = inteval->QD_x;

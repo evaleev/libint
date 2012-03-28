@@ -161,12 +161,12 @@ int main(int argc, char** argv)
 
             for(unsigned int di = 0; di<nderiv; ++di) {
 
-              const double new_eri = scale_target * erieval[0].targets[di][ijkl*veclen+v];
+              const LIBINT2_REALTYPE new_eri = scale_target * erieval[0].targets[di][ijkl*veclen+v];
 
-              if ( fabs(ref_eri[di]-new_eri) > 1.0E-10) {
+              if ( fabs(ref_eri[di]-(double)new_eri) > 1.0E-10) {
                 std::cout << "Elem " << ijkl << " di= " << di << " v=" << v
                     << " : eri.cc = " << ref_eri[di]
-                    << " libint = " << new_eri << endl;
+                    << " libint = " << (double) new_eri << endl;
                 success = false;
               }
             }

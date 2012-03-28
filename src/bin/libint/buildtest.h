@@ -347,6 +347,12 @@ namespace libint2 {
 #else
     cparams->contracted_targets(false);
 #endif
+#ifdef LIBINT_USER_DEFINED_REAL
+  {
+    const std::string realtype(LIBINT_USER_DEFINED_REAL);
+    cparams->realtype(realtype);
+  }
+#endif
 
     if (do_cse) {
       cparams->max_am_opt(complabel,max_am);

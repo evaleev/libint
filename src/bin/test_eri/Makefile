@@ -61,7 +61,7 @@ $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)  $(CGSHELLOBJ)
 $(TIMEV): $(CXXTIMEVOBJ)
 	$(LD) -o $@ $(LDFLAGS) $^
 
-# Assume that CXXGEN has a weaker frontend of the two (there is no reason to not use it then as CXX)
+# Assume that CXXGEN has the weaker frontend of the two (there is no reason to not use it then as CXX)
 # hence use it *only* to compile generated source if CXXGEN is compatible with CXX
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
  # Only generated files to be complied using CXXGEN

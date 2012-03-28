@@ -55,7 +55,7 @@ namespace libint2 {
         --a[xyz];
 
         // redirect
-        const double *pfac0;
+        const LIBINT2_REALTYPE *pfac0;
         switch(xyz) {
           case x:
             pfac0 = InBra ?

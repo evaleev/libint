@@ -276,9 +276,9 @@ void try_main (int argc, char* argv[])
   cparams->contracted_targets(false);
   CGShell::set_contracted_default_value(false);
 #endif
-#ifdef LIBINT_USER_DEFINED_FLOAT
+#ifdef LIBINT_USER_DEFINED_REAL
   {
-    const std::string realtype(LIBINT_USER_DEFINED_FLOAT);
+    const std::string realtype(LIBINT_USER_DEFINED_REAL);
     cparams->realtype(realtype);
   }
 #endif
