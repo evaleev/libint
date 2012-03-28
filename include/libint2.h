@@ -171,7 +171,7 @@ typedef struct {
    these macros define bzero, copy, and inc operations:
 */
 /** X[i] = 0 */
-#define _libint2_static_api_bzero_short_(X,nelem) for(int i=0; i < (nelem); ++i) { (X)[i] = 0; }
+#define _libint2_static_api_bzero_short_(X,nelem) for(int i=0; i < (nelem); ++i) { (X)[i] = 0.0; }
 /** X[i] = Y[i] */
 #define _libint2_static_api_copy_short_(X,Y,nelem) for(int i=0; i < (nelem); ++i) { (X)[i] = (Y)[i]; }
 /** X[i] = a*Y[i] */
