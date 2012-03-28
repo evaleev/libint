@@ -121,6 +121,7 @@ namespace libint2 {
 
 };
 
-# include <vector_x86.h>
+#include <vector_x86.h>
+#include <vector_ppc.h>
 
 #endif

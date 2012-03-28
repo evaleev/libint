@@ -321,7 +321,7 @@ namespace libint2 {
 
 };
 
-#endif // SSE-only
+#endif // AVX-only
 
 #endif // header guard
 
