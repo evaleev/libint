@@ -4,6 +4,11 @@
 
 #ifdef __VECTOR4DOUBLE__
 
+// clang on BG/Q uses this header file for intrinsics
+#if defined(__clang__)
+# include <qpxintrin.h>
+#endif
+
 namespace libint2 {
 
   struct VectorQPXDouble {
