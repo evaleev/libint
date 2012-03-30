@@ -2,12 +2,12 @@
 #ifndef _libint2_src_lib_libint_vectorppc_h_
 #define _libint2_src_lib_libint_vectorppc_h_
 
-#ifdef __VECTOR4DOUBLE__
-
 // clang on BG/Q uses this header file for intrinsics
-#if defined(__clang__)
+#if defined(__clang__) && defined(__bgq__)
 # include <qpxintrin.h>
 #endif
+
+#ifdef __VECTOR4DOUBLE__
 
 namespace libint2 {
 
@@ -111,7 +111,8 @@ namespace libint2 {
 
 #endif // QPX-only
 
-#if defined(__bgp__) || defined(__blrts__)
+// only xlC on BG/L and BG/P supports Double Hummer instructions, not sure how to check if they are enabled
+#if defined(__xlC__) && (defined(__bgp__) || defined(__blrts__))
 
 namespace libint2 {
 
