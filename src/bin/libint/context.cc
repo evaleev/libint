@@ -374,6 +374,97 @@ CppCodeContext::assign_binary_expr_(const std::string& name,
 }
 
 std::string
+CppCodeContext::assign_ternary_expr(const std::string& name,
+                                    const std::string& arg1,
+                                    const std::string& oper1,
+                                    const std::string& arg2,
+                                    const std::string& oper2,
+                                    const std::string& arg3) {
+  return assign_ternary_expr_(name, arg1, oper1, arg2, oper2, arg3, false);
+}
+
+std::string
+CppCodeContext::assign_ternary_expr_(const std::string& name,
+                                     const std::string& arg1,
+                                     const std::string& oper1,
+                                     const std::string& arg2,
+                                     const std::string& oper2,
+                                     const std::string& arg3,
+                                     bool accum)
+{
+  ostringstream oss;
+
+  // this should only be invoked for FMA, i.e. oper1 = "*" and oper2 = "+" or "-"
+  assert(oper1 == "*");
+  assert(oper2 == "+" || oper2 == "-");
+
+  if (vectorize_) {
+    std::string symb0 = unique_fp_name();
+    std::string symb1 = unique_fp_name();
+    std::string symb2 = unique_fp_name();
+    std::string symb3 = unique_fp_name();
+    std::string ptr0 = symbol_to_pointer(name);
+    std::string ptr1 = symbol_to_pointer(arg1);
+    std::string ptr2 = symbol_to_pointer(arg2);
+    std::string ptr3 = symbol_to_pointer(arg3);
+    bool symb1_is_a_const = (ptr1.length() == 0);
+    bool symb2_is_a_const = (ptr2.length() == 0);
+    bool symb3_is_a_const = (ptr3.length() == 0);
+    oss << "LIBINT2_REALTYPE* " << symb0 << " = "
+    << symbol_to_pointer(name) << end_of_stat() << endl;
+    oss << "__assume_aligned(" << symb0 << ", 16)" << end_of_stat() << endl;
+    if (!symb1_is_a_const) {
+      oss << "LIBINT2_REALTYPE* " << symb1 << " = "
+      <<  symbol_to_pointer(arg1) << end_of_stat() << endl;
+      oss << "__assume_aligned(" << symb1 << ", 16)" << end_of_stat() << endl;
+    }
+    if (!symb2_is_a_const) {
+      oss << "LIBINT2_REALTYPE* " << symb2 << " = "
+      << symbol_to_pointer(arg2) << end_of_stat() << endl;
+      oss << "__assume_aligned(" << symb2 << ", 16)" << end_of_stat() << endl;
+    }
+    if (!symb3_is_a_const) {
+      oss << "LIBINT2_REALTYPE* " << symb3 << " = "
+      <<  symbol_to_pointer(arg3) << end_of_stat() << endl;
+      oss << "__assume_aligned(" << symb3 << ", 16)" << end_of_stat() << endl;
+    }
+
+    oss << start_expr();
+    oss << symb0 << "[v]" << (accum ? " += " : " = ")
+        << "libint2::fma_" << (oper2 == "+" ? "plus" : "minus") << "("
+        << (symb1_is_a_const ? arg1 : symb1)
+        << (symb1_is_a_const ? " " : "[v] ")
+        << ","
+        << (symb2_is_a_const ? arg2 : symb2)
+        << (symb2_is_a_const ? "" : "[v]")
+        << ","
+        << (symb3_is_a_const ? arg3 : symb3)
+        << (symb3_is_a_const ? "" : "[v]")
+        << ")";
+  }
+  else {
+    oss << start_expr();
+    oss << name << (accum ? " += " : " = ")
+        << "libint2::fma_" << (oper2 == "+" ? "plus" : "minus") << "("
+        << arg1 << ", " << arg2 << ", " << arg3 << ")";
+  }
+  oss << end_of_stat() << endl;
+  oss << end_expr();
+
+  return oss.str();
+}
+
+std::string
+CppCodeContext::accumulate_ternary_expr(const std::string& name,
+                                        const std::string& arg1,
+                                        const std::string& oper1,
+                                        const std::string& arg2,
+                                        const std::string& oper2,
+                                        const std::string& arg3) {
+  return assign_ternary_expr_(name, arg1, oper1, arg2, oper2, arg3, true);
+}
+
+std::string
 CppCodeContext::symbol_to_pointer(const std::string& symbol)
 {
   std::string::size_type loc = symbol.find("stack");

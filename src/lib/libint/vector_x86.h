@@ -103,6 +103,30 @@ namespace libint2 {
     return c;
   }
 
+#if defined(__FMA__)
+  inline VectorSSEDouble fma_plus(VectorSSEDouble a, VectorSSEDouble b, VectorSSEDouble c) {
+    VectorSSEDouble d;
+    d.d = _mm_fmadd_pd(a.d, b.d, c.d);
+    return d;
+  }
+  inline VectorSSEDouble fma_minus(VectorSSEDouble a, VectorSSEDouble b, VectorSSEDouble c) {
+    VectorSSEDouble d;
+    d.d = _mm_fmsub_pd(a.d, b.d, c.d);
+    return d;
+  }
+#elif defined(__FMA4__)
+  inline VectorSSEDouble fma_plus(VectorSSEDouble a, VectorSSEDouble b, VectorSSEDouble c) {
+    VectorSSEDouble d;
+    d.d = _mm_macc_pd(a.d, b.d, c.d);
+    return d;
+  }
+  inline VectorSSEDouble fma_minus(VectorSSEDouble a, VectorSSEDouble b, VectorSSEDouble c) {
+    VectorSSEDouble d;
+    d.d = _mm_msub_pd(a.d, b.d, c.d);
+    return d;
+  }
+#endif
+
   //@}
 
 };
@@ -210,6 +234,30 @@ namespace libint2 {
     return c;
   }
 
+#if defined(__FMA__)
+  inline VectorSSEFloat fma_plus(VectorSSEFloat a, VectorSSEFloat b, VectorSSEFloat c) {
+    VectorSSEFloat d;
+    d.d = _mm_fmadd_ps(a.d, b.d, c.d);
+    return d;
+  }
+  inline VectorSSEFloat fma_minus(VectorSSEFloat a, VectorSSEFloat b, VectorSSEFloat c) {
+    VectorSSEFloat d;
+    d.d = _mm_fmsub_ps(a.d, b.d, c.d);
+    return d;
+  }
+#elif defined(__FMA4__)
+  inline VectorSSEFloat fma_plus(VectorSSEFloat a, VectorSSEFloat b, VectorSSEFloat c) {
+    VectorSSEFloat d;
+    d.d = _mm_macc_ps(a.d, b.d, c.d);
+    return d;
+  }
+  inline VectorSSEFloat fma_minus(VectorSSEFloat a, VectorSSEFloat b, VectorSSEFloat c) {
+    VectorSSEFloat d;
+    d.d = _mm_msub_ps(a.d, b.d, c.d);
+    return d;
+  }
+#endif
+
   //@}
 
 };
@@ -316,6 +364,31 @@ namespace libint2 {
     c.d = _mm256_div_pd(a.d, b.d);
     return c;
   }
+
+#if defined(__FMA__)
+  inline VectorAVXDouble fma_plus(VectorAVXDouble a, VectorAVXDouble b, VectorAVXDouble c) {
+    VectorAVXDouble d;
+    d.d = _mm256_fmadd_pd(a.d, b.d, c.d);
+    return d;
+  }
+  inline VectorAVXDouble fma_minus(VectorAVXDouble a, VectorAVXDouble b, VectorAVXDouble c) {
+    VectorAVXDouble d;
+    d.d = _mm256_fmsub_pd(a.d, b.d, c.d);
+    return d;
+  }
+#elif defined(__FMA4__)
+  inline VectorAVXDouble fma_plus(VectorAVXDouble a, VectorAVXDouble b, VectorAVXDouble c) {
+    VectorAVXDouble d;
+    d.d = _mm256_facc_pd(a.d, b.d, c.d);
+    return d;
+  }
+  inline VectorAVXDouble fma_minus(VectorAVXDouble a, VectorAVXDouble b, VectorAVXDouble c) {
+    VectorAVXDouble d;
+    d.d = _mm256_fsub_pd(a.d, b.d, c.d);
+    return d;
+  }
+#endif
+
 
   //@}
 

@@ -183,6 +183,10 @@ namespace libint2 {
     void prepare_to_traverse();
     /// tag() tags the vertex and returns the total number of tags this vertex has received
     unsigned int tag();
+    /// schedule() marks the vertex as scheduled, hence its code exists
+    void schedule() { scheduled_ = true; }
+    /// scheduled() returns true if the vertex has been scheduled
+    bool scheduled() const { return scheduled_; }
     /// Returns pointer to vertex to be computed after this vertex, 0 if this is the last vertex
     SafePtr<DGVertex> postcalc() const { return postcalc_; };
     /// Sets postcalc
@@ -251,13 +255,15 @@ namespace libint2 {
     void del_entry_arc(const SafePtr<DGArc>&);
 
     ////////
-    // These members used in traversal algorithms
+    // These members used in traversal and scheduling algorithms
     ////////
 
     /// num_tagged_arcs keeps track of how many entry arcs have been tagged during traversal
     unsigned int num_tagged_arcs_;
     /// Which DGVertex to be computed after this vertex (0, if this is the last vertex)
     SafePtr<DGVertex> postcalc_;
+    /// has it been scheduled?
+    bool scheduled_;
 
 
     ///////

@@ -1,6 +1,7 @@
 
 #include <cstdio>
 #include <functional>
+#include <utility>
 #include <fstream>
 #include <dg.h>
 #include <rr.h>
@@ -214,6 +215,35 @@ namespace{
       v->prepare_to_traverse();
     }
   };
+
+#if !HAVE_CXX11_LAMBDA
+  struct __compare_by_nparents {
+      bool operator()(DGVertex::ArcSetType::value_type a,
+                      DGVertex::ArcSetType::value_type b) {
+        return a->dest()->num_entry_arcs() < b->dest()->num_entry_arcs();
+      }
+  };
+#endif
+  std::vector<DGVertex::ArcSetType::value_type> sort_children_by_nparents(DGVertex::ArcSetType::const_iterator begin,
+                                 DGVertex::ArcSetType::const_iterator end) {
+    // std::sort works only for containers that support random access
+//    std::vector<DGVertex::ArcSetType::value_type> sorted_children;
+//    for(DGVertex::ArcSetType::const_iterator i=begin; i!=end; ++i)
+//      sorted_children.push_back(*i);
+    std::vector<DGVertex::ArcSetType::value_type> sorted_children(begin, end);
+#if HAVE_CXX11_LAMBDA
+    std::sort(sorted_children.begin(), sorted_children.end(),
+              [](DGVertex::ArcSetType::value_type a,
+                 DGVertex::ArcSetType::value_type b) {
+          return a->dest()->num_entry_arcs() < b->dest()->num_entry_arcs();
+        }
+      );
+#else
+    std::sort(sorted_children.begin(), sorted_children.end(),
+              __compare_by_nparents());
+#endif
+    return sorted_children;
+  }
 }
 
 void
@@ -223,6 +253,9 @@ DirectedGraph::prepare_to_traverse()
   foreach(__ptt);
 }
 
+/**
+ * Recursively traverse depth-first, once a node has been tagged by all of its parents schedule its computation
+ */
 void
 DirectedGraph::traverse()
 {
@@ -238,12 +271,22 @@ DirectedGraph::traverse()
       // First, since this target doesn't have parents we can schedule its computation
       schedule_computation(vptr);
 
-      typedef DGVertex::ArcSetType::const_iterator aciter;
-      const aciter abegin = (vptr)->first_exit_arc();
-      const aciter aend = (vptr)->plast_exit_arc();
-      for(aciter a=abegin; a!=aend; ++a) {
-        traverse_from(*a);
+      //
+      // traverse the rest of graph starting from each child
+      // traversal will start with children with the fewest parents
+      // an explanation for this heuristic: I want to compute the children with 1 parent after
+      // other children so that I can potentially fold their computation with
+      // addition/subtraction to produce FMA and other composite instructions
+      //
+      {
+        // std::sort works only fro containers that support random access
+        std::vector<DGVertex::ArcSetType::value_type> sorted_children = sort_children_by_nparents(vptr->first_exit_arc(),
+                                                                                                  vptr->plast_exit_arc());
+        for(auto a=sorted_children.begin(); a!=sorted_children.end(); ++a) {
+          traverse_from(*a);
+        }
       }
+
     }
   }
 }
@@ -281,11 +324,15 @@ DirectedGraph::traverse_from(const SafePtr<DGArc>& arc)
     else
       schedule_computation(dest);
 
-      typedef DGVertex::ArcSetType::const_iterator aciter;
-      const aciter abegin = dest->first_exit_arc();
-      const aciter aend = dest->plast_exit_arc();
-      for(aciter a=abegin; a!=aend; ++a)
+    {
+      // std::sort works only fro containers that support random access
+      std::vector<DGVertex::ArcSetType::value_type> sorted_children = sort_children_by_nparents(dest->first_exit_arc(),
+                                                                                                dest->plast_exit_arc());
+      for(auto a=sorted_children.begin(); a!=sorted_children.end(); ++a) {
         traverse_from(*a);
+      }
+    }
+
   }
 }
 
@@ -1668,6 +1715,10 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
   SafePtr<DGVertex> current_vertex = first_to_compute_;
   do {
 
+    // skip if already scheduled
+    if (current_vertex->scheduled())
+      goto next;
+
     // skip if this is a dummy vertex (i.e. refers to someone else)
     if (current_vertex->refers_to_another())
       goto next;
@@ -1721,14 +1772,65 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           cout << "        right_arg = " << right_arg->description() << endl;
 #endif
 
+          // can we generate a composite instruction, like FMA?
+          // - FMA: yes if:
+          //     o current_vertex is a multiply
+          //     o it has one parent and the parent is a +/- operator
+          //     o parent's other argument has been computed already
+          bool generate_fma = false;
+          SafePtr<oper_type> parent_oper_ptr;
+          SafePtr<DGVertex> fma_other_arg;
+          {
+            if (oper_ptr->type() == algebra::OperatorTypes::Times &&
+                oper_ptr->num_entry_arcs() == 1) {
+              parent_oper_ptr =
+                          dynamic_pointer_cast<oper_type, DGVertex> ( (*(oper_ptr->first_entry_arc()))->orig() );
+              if (parent_oper_ptr != 0) {
+                auto parent_oper_type = parent_oper_ptr->type();
+                if (parent_oper_type == algebra::OperatorTypes::Plus ||
+                    parent_oper_type == algebra::OperatorTypes::Minus) {
+                  auto arg1 = parent_oper_ptr->left();
+                  auto arg2 = parent_oper_ptr->right();
+                  if (arg1->scheduled() || arg2->scheduled()) {
+                    generate_fma = true;
+                    //std::cout << context->comment("CAN GENERATE FMA!!!") << endl;
+                    fma_other_arg = (arg1 == current_vertex) ? arg2 : arg1;
+
+                    // may need to declare the variable for the parent
+                    if (parent_oper_ptr->symbol_set()) {
+
+                      // Type declaration if this is an automatic variable
+                      // ids for automatic variables cannot have characters '[' or ']'
+                      const std::string& symbol = parent_oper_ptr->symbol();
+                      if (symbol.find('[') == std::string::npos) {
+                        os << context->declare(context->type_name<double> (),
+                                               parent_oper_ptr->symbol());
+#if CHECK_SAFETY
+                        parent_oper_type->declared(true);
+#endif
+                      }
+                    }
+
+                  }
+                }
+              }
+            }
+          }
+
           // convert symbols to their vector form if needed
           std::string curr_symbol = current_vertex->symbol();
           std::string left_symbol = left_arg->symbol();
           std::string right_symbol = right_arg->symbol();
+          std::string parent_symbol = generate_fma ? parent_oper_ptr->symbol() : "";
+          std::string fma_other_arg_symbol = generate_fma ? fma_other_arg->symbol() : "";
           if (vectorize) {
             curr_symbol = to_vector_symbol(current_vertex);
             left_symbol = to_vector_symbol(left_arg);
             right_symbol = to_vector_symbol(right_arg);
+            if (generate_fma) {
+              parent_symbol = to_vector_symbol(parent_oper_ptr);
+              fma_other_arg_symbol = to_vector_symbol(fma_other_arg);
+            }
           }
 #if CHECK_SAFETY
           bool left_not_declared = left_arg->need_to_compute() && !left_arg->declared();
@@ -1747,21 +1849,52 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           // the statement that does the work
           {
             if (accumulate_not_assign) {
-              os << context->accumulate_binary_expr(curr_symbol, left_symbol,
-                                                    oper_ptr->label(),
-                                                    right_symbol);
-              nflops_total += (1 + nflops(left_symbol) + nflops(right_symbol))
-                  + 1;
+
+              if (generate_fma) {
+                os << context->accumulate_ternary_expr(parent_symbol,
+                                                       left_symbol,
+                                                       oper_ptr->label(),
+                                                       right_symbol,
+                                                       parent_oper_ptr->label(),
+                                                       fma_other_arg_symbol
+                                                       );
+                nflops_total += 2; // extra flop due to ccumulation + extra flop due to FMA
+              }
+              else {
+                os << context->accumulate_binary_expr(curr_symbol, left_symbol,
+                                                      oper_ptr->label(),
+                                                      right_symbol);
+                nflops_total += 1; // extra flop due to accumulation
+              }
+
             } else {
-              os
-                  << context->assign_binary_expr(curr_symbol, left_symbol,
-                                                 oper_ptr->label(),
-                                                 right_symbol);
-              nflops_total += (1 + nflops(left_symbol) + nflops(right_symbol));
+              if (generate_fma) {
+                os << context->assign_ternary_expr(parent_symbol,
+                                                   left_symbol,
+                                                   oper_ptr->label(),
+                                                   right_symbol,
+                                                   parent_oper_ptr->label(),
+                                                   fma_other_arg_symbol
+                );
+                nflops_total += 1; // extra flop due to FMA
+              }
+              else {
+                os
+                << context->assign_binary_expr(curr_symbol, left_symbol,
+                                               oper_ptr->label(),
+                                               right_symbol);
+              }
             }
+
+            nflops_total += (1 + nflops(left_symbol) + nflops(right_symbol));
           }
           if (vectorize_by_line)
             os << line_vloop->close();
+
+          // if produced FMA, do not forget to mark the parent scheduled
+          if (generate_fma) {
+            parent_oper_ptr->schedule();
+          }
 
           goto next;
         }
@@ -1851,7 +1984,10 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
 #endif
     }
 
-    next: current_vertex = current_vertex->postcalc();
+    next:
+    current_vertex->schedule();
+    current_vertex = current_vertex->postcalc();
+
   } while (current_vertex != 0);
 
   os << outer_vloop->close();

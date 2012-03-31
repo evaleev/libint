@@ -41,6 +41,7 @@ exportdir::
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2.h $(TOPDIR)/$(EXPORTDIR)/include
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_intrinsic_types.h $(TOPDIR)/$(EXPORTDIR)/include
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_intrinsic_operations.h $(TOPDIR)/$(EXPORTDIR)/include
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/libint/util_types.h $(TOPDIR)/$(EXPORTDIR)/include
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/libint/cgshellinfo.h $(TOPDIR)/$(EXPORTDIR)/include
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/lib/libint/*.h $(TOPDIR)/$(EXPORTDIR)/include

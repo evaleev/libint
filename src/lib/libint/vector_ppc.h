@@ -105,6 +105,17 @@ namespace libint2 {
     return c;
   }
 
+  inline VectorQPXDouble fma_plus(VectorQPXDouble a, VectorQPXDouble b, VectorQPXDouble c) {
+    VectorQPXDouble d;
+    d.d = vec_madd(a.d, b.d, c.d);
+    return d;
+  }
+  inline VectorQPXDouble fma_minus(VectorQPXDouble a, VectorQPXDouble b, VectorQPXDouble c) {
+    VectorQPXDouble d;
+    d.d = vec_msub(a.d, b.d, c.d);
+    return d;
+  }
+
   //@}
 
 };
@@ -207,6 +218,17 @@ namespace libint2 {
     VectorDoubleHummerDouble c;
   }
   */
+
+  inline VectorDoubleHummerDouble fma_plus(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b, VectorDoubleHummerDouble c) {
+    VectorDoubleHummerDouble d;
+    d.d = __fmadd(a.d, b.d, c.d);
+    return d;
+  }
+  inline VectorDoubleHummerDouble fma_minus(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b, VectorDoubleHummerDouble c) {
+    VectorDoubleHummerDouble d;
+    d.d = __fmsub(a.d, b.d, c.d);
+    return d;
+  }
 
   //@}
 

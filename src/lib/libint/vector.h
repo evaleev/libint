@@ -4,6 +4,8 @@
 
 #include <unistd.h>
 
+#ifdef __cpluscplus
+
 namespace libint2 {
 
   // add __declspec(align(N*sizeof(T))) ?
@@ -120,6 +122,8 @@ namespace libint2 {
   //@}
 
 };
+
+#endif // C++ only
 
 #include <vector_x86.h>
 #include <vector_ppc.h>

@@ -284,12 +284,83 @@ dnl AC_CHECK_SIZEOF(void*)
 AC_SUBST(EXTRADEFINES)
 
 dnl ---------- Checks for header files. -----------
-
 AC_HEADER_STDC
 AC_CHECK_HEADERS(limits.h stdint.h)
 
 dnl -- Checks for typedefs, structures, and compiler characteristics. --
 AC_TYPE_SIZE_T
+
+dnl ---------- Check for posix_memalign ----------------------
+AC_CHECK_FUNC(posix_memalign,[have_posix_memalign=1],[have_posix_memalign=0])
+if test $have_posix_memalign != 0; then
+ # control memory alignment if posix_memalign is found 
+ # if vectorization is off (default) then let the default alignment be determined by the system
+ # if vectorization is on then the default alignment is veclen * sizeof(LIBINT2_REALTYPE)
+ # see default_params.cc to see this logic in action
+ LIBINT_ALIGN_SIZE=default  # this will be interpreted as "use the default alignment"
+ AC_ARG_WITH(align-size,
+ [  --with-align-size       (EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics.],
+  [
+   if test "X$withval" != "Xdefault"; then
+    LIBINT_ALIGN_SIZE=$withval
+    if test $LIBINT_ALIGN_SIZE -lt 1; then
+     AC_MSG_ERROR([Invalid alignment: $LIBINT_ALIGN_SIZE])
+    fi
+   fi
+  ]
+ )
+ if test "X$LIBINT_ALIGN_SIZE" != "Xdefault"; then
+  AC_MSG_RESULT([will use custom memory alignment: $LIBINT_ALIGN_SIZE * sizeof(LIBINT2_REALTYPE)])
+ else
+  LIBINT_ALIGN_SIZE=0
+  AC_DEFINE(LIBINT_ALIGN_SIZE)
+ fi
+fi
+
+dnl ------------------ Check if the given real type is usable -----------------------
+
+# extra includes may be needed in that case!
+if test "X$libint_user_defined_real" != "X"; then
+ copy_CXX=$CXX
+ copy_CXXFLAGS=$CXXFLAGS
+ 
+  AC_ARG_WITH(real-type-includes,
+  [  --with-real-type-includes Additional includes necessary to use the real type (default: none).],
+  [
+   AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_REAL_INCLUDES,"$withval")
+   libint_user_defined_real_includes=$withval
+  ]
+ )
+
+ AC_MSG_CHECKING([if Libint real type is usable])
+ AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM(
+    [[#include <vector.h>
+      $libint_user_defined_real_includes
+      
+    ]],
+    [[
+     LIBINT2_REALTYPE x1;
+     LIBINT2_REALTYPE x2 = 2.0;
+     LIBINT2_REALTYPE x3 = x2;
+     LIBINT2_REALTYPE x4 = x2 + x3;
+     LIBINT2_REALTYPE x5 = x2 - x3;
+     LIBINT2_REALTYPE x6 = x2 * x3;
+     LIBINT2_REALTYPE x7 = x2 / x3;
+     LIBINT2_REALTYPE x8 = 2 * x2;
+     LIBINT2_REALTYPE x9 = x2 * 3;
+     x6 += x2 * x3;
+     x7 -= 3 * x3;
+    ]]
+   )
+  ],
+  [AC_MSG_RESULT([yes])
+  ],
+  [AC_MSG_RESULT([no])
+   AC_MSG_ERROR([[Libint real type is not usable, perhaps extra -I directories or extra #include's are needed?]])
+  ]
+ ) 
+fi
 
 CPPFLAGS="$CPPFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \

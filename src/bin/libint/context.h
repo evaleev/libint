@@ -71,6 +71,15 @@ namespace libint2 {
                                            const std::string& left,
                                            const std::string& oper,
                                            const std::string& right) =0;
+    /** assign_ternary_expr returns a statement which assigns ternary
+        expression 'arg1 oper1 arg2 oper2 arg3' to variable 'name'
+    */
+    virtual std::string assign_ternary_expr(const std::string& name,
+                                            const std::string& arg1,
+                                            const std::string& oper1,
+                                            const std::string& arg2,
+                                            const std::string& oper2,
+                                            const std::string& arg3) =0;
     /** accumulate_binary_expr returns a statement which accumulates binary
         expression 'left oper right' to variable 'name'
     */
@@ -78,6 +87,15 @@ namespace libint2 {
 					       const std::string& left,
 					       const std::string& oper,
 					       const std::string& right) =0;
+    /** accumulate_ternary_expr returns a statement which accumulates ternary
+        expression 'arg1 oper1 arg2 oper2 arg3' to variable 'name'
+    */
+    virtual std::string accumulate_ternary_expr(const std::string& name,
+                                                const std::string& arg1,
+                                                const std::string& oper1,
+                                                const std::string& arg2,
+                                                const std::string& oper2,
+                                                const std::string& arg3) =0;
     /// converts an address on the stack to its string representation
     virtual std::string stack_address(const DGVertex::Address& a) const =0;
 
@@ -202,11 +220,25 @@ namespace libint2 {
                                    const std::string& left,
                                    const std::string& oper,
                                    const std::string& right);
+    // Implementation of CodeContext::assign_ternary_expr()
+    std::string assign_ternary_expr(const std::string& name,
+                                    const std::string& arg1,
+                                    const std::string& oper1,
+                                    const std::string& arg2,
+                                    const std::string& oper2,
+                                    const std::string& arg3);
     /// Implementation of CodeContext::accumulate_binary_expr()
     std::string accumulate_binary_expr(const std::string& name,
 				       const std::string& left,
 				       const std::string& oper,
 				       const std::string& right);
+    // Implementation of CodeContext::accumulate_ternary_expr()
+    std::string accumulate_ternary_expr(const std::string& name,
+                                        const std::string& arg1,
+                                        const std::string& oper1,
+                                        const std::string& arg2,
+                                        const std::string& oper2,
+                                        const std::string& arg3);
     /// Implementation of CodeContext::stack_address()
     std::string stack_address(const DGVertex::Address& a) const;
 
@@ -273,7 +305,14 @@ namespace libint2 {
 				    const std::string& oper,
 				    const std::string& right,
 				    bool accum);
-
+    /// assign/accumulate if accum=false/true
+    std::string assign_ternary_expr_(const std::string& name,
+                                     const std::string& arg1,
+                                     const std::string& oper1,
+                                     const std::string& arg2,
+                                     const std::string& oper2,
+                                     const std::string& arg3,
+                                     bool accum);
   };
 
 };

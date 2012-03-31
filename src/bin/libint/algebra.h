@@ -68,6 +68,8 @@ namespace libint2 {
 #endif
         }
       
+      /// Returns the OperatorType
+      OperatorType type() const { return OT_; }
       /// Returns the left argument
       const SafePtr<T>& left() const { return left_; }
       /// Returns the right argument
