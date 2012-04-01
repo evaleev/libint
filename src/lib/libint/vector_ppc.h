@@ -122,35 +122,42 @@ namespace libint2 {
 
 #endif // QPX-only
 
-// only xlC on BG/L and BG/P supports Double Hummer instructions, not sure how to check if they are enabled
-#if defined(__xlC__) && (defined(__bgp__) || defined(__blrts__))
+// only xlC on BG/L and BG/P supports FP2 (Double Hummer)instructions, not sure how to check if they are enabled
+#if (defined(__xlC__) || defined(__clang__)) && (defined(__bgp__) || defined(__blrts__))
+
+#if defined(__xlC__)
+# include <builtins.h>
+#endif
+#if defined(__clang__)
+# include <fp2intrin.h>
+#endif
 
 namespace libint2 {
 
-  struct VectorDoubleHummerDouble {
+  struct VectorFP2Double {
 
       typedef double T;
       double _Complex d; //< represents 2 doubles
 
-      VectorDoubleHummerDouble() {}
+      VectorFP2Double() {}
 
-      VectorDoubleHummerDouble(T a) {
+      VectorFP2Double(T a) {
         T a01[2]; a01[0] = a; a01[1] = a;
         d = __lfpd(&a01[0]);
       }
 
-      VectorDoubleHummerDouble& operator=(T a) {
+      VectorFP2Double& operator=(T a) {
         T a01[2]; a01[0] = a; a01[1] = a;
         d = __lfpd(&a01[0]);
         return *this;
       }
 
-      VectorDoubleHummerDouble& operator+=(VectorDoubleHummerDouble a) {
+      VectorFP2Double& operator+=(VectorFP2Double a) {
         d = __fpadd(d, a.d);
         return *this;
       }
 
-      VectorDoubleHummerDouble& operator-=(VectorDoubleHummerDouble a) {
+      VectorFP2Double& operator-=(VectorFP2Double a) {
         d = __fpsub(d, a.d);
         return *this;
       }
@@ -163,76 +170,78 @@ namespace libint2 {
   };
 
   //@{ arithmetic operators
-  inline VectorDoubleHummerDouble operator*(double a, VectorDoubleHummerDouble b) {
-    VectorDoubleHummerDouble c;
+  inline VectorFP2Double operator*(double a, VectorFP2Double b) {
+    VectorFP2Double c;
     c.d = __fxpmul(b.d, a);
     return c;
   }
 
-  inline VectorDoubleHummerDouble operator*(VectorDoubleHummerDouble a, double b) {
-    VectorDoubleHummerDouble c;
+  inline VectorFP2Double operator*(VectorFP2Double a, double b) {
+    VectorFP2Double c;
     c.d = __fxpmul(a.d, b);
     return c;
   }
 
-  inline VectorDoubleHummerDouble operator*(int a, VectorDoubleHummerDouble b) {
+  inline VectorFP2Double operator*(int a, VectorFP2Double b) {
     if (a == 1)
       return b;
     else {
-      VectorDoubleHummerDouble c;
+      VectorFP2Double c;
       c.d = __fxpmul(b.d, (double)a);
       return c;
     }
   }
 
-  inline VectorDoubleHummerDouble operator*(VectorDoubleHummerDouble a, int b) {
+  inline VectorFP2Double operator*(VectorFP2Double a, int b) {
     if (b == 1)
       return a;
     else {
-      VectorDoubleHummerDouble c;
+      VectorFP2Double c;
       c.d = __fxpmul(a.d, (double)b);
       return c;
     }
   }
 
-  inline VectorDoubleHummerDouble operator*(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b) {
-    VectorDoubleHummerDouble c;
+  inline VectorFP2Double operator*(VectorFP2Double a, VectorFP2Double b) {
+    VectorFP2Double c;
     c.d = __fpmul(a.d, b.d);
     return c;
   }
 
-  inline VectorDoubleHummerDouble operator+(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b) {
-    VectorDoubleHummerDouble c;
+  inline VectorFP2Double operator+(VectorFP2Double a, VectorFP2Double b) {
+    VectorFP2Double c;
     c.d = __fpadd(a.d, b.d);
     return c;
   }
 
-  inline VectorDoubleHummerDouble operator-(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b) {
-    VectorDoubleHummerDouble c;
+  inline VectorFP2Double operator-(VectorFP2Double a, VectorFP2Double b) {
+    VectorFP2Double c;
     c.d = __fpsub(a.d, b.d);
     return c;
   }
 
   /* there's no division DH instruction that I can see
-  inline VectorDoubleHummerDouble operator/(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b) {
-    VectorDoubleHummerDouble c;
+  inline VectorFP2Double operator/(VectorFP2Double a, VectorFP2Double b) {
+    VectorFP2Double c;
   }
   */
 
-  inline VectorDoubleHummerDouble fma_plus(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b, VectorDoubleHummerDouble c) {
-    VectorDoubleHummerDouble d;
-    d.d = __fmadd(a.d, b.d, c.d);
+  inline VectorFP2Double fma_plus(VectorFP2Double a, VectorFP2Double b, VectorFP2Double c) {
+    VectorFP2Double d;
+    d.d = __fpmadd(a.d, b.d, c.d);
     return d;
   }
-  inline VectorDoubleHummerDouble fma_minus(VectorDoubleHummerDouble a, VectorDoubleHummerDouble b, VectorDoubleHummerDouble c) {
-    VectorDoubleHummerDouble d;
-    d.d = __fmsub(a.d, b.d, c.d);
+  inline VectorFP2Double fma_minus(VectorFP2Double a, VectorFP2Double b, VectorFP2Double c) {
+    VectorFP2Double d;
+    d.d = __fpmsub(a.d, b.d, c.d);
     return d;
   }
 
   //@}
 
-#endif // Double-Hummer
+};
+
+#endif // FP2-only
 
 #endif // header guard
 
