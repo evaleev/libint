@@ -42,7 +42,7 @@ namespace libint2 { namespace simd {
       /**
        * creates a vector of values initialized by an ordinary static-sized array
        */
-      VectorQPXDouble(T a0, T a1, T a2, T, a3) {
+      VectorQPXDouble(T a0, T a1, T a2, T a3) {
         T a[4]; a[0] = a0; a[1] = a1; a[2] = a2; a[3] = a3;
         d = vec_ld(0, &a[0]);
       }

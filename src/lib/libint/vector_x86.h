@@ -357,7 +357,7 @@ namespace libint2 { namespace simd {
       /**
        * creates a vector of values initialized by an ordinary static-sized array
        */
-      VectorAVXFloat(T a0, T a1, T a2, T a3) {
+      VectorAVXDouble(T a0, T a1, T a2, T a3) {
         d = _mm256_set_pd(a0, a1, a2, a3);
       }
 
