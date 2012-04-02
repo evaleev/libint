@@ -2,24 +2,49 @@
 #ifndef _libint2_src_lib_libint_vectorppc_h_
 #define _libint2_src_lib_libint_vectorppc_h_
 
-// clang on BG/Q uses this header file for intrinsics
+// clang on BG/Q defines __VECTOR4DOUBLE__ and intrinsics in this header file
 #if defined(__clang__) && defined(__bgq__)
 # include <qpxintrin.h>
 #endif
 
 #ifdef __VECTOR4DOUBLE__
 
-namespace libint2 {
+namespace libint2 { namespace simd {
 
+  /**
+   * SIMD vector of 4 double-precision floating-point real numbers, operations on which use QPX instructions
+   * available on some recent PowerPC hardware, e.g. Blue Gene/Q.
+   */
   struct VectorQPXDouble {
 
       typedef double T;
       vector4double d;
 
+      /**
+       * creates a vector of default-initialized values.
+       */
       VectorQPXDouble() {}
 
+      /** Initializes all elements to the same value
+       *  @param a the value to which all elements will be set
+       */
       VectorQPXDouble(T a) {
         d = vec_splats(a);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorQPXDouble(T (&a)[4]) {
+        d = vec_ld(0, &a[0]);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorQPXDouble(T a0, T a1, T a2, T, a3) {
+        T a[4]; a[0] = a0; a[1] = a1; a[2] = a2; a[3] = a3;
+        d = vec_ld(0, &a[0]);
       }
 
       VectorQPXDouble& operator=(T a) {
@@ -40,6 +65,10 @@ namespace libint2 {
       operator double() const {
         double d0 = vec_extract(d, 0);
         return d0;
+      }
+
+      void convert(double(&a)[4]) const {
+        vec_st(d, 0, &a[0]);
       }
 
   };
@@ -118,7 +147,7 @@ namespace libint2 {
 
   //@}
 
-};
+};}; // namespace libint2::simd
 
 #endif // QPX-only
 
@@ -132,18 +161,43 @@ namespace libint2 {
 # include <fp2intrin.h>
 #endif
 
-namespace libint2 {
+namespace libint2 { namespace simd {
 
+  /**
+   * SIMD vector of 2 double-precision floating-point real numbers, operations on which use FP2 (Double Hummer) instructions
+   * available on some PowerPC hardware, e.g. Blue Gene/L and Blue Gene/P.
+   */
   struct VectorFP2Double {
 
       typedef double T;
       double _Complex d; //< represents 2 doubles
 
+      /**
+       * creates a vector of default-initialized values.
+       */
       VectorFP2Double() {}
 
+      /** Initializes all elements to the same value
+       *  @param a the value to which all elements will be set
+       */
       VectorFP2Double(T a) {
         T a01[2]; a01[0] = a; a01[1] = a;
         d = __lfpd(&a01[0]);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorFP2Double(T (&a)[2]) {
+        d = __lfpd(&a[0]);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorFP2Double(T a0, T a1) {
+        T a[2]; a[0] = a0; a[1] = a1;
+        d = __lfpd(&a[0]);
       }
 
       VectorFP2Double& operator=(T a) {
@@ -167,6 +221,9 @@ namespace libint2 {
         return d0;
       }
 
+      void convert(double(&a)[2]) const {
+        __stfpd(&a[0], d);
+      }
   };
 
   //@{ arithmetic operators
@@ -239,7 +296,7 @@ namespace libint2 {
 
   //@}
 
-};
+};}; // namespace libint2::simd
 
 #endif // FP2-only
 

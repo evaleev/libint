@@ -4,21 +4,45 @@
 
 #include <unistd.h>
 
-#ifdef __cpluscplus
+#if defined(__cplusplus)
+
+#include <algorithm>
 
 namespace libint2 {
 
+  /**
+     Contains data types that support SIMD-style computation on vectors of numbers.
+  */
+  namespace simd {
+
   // add __declspec(align(N*sizeof(T))) ?
+
+  /**
+   * Vector<N,T> is used by vectorized Libint library as fixed-length vectors amenable for SIMD-style parallelism
+   * Vectorization via this class should be the last-resort measure if no specialized implementation is available
+   */
   template <size_t N, typename T>
     struct Vector {
 
       T d[N];
 
+      /**
+       * creates a vector of default-initialized values.
+       */
       Vector() {}
 
+      /** Initializes all elements to the same value
+       *  @param a the value to which all elements will be set
+       */
       Vector(T a) {
-        for(size_t i=0; i<N; ++i)
-          d[i] = a;
+        std::fill_n(&(d[0]), N, a);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      Vector(T (&a)[N]) {
+        std::copy(&a[0], &a[0]+N, &d[0]);
       }
 
       Vector& operator=(T a) {
@@ -121,11 +145,11 @@ namespace libint2 {
 
   //@}
 
-};
-
-#endif // C++ only
+};}; // namespace libint2::simd
 
 #include <vector_x86.h>
 #include <vector_ppc.h>
+
+#endif // C++ only
 
 #endif

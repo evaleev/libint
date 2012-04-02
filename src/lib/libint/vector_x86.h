@@ -6,17 +6,41 @@
 
 #include <emmintrin.h>
 
-namespace libint2 {
+namespace libint2 { namespace simd {
 
+  /**
+   * SIMD vector of 2 double-precision floating-point real numbers, operations on which use SSE2 instructions
+   * available on all recent x86 hardware
+   */
   struct VectorSSEDouble {
 
       typedef double T;
       __m128d d;
 
+      /**
+       * creates a vector of default-initialized values.
+       */
       VectorSSEDouble() {}
 
+      /** Initializes all elements to the same value
+       *  @param a the value to which all elements will be set
+       */
       VectorSSEDouble(T a) {
         d = _mm_set_pd(a, a);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorSSEDouble(T (&a)[2]) {
+        d = _mm_loadu_pd(&a[0]);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorSSEDouble(T a0, T a1) {
+        d = _mm_set_pd(a0, a1);
       }
 
       VectorSSEDouble& operator=(T a) {
@@ -38,6 +62,10 @@ namespace libint2 {
         double d0;
         _mm_store_sd(&d0, d);
         return d0;
+      }
+
+      void convert(double(&a)[2]) const {
+        _mm_storeu_pd(&a[0], d);
       }
 
   };
@@ -129,7 +157,7 @@ namespace libint2 {
 
   //@}
 
-};
+};}; // namespace libint2::simd
 
 #endif // SSE2-only
 
@@ -137,17 +165,41 @@ namespace libint2 {
 
 #include <xmmintrin.h>
 
-namespace libint2 {
+namespace libint2 { namespace simd {
 
+  /**
+   * SIMD vector of 4 single-precision floating-point real numbers, operations on which use SSE instructions
+   * available on all recent x86 hardware.
+   */
   struct VectorSSEFloat {
 
       typedef float T;
       __m128 d;
 
+      /**
+       * creates a vector of default-initialized values.
+       */
       VectorSSEFloat() {}
 
+      /** Initializes all elements to the same value
+       *  @param a the value to which all elements will be set
+       */
       VectorSSEFloat(T a) {
         d = _mm_set_ps(a, a, a, a);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorSSEFloat(T (&a)[4]) {
+        d = _mm_loadu_ps(&a[0]);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorSSEFloat(T a0, T a1, T a2, T a3) {
+        d = _mm_set_ps(a0, a1, a2, a3);
       }
 
       VectorSSEFloat& operator=(T a) {
@@ -171,6 +223,9 @@ namespace libint2 {
         return d0;
       }
 
+      void convert(T(&a)[4]) const {
+        _mm_storeu_ps(&a[0], d);
+      }
   };
 
   //@{ arithmetic operators
@@ -260,7 +315,7 @@ namespace libint2 {
 
   //@}
 
-};
+};}; // namespace libint2::simd
 
 #endif // SSE-only
 
@@ -268,17 +323,42 @@ namespace libint2 {
 
 #include <immintrin.h>
 
-namespace libint2 {
+namespace libint2 { namespace simd {
 
+  /**
+   * SIMD vector of 4 double-precision floating-point real numbers, operations on which use AVX instructions
+   * available on recent x86 hardware from Intel (starting with Sandy Bridge processors released in 2011)
+   * and AMD (starting with Bulldozer released in 2011).
+   */
   struct VectorAVXDouble {
 
       typedef double T;
       __m256d d;
 
+      /**
+       * creates a vector of default-initialized values.
+       */
       VectorAVXDouble() {}
 
+      /** Initializes all elements to the same value
+       *  @param a the value to which all elements will be set
+       */
       VectorAVXDouble(T a) {
         d = _mm256_set_pd(a, a, a, a);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorAVXDouble(T (&a)[4]) {
+        d = _mm256_loadu_pd(&a[0]);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorAVXFloat(T a0, T a1, T a2, T a3) {
+        d = _mm256_set_pd(a0, a1, a2, a3);
       }
 
       VectorAVXDouble& operator=(T a) {
@@ -297,11 +377,14 @@ namespace libint2 {
       }
 
       operator double() const {
-        double d0[2];
+        double d0[4];
         _mm256_store_pd(&(d0[0]), d);
         return d0[0];
       }
 
+      void convert(T(&a)[4]) const {
+        _mm256_storeu_pd(&a[0], d);
+      }
   };
 
   //@{ arithmetic operators
@@ -392,7 +475,7 @@ namespace libint2 {
 
   //@}
 
-};
+};}; // namespace libint2::simd
 
 #endif // AVX-only
 
