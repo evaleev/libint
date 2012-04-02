@@ -246,7 +246,7 @@ Libint2Iface::~Libint2Iface()
           }
           else { // use user-provided alignment
             // TODO generalize to non-C++
-            li_ << "posix_memalign(reinterpret_cast<void**>(&inteval->stack), " << cparams_->align_size() << "*sizeof(LIBINT2_REALTYPE), " << tmp << "*sizeof(LIBINT2_REALTYPE));" << std::endl;
+            li_ << "posix_memalign(reinterpret_cast<void**>(&inteval->stack), LIBINT2_ALIGN_SIZE*sizeof(LIBINT2_REALTYPE), " << tmp << "*sizeof(LIBINT2_REALTYPE));" << std::endl;
           }
         }
       }

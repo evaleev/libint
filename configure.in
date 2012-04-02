@@ -218,7 +218,7 @@ case $enableval in
   ;;
 esac
 ],[
-    INCLUDE_ERI3=0
+    INCLUDE_ERI3=no
 ]
 )
 
@@ -240,7 +240,7 @@ case $enableval in
   ;;
 esac
 ],[
-    INCLUDE_ERI2=0
+    INCLUDE_ERI2=no
 ]
 )
 
@@ -925,8 +925,8 @@ if test $have_posix_memalign != 0; then
   AC_MSG_RESULT([will use custom memory alignment: $LIBINT_ALIGN_SIZE * sizeof(LIBINT2_REALTYPE)])
  else
   LIBINT_ALIGN_SIZE=0
-  AC_DEFINE(LIBINT_ALIGN_SIZE)
  fi
+  AC_DEFINE_UNQUOTED(LIBINT_ALIGN_SIZE, $LIBINT_ALIGN_SIZE)
 fi
 
 dnl ------------------ Check for support for C++11 standard features --------------

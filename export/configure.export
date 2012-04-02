@@ -15,8 +15,6 @@ dnl --- Compiling C++ only ---
 AC_LANG(C++)
 
 AC_CANONICAL_TARGET
-AC_DEFINE_UNQUOTED(HOST_ARCH, "$host")
-AC_DEFINE_UNQUOTED(TARGET_ARCH, "$target")
 
 define([default_prefix_dash],ifelse(libint_buildid, ,[],[-]))
 define([default_prefix],"/usr/local")
@@ -30,9 +28,6 @@ LIBINT_MAJOR_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/\([0-9]*\)\.[0-9]*\.[0-9]*
 LIBINT_MINOR_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/[0-9]*\.\([0-9]*\)\.[0-9]*/\1/'`
 LIBINT_MICRO_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/[0-9]*\.[0-9]*\.\([0-9]*\)/\1/'`
 changequote([, ])dnl
-AC_DEFINE_UNQUOTED(LIBINT_MAJOR_VERSION,$LIBINT_MAJOR_VERSION)
-AC_DEFINE_UNQUOTED(LIBINT_MINOR_VERSION,$LIBINT_MINOR_VERSION)
-AC_DEFINE_UNQUOTED(LIBINT_MICRO_VERSION,$LIBINT_MICRO_VERSION)
 AC_SUBST(LIBINT_MAJOR_VERSION)
 AC_SUBST(LIBINT_MINOR_VERSION)
 AC_SUBST(LIBINT_MICRO_VERSION)
@@ -317,7 +312,15 @@ if test $have_posix_memalign != 0; then
  fi
 fi
 
-dnl ------------------ Check if the given real type is usable -----------------------
+dnl ------------------ Check for real type. If given, check if it is usable -----------------------
+
+AC_ARG_WITH(real-type,
+[  --with-real-type       Compute all integrals using the given real type.],
+[
+AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_REAL,"$withval")
+libint_user_defined_real=$withval
+AC_MSG_RESULT([Using real type: $withval])
+])
 
 # extra includes may be needed in that case!
 if test "X$libint_user_defined_real" != "X"; then
