@@ -133,9 +133,6 @@
 /* Strategy for ERI evaluation */
 #undef LIBINT_ERI_STRATEGY
 
-/* have stdint.h ? */
-#undef HAVE_STDINT_H
-
 /* have C++ features? */
 #undef HAVE_CXX11
 #undef HAVE_CXX11_LAMBDA
@@ -160,4 +157,14 @@
 #undef LIBINT_SHELL_SET_STANDARD
 #undef LIBINT_SHELL_SET_ORCA
 
-#endif 
+/*
+ Libint-independent features
+ */
+
+/* have stdint.h ? */
+#undef HAVE_STDINT_H
+
+/* have posix_memalign ? */
+#undef HAVE_POSIX_MEMALIGN
+
+#endif // header guard

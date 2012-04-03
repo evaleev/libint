@@ -760,6 +760,10 @@ AC_PROG_LN_S
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
+# if not given a C++ compiler
+if test "X$CXX" = "X"; then
+  AC_CHECK_PROGS(CXX, clang++ icpc xlC_r g++ c++ CC, c++)
+fi
 # discard CXXFLAGS provided by the C++ detection macros
 initial_CXXFLAGS="$CXXFLAGS"
 AC_PROG_CXX
@@ -768,6 +772,7 @@ CXXFLAGS="$initial_CXXFLAGS"
 
 AC_CHECK_PROG(AR,ar,ar)
 AC_CHECK_PROG(PERL,perl,perl)
+AC_CHECK_PROGS(TAR,gnutar tar,tar)
 AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin)
 AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin)
 AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin)
@@ -831,14 +836,16 @@ if test "X$CXXFLAGS_GEN_OPT" = X; then
   AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxxgen-optflags configure option])
 fi
 
-if test $DEBUG = yes; then
+if test "X$CXXFLAGS" = "X"; then
+ if test $DEBUG = yes; then
   CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXFLAGS_MISC"
   LDFLAGS="$LDFLAGS -g"
-elif test $DEBUG = opt; then
+ elif test $DEBUG = opt; then
   CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXOPTIONS_OPT $CXXFLAGS_MISC"
   LDFLAGS="$LDFLAGS -g"
-else
+ else
   CXXFLAGS="$CXXFLAGS $CXXFLAGS_OPT $CXXFLAGS_MISC"
+ fi
 fi
 
 AC_SUBST(EXTRAINCLUDE)
@@ -903,8 +910,8 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(limits.h stdint.h)
 
 dnl ---------- Check for posix_memalign ----------------------
-AC_CHECK_FUNC(posix_memalign,[have_posix_memalign=1],[have_posix_memalign=0])
-if test $have_posix_memalign != 0; then
+AC_CHECK_FUNC(posix_memalign,[have_posix_memalign=1 AC_DEFINE(HAVE_POSIX_MEMALIGN)],[have_posix_memalign=0])
+if test "X$have_posix_memalign" != "X0"; then
  # control memory alignment if posix_memalign is found 
  # if vectorization is off (default) then let the default alignment be determined by the system
  # if vectorization is on then the default alignment is veclen * sizeof(LIBINT2_REALTYPE)
@@ -1136,9 +1143,8 @@ if test "X$libint_user_defined_real" != "X"; then
      $libint_user_defined_real x4 = x2 + x3;
      $libint_user_defined_real x5 = x2 - x3;
      $libint_user_defined_real x6 = x2 * x3;
-     $libint_user_defined_real x7 = x2 / x3;
-     $libint_user_defined_real x8 = 2 * x2;
-     $libint_user_defined_real x9 = x2 * 3;
+     $libint_user_defined_real x7 = 2 * x2;
+     $libint_user_defined_real x8 = x2 * 3;
      x6 += x2 * x3;
      x7 -= 3 * x3;
     ]]

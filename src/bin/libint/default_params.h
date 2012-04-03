@@ -47,10 +47,6 @@ namespace libint2 {
     unsigned int align_size() const {
       return align_size_;
     }
-    /// is alignment size set to default?
-    bool default_align_size() const {
-      return (align_size_ == UINT_MAX);
-    }
     /// returns directory path for the generated source
     const std::string& source_directory() const {
       return source_directory_;
@@ -155,7 +151,7 @@ namespace libint2 {
       /// Vectorize all body by default
       static const bool vectorize_by_line = false;
       /// Use default alignment by default
-      static const unsigned int align_size = UINT_MAX;
+      static const unsigned int align_size = 0;
       /// Produce quartet-level code by default
       static const unsigned int unroll_threshold = 1;
       /// Where to put generated library source
