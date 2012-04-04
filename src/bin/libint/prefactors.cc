@@ -49,12 +49,23 @@ Prefactors::Prefactors() :
       sprintf(X_Y_str,"%s%s",X[p][0],X[p][1]);
       rdptr vX_Y_ptr(new rdouble(X_Y_str));
       vX_Y[p] = vX_Y_ptr;
-      char xyz_str[] = "xyz";
+      const char xyz_str[] = "xyz";
       for(int xyz=0; xyz<3; xyz++) {
         char X_Y_i_str[20];
         sprintf(X_Y_i_str,"%s_%c",X_Y_str,xyz_str[xyz]);
         rdptr X_Y_i_ptr(new rdouble(X_Y_i_str));
         X_Y[p][xyz] = X_Y_i_ptr;
+      }
+
+      char Y_X_str[20];
+      sprintf(Y_X_str,"%s%s",X[p][1],X[p][0]);
+      rdptr vY_X_ptr(new rdouble(Y_X_str));
+      vY_X[p] = vY_X_ptr;
+      for(int xyz=0; xyz<3; xyz++) {
+        char Y_X_i_str[20];
+        sprintf(Y_X_i_str,"%s_%c",Y_X_str,xyz_str[xyz]);
+        rdptr Y_X_i_ptr(new rdouble(Y_X_i_str));
+        Y_X[p][xyz] = Y_X_i_ptr;
       }
 
   }

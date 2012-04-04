@@ -160,6 +160,15 @@ namespace libint2 {
       /// Implements Hashable::key()
       typename DGVertex::KeyReturnType key() const { return 0; }
       
+      void print(std::ostream& os) const {
+        DGVertex::print(os);
+        using std::endl;
+        std::string prefix("AlgebraicOperator::print: ");
+        os << prefix << "this = " << this << endl;
+        os << prefix << "left_ = " << left_ << endl;
+        os << prefix << "right_ = " << right_ << endl;
+      }
+
     private:
       OperatorType OT_;
       SafePtr<T> left_;

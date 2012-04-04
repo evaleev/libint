@@ -5,6 +5,7 @@
 #include <list>
 #include <vector>
 //#include <dg.h>
+#include <global_macros.h>
 #include <drtree.h>
 #include <dgarc.h>
 #include <iostream>
@@ -126,7 +127,7 @@ namespace libint2 {
     */
     virtual std::string description() const =0;
     /** print(os) prints vertex info to os */
-    void print(std::ostream& os) const;
+    virtual void print(std::ostream& os) const;
 
     /// Returns pointer to the DirectedGraph to which this DGVertex belongs to
     const DirectedGraph* dg() const { return dg_; }

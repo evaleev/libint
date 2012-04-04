@@ -195,8 +195,9 @@ namespace libint2 {
         }
 
         if (is_simple()) {
-          // ( b | a ) = ( b-1_i | a+1_i )  - AB_i ( b-1_i | a )
-          expr_ = children_[0] - prefactors.X_Y[part][dir] * children_[1];
+          // ( b | a ) = ( b-1_i | a+1_i )  - AB_i ( b-1_i | a ) = ( b-1_i | a+1_i )  + BA_i ( b-1_i | a )
+          // the latter is amenable to generate fmadd instruction
+          expr_ = children_[0] + prefactors.Y_X[part][dir] * children_[1];
 
           // is a differentiated in this direction? add another term
           const bool aderiv = a.deriv().d(dir_) > 0;

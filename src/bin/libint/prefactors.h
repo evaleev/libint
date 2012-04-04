@@ -39,6 +39,14 @@ namespace libint2 {
     SafePtr<rdouble> X_Y[np][3];
 
     /**
+       Y-X vectors, where X and Y are for the same particle:
+       Y_X[0] = BA, Y_X[1] = DC, etc.
+     */
+    SafePtr<rdouble> vY_X[np];
+    /// Cartesian components of Y_X vectors
+    SafePtr<rdouble> Y_X[np][3];
+
+    /**
        XY-X vectors:
        XY is either P or Q,
        X is either (A or B) or (C or D).
