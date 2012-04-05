@@ -105,29 +105,29 @@ namespace {
 #if 1
     RunTest(test0,"iterators");
 #endif
-#if 0
+#if 1
     RunTest(test1,"memory managers");
 #endif
-#if 0
+#if 1
     RunTest(test2,"integrals types");
 #endif
-#if 0
+#if 1
     RunTest(test3,"recurrence relations");
 #endif
-#if 0
+#if 1
     RunTest(test4,"primitive ERI build");
 #endif
-#if 0
+#if 1
     RunTest(test5,"contracted ERI build");
 #endif
-#if 0
+#if 1
     RunTest(test6,"contracted derivative ERI build");
 #endif
-#if 0
+#if 1
     RunTest(test7,"shell-set RR generation");
 #endif
-#if 0
-    RunTest(test8,"congracted G12 integral build");
+#if 1
+    RunTest(test8,"contracted G12 integral build");
 #endif
 
     return 0;
@@ -430,7 +430,7 @@ namespace {
 
     SafePtr<TwoPRep_11_11_sq> target = TwoPRep_11_11_sq::Instance(csh_p,csh_d_dx,csh_s,csh_s,mType(0u));
 
-    SafePtr<RecurrenceRelation> rr = HRR_ba_11_TwoPRep_11_sh::Instance(target,0);
+    SafePtr<RecurrenceRelation> rr = HRR_ab_11_TwoPRep_11_sh::Instance(target,0);
     assert(rr != 0 && rr->num_children() != 0);
     SafePtr<RRStack> rrstack = RRStack::Instance();
     rrstack->find(rr);
@@ -457,7 +457,7 @@ namespace {
     CGShell csh_p(1u);
 
     const Ti_G12_Descr t0g12_descr(0);
-    RunBuildTest<TiG12_11_11_sq>(csh_s,csh_s,csh_s,csh_s,0,t0g12_descr,use_quartets);
+    RunBuildTest<TiG12_11_11_sq>(csh_p,csh_s,csh_p,csh_s,0,t0g12_descr,use_quartets);
 
     cparams->contracted_targets(contracted_targets_old_value);
   }
