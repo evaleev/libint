@@ -105,7 +105,7 @@ namespace {
 #if 1
     RunTest(test0,"iterators");
 #endif
-#if 1
+#if 0
     RunTest(test1,"memory managers");
 #endif
 #if 1
