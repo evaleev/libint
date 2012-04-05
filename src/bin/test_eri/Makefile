@@ -18,8 +18,9 @@ CPPFLAGS += -I.
 ifndef COMPUTE_XX_ERI_XX_SRC
   -include Make.compute_eri
 endif
-CXXGENSRC = libint2_init.cc $(COMPUTE_XX_ERI_XX_SRC)
+CXXGENSRC = libint2_init.cc libint2_static_init.cc libint2_static_cleanup.cc $(COMPUTE_XX_ERI_XX_SRC)
 CXXGENOBJ = $(CXXGENSRC:%.cc=%.o)
+CXXGENHDRS = test_eri_conf.h libint2_types.h libint2_params.h libint2_iface.h libint2_iface_internal.h $(CXXGENSRC:%.cc=%.h)
 LIBINTDIR = $(TOPDIR)/src/bin/libint
 LIBINT = $(LIBINTDIR)/libINT.a
 CGSHELLOBJ = $(LIBINTDIR)/gauss.o $(LIBINTDIR)/iter.o $(LIBINTDIR)/policy.o \
@@ -87,10 +88,13 @@ $(CXXTIMEOBJ): test_eri_conf.h
 $(CXXERICOMPOBJ):: $(LIBINTDIR)/buildtest.h
 
 clean::
-	-rm -rf $(ERICOMP) $(TEST) $(TIME) $(TIMEV) *.o *.d
+	-rm -rf $(ERICOMP) $(TEST) $(TIME) $(TIMEV) *.o *.d *.dot *.log
 
-realclean:: clean
-	-rm -rf Make.compute_eri *.h *.cc *.dot *.log
+genclean::
+	-rm -rf Make.compute_eri $(CXXGENSRC) $(CXXGENOBJ) $(CXXGENHDRS) 
+
+realclean:: clean genclean
+
 
 distclean:: realclean
 	-rm -rf run_time_eri.pl run_timing_suite.pl stdtests.pl test_eri.pl time_eri.pl

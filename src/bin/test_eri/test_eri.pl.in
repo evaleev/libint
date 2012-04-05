@@ -39,6 +39,8 @@ if ($#ARGV >= 7) {
 
 my $makecmd = "make $makevars $ericomp";
 system($makecmd) && die("$makecmd failed");
+printf STDOUT "Cleaning ... ";
+system("make genclean");
 printf STDOUT "Generating source ... ";
 system("./$ericomp $la $lb $lc $ld $size_to_unroll $veclen $vecmethod $do_cse | tee $ericomp.log") 
   && die("$ericomp failed");
