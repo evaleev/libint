@@ -45,11 +45,11 @@ CXXTIMEVOBJ = $(CXXTIMEVSRC:%.cc=%.o)
 
 $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	cd ../libint; $(MAKE) $(LIBINT)
-	$(LD) -o $@ $(LDFLAGS) $(SYSLIBS) $^
+	$(CXX) -o $@ $(LDFLAGS) $(SYSLIBS) $^
 
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
-	$(LD) -o $@ $(LDFLAGS) $(SYSLIBS) $^
+	$(CXX) -o $@ $(LDFLAGS) $(SYSLIBS) $^
 else
 $(TEST):
 	echo "Cannot test generated code! $(CXXGEN) is not compatible with $(CXXCOMP)"
@@ -57,10 +57,10 @@ $(TEST):
 endif
 
 $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)  $(CGSHELLOBJ)
-	$(LD) -o $@ $(LDFLAGS) $(SYSLIBS) $^
+	$(CXX) -o $@ $(LDFLAGS) $(SYSLIBS) $^
 
 $(TIMEV): $(CXXTIMEVOBJ)
-	$(LD) -o $@ $(LDFLAGS) $^
+	$(CXX) -o $@ $(LDFLAGS) $^
 
 # Assume that CXXGEN has the weaker frontend of the two (there is no reason to not use it then as CXX)
 # hence use it *only* to compile generated source if CXXGEN is compatible with CXX
