@@ -137,7 +137,7 @@ void test_4eri(unsigned int deriv_order) {
           }
           cout << endl;
 
-          //  not use Libint to compute
+          //  now use Libint to compute
           double scale_target = 1.0;
 #if LIBINT_ACCUM_INTS
           // if accumulating integrals, zero out first, then compute twice
