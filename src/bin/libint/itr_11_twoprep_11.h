@@ -111,7 +111,7 @@ namespace libint2 {
       SafePtr<ThisType> this_ptr(new ThisType(Tint,dir));
       // Do post-construction duties
       if (this_ptr->num_children() != 0) {
-        this_ptr->register_with_rrstack<ThisType>();
+        this_ptr->template register_with_rrstack<ThisType>();
         return this_ptr;
       }
       return SafePtr<ThisType>();
