@@ -21,6 +21,11 @@ typedef unsigned int uint;
 
 int main(int argc, char** argv)
 {
+#if defined(__cplusplus)
+//  mpf_set_default_prec(256);
+//  mpfr_set_default_prec(256);
+#endif
+
   const uint veclen = LIBINT2_MAX_VECLEN;
 #if LIBINT_CONTRACTED_INTS
   const uint contrdepth = 3;
@@ -43,6 +48,10 @@ int main(int argc, char** argv)
   const double* B = &(rsqset.R[1][0]);
   const double* C = &(rsqset.R[2][0]);
   const double* D = &(rsqset.R[3][0]);
+  LIBINT2_REF_REALTYPE Aref[4]; for(int i=0; i<4; ++i) Aref[i] = A[i];
+  LIBINT2_REF_REALTYPE Bref[4]; for(int i=0; i<4; ++i) Bref[i] = B[i];
+  LIBINT2_REF_REALTYPE Cref[4]; for(int i=0; i<4; ++i) Cref[i] = C[i];
+  LIBINT2_REF_REALTYPE Dref[4]; for(int i=0; i<4; ++i) Dref[i] = D[i];
 
   typedef SubIteratorBase<CGShell> iter;
   SafePtr<iter> sh0_iter(new iter(sh0));
@@ -121,7 +130,7 @@ int main(int argc, char** argv)
 
           for(uint v=0; v<veclen; v++) {
 
-            std::vector<double> ref_eri(nderiv, 0.0);
+            std::vector<LIBINT2_REF_REALTYPE> ref_eri(nderiv, LIBINT2_REF_REALTYPE(0.0));
 
             uint p0123 = 0;
             for (uint p0 = 0; p0 < contrdepth; p0++) {
@@ -129,26 +138,26 @@ int main(int argc, char** argv)
                 for (uint p2 = 0; p2 < contrdepth; p2++) {
                   for (uint p3 = 0; p3 < contrdepth; p3++, p0123++) {
 
-                    const double alpha0 = rsqset.exp[0][v][p0];
-                    const double alpha1 = rsqset.exp[1][v][p1];
-                    const double alpha2 = rsqset.exp[2][v][p2];
-                    const double alpha3 = rsqset.exp[3][v][p3];
+                    const LIBINT2_REF_REALTYPE alpha0 = rsqset.exp[0][v][p0];
+                    const LIBINT2_REF_REALTYPE alpha1 = rsqset.exp[1][v][p1];
+                    const LIBINT2_REF_REALTYPE alpha2 = rsqset.exp[2][v][p2];
+                    const LIBINT2_REF_REALTYPE alpha3 = rsqset.exp[3][v][p3];
 
-                    const double c0 = rsqset.coef[0][v][p0];
-                    const double c1 = rsqset.coef[1][v][p1];
-                    const double c2 = rsqset.coef[2][v][p2];
-                    const double c3 = rsqset.coef[3][v][p3];
-                    const double c0123 = c0 * c1 * c2 * c3;
+                    const LIBINT2_REF_REALTYPE c0 = rsqset.coef[0][v][p0];
+                    const LIBINT2_REF_REALTYPE c1 = rsqset.coef[1][v][p1];
+                    const LIBINT2_REF_REALTYPE c2 = rsqset.coef[2][v][p2];
+                    const LIBINT2_REF_REALTYPE c3 = rsqset.coef[3][v][p3];
+                    const LIBINT2_REF_REALTYPE c0123 = c0 * c1 * c2 * c3;
 
                     DerivIndexIterator<4> diter(deriv_order);
                     bool last_deriv = false;
                     unsigned int di = 0;
                     do {
                       ref_eri[di++] += c0123 * eri(diter.values(),
-                                                   l0,m0,n0,alpha0,A,
-                                                   l1,m1,n1,alpha1,B,
-                                                   l2,m2,n2,alpha2,C,
-                                                   l3,m3,n3,alpha3,D,
+                                                   l0,m0,n0,alpha0,Aref,
+                                                   l1,m1,n1,alpha1,Bref,
+                                                   l2,m2,n2,alpha2,Cref,
+                                                   l3,m3,n3,alpha3,Dref,
                                                    0);
                       last_deriv = diter.last();
                       if (!last_deriv) diter.next();
@@ -163,7 +172,7 @@ int main(int argc, char** argv)
 
               const LIBINT2_REALTYPE new_eri = scale_target * erieval[0].targets[di][ijkl*veclen+v];
 
-              if ( fabs(ref_eri[di]-(double)new_eri) > 1.0E-10) {
+              if ( abs(ref_eri[di]-(double)new_eri) > 1.0E-10) {
                 std::cout << "Elem " << ijkl << " di= " << di << " v=" << v
                     << " : eri.cc = " << ref_eri[di]
                     << " libint = " << (double) new_eri << endl;
