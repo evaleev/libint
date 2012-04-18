@@ -333,6 +333,9 @@ AC_ARG_WITH(real-type,
   AC_DEFINE_UNQUOTED(LIBINT2_REALTYPE,[$withval])
   libint_user_defined_real=$withval
   AC_MSG_RESULT([Using real type: $withval])
+ ],
+ [
+   AC_DEFINE_UNQUOTED(LIBINT2_REALTYPE,[double])
  ]
 )
 
