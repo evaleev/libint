@@ -230,25 +230,29 @@ Libint2Iface::~Libint2Iface()
       const std::string& tlabel = t->label();
 
       li_ << li_decls_[i] << ctext_->open_block();
-      li_ << "if (buf != 0) inteval->stack = reinterpret_cast<LIBINT2_REALTYPE*>(buf);" << std::endl << "else ";
+      li_ << "if (buf != 0) inteval->stack = reinterpret_cast<LIBINT2_REALTYPE*>(buf);" << std::endl << "else " << std::endl;
       {
         std::string tmp = ctext_->label_to_name(cparams_->api_prefix() + "libint2_need_memory_" + tlabel) + "(max_am)";
-        if (cparams_->default_align_size()) // no alignment control
+
+        // no posix_memalign? use new, with default alignment
+        li_ << "#ifndef HAVE_POSIX_MEMALIGN" << std::endl
+            << ctext_->assign("inteval->stack",std::string("new LIBINT2_REALTYPE[") + tmp + std::string("]"));
+
+        // use default heuristics if user did not provide specific alignment size
+        li_ << "#elif (LIBINT2_ALIGN_SIZE == 0)" << std::endl;
+        if (cparams_->max_vector_length() == 1) // scalar code? use default alignment
           li_ << ctext_->assign("inteval->stack",std::string("new LIBINT2_REALTYPE[") + tmp + std::string("]"));
-        else { // control alignment using posix_memalign
-          if (cparams_->align_size() == 0u) { // use default heuristics if user did not provide specific alignment size
-            if (cparams_->max_vector_length() == 1) // scalar code? use default alignment
-              li_ << ctext_->assign("inteval->stack",std::string("new LIBINT2_REALTYPE[") + tmp + std::string("]"));
-            else { // vectorize? then align to veclen*sizeof(LIBINT2_REALTYPE)
-              // TODO generalize to non-C++
-              li_ << "posix_memalign(reinterpret_cast<void**>(&inteval->stack), " << cparams_->max_vector_length() << "*sizeof(LIBINT2_REALTYPE), " << tmp << "*sizeof(LIBINT2_REALTYPE));" << std::endl;
-            }
-          }
-          else { // use user-provided alignment
-            // TODO generalize to non-C++
-            li_ << "posix_memalign(reinterpret_cast<void**>(&inteval->stack), " << cparams_->align_size() << "*sizeof(LIBINT2_REALTYPE), " << tmp << "*sizeof(LIBINT2_REALTYPE));" << std::endl;
-          }
+        else { // vectorize? then align to veclen*sizeof(LIBINT2_REALTYPE)
+          // TODO generalize to non-C++
+          li_ << "posix_memalign(reinterpret_cast<void**>(&inteval->stack), " << cparams_->max_vector_length() << "*sizeof(LIBINT2_REALTYPE), " << tmp << "*sizeof(LIBINT2_REALTYPE));" << std::endl;
         }
+
+        // use user-provided alignment
+        li_ << "#else" << std::endl;
+        // TODO generalize to non-C++
+        li_ << "posix_memalign(reinterpret_cast<void**>(&inteval->stack), LIBINT2_ALIGN_SIZE*sizeof(LIBINT2_REALTYPE), " << tmp << "*sizeof(LIBINT2_REALTYPE));" << std::endl;
+
+        li_ << "#endif" << std::endl;
       }
 
       const unsigned int max_am = t->params()->max_am();
@@ -277,10 +281,16 @@ Libint2Iface::~Libint2Iface()
     i = 0;
     for(tciter t=taskmgr.first(); t!=taskmgr.plast(); ++t,++i) {
       li_ << lc_decls_[i] << ctext_->open_block();
-      if (cparams_->default_align_size() || cparams_->align_size() == 0) // no alignment control
-        li_ << "delete[] inteval->stack;" << std::endl;
+
+      li_ << "#ifndef HAVE_POSIX_MEMALIGN\ndelete[] inteval->stack;\n";
+      li_ << "#elif (LIBINT2_ALIGN_SIZE == 0)\n";
+      if (cparams_->max_vector_length() == 1)
+        li_ << "delete[] inteval->stack;\n";
       else
-        li_ << "free(inteval->stack);" << std::endl;
+        li_ << "free(inteval->stack);\n";
+      li_ << "#else\nfree(inteval->stack);\n";
+      li_ << "#endif\n";
+
       li_ << ctext_->assign("inteval->stack","0");
       li_ << ctext_->assign("inteval->vstack","0");
       if (cparams_->count_flops()) {

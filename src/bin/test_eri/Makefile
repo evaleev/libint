@@ -18,8 +18,9 @@ CPPFLAGS += -I.
 ifndef COMPUTE_XX_ERI_XX_SRC
   -include Make.compute_eri
 endif
-CXXGENSRC = libint2_init.cc $(COMPUTE_XX_ERI_XX_SRC)
+CXXGENSRC = libint2_init.cc libint2_static_init.cc libint2_static_cleanup.cc $(COMPUTE_XX_ERI_XX_SRC)
 CXXGENOBJ = $(CXXGENSRC:%.cc=%.o)
+CXXGENHDRS = test_eri_conf.h libint2_types.h libint2_params.h libint2_iface.h libint2_iface_internal.h $(CXXGENSRC:%.cc=%.h)
 LIBINTDIR = $(TOPDIR)/src/bin/libint
 LIBINT = $(LIBINTDIR)/libINT.a
 CGSHELLOBJ = $(LIBINTDIR)/gauss.o $(LIBINTDIR)/iter.o $(LIBINTDIR)/policy.o \
@@ -44,11 +45,11 @@ CXXTIMEVOBJ = $(CXXTIMEVSRC:%.cc=%.o)
 
 $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	cd ../libint; $(MAKE) $(LIBINT)
-	$(LD) -o $@ $(LDFLAGS) $(SYSLIBS) $^
+	$(CXX) -o $@ $(LDFLAGS) $(SYSLIBS) $^
 
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
-	$(LD) -o $@ $(LDFLAGS) $(SYSLIBS) $^
+	$(CXX) -o $@ $(LDFLAGS) $(SYSLIBS) $^
 else
 $(TEST):
 	echo "Cannot test generated code! $(CXXGEN) is not compatible with $(CXXCOMP)"
@@ -56,10 +57,10 @@ $(TEST):
 endif
 
 $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)  $(CGSHELLOBJ)
-	$(LD) -o $@ $(LDFLAGS) $(SYSLIBS) $^
+	$(CXX) -o $@ $(LDFLAGS) $(SYSLIBS) $^
 
 $(TIMEV): $(CXXTIMEVOBJ)
-	$(LD) -o $@ $(LDFLAGS) $^
+	$(CXX) -o $@ $(LDFLAGS) $^
 
 # Assume that CXXGEN has the weaker frontend of the two (there is no reason to not use it then as CXX)
 # hence use it *only* to compile generated source if CXXGEN is compatible with CXX
@@ -87,10 +88,13 @@ $(CXXTIMEOBJ): test_eri_conf.h
 $(CXXERICOMPOBJ):: $(LIBINTDIR)/buildtest.h
 
 clean::
-	-rm -rf $(ERICOMP) $(TEST) $(TIME) $(TIMEV) *.o *.d
+	-rm -rf $(ERICOMP) $(TEST) $(TIME) $(TIMEV) *.o *.d *.dot *.log
 
-realclean:: clean
-	-rm -rf Make.compute_eri *.h *.cc *.dot *.log
+genclean::
+	-rm -rf Make.compute_eri $(CXXGENSRC) $(CXXGENOBJ) $(CXXGENHDRS) 
+
+realclean:: clean genclean
+
 
 distclean:: realclean
 	-rm -rf run_time_eri.pl run_timing_suite.pl stdtests.pl test_eri.pl time_eri.pl

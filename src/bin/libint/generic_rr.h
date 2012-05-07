@@ -43,7 +43,7 @@ namespace libint2 {
         SafePtr<RRImpl> this_ptr(new RRImpl(Tint,dir));
         // if succeeded (nchildren > 0) do post-construction
         if (this_ptr->num_children() != 0) {
-          this_ptr->register_with_rrstack<RRImpl>();
+          this_ptr->template register_with_rrstack<RRImpl>();
           return this_ptr;
         }
         // else return null pointer

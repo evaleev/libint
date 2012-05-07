@@ -9,14 +9,13 @@ define([AC_CACHE_SAVE], )dnl for debugging configure.in
 AC_PREREQ(2.57)
 AC_INIT([Libint2],[libint_mmm_version],[libint@valeyev.net],[libint2])
 AC_CONFIG_SRCDIR(include/libint2.h)
+AC_CONFIG_HEADER(include/libint2_config.h)
 AC_CONFIG_AUX_DIR(bin)
 
 dnl --- Compiling C++ only ---
 AC_LANG(C++)
 
 AC_CANONICAL_TARGET
-AC_DEFINE_UNQUOTED(HOST_ARCH, "$host")
-AC_DEFINE_UNQUOTED(TARGET_ARCH, "$target")
 
 define([default_prefix_dash],ifelse(libint_buildid, ,[],[-]))
 define([default_prefix],"/usr/local")
@@ -30,9 +29,6 @@ LIBINT_MAJOR_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/\([0-9]*\)\.[0-9]*\.[0-9]*
 LIBINT_MINOR_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/[0-9]*\.\([0-9]*\)\.[0-9]*/\1/'`
 LIBINT_MICRO_VERSION=`echo $LIBINT_MMM_VERSION|sed 's/[0-9]*\.[0-9]*\.\([0-9]*\)/\1/'`
 changequote([, ])dnl
-AC_DEFINE_UNQUOTED(LIBINT_MAJOR_VERSION,$LIBINT_MAJOR_VERSION)
-AC_DEFINE_UNQUOTED(LIBINT_MINOR_VERSION,$LIBINT_MINOR_VERSION)
-AC_DEFINE_UNQUOTED(LIBINT_MICRO_VERSION,$LIBINT_MICRO_VERSION)
 AC_SUBST(LIBINT_MAJOR_VERSION)
 AC_SUBST(LIBINT_MINOR_VERSION)
 AC_SUBST(LIBINT_MICRO_VERSION)
@@ -71,7 +67,7 @@ AC_ARG_WITH(build-id,
 BUILDID=$withval
 )
 AC_SUBST(BUILDID)
-AC_DEFINE_UNQUOTED(LIBINT_BUILDID,"$BUILDID")
+AC_DEFINE_UNQUOTED(LIBINT2_BUILDID,"$BUILDID")
 
 if test "$BUILDID"; then
   LIBINT_VERSION="$LIBINT_MMM_VERSION-$BUILDID"
@@ -79,7 +75,7 @@ else
   LIBINT_VERSION="$LIBINT_MMM_VERSION"
 fi
 
-AC_DEFINE_UNQUOTED(LIBINT_VERSION, "$LIBINT_VERSION")
+AC_DEFINE_UNQUOTED(LIBINT2_VERSION, "$LIBINT_VERSION")
 AC_SUBST(LIBINT_VERSION)
 
 ac_default_prefix="/usr/local/libint/$LIBINT_VERSION"
@@ -161,11 +157,18 @@ dnl --------- Checks for programs. ---------
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
 AC_PROG_RANLIB
-dnl ac_prog_cxx's order isn't what i need
-AC_CHECK_PROGS(CXX, g++ c++ gcc CC cxx xlC_r, gcc)
-dnl sees if CXX is a GNU compiler
+
+# if not given a C++ compiler
+if test "X$CXX" = "X"; then
+  AC_MSG_WARN([No C++ compiler was given! Will try to find one, but not guaranteed to be the best choice...])
+  AC_CHECK_PROGS(CXX, clang++ icpc xlC_r g++ c++ CC, g++)
+fi
+# discard CXXFLAGS provided by the C++ detection macros
+initial_CXXFLAGS="$CXXFLAGS"
 AC_PROG_CXX
 AC_PROG_CXXCPP
+CXXFLAGS="$initial_CXXFLAGS"
+
 AC_CHECK_PROG(AR,ar,ar)
 AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin)
 AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin)
@@ -178,14 +181,17 @@ fi
 
 dnl -------- Checks for compiler/linker options. ----------
 
-# options needed only for optimization
-if test "X$CXXOPTIONS_OPT" = X; then
-  CXXOPTIONS_OPT=-O2
+# if user provided CXXFLAGS, I'm set; else ...
+if test "X$CXXFLAGS" = X; then
+  # options needed only for optimization
+  if test "X$CXXFLAGS_OPT" = X; then
+    CXXFLAGS_OPT=-O2
+  fi
+  # options needed only for debugging
+  CXXFLAGS_DBG=-g
+  # options that are always needed
+  CXXFLAGS_MISC=
 fi
-# options needed only for debugging
-CXXOPTIONS_DBG=-g
-# options that are always needed
-CXXOPTIONS_MISC=
 
 OBJSUF=o
 LIBSUF=a
@@ -257,14 +263,16 @@ else
     esac
 fi
 
-if test $DEBUG = yes; then
+if test "X$CXXFLAGS" = "X"; then
+ if test $DEBUG = yes; then
   CXXFLAGS="$CXXOPTIONS_DBG $CXXOPTIONS_MISC"
   LDFLAGS="$LDFLAGS -g"
-elif test $DEBUG = opt; then
+ elif test $DEBUG = opt; then
   CXXFLAGS="$CXXOPTIONS_DBG $COPTIONS_OPT $CXXOPTIONS_MISC"
   LDFLAGS="$LDFLAGS -g"
-else
+ else
   CXXFLAGS="$CXXOPTIONS_OPT $CXXOPTIONS_MISC"
+ fi
 fi
 
 AC_SUBST(EXTRAINCLUDE)
@@ -291,15 +299,15 @@ dnl -- Checks for typedefs, structures, and compiler characteristics. --
 AC_TYPE_SIZE_T
 
 dnl ---------- Check for posix_memalign ----------------------
-AC_CHECK_FUNC(posix_memalign,[have_posix_memalign=1],[have_posix_memalign=0])
-if test $have_posix_memalign != 0; then
+AC_CHECK_FUNC(posix_memalign,[have_posix_memalign=1 AC_DEFINE(HAVE_POSIX_MEMALIGN)],[have_posix_memalign=0])
+if test "X$have_posix_memalign" != "X0"; then
  # control memory alignment if posix_memalign is found 
  # if vectorization is off (default) then let the default alignment be determined by the system
  # if vectorization is on then the default alignment is veclen * sizeof(LIBINT2_REALTYPE)
  # see default_params.cc to see this logic in action
  LIBINT_ALIGN_SIZE=default  # this will be interpreted as "use the default alignment"
  AC_ARG_WITH(align-size,
- [  --with-align-size       (EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics.],
+  [  --with-align-size       (EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics.],
   [
    if test "X$withval" != "Xdefault"; then
     LIBINT_ALIGN_SIZE=$withval
@@ -313,21 +321,34 @@ if test $have_posix_memalign != 0; then
   AC_MSG_RESULT([will use custom memory alignment: $LIBINT_ALIGN_SIZE * sizeof(LIBINT2_REALTYPE)])
  else
   LIBINT_ALIGN_SIZE=0
-  AC_DEFINE(LIBINT_ALIGN_SIZE)
  fi
+ AC_DEFINE_UNQUOTED(LIBINT2_ALIGN_SIZE,[$LIBINT_ALIGN_SIZE])
 fi
 
-dnl ------------------ Check if the given real type is usable -----------------------
+dnl ------------------ Check for real type. If given, check if it is usable -----------------------
+
+AC_ARG_WITH(real-type,
+ [  --with-real-type       Compute all integrals using the given real type.],
+ [
+  AC_DEFINE_UNQUOTED(LIBINT2_REALTYPE,[$withval])
+  libint_user_defined_real=$withval
+  AC_MSG_RESULT([Using real type: $withval])
+ ],
+ [
+   AC_DEFINE_UNQUOTED(LIBINT2_REALTYPE,[double])
+ ]
+)
 
 # extra includes may be needed in that case!
 if test "X$libint_user_defined_real" != "X"; then
  copy_CXX=$CXX
  copy_CXXFLAGS=$CXXFLAGS
+ CXXFLAGS="$CXXFLAGS -Iinclude"
  
-  AC_ARG_WITH(real-type-includes,
+ AC_ARG_WITH(real-type-includes,
   [  --with-real-type-includes Additional includes necessary to use the real type (default: none).],
   [
-   AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_REAL_INCLUDES,"$withval")
+   AC_DEFINE_UNQUOTED(LIBINT2_REALTYPE_INCLUDES,"$withval")
    libint_user_defined_real_includes=$withval
   ]
  )
@@ -340,15 +361,14 @@ if test "X$libint_user_defined_real" != "X"; then
       
     ]],
     [[
-     LIBINT2_REALTYPE x1;
-     LIBINT2_REALTYPE x2 = 2.0;
-     LIBINT2_REALTYPE x3 = x2;
-     LIBINT2_REALTYPE x4 = x2 + x3;
-     LIBINT2_REALTYPE x5 = x2 - x3;
-     LIBINT2_REALTYPE x6 = x2 * x3;
-     LIBINT2_REALTYPE x7 = x2 / x3;
-     LIBINT2_REALTYPE x8 = 2 * x2;
-     LIBINT2_REALTYPE x9 = x2 * 3;
+     $libint_user_defined_real x1;
+     $libint_user_defined_real x2 = 2.0;
+     $libint_user_defined_real x3 = x2;
+     $libint_user_defined_real x4 = x2 + x3;
+     $libint_user_defined_real x5 = x2 - x3;
+     $libint_user_defined_real x6 = x2 * x3;
+     $libint_user_defined_real x7 = 2 * x2;
+     $libint_user_defined_real x8 = x2 * 3;
      x6 += x2 * x3;
      x7 -= 3 * x3;
     ]]
@@ -359,7 +379,8 @@ if test "X$libint_user_defined_real" != "X"; then
   [AC_MSG_RESULT([no])
    AC_MSG_ERROR([[Libint real type is not usable, perhaps extra -I directories or extra #include's are needed?]])
   ]
- ) 
+ )
+ CXXFLAGS="$copy_CXXFLAGS" 
 fi
 
 CPPFLAGS="$CPPFLAGS" \

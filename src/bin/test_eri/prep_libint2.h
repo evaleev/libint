@@ -57,7 +57,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 
   const uint* am = rsqset.l;
   const unsigned int amtot = am[0] + am[1] + am[2] + am[3] + 6;
-  double* F = init_array(amtot + 1);
+  double* F = new double[amtot + 1];
 
   uint p0123 = 0;
   for (uint p0 = 0; p0 < contrdepth; p0++) {
@@ -396,7 +396,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
     }
   } // end of primitive loops
 
-  free_array(F);
+  delete[] F;
 }
 
 template<typename LibintEval>
@@ -415,7 +415,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 
   const uint* am = rsqset.l;
   const unsigned int amtot = am[0] + am[1] + am[2] + 6;
-  double* F = init_array(amtot + 1);
+  double* F = new double[amtot + 1];
 
   uint p012 = 0;
   for (uint p0 = 0; p0 < contrdepth; p0++) {
@@ -752,7 +752,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
     }
   } // end of primitive loops
 
-  free_array(F);
+  delete[] F;
 }
 
 template<typename LibintEval>
@@ -772,7 +772,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 
   const uint* am = rsqset.l;
   const unsigned int amtot = am[0] + am[1] + 6;
-  double* F = init_array(amtot + 1);
+  double* F = new double[amtot + 1];
 
   uint p01 = 0;
   for (uint p0 = 0; p0 < contrdepth; p0++) {
@@ -1107,6 +1107,6 @@ void prep_libint2(std::vector<LibintEval>& erievals,
     }
   } // end of primitive loops
 
-  free_array(F);
+  delete[] F;
 }
 

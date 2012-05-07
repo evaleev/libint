@@ -52,7 +52,7 @@ depend:: $(TESTCXXDEP) $(BUILDCXXDEP) $(LIBCXXDEP)
 run_test:: test
 	./test
 
-test: $(TESTCXXOBJ) $(LIBTARGET) buildtest.o
+test: $(TESTCXXOBJ) $(LIBTARGET)
 	$(CXX) -o $@ $(LDFLAGS) $(SYSLIBS) $^
 
 $(LIBTARGET): $(LIBOBJ)

@@ -11,7 +11,7 @@ AC_INIT([Libint2],[libint_mmm_version],[libint@valeyev.net],[libint2])
 AC_CONFIG_SRCDIR(src/bin/libint/rr.h)
 AC_CONFIG_HEADER(include/libint2_config.h)
 AC_CONFIG_AUX_DIR(bin)
-AC_CONFIG_MACRO_DIR([config])
+#AC_CONFIG_MACRO_DIR([config])
 
 dnl --- Compiling C++ only ---
 AC_LANG(C++)
@@ -218,7 +218,7 @@ case $enableval in
   ;;
 esac
 ],[
-    INCLUDE_ERI3=0
+    INCLUDE_ERI3=no
 ]
 )
 
@@ -240,7 +240,7 @@ case $enableval in
   ;;
 esac
 ],[
-    INCLUDE_ERI2=0
+    INCLUDE_ERI2=no
 ]
 )
 
@@ -760,6 +760,10 @@ AC_PROG_LN_S
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
+# if not given a C++ compiler
+if test "X$CXX" = "X"; then
+  AC_CHECK_PROGS(CXX, clang++ icpc xlC_r g++ c++ CC, c++)
+fi
 # discard CXXFLAGS provided by the C++ detection macros
 initial_CXXFLAGS="$CXXFLAGS"
 AC_PROG_CXX
@@ -768,6 +772,7 @@ CXXFLAGS="$initial_CXXFLAGS"
 
 AC_CHECK_PROG(AR,ar,ar)
 AC_CHECK_PROG(PERL,perl,perl)
+AC_CHECK_PROGS(TAR,gnutar tar,tar)
 AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin)
 AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin)
 AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin)
@@ -831,14 +836,16 @@ if test "X$CXXFLAGS_GEN_OPT" = X; then
   AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxxgen-optflags configure option])
 fi
 
-if test $DEBUG = yes; then
+if test "X$CXXFLAGS" = "X"; then
+ if test $DEBUG = yes; then
   CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXFLAGS_MISC"
   LDFLAGS="$LDFLAGS -g"
-elif test $DEBUG = opt; then
+ elif test $DEBUG = opt; then
   CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXOPTIONS_OPT $CXXFLAGS_MISC"
   LDFLAGS="$LDFLAGS -g"
-else
+ else
   CXXFLAGS="$CXXFLAGS $CXXFLAGS_OPT $CXXFLAGS_MISC"
+ fi
 fi
 
 AC_SUBST(EXTRAINCLUDE)
@@ -903,8 +910,8 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(limits.h stdint.h)
 
 dnl ---------- Check for posix_memalign ----------------------
-AC_CHECK_FUNC(posix_memalign,[have_posix_memalign=1],[have_posix_memalign=0])
-if test $have_posix_memalign != 0; then
+AC_CHECK_FUNC(posix_memalign,[have_posix_memalign=1 AC_DEFINE(HAVE_POSIX_MEMALIGN)],[have_posix_memalign=0])
+if test "X$have_posix_memalign" != "X0"; then
  # control memory alignment if posix_memalign is found 
  # if vectorization is off (default) then let the default alignment be determined by the system
  # if vectorization is on then the default alignment is veclen * sizeof(LIBINT2_REALTYPE)
@@ -925,8 +932,8 @@ if test $have_posix_memalign != 0; then
   AC_MSG_RESULT([will use custom memory alignment: $LIBINT_ALIGN_SIZE * sizeof(LIBINT2_REALTYPE)])
  else
   LIBINT_ALIGN_SIZE=0
-  AC_DEFINE(LIBINT_ALIGN_SIZE)
  fi
+  AC_DEFINE_UNQUOTED(LIBINT_ALIGN_SIZE, $LIBINT_ALIGN_SIZE)
 fi
 
 dnl ------------------ Check for support for C++11 standard features --------------
@@ -1015,7 +1022,7 @@ AC_CHECK_HEADER(gmpxx.h,[
     [[#include <gmpxx.h>
     ]],
     [[
-     mpz_class a = 1;
+     mpf_class a = 1.0;
     ]]
     )
    ],
@@ -1023,9 +1030,33 @@ AC_CHECK_HEADER(gmpxx.h,[
    ],
    [
     AC_MSG_RESULT([no])
-    AC_MSG_ERROR([cannot link against GMP libraries. Please get the latest GMP with support for C++. It can be obtained at gmplib.org .])
+    AC_MSG_ERROR([cannot link against GMP C++ library. Please get the latest GMP with support for C++. It can be obtained at gmplib.org .])
    ]
   )
+  
+  AC_CHECK_HEADER(mpfr.h,[
+   AC_MSG_CHECKING([if MPFR library is usable])
+   LIBS="-lmpfr $LIBS"
+   AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+     [[#include <mpfr.h>
+     ]],
+     [[
+      mpfr_t x;  mpfr_init(x);
+     ]]
+     )
+    ],
+    [AC_MSG_RESULT([yes])
+    ],
+    [
+     AC_MSG_RESULT([no])
+     AC_MSG_ERROR([cannot link against MPFR library. Please get the latest MPFR library at mpfr.org.])
+    ]
+   )
+  ],
+  [AC_MSG_ERROR([MPFR library is required. Please get the latest MPFR library at mpfr.org.])]
+ )
+  
  ],
  [AC_MSG_ERROR([GMP C++ support is required. Please get the latest GMP with support for C++. It can be obtained at gmplib.org .])]
 )
@@ -1136,9 +1167,8 @@ if test "X$libint_user_defined_real" != "X"; then
      $libint_user_defined_real x4 = x2 + x3;
      $libint_user_defined_real x5 = x2 - x3;
      $libint_user_defined_real x6 = x2 * x3;
-     $libint_user_defined_real x7 = x2 / x3;
-     $libint_user_defined_real x8 = 2 * x2;
-     $libint_user_defined_real x9 = x2 * 3;
+     $libint_user_defined_real x7 = 2 * x2;
+     $libint_user_defined_real x8 = x2 * 3;
      x6 += x2 * x3;
      x7 -= 3 * x3;
     ]]

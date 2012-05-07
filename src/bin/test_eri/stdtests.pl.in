@@ -27,6 +27,7 @@ if ($runall || !$runlong) {
     printf STDOUT "Test \"$tester_arg\" ... ";
     system("./$tester $tester_arg 1>/dev/null 2>/dev/null") && die("failed");
     printf STDOUT "passed\n";
+    system("make genclean 1>/dev/null 2>/dev/null");
   }
 }
 
@@ -36,6 +37,7 @@ if ($runlong) {
     printf STDOUT "Test \"$tester_arg\" ... ";
     system("./$tester $tester_arg 1>/dev/null 2>/dev/null") && die("failed");
     printf STDOUT "passed\n";
+    system("make genclean 1>/dev/null 2>/dev/null");
   }
 }
 

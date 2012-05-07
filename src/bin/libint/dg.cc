@@ -1789,12 +1789,39 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
                 auto parent_oper_type = parent_oper_ptr->type();
                 if (parent_oper_type == algebra::OperatorTypes::Plus ||
                     parent_oper_type == algebra::OperatorTypes::Minus) {
-                  auto arg1 = parent_oper_ptr->left();
-                  auto arg2 = parent_oper_ptr->right();
-                  if (arg1->scheduled() || arg2->scheduled()) {
-                    generate_fma = true;
+                  auto arg1 = (*(parent_oper_ptr->first_exit_arc()))->dest();
+                  auto arg2 = (*(++(parent_oper_ptr->first_exit_arc())))->dest();
+                  auto other_arg = (arg1 == current_vertex) ? arg2 : arg1;
+                  const bool other_ready = other_arg->num_exit_arcs() == 0 || other_arg->scheduled();
+
+                  // can do fmadd if other_ready
+                  // can do fmsub if other_ready and it's arg2
+                  if (parent_oper_type == algebra::OperatorTypes::Plus)
+                    generate_fma = other_ready;
+                  else
+                    generate_fma = other_ready && (current_vertex == arg1);
+                  if (generate_fma) {
                     //std::cout << context->comment("CAN GENERATE FMA!!!") << endl;
-                    fma_other_arg = (arg1 == current_vertex) ? arg2 : arg1;
+                    fma_other_arg = other_arg;
+
+#if DEBUG
+                    std::cout << "Generating FMA:" << std::endl;
+                    std::cout << "parent:\n";
+                    parent_oper_ptr->print(std::cout);
+                    std::cout << "current_vertex:\n";
+                    current_vertex->print(std::cout);
+                    std::cout << "other_vertex:\n";
+                    other_arg->print(std::cout);
+                    std::cout << "arg1:\n";
+                    arg1->print(std::cout);
+                    std::cout << "arg2:\n";
+                    arg2->print(std::cout);
+                    std::cout << "child1:\n";
+                    (*(parent_oper_ptr->first_exit_arc()))->dest()->print(std::cout);
+                    std::cout << "child2:\n";
+                    (*(++(parent_oper_ptr->first_exit_arc())))->dest()->print(std::cout);
+#endif
+
 
                     // may need to declare the variable for the parent
                     if (parent_oper_ptr->symbol_set()) {
@@ -1806,7 +1833,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
                         os << context->declare(context->type_name<double> (),
                                                parent_oper_ptr->symbol());
 #if CHECK_SAFETY
-                        parent_oper_type->declared(true);
+                        parent_oper_ptr->declared(true);
 #endif
                       }
                     }
@@ -1832,7 +1859,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
               fma_other_arg_symbol = to_vector_symbol(fma_other_arg);
             }
           }
-#if CHECK_SAFETY
+#if CHECK_SAFETY && 0
           bool left_not_declared = left_arg->need_to_compute() && !left_arg->declared();
           bool right_not_declared = right_arg->need_to_compute() && !right_arg->declared();
           if (left_not_declared || right_not_declared) {
