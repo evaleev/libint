@@ -19,6 +19,8 @@ using namespace libint2;
 
 typedef unsigned int uint;
 
+FmEval_Chebyshev3 fmeval(28);
+
 int main(int argc, char** argv)
 {
 #if defined(__cplusplus)
@@ -175,7 +177,9 @@ int main(int argc, char** argv)
               if ( abs(ref_eri[di]-(double)new_eri) > 1.0E-10) {
                 std::cout << "Elem " << ijkl << " di= " << di << " v=" << v
                     << " : eri.cc = " << ref_eri[di]
-                    << " libint = " << (double) new_eri << endl;
+                    << " libint = " << (double) new_eri
+                    << " (relerr = " << abs((ref_eri[di] - new_eri)/ref_eri[di]) << ")"
+                    << endl;
                 success = false;
               }
             }

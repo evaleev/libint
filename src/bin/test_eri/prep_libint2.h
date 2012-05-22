@@ -5,6 +5,9 @@
 #include <cstdlib>
 #include <libint2.h>
 #include <test_eri/eri.h>
+#include <boys.h>
+
+extern FmEval_Chebyshev3 fmeval;
 
 typedef unsigned int uint;
 template <unsigned int N>
@@ -323,7 +326,9 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 //              pfac *= norm_const(l4,m4,n4,alpha3,D);
             }
 
-            calc_f(F, amtot, PQ2 * gammapq);
+            //calc_f(F, amtot, PQ2 * gammapq);
+            //FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
+            fmeval.eval(F,PQ2*gammapq,amtot);
 
             // using dangerous macros from libint2.h
 #if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(0))
@@ -680,7 +685,8 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 //              pfac *= norm_const(l4,m4,n4,alpha3,D);
             }
 
-            calc_f(F, amtot, PQ2 * gammapq);
+            //calc_f(F, amtot, PQ2 * gammapq);
+            FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
 
             // using dangerous macros from libint2.h
 #if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(0))
@@ -1036,7 +1042,8 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 //              pfac *= norm_const(l4,m4,n4,alpha3,D);
             }
 
-            calc_f(F, amtot, PQ2 * gammapq);
+            //calc_f(F, amtot, PQ2 * gammapq);
+            FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
 
             // using dangerous macros from libint2.h
 #if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(0))

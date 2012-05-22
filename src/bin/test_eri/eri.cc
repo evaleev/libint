@@ -10,6 +10,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include "eri.h"
+#include "boys.h"
 
 #define EPS 1.0E-17     /* Absolute precision in computing Fm(t)
                            (see recursion:calc_fij() ) */
@@ -105,7 +106,8 @@ LIBINT2_REF_REALTYPE eri(unsigned int l1, unsigned int m1, unsigned int n1,
 
   const int ltot = l1+l2+l3+l4+m1+m2+m3+m4+n1+n2+n3+n4;
   F = new LIBINT2_REF_REALTYPE[ltot+1];
-  calc_f<LIBINT2_REF_REALTYPE>(F,ltot,PQ2*gammapq);
+  //calc_f<LIBINT2_REF_REALTYPE>(F,ltot,PQ2*gammapq);
+  FmEval_Reference<LIBINT2_REF_REALTYPE>::eval(F,PQ2*gammapq,ltot,1e-15);
 
 #define DEBUG 0
 #if DEBUG
