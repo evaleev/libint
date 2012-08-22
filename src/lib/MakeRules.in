@@ -23,6 +23,7 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)$(VERSION)/*.h $(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2_config.h $(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_intrinsic_types.h $(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/*.h $(includedir)/$(NAME)$(VERSION)
 
 install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)
