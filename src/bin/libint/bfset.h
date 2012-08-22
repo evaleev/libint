@@ -9,6 +9,7 @@
 #include <hashable.h>
 #include <contractable.h>
 #include <global_macros.h>
+#include <cassert>
 
 namespace libint2 {
 
