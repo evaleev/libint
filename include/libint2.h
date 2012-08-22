@@ -10,7 +10,7 @@
 
 #include <libint2_intrinsic_types.h>
 #include <libint2_params.h>
-# include <libint2_types.h>
+#include <libint2_types.h>
 
 #if 0
 #define VECLEN LIBINT2_MAX_VECLEN

@@ -15,6 +15,7 @@
 # define LIBINT_CGSHELL_ORDERING_INTV3 LIBINT2_CGSHELL_ORDERING_INTV3
 # define LIBINT_CGSHELL_ORDERING_GAMESS LIBINT2_CGSHELL_ORDERING_GAMESS
 # define LIBINT_CGSHELL_ORDERING_ORCA LIBINT2_CGSHELL_ORDERING_ORCA
+# define LIBINT_CGSHELL_ORDERING_TORU LIBINT2_CGSHELL_ORDERING_TORU
 #endif
 
 namespace libint2 {
@@ -23,7 +24,8 @@ namespace libint2 {
     CGShellOrdering_Standard     = LIBINT_CGSHELL_ORDERING_STANDARD,
     CGShellOrdering_IntV3        = LIBINT_CGSHELL_ORDERING_INTV3,
     CGShellOrdering_GAMESS       = LIBINT_CGSHELL_ORDERING_GAMESS,
-    CGShellOrdering_ORCA         = LIBINT_CGSHELL_ORDERING_ORCA
+    CGShellOrdering_ORCA         = LIBINT_CGSHELL_ORDERING_ORCA,
+    CGShellOrdering_TORU         = LIBINT_CGSHELL_ORDERING_TORU
   };
 
 };
@@ -159,5 +161,38 @@ namespace libint2 {
 #define END_FOR_CART }
 
 #endif // ORCA ordering
+
+#if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_TORU
+// permuted version of IntV3 (y in IntV3 = x in Toru, etc.)
+
+/* Computes an index to a Cartesian function within a shell given
+ * all arguments are used multiple times in the macro--beware side effects)
+ * am = total angular momentum
+ * i = the exponent of x
+ * j = the exponent of y
+ * formula: am*(k+1) - (k*(k+1))/2 + k+1 - i - 1 = 
+ * The following loop will generate indices in the proper order:
+ *  cartindex = 0;
+ *  for (k=0; k<=am; k++) {
+ *    for (j=0; j<=am-k; j++) {
+ *      i = am - j - k;
+ *      do_it_with(cartindex); // cartindex == INT_CARTINDEX(am,i,j)
+ *      cartindex++;
+ *      }
+ *    }
+ */
+#define INT_CARTINDEX(am,i,j) ((((am)+((i)+(j))+2)*((am)-((i)+(j))+1)>>1)-(i)-1)
+
+/* This sets up the above loop over cartesian exponents as follows
+ * FOR_CART(i,j,k,am)
+ *   Stuff using i,j,k.
+ *   END_FOR_CART
+ */
+#define FOR_CART(i,j,k,am) for((k)=0;(k)<=(am);(k)++) {\
+                           for((j)=0;(j)<=(am)-(k);(j)++) \
+                           { (i) = (am) - (j) - (k);
+#define END_FOR_CART }}
+
+#endif // TORU ordering
 
 #endif // header guard

@@ -49,10 +49,10 @@ struct RandomShellSet {
 template<typename LibintEval>
 void prep_libint2(std::vector<LibintEval>& erievals,
                   const RandomShellSet<4u>& rsqset,
-                  int norm_flag) {
+                  int norm_flag,
+                  int deriv_order = 0) {
   const uint veclen = rsqset.exp[0].size();
   const uint contrdepth = rsqset.exp[0][0].size();
-  const uint contrdepth4 = erievals.size();
 
   const double* A = &(rsqset.R[0][0]);
   const double* B = &(rsqset.R[1][0]);
@@ -60,8 +60,9 @@ void prep_libint2(std::vector<LibintEval>& erievals,
   const double* D = &(rsqset.R[3][0]);
 
   const uint* am = rsqset.l;
-  const unsigned int amtot = am[0] + am[1] + am[2] + am[3] + 6;
-  double* F = new double[amtot + 1];
+  const unsigned int amtot = am[0] + am[1] + am[2] + am[3] + deriv_order;
+  // static seems to be important for performance on OS X 10.7 with Apple clang 3.1 (318.0.58)
+  static double F[LIBINT_MAX_AM*4 + 6];
 
   uint p0123 = 0;
   for (uint p0 = 0; p0 < contrdepth; p0++) {
@@ -88,10 +89,11 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             const double c3 = rsqset.coef[3][v][p3];
 
             const double gammap = alpha0 + alpha1;
-            const double rhop = alpha0 * alpha1 / gammap;
-            const double Px = (alpha0 * A[0] + alpha1 * B[0]) / gammap;
-            const double Py = (alpha0 * A[1] + alpha1 * B[1]) / gammap;
-            const double Pz = (alpha0 * A[2] + alpha1 * B[2]) / gammap;
+            const double oogammap = 1.0 / gammap;
+            const double rhop = alpha0 * alpha1 * oogammap;
+            const double Px = (alpha0 * A[0] + alpha1 * B[0]) * oogammap;
+            const double Py = (alpha0 * A[1] + alpha1 * B[1]) * oogammap;
+            const double Pz = (alpha0 * A[2] + alpha1 * B[2]) * oogammap;
             const double PAx = Px - A[0];
             const double PAy = Py - A[1];
             const double PAz = Pz - A[2];
@@ -132,15 +134,18 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             erieval->AB_z[v] = AB_z;
 #endif
 #if LIBINT2_DEFINED(eri,oo2z)
-            erieval->oo2z[v] = 0.5/gammap;
+            erieval->oo2z[v] = 0.5*oogammap;
 #endif
 
             const double gammaq = alpha2 + alpha3;
-            const double rhoq = alpha2 * alpha3 / gammaq;
+            const double oogammaq = 1.0 / gammaq;
+            const double rhoq = alpha2 * alpha3 * oogammaq;
             const double gammapq = gammap * gammaq / (gammap + gammaq);
-            const double Qx = (alpha2 * C[0] + alpha3 * D[0]) / gammaq;
-            const double Qy = (alpha2 * C[1] + alpha3 * D[1]) / gammaq;
-            const double Qz = (alpha2 * C[2] + alpha3 * D[2]) / gammaq;
+            const double gammap_o_gammapgammaq = gammapq * oogammaq;
+            const double gammaq_o_gammapgammaq = gammapq * oogammap;
+            const double Qx = (alpha2 * C[0] + alpha3 * D[0]) * oogammaq;
+            const double Qy = (alpha2 * C[1] + alpha3 * D[1]) * oogammaq;
+            const double Qz = (alpha2 * C[2] + alpha3 * D[2]) * oogammaq;
             const double QCx = Qx - C[0];
             const double QCy = Qy - C[1];
             const double QCz = Qz - C[2];
@@ -181,60 +186,60 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             erieval->CD_z[v] = CD_z;
 #endif
 #if LIBINT2_DEFINED(eri,oo2e)
-            erieval->oo2e[v] = 0.5/gammaq;
+            erieval->oo2e[v] = 0.5*oogammaq;
 #endif
 
     // Prefactors for interelectron transfer relation
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_x)
-            erieval->TwoPRepITR_pfac0_0_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)/gammap;
+            erieval->TwoPRepITR_pfac0_0_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_y)
-            erieval->TwoPRepITR_pfac0_0_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)/gammap;
+            erieval->TwoPRepITR_pfac0_0_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_z)
-            erieval->TwoPRepITR_pfac0_0_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)/gammap;
+            erieval->TwoPRepITR_pfac0_0_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_x)
-            erieval->TwoPRepITR_pfac0_1_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_y)
-            erieval->TwoPRepITR_pfac0_1_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_z)
-            erieval->TwoPRepITR_pfac0_1_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_x)
-            erieval->TwoPRepITR_pfac0_0_1_x[v] = (alpha0*AB_x + alpha2*CD_x)/gammap;
+            erieval->TwoPRepITR_pfac0_0_1_x[v] = (alpha0*AB_x + alpha2*CD_x)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_y)
-            erieval->TwoPRepITR_pfac0_0_1_y[v] = (alpha0*AB_y + alpha2*CD_y)/gammap;
+            erieval->TwoPRepITR_pfac0_0_1_y[v] = (alpha0*AB_y + alpha2*CD_y)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_z)
-            erieval->TwoPRepITR_pfac0_0_1_z[v] = (alpha0*AB_z + alpha2*CD_z)/gammap;
+            erieval->TwoPRepITR_pfac0_0_1_z[v] = (alpha0*AB_z + alpha2*CD_z)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_x)
-            erieval->TwoPRepITR_pfac0_1_1_x[v] = (alpha0*AB_x + alpha2*CD_x)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_1_x[v] = (alpha0*AB_x + alpha2*CD_x)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_y)
-            erieval->TwoPRepITR_pfac0_1_1_y[v] = (alpha0*AB_y + alpha2*CD_y)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_1_y[v] = (alpha0*AB_y + alpha2*CD_y)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_z)
-            erieval->TwoPRepITR_pfac0_1_1_z[v] = (alpha0*AB_z + alpha2*CD_z)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_1_z[v] = (alpha0*AB_z + alpha2*CD_z)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,eoz)
-            erieval->eoz[v] = gammaq/gammap;
+            erieval->eoz[v] = gammaq*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,zoe)
-            erieval->zoe[v] = gammap/gammaq;
+            erieval->zoe[v] = gammap*oogammaq;
 #endif
 
             const double PQx = Px - Qx;
             const double PQy = Py - Qy;
             const double PQz = Pz - Qz;
             const double PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
-            const double Wx = (gammap * Px + gammaq * Qx) / (gammap + gammaq);
-            const double Wy = (gammap * Py + gammaq * Qy) / (gammap + gammaq);
-            const double Wz = (gammap * Pz + gammaq * Qz) / (gammap + gammaq);
+            const double Wx = (gammap_o_gammapgammaq * Px + gammaq_o_gammapgammaq * Qx);
+            const double Wy = (gammap_o_gammapgammaq * Py + gammaq_o_gammapgammaq * Qy);
+            const double Wz = (gammap_o_gammapgammaq * Pz + gammaq_o_gammapgammaq * Qz);
 
 #if LIBINT2_DEFINED(eri,WP_x)
             erieval->WP_x[v] = Wx - Px;
@@ -258,12 +263,13 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             erieval->oo2ze[v] = 0.5/(gammap+gammaq);
 #endif
 #if LIBINT2_DEFINED(eri,roz)
-            erieval->roz[v] = gammapq/gammap;
+            erieval->roz[v] = gammapq*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,roe)
-            erieval->roe[v] = gammapq/gammaq;
+            erieval->roe[v] = gammapq*oogammaq;
 #endif
 
+            if (deriv_order > 0) {
             // prefactors for derivative ERI relations
 #if LIBINT2_DEFINED(eri,alpha1_rho_over_zeta2)
             erieval->alpha1_rho_over_zeta2[v] = alpha0 * gammapq / (gammap * gammap);
@@ -313,9 +319,10 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 #if LIBINT2_DEFINED(eri,two_alpha1_ket)
             erieval->two_alpha1_ket[v] = 2.0 * alpha3;
 #endif
+            }
 
-            double K1 = exp(-alpha0 * alpha1 * AB2 / gammap);
-            double K2 = exp(-alpha2 * alpha3 * CD2 / gammaq);
+            const double K1 = exp(- rhop * AB2);
+            const double K2 = exp(- rhoq * CD2);
             double pfac = 2 * pow(M_PI, 2.5) * K1 * K2 / (gammap * gammaq * sqrt(gammap
                                                                                  + gammaq));
             pfac *= c0 * c1 * c2 * c3;
@@ -329,8 +336,8 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 
             //calc_f(F, amtot, PQ2 * gammapq);
             //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-20);
-            fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
-            //fmeval_taylor.eval(F,PQ2*gammapq,amtot);
+            //fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
+            fmeval_taylor.eval(F,PQ2*gammapq,amtot);
 
             // using dangerous macros from libint2.h
 #if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(0))
@@ -402,17 +409,15 @@ void prep_libint2(std::vector<LibintEval>& erievals,
       }
     }
   } // end of primitive loops
-
-  delete[] F;
 }
 
 template<typename LibintEval>
 void prep_libint2(std::vector<LibintEval>& erievals,
                   const RandomShellSet<3u>& rsqset,
-                  int norm_flag) {
+                  int norm_flag,
+                  int deriv_order = 0) {
   const uint veclen = rsqset.exp[0].size();
   const uint contrdepth = rsqset.exp[0][0].size();
-  const uint contrdepth3 = erievals.size();
 
   const unsigned int dummy_center = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD) ? 1 : 0;
   const double* A = &(rsqset.R[0][0]);
@@ -421,8 +426,8 @@ void prep_libint2(std::vector<LibintEval>& erievals,
   const double* D = &(rsqset.R[2][0]);
 
   const uint* am = rsqset.l;
-  const unsigned int amtot = am[0] + am[1] + am[2] + 6;
-  double* F = new double[amtot + 1];
+  const unsigned int amtot = am[0] + am[1] + am[2] + deriv_order;
+  static double F[LIBINT_MAX_AM*3 + 6];
 
   uint p012 = 0;
   for (uint p0 = 0; p0 < contrdepth; p0++) {
@@ -448,10 +453,11 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             const double c3 = rsqset.coef[2][v][p2];
 
             const double gammap = alpha0 + alpha1;
-            const double rhop = alpha0 * alpha1 / gammap;
-            const double Px = (alpha0 * A[0] + alpha1 * B[0]) / gammap;
-            const double Py = (alpha0 * A[1] + alpha1 * B[1]) / gammap;
-            const double Pz = (alpha0 * A[2] + alpha1 * B[2]) / gammap;
+            const double oogammap = 1.0 / gammap;
+            const double rhop = alpha0 * alpha1 * oogammap;
+            const double Px = (alpha0 * A[0] + alpha1 * B[0]) * oogammap;
+            const double Py = (alpha0 * A[1] + alpha1 * B[1]) * oogammap;
+            const double Pz = (alpha0 * A[2] + alpha1 * B[2]) * oogammap;
             const double PAx = Px - A[0];
             const double PAy = Py - A[1];
             const double PAz = Pz - A[2];
@@ -492,15 +498,18 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             erieval->AB_z[v] = AB_z;
 #endif
 #if LIBINT2_DEFINED(eri,oo2z)
-            erieval->oo2z[v] = 0.5/gammap;
+            erieval->oo2z[v] = 0.5*oogammap;
 #endif
 
             const double gammaq = alpha2 + alpha3;
-            const double rhoq = alpha2 * alpha3 / gammaq;
+            const double oogammaq = 1.0 / gammaq;
+            const double rhoq = alpha2 * alpha3 * oogammaq;
             const double gammapq = gammap * gammaq / (gammap + gammaq);
-            const double Qx = (alpha2 * C[0] + alpha3 * D[0]) / gammaq;
-            const double Qy = (alpha2 * C[1] + alpha3 * D[1]) / gammaq;
-            const double Qz = (alpha2 * C[2] + alpha3 * D[2]) / gammaq;
+            const double gammap_o_gammapgammaq = gammapq * oogammaq;
+            const double gammaq_o_gammapgammaq = gammapq * oogammap;
+            const double Qx = (alpha2 * C[0] + alpha3 * D[0]) * oogammaq;
+            const double Qy = (alpha2 * C[1] + alpha3 * D[1]) * oogammaq;
+            const double Qz = (alpha2 * C[2] + alpha3 * D[2]) * oogammaq;
             const double QCx = Qx - C[0];
             const double QCy = Qy - C[1];
             const double QCz = Qz - C[2];
@@ -541,60 +550,60 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             erieval->CD_z[v] = CD_z;
 #endif
 #if LIBINT2_DEFINED(eri,oo2e)
-            erieval->oo2e[v] = 0.5/gammaq;
+            erieval->oo2e[v] = 0.5*oogammaq;
 #endif
 
     // Prefactors for interelectron transfer relation
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_x)
-            erieval->TwoPRepITR_pfac0_0_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)/gammap;
+            erieval->TwoPRepITR_pfac0_0_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_y)
-            erieval->TwoPRepITR_pfac0_0_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)/gammap;
+            erieval->TwoPRepITR_pfac0_0_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_z)
-            erieval->TwoPRepITR_pfac0_0_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)/gammap;
+            erieval->TwoPRepITR_pfac0_0_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_x)
-            erieval->TwoPRepITR_pfac0_1_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_y)
-            erieval->TwoPRepITR_pfac0_1_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_z)
-            erieval->TwoPRepITR_pfac0_1_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_x)
-            erieval->TwoPRepITR_pfac0_0_1_x[v] = (alpha0*AB_x + alpha2*CD_x)/gammap;
+            erieval->TwoPRepITR_pfac0_0_1_x[v] = (alpha0*AB_x + alpha2*CD_x)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_y)
-            erieval->TwoPRepITR_pfac0_0_1_y[v] = (alpha0*AB_y + alpha2*CD_y)/gammap;
+            erieval->TwoPRepITR_pfac0_0_1_y[v] = (alpha0*AB_y + alpha2*CD_y)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_z)
-            erieval->TwoPRepITR_pfac0_0_1_z[v] = (alpha0*AB_z + alpha2*CD_z)/gammap;
+            erieval->TwoPRepITR_pfac0_0_1_z[v] = (alpha0*AB_z + alpha2*CD_z)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_x)
-            erieval->TwoPRepITR_pfac0_1_1_x[v] = (alpha0*AB_x + alpha2*CD_x)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_1_x[v] = (alpha0*AB_x + alpha2*CD_x)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_y)
-            erieval->TwoPRepITR_pfac0_1_1_y[v] = (alpha0*AB_y + alpha2*CD_y)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_1_y[v] = (alpha0*AB_y + alpha2*CD_y)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_z)
-            erieval->TwoPRepITR_pfac0_1_1_z[v] = (alpha0*AB_z + alpha2*CD_z)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_1_z[v] = (alpha0*AB_z + alpha2*CD_z)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,eoz)
-            erieval->eoz[v] = gammaq/gammap;
+            erieval->eoz[v] = gammaq*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,zoe)
-            erieval->zoe[v] = gammap/gammaq;
+            erieval->zoe[v] = gammap*oogammaq;
 #endif
 
             const double PQx = Px - Qx;
             const double PQy = Py - Qy;
             const double PQz = Pz - Qz;
             const double PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
-            const double Wx = (gammap * Px + gammaq * Qx) / (gammap + gammaq);
-            const double Wy = (gammap * Py + gammaq * Qy) / (gammap + gammaq);
-            const double Wz = (gammap * Pz + gammaq * Qz) / (gammap + gammaq);
+            const double Wx = (gammap_o_gammapgammaq * Px + gammaq_o_gammapgammaq * Qx);
+            const double Wy = (gammap_o_gammapgammaq * Py + gammaq_o_gammapgammaq * Qy);
+            const double Wz = (gammap_o_gammapgammaq * Pz + gammaq_o_gammapgammaq * Qz);
 
 #if LIBINT2_DEFINED(eri,WP_x)
             erieval->WP_x[v] = Wx - Px;
@@ -618,13 +627,14 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             erieval->oo2ze[v] = 0.5/(gammap+gammaq);
 #endif
 #if LIBINT2_DEFINED(eri,roz)
-            erieval->roz[v] = gammapq/gammap;
+            erieval->roz[v] = gammapq*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,roe)
-            erieval->roe[v] = gammapq/gammaq;
+            erieval->roe[v] = gammapq*oogammaq;
 #endif
 
             // prefactors for derivative ERI relations
+            if (deriv_order > 0) {
 #if LIBINT2_DEFINED(eri,alpha1_rho_over_zeta2)
             erieval->alpha1_rho_over_zeta2[v] = alpha0 * gammapq / (gammap * gammap);
 #endif
@@ -673,9 +683,10 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 #if LIBINT2_DEFINED(eri,two_alpha1_ket)
             erieval->two_alpha1_ket[v] = 2.0 * alpha3;
 #endif
+            }
 
-            double K1 = exp(-alpha0 * alpha1 * AB2 / gammap);
-            double K2 = exp(-alpha2 * alpha3 * CD2 / gammaq);
+            const double K1 = exp(- rhop * AB2);
+            const double K2 = exp(- rhoq * CD2);
             double pfac = 2 * pow(M_PI, 2.5) * K1 * K2 / (gammap * gammaq * sqrt(gammap
                                                                                  + gammaq));
             pfac *= c0 * c1 * c2 * c3;
@@ -688,7 +699,9 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             }
 
             //calc_f(F, amtot, PQ2 * gammapq);
-            libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
+            //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
+            fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
+            //fmeval_taylor.eval(F,PQ2*gammapq,amtot);
 
             // using dangerous macros from libint2.h
 #if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(0))
@@ -759,17 +772,15 @@ void prep_libint2(std::vector<LibintEval>& erievals,
       }
     }
   } // end of primitive loops
-
-  delete[] F;
 }
 
 template<typename LibintEval>
 void prep_libint2(std::vector<LibintEval>& erievals,
                   const RandomShellSet<2u>& rsqset,
-                  int norm_flag) {
+                  int norm_flag,
+                  int deriv_order = 0) {
   const uint veclen = rsqset.exp[0].size();
   const uint contrdepth = rsqset.exp[0][0].size();
-  const uint contrdepth2 = erievals.size();
 
   const unsigned int dummy_center1 = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD) ? 1 : 0;
   const unsigned int dummy_center2 = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD) ? 3 : 2;
@@ -779,8 +790,8 @@ void prep_libint2(std::vector<LibintEval>& erievals,
   const double* D = &(rsqset.R[1][0]);
 
   const uint* am = rsqset.l;
-  const unsigned int amtot = am[0] + am[1] + 6;
-  double* F = new double[amtot + 1];
+  const unsigned int amtot = am[0] + am[1] + deriv_order;
+  static double F[LIBINT_MAX_AM*4 + 6];
 
   uint p01 = 0;
   for (uint p0 = 0; p0 < contrdepth; p0++) {
@@ -805,10 +816,11 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             const double c3 = (dummy_center2 == 3) ? 1.0 : rsqset.coef[1][v][p1];
 
             const double gammap = alpha0 + alpha1;
-            const double rhop = alpha0 * alpha1 / gammap;
-            const double Px = (alpha0 * A[0] + alpha1 * B[0]) / gammap;
-            const double Py = (alpha0 * A[1] + alpha1 * B[1]) / gammap;
-            const double Pz = (alpha0 * A[2] + alpha1 * B[2]) / gammap;
+            const double oogammap = 1.0 / gammap;
+            const double rhop = alpha0 * alpha1 * oogammap;
+            const double Px = (alpha0 * A[0] + alpha1 * B[0]) * oogammap;
+            const double Py = (alpha0 * A[1] + alpha1 * B[1]) * oogammap;
+            const double Pz = (alpha0 * A[2] + alpha1 * B[2]) * oogammap;
             const double PAx = Px - A[0];
             const double PAy = Py - A[1];
             const double PAz = Pz - A[2];
@@ -849,15 +861,18 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             erieval->AB_z[v] = AB_z;
 #endif
 #if LIBINT2_DEFINED(eri,oo2z)
-            erieval->oo2z[v] = 0.5/gammap;
+            erieval->oo2z[v] = 0.5*oogammap;
 #endif
 
             const double gammaq = alpha2 + alpha3;
-            const double rhoq = alpha2 * alpha3 / gammaq;
+            const double oogammaq = 1.0 / gammaq;
+            const double rhoq = alpha2 * alpha3 * oogammaq;
             const double gammapq = gammap * gammaq / (gammap + gammaq);
-            const double Qx = (alpha2 * C[0] + alpha3 * D[0]) / gammaq;
-            const double Qy = (alpha2 * C[1] + alpha3 * D[1]) / gammaq;
-            const double Qz = (alpha2 * C[2] + alpha3 * D[2]) / gammaq;
+            const double gammap_o_gammapgammaq = gammapq * oogammaq;
+            const double gammaq_o_gammapgammaq = gammapq * oogammap;
+            const double Qx = (alpha2 * C[0] + alpha3 * D[0]) * oogammaq;
+            const double Qy = (alpha2 * C[1] + alpha3 * D[1]) * oogammaq;
+            const double Qz = (alpha2 * C[2] + alpha3 * D[2]) * oogammaq;
             const double QCx = Qx - C[0];
             const double QCy = Qy - C[1];
             const double QCz = Qz - C[2];
@@ -898,60 +913,60 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             erieval->CD_z[v] = CD_z;
 #endif
 #if LIBINT2_DEFINED(eri,oo2e)
-            erieval->oo2e[v] = 0.5/gammaq;
+            erieval->oo2e[v] = 0.5*oogammaq;
 #endif
 
     // Prefactors for interelectron transfer relation
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_x)
-            erieval->TwoPRepITR_pfac0_0_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)/gammap;
+            erieval->TwoPRepITR_pfac0_0_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_y)
-            erieval->TwoPRepITR_pfac0_0_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)/gammap;
+            erieval->TwoPRepITR_pfac0_0_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_z)
-            erieval->TwoPRepITR_pfac0_0_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)/gammap;
+            erieval->TwoPRepITR_pfac0_0_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_x)
-            erieval->TwoPRepITR_pfac0_1_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_0_x[v] = - (alpha1*AB_x + alpha3*CD_x)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_y)
-            erieval->TwoPRepITR_pfac0_1_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_0_y[v] = - (alpha1*AB_y + alpha3*CD_y)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_z)
-            erieval->TwoPRepITR_pfac0_1_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_0_z[v] = - (alpha1*AB_z + alpha3*CD_z)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_x)
-            erieval->TwoPRepITR_pfac0_0_1_x[v] = (alpha0*AB_x + alpha2*CD_x)/gammap;
+            erieval->TwoPRepITR_pfac0_0_1_x[v] = (alpha0*AB_x + alpha2*CD_x)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_y)
-            erieval->TwoPRepITR_pfac0_0_1_y[v] = (alpha0*AB_y + alpha2*CD_y)/gammap;
+            erieval->TwoPRepITR_pfac0_0_1_y[v] = (alpha0*AB_y + alpha2*CD_y)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_z)
-            erieval->TwoPRepITR_pfac0_0_1_z[v] = (alpha0*AB_z + alpha2*CD_z)/gammap;
+            erieval->TwoPRepITR_pfac0_0_1_z[v] = (alpha0*AB_z + alpha2*CD_z)*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_x)
-            erieval->TwoPRepITR_pfac0_1_1_x[v] = (alpha0*AB_x + alpha2*CD_x)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_1_x[v] = (alpha0*AB_x + alpha2*CD_x)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_y)
-            erieval->TwoPRepITR_pfac0_1_1_y[v] = (alpha0*AB_y + alpha2*CD_y)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_1_y[v] = (alpha0*AB_y + alpha2*CD_y)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_z)
-            erieval->TwoPRepITR_pfac0_1_1_z[v] = (alpha0*AB_z + alpha2*CD_z)/gammaq;
+            erieval->TwoPRepITR_pfac0_1_1_z[v] = (alpha0*AB_z + alpha2*CD_z)*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,eoz)
-            erieval->eoz[v] = gammaq/gammap;
+            erieval->eoz[v] = gammaq*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,zoe)
-            erieval->zoe[v] = gammap/gammaq;
+            erieval->zoe[v] = gammap*oogammaq;
 #endif
 
             const double PQx = Px - Qx;
             const double PQy = Py - Qy;
             const double PQz = Pz - Qz;
             const double PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
-            const double Wx = (gammap * Px + gammaq * Qx) / (gammap + gammaq);
-            const double Wy = (gammap * Py + gammaq * Qy) / (gammap + gammaq);
-            const double Wz = (gammap * Pz + gammaq * Qz) / (gammap + gammaq);
+            const double Wx = (gammap_o_gammapgammaq * Px + gammaq_o_gammapgammaq * Qx);
+            const double Wy = (gammap_o_gammapgammaq * Py + gammaq_o_gammapgammaq * Qy);
+            const double Wz = (gammap_o_gammapgammaq * Pz + gammaq_o_gammapgammaq * Qz);
 
 #if LIBINT2_DEFINED(eri,WP_x)
             erieval->WP_x[v] = Wx - Px;
@@ -975,13 +990,14 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             erieval->oo2ze[v] = 0.5/(gammap+gammaq);
 #endif
 #if LIBINT2_DEFINED(eri,roz)
-            erieval->roz[v] = gammapq/gammap;
+            erieval->roz[v] = gammapq*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,roe)
-            erieval->roe[v] = gammapq/gammaq;
+            erieval->roe[v] = gammapq*oogammaq;
 #endif
 
             // prefactors for derivative ERI relations
+            if (deriv_order > 0) {
 #if LIBINT2_DEFINED(eri,alpha1_rho_over_zeta2)
             erieval->alpha1_rho_over_zeta2[v] = alpha0 * gammapq / (gammap * gammap);
 #endif
@@ -1030,9 +1046,10 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 #if LIBINT2_DEFINED(eri,two_alpha1_ket)
             erieval->two_alpha1_ket[v] = 2.0 * alpha3;
 #endif
+            }
 
-            double K1 = exp(-alpha0 * alpha1 * AB2 / gammap);
-            double K2 = exp(-alpha2 * alpha3 * CD2 / gammaq);
+            const double K1 = exp(- rhop * AB2 );
+            const double K2 = exp(- rhoq * CD2 );
             double pfac = 2 * pow(M_PI, 2.5) * K1 * K2 / (gammap * gammaq * sqrt(gammap
                                                                                  + gammaq));
             pfac *= c0 * c1 * c2 * c3;
@@ -1045,7 +1062,9 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             }
 
             //calc_f(F, amtot, PQ2 * gammapq);
-            libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
+            //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
+            fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
+            //fmeval_taylor.eval(F,PQ2*gammapq,amtot);
 
             // using dangerous macros from libint2.h
 #if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(0))
@@ -1115,7 +1134,5 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 
     }
   } // end of primitive loops
-
-  delete[] F;
 }
 
