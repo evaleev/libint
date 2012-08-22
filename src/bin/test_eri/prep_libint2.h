@@ -336,8 +336,8 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 
             //calc_f(F, amtot, PQ2 * gammapq);
             //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-20);
-            //fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
-            fmeval_taylor.eval(F,PQ2*gammapq,amtot);
+            fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
+            //fmeval_taylor.eval(F,PQ2*gammapq,amtot);
 
             // using dangerous macros from libint2.h
 #if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(0))

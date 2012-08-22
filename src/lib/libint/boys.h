@@ -4,6 +4,7 @@
 #ifndef _libint2_src_lib_libint_boys_h_
 #define _libint2_src_lib_libint_boys_h_
 
+#include <iostream>
 #include <math.h>
 #include <vector.h>
 
@@ -115,8 +116,8 @@ namespace libint2 {
 
     public:
       FmEval_Chebyshev3(int m_max) :
-          mmax(m_max), FM_MAX(25.0), FM_DELTA(FM_MAX / (FM_N - 1)),
-          numbers_(14, 0) {
+          FM_MAX(25.0), FM_DELTA(FM_MAX / (FM_N - 1)),
+          mmax(m_max), numbers_(14, 0) {
         assert(mmax <= 63);
         init();
       }
@@ -161,7 +162,7 @@ namespace libint2 {
             + xd * (d[ofs + 1] + xd * (d[ofs + 2] + xd * d[ofs + 3]));
 
         // check against the reference value
-        {
+        if (false) {
           double refvalue = FmEval_Reference<double>::eval(x, mmax, 1e-15);
           if (abs(refvalue - Fm[mmax]) > 1e-10) {
             std::cout << "T = " << x << " m = " << mmax << " cheb = "
