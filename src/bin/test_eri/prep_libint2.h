@@ -60,7 +60,9 @@ void prep_libint2(std::vector<LibintEval>& erievals,
   const double* D = &(rsqset.R[3][0]);
 
   const uint* am = rsqset.l;
-  const unsigned int amtot = am[0] + am[1] + am[2] + am[3] + deriv_order;
+  const unsigned int am01 = am[0] + am[1];
+  const unsigned int am23 = am[2] + am[3];
+  const unsigned int amtot = am01 + am23 + deriv_order;
   // static seems to be important for performance on OS X 10.7 with Apple clang 3.1 (318.0.58)
   static double F[LIBINT_MAX_AM*4 + 6];
 
@@ -94,16 +96,17 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             const double Px = (alpha0 * A[0] + alpha1 * B[0]) * oogammap;
             const double Py = (alpha0 * A[1] + alpha1 * B[1]) * oogammap;
             const double Pz = (alpha0 * A[2] + alpha1 * B[2]) * oogammap;
+            const double AB_x = A[0] - B[0];
+            const double AB_y = A[1] - B[1];
+            const double AB_z = A[2] - B[2];
+            const double AB2 = AB_x * AB_x + AB_y * AB_y + AB_z * AB_z;
+
             const double PAx = Px - A[0];
             const double PAy = Py - A[1];
             const double PAz = Pz - A[2];
             const double PBx = Px - B[0];
             const double PBy = Py - B[1];
             const double PBz = Pz - B[2];
-            const double AB_x = A[0] - B[0];
-            const double AB_y = A[1] - B[1];
-            const double AB_z = A[2] - B[2];
-            const double AB2 = AB_x * AB_x + AB_y * AB_y + AB_z * AB_z;
 
 #if LIBINT2_DEFINED(eri,PA_x)
             erieval->PA_x[v] = PAx;
@@ -146,16 +149,22 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             const double Qx = (alpha2 * C[0] + alpha3 * D[0]) * oogammaq;
             const double Qy = (alpha2 * C[1] + alpha3 * D[1]) * oogammaq;
             const double Qz = (alpha2 * C[2] + alpha3 * D[2]) * oogammaq;
+            const double CD_x = C[0] - D[0];
+            const double CD_y = C[1] - D[1];
+            const double CD_z = C[2] - D[2];
+            const double CD2 = CD_x * CD_x + CD_y * CD_y + CD_z * CD_z;
+
+            const double PQx = Px - Qx;
+            const double PQy = Py - Qy;
+            const double PQz = Pz - Qz;
+            const double PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
+
             const double QCx = Qx - C[0];
             const double QCy = Qy - C[1];
             const double QCz = Qz - C[2];
             const double QDx = Qx - D[0];
             const double QDy = Qy - D[1];
             const double QDz = Qz - D[2];
-            const double CD_x = C[0] - D[0];
-            const double CD_y = C[1] - D[1];
-            const double CD_z = C[2] - D[2];
-            const double CD2 = CD_x * CD_x + CD_y * CD_y + CD_z * CD_z;
 
 #if LIBINT2_DEFINED(eri,QC_x)
             erieval->QC_x[v] = QCx;
@@ -233,10 +242,6 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             erieval->zoe[v] = gammap*oogammaq;
 #endif
 
-            const double PQx = Px - Qx;
-            const double PQy = Py - Qy;
-            const double PQz = Pz - Qz;
-            const double PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
             const double Wx = (gammap_o_gammapgammaq * Px + gammaq_o_gammapgammaq * Qx);
             const double Wy = (gammap_o_gammapgammaq * Py + gammaq_o_gammapgammaq * Qy);
             const double Wz = (gammap_o_gammapgammaq * Pz + gammaq_o_gammapgammaq * Qz);
@@ -323,16 +328,10 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 
             const double K1 = exp(- rhop * AB2);
             const double K2 = exp(- rhoq * CD2);
-            double pfac = 2 * pow(M_PI, 2.5) * K1 * K2 / (gammap * gammaq * sqrt(gammap
-                                                                                 + gammaq));
+            const double two_times_M_PI_to_25 = 34.986836655249725693;
+            double pfac = two_times_M_PI_to_25 * K1 * K2 / (gammap * gammaq * sqrt(gammap
+                                                                                   + gammaq));
             pfac *= c0 * c1 * c2 * c3;
-
-            if (norm_flag > 0) {
-//              pfac *= norm_const(l1,m1,n1,alpha0,A);
-//              pfac *= norm_const(l2,m2,n2,alpha1,B);
-//              pfac *= norm_const(l3,m3,n3,alpha2,C);
-//              pfac *= norm_const(l4,m4,n4,alpha3,D);
-            }
 
             //calc_f(F, amtot, PQ2 * gammapq);
             //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-20);
@@ -687,16 +686,10 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 
             const double K1 = exp(- rhop * AB2);
             const double K2 = exp(- rhoq * CD2);
-            double pfac = 2 * pow(M_PI, 2.5) * K1 * K2 / (gammap * gammaq * sqrt(gammap
+            const double two_times_M_PI_to_25 = 34.986836655249725693;
+            double pfac = two_times_M_PI_to_25 * K1 * K2 / (gammap * gammaq * sqrt(gammap
                                                                                  + gammaq));
             pfac *= c0 * c1 * c2 * c3;
-
-            if (norm_flag > 0) {
-//              pfac *= norm_const(l1,m1,n1,alpha0,A);
-//              pfac *= norm_const(l2,m2,n2,alpha1,B);
-//              pfac *= norm_const(l3,m3,n3,alpha2,C);
-//              pfac *= norm_const(l4,m4,n4,alpha3,D);
-            }
 
             //calc_f(F, amtot, PQ2 * gammapq);
             //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
@@ -1050,16 +1043,10 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 
             const double K1 = exp(- rhop * AB2 );
             const double K2 = exp(- rhoq * CD2 );
-            double pfac = 2 * pow(M_PI, 2.5) * K1 * K2 / (gammap * gammaq * sqrt(gammap
+            const double two_times_M_PI_to_25 = 34.986836655249725693;
+            double pfac = two_times_M_PI_to_25 * K1 * K2 / (gammap * gammaq * sqrt(gammap
                                                                                  + gammaq));
             pfac *= c0 * c1 * c2 * c3;
-
-            if (norm_flag > 0) {
-//              pfac *= norm_const(l1,m1,n1,alpha0,A);
-//              pfac *= norm_const(l2,m2,n2,alpha1,B);
-//              pfac *= norm_const(l3,m3,n3,alpha2,C);
-//              pfac *= norm_const(l4,m4,n4,alpha3,D);
-            }
 
             //calc_f(F, amtot, PQ2 * gammapq);
             //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
