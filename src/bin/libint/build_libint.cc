@@ -756,10 +756,6 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
       for(unsigned int lc=0; lc<=lmax; lc++) {
         for(unsigned int ld=0; ld<=lmax; ld++) {
 
-          // skip ss|ss integrals -- no need to involve LIBINT here
-          if (deriv_level == 0 && la == 0 && lb == 0 && lc == 0 && ld == 0)
-            continue;
-
           if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(LIBINT_SHELL_SET)>::value(la,lb,lc,ld))
             continue;
 
@@ -941,10 +937,6 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
     for(unsigned int lc=0; lc<=lmax_default; lc++) {
       for(unsigned int ld=0; ld<=lmax_default; ld++) {
 
-          // skip ss|s integrals -- no need to involve LIBINT here
-          if (deriv_level == 0 && lbra == 0 && lc == 0 && ld == 0)
-            continue;
-
           // eliminate some cases depending on the desired convention
           if (!ShellTripletSetPredicate<static_cast<ShellSetType>(LIBINT_SHELL_SET)>::value(lbra,lc,ld))
             continue;
@@ -1125,10 +1117,6 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
   for(unsigned int lbra=0; lbra<=lmax; lbra++) {
     for(unsigned int lket=0; lket<=lmax; lket++) {
-
-          // skip s|s integrals -- no need to involve LIBINT here
-          if (deriv_level == 0 && lbra == 0 && lket == 0)
-            continue;
 
           // I will use 4-center recurrence relations and integrals, and have two centers carry an s function
           // unfortunately, depending on the direction in which the build goes it must be A(0) and C(2) or B(1) and D(3)
