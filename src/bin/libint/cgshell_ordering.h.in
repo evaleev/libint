@@ -15,7 +15,7 @@
 # define LIBINT_CGSHELL_ORDERING_INTV3 LIBINT2_CGSHELL_ORDERING_INTV3
 # define LIBINT_CGSHELL_ORDERING_GAMESS LIBINT2_CGSHELL_ORDERING_GAMESS
 # define LIBINT_CGSHELL_ORDERING_ORCA LIBINT2_CGSHELL_ORDERING_ORCA
-# define LIBINT_CGSHELL_ORDERING_TORU LIBINT2_CGSHELL_ORDERING_TORU
+# define LIBINT_CGSHELL_ORDERING_BAGEL LIBINT2_CGSHELL_ORDERING_BAGEL
 #endif
 
 namespace libint2 {
@@ -25,7 +25,7 @@ namespace libint2 {
     CGShellOrdering_IntV3        = LIBINT_CGSHELL_ORDERING_INTV3,
     CGShellOrdering_GAMESS       = LIBINT_CGSHELL_ORDERING_GAMESS,
     CGShellOrdering_ORCA         = LIBINT_CGSHELL_ORDERING_ORCA,
-    CGShellOrdering_TORU         = LIBINT_CGSHELL_ORDERING_TORU
+    CGShellOrdering_BAGEL        = LIBINT_CGSHELL_ORDERING_BAGEL
   };
 
 };
@@ -162,8 +162,8 @@ namespace libint2 {
 
 #endif // ORCA ordering
 
-#if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_TORU
-// permuted version of IntV3 (y in IntV3 = x in Toru, etc.)
+#if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_BAGEL
+// permuted version of IntV3 (y in IntV3 = x in Bagel, etc.)
 
 /* Computes an index to a Cartesian function within a shell given
  * all arguments are used multiple times in the macro--beware side effects)
@@ -193,6 +193,6 @@ namespace libint2 {
                            { (i) = (am) - (j) - (k);
 #define END_FOR_CART }}
 
-#endif // TORU ordering
+#endif // Bagel ordering
 
 #endif // header guard

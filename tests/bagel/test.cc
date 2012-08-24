@@ -16,8 +16,8 @@
 #include <test_eri/eri.h>
 #include <test_eri/prep_libint2.h>
 
-// Toru's newint integrals package
-#ifdef INCLUDE_NEWINT
+// Toru's integrals package
+#ifdef INCLUDE_BAGEL
 #include <src/scf/shell.h>
 #include <src/rysint/eribatch.h>
 Resources* resources__;
@@ -44,8 +44,8 @@ void test_3eri(unsigned int deriv_order);
 #ifdef INCLUDE_ERI2
 void test_2eri(unsigned int deriv_order);
 #endif
-#ifdef INCLUDE_NEWINT
-void test_newint(unsigned int deriv_order);
+#ifdef INCLUDE_BAGEL
+void test_bagel(unsigned int deriv_order);
 #endif
 
 /// give optional derivative order (default = 0, i.e. regular integrals)
@@ -59,8 +59,8 @@ int main(int argc, char** argv) {
   // run the tests
 #ifdef INCLUDE_ERI
   test_4eri(deriv_order);
-# ifdef INCLUDE_NEWINT
-   test_newint(deriv_order);
+# ifdef INCLUDE_BAGEL
+   test_bagel(deriv_order);
 # endif
 #endif
 #ifdef INCLUDE_ERI3
@@ -221,8 +221,8 @@ void test_4eri(unsigned int deriv_order) {
 
           if (not do_timing_only) {
 
-#ifdef INCLUDE_NEWINT
-            // print out integrals to compare against Toru's NEWINT
+#ifdef INCLUDE_BAGEL
+            // print out integrals to compare against Toru's Bagel
             {
               const double* buffer = inteval[0].targets[0];
 
@@ -1001,10 +1001,10 @@ void test_2eri(unsigned int deriv_order) {
 #endif // INCLUDE_ERI2
 
 
-#ifdef INCLUDE_NEWINT
-void test_newint(unsigned int deriv_order) {
+#ifdef INCLUDE_BAGEL
+void test_bagel(unsigned int deriv_order) {
 
-  if (deriv_order > INCLUDE_NEWINT) return;
+  if (deriv_order > INCLUDE_BAGEL) return;
 
   resources__ = new Resources(1);
 
@@ -1021,10 +1021,10 @@ void test_newint(unsigned int deriv_order) {
 
   unsigned int lmax;
   if (deriv_order == 0) lmax = LIBINT2_MAX_AM_ERI;
-#if INCLUDE_NEWINT >= 1
+#if INCLUDE_BAGEL >= 1
   if (deriv_order == 1) lmax = LIBINT2_MAX_AM_ERI1;
 #endif
-#if INCLUDE_NEWINT >= 2
+#if INCLUDE_BAGEL >= 2
   if (deriv_order == 2) lmax = LIBINT2_MAX_AM_ERI2;
 #endif
 
@@ -1116,14 +1116,14 @@ void test_newint(unsigned int deriv_order) {
                                               am[3], rsqset.exp[3][0],
                                               rsqset.coef[3], prim_range));
           std::array<std::shared_ptr<const Shell>, 4> s0123{{s0, s1, s2, s3}};
-          ERIBatch eribatch(s0123, 0.0);
 
-          std::cout << "sorts: 01=" << eribatch.swap01() << " 23=" << eribatch.swap23()
-                    << " 0123=" << eribatch.swap0123() << std::endl;
+//          std::cout << "sorts: 01=" << eribatch.swap01() << " 23=" << eribatch.swap23()
+//                    << " 0123=" << eribatch.swap0123() << std::endl;
 
           for(int k=0; k<nrepeats; ++k) {
 
-            //  now use newint to compute
+            //  now use bagel to compute
+            ERIBatch eribatch(s0123, 0.0);
             eribatch.compute();
 
             // print out integrals
@@ -1191,4 +1191,4 @@ void test_newint(unsigned int deriv_order) {
   const double end_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
   std::cout << "wall time = " << (end_wall_time - start_wall_time) << " seconds" << std::endl;
 }
-#endif // INCLUDE_NEWINT
+#endif // INCLUDE_BAGEL

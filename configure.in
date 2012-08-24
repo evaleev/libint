@@ -56,7 +56,7 @@ LIBINT_CGSHELL_ORDERING_STANDARD=1   AC_SUBST(LIBINT_CGSHELL_ORDERING_STANDARD)
 LIBINT_CGSHELL_ORDERING_INTV3=2      AC_SUBST(LIBINT_CGSHELL_ORDERING_INTV3)
 LIBINT_CGSHELL_ORDERING_GAMESS=3     AC_SUBST(LIBINT_CGSHELL_ORDERING_GAMESS)
 LIBINT_CGSHELL_ORDERING_ORCA=4       AC_SUBST(LIBINT_CGSHELL_ORDERING_ORCA)
-LIBINT_CGSHELL_ORDERING_TORU=5       AC_SUBST(LIBINT_CGSHELL_ORDERING_TORU)
+LIBINT_CGSHELL_ORDERING_BAGEL=5      AC_SUBST(LIBINT_CGSHELL_ORDERING_BAGEL)
 libint_cgshell_ordering=standard
 AC_ARG_WITH(cartgauss-ordering,
 [  --with-cartgauss-ordering   Use one of the following known orderings for shells of cartesian Gaussians:
@@ -64,7 +64,7 @@ AC_ARG_WITH(cartgauss-ordering,
                                intv3  -- intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx)
                                gamess -- GAMESS ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
                                orca -- ORCA ordering (hydrid between GAMESS and standard)
-                               toru -- axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)
+                               bagel -- axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)
                                The default is standard.],
 [
 libint_cgshell_ordering=$withval
@@ -83,8 +83,8 @@ case $libint_cgshell_ordering in
   orca)
     libint_cgshell_ordering=$LIBINT_CGSHELL_ORDERING_ORCA
   ;;
-  toru)
-    libint_cgshell_ordering=$LIBINT_CGSHELL_ORDERING_TORU
+  bagel)
+    libint_cgshell_ordering=$LIBINT_CGSHELL_ORDERING_BAGEL
   ;;
   *)
     AC_MSG_ERROR([Invalid value for --with-cartgauss-ordering ($withval)])
@@ -95,7 +95,7 @@ AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_STANDARD,$LIBINT_CGSHELL_ORDERING_STA
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_INTV3,$LIBINT_CGSHELL_ORDERING_INTV3)
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_GAMESS,$LIBINT_CGSHELL_ORDERING_GAMESS)
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_ORCA,$LIBINT_CGSHELL_ORDERING_ORCA)
-AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_TORU,$LIBINT_CGSHELL_ORDERING_TORU)
+AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_BAGEL,$LIBINT_CGSHELL_ORDERING_BAGEL)
 
 LIBINT_SHELL_SET_STANDARD=1   AC_SUBST(LIBINT_SHELL_SET_STANDARD)
 LIBINT_SHELL_SET_ORCA=2      AC_SUBST(LIBINT_SHELL_SET_ORCA)
@@ -523,8 +523,15 @@ esac
 AC_ARG_ENABLE(generic-code,
 [  --enable-generic-code   Use manually-written generic code.],
 [
-AC_DEFINE(LIBINT_ENABLE_GENERIC_CODE)
-AC_MSG_RESULT([Use generic code])
+case $enableval in
+  yes)
+  AC_DEFINE(LIBINT_ENABLE_GENERIC_CODE)
+  AC_MSG_RESULT([Generic RR code will be used])
+  ;;
+  no)
+  AC_MSG_RESULT([Generic RR code will not be used])
+  ;;
+esac
 ])
 
 LIBINT_VECTOR_LENGTH=1

@@ -14,7 +14,7 @@ CPPFLAGS += -I$(TOPDIR)/src/bin
 CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/lib/libint
 # include bagel headers and libraries
 # user must define BAGELDIR and BAGELOBJDIR (for now using files from build directory)
-CPPFLAGS += -I$(BAGELDIR) -DINCLUDE_NEWINT=0
+CPPFLAGS += -I$(BAGELDIR) -DINCLUDE_BAGEL=0
 BAGELLIBS = $(BAGELOBJDIR)/src/scf/libscf.a $(BAGELOBJDIR)/src/rysint/librysint.a \
   $(BAGELOBJDIR)/src/util/libutil.a /System/Library/Frameworks/vecLib.framework/vecLib
 
