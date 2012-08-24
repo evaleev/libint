@@ -126,7 +126,7 @@ namespace libint2 {
         delete c;
       }
 
-      inline void eval(double* Fm, double x, int mmax) {
+      inline void eval(double* Fm, double x, int mmax) const {
 
         // ---------------------------------------------
         // large arguments. The total cost is:
@@ -188,7 +188,7 @@ namespace libint2 {
 // -----------------------------------------------------
       typedef libint2::simd::VectorSSEDouble REALTYPE; // for now REALTYPE will be SSE2 type, eventually this will be defined elsewhere and the Interpolate will become
                                                        // a template (or likely a macro since OpenCL does not support templates as of spec 1.2)
-      inline void eval(REALTYPE *Fm, REALTYPE x, int mmax) {
+      inline void eval(REALTYPE *Fm, REALTYPE x, int mmax) const {
 
         abort(); // the rest is to be implemented
 
@@ -442,7 +442,7 @@ namespace libint2 {
         delete[] grid_;
       }
 
-      void eval(Real* Fm, Real T, int mmax) {
+      void eval(Real* Fm, Real T, int mmax) const {
         static const double sqrt_pio2 = std::sqrt(M_PI / 2);
         const double two_T = 2.0 * T;
 
