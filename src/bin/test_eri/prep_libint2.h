@@ -64,6 +64,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
   const unsigned int am23 = am[2] + am[3];
   const unsigned int amtot = am01 + am23 + deriv_order;
   // static seems to be important for performance on OS X 10.7 with Apple clang 3.1 (318.0.58)
+  // 8/24/2012 also seems to affect other compilers (macports g++ 4.7.1) on OS X 10.7 and 10.8
   static double F[LIBINT_MAX_AM*4 + 6];
 
   uint p0123 = 0;
@@ -402,6 +403,14 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 #if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(20))
             erieval->LIBINT_T_SS_EREP_SS(20)[v] = pfac*F[20];
 #endif
+
+//            if LIBINT2_REALTYPE is a POD just copy like this
+//            {
+//              LIBINT2_REALTYPE* ssss_ptr = erieval->LIBINT_T_SS_EREP_SS(0) + v;
+//              for(int l=0; l<amtot; ++l, ssss_ptr+=veclen)
+//                *ssss_ptr = pfac*F[l];
+//            }
+            
           } // end of v loop
 
         }
