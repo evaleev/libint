@@ -58,10 +58,10 @@ ZeroNewVerticesTactic::optimal_rr(const rr_stack& stack) const {
           std::cout << "  child " << c << ": " << child->label() << std::endl;
         }
 
-        {
-          VertexPrinter vp(std::cout);
-          dg_->foreach(vp);
-        }
+//        {
+//          VertexPrinter vp(std::cout);
+//          dg_->foreach(vp);
+//        }
 
       }
     }
