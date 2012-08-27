@@ -97,23 +97,32 @@ namespace libint2 {
       typedef TargetType ChildType;
       ChildFactory<ThisType,ChildType> factory(this);
 
+      bool part0_has_unit=false, part1_has_unit=false;
+
       // Build on A
       if (part == 0 && where == InBra) {
         F a(Tint->bra(0,0) - _1);
         if (!exists(a)) return;
-        F b(Tint->ket(0,0));
+        F b(Tint->ket(0,0)); const bool unit_b = (b == F::unit()); part0_has_unit |= unit_b;
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
-        auto ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-        if (is_simple()) { expr_ = Vector("PA")[dir] * ABCD_m + Vector("WP")[dir] * ABCD_mp1;  nflops_+=3; }
+        decltype(ABCD_mp1) ABCD_m; if (not unit_b) ABCD_m = factory.make_child(a,b,c,d,m);
+        if (is_simple()) {
+          expr_ = Vector("WP")[dir] * ABCD_mp1;  nflops_+=1;
+          if (not unit_b) {
+            expr_ += Vector("PA")[dir] * ABCD_m;  nflops_+=2;
+          }
+        }
 
+        // simplified 3-center VRR due to Ahlrichs (PCCP 6, 5119 (2004))
+        const bool ahlrichs_simplification = a.pure_sh() && unit_b;
         auto am1 = a - _1;
-        if (exists(am1)) {
+        if (exists(am1) && not ahlrichs_simplification) {
           auto Am1BCD_m = factory.make_child(am1,b,c,d,m);
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
-          // this form is amenable to generatin of fmsub
+          // this form is amenable to generation of fmsub
           if (is_simple()) { expr_ -= Vector(a)[dir] * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
         }
         const F& bm1 = b - _1;
@@ -135,15 +144,20 @@ namespace libint2 {
       }
       // Build on B
       if (part == 0 && where == InKet) {
-        F a(Tint->bra(0,0));
+        F a(Tint->bra(0,0));  const bool unit_a = (a == F::unit()); part0_has_unit |= unit_a;
         F b(Tint->ket(0,0) - _1);
         if (!exists(b)) return;
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
-        auto ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-        if (is_simple()) { expr_ = Vector("PB")[dir] * ABCD_m + Vector("WP")[dir] * ABCD_mp1;  nflops_+=3; }
+        decltype(ABCD_mp1) ABCD_m; if (not unit_a) ABCD_m = factory.make_child(a,b,c,d,m);
+        if (is_simple()) {
+          expr_ = Vector("WP")[dir] * ABCD_mp1;  nflops_+=1;
+          if (not unit_a) {
+            expr_ += Vector("PB")[dir] * ABCD_m;  nflops_+=2;
+          }
+        }
 
         const F& am1 = a - _1;
         if (exists(am1)) {
@@ -151,8 +165,10 @@ namespace libint2 {
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
           if (is_simple()) { expr_ -= Vector(a)[dir] * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
         }
+        // simplified 3-center VRR due to Ahlrichs (PCCP 6, 5119 (2004))
+        const bool ahlrichs_simplification = b.pure_sh() && unit_a;
         const F& bm1 = b - _1;
-        if (exists(bm1)) {
+        if (exists(bm1) && not ahlrichs_simplification) {
           auto ABm1CD_m = factory.make_child(a,bm1,c,d,m);
           auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
           if (is_simple()) { expr_ -= Vector(b)[dir] * Scalar("oo2z") * (Scalar("roz") * ABm1CD_mp1 - ABm1CD_m);  nflops_+=5; }
@@ -174,14 +190,21 @@ namespace libint2 {
         F b(Tint->ket(0,0));
         F c(Tint->bra(1,0) - _1);
         if (!exists(c)) return;
-        F d(Tint->ket(1,0));
+        F d(Tint->ket(1,0)); const bool unit_d = (d == F::unit()); part1_has_unit |= unit_d;
 
-        auto ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-        if (is_simple()) { expr_ = Vector("QC")[dir] * ABCD_m + Vector("WQ")[dir] * ABCD_mp1;  nflops_+=3; }
+        decltype(ABCD_mp1) ABCD_m; if (not unit_d) ABCD_m = factory.make_child(a,b,c,d,m);
+        if (is_simple()) {
+          expr_ = Vector("WQ")[dir] * ABCD_mp1;  nflops_+=1;
+          if (not unit_d) {
+            expr_ += Vector("QC")[dir] * ABCD_m;  nflops_+=2;
+          }
+        }
 
+        // simplified 3-center VRR due to Ahlrichs (PCCP 6, 5119 (2004))
+        const bool ahlrichs_simplification = c.pure_sh() && unit_d;
         const F& cm1 = c - _1;
-        if (exists(cm1)) {
+        if (exists(cm1) && not ahlrichs_simplification) {
           auto ABCm1D_m = factory.make_child(a,b,cm1,d,m);
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
           if (is_simple()) { expr_ -= Vector(c)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
@@ -207,13 +230,18 @@ namespace libint2 {
       if (part == 1 && where == InKet) {
         F a(Tint->bra(0,0));
         F b(Tint->ket(0,0));
-        F c(Tint->bra(1,0));
+        F c(Tint->bra(1,0));  const bool unit_c = (c == F::unit()); part1_has_unit |= unit_c;
         F d(Tint->ket(1,0) - _1);
         if (!exists(d)) return;
 
-        auto ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-        if (is_simple()) { expr_ = Vector("QD")[dir] * ABCD_m + Vector("WQ")[dir] * ABCD_mp1;  nflops_+=3; }
+        decltype(ABCD_mp1) ABCD_m; if (not unit_c) ABCD_m = factory.make_child(a,b,c,d,m);
+        if (is_simple()) {
+          expr_ = Vector("WQ")[dir] * ABCD_mp1;  nflops_+=1;
+          if (not unit_c) {
+            expr_ += Vector("QD")[dir] * ABCD_m;  nflops_+=2;
+          }
+        }
 
         const F& cm1 = c - _1;
         if (exists(cm1)) {
@@ -221,8 +249,10 @@ namespace libint2 {
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
           if (is_simple()) { expr_ -= Vector(c)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
         }
+        // simplified 3-center VRR due to Ahlrichs (PCCP 6, 5119 (2004))
+        const bool ahlrichs_simplification = d.pure_sh() && unit_c;
         const F& dm1 = d - _1;
-        if (exists(dm1)) {
+        if (exists(dm1) && not ahlrichs_simplification) {
           auto ABCDm1_m = factory.make_child(a,b,c,dm1,m);
           auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
           if (is_simple()) { expr_ -= Vector(d)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCDm1_mp1 - ABCDm1_m);  nflops_+=5; }
@@ -265,13 +295,25 @@ namespace libint2 {
             const OriginDerivative dAm1(dA - _d1);
             if (exists(dAm1)) { // yes
               a.deriv() = dAm1;
-              auto ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              auto ABCD_m = (part == 0 && not part0_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
               auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
               if (is_simple()) {
                 if (part == 0 && where == InBra) { // building on A
-                  expr_ -= Vector(dA)[dxyz] * (Scalar("rho12_over_alpha1") * ABCD_m + Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                  if (not part0_has_unit) {
+                    expr_ -= Vector(dA)[dxyz] * (Scalar("rho12_over_alpha1") * ABCD_m + Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5;
+                  }
+                  else {
+                    expr_ -= Vector(dA)[dxyz] * (Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 3;
+                  }
+                }
                 if (part == 0 && where == InKet) { // building on B
-                  expr_ += Vector(dA)[dxyz] * (Scalar("rho12_over_alpha2") * ABCD_m - Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                  if (not part0_has_unit) {
+                    expr_ += Vector(dA)[dxyz] * (Scalar("rho12_over_alpha2") * ABCD_m - Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5;
+                  }
+                  else {
+                    expr_ -= Vector(dA)[dxyz] * (Scalar("alpha1_rho_over_zeta2") * ABCD_mp1);  nflops_ += 3;
+                  }
+                }
                 if (part == 1) { // building on C or D
                   expr_ += Vector(dA)[dxyz] * Scalar("alpha1_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
               }
@@ -284,13 +326,25 @@ namespace libint2 {
             const OriginDerivative dBm1(dB - _d1);
             if (exists(dBm1)) { // yes
               b.deriv() = dBm1;
-              auto ABCD_m = (part == 0) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              auto ABCD_m = (part == 0 && not part0_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
               auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
               if (is_simple()) {
                 if (part == 0 && where == InBra) { // building on A
-                  expr_ += Vector(dB)[dxyz] * (Scalar("rho12_over_alpha1") * ABCD_m - Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                  if (not part0_has_unit) {
+                    expr_ += Vector(dB)[dxyz] * (Scalar("rho12_over_alpha1") * ABCD_m - Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5;
+                  }
+                  else {
+                    expr_ -= Vector(dB)[dxyz] * (Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 3;
+                  }
+                }
                 if (part == 0 && where == InKet) { // building on B
-                  expr_ -= Vector(dB)[dxyz] * (Scalar("rho12_over_alpha2") * ABCD_m + Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5; }
+                  if (not part0_has_unit) {
+                    expr_ -= Vector(dB)[dxyz] * (Scalar("rho12_over_alpha2") * ABCD_m + Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 5;
+                  }
+                  else {
+                    expr_ -= Vector(dB)[dxyz] * (Scalar("alpha2_rho_over_zeta2") * ABCD_mp1);  nflops_ += 3;
+                  }
+                }
                 if (part == 1) { // building on C or D
                   expr_ += Vector(dB)[dxyz] * Scalar("alpha2_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
               }
@@ -303,15 +357,27 @@ namespace libint2 {
             const OriginDerivative dCm1(dC - _d1);
             if (exists(dCm1)) { // yes
               c.deriv() = dCm1;
-              auto ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              auto ABCD_m = (part == 1 && not part1_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
               auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
               if (is_simple()) {
                 if (part == 0) { // building on A or B
                   expr_ += Vector(dC)[dxyz] * Scalar("alpha3_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
                 if (part == 1 && where == InBra) { // building on C
-                  expr_ -= Vector(dC)[dxyz] * (Scalar("rho34_over_alpha3") * ABCD_m + Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+                  if (not part1_has_unit) {
+                    expr_ -= Vector(dC)[dxyz] * (Scalar("rho34_over_alpha3") * ABCD_m + Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5;
+                  }
+                  else {
+                    expr_ -= Vector(dC)[dxyz] * (Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 3;
+                  }
+                }
                 if (part == 1 && where == InKet) { // building on D
-                  expr_ += Vector(dC)[dxyz] * (Scalar("rho34_over_alpha4") * ABCD_m - Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+                  if (not part1_has_unit) {
+                    expr_ += Vector(dC)[dxyz] * (Scalar("rho34_over_alpha4") * ABCD_m - Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 5;
+                  }
+                  else {
+                    expr_ -= Vector(dC)[dxyz] * (Scalar("alpha3_rho_over_eta2") * ABCD_mp1);  nflops_ += 3;
+                  }
+                }
               }
               c.deriv() = dC;
             }
@@ -322,15 +388,27 @@ namespace libint2 {
             const OriginDerivative dDm1(dD - _d1);
             if (exists(dDm1)) { // yes
               d.deriv() = dDm1;
-              auto ABCD_m = (part == 1) ? factory.make_child(a,b,c,d,m) : _nullptr;
+              auto ABCD_m = (part == 1 && not part1_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
               auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
               if (is_simple()) {
                 if (part == 0) { // building on A or B
                   expr_ += Vector(dD)[dxyz] * Scalar("alpha4_over_zetapluseta") * ABCD_mp1;  nflops_ += 3; }
                 if (part == 1 && where == InBra) { // building on C
-                  expr_ += Vector(dD)[dxyz] * (Scalar("rho34_over_alpha3") * ABCD_m - Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+                  if (not part1_has_unit) {
+                    expr_ += Vector(dD)[dxyz] * (Scalar("rho34_over_alpha3") * ABCD_m - Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5;
+                  }
+                  else {
+                    expr_ -= Vector(dD)[dxyz] * (Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 3;
+                  }
+                }
                 if (part == 1 && where == InKet) { // building on D
-                  expr_ -= Vector(dD)[dxyz] * (Scalar("rho34_over_alpha4") * ABCD_m + Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5; }
+                  if (not part1_has_unit) {
+                    expr_ -= Vector(dD)[dxyz] * (Scalar("rho34_over_alpha4") * ABCD_m + Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 5;
+                  }
+                  else {
+                    expr_ -= Vector(dD)[dxyz] * (Scalar("alpha4_rho_over_eta2") * ABCD_mp1);  nflops_ += 3;
+                  }
+                }
               }
               d.deriv() = dD;
             }

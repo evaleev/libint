@@ -973,10 +973,14 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
           bool last_deriv = false;
           do {
-            CGShell a((dummy_center == 0) ? 0 : lbra);
-            CGShell b((dummy_center == 1) ? 0 : lbra);
+            CGShell a = (dummy_center == 0) ? CGShell::unit() : CGShell(lbra);
+            CGShell b = (dummy_center == 1) ? CGShell::unit() : CGShell(lbra);
             CGShell c(lc);
             CGShell d(ld);
+#if ERI3_PURE_SH
+            if (dummy_center == 1 && lbra >= 2) a.pure_sh(true);
+            if (dummy_center == 0 && lbra >= 2) b.pure_sh(true);
+#endif
 
             unsigned int center = 0;
             for(unsigned int i=0; i<4; ++i) {
@@ -1009,10 +1013,14 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           // use the label of the nondifferentiated integral as a base
           std::string abcd_label;
           {
-            CGShell a((dummy_center == 0) ? 0 : lbra);
-            CGShell b((dummy_center == 1) ? 0 : lbra);
+            CGShell a = (dummy_center == 0) ? CGShell::unit() : CGShell(lbra);
+            CGShell b = (dummy_center == 1) ? CGShell::unit() : CGShell(lbra);
             CGShell c(lc);
             CGShell d(ld);
+#if ERI3_PURE_SH
+            if (dummy_center == 1 && lbra >= 2) a.pure_sh(true);
+            if (dummy_center == 0 && lbra >= 2) b.pure_sh(true);
+#endif
             SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(a,b,c,d,mType(0u));
             abcd_label = abcd->label();
           }
@@ -1151,10 +1159,16 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
           bool last_deriv = false;
           do {
-            CGShell a((dummy_center1 == 0) ? 0 : lbra);
-            CGShell b((dummy_center1 == 1) ? 0 : lbra);
-            CGShell c((dummy_center2 == 2) ? 0 : lket);
-            CGShell d((dummy_center2 == 3) ? 0 : lket);
+            CGShell a = (dummy_center1 == 0) ? CGShell::unit() : CGShell(lbra);
+            CGShell b = (dummy_center1 == 1) ? CGShell::unit() : CGShell(lbra);
+            CGShell c = (dummy_center2 == 2) ? CGShell::unit() : CGShell(lket);
+            CGShell d = (dummy_center2 == 3) ? CGShell::unit() : CGShell(lket);
+#if ERI2_PURE_SH
+            if (dummy_center1 == 1 && lbra >= 2) a.pure_sh(true);
+            if (dummy_center1 == 0 && lbra >= 2) b.pure_sh(true);
+            if (dummy_center2 == 3 && lket >= 2) c.pure_sh(true);
+            if (dummy_center2 == 2 && lket >= 2) d.pure_sh(true);
+#endif
 
             unsigned int center = 0;
             for(unsigned int i=0; i<4; ++i) {
@@ -1187,10 +1201,16 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           // use the label of the nondifferentiated integral as a base
           std::string abcd_label;
           {
-            CGShell a((dummy_center1 == 0) ? 0 : lbra);
-            CGShell b((dummy_center1 == 1) ? 0 : lbra);
-            CGShell c((dummy_center2 == 2) ? 0 : lket);
-            CGShell d((dummy_center2 == 3) ? 0 : lket);
+            CGShell a = (dummy_center1 == 0) ? CGShell::unit() : CGShell(lbra);
+            CGShell b = (dummy_center1 == 1) ? CGShell::unit() : CGShell(lbra);
+            CGShell c = (dummy_center2 == 2) ? CGShell::unit() : CGShell(lket);
+            CGShell d = (dummy_center2 == 3) ? CGShell::unit() : CGShell(lket);
+#if ERI2_PURE_SH
+            if (dummy_center1 == 1 && lbra >= 2) a.pure_sh(true);
+            if (dummy_center1 == 0 && lbra >= 2) b.pure_sh(true);
+            if (dummy_center2 == 3 && lket >= 2) c.pure_sh(true);
+            if (dummy_center2 == 2 && lket >= 2) d.pure_sh(true);
+#endif
             SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(a,b,c,d,mType(0u));
             abcd_label = abcd->label();
           }

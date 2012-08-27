@@ -21,7 +21,7 @@ using namespace libint2;
 const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any integral differs in relative sense by more than this
 
 /// change to true to skip verification and do some timing simulation
-const bool do_timing_only = false;
+const bool do_timing_only = true;
 
 libint2::FmEval_Chebyshev3 fmeval_chebyshev(18);
 libint2::FmEval_Taylor<double,6> fmeval_taylor(18, 1e-15);
@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 
   // run the tests
 #ifdef INCLUDE_ERI
-  test_4eri(deriv_order);
+  //test_4eri(deriv_order);
 #endif
 #ifdef INCLUDE_ERI3
   test_3eri(deriv_order);

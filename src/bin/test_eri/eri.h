@@ -2,7 +2,10 @@
 #ifndef _libint2_src_bin_testeri_eri_h_
 #define _libint2_src_bin_testeri_eri_h_
 
+#include <libint2_config.h>
+
 #if defined(__cplusplus)
+#if HAVE_MPFR
 # include <gmpxx.h>
 # include <mpfr.h>
  typedef mpf_class LIBINT2_REF_REALTYPE;
@@ -47,6 +50,9 @@
    mpf_class result(erfx);
    return result;
  }
+#else
+ typedef double LIBINT2_REF_REALTYPE;
+#endif
 #else
  typedef double LIBINT2_REF_REALTYPE;
 #endif

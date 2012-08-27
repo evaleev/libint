@@ -40,18 +40,23 @@ void
 StdLibintTDPolicy<CGShell>::init_subobj(const StdLibintTDPolicy<CGShell>::obj_stype& cgshell,
 vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
 {
-  unsigned int am = TypeTraits<CGShell>::const_ref(cgshell).qn();
-  unsigned int qn[3] = {0, 0, 0};
-  int lx, ly, lz;
-  FOR_CART(lx,ly,lz,am)
-    qn[0] = lx;
-    qn[1] = ly;
-    qn[2] = lz;
-    subobj_stype cgf(qn);
-    cgf.deriv() = cgshell.deriv();
-    if (cgshell.contracted()) cgf.contract();
-    cgfs.push_back(cgf);
-  END_FOR_CART
+  if (cgshell.is_unit()) {
+      cgfs.push_back(CGF::unit());
+  }
+  else {
+    unsigned int am = TypeTraits<CGShell>::const_ref(cgshell).qn();
+    unsigned int qn[3] = {0, 0, 0};
+    int lx, ly, lz;
+    FOR_CART(lx,ly,lz,am)
+      qn[0] = lx;
+      qn[1] = ly;
+      qn[2] = lz;
+      subobj_stype cgf(qn, cgshell.pure_sh());
+      cgf.deriv() = cgshell.deriv();
+      if (cgshell.contracted()) cgf.contract();
+      cgfs.push_back(cgf);
+    END_FOR_CART
+  }
 }
 
 template <>

@@ -162,7 +162,7 @@ namespace libint2 {
   /// Return true if A is valid
   inline bool exists(const OriginDerivative& A) { return A.valid(); }
 
-  class CGF;
+  class CGF;   // forward declaration of CGF
 
   /// Cartesian Gaussian Shell
   class CGShell : public IncableBFSet, public Hashable<unsigned,ReferToKey>,
@@ -170,18 +170,19 @@ namespace libint2 {
 
     unsigned int qn_[1];
     OriginDerivative deriv_;
+    bool pure_sh_;  //< if true, assumed to contain solid harmonics with quantum number qn_[0] only
 
     friend CGShell operator+(const CGShell& A, const CGShell& B);
     friend CGShell operator-(const CGShell& A, const CGShell& B);
 
   public:
-    /// As far as SetIterator is concerned, CGShell is a set of one CGF
+    /// As far as SetIterator is concerned, CGShell is a set of CGFs
     typedef CGF iter_type;
     typedef IncableBFSet parent_type;
 
     /// Default constructor creates an s-type shell
     CGShell();
-    CGShell(unsigned int qn);
+    CGShell(unsigned int qn, bool pure_sh = false);
     CGShell(const CGShell&);
     virtual ~CGShell();
     CGShell& operator=(const CGShell&);
@@ -199,6 +200,12 @@ namespace libint2 {
     /// Comparison operator
     bool operator==(const CGShell&) const;
 
+    /// contains only solid harmonics with the same quantum number as this shell?
+    /// (this may permit simplified RR to be used -- obviously must transform to solid harmonics later)
+    bool pure_sh() const { return pure_sh_; }
+    /// @param p if true, will assume to contain only solid harmonics of the same quantum number as this shell
+    void pure_sh(bool p) { pure_sh_ = p; }
+
     /// Implementation of IncableBFSet::inc().
     void inc(unsigned int xyz, unsigned int c = 1u);
     /// Implementation of IncableBFSet::dec().
@@ -214,6 +221,12 @@ namespace libint2 {
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
 
+    /// returns the unit shell (exponent=0, am=0, indicated by pure_sh=true)
+    static CGShell unit();
+    bool is_unit() const { return qn_[0] == 0 &&
+                                  contracted() == false &&
+                                  pure_sh_ == true; }
+
   };
 
   CGShell operator+(const CGShell& A, const CGShell& B);
@@ -225,6 +238,8 @@ namespace libint2 {
 
     unsigned int qn_[3];
     OriginDerivative deriv_;
+    bool pure_sh_;  //< if true, assumed to contain solid harmonics with quantum number qn_[0] only
+    bool unit_;
 
     friend CGF operator+(const CGF& A, const CGF& B);
     friend CGF operator-(const CGF& A, const CGF& B);
@@ -238,7 +253,7 @@ namespace libint2 {
 
     /// Default constructor makes an s-type Gaussian
     CGF();
-    CGF(unsigned int qn[3]);
+    CGF(unsigned int qn[3], bool pure_sh = false);
     CGF(const CGF&);
     CGF(const ConstructablePolymorphically&);
     virtual ~CGF();
@@ -254,6 +269,12 @@ namespace libint2 {
     unsigned int num_bf() const { return 1; };
     /// Returns the angular momentum
     unsigned int qn(unsigned int xyz) const;
+
+    /// contains only solid harmonics with the same quantum number as this shell?
+    /// (this may permit simplified RR to be used -- obviously must transform to solid harmonics later)
+    bool pure_sh() const { return pure_sh_; }
+    /// @param p if true, will assume to contain only solid harmonics of the same quantum number as this shell
+    void pure_sh(bool p) { pure_sh_ = p; }
 
     /// Comparison operator
     bool operator==(const CGF&) const;
@@ -280,6 +301,12 @@ namespace libint2 {
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
 
+    /// returns the unit shell (exponent=0, am=0, indicated by pure_sh=true)
+    static CGF unit();
+    bool is_unit() const { return qn_[0]+qn_[1]+qn_[2] == 0 &&
+                                  contracted() == false &&
+                                  pure_sh_ == true; }
+
   private:
     /// key_l_offset[L] is the number of all possible CGFs with angular momentum less than L
     static unsigned key_l_offset[CGShell::max_key+2];
@@ -287,6 +314,132 @@ namespace libint2 {
 
   CGF operator+(const CGF& A, const CGF& B);
   CGF operator-(const CGF& A, const CGF& B);
+
+  class SHGF; // forward declaration
+
+  /// Solid-Harmonic Gaussian Shell
+  class SHGShell : public IncableBFSet, public Hashable<unsigned,ReferToKey>,
+                   public Contractable<SHGShell> {
+
+    unsigned int qn_[1];
+    OriginDerivative deriv_;
+
+    friend SHGShell operator+(const SHGShell& A, const SHGShell& B);
+    friend SHGShell operator-(const SHGShell& A, const SHGShell& B);
+
+  public:
+    /// As far as SetIterator is concerned, SHGShell is a set of SHGFs
+    typedef SHGF iter_type;
+    typedef IncableBFSet parent_type;
+
+    /// Default constructor creates an s-type shell
+    SHGShell();
+    SHGShell(unsigned int qn);
+    SHGShell(const SHGShell&);
+    virtual ~SHGShell();
+    SHGShell& operator=(const SHGShell&);
+
+    const OriginDerivative& deriv() const { return deriv_; }
+    OriginDerivative& deriv() { return deriv_; }
+
+    /// Return a compact label
+    const std::string label() const;
+    /// Returns the number of basis functions in the set
+    unsigned int num_bf() const { return 2*qn_[0]+1; };
+    /// Returns the angular momentum
+    unsigned int qn(unsigned int m=0) const { return qn_[0]; }
+
+    /// Comparison operator
+    bool operator==(const SHGShell&) const;
+
+    /// Implementation of IncableBFSet::inc().
+    void inc(unsigned int xyz, unsigned int c = 1u);
+    /// Implementation of IncableBFSet::dec().
+    void dec(unsigned int xyz, unsigned int c = 1u);
+    /// Implements IncableBFSet::norm()
+    unsigned int norm() const;
+    /// Implements Hashable<unsigned>::key()
+    unsigned key() const { return (deriv().key() * 2 + (contracted() ? 1 : 0)) * (max_qn+1) + qn_[0]; }
+    const static unsigned max_qn = LIBINT_CARTGAUSS_MAX_AM;
+    // The range of keys is [0,max_key]
+    const static unsigned max_key = 2 * (max_qn + 1) * OriginDerivative::max_key;
+
+    /// Print out the content
+    void print(std::ostream& os = std::cout) const;
+
+  };
+
+  SHGShell operator+(const SHGShell& A, const SHGShell& B);
+  SHGShell operator-(const SHGShell& A, const SHGShell& B);
+
+  /// Solid-Harmonic Gaussian Function
+  class SHGF : public IncableBFSet, public Hashable<unsigned,ComputeKey>,
+               public Contractable<SHGF> {
+
+    unsigned int qn_[3];
+    OriginDerivative deriv_;
+
+    friend SHGF operator+(const SHGF& A, const SHGF& B);
+    friend SHGF operator-(const SHGF& A, const SHGF& B);
+
+  public:
+    /// As far as SetIterator is concerned, SHGF is a set of one SHGF
+    typedef SHGF iter_type;
+    typedef IncableBFSet parent_type;
+    /// How to return key
+    //typedef typename Hashable<unsigned,ComputeKey>::KeyReturnType KeyReturnType;
+
+    /// Default constructor makes an s-type Gaussian
+    SHGF();
+    SHGF(unsigned int qn[3]);
+    SHGF(const SHGF&);
+    SHGF(const ConstructablePolymorphically&);
+    virtual ~SHGF();
+    /// assignment
+    SHGF& operator=(const SHGF&);
+
+    const OriginDerivative& deriv() const { return deriv_; }
+    OriginDerivative& deriv() { return deriv_; }
+
+    /// Return a compact label
+    const std::string label() const;
+    /// Returns the number of basis functions in the set (always 1)
+    unsigned int num_bf() const { return 1; };
+    /// Returns the angular momentum
+    unsigned int qn(unsigned int xyz) const;
+
+    /// Comparison operator
+    bool operator==(const SHGF&) const;
+
+    /// Implementation of IncableBFSet::inc().
+    void inc(unsigned int xyz, unsigned int c = 1u);
+    /// Implementation of IncableBFSet::dec().
+    void dec(unsigned int xyz, unsigned int c = 1u);
+    /// Implements IncableBFSet::norm()
+    unsigned int norm() const;
+    /// Implements Hashable<unsigned>::key()
+    unsigned key() const {
+      unsigned nxy = qn_[1] + qn_[2];
+      unsigned l = nxy + qn_[0];
+      unsigned key = nxy*(nxy+1)/2 + qn_[2];
+      return ( deriv().key() * 2 + (contracted() ? 1 : 0)) * max_num_qn + key + key_l_offset[l];
+    }
+    /// The range of keys is [0,max_key). The formula is easily derived by summing (L+1)(L+2)/2 up to SHGShell::max_key
+    /// The factor of 2 to account for contracted vs. uncontracted basis functions
+    /// The factor of OriginDerivative::max_key to account for derivatives
+    const static unsigned max_num_qn = ((1 + (SHGShell::max_qn+1)) * (2 + (SHGShell::max_qn+1)) * (3 + (SHGShell::max_qn+1)) /6);
+    const static unsigned max_key = 2 * OriginDerivative::max_key * max_num_qn;
+
+    /// Print out the content
+    void print(std::ostream& os = std::cout) const;
+
+  private:
+    /// key_l_offset[L] is the number of all possible SGGFs with angular momentum less than L
+    static unsigned key_l_offset[SHGShell::max_key+2];
+  };
+
+  SHGF operator+(const SHGF& A, const SHGF& B);
+  SHGF operator-(const SHGF& A, const SHGF& B);
 
   /**
      TrivialBFSet<T> defines static member result, which is true if T
@@ -300,6 +453,14 @@ namespace libint2 {
     };
   template <>
     struct TrivialBFSet<CGF> {
+      static const bool result = true;
+    };
+  template <>
+    struct TrivialBFSet<SHGShell> {
+      static const bool result = false;
+    };
+  template <>
+    struct TrivialBFSet<SHGF> {
       static const bool result = true;
     };
 

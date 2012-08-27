@@ -70,11 +70,17 @@
 /* Max optimized AM for 3-center ERI */
 #undef ERI3_OPT_AM
 
+/* If 1, assume will transform the "unpaired" center (e.g. a in (a|cd)) to solid harmonics */
+#undef ERI3_PURE_SH
+
 /* Max AM for 2-center ERI */
 #undef ERI2_MAX_AM
 
 /* Max optimized AM for 2-center ERI */
 #undef ERI2_OPT_AM
+
+/* If 1, assume will transform to solid harmonics */
+#undef ERI2_PURE_SH
 
 /* Max AM for G12 method integrals */
 #undef G12_MAX_AM
@@ -164,6 +170,9 @@
 
 /* have stdint.h ? */
 #undef HAVE_STDINT_H
+
+/* have MPFR library ? */
+#undef HAVE_MPFR
 
 /* have posix_memalign ? */
 #undef HAVE_POSIX_MEMALIGN

@@ -46,7 +46,7 @@ AC_SUBST(LIBINT_SO_VERSION)
 dnl --------- Features ---------
 
 AC_ARG_WITH(api-prefix,
-[  --with-api-prefix      Prepend this string to every name in the library API (except for the types).],
+[  --with-api-prefix       Prepend this string to every name in the library API (except for the types).],
 [
 AC_DEFINE_UNQUOTED(LIBINT_API_PREFIX,"$withval")
 echo Using API prefix: $withval
@@ -251,7 +251,7 @@ esac
 )
 
 AC_ARG_ENABLE(g12,
-[  --enable-g12=N           Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors],
+[  --enable-g12=N          Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors],
 [
 case $enableval in
   yes)
@@ -273,7 +273,7 @@ esac
 )
 
 AC_ARG_ENABLE(g12dkh,
-[  --enable-g12dkh=N           Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors],
+[  --enable-g12dkh=N       Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors],
 [
 case $enableval in
   yes)
@@ -370,12 +370,31 @@ if test $withval -le $ERI3_MAX_AM; then
 fi
 )
 
+AC_ARG_ENABLE(eri3-pure-sh,
+[  --enable-eri3-pure-sh   Assume the "unpaired" center of 3-center electron repulsion integrals will be transformed to pure solid harmonics],
+[
+case $enableval in
+  yes)
+    ERI3_PURE_SH=yes
+  ;;
+  no)
+    ERI3_PURE_SH=no
+  ;;
+esac
+],[
+    ERI3_PURE_SH=no
+]
+)
+
 if test X$INCLUDE_ERI3 != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ERI3,$INCLUDE_ERI3)
   AC_SUBST(ERI3_MAX_AM)
   AC_SUBST(ERI3_OPT_AM)
   AC_DEFINE_UNQUOTED(ERI3_MAX_AM,$ERI3_MAX_AM)
   AC_DEFINE_UNQUOTED(ERI3_OPT_AM,$ERI3_OPT_AM)
+  if test X$ERI3_PURE_SH != Xno; then
+    AC_DEFINE(ERI3_PURE_SH)
+  fi
 fi
 
 # check max am for 2-center ERIs, if needed
@@ -400,12 +419,31 @@ if test $withval -le $ERI2_MAX_AM; then
 fi
 )
 
+AC_ARG_ENABLE(eri2-pure-sh,
+[  --enable-eri2-pure-sh   Assume the 2-center electron repulsion integrals will be transformed to pure solid harmonics],
+[
+case $enableval in
+  yes)
+    ERI2_PURE_SH=yes
+  ;;
+  no)
+    ERI2_PURE_SH=no
+  ;;
+esac
+],[
+    ERI2_PURE_SH=no
+]
+)
+
 if test X$INCLUDE_ERI2 != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ERI2,$INCLUDE_ERI2)
   AC_SUBST(ERI2_MAX_AM)
   AC_SUBST(ERI2_OPT_AM)
   AC_DEFINE_UNQUOTED(ERI2_MAX_AM,$ERI2_MAX_AM)
   AC_DEFINE_UNQUOTED(ERI2_OPT_AM,$ERI2_OPT_AM)
+  if test X$ERI2_PURE_SH != Xno; then
+    AC_DEFINE(ERI2_PURE_SH)
+  fi
 fi
 
 # check max am for G12 integrals, if needed
@@ -428,7 +466,7 @@ fi
 )
 
 AC_ARG_ENABLE(t1g12-support,
-[  --disable-t1g12-support   Libint will not support [Ti,G12] integrals],
+[  --disable-t1g12-support Libint will not support [Ti,G12] integrals],
 [
 case $enableval in
   yes)
@@ -482,7 +520,7 @@ fi
 # check max am for G12DKH integrals, if needed
 G12DKH_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(g12dkh-max-am,
-[  --with-g12dkh-max-am=N    Support integrals for relativistic G12 methods of angular momentum up to N.],
+[  --with-g12dkh-max-am=N  Support integrals for relativistic G12 methods of angular momentum up to N.],
 if test $withval -le 0; then
   AC_MSG_ERROR([Invalid value for --with-g12dkh-max-am ($withval)])
 else
@@ -492,7 +530,7 @@ fi
 
 G12DKH_OPT_AM=$LIBINT_OPT_AM
 AC_ARG_WITH(g12dkh-opt-am,
-[  --with-g12dkh-opt-am=N    Optimize G12DKH integrals for up to angular momentum N (N <= max-am).],
+[  --with-g12dkh-opt-am=N  Optimize G12DKH integrals for up to angular momentum N (N <= max-am).],
 if test $withval -le $G12DKH_MAX_AM; then
   G12DKH_OPT_AM=$withval
 fi
@@ -566,7 +604,7 @@ if test $LIBINT_VECTOR_LENGTH -gt 1; then
 fi
 
 AC_ARG_WITH(real-type,
-[  --with-real-type       Compute all integrals using the given real type (default: double).],
+[  --with-real-type        Compute all integrals using the given real type (default: double).],
 [
 AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_REAL,"$withval")
 libint_user_defined_real=$withval
@@ -1046,29 +1084,37 @@ AC_CHECK_HEADER(gmpxx.h,[
     AC_MSG_ERROR([cannot link against GMP C++ library. Please get the latest GMP with support for C++. It can be obtained at gmplib.org .])
    ]
   )
-  
-  AC_CHECK_HEADER(mpfr.h,[
-   AC_MSG_CHECKING([if MPFR library is usable])
-   LIBS="-lmpfr $LIBS"
-   AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM(
-     [[#include <mpfr.h>
-     ]],
-     [[
-      mpfr_t x;  mpfr_init(x);
-     ]]
+
+  dnl ----- MPFR is needed for high-precision testing -----
+  AC_ARG_ENABLE(mpfr,
+  [  --enable-mpfr           Use MPFR library to test Libint integrals in high precision.],
+  [
+   case $enableval in
+    yes)
+     AC_CHECK_HEADER(mpfr.h,[
+      AC_MSG_CHECKING([if MPFR library is usable])
+       LIBS="-lmpfr $LIBS"
+       AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM(
+        [[#include <mpfr.h>
+        ]],
+        [[
+         mpfr_t x;  mpfr_init(x);
+        ]]
+       )
+      ],
+      [AC_MSG_RESULT([yes])
+       AC_DEFINE(HAVE_MPFR)
+      ],
+      [
+       AC_MSG_RESULT([no])
+      ]
      )
-    ],
-    [AC_MSG_RESULT([yes])
-    ],
-    [
-     AC_MSG_RESULT([no])
-     AC_MSG_ERROR([cannot link against MPFR library. Please get the latest MPFR library at mpfr.org.])
-    ]
-   )
-  ],
-  [AC_MSG_ERROR([MPFR library is required. Please get the latest MPFR library at mpfr.org.])]
- )
+     ]
+    )
+    ;;
+   esac
+  ])
   
  ],
  [AC_MSG_ERROR([GMP C++ support is required. Please get the latest GMP with support for C++. It can be obtained at gmplib.org .])]
