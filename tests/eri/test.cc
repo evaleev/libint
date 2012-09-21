@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 
   // run the tests
 #ifdef INCLUDE_ERI
-  //test_4eri(deriv_order);
+  test_4eri(deriv_order);
 #endif
 #ifdef INCLUDE_ERI3
   test_3eri(deriv_order);
@@ -99,6 +99,11 @@ void test_4eri(unsigned int deriv_order) {
     for (unsigned int l1 = 0; l1 <= lmax; ++l1) {
       for (unsigned int l2 = 0; l2 <= lmax; ++l2) {
         for (unsigned int l3 = 0; l3 <= lmax; ++l3) {
+
+          // record start wall time
+          struct timeval tod;
+          gettimeofday(&tod,0);
+          const double start_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
 
 #if LIBINT_CONTRACTED_INTS
           const uint contrdepth = do_timing_only ? std::min((4*lmax+4) / (l0+l1+l2+l3+4), max_contrdepth) : max_contrdepth;
@@ -158,7 +163,7 @@ void test_4eri(unsigned int deriv_order) {
             cout << " contrdepth = " << contrdepth
                  << " #(repeats) = " << nrepeats;
           }
-          cout << endl;
+          cout << ": ";
 
           for(int k=0; k<nrepeats; ++k) {
 
@@ -375,11 +380,18 @@ void test_4eri(unsigned int deriv_order) {
             }
           }
 
-          cout << (success ? "ok" : "failed") << endl;
+          cout << (success ? "ok" : "failed") << std::endl;
 
           } // checking computed values vs. the reference
 
           } // end of nrepeats
+
+          if (do_timing_only) {
+            // record end wall time, compute total wall time spent here
+            gettimeofday(&tod,0);
+            const double end_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+            std::cout << "wall time = " << (end_wall_time - start_wall_time) << " seconds" << std::endl;
+          }
 
         }
       }
@@ -444,6 +456,11 @@ void test_3eri(unsigned int deriv_order) {
     for (unsigned int l1 = 0; l1 <= lmax; ++l1) {
       for (unsigned int l2 = 0; l2 <= lmax; ++l2) {
 
+        // record start wall time
+        struct timeval tod;
+        gettimeofday(&tod,0);
+        const double start_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+
         // can compute this? skip, if not
         if (deriv_order == 0 && LIBINT2_PREFIXED_NAME(libint2_build_3eri)[l0][l1][l2] == 0)
           continue;
@@ -500,7 +517,7 @@ void test_3eri(unsigned int deriv_order) {
           cout << " contrdepth = " << contrdepth
                << " #(repeats) = " << nrepeats;
         }
-        cout << endl;
+        cout << ": ";
 
         for(int k=0; k<nrepeats; ++k) {
 
@@ -676,6 +693,12 @@ void test_3eri(unsigned int deriv_order) {
 
         } // end of nrepeats
 
+        if (do_timing_only) {
+          // record end wall time, compute total wall time spent here
+          gettimeofday(&tod,0);
+          const double end_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+          std::cout << "wall time = " << (end_wall_time - start_wall_time) << " seconds" << std::endl;
+        }
 
       }
     }
