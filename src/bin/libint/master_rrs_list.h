@@ -108,6 +108,10 @@ namespace libint2 {
   typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGF,0,InBra> ITR_a_11_TwoPRep_11_int;
   typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,0,InKet> ITR_b_11_TwoPRep_11_sh;
   typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGF,0,InKet> ITR_b_11_TwoPRep_11_int;
+  typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,1,InBra> ITR_c_11_TwoPRep_11_sh;
+  typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGF,1,InBra> ITR_c_11_TwoPRep_11_int;
+  typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGShell,1,InKet> ITR_d_11_TwoPRep_11_sh;
+  typedef ITR_11_TwoPRep_11<GenIntegralSet_11_11,CGF,1,InKet> ITR_d_11_TwoPRep_11_int;
 
   typedef CR_DerivGauss<TwoPRep_11_11_sq,0,InBra> Deriv_a_11_TwoPRep_11_sh;
   typedef CR_DerivGauss<TwoPRep_11_11_sq,0,InKet> Deriv_b_11_TwoPRep_11_sh;
