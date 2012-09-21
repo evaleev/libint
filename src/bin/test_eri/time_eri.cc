@@ -21,6 +21,9 @@ using namespace libint2;
 
 typedef unsigned int uint;
 
+libint2::FmEval_Chebyshev3 fmeval_chebyshev(28);
+libint2::FmEval_Taylor<double,6> fmeval_taylor(28, 1e-15);
+
 namespace {
   std::string usage();
   std::string am2label(unsigned int);
