@@ -167,6 +167,7 @@ namespace libint2 {
           pfac *= BFS::max_key;
         }
       }
+      assert(key < this->max_key());
       return key;
     }
 
@@ -334,6 +335,7 @@ namespace libint2 {
       key += pfac*bfs_[p].key();
       pfac *= BFS::max_key;
     }
+    assert(key < this->max_key());
     return key;
   }
   
