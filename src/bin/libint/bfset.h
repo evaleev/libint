@@ -4,12 +4,13 @@
 
 #include <iostream>
 #include <string>
+#include <cassert>
+#include <array>
 #include <smart_ptr.h>
 #include <polyconstr.h>
 #include <hashable.h>
 #include <contractable.h>
 #include <global_macros.h>
-#include <cassert>
 
 namespace libint2 {
 
@@ -70,7 +71,7 @@ namespace libint2 {
 
   /** Represents cartesian derivatives of atom-centered basis functions
   */
-  class OriginDerivative : public Hashable<unsigned,ReferToKey> {
+  class OriginDerivative : public Hashable<LIBINT2_UINT_LEAST64,ReferToKey> {
 
   public:
     OriginDerivative() : valid_(true) {
@@ -123,10 +124,10 @@ namespace libint2 {
     /// Return false if this object is invalid
     bool valid() const { return valid_; }
     /// Implements Hashable<unsigned>::key()
-    unsigned key() const {
+    LIBINT2_UINT_LEAST64 key() const {
       unsigned nxy = d_[1] + d_[2];
       unsigned l = nxy + d_[0];
-      unsigned key = nxy*(nxy+1)/2 + d_[2];
+      LIBINT2_UINT_LEAST64 key = nxy*(nxy+1)/2 + d_[2];
       return key + key_l_offset[l];
     }
     /// Return a compact label
@@ -153,7 +154,7 @@ namespace libint2 {
     unsigned int d_[3];
     bool valid_;  // indicates valid/invalid state
     /// key_l_offset[L] is the number of all possible derivatives of order up to L
-    static unsigned key_l_offset[max_deriv+1];
+    static std::array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1> key_l_offset;
 
   };
 
@@ -165,12 +166,14 @@ namespace libint2 {
   class CGF;   // forward declaration of CGF
 
   /// Cartesian Gaussian Shell
-  class CGShell : public IncableBFSet, public Hashable<unsigned,ReferToKey>,
+  class CGShell : public IncableBFSet, public Hashable<LIBINT2_UINT_LEAST64,ReferToKey>,
                   public Contractable<CGShell> {
 
     unsigned int qn_[1];
     OriginDerivative deriv_;
     bool pure_sh_;  //< if true, assumed to contain solid harmonics with quantum number qn_[0] only
+    /** if true, this is a unit shell (zero-exponent Gaussian) */
+    bool unit_;
 
     friend CGShell operator+(const CGShell& A, const CGShell& B);
     friend CGShell operator-(const CGShell& A, const CGShell& B);
@@ -212,20 +215,34 @@ namespace libint2 {
     void dec(unsigned int xyz, unsigned int c = 1u);
     /// Implements IncableBFSet::norm()
     unsigned int norm() const;
-    /// Implements Hashable<unsigned>::key()
-    unsigned key() const { return (deriv().key() * 2 + (contracted() ? 1 : 0)) * (max_qn+1) + qn_[0]; }
-    const static unsigned max_qn = LIBINT_CARTGAUSS_MAX_AM;
-    // The range of keys is [0,max_key]
-    const static unsigned max_key = 2 * (max_qn + 1) * OriginDerivative::max_key;
+    /// Implements Hashable<LIBINT2_UINT_LEAST64>::key()
+    LIBINT2_UINT_LEAST64 key() const {
+      if (is_unit()) return max_key-1;
+      const LIBINT2_UINT_LEAST64 result =
+             ((deriv().key() * 2 +
+               (contracted() ? 1 : 0)
+              ) * (max_qn+1) +
+              qn_[0]
+             ) * 2 +
+             (pure_sh() ? 1 : 0);
+      assert(result < max_key-1);
+      return result;
+    }
+    const static LIBINT2_UINT_LEAST64 max_qn = LIBINT_CARTGAUSS_MAX_AM;
+    /** The range of keys is [0,max_key]
+        deriv_key_range = 2
+        qn_range = max_qn + 1
+        puresh_key_range = 2
+        +1 to account for the unit shell
+      */
+    const static LIBINT2_UINT_LEAST64 max_key = 2 * (max_qn + 1) * OriginDerivative::max_key * 2 + 1;
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
 
     /// returns the unit shell (exponent=0, am=0, indicated by pure_sh=true)
     static CGShell unit();
-    bool is_unit() const { return qn_[0] == 0 &&
-                                  contracted() == false &&
-                                  pure_sh_ == true; }
+    bool is_unit() const { return unit_; }
 
   };
 
@@ -233,13 +250,13 @@ namespace libint2 {
   CGShell operator-(const CGShell& A, const CGShell& B);
 
   /// Cartesian Gaussian Function
-  class CGF : public IncableBFSet, public Hashable<unsigned,ComputeKey>,
+  class CGF : public IncableBFSet, public Hashable<LIBINT2_UINT_LEAST64,ComputeKey>,
               public Contractable<CGF> {
 
     unsigned int qn_[3];
     OriginDerivative deriv_;
     bool pure_sh_;  //< if true, assumed to contain solid harmonics with quantum number qn_[0] only
-    bool unit_;
+    bool unit_; //< if true, this is a unit Gaussian (exponent = 0)
 
     friend CGF operator+(const CGF& A, const CGF& B);
     friend CGF operator-(const CGF& A, const CGF& B);
@@ -285,36 +302,51 @@ namespace libint2 {
     void dec(unsigned int xyz, unsigned int c = 1u);
     /// Implements IncableBFSet::norm()
     unsigned int norm() const;
-    /// Implements Hashable<unsigned>::key()
-    unsigned key() const {
+    /// Implements Hashable<LIBINT2_UINT_LEAST64>::key()
+    LIBINT2_UINT_LEAST64 key() const {
+      if (is_unit()) return max_key-1;
       unsigned nxy = qn_[1] + qn_[2];
       unsigned l = nxy + qn_[0];
-      unsigned key = nxy*(nxy+1)/2 + qn_[2];
-      return ( deriv().key() * 2 + (contracted() ? 1 : 0)) * max_num_qn + key + key_l_offset[l];
+      LIBINT2_UINT_LEAST64 key = nxy*(nxy+1)/2 + qn_[2];
+      const LIBINT2_UINT_LEAST64 result =
+          ( ( deriv().key() * 2 +
+              (contracted() ? 1 : 0)
+            ) * max_num_qn +
+            key + key_l_offset[l] * 2
+          ) + (pure_sh() ? 1 : 0);
+      if (result >= max_key-1) {
+        this->print(std::cout);
+        std::cout << "result,max_key-1 = " << result << "," << max_key-1 << std::endl;
+        assert(result < max_key-1);
+      }
+      return result;
     }
     /// The range of keys is [0,max_key). The formula is easily derived by summing (L+1)(L+2)/2 up to CGShell::max_key
     /// The factor of 2 to account for contracted vs. uncontracted basis functions
     /// The factor of OriginDerivative::max_key to account for derivatives
-    const static unsigned max_num_qn = ((1 + (CGShell::max_qn+1)) * (2 + (CGShell::max_qn+1)) * (3 + (CGShell::max_qn+1)) /6);
-    const static unsigned max_key = 2 * OriginDerivative::max_key * max_num_qn;
+    const static LIBINT2_UINT_LEAST64 max_num_qn = ((1 + (CGShell::max_qn+1)) * (2 + (CGShell::max_qn+1)) * (3 + (CGShell::max_qn+1)) /6);
+    // deriv_key_range = 2
+    // qn_range = max_num_qn
+    // puresh_key_range = 2
+    // +1 to account for unit function
+    const static LIBINT2_UINT_LEAST64 max_key = 2ul * OriginDerivative::max_key * max_num_qn * 2ul + 1;
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
 
-    /// returns the unit shell (exponent=0, am=0, indicated by pure_sh=true)
+    /// returns the unit shell (exponent=0, am=0, indicated by unit_=true)
     static CGF unit();
-    bool is_unit() const { return qn_[0]+qn_[1]+qn_[2] == 0 &&
-                                  contracted() == false &&
-                                  pure_sh_ == true; }
+    bool is_unit() const { return unit_; }
 
   private:
     /// key_l_offset[L] is the number of all possible CGFs with angular momentum less than L
-    static unsigned key_l_offset[CGShell::max_key+2];
+    static std::array<LIBINT2_UINT_LEAST64, CGShell::max_key+2> key_l_offset;
   };
 
   CGF operator+(const CGF& A, const CGF& B);
   CGF operator-(const CGF& A, const CGF& B);
 
+#if 0
   class SHGF; // forward declaration
 
   /// Solid-Harmonic Gaussian Shell
@@ -362,7 +394,9 @@ namespace libint2 {
     unsigned key() const { return (deriv().key() * 2 + (contracted() ? 1 : 0)) * (max_qn+1) + qn_[0]; }
     const static unsigned max_qn = LIBINT_CARTGAUSS_MAX_AM;
     // The range of keys is [0,max_key]
-    const static unsigned max_key = 2 * (max_qn + 1) * OriginDerivative::max_key;
+    const static unsigned max_key = 2 * (max_qn + 1) * OriginDerivative::max_key * 2; // deriv_key_range = 2
+                                                                                      // qn_range = max_qn + 1
+                                                                                      // puresh_key_range = 2
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
@@ -440,6 +474,7 @@ namespace libint2 {
 
   SHGF operator+(const SHGF& A, const SHGF& B);
   SHGF operator-(const SHGF& A, const SHGF& B);
+#endif
 
   /**
      TrivialBFSet<T> defines static member result, which is true if T
@@ -455,6 +490,7 @@ namespace libint2 {
     struct TrivialBFSet<CGF> {
       static const bool result = true;
     };
+#if 0
   template <>
     struct TrivialBFSet<SHGShell> {
       static const bool result = false;
@@ -463,6 +499,7 @@ namespace libint2 {
     struct TrivialBFSet<SHGF> {
       static const bool result = true;
     };
+#endif
 
 };
 

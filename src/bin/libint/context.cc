@@ -430,8 +430,9 @@ CppCodeContext::assign_ternary_expr_(const std::string& name,
     }
 
     oss << start_expr();
-    oss << symb0 << "[v]" << (accum ? " += " : " = ")
-        << "libint2::fma_" << (oper2 == "+" ? "plus" : "minus") << "("
+    oss << symb0 << "[v]" << (accum ? " += " : " = ");
+#if LIBINT_GENERATE_FMA
+    oss << "libint2::fma_" << (oper2 == "+" ? "plus" : "minus") << "("
         << (symb1_is_a_const ? arg1 : symb1)
         << (symb1_is_a_const ? " " : "[v] ")
         << ","
@@ -441,12 +442,26 @@ CppCodeContext::assign_ternary_expr_(const std::string& name,
         << (symb3_is_a_const ? arg3 : symb3)
         << (symb3_is_a_const ? "" : "[v]")
         << ")";
+#else
+    oss << (symb1_is_a_const ? arg1 : symb1)
+        << (symb1_is_a_const ? " " : "[v] ")
+        << "* "
+        << (symb2_is_a_const ? arg2 : symb2)
+        << (symb2_is_a_const ? " " : "[v] ")
+        << oper2
+        << (symb3_is_a_const ? arg3 : symb3)
+        << (symb3_is_a_const ? "" : "[v]");
+#endif
   }
   else {
     oss << start_expr();
-    oss << name << (accum ? " += " : " = ")
-        << "libint2::fma_" << (oper2 == "+" ? "plus" : "minus") << "("
+    oss << name << (accum ? " += " : " = ");
+#if LIBINT_GENERATE_FMA
+    oss << "libint2::fma_" << (oper2 == "+" ? "plus" : "minus") << "("
         << arg1 << ", " << arg2 << ", " << arg3 << ")";
+#else
+    oss << arg1 << " * " << arg2 << " " << oper2 << " " << arg3;
+#endif
   }
   oss << end_of_stat() << endl;
   oss << end_expr();

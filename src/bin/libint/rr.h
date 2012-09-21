@@ -114,6 +114,11 @@ namespace libint2 {
        Returns true is the type of target and all children are exactly the same
     */
     virtual bool invariant_type() const;
+    /**
+     *
+     * @return 1 if recurrence relation transfers quanta from lower to higher particles, -1 if vice versa, and 0 if neither
+     */
+    virtual int partindex_direction() const { return 0; }
 
     /**
       label() returns a unique, short, descriptive label of this RR

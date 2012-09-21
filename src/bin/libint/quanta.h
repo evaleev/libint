@@ -85,6 +85,7 @@ namespace libint2 {
         key += pfac*qn_[i];
         pfac *= QuantumSet::max_quantum_number;
       }
+      assert(key < this->max_key());
       return key;
     }
 
@@ -232,6 +233,7 @@ namespace libint2 {
         key += pfac*qn_[i];
         pfac *= QuantumSet::max_quantum_number;
       }
+      assert(key < this->max_key());
       return key;
     }
 

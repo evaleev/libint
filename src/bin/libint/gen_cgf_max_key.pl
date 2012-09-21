@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-my $lmax = 28;
+my $lmax = 39;
 my $ncgf = 0;
 
 printf STDOUT "{ 0";

@@ -92,8 +92,9 @@ TaskExternSymbols::symbols() const
   symbollist_.clear();
   typedef Symbols::const_iterator citer;
   citer end = symbols_.end();
+
   for(citer s=symbols_.begin(); s!=end; ++s) {
-    symbollist_.push_back(s->first);
+      symbollist_.push_back(s->first);
   }
   return symbollist_;
 }
@@ -106,3 +107,13 @@ TaskExternSymbols::find(const RRid& rrid) const
   return (found != rrmap_.end());
 }
 
+TaskExternSymbols::RRList
+TaskExternSymbols::rrlist() const {
+  RRList result;
+  typedef RRmap::const_iterator citer;
+  citer end = rrmap_.end();
+  for(citer rr=rrmap_.begin(); rr!=end; ++rr) {
+    result.push_back(rr->first);
+  }
+  return result;
+}

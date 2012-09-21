@@ -25,6 +25,10 @@ namespace libint2 {
       static const unsigned int max_nchildren = 1;
 
       using ParentType::Instance;
+
+      /// This relation is not directional
+      static bool directional() { return false; }
+
     private:
       using ParentType::RecurrenceRelation::expr_;
       using ParentType::RecurrenceRelation::nflops_;
@@ -33,8 +37,6 @@ namespace libint2 {
 
       /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
       CR_11_G12TiG12_11(const SafePtr<TargetType>&, unsigned int dir);
-      /// This relation is not directional
-      static bool directional() { return false; }
       static std::string descr() { return "CR"; }
 
 #if LIBINT_ENABLE_GENERIC_CODE

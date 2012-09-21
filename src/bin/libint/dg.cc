@@ -1780,6 +1780,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
           bool generate_fma = false;
           SafePtr<oper_type> parent_oper_ptr;
           SafePtr<DGVertex> fma_other_arg;
+#if LIBINT_GENERATE_FMA
           {
             if (oper_ptr->type() == algebra::OperatorTypes::Times &&
                 oper_ptr->num_entry_arcs() == 1) {
@@ -1843,6 +1844,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
               }
             }
           }
+#endif // LIBINT_GENERATE_FMA=1
 
           // convert symbols to their vector form if needed
           std::string curr_symbol = current_vertex->symbol();
@@ -1885,7 +1887,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
                                                        parent_oper_ptr->label(),
                                                        fma_other_arg_symbol
                                                        );
-                nflops_total += 2; // extra flop due to ccumulation + extra flop due to FMA
+                nflops_total += 2; // extra flop due to accumulation + extra flop due to FMA
               }
               else {
                 os << context->accumulate_binary_expr(curr_symbol, left_symbol,
@@ -1894,7 +1896,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
                 nflops_total += 1; // extra flop due to accumulation
               }
 
-            } else {
+            } else { // assign, not accumulate
               if (generate_fma) {
                 os << context->assign_ternary_expr(parent_symbol,
                                                    left_symbol,

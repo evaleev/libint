@@ -71,6 +71,10 @@ template <> struct ShellTripletSetPredicate<ShellSetType_ORCA> {
 #define STUDY_MEMORY_USAGE 0
 long living_count = 0;
 
+size_t l_to_cgshellsize(size_t l) {
+  return (l+1)*(l+2)/2;
+}
+
 std::string task_label(const std::string& prefix,
                        unsigned int deriv_level) {
   std::stringstream oss;
@@ -202,7 +206,7 @@ void try_main (int argc, char* argv[])
   }
 #endif
 #ifdef INCLUDE_ERI3
-  for(unsigned int d=0; d<=INCLUDE_ERI3; ++d) {
+  for(unsigned int d=0; d<=0; ++d) {
     cparams->max_am( task_label("3eri", d) ,ERI3_MAX_AM);
     cparams->max_am_opt( task_label("3eri", d) ,ERI3_OPT_AM);
   }
@@ -211,7 +215,7 @@ void try_main (int argc, char* argv[])
   }
 #endif
 #ifdef INCLUDE_ERI2
-  for(unsigned int d=0; d<=INCLUDE_ERI2; ++d) {
+  for(unsigned int d=0; d<=0; ++d) {
     cparams->max_am( task_label("2eri", d) ,ERI2_MAX_AM);
     cparams->max_am_opt( task_label("2eri", d) ,ERI2_OPT_AM);
   }
@@ -246,7 +250,7 @@ void try_main (int argc, char* argv[])
   cparams->max_am_opt("g12dkh",G12DKH_OPT_AM);
 #endif
 #if LIBINT_ENABLE_UNROLLING
-  cparams->unroll_threshold(1000000000);
+  cparams->unroll_threshold(LIBINT_ENABLE_UNROLLING);
 #endif
 #ifdef LIBINT_VECTOR_LENGTH
   cparams->max_vector_length(LIBINT_VECTOR_LENGTH);
@@ -334,11 +338,17 @@ void try_main (int argc, char* argv[])
   for(unsigned int d=0; d<=INCLUDE_ERI3; ++d) {
     build_TwoPRep_1b_2k(os,cparams,iface,d);
   }
+# if ERI3_PURE_SH
+  iface->to_params(iface->macro_define("ERI3_PURE_SH",1));
+# endif
 #endif
 #ifdef INCLUDE_ERI2
   for(unsigned int d=0; d<=INCLUDE_ERI2; ++d) {
     build_TwoPRep_1b_1k(os,cparams,iface,d);
   }
+# if ERI2_PURE_SH
+  iface->to_params(iface->macro_define("ERI2_PURE_SH",1));
+# endif
 #endif
 #ifdef INCLUDE_G12
 # if LIBINT_USE_COMPOSITE_EVALUATORS
@@ -480,7 +490,7 @@ build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           using std::max;
           const unsigned int max_am = max(la,lb);
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 1;
+          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 0;
           dg->registry()->unroll_threshold(unroll_threshold);
           dg->registry()->do_cse(need_to_optimize);
           dg->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
@@ -598,126 +608,6 @@ build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 #endif
 
 #ifdef INCLUDE_ERI
-#if !USE_GENERIC_ERI_BUILD
-void
-build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                    SafePtr<Libint2Iface>& iface)
-{
-  const std::string task("eri");
-  typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
-  vector<CGShell*> shells;
-  unsigned int lmax = cparams->max_am(task);
-  for(unsigned int l=0; l<=lmax; l++) {
-    shells.push_back(new CGShell(l));
-  }
-  ImplicitDimensions::set_default_dims(cparams);
-
-  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current(task);
-  iface->to_params(iface->macro_define("MAX_AM_ERI",lmax));
-
-  //
-  // Construct graphs for each desired target integral and
-  // 1) generate source code for the found traversal path
-  // 2) extract all remaining unresolved recurrence relations and
-  //    append them to the stack. Such unresolved RRs are RRs applied
-  //    to sets of integrals (rather than to individual integrals).
-  // 3) at the end, for each unresolved recurrence relation generate
-  //    explicit source code
-  //
-  SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
-  SafePtr<Strategy> strat(new Strategy());
-  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-  //SafePtr<Tactic> tactic(new RandomChoiceTactic());
-  //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
-  SafePtr<CodeContext> context(new CppCodeContext(cparams));
-  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
-
-  for(unsigned int la=0; la<=lmax; la++) {
-    for(unsigned int lb=0; lb<=lmax; lb++) {
-      for(unsigned int lc=0; lc<=lmax; lc++) {
-        for(unsigned int ld=0; ld<=lmax; ld++) {
-
-          if (la+lb+lc+ld == 0)
-            continue;
-
-          if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(LIBINT_SHELL_SET)>::value(la,lb,lc,ld))
-            continue;
-
-#if STUDY_MEMORY_USAGE
-          const int lim = 1;
-          if (! (la == lim && lb == lim && lc == lim && ld == lim) )
-            continue;
-#endif
-
-          // unroll only if max_am <= cparams->max_am_opt(task)
-          using std::max;
-          const unsigned int max_am = max(max(la,lb),max(lc,ld));
-          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 1;
-          dg_xxxx->registry()->unroll_threshold(unroll_threshold);
-          dg_xxxx->registry()->do_cse(need_to_optimize);
-          dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
-          // Need to accumulate integrals?
-          dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
-
-          SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],mType(0u));
-          os << "building " << abcd->description() << endl;
-          SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(abcd);
-          dg_xxxx->append_target(abcd_ptr);
-
-          std::string prefix(cparams->source_directory());
-          std::string label(cparams->api_prefix() + abcd->label());
-          std::deque<std::string> decl_filenames;
-          std::deque<std::string> def_filenames;
-
-          // this will generate code for this targets, and potentially generate code for its prerequisites
-          GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
-                       decl_filenames, def_filenames,
-                       prefix, label, false);
-
-          // update max stack size and # of targets
-          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
-          tparams->max_stack_size(max_am, memman->max_memory_used());
-          tparams->max_ntarget(1);
-          //os << " Max memory used = " << memman->max_memory_used() << std::endl;
-
-          // set pointer to the top-level evaluator function
-          ostringstream oss;
-          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_eri[" << la << "][" << lb << "][" << lc << "]["
-              << ld <<"] = " << context->label_to_name(label_to_funcname(label))
-              << context->end_of_stat() << endl;
-          iface->to_static_init(oss.str());
-
-          // need to declare this function internally
-          for(std::deque<std::string>::const_iterator i=decl_filenames.begin();
-              i != decl_filenames.end();
-              ++i) {
-            oss.str("");
-            oss << "#include <" << *i << ">" << endl;
-            iface->to_int_iface(oss.str());
-          }
-
-          // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
-          // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-          if (la == lmax &&
-              lb == lmax &&
-              lc == lmax &&
-              ld == lmax) {
-            extract_symbols(dg_xxxx);
-          }
-
-#if DEBUG
-          os << "Max memory used = " << memman->max_memory_used() << endl;
-#endif
-          dg_xxxx->reset();
-          memman->reset();
-        } // end of d loop
-      } // end of c loop
-    } // end of b loop
-  } // end of a loop
-}
-#else  // USE_GENERIC_ERI_BUILD
 void
 build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
@@ -747,7 +637,6 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   //
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy());
-  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   SafePtr<CodeContext> context(new CppCodeContext(cparams));
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
 
@@ -759,6 +648,9 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(LIBINT_SHELL_SET)>::value(la,lb,lc,ld))
             continue;
 
+          //SafePtr<Tactic> tactic(new ParticleDirectionTactic(la+lb > lc+ld ? false : true));
+          SafePtr<Tactic> tactic(new FourCenter_OS_Tactic(la, lb, lc, ld));
+
 #if STUDY_MEMORY_USAGE
           const int lim = 1;
           if (! (la == lim && lb == lim && lc == lim && ld == lim) )
@@ -769,10 +661,13 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           using std::max;
           const unsigned int max_am = max(max(la,lb),max(lc,ld));
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 1;
+          const bool need_to_unroll = l_to_cgshellsize(la)*l_to_cgshellsize(lb)*
+                                      l_to_cgshellsize(lc)*l_to_cgshellsize(ld) <= cparams->unroll_threshold();
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
           dg_xxxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxxx->registry()->do_cse(need_to_optimize);
           dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
+          //dg_xxxx->registry()->condense_expr(true);
           // Need to accumulate integrals?
           dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
 
@@ -874,12 +769,12 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
           // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
           // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-          if (la == lmax &&
-              lb == lmax &&
-              lc == lmax &&
-              ld == lmax) {
-            extract_symbols(dg_xxxx);
-          }
+//          if (la == lmax &&
+//              lb == lmax &&
+//              lc == lmax &&
+//              ld == lmax) {
+//            extract_symbols(dg_xxxx);
+//          }
 
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
@@ -892,7 +787,6 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
     } // end of b loop
   } // end of a loop
 }
-# endif // USE_GENERIC_ERI_BUILD
 
 #endif // INCLUDE_ERI
 
@@ -929,7 +823,6 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   //
   SafePtr<DirectedGraph> dg_xxx(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy());
-  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   SafePtr<CodeContext> context(new CppCodeContext(cparams));
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
 
@@ -945,6 +838,10 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           // unfortunately, depending on the direction in which the build goes it must be A(0) or B(1)
           const unsigned int dummy_center = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 0 : 1;
 
+          //SafePtr<Tactic> tactic(new ParticleDirectionTactic(lbra > lc+ld ? false : true));
+          SafePtr<Tactic> tactic(new FourCenter_OS_Tactic(dummy_center==0?0:lbra,
+              dummy_center==1?0:lbra, lc, ld));
+
 #if STUDY_MEMORY_USAGE
           const int lim = 1;
           if (! (lbra == lim && lc == lim && ld == lim) )
@@ -955,10 +852,14 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           using std::max;
           const unsigned int max_am = max(max(lc,ld),lbra);
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 1;
+          const bool need_to_unroll = l_to_cgshellsize(lbra)*
+                                      l_to_cgshellsize(lc)*
+                                      l_to_cgshellsize(ld) <= cparams->unroll_threshold();
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
           dg_xxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxx->registry()->do_cse(need_to_optimize);
           dg_xxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
+          //dg_xxx->registry()->condense_expr(true);
           // Need to accumulate integrals?
           dg_xxx->registry()->accumulate_targets(cparams->accumulate_targets());
 
@@ -978,8 +879,8 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             CGShell c(lc);
             CGShell d(ld);
 #if ERI3_PURE_SH
-            if (dummy_center == 1 && lbra >= 2) a.pure_sh(true);
-            if (dummy_center == 0 && lbra >= 2) b.pure_sh(true);
+            if (dummy_center == 1 && deriv_level == 0) a.pure_sh(true);
+            if (dummy_center == 0 && deriv_level == 0) b.pure_sh(true);
 #endif
 
             unsigned int center = 0;
@@ -1018,8 +919,8 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             CGShell c(lc);
             CGShell d(ld);
 #if ERI3_PURE_SH
-            if (dummy_center == 1 && lbra >= 2) a.pure_sh(true);
-            if (dummy_center == 0 && lbra >= 2) b.pure_sh(true);
+            if (dummy_center == 1 && deriv_level == 0) a.pure_sh(true);
+            if (dummy_center == 0 && deriv_level == 0) b.pure_sh(true);
 #endif
             SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(a,b,c,d,mType(0u));
             abcd_label = abcd->label();
@@ -1070,11 +971,11 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
           // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
           // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-          if (lbra == lmax &&
-              lc == lmax &&
-              ld == lmax) {
-            extract_symbols(dg_xxx);
-          }
+//          if (lbra == lmax &&
+//              lc == lmax &&
+//              ld == lmax) {
+//            extract_symbols(dg_xxx);
+//          }
 
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
@@ -1119,7 +1020,6 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   //
   SafePtr<DirectedGraph> dg_xxx(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy());
-  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   SafePtr<CodeContext> context(new CppCodeContext(cparams));
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
 
@@ -1131,6 +1031,12 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const unsigned int dummy_center1 = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 0 : 1;
           const unsigned int dummy_center2 = (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 2 : 3;
 
+          //SafePtr<Tactic> tactic(new ParticleDirectionTactic(lbra > lket ? false : true));
+          SafePtr<Tactic> tactic(new FourCenter_OS_Tactic(dummy_center1==0?0:lbra,
+                                                          dummy_center1==1?0:lbra,
+                                                          dummy_center2==2?0:lket,
+                                                          dummy_center2==3?0:lket));
+
 #if STUDY_MEMORY_USAGE
           const int lim = 1;
           if (! (lbra == lim && lket == lim) )
@@ -1141,7 +1047,9 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           using std::max;
           const unsigned int max_am = max(lbra,lket);
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 1;
+          const bool need_to_unroll = l_to_cgshellsize(lbra)*
+                                      l_to_cgshellsize(lket) <= cparams->unroll_threshold();
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
           dg_xxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxx->registry()->do_cse(need_to_optimize);
           dg_xxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
@@ -1164,10 +1072,10 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             CGShell c = (dummy_center2 == 2) ? CGShell::unit() : CGShell(lket);
             CGShell d = (dummy_center2 == 3) ? CGShell::unit() : CGShell(lket);
 #if ERI2_PURE_SH
-            if (dummy_center1 == 1 && lbra >= 2) a.pure_sh(true);
-            if (dummy_center1 == 0 && lbra >= 2) b.pure_sh(true);
-            if (dummy_center2 == 3 && lket >= 2) c.pure_sh(true);
-            if (dummy_center2 == 2 && lket >= 2) d.pure_sh(true);
+            if (dummy_center1 == 1 && deriv_level == 0) a.pure_sh(true);
+            if (dummy_center1 == 0 && deriv_level == 0) b.pure_sh(true);
+            if (dummy_center2 == 3 && deriv_level == 0) c.pure_sh(true);
+            if (dummy_center2 == 2 && deriv_level == 0) d.pure_sh(true);
 #endif
 
             unsigned int center = 0;
@@ -1206,10 +1114,10 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             CGShell c = (dummy_center2 == 2) ? CGShell::unit() : CGShell(lket);
             CGShell d = (dummy_center2 == 3) ? CGShell::unit() : CGShell(lket);
 #if ERI2_PURE_SH
-            if (dummy_center1 == 1 && lbra >= 2) a.pure_sh(true);
-            if (dummy_center1 == 0 && lbra >= 2) b.pure_sh(true);
-            if (dummy_center2 == 3 && lket >= 2) c.pure_sh(true);
-            if (dummy_center2 == 2 && lket >= 2) d.pure_sh(true);
+            if (dummy_center1 == 1 && deriv_level == 0) a.pure_sh(true);
+            if (dummy_center1 == 0 && deriv_level == 0) b.pure_sh(true);
+            if (dummy_center2 == 3 && deriv_level == 0) c.pure_sh(true);
+            if (dummy_center2 == 2 && deriv_level == 0) d.pure_sh(true);
 #endif
             SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(a,b,c,d,mType(0u));
             abcd_label = abcd->label();
@@ -1260,10 +1168,10 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
           // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
           // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-          if (lbra == lmax &&
-              lket == lmax) {
-            extract_symbols(dg_xxx);
-          }
+//          if (lbra == lmax &&
+//              lket == lmax) {
+//            extract_symbols(dg_xxx);
+//          }
 
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
@@ -1273,6 +1181,7 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
     } // end of ket loop
   } // end of bra loop
+
 }
 #endif // INCLUDE_ERI2
 

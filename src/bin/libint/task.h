@@ -95,12 +95,15 @@ namespace libint2 {
 
     /// Add the symbols
     void add(const SymbolList& symbols);
-    /// Return the symbols
+    /** Return the symbols.
+     */
     const SymbolList& symbols() const;
     /// Add the RRs
     void add(const RRList& rrlist);
     /// Is this RR found in the list?
     bool find(const RRid& rrid) const;
+    /// @return list of RRs references by this task
+    RRList rrlist() const;
 
   private:
     // Maintain symbols as a map since each symbol only needs to appear once

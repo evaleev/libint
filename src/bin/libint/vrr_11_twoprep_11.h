@@ -26,6 +26,10 @@ namespace libint2 {
       static const unsigned int max_nchildren = 26;
 
       using ParentType::Instance;
+
+      /// Default directionality
+      static bool directional() { return ParentType::default_directional(); }
+
     private:
       using ParentType::RecurrenceRelation::expr_;
       using ParentType::RecurrenceRelation::nflops_;
@@ -34,8 +38,6 @@ namespace libint2 {
 
       /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
       VRR_11_TwoPRep_11(const SafePtr<TargetType>&, unsigned int dir);
-      /// Default directionality
-      static bool directional() { return ParentType::default_directional(); }
 
       static std::string descr() { return "OSVRR"; }
       /** Re-Implementation of GenericRecurrenceRelation::generate_label():
@@ -94,6 +96,30 @@ namespace libint2 {
           dC.zero() == false ||
           dD.zero() == false;
 
+      // This is a hack to avoid creating recurrence relations for which generic code has not been yet implemented
+#if LIBINT_ENABLE_GENERIC_CODE
+      {
+        F sh_a(target_->bra(0,0));
+        F sh_b(target_->ket(0,0));
+        F sh_c(target_->bra(1,0));
+        F sh_d(target_->ket(1,0));
+        // generic code works for a0c0 of 0a0c classes where am(a) > 1 and am(c) > 1
+        // to generate optimized code for xxxx integral need to generate specialized code for up to (x+x)0(x+x)0 integrals
+        if (sh_b.zero() && sh_d.zero() &&
+           (sh_a.norm() > 1u && sh_c.norm() > 1u)
+           ) { // have a generic implemented ...
+          if (part != 0) // ... but only implemented build on A in this case
+            return;
+        }
+        if (sh_a.zero() && sh_c.zero() &&
+           (sh_b.norm() > 1u && sh_d.norm() > 1u)
+           ) {
+          if (part != 0) // but only implemented build on B in this case
+            return;
+        }
+      }
+#endif
+
       typedef TargetType ChildType;
       ChildFactory<ThisType,ChildType> factory(this);
 
@@ -107,12 +133,14 @@ namespace libint2 {
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
+        SafePtr<DGVertex> ABCD_m; if (not unit_b) ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-        decltype(ABCD_mp1) ABCD_m; if (not unit_b) ABCD_m = factory.make_child(a,b,c,d,m);
         if (is_simple()) {
-          expr_ = Vector("WP")[dir] * ABCD_mp1;  nflops_+=1;
           if (not unit_b) {
-            expr_ += Vector("PA")[dir] * ABCD_m;  nflops_+=2;
+            expr_ = Vector("PA")[dir] * ABCD_m + Vector("WP")[dir] * ABCD_mp1;  nflops_+=3;
+          }
+          else {
+            expr_ = Vector("WP")[dir] * ABCD_mp1;  nflops_+=1;
           }
         }
 
@@ -122,14 +150,23 @@ namespace libint2 {
         if (exists(am1) && not ahlrichs_simplification) {
           auto Am1BCD_m = factory.make_child(am1,b,c,d,m);
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
+#if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
           if (is_simple()) { expr_ -= Vector(a)[dir] * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
+#else
+          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
+#endif
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
           auto ABm1CD_m = factory.make_child(a,bm1,c,d,m);
           auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
+#if LIBINT_GENERATE_FMA
+          // this form is amenable to generation of fmsub
           if (is_simple()) { expr_ -= Vector(b)[dir] * Scalar("oo2z") * (Scalar("roz") * ABm1CD_mp1 - ABm1CD_m);  nflops_+=5; }
+#else
+          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
+#endif
         }
         const F& cm1 = c - _1;
         if (exists(cm1)) {
@@ -150,12 +187,14 @@ namespace libint2 {
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
+        SafePtr<DGVertex> ABCD_m; if (not unit_a) ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-        decltype(ABCD_mp1) ABCD_m; if (not unit_a) ABCD_m = factory.make_child(a,b,c,d,m);
         if (is_simple()) {
-          expr_ = Vector("WP")[dir] * ABCD_mp1;  nflops_+=1;
           if (not unit_a) {
-            expr_ += Vector("PB")[dir] * ABCD_m;  nflops_+=2;
+            expr_ = Vector("PB")[dir] * ABCD_m + Vector("WP")[dir] * ABCD_mp1;  nflops_+=3;
+          }
+          else {
+            expr_ = Vector("WP")[dir] * ABCD_mp1;  nflops_+=1;
           }
         }
 
@@ -163,7 +202,12 @@ namespace libint2 {
         if (exists(am1)) {
           auto Am1BCD_m = factory.make_child(am1,b,c,d,m);
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
+#if LIBINT_GENERATE_FMA
+          // this form is amenable to generation of fmsub
           if (is_simple()) { expr_ -= Vector(a)[dir] * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
+#else
+          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
+#endif
         }
         // simplified 3-center VRR due to Ahlrichs (PCCP 6, 5119 (2004))
         const bool ahlrichs_simplification = b.pure_sh() && unit_a;
@@ -171,7 +215,12 @@ namespace libint2 {
         if (exists(bm1) && not ahlrichs_simplification) {
           auto ABm1CD_m = factory.make_child(a,bm1,c,d,m);
           auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
+#if LIBINT_GENERATE_FMA
+          // this form is amenable to generation of fmsub
           if (is_simple()) { expr_ -= Vector(b)[dir] * Scalar("oo2z") * (Scalar("roz") * ABm1CD_mp1 - ABm1CD_m);  nflops_+=5; }
+#else
+          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
+#endif
         }
         const F& cm1 = c - _1;
         if (exists(cm1)) {
@@ -192,12 +241,14 @@ namespace libint2 {
         if (!exists(c)) return;
         F d(Tint->ket(1,0)); const bool unit_d = (d == F::unit()); part1_has_unit |= unit_d;
 
+        SafePtr<DGVertex> ABCD_m; if (not unit_d) ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-        decltype(ABCD_mp1) ABCD_m; if (not unit_d) ABCD_m = factory.make_child(a,b,c,d,m);
         if (is_simple()) {
-          expr_ = Vector("WQ")[dir] * ABCD_mp1;  nflops_+=1;
           if (not unit_d) {
-            expr_ += Vector("QC")[dir] * ABCD_m;  nflops_+=2;
+            expr_ = Vector("QC")[dir] * ABCD_m + Vector("WQ")[dir] * ABCD_mp1;  nflops_+=3;
+          }
+          else {
+            expr_ = Vector("WQ")[dir] * ABCD_mp1;  nflops_+=1;
           }
         }
 
@@ -207,13 +258,23 @@ namespace libint2 {
         if (exists(cm1) && not ahlrichs_simplification) {
           auto ABCm1D_m = factory.make_child(a,b,cm1,d,m);
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
+#if LIBINT_GENERATE_FMA
+          // this form is amenable to generation of fmsub
           if (is_simple()) { expr_ -= Vector(c)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
+#else
+          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
+#endif
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
           auto ABCDm1_m = factory.make_child(a,b,c,dm1,m);
           auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
+#if LIBINT_GENERATE_FMA
+          // this form is amenable to generation of fmsub
           if (is_simple()) { expr_ -= Vector(d)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCDm1_mp1 - ABCDm1_m);  nflops_+=5; }
+#else
+          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
+#endif
         }
         const F& am1 = a - _1;
         if (exists(am1)) {
@@ -234,12 +295,14 @@ namespace libint2 {
         F d(Tint->ket(1,0) - _1);
         if (!exists(d)) return;
 
+        SafePtr<DGVertex> ABCD_m; if (not unit_c) ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
-        decltype(ABCD_mp1) ABCD_m; if (not unit_c) ABCD_m = factory.make_child(a,b,c,d,m);
         if (is_simple()) {
-          expr_ = Vector("WQ")[dir] * ABCD_mp1;  nflops_+=1;
           if (not unit_c) {
-            expr_ += Vector("QD")[dir] * ABCD_m;  nflops_+=2;
+            expr_ = Vector("QD")[dir] * ABCD_m + Vector("WQ")[dir] * ABCD_mp1;  nflops_+=3;
+          }
+          else {
+            expr_ = Vector("WQ")[dir] * ABCD_mp1;  nflops_+=1;
           }
         }
 
@@ -247,7 +310,12 @@ namespace libint2 {
         if (exists(cm1)) {
           auto ABCm1D_m = factory.make_child(a,b,cm1,d,m);
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
+#if LIBINT_GENERATE_FMA
+          // this form is amenable to generation of fmsub
           if (is_simple()) { expr_ -= Vector(c)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
+#else
+          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
+#endif
         }
         // simplified 3-center VRR due to Ahlrichs (PCCP 6, 5119 (2004))
         const bool ahlrichs_simplification = d.pure_sh() && unit_c;
@@ -255,7 +323,12 @@ namespace libint2 {
         if (exists(dm1) && not ahlrichs_simplification) {
           auto ABCDm1_m = factory.make_child(a,b,c,dm1,m);
           auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
+#if LIBINT_GENERATE_FMA
+          // this form is amenable to generation of fmsub
           if (is_simple()) { expr_ -= Vector(d)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCDm1_mp1 - ABCDm1_m);  nflops_+=5; }
+#else
+          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
+#endif
         }
         const F& am1 = a - _1;
         if (exists(am1)) {
@@ -439,15 +512,19 @@ namespace libint2 {
            sh_c.norm() > std::max(2*max_opt_am,1u)
           ) &&
           (sh_a.norm() > 1u && sh_c.norm() > 1u)
-         )
+         ) {
+        assert(part == 0); // has only implemented build on A in this case
         return true;
+      }
       if (sh_a.zero() && sh_c.zero() &&
           (sh_b.norm() > std::max(2*max_opt_am,1u) ||
            sh_d.norm() > std::max(2*max_opt_am,1u)
           ) &&
           (sh_b.norm() > 1u && sh_d.norm() > 1u)
-         )
+         ) {
+        assert(part == 0); // has only implemented build on B in this case
         return true;
+      }
       return false;
     }
 
@@ -493,6 +570,18 @@ namespace libint2 {
       F sh_d(target_->ket(1,0));
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
+      bool ahlrichs_simplification;
+      bool unit_s = false;
+      if (xsxs) {
+        ahlrichs_simplification = (sh_a.pure_sh() && sh_b.is_unit()) ||
+                                  (sh_c.pure_sh() && sh_d.is_unit());
+        unit_s = sh_b.is_unit();
+      }
+      if (sxsx) {
+        ahlrichs_simplification = (sh_b.pure_sh() && sh_a.is_unit()) ||
+                                  (sh_d.pure_sh() && sh_c.is_unit());
+        unit_s = sh_a.is_unit();
+      }
 
       const OriginDerivative dA = target_->bra(0,0).deriv();
       const OriginDerivative dB = target_->ket(0,0).deriv();
@@ -507,38 +596,56 @@ namespace libint2 {
 
       if (deriv == false) { // for regular integrals I know exactly how many prerequisites I need
         if(xsxs) {
-          oss << "libint2::OSVRR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+          oss << "libint2::OS" << (ahlrichs_simplification ? "A" : "")
+              << "VRR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
         }
         if (sxsx) {
-          oss << "libint2::OSVRR_sx_sx<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
+          oss << "libint2::OS" << (ahlrichs_simplification ? "A" : "")
+              << "VRR_sx_sx<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
         }
+        if (not ahlrichs_simplification) oss << (unit_s ? "true," : "false,");
         oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
         oss << ">::compute(inteval";
 
+        oss << "," << args->symbol(0); // target
+        if (not ahlrichs_simplification && unit_s) // purely to avoid having a 4-term generic RR, reuse 5-term with dummy argument
+          oss << ",0"; // src0-> 0x0
         const unsigned int nargs = args->n();
-        for(unsigned int a=0; a<nargs; a++) {
+        for(unsigned int a=1; a<nargs; a++) {
           oss << "," << args->symbol(a);
         }
         oss << ");";
       }
       else { // deriv == true -> only some arguments are needed
         if(xsxs) {
-          oss << "libint2::OSVRR_xs_xs_deriv<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+          oss << "libint2::OS" << (ahlrichs_simplification ? "A" : "")
+              << "VRR_xs_xs_deriv<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
         }
         if(sxsx) {
-          oss << "libint2::OSVRR_sx_sx_deriv<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
+          oss << "libint2::OS" << (ahlrichs_simplification ? "A" : "")
+              << "VRR_sx_sx_deriv<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
         }
 
         for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_a.deriv().d(xyz) << ",";
         for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_b.deriv().d(xyz) << ",";
         for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_c.deriv().d(xyz) << ",";
         for(unsigned int xyz=0; xyz<3; ++xyz) oss << sh_d.deriv().d(xyz) << ",";
+        if (not ahlrichs_simplification) oss << (unit_s ? "true," : "false,");
         oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
         oss << ">::compute(inteval";
-        // out of all 22 possible prerequisites first 5 are guaranteed to be there
+        // out of all 22 possible prerequisites first few have same derivative degree as the target
+        // 5 if standard 4-center integral
+        // 1+4 if the center opposite the build center carries a unit function
+        //     will pass 0 instead of src0
+        // 2 if Ahlrichs
+        oss << "," << args->symbol(0); // target
+        if (not ahlrichs_simplification && unit_s) // purely to avoid having a 4-term generic RR, reuse 5-term with dummy argument
+          oss << ",0"; // src0-> 0x0
         const unsigned int nargs = args->n();
-        unsigned int arg = 0;
-        for(; arg<6; arg++) { // hence first 6 arguments (target + 5) are always there
+        unsigned int arg = 1;
+        for(;
+            arg<(ahlrichs_simplification? 3 : (unit_s ? 5 : 6));  // nargs + 1 target
+            arg++) {
           oss << "," << args->symbol(arg);
         }
         for(unsigned int xyz=0; xyz<3; ++xyz) {

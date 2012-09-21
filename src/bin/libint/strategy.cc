@@ -50,30 +50,32 @@ namespace libint2 {
     typedef mpl::list<
     HRR_ab_11_TwoPRep_11_sh,
     HRR_cd_11_TwoPRep_11_sh,
-#if LIBINT_ERI_STRATEGY == 2
-    ITR_a_11_TwoPRep_11_sh,
-#endif
-    VRR_a_11_TwoPRep_11_sh,
-    VRR_c_11_TwoPRep_11_sh,
     Deriv_a_11_TwoPRep_11_sh,
     Deriv_b_11_TwoPRep_11_sh,
     Deriv_c_11_TwoPRep_11_sh,
-    Deriv_d_11_TwoPRep_11_sh
+    Deriv_d_11_TwoPRep_11_sh,
+#if LIBINT_ERI_STRATEGY == 2
+    ITR_a_11_TwoPRep_11_sh,
+    ITR_c_11_TwoPRep_11_sh,
+#endif
+    VRR_a_11_TwoPRep_11_sh,
+    VRR_c_11_TwoPRep_11_sh
     > value;
   };
   template <> struct MasterStrategy<TwoPRep_11_11_int> {
     typedef mpl::list<
     HRR_ab_11_TwoPRep_11_int,
     HRR_cd_11_TwoPRep_11_int,
-#if LIBINT_ERI_STRATEGY == 2
-    ITR_a_11_TwoPRep_11_int,
-#endif
-    VRR_a_11_TwoPRep_11_int,
-    VRR_c_11_TwoPRep_11_int,
     Deriv_a_11_TwoPRep_11_int,
     Deriv_b_11_TwoPRep_11_int,
     Deriv_c_11_TwoPRep_11_int,
-    Deriv_d_11_TwoPRep_11_int
+    Deriv_d_11_TwoPRep_11_int,
+#if LIBINT_ERI_STRATEGY == 2
+    ITR_a_11_TwoPRep_11_int,
+    ITR_c_11_TwoPRep_11_int,
+#endif
+    VRR_a_11_TwoPRep_11_int,
+    VRR_c_11_TwoPRep_11_int
     > value;
   };
 #else  // 0B0D strategy
@@ -81,30 +83,32 @@ namespace libint2 {
     typedef mpl::list<
     HRR_ba_11_TwoPRep_11_sh,
     HRR_dc_11_TwoPRep_11_sh,
-#if LIBINT_ERI_STRATEGY == 2
-    ITR_b_11_TwoPRep_11_sh,
-#endif
-    VRR_b_11_TwoPRep_11_sh,
-    VRR_d_11_TwoPRep_11_sh,
     Deriv_a_11_TwoPRep_11_sh,
     Deriv_b_11_TwoPRep_11_sh,
     Deriv_c_11_TwoPRep_11_sh,
-    Deriv_d_11_TwoPRep_11_sh
+    Deriv_d_11_TwoPRep_11_sh,
+#if LIBINT_ERI_STRATEGY == 2
+    ITR_b_11_TwoPRep_11_sh,
+    ITR_d_11_TwoPRep_11_sh,
+#endif
+    VRR_b_11_TwoPRep_11_sh,
+    VRR_d_11_TwoPRep_11_sh
     > value;
   };
   template <> struct MasterStrategy<TwoPRep_11_11_int> {
     typedef mpl::list<
     HRR_ba_11_TwoPRep_11_int,
     HRR_dc_11_TwoPRep_11_int,
-#if LIBINT_ERI_STRATEGY == 2
-    ITR_b_11_TwoPRep_11_int,
-#endif
-    VRR_b_11_TwoPRep_11_int,
-    VRR_d_11_TwoPRep_11_int,
     Deriv_a_11_TwoPRep_11_int,
     Deriv_b_11_TwoPRep_11_int,
     Deriv_c_11_TwoPRep_11_int,
-    Deriv_d_11_TwoPRep_11_int
+    Deriv_d_11_TwoPRep_11_int,
+#if LIBINT_ERI_STRATEGY == 2
+    ITR_b_11_TwoPRep_11_int,
+    ITR_d_11_TwoPRep_11_int,
+#endif
+    VRR_b_11_TwoPRep_11_int,
+    VRR_d_11_TwoPRep_11_int
     > value;
   };
 #endif
@@ -252,11 +256,11 @@ namespace libint2 {
                           const SafePtr<Tactic>& tactic,
                           SafePtr<RecurrenceRelation>& rr,
                           Tactic::rr_stack& rrstack) {
-        SafePtr<RRType> rr_ptr = RRType::Instance(integral, 0);
-        // only first RR is needed in CGShell case
-        if (rr_ptr != 0) {
-          rr = static_pointer_cast<RecurrenceRelation, RRType>(rr_ptr);
-          return true;
+        const bool rr_is_directional = RRType::directional();
+        for (int xyz = (rr_is_directional ? 2 : 0); xyz >= 0; xyz--) {
+          SafePtr<RRType> rr_ptr = RRType::Instance(integral, xyz);
+          if (rr_ptr != 0)
+            rrstack.push_back(static_pointer_cast<RecurrenceRelation, RRType>(rr_ptr));
         }
         return false;
       }
@@ -302,9 +306,8 @@ namespace libint2 {
             const SafePtr<RecurrenceRelation>& rr() {
               // if rr() is called then we should no longer do any processing
               done_ = true;
-              // some postprocessing may be needed to determine optimal rr
-              if (boost::is_same<typename IntType::BasisFunctionType, CGF>::value)
-                postprocess_rr_cgf(tactic_, rr_, rrstack_);
+              // determine optimal rr
+              postprocess_rr(tactic_, rr_, rrstack_);
               return rr_;
             }
 
@@ -315,10 +318,10 @@ namespace libint2 {
             bool done_;
             Tactic::rr_stack rrstack_;
 
-            // for shell quartets the relation has been determined, for CGF use rrstack and tactic
-            void postprocess_rr_cgf(const SafePtr<Tactic>& tactic,
-                                    SafePtr<RecurrenceRelation>& rr,
-                                    const Tactic::rr_stack& rrstack) {
+            // determine the optimal RR to use given the rrstack and tactic
+            void postprocess_rr(const SafePtr<Tactic>& tactic,
+                                SafePtr<RecurrenceRelation>& rr,
+                                const Tactic::rr_stack& rrstack) {
               rr = tactic->optimal_rr(rrstack);
             }
 

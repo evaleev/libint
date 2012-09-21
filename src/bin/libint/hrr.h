@@ -56,6 +56,15 @@ namespace libint2 {
       static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
       virtual ~HRR();
 
+      /** is this recurrence relation parameterized by a direction.
+          the default is false if BasisFunctionSet is CGShell,
+          true otherwise. */
+      static bool directional() {
+        if (boost::is_same<BasisFunctionType,CGShell>::value)
+          return false;
+        return true;
+      }
+
       /// Implementation of RecurrenceRelation::num_children()
       const unsigned int num_children() const {return nchildren_;};
       /// returns pointer to the target

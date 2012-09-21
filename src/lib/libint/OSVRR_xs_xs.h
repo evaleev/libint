@@ -9,7 +9,7 @@
 
 namespace libint2 {
 
-  template <int part, int La, int Lc, bool vectorize> struct OSVRR_xs_xs {
+  template <int part, int La, int Lc, bool unit_b, bool vectorize> struct OSVRR_xs_xs {
     static void compute(const Libint_t* inteval,
         LIBINT2_REALTYPE* target,
         const LIBINT2_REALTYPE* src0,
@@ -20,13 +20,15 @@ namespace libint2 {
   };
 
   /** builds (a 0|c0)^(m)
-      src0 = (a-10|c0)^(m)
+      src0 = (a-10|c0)^(m) // ignored if unit_b is true
       src1 = (a-10|c0)^(m+1)
       src2 = (a-20|c0)^(m)
       src3 = (a-20|c0)^(m+1)
       src4 = (a-10|c-10)^(m+1)
    **/
-  template <int La, int Lc, bool vectorize> struct OSVRR_xs_xs<0,La,Lc,vectorize> {
+  template <int La, int Lc,
+            bool unit_b,
+            bool vectorize> struct OSVRR_xs_xs<0,La,Lc,unit_b,vectorize> {
 
     static void compute(const Libint_t* inteval,
         LIBINT2_REALTYPE* target,
@@ -37,8 +39,7 @@ namespace libint2 {
         const LIBINT2_REALTYPE* src4) {
 
       // works for (ds|ps) and higher
-      if (La < 2 || Lc < 1)
-        abort();
+      assert(not (La < 2 || Lc < 1));
 
       const unsigned int veclen = vectorize ? inteval->veclen : 1;
 
@@ -61,22 +62,28 @@ namespace libint2 {
         const LIBINT2_REALTYPE *PA, *WP;
         switch(xyz) {
           case x:
-            PA = inteval->PA_x;
+#if LIBINT2_DEFINED(eri,PA_x)
+            if (not unit_b) PA = inteval->PA_x;
+#endif
             WP = inteval->WP_x;
             break;
           case y:
-            PA = inteval->PA_y;
+#if LIBINT2_DEFINED(eri,PA_y)
+            if (not unit_b) PA = inteval->PA_y;
+#endif
             WP = inteval->WP_y;
             break;
           case z:
-            PA = inteval->PA_z;
+#if LIBINT2_DEFINED(eri,PA_z)
+            if (not unit_b) PA = inteval->PA_z;
+#endif
             WP = inteval->WP_z;
             break;
         }
 
         const unsigned int iam1 = INT_CARTINDEX(La-1,a[0],a[1]);
         const unsigned int am10c0_offset = iam1 * NcV;
-        const LIBINT2_REALTYPE* src0_ptr = src0 + am10c0_offset;
+        const LIBINT2_REALTYPE* src0_ptr = unit_b ? 0 : src0 + am10c0_offset;
         const LIBINT2_REALTYPE* src1_ptr = src1 + am10c0_offset;
 
         // if a-2_xyz exists, include (a-2_xyz 0 | c 0)
@@ -92,11 +99,13 @@ namespace libint2 {
           unsigned int cv = 0;
           for(unsigned int c = 0; c < Nc; ++c) {
             for(unsigned int v=0; v<veclen; ++v, ++cv) {
-              target[cv] = PA[v] * src0_ptr[cv] + WP[v] * src1_ptr[cv] + axyz * inteval->oo2z[v] * (src2_ptr[cv] - inteval->roz[v] * src3_ptr[cv]);
+              double value = WP[v] * src1_ptr[cv] + axyz * inteval->oo2z[v] * (src2_ptr[cv] - inteval->roz[v] * src3_ptr[cv]);
+              if (not unit_b) value += PA[v] * src0_ptr[cv];
+              target[cv] = value;
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 8 * NcV;
+          inteval->nflops[0] += (unit_b ? 6 : 8) * NcV;
 #endif
 
         }
@@ -104,11 +113,13 @@ namespace libint2 {
           unsigned int cv = 0;
           for(unsigned int c = 0; c < Nc; ++c) {
             for(unsigned int v=0; v<veclen; ++v, ++cv) {
-              target[cv] = PA[v] * src0_ptr[cv] + WP[v] * src1_ptr[cv];
+              double value = WP[v] * src1_ptr[cv];
+              if (not unit_b) value += PA[v] * src0_ptr[cv];
+              target[cv] = value;
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 3 * NcV;
+          inteval->nflops[0] += (unit_b ? 1 : 3) * NcV;
 #endif
         }
 
@@ -170,9 +181,8 @@ namespace libint2 {
         const LIBINT2_REALTYPE* src1,
         const LIBINT2_REALTYPE* src4) {
 
-      // works for (ds|ps) and higher
-      if (La < 1 || Lc < 1)
-        abort();
+      // works for (ps|ps) and higher
+      assert(not (La < 1 || Lc < 1));
 
       const unsigned int veclen = vectorize ? inteval->veclen : 1;
 
@@ -192,7 +202,7 @@ namespace libint2 {
         --a[xyz];
 
         // redirect
-        const LIBINT2_REALTYPE *PA, *WP;
+        const LIBINT2_REALTYPE *WP;
         switch(xyz) {
           case x:
             WP = inteval->WP_x;
@@ -263,4 +273,3 @@ namespace libint2 {
 };
 
 #endif // header guard
-

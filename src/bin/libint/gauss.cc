@@ -12,9 +12,12 @@
 using namespace std;
 using namespace libint2;
 
-unsigned CGF::key_l_offset[] = { 0, 1, 4, 10, 20, 35, 56, 84, 120, 165, 220, 286, 364, 455, 560, 680, 816, 969, 1140, 1330, 1540,
-                                 1771, 2024, 2300, 2600, 2925, 3276, 3654, 4060, 4495};
-unsigned OriginDerivative::key_l_offset[] = { 0, 1, 4, 10, 20};
+std::array<LIBINT2_UINT_LEAST64, CGShell::max_key+2> CGF::key_l_offset{{ 0, 1, 4, 10, 20, 35, 56, 84, 120, 165,
+                                             220, 286, 364, 455, 560, 680, 816, 969, 1140, 1330,
+                                             1540, 1771, 2024, 2300, 2600, 2925, 3276, 3654, 4060, 4495,
+                                             4960, 5456, 5984, 6545, 7140, 7770, 8436, 9139, 9880, 10660,
+                                             11480}};
+std::array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1> OriginDerivative::key_l_offset{{ 0, 1, 4, 10, 20}};
 
 namespace {
   std::string am_to_symbol(unsigned int l, bool contracted) {
@@ -48,7 +51,7 @@ libint2::operator==(const OriginDerivative& A, const OriginDerivative& B) {
   return true;
 }
 
-CGF::CGF() : pure_sh_(false)
+CGF::CGF() : pure_sh_(false), unit_(false)
 {
   for(int i=0; i<3; i++)
     qn_[i] = 0;
@@ -56,14 +59,15 @@ CGF::CGF() : pure_sh_(false)
 
 CGF::CGF(unsigned int qn[3],
          bool puresh) :
-         pure_sh_(qn[0] + qn[1] + qn[2] > 0 ? puresh : false)
+         pure_sh_(puresh),
+         unit_(false)
 {
   for(int i=0; i<3; i++)
     qn_[i] = qn[i];
 }
 
 CGF::CGF(const CGF& source) : Contractable<CGF>(source),
-    deriv_(source.deriv_), pure_sh_(source.pure_sh_)
+    deriv_(source.deriv_), pure_sh_(source.pure_sh_), unit_(source.unit_)
 {
   for(int i=0; i<3; i++)
     qn_[i] = source.qn_[i];
@@ -77,6 +81,7 @@ CGF::CGF(const ConstructablePolymorphically& sptr) :
     qn_[i] = sptr_cast.qn_[i];
   deriv_ = sptr_cast.deriv_;
   pure_sh_ = sptr_cast.pure_sh_;
+  unit_ = sptr_cast.unit_;
 }
 
 CGF::~CGF()
@@ -86,12 +91,14 @@ CGF::~CGF()
 const std::string
 CGF::label() const
 {
+  // unit *functions* are treated as regular s functions so that (ss|ss)^(m) = (unit s|ss)^(m)
+  //if (is_unit()) return "unit_";
   unsigned int am = qn_[0] + qn_[1] + qn_[2];
   std::string deriv_label;
   if (deriv_.zero() == false) deriv_label = deriv_.label();
   const std::string am_string = am_to_symbol(am, contracted());
   std::ostringstream oss;
-  oss << am_string << deriv_label << "_";
+  oss << (pure_sh_ && am>0 ? "W" : "") << am_string << deriv_label << "_";
   if (am == 0) return oss.str();
 
   std::string label = oss.str();
@@ -120,7 +127,8 @@ CGF::operator==(const CGF& a) const
            qn_[2] == a.qn_[2] &&
            contracted() == a.contracted() &&
            deriv_ == a.deriv_ &&
-           pure_sh_ == a.pure_sh_);
+           pure_sh_ == a.pure_sh_ &&
+           unit_ == a.unit_);
 }
 
 CGF&
@@ -130,6 +138,7 @@ CGF::operator=(const CGF& source)
     qn_[i] = source.qn_[i];
   deriv_ = source.deriv_;
   pure_sh_ = source.pure_sh_;
+  unit_ = source.unit_;
   Contractable<CGF>::operator=(source);
   if (!source.valid()) invalidate();
   return *this;
@@ -138,21 +147,20 @@ CGF::operator=(const CGF& source)
 void
 CGF::dec(unsigned int i, unsigned int c)
 {
+  if (is_unit()) { invalidate(); return; }
   if (i<3 && valid()) {
     if (qn_[i] < c) {
       invalidate();
       return;
     }
     qn_[i] -= c;
-    // if this was a pure_sh function and decremented to 0, make it non-pure_sh
-    // because qn_[0] && pure_sh_ is reserved to indicate a "unit" function
-    if (norm() == 0 && this->pure_sh()) this->pure_sh(false);
   }
 }
 
 void
 CGF::inc(unsigned int i, unsigned int c)
 {
+  assert(is_unit() == false);
   if (i<3 && valid())
     qn_[i] += c;
 }
@@ -171,6 +179,7 @@ CGF::print(std::ostream& os) const
 
 CGF
 libint2::operator+(const CGF& A, const CGF& B) {
+  assert(A.is_unit() == false && B.is_unit() == false);
   CGF Sum(A);
   for(unsigned int xyz=0; xyz<3; ++xyz)
     Sum.inc(xyz,B.qn(xyz));
@@ -180,16 +189,18 @@ libint2::operator+(const CGF& A, const CGF& B) {
 
 CGF
 libint2::operator-(const CGF& A, const CGF& B) {
+  //assert(A.is_unit() == false && B.is_unit() == false);
   CGF Diff(A);
   for(unsigned int xyz=0; xyz<3; ++xyz)
     Diff.dec(xyz,B.qn(xyz));
+  Diff.deriv_ -= B.deriv_;
 
   return Diff;
 }
 
 CGF CGF::unit() {
   CGF result;
-  result.pure_sh_ = true;
+  result.unit_ = true;
   result.uncontract();
   return result;
 }
@@ -197,7 +208,7 @@ CGF CGF::unit() {
 ///////////////////////////////////////
 
 // By default make it an s-shell
-CGShell::CGShell() : pure_sh_(false)
+CGShell::CGShell() : pure_sh_(false), unit_(false)
 {
   for(int i=0; i<1; i++)
     qn_[i] = 0;
@@ -205,13 +216,13 @@ CGShell::CGShell() : pure_sh_(false)
 
 CGShell::CGShell(unsigned int qn,
                  bool puresh) :
-    pure_sh_(qn > 0 ? puresh : false)
+    pure_sh_(puresh), unit_(false)
 {
     qn_[0] = qn;
 }
 
 CGShell::CGShell(const CGShell& source) : Contractable<CGShell>(source),
-    deriv_(source.deriv_), pure_sh_(source.pure_sh_)
+    deriv_(source.deriv_), pure_sh_(source.pure_sh_), unit_(source.unit_)
 {
     qn_[0] = source.qn_[0];
 }
@@ -224,7 +235,8 @@ const std::string
 CGShell::label() const
 {
   if (is_unit()) return "unit";
-  std::string result = am_to_symbol(qn_[0], contracted());
+  std::string result = std::string(pure_sh_ && qn_[0]>0 ? "W" : "") +
+                       am_to_symbol(qn_[0], contracted());
   if (!deriv_.zero())
     result += deriv_.label();
   return result;
@@ -236,6 +248,7 @@ CGShell::operator=(const CGShell& source)
   qn_[0] = source.qn_[0];
   deriv_ = source.deriv_;
   pure_sh_ = source.pure_sh_;
+  unit_ = source.unit_;
   Contractable<CGShell>::operator=(source);
   if (!source.valid()) invalidate();
   return *this;
@@ -247,25 +260,27 @@ CGShell::operator==(const CGShell& a) const
   return ( qn_[0] == a.qn_[0] &&
            contracted() == a.contracted() &&
            deriv_ == a.deriv_ &&
-           pure_sh_ == a.pure_sh_);
+           pure_sh_ == a.pure_sh_ &&
+           unit_ == a.unit_);
 }
 
 void
 CGShell::dec(unsigned int i, unsigned int c)
 {
+  if (is_unit()) { invalidate(); return; }
   if (i == 0 && valid()) {
     if (qn_[0] < c) {
       invalidate();
       return;
     }
     qn_[0] -= c;
-    if (norm() == 0 && this->pure_sh()) this->pure_sh(false); // see CGF::dec() for explanation
   }
 }
 
 void
 CGShell::inc(unsigned int i, unsigned int c)
 {
+  assert(is_unit() == false);
   if (i == 0 && valid())
     qn_[0] += c;
 }
@@ -284,6 +299,7 @@ CGShell::print(std::ostream& os) const
 
 CGShell
 libint2::operator+(const CGShell& A, const CGShell& B) {
+  assert(A.is_unit() == false && B.is_unit() == false);
   CGShell Sum(A);
   Sum.inc(0,B.qn(0));
   Sum.deriv_ += B.deriv_;
@@ -292,6 +308,7 @@ libint2::operator+(const CGShell& A, const CGShell& B) {
 
 CGShell
 libint2::operator-(const CGShell& A, const CGShell& B) {
+  //assert(A.is_unit() == false && B.is_unit() == false);
   CGShell Diff(A);
   Diff.dec(0,B.qn(0));
   Diff.deriv_ -= B.deriv_;
@@ -300,7 +317,7 @@ libint2::operator-(const CGShell& A, const CGShell& B) {
 
 CGShell CGShell::unit() {
   CGShell result;
-  result.pure_sh_ = true;
+  result.unit_ = true;
   result.uncontract();
   return result;
 }

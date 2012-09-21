@@ -3,7 +3,7 @@
 #define _libint2_src_bin_libint_globalmacros_h_
 
 /// Feel free to adjust higher, but not yet tested
-#define LIBINT_CARTGAUSS_MAX_AM 16
+#define LIBINT_CARTGAUSS_MAX_AM 32
 
 /// For developers only
 #define LIBINT_SUPPORT_ONEBODYINTS 0

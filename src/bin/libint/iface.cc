@@ -313,6 +313,66 @@ Libint2Iface::~Libint2Iface()
   li_.close();
 }
 
+namespace libint2 {
+
+  /// Parses the symbol if it is composed of a prefix followed by a number.
+  class Parser_prefixN {
+
+    public:
+      Parser_prefixN(const std::string& symbol) :
+        match_(false), N_(0) {
+
+        std::string N_str;
+        bool minus = false;
+
+        auto prefix_rbegin = symbol.rbegin();
+        for(auto ri = symbol.rbegin(); ri != symbol.rend(); ++ri) {
+          if (isdigit(*ri)) {
+            match_ = true;
+            N_str.insert(0, 1, *ri);
+          }
+          else { // no more digits? check for a minus sign
+            prefix_rbegin = ri;
+            if (*ri == '_') {
+              std::string token("_");
+              ++ri;
+              for(int i=0; i<6 && ri != symbol.rend(); ++ri, ++i) {
+                token.push_back(*ri);
+              }
+              if (token == "_sunim_") { // minus reversed
+                minus = true;
+                prefix_rbegin = ri;
+              }
+            }
+            break;
+          }
+        }
+
+        if (match_) {
+
+          N_ = atoi(N_str.c_str());
+          if (minus)
+            N_ *= -1;
+
+          prefix_ = std::string(prefix_rbegin, symbol.rend());
+          std::reverse(prefix_.begin(), prefix_.end());
+        }
+      }
+
+      /// returns true if the pattern matched
+      bool match() const { return match_; }
+      /// returns N (only valid if match()==true)
+      int N() const { return N_; }
+      /// returns prefix (only valid if match()==true)
+      const std::string& prefix() const { return prefix_; }
+
+    private:
+      bool match_;
+      std::string prefix_;
+      int N_;
+
+  };
+}
 
 void
 Libint2Iface::generate_inteval_type(std::ostream& os)
@@ -351,9 +411,52 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
       symbols = tsymbols->symbols();
       tlabel = t->label();
     }
-    typedef SymbolList::const_iterator citer;
-    citer end = symbols.end();
-    for(citer s=symbols.begin(); s!=end; ++s) {
+
+    // Spend some effort to ensure reasonable ordering/grouping of symbols in the list, e.g.
+    // all symbols of form PrefixIndex (e.g. crazyprefixN) will be grouped together in the order of increasing Index.
+    SymbolList ordered_symbols;
+    // 1) convert all symbols to valid code
+    // 2) then scan for symbols matching pattern prefixN, for each prefix determine range of N
+    std::map<std::string,std::pair<int,int> > prefix_symbols;
+    for(auto s : symbols) {
+      Parser_prefixN parser(ctext_->label_to_name(s));
+      if (parser.match()) {
+        if (prefix_symbols.find(parser.prefix()) == prefix_symbols.end()) {
+          prefix_symbols[parser.prefix()] = std::make_pair(parser.N(), parser.N());
+        }
+        else {
+          const int N = parser.N();
+          auto Nlimits = prefix_symbols[parser.prefix()];
+          if (N < Nlimits.first)  Nlimits.first = N;
+          if (N > Nlimits.second) Nlimits.second = N;
+          prefix_symbols[parser.prefix()] = Nlimits;
+        }
+      }
+    }
+
+    // 3) for each prefix iterate over the corresponding range, and add the matching symbols in the same order
+    for(auto pi=prefix_symbols.begin(); pi!=prefix_symbols.end(); ++pi) {
+      auto prefix = pi->first;
+      auto Nlimits = pi->second;
+      for(int N=Nlimits.first; N<=Nlimits.second; ++N) {
+        std::ostringstream oss; oss << prefix << (N<0 ? "-" : "") << abs(N);
+        std::string code_symbol = ctext_->label_to_name(oss.str());
+        for(auto v : symbols) {
+          if (code_symbol == ctext_->label_to_name(v)) {
+            ordered_symbols.push_back(code_symbol);
+          }
+        }
+      }
+    }
+    // 4) the rest of symbols can appear in any order
+    //    in practice, the order is lexicographic, hence xyz components are automatically ordered x,y,z
+    for(auto s : symbols) {
+      if (std::find(ordered_symbols.begin(), ordered_symbols.end(), ctext_->label_to_name(s)) == ordered_symbols.end())
+        ordered_symbols.push_back(s);
+    }
+
+    // now dump all symbols into the evaluator data type definition
+    for(auto s=ordered_symbols.begin(); s!=ordered_symbols.end(); ++s) {
       // for each extrnal symbol #define a macro
       std::string tmplabel("DEFINED_"); tmplabel += ctext_->label_to_name(*s);
       os << macro_define(tlabel,tmplabel,1);

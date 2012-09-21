@@ -83,7 +83,7 @@ namespace libint2 {
           if found returns the pointer to the corresponding object on ostack_,
           else returns a null value_type.
      */
-    const value_type& find(const key_type& key)  {
+    const value_type& find(const key_type& key) {
       static value_type null_value(make_pair(InstanceID(0),SafePtr<T>()));
       typedef typename map_type::iterator miter;
       miter pos = map_.find(key);
@@ -93,6 +93,19 @@ namespace libint2 {
       else {
         return null_value;
       }
+    }
+
+    /** Returns the pointer to the unique instance of object corresponding to the hashed_key.
+          if found returns the pointer to the corresponding object on ostack_,
+          else returns a null value_type.
+     */
+    const value_type& find_hashed(const InstanceID& hashed_key) const {
+      static value_type null_value(make_pair(InstanceID(0),SafePtr<T>()));
+      for(auto& i: map_) {
+        if (i.second.first == hashed_key)
+          return i.second;
+      }
+      return null_value;
     }
 
     /** Searches for obj on the stack and, if found, removes the unique instance

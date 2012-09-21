@@ -121,6 +121,9 @@
 /* User-defined real type */
 #undef LIBINT_USER_DEFINED_REAL
 
+/*Generate FMA instructions? */
+#undef LIBINT_GENERATE_FMA
+
 /* Accumulate integrals to the buffer? */
 #undef LIBINT_ACCUM_INTS
 

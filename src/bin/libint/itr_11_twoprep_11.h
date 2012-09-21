@@ -51,6 +51,21 @@ namespace libint2 {
     static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
     virtual ~ITR_11_TwoPRep_11() { assert(part == 0 || part == 1); }
 
+    /// overrides RecurrenceRelation::partindex_direction()
+    int partindex_direction() const { return part == 0 ? +1  // transfer from 0 to 1
+                                                       : -1; // transfer from 1 to 0
+    }
+
+    /// Default directionality
+    /** is this recurrence relation parameterized by a direction.
+        the default is false if BasisFunctionSet is CGShell,
+        true otherwise. */
+    static bool directional() {
+      if (boost::is_same<BasisFunctionType,CGShell>::value)
+        return false;
+      return true;
+    }
+
 #if 1
     /// Implementation of RecurrenceRelation::num_children()
     const unsigned int num_children() const { return children_.size(); };
@@ -237,7 +252,7 @@ namespace libint2 {
         return;
       }
       // Build on D
-      if (part == 1 && where == InBra) {
+      if (part == 1 && where == InKet) {
         F a(Tint->bra(0,0));
         F b(Tint->ket(0,0));
         F c(Tint->bra(1,0));
@@ -286,15 +301,20 @@ namespace libint2 {
            sh_c.norm() > std::max(2*max_opt_am,1u)
           ) &&
           (sh_a.norm() > 1u && sh_c.norm() > 1u)
-         )
-        return true;
+         ) {
+        const bool ITR_xs_xs_Part1_implemented = false; // only Part0 is implemented
+        if (part == 1) return ITR_xs_xs_Part1_implemented;
+        else return true;
+      }
       if (sh_a.zero() && sh_c.zero() &&
           (sh_b.norm() > std::max(2*max_opt_am,1u) ||
            sh_d.norm() > std::max(2*max_opt_am,1u)
           ) &&
           (sh_b.norm() > 1u && sh_d.norm() > 1u)
-         )
-        return true;
+         ) {
+        const bool ITR_sx_sx_implemented = false; // only ITR_xs_xs is implemented
+        return ITR_sx_sx_implemented;
+      }
       return false;
     }
 

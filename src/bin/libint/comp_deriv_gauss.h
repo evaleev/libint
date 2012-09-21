@@ -8,8 +8,8 @@ using namespace std;
 
 namespace libint2 {
 
-  /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
-  the angular momentum is raised. where specifies whether angular momentum is decreased in bra or ket.
+  /** compute relation for derivative 2-e ERI. part+where specify the function
+   * to be differentiated.
   */
     template <class IntType, int part, FunctionPosition where>
       class CR_DerivGauss : public GenericRecurrenceRelation< CR_DerivGauss<IntType,part,where>,
@@ -25,6 +25,10 @@ namespace libint2 {
       static const unsigned int max_nchildren = 2;
 
       using ParentType::Instance;
+
+      /// always directional! Cartesian derivatives are applied in a particular direction
+      static bool directional() { return true; }
+
     private:
       using ParentType::RecurrenceRelation::expr_;
       using ParentType::RecurrenceRelation::nflops_;
@@ -33,10 +37,20 @@ namespace libint2 {
 
       /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
       CR_DerivGauss(const SafePtr<TargetType>&, unsigned int dir);
-      /// Default directionality
-      static bool directional() { return ParentType::default_directional(); }
 
       static std::string descr() { return "CR_DerivGauss"; }
+      /** Re-Implementation of GenericRecurrenceRelation::generate_label():
+          CR Deriv relations are independent of m (it never appears anywhere in equations), hence
+          to avoid generating identical code make sure that the (unique) label has m=0. */
+      std::string generate_label() const
+      {
+        typedef typename TargetType::AuxIndexType mType;
+        static SafePtr<mType> aux0(new mType(0u));
+        ostringstream os;
+        os << descr() << "P" << part << to_string(where)
+           << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
+        return os.str();
+      }
     };
 
   template <class IntType, int part, FunctionPosition where>
