@@ -21,6 +21,7 @@ struct RandomShellSet {
       std::copy(am, am+N, l);
 
       boost::mt19937 rng;                 // produces randomness out of thin air
+      // rng.seed(1352054452);            // uncomment to make results repeatable
       boost::uniform_real<> rdist(0.1, 3.0);  // distribution that maps to 0.1 .. 3.0
       boost::variate_generator<boost::mt19937&, boost::uniform_real<> >
                die(rng, rdist);             // glues randomness with mapping
@@ -137,6 +138,15 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 #if LIBINT2_DEFINED(eri,AB_z)
             erieval->AB_z[v] = AB_z;
 #endif
+#if LIBINT2_DEFINED(eri,BA_x)
+            erieval->BA_x[v] = -AB_x;
+#endif
+#if LIBINT2_DEFINED(eri,BA_y)
+            erieval->BA_y[v] = -AB_y;
+#endif
+#if LIBINT2_DEFINED(eri,BA_z)
+            erieval->BA_z[v] = -AB_z;
+#endif
 #if LIBINT2_DEFINED(eri,oo2z)
             erieval->oo2z[v] = 0.5*oogammap;
 #endif
@@ -194,6 +204,15 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 #endif
 #if LIBINT2_DEFINED(eri,CD_z)
             erieval->CD_z[v] = CD_z;
+#endif
+#if LIBINT2_DEFINED(eri,DC_x)
+            erieval->DC_x[v] = -CD_x;
+#endif
+#if LIBINT2_DEFINED(eri,DC_y)
+            erieval->DC_y[v] = -CD_y;
+#endif
+#if LIBINT2_DEFINED(eri,DC_z)
+            erieval->DC_z[v] = -CD_z;
 #endif
 #if LIBINT2_DEFINED(eri,oo2e)
             erieval->oo2e[v] = 0.5*oogammaq;
@@ -505,6 +524,15 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 #if LIBINT2_DEFINED(eri,AB_z)
             erieval->AB_z[v] = AB_z;
 #endif
+#if LIBINT2_DEFINED(eri,BA_x)
+            erieval->BA_x[v] = -AB_x;
+#endif
+#if LIBINT2_DEFINED(eri,BA_y)
+            erieval->BA_y[v] = -AB_y;
+#endif
+#if LIBINT2_DEFINED(eri,BA_z)
+            erieval->BA_z[v] = -AB_z;
+#endif
 #if LIBINT2_DEFINED(eri,oo2z)
             erieval->oo2z[v] = 0.5*oogammap;
 #endif
@@ -556,6 +584,15 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 #endif
 #if LIBINT2_DEFINED(eri,CD_z)
             erieval->CD_z[v] = CD_z;
+#endif
+#if LIBINT2_DEFINED(eri,DC_x)
+            erieval->DC_x[v] = -CD_x;
+#endif
+#if LIBINT2_DEFINED(eri,DC_y)
+            erieval->DC_y[v] = -CD_y;
+#endif
+#if LIBINT2_DEFINED(eri,DC_z)
+            erieval->DC_z[v] = -CD_z;
 #endif
 #if LIBINT2_DEFINED(eri,oo2e)
             erieval->oo2e[v] = 0.5*oogammaq;
