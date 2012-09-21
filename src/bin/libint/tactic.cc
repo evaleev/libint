@@ -4,6 +4,7 @@
 #include <dg.h>
 #include <tactic.h>
 #include <rr.h>
+#include <master_ints_list.h>
 
 using namespace std;
 using namespace libint2;
@@ -49,21 +50,21 @@ ZeroNewVerticesTactic::optimal_rr(const rr_stack& stack) const {
       if (nchildren == nchildren_on_dg) {
         return rr;
       }
-      else {
-        std::cout << "ZeroNewVerticesTactic::optimal_rr: not optimal: " << stack[i]->label() << std::endl;
-        SafePtr<DGVertex> target = stack[i]->rr_target();
-        const unsigned int nchildren = stack[i]->num_children();
-        for(unsigned int c=0; c<nchildren; ++c) {
-          SafePtr<DGVertex> child = stack[i]->rr_child(c);
-          std::cout << "  child " << c << ": " << child->label() << std::endl;
-        }
-
+//      else {
+//        std::cout << "ZeroNewVerticesTactic::optimal_rr: not optimal: " << stack[i]->label() << std::endl;
+//        SafePtr<DGVertex> target = stack[i]->rr_target();
+//        const unsigned int nchildren = stack[i]->num_children();
+//        for(unsigned int c=0; c<nchildren; ++c) {
+//          SafePtr<DGVertex> child = stack[i]->rr_child(c);
+//          std::cout << "  child " << c << ": " << child->label() << std::endl;
+//        }
+//
 //        {
 //          VertexPrinter vp(std::cout);
 //          dg_->foreach(vp);
 //        }
-
-      }
+//
+//      }
     }
     throw std::logic_error("ZeroNewVerticesTactic -- no RRs found that add zero new vertices. Probably used by mistake");
   }
@@ -97,4 +98,82 @@ NullTactic::optimal_rr(const rr_stack& stack) const {
   return RR();
 }
 
+ParticleDirectionTactic::RR
+ParticleDirectionTactic::optimal_rr(const rr_stack& stack) const {
+  //  std::cout << "in ParticleDirectionTactic::optimal_rr : increase_=" << increase_ << std::endl;
 
+  // try to find the first RR with matching direction
+  for (auto& t : stack) {
+//    std::cout << " rr=" << t->label() << std::endl;
+    if (t->partindex_direction() == +1 && increase_)
+      return t;
+    if (t->partindex_direction() == -1 && not increase_)
+      return t;
+//    std::cout << "**not selected**" << std::endl;
+  }
+
+  // if failed to find an RR with matching direction, choose the first non-directional
+  for (auto& t : stack) {
+    if (t->partindex_direction() == 0)
+      return t;
+  }
+
+  // if all failed, return an empty RR
+  return RR();
+}
+
+FourCenter_OS_Tactic::RR
+FourCenter_OS_Tactic::optimal_rr(const rr_stack& stack) const {
+
+  if (stack.empty())
+    return RR();
+
+  // grab the quantum numbers of the target set of these RRs
+  unsigned lbra0, lket0, lbra1, lket1;
+  SafePtr<TwoPRep_11_11_sq> abcd_ptr = dynamic_pointer_cast<TwoPRep_11_11_sq>(stack[0]->rr_target());
+  if (abcd_ptr) {
+    lbra0 = abcd_ptr->bra(0,0).norm();
+    lbra1 = abcd_ptr->bra(1,0).norm();
+    lket0 = abcd_ptr->ket(0,0).norm();
+    lket1 = abcd_ptr->ket(1,0).norm();
+  }
+  else {
+    SafePtr<TwoPRep_11_11_int> abcd_ptr = dynamic_pointer_cast<TwoPRep_11_11_int>(stack[0]->rr_target());
+    if (abcd_ptr) {
+      lbra0 = abcd_ptr->bra(0,0).norm();
+      lbra1 = abcd_ptr->bra(1,0).norm();
+      lket0 = abcd_ptr->ket(0,0).norm();
+      lket1 = abcd_ptr->ket(1,0).norm();
+    }
+    else {
+      assert(false); // should not be possible
+    }
+  }
+
+  const bool l1_ge_l0 = lbra1+lket1 >= lbra0+lket0;
+  const bool use_itr = lbra0_+lket0_ >= 0 && lbra1_+lket1_ >= 0;
+
+  // try to apply ITR first
+  if (use_itr) {
+    for (auto& t : stack) {
+
+      if (t->partindex_direction() == 0) // skip all non-ITR RRs
+        continue;
+
+      //
+      // this ITR is useful if it shifts the quanta towards the particle with greater total quanta
+      if (t->partindex_direction() == +1 && l1_ge_l0)
+        return t;
+      if (t->partindex_direction() == -1 && not l1_ge_l0)
+        return t;
+    }
+  }
+  // else use first applicable non-ITR relation
+  for (auto& t : stack) {
+    if (t->partindex_direction() == 0) // skip all ITR RRs
+      return t;
+  }
+
+  // if all failed, return an empty RR
+  return RR();
+}

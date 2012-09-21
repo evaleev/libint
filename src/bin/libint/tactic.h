@@ -95,9 +95,50 @@ namespace libint2 {
     virtual ~NullTactic() {}
 
     RR optimal_rr(const rr_stack& stack) const;
-
   };
 
+  /**
+   * ParticleDirectionTactic returns the first RR that transfers the quantum numbers between particles in
+   * the desired direction.
+   */
+  class ParticleDirectionTactic : public Tactic {
+    public:
+      /**
+       * @param increasing if true, quanta should be transferred from lower to higher particle indices.
+       */
+      ParticleDirectionTactic(bool increase) : Tactic(), increase_(increase) {}
+      virtual ~ParticleDirectionTactic() {}
+
+      RR optimal_rr(const rr_stack& stack) const;
+    private:
+      bool increase_;
+  };
+
+  /**
+   * FourCenter_OS_Tactic decides graph build for (bra0 ket0| bra1 ket1) = <bra0 bra1|ket0 ket1>
+   */
+  class FourCenter_OS_Tactic : public Tactic {
+    public:
+      /**
+       * @param lbra0
+       * @param lbra1
+       * @param lket0
+       * @param lket1
+       */
+      FourCenter_OS_Tactic(unsigned lbra0,
+                           unsigned lket0,
+                           unsigned lbra1,
+                           unsigned lket1) : Tactic(), lbra0_(lbra0), lket0_(lket0),
+                           lbra1_(lbra1), lket1_(lket1) {}
+      virtual ~FourCenter_OS_Tactic() {}
+
+      RR optimal_rr(const rr_stack& stack) const;
+    private:
+      unsigned lbra0_;
+      unsigned lket0_;
+      unsigned lbra1_;
+      unsigned lket1_;
+  };
 
   /////////////////////////////////
 
@@ -114,8 +155,8 @@ namespace libint2 {
     public:
     StdRandomizePolicy(double scale) : scale_(scale) {
       // Initialize state randomly
-      time_t crap;
-      srandom(time(&crap));
+      time_t t;
+      srandom(time(&t));
     }
 
     unsigned int noise(unsigned int nrrs) const {
