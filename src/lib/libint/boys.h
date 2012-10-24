@@ -4,11 +4,13 @@
 #ifndef _libint2_src_lib_libint_boys_h_
 #define _libint2_src_lib_libint_boys_h_
 
-#include <iostream>
-#include <math.h>
-#include <vector.h>
-
 #if defined(__cplusplus)
+
+#include <iostream>
+#include <cstdlib>
+#include <cmath>
+#include <vector.h>
+#include <cassert>
 
 namespace libint2 {
 
@@ -105,8 +107,8 @@ namespace libint2 {
 /// based on the code from ORCA by Dr. Frank Neese
   class FmEval_Chebyshev3 {
 
-      const int FM_N = 2048;
-      const int ORDER = 4;
+      static const int FM_N = 2048;
+      static const int ORDER = 4;
       const double FM_MAX;
       const double FM_DELTA;
 
@@ -186,6 +188,8 @@ namespace libint2 {
 // F_mmax(x) is evaluated by extrapolation, the rest
 // by downward recursion
 // -----------------------------------------------------
+#define __COMMENT_OUT_VECTORIZED_EVAL 1
+#if not(__COMMENT_OUT_VECTORIZED_EVAL)
       typedef libint2::simd::VectorSSEDouble REALTYPE; // for now REALTYPE will be SSE2 type, eventually this will be defined elsewhere and the Interpolate will become
                                                        // a template (or likely a macro since OpenCL does not support templates as of spec 1.2)
       inline void eval(REALTYPE *Fm, REALTYPE x, int mmax) const {
@@ -246,6 +250,7 @@ namespace libint2 {
         }
 #endif
       }
+#endif
 
     private:
 
@@ -302,10 +307,9 @@ namespace libint2 {
         cc[2] = 8.0 * ac[2] + 48.0 * ac[3] * arg;
         cc[3] = 32.0 * ac[3];
       }
-      ;
 
       /* ----------------------------------------------------------------------------
-       This function here make the expansion coefficients for all intervals
+       This function makes the expansion coefficients for all intervals
 
 
        ON INPUT  m    : the highest F[m] to generate
