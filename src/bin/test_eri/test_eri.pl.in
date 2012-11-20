@@ -83,7 +83,7 @@ if ($scpexportdest eq "") {
   my $makecmd = "make $makevars test_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"";
   my $errcod = system($makecmd);
   if ($errcod != 0) {
-    printf STDOUT "make test_eri failed!\n";
+    die("make test_eri failed!\n");
   }
   else {
     system("./test_eri") && die("./test_eri failed");
@@ -93,7 +93,7 @@ if ($scpexportdest eq "") {
   $makecmd = "make $makevars time_eri COMPUTE_XX_ERI_XX_SRC=\"$source_filename\"";
   $errcod = system($makecmd);
   if ($errcod) {
-    printf STDOUT "make time_eri failed!\n";
+    die("make time_eri failed!\n");
   }
   else {
     printf STDOUT "Timing program compiled.\n";

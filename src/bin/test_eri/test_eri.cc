@@ -179,7 +179,7 @@ int main(int argc, char** argv)
                 std::cout << "Elem " << ijkl << " di= " << di << " v=" << v
                     << " : eri.cc = " << ref_eri[di]
                     << " libint = " << (double) new_eri
-                    << " (relerr = " << abs((ref_eri[di] - new_eri)/ref_eri[di]) << ")"
+                    << " (relerr = " << abs((ref_eri[di] - (double)new_eri)/ref_eri[di]) << ")"
                     << endl;
                 success = false;
               }
