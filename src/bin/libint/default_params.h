@@ -17,7 +17,7 @@ namespace libint2 {
 
   /// These are the parameters received by the compiler
   class CompilationParameters {
-    static const std::string default_task_name;
+    std::string default_task_name_;
 
     public:
 
@@ -26,11 +26,11 @@ namespace libint2 {
     ~CompilationParameters();
     
     /// returns max AM for task t
-    unsigned int max_am(const std::string& t = "default") const;
+    unsigned int max_am(std::string t = "") const;
     /// returns max AM for which to produce optimal code for task t
-    unsigned int max_am_opt(const std::string& t = "default") const;
+    unsigned int max_am_opt(std::string t = "") const;
     /// returns number of basis functions in integrals for task t
-    unsigned int num_bf(const std::string& t = "default") const;
+    unsigned int num_bf(std::string t = "") const;
     /// returns max vector length
     unsigned int max_vector_length() const {
       return max_vector_length_;
@@ -78,6 +78,10 @@ namespace libint2 {
     /// whether contracted targets are supported
     bool contracted_targets() const {
       return contracted_targets_;
+    }
+    /// default task name
+    const std::string& default_task_name() const {
+      return default_task_name_;
     }
     
     /// set max AM for task t
@@ -134,6 +138,10 @@ namespace libint2 {
     void contracted_targets(bool c) {
       contracted_targets_ = c;
     }
+    /// default task name
+    void default_task_name(const std::string& s) {
+      default_task_name_ = s;
+    }
     
     /// print params out
     void print(std::ostream& os) const;
@@ -170,6 +178,8 @@ namespace libint2 {
       static const std::string realtype;
       /// Do not support contracted targets
       static const bool contracted_targets = false;
+      /// task name
+      static const std::string task_name;
     };
 
     struct TaskParameters {

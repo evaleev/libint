@@ -10,7 +10,7 @@ using namespace std;
 const std::string CompilationParameters::Defaults::source_directory("./");
 const std::string CompilationParameters::Defaults::api_prefix("");
 const std::string CompilationParameters::Defaults::realtype("double");
-const std::string CompilationParameters::default_task_name("default");
+const std::string CompilationParameters::Defaults::task_name("default");
 
 CompilationParameters::CompilationParameters() :
   max_vector_length_(Defaults::max_vector_length),
@@ -23,7 +23,7 @@ CompilationParameters::CompilationParameters() :
   accumulate_targets_(Defaults::accumulate_targets),
   realtype_(Defaults::realtype)
 {
-  add_task(default_task_name);
+  add_task(Defaults::task_name);
 }
 
 CompilationParameters::~CompilationParameters()
@@ -34,8 +34,8 @@ void
 CompilationParameters::print(std::ostream& os) const
 {
   using namespace std;
-  os << "MAX_AM           = " << max_am(default_task_name) << endl;
-  os << "OPT_AM           = " << max_am_opt(default_task_name) << endl;
+  os << "MAX_AM           = " << max_am(default_task_name()) << endl;
+  os << "OPT_AM           = " << max_am_opt(default_task_name()) << endl;
 
   typedef LibraryTaskManager::TasksCIter citer;
   const LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
@@ -66,7 +66,7 @@ CompilationParameters::print(std::ostream& os) const
 void
 CompilationParameters::task_exists(const std::string& t) const
 {
-  if (t != default_task_name) {
+  if (t != default_task_name()) {
     const LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
     // Will throw if task manager doesn't know anything about this task
     taskmgr.find(t);
@@ -74,8 +74,9 @@ CompilationParameters::task_exists(const std::string& t) const
 }
 
 unsigned int
-CompilationParameters::max_am(const std::string& t) const
+CompilationParameters::max_am(std::string t) const
 {
+  if (t.empty()) t = default_task_name();
   task_exists(t);
 
   typedef std::map<std::string,TaskParameters>::const_iterator citer;
@@ -83,12 +84,13 @@ CompilationParameters::max_am(const std::string& t) const
   if (ti != task_params_.end())
     return ti->second.max_am;
   else
-    return task_params_.find(default_task_name)->second.max_am;
+    return task_params_.find(default_task_name())->second.max_am;
 }
 
 unsigned int
-CompilationParameters::max_am_opt(const std::string& t) const
+CompilationParameters::max_am_opt(std::string t) const
 {
+  if (t.empty()) t = default_task_name();
   task_exists(t);
 
   typedef std::map<std::string,TaskParameters>::const_iterator citer;
@@ -96,12 +98,13 @@ CompilationParameters::max_am_opt(const std::string& t) const
   if (ti != task_params_.end())
     return ti->second.max_am_opt;
   else
-    return task_params_.find(default_task_name)->second.max_am_opt;
+    return task_params_.find(default_task_name())->second.max_am_opt;
 }
 
 unsigned int
-CompilationParameters::num_bf(const std::string& t) const
+CompilationParameters::num_bf(std::string t) const
 {
+  if (t.empty()) t = default_task_name();
   task_exists(t);
 
   typedef std::map<std::string,TaskParameters>::const_iterator citer;
@@ -109,7 +112,7 @@ CompilationParameters::num_bf(const std::string& t) const
   if (ti != task_params_.end())
     return ti->second.num_bf;
   else
-    return task_params_.find(default_task_name)->second.num_bf;
+    return task_params_.find(default_task_name())->second.num_bf;
 }
 
 void
@@ -117,8 +120,8 @@ CompilationParameters::add_task(const std::string& t)
 {
   TaskParameters tp;
   // copy defaults from the default task
-  if (t != default_task_name)
-    tp = TaskParameters( task_params_.find(default_task_name)->second );
+  if (t != default_task_name())
+    tp = TaskParameters( task_params_.find(default_task_name())->second );
   task_params_.insert(std::make_pair(t,tp));
 }
 
