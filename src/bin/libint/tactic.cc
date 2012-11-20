@@ -151,7 +151,7 @@ FourCenter_OS_Tactic::optimal_rr(const rr_stack& stack) const {
   }
 
   const bool l1_ge_l0 = lbra1+lket1 >= lbra0+lket0;
-  const bool use_itr = lbra0_+lket0_ >= 0 && lbra1_+lket1_ >= 0;
+  const bool use_itr = lbra0_+lket0_ > 0 && lbra1_+lket1_ > 0;
 
   // try to apply ITR first
   if (use_itr) {
