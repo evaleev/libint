@@ -12,12 +12,28 @@
 using namespace std;
 using namespace libint2;
 
-std::array<LIBINT2_UINT_LEAST64, CGShell::max_key+2> CGF::key_l_offset{{ 0, 1, 4, 10, 20, 35, 56, 84, 120, 165,
+namespace libint2 {
+  LIBINT2_UINT_LEAST64 cgshell_key_l_offset_[] = { 0, 1, 4, 10, 20, 35, 56, 84, 120, 165,
                                              220, 286, 364, 455, 560, 680, 816, 969, 1140, 1330,
                                              1540, 1771, 2024, 2300, 2600, 2925, 3276, 3654, 4060, 4495,
-                                             4960, 5456, 5984, 6545, 7140, 7770, 8436, 9139, 9880, 10660,
-                                             11480}};
-std::array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1> OriginDerivative::key_l_offset{{ 0, 1, 4, 10, 20}};
+                                             4960, 5456, 5984};
+  LIBINT2_UINT_LEAST64 oderiv_key_l_offset_[] = { 0, 1, 4, 10, 20};
+
+  template<typename T, std::size_t N>
+  std::array<T,N> make_std_array(T* data) {
+    std::array<T,N> result;
+    std::copy(data, data+N, result.begin());
+    return result;
+  }
+};
+
+std::array<LIBINT2_UINT_LEAST64, CGShell::max_qn+1> CGF::key_l_offset(
+    make_std_array<LIBINT2_UINT_LEAST64,CGShell::max_qn+1>(cgshell_key_l_offset_)
+    );
+
+std::array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1> OriginDerivative::key_l_offset(
+    make_std_array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1>(oderiv_key_l_offset_)
+    );
 
 namespace {
   std::string am_to_symbol(unsigned int l, bool contracted) {
