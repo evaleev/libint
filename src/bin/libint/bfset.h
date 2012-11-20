@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string>
 #include <cassert>
-#include <array>
+#include <stdarray.h>
 #include <smart_ptr.h>
 #include <polyconstr.h>
 #include <hashable.h>
@@ -128,7 +128,7 @@ namespace libint2 {
       unsigned nxy = d_[1] + d_[2];
       unsigned l = nxy + d_[0];
       LIBINT2_UINT_LEAST64 key = nxy*(nxy+1)/2 + d_[2];
-      return key + key_l_offset[l];
+      return key + key_l_offset.at(l);
     }
     /// Return a compact label
     const std::string label() const {
@@ -312,7 +312,7 @@ namespace libint2 {
           ( ( deriv().key() * 2 +
               (contracted() ? 1 : 0)
             ) * max_num_qn +
-            key + key_l_offset[l] * 2
+            key + key_l_offset.at(l) * 2
           ) + (pure_sh() ? 1 : 0);
       if (result >= max_key-1) {
         this->print(std::cout);
@@ -340,7 +340,7 @@ namespace libint2 {
 
   private:
     /// key_l_offset[L] is the number of all possible CGFs with angular momentum less than L
-    static std::array<LIBINT2_UINT_LEAST64, CGShell::max_key+2> key_l_offset;
+    static std::array<LIBINT2_UINT_LEAST64, CGShell::max_qn+1> key_l_offset;
   };
 
   CGF operator+(const CGF& A, const CGF& B);
@@ -456,7 +456,7 @@ namespace libint2 {
       unsigned nxy = qn_[1] + qn_[2];
       unsigned l = nxy + qn_[0];
       unsigned key = nxy*(nxy+1)/2 + qn_[2];
-      return ( deriv().key() * 2 + (contracted() ? 1 : 0)) * max_num_qn + key + key_l_offset[l];
+      return ( deriv().key() * 2 + (contracted() ? 1 : 0)) * max_num_qn + key + key_l_offset.at(l);
     }
     /// The range of keys is [0,max_key). The formula is easily derived by summing (L+1)(L+2)/2 up to SHGShell::max_key
     /// The factor of 2 to account for contracted vs. uncontracted basis functions
