@@ -5,9 +5,9 @@
 static const char cart_comp[] = "XYZ";
 static const char am_letter[] = "0pdfghiklmnoqrtuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static const char *number[] = {"zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven",
-			       "twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty",
+                               "twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty",
                                "twentyone", "twentytwo", "twentythree", "twentyfour", "twentyfive", "twentysix", "twentyseven",
-                               "twentyeight", "twentynine", "thirty"};
+                               "twentyeight", "twentynine", "thirty", "thirtyone", "thirtytwo"};
 
 static inline int io(int i) { return i*(i+1)/2; }
 static inline int iop1(int i) { return (i+1)*(i+2)/2; }
