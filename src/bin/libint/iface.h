@@ -69,7 +69,9 @@ namespace libint2 {
       
       template <typename T> const std::string macro_define(const std::string& label, const T& value) {
         oss_ .str(null_str_);
-        oss_ << "#define " << macro(label) << " " << value << endl;
+        oss_ << "#ifndef " << macro(label) << endl;
+        oss_ << "# define " << macro(label) << " " << value << endl;
+        oss_ << "#endif" << endl;
         return oss_.str();
       }
       
