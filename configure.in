@@ -1107,6 +1107,9 @@ AC_COMPILE_IFELSE(
   ]
 )
 
+enable_cpptr1=no   # TR1's array seems to be broken on OS X
+acx_with_boost=yes
+ACX_CHECK_CPP11
 
 dnl ------------------ Check for gmp C++ interface -----------------------
 

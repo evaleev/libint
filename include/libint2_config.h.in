@@ -142,10 +142,65 @@
 /* Strategy for ERI evaluation */
 #undef LIBINT_ERI_STRATEGY
 
-/* have C++ features? */
+/* --------------------------
+  have C++ features?
+   -------------------------- */
+// see lib/autoconf/ac_check_cpp11.m4
+
 #undef HAVE_CXX11
 #undef HAVE_CXX11_LAMBDA
 #undef HAVE_CXX11_ALIGN
+
+/* define if array has fill member function. */
+#undef LIBINT_ARRAY_HAS_FILL
+
+/* define if std::array is available. */
+#undef LIBINT_HAS_STD_ARRAY
+
+/* define if std::make_shared and std::allocate_shared are available. */
+#undef LIBINT_HAS_STD_MAKE_SHARED
+
+/* define if std::shared_ptr is available. */
+#undef LIBINT_HAS_STD_SHARED_PTR
+
+/* define if std::tr1::array is available. */
+#undef LIBINT_HAS_STD_TR1_ARRAY
+
+/* define if std::tr1::shared_ptr is available. */
+#undef LIBINT_HAS_STD_TR1_SHARED_PTR
+
+/* define if std::tr1 type traits are available. */
+#undef LIBINT_HAS_STD_TR1_TYPE_TRAITS
+
+/* define if std type traits are available. */
+#undef LIBINT_HAS_STD_TYPE_TRAITS
+
+/* define if Libint is using <array>. */
+#undef LIBINT_USE_ARRAY
+
+/* define if Libint is using <boost/tr1/array.hpp>. */
+#undef LIBINT_USE_BOOST_TR1_ARRAY_HPP
+
+/* define if Libint is using <boost/tr1/memory.hpp>. */
+#undef LIBINT_USE_BOOST_TR1_MEMORY_HPP
+
+/* define if Libint is using <boost/tr1/type_traits.hpp>. */
+#undef LIBINT_USE_BOOST_TR1_TYPE_TRAITS_HPP
+
+/* define if Libint is using <memory>. */
+#undef LIBINT_USE_MEMORY
+
+/* define if Libint is using <tr1/array>. */
+#undef LIBINT_USE_TR1_ARRAY
+
+/* define if Libint is using <tr1/memory>. */
+#undef LIBINT_USE_TR1_MEMORY
+
+/* define if Libint is using <tr1/type_traits>. */
+#undef LIBINT_USE_TR1_TYPE_TRAITS
+
+/* define if Libint is using <type_traits>. */
+#undef LIBINT_USE_TYPE_TRAITS
 
 /* C++ compiler allows template with default params as template template parameter */
 #undef CXX_ALLOWS_DEFPARAMTEMPLATE_AS_TEMPTEMPPARAM
