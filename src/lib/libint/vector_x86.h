@@ -59,9 +59,11 @@ namespace libint2 { namespace simd {
       }
 
       operator double() const {
-        double d0;
-        _mm_store_sd(&d0, d);
-        return d0;
+        double d0[2];
+        _mm_store_sd(&(d0[0]), d);
+//        alignas(__m128d) double d0[2];
+//        _mm_store_sd(&(d0[0]), d);
+        return d0[0];
       }
 
       void convert(double(&a)[2]) const {
@@ -218,9 +220,11 @@ namespace libint2 { namespace simd {
       }
 
       operator float() const {
-        float d0;
-        _mm_store_ss(&d0, d);
-        return d0;
+        float d0[4];
+        _mm_store_ss(&(d0[0]), d);
+        //alignas(__m128) float d0[4];
+        //_mm_store_ss(&(d0[0]), d);
+        return d0[0];
       }
 
       void convert(T(&a)[4]) const {
@@ -378,7 +382,10 @@ namespace libint2 { namespace simd {
 
       operator double() const {
         double d0[4];
-        _mm256_store_pd(&(d0[0]), d);
+        _mm256_storeu_pd(&(d0[0]), d);
+        // aligned alternative, but efficiency should not matter here
+        //        alignas(__m256d) double d0[4];
+        //        _mm256_store_pd(&(d0[0]), d);
         return d0[0];
       }
 
