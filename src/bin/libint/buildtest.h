@@ -9,6 +9,7 @@
 #include <deque>
 #include <iterator>
 #include <dg.h>
+#include <integral_11_11.h>
 #include <strategy.h>
 #include <iface.h>
 #include <dims.h>
@@ -186,19 +187,8 @@ namespace libint2 {
         // Print log
         std::cout << "Generated headers: ";
         std::copy(decl_filenames.begin(), decl_filenames.end(), std::ostream_iterator<std::string>(std::cout, " "));
-        SafePtr<RRStack> rrstack = RRStack::Instance();
-        for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
-          SafePtr<RecurrenceRelation> rr = (*it).second.second;
-          std::string rrlabel = cparams->api_prefix() + rr->label();
-          std::cout << " " << context->label_to_name(rrlabel) << ".h";
-        }
         std::cout << std::endl << "Generated sources: ";
         std::copy(def_filenames.begin(), def_filenames.end(), std::ostream_iterator<std::string>(std::cout, " "));
-        for(RRStack::citer_type it = rrstack->begin(); it!=rrstack->end(); it++) {
-          SafePtr<RecurrenceRelation> rr = (*it).second.second;
-          std::string rrlabel = cparams->api_prefix() + rr->label();
-          std::cout << " " << context->label_to_name(rrlabel) << ".cc";
-        }
         std::cout << std::endl << "Top compute function: " << context->label_to_name(label_to_funcname(label)) << std::endl;
 
       }
@@ -361,12 +351,30 @@ namespace libint2 {
     else {
       cparams->max_am_opt(complabel,0);
     }
+    cparams->default_task_name(complabel);
 
     // set default dims
     ImplicitDimensions::set_default_dims(cparams);
 
     SafePtr<StdRandomizePolicy> rpolicy(new StdRandomizePolicy(0.00));
-    SafePtr<Tactic> tactic(new FirstChoiceTactic<StdRandomizePolicy>(rpolicy));
+    // use 4-center OS if the target is a 4-center integral
+    SafePtr<Tactic> tactic;
+    {
+      typedef GenIntegralSet_11_11<typename Integral::BasisFunctionType,
+      typename Integral::OperatorType,
+      typename Integral::AuxIndexType> genint_11_11_t;
+      SafePtr< genint_11_11_t > cast_ptr = dynamic_pointer_cast<genint_11_11_t>(targets.front());
+      if (cast_ptr) {
+        const unsigned int la = cast_ptr->bra(0, 0).norm();
+        const unsigned int lb = cast_ptr->ket(0, 0).norm();
+        const unsigned int lc = cast_ptr->bra(1, 0).norm();
+        const unsigned int ld = cast_ptr->ket(1, 0).norm();
+        tactic = SafePtr<Tactic>(new FourCenter_OS_Tactic(la, lb, lc, ld));
+      }
+      else {
+        tactic = SafePtr<Tactic>(new FirstChoiceTactic<StdRandomizePolicy>(rpolicy));
+      }
+    }
     const SafePtr<MemoryManager> memman(new WorstFitMemoryManager);
     __BuildTest<Integral,true>(targets,cparams,size_to_unroll,os,tactic,memman,complabel);
   }
