@@ -9,9 +9,17 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
+#include <stdexcept>
 #include <vector.h>
 #include <cassert>
 #include <vector>
+
+#if HAVE_LAPACK // use F77-type interface for now, switch to LAPACKE later
+extern "C" void dgesv_(const int* n,
+                           const int* nrhs, double* A, const int* lda,
+                           int* ipiv, double* b, const int* ldb,
+                           int* info);
+#endif
 
 namespace libint2 {
 
@@ -107,20 +115,23 @@ namespace libint2 {
         return sum;
       }
 
-      /// fills up Fm from the top using downward recursion
+      /// fills up an array of Fm
       static void eval(Real* Fm, Real T, size_t mmax, Real absolute_precision) {
 
         // evaluate for mmax using MacLaurin series
         // it converges fastest for the largest m -> use it to compute Fmmax(T)
         //  see JPC 94, 5564 (1990).
-        Fm[mmax] = eval(T, mmax, absolute_precision);
-        /* And then do downward recursion */
+        for(int m=0; m<=mmax; ++m)
+          Fm[m] = eval(T, m, absolute_precision);
+        return;
+        /** downward recursion does not maintain absolute precision, only relative precision, and cannot be used for T > 10
         if (mmax > 0) {
           const Real T2 = 2.0 * T;
           const Real exp_T = exp(-T);
           for (int m = mmax - 1; m >= 0; m--)
             Fm[m] = (Fm[m + 1] * T2 + exp_T) / (2 * m + 1);
         }
+        */
       }
 
   };
@@ -130,7 +141,7 @@ namespace libint2 {
     */
   class FmEval_Chebyshev3 {
 
-      static const int FM_N = 2048;
+      static const int FM_N = 4096;
       static const int ORDER = 4;
       const double FM_MAX;
       const double FM_DELTA;
@@ -181,6 +192,7 @@ namespace libint2 {
         const double xd = x * FM_one_over_DELTA;
         const int iv = int(xd); // the interval
         const int ofs = iv * 4; // the offset in the interpolation table
+        asm("#chebcore");
         // for the largest m evaluate by interpolation (6 FLOPS)
         Fm[mmax] = d[ofs]
             + xd * (d[ofs + 1] + xd * (d[ofs + 2] + xd * d[ofs + 3]));
@@ -345,6 +357,8 @@ namespace libint2 {
         // get memory
         c = new double*[mmax + 1];
         c[0] = new double[(mmax + 1) * FM_N * ORDER];
+        std::cout << "Allocated interpolation table of " << (mmax + 1) * FM_N * ORDER << " reals" << std::endl;
+
 
         // loop over all m values and make the coefficients
         for (im = 0; im <= mmax; im++) {
@@ -374,7 +388,7 @@ namespace libint2 {
   class FmEval_Taylor {
     public:
       static const int max_interp_order = 8;
-      static const int INTERPOLATION_AND_RECURSION = 1; // compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
+      static const bool INTERPOLATION_AND_RECURSION = true; // compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
       const Real relative_zero_;
       const Real soft_zero_;
 
@@ -446,6 +460,7 @@ namespace libint2 {
           const int ncol = max_m_ + 1;
           grid_ = new Real*[nrow];
           grid_[0] = new Real[nrow * ncol];
+          std::cout << "Allocated interpolation table of " << nrow * ncol << " reals" << std::endl;
           for (int r = 1; r < nrow; ++r)
             grid_[r] = grid_[r - 1] + ncol;
         }
@@ -512,8 +527,9 @@ namespace libint2 {
 
             /*--- Taylor interpolation ---*/
             Real total = 0.0;
-            for(int i=INTERPOLATION_ORDER; i>=1; --i)
+            for(int i=INTERPOLATION_ORDER; i>=1; --i) {
               total = oon[i]*h*(F_row[i] + total);
+            }
 
             Fm[m] = F_row[0] + total;
 
@@ -535,12 +551,9 @@ namespace libint2 {
          ------------------------------------*/
         if (INTERPOLATION_AND_RECURSION) {
           if (mmin > 0) {
-            double F_mp1 = Fm[mmin];
             const double exp_mT = std::exp(-T);
             for (int m = mmin - 1; m >= 0; --m) {
-              const double F_m = (exp_mT + two_T * F_mp1) * numbers_.twoi1[m];
-              Fm[m] = F_m;
-              F_mp1 = F_m;
+              Fm[m] = (exp_mT + two_T * Fm[m+1]) * numbers_.twoi1[m];
             }
           }
         }
@@ -686,9 +699,13 @@ namespace libint2 {
         assert(k == -1 || k == 0 || k == 2);
         // for k=-1 need to evaluate the Boys function
         if (k == -1) {
-//          fm_eval_ = new FmEval_Taylor<Real>(mmax_, precision_);
-          fm_eval_ = new FmEval_Chebyshev3(mmax_);
+          fm_eval_ = new FmEval_Taylor<Real>(mmax_, precision_);
+//          fm_eval_ = new FmEval_Chebyshev3(mmax_);
           Fm_.resize(mmax_ + 1);
+
+          g_i[0] = 1.0;
+          r_i[0] = 1.0;
+          oorhog_i[0] = 1.0;
         }
       }
 
@@ -711,6 +728,9 @@ namespace libint2 {
         std::fill(Gm, Gm+mmax+1, Real(0));
 
         const double sqrt_rho = sqrt(rho);
+        for(int i=1; i<=mmax; i++) {
+          r_i[i] = r_i[i-1] * rho;
+        }
 
         typedef typename std::vector<std::pair<Real, Real> >::const_iterator citer;
         const citer gend = geminal.end();
@@ -734,26 +754,22 @@ namespace libint2 {
             const double rorgT = rorg * T;
             fm_eval_->eval(&Fm_[0], rorgT, mmax);
 
-#if 0
+#if 1
             const Real const_2_SQRTPI(1.12837916709551257389615890312154517);   /* 2/sqrt(pi)     */
-            double pfac = const_2_SQRTPI * sqrt_rhog * SS_K0G12_SS;
-            g_i[0] = 1.0;
-            r_i[0] = 1.0;
-            oorhog_i[0] = 1.0;
+            Real pfac = const_2_SQRTPI * sqrt_rhog * SS_K0G12_SS;
             for(int i=1; i<=mmax; i++) {
               g_i[i] = g_i[i-1] * gamma;
-              r_i[i] = r_i[i-1] * rho;
               oorhog_i[i] = oorhog_i[i-1] * oorhog;
             }
             for(int m=0; m<=mmax; m++) {
-              double ssss = 0.0;
+              Real ssss = 0.0;
+              Real* bcm = numbers_.bc[m];
               for(int k=0; k<=m; k++) {
-                ssss += numbers_.bc[m][k] * r_i[k] * g_i[m-k] * Fm_[k];
+                ssss += bcm[k] * r_i[k] * g_i[m-k] * Fm_[k];
               }
               Gm[m] += gcoef * pfac * ssss * oorhog_i[m];
             }
 #endif
-            return;
           }
 
           if (k == 0) {
@@ -764,7 +780,6 @@ namespace libint2 {
               ss_oper_ss_m *= gorg;
               Gm[m] += ss_oper_ss_m;
             }
-            return;
           }
 
           if (k == 2) {
@@ -782,7 +797,6 @@ namespace libint2 {
               Gm[m] += SS_K2G12_SS_gorg_m - m * SS_K2G12_SS_gorg_m1;
               SS_K2G12_SS_gorg_m1 *= gorg;
             }
-            return;
           }
 
         }
@@ -792,8 +806,8 @@ namespace libint2 {
     private:
       int mmax_;
       Real precision_; //< absolute precision
-//      FmEval_Taylor<Real>* fm_eval_;
-      FmEval_Chebyshev3* fm_eval_;
+      FmEval_Taylor<Real>* fm_eval_;
+//      FmEval_Chebyshev3* fm_eval_;
       std::vector<Real> Fm_;
 
       std::vector<double> g_i;
@@ -804,6 +818,237 @@ namespace libint2 {
       ExpensiveNumbers<Real> numbers_;
   };
 
+  /*
+   *  Slater geminal fitting is available only if have LAPACK
+   */
+#if HAVE_LAPACK
+  /*
+  f[x_] := - Exp[-\[Zeta] x] / \[Zeta];
+
+  ff[cc_, aa_, x_] := Sum[cc[[i]]*Exp[-aa[[i]] x^2], {i, 1, n}];
+  */
+  template <typename Real>
+  Real
+  fstg(Real zeta,
+       Real x) {
+    return -std::exp(-zeta*x)/zeta;
+  }
+
+  template <typename Real>
+  Real
+  fngtg(const std::vector<Real>& cc,
+        const std::vector<Real>& aa,
+        Real x) {
+    Real value = 0.0;
+    const Real x2 = x * x;
+    const unsigned int n = cc.size();
+    for(unsigned int i=0; i<n; ++i)
+      value += cc[i] * std::exp(- aa[i] * x2);
+    return value;
+  }
+
+  // --- weighting functions ---
+  // L2 error is weighted by ww(x)
+  // hence error is weighted by sqrt(ww(x))
+  template <typename Real>
+  Real
+  wwtewklopper(Real x) {
+    const Real x2 = x * x;
+    return x2 * std::exp(-2 * x2);
+  }
+  template <typename Real>
+  Real
+  wwcusp(Real x) {
+    const Real x2 = x * x;
+    const Real x6 = x2 * x2 * x2;
+    return std::exp(-0.005 * x6);
+  }
+  // default is Tew-Klopper
+  template <typename Real>
+  Real
+  ww(Real x) {
+    return wwtewklopper(x);
+    //return wwcusp(x);
+  }
+
+  template <typename Real>
+  Real
+  norm(const std::vector<Real>& vec) {
+    Real value = 0.0;
+    const unsigned int n = vec.size();
+    for(unsigned int i=0; i<n; ++i)
+      value += vec[i] * vec[i];
+    return value;
+  }
+
+  template <typename Real>
+  void LinearSolveDamped(const std::vector<Real>& A,
+                         const std::vector<Real>& b,
+                         Real lambda,
+                         std::vector<Real>& x) {
+    const size_t n = b.size();
+    std::vector<Real> Acopy(A);
+    for(size_t m=0; m<n; ++m) Acopy[m*n + m]  *= (1 + lambda);
+    std::vector<Real> e(b);
+
+    //int info = LAPACKE_dgesv( LAPACK_ROW_MAJOR, n, 1, &Acopy[0], n, &ipiv[0], &e[0], n );
+    {
+      std::vector<int> ipiv(n);
+      int n = b.size();
+      int one = 1;
+      int info;
+      dgesv_(&n, &one, &Acopy[0], &n, &ipiv[0], &e[0], &n, &info);
+      assert (info == 0);
+    }
+
+    x = e;
+  }
+
+  /**
+   * computes a least-squares fit of \f$ -exp(-\zeta r_{12})/\zeta = \sum_{i=1}^n c_i exp(-a_i r_{12}^2) \f$
+   * on \f$ r_{12} \in [0, x_{\rm max}] \f$ discretized to npts.
+   * @param[in] n
+   * @param[in] zeta
+   * @param[out] geminal
+   * @param[in] xmin
+   * @param[in] xmax
+   * @param[in] npts
+   */
+  template <typename Real>
+  void stg_ng_fit(unsigned int n,
+                 Real zeta,
+                 std::vector< std::pair<Real, Real> >& geminal,
+                 Real xmin = 0.0,
+                 Real xmax = 10.0,
+                 unsigned int npts = 1001) {
+
+    // initial guess
+    std::vector<Real> cc(n, 1.0); // coefficients
+    std::vector<Real> aa(n); // exponents
+    for(unsigned int i=0; i<n; ++i)
+      aa[i] = std::pow(3.0, (i + 2 - (n + 1)/2.0));
+
+    // first rescale cc for ff[x] to match the norm of f[x]
+    Real ffnormfac = 0.0;
+    for(unsigned int i=0; i<n; ++i)
+      for(unsigned int j=0; j<n; ++j)
+        ffnormfac += cc[i] * cc[j]/std::sqrt(aa[i] + aa[j]);
+    const Real Nf = std::sqrt(2.0 * zeta) * zeta;
+    const Real Nff = std::sqrt(2.0) / (std::sqrt(ffnormfac) *
+        std::sqrt(std::sqrt(M_PI)));
+    for(unsigned int i=0; i<n; ++i) cc[i] *= -Nff/Nf;
+
+    Real lambda0 = 1000; // damping factor is initially set to 1000, eventually should end up at 0
+    const Real nu = 3.0; // increase/decrease the damping factor scale it by this
+    const Real epsilon = 1e-15; // convergence
+    const unsigned int maxniter = 200;
+
+    // grid points on which we will fit
+    std::vector<Real> xi(npts);
+    for(unsigned int i=0; i<npts; ++i) xi[i] = xmin + (xmax - xmin)*i/(npts - 1);
+
+    std::vector<Real> err(npts);
+
+    const size_t nparams = 2*n; // params = expansion coefficients + gaussian exponents
+    std::vector<Real> J( npts * nparams );
+    std::vector<Real> delta(nparams);
+
+//    std::cout << "iteration 0" << std::endl;
+//    for(unsigned int i=0; i<n; ++i)
+//      std::cout << cc[i] << " " << aa[i] << std::endl;
+
+    Real errnormI;
+    Real errnormIm1 = 1e3;
+    bool converged = false;
+    unsigned int iter = 0;
+    while (!converged && iter < maxniter) {
+//      std::cout << "Iteration " << ++iter << ": lambda = " << lambda0/nu << std::endl;
+
+        for(unsigned int i=0; i<npts; ++i) {
+          const Real x = xi[i];
+          err[i] = (fstg(zeta, x) - fngtg(cc, aa, x)) * std::sqrt(ww(x));
+        }
+        errnormI = norm(err)/std::sqrt((Real)npts);
+
+//        std::cout << "|err|=" << errnormI << std::endl;
+        converged = std::abs((errnormI - errnormIm1)/errnormIm1) <= epsilon;
+        if (converged) break;
+        errnormIm1 = errnormI;
+
+        for(unsigned int i=0; i<npts; ++i) {
+          const Real x2 = xi[i] * xi[i];
+          const Real sqrt_ww_x = std::sqrt(ww(xi[i]));
+          const unsigned int ioffset = i * nparams;
+          for(unsigned int j=0; j<n; ++j)
+            J[ioffset+j] = (std::exp(-aa[j] * x2)) * sqrt_ww_x;
+          const unsigned int ioffsetn = ioffset+n;
+          for(unsigned int j=0; j<n; ++j)
+            J[ioffsetn+j] = -  sqrt_ww_x * x2 * cc[j] * std::exp(-aa[j] * x2);
+        }
+
+        std::vector<Real> A( nparams * nparams);
+        for(size_t r=0, rc=0; r<nparams; ++r) {
+          for(size_t c=0; c<nparams; ++c, ++rc) {
+            double Arc = 0.0;
+            for(size_t i=0, ir=r, ic=c; i<npts; ++i, ir+=nparams, ic+=nparams)
+              Arc += J[ir] * J[ic];
+            A[rc] = Arc;
+          }
+        }
+
+        std::vector<Real> b( nparams );
+        for(size_t r=0; r<nparams; ++r) {
+          Real br = 0.0;
+          for(size_t i=0, ir=r; i<npts; ++i, ir+=nparams)
+            br += J[ir] * err[i];
+          b[r] = br;
+        }
+
+        // try decreasing damping first
+        // if not successful try increasing damping until it results in a decrease in the error
+        lambda0 /= nu;
+        for(int l=-1; l<1000; ++l) {
+
+          LinearSolveDamped(A, b, lambda0, delta );
+
+          std::vector<double> cc_0(cc); for(unsigned int i=0; i<n; ++i) cc_0[i] += delta[i];
+          std::vector<double> aa_0(aa); for(unsigned int i=0; i<n; ++i) aa_0[i] += delta[i+n];
+
+          // if any of the exponents are negative the step is too large and need to increase damping
+          bool step_too_large = false;
+          for(unsigned int i=0; i<n; ++i)
+            if (aa_0[i] < 0.0) {
+              step_too_large = true;
+              break;
+            }
+          if (!step_too_large) {
+            std::vector<double> err_0(npts);
+            for(unsigned int i=0; i<npts; ++i) {
+              const double x = xi[i];
+              err_0[i] = (fstg(zeta, x) - fngtg(cc_0, aa_0, x)) * std::sqrt(ww(x));
+            }
+            const double errnorm_0 = norm(err_0)/std::sqrt((double)npts);
+            if (errnorm_0 < errnormI) {
+              cc = cc_0;
+              aa = aa_0;
+              break;
+            }
+            else // step lead to increase of the error -- try dampening a bit more
+              lambda0 *= nu;
+          }
+          else // too large of a step
+            lambda0 *= nu;
+        } // done adjusting the damping factor
+
+      } // end of iterative minimization
+
+      // if reached max # of iterations throw if the error is too terrible
+      assert(not (iter == maxniter && errnormI > 1e-10));
+
+      for(unsigned int i=0; i<n; ++i)
+        geminal[i] = std::make_pair(aa[i], cc[i]);
+    }
+#endif
 
 } // end of namespace libint2
 
