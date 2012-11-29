@@ -41,6 +41,11 @@ COMP2 = profile_Gm
 COMP2SRC = $(COMP2).cc
 COMP2OBJ = $(COMP2SRC:%.cc=%.o)
 
+$(COMP2): $(COMP2OBJ)
+	$(CXX) -o $@ $(LDFLAGS) -lboost_chrono -lboost_system $^
+
+$(COMP2OBJ):: $(TOPDIR)/src/lib/libint/boys.h
+
 clean::
 	-rm -rf $(COMP1) $(COMP2) *.o *.d
 
