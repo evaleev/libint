@@ -764,8 +764,8 @@ namespace libint2 {
             for(int m=0; m<=mmax; m++) {
               Real ssss = 0.0;
               Real* bcm = numbers_.bc[m];
-              for(int k=0; k<=m; k++) {
-                ssss += bcm[k] * r_i[k] * g_i[m-k] * Fm_[k];
+              for(int n=0; n<=m; n++) {
+                ssss += bcm[n] * r_i[n] * g_i[m-n] * Fm_[n];
               }
               Gm[m] += gcoef * pfac * ssss * oorhog_i[m];
             }
