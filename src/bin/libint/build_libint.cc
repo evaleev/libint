@@ -203,6 +203,9 @@ void try_main (int argc, char* argv[])
   for(unsigned int d=0; d<=0; ++d) {
     cparams->max_am( task_label("eri", d) ,ERI_MAX_AM);
     cparams->max_am_opt( task_label("eri", d) ,ERI_OPT_AM);
+    for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
+      cparams->num_bf(task_label("eri", d), 4);
+    }
   }
 #endif
 #ifdef INCLUDE_ERI3
