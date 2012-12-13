@@ -5,6 +5,8 @@
 #ifdef __SSE2__
 
 #include <emmintrin.h>
+#include <cmath>
+#include <iostream>
 
 namespace libint2 { namespace simd {
 
@@ -58,13 +60,19 @@ namespace libint2 { namespace simd {
         return *this;
       }
 
-      operator double() const {
-        double d0[2];
-        _mm_store_sd(&(d0[0]), d);
-//        alignas(__m128d) double d0[2];
-//        _mm_store_sd(&(d0[0]), d);
-        return d0[0];
+      VectorSSEDouble operator-() const {
+        // TODO improve using bitflips
+        const static __m128d minus_one = _mm_set_pd(-1.0, -1.0);;
+        VectorSSEDouble result;
+        result.d = _mm_mul_pd(this->d, minus_one);
+        return result;
       }
+
+//      operator double() const {
+//        double d0[2];
+//        _mm_store_sd(&(d0[0]), d);
+//        return d0[0];
+//      }
 
       void convert(double(&a)[2]) const {
         _mm_storeu_pd(&a[0], d);
@@ -159,7 +167,63 @@ namespace libint2 { namespace simd {
 
   //@}
 
+  //@{ standard functions
+  inline VectorSSEDouble exp(VectorSSEDouble a) {
+#if HAVE_INTEL_SVML
+    VectorSSEDouble result;
+    result.d = _mm_exp_pd(a.d);
+#else
+    double a_d[2]; a.convert(a_d);
+    for(int i=0; i<2; ++i) a_d[i] = std::exp(a_d[i]);
+    VectorSSEDouble result(a_d);
+#endif
+    return result;
+  }
+  inline VectorSSEDouble sqrt(VectorSSEDouble a) {
+#if HAVE_INTEL_SVML
+    VectorSSEDouble result;
+    result.d = _mm_sqrt_pd(a.d);
+#else
+    double a_d[2]; a.convert(a_d);
+    for(int i=0; i<2; ++i) a_d[i] = std::sqrt(a_d[i]);
+    VectorSSEDouble result(a_d);
+#endif
+    return result;
+  }
+  inline VectorSSEDouble erf(VectorSSEDouble a) {
+#if HAVE_INTEL_SVML
+    VectorSSEDouble result;
+    result.d = _mm_erf_pd(a.d);
+#else
+    double a_d[2]; a.convert(a_d);
+    for(int i=0; i<2; ++i) a_d[i] = ::erf(a_d[i]);
+    VectorSSEDouble result(a_d);
+#endif
+    return result;
+  }
+  inline VectorSSEDouble erfc(VectorSSEDouble a) {
+#if HAVE_INTEL_SVML
+    VectorSSEDouble result;
+    result.d = _mm_erfc_pd(a.d);
+#else
+    double a_d[2]; a.convert(a_d);
+    for(int i=0; i<2; ++i) a_d[i] = ::erfc(a_d[i]);
+    VectorSSEDouble result(a_d);
+#endif
+    return result;
+  }
+  //@}
+
 };}; // namespace libint2::simd
+
+//@{ standard stream operations
+inline std::ostream& operator<<(std::ostream& os, libint2::simd::VectorSSEDouble a) {
+  double ad[2];
+  a.convert(ad);
+  os << "{" << ad[0] << "," << ad[1] << "}";
+  return os;
+}
+//@}
 
 #endif // SSE2-only
 
@@ -219,13 +283,21 @@ namespace libint2 { namespace simd {
         return *this;
       }
 
-      operator float() const {
-        float d0[4];
-        _mm_store_ss(&(d0[0]), d);
-        //alignas(__m128) float d0[4];
-        //_mm_store_ss(&(d0[0]), d);
-        return d0[0];
+      VectorSSEFloat operator-() const {
+        // TODO improve using bitflips
+        const static __m128 minus_one = _mm_set_ps(-1.0, -1.0, -1.0, -1.0);;
+        VectorSSEFloat result;
+        result.d = _mm_mul_ps(this->d, minus_one);
+        return result;
       }
+
+//      operator float() const {
+//        float d0[4];
+//        _mm_store_ss(&(d0[0]), d);
+//        //alignas(__m128) float d0[4];
+//        //_mm_store_ss(&(d0[0]), d);
+//        return d0[0];
+//      }
 
       void convert(T(&a)[4]) const {
         _mm_storeu_ps(&a[0], d);
@@ -319,7 +391,63 @@ namespace libint2 { namespace simd {
 
   //@}
 
+  //@{ standard functions
+  inline VectorSSEFloat exp(VectorSSEFloat a) {
+#if HAVE_INTEL_SVML
+    VectorSSEFloat result;
+    result.d = _mm_exp_ps(a.d);
+#else
+    float a_d[4]; a.convert(a_d);
+    for(int i=0; i<4; ++i) a_d[i] = std::exp(a_d[i]);
+    VectorSSEFloat result(a_d);
+#endif
+    return result;
+  }
+  inline VectorSSEFloat sqrt(VectorSSEFloat a) {
+#if HAVE_INTEL_SVML
+    VectorSSEFloat result;
+    result.d = _mm_sqrt_ps(a.d);
+#else
+    float a_d[4]; a.convert(a_d);
+    for(int i=0; i<4; ++i) a_d[i] = std::sqrt(a_d[i]);
+    VectorSSEFloat result(a_d);
+#endif
+    return result;
+  }
+  inline VectorSSEFloat erf(VectorSSEFloat a) {
+#if HAVE_INTEL_SVML
+    VectorSSEFloat result;
+    result.d = _mm_erf_ps(a.d);
+#else
+    float a_d[4]; a.convert(a_d);
+    for(int i=0; i<4; ++i) a_d[i] = ::erf(a_d[i]);
+    VectorSSEFloat result(a_d);
+#endif
+    return result;
+  }
+  inline VectorSSEFloat erfc(VectorSSEFloat a) {
+#if HAVE_INTEL_SVML
+    VectorSSEFloat result;
+    result.d = _mm_erfc_ps(a.d);
+#else
+    float a_d[4]; a.convert(a_d);
+    for(int i=0; i<4; ++i) a_d[i] = ::erfc(a_d[i]);
+    VectorSSEFloat result(a_d);
+#endif
+    return result;
+  }
+  //@}
+
 };}; // namespace libint2::simd
+
+//@{ standard stream operations
+inline std::ostream& operator<<(std::ostream& os, libint2::simd::VectorSSEFloat a) {
+  float ad[4];
+  a.convert(ad);
+  os << "{" << ad[0] << "," << ad[1] << "," << ad[2] << "," << ad[3] << "}";
+  return os;
+}
+//@}
 
 #endif // SSE-only
 
@@ -380,14 +508,22 @@ namespace libint2 { namespace simd {
         return *this;
       }
 
-      operator double() const {
-        double d0[4];
-        _mm256_storeu_pd(&(d0[0]), d);
-        // aligned alternative, but efficiency should not matter here
-        //        alignas(__m256d) double d0[4];
-        //        _mm256_store_pd(&(d0[0]), d);
-        return d0[0];
+      VectorAVXDouble operator-() const {
+        // TODO improve using bitflips
+        const static __m256d minus_one = _mm256_set_pd(-1.0, -1.0, -1.0, -1.0);;
+        VectorAVXDouble result;
+        result.d = _mm256_mul_pd(this->d, minus_one);
+        return result;
       }
+
+//      operator double() const {
+//        double d0[4];
+//        _mm256_storeu_pd(&(d0[0]), d);
+//        // aligned alternative, but efficiency should not matter here
+//        //        alignas(__m256d) double d0[4];
+//        //        _mm256_store_pd(&(d0[0]), d);
+//        return d0[0];
+//      }
 
       void convert(T(&a)[4]) const {
         _mm256_storeu_pd(&a[0], d);
@@ -479,10 +615,65 @@ namespace libint2 { namespace simd {
   }
 #endif
 
+  //@}
 
+  //@{ standard functions
+  inline VectorAVXDouble exp(VectorAVXDouble a) {
+#if HAVE_INTEL_SVML
+    VectorAVXDouble result;
+    result.d = _mm256_exp_pd(a.d);
+#else
+    double a_d[4]; a.convert(a_d);
+    for(int i=0; i<4; ++i) a_d[i] = ::exp(a_d[i]);
+    VectorAVXDouble result(a_d);
+#endif
+    return result;
+  }
+  inline VectorAVXDouble sqrt(VectorAVXDouble a) {
+#if HAVE_INTEL_SVML
+    VectorAVXDouble result;
+    result.d = _mm256_sqrt_pd(a.d);
+#else
+    double a_d[4]; a.convert(a_d);
+    for(int i=0; i<4; ++i) a_d[i] = ::sqrt(a_d[i]);
+    VectorAVXDouble result(a_d);
+#endif
+    return result;
+  }
+  inline VectorAVXDouble erf(VectorAVXDouble a) {
+#if HAVE_INTEL_SVML
+    VectorAVXDouble result;
+    result.d = _mm256_erf_pd(a.d);
+#else
+    double a_d[4]; a.convert(a_d);
+    for(int i=0; i<4; ++i) a_d[i] = ::erf(a_d[i]);
+    VectorAVXDouble result(a_d);
+#endif
+    return result;
+  }
+  inline VectorAVXDouble erfc(VectorAVXDouble a) {
+#if HAVE_INTEL_SVML
+    VectorAVXDouble result;
+    result.d = _mm256_erfc_pd(a.d);
+#else
+    double a_d[4]; a.convert(a_d);
+    for(int i=0; i<4; ++i) a_d[i] = ::erfc(a_d[i]);
+    VectorAVXDouble result(a_d);
+#endif
+    return result;
+  }
   //@}
 
 };}; // namespace libint2::simd
+
+//@{ standard stream operations
+inline std::ostream& operator<<(std::ostream& os, libint2::simd::VectorAVXDouble a) {
+  double ad[4];
+  a.convert(ad);
+  os << "{" << ad[0] << "," << ad[1] << "," << ad[2] << "," << ad[3] << "}";
+  return os;
+}
+//@}
 
 #endif // AVX-only
 
