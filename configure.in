@@ -11,7 +11,7 @@ AC_INIT([Libint2],[libint_mmm_version],[libint@valeyev.net],[libint2])
 AC_CONFIG_SRCDIR(src/bin/libint/rr.h)
 AC_CONFIG_HEADER(include/libint2_config.h)
 AC_CONFIG_AUX_DIR(bin)
-#AC_CONFIG_MACRO_DIR([config])
+AC_CONFIG_MACRO_DIR([lib/autoconf])
 
 dnl --- Compiling C++ only ---
 AC_LANG(C++)
@@ -1320,8 +1320,7 @@ esac
 if test "$enablelibtool" = yes; then
 
 dnl by default make only static libraries
-AC_DISABLE_SHARED
-AC_PROG_LIBTOOL
+LT_INIT([disable-shared])
 
 OBJSUF=lo
 LIBSUF=la
