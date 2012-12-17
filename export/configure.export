@@ -174,10 +174,6 @@ AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin)
 AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin)
 AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin)
 AC_PATH_PROG(BIBTEX,bibtex,,$PATH:/usr/local/bin)
-if test X$LD = X; then
-  LD=$CXX
-  AC_SUBST(LD)
-fi
 
 dnl -------- Checks for compiler/linker options. ----------
 
@@ -389,43 +385,12 @@ LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB" \
 
 dnl --------- Shared library configuration. ---------
 
-enablelibtool=yes
-AC_ARG_ENABLE(libtool,
-[  --disable-libtool       Do not use libtool.],
-[
-case $enableval in
-  yes)
-  ;;
-  no)
-    enablelibtool=no
-  ;;
-  *)
-    AC_MSG_ERROR([Invalid value for --(dis|en)able-libtool ($enableval)])
-  ;;
-esac
-])
-
-if test "$enablelibtool" = yes; then
-
 dnl by default make only static libraries
-AC_DISABLE_SHARED
-AC_PROG_LIBTOOL
-
+LT_INIT([disable-shared])
+LT_LANG([C++])
 OBJSUF=lo
 LIBSUF=la
-
-else
-
-enable_shared=no
-
-fi
-
-if test "$enable_shared" = "no"; then
-  OBJSUF=o
-  LIBSUF=a
-fi
-
-ENABLESHARED=$enable_shared
+ENABLESHARED=yes
 AC_SUBST(ENABLESHARED)
 
 AC_CONFIG_FILES(MakeVars MakeRules MakeSuffixRules)

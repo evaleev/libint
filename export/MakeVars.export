@@ -4,6 +4,7 @@ ifndef SRCDIR
   SRCDIR = .
 endif
 SRCTOPDIR = $(SRCDIR)/$(TO_TOPDIR)
+top_builddir = $(TO_TOPDIR)
 
 host = @host@
 host_cpu = @host_cpu@
