@@ -39,17 +39,13 @@ TIME = time_eri
 CXXTIMESRC = $(TIME).cc $(AUXSRC)
 CXXTIMEOBJ = $(CXXTIMESRC:%.cc=%.o)
 
-TIMEV = time_vecops
-CXXTIMEVSRC = $(TIMEV).cc
-CXXTIMEVOBJ = $(CXXTIMEVSRC:%.cc=%.o)
-
 $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	cd ../libint; $(MAKE) $(LIBINT)
-	$(CXX) -o $@ $(LDFLAGS) $(SYSLIBS) $^
+	$(CXX) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
 
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
-	$(CXX) -o $@ $(LDFLAGS) $(SYSLIBS) $^
+	$(CXX) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
 else
 $(TEST):
 	echo "Cannot test generated code! $(CXXGEN) is not compatible with $(CXXCOMP)"
@@ -57,10 +53,7 @@ $(TEST):
 endif
 
 $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)  $(CGSHELLOBJ)
-	$(CXX) -o $@ $(LDFLAGS) $(SYSLIBS) $^
-
-$(TIMEV): $(CXXTIMEVOBJ)
-	$(CXX) -o $@ $(LDFLAGS) $^
+	$(CXX) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
 
 # Assume that CXXGEN has the weaker frontend of the two (there is no reason to not use it then as CXX)
 # hence use it *only* to compile generated source if CXXGEN is compatible with CXX
@@ -79,16 +72,13 @@ else
  $(TIME): CXXFLAGS=$(CXXGENFLAGS)
  $(TIME): LD=$(CXXGEN)
 endif
-$(TIMEV): CXX=$(CXXGEN)
-$(TIMEV): CXXFLAGS=$(CXXGENFLAGS)
-$(TIMEV): LD=$(CXXGEN)
 
 $(CXXTESTOBJ): test_eri_conf.h
 $(CXXTIMEOBJ): test_eri_conf.h
 $(CXXERICOMPOBJ):: $(LIBINTDIR)/buildtest.h
 
 clean::
-	-rm -rf $(ERICOMP) $(TEST) $(TIME) $(TIMEV) *.o *.d *.dot *.log
+	-rm -rf $(ERICOMP) $(TEST) $(TIME) *.o *.d *.dot *.log
 
 genclean::
 	-rm -rf Make.compute_eri $(CXXGENSRC) $(CXXGENOBJ) $(CXXGENHDRS) 
