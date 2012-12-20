@@ -125,6 +125,15 @@ namespace libint2 {
       oss << target_->size() << "*" << (vec ? "inteval->veclen" : "1")
           << ",inteval->R12_2_G12_scale_to_G12T1G12" << (vec ? ",inteval->veclen" : "[0]") << ");";
 
+      // HACK alert ... unfortunately it's not completely possible to figure out all "precomputed" symbols from the DAG alone
+      // force R12_2_G12_scale_to_G12T1G12 on the list of symbols
+      {
+        LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+        std::list<std::string> forced_symbol;
+        forced_symbol.push_back(std::string("R12_2_G12_scale_to_G12T1G12"));
+        taskmgr.current().symbols()->add(forced_symbol);
+      }
+
       return oss.str();
   }
 #endif

@@ -203,9 +203,9 @@ void try_main (int argc, char* argv[])
   for(unsigned int d=0; d<=0; ++d) {
     cparams->max_am( task_label("eri", d) ,ERI_MAX_AM);
     cparams->max_am_opt( task_label("eri", d) ,ERI_OPT_AM);
-    for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
-      cparams->num_bf(task_label("eri", d), 4);
-    }
+  }
+  for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
+    cparams->num_bf(task_label("eri", d), 4);
   }
 #endif
 #ifdef INCLUDE_ERI3
@@ -235,11 +235,14 @@ void try_main (int argc, char* argv[])
 # endif
   cparams->max_am("r12kg12",G12_MAX_AM);
   cparams->max_am_opt("r12kg12",G12_OPT_AM);
+  cparams->num_bf("r12kg12", 4);
 # if !LIBINT_USE_COMPOSITE_EVALUATORS
     cparams->max_am("r12_0_g12",G12_MAX_AM);
     cparams->max_am_opt("r12_0_g12",G12_OPT_AM);
+    cparams->num_bf("r12_0_g12", 4);
     cparams->max_am("r12_2_g12",G12_MAX_AM);
     cparams->max_am_opt("r12_2_g12",G12_OPT_AM);
+    cparams->num_bf("r12_2_g12", 4);
 # endif
 #endif
 #ifdef INCLUDE_G12DKH
@@ -590,13 +593,6 @@ build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             iface->to_int_iface(oss.str());
           }
 
-          // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
-          // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-          if (la == lmax &&
-              lb == lmax) {
-            extract_symbols(dg);
-          }
-
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
 #endif
@@ -769,15 +765,6 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             oss << "#include <" << *i << ">" << endl;
             iface->to_int_iface(oss.str());
           }
-
-          // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
-          // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-//          if (la == lmax &&
-//              lb == lmax &&
-//              lc == lmax &&
-//              ld == lmax) {
-//            extract_symbols(dg_xxxx);
-//          }
 
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
@@ -972,14 +959,6 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             iface->to_int_iface(oss.str());
           }
 
-          // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
-          // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-//          if (lbra == lmax &&
-//              lc == lmax &&
-//              ld == lmax) {
-//            extract_symbols(dg_xxx);
-//          }
-
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
 #endif
@@ -1169,13 +1148,6 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             iface->to_int_iface(oss.str());
           }
 
-          // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
-          // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-//          if (lbra == lmax &&
-//              lket == lmax) {
-//            extract_symbols(dg_xxx);
-//          }
-
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
 #endif
@@ -1363,17 +1335,6 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             iface->to_int_iface(oss.str());
           }
 
-          // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
-          // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-          if (la == lmax &&
-              lb == lmax &&
-              lc == lmax &&
-              ld == lmax) {
-
-            extract_symbols(dg_xxxx);
-
-          }
-
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
 #endif
@@ -1505,15 +1466,6 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
               oss.str("");
               oss << "#include <" << *i << ">" << endl;
               iface->to_int_iface(oss.str());
-            }
-
-            // For the most expensive (i.e. presumably complete) graph extract all precomputed quantities -- these will be members of the evaluator structure
-            // also extract all RRs -- need to keep track of these to figure out which external symbols appearing in RR code belong to this task also
-            if (la == lmax &&
-                lb == lmax &&
-                lc == lmax &&
-                ld == lmax) {
-              extract_symbols(dg_xxxx);
             }
 
 #if DEBUG
@@ -1681,11 +1633,8 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
       if (la == lmax &&
           lb == lmax &&
           lc == lmax &&
-          ld == lmax) {
-
+          ld == lmax)
         extract_symbols(dg_xxxx);
-
-      }
 
 #if DEBUG
           os << "Max memory used = " << memman->max_memory_used() << endl;
