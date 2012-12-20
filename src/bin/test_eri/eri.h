@@ -101,7 +101,7 @@ struct ExpensiveMath {
     BigInt *df;
     BigInt *fac;
     BigInt **bc;
-    const unsigned int MAXFAC = 100;
+    const static unsigned int MAXFAC = 100;
 
     ExpensiveMath() {
       df = new BigInt[2*MAXFAC];
