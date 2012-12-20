@@ -37,16 +37,17 @@ LIBSUF = @LIBSUF@
 ENABLESHARED = @ENABLESHARED@
 
 ifeq ($(ENABLESHARED),yes)
+  SHELL = @SHELL@  # LIBTOOL will provide the appropriate shell here
   LIBTOOL = $(SHELL) $(TOPDIR)/libtool
-  LTLINK = $(LIBTOOL) --mode=link
+  LTLINK = $(LIBTOOL) --mode=link --tag=CXX     # LIBTOOL needs clues in some settings
   ifneq ($(BUILDID),)
     LTLINKLIBOPTS = -rpath $(libdir) -release $(BUILDID) -version-info $(LIBINT_SO_VERSION)
   else
     LTLINKLIBOPTS = -rpath $(libdir) -version-info $(LIBINT_SO_VERSION)
   endif
   LTLINKBINOPTS =
-  LTCOMP = $(LIBTOOL) --mode=compile
-  LTINST = $(LIBTOOL) --mode=install
+  LTCOMP = $(LIBTOOL) --mode=compile --tag=CXX
+  LTINST = $(LIBTOOL) --mode=install --tag=CXX
 
 else
   LIBTOOL=
