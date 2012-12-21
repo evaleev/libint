@@ -76,6 +76,7 @@ namespace libint2 {
         const unsigned int m = Tint->aux()->elem(0);
         const F _1 = unit<F>(dir);
 
+        // does not work for contracted functions
         {
           F a(Tint->bra(0,0));
           F b(Tint->ket(0,0));
@@ -88,6 +89,18 @@ namespace libint2 {
             Tint->oper()->descr().contracted())
             return;
         }
+
+        // does not work for derivative integrals (yet or ever)
+        const OriginDerivative dA = Tint->bra(0,0).deriv();
+        const OriginDerivative dB = Tint->ket(0,0).deriv();
+        const OriginDerivative dC = Tint->bra(1,0).deriv();
+        const OriginDerivative dD = Tint->ket(1,0).deriv();
+        const bool deriv = dA.zero() == false ||
+            dB.zero() == false ||
+            dC.zero() == false ||
+            dD.zero() == false;
+        assert(deriv == false);
+
 
         typedef TargetType ChildType;
         ChildFactory<ThisType,ChildType> factory(this);
@@ -465,14 +478,25 @@ namespace libint2 {
         const bool xsxs = sh_b.zero() && sh_d.zero();
         const bool sxsx = sh_a.zero() && sh_c.zero();
 
+        bool ahlrichs_simplification = false;
+        bool unit_s = false;
+        if (xsxs) {
+          unit_s = sh_b.is_unit();
+        }
+        else { // (sxsx)
+          unit_s = sh_a.is_unit();
+        }
+
         oss << "using namespace libint2;" << endl;
         if (K == -1) {
           if (xsxs) {
             oss << "libint2::OSVRR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";
+            if (not ahlrichs_simplification) oss << (unit_s ? "true," : "false,");
             oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
           }
           if (sxsx) {
             oss << "libint2::OSVRR_sx_sx<" << part << "," << sh_b.norm() << "," << sh_d.norm() << ",";
+            if (not ahlrichs_simplification) oss << (unit_s ? "true," : "false,");
             oss << ((context->cparams()->max_vector_length() == 1) ? "false" : "true");
           }
         }
@@ -489,11 +513,22 @@ namespace libint2 {
         }
         oss << ">::compute(inteval";
 
-        const unsigned int nargs = args->n();
-        for(unsigned int a=0; a<nargs; a++) {
-          oss << "," << args->symbol(a);
+        // if K == -1 follow the same logic as for standard VRR
+        if (K == -1) {
+          oss << "," << args->symbol(0); // target
+          if (not ahlrichs_simplification && unit_s) // purely to avoid having a 4-term generic RR, reuse 5-term with dummy argument
+            oss << ",0"; // src0-> 0x0
+          const unsigned int nargs = args->n();
+          for(unsigned int a=1; a<nargs; a++) {
+            oss << "," << args->symbol(a);
+          }
         }
-
+        else { // K != -1
+          const unsigned int nargs = args->n();
+          for(unsigned int a=0; a<nargs; a++) {
+            oss << "," << args->symbol(a);
+          }
+        }
         // if K == 0 add dummy arguments so that the same generic function can be used for all K>=0 cases
         if (K == 0) {
           for(unsigned int a=0; a<3; ++a) {
