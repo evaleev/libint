@@ -14,7 +14,7 @@ CPPFLAGS += -I$(TOPDIR)/src/bin
 CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/lib/libint
 
 COMPILER_LIB = $(TOPDIR)/src/bin/libint/libINT.a
-COMPUTE_LIB = $(TOPDIR)/lib/libint2.a
+COMPUTE_LIB = -L$(TOPDIR)/lib -L$(TOPDIR)/lib/.libs -lint2
 
 TEST = test
 AUXSRC = $(TOPDIR)/src/bin/test_eri/eri.cc
