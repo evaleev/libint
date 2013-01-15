@@ -13,12 +13,13 @@
 #include <vector.h>
 #include <cassert>
 #include <vector>
+#include <algorithm>
 
 #if HAVE_LAPACK // use F77-type interface for now, switch to LAPACKE later
 extern "C" void dgesv_(const int* n,
-                           const int* nrhs, double* A, const int* lda,
-                           int* ipiv, double* b, const int* ldb,
-                           int* info);
+                       const int* nrhs, double* A, const int* lda,
+                       int* ipiv, double* b, const int* ldb,
+                       int* info);
 #endif
 
 namespace libint2 {
@@ -64,7 +65,7 @@ namespace libint2 {
               bc[i][j] = bc[i][j-1] * Real(i-j+1) / Real(j);
         }
 
-        for (int i = 0; i < 64; i++) {
+        for (int i = 0; i < 128; i++) {
           twoi1[i] = 1.0 / (Real(2.0) * i + Real(1.0));
           ihalf[i] = Real(i) - Real(0.5);
         }
@@ -80,8 +81,9 @@ namespace libint2 {
 
       // these quantitites are needed with indices <= mmax
       // 64 is sufficient to handle up to 4 center integrals with up to L=15 basis functions
-      Real twoi1[64]; /* 1/(2 i + 1); needed for downward recursion */
-      Real ihalf[64]; /* i - 0.5, needed for upward recursion */
+      // but need higher values for Yukawa integrals ...
+      Real twoi1[128]; /* 1/(2 i + 1); needed for downward recursion */
+      Real ihalf[128]; /* i - 0.5, needed for upward recursion */
 
     private:
       std::vector<Real> bc_;
@@ -619,50 +621,226 @@ namespace libint2 {
 
   /**
    * Evaluates core integral for the Yukawa potential \f$ \exp(- \zeta r) / r \f$
-   *
-   * P.S. Slow for the sake of precision -- only use for reference purposes
+   * @tparam Real real type
    */
   template<typename Real>
-  struct YukawaGmEval_Reference {
+  struct YukawaGmEval {
 
-      /// computes a single value of G(U,T) using MacLaurin series.
-      static Real eval(Real T, size_t m, Real absolute_precision) {
-        Real denom = (m + 0.5);
-        Real term = 0.5 * exp(-T) / denom;
-        Real sum = term;
-        Real rel_error;
-        Real epsilon;
-        const Real relative_zero = 1e-15;
-        const Real absolute_precision_o_10 = absolute_precision * 0.1;
-        do {
-          denom += 1.0;
-          term *= T / denom;
-          sum += term;
-          rel_error = term / sum;
-          // stop if adding a term smaller or equal to absolute_precision/10 and smaller than relative_zero * sum
-          // When sum is small in absolute value, the second threshold is more important
-          epsilon = _local_min_macro(absolute_precision_o_10, sum*relative_zero);
-        } while (term > epsilon);
+      static const int mmin = -1;
 
-        return sum;
+      ///
+      YukawaGmEval(unsigned int mmax, Real precision) :
+        mmax_(mmax), precision_(precision),
+        numbers_(),
+        Gm_0_U_(256) // should be enough to hold up to G_{255}(0,U)
+      { }
+
+      ///
+      void eval_yukawa(Real* Gm, Real T, Real U, size_t mmax, Real absolute_precision) {
+        assert(false); // not yet implemented
+      }
+      ///
+      void eval_slater(Real* Gm, Real T, Real U, size_t mmax, Real absolute_precision) {
+        assert(false); // not yet implemented
       }
 
-      /// fills up Fm from the top using downward recursion
-      static void eval(Real* Fm, Real T, size_t mmax, Real absolute_precision) {
+      /// Scheme 1 of Ten-no: upward recursion from \f$ G_{-1} (T,U) \f$ and \f$ G_0 (T,U) \f$
+      /// T must be non-zero!
+      /// @param[out] Gm \f$ G_m(T,U), m=-1..mmax \f$
+      static void eval_yukawa_s1(Real* Gm, Real T, Real U, size_t mmax) {
+        Real G_m1;
 
-        // evaluate for mmax using MacLaurin series
-        // it converges fastest for the largest m -> use it to compute Fmmax(T)
-        //  see JPC 94, 5564 (1990).
-        Fm[mmax] = eval(T, mmax, absolute_precision);
-        /* And then do downward recursion */
+        const Real sqrt_U = sqrt(U);
+        const Real sqrt_T = sqrt(T);
+        const Real oo_sqrt_T = 1 / sqrt_T;
+        const Real oo_sqrt_U = 1 / sqrt_U;
+        const Real exp_mT = exp(-T);
+        const Real kappa = sqrt_U - sqrt_T;
+        const Real lambda = sqrt_U + sqrt_T;
+        const Real sqrtPi_over_4(0.44311346272637900682454187083528629569938736403060);
+        const Real pfac = sqrtPi_over_4 * exp_mT;
+        const Real erfc_k = exp(kappa*kappa) * (1 - erf(kappa));
+        const Real erfc_l = exp(lambda*lambda) * (1 - erf(lambda));
+
+        Gm[0] = pfac * (erfc_k + erfc_l) * oo_sqrt_U;
+        Gm[1] = pfac * (erfc_k - erfc_l) * oo_sqrt_T;
         if (mmax > 0) {
-          const Real T2 = 2.0 * T;
-          const Real exp_T = exp(-T);
-          for (int m = mmax - 1; m >= 0; m--)
-            Fm[m] = (Fm[m + 1] * T2 + exp_T) / (2 * m + 1);
+
+          // first application of URR
+          const Real oo_two_T = 0.5 / T;
+          const Real two_U = 2.0 * U;
+
+          for(unsigned int m=1, two_m_minus_1=1; m<=mmax; ++m, two_m_minus_1+=2) {
+            Gm[m+1] = oo_two_T * ( two_m_minus_1 * Gm[m] + two_U * Gm[m-1] - exp_mT);
+          }
         }
+
+        return;
       }
 
+      /// Scheme 2 of Ten-no:
+      /// - evaluate G_m(0,U) for m = mmax ... mmax+n, where n is the number of terms in Maclaurin expansion
+      ///   how? see eval_yukawa_Gm0U
+      /// - then MacLaurin expansion for \f$ G_{m_{\rm max}}(T,U) \f$ and \f$ G_{m_{\rm max}-1}(T,U) \f$
+      /// - then downward recursion
+      /// @param[out] Gm \f$ G_m(T,U), m=-1..mmax \f$
+      void eval_yukawa_s2(Real* Gm, Real T, Real U, size_t mmax) {
+
+        const int expansion_order = 60;
+        eval_yukawa_Gm0U(Gm_0_U_, U, mmax - 1 + expansion_order);
+
+        // Maclaurin
+
+
+        // downward recursion
+        //Gm[m + 1] = 1/(2 U) (E^-T - (2 m + 3) Gm[[m + 2]] + 2 T Gm[[m + 3]])
+
+
+        // testing ...
+        std::copy(Gm_0_U_.begin()+1, Gm_0_U_.begin()+mmax+2, Gm);
+
+        return;
+      }
+
+      /// Scheme 3 of Ten-no:
+      /// - evaluate G_m(0,U) for m = 0 ... mmax+n, where n is the max order of terms in Maclaurin expansion
+      ///   how? see eval_yukawa_Gm0U
+      /// - then MacLaurin expansion for \f$ G_{m}(T,U) \f$ for m = 0 ... mmax
+      /// @param[out] Gm \f$ G_m(T,U), m=-1..mmax \f$
+      void eval_yukawa_s3(Real* Gm, Real T, Real U, size_t mmax) {
+
+        // Ten-no's prescription:
+        //
+
+        assert(false);
+
+        // testing ...
+        std::copy(Gm_0_U_.begin()+1, Gm_0_U_.begin()+mmax+2, Gm);
+
+        return;
+      }
+
+
+      /**
+       * computes prerequisites for MacLaurin expansion of Gm(T,U)
+       * for m in [-1,mmax)
+       * @param[out] Gm0U
+       * @param[in] U
+       * @param[in] mmax
+       */
+      void eval_yukawa_Gm0U(Real* Gm0U, Real U, int mmax, int mmin = -1) {
+
+        // Ten-no's prescription:
+        // start with Gm*(0,T)
+        // 1) for U < 5, m* = -1
+        // 2) for U > 5, m* = min(U,mmax)
+        int mstar;
+
+        // G_{-1} (0,T) is easy
+        if (U < 5.0) {
+          mstar = -1;
+
+          const Real sqrt_U = sqrt(U);
+          const Real exp_U = exp(U);
+          const Real oo_sqrt_U = 1 / sqrt_U;
+          const Real sqrtPi_over_2(
+              0.88622692545275801364908374167057259139877472806119);
+          const Real pfac = sqrtPi_over_2 * exp_U;
+          const Real erfc_sqrt_U = 1.0 - erf(sqrt_U);
+          Gm_0_U_[0] = pfac * exp_U * oo_sqrt_U * erfc_sqrt_U;
+          // can get G0 for "free"
+          // this is the l'Hopital-transformed expression for G_0 (0,T)
+//          const Real sqrtPi(
+//              1.7724538509055160272981674833411451827975494561224);
+//          Gm_0_U_[1] = 1.0 - exp_U * sqrtPi * sqrt_U * erfc_sqrt_U;
+        }
+        else { // use continued fraction for m*
+          mstar = std::min((size_t)U,(size_t)mmax);
+          const bool implemented = false;
+          assert(implemented == true);
+        }
+
+        { // use recursion if needed
+          const Real two_U = 2.0 * U;
+          // simplified URR
+          if (mmax > mstar) {
+            for(int m=mstar+1; m<=mmax; ++m) {
+              Gm_0_U_[m+1] = numbers_.twoi1[m] * (1.0 - two_U * Gm_0_U_[m]);
+            }
+          }
+
+          // simplified DRR
+          if (mstar > mmin) { // instead of -1 because we trigger this only for U > 5
+            const Real one_over_U = 2.0 / two_U;
+            for(int m=mstar-1; m>=mmin; --m) {
+              Gm_0_U_[m+1] = one_over_U * ( 0.5 - numbers_.ihalf[m+2] * Gm_0_U_[m+2]);
+            }
+          }
+        }
+
+        // testing ...
+        std::copy(Gm_0_U_.begin()+1, Gm_0_U_.begin()+mmax+2, Gm0U);
+
+        return;
+      }
+
+
+      /// computes a single value of G_{-1}(T,U)
+      static Real eval_Gm1(Real T, Real U) {
+        const Real sqrt_U = sqrt(U);
+        const Real sqrt_T = sqrt(T);
+        const Real exp_mT = exp(-T);
+        const Real kappa = sqrt_U - sqrt_T;
+        const Real lambda = sqrt_U + sqrt_T;
+        const Real sqrtPi_over_4(0.44311346272637900682454187083528629569938736403060);
+        const Real result = sqrtPi_over_4 * exp_mT *
+            (exp(kappa*kappa) * (1 - erf(kappa)) + exp(lambda*lambda) * (1 - erf(lambda))) / sqrt_U;
+        return result;
+      }
+      /// computes a single value of G_0(T,U)
+      static Real eval_G0(Real T, Real U) {
+        const Real sqrt_U = sqrt(U);
+        const Real sqrt_T = sqrt(T);
+        const Real exp_mT = exp(-T);
+        const Real kappa = sqrt_U - sqrt_T;
+        const Real lambda = sqrt_U + sqrt_T;
+        const Real sqrtPi_over_4(0.44311346272637900682454187083528629569938736403060);
+        const Real result = sqrtPi_over_4 * exp_mT *
+            (exp(kappa*kappa) * (1 - erf(kappa)) - exp(lambda*lambda) * (1 - erf(lambda))) / sqrt_T;
+        return result;
+      }
+      /// computes \f$ G_{-1}(T,U) \f$ and \f$ G_{0}(T,U) \f$ , both are needed for Yukawa and Slater integrals
+      /// @param[out] result result[0] contains \f$ G_{-1}(T,U) \f$, result[1] contains \f$ G_{0}(T,U) \f$
+      static void eval_G_m1_0(Real* result, Real T, Real U) {
+        const Real sqrt_U = sqrt(U);
+        const Real sqrt_T = sqrt(T);
+        const Real oo_sqrt_U = 1 / sqrt_U;
+        const Real oo_sqrt_T = 1 / sqrt_T;
+        const Real exp_mT = exp(-T);
+        const Real kappa = sqrt_U - sqrt_T;
+        const Real lambda = sqrt_U + sqrt_T;
+        const Real sqrtPi_over_4(0.44311346272637900682454187083528629569938736403060);
+        const Real pfac = sqrtPi_over_4 * exp_mT;
+        const Real erfc_k = exp(kappa*kappa) * (1 - erf(kappa));
+        const Real erfc_l = exp(lambda*lambda) * (1 - erf(lambda));
+        result[0] = pfac * (erfc_k + erfc_l) * oo_sqrt_U;
+        result[1] = pfac * (erfc_k - erfc_l) * oo_sqrt_T;
+      }
+
+      /// computes a single value of G(T,U) using MacLaurin series.
+      static Real eval_MacLaurinT(Real T, Real U, size_t m, Real absolute_precision) {
+        assert(false); // not yet implemented
+        return 0.0;
+      }
+
+    private:
+      std::vector<Real> Gm_0_U_; // used for MacLaurin expansion
+      unsigned int mmax_;
+      Real precision_;
+      ExpensiveNumbers<Real> numbers_;
+
+      size_t count_tenno_algorithm_branches[3]; // counts the number of times each branch Ten-no algorithm
+                                                // was picked
   };
 
   //////////////////////////////////////////////////////////
@@ -728,6 +906,7 @@ namespace libint2 {
         std::fill(Gm, Gm+mmax+1, Real(0));
 
         const double sqrt_rho = sqrt(rho);
+        const double oo_sqrt_rho = 1.0/sqrt_rho;
         for(int i=1; i<=mmax; i++) {
           r_i[i] = r_i[i-1] * rho;
         }
@@ -748,7 +927,8 @@ namespace libint2 {
           const double sqrt_rorg = sqrt_rho_org * sqrt_rhog;
 
           /// (ss|g12|ss)
-          const double SS_K0G12_SS = rorg * sqrt_rorg * exp(-gorg*T);
+          const Real const_SQRTPI_2(0.88622692545275801364908374167057259139877472806119); /* sqrt(pi)/2 */
+          const double SS_K0G12_SS = gcoef * oo_sqrt_rho * const_SQRTPI_2 * rorg * sqrt_rorg * exp(-gorg*T);
 
           if (k == -1) {
             const double rorgT = rorg * T;
@@ -756,7 +936,8 @@ namespace libint2 {
 
 #if 1
             const Real const_2_SQRTPI(1.12837916709551257389615890312154517);   /* 2/sqrt(pi)     */
-            Real pfac = const_2_SQRTPI * sqrt_rhog * SS_K0G12_SS;
+            const Real pfac = const_2_SQRTPI * sqrt_rhog * SS_K0G12_SS;
+            oorhog_i[0] = pfac;
             for(int i=1; i<=mmax; i++) {
               g_i[i] = g_i[i-1] * gamma;
               oorhog_i[i] = oorhog_i[i-1] * oorhog;
@@ -767,14 +948,13 @@ namespace libint2 {
               for(int n=0; n<=m; n++) {
                 ssss += bcm[n] * r_i[n] * g_i[m-n] * Fm_[n];
               }
-              Gm[m] += gcoef * pfac * ssss * oorhog_i[m];
+              Gm[m] += ssss * oorhog_i[m];
             }
 #endif
           }
 
           if (k == 0) {
-
-            double ss_oper_ss_m = SS_K0G12_SS * gcoef;
+            double ss_oper_ss_m = SS_K0G12_SS;
             Gm[0] += ss_oper_ss_m;
             for(int m=1; m<=mmax; ++m) {
               ss_oper_ss_m *= gorg;
@@ -789,8 +969,8 @@ namespace libint2 {
             const double SS_K2G12_SS_0 = (1.5 + rorgT) * (SS_K0G12_SS * oorhog);
             const double SS_K2G12_SS_m1 = rorg * (SS_K0G12_SS * oorhog);
 
-            double SS_K2G12_SS_gorg_m = SS_K2G12_SS_0 * gcoef;
-            double SS_K2G12_SS_gorg_m1 = SS_K2G12_SS_m1 * gcoef;
+            double SS_K2G12_SS_gorg_m = SS_K2G12_SS_0 ;
+            double SS_K2G12_SS_gorg_m1 = SS_K2G12_SS_m1;
             Gm[0] += SS_K2G12_SS_gorg_m;
             for(int m=1; m<=mmax; ++m) {
               SS_K2G12_SS_gorg_m *= gorg;
@@ -867,8 +1047,8 @@ namespace libint2 {
   template <typename Real>
   Real
   ww(Real x) {
-    return wwtewklopper(x);
-    //return wwcusp(x);
+    //return wwtewklopper(x);
+    return wwcusp(x);
   }
 
   template <typename Real>
