@@ -21,7 +21,8 @@ CompilationParameters::CompilationParameters() :
   use_C_linking_(Defaults::use_C_linking),
   count_flops_(Defaults::count_flops),
   accumulate_targets_(Defaults::accumulate_targets),
-  realtype_(Defaults::realtype)
+  realtype_(Defaults::realtype),
+  default_task_name_(Defaults::task_name)
 {
   add_task(Defaults::task_name);
 }
@@ -120,8 +121,10 @@ CompilationParameters::add_task(const std::string& t)
 {
   TaskParameters tp;
   // copy defaults from the default task
-  if (t != default_task_name())
+  if (t != default_task_name()) {
+    assert(task_params_.find(default_task_name()) != task_params_.end());
     tp = TaskParameters( task_params_.find(default_task_name())->second );
+  }
   task_params_.insert(std::make_pair(t,tp));
 }
 
