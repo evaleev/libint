@@ -154,7 +154,8 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             const double gammaq = alpha2 + alpha3;
             const double oogammaq = 1.0 / gammaq;
             const double rhoq = alpha2 * alpha3 * oogammaq;
-            const double gammapq = gammap * gammaq / (gammap + gammaq);
+            const double one_o_gammap_plus_gammaq = 1.0 / (gammap + gammaq);
+            const double gammapq = gammap * gammaq * one_o_gammap_plus_gammaq;
             const double gammap_o_gammapgammaq = gammapq * oogammaq;
             const double gammaq_o_gammapgammaq = gammapq * oogammap;
             const double Qx = (alpha2 * C[0] + alpha3 * D[0]) * oogammaq;
@@ -346,90 +347,29 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 #endif
             }
 
-            const double K1 = exp(- rhop * AB2);
-            const double K2 = exp(- rhoq * CD2);
+            const double K1 = exp(- rhop * AB2) * oogammap;
+            const double K2 = exp(- rhoq * CD2) * oogammaq;
             const double two_times_M_PI_to_25 = 34.986836655249725693;
-            double pfac = two_times_M_PI_to_25 * K1 * K2 / (gammap * gammaq * sqrt(gammap
-                                                                                   + gammaq));
+            double pfac = two_times_M_PI_to_25 * K1 * K2 * sqrt(one_o_gammap_plus_gammaq);
             pfac *= c0 * c1 * c2 * c3;
 
-            //calc_f(F, amtot, PQ2 * gammapq);
-            //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-20);
-            fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
-            //fmeval_taylor.eval(F,PQ2*gammapq,amtot);
+            // if veclen=1, ignore the F scratch, use the erieval directly
+            if (veclen == 1) {
+              fmeval_chebyshev.eval(erieval->LIBINT_T_SS_EREP_SS(0),PQ2*gammapq,amtot);
+              LIBINT2_REALTYPE* ssss_ptr = erieval->LIBINT_T_SS_EREP_SS(0);
+              for(int l=0; l<=amtot; ++l, ++ssss_ptr)
+                *ssss_ptr *= pfac;
+            }
+            else {
+              fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
+              //fmeval_taylor.eval(F,PQ2*gammapq,amtot);
+              {
+                LIBINT2_REALTYPE* ssss_ptr = erieval->LIBINT_T_SS_EREP_SS(0) + v;
+                for(int l=0; l<=amtot; ++l, ssss_ptr+=veclen)
+                  *ssss_ptr = pfac*F[l];
+              }
+            }
 
-            // using dangerous macros from libint2.h
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(0))
-            erieval->LIBINT_T_SS_EREP_SS(0)[v] = pfac*F[0];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(1))
-            erieval->LIBINT_T_SS_EREP_SS(1)[v] = pfac*F[1];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(2))
-            erieval->LIBINT_T_SS_EREP_SS(2)[v] = pfac*F[2];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(3))
-            erieval->LIBINT_T_SS_EREP_SS(3)[v] = pfac*F[3];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(4))
-            erieval->LIBINT_T_SS_EREP_SS(4)[v] = pfac*F[4];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(5))
-            erieval->LIBINT_T_SS_EREP_SS(5)[v] = pfac*F[5];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(6))
-            erieval->LIBINT_T_SS_EREP_SS(6)[v] = pfac*F[6];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(7))
-            erieval->LIBINT_T_SS_EREP_SS(7)[v] = pfac*F[7];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(8))
-            erieval->LIBINT_T_SS_EREP_SS(8)[v] = pfac*F[8];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(9))
-            erieval->LIBINT_T_SS_EREP_SS(9)[v] = pfac*F[9];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(10))
-            erieval->LIBINT_T_SS_EREP_SS(10)[v] = pfac*F[10];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(11))
-            erieval->LIBINT_T_SS_EREP_SS(11)[v] = pfac*F[11];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(12))
-            erieval->LIBINT_T_SS_EREP_SS(12)[v] = pfac*F[12];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(13))
-            erieval->LIBINT_T_SS_EREP_SS(13)[v] = pfac*F[13];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(14))
-            erieval->LIBINT_T_SS_EREP_SS(14)[v] = pfac*F[14];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(15))
-            erieval->LIBINT_T_SS_EREP_SS(15)[v] = pfac*F[15];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(16))
-            erieval->LIBINT_T_SS_EREP_SS(16)[v] = pfac*F[16];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(17))
-            erieval->LIBINT_T_SS_EREP_SS(17)[v] = pfac*F[17];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(18))
-            erieval->LIBINT_T_SS_EREP_SS(18)[v] = pfac*F[18];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(19))
-            erieval->LIBINT_T_SS_EREP_SS(19)[v] = pfac*F[19];
-#endif
-#if LIBINT2_DEFINED(eri,LIBINT_T_SS_EREP_SS(20))
-            erieval->LIBINT_T_SS_EREP_SS(20)[v] = pfac*F[20];
-#endif
-
-//            if LIBINT2_REALTYPE is a POD just copy like this
-//            {
-//              LIBINT2_REALTYPE* ssss_ptr = erieval->LIBINT_T_SS_EREP_SS(0) + v;
-//              for(int l=0; l<amtot; ++l, ssss_ptr+=veclen)
-//                *ssss_ptr = pfac*F[l];
-//            }
-            
           } // end of v loop
 
         }
