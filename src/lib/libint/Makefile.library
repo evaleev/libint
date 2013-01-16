@@ -22,7 +22,9 @@ $(TOPDIR)/lib/$(NAME).a: $(LIBOBJ)
 
 # this is how shared library is made
 $(TOPDIR)/lib/$(NAME).la: $(LIBOBJ)
-	$(LTLINK) $(CXX) -o $@ $^ $(LTLINKLIBOPTS)
+	find . -name '*.$(OBJSUF)' -print > libobjlist
+	$(LTLINK) $(CXX) -o $@ -objectlist libobjlist $(LTLINKLIBOPTS)
+	-rm -f libobjlist
 
 # the library is to be compiled using cxxgen
 $(TOPDIR)/lib/$(NAME).a: CXX=$(CXXGEN)
