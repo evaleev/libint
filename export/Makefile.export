@@ -30,4 +30,6 @@ $(TOPDIR)/lib/$(NAMEV).a: $(LIBOBJ)
 
 # this is how shared library is made
 $(TOPDIR)/lib/$(NAMEV).la: $(LIBOBJ)
-	$(LTLINK) $(CXX) -o $@ $^ $(LTLINKLIBOPTS)
+	find . -name '*.$(OBJSUF)' -print > libobjlist
+	$(LTLINK) $(CXX) -o $@ -objectlist libobjlist $(LTLINKLIBOPTS)
+	-rm -f libobjlist
