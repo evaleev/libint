@@ -6,7 +6,7 @@ endif
 TOPOBJDIR = $(shell ls -d `pwd`/$(TOPDIR))
 TAR = tar
 
-include $(TOPDIR)/src/lib/MakeVars
+-include $(TOPDIR)/src/lib/MakeVars
 
 default::
 

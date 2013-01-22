@@ -3,8 +3,8 @@ ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
 
-include $(TOPDIR)/Makedirlist
-include $(TOPDIR)/doc/MakeVars
+-include $(TOPDIR)/Makedirlist
+-include $(TOPDIR)/doc/MakeVars
 
 SUBDIRS = classdoc progman
 

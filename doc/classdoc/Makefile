@@ -4,8 +4,8 @@ ifndef SRCDIR
 endif
 TOPOBJDIR = $(shell ls -d `pwd`/$(TOPDIR))
 
-include $(TOPDIR)/doc/MakeVars
-include $(TOPDIR)/doc/MakeRules
+-include $(TOPDIR)/doc/MakeVars
+-include $(TOPDIR)/doc/MakeRules
 include $(SRCDIR)/$(TOPDIR)/lib/MakeSuffixRules
 
 ifdef DOXYGEN
@@ -17,8 +17,8 @@ $(TARGET): doxygen.cfg
 	$(DOXYGEN) $^
 
 install_target:: $(TARGET)
-	$(INSTALL) $(INSTALLDIROPT) $(docdir)/html
-	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) html/* $(docdir)/html
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(docdir)/html
+	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) html/* $(DESTDIR)$(docdir)/html
 
 else
 

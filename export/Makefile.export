@@ -11,9 +11,9 @@ VERSION = 2
 NAMEV = $(NAME)$(VERSION)
 TARGET = $(NAMEV).$(LIBSUF)
 
-include $(TOPDIR)/MakeVars
-include $(TOPDIR)/MakeRules
-include $(TOPDIR)/MakeSuffixRules
+-include $(TOPDIR)/MakeVars
+-include $(TOPDIR)/MakeRules
+-include $(TOPDIR)/MakeSuffixRules
 VPATH = $(SRCTOPDIR)/src $(SRCTOPDIR)/include
 
 TRUESRC = $(shell echo `find src -name '*.cc' -exec echo -n '{} ' \;`)

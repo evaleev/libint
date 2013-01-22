@@ -30,14 +30,14 @@ BIBTEX = @BIBTEX@
 # The document suffix (pdf or ps)
 # Preferentially make pdf manuals, only revert to ps if necessary
 ifdef BIBTEX
-ifdef PSLATEX
-DOCSUF = ps
-LATEX = $(PSLATEX)
-endif
-ifdef PDFLATEX
-DOCSUF = pdf
-LATEX = $(PDFLATEX)
-endif
+ ifdef PSLATEX
+  DOCSUF = ps
+  LATEX = $(PSLATEX)
+ endif
+ ifdef PDFLATEX
+  DOCSUF = pdf
+  LATEX = $(PDFLATEX)
+ endif
 endif
 TEXINPUTS = :$(SRCDIR):$(SRCDIR)/..:
 BIBINPUTS = $(TEXINPUTS)

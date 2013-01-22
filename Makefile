@@ -67,7 +67,7 @@ oclean::
 distclean::
 	for dir in $(ALLSUBDIRS); \
 	  do \
-	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
+	    (cd $${dir} && $(MAKE) DODEPEND=no distclean) || exit 1; \
 	  done
 	-rm -rf autom4te.cache config.status config.log conf*.file conf*.dir *.dSYM depcheck* libtool \
 Makedirlist include

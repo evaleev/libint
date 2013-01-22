@@ -1,4 +1,4 @@
-include $(TOPDIR)/src/lib/MakeVars
+-include $(TOPDIR)/src/lib/MakeVars
 include $(SRCTOPDIR)/lib/MakeSuffixRules
 VPATH = $(SRCDIR) $(SRCTOPDIR)/include
 
@@ -44,12 +44,12 @@ libint2_iface.h:
 install:: install_inc install_target
 
 install_inc::
-	$(INSTALL) $(INSTALLDIROPT) $(includedir)
-	-$(INSTALL) $(INSTALLLIBOPT) $(TARGET_HEADERS) $(includedir)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)
+	-$(INSTALL) $(INSTALLLIBOPT) $(TARGET_HEADERS) $(DESTDIR)$(includedir)
 
 install_target:: $(TOPDIR)/lib/$(TARGET)
-	$(INSTALL) $(INSTALLDIROPT) $(libdir)
-	$(INSTALL) $(INSTALLLIBOPT) $< $(libdir)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)
+	$(INSTALL) $(INSTALLLIBOPT) $< $(DESTDIR)$(libdir)
 
 clean:: oclean targetclean
 

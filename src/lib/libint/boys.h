@@ -581,7 +581,7 @@ namespace libint2 {
       /**
        * Power series estimate of the error introduced by replacing
        * \f$ F_m(T) = \int_0^1 \exp(-T t^2) t^{2 m} \, \mathrm{d} t \f$ with analytically
-       * integrable \f$ \int_0^\infinity \exp(-T t^2) t^{2 m} \, \mathrm{d} t = \frac{(2m-1)!!}{2^{m+1}} \sqrt{\frac{\pi}{T^{2m+1}}} \f$
+       * integrable \f$ \int_0^\infty \exp(-T t^2) t^{2 m} \, \mathrm{d} t = \frac{(2m-1)!!}{2^{m+1}} \sqrt{\frac{\pi}{T^{2m+1}}} \f$
        * @param m
        * @param T
        * @return the error estimate
@@ -603,7 +603,7 @@ namespace libint2 {
       /**
        * Leading-order estimate of the error introduced by replacing
        * \f$ F_m(T) = \int_0^1 \exp(-T t^2) t^{2 m} \, \mathrm{d} t \f$ with analytically
-       * integrable \f$ \int_0^\infinity \exp(-T t^2) t^{2 m} \, \mathrm{d} t = \frac{(2m-1)!!}{2^{m+1}} \sqrt{\frac{\pi}{T^{2m+1}}} \f$
+       * integrable \f$ \int_0^\infty \exp(-T t^2) t^{2 m} \, \mathrm{d} t = \frac{(2m-1)!!}{2^{m+1}} \sqrt{\frac{\pi}{T^{2m+1}}} \f$
        * @param m
        * @param T
        * @return the error estimate

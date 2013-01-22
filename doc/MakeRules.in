@@ -6,8 +6,8 @@ default:: $(TARGET)
 install:: install_target
 
 install_target:: default
-	$(INSTALL) $(INSTALLDIROPT) $(docdir)
-	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) $(TARGET) $(docdir)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(docdir)
+	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) $(TARGET) $(DESTDIR)$(docdir)
 
 clean::
 	-rm -rf $(TARGET)

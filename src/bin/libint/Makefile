@@ -5,7 +5,7 @@ ifndef LOCAL
   ifndef SRCDIR
     SRCDIR=$(shell pwd)
   endif
-  include $(TOPDIR)/src/bin/MakeVars
+  -include $(TOPDIR)/src/bin/MakeVars
   vpath %.a $(libdir)
 else
   SRCDIR=.
@@ -75,8 +75,8 @@ graph.dot: test
 install:: install_inc
 
 install_inc:: $(LIBCXXINC)
-	$(INSTALL) $(INSTALLDIROPT) $(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $^ $(includedir)/$(NAME)$(VERSION)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $^ $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 
 clean:: oclean targetclean dependclean
 
