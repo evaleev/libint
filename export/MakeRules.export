@@ -15,6 +15,7 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/cgshell_ordering.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/vector*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2_config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/boys.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 
 install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)
