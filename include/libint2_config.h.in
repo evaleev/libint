@@ -58,26 +58,44 @@
 /* Max optimized AM for one-body ints */
 #undef ONEBODY_OPT_AM
 
-/* Max AM for ERI */
+/* Max AM for ERI (same for all derivatives; if not defined see ERI_MAX_AM_LIST) */
 #undef ERI_MAX_AM
 
-/* Max optimized AM for ERI */
+/* Max AM for ERI and its derivatives */
+#undef ERI_MAX_AM_LIST
+
+/* Max optimized AM for ERI (same for all derivatives; if not defined see ERI_OPT_AM_LIST) */
 #undef ERI_OPT_AM
 
-/* Max AM for 3-center ERI */
+/* Max optimized AM for ERI and its derivatives */
+#undef ERI_OPT_AM_LIST
+
+/* Max AM for 3-center ERI (same for all derivatives; if not defined see ERI3_MAX_AM_LIST) */
 #undef ERI3_MAX_AM
 
-/* Max optimized AM for 3-center ERI */
+/* Max AM for 3-center ERI and its derivatives */
+#undef ERI3_MAX_AM_LIST
+
+/* Max optimized AM for 3-center ERI (same for all derivatives; if not defined see ERI3_OPT_AM_LIST) */
 #undef ERI3_OPT_AM
+
+/* Max optimized AM for 3-center ERI and its derivatives */
+#undef ERI3_OPT_AM_LIST
 
 /* If 1, assume will transform the "unpaired" center (e.g. a in (a|cd)) to solid harmonics */
 #undef ERI3_PURE_SH
 
-/* Max AM for 2-center ERI */
+/* Max AM for 2-center ERI (same for all derivatives; if not defined see ERI2_MAX_AM_LIST) */
 #undef ERI2_MAX_AM
 
-/* Max optimized AM for 2-center ERI */
+/* Max AM for 2-center ERI and its derivatives */
+#undef ERI2_MAX_AM_LIST
+
+/* Max optimized AM for 2-center ERI (same for all derivatives; if not defined see ERI2_OPT_AM_LIST) */
 #undef ERI2_OPT_AM
+
+/* Max optimized AM for 2-center ERI and its derivatives */
+#undef ERI2_OPT_AM_LIST
 
 /* If 1, assume will transform to solid harmonics */
 #undef ERI2_PURE_SH

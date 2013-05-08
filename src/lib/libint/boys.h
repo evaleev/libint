@@ -1,5 +1,5 @@
 // prototype for the Boys function engines (Boys function = Fm(T))
-// the original Chebyshev extrapolation code is from ORCA, due to Frank Neese
+// the original Chebyshev extrapolation code is based on that by Frank Neese
 
 #ifndef _libint2_src_lib_libint_boys_h_
 #define _libint2_src_lib_libint_boys_h_
@@ -194,8 +194,7 @@ namespace libint2 {
         const double xd = x * FM_one_over_DELTA;
         const int iv = int(xd); // the interval
         const int ofs = iv * 4; // the offset in the interpolation table
-        asm("#chebcore");
-        // for the largest m evaluate by interpolation (6 FLOPS)
+        // for the largest m evaluate by interpolation
         Fm[mmax] = d[ofs]
             + xd * (d[ofs + 1] + xd * (d[ofs + 2] + xd * d[ofs + 3]));
 
@@ -209,7 +208,6 @@ namespace libint2 {
 //        }
 
         // use downward recursion (Eq. (9.8.14))
-        // cost = 1 exp + (1 + 3*m mul/add)
         if (mmax > 0) {
           const double x2 = 2.0 * x;
           const double exp_x = exp(-x);
@@ -619,6 +617,7 @@ namespace libint2 {
   /// core integral for Yukawa and exponential interactions
   //////////////////////////////////////////////////////////
 
+#if 0
   /**
    * Evaluates core integral for the Yukawa potential \f$ \exp(- \zeta r) / r \f$
    * @tparam Real real type
@@ -686,6 +685,7 @@ namespace libint2 {
       /// @param[out] Gm \f$ G_m(T,U), m=-1..mmax \f$
       void eval_yukawa_s2(Real* Gm, Real T, Real U, size_t mmax) {
 
+        // TODO estimate the number of expansion terms for the given precision
         const int expansion_order = 60;
         eval_yukawa_Gm0U(Gm_0_U_, U, mmax - 1 + expansion_order);
 
@@ -694,7 +694,11 @@ namespace libint2 {
 
         // downward recursion
         //Gm[m + 1] = 1/(2 U) (E^-T - (2 m + 3) Gm[[m + 2]] + 2 T Gm[[m + 3]])
-
+        const Real one_over_twoU = 0.5 / U;
+        const Real one_over_twoU = 2.0 * T;
+        const Real exp_mT = exp(-T);
+        for(int m=mmax-2; m>=-1; --m)
+          Gm[m] = one_over_twoU (exp_mT - numbers_.twoi1[m+1] * Gm[m+1] + twoT Gm[m+2])
 
         // testing ...
         std::copy(Gm_0_U_.begin()+1, Gm_0_U_.begin()+mmax+2, Gm);
@@ -723,7 +727,9 @@ namespace libint2 {
 
       /**
        * computes prerequisites for MacLaurin expansion of Gm(T,U)
-       * for m in [-1,mmax)
+       * for m in [-1,mmax); uses Ten-no's prescription, i.e.
+       *
+       *
        * @param[out] Gm0U
        * @param[in] U
        * @param[in] mmax
@@ -736,7 +742,7 @@ namespace libint2 {
         // 2) for U > 5, m* = min(U,mmax)
         int mstar;
 
-        // G_{-1} (0,T) is easy
+        // G_{-1} (0,U) is easy
         if (U < 5.0) {
           mstar = -1;
 
@@ -839,9 +845,16 @@ namespace libint2 {
       Real precision_;
       ExpensiveNumbers<Real> numbers_;
 
+      // since evaluation may involve several functions, will store some intermediate constants here
+      // to avoid the cost of extra parameters
+      //Real exp_U_;
+      //Real exp_mT_;
+
       size_t count_tenno_algorithm_branches[3]; // counts the number of times each branch Ten-no algorithm
                                                 // was picked
+
   };
+#endif
 
   //////////////////////////////////////////////////////////
   /// core integrals r12^k \sum_i \exp(- a_i r_12^2)

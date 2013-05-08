@@ -1,6 +1,6 @@
-define([libint_mmm_version],[2.0.1])
+define([libint_mmm_version],[2.0.2])
 define([libint_buildid],[stable])
-define([libint_so_version],[2:0:1])
+define([libint_so_version],[2:0:2])
 
 dnl --------- Begin ---------
 dnl Process this file with autoconf to produce a configure script.
@@ -313,61 +313,107 @@ if test $withval -le $LIBINT_MAX_AM; then
   LIBINT_OPT_AM=$withval
 fi
 )
-AC_SUBST(LIBINT_MAX_AM)
-AC_SUBST(LIBINT_OPT_AM)
 AC_DEFINE_UNQUOTED(LIBINT_MAX_AM,$LIBINT_MAX_AM)
 AC_DEFINE_UNQUOTED(LIBINT_OPT_AM,$LIBINT_OPT_AM)
 
 
 ERI_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(eri-max-am,
-[  --with-eri-max-am=N      Support ERIs for Gaussians of angular momentum up to N.],
-if test $withval -le 0; then
-  AC_MSG_ERROR([Invalid value for --with-eri-max-am ($withval)])
-else
-  ERI_MAX_AM=$withval
-fi
-if test $ERI_MAX_AM -ge 8; then
-  AC_MSG_ERROR([Value for --with-eri-max-am too high ($withval). Are you sure you know what you are doing?])
-fi
+[  --with-eri-max-am=N      Support ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...],
+[
+  case $withval in 
+    *,*)
+      ERI_MAX_AM_LIST="$withval"
+      AC_SUBST(ERI_MAX_AM_LIST)
+      AC_DEFINE_UNQUOTED(ERI_MAX_AM_LIST, "$ERI_MAX_AM_LIST")
+    ;;
+    *) 
+     if test $withval -le 0; then
+      AC_MSG_ERROR([Invalid value for --with-eri-max-am ($withval)])
+     else
+      ERI_MAX_AM=$withval
+     fi
+     if test $ERI_MAX_AM -ge 8; then
+      AC_MSG_ERROR([Value for --with-eri-max-am too high ($withval). Are you sure you know what you are doing?])
+     fi
+     AC_SUBST(ERI_MAX_AM)
+     AC_DEFINE_UNQUOTED(ERI_MAX_AM,$ERI_MAX_AM)
+    ;; 
+  esac
+]
 )
 
 ERI_OPT_AM=$LIBINT_OPT_AM
 AC_ARG_WITH(eri-opt-am,
-[  --with-eri-opt-am=N       Optimize ERIs maximally for up to angular momentum N (N <= max-am).],
-if test $withval -le $ERI_MAX_AM; then
-  ERI_OPT_AM=$withval
-fi
+[  --with-eri-opt-am=N       Optimize ERIs maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...],
+[
+  case $withval in 
+    *,*)
+      ERI_OPT_AM_LIST="$withval"
+      AC_SUBST(ERI_OPT_AM_LIST)
+      AC_DEFINE_UNQUOTED(ERI_OPT_AM_LIST, "$ERI_OPT_AM_LIST")  
+    ;;
+    *) 
+     if test $withval -le $ERI_MAX_AM; then
+       ERI_OPT_AM=$withval
+       AC_SUBST(ERI_OPT_AM)
+       AC_DEFINE_UNQUOTED(ERI_OPT_AM,$ERI_OPT_AM)  
+     fi
+    ;;
+  esac
+]
 )
 
 if test X$INCLUDE_ERI != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ERI,$INCLUDE_ERI)
-  AC_SUBST(ERI_MAX_AM)
-  AC_SUBST(ERI_OPT_AM)
-  AC_DEFINE_UNQUOTED(ERI_MAX_AM,$ERI_MAX_AM)
-  AC_DEFINE_UNQUOTED(ERI_OPT_AM,$ERI_OPT_AM)
 fi
 
 # check max am for 3-center ERIs, if needed
 ERI3_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(eri3-max-am,
-[  --with-eri3-max-am=N     Support 3-center ERIs for Gaussians of angular momentum up to N.],
-if test $withval -le 0; then
-  AC_MSG_ERROR([Invalid value for --with-eri3-max-am ($withval)])
-else
-  ERI3_MAX_AM=$withval
-fi
-if test $ERI3_MAX_AM -ge 8; then
-  AC_MSG_ERROR([Value for --with-eri3-max-am too high ($withval). Are you sure you know what you are doing?])
-fi
+[  --with-eri3-max-am=N     Support 3-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...],
+[
+  case $withval in 
+    *,*)
+      ERI3_MAX_AM_LIST="$withval"
+      AC_SUBST(ERI3_MAX_AM_LIST)
+      AC_DEFINE_UNQUOTED(ERI3_MAX_AM_LIST, "$ERI3_MAX_AM_LIST")
+    ;;
+    *) 
+     if test $withval -le 0; then
+      AC_MSG_ERROR([Invalid value for --with-eri3-max-am ($withval)])
+     else
+      ERI3_MAX_AM=$withval
+     fi
+     if test $ERI3_MAX_AM -ge 8; then
+      AC_MSG_ERROR([Value for --with-eri3-max-am too high ($withval). Are you sure you know what you are doing?])
+     fi
+     AC_SUBST(ERI3_MAX_AM)
+     AC_DEFINE_UNQUOTED(ERI3_MAX_AM,$ERI3_MAX_AM)
+    ;; 
+  esac
+]
 )
 
 ERI3_OPT_AM=$LIBINT_OPT_AM
 AC_ARG_WITH(eri3-opt-am,
-[  --with-eri3-opt-am=N      Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).],
-if test $withval -le $ERI3_MAX_AM; then
-  ERI3_OPT_AM=$withval
-fi
+[  --with-eri3-opt-am=N       Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...],
+[
+  case $withval in 
+    *,*)
+      ERI3_OPT_AM_LIST="$withval"
+      AC_SUBST(ERI3_OPT_AM_LIST)
+      AC_DEFINE_UNQUOTED(ERI3_OPT_AM_LIST, "$ERI3_OPT_AM_LIST")  
+    ;;
+    *) 
+     if test $withval -le $ERI3_MAX_AM; then
+       ERI3_OPT_AM=$withval
+       AC_SUBST(ERI3_OPT_AM)
+       AC_DEFINE_UNQUOTED(ERI3_OPT_AM,$ERI3_OPT_AM)  
+     fi
+    ;;
+  esac
+]
 )
 
 AC_ARG_ENABLE(eri3-pure-sh,
@@ -388,10 +434,6 @@ esac
 
 if test X$INCLUDE_ERI3 != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ERI3,$INCLUDE_ERI3)
-  AC_SUBST(ERI3_MAX_AM)
-  AC_SUBST(ERI3_OPT_AM)
-  AC_DEFINE_UNQUOTED(ERI3_MAX_AM,$ERI3_MAX_AM)
-  AC_DEFINE_UNQUOTED(ERI3_OPT_AM,$ERI3_OPT_AM)
   if test X$ERI3_PURE_SH != Xno; then
     AC_DEFINE(ERI3_PURE_SH)
   fi
@@ -400,23 +442,49 @@ fi
 # check max am for 2-center ERIs, if needed
 ERI2_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(eri2-max-am,
-[  --with-eri2-max-am=N     Support 2-center ERIs for Gaussians of angular momentum up to N.],
-if test $withval -le 0; then
-  AC_MSG_ERROR([Invalid value for --with-eri2-max-am ($withval)])
-else
-  ERI2_MAX_AM=$withval
-fi
-if test $ERI2_MAX_AM -ge 8; then
-  AC_MSG_ERROR([Value for --with-eri2-max-am too high ($withval). Are you sure you know what you are doing?])
-fi
+[  --with-eri2-max-am=N     Support 2-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...],
+[
+  case $withval in 
+    *,*)
+      ERI2_MAX_AM_LIST="$withval"
+      AC_SUBST(ERI2_MAX_AM_LIST)
+      AC_DEFINE_UNQUOTED(ERI2_MAX_AM_LIST, "$ERI2_MAX_AM_LIST")
+    ;;
+    *) 
+     if test $withval -le 0; then
+      AC_MSG_ERROR([Invalid value for --with-eri2-max-am ($withval)])
+     else
+      ERI2_MAX_AM=$withval
+     fi
+     if test $ERI2_MAX_AM -ge 8; then
+      AC_MSG_ERROR([Value for --with-eri2-max-am too high ($withval). Are you sure you know what you are doing?])
+     fi
+     AC_SUBST(ERI2_MAX_AM)
+     AC_DEFINE_UNQUOTED(ERI2_MAX_AM,$ERI2_MAX_AM)
+    ;; 
+  esac
+]
 )
 
 ERI2_OPT_AM=$LIBINT_OPT_AM
 AC_ARG_WITH(eri2-opt-am,
-[  --with-eri2-opt-am=N      Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am).],
-if test $withval -le $ERI2_MAX_AM; then
-  ERI2_OPT_AM=$withval
-fi
+[  --with-eri2-opt-am=N       Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...],
+[
+  case $withval in 
+    *,*)
+      ERI2_OPT_AM_LIST="$withval"
+      AC_SUBST(ERI2_OPT_AM_LIST)
+      AC_DEFINE_UNQUOTED(ERI2_OPT_AM_LIST, "$ERI2_OPT_AM_LIST")  
+    ;;
+    *) 
+     if test $withval -le $ERI2_MAX_AM; then
+       ERI2_OPT_AM=$withval
+       AC_SUBST(ERI2_OPT_AM)
+       AC_DEFINE_UNQUOTED(ERI2_OPT_AM,$ERI2_OPT_AM)  
+     fi
+    ;;
+  esac
+]
 )
 
 AC_ARG_ENABLE(eri2-pure-sh,
@@ -437,10 +505,6 @@ esac
 
 if test X$INCLUDE_ERI2 != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ERI2,$INCLUDE_ERI2)
-  AC_SUBST(ERI2_MAX_AM)
-  AC_SUBST(ERI2_OPT_AM)
-  AC_DEFINE_UNQUOTED(ERI2_MAX_AM,$ERI2_MAX_AM)
-  AC_DEFINE_UNQUOTED(ERI2_OPT_AM,$ERI2_OPT_AM)
   if test X$ERI2_PURE_SH != Xno; then
     AC_DEFINE(ERI2_PURE_SH)
   fi

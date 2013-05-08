@@ -85,6 +85,8 @@ namespace libint2 {
         return true;
       }
 
+      unsigned int dir() const { return dir_; }
+
       /// add child
       const SafePtr<DGVertex>& add_child(const SafePtr<DGVertex>& child) {
         typedef std::vector< SafePtr<DGVertex> > cvector;

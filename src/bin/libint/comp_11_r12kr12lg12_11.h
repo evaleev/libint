@@ -77,7 +77,7 @@ namespace libint2 {
           if (norm == 1) {
             typedef GenIntegralSet_11_11<BasisFunctionType,R12kG12,mType> ChildType;
             ChildFactory<ThisType,ChildType> factory(this);
-            factory.wedge( R12v(_pbra(a,c),xyz) , _pket(b,d), mType(0u), R12kG12(0));
+            factory.wedge( R12v(_pbra(a,c),xyz) , _pket(b,d), mType(0u), R12kG12(R12_k_G12_Descr(0)));
           }
           else {
             typedef GenIntegralSet_11_11<BasisFunctionType,R12kR12lG12,EmptySet> ChildType;
@@ -99,7 +99,7 @@ namespace libint2 {
           if (norm == 1) {
             typedef GenIntegralSet_11_11<BasisFunctionType,R12kG12,mType> ChildType;
             ChildFactory<ThisType,ChildType> factory(this);
-            factory.wedge( _pbra(a,c) , R12v(_pket(b,d),xyz), mType(0u), R12kG12(0));
+            factory.wedge( _pbra(a,c) , R12v(_pket(b,d),xyz), mType(0u), R12kG12(R12_k_G12_Descr(0)));
           }
           else {
             typedef GenIntegralSet_11_11<BasisFunctionType,R12kR12lG12,EmptySet> ChildType;

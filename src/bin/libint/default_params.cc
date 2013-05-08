@@ -141,6 +141,7 @@ CompilationParameters::max_am(const std::string& t, unsigned int ma)
     add_task(t);
     max_am(t,ma);
   }
+  std::cout << "CompilationParameters::max_am: task=" << t << " max_am=" << ma << std::endl;
 }
 
 void
@@ -156,6 +157,7 @@ CompilationParameters::max_am_opt(const std::string& t, unsigned int v)
     add_task(t);
     max_am_opt(t,v);
   }
+  std::cout << "CompilationParameters::max_am_opt: task=" << t << " max_am_opt=" << v << std::endl;
 }
 
 void

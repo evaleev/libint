@@ -55,8 +55,8 @@ namespace libint2 {
       using namespace libint2::braket;
       // kinetic energy of which electron?
       const int i = target_->oper()->descr().K();
-      const R12kG12 G0(0);
-      const R12kG12 G2(2);
+      const R12kG12 G0(R12_k_G12_Descr(0));
+      const R12kG12 G2(R12_k_G12_Descr(2));
 
       F a(Tint->bra(0,0));
       F b(Tint->ket(0,0));

@@ -86,6 +86,36 @@ std::string task_label(const std::string& prefix,
   }
 }
 
+/**
+ * Returns n-th token. If n > number of tokens, returns the last one.
+ * @param c_str input string
+ * @param delimiter delimiter/separator character
+ * @param n
+ * @return
+ */
+template <typename T>
+T token(const char* c_str,
+        char delimiter,
+        std::size_t n = 0) {
+  T result;
+  std::string result_str;
+
+  // replace all occurences of delimiter in str with whitespaces
+  std::string str(c_str);
+  std::cout << "token<>: str=" << str << std::endl;
+  std::string::size_type pos;
+  while ((pos = str.find(delimiter)) != std::string::npos) {
+    str[pos] = ' ';
+  }
+
+  // tokenize
+  std::istringstream iss(str);
+  for(size_t i=0; i<=n && !iss.eof(); ++i)
+    iss >> result;
+
+  return result;
+}
+
 static void try_main (int argc, char* argv[]);
 
 int main(int argc, char* argv[])
@@ -200,27 +230,51 @@ void try_main (int argc, char* argv[])
   }
 #endif
 #ifdef INCLUDE_ERI
-  for(unsigned int d=0; d<=0; ++d) {
-    cparams->max_am( task_label("eri", d) ,ERI_MAX_AM);
-    cparams->max_am_opt( task_label("eri", d) ,ERI_OPT_AM);
+  for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
+#if defined(ERI_MAX_AM_LIST)
+    cparams->max_am( task_label("eri", d), token<unsigned int>(ERI_MAX_AM_LIST,',',d));
+#elif defined(ERI_MAX_AM)
+    cparams->max_am( task_label("eri", d), ERI_MAX_AM);
+#endif
+#if defined(ERI_OPT_AM_LIST)
+    cparams->max_am_opt( task_label("eri", d) ,token<unsigned int>(ERI_OPT_AM_LIST,',',d));
+#elif defined(ERI_OPT_AM)
+    cparams->max_am_opt( task_label("eri", d) , ERI_OPT_AM);
+#endif
   }
   for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
     cparams->num_bf(task_label("eri", d), 4);
   }
 #endif
 #ifdef INCLUDE_ERI3
-  for(unsigned int d=0; d<=0; ++d) {
-    cparams->max_am( task_label("3eri", d) ,ERI3_MAX_AM);
-    cparams->max_am_opt( task_label("3eri", d) ,ERI3_OPT_AM);
+  for(unsigned int d=0; d<=INCLUDE_ERI3; ++d) {
+#if defined(ERI3_MAX_AM_LIST)
+    cparams->max_am( task_label("3eri", d), token<unsigned int>(ERI3_MAX_AM_LIST,',',d));
+#elif defined(ERI3_MAX_AM)
+    cparams->max_am( task_label("3eri", d), ERI3_MAX_AM);
+#endif
+#if defined(ERI3_OPT_AM_LIST)
+    cparams->max_am_opt( task_label("3eri", d) ,token<unsigned int>(ERI3_OPT_AM_LIST,',',d));
+#elif defined(ERI3_OPT_AM)
+    cparams->max_am_opt( task_label("3eri", d) , ERI3_OPT_AM);
+#endif
   }
   for(unsigned int d=0; d<=INCLUDE_ERI3; ++d) {
     cparams->num_bf( task_label("3eri", d) ,3);
   }
 #endif
 #ifdef INCLUDE_ERI2
-  for(unsigned int d=0; d<=0; ++d) {
-    cparams->max_am( task_label("2eri", d) ,ERI2_MAX_AM);
-    cparams->max_am_opt( task_label("2eri", d) ,ERI2_OPT_AM);
+  for(unsigned int d=0; d<=INCLUDE_ERI2; ++d) {
+#if defined(ERI2_MAX_AM_LIST)
+    cparams->max_am( task_label("2eri", d), token<unsigned int>(ERI2_MAX_AM_LIST,',',d));
+#elif defined(ERI2_MAX_AM)
+    cparams->max_am( task_label("2eri", d), ERI2_MAX_AM);
+#endif
+#if defined(ERI2_OPT_AM_LIST)
+    cparams->max_am_opt( task_label("2eri", d) ,token<unsigned int>(ERI2_OPT_AM_LIST,',',d));
+#elif defined(ERI2_OPT_AM)
+    cparams->max_am_opt( task_label("2eri", d) , ERI2_OPT_AM);
+#endif
   }
   for(unsigned int d=0; d<=INCLUDE_ERI2; ++d) {
     cparams->num_bf( task_label("2eri", d) ,2);

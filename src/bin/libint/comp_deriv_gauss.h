@@ -3,10 +3,25 @@
 #define _libint2_src_bin_libint_compderivgauss_h_
 
 #include <generic_rr.h>
+#include <set>
 
 using namespace std;
 
 namespace libint2 {
+
+  class CR_DerivGauss_GenericInstantiator {
+      static CR_DerivGauss_GenericInstantiator instance_;
+
+      CR_DerivGauss_GenericInstantiator(); // this is a singleton
+      ~CR_DerivGauss_GenericInstantiator();
+
+      // pairs of L,vectorize specify the instances of GenericGaussDeriv template to be created
+      std::set<std::pair<unsigned int, bool> > template_instances_;
+
+    public:
+      static CR_DerivGauss_GenericInstantiator& instance();
+      void add(unsigned int L, bool vectorize);
+  };
 
   /** compute relation for derivative 2-e ERI. part+where specify the function
    * to be differentiated.
@@ -51,6 +66,15 @@ namespace libint2 {
            << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
         return os.str();
       }
+
+#if LIBINT_ENABLE_GENERIC_CODE
+      /// Implementation of RecurrenceRelation::has_generic()
+      bool has_generic(const SafePtr<CompilationParameters>& cparams) const;
+      /// Implementation of RecurrenceRelation::generic_header()
+      std::string generic_header() const;
+      /// Implementation of RecurrenceRelation::generic_instance()
+      std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const;
+#endif
     };
 
   template <class IntType, int part, FunctionPosition where>
@@ -149,6 +173,118 @@ namespace libint2 {
       return;
     }
 
-};
+#if LIBINT_ENABLE_GENERIC_CODE
+  template <class IntType, int part, FunctionPosition where>
+  bool
+  CR_DerivGauss<IntType,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
+    {
+      if (TrivialBFSet<BasisFunctionType>::result)
+        return false;
+
+      // generate generic code if the average quantum number > max_l_opt
+      const unsigned int max_opt_am = cparams->max_am_opt();
+      unsigned int am_total = 0;
+      unsigned int nfunctions = 0;
+      const unsigned int np = IntType::OperType::Properties::np;
+      for(int p=0; p<np; p++) {
+        unsigned int nbra = target_->bra().num_members(p);
+        for(unsigned int i=0; i<nbra; i++) {
+          am_total += target_->bra(p,i).norm();
+          ++nfunctions;
+        }
+        unsigned int nket = target_->ket().num_members(p);
+        for(unsigned int i=0; i<nket; i++) {
+          am_total += target_->ket(p,i).norm();
+          ++nfunctions;
+        }
+      }
+      if (am_total > max_opt_am*nfunctions)
+        return true;
+
+      // else generate explicit code
+      return false;
+    }
+
+  template <class IntType, int part, FunctionPosition where>
+    std::string
+    CR_DerivGauss<IntType,part,where>::generic_header() const
+    {
+      return std::string("GenericGaussDeriv.h");
+    }
+
+  template <class IntType, int part, FunctionPosition where>
+      std::string
+      CR_DerivGauss<IntType,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
+    {
+      std::ostringstream oss;
+
+      oss << "using namespace libint2;" << endl;
+
+      BasisFunctionType sh(where == InBra ? target_->bra(part,0) : target_->ket(part,0));
+
+      const unsigned int L = sh.norm();
+      const bool vectorize = (context->cparams()->max_vector_length() == 1) ? false : true;
+      oss << "libint2::GenericGaussDeriv<" << L << ","
+          << (vectorize ? "true" : "false")
+          << ">::compute(inteval";
+
+      oss << "," << args->symbol(0); // target
+      const unsigned int nargs = args->n();
+      for(unsigned int a=1; a<nargs; a++) {
+        oss << "," << args->symbol(a);
+      }
+      // L == 0 => second argument not needed
+      if (nargs == 2)
+        oss << ",0";
+
+      // then dimensions of basis function sets not involved in the transfer
+      unsigned int hsr = 1;
+      unsigned int lsr = 1;
+      const unsigned int np = IntType::OperType::Properties::np;
+      // a cleaner way to count the number of function sets referring
+      // to some particles is to construct a dummy integral and
+      // use subiterator policy
+      // WARNING !!!
+      for(int p=0; p<np; p++) {
+        unsigned int nbra = target_->bra().num_members(p);
+        assert(nbra == 1);
+        for(unsigned int i=0; i<nbra; i++) {
+          SubIterator* iter = target_->bra().member_subiter(p,i);
+          if (p < part || (p == part && where == InKet))
+            hsr *= iter->num_iter();
+          // skip p == part && where == InBra
+          if (p > part)
+            lsr *= iter->num_iter();
+          delete iter;
+        }
+        unsigned int nket = target_->ket().num_members(p);
+        assert(nket == 1);
+        for(unsigned int i=0; i<nket; i++) {
+          SubIterator* iter = target_->ket().member_subiter(p,i);
+          if (p < part)
+              hsr *= iter->num_iter();
+          // skip p == part && where == InKet
+          if (p > part || (p == part && where == InBra))
+              lsr *= iter->num_iter();
+          delete iter;
+        }
+      }
+      oss << "," << hsr << "," << lsr;
+
+      // direction
+      oss << "," << this->dir();
+
+      // two_alpha prefactor
+      oss << ",inteval->two_alpha" << part << "_" << (where == InBra ? "bra" : "ket");
+
+      oss << ");";
+
+      CR_DerivGauss_GenericInstantiator::instance().add(L, vectorize);
+
+      return oss.str();
+    }
+#endif // #if !LIBINT_ENABLE_GENERIC_CODE
+
+}; // namespace libint2
 
 #endif
