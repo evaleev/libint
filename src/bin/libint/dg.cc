@@ -1525,7 +1525,7 @@ DirectedGraph::assign_oper_symbol(const SafePtr<CodeContext>& context, SafePtr<D
     SafePtr<oper> ptr_cast = dynamic_pointer_cast<oper,DGVertex>(vertex);
     if (ptr_cast) {
       // is it in a subtree?
-      const bool on_a_subtree = (vertex->subtree());
+      const bool on_a_subtree = (vertex->subtree() != 0);
 
       // If no -- it will be an automatic variable
       if (!on_a_subtree)
