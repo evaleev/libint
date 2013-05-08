@@ -916,7 +916,6 @@ dnl --------- Checks for programs. ---------
 AC_PROG_MAKE_SET
 AC_PROG_LN_S
 AC_PROG_INSTALL
-AC_PROG_RANLIB
 
 # if not given a C++ compiler
 if test "X$CXX" = "X"; then

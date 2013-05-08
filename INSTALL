@@ -1,16 +1,30 @@
-The recommended installation procedure:
-0) create a directory for object files $(OBJDIR) 
-1) cd $(OBJDIR)
-2) $(SRCDIR)/configure
+For more complete instructions please refer to https://sourceforge.net/p/libint/home
+
+The installation procedure for the impatient and/or experts:
+0) only if obtained the compiler source via Mercurial:
+   aclocal -I lib/autoconf; autoconf
+1) create a directory for object files:
+   mkdir ../build; cd ../build
+2) configure the package:
+   ../configure
    Most often you will need to specify command-line options to configure.
    To obtain a list of configure options run 'configure --help'.
-3) make
-4) make install
 
-If you are compiling from sources obtained via CVS then prior to step 0 you need to
-run the following 2 commands:
-aclocal -I lib/autoconf
-autoconf
+then either choose path a or b:
 
-Report all problems to edward.valeev@gmail.com
+3a) build the Libint compiler, then generate and compile a library:
+   make
+4a) optional validation of the library:
+  cd tests/eri
+  make
+  ./test 0
+  ./test 1 (if derivative Coulomb integrals were enabled)
+  ./test 2 (if second-derivative Coulomb integrals were enabled)
+  cd ../..
+5a) install the compiled library:
+  make install
+
+3b) build the Libint compiler, then generate and package a library for redistribution
+   make export
+   this produce a tarball with a Libint library that can be unpacked, configured, and compiled elsewhere.
 
