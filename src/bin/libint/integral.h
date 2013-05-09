@@ -150,7 +150,7 @@ namespace libint2 {
       const SafePtr<AuxQuanta> aux() const;
 
       /// Implements Hashable::key()
-      key_type key() const {
+      DGVertex::KeyReturnType key() const {
         if (key_ == 0) compute_key();
         return key_;
       }
@@ -171,9 +171,14 @@ namespace libint2 {
         remainder /= (key_type)bra.max_key(); assert(remainder != 0);
         remainder /= (key_type)O.max_key; assert(remainder != 0);
 #endif
-        key_type key = ( (key_type(O.key()) * key_type(bra.max_key()) + key_type(bra.key()) ) * key_type(ket.max_key()) +
-			 key_type(ket.key()) ) * key_type(aux.max_key()) + key_type(aux.key());
+
+        key_type key;
+
+        key = ( (key_type(O.key()) * KeyTypes::cast(bra.max_key()) + KeyTypes::cast(bra.key()) ) * KeyTypes::cast(ket.max_key()) +
+            KeyTypes::cast(ket.key()) ) * KeyTypes::cast(aux.max_key()) + KeyTypes::cast(aux.key());
+
         return key;
+
       }
 
       BraSetType bra_;

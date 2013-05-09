@@ -89,7 +89,7 @@ namespace libint2 {
       Entity(id), DGVertex(ClassInfo<RTimeEntity>::Instance().id()), precomputed_(p)
     {
       FNVStringHash SH;
-      key_ = SH.hash(id);
+      key_ = KeyTypes::cast(SH.hash(id));
 #if DEBUG
 std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
 #endif

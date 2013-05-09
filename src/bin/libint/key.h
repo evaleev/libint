@@ -4,6 +4,7 @@
 
 #include <libint2_intrinsic_types.h>
 #include <gmpxx.h>
+#include <sstream>
 
 namespace libint2 {
 
@@ -58,7 +59,36 @@ namespace libint2 {
     typedef unsigned int ClassID;
     /// some classes need to have distinct instances to have unique InstanceID's, e.g. generalized Singletons
     typedef mpz_class InstanceID;
+
+    private:
+    /// mpz_class cannot be constructed via long long and long double, use std::string instead
+    template <typename Target, typename Source>
+    static Target
+    string_cast(Source s) {
+      std::ostringstream oss;
+      oss << s;
+      return Target(oss.str());
+    }
+
+    public:
+    template <typename U>
+    inline static InstanceID cast(U i) {
+      return InstanceID(i);
+    }
   };
+
+  template <>
+  inline KeyTypes::InstanceID
+  KeyTypes::cast<long long>(long long i) {
+    return string_cast<InstanceID>(i);
+  }
+  template <>
+  inline KeyTypes::InstanceID
+  KeyTypes::cast<unsigned long long>(unsigned long long i) {
+    return string_cast<InstanceID>(i);
+  }
+
+
   /// this composite hashing key works for DGVertex
   typedef TypeAndInstance<KeyTypes::ClassID,KeyTypes::InstanceID> DGVertexKey;
 

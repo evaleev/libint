@@ -14,18 +14,25 @@ typedef LIBINT2_USER_DEFINED_REAL LIBINT2_FLOAT;
 typedef double LIBINT2_FLOAT;
 #endif
 
-/* default LIBINT2 64-bit integer */
+#include <limits.h>
+
+/* determine default LIBINT2 64-bit integer */
 #ifdef HAVE_STDINT_H
 
 #include <stdint.h>
-//typedef int_least64_t LIBINT2_INT_LEAST64;
-//typedef uint_least64_t LIBINT2_UINT_LEAST64;
-typedef long int LIBINT2_INT_LEAST64;
-typedef unsigned long int LIBINT2_UINT_LEAST64;
+/* because mpz_class does not mesh with long long types, only use those when absolutely necessary */
+#if UINT_LEAST64_MAX != ULONG_MAX
+  typedef uint_least64_t LIBINT2_UINT_LEAST64;
+#else
+  typedef unsigned long int LIBINT2_UINT_LEAST64;
+#endif
+#if INT_LEAST64_MAX != LONG_MAX
+  typedef int_least64_t LIBINT2_INT_LEAST64;
+#else
+  typedef long int LIBINT2_INT_LEAST64;
+#endif
 
 #else
-
-#include <limits.h>
 
 #if defined(ULONGLONG_MAX) && !defined(ULLONG_MAX)
 #    define ULLONG_MAX ULONGLONG_MAX
@@ -36,7 +43,7 @@ typedef unsigned long int LIBINT2_UINT_LEAST64;
      typedef long long LIBINT2_INT_LEAST64; 
      typedef unsigned long long LIBINT2_UINT_LEAST64; 
 #   else
-#     error defaults not correct; you must hand modify psitypes.h
+#     error defaults not correct; you must hand modify libint2_intrinsic_types.h
 #   endif
 # elif ULONG_MAX != 0xffffffff
 
