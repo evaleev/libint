@@ -14,6 +14,7 @@
 \newcommand{\libinttypesh}{{\tt libint2\_types.h}}
 \newcommand{\libintparamsh}{{\tt libint2\_params.h}}
 \newcommand{\libintifaceh}{{\tt libint2\_iface.h}}
+\newcommand{\boysh}{{\tt boys.h}}
 \newcommand{\libderivh}{{\tt libderiv.h}}
 \newcommand{\librijh}{{\tt libr12.h}}
 
