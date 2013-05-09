@@ -100,12 +100,12 @@ functions which appear in electronic and molecular structure theories.
 
 \begin{itemize}
 
-\item Two-particle Coulomb (electron repulsion) integrals (ERIs). This is by
+\item Two-body Coulomb (electron repulsion) integrals (ERIs). This is by
 far the most common type of integrals in molecular structure theory. Two-,
 three-, and four-center integrals, and their geometrical derivatives, are
 supported.
 
-\item Two-electron integrals which appear in explicitly correlated R12 (or F12) methods
+\item Two-body integrals which appear in explicitly correlated R12/F12 methods
 with Gaussian correlation factors.\cite{Kutzelnigg85,Kutzelnigg91,Persson96} All R12 methods, such as
 MP2-R12, contain terms in the wave function that depend on the interelectronic distances
 $r_{ij}$ (hence the name). Appearance of several types of {\em two}-body integrals
@@ -147,14 +147,11 @@ following Obara-Saika recurrence relation,\cite{Obara86}
 ({\bf a} {\bf b}| {\bf c}\ {\bf d}-1_i)^{(m+1)}
 \end{eqnarray}
 is specified in a high-level form in C++ as shown in Listing \ref{lst:osrrcode}.
-Although the C++ code compactly represents the mathematical expression, we hope
-to provide a more robust language for expressing recurrence relations in the
-future.
 \item Second, the goal of the compiler is to make possible optimizing the code
 for existing and future computer hardware. For example, the ongoing trend in
 processors is to support single instruction multiple data (SIMD)
 parallelism. To effectively take advantage of the SIMD units
-The \LIBINT\ compiler can easily generate vectorized code at user's request.
+The \LIBINT\ compiler can generate vectorized code at user's request.
 As the hardware evolves, manual code reengineering can be avoided --
 only the compiler needs to be modified.
 \end{itemize}
@@ -198,35 +195,37 @@ The corresponding mathematical expression is shown in Eq. \eqref{eq:osvrrA}]{}
 There are also drawbacks to the compiler-based \LIBINT\ approach. First, the
 generated code can be fairly large and thus take a long time to compile.
 It is a relatively benign problem in practice.
-Also, the \LIBINT\ compiler is a fairly complicated program, which in practice
+Also, the \LIBINT\ compiler is a fairly complicated program; this
 limits the extent to which an average programmer can modify it.
 
-\LIBINT\ currently implements recursive schemes based on Obara-Saika method\cite{Obara86} and Head-Gordon and Pople's
-variation thereof.\cite{Head-Gordon88} Other recurrence relations can be easily implemented as needed.
+\LIBINT\ currently implements recursive schemes based on the Obara-Saika method,\cite{Obara86, Obara88}
+and Head-Gordon-Pople\cite{Head-Gordon88} and Hamilton-Lindh variations thereof.\cite{Hamilton91,Lindh91}
+Other recurrence relations can be easily implemented as needed.
 
 Unlike version 1, which came as three separate interdependent libraries, version
 2 of \LIBINT\ comes as a single library configured at code-generation time.
 The following features of the library can be configured:
 \begin{itemize}
 \item support for four-center ERI, including optional support for two- and
-three-center ERIs
-\item derivative level for ERI
-\item support for some special two-electron integrals for explicitly-correlated
-integrals, e.g. of $[\hat{T}_1,\exp(- \alpha r_{12}^2)]$
+three-center ERIs,
+\item derivative level for ERI,
+\item support for some special two-body integrals for explicitly-correlated
+integrals, e.g. of $[\hat{T}_1,\exp(- \alpha r_{12}^2)]$,
 \item optimization features (whether shell-sets of integrals can be unrolled,
-whether to perform Common Subexpression Elimination, etc.)
-\item vectorization features
-\item algorithmic features (evaluation strategy)
+whether to perform Common Subexpression Elimination, etc.),
+\item vectorization features,
+\item algorithmic features (evaluation strategy),
 \item API features (name prefix, FLOP counter, whether to accumulate target integrals, floating-point type,
-shell ordering of Cartesian basis functions)
-\item shared library support
+shell ordering of Cartesian basis functions),
+\item shared library support.
 \end{itemize}
-Depending on its configuration, the library may not include all features.
+Depending on its configuration, the library may not lack some capabilities.
 
 \section{Overview of \LIBINT 's API}
 
-({\bf Note}: Depending on configuration, \LIBINT\ may also support computation of other, non-ERI types of integrals. Here I will describe
-the parts of the interface which deals with ERIs only. The rest of the API is very similar to what's described here.)
+({\bf Note}: Depending on configuration, \LIBINT\ may support computation of several types of integrals. This section describes
+the parts of the interface that deal with theevaluatiin of four-center two-body Coulomb integrals.
+Additional notes on computing other types of integrals are provided in later sections.)
 
 \LIBINT\ library is a low-level C++ code. C linking convention is adopted to enable interoperability with other languages, such as C and FORTRAN.
 For notes on how to use \LIBINT\ library from FORTRAN code, see subsection
@@ -235,17 +234,18 @@ For notes on how to use \LIBINT\ library from FORTRAN code, see subsection
 \LIBINT\ API consists of 3 major components: type definitions, function and variable prototypes, and C preprocessor macros.
 The API is described in the following header files:
 \begin{itemize}
-\item \libinth\ -- main header file, it includes all other headers (not generated).
+\item \libinth\ -- main header file, it includes most other headers (not generated).
 \item \libintinttypesh\ -- architecture-specific definitions for long integer types (not generated).
 \item \libinttypesh\ -- definitions for the integral evaluator types (generated).
 \item \libintparamsh\ -- C preprocessor macros for library features (generated).
 \item \libintifaceh\ -- prototypes for functions and data as well as some misc macros (generated).
+\item \boysh\ -- engines for computation of the Boys function and related quantities (not generated).
 \end{itemize}
-\libinth is the only header that must be included explicitly in the user code.
+\libinth\ (and, optionally, \boysh) is the only header that must be included explicitly in the user code.
 
 The preprocessor macros provided by \libinth\ are necessary so that the user code can
 access the library configuration parameters. For example, the library can be configured at the code generation time
-to support in principle any finite angular momentum of the basis functions. The user code must still
+to support any finite angular momentum (quantum numbers) of the basis functions. The user code must still
 test whether the maximum angular momentum present in the basis set exceeds the library limit.
 
 The preprocessor value macros provided by \libinth\ are listed in Listing
@@ -256,11 +256,11 @@ The next macro, {\tt LIBINT2\_MAX\_VECLEN} specifies the maximum vector length s
 this macro will be set to 1, whereas for the vectorized library this will have a value greater than
 1.
 The next macro, {\tt LIBINT2\_API\_PREFIX}, is used by the {\tt LIBINT2\_PREFIXED\_NAME} function macro and should not be
-used explicitly (I list it here for reference).
+used explicitly (I list it here for completeness).
 The last three macros describe whether the library supports computation of the electron repulsion integrals,
 the maximum angular momentum of the basis functions supported for the ERI code (value of 3 corresponds to support
 of up to $f$ functions, etc.), and the maximum order of the
-ERI derivatives which can be computed (currently only 0 is supported).
+ERI derivatives which can be computed.
 
 \begin{lstlisting}[label=lst:valmacros,caption=C preprocessor value macros
 provided by \libinth . The angled brakets describe valid macro values.]{}
@@ -276,13 +276,15 @@ provided by \libinth . The angled brakets describe valid macro values.]{}
 
 \LIBINT\ API also specifies several functions and variables whose decralations
 are listed in Listing \ref{lst:api}.
+
 The first two functions perform static initialization and cleanup of the library.
 Thus {\tt libint2\_static\_init} must be called before \LIBINT\ is used and
 {\tt libint2\_static\_cleanup} must be called after \LIBINT\ is no longer needed (only one thread needs to call these functions).
-The next two functions are used to initialize and deinitialize the key data
+
+The next two functions are used to initialize and cleanup the key data
 structure ({\em integral evaluator}) involved in the computation of the electron repulsion integrals.
 To initialize the integral evaluator, {\tt libint2\_init\_eri} should be called with three arguments:
-1) the pointer to the evaluator to be initialized; 2) the maximum angular momentum
+1) the pointer to the evaluator to be initialized (or to the first evaluator of an array of evaluators -- see the notes on handling contracted Gaussians below); 2) the maximum angular momentum
 of basis functions this object will support ({\tt max\_am} will affect the memory requirements
 for the computation and therefore should be always set to the actual maximum value needed,
 not the maximum value supported by the library); 3) optional pointer to the scratch buffer
@@ -291,7 +293,7 @@ the call will dynamically allocate the needed space. If the user code needs to c
 memory allocation/deallocation, the scratch buffer needs to be allocated prior to the call.
 {\tt libint2\_need\_memory\_eri} can be used to compute the required size of
 the scratch buffer in units of {\tt LIBINT2\_REALTYPE}. Lastly, {\tt libint2\_build\_eri} is a 4-dimensional
-array of pointers to functions which evaluate ERIs, e.g., {\tt libint2\_build\_eri[1][0][2][0](\&erieval)}
+array of pointers to functions that evaluate ERIs, e.g., {\tt libint2\_build\_eri[1][0][2][0](\&erieval)}
 will compute the $(ps|ds)$ set using evaluator {\tt erieval} ({\tt erieval} must have been initialized
 with {\tt libint2\_init\_eri}).
 
@@ -307,14 +309,15 @@ size_t libint2_need_memory_eri(int max_am);
 void (*libint2_build_eri[N][N][N][N])(Libint_eri_t *);
 \end{lstlisting}
 
-\LIBINT\ API I have described so far is very simple. However, as you may have noticed, there has been no mention of
+\LIBINT\ API described so far is very simple. However, as you may have noticed, there has been no mention of
 where the basis set data is stored. This is because \LIBINT\ does not maintain the basis set information.
 As part of \LIBINT 's philosophy to provide the leanest possible code, the user code
 is in charge of precomputing basis set data and Boys function values and then feeding it to the evaluator object
-of type {\tt Libint\_eri\_t}.
+of type {\tt Libint\_eri\_t}. (Note that since currently all integral evaluations in \LIBINT\ use the same
+evaluator object type, they are all just typedefs to the common type {\tt Libint\_t}, henceforth
+we will use both interchangeably).
 
-\begin{lstlisting}[label=lst:libintt,caption=``External'' parts of the
-definition of the \LIBINT\ integral evaluator type.]{}
+\begin{lstlisting}[label=lst:libintt,caption=Definition of the \LIBINT\ integral evaluator type.]{}
 typedef struct {
   _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_0[VECLEN];
   _aB_s__0__s__1___TwoERep_s__0__s__1___Ab__up_1[VECLEN];
@@ -376,9 +379,81 @@ and ${\bf WQ} \equiv {\bf W} - {\bf Q}$.
 \item {\tt ron} -- $\frac{\rho}{\eta}$
 \end{itemize}
 Most of these quantities are simple to evaluate. Evaluation of the Boys function needed to compute
-the auxiliary integrals $({\bf 00}|{\bf 00})^{(m)}$ is more involved.
-One should consult external sources for information on how
-to compute it efficiently.\cite{Gill91}
+the auxiliary integrals $({\bf 00}|{\bf 00})^{(m)}$ can be fairly complicated.\cite{Gill91}
+\LIBINT\ includes C++ classes that can evaluate Boys and related functions relatively
+efficiently (see \boysh\ header). An example of how to use \LIBINT\ to compute Boys function
+is shown in Listing \ref{lst:boys}.
+\begin{lstlisting}[label=lst:boys,caption=Computation of Boys function using \LIBINT.]{}
+#include <boys.h>
+
+// initialize Boys function engine to support m values up to mmax
+// not thread-safe, should be constructed by main thread
+libint2::FmEval_Chebyshev3 fmeval(mmax);
+
+// double* Fm initialized somewhere else
+// on return Fm[m], m=0..M, contains Fm(T)
+// thread-safe provided each thread uses its own Fm
+fmeval.compute(Fm, T, M);
+\end{lstlisting}
+
+Note that the evaluator object contains data that is depends on the Gaussian exponents.
+Hence for a shell set over contracted Gaussian functions data for each combination of primitive Gaussians
+will be kept in its own evaluator object, resulting in an array of evaluator objects necessary to evaluate contracted integrals.
+This is best illustrated by an example shown in Listing \ref{lst:contrloops}.
+This is perhaps the most significant change relative to the version 1 of the library, where the single evaluator object kept the data for all primitive combinations contributing to the given shell set. 
+\begin{lstlisting}[label=lst:contrloops,caption=Initialization and use of \LIBINT\ with contracted basis functions.]{}
+libint2_static_init(); // static initialization (once per program)
+std::vector<Libint_t> inteval(contrdepth4); // array of contrdepth4 evaluators
+                                            // contrdepth4 = contrdepth^4, where contrdepth is the max contraction
+                                            // depth of Gaussians in the basis set
+
+// initialize the array of evaluators .. this allocates the scratch array
+// use libint2_need_memory_eri() to figure out how much memory is needed
+libint2_init_eri(&inteval[0], // ptr to the first evaluator in the array
+                 lmax,        // maximum angular momentum
+                 0);          
+
+// loop over (contracted) Gaussian shells
+for(int s0=0; s0<nshell; ++s0) {
+  for(int s1=0; s1<nshell; ++s1) {
+    for(int s2=0; s2<nshell; ++s2) {
+      for(int s3=0; s3<nshell; ++s3) {
+        
+        // decide whether to evaluate the integral (uniqueness, magnitude, etc.)
+        // ..
+
+        // loop over each primitive combination for this shell set
+        int p0123 = 0;
+        for(int p0=0; p0<nprim[s0]; ++p0) {
+          for(int p1=0; p1<nprim[s0]; ++p1) {
+            for(int p2=0; p2<nprim[s0]; ++p2) {
+              for(int p3=0; p3<nprim[s0]; ++p3) {
+
+                // optionally screen out primitive combinations
+                
+                // compute primitive data and put into inteval[p0123]
+                // ...
+
+                ++p0123;
+              }
+            }
+          }
+        }
+        // report the number of primitive combinations to libint
+        inteval[0].contrdepth = p0123;
+        
+        // evaluate the contracted integral shell set
+        libint2_build_eri[am[s0]][am[s1]][am[s2]][am[s3]](&inteval[0]);
+        
+        // grab the resulting shell set in inteval[0].targets[0][É]
+      }
+    }
+  }
+}
+
+libint2_cleanup_eri(&inteval[0]);
+libint2_static_cleanup();
+\end{lstlisting}
 
 After the integrals have been built, they are placed somewhere in the scratch buffer.
 To recover their location, the array of pointers {\tt targets} is provided, e.g.,
@@ -394,8 +469,8 @@ then the integral $(ab|cd)$ is found at position $abcd = ( (a n_b + b) n_c + c) 
 The rest of {\tt Libint\_eri\_t} is used to control various aspects of its behavior:
 \begin{itemize}
 \item {\tt veclength} is used in vectorized computation of integrals.
-\item {\tt nflops} is used to count the total number of FLOPs (the library must have been configured
-  with {\tt --enable-flop-counter}).
+\item {\tt nflops} is used to count the total number of FLOPs (the library must have been \
+configured with {\tt --enable-flop-counter}).
 \item {\tt zero\_out\_targets} is used to zero out the target integral buffers. This is only useful
   if \LIBINT\ was configured with {\tt --enable-accum-ints}.
 \end{itemize}
@@ -405,7 +480,7 @@ generates by taking advantage of the permutational symmetry of the integrals.
 This means that only certain combinations of the angular momenta can be handled.
 In standard configuration \LIBINT\ can evaluate a shell quartet $({\bf ab}|{\bf cd})$ if $\lambda({\bf a}) \geq \lambda({\bf b})$, $\lambda({\bf c}) \geq \lambda({\bf d})$, and $\lambda({\bf c}) + \lambda({\bf d}) \geq \lambda({\bf a}) + \lambda({\bf b})$.
 (There is also the ordering used by {\tt ORCA} program for which \LIBINT\ can be
-configured). If one needs to compute a quartet that doesn't conform the rule,
+configured --- it will not be discussed here). If one needs to compute a quartet that doesn't conform the rule,
 e.g. of type $(pf|sd)$, permutational symmetry of integrals can be utilized to compute such quartet:
 \begin{eqnarray}
 (pq|rs) = (pq|sr) = (qp|rs) = (qp|sr) = (rs|pq) = (rs|qp)= (sr|pq) = (sr|qp)
@@ -421,166 +496,125 @@ quanta along one Cartesian direction, e.g., $d_{xx}, f_{xxx}$, etc. Some
 programs (e.g., GAMESS) require all functions to be unit-normalized;
 this can be achieved by scaling the final integrals.
 
-%\subsection{Notes on computing derivative ERIs}
-%Component \libderiv\ is used to evaluate derivatives of ERIs with respect to basis function positions.
-%Using \libderiv\ is mostly similar to how \libint\ is used. Here we only concentrate on significant
-%differences which have not been noted before or on aspects of use specific to \libderiv .
-%
-%One quartet of ERIs $({\bf ab}|{\bf cd})$ has total of 12 first derivatives
-%\begin{eqnarray}
-%& & \frac{\partial ({\bf ab}|{\bf cd})}{\partial A_i}, \frac{\partial ({\bf ab}|{\bf cd})}{\partial B_i},
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_i},
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial D_i} :\quad i \in \{x,y,z\} \nonumber
-%\end{eqnarray}
-%and $12*12=144$ second derivatives, although $12*13/2=78$ derivatives are unique because of
-%permutation symmetry with respect to the order of taking the derivative:
-%\begin{eqnarray}
-%& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial A_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial B_j},
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial C_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_i \partial D_j} :\quad
-%i \leq j \in \{x,y,z\} \nonumber \\
-%& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial B_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j},
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j}, \nonumber \\
-%& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial C_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial D_j},
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial D_j} : \quad i,j \in \{x,y,z\} \nonumber
-%\end{eqnarray}
-%Translational invariance of ERIs can be used to eliminate any 3 of 12 first derivatives
-%\begin{eqnarray} \label{eqn:TId1eri}
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial B_i} & = & - \frac{\partial ({\bf ab}|{\bf cd})}{\partial A_i} -
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_i} - \frac{\partial ({\bf ab}|{\bf cd})}{\partial D_i} \quad i \in \{x,y,z\}
-%\end{eqnarray}
-%and
-%33 of 78 second derivatives
-%\begin{eqnarray} \label{eqn:TId2eri_AB}
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial B_j} & = & - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial A_j} -
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j} - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j} \quad i,j \in \{x,y,z\} \\
-%\label{eqn:TId2eri_BB}
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial B_j} & = & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial A_j} +
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j} + \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j} \nonumber \\
-%& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j} +
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial C_j} + \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial D_j} \nonumber \\
-%& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_j \partial D_i} +
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_j \partial D_i} + \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_i \partial D_j} \quad i \leq j \in \{x,y,z\} \\
-%\label{eqn:TId2eri_BC}
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial C_j} & = & - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j} -
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial C_j} - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_j \partial D_i} \quad i,j \in \{x,y,z\} \\
-%\label{eqn:TId2eri_BD}
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial D_j} & = & - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j} -
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial D_j} - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_i \partial D_j} \quad i,j \in \{x,y,z\} \\
-%\end{eqnarray}
-%
-%While \libint\ computes one target quartet at a time, \libderiv\ evaluates all
-%of its possible unique derivatives. There are 2 types of ``compute'' functions in \libderiv\ (see \libderivh):
-%\begin{verbatim}
-%extern void (*build_deriv1_eri[5][5][5][5])(Libderiv_t *, int);
-%extern void (*build_deriv12_eri[4][4][4][4])(Libderiv_t *, int);
-%\end{verbatim}
-%The former refers to functions which compute only first derivative ERIs, and the second
-%refers to functions which compute both first and second derivative ERIs.
-%The dimensions of each array are determined by the following 2 configure-time macros:
-%\begin{verbatim}
-%#define LIBDERIV_MAX_AM1 5
-%#define LIBDERIV_MAX_AM12 4
-%\end{verbatim}
-%
-%Note that ``compute'' functions in \libint, {\tt build\_eri}, simply return a pointer
-%to the target quartet, whereas \libderiv 's functions return target data through integrals
-%evaluator object, {\tt Libderiv\_t}. Such objects are initialized using one of the following functions:
-%\begin{verbatim}
-%int  init_libderiv1(Libderiv_t *, int max_am, int max_num_prim_quartets,
-%                    int max_cart_class_size);
-%int  init_libderiv12(Libderiv_t *, int max_am, int max_num_prim_quartets,
-%                     int max_cart_class_size);
-%\end{verbatim}
-%These functions initialize objects for use with {\tt build\_deriv1\_eri} and
-%{\tt build\_deriv12\_eri} compute functions, respectively. It is illegal to use
-%a {\tt Libderiv\_t} object initialized by {\tt init\_libderiv1()} with
-%{\tt build\_deriv12\_eri} compute functions.
-%Memory requirements for initializing these two types of objects are evaluated using
-%\begin{verbatim}
-%int  libderiv1_storage_required(int max_am, int max_num_prim_quartets,
-%                                int max_cart_class_size);
-%int  libderiv12_storage_required(int max_am, int max_num_prim_quartets,
-%                                 int max_cart_class_size);
-%\end{verbatim}
-%
-%Structure of {\tt Libderiv\_t} is essentially similar to {\tt Libint\_t}:
-%\begin{verbatim}
-%typedef struct {
-%  double *int_stack;
-%  prim_data *PrimQuartet;
-%  double *zero_stack;
-%  double *ABCD[12+144];
-%  double AB[3];
-%  double CD[3];
-%  double *deriv_classes[9][9][12];
-%  double *deriv2_classes[9][9][144];
-%  double *dvrr_classes[9][9];
-%  double *dvrr_stack;
-%  } Libderiv_t;
-%\end{verbatim}
-%User passes quartet data to \libderiv\ through {\tt PrimQuartet}, {\tt AB},
-%and {\tt CD}. Data is returned through member {\tt ABCD}. The dimension of {\tt ABCD}
-%is explicitly written as 12+144 which refer to the number of
-%all (including nonunique) first and second derivatives of ERIs. If a derivative index runs 
-%For example, {\tt ABCD[4]} and {\tt ABCD[11]} point
-%to derivative quartets $\frac{\partial ({\bf ab}|{\bf cd})}{\partial B_y}$ and $\frac{\partial ({\bf ab}|{\bf cd})}{\partial D_z}$, respectively.
-%Similarly, {\tt ABCD[13]} and {\tt ABCD[27]} refer to $\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial A_y}$
-%and $\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial B_x}$, respectively.
-%
-%Due to the translation invariance relations and the permutational symmetry of the second derivative integrals,
-%some derivative quartets are not computed and thus
-%only some elements of this array are initialized. Eqs. (\ref{eqn:TId1eri}-\ref{eqn:TId2eri_BD})
-%specify how to evaluate elements which are not computed. Thus {\tt build\_deriv1\_eri()} and {\tt build\_deriv12\_eri()}
-%functions produce 9 and $9+45=54$ unique derivative quartets, respectively. The unique quartets and corresponding
-%elements of {\tt Libderiv\_t.ABCD} are listed here:
-%\begin{scriptsize}
-%\begin{eqnarray}
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial A_x} \quad 0 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial A_y} \quad 25 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial D_x} \quad 93 \nonumber \\
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial A_y} \quad 1 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial A_z} \quad 26 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial D_y} \quad 94 \nonumber \\
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial A_z} \quad 2 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial C_x} \quad 30 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial D_z} \quad 95 \nonumber \\
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_x} \quad 6 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial C_y} \quad 31 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_y \partial C_y} \quad 103 \nonumber \\
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_y} \quad 7 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial C_z} \quad 32 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_y \partial C_z} \quad 104 \nonumber \\
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_z} \quad 8 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial D_x} \quad 33 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_y \partial D_x} \quad 105 \nonumber \\
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial D_x} \quad 9 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial D_y} \quad 34 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_y \partial D_y} \quad 106 \nonumber \\
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial D_y} \quad 10 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_y \partial D_z} \quad 35 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_y \partial D_z} \quad 107 \nonumber \\
-%\frac{\partial ({\bf ab}|{\bf cd})}{\partial D_z} \quad 11 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial A_z} \quad 38 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_z \partial C_z} \quad 116 \nonumber \\
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial A_x} \quad 12 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial C_x} \quad 42 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_z \partial D_x} \quad 117 \nonumber \\
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial A_y} \quad 13 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial C_y} \quad 43 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_z \partial D_y} \quad 118 \nonumber \\
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial A_z} \quad 14 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial C_z} \quad 44 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_z \partial D_z} \quad 119 \nonumber \\
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial C_x} \quad 18 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial D_x} \quad 45 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_x \partial D_x} \quad 129 \nonumber \\
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial C_y} \quad 19 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial D_y} \quad 46 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_x \partial D_y} \quad 130 \nonumber \\
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial C_z} \quad 20 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_z \partial D_z} \quad 47 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_x \partial D_z} \quad 131 \nonumber \\
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial D_x} \quad 21 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial C_x} \quad 90 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_y \partial D_y} \quad 142 \nonumber \\
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial D_y} \quad 22 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial C_y} \quad 91 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_y \partial D_z} \quad 143 \nonumber \\
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_x \partial D_z} \quad 23 \quad \quad \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_x \partial C_z} \quad 92 \quad \quad 
-%\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_z \partial D_z} \quad 155 \nonumber
-%\end{eqnarray}
-%\end{scriptsize}
-%
-%Each derivative quartet is identical in structure to a nondifferentiated
-%quartet, i.e. individual integrals are arranged in a row major order. Normalization convention
-%for the derivative integrals is the same as for the regular ERIs.
+\section{Using \LIBINT\ to compute non-Coulomb integrals}
 
-\section{Example: using \libint}
+As elegantly shown by Ahlrichs,\cite{Ahlrichs:2006} Obara-Saika and related schemes can also be used to compute many two-body integrals with spherically-symmetric kernels $f(r_{12})$. Such integrals appear in, for example, explicitly correlated R12/F12 methods or in range-separated form of Kohn-Sham density functional theory. To compute such integrals, instead of the Coulomb-kernel $({\bf 00}|{\bf 00})^{(m)}$ integrals related to the Boys function by Eq. \ref{eq:0000m_scaled} \LIBINT\ needs to be fed the corresponding kernel-specific $({\bf 00}|{\bf 00})^{(m)}$ integrals related to the
+the kernel-specific $G_{m}(\rho,T)$ function of Ahlrichs. Explicit expressions for $G_{m}$ for several important kernels are given
+in Section 5 of Ref. \cite{Ahlrichs:2006}. For example, for the Coulomb kernel $G_{m}(\rho,T)$ are related to the Boys function as (Eq. (39) of Ahrlichs paper):
+\begin{align}
+G_{0}(\rho, T) = & \frac{2 \pi}{\rho} F_{m}(T).
+\end{align}
+Hence Eq. \eqref{eq:0000m_scaled} changes to
+\begin{eqnarray} \label{eq:0000m_scaled_Gm}
+({\bf 00}|{\bf 00})^{(m)} & = &  G_m(\rho, \rho |{\bf PQ}|^2) \sqrt{\frac{\rho^{3}}{\pi^{3}}}S_{12}S_{34}
+C_1 C_2 C_3 C_4 .
+\end{eqnarray}
+where the overlaps $S_{12}$ and $S_{34}$ are defined in Eqs. \eqref{eq:S12} and \eqref{eq:S34}, {\bf not} the overlaps from Ahlrichs' paper.
 
-A C++ function which uses \LIBINT\ is shown in Listing \ref{lst:usecpp}.
+\LIBINT\ supports computation of the $G_{m}$ function for the important case of a contracted Gaussian kernel that appears in
+explicitly correlated methods:
+\begin{align}
+f_{k}(r_{12}) = & r_{12}^{k} \sum_{i=1}^{n} c_{i} \exp(- \alpha_{i} r_{12}^{2}) , \quad k=-1,0,2.
+\end{align}
+Example code is shown in Listing \ref{lst:GmGaussian}.
+
+\begin{lstlisting}[label=lst:GmGaussian,caption=Computation of the $G_{m}$ function for the contracted Gaussian kernel using \LIBINT.]{}
+#include <boys.h>
+
+// initialize Gaussian Gm function engine to support m values up to mmax
+// k specifies the exponent of r_{12} in the kernel (0, -1, and 2 supported)
+libint2::GaussianGmEval<double, k> gmeval(mmax, 1e-15);  // 1e-15 is the desired precision
+
+std::vector<std::pair<double,double> > gauss; // vector of {exponent,coefficient} pairs defines the contracted Gaussian kernel
+
+// double* Gm initialized somewhere else
+// on return Gm[m], m=0..M, contains Gm(rho,T)
+gmeval.compute(Gm, rho, T, M, gauss);
+\end{lstlisting}
+
+\section{Using \LIBINT\ to compute geometrical derivatives of integrals.}
+\LIBINT\ can also evaluate geometrical derivatives of two-body integrals with respect to basis function positions.
+One shell set of four-center two-body integrals $({\bf ab}|{\bf cd})$ has total of 12 first-order geometrical derivatives:
+\begin{eqnarray}
+& & \frac{\partial ({\bf ab}|{\bf cd})}{\partial A_i}, \frac{\partial ({\bf ab}|{\bf cd})}{\partial B_i},
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_i},
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial D_i} :\quad i \in \{x,y,z\} \nonumber
+\end{eqnarray}
+and $12\times12=144$ second-order derivatives, although only $\frac{12 (12+1)}{2}=78$ of those are unique because of
+permutation symmetry with respect to the order of taking the derivative:
+\begin{eqnarray}
+& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial A_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial B_j},
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial C_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_i \partial D_j} :\quad
+i \leq j \in \{x,y,z\} \nonumber \\
+& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial B_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j},
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j}, \nonumber \\
+& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial C_j}, \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial D_j},
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial D_j} : \quad i,j \in \{x,y,z\} \nonumber
+\end{eqnarray}
+The translational invariance of the integral can be used to eliminate derivatives involving one of the centers (as a matter of convention, \LIBINT\ skips the third center, {\bf C}). This allows to eliminate 3 of the 12 first-order derivatives.
+\begin{eqnarray} \label{eqn:TId1eri}
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial C_i} & = & - \frac{\partial ({\bf ab}|{\bf cd})}{\partial A_i} -
+\frac{\partial ({\bf ab}|{\bf cd})}{\partial B_i} - \frac{\partial ({\bf ab}|{\bf cd})}{\partial D_i} \quad i \in \{x,y,z\}
+\end{eqnarray}
+and
+33 of the 78 second-order derivatives
+\begin{eqnarray} \label{eqn:TId2eri_AC}
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j} & = & - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial A_j} -
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial B_j} - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j} \quad i,j \in \{x,y,z\} \\
+\label{eqn:TId2eri_CC}
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial C_j} & = & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial A_j} +
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial C_j} + \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j} \nonumber \\
+& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_j \partial B_i} +
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial C_j} + \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial D_j} \nonumber \\
+& & \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_j \partial D_i} +
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_j \partial D_i} + \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_i \partial D_j} \quad i \leq j \in \{x,y,z\} \\
+\label{eqn:TId2eri_BC}
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial C_j} & = & - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_j \partial B_i} -
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial B_j} - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial D_j} \quad i,j \in \{x,y,z\} \\
+\label{eqn:TId2eri_CD}
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial C_i \partial D_j} & = & - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial A_i \partial D_j} -
+\frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial B_i \partial D_j} - \frac{\partial^2 ({\bf ab}|{\bf cd})}{\partial D_i \partial D_j} \quad i,j \in \{x,y,z\} \\
+\end{eqnarray}
+Here's an easy way to understand how many derivatives are permutationally and translationally invariant:
+translational invariance allows to omit one center from consideration, hence we are left with 4-1=3 centers and $3\times3 = 9$
+first-order geometrical derivatives; for the $k$th-order derivatives the order of differentiation does not matter, hence
+we are left with $(9+k)!/9!k!$ unique derivatives, i.e. $9 \times 10/2 = 45$ second-order derivatives.
+
+To minimize the operation count, \LIBINT\ evaluates a complete set of unique shell-set derivatives at once.
+On return, {\tt Libint\_t::target[i]} will contain the {\tt i}-th set of derivative integrals. For the first-order derivatives
+sets $i=0..2$ corresponds to the derivative with respect to $A_{x} .. A_{z}$, respectively, $i=3..5$ --- $B_{x} .. B_{z}$,
+and $i=6..8$ --- $D_{x} .. D_{z}$; derivatives with respect to coordinates $C_{x}..C_{z}$ can be recovered using Eq. \eqref{eqn:TId1eri}.
+Similarly, for the second-order derivatives {\tt Libint\_t::target[ij]} will contain {\tt ij}-th set of derivative integrals,
+where $ij$ is the composite ``upper-triangle'' index: $ij = i\times(19-i)/2 + (j-i), 0\leq i \leq j<9$.
+For example, {\tt Libint\_t::target[29]} thus contains the $\partial^{2}/\partial B_{x} \partial D_{z}$ derivative set ($ij=29 \to i=3, j=8$).
+
+The additional types of ``compute'' functions specific to the geometric derivatives are:
+\begin{verbatim}
+extern void (*libint2_build_eri1[5][5][5][5])(Libint_t *);
+extern void (*libint2_build_eri2[4][4][4][4])(Libint_t *);
+\end{verbatim}
+The former refers to functions which compute first derivative ERIs, and the second
+refers to functions which compute second derivative ERIs.
+The dimensions of each array are determined by the following 2 configure-time macros defined in \libintparamsh:
+\begin{verbatim}
+#define LIBINT2_MAX_AM_ERI1 5
+#define LIBINT2_MAX_AM_ERI2 4
+\end{verbatim}
+(the actual values ail depend on how the library was configured).
+
+Each derivative shell set is identical in structure to a nondifferentiated
+shell set, i.e. individual integrals are arranged in a row major order. Normalization convention
+for the derivative integrals is the same as for the regular ERIs.
+
+\section{Using \LIBINT\ to compute three- and two-center integrals}
+
+No notes yet --- see {\tt tests/eri/test\_eri.cc} for a working example of how to compute 2- and 3-center integrals and their geometrical derivatives.
+
+\section{Example: using \libint\ to compute four-center two-body Coulomb integrals}
+
+A C++ function that uses \LIBINT\ to evaluate four-center two-body Coulomb integrals over primitive (non-contracted) Gaussians
+is shown in Listing \ref{lst:usecpp}. A standalone example of how to use \LIBINT\ to compute the integrals
+over contracted Gaussians can be found in {\tt doc/sample/test.cc} .
 
 \begin{lstlisting}[label=lst:usecpp,caption=Using \LIBINT\ from C++.]{}
 #include <iostream>
@@ -887,7 +921,7 @@ Examples of basis sets that include general contractions include Atomic Natural 
 into segments for each angular momentum (it's done for correlation consistent basis sets)
 or use basis sets with segmented contractions only.
 
-An integral of a two-electron operator $\hat{O}({\bf r}_1, {\bf r}_2)$ over unnormalized
+An integral of a two-body operator $\hat{O}({\bf r}_1, {\bf r}_2)$ over unnormalized
 primitive Cartesian Gaussians is written as
 \begin{eqnarray}
 \int \phi({\bf r}_1; \zeta_a, {\bf a}, {\bf A}) \phi ({\bf r}_2; \zeta_c, {\bf c}, \C) \hat{O}({\bf r}_1, {\bf r}_2)
@@ -921,9 +955,10 @@ defined as
 \end{eqnarray}
 where ${\bf PQ} = {\bf P} - {\bf Q}$ and primitive overlaps $S_{12}$ and $S_{34}$
 are computed as
-\begin{eqnarray}
+\begin{eqnarray} \label{eq:S12}
 S_{12} & = & \Bigl( \frac{\pi}{\zeta} \Bigr)^{3/2}
 \exp \Bigl(-\frac{\zeta_a\zeta_b}{\zeta} |{\bf AB}|^2 \Bigr) \\
+\label{eq:S34}
 S_{34} & = & \Bigl( \frac{\pi}{\eta} \Bigr)^{3/2}
 \exp \Bigl(-\frac{\zeta_c\zeta_d}{\eta} |{\bf CD}|^2 \Bigr)
 \end{eqnarray}
