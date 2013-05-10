@@ -357,7 +357,7 @@ namespace libint2 {
         // get memory
         c = new double*[mmax + 1];
         c[0] = new double[(mmax + 1) * FM_N * ORDER];
-        std::cout << "Allocated interpolation table of " << (mmax + 1) * FM_N * ORDER << " reals" << std::endl;
+        //std::cout << "Allocated interpolation table of " << (mmax + 1) * FM_N * ORDER << " reals" << std::endl;
 
 
         // loop over all m values and make the coefficients
@@ -460,7 +460,7 @@ namespace libint2 {
           const int ncol = max_m_ + 1;
           grid_ = new Real*[nrow];
           grid_[0] = new Real[nrow * ncol];
-          std::cout << "Allocated interpolation table of " << nrow * ncol << " reals" << std::endl;
+          //std::cout << "Allocated interpolation table of " << nrow * ncol << " reals" << std::endl;
           for (int r = 1; r < nrow; ++r)
             grid_[r] = grid_[r - 1] + ncol;
         }
