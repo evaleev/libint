@@ -21,8 +21,14 @@ AUXSRC = $(TOPDIR)/src/bin/test_eri/eri.cc
 CXXTESTSRC = $(TEST).cc $(AUXSRC)
 CXXTESTOBJ = $(CXXTESTSRC:%.cc=%.o)
 
+ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ)
 	$(LD) -o $@ $(LDFLAGS) $^ $(COMPILER_LIB) $(COMPUTE_LIB) $(SYSLIBS)
+else
+$(TEST):
+	echo "Cannot test generated code! $(CXXGEN) is not compatible with $(CXXCOMP)"
+	@exit 0
+endif
 
 # Source files for timer and tester are to be complied using CXXGEN
 $(TEST): CXX=$(CXXGEN)

@@ -1011,46 +1011,6 @@ AC_SUBST(CXXDEPENDSUF)
 AC_SUBST(CXXDEPENDFLAGS)
 
 
-dnl --------- configure compiler for generated source ---------
-if test "X$CXXGEN" = X; then
-  CXXGEN=$CXX
-fi
-if test "X$CXXFLAGS_GEN_OPT" = X; then
-  CXXFLAGS_GEN_OPT=$CXXFLAGS_OPT
-fi
-if test $DEBUG = yes; then
-  CXXGENFLAGS="$CXXFLAGS_DBG $CXXFLAGS_GEN_MISC"
-elif test $DEBUG = opt; then
-  CXXGENFLAGS="$CXXFLAGS_DBG $CXXFLAGS_GEN_OPT $CXXFLAGS_GEN_MISC"
-else
-  CXXGENFLAGS="$CXXFLAGS_GEN_OPT $CXXFLAGS_GEN_MISC"
-fi
-AC_SUBST(CXXGEN)
-AC_SUBST(CXXGENFLAGS)
-
-dnl Check if sources compiled with CXX and CXXGEN can be linked together
-CXX_COMPATIBLE_WITH_CXXGEN=yes
-if test "X$CXX" != "X$CXXGEN"; then
-AC_MSG_CHECKING([[for compatible cxx and cxxgen compilers]])
-echo "extern void func1(); int main(int argc, char**argv) { func1(); } " > linkcheck1.cc
-echo "void func1() {}" > linkcheck2.cc
-$CXX $CPPFLAGS $CXXFLAGS -c linkcheck1.cc > /dev/null 2>&1
-$CXXGEN $CPPFLAGS $CXXGENFLAGS -c linkcheck2.cc > /dev/null 2>&1
-$LD $LDFLAGS -o linkcheck1 linkcheck1.o linkcheck2.o > /dev/null 2>&1
-$CXX $LDFLAGS -o linkcheck2 linkcheck1.o linkcheck2.o > /dev/null 2>&1
-$CXXGEN $LDFLAGS -o linkcheck3 linkcheck1.o linkcheck2.o > /dev/null 2>&1
-if test -f linkcheck1 -a -f linkcheck2 -a -f linkcheck3; then
-  AC_MSG_RESULT([[yes]])
-else
-  AC_MSG_RESULT([[no]])
-  AC_MSG_WARN([[Compilers cxx and cxxgen produce incompatible code! You will not be able to test generated code.]])
-  CXX_COMPATIBLE_WITH_CXXGEN=no
-fi
-/bin/rm -f linkcheck1 linkcheck2 linkcheck3  linkcheck1.cc linkcheck2.cc linkcheck1.o linkcheck2.o
-fi
-
-AC_SUBST(CXX_COMPATIBLE_WITH_CXXGEN)
-
 dnl -------- Checks for architecture specific features. --------
 dnl (Doesn't work for cross compilation.)
 dnl AC_CHECK_SIZEOF(void*)
@@ -1355,6 +1315,49 @@ fi
 CPPFLAGS="$CPPFLAGS" CXX="$CXX" CXXFLAGS="$CXXFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
 LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB" \
+
+dnl --------- configure compiler for generated source ---------
+CXXGENFLAGS=
+if test "X$CXXGEN" = X; then
+  CXXGEN=$CXX
+  CXXGENFLAGS=$CXXFLAGS
+fi
+if test "X$CXXFLAGS_GEN_OPT" = X; then
+  CXXFLAGS_GEN_OPT=$CXXFLAGS_OPT
+fi
+if test $DEBUG = yes; then
+  CXXGENFLAGS="$CXXGENFLAGS $CXXFLAGS_DBG $CXXFLAGS_GEN_MISC"
+elif test $DEBUG = opt; then
+  CXXGENFLAGS="$CXXGENFLAGS $CXXFLAGS_DBG $CXXFLAGS_GEN_OPT $CXXFLAGS_GEN_MISC"
+else
+  CXXGENFLAGS="$CXXGENFLAGS $CXXFLAGS_GEN_OPT $CXXFLAGS_GEN_MISC"
+fi
+AC_SUBST(CXXGEN)
+AC_SUBST(CXXGENFLAGS)
+
+dnl Check if sources compiled with CXX and CXXGEN can be linked together
+CXX_COMPATIBLE_WITH_CXXGEN=yes
+if test "X$CXX" != "X$CXXGEN"; then
+AC_MSG_CHECKING([[for compatible cxx and cxxgen compilers]])
+echo "extern void func1(); int main(int argc, char**argv) { func1(); } " > linkcheck1.cc
+echo "void func1() {}" > linkcheck2.cc
+$CXX $CPPFLAGS $CXXFLAGS -c linkcheck1.cc > /dev/null 2>&1
+$CXXGEN $CPPFLAGS $CXXGENFLAGS -c linkcheck2.cc > /dev/null 2>&1
+$LD $LDFLAGS -o linkcheck1 linkcheck1.o linkcheck2.o > /dev/null 2>&1
+$CXX $LDFLAGS -o linkcheck2 linkcheck1.o linkcheck2.o > /dev/null 2>&1
+$CXXGEN $LDFLAGS -o linkcheck3 linkcheck1.o linkcheck2.o > /dev/null 2>&1
+if test -f linkcheck1 -a -f linkcheck2 -a -f linkcheck3; then
+  AC_MSG_RESULT([[yes]])
+else
+  AC_MSG_RESULT([[no]])
+  AC_MSG_WARN([[Compilers cxx and cxxgen produce incompatible code! You will not be able to test generated code.]])
+  CXX_COMPATIBLE_WITH_CXXGEN=no
+fi
+/bin/rm -f linkcheck1 linkcheck2 linkcheck3  linkcheck1.cc linkcheck2.cc linkcheck1.o linkcheck2.o
+fi
+
+AC_SUBST(CXX_COMPATIBLE_WITH_CXXGEN)
+
 
 dnl --------- Shared library configuration. ---------
 
