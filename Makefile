@@ -84,3 +84,8 @@ realclean::
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) realclean) || exit 1; \
 	  done
 
+check::
+	for dir in tests/eri; \
+	  do \
+	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) check) || exit 1; \
+	  done

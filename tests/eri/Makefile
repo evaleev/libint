@@ -21,6 +21,9 @@ AUXSRC = $(TOPDIR)/src/bin/test_eri/eri.cc
 CXXTESTSRC = $(TEST).cc $(AUXSRC)
 CXXTESTOBJ = $(CXXTESTSRC:%.cc=%.o)
 
+check:: $(TEST)
+	./$(TEST) 0 3 && ./$(TEST) 1 2 && ./$(TEST) 2 1
+
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ)
 	$(LD) -o $@ $(LDFLAGS) $^ $(COMPILER_LIB) $(COMPUTE_LIB) $(SYSLIBS)

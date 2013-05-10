@@ -18,6 +18,7 @@
 using namespace std;
 using namespace libint2;
 
+const double ABSOLUTE_DEVIATION_THRESHOLD = 1.0E-15; // indicate failure if any integral differs in absolute sense by more than this
 const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any integral differs in relative sense by more than this
 
 /// change to true to skip verification and do some timing simulation
@@ -28,32 +29,36 @@ libint2::FmEval_Taylor<double,6> fmeval_taylor(18, 1e-15);
 
 // test 4, 3, and 2-center integrals
 #ifdef INCLUDE_ERI
-void test_4eri(unsigned int deriv_order);
+void test_4eri(unsigned int deriv_order,
+               unsigned int lmax_max);
 #endif
 #ifdef INCLUDE_ERI3
-void test_3eri(unsigned int deriv_order);
+void test_3eri(unsigned int deriv_order,
+               unsigned int lmax_max);
 #endif
 #ifdef INCLUDE_ERI2
-void test_2eri(unsigned int deriv_order);
+void test_2eri(unsigned int deriv_order,
+               unsigned int lmax_max);
 #endif
 
 /// give optional derivative order (default = 0, i.e. regular integrals)
 int main(int argc, char** argv) {
-  assert(argc == 1 || argc == 2);
-  const unsigned int deriv_order = (argc == 2) ? atoi(argv[1]) : 0u;
+  assert(argc == 1 || argc == 2 || argc == 3);
+  const unsigned int deriv_order = (argc == 2 || argc == 3) ? atoi(argv[1]) : 0u;
+  const unsigned int lmax_max = (argc == 3) ? atoi(argv[2]) : UINT_MAX;
 
   // static initialziation of the library (one needs to happen once per process)
   LIBINT2_PREFIXED_NAME(libint2_static_init)();
 
   // run the tests
 #ifdef INCLUDE_ERI
-  test_4eri(deriv_order);
+  test_4eri(deriv_order, lmax_max);
 #endif
 #ifdef INCLUDE_ERI3
-  test_3eri(deriv_order);
+  test_3eri(deriv_order, lmax_max);
 #endif
 #ifdef INCLUDE_ERI2
-  test_2eri(deriv_order);
+  test_2eri(deriv_order, lmax_max);
 #endif
 
   // cleanup static library data (once per process)
@@ -63,7 +68,8 @@ int main(int argc, char** argv) {
 }
 
 #ifdef INCLUDE_ERI
-void test_4eri(unsigned int deriv_order) {
+void test_4eri(unsigned int deriv_order,
+               unsigned int lmax_max) {
 
   if (deriv_order > INCLUDE_ERI) return;
 
@@ -94,6 +100,8 @@ void test_4eri(unsigned int deriv_order) {
 #if INCLUDE_ERI >= 2
   if (deriv_order == 2) LIBINT2_PREFIXED_NAME(libint2_init_eri2)(&inteval[0], lmax, 0);
 #endif
+
+  lmax = std::min(lmax_max, lmax);
 
   for (unsigned int l0 = 0; l0 <= lmax; ++l0) {
     for (unsigned int l1 = 0; l1 <= lmax; ++l1) {
@@ -295,7 +303,7 @@ void test_4eri(unsigned int deriv_order) {
                     // derivatives w.r.t. center 2 skipped and must be reconstructed using the translational invariance
                     if (deriv_order == 1) {
                       for (unsigned int di = 0; di < nderiv; ++di) {
-                        double value;
+                        LIBINT2_REF_REALTYPE value;
                         if (di<6)
                           value = scale_target * inteval[0].targets[di][ijkl * veclen + v];
                         else if (di>=9)
@@ -366,10 +374,13 @@ void test_4eri(unsigned int deriv_order) {
                     // compare reference and libint integrals
                     //
                     for (unsigned int di = 0; di < nderiv; ++di) {
-                      if (abs((ref_eri[di] - new_eri[di]) / new_eri[di]) > RELATIVE_DEVIATION_THRESHOLD) {
+                      const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);
+                      const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
+                      if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
                         std::cout << "Elem " << ijkl << " di= " << di << " v="
-                            << v << " : eri.cc = " << ref_eri[di]
-                            << " libint = " << new_eri[di] << endl;
+                            << v << " : ref = " << ref_eri[di]
+                            << " libint = " << new_eri[di]
+                            << " relabs_error = " << relabs_error << endl;
                         success = false;
                       }
                     }
@@ -417,7 +428,8 @@ void test_4eri(unsigned int deriv_order) {
 #endif // INCLUDE_ERI
 
 #ifdef INCLUDE_ERI3
-void test_3eri(unsigned int deriv_order) {
+void test_3eri(unsigned int deriv_order,
+               unsigned int lmax_max) {
 
   if (deriv_order > INCLUDE_ERI3) return;
 
@@ -451,6 +463,8 @@ void test_3eri(unsigned int deriv_order) {
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_init_3eri2)(&inteval[0], lmax, 0);
 #endif
+
+  lmax = std::min(lmax_max, lmax);
 
   for (unsigned int l0 = 0; l0 <= lmax; ++l0) {
     for (unsigned int l1 = 0; l1 <= lmax; ++l1) {
@@ -674,10 +688,13 @@ void test_3eri(unsigned int deriv_order) {
                 }
 
                 for (unsigned int di = 0; di < nderiv; ++di) {
-                  if (abs((ref_eri[di] - new_eri[di]) / new_eri[di]) > RELATIVE_DEVIATION_THRESHOLD) {
-                    std::cout << "Elem " << ijk << " di= " << di << " v=" << v
-                        << " : eri.cc = " << ref_eri[di] << " libint = "
-                        << new_eri[di] << endl;
+                  const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);
+                  const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
+                  if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
+                    std::cout << "Elem " << ijk << " di= " << di << " v="
+                        << v << " : ref = " << ref_eri[di]
+                        << " libint = " << new_eri[di]
+                        << " relabs_error = " << relabs_error << endl;
                     success = false;
                   }
                 }
@@ -723,7 +740,8 @@ void test_3eri(unsigned int deriv_order) {
 #endif // INCLUDE_ERI3
 
 #ifdef INCLUDE_ERI2
-void test_2eri(unsigned int deriv_order) {
+void test_2eri(unsigned int deriv_order,
+               unsigned int lmax_max) {
 
   if (deriv_order > INCLUDE_ERI2) return;
 
@@ -756,6 +774,8 @@ void test_2eri(unsigned int deriv_order) {
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_init_2eri2)(&inteval[0], lmax, 0);
 #endif
+
+  lmax = std::min(lmax_max, lmax);
 
   for (unsigned int l0 = 0; l0 <= lmax; ++l0) {
     for (unsigned int l1 = 0; l1 <= lmax; ++l1) {
@@ -939,10 +959,13 @@ void test_2eri(unsigned int deriv_order) {
                 }
 
                 for (unsigned int di = 0; di < nderiv; ++di) {
-                  if (abs((ref_eri[di] - new_eri[di]) / new_eri[di]) > RELATIVE_DEVIATION_THRESHOLD) {
-                    std::cout << "Elem " << ij << " di= " << di << " v=" << v
-                        << " : eri.cc = " << ref_eri[di] << " libint = "
-                        << new_eri[di] << endl;
+                  const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);
+                  const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
+                  if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
+                    std::cout << "Elem " << ij << " di= " << di << " v="
+                        << v << " : ref = " << ref_eri[di]
+                        << " libint = " << new_eri[di]
+                        << " relabs_error = " << relabs_error << endl;
                     success = false;
                   }
                 }
