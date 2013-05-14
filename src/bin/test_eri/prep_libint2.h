@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <libint2.h>
 #include <boys.h>
+#include <time.h>
 
 extern libint2::FmEval_Chebyshev3 fmeval_chebyshev;
 extern libint2::FmEval_Taylor<double,6> fmeval_taylor;
@@ -16,7 +17,7 @@ struct RandomDie {
     RandomDie(double lower, double upper, long seed = -1) : lower_(lower), frange_(upper - lower), seed_(seed)
     {
       if (seed == -1)
-        srandomdev();
+        srandom(time(NULL));
       else
         srandom((unsigned int)seed);
     }
