@@ -34,7 +34,7 @@ namespace libint2 {
     /// Will uncontract the integral sets if true. Default is no uncontracting
     bool uncontract() const { return uncontract_; }
     void uncontract(bool uc) { uncontract_ = uc; }
-    /// Ignore missing prerequisites -- generate the code as is, without egenrating code for the prerequisites. This is a hack.
+    /// Ignore missing prerequisites -- generate the code as is, without generating code for the prerequisites. This is a hack.
     bool ignore_missing_prereqs() const { return ignore_missing_prereqs_; }
     void ignore_missing_prereqs(bool imp) { ignore_missing_prereqs_ = imp; }
     /// Do Common Subexpression Elimination (CSE)? The default is false.

@@ -570,7 +570,7 @@ namespace libint2 {
       F sh_d(target_->ket(1,0));
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
-      bool ahlrichs_simplification;
+      bool ahlrichs_simplification = false;
       bool unit_s = false;
       if (xsxs) {
         ahlrichs_simplification = (sh_a.pure_sh() && sh_b.is_unit()) ||
@@ -641,7 +641,7 @@ namespace libint2 {
         oss << "," << args->symbol(0); // target
         if (not ahlrichs_simplification && unit_s) // purely to avoid having a 4-term generic RR, reuse 5-term with dummy argument
           oss << ",0"; // src0-> 0x0
-        const unsigned int nargs = args->n();
+        //const unsigned int nargs = args->n();
         unsigned int arg = 1;
         for(;
             arg<(ahlrichs_simplification? 3 : (unit_s ? 5 : 6));  // nargs + 1 target

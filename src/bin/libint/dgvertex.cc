@@ -16,7 +16,7 @@ DGVertex::DGVertex(ClassID tid) :
   declared_(false),
 #endif
   parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
-  postcalc_(), subtree_(SafePtr<DRTree>()), scheduled_(false)
+  postcalc_(), scheduled_(false), subtree_(SafePtr<DRTree>())
 {
 }
 
@@ -28,7 +28,7 @@ DGVertex::DGVertex(const DGVertex& v) :
 #endif
   parents_(v.parents_), children_(v.children_), target_(v.target_),
   can_add_arcs_(v.can_add_arcs_), num_tagged_arcs_(v.num_tagged_arcs_),
-  postcalc_(v.postcalc_), subtree_(v.subtree_),  scheduled_(false)
+  postcalc_(v.postcalc_), scheduled_(false), subtree_(v.subtree_)
 {
 }
 

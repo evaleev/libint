@@ -186,7 +186,7 @@ namespace libint2 {
       unsigned int am_total = 0;
       unsigned int nfunctions = 0;
       const unsigned int np = IntType::OperType::Properties::np;
-      for(int p=0; p<np; p++) {
+      for(unsigned int p=0; p<np; p++) {
         unsigned int nbra = target_->bra().num_members(p);
         for(unsigned int i=0; i<nbra; i++) {
           am_total += target_->bra(p,i).norm();
@@ -245,7 +245,7 @@ namespace libint2 {
       // to some particles is to construct a dummy integral and
       // use subiterator policy
       // WARNING !!!
-      for(int p=0; p<np; p++) {
+      for(int p=0; p<static_cast<int>(np); p++) {
         unsigned int nbra = target_->bra().num_members(p);
         assert(nbra == 1);
         for(unsigned int i=0; i<nbra; i++) {
