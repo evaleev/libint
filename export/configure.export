@@ -170,10 +170,6 @@ AC_PROG_CXXCPP
 CXXFLAGS="$initial_CXXFLAGS"
 
 AC_CHECK_PROG(AR,ar,ar)
-AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin)
-AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin)
-AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin)
-AC_PATH_PROG(BIBTEX,bibtex,,$PATH:/usr/local/bin)
 
 dnl -------- Checks for compiler/linker options. ----------
 
