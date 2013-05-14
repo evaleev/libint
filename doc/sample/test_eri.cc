@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
   // LIBINT2_MAX_AM_ERI is a macro defined in libint2.h that specifies the maximum angular momentum
   // this Libint library instance can handle. To save time, we will only compute integrals over up to f functions here.
   // const unsigned int ammax = LIBINT2_MAX_AM_ERI;
-  const unsigned int ammax = 3;
+  const unsigned int ammax = std::min(3, LIBINT2_MAX_AM_ERI);
   // Libint_t is the type of a data structure used to pass basis function data to Libint
   // One Libint_t instance keeps information for one shell set of integrals (or one vector of shell sets, if using vectorization)
   // To evaluate integrals over contracted functions, allocate an array of Libint_t objects, one for each combination of primitives
