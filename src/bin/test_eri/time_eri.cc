@@ -7,6 +7,7 @@
 #include <rr.h>
 #include <iter.h>
 #include <util.h>
+#include <deriv_iter.h>
 #include <policy_spec.h>
 #include <global_macros.h>
 

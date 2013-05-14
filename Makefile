@@ -18,9 +18,6 @@ ifndef DODEPEND
 DODEPENDOPT = "DODEPEND=no"
 endif
 
-doc::
-	(cd doc && $(MAKE) $(DODEPENDOPT) install) || exit 1;
-
 export::
 	for dir in $(SUBDIRS); \
 	  do \
@@ -89,3 +86,31 @@ check::
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) check) || exit 1; \
 	  done
+
+install-pdf:: pdf
+	(cd doc && $(MAKE) $(DODEPENDOPT) install-pdf) || exit 1;
+
+install-ps:: ps
+	(cd doc && $(MAKE) $(DODEPENDOPT) install-ps) || exit 1;
+
+install-dvi:: dvi
+	(cd doc && $(MAKE) $(DODEPENDOPT) install-dvi) || exit 1;
+
+install-html:: html
+	(cd doc && $(MAKE) $(DODEPENDOPT) install-html) || exit 1;
+
+pdf::
+	(cd doc && $(MAKE) $(DODEPENDOPT) pdf) || exit 1;
+
+ps::
+	(cd doc && $(MAKE) $(DODEPENDOPT) ps) || exit 1;
+
+dvi::
+	(cd doc && $(MAKE) $(DODEPENDOPT) dvi) || exit 1;
+
+html::
+	(cd doc && $(MAKE) $(DODEPENDOPT) html) || exit 1;
+
+
+doc::
+	(cd doc && $(MAKE) $(DODEPENDOPT) install) || exit 1;

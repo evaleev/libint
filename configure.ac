@@ -930,10 +930,13 @@ CXXFLAGS="$initial_CXXFLAGS"
 AC_CHECK_PROG(AR,ar,ar)
 AC_CHECK_PROG(PERL,perl,perl)
 AC_CHECK_PROGS(TAR,gnutar tar,tar)
-AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin)
-AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin)
-AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin)
-AC_PATH_PROG(BIBTEX,bibtex,,$PATH:/usr/local/bin)
+AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin:/opt/local/bin)
+AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin:/opt/local/bin)
+AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin:/opt/local/bin)
+AC_PATH_PROG(DVIPS,dvips,,$PATH:/usr/local/bin:/opt/local/bin)
+AC_PATH_PROG(LATEX,latex,,$PATH:/usr/local/bin:/opt/local/bin)
+AC_PATH_PROG(LATEX2HTML,latex2html,,$PATH:/usr/local/bin:/opt/local/bin)
+AC_PATH_PROG(BIBTEX,bibtex,,$PATH:/usr/local/bin:/opt/local/bin)
 
 dnl The lack of certain tools is a show stopper
 
@@ -1384,7 +1387,7 @@ AC_CONFIG_FILES([src/bin/test_eri/run_time_eri.pl],[chmod +x src/bin/test_eri/ru
 AC_CONFIG_FILES([src/bin/test_eri/stdtests.pl],[chmod +x src/bin/test_eri/stdtests.pl])
 AC_CONFIG_FILES([src/bin/test_eri/run_timing_suite.pl],[chmod +x src/bin/test_eri/run_timing_suite.pl])
 AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules
-                doc/MakeVars doc/MakeRules doc/macros.tex doc/classdoc/doxygen.cfg
+                doc/MakeVars doc/MakeRules doc/progman/macros.tex doc/classdoc/doxygen.cfg
                 src/bin/libint/cgshell_ordering.h)
 
 dnl --------- Done! ---------

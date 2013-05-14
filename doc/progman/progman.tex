@@ -74,7 +74,7 @@
 \captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white}
 
 \begin{document}
-\input{../macros}
+\input{macros}
 
 \begin{center}
 {\bf {\Large The \LIBINT\ Programmer's Manual}} \\
@@ -86,7 +86,7 @@ Edward F.\ Valeev \\
 \LIBINTv \\
 Created on: \today \\
 \vspace{30\baselineskip}
-\includegraphics[width=0.3\textwidth]{Libint_Logo3_alt.pdf}
+\includegraphics[width=0.3\textwidth]{Libint_Logo3_alt}
 
 \end{center}
 
@@ -525,7 +525,8 @@ Example code is shown in Listing \ref{lst:GmGaussian}.
 // k specifies the exponent of r_{12} in the kernel (0, -1, and 2 supported)
 libint2::GaussianGmEval<double, k> gmeval(mmax, 1e-15);  // 1e-15 is the desired precision
 
-std::vector<std::pair<double,double> > gauss; // vector of {exponent,coefficient} pairs defines the contracted Gaussian kernel
+// vector of {exponent,coefficient} pairs = contracted Gaussian kernel
+std::vector<std::pair<double,double> > gauss;
 
 // double* Gm initialized somewhere else
 // on return Gm[m], m=0..M, contains Gm(rho,T)

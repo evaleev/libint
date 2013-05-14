@@ -33,3 +33,13 @@ $(TOPDIR)/lib/$(NAMEV).la: $(LIBOBJ)
 	find . -name '*.$(OBJSUF)' -print > libobjlist
 	$(LTLINK) $(CXX) -o $@ -objectlist libobjlist $(LTLINKLIBOPTS)
 	-rm -f libobjlist
+
+check:
+	(cd tests && make check) || exit 1
+
+.PHONY: doc
+doc:
+	(cd doc && make) || exit 1
+
+install_doc::
+	(cd doc && make install) || exit 1

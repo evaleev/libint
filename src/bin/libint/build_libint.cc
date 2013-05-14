@@ -29,6 +29,7 @@
 #include <dims.h>
 #include <purgeable.h>
 #include <buildtest.h>
+#include <deriv_iter.h>
 
 #include <master_ints_list.h>
 

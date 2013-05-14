@@ -10,3 +10,6 @@ TARGET = progman.$(DOCSUF)
 -include $(TOPDIR)/doc/MakeRules
 include $(SRCDIR)/$(TOPDIR)/lib/MakeSuffixRules
 include $(SRCDIR)/$(TOPDIR)/lib/MakeRules
+
+distclean:: clean
+	-rm -f macros.tex

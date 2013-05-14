@@ -43,3 +43,4 @@ clean::
 
 realclean:: clean
 
+targetclean:: clean

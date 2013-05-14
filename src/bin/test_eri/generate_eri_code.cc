@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <libint/util.h>
+#include <libint/deriv_iter.h>
 #include <libint/buildtest.h>
 #include <libint/bfset.h>
 #include <libint/master_ints_list.h>

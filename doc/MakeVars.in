@@ -26,6 +26,9 @@ LIBINT_MAJOR_VERSION = @LIBINT_MAJOR_VERSION@
 DOXYGEN = @DOXYGEN@
 PDFLATEX  = @PDFLATEX@
 PSLATEX  = @PSLATEX@
+DVIPS  = @DVIPS@
+LATEX  = @LATEX@
+LATEX2HTML  = @LATEX2HTML@
 BIBTEX = @BIBTEX@
 # The document suffix (pdf or ps)
 # Preferentially make pdf manuals, only revert to ps if necessary
@@ -41,7 +44,7 @@ ifdef BIBTEX
 endif
 TEXINPUTS = :$(SRCDIR):$(SRCDIR)/..:
 BIBINPUTS = $(TEXINPUTS)
-TEXGARBAGE = *.bbl *.blg *.aux *.log *.ps *.pdf
+TEXGARBAGE = *.bbl *.blg *.aux *.log *.out
 
 INSTALL = @INSTALL@
 INSTALLDIROPT = -d -m 0755

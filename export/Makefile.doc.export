@@ -1,0 +1,126 @@
+
+SRCDIR = .
+
+DOXYGEN = @DOXYGEN@
+PDFLATEX  = @PDFLATEX@
+PSLATEX  = @PSLATEX@
+DVIPS = @DVIPS@
+LATEX  = @LATEX@
+LATEX2HTML  = @LATEX2HTML@
+BIBTEX = @BIBTEX@
+# The default document suffix (pdf or ps)
+# Preferentially make pdf manuals, only revert to ps if necessary
+ifdef BIBTEX
+ ifdef PSLATEX
+  DOCSUF = ps
+  LATEX = $(PSLATEX)
+ endif
+ ifdef PDFLATEX
+  DOCSUF = pdf
+  LATEX = $(PDFLATEX)
+ endif
+endif
+TEXINPUTS = :$(SRCDIR):$(SRCDIR)/..:
+BIBINPUTS = $(TEXINPUTS)
+TEXGARBAGE = *.bbl *.blg *.aux *.log *.out
+
+TARGETNAME = progman
+DEFAULTTARGET = $(TARGETNAME).$(DOCSUF)
+
+default:: $(DEFAULTTARGET)
+
+install:: install_target
+
+install_target:: default
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(docdir)
+	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) $(DEFAULTTARGET) $(DESTDIR)$(docdir)
+
+clean::
+	-rm -rf $(DEFAULTTARGET) $(TEXGARBAGE)
+
+distclean:: clean
+	-rm -f Makefile $(TARGETNAME).pdf $(TARGETNAME).ps $(TARGETNAME).dvi
+
+targetclean:: clean
+
+pdf::
+
+ps::
+
+dvi::
+
+html::
+
+install-pdf:: pdf
+
+install-ps:: ps
+
+install-dvi:: dvi
+
+install-html:: html
+
+ifdef BIBTEX
+ifdef PDFLATEX
+pdf:: $(TARGETNAME).pdf
+
+install-pdf:: pdf
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(docdir)/pdf
+	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) $(TARGETNAME).pdf $(DESTDIR)$(docdir)/pdf
+
+%.pdf:: $(SRCDIR)/%.tex
+	TEXINPUTS=$(TEXINPUTS) $(PDFLATEX) $<
+	BIBINPUTS=$(BIBINPUTS) $(BIBTEX) $(@:%.pdf=%)
+	TEXINPUTS=$(TEXINPUTS) $(PDFLATEX) $<
+	TEXINPUTS=$(TEXINPUTS) $(PDFLATEX) $<
+	TEXINPUTS=$(TEXINPUTS) $(PDFLATEX) $<
+endif
+
+ifdef PSLATEX
+ifdef DVIPS
+ps:: $(TARGETNAME).ps
+
+install-ps:: ps
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(docdir)/ps
+	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) $(TARGETNAME).ps $(DESTDIR)$(docdir)/ps
+
+%.ps:: $(SRCDIR)/%.tex
+	TEXINPUTS=$(TEXINPUTS) $(PSLATEX) $<
+	BIBINPUTS=$(BIBINPUTS) $(BIBTEX) $(@:%.ps=%)
+	TEXINPUTS=$(TEXINPUTS) $(PSLATEX) $<
+	TEXINPUTS=$(TEXINPUTS) $(PSLATEX) $<
+	TEXINPUTS=$(TEXINPUTS) $(PSLATEX) $<
+	TEXINPUTS=$(TEXINPUTS) $(DVIPS) $(@:%.ps=%)
+endif
+endif
+
+ifdef LATEX
+dvi:: $(TARGETNAME).dvi
+
+install-dvi:: dvi
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(docdir)/dvi
+	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) $(TARGETNAME).dvi $(DESTDIR)$(docdir)/dvi
+
+%.dvi:: $(SRCDIR)/%.tex
+	TEXINPUTS=$(TEXINPUTS) $(LATEX) $<
+	BIBINPUTS=$(BIBINPUTS) $(BIBTEX) $(@:%.dvi=%)
+	TEXINPUTS=$(TEXINPUTS) $(LATEX) $<
+	TEXINPUTS=$(TEXINPUTS) $(LATEX) $<
+	TEXINPUTS=$(TEXINPUTS) $(LATEX) $<
+
+ifdef LATEX2HTML
+html:: dvi
+	$(LATEX2HTML) $(TARGETNAME)
+endif
+
+endif
+
+endif
+
+INSTALL = @INSTALL@
+INSTALLDIROPT = -d -m 0755
+INSTALLDOCOPT = -m 0644
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+docdir=$(prefix)/doc
+includedir=@libintincludedir@

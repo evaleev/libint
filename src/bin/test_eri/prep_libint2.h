@@ -1,14 +1,33 @@
-#include <boost/random.hpp>
+#ifndef PREP_LIBINT2_SKIP_BOOST
+# include <boost/random.hpp>
+#endif
 
 #include <cmath>
 #include <vector>
 #include <cstdlib>
 #include <libint2.h>
-#include <test_eri/eri.h>
 #include <boys.h>
 
 extern libint2::FmEval_Chebyshev3 fmeval_chebyshev;
 extern libint2::FmEval_Taylor<double,6> fmeval_taylor;
+
+#ifdef PREP_LIBINT2_SKIP_BOOST
+struct RandomDie {
+    RandomDie(double lower, double upper, long seed = -1) : lower_(lower), frange_(upper - lower), seed_(seed)
+    {
+      if (seed == -1)
+        srandomdev();
+      else
+        srandom((unsigned int)seed);
+    }
+    double operator()() const {
+      return lower_ + random() * frange_ / intrange_;
+    }
+    double lower_, frange_;
+    unsigned int seed_;
+    static const long intrange_ = (1l<<31) - 1;
+};
+#endif
 
 typedef unsigned int uint;
 template <unsigned int N>
@@ -20,12 +39,15 @@ struct RandomShellSet {
 
       std::copy(am, am+N, l);
 
+#ifndef PREP_LIBINT2_SKIP_BOOST
       boost::mt19937 rng;                 // produces randomness out of thin air
       // rng.seed(1352054452);            // uncomment to make results repeatable
       boost::uniform_real<> rdist(0.1, 3.0);  // distribution that maps to 0.1 .. 3.0
       boost::variate_generator<boost::mt19937&, boost::uniform_real<> >
                die(rng, rdist);             // glues randomness with mapping
-
+#else
+      RandomDie die(0.1, 3.0);
+#endif
 
       for(uint c=0; c<N; ++c) {
 

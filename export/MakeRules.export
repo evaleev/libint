@@ -21,13 +21,42 @@ install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)
 	$(LTINST) $(INSTALL) $(INSTALLLIBOPT) $< $(DESTDIR)$(libdir)
 
+install-pdf:: pdf
+	(cd doc && make install-pdf) || exit 1
+
+install-ps:: ps
+	(cd doc && make install-ps) || exit 1
+
+install-dvi:: dvi
+	(cd doc && make install-dvi) || exit 1
+
+install-html:: html
+	(cd doc && make install-html) || exit 1
+
+pdf::
+	(cd doc && make pdf) || exit 1
+
+ps::
+	(cd doc && make ps) || exit 1
+
+dvi::
+	(cd doc && make dvi) || exit 1
+
+html::
+	(cd doc && make html) || exit 1
+
 clean:: oclean targetclean
+	cd tests; make clean
+	cd doc; make clean
 
 distclean:: clean
+	-rm -rf MakeVars MakeRules MakeSuffixRules config.* depcheck* autom4* libtool include/libint2_config.h
+	cd tests; make distclean
+	cd doc; make distclean
 
 oclean::
-	-rm -rf *.$(OBJSUF)
+	-rm -rf src/*.o src/*.lo
 
 targetclean::
-	-rm -f $(TOPDIR)/lib/$(TARGET)
+	-rm -rf $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/lib/.libs/
 
