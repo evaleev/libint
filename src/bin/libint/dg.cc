@@ -715,19 +715,23 @@ DirectedGraph::remove_trivial_arithmetics()
 
       // 1.0 * x = x
       if (left->equiv(const_one_point_zero) && left->num_entry_arcs() == 1) {
-        const bool success = remove_vertex_at((vptr),right);
 #if DEBUG
+        const bool success = remove_vertex_at((vptr),right);
         if (success)
           cout << "Removed vertex " << (vptr)->description() << endl;
+#else
+        remove_vertex_at((vptr),right);
 #endif
       }
 
       // x * 1.0 = x
       if (right->equiv(const_one_point_zero) && right->num_entry_arcs() == 1) {
-        const bool success = remove_vertex_at((vptr),left);
 #if DEBUG
+        const bool success = remove_vertex_at((vptr),left);
         if (success)
           cout << "Removed vertex " << (vptr)->description() << endl;
+#else
+        remove_vertex_at((vptr),left);
 #endif
       }
 
