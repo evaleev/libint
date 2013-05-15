@@ -393,7 +393,7 @@ libint2::FmEval_Chebyshev3 fmeval(mmax);
 // double* Fm initialized somewhere else
 // on return Fm[m], m=0..M, contains Fm(T)
 // thread-safe provided each thread uses its own Fm
-fmeval.compute(Fm, T, M);
+fmeval.eval(Fm, T, M);
 \end{lstlisting}
 
 Note that the evaluator object contains data that is depends on the Gaussian exponents.
@@ -530,7 +530,7 @@ std::vector<std::pair<double,double> > gauss;
 
 // double* Gm initialized somewhere else
 // on return Gm[m], m=0..M, contains Gm(rho,T)
-gmeval.compute(Gm, rho, T, M, gauss);
+gmeval.eval(Gm, rho, T, M, gauss);
 \end{lstlisting}
 
 \section{Using \LIBINT\ to compute geometrical derivatives of integrals.}

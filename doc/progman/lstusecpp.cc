@@ -108,11 +108,11 @@ using namespace libint2;
     double pfac = 2*pow(M_PI,2.5)*K1*K2/(gammap*gammaq*sqrt(gammap+gammaq));
 
     //
-    // calc_f (not shown here) evaluates Boys function F_m for all m in [0,am]
+    // evaluate Boys function F_m for all m in [0,am]
     //
     unsigned int am = am1 + am2 + am3 + am4;
     double* F = new double[am+1];
-    fmeval.compute(F, PQ2*gammapq, am);
+    fmeval.eval(F, PQ2*gammapq, am);
 
     // (00|00)^m = pfac * F_m
     erieval.LIBINT_T_SS_EREP_SS(0)[0] = pfac*F[0];
