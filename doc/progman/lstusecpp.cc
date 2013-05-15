@@ -146,6 +146,6 @@ using namespace libint2;
       }
     }
 
-    // same comment applies as libint2_init_eri()
+    // ------ like the code at the beginning, this usually goes outside this function ------
     libint2_cleanup_eri(&erieval);
 }
