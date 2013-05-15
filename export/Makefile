@@ -69,6 +69,7 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/Makefile.tests.export $(TOPDIR)/$(EXPORTDIR)/tests/Makefile
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/doc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/doc/progman/progman.tex $(TOPDIR)/$(EXPORTDIR)/doc/progman.tex
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/doc/progman/*.cc $(TOPDIR)/$(EXPORTDIR)/doc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/doc/progman/refs.bib $(TOPDIR)/$(EXPORTDIR)/doc/refs.bib
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/doc/progman/macros.tex $(TOPDIR)/$(EXPORTDIR)/doc/macros.tex
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/doc/Libint_Logo3_alt.pdf $(TOPDIR)/$(EXPORTDIR)/doc/Libint_Logo3_alt.pdf
