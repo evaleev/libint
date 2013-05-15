@@ -1,11 +1,12 @@
 #include <iostream>
 #include <algorithm>
 #include <libint2.h>
+#include <boys.h>
 
 using namespace std;
 using namespace libint2;
 
-/** This function evaluates ERI over 4 primitive Gaussians.
+/** This function evaluates ERI over 4 primitive Gaussian shells.
     See doc/sample/test_eri.cc for an example of how to deal with
     contracted Gaussians.
 
@@ -20,15 +21,20 @@ using namespace libint2;
 {
     // I will assume that libint2_static_init() has been called elsewhere!
 
-    // The ERI evaluator would normally be allocated once per calculation,
-    // not once every integral shell-set
+    //-------------------------------------------------------------------------------------
+    // ------ the code in this section would usually be placed outside this function ------
+    //        to occur once per calculation, not every time this function is called
+    // - allocate ERI evaluator object
     Libint_eri_t erieval;
     const unsigned int max_am = max(max(am1,am2),max(am3,am4));
     libint2_init_eri(&erieval,max_am,0);
-    // if have support for contracted integrals, set the contraction length to 1
 #if LIBINT_CONTRACTED_INTS
+    // if have support for contracted integrals, set the contraction length to 1
     erieval.contrdepth = 1;
 #endif
+    // - initialize Boys function evaluator
+    FmEval_Chebyshev3 fmeval(max_am);
+    //-------------------------------------------------------------------------------------
 
     //
     // Compute requisite data -- many of these quantities would be precomputed
@@ -105,8 +111,8 @@ using namespace libint2;
     // calc_f (not shown here) evaluates Boys function F_m for all m in [0,am]
     //
     unsigned int am = am1 + am2 + am3 + am4;
-    double* F = init_array(am+1);
-    calc_f(F,am,PQ2*gammapq);
+    double* F = new double[am+1];
+    fmeval.compute(F, PQ2*gammapq, am);
 
     // (00|00)^m = pfac * F_m
     erieval.LIBINT_T_SS_EREP_SS(0)[0] = pfac*F[0];
@@ -121,10 +127,10 @@ using namespace libint2;
 
     // Print out the integrals
     const double* eri_shell_set = erieval.targets[0];
-    const unsigned int n1 = (am1 + 1)(am1 + 2)/2;
-    const unsigned int n2 = (am2 + 1)(am2 + 2)/2;
-    const unsigned int n3 = (am3 + 1)(am3 + 2)/2;
-    const unsigned int n4 = (am4 + 1)(am4 + 2)/2;
+    const unsigned int n1 = (am1 + 1) * (am1 + 2)/2;
+    const unsigned int n2 = (am2 + 1) * (am2 + 2)/2;
+    const unsigned int n3 = (am3 + 1) * (am3 + 2)/2;
+    const unsigned int n4 = (am4 + 1) * (am4 + 2)/2;
     for(int a=0; a<n1; a++) {
       for(int b=0; b<n2; b++) {
         for(int c=0; c<n3; c++) {
@@ -140,5 +146,6 @@ using namespace libint2;
       }
     }
 
+    // same comment applies as libint2_init_eri()
     libint2_cleanup_eri(&erieval);
 }
