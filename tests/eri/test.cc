@@ -19,8 +19,8 @@
 using namespace std;
 using namespace libint2;
 
-const double ABSOLUTE_DEVIATION_THRESHOLD = 1.0E-15; // indicate failure if any integral differs in absolute sense by more than this
-const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any integral differs in relative sense by more than this
+const double ABSOLUTE_DEVIATION_THRESHOLD = 1.0E-14; // indicate failure if any integral differs in absolute sense by more than this
+const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-8; // indicate failure if any integral differs in relative sense by more than this
 
 /// change to true to skip verification and do some timing simulation
 const bool do_timing_only = false;
@@ -321,16 +321,16 @@ void test_4eri(unsigned int deriv_order,
                     if (deriv_order == 2) {
                       const unsigned int NumCenters = 4;
                       double libint_eri[3*(NumCenters-1)][3*(NumCenters-1)];
-                      for(int di=0,dij=0; di<3*(NumCenters-1); di++) {
-                        for(int dj=di; dj<3*(NumCenters-1); dj++, ++dij){
+                      for(unsigned int di=0,dij=0; di<3*(NumCenters-1); di++) {
+                        for(unsigned int dj=di; dj<3*(NumCenters-1); dj++, ++dij){
                           const double value = scale_target * inteval[0].targets[dij][ijkl * veclen + v];
                           libint_eri[di][dj] = value;
                           libint_eri[dj][di] = value;
                         }
                       }
 
-                      for(int di=0; di<3*NumCenters; di++) {
-                        for(int dj=di; dj<3*NumCenters; dj++){
+                      for(unsigned int di=0; di<3*NumCenters; di++) {
+                        for(unsigned int dj=di; dj<3*NumCenters; dj++){
 
                           const int ci = di/3;
                           const int cj = dj/3;
@@ -652,16 +652,16 @@ void test_3eri(unsigned int deriv_order,
                 if (deriv_order == 2) {
                   const unsigned int NumCenters = 3;
                   double libint_eri[3*(NumCenters-1)][3*(NumCenters-1)];
-                  for(int di=0,dij=0; di<3*(NumCenters-1); di++) {
-                    for(int dj=di; dj<3*(NumCenters-1); dj++, ++dij){
+                  for(unsigned int di=0,dij=0; di<3*(NumCenters-1); di++) {
+                    for(unsigned int dj=di; dj<3*(NumCenters-1); dj++, ++dij){
                       const double value = scale_target * inteval[0].targets[dij][ijk * veclen + v];
                       libint_eri[di][dj] = value;
                       libint_eri[dj][di] = value;
                     }
                   }
 
-                  for(int di=0; di<3*NumCenters; di++) {
-                    for(int dj=di; dj<3*NumCenters; dj++){
+                  for(unsigned int di=0; di<3*NumCenters; di++) {
+                    for(unsigned int dj=di; dj<3*NumCenters; dj++){
 
                       const int ci = di/3;
                       const int cj = dj/3;

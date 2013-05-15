@@ -380,7 +380,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             if (veclen == 1) {
               fmeval_chebyshev.eval(erieval->LIBINT_T_SS_EREP_SS(0),PQ2*gammapq,amtot);
               LIBINT2_REALTYPE* ssss_ptr = erieval->LIBINT_T_SS_EREP_SS(0);
-              for(int l=0; l<=amtot; ++l, ++ssss_ptr)
+              for(unsigned int l=0; l<=amtot; ++l, ++ssss_ptr)
                 *ssss_ptr *= pfac;
             }
             else {
@@ -388,7 +388,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
               //fmeval_taylor.eval(F,PQ2*gammapq,amtot);
               {
                 LIBINT2_REALTYPE* ssss_ptr = erieval->LIBINT_T_SS_EREP_SS(0) + v;
-                for(int l=0; l<=amtot; ++l, ssss_ptr+=veclen)
+                for(unsigned int l=0; l<=amtot; ++l, ssss_ptr+=veclen)
                   *ssss_ptr = pfac*F[l];
               }
             }

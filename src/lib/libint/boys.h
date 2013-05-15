@@ -100,7 +100,7 @@ namespace libint2 {
         Real denom = (m + 0.5);
         Real term = 0.5 * exp(-T) / denom;
         Real sum = term;
-        Real rel_error;
+        //Real rel_error;
         Real epsilon;
         const Real relative_zero = 1e-15;
         const Real absolute_precision_o_10 = absolute_precision * 0.1;
@@ -108,7 +108,7 @@ namespace libint2 {
           denom += 1.0;
           term *= T / denom;
           sum += term;
-          rel_error = term / sum;
+          //rel_error = term / sum;
           // stop if adding a term smaller or equal to absolute_precision/10 and smaller than relative_zero * sum
           // When sum is small in absolute value, the second threshold is more important
           epsilon = _local_min_macro(absolute_precision_o_10, sum*relative_zero);
@@ -123,7 +123,7 @@ namespace libint2 {
         // evaluate for mmax using MacLaurin series
         // it converges fastest for the largest m -> use it to compute Fmmax(T)
         //  see JPC 94, 5564 (1990).
-        for(int m=0; m<=mmax; ++m)
+        for(size_t m=0; m<=mmax; ++m)
           Fm[m] = eval(T, m, absolute_precision);
         return;
         /** downward recursion does not maintain absolute precision, only relative precision, and cannot be used for T > 10
@@ -471,7 +471,6 @@ namespace libint2 {
          Fm(0) is simple to compute
          -------------------------------------------------------*/
         /*--- do the mmax first ---*/
-        const double cutoff_o_10 = 0.1 * cutoff_;
         for (int T_idx = max_T_; T_idx >= 0; --T_idx) {
           const double T = T_idx * delT_;
           libint2::FmEval_Reference<Real>::eval(grid_[T_idx], T, max_m_, cutoff_);
