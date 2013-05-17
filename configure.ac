@@ -826,10 +826,10 @@ AC_ARG_WITH(cxxgen,
 CXXGEN=$withval
 )
 
-CXXFLAGS_GEN_OPT=
+CXXGENFLAGS_OPT=
 AC_ARG_WITH(cxxgen-optflags,
 [  --with-cxxgen-optflags  Gives optimization flags for the C++ compiler for generated source.],
-CXXFLAGS_GEN_OPT=$withval
+CXXGENFLAGS_OPT=$withval
 )
 
 AC_ARG_WITH(cxxdepend,
@@ -954,16 +954,42 @@ changequote([, ])dnl
 
 dnl -------- Checks for compiler/linker options. ----------
 
-# if user provided CXXFLAGS, I'm set; else ...
-if test "X$CXXFLAGS" = X; then
-  # options needed only for optimization
-  if test "X$CXXFLAGS_OPT" = X; then
-    CXXFLAGS_OPT=-O2
-  fi
-  # options needed only for debugging
-  CXXFLAGS_DBG=-g
-  # options that are always needed
-  CXXFLAGS_MISC=
+# set the optimization default if neither CXXFLAGS or --with-*-optflags were given
+if test "X$CXXFLAGS_OPT" = X -a "X$CXXFLAGS" = X; then
+  CXXFLAGS_OPT=-O2
+fi
+if test "X$CXXGENFLAGS_OPT" = X -a "X$CXXGENFLAGS" = X; then
+  AC_MSG_WARN([C++ optimization options are not given! For optimum performance give CXXGENFLAGS or use --with-cxxgen-optflags configure option])
+  CXXGENFLAGS_OPT=-O2
+fi
+# options needed only for debugging
+CXXFLAGS_DBG=-g
+# options that are always needed
+CXXFLAGS_MISC=
+
+# now form CXXGENFLAGS ...
+if test "X$CXXGENFLAGS" = X; then
+  CXXGENFLAGS=$CXXFLAGS
+fi
+if test $DEBUG = yes; then
+ CXXGENFLAGS="$CXXGENFLAGS $CXXFLAGS_DBG $CXXFLAGS_MISC"
+ LDFLAGS="$LDFLAGS -g"
+elif test $DEBUG = opt; then
+ CXXGENFLAGS="$CXXGENFLAGS $CXXFLAGS_DBG $CXXGENFLAGS_OPT $CXXFLAGS_MISC"
+ LDFLAGS="$LDFLAGS -g"
+else
+ CXXGENFLAGS="$CXXGENFLAGS $CXXGENFLAGS_OPT $CXXFLAGS_MISC"
+fi
+
+# ... and CXXFLAGS
+if test $DEBUG = yes; then
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXFLAGS_MISC"
+ LDFLAGS="$LDFLAGS -g"
+elif test $DEBUG = opt; then
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXFLAGS_OPT $CXXFLAGS_MISC"
+ LDFLAGS="$LDFLAGS -g"
+else
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_OPT $CXXFLAGS_MISC"
 fi
 
 OBJSUF=o
@@ -988,21 +1014,7 @@ fi
 
 dnl -- special architecture options --
 
-if test "X$CXXFLAGS_GEN_OPT" = X; then
-  AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxxgen-optflags configure option])
-fi
-
-if test "X$CXXFLAGS" = "X"; then
- if test $DEBUG = yes; then
-  CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXFLAGS_MISC"
-  LDFLAGS="$LDFLAGS -g"
- elif test $DEBUG = opt; then
-  CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXOPTIONS_OPT $CXXFLAGS_MISC"
-  LDFLAGS="$LDFLAGS -g"
- else
-  CXXFLAGS="$CXXFLAGS $CXXFLAGS_OPT $CXXFLAGS_MISC"
- fi
-fi
+# nothing so far
 
 AC_SUBST(EXTRAINCLUDE)
 
@@ -1317,23 +1329,11 @@ fi
 
 CPPFLAGS="$CPPFLAGS" CXX="$CXX" CXXFLAGS="$CXXFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
-LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB" \
+LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB"
 
 dnl --------- configure compiler for generated source ---------
-CXXGENFLAGS=
 if test "X$CXXGEN" = X; then
   CXXGEN=$CXX
-  CXXGENFLAGS=$CXXFLAGS
-fi
-if test "X$CXXFLAGS_GEN_OPT" = X; then
-  CXXFLAGS_GEN_OPT=$CXXFLAGS_OPT
-fi
-if test $DEBUG = yes; then
-  CXXGENFLAGS="$CXXGENFLAGS $CXXFLAGS_DBG $CXXFLAGS_GEN_MISC"
-elif test $DEBUG = opt; then
-  CXXGENFLAGS="$CXXGENFLAGS $CXXFLAGS_DBG $CXXFLAGS_GEN_OPT $CXXFLAGS_GEN_MISC"
-else
-  CXXGENFLAGS="$CXXGENFLAGS $CXXFLAGS_GEN_OPT $CXXFLAGS_GEN_MISC"
 fi
 AC_SUBST(CXXGEN)
 AC_SUBST(CXXGENFLAGS)

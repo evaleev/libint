@@ -173,16 +173,26 @@ AC_CHECK_PROG(AR,ar,ar)
 
 dnl -------- Checks for compiler/linker options. ----------
 
-# if user provided CXXFLAGS, I'm set; else ...
-if test "X$CXXFLAGS" = X; then
-  # options needed only for optimization
-  if test "X$CXXFLAGS_OPT" = X; then
-    CXXFLAGS_OPT=-O2
-  fi
-  # options needed only for debugging
-  CXXFLAGS_DBG=-g
-  # options that are always needed
-  CXXFLAGS_MISC=
+# set the optimization default if neither CXXFLAGS or --with-*-optflags were given
+if test "X$CXXFLAGS_OPT" = X -a "X$CXXFLAGS" = X; then
+  AC_MSG_WARN([C++ optimization options are not given! For optimum performance give CXXFLAGS or use --with-cxx-optflags configure option])
+  CXXFLAGS_OPT=-O2
+fi
+
+# options needed only for debugging
+CXXFLAGS_DBG=-g
+# options that are always needed
+CXXFLAGS_MISC=
+
+# now form CXXFLAGS ...
+if test $DEBUG = yes; then
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXFLAGS_MISC"
+ LDFLAGS="$LDFLAGS -g"
+elif test $DEBUG = opt; then
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_DBG $CXXFLAGS_OPT $CXXFLAGS_MISC"
+ LDFLAGS="$LDFLAGS -g"
+else
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_OPT $CXXFLAGS_MISC"
 fi
 
 OBJSUF=o
@@ -255,20 +265,9 @@ else
     esac
 fi
 
-if test "X$CXXFLAGS" = "X"; then
- if test $DEBUG = yes; then
-  CXXFLAGS="$CXXOPTIONS_DBG $CXXOPTIONS_MISC"
-  LDFLAGS="$LDFLAGS -g"
- elif test $DEBUG = opt; then
-  CXXFLAGS="$CXXOPTIONS_DBG $COPTIONS_OPT $CXXOPTIONS_MISC"
-  LDFLAGS="$LDFLAGS -g"
- else
-  CXXFLAGS="$CXXOPTIONS_OPT $CXXOPTIONS_MISC"
- fi
-fi
-
 AC_SUBST(EXTRAINCLUDE)
 
+AC_SUBST(CXX)
 AC_SUBST(CXXFLAGS)
 AC_SUBST(LIBDIRS)
 AC_SUBST(OBJSUF)
@@ -377,7 +376,7 @@ fi
 
 CPPFLAGS="$CPPFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
-LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB" \
+LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB"
 
 dnl --------- Check for documentation tools ---------
 
