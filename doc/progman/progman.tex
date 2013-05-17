@@ -24,7 +24,11 @@
 \usepackage{graphicx}
 \usepackage{epsfig}
 \usepackage{amsfonts}
-\usepackage{braket}
+\IfFileExists{braket.sty}{
+  \usepackage{braket}
+}{
+  \def\braket#1{\langle #1 \rangle}
+}
 \usepackage{dcolumn}
 \usepackage{url}
 \usepackage{textcomp}
@@ -43,8 +47,12 @@
 \usepackage[sort&compress,super,comma]{natbib}
 \renewcommand{\thefootnote}{\fnsymbol{footnote}}
 \renewcommand{\familydefault}{\sfdefault}
-\usepackage[cm]{sfmath}
-\usepackage{bbding}
+\IfFileExists{sfmath.sty}{
+  \usepackage[cm]{sfmath}
+}{}
+\IfFileExists{bbding.sty}{
+  \usepackage{bbding}
+}{}
 
 
 \lstset{
@@ -692,8 +700,10 @@ will be replaced with a Fortran expression (I'm not sure how to pass pointer to 
 \begin{verbatim}
 _aB_p__0__d__1___TwoERep_s__0__s__1___Ab__up_0()
 \end{verbatim}
-where {\tt \_aB\_p\_\_0\_\_d\_\_1\_\_\_TwoERep\_s\_\_0\_\_s\_\_1\_\_\_Ab\_\_up\_0} is the name of the function
-to which {\tt libint2\_build\_eri[1][0][2][0]} points.
+where {\tt
+\_aB\_p\_\_0\_\_d\_\_1\_\_\_TwoERep\_s\_\_0\_\_s\_\_1\_\_\_Ab\_\_up\_0} is the
+name of the function to which \\
+{\tt libint2\_build\_eri[1][0][2][0]} points.
 
 Please send in your comments on how to actually make \LIBINT\ work from Fortran.
 
@@ -785,7 +795,9 @@ An integral of a two-body operator $\hat{O}({\bf r}_1, {\bf r}_2)$ over unnormal
 primitive Cartesian Gaussians is written as
 \begin{eqnarray}
 \int \phi({\bf r}_1; \zeta_a, {\bf a}, {\bf A}) \phi ({\bf r}_2; \zeta_c, {\bf c}, \C) \hat{O}({\bf r}_1, {\bf r}_2)
-\phi({\bf r}_1; \zeta_b, {\bf b}, \B) \phi({\bf r}_2; \zeta_d, {\bf d}, \D) d{\bf r}_1 d{\bf r}_2 \equiv ({\bf ab} |\hat{O}|{\bf cd})
+\phi({\bf r}_1; \zeta_b, {\bf b}, \B) \phi({\bf r}_2; \zeta_d, {\bf d}, \D)
+d{\bf r}_1 d{\bf r}_2 \equiv ({\bf ab} |\hat{O}|{\bf cd}) \equiv \braket{ {\bf
+ac} | \hat{O} | {\bf bd} }
 \end{eqnarray}
 A set of integrals $\{ ({\bf a} {\bf b}|\hat{O}({\bf r}_1, {\bf r}_2)|{\bf c} {\bf d}) \}$
 over all possible combinations of functions ${\bf a} \in {\rm Shell A}$, ${\bf b} \in {\rm Shell B}$, etc.
