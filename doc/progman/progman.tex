@@ -27,7 +27,7 @@
 \IfFileExists{braket.sty}{
   \usepackage{braket}
 }{
-  \def\braket#1{\langle #1 \rangle}
+  \newcommand{\braket}[1]{\langle #1 \rangle}
 }
 \usepackage{dcolumn}
 \usepackage{url}
@@ -271,7 +271,7 @@ of up to $f$ functions, etc.), and the maximum order of the
 ERI derivatives which can be computed.
 
 \begin{lstlisting}[label=lst:valmacros,caption=C preprocessor value macros
-provided by \libinth . The angled brakets describe valid macro values.]{}
+provided by \libinth . The angled brackets describe valid macro values.]{}
 #define LIBINT2_REALTYPE <C++ floating-point type>
 #define LIBINT2_MAX_VECLEN <positive integer>
 #define LIBINT2_API_PREFIX <string>
