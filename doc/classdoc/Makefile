@@ -20,12 +20,32 @@ install_target:: $(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(docdir)/html
 	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) html/* $(DESTDIR)$(docdir)/html
 
+install-html:: html install_target
+
+html:: $(TARGET)
+
 else
 
 TARGET=
 default::
 
+install-html:: html
+
+html::
+
 endif
+
+pdf::
+
+ps::
+
+dvi::
+
+install-pdf:: pdf
+
+install-ps:: ps
+
+install-dvi:: dvi
 
 clean::
 	-rm -rf html

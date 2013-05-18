@@ -111,6 +111,5 @@ dvi::
 html::
 	(cd doc && $(MAKE) $(DODEPENDOPT) html) || exit 1;
 
-
 doc::
-	(cd doc && $(MAKE) $(DODEPENDOPT) install) || exit 1;
+	(cd doc && $(MAKE) $(DODEPENDOPT) install-pdf install-html) || exit 1;
