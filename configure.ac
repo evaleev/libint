@@ -834,9 +834,8 @@ CXXGENFLAGS_OPT=$withval
 
 AC_ARG_WITH(cxxdepend,
 [  --with-cxxdepend        Gives the name of the C++ compiler with which to extract dependency information.],
-CXXDEPEND=$withval,CXXDEPEND=$CXX
+CXXDEPEND=$withval
 )
-AC_SUBST(CXXDEPEND)
 
 AC_ARG_WITH(ranlib,
 [  --with-ranlib           Gives the name of the ranlib program.],
@@ -1012,6 +1011,13 @@ if test -f depcheck.u; then
 fi
 /bin/rm -f depcheck.u depcheck.c depcheck.o
 
+if test "X$CXXDEPEND" = X; then
+  CXXDEPEND=$CXX
+fi
+AC_SUBST(CXXDEPEND)
+AC_SUBST(CXXDEPENDSUF)
+AC_SUBST(CXXDEPENDFLAGS)
+
 dnl -- special architecture options --
 
 # nothing so far
@@ -1022,8 +1028,6 @@ AC_SUBST(CXXFLAGS)
 AC_SUBST(LIBDIRS)
 AC_SUBST(OBJSUF)
 AC_SUBST(LIBSUF)
-AC_SUBST(CXXDEPENDSUF)
-AC_SUBST(CXXDEPENDFLAGS)
 
 
 dnl -------- Checks for architecture specific features. --------
