@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Libint by evaleev</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">Libint</h1>
+        <p class="header">Libint is a high-performance library for computing Gaussian integrals in quantum mechanics</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/evaleev/libint/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/evaleev/libint/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/evaleev/libint">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/evaleev">evaleev</a></p>
+
+
+      </header>
+      <section>
+        <h1>
+<a name="libint" class="anchor" href="#libint"><span class="octicon octicon-link"></span></a>libint</h1>
+
+<h2>
+<a name="what-is-libint" class="anchor" href="#what-is-libint"><span class="octicon octicon-link"></span></a>what is libint</h2>
+
+<p>libint is two things:
+    1. a library of C/C++ functions for efficient evaluation of several kinds of two-body molecular integrals over Gaussian functions;
+    2. the optimizing compiler that generates a Libint library.</p>
+
+<h2>
+<a name="who-needs-libint" class="anchor" href="#who-needs-libint"><span class="octicon octicon-link"></span></a>who needs libint</h2>
+
+<p>Developers of scientific software, such as for molecular electronic structure. In molecular electronic structure theory Gaussian basis sets are standard because they allow efficient evaluation of matrix elements of operators (molecular integrals). Modern electronic structure programs spend considerable portion of their runtime computing the Coulomb two-electron integrals. While anyone can compute Gaussian integrals using simple formulas (see, for example, <a href="http://www.files.chem.vt.edu/chem-dept/valeev/docs/ints.pdf">here</a> and <a href="http://www.files.chem.vt.edu/chem-dept/valeev/docs/project_ints.11292007.pdf">here</a>), the efficient evaluation of many-body can be (relatively) complicated. Libint is an open library that anyone can use to compute a variety of two-electron integrals, most importantly the Coulomb two-electron integrals and their arbitrary-order geometric derivatives, over Gaussians of arbitrary angular momentum. Among other notable features is the support for the nonstandard two-electron integrals that appear in explicitly correlated R12 methods.</p>
+
+<h2>
+<a name="versions-of-libint" class="anchor" href="#versions-of-libint"><span class="octicon octicon-link"></span></a>versions of libint</h2>
+
+<p>The older libint is version 1.1.x . It is incorporated into <a href="www.psicode.org">Psi</a> package and can be used with <a href="www.mpqc.org">MPQC</a> program. It is no longer developed, and minimally supported; download it <a href="https://sourceforge.net/projects/libint/files/v1-releases/">here</a>.</p>
+
+<p>The latest major version of Libint is 2 . Libint2 has been in use internally since 2004; in fact it is more stable than version 1. It has now been improved to production-ready status and officially released on April 25, 2011.</p>
+
+<h2>
+<a name="where-libint-is-used" class="anchor" href="#where-libint-is-used"><span class="octicon octicon-link"></span></a>where libint is used</h2>
+
+<p>It is currently used by production releases of <a href="www.mpqc.org">MPQC</a>, <a href="http://www.thch.uni-bonn.de/tc/orca/">ORCA</a>, <a href="www.psicode.org">Psi</a>, and <a href="http://cp2k.berlios.de/">CP2K</a> packages.</p>
+
+<h2>
+<a name="how-to-get-libint" class="anchor" href="#how-to-get-libint"><span class="octicon octicon-link"></span></a>how to get libint</h2>
+
+<p>The vast majority of users will not be interested in tinkering with the compiler -- and, thus, are recommended to download one of pre-generated libraries:
+    1. MPQC users can download a Libint 2.0 library with support for Coulomb and R12 integrals over up to l=7 functions <a href="https://sourceforge.net/projects/libint/files/libint-for-mpqc/">here</a>;
+    2. Electronic structure enthusiasts who want to experiment with Libint should simply download the library configured for MPQC (see iter 1) and obtain the programmer guide and test program <a href="https://sourceforge.net/projects/libint/files/libint-for-beginners/">here</a>;
+    3. ORCA users do not need to obtain Libint -- Libint version 2 has been integrated into ORCA;
+    4. Psi users do not need to obtain Libint -- Libint version 1 has been integrated into Psi.</p>
+
+<p>If you want to download the Libint compiler to generate a custom Libint library -- you can check it out from the source repository! (Read the <a href="https://sourceforge.net/p/libint/wiki/">wiki</a> for instructions).</p>
+
+<h2>
+<a name="license-and-warranty" class="anchor" href="#license-and-warranty"><span class="octicon octicon-link"></span></a>license and warranty</h2>
+
+<p>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.</p>
+
+<p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
+
+<p>Refer to the full text of the GNU General Public License. You can obtain the most up-to-date version of GPL if you write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>
+
+<h2>
+<a name="copyright" class="anchor" href="#copyright"><span class="octicon octicon-link"></span></a>copyright</h2>
+
+<p>For version 1:
+ Copyright (C) 1996-2013 <a href="http://www.valeyev.net/">Edward F. Valeev</a> and <a href="http://pisgah.chem.umass.edu/">Justin T. Fermann</a>.</p>
+
+<p>For version 2:
+ Copyright (C) 2004-2013 <a href="http://www.valeyev.net/">Edward F. Valeev</a>.</p>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>
