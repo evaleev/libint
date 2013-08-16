@@ -1283,7 +1283,8 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           typedef R12kG12 oper_type;
           // k=0
           if (!ssss) {
-            oper_type oper(0);
+            typedef oper_type::Descriptor oper_descr;
+            oper_type oper(oper_descr(0));
 #if LIBINT_CONTRACTED_INTS
             oper.descr().contract();
 #endif
@@ -1295,7 +1296,8 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
           // k=-1
           if (!ssss) {
-            oper_type oper(-1);
+            typedef oper_type::Descriptor oper_descr;
+            oper_type oper(oper_descr(-1));
 #if LIBINT_CONTRACTED_INTS
             oper.descr().contract();
 #endif
@@ -1310,7 +1312,8 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (true) {
             typedef TiG12_11_11_sq int_type;
             typedef int_type::OperType oper_type;
-            oper_type oper(0);
+            typedef oper_type::Descriptor oper_descr;
+            oper_type oper(oper_descr(0));
 #if LIBINT_CONTRACTED_INTS
             oper.descr().contract();
 #endif
@@ -1324,7 +1327,8 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (true) {
             typedef TiG12_11_11_sq int_type;
             typedef int_type::OperType oper_type;
-            oper_type oper(1);
+            typedef oper_type::Descriptor oper_descr;
+            oper_type oper(oper_descr(1));
 #if LIBINT_CONTRACTED_INTS
             oper.descr().contract();
 #endif
@@ -1339,7 +1343,8 @@ build_R12kG12_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           if (!ssss) {
             typedef G12TiG12_11_11_sq int_type;
             typedef int_type::OperType oper_type;
-            oper_type oper(0); // doesn't matter whether T1 or T2 here
+            typedef oper_type::Descriptor oper_descr;
+            oper_type oper(oper_descr(0)); // doesn't matter whether T1 or T2 here
 #if LIBINT_CONTRACTED_INTS
             oper.descr().contract();
 #endif
@@ -1466,7 +1471,8 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
             if (task == 0) {
               typedef R12kG12_11_11_sq int_type;
               typedef R12kG12 oper_type;
-              oper_type oper(0);
+              typedef oper_type::Descriptor oper_descr;
+              oper_type oper(oper_descr(0));
 #if LIBINT_CONTRACTED_INTS
               oper.descr().contract();
 #endif
@@ -1481,7 +1487,8 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const SafePtr<CompilationParamete
             if (task == 1) {
               typedef G12TiG12_11_11_sq int_type;
               typedef int_type::OperType oper_type;
-              oper_type oper(0); // doesn't matter whether T1 or T2 here
+              typedef oper_type::Descriptor oper_descr;
+              oper_type oper(oper_descr(0)); // doesn't matter whether T1 or T2 here
 #if LIBINT_CONTRACTED_INTS
               oper.descr().contract();
 #endif
@@ -1600,7 +1607,8 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           if (!ssss) {
             typedef R12kG12_11_11_sq int_type;
             typedef R12kG12 oper_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(0));
+            typedef oper_type::Descriptor oper_descr;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(oper_descr(0)));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -1609,7 +1617,8 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           if (!ssss) {
             typedef R12kG12_11_11_sq int_type;
             typedef R12kG12 oper_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(2));
+            typedef oper_type::Descriptor oper_descr;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(oper_descr(2)));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -1618,7 +1627,8 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           if (!ssss) {
             typedef R12kG12_11_11_sq int_type;
             typedef R12kG12 oper_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(4));
+            typedef oper_type::Descriptor oper_descr;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(oper_descr(4)));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -1627,7 +1637,8 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           if (true) {
             typedef DivG12prime_xTx_11_11_sq int_type;
             typedef int_type::OperType oper_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(0));
+            typedef oper_type::Descriptor oper_descr;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(oper_descr(0)));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
@@ -1636,7 +1647,8 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
           if (true) {
             typedef DivG12prime_xTx_11_11_sq int_type;
             typedef int_type::OperType oper_type;
-            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(1));
+            typedef oper_type::Descriptor oper_descr;
+            SafePtr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(oper_descr(1)));
             os << "building " << abcd->description() << endl;
             SafePtr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
