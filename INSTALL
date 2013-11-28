@@ -1,7 +1,7 @@
-For more complete instructions please refer to https://sourceforge.net/p/libint/home
+For more complete instructions please refer to https://github.com/evaleev/libint/wiki
 
 The installation procedure for the impatient and/or experts:
-0) only if obtained the compiler source via Mercurial:
+0) only if obtained the compiler source via Git:
    aclocal -I lib/autoconf; autoconf
 1) create a directory for object files:
    mkdir ../build; cd ../build
