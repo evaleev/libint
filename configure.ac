@@ -1392,7 +1392,7 @@ AC_CONFIG_FILES([src/bin/test_eri/stdtests.pl],[chmod +x src/bin/test_eri/stdtes
 AC_CONFIG_FILES([src/bin/test_eri/run_timing_suite.pl],[chmod +x src/bin/test_eri/run_timing_suite.pl])
 AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules
                 doc/MakeVars doc/MakeRules doc/progman/macros.tex doc/classdoc/doxygen.cfg
-                src/bin/libint/cgshell_ordering.h)
+                src/bin/libint/cgshell_ordering.h libint2.pc)
 
 dnl --------- Done! ---------
 AC_OUTPUT
