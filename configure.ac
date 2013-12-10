@@ -900,6 +900,13 @@ SCRATCHDIR=$withval
 )
 AC_SUBST(SCRATCHDIR)
 
+PKGCONFIGDIR='$(libdir)/pkgconfig'
+AC_ARG_WITH(pkgconfigdir,
+[  --with-pkgconfigdir     Specifies the location to put pkg-config's data file. Default is $(libdir)/pkgconfig.],
+PKGCONFIGDIR=$withval
+)
+AC_SUBST(PKGCONFIGDIR)
+
 dnl --------- Want absolute path for srcdir, not relative. ---------
 
 if test X$ac_srcdir_defaulted = Xyes; then
