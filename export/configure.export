@@ -143,6 +143,13 @@ LDFLAGS=$withval
 echo Using extra library directories: $withval
 )
 
+PKGCONFIGDIR='$(libdir)/pkgconfig'
+AC_ARG_WITH(pkgconfigdir,
+[  --with-pkgconfigdir     Specifies the location to put pkg-config's data file. Default is $(libdir)/pkgconfig.],
+PKGCONFIGDIR=$withval
+)
+AC_SUBST(PKGCONFIGDIR)
+
 dnl --------- Want absolute path for srcdir, not relative. ---------
 
 if test X$ac_srcdir_defaulted = Xyes; then
@@ -399,7 +406,7 @@ LIBSUF=la
 ENABLESHARED=yes
 AC_SUBST(ENABLESHARED)
 
-AC_CONFIG_FILES(MakeVars MakeRules MakeSuffixRules doc/Makefile)
+AC_CONFIG_FILES(MakeVars MakeRules MakeSuffixRules doc/Makefile libint2.pc)
 
 dnl --------- Done! ---------
 AC_OUTPUT
