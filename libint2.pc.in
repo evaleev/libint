@@ -7,4 +7,4 @@ Name: libint2
 Description: a library for the evaluation of molecular integrals of many-body operators over Gaussian functions
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lint2
-Cflags:-I${includedir}/libint2 
+Cflags: -I${includedir} -I${includedir}/libint2 
