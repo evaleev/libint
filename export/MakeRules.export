@@ -1,7 +1,7 @@
 
 default:: $(TOPDIR)/lib/$(TARGET)
 
-install:: install_inc install_target
+install:: install_inc install_target install_pkgconfig
 
 install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
@@ -16,6 +16,10 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/vector*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2_config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/boys.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+
+install_pkgconfig::
+	$(INSTALL) $(INSTALLDIROPT) $(pkgconfigdir)
+	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(pkgconfigdir)
 
 install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)

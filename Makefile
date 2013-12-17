@@ -4,6 +4,7 @@ ifndef SRCDIR
 endif
 
 -include $(TOPDIR)/Makedirlist
+-include $(TOPDIR)/src/lib/MakeVars
 
 SUBDIRS = src
 ALLSUBDIRS = $(SUBDIRS) doc
@@ -25,11 +26,17 @@ export::
 	  done
 	(cd export && $(MAKE) $(DODEPENDOPT) export) || exit 1;
 
-install::
+install:: install_pkgconfig
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install) || exit 1; \
 	  done
+
+ifdef pkgconfigdir
+install_pkgconfig:: 
+	$(INSTALL) $(INSTALLDIROPT) $(pkgconfigdir)
+	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(pkgconfigdir)
+endif
 
 install_inc::
 	for dir in $(SUBDIRS); \

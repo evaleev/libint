@@ -84,6 +84,7 @@ exec_prefix=@exec_prefix@
 bindir=@bindir@
 libdir=@libdir@
 includedir=@libintincludedir@
+pkgconfigdir=@PKGCONFIGDIR@
 
 RANLIB = @RANLIB@
 COMPRESS = gzip
