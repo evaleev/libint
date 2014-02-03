@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
   
 #if LIBINT2_CGSHELL_ORDERING != LIBINT2_CGSHELL_ORDERING_STANDARD
   std::cerr << "Cannot validate a library with non-standard shell ordering" << std::endl;
-  return 1;
+  return 0;
 #endif
   
   assert(argc == 1 || argc == 2 || argc == 3);
