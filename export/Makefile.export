@@ -43,3 +43,7 @@ doc:
 
 install_doc::
 	(cd doc && make install) || exit 1
+
+oclean::
+	find src -name '*.$(OBJSUF)' -print0 | xargs -0 rm -f
+	find src -name '*.o' -print0 | xargs -0 rm -f

@@ -58,8 +58,9 @@ distclean:: clean
 	cd tests; make distclean
 	cd doc; make distclean
 
-oclean::
-	-rm -rf src/*.o src/*.lo
+# this will break for large libraries, moved to MakeFile
+#oclean::
+#	-rm -f src/*.o src/*.lo
 
 targetclean::
 	-rm -rf $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/lib/.libs/

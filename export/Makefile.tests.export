@@ -14,10 +14,10 @@ $(TEST): test_eri.o eri.o
 	$(CXX) $(LDFLAGS) -o $@ $^
 
 clean:: targetclean
-	-rm -rf *.o *.d
+	-rm -f *.o *.d
 
 targetclean::
-	-rm -rf $(TEST)
+	-rm -f $(TEST)
 
 distclean:: clean
 
