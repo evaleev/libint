@@ -4,12 +4,12 @@ If you publish results using LIBINT, please cite it using:
 
 An unmodified standard release:
 
-LIBINT: A library for the evaluation of molecular integrals of many-body operators over Gaussian functions, Version 2.0.4
+LIBINT: A library for the evaluation of molecular integrals of many-body operators over Gaussian functions, Version 2.0.5
 Edward F. Valeev, http://libint.valeyev.net/ .
 
 A modified release:
 
-LIBINT: A library for the evaluation of molecular integrals of many-body operators over Gaussian functions, Version 2.0.4
+LIBINT: A library for the evaluation of molecular integrals of many-body operators over Gaussian functions, Version 2.0.5
 Edward F. Valeev, http://libint.valeyev.net/ . Modified by An Author, institution, location, year.
 
 The literature citation in bibtex format is:
