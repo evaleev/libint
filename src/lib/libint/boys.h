@@ -91,11 +91,16 @@ namespace libint2 {
 
 #define _local_min_macro(a,b) ((a) > (b) ? (a) : (b))
 
-  /// Slow for the sake of precision -- only use for reference purposes
+  /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
+    * using asymptotic expansion and recurrence.
+    * Slow for the sake of precision -- only use for reference purposes
+    *
+    * @tparam Real the type to use for all floating-point computations. Must be able to compute exponentials, i.e. exp(x), where x is Real, must be a valid expression.
+    */
   template<typename Real>
   struct FmEval_Reference {
 
-      /// computes a single value of Fm(T) using MacLaurin series.
+      /// computes a single value of \f$ F_m(T) \f$ using MacLaurin series.
       static Real eval(Real T, size_t m, Real absolute_precision) {
         Real denom = (m + 0.5);
         Real term = 0.5 * exp(-T) / denom;
@@ -117,7 +122,11 @@ namespace libint2 {
         return sum;
       }
 
-      /// fills up an array of Fm
+      /// fills up an array of Fm(T) for m in [0,mmax]
+      /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
+      /// @param[in] x the Boys function argument
+      /// @param[in] mmax the maximum value of m for which Boys function will be computed;
+      /// @param[in] absolute_precision the absolute precision to which to compute the result
       static void eval(Real* Fm, Real T, size_t mmax, Real absolute_precision) {
 
         // evaluate for mmax using MacLaurin series
@@ -138,7 +147,8 @@ namespace libint2 {
 
   };
 
-  /** Computes the Boys function, Fm(T), using Chebyshev interpolation from a precomputed table of values
+  /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
+    * using Chebyshev interpolation.
     * based on the code from ORCA by Dr. Frank Neese.
     */
   class FmEval_Chebyshev3 {
@@ -167,6 +177,13 @@ namespace libint2 {
         delete c;
       }
 
+      /// @return the maximum value of m for which the Boys function can be computed with this object
+      int max_m() const { return mmax; }
+
+      /// fills in Fm with computed Boys function values for m in [0,mmax]
+      /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
+      /// @param[in] x the Boys function argument
+      /// @param[in] mmax the maximum value of m for which Boys function will be computed; mmax must be <= the value returned by max_m
       inline void eval(double* Fm, double x, int mmax) const {
 
         // large T => use upward recursion
@@ -383,7 +400,11 @@ namespace libint2 {
   }
 #endif
 
-  /// Uses Taylor interpolation of up to 8-th order to compute the Boys function
+  /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
+    * using Taylor interpolation of up to 8-th order.
+    * @tparam Real the type to use for all floating-point computations. Must support std::exp, std::pow, std::fabs, std::max, and std::floor.
+    * @tparam INTERPOLATION_ORDER the interpolation order. The higher the order the less memory this object will need, but the computational cost will increase (usually very slightly)
+    */
   template<typename Real, int INTERPOLATION_ORDER = 6>
   class FmEval_Taylor {
     public:
@@ -392,6 +413,7 @@ namespace libint2 {
       const Real relative_zero_;
       const Real soft_zero_;
 
+      /// Constructs the object to be able to compute Boys funcion for m in [0,mmax], with relative \c precision
       FmEval_Taylor(unsigned int mmax, Real precision) :
           relative_zero_(1e-15), soft_zero_(1e-6), cutoff_(precision), numbers_(
               INTERPOLATION_ORDER + 1, 2 * (mmax + INTERPOLATION_ORDER - 1)) {
@@ -483,6 +505,16 @@ namespace libint2 {
         delete[] grid_;
       }
 
+      /// @return the maximum value of m for which this object can compute the Boys function
+      int max_m() const { return max_m_ - INTERPOLATION_ORDER + 1; }
+      /// @return the precision with which this object can compute the Boys function
+      Real precision() const { return cutoff_; }
+
+      /// computes Boys function values with m index in range [0,mmax]
+      /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
+      /// @param[in] x the Boys function argument
+      /// @param[in] mmax the maximum value of m for which Boys function will be computed;
+      ///                  it must be <= the value returned by max_m() (this is not checked)
       void eval(Real* Fm, Real T, int mmax) const {
         const double sqrt_pio2 = 1.2533141373155002512;
         const double two_T = 2.0 * T;
@@ -632,6 +664,10 @@ namespace libint2 {
         numbers_(),
         Gm_0_U_(256) // should be enough to hold up to G_{255}(0,U)
       { }
+
+      unsigned int max_m() const { return mmax; }
+      /// @return the precision with which this object can compute the result
+      Real precision() const { return precision_; }
 
       ///
       void eval_yukawa(Real* Gm, Real T, Real U, size_t mmax, Real absolute_precision) {
@@ -860,8 +896,10 @@ namespace libint2 {
   //////////////////////////////////////////////////////////
 
   /**
-   * Evaluates core integral Gm(rho, T) over a general contracted
-   * Gaussian geminal \f$ r_{12}^k \sum_i c_i \exp(- a_i r_{12}^2), \quad k = -1, 0, 2 \f$ .
+   * Evaluates core integral \$ G_m(\rho, T) = \left( - \frac{\partial}{\partial T} \right)^n G_0(\rho,T) \f$,
+   * \f$ G_0(\rho,T) = \int \exp(-\rho |\vec{r} - \vec{P} + \vec{Q}|^2) g(r) \, {\rm d}\vec{r} \f$
+   * over a general contracted
+   * Gaussian geminal \f$ g(r_{12}) = r_{12}^k \sum_i c_i \exp(- a_i r_{12}^2), \quad k = -1, 0, 2 \f$ .
    * The integrals are needed in R12/F12 methods with STG-nG correlation factors.
    * Specifically, for a correlation factor \f$ f(r_{12}) = \sum_i c_i \exp(- a_i r_{12}^2) \f$
    * integrals with the following kernels are needed:
@@ -876,12 +914,13 @@ namespace libint2 {
    *   \f$ [f(r_{12}), [\hat{T}_1, g(r_{12})]] \f$, where f and g are two different geminals,
    *   can also be handled straightforwardly.
    *
+   * \note for more details see DOI: 10.1039/b605188j
    */
   template<typename Real, int k>
   struct GaussianGmEval {
 
       /**
-       * @param[in] mmax the evaluator will be used to compute Gm(T) for m <= mmax
+       * @param[in] mmax the evaluator will be used to compute Gm(T) for 0 <= m <= mmax
        */
       GaussianGmEval(int mmax, Real precision) : mmax_(mmax),
           precision_(precision), fm_eval_(0), numbers_(-1,-1,mmax),
@@ -904,13 +943,19 @@ namespace libint2 {
         fm_eval_ = 0;
       }
 
-      /** fills up Gm(T) from the top using downward recursion.
+      /// @return the maximum value of m for which the \f$ G_m(\rho, T) \f$ can be computed with this object
+      int max_m() const { return mmax_; }
+      /// @return the precision with which this object can compute the Boys function
+      Real precision() const { return precision_; }
+
+      /** computes \f$ G_m(\rho, T) \f$ using downward recursion.
        *
-       * @param[out] Gm
+       * @param[out] Gm array to be filled in with the \f$ Gm(\rho, T) \f$ values, must be at least mmax+1 elements long
        * @param[in] rho
        * @param[in] T
-       * @param[in] mmax
-       * @param[in] geminal
+       * @param[in] mmax mmax the maximum value of m for which Boys function will be computed;
+       *                 it must be <= the value returned by max_m() (this is not checked)
+       * @param[in] geminal the Gaussian geminal for which the core integral \f$ Gm(\rho, T) \f$ is computed
        */
       void eval(Real* Gm, Real rho, Real T, size_t mmax,
                 const std::vector<std::pair<Real, Real> >& geminal) {
