@@ -1,4 +1,6 @@
 
+03/05/2014:  Fixed compilation issues with printf, due to Susi Lehtola -EFV
+
 05/15/2013:  Upgraded libtool and bin/config.*; updated license info, etc. -EFV
 
 12/05/2007:  Upgraded to libtool-1.5.24, which works on Darwin/gcc. -EFV
