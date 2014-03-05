@@ -1,0 +1,10 @@
+LIBINT - a library for the evaluation of molecular integrals of two-body
+operators over Gaussian functions
+Copyright (C) 1996-2013 Edward F. Valeev and Justin T. Fermann
+
+See INSTALL for installation intructions.
+
+Contact info:
+  o project page: http://sf.net/projects/libint/
+  o other info - http://libint.valeyev.net/
+  o e-mail - libint@valeyev.edu

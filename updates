@@ -1,4 +1,6 @@
 
+05/15/2013:  Upgraded libtool and bin/config.*; updated license info, etc. -EFV
+
 12/05/2007:  Upgraded to libtool-1.5.24, which works on Darwin/gcc. -EFV
 
 08/29/2007:  1) Fixed a severe bug in libderiv

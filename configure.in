@@ -1,4 +1,4 @@
-define([libint_mmm_version],[1.1.4])
+define([libint_mmm_version],[1.1.5])
 define([libint_buildid],[stable])
 define([libint_so_version],[1:0:0])
 
@@ -9,6 +9,7 @@ AC_INIT(src/bin/libint/build_libint.c)
 AC_PREREQ(2.52)
 AC_CONFIG_HEADER(src/bin/libint_config.h)
 AC_CONFIG_AUX_DIR(bin)
+AC_CONFIG_MACRO_DIR([lib/autoconf])
 
 AC_CANONICAL_SYSTEM
 AC_SET_MAKE
