@@ -195,7 +195,7 @@ int main()
 
 void punt(char* str)
 {
-  printf(str);
+  printf("%s",str);
   exit(1);
 }
 
