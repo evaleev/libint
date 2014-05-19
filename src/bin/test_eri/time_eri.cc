@@ -3,6 +3,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <math.h>
+#include <sys/time.h>
 
 #include <rr.h>
 #include <iter.h>
@@ -74,6 +75,12 @@ int main(int argc, char** argv)
   std::vector<Libint_eri0_t> erieval(contrdepth4);
   const int max_am = max(max(am[0],am[1]),max(am[2],am[3]));
   LIBINT2_PREFIXED_NAME(libint2_init_eri0)(&erieval[0],max_am,0);
+
+  // record start wall time
+  struct timeval tod;
+  gettimeofday(&tod,0);
+  const double start_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
+
   prep_libint2(erieval,rsqset,0);
   erieval[0].nflops[0] = 0;
   
@@ -86,8 +93,11 @@ int main(int argc, char** argv)
   for(int iter=0; iter<niter; iter++)
     COMPUTE_XX_ERI_XX(&erieval[0]);
 
+  // record end wall time, compute total wall time spent here
+  gettimeofday(&tod,0);
+  const double end_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
   const unsigned int nints = am2nbf(am[0]) * am2nbf(am[1]) * am2nbf(am[2]) * am2nbf(am[3]) * LIBINT2_MAX_VECLEN;
-  cout << "nflops = " << *(erieval[0].nflops) << " nints = " << nints << endl;
+  cout << "nflops = " << *(erieval[0].nflops) << " nints = " << nints << " wtime = " << (end_wall_time - start_wall_time) << " seconds" << endl;
 
   LIBINT2_PREFIXED_NAME(libint2_cleanup_eri0)(&erieval[0]);
 
