@@ -44,7 +44,6 @@ void test_2eri(unsigned int deriv_order,
 
 /// give optional derivative order (default = 0, i.e. regular integrals)
 int main(int argc, char** argv) {
-  // Random comment
   assert(argc == 1 || argc == 2 || argc == 3);
   const unsigned int deriv_order = (argc == 2 || argc == 3) ? atoi(argv[1]) : 0u;
   const unsigned int lmax_max = (argc == 3) ? atoi(argv[2]) : UINT_MAX;
