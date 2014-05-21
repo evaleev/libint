@@ -192,7 +192,7 @@ namespace libint2 {
           unsigned int cv = 0;
           for(unsigned int c = 0; c < Nc; ++c) {
             for(unsigned int v=0; v<veclen; ++v, ++cv) {
-              double value = WP[v] * src1_ptr[cv] + axyz * inteval->oo2z[v] * (src2_ptr[cv] - inteval->roz[v] * src3_ptr[cv]);
+              LIBINT2_REALTYPE value = WP[v] * src1_ptr[cv] + axyz * inteval->oo2z[v] * (src2_ptr[cv] - inteval->roz[v] * src3_ptr[cv]);
               if (not unit_b) value += PA[v] * src0_ptr[cv];
               target[cv] = value;
             }
@@ -206,7 +206,7 @@ namespace libint2 {
           unsigned int cv = 0;
           for(unsigned int c = 0; c < Nc; ++c) {
             for(unsigned int v=0; v<veclen; ++v, ++cv) {
-              double value = WP[v] * src1_ptr[cv];
+              LIBINT2_REALTYPE value = WP[v] * src1_ptr[cv];
               if (not unit_b)
                 value += PA[v] * src0_ptr[cv];
               target[cv] = value;
