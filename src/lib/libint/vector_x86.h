@@ -2,6 +2,8 @@
 #ifndef _libint2_src_lib_libint_vectorx86_h_
 #define _libint2_src_lib_libint_vectorx86_h_
 
+#include <cstring>
+
 #ifdef __SSE2__
 
 #include <emmintrin.h>
