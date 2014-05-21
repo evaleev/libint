@@ -68,11 +68,16 @@ namespace libint2 { namespace simd {
         return result;
       }
 
-//      operator double() const {
-//        double d0[2];
-//        _mm_store_sd(&(d0[0]), d);
-//        return d0[0];
-//      }
+      explicit operator double() const {
+        double d0[2];
+        ::memcpy(&(d0[0]), &d, sizeof(__m128d));
+        // this segfaults on OS X
+        //_mm_storeu_pd(&(d0[0]), d);
+//        // aligned alternative requires C++11's alignas, but efficiency should not matter here
+//        alignas(__m128d) double d0[2];
+//        _mm_store_pd(&(d0[0]), d);
+        return d0[0];
+      }
 
       void convert(double(&a)[2]) const {
         _mm_storeu_pd(&a[0], d);
@@ -291,13 +296,16 @@ namespace libint2 { namespace simd {
         return result;
       }
 
-//      operator float() const {
-//        float d0[4];
-//        _mm_store_ss(&(d0[0]), d);
-//        //alignas(__m128) float d0[4];
-//        //_mm_store_ss(&(d0[0]), d);
-//        return d0[0];
-//      }
+      explicit operator float() const {
+        float d0[4];
+        ::memcpy(&(d0[0]), &d, sizeof(__m128));
+        // this segfaults on OS X
+        //_mm_storeu_ps(&(d0[0]), d);
+//        // aligned alternative requires C++11's alignas, but efficiency should not matter here
+//        alignas(__m128) float d0[4];
+//        _mm_store_ps(&(d0[0]), d);
+        return d0[0];
+      }
 
       void convert(T(&a)[4]) const {
         _mm_storeu_ps(&a[0], d);
@@ -516,14 +524,16 @@ namespace libint2 { namespace simd {
         return result;
       }
 
-//      operator double() const {
-//        double d0[4];
-//        _mm256_storeu_pd(&(d0[0]), d);
-//        // aligned alternative, but efficiency should not matter here
+      explicit operator double() const {
+        double d0[4];
+        ::memcpy(&(d0[0]), &d, sizeof(__m256d));
+        // this segfaults on OS X
+//        _mm256_storeu_pd(&d0[0], d);
+//        // aligned alternative requires C++11's alignas, but efficiency should not matter here
 //        //        alignas(__m256d) double d0[4];
 //        //        _mm256_store_pd(&(d0[0]), d);
-//        return d0[0];
-//      }
+        return d0[0];
+      }
 
       void convert(T(&a)[4]) const {
         _mm256_storeu_pd(&a[0], d);
