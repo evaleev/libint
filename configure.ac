@@ -1283,7 +1283,49 @@ AC_COMPILE_IFELSE(
 dnl -- Checks for typedefs, structures, and compiler characteristics. --
 AC_TYPE_SIZE_T
 
-dnl ------------------ Check if the given real type is usable with CXXGEN -----------------------
+CPPFLAGS="$CPPFLAGS" CXX="$CXX" CXXFLAGS="$CXXFLAGS" \
+LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
+LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB"
+
+dnl --------- configure compiler for generated source ---------
+if test "X$CXXGEN" = X; then
+  CXXGEN=$CXX
+fi
+AC_SUBST(CXXGEN)
+AC_SUBST(CXXGENFLAGS)
+
+dnl Check if sources compiled with CXX and CXXGEN can be linked together
+CXX_COMPATIBLE_WITH_CXXGEN=yes
+if test "X$CXX" != "X$CXXGEN"; then
+AC_MSG_CHECKING([[for compatible cxx and cxxgen compilers]])
+echo "extern void func1(); int main(int argc, char**argv) { func1(); } " > linkcheck1.cc
+echo "void func1() {}" > linkcheck2.cc
+$CXX $CPPFLAGS $CXXFLAGS -c linkcheck1.cc > /dev/null 2>&1
+$CXXGEN $CPPFLAGS $CXXGENFLAGS -c linkcheck2.cc > /dev/null 2>&1
+$LD $LDFLAGS -o linkcheck1 linkcheck1.o linkcheck2.o > /dev/null 2>&1
+$CXX $LDFLAGS -o linkcheck2 linkcheck1.o linkcheck2.o > /dev/null 2>&1
+$CXXGEN $LDFLAGS -o linkcheck3 linkcheck1.o linkcheck2.o > /dev/null 2>&1
+if test -f linkcheck1 -a -f linkcheck2 -a -f linkcheck3; then
+  AC_MSG_RESULT([[yes]])
+else
+  AC_MSG_RESULT([[no]])
+  AC_MSG_WARN([[Compilers cxx and cxxgen produce incompatible code! You will not be able to test generated code.]])
+  CXX_COMPATIBLE_WITH_CXXGEN=no
+fi
+/bin/rm -f linkcheck1 linkcheck2 linkcheck3  linkcheck1.cc linkcheck2.cc linkcheck1.o linkcheck2.o
+fi
+
+AC_SUBST(CXX_COMPATIBLE_WITH_CXXGEN)
+
+dnl ------------------ Check if real type is given and is usable with CXXGEN -----------------------
+
+AC_ARG_WITH(real-type,
+[  --with-real-type        Compute all integrals using the given real type (default: double).],
+[
+AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_REAL,"$withval")
+libint_user_defined_real=$withval
+AC_MSG_RESULT([Using real type: $withval])
+])
 
 # extra includes may be needed in that case!
 if test "X$libint_user_defined_real" != "X"; then
@@ -1328,7 +1370,7 @@ if test "X$libint_user_defined_real" != "X"; then
    CXXFLAGS=$copy2_CXXFLAGS
   ],
   [AC_MSG_RESULT([no])
-   AC_MSG_ERROR([[real type $withval is not usable, perhaps extra -I directories or extra #include's are needed?]])
+   AC_MSG_ERROR([[real type $libint_user_defined_real is not usable, perhaps extra -I directories or extra #include's are needed?]])
   ]
  )
  
@@ -1337,41 +1379,6 @@ if test "X$libint_user_defined_real" != "X"; then
  CXX=$copy_CXX
  CXXFLAGS=$copy_CXXFLAGS
 fi
-
-CPPFLAGS="$CPPFLAGS" CXX="$CXX" CXXFLAGS="$CXXFLAGS" \
-LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
-LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB"
-
-dnl --------- configure compiler for generated source ---------
-if test "X$CXXGEN" = X; then
-  CXXGEN=$CXX
-fi
-AC_SUBST(CXXGEN)
-AC_SUBST(CXXGENFLAGS)
-
-dnl Check if sources compiled with CXX and CXXGEN can be linked together
-CXX_COMPATIBLE_WITH_CXXGEN=yes
-if test "X$CXX" != "X$CXXGEN"; then
-AC_MSG_CHECKING([[for compatible cxx and cxxgen compilers]])
-echo "extern void func1(); int main(int argc, char**argv) { func1(); } " > linkcheck1.cc
-echo "void func1() {}" > linkcheck2.cc
-$CXX $CPPFLAGS $CXXFLAGS -c linkcheck1.cc > /dev/null 2>&1
-$CXXGEN $CPPFLAGS $CXXGENFLAGS -c linkcheck2.cc > /dev/null 2>&1
-$LD $LDFLAGS -o linkcheck1 linkcheck1.o linkcheck2.o > /dev/null 2>&1
-$CXX $LDFLAGS -o linkcheck2 linkcheck1.o linkcheck2.o > /dev/null 2>&1
-$CXXGEN $LDFLAGS -o linkcheck3 linkcheck1.o linkcheck2.o > /dev/null 2>&1
-if test -f linkcheck1 -a -f linkcheck2 -a -f linkcheck3; then
-  AC_MSG_RESULT([[yes]])
-else
-  AC_MSG_RESULT([[no]])
-  AC_MSG_WARN([[Compilers cxx and cxxgen produce incompatible code! You will not be able to test generated code.]])
-  CXX_COMPATIBLE_WITH_CXXGEN=no
-fi
-/bin/rm -f linkcheck1 linkcheck2 linkcheck3  linkcheck1.cc linkcheck2.cc linkcheck1.o linkcheck2.o
-fi
-
-AC_SUBST(CXX_COMPATIBLE_WITH_CXXGEN)
-
 
 dnl --------- Shared library configuration. ---------
 
