@@ -327,6 +327,23 @@ namespace libint2 { namespace simd {
     return c;
   }
 
+  // narrows a!
+  inline VectorSSEFloat operator*(double a, VectorSSEFloat b) {
+    VectorSSEFloat c;
+    VectorSSEFloat _a((float)a);
+    c.d = _mm_mul_ps(_a.d, b.d);
+    return c;
+  }
+
+  // narrows b!
+  inline VectorSSEFloat operator*(VectorSSEFloat a, double b) {
+    VectorSSEFloat c;
+    VectorSSEFloat _b((float)b);
+    c.d = _mm_mul_ps(a.d, _b.d);
+    return c;
+  }
+
+
   inline VectorSSEFloat operator*(int a, VectorSSEFloat b) {
     if (a == 1)
       return b;
