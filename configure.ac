@@ -952,7 +952,7 @@ if [ X$PERL = X ]; then
   echo "Could not find the program perl!"
   echo "Most system vendors provide it."
   echo "It can also be obtained at"
-  echo "ftp://prep.ai.mit.edu/pub/gnu"
+  echo "http://www.perl.org/"
   exit 1
 fi
 
