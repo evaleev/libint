@@ -111,7 +111,7 @@ namespace libint2 {
         const Real absolute_precision_o_10 = absolute_precision * 0.1;
         do {
           denom += 1.0;
-          term *= T / denom;
+          term = term * T / denom;
           sum += term;
           //rel_error = term / sum;
           // stop if adding a term smaller or equal to absolute_precision/10 and smaller than relative_zero * sum

@@ -7,7 +7,8 @@ endif
 -include $(TOPDIR)/src/lib/MakeVars
 
 SUBDIRS = src
-ALLSUBDIRS = $(SUBDIRS) doc
+CLEANSUBDIRS = src tests/eri
+ALLSUBDIRS = $(CLEANSUBDIRS) doc tests/eri
 
 default::
 	for dir in $(SUBDIRS); \
@@ -57,13 +58,13 @@ uninstall::
 	  done
 
 clean::
-	for dir in $(SUBDIRS); \
+	for dir in $(CLEANSUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) clean) || exit 1; \
 	  done
 
 oclean::
-	for dir in $(SUBDIRS); \
+	for dir in $(CLEANSUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) oclean) || exit 1; \
 	  done
@@ -83,7 +84,7 @@ targetclean::
 	  done
 
 realclean::
-	for dir in $(SUBDIRS); \
+	for dir in $(CLEANSUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) realclean) || exit 1; \
 	  done
