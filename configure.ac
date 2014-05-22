@@ -1064,7 +1064,10 @@ if test "X$have_posix_memalign" != "X0"; then
  else
   LIBINT_ALIGN_SIZE=0
  fi
-  AC_DEFINE_UNQUOTED(LIBINT_ALIGN_SIZE, $LIBINT_ALIGN_SIZE)
+ AC_DEFINE_UNQUOTED(LIBINT_ALIGN_SIZE, $LIBINT_ALIGN_SIZE)
+else # no posix_memalign = death
+ echo "did not find posix_memalign ... this SHOULD NOT happen. Cannot proceed."
+ exit 1
 fi
 
 dnl ------------------ Check for support for C++11 standard features --------------
