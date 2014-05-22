@@ -308,6 +308,10 @@ namespace libint2 { namespace simd {
 //        _mm_store_ps(&(d0[0]), d);
         return d0[0];
       }
+      explicit operator double() const {
+        const float result_flt = this->operator float();
+        return result_flt;
+      }
 
       void convert(T(&a)[4]) const {
         _mm_storeu_ps(&a[0], d);
