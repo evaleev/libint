@@ -71,7 +71,7 @@ struct RandomShellSet {
 };
 
 template<typename LibintEval>
-void prep_libint2(std::vector<LibintEval>& erievals,
+void prep_libint2(LibintEval* erievals,
                   const RandomShellSet<4u>& rsqset,
                   int norm_flag,
                   int deriv_order = 0) {
@@ -405,7 +405,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 }
 
 template<typename LibintEval>
-void prep_libint2(std::vector<LibintEval>& erievals,
+void prep_libint2(LibintEval* erievals,
                   const RandomShellSet<3u>& rsqset,
                   int norm_flag,
                   int deriv_order = 0) {
@@ -780,7 +780,7 @@ void prep_libint2(std::vector<LibintEval>& erievals,
 }
 
 template<typename LibintEval>
-void prep_libint2(std::vector<LibintEval>& erievals,
+void prep_libint2(LibintEval* erievals,
                   const RandomShellSet<2u>& rsqset,
                   int norm_flag,
                   int deriv_order = 0) {
