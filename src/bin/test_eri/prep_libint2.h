@@ -377,11 +377,14 @@ void prep_libint2(std::vector<LibintEval>& erievals,
             pfac *= c0 * c1 * c2 * c3;
 
             // if veclen=1, ignore the F scratch, use the erieval directly
-            if (veclen == 1) {
-              fmeval_chebyshev.eval(erieval->LIBINT_T_SS_EREP_SS(0),PQ2*gammapq,amtot);
+            if (veclen == 1 && std::is_same<double,LIBINT2_REALTYPE>::value) {
+              { // this is only used for double realtype, so nothing nefarious here, just a workaround the type system
+                double* ssss_ptr = reinterpret_cast<double*>(erieval->LIBINT_T_SS_EREP_SS(0));
+                fmeval_chebyshev.eval(ssss_ptr,PQ2*gammapq,amtot);
+              }
               LIBINT2_REALTYPE* ssss_ptr = erieval->LIBINT_T_SS_EREP_SS(0);
               for(unsigned int l=0; l<=amtot; ++l, ++ssss_ptr)
-                *ssss_ptr *= pfac;
+                *ssss_ptr = *ssss_ptr * pfac;
             }
             else {
               fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);

@@ -67,7 +67,7 @@ namespace libint2 {
         --a[xyz];
 
         // redirect
-        const double *pfac0_0, *pfac4_0;
+        const LIBINT2_REALTYPE *pfac0_0, *pfac4_0;
         switch(xyz) {
           case x:
             pfac0_0 = inteval->R12kG12_pfac0_0_x;

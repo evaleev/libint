@@ -1,30 +1,30 @@
-For more complete instructions please refer to https://github.com/evaleev/libint/wiki
+For (more) complete instructions please refer to https://github.com/evaleev/libint/wiki
 
 The installation procedure for the impatient and/or experts:
-0) only if obtained the compiler source via Git:
-   aclocal -I lib/autoconf; autoconf
+0) create configure:
+   $ aclocal -I lib/autoconf; autoconf
 1) create a directory for object files:
-   mkdir ../build; cd ../build
+   $ mkdir ../build; cd ../build
 2) configure the package:
-   ../configure
+   $ ../configure
    Most often you will need to specify command-line options to configure.
    To obtain a list of configure options run 'configure --help'.
 
 then either choose path a or b:
 
 3a) build the Libint compiler, then generate and compile a library:
-   make
+   $ make
 4a) optional validation of the library:
-  cd tests/eri
-  make
-  ./test 0
-  ./test 1 (if derivative Coulomb integrals were enabled)
-  ./test 2 (if second-derivative Coulomb integrals were enabled)
-  cd ../..
+   $ cd tests/eri
+   $ make
+   $ ./test 0
+   $ ./test 1 (if derivative Coulomb integrals were enabled)
+   $ ./test 2 (if second-derivative Coulomb integrals were enabled)
+   $ cd ../..
 5a) install the compiled library:
-  make install
+   $ make install
 
 3b) build the Libint compiler, then generate and package a library for redistribution
-   make export
-   this produce a tarball with a Libint library that can be unpacked, configured, and compiled elsewhere.
+   $ make export
+   this produces a tarball with a Libint library that can be unpacked, configured, and compiled elsewhere.
 

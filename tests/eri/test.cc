@@ -297,14 +297,14 @@ void test_4eri(unsigned int deriv_order,
                     // for derivative integrals this involves
                     // using translational invariance to reconstruct
                     //
-                    std::vector<double> new_eri;
+                    std::vector<LIBINT2_REALTYPE> new_eri;
                     if (deriv_order == 0)
                       new_eri.push_back( scale_target * inteval[0].targets[0][ijkl * veclen + v] );
 
                     // derivatives w.r.t. center 2 skipped and must be reconstructed using the translational invariance
                     if (deriv_order == 1) {
                       for (unsigned int di = 0; di < nderiv; ++di) {
-                        LIBINT2_REF_REALTYPE value;
+                        LIBINT2_REALTYPE value;
                         if (di<6)
                           value = scale_target * inteval[0].targets[di][ijkl * veclen + v];
                         else if (di>=9)
@@ -320,10 +320,10 @@ void test_4eri(unsigned int deriv_order,
                     // derivatives w.r.t. center 2 are skipped and must be reconstructed using the translational invariance
                     if (deriv_order == 2) {
                       const unsigned int NumCenters = 4;
-                      double libint_eri[3*(NumCenters-1)][3*(NumCenters-1)];
+                      LIBINT2_REALTYPE libint_eri[3*(NumCenters-1)][3*(NumCenters-1)];
                       for(unsigned int di=0,dij=0; di<3*(NumCenters-1); di++) {
                         for(unsigned int dj=di; dj<3*(NumCenters-1); dj++, ++dij){
-                          const double value = scale_target * inteval[0].targets[dij][ijkl * veclen + v];
+                          const LIBINT2_REALTYPE value = scale_target * inteval[0].targets[dij][ijkl * veclen + v];
                           libint_eri[di][dj] = value;
                           libint_eri[dj][di] = value;
                         }
@@ -337,7 +337,7 @@ void test_4eri(unsigned int deriv_order,
                           const int xyzi = di%3;
                           const int xyzj = dj%3;
 
-                          double value = 0.0;
+                          LIBINT2_REALTYPE value = 0.0;
 
                           // d2/dCidCj = d2/dAidAj + d2/dAidBj + d2/dAidDj + d2/dBidAj + d2/dBidBj + d2/dBidDj + d2/dDidAj + d2/dDidBj + d2/dDidDj
                           if (ci == 2 && cj == 2) {
@@ -375,7 +375,7 @@ void test_4eri(unsigned int deriv_order,
                     // compare reference and libint integrals
                     //
                     for (unsigned int di = 0; di < nderiv; ++di) {
-                      const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);
+                      const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - double(new_eri[di]));
                       const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
                       if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
                         std::cout << "Elem " << ijkl << " di= " << di << " v="
@@ -631,7 +631,7 @@ void test_3eri(unsigned int deriv_order,
                   }
                 }
 
-                std::vector<double> new_eri;
+                std::vector<LIBINT2_REALTYPE> new_eri;
 
                 if (deriv_order == 0)
                   new_eri.push_back( scale_target * inteval[0].targets[0][ijk * veclen + v] );
@@ -651,10 +651,10 @@ void test_3eri(unsigned int deriv_order,
                 // derivatives w.r.t. center 0 are skipped and must be reconstructed using the translational invariance
                 if (deriv_order == 2) {
                   const unsigned int NumCenters = 3;
-                  double libint_eri[3*(NumCenters-1)][3*(NumCenters-1)];
+                  LIBINT2_REALTYPE libint_eri[3*(NumCenters-1)][3*(NumCenters-1)];
                   for(unsigned int di=0,dij=0; di<3*(NumCenters-1); di++) {
                     for(unsigned int dj=di; dj<3*(NumCenters-1); dj++, ++dij){
-                      const double value = scale_target * inteval[0].targets[dij][ijk * veclen + v];
+                      const LIBINT2_REALTYPE value = scale_target * inteval[0].targets[dij][ijk * veclen + v];
                       libint_eri[di][dj] = value;
                       libint_eri[dj][di] = value;
                     }
@@ -668,7 +668,7 @@ void test_3eri(unsigned int deriv_order,
                       const int xyzi = di%3;
                       const int xyzj = dj%3;
 
-                      double value = 0.0;
+                      LIBINT2_REALTYPE value = 0.0;
 
                       // d2/dAidAj = d2/dBidBj + d2/dBidCj + d2/dCidBj + d2/dCidCj
                       if (ci == 0 && cj == 0) {
@@ -904,7 +904,7 @@ void test_2eri(unsigned int deriv_order,
                   }
                 }
 
-                std::vector<double> new_eri;
+                std::vector<LIBINT2_REALTYPE> new_eri;
 
                 if (deriv_order == 0)
                   new_eri.push_back(scale_target * inteval[0].targets[0][ij * veclen + v]);
@@ -922,10 +922,10 @@ void test_2eri(unsigned int deriv_order,
                 // derivatives w.r.t. center 0 are skipped and must be reconstructed using the translational invariance
                 if (deriv_order == 2) {
 
-                  double libint_eri[3][3];
+                  LIBINT2_REALTYPE libint_eri[3][3];
                   for(int di=0,dij=0; di<3; di++) {
                     for(int dj=di; dj<3; dj++, ++dij){
-                      const double value = scale_target * inteval[0].targets[dij][ij * veclen + v];
+                      const LIBINT2_REALTYPE value = scale_target * inteval[0].targets[dij][ij * veclen + v];
                       libint_eri[di][dj] = value;
                       libint_eri[dj][di] = value;
                     }
@@ -939,7 +939,7 @@ void test_2eri(unsigned int deriv_order,
                       const int xyzi = di%3;
                       const int xyzj = dj%3;
 
-                      double value = 0.0;
+                      LIBINT2_REALTYPE value = 0.0;
 
                       // d2/dAidAj
                       if (ci == 0 && cj == 0) {
