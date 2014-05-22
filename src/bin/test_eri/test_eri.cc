@@ -104,7 +104,7 @@ int main(int argc, char** argv)
   SafePtr<iter> sh2_iter(new iter(sh2));
   SafePtr<iter> sh3_iter(new iter(sh3));
 
-  std::vector<Libint_eri0_t> erieval(contrdepth4);
+  Libint_eri0_t* erieval = libint2::malloc<Libint_eri0_t>(contrdepth4);
   const int max_am = max(max(am[0],am[1]),max(am[2],am[3]));
   LIBINT2_PREFIXED_NAME(libint2_init_eri0)(&erieval[0],max_am,0);
   prep_libint2(erieval,rsqset,0);
@@ -234,6 +234,7 @@ int main(int argc, char** argv)
   }
 
   LIBINT2_PREFIXED_NAME(libint2_cleanup_eri0)(&erieval[0]);
+  free(erieval);
 
   cout << "test " << (success ? "ok" : "failed") << endl;
 

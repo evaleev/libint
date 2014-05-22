@@ -165,6 +165,7 @@ Libint2Iface::~Libint2Iface()
 
   // For each task, generate the evaluator type
   th_ << "#include <vector.h>" << std::endl;
+  th_ << "#include <libint2_memory.h>" << std::endl;
   th_ << "#include <libint2_intrinsic_operations.h>" << std::endl;
   generate_inteval_type(th_);
 
@@ -235,24 +236,8 @@ Libint2Iface::~Libint2Iface()
         std::string tmp = ctext_->label_to_name(cparams_->api_prefix() + "libint2_need_memory_" + tlabel) + "(max_am)";
 
         // no posix_memalign? use new, with default alignment
-        li_ << "#ifndef HAVE_POSIX_MEMALIGN" << std::endl
-            << ctext_->assign("inteval->stack",std::string("new LIBINT2_REALTYPE[") + tmp + std::string("]"));
+        li_ << ctext_->assign("inteval->stack",std::string("libint2::malloc<LIBINT2_REALTYPE>(") + tmp + std::string(")"));
 
-        // use default heuristics if user did not provide specific alignment size
-        li_ << "#elif (LIBINT2_ALIGN_SIZE == 0)" << std::endl;
-        if (cparams_->max_vector_length() == 1) // scalar code? use default alignment
-          li_ << ctext_->assign("inteval->stack",std::string("new LIBINT2_REALTYPE[") + tmp + std::string("]"));
-        else { // vectorize? then align to veclen*sizeof(LIBINT2_REALTYPE)
-          // TODO generalize to non-C++
-          li_ << "posix_memalign(reinterpret_cast<void**>(&inteval->stack), " << cparams_->max_vector_length() << "*sizeof(LIBINT2_REALTYPE), " << tmp << "*sizeof(LIBINT2_REALTYPE));" << std::endl;
-        }
-
-        // use user-provided alignment
-        li_ << "#else" << std::endl;
-        // TODO generalize to non-C++
-        li_ << "posix_memalign(reinterpret_cast<void**>(&inteval->stack), LIBINT2_ALIGN_SIZE*sizeof(LIBINT2_REALTYPE), " << tmp << "*sizeof(LIBINT2_REALTYPE));" << std::endl;
-
-        li_ << "#endif" << std::endl;
       }
 
       const unsigned int max_am = t->params()->max_am();
@@ -282,15 +267,7 @@ Libint2Iface::~Libint2Iface()
     for(tciter t=taskmgr.first(); t!=taskmgr.plast(); ++t,++i) {
       li_ << lc_decls_[i] << ctext_->open_block();
 
-      li_ << "#ifndef HAVE_POSIX_MEMALIGN\ndelete[] inteval->stack;\n";
-      li_ << "#elif (LIBINT2_ALIGN_SIZE == 0)\n";
-      if (cparams_->max_vector_length() == 1)
-        li_ << "delete[] inteval->stack;\n";
-      else
-        li_ << "free(inteval->stack);\n";
-      li_ << "#else\nfree(inteval->stack);\n";
-      li_ << "#endif\n";
-
+      li_ << "free(inteval->stack);\n";
       li_ << ctext_->assign("inteval->stack","0");
       li_ << ctext_->assign("inteval->vstack","0");
       if (cparams_->count_flops()) {
