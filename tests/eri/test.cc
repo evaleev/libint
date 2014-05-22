@@ -93,7 +93,7 @@ void test_4eri(unsigned int deriv_order,
 #if INCLUDE_ERI >= 2
   if (deriv_order == 2) lmax = LIBINT2_MAX_AM_ERI2;
 #endif
-  std::vector<Libint_t> inteval(max_contrdepth4);
+  Libint_t* inteval = libint2::malloc<Libint_t>(max_contrdepth4);
   if (deriv_order == 0) LIBINT2_PREFIXED_NAME(libint2_init_eri)(&inteval[0], lmax, 0);
 #if INCLUDE_ERI >= 1
   if (deriv_order == 1) LIBINT2_PREFIXED_NAME(libint2_init_eri1)(&inteval[0], lmax, 0);
@@ -420,6 +420,7 @@ void test_4eri(unsigned int deriv_order,
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(&inteval[0]);
 #endif
+  free(inteval);
 
   // record end wall time, compute total wall time spent here
   gettimeofday(&tod,0);
@@ -453,7 +454,7 @@ void test_3eri(unsigned int deriv_order,
 #if INCLUDE_ERI3 >= 2
   if (deriv_order == 2) lmax = LIBINT2_MAX_AM_3ERI2;
 #endif
-  std::vector<Libint_t> inteval(max_contrdepth3);
+  Libint_t* inteval = libint2::malloc<Libint_t>(max_contrdepth3);
   if (deriv_order == 0)
     LIBINT2_PREFIXED_NAME(libint2_init_3eri)(&inteval[0], lmax, 0);
 #if INCLUDE_ERI3 >= 1
@@ -732,6 +733,7 @@ void test_3eri(unsigned int deriv_order,
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_cleanup_3eri2)(&inteval[0]);
 #endif
+  free(inteval);
 
   // record end wall time, compute total wall time spent here
   gettimeofday(&tod,0);
@@ -764,7 +766,7 @@ void test_2eri(unsigned int deriv_order,
 #if INCLUDE_ERI2 >= 2
   if (deriv_order == 2) lmax = LIBINT2_MAX_AM_2ERI2;
 #endif
-  std::vector<Libint_t> inteval(contrdepth2);
+  Libint_t* inteval = libint2::malloc<Libint_t>(contrdepth2);
   if (deriv_order == 0)
     LIBINT2_PREFIXED_NAME(libint2_init_2eri)(&inteval[0], lmax, 0);
 #if INCLUDE_ERI2 >= 1
@@ -987,6 +989,7 @@ void test_2eri(unsigned int deriv_order,
 #if INCLUDE_ERI2 >= 2
   if (deriv_order == 2) LIBINT2_PREFIXED_NAME(libint2_cleanup_2eri2)(&inteval[0]);
 #endif
+  free(inteval);
 
 }
 #endif // INCLUDE_ERI2
