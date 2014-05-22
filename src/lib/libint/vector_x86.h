@@ -710,5 +710,9 @@ inline std::ostream& operator<<(std::ostream& os, libint2::simd::VectorAVXDouble
 
 #endif // AVX-only
 
+#ifdef LIBINT2_HAVE_AGNER_VECTORCLASS
+#include <vectorclass.h>
+#endif
+
 #endif // header guard
 

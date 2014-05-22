@@ -23,9 +23,39 @@ using namespace libint2;
 namespace libint2 {
 
   template <typename Output, typename Input>
-  Output cast(Input i) {
+  inline Output cast(Input i) {
     return Output(i);
   }
+
+#ifdef LIBINT2_HAVE_AGNER_VECTORCLASS
+  // AVX
+  template <>
+  inline double cast<double,Vec4d>(Vec4d i) {
+    return i[0];
+  }
+  template <>
+  inline double cast<double,Vec8f>(Vec8f i) {
+    return i[0];
+  }
+  template <>
+  inline float cast<float,Vec8f>(Vec8f i) {
+    return i[0];
+  }
+
+  // SSE
+  template <>
+  inline double cast<double,Vec2d>(Vec2d i) {
+    return i[0];
+  }
+  template <>
+  inline double cast<double,Vec4f>(Vec4f i) {
+    return i[0];
+  }
+  template <>
+  inline float cast<float,Vec4f>(Vec4f i) {
+    return i[0];
+  }
+#endif
 
 };
 
