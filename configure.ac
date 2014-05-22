@@ -671,14 +671,6 @@ if test $LIBINT_VECTOR_LENGTH -gt 1; then
   AC_MSG_RESULT([Using vector method: $LIBINT_VECTOR_METHOD])
 fi
 
-AC_ARG_WITH(real-type,
-[  --with-real-type        Compute all integrals using the given real type (default: double).],
-[
-AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_REAL,"$withval")
-libint_user_defined_real=$withval
-AC_MSG_RESULT([Using real type: $withval])
-])
-
 AC_ARG_ENABLE(single-evaltype,
  AS_HELP_STRING([--enable-single-evaltype],[Generate single evaluator type (i.e. all tasks use the same evaluator)]),
  [
