@@ -19,6 +19,16 @@
 using namespace std;
 using namespace libint2;
 
+// these are used for casts
+namespace libint2 {
+
+  template <typename Output, typename Input>
+  Output cast(Input i) {
+    return Output(i);
+  }
+
+};
+
 typedef unsigned int uint;
 
 libint2::FmEval_Chebyshev3 fmeval_chebyshev(28);
@@ -177,11 +187,11 @@ int main(int argc, char** argv)
 
               const LIBINT2_REALTYPE new_eri = scale_target * erieval[0].targets[di][ijkl*veclen+v];
 
-              if ( abs(ref_eri[di]-(double)new_eri) > 1.0E-10) {
+              if ( abs(ref_eri[di] - libint2::cast<LIBINT2_REF_REALTYPE>(new_eri)) > 1.0E-10) {
                 std::cout << "Elem " << ijkl << " di= " << di << " v=" << v
                     << " : eri.cc = " << ref_eri[di]
-                    << " libint = " << (double) new_eri
-                    << " (relerr = " << abs((ref_eri[di] - (double)new_eri)/ref_eri[di]) << ")"
+                    << " libint = " <<  libint2::cast<LIBINT2_REF_REALTYPE>(new_eri)
+                    << " (relerr = " << abs((ref_eri[di] - libint2::cast<LIBINT2_REF_REALTYPE>(new_eri))/ref_eri[di]) << ")"
                     << endl;
                 success = false;
               }
