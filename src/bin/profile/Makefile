@@ -18,6 +18,8 @@ LIBINT = $(LIBINTDIR)/libINT.a
 CGSHELLOBJ = $(LIBINTDIR)/gauss.o $(LIBINTDIR)/iter.o $(LIBINTDIR)/policy.o \
 $(LIBINTDIR)/policy_spec.o $(LIBINTDIR)/default_params.o
 
+default:: all
+
 #
 # making target1
 #
@@ -45,6 +47,8 @@ $(COMP2): $(COMP2OBJ)
 	$(CXX) -o $@ $^ -lboost_chrono -lboost_system $(SYSLIBS) $(LDFLAGS)
 
 $(COMP2OBJ):: $(TOPDIR)/src/lib/libint/boys.h
+
+all:: $(COMP2)
 
 clean::
 	-rm -rf $(COMP1) $(COMP2) *.o *.d

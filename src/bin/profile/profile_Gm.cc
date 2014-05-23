@@ -255,7 +255,10 @@ struct DGEMMKernel : public VectorOpKernel<double> {
 };
 
 int main(int argc, char* argv[]) {
-
+  if (argc < 2 or argc > 4) {
+    std::cout << "Usage: profile_Gm mmax T nrepeats" << std::endl;
+    return 1;
+  }
   const int mmax  = atoi(argv[1]);
   const double T  = atol(argv[2]);
   const double stg_zeta = 0.10;
@@ -326,8 +329,9 @@ int main(int argc, char* argv[]) {
   do_stg6g<f12_t_f12>(mmax, T, rho, nrepeats);
 #endif
 #ifndef SKIP_YUKAWA
-  do_yukawa(mmax, T, U, nrepeats);
+  //do_yukawa(mmax, T, U, nrepeats);
 #endif
+  return 0;
 }
 
 template <typename Kernel>
@@ -479,6 +483,7 @@ void do_stg6g(int mmax, double T, double rho, int nrepeats) {
   delete[] Gm_array_sum;
 }
 
+#if 0
 void do_yukawa(int mmax, double T, double U, int nrepeats) {
   std::cout << "===================== Gm Yukawa ======================" << std::endl;
   double* Gm_array = new double[mmax+2];
@@ -517,4 +522,4 @@ void do_yukawa(int mmax, double T, double U, int nrepeats) {
   delete[] Gm_array;
   delete[] Gm_array_sum;
 }
-
+#endif
