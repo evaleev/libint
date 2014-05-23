@@ -8,7 +8,7 @@
 #include <bfset.h>
 #include <singl_stack.h>
 
-#define CTIMEENTITIES_SINGLETONS 0
+#define CTIMEENTITIES_SINGLETONS 1
 
 namespace libint2 {
 
@@ -145,7 +145,6 @@ namespace libint2 {
     };
     template <typename T> SafePtr<typename RTimeSingletons<T>::ManagerType> RTimeSingletons<T>::manager_;
 
-#define CTIMEENTITIES_SINGLETONS 0
 #if CTIMEENTITIES_SINGLETONS
     template <typename T> struct CTimeSingletons {
       typedef SingletonStack<CTimeEntity<T>,T> ManagerType;
