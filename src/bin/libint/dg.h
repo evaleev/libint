@@ -34,8 +34,10 @@ namespace libint2 {
   class InternalGraphRegistry;
 
   /** DirectedGraph is an implementation of a directed graph
-      composed of vertices represented by DGVertex objects. The objects
-      are allocated on free store and the graph is implemented as
+      composed of vertices represented by DGVertex objects. Most important operations
+      will assume that this is a DAG, i.e. there are no directed cycles.
+
+      \note The objects are allocated on free store and the graph is implemented as
       an object of type 'vertices'.
    */
 
@@ -83,7 +85,7 @@ namespace libint2 {
 
   public:
 
-    /** This constructor doesn't do much. Actual initialization of the graph
+    /** Creates an empty DAG. Actual initialization of the graph
         must be done using append_target */
     DirectedGraph();
     ~DirectedGraph();
@@ -293,6 +295,11 @@ namespace libint2 {
     SafePtr<GraphRegistry>& registry() { return registry_; }
     const SafePtr<GraphRegistry>& registry() const { return registry_; }
 
+    /// return the graph label
+    const std::string& label() const { return label_; }
+    /// sets label to \c new_label
+    void set_label(const std::string& new_label) { label_ = new_label; }
+
     /// return true if there are vertices with 0 children but not pre-computed
     bool missing_prerequisites() const;
 
@@ -304,6 +311,9 @@ namespace libint2 {
     targets targets_;
     /// addresses of blocks which accumulate targets
     addresses target_accums_;
+
+    // graph label, used for annotating internal work, e.g. graphviz plots
+    std::string label_;
 
     typedef std::map<std::string,bool> FuncNameContainer;
     /** Maintains the list of names of functions calls to which have been generated so far.

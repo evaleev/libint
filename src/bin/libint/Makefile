@@ -78,7 +78,7 @@ install_inc:: $(LIBCXXINC)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $^ $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 
-clean:: oclean targetclean dependclean
+clean:: oclean targetclean dependclean miscclean
 
 oclean::
 	-rm -f *.$(OBJSUF)
@@ -88,6 +88,9 @@ targetclean::
 
 dependclean::
 	-rm -f *.$(DEPSUF)
+
+miscclean::
+	-rm -f *.dot
 
 realclean:: clean
 

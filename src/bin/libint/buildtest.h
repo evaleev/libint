@@ -130,6 +130,7 @@ namespace libint2 {
       os << "Building " << complabel << std::endl;
 
       SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
+      dg_xxxx->set_label(complabel);
 
       // configure the graph
       dg_xxxx->registry()->do_cse(need_to_optimize);
@@ -208,9 +209,9 @@ namespace libint2 {
                bool have_parent) {
 
     dg->apply(strat,tactic);
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
     {
-      std::basic_ofstream<char> dotfile("graph.strat.dot");
+      std::basic_ofstream<char> dotfile(dg->label() + ".strat.dot");
       dg->print_to_dot(false,dotfile);
     }
 #endif
@@ -230,9 +231,9 @@ namespace libint2 {
     dg->traverse();
     //dg->debug_print_traversal(cout);
 
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
     {
-      std::basic_ofstream<char> dotfile("graph.expr.dot");
+      std::basic_ofstream<char> dotfile(dg->label() + ".expr.dot");
       dg->print_to_dot(false,dotfile);
     }
 #endif
@@ -253,10 +254,10 @@ namespace libint2 {
     // extract all external symbols
     extract_symbols(dg);
 
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
     {
-      std::basic_ofstream<char> dotfile2("graph.symb.dot");
-      dg->print_to_dot(true,dotfile2);
+      std::basic_ofstream<char> dotfile(dg->label() + ".symb.dot");
+      dg->print_to_dot(true,dotfile);
     }
 #endif
 

@@ -54,6 +54,9 @@
 /// expressions, which should help linewise vectorization
 #define DISABLE_SUBTREES 0
 
+/// Set to 1 to produce GraphViz-formatted DAGs
+#define PRINT_DAG_GRAPHVIZ 1
+
 /// Produce massive amounts of debugging info
 #define DEBUG 0
 #define DEBUG_RESTRUCTURE 0

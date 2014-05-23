@@ -52,7 +52,9 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   std::cout << "RecurrenceRelation::generate_code: target = " << target_vptr->label() << std::endl;
 
   const SafePtr<CompilationParameters>& cparams = context->cparams();
-  SafePtr<DirectedGraph> dg = generate_graph_();
+  SafePtr<DirectedGraph> dg(new DirectedGraph);
+  dg->set_label(funcname);
+  generate_graph_(dg);
 
   // Intermediates in RR code are either are automatic variables or have to go on vstack
   dg->registry()->stack_name("inteval->vstack");
@@ -94,9 +96,9 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   dg->registry()->condense_expr(condense_expr(1000000000,cparams->max_vector_length()>1));
   dg->registry()->ignore_missing_prereqs(true);  // assume all prerequisites are available -- if some are not, something is VERY broken
 
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
   {
-    std::basic_ofstream<char> dotfile("graph_rr.strat.dot");
+    std::basic_ofstream<char> dotfile(dg->label() + ".strat.dot");
     dg->print_to_dot(false,dotfile);
   }
 #endif
@@ -107,9 +109,9 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   // Traverse the graph
   dg->optimize_rr_out(context);
   dg->traverse();
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
     {
-      std::basic_ofstream<char> dotfile("graph_rr.expr.dot");
+      std::basic_ofstream<char> dotfile(dg->label() + ".expr.dot");
       dg->print_to_dot(false,dotfile);
     }
 #endif
@@ -132,9 +134,9 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
     std::cout << *t << std::endl;
 #endif
 
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
     {
-      std::basic_ofstream<char> dotfile("graph_rr.symb.dot");
+      std::basic_ofstream<char> dotfile(dg->label() + ".symb.dot");
       dg->print_to_dot(false,dotfile);
     }
 #endif
@@ -213,9 +215,8 @@ RecurrenceRelation::generate_generic_code(const SafePtr<CodeContext>& context,
 }
 
 SafePtr<DirectedGraph>
-RecurrenceRelation::generate_graph_()
+RecurrenceRelation::generate_graph_(const SafePtr<DirectedGraph>& dg)
 {
-  SafePtr<DirectedGraph> dg(new DirectedGraph);
   dg->append_target(rr_target());
   for(unsigned int c=0; c<num_children(); c++)
     dg->append_vertex(rr_child(c));

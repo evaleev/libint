@@ -183,9 +183,9 @@ namespace libint2 {
     }
     private:
 
-    /** used by generate_code to create a (new) computation graph that computes sets of integrals using the RR
+    /** used by generate_code to initialize the computation graph that computes sets of integrals using the RR
     */
-    SafePtr<DirectedGraph> generate_graph_();
+    SafePtr<DirectedGraph> generate_graph_(const SafePtr<DirectedGraph>& dg);
     /** assigns "target" symbol to the target vertex and "src<i>" to the i-th child vertex. Also
         appends these symbols to S. */
     void assign_symbols_(SafePtr<CodeSymbols>& S);

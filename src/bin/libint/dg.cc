@@ -38,7 +38,7 @@ namespace {
 
 
 DirectedGraph::DirectedGraph() :
-  stack_(), targets_(), func_names_(),
+  stack_(), targets_(), target_accums_(), label_("graph"), func_names_(),
   registry_(SafePtr<GraphRegistry>(new GraphRegistry)),
   iregistry_(SafePtr<InternalGraphRegistry>(new InternalGraphRegistry)),
   first_to_compute_()
@@ -517,18 +517,18 @@ void
 DirectedGraph::optimize_rr_out(const SafePtr<CodeContext>& context)
 {
   replace_rr_with_expr();
-#if DEBUG
-    {
-      std::basic_ofstream<char> dotfile("graph.expr0.dot");
-      this->print_to_dot(false,dotfile);
-    }
-#endif
   // TODO remove_trivial_arithmetics() seems to be broken when working with [Ti,G12], fix!
 #if 1
   remove_trivial_arithmetics();
 #endif
   handle_trivial_nodes(context);
   remove_disconnected_vertices();
+#if PRINT_DAG_GRAPHVIZ
+    {
+      std::basic_ofstream<char> dotfile(label() + ".expr0.dot");
+      this->print_to_dot(false,dotfile);
+    }
+#endif
   find_subtrees();
 }
 
