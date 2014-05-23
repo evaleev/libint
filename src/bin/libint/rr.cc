@@ -53,7 +53,7 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
 
   const SafePtr<CompilationParameters>& cparams = context->cparams();
   SafePtr<DirectedGraph> dg(new DirectedGraph);
-  dg->set_label(funcname);
+  dg->set_label(context->label_to_name(label_to_funcname(funcname)));
   generate_graph_(dg);
 
   // Intermediates in RR code are either are automatic variables or have to go on vstack

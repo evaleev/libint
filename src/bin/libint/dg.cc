@@ -414,13 +414,13 @@ DirectedGraph::print_to_dot(bool symbols, std::ostream& os) const
       SafePtr<DGVertex> next = current_vertex->postcalc();
       if (current_vertex && next) {
         os << "  " << current_vertex->graph_label() << " -> "
-           << next->graph_label() << " [ style = dotted ]";
+           << next->graph_label() << " [ style = dotted constraint = false ]";
       }
       current_vertex = next;
     } while (current_vertex != 0);
   }
 
-  os << "}" << endl;
+  os << endl << "}" << endl;
 }
 
 void
@@ -523,12 +523,6 @@ DirectedGraph::optimize_rr_out(const SafePtr<CodeContext>& context)
 #endif
   handle_trivial_nodes(context);
   remove_disconnected_vertices();
-#if PRINT_DAG_GRAPHVIZ
-    {
-      std::basic_ofstream<char> dotfile(label() + ".expr0.dot");
-      this->print_to_dot(false,dotfile);
-    }
-#endif
   find_subtrees();
 }
 
