@@ -18,6 +18,8 @@ LIBINT = $(LIBINTDIR)/libINT.a
 CGSHELLOBJ = $(LIBINTDIR)/gauss.o $(LIBINTDIR)/iter.o $(LIBINTDIR)/policy.o \
 $(LIBINTDIR)/policy_spec.o $(LIBINTDIR)/default_params.o
 
+default:: all
+
 #
 # making target1
 #
