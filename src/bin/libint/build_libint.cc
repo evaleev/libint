@@ -138,10 +138,11 @@ static void print_config(std::ostream& os);
 static void config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface);
 
 #ifdef INCLUDE_ONEBODY
-  static void build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                                                 SafePtr<Libint2Iface>& iface);
-  static void build_OnePNonSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                                                    SafePtr<Libint2Iface>& iface);
+# if  LIBINT_SUPPORT_ONEBODYINTS == 0
+#  error "change LIBINT_SUPPORT_ONEBODYINTS in global_macros.h to 1 if need 1-body ints"
+# endif
+  static void build_Overlap_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+                                  SafePtr<Libint2Iface>& iface, unsigned int deriv_level);
 #endif
 
 #ifdef INCLUDE_ERI
@@ -186,7 +187,9 @@ void try_main (int argc, char* argv[])
   taskmgr.add("default");
 #ifdef INCLUDE_ONEBODY
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
-    taskmgr.add( task_label("onebody",d) );
+    taskmgr.add( task_label("overlap",d) );
+    taskmgr.add( task_label("kinetic",d) );
+    taskmgr.add( task_label("1ecoulomb",d) );
   }
 #endif
 #ifdef INCLUDE_ERI
@@ -225,11 +228,32 @@ void try_main (int argc, char* argv[])
   cparams->max_am_opt("default",LIBINT_OPT_AM);
   cparams->num_bf("default",4);
 #ifdef INCLUDE_ONEBODY
-  for(unsigned int d=0; d<=0; ++d) {
-    cparams->max_am( task_label("onebody", d) ,ONEBODY_MAX_AM);
-    cparams->max_am_opt( task_label("onebody", d) ,ONEBODY_OPT_AM);
-  }
+  for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
+#if defined(ONEBODY_MAX_AM_LIST)
+    cparams->max_am( task_label("overlap", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    cparams->max_am( task_label("kinetic", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    cparams->max_am( task_label("1ecoulomb", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+#elif defined(ONEBODY_MAX_AM)
+    cparams->max_am( task_label("overlap", d), ONEBODY_MAX_AM);
+    cparams->max_am( task_label("kinetic", d), ONEBODY_MAX_AM);
+    cparams->max_am( task_label("1ecoulomb", d), ONEBODY_MAX_AM);
 #endif
+#if defined(ONEBODY_OPT_AM_LIST)
+    cparams->max_am_opt( task_label("overlap", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    cparams->max_am_opt( task_label("kinetic", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    cparams->max_am_opt( task_label("1ecoulomb", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+#elif defined(ONEBODY_OPT_AM)
+    cparams->max_am_opt( task_label("onebody", d) , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label("kinetic", d) , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label("1ecoulomb", d) , ONEBODY_OPT_AM);
+#endif
+  }
+  for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
+    cparams->num_bf(task_label("overlap", d), 2);
+    cparams->num_bf(task_label("kinetic", d), 2);
+    cparams->num_bf(task_label("1ecoulomb", d), 2);
+  }
+#endif // INCLUDE_ONEBODY
 #ifdef INCLUDE_ERI
   for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
 #if defined(ERI_MAX_AM_LIST)
@@ -383,8 +407,9 @@ void try_main (int argc, char* argv[])
   cparams->print(os);
 
 #ifdef INCLUDE_ONEBODY
-  build_OnePSep_1b_1k(os,cparams,iface,d);
-  //build_OnePNonSep_2b_2k(os,cparams,iface,d);
+  for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
+    build_Overlap_1b_1k(os,cparams,iface,d);
+  }
 #endif
 #ifdef INCLUDE_ERI
 # if !USE_GENERIC_ERI_BUILD
@@ -502,12 +527,12 @@ print_config(std::ostream& os)
 
 #ifdef INCLUDE_ONEBODY
 void
-build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+build_Overlap_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
 {
-  const std::string task = task_label("onebody", deriv_level);
-  const std::string task_uc = task_label("ONEBODY", deriv_level);
-  typedef OnePSep_1_1_sq OnePSep_sh_1_1;
+  const std::string task = task_label("overlap", deriv_level);
+  const std::string task_uc = task_label("overlap", deriv_level);
+  typedef Overlap_1_1_sq Overlap_sh_1_1;
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
   for(unsigned int l=0; l<=lmax; l++) {
@@ -566,7 +591,7 @@ build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           // which center to skip? -> A = 0, B = 1
           const unsigned int center_to_skip = 1;
           DerivIndexIterator<1> diter(deriv_level);
-          std::vector< SafePtr<OnePSep_sh_1_1> > targets;
+          std::vector< SafePtr<Overlap_sh_1_1> > targets;
           bool last_deriv = false;
           do {
             CGShell a(la);
@@ -583,16 +608,16 @@ build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
               ++center;
             }
 
-            SafePtr<OnePSep_sh_1_1> abcd = OnePSep_sh_1_1::Instance(a,b,mType(0u));
-            targets.push_back(abcd);
+            SafePtr<Overlap_sh_1_1> target = Overlap_sh_1_1::Instance(a,b);
+            targets.push_back(target);
             last_deriv = diter.last();
             if (!last_deriv) diter.next();
           } while (!last_deriv);
           // append all derivatives as targets to the graph
-          for(std::vector< SafePtr<OnePSep_sh_1_1> >::const_iterator t=targets.begin();
+          for(std::vector< SafePtr<Overlap_sh_1_1> >::const_iterator t=targets.begin();
               t != targets.end();
               ++t) {
-            SafePtr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,OnePSep_sh_1_1>(*t);
+            SafePtr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,Overlap_sh_1_1>(*t);
             dg->append_target(t_ptr);
           }
 
@@ -602,7 +627,7 @@ build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           {
             CGShell a(la);
             CGShell b(lb);
-            SafePtr<OnePSep_sh_1_1> ab = OnePSep_sh_1_1::Instance(a,b,mType(0u));
+            SafePtr<Overlap_sh_1_1> ab = Overlap_sh_1_1::Instance(a,b);
             ab_label = ab->label();
           }
           // + derivative level (if deriv_level > 0)
@@ -654,8 +679,6 @@ build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           dg->reset();
           memman->reset();
 
-        } // end of d loop
-      } // end of c loop
     } // end of b loop
   } // end of a loop
 }

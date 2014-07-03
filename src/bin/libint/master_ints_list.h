@@ -16,10 +16,8 @@ namespace libint2 {
   // one-electron integrals
   //////////////////////////
 #if LIBINT_SUPPORT_ONEBODYINTS
-  typedef GenIntegralSet_1_1<CGShell,OnePSep,EmptySet> OnePSep_1_1_sq;
-  typedef GenIntegralSet_1_1<CGF,OnePSep,EmptySet> OnePSep_1_1_int;
-  typedef GenIntegralSet_1_1<CGShell,OnePNonSep,mType> OnePNonSep_1_1_sq;
-  typedef GenIntegralSet_1_1<CGF,OnePNonSep,mType> OnePNonSep_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,OverlapOper,EmptySet> Overlap_1_1_sq;
+  typedef GenIntegralSet_1_1<CGF,OverlapOper,EmptySet> Overlap_1_1_int;
 #endif
 
   //////////////////////////
@@ -55,10 +53,8 @@ namespace libint2 {
     */
   typedef mpl::list<
 #if LIBINT_SUPPORT_ONEBODYINTS
-  OnePSep_1_1_sq,
-  OnePSep_1_1_int,
-  OnePNonSep_1_1_sq,
-  OnePNonSep_1_1_int,
+  Overlap_1_1_sq,
+  Overlap_1_1_int,
 #endif
   TwoPRep_11_11_sq,
   TwoPRep_11_11_int,

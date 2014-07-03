@@ -5,6 +5,7 @@
 
 #include <master_ints_list.h>
 #include <hrr.h>
+#include <vrr_1_onep_1.h>
 #include <vrr_11_twoprep_11.h>
 #include <vrr_11_r12kg12_11.h>
 #include <itr_11_twoprep_11.h>
@@ -68,10 +69,13 @@ namespace libint2 {
   typedef HRR<DummySymmIntegral_11_11_int,CGF,1,InKet,0,InBra,0> HRR_dc_11_Dummy_11_int;
 
 #if LIBINT_SUPPORT_ONEBODYINTS
-  typedef VRR_1_OnePSep_1<CGShell,0,InBra> VRR_a_1_OnePSep_1_sh;
-  typedef VRR_1_OnePSep_1<CGF,0,InBra> VRR_a_1_OnePSep_1_int;
-  typedef VRR_1_OnePSep_1<CGShell,0,InKet> VRR_b_1_OnePSep_1_sh;
-  typedef VRR_1_OnePSep_1<CGF,0,InKet> VRR_b_1_OnePSep_1_int;
+  typedef HRR<Overlap_1_1_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_1_Overlap_1_sh;
+  typedef HRR<Overlap_1_1_int,CGF,0,InBra,0,InKet,0> HRR_ab_1_Overlap_1_int;
+
+  typedef VRR_1_Overlap_1<CGShell,InBra> VRR_a_1_Overlap_1_sh;
+  typedef VRR_1_Overlap_1<CGF,InBra> VRR_a_1_Overlap_1_int;
+  typedef VRR_1_Overlap_1<CGShell,InKet> VRR_b_1_Overlap_1_sh;
+  typedef VRR_1_Overlap_1<CGF,InKet> VRR_b_1_Overlap_1_int;
 #endif
 
   typedef VRR_11_TwoPRep_11<CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;

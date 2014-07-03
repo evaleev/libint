@@ -162,27 +162,27 @@ esac
 # can be used in the future to exclude source directories
 EXCLUDED_DIRS=
 
-#AC_ARG_ENABLE(1body,
-#[  --enable-1body=N        Compile with support for up to N-th derivatives of 1-body integrals],
-#[
-#case $enableval in
-#  yes)
-#    INCLUDE_ONEBODY=0
-#  ;;
-#  no)
-#    INCLUDE_ONEBODY=no
-#  ;;
-#  *)
-#    if test $enableval -lt 0; then
-#      AC_MSG_ERROR([Invalid value for --enable-1body ($enableval)])
-#    fi
-#    INCLUDE_ONEBODY=$enableval
-#  ;;
-#esac
-#],[
-#    INCLUDE_ONEBODY=0
-#]
-#)
+AC_ARG_ENABLE(1body,
+[  --enable-1body=N        Compile with support for up to N-th derivatives of 1-body integrals],
+[
+case $enableval in
+  yes)
+    INCLUDE_ONEBODY=0
+  ;;
+  no)
+    INCLUDE_ONEBODY=no
+  ;;
+  *)
+    if test $enableval -lt 0; then
+      AC_MSG_ERROR([Invalid value for --enable-1body ($enableval)])
+    fi
+    INCLUDE_ONEBODY=$enableval
+  ;;
+esac
+],[
+    INCLUDE_ONEBODY=no
+]
+)
 
 AC_ARG_ENABLE(eri,
 [  --enable-eri=N          Compile with support for up to N-th derivatives of electron repulsion integrals],
@@ -316,7 +316,6 @@ fi
 AC_DEFINE_UNQUOTED(LIBINT_MAX_AM,$LIBINT_MAX_AM)
 AC_DEFINE_UNQUOTED(LIBINT_OPT_AM,$LIBINT_OPT_AM)
 
-
 ERI_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(eri-max-am,
 [  --with-eri-max-am=N      Support ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...],
@@ -366,6 +365,57 @@ AC_ARG_WITH(eri-opt-am,
 
 if test X$INCLUDE_ERI != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ERI,$INCLUDE_ERI)
+fi
+
+ONEBODY_MAX_AM=$LIBINT_MAX_AM
+AC_ARG_WITH(1body-max-am,
+[  --with-1body-max-am=N      Support 1-e ints for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...],
+[
+  case $withval in 
+    *,*)
+      ONEBODY_MAX_AM_LIST="$withval"
+      AC_SUBST(ONEBODY_MAX_AM_LIST)
+      AC_DEFINE_UNQUOTED(ONEBODY_MAX_AM_LIST, "$ONEBODY_MAX_AM_LIST")
+    ;;
+    *) 
+     if test $withval -le 0; then
+      AC_MSG_ERROR([Invalid value for --with-1body-max-am ($withval)])
+     else
+      ONEBODY_MAX_AM=$withval
+     fi
+     if test $ONEBODY_MAX_AM -ge 8; then
+      AC_MSG_ERROR([Value for --with-1body-max-am too high ($withval). Are you sure you know what you are doing?])
+     fi
+     AC_SUBST(ONEBODY_MAX_AM)
+     AC_DEFINE_UNQUOTED(ONEBODY_MAX_AM,$ONEBODY_MAX_AM)
+    ;; 
+  esac
+]
+)
+
+ONEBODY_OPT_AM=$LIBINT_OPT_AM
+AC_ARG_WITH(1body-opt-am,
+[  --with-1body-opt-am=N       Optimize 1-e ints maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...],
+[
+  case $withval in 
+    *,*)
+      ONEBODY_OPT_AM_LIST="$withval"
+      AC_SUBST(ONEBODY_OPT_AM_LIST)
+      AC_DEFINE_UNQUOTED(ONEBODY_OPT_AM_LIST, "$ONEBODY_OPT_AM_LIST")  
+    ;;
+    *) 
+     if test $withval -le $ONEBODY_MAX_AM; then
+       ONEBODY_OPT_AM=$withval
+       AC_SUBST(ONEBODY_OPT_AM)
+       AC_DEFINE_UNQUOTED(ONEBODY_OPT_AM,$ONEBODY_OPT_AM)  
+     fi
+    ;;
+  esac
+]
+)
+
+if test X$INCLUDE_ONEBODY != Xno; then
+  AC_DEFINE_UNQUOTED(INCLUDE_ONEBODY,$INCLUDE_ONEBODY)
 fi
 
 # check max am for 3-center ERIs, if needed

@@ -97,7 +97,7 @@ namespace libint2 {
 #endif
   
   template <class BFS, class Oper, class AuxQuanta>
-    GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::GenIntegralSet_11_11(const OperType& oper, const BraType& bra, const KetType& ket,  const AuxIndexType& aux) :
+    GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::GenIntegralSet_1_1(const OperType& oper, const BraType& bra, const KetType& ket,  const AuxIndexType& aux) :
     parent_type(oper, bra, ket, aux)
     {
       if (bra.num_members(0) != 1)
@@ -110,7 +110,7 @@ namespace libint2 {
     }
 
   template <class BFS, class Oper, class AuxQuanta>
-    GenIntegralSet_11_11<BFS,Oper,AuxQuanta>::~GenIntegralSet_1_1()
+    GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::~GenIntegralSet_1_1()
     {
 #if DEBUG
       std::cout << "GenIntegralSet_1_1: destructed " << this->label() << std::endl;

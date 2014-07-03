@@ -233,6 +233,23 @@ namespace libint2 {
   };
 #endif
 
+#if LIBINT_SUPPORT_ONEBODYINTS
+  template <> struct MasterStrategy<Overlap_1_1_sq> {
+      typedef mpl::list<
+      HRR_ab_1_Overlap_1_sh,
+      VRR_a_1_Overlap_1_sh,
+      VRR_b_1_Overlap_1_sh
+      > value;
+    };
+  template <> struct MasterStrategy<Overlap_1_1_int> {
+      typedef mpl::list<
+      HRR_ab_1_Overlap_1_int,
+      VRR_a_1_Overlap_1_int,
+      VRR_b_1_Overlap_1_int
+      > value;
+    };
+#endif // LIBINT_SUPPORT_ONEBODYINTS
+
   /// transform<RRType> encapsulates RRType and the action associated with RRType
   /// it's used by apply_strategy::operator()<RRType> via mpl::for_each
   template <class RRType>

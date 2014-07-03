@@ -610,8 +610,12 @@ namespace libint2 {
     {
         unsigned int np = IntType::OperType::Properties::np;
         bool low = true;
-        if (part == np -1)
+        if (part == np - 1)
           low = false;
+        // corner case: # of particles == 1
+        if (np == 1) { // to match the interface of np != 1 need to add insert dummy argument
+          low = true;
+        }
         return low;
     }
 
