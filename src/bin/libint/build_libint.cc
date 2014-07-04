@@ -1743,6 +1743,10 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 void
 config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface)
 {
+#ifdef INCLUDE_ONEBODY
+  iface->to_params(iface->macro_define("SUPPORT_ONEBODY",1));
+  iface->to_params(iface->macro_define("DERIV_ONEBODY_ORDER",INCLUDE_ONEBODY));
+#endif
 #ifdef INCLUDE_ERI
   iface->to_params(iface->macro_define("SUPPORT_ERI",1));
   iface->to_params(iface->macro_define("DERIV_ERI_ORDER",INCLUDE_ERI));

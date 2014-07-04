@@ -71,6 +71,8 @@ namespace libint2 {
 #if LIBINT_SUPPORT_ONEBODYINTS
   typedef HRR<Overlap_1_1_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_1_Overlap_1_sh;
   typedef HRR<Overlap_1_1_int,CGF,0,InBra,0,InKet,0> HRR_ab_1_Overlap_1_int;
+  typedef HRR<Overlap_1_1_sq,CGShell,0,InKet,0,InBra,0> HRR_ba_1_Overlap_1_sh;
+  typedef HRR<Overlap_1_1_int,CGF,0,InKet,0,InBra,0> HRR_ba_1_Overlap_1_int;
 
   typedef VRR_1_Overlap_1<CGShell,InBra> VRR_a_1_Overlap_1_sh;
   typedef VRR_1_Overlap_1<CGF,InBra> VRR_a_1_Overlap_1_int;

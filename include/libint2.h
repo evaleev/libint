@@ -7,6 +7,7 @@
 #define LIBINT_T_SS_K0G12_SS_0 _aB_s___0__s___1___r12_0_g12_s___0__s___1___Ab__up_0
 #define LIBINT_T_SS_K2G12_SS_0 _aB_s___0__s___1___r12_2_g12_s___0__s___1___Ab__up_0
 #define LIBINT_T_SS_K4G12_SS_0 _aB_s___0__s___1___r12_4_g12_s___0__s___1___Ab__up_0
+#define LIBINT_T_S_OVERLAP_S _aB_s___0___Overlap_s___0___Ab__up_
 
 #include <libint2_intrinsic_types.h>
 #include <libint2_params.h>
