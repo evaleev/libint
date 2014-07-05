@@ -18,6 +18,8 @@ namespace libint2 {
 #if LIBINT_SUPPORT_ONEBODYINTS
   typedef GenIntegralSet_1_1<CGShell,OverlapOper,EmptySet> Overlap_1_1_sq;
   typedef GenIntegralSet_1_1<CGF,OverlapOper,EmptySet> Overlap_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,KineticOper,EmptySet> Kinetic_1_1_sq;
+  typedef GenIntegralSet_1_1<CGF,KineticOper,EmptySet> Kinetic_1_1_int;
 #endif
 
   //////////////////////////
@@ -55,6 +57,8 @@ namespace libint2 {
 #if LIBINT_SUPPORT_ONEBODYINTS
   Overlap_1_1_sq,
   Overlap_1_1_int,
+  Kinetic_1_1_sq,
+  Kinetic_1_1_int,
 #endif
   TwoPRep_11_11_sq,
   TwoPRep_11_11_int,

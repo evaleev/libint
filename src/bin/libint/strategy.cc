@@ -261,6 +261,18 @@ namespace libint2 {
       > value;
     };
 # endif // strategy: A0 or 0B
+  template <> struct MasterStrategy<Kinetic_1_1_sq> {
+      typedef mpl::list<
+      VRR_a_1_Kinetic_1_sh,
+      VRR_b_1_Kinetic_1_sh
+      > value;
+    };
+  template <> struct MasterStrategy<Kinetic_1_1_int> {
+      typedef mpl::list<
+      VRR_a_1_Kinetic_1_int,
+      VRR_b_1_Kinetic_1_int
+      > value;
+    };
 #endif // LIBINT_SUPPORT_ONEBODYINTS
 
   /// transform<RRType> encapsulates RRType and the action associated with RRType

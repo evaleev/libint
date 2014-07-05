@@ -35,8 +35,9 @@ namespace libint2 {
 
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
 
+        assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
+
         if (type_ == overlap) {
-          assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
           switch(deriv_order_) {
 
             case 0:
@@ -61,7 +62,32 @@ namespace libint2 {
           return;
         }
 
-        assert(type_ == overlap);
+        if (type_ == kinetic) {
+          switch(deriv_order_) {
+
+            case 0:
+              libint2_init_kinetic(&primdata_[0], lmax_, 0);
+              scratch_.resize(ncart_max*ncart_max);
+              break;
+            case 1:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              libint2_init_kinetic1(&primdata_[0], lmax_, 0);
+              scratch_.resize(3 * ncart_max*ncart_max);
+#endif
+              break;
+            case 2:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              libint2_init_kinetic2(&primdata_[0], lmax_, 0);
+              scratch_.resize(6 * ncart_max*ncart_max);
+#endif
+              break;
+            default: assert(deriv_order_ < 3);
+          }
+
+          return;
+        }
+
+        assert(type_ == overlap || type_ == kinetic);
       }
 
       /// computes shell set of integrals
@@ -107,12 +133,31 @@ namespace libint2 {
         if (lmax == 0) { // (s|s)
           auto& result = primdata_[0].stack[0];
           result = 0;
-          for(auto p12=0; p12 != nprimpairs; ++p12)
-            result += primdata_[p12]._aB_s___0___Overlap_s___0___Ab__up_[0];
+          switch (type_) {
+            case overlap:
+              for(auto p12=0; p12 != nprimpairs; ++p12)
+                result += primdata_[p12].LIBINT_T_S_OVERLAP_S[0];
+              break;
+            case kinetic:
+              for(auto p12=0; p12 != nprimpairs; ++p12)
+                result += primdata_[p12].LIBINT_T_S_KINETIC_S[0];
+              break;
+            default:
+              assert(false);
+          }
           primdata_[0].targets[0] = primdata_[0].stack;
         }
         else {
-          LIBINT2_PREFIXED_NAME(libint2_build_overlap)[bra.contr[0].l][ket.contr[0].l](&primdata_[0]);
+          switch (type_) {
+            case overlap:
+              LIBINT2_PREFIXED_NAME(libint2_build_overlap)[bra.contr[0].l][ket.contr[0].l](&primdata_[0]);
+              break;
+            case kinetic:
+              LIBINT2_PREFIXED_NAME(libint2_build_kinetic)[bra.contr[0].l][ket.contr[0].l](&primdata_[0]);
+              break;
+            default:
+              assert(false);
+          }
         }
 
         if (swap) {
@@ -161,7 +206,9 @@ namespace libint2 {
         const double PBy = Py - B[1];
         const double PBz = Pz - B[2];
 
-#if LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD // always VRR on bra, and HRR to bra
+        if (LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD // always VRR on bra, and HRR to bra (overlap, coulomb)
+            || type_ == kinetic // kinetic energy ints don't use HRR, hence VRR on both centers
+           ) {
 
 #if LIBINT2_DEFINED(eri,PA_x)
         primdata.PA_x[0] = Px - A[0];
@@ -181,8 +228,8 @@ namespace libint2 {
 #if LIBINT2_DEFINED(eri,AB_z)
         primdata.AB_z[0] = A[2] - B[2];
 #endif
-
-#else // always VRR on ket, HRR to ket
+        }
+        else { // always VRR on ket, HRR to ket (overlap, coulomb), or no HRR at all (kinetic energy ints)
 
 #if LIBINT2_DEFINED(eri,PB_x)
         primdata.PB_x[0] = Px - B[0];
@@ -202,12 +249,23 @@ namespace libint2 {
 #if LIBINT2_DEFINED(eri,BA_z)
         primdata.BA_z[0] = B[2] - A[2];
 #endif
-
-#endif
+        }
 
 #if LIBINT2_DEFINED(eri,oo2z)
         primdata.oo2z[0] = 0.5*oogammap;
 #endif
+
+        if (type_ == kinetic) { // additional factors for kinetic energy
+#if LIBINT2_DEFINED(eri,rho12_over_alpha1)
+        primdata.rho12_over_alpha1[0] = alpha2 * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri,rho12_over_alpha2)
+        primdata.rho12_over_alpha2[0] = alpha1 * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri,two_rho12)
+        primdata.two_rho12[0] = 2. * rhop;
+#endif
+        }
 
         if (deriv_order_ > 0) {
           // prefactors for derivative overlap relations
@@ -219,6 +277,9 @@ namespace libint2 {
         const auto ovlp_ss = sqrt_PI_cubed * sqrt(oogammap) * K1 * c1 * c2;
 
         primdata.LIBINT_T_S_OVERLAP_S[0] = ovlp_ss;
+        if (type_ == kinetic) {
+          primdata.LIBINT_T_S_KINETIC_S[0] = rhop * (3. - 2.*rhop*AB2) * ovlp_ss;
+        }
 
       }
 

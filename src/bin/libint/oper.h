@@ -212,6 +212,19 @@ namespace libint2 {
   };
   typedef GenOper<Overlap_Descr> OverlapOper;
 
+  /** Kinetic is a one-body kinetic energy operator
+  */
+  struct Kinetic_Descr : public Contractable<Kinetic_Descr> {
+    typedef Nonmultiplicative1Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "Kinetic"; }
+    std::string label() const { return "Kinetic"; }
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { return +1; }
+  };
+  typedef GenOper<Kinetic_Descr> KineticOper;
+
   /** TwoPRep is the two-body repulsion operator.
   */
   struct TwoPRep_Descr : public Contractable<TwoPRep_Descr> {
