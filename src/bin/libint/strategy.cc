@@ -247,6 +247,18 @@ namespace libint2 {
       VRR_a_1_Overlap_1_int
       > value;
     };
+  template <> struct MasterStrategy<ElecPot_1_1_sq> {
+      typedef mpl::list<
+      HRR_ab_1_ElecPot_1_sh,
+      VRR_a_1_ElecPot_1_sh
+      > value;
+    };
+  template <> struct MasterStrategy<ElecPot_1_1_int> {
+      typedef mpl::list<
+      HRR_ab_1_ElecPot_1_int,
+      VRR_a_1_ElecPot_1_int
+      > value;
+    };
 # else //  // 0B0D strategy
   template <> struct MasterStrategy<Overlap_1_1_sq> {
       typedef mpl::list<
@@ -258,6 +270,18 @@ namespace libint2 {
       typedef mpl::list<
       HRR_ba_1_Overlap_1_int,
       VRR_b_1_Overlap_1_int
+      > value;
+    };
+  template <> struct MasterStrategy<ElecPot_1_1_sq> {
+      typedef mpl::list<
+      HRR_ba_1_ElecPot_1_sh,
+      VRR_b_1_ElecPot_1_sh
+      > value;
+    };
+  template <> struct MasterStrategy<ElecPot_1_1_int> {
+      typedef mpl::list<
+      HRR_ba_1_ElecPot_1_int,
+      VRR_b_1_ElecPot_1_int
       > value;
     };
 # endif // strategy: A0 or 0B

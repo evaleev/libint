@@ -225,6 +225,19 @@ namespace libint2 {
   };
   typedef GenOper<Kinetic_Descr> KineticOper;
 
+  /** ElecPot is the electrostatic potential (Coulomb) operator
+  */
+  struct ElecPot_Descr : public Contractable<Overlap_Descr> {
+    typedef Multiplicative1Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "ElecPot"; }
+    std::string label() const { return "ElecPot"; }
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { return +1; }
+  };
+  typedef GenOper<ElecPot_Descr> ElecPotOper;
+
   /** TwoPRep is the two-body repulsion operator.
   */
   struct TwoPRep_Descr : public Contractable<TwoPRep_Descr> {

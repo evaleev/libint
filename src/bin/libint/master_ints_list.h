@@ -20,6 +20,8 @@ namespace libint2 {
   typedef GenIntegralSet_1_1<CGF,OverlapOper,EmptySet> Overlap_1_1_int;
   typedef GenIntegralSet_1_1<CGShell,KineticOper,EmptySet> Kinetic_1_1_sq;
   typedef GenIntegralSet_1_1<CGF,KineticOper,EmptySet> Kinetic_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,ElecPotOper,mType> ElecPot_1_1_sq;
+  typedef GenIntegralSet_1_1<CGF,ElecPotOper,mType> ElecPot_1_1_int;
 #endif
 
   //////////////////////////
@@ -59,6 +61,8 @@ namespace libint2 {
   Overlap_1_1_int,
   Kinetic_1_1_sq,
   Kinetic_1_1_int,
+  ElecPot_1_1_sq,
+  ElecPot_1_1_int,
 #endif
   TwoPRep_11_11_sq,
   TwoPRep_11_11_int,

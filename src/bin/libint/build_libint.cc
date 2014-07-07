@@ -195,6 +195,8 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
   taskmgr.current(task);
   iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
 
+  const auto nullaux = typename Onebody_sh_1_1::AuxIndexType(0u);
+
   //
   // Construct graphs for each desired target integral and
   // 1) generate source code for the found traversal path
@@ -259,7 +261,8 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
               ++center;
             }
 
-            SafePtr<Onebody_sh_1_1> target = Onebody_sh_1_1::Instance(a,b);
+
+            SafePtr<Onebody_sh_1_1> target = Onebody_sh_1_1::Instance(a,b,nullaux);
             targets.push_back(target);
             last_deriv = diter.last();
             if (!last_deriv) diter.next();
@@ -278,7 +281,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           {
             CGShell a(la);
             CGShell b(lb);
-            SafePtr<Onebody_sh_1_1> ab = Onebody_sh_1_1::Instance(a,b);
+            SafePtr<Onebody_sh_1_1> ab = Onebody_sh_1_1::Instance(a,b,nullaux);
             ab_label = ab->label();
           }
           // + derivative level (if deriv_level > 0)
@@ -346,7 +349,7 @@ void try_main (int argc, char* argv[])
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
     taskmgr.add( task_label("overlap",d) );
     taskmgr.add( task_label("kinetic",d) );
-    taskmgr.add( task_label("1ecoulomb",d) );
+    taskmgr.add( task_label("elecpot",d) );
   }
 #endif
 #ifdef INCLUDE_ERI
@@ -389,26 +392,26 @@ void try_main (int argc, char* argv[])
 #if defined(ONEBODY_MAX_AM_LIST)
     cparams->max_am( task_label("overlap", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
     cparams->max_am( task_label("kinetic", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
-    cparams->max_am( task_label("1ecoulomb", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    cparams->max_am( task_label("elecpot", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
 #elif defined(ONEBODY_MAX_AM)
     cparams->max_am( task_label("overlap", d), ONEBODY_MAX_AM);
     cparams->max_am( task_label("kinetic", d), ONEBODY_MAX_AM);
-    cparams->max_am( task_label("1ecoulomb", d), ONEBODY_MAX_AM);
+    cparams->max_am( task_label("elecpot", d), ONEBODY_MAX_AM);
 #endif
 #if defined(ONEBODY_OPT_AM_LIST)
     cparams->max_am_opt( task_label("overlap", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
     cparams->max_am_opt( task_label("kinetic", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
-    cparams->max_am_opt( task_label("1ecoulomb", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    cparams->max_am_opt( task_label("elecpot", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
 #elif defined(ONEBODY_OPT_AM)
     cparams->max_am_opt( task_label("onebody", d) , ONEBODY_OPT_AM);
     cparams->max_am_opt( task_label("kinetic", d) , ONEBODY_OPT_AM);
-    cparams->max_am_opt( task_label("1ecoulomb", d) , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label("elecpot", d) , ONEBODY_OPT_AM);
 #endif
   }
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
     cparams->num_bf(task_label("overlap", d), 2);
     cparams->num_bf(task_label("kinetic", d), 2);
-    cparams->num_bf(task_label("1ecoulomb", d), 2);
+    cparams->num_bf(task_label("elecpot", d), 2);
   }
 #endif // INCLUDE_ONEBODY
 #ifdef INCLUDE_ERI
@@ -567,6 +570,7 @@ void try_main (int argc, char* argv[])
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
     build_onebody_1b_1k<Overlap_1_1_sq>(os,"overlap",cparams,iface,d);
     build_onebody_1b_1k<Kinetic_1_1_sq>(os,"kinetic",cparams,iface,d);
+    build_onebody_1b_1k<ElecPot_1_1_sq>(os,"elecpot",cparams,iface,d);
   }
 #endif
 #ifdef INCLUDE_ERI

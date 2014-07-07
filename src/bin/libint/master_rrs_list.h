@@ -74,14 +74,25 @@ namespace libint2 {
   typedef HRR<Overlap_1_1_sq,CGShell,0,InKet,0,InBra,0> HRR_ba_1_Overlap_1_sh;
   typedef HRR<Overlap_1_1_int,CGF,0,InKet,0,InBra,0> HRR_ba_1_Overlap_1_int;
 
+  typedef HRR<ElecPot_1_1_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_1_ElecPot_1_sh;
+  typedef HRR<ElecPot_1_1_int,CGF,0,InBra,0,InKet,0> HRR_ab_1_ElecPot_1_int;
+  typedef HRR<ElecPot_1_1_sq,CGShell,0,InKet,0,InBra,0> HRR_ba_1_ElecPot_1_sh;
+  typedef HRR<ElecPot_1_1_int,CGF,0,InKet,0,InBra,0> HRR_ba_1_ElecPot_1_int;
+
   typedef VRR_1_Overlap_1<CGShell,InBra> VRR_a_1_Overlap_1_sh;
   typedef VRR_1_Overlap_1<CGF,InBra> VRR_a_1_Overlap_1_int;
   typedef VRR_1_Overlap_1<CGShell,InKet> VRR_b_1_Overlap_1_sh;
   typedef VRR_1_Overlap_1<CGF,InKet> VRR_b_1_Overlap_1_int;
+
   typedef VRR_1_Kinetic_1<CGShell,InBra> VRR_a_1_Kinetic_1_sh;
   typedef VRR_1_Kinetic_1<CGF,InBra> VRR_a_1_Kinetic_1_int;
   typedef VRR_1_Kinetic_1<CGShell,InKet> VRR_b_1_Kinetic_1_sh;
   typedef VRR_1_Kinetic_1<CGF,InKet> VRR_b_1_Kinetic_1_int;
+
+  typedef VRR_1_ElecPot_1<CGShell,InBra> VRR_a_1_ElecPot_1_sh;
+  typedef VRR_1_ElecPot_1<CGF,InBra> VRR_a_1_ElecPot_1_int;
+  typedef VRR_1_ElecPot_1<CGShell,InKet> VRR_b_1_ElecPot_1_sh;
+  typedef VRR_1_ElecPot_1<CGF,InKet> VRR_b_1_ElecPot_1_int;
 #endif
 
   typedef VRR_11_TwoPRep_11<CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;
