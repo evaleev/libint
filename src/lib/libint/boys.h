@@ -1,5 +1,5 @@
 // prototype for the Boys function engines (Boys function = Fm(T))
-// the original Chebyshev extrapolation code is based on that by Frank Neese
+// the Chebyshev extrapolation code is based on that by Frank Neese
 
 #ifndef _libint2_src_lib_libint_boys_h_
 #define _libint2_src_lib_libint_boys_h_
