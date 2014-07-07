@@ -164,17 +164,21 @@ namespace libint2 {
       ExpensiveNumbers<double> numbers_;
 
     public:
+      /// \param m_max maximum value of the Boys function index; set to -1 to skip initialization
       FmEval_Chebyshev3(int m_max) :
           FM_MAX(30.0), // this translates in appr. 1e-15  error in upward recursion, see the note below
           FM_DELTA(FM_MAX / (FM_N - 1)),
           FM_one_over_DELTA(1.0 / FM_DELTA),
           mmax(m_max), numbers_(14, 0) {
         assert(mmax <= 63);
-        init();
+        if (m_max >= 0)
+          init();
       }
       ~FmEval_Chebyshev3() {
-        delete[] c[0];
-        delete c;
+        if (mmax >= 0) {
+          delete[] c[0];
+          delete c;
+        }
       }
 
       /// @return the maximum value of m for which the Boys function can be computed with this object
