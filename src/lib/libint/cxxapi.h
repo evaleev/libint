@@ -1,9 +1,9 @@
 
-#ifndef _libint2_src_lib_libint_simpleapi_h_
-#define _libint2_src_lib_libint_simpleapi_h_
+#ifndef _libint2_src_lib_libint_cxxapi_h_
+#define _libint2_src_lib_libint_cxxapi_h_
 
 #if __cplusplus <= 199711L
-# error "Simple Libint API requires C++11 support"
+# error " Libint2 C++ API requires C++11 support"
 #endif
 
 #include <libint2.h>
@@ -17,7 +17,6 @@ namespace libint2 {
   }
 }
 
-//#include <libint2/engine.h>
-#include <engine.h>
+#include <libint2/engine.h>
 
-#endif /* _libint2_src_lib_libint_simpleapi_h_ */
+#endif /* _libint2_src_lib_libint_cxxapi_h_ */
