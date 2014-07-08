@@ -70,7 +70,10 @@ namespace libint2 { namespace simd {
         return result;
       }
 
-      explicit operator double() const {
+#if __cplusplus > 199711L
+      explicit
+#endif
+      operator double() const {
         double d0[2];
         ::memcpy(&(d0[0]), &d, sizeof(__m128d));
         // this segfaults on OS X
@@ -298,7 +301,10 @@ namespace libint2 { namespace simd {
         return result;
       }
 
-      explicit operator float() const {
+#if __cplusplus > 199711L
+      explicit
+#endif
+      operator float() const {
         float d0[4];
         ::memcpy(&(d0[0]), &d, sizeof(__m128));
         // this segfaults on OS X
@@ -308,7 +314,11 @@ namespace libint2 { namespace simd {
 //        _mm_store_ps(&(d0[0]), d);
         return d0[0];
       }
-      explicit operator double() const {
+
+#if __cplusplus > 199711L
+      explicit
+#endif
+      operator double() const {
         const float result_flt = this->operator float();
         return result_flt;
       }
@@ -547,7 +557,10 @@ namespace libint2 { namespace simd {
         return result;
       }
 
-      explicit operator double() const {
+#if __cplusplus > 199711L
+      explicit
+#endif
+      operator double() const {
         double d0[4];
         ::memcpy(&(d0[0]), &d, sizeof(__m256d));
         // this segfaults on OS X
