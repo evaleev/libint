@@ -137,13 +137,6 @@ static void print_config(std::ostream& os);
 // Put all configuration-specific API elements in here
 static void config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface);
 
-#ifdef INCLUDE_ONEBODY
-  static void build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                                                 SafePtr<Libint2Iface>& iface);
-  static void build_OnePNonSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                                                    SafePtr<Libint2Iface>& iface);
-#endif
-
 #ifdef INCLUDE_ERI
 #define USE_GENERIC_ERI_BUILD 1
 # if !USE_GENERIC_ERI_BUILD
@@ -177,6 +170,174 @@ static void build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParame
                                 SafePtr<Libint2Iface>& iface);
 #endif
 
+#ifdef INCLUDE_ONEBODY
+
+#  if  LIBINT_SUPPORT_ONEBODYINTS == 0
+#  error "change LIBINT_SUPPORT_ONEBODYINTS in global_macros.h to 1 if need 1-body ints"
+# endif
+
+template <typename ShellSet>
+void
+build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<CompilationParameters>& cparams,
+                    SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
+{
+  const std::string task = task_label(label, deriv_level);
+  const std::string task_uc = task_label(label, deriv_level);
+  typedef ShellSet Onebody_sh_1_1;
+  vector<CGShell*> shells;
+  unsigned int lmax = cparams->max_am(task);
+  for(unsigned int l=0; l<=lmax; l++) {
+    shells.push_back(new CGShell(l));
+  }
+  ImplicitDimensions::set_default_dims(cparams);
+
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  taskmgr.current(task);
+  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
+
+  const auto nullaux = typename Onebody_sh_1_1::AuxIndexType(0u);
+
+  //
+  // Construct graphs for each desired target integral and
+  // 1) generate source code for the found traversal path
+  // 2) extract all remaining unresolved recurrence relations and
+  //    append them to the stack. Such unresolved RRs are RRs applied
+  //    to sets of integrals (rather than to individual integrals).
+  // 3) at the end, for each unresolved recurrence relation generate
+  //    explicit source code
+  //
+  SafePtr<DirectedGraph> dg(new DirectedGraph);
+  SafePtr<Strategy> strat(new Strategy());
+  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
+  SafePtr<CodeContext> context(new CppCodeContext(cparams));
+  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+
+  for(unsigned int la=0; la<=lmax; la++) {
+    for(unsigned int lb=0; lb<=lmax; lb++) {
+
+          // skip s|s integrals -- no need to involve LIBINT here
+          if (deriv_level == 0 && la == 0 && lb == 0)
+            continue;
+
+#if STUDY_MEMORY_USAGE
+          const int lim = 1;
+          if (! (la == lim && lb == lim) )
+            continue;
+#endif
+
+          // unroll only if max_am <= cparams->max_am_opt(task)
+          using std::max;
+          const unsigned int max_am = max(la,lb);
+          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
+          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 0;
+          dg->registry()->unroll_threshold(unroll_threshold);
+          dg->registry()->do_cse(need_to_optimize);
+          dg->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
+          // Need to accumulate integrals?
+          dg->registry()->accumulate_targets(cparams->accumulate_targets());
+
+          ////////////
+          // loop over unique derivative index combinations
+          ////////////
+          // skip 1 center -- all derivatives with respect to that center can be
+          // recovered using translational invariance conditions
+          // which center to skip? -> A = 0, B = 1
+          const unsigned int center_to_skip = 1;
+          DerivIndexIterator<1> diter(deriv_level);
+          std::vector< SafePtr<Onebody_sh_1_1> > targets;
+          bool last_deriv = false;
+          do {
+            CGShell a(la);
+            CGShell b(lb);
+
+            unsigned int center = 0;
+            for(unsigned int i=0; i<2; ++i) {
+              if (i == center_to_skip)
+                continue;
+              for(unsigned int xyz=0; xyz<3; ++xyz) {
+                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
+              }
+              ++center;
+            }
+
+
+            SafePtr<Onebody_sh_1_1> target = Onebody_sh_1_1::Instance(a,b,nullaux);
+            targets.push_back(target);
+            last_deriv = diter.last();
+            if (!last_deriv) diter.next();
+          } while (!last_deriv);
+          // append all derivatives as targets to the graph
+          for(typename std::vector< SafePtr<Onebody_sh_1_1> >::const_iterator t=targets.begin();
+              t != targets.end();
+              ++t) {
+            SafePtr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,Onebody_sh_1_1>(*t);
+            dg->append_target(t_ptr);
+          }
+
+          // make label that characterizes this set of targets
+          // use the label of the nondifferentiated integral as a base
+          std::string ab_label;
+          {
+            CGShell a(la);
+            CGShell b(lb);
+            SafePtr<Onebody_sh_1_1> ab = Onebody_sh_1_1::Instance(a,b,nullaux);
+            ab_label = ab->label();
+          }
+          // + derivative level (if deriv_level > 0)
+          std::string label;
+          {
+            label = cparams->api_prefix();
+            if (deriv_level != 0) {
+              std::ostringstream oss;
+              oss << "deriv" << deriv_level;
+              label += oss.str();
+            }
+            label += ab_label;
+          }
+
+          std::string prefix(cparams->source_directory());
+          std::deque<std::string> decl_filenames;
+          std::deque<std::string> def_filenames;
+
+          // this will generate code for this targets, and potentially generate code for its prerequisites
+          GenerateCode(dg, context, cparams, strat, tactic, memman,
+                       decl_filenames, def_filenames,
+                       prefix, label, false);
+
+          // update max stack size and # of targets
+          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
+          tparams->max_stack_size(max_am, memman->max_memory_used());
+          tparams->max_ntarget(targets.size());
+          //os << " Max memory used = " << memman->max_memory_used() << std::endl;
+
+          // set pointer to the top-level evaluator function
+          ostringstream oss;
+          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_" << task << "[" << la << "][" << lb << "] = "
+              << context->label_to_name(label_to_funcname(label))
+              << context->end_of_stat() << endl;
+          iface->to_static_init(oss.str());
+
+          // need to declare this function internally
+          for(std::deque<std::string>::const_iterator i=decl_filenames.begin();
+              i != decl_filenames.end();
+              ++i) {
+            oss.str("");
+            oss << "#include <" << *i << ">" << endl;
+            iface->to_int_iface(oss.str());
+          }
+
+#if DEBUG
+          os << "Max memory used = " << memman->max_memory_used() << endl;
+#endif
+          dg->reset();
+          memman->reset();
+
+    } // end of b loop
+  } // end of a loop
+}
+#endif
+
 void try_main (int argc, char* argv[])
 {
   std::ostream& os = cout;
@@ -186,7 +347,9 @@ void try_main (int argc, char* argv[])
   taskmgr.add("default");
 #ifdef INCLUDE_ONEBODY
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
-    taskmgr.add( task_label("onebody",d) );
+    taskmgr.add( task_label("overlap",d) );
+    taskmgr.add( task_label("kinetic",d) );
+    taskmgr.add( task_label("elecpot",d) );
   }
 #endif
 #ifdef INCLUDE_ERI
@@ -225,11 +388,32 @@ void try_main (int argc, char* argv[])
   cparams->max_am_opt("default",LIBINT_OPT_AM);
   cparams->num_bf("default",4);
 #ifdef INCLUDE_ONEBODY
-  for(unsigned int d=0; d<=0; ++d) {
-    cparams->max_am( task_label("onebody", d) ,ONEBODY_MAX_AM);
-    cparams->max_am_opt( task_label("onebody", d) ,ONEBODY_OPT_AM);
-  }
+  for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
+#if defined(ONEBODY_MAX_AM_LIST)
+    cparams->max_am( task_label("overlap", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    cparams->max_am( task_label("kinetic", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    cparams->max_am( task_label("elecpot", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+#elif defined(ONEBODY_MAX_AM)
+    cparams->max_am( task_label("overlap", d), ONEBODY_MAX_AM);
+    cparams->max_am( task_label("kinetic", d), ONEBODY_MAX_AM);
+    cparams->max_am( task_label("elecpot", d), ONEBODY_MAX_AM);
 #endif
+#if defined(ONEBODY_OPT_AM_LIST)
+    cparams->max_am_opt( task_label("overlap", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    cparams->max_am_opt( task_label("kinetic", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    cparams->max_am_opt( task_label("elecpot", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+#elif defined(ONEBODY_OPT_AM)
+    cparams->max_am_opt( task_label("onebody", d) , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label("kinetic", d) , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label("elecpot", d) , ONEBODY_OPT_AM);
+#endif
+  }
+  for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
+    cparams->num_bf(task_label("overlap", d), 2);
+    cparams->num_bf(task_label("kinetic", d), 2);
+    cparams->num_bf(task_label("elecpot", d), 2);
+  }
+#endif // INCLUDE_ONEBODY
 #ifdef INCLUDE_ERI
   for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
 #if defined(ERI_MAX_AM_LIST)
@@ -383,8 +567,11 @@ void try_main (int argc, char* argv[])
   cparams->print(os);
 
 #ifdef INCLUDE_ONEBODY
-  build_OnePSep_1b_1k(os,cparams,iface,d);
-  //build_OnePNonSep_2b_2k(os,cparams,iface,d);
+  for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
+    build_onebody_1b_1k<Overlap_1_1_sq>(os,"overlap",cparams,iface,d);
+    build_onebody_1b_1k<Kinetic_1_1_sq>(os,"kinetic",cparams,iface,d);
+    build_onebody_1b_1k<ElecPot_1_1_sq>(os,"elecpot",cparams,iface,d);
+  }
 #endif
 #ifdef INCLUDE_ERI
 # if !USE_GENERIC_ERI_BUILD
@@ -500,166 +687,6 @@ print_config(std::ostream& os)
 #endif
 }
 
-#ifdef INCLUDE_ONEBODY
-void
-build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                    SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
-{
-  const std::string task = task_label("onebody", deriv_level);
-  const std::string task_uc = task_label("ONEBODY", deriv_level);
-  typedef OnePSep_1_1_sq OnePSep_sh_1_1;
-  vector<CGShell*> shells;
-  unsigned int lmax = cparams->max_am(task);
-  for(unsigned int l=0; l<=lmax; l++) {
-    shells.push_back(new CGShell(l));
-  }
-  ImplicitDimensions::set_default_dims(cparams);
-
-  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current(task);
-  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
-
-  //
-  // Construct graphs for each desired target integral and
-  // 1) generate source code for the found traversal path
-  // 2) extract all remaining unresolved recurrence relations and
-  //    append them to the stack. Such unresolved RRs are RRs applied
-  //    to sets of integrals (rather than to individual integrals).
-  // 3) at the end, for each unresolved recurrence relation generate
-  //    explicit source code
-  //
-  SafePtr<DirectedGraph> dg(new DirectedGraph);
-  SafePtr<Strategy> strat(new Strategy());
-  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-  SafePtr<CodeContext> context(new CppCodeContext(cparams));
-  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
-
-  for(unsigned int la=0; la<=lmax; la++) {
-    for(unsigned int lb=0; lb<=lmax; lb++) {
-
-          // skip s|s integrals -- no need to involve LIBINT here
-          if (deriv_level == 0 && la == 0 && lb == 0)
-            continue;
-
-#if STUDY_MEMORY_USAGE
-          const int lim = 1;
-          if (! (la == lim && lb == lim) )
-            continue;
-#endif
-
-          // unroll only if max_am <= cparams->max_am_opt(task)
-          using std::max;
-          const unsigned int max_am = max(la,lb);
-          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 0;
-          dg->registry()->unroll_threshold(unroll_threshold);
-          dg->registry()->do_cse(need_to_optimize);
-          dg->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
-          // Need to accumulate integrals?
-          dg->registry()->accumulate_targets(cparams->accumulate_targets());
-
-          ////////////
-          // loop over unique derivative index combinations
-          ////////////
-          // skip 1 center -- all derivatives with respect to that center can be
-          // recovered using translational invariance conditions
-          // which center to skip? -> A = 0, B = 1
-          const unsigned int center_to_skip = 1;
-          DerivIndexIterator<1> diter(deriv_level);
-          std::vector< SafePtr<OnePSep_sh_1_1> > targets;
-          bool last_deriv = false;
-          do {
-            CGShell a(la);
-            CGShell b(lb);
-
-            unsigned int center = 0;
-            for(unsigned int i=0; i<2; ++i) {
-              if (i == center_to_skip)
-                continue;
-              for(unsigned int xyz=0; xyz<3; ++xyz) {
-                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
-              }
-              ++center;
-            }
-
-            SafePtr<OnePSep_sh_1_1> abcd = OnePSep_sh_1_1::Instance(a,b,mType(0u));
-            targets.push_back(abcd);
-            last_deriv = diter.last();
-            if (!last_deriv) diter.next();
-          } while (!last_deriv);
-          // append all derivatives as targets to the graph
-          for(std::vector< SafePtr<OnePSep_sh_1_1> >::const_iterator t=targets.begin();
-              t != targets.end();
-              ++t) {
-            SafePtr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,OnePSep_sh_1_1>(*t);
-            dg->append_target(t_ptr);
-          }
-
-          // make label that characterizes this set of targets
-          // use the label of the nondifferentiated integral as a base
-          std::string ab_label;
-          {
-            CGShell a(la);
-            CGShell b(lb);
-            SafePtr<OnePSep_sh_1_1> ab = OnePSep_sh_1_1::Instance(a,b,mType(0u));
-            ab_label = ab->label();
-          }
-          // + derivative level (if deriv_level > 0)
-          std::string label;
-          {
-            label = cparams->api_prefix();
-            if (deriv_level != 0) {
-              std::ostringstream oss;
-              oss << "deriv" << deriv_level;
-              label += oss.str();
-            }
-            label += ab_label;
-          }
-
-          std::string prefix(cparams->source_directory());
-          std::deque<std::string> decl_filenames;
-          std::deque<std::string> def_filenames;
-
-          // this will generate code for this targets, and potentially generate code for its prerequisites
-          GenerateCode(dg, context, cparams, strat, tactic, memman,
-                       decl_filenames, def_filenames,
-                       prefix, label, false);
-
-          // update max stack size and # of targets
-          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
-          tparams->max_stack_size(max_am, memman->max_memory_used());
-          tparams->max_ntarget(targets.size());
-          //os << " Max memory used = " << memman->max_memory_used() << std::endl;
-
-          // set pointer to the top-level evaluator function
-          ostringstream oss;
-          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_" << task << "[" << la << "][" << lb << "] = "
-              << context->label_to_name(label_to_funcname(label))
-              << context->end_of_stat() << endl;
-          iface->to_static_init(oss.str());
-
-          // need to declare this function internally
-          for(std::deque<std::string>::const_iterator i=decl_filenames.begin();
-              i != decl_filenames.end();
-              ++i) {
-            oss.str("");
-            oss << "#include <" << *i << ">" << endl;
-            iface->to_int_iface(oss.str());
-          }
-
-#if DEBUG
-          os << "Max memory used = " << memman->max_memory_used() << endl;
-#endif
-          dg->reset();
-          memman->reset();
-
-        } // end of d loop
-      } // end of c loop
-    } // end of b loop
-  } // end of a loop
-}
-#endif
 
 #ifdef INCLUDE_ERI
 void
@@ -1720,6 +1747,10 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 void
 config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface)
 {
+#ifdef INCLUDE_ONEBODY
+  iface->to_params(iface->macro_define("SUPPORT_ONEBODY",1));
+  iface->to_params(iface->macro_define("DERIV_ONEBODY_ORDER",INCLUDE_ONEBODY));
+#endif
 #ifdef INCLUDE_ERI
   iface->to_params(iface->macro_define("SUPPORT_ERI",1));
   iface->to_params(iface->macro_define("DERIV_ERI_ORDER",INCLUDE_ERI));

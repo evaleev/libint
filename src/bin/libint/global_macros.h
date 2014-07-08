@@ -6,7 +6,7 @@
 #define LIBINT_CARTGAUSS_MAX_AM 32
 
 /// For developers only
-#define LIBINT_SUPPORT_ONEBODYINTS 0
+#define LIBINT_SUPPORT_ONEBODYINTS 1
 
 /// Set to 1 to enable various safety checks which are normally too expensive to perform
 #define CHECK_SAFETY 0
@@ -55,7 +55,7 @@
 #define DISABLE_SUBTREES 0
 
 /// Set to 1 to produce GraphViz-formatted DAGs
-#define PRINT_DAG_GRAPHVIZ 0
+#define PRINT_DAG_GRAPHVIZ 1
 
 /// Produce massive amounts of debugging info
 #define DEBUG 0

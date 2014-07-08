@@ -145,6 +145,14 @@ namespace libint2 {
       auto i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(A,B,C,D,aux,oper));
       return rr_->add_child(i);
     }
+    /// make_child
+    const SafePtr<DGVertex>& make_child(const F& A,
+                                        const F& B,
+                                        const AuxIndexType& aux = AuxIndexType(),
+                                        const OperType& oper = OperType()) {
+      auto i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(A,B,aux,oper));
+      return rr_->add_child(i);
+    }
     /// make a child from a wedge of physicists' brackets
     const SafePtr<DGVertex>&
     make_child(const algebra::Wedge< BraketPair<F,PBra>, BraketPair<F,PKet> >& braket_wedge,

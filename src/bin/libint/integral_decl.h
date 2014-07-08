@@ -6,6 +6,10 @@ namespace libint2 {
 
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
   class GenIntegralSet;
+#if LIBINT_SUPPORT_ONEBODYINTS
+  template <class Oper, class BFS, class AuxQuanta>
+  class GenIntegralSet_1_1;
+#endif // LIBINT_SUPPORT_ONEBODYINTS
   template <class Oper, class BFS, class AuxQuanta>
   class GenIntegralSet_11_11;
 

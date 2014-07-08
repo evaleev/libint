@@ -179,8 +179,9 @@ namespace libint2 {
 //////////////////////////////
 
   typedef OperatorProperties<1,false,PermutationalSymmetry::nonsymm> Nonmultiplicative1Body_Props;
-  typedef OperatorProperties<2,true,PermutationalSymmetry::symm> MultiplicativeSymm2Body_Props;
-  typedef OperatorProperties<2,true,PermutationalSymmetry::nonsymm> MultiplicativeNonsymm2Body_Props;
+  typedef OperatorProperties<1,true, PermutationalSymmetry::nonsymm> Multiplicative1Body_Props;
+  typedef OperatorProperties<2,true, PermutationalSymmetry::symm> MultiplicativeSymm2Body_Props;
+  typedef OperatorProperties<2,true, PermutationalSymmetry::nonsymm> MultiplicativeNonsymm2Body_Props;
   typedef OperatorProperties<2,false,PermutationalSymmetry::symm> NonmultiplicativeSymm2Body_Props;
   typedef OperatorProperties<2,false,PermutationalSymmetry::nonsymm> NonmultiplicativeNonsymm2Body_Props;
 
@@ -198,32 +199,44 @@ namespace libint2 {
   };
   typedef GenOper< GenMultSymmOper_Descr<2>  > GenMultSymm2BodyOper;
 
-  /** OnePSep is a general one-body operator with separable (in cartesian sense) kernel
+  /** Overlap is a one-body overlap operator
   */
-  struct OnePSep_Descr : public Contractable<OnePSep_Descr> {
+  struct Overlap_Descr : public Contractable<Overlap_Descr> {
+    typedef Multiplicative1Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "Overlap"; }
+    std::string label() const { return "Overlap"; }
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { return +1; }
+  };
+  typedef GenOper<Overlap_Descr> OverlapOper;
+
+  /** Kinetic is a one-body kinetic energy operator
+  */
+  struct Kinetic_Descr : public Contractable<Kinetic_Descr> {
     typedef Nonmultiplicative1Body_Props Properties;
     static const unsigned int max_key = 1;
     unsigned int key() const { return 0; }
-    std::string description() const { return "OnePSep"; }
-    std::string label() const { return "OnePSep"; }
+    std::string description() const { return "Kinetic"; }
+    std::string label() const { return "Kinetic"; }
     int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
+    int hermitian(int i) const { return +1; }
   };
-  typedef GenOper<OnePSep_Descr> OnePSep;
+  typedef GenOper<Kinetic_Descr> KineticOper;
 
-  /** OnePNonSep is a general one-body operator with non-separable (in cartesian sense) kernel
+  /** ElecPot is the electrostatic potential (Coulomb) operator
   */
-  struct OnePNonSep_Descr : public Contractable<OnePNonSep_Descr> {
-    typedef Nonmultiplicative1Body_Props Properties;
+  struct ElecPot_Descr : public Contractable<Overlap_Descr> {
+    typedef Multiplicative1Body_Props Properties;
     static const unsigned int max_key = 1;
     unsigned int key() const { return 0; }
-    std::string description() const { return "OnePNonSep"; }
-    std::string label() const { return "OnePNonSep"; }
+    std::string description() const { return "ElecPot"; }
+    std::string label() const { return "ElecPot"; }
     int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
+    int hermitian(int i) const { return +1; }
   };
-  typedef GenOper<OnePNonSep_Descr> OnePNonSep;
-
+  typedef GenOper<ElecPot_Descr> ElecPotOper;
 
   /** TwoPRep is the two-body repulsion operator.
   */
