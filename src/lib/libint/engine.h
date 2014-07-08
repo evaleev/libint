@@ -18,6 +18,7 @@
 
 namespace libint2 {
 
+#ifdef LIBINT2_SUPPORT_ONEBODY
   /// OneBodyEngine computes integrals of 1-body operators, e.g. overlap, kinetic energy, dipole moment, etc.
 
   /**
@@ -54,6 +55,12 @@ namespace libint2 {
 
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
 
+        switch(type_) {
+          case overlap: assert(max_l <= LIBINT2_MAX_AM_overlap); break;
+          case kinetic: assert(max_l <= LIBINT2_MAX_AM_kinetic); break;
+          case nuclear: assert(max_l <= LIBINT2_MAX_AM_elecpot); break;
+          default: assert(false);
+        }
         assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
 
         if (type_ == overlap) {
@@ -402,6 +409,7 @@ namespace libint2 {
       std::vector<LIBINT2_REALTYPE> scratch_; // for transposes and/or transforming to solid harmonics
 
   }; // struct OneBodyEngine
+#endif // LIBINT2_SUPPORT_ONEBODY
 
   /// types of multiplicative spherically-symmetric two-body kernels known by TwoBodyEngine
   enum MultiplicativeSphericalTwoBodyKernel {
@@ -427,6 +435,7 @@ namespace libint2 {
     };
   }
 
+#ifdef LIBINT2_SUPPORT_ERI
   /// TwoBodyEngine computes (ab|O|cd) (i.e. <em>four-center</em>) integrals over
   /// a two-body kernel of type MultiplicativeSphericalTwoBodyKernel using Obara-Saika-Ahlrichs relations
 
@@ -457,6 +466,7 @@ namespace libint2 {
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
         const auto max_shellset_size = ncart_max * ncart_max * ncart_max * ncart_max;
 
+        assert(max_l <= LIBINT2_MAX_AM_ERI);
         assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
 
         switch(deriv_order_) {
@@ -879,6 +889,7 @@ namespace libint2 {
       std::vector<LIBINT2_REALTYPE> scratch_; // for transposes and/or transforming to solid harmonics
 
   }; // struct TwoBodyEngine
+#endif // LIBINT2_SUPPORT_ERI
 
 } // namespace libint2
 
