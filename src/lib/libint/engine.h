@@ -310,7 +310,9 @@ namespace libint2 {
         primdata.AB_z[0] = A[2] - B[2];
 #endif
         }
-        else { // always VRR on ket, HRR to ket (overlap, coulomb), or no HRR at all (kinetic energy ints)
+        if (LIBINT2_SHELLQUARTET_SET != LIBINT2_SHELLQUARTET_SET_STANDARD
+            || type_ == kinetic)
+        { // always VRR on ket, HRR to ket (overlap, coulomb), or kinetic energy ints
 
 #if LIBINT2_DEFINED(eri,PB_x)
         primdata.PB_x[0] = Px - B[0];
