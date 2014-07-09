@@ -194,7 +194,7 @@ namespace libint2 {
         // thread-safe per C++11 standard [6.7.4]
         static std::shared_ptr<FmEval_Chebyshev3> instance_ = 0;
 
-        const bool need_new_instance = !instance_ || (instance_ && instance_->max_m() < max_m);
+        const bool need_new_instance = !instance_ || (instance_ && instance_->max_m() < m_max);
         if (need_new_instance) {
           auto new_instance = std::make_shared<FmEval_Chebyshev3>(m_max);
           instance_ = new_instance; // thread-safe
