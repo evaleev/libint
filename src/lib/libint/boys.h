@@ -15,6 +15,11 @@
 #include <vector>
 #include <algorithm>
 
+// some features require at least C++11
+#if __cplusplus > 199711L
+#include <memory>
+#endif
+
 #if HAVE_LAPACK // use F77-type interface for now, switch to LAPACKE later
 extern "C" void dgesv_(const int* n,
                        const int* nrhs, double* A, const int* lda,
@@ -180,6 +185,24 @@ namespace libint2 {
           delete c;
         }
       }
+
+      // some features require at least C++11
+#if __cplusplus > 199711L
+      /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
+      static const std::shared_ptr<FmEval_Chebyshev3>& instance(int m_max) {
+
+        // thread-safe per C++11 standard [6.7.4]
+        static std::shared_ptr<FmEval_Chebyshev3> instance_ = 0;
+
+        const bool need_new_instance = !instance_ || (instance_ && instance_->max_m());
+        if (need_new_instance) {
+          auto new_instance = std::make_shared<FmEval_Chebyshev3>(m_max);
+          instance_ = new_instance; // thread-safe
+        }
+
+        return instance_;
+      }
+#endif
 
       /// @return the maximum value of m for which the Boys function can be computed with this object
       int max_m() const { return mmax; }

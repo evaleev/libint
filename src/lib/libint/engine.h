@@ -34,7 +34,7 @@ namespace libint2 {
       };
 
       /// creates a default (unusable) OneBodyEngine; to be used as placeholder for copying a usable engine
-      OneBodyEngine() : type_(_invalid), primdata_(), lmax_(-1), fm_eval_(-1) {}
+      OneBodyEngine() : type_(_invalid), primdata_(), lmax_(-1) {}
 
       OneBodyEngine(const OneBodyEngine& other) = default;
       OneBodyEngine(OneBodyEngine&& other) = default;
@@ -51,7 +51,7 @@ namespace libint2 {
       /// \warning currently solid harmonics Gaussians are not supported
       OneBodyEngine(type t, size_t max_nprim, int max_l, int deriv_order = 0) :
         type_(t), primdata_(max_nprim * max_nprim), lmax_(max_l), deriv_order_(deriv_order),
-        fm_eval_(t == nuclear ? static_cast<int>(2*lmax_ + deriv_order) : -1) {
+        fm_eval_(t == nuclear ? libint2::FmEval_Chebyshev3::instance(2*max_l+deriv_order) : 0) {
 
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
 
@@ -384,7 +384,7 @@ namespace libint2 {
           const auto U = gammap * PC2;
           const auto ltot = s1.contr[0].l + s2.contr[0].l;
           double* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
-          fm_eval_.eval(fm_ptr, U, ltot);
+          fm_eval_->eval(fm_ptr, U, ltot);
 
           decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
           const auto pfac = - q_[oset].first * sqrt(gammap) * two_o_sqrt_PI * ovlp_ss;
@@ -404,7 +404,7 @@ namespace libint2 {
       size_t deriv_order_;
       std::vector<std::pair<double, std::array<double,3>>> q_;
 
-      libint2::FmEval_Chebyshev3 fm_eval_;
+      std::shared_ptr<libint2::FmEval_Chebyshev3> fm_eval_;
 
       std::vector<LIBINT2_REALTYPE> scratch_; // for transposes and/or transforming to solid harmonics
 
@@ -446,7 +446,7 @@ namespace libint2 {
   class TwoBodyEngine {
     public:
       /// creates a default (unusable) TwoBodyEngine
-      TwoBodyEngine() : primdata_(), lmax_(-1), core_eval_(-1) {}
+      TwoBodyEngine() : primdata_(), lmax_(-1), core_eval_(0) {}
 
       TwoBodyEngine(const TwoBodyEngine& other) = default;
       TwoBodyEngine(TwoBodyEngine&& other) = default;
@@ -461,7 +461,8 @@ namespace libint2 {
       /// \warning currently solid harmonics Gaussians are not supported
       TwoBodyEngine(size_t max_nprim, int max_l, int deriv_order = 0) :
         primdata_(max_nprim * max_nprim * max_nprim * max_nprim), lmax_(max_l), deriv_order_(deriv_order),
-        core_eval_(4*lmax_ + deriv_order) {
+        core_eval_(core_eval_type::instance(4*lmax_ + deriv_order))
+      {
 
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
         const auto max_shellset_size = ncart_max * ncart_max * ncart_max * ncart_max;
@@ -871,7 +872,7 @@ namespace libint2 {
             const auto T = PQ2*gammapq;
             double* fm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
             const auto mmax = amtot + deriv_order_;
-            core_eval_.eval(fm_ptr, T, mmax);
+            core_eval_->eval(fm_ptr, T, mmax);
 
             for(auto m=0; m!=mmax+1; ++m) {
               fm_ptr[m] *= pfac;
@@ -884,7 +885,8 @@ namespace libint2 {
       int lmax_;
       size_t deriv_order_;
 
-      typename libint2::detail::twobodyengine_traits<Kernel>::core_eval_type core_eval_;
+      typedef typename libint2::detail::twobodyengine_traits<Kernel>::core_eval_type core_eval_type;
+      std::shared_ptr<core_eval_type> core_eval_;
 
       std::vector<LIBINT2_REALTYPE> scratch_; // for transposes and/or transforming to solid harmonics
 
