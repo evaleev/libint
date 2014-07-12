@@ -170,7 +170,8 @@ namespace libint2 {
 
     public:
       /// \param m_max maximum value of the Boys function index; set to -1 to skip initialization
-      FmEval_Chebyshev3(int m_max) :
+      /// \param precision the desired precision
+      FmEval_Chebyshev3(int m_max, double = 0.0) :
           FM_MAX(30.0), // this translates in appr. 1e-15  error in upward recursion, see the note below
           FM_DELTA(FM_MAX / (FM_N - 1)),
           FM_one_over_DELTA(1.0 / FM_DELTA),
@@ -189,7 +190,7 @@ namespace libint2 {
       // some features require at least C++11
 #if __cplusplus > 199711L
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
-      static const std::shared_ptr<FmEval_Chebyshev3>& instance(int m_max) {
+      static const std::shared_ptr<FmEval_Chebyshev3>& instance(int m_max, double = 0.0) {
 
         // thread-safe per C++11 standard [6.7.4]
         static std::shared_ptr<FmEval_Chebyshev3> instance_ = 0;
