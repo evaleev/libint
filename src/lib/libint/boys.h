@@ -533,6 +533,27 @@ namespace libint2 {
         delete[] grid_;
       }
 
+      // some features require at least C++11
+#if __cplusplus > 199711L
+      /// Singleton interface allows to manage the lone instance;
+      /// adjusts max m and precision values as needed in thread-safe fashion
+      static const std::shared_ptr<FmEval_Taylor>& instance(unsigned int mmax, Real precision) {
+
+        // thread-safe per C++11 standard [6.7.4]
+        static std::shared_ptr<FmEval_Taylor> instance_ = 0;
+
+        const bool need_new_instance = !instance_ ||
+                                       (instance_ && (instance_->max_m() < mmax ||
+                                                      instance_->precision() > precision));
+        if (need_new_instance) {
+          auto new_instance = std::make_shared<FmEval_Taylor>(mmax, precision);
+          instance_ = new_instance; // thread-safe
+        }
+
+        return instance_;
+      }
+#endif
+
       /// @return the maximum value of m for which this object can compute the Boys function
       int max_m() const { return max_m_ - INTERPOLATION_ORDER + 1; }
       /// @return the precision with which this object can compute the Boys function
@@ -971,6 +992,27 @@ namespace libint2 {
         delete fm_eval_;
         fm_eval_ = 0;
       }
+
+      // some features require at least C++11
+#if __cplusplus > 199711L
+      /// Singleton interface allows to manage the lone instance;
+      /// adjusts max m and precision values as needed in thread-safe fashion
+      static const std::shared_ptr<GaussianGmEval>& instance(unsigned int mmax, Real precision) {
+
+        // thread-safe per C++11 standard [6.7.4]
+        static std::shared_ptr<GaussianGmEval> instance_ = 0;
+
+        const bool need_new_instance = !instance_ ||
+                                       (instance_ && (instance_->max_m() < mmax ||
+                                                      instance_->precision() > precision));
+        if (need_new_instance) {
+          auto new_instance = std::make_shared<GaussianGmEval>(mmax, precision);
+          instance_ = new_instance; // thread-safe
+        }
+
+        return instance_;
+      }
+#endif
 
       /// @return the maximum value of m for which the \f$ G_m(\rho, T) \f$ can be computed with this object
       int max_m() const { return mmax_; }
