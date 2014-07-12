@@ -950,8 +950,9 @@ namespace libint2 {
        * @param[in] mmax the evaluator will be used to compute Gm(T) for 0 <= m <= mmax
        */
       GaussianGmEval(int mmax, Real precision) : mmax_(mmax),
-          precision_(precision), fm_eval_(0), numbers_(-1,-1,mmax),
-          g_i(mmax+1), r_i(mmax+1), oorhog_i(mmax+1) {
+          precision_(precision), fm_eval_(0),
+          g_i(mmax+1), r_i(mmax+1), oorhog_i(mmax+1),
+          numbers_(-1,-1,mmax) {
         assert(k == -1 || k == 0 || k == 2);
         // for k=-1 need to evaluate the Boys function
         if (k == -1) {
