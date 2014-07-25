@@ -1,6 +1,6 @@
 
-#ifndef _libint2_src_lib_libint_compute_h_
-#define _libint2_src_lib_libint_compute_h_
+#ifndef _libint2_src_lib_libint_engine_h_
+#define _libint2_src_lib_libint_engine_h_
 
 #if __cplusplus <= 199711L
 # error "The simple Libint API requires C++11 support"
@@ -1014,4 +1014,4 @@ namespace libint2 {
 
 } // namespace libint2
 
-#endif /* _libint2_src_lib_libint_shell_h_ */
+#endif /* _libint2_src_lib_libint_engine_h_ */
