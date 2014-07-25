@@ -180,7 +180,7 @@ case $enableval in
   ;;
 esac
 ],[
-    INCLUDE_ONEBODY=no
+    INCLUDE_ONEBODY=0
 ]
 )
 
