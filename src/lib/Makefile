@@ -13,6 +13,8 @@ default::
 	    (cd $${dir} && $(MAKE) $(JOBS)) || exit 1; \
 	  done
 
+all:: default
+
 ifndef DODEPEND
 DODEPENDOPT = "DODEPEND=no"
 endif

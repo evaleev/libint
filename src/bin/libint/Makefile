@@ -44,6 +44,8 @@ TESTCXXDEP = $(TESTCXXSRC:%.cc=%.$(DEPSUF))
 
 default:: build_libint
 
+all:: default
+
 build_libint: $(BUILDCXXOBJ) $(LIBTARGET)
 	$(CXX) -o $@ $(LDFLAGS) $^ $(SYSLIBS) 
 

@@ -3,6 +3,8 @@
 
 default:: $(TOPDIR)/lib/$(TARGET)
 
+all:: default
+
 export:: source
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/src
 	for i in $(LIBSRCDIR)/*.cc; do \
