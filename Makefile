@@ -29,7 +29,7 @@ export::
 	  done
 	(cd export && $(MAKE) $(DODEPENDOPT) export) || exit 1;
 
-install:: install_pkgconfig
+install:: all install_pkgconfig install_inc
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install) || exit 1; \
@@ -41,13 +41,13 @@ install_pkgconfig::
 	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(pkgconfigdir)
 endif
 
-install_inc::
+install_inc:: all
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install_inc) || exit 1; \
 	  done
 
-install_target::
+install_target:: all
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install_target) || exit 1; \
