@@ -1,8 +1,8 @@
 For (more) complete instructions please refer to https://github.com/evaleev/libint/wiki
 
 The installation procedure for the impatient and/or experts:
-0) create configure:
-   $ aclocal -I lib/autoconf; autoconf
+0) create configure in the source directory:
+   $ ./autogen.sh
 1) create a directory for object files:
    $ mkdir ../build; cd ../build
 2) configure the package:
@@ -15,12 +15,7 @@ then either choose path a or b:
 3a) build the Libint compiler, then generate and compile a library:
    $ make
 4a) optional validation of the library:
-   $ cd tests/eri
-   $ make
-   $ ./test 0
-   $ ./test 1 (if derivative Coulomb integrals were enabled)
-   $ ./test 2 (if second-derivative Coulomb integrals were enabled)
-   $ cd ../..
+   $ make check
 5a) install the compiled library:
    $ make install
 
