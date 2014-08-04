@@ -72,10 +72,10 @@ oclean::
 distclean::
 	for dir in $(ALLSUBDIRS); \
 	  do \
-	    (cd $${dir} && $(MAKE) DODEPEND=no distclean) || exit 1; \
+	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
 	-rm -rf autom4te.cache config.status config.log conf*.file conf*.dir *.dSYM depcheck* libtool \
-Makedirlist include
+Makedirlist libint2.pc include/libint2_config.h include/libint2
 
 targetclean::
 	for dir in $(SUBDIRS); \

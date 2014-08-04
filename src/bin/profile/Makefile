@@ -54,6 +54,6 @@ clean::
 	-rm -rf $(COMP1) $(COMP2) *.o *.d
 
 realclean:: clean
-	-rm -rf *.h *.cc *.dot *.log
+	-rm -rf *.dot *.log
 
 distclean:: realclean

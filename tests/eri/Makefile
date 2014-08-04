@@ -2,7 +2,7 @@ TOPDIR=../..
 ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
-include $(TOPDIR)/src/bin/MakeVars
+-include $(TOPDIR)/src/bin/MakeVars
 
 # include headers the object include directory
 CPPFLAGS += -I$(TOPDIR)/include -I$(TOPDIR)/include/libint2
@@ -40,6 +40,8 @@ $(TEST): LD=$(CXXGEN)
 
 clean::
 	-rm -rf $(TEST) *.o *.d
+
+distclean:: realclean
 
 realclean:: clean
 
