@@ -7,7 +7,7 @@ using namespace std;
 using namespace libint2;
 
 /** This function evaluates ERI over 4 primitive Gaussian shells.
-    See doc/sample/test_eri.cc for an example of how to deal with
+    See tests/eri/test.cc for an example of how to deal with
     contracted Gaussians.
 
     For simplicity, many details are omitted here, e.g. normalization.
