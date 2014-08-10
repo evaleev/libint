@@ -1,4 +1,4 @@
-// shamelessly borrowed from MADNESS (GPLed)
+// shamelessly borrowed from MADNESS (GPLv3)
 // written by Justus Calvin (justus.c79@gmail.com)
 
 #ifndef _libint2_include_stdarray_h
