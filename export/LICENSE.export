@@ -1,0 +1,15 @@
+LIBINT (version 2) - a library for the evaluation of molecular
+integrals of many-body operators over Gaussian functions
+Copyright (C) 2004-2014 Edward F. Valeev
+
+This program is free software. Most of it can be redistributed and/or modified
+under the terms of the GNU Library General Public License, version 2
+(see the accompanying file COPYING; if you did not receive this file refer to
+http://www.gnu.org/licenses/). Some source files are distributed under the terms of the
+GNU General Public License, version 2. The applicable license is specified in each source file.
+If not indicated, the applicable license is GNU LGPL, version 2 (not GPL).
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Library General Public License, version 2, for more details.
