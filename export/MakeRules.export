@@ -1,4 +1,6 @@
 
+all:: default
+
 default:: $(TOPDIR)/lib/$(TARGET)
 
 install:: install_inc install_target install_pkgconfig
@@ -58,7 +60,7 @@ clean:: oclean targetclean
 	cd doc; make clean
 
 distclean:: clean
-	-rm -rf MakeVars MakeRules MakeSuffixRules config.* depcheck* autom4* libtool include/libint2_config.h
+	-rm -rf MakeVars MakeRules MakeSuffixRules config.* depcheck* autom4* libtool include/libint2_config.h libint2.pc
 	cd tests; make distclean
 	cd doc; make distclean
 

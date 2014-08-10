@@ -34,7 +34,7 @@ $(TOPDIR)/lib/$(NAMEV).la: $(LIBOBJ)
 	$(LTLINK) $(CXX) -o $@ -objectlist libobjlist $(LTLINKLIBOPTS)
 	-rm -f libobjlist
 
-check:
+check: all
 	(cd tests && make check) || exit 1
 
 .PHONY: doc
