@@ -23,29 +23,43 @@
 #include <iostream>
 #include <cmath>
 #include <sys/time.h>
-
-#include <rr.h>
-#include <iter.h>
-#include <util.h>
-#include <deriv_iter.h>
-#include <policy_spec.h>
-#include <global_macros.h>
+#include <cassert>
 
 #include <libint2.h>
-#include <test_eri/eri.h>
-#include <test_eri/prep_libint2.h>
+#include <deriv_iter.h>
+#include <eri.h>
+#include <prep_libint2.h>
+#include <cgshell_ordering.h>
 
 using namespace std;
 using namespace libint2;
 
-const double ABSOLUTE_DEVIATION_THRESHOLD = 1.0E-14; // indicate failure if any integral differs in absolute sense by more than this
-const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-8; // indicate failure if any integral differs in relative sense by more than this
+const double ABSOLUTE_DEVIATION_THRESHOLD = 1.0E-15; // indicate failure if any integral differs in absolute sense by more than this
+const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any integral differs in relative sense by more than this
 
 /// change to true to skip verification and do some timing simulation
 const bool do_timing_only = false;
 
 libint2::FmEval_Chebyshev3 fmeval_chebyshev(LIBINT_MAX_AM*4 + 2);
-libint2::FmEval_Taylor<double,6> fmeval_taylor(LIBINT_MAX_AM*4+2, 1e-15);
+libint2::FmEval_Taylor<double,6> fmeval_taylor(LIBINT_MAX_AM*4 + 2, 1e-15);
+
+namespace {
+  const char am_letters[] = "spdfghiklm";
+
+  std::string am_to_symbol(unsigned int l, bool contracted = false) {
+    std::string result;
+    do {
+      const unsigned int digit = l % 10u;
+      char letter = am_letters[digit];
+      if (contracted)
+        letter = toupper(letter);
+      result.insert(result.begin(), letter);
+      l /= 10;
+    } while (l != 0);
+
+    return result;
+  }
+}
 
 // test 4, 3, and 2-center integrals
 #ifdef INCLUDE_ERI
@@ -67,7 +81,7 @@ int main(int argc, char** argv) {
   const unsigned int deriv_order = (argc == 2 || argc == 3) ? atoi(argv[1]) : 0u;
   const unsigned int lmax_max = (argc == 3) ? atoi(argv[2]) : UINT_MAX;
 
-  // static initialziation of the library (one needs to happen once per process)
+  // static initialization of the library (only needs to happen once per process)
   LIBINT2_PREFIXED_NAME(libint2_static_init)();
 
   // run the tests
@@ -165,11 +179,6 @@ void test_4eri(unsigned int deriv_order,
           DerivIndexIterator<4> diter(deriv_order);
           const unsigned int nderiv = diter.range_rank();
 
-          CGShell sh0(am[0]);
-          CGShell sh1(am[1]);
-          CGShell sh2(am[2]);
-          CGShell sh3(am[3]);
-
           const double* A = &(rsqset.R[0][0]);
           const double* B = &(rsqset.R[1][0]);
           const double* C = &(rsqset.R[2][0]);
@@ -182,8 +191,8 @@ void test_4eri(unsigned int deriv_order,
           const int nrepeats = do_timing_only ? 50*(lmax-l0+1)*(lmax-l1+1)*(lmax-l2+1)*(lmax-l3+1) : 1;
 
           cout << (do_timing_only ? "Timing " : "Testing ")
-               << " (" << sh0.label() << sh1.label() << "|"
-               << sh2.label() << sh3.label() << ") ";
+               << " (" << am_to_symbol(am[0]) << am_to_symbol(am[1]) << "|"
+               << am_to_symbol(am[2]) << am_to_symbol(am[3]) << ") ";
           if (deriv_order > 0) {
             cout << " deriv order = " << deriv_order;
           }
@@ -238,36 +247,20 @@ void test_4eri(unsigned int deriv_order,
           // since the reference implementation computes integrals one at a time (not one shell-set at a time)
           // the outer loop is over the basis functions
 
-          typedef SubIteratorBase<CGShell> iter;
-          SafePtr<iter> sh0_iter(new iter(sh0));
-          SafePtr<iter> sh1_iter(new iter(sh1));
-          SafePtr<iter> sh2_iter(new iter(sh2));
-          SafePtr<iter> sh3_iter(new iter(sh3));
-
           bool success = true;
           int ijkl = 0;
-          for (sh0_iter->init(); int(*sh0_iter); ++(*sh0_iter)) {
-            for (sh1_iter->init(); int(*sh1_iter); ++(*sh1_iter)) {
-              for (sh2_iter->init(); int(*sh2_iter); ++(*sh2_iter)) {
-                for (sh3_iter->init(); int(*sh3_iter); ++(*sh3_iter), ijkl++) {
 
-                  CGF bf0 = sh0_iter->elem();
-                  CGF bf1 = sh1_iter->elem();
-                  CGF bf2 = sh2_iter->elem();
-                  CGF bf3 = sh3_iter->elem();
+          int l0, m0, n0;
+          FOR_CART(l0, m0, n0, am[0])
 
-                  uint l0 = bf0.qn(0);
-                  uint m0 = bf0.qn(1);
-                  uint n0 = bf0.qn(2);
-                  uint l1 = bf1.qn(0);
-                  uint m1 = bf1.qn(1);
-                  uint n1 = bf1.qn(2);
-                  uint l2 = bf2.qn(0);
-                  uint m2 = bf2.qn(1);
-                  uint n2 = bf2.qn(2);
-                  uint l3 = bf3.qn(0);
-                  uint m3 = bf3.qn(1);
-                  uint n3 = bf3.qn(2);
+            int l1, m1, n1;
+            FOR_CART(l1, m1, n1, am[1])
+
+              int l2, m2, n2;
+              FOR_CART(l2, m2, n2, am[2])
+
+                int l3, m3, n3;
+                FOR_CART(l3, m3, n3, am[3])
 
                   for (uint v = 0; v < veclen; v++) {
 
@@ -406,10 +399,11 @@ void test_4eri(unsigned int deriv_order,
                     }
 
                   } // end of vector loop
-                }
-              }
-            }
-          }
+                  ++ijkl;
+                END_FOR_CART
+              END_FOR_CART
+            END_FOR_CART
+          END_FOR_CART
 
           cout << (success ? "ok" : "failed") << std::endl;
 
@@ -524,10 +518,6 @@ void test_3eri(unsigned int deriv_order,
         DerivIndexIterator<3> diter(deriv_order);
         const unsigned int nderiv = diter.range_rank();
 
-        CGShell sh0(am[0]);
-        CGShell sh1(am[1]);
-        CGShell sh2(am[2]);
-
         const double* A = &(rsqset.R[0][0]);
         const double* B = &(rsqset.R[1][0]);
         const double* C = &(rsqset.R[2][0]);
@@ -535,15 +525,10 @@ void test_3eri(unsigned int deriv_order,
         LIBINT2_REF_REALTYPE Bref[3]; for(int i=0; i<3; ++i) Bref[i] = B[i];
         LIBINT2_REF_REALTYPE Cref[3]; for(int i=0; i<3; ++i) Cref[i] = C[i];
 
-        typedef SubIteratorBase<CGShell> iter;
-        SafePtr<iter> sh0_iter(new iter(sh0));
-        SafePtr<iter> sh1_iter(new iter(sh1));
-        SafePtr<iter> sh2_iter(new iter(sh2));
-
         const int nrepeats = do_timing_only ? 1000*(lmax-l0+1)*(lmax-l1+1)*(lmax-l2+1) : 1;
 
         cout << (do_timing_only ? "Timing " : "Testing ")
-             << "(" << sh0.label() << "|" << sh1.label() << sh2.label()
+             << "(" << am_to_symbol(am[0]) << "|" << am_to_symbol(am[1]) << am_to_symbol(am[2])
              << ") ";
         if (deriv_order > 0) {
           cout << " deriv order = " << deriv_order;
@@ -592,23 +577,15 @@ void test_3eri(unsigned int deriv_order,
 
         bool success = true;
         int ijk = 0;
-        for (sh0_iter->init(); int(*sh0_iter); ++(*sh0_iter)) {
-          for (sh1_iter->init(); int(*sh1_iter); ++(*sh1_iter)) {
-            for (sh2_iter->init(); int(*sh2_iter); ++(*sh2_iter), ijk++) {
 
-              CGF bf0 = sh0_iter->elem();
-              CGF bf1 = sh1_iter->elem();
-              CGF bf2 = sh2_iter->elem();
+        int l0, m0, n0;
+        FOR_CART(l0, m0, n0, am[0])
 
-              uint l0 = bf0.qn(0);
-              uint m0 = bf0.qn(1);
-              uint n0 = bf0.qn(2);
-              uint l1 = bf1.qn(0);
-              uint m1 = bf1.qn(1);
-              uint n1 = bf1.qn(2);
-              uint l2 = bf2.qn(0);
-              uint m2 = bf2.qn(1);
-              uint n2 = bf2.qn(2);
+          int l1, m1, n1;
+          FOR_CART(l1, m1, n1, am[1])
+
+            int l2, m2, n2;
+            FOR_CART(l2, m2, n2, am[2])
 
               for (uint v = 0; v < veclen; v++) {
 
@@ -721,9 +698,10 @@ void test_3eri(unsigned int deriv_order,
                 }
 
               } // end of vector loop
-            }
-          }
-        }
+              ++ijk;
+            END_FOR_CART
+          END_FOR_CART
+        END_FOR_CART
 
         cout << (success ? "ok" : "failed") << endl;
 
@@ -822,21 +800,14 @@ void test_2eri(unsigned int deriv_order,
         DerivIndexIterator<2> diter(deriv_order);
         const unsigned int nderiv = diter.range_rank();
 
-        CGShell sh0(am[0]);
-        CGShell sh1(am[1]);
-
         const double* A = &(rsqset.R[0][0]);
         const double* B = &(rsqset.R[1][0]);
         LIBINT2_REF_REALTYPE Aref[3]; for(int i=0; i<3; ++i) Aref[i] = A[i];
         LIBINT2_REF_REALTYPE Bref[3]; for(int i=0; i<3; ++i) Bref[i] = B[i];
 
-        typedef SubIteratorBase<CGShell> iter;
-        SafePtr<iter> sh0_iter(new iter(sh0));
-        SafePtr<iter> sh1_iter(new iter(sh1));
-
         prep_libint2(inteval, rsqset, 0, deriv_order);
 
-        cout << "Testing (" << sh0.label() << "|" << sh1.label() << ") ";
+        cout << "Testing (" << am_to_symbol(am[0]) << "|" << am_to_symbol(am[1]) << ") ";
         if (deriv_order > 0) {
           cout << " deriv order = " << deriv_order;
         }
@@ -874,18 +845,12 @@ void test_2eri(unsigned int deriv_order,
 
         bool success = true;
         int ij = 0;
-        for (sh0_iter->init(); int(*sh0_iter); ++(*sh0_iter)) {
-          for (sh1_iter->init(); int(*sh1_iter); ++(*sh1_iter), ij++) {
 
-              CGF bf0 = sh0_iter->elem();
-              CGF bf1 = sh1_iter->elem();
+        int l0, m0, n0;
+        FOR_CART(l0, m0, n0, am[0])
 
-              uint l0 = bf0.qn(0);
-              uint m0 = bf0.qn(1);
-              uint n0 = bf0.qn(2);
-              uint l1 = bf1.qn(0);
-              uint m1 = bf1.qn(1);
-              uint n1 = bf1.qn(2);
+          int l1, m1, n1;
+          FOR_CART(l1, m1, n1, am[1])
 
               for (uint v = 0; v < veclen; v++) {
 
@@ -993,8 +958,9 @@ void test_2eri(unsigned int deriv_order,
                 }
 
               } // end of vector loop
-          }
-        }
+              ++ij;
+          END_FOR_CART
+        END_FOR_CART
 
         cout << (success ? "ok" : "failed") << endl;
 

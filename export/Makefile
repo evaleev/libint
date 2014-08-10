@@ -63,7 +63,7 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/COPYING $(TOPDIR)/$(EXPORTDIR)/COPYING
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/CITATION $(TOPDIR)/$(EXPORTDIR)/CITATION
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/test_eri.cc.export $(TOPDIR)/$(EXPORTDIR)/tests/test_eri.cc
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/eri/test.cc $(TOPDIR)/$(EXPORTDIR)/tests/test_eri.cc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/test_eri/eri.h $(TOPDIR)/$(EXPORTDIR)/tests/eri.h
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/test_eri/eri.cc $(TOPDIR)/$(EXPORTDIR)/tests/eri.cc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/test_eri/prep_libint2.h $(TOPDIR)/$(EXPORTDIR)/tests/prep_libint2.h

@@ -8,10 +8,12 @@ endif
 CPPFLAGS += -I$(TOPDIR)/include -I$(TOPDIR)/include/libint2
 # include headers from the compiler directory
 CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/bin/libint
-# include processed headers from the compiler directory
-CPPFLAGS += -I$(TOPDIR)/src/bin
+# include headers from the src/bin/test_eri directory
+CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/bin/test_eri
 # include headers from the library directory
 CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/lib/libint
+# include processed headers from the compiler directory
+CPPFLAGS += -I$(TOPDIR)/src/bin/libint
 
 COMPILER_LIB = $(TOPDIR)/src/bin/libint/libINT.a
 COMPUTE_LIB = -L$(TOPDIR)/lib -L$(TOPDIR)/lib/.libs -lint2
@@ -25,8 +27,8 @@ check:: $(TEST)
 	./$(TEST) 0 3 && ./$(TEST) 1 2 && ./$(TEST) 2 1
 
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
-$(TEST): $(CXXTESTOBJ)
-	$(LD) -o $@ $(LDFLAGS) $^ $(COMPILER_LIB) $(COMPUTE_LIB) $(SYSLIBS)
+$(TEST): $(CXXTESTOBJ) $(COMPILER_LIB)
+	$(LD) -o $@ $(LDFLAGS) $^  $(COMPUTE_LIB) $(SYSLIBS)
 else
 $(TEST):
 	echo "Cannot test generated code! $(CXXGEN) is not compatible with $(CXXCOMP)"
