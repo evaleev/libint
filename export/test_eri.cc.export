@@ -27,6 +27,7 @@
 #include <eri.h>
 #include <prep_libint2.h>
 #include <deriv_iter.h>
+#include <cgshell_ordering.h>
 
 using namespace std;
 using namespace libint2;
@@ -74,11 +75,6 @@ void test_2eri(unsigned int deriv_order,
 
 /// give optional derivative order (default = 0, i.e. regular integrals)
 int main(int argc, char** argv) {
-  
-#if LIBINT2_CGSHELL_ORDERING != LIBINT2_CGSHELL_ORDERING_STANDARD
-  std::cerr << "Cannot validate a library with non-standard shell ordering" << std::endl;
-  return 0;
-#endif
   
   assert(argc == 1 || argc == 2 || argc == 3);
   const unsigned int deriv_order = (argc == 2 || argc == 3) ? atoi(argv[1]) : 0u;
@@ -246,29 +242,18 @@ void test_4eri(unsigned int deriv_order,
 
           bool success = true;
           int ijkl = 0;
-          for(uint i0=0; i0<=am[0]; ++i0) {
-            uint l0 = am[0] - i0;
-            for(uint j0=0; j0<=i0; ++j0) {
-              uint m0 = i0 - j0;
-              uint n0 = j0;
+          
+          int l0, m0, n0;
+          FOR_CART(l0, m0, n0, am[0])
               
-              for(uint i1=0; i1<=am[1]; ++i1) {
-                uint l1 = am[1] - i1;
-                for(uint j1=0; j1<=i1; ++j1) {
-                  uint m1 = i1 - j1;
-                  uint n1 = j1;
+            int l1, m1, n1;
+            FOR_CART(l1, m1, n1, am[1])
                   
-                  for(uint i2=0; i2<=am[2]; ++i2) {
-                    uint l2 = am[2] - i2;
-                    for(uint j2=0; j2<=i2; ++j2) {
-                      uint m2 = i2 - j2;
-                      uint n2 = j2;
+              int l2, m2, n2;
+              FOR_CART(l2, m2, n2, am[2])
                       
-                      for(uint i3=0; i3<=am[3]; ++i3) {
-                        uint l3 = am[3] - i3;
-                        for(uint j3=0; j3<=i3; ++j3, ++ijkl) {
-                          uint m3 = i3 - j3;
-                          uint n3 = j3;
+                int l3, m3, n3;
+                FOR_CART(l3, m3, n3, am[3])
 
 
                   for (uint v = 0; v < veclen; v++) {
@@ -409,10 +394,11 @@ void test_4eri(unsigned int deriv_order,
 
                   } // end of vector loop
                   
-                }}
-              }}
-            }}
-          }}
+                  ++ijkl;
+                END_FOR_CART
+              END_FOR_CART
+            END_FOR_CART
+          END_FOR_CART
 
           cout << (success ? "ok" : "failed") << std::endl;
 
@@ -581,23 +567,14 @@ void test_3eri(unsigned int deriv_order,
         bool success = true;
         int ijk = 0;
         
-        for(uint i0=0; i0<=am[0]; ++i0) {
-          uint l0 = am[0] - i0;
-          for(uint j0=0; j0<=i0; ++j0) {
-            uint m0 = i0 - j0;
-            uint n0 = j0;
+        int l0, m0, n0;
+        FOR_CART(l0, m0, n0, am[0])
             
-            for(uint i1=0; i1<=am[1]; ++i1) {
-              uint l1 = am[1] - i1;
-              for(uint j1=0; j1<=i1; ++j1) {
-                uint m1 = i1 - j1;
-                uint n1 = j1;
+          int l1, m1, n1;
+          FOR_CART(l1, m1, n1, am[1])
                 
-                for(uint i2=0; i2<=am[2]; ++i2, ++ijk) {
-                  uint l2 = am[2] - i2;
-                  for(uint j2=0; j2<=i2; ++j2) {
-                    uint m2 = i2 - j2;
-                    uint n2 = j2;
+            int l2, m2, n2;
+            FOR_CART(l2, m2, n2, am[2])
 
               for (uint v = 0; v < veclen; v++) {
 
@@ -710,9 +687,10 @@ void test_3eri(unsigned int deriv_order,
                 }
 
               } // end of vector loop
-            }
-          }
-        }
+              ++ijk;
+            END_FOR_CART
+          END_FOR_CART
+        END_FOR_CART
 
         cout << (success ? "ok" : "failed") << endl;
 
@@ -852,18 +830,12 @@ void test_2eri(unsigned int deriv_order,
 
         bool success = true;
         int ij = 0;
-        for(uint i0=0; i0<=am[0]; ++i0) {
-          uint l0 = am[0] - i0;
-          for(uint j0=0; j0<=i0; ++j0) {
-            uint m0 = i0 - j0;
-            uint n0 = j0;
+        
+        int l0, m0, n0;
+        FOR_CART(l0, m0, n0, am[0])
             
-            for(uint i1=0; i1<=am[1]; ++i1) {
-              uint l1 = am[1] - i1;
-              for(uint j1=0; j1<=i1; ++j1, ++ij) {
-                uint m1 = i1 - j1;
-                uint n1 = j1;
-                
+          int l1, m1, n1;
+          FOR_CART(l1, m1, n1, am[1])
 
               for (uint v = 0; v < veclen; v++) {
 
@@ -971,8 +943,10 @@ void test_2eri(unsigned int deriv_order,
                 }
 
               } // end of vector loop
-          }
-        }
+              
+              ++ij;
+          END_FOR_CART
+        END_FOR_CART
 
         cout << (success ? "ok" : "failed") << endl;
 
