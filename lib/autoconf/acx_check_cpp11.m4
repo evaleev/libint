@@ -1,4 +1,4 @@
-# borrowed shamelessly from MADNESS (GPLed)
+# borrowed shamelessly from MADNESS (GPLv3)
 # written by Justus Calvin (justus.c79@gmail.com)
 
 AC_DEFUN([ACX_CHECK_SHARED_PTR], [
