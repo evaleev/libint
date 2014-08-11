@@ -1331,6 +1331,37 @@ AC_COMPILE_IFELSE(
   ]
 )
 
+dnl ------------------ Check for Eigen library -----------------------
+
+LIBINT_HAS_EIGEN=no
+AC_CHECK_HEADER(Eigen/Core,[
+  AC_MSG_CHECKING([if Eigen library is usable])
+  AC_LINK_IFELSE(
+   [AC_LANG_PROGRAM(
+    [[#include <Eigen/Dense>
+      #include <Eigen/Eigenvalues>
+    ]],
+    [[
+     typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
+     Matrix h; h << 2.0, 1.0, 1.0, 2.0;
+     Matrix s; s << 1.0, 0.0, 0.0, 1.0;
+     Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> gen_eig_solver(h, s);
+     auto evals = gen_eig_solver.eigenvalues();
+    ]]
+    )
+   ],
+   [AC_MSG_RESULT([yes])
+    AC_DEFINE(LIBINT_HAS_EIGEN)
+    LIBINT_HAS_EIGEN=yes
+   ],
+   [
+    AC_MSG_RESULT([no])
+   ]
+  )
+ ]
+)
+AC_SUBST(LIBINT_HAS_EIGEN)
+
 dnl -- Checks for typedefs, structures, and compiler characteristics. --
 AC_TYPE_SIZE_T
 
