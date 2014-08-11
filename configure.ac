@@ -1123,11 +1123,14 @@ fi
 dnl ------------------ Check for support for C++11 standard features --------------
 
 HAVE_CXX11=no
-AC_MSG_CHECKING([for C++11 features: auto ])
+AC_MSG_CHECKING([for general C++11 support])
 AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM(
     [[#include <vector>
       #include <iostream>
+      #if __cplusplus <= 199711L
+      # error "no C++11 support"
+      #endif
     ]],
     [[
      std::vector<double> reals(10, 0.0);
@@ -1149,7 +1152,10 @@ if test "X$HAVE_CXX11" = "Xno"; then
   AC_COMPILE_IFELSE(
    [AC_LANG_PROGRAM(
      [[#include <vector>
-      #include <iostream>
+       #include <iostream>
+       #if __cplusplus <= 199711L
+       # error "no C++11 support"
+       #endif
      ]],
      [[
       std::vector<double> reals(10, 0.0);
@@ -1159,7 +1165,7 @@ if test "X$HAVE_CXX11" = "Xno"; then
      ]]
     )
    ],
-   [AC_MSG_RESULT([yes (with -std=c++0x)])
+   [AC_MSG_RESULT([yes (with -std=c++11)])
     HAVE_CXX11=yes
     AC_DEFINE(HAVE_CXX11)
    ],
