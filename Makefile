@@ -7,8 +7,12 @@ endif
 -include $(TOPDIR)/src/lib/MakeVars
 
 SUBDIRS = src
-CLEANSUBDIRS = src tests/eri
-ALLSUBDIRS = $(CLEANSUBDIRS) doc tests/eri
+CHECKSUBDIRS = 
+ifeq ($(LIBINT_HAS_EIGEN),yes)
+  CHECKSUBDIRS += tests/hartree-fock
+endif
+CLEANSUBDIRS = $(SUBDIRS) $(CHECKSUBDIRS)
+ALLSUBDIRS = $(CLEANSUBDIRS) doc $(CHECKSUBDIRS)
 
 default::
 	for dir in $(SUBDIRS); \
@@ -92,7 +96,7 @@ realclean::
 	  done
 
 check::
-	for dir in tests/eri; \
+	for dir in $(CHECKSUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) check) || exit 1; \
 	  done

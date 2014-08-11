@@ -440,7 +440,7 @@ namespace libint2 {
 
   /// contracted Gaussian geminal = \f$ \sum_i c_i \exp(- \alpha r_{12}^2) \f$, represented as a vector of
   /// {\f$ \alpha_i \f$, \f$ c_i \f$ } pairs
-  typedef std::vector<std::pair<double,double>> ContractedGaussianGeminal
+  typedef std::vector<std::pair<double,double>> ContractedGaussianGeminal;
 
   namespace detail {
     template <int K> struct R12_K_G12_to_Kernel;
