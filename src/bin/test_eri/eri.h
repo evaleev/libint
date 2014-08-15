@@ -20,7 +20,7 @@
 #ifndef _libint2_src_bin_testeri_eri_h_
 #define _libint2_src_bin_testeri_eri_h_
 
-#include <libint2_config.h>
+#include <libint2/config.h>
 
 #if defined(__cplusplus)
 #if HAVE_MPFR

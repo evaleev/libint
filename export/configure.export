@@ -9,7 +9,7 @@ define([AC_CACHE_SAVE], )dnl for debugging configure.in
 AC_PREREQ(2.57)
 AC_INIT([Libint2],[libint_mmm_version],[libint@valeyev.net],[libint2])
 AC_CONFIG_SRCDIR(include/libint2.h)
-AC_CONFIG_HEADER(include/libint2_config.h)
+AC_CONFIG_HEADER(include/libint2/config.h)
 AC_CONFIG_AUX_DIR(bin)
 AC_CONFIG_MACRO_DIR([lib/autoconf])
 
@@ -244,20 +244,16 @@ if test "X$CXXOPTIONS_OPT" = X; then
   AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxx-optflags configure option])
 fi
 
-dnl ----------- check for GNU libc++-v3 prerelease bug ---------------
+dnl -- language options --
 
-if test X$GXX = Xyes; then
-AC_MSG_CHECKING([for GNU libc++-v3 prerelease bug])
-AC_LINK_IFELSE([AC_LANG_SOURCE(
-[[#include <stdio.h>
-#include <$iostream>
-]],[[
-]])],[
-AC_MSG_RESULT([no])
-],
-EXTRADEFINES="$EXTRADEFINES -D_ISOC99_SOURCE=1"
-AC_MSG_RESULT([yes])
-);
+ACX_CHECK_CPP11_GENERAL
+AC_SUBST(LIBINT_HAS_CXX11,$acx_have_cxx11)
+
+dnl ------------------ Check for Eigen library -----------------------
+
+ACX_CHECK_EIGEN
+if test "X$acx_have_eigen" = "Xyes"; then
+  AC_SUBST(LIBINT_HAS_EIGEN,$acx_have_eigen)
 fi
 
 dnl -- other options --
@@ -358,7 +354,7 @@ if test "X$libint_user_defined_real" != "X"; then
  AC_MSG_CHECKING([if Libint real type is usable])
  AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM(
-    [[#include <vector.h>
+    [[#include <libint2/vector.h>
       $libint_user_defined_real_includes
       
     ]],

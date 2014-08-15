@@ -29,7 +29,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include "eri.h"
-#include "boys.h"
+#include "libint2/boys.h"
 
 #define EPS 1.0E-17     /* Absolute precision in computing Fm(t)
                            (see recursion:calc_fij() ) */

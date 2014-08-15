@@ -19,7 +19,7 @@
 #ifndef _libint2_include_libint2intrinsictypes_h_
 #define _libint2_include_libint2intrinsictypes_h_
 
-#include <libint2_config.h>
+#include <libint2/config.h>
 
 #include <limits.h>
 

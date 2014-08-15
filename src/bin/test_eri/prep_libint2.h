@@ -25,7 +25,7 @@
 #include <vector>
 #include <cstdlib>
 #include <libint2.h>
-#include <boys.h>
+#include <libint2/boys.h>
 #include <time.h>
 
 extern libint2::FmEval_Chebyshev3 fmeval_chebyshev;

@@ -20,7 +20,7 @@
 #ifndef _libint2_src_bin_libint_key_h_
 #define _libint2_src_bin_libint_key_h_
 
-#include <libint2_intrinsic_types.h>
+#include <libint2/intrinsic_types.h>
 #include <gmpxx.h>
 #include <sstream>
 

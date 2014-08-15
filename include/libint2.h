@@ -28,7 +28,7 @@
 #define LIBINT_T_S_KINETIC_S _aB_s___0___Kinetic_s___0___Ab__up_
 #define LIBINT_T_S_ELECPOT_S(mValue) _aB_s___0___ElecPot_s___0___Ab__up_##mValue
 
-#include <libint2_intrinsic_types.h>
+#include <libint2/intrinsic_types.h>
 #include <libint2_params.h>
 #include <libint2_types.h>
 

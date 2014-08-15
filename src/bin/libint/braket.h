@@ -23,7 +23,7 @@
 #include <polyconstr.h>
 #include <bfset.h>
 #include <algebra.h>
-#include <libint2_intrinsic_types.h>
+#include <libint2/intrinsic_types.h>
 #include <global_macros.h>
 
 namespace libint2 {

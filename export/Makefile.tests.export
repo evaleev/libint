@@ -2,22 +2,38 @@
 SRCDIR = ..
 -include ../MakeVars
 
-CPPFLAGS = -I. -I../include -DPREP_LIBINT2_SKIP_BOOST 
+CPPFLAGS += -I../include -Ieri -Ihartree-fock -DPREP_LIBINT2_SKIP_BOOST 
 LDFLAGS = -L../lib -L../lib/.libs -lint2
 
-TEST = test_eri
+check:: check1 check2
 
-check:: $(TEST)
-	./$(TEST) 0 3 && ./$(TEST) 1 2 && ./$(TEST) 2 1
+TEST1 = eri/test
+check1:: $(TEST1)
+	./$(TEST1) 0 3 && ./$(TEST1) 1 2 && ./$(TEST1) 2 1
 
-$(TEST): test_eri.o eri.o
+$(TEST1): eri/test.o eri/eri.o
+	$(CXX) $(LDFLAGS) -o $@ $^
+
+TEST2 = hartree-fock/hartree-fock
+
+check2::
+
+ifeq ($(LIBINT_HAS_CXX11),yes)
+  ifeq ($(LIBINT_HAS_EIGEN),yes)
+check2:: $(TEST2)
+	$^ hartree-fock/h2o.xyz | \
+ awk ' {print} /^\*\*/ { eref = -74.942080057682; tol = 1e-11; if ($$5 - eref < tol && eref - $$5 < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }'
+  endif
+endif
+
+$(TEST2): hartree-fock/hartree-fock.o
 	$(CXX) $(LDFLAGS) -o $@ $^
 
 clean:: targetclean
-	-rm -f *.o *.d
+	-rm -f */*.o */*.d
 
 targetclean::
-	-rm -f $(TEST)
+	-rm -f $(TEST1) $(TEST2)
 
 distclean:: clean
 

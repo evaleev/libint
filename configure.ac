@@ -9,7 +9,7 @@ define([AC_CACHE_SAVE], )dnl for debugging configure.in
 AC_PREREQ(2.57)
 AC_INIT([Libint2],[libint_mmm_version],[libint@valeyev.net],[libint2])
 AC_CONFIG_SRCDIR(src/bin/libint/rr.h)
-AC_CONFIG_HEADER(include/libint2_config.h)
+AC_CONFIG_HEADER(include/libint2/config.h)
 AC_CONFIG_AUX_DIR(bin)
 AC_CONFIG_MACRO_DIR([lib/autoconf])
 
@@ -1122,88 +1122,13 @@ fi
 
 dnl ------------------ Check for support for C++11 standard features --------------
 
-HAVE_CXX11=no
-AC_MSG_CHECKING([for general C++11 support])
-AC_COMPILE_IFELSE(
-  [AC_LANG_PROGRAM(
-    [[#include <vector>
-      #include <iostream>
-      #if __cplusplus <= 199711L
-      # error "no C++11 support"
-      #endif
-    ]],
-    [[
-     std::vector<double> reals(10, 0.0);
-     for (auto i=reals.begin(); i!= reals.end(); i++) {
-       std::cout << *i << "\n";
-     }
-    ]]
-   )
-  ],
-  [AC_MSG_RESULT([yes])
-   HAVE_CXX11=yes
-   AC_DEFINE(HAVE_CXX11)
-  ]
-)
-# if not found, try adding -std flag
-if test "X$HAVE_CXX11" = "Xno"; then
-  CXXFLAGS="$CXXFLAGS -std=c++11"
-  ADDED_DASHSTD=1
-  AC_COMPILE_IFELSE(
-   [AC_LANG_PROGRAM(
-     [[#include <vector>
-       #include <iostream>
-       #if __cplusplus <= 199711L
-       # error "no C++11 support"
-       #endif
-     ]],
-     [[
-      std::vector<double> reals(10, 0.0);
-      for (auto i=reals.begin(); i!= reals.end(); i++) {
-        std::cout << *i << "\n";
-      }
-     ]]
-    )
-   ],
-   [AC_MSG_RESULT([yes (with -std=c++11)])
-    HAVE_CXX11=yes
-    AC_DEFINE(HAVE_CXX11)
-   ],
-   [
-    AC_MSG_RESULT([no])
-    AC_MSG_ERROR([C++11 support is required to compile the Libint compiler. Obtain a recent C++ compiler that supports C++11, or consider using a pregenerated library])
-   ]
- )
-fi
-
-AC_MSG_CHECKING([for C++11 features: lambda ])
-AC_COMPILE_IFELSE(
-  [AC_LANG_PROGRAM(
-    [[#include <vector>
-      #include <algorithm>
-    ]],
-    [[
-     std::vector<double> reals(10, 0.0);
-     reals[5] = 1.0;
-     auto v = std::find_if(reals.begin(), reals.end(),
-                           [](double i){
-                             return (i == 1.0);
-                           }
-                          );
-    ]]
-   )
-  ],
-  [AC_MSG_RESULT([yes])
-   HAVE_CXX11_LAMBDA=yes
-   AC_DEFINE(HAVE_CXX11_LAMBDA)
-  ],
-  [AC_MSG_RESULT([no])
-  ]
-)
-
 enable_cpptr1=no   # TR1's array seems to be broken on OS X
 acx_with_boost=yes
 ACX_CHECK_CPP11
+
+if test "X$acx_have_cxx11" = "Xno"; then
+  AC_MSG_ERROR([C++11 support is required to compile the Libint compiler. Obtain a recent C++ compiler that supports C++11, or consider using a pregenerated library])
+fi
 
 dnl ------------------ Check for gmp C++ interface -----------------------
 
@@ -1333,34 +1258,10 @@ AC_COMPILE_IFELSE(
 
 dnl ------------------ Check for Eigen library -----------------------
 
-LIBINT_HAS_EIGEN=no
-AC_CHECK_HEADER(Eigen/Core,[
-  AC_MSG_CHECKING([if Eigen library is usable])
-  AC_LINK_IFELSE(
-   [AC_LANG_PROGRAM(
-    [[#include <Eigen/Dense>
-      #include <Eigen/Eigenvalues>
-    ]],
-    [[
-     typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
-     Matrix h; h << 2.0, 1.0, 1.0, 2.0;
-     Matrix s; s << 1.0, 0.0, 0.0, 1.0;
-     Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> gen_eig_solver(h, s);
-     auto evals = gen_eig_solver.eigenvalues();
-    ]]
-    )
-   ],
-   [AC_MSG_RESULT([yes])
-    AC_DEFINE(LIBINT_HAS_EIGEN)
-    LIBINT_HAS_EIGEN=yes
-   ],
-   [
-    AC_MSG_RESULT([no])
-   ]
-  )
- ]
-)
-AC_SUBST(LIBINT_HAS_EIGEN)
+ACX_CHECK_EIGEN
+if test "X$acx_have_eigen" = "Xyes"; then
+  AC_SUBST(LIBINT_HAS_EIGEN,$acx_have_eigen)
+fi
 
 dnl -- Checks for typedefs, structures, and compiler characteristics. --
 AC_TYPE_SIZE_T
@@ -1430,7 +1331,7 @@ if test "X$libint_user_defined_real" != "X"; then
  CXXFLAGS="$CXXFLAGS -Iinclude -I$srcdir/src/lib/libint"
  AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM(
-    [[#include <vector.h>
+    [[#include <libint2/vector.h>
       $libint_user_defined_real_includes
       
     ]],

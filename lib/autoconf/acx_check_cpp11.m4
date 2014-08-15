@@ -1,3 +1,96 @@
+AC_DEFUN([ACX_CHECK_CPP11_GENERAL], [
+  AC_LANG_SAVE
+  AC_LANG([C++])
+
+  acx_have_cxx11=no
+  AC_MSG_CHECKING([for general C++11 support])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <vector>
+        #include <iostream>
+        #if __cplusplus <= 199711L
+        # error "no C++11 support"
+        #endif
+      ]],
+      [[
+       std::vector<double> reals(10, 0.0);
+       for (auto i=reals.begin(); i!= reals.end(); i++) {
+         std::cout << *i << "\n";
+       }
+      ]]
+     )
+    ],
+    [acx_have_cxx11=yes
+     AC_DEFINE(LIBINT_HAS_CXX11)
+     AC_MSG_RESULT([yes])
+    ]
+  )
+  # if not found, try adding -std flag
+  if test "X$acx_have_cxx11" = "Xno"; then
+    old_CXXFLAGS=$CXXFLAGS
+    CXXFLAGS="$CXXFLAGS -std=c++11"
+    ADDED_DASHSTD=1
+    AC_COMPILE_IFELSE(
+     [AC_LANG_PROGRAM(
+       [[#include <vector>
+         #include <iostream>
+         #if __cplusplus <= 199711L
+         # error "no C++11 support"
+         #endif
+       ]],
+       [[
+        std::vector<double> reals(10, 0.0);
+        for (auto i=reals.begin(); i!= reals.end(); i++) {
+          std::cout << *i << "\n";
+        }
+       ]]
+      )
+     ],
+     [acx_have_cxx11=yes
+      AC_MSG_RESULT([yes (with -std=c++11)])
+      AC_DEFINE(LIBINT_HAS_CXX11)
+     ],
+     [
+      AC_MSG_RESULT([no])
+      CXXFLAGS=$old_CXXFLAGS
+     ]
+   )
+  fi
+
+  AC_LANG_RESTORE  
+])
+
+AC_DEFUN([ACX_CHECK_CPP11_LAMBDA], [
+  AC_LANG_SAVE
+  AC_LANG([C++])
+
+  acx_have_cxx11_lambda=no
+  AC_MSG_CHECKING([for C++11 lambdas support])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <vector>
+        #include <algorithm>
+      ]],
+      [[
+       std::vector<double> reals(10, 0.0);
+       reals[5] = 1.0;
+       auto v = std::find_if(reals.begin(), reals.end(),
+                             [](double i){
+                               return (i == 1.0);
+                             }
+                            );
+      ]]
+     )
+    ],
+    [acx_have_cxx11_lambda=yes
+     AC_DEFINE(LIBINT_HAS_CXX11_LAMBDA)
+    ]
+  )
+  AC_MSG_RESULT([$acx_have_cxx11_lambda])
+  
+  AC_LANG_RESTORE  
+])
+
 # borrowed shamelessly from MADNESS (GPLv3)
 # written by Justus Calvin (justus.c79@gmail.com)
 
@@ -280,6 +373,10 @@ AC_DEFUN([ACX_CHECK_ARRAY], [
 
 AC_DEFUN([ACX_CHECK_CPP11],
 [
+  ACX_CHECK_CPP11_GENERAL
+  if test "X$acx_have_cxx11" = "Xyes"; then
+    ACX_CHECK_CPP11_LAMBDA
+  fi
   ACX_CHECK_SHARED_PTR
   ACX_CHECK_TYPE_TRAITS
   ACX_CHECK_ARRAY

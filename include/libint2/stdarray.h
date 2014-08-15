@@ -4,7 +4,7 @@
 #ifndef _libint2_include_stdarray_h
 #define _libint2_include_stdarray_h
 
-#include <libint2_config.h>
+#include <libint2/config.h>
 
 #if defined(LIBINT_USE_ARRAY)
 #  include <array>

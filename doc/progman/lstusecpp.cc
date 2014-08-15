@@ -1,7 +1,8 @@
 #include <iostream>
 #include <algorithm>
+
 #include <libint2.h>
-#include <boys.h>
+#include <libint2/boys.h>
 
 using namespace std;
 using namespace libint2;

@@ -164,8 +164,8 @@ namespace libint2 {
 
 };}; // namespace libint2::simd
 
-#include <vector_x86.h>
-#include <vector_ppc.h>
+#include "vector_x86.h"
+#include "vector_ppc.h"
 
 #endif // C++ only
 

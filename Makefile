@@ -7,7 +7,7 @@ endif
 -include $(TOPDIR)/src/lib/MakeVars
 
 SUBDIRS = src
-CHECKSUBDIRS = 
+CHECKSUBDIRS = tests/eri
 ifeq ($(LIBINT_HAS_EIGEN),yes)
   CHECKSUBDIRS += tests/hartree-fock
 endif
@@ -81,7 +81,7 @@ distclean::
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
 	-rm -rf autom4te.cache config.status config.log conf*.file conf*.dir *.dSYM depcheck* libtool \
-Makedirlist libint2.pc include/libint2_config.h include/libint2
+Makedirlist libint2.pc include/libint2
 
 targetclean::
 	for dir in $(SUBDIRS); \

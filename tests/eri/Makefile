@@ -35,7 +35,7 @@ $(TEST):
 	@exit 0
 endif
 
-# Source files for timer and tester are to be complied using CXXGEN
+# Source files for timer and tester are to be compiled using CXXGEN
 $(TEST): CXX=$(CXXGEN)
 $(TEST): CXXFLAGS=$(CXXGENFLAGS)
 $(TEST): LD=$(CXXGEN)

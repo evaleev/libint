@@ -17,7 +17,7 @@
  *
  */
 
-#include <libint2_config.h>
+#include <libint2/config.h>
 #include <default_params.h>
 #include <task.h>
 #include <cassert>

@@ -20,7 +20,7 @@
 #ifndef _libint2_src_bin_libint_cgshellordering_h_
 #define _libint2_src_bin_libint_cgshellordering_h_
 
-#include <libint2_config.h>
+#include <libint2/config.h>
 /* if this is not defined, then using exported source -- redefine using macro from libint2_params.h */
 #ifndef LIBINT_CARTGAUSS_MAX_AM
 # include <libint2_params.h>

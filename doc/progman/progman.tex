@@ -391,7 +391,7 @@ the auxiliary integrals $({\bf 00}|{\bf 00})^{(m)}$ can be fairly complicated.\c
 efficiently (see \boysh\ header). An example of how to use \LIBINT\ to compute Boys function
 is shown in Listing \ref{lst:boys}.
 \begin{lstlisting}[label=lst:boys,caption=Computation of Boys function using \LIBINT.]{}
-#include <boys.h>
+#include <libint2/boys.h>
 
 // initialize Boys function engine to support m values up to mmax
 // not thread-safe, should be constructed by main thread
@@ -526,7 +526,7 @@ f_{k}(r_{12}) = & r_{12}^{k} \sum_{i=1}^{n} c_{i} \exp(- \alpha_{i} r_{12}^{2}) 
 Example code is shown in Listing \ref{lst:GmGaussian}.
 
 \begin{lstlisting}[label=lst:GmGaussian,caption=Computation of the $G_{m}$ function for the contracted Gaussian kernel using \LIBINT.]{}
-#include <boys.h>
+#include <libint2/boys.h>
 
 // initialize Gaussian Gm function engine to support m values up to mmax
 // k specifies the exponent of r_{12} in the kernel (0, -1, and 2 supported)

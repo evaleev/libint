@@ -28,7 +28,7 @@
   Blacksburg (August 2006 - present)
   */
 
-#include <libint2_config.h>
+#include <libint2/config.h>
 
 #include <iostream>
 #include <fstream>

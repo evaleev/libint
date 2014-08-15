@@ -4,14 +4,14 @@ VPATH = $(SRCDIR) $(SRCTOPDIR)/include
 
 NAME = libint2
 TARGET = $(NAME).$(LIBSUF)
-TARGET_HEADERS = libint2.h libint2_params.h libint2_types.h libint2_iface.h
+TARGET_HEADERS = libint2_params.h libint2_types.h libint2_iface.h
 
 INCLUDE += -I.
 
 TRUESRC = $(shell echo `find . -name '*.cc' -exec echo -n '{} ' \;`)
 LIBOBJ = $(TRUESRC:%.cc=%.$(OBJSUF))
 
-default:: $(TOPDIR)/lib/$(TARGET) $(TOPDIR)/include/$(NAME)/$(NAME).h
+default:: $(TOPDIR)/lib/$(TARGET) local_install_generated_headers
 
 # this is how the static library is made
 # NOTE: the library is made from scratch every time and the prerequisite variable is not used to avoid overflow
@@ -33,7 +33,7 @@ $(TOPDIR)/lib/$(NAME).la: CXX=$(CXXGEN)
 $(TOPDIR)/lib/$(NAME).la: CXXFLAGS=$(CXXGENFLAGS)
 
 SRC_HEADERS = $(TARGET_HEADERS:%.h=$(SRCTOPDIR)/include/%.h)
-$(TOPDIR)/include/$(NAME)/$(NAME).h: $(TARGET_HEADERS)
+local_install_generated_headers: $(TARGET_HEADERS)
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/include/$(NAME)
 	-$(INSTALL) $(INSTALLLIBOPT) $^ $(TOPDIR)/include/$(NAME)
 

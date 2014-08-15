@@ -20,7 +20,7 @@
 #ifndef _libint2_src_bin_libint_smartptr_h_
 #define _libint2_src_bin_libint_smartptr_h_
 
-#include <libint2_config.h>
+#include <libint2/config.h>
 
 #if HAVE_SHARED_PTR_IN_BOOST
   #include <boost/shared_ptr.hpp>

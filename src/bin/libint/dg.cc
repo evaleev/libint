@@ -234,7 +234,7 @@ namespace{
     }
   };
 
-#if !HAVE_CXX11_LAMBDA
+#if !LIBINT_HAS_CXX11_LAMBDA
   struct __compare_by_nparents {
       bool operator()(DGVertex::ArcSetType::value_type a,
                       DGVertex::ArcSetType::value_type b) {
@@ -249,7 +249,7 @@ namespace{
 //    for(DGVertex::ArcSetType::const_iterator i=begin; i!=end; ++i)
 //      sorted_children.push_back(*i);
     std::vector<DGVertex::ArcSetType::value_type> sorted_children(begin, end);
-#if HAVE_CXX11_LAMBDA
+#if LIBINT_HAS_CXX11_LAMBDA
     std::sort(sorted_children.begin(), sorted_children.end(),
               [](DGVertex::ArcSetType::value_type a,
                  DGVertex::ArcSetType::value_type b) {
@@ -1261,7 +1261,7 @@ unsigned int min_size_to_alloc)
 
     // need extra buffers for targets if some are not unrolled ( and not decontracted)
     //const bool need_copies_of_targets = nonunrolled_targets(targets_);
-#if HAVE_CXX11_LAMBDA
+#if LIBINT_HAS_CXX11_LAMBDA
     const bool need_copies_of_targets = std::find_if(targets_.begin(),
                                                      targets_.end(),
                                                      [](SafePtr<DGVertex> i){

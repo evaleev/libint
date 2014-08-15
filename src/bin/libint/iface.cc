@@ -182,9 +182,9 @@ Libint2Iface::~Libint2Iface()
   }
 
   // For each task, generate the evaluator type
-  th_ << "#include <vector.h>" << std::endl;
-  th_ << "#include <libint2_memory.h>" << std::endl;
-  th_ << "#include <libint2_intrinsic_operations.h>" << std::endl;
+  th_ << "#include <libint2/vector.h>" << std::endl;
+  th_ << "#include <libint2/memory.h>" << std::endl;
+  th_ << "#include <libint2/intrinsic_operations.h>" << std::endl;
   generate_inteval_type(th_);
 
   // libint2_iface.h needs macros to help forming prefixed names in API

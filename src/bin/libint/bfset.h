@@ -23,7 +23,7 @@
 #include <iostream>
 #include <string>
 #include <cassert>
-#include <stdarray.h>
+#include <libint2/stdarray.h>
 #include <smart_ptr.h>
 #include <polyconstr.h>
 #include <hashable.h>

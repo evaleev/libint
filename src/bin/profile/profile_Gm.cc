@@ -17,8 +17,8 @@
  *
  */
 
-#include "boys.h"
-//#include "vector.h"
+#include "libint2/boys.h"
+//#include "libint2/vector.h"
 #include <ctime>
 #include <iostream>
 #include <iterator>
