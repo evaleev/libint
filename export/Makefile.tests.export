@@ -10,7 +10,7 @@ check:: check1 check2
 
 TEST1 = eri/test
 check1:: $(TEST1)
-	./$(TEST1) 0 3 && ./$(TEST1) 1 2 && ./$(TEST1) 2 1
+	./$(TEST1) 0 2 && ./$(TEST1) 1 1 && ./$(TEST1) 2 1
 
 $(TEST1): eri/test.o eri/eri.o
 	$(LTLINK) $(CXX) $(LDFLAGS) -o $@ $^
