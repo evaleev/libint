@@ -24,6 +24,7 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)$(VERSION)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)$(VERSION)/config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION).h $(DESTDIR)$(includedir)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 
