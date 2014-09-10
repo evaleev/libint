@@ -73,7 +73,7 @@
 #define DISABLE_SUBTREES 0
 
 /// Set to 1 to produce GraphViz-formatted DAGs
-#define PRINT_DAG_GRAPHVIZ 1
+#define PRINT_DAG_GRAPHVIZ 0
 
 /// Produce massive amounts of debugging info
 #define DEBUG 0
