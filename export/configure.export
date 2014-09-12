@@ -13,6 +13,14 @@ AC_CONFIG_HEADER(include/libint2/config.h)
 AC_CONFIG_AUX_DIR(bin)
 AC_CONFIG_MACRO_DIR([lib/autoconf])
 
+dnl --- Can only compile in-place!!! ---
+abs_builddir=`pwd -P`
+rel_srcdir=`dirname $0`
+abs_srcdir=`cd $rel_srcdir; pwd -P`
+if test "X$abs_builddir" != "X$abs_srcdir"; then
+  AC_MSG_ERROR([** Only in-place build is supported for exported libraries!])
+fi
+
 dnl --- Compiling C++ only ---
 AC_LANG(C++)
 
