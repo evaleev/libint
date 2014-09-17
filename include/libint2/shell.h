@@ -107,7 +107,7 @@ namespace libint2 {
 
   };
 
-  std::ostream& operator<<(std::ostream& os, const Shell& sh) {
+  inline std::ostream& operator<<(std::ostream& os, const Shell& sh) {
     os << "Shell:( O={" << sh.O[0] << "," << sh.O[1] << "," << sh.O[2] << "}" << std::endl;
     os << "  ";
     for(const auto& c: sh.contr) {

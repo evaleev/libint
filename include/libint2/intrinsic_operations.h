@@ -27,13 +27,13 @@ namespace libint2 {
 
   /// @return x*y+z
   template <typename X, typename Y, typename Z>
-  Z fma_plus(X x, Y y, Z z) {
+  inline Z fma_plus(X x, Y y, Z z) {
     return x*y + z;
   }
 
   /// @return x*y-z
   template <typename X, typename Y, typename Z>
-  Z fma_minus(X x, Y y, Z z) {
+  inline Z fma_minus(X x, Y y, Z z) {
     return x*y - z;
   }
 

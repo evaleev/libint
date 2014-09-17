@@ -26,10 +26,10 @@
 #include <libint2.h>
 
 namespace libint2 {
-  void init() {
+  inline void init() {
     libint2_static_init();
   }
-  void cleanup() {
+  inline void cleanup() {
     libint2_static_cleanup();
   }
 }
