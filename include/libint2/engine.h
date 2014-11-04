@@ -1007,7 +1007,8 @@ namespace libint2 {
 
 
   template <>
-  void TwoBodyEngine<DelcGTG_square>::init_core_ints_params(const oper_params_type& oparams) {
+  inline void TwoBodyEngine<DelcGTG_square>::init_core_ints_params(
+      const oper_params_type& oparams) {
     // [g12,[- \Del^2, g12] = 2 (\Del g12) \cdot (\Del g12)
     // (\Del exp(-a r_12^2) \cdot (\Del exp(-b r_12^2) = 4 a b (r_{12}^2 exp(- (a+b) r_{12}^2) )
     // i.e. need to scale each coefficient by 4 a b
@@ -1023,9 +1024,11 @@ namespace libint2 {
   }
 
   template <MultiplicativeSphericalTwoBodyKernel Kernel>
-  void TwoBodyEngine<Kernel>::init_core_ints_params(const oper_params_type& oparams) {
+  inline void TwoBodyEngine<Kernel>::init_core_ints_params(
+      const oper_params_type& oparams) {
     core_ints_params_ = oparams;
   }
+
 
 #endif // LIBINT2_SUPPORT_ERI
 
