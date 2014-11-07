@@ -793,22 +793,24 @@ esac
     AC_MSG_RESULT([FLOP counter will not be supported])
 ])
 
+acx_contracted_ints=yes
 AC_ARG_ENABLE(contracted-ints,
 [  --enable-contracted-ints     Turn on support for contracted integrals.],
 [
 case $enableval in
-  yes)
-    AC_DEFINE(LIBINT_CONTRACTED_INTS)
-    AC_MSG_RESULT([Will support contracted integrals])
-  ;;
   no)
-    AC_MSG_RESULT([Will not support contracted integrals])
+    acx_contracted_ints=no
   ;;
 esac
-],
-[
-    AC_MSG_RESULT([Will not support contracted integrals])
 ])
+if test "X$acx_contracted_ints" = Xyes; then
+  AC_DEFINE(LIBINT_CONTRACTED_INTS)
+  AC_MSG_RESULT([Will support contracted integrals])
+else
+  AC_MSG_RESULT([Will not support contracted integrals])
+fi
+AC_SUBST(LIBINT_CONTRACTED_INTS, $acx_contracted_ints)
+
 
 dnl
 dnl Preferred strategies for evaluation
