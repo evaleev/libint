@@ -48,7 +48,7 @@ namespace libint2 {
 
 };
 
-#include <cgshellinfo.h>
+#include <libint2/cgshellinfo.h>
 
 //
 // Macros common to all orderings

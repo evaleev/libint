@@ -29,7 +29,7 @@
 #include <deriv_iter.h>
 #include <eri.h>
 #include <prep_libint2.h>
-#include <cgshell_ordering.h>
+#include <libint2/cgshell_ordering.h>
 
 using namespace std;
 using namespace libint2;

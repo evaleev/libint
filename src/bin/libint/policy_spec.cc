@@ -19,8 +19,7 @@
 
 #include <policy.h>
 #include <rr.h>
-#include <cgshell_ordering.h>
-#include <cgshellinfo.h>
+#include <libint2/cgshell_ordering.h>
 
 using namespace std;
 

@@ -23,7 +23,7 @@
 #include <cassert>
 #include <libint2.h>
 #include <util_types.h>
-#include <cgshell_ordering.h>
+#include <libint2/cgshell_ordering.h>
 
 namespace libint2 {
 
