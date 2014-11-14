@@ -1,6 +1,11 @@
 language: cpp
 compiler:
   - clang
+before_install:
+  - echo $LANG
+  - echo $LC_ALL
+  - if [ $TRAVIS_OS_NAME == linux ]; then sudo apt-get install -y llvm-3.4 llvm-3.4-dev libgmpxx4ldbl; fi
+  - if [ $TRAVIS_OS_NAME == osx ]; then brew update && brew install llvm && brew link --force llvm; fi
 notifications:
   email:
     recipients:
@@ -9,5 +14,4 @@ notifications:
     on_failure: always
 os:
   - linux
-  - osx
-script: ./configure CPPFLAGS='-std=c++11' && make && make check
+script: ./autogen.sh && ./configure CXXFLAGS='-std=c++11' && make && make check
