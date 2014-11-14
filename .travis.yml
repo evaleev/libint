@@ -4,7 +4,7 @@ compiler:
 before_install:
   - echo $LANG
   - echo $LC_ALL
-  - if [ $TRAVIS_OS_NAME == linux ]; then sudo apt-get install -y llvm-3.4 llvm-3.4-dev libgmpxx4ldbl; fi
+  - if [ $TRAVIS_OS_NAME == linux ]; then sudo apt-get install -y llvm-3.4 llvm-3.4-dev libgmpxx4ldbl libeigen3-dev; fi
   - if [ $TRAVIS_OS_NAME == osx ]; then brew update && brew install llvm && brew link --force llvm; fi
 notifications:
   email:
@@ -14,4 +14,5 @@ notifications:
     on_failure: always
 os:
   - linux
+after_failure: cat ./config.log
 script: ./autogen.sh && ./configure CXXFLAGS='-std=c++11' && make && make check
