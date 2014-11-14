@@ -5,7 +5,7 @@ before_install:
   - echo $LANG
   - echo $LC_ALL
   - if [ $TRAVIS_OS_NAME == linux ]; then sudo add-apt-repository ppa:boost-latest/ppa -y && sudo apt-get update && sudo apt-get install -y llvm-3.4 llvm-3.4-dev libgmp-dev libeigen3-dev libboost1.55-dev ; fi
-  - if [ $TRAVIS_OS_NAME == osx ]; then brew update && brew install llvm && brew link --force llvm; fi
+  - if [ $TRAVIS_OS_NAME == osx ]; then brew update && brew install llvm boost eigen gmp && brew link --force llvm; fi
 notifications:
   email:
     recipients:
@@ -14,5 +14,7 @@ notifications:
     on_failure: always
 os:
   - linux
+  - osx
 after_failure: cat ./config.log
-script: ./autogen.sh && ./configure CXXFLAGS='-std=c++11' CPPFLAGS='-I/usr/include/eigen3' --with-max-am=2 --enable-eri=1 --enable-eri3=1 && make && make check
+script:
+  - ./autogen.sh && ./configure CXXFLAGS='-std=c++11' CPPFLAGS='-I/usr/include/eigen3' --with-eri-max-am=2,1 --with-eri3-max-am=2,2 --enable-eri=1 --enable-eri3=1 && make && make check
