@@ -4,7 +4,7 @@ compiler:
 before_install:
   - echo $LANG
   - echo $LC_ALL
-  - if [ $TRAVIS_OS_NAME == linux ]; then sudo add-apt-repository ppa:boost-latest/ppa && sudo apt-get update && sudo apt-get install -y llvm-3.4 llvm-3.4-dev libgmp-dev libeigen3-devlibboost1.54-dev ; fi
+  - if [ $TRAVIS_OS_NAME == linux ]; then sudo add-apt-repository ppa:boost-latest/ppa -y && sudo apt-get update && sudo apt-get install -y llvm-3.4 llvm-3.4-dev libgmp-dev libeigen3-devlibboost1.54-dev ; fi
   - if [ $TRAVIS_OS_NAME == osx ]; then brew update && brew install llvm && brew link --force llvm; fi
 notifications:
   email:
