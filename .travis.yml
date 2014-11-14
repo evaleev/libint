@@ -1,0 +1,13 @@
+language: cpp
+compiler:
+  - clang
+notifications:
+  email:
+    recipients:
+      - libint@valeyev.net
+    on_success: change
+    on_failure: always
+os:
+  - linux
+  - osx
+script: ./configure CPPFLAGS='-std=c++11' && make && make check
