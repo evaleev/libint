@@ -141,15 +141,16 @@ T token(const char* c_str,
  * @param delimiter delimiter/separator character
  * @return the number of tokens
  */
-size_t ntokens(const char* c_str,
-               char delimiter) {
-  size_t n = 0;
+inline size_t ntokens(const char* c_str,
+                      char delimiter) {
+  size_t n = 1;
 
   // replace all occurences of delimiter in str with whitespaces
   std::string str(c_str);
-  std::cout << "ntokens<>: str=" << str << std::endl;
+  std::cout << "ntokens: str=" << str << std::endl;
   std::string::size_type pos;
   while ((pos = str.find(delimiter)) != std::string::npos) {
+    str[pos] = ' ';
     ++n;
   }
 
@@ -385,7 +386,7 @@ void try_main (int argc, char* argv[])
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.add("default");
 #if defined(LIBINT_MAX_AM_LIST)
-  for(unsigned int d=1; d<ntokens<unsigned int>(LIBINT_MAX_AM_LIST,','); ++d) {
+  for(unsigned int d=1; d<ntokens(LIBINT_MAX_AM_LIST,','); ++d) {
     taskmgr.add( task_label("default", d) );
   }
 #endif
@@ -431,12 +432,12 @@ void try_main (int argc, char* argv[])
   cparams->max_am("default",LIBINT_MAX_AM);
   cparams->max_am_opt("default",LIBINT_OPT_AM);
 #if defined(LIBINT_MAX_AM_LIST)
-  for(unsigned int d=0; d<ntokens<unsigned int>(LIBINT_MAX_AM_LIST,','); ++d) {
+  for(unsigned int d=0; d<ntokens(LIBINT_MAX_AM_LIST,','); ++d) {
     cparams->max_am( task_label("default", d), token<unsigned int>(LIBINT_MAX_AM_LIST,',',d));
   }
 #endif
 #if defined(LIBINT_OPT_AM_LIST)
-  for(unsigned int d=0; d<ntokens<unsigned int>(LIBINT_OPT_AM_LIST,','); ++d) {
+  for(unsigned int d=0; d<ntokens(LIBINT_OPT_AM_LIST,','); ++d) {
     cparams->max_am_opt( task_label("default", d), token<unsigned int>(LIBINT_OPT_AM_LIST,',',d));
   }
 #endif
@@ -628,11 +629,11 @@ void try_main (int argc, char* argv[])
   iface->to_params(iface->macro_define("SHELLQUARTET_SET_STANDARD",LIBINT_SHELL_SET_STANDARD));
   iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELL_SET_ORCA));
 #if defined(LIBINT_MAX_AM_LIST)
-  for(unsigned int d=0; d<ntokens<unsigned int>(LIBINT_MAX_AM_LIST,','); ++d) {
+  for(unsigned int d=0; d<ntokens(LIBINT_MAX_AM_LIST,','); ++d) {
     std::ostringstream oss;
     oss << "MAX_AM";
     if (d > 0) oss << d;
-    iface->to_params(iface->macro_define(oss.str(),tokens<unsigned int>(LIBINT_MAX_AM_LIST,',')));
+    iface->to_params(iface->macro_define(oss.str(),token<unsigned int>(LIBINT_MAX_AM_LIST,',',d)));
   }
 #else
   iface->to_params(iface->macro_define("MAX_AM",LIBINT_MAX_AM));
