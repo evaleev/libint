@@ -100,7 +100,7 @@ int main(int argc, char** argv)
   const double start_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
 
   prep_libint2(erieval,rsqset,0);
-  erieval[0].nflops[0] = 0;
+  erieval[0].nflops = 0;
   
   cout << "Computing (" << am2label(am[0]) << am2label(am[1])
        << "|" << am2label(am[2]) << am2label(am[3]) << ") " << niter << " times" << endl;
@@ -115,7 +115,7 @@ int main(int argc, char** argv)
   gettimeofday(&tod,0);
   const double end_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
   const unsigned int nints = am2nbf(am[0]) * am2nbf(am[1]) * am2nbf(am[2]) * am2nbf(am[3]) * LIBINT2_MAX_VECLEN;
-  cout << "nflops = " << *(erieval[0].nflops) << " nints = " << nints << " wtime = " << (end_wall_time - start_wall_time) << " seconds" << endl;
+  cout << "nflops = " << erieval[0].nflops << " nints = " << nints << " wtime = " << (end_wall_time - start_wall_time) << " seconds" << endl;
 
   LIBINT2_PREFIXED_NAME(libint2_cleanup_eri0)(&erieval[0]);
   free(erieval);

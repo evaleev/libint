@@ -2149,7 +2149,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
     oss << nflops_total << " * " << dims->high_label() << " * "
         << dims->low_label() << " * "
         << dims->vecdim_label();
-    os << context->assign_binary_expr("inteval->nflops[0]","inteval->nflops[0]","+",oss.str());
+    os << context->assign_binary_expr("inteval->nflops","inteval->nflops","+",oss.str());
   }
 
 }
