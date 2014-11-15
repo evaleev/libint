@@ -147,6 +147,13 @@ struct ExpensiveMath {
       }
     }
 
+    ~ExpensiveMath() {
+      delete[] df;
+      delete[] fac;
+      delete[] bc[0];
+      delete[] bc;
+    }
+
     template <typename Real>
     Real norm_const(unsigned int l1, unsigned int m1, unsigned int n1,
                     Real alpha1, const Real* A)

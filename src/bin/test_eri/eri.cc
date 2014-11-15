@@ -41,6 +41,8 @@ namespace {
     if (a%2 == 1) return -1;
     return 1;
   }
+
+  ExpensiveMath expmath;
 }
 
 /*!
@@ -63,8 +65,6 @@ LIBINT2_REF_REALTYPE eri(unsigned int l1, unsigned int m1, unsigned int n1,
 	   unsigned int l4, unsigned int m4, unsigned int n4, 
            LIBINT2_REF_REALTYPE alpha4, const LIBINT2_REF_REALTYPE* D, int norm_flag)
 {
-  static ExpensiveMath expmath;
-
   const LIBINT2_REF_REALTYPE gammap = alpha1 + alpha2;
   const LIBINT2_REF_REALTYPE Px = (alpha1*A[0] + alpha2*B[0])/gammap;
   const LIBINT2_REF_REALTYPE Py = (alpha1*A[1] + alpha2*B[1])/gammap;
