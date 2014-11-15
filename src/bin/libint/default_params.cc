@@ -94,17 +94,17 @@ CompilationParameters::task_exists(const std::string& t) const
 }
 
 unsigned int
-CompilationParameters::max_am(std::string t) const
+CompilationParameters::max_am(std::string t, unsigned int c) const
 {
   if (t.empty()) t = default_task_name();
   task_exists(t);
 
   typedef std::map<std::string,TaskParameters>::const_iterator citer;
   citer ti = task_params_.find(t);
-  if (ti != task_params_.end())
-    return ti->second.max_am;
-  else
-    return task_params_.find(default_task_name())->second.max_am;
+  auto max_am = (ti != task_params_.end()) ?
+      ti->second.max_am :
+      task_params_.find(default_task_name())->second.max_am;
+  return (c < max_am.size()) ? max_am[c] : max_am[0];
 }
 
 unsigned int
@@ -148,19 +148,22 @@ CompilationParameters::add_task(const std::string& t)
 }
 
 void
-CompilationParameters::max_am(const std::string& t, unsigned int ma)
+CompilationParameters::max_am(const std::string& t, unsigned int ma, unsigned int c)
 {
   task_exists(t);
 
   typedef std::map<std::string,TaskParameters>::iterator iter;
   iter ti = task_params_.find(t);
-  if (ti != task_params_.end())
-    ti->second.max_am = ma;
+  if (ti != task_params_.end()) {
+    if (ti->second.max_am.size() <= c)
+      ti->second.max_am.resize(c+1);
+    ti->second.max_am[c] = ma;
+  }
   else {
     add_task(t);
-    max_am(t,ma);
+    max_am(t,ma,c);
   }
-  std::cout << "CompilationParameters::max_am: task=" << t << " max_am=" << ma << std::endl;
+  std::cout << "CompilationParameters::max_am: task=" << t << " max_am=" << ma << " center=" << c << std::endl;
 }
 
 void

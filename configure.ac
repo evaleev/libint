@@ -296,25 +296,47 @@ esac
 
 LIBINT_MAX_AM=4
 AC_ARG_WITH(max-am,
-[  --with-max-am=N      Support Gaussians of angular momentum up to N.],
-if test $withval -le 0; then
-  AC_MSG_ERROR([Invalid value for --with-max-am ($withval)])
-else
-  LIBINT_MAX_AM=$withval
-fi
-if test $LIBINT_MAX_AM -ge 8; then
-  AC_MSG_ERROR([Value for --with-max-am too high ($withval). Are you sure you know what you are doing?])
-fi
+[  --with-max-am=N      Support Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...],
+[
+  case $withval in 
+    *,*)
+      LIBINT_MAX_AM_LIST="$withval"
+      AC_SUBST(LIBINT_MAX_AM_LIST)
+      AC_DEFINE_UNQUOTED(LIBINT_MAX_AM_LIST, "$LIBINT_MAX_AM_LIST")
+    ;;
+    *)
+      if test $withval -le 0; then
+        AC_MSG_ERROR([Invalid value for --with-max-am ($withval)])
+      else
+        LIBINT_MAX_AM=$withval
+      fi
+      if test $LIBINT_MAX_AM -ge 8; then
+        AC_MSG_ERROR([Value for --with-max-am too high ($withval). Are you sure you know what you are doing?])
+      fi
+      AC_DEFINE_UNQUOTED(LIBINT_MAX_AM,$LIBINT_MAX_AM)
+    ;;
+  esac
+]
 )
 LIBINT_OPT_AM=$((($LIBINT_MAX_AM/2)+1))
 AC_ARG_WITH(opt-am,
 [  --with-opt-am=N       Optimize maximally for up to angular momentum N (N <= max-am).],
-if test $withval -le $LIBINT_MAX_AM; then
-  LIBINT_OPT_AM=$withval
-fi
+[
+  case $withval in 
+    *,*)
+      LIBINT_OPT_AM_LIST="$withval"
+      AC_SUBST(LIBINT_OPT_AM_LIST)
+      AC_DEFINE_UNQUOTED(LIBINT_OPT_AM_LIST, "$LIBINT_OPT_AM_LIST")
+    ;;
+    *)
+      if test $withval -le $LIBINT_MAX_AM; then
+        LIBINT_OPT_AM=$withval
+      fi
+      AC_DEFINE_UNQUOTED(LIBINT_OPT_AM,$LIBINT_OPT_AM)
+    ;;
+  esac
+]
 )
-AC_DEFINE_UNQUOTED(LIBINT_MAX_AM,$LIBINT_MAX_AM)
-AC_DEFINE_UNQUOTED(LIBINT_OPT_AM,$LIBINT_OPT_AM)
 
 ERI_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(eri-max-am,

@@ -45,11 +45,17 @@
 /* Prefix for all names in API */
 #undef LIBINT_API_PREFIX
 
-/* Max AM */
+/* Max AM (same for all derivatives; if not defined see LIBINT_MAX_AM_LIST) */
 #undef LIBINT_MAX_AM
 
-/* Max optimized AM */
+/* Max AM for integrals and their derivatives */
+#undef LIBINT_MAX_AM_LIST
+
+/* Max optimized AM (same for all derivatives; if not defined see LIBINT_OPT_AM_LIST) */
 #undef LIBINT_OPT_AM
+
+/* Max optimized AM for integrals and their derivatives */
+#undef LIBINT_OPT_AM_LIST
 
 /* Support 1-body derivatives up to this order */
 #undef INCLUDE_ONEBODY

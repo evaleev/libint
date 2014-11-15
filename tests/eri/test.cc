@@ -40,8 +40,8 @@ const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any i
 /// change to true to skip verification and do some timing simulation
 const bool do_timing_only = false;
 
-libint2::FmEval_Chebyshev3 fmeval_chebyshev(LIBINT_MAX_AM*4 + 2);
-libint2::FmEval_Taylor<double,6> fmeval_taylor(LIBINT_MAX_AM*4 + 2, 1e-15);
+libint2::FmEval_Chebyshev3 fmeval_chebyshev(std::max(LIBINT_MAX_AM,4)*4 + 2);
+libint2::FmEval_Taylor<double,6> fmeval_taylor(std::max(LIBINT_MAX_AM,4)*4 + 2, 1e-15);
 
 namespace {
   const char am_letters[] = "spdfghiklm";
@@ -459,6 +459,14 @@ void test_3eri(unsigned int deriv_order,
   const uint max_contrdepth = 3;
   const uint max_contrdepth3 = max_contrdepth * max_contrdepth * max_contrdepth;
 
+  unsigned int lmax_default = LIBINT2_MAX_AM;
+#if defined(LIBINT2_MAX_AM1)
+  if (deriv_order == 1) lmax_default = LIBINT2_MAX_AM1;
+#endif
+#if defined(LIBINT2_MAX_AM2)
+  if (deriv_order == 2) lmax_default = LIBINT2_MAX_AM2;
+#endif
+
   unsigned int lmax;
   if (deriv_order == 0) lmax = LIBINT2_MAX_AM_3ERI;
 #if INCLUDE_ERI3 >= 1
@@ -479,11 +487,13 @@ void test_3eri(unsigned int deriv_order,
     LIBINT2_PREFIXED_NAME(libint2_init_3eri2)(&inteval[0], lmax, 0);
 #endif
 
-  lmax = std::min(lmax_max, lmax);
+  auto lmax0 = std::min(lmax_max, lmax);
+  auto lmax1 = std::min(lmax_max, lmax_default);
+  auto lmax2 = std::min(lmax_max, lmax_default);
 
-  for (unsigned int l0 = 0; l0 <= lmax; ++l0) {
-    for (unsigned int l1 = 0; l1 <= lmax; ++l1) {
-      for (unsigned int l2 = 0; l2 <= lmax; ++l2) {
+  for (unsigned int l0 = 0; l0 <= lmax0; ++l0) {
+    for (unsigned int l1 = 0; l1 <= lmax1; ++l1) {
+      for (unsigned int l2 = 0; l2 <= lmax2; ++l2) {
 
         // record start wall time
         struct timeval tod;

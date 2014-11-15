@@ -93,13 +93,14 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   typedef LibraryTaskManager::TasksCIter tciter;
   for(tciter t=taskmgr.first(); t!=taskmgr.plast(); ++t) {
     const std::string& tlabel = t->label();
-    const unsigned int lmax = cparams_->max_am(tlabel) + 1;
     const unsigned int nbf = cparams_->num_bf(tlabel);
 
     ostringstream oss;
     oss << "void (*" << ctext->label_to_name(cparams->api_prefix()) << "libint2_build_" << tlabel;
     for(unsigned int c=0; c<nbf; ++c) {
-      oss << "[" << lmax << "]";
+      const unsigned int lmax = const_cast<const CompilationParameters*>(cparams_.get())->max_am(tlabel, c);
+      oss << "[" << lmax+1 << "]";
+      std::cout << "task=" << tlabel << " center=" << c << " lmax=" << lmax << std::endl;
     }
     oss << ")(" << ctext_->const_modifier() << ctext_->inteval_type_name(tlabel) << "*);" << endl;
     ih_ << "extern " << oss.str();

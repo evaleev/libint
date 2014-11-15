@@ -135,6 +135,27 @@ T token(const char* c_str,
   return result;
 }
 
+/**
+ * Returns the number of tokens.
+ * @param c_str input string
+ * @param delimiter delimiter/separator character
+ * @return the number of tokens
+ */
+size_t ntokens(const char* c_str,
+               char delimiter) {
+  size_t n = 0;
+
+  // replace all occurences of delimiter in str with whitespaces
+  std::string str(c_str);
+  std::cout << "ntokens<>: str=" << str << std::endl;
+  std::string::size_type pos;
+  while ((pos = str.find(delimiter)) != std::string::npos) {
+    ++n;
+  }
+
+  return n;
+}
+
 static void try_main (int argc, char* argv[]);
 
 int main(int argc, char* argv[])
@@ -363,6 +384,11 @@ void try_main (int argc, char* argv[])
   // First must declare the tasks
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.add("default");
+#if defined(LIBINT_MAX_AM_LIST)
+  for(unsigned int d=1; d<ntokens<unsigned int>(LIBINT_MAX_AM_LIST,','); ++d) {
+    taskmgr.add( task_label("default", d) );
+  }
+#endif
 #ifdef INCLUDE_ONEBODY
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
     taskmgr.add( task_label("overlap",d) );
@@ -404,7 +430,18 @@ void try_main (int argc, char* argv[])
 
   cparams->max_am("default",LIBINT_MAX_AM);
   cparams->max_am_opt("default",LIBINT_OPT_AM);
+#if defined(LIBINT_MAX_AM_LIST)
+  for(unsigned int d=0; d<ntokens<unsigned int>(LIBINT_MAX_AM_LIST,','); ++d) {
+    cparams->max_am( task_label("default", d), token<unsigned int>(LIBINT_MAX_AM_LIST,',',d));
+  }
+#endif
+#if defined(LIBINT_OPT_AM_LIST)
+  for(unsigned int d=0; d<ntokens<unsigned int>(LIBINT_OPT_AM_LIST,','); ++d) {
+    cparams->max_am_opt( task_label("default", d), token<unsigned int>(LIBINT_OPT_AM_LIST,',',d));
+  }
+#endif
   cparams->num_bf("default",4);
+
 #ifdef INCLUDE_ONEBODY
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
 #if defined(ONEBODY_MAX_AM_LIST)
@@ -460,6 +497,14 @@ void try_main (int argc, char* argv[])
     cparams->max_am_opt( task_label("3eri", d) ,token<unsigned int>(ERI3_OPT_AM_LIST,',',d));
 #elif defined(ERI3_OPT_AM)
     cparams->max_am_opt( task_label("3eri", d) , ERI3_OPT_AM);
+#endif
+
+#if defined(LIBINT_MAX_AM_LIST)
+    cparams->max_am( task_label("3eri", d), cparams->max_am(task_label("default", d)), 1 );
+    cparams->max_am( task_label("3eri", d), cparams->max_am(task_label("default", d)), 2 );
+#else
+    cparams->max_am( task_label("3eri", d), cparams->max_am("default"), 1 );
+    cparams->max_am( task_label("3eri", d), cparams->max_am("default"), 2 );
 #endif
   }
   for(unsigned int d=0; d<=INCLUDE_ERI3; ++d) {
@@ -582,6 +627,16 @@ void try_main (int argc, char* argv[])
   iface->to_params(iface->macro_define("SHELLQUARTET_SET",LIBINT_SHELL_SET));
   iface->to_params(iface->macro_define("SHELLQUARTET_SET_STANDARD",LIBINT_SHELL_SET_STANDARD));
   iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELL_SET_ORCA));
+#if defined(LIBINT_MAX_AM_LIST)
+  for(unsigned int d=0; d<ntokens<unsigned int>(LIBINT_MAX_AM_LIST,','); ++d) {
+    std::ostringstream oss;
+    oss << "MAX_AM";
+    if (d > 0) oss << d;
+    iface->to_params(iface->macro_define(oss.str(),tokens<unsigned int>(LIBINT_MAX_AM_LIST,',')));
+  }
+#else
+  iface->to_params(iface->macro_define("MAX_AM",LIBINT_MAX_AM));
+#endif
   cparams->print(os);
 
 #ifdef INCLUDE_ONEBODY
@@ -888,11 +943,11 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 {
   const std::string task = task_label("3eri", deriv_level);
   const std::string task_uc = task_label("3ERI", deriv_level);
-  const std::string task_default("default");
   typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
   vector<CGShell*> shells;
   const unsigned int lmax = cparams->max_am(task);
-  const unsigned int lmax_default = deriv_level > 0 ? cparams->max_am(task_default) : lmax;
+  const unsigned int lmax_default = const_cast<const CompilationParameters*>(cparams.get())->max_am(task, 1);
+
   for(unsigned int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }

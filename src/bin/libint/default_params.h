@@ -43,8 +43,8 @@ namespace libint2 {
     CompilationParameters();
     ~CompilationParameters();
     
-    /// returns max AM for task t
-    unsigned int max_am(std::string t = "") const;
+    /// returns max AM for task \c t and center \c c
+    unsigned int max_am(std::string t = "", unsigned int c = 0) const;
     /// returns max AM for which to produce optimal code for task t
     unsigned int max_am_opt(std::string t = "") const;
     /// returns number of basis functions in integrals for task t
@@ -102,8 +102,8 @@ namespace libint2 {
       return default_task_name_;
     }
     
-    /// set max AM for task t
-    void max_am(const std::string& t, unsigned int a);
+    /// set max AM for task \c t and center \c c
+    void max_am(const std::string& t, unsigned int a, unsigned int c=0);
     /// set max AM for task t
     void max_am_opt(const std::string& t, unsigned int a);
     /// set num of basis functions for task t
@@ -202,13 +202,13 @@ namespace libint2 {
 
     struct TaskParameters {
       /// max AM
-      unsigned int max_am;
+      std::vector<unsigned int> max_am;
       /// max AM for "optimized" integrals
       unsigned int max_am_opt;
       /// number of basis functions
       unsigned int num_bf;
 
-      TaskParameters() : max_am(0u), max_am_opt(0u), num_bf(0u) {}
+      TaskParameters() : max_am(1, 0u), max_am_opt(0u), num_bf(0u) {}
     };
     /// Parameters for tasks
     std::map<std::string,TaskParameters> task_params_;
