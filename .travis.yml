@@ -5,7 +5,12 @@ compiler:
   - clang
   - gcc
 env:
+  - GCC_VERSION=4.7
   - GCC_VERSION=4.8
+matrix:
+  exclude:
+    - compiler: clang
+      env: GCC_VERSION=4.7
 before_install:
   - ./bin/travisci_before_$TRAVIS_OS_NAME.sh
 script:
