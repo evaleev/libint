@@ -1,20 +1,24 @@
+os:
+  - linux
 language: cpp
 compiler:
   - clang
+  - gcc
+env:
+  - GCC_VERSION=4.8
+  - GCC_VERSION=4.9
+matrix:
+  exclude:
+    - compiler: clang
+      env: GCC_VERSION=4.9
 before_install:
-  - echo $LANG
-  - echo $LC_ALL
-  - if [ $TRAVIS_OS_NAME == linux ]; then sudo add-apt-repository ppa:boost-latest/ppa -y && sudo apt-get update && sudo apt-get install -y llvm-3.4 llvm-3.4-dev libgmp-dev libeigen3-dev libboost1.55-dev ; fi
-  - if [ $TRAVIS_OS_NAME == osx ]; then brew update && brew install llvm boost eigen gmp && brew link --force llvm; fi
+  - ./bin/travisci_before_$TRAVIS_OS_NAME.sh
+script:
+  - ./autogen.sh && ./configure CXXFLAGS='-std=c++11' CPPFLAGS='-I/usr/include/eigen3' --with-max-am=2,2 --with-eri-max-am=2,1 --with-eri3-max-am=3,2 --enable-eri=1 --enable-eri3=1 && make -j2 && make check
+after_failure: cat ./config.log && cat include/libint2/config.h
 notifications:
   email:
     recipients:
       - libint+travisci@valeyev.net
     on_success: change
     on_failure: always
-os:
-  - linux
-  - osx
-after_failure: cat ./config.log && cat include/libint2/config.h
-script:
-  - ./autogen.sh && ./configure CXXFLAGS='-std=c++11' CPPFLAGS='-I/usr/include/eigen3' --with-max-am=2,2 --with-eri-max-am=2,1 --with-eri3-max-am=3,2 --enable-eri=1 --enable-eri3=1 && make -j2 && make check
