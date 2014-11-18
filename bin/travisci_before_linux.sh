@@ -14,3 +14,4 @@ else
     export CFLAGS="--gcc-toolchain=/usr/bin/gcc-$GCC_VERSION"
     export CXXFLAGS="--gcc-toolchain=/usr/bin/g++-$GCC_VERSION"
 fi
+echo $CXX
