@@ -589,7 +589,7 @@ namespace libint2 {
         auto nprim_ket1 = ket1.nprim();
         auto nprim_ket2 = ket2.nprim();
         auto nprimsets = nprim_bra1 * nprim_bra2 * nprim_ket1 * nprim_bra2;
-        assert(nprimsets < primdata_.size());
+        assert(nprimsets <= primdata_.size());
 
         // adjust max angular momentum, if needed
         auto lmax = std::max(std::max(bra1.contr[0].l, bra2.contr[0].l), std::max(ket1.contr[0].l, ket2.contr[0].l));
