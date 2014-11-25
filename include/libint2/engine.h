@@ -53,8 +53,19 @@ namespace libint2 {
       /// creates a default (unusable) OneBodyEngine; to be used as placeholder for copying a usable engine
       OneBodyEngine() : type_(_invalid), primdata_(), lmax_(-1) {}
 
-      OneBodyEngine(const OneBodyEngine& other) = default;
+      /// move constructor
       OneBodyEngine(OneBodyEngine&& other) = default;
+
+      /// (deep) copy constructor
+      OneBodyEngine(const OneBodyEngine& other) :
+        type_(other.type_),
+        primdata_(other.primdata_.size()),
+        lmax_(other.lmax_),
+        deriv_order_(other.deriv_order_),
+        q_(other.q_),
+        fm_eval_(other.fm_eval_) {
+        init();
+      }
 
       /// Constructs a (usable) OneBodyEngine
 
@@ -69,94 +80,22 @@ namespace libint2 {
       OneBodyEngine(type t, size_t max_nprim, int max_l, int deriv_order = 0) :
         type_(t), primdata_(max_nprim * max_nprim), lmax_(max_l), deriv_order_(deriv_order),
         fm_eval_(t == nuclear ? libint2::FmEval_Chebyshev3::instance(2*max_l+deriv_order) : 0) {
+        init();
+      }
 
-        const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
+      /// move assignment
+      OneBodyEngine& operator=(OneBodyEngine&& other) = default;
 
-        switch(type_) {
-          case overlap: assert(max_l <= LIBINT2_MAX_AM_overlap); break;
-          case kinetic: assert(max_l <= LIBINT2_MAX_AM_kinetic); break;
-          case nuclear: assert(max_l <= LIBINT2_MAX_AM_elecpot); break;
-          default: assert(false);
-        }
-        assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
-
-        if (type_ == overlap) {
-          switch(deriv_order_) {
-
-            case 0:
-              libint2_init_overlap(&primdata_[0], lmax_, 0);
-              scratch_.resize(ncart_max*ncart_max);
-              break;
-            case 1:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_init_overlap1(&primdata_[0], lmax_, 0);
-              scratch_.resize(3 * ncart_max*ncart_max);
-#endif
-              break;
-            case 2:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_init_overlap2(&primdata_[0], lmax_, 0);
-              scratch_.resize(6 * ncart_max*ncart_max);
-#endif
-              break;
-            default: assert(deriv_order_ < 3);
-          }
-
-          return;
-        }
-
-        if (type_ == kinetic) {
-          switch(deriv_order_) {
-
-            case 0:
-              libint2_init_kinetic(&primdata_[0], lmax_, 0);
-              scratch_.resize(ncart_max*ncart_max);
-              break;
-            case 1:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_init_kinetic1(&primdata_[0], lmax_, 0);
-              scratch_.resize(3 * ncart_max*ncart_max);
-#endif
-              break;
-            case 2:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_init_kinetic2(&primdata_[0], lmax_, 0);
-              scratch_.resize(6 * ncart_max*ncart_max);
-#endif
-              break;
-            default: assert(deriv_order_ < 3);
-          }
-
-          return;
-        }
-
-        if (type_ == nuclear) {
-
-          switch(deriv_order_) {
-
-            case 0:
-              libint2_init_elecpot(&primdata_[0], lmax_, 0);
-              scratch_.resize(ncart_max*ncart_max); // one more set to be able to accumulate
-              break;
-            case 1:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_init_elecpot1(&primdata_[0], lmax_, 0);
-              scratch_.resize(3 * ncart_max*ncart_max);
-#endif
-              break;
-            case 2:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_init_elecpot2(&primdata_[0], lmax_, 0);
-              scratch_.resize(6 * ncart_max*ncart_max);
-#endif
-              break;
-            default: assert(deriv_order_ < 3);
-          }
-
-          return;
-        }
-
-        assert(type_ == overlap || type_ == kinetic || type_ == nuclear);
+      /// (deep) copy assignment
+      OneBodyEngine& operator=(const OneBodyEngine& other) {
+        type_ = other.type_;
+        primdata_.resize(other.primdata_.size());
+        lmax_ = other.lmax_;
+        deriv_order_ = other.deriv_order_;
+        q_ = other.q_;
+        fm_eval_ = other.fm_eval_;
+        init();
+        return *this;
       }
 
       /// specifies the nuclear charges
@@ -427,6 +366,96 @@ namespace libint2 {
 
       std::vector<LIBINT2_REALTYPE> scratch_; // for transposes and/or transforming to solid harmonics
 
+      void init() {
+        const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
+
+        switch(type_) {
+          case overlap: assert(lmax_ <= LIBINT2_MAX_AM_overlap); break;
+          case kinetic: assert(lmax_ <= LIBINT2_MAX_AM_kinetic); break;
+          case nuclear: assert(lmax_ <= LIBINT2_MAX_AM_elecpot); break;
+          default: assert(false);
+        }
+        assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
+
+        if (type_ == overlap) {
+          switch(deriv_order_) {
+
+            case 0:
+              libint2_init_overlap(&primdata_[0], lmax_, 0);
+              scratch_.resize(ncart_max*ncart_max);
+              break;
+            case 1:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              libint2_init_overlap1(&primdata_[0], lmax_, 0);
+              scratch_.resize(3 * ncart_max*ncart_max);
+#endif
+              break;
+            case 2:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              libint2_init_overlap2(&primdata_[0], lmax_, 0);
+              scratch_.resize(6 * ncart_max*ncart_max);
+#endif
+              break;
+            default: assert(deriv_order_ < 3);
+          }
+
+          return;
+        }
+
+        if (type_ == kinetic) {
+          switch(deriv_order_) {
+
+            case 0:
+              libint2_init_kinetic(&primdata_[0], lmax_, 0);
+              scratch_.resize(ncart_max*ncart_max);
+              break;
+            case 1:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              libint2_init_kinetic1(&primdata_[0], lmax_, 0);
+              scratch_.resize(3 * ncart_max*ncart_max);
+#endif
+              break;
+            case 2:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              libint2_init_kinetic2(&primdata_[0], lmax_, 0);
+              scratch_.resize(6 * ncart_max*ncart_max);
+#endif
+              break;
+            default: assert(deriv_order_ < 3);
+          }
+
+          return;
+        }
+
+        if (type_ == nuclear) {
+
+          switch(deriv_order_) {
+
+            case 0:
+              libint2_init_elecpot(&primdata_[0], lmax_, 0);
+              scratch_.resize(ncart_max*ncart_max); // one more set to be able to accumulate
+              break;
+            case 1:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              libint2_init_elecpot1(&primdata_[0], lmax_, 0);
+              scratch_.resize(3 * ncart_max*ncart_max);
+#endif
+              break;
+            case 2:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              libint2_init_elecpot2(&primdata_[0], lmax_, 0);
+              scratch_.resize(6 * ncart_max*ncart_max);
+#endif
+              break;
+            default: assert(deriv_order_ < 3);
+          }
+
+          return;
+        }
+
+        assert(type_ == overlap || type_ == kinetic || type_ == nuclear);
+      }
+
   }; // struct OneBodyEngine
 #endif // LIBINT2_SUPPORT_ONEBODY
 
@@ -492,8 +521,16 @@ namespace libint2 {
       /// creates a default (unusable) TwoBodyEngine
       TwoBodyEngine() : primdata_(), lmax_(-1), core_eval_(0) {}
 
-      TwoBodyEngine(const TwoBodyEngine& other) = default;
+      /// move constructor
       TwoBodyEngine(TwoBodyEngine&& other) = default;
+
+      /// (deep) copy constructor
+      TwoBodyEngine(const TwoBodyEngine& other) :
+        primdata_(other.primdata_), lmax_(other.lmax_), deriv_order_(other.deriv_order_),
+        core_eval_(other.core_eval_), core_ints_params_(other.core_ints_params_)
+      {
+        init();
+      }
 
       /// Initializes a TwoBodyEngine
 
@@ -514,35 +551,23 @@ namespace libint2 {
         primdata_(max_nprim * max_nprim * max_nprim * max_nprim), lmax_(max_l), deriv_order_(deriv_order),
         core_eval_(core_eval_type::instance(4*lmax_ + deriv_order, 1.e-15))
       {
-
-        const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
-        const auto max_shellset_size = ncart_max * ncart_max * ncart_max * ncart_max;
-
-        assert(max_l <= LIBINT2_MAX_AM_ERI);
-        assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
-
-        switch(deriv_order_) {
-
-            case 0:
-              libint2_init_eri(&primdata_[0], lmax_, 0);
-              scratch_.resize(max_shellset_size);
-              break;
-            case 1:
-#if LIBINT2_DERIV_ERI_ORDER > 0
-              libint2_init_eri1(&primdata_[0], lmax_, 0);
-              scratch_.resize(9 * max_shellset_size);
-#endif
-              break;
-            case 2:
-#if LIBINT2_DERIV_ERI_ORDER > 1
-              libint2_init_eri2(&primdata_[0], lmax_, 0);
-              scratch_.resize(45 * max_shellset_size);
-#endif
-              break;
-            default: assert(deriv_order_ < 3);
-        }
-
+        init();
         init_core_ints_params(oparams);
+      }
+
+      /// move assignment
+      TwoBodyEngine& operator=(TwoBodyEngine&& other) = default;
+
+      /// (deep) copy assignment
+      TwoBodyEngine& operator=(const TwoBodyEngine& other)
+      {
+        primdata_ = other.primdata_;
+        lmax_ = other.lmax_;
+        deriv_order_ = other.deriv_order_;
+        core_eval_ = other.core_eval_;
+        core_ints_params_ = other.core_ints_params_;
+        init();
+        return *this;
       }
 
       /// computes shell set of integrals
@@ -715,6 +740,35 @@ namespace libint2 {
       std::vector<LIBINT2_REALTYPE> scratch_; // for transposes and/or transforming to solid harmonics
 
       friend struct detail::TwoBodyEngineDispatcher<Kernel>;
+
+      void init() {
+        const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
+        const auto max_shellset_size = ncart_max * ncart_max * ncart_max * ncart_max;
+
+        assert(lmax_ <= LIBINT2_MAX_AM_ERI);
+        assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
+
+        switch(deriv_order_) {
+
+            case 0:
+              libint2_init_eri(&primdata_[0], lmax_, 0);
+              scratch_.resize(max_shellset_size);
+              break;
+            case 1:
+#if LIBINT2_DERIV_ERI_ORDER > 0
+              libint2_init_eri1(&primdata_[0], lmax_, 0);
+              scratch_.resize(9 * max_shellset_size);
+#endif
+              break;
+            case 2:
+#if LIBINT2_DERIV_ERI_ORDER > 1
+              libint2_init_eri2(&primdata_[0], lmax_, 0);
+              scratch_.resize(45 * max_shellset_size);
+#endif
+              break;
+            default: assert(deriv_order_ < 3);
+        }
+      }
 
   }; // struct TwoBodyEngine
 
