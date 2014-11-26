@@ -57,6 +57,7 @@ struct Atom {
 
 std::vector<Atom> read_geometry(const std::string& filename);
 std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms);
+std::vector<libint2::Shell> make_augccpvdz_basis(const std::vector<Atom>& atoms);
 size_t nbasis(const std::vector<libint2::Shell>& shells);
 std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell>& shells);
 Matrix compute_soad(const std::vector<Atom>& atoms);
@@ -93,6 +94,11 @@ int main(int argc, char *argv[]) {
     const auto filename = (argc > 1) ? argv[1] : "h2o.xyz";
     std::vector<Atom> atoms = read_geometry(filename);
 
+    // announce OpenMP
+#if defined(_OPENMP)
+    std::cout << "Will use OpenMP to scale Fock build up to " << omp_get_max_threads() << " threads" << std::endl;
+#endif
+
     // count the number of electrons
     auto nelectron = 0;
     for (auto i = 0; i < atoms.size(); ++i)
@@ -117,6 +123,7 @@ int main(int argc, char *argv[]) {
     /*** =========================== ***/
 
     auto shells = make_sto3g_basis(atoms);
+    //auto shells = make_augccpvdz_basis(atoms);
     size_t nao = 0;
     for (auto s=0; s<shells.size(); ++s)
       nao += shells[s].size();
@@ -156,7 +163,7 @@ int main(int argc, char *argv[]) {
     /*** build initial-guess density ***/
     /*** =========================== ***/
 
-    const auto use_hcore_guess = false;  // use core Hamiltonian eigenstates to guess density?
+    const auto use_hcore_guess = true ;  // use core Hamiltonian eigenstates to guess density?
                                          // set to true to match the result of versions 0, 1, and 2 of the code
                                          // HOWEVER !!! even for medium-size molecules hcore will usually fail !!!
                                          // thus set to false to use Superposition-Of-Atomic-Densities (SOAD) guess
@@ -191,7 +198,7 @@ int main(int argc, char *argv[]) {
     auto ediff = 0.0;
     auto ehf = 0.0;
     do {
-      const auto tstart = std::chrono::system_clock::now();
+      const auto tstart = std::chrono::high_resolution_clock::now();
       ++iter;
 
       // Save a copy of the energy and the density
@@ -231,7 +238,7 @@ int main(int argc, char *argv[]) {
       ediff = ehf - ehf_last;
       rmsd = (D - D_last).norm();
 
-      const auto tstop = std::chrono::system_clock::now();
+      const auto tstop = std::chrono::high_resolution_clock::now();
       const std::chrono::duration<double> time_elapsed = tstop - tstart;
 
       if (iter == 1)
@@ -452,6 +459,159 @@ std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
 
       default:
         throw "do not know STO-3G basis for this Z";
+    }
+
+  }
+
+  // technical step: rescale contraction coefficients to include primitive normalization coefficients
+  for(auto& s: shells) {
+    s.renorm();
+  }
+
+  return shells;
+}
+
+std::vector<libint2::Shell> make_augccpvdz_basis(const std::vector<Atom>& atoms) {
+
+  std::vector<libint2::Shell> shells;
+
+  for(auto a=0; a<atoms.size(); ++a) {
+
+    switch (atoms[a].atomic_number) {
+      case 1: // Z=1: hydrogen
+        shells.push_back(
+            {
+              {13.010000000, 1.9620000000, 0.44460000000}, // exponents of primitive Gaussians
+              {  // contraction 0: s shell (l=0), spherical=false, contraction coefficients
+                {0, false, {0.019685000000, 0.13797700000, 0.47814800000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}   // origin coordinates
+            }
+        );
+        shells.push_back(
+            {
+              {0.12200000000},
+              {
+                {0, false, {1.000000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        shells.push_back(
+            {
+              {0.029740000000},
+              {
+                {0, false, {1.000000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        shells.push_back(
+            {
+              {0.72700000000},
+              {
+                {1, false, {1.000000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        shells.push_back(
+            {
+              {0.14100000000},
+              {
+                {1, false, {1.000000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        break;
+
+      case 8: // Z=8: oxygen
+        shells.push_back(
+            {
+              {11720.000000, 1759.0000000, 400.80000000, 113.70000000, 37.030000000, 13.270000000, 5.0250000000, 1.0130000000},
+              {
+                {0, false, {0.00071000000000, 0.0054700000000, 0.027837000000, 0.10480000000, 0.28306200000, 0.44871900000, 0.27095200000, 0.015458000000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        shells.push_back(
+            {
+              {11720.000000, 1759.0000000, 400.80000000, 113.70000000, 37.030000000, 13.270000000, 5.0250000000, 1.0130000000},
+              {
+                {0, false, {-0.00016000000000, -0.0012630000000, -0.0062670000000, -0.025716000000, -0.070924000000, -0.16541100000, -0.11695500000, 0.55736800000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        shells.push_back(
+            {
+              {0.30230000000},
+              {
+                {0, false, {1.000000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        shells.push_back(
+            {
+              {0.078960000000},
+              {
+                {0, false, {1.000000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        shells.push_back(
+            {
+              {17.700000000, 3.8540000000, 1.0460000000},
+              {
+                {1, false, {0.043018000000, 0.22891300000, 0.50872800000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        shells.push_back(
+            {
+              {0.27530000000},
+              {
+                {1, false, {1.000000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        shells.push_back(
+            {
+              {0.068560000000},
+              {
+                {1, false, {1.000000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        shells.push_back(
+            {
+              {1.1850000000},
+              {
+                {2, false, {1.000000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        shells.push_back(
+            {
+              {0.33200000000},
+              {
+                {2, false, {1.000000}}
+              },
+              {{atoms[a].x, atoms[a].y, atoms[a].z}}
+            }
+        );
+        break;
+
+      default:
+        throw "do not know aug-cc-pVDZ basis for this Z";
     }
 
   }
@@ -704,7 +864,7 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
   // The real trick is figuring out to which matrix elements of the Fock matrix each permutationally-unique
   // (ab|cd) contributes. STOP READING and try to figure it out yourself. (to check your answer see below)
 
-  // loop over permutatinally-unique set of shells
+  // loop over permutationally-unique set of shells
   for(auto s1=0; s1!=shells.size(); ++s1) {
 
     auto bf1_first = shell2bf[s1]; // first basis function in this shell
@@ -733,7 +893,6 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
           auto s1234_deg = s12_deg * s34_deg * s12_34_deg;
 
           const auto* buf = engine.compute(shells[s1], shells[s2], shells[s3], shells[s4]);
-          //const auto bufmap = btas::make_cmap(buf, btas::Range{n1,n2,n3,n4});
 
           // ANSWER
           // 1) each shell set of integrals contributes up to 6 shell sets of the Fock matrix:
@@ -756,7 +915,6 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
                   const auto bf4 = f4 + bf4_first;
 
                   const auto value = buf[f1234];
-                  //const auto value = bufmap(f1,f2,f3,f4);
 
                   const auto value_scal_by_deg = value * s1234_deg;
 
