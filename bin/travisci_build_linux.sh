@@ -7,7 +7,8 @@ if [ "$CXX" = "g++" ]; then
     export CXX=/usr/bin/g++-$GCC_VERSION
     export OPENMPFLAGS=-fopenmp
 else
-    export OPENMPFLAGS=-openmp
+    # not sure about clang OpenMP flags ... ignores -fopenmp and bombs with -openmp
+    export OPENMPFLAGS=
 fi
 export CXXFLAGS="-std=c++11 $OPENMPFLAGS"
 export LDFLAGS=$OPENMPFLAGS
