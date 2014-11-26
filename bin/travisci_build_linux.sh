@@ -9,7 +9,7 @@ if [ "$CXX" = "g++" ]; then
 else
     export OPENMPFLAGS=-openmp
 fi
-export CXXFLAGS='-std=c++11 $OPENMPFLAGS'
+export CXXFLAGS="-std=c++11 $OPENMPFLAGS"
 export LDFLAGS=$OPENMPFLAGS
 
 ./autogen.sh
