@@ -53,20 +53,6 @@ namespace libint2 {
       /// creates a default (unusable) OneBodyEngine; to be used as placeholder for copying a usable engine
       OneBodyEngine() : type_(_invalid), primdata_(), lmax_(-1) {}
 
-      /// move constructor
-      OneBodyEngine(OneBodyEngine&& other) = default;
-
-      /// (deep) copy constructor
-      OneBodyEngine(const OneBodyEngine& other) :
-        type_(other.type_),
-        primdata_(other.primdata_.size()),
-        lmax_(other.lmax_),
-        deriv_order_(other.deriv_order_),
-        q_(other.q_),
-        fm_eval_(other.fm_eval_) {
-        init();
-      }
-
       /// Constructs a (usable) OneBodyEngine
 
       /// \param t integral type, see OneBodyEngine::type
@@ -80,7 +66,25 @@ namespace libint2 {
       OneBodyEngine(type t, size_t max_nprim, int max_l, int deriv_order = 0) :
         type_(t), primdata_(max_nprim * max_nprim), lmax_(max_l), deriv_order_(deriv_order),
         fm_eval_(t == nuclear ? libint2::FmEval_Chebyshev3::instance(2*max_l+deriv_order) : 0) {
-        init();
+        initialize();
+      }
+
+      /// move constructor
+      OneBodyEngine(OneBodyEngine&& other) = default;
+
+      /// (deep) copy constructor
+      OneBodyEngine(const OneBodyEngine& other) :
+        type_(other.type_),
+        primdata_(other.primdata_.size()),
+        lmax_(other.lmax_),
+        deriv_order_(other.deriv_order_),
+        q_(other.q_),
+        fm_eval_(other.fm_eval_) {
+        initialize();
+      }
+
+      ~OneBodyEngine() {
+        finalize();
       }
 
       /// move assignment
@@ -94,7 +98,7 @@ namespace libint2 {
         deriv_order_ = other.deriv_order_;
         q_ = other.q_;
         fm_eval_ = other.fm_eval_;
-        init();
+        initialize();
         return *this;
       }
 
@@ -366,7 +370,7 @@ namespace libint2 {
 
       std::vector<LIBINT2_REALTYPE> scratch_; // for transposes and/or transforming to solid harmonics
 
-      void init() {
+      void initialize() {
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
 
         switch(type_) {
@@ -454,7 +458,75 @@ namespace libint2 {
         }
 
         assert(type_ == overlap || type_ == kinetic || type_ == nuclear);
-      }
+      } // initialize()
+
+      void finalize() {
+        if (type_ == overlap) {
+          switch(deriv_order_) {
+
+            case 0:
+              libint2_cleanup_overlap(&primdata_[0]);
+              break;
+            case 1:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              libint2_cleanup_overlap1(&primdata_[0]);
+#endif
+              break;
+            case 2:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              libint2_cleanup_overlap2(&primdata_[0]);
+#endif
+              break;
+          }
+
+          return;
+        }
+
+        if (type_ == kinetic) {
+          switch(deriv_order_) {
+
+            case 0:
+              libint2_cleanup_kinetic(&primdata_[0]);
+              break;
+            case 1:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              libint2_cleanup_kinetic1(&primdata_[0]);
+#endif
+              break;
+            case 2:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              libint2_cleanup_kinetic2(&primdata_[0]);
+#endif
+              break;
+          }
+
+          return;
+        }
+
+        if (type_ == nuclear) {
+
+          switch(deriv_order_) {
+
+            case 0:
+              libint2_cleanup_elecpot(&primdata_[0]);
+              break;
+            case 1:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              libint2_cleanup_elecpot1(&primdata_[0]);
+#endif
+              break;
+            case 2:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              libint2_cleanup_elecpot2(&primdata_[0]);
+#endif
+              break;
+          }
+
+          return;
+        }
+
+      } // finalize()
+
 
   }; // struct OneBodyEngine
 #endif // LIBINT2_SUPPORT_ONEBODY
@@ -521,18 +593,7 @@ namespace libint2 {
       /// creates a default (unusable) TwoBodyEngine
       TwoBodyEngine() : primdata_(), lmax_(-1), core_eval_(0) {}
 
-      /// move constructor
-      TwoBodyEngine(TwoBodyEngine&& other) = default;
-
-      /// (deep) copy constructor
-      TwoBodyEngine(const TwoBodyEngine& other) :
-        primdata_(other.primdata_), lmax_(other.lmax_), deriv_order_(other.deriv_order_),
-        core_eval_(other.core_eval_), core_ints_params_(other.core_ints_params_)
-      {
-        init();
-      }
-
-      /// Initializes a TwoBodyEngine
+      /// Constructs a (usable) TwoBodyEngine
 
       /// \param max_nprim the maximum number of primitives per contracted Gaussian shell
       /// \param max_l the maximum angular momentum of Gaussian shell
@@ -551,8 +612,23 @@ namespace libint2 {
         primdata_(max_nprim * max_nprim * max_nprim * max_nprim), lmax_(max_l), deriv_order_(deriv_order),
         core_eval_(core_eval_type::instance(4*lmax_ + deriv_order, 1.e-15))
       {
-        init();
+        initialize();
         init_core_ints_params(oparams);
+      }
+
+      /// move constructor
+      TwoBodyEngine(TwoBodyEngine&& other) = default;
+
+      /// (deep) copy constructor
+      TwoBodyEngine(const TwoBodyEngine& other) :
+        primdata_(other.primdata_), lmax_(other.lmax_), deriv_order_(other.deriv_order_),
+        core_eval_(other.core_eval_), core_ints_params_(other.core_ints_params_)
+      {
+        initialize();
+      }
+
+      ~TwoBodyEngine() {
+        finalize();
       }
 
       /// move assignment
@@ -566,7 +642,7 @@ namespace libint2 {
         deriv_order_ = other.deriv_order_;
         core_eval_ = other.core_eval_;
         core_ints_params_ = other.core_ints_params_;
-        init();
+        initialize();
         return *this;
       }
 
@@ -741,7 +817,7 @@ namespace libint2 {
 
       friend struct detail::TwoBodyEngineDispatcher<Kernel>;
 
-      void init() {
+      void initialize() {
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
         const auto max_shellset_size = ncart_max * ncart_max * ncart_max * ncart_max;
 
@@ -767,6 +843,27 @@ namespace libint2 {
 #endif
               break;
             default: assert(deriv_order_ < 3);
+        }
+      }
+
+      void finalize() {
+        if (primdata_.size() != 0) {
+          switch(deriv_order_) {
+
+            case 0:
+              libint2_cleanup_eri(&primdata_[0]);
+              break;
+            case 1:
+#if LIBINT2_DERIV_ERI_ORDER > 0
+              libint2_cleanup_eri1(&primdata_[0]);
+#endif
+              break;
+            case 2:
+#if LIBINT2_DERIV_ERI_ORDER > 1
+              libint2_cleanup_eri2(&primdata_[0]);
+#endif
+              break;
+          }
         }
       }
 
