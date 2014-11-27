@@ -461,68 +461,71 @@ namespace libint2 {
       } // initialize()
 
       void finalize() {
-        if (type_ == overlap) {
-          switch(deriv_order_) {
+        if (primdata_.size() != 0) {
 
-            case 0:
+          if (type_ == overlap) {
+            switch(deriv_order_) {
+
+              case 0:
               libint2_cleanup_overlap(&primdata_[0]);
               break;
-            case 1:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              case 1:
+  #if LIBINT2_DERIV_ONEBODY_ORDER > 0
               libint2_cleanup_overlap1(&primdata_[0]);
-#endif
+  #endif
               break;
-            case 2:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              case 2:
+  #if LIBINT2_DERIV_ONEBODY_ORDER > 1
               libint2_cleanup_overlap2(&primdata_[0]);
-#endif
+  #endif
               break;
+            }
+
+            return;
           }
 
-          return;
-        }
+          if (type_ == kinetic) {
+            switch(deriv_order_) {
 
-        if (type_ == kinetic) {
-          switch(deriv_order_) {
-
-            case 0:
+              case 0:
               libint2_cleanup_kinetic(&primdata_[0]);
               break;
-            case 1:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              case 1:
+  #if LIBINT2_DERIV_ONEBODY_ORDER > 0
               libint2_cleanup_kinetic1(&primdata_[0]);
-#endif
+  #endif
               break;
-            case 2:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              case 2:
+  #if LIBINT2_DERIV_ONEBODY_ORDER > 1
               libint2_cleanup_kinetic2(&primdata_[0]);
-#endif
+  #endif
               break;
+            }
+
+            return;
           }
 
-          return;
-        }
+          if (type_ == nuclear) {
 
-        if (type_ == nuclear) {
+            switch(deriv_order_) {
 
-          switch(deriv_order_) {
-
-            case 0:
+              case 0:
               libint2_cleanup_elecpot(&primdata_[0]);
               break;
-            case 1:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              case 1:
+  #if LIBINT2_DERIV_ONEBODY_ORDER > 0
               libint2_cleanup_elecpot1(&primdata_[0]);
-#endif
+  #endif
               break;
-            case 2:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              case 2:
+  #if LIBINT2_DERIV_ONEBODY_ORDER > 1
               libint2_cleanup_elecpot2(&primdata_[0]);
-#endif
+  #endif
               break;
-          }
+            }
 
-          return;
+            return;
+          }
         }
 
       } // finalize()
