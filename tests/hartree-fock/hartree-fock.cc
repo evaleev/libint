@@ -71,8 +71,11 @@ Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
 // an efficient Fock builder; *integral-driven* hence computes permutationally-unique ints once
 Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
                                  const Matrix& D);
-// a threaded Fock builder
+// threaded versions of the above
 #if defined(_OPENMP)
+Matrix compute_1body_ints_openmp(const std::vector<libint2::Shell>& shells,
+                                 libint2::OneBodyEngine::type t,
+                                 const std::vector<Atom>& atoms = std::vector<Atom>());
 Matrix compute_2body_fock_openmp(const std::vector<libint2::Shell>& shells,
                                  const Matrix& D);
 #endif
@@ -96,7 +99,7 @@ int main(int argc, char *argv[]) {
 
     // announce OpenMP
 #if defined(_OPENMP)
-    std::cout << "Will use OpenMP to scale Fock build up to " << omp_get_max_threads() << " threads" << std::endl;
+    std::cout << "Will use OpenMP to scale up to " << omp_get_max_threads() << " threads" << std::endl;
 #endif
 
     // count the number of electrons
@@ -136,17 +139,29 @@ int main(int argc, char *argv[]) {
     libint2::init();
 
     // compute overlap integrals
-    auto S = compute_1body_ints(shells, libint2::OneBodyEngine::overlap);
+#if defined(_OPENMP)
+      auto S = compute_1body_ints_openmp(shells, libint2::OneBodyEngine::overlap);
+#else
+      auto S = compute_1body_ints(shells, libint2::OneBodyEngine::overlap);
+#endif
     cout << "\n\tOverlap Integrals:\n";
     cout << S << endl;
 
     // compute kinetic-energy integrals
+#if defined(_OPENMP)
+    auto T = compute_1body_ints_openmp(shells, libint2::OneBodyEngine::kinetic);
+#else
     auto T = compute_1body_ints(shells, libint2::OneBodyEngine::kinetic);
+#endif
     cout << "\n\tKinetic-Energy Integrals:\n";
     cout << T << endl;
 
     // compute nuclear-attraction integrals
+#if defined(_OPENMP)
+    Matrix V = compute_1body_ints_openmp(shells, libint2::OneBodyEngine::nuclear, atoms);
+#else
     Matrix V = compute_1body_ints(shells, libint2::OneBodyEngine::nuclear, atoms);
+#endif
     cout << "\n\tNuclear Attraction Integrals:\n";
     cout << V << endl;
 
@@ -746,6 +761,76 @@ Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
   return result;
 }
 
+#if defined(_OPENMP)
+Matrix compute_1body_ints_openmp(const std::vector<libint2::Shell>& shells,
+                                 libint2::OneBodyEngine::type obtype,
+                                 const std::vector<Atom>& atoms)
+{
+  const auto n = nbasis(shells);
+  const auto nthreads = omp_get_max_threads();
+  std::vector<Matrix> results(nthreads, Matrix::Zero(n,n));
+
+  // construct the overlap integrals engine
+  std::vector<libint2::OneBodyEngine> engines(nthreads);
+  engines[0] = libint2::OneBodyEngine(obtype, max_nprim(shells), max_l(shells), 0);
+  // nuclear attraction ints engine needs to know where the charges sit ...
+  // the nuclei are charges in this case; in QM/MM there will also be classical charges
+  if (obtype == libint2::OneBodyEngine::nuclear) {
+    std::vector<std::pair<double,std::array<double,3>>> q;
+    for(const auto& atom : atoms) {
+      q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
+    }
+    engines[0].set_q(q);
+  }
+  for(size_t i=1; i!=nthreads; ++i) {
+    engines[i] = engines[0];
+  }
+
+  auto shell2bf = map_shell_to_basis_function(shells);
+
+#pragma omp parallel
+  {
+    auto thread_id = omp_get_thread_num();
+
+    // loop over unique shell pairs, {s1,s2} such that s1 >= s2
+    // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
+    for(auto s1=0l, s12=0l; s1!=shells.size(); ++s1) {
+
+      auto bf1 = shell2bf[s1]; // first basis function in this shell
+      auto n1 = shells[s1].size();
+
+      for(auto s2=0; s2<=s1; ++s2) {
+
+        if (s12 % nthreads != thread_id)
+          continue;
+
+        auto bf2 = shell2bf[s2];
+        auto n2 = shells[s2].size();
+
+        // compute shell pair; return is the pointer to the buffer
+        const auto* buf = engines[thread_id].compute(shells[s1], shells[s2]);
+
+        auto& r = results[thread_id];
+
+        // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
+        Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+        r.block(bf1, bf2, n1, n2) = buf_mat;
+        if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
+        r.block(bf2, bf1, n2, n1) = buf_mat.transpose();
+
+      }
+    }
+  } // omp parallel
+
+  // accumulate contributions from all threads
+  for(size_t i=1; i!=nthreads; ++i) {
+    results[0] += results[i];
+  }
+
+  return results[0];
+}
+#endif // defined(_OPENMP)
+
 Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
                                  const Matrix& D) {
 
@@ -962,7 +1047,7 @@ Matrix compute_2body_fock_openmp(const std::vector<libint2::Shell>& shells,
     auto thread_id = omp_get_thread_num();
 
     // loop over permutationally-unique set of shells
-    for(auto s1=0, s1234=0; s1!=shells.size(); ++s1) {
+    for(auto s1=0l, s1234=0l; s1!=shells.size(); ++s1) {
 
       auto bf1_first = shell2bf[s1]; // first basis function in this shell
       auto n1 = shells[s1].size();// number of basis functions in this shell
@@ -1044,5 +1129,5 @@ Matrix compute_2body_fock_openmp(const std::vector<libint2::Shell>& shells,
   // symmetrize the result and return
   return 0.5 * (G[0] + G[0].transpose());
 }
-#endif // _OPENMP
+#endif // defined(_OPENMP)
 
