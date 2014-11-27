@@ -15,7 +15,11 @@ before_install:
   - ./bin/travisci_before_$TRAVIS_OS_NAME.sh
 script:
   - ./bin/travisci_build_$TRAVIS_OS_NAME.sh
-after_failure: cat ./config.log && cat include/libint2/config.h
+after_failure:
+  - cat include/libint2/config.h
+  - cat config.log
+  - cat export_build/config.log
+  - ls -l export_build
 notifications:
   email:
     recipients:
