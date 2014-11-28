@@ -141,6 +141,11 @@ int main(int argc, char *argv[]) {
     // compute overlap integrals
 #if defined(_OPENMP)
       auto S = compute_1body_ints_openmp(shells, libint2::OneBodyEngine::overlap);
+      { // validate overlap integrals; this also tests 1-thread function
+        auto S_1thread = compute_1body_ints(shells, libint2::OneBodyEngine::overlap);
+        if ((S - S_1thread).norm() > 1e-12)
+          throw "overlap sanity check: threaded result != sequential result";
+      }
 #else
       auto S = compute_1body_ints(shells, libint2::OneBodyEngine::overlap);
 #endif
@@ -225,6 +230,11 @@ int main(int argc, char *argv[]) {
       //F += compute_2body_fock_simple(shells, D);
 #if defined(_OPENMP)
       F += compute_2body_fock_openmp(shells, D);
+      if (iter == 1) {
+        auto G_1thread = compute_2body_fock(shells, D);
+        if ((F - H - G_1thread).norm() > 1e-12)
+          throw "Fock sanity check: threaded result != sequential result";
+      }
 #else
       F += compute_2body_fock(shells, D);
 #endif
