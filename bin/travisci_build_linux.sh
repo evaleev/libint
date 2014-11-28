@@ -27,5 +27,5 @@ rm -f libint-*.tgz
 cd libint-*
 ./configure CPPFLAGS='-I/usr/include/eigen3'
 # build currently does not work
-#make -j2
-#make check
+make -j2
+make check
