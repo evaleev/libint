@@ -4,7 +4,7 @@ SRCDIR = ..
 -include ../MakeVars
 
 CPPFLAGS += -I../include -Ieri -Ihartree-fock -DPREP_LIBINT2_SKIP_BOOST 
-LDFLAGS = -L../lib -lint2
+COMPUTE_LIB = -L../lib -lint2
 
 check:: check1 check2
 
@@ -13,7 +13,7 @@ check1:: $(TEST1)
 	./$(TEST1) 0 2 && ./$(TEST1) 1 1 && ./$(TEST1) 2 1
 
 $(TEST1): eri/test.o eri/eri.o
-	$(LTLINK) $(CXX) $(LDFLAGS) -o $@ $^
+	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
 
 TEST2 = hartree-fock/hartree-fock
 
@@ -28,7 +28,7 @@ check2:: $(TEST2)
 endif
 
 $(TEST2): hartree-fock/hartree-fock.o
-	$(LTLINK) $(CXX) $(LDFLAGS) -o $@ $^
+	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
 
 clean:: targetclean
 	-rm -f */*.o */*.d
