@@ -762,8 +762,8 @@ namespace libint2 {
                 // and copy to the block of the target matrix
                 if (swap_braket) {
                   // if swapped bra and ket, a row of source becomes a column of target
-                  // source row {r1,r2} is mapped to target column {r1,r2} if !swap_bra, else to {r2,r1}
-                  const auto tgt_col_idx = !swap_bra ? r1 * nr2 + r2 : r2 * nr1 + r1;
+                  // source row {r1,r2} is mapped to target column {r1,r2} if !swap_ket, else to {r2,r1}
+                  const auto tgt_col_idx = !swap_ket ? r1 * nr2 + r2 : r2 * nr1 + r1;
                   StridedMap tgt_blk_mat(tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt, Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic>(nr2_tgt*ncol_tgt,ncol_tgt));
                   if (swap_bra)
                     tgt_blk_mat = src_blk_mat.transpose();
@@ -771,8 +771,9 @@ namespace libint2 {
                     tgt_blk_mat = src_blk_mat;
                 }
                 else {
-                  const auto r12 = r1 * nr2 + r2;
-                  Map tgt_blk_mat(tgt_ptr + r12*ncol, nc1_tgt, nc2_tgt);
+                  // source row {r1,r2} is mapped to target row {r1,r2} if !swap_bra, else to {r2,r1}
+                  const auto tgt_row_idx = !swap_bra ? r1 * nr2 + r2 : r2 * nr1 + r1;
+                  Map tgt_blk_mat(tgt_ptr + tgt_row_idx*ncol, nc1_tgt, nc2_tgt);
                   if (swap_ket)
                     tgt_blk_mat = src_blk_mat.transpose();
                   else
