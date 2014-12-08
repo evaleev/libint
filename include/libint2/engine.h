@@ -102,6 +102,9 @@ namespace libint2 {
         return *this;
       }
 
+      /// returns the integral type used by the engine
+      type integral_type() const {return type_;}
+
       /// specifies the nuclear charges
       /// \param q vector of {charge,Cartesian coordinate} pairs
       void set_q(const std::vector<std::pair<double, std::array<double, 3>>>& q) {
