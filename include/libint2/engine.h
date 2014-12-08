@@ -103,7 +103,7 @@ namespace libint2 {
       }
 
       /// returns the integral type used by the engine
-      type integral_type() const {return type_;}
+      type type() const {return type_;}
 
       /// specifies the nuclear charges
       /// \param q vector of {charge,Cartesian coordinate} pairs
