@@ -77,6 +77,12 @@ namespace libint2 {
           int l;
           bool pure;
           std::vector<LIBINT2_REALTYPE> coeff;
+          bool operator==(const Contraction& other) const {
+            return &other == this || (l == other.l && pure == other.pure && coeff == other.coeff);
+          }
+          bool operator!=(const Contraction& other) const {
+            return not this->operator==(other);
+          }
       };
 
       std::vector<LIBINT2_REALTYPE> alpha; //!< exponents
@@ -117,6 +123,13 @@ namespace libint2 {
 
       size_t ncontr() const { return contr.size(); }
       size_t nprim() const { return alpha.size(); }
+
+      bool operator==(const Shell& other) const {
+        return &other == this || (O == other.O && alpha == other.alpha && contr == other.contr);
+      }
+      bool operator!=(const Shell& other) const {
+        return not this->operator==(other);
+      }
 
   };
 
