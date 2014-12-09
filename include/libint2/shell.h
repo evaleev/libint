@@ -31,13 +31,25 @@
 
 namespace libint2 {
 
-  namespace {
-    /// df[k] = (k-1)!!
-    static constexpr std::array<int64_t,31> df = {{1, 1, 1, 2, 3, 8, 15, 48, 105, 384, 945, 3840, 10395, 46080, 135135,
-                           645120, 2027025, 10321920, 34459425, 185794560, 654729075,
-                           3715891200, 13749310575, 81749606400, 316234143225, 1961990553600,
-                           7905853580625, 51011754393600, 213458046676875, 1428329123020800,
-                           6190283353629375}};
+  namespace math {
+    /// fac[k] = k!
+    static constexpr std::array<int64_t,21> fac = {{1L, 1L, 2L, 6L, 24L, 120L, 720L, 5040L, 40320L, 362880L, 3628800L, 39916800L,
+                                                    479001600L, 6227020800L, 87178291200L, 1307674368000L, 20922789888000L,
+                                                    355687428096000L, 6402373705728000L, 121645100408832000L,
+                                                    2432902008176640000L}};
+    /// df_Kminus1[k] = (k-1)!!
+    static constexpr std::array<int64_t,31> df_Kminus1 = {{1, 1, 1, 2, 3, 8, 15, 48, 105, 384, 945, 3840, 10395, 46080, 135135,
+                                                           645120, 2027025, 10321920, 34459425, 185794560, 654729075,
+                                                           3715891200, 13749310575, 81749606400, 316234143225, 1961990553600,
+                                                           7905853580625, 51011754393600, 213458046676875, 1428329123020800,
+                                                           6190283353629375}};
+    /// bc(i,j) = binomial coefficient, i! / (j! (i-j)!)
+    template <typename Int> int64_t bc(Int i, Int j) {
+      assert(i < fac.size());
+      assert(j < fac.size());
+      assert(i >= j);
+      return fac[i] / (fac[j] * fac[i-j]);
+    }
   }
 
   /// generally-contracted Solid-Harmonic/Cartesion Gaussian Shell
@@ -87,14 +99,15 @@ namespace libint2 {
       /// embeds normalization constants into contraction coefficients. Do this before computing integrals.
       /// \note Must be done only once.
       void renorm() {
+        using libint2::math::df_Kminus1;
         const auto sqrt_Pi_cubed = LIBINT2_REALTYPE{5.56832799683170784528481798212};
         const auto np = nprim();
         for(auto& c: contr) {
-          assert(c.l <= 15); // due to df[] a 64-bit integer type, kinda ridiculous restriction anyway
+          assert(c.l <= 15); // due to df_Kminus1[] a 64-bit integer type; kinda ridiculous restriction anyway
           for(auto p=0; p!=np; ++p) {
             const auto two_alpha = 2 * alpha[p];
             const auto two_alpha_to_am32 = pow(two_alpha,c.l+1) * sqrt(two_alpha);
-            const auto norm = sqrt(pow(2,c.l) * two_alpha_to_am32/(sqrt_Pi_cubed * df[2*c.l] ));
+            const auto norm = sqrt(pow(2,c.l) * two_alpha_to_am32/(sqrt_Pi_cubed * df_Kminus1[2*c.l] ));
 
             c.coeff[p] *= norm;
 
