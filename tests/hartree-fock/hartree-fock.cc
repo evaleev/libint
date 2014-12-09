@@ -58,7 +58,7 @@ struct Atom {
 
 std::vector<Atom> read_geometry(const std::string& filename);
 std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms);
-std::vector<libint2::Shell> make_augccpvdz_basis(const std::vector<Atom>& atoms);
+std::vector<libint2::Shell> make_basis(const std::vector<Atom>& atoms, std::string file_dot_g94);
 size_t nbasis(const std::vector<libint2::Shell>& shells);
 std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell>& shells);
 Matrix compute_soad(const std::vector<Atom>& atoms);
@@ -521,147 +521,163 @@ std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
   return shells;
 }
 
-std::vector<libint2::Shell> make_augccpvdz_basis(const std::vector<Atom>& atoms) {
+unsigned short to_l(std::string amlabel) {
+  assert(amlabel.size() == 1);
+  const char amchar = ::toupper(amlabel.c_str()[0]);
+  switch (amchar) {
+    case 'S': return 0;
+    case 'P': return 1;
+    case 'D': return 2;
+    case 'F': return 3;
+    case 'G': return 4;
+    case 'H': return 5;
+    case 'I': return 6;
+    case 'K': return 7;
+    case 'L': return 8;
+    case 'M': return 9;
+    case 'N': return 10;
+    case 'O': return 11;
+    case 'Q': return 12;
+    case 'R': return 13;
+    case 'T': return 14;
+    case 'U': return 15;
+    case 'V': return 16;
+    case 'W': return 17;
+    case 'X': return 18;
+    case 'Y': return 19;
+    case 'Z': return 20;
+    default: throw "invalid angular momentum label";
+  }
+}
 
+std::vector<std::vector<libint2::Shell>> read_g94_basis_library(std::string file_dot_g94) {
+
+  std::cout << "Will read basis set from " << file_dot_g94 << std::endl;
+  std::ifstream is(file_dot_g94);
+  assert(is.good());
+  std::vector<std::vector<libint2::Shell>> ref_shells(118); // 118 = number of chemical elements
+
+  std::string comment, rest;
+
+  // skip till first basis
+  while(std::getline(is, comment) && comment != "****") {
+  }
+
+  size_t Z;
+  auto nextbasis = true, nextshell = false;
+  while(std::getline(is, comment) && comment != "") {
+    if (comment == "****") {
+      nextbasis = true;
+      nextshell = false;
+      continue;
+    }
+    if (nextbasis) {
+      nextbasis = false;
+      std::istringstream iss(comment);
+      std::string elemsymbol;
+      iss >> elemsymbol >> rest;
+
+      bool found = false;
+      using libint2::chemistry::element_info;
+      for(const auto& e: element_info) {
+        if (strcaseequal(e.symbol, elemsymbol)) {
+          Z = e.Z;
+          found = true;
+          break;
+        }
+      }
+      if (not found) {
+        std::ostringstream oss;
+        oss << "in file " << file_dot_g94
+            << " found G94 basis set for element symbol \""
+            << elemsymbol << "\", not found in Periodic Table.";
+        throw std::runtime_error(oss.str());
+      }
+
+      nextshell = true;
+      continue;
+    }
+    if (nextshell) {
+      std::istringstream iss(comment);
+      std::string amlabel;
+      unsigned nprim;
+      iss >> amlabel >> nprim >> rest;
+      if (amlabel != "SP" && amlabel != "sp") {
+        auto l = to_l(amlabel);
+        std::vector<double> exps;
+        std::vector<double> coeffs;
+        for(auto p = 0; p!=nprim; ++p) {
+          std::getline(is, comment);
+          std::istringstream iss(comment);
+          double e, c;
+          iss >> e >> c;
+          exps.emplace_back(e);
+          coeffs.emplace_back(c);
+        }
+        auto pure = l>1;
+        ref_shells[Z].push_back(
+            libint2::Shell{
+              exps,
+              {
+                {l, pure, coeffs}
+              },
+              {{0.0, 0.0, 0.0}}
+            }
+        );
+      }
+      else { // split the SP shells
+        std::vector<double> exps;
+        std::vector<double> coeffs_s, coeffs_p;
+        for(auto p = 0; p!=nprim; ++p) {
+          std::getline(is, comment);
+          std::istringstream iss(comment);
+          double e, c1, c2;
+          iss >> e >> c1 >> c2;
+          exps.emplace_back(e);
+          coeffs_s.emplace_back(c1);
+          coeffs_p.emplace_back(c2);
+        }
+        ref_shells[Z].push_back(
+            libint2::Shell{exps,
+          {
+           {0, false, coeffs_s}
+          },
+          {{0.0, 0.0, 0.0}}
+        }
+        );
+        ref_shells[Z].push_back(
+            libint2::Shell{ exps,
+          {
+           {1, false, coeffs_p}
+          },
+          {{0.0, 0.0, 0.0}}
+        }
+        );
+      }
+    }
+  }
+
+  return ref_shells;
+}
+
+std::vector<libint2::Shell> make_basis(const std::vector<Atom>& atoms,
+                                       std::string file_dot_g94) {
+
+  // read in the file contents
+  std::vector<std::vector<libint2::Shell>> ref_shells = read_g94_basis_library(file_dot_g94);
+
+  // for each atom find the corresponding basis
   std::vector<libint2::Shell> shells;
 
   for(auto a=0; a<atoms.size(); ++a) {
 
-    switch (atoms[a].atomic_number) {
-      case 1: // Z=1: hydrogen
-        shells.push_back(
-            {
-              {13.010000000, 1.9620000000, 0.44460000000}, // exponents of primitive Gaussians
-              {  // contraction 0: s shell (l=0), spherical=false, contraction coefficients
-                {0, false, {0.019685000000, 0.13797700000, 0.47814800000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}   // origin coordinates
-            }
-        );
-        shells.push_back(
-            {
-              {0.12200000000},
-              {
-                {0, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.029740000000},
-              {
-                {0, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.72700000000},
-              {
-                {1, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.14100000000},
-              {
-                {1, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        break;
+    auto Z = atoms[a].atomic_number;
+    if (ref_shells[Z].empty())
+      throw std::string("did not find the basis for this Z in ") + file_dot_g94;
 
-      case 8: // Z=8: oxygen
-        shells.push_back(
-            {
-              {11720.000000, 1759.0000000, 400.80000000, 113.70000000, 37.030000000, 13.270000000, 5.0250000000, 1.0130000000},
-              {
-                {0, false, {0.00071000000000, 0.0054700000000, 0.027837000000, 0.10480000000, 0.28306200000, 0.44871900000, 0.27095200000, 0.015458000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {11720.000000, 1759.0000000, 400.80000000, 113.70000000, 37.030000000, 13.270000000, 5.0250000000, 1.0130000000},
-              {
-                {0, false, {-0.00016000000000, -0.0012630000000, -0.0062670000000, -0.025716000000, -0.070924000000, -0.16541100000, -0.11695500000, 0.55736800000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.30230000000},
-              {
-                {0, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.078960000000},
-              {
-                {0, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {17.700000000, 3.8540000000, 1.0460000000},
-              {
-                {1, false, {0.043018000000, 0.22891300000, 0.50872800000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.27530000000},
-              {
-                {1, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.068560000000},
-              {
-                {1, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {1.1850000000},
-              {
-                {2, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.33200000000},
-              {
-                {2, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        break;
-
-      default:
-        throw "do not know aug-cc-pVDZ basis for this Z";
+    for(auto s: ref_shells[Z]) {
+      shells.push_back(std::move(s));
+      shells.back().move({{atoms[a].x, atoms[a].y, atoms[a].z}});
     }
 
   }
