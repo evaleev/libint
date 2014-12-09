@@ -33,6 +33,9 @@
 
 #include <Eigen/Core>
 
+// uncomment to troubleshoot solid harmonics transform
+//#define FORCE_SOLID_TFORM_CHECK
+
 namespace libint2 {
 
 #ifdef LIBINT2_SUPPORT_ONEBODY
@@ -110,48 +113,49 @@ namespace libint2 {
 
       /// computes shell set of integrals
       /// \note result is stored in row-major order
-      LIBINT2_REALTYPE* compute(const libint2::Shell& s1,
-                                const libint2::Shell& s2) {
+      const LIBINT2_REALTYPE* compute(const libint2::Shell& s1,
+                                      const libint2::Shell& s2) {
 
         // can only handle 1 contraction at a time
         assert(s1.ncontr() == 1 && s2.ncontr() == 1);
-
-        // can only handle cartesian shells for now
-        assert(s1.contr[0].pure == false && s2.contr[0].pure == false);
-
         // derivatives not supported for now
         assert(deriv_order_ == 0);
+
+        const auto l1 = s1.contr[0].l;
+        const auto l2 = s2.contr[0].l;
 
         // if want nuclear, make sure there is at least one nucleus .. otherwise the user likely forgot to call set_q
         if (type_ == nuclear and q_.size() == 0)
           throw std::runtime_error("libint2::OneBodyEngine(type = nuclear), but no nuclei found; forgot to call set_q()?");
 
 #if LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD // make sure bra.l >= ket.l
-        auto swap = (s1.contr[0].l < s2.contr[0].l);
+        const auto swap = (l1 < l2);
 #else // make sure bra.l <= ket.l
-        auto swap = (s1.contr[0].l > s2.contr[0].l);
+        const auto swap = (l1 > l2);
 #endif
         const auto& bra = !swap ? s1 : s2;
         const auto& ket = !swap ? s2 : s1;
 
         const auto n1 = s1.size();
         const auto n2 = s2.size();
+        const auto ncart1 = s1.cartesian_size();
+        const auto ncart2 = s2.cartesian_size();
 
         const bool use_scratch = (swap || type_ == nuclear);
 
         // assert # of primitive pairs
-        auto nprim_bra = bra.nprim();
-        auto nprim_ket = ket.nprim();
-        auto nprimpairs = nprim_bra * nprim_ket;
+        const auto nprim_bra = bra.nprim();
+        const auto nprim_ket = ket.nprim();
+        const auto nprimpairs = nprim_bra * nprim_ket;
         assert(nprimpairs <= primdata_.size());
 
         // adjust max angular momentum, if needed
-        auto lmax = std::max(bra.contr[0].l, ket.contr[0].l);
+        const auto lmax = std::max(l1, l2);
         assert (lmax <= lmax_);
         if (lmax == 0) // (s|s) ints will be accumulated in the first element of stack
           primdata_[0].stack[0] = 0;
         else if (use_scratch)
-          memset(static_cast<void*>(&scratch_[0]), 0, sizeof(LIBINT2_REALTYPE)*s1.size()*s2.size());
+          memset(static_cast<void*>(&scratch_[0]), 0, sizeof(LIBINT2_REALTYPE)*ncart1*ncart2);
 
         // loop over operator components
         const auto num_operset = type_ == nuclear ? q_.size() : 1u;
@@ -200,13 +204,13 @@ namespace libint2 {
                   assert(false);
               }
               if (use_scratch) {
-                const auto nbra = bra.size();
-                const auto nket = ket.size();
+                const auto ncart_bra = bra.cartesian_size();
+                const auto ncart_ket = ket.cartesian_size();
                 constexpr auto using_scalar_real = std::is_same<double,LIBINT2_REALTYPE>::value || std::is_same<float,LIBINT2_REALTYPE>::value;
                 static_assert(using_scalar_real, "Libint2 C++11 API only supports fundamental real types");
                 typedef Eigen::Matrix<LIBINT2_REALTYPE, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
-                Eigen::Map<Matrix> braket(primdata_[0].targets[0], nbra, nket);
-                Eigen::Map<Matrix> set12(&scratch_[0], n1, n2);
+                Eigen::Map<Matrix> braket(primdata_[0].targets[0], ncart_bra, ncart_ket);
+                Eigen::Map<Matrix> set12(&scratch_[0], ncart1, ncart2);
                 if (swap)
                   set12 += braket.transpose();
                 else
@@ -216,10 +220,52 @@ namespace libint2 {
 
         } // oset (operator components, artifact of nuclear)
 
-        if (use_scratch && lmax != 0)
-          return &scratch_[0];
-        else
-          return primdata_[0].targets[0];
+        auto cartesian_ints = (use_scratch && lmax != 0) ? &scratch_[0] : primdata_[0].targets[0];
+
+        auto result = cartesian_ints;
+
+        if (s1.contr[0].pure || s2.contr[0].pure) {
+          auto* spherical_ints = (cartesian_ints == &scratch_[0]) ? primdata_[0].targets[0] : &scratch_[0];
+          if (s1.contr[0].pure && s2.contr[0].pure) {
+            libint2::solidharmonics::tform(l1, l2, cartesian_ints, spherical_ints);
+          }
+          else {
+            if (s1.contr[0].pure)
+              libint2::solidharmonics::tform_rows(l1, n2, cartesian_ints, spherical_ints);
+            else
+              libint2::solidharmonics::tform_cols(n1, l2, cartesian_ints, spherical_ints);
+          }
+
+#ifdef FORCE_SOLID_TFORM_CHECK
+          if (1) {
+            const size_t nreplicas = 7;
+            const auto blksize = n1*n2;
+            const auto cart_blksize = ncart1*ncart2;
+            LIBINT2_REALTYPE* test_cartesian_ints = new LIBINT2_REALTYPE[nreplicas*cart_blksize];
+            for(auto i12=0, i12r=0; i12<cart_blksize; ++i12) {
+              for(auto r=0; r<nreplicas; ++r, ++i12r) {
+                test_cartesian_ints[i12r] = cartesian_ints[i12] * r;
+              }
+            }
+            LIBINT2_REALTYPE* test_spherical_ints = new LIBINT2_REALTYPE[nreplicas*blksize];
+            libint2::solidharmonics::tform_tensor(s1.contr[0], s2.contr[0], nreplicas, test_cartesian_ints, test_spherical_ints);
+            bool tform_tensor_works = true;
+            for(auto i12=0, i12r=0; i12<blksize; ++i12) {
+              for(auto r=0; r<nreplicas; ++r, ++i12r) {
+                if (::fabs(test_spherical_ints[i12r] - spherical_ints[i12] * r) > 1e-12) {
+                  tform_tensor_works = false;
+                  throw "sanity test of tform_tensor failed!";
+                }
+              }
+            }
+
+          }
+#endif
+
+          result = spherical_ints;
+        } // tform to solids
+
+        return result;
       }
 
       void compute_primdata(Libint_t& primdata,
@@ -651,10 +697,10 @@ namespace libint2 {
 
       /// computes shell set of integrals
       /// \note result is stored in the "chemists" form, i.e. (tbra1 tbra2 |tket1 tket2), in row-major order
-      LIBINT2_REALTYPE* compute(const libint2::Shell& tbra1,
-                                const libint2::Shell& tbra2,
-                                const libint2::Shell& tket1,
-                                const libint2::Shell& tket2) {
+      const LIBINT2_REALTYPE* compute(const libint2::Shell& tbra1,
+                                      const libint2::Shell& tbra2,
+                                      const libint2::Shell& tket1,
+                                      const libint2::Shell& tket2) {
 
         //
         // i.e. bra and ket refer to chemists bra and ket
@@ -663,10 +709,6 @@ namespace libint2 {
         // can only handle 1 contraction at a time
         assert(tbra1.ncontr() == 1 && tbra2.ncontr() == 1 &&
                tket1.ncontr() == 1 && tket2.ncontr() == 1);
-
-        // can only handle cartesian shells for now
-        assert(tbra1.contr[0].pure == false && tbra2.contr[0].pure == false &&
-               tket1.contr[0].pure == false && tket2.contr[0].pure == false);
 
         // derivatives not supported for now
         assert(deriv_order_ == 0);
@@ -685,15 +727,14 @@ namespace libint2 {
         const auto& ket1 = swap_braket ? (swap_bra ? tbra2 : tbra1) : (swap_ket ? tket2 : tket1);
         const auto& ket2 = swap_braket ? (swap_bra ? tbra1 : tbra2) : (swap_ket ? tket1 : tket2);
 
-        const bool use_scratch = (swap_braket || swap_bra || swap_ket);
+        const bool tform = tbra1.contr[0].pure || tbra2.contr[0].pure || tket1.contr[0].pure || tket2.contr[0].pure;
+        const bool use_scratch = (swap_braket || swap_bra || swap_ket || tform);
 
         // assert # of primitive pairs
         auto nprim_bra1 = bra1.nprim();
         auto nprim_bra2 = bra2.nprim();
         auto nprim_ket1 = ket1.nprim();
         auto nprim_ket2 = ket2.nprim();
-        auto nprimsets = nprim_bra1 * nprim_bra2 * nprim_ket1 * nprim_bra2;
-        assert(nprimsets <= primdata_.size());
 
         // adjust max angular momentum, if needed
         auto lmax = std::max(std::max(bra1.contr[0].l, bra2.contr[0].l), std::max(ket1.contr[0].l, ket2.contr[0].l));
@@ -716,25 +757,65 @@ namespace libint2 {
           primdata_[0].contrdepth = p;
         }
 
+        const LIBINT2_REALTYPE* result = nullptr;
+
+#ifdef FORCE_SOLID_TFORM_CHECK
+        std::vector<LIBINT2_REALTYPE> cart_ints(tbra1.cartesian_size()*
+                                                tbra2.cartesian_size()*
+                                                tket1.cartesian_size()*
+                                                tket2.cartesian_size());
+#endif
+
         if (lmax == 0) { // (ss|ss)
-          auto& result = primdata_[0].stack[0];
+          auto& stack = primdata_[0].stack[0];
           for(auto p=0; p != primdata_[0].contrdepth; ++p)
-            result += primdata_[p].LIBINT_T_SS_EREP_SS(0)[0];
+            stack += primdata_[p].LIBINT_T_SS_EREP_SS(0)[0];
           primdata_[0].targets[0] = primdata_[0].stack;
+
+          result = primdata_[0].targets[0];
+#ifdef FORCE_SOLID_TFORM_CHECK
+          cart_ints[0] = result[0];
+#endif
         }
         else { // not (ss|ss)
           LIBINT2_PREFIXED_NAME(libint2_build_eri)[bra1.contr[0].l][bra2.contr[0].l][ket1.contr[0].l][ket2.contr[0].l](&primdata_[0]);
+          result = primdata_[0].targets[0];
 
           // if needed, permute (and transform ... soon :)
           if (use_scratch) {
+
+#ifdef FORCE_SOLID_TFORM_CHECK
+            {
+              for(auto i1=0, i1234=0; i1<tbra1.cartesian_size(); ++i1) {
+                for(auto i2=0; i2<tbra2.cartesian_size(); ++i2) {
+                  for(auto i3=0; i3<tket1.cartesian_size(); ++i3) {
+                    for(auto i4=0; i4<tket2.cartesian_size(); ++i4, ++i1234) {
+
+                      const auto& j1 = swap_braket ? (swap_ket ? i4 : i3) : (swap_bra ? i2 : i1);
+                      const auto& j2 = swap_braket ? (swap_ket ? i3 : i4) : (swap_bra ? i1 : i2);
+                      const auto& j3 = swap_braket ? (swap_bra ? i2 : i1) : (swap_ket ? i4 : i3);
+                      const auto& j4 = swap_braket ? (swap_bra ? i1 : i2) : (swap_ket ? i3 : i4);
+
+                      cart_ints[i1234] = result[((j1*bra2.cartesian_size()+j2)*ket1.cartesian_size()+j3)*ket2.cartesian_size()+j4];
+                    }
+                  }
+                }
+              }
+
+            }
+#endif // FORCE_SOLID_TFORM_CHECK
+
 
             constexpr auto using_scalar_real = std::is_same<double,LIBINT2_REALTYPE>::value || std::is_same<float,LIBINT2_REALTYPE>::value;
             static_assert(using_scalar_real, "Libint2 C++11 API only supports fundamental real types");
             typedef Eigen::Matrix<LIBINT2_REALTYPE, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
 
             // a 2-d view of the 4-d source tensor
-            const auto nr1 = bra1.size();
-            const auto nr2 = bra2.size();
+            const auto nr1_cart = bra1.cartesian_size();
+            const auto nr2_cart = bra2.cartesian_size();
+            const auto nc1_cart = ket1.cartesian_size();
+            const auto nc2_cart = ket2.cartesian_size();
+            const auto ncol_cart = nc1_cart * nc2_cart;
             const auto nc1 = ket1.size();
             const auto nc2 = ket2.size();
             const auto ncol = nc1 * nc2;
@@ -745,26 +826,39 @@ namespace libint2 {
             const auto nc1_tgt = tket1.size();
             const auto nc2_tgt = tket2.size();
             const auto ncol_tgt = nc1_tgt * nc2_tgt;
+            const auto ncol_tgt_cart = tket1.cartesian_size() * tket2.cartesian_size();
 
             auto tgt_ptr = &scratch_[0];
 
+            const bool do_tform_src_col_blk = ket1.contr[0].pure || ket2.contr[0].pure;
+            auto tform_scratch = &(*(scratch_.end() - ncol));
+            auto tform_row_buf = tform_scratch; // use the end of scratch_ as the buffer
+
             // loop over rows of the source matrix
             const auto* src_row_ptr = primdata_[0].targets[0];
-            for(auto r1=0; r1!=nr1; ++r1) {
-              for(auto r2=0; r2!=nr2; ++r2, src_row_ptr+=ncol) {
+            for(auto r1=0; r1!=nr1_cart; ++r1) {
+              for(auto r2=0; r2!=nr2_cart; ++r2, src_row_ptr+=ncol_cart) {
 
                 typedef Eigen::Map<const Matrix> ConstMap;
                 typedef Eigen::Map<Matrix> Map;
                 typedef Eigen::Map<Matrix, Eigen::Unaligned, Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic> > StridedMap;
 
+                // if need to tform this row block ...
+                if (do_tform_src_col_blk)
+                  libint2::solidharmonics::tform(ket1.contr[0], ket2.contr[0], src_row_ptr, tform_row_buf);
+
                 // represent this source row as a matrix
-                ConstMap src_blk_mat(src_row_ptr, nc1, nc2);
+                ConstMap src_blk_mat(do_tform_src_col_blk ? tform_row_buf : src_row_ptr,
+                                     nc1,
+                                     nc2);
+
                 // and copy to the block of the target matrix
                 if (swap_braket) {
                   // if swapped bra and ket, a row of source becomes a column of target
                   // source row {r1,r2} is mapped to target column {r1,r2} if !swap_ket, else to {r2,r1}
-                  const auto tgt_col_idx = !swap_ket ? r1 * nr2 + r2 : r2 * nr1 + r1;
-                  StridedMap tgt_blk_mat(tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt, Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic>(nr2_tgt*ncol_tgt,ncol_tgt));
+                  const auto tgt_col_idx = !swap_ket ? r1 * nr2_cart + r2 : r2 * nr1_cart + r1;
+                  StridedMap tgt_blk_mat(tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt,
+                                         Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic>(nr2_tgt*ncol_tgt_cart,ncol_tgt_cart));
                   if (swap_bra)
                     tgt_blk_mat = src_blk_mat.transpose();
                   else
@@ -772,7 +866,7 @@ namespace libint2 {
                 }
                 else {
                   // source row {r1,r2} is mapped to target row {r1,r2} if !swap_bra, else to {r2,r1}
-                  const auto tgt_row_idx = !swap_bra ? r1 * nr2 + r2 : r2 * nr1 + r1;
+                  const auto tgt_row_idx = !swap_bra ? r1 * nr2_cart + r2 : r2 * nr1_cart + r1;
                   Map tgt_blk_mat(tgt_ptr + tgt_row_idx*ncol, nc1_tgt, nc2_tgt);
                   if (swap_ket)
                     tgt_blk_mat = src_blk_mat.transpose();
@@ -783,14 +877,117 @@ namespace libint2 {
               } // end of loop
             }   // over rows of source
 
+            // need to transform bra?
+            const bool do_tform_rest = bra1.contr[0].pure || bra2.contr[0].pure;
+
+            // if need to tform this row block ...
+            if (do_tform_rest) {
+
+              const auto* src_row_ptr = &scratch_[0];
+              auto* tgt_row_ptr = primdata_[0].targets[0];
+              if (swap_braket) { // bra indices already transformed
+                for(auto r1=0; r1!=nr1_tgt; ++r1) {
+                  for(auto r2=0; r2!=nr2_tgt; ++r2, src_row_ptr+=ncol_tgt_cart, tgt_row_ptr+=ncol_tgt) {
+                    libint2::solidharmonics::tform(tket1.contr[0], tket2.contr[0], src_row_ptr, tgt_row_ptr);
+                  }
+                }
+              }
+              else {
+                libint2::solidharmonics::tform_tensor(tbra1.contr[0], tbra2.contr[0], ncol_tgt, src_row_ptr, tgt_row_ptr);
+              }
+
+              result = primdata_[0].targets[0];
+            }
+            else
+              result = &scratch_[0];
+
           } // if need_scratch => needed to transpose
+#ifdef FORCE_SOLID_TFORM_CHECK
+          else {
+            std::copy(result, result+cart_ints.size(), cart_ints.begin());
+          }
+#endif
 
         } // not (ss|ss)
 
-        if (use_scratch)
-          return &scratch_[0];
-        else
-          return primdata_[0].targets[0];
+#ifdef FORCE_SOLID_TFORM_CHECK
+        // validate tform by re-computing reference result here
+        {
+          if (tbra1.contr[0].pure && tbra2.contr[0].pure && tket1.contr[0].pure && tket2.contr[0].pure) {
+
+            const auto n = tbra1.size() * tbra2.size() * tket1.size() * tket2.size();
+            std::vector<LIBINT2_REALTYPE> ref_ints(n, 0.0);
+
+            for(size_t s1=0, s1234=0; s1!=tbra1.size(); ++s1) {
+              const solidharmonics::shg_coefs_type& coefs1 = solidharmonics::shg_coefs[tbra1.contr[0].l];
+              const auto nc1 = coefs1.nnz(s1);      // # of cartesians contributing to shg s1
+              const auto* c1_idxs = coefs1.row_idx(s1); // indices of cartesians contributing to shg s1
+              const auto* c1_vals = coefs1.row_values(s1); // coefficients of cartesians contributing to shg s1
+
+              for(size_t s2=0; s2!=tbra2.size(); ++s2) {
+                const solidharmonics::shg_coefs_type& coefs2 = solidharmonics::shg_coefs[tbra2.contr[0].l];
+                const auto nc2 = coefs2.nnz(s2);      // # of cartesians contributing to shg s1
+                const auto* c2_idxs = coefs2.row_idx(s2); // indices of cartesians contributing to shg s1
+                const auto* c2_vals = coefs2.row_values(s2); // coefficients of cartesians contributing to shg s1
+
+                for(size_t s3=0; s3!=tket1.size(); ++s3) {
+                  const solidharmonics::shg_coefs_type& coefs3 = solidharmonics::shg_coefs[tket1.contr[0].l];
+                  const auto nc3 = coefs3.nnz(s3);      // # of cartesians contributing to shg s1
+                  const auto* c3_idxs = coefs3.row_idx(s3); // indices of cartesians contributing to shg s1
+                  const auto* c3_vals = coefs3.row_values(s3); // coefficients of cartesians contributing to shg s1
+
+                  for(size_t s4=0; s4!=tket2.size(); ++s4, ++s1234) {
+                    const solidharmonics::shg_coefs_type& coefs4 = solidharmonics::shg_coefs[tket2.contr[0].l];
+                    const auto nc4 = coefs4.nnz(s4);      // # of cartesians contributing to shg s1
+                    const auto* c4_idxs = coefs4.row_idx(s4); // indices of cartesians contributing to shg s1
+                    const auto* c4_vals = coefs4.row_values(s4); // coefficients of cartesians contributing to shg s1
+
+                    LIBINT2_REALTYPE tformed_value = 0.0;
+
+                    for(size_t ic1=0; ic1!=nc1; ++ic1) { // loop over contributing cartesians
+                      auto c1 = c1_idxs[ic1];
+                      auto s1_c1_coeff = c1_vals[ic1];
+
+                      for(size_t ic2=0; ic2!=nc2; ++ic2) { // loop over contributing cartesians
+                        auto c2 = c2_idxs[ic2];
+                        auto s2_c2_coeff = c2_vals[ic2];
+
+                        for(size_t ic3=0; ic3!=nc3; ++ic3) { // loop over contributing cartesians
+                          auto c3 = c3_idxs[ic3];
+                          auto s3_c3_coeff = c3_vals[ic3];
+
+                          for(size_t ic4=0; ic4!=nc4; ++ic4) { // loop over contributing cartesians
+                            auto c4 = c4_idxs[ic4];
+                            auto s4_c4_coeff = c4_vals[ic4];
+
+                            tformed_value += s1_c1_coeff *
+                                             s2_c2_coeff *
+                                             s3_c3_coeff *
+                                             s4_c4_coeff *
+                                             cart_ints[((c1*tbra2.cartesian_size() + c2)*tket1.cartesian_size() + c3)*tket2.cartesian_size() + c4];
+                          }
+                        }
+                      }
+                    }
+
+                    ref_ints[s1234] = tformed_value;
+                  }
+                }
+              }
+            }
+
+            for(auto i=0; i<n; ++i) {
+              if (::fabs(ref_ints[i] - result[i]) > 1e-12) {
+                  throw "sanity test of solid tform failed!";
+              }
+            }
+
+          }
+        }
+#endif // FORCE_SOLID_TFORM_CHECK
+
+
+        return result;
       }
 
     private:
@@ -823,7 +1020,8 @@ namespace libint2 {
 
       void initialize() {
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
-        const auto max_shellset_size = ncart_max * ncart_max * ncart_max * ncart_max;
+        const auto max_shellpair_size = ncart_max * ncart_max;
+        const auto max_shellset_size = max_shellpair_size * max_shellpair_size;
 
         assert(lmax_ <= LIBINT2_MAX_AM_ERI);
         assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
@@ -832,18 +1030,18 @@ namespace libint2 {
 
             case 0:
               libint2_init_eri(&primdata_[0], lmax_, 0);
-              scratch_.resize(max_shellset_size);
+              scratch_.resize(max_shellset_size + max_shellpair_size);
               break;
             case 1:
 #if LIBINT2_DERIV_ERI_ORDER > 0
               libint2_init_eri1(&primdata_[0], lmax_, 0);
-              scratch_.resize(9 * max_shellset_size);
+              scratch_.resize(9 * max_shellset_size + max_shellpair_size);
 #endif
               break;
             case 2:
 #if LIBINT2_DERIV_ERI_ORDER > 1
               libint2_init_eri2(&primdata_[0], lmax_, 0);
-              scratch_.resize(45 * max_shellset_size);
+              scratch_.resize(45 * max_shellset_size + max_shellpair_size);
 #endif
               break;
             default: assert(deriv_order_ < 3);

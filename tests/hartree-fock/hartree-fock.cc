@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
     /*** build initial-guess density ***/
     /*** =========================== ***/
 
-    const auto use_hcore_guess = true ;  // use core Hamiltonian eigenstates to guess density?
+    const auto use_hcore_guess = false ;  // use core Hamiltonian eigenstates to guess density?
                                          // set to true to match the result of versions 0, 1, and 2 of the code
                                          // HOWEVER !!! even for medium-size molecules hcore will usually fail !!!
                                          // thus set to false to use Superposition-Of-Atomic-Densities (SOAD) guess
