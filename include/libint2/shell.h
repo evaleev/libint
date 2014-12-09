@@ -54,7 +54,7 @@ namespace libint2 {
 
   /// generally-contracted Solid-Harmonic/Cartesion Gaussian Shell
 
-  /** Simple-to-use Gaussian shell. Here's an example of how to create an s+p shell of the STO-3G basis on the oxygen atom
+  /** A simple-to-use Gaussian shell. Here's an example of how to create an s+p shell of the STO-3G basis on the oxygen atom
    *  located at the origin.
    *  \verbatim
    *  auto s = Shell{
