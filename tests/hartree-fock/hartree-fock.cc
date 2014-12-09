@@ -72,6 +72,10 @@ Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
 // an efficient Fock builder; *integral-driven* hence computes permutationally-unique ints once
 Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
                                  const Matrix& D);
+// an efficient Fock builder that can accept densities expressed a separate basis
+Matrix compute_2body_fock_general(const std::vector<libint2::Shell>& shells,
+                                  const Matrix& D,
+                                  const std::vector<libint2::Shell>& shells_D);
 // threaded versions of the above
 #if defined(_OPENMP)
 Matrix compute_1body_ints_openmp(const std::vector<libint2::Shell>& shells,
@@ -201,8 +205,27 @@ int main(int argc, char *argv[]) {
       auto C_occ = C.leftCols(ndocc);
       D = C_occ * C_occ.transpose();
     }
-    else {  // SOAD as the guess density, assumes STO-nG basis
-      D = compute_soad(atoms);
+    else {  // use SOAD as the guess density
+      auto D_minbs = compute_soad(atoms); // compute guess in minimal basis
+      auto minbs_shells = make_sto3g_basis(atoms);
+      if (minbs_shells == shells)
+        D = D_minbs;
+      else { // if basis != minimal basis, map non-representable SOAD guess into the AO basis
+             // by diagonalizing a Fock matrix
+        std::cout << "projecting SOAD into AO basis" << std::endl;
+        auto F = H;
+        F += compute_2body_fock_general(shells, D_minbs, minbs_shells);
+        cout << "\n\tSOAD Fock Matrix:\n";
+        cout << F << endl;
+
+        // solve F C = e S C
+        Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> gen_eig_solver(F, S);
+        auto C = gen_eig_solver.eigenvectors();
+
+        // compute density, D = C(occ) . C(occ)T
+        auto C_occ = C.leftCols(ndocc);
+        D = C_occ * C_occ.transpose();
+      }
     }
 
     cout << "\n\tInitial Density Matrix:\n";
@@ -687,7 +710,7 @@ std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell
 }
 
 // computes Superposition-Of-Atomic-Densities guess for the molecular density matrix
-// basically assumes minimal basis and occupies subshell by smearing electrons evenly over the orbitals
+// in minimal basis; occupies subshells by smearing electrons evenly over the orbitals
 Matrix compute_soad(const std::vector<Atom>& atoms) {
 
   // compute number of atomic orbitals
@@ -702,7 +725,7 @@ Matrix compute_soad(const std::vector<Atom>& atoms) {
       throw "SOAD with Z > 10 is not yet supported";
   }
 
-  // compute the density
+  // compute the minimal basis density
   Matrix D = Matrix::Zero(nao, nao);
   size_t ao_offset = 0; // first AO of this atom
   for(const auto& atom: atoms) {
@@ -1143,3 +1166,96 @@ Matrix compute_2body_fock_openmp(const std::vector<libint2::Shell>& shells,
 }
 #endif // defined(_OPENMP)
 
+Matrix compute_2body_fock_general(const std::vector<libint2::Shell>& shells,
+                                  const Matrix& D,
+                                  const std::vector<libint2::Shell>& shells_D) {
+
+  const auto n = nbasis(shells);
+  Matrix G = Matrix::Zero(n,n);
+
+  const auto n_D = nbasis(shells_D);
+  assert(D.cols() == D.rows() && D.cols() == n_D);
+
+  // construct the 2-electron repulsion integrals engine
+  libint2::TwoBodyEngine<libint2::Coulomb> engine(std::max(max_nprim(shells),max_nprim(shells_D)),
+                                                  std::max(max_l(shells), max_l(shells_D)), 0);
+
+  auto shell2bf = map_shell_to_basis_function(shells);
+  auto shell2bf_D = map_shell_to_basis_function(shells_D);
+
+  // loop over permutationally-unique set of shells
+  for(auto s1=0; s1!=shells.size(); ++s1) {
+
+    auto bf1_first = shell2bf[s1]; // first basis function in this shell
+    auto n1 = shells[s1].size();   // number of basis functions in this shell
+
+    for(auto s2=0; s2<=s1; ++s2) {
+
+      auto bf2_first = shell2bf[s2];
+      auto n2 = shells[s2].size();
+
+      for(auto s3=0; s3<shells_D.size(); ++s3) {
+
+        auto bf3_first = shell2bf_D[s3];
+        auto n3 = shells_D[s3].size();
+
+        for(auto s4=0; s4<shells_D.size(); ++s4) {
+
+          auto bf4_first = shell2bf_D[s4];
+          auto n4 = shells_D[s4].size();
+
+          // compute the permutational degeneracy (i.e. # of equivalents) of the given shell set
+          auto s12_deg = (s1 == s2) ? 1.0 : 2.0;
+
+          if (s3 >= s4) {
+            auto s34_deg = (s3 == s4) ? 1.0 : 2.0;
+            auto s1234_deg = s12_deg * s34_deg;
+            //auto s1234_deg = s12_deg;
+            const auto* buf_J = engine.compute(shells[s1], shells[s2], shells_D[s3], shells_D[s4]);
+
+            for(auto f1=0, f1234=0; f1!=n1; ++f1) {
+              const auto bf1 = f1 + bf1_first;
+              for(auto f2=0; f2!=n2; ++f2) {
+                const auto bf2 = f2 + bf2_first;
+                for(auto f3=0; f3!=n3; ++f3) {
+                  const auto bf3 = f3 + bf3_first;
+                  for(auto f4=0; f4!=n4; ++f4, ++f1234) {
+                    const auto bf4 = f4 + bf4_first;
+
+                    const auto value = buf_J[f1234];
+                    const auto value_scal_by_deg = value * s1234_deg;
+                    G(bf1,bf2) += 2.0 * D(bf3,bf4) * value_scal_by_deg;
+                  }
+                }
+              }
+            }
+          }
+
+          const auto* buf_K = engine.compute(shells[s1], shells_D[s3], shells[s2], shells_D[s4]);
+
+          for(auto f1=0, f1324=0; f1!=n1; ++f1) {
+            const auto bf1 = f1 + bf1_first;
+            for(auto f3=0; f3!=n3; ++f3) {
+              const auto bf3 = f3 + bf3_first;
+              for(auto f2=0; f2!=n2; ++f2) {
+                const auto bf2 = f2 + bf2_first;
+                for(auto f4=0; f4!=n4; ++f4, ++f1324) {
+                  const auto bf4 = f4 + bf4_first;
+
+                  const auto value = buf_K[f1324];
+                  const auto value_scal_by_deg = value * s12_deg;
+                  G(bf1,bf2) -= D(bf3,bf4) * value_scal_by_deg;
+                }
+              }
+            }
+          }
+
+        }
+      }
+    }
+  }
+
+  // symmetrize the result and return
+  Matrix Gt = G.transpose();
+  return 0.5 * (G + Gt);
+}
