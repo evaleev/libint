@@ -83,6 +83,12 @@ namespace libint2 {
           bool operator!=(const Contraction& other) const {
             return not this->operator==(other);
           }
+          size_t cartesian_size() const {
+            return (l + 1) * (l + 2) / 2;
+          }
+          size_t size() const {
+              return pure ? (2 * l + 1) : cartesian_size();
+          }
       };
 
       std::vector<LIBINT2_REALTYPE> alpha; //!< exponents
@@ -94,11 +100,14 @@ namespace libint2 {
         return *this;
       }
 
+      size_t cartesian_size() const {
+        size_t s = 0;
+        for(const auto& c: contr) { s += c.cartesian_size(); }
+        return s;
+      }
       size_t size() const {
         size_t s = 0;
-        for(const auto& c: contr) {
-          s += c.pure ? (2 * c.l + 1) : ((c.l + 1) * (c.l + 2) / 2);
-        }
+        for(const auto& c: contr) { s += c.size(); }
         return s;
       }
 
