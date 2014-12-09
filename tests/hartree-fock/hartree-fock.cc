@@ -40,6 +40,7 @@
 // Libint Gaussian integrals library
 #include <libint2.h>
 #include <libint2/cxxapi.h>
+#include <libint2/chemistry/elements.h>
 
 #if defined(_OPENMP)
 # include <omp.h>
@@ -300,6 +301,14 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
+namespace {
+  bool strcaseequal(const std::string& a, const std::string& b) {
+    return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(),
+                                              [](char a, char b) {return ::tolower(a) == ::tolower(b);}
+                                             );
+  }
+}
+
 // this reads the geometry in the standard xyz format supported by most chemistry software
 std::vector<Atom> read_dotxyz(std::istream& is) {
   size_t natom;
@@ -310,29 +319,22 @@ std::vector<Atom> read_dotxyz(std::istream& is) {
 
   std::vector<Atom> atoms(natom);
   for (auto i = 0; i < natom; i++) {
-    std::string element_label;
+    std::string element_symbol;
     double x, y, z;
-    is >> element_label >> x >> y >> z;
+    is >> element_symbol >> x >> y >> z;
 
     // .xyz files report element labels, hence convert to atomic numbers
-    int Z;
-    if (element_label == "H")
-      Z = 1;
-    else if (element_label == "C")
-      Z = 6;
-    else if (element_label == "N")
-      Z = 7;
-    else if (element_label == "O")
-      Z = 8;
-    else if (element_label == "F")
-      Z = 9;
-    else if (element_label == "S")
-      Z = 16;
-    else if (element_label == "Cl")
-      Z = 17;
-    else {
-      std::cerr << "read_dotxyz: element label \"" << element_label << "\" is not recognized" << std::endl;
-      throw "Did not recognize element label in .xyz file";
+    int Z = -1;
+    using libint2::chemistry::element_info;
+    for(const auto& e: element_info) {
+      if (strcaseequal(e.symbol, element_symbol)) {
+        Z = e.Z;
+        break;
+      }
+    }
+    if (Z == -1) {
+      std::cerr << "read_dotxyz: element symbol \"" << element_symbol << "\" is not recognized" << std::endl;
+      throw "Did not recognize element symbol in .xyz file";
     }
 
     atoms[i].atomic_number = Z;
