@@ -1154,208 +1154,258 @@ namespace libint2 {
     const auto AB_z = A[2] - B[2];
     const auto AB2 = AB_x*AB_x + AB_y*AB_y + AB_z*AB_z;
 
+    const auto gammaq = alpha2 + alpha3;
+    const auto oogammaq = 1.0 / gammaq;
+    const auto rhoq = alpha2 * alpha3 * oogammaq;
+    const auto gammapq = gammap + gammaq;
+    const auto sqrt_gammapq = sqrt(gammapq);
+    const auto oogammapq = 1.0 / (gammapq);
+    const auto rho = gammap * gammaq * oogammapq;
+    const auto Qx = (alpha2 * C[0] + alpha3 * D[0]) * oogammaq;
+    const auto Qy = (alpha2 * C[1] + alpha3 * D[1]) * oogammaq;
+    const auto Qz = (alpha2 * C[2] + alpha3 * D[2]) * oogammaq;
+    const auto CD_x = C[0] - D[0];
+    const auto CD_y = C[1] - D[1];
+    const auto CD_z = C[2] - D[2];
+    const auto CD2 = CD_x * CD_x + CD_y * CD_y + CD_z * CD_z;
+
+    const auto PQx = Px - Qx;
+    const auto PQy = Py - Qy;
+    const auto PQz = Pz - Qz;
+    const auto PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
+
+    const auto K1 = exp(- rhop * AB2);
+    const auto K2 = exp(- rhoq * CD2);
+    decltype(K1) two_times_M_PI_to_25(34.986836655249725693); // (2 \pi)^{5/2}
+    double pfac = two_times_M_PI_to_25 * K1 * K2  * oogammap * oogammaq * sqrt_gammapq * oogammapq;
+    pfac *= c0 * c1 * c2 * c3;
+
+    const auto T = PQ2*rho;
+    double* fm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
+    const auto mmax = amtot + deriv_order_;
+
+//        timers.stop(0);
+//        timers.start(3);
+        //core_eval_->eval(fm_ptr, T, mmax);
+    detail::TwoBodyEngineDispatcher<Kernel>::core_eval(this, fm_ptr, mmax, T, rho);
+//        timers.stop(3);
+//        timers.start(0);
+//        timers.start(4);
+//        timers.stop(4);
+
+    for(auto m=0; m!=mmax+1; ++m) {
+      fm_ptr[m] *= pfac;
+    }
+
+    if (mmax == 0)
+      return;
+
 #if LIBINT2_DEFINED(eri,PA_x)
-        primdata.PA_x[0] = Px - A[0];
+    primdata.PA_x[0] = Px - A[0];
 #endif
 #if LIBINT2_DEFINED(eri,PA_y)
-        primdata.PA_y[0] = Py - A[1];
+    primdata.PA_y[0] = Py - A[1];
 #endif
 #if LIBINT2_DEFINED(eri,PA_z)
-        primdata.PA_z[0] = Pz - A[2];
+    primdata.PA_z[0] = Pz - A[2];
 #endif
 #if LIBINT2_DEFINED(eri,PB_x)
-        primdata.PB_x[0] = Px - B[0];
+    primdata.PB_x[0] = Px - B[0];
 #endif
 #if LIBINT2_DEFINED(eri,PB_y)
-        primdata.PB_y[0] = Py - B[1];
+    primdata.PB_y[0] = Py - B[1];
 #endif
 #if LIBINT2_DEFINED(eri,PB_z)
-        primdata.PB_z[0] = Pz - B[2];
+    primdata.PB_z[0] = Pz - B[2];
+#endif
+
+#if LIBINT2_DEFINED(eri,QC_x)
+    primdata.QC_x[0] = Qx - C[0];
+#endif
+#if LIBINT2_DEFINED(eri,QC_y)
+    primdata.QC_y[0] = Qy - C[1];
+#endif
+#if LIBINT2_DEFINED(eri,QC_z)
+    primdata.QC_z[0] = Qz - C[2];
+#endif
+#if LIBINT2_DEFINED(eri,QD_x)
+    primdata.QD_x[0] = Qx - D[0];
+#endif
+#if LIBINT2_DEFINED(eri,QD_y)
+    primdata.QD_y[0] = Qy - D[1];
+#endif
+#if LIBINT2_DEFINED(eri,QD_z)
+    primdata.QD_z[0] = Qz - D[2];
 #endif
 
 #if LIBINT2_DEFINED(eri,AB_x)
-        primdata.AB_x[0] = AB_x;
+    primdata.AB_x[0] = AB_x;
 #endif
 #if LIBINT2_DEFINED(eri,AB_y)
-        primdata.AB_y[0] = AB_y;
+    primdata.AB_y[0] = AB_y;
 #endif
 #if LIBINT2_DEFINED(eri,AB_z)
-        primdata.AB_z[0] = AB_z;
+    primdata.AB_z[0] = AB_z;
 #endif
 #if LIBINT2_DEFINED(eri,BA_x)
-        primdata.BA_x[0] = -AB_x;
+    primdata.BA_x[0] = -AB_x;
 #endif
 #if LIBINT2_DEFINED(eri,BA_y)
-        primdata.BA_y[0] = -AB_y;
+    primdata.BA_y[0] = -AB_y;
 #endif
 #if LIBINT2_DEFINED(eri,BA_z)
-        primdata.BA_z[0] = -AB_z;
-#endif
-#if LIBINT2_DEFINED(eri,oo2z)
-        primdata.oo2z[0] = 0.5*oogammap;
-#endif
-
-        const auto gammaq = alpha2 + alpha3;
-        const auto oogammaq = 1.0 / gammaq;
-        const auto rhoq = alpha2 * alpha3 * oogammaq;
-        const auto gammapq = gammap * gammaq / (gammap + gammaq);
-        const auto gammap_o_gammapgammaq = gammapq * oogammaq;
-        const auto gammaq_o_gammapgammaq = gammapq * oogammap;
-        const auto Qx = (alpha2 * C[0] + alpha3 * D[0]) * oogammaq;
-        const auto Qy = (alpha2 * C[1] + alpha3 * D[1]) * oogammaq;
-        const auto Qz = (alpha2 * C[2] + alpha3 * D[2]) * oogammaq;
-        const auto CD_x = C[0] - D[0];
-        const auto CD_y = C[1] - D[1];
-        const auto CD_z = C[2] - D[2];
-        const auto CD2 = CD_x * CD_x + CD_y * CD_y + CD_z * CD_z;
-
-#if LIBINT2_DEFINED(eri,QC_x)
-        primdata.QC_x[0] = Qx - C[0];
-#endif
-#if LIBINT2_DEFINED(eri,QC_y)
-        primdata.QC_y[0] = Qy - C[1];
-#endif
-#if LIBINT2_DEFINED(eri,QC_z)
-        primdata.QC_z[0] = Qz - C[2];
-#endif
-#if LIBINT2_DEFINED(eri,QD_x)
-        primdata.QD_x[0] = Qx - D[0];
-#endif
-#if LIBINT2_DEFINED(eri,QD_y)
-        primdata.QD_y[0] = Qy - D[1];
-#endif
-#if LIBINT2_DEFINED(eri,QD_z)
-        primdata.QD_z[0] = Qz - D[2];
+    primdata.BA_z[0] = -AB_z;
 #endif
 
 #if LIBINT2_DEFINED(eri,CD_x)
-        primdata.CD_x[0] = CD_x;
+    primdata.CD_x[0] = CD_x;
 #endif
 #if LIBINT2_DEFINED(eri,CD_y)
-        primdata.CD_y[0] = CD_y;
+    primdata.CD_y[0] = CD_y;
 #endif
 #if LIBINT2_DEFINED(eri,CD_z)
-        primdata.CD_z[0] = CD_z;
+    primdata.CD_z[0] = CD_z;
 #endif
 #if LIBINT2_DEFINED(eri,DC_x)
-        primdata.DC_x[0] = -CD_x;
+    primdata.DC_x[0] = -CD_x;
 #endif
 #if LIBINT2_DEFINED(eri,DC_y)
-        primdata.DC_y[0] = -CD_y;
+    primdata.DC_y[0] = -CD_y;
 #endif
 #if LIBINT2_DEFINED(eri,DC_z)
-        primdata.DC_z[0] = -CD_z;
-#endif
-#if LIBINT2_DEFINED(eri,oo2e)
-        primdata.oo2e[0] = 0.5*oogammaq;
+    primdata.DC_z[0] = -CD_z;
 #endif
 
-        const auto PQx = Px - Qx;
-        const auto PQy = Py - Qy;
-        const auto PQz = Pz - Qz;
-        const auto PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
-        const auto Wx = (gammap_o_gammapgammaq * Px + gammaq_o_gammapgammaq * Qx);
-        const auto Wy = (gammap_o_gammapgammaq * Py + gammaq_o_gammapgammaq * Qy);
-        const auto Wz = (gammap_o_gammapgammaq * Pz + gammaq_o_gammapgammaq * Qz);
+    const auto gammap_o_gammapgammaq = oogammapq * gammap;
+    const auto gammaq_o_gammapgammaq = oogammapq * gammaq;
+
+    const auto Wx = (gammap_o_gammapgammaq * Px + gammaq_o_gammapgammaq * Qx);
+    const auto Wy = (gammap_o_gammapgammaq * Py + gammaq_o_gammapgammaq * Qy);
+    const auto Wz = (gammap_o_gammapgammaq * Pz + gammaq_o_gammapgammaq * Qz);
 
 #if LIBINT2_DEFINED(eri,WP_x)
-        primdata.WP_x[0] = Wx - Px;
+    primdata.WP_x[0] = Wx - Px;
 #endif
 #if LIBINT2_DEFINED(eri,WP_y)
-        primdata.WP_y[0] = Wy - Py;
+    primdata.WP_y[0] = Wy - Py;
 #endif
 #if LIBINT2_DEFINED(eri,WP_z)
-        primdata.WP_z[0] = Wz - Pz;
+    primdata.WP_z[0] = Wz - Pz;
 #endif
 #if LIBINT2_DEFINED(eri,WQ_x)
-        primdata.WQ_x[0] = Wx - Qx;
+    primdata.WQ_x[0] = Wx - Qx;
 #endif
 #if LIBINT2_DEFINED(eri,WQ_y)
-        primdata.WQ_y[0] = Wy - Qy;
+    primdata.WQ_y[0] = Wy - Qy;
 #endif
 #if LIBINT2_DEFINED(eri,WQ_z)
-        primdata.WQ_z[0] = Wz - Qz;
+    primdata.WQ_z[0] = Wz - Qz;
+#endif
+#if LIBINT2_DEFINED(eri,oo2z)
+    primdata.oo2z[0] = 0.5*oogammap;
+#endif
+#if LIBINT2_DEFINED(eri,oo2e)
+    primdata.oo2e[0] = 0.5*oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,oo2ze)
-        primdata.oo2ze[0] = 0.5/(gammap+gammaq);
+    primdata.oo2ze[0] = 0.5*oogammapq;
 #endif
 #if LIBINT2_DEFINED(eri,roz)
-        primdata.roz[0] = gammapq*oogammap;
+    primdata.roz[0] = rho*oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,roe)
-        primdata.roe[0] = gammapq*oogammaq;
+    primdata.roe[0] = rho*oogammaq;
 #endif
 
-        // prefactors for derivative ERI relations
-        if (deriv_order_ > 0) {
+    // using ITR?
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_x)
+    Data->TwoPRepITR_pfac0_0_0_x[0] = - (alpha1*AB_x + alpha3*CD_x) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_y)
+    Data->TwoPRepITR_pfac0_0_0_y[0] = - (alpha1*AB_y + alpha3*CD_y) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_z)
+    Data->TwoPRepITR_pfac0_0_0_z[0] = - (alpha1*AB_z + alpha3*CD_z) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_x)
+    Data->TwoPRepITR_pfac0_1_0_x[0] = - (alpha1*AB_x + alpha3*CD_x) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_y)
+    Data->TwoPRepITR_pfac0_1_0_y[0] = - (alpha1*AB_y + alpha3*CD_y) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_z)
+    Data->TwoPRepITR_pfac0_1_0_z[0] = - (alpha1*AB_z + alpha3*CD_z) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_x)
+    Data->TwoPRepITR_pfac0_0_1_x[0] = (alpha0*AB_x + alpha2*CD_x) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_y)
+    Data->TwoPRepITR_pfac0_0_1_y[0] = (alpha0*AB_y + alpha2*CD_y) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_z)
+    Data->TwoPRepITR_pfac0_0_1_z[0] = (alpha0*AB_z + alpha2*CD_z) * oogammap;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_x)
+    Data->TwoPRepITR_pfac0_1_1_x[0] = (alpha0*AB_x + alpha2*CD_x) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_y)
+    Data->TwoPRepITR_pfac0_1_1_y[0] = (alpha0*AB_y + alpha2*CD_y) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_z)
+    Data->TwoPRepITR_pfac0_1_1_z[0] = (alpha0*AB_z + alpha2*CD_z) * oogammaq;
+#endif
+
+    // prefactors for derivative ERI relations
+    if (deriv_order_ > 0) {
 #if LIBINT2_DEFINED(eri,alpha1_rho_over_zeta2)
-        primdata.alpha1_rho_over_zeta2[0] = alpha0 * gammapq / (gammap * gammap);
+      primdata.alpha1_rho_over_zeta2[0] = alpha0 * rho / (gammap * gammap);
 #endif
 #if LIBINT2_DEFINED(eri,alpha2_rho_over_zeta2)
-        primdata.alpha2_rho_over_zeta2[0] = alpha1 * gammapq / (gammap * gammap);
+      primdata.alpha2_rho_over_zeta2[0] = alpha1 * rho / (gammap * gammap);
 #endif
 #if LIBINT2_DEFINED(eri,alpha3_rho_over_eta2)
-        primdata.alpha3_rho_over_eta2[0] = alpha2 * gammapq / (gammaq * gammaq);
+      primdata.alpha3_rho_over_eta2[0] = alpha2 * rho / (gammaq * gammaq);
 #endif
 #if LIBINT2_DEFINED(eri,alpha4_rho_over_eta2)
-        primdata.alpha4_rho_over_eta2[0] = alpha3 * gammapq / (gammaq * gammaq);
+      primdata.alpha4_rho_over_eta2[0] = alpha3 * rho / (gammaq * gammaq);
 #endif
 #if LIBINT2_DEFINED(eri,alpha1_over_zetapluseta)
-        primdata.alpha1_over_zetapluseta[0] = alpha0 / (gammap + gammaq);
+      primdata.alpha1_over_zetapluseta[0] = alpha0 / (gammap + gammaq);
 #endif
 #if LIBINT2_DEFINED(eri,alpha2_over_zetapluseta)
-        primdata.alpha2_over_zetapluseta[0] = alpha1 / (gammap + gammaq);
+      primdata.alpha2_over_zetapluseta[0] = alpha1 / (gammap + gammaq);
 #endif
 #if LIBINT2_DEFINED(eri,alpha3_over_zetapluseta)
-        primdata.alpha3_over_zetapluseta[0] = alpha2 / (gammap + gammaq);
+      primdata.alpha3_over_zetapluseta[0] = alpha2 / (gammap + gammaq);
 #endif
 #if LIBINT2_DEFINED(eri,alpha4_over_zetapluseta)
-        primdata.alpha4_over_zetapluseta[0] = alpha3 / (gammap + gammaq);
+      primdata.alpha4_over_zetapluseta[0] = alpha3 / (gammap + gammaq);
 #endif
 #if LIBINT2_DEFINED(eri,rho12_over_alpha1)
-        primdata.rho12_over_alpha1[0] = rhop / alpha0;
+      primdata.rho12_over_alpha1[0] = rhop / alpha0;
 #endif
 #if LIBINT2_DEFINED(eri,rho12_over_alpha2)
-        primdata.rho12_over_alpha2[0] = rhop / alpha1;
+      primdata.rho12_over_alpha2[0] = rhop / alpha1;
 #endif
 #if LIBINT2_DEFINED(eri,rho34_over_alpha3)
-        primdata.rho34_over_alpha3[0] = rhoq / alpha2;
+      primdata.rho34_over_alpha3[0] = rhoq / alpha2;
 #endif
 #if LIBINT2_DEFINED(eri,rho34_over_alpha4)
-        primdata.rho34_over_alpha4[0] = rhoq / alpha3;
+      primdata.rho34_over_alpha4[0] = rhoq / alpha3;
 #endif
 #if LIBINT2_DEFINED(eri,two_alpha0_bra)
-        primdata.two_alpha0_bra[0] = 2.0 * alpha0;
+      primdata.two_alpha0_bra[0] = 2.0 * alpha0;
 #endif
 #if LIBINT2_DEFINED(eri,two_alpha0_ket)
-        primdata.two_alpha0_ket[0] = 2.0 * alpha1;
+      primdata.two_alpha0_ket[0] = 2.0 * alpha1;
 #endif
 #if LIBINT2_DEFINED(eri,two_alpha1_bra)
-        primdata.two_alpha1_bra[0] = 2.0 * alpha2;
+      primdata.two_alpha1_bra[0] = 2.0 * alpha2;
 #endif
 #if LIBINT2_DEFINED(eri,two_alpha1_ket)
-        primdata.two_alpha1_ket[0] = 2.0 * alpha3;
+      primdata.two_alpha1_ket[0] = 2.0 * alpha3;
 #endif
-        }
-
-        const auto K1 = exp(- rhop * AB2);
-        const auto K2 = exp(- rhoq * CD2);
-        decltype(K1) two_times_M_PI_to_25(34.986836655249725693);
-        double pfac = two_times_M_PI_to_25 * K1 * K2 / (gammap * gammaq * sqrt(gammap
-                                                                             + gammaq));
-        pfac *= c0 * c1 * c2 * c3;
-
-        const auto T = PQ2*gammapq;
-        double* fm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
-        const auto mmax = amtot + deriv_order_;
-
-        //core_eval_->eval(fm_ptr, T, mmax);
-        detail::TwoBodyEngineDispatcher<Kernel>::core_eval(this, fm_ptr, mmax, T, gammapq);
-
-        for(auto m=0; m!=mmax+1; ++m) {
-          fm_ptr[m] *= pfac;
-        }
-
+    }
   }
 
 
