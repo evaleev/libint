@@ -757,7 +757,7 @@ namespace libint2 {
           primdata_[0].contrdepth = p;
         }
 
-        const LIBINT2_REALTYPE* result = nullptr;
+        LIBINT2_REALTYPE* result = nullptr;
 
 #ifdef FORCE_SOLID_TFORM_CHECK
         std::vector<LIBINT2_REALTYPE> cart_ints(tbra1.cartesian_size()*
@@ -816,8 +816,11 @@ namespace libint2 {
             const auto nc1_cart = ket1.cartesian_size();
             const auto nc2_cart = ket2.cartesian_size();
             const auto ncol_cart = nc1_cart * nc2_cart;
+            const auto nr1 = bra1.size();
+            const auto nr2 = bra2.size();
             const auto nc1 = ket1.size();
             const auto nc2 = ket2.size();
+            const auto nrow = nr1 * nr2;
             const auto ncol = nc1 * nc2;
 
             // a 2-d view of the 4-d target tensor
@@ -826,39 +829,51 @@ namespace libint2 {
             const auto nc1_tgt = tket1.size();
             const auto nc2_tgt = tket2.size();
             const auto ncol_tgt = nc1_tgt * nc2_tgt;
-            const auto ncol_tgt_cart = tket1.cartesian_size() * tket2.cartesian_size();
 
-            auto tgt_ptr = &scratch_[0];
-
-            const bool do_tform_src_col_blk = ket1.contr[0].pure || ket2.contr[0].pure;
-            auto tform_scratch = &(*(scratch_.end() - ncol));
-            auto tform_row_buf = tform_scratch; // use the end of scratch_ as the buffer
+            // transform to solid harmonics first, then unpermute, if necessary
+            auto mainbuf = result;
+            auto scratchbuf = &scratch_[0];
+            if (bra1.contr[0].pure) {
+              libint2::solidharmonics::transform_first(bra1.contr[0].l, nr2_cart*ncol_cart,
+                                                       mainbuf, scratchbuf);
+              std::swap(mainbuf, scratchbuf);
+            }
+            if (bra2.contr[0].pure) {
+              libint2::solidharmonics::transform_inner(bra1.size(), bra2.contr[0].l, ncol_cart,
+                                                       mainbuf, scratchbuf);
+              std::swap(mainbuf, scratchbuf);
+            }
+            if (ket1.contr[0].pure) {
+              libint2::solidharmonics::transform_inner(nrow, ket1.contr[0].l, nc2_cart,
+                                                       mainbuf, scratchbuf);
+              std::swap(mainbuf, scratchbuf);
+            }
+            if (ket2.contr[0].pure) {
+              libint2::solidharmonics::transform_last(bra1.size()*bra2.size()*ket1.size(), ket2.contr[0].l,
+                                                      mainbuf, scratchbuf);
+              std::swap(mainbuf, scratchbuf);
+            }
 
             // loop over rows of the source matrix
-            const auto* src_row_ptr = primdata_[0].targets[0];
-            for(auto r1=0; r1!=nr1_cart; ++r1) {
-              for(auto r2=0; r2!=nr2_cart; ++r2, src_row_ptr+=ncol_cart) {
+            const auto* src_row_ptr = mainbuf;
+            auto tgt_ptr = scratchbuf;
+            for(auto r1=0; r1!=nr1; ++r1) {
+              for(auto r2=0; r2!=nr2; ++r2, src_row_ptr+=ncol) {
 
                 typedef Eigen::Map<const Matrix> ConstMap;
                 typedef Eigen::Map<Matrix> Map;
                 typedef Eigen::Map<Matrix, Eigen::Unaligned, Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic> > StridedMap;
 
-                // if need to tform this row block ...
-                if (do_tform_src_col_blk)
-                  libint2::solidharmonics::tform(ket1.contr[0], ket2.contr[0], src_row_ptr, tform_row_buf);
-
                 // represent this source row as a matrix
-                ConstMap src_blk_mat(do_tform_src_col_blk ? tform_row_buf : src_row_ptr,
-                                     nc1,
-                                     nc2);
+                ConstMap src_blk_mat(src_row_ptr, nc1, nc2);
 
                 // and copy to the block of the target matrix
                 if (swap_braket) {
                   // if swapped bra and ket, a row of source becomes a column of target
                   // source row {r1,r2} is mapped to target column {r1,r2} if !swap_ket, else to {r2,r1}
-                  const auto tgt_col_idx = !swap_ket ? r1 * nr2_cart + r2 : r2 * nr1_cart + r1;
+                  const auto tgt_col_idx = !swap_ket ? r1 * nr2 + r2 : r2 * nr1 + r1;
                   StridedMap tgt_blk_mat(tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt,
-                                         Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic>(nr2_tgt*ncol_tgt_cart,ncol_tgt_cart));
+                                         Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic>(nr2_tgt*ncol_tgt,ncol_tgt));
                   if (swap_bra)
                     tgt_blk_mat = src_blk_mat.transpose();
                   else
@@ -866,7 +881,7 @@ namespace libint2 {
                 }
                 else {
                   // source row {r1,r2} is mapped to target row {r1,r2} if !swap_bra, else to {r2,r1}
-                  const auto tgt_row_idx = !swap_bra ? r1 * nr2_cart + r2 : r2 * nr1_cart + r1;
+                  const auto tgt_row_idx = !swap_bra ? r1 * nr2 + r2 : r2 * nr1 + r1;
                   Map tgt_blk_mat(tgt_ptr + tgt_row_idx*ncol, nc1_tgt, nc2_tgt);
                   if (swap_ket)
                     tgt_blk_mat = src_blk_mat.transpose();
@@ -877,29 +892,7 @@ namespace libint2 {
               } // end of loop
             }   // over rows of source
 
-            // need to transform bra?
-            const bool do_tform_rest = bra1.contr[0].pure || bra2.contr[0].pure;
-
-            // if need to tform this row block ...
-            if (do_tform_rest) {
-
-              const auto* src_row_ptr = &scratch_[0];
-              auto* tgt_row_ptr = primdata_[0].targets[0];
-              if (swap_braket) { // bra indices already transformed
-                for(auto r1=0; r1!=nr1_tgt; ++r1) {
-                  for(auto r2=0; r2!=nr2_tgt; ++r2, src_row_ptr+=ncol_tgt_cart, tgt_row_ptr+=ncol_tgt) {
-                    libint2::solidharmonics::tform(tket1.contr[0], tket2.contr[0], src_row_ptr, tgt_row_ptr);
-                  }
-                }
-              }
-              else {
-                libint2::solidharmonics::tform_tensor(tbra1.contr[0], tbra2.contr[0], ncol_tgt, src_row_ptr, tgt_row_ptr);
-              }
-
-              result = primdata_[0].targets[0];
-            }
-            else
-              result = &scratch_[0];
+            result = scratchbuf;
 
           } // if need_scratch => needed to transpose
 #ifdef FORCE_SOLID_TFORM_CHECK
@@ -1030,18 +1023,18 @@ namespace libint2 {
 
             case 0:
               libint2_init_eri(&primdata_[0], lmax_, 0);
-              scratch_.resize(max_shellset_size + max_shellpair_size);
+              scratch_.resize(max_shellset_size);
               break;
             case 1:
 #if LIBINT2_DERIV_ERI_ORDER > 0
               libint2_init_eri1(&primdata_[0], lmax_, 0);
-              scratch_.resize(9 * max_shellset_size + max_shellpair_size);
+              scratch_.resize(9 * max_shellset_size);
 #endif
               break;
             case 2:
 #if LIBINT2_DERIV_ERI_ORDER > 1
               libint2_init_eri2(&primdata_[0], lmax_, 0);
-              scratch_.resize(45 * max_shellset_size + max_shellpair_size);
+              scratch_.resize(45 * max_shellset_size);
 #endif
               break;
             default: assert(deriv_order_ < 3);

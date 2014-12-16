@@ -211,145 +211,43 @@ namespace libint2 {
       std::swap(shg_coefs, null);
     }
 
-    /// multiplies rows and columns of matrix \c source_blk, stores result to \c target_blk
+    // generic transforms
+
     template <typename Real>
-    void tform(int l_row, int l_col, const Real* source_blk, Real* target_blk) {
-      const shg_coefs_type& coefs_row = shg_coefs[l_row];
-      const shg_coefs_type& coefs_col = shg_coefs[l_col];
+    void transform_first(size_t l, size_t n2, const Real *src, Real *tgt)
+    {
+      const shg_coefs_type& coefs = shg_coefs[l];
 
-      const auto ncart_row = (l_row+1)*(l_row+2)/2;
-      const auto ncart_col = (l_col+1)*(l_col+2)/2;
-      const auto npure_row = 2*l_row+1;
-      const auto npure_col = 2*l_col+1;
-      memset(target_blk, 0, npure_row*npure_col*sizeof(LIBINT2_REALTYPE_BASE));
+      const auto n = 2*l+1;
+      memset(tgt,0,n*n2*sizeof(Real));
 
-      // loop over row shg
-      for(size_t s1=0; s1!=npure_row; ++s1) {
-        const auto nc1 = coefs_row.nnz(s1);      // # of cartesians contributing to shg s1
-        const auto* c1_idxs = coefs_row.row_idx(s1); // indices of cartesians contributing to shg s1
-        const auto* c1_vals = coefs_row.row_values(s1); // coefficients of cartesians contributing to shg s1
+      // loop over shg
+      for(size_t s=0; s!=n; ++s) {
+        const auto nc_s = coefs.nnz(s);      // # of cartesians contributing to shg s
+        const auto* c_idxs = coefs.row_idx(s); // indices of cartesians contributing to shg s
+        const auto* c_vals = coefs.row_values(s); // coefficients of cartesians contributing to shg s
 
-        auto target_blk_s1 = target_blk + s1 * npure_col;
+        const auto tgt_blk_s_offset = s * n2;
 
-        // loop over col shg
-        for(size_t s2=0; s2!=npure_col; ++s2) {
-          const auto nc2 = coefs_col.nnz(s2);      // # of cartesians contributing to shg s2
-          const auto* c2_idxs = coefs_col.row_idx(s2); // indices of cartesians contributing to shg s2
-          const auto* c2_vals = coefs_col.row_values(s2); // coefficients of cartesians contributing to shg s2
+        for(size_t ic=0; ic!=nc_s; ++ic) { // loop over contributing cartesians
+          const auto c = c_idxs[ic];
+          const auto s_c_coeff = c_vals[ic];
 
-          for(size_t ic1=0; ic1!=nc1; ++ic1) { // loop over contributing cartesians
-            auto c1 = c1_idxs[ic1];
-            auto s1_c1_coeff = c1_vals[ic1];
+          auto src_blk_s = src + c * n2;
+          auto tgt_blk_s = tgt + tgt_blk_s_offset;
 
-            auto source_blk_c1 = source_blk + c1 * ncart_col;
-
-            for(size_t ic2=0; ic2!=nc2; ++ic2) { // loop over contributing cartesians
-              auto c2 = c2_idxs[ic2];
-              auto s2_c2_coeff = c2_vals[ic2];
-
-              target_blk_s1[s2] += source_blk_c1[c2] * s1_c1_coeff * s2_c2_coeff;
-            } // cart2
-
-          } //cart1
-
-        } // shg2
-
-      } // shg1
-    } // tform()
-
-    /// multiplies columns of matrix \c source_blk, stores result to \c target_blk
-    template <typename Real>
-    void tform_cols(size_t nrow, int l_col, const Real* source_blk, Real* target_blk) {
-      const shg_coefs_type& coefs_col = shg_coefs[l_col];
-
-      const auto ncart_col = (l_col+1)*(l_col+2)/2;
-      const auto npure_col = 2*l_col+1;
-
-      // loop over rows
-      for(size_t r1=0; r1!=nrow; ++r1) {
-
-        auto source_blk_r1 = source_blk + r1 * ncart_col;
-        auto target_blk_r1 = target_blk + r1 * npure_col;
-
-        // loop over col shg
-        for(size_t s2=0; s2!=npure_col; ++s2) {
-          const auto nc2 = coefs_col.nnz(s2);      // # of cartesians contributing to shg s2
-          const auto* c2_idxs = coefs_col.row_idx(s2); // indices of cartesians contributing to shg s2
-          const auto* c2_vals = coefs_col.row_values(s2); // coefficients of cartesians contributing to shg s2
-
-          Real r1_s2_value = 0.0;
-
-          for(size_t ic2=0; ic2!=nc2; ++ic2) { // loop over contributing cartesians
-            auto c2 = c2_idxs[ic2];
-            auto s2_c2_coeff = c2_vals[ic2];
-
-            r1_s2_value += source_blk_r1[c2] * s2_c2_coeff;
-
-          } // cart2
-
-          target_blk_r1[s2] = r1_s2_value;
-
-        } // shg1
-
-      } // rows
-
-    } // tform_cols()
-
-    /// multiplies rows of matrix \c source_blk, stores result to \c target_blk
-    template <typename Real>
-    void tform_rows(int l_row, size_t ncol, const Real* source_blk, Real* target_blk) {
-      const shg_coefs_type& coefs_row = shg_coefs[l_row];
-
-      const auto ncart_row = (l_row+1)*(l_row+2)/2;
-      const auto npure_row = 2*l_row+1;
-
-      // loop over row shg
-      for(size_t s1=0; s1!=npure_row; ++s1) {
-        const auto nc1 = coefs_row.nnz(s1);      // # of cartesians contributing to shg s1
-        const auto* c1_idxs = coefs_row.row_idx(s1); // indices of cartesians contributing to shg s1
-        const auto* c1_vals = coefs_row.row_values(s1); // coefficients of cartesians contributing to shg s1
-
-        auto target_blk_s1 = target_blk + s1 * ncol;
-
-        // loop over cols
-        for(size_t c2=0; c2!=ncol; ++c2) {
-
-          Real s1_c2_value = 0.0;
-          auto source_blk_c2_offset = source_blk + c2;
-
-          for(size_t ic1=0; ic1!=nc1; ++ic1) { // loop over contributing cartesians
-            auto c1 = c1_idxs[ic1];
-            auto s1_c1_coeff = c1_vals[ic1];
-
-            s1_c2_value += source_blk_c2_offset[c1 * ncol] * s1_c1_coeff;
-
-          } //cart1
-
-          target_blk_s1[c2] = s1_c2_value;
-
-        } // shg2
-
-      } // shg1
-    } // tform_rows();
-
-    /// transforms matrix from cartesian to real solid harmonic basis
-    template <typename Real, typename Shell> // Shell = libint2::Shell::Contraction
-    void tform(const Shell& shell_row, const Shell& shell_col, const Real* source_blk, Real* target_blk) {
-      const auto trow = shell_row.pure;
-      const auto tcol = shell_col.pure;
-      if (trow) {
-        if (tcol)
-          tform(shell_row.l, shell_col.l, source_blk, target_blk);
-        else
-          tform_rows(shell_row.l, shell_col.cartesian_size(), source_blk, target_blk);
+          // loop over other dims
+          for(size_t i2=0; i2!=n2; ++i2, ++src_blk_s, ++tgt_blk_s) {
+            *tgt_blk_s += s_c_coeff * *src_blk_s;
+          }
+        }
       }
-      else
-        tform_cols(shell_row.cartesian_size(), shell_col.l, source_blk, target_blk);
+
     }
 
     /// transforms two first dimensions of tensor from cartesian to real solid harmonic basis
     template <typename Real>
-    void tform_tensor_12(int l1, int l2, size_t inner_dim, const Real* source_blk, Real* target_blk) {
+    void transform_first2(int l1, int l2, size_t inner_dim, const Real* source_blk, Real* target_blk) {
       const shg_coefs_type& coefs1 = shg_coefs[l1];
       const shg_coefs_type& coefs2 = shg_coefs[l2];
 
@@ -411,29 +309,269 @@ namespace libint2 {
 
       } // blk
 
-    } // tform_tensor_12()
+    } // transform_first2()
 
-    /// transforms two first dimensions of tensor from cartesian to real solid harmonic basis
+    template <typename Real>
+    void transform_inner(size_t n1, size_t l, size_t n2, const Real *src, Real *tgt)
+    {
+      const shg_coefs_type& coefs = shg_coefs[l];
+
+      const auto nc = (l+1)*(l+2)/2;
+      const auto n = 2*l+1;
+      const auto nc_n2 = nc * n2;
+      const auto n_n2 = n * n2;
+      memset(tgt,0,n1*n_n2*sizeof(Real));
+
+      // loop over shg
+      for(size_t s=0; s!=n; ++s) {
+        const auto nc_s = coefs.nnz(s);      // # of cartesians contributing to shg s
+        const auto* c_idxs = coefs.row_idx(s); // indices of cartesians contributing to shg s
+        const auto* c_vals = coefs.row_values(s); // coefficients of cartesians contributing to shg s
+
+        const auto tgt_blk_s_offset = s * n2;
+
+        for(size_t ic=0; ic!=nc_s; ++ic) { // loop over contributing cartesians
+          const auto c = c_idxs[ic];
+          const auto s_c_coeff = c_vals[ic];
+
+          auto src_blk_s = src + c * n2;
+          auto tgt_blk_s = tgt + tgt_blk_s_offset;
+
+          // loop over other dims
+          for(size_t i1=0; i1!=n1; ++i1, src_blk_s+=nc_n2, tgt_blk_s+=n_n2) {
+            for(size_t i2=0; i2!=n2; ++i2) {
+              tgt_blk_s[i2] += s_c_coeff * src_blk_s[i2];
+            }
+          }
+        }
+      }
+
+    }
+
+    /// transforms the last dimension of \c src from cartesian to solid harmonic Gaussians, stores result to \c tgt
+    template <typename Real>
+    void transform_last(size_t n1, size_t l, const Real *src, Real *tgt)
+    {
+      const shg_coefs_type& coefs = shg_coefs[l];
+
+      const auto nc = (l+1)*(l+2)/2;
+      const auto n = 2*l+1;
+      memset(tgt,0,n1*n*sizeof(Real));
+
+      // loop over shg
+      for(size_t s=0; s!=n; ++s) {
+        const auto nc_s = coefs.nnz(s);      // # of cartesians contributing to shg s
+        const auto* c_idxs = coefs.row_idx(s); // indices of cartesians contributing to shg s
+        const auto* c_vals = coefs.row_values(s); // coefficients of cartesians contributing to shg s
+
+        const auto tgt_blk_s_offset = s;
+
+        for(size_t ic=0; ic!=nc_s; ++ic) { // loop over contributing cartesians
+          const auto c = c_idxs[ic];
+          const auto s_c_coeff = c_vals[ic];
+
+          auto src_blk_s = src + c;
+          auto tgt_blk_s = tgt + tgt_blk_s_offset;
+
+          // loop over other dims
+          for(size_t i1=0; i1!=n1; ++i1, src_blk_s+=nc, tgt_blk_s+=n) {
+              *tgt_blk_s += s_c_coeff * *src_blk_s;
+          }
+        }
+      }
+
+    }
+
+    /// transforms the last two dimensions of \c src from cartesian to solid harmonic Gaussians, stores result to \c tgt
+    template <typename Real>
+    void tform_last2(size_t n1, int l_row, int l_col, const Real* source_blk, Real* target_blk) {
+      const shg_coefs_type& coefs_row = shg_coefs[l_row];
+      const shg_coefs_type& coefs_col = shg_coefs[l_col];
+
+      const auto ncart_row = (l_row+1)*(l_row+2)/2;
+      const auto ncart_col = (l_col+1)*(l_col+2)/2;
+      const auto ncart = ncart_row * ncart_col;
+      const auto npure_row = 2*l_row+1;
+      const auto npure_col = 2*l_col+1;
+      const auto npure = npure_row * npure_col;
+      memset(target_blk, 0, n1*npure*sizeof(Real));
+
+      for(size_t i1=0; i1!=n1; ++i1, source_blk+=ncart, target_blk+=npure) {
+        // loop over row shg
+        for(size_t s1=0; s1!=npure_row; ++s1) {
+          const auto nc1 = coefs_row.nnz(s1);      // # of cartesians contributing to shg s1
+          const auto* c1_idxs = coefs_row.row_idx(s1); // indices of cartesians contributing to shg s1
+          const auto* c1_vals = coefs_row.row_values(s1); // coefficients of cartesians contributing to shg s1
+
+          auto target_blk_s1 = target_blk + s1 * npure_col;
+
+          // loop over col shg
+          for(size_t s2=0; s2!=npure_col; ++s2) {
+            const auto nc2 = coefs_col.nnz(s2);      // # of cartesians contributing to shg s2
+            const auto* c2_idxs = coefs_col.row_idx(s2); // indices of cartesians contributing to shg s2
+            const auto* c2_vals = coefs_col.row_values(s2); // coefficients of cartesians contributing to shg s2
+
+            for(size_t ic1=0; ic1!=nc1; ++ic1) { // loop over contributing cartesians
+              auto c1 = c1_idxs[ic1];
+              auto s1_c1_coeff = c1_vals[ic1];
+
+              auto source_blk_c1 = source_blk + c1 * ncart_col;
+
+              for(size_t ic2=0; ic2!=nc2; ++ic2) { // loop over contributing cartesians
+                auto c2 = c2_idxs[ic2];
+                auto s2_c2_coeff = c2_vals[ic2];
+
+                target_blk_s1[s2] += source_blk_c1[c2] * s1_c1_coeff * s2_c2_coeff;
+              } // cart2
+
+            } //cart1
+
+          } // shg2
+
+        } // shg1
+      }
+    } // tform()
+
+    /// multiplies rows and columns of matrix \c source_blk, stores result to \c target_blk
+    template <typename Real>
+    void tform(int l_row, int l_col, const Real* source_blk, Real* target_blk) {
+      const shg_coefs_type& coefs_row = shg_coefs[l_row];
+      const shg_coefs_type& coefs_col = shg_coefs[l_col];
+
+      const auto ncart_row = (l_row+1)*(l_row+2)/2;
+      const auto ncart_col = (l_col+1)*(l_col+2)/2;
+      const auto npure_row = 2*l_row+1;
+      const auto npure_col = 2*l_col+1;
+      memset(target_blk, 0, npure_row*npure_col*sizeof(LIBINT2_REALTYPE_BASE));
+
+      // loop over row shg
+      for(size_t s1=0; s1!=npure_row; ++s1) {
+        const auto nc1 = coefs_row.nnz(s1);      // # of cartesians contributing to shg s1
+        const auto* c1_idxs = coefs_row.row_idx(s1); // indices of cartesians contributing to shg s1
+        const auto* c1_vals = coefs_row.row_values(s1); // coefficients of cartesians contributing to shg s1
+
+        auto target_blk_s1 = target_blk + s1 * npure_col;
+
+        // loop over col shg
+        for(size_t s2=0; s2!=npure_col; ++s2) {
+          const auto nc2 = coefs_col.nnz(s2);      // # of cartesians contributing to shg s2
+          const auto* c2_idxs = coefs_col.row_idx(s2); // indices of cartesians contributing to shg s2
+          const auto* c2_vals = coefs_col.row_values(s2); // coefficients of cartesians contributing to shg s2
+
+          for(size_t ic1=0; ic1!=nc1; ++ic1) { // loop over contributing cartesians
+            auto c1 = c1_idxs[ic1];
+            auto s1_c1_coeff = c1_vals[ic1];
+
+            auto source_blk_c1 = source_blk + c1 * ncart_col;
+
+            for(size_t ic2=0; ic2!=nc2; ++ic2) { // loop over contributing cartesians
+              auto c2 = c2_idxs[ic2];
+              auto s2_c2_coeff = c2_vals[ic2];
+
+              target_blk_s1[s2] += source_blk_c1[c2] * s1_c1_coeff * s2_c2_coeff;
+            } // cart2
+
+          } //cart1
+
+        } // shg2
+
+      } // shg1
+    } // transform_last2()
+
+    /// multiplies columns of matrix \c source_blk, stores result to \c target_blk
+    template <typename Real>
+    void tform_cols(size_t nrow, int l_col, const Real* source_blk, Real* target_blk) {
+      return transform_last(nrow, l_col, source_blk, target_blk);
+      const shg_coefs_type& coefs_col = shg_coefs[l_col];
+
+      const auto ncart_col = (l_col+1)*(l_col+2)/2;
+      const auto npure_col = 2*l_col+1;
+
+      // loop over rows
+      for(size_t r1=0; r1!=nrow; ++r1) {
+
+        auto source_blk_r1 = source_blk + r1 * ncart_col;
+        auto target_blk_r1 = target_blk + r1 * npure_col;
+
+        // loop over col shg
+        for(size_t s2=0; s2!=npure_col; ++s2) {
+          const auto nc2 = coefs_col.nnz(s2);      // # of cartesians contributing to shg s2
+          const auto* c2_idxs = coefs_col.row_idx(s2); // indices of cartesians contributing to shg s2
+          const auto* c2_vals = coefs_col.row_values(s2); // coefficients of cartesians contributing to shg s2
+
+          Real r1_s2_value = 0.0;
+
+          for(size_t ic2=0; ic2!=nc2; ++ic2) { // loop over contributing cartesians
+            auto c2 = c2_idxs[ic2];
+            auto s2_c2_coeff = c2_vals[ic2];
+
+            r1_s2_value += source_blk_r1[c2] * s2_c2_coeff;
+
+          } // cart2
+
+          target_blk_r1[s2] = r1_s2_value;
+
+        } // shg1
+
+      } // rows
+
+    } // tform_cols()
+
+    /// multiplies rows of matrix \c source_blk, stores result to \c target_blk
+    template <typename Real>
+    void tform_rows(int l_row, size_t ncol,  const Real* source_blk, Real* target_blk) {
+      return transform_first(l_row, ncol, source_blk, target_blk);
+      const shg_coefs_type& coefs_row = shg_coefs[l_row];
+
+      const auto ncart_row = (l_row+1)*(l_row+2)/2;
+      const auto npure_row = 2*l_row+1;
+
+      // loop over row shg
+      for(size_t s1=0; s1!=npure_row; ++s1) {
+        const auto nc1 = coefs_row.nnz(s1);      // # of cartesians contributing to shg s1
+        const auto* c1_idxs = coefs_row.row_idx(s1); // indices of cartesians contributing to shg s1
+        const auto* c1_vals = coefs_row.row_values(s1); // coefficients of cartesians contributing to shg s1
+
+        auto target_blk_s1 = target_blk + s1 * ncol;
+
+        // loop over cols
+        for(size_t c2=0; c2!=ncol; ++c2) {
+
+          Real s1_c2_value = 0.0;
+          auto source_blk_c2_offset = source_blk + c2;
+
+          for(size_t ic1=0; ic1!=nc1; ++ic1) { // loop over contributing cartesians
+            auto c1 = c1_idxs[ic1];
+            auto s1_c1_coeff = c1_vals[ic1];
+
+            s1_c2_value += source_blk_c2_offset[c1 * ncol] * s1_c1_coeff;
+
+          } //cart1
+
+          target_blk_s1[c2] = s1_c2_value;
+
+        } // shg2
+
+      } // shg1
+    } // tform_rows();
+
+    /// transforms matrix from cartesian to real solid harmonic basis
     template <typename Real, typename Shell> // Shell = libint2::Shell::Contraction
-    void tform_tensor(const Shell& shell1, const Shell& shell2, size_t inner_dim,
-                      const Real* source, Real* target) {
-      const auto t1 = shell1.pure;
-      const auto t2 = shell2.pure;
-      if (t1) {
-        if (t2)
-          tform_tensor_12(shell1.l, shell2.l, inner_dim, source, target);
+    void tform(const Shell& shell_row, const Shell& shell_col, const Real* source_blk, Real* target_blk) {
+      const auto trow = shell_row.pure;
+      const auto tcol = shell_col.pure;
+      if (trow) {
+        if (tcol) {
+          //tform(shell_row.l, shell_col.l, source_blk, target_blk);
+          Real localscratch[500];
+          tform_cols(shell_row.cartesian_size(), shell_col.l, source_blk, &localscratch[0]);
+          tform_rows(shell_row.l, shell_col.size(), &localscratch[0], target_blk);
+        }
         else
-          tform_rows(shell1.l, shell2.cartesian_size()*inner_dim, source, target);
+          tform_rows(shell_row.l, shell_col.cartesian_size(), source_blk, target_blk);
       }
-      else {
-        const auto* source_blk = source;
-        auto* target_blk = target;
-        const auto n1 = shell1.size();
-        const auto source_blk_size = shell2.cartesian_size() * inner_dim;
-        const auto target_blk_size = shell2.size() * inner_dim;
-        for(int i1=0; i1!=n1; ++i1, source_blk+=source_blk_size, target_blk+=target_blk_size)
-          tform_rows(shell2.l, inner_dim, source_blk, target_blk);
-      }
+      else
+        tform_cols(shell_row.cartesian_size(), shell_col.l, source_blk, target_blk);
     }
 
   } // namespace libint2::solidharmonics
