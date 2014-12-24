@@ -31,7 +31,7 @@
 
 namespace {
   template <typename Int>
-  char parity(Int i) {
+  signed char parity(Int i) {
     return i%2 ? -1 : 1;
   }
 }
@@ -49,13 +49,15 @@ namespace libint2 {
       public:
         SolidHarmonicsCoefficients() : l_(-1) {
         }
-        SolidHarmonicsCoefficients(char l) : l_(l) {
+        SolidHarmonicsCoefficients(unsigned char l) : l_(l) {
+          assert(l <= std::numeric_limits<signed char>::max());
           init();
         }
         ~SolidHarmonicsCoefficients() {
           cleanup();
         }
-        void init(char l) {
+        void init(unsigned char l) {
+          assert(l <= std::numeric_limits<signed char>::max());
           l_ = l;
           init();
         }
@@ -65,29 +67,29 @@ namespace libint2 {
           return values_ + row_offset_[r];
         }
         /// returns ptr to row indices
-        const char* row_idx(size_t r) const {
+        const unsigned char* row_idx(size_t r) const {
           return colidx_ + row_offset_[r];
         }
         /// number of nonzero elements in row \c r
-        char nnz(size_t r) const {
+        unsigned char nnz(size_t r) const {
           return row_offset_[r+1] - row_offset_[r];
         }
 
       private:
         Real* values_;  // elements
-        short* row_offset_; // "pointer" to the beginning of each row
-        char* colidx_;  // column indices
-        char l_;        // the angular momentum quantum number
+        unsigned short* row_offset_; // "pointer" to the beginning of each row
+        unsigned char* colidx_;  // column indices
+        signed char l_;        // the angular momentum quantum number
 
         void init() {
-          const short npure = 2*l_ + 1;;
-          const short ncart = (l_ + 1) * (l_ + 2) / 2;
+          const unsigned short npure = 2*l_ + 1;
+          const unsigned short ncart = (l_ + 1) * (l_ + 2) / 2;
           std::vector<Real> full_coeff(npure * ncart);
 
-          for(char m=-l_; m<=l_; ++m) {
-            const char pure_idx = m + l_;
-            char cart_idx = 0;
-            char lx, ly, lz;
+          for(signed char m=-l_; m<=l_; ++m) {
+            const signed char pure_idx = m + l_;
+            signed char cart_idx = 0;
+            signed char lx, ly, lz;
             FOR_CART(lx, ly, lz, l_)
               full_coeff[pure_idx * ncart + cart_idx] = coeff(l_, m, lx, ly, lz);
               ++cart_idx;
@@ -95,10 +97,10 @@ namespace libint2 {
           }
 
           if (false) {
-          std::cout << "SolidHarmonicsCoefficients: l = " << int(l_) << "\n";
-          typedef Eigen::Matrix<LIBINT2_REALTYPE, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
-          Eigen::Map<Matrix> fcoeff(&full_coeff[0], npure, ncart);
-          std::cout << fcoeff << "\n";
+            std::cout << "SolidHarmonicsCoefficients: l = " << l_ << "\n";
+            typedef Eigen::Matrix<LIBINT2_REALTYPE, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
+            Eigen::Map<Matrix> fcoeff(&full_coeff[0], npure, ncart);
+            std::cout << fcoeff << "\n";
           }
 
           // compress rows
@@ -108,15 +110,15 @@ namespace libint2 {
             nnz += full_coeff[i] == 0.0 ? 0 : 1;
           // 2) allocate
           values_ = new Real[nnz];
-          colidx_ = new char[nnz];
-          row_offset_ = new short[npure+1];
+          colidx_ = new unsigned char[nnz];
+          row_offset_ = new unsigned short[npure+1];
           // 3) copy
           {
-            size_t pc = 0;
-            size_t cnt = 0;
-            for(short p=0; p!=npure; ++p) {
+            unsigned short pc = 0;
+            unsigned short cnt = 0;
+            for(unsigned short p=0; p!=npure; ++p) {
               row_offset_[p] = cnt;
-              for(short c=0; c!=ncart; ++c, ++pc) {
+              for(unsigned short c=0; c!=ncart; ++c, ++pc) {
                 if (full_coeff[pc] != 0.0) {
                   values_[cnt] = full_coeff[pc];
                   colidx_[cnt] = c;
@@ -202,8 +204,8 @@ namespace libint2 {
 
     inline void init() {
       shg_coefs.resize(LIBINT_MAX_AM+1);
-      for(char i=0; i<shg_coefs.size(); ++i) {
-        shg_coefs[i].init(i);
+      for(size_t i=0; i<shg_coefs.size(); ++i) {
+        shg_coefs[i].init(static_cast<unsigned char>(i));
       }
     }
     inline void cleanup() {
