@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
     /*** =========================== ***/
 
     auto shells = make_sto3g_basis(atoms);
-    //auto shells = make_augccpvdz_basis(atoms);
+    //auto shells = make_basis(atoms, SRCDATADIR "/sto-3g.g94");
     size_t nao = 0;
     for (auto s=0; s<shells.size(); ++s)
       nao += shells[s].size();
