@@ -244,7 +244,7 @@ namespace libint2 {
         auto am1 = a - _1;
         if (exists(am1)) {
           auto Am1B = factory.make_child(am1,b);
-          auto S_Am1B = (where == InBra) ? overlap_factory.make_child(am1,b) : 0;
+          auto S_Am1B = (where == InBra) ? overlap_factory.make_child(am1,b) : SafePtr<DGVertex>();
           if (is_simple()) {
             if (where == InBra) {
               expr_ += Vector(a)[dir] * ( Scalar("oo2z") * Am1B -
@@ -260,7 +260,7 @@ namespace libint2 {
         auto bm1 = b - _1;
         if (exists(bm1)) {
           auto ABm1 = factory.make_child(a,bm1);
-          auto S_ABm1 = (where == InKet) ? overlap_factory.make_child(a,bm1) : 0;
+          auto S_ABm1 = (where == InKet) ? overlap_factory.make_child(a,bm1) : SafePtr<DGVertex>();
           if (is_simple()) {
             if (where == InKet) {
               expr_ += Vector(b)[dir] * ( Scalar("oo2z") * ABm1 -
