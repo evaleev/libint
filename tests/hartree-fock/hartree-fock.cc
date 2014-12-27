@@ -973,6 +973,9 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
 
   // construct the 2-electron repulsion integrals engine
   libint2::TwoBodyEngine<libint2::Coulomb> engine(max_nprim(shells), max_l(shells), 0);
+#ifdef LIBINT2_ENGINE_TIMERS
+  engine.timers.set_now_overhead(20);
+#endif
 
   auto shell2bf = map_shell_to_basis_function(shells);
 
@@ -1078,6 +1081,12 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
   }
 
   std::cout << "time for integrals = " << time_elapsed.count() << std::endl;
+#ifdef LIBINT2_ENGINE_TIMERS
+  std::cout << "timers: prereq = " << engine.timers.read(0)
+            << " build = " << engine.timers.read(1)
+            << " tform = " << engine.timers.read(2) << std::endl;
+#endif
+
   // symmetrize the result and return
   Matrix Gt = G.transpose();
   return 0.5 * (G + Gt);

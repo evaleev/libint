@@ -30,11 +30,12 @@
 #include <libint2.h>
 #include <libint2/boys.h>
 #include <libint2/shell.h>
+#include <libint2/timer.h>
 
 #include <Eigen/Core>
 
-// uncomment to troubleshoot solid harmonics transform
-//#define FORCE_SOLID_TFORM_CHECK
+// uncomment to time the TwoBodyEngine
+//#define LIBINT2_ENGINE_TIMERS
 
 namespace libint2 {
 
@@ -235,32 +236,6 @@ namespace libint2 {
             else
               libint2::solidharmonics::tform_cols(n1, l2, cartesian_ints, spherical_ints);
           }
-
-#ifdef FORCE_SOLID_TFORM_CHECK
-          if (1) {
-            const size_t nreplicas = 7;
-            const auto blksize = n1*n2;
-            const auto cart_blksize = ncart1*ncart2;
-            LIBINT2_REALTYPE* test_cartesian_ints = new LIBINT2_REALTYPE[nreplicas*cart_blksize];
-            for(auto i12=0, i12r=0; i12<cart_blksize; ++i12) {
-              for(auto r=0; r<nreplicas; ++r, ++i12r) {
-                test_cartesian_ints[i12r] = cartesian_ints[i12] * r;
-              }
-            }
-            LIBINT2_REALTYPE* test_spherical_ints = new LIBINT2_REALTYPE[nreplicas*blksize];
-            libint2::solidharmonics::tform_tensor(s1.contr[0], s2.contr[0], nreplicas, test_cartesian_ints, test_spherical_ints);
-            bool tform_tensor_works = true;
-            for(auto i12=0, i12r=0; i12<blksize; ++i12) {
-              for(auto r=0; r<nreplicas; ++r, ++i12r) {
-                if (::fabs(test_spherical_ints[i12r] - spherical_ints[i12] * r) > 1e-12) {
-                  tform_tensor_works = false;
-                  throw "sanity test of tform_tensor failed!";
-                }
-              }
-            }
-
-          }
-#endif
 
           result = spherical_ints;
         } // tform to solids
@@ -695,6 +670,10 @@ namespace libint2 {
         return *this;
       }
 
+#ifdef LIBINT2_ENGINE_TIMERS
+      Timers<3> timers;
+#endif
+
       /// computes shell set of integrals
       /// \note result is stored in the "chemists" form, i.e. (tbra1 tbra2 |tket1 tket2), in row-major order
       const LIBINT2_REALTYPE* compute(const libint2::Shell& tbra1,
@@ -743,6 +722,9 @@ namespace libint2 {
           primdata_[0].stack[0] = 0;
 
         // compute primitive data
+#ifdef LIBINT2_ENGINE_TIMERS
+        timers.start(0);
+#endif
         {
           auto p = 0;
           for(auto pb1=0; pb1!=nprim_bra1; ++pb1) {
@@ -756,55 +738,43 @@ namespace libint2 {
           }
           primdata_[0].contrdepth = p;
         }
+#ifdef LIBINT2_ENGINE_TIMERS
+        timers.stop(0);
+#endif
 
         LIBINT2_REALTYPE* result = nullptr;
 
-#ifdef FORCE_SOLID_TFORM_CHECK
-        std::vector<LIBINT2_REALTYPE> cart_ints(tbra1.cartesian_size()*
-                                                tbra2.cartesian_size()*
-                                                tket1.cartesian_size()*
-                                                tket2.cartesian_size());
-#endif
-
         if (lmax == 0) { // (ss|ss)
+#ifdef LIBINT2_ENGINE_TIMERS
+          timers.start(1);
+#endif
           auto& stack = primdata_[0].stack[0];
           for(auto p=0; p != primdata_[0].contrdepth; ++p)
             stack += primdata_[p].LIBINT_T_SS_EREP_SS(0)[0];
           primdata_[0].targets[0] = primdata_[0].stack;
+#ifdef LIBINT2_ENGINE_TIMERS
+          timers.stop(1);
+#endif
 
           result = primdata_[0].targets[0];
-#ifdef FORCE_SOLID_TFORM_CHECK
-          cart_ints[0] = result[0];
-#endif
         }
         else { // not (ss|ss)
+#ifdef LIBINT2_ENGINE_TIMERS
+          timers.start(1);
+#endif
           LIBINT2_PREFIXED_NAME(libint2_build_eri)[bra1.contr[0].l][bra2.contr[0].l][ket1.contr[0].l][ket2.contr[0].l](&primdata_[0]);
+#ifdef LIBINT2_ENGINE_TIMERS
+          timers.stop(1);
+#endif
+
           result = primdata_[0].targets[0];
 
-          // if needed, permute (and transform ... soon :)
+#ifdef LIBINT2_ENGINE_TIMERS
+          timers.start(2);
+#endif
+
+          // if needed, permute and transform
           if (use_scratch) {
-
-#ifdef FORCE_SOLID_TFORM_CHECK
-            {
-              for(auto i1=0, i1234=0; i1<tbra1.cartesian_size(); ++i1) {
-                for(auto i2=0; i2<tbra2.cartesian_size(); ++i2) {
-                  for(auto i3=0; i3<tket1.cartesian_size(); ++i3) {
-                    for(auto i4=0; i4<tket2.cartesian_size(); ++i4, ++i1234) {
-
-                      const auto& j1 = swap_braket ? (swap_ket ? i4 : i3) : (swap_bra ? i2 : i1);
-                      const auto& j2 = swap_braket ? (swap_ket ? i3 : i4) : (swap_bra ? i1 : i2);
-                      const auto& j3 = swap_braket ? (swap_bra ? i2 : i1) : (swap_ket ? i4 : i3);
-                      const auto& j4 = swap_braket ? (swap_bra ? i1 : i2) : (swap_ket ? i3 : i4);
-
-                      cart_ints[i1234] = result[((j1*bra2.cartesian_size()+j2)*ket1.cartesian_size()+j3)*ket2.cartesian_size()+j4];
-                    }
-                  }
-                }
-              }
-
-            }
-#endif // FORCE_SOLID_TFORM_CHECK
-
 
             constexpr auto using_scalar_real = std::is_same<double,LIBINT2_REALTYPE>::value || std::is_same<float,LIBINT2_REALTYPE>::value;
             static_assert(using_scalar_real, "Libint2 C++11 API only supports fundamental real types");
@@ -895,90 +865,12 @@ namespace libint2 {
             result = scratchbuf;
 
           } // if need_scratch => needed to transpose
-#ifdef FORCE_SOLID_TFORM_CHECK
-          else {
-            std::copy(result, result+cart_ints.size(), cart_ints.begin());
-          }
+
+#ifdef LIBINT2_ENGINE_TIMERS
+          timers.stop(2);
 #endif
 
         } // not (ss|ss)
-
-#ifdef FORCE_SOLID_TFORM_CHECK
-        // validate tform by re-computing reference result here
-        {
-          if (tbra1.contr[0].pure && tbra2.contr[0].pure && tket1.contr[0].pure && tket2.contr[0].pure) {
-
-            const auto n = tbra1.size() * tbra2.size() * tket1.size() * tket2.size();
-            std::vector<LIBINT2_REALTYPE> ref_ints(n, 0.0);
-
-            for(size_t s1=0, s1234=0; s1!=tbra1.size(); ++s1) {
-              const solidharmonics::shg_coefs_type& coefs1 = solidharmonics::shg_coefs[tbra1.contr[0].l];
-              const auto nc1 = coefs1.nnz(s1);      // # of cartesians contributing to shg s1
-              const auto* c1_idxs = coefs1.row_idx(s1); // indices of cartesians contributing to shg s1
-              const auto* c1_vals = coefs1.row_values(s1); // coefficients of cartesians contributing to shg s1
-
-              for(size_t s2=0; s2!=tbra2.size(); ++s2) {
-                const solidharmonics::shg_coefs_type& coefs2 = solidharmonics::shg_coefs[tbra2.contr[0].l];
-                const auto nc2 = coefs2.nnz(s2);      // # of cartesians contributing to shg s1
-                const auto* c2_idxs = coefs2.row_idx(s2); // indices of cartesians contributing to shg s1
-                const auto* c2_vals = coefs2.row_values(s2); // coefficients of cartesians contributing to shg s1
-
-                for(size_t s3=0; s3!=tket1.size(); ++s3) {
-                  const solidharmonics::shg_coefs_type& coefs3 = solidharmonics::shg_coefs[tket1.contr[0].l];
-                  const auto nc3 = coefs3.nnz(s3);      // # of cartesians contributing to shg s1
-                  const auto* c3_idxs = coefs3.row_idx(s3); // indices of cartesians contributing to shg s1
-                  const auto* c3_vals = coefs3.row_values(s3); // coefficients of cartesians contributing to shg s1
-
-                  for(size_t s4=0; s4!=tket2.size(); ++s4, ++s1234) {
-                    const solidharmonics::shg_coefs_type& coefs4 = solidharmonics::shg_coefs[tket2.contr[0].l];
-                    const auto nc4 = coefs4.nnz(s4);      // # of cartesians contributing to shg s1
-                    const auto* c4_idxs = coefs4.row_idx(s4); // indices of cartesians contributing to shg s1
-                    const auto* c4_vals = coefs4.row_values(s4); // coefficients of cartesians contributing to shg s1
-
-                    LIBINT2_REALTYPE tformed_value = 0.0;
-
-                    for(size_t ic1=0; ic1!=nc1; ++ic1) { // loop over contributing cartesians
-                      auto c1 = c1_idxs[ic1];
-                      auto s1_c1_coeff = c1_vals[ic1];
-
-                      for(size_t ic2=0; ic2!=nc2; ++ic2) { // loop over contributing cartesians
-                        auto c2 = c2_idxs[ic2];
-                        auto s2_c2_coeff = c2_vals[ic2];
-
-                        for(size_t ic3=0; ic3!=nc3; ++ic3) { // loop over contributing cartesians
-                          auto c3 = c3_idxs[ic3];
-                          auto s3_c3_coeff = c3_vals[ic3];
-
-                          for(size_t ic4=0; ic4!=nc4; ++ic4) { // loop over contributing cartesians
-                            auto c4 = c4_idxs[ic4];
-                            auto s4_c4_coeff = c4_vals[ic4];
-
-                            tformed_value += s1_c1_coeff *
-                                             s2_c2_coeff *
-                                             s3_c3_coeff *
-                                             s4_c4_coeff *
-                                             cart_ints[((c1*tbra2.cartesian_size() + c2)*tket1.cartesian_size() + c3)*tket2.cartesian_size() + c4];
-                          }
-                        }
-                      }
-                    }
-
-                    ref_ints[s1234] = tformed_value;
-                  }
-                }
-              }
-            }
-
-            for(auto i=0; i<n; ++i) {
-              if (::fabs(ref_ints[i] - result[i]) > 1e-12) {
-                  throw "sanity test of solid tform failed!";
-              }
-            }
-
-          }
-        }
-#endif // FORCE_SOLID_TFORM_CHECK
-
 
         return result;
       }
@@ -1177,14 +1069,7 @@ namespace libint2 {
     double* fm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
     const auto mmax = amtot + deriv_order_;
 
-//        timers.stop(0);
-//        timers.start(3);
-        //core_eval_->eval(fm_ptr, T, mmax);
     detail::TwoBodyEngineDispatcher<Kernel>::core_eval(this, fm_ptr, mmax, T, rho);
-//        timers.stop(3);
-//        timers.start(0);
-//        timers.start(4);
-//        timers.stop(4);
 
     for(auto m=0; m!=mmax+1; ++m) {
       fm_ptr[m] *= pfac;
