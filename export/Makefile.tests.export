@@ -3,10 +3,10 @@ TOPDIR = ..
 SRCDIR = ..
 -include ../MakeVars
 
-CPPFLAGS += -I../include -Ieri -Ihartree-fock -DPREP_LIBINT2_SKIP_BOOST 
+CPPFLAGS += -I../include -Ieri -Ihartree-fock -DPREP_LIBINT2_SKIP_BOOST -DSRCDATADIR=\"$(SRCDIR)/lib/data\"
 COMPUTE_LIB = -L../lib -lint2
 
-check:: check1 check2
+check:: check1 check2 check3
 
 TEST1 = eri/test
 check1:: $(TEST1)
@@ -16,25 +16,33 @@ $(TEST1): eri/test.o eri/eri.o
 	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
 
 TEST2 = hartree-fock/hartree-fock
+TEST3 = hartree-fock/hartree-fock++
 
 check2::
+check3::
 
 ifeq ($(LIBINT_HAS_CXX11),yes)
   ifeq ($(LIBINT_HAS_EIGEN),yes)
 check2:: $(TEST2)
 	$^ hartree-fock/h2o.xyz | \
  awk ' {print} /^\*\*/ { eref = -74.942080057682; tol = 1e-11; if ($$5 - eref < tol && eref - $$5 < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }'
+check3:: $(TEST3)
+	$^ hartree-fock/h2o.xyz | \
+ awk ' {print} /^\*\*/ { eref = -76.003354058441; tol = 1e-11; if ($$5 - eref < tol && eref - $$5 < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }'
   endif
 endif
 
 $(TEST2): hartree-fock/hartree-fock.o
 	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
 
+$(TEST3): hartree-fock/hartree-fock++.o
+	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
+
 clean:: targetclean
 	-rm -f */*.o */*.d
 
 targetclean::
-	-rm -f $(TEST1) $(TEST2)
+	-rm -f $(TEST1) $(TEST2) $(TEST3)
 
 distclean:: clean
 

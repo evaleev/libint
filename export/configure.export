@@ -142,8 +142,6 @@ LIBS=$withval
 echo Using extra libraries: $withval
 )
 
-LDFLAGS=
-LIBDIRS=
 AC_ARG_WITH(libdirs,
 [  --with-libdirs          Specifies library directories (-Ldir1 -Ldir2).],
 LIBDIRS=$withval
@@ -282,6 +280,8 @@ AC_SUBST(EXTRAINCLUDE)
 AC_SUBST(CXX)
 AC_SUBST(CXXFLAGS)
 AC_SUBST(LIBDIRS)
+AC_SUBST(LD)
+AC_SUBST(LDFLAGS)
 AC_SUBST(OBJSUF)
 AC_SUBST(LIBSUF)
 AC_SUBST(CXXDEPENDSUF)
