@@ -384,6 +384,13 @@ Matrix compute_2body_fock(const BasisSet& obs,
     engines[i] = engines[0];
   }
 
+#ifndef _OPENMP
+  std::chrono::duration<double> time_elapsed = std::chrono::duration<double>::zero();
+#ifdef LIBINT2_ENGINE_TIMERS
+  engine.timers.set_now_overhead(20);
+#endif
+#endif // not defined _OPENMP
+
   auto shell2bf = obs.shell2bf();
 
 #ifdef _OPENMP
@@ -427,7 +434,16 @@ Matrix compute_2body_fock(const BasisSet& obs,
             auto s12_34_deg = (s1 == s3) ? (s2 == s4 ? 1.0 : 2.0) : 2.0;
             auto s1234_deg = s12_deg * s34_deg * s12_34_deg;
 
+#ifndef _OPENMP
+            const auto tstart = std::chrono::high_resolution_clock::now();
+#endif
+
             const auto* buf = engines[thread_id].compute(obs[s1], obs[s2], obs[s3], obs[s4]);
+
+#ifndef _OPENMP
+            const auto tstop = std::chrono::high_resolution_clock::now();
+            time_elapsed += tstop - tstart;
+#endif
 
             // 1) each shell set of integrals contributes up to 6 shell sets of the Fock matrix:
             //    F(a,b) += (ab|cd) * D(c,d)
@@ -470,6 +486,15 @@ Matrix compute_2body_fock(const BasisSet& obs,
       }
     }
   } // omp parallel
+
+#ifndef _OPENMP
+  std::cout << "time for integrals = " << time_elapsed.count() << std::endl;
+#ifdef LIBINT2_ENGINE_TIMERS
+  std::cout << "timers: prereq = " << engine.timers.read(0)
+            << " build = " << engine.timers.read(1)
+            << " tform = " << engine.timers.read(2) << std::endl;
+#endif
+#endif // not defined _OPENMP
 
   // accumulate contributions from all threads
   for(size_t i=1; i!=nthreads; ++i) {
