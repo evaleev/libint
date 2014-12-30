@@ -622,6 +622,8 @@ namespace libint2 {
       /// \param max_nprim the maximum number of primitives per contracted Gaussian shell
       /// \param max_l the maximum angular momentum of Gaussian shell
       /// \param deriv_level if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_level
+      /// \param precision specifies the target precision with which the integrals will be computed; the default is the "epsilon"
+      ///        of \c LIBINT2_REALTYPE type, given by \c std::numeric_limits<LIBINT2_REALTYPE>::epsilon() (\sa set_precision() )
       /// \param oper_params specifies the operator parameters. The type of \c oper_params depends on \c Kernel as follows:
       ///        <ol>
       ///        <li> \c Coulomb : empty type (does not need to be provided) </li>
@@ -631,10 +633,17 @@ namespace libint2 {
       ///        </ol>
       /// \warning currently only the following kernel types are suported: \c Coulomb
       /// \warning currently derivative integrals are not supported
-      /// \warning currently solid harmonics Gaussians are not supported
-      TwoBodyEngine(size_t max_nprim, int max_l, int deriv_order = 0, const oper_params_type& oparams = oper_params_type()) :
-        primdata_(max_nprim * max_nprim * max_nprim * max_nprim), lmax_(max_l), deriv_order_(deriv_order),
-        core_eval_(core_eval_type::instance(4*lmax_ + deriv_order, 1.e-15))
+      /// \warning currently only one-contraction Shell objects are supported; i.e. generally-contracted Shells are not yet supported
+      TwoBodyEngine(size_t max_nprim, int max_l,
+                    int deriv_order = 0,
+                    LIBINT2_REALTYPE precision = std::numeric_limits<LIBINT2_REALTYPE>::epsilon(),
+                    const oper_params_type& oparams = oper_params_type()) :
+        primdata_(max_nprim * max_nprim * max_nprim * max_nprim),
+        spbra_(max_nprim), spket_(max_nprim),
+        lmax_(max_l), deriv_order_(deriv_order),
+        precision_(precision),
+        ln_precision_(std::log(precision)),
+        core_eval_(core_eval_type::instance(4*lmax_ + deriv_order, precision))
       {
         initialize();
         init_core_ints_params(oparams);
@@ -645,7 +654,10 @@ namespace libint2 {
 
       /// (deep) copy constructor
       TwoBodyEngine(const TwoBodyEngine& other) :
-        primdata_(other.primdata_), lmax_(other.lmax_), deriv_order_(other.deriv_order_),
+        primdata_(other.primdata_),
+        spbra_(other.spbra_), spket_(other.spket_),
+        lmax_(other.lmax_), deriv_order_(other.deriv_order_),
+        precision_(other.precision_), ln_precision_(other.ln_precision_),
         core_eval_(other.core_eval_), core_ints_params_(other.core_ints_params_)
       {
         initialize();
@@ -664,6 +676,8 @@ namespace libint2 {
         primdata_ = other.primdata_;
         lmax_ = other.lmax_;
         deriv_order_ = other.deriv_order_;
+        precision_ = other.precision_;
+        ln_precision_ = other.ln_precision_;
         core_eval_ = other.core_eval_;
         core_ints_params_ = other.core_ints_params_;
         initialize();
@@ -727,17 +741,29 @@ namespace libint2 {
 #endif
         {
           auto p = 0;
-          for(auto pb1=0; pb1!=nprim_bra1; ++pb1) {
-            for(auto pb2=0; pb2!=nprim_bra2; ++pb2) {
-              for(auto pk1=0; pk1!=nprim_ket1; ++pk1) {
-                for(auto pk2=0; pk2!=nprim_ket2; ++pk2, ++p) {
-                  compute_primdata(primdata_[p],bra1,bra2,ket1,ket2,pb1,pb2,pk1,pk2);
+          spbra_.init(bra1, bra2, ln_precision_);
+          spket_.init(ket1, ket2, ln_precision_);
+          const auto npbra = spbra_.primpairs.size();
+          const auto npket = spket_.primpairs.size();
+          for(auto pb=0; pb!=npbra; ++pb) {
+            for(auto pk=0; pk!=npket; ++pk) {
+              if (spbra_.primpairs[pb].scr + spket_.primpairs[pk].scr > ln_precision_) {
+                if (compute_primdata(primdata_[p],bra1,bra2,ket1,ket2,spbra_,pb,spket_,pk)) {
+                  ++p;
                 }
               }
             }
           }
           primdata_[0].contrdepth = p;
         }
+
+        // all primitive combinations screened out? return zeroes
+        if (primdata_[0].contrdepth == 0) {
+          const size_t n = bra1.size() * bra2.size() * ket1.size() * ket2.size();
+          memset(primdata_[0].stack, 0, sizeof(LIBINT2_REALTYPE)*n);
+          return primdata_[0].stack;
+        }
+
 #ifdef LIBINT2_ENGINE_TIMERS
         timers.stop(0);
 #endif
@@ -875,21 +901,35 @@ namespace libint2 {
         return result;
       }
 
+      /** this specifies target precision for computing the integrals.
+       *  target precision \f$ \epsilon \f$ is used in 3 ways:
+       *  (1) to screen out primitive pairs in ShellPair object for which
+       *      \f$ {\rm scr}_{12} = \max|c_1| \max|c_2| \exp(-\rho_{12} |AB|^2)/\gamma_{12} < \epsilon \f$ ;
+       *  (2) to screen out primitive quartets outside compute_primdata() for which \f$ {\rm scr}_{12} {\rm scr}_{34} <  \epsilon \f$;
+       *  (3) to screen out primitive quartets inside compute_primdata() for which the prefactor of \f$ F_m(\rho, T) \f$ is smaller
+       *      than \f$ \epsilon \f$ .
+       */
+      void set_precision(LIBINT2_REALTYPE prec) {
+        precision_ = prec;
+        ln_precision_ = std::log(precision_);
+      }
+
     private:
 
-      void compute_primdata(Libint_t& primdata,
-                            const Shell& sbra1,
-                            const Shell& sbra2,
-                            const Shell& sket1,
-                            const Shell& sket2,
-                            size_t pbra1,
-                            size_t pbra2,
-                            size_t pket1,
-                            size_t pket2);
+      inline bool compute_primdata(Libint_t& primdata,
+                                   const Shell& sbra1,
+                                   const Shell& sbra2,
+                                   const Shell& sket1,
+                                   const Shell& sket2,
+                                   const ShellPair& spbra, size_t pbra,
+                                   const ShellPair& spket, size_t pket);
 
       std::vector<Libint_t> primdata_;
+      ShellPair spbra_, spket_;
       int lmax_;
       size_t deriv_order_;
+      LIBINT2_REALTYPE precision_;
+      LIBINT2_REALTYPE ln_precision_;
 
       typedef typename libint2::TwoBodyEngineTraits<Kernel>::core_eval_type core_eval_type;
       std::shared_ptr<core_eval_type> core_eval_;
@@ -1000,20 +1040,27 @@ namespace libint2 {
   }
 
   template <MultiplicativeSphericalTwoBodyKernel Kernel>
-  void TwoBodyEngine<Kernel>::compute_primdata(Libint_t& primdata,
-                        const Shell& sbra1,
-                        const Shell& sbra2,
-                        const Shell& sket1,
-                        const Shell& sket2,
-                        size_t pbra1,
-                        size_t pbra2,
-                        size_t pket1,
-                        size_t pket2) {
+  inline bool TwoBodyEngine<Kernel>::compute_primdata(Libint_t& primdata,
+                                                      const Shell& sbra1,
+                                                      const Shell& sbra2,
+                                                      const Shell& sket1,
+                                                      const Shell& sket2,
+                                                      const ShellPair& spbra, size_t pbra,
+                                                      const ShellPair& spket, size_t pket) {
 
     const auto& A = sbra1.O;
     const auto& B = sbra2.O;
     const auto& C = sket1.O;
     const auto& D = sket2.O;
+    const auto& AB = spbra.AB;
+    const auto& CD = spket.AB;
+
+    const auto& spbrapp = spbra.primpairs[pbra];
+    const auto& spketpp = spket.primpairs[pket];
+    const auto& pbra1 = spbrapp.p1;
+    const auto& pbra2 = spbrapp.p2;
+    const auto& pket1 = spketpp.p1;
+    const auto& pket2 = spketpp.p2;
 
     const auto alpha0 = sbra1.alpha[pbra1];
     const auto alpha1 = sbra2.alpha[pbra2];
@@ -1029,42 +1076,32 @@ namespace libint2 {
                        sbra2.contr[0].l + sket2.contr[0].l;
 
     const auto gammap = alpha0 + alpha1;
-    const auto oogammap = 1.0 / gammap;
+    const auto oogammap = spbrapp.one_over_gamma;
     const auto rhop = alpha0 * alpha1 * oogammap;
-    const auto Px = (alpha0 * A[0] + alpha1 * B[0]) * oogammap;
-    const auto Py = (alpha0 * A[1] + alpha1 * B[1]) * oogammap;
-    const auto Pz = (alpha0 * A[2] + alpha1 * B[2]) * oogammap;
-    const auto AB_x = A[0] - B[0];
-    const auto AB_y = A[1] - B[1];
-    const auto AB_z = A[2] - B[2];
-    const auto AB2 = AB_x*AB_x + AB_y*AB_y + AB_z*AB_z;
 
     const auto gammaq = alpha2 + alpha3;
-    const auto oogammaq = 1.0 / gammaq;
+    const auto oogammaq = spketpp.one_over_gamma;
     const auto rhoq = alpha2 * alpha3 * oogammaq;
+
+    const auto& P = spbrapp.P;
+    const auto& Q = spketpp.P;
+    const auto PQx = P[0] - Q[0];
+    const auto PQy = P[1] - Q[1];
+    const auto PQz = P[2] - Q[2];
+    const auto PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
+
+    const auto K12 = spbrapp.K * spketpp.K;
+    decltype(K12) two_times_M_PI_to_25(34.986836655249725693); // (2 \pi)^{5/2}
     const auto gammapq = gammap + gammaq;
     const auto sqrt_gammapq = sqrt(gammapq);
     const auto oogammapq = 1.0 / (gammapq);
-    const auto rho = gammap * gammaq * oogammapq;
-    const auto Qx = (alpha2 * C[0] + alpha3 * D[0]) * oogammaq;
-    const auto Qy = (alpha2 * C[1] + alpha3 * D[1]) * oogammaq;
-    const auto Qz = (alpha2 * C[2] + alpha3 * D[2]) * oogammaq;
-    const auto CD_x = C[0] - D[0];
-    const auto CD_y = C[1] - D[1];
-    const auto CD_z = C[2] - D[2];
-    const auto CD2 = CD_x * CD_x + CD_y * CD_y + CD_z * CD_z;
-
-    const auto PQx = Px - Qx;
-    const auto PQy = Py - Qy;
-    const auto PQz = Pz - Qz;
-    const auto PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
-
-    const auto K1 = exp(- rhop * AB2);
-    const auto K2 = exp(- rhoq * CD2);
-    decltype(K1) two_times_M_PI_to_25(34.986836655249725693); // (2 \pi)^{5/2}
-    double pfac = two_times_M_PI_to_25 * K1 * K2  * oogammap * oogammaq * sqrt_gammapq * oogammapq;
+    double pfac = two_times_M_PI_to_25 * K12 * sqrt_gammapq * oogammapq;
     pfac *= c0 * c1 * c2 * c3;
 
+    if (std::abs(pfac) < precision_)
+      return false;
+
+    const auto rho = gammap * gammaq * oogammapq;
     const auto T = PQ2*rho;
     double* fm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
     const auto mmax = amtot + deriv_order_;
@@ -1076,108 +1113,108 @@ namespace libint2 {
     }
 
     if (mmax == 0)
-      return;
+      return true;
 
 #if LIBINT2_DEFINED(eri,PA_x)
-    primdata.PA_x[0] = Px - A[0];
+    primdata.PA_x[0] = P[0] - A[0];
 #endif
 #if LIBINT2_DEFINED(eri,PA_y)
-    primdata.PA_y[0] = Py - A[1];
+    primdata.PA_y[0] = P[1] - A[1];
 #endif
 #if LIBINT2_DEFINED(eri,PA_z)
-    primdata.PA_z[0] = Pz - A[2];
+    primdata.PA_z[0] = P[2] - A[2];
 #endif
 #if LIBINT2_DEFINED(eri,PB_x)
-    primdata.PB_x[0] = Px - B[0];
+    primdata.PB_x[0] = P[0] - B[0];
 #endif
 #if LIBINT2_DEFINED(eri,PB_y)
-    primdata.PB_y[0] = Py - B[1];
+    primdata.PB_y[0] = P[1] - B[1];
 #endif
 #if LIBINT2_DEFINED(eri,PB_z)
-    primdata.PB_z[0] = Pz - B[2];
+    primdata.PB_z[0] = P[2] - B[2];
 #endif
 
 #if LIBINT2_DEFINED(eri,QC_x)
-    primdata.QC_x[0] = Qx - C[0];
+    primdata.QC_x[0] = Q[0] - C[0];
 #endif
 #if LIBINT2_DEFINED(eri,QC_y)
-    primdata.QC_y[0] = Qy - C[1];
+    primdata.QC_y[0] = Q[1] - C[1];
 #endif
 #if LIBINT2_DEFINED(eri,QC_z)
-    primdata.QC_z[0] = Qz - C[2];
+    primdata.QC_z[0] = Q[2] - C[2];
 #endif
 #if LIBINT2_DEFINED(eri,QD_x)
-    primdata.QD_x[0] = Qx - D[0];
+    primdata.QD_x[0] = Q[0] - D[0];
 #endif
 #if LIBINT2_DEFINED(eri,QD_y)
-    primdata.QD_y[0] = Qy - D[1];
+    primdata.QD_y[0] = Q[1] - D[1];
 #endif
 #if LIBINT2_DEFINED(eri,QD_z)
-    primdata.QD_z[0] = Qz - D[2];
+    primdata.QD_z[0] = Q[2] - D[2];
 #endif
 
 #if LIBINT2_DEFINED(eri,AB_x)
-    primdata.AB_x[0] = AB_x;
+    primdata.AB_x[0] = AB[0];
 #endif
 #if LIBINT2_DEFINED(eri,AB_y)
-    primdata.AB_y[0] = AB_y;
+    primdata.AB_y[0] = AB[1];
 #endif
 #if LIBINT2_DEFINED(eri,AB_z)
-    primdata.AB_z[0] = AB_z;
+    primdata.AB_z[0] = AB[2];
 #endif
 #if LIBINT2_DEFINED(eri,BA_x)
-    primdata.BA_x[0] = -AB_x;
+    primdata.BA_x[0] = -AB[0];
 #endif
 #if LIBINT2_DEFINED(eri,BA_y)
-    primdata.BA_y[0] = -AB_y;
+    primdata.BA_y[0] = -AB[1];
 #endif
 #if LIBINT2_DEFINED(eri,BA_z)
-    primdata.BA_z[0] = -AB_z;
+    primdata.BA_z[0] = -AB[2];
 #endif
 
 #if LIBINT2_DEFINED(eri,CD_x)
-    primdata.CD_x[0] = CD_x;
+    primdata.CD_x[0] = CD[0];
 #endif
 #if LIBINT2_DEFINED(eri,CD_y)
-    primdata.CD_y[0] = CD_y;
+    primdata.CD_y[0] = CD[1];
 #endif
 #if LIBINT2_DEFINED(eri,CD_z)
-    primdata.CD_z[0] = CD_z;
+    primdata.CD_z[0] = CD[2];
 #endif
 #if LIBINT2_DEFINED(eri,DC_x)
-    primdata.DC_x[0] = -CD_x;
+    primdata.DC_x[0] = -CD[0];
 #endif
 #if LIBINT2_DEFINED(eri,DC_y)
-    primdata.DC_y[0] = -CD_y;
+    primdata.DC_y[0] = -CD[1];
 #endif
 #if LIBINT2_DEFINED(eri,DC_z)
-    primdata.DC_z[0] = -CD_z;
+    primdata.DC_z[0] = -CD[2];
 #endif
 
     const auto gammap_o_gammapgammaq = oogammapq * gammap;
     const auto gammaq_o_gammapgammaq = oogammapq * gammaq;
 
-    const auto Wx = (gammap_o_gammapgammaq * Px + gammaq_o_gammapgammaq * Qx);
-    const auto Wy = (gammap_o_gammapgammaq * Py + gammaq_o_gammapgammaq * Qy);
-    const auto Wz = (gammap_o_gammapgammaq * Pz + gammaq_o_gammapgammaq * Qz);
+    const auto Wx = (gammap_o_gammapgammaq * P[0] + gammaq_o_gammapgammaq * Q[0]);
+    const auto Wy = (gammap_o_gammapgammaq * P[1] + gammaq_o_gammapgammaq * Q[1]);
+    const auto Wz = (gammap_o_gammapgammaq * P[2] + gammaq_o_gammapgammaq * Q[2]);
 
 #if LIBINT2_DEFINED(eri,WP_x)
-    primdata.WP_x[0] = Wx - Px;
+    primdata.WP_x[0] = Wx - P[0];
 #endif
 #if LIBINT2_DEFINED(eri,WP_y)
-    primdata.WP_y[0] = Wy - Py;
+    primdata.WP_y[0] = Wy - P[1];
 #endif
 #if LIBINT2_DEFINED(eri,WP_z)
-    primdata.WP_z[0] = Wz - Pz;
+    primdata.WP_z[0] = Wz - P[2];
 #endif
 #if LIBINT2_DEFINED(eri,WQ_x)
-    primdata.WQ_x[0] = Wx - Qx;
+    primdata.WQ_x[0] = Wx - Q[0];
 #endif
 #if LIBINT2_DEFINED(eri,WQ_y)
-    primdata.WQ_y[0] = Wy - Qy;
+    primdata.WQ_y[0] = Wy - Q[1];
 #endif
 #if LIBINT2_DEFINED(eri,WQ_z)
-    primdata.WQ_z[0] = Wz - Qz;
+    primdata.WQ_z[0] = Wz - Q[2];
 #endif
 #if LIBINT2_DEFINED(eri,oo2z)
     primdata.oo2z[0] = 0.5*oogammap;
@@ -1197,40 +1234,40 @@ namespace libint2 {
 
     // using ITR?
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_x)
-    Data->TwoPRepITR_pfac0_0_0_x[0] = - (alpha1*AB_x + alpha3*CD_x) * oogammap;
+    Data->TwoPRepITR_pfac0_0_0_x[0] = - (alpha1*AB[0] + alpha3*CD[0]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_y)
-    Data->TwoPRepITR_pfac0_0_0_y[0] = - (alpha1*AB_y + alpha3*CD_y) * oogammap;
+    Data->TwoPRepITR_pfac0_0_0_y[0] = - (alpha1*AB[1] + alpha3*CD[1]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_z)
-    Data->TwoPRepITR_pfac0_0_0_z[0] = - (alpha1*AB_z + alpha3*CD_z) * oogammap;
+    Data->TwoPRepITR_pfac0_0_0_z[0] = - (alpha1*AB[2] + alpha3*CD[2]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_x)
-    Data->TwoPRepITR_pfac0_1_0_x[0] = - (alpha1*AB_x + alpha3*CD_x) * oogammaq;
+    Data->TwoPRepITR_pfac0_1_0_x[0] = - (alpha1*AB[0] + alpha3*CD[0]) * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_y)
-    Data->TwoPRepITR_pfac0_1_0_y[0] = - (alpha1*AB_y + alpha3*CD_y) * oogammaq;
+    Data->TwoPRepITR_pfac0_1_0_y[0] = - (alpha1*AB[1] + alpha3*CD[1]) * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_z)
-    Data->TwoPRepITR_pfac0_1_0_z[0] = - (alpha1*AB_z + alpha3*CD_z) * oogammaq;
+    Data->TwoPRepITR_pfac0_1_0_z[0] = - (alpha1*AB[2] + alpha3*CD[2]) * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_x)
-    Data->TwoPRepITR_pfac0_0_1_x[0] = (alpha0*AB_x + alpha2*CD_x) * oogammap;
+    Data->TwoPRepITR_pfac0_0_1_x[0] = (alpha0*AB[0] + alpha2*CD[0]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_y)
-    Data->TwoPRepITR_pfac0_0_1_y[0] = (alpha0*AB_y + alpha2*CD_y) * oogammap;
+    Data->TwoPRepITR_pfac0_0_1_y[0] = (alpha0*AB[1] + alpha2*CD[1]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_z)
-    Data->TwoPRepITR_pfac0_0_1_z[0] = (alpha0*AB_z + alpha2*CD_z) * oogammap;
+    Data->TwoPRepITR_pfac0_0_1_z[0] = (alpha0*AB[2] + alpha2*CD[2]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_x)
-    Data->TwoPRepITR_pfac0_1_1_x[0] = (alpha0*AB_x + alpha2*CD_x) * oogammaq;
+    Data->TwoPRepITR_pfac0_1_1_x[0] = (alpha0*AB[0] + alpha2*CD[0]) * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_y)
-    Data->TwoPRepITR_pfac0_1_1_y[0] = (alpha0*AB_y + alpha2*CD_y) * oogammaq;
+    Data->TwoPRepITR_pfac0_1_1_y[0] = (alpha0*AB[1] + alpha2*CD[1]) * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_z)
-    Data->TwoPRepITR_pfac0_1_1_z[0] = (alpha0*AB_z + alpha2*CD_z) * oogammaq;
+    Data->TwoPRepITR_pfac0_1_1_z[0] = (alpha0*AB[2] + alpha2*CD[2]) * oogammaq;
 #endif
 
     // prefactors for derivative ERI relations
@@ -1284,8 +1321,9 @@ namespace libint2 {
       primdata.two_alpha1_ket[0] = 2.0 * alpha3;
 #endif
     }
-  }
 
+    return true;
+  }
 
   template <>
   inline void TwoBodyEngine<DelcGTG_square>::init_core_ints_params(

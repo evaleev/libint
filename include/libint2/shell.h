@@ -94,6 +94,7 @@ namespace libint2 {
       std::vector<LIBINT2_REALTYPE> alpha; //!< exponents
       std::vector<Contraction> contr;      //!< contractions
       std::array<LIBINT2_REALTYPE, 3> O;   //!< origin
+      std::vector<LIBINT2_REALTYPE> max_ln_coeff; //!< maximum ln of (absolute) contraction coefficient for each primitive
 
       Shell& move(const std::array<LIBINT2_REALTYPE, 3> new_origin) {
         O = new_origin;
@@ -128,6 +129,16 @@ namespace libint2 {
 
           }
         }
+
+        // update max log coefficients
+        max_ln_coeff.resize(np);
+        for(auto p=0; p!=np; ++p) {
+          LIBINT2_REALTYPE max_ln_c = - std::numeric_limits<LIBINT2_REALTYPE>::max();
+          for(auto& c: contr) {
+            max_ln_c = std::max(max_ln_c, log(std::abs(c.coeff[p])));
+          }
+          max_ln_coeff[p] = max_ln_c;
+        }
       }
 
       size_t ncontr() const { return contr.size(); }
@@ -160,6 +171,73 @@ namespace libint2 {
 
     return os;
   }
+
+  /// ShellPair pre-computes shell-pair data, primitive pairs are screened to finite precision
+  struct ShellPair {
+      struct PrimPairData {
+          LIBINT2_REALTYPE P[3]; //!< \f$ (\alpha_1 \vec{A} + \alpha_2 \vec{B})/(\alpha_1 + \alpha_2) \f$
+          LIBINT2_REALTYPE K;
+          LIBINT2_REALTYPE one_over_gamma;
+          LIBINT2_REALTYPE scr;
+          int p1;
+          int p2;
+      };
+
+      std::vector<PrimPairData> primpairs;
+      LIBINT2_REALTYPE AB[3];
+
+      ShellPair() : primpairs() { for(int i=0; i!=3; ++i) AB[i] = 0.; }
+
+      ShellPair(size_t max_nprim) : primpairs() {
+        primpairs.reserve(max_nprim*max_nprim);
+        for(int i=0; i!=3; ++i) AB[i] = 0.;
+      }
+
+      // initializes "expensive" primitive pair data; primitive pairs are
+      void init(const Shell& s1, const Shell& s2, const LIBINT2_REALTYPE& ln_prec) {
+
+        primpairs.clear();
+
+        const auto& A = s1.O;
+        const auto& B = s2.O;
+        LIBINT2_REALTYPE AB2 = 0.;
+        for(int i=0; i!=3; ++i) {
+          AB[i] = A[i] - B[i];
+          AB2 += AB[i]*AB[i];
+        }
+
+        size_t c = 0;
+        for(size_t p1=0; p1!=s1.alpha.size(); ++p1) {
+          for(size_t p2=0; p2!=s2.alpha.size(); ++p2) {
+
+            const auto& a1 = s1.alpha[p1];
+            const auto& a2 = s2.alpha[p2];
+            const auto gamma = a1 + a2;
+            const auto oogamma = 1.0 / gamma;
+
+            const auto rho = a1 * a2 * oogamma;
+            const auto minus_rho_times_AB2 = -rho*AB2;
+            const auto screen_fac = minus_rho_times_AB2 + s1.max_ln_coeff[p1] + s2.max_ln_coeff[p2];
+            if (screen_fac < ln_prec)
+              continue;
+
+            primpairs.resize(c+1);
+            PrimPairData& p = primpairs[c];
+            p.scr = screen_fac;
+            p.p1 = p1;
+            p.p2 = p2;
+            p.K = exp(minus_rho_times_AB2) * oogamma;
+            p.P[0] = (a1 * A[0] + a2 * B[0]) * oogamma;
+            p.P[1] = (a1 * A[1] + a2 * B[1]) * oogamma;
+            p.P[2] = (a1 * A[2] + a2 * B[2]) * oogamma;
+            p.one_over_gamma = oogamma;
+
+            ++c;
+          }
+        }
+      }
+
+  };
 
 } // namespace libint2
 
