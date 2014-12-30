@@ -32,6 +32,7 @@
 
 namespace libint2 {
 
+  /// BasisSet is a slightly decorated \c std::vector of \c libint2::Shell objects.
   class BasisSet : public std::vector<libint2::Shell> {
     public:
       BasisSet() : name_(""), nbf_(-1), max_nprim_(0), max_l_(-1) {}
@@ -101,6 +102,7 @@ namespace libint2 {
         shell2bf_ = compute_shell2bf(*this);
       }
 
+    public:
       static unsigned short to_l(std::string amlabel) {
         assert(amlabel.size() == 1);
         const char amchar = ::toupper(amlabel.c_str()[0]);
