@@ -425,6 +425,7 @@ WARN_LOGFILE           =
 
 INPUT                  = @top_srcdir@/src/bin \
                          @top_srcdir@/src/lib/libint \
+                         @top_srcdir@/include \
                          @top_srcdir@/doc
 
 # If the value of the INPUT tag contains directories, you can use the 
