@@ -61,7 +61,7 @@ Matrix compute_1body_ints(const BasisSet& obs,
                           const std::vector<Atom>& atoms = std::vector<Atom>());
 Matrix compute_2body_fock(const BasisSet& obs,
                           const Matrix& D);
-// an efficient Fock builder that can accept densities expressed a separate basis
+// an Fock builder that can accept densities expressed a separate basis
 Matrix compute_2body_fock_general(const BasisSet& obs,
                                   const Matrix& D,
                                   const BasisSet& D_bs);
