@@ -2005,7 +2005,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
       // print out a recurrence relation
       if (current_vertex->num_exit_arcs() != 0) {
         // printing a recurrence relation
-        std::cout << "DirectedGraph::print_def(): a RR making " << current_vertex->description() << std::endl;
+        //std::cout << "DirectedGraph::print_def(): a RR making " << current_vertex->description() << std::endl;
         typedef DGArcRR arc_type;
         SafePtr<arc_type>
             arc_ptr =
