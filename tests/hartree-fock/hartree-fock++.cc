@@ -39,6 +39,7 @@
 #include <libint2/cxxapi.h>
 #include <libint2/chemistry/elements.h>
 #include <libint2/basis.h>
+#include <libint2/diis.h>
 
 #if defined(_OPENMP)
 # include <omp.h>
@@ -105,9 +106,9 @@ int main(int argc, char *argv[]) {
         auto r = sqrt(r2);
         enuc += atoms[i].atomic_number * atoms[j].atomic_number / r;
       }
-    cout << "\tNuclear repulsion energy = " << std::setprecision(15) << enuc << endl;
+    cout << "Nuclear repulsion energy = " << std::setprecision(15) << enuc << endl;
 
-    BasisSet obs("aug-cc-pvdz", atoms);
+    BasisSet obs("6-31G", atoms);
 
     /*** =========================== ***/
     /*** compute 1-e integrals       ***/
@@ -147,32 +148,37 @@ int main(int argc, char *argv[]) {
     }
 
     /*** =========================== ***/
-    /*** main iterative loop         ***/
+    /***          SCF loop           ***/
     /*** =========================== ***/
 
     const auto maxiter = 100;
     const auto conv = 1e-12;
     auto iter = 0;
-    auto rmsd = 0.0;
-    auto ediff = 0.0;
+    auto rms_error = 0.0;
+    auto ediff_rel = 0.0;
     auto ehf = 0.0;
+    auto n2 = D.cols() * D.rows();
+    libint2::DIIS<Matrix> diis;
     do {
       const auto tstart = std::chrono::high_resolution_clock::now();
       ++iter;
 
-      // Save a copy of the energy and the density
+      // Last iteration's energy
       auto ehf_last = ehf;
-      auto D_last = D;
 
       // build a new Fock matrix
       auto F = H;
       F += compute_2body_fock(obs, D);
 
-      // compute HF energy
-      ehf = 0.0;
-      for (auto i = 0; i < D.rows(); i++)
-        for (auto j = 0; j < D.cols(); j++)
-          ehf += D(i,j) * (H(i,j) + F(i,j));
+      // compute HF energy with the non-extrapolated Fock matrix
+      ehf = D.cwiseProduct(H+F).sum();
+      ediff_rel = std::abs((ehf - ehf_last)/ehf);
+
+      // DIIS extrapolate F
+      Matrix FD_comm = F*D*S - S*D*F;
+      diis.extrapolate(F,FD_comm);
+      // compute SCF error
+      rms_error = FD_comm.norm()/n2;
 
       // solve F C = e S C
       Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> gen_eig_solver(F, S);
@@ -183,20 +189,16 @@ int main(int argc, char *argv[]) {
       auto C_occ = C.leftCols(ndocc);
       D = C_occ * C_occ.transpose();
 
-      // compute difference with last iteration
-      ediff = ehf - ehf_last;
-      rmsd = (D - D_last).norm();
-
       const auto tstop = std::chrono::high_resolution_clock::now();
       const std::chrono::duration<double> time_elapsed = tstop - tstart;
 
       if (iter == 1)
         std::cout <<
-        "\n\n Iter        E(elec)              E(tot)               Delta(E)             RMS(D)         Time(s)\n";
-      printf(" %02d %20.12f %20.12f %20.12f %20.12f %10.5lf\n", iter, ehf, ehf + enuc,
-             ediff, rmsd, time_elapsed.count());
+        "\n\nIter         E(HF)                 D(E)/E         RMS([F,D])/nn       Time(s)\n";
+      printf(" %02d %20.12f %20.12f %20.12e %10.5lf\n", iter, ehf + enuc,
+             ediff_rel, rms_error, time_elapsed.count());
 
-    } while (((fabs(ediff) > conv) || (fabs(rmsd) > conv)) && (iter < maxiter));
+    } while (((ediff_rel > conv) || (rms_error > conv)) && (iter < maxiter));
 
     printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
 
@@ -510,91 +512,125 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                                   const BasisSet& D_bs) {
 
   const auto n = obs.nbf();
-  Matrix G = Matrix::Zero(n,n);
-
   const auto n_D = D_bs.nbf();
   assert(D.cols() == D.rows() && D.cols() == n_D);
 
-  // construct the 2-electron repulsion integrals engine
-  libint2::TwoBodyEngine<libint2::Coulomb> engine(std::max(obs.max_nprim(),D_bs.max_nprim()),
-                                                  std::max(obs.max_l(), D_bs.max_l()), 0);
+#ifdef _OPENMP
+  const auto nthreads = omp_get_max_threads();
+#else
+  const auto nthreads = 1;
+#endif
+  std::vector<Matrix> G(nthreads, Matrix::Zero(n,n));
 
+  // construct the 2-electron repulsion integrals engine
+  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
+  std::vector<coulomb_engine_type> engines(nthreads);
+  engines[0] = coulomb_engine_type(std::max(obs.max_nprim(),D_bs.max_nprim()),
+                                   std::max(obs.max_l(), D_bs.max_l()), 0);
+  engines[0].set_precision(1e-8);
+  for(size_t i=1; i!=nthreads; ++i) {
+    engines[i] = engines[0];
+  }
   auto shell2bf = obs.shell2bf();
   auto shell2bf_D = D_bs.shell2bf();
 
-  // loop over permutationally-unique set of shells
-  for(auto s1=0; s1!=obs.size(); ++s1) {
+#ifdef _OPENMP
+  #pragma omp parallel
+#endif
+  {
+#ifdef _OPENMP
+    auto thread_id = omp_get_thread_num();
+#else
+    auto thread_id = 0;
+#endif
 
-    auto bf1_first = shell2bf[s1]; // first basis function in this shell
-    auto n1 = obs[s1].size();   // number of basis functions in this shell
+    auto s1234 = 0ul;
+    // loop over permutationally-unique set of shells
+    for(auto s1=0; s1!=obs.size(); ++s1) {
 
-    for(auto s2=0; s2<=s1; ++s2) {
+      auto bf1_first = shell2bf[s1]; // first basis function in this shell
+      auto n1 = obs[s1].size();   // number of basis functions in this shell
 
-      auto bf2_first = shell2bf[s2];
-      auto n2 = obs[s2].size();
+      for(auto s2=0; s2<=s1; ++s2) {
 
-      for(auto s3=0; s3<D_bs.size(); ++s3) {
+        auto bf2_first = shell2bf[s2];
+        auto n2 = obs[s2].size();
 
-        auto bf3_first = shell2bf_D[s3];
-        auto n3 = D_bs[s3].size();
+        for(auto s3=0; s3<D_bs.size(); ++s3) {
 
-        for(auto s4=0; s4<D_bs.size(); ++s4) {
+          auto bf3_first = shell2bf_D[s3];
+          auto n3 = D_bs[s3].size();
 
-          auto bf4_first = shell2bf_D[s4];
-          auto n4 = D_bs[s4].size();
+          for(auto s4=0; s4<D_bs.size(); ++s4, ++s1234) {
 
-          // compute the permutational degeneracy (i.e. # of equivalents) of the given shell set
-          auto s12_deg = (s1 == s2) ? 1.0 : 2.0;
+            if (s1234 % nthreads != thread_id)
+              continue;
 
-          if (s3 >= s4) {
-            auto s34_deg = (s3 == s4) ? 1.0 : 2.0;
-            auto s1234_deg = s12_deg * s34_deg;
-            //auto s1234_deg = s12_deg;
-            const auto* buf_J = engine.compute(obs[s1], obs[s2], D_bs[s3], D_bs[s4]);
+            auto bf4_first = shell2bf_D[s4];
+            auto n4 = D_bs[s4].size();
 
-            for(auto f1=0, f1234=0; f1!=n1; ++f1) {
-              const auto bf1 = f1 + bf1_first;
-              for(auto f2=0; f2!=n2; ++f2) {
-                const auto bf2 = f2 + bf2_first;
-                for(auto f3=0; f3!=n3; ++f3) {
-                  const auto bf3 = f3 + bf3_first;
-                  for(auto f4=0; f4!=n4; ++f4, ++f1234) {
-                    const auto bf4 = f4 + bf4_first;
+            // compute the permutational degeneracy (i.e. # of equivalents) of the given shell set
+            auto s12_deg = (s1 == s2) ? 1.0 : 2.0;
 
-                    const auto value = buf_J[f1234];
-                    const auto value_scal_by_deg = value * s1234_deg;
-                    G(bf1,bf2) += 2.0 * D(bf3,bf4) * value_scal_by_deg;
+            if (s3 >= s4) {
+              auto s34_deg = (s3 == s4) ? 1.0 : 2.0;
+              auto s1234_deg = s12_deg * s34_deg;
+              //auto s1234_deg = s12_deg;
+              const auto* buf_J = engines[thread_id].compute(obs[s1], obs[s2], D_bs[s3], D_bs[s4]);
+
+              for(auto f1=0, f1234=0; f1!=n1; ++f1) {
+                const auto bf1 = f1 + bf1_first;
+                for(auto f2=0; f2!=n2; ++f2) {
+                  const auto bf2 = f2 + bf2_first;
+                  for(auto f3=0; f3!=n3; ++f3) {
+                    const auto bf3 = f3 + bf3_first;
+                    for(auto f4=0; f4!=n4; ++f4, ++f1234) {
+                      const auto bf4 = f4 + bf4_first;
+
+                      auto& g = G[thread_id];
+
+                      const auto value = buf_J[f1234];
+                      const auto value_scal_by_deg = value * s1234_deg;
+                      g(bf1,bf2) += 2.0 * D(bf3,bf4) * value_scal_by_deg;
+                    }
                   }
                 }
               }
             }
-          }
 
-          const auto* buf_K = engine.compute(obs[s1], D_bs[s3], obs[s2], D_bs[s4]);
+            const auto* buf_K = engines[thread_id].compute(obs[s1], D_bs[s3], obs[s2], D_bs[s4]);
 
-          for(auto f1=0, f1324=0; f1!=n1; ++f1) {
-            const auto bf1 = f1 + bf1_first;
-            for(auto f3=0; f3!=n3; ++f3) {
-              const auto bf3 = f3 + bf3_first;
-              for(auto f2=0; f2!=n2; ++f2) {
-                const auto bf2 = f2 + bf2_first;
-                for(auto f4=0; f4!=n4; ++f4, ++f1324) {
-                  const auto bf4 = f4 + bf4_first;
+            for(auto f1=0, f1324=0; f1!=n1; ++f1) {
+              const auto bf1 = f1 + bf1_first;
+              for(auto f3=0; f3!=n3; ++f3) {
+                const auto bf3 = f3 + bf3_first;
+                for(auto f2=0; f2!=n2; ++f2) {
+                  const auto bf2 = f2 + bf2_first;
+                  for(auto f4=0; f4!=n4; ++f4, ++f1324) {
+                    const auto bf4 = f4 + bf4_first;
 
-                  const auto value = buf_K[f1324];
-                  const auto value_scal_by_deg = value * s12_deg;
-                  G(bf1,bf2) -= D(bf3,bf4) * value_scal_by_deg;
+                    auto& g = G[thread_id];
+
+                    const auto value = buf_K[f1324];
+                    const auto value_scal_by_deg = value * s12_deg;
+                    g(bf1,bf2) -= D(bf3,bf4) * value_scal_by_deg;
+                  }
                 }
               }
             }
-          }
 
+          }
         }
       }
     }
+
+  } // omp parallel
+
+  // accumulate contributions from all threads
+  for(size_t i=1; i!=nthreads; ++i) {
+    G[0] += G[i];
   }
 
   // symmetrize the result and return
-  Matrix Gt = G.transpose();
-  return 0.5 * (G + Gt);
+  return 0.5 * (G[0] + G[0].transpose());
 }
