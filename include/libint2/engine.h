@@ -615,7 +615,9 @@ namespace libint2 {
       typedef typename libint2::TwoBodyEngineTraits<Kernel>::oper_params_type oper_params_type;
 
       /// creates a default (unusable) TwoBodyEngine
-      TwoBodyEngine() : primdata_(), lmax_(-1), core_eval_(0) {}
+      TwoBodyEngine() : primdata_(), lmax_(-1), core_eval_(0) {
+        set_precision(std::numeric_limits<LIBINT2_REALTYPE>::epsilon());
+      }
 
       /// Constructs a (usable) TwoBodyEngine
 
@@ -623,7 +625,8 @@ namespace libint2 {
       /// \param max_l the maximum angular momentum of Gaussian shell
       /// \param deriv_level if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_level
       /// \param precision specifies the target precision with which the integrals will be computed; the default is the "epsilon"
-      ///        of \c LIBINT2_REALTYPE type, given by \c std::numeric_limits<LIBINT2_REALTYPE>::epsilon() (\sa set_precision() )
+      ///        of \c LIBINT2_REALTYPE type, given by \c std::numeric_limits<LIBINT2_REALTYPE>::epsilon(). The precision
+      ///        control is somewhat empirical, hence be conservative. \sa set_precision()
       /// \param oper_params specifies the operator parameters. The type of \c oper_params depends on \c Kernel as follows:
       ///        <ol>
       ///        <li> \c Coulomb : empty type (does not need to be provided) </li>
@@ -641,10 +644,9 @@ namespace libint2 {
         primdata_(max_nprim * max_nprim * max_nprim * max_nprim),
         spbra_(max_nprim), spket_(max_nprim),
         lmax_(max_l), deriv_order_(deriv_order),
-        precision_(precision),
-        ln_precision_(std::log(precision)),
         core_eval_(core_eval_type::instance(4*lmax_ + deriv_order, precision))
       {
+        set_precision(precision);
         initialize();
         init_core_ints_params(oparams);
       }
@@ -910,6 +912,8 @@ namespace libint2 {
        *      than \f$ \epsilon \f$ .
        */
       void set_precision(LIBINT2_REALTYPE prec) {
+        if (prec <= 0.)
+          prec = std::numeric_limits<LIBINT2_REALTYPE>::min();
         precision_ = prec;
         ln_precision_ = std::log(precision_);
       }
