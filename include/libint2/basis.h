@@ -45,7 +45,7 @@ namespace libint2 {
 
         // read in the library file contents
         std::string file_dot_g94(SRCDATADIR);
-        file_dot_g94 += "/" + name_ + ".g94";
+        file_dot_g94 += "/" + canonicalize_name(name_) + ".g94";
         std::vector<std::vector<libint2::Shell>> ref_shells = read_g94_basis_library(file_dot_g94);
 
         // for each atom find the corresponding basis
@@ -100,6 +100,23 @@ namespace libint2 {
         max_nprim_ = max_nprim(*this);
         max_l_ = max_l(*this);
         shell2bf_ = compute_shell2bf(*this);
+      }
+
+      struct canonicalizer {
+          char operator()(char c) {
+            char cc = ::tolower(c);
+            switch (cc) {
+              case '/': cc = 'I'; break;
+            }
+            return cc;
+          }
+      };
+
+      static std::string canonicalize_name(const std::string& name) {
+        auto result = name;
+        std::transform(name.begin(), name.end(),
+                       result.begin(), BasisSet::canonicalizer());
+        return result;
       }
 
     public:
