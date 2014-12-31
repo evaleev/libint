@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
       }
     cout << "Nuclear repulsion energy = " << std::setprecision(15) << enuc << endl;
 
-    BasisSet obs("6-31G", atoms);
+    BasisSet obs("aug-cc-pVDZ", atoms);
 
     /*** =========================== ***/
     /*** compute 1-e integrals       ***/
