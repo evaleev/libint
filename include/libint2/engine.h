@@ -912,10 +912,14 @@ namespace libint2 {
        *      than \f$ \epsilon \f$ .
        */
       void set_precision(LIBINT2_REALTYPE prec) {
-        if (prec <= 0.)
-          prec = std::numeric_limits<LIBINT2_REALTYPE>::min();
-        precision_ = prec;
-        ln_precision_ = std::log(precision_);
+        if (prec <= 0.) {
+          precision_ = 0.;
+          ln_precision_ = std::numeric_limits<LIBINT2_REALTYPE>::lowest();
+        }
+        else {
+          precision_ = prec;
+          ln_precision_ = std::log(precision_);
+        }
       }
 
     private:
