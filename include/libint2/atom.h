@@ -59,9 +59,14 @@ namespace libint2 {
     // rest of lines are atoms
     std::vector<Atom> atoms(natom);
     for (auto i = 0; i < natom; i++) {
+      // read line
+      std::string line;
+      std::getline(is, line);
+      std::istringstream iss(line);
+      // then parse ... this handles "extended" XYZ formats
       std::string element_symbol;
       double x, y, z;
-      is >> element_symbol >> x >> y >> z;
+      iss >> element_symbol >> x >> y >> z;
 
       // .xyz files report element labels, hence convert to atomic numbers
       int Z = -1;
