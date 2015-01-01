@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
       if (iter == 1)
         std::cout <<
         "\n\nIter         E(HF)                 D(E)/E         RMS([F,D])/nn       Time(s)\n";
-      printf(" %02d %20.12f %20.12f %20.12e %10.5lf\n", iter, ehf + enuc,
+      printf(" %02d %20.12f %20.12e %20.12e %10.5lf\n", iter, ehf + enuc,
              ediff_rel, rms_error, time_elapsed.count());
 
     } while (((ediff_rel > conv) || (rms_error > conv)) && (iter < maxiter));
