@@ -93,7 +93,7 @@ namespace libint2 {
           }
 
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += (have_am1 ? 3 : 1) * lveclen;
+          inteval->nflops[0] += (have_am1 ? 3 : 1) * lveclen;
 #endif
 
         END_FOR_CART // end of loop over a

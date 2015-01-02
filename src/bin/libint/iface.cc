@@ -276,7 +276,8 @@ Libint2Iface::~Libint2Iface()
 
       if (cparams_->count_flops()) {
         // allocate the counter and set it to zero
-        li_ << "inteval->nflops = 0;" << endl;
+        li_ << "inteval->nflops = new " << macro("UINT_LEAST64") << ";" << endl;
+        li_ << "inteval->nflops[0] = 0;" << endl;
       }
       li_ << ctext_->close_block();
     }
@@ -288,6 +289,11 @@ Libint2Iface::~Libint2Iface()
       li_ << "free(inteval->stack);\n";
       li_ << ctext_->assign("inteval->stack","0");
       li_ << ctext_->assign("inteval->vstack","0");
+      if (cparams_->count_flops()) {
+        // free the counter and set the pointer to zero
+        li_ << "delete inteval->nflops;" << endl;
+        li_ << "inteval->nflops = 0;" << endl;
+      }
       li_ << ctext_->close_block();
     }
   }
@@ -483,7 +489,7 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
 
     os << ctext_->macro_if(macro("FLOP_COUNT"));
     os << ctext_->comment("FLOP counter. Libint must be configured with --enable-flop-counter to allow FLOP counting. It is user's reponsibility to set zero nflops before computing integrals.") << std::endl;
-    os << ctext_->declare(ctext_->mutable_modifier() + macro("UINT_LEAST64"),std::string("nflops"));
+    os << ctext_->declare(ctext_->mutable_modifier() + macro("UINT_LEAST64*"),std::string("nflops"));
     os << ctext_->macro_endif();
 
     os << ctext_->macro_if(macro("ACCUM_INTS"));
