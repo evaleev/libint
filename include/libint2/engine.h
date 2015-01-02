@@ -941,10 +941,6 @@ namespace libint2 {
 #endif
       }
 
-      void skip_core_ints(bool s) {
-        skip_core_ints_ = s;
-      }
-
     private:
 
       inline bool compute_primdata(Libint_t& primdata,
@@ -1009,7 +1005,6 @@ namespace libint2 {
 #ifdef LIBINT2_PROFILE
         primdata_[0].timers->set_now_overhead(25);
 #endif
-        skip_core_ints(false);
       }
 
       void finalize() {
