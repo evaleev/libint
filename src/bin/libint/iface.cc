@@ -66,6 +66,8 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   ph_ << macro_define("ALIGN_SIZE", cparams_->align_size());
   if (cparams_->count_flops())
     ph_ << macro_define("FLOP_COUNT",1);
+  if (cparams_->profile())
+    ph_ << macro_define("PROFILE",1);
   if (cparams_->accumulate_targets())
     ph_ << macro_define("ACCUM_INTS",1);
   const std::string realtype(cparams_->realtype());
@@ -186,6 +188,7 @@ Libint2Iface::~Libint2Iface()
   th_ << "#include <libint2/vector.h>" << std::endl;
   th_ << "#include <libint2/memory.h>" << std::endl;
   th_ << "#include <libint2/intrinsic_operations.h>" << std::endl;
+  th_ << "#include <libint2/timer.h>" << std::endl; // in case LIBINT2_PROFILE is on
   generate_inteval_type(th_);
 
   // libint2_iface.h needs macros to help forming prefixed names in API
@@ -279,6 +282,12 @@ Libint2Iface::~Libint2Iface()
         li_ << "inteval->nflops = new " << macro("UINT_LEAST64") << ";" << endl;
         li_ << "inteval->nflops[0] = 0;" << endl;
       }
+      if (cparams_->profile()) { // zero out the timers
+        li_ << ctext_->macro_if("__cplusplus > 199711L");
+        li_ << "inteval->timers = new libint2::Timers<2>;" << endl;
+        li_ << "inteval->timers->clear();" << endl;
+        li_ << ctext_->macro_endif(); // >= C++11
+      }
       li_ << ctext_->close_block();
     }
 
@@ -293,6 +302,12 @@ Libint2Iface::~Libint2Iface()
         // free the counter and set the pointer to zero
         li_ << "delete inteval->nflops;" << endl;
         li_ << "inteval->nflops = 0;" << endl;
+      }
+      if (cparams_->profile()) {
+        li_ << ctext_->macro_if("__cplusplus > 199711L");
+        li_ << "delete inteval->timers;" << endl;
+        li_ << "inteval->timers = 0;" << endl;
+        li_ << ctext_->macro_endif(); // >= C++11
       }
       li_ << ctext_->close_block();
     }
@@ -490,6 +505,13 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
     os << ctext_->macro_if(macro("FLOP_COUNT"));
     os << ctext_->comment("FLOP counter. Libint must be configured with --enable-flop-counter to allow FLOP counting. It is user's reponsibility to set zero nflops before computing integrals.") << std::endl;
     os << ctext_->declare(ctext_->mutable_modifier() + macro("UINT_LEAST64*"),std::string("nflops"));
+    os << ctext_->macro_endif();
+
+    os << ctext_->macro_if(macro("PROFILE"));
+    os << ctext_->macro_if("__cplusplus > 199711L");
+    os << ctext_->comment("profiling timers. Libint must be configured with --enable-profile to allow profiling.") << std::endl;
+    os << ctext_->declare(ctext_->mutable_modifier() + "libint2::Timers<2>*",std::string("timers")); // 1 timer for HRR and 1 timer for VRR
+    os << ctext_->macro_endif(); // >= C++11
     os << ctext_->macro_endif();
 
     os << ctext_->macro_if(macro("ACCUM_INTS"));

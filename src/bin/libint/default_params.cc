@@ -39,6 +39,7 @@ CompilationParameters::CompilationParameters() :
   single_evaltype_(Defaults::single_evaltype),
   use_C_linking_(Defaults::use_C_linking),
   count_flops_(Defaults::count_flops),
+  profile_(Defaults::profile),
   accumulate_targets_(Defaults::accumulate_targets),
   realtype_(Defaults::realtype),
   contracted_targets_(Defaults::contracted_targets)
@@ -77,6 +78,7 @@ CompilationParameters::print(std::ostream& os) const
   os << "API_PREFIX           = " << api_prefix() << endl;
   os << "USE_C_LINKING        = " << (use_C_linking() ? "true" : "false") << endl;
   os << "COUNT_FLOPS          = " << (count_flops() ? "true" : "false") << endl;
+  os << "PROFILE              = " << (profile() ? "true" : "false") << endl;
   os << "ACCUMULATE_TARGETS   = " << (accumulate_targets() ? "true" : "false") << endl;
   os << "REALTYPE             = " << (realtype()) << endl;
   os << "CONTRACTED_TARGETS   = " << (contracted_targets() ? "true" : "false") << endl;

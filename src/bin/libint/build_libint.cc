@@ -577,6 +577,9 @@ void try_main (int argc, char* argv[])
 #if LIBINT_FLOP_COUNT
   cparams->count_flops(true);
 #endif
+#if LIBINT_PROFILE
+  cparams->profile(true);
+#endif
 #if LIBINT_ACCUM_INTS
   cparams->accumulate_targets(true);
 #else
@@ -825,6 +828,10 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           //dg_xxxx->registry()->condense_expr(true);
           // Need to accumulate integrals?
           dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
+          // need to profile?
+          if (cparams->profile()) {
+            dg_xxxx->registry()->current_timer(0);
+          }
 
           ////////////
           // loop over unique derivative index combinations

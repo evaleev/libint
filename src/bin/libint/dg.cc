@@ -1114,6 +1114,16 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   // then ...
   if (missing_prereqs) { // need to compute prerequisites?
 
+    // if profiling is on, start the next timer, after stopping the current timer (if possible)
+    if (registry()->current_timer() >= 0) {
+      const int current_timer = registry()->current_timer();
+      def << context->macro_if("__cplusplus > 199711L");
+      if (current_timer > 0)
+        def << "inteval->timers->stop(" << current_timer << ");" << std::endl;
+      def << "inteval->timers->start(" << current_timer+1 << ");" << std::endl;
+      def << context->macro_endif();
+    }
+
     //
     // need to zero out space for all missing prerequisites -- prereq evaluator will accumulate into that space
     //
@@ -1158,10 +1168,37 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
         << registry()->stack_name()
         << ")" << context->end_of_stat() << endl;
     def << contr_loop->close() << endl;
+
+    // if profiling is on, start the next timer, after stopping the current timer (if possible)
+    if (registry()->current_timer() >= 0) {
+      const int current_timer = registry()->current_timer();
+      def << context->macro_if("__cplusplus > 199711L");
+      def << "inteval->timers->stop(" << current_timer+1 << ");" << std::endl;
+      if (current_timer > 0)
+        def << "inteval->timers->start(" << current_timer << ");" << std::endl;
+      def << context->macro_endif();
+    }
+
+  }
+
+  // if profiling=on and the current timer is outermost, start it
+  // if this is not outermost timer, it has been started outside of this function
+  if (registry()->current_timer() == 0) {
+    def << context->macro_if("__cplusplus > 199711L");
+    def << "inteval->timers->start(0);" << std::endl;
+    def << context->macro_endif();
   }
 
   // now print out the code for this graph
   print_def(context,def,dims,args);
+
+  // if profiling=on and the current timer is outermost, stop it
+  // if this is not outermost timer, it is managed outside of this function
+  if (registry()->current_timer() == 0) {
+    def << context->macro_if("__cplusplus > 199711L");
+    def << "inteval->timers->stop(0);" << std::endl;
+    def << context->macro_endif();
+  }
 
   def << context->close_block() << endl;
   def << context->code_postfix();

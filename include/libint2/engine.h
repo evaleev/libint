@@ -35,7 +35,9 @@
 #include <Eigen/Core>
 
 // uncomment to time the TwoBodyEngine
-//#define LIBINT2_ENGINE_TIMERS
+#ifdef LIBINT2_PROFILE
+#  define LIBINT2_ENGINE_TIMERS
+#endif
 
 namespace libint2 {
 
@@ -687,7 +689,6 @@ namespace libint2 {
       }
 
 #ifdef LIBINT2_ENGINE_TIMERS
-      Timers<3> timers;
 #endif
 
       /// computes shell set of integrals
@@ -759,16 +760,16 @@ namespace libint2 {
           primdata_[0].contrdepth = p;
         }
 
+#ifdef LIBINT2_ENGINE_TIMERS
+          timers.stop(0);
+#endif
+
         // all primitive combinations screened out? return zeroes
         if (primdata_[0].contrdepth == 0) {
           const size_t n = bra1.size() * bra2.size() * ket1.size() * ket2.size();
           memset(primdata_[0].stack, 0, sizeof(LIBINT2_REALTYPE)*n);
           return primdata_[0].stack;
         }
-
-#ifdef LIBINT2_ENGINE_TIMERS
-        timers.stop(0);
-#endif
 
         LIBINT2_REALTYPE* result = nullptr;
 
@@ -922,6 +923,25 @@ namespace libint2 {
         }
       }
 
+      void print_timers() {
+#ifdef LIBINT2_ENGINE_TIMERS
+        std::cout << "timers: prereq = " << timers.read(0);
+#  ifndef LIBINT2_PROFILE // if libint's profiling was on, engine's build timer will include its overhead
+                          // do not report it, detailed profiling from libint will be printed below
+        std::cout << " build = " << timers.read(1);
+#  endif
+        std::cout << " tform = " << timers.read(2) << std::endl;
+#endif
+#ifdef LIBINT2_PROFILE
+        std::cout << "build timers: hrr = " << primdata_[0].timers->read(0)
+                << " vrr = " << primdata_[0].timers->read(1) << std::endl;
+#endif
+      }
+
+      void skip_core_ints(bool s) {
+        skip_core_ints_ = s;
+      }
+
     private:
 
       inline bool compute_primdata(Libint_t& primdata,
@@ -979,6 +999,14 @@ namespace libint2 {
               break;
             default: assert(deriv_order_ < 3);
         }
+
+#ifdef LIBINT2_ENGINE_TIMERS
+        timers.set_now_overhead(25);
+#endif
+#ifdef LIBINT2_PROFILE
+        primdata_[0].timers->set_now_overhead(25);
+#endif
+        skip_core_ints(false);
       }
 
       void finalize() {

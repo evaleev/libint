@@ -19,9 +19,7 @@
 #ifndef _libint2_src_lib_libint_timer_h_
 #define _libint2_src_lib_libint_timer_h_
 
-#if __cplusplus <= 199711L
-# error "The simple Libint API requires C++11 support"
-#endif
+#if __cplusplus > 199711L
 
 #include <chrono>
 
@@ -36,6 +34,11 @@ namespace libint2 {
       typedef std::chrono::duration<double> dur_t;
       typedef std::chrono::high_resolution_clock clock_t;
       typedef std::chrono::time_point<clock_t> time_point_t;
+
+      Timers() {
+        clear();
+        set_now_overhead(0);
+      }
 
       static time_point_t now() {
         return clock_t::now();
@@ -75,6 +78,8 @@ namespace libint2 {
   };
 
 } // namespace libint2
+
+#endif // C++11 or later
 
 #endif // header guard
 

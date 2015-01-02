@@ -171,6 +171,9 @@
 /* Whether FLOP counting is supported */
 #undef LIBINT_FLOP_COUNT
 
+/* Whether profile instrumentation will be enabled */
+#undef LIBINT_PROFILE
+
 /* Support contracted integrals? */
 #undef LIBINT_CONTRACTED_INTS
 

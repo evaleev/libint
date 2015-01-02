@@ -388,9 +388,6 @@ Matrix compute_2body_fock(const BasisSet& obs,
 
 #ifndef _OPENMP
   std::chrono::duration<double> time_elapsed = std::chrono::duration<double>::zero();
-#ifdef LIBINT2_ENGINE_TIMERS
-  engine.timers.set_now_overhead(20);
-#endif
 #endif // not defined _OPENMP
 
   auto shell2bf = obs.shell2bf();
@@ -491,11 +488,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
 
 #ifndef _OPENMP
   std::cout << "time for integrals = " << time_elapsed.count() << std::endl;
-#ifdef LIBINT2_ENGINE_TIMERS
-  std::cout << "timers: prereq = " << engine.timers.read(0)
-            << " build = " << engine.timers.read(1)
-            << " tform = " << engine.timers.read(2) << std::endl;
-#endif
+  engines[0].print_timers();
 #endif // not defined _OPENMP
 
   // accumulate contributions from all threads

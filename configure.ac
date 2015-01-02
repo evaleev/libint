@@ -818,6 +818,23 @@ esac
     AC_MSG_RESULT([FLOP counter will not be supported])
 ])
 
+AC_ARG_ENABLE(profile,
+[  --enable-profile        Turn on profiling instrumentation of the library. Generated code will require C++11!],
+[
+case $enableval in
+  yes)
+    AC_DEFINE(LIBINT_PROFILE)
+    AC_MSG_RESULT([Profiling instrumentation enabled (generated code will require C++11)])
+  ;;
+  no)
+    AC_MSG_RESULT([Profiling instrumentation disabled])
+  ;;
+esac
+],
+[
+    AC_MSG_RESULT([Profiling instrumentation disabled])
+])
+
 acx_contracted_ints=yes
 AC_ARG_ENABLE(contracted-ints,
 [  --enable-contracted-ints     Turn on support for contracted integrals.],

@@ -85,6 +85,10 @@ namespace libint2 {
     bool count_flops() const {
       return count_flops_;
     }
+    /// whether profiling instrumentation is enabled
+    bool profile() const {
+      return profile_;
+    }
     /// whether target integrals are accumulated
     bool accumulate_targets() const {
       return accumulate_targets_;
@@ -144,6 +148,10 @@ namespace libint2 {
     void count_flops(bool a) {
       count_flops_ = a;
     }
+    /// set to instrument profiling
+    void profile(bool a) {
+      profile_ = a;
+    }
     /// accumulate targets?
     void accumulate_targets(bool a) {
       accumulate_targets_ = a;
@@ -190,6 +198,8 @@ namespace libint2 {
       static const bool use_C_linking = true;
       /// Do not count FLOPs by default
       static const bool count_flops = false;
+      /// Do not profile by default
+      static const bool profile = false;
       /// Do not accumulate targets by default
       static const bool accumulate_targets = false;
       /// Use double for computations
@@ -237,6 +247,8 @@ namespace libint2 {
     bool use_C_linking_;
     /// whether to count FLOPs
     bool count_flops_;
+    /// whether to turn on profiling instrumentation
+    bool profile_;
     /// whether to accumulate targets
     bool accumulate_targets_;
     /// name of the floating-point type
