@@ -689,6 +689,9 @@ namespace libint2 {
       }
 
 #ifdef LIBINT2_ENGINE_TIMERS
+      Timers<3> timers; // timers[0] -> prereqs
+                        // timers[1] -> build (only meaningful if LIBINT2_PROFILE is not defined
+                        // timers[2] -> tform
 #endif
 
       /// computes shell set of integrals
