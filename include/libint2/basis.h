@@ -120,34 +120,6 @@ namespace libint2 {
       }
 
     public:
-      static unsigned short to_l(std::string amlabel) {
-        assert(amlabel.size() == 1);
-        const char amchar = ::toupper(amlabel.c_str()[0]);
-        switch (amchar) {
-          case 'S': return 0;
-          case 'P': return 1;
-          case 'D': return 2;
-          case 'F': return 3;
-          case 'G': return 4;
-          case 'H': return 5;
-          case 'I': return 6;
-          case 'K': return 7;
-          case 'L': return 8;
-          case 'M': return 9;
-          case 'N': return 10;
-          case 'O': return 11;
-          case 'Q': return 12;
-          case 'R': return 13;
-          case 'T': return 14;
-          case 'U': return 15;
-          case 'V': return 16;
-          case 'W': return 17;
-          case 'X': return 18;
-          case 'Y': return 19;
-          case 'Z': return 20;
-          default: throw "invalid angular momentum label";
-        }
-      }
 
       static std::vector<std::vector<libint2::Shell>> read_g94_basis_library(std::string file_dot_g94) {
 
@@ -202,7 +174,8 @@ namespace libint2 {
             unsigned nprim;
             iss >> amlabel >> nprim >> rest;
             if (amlabel != "SP" && amlabel != "sp") {
-              auto l = to_l(amlabel);
+              assert(amlabel.size() == 1);
+              auto l = Shell::am_symbol_to_l(amlabel[0]);
               std::vector<double> exps;
               std::vector<double> coeffs;
               for(auto p = 0; p!=nprim; ++p) {

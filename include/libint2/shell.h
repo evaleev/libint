@@ -151,6 +151,37 @@ namespace libint2 {
         return not this->operator==(other);
       }
 
+      static char am_symbol(size_t l) {
+        static char lsymb[] = "spdfghikmnoqrtuvwxyz";
+        assert(l<=19);
+        return lsymb[l];
+      }
+      static unsigned short am_symbol_to_l(char am_symbol) {
+        const char AM_SYMBOL = ::toupper(am_symbol);
+        switch (AM_SYMBOL) {
+          case 'S': return 0;
+          case 'P': return 1;
+          case 'D': return 2;
+          case 'F': return 3;
+          case 'G': return 4;
+          case 'H': return 5;
+          case 'I': return 6;
+          case 'K': return 7;
+          case 'M': return 8;
+          case 'N': return 9;
+          case 'O': return 10;
+          case 'Q': return 11;
+          case 'R': return 12;
+          case 'T': return 13;
+          case 'U': return 14;
+          case 'V': return 15;
+          case 'W': return 16;
+          case 'X': return 17;
+          case 'Y': return 18;
+          case 'Z': return 19;
+          default: throw "invalid angular momentum label";
+        }
+      }
   };
 
   inline std::ostream& operator<<(std::ostream& os, const Shell& sh) {
