@@ -27,7 +27,7 @@ namespace libint2 {
   /// Aligned version of malloc().
 
   /** Allocates a memory block aligned to LIBINT2_ALIGN_SIZE*sizeof(LIBINT2_REALTYPE).
-      If LIBINT2_ALIGN_SIZE, no alignment is assumed Use free() to deallocate. */
+      If LIBINT2_ALIGN_SIZE, no alignment is assumed. Use free() to deallocate. */
   inline void* malloc(size_t nbytes) {
     void* result;
 #if (LIBINT2_ALIGN_SIZE == 0)
