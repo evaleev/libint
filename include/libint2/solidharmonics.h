@@ -47,6 +47,8 @@ namespace libint2 {
     template <typename Real>
     class SolidHarmonicsCoefficients {
       public:
+        typedef ::libint2::real_t real_t;
+
         SolidHarmonicsCoefficients() : l_(-1) {
         }
         SolidHarmonicsCoefficients(unsigned char l) : l_(l) {
@@ -98,7 +100,7 @@ namespace libint2 {
 
           if (false) {
             std::cout << "SolidHarmonicsCoefficients: l = " << l_ << "\n";
-            typedef Eigen::Matrix<LIBINT2_REALTYPE, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
+            typedef Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
             Eigen::Map<Matrix> fcoeff(&full_coeff[0], npure, ncart);
             std::cout << fcoeff << "\n";
           }
@@ -198,8 +200,7 @@ namespace libint2 {
 
     };
 
-    using LIBINT2_REALTYPE_BASE = double;
-    using shg_coefs_type = SolidHarmonicsCoefficients<LIBINT2_REALTYPE_BASE>;
+    using shg_coefs_type = SolidHarmonicsCoefficients<real_t>;
     static std::vector<shg_coefs_type> shg_coefs;
 
     inline void init() {
@@ -259,7 +260,7 @@ namespace libint2 {
       const auto npure2 = 2*l2+1;
       const auto ncart2inner = ncart2 * inner_dim;
       const auto npure2inner = npure2 * inner_dim;
-      memset(target_blk, 0, npure1*npure2inner*sizeof(LIBINT2_REALTYPE_BASE));
+      memset(target_blk, 0, npure1*npure2inner*sizeof(real_t));
 
       // loop over blocks of inner dimension
       const size_t inner_blk_size = 8;
@@ -444,7 +445,7 @@ namespace libint2 {
       const auto ncart_col = (l_col+1)*(l_col+2)/2;
       const auto npure_row = 2*l_row+1;
       const auto npure_col = 2*l_col+1;
-      memset(target_blk, 0, npure_row*npure_col*sizeof(LIBINT2_REALTYPE_BASE));
+      memset(target_blk, 0, npure_row*npure_col*sizeof(real_t));
 
       // loop over row shg
       for(size_t s1=0; s1!=npure_row; ++s1) {

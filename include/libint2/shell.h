@@ -66,17 +66,20 @@ namespace libint2 {
    *                   {{0.0, 0.0, 0.0}}
    *                };
    *  \endverbatim
-   *  \note The contraction coefficients correspond to <em>unity-normalized</em> primitives. Basis Set Database,
+   *  \note The contraction coefficients correspond to <em>unity-normalized</em> primitives. EMSL Gaussian Basis Set Database,
    *  as well as basis set libraries embedded into most quantum chemistry programs use this convention.
    *  However, coefficients must be converted to refer to normalization-free primitives before computing
    *  integrals! See Shell::renorm();
    */
   struct Shell {
+      typedef ::libint2::real_t real_t;
+      typedef ::libint2::realvec_t realvec_t;
+
       /// contracted Gaussian = angular momentum + sph/cart flag + contraction coefficients
       struct Contraction {
           int l;
           bool pure;
-          std::vector<LIBINT2_REALTYPE> coeff;
+          std::vector<real_t> coeff;
           bool operator==(const Contraction& other) const {
             return &other == this || (l == other.l && pure == other.pure && coeff == other.coeff);
           }
@@ -91,12 +94,12 @@ namespace libint2 {
           }
       };
 
-      std::vector<LIBINT2_REALTYPE> alpha; //!< exponents
+      std::vector<real_t> alpha; //!< exponents
       std::vector<Contraction> contr;      //!< contractions
-      std::array<LIBINT2_REALTYPE, 3> O;   //!< origin
-      std::vector<LIBINT2_REALTYPE> max_ln_coeff; //!< maximum ln of (absolute) contraction coefficient for each primitive
+      std::array<real_t, 3> O;   //!< origin
+      std::vector<real_t> max_ln_coeff; //!< maximum ln of (absolute) contraction coefficient for each primitive
 
-      Shell& move(const std::array<LIBINT2_REALTYPE, 3> new_origin) {
+      Shell& move(const std::array<real_t, 3> new_origin) {
         O = new_origin;
         return *this;
       }
@@ -116,7 +119,7 @@ namespace libint2 {
       /// \note Must be done only once.
       void renorm() {
         using libint2::math::df_Kminus1;
-        const auto sqrt_Pi_cubed = LIBINT2_REALTYPE{5.56832799683170784528481798212};
+        const auto sqrt_Pi_cubed = real_t{5.56832799683170784528481798212};
         const auto np = nprim();
         for(auto& c: contr) {
           assert(c.l <= 15); // due to df_Kminus1[] a 64-bit integer type; kinda ridiculous restriction anyway
@@ -133,7 +136,7 @@ namespace libint2 {
         // update max log coefficients
         max_ln_coeff.resize(np);
         for(auto p=0; p!=np; ++p) {
-          LIBINT2_REALTYPE max_ln_c = - std::numeric_limits<LIBINT2_REALTYPE>::max();
+          real_t max_ln_c = - std::numeric_limits<real_t>::max();
           for(auto& c: contr) {
             max_ln_c = std::max(max_ln_c, log(std::abs(c.coeff[p])));
           }
@@ -205,17 +208,19 @@ namespace libint2 {
 
   /// ShellPair pre-computes shell-pair data, primitive pairs are screened to finite precision
   struct ShellPair {
+      typedef Shell::real_t real_t;
+
       struct PrimPairData {
-          LIBINT2_REALTYPE P[3]; //!< \f$ (\alpha_1 \vec{A} + \alpha_2 \vec{B})/(\alpha_1 + \alpha_2) \f$
-          LIBINT2_REALTYPE K;
-          LIBINT2_REALTYPE one_over_gamma;
-          LIBINT2_REALTYPE scr;
+          real_t P[3]; //!< \f$ (\alpha_1 \vec{A} + \alpha_2 \vec{B})/(\alpha_1 + \alpha_2) \f$
+          real_t K;
+          real_t one_over_gamma;
+          real_t scr;
           int p1;
           int p2;
       };
 
       std::vector<PrimPairData> primpairs;
-      LIBINT2_REALTYPE AB[3];
+      real_t AB[3];
 
       ShellPair() : primpairs() { for(int i=0; i!=3; ++i) AB[i] = 0.; }
 
@@ -225,13 +230,13 @@ namespace libint2 {
       }
 
       // initializes "expensive" primitive pair data; primitive pairs are
-      void init(const Shell& s1, const Shell& s2, const LIBINT2_REALTYPE& ln_prec) {
+      void init(const Shell& s1, const Shell& s2, const real_t& ln_prec) {
 
         primpairs.clear();
 
         const auto& A = s1.O;
         const auto& B = s2.O;
-        LIBINT2_REALTYPE AB2 = 0.;
+        real_t AB2 = 0.;
         for(int i=0; i!=3; ++i) {
           AB[i] = A[i] - B[i];
           AB2 += AB[i]*AB[i];

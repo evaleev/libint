@@ -121,8 +121,8 @@ namespace libint2 {
 
       /// computes shell set of integrals
       /// \note result is stored in row-major order
-      const LIBINT2_REALTYPE* compute(const libint2::Shell& s1,
-                                      const libint2::Shell& s2) {
+      const real_t* compute(const libint2::Shell& s1,
+                            const libint2::Shell& s2) {
 
         // can only handle 1 contraction at a time
         assert(s1.ncontr() == 1 && s2.ncontr() == 1);
@@ -163,7 +163,7 @@ namespace libint2 {
         if (lmax == 0) // (s|s) ints will be accumulated in the first element of stack
           primdata_[0].stack[0] = 0;
         else if (use_scratch)
-          memset(static_cast<void*>(&scratch_[0]), 0, sizeof(LIBINT2_REALTYPE)*ncart1*ncart2);
+          memset(static_cast<void*>(&scratch_[0]), 0, sizeof(real_t)*ncart1*ncart2);
 
         // loop over operator components
         const auto num_operset = type_ == nuclear ? q_.size() : 1u;
@@ -214,9 +214,9 @@ namespace libint2 {
               if (use_scratch) {
                 const auto ncart_bra = bra.cartesian_size();
                 const auto ncart_ket = ket.cartesian_size();
-                constexpr auto using_scalar_real = std::is_same<double,LIBINT2_REALTYPE>::value || std::is_same<float,LIBINT2_REALTYPE>::value;
+                constexpr auto using_scalar_real = std::is_same<double,real_t>::value || std::is_same<float,real_t>::value;
                 static_assert(using_scalar_real, "Libint2 C++11 API only supports fundamental real types");
-                typedef Eigen::Matrix<LIBINT2_REALTYPE, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
+                typedef Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
                 Eigen::Map<Matrix> braket(primdata_[0].targets[0], ncart_bra, ncart_ket);
                 Eigen::Map<Matrix> set12(&scratch_[0], ncart1, ncart2);
                 if (swap)
@@ -396,7 +396,7 @@ namespace libint2 {
 
       std::shared_ptr<libint2::FmEval_Chebyshev3> fm_eval_;
 
-      std::vector<LIBINT2_REALTYPE> scratch_; // for transposes and/or transforming to solid harmonics
+      std::vector<real_t> scratch_; // for transposes and/or transforming to solid harmonics
 
       void initialize() {
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
@@ -596,15 +596,15 @@ namespace libint2 {
       typedef struct {} oper_params_type;
   };
   template <> struct TwoBodyEngineTraits<cGTG> {
-      typedef libint2::GaussianGmEval<LIBINT2_REALTYPE, 0> core_eval_type;
+      typedef libint2::GaussianGmEval<real_t, 0> core_eval_type;
       typedef ContractedGaussianGeminal oper_params_type;
   };
   template <> struct TwoBodyEngineTraits<cGTG_times_Coulomb> {
-      typedef libint2::GaussianGmEval<LIBINT2_REALTYPE, -1> core_eval_type;
+      typedef libint2::GaussianGmEval<real_t, -1> core_eval_type;
       typedef ContractedGaussianGeminal oper_params_type;
   };
   template <> struct TwoBodyEngineTraits<DelcGTG_square> {
-      typedef libint2::GaussianGmEval<LIBINT2_REALTYPE, 2> core_eval_type;
+      typedef libint2::GaussianGmEval<real_t, 2> core_eval_type;
       typedef ContractedGaussianGeminal oper_params_type;
   };
 
@@ -623,7 +623,7 @@ namespace libint2 {
 
       /// creates a default (unusable) TwoBodyEngine
       TwoBodyEngine() : primdata_(), lmax_(-1), core_eval_(0) {
-        set_precision(std::numeric_limits<LIBINT2_REALTYPE>::epsilon());
+        set_precision(std::numeric_limits<real_t>::epsilon());
       }
 
       /// Constructs a (usable) TwoBodyEngine
@@ -632,7 +632,7 @@ namespace libint2 {
       /// \param max_l the maximum angular momentum of Gaussian shell
       /// \param deriv_level if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_level
       /// \param precision specifies the target precision with which the integrals will be computed; the default is the "epsilon"
-      ///        of \c LIBINT2_REALTYPE type, given by \c std::numeric_limits<LIBINT2_REALTYPE>::epsilon(). The precision
+      ///        of \c real_t type, given by \c std::numeric_limits<real_t>::epsilon(). The precision
       ///        control is somewhat empirical, hence be conservative. \sa set_precision()
       /// \param oper_params specifies the operator parameters. The type of \c oper_params depends on \c Kernel as follows:
       ///        <ol>
@@ -646,7 +646,7 @@ namespace libint2 {
       /// \warning currently only one-contraction Shell objects are supported; i.e. generally-contracted Shells are not yet supported
       TwoBodyEngine(size_t max_nprim, int max_l,
                     int deriv_order = 0,
-                    LIBINT2_REALTYPE precision = std::numeric_limits<LIBINT2_REALTYPE>::epsilon(),
+                    real_t precision = std::numeric_limits<real_t>::epsilon(),
                     const oper_params_type& oparams = oper_params_type()) :
         primdata_(max_nprim * max_nprim * max_nprim * max_nprim),
         spbra_(max_nprim), spket_(max_nprim),
@@ -736,10 +736,10 @@ namespace libint2 {
 
       /// computes shell set of integrals
       /// \note result is stored in the "chemists" form, i.e. (tbra1 tbra2 |tket1 tket2), in row-major order
-      const LIBINT2_REALTYPE* compute(const libint2::Shell& tbra1,
-                                      const libint2::Shell& tbra2,
-                                      const libint2::Shell& tket1,
-                                      const libint2::Shell& tket2) {
+      const real_t* compute(const libint2::Shell& tbra1,
+                            const libint2::Shell& tbra2,
+                            const libint2::Shell& tket1,
+                            const libint2::Shell& tket2) {
 
         //
         // i.e. bra and ket refer to chemists bra and ket
@@ -821,11 +821,11 @@ namespace libint2 {
         // all primitive combinations screened out? return zeroes
         if (primdata_[0].contrdepth == 0) {
           const size_t n = bra1.size() * bra2.size() * ket1.size() * ket2.size();
-          memset(primdata_[0].stack, 0, sizeof(LIBINT2_REALTYPE)*n);
+          memset(primdata_[0].stack, 0, sizeof(real_t)*n);
           return primdata_[0].stack;
         }
 
-        LIBINT2_REALTYPE* result = nullptr;
+        real_t* result = nullptr;
 
         if (lmax == 0) { // (ss|ss)
 #ifdef LIBINT2_ENGINE_TIMERS
@@ -874,9 +874,9 @@ namespace libint2 {
           // if needed, permute and transform
           if (use_scratch) {
 
-            constexpr auto using_scalar_real = std::is_same<double,LIBINT2_REALTYPE>::value || std::is_same<float,LIBINT2_REALTYPE>::value;
+            constexpr auto using_scalar_real = std::is_same<double,real_t>::value || std::is_same<float,real_t>::value;
             static_assert(using_scalar_real, "Libint2 C++11 API only supports fundamental real types");
-            typedef Eigen::Matrix<LIBINT2_REALTYPE, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
+            typedef Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
 
             // a 2-d view of the 4-d source tensor
             const auto nr1_cart = bra1.cartesian_size();
@@ -984,10 +984,10 @@ namespace libint2 {
        *  (3) to screen out primitive quartets inside compute_primdata() for which the prefactor of \f$ F_m(\rho, T) \f$ is smaller
        *      than \f$ \epsilon \f$ .
        */
-      void set_precision(LIBINT2_REALTYPE prec) {
+      void set_precision(real_t prec) {
         if (prec <= 0.) {
           precision_ = 0.;
-          ln_precision_ = std::numeric_limits<LIBINT2_REALTYPE>::lowest();
+          ln_precision_ = std::numeric_limits<real_t>::lowest();
         }
         else {
           precision_ = prec;
@@ -1036,8 +1036,8 @@ namespace libint2 {
       ShellPair spbra_, spket_;
       int lmax_;
       size_t deriv_order_;
-      LIBINT2_REALTYPE precision_;
-      LIBINT2_REALTYPE ln_precision_;
+      real_t precision_;
+      real_t ln_precision_;
 
       typedef typename libint2::TwoBodyEngineTraits<Kernel>::core_eval_type core_eval_type;
       std::shared_ptr<core_eval_type> core_eval_;
@@ -1047,7 +1047,7 @@ namespace libint2 {
       /// converts operator parameters to core ints params
       void init_core_ints_params(const oper_params_type& oparams);
 
-      std::vector<LIBINT2_REALTYPE> scratch_; // for transposes and/or transforming to solid harmonics
+      std::vector<real_t> scratch_; // for transposes and/or transforming to solid harmonics
 
       friend struct detail::TwoBodyEngineDispatcher<Kernel>;
 
@@ -1114,10 +1114,10 @@ namespace libint2 {
   namespace detail {
     template <> struct TwoBodyEngineDispatcher<Coulomb> {
         static void core_eval(TwoBodyEngine<Coulomb>* engine,
-                              LIBINT2_REALTYPE* Fm,
+                              real_t* Fm,
                               int mmax,
-                              LIBINT2_REALTYPE T,
-                              LIBINT2_REALTYPE) {
+                              real_t T,
+                              real_t) {
           engine->core_eval_->eval(Fm, T, mmax);
         }
     };
@@ -1125,30 +1125,30 @@ namespace libint2 {
     template <>
     struct TwoBodyEngineDispatcher<cGTG_times_Coulomb> {
         static void core_eval(TwoBodyEngine<cGTG_times_Coulomb>* engine,
-                              LIBINT2_REALTYPE* Gm,
+                              real_t* Gm,
                               int mmax,
-                              LIBINT2_REALTYPE T,
-                              LIBINT2_REALTYPE rho) {
+                              real_t T,
+                              real_t rho) {
           engine->core_eval_->eval(Gm, rho, T, mmax, engine->core_ints_params_);
         }
     };
     template <>
     struct TwoBodyEngineDispatcher<cGTG> {
         static void core_eval(TwoBodyEngine<cGTG>* engine,
-                              LIBINT2_REALTYPE* Gm,
+                              real_t* Gm,
                               int mmax,
-                              LIBINT2_REALTYPE T,
-                              LIBINT2_REALTYPE rho) {
+                              real_t T,
+                              real_t rho) {
           engine->core_eval_->eval(Gm, rho, T, mmax, engine->core_ints_params_);
         }
     };
     template <>
     struct TwoBodyEngineDispatcher<DelcGTG_square> {
         static void core_eval(TwoBodyEngine<DelcGTG_square>* engine,
-                              LIBINT2_REALTYPE* Gm,
+                              real_t* Gm,
                               int mmax,
-                              LIBINT2_REALTYPE T,
-                              LIBINT2_REALTYPE rho) {
+                              real_t T,
+                              real_t rho) {
           engine->core_eval_->eval(Gm, rho, T, mmax, engine->core_ints_params_);
         }
     };
