@@ -19,6 +19,8 @@
 #ifndef _libint2_src_lib_libint_vectorppc_h_
 #define _libint2_src_lib_libint_vectorppc_h_
 
+#include <libint2/type_traits.h>
+
 // clang on BG/Q defines __VECTOR4DOUBLE__ and intrinsics in this header file
 #if defined(__clang__) && defined(__bgq__)
 # include <qpxintrin.h>
@@ -165,6 +167,25 @@ namespace libint2 { namespace simd {
   //@}
 
 };}; // namespace libint2::simd
+
+namespace libint2 {
+
+  //@{ vector traits of VectorQPXDouble
+
+  template <>
+  struct is_vector<simd::VectorQPXDouble> {
+      static const bool value = true;
+  };
+
+  template <>
+  struct vector_traits<simd::VectorQPXDouble> {
+      typedef double value_type;
+      static const size_t extent = 4;
+  };
+
+  //@}
+
+} // namespace libint2
 
 #endif // QPX-only
 
@@ -314,6 +335,25 @@ namespace libint2 { namespace simd {
   //@}
 
 };}; // namespace libint2::simd
+
+namespace libint2 {
+
+  //@{ vector traits of VectorFP2Double
+
+  template <>
+  struct is_vector<simd::VectorFP2Double> {
+      static const bool value = true;
+  };
+
+  template <>
+  struct vector_traits<simd::VectorFP2Double> {
+      typedef double value_type;
+      static const size_t extent = 2;
+  };
+
+  //@}
+
+} // namespace libint2
 
 #endif // FP2-only
 

@@ -20,6 +20,7 @@
 #define _libint2_src_lib_libint_vectorx86_h_
 
 #include <cstring>
+#include <libint2/type_traits.h>
 
 #ifdef __SSE2__
 
@@ -251,6 +252,25 @@ inline std::ostream& operator<<(std::ostream& os, libint2::simd::VectorSSEDouble
   return os;
 }
 //@}
+
+namespace libint2 {
+
+  //@{ vector traits of VectorSSEDouble
+
+  template <>
+  struct is_vector<simd::VectorSSEDouble> {
+      static const bool value = true;
+  };
+
+  template <>
+  struct vector_traits<simd::VectorSSEDouble> {
+      typedef double value_type;
+      static const size_t extent = 2;
+  };
+
+  //@}
+
+} // namespace libint2
 
 #endif // SSE2-only
 
@@ -507,6 +527,25 @@ inline std::ostream& operator<<(std::ostream& os, libint2::simd::VectorSSEFloat 
 }
 //@}
 
+namespace libint2 {
+
+  //@{ vector traits of VectorSSEFloat
+
+  template <>
+  struct is_vector<simd::VectorSSEFloat> {
+      static const bool value = true;
+  };
+
+  template <>
+  struct vector_traits<simd::VectorSSEFloat> {
+      typedef float value_type;
+      static const size_t extent = 4;
+  };
+
+  //@}
+
+} // namespace libint2
+
 #endif // SSE-only
 
 #ifdef __AVX__
@@ -737,6 +776,25 @@ inline std::ostream& operator<<(std::ostream& os, libint2::simd::VectorAVXDouble
   return os;
 }
 //@}
+
+namespace libint2 {
+
+  //@{ vector traits of VectorAVXDouble
+
+  template <>
+  struct is_vector<simd::VectorAVXDouble> {
+      static const bool value = true;
+  };
+
+  template <>
+  struct vector_traits<simd::VectorAVXDouble> {
+      typedef double value_type;
+      static const size_t extent = 4;
+  };
+
+  //@}
+
+} // namespace libint2
 
 #endif // AVX-only
 

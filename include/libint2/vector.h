@@ -25,6 +25,8 @@
 
 #include <algorithm>
 
+#include <libint2/type_traits.h>
+
 namespace libint2 {
 
   /**
@@ -163,6 +165,21 @@ namespace libint2 {
   //@}
 
 };}; // namespace libint2::simd
+
+namespace libint2 {
+
+  template <size_t N, typename T>
+  struct is_vector<simd::Vector<N,T> > {
+      static const bool value = true;
+  };
+
+  template <size_t N, typename T>
+  struct vector_traits<simd::Vector<N,T> > {
+      typedef T value_type;
+      static const size_t extent = N;
+  };
+
+} // namespace libint2
 
 #include "vector_x86.h"
 #include "vector_ppc.h"
