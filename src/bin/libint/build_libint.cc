@@ -902,7 +902,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           std::deque<std::string> decl_filenames;
           std::deque<std::string> def_filenames;
 
-          // this will generate code for this targets, and potentially generate code for its prerequisites
+          // this will generate code for these targets, and potentially generate code for its prerequisites
           GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
                        decl_filenames, def_filenames,
                        prefix, label, false);
