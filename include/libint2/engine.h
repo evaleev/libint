@@ -26,6 +26,7 @@
 #include <iostream>
 #include <array>
 #include <vector>
+#include <map>
 
 #include <libint2.h>
 #include <libint2/boys.h>
@@ -34,10 +35,14 @@
 
 #include <Eigen/Core>
 
-// uncomment to time the TwoBodyEngine
+// the engine will be profiled by default if library was configured with --enable-profile
 #ifdef LIBINT2_PROFILE
 #  define LIBINT2_ENGINE_TIMERS
+// uncomment if want to profile each integral class
+#  define LIBINT2_ENGINE_PROFILE_CLASS
 #endif
+// uncomment if want to profile the engine even if library was configured without --enable-profile
+//#  define LIBINT2_ENGINE_TIMERS
 
 namespace libint2 {
 
@@ -692,6 +697,41 @@ namespace libint2 {
       Timers<3> timers; // timers[0] -> prereqs
                         // timers[1] -> build (only meaningful if LIBINT2_PROFILE is not defined
                         // timers[2] -> tform
+#  ifdef LIBINT2_ENGINE_PROFILE_CLASS
+      struct class_id {
+          size_t l[4];
+          template <typename I> class_id(I l0, I l1, I l2, I l3) {
+            l[0] = l0;
+            l[1] = l1;
+            l[2] = l2;
+            l[3] = l3;
+          }
+          bool operator<(const class_id& other) const {
+            return ordinal(l) < ordinal(other.l);
+          }
+          static size_t ordinal(const size_t (&l)[4]) {
+            return ((l[0]*LIBINT2_MAX_AM_ERI + l[1])*LIBINT2_MAX_AM_ERI + l[2])*LIBINT2_MAX_AM_ERI + l[3];
+          }
+          std::string to_string() const {
+            std::ostringstream oss;
+            oss << "(" << Shell::am_symbol(l[0]) << Shell::am_symbol(l[1])
+                << "|" << Shell::am_symbol(l[2]) << Shell::am_symbol(l[3]) << ")";
+            return oss.str();
+          }
+      };
+      struct class_profile {
+          double prereqs;
+          double build_hrr;
+          double build_vrr;
+          double tform;
+          class_profile() { clear(); }
+          class_profile(const class_profile& other) = default;
+          void clear() {
+            prereqs = build_hrr = build_vrr = tform = 0.;
+          }
+      };
+      std::map<class_id, class_profile> class_profiles;
+#  endif
 #endif
 
       /// computes shell set of integrals
@@ -741,6 +781,14 @@ namespace libint2 {
         if (lmax == 0) // (ss|ss) ints will be accumulated in the first element of stack
           primdata_[0].stack[0] = 0;
 
+#ifdef LIBINT2_ENGINE_PROFILE_CLASS
+        class_id id(bra1.contr[0].l, bra2.contr[0].l, ket1.contr[0].l, ket2.contr[0].l);
+        if (class_profiles.find(id) == class_profiles.end()) {
+          class_profile dummy;
+          class_profiles[id] = dummy;
+        }
+#endif
+
         // compute primitive data
 #ifdef LIBINT2_ENGINE_TIMERS
         timers.start(0);
@@ -764,7 +812,10 @@ namespace libint2 {
         }
 
 #ifdef LIBINT2_ENGINE_TIMERS
-          timers.stop(0);
+        const auto t0 = timers.stop(0);
+#  ifdef LIBINT2_ENGINE_PROFILE_CLASS
+        class_profiles[id].prereqs += t0.count();
+#  endif
 #endif
 
         // all primitive combinations screened out? return zeroes
@@ -785,18 +836,33 @@ namespace libint2 {
             stack += primdata_[p].LIBINT_T_SS_EREP_SS(0)[0];
           primdata_[0].targets[0] = primdata_[0].stack;
 #ifdef LIBINT2_ENGINE_TIMERS
-          timers.stop(1);
+          const auto t1 = timers.stop(1);
+#  ifdef LIBINT2_ENGINE_PROFILE_CLASS
+          class_profiles[id].build_vrr += t1.count();
+#  endif
 #endif
 
           result = primdata_[0].targets[0];
         }
         else { // not (ss|ss)
 #ifdef LIBINT2_ENGINE_TIMERS
+#    ifdef LIBINT2_PROFILE
+          const auto t1_hrr_start = primdata_[0].timers->read(0);
+          const auto t1_vrr_start = primdata_[0].timers->read(1);
+#    endif
           timers.start(1);
 #endif
           LIBINT2_PREFIXED_NAME(libint2_build_eri)[bra1.contr[0].l][bra2.contr[0].l][ket1.contr[0].l][ket2.contr[0].l](&primdata_[0]);
 #ifdef LIBINT2_ENGINE_TIMERS
-          timers.stop(1);
+          const auto t1 = timers.stop(1);
+#  ifdef LIBINT2_ENGINE_PROFILE_CLASS
+#    ifndef LIBINT2_PROFILE
+          class_profiles[id].build_vrr += t1.count();
+#    else
+          class_profiles[id].build_hrr += primdata_[0].timers->read(0) - t1_hrr_start;
+          class_profiles[id].build_vrr += primdata_[0].timers->read(1) - t1_vrr_start;
+#    endif
+#  endif
 #endif
 
           result = primdata_[0].targets[0];
@@ -899,7 +965,10 @@ namespace libint2 {
           } // if need_scratch => needed to transpose
 
 #ifdef LIBINT2_ENGINE_TIMERS
-          timers.stop(2);
+          const auto t2 = timers.stop(2);
+#  ifdef LIBINT2_ENGINE_PROFILE_CLASS
+          class_profiles[id].tform += t2.count();
+#  endif
 #endif
 
         } // not (ss|ss)
@@ -938,6 +1007,18 @@ namespace libint2 {
 #ifdef LIBINT2_PROFILE
         std::cout << "build timers: hrr = " << primdata_[0].timers->read(0)
                 << " vrr = " << primdata_[0].timers->read(1) << std::endl;
+#endif
+#ifdef LIBINT2_ENGINE_TIMERS
+#  ifdef LIBINT2_ENGINE_PROFILE_CLASS
+        for(const auto& p: class_profiles) {
+          printf("{\"%s\", %10.5lf, %10.5lf, %10.5lf, %10.5lf},\n",
+                 p.first.to_string().c_str(),
+                 p.second.prereqs,
+                 p.second.build_vrr,
+                 p.second.build_hrr,
+                 p.second.tform);
+        }
+#  endif
 #endif
       }
 
