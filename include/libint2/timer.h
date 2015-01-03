@@ -40,12 +40,14 @@ namespace libint2 {
         set_now_overhead(0);
       }
 
+      /// returns the current time point
       static time_point_t now() {
         return clock_t::now();
       }
 
       /// use this to report the overhead of now() call; if set, the reported timings will be adjusted for this overhead
-      /// @note this is clearly compiler and system dependent, please measure carefully
+      /// @note this is clearly compiler and system dependent, please measure carefully (turn off turboboost, etc.)
+      ///       using src/bin/profile/chrono.cc
       void set_now_overhead(size_t ns) {
         overhead_ = std::chrono::nanoseconds(ns);
       }
@@ -55,14 +57,18 @@ namespace libint2 {
         tstart_[t] = now();
       }
       /// stops timer \c t
-      void stop(size_t t) {
+      /// @return the duration, corrected for overhead, elapsed since the last call to \c start(t)
+      dur_t stop(size_t t) {
         const auto tstop = now();
-        timers_[t] += (tstop - tstart_[t]) - overhead_;
+        const dur_t result = (tstop - tstart_[t]) - overhead_;
+        timers_[t] += result;
+        return result;
       }
-      /// reads timer \c t
+      /// reads value (in seconds) of timer \c t , converted to \c double
       double read(size_t t) const {
         return timers_[t].count();
       }
+      /// resets timers to zero
       void clear() {
         for(auto t=0; t!=ntimers; ++t) {
           timers_[t] = dur_t::zero();
