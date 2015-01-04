@@ -24,13 +24,17 @@
 #endif
 
 #include <libint2.h>
+#include <libint2/solidharmonics.h>
 
 namespace libint2 {
+
   inline void init() {
     libint2_static_init();
+    libint2_init_shg();
   }
   inline void cleanup() {
     libint2_static_cleanup();
+    libint2_cleanup_shg();
   }
 }
 

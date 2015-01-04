@@ -54,14 +54,18 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/autoconf/libtool.m4 $(TOPDIR)/$(EXPORTDIR)/lib/autoconf
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/autoconf/lt*.m4 $(TOPDIR)/$(EXPORTDIR)/lib/autoconf
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/autoconf/acx*.m4 $(TOPDIR)/$(EXPORTDIR)/lib/autoconf
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/lib/data
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/data/*.g94 $(TOPDIR)/$(EXPORTDIR)/lib/data	
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2/chemistry
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2.h $(TOPDIR)/$(EXPORTDIR)/include
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/libint/util_types.h $(TOPDIR)/$(EXPORTDIR)/include
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/lib/libint/*.h $(TOPDIR)/$(EXPORTDIR)/include
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/*.h $(TOPDIR)/$(EXPORTDIR)/include/libint2
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/chemistry/*.h $(TOPDIR)/$(EXPORTDIR)/include/libint2/chemistry
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2/config.h $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.in
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2/cgshell_ordering.h $(TOPDIR)/$(EXPORTDIR)/include/libint2
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/libint/util_types.h $(TOPDIR)/$(EXPORTDIR)/include
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/lib/libint/*.h $(TOPDIR)/$(EXPORTDIR)/include
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/Makefile.tests.export $(TOPDIR)/$(EXPORTDIR)/tests/Makefile
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests/eri
@@ -72,6 +76,7 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/libint/deriv_iter.h $(TOPDIR)/$(EXPORTDIR)/tests/eri/deriv_iter.h
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock.cc $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock.cc
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock++.cc $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock++.cc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/h2o.xyz $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/h2o.xyz
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/doc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/doc/progman/progman.tex $(TOPDIR)/$(EXPORTDIR)/doc/progman.tex

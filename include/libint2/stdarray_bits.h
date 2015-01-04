@@ -6,7 +6,7 @@
 
 #include <stdexcept>
 
-namespace sc {
+namespace libint2 {
     namespace tr1 {
         namespace array {
             /// Array idential to C++0X arrays

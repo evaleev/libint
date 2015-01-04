@@ -64,6 +64,9 @@ namespace libint2 {
     /// Condense expressions? The default is false.
     bool condense_expr() const { return condense_expr_; }
     void condense_expr(bool ce) { condense_expr_ = ce; }
+    /// if -1, no profiling, otherwise, indicates the current timer
+    int current_timer() const { return current_timer_; }
+    void current_timer(int ct) { current_timer_ = ct; }
     
     private:
     bool accumulate_targets_;
@@ -74,6 +77,7 @@ namespace libint2 {
     bool do_cse_;
     bool condense_expr_;
     std::string stack_name_;
+    int current_timer_;
   };
   
   /**

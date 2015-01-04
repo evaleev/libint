@@ -214,7 +214,7 @@ namespace libint2 {
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += (unit_a ? 6 : 8) * NdV;
+          inteval->nflops[0] += (unit_a ? 6 : 8) * NdV;
 #endif
 
         }
@@ -228,7 +228,7 @@ namespace libint2 {
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += (unit_a ? 1 : 3) * NdV;
+          inteval->nflops[0] += (unit_a ? 1 : 3) * NdV;
 #endif
         }
 
@@ -253,7 +253,7 @@ namespace libint2 {
               tptr[v] += dxyz * inteval->oo2ze[v] * src4_ptr[v];
             }
 #if LIBINT2_FLOP_COUNT
-            inteval->nflops += 3 * veclen;
+            inteval->nflops[0] += 3 * veclen;
 #endif
             src4_ptr += veclen;
 
@@ -305,19 +305,19 @@ namespace libint2 {
         if (Da_x > 0 && xyz == x){
           dcontrA(target,src5,src6,Da_x,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
         if (Da_y > 0 && xyz == y){
           dcontrA(target,src11,src12,Da_y,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
         if (Da_z > 0 && xyz == z){
           dcontrA(target,src17,src18,Da_z,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
 #endif
@@ -326,19 +326,19 @@ namespace libint2 {
         if (Db_x > 0 && xyz == x){
           dcontrB(target,src7,src8,Db_x,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
         if (Db_y > 0 && xyz == y){
           dcontrB(target,src13,src14,Db_y,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
         if (Db_z > 0 && xyz == z){
           dcontrB(target,src19,src20,Db_z,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
 #endif
@@ -347,19 +347,19 @@ namespace libint2 {
         if (Dc_x > 0 && xyz == x){
           dcontrCD(target,src9,Dc_x,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dc_y > 0 && xyz == y){
           dcontrCD(target,src15,Dc_y,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dc_z > 0 && xyz == z){
           dcontrCD(target,src21,Dc_z,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
 #endif
@@ -368,19 +368,19 @@ namespace libint2 {
         if (Dd_x > 0 && xyz == x){
           dcontrCD(target,src10,Dd_x,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dd_y > 0 && xyz == y){
           dcontrCD(target,src16,Dd_y,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dd_z > 0 && xyz == z){
           dcontrCD(target,src22,Dd_z,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
 #endif
@@ -390,7 +390,7 @@ namespace libint2 {
       END_FOR_CART // end of loop over a-1
 
       /** Number of flops = ??? */
-      //inteval->nflops = inteval->nflops + 222 * 1 * 1 * veclen;
+      //inteval->nflops[0] = inteval->nflops[0] + 222 * 1 * 1 * veclen;
 
     }
 
@@ -552,7 +552,7 @@ namespace libint2 {
             }
           }
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += NdV;
+          inteval->nflops[0] += NdV;
 #endif
         }
 
@@ -577,7 +577,7 @@ namespace libint2 {
               tptr[v] += dxyz * inteval->oo2ze[v] * src4_ptr[v];
             }
 #if LIBINT2_FLOP_COUNT
-            inteval->nflops += 3 * veclen;
+            inteval->nflops[0] += 3 * veclen;
 #endif
             src4_ptr += veclen;
 
@@ -629,19 +629,19 @@ namespace libint2 {
         if (Da_x > 0 && xyz == x){
           dcontrA(target,src5,src6,Da_x,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
         if (Da_y > 0 && xyz == y){
           dcontrA(target,src11,src12,Da_y,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
         if (Da_z > 0 && xyz == z){
           dcontrA(target,src17,src18,Da_z,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
 #endif
@@ -650,19 +650,19 @@ namespace libint2 {
         if (Db_x > 0 && xyz == x){
           dcontrB(target,src7,src8,Db_x,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
         if (Db_y > 0 && xyz == y){
           dcontrB(target,src13,src14,Db_y,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
         if (Db_z > 0 && xyz == z){
           dcontrB(target,src19,src20,Db_z,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 5 * NdV;
+          inteval->nflops[0] += 5 * NdV;
 #endif
         }
 #endif
@@ -671,19 +671,19 @@ namespace libint2 {
         if (Dc_x > 0 && xyz == x){
           dcontrCD(target,src9,Dc_x,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dc_y > 0 && xyz == y){
           dcontrCD(target,src15,Dc_y,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dc_z > 0 && xyz == z){
           dcontrCD(target,src21,Dc_z,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
 #endif
@@ -692,19 +692,19 @@ namespace libint2 {
         if (Dd_x > 0 && xyz == x){
           dcontrCD(target,src10,Dd_x,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dd_y > 0 && xyz == y){
           dcontrCD(target,src16,Dd_y,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dd_z > 0 && xyz == z){
           dcontrCD(target,src22,Dd_z,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops += 3 * NdV;
+          inteval->nflops[0] += 3 * NdV;
 #endif
         }
 #endif
@@ -714,7 +714,7 @@ namespace libint2 {
       END_FOR_CART // end of loop over a-1
 
       /** Number of flops = ??? */
-      //inteval->nflops = inteval->nflops + 222 * 1 * 1 * veclen;
+      //inteval->nflops[0] = inteval->nflops[0] + 222 * 1 * 1 * veclen;
 
     }
 

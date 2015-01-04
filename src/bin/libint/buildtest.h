@@ -296,6 +296,9 @@ namespace libint2 {
       dg_prereq->registry()->return_targets(false);
       dg_prereq->registry()->accumulate_targets(true);
       dg_prereq->registry()->stack_name("stack");
+      if (dg->registry()->current_timer() >= 0) {
+        dg_prereq->registry()->current_timer( dg->registry()->current_timer() + 1 );
+      }
 
       // now is the "right" time to reset dg
       // reset graph of the previous computation so that the vertices that will be targets on the new graph

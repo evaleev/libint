@@ -34,16 +34,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 
-// BTAS tensor algebra library: not yet ready
-//#include <btas/btas.h>
-
 // Libint Gaussian integrals library
 #include <libint2.h>
 #include <libint2/cxxapi.h>
-
-#if defined(_OPENMP)
-# include <omp.h>
-#endif
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         Matrix;  // import dense, dynamically sized Matrix type from Eigen;
@@ -55,31 +48,23 @@ struct Atom {
     double x, y, z;
 };
 
+using libint2::Shell;
+
 std::vector<Atom> read_geometry(const std::string& filename);
-std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms);
-std::vector<libint2::Shell> make_augccpvdz_basis(const std::vector<Atom>& atoms);
-size_t nbasis(const std::vector<libint2::Shell>& shells);
-std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell>& shells);
+std::vector<Shell> make_sto3g_basis(const std::vector<Atom>& atoms);
+size_t nbasis(const std::vector<Shell>& shells);
+std::vector<size_t> map_shell_to_basis_function(const std::vector<Shell>& shells);
 Matrix compute_soad(const std::vector<Atom>& atoms);
 Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
                           libint2::OneBodyEngine::integral_type t,
                           const std::vector<Atom>& atoms = std::vector<Atom>());
 
 // simple-to-read, but inefficient Fock builder; computes ~16 times as many ints as possible
-Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
+Matrix compute_2body_fock_simple(const std::vector<Shell>& shells,
                                  const Matrix& D);
 // an efficient Fock builder; *integral-driven* hence computes permutationally-unique ints once
-Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
+Matrix compute_2body_fock(const std::vector<Shell>& shells,
                                  const Matrix& D);
-// threaded versions of the above
-#if defined(_OPENMP)
-Matrix compute_1body_ints_openmp(const std::vector<libint2::Shell>& shells,
-                                 libint2::OneBodyEngine::integral_type t,
-                                 const std::vector<Atom>& atoms = std::vector<Atom>());
-Matrix compute_2body_fock_openmp(const std::vector<libint2::Shell>& shells,
-                                 const Matrix& D);
-#endif
-
 
 int main(int argc, char *argv[]) {
 
@@ -96,11 +81,6 @@ int main(int argc, char *argv[]) {
     // read geometry from a file; by default read from h2o.xyz, else take filename (.xyz) from the command line
     const auto filename = (argc > 1) ? argv[1] : "h2o.xyz";
     std::vector<Atom> atoms = read_geometry(filename);
-
-    // announce OpenMP
-#if defined(_OPENMP)
-    std::cout << "Will use OpenMP to scale up to " << omp_get_max_threads() << " threads" << std::endl;
-#endif
 
     // count the number of electrons
     auto nelectron = 0;
@@ -126,7 +106,6 @@ int main(int argc, char *argv[]) {
     /*** =========================== ***/
 
     auto shells = make_sto3g_basis(atoms);
-    //auto shells = make_augccpvdz_basis(atoms);
     size_t nao = 0;
     for (auto s=0; s<shells.size(); ++s)
       nao += shells[s].size();
@@ -139,34 +118,17 @@ int main(int argc, char *argv[]) {
     libint2::init();
 
     // compute overlap integrals
-#if defined(_OPENMP)
-      auto S = compute_1body_ints_openmp(shells, libint2::OneBodyEngine::overlap);
-      { // validate overlap integrals; this also tests 1-thread function
-        auto S_1thread = compute_1body_ints(shells, libint2::OneBodyEngine::overlap);
-        if ((S - S_1thread).norm() > 1e-12)
-          throw "overlap sanity check: threaded result != sequential result";
-      }
-#else
-      auto S = compute_1body_ints(shells, libint2::OneBodyEngine::overlap);
-#endif
+    auto S = compute_1body_ints(shells, libint2::OneBodyEngine::overlap);
     cout << "\n\tOverlap Integrals:\n";
     cout << S << endl;
 
     // compute kinetic-energy integrals
-#if defined(_OPENMP)
-    auto T = compute_1body_ints_openmp(shells, libint2::OneBodyEngine::kinetic);
-#else
     auto T = compute_1body_ints(shells, libint2::OneBodyEngine::kinetic);
-#endif
     cout << "\n\tKinetic-Energy Integrals:\n";
     cout << T << endl;
 
     // compute nuclear-attraction integrals
-#if defined(_OPENMP)
-    Matrix V = compute_1body_ints_openmp(shells, libint2::OneBodyEngine::nuclear, atoms);
-#else
     Matrix V = compute_1body_ints(shells, libint2::OneBodyEngine::nuclear, atoms);
-#endif
     cout << "\n\tNuclear Attraction Integrals:\n";
     cout << V << endl;
 
@@ -183,7 +145,7 @@ int main(int argc, char *argv[]) {
     /*** build initial-guess density ***/
     /*** =========================== ***/
 
-    const auto use_hcore_guess = true ;  // use core Hamiltonian eigenstates to guess density?
+    const auto use_hcore_guess = false;  // use core Hamiltonian eigenstates to guess density?
                                          // set to true to match the result of versions 0, 1, and 2 of the code
                                          // HOWEVER !!! even for medium-size molecules hcore will usually fail !!!
                                          // thus set to false to use Superposition-Of-Atomic-Densities (SOAD) guess
@@ -228,16 +190,7 @@ int main(int argc, char *argv[]) {
       // build a new Fock matrix
       auto F = H;
       //F += compute_2body_fock_simple(shells, D);
-#if defined(_OPENMP)
-      F += compute_2body_fock_openmp(shells, D);
-      if (iter == 1) {
-        auto G_1thread = compute_2body_fock(shells, D);
-        if ((F - H - G_1thread).norm() > 1e-12)
-          throw "Fock sanity check: threaded result != sequential result";
-      }
-#else
       F += compute_2body_fock(shells, D);
-#endif
 
       if (iter == 1) {
         cout << "\n\tFock Matrix:\n";
@@ -369,9 +322,9 @@ std::vector<Atom> read_geometry(const std::string& filename) {
     throw "only .xyz files are accepted";
 }
 
-std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
+std::vector<Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
 
-  std::vector<libint2::Shell> shells;
+  std::vector<Shell> shells;
 
   for(auto a=0; a<atoms.size(); ++a) {
 
@@ -496,174 +449,21 @@ std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
   return shells;
 }
 
-std::vector<libint2::Shell> make_augccpvdz_basis(const std::vector<Atom>& atoms) {
-
-  std::vector<libint2::Shell> shells;
-
-  for(auto a=0; a<atoms.size(); ++a) {
-
-    switch (atoms[a].atomic_number) {
-      case 1: // Z=1: hydrogen
-        shells.push_back(
-            {
-              {13.010000000, 1.9620000000, 0.44460000000}, // exponents of primitive Gaussians
-              {  // contraction 0: s shell (l=0), spherical=false, contraction coefficients
-                {0, false, {0.019685000000, 0.13797700000, 0.47814800000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}   // origin coordinates
-            }
-        );
-        shells.push_back(
-            {
-              {0.12200000000},
-              {
-                {0, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.029740000000},
-              {
-                {0, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.72700000000},
-              {
-                {1, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.14100000000},
-              {
-                {1, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        break;
-
-      case 8: // Z=8: oxygen
-        shells.push_back(
-            {
-              {11720.000000, 1759.0000000, 400.80000000, 113.70000000, 37.030000000, 13.270000000, 5.0250000000, 1.0130000000},
-              {
-                {0, false, {0.00071000000000, 0.0054700000000, 0.027837000000, 0.10480000000, 0.28306200000, 0.44871900000, 0.27095200000, 0.015458000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {11720.000000, 1759.0000000, 400.80000000, 113.70000000, 37.030000000, 13.270000000, 5.0250000000, 1.0130000000},
-              {
-                {0, false, {-0.00016000000000, -0.0012630000000, -0.0062670000000, -0.025716000000, -0.070924000000, -0.16541100000, -0.11695500000, 0.55736800000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.30230000000},
-              {
-                {0, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.078960000000},
-              {
-                {0, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {17.700000000, 3.8540000000, 1.0460000000},
-              {
-                {1, false, {0.043018000000, 0.22891300000, 0.50872800000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.27530000000},
-              {
-                {1, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.068560000000},
-              {
-                {1, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {1.1850000000},
-              {
-                {2, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        shells.push_back(
-            {
-              {0.33200000000},
-              {
-                {2, false, {1.000000}}
-              },
-              {{atoms[a].x, atoms[a].y, atoms[a].z}}
-            }
-        );
-        break;
-
-      default:
-        throw "do not know aug-cc-pVDZ basis for this Z";
-    }
-
-  }
-
-  // technical step: rescale contraction coefficients to include primitive normalization coefficients
-  for(auto& s: shells) {
-    s.renorm();
-  }
-
-  return shells;
-}
-
-size_t nbasis(const std::vector<libint2::Shell>& shells) {
+size_t nbasis(const std::vector<Shell>& shells) {
   size_t n = 0;
   for (const auto& shell: shells)
     n += shell.size();
   return n;
 }
 
-size_t max_nprim(const std::vector<libint2::Shell>& shells) {
+size_t max_nprim(const std::vector<Shell>& shells) {
   size_t n = 0;
   for (auto shell: shells)
     n = std::max(shell.nprim(), n);
   return n;
 }
 
-int max_l(const std::vector<libint2::Shell>& shells) {
+int max_l(const std::vector<Shell>& shells) {
   int l = 0;
   for (auto shell: shells)
     for (auto c: shell.contr)
@@ -671,7 +471,7 @@ int max_l(const std::vector<libint2::Shell>& shells) {
   return l;
 }
 
-std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell>& shells) {
+std::vector<size_t> map_shell_to_basis_function(const std::vector<Shell>& shells) {
   std::vector<size_t> result;
   result.reserve(shells.size());
 
@@ -685,7 +485,7 @@ std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell
 }
 
 // computes Superposition-Of-Atomic-Densities guess for the molecular density matrix
-// basically assumes minimal basis and occupies subshell by smearing electrons evenly over the orbitals
+// in minimal basis; occupies subshells by smearing electrons evenly over the orbitals
 Matrix compute_soad(const std::vector<Atom>& atoms) {
 
   // compute number of atomic orbitals
@@ -700,7 +500,7 @@ Matrix compute_soad(const std::vector<Atom>& atoms) {
       throw "SOAD with Z > 10 is not yet supported";
   }
 
-  // compute the density
+  // compute the minimal basis density
   Matrix D = Matrix::Zero(nao, nao);
   size_t ao_offset = 0; // first AO of this atom
   for(const auto& atom: atoms) {
@@ -771,77 +571,7 @@ Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
   return result;
 }
 
-#if defined(_OPENMP)
-Matrix compute_1body_ints_openmp(const std::vector<libint2::Shell>& shells,
-                                 libint2::OneBodyEngine::integral_type obtype,
-                                 const std::vector<Atom>& atoms)
-{
-  const auto n = nbasis(shells);
-  const auto nthreads = omp_get_max_threads();
-  std::vector<Matrix> results(nthreads, Matrix::Zero(n,n));
-
-  // construct the overlap integrals engine
-  std::vector<libint2::OneBodyEngine> engines(nthreads);
-  engines[0] = libint2::OneBodyEngine(obtype, max_nprim(shells), max_l(shells), 0);
-  // nuclear attraction ints engine needs to know where the charges sit ...
-  // the nuclei are charges in this case; in QM/MM there will also be classical charges
-  if (obtype == libint2::OneBodyEngine::nuclear) {
-    std::vector<std::pair<double,std::array<double,3>>> q;
-    for(const auto& atom : atoms) {
-      q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
-    }
-    engines[0].set_q(q);
-  }
-  for(size_t i=1; i!=nthreads; ++i) {
-    engines[i] = engines[0];
-  }
-
-  auto shell2bf = map_shell_to_basis_function(shells);
-
-#pragma omp parallel
-  {
-    auto thread_id = omp_get_thread_num();
-
-    // loop over unique shell pairs, {s1,s2} such that s1 >= s2
-    // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
-    for(auto s1=0l, s12=0l; s1!=shells.size(); ++s1) {
-
-      auto bf1 = shell2bf[s1]; // first basis function in this shell
-      auto n1 = shells[s1].size();
-
-      for(auto s2=0; s2<=s1; ++s2) {
-
-        if (s12 % nthreads != thread_id)
-          continue;
-
-        auto bf2 = shell2bf[s2];
-        auto n2 = shells[s2].size();
-
-        // compute shell pair; return is the pointer to the buffer
-        const auto* buf = engines[thread_id].compute(shells[s1], shells[s2]);
-
-        auto& r = results[thread_id];
-
-        // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
-        Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
-        r.block(bf1, bf2, n1, n2) = buf_mat;
-        if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
-        r.block(bf2, bf1, n2, n1) = buf_mat.transpose();
-
-      }
-    }
-  } // omp parallel
-
-  // accumulate contributions from all threads
-  for(size_t i=1; i!=nthreads; ++i) {
-    results[0] += results[i];
-  }
-
-  return results[0];
-}
-#endif // defined(_OPENMP)
-
-Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
+Matrix compute_2body_fock_simple(const std::vector<Shell>& shells,
                                  const Matrix& D) {
 
   const auto n = nbasis(shells);
@@ -922,8 +652,10 @@ Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
   return G;
 }
 
-Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
+Matrix compute_2body_fock(const std::vector<Shell>& shells,
                           const Matrix& D) {
+
+  std::chrono::duration<double> time_elapsed = std::chrono::duration<double>::zero();
 
   const auto n = nbasis(shells);
   Matrix G = Matrix::Zero(n,n);
@@ -987,7 +719,12 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
           auto s12_34_deg = (s1 == s3) ? (s2 == s4 ? 1.0 : 2.0) : 2.0;
           auto s1234_deg = s12_deg * s34_deg * s12_34_deg;
 
+          const auto tstart = std::chrono::high_resolution_clock::now();
+
           const auto* buf = engine.compute(shells[s1], shells[s2], shells[s3], shells[s4]);
+
+          const auto tstop = std::chrono::high_resolution_clock::now();
+          time_elapsed += tstop - tstart;
 
           // ANSWER
           // 1) each shell set of integrals contributes up to 6 shell sets of the Fock matrix:
@@ -1033,111 +770,3 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
   Matrix Gt = G.transpose();
   return 0.5 * (G + Gt);
 }
-
-#if defined(_OPENMP)
-Matrix compute_2body_fock_openmp(const std::vector<libint2::Shell>& shells,
-                                 const Matrix& D) {
-
-  const auto n = nbasis(shells);
-  const auto nthreads = omp_get_max_threads();
-  std::vector<Matrix> G(nthreads, Matrix::Zero(n,n));
-
-  // construct the 2-electron repulsion integrals engine
-  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
-  std::vector<coulomb_engine_type> engines(nthreads);
-  engines[0] = coulomb_engine_type(max_nprim(shells), max_l(shells), 0);
-  for(size_t i=1; i!=nthreads; ++i) {
-    engines[i] = engines[0];
-  }
-
-  auto shell2bf = map_shell_to_basis_function(shells);
-
-#pragma omp parallel
-  {
-    auto thread_id = omp_get_thread_num();
-
-    // loop over permutationally-unique set of shells
-    for(auto s1=0l, s1234=0l; s1!=shells.size(); ++s1) {
-
-      auto bf1_first = shell2bf[s1]; // first basis function in this shell
-      auto n1 = shells[s1].size();// number of basis functions in this shell
-
-      for(auto s2=0; s2<=s1; ++s2) {
-
-        auto bf2_first = shell2bf[s2];
-        auto n2 = shells[s2].size();
-
-        for(auto s3=0; s3<=s1; ++s3) {
-
-          auto bf3_first = shell2bf[s3];
-          auto n3 = shells[s3].size();
-
-          const auto s4_max = (s1 == s3) ? s2 : s3;
-          for(auto s4=0; s4<=s4_max; ++s4, ++s1234) {
-
-            if (s1234 % nthreads != thread_id)
-              continue;
-
-            auto bf4_first = shell2bf[s4];
-            auto n4 = shells[s4].size();
-
-            // compute the permutational degeneracy (i.e. # of equivalents) of the given shell set
-            auto s12_deg = (s1 == s2) ? 1.0 : 2.0;
-            auto s34_deg = (s3 == s4) ? 1.0 : 2.0;
-            auto s12_34_deg = (s1 == s3) ? (s2 == s4 ? 1.0 : 2.0) : 2.0;
-            auto s1234_deg = s12_deg * s34_deg * s12_34_deg;
-
-            const auto* buf = engines[thread_id].compute(shells[s1], shells[s2], shells[s3], shells[s4]);
-
-            // 1) each shell set of integrals contributes up to 6 shell sets of the Fock matrix:
-            //    F(a,b) += (ab|cd) * D(c,d)
-            //    F(c,d) += (ab|cd) * D(a,b)
-            //    F(b,d) -= 1/4 * (ab|cd) * D(a,c)
-            //    F(b,c) -= 1/4 * (ab|cd) * D(a,d)
-            //    F(a,c) -= 1/4 * (ab|cd) * D(b,d)
-            //    F(a,d) -= 1/4 * (ab|cd) * D(b,c)
-            // 2) each permutationally-unique integral (shell set) must be scaled by its degeneracy,
-            //    i.e. the number of the integrals/sets equivalent to it
-            // 3) the end result must be symmetrized
-            for(auto f1=0, f1234=0; f1!=n1; ++f1) {
-              const auto bf1 = f1 + bf1_first;
-              for(auto f2=0; f2!=n2; ++f2) {
-                const auto bf2 = f2 + bf2_first;
-                for(auto f3=0; f3!=n3; ++f3) {
-                  const auto bf3 = f3 + bf3_first;
-                  for(auto f4=0; f4!=n4; ++f4, ++f1234) {
-                    const auto bf4 = f4 + bf4_first;
-
-                    const auto value = buf[f1234];
-
-                    const auto value_scal_by_deg = value * s1234_deg;
-
-                    auto& g = G[thread_id];
-
-                    g(bf1,bf2) += D(bf3,bf4) * value_scal_by_deg;
-                    g(bf3,bf4) += D(bf1,bf2) * value_scal_by_deg;
-                    g(bf1,bf3) -= 0.25 * D(bf2,bf4) * value_scal_by_deg;
-                    g(bf2,bf4) -= 0.25 * D(bf1,bf3) * value_scal_by_deg;
-                    g(bf1,bf4) -= 0.25 * D(bf2,bf3) * value_scal_by_deg;
-                    g(bf2,bf3) -= 0.25 * D(bf1,bf4) * value_scal_by_deg;
-                  }
-                }
-              }
-            }
-
-          }
-        }
-      }
-    }
-  } // omp parallel
-
-  // accumulate contributions from all threads
-  for(size_t i=1; i!=nthreads; ++i) {
-    G[0] += G[i];
-  }
-
-  // symmetrize the result and return
-  return 0.5 * (G[0] + G[0].transpose());
-}
-#endif // defined(_OPENMP)
-

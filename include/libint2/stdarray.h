@@ -16,7 +16,7 @@
 #  define LIBINT_HAS_STD_ARRAY 1
 #  include <stdarray_bits.h>
    namespace std {
-      using namespace sc::tr1::array;
+      using namespace libint2::tr1::array;
    }
 #endif
 
