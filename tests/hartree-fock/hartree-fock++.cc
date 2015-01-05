@@ -58,7 +58,7 @@ std::vector<Atom> read_geometry(const std::string& filename);
 Matrix compute_soad(const std::vector<Atom>& atoms);
 
 Matrix compute_1body_ints(const BasisSet& obs,
-                          libint2::OneBodyEngine::type t,
+                          libint2::OneBodyEngine::integral_type t,
                           const std::vector<Atom>& atoms = std::vector<Atom>());
 Matrix compute_2body_fock(const BasisSet& obs,
                           const Matrix& D);
@@ -288,7 +288,7 @@ Matrix compute_soad(const std::vector<Atom>& atoms) {
 }
 
 Matrix compute_1body_ints(const BasisSet& obs,
-                          libint2::OneBodyEngine::type obtype,
+                          libint2::OneBodyEngine::integral_type obtype,
                           const std::vector<Atom>& atoms)
 {
   const auto n = obs.nbf();

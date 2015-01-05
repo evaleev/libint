@@ -50,11 +50,11 @@ namespace libint2 {
   /// OneBodyEngine computes integrals of 1-body operators, e.g. overlap, kinetic energy, dipole moment, etc.
 
   /**
-   * OneBodyEngine computes integrals of types given by OneBodyEngine::type
+   * OneBodyEngine computes integrals of types given by OneBodyEngine::integral_type
    */
   class OneBodyEngine {
     public:
-      enum type {
+      enum integral_type {
         overlap,
         kinetic,
         nuclear,
@@ -66,15 +66,15 @@ namespace libint2 {
 
       /// Constructs a (usable) OneBodyEngine
 
-      /// \param t integral type, see OneBodyEngine::type
+      /// \param t integral type, see OneBodyEngine::integral_type
       /// \param max_nprim the maximum number of primitives per contracted Gaussian shell
       /// \param max_l the maximum angular momentum of Gaussian shell
       /// \param deriv_level if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_level
-      /// \note if type == nuclear, must specify charges using set_q()
-      /// \warning currently only the following types are suported: \c overlap, \c kinetic, \c nuclear
+      /// \note if integral_type == nuclear, must specify charges using set_q()
+      /// \warning currently only the following integral types are suported: \c overlap, \c kinetic, \c nuclear
       /// \warning currently derivative integrals are not supported
       /// \warning currently solid harmonics Gaussians are not supported
-      OneBodyEngine(type t, size_t max_nprim, int max_l, int deriv_order = 0) :
+      OneBodyEngine(integral_type t, size_t max_nprim, int max_l, int deriv_order = 0) :
         type_(t), primdata_(max_nprim * max_nprim), lmax_(max_l), deriv_order_(deriv_order),
         fm_eval_(t == nuclear ? libint2::FmEval_Chebyshev3::instance(2*max_l+deriv_order) : 0) {
         initialize();
@@ -113,6 +113,9 @@ namespace libint2 {
         return *this;
       }
 
+      /// returns the integral type used by the engine
+      integral_type type() const {return type_;}
+
       /// specifies the nuclear charges
       /// \param q vector of {charge,Cartesian coordinate} pairs
       void set_q(const std::vector<std::pair<double, std::array<double, 3>>>& q) {
@@ -134,7 +137,7 @@ namespace libint2 {
 
         // if want nuclear, make sure there is at least one nucleus .. otherwise the user likely forgot to call set_q
         if (type_ == nuclear and q_.size() == 0)
-          throw std::runtime_error("libint2::OneBodyEngine(type = nuclear), but no nuclei found; forgot to call set_q()?");
+          throw std::runtime_error("libint2::OneBodyEngine(integral_type = nuclear), but no nuclei found; forgot to call set_q()?");
 
 #if LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD // make sure bra.l >= ket.l
         const auto swap = (l1 < l2);
@@ -388,7 +391,7 @@ namespace libint2 {
       }
 
     private:
-      type type_;
+      integral_type type_;
       std::vector<Libint_t> primdata_;
       int lmax_;
       size_t deriv_order_;

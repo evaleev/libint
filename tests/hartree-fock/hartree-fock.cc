@@ -55,8 +55,8 @@ std::vector<Shell> make_sto3g_basis(const std::vector<Atom>& atoms);
 size_t nbasis(const std::vector<Shell>& shells);
 std::vector<size_t> map_shell_to_basis_function(const std::vector<Shell>& shells);
 Matrix compute_soad(const std::vector<Atom>& atoms);
-Matrix compute_1body_ints(const std::vector<Shell>& shells,
-                          libint2::OneBodyEngine::type t,
+Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
+                          libint2::OneBodyEngine::integral_type t,
                           const std::vector<Atom>& atoms = std::vector<Atom>());
 
 // simple-to-read, but inefficient Fock builder; computes ~16 times as many ints as possible
@@ -523,8 +523,8 @@ Matrix compute_soad(const std::vector<Atom>& atoms) {
   return D * 0.5; // we use densities normalized to # of electrons/2
 }
 
-Matrix compute_1body_ints(const std::vector<Shell>& shells,
-                          libint2::OneBodyEngine::type obtype,
+Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
+                          libint2::OneBodyEngine::integral_type obtype,
                           const std::vector<Atom>& atoms)
 {
   const auto n = nbasis(shells);
