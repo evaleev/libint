@@ -196,6 +196,9 @@ namespace libint2 {
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
+        // must be (A0|C0)
+        if (not (b.zero() && d.zero())) return;
+
         const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
         if (is_simple()) { expr_ = Vector("TwoPRepITR_pfac0_0_0")[dir] * ABCD_m;  nflops_+=1; }
 
@@ -222,6 +225,9 @@ namespace libint2 {
         F c(Tint->bra(1,0) - _1);
         if (!exists(c)) return;
         F d(Tint->ket(1,0));
+
+        // must be (A0|C0)
+        if (not (b.zero() && d.zero())) return;
 
         const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
         if (is_simple()) { expr_ = Vector("TwoPRepITR_pfac0_1_0")[dir] * ABCD_m;  nflops_+=1; }
@@ -250,6 +256,9 @@ namespace libint2 {
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
+        // must be (0B|0D)
+        if (not (a.zero() && c.zero())) return;
+
         const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
         if (is_simple()) { expr_ = Vector("TwoPRepITR_pfac0_0_1")[dir] * ABCD_m;  nflops_+=1; }
 
@@ -276,6 +285,9 @@ namespace libint2 {
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0) - _1);
         if (!exists(d)) return;
+
+        // must be (0B|0D)
+        if (not (a.zero() && c.zero())) return;
 
         const SafePtr<ChildType>& ABCD_m = make_child(a,b,c,d,m);
         if (is_simple()) { expr_ = Vector("TwoPRepITR_pfac0_1_1")[dir] * ABCD_m;  nflops_+=1; }
