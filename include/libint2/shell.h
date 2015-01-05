@@ -124,12 +124,14 @@ namespace libint2 {
         for(auto& c: contr) {
           assert(c.l <= 15); // due to df_Kminus1[] a 64-bit integer type; kinda ridiculous restriction anyway
           for(auto p=0; p!=np; ++p) {
-            const auto two_alpha = 2 * alpha[p];
-            const auto two_alpha_to_am32 = pow(two_alpha,c.l+1) * sqrt(two_alpha);
-            const auto norm = sqrt(pow(2,c.l) * two_alpha_to_am32/(sqrt_Pi_cubed * df_Kminus1[2*c.l] ));
+            assert(alpha[p] >= 0.0);
+            if (alpha[p] != 0.) {
+              const auto two_alpha = 2 * alpha[p];
+              const auto two_alpha_to_am32 = pow(two_alpha,c.l+1) * sqrt(two_alpha);
+              const auto norm = sqrt(pow(2,c.l) * two_alpha_to_am32/(sqrt_Pi_cubed * df_Kminus1[2*c.l] ));
 
-            c.coeff[p] *= norm;
-
+              c.coeff[p] *= norm;
+            }
           }
         }
 
