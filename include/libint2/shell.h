@@ -26,6 +26,7 @@
 #include <iostream>
 #include <array>
 #include <vector>
+#include <cassert>
 
 #include <libint2.h>
 

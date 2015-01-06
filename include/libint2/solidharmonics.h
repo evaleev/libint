@@ -28,6 +28,7 @@
 
 #include <libint2/shell.h>
 #include <libint2/cgshell_ordering.h>
+#include <Eigen/Dense>
 
 namespace {
   template <typename Int>
