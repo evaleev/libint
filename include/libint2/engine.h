@@ -283,22 +283,22 @@ namespace libint2 {
            ) {
 
 #if LIBINT2_DEFINED(eri,PA_x)
-        primdata.PA_x[0] = Px - A[0];
+          primdata.PA_x[0] = Px - A[0];
 #endif
 #if LIBINT2_DEFINED(eri,PA_y)
-        primdata.PA_y[0] = Py - A[1];
+          primdata.PA_y[0] = Py - A[1];
 #endif
 #if LIBINT2_DEFINED(eri,PA_z)
-        primdata.PA_z[0] = Pz - A[2];
+          primdata.PA_z[0] = Pz - A[2];
 #endif
 #if LIBINT2_DEFINED(eri,AB_x)
-        primdata.AB_x[0] = A[0] - B[0];
+          primdata.AB_x[0] = A[0] - B[0];
 #endif
 #if LIBINT2_DEFINED(eri,AB_y)
-        primdata.AB_y[0] = A[1] - B[1];
+          primdata.AB_y[0] = A[1] - B[1];
 #endif
 #if LIBINT2_DEFINED(eri,AB_z)
-        primdata.AB_z[0] = A[2] - B[2];
+          primdata.AB_z[0] = A[2] - B[2];
 #endif
         }
         if (LIBINT2_SHELLQUARTET_SET != LIBINT2_SHELLQUARTET_SET_STANDARD
@@ -306,22 +306,22 @@ namespace libint2 {
         { // always VRR on ket, HRR to ket (overlap, coulomb), or kinetic energy ints
 
 #if LIBINT2_DEFINED(eri,PB_x)
-        primdata.PB_x[0] = Px - B[0];
+          primdata.PB_x[0] = Px - B[0];
 #endif
 #if LIBINT2_DEFINED(eri,PB_y)
-        primdata.PB_y[0] = Py - B[1];
+          primdata.PB_y[0] = Py - B[1];
 #endif
 #if LIBINT2_DEFINED(eri,PB_z)
-        primdata.PB_z[0] = Pz - B[2];
+          primdata.PB_z[0] = Pz - B[2];
 #endif
 #if LIBINT2_DEFINED(eri,BA_x)
-        primdata.BA_x[0] = B[0] - A[0];
+          primdata.BA_x[0] = B[0] - A[0];
 #endif
 #if LIBINT2_DEFINED(eri,BA_y)
-        primdata.BA_y[0] = B[1] - A[1];
+          primdata.BA_y[0] = B[1] - A[1];
 #endif
 #if LIBINT2_DEFINED(eri,BA_z)
-        primdata.BA_z[0] = B[2] - A[2];
+          primdata.BA_z[0] = B[2] - A[2];
 #endif
         }
 
@@ -331,26 +331,26 @@ namespace libint2 {
 
         if (type_ == kinetic) { // additional factors for kinetic energy
 #if LIBINT2_DEFINED(eri,rho12_over_alpha1)
-        primdata.rho12_over_alpha1[0] = alpha2 * oogammap;
+          primdata.rho12_over_alpha1[0] = alpha2 * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,rho12_over_alpha2)
-        primdata.rho12_over_alpha2[0] = alpha1 * oogammap;
+          primdata.rho12_over_alpha2[0] = alpha1 * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,two_rho12)
-        primdata.two_rho12[0] = 2. * rhop;
+          primdata.two_rho12[0] = 2. * rhop;
 #endif
         }
 
         if (type_ == nuclear) { // additional factor for electrostatic potential
           const auto& C = q_[oset].second;
 #if LIBINT2_DEFINED(eri,PC_x)
-        primdata.PC_x[0] = Px - C[0];
+          primdata.PC_x[0] = Px - C[0];
 #endif
 #if LIBINT2_DEFINED(eri,PC_y)
-        primdata.PC_y[0] = Py - C[1];
+          primdata.PC_y[0] = Py - C[1];
 #endif
 #if LIBINT2_DEFINED(eri,PC_z)
-        primdata.PC_z[0] = Pz - C[2];
+          primdata.PC_z[0] = Pz - C[2];
 #endif
         }
 
@@ -1352,40 +1352,46 @@ namespace libint2 {
 
     // using ITR?
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_x)
-    Data->TwoPRepITR_pfac0_0_0_x[0] = - (alpha1*AB[0] + alpha3*CD[0]) * oogammap;
+    primdata.TwoPRepITR_pfac0_0_0_x[0] = - (alpha1*AB[0] + alpha3*CD[0]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_y)
-    Data->TwoPRepITR_pfac0_0_0_y[0] = - (alpha1*AB[1] + alpha3*CD[1]) * oogammap;
+    primdata.TwoPRepITR_pfac0_0_0_y[0] = - (alpha1*AB[1] + alpha3*CD[1]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_z)
-    Data->TwoPRepITR_pfac0_0_0_z[0] = - (alpha1*AB[2] + alpha3*CD[2]) * oogammap;
+    primdata.TwoPRepITR_pfac0_0_0_z[0] = - (alpha1*AB[2] + alpha3*CD[2]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_x)
-    Data->TwoPRepITR_pfac0_1_0_x[0] = - (alpha1*AB[0] + alpha3*CD[0]) * oogammaq;
+    primdata.TwoPRepITR_pfac0_1_0_x[0] = - (alpha1*AB[0] + alpha3*CD[0]) * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_y)
-    Data->TwoPRepITR_pfac0_1_0_y[0] = - (alpha1*AB[1] + alpha3*CD[1]) * oogammaq;
+    primdata.TwoPRepITR_pfac0_1_0_y[0] = - (alpha1*AB[1] + alpha3*CD[1]) * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_z)
-    Data->TwoPRepITR_pfac0_1_0_z[0] = - (alpha1*AB[2] + alpha3*CD[2]) * oogammaq;
+    primdata.TwoPRepITR_pfac0_1_0_z[0] = - (alpha1*AB[2] + alpha3*CD[2]) * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_x)
-    Data->TwoPRepITR_pfac0_0_1_x[0] = (alpha0*AB[0] + alpha2*CD[0]) * oogammap;
+    primdata.TwoPRepITR_pfac0_0_1_x[0] = (alpha0*AB[0] + alpha2*CD[0]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_y)
-    Data->TwoPRepITR_pfac0_0_1_y[0] = (alpha0*AB[1] + alpha2*CD[1]) * oogammap;
+    primdata.TwoPRepITR_pfac0_0_1_y[0] = (alpha0*AB[1] + alpha2*CD[1]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_z)
-    Data->TwoPRepITR_pfac0_0_1_z[0] = (alpha0*AB[2] + alpha2*CD[2]) * oogammap;
+    primdata.TwoPRepITR_pfac0_0_1_z[0] = (alpha0*AB[2] + alpha2*CD[2]) * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_x)
-    Data->TwoPRepITR_pfac0_1_1_x[0] = (alpha0*AB[0] + alpha2*CD[0]) * oogammaq;
+    primdata.TwoPRepITR_pfac0_1_1_x[0] = (alpha0*AB[0] + alpha2*CD[0]) * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_y)
-    Data->TwoPRepITR_pfac0_1_1_y[0] = (alpha0*AB[1] + alpha2*CD[1]) * oogammaq;
+    primdata.TwoPRepITR_pfac0_1_1_y[0] = (alpha0*AB[1] + alpha2*CD[1]) * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_z)
-    Data->TwoPRepITR_pfac0_1_1_z[0] = (alpha0*AB[2] + alpha2*CD[2]) * oogammaq;
+    primdata.TwoPRepITR_pfac0_1_1_z[0] = (alpha0*AB[2] + alpha2*CD[2]) * oogammaq;
+#endif
+#if LIBINT2_DEFINED(eri,eoz)
+    primdata.eoz[0] = gammaq*oogammap;
+#endif
+#if LIBINT2_DEFINED(eri,zoe)
+    primdata.zoe[0] = gammap*oogammaq;
 #endif
 
     // prefactors for derivative ERI relations
