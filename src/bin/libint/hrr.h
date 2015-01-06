@@ -174,7 +174,7 @@ namespace libint2 {
       IKetType* ket = new IKetType(Tint->ket());
 
       //
-      // InBra and InKet cases have to treated explicitly since BraType and KetType don't have to match
+      // InBra and InKet cases have to be treated explicitly since BraType and KetType don't have to match
       //
       if (loc_a == InKet && loc_b == InBra) {
         F a(ket->member(part,pos_a));

@@ -898,6 +898,8 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             label += abcd_label;
           }
 
+          std::cout << "working on " << label << " ... ";
+
           std::string prefix(cparams->source_directory());
           std::deque<std::string> decl_filenames;
           std::deque<std::string> def_filenames;
@@ -934,6 +936,8 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 #endif
           dg_xxxx->reset();
           memman->reset();
+
+          std::cout << "done" << std::endl;
 
         } // end of d loop
       } // end of c loop
