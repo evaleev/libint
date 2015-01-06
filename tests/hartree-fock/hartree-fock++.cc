@@ -109,6 +109,7 @@ int main(int argc, char *argv[]) {
     cout << "Nuclear repulsion energy = " << std::setprecision(15) << enuc << endl;
 
     BasisSet obs("aug-cc-pVDZ", atoms);
+    cout << "basis rank = " << obs.nbf() << endl;
 
     /*** =========================== ***/
     /*** compute 1-e integrals       ***/
@@ -128,7 +129,7 @@ int main(int argc, char *argv[]) {
     Matrix D;
     {  // use SOAD as the guess density
       auto D_minbs = compute_soad(atoms); // compute guess in minimal basis
-      BasisSet minbs("sto-3g", atoms);
+      BasisSet minbs("STO-3G", atoms);
       if (minbs == obs)
         D = D_minbs;
       else { // if basis != minimal basis, map non-representable SOAD guess into the AO basis
