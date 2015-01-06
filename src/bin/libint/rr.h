@@ -137,6 +137,10 @@ namespace libint2 {
      * @return 1 if recurrence relation transfers quanta from lower to higher particles, -1 if vice versa, and 0 if neither
      */
     virtual int partindex_direction() const { return 0; }
+    /**
+     * @return the total size of the children of this RR
+     */
+    size_t size_of_children() const;
 
     /**
       label() returns a unique, short, descriptive label of this RR

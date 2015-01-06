@@ -366,6 +366,16 @@ RecurrenceRelation::generic_instance(const SafePtr<CodeContext>& context, const 
   throw std::logic_error("RecurrenceRelation::generic_instance() -- should not be called! Check if DerivedRecurrenceRelation::generic_instance() is implemented");
 }
 
+size_t
+RecurrenceRelation::size_of_children() const {
+  const auto nchildren = this->num_children();
+  size_t result = 0;
+  for(auto c=0; c!=nchildren; ++c) {
+    result += this->rr_child(c)->size();
+  }
+  return result;
+}
+
 namespace libint2 { namespace algebra {
   /// these operators are extremely useful to write compact expressions
   SafePtr<RecurrenceRelation::ExprType> operator+(const SafePtr<DGVertex>& A,

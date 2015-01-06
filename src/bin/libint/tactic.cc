@@ -168,8 +168,10 @@ FourCenter_OS_Tactic::optimal_rr(const rr_stack& stack) const {
     }
   }
 
-  const bool l1_ge_l0 = lbra1+lket1 >= lbra0+lket0;
-  const bool use_itr = lbra0_+lket0_ > 0 && lbra1_+lket1_ > 0;
+  auto l0 = lbra0_ + lket0_;
+  auto l1 = lbra1_ + lket1_;
+  auto l1_ge_l0 = l1 >= l0;
+  auto use_itr = l0 > 0 && l1 > 0;
 
   // try to apply ITR first
   if (use_itr) {
@@ -186,12 +188,26 @@ FourCenter_OS_Tactic::optimal_rr(const rr_stack& stack) const {
         return t;
     }
   }
-  // else use first applicable non-ITR relation
+  // else use the non-ITR relation with smallest size of children (to reduce the memory bandwidth demand)
+  RR result;
+  size_t max_result_size = std::numeric_limits<size_t>::max();
+  size_t nbests = 0;
   for (auto& t : stack) {
-    if (t->partindex_direction() == 0) // skip all ITR RRs
-      return t;
+    if (t->partindex_direction() == 0) { // skip all ITR RRs
+      if (t->size_of_children() < max_result_size)
+        ++nbests;
+      if (t->size_of_children() < max_result_size) {
+        result = t;
+        max_result_size = t->size_of_children();
+        nbests = 1;
+      }
+    }
   }
 
-  // if all failed, return an empty RR
-  return RR();
+  if (nbests > 1) {
+    std::cout << "FourCenter_OS_Tactic: found more than one RR with same (optimal) size of children" << std::endl;
+    assert(nbests == 1);
+  }
+
+  return result;
 }
