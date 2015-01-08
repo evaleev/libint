@@ -962,6 +962,30 @@ namespace libint2 {
   /// core integrals r12^k \sum_i \exp(- a_i r_12^2)
   //////////////////////////////////////////////////////////
 
+  /// each thread needs into own scratch if k==-1
+  template <typename Real, int k> struct GaussianGmEvalScratch;
+  /// create this object for each thread that needs to use GaussianGmEval<Real,-1>
+  template <typename Real>
+  struct GaussianGmEvalScratch<Real, -1> {
+      std::vector<Real> Fm_;
+      std::vector<Real> g_i;
+      std::vector<Real> r_i;
+      std::vector<Real> oorhog_i;
+      GaussianGmEvalScratch() {}
+      GaussianGmEvalScratch(int mmax) {
+        init(mmax);
+      }
+      void init(int mmax) {
+        Fm_.resize(mmax+1);
+        g_i.resize(mmax+1);
+        r_i.resize(mmax+1);
+        oorhog_i.resize(mmax+1);
+        g_i[0] = 1.0;
+        r_i[0] = 1.0;
+      }
+  };
+
+
   /**
    * Evaluates core integral \$ G_m(\rho, T) = \left( - \frac{\partial}{\partial T} \right)^n G_0(\rho,T) \f$,
    * \f$ G_0(\rho,T) = \int \exp(-\rho |\vec{r} - \vec{P} + \vec{Q}|^2) g(r) \, {\rm d}\vec{r} \f$
@@ -991,18 +1015,13 @@ namespace libint2 {
        */
       GaussianGmEval(int mmax, Real precision) : mmax_(mmax),
           precision_(precision), fm_eval_(0),
-          g_i(mmax+1), r_i(mmax+1), oorhog_i(mmax+1),
           numbers_(-1,-1,mmax) {
         assert(k == -1 || k == 0 || k == 2);
         // for k=-1 need to evaluate the Boys function
         if (k == -1) {
           fm_eval_ = new FmEval_Taylor<Real>(mmax_, precision_);
 //          fm_eval_ = new FmEval_Chebyshev3(mmax_);
-          Fm_.resize(mmax_ + 1);
-
-          g_i[0] = 1.0;
-          r_i[0] = 1.0;
-          oorhog_i[0] = 1.0;
+          scratch_.init(mmax_);
         }
       }
 
@@ -1039,22 +1058,30 @@ namespace libint2 {
 
       /** computes \f$ G_m(\rho, T) \f$ using downward recursion.
        *
+       * @warning NOT reentrant if \c k == -1 and C++11 is not available
+       *
        * @param[out] Gm array to be filled in with the \f$ Gm(\rho, T) \f$ values, must be at least mmax+1 elements long
        * @param[in] rho
        * @param[in] T
        * @param[in] mmax mmax the maximum value of m for which Boys function will be computed;
        *                 it must be <= the value returned by max_m() (this is not checked)
        * @param[in] geminal the Gaussian geminal for which the core integral \f$ Gm(\rho, T) \f$ is computed
+       * @param[in] scr if \c k ==-1 and need this to be reentrant, must provide ptr to the per-thread \c GaussianGmEvalScratch<Real,-1> object;
+       *                no need to specify \c scr otherwise
        */
       void eval(Real* Gm, Real rho, Real T, size_t mmax,
-                const std::vector<std::pair<Real, Real> >& geminal) {
+                const std::vector<std::pair<Real, Real> >& geminal,
+                void* scr = 0) {
 
         std::fill(Gm, Gm+mmax+1, Real(0));
 
         const double sqrt_rho = sqrt(rho);
         const double oo_sqrt_rho = 1.0/sqrt_rho;
-        for(int i=1; i<=mmax; i++) {
-          r_i[i] = r_i[i-1] * rho;
+        if (k == -1) {
+          GaussianGmEvalScratch<Real, -1>& scratch = (scr == 0) ? scratch_ : *(reinterpret_cast<GaussianGmEvalScratch<Real, -1>*>(scr));
+          for(int i=1; i<=mmax; i++) {
+            scratch.r_i[i] = scratch.r_i[i-1] * rho;
+          }
         }
 
         typedef typename std::vector<std::pair<Real, Real> >::const_iterator citer;
@@ -1077,24 +1104,26 @@ namespace libint2 {
           const double SS_K0G12_SS = gcoef * oo_sqrt_rho * const_SQRTPI_2 * rorg * sqrt_rorg * exp(-gorg*T);
 
           if (k == -1) {
+            GaussianGmEvalScratch<Real, -1>& scratch = (scr == 0) ? scratch_ : *(reinterpret_cast<GaussianGmEvalScratch<Real, -1>*>(scr));
+
             const double rorgT = rorg * T;
-            fm_eval_->eval(&Fm_[0], rorgT, mmax);
+            fm_eval_->eval(&scratch.Fm_[0], rorgT, mmax);
 
 #if 1
             const Real const_2_SQRTPI(1.12837916709551257389615890312154517);   /* 2/sqrt(pi)     */
             const Real pfac = const_2_SQRTPI * sqrt_rhog * SS_K0G12_SS;
-            oorhog_i[0] = pfac;
+            scratch.oorhog_i[0] = pfac;
             for(int i=1; i<=mmax; i++) {
-              g_i[i] = g_i[i-1] * gamma;
-              oorhog_i[i] = oorhog_i[i-1] * oorhog;
+              scratch.g_i[i] = scratch.g_i[i-1] * gamma;
+              scratch.oorhog_i[i] = scratch.oorhog_i[i-1] * oorhog;
             }
             for(int m=0; m<=mmax; m++) {
               Real ssss = 0.0;
               Real* bcm = numbers_.bc[m];
               for(int n=0; n<=m; n++) {
-                ssss += bcm[n] * r_i[n] * g_i[m-n] * Fm_[n];
+                ssss += bcm[n] * scratch.r_i[n] * scratch.g_i[m-n] * scratch.Fm_[n];
               }
-              Gm[m] += ssss * oorhog_i[m];
+              Gm[m] += ssss * scratch.oorhog_i[m];
             }
 #endif
           }
@@ -1134,12 +1163,8 @@ namespace libint2 {
       Real precision_; //< absolute precision
       FmEval_Taylor<Real>* fm_eval_;
 //      FmEval_Chebyshev3* fm_eval_;
-      std::vector<Real> Fm_;
 
-      std::vector<double> g_i;
-      std::vector<double> r_i;
-      std::vector<double> oorhog_i;
-
+      GaussianGmEvalScratch <Real, -1> scratch_; // only used in serial if k==-1
 
       ExpensiveNumbers<Real> numbers_;
   };
