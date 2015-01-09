@@ -8,20 +8,10 @@ install:: install_inc install_target install_pkgconfig
 install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2.h $(DESTDIR)$(includedir)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/intrinsic_types.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/intrinsic_operations.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_iface.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_types.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_params.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/cgshellinfo.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/cgshell_ordering.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/memory.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/vector*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2/config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/boys.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/cxxapi.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/shell.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/engine.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
+	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2/chemistry/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
 
 install_pkgconfig::
 	$(INSTALL) $(INSTALLDIROPT) $(pkgconfigdir)
