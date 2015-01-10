@@ -1034,10 +1034,6 @@ namespace libint2 {
 #endif
       }
 
-      void skip_core_ints(bool s) {
-        skip_core_ints_ = s;
-      }
-
     private:
 
       inline bool compute_primdata(Libint_t& primdata,
