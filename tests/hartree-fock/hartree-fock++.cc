@@ -388,7 +388,8 @@ Matrix compute_2body_fock(const BasisSet& obs,
   }
 
 #ifndef _OPENMP
-  std::chrono::duration<double> time_elapsed = std::chrono::duration<double>::zero();
+  libint2::Timers<1> timer;
+  timer.set_now_overhead(25);
 #endif // not defined _OPENMP
 
   auto shell2bf = obs.shell2bf();
@@ -435,14 +436,13 @@ Matrix compute_2body_fock(const BasisSet& obs,
             auto s1234_deg = s12_deg * s34_deg * s12_34_deg;
 
 #ifndef _OPENMP
-            const auto tstart = std::chrono::high_resolution_clock::now();
+            timer.start(0);
 #endif
 
             const auto* buf = engines[thread_id].compute(obs[s1], obs[s2], obs[s3], obs[s4]);
 
 #ifndef _OPENMP
-            const auto tstop = std::chrono::high_resolution_clock::now();
-            time_elapsed += tstop - tstart;
+            timer.stop(0);
 #endif
 
             // 1) each shell set of integrals contributes up to 6 shell sets of the Fock matrix:
@@ -488,7 +488,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
   } // omp parallel
 
 #ifndef _OPENMP
-  std::cout << "time for integrals = " << time_elapsed.count() << std::endl;
+  std::cout << "time for integrals = " << timer.read(0) << std::endl;
   engines[0].print_timers();
 #endif // not defined _OPENMP
 

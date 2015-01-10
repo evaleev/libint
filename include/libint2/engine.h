@@ -727,10 +727,13 @@ namespace libint2 {
           double build_hrr;
           double build_vrr;
           double tform;
+          size_t nshellset; // total number of shell sets
+          size_t nprimset;  // total number of primitive sets
           class_profile() { clear(); }
           class_profile(const class_profile& other) = default;
           void clear() {
             prereqs = build_hrr = build_vrr = tform = 0.;
+            nprimset = nshellset = 0;
           }
       };
       std::map<class_id, class_profile> class_profiles;
@@ -818,6 +821,10 @@ namespace libint2 {
         const auto t0 = timers.stop(0);
 #  ifdef LIBINT2_ENGINE_PROFILE_CLASS
         class_profiles[id].prereqs += t0.count();
+        if (primdata_[0].contrdepth != 0) {
+          class_profiles[id].nshellset += 1;
+          class_profiles[id].nprimset += primdata_[0].contrdepth;
+        }
 #  endif
 #endif
 
@@ -1014,15 +1021,21 @@ namespace libint2 {
 #ifdef LIBINT2_ENGINE_TIMERS
 #  ifdef LIBINT2_ENGINE_PROFILE_CLASS
         for(const auto& p: class_profiles) {
-          printf("{\"%s\", %10.5lf, %10.5lf, %10.5lf, %10.5lf},\n",
+          printf("{\"%s\", %10.5lf, %10.5lf, %10.5lf, %10.5lf, %ld, %ld},\n",
                  p.first.to_string().c_str(),
                  p.second.prereqs,
                  p.second.build_vrr,
                  p.second.build_hrr,
-                 p.second.tform);
+                 p.second.tform,
+                 p.second.nshellset,
+                 p.second.nprimset);
         }
 #  endif
 #endif
+      }
+
+      void skip_core_ints(bool s) {
+        skip_core_ints_ = s;
       }
 
     private:
