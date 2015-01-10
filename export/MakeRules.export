@@ -9,6 +9,7 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2.h $(DESTDIR)$(includedir)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2/config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2/chemistry/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
