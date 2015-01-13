@@ -176,24 +176,24 @@ namespace libint2 {
     */
   class FmEval_Chebyshev3 {
 
-      static const int FM_N = 4096;
-      static const int ORDER = 4;
-      const double FM_MAX;
-      const double FM_DELTA;
-      const double FM_one_over_DELTA;
-      static const bool INTERPOLATION_AND_RECURSION = true; // compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
+      static const int NGRID = 4096; //!< number of grid points
+      static const int INTERPOLATION_ORDER = 4;   //!< interpolation order + 1
+      static const bool INTERPOLATION_AND_RECURSION = false; //!< compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
 
-      int mmax; /* the maximum m that is tabulated */
-      double **c; /* the Chebyshev coefficients for a given m */
+      const double T_crit;          //!< criical value of T above which safe to use upward recusion
+      const double delta;           //!< grid size
+      const double one_over_delta;  //! 1/delta
+      int mmax;                     //!< the maximum m that is tabulated
       ExpensiveNumbers<double> numbers_;
+      double *c; /* the Chebyshev coefficients table, NGRID by mmax*interpolation_order */
 
     public:
       /// \param m_max maximum value of the Boys function index; set to -1 to skip initialization
       /// \param precision the desired precision
       FmEval_Chebyshev3(int m_max, double = 0.0) :
-          FM_MAX(30.0), // this translates in appr. 1e-15  error in upward recursion, see the note below
-          FM_DELTA(FM_MAX / (FM_N - 1)),
-          FM_one_over_DELTA(1.0 / FM_DELTA),
+          T_crit(30.0), // this translates in appr. 1e-15  error in upward recursion, see the note below
+          delta(T_crit / (NGRID - 1)),
+          one_over_delta(1.0 / delta),
           mmax(m_max), numbers_(14, 0) {
         assert(mmax <= 63);
         if (m_max >= 0)
@@ -201,9 +201,7 @@ namespace libint2 {
       }
       ~FmEval_Chebyshev3() {
         if (mmax >= 0) {
-          //delete[] c[0];
-          free(c[0]);
-          delete c;
+          free(c);
         }
       }
 
@@ -232,57 +230,113 @@ namespace libint2 {
       /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
       /// @param[in] x the Boys function argument
       /// @param[in] mmax the maximum value of m for which Boys function will be computed; mmax must be <= the value returned by max_m
-      inline void eval(double* Fm, double x, int mmax) const {
+      inline void eval(double* Fm, double x, int m_max) const {
 
         // large T => use upward recursion
         // cost = 1 div + 1 sqrt + (1 + 2*(m-1)) muls
-        if (x > FM_MAX) {
+        if (x > T_crit) {
           const double one_over_x = 1.0/x;
           Fm[0] = 0.88622692545275801365 * sqrt(one_over_x); // see Eq. (9.8.9) in Helgaker-Jorgensen-Olsen
-          if (mmax == 0)
+          if (m_max == 0)
             return;
-          // this upward recursion formula omits - e^(-x)/(2x), which for x>FM_MAX is <1e-15
-          for (int i = 1; i <= mmax; i++)
+          // this upward recursion formula omits - e^(-x)/(2x), which for x>T_crit is <1e-15
+          for (int i = 1; i <= m_max; i++)
             Fm[i] = Fm[i - 1] * numbers_.ihalf[i] * one_over_x; // see Eq. (9.8.13)
           return;
         }
 
         // ---------------------------------------------
-        // small and intermediate arguments => interpolate Fm and downward recursion
-        // cost is 6       FLOPS
-        //        +3*(m-1) FLOPS
-        //        +2       FLOPS
-        //        +1       EXP
+        // small and intermediate arguments => interpolate Fm and (optional) downward recursion
         // ---------------------------------------------
         // about which point on the grid to interpolate?
-        const double xd = x * FM_one_over_DELTA;
+        const double xd = x * one_over_delta;
         const int iv = int(xd); // the interval
-        const int ofs = iv * 4; // the offset in the interpolation table
         // INTERPOLATION_AND_RECURSION== true? evaluate by interpolation for LARGEST m only
         // INTERPOLATION_AND_RECURSION==false? evaluate by interpolation for ALL m
-        const int mmin = INTERPOLATION_AND_RECURSION ? mmax-1 : -1;
+        const int m_min = INTERPOLATION_AND_RECURSION ? m_max : 0;
 
-#if defined(__AVX__)
+#if defined(__AVX__) || defined(__SSE2__)
         const double x2 = xd*xd;
         const double x3 = x2*xd;
-        libint2::simd::VectorAVXDouble xvec(x3, x2, xd, 1.);
-#endif // __AVX__
+#  if defined (__AVX__)
+        libint2::simd::VectorAVXDouble xvec(1., xd, x2, x3);
+#  else // defined(__SSE2__)
+        libint2::simd::VectorSSEDouble x0vec(1., xd);
+        libint2::simd::VectorSSEDouble x1vec(x2, x3);
+#  endif
+#endif // SSE2 || AVX
 
-        for(int m=mmax; m!=mmin; --m) {
-          const double *d = c[m]; // a pointer to the m-vector
-
+        const double *d = c + INTERPOLATION_ORDER * (iv * (mmax+1) + m_min); // ptr to the interpolation data for m=mmin
+        int m = m_min;
 #if defined(__AVX__)
-          libint2::simd::VectorAVXDouble dvec;
-          dvec.load_aligned(d + ofs);
-          libint2::simd::VectorAVXDouble fm_prereduce = dvec * xvec;
-          Fm[m] = fm_prereduce.sum_reduce();
-          //double fm_components_vec[4];
-          //fm_prereduce.convert(fm_components_vec);
-          //Fm[m] = fm_components_vec[0] + fm_components_vec[1] + fm_components_vec[2] + fm_components_vec[3];
-#else // !__AVX__
-          Fm[m] = d[ofs]
-                + xd * (d[ofs + 1] + xd * (d[ofs + 2] + xd * d[ofs + 3]));
-#endif
+        if (m_max-m >=3) {
+          const int unroll_size = 4;
+          const int m_fence = (m_max + 2 - unroll_size);
+          for(; m<m_fence; m+=unroll_size, d+=INTERPOLATION_ORDER*unroll_size) {
+            libint2::simd::VectorAVXDouble d0v, d1v, d2v, d3v;
+            d0v.load_aligned(d);
+            d1v.load_aligned(d+INTERPOLATION_ORDER);
+            d2v.load_aligned(d+2*INTERPOLATION_ORDER);
+            d3v.load_aligned(d+3*INTERPOLATION_ORDER);
+            libint2::simd::VectorAVXDouble fm0 = d0v * xvec;
+            libint2::simd::VectorAVXDouble fm1 = d1v * xvec;
+            libint2::simd::VectorAVXDouble fm2 = d2v * xvec;
+            libint2::simd::VectorAVXDouble fm3 = d3v * xvec;
+            libint2::simd::VectorAVXDouble sum0123 = horizontal_add(fm0, fm1, fm2, fm3);
+            sum0123.convert(&Fm[m]);
+          }
+        } // unroll_size=4
+        if (m_max-m >=1) {
+          const int unroll_size = 2;
+          const int m_fence = (m_max + 2 - unroll_size);
+          for(; m<m_fence; m+=unroll_size, d+=INTERPOLATION_ORDER*unroll_size) {
+            libint2::simd::VectorAVXDouble d0v, d1v;
+            d0v.load_aligned(d);
+            d1v.load_aligned(d+INTERPOLATION_ORDER);
+            libint2::simd::VectorAVXDouble fm0 = d0v * xvec;
+            libint2::simd::VectorAVXDouble fm1 = d1v * xvec;
+            libint2::simd::VectorSSEDouble sum01 = horizontal_add(fm0, fm1);
+            sum01.convert(&Fm[m]);
+          }
+        } // unroll_size=2
+        { // no unrolling
+          for(; m<=m_max; ++m, d+=INTERPOLATION_ORDER) {
+            libint2::simd::VectorAVXDouble dvec;
+            dvec.load_aligned(d);
+            libint2::simd::VectorAVXDouble fm_prereduce = dvec * xvec;
+            Fm[m] = horizontal_add(fm_prereduce);
+          }
+        }
+#elif defined(__SSE2__)
+        if (m_max-m >=1) {
+          const int unroll_size = 2;
+          const int m_fence = (m_max + 2 - unroll_size);
+          for(; m<m_fence; m+=unroll_size, d+=INTERPOLATION_ORDER*unroll_size) {
+            libint2::simd::VectorSSEDouble d00v, d01v, d10v, d11v;
+            d00v.load_aligned(d);
+            d01v.load_aligned(d+2);
+            d10v.load_aligned(d+4); // d + INTERPOLATION_ORDER
+            d11v.load_aligned(d+6);
+            libint2::simd::VectorSSEDouble fm00 = d00v * x0vec;
+            libint2::simd::VectorSSEDouble fm01 = d01v * x1vec;
+            libint2::simd::VectorSSEDouble fm10 = d10v * x0vec;
+            libint2::simd::VectorSSEDouble fm11 = d11v * x1vec;
+            libint2::simd::VectorSSEDouble sum01 = horizontal_add(fm00, fm10) + horizontal_add(fm01, fm11);
+            sum01.convert(&Fm[m]);
+          }
+        } // unroll_size=2
+        { // no unrolling
+          for(; m<=m_max; ++m, d+=INTERPOLATION_ORDER) {
+            libint2::simd::VectorSSEDouble d0vec, d1vec;
+            d0vec.load_aligned(d);
+            d1vec.load_aligned(d+2);
+            Fm[m] = horizontal_add(d0vec * x0vec + d1vec * x1vec);
+          }
+        }
+#else // not SSE2 nor AVX available
+        for(int m=m_min; m<=m_max; ++m, d+=INTERPOLATION_ORDER) {
+          Fm[m] = d[0]
+                + xd * (d[1] + xd * (d[2] + xd * d[3]));
 
           //        // check against the reference value
           //        if (false) {
@@ -292,88 +346,21 @@ namespace libint2 {
           //                      << Fm[m] << " ref = " << refvalue << std::endl;
           //          }
           //        }
-
         }
+#endif
 
-        // use downward recursion (Eq. (9.8.14))
-        if (INTERPOLATION_AND_RECURSION && mmax > 0) {
+
+        // use downward recursion (Eq. (9.8.14) in HJO)
+        // WARNING: do not turn this on ... on modern CPU exp is very slow
+        if (INTERPOLATION_AND_RECURSION && m_max > 0) {
+          const bool INTERPOLATION_AND_RECURSION_is_slow_on_modern_CPU = false;
+          assert(INTERPOLATION_AND_RECURSION_is_slow_on_modern_CPU);
           const double x2 = 2.0 * x;
           const double exp_x = exp(-x);
-          for (int m = mmax - 1; m >= 0; m--)
+          for (int m = m_max - 1; m >= 0; m--)
             Fm[m] = (Fm[m + 1] * x2 + exp_x) * numbers_.twoi1[m];
         }
       }
-
-// -----------------------------------------------------
-// the vectorized Boys function
-// computes F_m(x) for all m = 0 ... mmax
-// x is a scalar or a SIMD-type vector, hence the output is an array of scalars/SIMD vectors
-// F_mmax(x) is evaluated by extrapolation, the rest
-// by downward recursion
-// -----------------------------------------------------
-#define __COMMENT_OUT_VECTORIZED_EVAL 1
-#if not(__COMMENT_OUT_VECTORIZED_EVAL)
-      typedef libint2::simd::VectorSSEDouble REALTYPE; // for now REALTYPE will be SSE2 type, eventually this will be defined elsewhere and the Interpolate will become
-                                                       // a template (or likely a macro since OpenCL does not support templates as of spec 1.2)
-      inline void eval(REALTYPE *Fm, REALTYPE x, int mmax) const {
-
-        abort(); // the rest is to be implemented
-
-#if 0
-        // ---------------------------------------------
-        // large arguments. The total cost is:
-        //  1       SQRT
-        // +1       FLOP
-        // +2*(m-1) FLOPS
-        // ---------------------------------------------
-        if (x>FM_MAX) {
-          Fm[0]= 0.88622692545275801365/sqrt(x);
-          if (mmax==0) return;
-          //for (i=1;i<=m;i++) Fm[i] = Fm[i-1]*(double(i)-0.5)/x;
-          for (int i=1;i<=mmax;i++) Fm[i] = Fm[i-1]*ihalf[i]/x;
-          return;
-        }
-#endif
-
-        // ---------------------------------------------
-        // small and intermediate arguments. The total
-        // cost is 6       FLOPS
-        //        +3*(m-1) FLOPS
-        //        +2       FLOPS
-        //        +1       EXP
-        // ---------------------------------------------
-        const double *d = c[mmax]; // a pointer to the correct m-vector
-
-        REALTYPE xstep(FM_DELTA, FM_DELTA);
-        REALTYPE xd = x / xstep; // the interpolation variable
-
-#if 0
-        // convert xd into iv and ofs
-        // iv and ofs must be the integer scalar/vector types corresponding to REALTYPE, hence need type traits
-
-        //
-        // find value of the largest member by interpolation (6 FLOPS)
-        //
-
-        // these will be held in vector registers
-        // note that these are initialized with values from noncontiguous memory locations:
-        // d0.0 = d[ofs.0] and d0.1 = d[ofs.1], hence for any ofs.0 != ofs.1 the loads will not be packed (coalesced in gpu lingo)
-        REALTYPE d0,// d[ofs]
-        d1,// d[ofs+1]
-        d2,// d[ofs+2]
-        d3;// d[ofs+3]
-        Fm[mmax] = d0 + xd * (d1 + xd * (d2 + xd * d3));
-
-        if (mmax > 0) {
-          // use downward recursion to make the other members (3 FLOPS/member)
-          REALTYPE x2 = 2.0 * x;
-          REALTYPE exp_x = exp(-x);
-          for (i = m - 1; i >= 0; i--)
-          Fm[i] = (Fm[i + 1] * x2 + exp_x) * twoi1_realtype[i];
-        }
-#endif
-      }
-#endif
 
     private:
 
@@ -397,10 +384,10 @@ namespace libint2 {
         double XXX = a + Delta;
 
         const double absolute_precision = 1e-20; // compute as precisely as possible
-        FmEval_Reference<double>::eval(Fm, XXX, m + ORDER + 20,
+        FmEval_Reference<double>::eval(Fm, XXX, m + INTERPOLATION_ORDER + 20,
                                        absolute_precision);
 
-        for (k = 0; k <= ORDER + 20; k++) {
+        for (k = 0; k <= INTERPOLATION_ORDER + 20; k++) {
           if ((k % 2) == 0)
             f[k] = Fm[k + m];
           else
@@ -408,7 +395,7 @@ namespace libint2 {
         }
         // calculate the coefficients a
         double fac;
-        for (j = 0; j < ORDER; j++) {
+        for (j = 0; j < INTERPOLATION_ORDER; j++) {
           if (j == 0)
             fac = 1.0;
           else
@@ -443,25 +430,20 @@ namespace libint2 {
         int iv, im;
 
         // get memory
-        c = new double*[mmax + 1];
-        //c[0] = new double[(mmax + 1) * FM_N * ORDER];
         void* result;
-        posix_memalign(&result, 4*sizeof(double), (mmax + 1) * FM_N * ORDER * sizeof(double));
-        c[0] = static_cast<double*>(result);
+        posix_memalign(&result, 4*sizeof(double), (mmax + 1) * NGRID * INTERPOLATION_ORDER * sizeof(double));
+        c = static_cast<double*>(result);
 
-        //std::cout << "Allocated interpolation table of " << (mmax + 1) * FM_N * ORDER << " reals" << std::endl;
+        //std::cout << "Allocated interpolation table of " << (mmax + 1) * NGRID * interpolation_order << " reals" << std::endl;
 
+        // make expansion coefficients for each grid value of T
+        for (iv = 0; iv < NGRID; iv++) {
+          const double a = iv * delta;
+          const double b = a + delta;
 
-        // loop over all m values and make the coefficients
-        for (im = 0; im <= mmax; im++) {
-          if (im > 0)
-            c[im] = c[im - 1] + FM_N * ORDER;
-
-          // make expansion coefficients for this particular m
-          for (iv = 0; iv < FM_N; iv++) {
-            const double a = iv * FM_DELTA;
-            const double b = a + FM_DELTA;
-            MakeCoeffs(a, b, &(c[im][iv * ORDER]), im);
+          // loop over all m values and make the coefficients
+          for (im = 0; im <= mmax; im++) {
+            MakeCoeffs(a, b, c + (iv * (mmax+1) + im) * INTERPOLATION_ORDER, im);
           }
         }
       }
@@ -628,7 +610,7 @@ namespace libint2 {
             Fm[0] = 0.88622692545275801365 * sqrt(one_over_x); // see Eq. (9.8.9) in Helgaker-Jorgensen-Olsen
             if (mmax == 0)
               return;
-            // this upward recursion formula omits - e^(-x)/(2x), which for x>FM_MAX is <1e-15
+            // this upward recursion formula omits - e^(-x)/(2x), which for x>T_crit is <1e-15
             for (int i = 1; i <= mmax; i++)
               Fm[i] = Fm[i - 1] * numbers_.ihalf[i] * one_over_x; // see Eq. (9.8.13)
             return;
