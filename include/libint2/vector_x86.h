@@ -63,7 +63,14 @@ namespace libint2 { namespace simd {
        * creates a vector of values initialized by an ordinary static-sized array
        */
       VectorSSEDouble(T a0, T a1) {
-        d = _mm_set_pd(a0, a1);
+        d = _mm_set_pd(a1, a0);
+      }
+
+      /**
+       * converts a 128-bit SSE double vector type to VectorSSEDouble
+       */
+      VectorSSEDouble(__m128d a) {
+        d = a;
       }
 
       VectorSSEDouble& operator=(T a) {
@@ -103,8 +110,28 @@ namespace libint2 { namespace simd {
         return d0[0];
       }
 
-      void convert(double(&a)[2]) const {
+      /// implicit conversion to SSE 128-bit "register"
+      operator __m128d() const {
+        return d;
+      }
+
+      /// loads \c a to \c this
+      void load(T const* a) {
+        d = _mm_loadu_pd(a);
+      }
+      /// loads \c a to \c this  \sa load()
+      /// @note \c a must be aligned to 16 bytes
+      void load_aligned(T const* a) {
+        d = _mm_load_pd(a);
+      }
+      /// writes \c this to \c a
+      void convert(T* a) const {
         _mm_storeu_pd(&a[0], d);
+      }
+      /// writes \c this to \c a
+      /// @note \c a must be aligned to 16 bytes
+      void convert_aligned(T* a) const {
+        _mm_store_pd(&a[0], d);
       }
 
   };
@@ -193,6 +220,34 @@ namespace libint2 { namespace simd {
     return d;
   }
 #endif
+
+  /// Horizontal add
+  /// @param a input vector = {a[0], a[1]}
+  /// @return a[0] + a[1]
+  inline double horizontal_add (VectorSSEDouble const & a) {
+//      Agner Fog's version
+#if defined(__SSE3__)
+    __m128d t1 = _mm_hadd_pd(a,a);
+    return _mm_cvtsd_f64(t1);
+#else // SSE2 only
+    __m128  t0 = _mm_castpd_ps(a);
+    __m128d t1 = _mm_castps_pd(_mm_movehl_ps(t0,t0));
+    __m128d t2 = _mm_add_sd(a,t1);
+    return _mm_cvtsd_f64(t2);
+#endif
+  }
+
+  /// Horizontal add of a pair of vectors
+  /// @param a input vector = {a[0], a[1]}
+  /// @param b input vector = {b[0], b[1]}
+  /// @return {a[0] + a[1], b[0] + b[1]}
+  inline VectorSSEDouble horizontal_add (VectorSSEDouble const & a, VectorSSEDouble const & b) {
+#if defined(__SSE3__)
+    return _mm_hadd_pd(a, b);
+#else // will be very inefficient without SSE3
+    return VectorSSEDouble(horizontal_add(a), horizontal_add(b));
+#endif
+  }
 
   //@}
 
@@ -313,7 +368,7 @@ namespace libint2 { namespace simd {
        * creates a vector of values initialized by an ordinary static-sized array
        */
       VectorSSEFloat(T a0, T a1, T a2, T a3) {
-        d = _mm_set_ps(a0, a1, a2, a3);
+        d = _mm_set_ps(a3, a2, a1, a0);
       }
 
       VectorSSEFloat& operator=(T a) {
@@ -361,8 +416,28 @@ namespace libint2 { namespace simd {
         return result_flt;
       }
 
-      void convert(T(&a)[4]) const {
+      /// implicit conversion to SSE 128-bit "register"
+      operator __m128() const {
+        return d;
+      }
+
+      /// loads \c a to \c this
+      void load(T const* a) {
+        d = _mm_loadu_ps(a);
+      }
+      /// loads \c a to \c this  \sa load()
+      /// @note \c a must be aligned to 16 bytes
+      void load_aligned(T const* a) {
+        d = _mm_load_ps(a);
+      }
+      /// writes \c this to \c a
+      void convert(T* a) const {
         _mm_storeu_ps(&a[0], d);
+      }
+      /// writes \c this to \c a
+      /// @note \c a must be aligned to 32 bytes
+      void convert_aligned(T* a) const {
+        _mm_store_ps(&a[0], d);
       }
   };
 
@@ -588,7 +663,14 @@ namespace libint2 { namespace simd {
        * creates a vector of values initialized by an ordinary static-sized array
        */
       VectorAVXDouble(T a0, T a1, T a2, T a3) {
-        d = _mm256_set_pd(a0, a1, a2, a3);
+        d = _mm256_set_pd(a3, a2, a1, a0);
+      }
+
+      /**
+       * converts a 256-bit AVX double vector type to VectorAVXDouble
+       */
+      VectorAVXDouble(__m256d a) {
+        d = a;
       }
 
       VectorAVXDouble& operator=(T a) {
@@ -628,15 +710,28 @@ namespace libint2 { namespace simd {
         return d0[0];
       }
 
+      /// implicit conversion to AVX 256-bit "register"
+      operator __m256d() const {
+        return d;
+      }
+
+      /// loads \c a to \c this
+      void load(T const* a) {
+        d = _mm256_loadu_pd(a);
+      }
+      /// loads \c a to \c this  \sa load()
+      /// @note \c a must be aligned to 32 bytes
       void load_aligned(T const* a) {
         d = _mm256_load_pd(a);
       }
-      void convert(T(&a)[4]) const {
+      /// writes \c this to \c a
+      void convert(T* a) const {
         _mm256_storeu_pd(&a[0], d);
       }
-      double sum_reduce() const {
-        __m256d s = _mm256_hadd_pd(d,d);
-        return ((double*)&s)[0] + ((double*)&s)[2];
+      /// writes \c this to \c a
+      /// @note \c a must be aligned to 32 bytes
+      void convert_aligned(T* a) const {
+        _mm256_store_pd(&a[0], d);
       }
   };
 
@@ -724,6 +819,56 @@ namespace libint2 { namespace simd {
     return d;
   }
 #endif
+
+  /// Horizontal add
+  /// @param a input vector = {a[0], a[1], a[2], a[3]}
+  /// @return a[0] + a[1] + a[2] + a[3]
+  inline double horizontal_add (VectorAVXDouble const & a) {
+      __m256d s = _mm256_hadd_pd(a,a);
+      return ((double*)&s)[0] + ((double*)&s)[2];
+//      Agner Fog's version
+//      __m256d t1 = _mm256_hadd_pd(a,a);
+//      __m128d t2 = _mm256_extractf128_pd(t1,1);
+//      __m128d t3 = _mm_add_sd(_mm256_castpd256_pd128(t1),t2);
+//      return _mm_cvtsd_f64(t3);
+  }
+
+  /// Horizontal add of a pair of vectors
+  /// @param a input vector = {a[0], a[1], a[2], a[3]}
+  /// @param b input vector = {b[0], b[1], b[2], b[3]}
+  /// @return {a[0] + a[1] + a[2] + a[3], b[0] + b[1] + b[2] + b[3]}
+  inline VectorSSEDouble horizontal_add (VectorAVXDouble const & a, VectorAVXDouble const & b) {
+    // solution from http://stackoverflow.com/questions/9775538/fastest-way-to-do-horizontal-vector-sum-with-avx-instructions
+    __m256d sum = _mm256_hadd_pd(a, b);
+    // extract upper 128 bits of result
+    __m128d sum_high = _mm256_extractf128_pd(sum, 1);
+    // add upper 128 bits of sum to its lower 128 bits
+    return _mm_add_pd(sum_high, _mm256_castpd256_pd128(sum));
+  }
+
+  /// Horizontal add of a set of 4 vectors
+  /// @param a input vector = {a[0], a[1], a[2], a[3]}
+  /// @param b input vector = {b[0], b[1], b[2], b[3]}
+  /// @param c input vector = {c[0], c[1], c[2], c[3]}
+  /// @param d input vector = {d[0], d[1], d[2], d[3]}
+  /// @return {a[0] + a[1] + a[2] + a[3], b[0] + b[1] + b[2] + b[3], c[0] + c[1] + c[2] + c[3], d[0] + d[1] + d[2] + d[3]}
+  inline VectorAVXDouble horizontal_add (VectorAVXDouble const & a,
+                                         VectorAVXDouble const & b,
+                                         VectorAVXDouble const & c,
+                                         VectorAVXDouble const & d) {
+    // solution from http://stackoverflow.com/questions/10833234/4-horizontal-double-precision-sums-in-one-go-with-avx?lq=1
+    // {a[0]+a[1], b[0]+b[1], a[2]+a[3], b[2]+b[3]}
+    __m256d sumab = _mm256_hadd_pd(a, b);
+    // {c[0]+c[1], d[0]+d[1], c[2]+c[3], d[2]+d[3]}
+    __m256d sumcd = _mm256_hadd_pd(c, d);
+
+    // {a[0]+a[1], b[0]+b[1], c[2]+c[3], d[2]+d[3]}
+    __m256d blend = _mm256_blend_pd(sumab, sumcd, 0b1100);
+    // {a[2]+a[3], b[2]+b[3], c[0]+c[1], d[0]+d[1]}
+    __m256d perm = _mm256_permute2f128_pd(sumab, sumcd, 0x21);
+
+    return _mm256_add_pd(perm, blend);
+  }
 
   //@}
 
