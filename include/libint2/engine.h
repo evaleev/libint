@@ -1004,6 +1004,11 @@ namespace libint2 {
           ln_precision_ = std::log(precision_);
         }
       }
+      /// @return the target precision for computing the integrals
+      /// @sa set_precision(real_t)
+      real_t precision() const {
+        return precision_;
+      }
 
       void print_timers() {
 #ifdef LIBINT2_ENGINE_TIMERS
