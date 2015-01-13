@@ -628,8 +628,15 @@ namespace libint2 { namespace simd {
         return d0[0];
       }
 
+      void load_aligned(T const* a) {
+        d = _mm256_load_pd(a);
+      }
       void convert(T(&a)[4]) const {
         _mm256_storeu_pd(&a[0], d);
+      }
+      double sum_reduce() const {
+        __m256d s = _mm256_hadd_pd(d,d);
+        return ((double*)&s)[0] + ((double*)&s)[2];
       }
   };
 

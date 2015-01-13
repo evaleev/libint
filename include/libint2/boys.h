@@ -181,6 +181,7 @@ namespace libint2 {
       const double FM_MAX;
       const double FM_DELTA;
       const double FM_one_over_DELTA;
+      static const bool INTERPOLATION_AND_RECURSION = true; // compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
 
       int mmax; /* the maximum m that is tabulated */
       double **c; /* the Chebyshev coefficients for a given m */
@@ -200,7 +201,8 @@ namespace libint2 {
       }
       ~FmEval_Chebyshev3() {
         if (mmax >= 0) {
-          delete[] c[0];
+          //delete[] c[0];
+          free(c[0]);
           delete c;
         }
       }
@@ -252,26 +254,49 @@ namespace libint2 {
         //        +2       FLOPS
         //        +1       EXP
         // ---------------------------------------------
-        const double *d = c[mmax]; // a pointer to the correct m-vector
         // about which point on the grid to interpolate?
         const double xd = x * FM_one_over_DELTA;
         const int iv = int(xd); // the interval
         const int ofs = iv * 4; // the offset in the interpolation table
-        // for the largest m evaluate by interpolation
-        Fm[mmax] = d[ofs]
-            + xd * (d[ofs + 1] + xd * (d[ofs + 2] + xd * d[ofs + 3]));
+        // INTERPOLATION_AND_RECURSION== true? evaluate by interpolation for LARGEST m only
+        // INTERPOLATION_AND_RECURSION==false? evaluate by interpolation for ALL m
+        const int mmin = INTERPOLATION_AND_RECURSION ? mmax-1 : -1;
 
-//        // check against the reference value
-//        if (false) {
-//          double refvalue = FmEval_Reference<double>::eval(x, mmax, 1e-15); // compute F(T) with m=mmax
-//          if (abs(refvalue - Fm[mmax]) > 1e-10) {
-//            std::cout << "T = " << x << " m = " << mmax << " cheb = "
-//                << Fm[mmax] << " ref = " << refvalue << std::endl;
-//          }
-//        }
+#if defined(__AVX__)
+        const double x2 = xd*xd;
+        const double x3 = x2*xd;
+        libint2::simd::VectorAVXDouble xvec(x3, x2, xd, 1.);
+#endif // __AVX__
+
+        for(int m=mmax; m!=mmin; --m) {
+          const double *d = c[m]; // a pointer to the m-vector
+
+#if defined(__AVX__)
+          libint2::simd::VectorAVXDouble dvec;
+          dvec.load_aligned(d + ofs);
+          libint2::simd::VectorAVXDouble fm_prereduce = dvec * xvec;
+          Fm[m] = fm_prereduce.sum_reduce();
+          //double fm_components_vec[4];
+          //fm_prereduce.convert(fm_components_vec);
+          //Fm[m] = fm_components_vec[0] + fm_components_vec[1] + fm_components_vec[2] + fm_components_vec[3];
+#else // !__AVX__
+          Fm[m] = d[ofs]
+                + xd * (d[ofs + 1] + xd * (d[ofs + 2] + xd * d[ofs + 3]));
+#endif
+
+          //        // check against the reference value
+          //        if (false) {
+          //          double refvalue = FmEval_Reference<double>::eval(x, m, 1e-15); // compute F(T)
+          //          if (abs(refvalue - Fm[m]) > 1e-10) {
+          //            std::cout << "T = " << x << " m = " << m << " cheb = "
+          //                      << Fm[m] << " ref = " << refvalue << std::endl;
+          //          }
+          //        }
+
+        }
 
         // use downward recursion (Eq. (9.8.14))
-        if (mmax > 0) {
+        if (INTERPOLATION_AND_RECURSION && mmax > 0) {
           const double x2 = 2.0 * x;
           const double exp_x = exp(-x);
           for (int m = mmax - 1; m >= 0; m--)
@@ -419,7 +444,11 @@ namespace libint2 {
 
         // get memory
         c = new double*[mmax + 1];
-        c[0] = new double[(mmax + 1) * FM_N * ORDER];
+        //c[0] = new double[(mmax + 1) * FM_N * ORDER];
+        void* result;
+        posix_memalign(&result, 4*sizeof(double), (mmax + 1) * FM_N * ORDER * sizeof(double));
+        c[0] = static_cast<double*>(result);
+
         //std::cout << "Allocated interpolation table of " << (mmax + 1) * FM_N * ORDER << " reals" << std::endl;
 
 
