@@ -44,7 +44,7 @@ COMP2SRC = $(COMP2).cc
 COMP2OBJ = $(COMP2SRC:%.cc=%.o)
 
 $(COMP2): $(COMP2OBJ)
-	$(CXX) -o $@ $^ -lboost_chrono -lboost_system $(SYSLIBS) $(LDFLAGS)
+	$(CXX) -o $@ $^ $(SYSLIBS) $(BLAS) $(LDFLAGS)
 
 $(COMP2OBJ):: $(TOPDIR)/include/libint2/boys.h
 

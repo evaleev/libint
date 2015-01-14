@@ -18,13 +18,12 @@
  */
 
 #include "libint2/boys.h"
-//#include "libint2/vector.h"
+#include "libint2/timer.h"
 #include <ctime>
 #include <iostream>
 #include <iterator>
 #include <functional>
 #include <numeric>
-#include <boost/chrono.hpp>
 #include <cxxabi.h>
 
 #ifndef SKIP_AXPY
@@ -33,22 +32,26 @@ typedef MKL_INT BLAS_INT;
 #endif
 
 #ifdef SKIP_ALL
-//# define SKIP_AXPY
-//# define SKIP_DOT
-//# define SKIP_GEMM
+# define SKIP_AXPY
+# define SKIP_DOT
+# define SKIP_GEMM
 # define SKIP_EXP
 # define SKIP_SQRT
 # define SKIP_ERF
 # define SKIP_CHEBYSHEV
 # define SKIP_TAYLOR
+//# define SKIP_STGNG
+//# define SKIP_YUKAWA
+#endif
 # define SKIP_STGNG
 # define SKIP_YUKAWA
-#endif
 
 #define AVOID_AUTO_VECTORIZATION 1 // set to 0 to measure performance within vectorizable loops
                                    // the default is to measure performance of a single call
 
 using namespace std;
+
+libint2::Timers<1> timer;
 
 enum OperType {
   f12, f12_2, f12_o_r12, f12_t_f12
@@ -280,22 +283,28 @@ int main(int argc, char* argv[]) {
   const int nrepeats  = atoi(argv[3]);
 
   using libint2::simd::VectorSSEDouble;
-  using libint2::simd::VectorAVXDouble;
   const VectorSSEDouble T_sse(T);
+#if defined(__AVX__)
+  using libint2::simd::VectorAVXDouble;
   const VectorAVXDouble T_avx(T);
+#endif
 
   cout << "mmax = " << mmax << endl;
   cout << " T   = "<< T << endl;
 
   // changes precision of cout to 15 for printing doubles and such.
   cout.precision(15);
+  // set the overhead of std::high_resolution_clock; measure carefully
+  timer.set_now_overhead(25);
 
 #ifndef SKIP_AXPY
   const int n = 128;
   profile(DAXPYKernel(n, 1.0, 1.0, "daxpy"), nrepeats);
   profile(AXPYKernel<double>(n, 1.0, 1.0, "axpy [double]"), nrepeats);
   profile(AXPYKernel<VectorSSEDouble>(n, 1.0, 1.0, "axpy [SSE]"), nrepeats);
+#  if defined(__AVX__)
   profile(AXPYKernel<VectorAVXDouble>(n, 1.0, 1.0, "axpy [AVX]"), nrepeats);
+#  endif
 #endif
 
 #ifndef SKIP_DOT
@@ -303,7 +312,9 @@ int main(int argc, char* argv[]) {
   profile(DDOTKernel(n, 1.0, "ddot"), nrepeats);
   profile(DOTKernel<double>(n, 1.0, "dot [double]"), nrepeats);
   profile(DOTKernel<VectorSSEDouble>(n, 1.0, "dot [SSE]"), nrepeats);
+# if defined(__AVX__)
   profile(DOTKernel<VectorAVXDouble>(n, 1.0, "dot [AVX]"), nrepeats);
+# endif
 #endif
 
 #ifndef SKIP_GEMM
@@ -314,20 +325,28 @@ int main(int argc, char* argv[]) {
 #ifndef SKIP_EXP
   profile(BasicKernel<double,std::exp>(-T,"exp(-T) [double]", -0.00001), nrepeats);
   profile(BasicKernel<VectorSSEDouble,libint2::simd::exp>(-T,"exp(-T) [SSE]", -0.00001), nrepeats);
+# if defined(__AVX__)
   profile(BasicKernel<VectorAVXDouble,libint2::simd::exp>(-T,"exp(-T) [AVX]", -0.00001), nrepeats);
+# endif
 #endif
 #ifndef SKIP_SQRT
   profile(BasicKernel<double,std::sqrt>(T,"sqrt(T) [double]"), nrepeats);
   profile(BasicKernel<VectorSSEDouble,libint2::simd::sqrt>(T,"sqrt(T) [SSE]"), nrepeats);
+# if defined(__AVX__)
   profile(BasicKernel<VectorAVXDouble,libint2::simd::sqrt>(T,"sqrt(T) [AVX]"), nrepeats);
+# endif
 #endif
 #ifndef SKIP_ERF
   profile(BasicKernel<double,erf>(T,"erf(T) [double]"), nrepeats);
   profile(BasicKernel<VectorSSEDouble,libint2::simd::erf>(T,"erf(T) [SSE]"), nrepeats);
+# if defined(__AVX__)
   profile(BasicKernel<VectorAVXDouble,libint2::simd::erf>(T,"erf(T) [AVX]"), nrepeats);
+# endif
   profile(BasicKernel<double,erfc>(T,"erfc(T) [double]"), nrepeats);
   profile(BasicKernel<VectorSSEDouble,libint2::simd::erfc>(T,"erfc(T) [SSE]"), nrepeats);
+# if defined(__AVX__)
   profile(BasicKernel<VectorAVXDouble,libint2::simd::erfc>(T,"erfc(T) [AVX]"), nrepeats);
+# endif
 #endif
 #ifndef SKIP_CHEBYSHEV
   do_chebyshev(mmax, T, nrepeats);
@@ -353,19 +372,21 @@ void profile(const Kernel& k, int nrepeats) {
 
   typedef typename Kernel::ResultType Real;
 
-  const auto start = boost::chrono::high_resolution_clock::now();
+  timer.clear();
+  timer.start(0);
+
 #if AVOID_AUTO_VECTORIZATION
 #pragma novector
 #endif
   for (int i = 0; i < nrepeats; ++i) {
     k.eval();
   }
-  const boost::chrono::duration<double> elapsed = boost::chrono::high_resolution_clock::now() - start;
+  timer.stop(0);
 
   std::cout << "sum of " << k.label() << ": " << k.sum() << std::endl;
 
-  cout << "Time = " << fixed << elapsed.count() << endl;
-  cout << "Rate = " << fixed << nrepeats * k.ops_per_eval() / elapsed.count()  << endl;
+  cout << "Time = " << fixed << timer.read(0) << endl;
+  cout << "Rate = " << fixed << nrepeats * k.ops_per_eval() / timer.read(0) << endl;
 }
 
 void do_chebyshev(int mmax, double T, int nrepeats) {
@@ -377,7 +398,8 @@ void do_chebyshev(int mmax, double T, int nrepeats) {
   libint2::FmEval_Chebyshev3 fmeval_cheb(mmax);
   std::cout << "done initialization:" << std::endl;
   std::fill(Fm_array_sum, Fm_array_sum+mmax+1, 0.0);
-  const auto start = boost::chrono::high_resolution_clock::now();
+  timer.clear();
+  timer.start(0);
 #if AVOID_AUTO_VECTORIZATION
 #pragma novector
 #endif
@@ -386,15 +408,15 @@ void do_chebyshev(int mmax, double T, int nrepeats) {
     fmeval_cheb.eval(Fm_array, T, mmax);
     for(int m=0; m<=mmax; ++m)
       Fm_array_sum[m] += Fm_array[m];
-    T += 0.00001; // to ward-off unrealistic compiler optimizations
+    T = (i & 0x000f0f0f)/1000.; // i % 16; // to ward-off unrealistic compiler optimizations
   }
-  const boost::chrono::duration<double> elapsed = boost::chrono::high_resolution_clock::now() - start;
+  timer.stop(0);
 
   std::cout << "sum of Fm:" << std::endl;
   std::copy(Fm_array_sum, Fm_array_sum+mmax+1, std::ostream_iterator<double>(std::cout,"\n"));
 
-  cout << "Time = " << fixed << elapsed.count() << endl;
-  cout << "Rate = " << fixed << nrepeats / elapsed.count()  << endl;
+  cout << "Time = " << fixed << timer.read(0) << endl;
+  cout << "Rate = " << fixed << nrepeats / timer.read(0)  << endl;
 
   delete[] Fm_array;
   delete[] Fm_array_sum;
@@ -405,9 +427,10 @@ void do_taylor(int mmax, double T, int nrepeats) {
   double* Fm_array = new double[mmax+1];
   double* Fm_array_sum = new double[mmax+1];
 
-  libint2::FmEval_Taylor<double, 6> fmeval_taylor6(mmax, 1e-15);
+  libint2::FmEval_Taylor<double, 7> fmeval_taylor6(mmax, 1e-15);
   std::fill(Fm_array_sum, Fm_array_sum+mmax+1, 0.0);
-  const auto start = boost::chrono::high_resolution_clock::now();
+  timer.clear();
+  timer.start(0);
 #if AVOID_AUTO_VECTORIZATION
 #pragma novector
 #endif
@@ -417,14 +440,14 @@ void do_taylor(int mmax, double T, int nrepeats) {
     fmeval_taylor6.eval(Fm_array, T, mmax);
     for(int m=0; m<=mmax; ++m)
       Fm_array_sum[m] += Fm_array[m];
-    T += 0.00001; // to ward-off unrealistic compiler optimizations
+    T = (i & 0x000f0f0f)/1000.; // i % 16; // to ward-off unrealistic compiler optimizations
   }
-  const boost::chrono::duration<double> elapsed = boost::chrono::high_resolution_clock::now() - start;
+  timer.stop(0);
   std::cout << "sum of Fm (Taylor):" << std::endl;
   std::copy(Fm_array_sum, Fm_array_sum+mmax+1, std::ostream_iterator<double>(std::cout,"\n"));
 
-  cout << "Time = " << fixed << elapsed.count() << endl;
-  cout << "Rate = " << fixed << nrepeats / elapsed.count()  << endl;
+  cout << "Time = " << fixed << timer.read(0) << endl;
+  cout << "Rate = " << fixed << nrepeats / timer.read(0)  << endl;
 
   delete[] Fm_array;
   delete[] Fm_array_sum;
@@ -470,7 +493,8 @@ void do_stg6g(int mmax, double T, double rho, int nrepeats) {
   libint2::GaussianGmEval<double, (O == f12 || O == f12_2) ? 0 : (O == f12_o_r12 ? -1 : 2)>
     gtg_eval(mmax, 1e-15);
   std::fill(Gm_array_sum, Gm_array_sum+mmax+1, 0.0);
-  const auto start = boost::chrono::high_resolution_clock::now();
+  timer.clear();
+  timer.start(0);
 #if AVOID_AUTO_VECTORIZATION
 #pragma novector
 #endif
@@ -484,13 +508,13 @@ void do_stg6g(int mmax, double T, double rho, int nrepeats) {
     T += 0.00001; // to ward-off unrealistic compiler optimizations
     rho += 0.000001;
   }
-  const boost::chrono::duration<double> elapsed = boost::chrono::high_resolution_clock::now() - start;
+  timer.stop(0);
 
   std::cout << "sum of Gm (STG-" << ng << "G O=" << to_string(O) << " ):" << std::endl;
   std::copy(Gm_array_sum, Gm_array_sum+mmax+1, std::ostream_iterator<double>(std::cout,"\n"));
 
-  cout << "Time = " << fixed << elapsed.count() << endl;
-  cout << "Rate = " << fixed << nrepeats / elapsed.count()  << endl;
+  cout << "Time = " << fixed << timer.read(0) << endl;
+  cout << "Rate = " << fixed << nrepeats / timer.read(0)  << endl;
 
   delete[] Gm_array;
   delete[] Gm_array_sum;
@@ -505,7 +529,8 @@ void do_yukawa(int mmax, double T, double U, int nrepeats) {
 
   libint2::YukawaGmEval<double> yukawa_eval(mmax, 1e-15);
   std::fill(Gm_array_sum, Gm_array_sum+mmax+2, 0.0);
-  const auto start = boost::chrono::high_resolution_clock::now();
+  timer.clear();
+  timer.start(0);
 #if AVOID_AUTO_VECTORIZATION
 #pragma novector
 #endif
@@ -524,13 +549,13 @@ void do_yukawa(int mmax, double T, double U, int nrepeats) {
     T += 0.00001; // to ward-off unrealistic compiler optimizations
     U += 0.000001;
   }
-  const boost::chrono::duration<double> elapsed = boost::chrono::high_resolution_clock::now() - start;
+  timer.stop(0);
 
   std::cout << "sum of Gm (STG):" << std::endl;
   std::copy(Gm_array_sum, Gm_array_sum+mmax+2, std::ostream_iterator<double>(std::cout,"\n"));
 
-  cout << "Time = " << fixed << elapsed.count() << endl;
-  cout << "Rate = " << fixed << nrepeats / elapsed.count()  << endl;
+  cout << "Time = " << fixed << timer.read(0) << endl;
+  cout << "Rate = " << fixed << nrepeats / timer.read(0)  << endl;
 
   delete[] Gm_array;
   delete[] Gm_array_sum;
