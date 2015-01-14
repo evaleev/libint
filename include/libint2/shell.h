@@ -188,6 +188,17 @@ namespace libint2 {
           default: throw "invalid angular momentum label";
         }
       }
+
+      /// @return "unit" Shell, with exponent=0. and coefficient=1., located at the origin
+      static Shell unit() {
+        libint2::Shell unitshell{
+                    {0.0}, // exponent
+                    {{0, false, {1.0}}},
+                    {{0.0, 0.0, 0.0}} // placed at origin
+                };
+        unitshell.renorm();
+        return unitshell;
+      }
   };
 
   inline std::ostream& operator<<(std::ostream& os, const Shell& sh) {
