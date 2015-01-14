@@ -56,16 +56,26 @@ using libint2::BasisSet;
 
 std::vector<Atom> read_geometry(const std::string& filename);
 Matrix compute_soad(const std::vector<Atom>& atoms);
+// computes norm of shell-blocks of A
+Matrix compute_shellblock_norm(const BasisSet& obs,
+                               const Matrix& A);
 
 Matrix compute_1body_ints(const BasisSet& obs,
                           libint2::OneBodyEngine::integral_type t,
                           const std::vector<Atom>& atoms = std::vector<Atom>());
+Matrix compute_schwartz_ints(const BasisSet& obs);
 Matrix compute_2body_fock(const BasisSet& obs,
-                          const Matrix& D);
+                          const Matrix& D,
+                          double precision = std::numeric_limits<double>::epsilon(), // discard contributions smaller than this
+                          const Matrix& Schwartz = Matrix() // K_ij = ||(ij|ij)||_2; if empty, do not Schwartz screen
+                         );
 // an Fock builder that can accept densities expressed a separate basis
 Matrix compute_2body_fock_general(const BasisSet& obs,
                                   const Matrix& D,
-                                  const BasisSet& D_bs);
+                                  const BasisSet& D_bs,
+                                  bool D_is_sheldiagonal = false, // set D_is_shelldiagonal if doing SOAD
+                                  double precision = std::numeric_limits<double>::epsilon() // discard contributions smaller than this
+                                 );
 
 
 int main(int argc, char *argv[]) {
@@ -128,15 +138,20 @@ int main(int argc, char *argv[]) {
 
     Matrix D;
     {  // use SOAD as the guess density
+      const auto tstart = std::chrono::high_resolution_clock::now();
+
       auto D_minbs = compute_soad(atoms); // compute guess in minimal basis
       BasisSet minbs("STO-3G", atoms);
       if (minbs == obs)
         D = D_minbs;
       else { // if basis != minimal basis, map non-representable SOAD guess into the AO basis
              // by diagonalizing a Fock matrix
-        std::cout << "projecting SOAD into AO basis" << std::endl;
+        std::cout << "projecting SOAD into AO basis ... ";
         auto F = H;
-        F += compute_2body_fock_general(obs, D_minbs, minbs);
+        F += compute_2body_fock_general(obs, D_minbs, minbs,
+                                        true /* SOAD_D_is_shelldiagonal */,
+                                        1e-12 // this is cheap, no reason to be cheaper
+                                       );
 
         // solve F C = e S C
         Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> gen_eig_solver(F, S);
@@ -145,8 +160,16 @@ int main(int argc, char *argv[]) {
         // compute density, D = C(occ) . C(occ)T
         auto C_occ = C.leftCols(ndocc);
         D = C_occ * C_occ.transpose();
+
+        const auto tstop = std::chrono::high_resolution_clock::now();
+        const std::chrono::duration<double> time_elapsed = tstop - tstart;
+        std::cout << "done (" << time_elapsed.count() << " s)" << std::endl;
+
       }
     }
+
+    // pre-compute data for Schwartz bounds
+    auto K = compute_schwartz_ints(obs);
 
     /*** =========================== ***/
     /***          SCF loop           ***/
@@ -155,7 +178,7 @@ int main(int argc, char *argv[]) {
     const auto maxiter = 100;
     const auto conv = 1e-12;
     auto iter = 0;
-    auto rms_error = 0.0;
+    auto rms_error = 1.0;
     auto ediff_rel = 0.0;
     auto ehf = 0.0;
     auto n2 = D.cols() * D.rows();
@@ -169,7 +192,8 @@ int main(int argc, char *argv[]) {
 
       // build a new Fock matrix
       auto F = H;
-      F += compute_2body_fock(obs, D);
+      F += compute_2body_fock(obs, D, std::min(1e-8,std::max(rms_error/1e4,std::numeric_limits<double>::epsilon())), K);
+
 
       // compute HF energy with the non-extrapolated Fock matrix
       ehf = D.cwiseProduct(H+F).sum();
@@ -288,6 +312,26 @@ Matrix compute_soad(const std::vector<Atom>& atoms) {
   return D * 0.5; // we use densities normalized to # of electrons/2
 }
 
+Matrix compute_shellblock_norm(const BasisSet& obs,
+                               const Matrix& A) {
+  const auto nsh = obs.size();
+  Matrix Ash(nsh, nsh);
+
+  auto shell2bf = obs.shell2bf();
+  for(size_t s1=0; s1!=nsh; ++s1) {
+    const auto& s1_first = shell2bf[s1];
+    const auto& s1_size = obs[s1].size();
+    for(size_t s2=0; s2!=nsh; ++s2) {
+      const auto& s2_first = shell2bf[s2];
+      const auto& s2_size = obs[s2].size();
+
+      Ash(s1, s2) = A.block(s1_first, s2_first, s1_size, s2_size).lpNorm<Eigen::Infinity>();
+    }
+  }
+
+  return Ash;
+}
+
 Matrix compute_1body_ints(const BasisSet& obs,
                           libint2::OneBodyEngine::integral_type obtype,
                           const std::vector<Atom>& atoms)
@@ -367,8 +411,50 @@ Matrix compute_1body_ints(const BasisSet& obs,
   return results[0];
 }
 
+Matrix compute_schwartz_ints(const BasisSet& obs) {
+
+  const auto nsh = obs.size();
+  Matrix K = Matrix::Zero(nsh,nsh);
+
+  // construct the 2-electron repulsion integrals engine
+  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
+  auto engine = coulomb_engine_type(obs.max_nprim(), obs.max_l(), 0);
+
+  std::cout << "computing Schwartz bound prerequisites ... ";
+
+  libint2::Timers<1> timer;
+  timer.set_now_overhead(25);
+  timer.start(0);
+
+  {
+    // loop over permutationally-unique set of shells
+    for(auto s1=0l, s12=0l; s1!=nsh; ++s1) {
+
+      auto n1 = obs[s1].size();// number of basis functions in this shell
+
+      for(auto s2=0; s2<=s1; ++s2) {
+
+        auto n2 = obs[s2].size();
+
+        const auto* buf = engine.compute(obs[s1], obs[s2], obs[s1], obs[s2]);
+
+        Eigen::Map<const Matrix> shblk(buf, n1, n2);
+        K(s1,s2) = K(s2,s1) = std::sqrt(shblk.lpNorm<Eigen::Infinity>());
+
+      }
+    }
+  }
+
+  timer.stop(0);
+  std::cout << "done (" << timer.read(0) << " s)"<< std::endl;
+
+  return K;
+}
+
 Matrix compute_2body_fock(const BasisSet& obs,
-                          const Matrix& D) {
+                          const Matrix& D,
+                          double precision,
+                          const Matrix& Schwartz) {
 
   const auto n = obs.nbf();
   const auto nshells = obs.size();
@@ -379,10 +465,20 @@ Matrix compute_2body_fock(const BasisSet& obs,
 #endif
   std::vector<Matrix> G(nthreads, Matrix::Zero(n,n));
 
+  const auto do_schwartz_screen = Schwartz.cols() != 0 && Schwartz.rows() != 0;
+  Matrix D_shblk_norm; // matrix of norms of shell blocks
+  if (do_schwartz_screen) {
+    D_shblk_norm = compute_shellblock_norm(obs, D);
+  }
+
   // construct the 2-electron repulsion integrals engine
   typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
   std::vector<coulomb_engine_type> engines(nthreads);
   engines[0] = coulomb_engine_type(obs.max_nprim(), obs.max_l(), 0);
+  engines[0].set_precision(std::min(precision,std::numeric_limits<double>::epsilon())); // shellset-dependent precision control will likely break positive definiteness
+                                       // stick with this simple recipe
+  coulomb_engine_type::skip_core_ints = false;
+  std::cout << "TwoBodyEngine::precision = " << engines[0].precision() << std::endl;
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -415,15 +511,32 @@ Matrix compute_2body_fock(const BasisSet& obs,
         auto bf2_first = shell2bf[s2];
         auto n2 = obs[s2].size();
 
+        const auto Dnorm12 = do_schwartz_screen ? D_shblk_norm(s1,s2) : 0.;
+
         for(auto s3=0; s3<=s1; ++s3) {
 
           auto bf3_first = shell2bf[s3];
           auto n3 = obs[s3].size();
 
+          const auto Dnorm123 = do_schwartz_screen ? std::max(D_shblk_norm(s1,s3),
+                                                              std::max(D_shblk_norm(s2,s3),Dnorm12)
+                                                             )
+                                                   : 0.;
+
           const auto s4_max = (s1 == s3) ? s2 : s3;
           for(auto s4=0; s4<=s4_max; ++s4, ++s1234) {
 
             if (s1234 % nthreads != thread_id)
+              continue;
+
+            const auto Dnorm1234 = do_schwartz_screen ? std::max(D_shblk_norm(s1,s4),
+                                                                 std::max(D_shblk_norm(s2,s4),
+                                                                          std::max(D_shblk_norm(s3,s4),Dnorm123)
+                                                                         )
+                                                                )
+                                                      : 0.;
+
+            if (do_schwartz_screen && Dnorm1234 * Schwartz(s1,s2) * Schwartz(s3,s4) < precision)
               continue;
 
             auto bf4_first = shell2bf[s4];
@@ -503,7 +616,9 @@ Matrix compute_2body_fock(const BasisSet& obs,
 
 Matrix compute_2body_fock_general(const BasisSet& obs,
                                   const Matrix& D,
-                                  const BasisSet& D_bs) {
+                                  const BasisSet& D_bs,
+                                  bool D_is_shelldiagonal,
+                                  double precision) {
 
   const auto n = obs.nbf();
   const auto n_D = D_bs.nbf();
@@ -521,7 +636,8 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
   std::vector<coulomb_engine_type> engines(nthreads);
   engines[0] = coulomb_engine_type(std::max(obs.max_nprim(),D_bs.max_nprim()),
                                    std::max(obs.max_l(), D_bs.max_l()), 0);
-  engines[0].set_precision(1e-8);
+  engines[0].set_precision(precision); // shellset-dependent precision control will likely break positive definiteness
+                                       // stick with this simple recipe
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -555,7 +671,10 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
           auto bf3_first = shell2bf_D[s3];
           auto n3 = D_bs[s3].size();
 
-          for(auto s4=0; s4<D_bs.size(); ++s4, ++s1234) {
+          auto s4_begin = D_is_shelldiagonal ? s3 : 0;
+          auto s4_fence = D_is_shelldiagonal ? s3+1 : D_bs.size();
+
+          for(auto s4=s4_begin; s4!=s4_fence; ++s4, ++s1234) {
 
             if (s1234 % nthreads != thread_id)
               continue;
