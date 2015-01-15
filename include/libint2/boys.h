@@ -466,7 +466,7 @@ namespace libint2 {
   class FmEval_Taylor {
     public:
       static const int max_interp_order = 8;
-      static const bool INTERPOLATION_AND_RECURSION = true; // compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
+      static const bool INTERPOLATION_AND_RECURSION = false; // compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
       const Real relative_zero_;
       const Real soft_zero_;
 
@@ -630,19 +630,82 @@ namespace libint2 {
         {
           const int T_ind = (int) (0.5 + T * oodelT_);
           const double h = T_ind * delT_ - T;
-          const double* F_row = grid_[T_ind] + mmax;
+          const double* F_row = grid_[T_ind] + mmin;
 
-          for (int m = mmax; m >= mmin; --m, --F_row) {
+#if defined (__AVX__)
+          libint2::simd::VectorAVXDouble h0123, h4567;
+          if (INTERPOLATION_ORDER == 3 || INTERPOLATION_ORDER == 7) {
+            const double h2 = h*h*oon[2];
+            const double h3 = h2*h*oon[3];
+            h0123 = libint2::simd::VectorAVXDouble (1.0, h, h2, h3);
+            if (INTERPOLATION_ORDER == 7) {
+              const double h4 = h3*h*oon[4];
+              const double h5 = h4*h*oon[5];
+              const double h6 = h5*h*oon[6];
+              const double h7 = h6*h*oon[7];
+              h4567 = libint2::simd::VectorAVXDouble (h4, h5, h6, h7);
+            }
+          }
+          //          libint2::simd::VectorAVXDouble h0123(1.0);
+          //          libint2::simd::VectorAVXDouble h4567(1.0);
+#endif
 
-            /*--- Taylor interpolation ---*/
+          int m = mmin;
+          if (mmax-m >=1) {
+            const int unroll_size = 2;
+            const int m_fence = (mmax + 2 - unroll_size);
+            for(; m<m_fence; m+=unroll_size, F_row+=unroll_size) {
+
+#if defined(__AVX__)
+              if (INTERPOLATION_ORDER == 3 || INTERPOLATION_ORDER == 7) {
+                 libint2::simd::VectorAVXDouble fr0_0123; fr0_0123.load(F_row);
+                 libint2::simd::VectorAVXDouble fr1_0123; fr1_0123.load(F_row+1);
+                 libint2::simd::VectorSSEDouble fm01 = horizontal_add(fr0_0123*h0123, fr1_0123*h0123);
+                 if (INTERPOLATION_ORDER == 7) {
+                   libint2::simd::VectorAVXDouble fr0_4567; fr0_4567.load(F_row+4);
+                   libint2::simd::VectorAVXDouble fr1_4567; fr1_4567.load(F_row+5);
+                   fm01 += horizontal_add(fr0_4567*h4567, fr1_4567*h4567);
+                 }
+                 fm01.convert(&Fm[m]);
+              }
+              else {
+#endif
+              Real total0 = 0.0, total1 = 0.0;
+              for(int i=INTERPOLATION_ORDER; i>=1; --i) {
+                total0 = oon[i]*h*(F_row[i] + total0);
+                total1 = oon[i]*h*(F_row[i+1] + total1);
+              }
+              Fm[m] = F_row[0] + total0;
+              Fm[m+1] = F_row[1] + total1;
+#if defined(__AVX__)
+              }
+#endif
+            }
+          } // unroll_size = 2
+          if (m<=mmax) { // unroll_size = 1
+#if defined(__AVX__)
+            if (INTERPOLATION_ORDER == 3 || INTERPOLATION_ORDER == 7) {
+              libint2::simd::VectorAVXDouble fr0123; fr0123.load(F_row);
+              if (INTERPOLATION_ORDER == 7) {
+                libint2::simd::VectorAVXDouble fr4567; fr4567.load(F_row+4);
+                libint2::simd::VectorSSEDouble fm = horizontal_add(fr0123*h0123, fr4567*h4567);
+                Fm[m] = horizontal_add(fm);
+              }
+              else { // INTERPOLATION_ORDER == 3
+                Fm[m] = horizontal_add(fr0123*h0123);
+              }
+            }
+            else {
+#endif
             Real total = 0.0;
             for(int i=INTERPOLATION_ORDER; i>=1; --i) {
               total = oon[i]*h*(F_row[i] + total);
             }
-
             Fm[m] = F_row[0] + total;
-
-          } // interpolation for F_m(T), mmin<=m<=mmax
+#if defined(__AVX__)
+            }
+#endif
+          } // unroll_size = 1
 
           // check against the reference value
 //          if (false) {
@@ -658,12 +721,10 @@ namespace libint2 {
         /*------------------------------------
          And then do downward recursion in j
          ------------------------------------*/
-        if (INTERPOLATION_AND_RECURSION) {
-          if (mmin > 0) {
-            const double exp_mT = std::exp(-T);
-            for (int m = mmin - 1; m >= 0; --m) {
-              Fm[m] = (exp_mT + two_T * Fm[m+1]) * numbers_.twoi1[m];
-            }
+        if (INTERPOLATION_AND_RECURSION && mmin > 0) {
+          const double exp_mT = std::exp(-T);
+          for (int m = mmin - 1; m >= 0; --m) {
+            Fm[m] = (exp_mT + two_T * Fm[m+1]) * numbers_.twoi1[m];
           }
         }
       }
