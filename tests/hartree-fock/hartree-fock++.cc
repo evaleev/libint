@@ -477,7 +477,6 @@ Matrix compute_2body_fock(const BasisSet& obs,
   engines[0] = coulomb_engine_type(obs.max_nprim(), obs.max_l(), 0);
   engines[0].set_precision(std::min(precision,std::numeric_limits<double>::epsilon())); // shellset-dependent precision control will likely break positive definiteness
                                        // stick with this simple recipe
-  coulomb_engine_type::skip_core_ints = false;
   std::cout << "TwoBodyEngine::precision = " << engines[0].precision() << std::endl;
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
