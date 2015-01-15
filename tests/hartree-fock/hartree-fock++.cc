@@ -343,7 +343,7 @@ Matrix compute_1body_ints(const BasisSet& obs,
 #else
   const auto nthreads = 1;
 #endif
-  std::vector<Matrix> results(nthreads, Matrix::Zero(n,n));
+  Matrix result = Matrix::Zero(n,n);
 
   // construct the overlap integrals engine
   std::vector<libint2::OneBodyEngine> engines(nthreads);
@@ -391,24 +391,17 @@ Matrix compute_1body_ints(const BasisSet& obs,
         // compute shell pair; return is the pointer to the buffer
         const auto* buf = engines[thread_id].compute(obs[s1], obs[s2]);
 
-        auto& r = results[thread_id];
-
         // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
         Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
-        r.block(bf1, bf2, n1, n2) = buf_mat;
+        result.block(bf1, bf2, n1, n2) = buf_mat;
         if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
-        r.block(bf2, bf1, n2, n1) = buf_mat.transpose();
+        result.block(bf2, bf1, n2, n1) = buf_mat.transpose();
 
       }
     }
   } // omp parallel
 
-  // accumulate contributions from all threads
-  for(size_t i=1; i!=nthreads; ++i) {
-    results[0] += results[i];
-  }
-
-  return results[0];
+  return result;
 }
 
 Matrix compute_schwartz_ints(const BasisSet& obs) {
