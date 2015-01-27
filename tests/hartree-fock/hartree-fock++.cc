@@ -29,6 +29,7 @@
 #include <iomanip>
 #include <vector>
 #include <chrono>
+#include <thread>
 
 // Eigen matrix algebra library
 #include <Eigen/Dense>
@@ -44,6 +45,10 @@
 #if defined(_OPENMP)
 # include <omp.h>
 #endif
+
+// uncomment if want to report integral timings (only useful if nthreads == 1)
+// N.B. integral engine timings are controled in engine.h
+//#define REPORT_INTEGRAL_TIMINGS
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         Matrix;  // import dense, dynamically sized Matrix type from Eigen;
@@ -77,6 +82,9 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                                   double precision = std::numeric_limits<double>::epsilon() // discard contributions smaller than this
                                  );
 
+namespace libint2 {
+  int nthreads;
+}
 
 int main(int argc, char *argv[]) {
 
@@ -94,10 +102,28 @@ int main(int argc, char *argv[]) {
     const auto filename = (argc > 1) ? argv[1] : "h2o.xyz";
     std::vector<Atom> atoms = read_geometry(filename);
 
-    // announce OpenMP
+    // set up thread pool
+    {
+      using libint2::nthreads;
+      auto nthreads_cstr = getenv("LIBINT_NUM_THREADS");
+      nthreads = 1;
+      if (nthreads_cstr && strcmp(nthreads_cstr,"")) {
+        std::istringstream iss(nthreads_cstr);
+        iss >> nthreads;
+        if (nthreads > 1<<16 || nthreads <= 0)
+          nthreads = 1;
+      }
 #if defined(_OPENMP)
-    std::cout << "Will use OpenMP to scale up to " << omp_get_max_threads() << " threads" << std::endl;
+      omp_set_num_threads(nthreads);
 #endif
+      std::cout << "Will scale over " << nthreads
+#if defined(_OPENMP)
+                << " OpenMP"
+#else
+                << " C++11"
+#endif
+                << " threads" << std::endl;
+    }
 
     // count the number of electrons
     auto nelectron = 0;
@@ -193,7 +219,6 @@ int main(int argc, char *argv[]) {
       // build a new Fock matrix
       auto F = H;
       F += compute_2body_fock(obs, D, std::min(1e-8,std::max(rms_error/1e4,std::numeric_limits<double>::epsilon())), K);
-
 
       // compute HF energy with the non-extrapolated Fock matrix
       ehf = D.cwiseProduct(H+F).sum();
@@ -451,11 +476,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
 
   const auto n = obs.nbf();
   const auto nshells = obs.size();
-#ifdef _OPENMP
-  const auto nthreads = omp_get_max_threads();
-#else
-  const auto nthreads = 1;
-#endif
+  using libint2::nthreads;
   std::vector<Matrix> G(nthreads, Matrix::Zero(n,n));
 
   const auto do_schwartz_screen = Schwartz.cols() != 0 && Schwartz.rows() != 0;
@@ -475,21 +496,21 @@ Matrix compute_2body_fock(const BasisSet& obs,
     engines[i] = engines[0];
   }
 
-#ifndef _OPENMP
-  libint2::Timers<1> timer;
-  timer.set_now_overhead(25);
-#endif // not defined _OPENMP
+#if defined(REPORT_INTEGRAL_TIMINGS)
+  std::vector<libint2::Timers<1>> timers(nthreads);
+#endif
 
   auto shell2bf = obs.shell2bf();
 
-#ifdef _OPENMP
-  #pragma omp parallel
-#endif
-  {
-#ifdef _OPENMP
-    auto thread_id = omp_get_thread_num();
-#else
-    auto thread_id = 0;
+  auto lambda = [&] (int thread_id) {
+
+    auto& engine = engines[thread_id];
+    auto& g = G[thread_id];
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+    auto& timer = timers[thread_id];
+    timer.clear();
+    timer.set_now_overhead(25);
 #endif
 
     // loop over permutationally-unique set of shells
@@ -540,13 +561,13 @@ Matrix compute_2body_fock(const BasisSet& obs,
             auto s12_34_deg = (s1 == s3) ? (s2 == s4 ? 1.0 : 2.0) : 2.0;
             auto s1234_deg = s12_deg * s34_deg * s12_34_deg;
 
-#ifndef _OPENMP
+#if defined(REPORT_INTEGRAL_TIMINGS)
             timer.start(0);
 #endif
 
-            const auto* buf = engines[thread_id].compute(obs[s1], obs[s2], obs[s3], obs[s4]);
+            const auto* buf = engine.compute(obs[s1], obs[s2], obs[s3], obs[s4]);
 
-#ifndef _OPENMP
+#if defined(REPORT_INTEGRAL_TIMINGS)
             timer.stop(0);
 #endif
 
@@ -573,8 +594,6 @@ Matrix compute_2body_fock(const BasisSet& obs,
 
                     const auto value_scal_by_deg = value * s1234_deg;
 
-                    auto& g = G[thread_id];
-
                     g(bf1,bf2) += D(bf3,bf4) * value_scal_by_deg;
                     g(bf3,bf4) += D(bf1,bf2) * value_scal_by_deg;
                     g(bf1,bf3) -= 0.25 * D(bf2,bf4) * value_scal_by_deg;
@@ -590,20 +609,47 @@ Matrix compute_2body_fock(const BasisSet& obs,
         }
       }
     }
-  } // omp parallel
 
-#ifndef _OPENMP
-  std::cout << "time for integrals = " << timer.read(0) << std::endl;
-  engines[0].print_timers();
-#endif // not defined _OPENMP
+  }; // end of lambda
+
+#ifdef _OPENMP
+  #pragma omp parallel
+  {
+    auto thread_id = omp_get_thread_num();
+    lambda(thread_id);
+  }
+#else // use C++11 threads
+  std::vector<std::thread> threads;
+  for(int thread_id=0; thread_id != nthreads; ++thread_id) {
+    if(thread_id != nthreads-1)
+      threads.push_back(std::thread(lambda,
+                                    thread_id));
+    else
+      lambda(thread_id);
+  } // threads_id
+  for(int thread_id=0; thread_id<nthreads-1; ++thread_id)
+    threads[thread_id].join();
+#endif
 
   // accumulate contributions from all threads
   for(size_t i=1; i!=nthreads; ++i) {
     G[0] += G[i];
   }
 
+#if defined(REPORT_INTEGRAL_TIMINGS)
+  double time_for_ints = 0.0;
+  for(auto& t: timers) {
+    time_for_ints += t.read(0);
+  }
+  std::cout << "time for integrals = " << time_for_ints << std::endl;
+  for(int t=0; t!=nthreads; ++t)
+    engines[t].print_timers();
+#endif
+
+  Matrix GG = 0.5 * (G[0] + G[0].transpose());
+
   // symmetrize the result and return
-  return 0.5 * (G[0] + G[0].transpose());
+  return GG;
 }
 
 Matrix compute_2body_fock_general(const BasisSet& obs,
