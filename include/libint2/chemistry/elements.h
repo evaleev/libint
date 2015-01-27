@@ -1,3 +1,10 @@
+#pragma once
+#ifndef LIBINT2_CHEMISTRY_ELEMENTS_H
+#define LIBINT2_CHEMISTRY_ELEMENTS_H
+
+#include <string>
+#include <vector>
+
 namespace libint2 {
   namespace chemistry {
 
@@ -129,3 +136,5 @@ namespace libint2 {
       };
   }
 }
+
+#endif /* end of include guard: LIBINT2_CHEMISTRY_ELEMENTS_H */
