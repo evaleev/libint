@@ -24,6 +24,7 @@
 #endif
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 
 #include <libint2.h>
