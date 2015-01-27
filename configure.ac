@@ -1323,6 +1323,10 @@ fi
 AC_SUBST(CXXGEN)
 AC_SUBST(CXXGENFLAGS)
 
+dnl --------- expand some variables -----------
+DATADIR_ABSOLUTE=`eval echo $datarootdir`/libint/$LIBINT_VERSION
+AC_SUBST(DATADIR_ABSOLUTE)
+
 dnl Check if sources compiled with CXX and CXXGEN can be linked together
 CXX_COMPATIBLE_WITH_CXXGEN=yes
 if test "X$CXX" != "X$CXXGEN"; then
@@ -1435,7 +1439,7 @@ AC_CONFIG_FILES([src/bin/test_eri/stdtests.pl],[chmod +x src/bin/test_eri/stdtes
 AC_CONFIG_FILES([src/bin/test_eri/run_timing_suite.pl],[chmod +x src/bin/test_eri/run_timing_suite.pl])
 AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules
                 doc/MakeVars doc/MakeRules doc/progman/macros.tex doc/classdoc/doxygen.cfg
-                include/libint2/cgshell_ordering.h libint2.pc)
+                include/libint2/cgshell_ordering.h include/libint2/basis.h libint2.pc)
 
 dnl --------- Done! ---------
 AC_OUTPUT

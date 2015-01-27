@@ -393,6 +393,11 @@ CPPFLAGS="$CPPFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
 LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB"
 
+dnl --------- expand some variables -----------
+DATADIR_ABSOLUTE=`eval echo $datarootdir`/libint/$LIBINT_VERSION
+echo $DATADIR_ABSOLUTE
+AC_SUBST(DATADIR_ABSOLUTE)
+
 dnl --------- Check for documentation tools ---------
 
 AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin:/opt/local/bin)
@@ -413,7 +418,7 @@ LIBSUF=la
 ENABLESHARED=yes
 AC_SUBST(ENABLESHARED)
 
-AC_CONFIG_FILES(MakeVars MakeRules MakeSuffixRules doc/Makefile libint2.pc)
+AC_CONFIG_FILES(MakeVars MakeRules MakeSuffixRules doc/Makefile include/libint2/basis.h libint2.pc)
 
 dnl --------- Done! ---------
 AC_OUTPUT

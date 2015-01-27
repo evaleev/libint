@@ -35,7 +35,7 @@ export::
 	  done
 	(cd export && $(MAKE) $(DODEPENDOPT) export) || exit 1;
 
-install:: all install_pkgconfig install_inc
+install:: all install_pkgconfig install_inc install_data
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install) || exit 1; \
@@ -43,9 +43,13 @@ install:: all install_pkgconfig install_inc
 
 ifdef pkgconfigdir
 install_pkgconfig:: 
-	$(INSTALL) $(INSTALLDIROPT) $(pkgconfigdir)
-	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(pkgconfigdir)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(pkgconfigdir)
+	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(DESTDIR)$(pkgconfigdir)
 endif
+
+install_data::
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(datadir)/basis
+	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/lib/basis/* $(DESTDIR)$(datadir)/basis
 
 install_inc:: all
 	for dir in $(SUBDIRS); \

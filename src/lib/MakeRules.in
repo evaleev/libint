@@ -18,7 +18,7 @@ export:: source
 $(TOPDIR)/lib/$(TARGET): source
 	cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR)
 
-install:: install_inc install_target
+install:: install_inc install_target install_pkgconfig install_data
 
 install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
@@ -33,6 +33,16 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)
 	$(LTINST) $(INSTALL) $(INSTALLLIBOPT) $< $(DESTDIR)$(libdir)
+
+ifdef pkgconfigdir
+install_pkgconfig::
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(pkgconfigdir)
+	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(DESTDIR)$(pkgconfigdir)
+endif
+
+install_data::
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(datadir)/basis
+	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/basis/* $(DESTDIR)$(datadir)/basis
 
 uninstall::
 	-rm -f $(DESTDIR)$(libdir)/$(TARGET)

@@ -88,6 +88,7 @@ bindir=@bindir@
 libdir=@libdir@
 includedir=@libintincludedir@
 pkgconfigdir=@PKGCONFIGDIR@
+datadir=@datarootdir@/libint/$(LIBINT_VERSION)
 
 RANLIB = @RANLIB@
 COMPRESS = gzip

@@ -26,6 +26,10 @@
 #include <iostream>
 #include <vector>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <libint2.h>
 #include <libint2/shell.h>
 #include <libint2/atom.h>
@@ -40,11 +44,28 @@ namespace libint2 {
       BasisSet(BasisSet&&) = default;
       ~BasisSet() = default;
 
+      /// Construct from basis set name and vector of atoms
+
+      /**
+       * @param name basis set name
+       * @param atoms \c std::vector of Atom objects
+       * \note All atoms receive the same basis set
+       * \note \c name will be "canonicalized" using BasisSet::canonicalize(name) to
+       *       produce the file name where the basis will be sought. This file needs to contain
+       *       the basis set definition in Gaussian94 format (see \c lib/basis directory for examples).
+       *       The file will be searched in the following directories (in decreasing order of preference)
+       *       <ol>
+       *         <li> specified by LIBINT_DATA_PATH environmental variable, if defined </li>
+       *         <li> specified by DATADIR macro variable, if defined </li>
+       *         <li> specified by SRCDATADIR macro variable, if defined </li>
+       *         <li> hardwired to directory \c @DATADIR_ABSOLUTE@/basis </li>
+       *       </ol>
+       */
       BasisSet(std::string name,
                const std::vector<Atom>& atoms) : name_(std::move(name)) {
 
         // read in the library file contents
-        std::string file_dot_g94(SRCDATADIR);
+        std::string file_dot_g94 = data_path();
         file_dot_g94 += "/" + canonicalize_name(name_) + ".g94";
         std::vector<std::vector<libint2::Shell>> ref_shells = read_g94_basis_library(file_dot_g94);
 
@@ -119,13 +140,61 @@ namespace libint2 {
         return result;
       }
 
+      /** determines the path to the data directory, as follows:
+       *       <ol>
+       *         <li> specified by LIBINT_DATA_PATH environmental variable, if defined </li>
+       *         <li> specified by DATADIR macro variable, if defined </li>
+       *         <li> specified by SRCDATADIR macro variable, if defined </li>
+       *         <li> hardwired to directory \c @DATADIR_ABSOLUTE@/basis </li>
+       *       </ol>
+       *  @throw std::runtime_error if the path is not valid, or cannot be determined
+       *  @return valid path to the data directory
+       */
+      static std::string data_path() {
+        std::string path;
+        const char* data_path_env = getenv("LIBINT_DATA_PATH");
+        if (data_path_env) {
+          path = data_path_env;
+        }
+        else {
+#if defined(DATADIR)
+          path = std::string{DATADIR};
+#elif defined(SRCDATADIR)
+          path = std::string{SRCDATADIR};
+#else
+          path = std::string("@DATADIR_ABSOLUTE@") + std::string("/basis");
+#endif
+        }
+        // validate path
+        bool error = true;
+        if (not path.empty()) {
+          struct stat sb;
+          error = (::stat(path.c_str(), &sb) == -1);
+          error = error && not S_ISDIR(sb.st_mode);
+        }
+        if (error) {
+          std::ostringstream oss; oss << "BasisSet::data_path(): path \"" << path << "\" is not valid";
+          throw std::runtime_error(oss.str());
+        }
+        return path;
+      }
+
     public:
 
+      /** reads in all basis sets from a Gaussian94-formatted basis set file (see https://bse.pnl.gov/bse/portal)
+       *  @param[in] file_dot_g94 file name
+       *  @throw std::runtime_error if the path is not valid, or cannot be determined
+       *  @return vector of basis sets for each element
+       */
       static std::vector<std::vector<libint2::Shell>> read_g94_basis_library(std::string file_dot_g94) {
 
         std::cout << "Will read basis set from " << file_dot_g94 << std::endl;
         std::ifstream is(file_dot_g94);
-        assert(is.good());
+        if (not is.good()) {
+          std::ostringstream oss;
+          oss << "BasisSet::read_g94_basis_library(): could not open \"" << file_dot_g94 << "\"" << std::endl;
+          throw std::runtime_error(oss.str());
+        }
         std::vector<std::vector<libint2::Shell>> ref_shells(118); // 118 = number of chemical elements
 
         std::string comment, rest;

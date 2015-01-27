@@ -54,13 +54,14 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/autoconf/libtool.m4 $(TOPDIR)/$(EXPORTDIR)/lib/autoconf
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/autoconf/lt*.m4 $(TOPDIR)/$(EXPORTDIR)/lib/autoconf
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/autoconf/acx*.m4 $(TOPDIR)/$(EXPORTDIR)/lib/autoconf
-	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/lib/data
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/data/*.g94 $(TOPDIR)/$(EXPORTDIR)/lib/data	
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/lib/basis
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/basis/* $(TOPDIR)/$(EXPORTDIR)/lib/basis	
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2/chemistry
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2.h $(TOPDIR)/$(EXPORTDIR)/include
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/*.h $(TOPDIR)/$(EXPORTDIR)/include/libint2
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/basis.h.in $(TOPDIR)/$(EXPORTDIR)/include/libint2
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/chemistry/*.h $(TOPDIR)/$(EXPORTDIR)/include/libint2/chemistry
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2/config.h $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.in
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2/cgshell_ordering.h $(TOPDIR)/$(EXPORTDIR)/include/libint2
