@@ -74,7 +74,7 @@ namespace libint2 {
   /** All known types go into this typelist
       Every type must have a corresponding instantiation of MasterStrategy in strategy.cc
     */
-  typedef mpl::list<
+  typedef boost::mpl::list<
 #if LIBINT_SUPPORT_ONEBODYINTS
   Overlap_1_1_sq,
   Overlap_1_1_int,

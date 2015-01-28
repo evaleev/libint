@@ -38,7 +38,8 @@
   // Should probably at least derive SafePtr from shared_ptr
   #define SafePtr std::shared_ptr
   #define EnableSafePtrFromThis std::enable_shared_from_this
-  #define SafePtr_from_this std::shared_from_this
+  #define SafePtr_from_this shared_from_this
+  using std::dynamic_pointer_cast;
 #endif
 
 /** Can be used to determine whether a type is a SafePtr */
