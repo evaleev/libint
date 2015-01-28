@@ -39,15 +39,6 @@
     typedef libint2::vector_traits<LIBINT2_REALTYPE>::value_type real_t;
   }; // namespace libint2
 
-#if __cplusplus > 199711L
-#  include <libint2/chemistry/elements.h>
-#  include <libint2/atom.h>
-#  include <libint2/basis.h>
-#  include <libint2/engine.h>
-#endif
-
-#endif
-
 #endif
 
 #include "libint2_iface.h"
