@@ -33,13 +33,14 @@
 #include <libint2_types.h>
 
 #if defined(__cplusplus)
-#  include <libint2/type_traits.h>
+# include <libint2/type_traits.h>
   namespace libint2 {
     typedef LIBINT2_REALTYPE realvec_t;
     typedef libint2::vector_traits<LIBINT2_REALTYPE>::value_type real_t;
-  }; // namespace libint2
+  }; /* namespace libint2 */
+#endif /* C++ only */
 
-#endif
+#endif /* header guard */
 
 #include "libint2_iface.h"
 
