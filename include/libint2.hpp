@@ -19,16 +19,11 @@
 #ifndef _libint2_cpp_header_
 #define _libint2_cpp_header_
 
-#include <libint2.h>
-
 #if __cplusplus <= 199711L
 # error "The simple Libint API requires C++11 support"
 #endif
 
-#include <libint2/chemistry/elements.h>
-#include <libint2/atom.h>
-#include <libint2/basis.h>
-#include <libint2/engine.h>
+#include <libint2/cxxapi.h>
 
 #endif /* header guard */
 

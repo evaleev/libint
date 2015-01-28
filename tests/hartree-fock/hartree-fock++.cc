@@ -36,10 +36,7 @@
 #include <Eigen/Eigenvalues>
 
 // Libint Gaussian integrals library
-#include <libint2.h>
-#include <libint2/cxxapi.h>
-#include <libint2/chemistry/elements.h>
-#include <libint2/basis.h>
+#include <libint2.hpp>
 #include <libint2/diis.h>
 
 #if defined(_OPENMP)

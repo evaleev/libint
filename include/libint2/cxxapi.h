@@ -24,6 +24,10 @@
 #endif
 
 #include <libint2.h>
+
+#include <libint2/chemistry/elements.h>
+#include <libint2/atom.h>
+#include <libint2/basis.h>
 #include <libint2/solidharmonics.h>
 
 namespace libint2 {

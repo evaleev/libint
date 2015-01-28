@@ -35,8 +35,7 @@
 #include <Eigen/Eigenvalues>
 
 // Libint Gaussian integrals library
-#include <libint2.h>
-#include <libint2/cxxapi.h>
+#include <libint2.hpp>
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         Matrix;  // import dense, dynamically sized Matrix type from Eigen;
