@@ -1185,60 +1185,42 @@ if test "X$acx_have_cxx11" = "Xno"; then
 fi
 
 dnl ------------------ Check for gmp C++ interface -----------------------
+ACX_CHECK_GMPXX
 
-AC_CHECK_HEADER(gmpxx.h,[
-  AC_MSG_CHECKING([if GMP C++ library is usable])
-  LIBS="-lgmpxx -lgmp $LIBS"
-  AC_LINK_IFELSE(
-   [AC_LANG_PROGRAM(
-    [[#include <gmpxx.h>
-    ]],
-    [[
-     mpf_class a = 1.0;
-    ]]
-    )
-   ],
-   [AC_MSG_RESULT([yes])
-   ],
-   [
-    AC_MSG_RESULT([no])
-    AC_MSG_ERROR([cannot link against GMP C++ library. Please get the latest GMP with support for C++. It can be obtained at gmplib.org .])
-   ]
-  )
+if test "X$acx_have_gmpxx" = "Xno"; then
+  AC_MSG_ERROR([cannot link against GMP C++ library. Please get the latest GMP with support for C++. It can be obtained at gmplib.org .])
+fi
 
-  dnl ----- MPFR is needed for high-precision testing -----
-  AC_ARG_ENABLE(mpfr,
-  [  --enable-mpfr           Use MPFR library to test Libint integrals in high precision.],
-  [
-   case $enableval in
-    yes)
-     AC_CHECK_HEADER(mpfr.h,[
-      AC_MSG_CHECKING([if MPFR library is usable])
-       LIBS="-lmpfr $LIBS"
-       AC_LINK_IFELSE(
-        [AC_LANG_PROGRAM(
-        [[#include <mpfr.h>
-        ]],
-        [[
-         mpfr_t x;  mpfr_init(x);
-        ]]
-       )
-      ],
-      [AC_MSG_RESULT([yes])
-       AC_DEFINE(HAVE_MPFR)
-      ],
-      [
-       AC_MSG_RESULT([no])
-      ]
-     )
+dnl ---------- Check for optional MPFR library (needed for high-precision testing) --------
+AC_ARG_ENABLE(mpfr,
+ [  --enable-mpfr           Use MPFR library to test Libint integrals in high precision.],
+ [
+  case $enableval in
+   yes)
+    AC_CHECK_HEADER(mpfr.h,[
+     AC_MSG_CHECKING([if MPFR library is usable])
+      LIBS="-lmpfr $LIBS"
+      AC_LINK_IFELSE(
+       [AC_LANG_PROGRAM(
+       [[#include <mpfr.h>
+       ]],
+       [[
+        mpfr_t x;  mpfr_init(x);
+       ]]
+      )
+     ],
+     [AC_MSG_RESULT([yes])
+      AC_DEFINE(HAVE_MPFR)
+     ],
+     [
+      AC_MSG_RESULT([no])
      ]
     )
-    ;;
-   esac
-  ])
-  
- ],
- [AC_MSG_ERROR([GMP C++ support is required. Please get the latest GMP with support for C++. It can be obtained at gmplib.org .])]
+    ]
+   )
+   ;;
+  esac
+ ]
 )
 
 dnl ------------------ Check for shared_ptr -----------------------
