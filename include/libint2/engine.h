@@ -32,6 +32,7 @@
 #include <libint2/boys.h>
 #include <libint2/shell.h>
 #include <libint2/timer.h>
+#include <libint2/solidharmonics.h>
 
 #include <Eigen/Core>
 
