@@ -49,7 +49,7 @@ endif
 
 install_data::
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(datadir)/basis
-	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/lib/basis/* $(DESTDIR)$(datadir)/basis
+	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/basis/* $(DESTDIR)$(datadir)/basis
 
 install_inc:: all
 	for dir in $(SUBDIRS); \
