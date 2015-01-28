@@ -1013,6 +1013,14 @@ AC_PROG_INSTALL
 if test "X$CXX" = "X"; then
   AC_CHECK_PROGS(CXX, clang++ icpc xlC_r g++ c++ CC, c++)
 fi
+
+# if not given a C++ compiler for generated source, use CXX
+if test "X$CXXGEN" = X; then
+  CXXGEN=$CXX
+fi
+AC_SUBST(CXXGEN)
+AC_SUBST(CXXGENFLAGS)
+
 # discard CXXFLAGS provided by the C++ detection macros
 initial_CXXFLAGS="$CXXFLAGS"
 AC_PROG_CXX
@@ -1315,13 +1323,6 @@ AC_TYPE_SIZE_T
 CPPFLAGS="$CPPFLAGS" CXX="$CXX" CXXFLAGS="$CXXFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
 LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB"
-
-dnl --------- configure compiler for generated source ---------
-if test "X$CXXGEN" = X; then
-  CXXGEN=$CXX
-fi
-AC_SUBST(CXXGEN)
-AC_SUBST(CXXGENFLAGS)
 
 dnl --------- expand some variables -----------
 DATADIR_ABSOLUTE=`eval echo $datarootdir`/libint/$LIBINT_VERSION

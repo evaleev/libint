@@ -1,9 +1,12 @@
+#
+# check if CXX provides C++11 support with CXXFLAGS, possibly by appending -std=c++11 to CXXFLAGS
+#
 AC_DEFUN([ACX_CHECK_CPP11_GENERAL], [
   AC_LANG_SAVE
   AC_LANG([C++])
 
   acx_have_cxx11=no
-  AC_MSG_CHECKING([for general C++11 support])
+  AC_MSG_CHECKING([CXX for general C++11 support])
   AC_COMPILE_IFELSE(
     [AC_LANG_PROGRAM(
       [[#include <vector>
@@ -60,12 +63,58 @@ AC_DEFUN([ACX_CHECK_CPP11_GENERAL], [
   AC_LANG_RESTORE  
 ])
 
+#
+# check if CXXGEN provides C++11 support with CXXGENFLAGS, without any additional flags
+#
+AC_DEFUN([ACX_CHECK_CPP11_CXXGEN], [
+  AC_LANG_SAVE
+  AC_LANG([C++])
+
+  AC_MSG_CHECKING([CXXGEN for general C++11 support])
+  ref_CXX=$CXX
+  CXX=$CXXGEN
+  ref_CXXFLAGS=$CXXFLAGS
+  CXXFLAGS=$CXXGENFLAGS
+  
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <vector>
+        #include <iostream>
+        #if __cplusplus <= 199711L
+        # error "no C++11 support"
+        #endif
+      ]],
+      [[
+       std::vector<double> reals(10, 0.0);
+       for (const auto& i: reals) {
+         std::cout << i << "\n";
+       }
+      ]]
+     )
+    ],
+    [
+     CXXGEN_SUPPORTS_CPP11=yes
+     AC_MSG_RESULT([yes])
+    ],
+    [
+     CXXGEN_SUPPORTS_CPP11=no
+     AC_MSG_RESULT([no])
+    ]
+  )
+  AC_SUBST(CXXGEN_SUPPORTS_CPP11)
+  # revert CXX and CXXFLAGS
+  CXX=$ref_CXX
+  CXXFLAGS=$ref_CXXFLAGS
+
+  AC_LANG_RESTORE  
+])
+
 AC_DEFUN([ACX_CHECK_CPP11_LAMBDA], [
   AC_LANG_SAVE
   AC_LANG([C++])
 
   acx_have_cxx11_lambda=no
-  AC_MSG_CHECKING([for C++11 lambdas support])
+  AC_MSG_CHECKING([CXX for C++11 lambdas support])
   AC_COMPILE_IFELSE(
     [AC_LANG_PROGRAM(
       [[#include <vector>
@@ -99,7 +148,7 @@ AC_DEFUN([ACX_CHECK_SHARED_PTR], [
   AC_LANG([C++])
   
   # Check for shared_ptr in std namespace
-  AC_MSG_CHECKING([for shared_ptr])
+  AC_MSG_CHECKING([CXX for shared_ptr])
   acx_shared_ptr=no
   
   # Check for std::shared_ptr in <memory>
@@ -169,7 +218,7 @@ AC_DEFUN([ACX_CHECK_SHARED_PTR], [
   
   #Check for std::make_shared and std::allocate_shared
   acx_std_make_shared=no
-  AC_MSG_CHECKING([for std::make_shared and std::allocate_shared])
+  AC_MSG_CHECKING([CXX for std::make_shared and std::allocate_shared])
   
   AC_COMPILE_IFELSE(
     [
@@ -196,7 +245,7 @@ AC_DEFUN([ACX_CHECK_TYPE_TRAITS], [
   AC_LANG([C++])
 
   # Check for type traits in <type_traits> and std namespace
-  AC_MSG_CHECKING([for type traits])
+  AC_MSG_CHECKING([CXX for type_traits])
   acx_type_traits=no
 
   AC_COMPILE_IFELSE(
@@ -269,7 +318,7 @@ AC_DEFUN([ACX_CHECK_ARRAY], [
   AC_LANG([C++])
   
   # Check for array in std namespace
-  AC_MSG_CHECKING([for array])
+  AC_MSG_CHECKING([CXX for array])
   acx_array=no
   
   # Check for std::array in <array>
@@ -380,4 +429,6 @@ AC_DEFUN([ACX_CHECK_CPP11],
   ACX_CHECK_SHARED_PTR
   ACX_CHECK_TYPE_TRAITS
   ACX_CHECK_ARRAY
+  
+  ACX_CHECK_CPP11_CXXGEN
 ])

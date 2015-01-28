@@ -8,9 +8,11 @@ endif
 
 SUBDIRS = src
 CHECKSUBDIRS = tests/eri
-ifeq ($(LIBINT_HAS_EIGEN),yes)
- ifeq ($(LIBINT_CONTRACTED_INTS),yes)
-  CHECKSUBDIRS += tests/hartree-fock
+ifeq ($(CXXGEN_SUPPORTS_CPP11),yes)
+ ifeq ($(LIBINT_HAS_EIGEN),yes)
+  ifeq ($(LIBINT_CONTRACTED_INTS),yes)
+   CHECKSUBDIRS += tests/hartree-fock
+  endif
  endif
 endif
 CLEANSUBDIRS = $(SUBDIRS) $(CHECKSUBDIRS)
