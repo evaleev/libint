@@ -36,13 +36,16 @@
 #  include <libint2/type_traits.h>
   namespace libint2 {
     typedef LIBINT2_REALTYPE realvec_t;
-    typedef typename libint2::vector_traits<LIBINT2_REALTYPE>::value_type real_t;
+    typedef libint2::vector_traits<LIBINT2_REALTYPE>::value_type real_t;
   }; // namespace libint2
 
-// Headers for chemistry
-#include <libint2/chemistry/elements.h>
-#include <libint2/atom.h>
-#include <libint2/basis.h>
+#if __cplusplus > 199711L
+#  include <libint2/chemistry/elements.h>
+#  include <libint2/atom.h>
+#  include <libint2/basis.h>
+#  include <libint2/engine.h>
+#endif
+
 #endif
 
 #endif
