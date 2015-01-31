@@ -115,32 +115,40 @@ namespace libint2 {
 #define _local_min_macro(a,b) ((a) > (b) ? (a) : (b))
 
   /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
-    * using asymptotic expansion and recurrence.
-    * Slow for the sake of precision -- only use for reference purposes
+    * using asymptotic expansion.
+    * Slow for the sake of precision control -- and needs Real with very high precision -- only use for reference purposes.
     *
-    * @tparam Real the type to use for all floating-point computations. Must be able to compute exponentials, i.e. exp(x), where x is Real, must be a valid expression.
+    * @tparam Real the type to use for all floating-point computations.
+    *         Must be able to compute logarithm and exponential, i.e.
+    *         log(x) and exp(x), where x is Real, must be a valid expression.
     */
   template<typename Real>
   struct FmEval_Reference {
 
       /// computes a single value of \f$ F_m(T) \f$ using MacLaurin series.
       static Real eval(Real T, size_t m, Real absolute_precision) {
+        assert(m < 100);
+        static const Real T_crit = std::numeric_limits<Real>::is_bounded == true ? -log( std::numeric_limits<Real>::min() * 100.5 / 2. ) : Real(0) ;
+        if (std::numeric_limits<Real>::is_bounded && T > T_crit)
+          throw std::overflow_error("FmEval_Reference<Real>::eval: Real lacks precision for the given value of argument T");
         Real denom = (m + 0.5);
         Real term = 0.5 * exp(-T) / denom;
+        Real old_term = 0.0;
         Real sum = term;
         //Real rel_error;
         Real epsilon;
-        const Real relative_zero = 1e-15;
+        const Real relative_zero = std::numeric_limits<Real>::epsilon();
         const Real absolute_precision_o_10 = absolute_precision * 0.1;
         do {
           denom += 1.0;
-          term = term * T / denom;
+          old_term = term;
+          term = old_term * T / denom;
           sum += term;
           //rel_error = term / sum;
           // stop if adding a term smaller or equal to absolute_precision/10 and smaller than relative_zero * sum
           // When sum is small in absolute value, the second threshold is more important
           epsilon = _local_min_macro(absolute_precision_o_10, sum*relative_zero);
-        } while (term > epsilon);
+        } while (term > epsilon || old_term < term);
 
         return sum;
       }

@@ -68,6 +68,21 @@
    mpf_class result(erfx);
    return result;
  }
+ /// implement log for mpf_class using MPFR ... I do not claim to know what issues the rounding presents here
+ inline mpf_class log(mpf_class x) {
+   mpfr_t x_r; mpfr_init(x_r);
+   mpfr_set_f(x_r, x.get_mpf_t(), MPFR_RNDN);
+
+   mpfr_t logx_r; mpfr_init(logx_r);
+   mpfr_log(logx_r, x_r, MPFR_RNDN);
+
+   mpf_t logx;
+   mpf_init(logx);
+   mpfr_get_f(logx, logx_r, MPFR_RNDN);
+   mpf_class result(logx);
+   return result;
+ }
+
 #else
  typedef double LIBINT2_REF_REALTYPE;
 #endif
@@ -158,7 +173,11 @@ struct ExpensiveMath {
     Real norm_const(unsigned int l1, unsigned int m1, unsigned int n1,
                     Real alpha1, const Real* A)
     {
-      return pow(2*alpha1/M_PI,0.75)*pow(4*alpha1,0.5*(l1+m1+n1))/sqrt(df[2*l1]*df[2*m1]*df[2*n1]);
+      const Real sqrt_twoalpha1_over_pi = sqrt(2*alpha1/M_PI);
+      const Real sqrtsqrt_twoalpha1_over_pi = sqrt(sqrt_twoalpha1_over_pi);
+      const Real sqrt_alpha1 = sqrt(alpha1);
+
+      return sqrt_twoalpha1_over_pi * sqrtsqrt_twoalpha1_over_pi * (2 * pow(sqrt_alpha1,l1+m1+n1))/sqrt(df[2*l1]*df[2*m1]*df[2*n1]);
     }
 };
 
