@@ -73,8 +73,7 @@ namespace libint2 {
    *  integrals! See Shell::renorm();
    */
   struct Shell {
-      typedef ::libint2::real_t real_t;
-      typedef ::libint2::realvec_t realvec_t;
+      typedef double real_t;
 
       /// contracted Gaussian = angular momentum + sph/cart flag + contraction coefficients
       struct Contraction {
