@@ -114,13 +114,23 @@ namespace libint2 {
 
 #define _local_min_macro(a,b) ((a) > (b) ? (a) : (b))
 
-  /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
-    * using asymptotic expansion.
-    * Slow for the sake of precision control -- and needs Real with very high precision -- only use for reference purposes.
+  /** Computes the Boys function, \f$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \f$,
+    * using single algorithm (asymptotic expansion). Slow for the sake of precision control.
+    * Useful in two cases:
+    * <ul>
+    *   <li> for reference purposes, if \c Real supports high/arbitrary precision, and </li>
+    *   <li> for moderate values of \f$ T \f$, if \c Real is a low-precision floating-point type.
+    *        N.B. FmEval_Reference2 , which can compute for all practical values of \f$ T \f$ and \f$ m \f$, is recommended
+    *        with standard \c Real types (\c double and \c float). </li>
+    * </ul>
+    *
+    * \note Precision is controlled heuristically, i.e. cannot be guaranteed mathematically;
+    *       will stop if absolute precision is reached, or precision of \c Real is exhausted.
+    *       It is important that \c std::numeric_limits<Real> is defined appropriately.
     *
     * @tparam Real the type to use for all floating-point computations.
     *         Must be able to compute logarithm and exponential, i.e.
-    *         log(x) and exp(x), where x is Real, must be a valid expression.
+    *         log(x) and exp(x), where x is Real, must be valid expressions.
     */
   template<typename Real>
   struct FmEval_Reference {
@@ -138,16 +148,16 @@ namespace libint2 {
         //Real rel_error;
         Real epsilon;
         const Real relative_zero = std::numeric_limits<Real>::epsilon();
-        const Real absolute_precision_o_10 = absolute_precision * 0.1;
+        const Real absolute_precision_o_1000 = absolute_precision * 0.001;
         do {
           denom += 1.0;
           old_term = term;
           term = old_term * T / denom;
           sum += term;
           //rel_error = term / sum;
-          // stop if adding a term smaller or equal to absolute_precision/10 and smaller than relative_zero * sum
+          // stop if adding a term smaller or equal to absolute_precision/1000 and smaller than relative_zero * sum
           // When sum is small in absolute value, the second threshold is more important
-          epsilon = _local_min_macro(absolute_precision_o_10, sum*relative_zero);
+          epsilon = _local_min_macro(absolute_precision_o_1000, sum*relative_zero);
         } while (term > epsilon || old_term < term);
 
         return sum;
@@ -155,7 +165,7 @@ namespace libint2 {
 
       /// fills up an array of Fm(T) for m in [0,mmax]
       /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
-      /// @param[in] x the Boys function argument
+      /// @param[in] T the Boys function argument
       /// @param[in] mmax the maximum value of m for which Boys function will be computed;
       /// @param[in] absolute_precision the absolute precision to which to compute the result
       static void eval(Real* Fm, Real T, size_t mmax, Real absolute_precision) {
