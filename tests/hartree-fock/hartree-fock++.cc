@@ -205,36 +205,71 @@ int main(int argc, char *argv[]) {
     auto ediff_rel = 0.0;
     auto ehf = 0.0;
     auto n2 = D.cols() * D.rows();
-    libint2::DIIS<Matrix> diis;
+    libint2::DIIS<Matrix> diis(2); // start DIIS on second iteration
+
+    // prepare for incremental Fock build
+    Matrix D_diff = D;
+    Matrix F = H;
+    bool reset_incremental_fock_formation = false;
+    bool incremental_Fbuild_started = false;
+    double start_incremental_F_threshold = 1e-5;
+    double next_reset_threshold = 0.0;
+    size_t last_reset_iteration = 0;
+
     do {
       const auto tstart = std::chrono::high_resolution_clock::now();
       ++iter;
 
-      // Last iteration's energy
+      // Last iteration's energy and density
       auto ehf_last = ehf;
+      Matrix D_last = D;
+
+      if (not incremental_Fbuild_started && rms_error < start_incremental_F_threshold) {
+        incremental_Fbuild_started = true;
+        reset_incremental_fock_formation = false;
+        last_reset_iteration = iter - 1;
+        next_reset_threshold = rms_error / 1e1;
+        std::cout << "== started incremental fock build" << std::endl;
+      }
+      if (reset_incremental_fock_formation || not incremental_Fbuild_started) {
+        F = H;
+        D_diff = D;
+      }
+      if (reset_incremental_fock_formation && incremental_Fbuild_started) {
+          reset_incremental_fock_formation = false;
+          last_reset_iteration = iter;
+          next_reset_threshold = rms_error / 1e1;
+          std::cout << "== reset incremental fock build" << std::endl;
+      }
 
       // build a new Fock matrix
-      auto F = H;
-      F += compute_2body_fock(obs, D, std::min(1e-8,std::max(rms_error/1e4,std::numeric_limits<double>::epsilon())), K);
+      const auto precision_F = std::min(1e-7,std::max(rms_error/1e4,std::numeric_limits<double>::epsilon()));
+      F += compute_2body_fock(obs, D_diff, precision_F, K);
 
       // compute HF energy with the non-extrapolated Fock matrix
       ehf = D.cwiseProduct(H+F).sum();
       ediff_rel = std::abs((ehf - ehf_last)/ehf);
 
-      // DIIS extrapolate F
-      Matrix FD_comm = F*D*S - S*D*F;
-      diis.extrapolate(F,FD_comm);
       // compute SCF error
+      Matrix FD_comm = F*D*S - S*D*F;
       rms_error = FD_comm.norm()/n2;
+      if (rms_error < next_reset_threshold || iter - last_reset_iteration >= 8)
+        reset_incremental_fock_formation = true;
+
+      // DIIS extrapolate F
+      Matrix F_diis = F; // extrapolated F cannot be used in incremental Fock build; only used to produce the density
+                         // make a copy of the unextrapolated matrix
+      diis.extrapolate(F_diis,FD_comm);
 
       // solve F C = e S C
-      Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> gen_eig_solver(F, S);
+      Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> gen_eig_solver(F_diis, S);
       auto eps = gen_eig_solver.eigenvalues();
       auto C = gen_eig_solver.eigenvectors();
 
       // compute density, D = C(occ) . C(occ)T
       auto C_occ = C.leftCols(ndocc);
       D = C_occ * C_occ.transpose();
+      D_diff = D - D_last;
 
       const auto tstop = std::chrono::high_resolution_clock::now();
       const std::chrono::duration<double> time_elapsed = tstop - tstart;
