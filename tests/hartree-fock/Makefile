@@ -22,11 +22,11 @@ check:: check1 check2
 
 check1:: $(TEST1)
 	./$(TEST1) $(SRCDIR)/h2o.xyz | \
- awk ' {print} /^\*\*/ { eref = -74.942080057682; tol = 1e-11; if ($$5 - eref < tol && eref - $$5 < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }'
+ awk ' {print} /^\*\*/ { eref = -74.942080057698; tol = 1e-11; if ($$5 - eref < tol && eref - $$5 < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }'
 
 check2::  $(TEST2)
 	./$(TEST2) $(SRCDIR)/h2o.xyz | \
- awk ' {print} /^\*\*/ { eref = -76.003354058441; tol = 1e-11; if ($$5 - eref < tol && eref - $$5 < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }'
+ awk ' {print} /^\*\*/ { eref = -76.003354058456; tol = 1e-11; if ($$5 - eref < tol && eref - $$5 < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }'
 
 $(TEST1): $(CXXTEST1OBJ) $(COMPILER_LIB)
 	$(LD) -o $@ $(LDFLAGS) $^ $(COMPUTE_LIB) $(SYSLIBS)
