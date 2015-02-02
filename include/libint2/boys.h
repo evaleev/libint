@@ -232,7 +232,7 @@ namespace libint2 {
     * using Chebyshev interpolation.
     * based on the code from ORCA by Dr. Frank Neese.
     */
-  template <typename Real>
+  template <typename Real = double>
   class FmEval_Chebyshev3 {
 
       static const int NGRID = 4096; //!< number of grid points
@@ -289,7 +289,7 @@ namespace libint2 {
       /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
       /// @param[in] x the Boys function argument
       /// @param[in] mmax the maximum value of m for which Boys function will be computed; mmax must be <= the value returned by max_m
-      inline void eval(double* Fm, double x, int m_max) const {
+      inline void eval(Real* Fm, Real x, int m_max) const {
 
         // large T => use upward recursion
         // cost = 1 div + 1 sqrt + (1 + 2*(m-1)) muls
@@ -315,8 +315,8 @@ namespace libint2 {
         const int m_min = INTERPOLATION_AND_RECURSION ? m_max : 0;
 
 #if defined(__AVX__) || defined(__SSE2__)
-        const double x2 = xd*xd;
-        const double x3 = x2*xd;
+        const auto x2 = xd*xd;
+        const auto x3 = x2*xd;
 #  if defined (__AVX__)
         libint2::simd::VectorAVXDouble xvec(1., xd, x2, x3);
 #  else // defined(__SSE2__)
@@ -325,7 +325,7 @@ namespace libint2 {
 #  endif
 #endif // SSE2 || AVX
 
-        const double *d = c + INTERPOLATION_ORDER * (iv * (mmax+1) + m_min); // ptr to the interpolation data for m=mmin
+        const Real *d = c + INTERPOLATION_ORDER * (iv * (mmax+1) + m_min); // ptr to the interpolation data for m=mmin
         int m = m_min;
 #if defined(__AVX__)
         if (m_max-m >=3) {
@@ -414,8 +414,8 @@ namespace libint2 {
         if (INTERPOLATION_AND_RECURSION && m_max > 0) {
           const bool INTERPOLATION_AND_RECURSION_is_slow_on_modern_CPU = false;
           assert(INTERPOLATION_AND_RECURSION_is_slow_on_modern_CPU);
-          const double x2 = 2.0 * x;
-          const double exp_x = exp(-x);
+          const Real x2 = 2.0 * x;
+          const Real exp_x = exp(-x);
           for (int m = m_max - 1; m >= 0; m--)
             Fm[m] = (Fm[m + 1] * x2 + exp_x) * numbers_.twoi1[m];
         }
@@ -432,7 +432,7 @@ namespace libint2 {
        m    : the F[m] to generate
        ON OUTPUT cc   : cc[0]-cc[3] hold the coefficients
        ---------------------------------------------------------------------------- */
-      void MakeCoeffs(double a, double b, double *cc, int m) {
+      void MakeCoeffs(double a, double b, Real *cc, int m) {
         int k, j;
         double f[128], ac[128], Fm[128];
         double sum;
@@ -469,12 +469,17 @@ namespace libint2 {
         double arg = -XXX / Delta;
         double arg2 = arg * arg;
         double arg3 = arg2 * arg;
-        cc[0] = (ac[0] - ac[2]) + (ac[1] - 3.0 * ac[3]) * arg
+        auto cc0 = (ac[0] - ac[2]) + (ac[1] - 3.0 * ac[3]) * arg
             + 2.0 * ac[2] * arg2 + 4.0 * ac[3] * arg3;
-        cc[1] = (2.0 * ac[1] - 6.0 * ac[3]) + 8.0 * ac[2] * arg
+
+        auto cc1 = (2.0 * ac[1] - 6.0 * ac[3]) + 8.0 * ac[2] * arg
             + 24.0 * ac[3] * arg2;
-        cc[2] = 8.0 * ac[2] + 48.0 * ac[3] * arg;
-        cc[3] = 32.0 * ac[3];
+        auto cc2 = 8.0 * ac[2] + 48.0 * ac[3] * arg;
+        auto cc3 = 32.0 * ac[3];
+        cc[0] = cc0;
+        cc[1] = cc1;
+        cc[2] = cc2;
+        cc[3] = cc3;
       }
 
       /* ----------------------------------------------------------------------------
@@ -490,15 +495,13 @@ namespace libint2 {
 
         // get memory
         void* result;
-        posix_memalign(&result, 4*sizeof(double), (mmax + 1) * NGRID * INTERPOLATION_ORDER * sizeof(double));
-        c = static_cast<double*>(result);
-
-        //std::cout << "Allocated interpolation table of " << (mmax + 1) * NGRID * interpolation_order << " reals" << std::endl;
+        posix_memalign(&result, 4*sizeof(Real), (mmax + 1) * NGRID * INTERPOLATION_ORDER * sizeof(Real));
+        c = static_cast<Real*>(result);
 
         // make expansion coefficients for each grid value of T
         for (iv = 0; iv < NGRID; iv++) {
-          const double a = iv * delta;
-          const double b = a + delta;
+          const auto a = iv * delta;
+          const auto b = a + delta;
 
           // loop over all m values and make the coefficients
           for (im = 0; im <= mmax; im++) {
@@ -521,22 +524,21 @@ namespace libint2 {
     * @tparam Real the type to use for all floating-point computations. Must support std::exp, std::pow, std::fabs, std::max, and std::floor.
     * @tparam INTERPOLATION_ORDER the interpolation order. The higher the order the less memory this object will need, but the computational cost will increase (usually very slightly)
     */
-  template<typename Real, int INTERPOLATION_ORDER = 6>
+  template<typename Real = double, int INTERPOLATION_ORDER = 7>
   class FmEval_Taylor {
     public:
       static const int max_interp_order = 8;
       static const bool INTERPOLATION_AND_RECURSION = false; // compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
-      const Real relative_zero_;
-      const Real soft_zero_;
+      const double soft_zero_;
 
       /// Constructs the object to be able to compute Boys funcion for m in [0,mmax], with relative \c precision
       FmEval_Taylor(unsigned int mmax, Real precision) :
-          relative_zero_(1e-15), soft_zero_(1e-6), cutoff_(precision), numbers_(
+          soft_zero_(1e-6), cutoff_(precision), numbers_(
               INTERPOLATION_ORDER + 1, 2 * (mmax + INTERPOLATION_ORDER - 1)) {
 
         assert(mmax <= 63);
 
-        const Real sqrt_pi = std::sqrt(M_PI);
+        const double sqrt_pi = std::sqrt(M_PI);
 
         /*---------------------------------------
          We are doing Taylor interpolation with
@@ -559,26 +561,26 @@ namespace libint2 {
            The solution is the max T for which to do
            the interpolation
            ------------------------------------------*/
-          Real T = -log(cutoff_);
-          const Real egamma = cutoff_ * sqrt_pi * numbers_.df[2 * m]
+          double T = -log(cutoff_);
+          const double egamma = cutoff_ * sqrt_pi * numbers_.df[2 * m]
               / std::pow(2.0, m);
-          Real T_new = T;
-          Real func;
+          double T_new = T;
+          double func;
           do {
-            const Real damping_factor = 0.2;
+            const double damping_factor = 0.2;
             T = T_new;
             /* f(T) = the difference between LHS and RHS of the equation above */
             func = std::pow(T, m - 0.5) * std::exp(-T) - egamma;
-            const Real dfuncdT = ((m - 0.5) * std::pow(T, m - 1.5)
+            const double dfuncdT = ((m - 0.5) * std::pow(T, m - 1.5)
                 - std::pow(T, m - 0.5)) * std::exp(-T);
             /* f(T) has 2 roots and has a maximum in between. If f'(T) > 0 we are to the left of the hump. Make a big step to the right. */
             if (dfuncdT > 0.0) {
               T_new *= 2.0;
             } else {
               /* damp the step */
-              Real deltaT = -func / dfuncdT;
-              const Real sign_deltaT = (deltaT > 0.0) ? 1.0 : -1.0;
-              const Real max_deltaT = damping_factor * T;
+              double deltaT = -func / dfuncdT;
+              const double sign_deltaT = (deltaT > 0.0) ? 1.0 : -1.0;
+              const double max_deltaT = damping_factor * T;
               if (std::fabs(deltaT) > max_deltaT)
                 deltaT = sign_deltaT * max_deltaT;
               T_new = T + deltaT;
@@ -611,7 +613,7 @@ namespace libint2 {
         /*--- do the mmax first ---*/
         for (int T_idx = max_T_; T_idx >= 0; --T_idx) {
           const double T = T_idx * delT_;
-          libint2::FmEval_Reference<Real>::eval(grid_[T_idx], T, max_m_, cutoff_);
+          libint2::FmEval_Reference2<double>::eval(grid_[T_idx], T, max_m_, 1e-100);
         }
       }
 
@@ -688,8 +690,8 @@ namespace libint2 {
         else
         {
           const int T_ind = (int) (0.5 + T * oodelT_);
-          const double h = T_ind * delT_ - T;
-          const double* F_row = grid_[T_ind] + mmin;
+          const Real h = T_ind * delT_ - T;
+          const Real* F_row = grid_[T_ind] + mmin;
 
 #if defined (__AVX__)
           libint2::simd::VectorAVXDouble h0123, h4567;
@@ -781,7 +783,7 @@ namespace libint2 {
          And then do downward recursion in j
          ------------------------------------*/
         if (INTERPOLATION_AND_RECURSION && mmin > 0) {
-          const double exp_mT = std::exp(-T);
+          const Real exp_mT = std::exp(-T);
           for (int m = mmin - 1; m >= 0; --m) {
             Fm[m] = (exp_mT + two_T * Fm[m+1]) * numbers_.twoi1[m];
           }
@@ -803,7 +805,7 @@ namespace libint2 {
        for a given m and T_idx <= max_T_idx[m] use Taylor interpolation,
        for a given m and T_idx > max_T_idx[m] use the asymptotic formula */
 
-      ExpensiveNumbers<Real> numbers_;
+      ExpensiveNumbers<double> numbers_;
 
       /**
        * Power series estimate of the error introduced by replacing
@@ -1200,8 +1202,9 @@ namespace libint2 {
        * @param[in] scr if \c k ==-1 and need this to be reentrant, must provide ptr to the per-thread \c GaussianGmEvalScratch<Real,-1> object;
        *                no need to specify \c scr otherwise
        */
+      template <typename AnyReal>
       void eval(Real* Gm, Real rho, Real T, size_t mmax,
-                const std::vector<std::pair<Real, Real> >& geminal,
+                const std::vector<std::pair<AnyReal, AnyReal> >& geminal,
                 void* scr = 0) {
 
         std::fill(Gm, Gm+mmax+1, Real(0));
@@ -1215,7 +1218,7 @@ namespace libint2 {
           }
         }
 
-        typedef typename std::vector<std::pair<Real, Real> >::const_iterator citer;
+        typedef typename std::vector<std::pair<AnyReal, AnyReal> >::const_iterator citer;
         const citer gend = geminal.end();
         for(citer i=geminal.begin(); i!= gend; ++i) {
 

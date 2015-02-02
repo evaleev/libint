@@ -62,6 +62,8 @@ namespace libint2 {
         _invalid
       };
 
+      typedef libint2::FmEval_Taylor<real_t, 7> coulomb_core_eval_t;
+
       /// creates a default (unusable) OneBodyEngine; to be used as placeholder for copying a usable engine
       OneBodyEngine() : type_(_invalid), primdata_(), lmax_(-1) {}
 
@@ -77,7 +79,9 @@ namespace libint2 {
       /// \warning currently solid harmonics Gaussians are not supported
       OneBodyEngine(integral_type t, size_t max_nprim, int max_l, int deriv_order = 0) :
         type_(t), primdata_(max_nprim * max_nprim), lmax_(max_l), deriv_order_(deriv_order),
-        fm_eval_(t == nuclear ? libint2::FmEval_Chebyshev3::instance(2*max_l+deriv_order) : 0) {
+        fm_eval_(t == nuclear ? coulomb_core_eval_t::instance(2*max_l+deriv_order, 1e-25) : 0)
+        //fm_eval_(0)
+      {
         initialize();
       }
 
@@ -377,8 +381,16 @@ namespace libint2 {
                            primdata.PC_z[0] * primdata.PC_z[0];
           const auto U = gammap * PC2;
           const auto ltot = s1.contr[0].l + s2.contr[0].l;
-          double* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
+          auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
           fm_eval_->eval(fm_ptr, U, ltot);
+
+          double fm_ref[25];
+          libint2::FmEval_Reference2<real_t>::eval(fm_ref, U, ltot, 1e-20);
+          for(int m=0;m<=ltot;++m)
+            if (std::abs((fm_ref[m] - fm_ptr[m])/fm_ref[m]) > 5e-15) {
+              std::cout << "m=" << m << " T=" << U << " relerr=" << std::abs((fm_ref[m] - fm_ptr[m])/fm_ref[m]) << " abserr=" << std::abs((fm_ref[m] - fm_ptr[m])) << std::endl;
+            }
+
 
           decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
           const auto pfac = - q_[oset].first * sqrt(gammap) * two_o_sqrt_PI * ovlp_ss;
@@ -398,7 +410,7 @@ namespace libint2 {
       size_t deriv_order_;
       std::vector<std::pair<double, std::array<double,3>>> q_;
 
-      std::shared_ptr<libint2::FmEval_Chebyshev3> fm_eval_;
+      std::shared_ptr<coulomb_core_eval_t> fm_eval_;
 
       std::vector<real_t> scratch_; // for transposes and/or transforming to solid harmonics
 
@@ -596,7 +608,8 @@ namespace libint2 {
 
   template <MultiplicativeSphericalTwoBodyKernel Kernel> struct TwoBodyEngineTraits;
   template <> struct TwoBodyEngineTraits<Coulomb> {
-      typedef libint2::FmEval_Chebyshev3 core_eval_type;
+      typedef libint2::FmEval_Chebyshev3<double> core_eval_type;
+      //typedef libint2::FmEval_Taylor<double, 7> core_eval_type;
       typedef struct {} oper_params_type;
   };
   template <> struct TwoBodyEngineTraits<cGTG> {
@@ -655,7 +668,7 @@ namespace libint2 {
         primdata_(max_nprim * max_nprim * max_nprim * max_nprim),
         spbra_(max_nprim), spket_(max_nprim),
         lmax_(max_l), deriv_order_(deriv_order),
-        core_eval_(core_eval_type::instance(4*lmax_ + deriv_order, precision))
+        core_eval_(core_eval_type::instance(4*lmax_ + deriv_order, std::min(std::numeric_limits<real_t>::epsilon(),precision)))
       {
         set_precision(precision);
         initialize();
@@ -1228,7 +1241,7 @@ namespace libint2 {
     const auto gammapq = gammap + gammaq;
     const auto sqrt_gammapq = sqrt(gammapq);
     const auto oogammapq = 1.0 / (gammapq);
-    double pfac = two_times_M_PI_to_25 * K12 * sqrt_gammapq * oogammapq;
+    auto pfac = two_times_M_PI_to_25 * K12 * sqrt_gammapq * oogammapq;
     pfac *= c0 * c1 * c2 * c3;
 
     if (std::abs(pfac) < precision_)
@@ -1236,7 +1249,7 @@ namespace libint2 {
 
     const auto rho = gammap * gammaq * oogammapq;
     const auto T = PQ2*rho;
-    double* fm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
+    auto* fm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
     const auto mmax = amtot + deriv_order_;
 
     detail::TwoBodyEngineDispatcher<Kernel>::core_eval(this, fm_ptr, mmax, T, rho);
