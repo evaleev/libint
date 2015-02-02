@@ -430,10 +430,20 @@ Matrix compute_schwartz_ints(const BasisSet& obs) {
 
   const auto nsh = obs.size();
   Matrix K = Matrix::Zero(nsh,nsh);
+#ifdef _OPENMP
+  const auto nthreads = omp_get_max_threads();
+#else
+  const auto nthreads = 1;
+#endif
 
   // construct the 2-electron repulsion integrals engine
   typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
-  auto engine = coulomb_engine_type(obs.max_nprim(), obs.max_l(), 0);
+  std::vector<coulomb_engine_type> engines(nthreads);
+  engines[0] = coulomb_engine_type(obs.max_nprim(), obs.max_l(), 0);
+  engines[0].set_precision(0.); // !!! very important: cannot screen primitives in Schwartz computation !!!
+  for(size_t i=1; i!=nthreads; ++i) {
+    engines[i] = engines[0];
+  }
 
   std::cout << "computing Schwartz bound prerequisites ... ";
 
@@ -441,19 +451,39 @@ Matrix compute_schwartz_ints(const BasisSet& obs) {
   timer.set_now_overhead(25);
   timer.start(0);
 
+#ifdef _OPENMP
+  #pragma omp parallel
+#endif
   {
+#ifdef _OPENMP
+    auto thread_id = omp_get_thread_num();
+#else
+    auto thread_id = 0;
+#endif
+
     // loop over permutationally-unique set of shells
     for(auto s1=0l, s12=0l; s1!=nsh; ++s1) {
 
       auto n1 = obs[s1].size();// number of basis functions in this shell
 
-      for(auto s2=0; s2<=s1; ++s2) {
+      for(auto s2=0; s2<=s1; ++s2, ++s12) {
+
+        if (s12 % nthreads != thread_id)
+          continue;
 
         auto n2 = obs[s2].size();
+        auto n12 = n1*n2;
 
-        const auto* buf = engine.compute(obs[s1], obs[s2], obs[s1], obs[s2]);
+        const auto* buf = engines[thread_id].compute(obs[s1], obs[s2], obs[s1], obs[s2]);
 
-        Eigen::Map<const Matrix> shblk(buf, n1, n2);
+        // extract ints into an Eigen Matrix
+        Matrix shblk = Matrix::Zero(n1, n2);
+        for(size_t f1=0, f12=0; f1!=n1; ++f1)
+          for(size_t f2=0; f2!=n2; ++f2, ++f12) {
+            const auto int1212 = buf[f12 * n12 + f12];
+            shblk(f1, f2) = int1212;
+          }
+
         K(s1,s2) = K(s2,s1) = std::sqrt(shblk.lpNorm<Eigen::Infinity>());
 
       }
