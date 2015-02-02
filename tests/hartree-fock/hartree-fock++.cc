@@ -69,7 +69,7 @@ Matrix compute_schwartz_ints(const BasisSet& obs);
 Matrix compute_2body_fock(const BasisSet& obs,
                           const Matrix& D,
                           double precision = std::numeric_limits<double>::epsilon(), // discard contributions smaller than this
-                          const Matrix& Schwartz = Matrix() // K_ij = ||(ij|ij)||_2; if empty, do not Schwartz screen
+                          const Matrix& Schwartz = Matrix() // K_ij = sqrt(||(ij|ij)||_\infty); if empty, do not Schwartz screen
                          );
 // an Fock builder that can accept densities expressed a separate basis
 Matrix compute_2body_fock_general(const BasisSet& obs,
