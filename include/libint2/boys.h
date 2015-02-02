@@ -399,7 +399,7 @@ namespace libint2 {
 
           //        // check against the reference value
           //        if (false) {
-          //          double refvalue = FmEval_Reference<double>::eval(x, m, 1e-15); // compute F(T)
+          //          double refvalue = FmEval_Reference2<double>::eval(x, m, 1e-15); // compute F(T)
           //          if (abs(refvalue - Fm[m]) > 1e-10) {
           //            std::cout << "T = " << x << " m = " << m << " cheb = "
           //                      << Fm[m] << " ref = " << refvalue << std::endl;
@@ -442,9 +442,9 @@ namespace libint2 {
         double HalfDelta = 0.5 * Delta;
         double XXX = a + Delta;
 
-        const double absolute_precision = 1e-20; // compute as precisely as possible
-        FmEval_Reference<double>::eval(Fm, XXX, m + INTERPOLATION_ORDER + 20,
-                                       absolute_precision);
+        const double absolute_precision = 1e-100; // compute as precisely as possible
+        FmEval_Reference2<double>::eval(Fm, XXX, m + INTERPOLATION_ORDER + 20,
+                                        absolute_precision);
 
         for (k = 0; k <= INTERPOLATION_ORDER + 20; k++) {
           if ((k % 2) == 0)
@@ -768,7 +768,7 @@ namespace libint2 {
 
           // check against the reference value
 //          if (false) {
-//            double refvalue = FmEval_Reference<double>::eval(T, mmax, 1e-15); // compute F(T) with m=mmax
+//            double refvalue = FmEval_Reference2<double>::eval(T, mmax, 1e-15); // compute F(T) with m=mmax
 //            if (abs(refvalue - Fm[mmax]) > 1e-14) {
 //              std::cout << "T = " << T << " m = " << mmax << " cheb = "
 //                  << Fm[mmax] << " ref = " << refvalue << std::endl;

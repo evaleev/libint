@@ -723,7 +723,7 @@ void prep_libint2(LibintEval* erievals,
             pfac *= c0 * c1 * c2 * c3;
 
             //calc_f(F, amtot, PQ2 * gammapq);
-            //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
+            //libint2::FmEval_Reference2<double>::eval(F,PQ2*gammapq,amtot,1e-15);
             fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
             //fmeval_taylor.eval(F,PQ2*gammapq,amtot);
 
@@ -1080,7 +1080,7 @@ void prep_libint2(LibintEval* erievals,
             pfac *= c0 * c1 * c2 * c3;
 
             //calc_f(F, amtot, PQ2 * gammapq);
-            //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
+            //libint2::FmEval_Reference2<double>::eval(F,PQ2*gammapq,amtot,1e-15);
             fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
             //fmeval_taylor.eval(F,PQ2*gammapq,amtot);
 
