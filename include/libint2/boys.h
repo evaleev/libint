@@ -189,21 +189,62 @@ namespace libint2 {
   };
 
   /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
+    * using multi-algorithm approach (upward precision for T>=30, and asymptotic summation for T<30).
+    * This is slow and should be used for reference purposes, e.g. computing the interpolation tables.
+    * Precision is not always guaranteed as it is limited by the precision of \c Real type.
+    * When \c Real is \c double, can maintain 1e-14 precision for up to m=38 and 0<=T<=1e9 .
+    *
+    * @tparam Real the type to use for all floating-point computations.
+    *         Must be able to compute logarithm, exponential, square root, and error function, i.e.
+    *         log(x), exp(x), sqrt(x), and erf(x), where x is Real, must be valid expressions.
+    */
+  template<typename Real>
+  struct FmEval_Reference2 {
+
+      /// fills up an array of Fm(T) for m in [0,mmax]
+      /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
+      /// @param[in] t the Boys function argument
+      /// @param[in] mmax the maximum value of m for which Boys function will be computed;
+      /// @param[in] absolute_precision the absolute precision to which to compute the result
+      static void eval(Real* Fm, Real t, size_t mmax, Real absolute_precision) {
+
+        if (t < Real(30)) {
+          FmEval_Reference<Real>::eval(Fm,t,mmax,absolute_precision);
+        }
+        else {
+          const Real two_over_sqrt_pi{1.128379167095512573896158903121545171688101258657997713688171443421284936882986828973487320404214727};
+          const Real K = 1.0/two_over_sqrt_pi;
+
+          auto t2 = 2*t;
+          auto et = exp(-t);
+          auto sqrt_t = sqrt(t);
+          Fm[0] = K*erf(sqrt_t)/sqrt_t;
+          if (mmax > 0)
+          for(size_t m=0; m<=mmax-1; m++) {
+            Fm[m+1] = ((2*m + 1)*Fm[m] - et)/(t2);
+          }
+        }
+      }
+
+  };
+
+  /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
     * using Chebyshev interpolation.
     * based on the code from ORCA by Dr. Frank Neese.
     */
+  template <typename Real>
   class FmEval_Chebyshev3 {
 
       static const int NGRID = 4096; //!< number of grid points
       static const int INTERPOLATION_ORDER = 4;   //!< interpolation order + 1
       static const bool INTERPOLATION_AND_RECURSION = false; //!< compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
 
-      const double T_crit;          //!< criical value of T above which safe to use upward recusion
-      const double delta;           //!< grid size
-      const double one_over_delta;  //! 1/delta
+      const Real T_crit;          //!< critical value of T above which safe to use upward recusion
+      const Real delta;           //!< grid size
+      const Real one_over_delta;  //! 1/delta
       int mmax;                     //!< the maximum m that is tabulated
       ExpensiveNumbers<double> numbers_;
-      double *c; /* the Chebyshev coefficients table, NGRID by mmax*interpolation_order */
+      Real *c; /* the Chebyshev coefficients table, NGRID by mmax*interpolation_order */
 
     public:
       /// \param m_max maximum value of the Boys function index; set to -1 to skip initialization
