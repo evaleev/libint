@@ -254,9 +254,14 @@ int main(int argc, char *argv[]) {
 
 // this reads the geometry in the standard xyz format supported by most chemistry software
 std::vector<Atom> read_dotxyz(std::istream& is) {
+  // line 1 = # of atoms
   size_t natom;
   is >> natom;
+  // read off the rest of line 1 and discard
+  std::string rest_of_line;
+  std::getline(is, rest_of_line);
 
+  // line 2 = comment (possibly empty)
   std::string comment;
   std::getline(is, comment);
 
