@@ -40,6 +40,9 @@ namespace libint2 {
     libint2_static_cleanup();
     libint2_cleanup_shg();
   }
+  inline void finalize() {
+    ::libint2::cleanup();
+  }
 }
 
 #include <libint2/engine.h>
