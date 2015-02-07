@@ -30,6 +30,7 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <atomic>
 
 // Eigen matrix algebra library
 #include <Eigen/Dense>
@@ -557,6 +558,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
   }
+  std::atomic<size_t> num_ints_computed{0};
 
 #if defined(REPORT_INTEGRAL_TIMINGS)
   std::vector<libint2::Timers<1>> timers(nthreads);
@@ -616,6 +618,8 @@ Matrix compute_2body_fock(const BasisSet& obs,
 
             auto bf4_first = shell2bf[s4];
             auto n4 = obs[s4].size();
+
+            num_ints_computed += n1*n2*n3*n4;
 
             // compute the permutational degeneracy (i.e. # of equivalents) of the given shell set
             auto s12_deg = (s1 == s2) ? 1.0 : 2.0;
@@ -709,6 +713,8 @@ Matrix compute_2body_fock(const BasisSet& obs,
 #endif
 
   Matrix GG = 0.5 * (G[0] + G[0].transpose());
+
+  std::cout << "# of integrals = " << num_ints_computed << std::endl;
 
   // symmetrize the result and return
   return GG;
