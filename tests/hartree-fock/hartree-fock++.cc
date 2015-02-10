@@ -35,6 +35,12 @@
 // Eigen matrix algebra library
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
+#include <Eigen/Cholesky>
+
+// have BTAS library?
+#ifdef LIBINT2_HAVE_BTAS
+# include <btas/btas.h>
+#endif // LIBINT2_HAVE_BTAS
 
 // Libint Gaussian integrals library
 #include <libint2.hpp>
@@ -79,6 +85,13 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                                   bool D_is_sheldiagonal = false, // set D_is_shelldiagonal if doing SOAD
                                   double precision = std::numeric_limits<double>::epsilon() // discard contributions smaller than this
                                  );
+
+#ifdef LIBINT2_HAVE_BTAS
+// a DF-based builder, using coefficients of occupied MOs
+Matrix compute_2body_fock_dfC(const BasisSet& obs,
+                              const BasisSet& dfbs,
+                              const Matrix& Cocc);
+#endif // LIBINT2_HAVE_BTAS
 
 namespace libint2 {
   int nthreads;
@@ -188,6 +201,15 @@ int main(int argc, char *argv[]) {
         const auto tstop = std::chrono::high_resolution_clock::now();
         const std::chrono::duration<double> time_elapsed = tstop - tstart;
         std::cout << "done (" << time_elapsed.count() << " s)" << std::endl;
+
+#ifdef LIBINT2_HAVE_BTAS
+        auto dfbs = BasisSet("cc-pVDZ-RI", atoms);
+        cout << "DF basis rank = " << dfbs.nbf() << endl;
+        auto tmp = compute_2body_fock_dfC(obs,
+                                          dfbs,
+                                          C_occ);
+        assert(false);
+#endif // LIBINT2_HAVE_BTAS
 
       }
     }
@@ -532,6 +554,69 @@ Matrix compute_schwartz_ints(const BasisSet& obs) {
   return K;
 }
 
+Matrix compute_2body_2index_ints(const BasisSet& bs)
+{
+  const auto n = bs.nbf();
+  const auto nshells = bs.size();
+#ifdef _OPENMP
+  const auto nthreads = omp_get_max_threads();
+#else
+  const auto nthreads = 1;
+#endif
+  Matrix result = Matrix::Zero(n,n);
+
+  // build engines for each thread
+  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
+  std::vector<coulomb_engine_type> engines(nthreads);
+  engines[0] = coulomb_engine_type(bs.max_nprim(), bs.max_l(), 0);
+  for(size_t i=1; i!=nthreads; ++i) {
+    engines[i] = engines[0];
+  }
+
+  auto shell2bf = bs.shell2bf();
+  auto unitshell = Shell::unit();
+
+#ifdef _OPENMP
+  #pragma omp parallel
+#endif
+  {
+#ifdef _OPENMP
+    auto thread_id = omp_get_thread_num();
+#else
+    auto thread_id = 0;
+#endif
+
+    // loop over unique shell pairs, {s1,s2} such that s1 >= s2
+    // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
+    for(auto s1=0l, s12=0l; s1!=nshells; ++s1) {
+
+      auto bf1 = shell2bf[s1]; // first basis function in this shell
+      auto n1 = bs[s1].size();
+
+      for(auto s2=0; s2<=s1; ++s2) {
+
+        if (s12 % nthreads != thread_id)
+          continue;
+
+        auto bf2 = shell2bf[s2];
+        auto n2 = bs[s2].size();
+
+        // compute shell pair; return is the pointer to the buffer
+        const auto* buf = engines[thread_id].compute(bs[s1], unitshell, bs[s2], unitshell);
+
+        // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
+        Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+        result.block(bf1, bf2, n1, n2) = buf_mat;
+        if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
+        result.block(bf2, bf1, n2, n1) = buf_mat.transpose();
+
+      }
+    }
+  } // omp parallel
+
+  return result;
+}
+
 Matrix compute_2body_fock(const BasisSet& obs,
                           const Matrix& D,
                           double precision,
@@ -853,3 +938,247 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
   // symmetrize the result and return
   return 0.5 * (G[0] + G[0].transpose());
 }
+
+#ifdef LIBINT2_HAVE_BTAS
+Matrix compute_2body_fock_dfC(const BasisSet& obs,
+                              const BasisSet& dfbs,
+                              const Matrix& Cocc) {
+
+#ifdef _OPENMP
+  const auto nthreads = omp_get_max_threads();
+#else
+  const auto nthreads = 1;
+#endif
+
+  const auto n          =  obs.nbf();
+  const auto ndf        = dfbs.nbf();
+  const auto nshells    =  obs.size();
+  const auto nshells_df = dfbs.size();
+  const auto unitshell = libint2::Shell::unit();
+
+  // construct the 2-electron 3-center repulsion integrals engine
+  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
+  std::vector<coulomb_engine_type> engines(nthreads);
+  engines[0] = coulomb_engine_type(std::max(obs.max_nprim(), dfbs.max_nprim()),
+                                   std::max(obs.max_l(), dfbs.max_l()), 0);
+  for(size_t i=1; i!=nthreads; ++i) {
+    engines[i] = engines[0];
+  }
+
+#ifndef _OPENMP
+  libint2::Timers<3> timer;
+  timer.set_now_overhead(25);
+#endif // not defined _OPENMP
+
+  auto shell2bf    =  obs.shell2bf();
+  auto shell2bf_df = dfbs.shell2bf();
+
+  typedef btas::RangeNd<CblasRowMajor, std::array<long, 3> > Range3d;
+  typedef btas::Tensor<double, Range3d> Tensor3d;
+  Tensor3d xyZ{n, n, ndf};
+
+#ifdef _OPENMP
+  #pragma omp parallel
+#endif
+  {
+#ifdef _OPENMP
+    auto thread_id = omp_get_thread_num();
+#else
+    auto thread_id = 0;
+#endif
+
+    // loop over permutationally-unique set of shells
+    for(auto s1=0l, s123=0l; s1!=nshells; ++s1) {
+
+      auto bf1_first = shell2bf[s1]; // first basis function in this shell
+      auto n1 = obs[s1].size();// number of basis functions in this shell
+
+      for(auto s2=0; s2!=nshells; ++s2) {
+
+        auto bf2_first = shell2bf[s2];
+        auto n2 = obs[s2].size();
+        const auto n12 = n1*n2;
+
+        for(auto s3=0; s3!=nshells_df; ++s3, ++s123) {
+
+          if (s123 % nthreads != thread_id)
+            continue;
+
+          auto bf3_first = shell2bf_df[s3];
+          auto n3 = dfbs[s3].size();
+          const auto n123 = n12*n3;
+
+#ifndef _OPENMP
+          timer.start(0);
+#endif
+
+          const auto* buf = engines[thread_id].compute(obs[s1], obs[s2], dfbs[s3], unitshell);
+
+#ifndef _OPENMP
+          timer.stop(0);
+#endif
+
+
+#ifndef _OPENMP
+          timer.start(1);
+#endif
+
+          auto lower_bound = {bf1_first, bf2_first, bf3_first};
+          auto upper_bound = {bf1_first+n1, bf2_first+n2, bf3_first+n3};
+          auto view = btas::make_view( xyZ.range().slice(lower_bound, upper_bound),
+                                       xyZ.storage());
+          std::copy(buf, buf+n123, view.begin());
+
+#ifndef _OPENMP
+          timer.stop(1);
+#endif
+
+        } // s3
+      } // s2
+    } // s1
+
+  } // omp parallel
+
+#ifndef _OPENMP
+  std::cout << "time for integrals = " << timer.read(0) << std::endl;
+  std::cout << "time for copying into BTAS = " << timer.read(1) << std::endl;
+  engines[0].print_timers();
+#endif // not defined _OPENMP
+
+  timer.start(2);
+
+  Matrix V = compute_2body_2index_ints(dfbs);
+  Eigen::LLT<Matrix> V_LLt(V);
+  Matrix I = Matrix::Identity(ndf, ndf);
+  auto L = V_LLt.matrixL();
+  Matrix V_L = L;
+  Matrix Linv = L.solve(I).transpose();
+  // check
+//  std::cout << "||V - L L^t|| = " << (V - V_L * V_L.transpose()).norm() << std::endl;
+//  std::cout << "||I - L L^-1^t|| = " << (I - V_L * Linv.transpose()).norm() << std::endl;
+//  std::cout << "||V^-1 - L^-1 L^-1^t|| = " << (V.inverse() - Linv * Linv.transpose()).norm() << std::endl;
+
+  typedef btas::RangeNd<CblasRowMajor, std::array<long, 2> > Range2d;
+  typedef btas::Tensor<double, Range2d> Tensor2d;
+  Tensor2d K{ndf, ndf};
+  std::copy(Linv.data(), Linv.data()+ndf*ndf, K.begin());
+
+  Tensor3d xyK{n, n, ndf};
+  btas::contract(1.0, xyZ, {1,2,3}, K, {3,4}, 0.0, xyK, {1,2,4});
+  xyZ = Tensor3d{0,0,0};
+
+  typedef Eigen::Map<const Matrix> ConstMap;
+  typedef Eigen::Map<Matrix> Map;
+  const auto nocc = Cocc.cols();
+  ConstMap Coccv(Cocc.data(), n, nocc);
+  Matrix Cocc_t = Coccv.transpose();
+
+  Tensor3d xiK{n, nocc, ndf};
+  for(auto x=0ul; x!=n; ++x) {
+    ConstMap yK(&xyK.storage()[0] + x*n*ndf, n, ndf);
+    Map iK(&xiK.storage()[0] + x*nocc*ndf, nocc, ndf);
+    iK = Cocc_t * yK;
+  }
+
+  Tensor2d exchange{n, n};
+  btas::contract(1.0, xiK, {1,2,3}, xiK, {4,2,3}, 0.0, exchange, {1,4});
+  xiK = Tensor3d{0,0,0};
+
+  {
+    Map m_exchange(&exchange.storage()[0], n, n);
+    std::cout << "exchange matrix:\n" << m_exchange << std::endl;
+  }
+
+  // reconstruct 4-index ints
+  if (0) {
+    ConstMap xyK_map(&xyK.storage()[0], n*n, ndf);
+    Matrix xyzw_df = xyK_map * xyK_map.transpose();
+
+    typedef btas::RangeNd<CblasRowMajor, std::array<long, 4> > Range4d;
+    typedef btas::Tensor<double, Range4d> Tensor4d;
+    Tensor4d xyzw{n, n, n, n};
+
+  #ifdef _OPENMP
+    #pragma omp parallel
+  #endif
+    {
+  #ifdef _OPENMP
+      auto thread_id = omp_get_thread_num();
+  #else
+      auto thread_id = 0;
+  #endif
+
+      // loop over permutationally-unique set of shells
+      for(auto s1=0l, s1234=0l; s1!=nshells; ++s1) {
+
+        auto bf1_first = shell2bf[s1]; // first basis function in this shell
+        auto n1 = obs[s1].size();// number of basis functions in this shell
+
+        for(auto s2=0; s2!=nshells; ++s2) {
+
+          auto bf2_first = shell2bf[s2];
+          auto n2 = obs[s2].size();
+          const auto n12 = n1*n2;
+
+          for(auto s3=0; s3!=nshells; ++s3) {
+
+            auto bf3_first = shell2bf[s3];
+            auto n3 = obs[s3].size();
+            const auto n123 = n12*n3;
+
+            for(auto s4=0; s4!=nshells; ++s4, ++s1234) {
+
+              if (s1234 % nthreads != thread_id)
+                continue;
+
+              auto bf4_first = shell2bf[s4];
+              auto n4 = obs[s4].size();
+              const auto n1234 = n123*n4;
+
+#ifndef _OPENMP
+              timer.start(0);
+#endif
+
+              const auto* buf = engines[thread_id].compute(obs[s1], obs[s2], obs[s3], obs[s4]);
+
+#ifndef _OPENMP
+              timer.stop(0);
+#endif
+
+
+#ifndef _OPENMP
+              timer.start(1);
+#endif
+
+              auto lower_bound = {bf1_first, bf2_first, bf3_first, bf4_first};
+              auto upper_bound = {bf1_first+n1, bf2_first+n2, bf3_first+n3, bf4_first+n4};
+              auto view = btas::make_view( xyzw.range().slice(lower_bound, upper_bound),
+                                           xyzw.storage());
+              std::copy(buf, buf+n1234, view.begin());
+
+#ifndef _OPENMP
+              timer.stop(1);
+#endif
+
+            } // s4
+          } // s3
+        } // s2
+      } // s1
+
+    } // omp parallel
+
+
+    Map xyzw_map(&xyzw.storage()[0], n*n, n*n);
+    std::cout << "4-center ints:\n" << (xyzw_map) << std::endl;
+    std::cout << "4-center ints (DF):\n" << (xyzw_df) << std::endl;
+    std::cout << "DF reconstruction error:\n" << (xyzw_map - xyzw_df) << std::endl;
+  }
+
+  timer.stop(2);
+
+  std::cout << "time for exchange = " << timer.read(2) << std::endl;
+
+  std::cout.flush();
+  exit(1);
+}
+#endif // LIBINT2_HAVE_BTAS
