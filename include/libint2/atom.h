@@ -47,11 +47,11 @@ namespace libint2 {
   /// reads the list of atoms from a file in the standard XYZ format supported by most chemistry software
   inline std::vector<Atom> read_dotxyz(std::istream& is) {
     // first line = # of atoms
-    std::string line;
-    std::getline(is, line);
-    std::istringstream iss(line);
     size_t natom;
-    iss >> natom;
+    is >> natom;
+    // read off the rest of first line and discard
+    std::string rest_of_line;
+    std::getline(is, rest_of_line);
 
     // second line = comment
     std::string comment;
