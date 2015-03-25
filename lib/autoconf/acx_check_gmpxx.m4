@@ -11,7 +11,8 @@ AC_DEFUN([ACX_CHECK_GMPXX], [
   LIBS="-lgmpxx -lgmp $LIBS"
   AC_LINK_IFELSE(
    [AC_LANG_PROGRAM(
-    [[#include <gmpxx.h>
+    [[#include <cstddef>
+      #include <gmpxx.h>
     ]],
     [[
      mpf_class a = 1.0;
