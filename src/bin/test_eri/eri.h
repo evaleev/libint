@@ -24,6 +24,7 @@
 
 #if defined(__cplusplus)
 #if HAVE_MPFR
+# include <cstddef>
 # include <gmpxx.h>
 # include <mpfr.h>
  typedef mpf_class LIBINT2_REF_REALTYPE;
