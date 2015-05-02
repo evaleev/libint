@@ -245,7 +245,7 @@ namespace libint2 {
 
   /** ElecPot is the electrostatic potential (Coulomb) operator
   */
-  struct ElecPot_Descr : public Contractable<Overlap_Descr> {
+  struct ElecPot_Descr : public Contractable<ElecPot_Descr> {
     typedef Multiplicative1Body_Props Properties;
     static const unsigned int max_key = 1;
     unsigned int key() const { return 0; }
