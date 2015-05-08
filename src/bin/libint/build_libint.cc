@@ -161,6 +161,7 @@ static void try_main (int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
+  int return_code = 0;
   try {
     try_main(argc,argv);
   }
@@ -168,8 +169,15 @@ int main(int argc, char* argv[])
     cout << endl
          << "  WARNING! Caught a standard exception:" << endl
          << "    " << a.what() << endl << endl;
+    return_code = 1;
   }
-  return 0;
+  catch(...) {
+    cout << endl
+         << "  WARNING! Caught an unknown exception" << endl << endl;
+    return_code = 1;
+  }
+
+  return return_code;
 }
 
 static void print_header(std::ostream& os);
