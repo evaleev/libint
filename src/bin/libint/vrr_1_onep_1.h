@@ -79,8 +79,8 @@ namespace libint2 {
       }
 
       // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89)
-      const OriginDerivative dA = Tint->bra(0,0).deriv();
-      const OriginDerivative dB = Tint->ket(0,0).deriv();
+      const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false;
 
@@ -125,13 +125,13 @@ namespace libint2 {
           if (is_simple() && dxyz != dir) // for integrals only consider derivatives in THE build direction
             continue;
 
-          OriginDerivative _d1; _d1.inc(dxyz);
+          OriginDerivative<3u> _d1; _d1.inc(dxyz);
 
           SafePtr<DGVertex> _nullptr;
 
           // dA - _1?
           {
-            const OriginDerivative dAm1(dA - _d1);
+            const OriginDerivative<3u> dAm1(dA - _d1);
             if (exists(dAm1)) { // yes
               a.deriv() = dAm1;
               auto AB = factory.make_child(a,b);
@@ -147,7 +147,7 @@ namespace libint2 {
 
           // dB - _1?
           {
-            const OriginDerivative dBm1(dB - _d1);
+            const OriginDerivative<3u> dBm1(dB - _d1);
             if (exists(dBm1)) { // yes
               b.deriv() = dBm1;
               auto AB = factory.make_child(a,b);
@@ -220,8 +220,8 @@ namespace libint2 {
       }
 
       // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89)
-      const OriginDerivative dA = Tint->bra(0,0).deriv();
-      const OriginDerivative dB = Tint->ket(0,0).deriv();
+      const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false;
 
@@ -301,13 +301,13 @@ namespace libint2 {
           if (is_simple() && dxyz != dir) // for integrals only consider derivatives in THE build direction
             continue;
 
-          OriginDerivative _d1; _d1.inc(dxyz);
+          OriginDerivative<3u> _d1; _d1.inc(dxyz);
 
           SafePtr<DGVertex> _nullptr;
 
           // dA - _1?
           {
-            const OriginDerivative dAm1(dA - _d1);
+            const OriginDerivative<3u> dAm1(dA - _d1);
             if (exists(dAm1)) { // yes
               a.deriv() = dAm1;
               auto AB = factory.make_child(a,b);
@@ -323,7 +323,7 @@ namespace libint2 {
 
           // dB - _1?
           {
-            const OriginDerivative dBm1(dB - _d1);
+            const OriginDerivative<3u> dBm1(dB - _d1);
             if (exists(dBm1)) { // yes
               b.deriv() = dBm1;
               auto AB = factory.make_child(a,b);
@@ -408,8 +408,8 @@ namespace libint2 {
       }
 
       // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89)
-      const OriginDerivative dA = Tint->bra(0,0).deriv();
-      const OriginDerivative dB = Tint->ket(0,0).deriv();
+      const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false;
 
@@ -462,13 +462,13 @@ namespace libint2 {
           if (is_simple() && dxyz != dir) // for integrals only consider derivatives in THE build direction
             continue;
 
-          OriginDerivative _d1; _d1.inc(dxyz);
+          OriginDerivative<3u> _d1; _d1.inc(dxyz);
 
           SafePtr<DGVertex> _nullptr;
 
           // dA - _1?
           {
-            const OriginDerivative dAm1(dA - _d1);
+            const OriginDerivative<3u> dAm1(dA - _d1);
             if (exists(dAm1)) { // yes
               a.deriv() = dAm1;
               auto AB = factory.make_child(a,b,m);
@@ -484,7 +484,7 @@ namespace libint2 {
 
           // dB - _1?
           {
-            const OriginDerivative dBm1(dB - _d1);
+            const OriginDerivative<3u> dBm1(dB - _d1);
             if (exists(dBm1)) { // yes
               b.deriv() = dBm1;
               auto AB = factory.make_child(a,b,m);

@@ -170,10 +170,10 @@ namespace libint2 {
 
       // not yet implemented for derivative integrals
       {
-        const OriginDerivative dA = Tint->bra(0,0).deriv();
-        const OriginDerivative dB = Tint->ket(0,0).deriv();
-        const OriginDerivative dC = Tint->bra(1,0).deriv();
-        const OriginDerivative dD = Tint->ket(1,0).deriv();
+        const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
+        const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
+        const OriginDerivative<3u> dC = Tint->bra(1,0).deriv();
+        const OriginDerivative<3u> dD = Tint->ket(1,0).deriv();
         const bool deriv = dA.zero() == false ||
             dB.zero() == false ||
             dC.zero() == false ||
@@ -359,10 +359,10 @@ namespace libint2 {
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
 
-      const OriginDerivative dA = target_->bra(0,0).deriv();
-      const OriginDerivative dB = target_->ket(0,0).deriv();
-      const OriginDerivative dC = target_->bra(1,0).deriv();
-      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const OriginDerivative<3u> dA = target_->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = target_->ket(0,0).deriv();
+      const OriginDerivative<3u> dC = target_->bra(1,0).deriv();
+      const OriginDerivative<3u> dD = target_->ket(1,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false ||
           dC.zero() == false ||
@@ -391,10 +391,10 @@ namespace libint2 {
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
 
-      const OriginDerivative dA = target_->bra(0,0).deriv();
-      const OriginDerivative dB = target_->ket(0,0).deriv();
-      const OriginDerivative dC = target_->bra(1,0).deriv();
-      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const OriginDerivative<3u> dA = target_->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = target_->ket(0,0).deriv();
+      const OriginDerivative<3u> dC = target_->bra(1,0).deriv();
+      const OriginDerivative<3u> dD = target_->ket(1,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false ||
           dC.zero() == false ||

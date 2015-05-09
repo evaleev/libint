@@ -23,12 +23,15 @@
 #include <iostream>
 #include <string>
 #include <cassert>
+#include <numeric>
+#include <sstream>
 #include <libint2/stdarray.h>
 #include <smart_ptr.h>
 #include <polyconstr.h>
 #include <hashable.h>
 #include <contractable.h>
 #include <global_macros.h>
+#include <util_types.h>
 
 namespace libint2 {
 
@@ -89,44 +92,53 @@ namespace libint2 {
 
   /** Represents cartesian derivatives of atom-centered basis functions
   */
+  template <unsigned NDIM = 3>
   class OriginDerivative : public Hashable<LIBINT2_UINT_LEAST64,ReferToKey> {
 
   public:
     OriginDerivative() : valid_(true) {
-      d_[0] = d_[1] = d_[2] = 0u;
+      for(auto d=0u; d!=NDIM; ++d) d_[d] = 0u;
     }
     OriginDerivative(const OriginDerivative& other) : valid_(true) {
-      std::copy(other.d_, other.d_ + 3, d_);
+      std::copy(other.d_, other.d_ + NDIM, d_);
     }
     OriginDerivative& operator=(const OriginDerivative& other) {
       valid_ = other.valid_;
-      std::copy(other.d_, other.d_ + 3, d_);
+      std::copy(other.d_, other.d_ + NDIM, d_);
       return *this;
     }
     OriginDerivative& operator+=(const OriginDerivative& other) {
       assert(valid_);
-      for(int xyz=0; xyz<3; ++xyz)
-        d_[xyz] += other.d_[xyz];
+      for(auto d=0u; d!=NDIM; ++d) d_[d] += other.d_[d];
       return *this;
     }
     OriginDerivative& operator-=(const OriginDerivative& other) {
       assert(valid_);
-      for(int xyz=0; xyz<3; ++xyz)
-        d_[xyz] -= other.d_[xyz];
+      for(auto d=0u; d!=NDIM; ++d) d_[d] -= other.d_[d];
       return *this;
+    }
+    ~OriginDerivative() {
+      static_assert(NDIM == 3u || NDIM == 1u, "OriginDerivative with NDIM=1,3 are implemented");
     }
 
     /// returns the number of quanta along xyz
     unsigned int d(unsigned int xyz) const {
+      assert(xyz < NDIM);
       return d_[xyz];
+    }
+    /// returns the number of quanta along xyz
+    unsigned int operator[](unsigned int xyz) const {
+      return this->d(xyz);
     }
     /// Add c quanta along xyz.
     void inc(unsigned int xyz, unsigned int c = 1u) {
+      assert(xyz < NDIM);
       assert(valid_);
       d_[xyz] += c;
     }
     /// Subtract c quanta along xyz. If impossible, invalidate the object, but do not change its quanta!
     void dec(unsigned int xyz, unsigned int c = 1u) {
+      assert(xyz < NDIM);
       //assert(valid_);
       if (d_[xyz] >= c)
         d_[xyz] -= c;
@@ -135,7 +147,7 @@ namespace libint2 {
     }
     /// Returns the norm of the quantum numbers
     unsigned int norm() const {
-      return d_[0] + d_[1] + d_[2];
+      return std::accumulate(d_, d_+NDIM, 0u);
     }
     /// norm() == 0
     bool zero() const { return norm() == 0; }
@@ -143,22 +155,39 @@ namespace libint2 {
     bool valid() const { return valid_; }
     /// Implements Hashable<unsigned>::key()
     LIBINT2_UINT_LEAST64 key() const {
-      unsigned nxy = d_[1] + d_[2];
-      unsigned l = nxy + d_[0];
-      LIBINT2_UINT_LEAST64 key = nxy*(nxy+1)/2 + d_[2];
-      return key + key_l_offset.at(l);
+      if (NDIM == 3u) {
+        unsigned nxy = d_[1] + d_[2];
+        unsigned l = nxy + d_[0];
+        LIBINT2_UINT_LEAST64 key = nxy*(nxy+1)/2 + d_[2];
+        return key + key_l_offset.at(l);
+      }
+      if (NDIM == 1u) {
+        return d_[0];
+      }
+      assert(false);
     }
     /// Return a compact label
     const std::string label() const {
-      char result[] = "000";
-      for(unsigned int xyz=0; xyz<3; ++xyz)
-        result[xyz] += d_[xyz];
+      char result[NDIM+1];
+      for(auto xyz=0u; xyz<NDIM; ++xyz) result[xyz] = '0' + d_[xyz];
+      result[NDIM] = '\0';
       return std::string(result);
     }
 
+    /* ---------------
+     * key computation
+     * --------------- */
     const static unsigned max_deriv = 4;
-    /// The range of keys is [0,max_key). The formula is easily derived by summing (L+1)(L+2)/2 up to max_deriv
-    const static unsigned max_key = (1 + max_deriv)*(2 + max_deriv)*(3 + max_deriv)/6;
+
+    // nkeys_l[L] is the number of possible OriginDerivative's with \c norm() == L
+    // \note for NDIM=1 nkeys_l[L] = 1
+    // \note for NDIM=2 nkeys_l[L] = (L+1)
+    // \note for NDIM=3 nkeys_l[L] = (L+1)(L+2)/2
+    //static std::array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1> nkeys;
+
+    /// The range of keys is [0,max_key).
+    /// \note for NDIM=3 the formula is easily derived by summing (L+1)(L+2)/2 up to \c max_deriv
+    const static unsigned max_key = NDIM == 3 ? (1 + max_deriv)*(2 + max_deriv)*(3 + max_deriv)/6 : (1+max_deriv);
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
@@ -169,26 +198,41 @@ namespace libint2 {
     void invalidate() { valid_ = false; }
 
   private:
-    unsigned int d_[3];
+    unsigned int d_[NDIM];
     bool valid_;  // indicates valid/invalid state
     /// key_l_offset[L] is the number of all possible derivatives of order up to L
+    /// \note key_l_offset[L] = sum k=[0,L) nkeys[L]
     static std::array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1> key_l_offset;
 
   };
 
-  OriginDerivative operator-(const OriginDerivative& A, const OriginDerivative& B);
-  bool operator==(const OriginDerivative& A, const OriginDerivative& B);
+  template <unsigned NDIM>
+  OriginDerivative<NDIM> operator-(const OriginDerivative<NDIM>& A, const OriginDerivative<NDIM>& B) {
+    OriginDerivative<NDIM> Diff(A);
+    for(unsigned int xyz=0; xyz<3; ++xyz)
+      Diff.dec(xyz,B.d(xyz));
+    return Diff;
+  }
+
+  template <unsigned NDIM>
+  bool operator==(const OriginDerivative<NDIM>& A, const OriginDerivative<NDIM>& B) {
+    for(unsigned d=0; d!=NDIM; ++d)
+      if (A.d(d) != B.d(d))
+        return false;
+    return true;
+  }
+
   /// Return true if A is valid
-  inline bool exists(const OriginDerivative& A) { return A.valid(); }
+  template <unsigned NDIM> inline bool exists(const OriginDerivative<NDIM>& A) { return A.valid(); }
 
   class CGF;   // forward declaration of CGF
 
-  /// Cartesian Gaussian Shell
+  /// 3D Cartesian Gaussian Shell
   class CGShell : public IncableBFSet, public Hashable<LIBINT2_UINT_LEAST64,ReferToKey>,
                   public Contractable<CGShell> {
 
     unsigned int qn_[1];
-    OriginDerivative deriv_;
+    OriginDerivative<3> deriv_;
     bool pure_sh_;  //< if true, assumed to contain solid harmonics with quantum number qn_[0] only
     /** if true, this is a unit shell (zero-exponent Gaussian) */
     bool unit_;
@@ -208,8 +252,8 @@ namespace libint2 {
     virtual ~CGShell();
     CGShell& operator=(const CGShell&);
 
-    const OriginDerivative& deriv() const { return deriv_; }
-    OriginDerivative& deriv() { return deriv_; }
+    const OriginDerivative<3u>& deriv() const { return deriv_; }
+    OriginDerivative<3u>& deriv() { return deriv_; }
 
     /// Return a compact label
     const std::string label() const;
@@ -248,12 +292,13 @@ namespace libint2 {
     }
     const static LIBINT2_UINT_LEAST64 max_qn = LIBINT_CARTGAUSS_MAX_AM;
     /** The range of keys is [0,max_key]
-        deriv_key_range = 2
+        deriv_key_range = OriginDerivative<3u>::max_key
+        contracted = 2 (yes or no)
         qn_range = max_qn + 1
         puresh_key_range = 2
         +1 to account for the unit shell
       */
-    const static LIBINT2_UINT_LEAST64 max_key = 2 * (max_qn + 1) * OriginDerivative::max_key * 2 + 1;
+    const static LIBINT2_UINT_LEAST64 max_key = OriginDerivative<3u>::max_key * 2 * (max_qn + 1) * 2 + 1;
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
@@ -267,12 +312,12 @@ namespace libint2 {
   CGShell operator+(const CGShell& A, const CGShell& B);
   CGShell operator-(const CGShell& A, const CGShell& B);
 
-  /// Cartesian Gaussian Function
+  /// 3D Cartesian Gaussian Function
   class CGF : public IncableBFSet, public Hashable<LIBINT2_UINT_LEAST64,ComputeKey>,
               public Contractable<CGF> {
 
     unsigned int qn_[3];
-    OriginDerivative deriv_;
+    OriginDerivative<3u> deriv_;
     bool pure_sh_;  //< if true, assumed to contain solid harmonics with quantum number qn_[0] only
     bool unit_; //< if true, this is a unit Gaussian (exponent = 0)
 
@@ -295,8 +340,8 @@ namespace libint2 {
     /// assignment
     CGF& operator=(const CGF&);
 
-    const OriginDerivative& deriv() const { return deriv_; }
-    OriginDerivative& deriv() { return deriv_; }
+    const OriginDerivative<3u>& deriv() const { return deriv_; }
+    OriginDerivative<3u>& deriv() { return deriv_; }
 
     /// Return a compact label
     const std::string label() const;
@@ -330,8 +375,9 @@ namespace libint2 {
           ( ( deriv().key() * 2 +
               (contracted() ? 1 : 0)
             ) * max_num_qn +
-            key + key_l_offset.at(l) * 2
-          ) + (pure_sh() ? 1 : 0);
+            key + key_l_offset.at(l)
+          ) * 2
+          + (pure_sh() ? 1 : 0);
       if (result >= max_key-1) {
         this->print(std::cout);
         std::cout << "result,max_key-1 = " << result << "," << max_key-1 << std::endl;
@@ -344,10 +390,11 @@ namespace libint2 {
     /// The factor of OriginDerivative::max_key to account for derivatives
     const static LIBINT2_UINT_LEAST64 max_num_qn = ((1 + (CGShell::max_qn+1)) * (2 + (CGShell::max_qn+1)) * (3 + (CGShell::max_qn+1)) /6);
     // deriv_key_range = 2
+    // contracted = 2 (yes or no)
     // qn_range = max_num_qn
     // puresh_key_range = 2
     // +1 to account for unit function
-    const static LIBINT2_UINT_LEAST64 max_key = 2ul * OriginDerivative::max_key * max_num_qn * 2ul + 1;
+    const static LIBINT2_UINT_LEAST64 max_key = OriginDerivative<3u>::max_key * 2ul * max_num_qn * 2ul + 1;
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const;
@@ -363,6 +410,331 @@ namespace libint2 {
 
   CGF operator+(const CGF& A, const CGF& B);
   CGF operator-(const CGF& A, const CGF& B);
+
+#if 1
+  /// Cartesian components of 3D CGF = 1D CGF
+  /// @note reference to particular cartesian axis embedded in type
+  template <CartesianAxis Axis>
+  class CGF1d : public IncableBFSet, public Hashable<LIBINT2_UINT_LEAST64,ComputeKey>,
+                public Contractable< CGF1d<Axis> > {
+
+    unsigned int qn_[1];
+    OriginDerivative<1u> deriv_;
+    bool unit_; //< if true, this is a unit Gaussian (exponent = 0)
+
+  public:
+
+    static constexpr CartesianAxis axis = Axis;
+
+    /// As far as SetIterator is concerned, CGF1d is a set of one CGF1d
+    typedef CGF1d iter_type;
+    typedef IncableBFSet parent_type;
+
+    /// Default constructor makes an qn=0 Gaussian
+    CGF1d() : unit_(false) { qn_[0] = 0; }
+    CGF1d(unsigned int qn) : unit_(false) { qn_[0] = qn; }
+    CGF1d(unsigned int qn[1]) : unit_(false) { qn_[0] = qn[0]; }
+    CGF1d(const CGF1d& source) : Contractable<CGF1d>(source),
+        deriv_(source.deriv_), unit_(source.unit_)
+    {
+      qn_[0] = source.qn_[0];
+    }
+    CGF1d(const ConstructablePolymorphically& sptr) :
+      Contractable<CGF1d>(dynamic_cast<const CGF1d&>(sptr))
+    {
+      const CGF1d& sptr_cast = dynamic_cast<const CGF1d&>(sptr);
+      qn_[0] = sptr_cast.qn_[0];
+      deriv_ = sptr_cast.deriv_;
+      unit_ = sptr_cast.unit_;
+    }
+    virtual ~CGF1d() {
+    }
+
+    /// assignment
+    CGF1d& operator=(const CGF1d& source)
+    {
+      qn_[0] = source.qn_[0];
+      deriv_ = source.deriv_;
+      unit_ = source.unit_;
+      Contractable<CGF1d>::operator=(source);
+      if (!source.valid()) invalidate();
+      return *this;
+    }
+
+    //CGF1d operator+(const CGF1d& A, const CGF1d& B);
+    CGF1d operator-(const CGF1d& B) {
+      //assert(A.is_unit() == false && B.is_unit() == false);
+      CGF1d Diff(*this);
+      Diff.dec(0,B.qn(0));
+      Diff.deriv_ -= B.deriv_;
+      return Diff;
+    }
+
+    const OriginDerivative<1u>& deriv() const { return deriv_; }
+    OriginDerivative<1u>& deriv() { return deriv_; }
+
+    /// Return a compact label
+    const std::string label() const {
+      // unit *functions* are treated as regular qn-0 functions so that (00|00)^(m) = (unit 0|00)^(m)
+      std::ostringstream oss;
+      oss << to_string(Axis) << qn_[0];
+      if (deriv_.zero() == false) oss << "_" << deriv_.label();
+
+      // I don't handle labels of contracted CGF1d because I don't think I need them
+      // make sure just in case
+      assert(this->contracted() == false);
+
+      return oss.str();
+    }
+
+
+    /// Returns the number of basis functions in the set (always 1)
+    unsigned int num_bf() const { return 1; };
+    /// Returns the quantum number (what used to be "angular momentum")
+    unsigned int qn(unsigned int dir = 0) const {
+      assert(dir == 0);
+      return qn_[0];
+    }
+    unsigned int operator[](unsigned int dir) const {
+      return this->qn(dir);
+    }
+
+    /// Comparison operator
+    bool operator==(const CGF1d& a) const {
+      return ( qn_[0] == a.qn_[0] &&
+               this->contracted() == a.contracted() &&
+               deriv_ == a.deriv_ &&
+               unit_ == a.unit_);
+    }
+
+    /// Implementation of IncableBFSet::inc().
+    void inc(unsigned int dir, unsigned int c = 1u) {
+      assert(is_unit() == false);
+      assert(dir==0);
+      if (valid())
+        qn_[0] += c;
+    }
+    /// Implementation of IncableBFSet::dec().
+    void dec(unsigned int dir, unsigned int c = 1u) {
+      if (is_unit()) { invalidate(); return; }
+      assert(dir==0);
+      if (valid()) {
+        if (qn_[0] < c) {
+          invalidate();
+          return;
+        }
+        qn_[0] -= c;
+      }
+    }
+    /// Implements IncableBFSet::norm()
+    unsigned int norm() const { return qn_[0]; }
+    /// Implements Hashable<LIBINT2_UINT_LEAST64>::key()
+    LIBINT2_UINT_LEAST64 key() const {
+      if (is_unit()) return max_key-1;
+      const LIBINT2_UINT_LEAST64 result =
+            ( deriv().key() * 2ul +
+              (this->contracted() ? 1ul : 0ul)
+            ) * max_num_qn +
+            qn_[0];
+      if (result >= max_key-1) {
+        this->print(std::cout);
+        std::cout << "result,max_key-1 = " << result << "," << max_key-1 << std::endl;
+        assert(result < max_key-1);
+      }
+      return result;
+    }
+    /// The range of keys is [0,max_key). The formula is easily derived by summing (L+1)(L+2)/2 up to CGShell::max_key
+    /// The factor of 2 to account for contracted vs. uncontracted basis functions
+    /// The factor of OriginDerivative::max_key to account for derivatives
+    const static LIBINT2_UINT_LEAST64 max_num_qn = CGShell::max_qn+1;
+    // deriv_key_range = 2
+    // contracted = 2 (yes or no)
+    // qn_range = max_num_qn
+    // +1 to account for unit function
+    const static LIBINT2_UINT_LEAST64 max_key = 2ul * OriginDerivative<1u>::max_key * max_num_qn + 1;
+
+    /// Print out the content
+    void print(std::ostream& os = std::cout) const {
+      os << "CGF1d<" << to_string(Axis) << ">: " << label() << std::endl;
+    }
+
+    /// returns the unit shell (exponent=0, am=0, indicated by unit_=true)
+    static CGF1d unit() {
+      CGF1d result;
+      result.unit_ = true;
+      result.uncontract();
+      return result;
+    }
+    bool is_unit() const { return unit_; }
+
+  private:
+    /// key_l_offset[L] is the number of all possible CGF1d's with quantum number less than L
+    static std::array<LIBINT2_UINT_LEAST64, CGShell::max_qn+1> key_l_offset;
+  };
+
+//  template <CartesianAxis Axis>
+//  inline CGF1d<Axis> operator+(const CGF1d<Axis>& A, const CGF1d<Axis>& B) {
+//    assert(A.is_unit() == false && B.is_unit() == false);
+//    CGF1d<Axis> Sum(A);
+//    Sum.inc(0,B.qn(0));
+//    Sum.deriv_ += B.deriv_;
+//    return Sum;
+//  }
+//  template <CartesianAxis Axis>
+//  inline CGF1d<Axis> operator-(const CGF1d<Axis>& A, const CGF1d<Axis>& B) {
+//    //assert(A.is_unit() == false && B.is_unit() == false);
+//    CGF1d<Axis> Diff(A);
+//    Diff.dec(0,B.qn(0));
+//    Diff.deriv_ -= B.deriv_;
+//
+//    return Diff;
+//  }
+
+
+  /// a "shell" of 1D CGFs with quantum number L is a set of 1D CGFs with quantum numbers 0 .. L
+  ///
+  /// @note This is very different from a CGShell which consists of CGFs with same "norm", distributed
+  ///       differently between axes. The notion of 1d shell is still useful because we want to compute
+  ///       integrals over all functions in the shell at once.
+  /// @note Just like with CGF1d, the axis is embedded into the type
+  template <CartesianAxis Axis>
+  class CGShell1d : public IncableBFSet, public Hashable<LIBINT2_UINT_LEAST64,ComputeKey>,
+                    public Contractable< CGShell1d<Axis> > {
+
+    unsigned int qn_[1];
+    OriginDerivative<1u> deriv_;
+    bool unit_; //< if true, this is a unit Gaussian (exponent = 0)
+
+  public:
+
+    static constexpr CartesianAxis axis = Axis;
+
+    /// As far as SetIterator is concerned, CGShell1d is a set CGF1d's
+    typedef CGF1d<Axis> iter_type;
+    typedef IncableBFSet parent_type;
+
+    /// Default constructor makes a qn=0 shell
+    CGShell1d() : unit_(false) { qn_[0] = 0; }
+    CGShell1d(unsigned int qn) : unit_(false) { qn_[0] = qn; }
+    CGShell1d(unsigned int qn[1]) : unit_(false) { qn_[0] = qn[0]; }
+    CGShell1d(const CGShell1d& source) : Contractable<CGShell1d>(source),
+        deriv_(source.deriv_), unit_(source.unit_)
+    {
+      qn_[0] = source.qn_[0];
+    }
+    CGShell1d(const ConstructablePolymorphically& sptr) :
+      Contractable<CGShell1d>(dynamic_cast<const CGShell1d&>(sptr))
+    {
+      const CGShell1d& sptr_cast = dynamic_cast<const CGShell1d&>(sptr);
+      qn_[0] = sptr_cast.qn_[0];
+      deriv_ = sptr_cast.deriv_;
+      unit_ = sptr_cast.unit_;
+    }
+    virtual ~CGShell1d() {
+    }
+
+    /// assignment
+    CGShell1d& operator=(const CGShell1d& source)
+    {
+      qn_[0] = source.qn_[0];
+      deriv_ = source.deriv_;
+      unit_ = source.unit_;
+      Contractable<CGShell1d>::operator=(source);
+      if (!source.valid()) invalidate();
+      return *this;
+    }
+
+    const OriginDerivative<1u>& deriv() const { return deriv_; }
+    OriginDerivative<1u>& deriv() { return deriv_; }
+
+    /// Return a compact label
+    const std::string label() const {
+      // unit *functions* are treated as regular qn-0 functions so that (00|00)^(m) = (unit 0|00)^(m)
+      std::ostringstream oss;
+      auto axis_label = to_string(Axis);
+      axis_label[0] = std::toupper(axis_label[0]);
+      oss << axis_label << qn_[0];
+      if (deriv_.zero() == false) oss << "_" << deriv_.label();
+
+      // I don't handle labels of contracted CGF1d because I don't think I need them
+      // make sure just in case
+      assert(this->contracted() == false);
+
+      return oss.str();
+    }
+
+
+    /// Returns the number of basis functions in the set (always 1)
+    unsigned int num_bf() const { return qn_[0]+1; };
+    /// Returns the quantum number (what used to be "angular momentum")
+    unsigned int qn(unsigned int dir=0) const {
+      assert(dir == 0);
+      return qn_[0];
+    }
+
+    /// Comparison operator
+    bool operator==(const CGShell1d& a) const {
+      return ( qn_[0] == a.qn_[0] &&
+               this->contracted() == a.contracted() &&
+               deriv_ == a.deriv_ &&
+               unit_ == a.unit_);
+    }
+
+    /// Implementation of IncableBFSet::inc().
+    void inc(unsigned int dir, unsigned int c = 1u) {
+      assert(false);
+    }
+    /// Implementation of IncableBFSet::dec().
+    void dec(unsigned int dir, unsigned int c = 1u) {
+      assert(false);
+    }
+    /// Implements IncableBFSet::norm()
+    unsigned int norm() const { return qn_[0]; }
+    /// Implements Hashable<LIBINT2_UINT_LEAST64>::key()
+    LIBINT2_UINT_LEAST64 key() const {
+      if (is_unit()) return max_key-1;
+      const LIBINT2_UINT_LEAST64 result =
+            ( deriv().key() * 2ul +
+              (this->contracted() ? 1ul : 0ul)
+            ) * max_num_qn +
+            qn_[0];
+      if (result >= max_key-1) {
+        this->print(std::cout);
+        std::cout << "result,max_key-1 = " << result << "," << max_key-1 << std::endl;
+        assert(result < max_key-1);
+      }
+      return result;
+    }
+    /// The range of keys is [0,max_key). The formula is easily derived by summing (L+1)(L+2)/2 up to CGShell::max_key
+    /// The factor of 2 to account for contracted vs. uncontracted basis functions
+    /// The factor of OriginDerivative::max_key to account for derivatives
+    const static LIBINT2_UINT_LEAST64 max_num_qn = CGShell::max_qn+1;
+    // deriv_key_range = 2
+    // contracted = 2 (yes or no)
+    // qn_range = max_num_qn
+    // +1 to account for unit function
+    const static LIBINT2_UINT_LEAST64 max_key = 2ul * OriginDerivative<1u>::max_key * max_num_qn + 1;
+
+    /// Print out the content
+    void print(std::ostream& os = std::cout) const {
+      os << "CGShell1d<" << to_string(Axis) << ">: " << label() << std::endl;
+    }
+
+    /// returns the unit shell (exponent=0, am=0, indicated by unit_=true)
+    static CGShell1d unit() {
+      CGShell1d result;
+      result.unit_ = true;
+      result.uncontract();
+      return result;
+    }
+    bool is_unit() const { return unit_; }
+
+  private:
+    /// key_l_offset[L] is the number of all possible CGF1d's with quantum number less than L
+    static std::array<LIBINT2_UINT_LEAST64, CGShell::max_qn+1> key_l_offset;
+  };
+
+#endif
 
 #if 0
   class SHGF; // forward declaration
@@ -506,6 +878,14 @@ namespace libint2 {
     };
   template <>
     struct TrivialBFSet<CGF> {
+      static const bool result = true;
+    };
+  template <CartesianAxis Axis>
+    struct TrivialBFSet< CGShell1d<Axis> > {
+      static const bool result = false;
+    };
+  template <CartesianAxis Axis>
+    struct TrivialBFSet< CGF1d<Axis> > {
       static const bool result = true;
     };
 #if 0

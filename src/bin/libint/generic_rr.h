@@ -94,13 +94,13 @@ namespace libint2 {
         target_(Tint), dir_(dir) {
         children_.reserve(RRImpl::max_nchildren);
       }
-      /** is this recurrence relation parameterized by a direction.
-          the default is false if BasisFunctionSet is CGShell,
-          true otherwise. */
+      /** is this recurrence relation parameterized by a direction (x, y, or z).
+          true if BasisFunctionSet is CGF,
+          false otherwise. */
       static bool default_directional() {
-        if (boost::is_same<BasisFunctionType,CGShell>::value)
-          return false;
-        return true;
+        if (boost::is_same<BasisFunctionType,CGF>::value)
+          return true;
+        return false;
       }
 
       unsigned int dir() const { return dir_; }

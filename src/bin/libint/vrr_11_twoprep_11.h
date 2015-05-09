@@ -105,10 +105,10 @@ namespace libint2 {
       }
 
       // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89)
-      const OriginDerivative dA = Tint->bra(0,0).deriv();
-      const OriginDerivative dB = Tint->ket(0,0).deriv();
-      const OriginDerivative dC = Tint->bra(1,0).deriv();
-      const OriginDerivative dD = Tint->ket(1,0).deriv();
+      const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
+      const OriginDerivative<3u> dC = Tint->bra(1,0).deriv();
+      const OriginDerivative<3u> dD = Tint->ket(1,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false ||
           dC.zero() == false ||
@@ -377,13 +377,13 @@ namespace libint2 {
           if (is_simple() && dxyz != dir) // for integrals only consider derivatives in THE build direction
             continue;
 
-          OriginDerivative _d1; _d1.inc(dxyz);
+          OriginDerivative<3u> _d1; _d1.inc(dxyz);
 
           SafePtr<DGVertex> _nullptr;
 
           // dA - _1?
           {
-            const OriginDerivative dAm1(dA - _d1);
+            const OriginDerivative<3u> dAm1(dA - _d1);
             if (exists(dAm1)) { // yes
               a.deriv() = dAm1;
               auto ABCD_m = (part == 0 && not part0_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
@@ -414,7 +414,7 @@ namespace libint2 {
 
           // dB - _1?
           {
-            const OriginDerivative dBm1(dB - _d1);
+            const OriginDerivative<3u> dBm1(dB - _d1);
             if (exists(dBm1)) { // yes
               b.deriv() = dBm1;
               auto ABCD_m = (part == 0 && not part0_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
@@ -445,7 +445,7 @@ namespace libint2 {
 
           // dC - _1?
           {
-            const OriginDerivative dCm1(dC - _d1);
+            const OriginDerivative<3u> dCm1(dC - _d1);
             if (exists(dCm1)) { // yes
               c.deriv() = dCm1;
               auto ABCD_m = (part == 1 && not part1_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
@@ -476,7 +476,7 @@ namespace libint2 {
 
           // dD - _1?
           {
-            const OriginDerivative dDm1(dD - _d1);
+            const OriginDerivative<3u> dDm1(dD - _d1);
             if (exists(dDm1)) { // yes
               d.deriv() = dDm1;
               auto ABCD_m = (part == 1 && not part1_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
@@ -557,10 +557,10 @@ namespace libint2 {
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
 
-      const OriginDerivative dA = target_->bra(0,0).deriv();
-      const OriginDerivative dB = target_->ket(0,0).deriv();
-      const OriginDerivative dC = target_->bra(1,0).deriv();
-      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const OriginDerivative<3u> dA = target_->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = target_->ket(0,0).deriv();
+      const OriginDerivative<3u> dC = target_->bra(1,0).deriv();
+      const OriginDerivative<3u> dD = target_->ket(1,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false ||
           dC.zero() == false ||
@@ -601,10 +601,10 @@ namespace libint2 {
         unit_s = sh_a.is_unit();
       }
 
-      const OriginDerivative dA = target_->bra(0,0).deriv();
-      const OriginDerivative dB = target_->ket(0,0).deriv();
-      const OriginDerivative dC = target_->bra(1,0).deriv();
-      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const OriginDerivative<3u> dA = target_->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = target_->ket(0,0).deriv();
+      const OriginDerivative<3u> dC = target_->bra(1,0).deriv();
+      const OriginDerivative<3u> dD = target_->ket(1,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false ||
           dC.zero() == false ||
