@@ -653,9 +653,9 @@ void try_main (int argc, char* argv[])
 
 #ifdef INCLUDE_ONEBODY
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
-    build_onebody_1b_1k<Overlap_1_1_sq>(os,"overlap",cparams,iface,d);
-    build_onebody_1b_1k<Kinetic_1_1_sq>(os,"kinetic",cparams,iface,d);
-    build_onebody_1b_1k<ElecPot_1_1_sq>(os,"elecpot",cparams,iface,d);
+    build_onebody_1b_1k<Overlap_1_1_sh>(os,"overlap",cparams,iface,d);
+    build_onebody_1b_1k<Kinetic_1_1_sh>(os,"kinetic",cparams,iface,d);
+    build_onebody_1b_1k<ElecPot_1_1_sh>(os,"elecpot",cparams,iface,d);
   }
 #endif
 #ifdef INCLUDE_ERI

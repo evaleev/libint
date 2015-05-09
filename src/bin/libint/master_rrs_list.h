@@ -88,14 +88,14 @@ namespace libint2 {
   typedef HRR<DummySymmIntegral_11_11_int,CGF,1,InKet,0,InBra,0> HRR_dc_11_Dummy_11_int;
 
 #if LIBINT_SUPPORT_ONEBODYINTS
-  typedef HRR<Overlap_1_1_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_1_Overlap_1_sh;
+  typedef HRR<Overlap_1_1_sh,CGShell,0,InBra,0,InKet,0> HRR_ab_1_Overlap_1_sh;
   typedef HRR<Overlap_1_1_int,CGF,0,InBra,0,InKet,0> HRR_ab_1_Overlap_1_int;
-  typedef HRR<Overlap_1_1_sq,CGShell,0,InKet,0,InBra,0> HRR_ba_1_Overlap_1_sh;
+  typedef HRR<Overlap_1_1_sh,CGShell,0,InKet,0,InBra,0> HRR_ba_1_Overlap_1_sh;
   typedef HRR<Overlap_1_1_int,CGF,0,InKet,0,InBra,0> HRR_ba_1_Overlap_1_int;
 
-  typedef HRR<ElecPot_1_1_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_1_ElecPot_1_sh;
+  typedef HRR<ElecPot_1_1_sh,CGShell,0,InBra,0,InKet,0> HRR_ab_1_ElecPot_1_sh;
   typedef HRR<ElecPot_1_1_int,CGF,0,InBra,0,InKet,0> HRR_ab_1_ElecPot_1_int;
-  typedef HRR<ElecPot_1_1_sq,CGShell,0,InKet,0,InBra,0> HRR_ba_1_ElecPot_1_sh;
+  typedef HRR<ElecPot_1_1_sh,CGShell,0,InKet,0,InBra,0> HRR_ba_1_ElecPot_1_sh;
   typedef HRR<ElecPot_1_1_int,CGF,0,InKet,0,InBra,0> HRR_ba_1_ElecPot_1_int;
 
   typedef VRR_1_Overlap_1<CGShell,InBra> VRR_a_1_Overlap_1_sh;

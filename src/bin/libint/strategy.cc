@@ -253,7 +253,7 @@ namespace libint2 {
 
 #if LIBINT_SUPPORT_ONEBODYINTS
 # if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
-  template <> struct MasterStrategy<Overlap_1_1_sq> {
+  template <> struct MasterStrategy<Overlap_1_1_sh> {
       typedef mpl::list<
       HRR_ab_1_Overlap_1_sh,
       VRR_a_1_Overlap_1_sh
@@ -265,7 +265,7 @@ namespace libint2 {
       VRR_a_1_Overlap_1_int
       > value;
     };
-  template <> struct MasterStrategy<ElecPot_1_1_sq> {
+  template <> struct MasterStrategy<ElecPot_1_1_sh> {
       typedef mpl::list<
       HRR_ab_1_ElecPot_1_sh,
       VRR_a_1_ElecPot_1_sh
@@ -278,7 +278,7 @@ namespace libint2 {
       > value;
     };
 # else //  // 0B0D strategy
-  template <> struct MasterStrategy<Overlap_1_1_sq> {
+  template <> struct MasterStrategy<Overlap_1_1_sh> {
       typedef mpl::list<
       HRR_ba_1_Overlap_1_sh,
       VRR_b_1_Overlap_1_sh
@@ -290,7 +290,7 @@ namespace libint2 {
       VRR_b_1_Overlap_1_int
       > value;
     };
-  template <> struct MasterStrategy<ElecPot_1_1_sq> {
+  template <> struct MasterStrategy<ElecPot_1_1_sh> {
       typedef mpl::list<
       HRR_ba_1_ElecPot_1_sh,
       VRR_b_1_ElecPot_1_sh
@@ -303,7 +303,7 @@ namespace libint2 {
       > value;
     };
 # endif // strategy: A0 or 0B
-  template <> struct MasterStrategy<Kinetic_1_1_sq> {
+  template <> struct MasterStrategy<Kinetic_1_1_sh> {
       typedef mpl::list<
       VRR_a_1_Kinetic_1_sh,
       VRR_b_1_Kinetic_1_sh
