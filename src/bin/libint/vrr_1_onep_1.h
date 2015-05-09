@@ -98,15 +98,24 @@ namespace libint2 {
         auto AB = factory.make_child(a,b);
         if (is_simple()) { expr_ = Vector(where == InBra ? "PA" : "PB")[dir] * AB; nflops_+=1; }
 
-        auto am1 = a - _1;
-        if (exists(am1)) {
+        auto am1 = a - _1; auto am1_exists = exists(am1);
+        auto bm1 = b - _1; auto bm1_exists = exists(bm1);
+
+        if (am1_exists && not bm1_exists) {
           auto Am1B = factory.make_child(am1,b);
           if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * Am1B;  nflops_+=3; }
         }
-        auto bm1 = b - _1;
-        if (exists(bm1)) {
+        if (bm1_exists && not am1_exists) {
           auto ABm1 = factory.make_child(a,bm1);
           if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * ABm1;  nflops_+=3; }
+        }
+        if (am1_exists && bm1_exists) {
+          auto Am1B = factory.make_child(am1,b);
+          auto ABm1 = factory.make_child(a,bm1);
+          if (is_simple()) {
+            expr_ += Scalar("oo2z") * (Vector(a)[dir] * Am1B + Vector(a)[dir] * Am1B);
+            nflops_+=5;
+          }
         }
       }
 
