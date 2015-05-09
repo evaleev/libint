@@ -200,12 +200,6 @@ SafePtr<Prefactors::cdouble>
 Prefactors::Cdouble(double a)
 {
   return prefactor::Scalar(a);
-#if 0
-  SafePtr<cdouble> tmp(new cdouble(a));
-  typedef CTimeSingletons<double>::ManagerType ManagerType;
-  const ManagerType::value_type& result = CTimeSingletons<double>::Manager()->find(tmp);
-  return result.second;
-#endif
 }
 #endif
 
