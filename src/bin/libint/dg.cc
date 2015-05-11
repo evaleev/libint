@@ -965,24 +965,23 @@ DirectedGraph::remove_disconnected_vertices()
 {
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
-  for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
+  for(iter v=stack_.begin(); v!=stack_.end();) {
     const ver_ptr& vptr = vertex_ptr(*v);
+    iter vnext = v; ++vnext; // note the next value of iterator before trying to erase
     if ((vptr)->num_entry_arcs() == 0 && (vptr)->num_exit_arcs() == 0 && (vptr)->is_a_target() == false) {
 #if DEBUG
       cout << "Trying to erase disconnected vertex " << (vptr)->description() << " num_vertices = " << num_vertices() << endl;
 #endif
-      iter vprev = v; --vprev;
       try { del_vertex(v); }
       catch (CannotPerformOperation& v) {
 #if DEBUG
         cout << "But couldn't!!!" << endl;
 #endif
-        ++vprev;
         throw v;
       }
-      // current vertex was erased, so need to decrease the iterator as well
-      v = vprev;
     }
+    // update the iterator
+    v = vnext;
   }
 }
 
