@@ -384,14 +384,6 @@ namespace libint2 {
           auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
           fm_eval_->eval(fm_ptr, U, ltot);
 
-          double fm_ref[25];
-          libint2::FmEval_Reference2<real_t>::eval(fm_ref, U, ltot, 1e-20);
-          for(int m=0;m<=ltot;++m)
-            if (std::abs((fm_ref[m] - fm_ptr[m])/fm_ref[m]) > 5e-15) {
-              std::cout << "m=" << m << " T=" << U << " relerr=" << std::abs((fm_ref[m] - fm_ptr[m])/fm_ref[m]) << " abserr=" << std::abs((fm_ref[m] - fm_ptr[m])) << std::endl;
-            }
-
-
           decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
           const auto pfac = - q_[oset].first * sqrt(gammap) * two_o_sqrt_PI * ovlp_ss;
           const auto ltot_p1 = ltot + 1;
