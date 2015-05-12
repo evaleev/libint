@@ -287,8 +287,7 @@ namespace libint2 {
         assert (LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD);
 
         // overlap and kinetic energy ints don't use HRR, hence VRR on both centers
-        if (type_ == overlap || type_ == kinetic ) {
-
+        // Coulomb potential do HRR on center 1 only
 #if LIBINT2_DEFINED(eri,PA_x)
           primdata.PA_x[0] = Px - A[0];
 #endif
@@ -298,6 +297,9 @@ namespace libint2 {
 #if LIBINT2_DEFINED(eri,PA_z)
           primdata.PA_z[0] = Pz - A[2];
 #endif
+
+        if (type_ == overlap || type_ == kinetic ) {
+
 #if LIBINT2_DEFINED(eri,PB_x)
           primdata.PB_x[0] = Px - B[0];
 #endif
