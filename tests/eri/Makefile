@@ -19,9 +19,8 @@ COMPILER_LIB = $(TOPDIR)/src/bin/libint/libINT.a
 COMPUTE_LIB = -L$(TOPDIR)/lib -L$(TOPDIR)/lib/.libs -lint2
 
 TEST = test
-AUXSRC = $(TOPDIR)/src/bin/test_eri/eri.cc
-CXXTESTSRC = $(TEST).cc $(AUXSRC)
 CXXTESTOBJ = $(CXXTESTSRC:%.cc=%.o)
+CXXTESTSRC = $(TEST).cc
 
 check:: $(TEST)
 	./$(TEST) 0 3 && ./$(TEST) 1 2 && ./$(TEST) 2 1
