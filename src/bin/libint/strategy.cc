@@ -17,15 +17,11 @@
  *
  */
 
-//
-// ... likely the most impressive piece of C++ code I've ever written ...
-//                    ------ ALL HAIL MPL ------
-
 #include <vector>
 #include <algorithm>
+
 #include <strategy.h>
 #include <dg.h>
-#include <rr.h>
 #include <rr.h>
 #include <graph_registry.h>
 #include <intset_to_ints.h>
@@ -35,6 +31,7 @@
 #include <master_ints_list.h>
 #include <master_rrs_list.h>
 
+// MPL is painful
 #include <boost/mpl/list.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/placeholders.hpp>
