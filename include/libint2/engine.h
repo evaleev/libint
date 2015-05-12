@@ -691,6 +691,8 @@ namespace libint2 {
         return *this;
       }
 
+      static bool skip_core_ints;
+
 #ifdef LIBINT2_ENGINE_TIMERS
       Timers<3> timers; // timers[0] -> prereqs
                         // timers[1] -> build (only meaningful if LIBINT2_PROFILE is not defined
@@ -1167,6 +1169,9 @@ namespace libint2 {
   }
 
   template <MultiplicativeSphericalTwoBodyKernel Kernel>
+  bool TwoBodyEngine<Kernel>::skip_core_ints = false;
+
+  template <MultiplicativeSphericalTwoBodyKernel Kernel>
   inline bool TwoBodyEngine<Kernel>::compute_primdata(Libint_t& primdata,
                                                       const Shell& sbra1,
                                                       const Shell& sbra2,
@@ -1233,7 +1238,8 @@ namespace libint2 {
     auto* fm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
     const auto mmax = amtot + deriv_order_;
 
-    detail::TwoBodyEngineDispatcher<Kernel>::core_eval(this, fm_ptr, mmax, T, rho);
+    if (!skip_core_ints)
+      detail::TwoBodyEngineDispatcher<Kernel>::core_eval(this, fm_ptr, mmax, T, rho);
 
     for(auto m=0; m!=mmax+1; ++m) {
       fm_ptr[m] *= pfac;
