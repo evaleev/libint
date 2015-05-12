@@ -136,6 +136,13 @@ namespace libint2 {
     /// cartesian components of pfac4 vector
     SafePtr<rdouble> R12kG12VRR_pfac4[np][3];
 
+    /**
+     * Precomputed 1-d integrals
+     */
+    /// (0|0)_xyz 1-d overlap integrals
+    SafePtr<rdouble> Overlap00_1d[3];
+
+
 #if CTIMEENTITIES_SINGLETONS
     /// integers represented as doubles
     SafePtr<cdouble> N_i[NMAX];

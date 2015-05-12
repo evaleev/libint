@@ -261,6 +261,10 @@ namespace libint2 {
     unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
     /// Returns the angular momentum
     unsigned int qn(unsigned int xyz=0) const { return qn_[0]; }
+    /// returns the angular momentum
+    unsigned int operator[](unsigned int xyz) const {
+      return this->qn(xyz);
+    }
 
     /// Comparison operator
     bool operator==(const CGShell&) const;
@@ -335,7 +339,7 @@ namespace libint2 {
     CGF();
     CGF(unsigned int qn[3], bool pure_sh = false);
     CGF(const CGF&);
-    CGF(const ConstructablePolymorphically&);
+    explicit CGF(const ConstructablePolymorphically&);
     virtual ~CGF();
     /// assignment
     CGF& operator=(const CGF&);
@@ -347,8 +351,11 @@ namespace libint2 {
     const std::string label() const;
     /// Returns the number of basis functions in the set (always 1)
     unsigned int num_bf() const { return 1; };
-    /// Returns the angular momentum
-    unsigned int qn(unsigned int xyz) const;
+    /// Returns the quantum number along \c axis
+    unsigned int qn(unsigned int axis) const;
+    unsigned int operator[](unsigned int axis) const {
+      return qn(axis);
+    }
 
     /// contains only solid harmonics with the same quantum number as this shell?
     /// (this may permit simplified RR to be used -- obviously must transform to solid harmonics later)
@@ -439,7 +446,7 @@ namespace libint2 {
     {
       qn_[0] = source.qn_[0];
     }
-    CGF1d(const ConstructablePolymorphically& sptr) :
+    explicit CGF1d(const ConstructablePolymorphically& sptr) :
       Contractable<CGF1d>(dynamic_cast<const CGF1d&>(sptr))
     {
       const CGF1d& sptr_cast = dynamic_cast<const CGF1d&>(sptr);
@@ -461,8 +468,14 @@ namespace libint2 {
       return *this;
     }
 
-    //CGF1d operator+(const CGF1d& A, const CGF1d& B);
-    CGF1d operator-(const CGF1d& B) {
+    CGF1d operator+(const CGF1d& B) const {
+      //assert(this->is_unit() == false && B.is_unit() == false);
+      CGF1d<Axis> Sum(*this);
+      Sum.inc(0,B.qn(0));
+      Sum.deriv_ += B.deriv_;
+      return Sum;
+    }
+    CGF1d operator-(const CGF1d& B) const {
       //assert(A.is_unit() == false && B.is_unit() == false);
       CGF1d Diff(*this);
       Diff.dec(0,B.qn(0));
@@ -609,7 +622,7 @@ namespace libint2 {
 
     static constexpr CartesianAxis axis = Axis;
 
-    /// As far as SetIterator is concerned, CGShell1d is a set CGF1d's
+    /// CGShell1d is a set CGF1d's
     typedef CGF1d<Axis> iter_type;
     typedef IncableBFSet parent_type;
 
@@ -621,14 +634,6 @@ namespace libint2 {
         deriv_(source.deriv_), unit_(source.unit_)
     {
       qn_[0] = source.qn_[0];
-    }
-    CGShell1d(const ConstructablePolymorphically& sptr) :
-      Contractable<CGShell1d>(dynamic_cast<const CGShell1d&>(sptr))
-    {
-      const CGShell1d& sptr_cast = dynamic_cast<const CGShell1d&>(sptr);
-      qn_[0] = sptr_cast.qn_[0];
-      deriv_ = sptr_cast.deriv_;
-      unit_ = sptr_cast.unit_;
     }
     virtual ~CGShell1d() {
     }

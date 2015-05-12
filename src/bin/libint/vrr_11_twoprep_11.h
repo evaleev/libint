@@ -170,9 +170,9 @@ namespace libint2 {
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(a)[dir] * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(a[dir]) * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
 #endif
         }
         const F& bm1 = b - _1;
@@ -181,20 +181,20 @@ namespace libint2 {
           auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(b)[dir] * Scalar("oo2z") * (Scalar("roz") * ABm1CD_mp1 - ABm1CD_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(b[dir]) * Scalar("oo2z") * (Scalar("roz") * ABm1CD_mp1 - ABm1CD_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
 #endif
         }
         const F& cm1 = c - _1;
         if (exists(cm1)) {
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
-          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
           auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
-          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
         }
       }
       // Build on B
@@ -222,9 +222,9 @@ namespace libint2 {
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(a)[dir] * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(a[dir]) * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
 #endif
         }
         // simplified 3-center VRR due to Ahlrichs (PCCP 6, 5119 (2004))
@@ -235,20 +235,20 @@ namespace libint2 {
           auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(b)[dir] * Scalar("oo2z") * (Scalar("roz") * ABm1CD_mp1 - ABm1CD_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(b[dir]) * Scalar("oo2z") * (Scalar("roz") * ABm1CD_mp1 - ABm1CD_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
 #endif
         }
         const F& cm1 = c - _1;
         if (exists(cm1)) {
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
-          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
           auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
-          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
         }
       }
       // Build on C
@@ -278,9 +278,9 @@ namespace libint2 {
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(c)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(c[dir]) * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
 #endif
         }
         const F& dm1 = d - _1;
@@ -289,20 +289,20 @@ namespace libint2 {
           auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(d)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCDm1_mp1 - ABCDm1_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(d[dir]) * Scalar("oo2e") * (Scalar("roe") * ABCDm1_mp1 - ABCDm1_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
 #endif
         }
         const F& am1 = a - _1;
         if (exists(am1)) {
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
-          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
           auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
-          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
         }
       }
       // Build on D
@@ -330,9 +330,9 @@ namespace libint2 {
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(c)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(c[dir]) * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
 #endif
         }
         // simplified 3-center VRR due to Ahlrichs (PCCP 6, 5119 (2004))
@@ -343,20 +343,20 @@ namespace libint2 {
           auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(d)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCDm1_mp1 - ABCDm1_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(d[dir]) * Scalar("oo2e") * (Scalar("roe") * ABCDm1_mp1 - ABCDm1_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
 #endif
         }
         const F& am1 = a - _1;
         if (exists(am1)) {
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
-          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
           auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
-          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
         }
       }
 

@@ -184,6 +184,19 @@ Prefactors::Prefactors() :
     rho_o_alpha12[p] = roz_ptr;
   }
 
+
+  //
+  // precomputed 1-d ints
+  //
+  {
+    for(unsigned int xyz=0; xyz!=3; ++xyz) {
+      std::ostringstream oss;
+      oss << "_0_Overlap_0_" << to_string(CartesianAxis(xyz));
+      rdptr p(new rdouble(oss.str()));
+      Overlap00_1d[xyz] = p;
+    }
+  }
+
 #if CTIMEENTITIES_SINGLETONS
   for(unsigned int i=0; i<NMAX; i++) {
     N_i[i] = prefactor::Scalar((double)i);

@@ -232,10 +232,11 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
   const std::string task = task_label(label, deriv_level);
   const std::string task_uc = task_label(label, deriv_level);
   typedef ShellSet Onebody_sh_1_1;
-  vector<CGShell*> shells;
+  typedef typename Onebody_sh_1_1::BasisFunctionType BFType;
+  vector<BFType*> shells;
   unsigned int lmax = cparams->max_am(task);
   for(unsigned int l=0; l<=lmax; l++) {
-    shells.push_back(new CGShell(l));
+    shells.push_back(new BFType(l));
   }
   ImplicitDimensions::set_default_dims(cparams);
 
@@ -263,8 +264,11 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
   for(unsigned int la=0; la<=lmax; la++) {
     for(unsigned int lb=0; lb<=lmax; lb++) {
 
-          // skip s|s integrals -- no need to involve LIBINT here
-          if (deriv_level == 0 && la == 0 && lb == 0)
+          // skip s|s overlap and elecpot integrals -- no need to involve LIBINT here
+          if (deriv_level == 0 && la == 0 && lb == 0 &&
+              (std::is_same<ShellSet,Overlap_1_1_sh>::value ||
+               std::is_same<ShellSet,ElecPot_1_1_sh>::value)
+             )
             continue;
 
 #if STUDY_MEMORY_USAGE
@@ -277,7 +281,9 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           using std::max;
           const unsigned int max_am = max(la,lb);
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 0;
+          const bool need_to_unroll = l_to_cgshellsize(la)*l_to_cgshellsize(lb) <= cparams->unroll_threshold();
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
+
           dg->registry()->unroll_threshold(unroll_threshold);
           dg->registry()->do_cse(need_to_optimize);
           dg->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
@@ -295,14 +301,15 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           std::vector< SafePtr<Onebody_sh_1_1> > targets;
           bool last_deriv = false;
           do {
-            CGShell a(la);
-            CGShell b(lb);
+            BFType a(la);
+            BFType b(lb);
 
             unsigned int center = 0;
             for(unsigned int i=0; i<2; ++i) {
               if (i == center_to_skip)
                 continue;
-              for(unsigned int xyz=0; xyz<3; ++xyz) {
+              const unsigned int ndir = std::is_same<BFType,CGShell>::value ? 3 : 1;
+              for(unsigned int xyz=0; xyz<ndir; ++xyz) {
                 if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
                 if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
               }
@@ -327,8 +334,8 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           // use the label of the nondifferentiated integral as a base
           std::string ab_label;
           {
-            CGShell a(la);
-            CGShell b(lb);
+            BFType a(la);
+            BFType b(lb);
             SafePtr<Onebody_sh_1_1> ab = Onebody_sh_1_1::Instance(a,b,nullaux);
             ab_label = ab->label();
           }
@@ -343,6 +350,8 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
             }
             label += ab_label;
           }
+
+          std::cout << "working on " << label << " ... ";
 
           std::string prefix(cparams->source_directory());
           std::deque<std::string> decl_filenames;
@@ -380,6 +389,8 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
 #endif
           dg->reset();
           memman->reset();
+
+          std::cout << "done" << std::endl;
 
     } // end of b loop
   } // end of a loop
@@ -467,7 +478,7 @@ void try_main (int argc, char* argv[])
     cparams->max_am_opt( task_label("kinetic", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
     cparams->max_am_opt( task_label("elecpot", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
 #elif defined(ONEBODY_OPT_AM)
-    cparams->max_am_opt( task_label("onebody", d) , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label("overlap", d) , ONEBODY_OPT_AM);
     cparams->max_am_opt( task_label("kinetic", d) , ONEBODY_OPT_AM);
     cparams->max_am_opt( task_label("elecpot", d) , ONEBODY_OPT_AM);
 #endif
@@ -1693,8 +1704,6 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy);
   SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-  //SafePtr<Tactic> tactic(new RandomChoiceTactic());
-  //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
   for(int la=0; la<=lmax; la++) {
     for(int lb=0; lb<=lmax; lb++) {
       for(int lc=0; lc<=lmax; lc++) {

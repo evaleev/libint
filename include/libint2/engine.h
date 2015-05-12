@@ -185,16 +185,14 @@ namespace libint2 {
             }
             primdata_[0].contrdepth = p12;
 
-            if (lmax == 0) { // (s|s)
+            if (lmax == 0 && type_ != kinetic) { // (s|s) or (s|V|s)
               auto& result = primdata_[0].stack[0];
               switch (type_) {
                 case overlap:
                 for(auto p12=0; p12 != primdata_[0].contrdepth; ++p12)
-                  result += primdata_[p12].LIBINT_T_S_OVERLAP_S[0];
-                  break;
-                case kinetic:
-                for(auto p12=0; p12 != primdata_[0].contrdepth; ++p12)
-                  result += primdata_[p12].LIBINT_T_S_KINETIC_S[0];
+                  result += primdata_[p12]._0_Overlap_0_x[0]
+                          * primdata_[p12]._0_Overlap_0_y[0]
+                          * primdata_[p12]._0_Overlap_0_z[0];
                   break;
                 case nuclear:
                 for(auto p12=0; p12 != primdata_[0].contrdepth; ++p12)
@@ -281,11 +279,15 @@ namespace libint2 {
         const auto AB_x = A[0] - B[0];
         const auto AB_y = A[1] - B[1];
         const auto AB_z = A[2] - B[2];
-        const auto AB2 = AB_x*AB_x + AB_y*AB_y + AB_z*AB_z;
+        const auto AB2_x = AB_x * AB_x;
+        const auto AB2_y = AB_y * AB_y;
+        const auto AB2_z = AB_z * AB_z;
+        const auto AB2 = AB2_x + AB2_y + AB2_z;
 
-        if (LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD // always VRR on bra, and HRR to bra (overlap, coulomb)
-            || type_ == kinetic // kinetic energy ints don't use HRR, hence VRR on both centers
-           ) {
+        assert (LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD);
+
+        // overlap and kinetic energy ints don't use HRR, hence VRR on both centers
+        if (type_ == overlap || type_ == kinetic ) {
 
 #if LIBINT2_DEFINED(eri,PA_x)
           primdata.PA_x[0] = Px - A[0];
@@ -296,20 +298,6 @@ namespace libint2 {
 #if LIBINT2_DEFINED(eri,PA_z)
           primdata.PA_z[0] = Pz - A[2];
 #endif
-#if LIBINT2_DEFINED(eri,AB_x)
-          primdata.AB_x[0] = A[0] - B[0];
-#endif
-#if LIBINT2_DEFINED(eri,AB_y)
-          primdata.AB_y[0] = A[1] - B[1];
-#endif
-#if LIBINT2_DEFINED(eri,AB_z)
-          primdata.AB_z[0] = A[2] - B[2];
-#endif
-        }
-        if (LIBINT2_SHELLQUARTET_SET != LIBINT2_SHELLQUARTET_SET_STANDARD
-            || type_ == kinetic)
-        { // always VRR on ket, HRR to ket (overlap, coulomb), or kinetic energy ints
-
 #if LIBINT2_DEFINED(eri,PB_x)
           primdata.PB_x[0] = Px - B[0];
 #endif
@@ -319,32 +307,11 @@ namespace libint2 {
 #if LIBINT2_DEFINED(eri,PB_z)
           primdata.PB_z[0] = Pz - B[2];
 #endif
-#if LIBINT2_DEFINED(eri,BA_x)
-          primdata.BA_x[0] = B[0] - A[0];
-#endif
-#if LIBINT2_DEFINED(eri,BA_y)
-          primdata.BA_y[0] = B[1] - A[1];
-#endif
-#if LIBINT2_DEFINED(eri,BA_z)
-          primdata.BA_z[0] = B[2] - A[2];
-#endif
         }
 
 #if LIBINT2_DEFINED(eri,oo2z)
         primdata.oo2z[0] = 0.5*oogammap;
 #endif
-
-        if (type_ == kinetic) { // additional factors for kinetic energy
-#if LIBINT2_DEFINED(eri,rho12_over_alpha1)
-          primdata.rho12_over_alpha1[0] = alpha2 * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri,rho12_over_alpha2)
-          primdata.rho12_over_alpha2[0] = alpha1 * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri,two_rho12)
-          primdata.two_rho12[0] = 2. * rhop;
-#endif
-        }
 
         if (type_ == nuclear) { // additional factor for electrostatic potential
           const auto& C = q_[oset].second;
@@ -357,6 +324,17 @@ namespace libint2 {
 #if LIBINT2_DEFINED(eri,PC_z)
           primdata.PC_z[0] = Pz - C[2];
 #endif
+          // elecpot uses HRR
+#if LIBINT2_DEFINED(eri,AB_x)
+          primdata.AB_x[0] = A[0] - B[0];
+#endif
+#if LIBINT2_DEFINED(eri,AB_y)
+          primdata.AB_y[0] = A[1] - B[1];
+#endif
+#if LIBINT2_DEFINED(eri,AB_z)
+          primdata.AB_z[0] = A[2] - B[2];
+#endif
+
         }
 
         if (deriv_order_ > 0) {
@@ -364,14 +342,23 @@ namespace libint2 {
           assert(false);
         }
 
-        const auto K1 = exp(- rhop * AB2) * oogammap;
-        decltype(K1) sqrt_PI_cubed(5.56832799683170784528481798212);
-        const auto ovlp_ss = sqrt_PI_cubed * sqrt(oogammap) * K1 * c1 * c2;
+        decltype(c1) sqrt_PI(1.77245385090551602729816748334);
+        const auto xyz_pfac = sqrt_PI * sqrt(oogammap);
+        const auto ovlp_ss_x = exp(- rhop * AB2_x) * xyz_pfac * c1 * c2;
+        const auto ovlp_ss_y = exp(- rhop * AB2_y) * xyz_pfac;
+        const auto ovlp_ss_z = exp(- rhop * AB2_z) * xyz_pfac;
 
-        primdata.LIBINT_T_S_OVERLAP_S[0] = ovlp_ss;
+        primdata._0_Overlap_0_x[0] = ovlp_ss_x;
+        primdata._0_Overlap_0_y[0] = ovlp_ss_y;
+        primdata._0_Overlap_0_z[0] = ovlp_ss_z;
 
         if (type_ == kinetic) {
-          primdata.LIBINT_T_S_KINETIC_S[0] = rhop * (3. - 2.*rhop*AB2) * ovlp_ss;
+#if LIBINT2_DEFINED(eri,two_alpha0_bra)
+          primdata.two_alpha0_bra[0] = 2.0 * alpha1;
+#endif
+#if LIBINT2_DEFINED(eri,two_alpha0_ket)
+          primdata.two_alpha0_ket[0] = 2.0 * alpha2;
+#endif
         }
 
         if (type_ == nuclear) {
@@ -385,7 +372,7 @@ namespace libint2 {
           fm_eval_->eval(fm_ptr, U, ltot);
 
           decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
-          const auto pfac = - q_[oset].first * sqrt(gammap) * two_o_sqrt_PI * ovlp_ss;
+          const auto pfac = - q_[oset].first * sqrt(gammap) * two_o_sqrt_PI * ovlp_ss_x * ovlp_ss_y * ovlp_ss_z;
           const auto ltot_p1 = ltot + 1;
           for(auto m=0; m!=ltot_p1; ++m) {
             fm_ptr[m] *= pfac;

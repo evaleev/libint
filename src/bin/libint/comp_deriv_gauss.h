@@ -153,7 +153,7 @@ namespace libint2 {
           auto int_am1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
           bra->set_member(a,part,0);
           if (is_simple()) {
-            expr_ -= Vector(a)[dir] * int_am1;  nflops_+=2;
+            expr_ -= Scalar(a[dir]) * int_am1;  nflops_+=2;
           }
         }
         return;
@@ -182,7 +182,7 @@ namespace libint2 {
           auto int_am1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
           ket->set_member(a,part,0);
           if (is_simple()) {
-            expr_ -= Vector(a)[dir] * int_am1;  nflops_+=2;
+            expr_ -= Scalar(a[dir]) * int_am1;  nflops_+=2;
           }
         }
         return;
