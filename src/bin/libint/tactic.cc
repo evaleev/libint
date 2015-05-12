@@ -42,11 +42,14 @@ FewestNewVerticesTactic::optimal_rr(const rr_stack& stack) const {
   if (!stack.empty()) {
     unsigned int best_rr = 0;
     unsigned int min_nchildren = 1000000000;
-    // Loop over all RRs and find the one with the fewest children
+    // Loop over all RRs and find the one with the fewest new children
     for(unsigned int i=0; i<stack.size(); i++) {
-      unsigned int nchildren = dg_->num_children_on(stack[i]);
-      if (nchildren < min_nchildren) {
-        min_nchildren = nchildren;
+      int nchildren = stack[i]->num_children();
+      int nchildren_on_dg = dg_->num_children_on(stack[i]);
+      assert(nchildren >= nchildren);
+      int nchildren_new = nchildren - nchildren_on_dg;
+      if (nchildren_new < min_nchildren) {
+        min_nchildren = nchildren_new;
         best_rr = i;
       }
     }
@@ -60,7 +63,7 @@ FewestNewVerticesTactic::optimal_rr(const rr_stack& stack) const {
 ZeroNewVerticesTactic::RR
 ZeroNewVerticesTactic::optimal_rr(const rr_stack& stack) const {
   if (!stack.empty()) {
-    // Loop over all RRs and find the one with zero children
+    // Loop over all RRs and find the first one with zero children
     for(unsigned int i=0; i<stack.size(); i++) {
       const RR& rr = stack[i];
       const unsigned int nchildren = rr->num_children();
