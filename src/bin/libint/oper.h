@@ -21,6 +21,9 @@
 #define _libint2_src_bin_libint_oper_h_
 
 #include <string>
+
+#include <boost/preprocessor/list/for_each.hpp>
+
 #include <hashable.h>
 #include <global_macros.h>
 #include <util.h>
@@ -170,7 +173,7 @@ namespace libint2 {
       GenOper(const SafePtr<GenOper>& o) : descr_(o->descr_) {}
       GenOper(const SafePtr<OperSet>& o) : descr_(require_dynamic_cast<GenOper,OperSet>(o)->descr_) {}
       GenOper(const SafePtr<ConstructablePolymorphically>& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(o)->descr_) {}
-      GenOper(const ConstructablePolymorphically& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(&o)->descr_) {}
+      explicit GenOper(const ConstructablePolymorphically& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(&o)->descr_) {}
       virtual ~GenOper() {}
 
     private:
@@ -217,44 +220,24 @@ namespace libint2 {
   };
   typedef GenOper< GenMultSymmOper_Descr<2>  > GenMultSymm2BodyOper;
 
-  /** Overlap is a one-body overlap operator
-  */
-  struct Overlap_Descr : public Contractable<Overlap_Descr> {
-    typedef Multiplicative1Body_Props Properties;
-    static const unsigned int max_key = 1;
-    unsigned int key() const { return 0; }
-    std::string description() const { return "Overlap"; }
-    std::string label() const { return "Overlap"; }
-    int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { return +1; }
-  };
-  typedef GenOper<Overlap_Descr> OverlapOper;
+#define BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR(r,mult,prefix)                                        \
+    struct prefix ## _Descr : public Contractable<prefix ## _Descr> {                                         \
+      typedef mult ## 1Body_Props Properties;                                                    \
+      static const unsigned int max_key = 1;                                                              \
+      unsigned int key() const { return 0; }                                                              \
+      std::string description() const { return #prefix; }                                                  \
+      std::string label() const { return #prefix; }                                                        \
+      int psymm(int i, int j) const { assert(false); }                                                    \
+      int hermitian(int i) const { return +1; }                                                           \
+    };                                                                                                    \
+    typedef GenOper<prefix ## _Descr> prefix ## Oper;                                                         \
 
-  /** Kinetic is a one-body kinetic energy operator
-  */
-  struct Kinetic_Descr : public Contractable<Kinetic_Descr> {
-    typedef Nonmultiplicative1Body_Props Properties;
-    static const unsigned int max_key = 1;
-    unsigned int key() const { return 0; }
-    std::string description() const { return "Kinetic"; }
-    std::string label() const { return "Kinetic"; }
-    int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { return +1; }
-  };
-  typedef GenOper<Kinetic_Descr> KineticOper;
-
-  /** ElecPot is the electrostatic potential (Coulomb) operator
-  */
-  struct ElecPot_Descr : public Contractable<ElecPot_Descr> {
-    typedef Multiplicative1Body_Props Properties;
-    static const unsigned int max_key = 1;
-    unsigned int key() const { return 0; }
-    std::string description() const { return "ElecPot"; }
-    std::string label() const { return "ElecPot"; }
-    int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { return +1; }
-  };
-  typedef GenOper<ElecPot_Descr> ElecPotOper;
+#define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (Kinetic, BOOST_PP_NIL)
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, Nonmultiplicative, BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST)
+#undef BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST
+#define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (Overlap, (ElecPot, BOOST_PP_NIL))
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, Multiplicative, BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST)
+#undef BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST
 
   /** TwoPRep is the two-body repulsion operator.
   */
