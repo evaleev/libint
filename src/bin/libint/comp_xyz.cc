@@ -33,7 +33,8 @@
 #include <singl_stack.h>
 
 using namespace std;
-using namespace libint2;
+
+namespace libint2 {
 
 template<>
 void CR_XYZ_1_1<CGShell,OverlapOper,EmptySet>::compute(const CGShell& a, const CGShell& b) {
@@ -187,3 +188,5 @@ void CR_XYZ_1_1<CGF1d<CartesianAxis_ ## elem>,KineticOper,EmptySet>::compute(con
 #define BOOST_PP_XYZ_LIST (X, (Y, (Z, BOOST_PP_NIL)))
 BOOST_PP_LIST_FOR_EACH ( BOOST_PP_CR_XYZ_1_1_1D_KINETIC_COMPUTE, _, BOOST_PP_XYZ_LIST)
 #undef BOOST_PP_XYZ_LIST
+
+} // namespace libint2
