@@ -26,20 +26,6 @@ using namespace std;
 
 namespace libint2 {
 
-//  class CR_DerivGauss_GenericInstantiator {
-//      static CR_DerivGauss_GenericInstantiator instance_;
-//
-//      CR_DerivGauss_GenericInstantiator(); // this is a singleton
-//      ~CR_DerivGauss_GenericInstantiator();
-//
-//      // pairs of L,vectorize specify the instances of GenericGaussDeriv template to be created
-//      std::set<std::pair<unsigned int, bool> > template_instances_;
-//
-//    public:
-//      static CR_DerivGauss_GenericInstantiator& instance();
-//      void add(unsigned int L, bool vectorize);
-//  };
-
   /**
    * this computes integral over Oper over CGShell/CGF as a product of 1-d integrals
    * @tparam F basis function type. valid choices are CGShell or CGF
@@ -52,6 +38,7 @@ namespace libint2 {
     public:
       typedef CR_XYZ_1_1<F, Oper, AuxQuanta> ThisType;
       typedef F BasisFunctionType;
+      typedef Oper OperType;
       typedef GenIntegralSet_1_1<F,Oper,AuxQuanta> TargetType;
       typedef GenericRecurrenceRelation<ThisType,BasisFunctionType,TargetType> ParentType;
       friend class GenericRecurrenceRelation<ThisType,BasisFunctionType,TargetType>;
@@ -73,7 +60,7 @@ namespace libint2 {
       static std::string descr() { return "CR"; }
 
       /// specialize this for the given operator type and CGF
-      void compute(const BasisFunctionType& bra, const BasisFunctionType& ket);
+      void compute(const BasisFunctionType& bra, const BasisFunctionType& ket, const Oper& oper);
   };
 
   template <typename F, typename Oper, typename AuxQuanta>
@@ -98,37 +85,7 @@ namespace libint2 {
           return;
       }
 
-      // shell set? for now assume it will be unrolled
-//      auto F_is_shell = std::is_same<F,CGShell>::value;
-//      assert (not F_is_shell);
-//        {
-//          typedef CGShell1d<CartesianAxis_X> F1;
-//          typedef GenIntegralSet_1_1<F1,Oper,AuxQuanta> ChildType;
-//          ChildFactory<ThisType,ChildType> factory(this);
-//          F1 a_(a.norm() + a.deriv().norm());
-//          F1 b_(b.norm() + b.deriv().norm());
-//          auto _ = factory.make_child(a_,b_);
-//        }
-//        {
-//          typedef CGShell1d<CartesianAxis_Y> F1;
-//          typedef GenIntegralSet_1_1<F1,Oper,AuxQuanta> ChildType;
-//          ChildFactory<ThisType,ChildType> factory(this);
-//          F1 a_(a.norm() + a.deriv().norm());
-//          F1 b_(b.norm() + b.deriv().norm());
-//          auto _ = factory.make_child(a_,b_);
-//        }
-//        {
-//          typedef CGShell1d<CartesianAxis_Z> F1;
-//          typedef GenIntegralSet_1_1<F1,Oper,AuxQuanta> ChildType;
-//          ChildFactory<ThisType,ChildType> factory(this);
-//          F1 a_(a.norm() + a.deriv().norm());
-//          F1 b_(b.norm() + b.deriv().norm());
-//          auto _ = factory.make_child(a_,b_);
-//        }
-
-      compute(a,b);
-
-      return;
+      compute(a,b,oper);
     } // CR_XYZ_1_1<F,Oper,AuxQuanta>::CR_XYZ_1_1
 
 }; // namespace libint2

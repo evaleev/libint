@@ -44,6 +44,8 @@ namespace libint2 {
   typedef GenIntegralSet_1_1<CGF,KineticOper,EmptySet> Kinetic_1_1_int;
   typedef GenIntegralSet_1_1<CGShell,ElecPotOper,mType> ElecPot_1_1_sh;
   typedef GenIntegralSet_1_1<CGF,ElecPotOper,mType> ElecPot_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,CartesianMultipoleOper<3u>,EmptySet> CMultipole_1_1_sh;
+  typedef GenIntegralSet_1_1<CGF,CartesianMultipoleOper<3u>,EmptySet> CMultipole_1_1_int;
 
   typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,OverlapOper,EmptySet> Overlap_1_1_sh_x;
   typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper,EmptySet> Overlap_1_1_sh_y;
@@ -57,6 +59,13 @@ namespace libint2 {
   typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_X>,KineticOper,EmptySet> Kinetic_1_1_int_x;
   typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Y>,KineticOper,EmptySet> Kinetic_1_1_int_y;
   typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Z>,KineticOper,EmptySet> Kinetic_1_1_int_z;
+
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_sh_x;
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_Y>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_sh_y;
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_Z>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_sh_z;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_X>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_int_x;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Y>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_int_y;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Z>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_int_z;
 #endif
 
   //////////////////////////
@@ -110,6 +119,14 @@ namespace libint2 {
   Kinetic_1_1_int_z,
   ElecPot_1_1_sh,
   ElecPot_1_1_int,
+  CMultipole_1_1_sh,
+  CMultipole_1_1_int,
+  CMultipole_1_1_sh_x,
+  CMultipole_1_1_sh_y,
+  CMultipole_1_1_sh_z,
+  CMultipole_1_1_int_x,
+  CMultipole_1_1_int_y,
+  CMultipole_1_1_int_z,
 #endif
   TwoPRep_11_11_sq,
   TwoPRep_11_11_int,

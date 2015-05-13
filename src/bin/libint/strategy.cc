@@ -329,19 +329,44 @@ namespace libint2 {
         CR_XYZ_1_1<CGF,KineticOper>
       > value;
     };
-  template <> struct MasterStrategy<GenIntegralSet_1_1<CGF1d<CartesianAxis_X>,KineticOper,EmptySet>> {
+  template <> struct MasterStrategy<Kinetic_1_1_int_x> {
       typedef mpl::list<
         CR_XYZ_1_1<CGF1d<CartesianAxis_X>,KineticOper>
       > value;
     };
-  template <> struct MasterStrategy<GenIntegralSet_1_1<CGF1d<CartesianAxis_Y>,KineticOper,EmptySet>> {
+  template <> struct MasterStrategy<Kinetic_1_1_int_y> {
       typedef mpl::list<
         CR_XYZ_1_1<CGF1d<CartesianAxis_Y>,KineticOper>
       > value;
     };
-  template <> struct MasterStrategy<GenIntegralSet_1_1<CGF1d<CartesianAxis_Z>,KineticOper,EmptySet>> {
+  template <> struct MasterStrategy<Kinetic_1_1_int_z> {
       typedef mpl::list<
         CR_XYZ_1_1<CGF1d<CartesianAxis_Z>,KineticOper>
+      > value;
+    };
+  template <> struct MasterStrategy<CMultipole_1_1_sh> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGShell,CartesianMultipoleOper<3u>>
+      > value;
+    };
+  template <> struct MasterStrategy<CMultipole_1_1_int> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGF,CartesianMultipoleOper<3u>>
+      > value;
+    };
+  template <> struct MasterStrategy<CMultipole_1_1_int_x> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGF1d<CartesianAxis_X>,CartesianMultipoleOper<1u>>
+      > value;
+    };
+  template <> struct MasterStrategy<CMultipole_1_1_int_y> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGF1d<CartesianAxis_Y>,CartesianMultipoleOper<1u>>
+      > value;
+    };
+  template <> struct MasterStrategy<CMultipole_1_1_int_z> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGF1d<CartesianAxis_Z>,CartesianMultipoleOper<1u>>
       > value;
     };
 #endif // LIBINT_SUPPORT_ONEBODYINTS

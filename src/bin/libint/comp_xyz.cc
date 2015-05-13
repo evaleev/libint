@@ -17,13 +17,12 @@
  *
  */
 
+#include <boost/preprocessor/list/for_each.hpp>
+
 #include <rr.h>
 #include <comp_xyz.h>
 #include <integral_1_1.h>
 #include <prefactors.h>
-
-#include <boost/preprocessor/list/for_each.hpp>
-
 #include <strategy.h>
 #include <dg.h>
 #include <rr.h>
@@ -37,7 +36,7 @@ using namespace std;
 namespace libint2 {
 
 template<>
-void CR_XYZ_1_1<CGShell,OverlapOper,EmptySet>::compute(const CGShell& a, const CGShell& b) {
+void CR_XYZ_1_1<CGShell,OverlapOper,EmptySet>::compute(const CGShell& a, const CGShell& b, const OperType&) {
   using namespace libint2::algebra;
   using namespace libint2::prefactor;
   using namespace libint2::braket;
@@ -56,20 +55,26 @@ void CR_XYZ_1_1<CGShell,OverlapOper,EmptySet>::compute(const CGShell& a, const C
 }
 
 template<>
-void CR_XYZ_1_1<CGShell1d<CartesianAxis_X>,OverlapOper,EmptySet>::compute(const CGShell1d<CartesianAxis_X>& a, const CGShell1d<CartesianAxis_X>& b) {
+void CR_XYZ_1_1<CGShell1d<CartesianAxis_X>,OverlapOper,EmptySet>::compute(const CGShell1d<CartesianAxis_X>& a,
+                                                                          const CGShell1d<CartesianAxis_X>& b,
+                                                                          const OperType&) {
   this->add_child(prefactor::Scalar("_0_Overlap_0_x"));
 }
 template<>
-void CR_XYZ_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper,EmptySet>::compute(const CGShell1d<CartesianAxis_Y>& a, const CGShell1d<CartesianAxis_Y>& b) {
+void CR_XYZ_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper,EmptySet>::compute(const CGShell1d<CartesianAxis_Y>& a,
+                                                                          const CGShell1d<CartesianAxis_Y>& b,
+                                                                          const OperType&) {
   this->add_child(prefactor::Scalar("_0_Overlap_0_y"));
 }
 template<>
-void CR_XYZ_1_1<CGShell1d<CartesianAxis_Z>,OverlapOper,EmptySet>::compute(const CGShell1d<CartesianAxis_Z>& a, const CGShell1d<CartesianAxis_Z>& b) {
+void CR_XYZ_1_1<CGShell1d<CartesianAxis_Z>,OverlapOper,EmptySet>::compute(const CGShell1d<CartesianAxis_Z>& a,
+                                                                          const CGShell1d<CartesianAxis_Z>& b,
+                                                                          const OperType&) {
   this->add_child(prefactor::Scalar("_0_Overlap_0_z"));
 }
 
 template<>
-void CR_XYZ_1_1<CGF,OverlapOper,EmptySet>::compute(const CGF& a, const CGF& b) {
+void CR_XYZ_1_1<CGF,OverlapOper,EmptySet>::compute(const CGF& a, const CGF& b, const OperType&) {
 
   using namespace libint2::algebra;
   using namespace libint2::prefactor;
@@ -95,7 +100,7 @@ void CR_XYZ_1_1<CGF,OverlapOper,EmptySet>::compute(const CGF& a, const CGF& b) {
 } // end of Overlap compute
 
 template<>
-void CR_XYZ_1_1<CGShell,KineticOper,EmptySet>::compute(const CGShell& a, const CGShell& b) {
+void CR_XYZ_1_1<CGShell,KineticOper,EmptySet>::compute(const CGShell& a, const CGShell& b, const OperType&) {
   using namespace libint2::algebra;
   using namespace libint2::prefactor;
   using namespace libint2::braket;
@@ -116,7 +121,7 @@ void CR_XYZ_1_1<CGShell,KineticOper,EmptySet>::compute(const CGShell& a, const C
 
 
 template<>
-void CR_XYZ_1_1<CGF,KineticOper,EmptySet>::compute(const CGF& a, const CGF& b) {
+void CR_XYZ_1_1<CGF,KineticOper,EmptySet>::compute(const CGF& a, const CGF& b, const OperType&) {
 
   using namespace libint2::algebra;
   // why do I need this? when this function is in header clang-602.0.49 on OS X works without this
@@ -152,7 +157,8 @@ void CR_XYZ_1_1<CGF,KineticOper,EmptySet>::compute(const CGF& a, const CGF& b) {
 #define BOOST_PP_CR_XYZ_1_1_1D_KINETIC_COMPUTE(r,data,elem)                                               \
 template<>                                                                                                \
 void CR_XYZ_1_1<CGF1d<CartesianAxis_ ## elem>,KineticOper,EmptySet>::compute(const BasisFunctionType& a,  \
-                                                                             const BasisFunctionType& b) {\
+                                                                             const BasisFunctionType& b,  \
+                                                                             const OperType&) {           \
   using namespace libint2::algebra;                                                                       \
   using namespace libint2::prefactor;                                                                     \
   using libint2::algebra::operator*;                                                                      \
@@ -187,6 +193,105 @@ void CR_XYZ_1_1<CGF1d<CartesianAxis_ ## elem>,KineticOper,EmptySet>::compute(con
 
 #define BOOST_PP_XYZ_LIST (X, (Y, (Z, BOOST_PP_NIL)))
 BOOST_PP_LIST_FOR_EACH ( BOOST_PP_CR_XYZ_1_1_1D_KINETIC_COMPUTE, _, BOOST_PP_XYZ_LIST)
+#undef BOOST_PP_XYZ_LIST
+
+
+template<>
+void CR_XYZ_1_1<CGShell,CartesianMultipoleOper<3u>,EmptySet>::compute(const CGShell& a,
+                                                                      const CGShell& b,
+                                                                      const OperType& oper) {
+  using namespace libint2::algebra;
+  using namespace libint2::prefactor;
+  using namespace libint2::braket;
+
+  // why do I need this? when this function is in header clang-602.0.49 on OS X works without this
+  using libint2::algebra::operator*;
+
+  ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,OverlapOper,EmptySet>> factory_X(this);
+  auto _X = factory_X.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm() + oper.descr().norm());
+
+  ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper,EmptySet>> factory_Y(this);
+  auto _Y = factory_Y.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm() + oper.descr().norm());
+
+  ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_Z>,OverlapOper,EmptySet>> factory_Z(this);
+  auto _Z = factory_Z.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm() + oper.descr().norm());
+}
+
+template<>
+void CR_XYZ_1_1<CGF,CartesianMultipoleOper<3u>,EmptySet>::compute(const CGF& a,
+                                                                  const CGF& b,
+                                                                  const OperType& oper) {
+
+  using namespace libint2::algebra;
+  using namespace libint2::prefactor;
+  using namespace libint2::braket;
+
+  // why do I need this? when this function is in header clang-602.0.49 on OS X works without this
+  using libint2::algebra::operator*;
+
+  using Descr1d = CartesianMultipoleOper<1u>::Descriptor;
+
+  ChildFactory<ThisType,
+               GenIntegralSet_1_1<CGF1d<CartesianAxis_X>,
+                                  CartesianMultipoleOper<1u>,
+                                  EmptySet>
+              > factory_X(this);
+  auto _X = factory_X.make_child(a[CartesianAxis_X],b[CartesianAxis_X],
+                                 EmptySet(),
+                                 Descr1d(oper.descr()[CartesianAxis_X]));
+
+  ChildFactory<ThisType,
+               GenIntegralSet_1_1<CGF1d<CartesianAxis_Y>,
+                                  CartesianMultipoleOper<1u>,
+                                  EmptySet>
+              > factory_Y(this);
+  auto _Y = factory_Y.make_child(a[CartesianAxis_Y],b[CartesianAxis_Y],
+                                 EmptySet(),
+                                 Descr1d(oper.descr()[CartesianAxis_Y]));
+
+  ChildFactory<ThisType,
+               GenIntegralSet_1_1<CGF1d<CartesianAxis_Z>,
+                                  CartesianMultipoleOper<1u>,
+                                  EmptySet>
+              > factory_Z(this);
+  auto _Z = factory_Z.make_child(a[CartesianAxis_Z],b[CartesianAxis_Z],
+                                 EmptySet(),
+                                 Descr1d(oper.descr()[CartesianAxis_Z]));
+
+  expr_ = _X * _Y * _Z;
+  nflops_ += 2;
+
+}
+
+#define BOOST_PP_CR_XYZ_1_1_1D_CMULTIPOLE_COMPUTE(r,data,elem)                                            \
+template<>                                                                                                \
+void CR_XYZ_1_1<CGF1d<CartesianAxis_ ## elem>,CartesianMultipoleOper<1u>,EmptySet>::compute(              \
+               const BasisFunctionType& a,                                                                \
+               const BasisFunctionType& b,                                                                \
+               const OperType& oper) {                                                                    \
+  using namespace libint2::algebra;                                                                       \
+  using namespace libint2::prefactor;                                                                     \
+  using libint2::algebra::operator*;                                                                      \
+                                                                                                          \
+  const BasisFunctionType& _1 = unit<BasisFunctionType>(0);                                               \
+  auto bp1 = b + _1;                                                                                      \
+  auto descr_m1 = oper.descr();                                                                           \
+  if (descr_m1[0] > 0) {                                                                                  \
+    ChildFactory<ThisType,                                                                                \
+                 GenIntegralSet_1_1<BasisFunctionType,OperType,EmptySet>> factory(this);                  \
+    descr_m1.dec(0);  auto oper_m1 = OperType(descr_m1);                                                  \
+    expr_ = factory.make_child(a,bp1,EmptySet(),oper_m1) +                                                \
+            Vector("BO")[CartesianAxis_ ## elem] * factory.make_child(a,b,EmptySet(),oper_m1);             \
+  } else {                                                                                                \
+    ChildFactory<ThisType,                                                                                \
+                 GenIntegralSet_1_1<BasisFunctionType,OverlapOper,EmptySet>> sfactory(this);              \
+    expr_ = Scalar(0u) + sfactory.make_child(a,b);                                                        \
+  }                                                                                                       \
+  nflops_ += 2;                                                                                           \
+}
+
+#define BOOST_PP_XYZ_LIST (X, (Y, (Z, BOOST_PP_NIL)))
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_CR_XYZ_1_1_1D_CMULTIPOLE_COMPUTE, _, BOOST_PP_XYZ_LIST)
 #undef BOOST_PP_XYZ_LIST
 
 } // namespace libint2

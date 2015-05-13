@@ -29,6 +29,8 @@
   */
 
 #include <libint2/config.h>
+#include <global_macros.h>
+#include <libint2/cgshell_ordering.h>
 
 #include <iostream>
 #include <fstream>
@@ -224,15 +226,38 @@ static void build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParame
 #  error "change LIBINT_SUPPORT_ONEBODYINTS in global_macros.h to 1 if need 1-body ints"
 # endif
 
-template <typename ShellSet>
+namespace {
+  template <typename OperType> struct AuxQuantaType;
+  template <> struct AuxQuantaType<ElecPotOper> {
+    typedef mType type;
+  };
+  template <typename OperType> struct AuxQuantaType {
+    typedef EmptySet type;
+  };
+
+  template <typename OperDescrType> OperDescrType make_descr(int, int, int) {
+    return OperDescrType();
+  }
+  template <> CartesianMultipole_Descr<3u> make_descr<CartesianMultipole_Descr<3u>>(int x, int y, int z) {
+    CartesianMultipole_Descr<3u> result;
+    result.inc(0,x);
+    result.inc(1,y);
+    result.inc(2,z);
+    return result;
+  }
+}
+
+template <typename OperType>
 void
 build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<CompilationParameters>& cparams,
                     SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
 {
   const std::string task = task_label(label, deriv_level);
   const std::string task_uc = task_label(label, deriv_level);
-  typedef ShellSet Onebody_sh_1_1;
-  typedef typename Onebody_sh_1_1::BasisFunctionType BFType;
+  typedef CGShell BFType;
+  typedef typename OperType::Descriptor OperDescrType;
+  typedef GenIntegralSet_1_1<CGShell, OperType, typename AuxQuantaType<OperType>::type> Onebody_sh_1_1;
+
   vector<BFType*> shells;
   unsigned int lmax = cparams->max_am(task);
   for(unsigned int l=0; l<=lmax; l++) {
@@ -266,16 +291,10 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
 
           // skip s|s overlap and elecpot integrals -- no need to involve LIBINT here
           if (deriv_level == 0 && la == 0 && lb == 0 &&
-              (std::is_same<ShellSet,Overlap_1_1_sh>::value ||
-               std::is_same<ShellSet,ElecPot_1_1_sh>::value)
+              (std::is_same<OperSet,OverlapOper>::value ||
+               std::is_same<OperSet,ElecPotOper>::value)
              )
             continue;
-
-#if STUDY_MEMORY_USAGE
-          const int lim = 1;
-          if (! (la == lim && lb == lim) )
-            continue;
-#endif
 
           // unroll only if max_am <= cparams->max_am_opt(task)
           using std::max;
@@ -290,68 +309,94 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           // Need to accumulate integrals?
           dg->registry()->accumulate_targets(cparams->accumulate_targets());
 
-          ////////////
-          // loop over unique derivative index combinations
-          ////////////
-          // skip 1 center -- all derivatives with respect to that center can be
-          // recovered using translational invariance conditions
-          // which center to skip? -> A = 0, B = 1
-          const unsigned int center_to_skip = 1;
-          DerivIndexIterator<1> diter(deriv_level);
+          // this will hold all target shell sets
           std::vector< SafePtr<Onebody_sh_1_1> > targets;
-          bool last_deriv = false;
-          do {
-            BFType a(la);
-            BFType b(lb);
 
-            unsigned int center = 0;
-            for(unsigned int i=0; i<2; ++i) {
-              if (i == center_to_skip)
-                continue;
-              const unsigned int ndir = std::is_same<BFType,CGShell>::value ? 3 : 1;
-              for(unsigned int xyz=0; xyz<ndir; ++xyz) {
-                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
-              }
-              ++center;
+          /////////////////////////////////
+          // loop over operator components
+          /////////////////////////////////
+          // most important operators have 1 component ...
+          std::vector<OperDescrType> descrs(1); // operator descriptors
+          // important EXCEPTION: multipole moments
+          if (std::is_same<OperType,CartesianMultipoleOper<3u>>::value) {
+            // reset descriptors array
+            descrs.resize(0);
+
+            // parse the label ... 1emultipole means include multipoles of order 0 (overlap) and 1 (dipole)
+            unsigned int max_multipole_order = 0;
+            auto key_pos = label.find("emultipole");
+            assert(key_pos != std::string::npos);
+            std::string tmp = label; tmp.erase(key_pos,std::string::npos);
+            istringstream iss(tmp);
+            iss >> max_multipole_order;
+            assert(max_multipole_order > 0);
+            // iterate over operators and construct their descriptors
+            for(int multipole_order=0; multipole_order<=max_multipole_order; ++multipole_order) {
+              // we iterate over them same way as over cartesian Gaussian shells
+              int x, y, z;
+              FOR_CART(x,y,z,multipole_order)
+                descrs.push_back(make_descr<OperDescrType>(x,y,z));
+              END_FOR_CART
             }
+          }
 
+          for(unsigned int op=0; op!=descrs.size(); ++op) {
 
-            SafePtr<Onebody_sh_1_1> target = Onebody_sh_1_1::Instance(a,b,nullaux);
-            targets.push_back(target);
-            last_deriv = diter.last();
-            if (!last_deriv) diter.next();
-          } while (!last_deriv);
-          // append all derivatives as targets to the graph
-          for(typename std::vector< SafePtr<Onebody_sh_1_1> >::const_iterator t=targets.begin();
-              t != targets.end();
-              ++t) {
+            OperType oper(descrs[op]);
+
+            ////////////
+            // loop over unique derivative index combinations
+            ////////////
+            // skip 1 center -- all derivatives with respect to that center can be
+            // recovered using translational invariance conditions
+            // which center to skip? -> A = 0, B = 1
+            const unsigned int center_to_skip = 1;
+            DerivIndexIterator<1> diter(deriv_level);
+            bool last_deriv = false;
+            do {
+              BFType a(la);
+              BFType b(lb);
+
+              unsigned int center = 0;
+              for(unsigned int i=0; i<2; ++i) {
+                if (i == center_to_skip)
+                  continue;
+                const unsigned int ndir = std::is_same<BFType,CGShell>::value ? 3 : 1;
+                for(unsigned int xyz=0; xyz<ndir; ++xyz) {
+                  if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
+                  if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
+                }
+                ++center;
+              }
+
+              SafePtr<Onebody_sh_1_1> target = Onebody_sh_1_1::Instance(a,b,nullaux,oper);
+              targets.push_back(target);
+              last_deriv = diter.last();
+              if (!last_deriv) diter.next();
+            } while (!last_deriv); // loop over derivatives
+
+          } // loop over operator components
+
+          // shove all targets on the graph, IN ORDER
+          for(auto t = targets.begin(); t!=targets.end(); ++t) {
             SafePtr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,Onebody_sh_1_1>(*t);
             dg->append_target(t_ptr);
           }
 
           // make label that characterizes this set of targets
-          // use the label of the nondifferentiated integral as a base
-          std::string ab_label;
+          std::string eval_label;
           {
+            std::ostringstream oss;
+            oss << cparams->api_prefix() << "_" << label;
+            if (deriv_level > 0)
+              oss << "deriv" << deriv_level;
             BFType a(la);
             BFType b(lb);
-            SafePtr<Onebody_sh_1_1> ab = Onebody_sh_1_1::Instance(a,b,nullaux);
-            ab_label = ab->label();
-          }
-          // + derivative level (if deriv_level > 0)
-          std::string label;
-          {
-            label = cparams->api_prefix();
-            if (deriv_level != 0) {
-              std::ostringstream oss;
-              oss << "deriv" << deriv_level;
-              label += oss.str();
-            }
-            label += ab_label;
+            oss << "_" << a.label() << "_" << b.label();
+            eval_label = oss.str();
           }
 
-          std::cout << "working on " << label << " ... ";
+          std::cout << "working on " << eval_label << " ... ";
 
           std::string prefix(cparams->source_directory());
           std::deque<std::string> decl_filenames;
@@ -360,7 +405,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           // this will generate code for this targets, and potentially generate code for its prerequisites
           GenerateCode(dg, context, cparams, strat, tactic, memman,
                        decl_filenames, def_filenames,
-                       prefix, label, false);
+                       prefix, eval_label, false);
 
           // update max stack size and # of targets
           const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
@@ -371,7 +416,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           // set pointer to the top-level evaluator function
           ostringstream oss;
           oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_" << task << "[" << la << "][" << lb << "] = "
-              << context->label_to_name(label_to_funcname(label))
+              << context->label_to_name(label_to_funcname(eval_label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
 
@@ -414,6 +459,8 @@ void try_main (int argc, char* argv[])
     taskmgr.add( task_label("overlap",d) );
     taskmgr.add( task_label("kinetic",d) );
     taskmgr.add( task_label("elecpot",d) );
+    taskmgr.add( task_label("1emultipole",d) );
+    taskmgr.add( task_label("2emultipole",d) );
   }
 #endif
 #ifdef INCLUDE_ERI
@@ -465,28 +512,38 @@ void try_main (int argc, char* argv[])
 #ifdef INCLUDE_ONEBODY
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
 #if defined(ONEBODY_MAX_AM_LIST)
-    cparams->max_am( task_label("overlap", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
-    cparams->max_am( task_label("kinetic", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
-    cparams->max_am( task_label("elecpot", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    cparams->max_am( task_label("overlap", d),     token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    cparams->max_am( task_label("kinetic", d),     token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    cparams->max_am( task_label("elecpot", d),     token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    cparams->max_am( task_label("1emultipole", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    cparams->max_am( task_label("2emultipole", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
 #elif defined(ONEBODY_MAX_AM)
-    cparams->max_am( task_label("overlap", d), ONEBODY_MAX_AM);
-    cparams->max_am( task_label("kinetic", d), ONEBODY_MAX_AM);
-    cparams->max_am( task_label("elecpot", d), ONEBODY_MAX_AM);
+    cparams->max_am( task_label("overlap", d),     ONEBODY_MAX_AM);
+    cparams->max_am( task_label("kinetic", d),     ONEBODY_MAX_AM);
+    cparams->max_am( task_label("elecpot", d),     ONEBODY_MAX_AM);
+    cparams->max_am( task_label("1emultipole", d), ONEBODY_MAX_AM);
+    cparams->max_am( task_label("2emultipole", d), ONEBODY_MAX_AM);
 #endif
 #if defined(ONEBODY_OPT_AM_LIST)
-    cparams->max_am_opt( task_label("overlap", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
-    cparams->max_am_opt( task_label("kinetic", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
-    cparams->max_am_opt( task_label("elecpot", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    cparams->max_am_opt( task_label("overlap", d)     ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    cparams->max_am_opt( task_label("kinetic", d)     ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    cparams->max_am_opt( task_label("elecpot", d)     ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    cparams->max_am_opt( task_label("1emultipole", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    cparams->max_am_opt( task_label("2emultipole", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
 #elif defined(ONEBODY_OPT_AM)
-    cparams->max_am_opt( task_label("overlap", d) , ONEBODY_OPT_AM);
-    cparams->max_am_opt( task_label("kinetic", d) , ONEBODY_OPT_AM);
-    cparams->max_am_opt( task_label("elecpot", d) , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label("overlap", d)     , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label("kinetic", d)     , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label("elecpot", d)     , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label("1emultipole", d) , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label("2emultipole", d) , ONEBODY_OPT_AM);
 #endif
   }
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
-    cparams->num_bf(task_label("overlap", d), 2);
-    cparams->num_bf(task_label("kinetic", d), 2);
-    cparams->num_bf(task_label("elecpot", d), 2);
+    cparams->num_bf(task_label("overlap", d),     2);
+    cparams->num_bf(task_label("kinetic", d),     2);
+    cparams->num_bf(task_label("elecpot", d),     2);
+    cparams->num_bf(task_label("1emultipole", d), 2);
+    cparams->num_bf(task_label("2emultipole", d), 2);
   }
 #endif // INCLUDE_ONEBODY
 #ifdef INCLUDE_ERI
@@ -664,9 +721,11 @@ void try_main (int argc, char* argv[])
 
 #ifdef INCLUDE_ONEBODY
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
-    build_onebody_1b_1k<Overlap_1_1_sh>(os,"overlap",cparams,iface,d);
-    build_onebody_1b_1k<Kinetic_1_1_sh>(os,"kinetic",cparams,iface,d);
-    build_onebody_1b_1k<ElecPot_1_1_sh>(os,"elecpot",cparams,iface,d);
+    build_onebody_1b_1k<OverlapOper>(os,"overlap",cparams,iface,d);
+    build_onebody_1b_1k<KineticOper>(os,"kinetic",cparams,iface,d);
+    build_onebody_1b_1k<ElecPotOper>(os,"elecpot",cparams,iface,d);
+    build_onebody_1b_1k<CartesianMultipoleOper<3u>>(os,"1emultipole",cparams,iface,d);
+    build_onebody_1b_1k<CartesianMultipoleOper<3u>>(os,"2emultipole",cparams,iface,d);
   }
 #endif
 #ifdef INCLUDE_ERI
