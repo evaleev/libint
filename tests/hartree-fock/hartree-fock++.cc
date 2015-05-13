@@ -312,7 +312,7 @@ int main(int argc, char *argv[]) {
       mu[xyz] = -2 * D.cwiseProduct(Mu[xyz+1]).sum(); // 2 = alpha + beta, -1 = electron charge
     for(int k=0; k!=6; ++k)
       qu[k] = -2 * D.cwiseProduct(Mu[k+4]).sum(); // 2 = alpha + beta, -1 = electron charge
-    std::cout << "electronic dipole moment: mu_x=" << mu[0] << " mu_y=" << mu[1] << " mu_z" << mu[2] << std::endl;
+    std::cout << "electronic dipole moment: mu_x=" << mu[0] << " mu_y=" << mu[1] << " mu_z=" << mu[2] << std::endl;
     std::cout << "electronic quadrupole moment:"
               << " q_xx=" << qu[0] << " q_xy=" << qu[1] << " q_xz=" << qu[2]
               << " q_yy=" << qu[3] << " q_yz=" << qu[4] << " q_zz=" << qu[5]
