@@ -9,7 +9,7 @@ CPPFLAGS += -I$(TOPDIR)/include -I$(TOPDIR)/include/libint2 -I$(SRCDIR)/$(TOPDIR
 
 COMPILER_LIB = $(TOPDIR)/src/bin/libint/libINT.a
 COMPUTE_LIB = -lint2
-VPATH = $(TOPDIR)/lib:$(TOPDIR)/lib/.libs
+vpath %.a $(TOPDIR)/lib:$(TOPDIR)/lib/.libs
 
 OBJSUF = o
 DEPSUF = d
