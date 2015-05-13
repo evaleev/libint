@@ -2433,7 +2433,7 @@ namespace libint2 {
         std::cout << "PrerequisitesExtractor: " << v->description() << " is a member of a shell set, will add that instead"<< std::endl;
 #endif
         if ( vertices.end() == find(vertices.begin(), vertices.end(), parent_shellset) ) {
-          vertices.push_front(parent_shellset);
+          vertices.push_back(parent_shellset);
 #if DEBUG
           std::cout << "PrerequisitesExtractor: extracted " << parent_shellset->description() << std::endl;
 #endif
@@ -2445,7 +2445,7 @@ namespace libint2 {
         }
       }
       else {
-        vertices.push_front(v);
+        vertices.push_back(v);
 #if DEBUG
         std::cout << "PrerequisitesExtractor: extracted " << v->description() << std::endl;
 #endif
@@ -2453,7 +2453,7 @@ namespace libint2 {
 
 #else
 
-      vertices.push_front(v);
+      vertices.push_back(v);
 #if DEBUG
       std::cout << "PrerequisitesExtractor: extracted " << v->description() << std::endl;
 #endif
