@@ -1,5 +1,6 @@
 #!/bin/sh
-$HOME/git_repos/libint/configure \
+../configure \
+--with-cxx=icpc \
 --enable-eri=0 \
 --with-max-am=7 \
 --with-opt-am=4 \
