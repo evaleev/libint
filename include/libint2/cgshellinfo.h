@@ -37,7 +37,8 @@ namespace libint2 {
         return 1;
       if (amin == 1 && amax == 2)
         return 0;
-      abort(); // unreachable
+      assert(false); // unreachable
+      return -1;
     }
 
    inline std::pair<int,int> notxyz(int a) {
@@ -46,7 +47,8 @@ namespace libint2 {
       case 1: return std::make_pair(0,2); break;
       case 2: return std::make_pair(0,1); break;
       }
-      abort(); // unreachable
+      assert(false); // unreachable
+      return std::make_pair(-1,-1);
     }
   }
 

@@ -69,9 +69,10 @@ Matrix compute_soad(const std::vector<Atom>& atoms);
 Matrix compute_shellblock_norm(const BasisSet& obs,
                                const Matrix& A);
 
-Matrix compute_1body_ints(const BasisSet& obs,
-                          libint2::OneBodyEngine::integral_type t,
-                          const std::vector<Atom>& atoms = std::vector<Atom>());
+template <libint2::OneBodyEngine::operator_type obtype>
+std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>
+compute_1body_ints(const BasisSet& obs,
+                   const std::vector<Atom>& atoms = std::vector<Atom>());
 Matrix compute_schwartz_ints(const BasisSet& obs);
 Matrix compute_2body_fock(const BasisSet& obs,
                           const Matrix& D,
@@ -166,9 +167,9 @@ int main(int argc, char *argv[]) {
     libint2::init();
 
     // compute one-body integrals
-    auto S = compute_1body_ints(obs, libint2::OneBodyEngine::overlap);
-    auto T = compute_1body_ints(obs, libint2::OneBodyEngine::kinetic);
-    auto V = compute_1body_ints(obs, libint2::OneBodyEngine::nuclear, atoms);
+    auto S = compute_1body_ints<libint2::OneBodyEngine::overlap>(obs)[0];
+    auto T = compute_1body_ints<libint2::OneBodyEngine::kinetic>(obs)[0];
+    auto V = compute_1body_ints<libint2::OneBodyEngine::nuclear>(obs, atoms)[0];
     Matrix H = T + V;
     T.resize(0,0);
     V.resize(0,0);
@@ -305,6 +306,18 @@ int main(int argc, char *argv[]) {
 
     } while (((ediff_rel > conv) || (rms_error > conv)) && (iter < maxiter));
 
+    auto Mu = compute_1body_ints<libint2::OneBodyEngine::emultipole2>(obs);
+    double mu[3], qu[6];
+    for(int xyz=0; xyz!=3; ++xyz)
+      mu[xyz] = -2 * D.cwiseProduct(Mu[xyz+1]).sum(); // 2 = alpha + beta, -1 = electron charge
+    for(int k=0; k!=6; ++k)
+      qu[k] = -2 * D.cwiseProduct(Mu[k+4]).sum(); // 2 = alpha + beta, -1 = electron charge
+    std::cout << "electronic dipole moment: mu_x=" << mu[0] << " mu_y=" << mu[1] << " mu_z=" << mu[2] << std::endl;
+    std::cout << "electronic quadrupole moment:"
+              << " q_xx=" << qu[0] << " q_xy=" << qu[1] << " q_xz=" << qu[2]
+              << " q_yy=" << qu[3] << " q_yz=" << qu[4] << " q_zz=" << qu[5]
+              << std::endl;
+
     printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
 
     libint2::cleanup(); // done with libint
@@ -412,9 +425,10 @@ Matrix compute_shellblock_norm(const BasisSet& obs,
   return Ash;
 }
 
-Matrix compute_1body_ints(const BasisSet& obs,
-                          libint2::OneBodyEngine::integral_type obtype,
-                          const std::vector<Atom>& atoms)
+template <libint2::OneBodyEngine::operator_type obtype>
+std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>
+compute_1body_ints(const BasisSet& obs,
+                   const std::vector<Atom>& atoms)
 {
   const auto n = obs.nbf();
   const auto nshells = obs.size();
@@ -423,7 +437,9 @@ Matrix compute_1body_ints(const BasisSet& obs,
 #else
   const auto nthreads = 1;
 #endif
-  Matrix result = Matrix::Zero(n,n);
+  typedef std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers> result_type;
+  const unsigned int nopers = libint2::OneBodyEngine::operator_traits<obtype>::nopers;
+  result_type result; for(auto& r: result) r = Matrix::Zero(n,n);
 
   // construct the overlap integrals engine
   std::vector<libint2::OneBodyEngine> engines(nthreads);
@@ -435,7 +451,7 @@ Matrix compute_1body_ints(const BasisSet& obs,
     for(const auto& atom : atoms) {
       q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
     }
-    engines[0].set_q(q);
+    engines[0].set_params(q);
   }
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
@@ -468,14 +484,18 @@ Matrix compute_1body_ints(const BasisSet& obs,
         auto bf2 = shell2bf[s2];
         auto n2 = obs[s2].size();
 
+        auto n12 = n1 * n2;
+
         // compute shell pair; return is the pointer to the buffer
         const auto* buf = engines[thread_id].compute(obs[s1], obs[s2]);
 
-        // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
-        Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
-        result.block(bf1, bf2, n1, n2) = buf_mat;
-        if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
-        result.block(bf2, bf1, n2, n1) = buf_mat.transpose();
+        for(unsigned int op=0; op!=nopers; ++op, buf+=n12) {
+          // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
+          Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+          result[op].block(bf1, bf2, n1, n2) = buf_mat;
+          if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
+            result[op].block(bf2, bf1, n2, n1) = buf_mat.transpose();
+        }
 
       }
     }

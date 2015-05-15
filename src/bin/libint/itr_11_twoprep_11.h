@@ -170,10 +170,10 @@ namespace libint2 {
 
       // not yet implemented for derivative integrals
       {
-        const OriginDerivative dA = Tint->bra(0,0).deriv();
-        const OriginDerivative dB = Tint->ket(0,0).deriv();
-        const OriginDerivative dC = Tint->bra(1,0).deriv();
-        const OriginDerivative dD = Tint->ket(1,0).deriv();
+        const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
+        const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
+        const OriginDerivative<3u> dC = Tint->bra(1,0).deriv();
+        const OriginDerivative<3u> dD = Tint->ket(1,0).deriv();
         const bool deriv = dA.zero() == false ||
             dB.zero() == false ||
             dC.zero() == false ||
@@ -209,12 +209,12 @@ namespace libint2 {
         const F& am1 = a - _1;
         if (exists(am1)) {
           const SafePtr<ChildType>& Am1BCD_m = make_child(am1,b,c,d,m);
-          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * Am1BCD_m;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2z") * Am1BCD_m;  nflops_+=3; }
         }
         const F& cm1 = c - _1;
         if (exists(cm1)) {
           const SafePtr<ChildType>& ABCm1D_m = make_child(a,b,cm1,d,m);
-          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2z") * ABCm1D_m;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2z") * ABCm1D_m;  nflops_+=3; }
         }
         return;
       }
@@ -239,12 +239,12 @@ namespace libint2 {
         const F& cm1 = c - _1;
         if (exists(cm1)) {
           const SafePtr<ChildType>& ABCm1D_m = make_child(a,b,cm1,d,m);
-          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * ABCm1D_m;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2e") * ABCm1D_m;  nflops_+=3; }
         }
         const F& am1 = a - _1;
         if (exists(am1)) {
           const SafePtr<ChildType>& Am1BCD_m = make_child(am1,b,c,d,m);
-          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2e") * Am1BCD_m;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2e") * Am1BCD_m;  nflops_+=3; }
         }
         return;
       }
@@ -269,12 +269,12 @@ namespace libint2 {
         const F& bm1 = b - _1;
         if (exists(bm1)) {
           const SafePtr<ChildType>& ABm1CD_m = make_child(a,bm1,c,d,m);
-          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * ABm1CD_m;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2z") * ABm1CD_m;  nflops_+=3; }
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
           const SafePtr<ChildType>& ABCDm1_m = make_child(a,b,c,dm1,m);
-          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2z") * ABCDm1_m;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2z") * ABCDm1_m;  nflops_+=3; }
         }
         return;
       }
@@ -299,12 +299,12 @@ namespace libint2 {
         const F& dm1 = d - _1;
         if (exists(dm1)) {
           const SafePtr<ChildType>& ABCDm1_m = make_child(a,b,c,dm1,m);
-          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * ABCDm1_m;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2e") * ABCDm1_m;  nflops_+=3; }
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
           const SafePtr<ChildType>& ABm1CD_m = make_child(a,bm1,c,d,m);
-          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2e") * ABm1CD_m;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2e") * ABm1CD_m;  nflops_+=3; }
         }
         return;
       }
@@ -359,10 +359,10 @@ namespace libint2 {
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
 
-      const OriginDerivative dA = target_->bra(0,0).deriv();
-      const OriginDerivative dB = target_->ket(0,0).deriv();
-      const OriginDerivative dC = target_->bra(1,0).deriv();
-      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const OriginDerivative<3u> dA = target_->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = target_->ket(0,0).deriv();
+      const OriginDerivative<3u> dC = target_->bra(1,0).deriv();
+      const OriginDerivative<3u> dD = target_->ket(1,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false ||
           dC.zero() == false ||
@@ -391,10 +391,10 @@ namespace libint2 {
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
 
-      const OriginDerivative dA = target_->bra(0,0).deriv();
-      const OriginDerivative dB = target_->ket(0,0).deriv();
-      const OriginDerivative dC = target_->bra(1,0).deriv();
-      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const OriginDerivative<3u> dA = target_->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = target_->ket(0,0).deriv();
+      const OriginDerivative<3u> dC = target_->bra(1,0).deriv();
+      const OriginDerivative<3u> dD = target_->ket(1,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false ||
           dC.zero() == false ||

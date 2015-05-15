@@ -27,22 +27,6 @@ using namespace std;
  Definition of a generic StdLibintTDPolicy is provided in policy.h
  */
 
-/**
-StdLibintTDPolicy<CGShell>::init_subobj initializes CGFs in canonical order.
- The functions in order are produced using the following C++ loop:
-
- for(int i=0; i<=am; i++) {
-   qn[0] = am - i;
-   for(int j=0; j<=i; j++) {
-     qn[1] = i - j;
-     qn[2] = j;
-   }
- }
-
- where am is the angular momentum of the shell and qn[3] are the x, y, and z
- exponents.
- */
-
 namespace {
   /// returns an xyz which is not a and not b
   int notxyz(int a, int b);
@@ -52,10 +36,14 @@ namespace {
 
 namespace libint2 {
 
+  /**
+  StdLibintTDPolicy<CGShell>::init_subobj initializes CGFs in canonical order.
+   */
+
 template <>
 void
 StdLibintTDPolicy<CGShell>::init_subobj(const StdLibintTDPolicy<CGShell>::obj_stype& cgshell,
-vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
+                                        vector<StdLibintTDPolicy<CGShell>::subobj_stype>& cgfs)
 {
   if (cgshell.is_unit()) {
       cgfs.push_back(CGF::unit());

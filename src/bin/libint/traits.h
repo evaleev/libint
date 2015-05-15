@@ -47,6 +47,20 @@ namespace libint2 {
     enum { StoredAsPtr = false };
     static const CGF& const_ref(const StorageType& s) { return s; };
   };
+
+  template <CartesianAxis Axis>
+  struct StorageTraits< CGShell1d<Axis> > {
+    typedef CGShell1d<Axis> StorageType;
+    enum { StoredAsPtr = false };
+    static const CGShell1d<Axis>& const_ref(const StorageType& s) { return s; };
+  };
+
+  template <CartesianAxis Axis>
+  struct StorageTraits< CGF1d<Axis> > {
+    typedef CGF1d<Axis> StorageType;
+    enum { StoredAsPtr = false };
+    static const CGF1d<Axis>& const_ref(const StorageType& s) { return s; };
+  };
 #endif
   
   ///////////

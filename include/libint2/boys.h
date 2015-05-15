@@ -1095,7 +1095,7 @@ namespace libint2 {
   /// core integrals r12^k \sum_i \exp(- a_i r_12^2)
   //////////////////////////////////////////////////////////
 
-  /// each thread needs into own scratch if k==-1
+  /// each thread needs its own scratch if k==-1
   template <typename Real, int k> struct GaussianGmEvalScratch;
   /// create this object for each thread that needs to use GaussianGmEval<Real,-1>
   template <typename Real>

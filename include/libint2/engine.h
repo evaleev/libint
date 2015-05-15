@@ -33,6 +33,7 @@
 #include <libint2/shell.h>
 #include <libint2/timer.h>
 #include <libint2/solidharmonics.h>
+#include <libint2/any.h>
 
 #include <Eigen/Core>
 
@@ -45,42 +46,75 @@
 // uncomment if want to profile the engine even if library was configured without --enable-profile
 //#  define LIBINT2_ENGINE_TIMERS
 
+#ifdef __GNUC__
+#define DEPRECATED __attribute__((deprecated))
+#elif defined(_MSC_VER)
+#define DEPRECATED __declspec(deprecated)
+#else
+#pragma message("WARNING: You need to implement DEPRECATED for this compiler")
+#define DEPRECATED
+#endif
+
 namespace libint2 {
 
-#ifdef LIBINT2_SUPPORT_ONEBODY
-  /// OneBodyEngine computes integrals of 1-body operators, e.g. overlap, kinetic energy, dipole moment, etc.
+#if defined(LIBINT2_SUPPORT_ONEBODY)
 
   /**
-   * OneBodyEngine computes integrals of types given by OneBodyEngine::integral_type
+   * OneBodyEngine computes integrals of operators (or operator sets) given by OneBodyOperator::operator_type
    */
   class OneBodyEngine {
+
+    private:
+      typedef struct {} empty_pod;
+
     public:
-      enum integral_type {
-        overlap,
-        kinetic,
-        nuclear,
+
+      /// types of operators (operator sets) supported by OneBodyEngine
+      enum operator_type {
+        overlap,        //!< overlap
+        kinetic,        //!< electronic kinetic energy, i.e. \f$ -\frac{1}{2} \Nabla^2 \f$
+        nuclear,        //!< Coulomb potential due to point charges
+        emultipole1,    //!< overlap + (Cartesian) electric dipole moment, \f$ x_O, y_O, z_O \f$, where \f$ x_O \equiv x - O_x \f$ is relative to origin \f$ \vec{O} \f$
+        emultipole2,    //!< emultipole1 + (Cartesian) electric quadrupole moment, \f$ x^2, xy, xz, y^2, yz, z^2 \f$
         _invalid
       };
 
+      /// alias to operator_type for backward compatibility to pre-05/13/2015 code
+      /// \deprecated use operator_type instead
+      DEPRECATED typedef operator_type integral_type;
+
+      /// describes operator sets given by OneBodyOperator
+      /// \note needs to be specialized for some operator types
+      template <operator_type O> struct operator_traits;
+
       typedef libint2::FmEval_Taylor<real_t, 7> coulomb_core_eval_t;
+
 
       /// creates a default (unusable) OneBodyEngine; to be used as placeholder for copying a usable engine
       OneBodyEngine() : type_(_invalid), primdata_(), lmax_(-1) {}
 
       /// Constructs a (usable) OneBodyEngine
 
-      /// \param t integral type, see OneBodyEngine::integral_type
       /// \param max_nprim the maximum number of primitives per contracted Gaussian shell
       /// \param max_l the maximum angular momentum of Gaussian shell
       /// \param deriv_level if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_level
-      /// \note if integral_type == nuclear, must specify charges using set_q()
-      /// \warning currently only the following integral types are suported: \c overlap, \c kinetic, \c nuclear
+      /// \param params a value of type OneBodyEngine::operator_traits<type>::oper_params_type specifying the parameters of
+      ///               the operator set, e.g. position and magnitude of the charges creating the Coulomb potential
+      ///               for type == nuclear. For most values of type this is not needed.
+      ///               \sa OneBodyEngine::operator_traits
       /// \warning currently derivative integrals are not supported
-      /// \warning currently solid harmonics Gaussians are not supported
-      OneBodyEngine(integral_type t, size_t max_nprim, int max_l, int deriv_order = 0) :
-        type_(t), primdata_(max_nprim * max_nprim), lmax_(max_l), deriv_order_(deriv_order),
-        fm_eval_(t == nuclear ? coulomb_core_eval_t::instance(2*max_l+deriv_order, 1e-25) : 0)
-        //fm_eval_(0)
+      template <typename Params = empty_pod>
+      OneBodyEngine(operator_type type,
+                    size_t max_nprim,
+                    int max_l,
+                    int deriv_order = 0,
+                    Params params = empty_pod()) :
+        type_(type),
+        primdata_(max_nprim * max_nprim),
+        lmax_(max_l),
+        deriv_order_(deriv_order),
+        params_(enforce_params_type(type,params)),
+        fm_eval_(type == nuclear ? coulomb_core_eval_t::instance(2*max_l+deriv_order, 1e-25) : 0)
       {
         initialize();
       }
@@ -90,11 +124,10 @@ namespace libint2 {
 
       /// (deep) copy constructor
       OneBodyEngine(const OneBodyEngine& other) :
-        type_(other.type_),
         primdata_(other.primdata_.size()),
         lmax_(other.lmax_),
         deriv_order_(other.deriv_order_),
-        q_(other.q_),
+        params_(other.params_),
         fm_eval_(other.fm_eval_) {
         initialize();
       }
@@ -108,23 +141,41 @@ namespace libint2 {
 
       /// (deep) copy assignment
       OneBodyEngine& operator=(const OneBodyEngine& other) {
-        type_ = other.type_;
         primdata_.resize(other.primdata_.size());
         lmax_ = other.lmax_;
         deriv_order_ = other.deriv_order_;
-        q_ = other.q_;
+        params_ = other.params_;
         fm_eval_ = other.fm_eval_;
         initialize();
         return *this;
       }
 
-      /// returns the integral type used by the engine
-      integral_type type() const {return type_;}
+      /// resets operator parameters; this may be useful if need to compute Coulomb potential
+      /// integrals over batches of charges for the sake of parallelism.
+      template <typename Params>
+      void set_params(const Params& params) {
+        params_ = params;
+      }
+      /// alias to set_params() for backward compatibility with pre-05/13/2015 code
+      /// \deprecated use set_params() instead
+      template <typename Params>
+      DEPRECATED void set_q(const Params& params) {
+        set_params(params);
+      }
 
-      /// specifies the nuclear charges
-      /// \param q vector of {charge,Cartesian coordinate} pairs
-      void set_q(const std::vector<std::pair<double, std::array<double, 3>>>& q) {
-        q_ = q;
+      /// reports the number of shell sets that each call to compute() produces.
+      /// this depends on the order of geometrical derivatives requested and
+      /// on the operator set. \sa compute()
+      /// \note need to specialize for some operator types
+      unsigned int nshellsets() const {
+        auto nderivs = [](unsigned int deriv_order) -> unsigned int {
+          unsigned int result = 1;
+          for(unsigned int d=0; d!=deriv_order; ++d) {
+            result *= (6 + d); result /= (1 + d);
+          }
+          return result;
+        };
+        return nopers() * nderivs(deriv_order_);
       }
 
       /// computes shell set of integrals
@@ -140,119 +191,118 @@ namespace libint2 {
         const auto l1 = s1.contr[0].l;
         const auto l2 = s2.contr[0].l;
 
-        // if want nuclear, make sure there is at least one nucleus .. otherwise the user likely forgot to call set_q
-        if (type_ == nuclear and q_.size() == 0)
-          throw std::runtime_error("libint2::OneBodyEngine(integral_type = nuclear), but no nuclei found; forgot to call set_q()?");
-
-#if LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD // make sure bra.l >= ket.l
-        const auto swap = (l1 < l2);
-#else // make sure bra.l <= ket.l
-        const auto swap = (l1 > l2);
-#endif
-        const auto& bra = !swap ? s1 : s2;
-        const auto& ket = !swap ? s2 : s1;
+        // if want nuclear, make sure there is at least one nucleus .. otherwise the user likely forgot to call set_params
+        if (type_ == nuclear and nparams() == 0)
+          throw std::runtime_error("libint2::OneBodyEngine<nuclear>, but no charges found; forgot to call set_params()?");
 
         const auto n1 = s1.size();
         const auto n2 = s2.size();
+        const auto n12 = n1 * n2;
         const auto ncart1 = s1.cartesian_size();
         const auto ncart2 = s2.cartesian_size();
-
-        const bool use_scratch = (swap || type_ == nuclear);
+        const auto ncart12 = ncart1 * ncart2;
 
         // assert # of primitive pairs
-        const auto nprim_bra = bra.nprim();
-        const auto nprim_ket = ket.nprim();
-        const auto nprimpairs = nprim_bra * nprim_ket;
+        const auto nprim1 = s1.nprim();
+        const auto nprim2 = s2.nprim();
+        const auto nprimpairs = nprim1 * nprim2;
         assert(nprimpairs <= primdata_.size());
+
+        // how many shell sets will I get?
+        auto num_shellsets = nshellsets();
+
+        // Coulomb ints are computed 1 charge at a time, contributions are accumulated in scratch_ (unless la==lb==0)
+        const bool accumulate_ints_in_scratch = (type_ == nuclear);
+        auto nparam_sets = nparams();
 
         // adjust max angular momentum, if needed
         const auto lmax = std::max(l1, l2);
         assert (lmax <= lmax_);
         if (lmax == 0) // (s|s) ints will be accumulated in the first element of stack
           primdata_[0].stack[0] = 0;
-        else if (use_scratch)
-          memset(static_cast<void*>(&scratch_[0]), 0, sizeof(real_t)*ncart1*ncart2);
+        else if (accumulate_ints_in_scratch)
+          memset(static_cast<void*>(&scratch_[0]), 0, sizeof(real_t)*ncart12);
 
-        // loop over operator components
-        const auto num_operset = type_ == nuclear ? q_.size() : 1u;
-        for(auto oset=0u; oset!=num_operset; ++oset) {
+        // loop over accumulation batches
+        for(auto pset=0u; pset!=nparam_sets; ++pset) {
 
-            auto p12 = 0;
-            for(auto pb=0; pb!=nprim_bra; ++pb) {
-              for(auto pk=0; pk!=nprim_ket; ++pk, ++p12) {
-                compute_primdata(primdata_[p12],bra,ket,pb,pk,oset);
-              }
+          if (type_!=nuclear) assert(nparam_sets == 1);
+
+          auto p12 = 0;
+          for(auto p1=0; p1!=nprim1; ++p1) {
+            for(auto p2=0; p2!=nprim2; ++p2, ++p12) {
+              compute_primdata(primdata_[p12],s1,s2,p1,p2,pset);
             }
-            primdata_[0].contrdepth = p12;
+          }
+          primdata_[0].contrdepth = p12;
 
-            if (lmax == 0) { // (s|s)
-              auto& result = primdata_[0].stack[0];
-              switch (type_) {
-                case overlap:
+          if (lmax == 0 && (type_ == overlap || type_ == nuclear)) { // (s|s) or (s|V|s)
+            auto& result = primdata_[0].stack[0];
+            switch (type_) {
+              case overlap:
                 for(auto p12=0; p12 != primdata_[0].contrdepth; ++p12)
-                  result += primdata_[p12].LIBINT_T_S_OVERLAP_S[0];
+                  result += primdata_[p12]._0_Overlap_0_x[0]
+                          * primdata_[p12]._0_Overlap_0_y[0]
+                          * primdata_[p12]._0_Overlap_0_z[0];
                   break;
-                case kinetic:
-                for(auto p12=0; p12 != primdata_[0].contrdepth; ++p12)
-                  result += primdata_[p12].LIBINT_T_S_KINETIC_S[0];
-                  break;
-                case nuclear:
+              case nuclear:
                 for(auto p12=0; p12 != primdata_[0].contrdepth; ++p12)
                   result += primdata_[p12].LIBINT_T_S_ELECPOT_S(0)[0];
                   break;
-                default:
-                  assert(false);
-              }
-              primdata_[0].targets[0] = primdata_[0].stack;
+              default:
+                assert(false);
             }
-            else {
-              switch (type_) {
-                case overlap:
-                  LIBINT2_PREFIXED_NAME(libint2_build_overlap)[bra.contr[0].l][ket.contr[0].l](&primdata_[0]);
-                  break;
-                case kinetic:
-                  LIBINT2_PREFIXED_NAME(libint2_build_kinetic)[bra.contr[0].l][ket.contr[0].l](&primdata_[0]);
-                  break;
-                case nuclear:
-                  LIBINT2_PREFIXED_NAME(libint2_build_elecpot)[bra.contr[0].l][ket.contr[0].l](&primdata_[0]);
-                  break;
-                default:
-                  assert(false);
-              }
-              if (use_scratch) {
-                const auto ncart_bra = bra.cartesian_size();
-                const auto ncart_ket = ket.cartesian_size();
-                constexpr auto using_scalar_real = std::is_same<double,real_t>::value || std::is_same<float,real_t>::value;
-                static_assert(using_scalar_real, "Libint2 C++11 API only supports fundamental real types");
-                typedef Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
-                Eigen::Map<Matrix> braket(primdata_[0].targets[0], ncart_bra, ncart_ket);
-                Eigen::Map<Matrix> set12(&scratch_[0], ncart1, ncart2);
-                if (swap)
-                  set12 += braket.transpose();
-                else
-                  set12 += braket;
-              }
-            } // ltot != 0
+            primdata_[0].targets[0] = primdata_[0].stack;
+          }
+          else {
+            switch (type_) {
+              case overlap:
+                LIBINT2_PREFIXED_NAME(libint2_build_overlap)[s1.contr[0].l][s2.contr[0].l](&primdata_[0]);
+                break;
+              case kinetic:
+                LIBINT2_PREFIXED_NAME(libint2_build_kinetic)[s1.contr[0].l][s2.contr[0].l](&primdata_[0]);
+                break;
+              case nuclear:
+                LIBINT2_PREFIXED_NAME(libint2_build_elecpot)[s1.contr[0].l][s2.contr[0].l](&primdata_[0]);
+                break;
+              case emultipole1:
+                LIBINT2_PREFIXED_NAME(libint2_build_1emultipole)[s1.contr[0].l][s2.contr[0].l](&primdata_[0]);
+                break;
+              case emultipole2:
+                LIBINT2_PREFIXED_NAME(libint2_build_2emultipole)[s1.contr[0].l][s2.contr[0].l](&primdata_[0]);
+                break;
+              default:
+                assert(false);
+            }
+            if (accumulate_ints_in_scratch) {
+              const auto target_buf_size = num_shellsets * ncart12;
+              std::transform(primdata_[0].targets[0], primdata_[0].targets[0] + target_buf_size,
+                             &scratch_[0],
+                             &scratch_[0], std::plus<real_t>());
+            }
+          } // ltot != 0
 
-        } // oset (operator components, artifact of nuclear)
+        } // pset (accumulation batches)
 
-        auto cartesian_ints = (use_scratch && lmax != 0) ? &scratch_[0] : primdata_[0].targets[0];
-
+        auto cartesian_ints = (accumulate_ints_in_scratch && lmax != 0) ? &scratch_[0] : primdata_[0].targets[0];
         auto result = cartesian_ints;
 
         if (s1.contr[0].pure || s2.contr[0].pure) {
           auto* spherical_ints = (cartesian_ints == &scratch_[0]) ? primdata_[0].targets[0] : &scratch_[0];
-          if (s1.contr[0].pure && s2.contr[0].pure) {
-            libint2::solidharmonics::tform(l1, l2, cartesian_ints, spherical_ints);
-          }
-          else {
-            if (s1.contr[0].pure)
-              libint2::solidharmonics::tform_rows(l1, n2, cartesian_ints, spherical_ints);
-            else
-              libint2::solidharmonics::tform_cols(n1, l2, cartesian_ints, spherical_ints);
-          }
-
           result = spherical_ints;
+
+          for(unsigned int s=0; s!=num_shellsets; ++s, cartesian_ints+=ncart12, spherical_ints+=n12) {
+            if (s1.contr[0].pure && s2.contr[0].pure) {
+              libint2::solidharmonics::tform(l1, l2, cartesian_ints, spherical_ints);
+            }
+            else {
+              if (s1.contr[0].pure)
+                libint2::solidharmonics::tform_rows(l1, n2, cartesian_ints, spherical_ints);
+              else
+                libint2::solidharmonics::tform_cols(n1, l2, cartesian_ints, spherical_ints);
+            }
+          } // loop over shell sets
+
         } // tform to solids
 
         return result;
@@ -261,187 +311,46 @@ namespace libint2 {
       void compute_primdata(Libint_t& primdata,
                             const Shell& s1, const Shell& s2,
                             size_t p1, size_t p2,
-                            size_t oset) {
-
-        const auto& A = s1.O;
-        const auto& B = s2.O;
-
-        const auto alpha1 = s1.alpha[p1];
-        const auto alpha2 = s2.alpha[p2];
-
-        const auto c1 = s1.contr[0].coeff[p1];
-        const auto c2 = s2.contr[0].coeff[p2];
-
-        const auto gammap = alpha1 + alpha2;
-        const auto oogammap = 1.0 / gammap;
-        const auto rhop = alpha1 * alpha2 * oogammap;
-        const auto Px = (alpha1 * A[0] + alpha2 * B[0]) * oogammap;
-        const auto Py = (alpha1 * A[1] + alpha2 * B[1]) * oogammap;
-        const auto Pz = (alpha1 * A[2] + alpha2 * B[2]) * oogammap;
-        const auto AB_x = A[0] - B[0];
-        const auto AB_y = A[1] - B[1];
-        const auto AB_z = A[2] - B[2];
-        const auto AB2 = AB_x*AB_x + AB_y*AB_y + AB_z*AB_z;
-
-        if (LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD // always VRR on bra, and HRR to bra (overlap, coulomb)
-            || type_ == kinetic // kinetic energy ints don't use HRR, hence VRR on both centers
-           ) {
-
-#if LIBINT2_DEFINED(eri,PA_x)
-          primdata.PA_x[0] = Px - A[0];
-#endif
-#if LIBINT2_DEFINED(eri,PA_y)
-          primdata.PA_y[0] = Py - A[1];
-#endif
-#if LIBINT2_DEFINED(eri,PA_z)
-          primdata.PA_z[0] = Pz - A[2];
-#endif
-#if LIBINT2_DEFINED(eri,AB_x)
-          primdata.AB_x[0] = A[0] - B[0];
-#endif
-#if LIBINT2_DEFINED(eri,AB_y)
-          primdata.AB_y[0] = A[1] - B[1];
-#endif
-#if LIBINT2_DEFINED(eri,AB_z)
-          primdata.AB_z[0] = A[2] - B[2];
-#endif
-        }
-        if (LIBINT2_SHELLQUARTET_SET != LIBINT2_SHELLQUARTET_SET_STANDARD
-            || type_ == kinetic)
-        { // always VRR on ket, HRR to ket (overlap, coulomb), or kinetic energy ints
-
-#if LIBINT2_DEFINED(eri,PB_x)
-          primdata.PB_x[0] = Px - B[0];
-#endif
-#if LIBINT2_DEFINED(eri,PB_y)
-          primdata.PB_y[0] = Py - B[1];
-#endif
-#if LIBINT2_DEFINED(eri,PB_z)
-          primdata.PB_z[0] = Pz - B[2];
-#endif
-#if LIBINT2_DEFINED(eri,BA_x)
-          primdata.BA_x[0] = B[0] - A[0];
-#endif
-#if LIBINT2_DEFINED(eri,BA_y)
-          primdata.BA_y[0] = B[1] - A[1];
-#endif
-#if LIBINT2_DEFINED(eri,BA_z)
-          primdata.BA_z[0] = B[2] - A[2];
-#endif
-        }
-
-#if LIBINT2_DEFINED(eri,oo2z)
-        primdata.oo2z[0] = 0.5*oogammap;
-#endif
-
-        if (type_ == kinetic) { // additional factors for kinetic energy
-#if LIBINT2_DEFINED(eri,rho12_over_alpha1)
-          primdata.rho12_over_alpha1[0] = alpha2 * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri,rho12_over_alpha2)
-          primdata.rho12_over_alpha2[0] = alpha1 * oogammap;
-#endif
-#if LIBINT2_DEFINED(eri,two_rho12)
-          primdata.two_rho12[0] = 2. * rhop;
-#endif
-        }
-
-        if (type_ == nuclear) { // additional factor for electrostatic potential
-          const auto& C = q_[oset].second;
-#if LIBINT2_DEFINED(eri,PC_x)
-          primdata.PC_x[0] = Px - C[0];
-#endif
-#if LIBINT2_DEFINED(eri,PC_y)
-          primdata.PC_y[0] = Py - C[1];
-#endif
-#if LIBINT2_DEFINED(eri,PC_z)
-          primdata.PC_z[0] = Pz - C[2];
-#endif
-        }
-
-        if (deriv_order_ > 0) {
-          // prefactors for derivative overlap relations
-          assert(false);
-        }
-
-        const auto K1 = exp(- rhop * AB2) * oogammap;
-        decltype(K1) sqrt_PI_cubed(5.56832799683170784528481798212);
-        const auto ovlp_ss = sqrt_PI_cubed * sqrt(oogammap) * K1 * c1 * c2;
-
-        primdata.LIBINT_T_S_OVERLAP_S[0] = ovlp_ss;
-
-        if (type_ == kinetic) {
-          primdata.LIBINT_T_S_KINETIC_S[0] = rhop * (3. - 2.*rhop*AB2) * ovlp_ss;
-        }
-
-        if (type_ == nuclear) {
-#if LIBINT2_DEFINED(eri,PC_x) && LIBINT2_DEFINED(eri,PC_y) && LIBINT2_DEFINED(eri,PC_z)
-          const auto PC2 = primdata.PC_x[0] * primdata.PC_x[0] +
-                           primdata.PC_y[0] * primdata.PC_y[0] +
-                           primdata.PC_z[0] * primdata.PC_z[0];
-          const auto U = gammap * PC2;
-          const auto ltot = s1.contr[0].l + s2.contr[0].l;
-          auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
-          fm_eval_->eval(fm_ptr, U, ltot);
-
-          double fm_ref[25];
-          libint2::FmEval_Reference2<real_t>::eval(fm_ref, U, ltot, 1e-20);
-          for(int m=0;m<=ltot;++m)
-            if (std::abs((fm_ref[m] - fm_ptr[m])/fm_ref[m]) > 5e-15) {
-              std::cout << "m=" << m << " T=" << U << " relerr=" << std::abs((fm_ref[m] - fm_ptr[m])/fm_ref[m]) << " abserr=" << std::abs((fm_ref[m] - fm_ptr[m])) << std::endl;
-            }
-
-
-          decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
-          const auto pfac = - q_[oset].first * sqrt(gammap) * two_o_sqrt_PI * ovlp_ss;
-          const auto ltot_p1 = ltot + 1;
-          for(auto m=0; m!=ltot_p1; ++m) {
-            fm_ptr[m] *= pfac;
-          }
-#endif
-        }
-
-      }
+                            size_t oset);
 
     private:
-      integral_type type_;
+      operator_type type_;
       std::vector<Libint_t> primdata_;
       int lmax_;
       size_t deriv_order_;
-      std::vector<std::pair<double, std::array<double,3>>> q_;
-
-      std::shared_ptr<coulomb_core_eval_t> fm_eval_;
-
+      Any params_;
+      std::shared_ptr<coulomb_core_eval_t> fm_eval_; // this is for Coulomb only
       std::vector<real_t> scratch_; // for transposes and/or transforming to solid harmonics
 
       void initialize() {
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
 
         switch(type_) {
-          case overlap: assert(lmax_ <= LIBINT2_MAX_AM_overlap); break;
-          case kinetic: assert(lmax_ <= LIBINT2_MAX_AM_kinetic); break;
-          case nuclear: assert(lmax_ <= LIBINT2_MAX_AM_elecpot); break;
+          case overlap:     assert(lmax_ <= LIBINT2_MAX_AM_overlap); break;
+          case kinetic:     assert(lmax_ <= LIBINT2_MAX_AM_kinetic); break;
+          case nuclear:     assert(lmax_ <= LIBINT2_MAX_AM_elecpot); break;
+          case emultipole1: assert(lmax_ <= LIBINT2_MAX_AM_1emultipole); break;
+          case emultipole2: assert(lmax_ <= LIBINT2_MAX_AM_2emultipole); break;
           default: assert(false);
         }
         assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
+
+        scratch_.resize(nshellsets() * ncart_max * ncart_max);
 
         if (type_ == overlap) {
           switch(deriv_order_) {
 
             case 0:
               libint2_init_overlap(&primdata_[0], lmax_, 0);
-              scratch_.resize(ncart_max*ncart_max);
               break;
             case 1:
 #if LIBINT2_DERIV_ONEBODY_ORDER > 0
               libint2_init_overlap1(&primdata_[0], lmax_, 0);
-              scratch_.resize(3 * ncart_max*ncart_max);
 #endif
               break;
             case 2:
 #if LIBINT2_DERIV_ONEBODY_ORDER > 1
               libint2_init_overlap2(&primdata_[0], lmax_, 0);
-              scratch_.resize(6 * ncart_max*ncart_max);
 #endif
               break;
             default: assert(deriv_order_ < 3);
@@ -455,18 +364,15 @@ namespace libint2 {
 
             case 0:
               libint2_init_kinetic(&primdata_[0], lmax_, 0);
-              scratch_.resize(ncart_max*ncart_max);
               break;
             case 1:
 #if LIBINT2_DERIV_ONEBODY_ORDER > 0
               libint2_init_kinetic1(&primdata_[0], lmax_, 0);
-              scratch_.resize(3 * ncart_max*ncart_max);
 #endif
               break;
             case 2:
 #if LIBINT2_DERIV_ONEBODY_ORDER > 1
               libint2_init_kinetic2(&primdata_[0], lmax_, 0);
-              scratch_.resize(6 * ncart_max*ncart_max);
 #endif
               break;
             default: assert(deriv_order_ < 3);
@@ -481,18 +387,15 @@ namespace libint2 {
 
             case 0:
               libint2_init_elecpot(&primdata_[0], lmax_, 0);
-              scratch_.resize(ncart_max*ncart_max); // one more set to be able to accumulate
               break;
             case 1:
 #if LIBINT2_DERIV_ONEBODY_ORDER > 0
               libint2_init_elecpot1(&primdata_[0], lmax_, 0);
-              scratch_.resize(3 * ncart_max*ncart_max);
 #endif
               break;
             case 2:
 #if LIBINT2_DERIV_ONEBODY_ORDER > 1
               libint2_init_elecpot2(&primdata_[0], lmax_, 0);
-              scratch_.resize(6 * ncart_max*ncart_max);
 #endif
               break;
             default: assert(deriv_order_ < 3);
@@ -501,7 +404,52 @@ namespace libint2 {
           return;
         }
 
-        assert(type_ == overlap || type_ == kinetic || type_ == nuclear);
+        if (type_ == emultipole1) {
+          switch(deriv_order_) {
+
+            case 0:
+              libint2_init_1emultipole(&primdata_[0], lmax_, 0);
+              break;
+            case 1:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              libint2_init_1emultipole1(&primdata_[0], lmax_, 0);
+#endif
+              break;
+            case 2:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              libint2_init_1emultipole2(&primdata_[0], lmax_, 0);
+#endif
+              break;
+            default: assert(deriv_order_ < 3);
+          }
+
+          return;
+        }
+
+        if (type_ == emultipole2) {
+          switch(deriv_order_) {
+
+            case 0:
+              libint2_init_2emultipole(&primdata_[0], lmax_, 0);
+              break;
+            case 1:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              libint2_init_2emultipole1(&primdata_[0], lmax_, 0);
+#endif
+              break;
+            case 2:
+#if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              libint2_init_2emultipole2(&primdata_[0], lmax_, 0);
+#endif
+              break;
+            default: assert(deriv_order_ < 3);
+          }
+
+          return;
+        }
+
+        assert(type_ == overlap || type_ == kinetic || type_ == nuclear ||
+               type_ == emultipole1 || type_ == emultipole2);
       } // initialize()
 
       void finalize() {
@@ -570,12 +518,299 @@ namespace libint2 {
 
             return;
           }
+
+          if (type_ == emultipole1) {
+            switch(deriv_order_) {
+
+              case 0:
+              libint2_cleanup_1emultipole(&primdata_[0]);
+              break;
+              case 1:
+  #if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              libint2_cleanup_1emultipole1(&primdata_[0]);
+  #endif
+              break;
+              case 2:
+  #if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              libint2_cleanup_1emultipole2(&primdata_[0]);
+  #endif
+              break;
+            }
+
+            return;
+          }
+
+          if (type_ == emultipole2) {
+            switch(deriv_order_) {
+
+              case 0:
+              libint2_cleanup_2emultipole(&primdata_[0]);
+              break;
+              case 1:
+  #if LIBINT2_DERIV_ONEBODY_ORDER > 0
+              libint2_cleanup_2emultipole1(&primdata_[0]);
+  #endif
+              break;
+              case 2:
+  #if LIBINT2_DERIV_ONEBODY_ORDER > 1
+              libint2_cleanup_2emultipole2(&primdata_[0]);
+  #endif
+              break;
+            }
+
+            return;
+          }
+
         }
 
       } // finalize()
 
+      //-------
+      // utils
+      //-------
+      unsigned int nparams() const;
+      unsigned int nopers() const;
+      /// if Params == operator_traits<type>::oper_params_type, will return Any(params)
+      /// else will set return Any initialized with default value for operator_traits<type>::oper_params_type
+      /// @param throw_if_wrong_type if true, and Params != operator_traits<type>::oper_params_type, will throw std::bad_cast
+      template <typename Params>
+      static Any enforce_params_type(operator_type type,
+                                     const Params& params,
+                                     bool throw_if_wrong_type = not std::is_same<Params,empty_pod>::value);
 
   }; // struct OneBodyEngine
+
+  template <OneBodyEngine::operator_type Op> struct OneBodyEngine::operator_traits {
+      typedef struct {} oper_params_type;
+      static constexpr unsigned int nopers = 1;
+  };
+
+  template <> struct OneBodyEngine::operator_traits<OneBodyEngine::nuclear> {
+      /// point charges and their positions
+      typedef std::vector<std::pair<double, std::array<double, 3>>> oper_params_type;
+      static constexpr unsigned int nopers = 1;
+  };
+  template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole1> {
+      /// Cartesian coordinates of the origin with respect to which the dipole moment is defined
+      typedef std::array<double, 3> oper_params_type;
+      static constexpr unsigned int nopers = 4; //!< overlap + 3 dipole components
+  };
+  template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole2> {
+      /// Cartesian coordinates of the origin with respect to which the multipole moments are defined
+      typedef std::array<double, 3> oper_params_type;
+      static constexpr unsigned int nopers = 10; //!< overlap + 3 dipoles + 6 quadrupoles
+  };
+
+  unsigned int OneBodyEngine::nparams() const {
+    switch (type_) {
+      case nuclear:
+        return params_.as<operator_traits<nuclear>::oper_params_type>().size();
+      default:
+        return 1;
+    }
+    return 1;
+  }
+  unsigned int OneBodyEngine::nopers() const {
+    switch (type_) {
+      case overlap: return operator_traits<overlap>::nopers;
+      case kinetic: return operator_traits<kinetic>::nopers;
+      case nuclear: return operator_traits<nuclear>::nopers;
+      case emultipole1: return operator_traits<emultipole1>::nopers;
+      case emultipole2: return operator_traits<emultipole2>::nopers;
+      default:
+        assert(false); // omitted case for some operator set?
+    }
+    assert(false); // unreachable
+    return 0;
+  }
+  template <typename Params>
+  Any OneBodyEngine::enforce_params_type(operator_type type,
+                                         const Params& params,
+                                         bool throw_if_wrong_type) {
+    Any result;
+    switch(type) {
+      case overlap:
+        if (std::is_same<Params,operator_traits<overlap>::oper_params_type>::value)
+          result = params;
+        else {
+          if (throw_if_wrong_type) throw std::bad_cast();
+          result = operator_traits<overlap>::oper_params_type();
+        }
+        break;
+      case kinetic:
+        if (std::is_same<Params,operator_traits<kinetic>::oper_params_type>::value)
+          result = params;
+        else {
+          if (throw_if_wrong_type) throw std::bad_cast();
+          result = operator_traits<kinetic>::oper_params_type();
+        }
+        break;
+      case nuclear:
+        if (std::is_same<Params,operator_traits<nuclear>::oper_params_type>::value)
+          result = params;
+        else {
+          if (throw_if_wrong_type) throw std::bad_cast();
+          result = operator_traits<nuclear>::oper_params_type(); // empty list of charges
+        }
+        break;
+      case emultipole1:
+      case emultipole2: // all emultipole operator sets require same param type
+        if (std::is_same<Params,operator_traits<emultipole1>::oper_params_type>::value)
+          result = params;
+        else {
+          if (throw_if_wrong_type) throw std::bad_cast();
+          result = operator_traits<emultipole1>::oper_params_type({{0.0,0.0,0.0}}); // multipole origin = {0,0,0}
+        }
+        break;
+      default:
+        assert(false); // missed a case?
+    }
+    return result;
+  }
+
+  void OneBodyEngine::compute_primdata(Libint_t& primdata,
+                                       const Shell& s1, const Shell& s2,
+                                       size_t p1, size_t p2,
+                                       size_t oset) {
+
+    const auto& A = s1.O;
+    const auto& B = s2.O;
+
+    const auto alpha1 = s1.alpha[p1];
+    const auto alpha2 = s2.alpha[p2];
+
+    const auto c1 = s1.contr[0].coeff[p1];
+    const auto c2 = s2.contr[0].coeff[p2];
+
+    const auto gammap = alpha1 + alpha2;
+    const auto oogammap = 1.0 / gammap;
+    const auto rhop = alpha1 * alpha2 * oogammap;
+    const auto Px = (alpha1 * A[0] + alpha2 * B[0]) * oogammap;
+    const auto Py = (alpha1 * A[1] + alpha2 * B[1]) * oogammap;
+    const auto Pz = (alpha1 * A[2] + alpha2 * B[2]) * oogammap;
+    const auto AB_x = A[0] - B[0];
+    const auto AB_y = A[1] - B[1];
+    const auto AB_z = A[2] - B[2];
+    const auto AB2_x = AB_x * AB_x;
+    const auto AB2_y = AB_y * AB_y;
+    const auto AB2_z = AB_z * AB_z;
+    const auto AB2 = AB2_x + AB2_y + AB2_z;
+
+    assert (LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD);
+
+    // overlap and kinetic energy ints don't use HRR, hence VRR on both centers
+    // Coulomb potential do HRR on center 1 only
+#if LIBINT2_DEFINED(eri,PA_x)
+      primdata.PA_x[0] = Px - A[0];
+#endif
+#if LIBINT2_DEFINED(eri,PA_y)
+      primdata.PA_y[0] = Py - A[1];
+#endif
+#if LIBINT2_DEFINED(eri,PA_z)
+      primdata.PA_z[0] = Pz - A[2];
+#endif
+
+    if (type_ != nuclear) {
+
+#if LIBINT2_DEFINED(eri,PB_x)
+      primdata.PB_x[0] = Px - B[0];
+#endif
+#if LIBINT2_DEFINED(eri,PB_y)
+      primdata.PB_y[0] = Py - B[1];
+#endif
+#if LIBINT2_DEFINED(eri,PB_z)
+      primdata.PB_z[0] = Pz - B[2];
+#endif
+    }
+
+    if (type_ == emultipole1 || type_ == emultipole2) {
+      auto& O = params_.as<operator_traits<emultipole1>::oper_params_type>(); // same as emultipole2
+#if LIBINT2_DEFINED(eri,BO_x)
+      primdata.BO_x[0] = B[0] - O[0];
+#endif
+#if LIBINT2_DEFINED(eri,BO_y)
+      primdata.BO_y[0] = B[1] - O[1];
+#endif
+#if LIBINT2_DEFINED(eri,BO_z)
+      primdata.BO_z[0] = B[2] - O[2];
+#endif
+    }
+
+#if LIBINT2_DEFINED(eri,oo2z)
+    primdata.oo2z[0] = 0.5*oogammap;
+#endif
+
+    if (type_ == nuclear) { // additional factor for electrostatic potential
+      auto& params = params_.as<operator_traits<nuclear>::oper_params_type>();
+      const auto& C = params[oset].second;
+#if LIBINT2_DEFINED(eri,PC_x)
+      primdata.PC_x[0] = Px - C[0];
+#endif
+#if LIBINT2_DEFINED(eri,PC_y)
+      primdata.PC_y[0] = Py - C[1];
+#endif
+#if LIBINT2_DEFINED(eri,PC_z)
+      primdata.PC_z[0] = Pz - C[2];
+#endif
+      // elecpot uses HRR
+#if LIBINT2_DEFINED(eri,AB_x)
+      primdata.AB_x[0] = A[0] - B[0];
+#endif
+#if LIBINT2_DEFINED(eri,AB_y)
+      primdata.AB_y[0] = A[1] - B[1];
+#endif
+#if LIBINT2_DEFINED(eri,AB_z)
+      primdata.AB_z[0] = A[2] - B[2];
+#endif
+
+    }
+
+    if (deriv_order_ > 0) {
+      // prefactors for derivative overlap relations
+      assert(false);
+    }
+
+    decltype(c1) sqrt_PI(1.77245385090551602729816748334);
+    const auto xyz_pfac = sqrt_PI * sqrt(oogammap);
+    const auto ovlp_ss_x = exp(- rhop * AB2_x) * xyz_pfac * c1 * c2;
+    const auto ovlp_ss_y = exp(- rhop * AB2_y) * xyz_pfac;
+    const auto ovlp_ss_z = exp(- rhop * AB2_z) * xyz_pfac;
+
+    primdata._0_Overlap_0_x[0] = ovlp_ss_x;
+    primdata._0_Overlap_0_y[0] = ovlp_ss_y;
+    primdata._0_Overlap_0_z[0] = ovlp_ss_z;
+
+    if (type_ == kinetic) {
+#if LIBINT2_DEFINED(eri,two_alpha0_bra)
+      primdata.two_alpha0_bra[0] = 2.0 * alpha1;
+#endif
+#if LIBINT2_DEFINED(eri,two_alpha0_ket)
+      primdata.two_alpha0_ket[0] = 2.0 * alpha2;
+#endif
+    }
+
+    if (type_ == nuclear) {
+#if LIBINT2_DEFINED(eri,PC_x) && LIBINT2_DEFINED(eri,PC_y) && LIBINT2_DEFINED(eri,PC_z)
+      const auto PC2 = primdata.PC_x[0] * primdata.PC_x[0] +
+                       primdata.PC_y[0] * primdata.PC_y[0] +
+                       primdata.PC_z[0] * primdata.PC_z[0];
+      const auto U = gammap * PC2;
+      const auto ltot = s1.contr[0].l + s2.contr[0].l;
+      auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
+      fm_eval_->eval(fm_ptr, U, ltot);
+
+      decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
+      const auto q = params_.as<operator_traits<nuclear>::oper_params_type>()[oset].first;
+      const auto pfac = - q * sqrt(gammap) * two_o_sqrt_PI * ovlp_ss_x * ovlp_ss_y * ovlp_ss_z;
+      const auto ltot_p1 = ltot + 1;
+      for(auto m=0; m!=ltot_p1; ++m) {
+        fm_ptr[m] *= pfac;
+      }
+#endif
+    }
+
+  } // OneBodyEngine::compute_primdata()
+
 #endif // LIBINT2_SUPPORT_ONEBODY
 
   /// types of multiplicative spherically-symmetric two-body kernels known by TwoBodyEngine
@@ -709,6 +944,8 @@ namespace libint2 {
         initialize();
         return *this;
       }
+
+      static bool skip_core_ints;
 
 #ifdef LIBINT2_ENGINE_TIMERS
       Timers<3> timers; // timers[0] -> prereqs
@@ -1186,6 +1423,9 @@ namespace libint2 {
   }
 
   template <MultiplicativeSphericalTwoBodyKernel Kernel>
+  bool TwoBodyEngine<Kernel>::skip_core_ints = false;
+
+  template <MultiplicativeSphericalTwoBodyKernel Kernel>
   inline bool TwoBodyEngine<Kernel>::compute_primdata(Libint_t& primdata,
                                                       const Shell& sbra1,
                                                       const Shell& sbra2,
@@ -1252,7 +1492,8 @@ namespace libint2 {
     auto* fm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
     const auto mmax = amtot + deriv_order_;
 
-    detail::TwoBodyEngineDispatcher<Kernel>::core_eval(this, fm_ptr, mmax, T, rho);
+    if (!skip_core_ints)
+      detail::TwoBodyEngineDispatcher<Kernel>::core_eval(this, fm_ptr, mmax, T, rho);
 
     for(auto m=0; m!=mmax+1; ++m) {
       fm_ptr[m] *= pfac;

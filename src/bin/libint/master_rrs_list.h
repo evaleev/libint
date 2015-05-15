@@ -33,6 +33,7 @@
 #include <comp_11_g12tig12_11.h>
 #include <comp_11_DivG12prime_xTx_11.h>
 #include <comp_deriv_gauss.h>
+#include <comp_xyz.h>
 #include <generic_rr.h>
 
 // master list of types and typedefs that describe capabilities of Libint2
@@ -88,20 +89,27 @@ namespace libint2 {
   typedef HRR<DummySymmIntegral_11_11_int,CGF,1,InKet,0,InBra,0> HRR_dc_11_Dummy_11_int;
 
 #if LIBINT_SUPPORT_ONEBODYINTS
-  typedef HRR<Overlap_1_1_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_1_Overlap_1_sh;
+  typedef HRR<Overlap_1_1_sh,CGShell,0,InBra,0,InKet,0> HRR_ab_1_Overlap_1_sh;
   typedef HRR<Overlap_1_1_int,CGF,0,InBra,0,InKet,0> HRR_ab_1_Overlap_1_int;
-  typedef HRR<Overlap_1_1_sq,CGShell,0,InKet,0,InBra,0> HRR_ba_1_Overlap_1_sh;
+  typedef HRR<Overlap_1_1_sh,CGShell,0,InKet,0,InBra,0> HRR_ba_1_Overlap_1_sh;
   typedef HRR<Overlap_1_1_int,CGF,0,InKet,0,InBra,0> HRR_ba_1_Overlap_1_int;
 
-  typedef HRR<ElecPot_1_1_sq,CGShell,0,InBra,0,InKet,0> HRR_ab_1_ElecPot_1_sh;
+  typedef HRR<ElecPot_1_1_sh,CGShell,0,InBra,0,InKet,0> HRR_ab_1_ElecPot_1_sh;
   typedef HRR<ElecPot_1_1_int,CGF,0,InBra,0,InKet,0> HRR_ab_1_ElecPot_1_int;
-  typedef HRR<ElecPot_1_1_sq,CGShell,0,InKet,0,InBra,0> HRR_ba_1_ElecPot_1_sh;
+  typedef HRR<ElecPot_1_1_sh,CGShell,0,InKet,0,InBra,0> HRR_ba_1_ElecPot_1_sh;
   typedef HRR<ElecPot_1_1_int,CGF,0,InKet,0,InBra,0> HRR_ba_1_ElecPot_1_int;
 
   typedef VRR_1_Overlap_1<CGShell,InBra> VRR_a_1_Overlap_1_sh;
   typedef VRR_1_Overlap_1<CGF,InBra> VRR_a_1_Overlap_1_int;
   typedef VRR_1_Overlap_1<CGShell,InKet> VRR_b_1_Overlap_1_sh;
   typedef VRR_1_Overlap_1<CGF,InKet> VRR_b_1_Overlap_1_int;
+
+  typedef VRR_1_Overlap_1_1d<CartesianAxis_X,InBra> VRR_a_1_Overlap_1_int_x;
+  typedef VRR_1_Overlap_1_1d<CartesianAxis_Y,InBra> VRR_a_1_Overlap_1_int_y;
+  typedef VRR_1_Overlap_1_1d<CartesianAxis_Z,InBra> VRR_a_1_Overlap_1_int_z;
+  typedef VRR_1_Overlap_1_1d<CartesianAxis_X,InKet> VRR_b_1_Overlap_1_int_x;
+  typedef VRR_1_Overlap_1_1d<CartesianAxis_Y,InKet> VRR_b_1_Overlap_1_int_y;
+  typedef VRR_1_Overlap_1_1d<CartesianAxis_Z,InKet> VRR_b_1_Overlap_1_int_z;
 
   typedef VRR_1_Kinetic_1<CGShell,InBra> VRR_a_1_Kinetic_1_sh;
   typedef VRR_1_Kinetic_1<CGF,InBra> VRR_a_1_Kinetic_1_int;

@@ -9,9 +9,13 @@ endif
 SUBDIRS = src
 CHECKSUBDIRS = tests/eri
 ifeq ($(CXXGEN_SUPPORTS_CPP11),yes)
- ifeq ($(LIBINT_HAS_EIGEN),yes)
-  ifeq ($(LIBINT_CONTRACTED_INTS),yes)
-   CHECKSUBDIRS += tests/hartree-fock
+ ifeq ($(LIBINT_SUPPORTS_ONEBODY),yes)
+  ifeq ($(LIBINT_SUPPORTS_ERI),yes)
+   ifeq ($(LIBINT_HAS_EIGEN),yes)
+    ifeq ($(LIBINT_CONTRACTED_INTS),yes)
+     CHECKSUBDIRS += tests/hartree-fock
+    endif
+   endif
   endif
  endif
 endif

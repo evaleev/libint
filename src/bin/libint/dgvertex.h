@@ -125,7 +125,7 @@ namespace libint2 {
     virtual bool equiv(const SafePtr<DGVertex>&) const =0;
 
     /** precomputed() returns whether this DGVertex is precomputed. See
-    precomputed_this() for description.
+    this_precomputed() for description.
     */
     bool precomputed() const;
 
@@ -216,11 +216,11 @@ namespace libint2 {
     /// If vertex is a singleton then remove it from the SingletonManager. Must be reimplemented in derived singleton class
     virtual void unregister() const;
 
-  protected:
+  public:
 
     /** this_precomputed() is used by precomputed() to determine whether this
         object really is precomputed. E.g. (ss|ss) shell is considered not
-        precomputed, i.e. precomputed_this() will return false. But the (ss|ss)
+        precomputed, i.e. this_precomputed() will return false. But the (ss|ss)
         integral is considered precomputed. Usually the shell vertex
         will refer to the integral vertex. Thus calling precomputed() on it
         will return true.

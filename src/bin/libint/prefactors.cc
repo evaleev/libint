@@ -184,6 +184,19 @@ Prefactors::Prefactors() :
     rho_o_alpha12[p] = roz_ptr;
   }
 
+
+  //
+  // precomputed 1-d ints
+  //
+  {
+    for(unsigned int xyz=0; xyz!=3; ++xyz) {
+      std::ostringstream oss;
+      oss << "_0_Overlap_0_" << to_string(CartesianAxis(xyz));
+      rdptr p(new rdouble(oss.str()));
+      Overlap00_1d[xyz] = p;
+    }
+  }
+
 #if CTIMEENTITIES_SINGLETONS
   for(unsigned int i=0; i<NMAX; i++) {
     N_i[i] = prefactor::Scalar((double)i);
@@ -200,12 +213,6 @@ SafePtr<Prefactors::cdouble>
 Prefactors::Cdouble(double a)
 {
   return prefactor::Scalar(a);
-#if 0
-  SafePtr<cdouble> tmp(new cdouble(a));
-  typedef CTimeSingletons<double>::ManagerType ManagerType;
-  const ManagerType::value_type& result = CTimeSingletons<double>::Manager()->find(tmp);
-  return result.second;
-#endif
 }
 #endif
 

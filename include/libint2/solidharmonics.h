@@ -28,7 +28,6 @@
 
 #include <libint2/shell.h>
 #include <libint2/cgshell_ordering.h>
-#include <Eigen/Dense>
 
 namespace {
   template <typename Int>
@@ -97,13 +96,6 @@ namespace libint2 {
               full_coeff[pure_idx * ncart + cart_idx] = coeff(l_, m, lx, ly, lz);
               ++cart_idx;
             END_FOR_CART
-          }
-
-          if (false) {
-            std::cout << "SolidHarmonicsCoefficients: l = " << l_ << "\n";
-            typedef Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
-            Eigen::Map<Matrix> fcoeff(&full_coeff[0], npure, ncart);
-            std::cout << fcoeff << "\n";
           }
 
           // compress rows
