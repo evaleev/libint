@@ -17,15 +17,11 @@
  *
  */
 
-//
-// ... likely the most impressive piece of C++ code I've ever written ...
-//                    ------ ALL HAIL MPL ------
-
 #include <vector>
 #include <algorithm>
+
 #include <strategy.h>
 #include <dg.h>
-#include <rr.h>
 #include <rr.h>
 #include <graph_registry.h>
 #include <intset_to_ints.h>
@@ -35,6 +31,7 @@
 #include <master_ints_list.h>
 #include <master_rrs_list.h>
 
+// MPL is painful
 #include <boost/mpl/list.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/placeholders.hpp>
@@ -252,20 +249,51 @@ namespace libint2 {
 #endif
 
 #if LIBINT_SUPPORT_ONEBODYINTS
-# if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
-  template <> struct MasterStrategy<Overlap_1_1_sq> {
+  template <> struct MasterStrategy<Overlap_1_1_sh> {
       typedef mpl::list<
-      HRR_ab_1_Overlap_1_sh,
-      VRR_a_1_Overlap_1_sh
+        CR_XYZ_1_1<CGShell,OverlapOper>
       > value;
     };
   template <> struct MasterStrategy<Overlap_1_1_int> {
       typedef mpl::list<
-      HRR_ab_1_Overlap_1_int,
-      VRR_a_1_Overlap_1_int
+        CR_XYZ_1_1<CGF,OverlapOper>
       > value;
     };
-  template <> struct MasterStrategy<ElecPot_1_1_sq> {
+  template <> struct MasterStrategy<Overlap_1_1_sh_x> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGShell1d<CartesianAxis_X>,OverlapOper>
+      > value;
+    };
+  template <> struct MasterStrategy<Overlap_1_1_sh_y> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper>
+      > value;
+    };
+  template <> struct MasterStrategy<Overlap_1_1_sh_z> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGShell1d<CartesianAxis_Z>,OverlapOper>
+      > value;
+    };
+  template <> struct MasterStrategy<Overlap_1_1_int_x> {
+      typedef mpl::list<
+      VRR_a_1_Overlap_1_int_x,
+      VRR_b_1_Overlap_1_int_x
+      > value;
+    };
+  template <> struct MasterStrategy<Overlap_1_1_int_y> {
+      typedef mpl::list<
+      VRR_a_1_Overlap_1_int_y,
+      VRR_b_1_Overlap_1_int_y
+      > value;
+    };
+  template <> struct MasterStrategy<Overlap_1_1_int_z> {
+      typedef mpl::list<
+      VRR_a_1_Overlap_1_int_z,
+      VRR_b_1_Overlap_1_int_z
+      > value;
+    };
+# if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
+  template <> struct MasterStrategy<ElecPot_1_1_sh> {
       typedef mpl::list<
       HRR_ab_1_ElecPot_1_sh,
       VRR_a_1_ElecPot_1_sh
@@ -278,19 +306,7 @@ namespace libint2 {
       > value;
     };
 # else //  // 0B0D strategy
-  template <> struct MasterStrategy<Overlap_1_1_sq> {
-      typedef mpl::list<
-      HRR_ba_1_Overlap_1_sh,
-      VRR_b_1_Overlap_1_sh
-      > value;
-    };
-  template <> struct MasterStrategy<Overlap_1_1_int> {
-      typedef mpl::list<
-      HRR_ba_1_Overlap_1_int,
-      VRR_b_1_Overlap_1_int
-      > value;
-    };
-  template <> struct MasterStrategy<ElecPot_1_1_sq> {
+  template <> struct MasterStrategy<ElecPot_1_1_sh> {
       typedef mpl::list<
       HRR_ba_1_ElecPot_1_sh,
       VRR_b_1_ElecPot_1_sh
@@ -303,19 +319,61 @@ namespace libint2 {
       > value;
     };
 # endif // strategy: A0 or 0B
-  template <> struct MasterStrategy<Kinetic_1_1_sq> {
+  template <> struct MasterStrategy<Kinetic_1_1_sh> {
       typedef mpl::list<
-      VRR_a_1_Kinetic_1_sh,
-      VRR_b_1_Kinetic_1_sh
+        CR_XYZ_1_1<CGShell,KineticOper>
       > value;
     };
   template <> struct MasterStrategy<Kinetic_1_1_int> {
       typedef mpl::list<
-      VRR_a_1_Kinetic_1_int,
-      VRR_b_1_Kinetic_1_int
+        CR_XYZ_1_1<CGF,KineticOper>
+      > value;
+    };
+  template <> struct MasterStrategy<Kinetic_1_1_int_x> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGF1d<CartesianAxis_X>,KineticOper>
+      > value;
+    };
+  template <> struct MasterStrategy<Kinetic_1_1_int_y> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGF1d<CartesianAxis_Y>,KineticOper>
+      > value;
+    };
+  template <> struct MasterStrategy<Kinetic_1_1_int_z> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGF1d<CartesianAxis_Z>,KineticOper>
+      > value;
+    };
+  template <> struct MasterStrategy<CMultipole_1_1_sh> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGShell,CartesianMultipoleOper<3u>>
+      > value;
+    };
+  template <> struct MasterStrategy<CMultipole_1_1_int> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGF,CartesianMultipoleOper<3u>>
+      > value;
+    };
+  template <> struct MasterStrategy<CMultipole_1_1_int_x> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGF1d<CartesianAxis_X>,CartesianMultipoleOper<1u>>
+      > value;
+    };
+  template <> struct MasterStrategy<CMultipole_1_1_int_y> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGF1d<CartesianAxis_Y>,CartesianMultipoleOper<1u>>
+      > value;
+    };
+  template <> struct MasterStrategy<CMultipole_1_1_int_z> {
+      typedef mpl::list<
+        CR_XYZ_1_1<CGF1d<CartesianAxis_Z>,CartesianMultipoleOper<1u>>
       > value;
     };
 #endif // LIBINT_SUPPORT_ONEBODYINTS
+
+  template <typename T> struct MasterStrategy {
+      typedef mpl::list<> value;
+  };
 
   /// transform<RRType> encapsulates RRType and the action associated with RRType
   /// it's used by apply_strategy::operator()<RRType> via mpl::for_each
@@ -440,14 +498,20 @@ namespace libint2 {
                       const SafePtr<Tactic>& tactic,
                       SafePtr<RecurrenceRelation>& rr) {
       SafePtr<T> tptr = dynamic_pointer_cast<T,DGVertex>(integral);
-      //std::cout << "In match_inttype_first::visit() integral=" << integral->label() << endl;
       if (tptr != 0) {
+        //std::cout << "In match_inttype_first::visit() integral=" << integral->label() << std::endl;
         using namespace boost;
         using namespace boost::mpl::placeholders;
         // Try to unroll first, if this is a shell set
         const unsigned int size = integral->size();
-        const bool can_unroll = boost::is_same<typename T::BasisFunctionType,CGShell>::value &&
+        const bool can_unroll = not TrivialBFSet<typename T::BasisFunctionType>::result &&
                                 (size <= dg->registry()->unroll_threshold());
+//        std::cout << "  size=" << size << " can unroll? " << (can_unroll ? "yes" : "no") << std::endl;
+//        if (not can_unroll) {
+//          std::cout << "    unroll_threshold=" << dg->registry()->unroll_threshold()
+//                    << " shell set? " << (not TrivialBFSet<typename T::BasisFunctionType>::result ? "yes" : "no")
+//                    << std::endl;
+//        }
 #if 0
         // for now only allow unrolling in primitive-basis code
         // TODO solve the problem with allowing unrolling in contracted code:

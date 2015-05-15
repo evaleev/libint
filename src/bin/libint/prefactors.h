@@ -136,6 +136,13 @@ namespace libint2 {
     /// cartesian components of pfac4 vector
     SafePtr<rdouble> R12kG12VRR_pfac4[np][3];
 
+    /**
+     * Precomputed 1-d integrals
+     */
+    /// (0|0)_xyz 1-d overlap integrals
+    SafePtr<rdouble> Overlap00_1d[3];
+
+
 #if CTIMEENTITIES_SINGLETONS
     /// integers represented as doubles
     SafePtr<cdouble> N_i[NMAX];
@@ -177,16 +184,43 @@ namespace libint2 {
     template <typename T> SafePtr<typename CTimeSingletons<T>::ManagerType> CTimeSingletons<T>::manager_;
 #endif
 
-    /// make a runtime quantity
-    inline SafePtr< RTimeEntity<double> > Scalar(const char* id) {
-      typedef double T;
-      typedef RTimeEntity<T> return_type;
-      typedef RTimeSingletons<T> singletons_type;
-      typedef singletons_type::ManagerType ManagerType;
-      SafePtr<return_type> tmp(new return_type(id));
-      const ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
+    /// make a floating-point compile-time quantity from an integer
+    template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
+    SafePtr< CTimeEntity<double> > Scalar(T a) {
+      typedef CTimeEntity<double> return_type;
+      SafePtr<return_type> tmp(new return_type(a));
+#if CTIMEENTITIES_SINGLETONS
+      typedef CTimeSingletons<double> singletons_type;
+      typedef typename singletons_type::ManagerType ManagerType;
+      const typename ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
       return result.second;
+#else
+      return tmp;
+#endif
     }
+    /// make a compile-time quantity
+    inline SafePtr< CTimeEntity<double> > Scalar(double a) {
+      typedef CTimeEntity<double> return_type;
+      SafePtr<return_type> tmp(new return_type(a));
+#if CTIMEENTITIES_SINGLETONS
+      typedef CTimeSingletons<double> singletons_type;
+      typedef typename singletons_type::ManagerType ManagerType;
+      const typename ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
+      return result.second;
+#else
+      return tmp;
+#endif
+    }
+    /// make a runtime quantity
+//    inline SafePtr< RTimeEntity<double> > Scalar(const char* id) {
+//      typedef double T;
+//      typedef RTimeEntity<T> return_type;
+//      typedef RTimeSingletons<T> singletons_type;
+//      typedef singletons_type::ManagerType ManagerType;
+//      SafePtr<return_type> tmp(new return_type(id));
+//      const ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
+//      return result.second;
+//    }
     /// make a runtime quantity
     inline SafePtr< RTimeEntity<double> > Scalar(const std::string& id) {
       typedef double T;
@@ -196,19 +230,6 @@ namespace libint2 {
       SafePtr<return_type> tmp(new return_type(id));
       const ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
       return result.second;
-    }
-    /// make a compile-time quantity
-    template <typename T> SafePtr< CTimeEntity<T> > Scalar(T a) {
-      typedef CTimeEntity<T> return_type;
-      SafePtr<return_type> tmp(new return_type(a));
-#if CTIMEENTITIES_SINGLETONS
-      typedef CTimeSingletons<T> singletons_type;
-      typedef typename singletons_type::ManagerType ManagerType;
-      const typename ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
-      return result.second;
-#else
-      return tmp;
-#endif
     }
 
     /// auxiliary class that write expressions with runtime cartesian vectors
@@ -266,7 +287,7 @@ namespace libint2 {
       return CTimeVector3<double>(qn);
     }
     /// make a compile-time quantity
-    inline CTimeVector3<double> Vector(const OriginDerivative& dd)
+    inline CTimeVector3<double> Vector(const OriginDerivative<3u>& dd)
     {
       double d[3]; for(unsigned int xyz=0; xyz<3; ++xyz) d[xyz] = dd.d(xyz);
       return CTimeVector3<double>(d);

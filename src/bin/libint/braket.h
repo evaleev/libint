@@ -341,7 +341,7 @@ namespace libint2 {
   ArrayBraket<BFS,NP>::set_member(const ConstructablePolymorphically& f, unsigned int p, unsigned int i) {
     assert(i==0 && p<NP);
     reset_cache();
-    bfs_[p] = f;
+    bfs_[p] = BFS(f);
   }
   
   template <class BFS, unsigned int NP>

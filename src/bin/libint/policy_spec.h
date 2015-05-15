@@ -34,7 +34,8 @@ namespace libint2 {
 
   /**
   StdLibintTDPolicy<CGShell>::init_subobj initializes CGFs in canonical order.
-   The functions in order are produced using the following C++ loop:
+  Several canonical orderings are supported. The default is the CCA ordering in which
+  the functions in a shell are produced using the following C++ loop:
 
    for(int i=0; i<=am; i++) {
      qn[0] = am - i;
@@ -57,6 +58,40 @@ namespace libint2 {
   void
   StdLibintTDPolicy<CGShell>::dealloc_subobj(std::vector<StdLibintTDPolicy<CGShell>::subobj_stype>& subobj);
   /* source is in policy_spec.cc */
+
+  /**
+  StdLibintTDPolicy<CGShell1d>::init_subobj initializes CGF1d's in canonical order.
+   */
+
+  template <CartesianAxis Axis>
+  struct StdLibintTDPolicy< CGShell1d<Axis> > {
+      typedef CGShell1d<Axis> obj_type;
+      typedef typename obj_type::iter_type subobj_type;
+      /// how these objects are stored
+      typedef typename TypeTraits<obj_type>::StorageType obj_stype;
+      /// how these subobjects are stored
+      typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
+
+      /// This function allocates subobj of obj (e.g. basis functions contained in a shell)
+      static void init_subobj(const obj_stype& cgshell, std::vector<subobj_stype>& cgfs)
+      {
+        if (cgshell.is_unit()) {
+          cgfs.push_back(CGF1d<Axis>::unit());
+        }
+        else {
+          unsigned int am = TypeTraits<CGShell1d<Axis>>::const_ref(cgshell).qn();
+          for(unsigned int q=0; q<=am; ++q) {
+            subobj_stype cgf(q);
+            cgf.deriv() = cgshell.deriv();
+            if (cgshell.contracted()) cgf.contract();
+            cgfs.push_back(cgf);
+          }
+        }
+      }
+      static void dealloc_subobj(vector<subobj_stype>& subobj)
+      {
+      }
+    };
 
   /** StdLibintTDPolicy<GenIntegralSet> describes how integral sets are composed
       of integrals in canonical order.

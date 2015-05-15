@@ -965,24 +965,23 @@ DirectedGraph::remove_disconnected_vertices()
 {
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
-  for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
+  for(iter v=stack_.begin(); v!=stack_.end();) {
     const ver_ptr& vptr = vertex_ptr(*v);
+    iter vnext = v; ++vnext; // note the next value of iterator before trying to erase
     if ((vptr)->num_entry_arcs() == 0 && (vptr)->num_exit_arcs() == 0 && (vptr)->is_a_target() == false) {
 #if DEBUG
       cout << "Trying to erase disconnected vertex " << (vptr)->description() << " num_vertices = " << num_vertices() << endl;
 #endif
-      iter vprev = v; --vprev;
       try { del_vertex(v); }
       catch (CannotPerformOperation& v) {
 #if DEBUG
         cout << "But couldn't!!!" << endl;
 #endif
-        ++vprev;
         throw v;
       }
-      // current vertex was erased, so need to decrease the iterator as well
-      v = vprev;
     }
+    // update the iterator
+    v = vnext;
   }
 }
 
@@ -2434,7 +2433,7 @@ namespace libint2 {
         std::cout << "PrerequisitesExtractor: " << v->description() << " is a member of a shell set, will add that instead"<< std::endl;
 #endif
         if ( vertices.end() == find(vertices.begin(), vertices.end(), parent_shellset) ) {
-          vertices.push_front(parent_shellset);
+          vertices.push_back(parent_shellset);
 #if DEBUG
           std::cout << "PrerequisitesExtractor: extracted " << parent_shellset->description() << std::endl;
 #endif
@@ -2446,7 +2445,7 @@ namespace libint2 {
         }
       }
       else {
-        vertices.push_front(v);
+        vertices.push_back(v);
 #if DEBUG
         std::cout << "PrerequisitesExtractor: extracted " << v->description() << std::endl;
 #endif
@@ -2454,7 +2453,7 @@ namespace libint2 {
 
 #else
 
-      vertices.push_front(v);
+      vertices.push_back(v);
 #if DEBUG
       std::cout << "PrerequisitesExtractor: extracted " << v->description() << std::endl;
 #endif

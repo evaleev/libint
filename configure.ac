@@ -1,5 +1,5 @@
 define([libint_mmm_version],[2.1.0])
-define([libint_buildid],[beta])
+define([libint_buildid],[beta2])
 define([libint_so_version],[2:0:0])
 
 dnl --------- Begin ---------
@@ -390,6 +390,7 @@ AC_ARG_WITH(eri-opt-am,
 
 if test X$INCLUDE_ERI != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ERI,$INCLUDE_ERI)
+  AC_SUBST(LIBINT_SUPPORTS_ERI,"yes")
 fi
 
 ONEBODY_MAX_AM=$LIBINT_MAX_AM
@@ -441,6 +442,7 @@ AC_ARG_WITH(1body-opt-am,
 
 if test X$INCLUDE_ONEBODY != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ONEBODY,$INCLUDE_ONEBODY)
+  AC_SUBST(LIBINT_SUPPORTS_ONEBODY,"yes")
 fi
 
 # check max am for 3-center ERIs, if needed

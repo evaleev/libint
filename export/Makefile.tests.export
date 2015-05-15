@@ -12,7 +12,7 @@ TEST1 = eri/test
 check1:: $(TEST1)
 	./$(TEST1) 0 2 && ./$(TEST1) 1 1 && ./$(TEST1) 2 1
 
-$(TEST1): eri/test.o eri/eri.o
+$(TEST1): eri/test.o
 	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
 
 TEST2 = hartree-fock/hartree-fock

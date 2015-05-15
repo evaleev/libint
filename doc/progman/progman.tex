@@ -176,26 +176,26 @@ The corresponding mathematical expression is shown in Eq. \eqref{eq:osvrrA}]{}
   if (exists(am1)) {
     auto Am1BCD_m = factory.make_child(am1,b,c,d,m);
     auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
-    expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);
+    expr_ += Scalar(a[dir]) * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);
   }
 
   auto bm1 = b - _1;
   if (exists(bm1)) {
     auto ABm1CD_m = factory.make_child(a,bm1,c,d,m);
     auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
-    expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);
+    expr_ += Scalar(b[dir]) * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);
   }
 
   auto cm1 = c - _1;
   if (exists(cm1)) {
     auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
-    expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;
+    expr_ += Scalar(c[dir]) * Scalar("oo2ze") * ABCm1D_mp1;
   }
 
   auto dm1 = d - _1;
   if (exists(dm1)) {
     auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
-    expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;
+    expr_ += Scalar(d[dir]) * Scalar("oo2ze") * ABCDm1_mp1;
   }
 \end{lstlisting}
 
@@ -452,7 +452,7 @@ for(int s0=0; s0<nshell; ++s0) {
         // evaluate the contracted integral shell set
         libint2_build_eri[am[s0]][am[s1]][am[s2]][am[s3]](&inteval[0]);
         
-        // grab the resulting shell set in inteval[0].targets[0][É]
+        // grab the resulting shell set in inteval[0].targets[0][...]
       }
     }
   }

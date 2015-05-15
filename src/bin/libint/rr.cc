@@ -254,7 +254,7 @@ RecurrenceRelation::generate_graph_(const SafePtr<DirectedGraph>& dg)
     dg->apply_at<&DGVertex::not_need_to_compute>(rr_child(c));
   // Apply recurrence relations using existing vertices on the graph (i.e.
   // such that no new vertices appear)
-  SafePtr<Tactic> ztactic(new ZeroNewVerticesTactic(dg));
+  SafePtr<Tactic> ztactic(new FewestNewVerticesTactic(dg));
   dg->apply(strat,ztactic);
 #if DEBUG
   cout << "RecurrenceRelation::generate_code -- should be same as previous = " << dg->num_vertices() << endl;

@@ -55,7 +55,7 @@ size_t nbasis(const std::vector<Shell>& shells);
 std::vector<size_t> map_shell_to_basis_function(const std::vector<Shell>& shells);
 Matrix compute_soad(const std::vector<Atom>& atoms);
 Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
-                          libint2::OneBodyEngine::integral_type t,
+                          libint2::OneBodyEngine::operator_type t,
                           const std::vector<Atom>& atoms = std::vector<Atom>());
 
 // simple-to-read, but inefficient Fock builder; computes ~16 times as many ints as possible
@@ -528,7 +528,7 @@ Matrix compute_soad(const std::vector<Atom>& atoms) {
 }
 
 Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
-                          libint2::OneBodyEngine::integral_type obtype,
+                          libint2::OneBodyEngine::operator_type obtype,
                           const std::vector<Atom>& atoms)
 {
   const auto n = nbasis(shells);
@@ -543,7 +543,7 @@ Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
     for(const auto& atom : atoms) {
       q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
     }
-    engine.set_q(q);
+    engine.set_params(q);
   }
 
   auto shell2bf = map_shell_to_basis_function(shells);
