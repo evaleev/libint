@@ -308,10 +308,10 @@ namespace libint2 {
         return result;
       }
 
-      void compute_primdata(Libint_t& primdata,
-                            const Shell& s1, const Shell& s2,
-                            size_t p1, size_t p2,
-                            size_t oset);
+      inline void compute_primdata(Libint_t& primdata,
+                                   const Shell& s1, const Shell& s2,
+                                   size_t p1, size_t p2,
+                                   size_t oset);
 
     private:
       operator_type type_;
@@ -568,10 +568,10 @@ namespace libint2 {
       //-------
       // utils
       //-------
-      unsigned int nparams() const;
-      unsigned int nopers() const;
-      /// if Params == operator_traits<type>::oper_params_type, will return Any(params)
-      /// else will set return Any initialized with default value for operator_traits<type>::oper_params_type
+      inline unsigned int nparams() const;
+      inline unsigned int nopers() const;
+      /// if Params == operator_traits<type>::oper_params_type, will return any(params)
+      /// else will set return any initialized with default value for operator_traits<type>::oper_params_type
       /// @param throw_if_wrong_type if true, and Params != operator_traits<type>::oper_params_type, will throw std::bad_cast
       template <typename Params>
       static Any enforce_params_type(operator_type type,
@@ -601,7 +601,7 @@ namespace libint2 {
       static constexpr unsigned int nopers = 10; //!< overlap + 3 dipoles + 6 quadrupoles
   };
 
-  unsigned int OneBodyEngine::nparams() const {
+  inline unsigned int OneBodyEngine::nparams() const {
     switch (type_) {
       case nuclear:
         return params_.as<operator_traits<nuclear>::oper_params_type>().size();
@@ -610,7 +610,7 @@ namespace libint2 {
     }
     return 1;
   }
-  unsigned int OneBodyEngine::nopers() const {
+  inline unsigned int OneBodyEngine::nopers() const {
     switch (type_) {
       case overlap: return operator_traits<overlap>::nopers;
       case kinetic: return operator_traits<kinetic>::nopers;
@@ -668,10 +668,10 @@ namespace libint2 {
     return result;
   }
 
-  void OneBodyEngine::compute_primdata(Libint_t& primdata,
-                                       const Shell& s1, const Shell& s2,
-                                       size_t p1, size_t p2,
-                                       size_t oset) {
+  inline void OneBodyEngine::compute_primdata(Libint_t& primdata,
+                                              const Shell& s1, const Shell& s2,
+                                              size_t p1, size_t p2,
+                                              size_t oset) {
 
     const auto& A = s1.O;
     const auto& B = s2.O;
