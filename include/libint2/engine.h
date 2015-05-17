@@ -146,6 +146,7 @@ namespace libint2 {
         deriv_order_ = other.deriv_order_;
         params_ = other.params_;
         fm_eval_ = other.fm_eval_;
+        type_ = other.type_;
         initialize();
         return *this;
       }
