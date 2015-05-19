@@ -34,8 +34,11 @@ check1:: $(TEST1)
  awk ' {print} /^\*\*/ { eref = -74.942080057698; tol = 1e-11; if ($$5 - eref < tol && eref - $$5 < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }'
 
 check2::  $(TEST2)
-	./$(TEST2) $(SRCDIR)/h2o.xyz | \
- awk ' {print} /^\*\*/ { eref = -76.003354058456; tol = 1e-11; if ($$5 - eref < tol && eref - $$5 < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }'
+	- ./$(TEST2) $(SRCDIR)/h2o.xyz | tee check2.log && \
+ cat check2.log | awk ' /^\*\* Hartree/ { eref = -76.003354058456; e = $$5; tol = 1e-11; if (e - eref < tol && eref - e < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }' && \
+ cat check2.log | awk ' /^\*\* edipole/ { trmuref = -0.297869981927709; trmu = $$4 + $$5 + $$6; tol = 1e-11; if (trmu - trmuref < tol && trmuref - trmu < tol) {print "dipole moment check passed"; exit 0} else {print "dipole moment check failed"; exit 1} }' && \
+ cat check2.log | awk ' /^\*\* equadrupole/ { trquref = -21.41570826291166; trqu = $$4 + $$7 + $$9; tol = 1e-11; if (trqu - trquref < tol && trquref - trqu < tol) {print "quadrupole moment check passed"; exit 0} else {print "quadrupole moment check failed"; exit 1} }' && \
+ rm -f check2.txt
 
 $(TEST1): $(CXXTEST1OBJ) $(COMPILER_LIB) $(COMPUTE_LIB)
 	$(LD) -o $@ $(LDFLAGS) $^ $(SYSLIBS)

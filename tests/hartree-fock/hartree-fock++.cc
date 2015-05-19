@@ -307,16 +307,14 @@ int main(int argc, char *argv[]) {
     } while (((ediff_rel > conv) || (rms_error > conv)) && (iter < maxiter));
 
     auto Mu = compute_1body_ints<libint2::OneBodyEngine::emultipole2>(obs);
-    double mu[3], qu[6];
+    std::array<double,3> mu;
+    std::array<double,6> qu;
     for(int xyz=0; xyz!=3; ++xyz)
       mu[xyz] = -2 * D.cwiseProduct(Mu[xyz+1]).sum(); // 2 = alpha + beta, -1 = electron charge
     for(int k=0; k!=6; ++k)
       qu[k] = -2 * D.cwiseProduct(Mu[k+4]).sum(); // 2 = alpha + beta, -1 = electron charge
-    std::cout << "electronic dipole moment: mu_x=" << mu[0] << " mu_y=" << mu[1] << " mu_z=" << mu[2] << std::endl;
-    std::cout << "electronic quadrupole moment:"
-              << " q_xx=" << qu[0] << " q_xy=" << qu[1] << " q_xz=" << qu[2]
-              << " q_yy=" << qu[3] << " q_yz=" << qu[4] << " q_zz=" << qu[5]
-              << std::endl;
+    std::cout << "** edipole = "; std::copy(mu.begin(), mu.end(), std::ostream_iterator<double>(std::cout, " ")); std::cout << std::endl;
+    std::cout << "** equadrupole = ";std::copy(qu.begin(), qu.end(), std::ostream_iterator<double>(std::cout, " ")); std::cout << std::endl;
 
     printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
 
