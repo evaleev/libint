@@ -31,6 +31,7 @@
 #include <chrono>
 #include <thread>
 #include <atomic>
+#include <iterator>
 
 // Eigen matrix algebra library
 #include <Eigen/Dense>
