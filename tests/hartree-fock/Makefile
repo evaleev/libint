@@ -62,7 +62,7 @@ realclean:: clean
 targetclean:: clean
 
 $(TOPDIR)/include/libint2/boost/preprocessor.hpp: $(SRCDIR)/$(TOPDIR)/external/boost.tar.gz
-	cd $(TOPDIR)/include/libint2 && gunzip -c $(SRCDIR)/$(TOPDIR)/external/boost.tar.gz | tar xf -
+	gunzip -c $(SRCDIR)/$(TOPDIR)/external/boost.tar.gz | tar -xf - -C $(TOPDIR)/include/libint2
 
 depend:: $(CXXTEST1DEP) $(CXXTEST2DEP)
 

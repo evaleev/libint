@@ -14,7 +14,7 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2/config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/chemistry/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
-	cd $(DESTDIR)$(includedir)/$(NAME)$(VERSION) && gunzip -c $(SRCTOPDIR)/external/boost.tar.gz | tar xf -
+	gunzip -c $(SRCTOPDIR)/external/boost.tar.gz | tar -xf - -C $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 
 install_pkgconfig::
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(pkgconfigdir)

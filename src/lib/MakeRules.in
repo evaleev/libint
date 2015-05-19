@@ -30,7 +30,7 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/chemistry/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	cd $(DESTDIR)$(includedir)/$(NAME)$(VERSION) && gunzip -c $(SRCTOPDIR)/external/boost.tar.gz | tar xf -
+	gunzip -c $(SRCTOPDIR)/external/boost.tar.gz | tar -xf - -C $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 
 install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)

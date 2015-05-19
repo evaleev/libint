@@ -47,7 +47,7 @@ $(TEST2).o :: unpack_boost
 $(TEST3).o :: unpack_boost
 
 unpack_boost::
-	cd $(TOPDIR)/include/libint2 && gunzip -c $(SRCDIR)/external/boost.tar.gz | tar xf -
+	gunzip -c $(SRCDIR)/external/boost.tar.gz | tar -xf - -C $(TOPDIR)/include/libint2
 
 clean:: targetclean
 	-rm -f */*.o */*.d
