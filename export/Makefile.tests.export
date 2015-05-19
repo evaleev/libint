@@ -35,11 +35,19 @@ check3:: $(TEST3)
   endif
 endif
 
-$(TEST2): hartree-fock/hartree-fock.o
+$(TEST2): $(TEST2).o
 	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
 
-$(TEST3): hartree-fock/hartree-fock++.o
+$(TEST3): $(TEST3).o
 	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
+
+.PHONY: unpack_boost
+
+$(TEST2).o :: unpack_boost
+$(TEST3).o :: unpack_boost
+
+unpack_boost::
+	cd $(TOPDIR)/include/libint2 && gunzip -c $(SRCDIR)/external/boost.tar.gz | tar xf -
 
 clean:: targetclean
 	-rm -f */*.o */*.d

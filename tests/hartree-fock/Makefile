@@ -55,20 +55,24 @@ clean::
 	-rm -rf $(TEST1) $(TEST2) *.o *.d
 
 distclean:: realclean
+	-rm -rf $(TOPDIR)/include/libint2/boost
 
 realclean:: clean
 
 targetclean:: clean
 
+$(TOPDIR)/include/libint2/boost/preprocessor.hpp: $(SRCDIR)/$(TOPDIR)/external/boost.tar.gz
+	cd $(TOPDIR)/include/libint2 && gunzip -c $(SRCDIR)/$(TOPDIR)/external/boost.tar.gz | tar xf -
+
 depend:: $(CXXTEST1DEP) $(CXXTEST2DEP)
 
 ifneq ($(CXXDEPENDSUF),none)
-%.d: %.cc
+%.d:: %.cc $(TOPDIR)/include/libint2/boost/preprocessor.hpp
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
 	sed 's/^$*.o/$*.$(OBJSUF) $*.d/g' < $(*F).$(CXXDEPENDSUF) > $(@F)
 	/bin/rm -f $(*F).$(CXXDEPENDSUF)
 else
-%.d: %.cc
+%.d:: %.cc $(TOPDIR)/include/libint2/boost/preprocessor.hpp
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< | sed 's/^$*.o/$*.$(OBJSUF) $*.d/g' > $(@F)
 endif
 

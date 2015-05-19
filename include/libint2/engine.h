@@ -35,6 +35,14 @@
 #include <libint2/solidharmonics.h>
 #include <libint2/any.h>
 
+#include <libint2/boost/preprocessor.hpp>
+
+// extra PP macros
+
+#define BOOST_PP_MAKE_TUPLE_INTERNAL(z, i, last) i BOOST_PP_COMMA_IF(BOOST_PP_NOT_EQUAL(i,last))
+/// BOOST_PP_MAKE_TUPLE(n) returns (0,1,....n-1,n)
+#define BOOST_PP_MAKE_TUPLE(n) ( BOOST_PP_REPEAT( n , BOOST_PP_MAKE_TUPLE_INTERNAL, BOOST_PP_DEC(n) ) )
+
 #include <Eigen/Core>
 
 // the engine will be profiled by default if library was configured with --enable-profile
@@ -57,6 +65,11 @@
 
 namespace libint2 {
 
+  constexpr size_t num_geometrical_derivatives(size_t ncenter,
+                                               size_t deriv_order) {
+    return (deriv_order > 0) ? num_geometrical_derivatives(ncenter, deriv_order-1) * (3*ncenter+deriv_order)/deriv_order : 1;
+  }
+
 #if defined(LIBINT2_SUPPORT_ONEBODY)
 
   /**
@@ -69,15 +82,31 @@ namespace libint2 {
 
     public:
 
-      /// types of operators (operator sets) supported by OneBodyEngine
+      /// types of operators (operator sets) supported by OneBodyEngine.
+      /// \warning These must start with 0 and appear in same order as elements of BOOST_PP_ONEBODY_OPERATOR_LIST preprocessor macro.
       enum operator_type {
-        overlap,        //!< overlap
-        kinetic,        //!< electronic kinetic energy, i.e. \f$ -\frac{1}{2} \Nabla^2 \f$
-        nuclear,        //!< Coulomb potential due to point charges
-        emultipole1,    //!< overlap + (Cartesian) electric dipole moment, \f$ x_O, y_O, z_O \f$, where \f$ x_O \equiv x - O_x \f$ is relative to origin \f$ \vec{O} \f$
-        emultipole2,    //!< emultipole1 + (Cartesian) electric quadrupole moment, \f$ x^2, xy, xz, y^2, yz, z^2 \f$
-        _invalid
+        overlap=0,        //!< overlap
+        kinetic=1,        //!< electronic kinetic energy, i.e. \f$ -\frac{1}{2} \Nabla^2 \f$
+        nuclear=2,        //!< Coulomb potential due to point charges
+        emultipole1=3,    //!< overlap + (Cartesian) electric dipole moment, \f$ x_O, y_O, z_O \f$, where \f$ x_O \equiv x - O_x \f$ is relative to origin \f$ \vec{O} \f$
+        emultipole2=4,    //!< emultipole1 + (Cartesian) electric quadrupole moment, \f$ x^2, xy, xz, y^2, yz, z^2 \f$
+        _invalid=-1
       };
+
+/// list of libint task names for each operator type. These MUST appear in the same order as in operator_type
+#define BOOST_PP_ONEBODY_OPERATOR_LIST  (overlap,         \
+                                        (kinetic,         \
+                                        (elecpot,         \
+                                        (1emultipole,     \
+                                        (2emultipole,     \
+                                         BOOST_PP_NIL)))))
+
+#define BOOST_PP_ONEBODY_OPERATOR_INDEX_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_LIST_SIZE(BOOST_PP_ONEBODY_OPERATOR_LIST) )
+#define BOOST_PP_ONEBODY_OPERATOR_INDEX_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_OPERATOR_INDEX_TUPLE )
+
+// make list of derivative orders for 1-body ints
+#define BOOST_PP_ONEBODY_DERIV_ORDER_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_INC(LIBINT2_DERIV_ONEBODY_ORDER) )
+#define BOOST_PP_ONEBODY_DERIV_ORDER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_DERIV_ORDER_TUPLE )
 
       /// alias to operator_type for backward compatibility to pre-05/13/2015 code
       /// \deprecated use operator_type instead
@@ -169,14 +198,7 @@ namespace libint2 {
       /// on the operator set. \sa compute()
       /// \note need to specialize for some operator types
       unsigned int nshellsets() const {
-        auto nderivs = [](unsigned int deriv_order) -> unsigned int {
-          unsigned int result = 1;
-          for(unsigned int d=0; d!=deriv_order; ++d) {
-            result *= (6 + d); result /= (1 + d);
-          }
-          return result;
-        };
-        return nopers() * nderivs(deriv_order_);
+        return nopers() * num_geometrical_derivatives(2,deriv_order_);
       }
 
       /// computes shell set of integrals
@@ -256,22 +278,16 @@ namespace libint2 {
             primdata_[0].targets[0] = primdata_[0].stack;
           }
           else {
+
             switch (type_) {
-              case overlap:
-                LIBINT2_PREFIXED_NAME(libint2_build_overlap)[s1.contr[0].l][s2.contr[0].l](&primdata_[0]);
-                break;
-              case kinetic:
-                LIBINT2_PREFIXED_NAME(libint2_build_kinetic)[s1.contr[0].l][s2.contr[0].l](&primdata_[0]);
-                break;
-              case nuclear:
-                LIBINT2_PREFIXED_NAME(libint2_build_elecpot)[s1.contr[0].l][s2.contr[0].l](&primdata_[0]);
-                break;
-              case emultipole1:
-                LIBINT2_PREFIXED_NAME(libint2_build_1emultipole)[s1.contr[0].l][s2.contr[0].l](&primdata_[0]);
-                break;
-              case emultipole2:
-                LIBINT2_PREFIXED_NAME(libint2_build_2emultipole)[s1.contr[0].l][s2.contr[0].l](&primdata_[0]);
-                break;
+
+#define BOOST_PP_ONEBODYENGINE_MCR1(r,data,i,elem)                                                           \
+              case i :                                                                                       \
+                LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(libint2_build_ , elem) )[s1.contr[0].l][s2.contr[0].l](&primdata_[0]); \
+              break;
+
+BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR1, _, BOOST_PP_ONEBODY_OPERATOR_LIST)
+
               default:
                 assert(false);
             }
@@ -326,244 +342,51 @@ namespace libint2 {
       void initialize() {
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
 
-        switch(type_) {
-          case overlap:     assert(lmax_ <= LIBINT2_MAX_AM_overlap); break;
-          case kinetic:     assert(lmax_ <= LIBINT2_MAX_AM_kinetic); break;
-          case nuclear:     assert(lmax_ <= LIBINT2_MAX_AM_elecpot); break;
-          case emultipole1: assert(lmax_ <= LIBINT2_MAX_AM_1emultipole); break;
-          case emultipole2: assert(lmax_ <= LIBINT2_MAX_AM_2emultipole); break;
-          default: assert(false);
-        }
-        assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
-
         scratch_.resize(nshellsets() * ncart_max * ncart_max);
 
-        if (type_ == overlap) {
-          switch(deriv_order_) {
+#define BOOST_PP_ONEBODYENGINE_MCR2(r,product)                                                                \
+         if (type_ == BOOST_PP_TUPLE_ELEM(2,0,product) && deriv_order_ == BOOST_PP_TUPLE_ELEM(2,1,product) ) {\
+           assert(lmax_ <= BOOST_PP_CAT(LIBINT2_MAX_AM_ ,                                                     \
+                                        BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_OPERATOR_LIST,                      \
+                                                         BOOST_PP_TUPLE_ELEM(2,0,product) )                   \
+                                       ) );                                                                   \
+           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
+                                    BOOST_PP_CAT(libint2_init_ ,                                              \
+                                      BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_OPERATOR_LIST,                        \
+                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
+                                    ),                                                                        \
+                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
+                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
+                                                )                                                             \
+                                  )                                                                           \
+                                )(&primdata_[0], lmax_, 0);                                                   \
+           return;                                                                                            \
+         }
 
-            case 0:
-              libint2_init_overlap(&primdata_[0], lmax_, 0);
-              break;
-            case 1:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_init_overlap1(&primdata_[0], lmax_, 0);
-#endif
-              break;
-            case 2:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_init_overlap2(&primdata_[0], lmax_, 0);
-#endif
-              break;
-            default: assert(deriv_order_ < 3);
-          }
+BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_ONEBODYENGINE_MCR2, 2, (BOOST_PP_ONEBODY_OPERATOR_INDEX_LIST, BOOST_PP_ONEBODY_DERIV_ORDER_LIST) )
 
-          return;
-        }
-
-        if (type_ == kinetic) {
-          switch(deriv_order_) {
-
-            case 0:
-              libint2_init_kinetic(&primdata_[0], lmax_, 0);
-              break;
-            case 1:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_init_kinetic1(&primdata_[0], lmax_, 0);
-#endif
-              break;
-            case 2:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_init_kinetic2(&primdata_[0], lmax_, 0);
-#endif
-              break;
-            default: assert(deriv_order_ < 3);
-          }
-
-          return;
-        }
-
-        if (type_ == nuclear) {
-
-          switch(deriv_order_) {
-
-            case 0:
-              libint2_init_elecpot(&primdata_[0], lmax_, 0);
-              break;
-            case 1:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_init_elecpot1(&primdata_[0], lmax_, 0);
-#endif
-              break;
-            case 2:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_init_elecpot2(&primdata_[0], lmax_, 0);
-#endif
-              break;
-            default: assert(deriv_order_ < 3);
-          }
-
-          return;
-        }
-
-        if (type_ == emultipole1) {
-          switch(deriv_order_) {
-
-            case 0:
-              libint2_init_1emultipole(&primdata_[0], lmax_, 0);
-              break;
-            case 1:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_init_1emultipole1(&primdata_[0], lmax_, 0);
-#endif
-              break;
-            case 2:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_init_1emultipole2(&primdata_[0], lmax_, 0);
-#endif
-              break;
-            default: assert(deriv_order_ < 3);
-          }
-
-          return;
-        }
-
-        if (type_ == emultipole2) {
-          switch(deriv_order_) {
-
-            case 0:
-              libint2_init_2emultipole(&primdata_[0], lmax_, 0);
-              break;
-            case 1:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_init_2emultipole1(&primdata_[0], lmax_, 0);
-#endif
-              break;
-            case 2:
-#if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_init_2emultipole2(&primdata_[0], lmax_, 0);
-#endif
-              break;
-            default: assert(deriv_order_ < 3);
-          }
-
-          return;
-        }
-
-        assert(type_ == overlap || type_ == kinetic || type_ == nuclear ||
-               type_ == emultipole1 || type_ == emultipole2);
+        assert(false); // either deriv_order_ or type_ is wrong
       } // initialize()
 
       void finalize() {
         if (primdata_.size() != 0) {
 
-          if (type_ == overlap) {
-            switch(deriv_order_) {
+#define BOOST_PP_ONEBODYENGINE_MCR3(r,product)                                                                \
+           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
+                                    BOOST_PP_CAT(libint2_cleanup_ ,                                           \
+                                      BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_OPERATOR_LIST,                        \
+                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
+                                    ),                                                                        \
+                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
+                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
+                                                )                                                             \
+                                  )                                                                           \
+                                )(&primdata_[0]);                                                             \
+           return;
 
-              case 0:
-              libint2_cleanup_overlap(&primdata_[0]);
-              break;
-              case 1:
-  #if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_cleanup_overlap1(&primdata_[0]);
-  #endif
-              break;
-              case 2:
-  #if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_cleanup_overlap2(&primdata_[0]);
-  #endif
-              break;
-            }
-
-            return;
-          }
-
-          if (type_ == kinetic) {
-            switch(deriv_order_) {
-
-              case 0:
-              libint2_cleanup_kinetic(&primdata_[0]);
-              break;
-              case 1:
-  #if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_cleanup_kinetic1(&primdata_[0]);
-  #endif
-              break;
-              case 2:
-  #if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_cleanup_kinetic2(&primdata_[0]);
-  #endif
-              break;
-            }
-
-            return;
-          }
-
-          if (type_ == nuclear) {
-
-            switch(deriv_order_) {
-
-              case 0:
-              libint2_cleanup_elecpot(&primdata_[0]);
-              break;
-              case 1:
-  #if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_cleanup_elecpot1(&primdata_[0]);
-  #endif
-              break;
-              case 2:
-  #if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_cleanup_elecpot2(&primdata_[0]);
-  #endif
-              break;
-            }
-
-            return;
-          }
-
-          if (type_ == emultipole1) {
-            switch(deriv_order_) {
-
-              case 0:
-              libint2_cleanup_1emultipole(&primdata_[0]);
-              break;
-              case 1:
-  #if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_cleanup_1emultipole1(&primdata_[0]);
-  #endif
-              break;
-              case 2:
-  #if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_cleanup_1emultipole2(&primdata_[0]);
-  #endif
-              break;
-            }
-
-            return;
-          }
-
-          if (type_ == emultipole2) {
-            switch(deriv_order_) {
-
-              case 0:
-              libint2_cleanup_2emultipole(&primdata_[0]);
-              break;
-              case 1:
-  #if LIBINT2_DERIV_ONEBODY_ORDER > 0
-              libint2_cleanup_2emultipole1(&primdata_[0]);
-  #endif
-              break;
-              case 2:
-  #if LIBINT2_DERIV_ONEBODY_ORDER > 1
-              libint2_cleanup_2emultipole2(&primdata_[0]);
-  #endif
-              break;
-            }
-
-            return;
-          }
+BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_ONEBODYENGINE_MCR3, 2, (BOOST_PP_ONEBODY_OPERATOR_INDEX_LIST, BOOST_PP_ONEBODY_DERIV_ORDER_LIST) )
 
         }
-
       } // finalize()
 
       //-------
@@ -583,24 +406,35 @@ namespace libint2 {
 
   template <OneBodyEngine::operator_type Op> struct OneBodyEngine::operator_traits {
       typedef struct {} oper_params_type;
+      static const oper_params_type default_params;
       static constexpr unsigned int nopers = 1;
   };
+  template <OneBodyEngine::operator_type Op> const typename OneBodyEngine::operator_traits<Op>::oper_params_type
+  OneBodyEngine::operator_traits<Op>::default_params{};
+
 
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::nuclear> {
       /// point charges and their positions
       typedef std::vector<std::pair<double, std::array<double, 3>>> oper_params_type;
+      static const oper_params_type default_params;
       static constexpr unsigned int nopers = 1;
   };
+  const OneBodyEngine::operator_traits<OneBodyEngine::nuclear>::oper_params_type OneBodyEngine::operator_traits<OneBodyEngine::nuclear>::default_params;
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole1> {
       /// Cartesian coordinates of the origin with respect to which the dipole moment is defined
       typedef std::array<double, 3> oper_params_type;
+      static const oper_params_type default_params;
       static constexpr unsigned int nopers = 4; //!< overlap + 3 dipole components
   };
+  const OneBodyEngine::operator_traits<OneBodyEngine::emultipole1>::oper_params_type OneBodyEngine::operator_traits<OneBodyEngine::emultipole1>::default_params{0.0,0.0,0.0};
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole2> {
       /// Cartesian coordinates of the origin with respect to which the multipole moments are defined
       typedef std::array<double, 3> oper_params_type;
+      //static constexpr oper_params_type default_params{0.0,0.0,0.0};
+      static const oper_params_type default_params;
       static constexpr unsigned int nopers = 10; //!< overlap + 3 dipoles + 6 quadrupoles
   };
+  const OneBodyEngine::operator_traits<OneBodyEngine::emultipole2>::oper_params_type OneBodyEngine::operator_traits<OneBodyEngine::emultipole2>::default_params{0.0,0.0,0.0};
 
   inline unsigned int OneBodyEngine::nparams() const {
     switch (type_) {
@@ -613,13 +447,9 @@ namespace libint2 {
   }
   inline unsigned int OneBodyEngine::nopers() const {
     switch (type_) {
-      case overlap: return operator_traits<overlap>::nopers;
-      case kinetic: return operator_traits<kinetic>::nopers;
-      case nuclear: return operator_traits<nuclear>::nopers;
-      case emultipole1: return operator_traits<emultipole1>::nopers;
-      case emultipole2: return operator_traits<emultipole2>::nopers;
-      default:
-        assert(false); // omitted case for some operator set?
+#define BOOST_PP_ONEBODYENGINE_MCR4(r,data,i,elem)  case i : return operator_traits< static_cast<OneBodyEngine::operator_type> ( i ) >::nopers;
+BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR4, _, BOOST_PP_ONEBODY_OPERATOR_LIST)
+      default: break;
     }
     assert(false); // unreachable
     return 0;
@@ -630,39 +460,19 @@ namespace libint2 {
                                          bool throw_if_wrong_type) {
     any result;
     switch(type) {
-      case overlap:
-        if (std::is_same<Params,operator_traits<overlap>::oper_params_type>::value)
-          result = params;
-        else {
-          if (throw_if_wrong_type) throw std::bad_cast();
-          result = operator_traits<overlap>::oper_params_type();
-        }
-        break;
-      case kinetic:
-        if (std::is_same<Params,operator_traits<kinetic>::oper_params_type>::value)
-          result = params;
-        else {
-          if (throw_if_wrong_type) throw std::bad_cast();
-          result = operator_traits<kinetic>::oper_params_type();
-        }
-        break;
-      case nuclear:
-        if (std::is_same<Params,operator_traits<nuclear>::oper_params_type>::value)
-          result = params;
-        else {
-          if (throw_if_wrong_type) throw std::bad_cast();
-          result = operator_traits<nuclear>::oper_params_type(); // empty list of charges
-        }
-        break;
-      case emultipole1:
-      case emultipole2: // all emultipole operator sets require same param type
-        if (std::is_same<Params,operator_traits<emultipole1>::oper_params_type>::value)
-          result = params;
-        else {
-          if (throw_if_wrong_type) throw std::bad_cast();
-          result = operator_traits<emultipole1>::oper_params_type({{0.0,0.0,0.0}}); // multipole origin = {0,0,0}
-        }
-        break;
+
+#define BOOST_PP_ONEBODYENGINE_MCR5(r,data,i,elem)                                                           \
+      case i :                                                                                               \
+      if (std::is_same<Params,operator_traits< static_cast<operator_type> ( i ) >::oper_params_type>::value) \
+        result = params;                                                                                     \
+      else {                                                                                                 \
+        if (throw_if_wrong_type) throw std::bad_cast();                                                      \
+        result = operator_traits<static_cast<operator_type> ( i ) >::default_params;                         \
+      }                                                                                                      \
+      break;
+
+BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPERATOR_LIST)
+
       default:
         assert(false); // missed a case?
     }
@@ -811,6 +621,17 @@ namespace libint2 {
     }
 
   } // OneBodyEngine::compute_primdata()
+
+#undef BOOST_PP_ONEBODY_OPERATOR_LIST
+#undef BOOST_PP_ONEBODY_OPERATOR_INDEX_TUPLE
+#undef BOOST_PP_ONEBODY_OPERATOR_INDEX_LIST
+#undef BOOST_PP_ONEBODY_DERIV_ORDER_TUPLE
+#undef BOOST_PP_ONEBODY_DERIV_ORDER_LIST
+#undef BOOST_PP_ONEBODYENGINE_MCR1
+#undef BOOST_PP_ONEBODYENGINE_MCR2
+#undef BOOST_PP_ONEBODYENGINE_MCR3
+#undef BOOST_PP_ONEBODYENGINE_MCR4
+#undef BOOST_PP_ONEBODYENGINE_MCR5
 
 #endif // LIBINT2_SUPPORT_ONEBODY
 
