@@ -94,6 +94,7 @@ distclean::
 	  done
 	-rm -rf autom4te.cache config.status config.log conf*.file conf*.dir *.dSYM depcheck* libtool \
 Makedirlist libint2.pc include/libint2
+	test -f libint2.pc.in || rm -rf include/libint2
 
 targetclean::
 	for dir in $(SUBDIRS); \
