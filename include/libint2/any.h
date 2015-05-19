@@ -13,59 +13,79 @@
 
 namespace libint2 {
 
-  template<class T>
-  using StorageType = typename std::decay<T>::type;
-
   /// emulates boost::any
-  struct Any
+  struct any
   {
-      bool is_null() const { return !ptr; }
-      bool not_null() const { return ptr; }
+    public:
 
-      template<typename U> Any(U&& value)
-          : ptr(new Derived<StorageType<U>>(std::forward<U>(value)))
+      template<class T>
+      using StorageType = typename std::decay<T>::type;
+
+      any() = default;
+      any(const any& that) : handle_(that.clone()) {}
+      any(any&& that) : handle_(std::move(that.handle_)) { }
+      template<typename U> any(U&& value)
+          : handle_(new handle<StorageType<U>>(std::forward<U>(value)))
       {
-
       }
+
+      any& operator=(const any& a)
+      {
+        any tmp(a);
+        std::swap(*this, tmp);
+        return *this;
+      }
+      template <typename U>
+      any& operator=(U a)
+      {
+        any tmp(std::forward<U>(a));
+        std::swap(*this, tmp);
+        return *this;
+      }
+      any& operator=(any&& a)
+      {
+        std::swap(handle_, a.handle_);
+        return *this;
+      }
+
+      operator bool() const { return bool(handle_); }
 
       template<class U> bool is() const
       {
           typedef StorageType<U> T;
-
-          auto derived = dynamic_cast<Derived<T>*> (ptr);
-
+          auto derived = dynamic_cast<handle<T>*> (handle_.get());
           return derived;
       }
 
-      /// \note if NDEBUG is not defined, will throw if U is not the stored type
+      /// \note if NDEBUG is not defined, will throw \c std::bad_cast if U is not the stored type
       template<class U>
       StorageType<U>& as()
       {
           typedef StorageType<U> T;
 
 #if not defined(NDEBUG)
-          auto derived = dynamic_cast<Derived<T>*> (ptr);
+          auto derived = dynamic_cast<handle<T>*> (handle_.get());
           if (!derived)
               throw std::bad_cast();
 #else // NDEBUG
-          auto derived = static_cast<Derived<T>*> (ptr);
+          auto derived = static_cast<handle<T>*> (handle_.get());
 #endif
 
           return derived->value;
       }
 
-      /// \note if NDEBUG is not defined, will throw if U is not the stored type
+      /// \note if NDEBUG is not defined, will throw \c std::bad_cast if U is not the stored type
       template<class U>
       const StorageType<U>& as() const
       {
           typedef StorageType<U> T;
 
 #if not defined(NDEBUG)
-          auto derived = dynamic_cast<Derived<T>*> (ptr);
+          auto derived = dynamic_cast<handle<T>*> (handle_.get());
           if (!derived)
               throw std::bad_cast();
 #else // NDEBUG
-          auto derived = static_cast<Derived<T>*> (ptr);
+          auto derived = static_cast<handle<T>*> (handle_.get());
 #endif
 
           return derived->value;
@@ -77,94 +97,34 @@ namespace libint2 {
           return as<StorageType<U>>();
       }
 
-      Any()
-          : ptr(nullptr)
+
+    private:
+      struct handle_base
       {
+          virtual ~handle_base() {}
 
-      }
-
-      Any(Any& that)
-          : ptr(that.clone())
-      {
-
-      }
-
-      Any(Any&& that)
-          : ptr(that.ptr)
-      {
-          that.ptr = nullptr;
-      }
-
-      Any(const Any& that)
-          : ptr(that.clone())
-      {
-
-      }
-
-      Any(const Any&& that)
-          : ptr(that.clone())
-      {
-
-      }
-
-      Any& operator=(const Any& a)
-      {
-          if (ptr == a.ptr)
-              return *this;
-
-          auto old_ptr = ptr;
-
-          ptr = a.clone();
-
-          if (old_ptr)
-              delete old_ptr;
-
-          return *this;
-      }
-
-      Any& operator=(Any&& a)
-      {
-          if (ptr == a.ptr)
-              return *this;
-
-          std::swap(ptr, a.ptr);
-
-          return *this;
-      }
-
-      ~Any()
-      {
-          if (ptr)
-              delete ptr;
-      }
-
-  private:
-      struct Base
-      {
-          virtual ~Base() {}
-
-          virtual Base* clone() const = 0;
+          virtual handle_base* clone() const = 0;
       };
 
       template<typename T>
-      struct Derived : Base
+      struct handle : handle_base
       {
-          template<typename U> Derived(U&& value) : value(std::forward<U>(value)) { }
+          template<typename U> handle(U&& value) : value(std::forward<U>(value)) { }
 
           T value;
 
-          Base* clone() const { return new Derived<T>(value); }
+          handle_base* clone() const { return new handle<T>(value); }
       };
 
-      Base* clone() const
+      handle_base* clone() const
       {
-          if (ptr)
-              return ptr->clone();
+          if (handle_)
+              return handle_->clone();
           else
               return nullptr;
       }
 
-      Base* ptr;
+      std::unique_ptr<handle_base> handle_;
   };
 
 } // namespace libint2

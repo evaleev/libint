@@ -319,7 +319,7 @@ namespace libint2 {
       std::vector<Libint_t> primdata_;
       int lmax_;
       size_t deriv_order_;
-      Any params_;
+      any params_;
       std::shared_ptr<coulomb_core_eval_t> fm_eval_; // this is for Coulomb only
       std::vector<real_t> scratch_; // for transposes and/or transforming to solid harmonics
 
@@ -575,7 +575,7 @@ namespace libint2 {
       /// else will set return any initialized with default value for operator_traits<type>::oper_params_type
       /// @param throw_if_wrong_type if true, and Params != operator_traits<type>::oper_params_type, will throw std::bad_cast
       template <typename Params>
-      static Any enforce_params_type(operator_type type,
+      static any enforce_params_type(operator_type type,
                                      const Params& params,
                                      bool throw_if_wrong_type = not std::is_same<Params,empty_pod>::value);
 
@@ -625,10 +625,10 @@ namespace libint2 {
     return 0;
   }
   template <typename Params>
-  Any OneBodyEngine::enforce_params_type(operator_type type,
+  any OneBodyEngine::enforce_params_type(operator_type type,
                                          const Params& params,
                                          bool throw_if_wrong_type) {
-    Any result;
+    any result;
     switch(type) {
       case overlap:
         if (std::is_same<Params,operator_traits<overlap>::oper_params_type>::value)
