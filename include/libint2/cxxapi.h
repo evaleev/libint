@@ -34,11 +34,9 @@ namespace libint2 {
 
   inline void init() {
     libint2_static_init();
-    libint2_init_shg();
   }
   inline void cleanup() {
     libint2_static_cleanup();
-    libint2_cleanup_shg();
   }
   inline void finalize() {
     ::libint2::cleanup();

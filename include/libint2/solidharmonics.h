@@ -55,22 +55,29 @@ namespace libint2 {
           assert(l <= std::numeric_limits<signed char>::max());
           init();
         }
-        ~SolidHarmonicsCoefficients() {
-          cleanup();
-        }
+        SolidHarmonicsCoefficients(SolidHarmonicsCoefficients&& other) = default;
+        SolidHarmonicsCoefficients(const SolidHarmonicsCoefficients& other) = default;
+
         void init(unsigned char l) {
           assert(l <= std::numeric_limits<signed char>::max());
           l_ = l;
           init();
         }
 
+        static const SolidHarmonicsCoefficients& instance(unsigned int l) {
+          static std::vector<SolidHarmonicsCoefficients> shg_coefs(SolidHarmonicsCoefficients::CtorHelperIter(0),
+                                                                   SolidHarmonicsCoefficients::CtorHelperIter(LIBINT_MAX_AM+1));
+          assert(l <= LIBINT_MAX_AM);
+          return shg_coefs[l];
+        }
+
         /// returns ptr to row values
         const Real* row_values(size_t r) const {
-          return values_ + row_offset_[r];
+          return &values_[0] + row_offset_[r];
         }
         /// returns ptr to row indices
         const unsigned char* row_idx(size_t r) const {
-          return colidx_ + row_offset_[r];
+          return &colidx_[0] + row_offset_[r];
         }
         /// number of nonzero elements in row \c r
         unsigned char nnz(size_t r) const {
@@ -78,9 +85,9 @@ namespace libint2 {
         }
 
       private:
-        Real* values_;  // elements
-        unsigned short* row_offset_; // "pointer" to the beginning of each row
-        unsigned char* colidx_;  // column indices
+        std::vector<Real> values_;  // elements
+        std::vector<unsigned short> row_offset_; // "pointer" to the beginning of each row
+        std::vector<unsigned char> colidx_;  // column indices
         signed char l_;        // the angular momentum quantum number
 
         void init() {
@@ -104,9 +111,9 @@ namespace libint2 {
           for(size_t i=0; i!=full_coeff.size(); ++i)
             nnz += full_coeff[i] == 0.0 ? 0 : 1;
           // 2) allocate
-          values_ = new Real[nnz];
-          colidx_ = new unsigned char[nnz];
-          row_offset_ = new unsigned short[npure+1];
+          values_.resize(nnz);
+          colidx_.resize(nnz);
+          row_offset_.resize(npure+1);
           // 3) copy
           {
             unsigned short pc = 0;
@@ -124,12 +131,6 @@ namespace libint2 {
             row_offset_[npure] = cnt;
           }
           // done
-        }
-
-        void cleanup() {
-          delete[] values_;
-          delete[] row_offset_;
-          delete[] colidx_;
         }
 
         /*!---------------------------------------------------------------------------------------------
@@ -191,28 +192,38 @@ namespace libint2 {
             return M_SQRT2*pfac*sum;
         }
 
+        struct CtorHelperIter : public std::iterator<std::input_iterator_tag, SolidHarmonicsCoefficients> {
+            unsigned int l_;
+            using typename std::iterator<std::input_iterator_tag, SolidHarmonicsCoefficients>::value_type;
+
+            CtorHelperIter() = default;
+            CtorHelperIter(unsigned int l) : l_(l) {}
+            CtorHelperIter(const CtorHelperIter&) = default;
+            CtorHelperIter(CtorHelperIter&&) = default;
+            CtorHelperIter& operator=(const CtorHelperIter& rhs) { l_ = rhs.l_; return *this; }
+
+            CtorHelperIter& operator++() { ++l_; return *this; }
+            CtorHelperIter& operator--() { assert(l_ > 0); --l_; return *this; }
+
+            value_type operator*() const {
+              return value_type(l_);
+            }
+            bool operator==(const CtorHelperIter& rhs) const {
+              return l_ == rhs.l_;
+            }
+            bool operator!=(const CtorHelperIter& rhs) const {
+              return not (*this == rhs);
+            }
+        };
+
     };
-
-    using shg_coefs_type = SolidHarmonicsCoefficients<real_t>;
-    static std::vector<shg_coefs_type> shg_coefs;
-
-    inline void init() {
-      shg_coefs.resize(LIBINT_MAX_AM+1);
-      for(size_t i=0; i<shg_coefs.size(); ++i) {
-        shg_coefs[i].init(static_cast<unsigned char>(i));
-      }
-    }
-    inline void cleanup() {
-      std::vector<shg_coefs_type> null;
-      std::swap(shg_coefs, null);
-    }
 
     // generic transforms
 
     template <typename Real>
     void transform_first(size_t l, size_t n2, const Real *src, Real *tgt)
     {
-      const shg_coefs_type& coefs = shg_coefs[l];
+      const auto& coefs = SolidHarmonicsCoefficients<Real>::instance(l);
 
       const auto n = 2*l+1;
       memset(tgt,0,n*n2*sizeof(Real));
@@ -244,8 +255,8 @@ namespace libint2 {
     /// transforms two first dimensions of tensor from cartesian to real solid harmonic basis
     template <typename Real>
     void transform_first2(int l1, int l2, size_t inner_dim, const Real* source_blk, Real* target_blk) {
-      const shg_coefs_type& coefs1 = shg_coefs[l1];
-      const shg_coefs_type& coefs2 = shg_coefs[l2];
+      const auto& coefs1 = SolidHarmonicsCoefficients<Real>::instance(l1);
+      const auto& coefs2 = SolidHarmonicsCoefficients<Real>::instance(l2);
 
       const auto ncart1 = (l1+1)*(l1+2)/2;
       const auto ncart2 = (l2+1)*(l2+2)/2;
@@ -310,7 +321,7 @@ namespace libint2 {
     template <typename Real>
     void transform_inner(size_t n1, size_t l, size_t n2, const Real *src, Real *tgt)
     {
-      const shg_coefs_type& coefs = shg_coefs[l];
+      const auto& coefs = SolidHarmonicsCoefficients<Real>::instance(l);
 
       const auto nc = (l+1)*(l+2)/2;
       const auto n = 2*l+1;
@@ -348,7 +359,7 @@ namespace libint2 {
     template <typename Real>
     void transform_last(size_t n1, size_t l, const Real *src, Real *tgt)
     {
-      const shg_coefs_type& coefs = shg_coefs[l];
+      const auto& coefs = SolidHarmonicsCoefficients<Real>::instance(l);
 
       const auto nc = (l+1)*(l+2)/2;
       const auto n = 2*l+1;
@@ -381,8 +392,8 @@ namespace libint2 {
     /// transforms the last two dimensions of \c src from cartesian to solid harmonic Gaussians, stores result to \c tgt
     template <typename Real>
     void tform_last2(size_t n1, int l_row, int l_col, const Real* source_blk, Real* target_blk) {
-      const shg_coefs_type& coefs_row = shg_coefs[l_row];
-      const shg_coefs_type& coefs_col = shg_coefs[l_col];
+      const auto& coefs_row = SolidHarmonicsCoefficients<Real>::instance(l_row);
+      const auto& coefs_col = SolidHarmonicsCoefficients<Real>::instance(l_col);
 
       const auto ncart_row = (l_row+1)*(l_row+2)/2;
       const auto ncart_col = (l_col+1)*(l_col+2)/2;
@@ -431,8 +442,8 @@ namespace libint2 {
     /// multiplies rows and columns of matrix \c source_blk, stores result to \c target_blk
     template <typename Real>
     void tform(int l_row, int l_col, const Real* source_blk, Real* target_blk) {
-      const shg_coefs_type& coefs_row = shg_coefs[l_row];
-      const shg_coefs_type& coefs_col = shg_coefs[l_col];
+      const auto& coefs_row = SolidHarmonicsCoefficients<Real>::instance(l_row);
+      const auto& coefs_col = SolidHarmonicsCoefficients<Real>::instance(l_col);
 
       const auto ncart_row = (l_row+1)*(l_row+2)/2;
       const auto ncart_col = (l_col+1)*(l_col+2)/2;
@@ -478,7 +489,7 @@ namespace libint2 {
     template <typename Real>
     void tform_cols(size_t nrow, int l_col, const Real* source_blk, Real* target_blk) {
       return transform_last(nrow, l_col, source_blk, target_blk);
-      const shg_coefs_type& coefs_col = shg_coefs[l_col];
+      const auto& coefs_col = SolidHarmonicsCoefficients<Real>::instance(l_col);
 
       const auto ncart_col = (l_col+1)*(l_col+2)/2;
       const auto npure_col = 2*l_col+1;
@@ -517,7 +528,7 @@ namespace libint2 {
     template <typename Real>
     void tform_rows(int l_row, size_t ncol,  const Real* source_blk, Real* target_blk) {
       return transform_first(l_row, ncol, source_blk, target_blk);
-      const shg_coefs_type& coefs_row = shg_coefs[l_row];
+      const auto& coefs_row = SolidHarmonicsCoefficients<Real>::instance(l_row);
 
       const auto ncart_row = (l_row+1)*(l_row+2)/2;
       const auto npure_row = 2*l_row+1;
@@ -571,13 +582,6 @@ namespace libint2 {
     }
 
   } // namespace libint2::solidharmonics
-
-  inline void libint2_init_shg() {
-    libint2::solidharmonics::init();
-  }
-  inline void libint2_cleanup_shg() {
-    libint2::solidharmonics::cleanup();
-  }
 
 } // namespace libint2
 
