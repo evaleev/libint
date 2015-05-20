@@ -406,39 +406,27 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_ONEBODYENGINE_MCR3, 2, (BOOST_PP_ONEBO
 
   template <OneBodyEngine::operator_type Op> struct OneBodyEngine::operator_traits {
       typedef struct {} oper_params_type;
-      static const oper_params_type& default_params() {
-        static const oper_params_type default_params_{};
-        return default_params_;
-      }
+      static oper_params_type default_params() { return oper_params_type{}; }
       static constexpr unsigned int nopers = 1;
   };
 
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::nuclear> {
       /// point charges and their positions
       typedef std::vector<std::pair<double, std::array<double, 3>>> oper_params_type;
-      static const oper_params_type& default_params() {
-        static const oper_params_type default_params_{};
-        return default_params_;
-      }
+      static oper_params_type default_params() { return oper_params_type{}; }
       static constexpr unsigned int nopers = 1;
   };
 
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole1> {
       /// Cartesian coordinates of the origin with respect to which the dipole moment is defined
       typedef std::array<double, 3> oper_params_type;
-      static const oper_params_type& default_params() {
-        static const oper_params_type default_params_{0.0,0.0,0.0};
-        return default_params_;
-      }
+      static oper_params_type default_params() { return oper_params_type{0.0,0.0,0.0}; }
       static constexpr unsigned int nopers = 4; //!< overlap + 3 dipole components
   };
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole2> {
       /// Cartesian coordinates of the origin with respect to which the multipole moments are defined
       typedef std::array<double, 3> oper_params_type;
-      static const oper_params_type& default_params() {
-        static const oper_params_type default_params_{0.0,0.0,0.0};
-        return default_params_;
-      }
+      static oper_params_type default_params() { return oper_params_type{0.0,0.0,0.0}; }
       static constexpr unsigned int nopers = 10; //!< overlap + 3 dipoles + 6 quadrupoles
   };
 
