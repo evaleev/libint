@@ -458,6 +458,7 @@ void try_main (int argc, char* argv[])
 #endif
 #ifdef INCLUDE_ONEBODY
 
+// if using compiler without variadic macros make sure to update the number of elements below
 #define BOOST_PP_ONEBODY_TASK_TUPLE ("overlap",               \
                                      "kinetic",               \
                                      "elecpot",               \
@@ -465,7 +466,11 @@ void try_main (int argc, char* argv[])
                                      "2emultipole",           \
                                      "3emultipole"            \
                                     )
-#define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_TUPLE )
+#if not BOOST_PP_VARIADICS  // no variadic macros? you must MANUALLY specify the number of elements in the tuple here
+#  define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( 6, BOOST_PP_ONEBODY_TASK_TUPLE )
+#else
+#  define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_TUPLE )
+#endif
 
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
 #define BOOST_PP_ONEBODY_MCR1(r,data,elem)          \
