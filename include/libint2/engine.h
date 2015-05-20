@@ -90,6 +90,7 @@ namespace libint2 {
         nuclear=2,        //!< Coulomb potential due to point charges
         emultipole1=3,    //!< overlap + (Cartesian) electric dipole moment, \f$ x_O, y_O, z_O \f$, where \f$ x_O \equiv x - O_x \f$ is relative to origin \f$ \vec{O} \f$
         emultipole2=4,    //!< emultipole1 + (Cartesian) electric quadrupole moment, \f$ x^2, xy, xz, y^2, yz, z^2 \f$
+        emultipole3=5,    //!< emultipole2 + (Cartesian) electric octupole moment, \f$ x^3, x^2y, x^2z, xy^2, xyz, xz^2, y^3, y^2z, yz^2, z^3 \f$
         _invalid=-1
       };
 
@@ -99,7 +100,8 @@ namespace libint2 {
                                         (elecpot,         \
                                         (1emultipole,     \
                                         (2emultipole,     \
-                                         BOOST_PP_NIL)))))
+                                        (3emultipole,     \
+                                         BOOST_PP_NIL))))))
 
 #define BOOST_PP_ONEBODY_OPERATOR_INDEX_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_LIST_SIZE(BOOST_PP_ONEBODY_OPERATOR_LIST) )
 #define BOOST_PP_ONEBODY_OPERATOR_INDEX_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_OPERATOR_INDEX_TUPLE )
@@ -425,9 +427,15 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_ONEBODYENGINE_MCR3, 2, (BOOST_PP_ONEBO
   };
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole2> {
       /// Cartesian coordinates of the origin with respect to which the multipole moments are defined
-      typedef std::array<double, 3> oper_params_type;
-      static oper_params_type default_params() { return oper_params_type{0.0,0.0,0.0}; }
-      static constexpr unsigned int nopers = 10; //!< overlap + 3 dipoles + 6 quadrupoles
+      typedef OneBodyEngine::operator_traits<OneBodyEngine::emultipole1>::oper_params_type oper_params_type;
+      static oper_params_type default_params() { return OneBodyEngine::operator_traits<OneBodyEngine::emultipole1>::default_params(); }
+      static constexpr unsigned int nopers = OneBodyEngine::operator_traits<OneBodyEngine::emultipole1>::nopers + 6; //!< overlap + 3 dipoles + 6 quadrupoles
+  };
+  template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole3> {
+      /// Cartesian coordinates of the origin with respect to which the multipole moments are defined
+      typedef OneBodyEngine::operator_traits<OneBodyEngine::emultipole1>::oper_params_type oper_params_type;
+      static oper_params_type default_params() { return OneBodyEngine::operator_traits<OneBodyEngine::emultipole1>::default_params(); }
+      static constexpr unsigned int nopers = OneBodyEngine::operator_traits<OneBodyEngine::emultipole2>::nopers + 10;
   };
 
   inline unsigned int OneBodyEngine::nparams() const {
@@ -528,8 +536,8 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 #endif
     }
 
-    if (type_ == emultipole1 || type_ == emultipole2) {
-      auto& O = params_.as<operator_traits<emultipole1>::oper_params_type>(); // same as emultipole2
+    if (type_ == emultipole1 || type_ == emultipole2 || type_ == emultipole3) {
+      auto& O = params_.as<operator_traits<emultipole1>::oper_params_type>(); // same as emultipoleX
 #if LIBINT2_DEFINED(eri,BO_x)
       primdata.BO_x[0] = B[0] - O[0];
 #endif

@@ -28,13 +28,15 @@
   Blacksburg (August 2006 - present)
   */
 
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <boost/preprocessor.hpp>
+
 #include <libint2/config.h>
 #include <global_macros.h>
 #include <libint2/cgshell_ordering.h>
 
-#include <iostream>
-#include <fstream>
-#include <vector>
 #include <default_params.h>
 #include <rr.h>
 #include <dg.h>
@@ -455,12 +457,22 @@ void try_main (int argc, char* argv[])
   }
 #endif
 #ifdef INCLUDE_ONEBODY
+
+#define BOOST_PP_ONEBODY_TASK_TUPLE ("overlap",               \
+                                     "kinetic",               \
+                                     "elecpot",               \
+                                     "1emultipole",           \
+                                     "2emultipole",           \
+                                     "3emultipole"            \
+                                    )
+#define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_TUPLE )
+
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
-    taskmgr.add( task_label("overlap",d) );
-    taskmgr.add( task_label("kinetic",d) );
-    taskmgr.add( task_label("elecpot",d) );
-    taskmgr.add( task_label("1emultipole",d) );
-    taskmgr.add( task_label("2emultipole",d) );
+#define BOOST_PP_ONEBODY_MCR1(r,data,elem)          \
+    taskmgr.add( task_label(elem,d) );
+
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
+#undef BOOST_PP_ONEBODY_MCR1
   }
 #endif
 #ifdef INCLUDE_ERI
@@ -511,41 +523,38 @@ void try_main (int argc, char* argv[])
 
 #ifdef INCLUDE_ONEBODY
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
+
 #if defined(ONEBODY_MAX_AM_LIST)
-    cparams->max_am( task_label("overlap", d),     token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
-    cparams->max_am( task_label("kinetic", d),     token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
-    cparams->max_am( task_label("elecpot", d),     token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
-    cparams->max_am( task_label("1emultipole", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
-    cparams->max_am( task_label("2emultipole", d), token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+#   define BOOST_PP_ONEBODY_MCR2(r,data,elem)          \
+    cparams->max_am( task_label(elem, d),     token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR2, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR2
 #elif defined(ONEBODY_MAX_AM)
-    cparams->max_am( task_label("overlap", d),     ONEBODY_MAX_AM);
-    cparams->max_am( task_label("kinetic", d),     ONEBODY_MAX_AM);
-    cparams->max_am( task_label("elecpot", d),     ONEBODY_MAX_AM);
-    cparams->max_am( task_label("1emultipole", d), ONEBODY_MAX_AM);
-    cparams->max_am( task_label("2emultipole", d), ONEBODY_MAX_AM);
+#   define BOOST_PP_ONEBODY_MCR3(r,data,elem)          \
+    cparams->max_am( task_label(elem, d),     ONEBODY_MAX_AM);
+    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR3, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR3
 #endif
 #if defined(ONEBODY_OPT_AM_LIST)
-    cparams->max_am_opt( task_label("overlap", d)     ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
-    cparams->max_am_opt( task_label("kinetic", d)     ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
-    cparams->max_am_opt( task_label("elecpot", d)     ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
-    cparams->max_am_opt( task_label("1emultipole", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
-    cparams->max_am_opt( task_label("2emultipole", d) ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+#   define BOOST_PP_ONEBODY_MCR4(r,data,elem)          \
+    cparams->max_am_opt( task_label(elem, d)     ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR4, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR4
 #elif defined(ONEBODY_OPT_AM)
-    cparams->max_am_opt( task_label("overlap", d)     , ONEBODY_OPT_AM);
-    cparams->max_am_opt( task_label("kinetic", d)     , ONEBODY_OPT_AM);
-    cparams->max_am_opt( task_label("elecpot", d)     , ONEBODY_OPT_AM);
-    cparams->max_am_opt( task_label("1emultipole", d) , ONEBODY_OPT_AM);
-    cparams->max_am_opt( task_label("2emultipole", d) , ONEBODY_OPT_AM);
+#define BOOST_PP_ONEBODY_MCR5(r,data,elem)          \
+    cparams->max_am_opt( task_label(elem, d)     , ONEBODY_OPT_AM);
+    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR5, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR5
 #endif
   }
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
-    cparams->num_bf(task_label("overlap", d),     2);
-    cparams->num_bf(task_label("kinetic", d),     2);
-    cparams->num_bf(task_label("elecpot", d),     2);
-    cparams->num_bf(task_label("1emultipole", d), 2);
-    cparams->num_bf(task_label("2emultipole", d), 2);
+#define BOOST_PP_ONEBODY_MCR6(r,data,elem)          \
+    cparams->num_bf(task_label(elem, d),     2);
+    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR6, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR6
   }
 #endif // INCLUDE_ONEBODY
+
 #ifdef INCLUDE_ERI
   for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
 #if defined(ERI_MAX_AM_LIST)
@@ -721,11 +730,10 @@ void try_main (int argc, char* argv[])
 
 #ifdef INCLUDE_ONEBODY
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
-    build_onebody_1b_1k<OverlapOper>(os,"overlap",cparams,iface,d);
-    build_onebody_1b_1k<KineticOper>(os,"kinetic",cparams,iface,d);
-    build_onebody_1b_1k<ElecPotOper>(os,"elecpot",cparams,iface,d);
-    build_onebody_1b_1k<CartesianMultipoleOper<3u>>(os,"1emultipole",cparams,iface,d);
-    build_onebody_1b_1k<CartesianMultipoleOper<3u>>(os,"2emultipole",cparams,iface,d);
+#   define BOOST_PP_ONEBODY_MCR7(r,data,elem)          \
+    build_onebody_1b_1k<OverlapOper>(os,elem,cparams,iface,d);
+    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR7, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR7
   }
 #endif
 #ifdef INCLUDE_ERI
