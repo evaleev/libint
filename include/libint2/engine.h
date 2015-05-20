@@ -406,35 +406,41 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_ONEBODYENGINE_MCR3, 2, (BOOST_PP_ONEBO
 
   template <OneBodyEngine::operator_type Op> struct OneBodyEngine::operator_traits {
       typedef struct {} oper_params_type;
-      static const oper_params_type default_params;
+      static const oper_params_type& default_params() {
+        static const oper_params_type default_params_{};
+        return default_params_;
+      }
       static constexpr unsigned int nopers = 1;
   };
-  template <OneBodyEngine::operator_type Op> const typename OneBodyEngine::operator_traits<Op>::oper_params_type
-  OneBodyEngine::operator_traits<Op>::default_params{};
-
 
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::nuclear> {
       /// point charges and their positions
       typedef std::vector<std::pair<double, std::array<double, 3>>> oper_params_type;
-      static const oper_params_type default_params;
+      static const oper_params_type& default_params() {
+        static const oper_params_type default_params_{};
+        return default_params_;
+      }
       static constexpr unsigned int nopers = 1;
   };
-  const OneBodyEngine::operator_traits<OneBodyEngine::nuclear>::oper_params_type OneBodyEngine::operator_traits<OneBodyEngine::nuclear>::default_params;
+
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole1> {
       /// Cartesian coordinates of the origin with respect to which the dipole moment is defined
       typedef std::array<double, 3> oper_params_type;
-      static const oper_params_type default_params;
+      static const oper_params_type& default_params() {
+        static const oper_params_type default_params_{0.0,0.0,0.0};
+        return default_params_;
+      }
       static constexpr unsigned int nopers = 4; //!< overlap + 3 dipole components
   };
-  const OneBodyEngine::operator_traits<OneBodyEngine::emultipole1>::oper_params_type OneBodyEngine::operator_traits<OneBodyEngine::emultipole1>::default_params{0.0,0.0,0.0};
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole2> {
       /// Cartesian coordinates of the origin with respect to which the multipole moments are defined
       typedef std::array<double, 3> oper_params_type;
-      //static constexpr oper_params_type default_params{0.0,0.0,0.0};
-      static const oper_params_type default_params;
+      static const oper_params_type& default_params() {
+        static const oper_params_type default_params_{0.0,0.0,0.0};
+        return default_params_;
+      }
       static constexpr unsigned int nopers = 10; //!< overlap + 3 dipoles + 6 quadrupoles
   };
-  const OneBodyEngine::operator_traits<OneBodyEngine::emultipole2>::oper_params_type OneBodyEngine::operator_traits<OneBodyEngine::emultipole2>::default_params{0.0,0.0,0.0};
 
   inline unsigned int OneBodyEngine::nparams() const {
     switch (type_) {
@@ -467,7 +473,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR4, _, BOOST_PP_ONEBODY_OPER
         result = params;                                                                                     \
       else {                                                                                                 \
         if (throw_if_wrong_type) throw std::bad_cast();                                                      \
-        result = operator_traits<static_cast<operator_type> ( i ) >::default_params;                         \
+        result = operator_traits<static_cast<operator_type> ( i ) >::default_params();                       \
       }                                                                                                      \
       break;
 
