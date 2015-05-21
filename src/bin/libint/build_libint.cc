@@ -466,10 +466,19 @@ void try_main (int argc, char* argv[])
                                      "2emultipole",           \
                                      "3emultipole"            \
                                     )
+#define BOOST_PP_ONEBODY_TASK_OPER_TUPLE (OverlapOper,                    \
+                                          KineticOper,                    \
+                                          ElecPotOper,                    \
+                                          CartesianMultipoleOper<3u>,     \
+                                          CartesianMultipoleOper<3u>,     \
+                                          CartesianMultipoleOper<3u>      \
+                                         )
 #if not BOOST_PP_VARIADICS  // no variadic macros? you must MANUALLY specify the number of elements in the tuple here
 #  define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( 6, BOOST_PP_ONEBODY_TASK_TUPLE )
+#  define BOOST_PP_ONEBODY_TASK_OPER_LIST BOOST_PP_TUPLE_TO_LIST( 6, BOOST_PP_ONEBODY_TASK_OPER_TUPLE )
 #else
 #  define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_TUPLE )
+#  define BOOST_PP_ONEBODY_TASK_OPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_OPER_TUPLE )
 #endif
 
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
@@ -735,9 +744,9 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
 
 #ifdef INCLUDE_ONEBODY
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
-#   define BOOST_PP_ONEBODY_MCR7(r,data,elem)          \
-    build_onebody_1b_1k<OverlapOper>(os,elem,cparams,iface,d);
-    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR7, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   define BOOST_PP_ONEBODY_MCR7(r,data,i,elem)          \
+    build_onebody_1b_1k< BOOST_PP_LIST_AT (BOOST_PP_ONEBODY_TASK_OPER_LIST, i) >(os,elem,cparams,iface,d);
+    BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODY_MCR7, _, BOOST_PP_ONEBODY_TASK_LIST)
 #   undef BOOST_PP_ONEBODY_MCR7
   }
 #endif
