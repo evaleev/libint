@@ -275,9 +275,22 @@ template <unsigned int NDIM> using CartesianMultipoleOper = GenOper<CartesianMul
     std::string description() const { return "1/r_{12}"; }
     std::string label() const { return "TwoPRep"; }
     int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
+    int hermitian(int i) const { return +1; }
   };
   typedef GenOper<TwoPRep_Descr> TwoPRep;
+
+  /** GTG_1d is the two-body 1-dimensional Gaussian geminal
+  */
+  struct GTG_1d_Descr : public Contractable<GTG_1d_Descr> {
+    typedef MultiplicativeSymm2Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "GTG_1d"; }
+    std::string label() const { return "GTG_1d"; }
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { return +1; }
+  };
+  typedef GenOper<GTG_1d_Descr> GTG_1d;
 
   /** R12_k_G12 is a two-body operator of form r_{12}^k * exp(-\gamma * r_{12}),
       where k is an integer and \gamma is a positive real number.

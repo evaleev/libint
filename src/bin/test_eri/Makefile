@@ -38,6 +38,10 @@ TIME = time_eri
 CXXTIMESRC = $(TIME).cc
 CXXTIMEOBJ = $(CXXTIMESRC:%.cc=%.o)
 
+TEST2 = test_eri_rys
+CXXTEST2SRC = $(TEST2).cc
+CXXTEST2OBJ = $(CXXTEST2SRC:%.cc=%.o)
+
 $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	cd ../libint; $(MAKE) $(LIBINT)
 	$(CXX) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
@@ -52,6 +56,9 @@ $(TEST):
 endif
 
 $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)  $(CGSHELLOBJ)
+	$(CXX) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
+
+$(TEST2): $(CXXTEST2OBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
 	$(CXX) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
 
 # Assume that CXXGEN has the weaker frontend of the two (there is no reason to not use it then as CXX)
@@ -77,7 +84,7 @@ $(CXXTIMEOBJ): test_eri_conf.h
 $(CXXERICOMPOBJ):: $(LIBINTDIR)/buildtest.h
 
 clean::
-	-rm -rf $(ERICOMP) $(TEST) $(TIME) *.o *.d *.dot *.log
+	-rm -rf $(ERICOMP) $(TEST) $(TIME) $(TEST2) *.o *.d *.dot *.log
 
 genclean::
 	-rm -rf Make.compute_eri $(CXXGENSRC) $(CXXGENOBJ) $(CXXGENHDRS) 
