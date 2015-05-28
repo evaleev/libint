@@ -229,7 +229,7 @@ namespace libint2 {
   };
 
   /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
-    * using Chebyshev interpolation.
+    * using 3-rd order Chebyshev interpolation.
     * based on the code from ORCA by Dr. Frank Neese.
     */
   template <typename Real = double>
@@ -362,8 +362,7 @@ namespace libint2 {
           for(; m<=m_max; ++m, d+=INTERPOLATION_ORDER) {
             libint2::simd::VectorAVXDouble dvec;
             dvec.load_aligned(d);
-            libint2::simd::VectorAVXDouble fm_prereduce = dvec * xvec;
-            Fm[m] = horizontal_add(fm_prereduce);
+            Fm[m] = horizontal_add(dvec * xvec);
           }
         }
 #elif defined(__SSE2__)
@@ -511,6 +510,225 @@ namespace libint2 {
       }
 
   };
+
+  /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
+    * using 7-th order Chebyshev interpolation.
+    */
+  template <typename Real = double>
+  class FmEval_Chebyshev7 {
+
+      static const int N = 60;      //!< number of interpolation intervals
+      static const int ORDER = 7;   //!, interpolation order
+      static const int ORDERp1 = ORDER+1;   //!< ORDER + 1
+
+      const Real T_crit;          //!< critical value of T above which safe to use upward recusion
+      const Real delta;           //!< interval size
+      const Real one_over_delta;  //! 1/delta
+      int mmax;                   //!< the maximum m that is tabulated
+      ExpensiveNumbers<double> numbers_;
+      Real *c; /* the Chebyshev coefficients table, N by mmax*interpolation_order */
+
+    public:
+      /// \param m_max maximum value of the Boys function index; set to -1 to skip initialization
+      /// \param precision the desired precision
+      FmEval_Chebyshev7(int m_max, double = 0.0) :
+          T_crit(30.0), // this translates in appr. 1e-15  error in upward recursion, see the note below
+          delta(T_crit / N),
+          one_over_delta(1.0 / delta),
+          mmax(m_max), numbers_(14, 0) {
+        assert(mmax <= 63);
+        if (m_max >= 0)
+          init();
+      }
+      ~FmEval_Chebyshev7() {
+        if (mmax >= 0) {
+          free(c);
+        }
+      }
+
+      // some features require at least C++11
+#if __cplusplus > 199711L
+      /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
+      static const std::shared_ptr<FmEval_Chebyshev7>& instance(int m_max, double = 0.0) {
+
+        // thread-safe per C++11 standard [6.7.4]
+        static std::shared_ptr<FmEval_Chebyshev7> instance_ = 0;
+
+        const bool need_new_instance = !instance_ || (instance_ && instance_->max_m() < m_max);
+        if (need_new_instance) {
+          auto new_instance = std::make_shared<FmEval_Chebyshev7>(m_max);
+          instance_ = new_instance; // thread-safe
+        }
+
+        return instance_;
+      }
+#endif
+
+      /// @return the maximum value of m for which the Boys function can be computed with this object
+      int max_m() const { return mmax; }
+
+      /// fills in Fm with computed Boys function values for m in [0,mmax]
+      /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
+      /// @param[in] x the Boys function argument
+      /// @param[in] mmax the maximum value of m for which Boys function will be computed; mmax must be <= the value returned by max_m
+      inline void eval(Real* Fm, Real x, int m_max) const {
+
+        // large T => use upward recursion
+        // cost = 1 div + 1 sqrt + (1 + 2*(m-1)) muls
+        if (x > T_crit) {
+          const double one_over_x = 1.0/x;
+          Fm[0] = 0.88622692545275801365 * sqrt(one_over_x); // see Eq. (9.8.9) in Helgaker-Jorgensen-Olsen
+          if (m_max == 0)
+            return;
+          // this upward recursion formula omits - e^(-x)/(2x), which for x>T_crit is <1e-15
+          for (int i = 1; i <= m_max; i++)
+            Fm[i] = Fm[i - 1] * numbers_.ihalf[i] * one_over_x; // see Eq. (9.8.13)
+          return;
+        }
+
+        // ---------------------------------------------
+        // small and intermediate arguments => interpolate Fm and (optional) downward recursion
+        // ---------------------------------------------
+        // which interval does this x fall into?
+        const Real x_over_delta = x * one_over_delta;
+        const int iv = int(x_over_delta); // the interval index
+        const Real xd = x_over_delta - (Real)iv - 0.5; // this ranges from -0.5 to 0.5
+        const int m_min = 0;
+
+#if defined(__AVX__) || defined(__SSE2__)
+        const auto x2 = xd*xd;
+        const auto x3 = x2*xd;
+        const auto x4 = x2*x2;
+        const auto x5 = x2*x3;
+        const auto x6 = x3*x3;
+        const auto x7 = x3*x4;
+#  if defined (__AVX__)
+        libint2::simd::VectorAVXDouble x0vec(1., xd, x2, x3);
+        libint2::simd::VectorAVXDouble x1vec(x4, x5, x6, x7);
+#  else // defined(__SSE2__)
+        libint2::simd::VectorSSEDouble x0vec(1., xd);
+        libint2::simd::VectorSSEDouble x1vec(x2, x3);
+        libint2::simd::VectorSSEDouble x2vec(x4, x5);
+        libint2::simd::VectorSSEDouble x3vec(x6, x7);
+#  endif
+#endif // SSE2 || AVX
+
+        const Real *d = c + (ORDERp1) * (iv * (mmax+1) + m_min); // ptr to the interpolation data for m=mmin
+        int m = m_min;
+#if defined(__AVX__)
+        if (m_max-m >=3) {
+          const int unroll_size = 4;
+          const int m_fence = (m_max + 2 - unroll_size);
+          for(; m<m_fence; m+=unroll_size, d+=ORDERp1*unroll_size) {
+            libint2::simd::VectorAVXDouble d00v, d01v, d10v, d11v,
+                                           d20v, d21v, d30v, d31v;
+            d00v.load_aligned(d);            d01v.load_aligned((d+4));
+            d10v.load_aligned(d+ORDERp1);    d11v.load_aligned((d+4)+ORDERp1);
+            d20v.load_aligned(d+2*ORDERp1);  d21v.load_aligned((d+4)+2*ORDERp1);
+            d30v.load_aligned(d+3*ORDERp1);  d31v.load_aligned((d+4)+3*ORDERp1);
+            libint2::simd::VectorAVXDouble fm0 = d00v * x0vec + d01v * x1vec;
+            libint2::simd::VectorAVXDouble fm1 = d10v * x0vec + d11v * x1vec;
+            libint2::simd::VectorAVXDouble fm2 = d20v * x0vec + d21v * x1vec;
+            libint2::simd::VectorAVXDouble fm3 = d30v * x0vec + d31v * x1vec;
+            libint2::simd::VectorAVXDouble sum0123 = horizontal_add(fm0, fm1, fm2, fm3);
+            sum0123.convert(&Fm[m]);
+          }
+        } // unroll_size=4
+        if (m_max-m >=1) {
+          const int unroll_size = 2;
+          const int m_fence = (m_max + 2 - unroll_size);
+          for(; m<m_fence; m+=unroll_size, d+=ORDERp1*unroll_size) {
+            libint2::simd::VectorAVXDouble d00v, d01v, d10v, d11v;
+            d00v.load_aligned(d);
+            d01v.load_aligned((d+4));
+            d10v.load_aligned(d+ORDERp1);
+            d11v.load_aligned((d+4)+ORDERp1);
+            libint2::simd::VectorAVXDouble fm0 = d00v * x0vec + d01v * x1vec;
+            libint2::simd::VectorAVXDouble fm1 = d10v * x0vec + d11v * x1vec;
+            libint2::simd::VectorSSEDouble sum01 = horizontal_add(fm0, fm1);
+            sum01.convert(&Fm[m]);
+          }
+        } // unroll_size=2
+        { // no unrolling
+          for(; m<=m_max; ++m, d+=ORDERp1) {
+            libint2::simd::VectorAVXDouble d0v, d1v;
+            d0v.load_aligned(d);
+            d1v.load_aligned(d+4);
+            Fm[m] = horizontal_add(d0v * x0vec + d1v * x1vec);
+          }
+        }
+#elif defined(__SSE2__) && 0 // no SSE yet
+        if (m_max-m >=1) {
+          const int unroll_size = 2;
+          const int m_fence = (m_max + 2 - unroll_size);
+          for(; m<m_fence; m+=unroll_size, d+=ORDERp1*unroll_size) {
+            libint2::simd::VectorSSEDouble d00v, d01v, d10v, d11v;
+            d00v.load_aligned(d);
+            d01v.load_aligned(d+2);
+            d10v.load_aligned(d+4); // d + ORDERp1
+            d11v.load_aligned(d+6);
+            libint2::simd::VectorSSEDouble fm00 = d00v * x0vec;
+            libint2::simd::VectorSSEDouble fm01 = d01v * x1vec;
+            libint2::simd::VectorSSEDouble fm10 = d10v * x0vec;
+            libint2::simd::VectorSSEDouble fm11 = d11v * x1vec;
+            libint2::simd::VectorSSEDouble sum01 = horizontal_add(fm00, fm10) + horizontal_add(fm01, fm11);
+            sum01.convert(&Fm[m]);
+          }
+        } // unroll_size=2
+        { // no unrolling
+          for(; m<=m_max; ++m, d+=ORDERp1) {
+            libint2::simd::VectorSSEDouble d0vec, d1vec;
+            d0vec.load_aligned(d);
+            d1vec.load_aligned(d+2);
+            Fm[m] = horizontal_add(d0vec * x0vec + d1vec * x1vec);
+          }
+        }
+#else // not SSE2 nor AVX available
+        for(int m=m_min; m<=m_max; ++m, d+=ORDERp1) {
+          Fm[m] = d[0]
+                + xd * (d[1]
+                + xd * (d[2]
+                + xd * (d[3]
+                + xd * (d[4]
+                + xd * (d[5]
+                + xd * (d[6]
+                + xd * (d[7])))))));
+
+          //        // check against the reference value
+          //        if (false) {
+          //          double refvalue = FmEval_Reference2<double>::eval(x, m, 1e-15); // compute F(T)
+          //          if (abs(refvalue - Fm[m]) > 1e-10) {
+          //            std::cout << "T = " << x << " m = " << m << " cheb = "
+          //                      << Fm[m] << " ref = " << refvalue << std::endl;
+          //          }
+          //        }
+        }
+#endif
+
+
+      } // eval()
+
+    private:
+
+      void init() {
+
+#include <libint2/boys_cheb7.h>
+
+        assert(mmax <= cheb_table_mmax);
+        // get memory
+        void* result;
+        posix_memalign(&result, ORDERp1*sizeof(Real), (mmax + 1) * N * ORDERp1 * sizeof(Real));
+        c = static_cast<Real*>(result);
+
+        // copy contents of static table into c
+        // need all intervals
+        for (int iv = 0; iv < N; ++iv) {
+          // but only values of m up to mmax
+          std::copy(cheb_table[iv], cheb_table[iv]+(mmax+1)*ORDERp1, c+(iv*(mmax+1))*ORDERp1);
+        }
+      }
+
+  }; // FmEval_Chebyshev7
 
 #ifndef STATIC_OON
 #define STATIC_OON
@@ -749,8 +967,9 @@ namespace libint2 {
               libint2::simd::VectorAVXDouble fr0123; fr0123.load(F_row);
               if (INTERPOLATION_ORDER == 7) {
                 libint2::simd::VectorAVXDouble fr4567; fr4567.load(F_row+4);
-                libint2::simd::VectorSSEDouble fm = horizontal_add(fr0123*h0123, fr4567*h4567);
-                Fm[m] = horizontal_add(fm);
+//                libint2::simd::VectorSSEDouble fm = horizontal_add(fr0123*h0123, fr4567*h4567);
+//                Fm[m] = horizontal_add(fm);
+                Fm[m] = horizontal_add(fr0123*h0123 + fr4567*h4567);
               }
               else { // INTERPOLATION_ORDER == 3
                 Fm[m] = horizontal_add(fr0123*h0123);
@@ -1296,7 +1515,6 @@ namespace libint2 {
       int mmax_;
       Real precision_; //< absolute precision
       FmEval_Taylor<Real>* fm_eval_;
-//      FmEval_Chebyshev3* fm_eval_;
 
       GaussianGmEvalScratch <Real, -1> scratch_; // only used in serial if k==-1
 

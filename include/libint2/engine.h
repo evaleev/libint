@@ -668,6 +668,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
   template <MultiplicativeSphericalTwoBodyKernel Kernel> struct TwoBodyEngineTraits;
   template <> struct TwoBodyEngineTraits<Coulomb> {
       typedef libint2::FmEval_Chebyshev3<double> core_eval_type;
+      //typedef libint2::FmEval_Chebyshev7<double> core_eval_type;
       //typedef libint2::FmEval_Taylor<double, 7> core_eval_type;
       typedef struct {} oper_params_type;
   };
