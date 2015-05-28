@@ -182,6 +182,9 @@ int main(int argc, char** argv)
   rysq::roots_initialize();
 #endif
 
+  libint2::Timers<3> timers; // 0 - roots/weights, 1 - 2d build, 2 - 6d build
+  timers.set_now_overhead(25);
+
   constexpr std::array<unsigned int, 4> am{am0,am1,am2,am3};
 
   const uint veclen = 1;
@@ -230,17 +233,14 @@ int main(int argc, char** argv)
   //------------------------------------------------------
   // compute recurrence prefactors, Rys roots and weights
   //------------------------------------------------------
-  const size_t am_tot = am0 + am1 + am2 + am3;
-  const size_t npts = am_tot/2 + 1;
-//  const size_t npts = 2;
+  constexpr size_t am_tot = am0 + am1 + am2 + am3;
+  constexpr size_t npts = am_tot/2 + 1;
 
   std::vector<Libint_t> erieval(contrdepth4 * npts); // data for each root will be held in its own Libint_t instance
   for(auto& v:erieval) { v.nflops = new LIBINT2_UINT_LEAST64; v.nflops[0] = 0; }
-//  const int max_am = max(max(am[0],am[1]),max(am[2],am[3]));
-//  LIBINT2_PREFIXED_NAME(libint2_init_eri0)(&erieval[0],max_am,0);
 
   /// prepare to compute 2-dimensional ints for quadrature point \c pt
-  auto prep_data = [=](Libint_t* ev) {
+  auto prep_data = [=](Libint_t* ev, Timers<3>& timers) {
     const auto a0 = alpha0[p0];
     const auto a1 = alpha1[p1];
     const auto a2 = alpha2[p2];
@@ -278,6 +278,7 @@ int main(int argc, char** argv)
     LIBINT2_REALTYPE gammas[20]; // gamma = t^2
     LIBINT2_REALTYPE weights[20];
 
+    timers.start(0);
 #ifdef LIBINT_HAVE_LIBROOTS
     {
       int32_t n = npts;
@@ -290,6 +291,7 @@ int main(int argc, char** argv)
     gammas[0] = Fm[1]/Fm[0];
     weights[0] = Fm[0];
 #endif
+    timers.stop(0);
 
     for(auto pt=0; pt!=npts; ++pt, ++ev) {
       std::cout << pt << ": " << " t=" << gammas[pt] << " w=" << weights[pt] << std::endl;
@@ -333,8 +335,9 @@ int main(int argc, char** argv)
   Tensor<real_t> gtg_x{npts,am[0]+1,am[1]+1,am[2]+1,am[3]+1};
   Tensor<real_t> gtg_y{npts,am[0]+1,am[1]+1,am[2]+1,am[3]+1};
   Tensor<real_t> gtg_z{npts,am[0]+1,am[1]+1,am[2]+1,am[3]+1};
-  prep_data(&erieval[0]);
+  prep_data(&erieval[0], timers);
   LIBINT2_UINT_LEAST64 nflops_build{0};
+  timers.start(1);
   for(size_t pt = 0; pt!=npts; ++pt) {
     VRR_GTG_1d_xx_xx<CartesianAxis_X,am0,am1,am2,am3,false>::compute(&erieval[pt],
                                                                      gtg_x.data(pt),
@@ -347,6 +350,7 @@ int main(int argc, char** argv)
                                                                      erieval[pt]._00_GTG1d_00_z);
     nflops_build += erieval[pt].nflops[0];
   }
+  timers.stop(1);
 
   cout << "Testing (" << sh0.label() << sh1.label()
   << "|" << sh2.label() << sh3.label() << ") ";
@@ -461,12 +465,11 @@ int main(int argc, char** argv)
     }
   }
 
-  //LIBINT2_PREFIXED_NAME(libint2_cleanup_eri0)(&erieval[0]);
-
   cout << "test " << (success ? "ok" : "failed") << endl;
 
   std::cout << "Rys build used " << nflops_build << " flops" << std::endl;
 
+  std::cout << "Timers{Rys,2d-build} = {" << timers.read(0) << "," << timers.read(1) << "}\n";
 #ifdef LIBINT_HAVE_LIBROOTS
   rysq::roots_finalize();
 #endif
