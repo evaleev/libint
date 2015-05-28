@@ -20,6 +20,8 @@
 #include "libint2/boys.h"
 #include "libint2/timer.h"
 #include <ctime>
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <iterator>
 #include <functional>
@@ -67,6 +69,24 @@ std::string to_string(OperType o) {
   return result;
 }
 
+/* These state variables must be initialized so that they are not all zero. */
+namespace dice {
+  uint32_t x, y, z, w;
+  void init(unsigned int seed = 159265359) {
+    srand(seed);
+    x=rand();
+    y=rand();
+    z=rand();
+    w=rand();
+  }
+  // uses xorshift128 algorithm, see http://en.wikipedia.org/wiki/Xorshift
+  uint32_t random_unit32(void) {
+    uint32_t t = x ^ (x << 11);
+    x = y; y = z; z = w;
+    return w = w ^ (w >> 19) ^ t ^ (t >> 8);
+  }
+};
+
 /** profiles Kernel by running it repeatedly, and reporting the sum of values
  *
  * @param k the Kernel, needs to have 2 member functions: label and and eval, neither of which takes a parameter
@@ -74,8 +94,10 @@ std::string to_string(OperType o) {
  */
 template <typename Kernel> void profile(const Kernel& k, int nrepeats);
 
-void do_chebyshev(int mmax, double T, int nrepeats);
-void do_taylor(int mmax, double T, int nrepeats);
+template <unsigned InterpolationOrder = 3>
+void do_chebyshev(int mmax, int nrepeats);
+template <unsigned InterpolationOrder = 7>
+void do_taylor(int mmax, int nrepeats);
 template <OperType O> void do_stg6g(int mmax, double T, double rho, int nrepeats);
 void do_yukawa(int mmax, double T, double U, int nrepeats);
 
@@ -349,10 +371,13 @@ int main(int argc, char* argv[]) {
 # endif
 #endif
 #ifndef SKIP_CHEBYSHEV
-  do_chebyshev(mmax, T, nrepeats);
+  do_chebyshev<3>(mmax, nrepeats);
+  do_chebyshev<7>(mmax, nrepeats);
+  do_chebyshev<33>(mmax, nrepeats);
 #endif
 #ifndef SKIP_TAYLOR
-  do_taylor(mmax, T, nrepeats);
+  do_taylor<3>(mmax, nrepeats);
+  do_taylor<7>(mmax, nrepeats);
 #endif
 #ifndef SKIP_STGNG
   do_stg6g<f12>(mmax, T, rho, nrepeats);
@@ -389,13 +414,23 @@ void profile(const Kernel& k, int nrepeats) {
   cout << "Rate = " << fixed << nrepeats * k.ops_per_eval() / timer.read(0) << endl;
 }
 
-void do_chebyshev(int mmax, double T, int nrepeats) {
-  std::cout << "===================== Fm Cheb3 ======================" << std::endl;
+template <unsigned InterpolationOrder>
+void do_chebyshev(int mmax, int nrepeats) {
+  std::cout << "===================== Fm Cheb" << InterpolationOrder << " ======================" << std::endl;
   double* Fm_array = new double[mmax+1];
   double* Fm_array_sum = new double[mmax+1];
   //std::cout << "alignment of Fm = " << reinterpret_cast<unsigned long int>((char*) Fm_array) % 32ul << " bytes\n";
 
-  libint2::FmEval_Chebyshev3 fmeval_cheb(mmax);
+  // initialize dice
+  dice::init();
+  const double T_max = 30.0; // values >= T_max are handled by recursion
+  const double scale_unit32_to_T = T_max / std::numeric_limits<uint32_t>::max();
+
+  typedef typename std::conditional<InterpolationOrder==7,
+                                    libint2::FmEval_Chebyshev7<>,
+                                    libint2::FmEval_Chebyshev3<>
+                                   >::type fmeval_t;
+  fmeval_t fmeval_cheb(mmax);
   std::cout << "done initialization:" << std::endl;
   std::fill(Fm_array_sum, Fm_array_sum+mmax+1, 0.0);
   timer.clear();
@@ -404,11 +439,11 @@ void do_chebyshev(int mmax, double T, int nrepeats) {
 #pragma novector
 #endif
   for (int i = 0; i < nrepeats; ++i) {
+    const double T = dice::random_unit32() * scale_unit32_to_T;
     // this computes all Fm for up to mmax
     fmeval_cheb.eval(Fm_array, T, mmax);
     for(int m=0; m<=mmax; ++m)
       Fm_array_sum[m] += Fm_array[m];
-    T = (i & 0x000f0f0f)/1000.; // i % 16; // to ward-off unrealistic compiler optimizations
   }
   timer.stop(0);
 
@@ -422,12 +457,18 @@ void do_chebyshev(int mmax, double T, int nrepeats) {
   delete[] Fm_array_sum;
 }
 
-void do_taylor(int mmax, double T, int nrepeats) {
-  std::cout << "===================== Fm Taylor6 ======================" << std::endl;
+template <unsigned InterpolationOrder>
+void do_taylor(int mmax, int nrepeats) {
+  std::cout << "===================== Fm Taylor" << InterpolationOrder << " ======================" << std::endl;
   double* Fm_array = new double[mmax+1];
   double* Fm_array_sum = new double[mmax+1];
 
-  libint2::FmEval_Taylor<double, 7> fmeval_taylor6(mmax, 1e-15);
+  // initialize dice
+  dice::init();
+  const double T_max = 30.0; // values >= T_max are handled by recursion
+  const double scale_unit32_to_T = T_max / std::numeric_limits<uint32_t>::max();
+
+  libint2::FmEval_Taylor<double, InterpolationOrder> fmeval(mmax, 1e-15);
   std::fill(Fm_array_sum, Fm_array_sum+mmax+1, 0.0);
   timer.clear();
   timer.start(0);
@@ -436,11 +477,11 @@ void do_taylor(int mmax, double T, int nrepeats) {
 #endif
   for (int i = 0; i < nrepeats; ++i)
   {
+    const double T = dice::random_unit32() * scale_unit32_to_T;
     // this computes all Fm for up to mmax
-    fmeval_taylor6.eval(Fm_array, T, mmax);
+    fmeval.eval(Fm_array, T, mmax);
     for(int m=0; m<=mmax; ++m)
       Fm_array_sum[m] += Fm_array[m];
-    T = (i & 0x000f0f0f)/1000.; // i % 16; // to ward-off unrealistic compiler optimizations
   }
   timer.stop(0);
   std::cout << "sum of Fm (Taylor):" << std::endl;
