@@ -89,11 +89,6 @@ namespace libint2 {
 
         }
 
-        // technical step: rescale contraction coefficients to include primitive normalization coefficients
-        for(auto& s: *this) {
-          s.renorm();
-        }
-
         init();
       }
 

@@ -445,11 +445,6 @@ std::vector<Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
 
   }
 
-  // technical step: rescale contraction coefficients to include primitive normalization coefficients
-  for(auto& s: shells) {
-    s.renorm();
-  }
-
   return shells;
 }
 

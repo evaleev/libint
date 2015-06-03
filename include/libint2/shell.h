@@ -99,8 +99,21 @@ namespace libint2 {
       std::array<real_t, 3> O;   //!< origin
       std::vector<real_t> max_ln_coeff; //!< maximum ln of (absolute) contraction coefficient for each primitive
 
-      Shell& move(const std::array<real_t, 3> new_origin) {
-        O = new_origin;
+      Shell() = default;
+      Shell(const Shell&) = default;
+      Shell(Shell&&) = default;
+      Shell(std::vector<real_t> _alpha,
+            std::vector<Contraction> _contr,
+            std::array<real_t, 3> _O) :
+              alpha(std::move(_alpha)),
+              contr(std::move(_contr)),
+              O(std::move(_O)) {
+        // embed normalization factors into contraction coefficients
+        renorm();
+      }
+
+      Shell& move(std::array<real_t, 3> new_origin) {
+        O = std::move(new_origin);
         return *this;
       }
 
@@ -113,37 +126,6 @@ namespace libint2 {
         size_t s = 0;
         for(const auto& c: contr) { s += c.size(); }
         return s;
-      }
-
-      /// embeds normalization constants into contraction coefficients. Do this before computing integrals.
-      /// \note Must be done only once.
-      void renorm() {
-        using libint2::math::df_Kminus1;
-        const auto sqrt_Pi_cubed = real_t{5.56832799683170784528481798212};
-        const auto np = nprim();
-        for(auto& c: contr) {
-          assert(c.l <= 15); // due to df_Kminus1[] a 64-bit integer type; kinda ridiculous restriction anyway
-          for(auto p=0; p!=np; ++p) {
-            assert(alpha[p] >= 0.0);
-            if (alpha[p] != 0.) {
-              const auto two_alpha = 2 * alpha[p];
-              const auto two_alpha_to_am32 = pow(two_alpha,c.l+1) * sqrt(two_alpha);
-              const auto norm = sqrt(pow(2,c.l) * two_alpha_to_am32/(sqrt_Pi_cubed * df_Kminus1[2*c.l] ));
-
-              c.coeff[p] *= norm;
-            }
-          }
-        }
-
-        // update max log coefficients
-        max_ln_coeff.resize(np);
-        for(auto p=0; p!=np; ++p) {
-          real_t max_ln_c = - std::numeric_limits<real_t>::max();
-          for(auto& c: contr) {
-            max_ln_c = std::max(max_ln_c, log(std::abs(c.coeff[p])));
-          }
-          max_ln_coeff[p] = max_ln_c;
-        }
       }
 
       size_t ncontr() const { return contr.size(); }
@@ -188,6 +170,28 @@ namespace libint2 {
         }
       }
 
+      struct defaultable_boolean {
+          typedef enum {false_value=0,true_value=1,default_value=2} value_t;
+          defaultable_boolean() : value_(default_value) {}
+          defaultable_boolean(bool v) : value_(static_cast<value_t>(v?1:0)) {}
+          bool is_default() const { return value_ == default_value; }
+          operator bool() const { assert(value_ != default_value); return value_ == true_value; }
+        private:
+          value_t value_;
+      };
+
+      /// sets and/or reports whether the auto-renormalization to unity is set
+      /// if called without arguments, returns the current value of the flag
+      /// otherwise, will set the flag to \c flag
+      /// \note by default, shells WILL be re-normalized to unity
+      static bool do_enforce_unit_normalization(defaultable_boolean flag = defaultable_boolean()) {
+        static bool result{true};
+        if (not flag.is_default()) {
+          result = flag;
+        }
+        return result;
+      }
+
       /// @return "unit" Shell, with exponent=0. and coefficient=1., located at the origin
       static Shell unit() {
         libint2::Shell unitshell{
@@ -198,6 +202,58 @@ namespace libint2 {
         unitshell.renorm();
         return unitshell;
       }
+
+    private:
+      /// embeds normalization constants into contraction coefficients. Do this before computing integrals.
+      /// \warning Must be done only once.
+      /// \note this is now private
+      void renorm() {
+        using libint2::math::df_Kminus1;
+        const auto sqrt_Pi_cubed = real_t{5.56832799683170784528481798212};
+        const auto np = nprim();
+        for(auto& c: contr) {
+          assert(c.l <= 15); // due to df_Kminus1[] a 64-bit integer type; kinda ridiculous restriction anyway
+          for(auto p=0; p!=np; ++p) {
+            assert(alpha[p] >= 0.0);
+            if (alpha[p] != 0.) {
+              const auto two_alpha = 2 * alpha[p];
+              const auto two_alpha_to_am32 = pow(two_alpha,c.l+1) * sqrt(two_alpha);
+              const auto normalization_factor = sqrt(pow(2,c.l) * two_alpha_to_am32/(sqrt_Pi_cubed * df_Kminus1[2*c.l] ));
+
+              c.coeff[p] *= normalization_factor;
+            }
+          }
+
+          // need to force normalization to unity?
+          if (do_enforce_unit_normalization()) {
+            // compute the self-overlap of the , scale coefficients by its inverse square root
+            double norm{0};
+            for(auto p=0; p!=np; ++p) {
+              for(auto q=0; q<=p; ++q) {
+                auto gamma = alpha[p] + alpha[q];
+                norm += (p==q ? 1.0 : 2.0) * df_Kminus1[2*c.l] * sqrt_Pi_cubed * c.coeff[p] * c.coeff[q] /
+                        (pow(2,c.l) * pow(gamma,c.l+1) * sqrt(gamma));
+              }
+            }
+            auto normalization_factor = 1.0 / sqrt(norm);
+            for(auto p=0; p!=np; ++p) {
+              c.coeff[p] *= normalization_factor;
+            }
+          }
+
+        }
+
+        // update max log coefficients
+        max_ln_coeff.resize(np);
+        for(auto p=0; p!=np; ++p) {
+          real_t max_ln_c = - std::numeric_limits<real_t>::max();
+          for(auto& c: contr) {
+            max_ln_c = std::max(max_ln_c, log(std::abs(c.coeff[p])));
+          }
+          max_ln_coeff[p] = max_ln_c;
+        }
+      }
+
   };
 
   inline std::ostream& operator<<(std::ostream& os, const Shell& sh) {
