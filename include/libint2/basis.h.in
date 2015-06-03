@@ -67,8 +67,13 @@ namespace libint2 {
 
         // read in the library file contents
         std::string file_dot_g94 = data_path();
-        file_dot_g94 += "/" + canonicalize_name(name_) + ".g94";
-        std::vector<std::vector<libint2::Shell>> ref_shells = read_g94_basis_library(file_dot_g94);
+        auto canonical_name = canonicalize_name(name_);
+        file_dot_g94 += "/" + canonical_name + ".g94";
+        
+        // some basis sets use cartesian d shells by convention, the convention is taken from Gaussian09
+        auto force_cartesian_d = gaussian_cartesian_d_convention(canonical_name);
+        std::vector<std::vector<libint2::Shell>> ref_shells = read_g94_basis_library(file_dot_g94,
+                                                                                     force_cartesian_d);
 
         // for each atom find the corresponding basis
         for(auto a=0; a<atoms.size(); ++a) {
@@ -141,6 +146,26 @@ namespace libint2 {
         return result;
       }
 
+      // see http://www.gaussian.com/g_tech/g_ur/m_basis_sets.htm
+      bool gaussian_cartesian_d_convention(const std::string& canonical_name) {
+        // 3-21??g??, 4-31g??
+        if (canonical_name.find("3-21")    == 0 ||
+            canonical_name.find("4-31g")   == 0)
+          return true;
+        // 6-31??g?? but not 6-311 OR 6-31g()
+        if (canonical_name.find("6-31") == 0 && canonical_name[4] != '1') {
+          // to exclude 6-31??g() find the g, then check the next character
+          auto g_pos = canonical_name.find('g');
+          if (g_pos == std::string::npos) // wtf, I don't even know what this is, assume spherical d is OK
+            return false;
+          if (g_pos+1 == canonical_name.size()) // 6-31??g uses cartesian d
+            return true;
+          if (canonical_name[g_pos+1] == '*') // 6-31??g*? uses cartesian d
+            return true;
+        }
+        return false;
+      }
+      
       /** determines the path to the data directory, as follows:
        *       <ol>
        *         <li> specified by LIBINT_DATA_PATH environmental variable, if defined </li>
@@ -187,7 +212,8 @@ namespace libint2 {
        *  @throw std::runtime_error if the path is not valid, or cannot be determined
        *  @return vector of basis sets for each element
        */
-      static std::vector<std::vector<libint2::Shell>> read_g94_basis_library(std::string file_dot_g94) {
+      static std::vector<std::vector<libint2::Shell>> read_g94_basis_library(std::string file_dot_g94,
+                                                                             bool force_cartesian_d = false) {
 
         std::cout << "Will read basis set from " << file_dot_g94 << std::endl;
         std::ifstream is(file_dot_g94);
@@ -256,7 +282,7 @@ namespace libint2 {
                 exps.emplace_back(e);
                 coeffs.emplace_back(c);
               }
-              auto pure = l>1;
+              auto pure = force_cartesian_d ? (l>2) : (l>1);
               ref_shells[Z].push_back(
                   libint2::Shell{
                     exps,
