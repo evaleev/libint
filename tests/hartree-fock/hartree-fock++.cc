@@ -224,7 +224,7 @@ int main(int argc, char *argv[]) {
     /*** =========================== ***/
 
     const auto maxiter = 100;
-    const auto conv = 1e-12;
+    const auto conv = 1e-13;
     auto iter = 0;
     auto rms_error = 1.0;
     auto ediff_rel = 0.0;
