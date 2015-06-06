@@ -10,7 +10,7 @@ else
     # no OpenMP support in clang, will use C++11 threads
     export OPENMPFLAGS=
 fi
-export CXXFLAGS="-std=c++11 $OPENMPFLAGS"
+export CXXFLAGS="-std=c++11 -Wno-enum-compare $OPENMPFLAGS"
 export LDFLAGS=$OPENMPFLAGS
 export LIBINT_NUM_THREADS=2
 
