@@ -102,6 +102,8 @@ namespace libint2 {
       Shell() = default;
       Shell(const Shell&) = default;
       Shell(Shell&&) = default;
+      Shell& operator=(const Shell&) = default;
+      Shell& operator=(Shell&&) = default;
       Shell(std::vector<real_t> _alpha,
             std::vector<Contraction> _contr,
             std::array<real_t, 3> _O) :

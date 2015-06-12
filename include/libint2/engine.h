@@ -150,7 +150,7 @@ namespace libint2 {
         initialize();
       }
 
-      /// move constructor
+      /// move constructor is default
       OneBodyEngine(OneBodyEngine&& other) = default;
 
       /// (deep) copy constructor
@@ -168,17 +168,17 @@ namespace libint2 {
         finalize();
       }
 
-      /// move assignment
+      /// move assignment is default
       OneBodyEngine& operator=(OneBodyEngine&& other) = default;
 
       /// (deep) copy assignment
       OneBodyEngine& operator=(const OneBodyEngine& other) {
+        type_ = other.type_;
         primdata_.resize(other.primdata_.size());
         lmax_ = other.lmax_;
         deriv_order_ = other.deriv_order_;
         params_ = other.params_;
         fm_eval_ = other.fm_eval_;
-        type_ = other.type_;
         initialize();
         return *this;
       }
