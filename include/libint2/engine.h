@@ -155,6 +155,7 @@ namespace libint2 {
 
       /// (deep) copy constructor
       OneBodyEngine(const OneBodyEngine& other) :
+        type_(other.type_),
         primdata_(other.primdata_.size()),
         lmax_(other.lmax_),
         deriv_order_(other.deriv_order_),
