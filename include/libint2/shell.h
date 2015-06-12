@@ -194,12 +194,11 @@ namespace libint2 {
 
       /// @return "unit" Shell, with exponent=0. and coefficient=1., located at the origin
       static Shell unit() {
-        libint2::Shell unitshell{
-                    {0.0}, // exponent
-                    {{0, false, {1.0}}},
-                    {{0.0, 0.0, 0.0}} // placed at origin
-                };
-        unitshell.renorm();
+        libint2::Shell unitshell;
+        unitshell.alpha.emplace_back(0.0);                           // exponent = 0
+        unitshell.contr.emplace_back(Contraction{0, false, {1.0}});  // contraction coefficient = 1
+        unitshell.O = std::array<real_t,3>({0.0, 0.0, 0.0});         // placed at origin
+        unitshell.max_ln_coeff.emplace_back(1.0);
         return unitshell;
       }
 
