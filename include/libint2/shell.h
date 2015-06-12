@@ -199,7 +199,7 @@ namespace libint2 {
         libint2::Shell unitshell;
         unitshell.alpha.emplace_back(0.0);                           // exponent = 0
         unitshell.contr.emplace_back(Contraction{0, false, {1.0}});  // contraction coefficient = 1
-        unitshell.O = std::array<real_t,3>({0.0, 0.0, 0.0});         // placed at origin
+        unitshell.O = std::array<real_t,3>{0.0, 0.0, 0.0};         // placed at origin
         unitshell.max_ln_coeff.emplace_back(1.0);
         return unitshell;
       }
