@@ -195,16 +195,22 @@ namespace libint2 {
       }
 
       /// @return "unit" Shell, with exponent=0. and coefficient=1., located at the origin
-      static Shell unit() {
-        libint2::Shell unitshell;
-        unitshell.alpha.emplace_back(0.0);                           // exponent = 0
-        unitshell.contr.emplace_back(Contraction{0, false, {1.0}});  // contraction coefficient = 1
-        unitshell.O = std::array<real_t,3>{0.0, 0.0, 0.0};         // placed at origin
-        unitshell.max_ln_coeff.emplace_back(1.0);
+      static const Shell& unit() {
+        static const Shell unitshell{make_unit()};
         return unitshell;
       }
 
     private:
+
+      // this makes a unit shell
+      struct make_unit{};
+      Shell(make_unit) :
+        alpha(1, 0.0),                           // exponent = 0
+        contr(1, Contraction{0, false, {1.0}}),  // contraction coefficient = 1
+        O({0.0, 0.0, 0.0}),                      // placed at origin
+        max_ln_coeff(1, 0.0) {
+      }
+
       /// embeds normalization constants into contraction coefficients. Do this before computing integrals.
       /// \warning Must be done only once.
       /// \note this is now private
