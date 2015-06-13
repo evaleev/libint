@@ -494,7 +494,10 @@ namespace libint2 {
 
         // get memory
         void* result;
-        posix_memalign(&result, 4*sizeof(Real), (mmax + 1) * NGRID * INTERPOLATION_ORDER * sizeof(Real));
+        if (posix_memalign(&result,
+                           4*sizeof(Real),
+                           (mmax + 1) * NGRID * INTERPOLATION_ORDER * sizeof(Real)))
+          throw std::bad_alloc();
         c = static_cast<Real*>(result);
 
         // make expansion coefficients for each grid value of T
