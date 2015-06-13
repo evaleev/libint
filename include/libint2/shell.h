@@ -205,9 +205,9 @@ namespace libint2 {
       // this makes a unit shell
       struct make_unit{};
       Shell(make_unit) :
-        alpha{10.0},                           // exponent = 0
+        alpha{0.0},                           // exponent = 0
         contr{Contraction{0, false, {1.0}}},  // contraction coefficient = 1
-        O{{0.0, 0.0, 0.0}},                      // placed at origin
+        O{{0.0, 0.0, 0.0}},                   // placed at origin
         max_ln_coeff{0.0} {
       }
 
