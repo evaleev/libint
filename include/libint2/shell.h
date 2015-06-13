@@ -205,10 +205,10 @@ namespace libint2 {
       // this makes a unit shell
       struct make_unit{};
       Shell(make_unit) :
-        alpha(1, 0.0),                           // exponent = 0
-        contr(1, Contraction{0, false, {1.0}}),  // contraction coefficient = 1
-        O({0.0, 0.0, 0.0}),                      // placed at origin
-        max_ln_coeff(1, 0.0) {
+        alpha{1, 0.0},                           // exponent = 0
+        contr{1, Contraction{0, false, {1.0}}},  // contraction coefficient = 1
+        O{0.0, 0.0, 0.0},                      // placed at origin
+        max_ln_coeff{1, 0.0} {
       }
 
       /// embeds normalization constants into contraction coefficients. Do this before computing integrals.
