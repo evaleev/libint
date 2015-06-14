@@ -242,7 +242,13 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
 
       /// Implements Hashable::key()
       typename DGVertex::KeyReturnType key() const {
-        return static_cast<typename DGVertex::KeyReturnType>(value());
+        if (std::is_floating_point<T>::value) {
+          if (not std::is_same<T,double>::value)
+            throw std::runtime_error("CTimeEntity<Real> only supported when Real==double");
+          return static_cast<typename DGVertex::KeyReturnType>(*reinterpret_cast<const unsigned long*>(&value_));
+        }
+        else
+          return static_cast<typename DGVertex::KeyReturnType>(value());
       }
 
     private:
