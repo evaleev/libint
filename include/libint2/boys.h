@@ -32,6 +32,8 @@
 #include <cassert>
 #include <vector>
 #include <algorithm>
+#include <limits>
+#include <type_traits>
 
 // some features require at least C++11
 #if __cplusplus > 199711L
