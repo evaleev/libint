@@ -535,10 +535,7 @@ void
 DirectedGraph::optimize_rr_out(const SafePtr<CodeContext>& context)
 {
   replace_rr_with_expr();
-  // TODO remove_trivial_arithmetics() seems to be broken when working with [Ti,G12], fix!
-#if 1
   remove_trivial_arithmetics();
-#endif
   handle_trivial_nodes(context);
   remove_disconnected_vertices();
   find_subtrees();
