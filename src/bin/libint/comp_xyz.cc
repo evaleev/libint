@@ -105,9 +105,6 @@ void CR_XYZ_1_1<CGShell,KineticOper,EmptySet>::compute(const CGShell& a, const C
   using namespace libint2::prefactor;
   using namespace libint2::braket;
 
-  // why do I need this? when this function is in header clang-602.0.49 on OS X works without this
-  using libint2::algebra::operator*;
-
   ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,OverlapOper,EmptySet>> factory_X(this);
   auto _X = factory_X.make_child(a.norm() + a.deriv().norm() + 1,b.norm() + b.deriv().norm() + 1);
 
