@@ -221,12 +221,12 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
       /// Implementation of DGVertex::label()
       const std::string& label() const
       {
-	return Entity::id();
+        return Entity::id();
       }
       /// Implementation of DGVertex::id()
       const std::string& id() const
       {
-	return label();
+        return label();
       }
       /// Implementation of DGVertex::description()
       std::string description() const
