@@ -121,7 +121,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
     }
 
     /// Implementation of DGVertex::size()
-    const unsigned int size() const { return 1; }
+    unsigned int size() const { return 1; }
 
     /// Implementation of DGVertex::equiv()
     bool equiv(const SafePtr<DGVertex>& a) const
@@ -201,7 +201,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
         }
 
       /// Implementation of DGVertex::size()
-      const unsigned int size() const { return 1; }
+      unsigned int size() const { return 1; }
 
       /// Implementation of DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const

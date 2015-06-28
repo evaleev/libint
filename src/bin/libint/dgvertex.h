@@ -131,7 +131,7 @@ namespace libint2 {
 
     /** Returns the amount of memory (in floating-point words) to be allocated for the vertex.
       */
-    virtual const unsigned int size() const =0;
+    virtual unsigned int size() const =0;
 
     /** label() returns a unique, short, descriptive label of DGVertex (e.g. "( p_x s | 1/r_{12} | d_xy s )^{(1)}")
     */

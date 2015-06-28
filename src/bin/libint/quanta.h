@@ -45,7 +45,7 @@ namespace libint2 {
     virtual const std::string label() const =0;
 
     /// Number of quantum numbers in the set
-    virtual const unsigned int num_quanta() const =0;
+    virtual unsigned int num_quanta() const =0;
     /// Increment i-th quantum number
     virtual void inc(unsigned int i) =0;
     /// Decrement i-th quantum number
@@ -90,7 +90,7 @@ namespace libint2 {
     }
 
     /// Return i-th quantum number
-    const unsigned int num_quanta() const {
+    unsigned int num_quanta() const {
       return qn_.size();
     }
 
@@ -238,7 +238,7 @@ namespace libint2 {
     }
 
     /// Implementation of QuantumSet::num_quanta()
-    const unsigned int num_quanta() const {
+    unsigned int num_quanta() const {
       return N;
     }
 
@@ -383,7 +383,7 @@ namespace libint2 {
     /// Return i-th quantum number
     const T elem(unsigned int i) const { throw std::runtime_error("QuantumNumbersA<T,0>::inc -- no quantum numbers to return"); }
     /// Implementation of QuantumSet::num_quanta()
-    const unsigned int num_quanta() const { return 0; }
+    unsigned int num_quanta() const { return 0; }
 
     /// Implements Hashable::key()
     LIBINT2_UINT_LEAST64 key() const { return 0; }

@@ -109,7 +109,7 @@ namespace libint2 {
     ~DirectedGraph();
 
     /// Returns the number of vertices
-    const unsigned int num_vertices() const { return stack_.size(); }
+    unsigned int num_vertices() const { return stack_.size(); }
 #if 0
     /// Returns all vertices
     const vertices& all_vertices() const { return stack_; }

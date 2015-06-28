@@ -69,7 +69,7 @@ namespace libint2 {
       }
 
       /// Implementation of RecurrenceRelation::num_children()
-      const unsigned int num_children() const { return children_.size(); };
+      unsigned int num_children() const { return children_.size(); };
       /// Implementation of RecurrenceRelation::rr_target()
       SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target_); }
       /// Implementation of RecurrenceRelation::rr_child()

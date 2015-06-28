@@ -85,7 +85,7 @@ namespace libint2 {
       }
 
       /// Implementation of RecurrenceRelation::num_children()
-      const unsigned int num_children() const {return nchildren_;};
+      unsigned int num_children() const {return nchildren_;};
       /// returns pointer to the target
       SafePtr<TargetType> target() const {return target_;};
       /// child(i) returns pointer to i-th child

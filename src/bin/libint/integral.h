@@ -130,7 +130,7 @@ namespace libint2 {
         return PtrComp::equiv(this,v);
       }
       /// Specialization of DGVertex::size()
-      virtual const unsigned int size() const;
+      virtual unsigned int size() const;
       /// Specialization of DGVertex::label()
       virtual const std::string& label() const;
       /// Specialization of DGVertex::id()
