@@ -7,21 +7,22 @@
 # error "Libint2 requires a C++ compiler"
 #endif
 
-#if __cplusplus >= 201103L
-#  define _libint2_has_cpp11_
+#if __cplusplus >= 199711L
+# define LIBINT2_CPLUSPLUS_STD 1998
+#elif __cplusplus >= 201103L
+# define LIBINT2_CPLUSPLUS_STD 2011
+#elif __cplusplus >= 201402L
+# define LIBINT2_CPLUSPLUS_STD 2014
+#elif
+# define LIBINT2_CPLUSPLUS_STD 0 // unknown standard
 #endif
 
-// workaround: Intel compiler is not standard conforming
-
-#ifdef __INTEL_COMPILER
+// workaround: standard Intel compiler (not INDE) is not standard conforming
+#if defined(__INTEL_COMPILER) && LIBINT2_CPLUSPLUS_STD==0
 # ifdef __INTEL_CXX11_MODE__
-#   define _libint2_has_cpp11_
+#  undef LIBINT2_CPLUSPLUS_STD
+#  define LIBINT2_CPLUSPLUS_STD 2011
 # endif
 #endif
 
-#if not _libint2_has_cpp11_
-# error " Libint2 C++ API requires C++11 support"
-#endif
-
 #endif /* header guard */
-
