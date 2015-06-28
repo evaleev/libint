@@ -20,8 +20,9 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
+#include <libint2/cxxstd.h>
 
-#if __cplusplus <= 199711L
+#if LIBINT2_CPLUSPLUS_STD < 2011
 # error "compiler does not support C++11, try -std=c++11 flag"
 #endif
 

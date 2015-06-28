@@ -17,10 +17,6 @@
  *
  */
 
-#if __cplusplus <= 199711L
-# error "Hartree-Fock test requires C++11 support"
-#endif
-
 // standard C++ headers
 #include <cmath>
 #include <iostream>

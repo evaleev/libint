@@ -1113,7 +1113,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
     // if profiling is on, start the next timer, after stopping the current timer (if possible)
     if (registry()->current_timer() >= 0) {
       const int current_timer = registry()->current_timer();
-      def << context->macro_if("__cplusplus > 199711L");
+      def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
       if (current_timer > 0)
         def << "inteval->timers->stop(" << current_timer << ");" << std::endl;
       def << "inteval->timers->start(" << current_timer+1 << ");" << std::endl;
@@ -1168,7 +1168,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
     // if profiling is on, start the next timer, after stopping the current timer (if possible)
     if (registry()->current_timer() >= 0) {
       const int current_timer = registry()->current_timer();
-      def << context->macro_if("__cplusplus > 199711L");
+      def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
       def << "inteval->timers->stop(" << current_timer+1 << ");" << std::endl;
       if (current_timer > 0)
         def << "inteval->timers->start(" << current_timer << ");" << std::endl;
@@ -1180,7 +1180,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   // if profiling=on and the current timer is outermost, start it
   // if this is not outermost timer, it has been started outside of this function
   if (registry()->current_timer() == 0) {
-    def << context->macro_if("__cplusplus > 199711L");
+    def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
     def << "inteval->timers->start(0);" << std::endl;
     def << context->macro_endif();
   }
@@ -1191,7 +1191,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   // if profiling=on and the current timer is outermost, stop it
   // if this is not outermost timer, it is managed outside of this function
   if (registry()->current_timer() == 0) {
-    def << context->macro_if("__cplusplus > 199711L");
+    def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
     def << "inteval->timers->stop(0);" << std::endl;
     def << context->macro_endif();
   }

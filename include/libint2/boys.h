@@ -36,7 +36,8 @@
 #include <type_traits>
 
 // some features require at least C++11
-#if __cplusplus > 199711L
+#include <libint2/cxxstd.h>
+#if LIBINT2_CPLUSPLUS_STD >= 2011
 #include <memory>
 #endif
 
@@ -267,7 +268,7 @@ namespace libint2 {
       }
 
       // some features require at least C++11
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
       static const std::shared_ptr<FmEval_Chebyshev3>& instance(int m_max, double = 0.0) {
 
@@ -552,7 +553,7 @@ namespace libint2 {
       }
 
       // some features require at least C++11
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
       static const std::shared_ptr<FmEval_Chebyshev7>& instance(int m_max, double = 0.0) {
 
@@ -847,7 +848,7 @@ namespace libint2 {
       }
 
       // some features require at least C++11
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
       static const std::shared_ptr<FmEval_Taylor>& instance(unsigned int mmax, Real precision) {
@@ -1388,7 +1389,7 @@ namespace libint2 {
       }
 
       // some features require at least C++11
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
       static const std::shared_ptr<GaussianGmEval>& instance(unsigned int mmax, Real precision) {

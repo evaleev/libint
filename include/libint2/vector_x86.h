@@ -20,6 +20,7 @@
 #define _libint2_src_lib_libint_vectorx86_h_
 
 #include <cstring>
+#include <libint2/cxxstd.h>
 #include <libint2/type_traits.h>
 
 #ifdef __SSE2__
@@ -96,7 +97,7 @@ namespace libint2 { namespace simd {
         return result;
       }
 
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       explicit
 #endif
       operator double() const {
@@ -394,7 +395,7 @@ namespace libint2 { namespace simd {
         return result;
       }
 
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       explicit
 #endif
       operator float() const {
@@ -408,7 +409,7 @@ namespace libint2 { namespace simd {
         return d0[0];
       }
 
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       explicit
 #endif
       operator double() const {
@@ -696,7 +697,7 @@ namespace libint2 { namespace simd {
         return result;
       }
 
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       explicit
 #endif
       operator double() const {

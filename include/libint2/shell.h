@@ -19,9 +19,11 @@
 #ifndef _libint2_src_lib_libint_shell_h_
 #define _libint2_src_lib_libint_shell_h_
 
-#if __cplusplus <= 199711L
-# error "The simple Libint API requires C++11 support"
+#include <libint2/cxxstd.h>
+#if LIBINT2_CPLUSPLUS_STD < 2011
+# error "libint2/shell.h requires C++11 support"
 #endif
+
 
 #include <iostream>
 #include <array>

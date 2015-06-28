@@ -283,7 +283,7 @@ Libint2Iface::~Libint2Iface()
         li_ << "inteval->nflops[0] = 0;" << endl;
       }
       if (cparams_->profile()) { // zero out the timers
-        li_ << ctext_->macro_if("__cplusplus > 199711L");
+        li_ << ctext_->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
         li_ << "inteval->timers = new libint2::Timers<2>;" << endl;
         li_ << "inteval->timers->clear();" << endl;
         li_ << ctext_->macro_endif(); // >= C++11
@@ -304,7 +304,7 @@ Libint2Iface::~Libint2Iface()
         li_ << "inteval->nflops = 0;" << endl;
       }
       if (cparams_->profile()) {
-        li_ << ctext_->macro_if("__cplusplus > 199711L");
+        li_ << ctext_->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
         li_ << "delete inteval->timers;" << endl;
         li_ << "inteval->timers = 0;" << endl;
         li_ << ctext_->macro_endif(); // >= C++11
@@ -508,7 +508,7 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
     os << ctext_->macro_endif();
 
     os << ctext_->macro_if(macro("PROFILE"));
-    os << ctext_->macro_if("__cplusplus > 199711L");
+    os << ctext_->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
     os << ctext_->comment("profiling timers. Libint must be configured with --enable-profile to allow profiling.") << std::endl;
     os << ctext_->declare(ctext_->mutable_modifier() + "libint2::Timers<2>*",std::string("timers")); // 1 timer for HRR and 1 timer for VRR
     os << ctext_->macro_endif(); // >= C++11

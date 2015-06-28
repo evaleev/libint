@@ -19,7 +19,8 @@
 #ifndef _libint2_src_lib_libint_solidharmonics_h_
 #define _libint2_src_lib_libint_solidharmonics_h_
 
-#if __cplusplus <= 199711L
+#include <libint2/cxxstd.h>
+#if LIBINT2_CPLUSPLUS_STD < 2011
 # error "The simple Libint API requires C++11 support"
 #endif
 
