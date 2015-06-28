@@ -26,6 +26,9 @@
 
 #include <deque>
 
+#include <Eigen/Core>
+#include <Eigen/QR>
+
 namespace libint2 {
 
   namespace diis {
