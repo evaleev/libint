@@ -13,7 +13,7 @@
 # define LIBINT2_CPLUSPLUS_STD 2011
 #elif __cplusplus >= 201402L
 # define LIBINT2_CPLUSPLUS_STD 2014
-#elif
+#else
 # define LIBINT2_CPLUSPLUS_STD 0 // unknown standard
 #endif
 
