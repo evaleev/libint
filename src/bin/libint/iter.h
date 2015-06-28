@@ -153,7 +153,7 @@ namespace libint2 {
     }
 
   template <class T, template <class> class P>
-    const unsigned int
+    unsigned int
     SubIteratorBase<T,P>::num_iter() const
     {
       return subobj_.size();

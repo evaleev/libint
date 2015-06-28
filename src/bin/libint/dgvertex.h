@@ -79,7 +79,7 @@ namespace libint2 {
     /// make_a_target() marks this vertex as a target
     void make_a_target();
     /// is_a_target() returns true if this vertex is a target
-    const bool is_a_target() const { return target_;};
+    bool is_a_target() const { return target_;};
     /** add_exit_arc(arc) adds arc as an arc connecting to children of this vertex.
         Thus, arcs are owned by their PARENTS. This function is virtual because
         certain types of vertices have duplicate references to children in their

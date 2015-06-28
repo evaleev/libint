@@ -150,14 +150,14 @@ namespace libint2 {
     }
   
   template <class BFS>
-    const unsigned int
+    unsigned int
     VectorBraket<BFS>::num_members(unsigned int p) const
     {
       return bfs_.at(p).size();
     }
 
   template <class BFS>
-    const unsigned int
+    unsigned int
     VectorBraket<BFS>::num_part() const
     {
       return bfs_.size();

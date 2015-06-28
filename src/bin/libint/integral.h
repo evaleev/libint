@@ -384,7 +384,7 @@ namespace libint2 {
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const unsigned int
+    unsigned int
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::size() const
     {
       if (size_ > 0)
