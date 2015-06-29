@@ -58,11 +58,11 @@ namespace libint2 {
         }
         // intel does not support "move ctor = default"
         SolidHarmonicsCoefficients(SolidHarmonicsCoefficients&& other) :
-	  values_(std::move(other.values_)),
-  	  row_offset_(std::move(other.row_offset_)),
-	  colidx_(std::move(other.colidx_)),
-	  l_(other.l_) {
-	  }
+          values_(std::move(other.values_)),
+          row_offset_(std::move(other.row_offset_)),
+          colidx_(std::move(other.colidx_)),
+          l_(other.l_) {
+        }
 
         SolidHarmonicsCoefficients(const SolidHarmonicsCoefficients& other) = default;
 

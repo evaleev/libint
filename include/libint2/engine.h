@@ -160,8 +160,9 @@ namespace libint2 {
         lmax_(other.lmax_),
         deriv_order_(other.deriv_order_),
         params_(std::move(other.params_)),
-        fm_eval_(std::move(other.fm_eval_)) {
-	}
+        fm_eval_(std::move(other.fm_eval_)),
+        scratch_(std::move(other.scratch_)) {
+      }
 
       /// (deep) copy constructor
       OneBodyEngine(const OneBodyEngine& other) :
@@ -186,6 +187,7 @@ namespace libint2 {
         deriv_order_ = other.deriv_order_;
         params_ = std::move(other.params_);
         fm_eval_ = std::move(other.fm_eval_);
+        scratch_ = std::move(other.scratch_);
         return *this;
       }
 
@@ -757,13 +759,14 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       /// move constructor
       // intel does not support "move ctor = default"
       TwoBodyEngine(TwoBodyEngine&& other) :
-	primdata_(std::move(other.primdata_)),
-	spbra_(std::move(other.spbra_)), spket_(std::move(other.spket_)),
-	lmax_(other.lmax_), deriv_order_(other.deriv_order_),
-	precision_(other.precision_), ln_precision_(other.ln_precision_),
-	core_eval_(std::move(other.core_eval_)),
-	core_ints_params_(std::move(other.core_ints_params_)) {
-	}
+        primdata_(std::move(other.primdata_)),
+        spbra_(std::move(other.spbra_)), spket_(std::move(other.spket_)),
+        lmax_(other.lmax_), deriv_order_(other.deriv_order_),
+        precision_(other.precision_), ln_precision_(other.ln_precision_),
+        core_eval_(std::move(other.core_eval_)),
+        core_ints_params_(std::move(other.core_ints_params_)),
+        scratch_(std::move(other.scratch_)) {
+      }
 
       /// (deep) copy constructor
       TwoBodyEngine(const TwoBodyEngine& other) :
@@ -783,14 +786,15 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       /// move assignment
       // intel does not support "move asgnmt = default"
       TwoBodyEngine& operator=(TwoBodyEngine&& other) {
-	primdata_ = std::move(other.primdata_);
+        primdata_ = std::move(other.primdata_);
         lmax_ = other.lmax_;
         deriv_order_ = other.deriv_order_;
         precision_ = other.precision_;
         ln_precision_ = other.ln_precision_;
         core_eval_ = std::move(other.core_eval_);
         core_ints_params_ = std::move(other.core_ints_params_);
-	return *this;
+        scratch_ = std::move(other.scratch_);
+        return *this;
       }
 
       /// (deep) copy assignment
