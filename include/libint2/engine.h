@@ -180,13 +180,13 @@ namespace libint2 {
 
       /// move assignment is default
       OneBodyEngine& operator=(OneBodyEngine&& other) {
-	type_ = other.type_;
-	primdata_ = std::move(primdata_);
-	lmax_ = other.lmax_;
+        type_ = other.type_;
+        primdata_ = std::move(other.primdata_);
+        lmax_ = other.lmax_;
         deriv_order_ = other.deriv_order_;
         params_ = std::move(other.params_);
         fm_eval_ = std::move(other.fm_eval_);
-	return *this;
+        return *this;
       }
 
       /// (deep) copy assignment
