@@ -27,6 +27,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <stdexcept>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -43,7 +44,13 @@ namespace libint2 {
     public:
       BasisSet() : name_(""), nbf_(-1), max_nprim_(0), max_l_(-1) {}
       BasisSet(const BasisSet&) = default;
-      BasisSet(BasisSet&&) = default;
+      BasisSet(BasisSet&& other) :
+        std::vector<libint2::Shell>(std::move(other)),
+        name_(std::move(other.name_)),
+	nbf_(other.nbf_),
+	max_nprim_(other.max_nprim_),
+	max_l_(other.max_l_){
+      }
       ~BasisSet() = default;
 
       /// Construct from basis set name and vector of atoms

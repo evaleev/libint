@@ -28,6 +28,7 @@
 #include <array>
 #include <vector>
 #include <map>
+#include <memory>
 
 #include <libint2.h>
 #include <libint2/boys.h>
@@ -146,13 +147,21 @@ namespace libint2 {
         lmax_(max_l),
         deriv_order_(deriv_order),
         params_(enforce_params_type(type,params)),
-        fm_eval_(type == nuclear ? coulomb_core_eval_t::instance(2*max_l+deriv_order, 1e-25) : 0)
+        fm_eval_(type == nuclear ? coulomb_core_eval_t::instance(2*max_l+deriv_order, 1e-25) : decltype(fm_eval_){})
       {
         initialize();
       }
 
-      /// move constructor is default
-      OneBodyEngine(OneBodyEngine&& other) = default;
+      /// move constructor
+      // intel does not accept "move ctor = default"
+      OneBodyEngine(OneBodyEngine&& other) :
+        type_(other.type_),
+        primdata_(std::move(other.primdata_)),
+        lmax_(other.lmax_),
+        deriv_order_(other.deriv_order_),
+        params_(std::move(other.params_)),
+        fm_eval_(std::move(other.fm_eval_)) {
+	}
 
       /// (deep) copy constructor
       OneBodyEngine(const OneBodyEngine& other) :
@@ -170,7 +179,15 @@ namespace libint2 {
       }
 
       /// move assignment is default
-      OneBodyEngine& operator=(OneBodyEngine&& other) = default;
+      OneBodyEngine& operator=(OneBodyEngine&& other) {
+	type_ = other.type_;
+	primdata_ = std::move(primdata_);
+	lmax_ = other.lmax_;
+        deriv_order_ = other.deriv_order_;
+        params_ = std::move(other.params_);
+        fm_eval_ = std::move(other.fm_eval_);
+	return *this;
+      }
 
       /// (deep) copy assignment
       OneBodyEngine& operator=(const OneBodyEngine& other) {
@@ -424,7 +441,7 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_ONEBODYENGINE_MCR3, 2, (BOOST_PP_ONEBO
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole1> {
       /// Cartesian coordinates of the origin with respect to which the dipole moment is defined
       typedef std::array<double, 3> oper_params_type;
-      static oper_params_type default_params() { return oper_params_type{0.0,0.0,0.0}; }
+      static oper_params_type default_params() { return oper_params_type{{0.0,0.0,0.0}}; }
       static constexpr unsigned int nopers = 4; //!< overlap + 3 dipole components
   };
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole2> {
@@ -738,7 +755,15 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       }
 
       /// move constructor
-      TwoBodyEngine(TwoBodyEngine&& other) = default;
+      // intel does not support "move ctor = default"
+      TwoBodyEngine(TwoBodyEngine&& other) :
+	primdata_(std::move(other.primdata_)),
+	spbra_(std::move(other.spbra_)), spket_(std::move(other.spket_)),
+	lmax_(other.lmax_), deriv_order_(other.deriv_order_),
+	precision_(other.precision_), ln_precision_(other.ln_precision_),
+	core_eval_(std::move(other.core_eval_)),
+	core_ints_params_(std::move(other.core_ints_params_)) {
+	}
 
       /// (deep) copy constructor
       TwoBodyEngine(const TwoBodyEngine& other) :
@@ -756,7 +781,17 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       }
 
       /// move assignment
-      TwoBodyEngine& operator=(TwoBodyEngine&& other) = default;
+      // intel does not support "move asgnmt = default"
+      TwoBodyEngine& operator=(TwoBodyEngine&& other) {
+	primdata_ = std::move(other.primdata_);
+        lmax_ = other.lmax_;
+        deriv_order_ = other.deriv_order_;
+        precision_ = other.precision_;
+        ln_precision_ = other.ln_precision_;
+        core_eval_ = std::move(other.core_eval_);
+        core_ints_params_ = std::move(other.core_ints_params_);
+	return *this;
+      }
 
       /// (deep) copy assignment
       TwoBodyEngine& operator=(const TwoBodyEngine& other)

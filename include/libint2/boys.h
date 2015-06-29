@@ -273,7 +273,7 @@ namespace libint2 {
       static const std::shared_ptr<FmEval_Chebyshev3>& instance(int m_max, double = 0.0) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static std::shared_ptr<FmEval_Chebyshev3> instance_ = 0;
+        static auto instance_ = std::shared_ptr<FmEval_Chebyshev3>{};
 
         const bool need_new_instance = !instance_ || (instance_ && instance_->max_m() < m_max);
         if (need_new_instance) {
@@ -558,7 +558,7 @@ namespace libint2 {
       static const std::shared_ptr<FmEval_Chebyshev7>& instance(int m_max, double = 0.0) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static std::shared_ptr<FmEval_Chebyshev7> instance_ = 0;
+        static auto instance_ = std::shared_ptr<FmEval_Chebyshev7>{};
 
         const bool need_new_instance = !instance_ || (instance_ && instance_->max_m() < m_max);
         if (need_new_instance) {
@@ -854,7 +854,7 @@ namespace libint2 {
       static const std::shared_ptr<FmEval_Taylor>& instance(unsigned int mmax, Real precision) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static std::shared_ptr<FmEval_Taylor> instance_ = 0;
+        static auto instance_ = std::shared_ptr<FmEval_Taylor>{};
 
         const bool need_new_instance = !instance_ ||
                                        (instance_ && (instance_->max_m() < mmax ||
@@ -1395,7 +1395,7 @@ namespace libint2 {
       static const std::shared_ptr<GaussianGmEval>& instance(unsigned int mmax, Real precision) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static std::shared_ptr<GaussianGmEval> instance_ = 0;
+        static auto instance_ = std::shared_ptr<GaussianGmEval>{};
 
         const bool need_new_instance = !instance_ ||
                                        (instance_ && (instance_->max_m() < mmax ||

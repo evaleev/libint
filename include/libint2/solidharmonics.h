@@ -56,7 +56,14 @@ namespace libint2 {
           assert(l <= std::numeric_limits<signed char>::max());
           init();
         }
-        SolidHarmonicsCoefficients(SolidHarmonicsCoefficients&& other) = default;
+        // intel does not support "move ctor = default"
+        SolidHarmonicsCoefficients(SolidHarmonicsCoefficients&& other) :
+	  values_(std::move(other.values_)),
+  	  row_offset_(std::move(other.row_offset_)),
+	  colidx_(std::move(other.colidx_)),
+	  l_(other.l_) {
+	  }
+
         SolidHarmonicsCoefficients(const SolidHarmonicsCoefficients& other) = default;
 
         void init(unsigned char l) {
@@ -200,7 +207,6 @@ namespace libint2 {
             CtorHelperIter() = default;
             CtorHelperIter(unsigned int l) : l_(l) {}
             CtorHelperIter(const CtorHelperIter&) = default;
-            CtorHelperIter(CtorHelperIter&&) = default;
             CtorHelperIter& operator=(const CtorHelperIter& rhs) { l_ = rhs.l_; return *this; }
 
             CtorHelperIter& operator++() { ++l_; return *this; }

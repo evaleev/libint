@@ -103,9 +103,22 @@ namespace libint2 {
 
       Shell() = default;
       Shell(const Shell&) = default;
-      Shell(Shell&&) = default;
+      // intel does not support "move ctor = default"
+      Shell(Shell&& other) :
+        alpha(std::move(other.alpha)),
+	contr(std::move(other.contr)),
+	O(std::move(other.O)),
+	max_ln_coeff(std::move(other.max_ln_coeff)) {
+	}
       Shell& operator=(const Shell&) = default;
-      Shell& operator=(Shell&&) = default;
+      // intel does not support "move asgnmt = default"
+      Shell& operator=(Shell&& other) {
+	alpha = std::move(other.alpha);
+        contr = std::move(other.contr);
+        O = std::move(other.O);
+        max_ln_coeff = std::move(other.max_ln_coeff);
+        return *this;
+      }
       Shell(std::vector<real_t> _alpha,
             std::vector<Contraction> _contr,
             std::array<real_t, 3> _O) :
