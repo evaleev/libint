@@ -363,6 +363,8 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR1, _, BOOST_PP_ONEBODY_OPER
       std::vector<real_t> scratch_; // for transposes and/or transforming to solid harmonics
 
       void initialize() {
+        assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
+	
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
 
         scratch_.resize(nshellsets() * ncart_max * ncart_max);
@@ -1186,12 +1188,12 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       friend struct detail::TwoBodyEngineDispatcher<Kernel>;
 
       void initialize() {
+        assert(lmax_ <= LIBINT2_MAX_AM_ERI);
+        assert(deriv_order_ <= LIBINT2_DERIV_ERI_ORDER);
+	
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
         const auto max_shellpair_size = ncart_max * ncart_max;
         const auto max_shellset_size = max_shellpair_size * max_shellpair_size;
-
-        assert(lmax_ <= LIBINT2_MAX_AM_ERI);
-        assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
 
         switch(deriv_order_) {
 
