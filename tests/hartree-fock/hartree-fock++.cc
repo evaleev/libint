@@ -441,7 +441,7 @@ compute_1body_ints(const BasisSet& obs,
   const unsigned int nopers = libint2::OneBodyEngine::operator_traits<obtype>::nopers;
   result_type result; for(auto& r: result) r = Matrix::Zero(n,n);
 
-  // construct the overlap integrals engine
+  // construct the 1-body integrals engine
   std::vector<libint2::OneBodyEngine> engines(nthreads);
   engines[0] = libint2::OneBodyEngine(obtype, obs.max_nprim(), obs.max_l(), 0);
   // nuclear attraction ints engine needs to know where the charges sit ...
