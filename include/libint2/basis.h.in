@@ -118,6 +118,17 @@ namespace libint2 {
       const std::vector<size_t>& shell2bf() const {
         return shell2bf_;
       }
+      /// Computes the map from shells to the corresponding atoms in \c atoms. If no atom matches the origin of a shell, it is mapped to -1.
+      /// @note coordinates must match exactly, i.e. shell2atom[k] == l iff atoms[l].x == *this[k].O[0] && atoms[l].y == *this[k].O[1] &&  atoms[l].z == *this[k].O[2]
+      /// @return the map from shell index to the atom in the list \c atoms that coincides with its origin;
+      std::vector<long> shell2atom(const std::vector<Atom>& atoms) const {
+        std::vector<long> result(size(),-1);
+        for(const auto& s: *this) {
+          auto a = std::find_if(atoms.begin(), atoms.end(), [&s](const Atom& a){ return s.O[0] == a.x && s.O[1] == a.y && s.O[2] == a.z; } );
+          result.push_back( a != atoms.end() ? a - atoms.begin() : -1);
+        }
+        return result;
+      }
 
     private:
       std::string name_;
