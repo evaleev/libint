@@ -69,7 +69,7 @@ namespace libint2 {
 
   constexpr size_t num_geometrical_derivatives(size_t ncenter,
                                                size_t deriv_order) {
-    return (deriv_order > 0) ? num_geometrical_derivatives(ncenter, deriv_order-1) * (3*ncenter+deriv_order)/deriv_order : 1;
+    return (deriv_order > 0) ? (num_geometrical_derivatives(ncenter, deriv_order-1) * (3*ncenter+deriv_order))/deriv_order : 1;
   }
 
 #if defined(LIBINT2_SUPPORT_ONEBODY)
