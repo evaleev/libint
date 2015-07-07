@@ -278,7 +278,7 @@ void CR_XYZ_1_1<CGF1d<CartesianAxis_ ## elem>,CartesianMultipoleOper<1u>,EmptySe
                  GenIntegralSet_1_1<BasisFunctionType,OperType,EmptySet>> factory(this);                  \
     descr_m1.dec(0);  auto oper_m1 = OperType(descr_m1);                                                  \
     expr_ = factory.make_child(a,bp1,EmptySet(),oper_m1) +                                                \
-            Vector("BO")[CartesianAxis_ ## elem] * factory.make_child(a,b,EmptySet(),oper_m1);             \
+            Vector("BO")[CartesianAxis_ ## elem] * factory.make_child(a,b,EmptySet(),oper_m1);            \
   } else {                                                                                                \
     ChildFactory<ThisType,                                                                                \
                  GenIntegralSet_1_1<BasisFunctionType,OverlapOper,EmptySet>> sfactory(this);              \
