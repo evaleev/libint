@@ -529,11 +529,8 @@ int main(int argc, char** argv)
 #ifdef LIBINT_HAVE_LIBROOTS
   rysq::roots_finalize();
 #endif
-return 0 ;
 
-
-
-
+//the below times the Rys build by running it many times
   {
 timers.start(2);
 
