@@ -168,6 +168,14 @@ public:
 		os << "{" << ad[0] << ","  << ad[1] << "}";
 		return os;
 		}
+	
+	inline double reduce(VectorSIMD<double,2> a){
+		
+	       __m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
+	      double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+	      return new_eri_double;
+	}	
+
 
 
 template <typename Real>
@@ -322,6 +330,13 @@ public:
 		}
 
 
+	inline double reduce(VectorSIMD<double,3> a){
+	       __m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
+	      double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+	      return new_eri_double;
+	}	
+
+
 
 template <typename Real>
 class VectorSIMD<Real,4>{
@@ -474,7 +489,17 @@ public:
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << "}";
 		return os;
-		}template <typename Real>
+	}
+
+	inline double reduce(VectorSIMD<double,4> a){
+	       __m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
+	      double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+	      return new_eri_double;
+	}	
+
+
+
+template <typename Real>
 class VectorSIMD<Real,5>{
 public:
 		__m256d _avx0;
@@ -662,6 +687,16 @@ public:
 		return os;
 		}
 
+	inline double reduce(VectorSIMD<double,5> a){
+		__m256d mask = _mm256_set_pd(0,0,0,1); //this ensures that assumed zero
+							//elements were not written to
+		a._avx1 = _mm256_mul_pd(a._avx1,mask);
+		__m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
+		double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx1,a._avx1);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		return new_eri_double;
+	}	
 
 template <typename Real>
 class VectorSIMD<Real,6>{
@@ -855,6 +890,16 @@ public:
 		return os;
 		}
 
+	inline double reduce(VectorSIMD<double,6> a){
+		__m256d mask = _mm256_set_pd(0,0,1,1); //this ensures that assumed zero
+							//elements were not written to
+		a._avx1 = _mm256_mul_pd(a._avx1,mask);
+		__m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
+		double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx1,a._avx1);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		return new_eri_double;
+	}	
 
 template <typename Real>
 class VectorSIMD<Real,7>{
@@ -1036,6 +1081,16 @@ public:
 		return os;
 		}
 
+	inline double reduce(VectorSIMD<double,7> a){
+		__m256d mask = _mm256_set_pd(0,1,1,1); //this ensures that assumed zero
+							//elements were not written to
+		a._avx1 = _mm256_mul_pd(a._avx1,mask);
+		__m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
+		double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx1,a._avx1);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		return new_eri_double;
+	}	
 
 
 template <typename Real>
@@ -1218,7 +1273,17 @@ public:
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << ","  << ad[4] << ","  << ad[5] << ","  << ad[6] << ","  << ad[7] << "}";
 		return os;
-		}template <typename Real>
+		}
+
+	inline double reduce(VectorSIMD<double,8> a){
+		__m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
+		double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx1,a._avx1);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		return new_eri_double;
+	}	
+
+template <typename Real>
 class VectorSIMD<Real,9>{
 public:
 		__m256d _avx0;
@@ -1442,6 +1507,21 @@ public:
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << ","  << ad[4] << ","  << ad[5] << ","  << ad[6] << ","  << ad[7] << ","  << ad[8] << "}";
 		return os;
 		}
+
+
+	inline double reduce(VectorSIMD<double,9> a){
+		__m256d mask = _mm256_set_pd(0,0,0,1); //this ensures that assumed zero
+							//elements were not written to
+		a._avx2 = _mm256_mul_pd(a._avx2,mask);
+		__m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
+		double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx1,a._avx1);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx2,a._avx2);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		return new_eri_double;
+	}	
+
 
 
 template <typename Real>
@@ -1673,6 +1753,18 @@ public:
 		return os;
 		}
 
+	inline double reduce(VectorSIMD<double,10> a){
+		__m256d mask = _mm256_set_pd(0,0,1,1); //this ensures that assumed zero
+							//elements were not written to
+		a._avx2 = _mm256_mul_pd(a._avx2,mask);
+		__m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
+		double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx1,a._avx1);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx2,a._avx2);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		return new_eri_double;
+	}	
 
 template <typename Real>
 class VectorSIMD<Real,11>{
@@ -1883,6 +1975,18 @@ public:
 		return os;
 		}
 
+	inline double reduce(VectorSIMD<double,11> a){
+		__m256d mask = _mm256_set_pd(0,1,1,1); //this ensures that assumed zero
+							//elements were not written to
+		a._avx2 = _mm256_mul_pd(a._avx2,mask);
+		__m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
+		double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx1,a._avx1);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx2,a._avx2);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		return new_eri_double;
+	}	
 
 
 template <typename Real>
@@ -2094,4 +2198,16 @@ public:
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << ","  << ad[4] << ","  << ad[5] << ","  << ad[6] << ","  << ad[7] << ","  << ad[8] << ","  << ad[9] << ","  << ad[10] << ","  << ad[11] << "}";
 		return os;
-		}
+	}  
+
+
+
+	inline double reduce(VectorSIMD<double,12> a){
+		__m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
+		double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx1,a._avx1);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		s = _mm256_hadd_pd(a._avx2,a._avx2);
+		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		return new_eri_double;
+	}	

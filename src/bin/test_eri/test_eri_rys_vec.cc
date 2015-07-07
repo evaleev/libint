@@ -31,10 +31,10 @@
 #define _libint2_libint2types_h_
 //make sure the 4 lines below stay at line # 34-37 for timing script to work, or edit timing script
 #define LIBINT2_MAX_VECLEN 1
-constexpr unsigned int am0 = 2;
-constexpr unsigned int am1 = 2;
-constexpr unsigned int am2 = 2;
-constexpr unsigned int am3 = 2;
+constexpr unsigned int am0 = 1;
+constexpr unsigned int am1 = 1;
+constexpr unsigned int am2 = 1;
+constexpr unsigned int am3 = 1;
 constexpr unsigned int am_tot = am0 + am1 + am2 + am3;
 int bool_test = 0;
 constexpr size_t npts = am_tot / 2 + 1;
@@ -568,13 +568,12 @@ while(int_num < 1){
 		    auto zero = static_cast<unsigned int>(0);
 			    
 		   new_eri = gtg_x(zero,l0,l1,l2,l3) * gtg_y(zero,m0,m1,m2,m3) * gtg_z(zero,n0,n1,n2,n3);
-		   new_eri_double = 0;
-		   
+		   new_eri_double = reduce(new_eri); 
 		   //Write generated function to do this...
 		   //until the funciton is done for this
 		   //the below has to be edited 
 		   //for the number of points
-		   if(npts <=4){
+		/*   if(npts <=4){
 		       __m256d s = _mm256_hadd_pd(new_eri._avx0,new_eri._avx0);
 		       new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
 
@@ -585,7 +584,7 @@ while(int_num < 1){
 		       new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
 		       s = _mm256_hadd_pd(new_eri._avx1,new_eri._avx1);
 		       new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
-		   }
+		   }*/
 	/*	   
 		   else if(npts > 8 && npts <= 12){		
 		        __m256d s = _mm256_hadd_pd(new_eri._avx0,new_eri._avx0);
@@ -597,7 +596,7 @@ while(int_num < 1){
 		   }
 
 	*/	
-	          // std::cout<<"new eri = "<<new_eri_double<<std::endl;
+	           std::cout<<"new eri = "<<new_eri_double<<std::endl;
 		END_FOR_CART
 	END_FOR_CART
 	END_FOR_CART
