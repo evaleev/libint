@@ -29,7 +29,7 @@
 
 #ifndef _libint2_libint2types_h_
 #define _libint2_libint2types_h_
-//make sure the 4 lines below stay at line # 34-37 for timing script to work, or edit timing script
+
 #define LIBINT2_MAX_VECLEN 1
 constexpr unsigned int am0 = 2;
 constexpr unsigned int am1 = 2;
