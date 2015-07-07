@@ -64,9 +64,9 @@ namespace libint2 {
     /// Sets i-th function for particle p (does a dynamic cast inside)
     void set_member(const ConstructablePolymorphically&, unsigned int p, unsigned int i);
     /// Returns the number of BFS for particle p
-    const unsigned int num_members(unsigned int p) const;
+    unsigned int num_members(unsigned int p) const;
     /// Returns the number of particles
-    const unsigned int num_part() const;
+    unsigned int num_part() const;
     /// Implements Hashable::key()
     inline LIBINT2_UINT_LEAST64 key() const;
     /// key lies in range [0,max_key())
@@ -150,14 +150,14 @@ namespace libint2 {
     }
   
   template <class BFS>
-    const unsigned int
+    unsigned int
     VectorBraket<BFS>::num_members(unsigned int p) const
     {
       return bfs_.at(p).size();
     }
 
   template <class BFS>
-    const unsigned int
+    unsigned int
     VectorBraket<BFS>::num_part() const
     {
       return bfs_.size();
@@ -244,9 +244,9 @@ namespace libint2 {
     /// Sets i-th function for particle p (does a dynamic cast inside)
     void set_member(const ConstructablePolymorphically&, unsigned int p, unsigned int i=0);
     /// Returns the number of BFS for particle p
-    const unsigned int num_members(unsigned int p) const { assert(p<NP); return 1; }
+    unsigned int num_members(unsigned int p) const { assert(p<NP); return 1; }
     /// Returns the number of particles
-    const unsigned int num_part() const { return NP; }
+    unsigned int num_part() const { return NP; }
     /// Implements Hashable::key()
     inline LIBINT2_UINT_LEAST64 key() const;
     /// key lies in range [0,max_key())

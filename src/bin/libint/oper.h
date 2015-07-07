@@ -73,7 +73,7 @@ namespace libint2 {
       virtual int hermitian(int p) const =0;
 
       /// Number of operators in the set
-      virtual const unsigned int num_oper() const =0;
+      virtual unsigned int num_oper() const =0;
     };
 
   /** Oper is OperSet characterized by properties Props
@@ -157,7 +157,7 @@ namespace libint2 {
       /// GenOper is not a set
       typedef GenOper iter_type;
 
-      const unsigned int num_oper() const { return 1; };
+      unsigned int num_oper() const { return 1; };
       /// Implementation of Hashable::key()
       unsigned int key() const { return descr_.key(); }
       /// Range of key is [0,Descr::max_key)

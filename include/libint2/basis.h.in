@@ -19,13 +19,15 @@
 #ifndef _libint2_src_lib_libint_basis_h_
 #define _libint2_src_lib_libint_basis_h_
 
-#if __cplusplus <= 199711L
-# error "The simple Libint API requires C++11 support"
+#include <libint2/cxxstd.h>
+#if LIBINT2_CPLUSPLUS_STD < 2011
+# error "libint2/basis.h requires C++11 support"
 #endif
 
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <stdexcept>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -42,7 +44,14 @@ namespace libint2 {
     public:
       BasisSet() : name_(""), nbf_(-1), max_nprim_(0), max_l_(-1) {}
       BasisSet(const BasisSet&) = default;
-      BasisSet(BasisSet&&) = default;
+      BasisSet(BasisSet&& other) :
+        std::vector<libint2::Shell>(std::move(other)),
+        name_(std::move(other.name_)),
+	nbf_(other.nbf_),
+	max_nprim_(other.max_nprim_),
+	max_l_(other.max_l_),
+	shell2bf_(std::move(other.shell2bf_)) {
+      }
       ~BasisSet() = default;
 
       /// Construct from basis set name and vector of atoms
@@ -108,6 +117,17 @@ namespace libint2 {
       /// \note basis functions are ordered as shells, i.e. shell2bf[i] >= shell2bf[j] iff i >= j
       const std::vector<size_t>& shell2bf() const {
         return shell2bf_;
+      }
+      /// Computes the map from shells to the corresponding atoms in \c atoms. If no atom matches the origin of a shell, it is mapped to -1.
+      /// @note coordinates must match exactly, i.e. shell2atom[k] == l iff atoms[l].x == *this[k].O[0] && atoms[l].y == *this[k].O[1] &&  atoms[l].z == *this[k].O[2]
+      /// @return the map from shell index to the atom in the list \c atoms that coincides with its origin;
+      std::vector<long> shell2atom(const std::vector<Atom>& atoms) const {
+        std::vector<long> result(size(),-1);
+        for(const auto& s: *this) {
+          auto a = std::find_if(atoms.begin(), atoms.end(), [&s](const Atom& a){ return s.O[0] == a.x && s.O[1] == a.y && s.O[2] == a.z; } );
+          result.push_back( a != atoms.end() ? a - atoms.begin() : -1);
+        }
+        return result;
       }
 
     private:

@@ -17,10 +17,6 @@
  *
  */
 
-#if __cplusplus <= 199711L
-# error "Hartree-Fock test requires C++11 support"
-#endif
-
 // standard C++ headers
 #include <cmath>
 #include <iostream>
@@ -113,6 +109,7 @@ int main(int argc, char *argv[]) {
 
     // read geometry from a file; by default read from h2o.xyz, else take filename (.xyz) from the command line
     const auto filename = (argc > 1) ? argv[1] : "h2o.xyz";
+    const auto basisname = (argc > 2) ? argv[2] : "aug-cc-pVDZ";
     std::vector<Atom> atoms = read_geometry(filename);
 
     // set up thread pool
@@ -157,7 +154,11 @@ int main(int argc, char *argv[]) {
       }
     cout << "Nuclear repulsion energy = " << std::setprecision(15) << enuc << endl;
 
-    BasisSet obs("aug-cc-pVDZ", atoms);
+    libint2::Shell::do_enforce_unit_normalization(false);
+
+    BasisSet obs(basisname, atoms);
+    for(const auto& a: atoms)
+      std::cout << a.atomic_number << " " << a.x << " " << a.y << " " << a.z << std::endl;
     cout << "basis rank = " << obs.nbf() << endl;
 
     /*** =========================== ***/
@@ -440,7 +441,7 @@ compute_1body_ints(const BasisSet& obs,
   const unsigned int nopers = libint2::OneBodyEngine::operator_traits<obtype>::nopers;
   result_type result; for(auto& r: result) r = Matrix::Zero(n,n);
 
-  // construct the overlap integrals engine
+  // construct the 1-body integrals engine
   std::vector<libint2::OneBodyEngine> engines(nthreads);
   engines[0] = libint2::OneBodyEngine(obtype, obs.max_nprim(), obs.max_l(), 0);
   // nuclear attraction ints engine needs to know where the charges sit ...
@@ -658,6 +659,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
   engines[0] = coulomb_engine_type(obs.max_nprim(), obs.max_l(), 0);
   engines[0].set_precision(std::min(precision,std::numeric_limits<double>::epsilon())); // shellset-dependent precision control will likely break positive definiteness
                                        // stick with this simple recipe
+  std::cout << "compute_2body_fock:precision = " << precision << std::endl;
   std::cout << "TwoBodyEngine::precision = " << engines[0].precision() << std::endl;
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];

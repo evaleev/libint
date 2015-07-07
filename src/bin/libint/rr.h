@@ -109,7 +109,7 @@ namespace libint2 {
         however, for some ERI classes (ss|ps) the actual number may be
         smaller.
     */
-    virtual const unsigned int num_children() const =0;
+    virtual unsigned int num_children() const =0;
     /// Returns i-th child
     virtual SafePtr<DGVertex> rr_child(unsigned int i) const =0;
     /// Returns the target

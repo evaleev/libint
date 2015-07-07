@@ -400,11 +400,12 @@ namespace libint2 {
       return data_.cartindex[am][i][j];
     }
     // computes i j k from cartindex xyz
-    static void cartindex_to_ijk(unsigned int am,
-                                int xyz,
-                                int& i,
-                                int& j,
-                                int& k) {
+    template <typename I1, typename I2, typename I3>
+    static void cartindex_to_ijk(I1 am,
+                                 I2 xyz,
+                                 I3& i,
+                                 I3& j,
+                                 I3& k) {
       const typename OrderingData::Triple& ijk = data_.cartindex_to_ijk[am][xyz];
       i = ijk.i;
       j = ijk.j;

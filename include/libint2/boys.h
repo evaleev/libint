@@ -32,9 +32,12 @@
 #include <cassert>
 #include <vector>
 #include <algorithm>
+#include <limits>
+#include <type_traits>
 
 // some features require at least C++11
-#if __cplusplus > 199711L
+#include <libint2/cxxstd.h>
+#if LIBINT2_CPLUSPLUS_STD >= 2011
 #include <memory>
 #endif
 
@@ -265,12 +268,12 @@ namespace libint2 {
       }
 
       // some features require at least C++11
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
       static const std::shared_ptr<FmEval_Chebyshev3>& instance(int m_max, double = 0.0) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static std::shared_ptr<FmEval_Chebyshev3> instance_ = 0;
+        static auto instance_ = std::shared_ptr<FmEval_Chebyshev3>{};
 
         const bool need_new_instance = !instance_ || (instance_ && instance_->max_m() < m_max);
         if (need_new_instance) {
@@ -494,7 +497,10 @@ namespace libint2 {
 
         // get memory
         void* result;
-        posix_memalign(&result, 4*sizeof(Real), (mmax + 1) * NGRID * INTERPOLATION_ORDER * sizeof(Real));
+        if (posix_memalign(&result,
+                           4*sizeof(Real),
+                           (mmax + 1) * NGRID * INTERPOLATION_ORDER * sizeof(Real)))
+          throw std::bad_alloc();
         c = static_cast<Real*>(result);
 
         // make expansion coefficients for each grid value of T
@@ -547,12 +553,12 @@ namespace libint2 {
       }
 
       // some features require at least C++11
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
       static const std::shared_ptr<FmEval_Chebyshev7>& instance(int m_max, double = 0.0) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static std::shared_ptr<FmEval_Chebyshev7> instance_ = 0;
+        static auto instance_ = std::shared_ptr<FmEval_Chebyshev7>{};
 
         const bool need_new_instance = !instance_ || (instance_ && instance_->max_m() < m_max);
         if (need_new_instance) {
@@ -842,13 +848,13 @@ namespace libint2 {
       }
 
       // some features require at least C++11
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
       static const std::shared_ptr<FmEval_Taylor>& instance(unsigned int mmax, Real precision) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static std::shared_ptr<FmEval_Taylor> instance_ = 0;
+        static auto instance_ = std::shared_ptr<FmEval_Taylor>{};
 
         const bool need_new_instance = !instance_ ||
                                        (instance_ && (instance_->max_m() < mmax ||
@@ -1383,13 +1389,13 @@ namespace libint2 {
       }
 
       // some features require at least C++11
-#if __cplusplus > 199711L
+#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
       static const std::shared_ptr<GaussianGmEval>& instance(unsigned int mmax, Real precision) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static std::shared_ptr<GaussianGmEval> instance_ = 0;
+        static auto instance_ = std::shared_ptr<GaussianGmEval>{};
 
         const bool need_new_instance = !instance_ ||
                                        (instance_ && (instance_->max_m() < mmax ||

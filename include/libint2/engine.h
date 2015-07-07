@@ -19,14 +19,16 @@
 #ifndef _libint2_src_lib_libint_engine_h_
 #define _libint2_src_lib_libint_engine_h_
 
-#if __cplusplus <= 199711L
-# error "The simple Libint API requires C++11 support"
+#include <libint2/cxxstd.h>
+#if LIBINT2_CPLUSPLUS_STD < 2011
+# error "libint2/engine.h requires C++11 support"
 #endif
 
 #include <iostream>
 #include <array>
 #include <vector>
 #include <map>
+#include <memory>
 
 #include <libint2.h>
 #include <libint2/boys.h>
@@ -67,7 +69,7 @@ namespace libint2 {
 
   constexpr size_t num_geometrical_derivatives(size_t ncenter,
                                                size_t deriv_order) {
-    return (deriv_order > 0) ? num_geometrical_derivatives(ncenter, deriv_order-1) * (3*ncenter+deriv_order)/deriv_order : 1;
+    return (deriv_order > 0) ? (num_geometrical_derivatives(ncenter, deriv_order-1) * (3*ncenter+deriv_order))/deriv_order : 1;
   }
 
 #if defined(LIBINT2_SUPPORT_ONEBODY)
@@ -145,16 +147,26 @@ namespace libint2 {
         lmax_(max_l),
         deriv_order_(deriv_order),
         params_(enforce_params_type(type,params)),
-        fm_eval_(type == nuclear ? coulomb_core_eval_t::instance(2*max_l+deriv_order, 1e-25) : 0)
+        fm_eval_(type == nuclear ? coulomb_core_eval_t::instance(2*max_l+deriv_order, 1e-25) : decltype(fm_eval_){})
       {
         initialize();
       }
 
       /// move constructor
-      OneBodyEngine(OneBodyEngine&& other) = default;
+      // intel does not accept "move ctor = default"
+      OneBodyEngine(OneBodyEngine&& other) :
+        type_(other.type_),
+        primdata_(std::move(other.primdata_)),
+        lmax_(other.lmax_),
+        deriv_order_(other.deriv_order_),
+        params_(std::move(other.params_)),
+        fm_eval_(std::move(other.fm_eval_)),
+        scratch_(std::move(other.scratch_)) {
+      }
 
       /// (deep) copy constructor
       OneBodyEngine(const OneBodyEngine& other) :
+        type_(other.type_),
         primdata_(other.primdata_.size()),
         lmax_(other.lmax_),
         deriv_order_(other.deriv_order_),
@@ -167,17 +179,26 @@ namespace libint2 {
         finalize();
       }
 
-      /// move assignment
-      OneBodyEngine& operator=(OneBodyEngine&& other) = default;
+      /// move assignment is default
+      OneBodyEngine& operator=(OneBodyEngine&& other) {
+        type_ = other.type_;
+        primdata_ = std::move(other.primdata_);
+        lmax_ = other.lmax_;
+        deriv_order_ = other.deriv_order_;
+        params_ = std::move(other.params_);
+        fm_eval_ = std::move(other.fm_eval_);
+        scratch_ = std::move(other.scratch_);
+        return *this;
+      }
 
       /// (deep) copy assignment
       OneBodyEngine& operator=(const OneBodyEngine& other) {
+        type_ = other.type_;
         primdata_.resize(other.primdata_.size());
         lmax_ = other.lmax_;
         deriv_order_ = other.deriv_order_;
         params_ = other.params_;
         fm_eval_ = other.fm_eval_;
-        type_ = other.type_;
         initialize();
         return *this;
       }
@@ -342,6 +363,8 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR1, _, BOOST_PP_ONEBODY_OPER
       std::vector<real_t> scratch_; // for transposes and/or transforming to solid harmonics
 
       void initialize() {
+        assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
+	
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
 
         scratch_.resize(nshellsets() * ncart_max * ncart_max);
@@ -422,7 +445,7 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_ONEBODYENGINE_MCR3, 2, (BOOST_PP_ONEBO
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole1> {
       /// Cartesian coordinates of the origin with respect to which the dipole moment is defined
       typedef std::array<double, 3> oper_params_type;
-      static oper_params_type default_params() { return oper_params_type{0.0,0.0,0.0}; }
+      static oper_params_type default_params() { return oper_params_type{{0.0,0.0,0.0}}; }
       static constexpr unsigned int nopers = 4; //!< overlap + 3 dipole components
   };
   template <> struct OneBodyEngine::operator_traits<OneBodyEngine::emultipole2> {
@@ -736,7 +759,16 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       }
 
       /// move constructor
-      TwoBodyEngine(TwoBodyEngine&& other) = default;
+      // intel does not support "move ctor = default"
+      TwoBodyEngine(TwoBodyEngine&& other) :
+        primdata_(std::move(other.primdata_)),
+        spbra_(std::move(other.spbra_)), spket_(std::move(other.spket_)),
+        lmax_(other.lmax_), deriv_order_(other.deriv_order_),
+        precision_(other.precision_), ln_precision_(other.ln_precision_),
+        core_eval_(std::move(other.core_eval_)),
+        core_ints_params_(std::move(other.core_ints_params_)),
+        scratch_(std::move(other.scratch_)) {
+      }
 
       /// (deep) copy constructor
       TwoBodyEngine(const TwoBodyEngine& other) :
@@ -754,7 +786,18 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       }
 
       /// move assignment
-      TwoBodyEngine& operator=(TwoBodyEngine&& other) = default;
+      // intel does not support "move asgnmt = default"
+      TwoBodyEngine& operator=(TwoBodyEngine&& other) {
+        primdata_ = std::move(other.primdata_);
+        lmax_ = other.lmax_;
+        deriv_order_ = other.deriv_order_;
+        precision_ = other.precision_;
+        ln_precision_ = other.ln_precision_;
+        core_eval_ = std::move(other.core_eval_);
+        core_ints_params_ = std::move(other.core_ints_params_);
+        scratch_ = std::move(other.scratch_);
+        return *this;
+      }
 
       /// (deep) copy assignment
       TwoBodyEngine& operator=(const TwoBodyEngine& other)
@@ -1145,12 +1188,12 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       friend struct detail::TwoBodyEngineDispatcher<Kernel>;
 
       void initialize() {
+        assert(lmax_ <= LIBINT2_MAX_AM_ERI);
+        assert(deriv_order_ <= LIBINT2_DERIV_ERI_ORDER);
+	
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
         const auto max_shellpair_size = ncart_max * ncart_max;
         const auto max_shellset_size = max_shellpair_size * max_shellpair_size;
-
-        assert(lmax_ <= LIBINT2_MAX_AM_ERI);
-        assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
 
         switch(deriv_order_) {
 

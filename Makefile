@@ -13,7 +13,9 @@ ifeq ($(CXXGEN_SUPPORTS_CPP11),yes)
   ifeq ($(LIBINT_SUPPORTS_ERI),yes)
    ifeq ($(LIBINT_HAS_EIGEN),yes)
     ifeq ($(LIBINT_CONTRACTED_INTS),yes)
-     CHECKSUBDIRS += tests/hartree-fock
+     ifeq ($(LIBINT_SHELL_SET),1)
+      CHECKSUBDIRS += tests/hartree-fock
+     endif
     endif
    endif
   endif

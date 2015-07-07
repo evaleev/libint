@@ -62,7 +62,7 @@ namespace libint2 {
     virtual ~Uncontract_Integral() {}
 
     /// Implementation of RecurrenceRelation::num_children()
-    const unsigned int num_children() const { return children_.size(); };
+    unsigned int num_children() const { return children_.size(); };
     /// target() returns pointer to target
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer i-th child

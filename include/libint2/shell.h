@@ -19,9 +19,11 @@
 #ifndef _libint2_src_lib_libint_shell_h_
 #define _libint2_src_lib_libint_shell_h_
 
-#if __cplusplus <= 199711L
-# error "The simple Libint API requires C++11 support"
+#include <libint2/cxxstd.h>
+#if LIBINT2_CPLUSPLUS_STD < 2011
+# error "libint2/shell.h requires C++11 support"
 #endif
+
 
 #include <iostream>
 #include <array>
@@ -101,7 +103,22 @@ namespace libint2 {
 
       Shell() = default;
       Shell(const Shell&) = default;
-      Shell(Shell&&) = default;
+      // intel does not support "move ctor = default"
+      Shell(Shell&& other) :
+        alpha(std::move(other.alpha)),
+	contr(std::move(other.contr)),
+	O(std::move(other.O)),
+	max_ln_coeff(std::move(other.max_ln_coeff)) {
+	}
+      Shell& operator=(const Shell&) = default;
+      // intel does not support "move asgnmt = default"
+      Shell& operator=(Shell&& other) {
+	alpha = std::move(other.alpha);
+        contr = std::move(other.contr);
+        O = std::move(other.O);
+        max_ln_coeff = std::move(other.max_ln_coeff);
+        return *this;
+      }
       Shell(std::vector<real_t> _alpha,
             std::vector<Contraction> _contr,
             std::array<real_t, 3> _O) :
@@ -193,17 +210,22 @@ namespace libint2 {
       }
 
       /// @return "unit" Shell, with exponent=0. and coefficient=1., located at the origin
-      static Shell unit() {
-        libint2::Shell unitshell{
-                    {0.0}, // exponent
-                    {{0, false, {1.0}}},
-                    {{0.0, 0.0, 0.0}} // placed at origin
-                };
-        unitshell.renorm();
+      static const Shell& unit() {
+        static const Shell unitshell{make_unit()};
         return unitshell;
       }
 
     private:
+
+      // this makes a unit shell
+      struct make_unit{};
+      Shell(make_unit) :
+        alpha{0.0},                           // exponent = 0
+        contr{Contraction{0, false, {1.0}}},  // contraction coefficient = 1
+        O{{0.0, 0.0, 0.0}},                   // placed at origin
+        max_ln_coeff{0.0} {
+      }
+
       /// embeds normalization constants into contraction coefficients. Do this before computing integrals.
       /// \warning Must be done only once.
       /// \note this is now private

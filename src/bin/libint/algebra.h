@@ -96,7 +96,7 @@ namespace libint2 {
       /// Overloads DGVertex::add_exit_arc(). The default definition is used unless T = DGVertex (see algebra.cc)
       void add_exit_arc(const SafePtr<DGArc>& a);
       /// Implements DGVertex::size()
-      const unsigned int size() const { return 1; }
+      unsigned int size() const { return 1; }
       /// Implements DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const
       {

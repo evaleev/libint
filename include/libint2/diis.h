@@ -19,11 +19,15 @@
 #ifndef _libint2_src_lib_libint_diis_h_
 #define _libint2_src_lib_libint_diis_h_
 
-#if __cplusplus <= 199711L
-# error " Libint2 C++ API requires C++11 support"
+#include <libint2/cxxstd.h>
+#if LIBINT2_CPLUSPLUS_STD < 2011
+# error "libint2/diis.h requires C++11 support"
 #endif
 
 #include <deque>
+
+#include <Eigen/Core>
+#include <Eigen/QR>
 
 namespace libint2 {
 

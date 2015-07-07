@@ -130,7 +130,7 @@ namespace libint2 {
         return PtrComp::equiv(this,v);
       }
       /// Specialization of DGVertex::size()
-      virtual const unsigned int size() const;
+      virtual unsigned int size() const;
       /// Specialization of DGVertex::label()
       virtual const std::string& label() const;
       /// Specialization of DGVertex::id()
@@ -384,7 +384,7 @@ namespace libint2 {
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const unsigned int
+    unsigned int
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::size() const
     {
       if (size_ > 0)

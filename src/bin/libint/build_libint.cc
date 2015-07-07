@@ -342,42 +342,45 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
             }
           }
 
-          for(unsigned int op=0; op!=descrs.size(); ++op) {
+          // derivative index is the outermost (slowest running)
+          // operator component is second slowest
 
-            OperType oper(descrs[op]);
-
-            ////////////
-            // loop over unique derivative index combinations
-            ////////////
-            // skip 1 center -- all derivatives with respect to that center can be
-            // recovered using translational invariance conditions
-            // which center to skip? -> A = 0, B = 1
-            const unsigned int center_to_skip = 1;
-            DerivIndexIterator<1> diter(deriv_level);
-            bool last_deriv = false;
-            do {
-              BFType a(la);
-              BFType b(lb);
-
-              unsigned int center = 0;
-              for(unsigned int i=0; i<2; ++i) {
-                if (i == center_to_skip)
-                  continue;
-                const unsigned int ndir = std::is_same<BFType,CGShell>::value ? 3 : 1;
-                for(unsigned int xyz=0; xyz<ndir; ++xyz) {
-                  if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
-                  if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
-                }
-                ++center;
+          ////////////
+          // loop over unique derivative index combinations
+          ////////////
+          // skip 1 center -- all derivatives with respect to that center can be
+          // recovered using translational invariance conditions
+          // which center to skip? -> A = 0, B = 1
+          const unsigned int center_to_skip = 1;
+          DerivIndexIterator<1> diter(deriv_level);
+          bool last_deriv = false;
+          do {
+            BFType a(la);
+            BFType b(lb);
+            
+            unsigned int center = 0;
+            for(unsigned int i=0; i<2; ++i) {
+              if (i == center_to_skip)
+                continue;
+              const unsigned int ndir = std::is_same<BFType,CGShell>::value ? 3 : 1;
+              for(unsigned int xyz=0; xyz<ndir; ++xyz) {
+                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
               }
+              ++center;
+            }
+
+            // operator component loop
+            for(unsigned int op=0; op!=descrs.size(); ++op) {
+              OperType oper(descrs[op]);
 
               SafePtr<Onebody_sh_1_1> target = Onebody_sh_1_1::Instance(a,b,nullaux,oper);
               targets.push_back(target);
-              last_deriv = diter.last();
-              if (!last_deriv) diter.next();
-            } while (!last_deriv); // loop over derivatives
-
-          } // loop over operator components
+            } // loop over operator components
+            
+            last_deriv = diter.last();
+            if (!last_deriv) diter.next();
+          } while (!last_deriv); // loop over derivatives
 
           // shove all targets on the graph, IN ORDER
           for(auto t = targets.begin(); t!=targets.end(); ++t) {
@@ -555,7 +558,7 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
     BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR4, _, BOOST_PP_ONEBODY_TASK_LIST)
 #   undef BOOST_PP_ONEBODY_MCR4
 #elif defined(ONEBODY_OPT_AM)
-#define BOOST_PP_ONEBODY_MCR5(r,data,elem)          \
+#   define BOOST_PP_ONEBODY_MCR5(r,data,elem)          \
     cparams->max_am_opt( task_label(elem, d)     , ONEBODY_OPT_AM);
     BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR5, _, BOOST_PP_ONEBODY_TASK_LIST)
 #   undef BOOST_PP_ONEBODY_MCR5

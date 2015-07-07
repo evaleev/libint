@@ -535,10 +535,7 @@ void
 DirectedGraph::optimize_rr_out(const SafePtr<CodeContext>& context)
 {
   replace_rr_with_expr();
-  // TODO remove_trivial_arithmetics() seems to be broken when working with [Ti,G12], fix!
-#if 1
   remove_trivial_arithmetics();
-#endif
   handle_trivial_nodes(context);
   remove_disconnected_vertices();
   find_subtrees();
@@ -712,6 +709,7 @@ DirectedGraph::remove_trivial_arithmetics()
 {
   using libint2::prefactor::Scalar;
   const SafePtr< CTimeEntity<double> > const_one_point_zero = Scalar(1.0);
+  const SafePtr< CTimeEntity<double> > const_zero_point_zero = Scalar(0.0);
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
@@ -723,10 +721,15 @@ DirectedGraph::remove_trivial_arithmetics()
       typedef DGVertex::ArcSetType::const_iterator aciter;
       aciter a = oper_cast->first_exit_arc();
       SafePtr<DGVertex> left = (*a)->dest();  ++a;
-      SafePtr<DGVertex> right = (*a)->dest();
+      SafePtr<DGVertex> right = oper_cast->num_exit_arcs()>1 ? (*a)->dest() : left; // num_exit_arcs==1 is a corner case, e.g. 1*1
 
-      // 1.0 * x = x
-      if (left->equiv(const_one_point_zero) && left->num_entry_arcs() == 1) {
+      using libint2::algebra::OperatorTypes;
+      
+      // 1.0 * x = x || 0.0 + x = x
+      if (left->num_entry_arcs() == 1 &&
+          ((oper_cast->type() == OperatorTypes::Times && left->equiv(const_one_point_zero)) ||
+           (oper_cast->type() == OperatorTypes::Plus && left->equiv(const_zero_point_zero))    )
+         ) {
 #if DEBUG
         const bool success = remove_vertex_at((vptr),right);
         if (success)
@@ -735,9 +738,12 @@ DirectedGraph::remove_trivial_arithmetics()
         remove_vertex_at((vptr),right);
 #endif
       }
-
-      // x * 1.0 = x
-      if (right->equiv(const_one_point_zero) && right->num_entry_arcs() == 1) {
+      // x * 1.0 = x || x + 0.0 = x
+      else
+      if (right->num_entry_arcs() == 1 &&
+          ((oper_cast->type() == OperatorTypes::Times && right->equiv(const_one_point_zero)) ||
+           (oper_cast->type() == OperatorTypes::Plus && right->equiv(const_zero_point_zero))    )
+         ) {
 #if DEBUG
         const bool success = remove_vertex_at((vptr),left);
         if (success)
@@ -1116,7 +1122,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
     // if profiling is on, start the next timer, after stopping the current timer (if possible)
     if (registry()->current_timer() >= 0) {
       const int current_timer = registry()->current_timer();
-      def << context->macro_if("__cplusplus > 199711L");
+      def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
       if (current_timer > 0)
         def << "inteval->timers->stop(" << current_timer << ");" << std::endl;
       def << "inteval->timers->start(" << current_timer+1 << ");" << std::endl;
@@ -1171,7 +1177,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
     // if profiling is on, start the next timer, after stopping the current timer (if possible)
     if (registry()->current_timer() >= 0) {
       const int current_timer = registry()->current_timer();
-      def << context->macro_if("__cplusplus > 199711L");
+      def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
       def << "inteval->timers->stop(" << current_timer+1 << ");" << std::endl;
       if (current_timer > 0)
         def << "inteval->timers->start(" << current_timer << ");" << std::endl;
@@ -1183,7 +1189,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   // if profiling=on and the current timer is outermost, start it
   // if this is not outermost timer, it has been started outside of this function
   if (registry()->current_timer() == 0) {
-    def << context->macro_if("__cplusplus > 199711L");
+    def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
     def << "inteval->timers->start(0);" << std::endl;
     def << context->macro_endif();
   }
@@ -1194,7 +1200,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   // if profiling=on and the current timer is outermost, stop it
   // if this is not outermost timer, it is managed outside of this function
   if (registry()->current_timer() == 0) {
-    def << context->macro_if("__cplusplus > 199711L");
+    def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
     def << "inteval->timers->stop(0);" << std::endl;
     def << context->macro_endif();
   }

@@ -45,7 +45,7 @@ namespace libint2 {
   
   public:
     /// Returns a number of iterations (number of elements in a set over which to iterate).
-    virtual const unsigned int num_iter() const =0;
+    virtual unsigned int num_iter() const =0;
     /// Initializes the iterator.
     virtual void init() =0;
     /// Iterates to the next element. Only prefix form is provided.
@@ -87,7 +87,7 @@ namespace libint2 {
     cp_rettype pelem() const;
 
     /// Returns a number of iterations (number of elements in a set over which to iterate).
-    const unsigned int num_iter() const;
+    unsigned int num_iter() const;
     /// Initializes the iterator.
     void init();
     /// Iterates to the next element. Only prefix form is provided.
@@ -153,7 +153,7 @@ namespace libint2 {
     }
 
   template <class T, template <class> class P>
-    const unsigned int
+    unsigned int
     SubIteratorBase<T,P>::num_iter() const
     {
       return subobj_.size();

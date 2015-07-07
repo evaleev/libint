@@ -121,7 +121,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
     }
 
     /// Implementation of DGVertex::size()
-    const unsigned int size() const { return 1; }
+    unsigned int size() const { return 1; }
 
     /// Implementation of DGVertex::equiv()
     bool equiv(const SafePtr<DGVertex>& a) const
@@ -201,7 +201,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
         }
 
       /// Implementation of DGVertex::size()
-      const unsigned int size() const { return 1; }
+      unsigned int size() const { return 1; }
 
       /// Implementation of DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const
@@ -221,12 +221,12 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
       /// Implementation of DGVertex::label()
       const std::string& label() const
       {
-	return Entity::id();
+        return Entity::id();
       }
       /// Implementation of DGVertex::id()
       const std::string& id() const
       {
-	return label();
+        return label();
       }
       /// Implementation of DGVertex::description()
       std::string description() const
@@ -242,7 +242,13 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
 
       /// Implements Hashable::key()
       typename DGVertex::KeyReturnType key() const {
-        return static_cast<typename DGVertex::KeyReturnType>(value());
+        if (std::is_floating_point<T>::value) {
+          if (not std::is_same<T,double>::value)
+            throw std::runtime_error("CTimeEntity<Real> only supported when Real==double");
+          return static_cast<typename DGVertex::KeyReturnType>(*reinterpret_cast<const unsigned long*>(&value_));
+        }
+        else
+          return static_cast<typename DGVertex::KeyReturnType>(value());
       }
 
     private:

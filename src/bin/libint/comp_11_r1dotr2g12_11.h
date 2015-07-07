@@ -66,7 +66,7 @@ namespace libint2 {
     virtual ~CR_11_R1dotR2G12_11() {}
 
     /// Implementation of RecurrenceRelation::num_children()
-    const unsigned int num_children() const { return nchildren_; };
+    unsigned int num_children() const { return nchildren_; };
     /// target() returns pointer to the i-th child
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer to the i-th child
