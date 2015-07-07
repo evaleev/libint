@@ -784,6 +784,32 @@ namespace libint2 { namespace simd {
     return c;
   }
 
+  inline VectorAVXDouble operator+(int a, VectorAVXDouble b) {
+    if(a == 0){
+      return b;
+    } 
+    else {
+      VectorAVXDouble c;
+      VectorAVXDouble _a = (static_cast<double>(a));
+      c.d = _mm256_add_pd(_a.d,b.d);
+      return c;
+    }
+  }
+
+
+  inline VectorAVXDouble operator+(VectorAVXDouble a, int b) {
+    if(b == 0){
+      return a;
+    } 
+    else {
+      VectorAVXDouble c;
+      VectorAVXDouble _b = (static_cast<double>(b));
+      c.d = _mm256_add_pd(a.d,_b.d);
+      return c;
+    }
+  }
+
+
   inline VectorAVXDouble operator-(VectorAVXDouble a, VectorAVXDouble b) {
     VectorAVXDouble c;
     c.d = _mm256_sub_pd(a.d, b.d);

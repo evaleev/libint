@@ -4,7 +4,7 @@
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  *  the Free Software Foundation, either version 2 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
@@ -16,11 +16,11 @@
  *  along with this program.  If not, see http://www.gnu.org/licenses/.
  *
  */
-#include "../../../../../SIMD_wrapped_vector/template/simd_wrapped_vector.hpp"
+#include "simd_wrapped_vector.hpp"
 #include <iostream>
 #include <cmath>
-
-#include <rr.h>
+#include <x86intrin.h>
+//#include <rr.h>
 #include <iter.h>
 #include <deriv_iter.h>
 #include <policy_spec.h>
@@ -37,34 +37,37 @@ constexpr unsigned int am2 = 2;
 constexpr unsigned int am3 = 2;
 constexpr unsigned int am_tot = am0 + am1 + am2 + am3;
 int bool_test = 0;
+constexpr size_t npts = am_tot / 2 + 1;
 
+#define ALIGNED_STORAGE __attribute__((aligned(256)))
 
 #include <libint2/vector.h>
 #include <libint2/memory.h>
 #include <libint2/intrinsic_operations.h>
-#include <libint2/timer.h>
+#include "../../../../../libint_master/include/libint2/timer.h"
+
 typedef struct {
-    LIBINT2_REALTYPE AB_x[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE AB_y[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE AB_z[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE CD_x[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE CD_y[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE CD_z[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE R12kG12_pfac0_0_x[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE R12kG12_pfac0_0_y[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE R12kG12_pfac0_0_z[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE R12kG12_pfac0_1_x[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE R12kG12_pfac0_1_y[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE R12kG12_pfac0_1_z[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE R12kG12_pfac1_0[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE R12kG12_pfac1_1[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE R12kG12_pfac2[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE _00_GTG1d_00_x[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE _00_GTG1d_00_y[LIBINT2_MAX_VECLEN];
-    LIBINT2_REALTYPE _00_GTG1d_00_z[LIBINT2_MAX_VECLEN];
-    mutable LIBINT2_REALTYPE* stack;
-    mutable LIBINT2_REALTYPE* vstack;
-    mutable LIBINT2_REALTYPE* targets[1];
+    double AB_x[LIBINT2_MAX_VECLEN];
+    double AB_y[LIBINT2_MAX_VECLEN];
+    double AB_z[LIBINT2_MAX_VECLEN];
+    double CD_x[LIBINT2_MAX_VECLEN];
+    double CD_y[LIBINT2_MAX_VECLEN];
+    double CD_z[LIBINT2_MAX_VECLEN];
+    ALIGNED_STORAGE VectorSIMD<double,npts> R12kG12_pfac0_0_x[LIBINT2_MAX_VECLEN];
+    ALIGNED_STORAGE VectorSIMD<double,npts> R12kG12_pfac0_0_y[LIBINT2_MAX_VECLEN];
+    ALIGNED_STORAGE VectorSIMD<double,npts> R12kG12_pfac0_0_z[LIBINT2_MAX_VECLEN];
+    ALIGNED_STORAGE VectorSIMD<double,npts> R12kG12_pfac0_1_x[LIBINT2_MAX_VECLEN];
+    ALIGNED_STORAGE VectorSIMD<double,npts> R12kG12_pfac0_1_y[LIBINT2_MAX_VECLEN];
+    ALIGNED_STORAGE VectorSIMD<double,npts> R12kG12_pfac0_1_z[LIBINT2_MAX_VECLEN];
+    ALIGNED_STORAGE VectorSIMD<double,npts> R12kG12_pfac1_0[LIBINT2_MAX_VECLEN];
+    ALIGNED_STORAGE VectorSIMD<double,npts> R12kG12_pfac1_1[LIBINT2_MAX_VECLEN];
+    ALIGNED_STORAGE VectorSIMD<double,npts> R12kG12_pfac2[LIBINT2_MAX_VECLEN]; 
+    ALIGNED_STORAGE VectorSIMD<double,npts> _00_GTG1d_00_x[LIBINT2_MAX_VECLEN]; 
+    ALIGNED_STORAGE VectorSIMD<double,npts> _00_GTG1d_00_y[LIBINT2_MAX_VECLEN];
+    ALIGNED_STORAGE VectorSIMD<double,npts> _00_GTG1d_00_z[LIBINT2_MAX_VECLEN];
+    mutable VectorSIMD<double,npts>* stack;
+    mutable VectorSIMD<double,npts>* vstack;
+    mutable VectorSIMD<double,npts>* targets[LIBINT2_MAX_VECLEN];
     int veclen;
 #if LIBINT2_FLOP_COUNT
     mutable LIBINT2_UINT_LEAST64* nflops;
@@ -73,11 +76,10 @@ typedef struct {
 } Libint_t;
 #endif
 
-#include <VRR_GTG_1d_xx_xx.h>
+#include <VRR_GTG_1d_xx_xx_vec.h>
 #include <libint/util.h>
 #include <libint/deriv_iter.h>
 #include <test_eri/eri.h>
-
 #ifdef LIBINT_HAVE_LIBROOTS
 # include <roots/roots.hpp>
 #endif
@@ -129,7 +131,7 @@ namespace libint2 {
     public:
       Tensor() = default;
       Tensor(const Tensor&) = default;
-      Tensor(Tensor&&) = default;
+ //     Tensor(Tensor&&) = default;
       ~Tensor() = default;
 
       template <class ... Dims> Tensor(Dims ... dims) : dims_{ std::forward<Dims>(dims)... } {
@@ -182,6 +184,7 @@ libint2::FmEval_Taylor<double,7> fmeval_taylor(28, 1e-15);
 
 int main(int argc, char** argv)
 {
+std::cout<<"number of points"<<npts<<endl;
 #ifdef LIBINT_HAVE_LIBROOTS
   rysq::roots_initialize();
 #endif
@@ -189,7 +192,8 @@ int main(int argc, char** argv)
   libint2::Timers<3> timers; // 0 - roots/weights, 1 - 2d build, 2 - 6d build
   timers.set_now_overhead(25);
 
-  constexpr std::array<unsigned int, 4> am{am0,am1,am2,am3};
+  //constexpr std::array<unsigned int, 4> am = {am0,am1,am2,am3};
+	unsigned int am[] = {am0,am1,am2,am3};
 
   const uint veclen = 1;
   // for now hardwire contraction length to 1
@@ -205,14 +209,14 @@ int main(int argc, char** argv)
   CGShell sh2(am[2]);
   CGShell sh3(am[3]);
 
-  const std::array<double,3> A{0.1, 0.4, 0.8};
-  const std::array<double,3> B{0.2, 0.5, 0.9};
-  const std::array<double,3> C{0.3, 0.6, 1.0};
-  const std::array<double,3> D{0.4, 0.7, 1.1};
-  const std::vector<double> alpha0{1};
-  const std::vector<double> alpha1{2};
-  const std::vector<double> alpha2{3};
-  const std::vector<double> alpha3{4};
+  const std::array<double,3> A = {0.1, 0.4, 0.8};
+  const std::array<double,3> B = {0.2, 0.5, 0.9};
+  const std::array<double,3> C = { 0.3, 0.6, 1.0};
+  const std::array<double,3> D = {0.4, 0.7, 1.1};
+  const std::vector<double> alpha0 = {1};
+  const std::vector<double> alpha1 = {2};
+  const std::vector<double> alpha2 = {3};
+  const std::vector<double> alpha3 = {4};
   const std::vector<double> c0{1};
   const std::vector<double> c1{1};
   const std::vector<double> c2{1};
@@ -238,16 +242,17 @@ int main(int argc, char** argv)
   //------------------------------------------------------
   // compute recurrence prefactors, Rys roots and weights
   //------------------------------------------------------
-  constexpr size_t am_tot = am0 + am1 + am2 + am3;
-  constexpr size_t npts = am_tot/2 + 1;
+//  constexpr size_t am_tot = am0 + am1 + am2 + am3;
+//  constexpr size_t npts = am_tot/2 + 1;
 
-  std::vector<Libint_t> erieval(contrdepth4 * npts); // data for each root will be held in its own Libint_t instance
+  std::vector<Libint_t> erieval(contrdepth4 + 1);
 #if LIBINT2_FLOP_COUNT
   for(auto& v:erieval) { v.nflops = new LIBINT2_UINT_LEAST64; v.nflops[0] = 0; }
 #endif
 
   /// prepare to compute 2-dimensional ints for quadrature point \c pt
-  auto prep_data = [=](Libint_t* ev, Timers<3>& timers) {
+  auto prep_data = [=,&erieval](Timers<3>& timers) {
+    auto ev = erieval.begin();
     const auto a0 = alpha0[p0];
     const auto a1 = alpha1[p1];
     const auto a2 = alpha2[p2];
@@ -282,15 +287,18 @@ int main(int argc, char** argv)
     const auto pfac = 2 * sqrt(rho) * oosqrtpi * k12 * c0[p0] * c1[p1] * c2[p2] * c3[p3];
 
     // compute roots and weights for linear polynomial
-    LIBINT2_REALTYPE gammas[20]; // gamma = t^2
-    LIBINT2_REALTYPE weights[20];
+    LIBINT2_REALTYPE gammas[npts]; // gamma = t^2
+    LIBINT2_REALTYPE weights[npts];
 
     timers.start(0);
+    
 #ifdef LIBINT_HAVE_LIBROOTS
     {
       int32_t n = npts;
       rysq_roots(&n, const_cast<double*>(&T), &gammas[0], &weights[0]);
     }
+    VectorSIMD<double,npts> gamma_vec(gammas);
+    VectorSIMD<double,npts> weight_vec(weights);
 #else
     assert(npts == 1);
     double Fm[2];
@@ -301,33 +309,52 @@ int main(int argc, char** argv)
 
     timers.stop(0);
 
-    for(auto pt=0; pt!=npts; ++pt, ++ev) {
-      std::cout << pt << ": " << " t=" << gammas[pt] << " w=" << weights[pt] << std::endl;
-      ev->_00_GTG1d_00_x[0] = ev->_00_GTG1d_00_y[0] = \
-	      ev->_00_GTG1d_00_z[0] = M_PI * sqrt(oogammap * oogammaq);
+    
+      std::cout  << ": " << " t=" << gamma_vec << " w=" << weight_vec << std::endl;
 
+      VectorSIMD<double,npts> vals; 
+      vals = 0.001;
+      std::cout<<vals<<std::endl;
+      vals = 0.0002;
+      std::cout<<vals;
+      std::cout<<ev->_00_GTG1d_00_x[0]<<std::endl;
+
+      ev->_00_GTG1d_00_x[0] = M_PI * sqrt(oogammap * oogammaq);
+      ev->_00_GTG1d_00_y[0] = M_PI * sqrt(oogammap * oogammaq);
+      ev->_00_GTG1d_00_z[0] = M_PI * sqrt(oogammap * oogammaq);
+      std::cout<<"made it even further"<<std::endl;
       // fold all extra factors into the x-axis integral
-      ev->_00_GTG1d_00_x[0] *= pfac * weights[pt];
+      ev->_00_GTG1d_00_x[0] = pfac * weight_vec * ev->_00_GTG1d_00_x[0];
 
       // compute VRR prefactors
-      const auto gamma_o_gammapq = gammas[pt] * oogammapq;
-      const auto gammap_gamma_o_gammapq = gammap * gamma_o_gammapq;
-      const auto gammaq_gamma_o_gammapq = gammaq * gamma_o_gammapq;
+      VectorSIMD<double,npts> gamma_o_gammapq = gamma_vec * oogammapq;
+      VectorSIMD<double,npts> gammap_gamma_o_gammapq = gammap * gamma_o_gammapq;
+      VectorSIMD<double,npts> gammaq_gamma_o_gammapq = gammaq * gamma_o_gammapq;
 
       // C_00 in RDK
-      ev->R12kG12_pfac0_0_x[0] = (P[0]-A[0]) - gammaq_gamma_o_gammapq * PQx;
-      ev->R12kG12_pfac0_0_y[0] = (P[1]-A[1]) - gammaq_gamma_o_gammapq * PQy;
-      ev->R12kG12_pfac0_0_z[0] = (P[2]-A[2]) - gammaq_gamma_o_gammapq * PQz;
+      //
+      VectorSIMD<double,npts> PA( P[0] - A[0]); 
+      ev->R12kG12_pfac0_0_x[0] = PA - gammaq_gamma_o_gammapq * PQx;
+      PA = P[1] - A[1];
+      ev->R12kG12_pfac0_0_y[0] = PA - gammaq_gamma_o_gammapq * PQy;
+      PA = P[2] - A[2];
+      ev->R12kG12_pfac0_0_z[0] = PA - gammaq_gamma_o_gammapq * PQz;
       // C'_00 in RDK
-      ev->R12kG12_pfac0_1_x[0] = (Q[0]-C[0]) + gammap_gamma_o_gammapq * PQx;
-      ev->R12kG12_pfac0_1_y[0] = (Q[1]-C[1]) + gammap_gamma_o_gammapq * PQy;
-      ev->R12kG12_pfac0_1_z[0] = (Q[2]-C[2]) + gammap_gamma_o_gammapq * PQz;
 
-      ev->R12kG12_pfac1_0[0] = 0.5 * oogammap * (1 - gammaq_gamma_o_gammapq); // B_10 in RDK
-      ev->R12kG12_pfac1_1[0] = 0.5 * oogammaq * (1 - gammap_gamma_o_gammapq); // B'_01 in RDK
+      VectorSIMD<double,npts> QC(Q[0] - C[0]);
+      ev->R12kG12_pfac0_1_x[0] = QC + gammap_gamma_o_gammapq * PQx;
+      QC = Q[1] - C[1];
+      ev->R12kG12_pfac0_1_y[0] = QC + gammap_gamma_o_gammapq * PQy;
+      QC = Q[2] - C[2];
+      ev->R12kG12_pfac0_1_z[0] = QC + gammap_gamma_o_gammapq * PQz;
+      
+      VectorSIMD<double,npts> ones(1);
+      ev->R12kG12_pfac1_0[0] = 0.5 * oogammap * (ones - gammaq_gamma_o_gammapq); // B_10 in RDK
+      ev->R12kG12_pfac1_0[0] = 0.5 * oogammap * (ones - gammaq_gamma_o_gammapq); // B_10 in RDK
+      ev->R12kG12_pfac1_1[0] = 0.5 * oogammaq * (ones - gammap_gamma_o_gammapq); // B'_01 in RDK
 
       ev->R12kG12_pfac2[0] = 0.5 * gamma_o_gammapq; // B_00 in RDK
-
+      std::cout <<"R12kG12: "<< ev->R12kG12_pfac2[0]<<std::endl;
       // horizontal RR prefactors
       ev->AB_x[0] = A[0]-B[0];
       ev->AB_y[0] = A[1]-B[1];
@@ -335,59 +362,33 @@ int main(int argc, char** argv)
       ev->CD_x[0] = C[0]-D[0];
       ev->CD_y[0] = C[1]-D[1];
       ev->CD_z[0] = C[2]-D[2];
-    }
+    
 
   };
 
-#if LIBINT2_REALTYPE == VectorAVXDouble
-    
-#endif
+  
 
 
   // prepare to compute 2-dimensional ints
   typedef LIBINT2_REALTYPE real_t;
-  Tensor<real_t> gtg_x{npts,am[0]+1,am[1]+1,am[2]+1,am[3]+1};
-  Tensor<real_t> gtg_y{npts,am[0]+1,am[1]+1,am[2]+1,am[3]+1};
-  Tensor<real_t> gtg_z{npts,am[0]+1,am[1]+1,am[2]+1,am[3]+1};
-  prep_data(&erieval[0], timers);
+  Tensor< VectorSIMD<double,npts> > gtg_x{1u,am[0]+1,am[1]+1,am[2]+1,am[3]+1};
+  Tensor< VectorSIMD<double,npts> > gtg_y{1u,am[0]+1,am[1]+1,am[2]+1,am[3]+1};
+  Tensor< VectorSIMD<double,npts> > gtg_z{1u,am[0]+1,am[1]+1,am[2]+1,am[3]+1};
+  prep_data(timers);
   LIBINT2_UINT_LEAST64 nflops_build{0};
   timers.start(1);
-  for(size_t pt = 0; pt!=npts; ++pt) {
-    VRR_GTG_1d_xx_xx<CartesianAxis_X,am0,am1,am2,am3,false>::compute(&erieval[pt],
-                                                                     gtg_x.data(pt),
-                                                                     erieval[pt]._00_GTG1d_00_x);
-    VRR_GTG_1d_xx_xx<CartesianAxis_Y,am0,am1,am2,am3,false>::compute(&erieval[pt],
-                                                                     gtg_y.data(pt),
-                                                                     erieval[pt]._00_GTG1d_00_y);
-    VRR_GTG_1d_xx_xx<CartesianAxis_Z,am0,am1,am2,am3,false>::compute(&erieval[pt],
-                                                                     gtg_z.data(pt),
-                                                                     erieval[pt]._00_GTG1d_00_z);
+  
+  VRR_GTG_1d_xx_xx<CartesianAxis_X,am0,am1,am2,am3,false>::compute(&erieval[0],
+                                                                     gtg_x.data(0),
+                                                                     erieval[0]._00_GTG1d_00_x);
+  VRR_GTG_1d_xx_xx<CartesianAxis_Y,am0,am1,am2,am3,false>::compute(&erieval[0],
+                                                                     gtg_y.data(0),
+                                                                     erieval[0]._00_GTG1d_00_y);
+  VRR_GTG_1d_xx_xx<CartesianAxis_Z,am0,am1,am2,am3,false>::compute(&erieval[0],
+                                                                     gtg_z.data(0),
+                                                                     erieval[0]._00_GTG1d_00_z);
 
-  }
-
-  /*
-  {
-  	unsigned int x0,y0,z0;
-	FOR_CART(x0,y0,z0,am0)
-		unsigned int x1,y1,z1;
-		FOR_CART(x1,y1,z1,am1)
-			unsigned int x2,y2,z2;
-			FOR_CART(x2,y2,z2,am2)
-				unsigned int x3,y3,z3;
-				FOR_CART(x3,y3,z3,am3)
-				//	LIBINT2_REALTYPE new_eri = 0;
-				//	for(uint pt=0; pt!=npts; ++pt) { 							//I think I want to time this... ?
-        			//		new_eri += gtg_x(pt,x0,x1,x2,x3) * gtg_y(pt,y0,y1,y2,y3) * gtg_z(pt,z0,z1,z2,z3);
-           			//	}	
-					std::cout<<x0<<x1<<x2<<x3<<" "<<y0<<y1<<y2<<y3<<" "<<z0<<z1<<z2<<z3<<std::endl;
-				END_FOR_CART
-			END_FOR_CART		
-		END_FOR_CART
-	END_FOR_CART
-
-  }
-  */
-
+/*
   std::cout<<"hello"<<std::endl;
 
 
@@ -403,6 +404,7 @@ int main(int argc, char** argv)
     cout << " deriv order = " << deriv_order;
   }
   cout << endl;
+
 
   bool success = true;
   int ijkl = 0;
@@ -478,7 +480,6 @@ int main(int argc, char** argv)
                                                    l2,m2,n2,a2,Cref,
                                                    l3,m3,n3,a3,Dref,
                                                    0);
-		      std::cout<<ref_eri[di]<<std::endl;
                       last_deriv = diter.last();
                       if (!last_deriv) diter.next();
                     } while (!last_deriv);
@@ -499,8 +500,7 @@ int main(int argc, char** argv)
                 new_eri += gtg_x(pt,l0,l1,l2,l3) * gtg_y(pt,m0,m1,m2,m3) * gtg_z(pt,n0,n1,n2,n3);
               }
 	      asm("#end of loop over points");
-	      std::cout <<"new eri = " <<new_eri<<std::endl;
-	      nflops_build += npts * 3;
+              nflops_build += npts * 3;
 
               if ( abs(ref_eri[di] - libint2::cast<LIBINT2_REF_REALTYPE>(new_eri)) > 1.0E-10 && bool_test) {
                 std::cout << "Elem " << ijkl << " di= " << di << " v=" << v
@@ -511,12 +511,14 @@ int main(int argc, char** argv)
                 success = false;
               }
             }
+	    
 
           } // end of vector loop
         }
       }
     }
   }
+
 
   if(bool_test)
   	cout << "test " << (success ? "ok" : "failed") << endl;
@@ -529,19 +531,16 @@ int main(int argc, char** argv)
 #ifdef LIBINT_HAVE_LIBROOTS
   rysq::roots_finalize();
 #endif
-return 0 ;
-
-
-
-
+*/
   {
 timers.start(2);
 
-const int max_num_ints = 1000000000/(nflops_build);
+
 int int_num = 0;
 
-LIBINT2_REALTYPE new_eri = 0;
-while(int_num < max_num_ints){
+VectorSIMD<double,npts> new_eri(0);
+double new_eri_double = 0;
+while(int_num < 1){
     int x0,y0,z0;
     FOR_CART(x0,y0,z0,am0)
       int x1,y1,z1;
@@ -551,25 +550,54 @@ while(int_num < max_num_ints){
 		int x3,y3,z3;
 		FOR_CART(x3,y3,z3,am3)
 		//	std::cout<<x0<<y1<<z1<<" "<<x1<<y1<<z1<<" "<<x2<<y2<<z2<<" "<<x3<<y3<<z3<<std::endl;
-			 for(uint pt=0; pt!=npts; ++pt) { 
-			
-				auto l0 = static_cast<unsigned int>(x0);
-				auto l1 = static_cast<unsigned int>(x1);
-				auto l2 = static_cast<unsigned int>(x2);
-				auto l3 = static_cast<unsigned int>(x3);	
+		    auto l0 = static_cast<unsigned int>(x0);
+		    auto l1 = static_cast<unsigned int>(x1);
+		    auto l2 = static_cast<unsigned int>(x2);
+		    auto l3 = static_cast<unsigned int>(x3);	
 				
-				auto m0 = static_cast<unsigned int>(y0);
-				auto m1 = static_cast<unsigned int>(y1);
-				auto m2 = static_cast<unsigned int>(y2);
-				auto m3 = static_cast<unsigned int>(y3);
+       		    auto m0 = static_cast<unsigned int>(y0);
+		    auto m1 = static_cast<unsigned int>(y1);
+		    auto m2 = static_cast<unsigned int>(y2);
+		    auto m3 = static_cast<unsigned int>(y3);
 				
-				auto n0 = static_cast<unsigned int>(z0);
-				auto n1 = static_cast<unsigned int>(z1);
-				auto n2 = static_cast<unsigned int>(z2);
-				auto n3 = static_cast<unsigned int>(z3);
+		    auto n0 = static_cast<unsigned int>(z0);
+		    auto n1 = static_cast<unsigned int>(z1);
+		    auto n2 = static_cast<unsigned int>(z2);
+		    auto n3 = static_cast<unsigned int>(z3);
+		
+		    auto zero = static_cast<unsigned int>(0);
+			    
+		   new_eri = gtg_x(zero,l0,l1,l2,l3) * gtg_y(zero,m0,m1,m2,m3) * gtg_z(zero,n0,n1,n2,n3);
+		   new_eri_double = 0;
+		   
+		   //Write generated function to do this...
+		   //until the funciton is done for this
+		   //the below has to be edited 
+		   //for the number of points
+		   if(npts <=4){
+		       __m256d s = _mm256_hadd_pd(new_eri._avx0,new_eri._avx0);
+		       new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
 
-				new_eri += gtg_x(pt,l0,l1,l2,l3) * gtg_y(pt,m0,m1,m2,m3) * gtg_z(pt,n0,n1,n2,n3);		               
-	               }
+		   }
+		   
+		   else if(npts >4 && npts <=8){
+		        __m256d s = _mm256_hadd_pd(new_eri._avx0,new_eri._avx0);
+		       new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+		       s = _mm256_hadd_pd(new_eri._avx1,new_eri._avx1);
+		       new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		   }
+	/*	   
+		   else if(npts > 8 && npts <= 12){		
+		        __m256d s = _mm256_hadd_pd(new_eri._avx0,new_eri._avx0);
+		       new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
+		       s = _mm256_hadd_pd(new_eri._avx1,new_eri._avx1);
+		       new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		       s = _mm256_hadd_pd(new_eri._avx2,new_eri._avx2);
+		       new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
+		   }
+
+	*/	
+	          // std::cout<<"new eri = "<<new_eri_double<<std::endl;
 		END_FOR_CART
 	END_FOR_CART
 	END_FOR_CART
@@ -580,10 +608,10 @@ timers.stop(2);
 std::cout<<new_eri<<endl;
 
 
-cout<<"6d build time per shell set: "<<timers.read(2)/max_num_ints<<std::endl;
+//cout<<"6d build time per shell set: "<<timers.read(2)/max_num_ints<<std::endl;
   }
 
-  return success ? 0 : 1;
+  return 0 ;
 }
 
 
