@@ -401,7 +401,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
             eval_label = oss.str();
           }
 
-          std::cout << "working on " << eval_label << " ... ";
+          std::cout << "working on " << eval_label << " ... "; std::cout.flush();
 
           std::string prefix(cparams->source_directory());
           std::deque<std::string> decl_filenames;
@@ -1001,7 +1001,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             label += abcd_label;
           }
 
-          std::cout << "working on " << label << " ... ";
+          std::cout << "working on " << label << " ... "; std::cout.flush();
 
           std::string prefix(cparams->source_directory());
           std::deque<std::string> decl_filenames;
