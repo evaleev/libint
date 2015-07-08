@@ -293,7 +293,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
 
           // skip s|s overlap and elecpot integrals -- no need to involve LIBINT here
           if (deriv_level == 0 && la == 0 && lb == 0 &&
-              (std::is_same<OperSet,OverlapOper>::value ||
+              (label == "overlap" ||
                std::is_same<OperSet,ElecPotOper>::value)
              )
             continue;
@@ -325,13 +325,16 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
             descrs.resize(0);
 
             // parse the label ... 1emultipole means include multipoles of order 0 (overlap) and 1 (dipole)
+            // label == "overlap" is the corner case
             unsigned int max_multipole_order = 0;
-            auto key_pos = label.find("emultipole");
-            assert(key_pos != std::string::npos);
-            std::string tmp = label; tmp.erase(key_pos,std::string::npos);
-            istringstream iss(tmp);
-            iss >> max_multipole_order;
-            assert(max_multipole_order > 0);
+            if (label != "overlap") {
+              auto key_pos = label.find("emultipole");
+              assert(key_pos != std::string::npos);
+              std::string tmp = label; tmp.erase(key_pos,std::string::npos);
+              istringstream iss(tmp);
+              iss >> max_multipole_order;
+              assert(max_multipole_order > 0);
+            }
             // iterate over operators and construct their descriptors
             for(int multipole_order=0; multipole_order<=max_multipole_order; ++multipole_order) {
               // we iterate over them same way as over cartesian Gaussian shells
@@ -469,7 +472,7 @@ void try_main (int argc, char* argv[])
                                      "2emultipole",           \
                                      "3emultipole"            \
                                     )
-#define BOOST_PP_ONEBODY_TASK_OPER_TUPLE (OverlapOper,                    \
+#define BOOST_PP_ONEBODY_TASK_OPER_TUPLE (CartesianMultipoleOper<3u>,     \
                                           KineticOper,                    \
                                           ElecPotOper,                    \
                                           CartesianMultipoleOper<3u>,     \
