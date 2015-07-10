@@ -51,6 +51,9 @@
 // N.B. integral engine timings are controled in engine.h
 //#define REPORT_INTEGRAL_TIMINGS
 
+// uncomment only if you are Ed
+//#define ENABLE_DERIV_INTS
+
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         Matrix;  // import dense, dynamically sized Matrix type from Eigen;
                  // this is a matrix with row-major storage (http://en.wikipedia.org/wiki/Row-major_order)
@@ -70,6 +73,13 @@ template <libint2::OneBodyEngine::operator_type obtype>
 std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>
 compute_1body_ints(const BasisSet& obs,
                    const std::vector<Atom>& atoms = std::vector<Atom>());
+#ifdef ENABLE_DERIV_INTS
+template <libint2::OneBodyEngine::operator_type obtype>
+std::vector<std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>>
+compute_1body_ints(const BasisSet& obs,
+		   unsigned int deriv_order,
+                   const std::vector<Atom>& atoms = std::vector<Atom>());
+#endif
 Matrix compute_schwartz_ints(const BasisSet& obs);
 Matrix compute_2body_fock(const BasisSet& obs,
                           const Matrix& D,
@@ -320,6 +330,11 @@ int main(int argc, char *argv[]) {
 
     printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
 
+#ifdef ENABLE_DERIV_INTS
+    // compute forces
+    auto S_deriv = compute_1body_ints<libint2::OneBodyEngine::overlap>(obs, 1);
+#endif
+    
     libint2::cleanup(); // done with libint
 
   } // end of try block; if any exceptions occurred, report them and exit cleanly
@@ -503,6 +518,98 @@ compute_1body_ints(const BasisSet& obs,
 
   return result;
 }
+
+#ifdef ENABLE_DERIV_INTS
+template <libint2::OneBodyEngine::operator_type obtype>
+std::vector<std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>>
+compute_1body_ints(const BasisSet& obs,
+		   unsigned int deriv_order,
+                   const std::vector<Atom>& atoms)
+{
+  const auto n = obs.nbf();
+  const auto nshells = obs.size();
+#ifdef _OPENMP
+  const auto nthreads = omp_get_max_threads();
+#else
+  const auto nthreads = 1;
+#endif
+  typedef std::vector<std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>> result_type;
+  const unsigned int nopers = libint2::OneBodyEngine::operator_traits<obtype>::nopers;
+  const auto nderiv = libint2::num_geometrical_derivatives(atoms.size(),
+							   deriv_order);
+  result_type result(nderiv);
+  for(auto& c: result)
+    for(auto& r: c)
+      r = Matrix::Zero(n,n);
+
+  // construct the 1-body integrals engine
+  std::vector<libint2::OneBodyEngine> engines(nthreads);
+  engines[0] = libint2::OneBodyEngine(obtype, obs.max_nprim(), obs.max_l(), deriv_order);
+  // nuclear attraction ints engine needs to know where the charges sit ...
+  // the nuclei are charges in this case; in QM/MM there will also be classical charges
+  if (obtype == libint2::OneBodyEngine::nuclear) {
+    std::vector<std::pair<double,std::array<double,3>>> q;
+    for(const auto& atom : atoms) {
+      q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
+    }
+    engines[0].set_params(q);
+  }
+  for(size_t i=1; i!=nthreads; ++i) {
+    engines[i] = engines[0];
+  }
+
+  auto shell2bf = obs.shell2bf();
+  auto shell2atom = obs.shell2atom(atoms);
+
+#ifdef _OPENMP
+  #pragma omp parallel
+#endif
+  {
+#ifdef _OPENMP
+    auto thread_id = omp_get_thread_num();
+#else
+    auto thread_id = 0;
+#endif
+
+    // loop over unique shell pairs, {s1,s2} such that s1 >= s2
+    // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
+    for(auto s1=0l, s12=0l; s1!=nshells; ++s1) {
+
+      auto bf1 = shell2bf[s1];     // first basis function in this shell
+      auto n1 = obs[s1].size();    // # of basis functions in this shell
+      auto atom1 = shell2atom[s1]; // atom on which this shell sits
+      assert(atom1 != -1);
+
+      for(auto s2=0; s2<=s1; ++s2) {
+
+        if (s12 % nthreads != thread_id)
+          continue;
+
+        auto bf2 = shell2bf[s2];
+        auto n2 = obs[s2].size();
+        auto atom2 = shell2atom[s2]; // atom on which this shell sits
+        assert(atom2 != -1);
+
+        auto n12 = n1 * n2;
+
+        // compute shell pair; return the pointer to the buffer
+        const auto* buf = engines[thread_id].compute(obs[s1], obs[s2]);
+
+        for(unsigned int op=0; op!=nopers; ++op, buf+=n12) {
+          // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
+          Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+          result[0][op].block(bf1, bf2, n1, n2) = buf_mat;
+          if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
+            result[0][op].block(bf2, bf1, n2, n1) = buf_mat.transpose();
+        }
+
+      }
+    }
+  } // omp parallel
+
+  return result;
+}
+#endif
 
 Matrix compute_schwartz_ints(const BasisSet& obs) {
 
