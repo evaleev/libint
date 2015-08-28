@@ -91,7 +91,7 @@ namespace libint2 {
         using namespace libint2::prefactor;
         const int K = Tint->oper()->descr().K();
         typedef R12_k_G12_Descr R12kG12Descr;
-        const R12kG12 oK(R12kG12Descr(K));
+        const R12kG12 oK((R12kG12Descr(K)));
         const unsigned int m = Tint->aux()->elem(0);
         const F _1 = unit<F>(dir);
 
@@ -322,7 +322,7 @@ namespace libint2 {
               if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("R12kG12_pfac2") * ABCm1D_K;  nflops_+=3; }
             }
             if (K != 0) {
-              const R12kG12 oKm2(R12kG12Descr(K-2));
+              const R12kG12 oKm2((R12kG12Descr(K-2)));
               auto Ap1BCD_Km2 = factory.make_child(a+_1,b,c,d,0u,oKm2);
               auto ABCp1D_Km2 = factory.make_child(a,b,c+_1,d,0u,oKm2);
               auto ABCD_Km2 = factory.make_child(a,b,c,d,0u,oKm2);
@@ -352,7 +352,7 @@ namespace libint2 {
               if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("R12kG12_pfac2") * Am1BCD_K;  nflops_+=3; }
             }
             if (K != 0) {
-              const R12kG12 oKm2(R12kG12Descr(K-2));
+              const R12kG12 oKm2((R12kG12Descr(K-2)));
               auto ABCp1D_Km2 = factory.make_child(a,b,c+_1,d,0u,oKm2);
               auto Ap1BCD_Km2 = factory.make_child(a+_1,b,c,d,0u,oKm2);
               auto ABCD_Km2 = factory.make_child(a,b,c,d,0u,oKm2);
@@ -385,7 +385,7 @@ namespace libint2 {
               if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("R12kG12_pfac2") * ABCDm1_K;  nflops_+=3; }
             }
             if (K != 0) {
-              const R12kG12 oKm2(R12kG12Descr(K-2));
+              const R12kG12 oKm2((R12kG12Descr(K-2)));
               auto ABp1CD_Km2 = factory.make_child(a,b+_1,c,d,0u,oKm2);
               auto ABCDp1_Km2 = factory.make_child(a,b,c,d+_1,0u,oKm2);
               auto ABCD_Km2 = factory.make_child(a,b,c,d,0u,oKm2);
@@ -415,7 +415,7 @@ namespace libint2 {
               if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("R12kG12_pfac2") * ABm1CD_K;  nflops_+=3; }
             }
             if (K != 0) {
-              const R12kG12 oKm2(R12kG12Descr(K-2));
+              const R12kG12 oKm2((R12kG12Descr(K-2)));
               auto ABCDp1_Km2 = factory.make_child(a,b,c,d+_1,0u,oKm2);
               auto ABp1CD_Km2 = factory.make_child(a,b+_1,c,d,0u,oKm2);
               auto ABCD_Km2 = factory.make_child(a,b,c,d,0u,oKm2);
