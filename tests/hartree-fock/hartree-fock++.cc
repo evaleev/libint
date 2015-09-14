@@ -95,11 +95,23 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                                  );
 
 #ifdef LIBINT2_HAVE_BTAS
-// a DF-based builder, using coefficients of occupied MOs
-Matrix compute_2body_fock_dfC(const BasisSet& obs,
-                              const BasisSet& dfbs,
-                              const Matrix& Cocc);
-#endif // LIBINT2_HAVE_BTAS
+# define HAVE_DENSITY_FITTING 1
+  struct DFFockEngine {
+    const BasisSet& obs;
+    const BasisSet& dfbs;
+    DFFockEngine(const BasisSet& _obs, const BasisSet& _dfbs) :
+      obs(_obs), dfbs(_dfbs)
+    {
+    }
+
+    typedef btas::RangeNd<CblasRowMajor, std::array<long, 3> > Range3d;
+    typedef btas::Tensor<double, Range3d> Tensor3d;
+    Tensor3d xyK;
+
+    // a DF-based builder, using coefficients of occupied MOs
+    Matrix compute_2body_fock_dfC(const Matrix& Cocc);
+  };
+#endif // HAVE_DENSITY_FITTING
 
 namespace libint2 {
   int nthreads;
@@ -120,6 +132,11 @@ int main(int argc, char *argv[]) {
     // read geometry from a file; by default read from h2o.xyz, else take filename (.xyz) from the command line
     const auto filename = (argc > 1) ? argv[1] : "h2o.xyz";
     const auto basisname = (argc > 2) ? argv[2] : "aug-cc-pVDZ";
+    bool do_density_fitting = false;
+#ifdef HAVE_DENSITY_FITTING
+    do_density_fitting = (argc > 3);
+    const auto dfbasisname = do_density_fitting ? argv[3] : "";
+#endif
     std::vector<Atom> atoms = read_geometry(filename);
 
     // set up thread pool
@@ -150,6 +167,7 @@ int main(int argc, char *argv[]) {
     for (auto i = 0; i < atoms.size(); ++i)
       nelectron += atoms[i].atomic_number;
     const auto ndocc = nelectron / 2;
+    cout << "# of electrons = " << nelectron << endl;
 
     // compute the nuclear repulsion energy
     auto enuc = 0.0;
@@ -166,10 +184,22 @@ int main(int argc, char *argv[]) {
 
     libint2::Shell::do_enforce_unit_normalization(false);
 
-    BasisSet obs(basisname, atoms);
+    cout << "Atomic Cartesian coordinates (a.u.):" << endl;
     for(const auto& a: atoms)
       std::cout << a.atomic_number << " " << a.x << " " << a.y << " " << a.z << std::endl;
-    cout << "basis rank = " << obs.nbf() << endl;
+
+    BasisSet obs(basisname, atoms);
+    cout << "orbital basis set rank = " << obs.nbf() << endl;
+
+#ifdef HAVE_DENSITY_FITTING
+    BasisSet dfbs;
+    if (do_density_fitting) {
+      dfbs = BasisSet(dfbasisname, atoms);
+      cout << "density-fitting basis set rank = " << dfbs.nbf() << endl;
+    }
+    DFFockEngine dffockengine(obs,dfbs);
+#endif // HAVE_DENSITY_FITTING
+
 
     /*** =========================== ***/
     /*** compute 1-e integrals       ***/
@@ -187,6 +217,7 @@ int main(int argc, char *argv[]) {
     V.resize(0,0);
 
     Matrix D;
+    Matrix C_occ;
     {  // use SOAD as the guess density
       const auto tstart = std::chrono::high_resolution_clock::now();
 
@@ -208,21 +239,12 @@ int main(int argc, char *argv[]) {
         auto C = gen_eig_solver.eigenvectors();
 
         // compute density, D = C(occ) . C(occ)T
-        auto C_occ = C.leftCols(ndocc);
+        C_occ = C.leftCols(ndocc);
         D = C_occ * C_occ.transpose();
 
         const auto tstop = std::chrono::high_resolution_clock::now();
         const std::chrono::duration<double> time_elapsed = tstop - tstart;
         std::cout << "done (" << time_elapsed.count() << " s)" << std::endl;
-
-#ifdef LIBINT2_HAVE_BTAS
-        auto dfbs = BasisSet("cc-pVDZ-RI", atoms);
-        cout << "DF basis rank = " << dfbs.nbf() << endl;
-        auto tmp = compute_2body_fock_dfC(obs,
-                                          dfbs,
-                                          C_occ);
-        assert(false);
-#endif // LIBINT2_HAVE_BTAS
 
       }
     }
@@ -243,7 +265,7 @@ int main(int argc, char *argv[]) {
     auto n2 = D.cols() * D.rows();
     libint2::DIIS<Matrix> diis(2); // start DIIS on second iteration
 
-    // prepare for incremental Fock build
+    // prepare for incremental Fock build ...
     Matrix D_diff = D;
     Matrix F = H;
     bool reset_incremental_fock_formation = false;
@@ -251,6 +273,8 @@ int main(int argc, char *argv[]) {
     double start_incremental_F_threshold = 1e-5;
     double next_reset_threshold = 0.0;
     size_t last_reset_iteration = 0;
+    // ... unless doing DF, then use MO coefficients, hence not "incremental"
+    if (do_density_fitting) start_incremental_F_threshold = 0.0;
 
     do {
       const auto tstart = std::chrono::high_resolution_clock::now();
@@ -279,8 +303,17 @@ int main(int argc, char *argv[]) {
       }
 
       // build a new Fock matrix
-      const auto precision_F = std::min(1e-7,std::max(rms_error/1e4,std::numeric_limits<double>::epsilon()));
-      F += compute_2body_fock(obs, D_diff, precision_F, K);
+      if (not do_density_fitting) {
+        const auto precision_F = std::min(1e-7,std::max(rms_error/1e4,std::numeric_limits<double>::epsilon()));
+        F += compute_2body_fock(obs, D_diff, precision_F, K);
+      }
+#if HAVE_DENSITY_FITTING
+      else { // do DF
+        F = H + dffockengine.compute_2body_fock_dfC(C_occ);
+      }
+#else
+      else { assert(false); } // do_density_fitting is true but HAVE_DENSITY_FITTING is not defined! should not happen
+#endif // HAVE_DENSITY_FITTING
 
       // compute HF energy with the non-extrapolated Fock matrix
       ehf = D.cwiseProduct(H+F).sum();
@@ -303,7 +336,7 @@ int main(int argc, char *argv[]) {
       auto C = gen_eig_solver.eigenvectors();
 
       // compute density, D = C(occ) . C(occ)T
-      auto C_occ = C.leftCols(ndocc);
+      C_occ = C.leftCols(ndocc);
       D = C_occ * C_occ.transpose();
       D_diff = D - D_last;
 
@@ -1067,10 +1100,13 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
   return 0.5 * (G[0] + G[0].transpose());
 }
 
-#ifdef LIBINT2_HAVE_BTAS
-Matrix compute_2body_fock_dfC(const BasisSet& obs,
-                              const BasisSet& dfbs,
-                              const Matrix& Cocc) {
+#ifdef HAVE_DENSITY_FITTING
+
+// uncomment if want to compute statistics of shell blocks
+//#define COMPUTE_DF_INTS_STATS 1
+
+Matrix
+DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
 
 #ifdef _OPENMP
   const auto nthreads = omp_get_max_threads();
@@ -1080,151 +1116,50 @@ Matrix compute_2body_fock_dfC(const BasisSet& obs,
 
   const auto n          =  obs.nbf();
   const auto ndf        = dfbs.nbf();
-  const auto nshells    =  obs.size();
-  const auto nshells_df = dfbs.size();
-  const auto unitshell = libint2::Shell::unit();
-
-  // construct the 2-electron 3-center repulsion integrals engine
-  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
-  std::vector<coulomb_engine_type> engines(nthreads);
-  engines[0] = coulomb_engine_type(std::max(obs.max_nprim(), dfbs.max_nprim()),
-                                   std::max(obs.max_l(), dfbs.max_l()), 0);
-  for(size_t i=1; i!=nthreads; ++i) {
-    engines[i] = engines[0];
-  }
-
 #ifndef _OPENMP
-  libint2::Timers<3> timer;
+  libint2::Timers<5> timer;
   timer.set_now_overhead(25);
 #endif // not defined _OPENMP
 
-  auto shell2bf    =  obs.shell2bf();
-  auto shell2bf_df = dfbs.shell2bf();
-
-  typedef btas::RangeNd<CblasRowMajor, std::array<long, 3> > Range3d;
-  typedef btas::Tensor<double, Range3d> Tensor3d;
-  Tensor3d xyZ{n, n, ndf};
-
-#ifdef _OPENMP
-  #pragma omp parallel
-#endif
-  {
-#ifdef _OPENMP
-    auto thread_id = omp_get_thread_num();
-#else
-    auto thread_id = 0;
-#endif
-
-    // loop over permutationally-unique set of shells
-    for(auto s1=0l, s123=0l; s1!=nshells; ++s1) {
-
-      auto bf1_first = shell2bf[s1]; // first basis function in this shell
-      auto n1 = obs[s1].size();// number of basis functions in this shell
-
-      for(auto s2=0; s2!=nshells; ++s2) {
-
-        auto bf2_first = shell2bf[s2];
-        auto n2 = obs[s2].size();
-        const auto n12 = n1*n2;
-
-        for(auto s3=0; s3!=nshells_df; ++s3, ++s123) {
-
-          if (s123 % nthreads != thread_id)
-            continue;
-
-          auto bf3_first = shell2bf_df[s3];
-          auto n3 = dfbs[s3].size();
-          const auto n123 = n12*n3;
-
-#ifndef _OPENMP
-          timer.start(0);
-#endif
-
-          const auto* buf = engines[thread_id].compute(obs[s1], obs[s2], dfbs[s3], unitshell);
-
-#ifndef _OPENMP
-          timer.stop(0);
-#endif
-
-
-#ifndef _OPENMP
-          timer.start(1);
-#endif
-
-          auto lower_bound = {bf1_first, bf2_first, bf3_first};
-          auto upper_bound = {bf1_first+n1, bf2_first+n2, bf3_first+n3};
-          auto view = btas::make_view( xyZ.range().slice(lower_bound, upper_bound),
-                                       xyZ.storage());
-          std::copy(buf, buf+n123, view.begin());
-
-#ifndef _OPENMP
-          timer.stop(1);
-#endif
-
-        } // s3
-      } // s2
-    } // s1
-
-  } // omp parallel
-
-#ifndef _OPENMP
-  std::cout << "time for integrals = " << timer.read(0) << std::endl;
-  std::cout << "time for copying into BTAS = " << timer.read(1) << std::endl;
-  engines[0].print_timers();
-#endif // not defined _OPENMP
-
-  timer.start(2);
-
-  Matrix V = compute_2body_2index_ints(dfbs);
-  Eigen::LLT<Matrix> V_LLt(V);
-  Matrix I = Matrix::Identity(ndf, ndf);
-  auto L = V_LLt.matrixL();
-  Matrix V_L = L;
-  Matrix Linv = L.solve(I).transpose();
-  // check
-//  std::cout << "||V - L L^t|| = " << (V - V_L * V_L.transpose()).norm() << std::endl;
-//  std::cout << "||I - L L^-1^t|| = " << (I - V_L * Linv.transpose()).norm() << std::endl;
-//  std::cout << "||V^-1 - L^-1 L^-1^t|| = " << (V.inverse() - Linv * Linv.transpose()).norm() << std::endl;
-
+  typedef btas::RangeNd<CblasRowMajor, std::array<long, 1> > Range1d;
   typedef btas::RangeNd<CblasRowMajor, std::array<long, 2> > Range2d;
+  typedef btas::Tensor<double, Range1d> Tensor1d;
   typedef btas::Tensor<double, Range2d> Tensor2d;
-  Tensor2d K{ndf, ndf};
-  std::copy(Linv.data(), Linv.data()+ndf*ndf, K.begin());
 
-  Tensor3d xyK{n, n, ndf};
-  btas::contract(1.0, xyZ, {1,2,3}, K, {3,4}, 0.0, xyK, {1,2,4});
-  xyZ = Tensor3d{0,0,0};
+  // using first time? compute 3-center ints and transform to inv sqrt repreentation
+  if (xyK.size() == 0) {
 
-  typedef Eigen::Map<const Matrix> ConstMap;
-  typedef Eigen::Map<Matrix> Map;
-  const auto nocc = Cocc.cols();
-  ConstMap Coccv(Cocc.data(), n, nocc);
-  Matrix Cocc_t = Coccv.transpose();
+    const auto nshells    =  obs.size();
+    const auto nshells_df = dfbs.size();
+    const auto unitshell = libint2::Shell::unit();
 
-  Tensor3d xiK{n, nocc, ndf};
-  for(auto x=0ul; x!=n; ++x) {
-    ConstMap yK(&xyK.storage()[0] + x*n*ndf, n, ndf);
-    Map iK(&xiK.storage()[0] + x*nocc*ndf, nocc, ndf);
-    iK = Cocc_t * yK;
-  }
+    // construct the 2-electron 3-center repulsion integrals engine
+    typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
+    std::vector<coulomb_engine_type> engines(nthreads);
+    engines[0] = coulomb_engine_type(std::max(obs.max_nprim(), dfbs.max_nprim()),
+                                     std::max(obs.max_l(), dfbs.max_l()), 0);
+    for(size_t i=1; i!=nthreads; ++i) {
+      engines[i] = engines[0];
+    }
 
-  Tensor2d exchange{n, n};
-  btas::contract(1.0, xiK, {1,2,3}, xiK, {4,2,3}, 0.0, exchange, {1,4});
-  xiK = Tensor3d{0,0,0};
+    auto shell2bf    =  obs.shell2bf();
+    auto shell2bf_df = dfbs.shell2bf();
 
-  {
-    Map m_exchange(&exchange.storage()[0], n, n);
-    std::cout << "exchange matrix:\n" << m_exchange << std::endl;
-  }
+    Tensor3d xyZ{n, n, ndf};
 
-  // reconstruct 4-index ints
-  if (0) {
-    ConstMap xyK_map(&xyK.storage()[0], n*n, ndf);
-    Matrix xyzw_df = xyK_map * xyK_map.transpose();
-
-    typedef btas::RangeNd<CblasRowMajor, std::array<long, 4> > Range4d;
-    typedef btas::Tensor<double, Range4d> Tensor4d;
-    Tensor4d xyzw{n, n, n, n};
+#if COMPUTE_DF_INTS_STATS
+    const double count_threshold = 1e-7;
+    std::atomic<size_t> nints{0};  // number of ints in shell blocks with Frobenius norm > count_threshold
+    std::atomic<size_t> nints2{0}; // number of ints in shell blocks with Frobenius norm/elem > count_threshold
+    typedef btas::Tensor<char, Range3d> Tensor3dBool;
+    const size_t nobs_per_mol = 24; // cc-pVDZ
+    const size_t ndfbs_per_mol = 84; // cc-pVDZ-RI
+    const size_t nmols = n/nobs_per_mol;
+    Tensor3dBool nonzero_mol_blocks{nmols, nmols, nmols}; // number of molecule blocks that contain shell blocks with Frobenius norm > count_threshold
+    Tensor3d mol_blocks_frob2{nmols, nmols, nmols}; // sum of Frobenius norms squared in each molecule block
+    std::fill(nonzero_mol_blocks.begin(), nonzero_mol_blocks.end(), 0);
+    std::fill(mol_blocks_frob2.begin(), mol_blocks_frob2.end(), 0.);
+#endif // COMPUTE_DF_INTS_STATS
 
   #ifdef _OPENMP
     #pragma omp parallel
@@ -1237,7 +1172,7 @@ Matrix compute_2body_fock_dfC(const BasisSet& obs,
   #endif
 
       // loop over permutationally-unique set of shells
-      for(auto s1=0l, s1234=0l; s1!=nshells; ++s1) {
+      for(auto s1=0l, s123=0l; s1!=nshells; ++s1) {
 
         auto bf1_first = shell2bf[s1]; // first basis function in this shell
         auto n1 = obs[s1].size();// number of basis functions in this shell
@@ -1248,65 +1183,147 @@ Matrix compute_2body_fock_dfC(const BasisSet& obs,
           auto n2 = obs[s2].size();
           const auto n12 = n1*n2;
 
-          for(auto s3=0; s3!=nshells; ++s3) {
+          for(auto s3=0; s3!=nshells_df; ++s3, ++s123) {
 
-            auto bf3_first = shell2bf[s3];
-            auto n3 = obs[s3].size();
+            if (s123 % nthreads != thread_id)
+              continue;
+
+            auto bf3_first = shell2bf_df[s3];
+            auto n3 = dfbs[s3].size();
             const auto n123 = n12*n3;
 
-            for(auto s4=0; s4!=nshells; ++s4, ++s1234) {
+  #ifndef _OPENMP
+            timer.start(0);
+  #endif
 
-              if (s1234 % nthreads != thread_id)
-                continue;
+            const auto* buf = engines[thread_id].compute(obs[s1], obs[s2], dfbs[s3], unitshell);
 
-              auto bf4_first = shell2bf[s4];
-              auto n4 = obs[s4].size();
-              const auto n1234 = n123*n4;
+  #ifndef _OPENMP
+            timer.stop(0);
+  #endif
 
-#ifndef _OPENMP
-              timer.start(0);
-#endif
+#if COMPUTE_DF_INTS_STATS
+            const auto buf_2norm = sqrt(std::inner_product(buf, buf+n123, buf, 0.));
+            const auto buf_2norm_scaled = sqrt(buf_2norm * buf_2norm/ n123);
+            const auto buf_infnorm = std::abs(
+                  *std::max_element(buf, buf+n123, [](double a, double b){return std::abs(a) < std::abs(b);})
+            );
+            if (buf_2norm > count_threshold) {
+              nints += n123;
 
-              const auto* buf = engines[thread_id].compute(obs[s1], obs[s2], obs[s3], obs[s4]);
+              nonzero_mol_blocks(bf1_first/nobs_per_mol,
+                                 bf2_first/nobs_per_mol,
+                                 bf3_first/ndfbs_per_mol) = 1;
+            }
+            if (buf_2norm_scaled > count_threshold) {
+              nints2 += n123;
+            }
+            mol_blocks_frob2(bf1_first/nobs_per_mol,
+                             bf2_first/nobs_per_mol,
+                             bf3_first/ndfbs_per_mol) += buf_2norm*buf_2norm;
+#endif // COMPUTE_DF_INTS_STATS
 
-#ifndef _OPENMP
-              timer.stop(0);
-#endif
+  #ifndef _OPENMP
+            timer.start(1);
+  #endif
 
+            auto lower_bound = {bf1_first, bf2_first, bf3_first};
+            auto upper_bound = {bf1_first+n1, bf2_first+n2, bf3_first+n3};
+            auto view = btas::make_view( xyZ.range().slice(lower_bound, upper_bound),
+                                         xyZ.storage());
+            std::copy(buf, buf+n123, view.begin());
 
-#ifndef _OPENMP
-              timer.start(1);
-#endif
+  #ifndef _OPENMP
+            timer.stop(1);
+  #endif
 
-              auto lower_bound = {bf1_first, bf2_first, bf3_first, bf4_first};
-              auto upper_bound = {bf1_first+n1, bf2_first+n2, bf3_first+n3, bf4_first+n4};
-              auto view = btas::make_view( xyzw.range().slice(lower_bound, upper_bound),
-                                           xyzw.storage());
-              std::copy(buf, buf+n1234, view.begin());
-
-#ifndef _OPENMP
-              timer.stop(1);
-#endif
-
-            } // s4
           } // s3
         } // s2
       } // s1
 
     } // omp parallel
 
+  #ifndef _OPENMP
+    std::cout << "time for integrals = " << timer.read(0) << std::endl;
+    std::cout << "time for copying into BTAS = " << timer.read(1) << std::endl;
+    engines[0].print_timers();
+  #endif // not defined _OPENMP
 
-    Map xyzw_map(&xyzw.storage()[0], n*n, n*n);
-    std::cout << "4-center ints:\n" << (xyzw_map) << std::endl;
-    std::cout << "4-center ints (DF):\n" << (xyzw_df) << std::endl;
-    std::cout << "DF reconstruction error:\n" << (xyzw_map - xyzw_df) << std::endl;
-  }
+#if COMPUTE_DF_INTS_STATS
+    {
+      const auto nints_per_molblock = nobs_per_mol * nobs_per_mol * ndfbs_per_mol;
+      const size_t nints_mols = std::count(nonzero_mol_blocks.begin(), nonzero_mol_blocks.end(), 1) *
+                                nints_per_molblock;
+      const size_t nints_mols2= std::count_if(mol_blocks_frob2.begin(), mol_blocks_frob2.end(),
+                                              [&](double a) { return sqrt(a) > count_threshold; }
+                                             ) *
+                                                 nints_per_molblock;
+      const size_t nints_mols3= std::count_if(mol_blocks_frob2.begin(), mol_blocks_frob2.end(),
+                                              [&](double a) { return sqrt(a)/nints_per_molblock > count_threshold; }
+                                             ) *
+                                                 nints_per_molblock;
+      std::cout << "# of ints in shell blocks with norm greater than " << count_threshold << " = " << nints << std::endl;
+      std::cout << "# of ints in shell blocks with scaled norm greater than " << count_threshold << " = " << nints2 << std::endl;
+      std::cout << "# of ints in molecule blocks whose any shell-block norm was greater than " << count_threshold << " = " << nints_mols << std::endl;
+      std::cout << "# of ints in molecule blocks with norm greater than " << count_threshold << " = " << nints_mols2 << std::endl;
+      std::cout << "# of ints in molecule blocks with scaled norm greater than " << count_threshold << " = " << nints_mols3 << std::endl;
+      std::cout << "# of total ints = " << n*n*ndf << std::endl;
+    }
+#endif // COMPUTE_DF_INTS_STATS
 
-  timer.stop(2);
+    timer.start(2);
 
-  std::cout << "time for exchange = " << timer.read(2) << std::endl;
+    Matrix V = compute_2body_2index_ints(dfbs);
+    Eigen::LLT<Matrix> V_LLt(V);
+    Matrix I = Matrix::Identity(ndf, ndf);
+    auto L = V_LLt.matrixL();
+    Matrix V_L = L;
+    Matrix Linv = L.solve(I).transpose();
+    // check
+  //  std::cout << "||V - L L^t|| = " << (V - V_L * V_L.transpose()).norm() << std::endl;
+  //  std::cout << "||I - L L^-1^t|| = " << (I - V_L * Linv.transpose()).norm() << std::endl;
+  //  std::cout << "||V^-1 - L^-1 L^-1^t|| = " << (V.inverse() - Linv * Linv.transpose()).norm() << std::endl;
 
-  std::cout.flush();
-  exit(1);
+    Tensor2d K{ndf, ndf};
+    std::copy(Linv.data(), Linv.data()+ndf*ndf, K.begin());
+
+    xyK = Tensor3d{n, n, ndf};
+    btas::contract(1.0, xyZ, {1,2,3}, K, {3,4}, 0.0, xyK, {1,2,4});
+    xyZ = Tensor3d{0,0,0}; // release memory
+
+    timer.stop(2);
+    std::cout << "time for integrals tform = " << timer.read(2) << std::endl;
+  } // if (xyK.size() == 0)
+
+  // compute exchange
+  timer.start(3);
+
+  const auto nocc = Cocc.cols();
+  Tensor2d Co{n, nocc};
+  std::copy(Cocc.data(), Cocc.data()+n*nocc, Co.begin());
+  Tensor3d xiK{n, nocc, ndf};
+  btas::contract(1.0, xyK, {1,2,3}, Co, {2,4}, 0.0, xiK, {1,4,3});
+
+  Tensor2d G{n, n};
+  btas::contract(1.0, xiK, {1,2,3}, xiK, {4,2,3}, 0.0, G, {1,4});
+
+  timer.stop(3);
+  std::cout << "time for exchange = " << timer.read(3) << std::endl;
+
+  // compute Coulomb
+  timer.start(4);
+
+  Tensor1d Jtmp{ndf};
+  btas::contract(1.0, xiK, {1,2,3}, Co, {1,2}, 0.0, Jtmp, {3});
+  xiK = Tensor3d{0,0,0};
+  btas::contract(2.0, xyK, {1,2,3}, Jtmp, {3}, -1.0, G, {1,2});
+
+  timer.stop(4);
+  std::cout << "time for coulomb = " << timer.read(4) << std::endl;
+
+  // copy result to an Eigen::Matrix
+  Matrix result(n, n);
+  std::copy(G.cbegin(), G.cend(), result.data());
+  return result;
 }
-#endif // LIBINT2_HAVE_BTAS
+#endif // HAVE_DENSITY_FITTING
