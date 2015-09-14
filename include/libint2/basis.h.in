@@ -47,12 +47,14 @@ namespace libint2 {
       BasisSet(BasisSet&& other) :
         std::vector<libint2::Shell>(std::move(other)),
         name_(std::move(other.name_)),
-	nbf_(other.nbf_),
-	max_nprim_(other.max_nprim_),
-	max_l_(other.max_l_),
-	shell2bf_(std::move(other.shell2bf_)) {
+        nbf_(other.nbf_),
+        max_nprim_(other.max_nprim_),
+        max_l_(other.max_l_),
+        shell2bf_(std::move(other.shell2bf_))
+      {
       }
       ~BasisSet() = default;
+      BasisSet& operator=(const BasisSet&) = default;
 
       /// Construct from basis set name and vector of atoms
 
