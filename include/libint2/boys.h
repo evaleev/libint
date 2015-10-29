@@ -1527,6 +1527,27 @@ namespace libint2 {
       ExpensiveNumbers<Real> numbers_;
   };
 
+  template <typename GmEvalFunction>
+  struct GenericGmEval {
+
+      GenericGmEval(unsigned int mmax, double precision) : mmax_(mmax), precision_(precision) {}
+
+      static std::shared_ptr<GenericGmEval> instance(unsigned int mmax, double precision = 0.0) {
+        return std::make_shared<GenericGmEval>(mmax, precision);
+      }
+
+      template <typename Real, typename... ExtraArgs>
+      void eval(Real* Gm, Real rho, Real T, size_t mmax, ExtraArgs... args) {
+        assert(mmax <= mmax_);
+        GmEvalFunction eval_;
+        eval_(Gm, rho, T, mmax, std::forward(args)...);
+      }
+
+    private:
+      unsigned int mmax_;
+      double precision_;
+  };
+
   /*
    *  Slater geminal fitting is available only if have LAPACK
    */

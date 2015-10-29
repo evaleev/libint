@@ -665,7 +665,8 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
     Coulomb,            //!< \f$ 1/r_{12} \f$
     cGTG,               //!< contracted Gaussian geminal = \f$ \sum_i c_i \exp(- \alpha r_{12}^2) \f$
     cGTG_times_Coulomb, //!< contracted Gaussian geminal times Coulomb
-    DelcGTG_square      //!< (\f$ \nabla \f$ cGTG) \f$ \cdot \f$ (\f$ \nabla \f$ cGTG)
+    DelcGTG_square,     //!< (\f$ \nabla \f$ cGTG) \f$ \cdot \f$ (\f$ \nabla \f$ cGTG)
+    Delta               //!< \f$ \delta\left({\bf r}_1 - {\bf r}_2\right) \f$
   };
 
   /// contracted Gaussian geminal = \f$ \sum_i c_i \exp(- \alpha r_{12}^2) \f$, represented as a vector of
@@ -708,6 +709,20 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       typedef ContractedGaussianGeminal oper_params_type;
   };
 
+  struct delta_gm_eval {
+      void operator()(double* Gm,
+                      double rho,
+                      double T,
+                      int mmax) {
+        const static auto one_over_two_pi = 1.0 / (2.0 * M_PI);
+        const auto G0 = exp(-T) * rho * one_over_two_pi;
+        std::fill(Gm, Gm+mmax+1, G0);
+      }
+  };
+  template <> struct TwoBodyEngineTraits<Delta> {
+      typedef libint2::GenericGmEval<delta_gm_eval> core_eval_type; // core ints are too trivial to bother
+      typedef struct {} oper_params_type;
+  };
 
 #ifdef LIBINT2_SUPPORT_ERI
   /**
@@ -1286,6 +1301,16 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
                               real_t T,
                               real_t rho) {
           engine->core_eval_->eval(Gm, rho, T, mmax, engine->core_ints_params_);
+        }
+    };
+    template <>
+    struct TwoBodyEngineDispatcher<Delta> {
+        static void core_eval(TwoBodyEngine<Delta>* engine,
+                              real_t* Gm,
+                              int mmax,
+                              real_t T,
+                              real_t rho) {
+          engine->core_eval_->eval(Gm, rho, T, mmax);
         }
     };
   }
