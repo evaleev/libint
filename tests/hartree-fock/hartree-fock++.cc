@@ -80,7 +80,15 @@ compute_1body_ints(const BasisSet& obs,
 		   unsigned int deriv_order,
                    const std::vector<Atom>& atoms = std::vector<Atom>());
 #endif
-Matrix compute_schwartz_ints(const BasisSet& obs);
+Matrix compute_schwartz_ints(const BasisSet& bs1,
+                             const BasisSet& bs2 = BasisSet(),
+                             bool use_2norm = false // use infty norm by default
+                            );
+Matrix compute_do_ints(const BasisSet& bs1,
+                       const BasisSet& bs2 = BasisSet(),
+                       bool use_2norm = false // use infty norm by default
+                      );
+
 Matrix compute_2body_fock(const BasisSet& obs,
                           const Matrix& D,
                           double precision = std::numeric_limits<double>::epsilon(), // discard contributions smaller than this
@@ -644,10 +652,15 @@ compute_1body_ints(const BasisSet& obs,
 }
 #endif
 
-Matrix compute_schwartz_ints(const BasisSet& obs) {
+Matrix compute_schwartz_ints(const BasisSet& bs1,
+                             const BasisSet& _bs2,
+                             bool use_2norm) {
+  const BasisSet& bs2 = (_bs2.empty() ? bs1 : _bs2);
+  const auto nsh1 = bs1.size();
+  const auto nsh2 = bs2.size();
+  const auto bs1_equiv_bs2 = (&bs1 == &bs2);
 
-  const auto nsh = obs.size();
-  Matrix K = Matrix::Zero(nsh,nsh);
+  Matrix K = Matrix::Zero(nsh1,nsh2);
 #ifdef _OPENMP
   const auto nthreads = omp_get_max_threads();
 #else
@@ -657,7 +670,7 @@ Matrix compute_schwartz_ints(const BasisSet& obs) {
   // construct the 2-electron repulsion integrals engine
   typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
   std::vector<coulomb_engine_type> engines(nthreads);
-  engines[0] = coulomb_engine_type(obs.max_nprim(), obs.max_l(), 0);
+  engines[0] = coulomb_engine_type(bs1.max_nprim(), bs2.max_l(), 0);
   engines[0].set_precision(0.); // !!! very important: cannot screen primitives in Schwartz computation !!!
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
@@ -680,29 +693,98 @@ Matrix compute_schwartz_ints(const BasisSet& obs) {
 #endif
 
     // loop over permutationally-unique set of shells
-    for(auto s1=0l, s12=0l; s1!=nsh; ++s1) {
+    for(auto s1=0l, s12=0l; s1!=nsh1; ++s1) {
 
-      auto n1 = obs[s1].size();// number of basis functions in this shell
+      auto n1 = bs1[s1].size();// number of basis functions in this shell
 
-      for(auto s2=0; s2<=s1; ++s2, ++s12) {
+      auto s2_max = bs1_equiv_bs2 ? s1 : nsh2;
+      for(auto s2=0; s2<=s2_max; ++s2, ++s12) {
 
         if (s12 % nthreads != thread_id)
           continue;
 
-        auto n2 = obs[s2].size();
+        auto n2 = bs2[s2].size();
         auto n12 = n1*n2;
 
-        const auto* buf = engines[thread_id].compute(obs[s1], obs[s2], obs[s1], obs[s2]);
+        const auto* buf = engines[thread_id].compute(bs1[s1], bs2[s2], bs1[s1], bs2[s2]);
 
-        // extract ints into an Eigen Matrix
-        Matrix shblk = Matrix::Zero(n1, n2);
-        for(size_t f1=0, f12=0; f1!=n1; ++f1)
-          for(size_t f2=0; f2!=n2; ++f2, ++f12) {
-            const auto int1212 = buf[f12 * n12 + f12];
-            shblk(f1, f2) = int1212;
-          }
+        // the diagonal elements are the Schwartz ints ... use Map.diagonal()
+        Eigen::Map<const Matrix> buf_mat(buf, n12, n12);
+        auto norm = use_2norm ? buf_mat.diagonal().norm() : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
+        K(s1,s2) = norm;
+        if (bs1_equiv_bs2) K(s2,s1) = norm;
 
-        K(s1,s2) = K(s2,s1) = std::sqrt(shblk.lpNorm<Eigen::Infinity>());
+      }
+    }
+  }
+
+  timer.stop(0);
+  std::cout << "done (" << timer.read(0) << " s)"<< std::endl;
+
+  return K;
+}
+
+Matrix compute_do_ints(const BasisSet& bs1,
+                       const BasisSet& _bs2,
+                       bool use_2norm) {
+  const BasisSet& bs2 = (_bs2.empty() ? bs1 : _bs2);
+  const auto nsh1 = bs1.size();
+  const auto nsh2 = bs2.size();
+  const auto bs1_equiv_bs2 = (&bs1 == &bs2);
+
+  Matrix K = Matrix::Zero(nsh1,nsh2);
+#ifdef _OPENMP
+  const auto nthreads = omp_get_max_threads();
+#else
+  const auto nthreads = 1;
+#endif
+
+  // construct the 2-electron repulsion integrals engine
+  typedef libint2::TwoBodyEngine<libint2::Delta> coulomb_engine_type;
+  std::vector<coulomb_engine_type> engines(nthreads);
+  engines[0] = coulomb_engine_type(bs1.max_nprim(), bs2.max_l(), 0);
+  engines[0].set_precision(0.); // !!! very important: cannot screen primitives in Schwartz computation !!!
+  for(size_t i=1; i!=nthreads; ++i) {
+    engines[i] = engines[0];
+  }
+
+  std::cout << "computing DOIs ... ";
+
+  libint2::Timers<1> timer;
+  timer.set_now_overhead(25);
+  timer.start(0);
+
+#ifdef _OPENMP
+  #pragma omp parallel
+#endif
+  {
+#ifdef _OPENMP
+    auto thread_id = omp_get_thread_num();
+#else
+    auto thread_id = 0;
+#endif
+
+    // loop over permutationally-unique set of shells
+    for(auto s1=0l, s12=0l; s1!=nsh1; ++s1) {
+
+      auto n1 = bs1[s1].size();// number of basis functions in this shell
+
+      auto s2_max = bs1_equiv_bs2 ? s1 : nsh2;
+      for(auto s2=0; s2<=s2_max; ++s2, ++s12) {
+
+        if (s12 % nthreads != thread_id)
+          continue;
+
+        auto n2 = bs2[s2].size();
+        auto n12 = n1*n2;
+
+        const auto* buf = engines[thread_id].compute(bs1[s1], bs2[s2], bs1[s1], bs2[s2]);
+
+        // the diagonal elements are the Schwartz ints ... use Map.diagonal()
+        Eigen::Map<const Matrix> buf_mat(buf, n12, n12);
+        auto norm = use_2norm ? buf_mat.diagonal().norm() : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
+        K(s1,s2) = norm;
+        if (bs1_equiv_bs2) K(s2,s1) = norm;
 
       }
     }
