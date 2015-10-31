@@ -113,7 +113,7 @@ namespace libint2 {
       Shell& operator=(const Shell&) = default;
       // intel does not support "move asgnmt = default"
       Shell& operator=(Shell&& other) {
-	alpha = std::move(other.alpha);
+        alpha = std::move(other.alpha);
         contr = std::move(other.contr);
         O = std::move(other.O);
         max_ln_coeff = std::move(other.max_ln_coeff);
