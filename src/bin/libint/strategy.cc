@@ -387,6 +387,9 @@ namespace libint2 {
                       const SafePtr<Tactic>& tactic,
                       SafePtr<RecurrenceRelation>& rr,
                       Tactic::rr_stack& rrstack) {
+#if DEBUG
+      std::cout << "Visiting integral " << integral->label() << " with RR " << class_name<RRType>() << std::endl;
+#endif
       if (boost::is_same<typename IntType::BasisFunctionType,CGF>::value)
         return _visit_cgf(dg,integral,tactic,rr,rrstack);
       else
