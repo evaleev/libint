@@ -25,6 +25,7 @@
 #include <stdexcept>
 #include <smart_ptr.h>
 #include <util_types.h>
+#include <cxxabi.h>
 
 namespace libint2 {
   std::string to_string(FunctionPosition pos);
@@ -41,6 +42,16 @@ namespace libint2 {
       throw std::runtime_error("require_dynamic_cast: dynamic case failed");
     return t;
   }
+
+  /// @return (demangled) class name
+  template <typename T> std::string class_name(T* ptr=nullptr) {
+    int status = 1;
+    std::unique_ptr<char, void (*)(void*)>
+     result { abi::__cxa_demangle(ptr==nullptr?typeid(T).name():typeid(ptr).name(),NULL,NULL,&status),
+      std::free };
+    return status == 0 ? result.get() : "unknown";
+  }
+
 } // namespace libint2
 
 #endif /* header guard */
