@@ -396,7 +396,7 @@ namespace libint2 {
     /// The factor of 2 to account for contracted vs. uncontracted basis functions
     /// The factor of OriginDerivative::max_key to account for derivatives
     const static LIBINT2_UINT_LEAST64 max_num_qn = ((1 + (CGShell::max_qn+1)) * (2 + (CGShell::max_qn+1)) * (3 + (CGShell::max_qn+1)) /6);
-    // deriv_key_range = 2
+    // deriv_key_range = OriginDerivative<3u>::max_key
     // contracted = 2 (yes or no)
     // qn_range = max_num_qn
     // puresh_key_range = 2
@@ -560,11 +560,11 @@ namespace libint2 {
     /// The factor of 2 to account for contracted vs. uncontracted basis functions
     /// The factor of OriginDerivative::max_key to account for derivatives
     const static LIBINT2_UINT_LEAST64 max_num_qn = CGShell::max_qn+1;
-    // deriv_key_range = 2
+    // deriv_key_range = OriginDerivative<1u>::max_key
     // contracted = 2 (yes or no)
     // qn_range = max_num_qn
     // +1 to account for unit function
-    const static LIBINT2_UINT_LEAST64 max_key = 2ul * OriginDerivative<1u>::max_key * max_num_qn + 1;
+    const static LIBINT2_UINT_LEAST64 max_key = OriginDerivative<1u>::max_key * OriginDerivative<1u>::max_key * max_num_qn + 1;
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const {
@@ -714,11 +714,11 @@ namespace libint2 {
     /// The factor of 2 to account for contracted vs. uncontracted basis functions
     /// The factor of OriginDerivative::max_key to account for derivatives
     const static LIBINT2_UINT_LEAST64 max_num_qn = CGShell::max_qn+1;
-    // deriv_key_range = 2
+    // deriv_key_range = OriginDerivative<1u>::max_key
     // contracted = 2 (yes or no)
     // qn_range = max_num_qn
     // +1 to account for unit function
-    const static LIBINT2_UINT_LEAST64 max_key = 2ul * OriginDerivative<1u>::max_key * max_num_qn + 1;
+    const static LIBINT2_UINT_LEAST64 max_key = OriginDerivative<1u>::max_key * OriginDerivative<1u>::max_key * max_num_qn + 1;
 
     /// Print out the content
     void print(std::ostream& os = std::cout) const {
