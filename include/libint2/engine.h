@@ -158,10 +158,12 @@ namespace libint2 {
         type_(other.type_),
         primdata_(std::move(other.primdata_)),
         lmax_(other.lmax_),
+        hard_lmax_(other.hard_lmax_),
         deriv_order_(other.deriv_order_),
         params_(std::move(other.params_)),
         fm_eval_(std::move(other.fm_eval_)),
-        scratch_(std::move(other.scratch_)) {
+        scratch_(std::move(other.scratch_)),
+        buildfnptrs_(other.buildfnptrs_) {
       }
 
       /// (deep) copy constructor
@@ -184,10 +186,12 @@ namespace libint2 {
         type_ = other.type_;
         primdata_ = std::move(other.primdata_);
         lmax_ = other.lmax_;
+        hard_lmax_ = other.hard_lmax_;
         deriv_order_ = other.deriv_order_;
         params_ = std::move(other.params_);
         fm_eval_ = std::move(other.fm_eval_);
         scratch_ = std::move(other.scratch_);
+        buildfnptrs_ = other.buildfnptrs_;
         return *this;
       }
 
@@ -302,18 +306,8 @@ namespace libint2 {
           }
           else {
 
-            switch (type_) {
+            buildfnptrs_[s1.contr[0].l*hard_lmax_ + s2.contr[0].l](&primdata_[0]);
 
-#define BOOST_PP_ONEBODYENGINE_MCR1(r,data,i,elem)                                                           \
-              case i :                                                                                       \
-                LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(libint2_build_ , elem) )[s1.contr[0].l][s2.contr[0].l](&primdata_[0]); \
-              break;
-
-BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR1, _, BOOST_PP_ONEBODY_OPERATOR_LIST)
-
-              default:
-                assert(false);
-            }
             if (accumulate_ints_in_scratch) {
               const auto target_buf_size = num_shellsets * ncart12;
               std::transform(primdata_[0].targets[0], primdata_[0].targets[0] + target_buf_size,
@@ -357,10 +351,13 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR1, _, BOOST_PP_ONEBODY_OPER
       operator_type type_;
       std::vector<Libint_t> primdata_;
       int lmax_;
+      int hard_lmax_;
       size_t deriv_order_;
       any params_;
       std::shared_ptr<coulomb_core_eval_t> fm_eval_; // this is for Coulomb only
       std::vector<real_t> scratch_; // for transposes and/or transforming to solid harmonics
+      typedef void (*buildfnptr_t)(const Libint_t*);
+      buildfnptr_t* buildfnptrs_;
 
       void initialize() {
         assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
@@ -385,6 +382,26 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR1, _, BOOST_PP_ONEBODY_OPER
                                                 )                                                             \
                                   )                                                                           \
                                 )(&primdata_[0], lmax_, 0);                                                   \
+           buildfnptrs_ = &                                                                                   \
+           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
+                                    BOOST_PP_CAT(libint2_build_ ,                                             \
+                                      BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_OPERATOR_LIST,                        \
+                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
+                                    ),                                                                        \
+                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
+                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
+                                                )                                                             \
+                                  )                                                                           \
+                                )[0][0];                                                                      \
+           hard_lmax_ =           BOOST_PP_CAT(                                                               \
+                                    BOOST_PP_CAT(LIBINT2_MAX_AM_ ,                                            \
+                                      BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_OPERATOR_LIST,                        \
+                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
+                                    ),                                                                        \
+                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
+                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
+                                                )                                                             \
+                                  );                                                                          \
            return;                                                                                            \
          }
 
@@ -652,7 +669,6 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 #undef BOOST_PP_ONEBODY_OPERATOR_INDEX_LIST
 #undef BOOST_PP_ONEBODY_DERIV_ORDER_TUPLE
 #undef BOOST_PP_ONEBODY_DERIV_ORDER_LIST
-#undef BOOST_PP_ONEBODYENGINE_MCR1
 #undef BOOST_PP_ONEBODYENGINE_MCR2
 #undef BOOST_PP_ONEBODYENGINE_MCR3
 #undef BOOST_PP_ONEBODYENGINE_MCR4
