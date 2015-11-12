@@ -351,7 +351,7 @@ namespace libint2 {
       operator_type type_;
       std::vector<Libint_t> primdata_;
       int lmax_;
-      int hard_lmax_;
+      int hard_lmax_;      // max L supported by library for this operator type + 1
       size_t deriv_order_;
       any params_;
       std::shared_ptr<coulomb_core_eval_t> fm_eval_; // this is for Coulomb only
@@ -401,7 +401,7 @@ namespace libint2 {
                                     BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
                                                   BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
                                                 )                                                             \
-                                  );                                                                          \
+                                  ) + 1;                                                                      \
            return;                                                                                            \
          }
 
