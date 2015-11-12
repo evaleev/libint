@@ -69,7 +69,7 @@ namespace libint2 {
 
   constexpr size_t num_geometrical_derivatives(size_t ncenter,
                                                size_t deriv_order) {
-    return (deriv_order > 0) ? (num_geometrical_derivatives(ncenter, deriv_order-1) * (3*ncenter+deriv_order))/deriv_order : 1;
+    return (deriv_order > 0) ? (num_geometrical_derivatives(ncenter, deriv_order-1) * (3*ncenter+deriv_order-1))/deriv_order : 1;
   }
 
 #if defined(LIBINT2_SUPPORT_ONEBODY)
@@ -130,7 +130,7 @@ namespace libint2 {
 
       /// \param max_nprim the maximum number of primitives per contracted Gaussian shell
       /// \param max_l the maximum angular momentum of Gaussian shell
-      /// \param deriv_level if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_level
+      /// \param deriv_order if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_order
       /// \param params a value of type OneBodyEngine::operator_traits<type>::oper_params_type specifying the parameters of
       ///               the operator set, e.g. position and magnitude of the charges creating the Coulomb potential
       ///               for type == nuclear. For most values of type this is not needed.
@@ -228,6 +228,29 @@ namespace libint2 {
         return nopers() * num_geometrical_derivatives(2,deriv_order_);
       }
 
+      /// Given the Cartesian geometric derivative index that refers to center set
+      /// (0...n-1) with one center omitted compute the derivative index referring
+      /// to the full center set
+      /// \param deriv_idx index of the derivative referring to the set with center \c omitted_center omitted
+      /// \param deriv_order order of the geometric derivative
+      /// \param ncenters number of centers in the full set
+      /// \param omitted_center the omitted center, must be less than \c ncenters.
+      /// \return the index of the derivative referring to full set
+      static unsigned int to_target_deriv_index(unsigned int deriv_idx,
+                                                unsigned int deriv_order,
+                                                unsigned int ncenters,
+                                                unsigned int omitted_center) {
+        auto ncenters_reduced = ncenters - 1;
+        auto nderiv_1d = 3 * ncenters_reduced;
+        assert(deriv_idx < num_geometrical_derivatives(ncenters_reduced,deriv_order));
+        switch (deriv_order) {
+          case 1: return deriv_idx >= omitted_center*3 ? deriv_idx+3 : deriv_idx;
+          default: assert(deriv_order<=1); // not implemented, won't be needed when Libint computes all derivatives
+        }
+        assert(false); // unreachable
+        return 0;
+      }
+
       /// computes shell set of integrals
       /// \note result is stored in row-major order
       const real_t* compute(const libint2::Shell& s1,
@@ -252,26 +275,44 @@ namespace libint2 {
         const auto ncart2 = s2.cartesian_size();
         const auto ncart12 = ncart1 * ncart2;
 
+        const auto tform_to_solids = s1.contr[0].pure || s2.contr[0].pure;
+
         // assert # of primitive pairs
         const auto nprim1 = s1.nprim();
         const auto nprim2 = s2.nprim();
         const auto nprimpairs = nprim1 * nprim2;
         assert(nprimpairs <= primdata_.size());
 
-        // how many shell sets will I get?
-        auto num_shellsets = nshellsets();
-
-        // Coulomb ints are computed 1 charge at a time, contributions are accumulated in scratch_ (unless la==lb==0)
-        const bool accumulate_ints_in_scratch = (type_ == nuclear);
         auto nparam_sets = nparams();
+
+        // how many shell sets will be returned?
+        auto num_shellsets = nshellsets();
+        // Libint computes derivatives with respect to one center fewer, will use translational invariance to recover
+        auto num_shellsets_computed = nopers() * num_geometrical_derivatives(1,deriv_order_);
+        // size of ints block computed by Libint
+        const auto target_buf_size = num_shellsets_computed * ncart12;
+
+        // will use scratch_ if:
+        // - Coulomb ints are computed 1 charge at a time, contributions are accumulated in scratch_ (unless la==lb==0)
+        // - derivatives on the missing center need to be reconstructed (no need to accumulate into scratch though)
+        // will only use scratch to accumulate ints when
+        const auto accumulate_ints_in_scratch = (type_ == nuclear);
 
         // adjust max angular momentum, if needed
         const auto lmax = std::max(l1, l2);
         assert (lmax <= lmax_);
-        if (lmax == 0) // (s|s) ints will be accumulated in the first element of stack
+
+        // where cartesian ints are located varies, sometimes we compute them in scratch, etc.
+        // this is the most likely location
+        auto cartesian_ints = primdata_[0].stack;
+
+        // simple (s|s) ints will be computed directly and accumulated in the first element of stack
+        const auto compute_directly = lmax == 0 && deriv_order_ == 0 && (type_ == overlap || type_ == nuclear);
+        if (compute_directly) {
           primdata_[0].stack[0] = 0;
+        }
         else if (accumulate_ints_in_scratch)
-          memset(static_cast<void*>(&scratch_[0]), 0, sizeof(real_t)*ncart12);
+          memset(static_cast<void*>(&scratch_[0]), 0, sizeof(real_t)*target_buf_size);
 
         // loop over accumulation batches
         for(auto pset=0u; pset!=nparam_sets; ++pset) {
@@ -286,8 +327,8 @@ namespace libint2 {
           }
           primdata_[0].contrdepth = p12;
 
-          if (lmax == 0 && (type_ == overlap || type_ == nuclear)) { // (s|s) or (s|V|s)
-            auto& result = primdata_[0].stack[0];
+          if (compute_directly) {
+            auto& result = cartesian_ints[0];
             switch (type_) {
               case overlap:
                 for(auto p12=0; p12 != primdata_[0].contrdepth; ++p12)
@@ -302,14 +343,14 @@ namespace libint2 {
               default:
                 assert(false);
             }
-            primdata_[0].targets[0] = primdata_[0].stack;
+            primdata_[0].targets[0] = cartesian_ints;
           }
           else {
 
             buildfnptrs_[s1.contr[0].l*hard_lmax_ + s2.contr[0].l](&primdata_[0]);
 
             if (accumulate_ints_in_scratch) {
-              const auto target_buf_size = num_shellsets * ncart12;
+              cartesian_ints = &scratch_[0];
               std::transform(primdata_[0].targets[0], primdata_[0].targets[0] + target_buf_size,
                              &scratch_[0],
                              &scratch_[0], std::plus<real_t>());
@@ -318,26 +359,73 @@ namespace libint2 {
 
         } // pset (accumulation batches)
 
-        auto cartesian_ints = (accumulate_ints_in_scratch && lmax != 0) ? &scratch_[0] : primdata_[0].targets[0];
-        auto result = cartesian_ints;
-
-        if (s1.contr[0].pure || s2.contr[0].pure) {
+        auto result = cartesian_ints; // will be adjusted as we proceed needed
+        if (tform_to_solids) {
+          // where do spherical ints go?
           auto* spherical_ints = (cartesian_ints == &scratch_[0]) ? primdata_[0].targets[0] : &scratch_[0];
           result = spherical_ints;
 
-          for(unsigned int s=0; s!=num_shellsets; ++s, cartesian_ints+=ncart12, spherical_ints+=n12) {
-            if (s1.contr[0].pure && s2.contr[0].pure) {
-              libint2::solidharmonics::tform(l1, l2, cartesian_ints, spherical_ints);
+          // transform to solid harmonics, one shell set at a time
+          const auto nops = nopers();
+          constexpr auto ncenters = 2;
+          const auto nderivs_target = num_geometrical_derivatives(ncenters,deriv_order_);
+          const auto nderivs_computed = num_geometrical_derivatives(ncenters-1,deriv_order_);
+          for(auto d=0ul; d!=nderivs_computed; ++d) {
+            auto d_target = d;
+            if (deriv_order_ > 0) {
+              // map derivative index in the computed set to the derivative index in the target set ..
+              const auto omitted_center = 1; // always skip second center for 2-center 1-e ints
+              assert(ncenters == 2); // for 3- and 4-center ints will need to adjust omitted_center
+              d_target = to_target_deriv_index(d, deriv_order_, ncenters, omitted_center);
             }
-            else {
-              if (s1.contr[0].pure)
-                libint2::solidharmonics::tform_rows(l1, n2, cartesian_ints, spherical_ints);
-              else
-                libint2::solidharmonics::tform_cols(n1, l2, cartesian_ints, spherical_ints);
-            }
-          } // loop over shell sets
+            // .. and compute the destination
+            spherical_ints = result + n12*nops*d_target;
+            for(auto op=0ul; op!=nops; ++op, cartesian_ints+=ncart12, spherical_ints +=n12) {
+              if (s1.contr[0].pure && s2.contr[0].pure) {
+                libint2::solidharmonics::tform(l1, l2, cartesian_ints, spherical_ints);
+              }
+              else {
+                if (s1.contr[0].pure)
+                  libint2::solidharmonics::tform_rows(l1, n2, cartesian_ints, spherical_ints);
+                else
+                  libint2::solidharmonics::tform_cols(n1, l2, cartesian_ints, spherical_ints);
+              }
+            } // loop over operator index
+          } // loop derivative index
+
+          // if computing derivatives compute the omitted derivatives
+          if (deriv_order_ > 0) {
+            assert(deriv_order_ == 1);
+            const auto omitted_center = 1; // always skip second center for 2-center 1-e ints
+            assert(ncenters == 2); // for 3- and 4-center ints will need to adjust omitted_center
+            for(auto xyz=0u; xyz!=3; ++xyz) {
+              const auto n = nops * n12;
+              auto dest = result + n*(xyz+3);
+              auto src = result + n*xyz;
+              for(auto f=0ul; f!=n; ++f) {
+                dest[f] = -src[f];
+              }
+            } // loop over cartesian directions
+          }
 
         } // tform to solids
+        else if (deriv_order_ > 0) { // cartesian ints only?
+                                     // if computing derivatives compute the omitted derivatives
+          assert(deriv_order_ == 1);
+          const auto nops = nopers();
+          const auto omitted_center = 1; // always skip second center for 2-center 1-e ints
+          // this assumes that Libint stack is large enough to hold all 6 sets of derivative ints
+          // NOT TRUE for overlap ints and lmax_ = 0
+          assert(type_ != overlap || lmax_ > 0);
+          for(auto xyz=0u; xyz!=3; ++xyz) {
+            const auto n = nops * n12;
+            auto dest = result + n*(xyz+3);
+            auto src = result + n*xyz;
+            for(auto f=0ul; f!=n; ++f) {
+              dest[f] = -src[f];
+            }
+          } // loop over cartesian directions
+        } // rebuild omitted derivatives of Cartesian ints
 
         return result;
       }
@@ -394,13 +482,14 @@ namespace libint2 {
                                   )                                                                           \
                                 )[0][0];                                                                      \
            hard_lmax_ =           BOOST_PP_CAT(                                                               \
-                                    BOOST_PP_CAT(LIBINT2_MAX_AM_ ,                                            \
+                                    LIBINT2_MAX_AM_ ,                                                         \
+                                    BOOST_PP_CAT(                                                             \
                                       BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_OPERATOR_LIST,                        \
-                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
-                                    ),                                                                        \
-                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
-                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
+                                                       BOOST_PP_TUPLE_ELEM(2,0,product) ),                    \
+                                      BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),     \
+                                                    BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()        \
                                                 )                                                             \
+                                    )                                                                         \
                                   ) + 1;                                                                      \
            return;                                                                                            \
          }
@@ -633,7 +722,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
     primdata._0_Overlap_0_y[0] = ovlp_ss_y;
     primdata._0_Overlap_0_z[0] = ovlp_ss_z;
 
-    if (type_ == kinetic) {
+    if (type_ == kinetic || (deriv_order_ > 0 && type_ == overlap)) {
 #if LIBINT2_DEFINED(eri,two_alpha0_bra)
       primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif
@@ -761,7 +850,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
       /// \param max_nprim the maximum number of primitives per contracted Gaussian shell
       /// \param max_l the maximum angular momentum of Gaussian shell
-      /// \param deriv_level if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_level
+      /// \param deriv_order if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_order
       /// \param precision specifies the target precision with which the integrals will be computed; the default is the "epsilon"
       ///        of \c real_t type, given by \c std::numeric_limits<real_t>::epsilon(). The precision
       ///        control is somewhat empirical, hence be conservative. \sa set_precision()
