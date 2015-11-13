@@ -326,6 +326,8 @@ namespace libint2 {
     };
   template <> struct MasterStrategy<Kinetic_1_1_int> {
       typedef mpl::list<
+        CR_DerivGauss<Kinetic_1_1_int,0,InBra>,
+        CR_DerivGauss<Kinetic_1_1_int,0,InKet>,
         CR_XYZ_1_1<CGF,KineticOper>
       > value;
     };
