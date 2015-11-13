@@ -249,16 +249,6 @@ namespace libint2 {
 #endif
 
 #if LIBINT_SUPPORT_ONEBODYINTS
-  template <> struct MasterStrategy<Overlap_1_1_sh> {
-      typedef mpl::list<
-        CR_XYZ_1_1<CGShell,OverlapOper>
-      > value;
-    };
-  template <> struct MasterStrategy<Overlap_1_1_int> {
-      typedef mpl::list<
-        CR_XYZ_1_1<CGF,OverlapOper>
-      > value;
-    };
   template <> struct MasterStrategy<Overlap_1_1_sh_x> {
       typedef mpl::list<
         CR_XYZ_1_1<CGShell1d<CartesianAxis_X>,OverlapOper>
