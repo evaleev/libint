@@ -778,10 +778,10 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 #if LIBINT2_DEFINED(eri,rho12_over_alpha1) || LIBINT2_DEFINED(eri,rho12_over_alpha2)
       if (deriv_order_ > 0) {
 #if LIBINT2_DEFINED(eri,rho12_over_alpha1)
-        primdata.rho12_over_alpha1 = rhop_over_alpha1;
+        primdata.rho12_over_alpha1[0] = rhop_over_alpha1;
 #endif
 #if LIBINT2_DEFINED(eri,rho12_over_alpha2)
-        primdata.rho12_over_alpha2 = alpha1 * oogammap;
+        primdata.rho12_over_alpha2[0] = alpha1 * oogammap;
 #endif
       }
 #endif
