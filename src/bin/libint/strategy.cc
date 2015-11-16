@@ -286,12 +286,16 @@ namespace libint2 {
   template <> struct MasterStrategy<ElecPot_1_1_sh> {
       typedef mpl::list<
       HRR_ab_1_ElecPot_1_sh,
+      CR_DerivGauss<ElecPot_1_1_sh,0,InBra>,
+      CR_DerivGauss<ElecPot_1_1_sh,0,InKet>,
       VRR_a_1_ElecPot_1_sh
       > value;
     };
   template <> struct MasterStrategy<ElecPot_1_1_int> {
       typedef mpl::list<
       HRR_ab_1_ElecPot_1_int,
+      CR_DerivGauss<ElecPot_1_1_int,0,InBra>,
+      CR_DerivGauss<ElecPot_1_1_int,0,InKet>,
       VRR_a_1_ElecPot_1_int
       > value;
     };
@@ -299,12 +303,16 @@ namespace libint2 {
   template <> struct MasterStrategy<ElecPot_1_1_sh> {
       typedef mpl::list<
       HRR_ba_1_ElecPot_1_sh,
+      CR_DerivGauss<ElecPot_1_1_sh,0,InBra>,
+      CR_DerivGauss<ElecPot_1_1_sh,0,InKet>,
       VRR_b_1_ElecPot_1_sh
       > value;
     };
   template <> struct MasterStrategy<ElecPot_1_1_int> {
       typedef mpl::list<
       HRR_ba_1_ElecPot_1_int,
+      CR_DerivGauss<ElecPot_1_1_int,0,InBra>,
+      CR_DerivGauss<ElecPot_1_1_int,0,InKet>,
       VRR_b_1_ElecPot_1_int
       > value;
     };
@@ -496,7 +504,9 @@ namespace libint2 {
                       SafePtr<RecurrenceRelation>& rr) {
       SafePtr<T> tptr = dynamic_pointer_cast<T,DGVertex>(integral);
       if (tptr != 0) {
-        //std::cout << "In match_inttype_first::visit() integral=" << integral->label() << std::endl;
+#if 0
+        std::cout << "Visiting integral " << integral->label() << ", its type is " << class_name<T>() << std::endl;
+#endif
         using namespace boost;
         using namespace boost::mpl::placeholders;
         // Try to unroll first, if this is a shell set

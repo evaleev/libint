@@ -599,7 +599,6 @@ namespace libint2 {
       // if got here, can decrement by at least 1 quantum
       // add additional derivative terms
       if (deriv) {
-        assert(false); // not yet implemented
         // bf quantum on the build center subtracted by 1
         F a( where == InBra ? Tint->bra(0,0) - _1 : Tint->bra(0,0) );
         F b( where == InKet ? Tint->ket(0,0) - _1 : Tint->ket(0,0) );
