@@ -103,6 +103,15 @@ namespace libint2 {
         init();
       }
 
+      /// forces solid harmonics/Cartesian Gaussians
+      /// @param solid if true, force all shells with L>1 to be solid harmonics, otherwise force all shells to Cartesian
+      void set_pure(bool solid) {
+        for(auto& s: *this) {
+          s.contr[0].pure = solid;
+        }
+        init();
+      }
+
       /// @return the number of basis functions in the basis; -1 if uninitialized
       long nbf() const {
         return nbf_;
