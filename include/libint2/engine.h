@@ -124,7 +124,7 @@ namespace libint2 {
 
 
       /// creates a default (unusable) OneBodyEngine; to be used as placeholder for copying a usable engine
-      OneBodyEngine() : type_(_invalid), primdata_(), lmax_(-1) {}
+      OneBodyEngine() : type_(_invalid), primdata_(), stack_size_(0), lmax_(-1) {}
 
       /// Constructs a (usable) OneBodyEngine
 
@@ -157,12 +157,14 @@ namespace libint2 {
       OneBodyEngine(OneBodyEngine&& other) :
         type_(other.type_),
         primdata_(std::move(other.primdata_)),
+        stack_size_(other.stack_size_),
         lmax_(other.lmax_),
         hard_lmax_(other.hard_lmax_),
         deriv_order_(other.deriv_order_),
         params_(std::move(other.params_)),
         fm_eval_(std::move(other.fm_eval_)),
         scratch_(std::move(other.scratch_)),
+        scratch2_(other.scratch2_),
         buildfnptrs_(other.buildfnptrs_) {
       }
 
@@ -170,6 +172,7 @@ namespace libint2 {
       OneBodyEngine(const OneBodyEngine& other) :
         type_(other.type_),
         primdata_(other.primdata_.size()),
+        stack_size_(other.stack_size_),
         lmax_(other.lmax_),
         deriv_order_(other.deriv_order_),
         params_(other.params_),
@@ -185,12 +188,14 @@ namespace libint2 {
       OneBodyEngine& operator=(OneBodyEngine&& other) {
         type_ = other.type_;
         primdata_ = std::move(other.primdata_);
+        stack_size_ = other.stack_size_;
         lmax_ = other.lmax_;
         hard_lmax_ = other.hard_lmax_;
         deriv_order_ = other.deriv_order_;
         params_ = std::move(other.params_);
         fm_eval_ = std::move(other.fm_eval_);
         scratch_ = std::move(other.scratch_);
+        scratch2_ = other.scratch2_;
         buildfnptrs_ = other.buildfnptrs_;
         return *this;
       }
@@ -199,6 +204,7 @@ namespace libint2 {
       OneBodyEngine& operator=(const OneBodyEngine& other) {
         type_ = other.type_;
         primdata_.resize(other.primdata_.size());
+        stack_size_ = other.stack_size_;
         lmax_ = other.lmax_;
         deriv_order_ = other.deriv_order_;
         params_ = other.params_;
@@ -212,6 +218,7 @@ namespace libint2 {
       template <typename Params>
       void set_params(const Params& params) {
         params_ = params;
+        reset_scratch();
       }
       /// alias to set_params() for backward compatibility with pre-05/13/2015 code
       /// \deprecated use set_params() instead
@@ -225,7 +232,9 @@ namespace libint2 {
       /// on the operator set. \sa compute()
       /// \note need to specialize for some operator types
       unsigned int nshellsets() const {
-        return nopers() * num_geometrical_derivatives(2,deriv_order_);
+        const unsigned int num_operator_geometrical_derivatives = (type_ == nuclear) ? this->nparams() : 0;
+        const auto ncenters = 2 + num_operator_geometrical_derivatives;
+        return nopers() * num_geometrical_derivatives(ncenters,deriv_order_);
       }
 
       /// Given the Cartesian geometric derivative index that refers to center set
@@ -258,8 +267,6 @@ namespace libint2 {
 
         // can only handle 1 contraction at a time
         assert(s1.ncontr() == 1 && s2.ncontr() == 1);
-        // derivatives not supported for now
-        assert(deriv_order_ == 0);
 
         const auto l1 = s1.contr[0].l;
         const auto l2 = s2.contr[0].l;
@@ -274,6 +281,7 @@ namespace libint2 {
         const auto ncart1 = s1.cartesian_size();
         const auto ncart2 = s2.cartesian_size();
         const auto ncart12 = ncart1 * ncart2;
+        const auto nops = nopers();
 
         const auto tform_to_solids = s1.contr[0].pure || s2.contr[0].pure;
 
@@ -288,7 +296,11 @@ namespace libint2 {
         // how many shell sets will be returned?
         auto num_shellsets = nshellsets();
         // Libint computes derivatives with respect to one center fewer, will use translational invariance to recover
-        auto num_shellsets_computed = nopers() * num_geometrical_derivatives(1,deriv_order_);
+        const auto geometry_independent_operator = type_ == overlap || type_ == kinetic;
+        const auto num_deriv_centers_computed = geometry_independent_operator ? 1 : 2;
+        auto num_shellsets_computed = nopers() *
+                                      num_geometrical_derivatives(num_deriv_centers_computed,
+                                                                  deriv_order_);
         // size of ints block computed by Libint
         const auto target_buf_size = num_shellsets_computed * ncart12;
 
@@ -348,83 +360,94 @@ namespace libint2 {
           else {
 
             buildfnptrs_[s1.contr[0].l*hard_lmax_ + s2.contr[0].l](&primdata_[0]);
+            cartesian_ints = primdata_[0].targets[0];
 
             if (accumulate_ints_in_scratch) {
               cartesian_ints = &scratch_[0];
               std::transform(primdata_[0].targets[0], primdata_[0].targets[0] + target_buf_size,
                              &scratch_[0],
                              &scratch_[0], std::plus<real_t>());
+
+              // need to reconstruct derivatives of nuclear ints for each nucleus
+              if (deriv_order_ > 0){
+                const auto nints_per_center = target_buf_size/2;
+                // first two blocks are derivatives with respect to Gaussian positions
+                // rest are derivs with respect to nuclear coordinates
+                auto dest = &scratch_[0] + (2+pset)*nints_per_center;
+                auto src = primdata_[0].targets[0];
+                for(auto i=0; i!=nints_per_center; ++i) {
+                  dest[i] = -src[i];
+                }
+                src = primdata_[0].targets[0] + nints_per_center;
+                for(auto i=0; i!=nints_per_center; ++i) {
+                  dest[i] -= src[i];
+                }
+                num_shellsets_computed+=3; // we just added 3 shell sets
+              } // reconstruct derivatives
+
             }
           } // ltot != 0
 
         } // pset (accumulation batches)
 
-        auto result = cartesian_ints; // will be adjusted as we proceed needed
+        auto result = cartesian_ints; // will be adjusted as we proceed
         if (tform_to_solids) {
           // where do spherical ints go?
-          auto* spherical_ints = (cartesian_ints == &scratch_[0]) ? primdata_[0].targets[0] : &scratch_[0];
+          auto* spherical_ints = (cartesian_ints == &scratch_[0]) ? scratch2_ : &scratch_[0];
           result = spherical_ints;
 
-          // transform to solid harmonics, one shell set at a time
-          const auto nops = nopers();
-          constexpr auto ncenters = 2;
-          const auto nderivs_target = num_geometrical_derivatives(ncenters,deriv_order_);
-          const auto nderivs_computed = num_geometrical_derivatives(ncenters-1,deriv_order_);
-          for(auto d=0ul; d!=nderivs_computed; ++d) {
-            auto d_target = d;
-            if (deriv_order_ > 0) {
-              // map derivative index in the computed set to the derivative index in the target set ..
-              const auto omitted_center = 1; // always skip second center for 2-center 1-e ints
-              assert(ncenters == 2); // for 3- and 4-center ints will need to adjust omitted_center
-              d_target = to_target_deriv_index(d, deriv_order_, ncenters, omitted_center);
-            }
+          // transform to solid harmonics, one shell set at a time:
+          // for each computed shell set ...
+          for(auto s=0ul; s!=num_shellsets_computed; ++s, cartesian_ints+=ncart12) {
+            // ... find its index in the target shell set:
+            // 1. if regular ints do nothing
+            // 2. for derivatives the target set includes derivatives w.r.t omitted centers,
+            //    to be computed later (for all ints) or already computed (for nuclear);
+            //    in the former case the "omitted" set of derivatives always comes at the end
+            //    hence the index of the current shell set does not change (for 2-body ints
+            //    the rules are different, but Libint will eliminate the need to reconstruct via
+            //    translational invariance soon, so this logic will be unnecessary).
+            auto s_target = s;
             // .. and compute the destination
-            spherical_ints = result + n12*nops*d_target;
-            for(auto op=0ul; op!=nops; ++op, cartesian_ints+=ncart12, spherical_ints +=n12) {
-              if (s1.contr[0].pure && s2.contr[0].pure) {
-                libint2::solidharmonics::tform(l1, l2, cartesian_ints, spherical_ints);
-              }
-              else {
-                if (s1.contr[0].pure)
-                  libint2::solidharmonics::tform_rows(l1, n2, cartesian_ints, spherical_ints);
-                else
-                  libint2::solidharmonics::tform_cols(n1, l2, cartesian_ints, spherical_ints);
-              }
-            } // loop over operator index
-          } // loop derivative index
-
-          // if computing derivatives compute the omitted derivatives
-          if (deriv_order_ > 0) {
-            assert(deriv_order_ == 1);
-            const auto omitted_center = 1; // always skip second center for 2-center 1-e ints
-            assert(ncenters == 2); // for 3- and 4-center ints will need to adjust omitted_center
-            for(auto xyz=0u; xyz!=3; ++xyz) {
-              const auto n = nops * n12;
-              auto dest = result + n*(xyz+3);
-              auto src = result + n*xyz;
-              for(auto f=0ul; f!=n; ++f) {
-                dest[f] = -src[f];
-              }
-            } // loop over cartesian directions
-          }
+            spherical_ints = result + n12 * s_target;
+            if (s1.contr[0].pure && s2.contr[0].pure) {
+              libint2::solidharmonics::tform(l1, l2, cartesian_ints, spherical_ints);
+            }
+            else {
+              if (s1.contr[0].pure)
+                libint2::solidharmonics::tform_rows(l1, n2, cartesian_ints, spherical_ints);
+              else
+                libint2::solidharmonics::tform_cols(n1, l2, cartesian_ints, spherical_ints);
+            }
+          } // loop cartesian shell set
 
         } // tform to solids
-        else if (deriv_order_ > 0) { // cartesian ints only?
-                                     // if computing derivatives compute the omitted derivatives
-          assert(deriv_order_ == 1);
-          const auto nops = nopers();
-          const auto omitted_center = 1; // always skip second center for 2-center 1-e ints
-          // this assumes that Libint stack is large enough to hold all 6 sets of derivative ints
-          // NOT TRUE for overlap ints and lmax_ = 0
-          assert(type_ != overlap || lmax_ > 0);
-          for(auto xyz=0u; xyz!=3; ++xyz) {
-            const auto n = nops * n12;
-            auto dest = result + n*(xyz+3);
-            auto src = result + n*xyz;
-            for(auto f=0ul; f!=n; ++f) {
-              dest[f] = -src[f];
+
+        // if computing derivatives of ints of geometry-independent operators
+        // compute the omitted derivatives using translational invariance
+        if (deriv_order_ > 0 && geometry_independent_operator) {
+          assert(deriv_order_ == 1); // assuming 1st-order derivs here, arbitrary order later
+
+          const auto nints_computed = n12*num_shellsets_computed; // target # of ints is twice this
+
+          // make sure there is enough room left in libint stack
+          // if not, copy into scratch2_
+          if (not tform_to_solids) {
+            const auto stack_size_remaining = stack_size_ - (result-primdata_[0].stack) - nints_computed;
+            const auto copy_to_scratch2 = stack_size_remaining < nints_computed;
+            if (copy_to_scratch2) {
+              // this is tricky ... copy does not allow scratch2_ in [result, result + nints_computed)
+              // but this would only happen in scratch2_ == result, but definition of scratch2_ ensures this
+              std::copy(result, result + nints_computed, scratch2_);
+              result = scratch2_;
             }
-          } // loop over cartesian directions
+          }
+
+          const auto src = result;
+          const auto dest = result + nints_computed;
+          for(auto f=0ul; f!=nints_computed; ++f) {
+            dest[f] = -src[f];
+          }
         } // rebuild omitted derivatives of Cartesian ints
 
         return result;
@@ -438,21 +461,34 @@ namespace libint2 {
     private:
       operator_type type_;
       std::vector<Libint_t> primdata_;
+      size_t stack_size_;  // amount allocated by libint2_init_xxx in primdata_[0].stack
       int lmax_;
       int hard_lmax_;      // max L supported by library for this operator type + 1
       size_t deriv_order_;
       any params_;
       std::shared_ptr<coulomb_core_eval_t> fm_eval_; // this is for Coulomb only
       std::vector<real_t> scratch_; // for transposes and/or transforming to solid harmonics
+      real_t* scratch2_;            // &scratch_[0] points to the first block large enough to hold all target ints
+                                    // scratch2_ points to second such block. It could point into scratch_ or at primdata_[0].stack
       typedef void (*buildfnptr_t)(const Libint_t*);
       buildfnptr_t* buildfnptrs_;
 
+      void reset_scratch() {
+        const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
+        const auto target_shellset_size = nshellsets() * ncart_max * ncart_max;
+        // need to be able to hold 2 sets of target shellsets: the worst case occurs when dealing with
+        // 1-body Coulomb ints derivatives ... have 2+natom derivative sets that are stored in scratch
+        // then need to transform to solids. To avoid copying back and forth make sure that there is enough
+        // room to transform all ints and save them in correct order in single pass
+        const auto need_extra_large_scratch = stack_size_ < target_shellset_size;
+        scratch_.resize(need_extra_large_scratch ? 2*target_shellset_size : target_shellset_size);
+        scratch2_ = need_extra_large_scratch ? &scratch_[target_shellset_size] : primdata_[0].stack;
+      }
+
       void initialize() {
         assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
-	
-        const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
 
-        scratch_.resize(nshellsets() * ncart_max * ncart_max);
+        reset_scratch();
 
 #define BOOST_PP_ONEBODYENGINE_MCR2(r,product)                                                                \
          if (type_ == BOOST_PP_TUPLE_ELEM(2,0,product) && deriv_order_ == BOOST_PP_TUPLE_ELEM(2,1,product) ) {\
@@ -460,6 +496,17 @@ namespace libint2 {
                                         BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_OPERATOR_LIST,                      \
                                                          BOOST_PP_TUPLE_ELEM(2,0,product) )                   \
                                        ) );                                                                   \
+           stack_size_ =                                                                                      \
+           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
+                                    BOOST_PP_CAT(libint2_need_memory_ ,                                       \
+                                      BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_OPERATOR_LIST,                        \
+                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
+                                    ),                                                                        \
+                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
+                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
+                                                )                                                             \
+                                  )                                                                           \
+                                 )(lmax_);                                                                    \
            LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
                                     BOOST_PP_CAT(libint2_init_ ,                                              \
                                       BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_OPERATOR_LIST,                        \
@@ -626,7 +673,8 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
     const auto gammap = alpha1 + alpha2;
     const auto oogammap = 1.0 / gammap;
-    const auto rhop = alpha1 * alpha2 * oogammap;
+    const auto rhop_over_alpha1 = alpha2 * oogammap;
+    const auto rhop = alpha1 * rhop_over_alpha1;
     const auto Px = (alpha1 * A[0] + alpha2 * B[0]) * oogammap;
     const auto Py = (alpha1 * A[1] + alpha2 * B[1]) * oogammap;
     const auto Pz = (alpha1 * A[2] + alpha2 * B[2]) * oogammap;
@@ -707,11 +755,6 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
     }
 
-    if (deriv_order_ > 0) {
-      // prefactors for derivative overlap relations
-      assert(false);
-    }
-
     decltype(c1) sqrt_PI(1.77245385090551602729816748334);
     const auto xyz_pfac = sqrt_PI * sqrt(oogammap);
     const auto ovlp_ss_x = exp(- rhop * AB2_x) * xyz_pfac * c1 * c2;
@@ -722,7 +765,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
     primdata._0_Overlap_0_y[0] = ovlp_ss_y;
     primdata._0_Overlap_0_z[0] = ovlp_ss_z;
 
-    if (type_ == kinetic || (deriv_order_ > 0 && type_ == overlap)) {
+    if (type_ == kinetic || (deriv_order_ > 0)) {
 #if LIBINT2_DEFINED(eri,two_alpha0_bra)
       primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif
@@ -732,20 +775,30 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
     }
 
     if (type_ == nuclear) {
+#if LIBINT2_DEFINED(eri,rho12_over_alpha1) || LIBINT2_DEFINED(eri,rho12_over_alpha2)
+      if (deriv_order_ > 0) {
+#if LIBINT2_DEFINED(eri,rho12_over_alpha1)
+        primdata.rho12_over_alpha1 = rhop_over_alpha1;
+#endif
+#if LIBINT2_DEFINED(eri,rho12_over_alpha2)
+        primdata.rho12_over_alpha2 = alpha1 * oogammap;
+#endif
+      }
+#endif
 #if LIBINT2_DEFINED(eri,PC_x) && LIBINT2_DEFINED(eri,PC_y) && LIBINT2_DEFINED(eri,PC_z)
       const auto PC2 = primdata.PC_x[0] * primdata.PC_x[0] +
                        primdata.PC_y[0] * primdata.PC_y[0] +
                        primdata.PC_z[0] * primdata.PC_z[0];
       const auto U = gammap * PC2;
-      const auto ltot = s1.contr[0].l + s2.contr[0].l;
+      const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_;
       auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
-      fm_eval_->eval(fm_ptr, U, ltot);
+      fm_eval_->eval(fm_ptr, U, mmax);
 
       decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
       const auto q = params_.as<operator_traits<nuclear>::oper_params_type>()[oset].first;
       const auto pfac = - q * sqrt(gammap) * two_o_sqrt_PI * ovlp_ss_x * ovlp_ss_y * ovlp_ss_z;
-      const auto ltot_p1 = ltot + 1;
-      for(auto m=0; m!=ltot_p1; ++m) {
+      const auto m_fence = mmax + 1;
+      for(auto m=0; m!=m_fence; ++m) {
         fm_ptr[m] *= pfac;
       }
 #endif

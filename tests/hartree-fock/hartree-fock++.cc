@@ -51,13 +51,12 @@
 // N.B. integral engine timings are controled in engine.h
 //#define REPORT_INTEGRAL_TIMINGS
 
-// uncomment only if you are Ed
-//#define ENABLE_DERIV_INTS
-
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         Matrix;  // import dense, dynamically sized Matrix type from Eigen;
                  // this is a matrix with row-major storage (http://en.wikipedia.org/wiki/Row-major_order)
                  // to meet the layout of the integrals returned by the Libint integral library
+typedef Eigen::DiagonalMatrix<double, Eigen::Dynamic, Eigen::Dynamic>
+        DiagonalMatrix;
 
 using libint2::Shell;
 using libint2::Atom;
@@ -73,13 +72,13 @@ template <libint2::OneBodyEngine::operator_type obtype>
 std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>
 compute_1body_ints(const BasisSet& obs,
                    const std::vector<Atom>& atoms = std::vector<Atom>());
-#ifdef ENABLE_DERIV_INTS
+
 template <libint2::OneBodyEngine::operator_type obtype>
-std::vector<std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>>
-compute_1body_ints(const BasisSet& obs,
-		   unsigned int deriv_order,
-                   const std::vector<Atom>& atoms = std::vector<Atom>());
-#endif
+std::vector<Matrix>
+compute_1body_deriv_ints(unsigned deriv_order,
+                         const BasisSet& obs,
+                         const std::vector<Atom>& atoms);
+
 Matrix compute_schwartz_ints(const BasisSet& bs1,
                              const BasisSet& bs2 = BasisSet(),
                              bool use_2norm = false // use infty norm by default
@@ -340,7 +339,7 @@ int main(int argc, char *argv[]) {
 
       // solve F C = e S C
       Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> gen_eig_solver(F_diis, S);
-      auto eps = gen_eig_solver.eigenvalues();
+      evals = gen_eig_solver.eigenvalues();
       auto C = gen_eig_solver.eigenvectors();
 
       // compute density, D = C(occ) . C(occ)T
@@ -560,12 +559,11 @@ compute_1body_ints(const BasisSet& obs,
   return result;
 }
 
-#ifdef ENABLE_DERIV_INTS
 template <libint2::OneBodyEngine::operator_type obtype>
-std::vector<std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>>
-compute_1body_ints(const BasisSet& obs,
-		   unsigned int deriv_order,
-                   const std::vector<Atom>& atoms)
+std::vector<Matrix>
+compute_1body_deriv_ints(unsigned deriv_order,
+                         const BasisSet& obs,
+                         const std::vector<Atom>& atoms)
 {
   const auto n = obs.nbf();
   const auto nshells = obs.size();
@@ -574,14 +572,10 @@ compute_1body_ints(const BasisSet& obs,
 #else
   const auto nthreads = 1;
 #endif
-  typedef std::vector<std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>> result_type;
-  const unsigned int nopers = libint2::OneBodyEngine::operator_traits<obtype>::nopers;
-  const auto nderiv = libint2::num_geometrical_derivatives(atoms.size(),
-							   deriv_order);
-  result_type result(nderiv);
-  for(auto& c: result)
-    for(auto& r: c)
-      r = Matrix::Zero(n,n);
+  constexpr auto nopers = libint2::OneBodyEngine::operator_traits<obtype>::nopers;
+  const auto nresults = nopers * libint2::num_geometrical_derivatives(atoms.size(),deriv_order);
+  typedef std::vector<Matrix> result_type;
+  result_type result(nresults); for(auto& r: result) r = Matrix::Zero(n,n);
 
   // construct the 1-body integrals engine
   std::vector<libint2::OneBodyEngine> engines(nthreads);
@@ -616,9 +610,9 @@ compute_1body_ints(const BasisSet& obs,
     // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
     for(auto s1=0l, s12=0l; s1!=nshells; ++s1) {
 
-      auto bf1 = shell2bf[s1];     // first basis function in this shell
-      auto n1 = obs[s1].size();    // # of basis functions in this shell
-      auto atom1 = shell2atom[s1]; // atom on which this shell sits
+      auto bf1 = shell2bf[s1]; // first basis function in this shell
+      auto n1 = obs[s1].size();
+      auto atom1 = shell2atom[s1];
       assert(atom1 != -1);
 
       for(auto s2=0; s2<=s1; ++s2) {
@@ -628,20 +622,43 @@ compute_1body_ints(const BasisSet& obs,
 
         auto bf2 = shell2bf[s2];
         auto n2 = obs[s2].size();
-        auto atom2 = shell2atom[s2]; // atom on which this shell sits
-        assert(atom2 != -1);
+        auto atom2 = shell2atom[s2];
 
         auto n12 = n1 * n2;
 
-        // compute shell pair; return the pointer to the buffer
+        // compute shell pair; return is the pointer to the buffer
         const auto* buf = engines[thread_id].compute(obs[s1], obs[s2]);
 
-        for(unsigned int op=0; op!=nopers; ++op, buf+=n12) {
-          // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
-          Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
-          result[0][op].block(bf1, bf2, n1, n2) = buf_mat;
-          if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
-            result[0][op].block(bf2, bf1, n2, n1) = buf_mat.transpose();
+        assert(deriv_order == 1); // the loop structure below needs to be generalized for higher-order derivatives
+        // 1. process derivatives with respect to the Gaussian origins first ...
+        for(unsigned int d=0; d!=6; ++d) { // 2 centers x 3 axes = 6 cartesian geometric derivatives
+          auto atom = d < 3 ? atom1 : atom2;
+          auto op_start = (3*atom+d%3) * nopers;
+          auto op_fence = op_start + nopers;
+          for(unsigned int op=op_start; op!=op_fence; ++op, buf+=n12) {
+            // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
+            Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+//            std::cout << "s1=" << s1 << " s2=" << s2 << " x=" << (3*atom+d%3) << " op=" << op-op_start << ":\n";
+//            std::cout << buf_mat << std::endl;
+            result[op].block(bf1, bf2, n1, n2) += buf_mat;
+            if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
+              result[op].block(bf2, bf1, n2, n1) += buf_mat.transpose();
+          }
+        }
+        // 2. process derivatives of nuclear Coulomb operator, if needed
+        if (obtype == libint2::OneBodyEngine::nuclear) {
+          for(unsigned int atom=0; atom!=atoms.size(); ++atom) {
+            for(unsigned int xyz=0; xyz!=3; ++xyz) {
+              auto op_start = (3*atom+xyz) * nopers;
+              auto op_fence = op_start + nopers;
+              for(unsigned int op=op_start; op!=op_fence; ++op, buf+=n12) {
+                Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+                result[op].block(bf1, bf2, n1, n2) += buf_mat;
+                if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
+                  result[op].block(bf2, bf1, n2, n1) += buf_mat.transpose();
+              }
+            }
+          }
         }
 
       }
@@ -650,7 +667,6 @@ compute_1body_ints(const BasisSet& obs,
 
   return result;
 }
-#endif
 
 Matrix compute_schwartz_ints(const BasisSet& bs1,
                              const BasisSet& _bs2,
