@@ -73,11 +73,13 @@ std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>
 compute_1body_ints(const BasisSet& obs,
                    const std::vector<Atom>& atoms = std::vector<Atom>());
 
+#if LIBINT2_DERIV_ONEBODY_ORDER
 template <libint2::OneBodyEngine::operator_type obtype>
 std::vector<Matrix>
 compute_1body_deriv_ints(unsigned deriv_order,
                          const BasisSet& obs,
                          const std::vector<Atom>& atoms);
+#endif
 
 Matrix compute_schwartz_ints(const BasisSet& bs1,
                              const BasisSet& bs2 = BasisSet(),
@@ -225,6 +227,7 @@ int main(int argc, char *argv[]) {
 
     Matrix D;
     Matrix C_occ;
+    Matrix evals;
     {  // use SOAD as the guess density
       const auto tstart = std::chrono::high_resolution_clock::now();
 
@@ -368,13 +371,50 @@ int main(int argc, char *argv[]) {
     std::cout << "** edipole = "; std::copy(mu.begin(), mu.end(), std::ostream_iterator<double>(std::cout, " ")); std::cout << std::endl;
     std::cout << "** equadrupole = ";std::copy(qu.begin(), qu.end(), std::ostream_iterator<double>(std::cout, " ")); std::cout << std::endl;
 
+#if LIBINT2_DERIV_ONEBODY_ORDER
+    // compute forces
+    {
+      Matrix F = Matrix::Zero(atoms.size(), 3);
+      //////////
+      // one-body contributions to the forces
+      //////////
+      auto T1 = compute_1body_deriv_ints<libint2::OneBodyEngine::kinetic>(1, obs, atoms);
+      auto V1 = compute_1body_deriv_ints<libint2::OneBodyEngine::nuclear>(1, obs, atoms);
+      for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
+        for(auto xyz=0; xyz!=3; ++xyz, ++i) {
+          auto force = 2 * (T1[i]+V1[i]).cwiseProduct(D).sum();
+          F(atom, xyz) += force;
+//        std::cout << "one-body force=" << force << std::endl;
+//        std::cout << "derivative nuclear ints:\n" << V1[i] << std::endl;
+        }
+      }
+
+      //////////
+      // Hellman-Feynman force
+      //////////
+      // orbital energy density
+      DiagonalMatrix evals_occ(evals.topRows(ndocc));
+      Matrix W = C_occ * evals_occ * C_occ.transpose();
+      auto S1 = compute_1body_deriv_ints<libint2::OneBodyEngine::overlap>(1, obs, atoms);
+      for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
+        for(auto xyz=0; xyz!=3; ++xyz, ++i) {
+          auto force = 2 * S1[i].cwiseProduct(W).sum();
+          F(atom, xyz) -= force;
+//        std::cout << "Hellmann-Feynman force=" << force << std::endl;
+//        std::cout << "derivative overlap ints:\n" << S1[i] << std::endl;
+        }
+      }
+
+      std::cout << "** 1-body contribution to forces = ";
+      for(int atom=0; atom!=atoms.size(); ++atom)
+        for(int xyz=0; xyz!=3; ++xyz)
+          std::cout << F(atom,xyz) << " ";
+      std::cout << std::endl;
+    }
+#endif
+
     printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
 
-#ifdef ENABLE_DERIV_INTS
-    // compute forces
-    auto S_deriv = compute_1body_ints<libint2::OneBodyEngine::overlap>(obs, 1);
-#endif
-    
     libint2::cleanup(); // done with libint
 
   } // end of try block; if any exceptions occurred, report them and exit cleanly
@@ -559,6 +599,7 @@ compute_1body_ints(const BasisSet& obs,
   return result;
 }
 
+#if LIBINT2_DERIV_ONEBODY_ORDER
 template <libint2::OneBodyEngine::operator_type obtype>
 std::vector<Matrix>
 compute_1body_deriv_ints(unsigned deriv_order,
@@ -667,6 +708,7 @@ compute_1body_deriv_ints(unsigned deriv_order,
 
   return result;
 }
+#endif
 
 Matrix compute_schwartz_ints(const BasisSet& bs1,
                              const BasisSet& _bs2,
