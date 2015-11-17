@@ -21,7 +21,7 @@ realclean::
 export:: exportdir $(TOPDIR)/$(EXPORTDIR)/configure tgz
 
 tgz:: exportdir $(TOPDIR)/$(EXPORTDIR)/configure
-	(cd $(TOPDIR) && $(TAR) -cvzf $(EXPORTDIR).tgz $(EXPORTDIR) && rm -rf $(EXPORTDIR))
+	(cd $(TOPDIR) && $(TAR) -czf $(EXPORTDIR).tgz $(EXPORTDIR) && rm -rf $(EXPORTDIR))
 
 $(TOPDIR)/$(EXPORTDIR)/configure:: exportdir strip_some_preproc_symb
 	(cd $(TOPDIR)/$(EXPORTDIR) && aclocal -I lib/autoconf && autoconf && rm -rf autom4* aclocal.m4)
@@ -43,7 +43,7 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/CITATION $(TOPDIR)/$(EXPORTDIR)/CITATION
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/MakeVars.export $(TOPDIR)/$(EXPORTDIR)/MakeVars.in
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/MakeRules.export $(TOPDIR)/$(EXPORTDIR)/MakeRules.in
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/MakeSuffixRules.export $(TOPDIR)/$(EXPORTDIR)/MakeSuffixRules.in
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/MakeSuffixRules $(TOPDIR)/$(EXPORTDIR)/MakeSuffixRules.in
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/Makefile.export $(TOPDIR)/$(EXPORTDIR)/Makefile
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/configure.export $(TOPDIR)/$(EXPORTDIR)/configure.ac
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/bin

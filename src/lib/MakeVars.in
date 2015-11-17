@@ -38,7 +38,7 @@ ENABLESHARED = @ENABLESHARED@
 
 ifeq ($(ENABLESHARED),yes)
   SHELL = @SHELL@  # LIBTOOL will provide the appropriate shell here
-  LIBTOOL = $(SHELL) $(TOPDIR)/libtool
+  LIBTOOL = $(SHELL) $(TOPDIR)/libtool --quiet
   LTLINK = $(LIBTOOL) --mode=link --tag=CXX     # LIBTOOL needs clues in some settings
   ifneq ($(BUILDID),)
     LTLINKLIBOPTS = -rpath $(libdir) -release $(BUILDID) -version-info $(LIBINT_SO_VERSION)

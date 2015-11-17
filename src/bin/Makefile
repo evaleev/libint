@@ -64,7 +64,7 @@ distclean::
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
-	-rm -rf MakeVars MakeRules
+	-rm -rf MakeVars
 
 targetclean::
 	for dir in $(SUBDIRS); \
