@@ -28,6 +28,7 @@
 #include <thread>
 #include <atomic>
 #include <iterator>
+#include <unordered_map>
 
 // Eigen matrix algebra library
 #include <Eigen/Dense>
@@ -89,6 +90,15 @@ Matrix compute_do_ints(const BasisSet& bs1,
                        const BasisSet& bs2 = BasisSet(),
                        bool use_2norm = false // use infty norm by default
                       );
+/// computes non-negligible shell pair list; shells \c i and \c j form a non-negligible
+/// pair if they share a center or the Frobenius norm of their overlap is greater than threshold
+std::unordered_multimap<size_t,size_t>
+compute_shellpair_list(const BasisSet& bs1,
+                       const BasisSet& bs2 = BasisSet(),
+                       double threshold = 1e-12
+                      );
+
+std::unordered_multimap<size_t,size_t> obs_shellpair_list; // shellpair list for OBS
 
 Matrix compute_2body_fock(const BasisSet& obs,
                           const Matrix& D,
@@ -124,6 +134,30 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
 
 namespace libint2 {
   int nthreads;
+
+  /// fires off \c nthreads instances of lambda in parallel
+  template <typename Lambda>
+  void parallel_do(Lambda& lambda) {
+#ifdef _OPENMP
+  #pragma omp parallel
+  {
+    auto thread_id = omp_get_thread_num();
+    lambda(thread_id);
+  }
+#else // use C++11 threads
+  std::vector<std::thread> threads;
+  for(int thread_id=0; thread_id != libint2::nthreads; ++thread_id) {
+    if(thread_id != nthreads-1)
+      threads.push_back(std::thread(lambda,
+                                    thread_id));
+    else
+      lambda(thread_id);
+  } // threads_id
+  for(int thread_id=0; thread_id<nthreads-1; ++thread_id)
+    threads[thread_id].join();
+#endif
+  }
+
 }
 
 int main(int argc, char *argv[]) {
@@ -216,6 +250,12 @@ int main(int argc, char *argv[]) {
 
     // initializes the Libint integrals library ... now ready to compute
     libint2::init();
+
+    // compute OBS non-negligible shell-pair list
+    obs_shellpair_list = compute_shellpair_list(obs);
+    std::cout << "# of {all,non-negligible} shell-pairs = {"
+              << obs.size()*(obs.size()+1)/2 << ","
+              << obs_shellpair_list.size() << "}" << std::endl;
 
     // compute one-body integrals
     auto S = compute_1body_ints<libint2::OneBodyEngine::overlap>(obs)[0];
@@ -755,7 +795,7 @@ Matrix compute_schwartz_ints(const BasisSet& bs1,
 
       auto n1 = bs1[s1].size();// number of basis functions in this shell
 
-      auto s2_max = bs1_equiv_bs2 ? s1 : nsh2;
+      auto s2_max = bs1_equiv_bs2 ? s1 : nsh2-1;
       for(auto s2=0; s2<=s2_max; ++s2, ++s12) {
 
         if (s12 % nthreads != thread_id)
@@ -827,7 +867,7 @@ Matrix compute_do_ints(const BasisSet& bs1,
 
       auto n1 = bs1[s1].size();// number of basis functions in this shell
 
-      auto s2_max = bs1_equiv_bs2 ? s1 : nsh2;
+      auto s2_max = bs1_equiv_bs2 ? s1 : nsh2-1;
       for(auto s2=0; s2<=s2_max; ++s2, ++s12) {
 
         if (s12 % nthreads != thread_id)
@@ -852,6 +892,84 @@ Matrix compute_do_ints(const BasisSet& bs1,
   std::cout << "done (" << timer.read(0) << " s)"<< std::endl;
 
   return K;
+}
+
+std::unordered_multimap<size_t,size_t>
+compute_shellpair_list(const BasisSet& bs1,
+                       const BasisSet& _bs2,
+                       const double threshold) {
+  const BasisSet& bs2 = (_bs2.empty() ? bs1 : _bs2);
+  const auto nsh1 = bs1.size();
+  const auto nsh2 = bs2.size();
+  const auto bs1_equiv_bs2 = (&bs1 == &bs2);
+
+#ifdef _OPENMP
+  const auto nthreads = omp_get_max_threads();
+#else
+  const auto nthreads = 1;
+#endif
+
+  // construct the 2-electron repulsion integrals engine
+  using libint2::OneBodyEngine;
+  std::vector<OneBodyEngine> engines; engines.reserve(nthreads);
+  engines.emplace_back(OneBodyEngine::overlap,
+                       std::max(bs1.max_nprim(),bs2.max_nprim()),
+                       std::max(bs1.max_l(),bs2.max_l()),
+                       0);
+  for(size_t i=1; i!=nthreads; ++i) {
+    engines.push_back(engines[0]);
+  }
+
+  std::cout << "computing non-negligible shell-pair list ... ";
+
+  libint2::Timers<1> timer;
+  timer.set_now_overhead(25);
+  timer.start(0);
+
+  std::unordered_multimap<size_t,size_t> result;
+
+  std::mutex mx;
+
+  auto lambda = [&] (int thread_id) {
+
+    auto& engine = engines[thread_id];
+
+    // loop over permutationally-unique set of shells
+    for(auto s1=0l, s12=0l; s1!=nsh1; ++s1) {
+
+      auto n1 = bs1[s1].size();// number of basis functions in this shell
+
+      auto s2_max = bs1_equiv_bs2 ? s1 : nsh2-1;
+      for(auto s2=0; s2<=s2_max; ++s2, ++s12) {
+
+        if (s12 % nthreads != thread_id)
+          continue;
+
+        auto on_same_center = (bs1[s1].O == bs2[s2].O);
+        bool significant = on_same_center;
+        if (not on_same_center) {
+          auto n2 = bs2[s2].size();
+          const auto* buf = engines[thread_id].compute(bs1[s1], bs2[s2]);
+          Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+          auto norm = buf_mat.norm();
+          significant = (norm >= threshold);
+        }
+
+        if (significant) {
+          mx.lock();
+          result.insert(std::make_pair(s1,s2));
+          mx.unlock();
+        }
+      }
+    }
+  }; // end of lambda
+
+  libint2::parallel_do(lambda);
+
+  timer.stop(0);
+  std::cout << "done (" << timer.read(0) << " s)"<< std::endl;
+
+  return result;
 }
 
 Matrix compute_2body_2index_ints(const BasisSet& bs)
@@ -969,7 +1087,9 @@ Matrix compute_2body_fock(const BasisSet& obs,
       auto bf1_first = shell2bf[s1]; // first basis function in this shell
       auto n1 = obs[s1].size();// number of basis functions in this shell
 
-      for(auto s2=0; s2<=s1; ++s2) {
+      auto s2_range = obs_shellpair_list.equal_range(s1);
+      for(auto s2_iter = s2_range.first; s2_iter != s2_range.second; ++s2_iter) {
+        auto s2 = s2_iter->second;
 
         auto bf2_first = shell2bf[s2];
         auto n2 = obs[s2].size();
@@ -987,7 +1107,10 @@ Matrix compute_2body_fock(const BasisSet& obs,
                                                    : 0.;
 
           const auto s4_max = (s1 == s3) ? s2 : s3;
-          for(auto s4=0; s4<=s4_max; ++s4, ++s1234) {
+          auto s4_range = obs_shellpair_list.equal_range(s3);
+          for(auto s4_iter = s4_range.first; s4_iter != s4_range.second; ++s4_iter) {
+            auto s4 = s4_iter->second;
+            if (s4 > s4_max) break; // s4 only increase, skip to next s3
 
             if (s1234 % nthreads != thread_id)
               continue;
@@ -1064,24 +1187,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
 
   }; // end of lambda
 
-#ifdef _OPENMP
-  #pragma omp parallel
-  {
-    auto thread_id = omp_get_thread_num();
-    lambda(thread_id);
-  }
-#else // use C++11 threads
-  std::vector<std::thread> threads;
-  for(int thread_id=0; thread_id != nthreads; ++thread_id) {
-    if(thread_id != nthreads-1)
-      threads.push_back(std::thread(lambda,
-                                    thread_id));
-    else
-      lambda(thread_id);
-  } // threads_id
-  for(int thread_id=0; thread_id<nthreads-1; ++thread_id)
-    threads[thread_id].join();
-#endif
+  libint2::parallel_do(lambda);
 
   // accumulate contributions from all threads
   for(size_t i=1; i!=nthreads; ++i) {
