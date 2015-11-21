@@ -29,6 +29,7 @@
 #include <atomic>
 #include <iterator>
 #include <unordered_map>
+#include <mutex>
 
 // Eigen matrix algebra library
 #include <Eigen/Dense>
