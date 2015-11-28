@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys, re, math, os
 
 def pat_numbers(n):
@@ -6,6 +7,19 @@ def pat_numbers(n):
         result += '\s*([+-e\d.]+)'
     return result
 
+def validate(label, data, refdata, tolerance, textline):
+    ok = False
+    ndata = len(refdata)
+    for i in range(ndata):
+        datum = float(data[i])
+        refdatum = refdata[i]
+        if (math.fabs(refdatum - datum) < tolerance):
+                ok = True
+        else:
+            print(label, "check: failed\nreference:", refdata, "\nactual:", textline)
+    if (ok): print(label, "check: passed")
+    return ok
+
 path_to_libfeatures = sys.argv[1]
 if os.path.exists(path_to_libfeatures): 
     # define boolean constants used in MakeVars.features
@@ -13,18 +27,15 @@ if os.path.exists(path_to_libfeatures):
     yes = True
     execfile(path_to_libfeatures)
 
-eref = -76.003354058456
+eref = [-76.003354058456]
 etol = 1e-11
-eok = False
 
 muref = [-0.263282355181168, -0.091203683186213, -0.105312942071265]
 mutol = 1e-10
-muok = False
 
 Qref = [-7.01719638095415, 0.0246243454339316, -0.57620129865407, \
         -8.04716668958708, 0.638204907503245,  -6.35134519301054]
 Qtol = 1e-10
-Qok = False
 
 F1ref = [-5.4356955590748,  -1.88298017661221, -2.17427822361541, \
           3.47022732552768, -2.96798871234053,  2.59189820377569, \
@@ -45,46 +56,17 @@ for line in sys.stdin:
     match4 = re.match('\*\* 1-body forces =' + pat_numbers(9), line)
     match5 = re.match('\*\* Pulay forces =' + pat_numbers(9), line)
     if match1:
-        efound = float(match1.group(1)) 
-        if (math.fabs(eref - efound) < etol):
-            eok = True
-            print "HF energy check: passed"
-        else:
-            print "HF energy check: failed\n", line
+        eok = validate("HF energy", match1.groups(), eref, etol, line)
     elif match2:
-        for i in range(3):
-            mufound = float(match2.group(i+1))
-            if (math.fabs(muref[i] - mufound) < mutol):
-                muok = True
-            else:
-                print "electric dipole moment check: failed\n", line
-        if (muok): print "electric dipole moment check: passed"
+        muok = validate("electric dipole moment", match2.groups(), muref, mutol, line)
     elif match3:
-        for i in range(6):
-            Qfound = float(match3.group(i+1))
-            if (math.fabs(Qref[i] - Qfound) < Qtol):
-                Qok = True
-            else:
-                print "electric quadrupole moment check: failed\n", line
-        if (Qok): print "electric quadrupole moment check: passed"
+        Qok = validate("electric quadrupole moment", match3.groups(), Qref, Qtol, line)
     elif match4:
-        for i in range(9):
-            F1found = float(match4.group(i+1))
-            if (math.fabs(F1ref[i] - F1found) < F1tol):
-                F1ok = True
-            else:
-                print "1-body force check: failed\n", line
-        if (F1ok): print "1-body force check: passed"
+        F1ok = validate("1-body force", match4.groups(), F1ref, F1tol, line)
     elif match5:
-        for i in range(9):
-            FPfound = float(match5.group(i+1))
-            if (math.fabs(FPref[i] - FPfound) < FPtol):
-                FPok = True
-            else:
-                print "Pulay force check: failed\n", line
-        if (FPok): print "Pulay force check: passed"
+        FPok = validate("Pulay force", match5.groups(), FPref, FPtol, line)
     else:
-        print(line),
+        print(line,end="")
 
 ok = eok and muok and Qok and F1ok and FPok
 if not ok: sys.exit(1)
