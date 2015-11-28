@@ -43,7 +43,7 @@ check1:: $(TEST1)
 	./$^ $(SRCDIR)/h2o.xyz | python $(SRCDIR)/$^-validate.py
 
 check2:: $(TEST2)
-	-./$^ $(SRCDIR)/h2o_rotated.xyz | python $(SRCDIR)/$^-validate.py ../../src/lib/libint/MakeVars.features
+	./$^ $(SRCDIR)/h2o_rotated.xyz | python $(SRCDIR)/$^-validate.py ../../src/lib/libint/MakeVars.features
      endif
     endif
    endif
