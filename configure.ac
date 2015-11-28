@@ -392,6 +392,8 @@ if test X$INCLUDE_ERI != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ERI,$INCLUDE_ERI)
   LIBINT_SUPPORTS_ERI=yes
   AC_SUBST(LIBINT_SUPPORTS_ERI)
+  LIBINT_ERI_DERIV=$INCLUDE_ERI
+  AC_SUBST(LIBINT_ERI_DERIV)  
 fi
 
 ONEBODY_MAX_AM=$LIBINT_MAX_AM
@@ -445,6 +447,8 @@ if test X$INCLUDE_ONEBODY != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ONEBODY,$INCLUDE_ONEBODY)
   LIBINT_SUPPORTS_ONEBODY=yes
   AC_SUBST(LIBINT_SUPPORTS_ONEBODY)
+  LIBINT_ONEBODY_DERIV=$INCLUDE_ONEBODY
+  AC_SUBST(LIBINT_ONEBODY_DERIV)
 fi
 
 # check max am for 3-center ERIs, if needed
@@ -1424,7 +1428,7 @@ AC_CONFIG_FILES([src/bin/test_eri/time_eri.pl],[chmod +x src/bin/test_eri/time_e
 AC_CONFIG_FILES([src/bin/test_eri/run_time_eri.pl],[chmod +x src/bin/test_eri/run_time_eri.pl])
 AC_CONFIG_FILES([src/bin/test_eri/stdtests.pl],[chmod +x src/bin/test_eri/stdtests.pl])
 AC_CONFIG_FILES([src/bin/test_eri/run_timing_suite.pl],[chmod +x src/bin/test_eri/run_timing_suite.pl])
-AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules
+AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/libint/MakeVars.features
                 doc/MakeVars doc/MakeRules doc/progman/macros.tex doc/classdoc/doxygen.cfg
                 include/libint2/cgshell_ordering.h include/libint2/basis.h libint2.pc)
 

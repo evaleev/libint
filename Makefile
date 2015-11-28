@@ -7,20 +7,7 @@ endif
 -include $(TOPDIR)/src/lib/MakeVars
 
 SUBDIRS = src
-CHECKSUBDIRS = tests/eri
-ifeq ($(CXXGEN_SUPPORTS_CPP11),yes)
- ifeq ($(LIBINT_SUPPORTS_ONEBODY),yes)
-  ifeq ($(LIBINT_SUPPORTS_ERI),yes)
-   ifeq ($(LIBINT_HAS_EIGEN),yes)
-    ifeq ($(LIBINT_CONTRACTED_INTS),yes)
-     ifeq ($(LIBINT_SHELL_SET),1)
-      CHECKSUBDIRS += tests/hartree-fock
-     endif
-    endif
-   endif
-  endif
- endif
-endif
+CHECKSUBDIRS = tests/eri tests/hartree-fock
 CLEANSUBDIRS = $(SUBDIRS) $(CHECKSUBDIRS)
 ALLSUBDIRS = $(CLEANSUBDIRS) doc $(CHECKSUBDIRS)
 

@@ -415,7 +415,8 @@ int main(int argc, char *argv[]) {
 #if LIBINT2_DERIV_ONEBODY_ORDER
     // compute forces
     {
-      Matrix F = Matrix::Zero(atoms.size(), 3);
+      Matrix F1 = Matrix::Zero(atoms.size(), 3);
+      Matrix F_Pulay = Matrix::Zero(atoms.size(), 3);
       //////////
       // one-body contributions to the forces
       //////////
@@ -424,14 +425,14 @@ int main(int argc, char *argv[]) {
       for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
         for(auto xyz=0; xyz!=3; ++xyz, ++i) {
           auto force = 2 * (T1[i]+V1[i]).cwiseProduct(D).sum();
-          F(atom, xyz) += force;
+          F1(atom, xyz) += force;
 //        std::cout << "one-body force=" << force << std::endl;
 //        std::cout << "derivative nuclear ints:\n" << V1[i] << std::endl;
         }
       }
 
       //////////
-      // Hellman-Feynman force
+      // Pulay force
       //////////
       // orbital energy density
       DiagonalMatrix evals_occ(evals.topRows(ndocc));
@@ -440,16 +441,21 @@ int main(int argc, char *argv[]) {
       for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
         for(auto xyz=0; xyz!=3; ++xyz, ++i) {
           auto force = 2 * S1[i].cwiseProduct(W).sum();
-          F(atom, xyz) -= force;
-//        std::cout << "Hellmann-Feynman force=" << force << std::endl;
+          F_Pulay(atom, xyz) -= force;
+//        std::cout << "Pulay force=" << force << std::endl;
 //        std::cout << "derivative overlap ints:\n" << S1[i] << std::endl;
         }
       }
 
-      std::cout << "** 1-body contribution to forces = ";
+      std::cout << "** 1-body forces = ";
       for(int atom=0; atom!=atoms.size(); ++atom)
         for(int xyz=0; xyz!=3; ++xyz)
-          std::cout << F(atom,xyz) << " ";
+          std::cout << F1(atom,xyz) << " ";
+      std::cout << std::endl;
+      std::cout << "** Pulay forces = ";
+      for(int atom=0; atom!=atoms.size(); ++atom)
+        for(int xyz=0; xyz!=3; ++xyz)
+          std::cout << F_Pulay(atom,xyz) << " ";
       std::cout << std::endl;
     }
 #endif

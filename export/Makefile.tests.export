@@ -2,6 +2,7 @@
 TOPDIR = ..
 SRCDIR = ..
 -include ../MakeVars
+-include ../MakeVars.features
 
 CPPFLAGS := -I../include -I../include/libint2 -Ieri -Ihartree-fock -DPREP_LIBINT2_SKIP_BOOST -DSRCDATADIR=\"$(SRCDIR)/lib/basis\" $(CPPFLAGS)
 COMPUTE_LIB = -L../lib -lint2
@@ -22,17 +23,21 @@ check2::
 check3::
 
 ifeq ($(LIBINT_HAS_CXX11),yes)
-  ifeq ($(LIBINT_HAS_EIGEN),yes)
+ ifeq ($(LIBINT_SUPPORTS_ONEBODY),yes)
+  ifeq ($(LIBINT_SUPPORTS_ERI),yes)
+   ifeq ($(LIBINT_HAS_EIGEN),yes)
+    ifeq ($(LIBINT_CONTRACTED_INTS),yes)
+     ifeq ($(LIBINT_SHELL_SET),1)
 check2:: $(TEST2)
-	$^ hartree-fock/h2o.xyz | \
-        awk ' {print} /^\*\*/ { eref = -74.942080057698; tol = 1e-11; if ($$5 - eref < tol && eref - $$5 < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }'
+	./$^ hartree-fock/h2o.xyz | $(PYTHON) $^-validate.py
+
 check3:: $(TEST3)
-	$^ hartree-fock/h2o.xyz | tee check2.log && \
-	cat check2.log | awk ' /^\*\* Hartree/ { eref = -76.003354058456; e = $$5; tol = 1e-11; if (e - eref < tol && eref - e < tol) {print "HF energy check passed"; exit 0} else {print "HF energy check failed"; exit 1} }' && \
-	cat check2.log | awk ' /^\*\* edipole/ { trmuref = -0.29786998277636906; trmu = $$4 + $$5 + $$6; tol = 1e-9; if (trmu - trmuref < tol && trmuref - trmu < tol) {print "dipole moment check passed"; exit 0} else {print "dipole moment check failed"; exit 1} }' && \
-	cat check2.log | awk ' /^\*\* equadrupole/ { trquref = -21.415708269322693; trqu = $$4 + $$5 + $$6 + $$7 + $$8 + $$9; tol = 1e-8; if (trqu - trquref < tol && trquref - trqu < tol) {print "quadrupole moment check passed"; exit 0} else {print "quadrupole moment check failed"; exit 1} }' && \
-        rm -f check2.txt
+	./$^ hartree-fock/h2o_rotated.xyz | python $(SRCDIR)/$^-validate.py ../../MakeVars.features
+
+    endif
+   endif
   endif
+ endif
 endif
 
 $(TEST2): $(TEST2).o
