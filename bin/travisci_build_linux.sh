@@ -12,7 +12,7 @@ else
 fi
 export CXXFLAGS="-std=c++11 -Wno-enum-compare $OPENMPFLAGS"
 export LDFLAGS=$OPENMPFLAGS
-export LIBINT_NUM_THREADS=2
+export LIBINT_NUM_THREADS=1
 
 ./autogen.sh
 ./configure CPPFLAGS='-I/usr/include/eigen3' --with-max-am=2,2 --with-eri-max-am=2,1 --with-eri3-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-1body=1
