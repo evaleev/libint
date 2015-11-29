@@ -44,7 +44,7 @@ $(TEST2): $(TEST2).o
 	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
 
 $(TEST3): $(TEST3).o
-	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
+	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -lpthread -o $@ $^
 
 .PHONY: unpack_boost
 
