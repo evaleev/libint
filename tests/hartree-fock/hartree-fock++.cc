@@ -945,7 +945,7 @@ compute_shellpair_list(const BasisSet& bs1,
 
   std::mutex mx;
 
-  auto lambda = [&] (int thread_id) {
+  auto compute = [&] (int thread_id) {
 
     auto& engine = engines[thread_id];
 
@@ -982,9 +982,21 @@ compute_shellpair_list(const BasisSet& bs1,
         }
       }
     }
-  }; // end of lambda
+  }; // end of compute
 
-  libint2::parallel_do(lambda);
+  libint2::parallel_do(compute);
+
+  // resort shell list
+  auto sort = [&] (int thread_id) {
+    for(auto s1=0l; s1!=nsh1; ++s1) {
+      if (s1%nthreads == thread_id) {
+        auto& list = result[s1];
+        std::sort(list.begin(), list.end());
+      }
+    }
+  }; // end of sort
+
+  libint2::parallel_do(sort);
 
   timer.stop(0);
   std::cout << "done (" << timer.read(0) << " s)"<< std::endl;
