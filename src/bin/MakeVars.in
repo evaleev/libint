@@ -60,6 +60,7 @@ includedir=@libintincludedir@
 RANLIB = @RANLIB@
 COMPRESS = gzip
 UNCOMPRESS = gzip -d
+PYTHON = @PYTHON@
 
 # first check for generated include files in the machine dependent directories
 # and then for include files in the src directory

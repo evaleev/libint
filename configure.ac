@@ -1038,6 +1038,7 @@ CXXFLAGS="$initial_CXXFLAGS"
 AC_CHECK_PROG(AR,ar,ar)
 AC_CHECK_PROG(PERL,perl,perl)
 AC_CHECK_PROGS(TAR,gnutar tar,tar)
+AC_CHECK_PROGS(PYTHON,python python3 python2 python2.7,python)
 AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin:/opt/local/bin)
@@ -1051,10 +1052,11 @@ dnl The lack of certain tools is a show stopper
 changequote(<<, >>)dnl
 
 if [ X$PERL = X ]; then
-  echo "Could not find the program perl!"
-  echo "Most system vendors provide it."
-  echo "It can also be obtained at"
-  echo "http://www.perl.org/"
+  echo "Could not find program: perl"
+  exit 1
+fi
+if [ X$PYTHON = X ]; then
+  echo "Could not find program: python"
   exit 1
 fi
 

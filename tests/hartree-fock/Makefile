@@ -40,10 +40,10 @@ ifeq ($(CXXGEN_SUPPORTS_CPP11),yes)
     ifeq ($(LIBINT_CONTRACTED_INTS),yes)
      ifeq ($(LIBINT_SHELL_SET),1)
 check1:: $(TEST1)
-	./$^ $(SRCDIR)/h2o.xyz | python $(SRCDIR)/$^-validate.py
+	./$^ $(SRCDIR)/h2o.xyz | $(PYTHON) $(SRCDIR)/$^-validate.py
 
 check2:: $(TEST2)
-	./$^ $(SRCDIR)/h2o_rotated.xyz | python $(SRCDIR)/$^-validate.py ../../src/lib/libint/MakeVars.features
+	./$^ $(SRCDIR)/h2o_rotated.xyz | $(PYTHON) $(SRCDIR)/$^-validate.py ../../src/lib/libint/MakeVars.features
      endif
     endif
    endif

@@ -29,10 +29,10 @@ ifeq ($(LIBINT_HAS_CXX11),yes)
     ifeq ($(LIBINT_CONTRACTED_INTS),yes)
      ifeq ($(LIBINT_SHELL_SET),1)
 check2:: $(TEST2)
-	$^ hartree-fock/h2o.xyz | python $^-validate.py
+	$^ hartree-fock/h2o.xyz | $(PYTHON) $^-validate.py
 
 check3:: $(TEST3)
-	$^ hartree-fock/h2o_rotated.xyz | python $^-validate.py $(SRCDIR)/MakeVars.features
+	$^ hartree-fock/h2o_rotated.xyz | $(PYTHON) $^-validate.py $(SRCDIR)/MakeVars.features
      endif
     endif
    endif
