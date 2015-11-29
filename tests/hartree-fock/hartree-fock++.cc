@@ -1117,7 +1117,8 @@ Matrix compute_2body_fock(const BasisSet& obs,
           auto s4_range = obs_shellpair_list.equal_range(s3);
           for(auto s4_iter = s4_range.first; s4_iter != s4_range.second; ++s4_iter) {
             auto s4 = s4_iter->second;
-            if (s4 > s4_max) break; // s4 only increase, skip to next s3
+            if (s4 > s4_max) continue; // even though shell pair list was created by inserting shells in monotonically increasing order
+                                       // this order is not preserved by unordered_multimap, thus can be nonmonotonic, can't break here
 
             if (s1234 % nthreads != thread_id)
               continue;
