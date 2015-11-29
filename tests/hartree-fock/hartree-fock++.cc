@@ -91,15 +91,17 @@ Matrix compute_do_ints(const BasisSet& bs1,
                        const BasisSet& bs2 = BasisSet(),
                        bool use_2norm = false // use infty norm by default
                       );
+
+using shellpair_list_t = std::unordered_map<size_t,std::vector<size_t>>;
+shellpair_list_t obs_shellpair_list; // shellpair list for OBS
+
 /// computes non-negligible shell pair list; shells \c i and \c j form a non-negligible
 /// pair if they share a center or the Frobenius norm of their overlap is greater than threshold
-std::unordered_multimap<size_t,size_t>
+shellpair_list_t
 compute_shellpair_list(const BasisSet& bs1,
                        const BasisSet& bs2 = BasisSet(),
                        double threshold = 1e-12
                       );
-
-std::unordered_multimap<size_t,size_t> obs_shellpair_list; // shellpair list for OBS
 
 Matrix compute_2body_fock(const BasisSet& obs,
                           const Matrix& D,
@@ -253,10 +255,16 @@ int main(int argc, char *argv[]) {
     libint2::init();
 
     // compute OBS non-negligible shell-pair list
-    obs_shellpair_list = compute_shellpair_list(obs);
-    std::cout << "# of {all,non-negligible} shell-pairs = {"
-              << obs.size()*(obs.size()+1)/2 << ","
-              << obs_shellpair_list.size() << "}" << std::endl;
+    {
+      obs_shellpair_list = compute_shellpair_list(obs);
+      size_t nsp = 0;
+      for(auto& sp: obs_shellpair_list) {
+        nsp += sp.second.size();
+      }
+      std::cout << "# of {all,non-negligible} shell-pairs = {"
+                << obs.size()*(obs.size()+1)/2 << ","
+                << nsp << "}" << std::endl;
+    }
 
     // compute one-body integrals
     auto S = compute_1body_ints<libint2::OneBodyEngine::overlap>(obs)[0];
@@ -901,7 +909,7 @@ Matrix compute_do_ints(const BasisSet& bs1,
   return K;
 }
 
-std::unordered_multimap<size_t,size_t>
+shellpair_list_t
 compute_shellpair_list(const BasisSet& bs1,
                        const BasisSet& _bs2,
                        const double threshold) {
@@ -933,7 +941,7 @@ compute_shellpair_list(const BasisSet& bs1,
   timer.set_now_overhead(25);
   timer.start(0);
 
-  std::unordered_multimap<size_t,size_t> result;
+  shellpair_list_t result;
 
   std::mutex mx;
 
@@ -943,6 +951,11 @@ compute_shellpair_list(const BasisSet& bs1,
 
     // loop over permutationally-unique set of shells
     for(auto s1=0l, s12=0l; s1!=nsh1; ++s1) {
+
+      mx.lock();
+      if (result.find(s1) == result.end())
+        result.insert(std::make_pair(s1,std::vector<size_t>()));
+      mx.unlock();
 
       auto n1 = bs1[s1].size();// number of basis functions in this shell
 
@@ -964,7 +977,7 @@ compute_shellpair_list(const BasisSet& bs1,
 
         if (significant) {
           mx.lock();
-          result.insert(std::make_pair(s1,s2));
+          result[s1].emplace_back(s2);
           mx.unlock();
         }
       }
@@ -1094,9 +1107,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
       auto bf1_first = shell2bf[s1]; // first basis function in this shell
       auto n1 = obs[s1].size();// number of basis functions in this shell
 
-      auto s2_range = obs_shellpair_list.equal_range(s1);
-      for(auto s2_iter = s2_range.first; s2_iter != s2_range.second; ++s2_iter) {
-        auto s2 = s2_iter->second;
+      for(const auto& s2: obs_shellpair_list[s1]) {
 
         auto bf2_first = shell2bf[s2];
         auto n2 = obs[s2].size();
@@ -1114,11 +1125,8 @@ Matrix compute_2body_fock(const BasisSet& obs,
                                                    : 0.;
 
           const auto s4_max = (s1 == s3) ? s2 : s3;
-          auto s4_range = obs_shellpair_list.equal_range(s3);
-          for(auto s4_iter = s4_range.first; s4_iter != s4_range.second; ++s4_iter) {
-            auto s4 = s4_iter->second;
-            if (s4 > s4_max) continue; // even though shell pair list was created by inserting shells in monotonically increasing order
-                                       // this order is not preserved by unordered_multimap, thus can be nonmonotonic, can't break here
+          for(const auto& s4: obs_shellpair_list[s3]) {
+            if (s4 > s4_max) break; // for each s3, s4 are stored in monotonically increasing order
 
             if (s1234 % nthreads != thread_id)
               continue;
