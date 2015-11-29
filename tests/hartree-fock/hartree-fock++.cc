@@ -1227,14 +1227,11 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                                   double precision) {
 
   const auto n = obs.nbf();
+  const auto nshells = obs.size();
   const auto n_D = D_bs.nbf();
   assert(D.cols() == D.rows() && D.cols() == n_D);
 
-#ifdef _OPENMP
-  const auto nthreads = omp_get_max_threads();
-#else
-  const auto nthreads = 1;
-#endif
+  using libint2::nthreads;
   std::vector<Matrix> G(nthreads, Matrix::Zero(n,n));
 
   // construct the 2-electron repulsion integrals engine
@@ -1250,19 +1247,13 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
   auto shell2bf = obs.shell2bf();
   auto shell2bf_D = D_bs.shell2bf();
 
-#ifdef _OPENMP
-  #pragma omp parallel
-#endif
-  {
-#ifdef _OPENMP
-    auto thread_id = omp_get_thread_num();
-#else
-    auto thread_id = 0;
-#endif
+  auto lambda = [&] (int thread_id) {
 
-    auto s1234 = 0ul;
+    auto& engine = engines[thread_id];
+    auto& g = G[thread_id];
+
     // loop over permutationally-unique set of shells
-    for(auto s1=0; s1!=obs.size(); ++s1) {
+    for(auto s1=0l, s1234=0l; s1!=nshells; ++s1) {
 
       auto bf1_first = shell2bf[s1]; // first basis function in this shell
       auto n1 = obs[s1].size();   // number of basis functions in this shell
@@ -1295,7 +1286,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
               auto s34_deg = (s3 == s4) ? 1.0 : 2.0;
               auto s1234_deg = s12_deg * s34_deg;
               //auto s1234_deg = s12_deg;
-              const auto* buf_J = engines[thread_id].compute(obs[s1], obs[s2], D_bs[s3], D_bs[s4]);
+              const auto* buf_J = engine.compute(obs[s1], obs[s2], D_bs[s3], D_bs[s4]);
 
               for(auto f1=0, f1234=0; f1!=n1; ++f1) {
                 const auto bf1 = f1 + bf1_first;
@@ -1306,8 +1297,6 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                     for(auto f4=0; f4!=n4; ++f4, ++f1234) {
                       const auto bf4 = f4 + bf4_first;
 
-                      auto& g = G[thread_id];
-
                       const auto value = buf_J[f1234];
                       const auto value_scal_by_deg = value * s1234_deg;
                       g(bf1,bf2) += 2.0 * D(bf3,bf4) * value_scal_by_deg;
@@ -1317,7 +1306,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
               }
             }
 
-            const auto* buf_K = engines[thread_id].compute(obs[s1], D_bs[s3], obs[s2], D_bs[s4]);
+            const auto* buf_K = engine.compute(obs[s1], D_bs[s3], obs[s2], D_bs[s4]);
 
             for(auto f1=0, f1324=0; f1!=n1; ++f1) {
               const auto bf1 = f1 + bf1_first;
@@ -1327,8 +1316,6 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                   const auto bf2 = f2 + bf2_first;
                   for(auto f4=0; f4!=n4; ++f4, ++f1324) {
                     const auto bf4 = f4 + bf4_first;
-
-                    auto& g = G[thread_id];
 
                     const auto value = buf_K[f1324];
                     const auto value_scal_by_deg = value * s12_deg;
@@ -1343,7 +1330,9 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
       }
     }
 
-  } // omp parallel
+  }; // thread lambda
+
+  libint2::parallel_do(lambda);
 
   // accumulate contributions from all threads
   for(size_t i=1; i!=nthreads; ++i) {
