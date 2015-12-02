@@ -67,7 +67,9 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   }
 
   const SafePtr<DGVertex> target_vptr = rr_target();
+#if DEBUG
   std::cout << "RecurrenceRelation::generate_code: target = " << target_vptr->label() << std::endl;
+#endif
 
   const SafePtr<CompilationParameters>& cparams = context->cparams();
   SafePtr<DirectedGraph> dg(new DirectedGraph);
