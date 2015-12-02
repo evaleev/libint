@@ -986,7 +986,7 @@ compute_shellpair_list(const BasisSet& bs1,
 
   libint2::parallel_do(compute);
 
-  // resort shell list
+  // resort shell list in increasing order, i.e. result[s][s1] < result[s][s2] if s1 < s2
   auto sort = [&] (int thread_id) {
     for(auto s1=0l; s1!=nsh1; ++s1) {
       if (s1%nthreads == thread_id) {
