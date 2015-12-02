@@ -823,9 +823,9 @@ Matrix compute_schwartz_ints(const BasisSet& bs1,
 
         // the diagonal elements are the Schwartz ints ... use Map.diagonal()
         Eigen::Map<const Matrix> buf_mat(buf, n12, n12);
-        auto norm = use_2norm ? buf_mat.diagonal().norm() : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
-        K(s1,s2) = norm;
-        if (bs1_equiv_bs2) K(s2,s1) = norm;
+        auto norm2 = use_2norm ? buf_mat.diagonal().norm() : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
+        K(s1,s2) = std::sqrt(norm2);
+        if (bs1_equiv_bs2) K(s2,s1) = K(s1,s2);
 
       }
     }
@@ -895,9 +895,9 @@ Matrix compute_do_ints(const BasisSet& bs1,
 
         // the diagonal elements are the Schwartz ints ... use Map.diagonal()
         Eigen::Map<const Matrix> buf_mat(buf, n12, n12);
-        auto norm = use_2norm ? buf_mat.diagonal().norm() : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
-        K(s1,s2) = norm;
-        if (bs1_equiv_bs2) K(s2,s1) = norm;
+        auto norm2 = use_2norm ? buf_mat.diagonal().norm() : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
+        K(s1,s2) = std::sqrt(norm2);
+        if (bs1_equiv_bs2) K(s2,s1) = K(s1,s2);
 
       }
     }
