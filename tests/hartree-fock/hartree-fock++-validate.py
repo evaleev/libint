@@ -8,15 +8,15 @@ def pat_numbers(n):
     return result
 
 def validate(label, data, refdata, tolerance, textline):
-    ok = False
+    ok = True
     ndata = len(refdata)
     for i in range(ndata):
         datum = float(data[i])
         refdatum = refdata[i]
-        if (math.fabs(refdatum - datum) < tolerance):
-                ok = True
-        else:
+        if (math.fabs(refdatum - datum) > tolerance):
+            ok = False
             print(label, "check: failed\nreference:", refdata, "\nactual:", textline)
+            break
     if (ok): print(label, "check: passed")
     return ok
 
@@ -28,25 +28,25 @@ if os.path.exists(path_to_libfeatures):
     execfile(path_to_libfeatures)
 
 eref = [-76.003354058456]
-etol = 1e-11
+etol = 1e-12
 
-muref = [-0.263282355181168, -0.091203683186213, -0.105312942071265]
-mutol = 1e-10
+muref = [-0.263282355852899, -0.0912036834147694, -0.105312942341114]
+mutol = 1e-9
 
-Qref = [-7.01719638095415, 0.0246243454339316, -0.57620129865407, \
-        -8.04716668958708, 0.638204907503245,  -6.35134519301054]
-Qtol = 1e-10
+Qref = [-7.01719638259305, 0.0246243455752736, -0.576201298992812,
+        -8.04716669233508, 0.638204908066147,  -6.35134519438538]
+Qtol = 1e-8
 
-F1ref = [-5.4356955590748,  -1.88298017661221, -2.17427822361541, \
-          3.47022732552768, -2.96798871234053,  2.59189820377569, \
-          1.96546823354713,  4.85096888895273, -0.417619980160289]
-F1tol = 1e-10
+F1ref = [-5.43569555885951, -1.88298017648151, -2.17427822354382, \
+          3.47022732532752, -2.96798871197376,  2.59189820356784, \
+          1.96546823353199,  4.85096888845526, -0.417619980024024 ]
+F1tol = 1e-9
 F1ok = False if LIBINT_ONEBODY_DERIV>0 else True
 
-FPref = [ 0.355265310364197,  0.123067513554652,  0.142106124142559, \
-         -0.224258642051479,  0.180741977858114, -0.16430503581098,  \
-         -0.131006668312719, -0.303809491412766,  0.0221989116684212]
-FPtol = 1e-10
+FPref = [ 0.35526531023214,   0.123067513497363,  0.14210612409289, \
+         -0.224258641960886,  0.180741977756425, -0.164305035736127, \
+         -0.131006668271254, -0.303809491253788,  0.0221989116432378]
+FPtol = 1e-9
 FPok = False if LIBINT_ONEBODY_DERIV>0 else True
 
 for line in sys.stdin:
