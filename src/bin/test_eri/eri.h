@@ -27,9 +27,7 @@
 #include <iostream>
 #include <stdlib.h>
 
-#include <libint2/config.h>
 #include <libint2/boys.h>
-#include "eri.h"
 
 #if defined(__cplusplus)
 #if HAVE_MPFR
@@ -212,65 +210,6 @@ template <typename Real> void calc_f(Real* F, int n, Real t)
     }
   }
 }
-
-#if 0
-namespace libint2 {
-
-  class ExpensiveMath {
-    public:
-      ExpensiveMath(int ifac, int idf);
-      ~ExpensiveMath();
-      double *fac;
-      double *df;
-  };
-
-  #define TAYLOR_INTERPOLATION_AND_RECURSION 0  // compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
-
-  /**
-   * Computes the Boys function using Taylor expansion in (T-T_k), where T_k is the closest value of T that exists in
-   * the table of precomputed values.
-   *
-   * @tparam RealP the real number data type used to precompute Fm(T). The default is double. Must implement the following operators and functions:
-   *    \li arithmetic (+, -, *, /)
-   *    \li log, exp, sqrt, pow, floor
-   * @tparam RealE the real number data type used to evaluate Fm(T). The default is same as RealP. Must implement the following operators and functions:
-   *    \li arithmetic (+, -, *, /)
-   *    \li log, exp, sqrt, pow, floor
-   * @tparam InterpolationOrder the interpolation order. The default is 6.
-   */
-  template <typename RealP = double, typename RealE = RealP, unsigned int InterpolationOrder = 6u>
-  class FmTaylor {
-    public:
-      static const unsigned int max_interp_order = 8u;
-
-      /// Initialize to compute Fm with 0<=m<=\c m_max, and estimated relative precision \c prec
-      FmTaylor(unsigned int m_max, Real prec);
-      ~FmTaylor();
-      /// returns the pointer to the result buffer
-      Real *values(unsigned int J, Real T);
-
-    private:
-      static Real relative_zero_;
-      Real **grid_; /* Table of "exact" Fm(T) values. Row index corresponds to
-       values of T (max_T+1 rows), column index to values
-       of m (max_m+1 columns) */
-      Real delT_; /* The step size for T, depends on cutoff */
-      Real oodelT_; /* 1.0 / delT_, see above */
-      Real cutoff_; /* Tolerance cutoff used in all computations of Fj(T) */
-      unsigned int max_m_; /* Maximum value of m in the table, depends on cutoff
-       and the number of terms in Taylor interpolation */
-      unsigned int max_T_; /* Maximum index of T in the table, depends on cutoff
-       and m */
-      Real *T_crit_; /* Maximum T for each row, depends on cutoff;
-       for a given m and T_idx <= max_T_idx[m] use Taylor interpolation,
-       for a given m and T_idx > max_T_idx[m] use the asymptotic formula */
-      Real *F_; /* Here computed values of Fj(T) are stored */
-
-      ExpensiveMath<Real> ExpMath_;
-  };
-
-}; // namespace libint2
-#endif
 
 namespace {
   template <typename Int>
