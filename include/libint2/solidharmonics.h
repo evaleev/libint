@@ -169,7 +169,11 @@ namespace libint2 {
             return 0.0;
 
           assert(l <= 10); // libint2::math::fac[] is only defined up to 20
-          Real pfac = sqrt(Real(fac[2*lx]*fac[2*ly]*fac[2*lz]*fac[l-abs_m])/(fac[2*l]*fac[l]*fac[lx]*fac[ly]*fac[lz]*fac[l+abs_m]));
+          Real pfac = sqrt( ((Real(fac[2*lx]*fac[2*ly]*fac[2*lz]))/fac[2*l]) *
+                            ((Real(fac[l-abs_m]))/(fac[l])) *
+                            (Real(1)/fac[l+abs_m]) *
+                            (Real(1)/(fac[lx]*fac[ly]*fac[lz]))
+                          );
           /*  pfac = sqrt(fac[l-abs_m]/(fac[l]*fac[l]*fac[l+abs_m]));*/
           pfac /= (1L << l);
           if (m < 0)
@@ -194,10 +198,8 @@ namespace libint2 {
           }
           sum *= sqrt(Real(df_Kminus1[2*l])/(df_Kminus1[2*lx]*df_Kminus1[2*ly]*df_Kminus1[2*lz]));
 
-          if (m == 0)
-            return pfac*sum;
-          else
-            return M_SQRT2*pfac*sum;
+          Real result = (m == 0) ? pfac*sum : M_SQRT2*pfac*sum;
+          return result;
         }
 
         struct CtorHelperIter : public std::iterator<std::input_iterator_tag, SolidHarmonicsCoefficients> {
