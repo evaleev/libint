@@ -488,8 +488,6 @@ namespace libint2 {
       void initialize() {
         assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
 
-        reset_scratch();
-
 #define BOOST_PP_ONEBODYENGINE_MCR2(r,product)                                                                \
          if (type_ == BOOST_PP_TUPLE_ELEM(2,0,product) && deriv_order_ == BOOST_PP_TUPLE_ELEM(2,1,product) ) {\
            assert(lmax_ <= BOOST_PP_CAT(LIBINT2_MAX_AM_ ,                                                     \
@@ -538,6 +536,7 @@ namespace libint2 {
                                                 )                                                             \
                                     )                                                                         \
                                   ) + 1;                                                                      \
+           reset_scratch();                                                                                   \
            return;                                                                                            \
          }
 
