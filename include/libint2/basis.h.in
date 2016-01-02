@@ -77,28 +77,44 @@ namespace libint2 {
                const std::vector<Atom>& atoms) : name_(std::move(name)) {
 
         // read in the library file contents
-        std::string file_dot_g94 = data_path();
+        std::string basis_lib_path = data_path();
         auto canonical_name = canonicalize_name(name_);
-        file_dot_g94 += "/" + canonical_name + ".g94";
-        
         // some basis sets use cartesian d shells by convention, the convention is taken from Gaussian09
         auto force_cartesian_d = gaussian_cartesian_d_convention(canonical_name);
-        std::vector<std::vector<libint2::Shell>> ref_shells = read_g94_basis_library(file_dot_g94,
-                                                                                     force_cartesian_d);
-
-        // for each atom find the corresponding basis
+        
+        // parse the name into components
+        std::vector<std::string> basis_component_names = decompose_name_into_components(canonical_name);
+        
+        // ref_shells[component_idx][Z] => vector of Shells
+        std::vector<std::vector<std::vector<libint2::Shell>>> component_basis_sets;
+        component_basis_sets.reserve(basis_component_names.size());
+        
+        // read in ALL basis set components
+        for(const auto& basis_component_name: basis_component_names) {
+          auto file_dot_g94 = basis_lib_path + "/" + basis_component_name + ".g94";
+        
+          // use same cartesian_d convention for all components!
+          component_basis_sets.emplace_back(read_g94_basis_library(file_dot_g94, force_cartesian_d));
+        }
+        
+        // for each atom find the corresponding basis components
         for(auto a=0; a<atoms.size(); ++a) {
 
           auto Z = atoms[a].atomic_number;
-          if (ref_shells[Z].empty())
-            throw std::string("did not find the basis for this Z in ") + file_dot_g94;
+          
+          // add each component in order
+          for(auto comp_idx=0; comp_idx!=component_basis_sets.size(); ++comp_idx) {
+            const auto& component_basis_set = component_basis_sets[comp_idx];
+            if (component_basis_set[Z].empty())
+              throw std::string("did not find the basis for this Z in ") +
+                    basis_lib_path + "/" + basis_component_names[comp_idx] + ".g94";
 
-          for(auto s: ref_shells[Z]) {
-            this->push_back(std::move(s));
-            this->back().move({{atoms[a].x, atoms[a].y, atoms[a].z}});
-          }
-
-        }
+            for(auto s: component_basis_set[Z]) {
+              this->push_back(std::move(s));
+              this->back().move({{atoms[a].x, atoms[a].y, atoms[a].z}});
+            } // shell loop
+          } // basis component loop
+        } // atom loop
 
         init();
       }
@@ -191,6 +207,21 @@ namespace libint2 {
             return true;
         }
         return false;
+      }
+      
+      /// decompose basis set name into components
+      std::vector<std::string> decompose_name_into_components(std::string name) {
+        std::vector<std::string> component_names;
+        // aug-cc-pvxz*
+        if (name.find("aug-cc-pv") == 0) {
+          std::string base_name = name.substr(4);
+          component_names.push_back(base_name);
+          component_names.push_back(std::string("augmentation-") + base_name);
+        }
+        else
+          component_names.push_back(name);
+
+        return component_names;
       }
       
       /** determines the path to the data directory, as follows:
