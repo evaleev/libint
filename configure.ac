@@ -691,23 +691,31 @@ if test "X$INCLUDE_G12DKH" != "Xno"; then
   AC_DEFINE_UNQUOTED(G12DKH_OPT_AM,$G12DKH_OPT_AM)
 fi
 
+LIBINT_UNROLLING_THRESHOLD=100
 AC_ARG_ENABLE(unrolling,
 [  --enable-unrolling      Unroll shell sets into integrals (--enable-unrolling=S will unroll shell sets larger than S).],
 [
 case $enableval in
   yes)
-  AC_DEFINE(LIBINT_ENABLE_UNROLLING,1000000000)
-  AC_MSG_RESULT([Integral sets can be unrolled])
+  LIBINT_UNROLLING_THRESHOLD=1000000000
   ;;
   no)
-  AC_MSG_RESULT([Integral sets will not be unrolled])
+  LIBINT_UNROLLING_THRESHOLD=
+  AC_MSG_RESULT([Shell sets will not be unrolled])
   ;;
   *)
-  AC_DEFINE_UNQUOTED(LIBINT_ENABLE_UNROLLING,$enableval)
-  AC_MSG_RESULT([Integral sets can be unrolled up to size $enableval])
+  LIBINT_UNROLLING_THRESHOLD=$enableval
   ;;
 esac
 ])
+if test X$LIBINT_UNROLLING_THRESHOLD != X; then
+  if test X$LIBINT_UNROLLING_THRESHOLD = X1000000000; then
+    AC_MSG_RESULT([All shell sets will be unrolled])
+  else
+    AC_MSG_RESULT([Shell sets will be unrolled up to size $LIBINT_UNROLLING_THRESHOLD])
+  fi
+  AC_DEFINE_UNQUOTED(LIBINT_ENABLE_UNROLLING, $LIBINT_UNROLLING_THRESHOLD)
+fi
 
 AC_ARG_ENABLE(generic-code,
 [  --enable-generic-code   Use manually-written generic code.],
