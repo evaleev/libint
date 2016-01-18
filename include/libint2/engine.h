@@ -1133,6 +1133,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
           timers.start(1);
 #endif
           auto& stack = primdata_[0].stack[0];
+          stack = 0;
           for(auto p=0; p != primdata_[0].contrdepth; ++p)
             stack += primdata_[p].LIBINT_T_SS_EREP_SS(0)[0];
           primdata_[0].targets[0] = primdata_[0].stack;
@@ -1716,40 +1717,40 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
     // prefactors for derivative ERI relations
     if (deriv_order_ > 0) {
 #if LIBINT2_DEFINED(eri,alpha1_rho_over_zeta2)
-      primdata.alpha1_rho_over_zeta2[0] = alpha0 * rho / (gammap * gammap);
+      primdata.alpha1_rho_over_zeta2[0] = alpha0 * (oogammap * gammaq_o_gammapgammaq);
 #endif
 #if LIBINT2_DEFINED(eri,alpha2_rho_over_zeta2)
-      primdata.alpha2_rho_over_zeta2[0] = alpha1 * rho / (gammap * gammap);
+      primdata.alpha2_rho_over_zeta2[0] = alpha1 * (oogammap * gammaq_o_gammapgammaq);
 #endif
 #if LIBINT2_DEFINED(eri,alpha3_rho_over_eta2)
-      primdata.alpha3_rho_over_eta2[0] = alpha2 * rho / (gammaq * gammaq);
+      primdata.alpha3_rho_over_eta2[0] = alpha2 * (oogammaq * gammap_o_gammapgammaq);
 #endif
 #if LIBINT2_DEFINED(eri,alpha4_rho_over_eta2)
-      primdata.alpha4_rho_over_eta2[0] = alpha3 * rho / (gammaq * gammaq);
+      primdata.alpha4_rho_over_eta2[0] = alpha3 * (oogammaq * gammap_o_gammapgammaq);
 #endif
 #if LIBINT2_DEFINED(eri,alpha1_over_zetapluseta)
-      primdata.alpha1_over_zetapluseta[0] = alpha0 / (gammap + gammaq);
+      primdata.alpha1_over_zetapluseta[0] = alpha0 * oogammapq;
 #endif
 #if LIBINT2_DEFINED(eri,alpha2_over_zetapluseta)
-      primdata.alpha2_over_zetapluseta[0] = alpha1 / (gammap + gammaq);
+      primdata.alpha2_over_zetapluseta[0] = alpha1 * oogammapq;
 #endif
 #if LIBINT2_DEFINED(eri,alpha3_over_zetapluseta)
-      primdata.alpha3_over_zetapluseta[0] = alpha2 / (gammap + gammaq);
+      primdata.alpha3_over_zetapluseta[0] = alpha2 * oogammapq;
 #endif
 #if LIBINT2_DEFINED(eri,alpha4_over_zetapluseta)
-      primdata.alpha4_over_zetapluseta[0] = alpha3 / (gammap + gammaq);
+      primdata.alpha4_over_zetapluseta[0] = alpha3 * oogammapq;
 #endif
 #if LIBINT2_DEFINED(eri,rho12_over_alpha1)
-      primdata.rho12_over_alpha1[0] = rhop / alpha0;
+      primdata.rho12_over_alpha1[0] = alpha1 * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,rho12_over_alpha2)
-      primdata.rho12_over_alpha2[0] = rhop / alpha1;
+      primdata.rho12_over_alpha2[0] = alpha0 * oogammap;
 #endif
 #if LIBINT2_DEFINED(eri,rho34_over_alpha3)
-      primdata.rho34_over_alpha3[0] = rhoq / alpha2;
+      primdata.rho34_over_alpha3[0] = alpha3 * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,rho34_over_alpha4)
-      primdata.rho34_over_alpha4[0] = rhoq / alpha3;
+      primdata.rho34_over_alpha4[0] = alpha2 * oogammaq;
 #endif
 #if LIBINT2_DEFINED(eri,two_alpha0_bra)
       primdata.two_alpha0_bra[0] = 2.0 * alpha0;
