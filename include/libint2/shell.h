@@ -71,8 +71,8 @@ namespace libint2 {
    *  \endverbatim
    *  \note The contraction coefficients correspond to <em>unity-normalized</em> primitives. EMSL Gaussian Basis Set Database,
    *  as well as basis set libraries embedded into most quantum chemistry programs use this convention.
-   *  However, coefficients must be converted to refer to normalization-free primitives before computing
-   *  integrals! See Shell::renorm();
+   *  However, coefficients are automatically converted internally to refer to
+   *  normalization-free primitives before computing integrals (see \c Shell::renorm() ).
    */
   struct Shell {
       typedef double real_t;
