@@ -116,6 +116,10 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                                   double precision = std::numeric_limits<double>::epsilon() // discard contributions smaller than this
                                  );
 
+// returns {X,X^{-1}}, where X is the canonical orthogonalizer such that X.transpose() * A * X = I
+// A is conditioned to max_condition_number .
+std::pair<Matrix,Matrix> canonical_orthogonalizer(const Matrix& A, double max_condition_number=1e8);
+
 #ifdef LIBINT2_HAVE_BTAS
 # define HAVE_DENSITY_FITTING 1
   struct DFFockEngine {
@@ -1002,6 +1006,38 @@ compute_shellpair_list(const BasisSet& bs1,
   std::cout << "done (" << timer.read(0) << " s)"<< std::endl;
 
   return result;
+}
+
+std::pair<Matrix,Matrix>
+canonical_orthogonalizer(const Matrix& S, double max_condition_number) {
+  Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(S);
+  auto U = eig_solver.eigenvectors();
+  auto s = eig_solver.eigenvalues();
+  auto s_max = s.maxCoeff();
+  auto threshold = s_max / max_condition_number;
+  auto n = s.rows();
+  auto n_oao=0ul;
+  std::vector<double> s_sqrt, s_invsqrt;
+  s_sqrt.reserve(n);
+  s_invsqrt.reserve(n);
+  for(auto i=0ul; i!=n; ++i) {
+    if (s(i) >= threshold) {
+      ++n_oao;
+      auto si_sqrt = sqrt(s(i));
+      s_sqrt.push_back(si_sqrt);
+      s_invsqrt.push_back(1.0/si_sqrt);
+    }
+  }
+
+  Matrix X{n, n_oao};
+  Matrix Xinv{n, n_oao};
+  for(auto r=0ul; r!=n; ++r) {
+    for(auto c=0ul; c!=n_oao; ++c) {
+      X(r,c) = U(r,c) * s_invsqrt[c];
+      Xinv(r,c) = U(r,c) * s_sqrt[c];
+    }
+  }
+  return std::make_pair(X,Xinv);
 }
 
 Matrix compute_2body_2index_ints(const BasisSet& bs)
