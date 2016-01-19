@@ -29,6 +29,7 @@
 #include <array>
 #include <vector>
 #include <cassert>
+#include <cmath>
 
 #include <libint2.h>
 
