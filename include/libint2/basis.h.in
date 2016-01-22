@@ -290,7 +290,8 @@ namespace libint2 {
 
         size_t Z;
         auto nextbasis = true, nextshell = false;
-        while(std::getline(is, comment) && comment != "") {
+        // read lines, skipping empty and starting with '!' (the comment delimiter)
+        while(std::getline(is, comment) && comment != "" && comment[0] != '!') {
           if (comment == "****") {
             nextbasis = true;
             nextshell = false;
