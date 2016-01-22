@@ -290,8 +290,10 @@ namespace libint2 {
 
         size_t Z;
         auto nextbasis = true, nextshell = false;
-        // read lines, skipping empty and starting with '!' (the comment delimiter)
-        while(std::getline(is, comment) && comment != "" && comment[0] != '!') {
+        // read lines till end
+        while(std::getline(is, comment)) {
+          // skipping empties and starting with '!' (the comment delimiter)
+          if (comment.empty() || comment[0] == '!') continue;
           if (comment == "****") {
             nextbasis = true;
             nextshell = false;
@@ -334,7 +336,7 @@ namespace libint2 {
               std::vector<double> exps;
               std::vector<double> coeffs;
               for(auto p = 0; p!=nprim; ++p) {
-                std::getline(is, comment);
+                while(std::getline(is, comment) && (comment.empty() || comment[0] == '!')) {}
                 std::istringstream iss(comment);
                 double e, c;
                 iss >> e >> c;
@@ -356,7 +358,7 @@ namespace libint2 {
               std::vector<double> exps;
               std::vector<double> coeffs_s, coeffs_p;
               for(auto p = 0; p!=nprim; ++p) {
-                std::getline(is, comment);
+                while(std::getline(is, comment) && (comment.empty() || comment[0] == '!')) {}
                 std::istringstream iss(comment);
                 double e, c1, c2;
                 iss >> e >> c1 >> c2;
