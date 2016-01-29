@@ -33,14 +33,23 @@
 
 namespace libint2 {
 
+  namespace detail {
+    static bool __initialized = false;
+  };
+
   inline void init() {
     libint2_static_init();
+    detail::__initialized = true;
   }
   inline void cleanup() {
     libint2_static_cleanup();
+    detail::__initialized = false;
   }
   inline void finalize() {
     ::libint2::cleanup();
+  }
+  inline bool initialized() {
+    return detail::__initialized;
   }
 }
 

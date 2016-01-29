@@ -486,6 +486,7 @@ namespace libint2 {
       }
 
       void initialize() {
+        assert(libint2::initialized());
         assert(deriv_order_ <= LIBINT2_DERIV_ONEBODY_ORDER);
 
 #define BOOST_PP_ONEBODYENGINE_MCR2(r,product)                                                                \
@@ -1361,6 +1362,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       friend struct detail::TwoBodyEngineDispatcher<Kernel>;
 
       void initialize() {
+        assert(libint2::initialized());
         assert(lmax_ <= LIBINT2_MAX_AM_ERI);
         assert(deriv_order_ <= LIBINT2_DERIV_ERI_ORDER);
 	
