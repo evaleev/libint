@@ -213,7 +213,7 @@ namespace libint2 {
       std::vector<std::string> decompose_name_into_components(std::string name) {
         std::vector<std::string> component_names;
         // aug-cc-pvxz*
-        if (name.find("aug-cc-pv") == 0) {
+        if ( (name.find("aug-cc-pv") == 0) && (name.find("CABS")!=std::string::npos)  ) {
           std::string base_name = name.substr(4);
           component_names.push_back(base_name);
           component_names.push_back(std::string("augmentation-") + base_name);
