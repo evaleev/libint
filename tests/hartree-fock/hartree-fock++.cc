@@ -116,9 +116,17 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                                   double precision = std::numeric_limits<double>::epsilon() // discard contributions smaller than this
                                  );
 
-// returns {X,X^{-1}}, where X is the canonical orthogonalizer such that X.transpose() * A * X = I
-// A is conditioned to max_condition_number .
-std::pair<Matrix,Matrix> canonical_orthogonalizer(const Matrix& A, double max_condition_number=1e8);
+// returns {X,X^{-1},rank,A_condition_number}, where
+// X is the generalized square-root-inverse such that X.transpose() * A * X = I
+//
+// if symmetric is true, produce "symmetric" sqrtinv: X = U . A_evals_sqrtinv . U.transpose()),
+// else produce "canonical" sqrtinv: X = U . A_evals_sqrtinv
+// where U are eigenvectors of A
+// rows and cols of symmetric X are equivalent; for canonical X the rows are original basis (AO),
+// cols are transformed basis ("orthogonal" AO)
+//
+// A is conditioned to max_condition_number
+std::tuple<Matrix,Matrix,size_t,double> gensqrtinv(const Matrix& A, bool symmetric=false, double max_condition_number=1e8);
 
 #ifdef LIBINT2_HAVE_BTAS
 # define HAVE_DENSITY_FITTING 1
@@ -278,6 +286,25 @@ int main(int argc, char *argv[]) {
     T.resize(0,0);
     V.resize(0,0);
 
+    // compute orthogonalizer X such that X.transpose() . S . X = I
+    Matrix X, Xinv;
+    {
+      size_t rank;
+      double S_condition_number;
+      double max_S_condition_number = 1e8;
+      std::tie(X, Xinv, rank, S_condition_number) = gensqrtinv(S, false,
+                                                               max_S_condition_number);
+      std::cout << "overlap condition number = " << S_condition_number;
+      if (S_condition_number > max_S_condition_number)
+      std::cout << " (dropped " << ((long)obs.nbf() - (long)rank)
+                << " fns to reduce to " << max_S_condition_number << ")";
+      std::cout << std::endl;
+
+      Matrix should_be_I = X.transpose() * S * X;
+      Matrix I = Matrix::Identity(should_be_I.rows(),should_be_I.cols());
+      std::cout << "||X^t * S * X - I||_2 = " << (should_be_I - I).norm()
+          << " (should be 0)" << std::endl;
+    }
     Matrix D;
     Matrix C_occ;
     Matrix evals;
@@ -297,9 +324,10 @@ int main(int argc, char *argv[]) {
                                         1e-12 // this is cheap, no reason to be cheaper
                                        );
 
-        // solve F C = e S C
-        Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> gen_eig_solver(F, S);
-        auto C = gen_eig_solver.eigenvectors();
+        // solve F C = e S C by (conditioned) transformation to F' C' = e C', where
+        // F' = X.transpose() . F . X; the original C is obtained as C = X . C'
+        Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(X.transpose() * F * X);
+        auto C = X * eig_solver.eigenvectors();
 
         // compute density, D = C(occ) . C(occ)T
         C_occ = C.leftCols(ndocc);
@@ -393,10 +421,12 @@ int main(int argc, char *argv[]) {
                          // make a copy of the unextrapolated matrix
       diis.extrapolate(F_diis,FD_comm);
 
-      // solve F C = e S C
-      Eigen::GeneralizedSelfAdjointEigenSolver<Matrix> gen_eig_solver(F_diis, S);
-      evals = gen_eig_solver.eigenvalues();
-      auto C = gen_eig_solver.eigenvectors();
+      // solve F C = e S C by (conditioned) transformation to F' C' = e C', where
+      // F' = X.transpose() . F . X; the original C is obtained as C = X . C'
+      Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(X.transpose() * F_diis * X);
+      evals = eig_solver.eigenvalues();
+      auto C = X * eig_solver.eigenvectors();
+
 
       // compute density, D = C(occ) . C(occ)T
       C_occ = C.leftCols(ndocc);
@@ -1008,36 +1038,39 @@ compute_shellpair_list(const BasisSet& bs1,
   return result;
 }
 
-std::pair<Matrix,Matrix>
-canonical_orthogonalizer(const Matrix& S, double max_condition_number) {
+std::tuple<Matrix,Matrix,size_t,double>
+gensqrtinv(const Matrix& S, bool symmetric, double max_condition_number) {
   Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(S);
   auto U = eig_solver.eigenvectors();
   auto s = eig_solver.eigenvalues();
   auto s_max = s.maxCoeff();
+  auto condition_number = std::min(s_max / std::max(s.minCoeff(),std::numeric_limits<double>::min()),
+                                   1.0 / std::numeric_limits<double>::epsilon());
   auto threshold = s_max / max_condition_number;
-  auto n = s.rows();
-  auto n_oao=0ul;
-  std::vector<double> s_sqrt, s_invsqrt;
-  s_sqrt.reserve(n);
-  s_invsqrt.reserve(n);
-  for(auto i=0ul; i!=n; ++i) {
+  long n = s.rows();
+  long n_cond=0;
+  for(long i=n-1; i>=0; --i) {
     if (s(i) >= threshold) {
-      ++n_oao;
-      auto si_sqrt = sqrt(s(i));
-      s_sqrt.push_back(si_sqrt);
-      s_invsqrt.push_back(1.0/si_sqrt);
+      ++n_cond;
     }
+    else
+      i = 0; // skip rest since eigenvalues are in ascending order
   }
 
-  Matrix X{n, n_oao};
-  Matrix Xinv{n, n_oao};
-  for(auto r=0ul; r!=n; ++r) {
-    for(auto c=0ul; c!=n_oao; ++c) {
-      X(r,c) = U(r,c) * s_invsqrt[c];
-      Xinv(r,c) = U(r,c) * s_sqrt[c];
-    }
+  auto sigma = s.bottomRows(n_cond);
+  auto sigma_sqrt = sigma.array().sqrt().matrix().asDiagonal();
+  auto sigma_invsqrt = sigma.array().sqrt().inverse().matrix().asDiagonal();
+
+  // make canonical X/Xinv
+  auto U_cond = U.block(0,n-n_cond,n,n_cond);
+  Matrix X =  U_cond * sigma_invsqrt;
+  Matrix Xinv = U_cond * sigma_sqrt;
+  // convert to symmetric, if needed
+  if (symmetric) {
+    X = X * U_cond.transpose();
+    Xinv = Xinv * U_cond.transpose();
   }
-  return std::make_pair(X,Xinv);
+  return std::make_tuple(X,Xinv,size_t(n_cond),condition_number);
 }
 
 Matrix compute_2body_2index_ints(const BasisSet& bs)
