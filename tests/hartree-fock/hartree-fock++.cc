@@ -1182,8 +1182,11 @@ Matrix compute_2body_fock(const BasisSet& obs,
   }
 
   auto fock_precision = precision;
+  // engine precision controls primitive truncation, assume worst-case scenario (all primitive combinations add up constructively)
+  auto max_nprim = obs.max_nprim();
+  auto max_nprim4 = max_nprim*max_nprim*max_nprim*max_nprim;
   auto engine_precision = std::min(fock_precision / D_shblk_norm.maxCoeff(),
-                                   std::numeric_limits<double>::epsilon());
+                                   std::numeric_limits<double>::epsilon()) / max_nprim4;
 
   // construct the 2-electron repulsion integrals engine
   typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
