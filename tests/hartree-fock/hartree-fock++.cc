@@ -382,7 +382,9 @@ int main(int argc, char *argv[]) {
 
       // build a new Fock matrix
       if (not do_density_fitting) {
-        const auto precision_F = std::min(1e-7,std::max(rms_error/1e4,std::numeric_limits<double>::epsilon()));
+        // totally empirical precision variation, involves the condition number
+        const auto precision_F = std::min(std::min(1e-3 / XtX_condition_number, 1e-7),
+            std::max(rms_error/1e4,std::numeric_limits<double>::epsilon()));
         F += compute_2body_fock(obs, D_diff, precision_F, K);
       }
 #if HAVE_DENSITY_FITTING
