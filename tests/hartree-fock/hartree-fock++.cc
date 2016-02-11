@@ -1154,7 +1154,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
   std::vector<Matrix> G(nthreads, Matrix::Zero(n,n));
 
   const auto do_schwartz_screen = Schwartz.cols() != 0 && Schwartz.rows() != 0;
-  Matrix D_shblk_norm; // matrix of norms of shell blocks
+  Matrix D_shblk_norm; // matrix of infty-norms of shell blocks
   if (do_schwartz_screen) {
     D_shblk_norm = compute_shellblock_norm(obs, D);
   }
