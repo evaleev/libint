@@ -327,7 +327,7 @@ int main(int argc, char *argv[]) {
         auto F = H;
         F += compute_2body_fock_general(obs, D_minbs, minbs,
                                         true /* SOAD_D_is_shelldiagonal */,
-                                        1e-12 // this is cheap, no reason to be cheaper
+                                        std::numeric_limits<double>::epsilon() // this is cheap, no reason to be cheaper
                                        );
 
         // solve F C = e S C by (conditioned) transformation to F' C' = e C', where
