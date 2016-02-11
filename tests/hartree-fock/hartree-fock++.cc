@@ -292,7 +292,7 @@ int main(int argc, char *argv[]) {
     {
       size_t obs_rank;
       double S_condition_number;
-      double max_S_condition_number = 1e8;
+      double max_S_condition_number = 1.0/std::numeric_limits<double>::epsilon();
       double result_S_condition_number;
       std::tie(X, Xinv, obs_rank, S_condition_number, result_S_condition_number) =
           gensqrtinv(S, false, max_S_condition_number);
