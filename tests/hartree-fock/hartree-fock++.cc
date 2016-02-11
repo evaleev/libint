@@ -116,7 +116,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                                   double precision = std::numeric_limits<double>::epsilon() // discard contributions smaller than this
                                  );
 
-// returns {X,X^{-1},rank,A_condition_number}, where
+// returns {X,X^{-1},rank,A_condition_number,result_A_condition_number}, where
 // X is the generalized square-root-inverse such that X.transpose() * A * X = I
 //
 // if symmetric is true, produce "symmetric" sqrtinv: X = U . A_evals_sqrtinv . U.transpose()),
@@ -126,7 +126,8 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
 // cols are transformed basis ("orthogonal" AO)
 //
 // A is conditioned to max_condition_number
-std::tuple<Matrix,Matrix,size_t,double> gensqrtinv(const Matrix& A, bool symmetric=false, double max_condition_number=1e8);
+std::tuple<Matrix,Matrix,size_t,double,double>
+gensqrtinv(const Matrix& A, bool symmetric=false, double max_condition_number=1e8);
 
 #ifdef LIBINT2_HAVE_BTAS
 # define HAVE_DENSITY_FITTING 1
@@ -289,21 +290,26 @@ int main(int argc, char *argv[]) {
     // compute orthogonalizer X such that X.transpose() . S . X = I
     Matrix X, Xinv;
     {
-      size_t rank;
+      size_t obs_rank;
       double S_condition_number;
       double max_S_condition_number = 1e8;
-      std::tie(X, Xinv, rank, S_condition_number) = gensqrtinv(S, false,
-                                                               max_S_condition_number);
+      double result_S_condition_number;
+      std::tie(X, Xinv, obs_rank, S_condition_number, result_S_condition_number) =
+          gensqrtinv(S, false, max_S_condition_number);
+      auto obs_nbf_omitted = (long)obs.nbf() - (long)obs_rank;
       std::cout << "overlap condition number = " << S_condition_number;
-      if (S_condition_number > max_S_condition_number)
-      std::cout << " (dropped " << ((long)obs.nbf() - (long)rank)
-                << " fns to reduce to " << max_S_condition_number << ")";
+      if (obs_nbf_omitted > 0)
+        std::cout << " (dropped " << obs_nbf_omitted
+                  << " " << (obs_nbf_omitted > 1 ? "fns" : "fn")
+                  << " to reduce to " << result_S_condition_number << ")";
       std::cout << std::endl;
 
-      Matrix should_be_I = X.transpose() * S * X;
-      Matrix I = Matrix::Identity(should_be_I.rows(),should_be_I.cols());
-      std::cout << "||X^t * S * X - I||_2 = " << (should_be_I - I).norm()
-          << " (should be 0)" << std::endl;
+      if (obs_nbf_omitted > 0) {
+        Matrix should_be_I = X.transpose() * S * X;
+        Matrix I = Matrix::Identity(should_be_I.rows(),should_be_I.cols());
+        std::cout << "||X^t * S * X - I||_2 = " << (should_be_I - I).norm()
+                  << " (should be 0)" << std::endl;
+      }
     }
     Matrix D;
     Matrix C_occ;
@@ -1038,7 +1044,7 @@ compute_shellpair_list(const BasisSet& bs1,
   return result;
 }
 
-std::tuple<Matrix,Matrix,size_t,double>
+std::tuple<Matrix,Matrix,size_t,double,double>
 gensqrtinv(const Matrix& S, bool symmetric, double max_condition_number) {
   Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(S);
   auto U = eig_solver.eigenvectors();
@@ -1058,6 +1064,7 @@ gensqrtinv(const Matrix& S, bool symmetric, double max_condition_number) {
   }
 
   auto sigma = s.bottomRows(n_cond);
+  auto result_condition_number = sigma.maxCoeff() / sigma.minCoeff();
   auto sigma_sqrt = sigma.array().sqrt().matrix().asDiagonal();
   auto sigma_invsqrt = sigma.array().sqrt().inverse().matrix().asDiagonal();
 
@@ -1070,7 +1077,7 @@ gensqrtinv(const Matrix& S, bool symmetric, double max_condition_number) {
     X = X * U_cond.transpose();
     Xinv = Xinv * U_cond.transpose();
   }
-  return std::make_tuple(X,Xinv,size_t(n_cond),condition_number);
+  return std::make_tuple(X,Xinv,size_t(n_cond),condition_number,result_condition_number);
 }
 
 Matrix compute_2body_2index_ints(const BasisSet& bs)
