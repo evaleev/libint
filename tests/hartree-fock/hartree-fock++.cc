@@ -1159,11 +1159,15 @@ Matrix compute_2body_fock(const BasisSet& obs,
     D_shblk_norm = compute_shellblock_norm(obs, D);
   }
 
+  auto fock_precision = precision;
+  auto engine_precision = std::min(fock_precision / D_shblk_norm.maxCoeff(),
+                                   std::numeric_limits<double>::epsilon());
+
   // construct the 2-electron repulsion integrals engine
   typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
   std::vector<coulomb_engine_type> engines(nthreads);
   engines[0] = coulomb_engine_type(obs.max_nprim(), obs.max_l(), 0);
-  engines[0].set_precision(std::min(precision,std::numeric_limits<double>::epsilon())); // shellset-dependent precision control will likely break positive definiteness
+  engines[0].set_precision(engine_precision); // shellset-dependent precision control will likely break positive definiteness
                                        // stick with this simple recipe
   std::cout << "compute_2body_fock:precision = " << precision << std::endl;
   std::cout << "TwoBodyEngine::precision = " << engines[0].precision() << std::endl;
@@ -1226,7 +1230,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
                                                                 )
                                                       : 0.;
 
-            if (do_schwartz_screen && Dnorm1234 * Schwartz(s1,s2) * Schwartz(s3,s4) < precision)
+            if (do_schwartz_screen && Dnorm1234 * Schwartz(s1,s2) * Schwartz(s3,s4) < fock_precision)
               continue;
 
             auto bf4_first = shell2bf[s4];
