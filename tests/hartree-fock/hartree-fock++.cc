@@ -116,18 +116,12 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                                   double precision = std::numeric_limits<double>::epsilon() // discard contributions smaller than this
                                  );
 
-// returns {X,X^{-1},rank,A_condition_number,result_A_condition_number}, where
-// X is the generalized square-root-inverse such that X.transpose() * A * X = I
-//
-// if symmetric is true, produce "symmetric" sqrtinv: X = U . A_evals_sqrtinv . U.transpose()),
-// else produce "canonical" sqrtinv: X = U . A_evals_sqrtinv
-// where U are eigenvectors of A
-// rows and cols of symmetric X are equivalent; for canonical X the rows are original basis (AO),
-// cols are transformed basis ("orthogonal" AO)
-//
-// A is conditioned to max_condition_number
-std::tuple<Matrix,Matrix,size_t,double,double>
-gensqrtinv(const Matrix& A, bool symmetric=false, double max_condition_number=1e8);
+// returns {X,X^{-1},S_condition_number_after_conditioning}, where
+// X is the generalized square-root-inverse such that X.transpose() * S * X = I
+// columns of Xinv is the basis conditioned such that
+// the condition number of its metric (Xinv.transpose . Xinv) < S_condition_number_threshold
+std::tuple<Matrix,Matrix,double>
+conditioning_orthogonalizer(const Matrix& S, double S_condition_number_threshold);
 
 #ifdef LIBINT2_HAVE_BTAS
 # define HAVE_DENSITY_FITTING 1
@@ -289,28 +283,15 @@ int main(int argc, char *argv[]) {
 
     // compute orthogonalizer X such that X.transpose() . S . X = I
     Matrix X, Xinv;
-    {
-      size_t obs_rank;
-      double S_condition_number;
-      double max_S_condition_number = 1.0/std::numeric_limits<double>::epsilon();
-      double result_S_condition_number;
-      std::tie(X, Xinv, obs_rank, S_condition_number, result_S_condition_number) =
-          gensqrtinv(S, false, max_S_condition_number);
-      auto obs_nbf_omitted = (long)obs.nbf() - (long)obs_rank;
-      std::cout << "overlap condition number = " << S_condition_number;
-      if (obs_nbf_omitted > 0)
-        std::cout << " (dropped " << obs_nbf_omitted
-                  << " " << (obs_nbf_omitted > 1 ? "fns" : "fn")
-                  << " to reduce to " << result_S_condition_number << ")";
-      std::cout << std::endl;
+    double XtX_condition_number; // condition number of "re-conditioned" overlap obtained as Xinv.transpose() . Xinv
+                                 // one should think of columns of Xinv as the conditioned basis
+                                 // Re: name ... cond # (Xinv.transpose() . Xinv) = cond # (X.transpose() . X)
+    // by default assume can manage to compute with condition number of S <= 1/eps
+    // this is probably too optimistic, but in well-behaved cases even 10^11 is OK
+    double S_condition_number_threshold = 1.0/std::numeric_limits<double>::epsilon();
+    std::tie(X, Xinv, XtX_condition_number) = conditioning_orthogonalizer(S,
+        S_condition_number_threshold);
 
-      if (obs_nbf_omitted > 0) {
-        Matrix should_be_I = X.transpose() * S * X;
-        Matrix I = Matrix::Identity(should_be_I.rows(),should_be_I.cols());
-        std::cout << "||X^t * S * X - I||_2 = " << (should_be_I - I).norm()
-                  << " (should be 0)" << std::endl;
-      }
-    }
     Matrix D;
     Matrix C_occ;
     Matrix evals;
@@ -1044,8 +1025,18 @@ compute_shellpair_list(const BasisSet& bs1,
   return result;
 }
 
+// returns {X,X^{-1},rank,A_condition_number,result_A_condition_number}, where
+// X is the generalized square-root-inverse such that X.transpose() * A * X = I
+//
+// if symmetric is true, produce "symmetric" sqrtinv: X = U . A_evals_sqrtinv . U.transpose()),
+// else produce "canonical" sqrtinv: X = U . A_evals_sqrtinv
+// where U are eigenvectors of A
+// rows and cols of symmetric X are equivalent; for canonical X the rows are original basis (AO),
+// cols are transformed basis ("orthogonal" AO)
+//
+// A is conditioned to max_condition_number
 std::tuple<Matrix,Matrix,size_t,double,double>
-gensqrtinv(const Matrix& S, bool symmetric, double max_condition_number) {
+gensqrtinv(const Matrix& S, bool symmetric=false, double max_condition_number=1e8) {
   Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(S);
   auto U = eig_solver.eigenvectors();
   auto s = eig_solver.eigenvalues();
@@ -1078,6 +1069,35 @@ gensqrtinv(const Matrix& S, bool symmetric, double max_condition_number) {
     Xinv = Xinv * U_cond.transpose();
   }
   return std::make_tuple(X,Xinv,size_t(n_cond),condition_number,result_condition_number);
+}
+
+std::tuple<Matrix,Matrix,double>
+conditioning_orthogonalizer(const Matrix& S, double S_condition_number_threshold) {
+  size_t obs_rank;
+  double S_condition_number;
+  double XtX_condition_number;
+  Matrix X, Xinv;
+
+  assert(S.rows() == S.cols());
+
+  std::tie(X, Xinv, obs_rank, S_condition_number, XtX_condition_number) =
+      gensqrtinv(S, false, S_condition_number_threshold);
+  auto obs_nbf_omitted = (long)S.rows() - (long)obs_rank;
+  std::cout << "overlap condition number = " << S_condition_number;
+  if (obs_nbf_omitted > 0)
+    std::cout << " (dropped " << obs_nbf_omitted
+              << " " << (obs_nbf_omitted > 1 ? "fns" : "fn")
+              << " to reduce to " << XtX_condition_number << ")";
+  std::cout << std::endl;
+
+  if (obs_nbf_omitted > 0) {
+    Matrix should_be_I = X.transpose() * S * X;
+    Matrix I = Matrix::Identity(should_be_I.rows(),should_be_I.cols());
+    std::cout << "||X^t * S * X - I||_2 = " << (should_be_I - I).norm()
+              << " (should be 0)" << std::endl;
+  }
+
+  return std::make_tuple(X,Xinv,XtX_condition_number);
 }
 
 Matrix compute_2body_2index_ints(const BasisSet& bs)
@@ -1670,3 +1690,52 @@ DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
   return result;
 }
 #endif // HAVE_DENSITY_FITTING
+
+// should be a unit test somewhere
+void api_basic_compile_test(const BasisSet& obs) {
+
+  libint2::OneBodyEngine onebody_engine(libint2::OneBodyEngine::overlap, // will compute overlap ints
+                                        obs.max_nprim(), // max # of primitives in shells this engine will accept
+                                        obs.max_l()      // max angular momentum of shells this engine will accept
+                                       );
+  auto shell2bf = obs.shell2bf();
+  for(auto s1=0; s1!=obs.size(); ++s1) {
+    for(auto s2=0; s2!=obs.size(); ++s2) {
+
+      std::cout << "compute shell set {" << s1 << "," << s2 << "} ... ";
+      const auto* ints_shellset = onebody_engine.compute(obs[s1], obs[s2]);
+      std::cout << "done" << std::endl;
+
+      auto bf1 = shell2bf[s1];  // first basis function in first shell
+      auto n1 = obs[s1].size(); // number of basis functions in first shell
+      auto bf2 = shell2bf[s2];  // first basis function in second shell
+      auto n2 = obs[s2].size(); // number of basis functions in second shell
+
+      // this iterates over integrals in the order they are packed in array ints_shellset
+      for(auto f1=0; f1!=n1; ++f1)
+        for(auto f2=0; f2!=n2; ++f2)
+          std::cout << "  " << bf1+f1 << " " << bf2+f2 << " " << ints_shellset[f1*n2+f2] << std::endl;
+    }
+  }
+
+  typedef libint2::TwoBodyEngine<libint2::cGTG> contracted_gtg_engine_t;
+  std::vector<std::pair<double,double>> cgtg_params{{0.1,0.2}, {-0.3,0.4}, {0.5, 0.6}};
+  contracted_gtg_engine_t twobody_engine(obs.max_nprim(), obs.max_l(),
+                                         0, // level of geometrical derivatives; 0 = regular integrals
+                                         std::numeric_limits<double>::epsilon(), // target precision
+                                         cgtg_params // geminal parameters
+                                        );
+  auto buf = twobody_engine.compute(obs[0], obs[1], obs[2], obs[3]);
+  typedef Eigen::Map<const Matrix> ConstMap;
+  ConstMap buf_mat(buf, obs[0].size() * obs[1].size(), obs[2].size() * obs[3].size());
+  std::cout << buf_mat << std::endl;
+
+  typedef libint2::TwoBodyEngine<libint2::cGTG_times_Coulomb> cgtg_coulomb_engine_t;
+  cgtg_coulomb_engine_t twobody_engine3(obs.max_nprim(), obs.max_l(),
+                                        0, std::numeric_limits<double>::epsilon(),
+                                        cgtg_params);
+  typedef libint2::TwoBodyEngine<libint2::DelcGTG_square> delcgtg2_engine_t;
+  delcgtg2_engine_t twobody_engine4(obs.max_nprim(), obs.max_l(),
+                                    0, std::numeric_limits<double>::epsilon(),
+                                    cgtg_params);
+}
