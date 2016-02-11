@@ -1093,6 +1093,9 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 #endif
         {
           auto p = 0;
+          // this is far less aggressive than should be, but proper analysis
+          // involves both bra and ket *bases* and thus cannot be done on shell-set basis
+          // probably ln_precision_/2 - 10 is enough
           spbra_.init(bra1, bra2, ln_precision_);
           spket_.init(ket1, ket2, ln_precision_);
           const auto npbra = spbra_.primpairs.size();
