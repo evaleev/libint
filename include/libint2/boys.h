@@ -1321,7 +1321,10 @@ namespace libint2 {
   //////////////////////////////////////////////////////////
 
   /// each thread needs its own scratch if k==-1
-  template <typename Real, int k> struct GaussianGmEvalScratch;
+  template <typename Real, int k> struct GaussianGmEvalScratch {
+      GaussianGmEvalScratch() = default;
+      GaussianGmEvalScratch(int) { }
+  };
   /// create this object for each thread that needs to use GaussianGmEval<Real,-1>
   template <typename Real>
   struct GaussianGmEvalScratch<Real, -1> {
@@ -1329,10 +1332,11 @@ namespace libint2 {
       std::vector<Real> g_i;
       std::vector<Real> r_i;
       std::vector<Real> oorhog_i;
-      GaussianGmEvalScratch() {}
+      GaussianGmEvalScratch() = default;
       GaussianGmEvalScratch(int mmax) {
         init(mmax);
       }
+    private:
       void init(int mmax) {
         Fm_.resize(mmax+1);
         g_i.resize(mmax+1);
@@ -1366,12 +1370,14 @@ namespace libint2 {
    * \note for more details see DOI: 10.1039/b605188j
    */
   template<typename Real, int k>
-  struct GaussianGmEval {
+  struct GaussianGmEval : private GaussianGmEvalScratch<Real, k> // N.B. empty-base optimization
+  {
 
       /**
        * @param[in] mmax the evaluator will be used to compute Gm(T) for 0 <= m <= mmax
        */
-      GaussianGmEval(int mmax, Real precision) : mmax_(mmax),
+      GaussianGmEval(int mmax, Real precision) :
+          GaussianGmEvalScratch<Real, k>(mmax), mmax_(mmax),
           precision_(precision), fm_eval_(0),
           numbers_(-1,-1,mmax) {
         assert(k == -1 || k == 0 || k == 2);
@@ -1379,7 +1385,6 @@ namespace libint2 {
         if (k == -1) {
           fm_eval_ = new FmEval_Taylor<Real>(mmax_, precision_);
 //          fm_eval_ = new FmEval_Chebyshev3(mmax_);
-          scratch_.init(mmax_);
         }
       }
 
@@ -1437,7 +1442,8 @@ namespace libint2 {
         const double sqrt_rho = sqrt(rho);
         const double oo_sqrt_rho = 1.0/sqrt_rho;
         if (k == -1) {
-          GaussianGmEvalScratch<Real, -1>& scratch = (scr == 0) ? scratch_ : *(reinterpret_cast<GaussianGmEvalScratch<Real, -1>*>(scr));
+          void* _scr = (scr == 0) ? this : scr;
+          GaussianGmEvalScratch<Real, -1>& scratch = *(reinterpret_cast<GaussianGmEvalScratch<Real, -1>*>(_scr));
           for(int i=1; i<=mmax; i++) {
             scratch.r_i[i] = scratch.r_i[i-1] * rho;
           }
@@ -1463,7 +1469,8 @@ namespace libint2 {
           const double SS_K0G12_SS = gcoef * oo_sqrt_rho * const_SQRTPI_2 * rorg * sqrt_rorg * exp(-gorg*T);
 
           if (k == -1) {
-            GaussianGmEvalScratch<Real, -1>& scratch = (scr == 0) ? scratch_ : *(reinterpret_cast<GaussianGmEvalScratch<Real, -1>*>(scr));
+            void* _scr = (scr == 0) ? this : scr;
+            GaussianGmEvalScratch<Real, -1>& scratch = *(reinterpret_cast<GaussianGmEvalScratch<Real, -1>*>(_scr));
 
             const double rorgT = rorg * T;
             fm_eval_->eval(&scratch.Fm_[0], rorgT, mmax);
@@ -1521,8 +1528,6 @@ namespace libint2 {
       int mmax_;
       Real precision_; //< absolute precision
       FmEval_Taylor<Real>* fm_eval_;
-
-      GaussianGmEvalScratch <Real, -1> scratch_; // only used in serial if k==-1
 
       ExpensiveNumbers<Real> numbers_;
   };
