@@ -1654,24 +1654,18 @@ void api_basic_compile_test(const BasisSet& obs) {
     }
   }
 
-  typedef libint2::TwoBodyEngine<libint2::cGTG> contracted_gtg_engine_t;
-  std::vector<std::pair<double,double>> cgtg_params{{0.1,0.2}, {-0.3,0.4}, {0.5, 0.6}};
-  contracted_gtg_engine_t twobody_engine(obs.max_nprim(), obs.max_l(),
-                                         0, // level of geometrical derivatives; 0 = regular integrals
-                                         std::numeric_limits<double>::epsilon(), // target precision
-                                         cgtg_params // geminal parameters
-                                        );
-  auto buf = twobody_engine.compute(obs[0], obs[1], obs[2], obs[3]);
-  typedef Eigen::Map<const Matrix> ConstMap;
-  ConstMap buf_mat(buf, obs[0].size() * obs[1].size(), obs[2].size() * obs[3].size());
-  std::cout << buf_mat << std::endl;
+  std::vector<std::pair<double,double>> cgtg_params{{0.1,0.2}, {0.3,0.4}, {0.5, 0.6}};
+  {
+    auto K = compute_schwartz_ints<libint2::cGTG>(obs, obs, false, cgtg_params);
+    std::cout << "cGTG Schwartz ints\n" << K << std::endl;
+  }
+  {
+    auto K = compute_schwartz_ints<libint2::cGTG_times_Coulomb>(obs, obs, false, cgtg_params);
+    std::cout << "cGTG/r12 Schwartz ints\n" << K << std::endl;
+  }
+  {
+    auto K = compute_schwartz_ints<libint2::DelcGTG_square>(obs, obs, false, cgtg_params);
+    std::cout << "||Del.cGTG||^2 Schwartz ints\n" << K << std::endl;
+  }
 
-  typedef libint2::TwoBodyEngine<libint2::cGTG_times_Coulomb> cgtg_coulomb_engine_t;
-  cgtg_coulomb_engine_t twobody_engine3(obs.max_nprim(), obs.max_l(),
-                                        0, std::numeric_limits<double>::epsilon(),
-                                        cgtg_params);
-  typedef libint2::TwoBodyEngine<libint2::DelcGTG_square> delcgtg2_engine_t;
-  delcgtg2_engine_t twobody_engine4(obs.max_nprim(), obs.max_l(),
-                                    0, std::numeric_limits<double>::epsilon(),
-                                    cgtg_params);
 }
