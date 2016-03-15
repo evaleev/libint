@@ -1316,27 +1316,28 @@ namespace libint2 {
   };
 #endif
 
-  //////////////////////////////////////////////////////////
-  /// core integrals r12^k \sum_i \exp(- a_i r_12^2)
-  //////////////////////////////////////////////////////////
+  template<typename Real, int k>
+    struct GaussianGmEval;
 
-  /// each thread needs its own scratch if k==-1
-  template <typename Real, int k> struct GaussianGmEvalScratch {
-      GaussianGmEvalScratch() = default;
-      GaussianGmEvalScratch(int) { }
-  };
-  /// create this object for each thread that needs to use GaussianGmEval<Real,-1>
-  template <typename Real>
-  struct GaussianGmEvalScratch<Real, -1> {
+  namespace detail {
+
+    /// some evaluators need thread-local scratch, but most don't
+    template <typename CoreEval> struct CoreEvalScratch {
+        CoreEvalScratch() = default;
+        CoreEvalScratch(int) { }
+    };
+    /// GaussianGmEval<Real,-1> needs extra scratch data
+    template <typename Real>
+    struct CoreEvalScratch<GaussianGmEval<Real, -1>> {
       std::vector<Real> Fm_;
       std::vector<Real> g_i;
       std::vector<Real> r_i;
       std::vector<Real> oorhog_i;
-      GaussianGmEvalScratch() = default;
-      GaussianGmEvalScratch(int mmax) {
+      CoreEvalScratch() = default;
+      CoreEvalScratch(int mmax) {
         init(mmax);
       }
-    private:
+      private:
       void init(int mmax) {
         Fm_.resize(mmax+1);
         g_i.resize(mmax+1);
@@ -1345,8 +1346,12 @@ namespace libint2 {
         g_i[0] = 1.0;
         r_i[0] = 1.0;
       }
-  };
+    };
+  } // namespace libint2::detail
 
+  //////////////////////////////////////////////////////////
+  /// core integrals r12^k \sum_i \exp(- a_i r_12^2)
+  //////////////////////////////////////////////////////////
 
   /**
    * Evaluates core integral \$ G_m(\rho, T) = \left( - \frac{\partial}{\partial T} \right)^n G_0(\rho,T) \f$,
@@ -1370,27 +1375,25 @@ namespace libint2 {
    * \note for more details see DOI: 10.1039/b605188j
    */
   template<typename Real, int k>
-  struct GaussianGmEval : private GaussianGmEvalScratch<Real, k> // N.B. empty-base optimization
+  struct GaussianGmEval : private detail::CoreEvalScratch<GaussianGmEval<Real,k>> // N.B. empty-base optimization
   {
 
       /**
        * @param[in] mmax the evaluator will be used to compute Gm(T) for 0 <= m <= mmax
        */
       GaussianGmEval(int mmax, Real precision) :
-          GaussianGmEvalScratch<Real, k>(mmax), mmax_(mmax),
-          precision_(precision), fm_eval_(0),
+          detail::CoreEvalScratch<GaussianGmEval<Real, k>>(mmax), mmax_(mmax),
+          precision_(precision), fm_eval_(),
           numbers_(-1,-1,mmax) {
         assert(k == -1 || k == 0 || k == 2);
         // for k=-1 need to evaluate the Boys function
         if (k == -1) {
-          fm_eval_ = new FmEval_Taylor<Real>(mmax_, precision_);
-//          fm_eval_ = new FmEval_Chebyshev3(mmax_);
+          fm_eval_ = FmEval_Taylor<Real>::instance(mmax_, precision_);
+//          fm_eval_ = FmEval_Chebyshev3::instance(mmax_);
         }
       }
 
       ~GaussianGmEval() {
-        delete fm_eval_;
-        fm_eval_ = 0;
       }
 
       // some features require at least C++11
@@ -1429,7 +1432,8 @@ namespace libint2 {
        * @param[in] mmax mmax the maximum value of m for which Boys function will be computed;
        *                 it must be <= the value returned by max_m() (this is not checked)
        * @param[in] geminal the Gaussian geminal for which the core integral \f$ Gm(\rho, T) \f$ is computed
-       * @param[in] scr if \c k ==-1 and need this to be reentrant, must provide ptr to the per-thread \c GaussianGmEvalScratch<Real,-1> object;
+       * @param[in] scr if \c k ==-1 and need this to be reentrant, must provide ptr to
+       *                the per-thread \c libint2::detail::CoreEvalScratch<GaussianGmEval<Real,-1>> object;
        *                no need to specify \c scr otherwise
        */
       template <typename AnyReal>
@@ -1443,7 +1447,7 @@ namespace libint2 {
         const double oo_sqrt_rho = 1.0/sqrt_rho;
         if (k == -1) {
           void* _scr = (scr == 0) ? this : scr;
-          GaussianGmEvalScratch<Real, -1>& scratch = *(reinterpret_cast<GaussianGmEvalScratch<Real, -1>*>(_scr));
+          auto& scratch = *(reinterpret_cast<detail::CoreEvalScratch<GaussianGmEval<Real, -1>>*>(_scr));
           for(int i=1; i<=mmax; i++) {
             scratch.r_i[i] = scratch.r_i[i-1] * rho;
           }
@@ -1470,7 +1474,7 @@ namespace libint2 {
 
           if (k == -1) {
             void* _scr = (scr == 0) ? this : scr;
-            GaussianGmEvalScratch<Real, -1>& scratch = *(reinterpret_cast<GaussianGmEvalScratch<Real, -1>*>(_scr));
+            auto& scratch = *(reinterpret_cast<detail::CoreEvalScratch<GaussianGmEval<Real, -1>>*>(_scr));
 
             const double rorgT = rorg * T;
             fm_eval_->eval(&scratch.Fm_[0], rorgT, mmax);
@@ -1527,7 +1531,7 @@ namespace libint2 {
     private:
       int mmax_;
       Real precision_; //< absolute precision
-      FmEval_Taylor<Real>* fm_eval_;
+      std::shared_ptr<FmEval_Taylor<Real>> fm_eval_;
 
       ExpensiveNumbers<Real> numbers_;
   };

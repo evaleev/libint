@@ -36,6 +36,7 @@
 #include <libint2/timer.h>
 #include <libint2/solidharmonics.h>
 #include <libint2/any.h>
+#include <libint2/util/compressed_pair.h>
 
 #include <libint2/boost/preprocessor.hpp>
 
@@ -895,7 +896,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       typedef typename libint2::TwoBodyEngineTraits<Kernel>::oper_params_type oper_params_type;
 
       /// creates a default (unusable) TwoBodyEngine
-      TwoBodyEngine() : primdata_(), lmax_(-1), core_eval_(0) {
+      TwoBodyEngine() : primdata_(), lmax_(-1), core_eval_pack_() {
         set_precision(std::numeric_limits<real_t>::epsilon());
       }
 
@@ -924,7 +925,10 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         primdata_(max_nprim * max_nprim * max_nprim * max_nprim),
         spbra_(max_nprim), spket_(max_nprim),
         lmax_(max_l), deriv_order_(deriv_order),
-        core_eval_(core_eval_type::instance(4*lmax_ + deriv_order, std::min(std::numeric_limits<real_t>::epsilon(),precision)))
+        core_eval_pack_(core_eval_type::instance(4*lmax_ + deriv_order,
+                                                 std::numeric_limits<real_t>::epsilon()),
+                        core_eval_scratch_type(4*lmax_ + deriv_order)
+                       )
       {
         set_precision(precision);
         initialize();
@@ -938,7 +942,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         spbra_(std::move(other.spbra_)), spket_(std::move(other.spket_)),
         lmax_(other.lmax_), deriv_order_(other.deriv_order_),
         precision_(other.precision_), ln_precision_(other.ln_precision_),
-        core_eval_(std::move(other.core_eval_)),
+        core_eval_pack_(std::move(other.core_eval_pack_)),
         core_ints_params_(std::move(other.core_ints_params_)),
         scratch_(std::move(other.scratch_)) {
       }
@@ -949,7 +953,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         spbra_(other.spbra_), spket_(other.spket_),
         lmax_(other.lmax_), deriv_order_(other.deriv_order_),
         precision_(other.precision_), ln_precision_(other.ln_precision_),
-        core_eval_(other.core_eval_), core_ints_params_(other.core_ints_params_)
+        core_eval_pack_(other.core_eval_pack_), core_ints_params_(other.core_ints_params_)
       {
         initialize();
       }
@@ -966,7 +970,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         deriv_order_ = other.deriv_order_;
         precision_ = other.precision_;
         ln_precision_ = other.ln_precision_;
-        core_eval_ = std::move(other.core_eval_);
+        core_eval_pack_ = std::move(other.core_eval_pack_);
         core_ints_params_ = std::move(other.core_ints_params_);
         scratch_ = std::move(other.scratch_);
         return *this;
@@ -980,7 +984,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         deriv_order_ = other.deriv_order_;
         precision_ = other.precision_;
         ln_precision_ = other.ln_precision_;
-        core_eval_ = other.core_eval_;
+        core_eval_pack_ = other.core_eval_pack_;
         core_ints_params_ = other.core_ints_params_;
         initialize();
         return *this;
@@ -1353,7 +1357,11 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       real_t ln_precision_;
 
       typedef typename libint2::TwoBodyEngineTraits<Kernel>::core_eval_type core_eval_type;
-      std::shared_ptr<core_eval_type> core_eval_;
+      typedef typename libint2::detail::CoreEvalScratch<core_eval_type> core_eval_scratch_type;
+      typedef libint2::detail::compressed_pair<std::shared_ptr<core_eval_type>,
+                                               core_eval_scratch_type>
+              core_eval_pack_type;
+      core_eval_pack_type core_eval_pack_;
 
       typedef oper_params_type core_ints_params_type; // currently core ints params are always same type as operator params
       core_ints_params_type core_ints_params_;
@@ -1432,7 +1440,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
                               int mmax,
                               real_t T,
                               real_t) {
-          engine->core_eval_->eval(Fm, T, mmax);
+          engine->core_eval_pack_.first()->eval(Fm, T, mmax);
         }
     };
 
@@ -1443,7 +1451,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
                               int mmax,
                               real_t T,
                               real_t rho) {
-          engine->core_eval_->eval(Gm, rho, T, mmax, engine->core_ints_params_);
+          engine->core_eval_pack_.first()->eval(Gm, rho, T, mmax, engine->core_ints_params_, &engine->core_eval_pack_.second());
         }
     };
     template <>
@@ -1453,7 +1461,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
                               int mmax,
                               real_t T,
                               real_t rho) {
-          engine->core_eval_->eval(Gm, rho, T, mmax, engine->core_ints_params_);
+          engine->core_eval_pack_.first()->eval(Gm, rho, T, mmax, engine->core_ints_params_);
         }
     };
     template <>
@@ -1463,7 +1471,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
                               int mmax,
                               real_t T,
                               real_t rho) {
-          engine->core_eval_->eval(Gm, rho, T, mmax, engine->core_ints_params_);
+          engine->core_eval_pack_.first()->eval(Gm, rho, T, mmax, engine->core_ints_params_);
         }
     };
     template <>
@@ -1473,7 +1481,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
                               int mmax,
                               real_t T,
                               real_t rho) {
-          engine->core_eval_->eval(Gm, rho, T, mmax);
+          engine->core_eval_pack_.first()->eval(Gm, rho, T, mmax);
         }
     };
   }
