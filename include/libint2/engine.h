@@ -73,6 +73,12 @@ namespace libint2 {
     return (deriv_order > 0) ? (num_geometrical_derivatives(ncenter, deriv_order-1) * (3*ncenter+deriv_order-1))/deriv_order : 1;
   }
 
+  template <typename T, unsigned N>
+  typename std::remove_all_extents<T>::type *
+  to_ptr1(T (&a)[N])  { return reinterpret_cast<
+                                 typename std::remove_all_extents<T>::type *
+                               >(&a); }
+
 #if defined(LIBINT2_SUPPORT_ONEBODY)
 
   /**
@@ -517,7 +523,7 @@ namespace libint2 {
                                                 )                                                             \
                                   )                                                                           \
                                 )(&primdata_[0], lmax_, 0);                                                   \
-           buildfnptrs_ = &                                                                                   \
+           buildfnptrs_ = to_ptr1(                                                                            \
            LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
                                     BOOST_PP_CAT(libint2_build_ ,                                             \
                                       BOOST_PP_LIST_AT(BOOST_PP_ONEBODY_OPERATOR_LIST,                        \
@@ -527,7 +533,8 @@ namespace libint2 {
                                                   BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
                                                 )                                                             \
                                   )                                                                           \
-                                )[0][0];                                                                      \
+                                )                                                                             \
+                                 );                                                                           \
            hard_lmax_ =           BOOST_PP_CAT(                                                               \
                                     LIBINT2_MAX_AM_ ,                                                         \
                                     BOOST_PP_CAT(                                                             \
