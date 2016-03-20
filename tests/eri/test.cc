@@ -119,12 +119,12 @@ void test_4eri(unsigned int deriv_order,
   const uint max_contrdepth4 = max_contrdepth * max_contrdepth * max_contrdepth * max_contrdepth;
 
   unsigned int lmax;
-  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_ERI;
+  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_eri;
 #if INCLUDE_ERI >= 1
-  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_ERI1;
+  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_eri1;
 #endif
 #if INCLUDE_ERI >= 2
-  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_ERI2;
+  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_eri2;
 #endif
   Libint_t* inteval = libint2::malloc<Libint_t>(max_contrdepth4);
   if (deriv_order == 0) LIBINT2_PREFIXED_NAME(libint2_init_eri)(&inteval[0], lmax, 0);
@@ -468,12 +468,12 @@ void test_3eri(unsigned int deriv_order,
 #endif
 
   unsigned int lmax;
-  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_3ERI;
+  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_3eri;
 #if INCLUDE_ERI3 >= 1
-  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_3ERI1;
+  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_3eri1;
 #endif
 #if INCLUDE_ERI3 >= 2
-  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_3ERI2;
+  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_3eri2;
 #endif
   Libint_t* inteval = libint2::malloc<Libint_t>(max_contrdepth3);
   if (deriv_order == 0)
@@ -766,12 +766,12 @@ void test_2eri(unsigned int deriv_order,
   const uint contrdepth2 = contrdepth * contrdepth;
 
   unsigned int lmax;
-  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_2ERI;
+  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_2eri;
 #if INCLUDE_ERI2 >= 1
-  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_2ERI1;
+  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_2eri1;
 #endif
 #if INCLUDE_ERI2 >= 2
-  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_2ERI2;
+  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_2eri2;
 #endif
   Libint_t* inteval = libint2::malloc<Libint_t>(contrdepth2);
   if (deriv_order == 0)
