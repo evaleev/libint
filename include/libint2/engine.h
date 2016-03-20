@@ -1967,8 +1967,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE )
 
 // make list of derivative orders for n-body ints
-#define LIBINT2_DERIV_NBODY_ORDER 0
-#define BOOST_PP_NBODY_DERIV_ORDER_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_INC(LIBINT2_DERIV_NBODY_ORDER) )
+#define BOOST_PP_NBODY_DERIV_ORDER_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_INC(LIBINT2_MAX_DERIV_ORDER) )
 #define BOOST_PP_NBODY_DERIV_ORDER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_NBODY_DERIV_ORDER_TUPLE )
 
       typedef libint2::FmEval_Taylor<real_t, 7> coulomb_core_eval_t;
@@ -2394,7 +2393,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
       void initialize() {
         assert(libint2::initialized());
-        assert(deriv_order_ <= LIBINT2_DERIV_NBODY_ORDER);
+        assert(deriv_order_ <= LIBINT2_MAX_DERIV_ORDER);
 
         // initialize braket, if needed
         if (braket_ == BraKet::invalid) {

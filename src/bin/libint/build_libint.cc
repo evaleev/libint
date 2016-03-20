@@ -1937,29 +1937,37 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 void
 config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface)
 {
+  int max_deriv_order = 0;
 #ifdef INCLUDE_ONEBODY
   iface->to_params(iface->macro_define("SUPPORT_ONEBODY",1));
   iface->to_params(iface->macro_define("DERIV_ONEBODY_ORDER",INCLUDE_ONEBODY));
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_ONEBODY);
 #endif
 #ifdef INCLUDE_ERI
   iface->to_params(iface->macro_define("SUPPORT_ERI",1));
   iface->to_params(iface->macro_define("DERIV_ERI_ORDER",INCLUDE_ERI));
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_ERI);
 #endif
 #ifdef INCLUDE_ERI3
   iface->to_params(iface->macro_define("SUPPORT_ERI3",1));
   iface->to_params(iface->macro_define("DERIV_ERI3_ORDER",INCLUDE_ERI3));
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_ERI3);
 #endif
 #ifdef INCLUDE_ERI2
   iface->to_params(iface->macro_define("SUPPORT_ERI2",1));
   iface->to_params(iface->macro_define("DERIV_ERI2_ORDER",INCLUDE_ERI2));
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_ERI2);
 #endif
 #ifdef INCLUDE_G12
   iface->to_params(iface->macro_define("SUPPORT_G12",1));
   iface->to_params(iface->macro_define("DERIV_G12_ORDER",INCLUDE_G12));
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_G12);
 #endif
 #ifdef INCLUDE_G12DKH
   iface->to_params(iface->macro_define("SUPPORT_G12DKH",1));
   iface->to_params(iface->macro_define("DERIV_G12DKH_ORDER",INCLUDE_G12DKH));
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_G12DKH);
 #endif
+  iface->to_params(iface->macro_define("MAX_DERIV_ORDER",max_deriv_order));
 }
 
