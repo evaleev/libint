@@ -82,7 +82,7 @@ namespace libint2 {
 #if defined(LIBINT2_SUPPORT_ONEBODY)
 
   /**
-   * OneBodyEngine computes integrals of operators (or operator sets) given by OneBodyOperator::operator_type
+   * OneBodyEngine computes integrals of operators (or operator sets) given by OneBodyEngine::operator_type
    */
   class OneBodyEngine {
 
@@ -1016,7 +1016,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
             return ordinal(l) < ordinal(other.l);
           }
           static size_t ordinal(const size_t (&l)[4]) {
-            return ((l[0]*LIBINT2_MAX_AM_ERI + l[1])*LIBINT2_MAX_AM_ERI + l[2])*LIBINT2_MAX_AM_ERI + l[3];
+            return ((l[0]*LIBINT2_MAX_AM_eri + l[1])*LIBINT2_MAX_AM_eri + l[2])*LIBINT2_MAX_AM_eri + l[3];
           }
           std::string to_string() const {
             std::ostringstream oss;
@@ -1381,7 +1381,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
       void initialize() {
         assert(libint2::initialized());
-        assert(lmax_ <= LIBINT2_MAX_AM_ERI);
+        assert(lmax_ <= LIBINT2_MAX_AM_eri);
         assert(deriv_order_ <= LIBINT2_DERIV_ERI_ORDER);
 	
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
@@ -1814,6 +1814,944 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
 
 #endif // LIBINT2_SUPPORT_ERI
+
+#if 1
+
+  /// types of operators (operator sets) supported by Engine.
+  /// \warning These must start with 0 and appear in same order as elements of BOOST_PP_ONEBODY_OPERATOR_LIST preprocessor macro.
+  /// \warning for the sake of nbody() order operators by # of particles
+  enum class Operator {
+    overlap=0,        //!< overlap
+    kinetic,          //!< electronic kinetic energy, i.e. \f$ -\frac{1}{2} \Nabla^2 \f$
+    nuclear,          //!< Coulomb potential due to point charges
+    emultipole1,      //!< overlap + (Cartesian) electric dipole moment, \f$ x_O, y_O, z_O \f$, where \f$ x_O \equiv x - O_x \f$ is relative to origin \f$ \vec{O} \f$
+    emultipole2,      //!< emultipole1 + (Cartesian) electric quadrupole moment, \f$ x^2, xy, xz, y^2, yz, z^2 \f$
+    emultipole3,      //!< emultipole2 + (Cartesian) electric octupole moment, \f$ x^3, x^2y, x^2z, xy^2, xyz, xz^2, y^3, y^2z, yz^2, z^3 \f$
+    delta,            //!< \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
+    coulomb,          //!< (2-body) Coulomb operator
+    cgtg,             //!< contracted Gaussian geminal
+    cgtg_x_coulomb,   //!< contracted Gaussian geminal times Coulomb
+    delcgtg2,         //!< |Delta . contracted Gaussian geminal|^2
+    invalid=-1, // do not modify this
+    // keep this updated
+    first_1body_oper=overlap,
+    last_1body_oper=emultipole3,
+    first_2body_oper=delta,
+    last_2body_oper=delcgtg2
+  };
+
+  /// @return the particle rank of \c oper
+  int rank(Operator oper) {
+    int n = 0;
+    if (oper >= Operator::first_1body_oper || oper <= Operator::last_1body_oper) n = 1;
+    else if (oper >= Operator::first_2body_oper || oper <= Operator::last_2body_oper) n = 2;
+    return n;
+  }
+
+  namespace detail {
+    struct default_operator_traits {
+        typedef struct {} oper_params_type;
+        static oper_params_type default_params() { return oper_params_type{}; }
+        static constexpr unsigned int nopers = 1;
+        typedef struct _core_eval_type {
+            template <typename ...params> static std::shared_ptr<_core_eval_type> instance(params...) { return nullptr; }
+        } core_eval_type;
+    };
+  }
+  /// describes operator set \c Op
+  /// @tparam Op a value of type Operator
+  /// \note default describes operator set of size 1 that takes trivial \c oper_params_type and \c core_eval_type;
+  ///       needs to be specialized for some operator types
+  template <Operator Op> struct operator_traits : public detail::default_operator_traits {};
+
+  template <> struct operator_traits<Operator::nuclear> : public detail::default_operator_traits {
+      /// point charges and their positions
+      typedef std::vector<std::pair<double, std::array<double, 3>>> oper_params_type;
+      static oper_params_type default_params() { return oper_params_type{}; }
+      typedef libint2::FmEval_Taylor<double, 7> core_eval_type;
+  };
+
+  template <> struct operator_traits<Operator::emultipole1> : public detail::default_operator_traits {
+      /// Cartesian coordinates of the origin with respect to which the dipole moment is defined
+      typedef std::array<double, 3> oper_params_type;
+      static oper_params_type default_params() { return oper_params_type{{0.0,0.0,0.0}}; }
+      static constexpr unsigned int nopers = 4; //!< overlap + 3 dipole components
+  };
+  template <> struct operator_traits<Operator::emultipole2> : public operator_traits<Operator::emultipole1> {
+      static constexpr unsigned int nopers = operator_traits<Operator::emultipole1>::nopers + 6; //!< overlap + 3 dipoles + 6 quadrupoles
+  };
+  template <> struct operator_traits<Operator::emultipole3> : public operator_traits<Operator::emultipole1> {
+      static constexpr unsigned int nopers = operator_traits<Operator::emultipole2>::nopers + 10;
+  };
+
+  template <> struct operator_traits<Operator::coulomb> : public detail::default_operator_traits {
+      typedef libint2::FmEval_Chebyshev3<double> core_eval_type;
+  };
+  namespace detail {
+    template <int K> struct cgtg_operator_traits : public detail::default_operator_traits {
+      typedef libint2::GaussianGmEval<real_t, K> core_eval_type;
+      typedef ContractedGaussianGeminal oper_params_type;
+    };
+  } // namespace detail
+  template <> struct operator_traits<Operator::cgtg> : public detail::cgtg_operator_traits<0> {};
+  template <> struct operator_traits<Operator::cgtg_x_coulomb> : public detail::cgtg_operator_traits<-1> {};
+  template <> struct operator_traits<Operator::delcgtg2> : public detail::cgtg_operator_traits<2> {};
+
+  template <> struct operator_traits<Operator::delta> : public detail::default_operator_traits {
+      typedef libint2::GenericGmEval<delta_gm_eval> core_eval_type; // core ints are too trivial to bother
+  };
+
+  namespace detail {
+    template <typename core_eval_type> using __core_eval_pack_type =
+        compressed_pair<std::shared_ptr<core_eval_type>,
+                        libint2::detail::CoreEvalScratch<core_eval_type>
+        >;
+    template <Operator Op> using core_eval_pack_type =
+        __core_eval_pack_type<typename operator_traits<Op>::core_eval_type>;
+  }
+
+  /// types of shell sets supported by Engine, in chemist notation (i.e. '_' separates particles)
+  enum BraKet {
+    x_x=0,
+    xx_xx=1,
+    xs_xx=2,
+    xs_xs=3,
+    invalid=-1
+  };
+
+  /// @return rank of \c braket
+  int rank(BraKet braket) {
+    int n = 0;
+    switch(braket) {
+      case x_x:
+      case xs_xs:
+        n = 2; break;
+      case xs_xx:
+        n = 3; break;
+      case xx_xx:
+        n = 4; break;
+      default:
+        assert(false);
+    }
+    return n;
+  }
+
+  template <typename T> struct print_type;
+
+  /**
+   * Engine computes integrals of operators (or operator sets) specified by combination of Operator and BraKet.
+   * This class deprecates OneBodyEngine and TwoBodyEngine.
+   */
+  class Engine {
+
+    private:
+      typedef struct {} empty_pod;
+
+    public:
+
+/// list of libint task names for each Operator type. These MUST appear in the same order as in Operator
+#define BOOST_PP_NBODY_OPERATOR_LIST  (overlap,         \
+                                      (kinetic,         \
+                                      (elecpot,         \
+                                      (1emultipole,     \
+                                      (2emultipole,     \
+                                      (3emultipole,     \
+                                      (eri,             \
+                                      (eri,             \
+                                      (eri,             \
+                                      (eri,             \
+                                      (eri,             \
+                                       BOOST_PP_NIL)))))))))))
+
+#define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST) )
+#define BOOST_PP_NBODY_OPERATOR_INDEX_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE )
+
+// make list of derivative orders for n-body ints
+#define LIBINT2_DERIV_NBODY_ORDER 0
+#define BOOST_PP_NBODY_DERIV_ORDER_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_INC(LIBINT2_DERIV_NBODY_ORDER) )
+#define BOOST_PP_NBODY_DERIV_ORDER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_NBODY_DERIV_ORDER_TUPLE )
+
+      typedef libint2::FmEval_Taylor<real_t, 7> coulomb_core_eval_t;
+
+      /// creates a default Engine that cannot be used for computing integrals;
+      /// to be used as placeholder for copying a usable engine, OR for cleanup of thread-local data
+      Engine() : oper_(Operator::invalid), braket_(BraKet::invalid), primdata_(), stack_size_(0), lmax_(-1) {}
+
+      /// Constructs a (usable) Engine
+
+      /// \param oper a value of Operator type
+      /// \param max_nprim the maximum number of primitives per contracted Gaussian shell
+      /// \param max_l the maximum angular momentum of Gaussian shell
+      /// \param deriv_order if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_order ,
+      ///                    (default=0)
+      /// \param params a value of type Engine::operator_traits<type>::oper_params_type specifying the parameters of
+      ///               the operator set, e.g. position and magnitude of the charges creating the Coulomb potential
+      ///               for oper == Operator::nuclear. For most values of type this is not needed.
+      ///               \sa Engine::operator_traits
+      /// \param braket a value of BraKet type
+      template <typename Params = empty_pod>
+      Engine(Operator oper,
+          size_t max_nprim,
+          int max_l,
+          int deriv_order = 0,
+          Params params = empty_pod(),
+          BraKet braket = BraKet::invalid) :
+        oper_(oper),
+        braket_(braket),
+        primdata_(max_nprim * max_nprim),
+        lmax_(max_l),
+        deriv_order_(deriv_order),
+        params_(enforce_params_type(oper,params))
+      {
+        initialize();
+        core_eval_pack_ = make_core_eval_pack(oper); // must follow initialize() to ensure default braket_ has been set
+        init_core_ints_params(params_);
+      }
+
+      /// move constructor
+      // intel does not accept "move ctor = default"
+      Engine(Engine&& other) :
+        oper_(other.oper_),
+        braket_(other.braket_),
+        primdata_(std::move(other.primdata_)),
+        stack_size_(other.stack_size_),
+        lmax_(other.lmax_),
+        hard_lmax_(other.hard_lmax_),
+        deriv_order_(other.deriv_order_),
+        core_eval_pack_(other.core_eval_pack_),
+        params_(std::move(other.params_)),
+        core_ints_params_(std::move(other.core_ints_params_)),
+        scratch_(std::move(other.scratch_)),
+        scratch2_(other.scratch2_),
+        buildfnptrs_(other.buildfnptrs_) {
+      }
+
+      /// (deep) copy constructor
+      Engine(const Engine& other) :
+        oper_(other.oper_),
+        braket_(other.braket_),
+        primdata_(other.primdata_.size()),
+        stack_size_(other.stack_size_),
+        lmax_(other.lmax_),
+        deriv_order_(other.deriv_order_),
+        core_eval_pack_(other.core_eval_pack_),
+        params_(other.params_),
+        core_ints_params_(other.core_ints_params_)
+      {
+        initialize();
+      }
+
+      ~Engine() {
+        finalize();
+      }
+
+      /// move assignment is default
+      Engine& operator=(Engine&& other) {
+        oper_ = other.oper_;
+        braket_ = other.braket_;
+        primdata_ = std::move(other.primdata_);
+        stack_size_ = other.stack_size_;
+        lmax_ = other.lmax_;
+        hard_lmax_ = other.hard_lmax_;
+        deriv_order_ = other.deriv_order_;
+        core_eval_pack_ = std::move(other.core_eval_pack_);
+        params_ = std::move(other.params_);
+        core_ints_params_ = std::move(other.core_ints_params_);
+        scratch_ = std::move(other.scratch_);
+        scratch2_ = other.scratch2_;
+        buildfnptrs_ = other.buildfnptrs_;
+        return *this;
+      }
+
+      /// (deep) copy assignment
+      Engine& operator=(const Engine& other) {
+        oper_ = other.oper_;
+        braket_ = other.braket_;
+        primdata_.resize(other.primdata_.size());
+        stack_size_ = other.stack_size_;
+        lmax_ = other.lmax_;
+        deriv_order_ = other.deriv_order_;
+        core_eval_pack_ = other.core_eval_pack_;
+        params_ = other.params_;
+        core_ints_params_ = other.core_ints_params_;
+        initialize();
+        return *this;
+      }
+
+      /// returns the particle rank of the operator
+      int operator_rank() const {
+        return rank(oper_);
+      }
+
+      /// rank of the braket
+      int braket_rank() const {
+        return rank(braket_);
+      }
+
+      /// resets operator type
+      void set_oper(Operator new_oper) {
+        if (rank(new_oper) != operator_rank())
+          braket_ = BraKet::invalid;
+        oper_ = new_oper;
+        initialize();
+      }
+
+      /// resets braket type
+      void set_braket(BraKet new_braket) {
+        braket_ = new_braket;
+        initialize();
+      }
+
+      /// resets operator parameters; this may be useful e.g. if need to compute Coulomb potential
+      /// integrals over batches of charges for the sake of parallelism.
+      template <typename Params>
+      void set_params(const Params& params) {
+        params_ = params;
+        init_core_ints_params(params_);
+        reset_scratch();
+      }
+
+      /// reports the number of shell sets that each call to compute() produces.
+      /// this depends on the order of geometrical derivatives requested and
+      /// on the operator set. \sa compute()
+      /// \note need to specialize for some operator types
+      unsigned int nshellsets() const {
+        const unsigned int num_operator_geometrical_derivatives = (oper_ == Operator::nuclear) ? this->nparams() : 0;
+        const auto ncenters = braket_rank() + num_operator_geometrical_derivatives;
+        return nopers() * num_geometrical_derivatives(ncenters,deriv_order_);
+      }
+
+      /// Given the Cartesian geometric derivative index that refers to center set
+      /// (0...n-1) with one center omitted compute the derivative index referring
+      /// to the full center set
+      /// \param deriv_idx index of the derivative referring to the set with center \c omitted_center omitted
+      /// \param deriv_order order of the geometric derivative
+      /// \param ncenters number of centers in the full set
+      /// \param omitted_center the omitted center, must be less than \c ncenters.
+      /// \return the index of the derivative referring to full set
+      static unsigned int to_target_deriv_index(unsigned int deriv_idx,
+                                                unsigned int deriv_order,
+                                                unsigned int ncenters,
+                                                unsigned int omitted_center) {
+        auto ncenters_reduced = ncenters - 1;
+        auto nderiv_1d = 3 * ncenters_reduced;
+        assert(deriv_idx < num_geometrical_derivatives(ncenters_reduced,deriv_order));
+        switch (deriv_order) {
+          case 1: return deriv_idx >= omitted_center*3 ? deriv_idx+3 : deriv_idx;
+          default: assert(deriv_order<=1); // not implemented, won't be needed when Libint computes all derivatives
+        }
+        assert(false); // unreachable
+        return 0;
+      }
+
+      /// computes shell set of integrals
+      /// \note result is stored in row-major order
+      template <typename ... ShellPack>
+      const real_t* compute(const libint2::Shell& first_shell, const ShellPack&... rest_of_shells) {
+        constexpr size_t nargs = 1 + sizeof...(rest_of_shells);
+        assert(nargs == braket_rank());
+
+        std::array<std::reference_wrapper<const Shell>, nargs> shells{first_shell, rest_of_shells...};
+
+        if (nargs == 2 && operator_rank() == 1)
+          return compute1(shells[0], shells[1]);
+        assert(false);
+      }
+
+      /// computes shell set of integrals
+      /// \note result is stored in row-major order
+      const real_t* compute1(const libint2::Shell& s1,
+                             const libint2::Shell& s2) {
+
+        // can only handle 1 contraction at a time
+        assert(s1.ncontr() == 1 && s2.ncontr() == 1);
+
+        const auto l1 = s1.contr[0].l;
+        const auto l2 = s2.contr[0].l;
+
+        // if want nuclear, make sure there is at least one nucleus .. otherwise the user likely forgot to call set_params
+        if (oper_ == Operator::nuclear and nparams() == 0)
+          throw std::runtime_error("Engine<nuclear>, but no charges found; forgot to call set_params()?");
+
+        const auto n1 = s1.size();
+        const auto n2 = s2.size();
+        const auto n12 = n1 * n2;
+        const auto ncart1 = s1.cartesian_size();
+        const auto ncart2 = s2.cartesian_size();
+        const auto ncart12 = ncart1 * ncart2;
+        const auto nops = nopers();
+
+        const auto tform_to_solids = s1.contr[0].pure || s2.contr[0].pure;
+
+        // assert # of primitive pairs
+        const auto nprim1 = s1.nprim();
+        const auto nprim2 = s2.nprim();
+        const auto nprimpairs = nprim1 * nprim2;
+        assert(nprimpairs <= primdata_.size());
+
+        auto nparam_sets = nparams();
+
+        // how many shell sets will be returned?
+        auto num_shellsets = nshellsets();
+        // Libint computes derivatives with respect to one center fewer, will use translational invariance to recover
+        const auto geometry_independent_operator = not (oper_ == Operator::nuclear);
+        const auto num_deriv_centers_computed = geometry_independent_operator ? braket_rank()-1 : braket_rank();
+        auto num_shellsets_computed = nopers() *
+                                      num_geometrical_derivatives(num_deriv_centers_computed,
+                                                                  deriv_order_);
+        // size of ints block computed by Libint
+        const auto target_buf_size = num_shellsets_computed * ncart12;
+
+        // will use scratch_ if:
+        // - Coulomb ints are computed 1 charge at a time, contributions are accumulated in scratch_ (unless la==lb==0)
+        // - derivatives on the missing center need to be reconstructed (no need to accumulate into scratch though)
+        // will only use scratch to accumulate ints when
+        const auto accumulate_ints_in_scratch = (oper_ == Operator::nuclear);
+
+        // adjust max angular momentum, if needed
+        const auto lmax = std::max(l1, l2);
+        assert (lmax <= lmax_);
+
+        // where cartesian ints are located varies, sometimes we compute them in scratch, etc.
+        // this is the most likely location
+        auto cartesian_ints = primdata_[0].stack;
+
+        // simple (s|s) ints will be computed directly and accumulated in the first element of stack
+        const auto compute_directly = lmax == 0 && deriv_order_ == 0 && (oper_ == Operator::overlap || oper_ == Operator::nuclear);
+        if (compute_directly) {
+          primdata_[0].stack[0] = 0;
+        }
+        else if (accumulate_ints_in_scratch)
+          memset(static_cast<void*>(&scratch_[0]), 0, sizeof(real_t)*target_buf_size);
+
+        // loop over accumulation batches
+        for(auto pset=0u; pset!=nparam_sets; ++pset) {
+
+          if (oper_!=Operator::nuclear) assert(nparam_sets == 1);
+
+          auto p12 = 0;
+          for(auto p1=0; p1!=nprim1; ++p1) {
+            for(auto p2=0; p2!=nprim2; ++p2, ++p12) {
+              compute_primdata(primdata_[p12],s1,s2,p1,p2,pset);
+            }
+          }
+          primdata_[0].contrdepth = p12;
+
+          if (compute_directly) {
+            auto& result = cartesian_ints[0];
+            switch (oper_) {
+              case Operator::overlap:
+                for(auto p12=0; p12 != primdata_[0].contrdepth; ++p12)
+                  result += primdata_[p12]._0_Overlap_0_x[0]
+                          * primdata_[p12]._0_Overlap_0_y[0]
+                          * primdata_[p12]._0_Overlap_0_z[0];
+                  break;
+              case Operator::nuclear:
+                for(auto p12=0; p12 != primdata_[0].contrdepth; ++p12)
+                  result += primdata_[p12].LIBINT_T_S_ELECPOT_S(0)[0];
+                  break;
+              default:
+                assert(false);
+            }
+            primdata_[0].targets[0] = cartesian_ints;
+          }
+          else {
+
+            buildfnptrs_[s1.contr[0].l*hard_lmax_ + s2.contr[0].l](&primdata_[0]);
+            cartesian_ints = primdata_[0].targets[0];
+
+            if (accumulate_ints_in_scratch) {
+              cartesian_ints = &scratch_[0];
+              std::transform(primdata_[0].targets[0], primdata_[0].targets[0] + target_buf_size,
+                             &scratch_[0],
+                             &scratch_[0], std::plus<real_t>());
+
+              // need to reconstruct derivatives of nuclear ints for each nucleus
+              if (deriv_order_ > 0){
+                const auto nints_per_center = target_buf_size/2;
+                // first two blocks are derivatives with respect to Gaussian positions
+                // rest are derivs with respect to nuclear coordinates
+                auto dest = &scratch_[0] + (2+pset)*nints_per_center;
+                auto src = primdata_[0].targets[0];
+                for(auto i=0; i!=nints_per_center; ++i) {
+                  dest[i] = -src[i];
+                }
+                src = primdata_[0].targets[0] + nints_per_center;
+                for(auto i=0; i!=nints_per_center; ++i) {
+                  dest[i] -= src[i];
+                }
+                num_shellsets_computed+=3; // we just added 3 shell sets
+              } // reconstruct derivatives
+
+            }
+          } // ltot != 0
+
+        } // pset (accumulation batches)
+
+        auto result = cartesian_ints; // will be adjusted as we proceed
+        if (tform_to_solids) {
+          // where do spherical ints go?
+          auto* spherical_ints = (cartesian_ints == &scratch_[0]) ? scratch2_ : &scratch_[0];
+          result = spherical_ints;
+
+          // transform to solid harmonics, one shell set at a time:
+          // for each computed shell set ...
+          for(auto s=0ul; s!=num_shellsets_computed; ++s, cartesian_ints+=ncart12) {
+            // ... find its index in the target shell set:
+            // 1. if regular ints do nothing
+            // 2. for derivatives the target set includes derivatives w.r.t omitted centers,
+            //    to be computed later (for all ints) or already computed (for nuclear);
+            //    in the former case the "omitted" set of derivatives always comes at the end
+            //    hence the index of the current shell set does not change (for 2-body ints
+            //    the rules are different, but Libint will eliminate the need to reconstruct via
+            //    translational invariance soon, so this logic will be unnecessary).
+            auto s_target = s;
+            // .. and compute the destination
+            spherical_ints = result + n12 * s_target;
+            if (s1.contr[0].pure && s2.contr[0].pure) {
+              libint2::solidharmonics::tform(l1, l2, cartesian_ints, spherical_ints);
+            }
+            else {
+              if (s1.contr[0].pure)
+                libint2::solidharmonics::tform_rows(l1, n2, cartesian_ints, spherical_ints);
+              else
+                libint2::solidharmonics::tform_cols(n1, l2, cartesian_ints, spherical_ints);
+            }
+          } // loop cartesian shell set
+
+        } // tform to solids
+
+        // if computing derivatives of ints of geometry-independent operators
+        // compute the omitted derivatives using translational invariance
+        if (deriv_order_ > 0 && geometry_independent_operator) {
+          assert(deriv_order_ == 1); // assuming 1st-order derivs here, arbitrary order later
+
+          const auto nints_computed = n12*num_shellsets_computed; // target # of ints is twice this
+
+          // make sure there is enough room left in libint stack
+          // if not, copy into scratch2_
+          if (not tform_to_solids) {
+            const auto stack_size_remaining = stack_size_ - (result-primdata_[0].stack) - nints_computed;
+            const auto copy_to_scratch2 = stack_size_remaining < nints_computed;
+            if (copy_to_scratch2) {
+              // this is tricky ... copy does not allow scratch2_ in [result, result + nints_computed)
+              // but this would only happen in scratch2_ == result, but definition of scratch2_ ensures this
+              std::copy(result, result + nints_computed, scratch2_);
+              result = scratch2_;
+            }
+          }
+
+          const auto src = result;
+          const auto dest = result + nints_computed;
+          for(auto f=0ul; f!=nints_computed; ++f) {
+            dest[f] = -src[f];
+          }
+        } // rebuild omitted derivatives of Cartesian ints
+
+        return result;
+      }
+
+      inline void compute_primdata(Libint_t& primdata,
+                                   const Shell& s1, const Shell& s2,
+                                   size_t p1, size_t p2,
+                                   size_t oset);
+
+    private:
+      Operator oper_;
+      BraKet braket_;
+      std::vector<Libint_t> primdata_;
+      size_t stack_size_;  // amount allocated by libint2_init_xxx in primdata_[0].stack
+      int lmax_;
+      int hard_lmax_;      // max L supported by library for this operator type + 1
+      size_t deriv_order_;
+
+      any core_eval_pack_;
+
+      /// operator params
+      any params_; // operator params
+      /// for some operators need core ints params that are derived from operator params
+      any core_ints_params_;
+      /// makes core ints params from the operator params
+      void init_core_ints_params(const any& params);
+
+      std::vector<real_t> scratch_; // for transposes and/or transforming to solid harmonics
+      real_t* scratch2_;            // &scratch_[0] points to the first block large enough to hold all target ints
+                                    // scratch2_ points to second such block. It could point into scratch_ or at primdata_[0].stack
+      typedef void (*buildfnptr_t)(const Libint_t*);
+      buildfnptr_t* buildfnptrs_;
+
+      void reset_scratch() {
+        const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
+        const auto target_shellset_size = nshellsets() * ncart_max * ncart_max;
+        // need to be able to hold 2 sets of target shellsets: the worst case occurs when dealing with
+        // 1-body Coulomb ints derivatives ... have 2+natom derivative sets that are stored in scratch
+        // then need to transform to solids. To avoid copying back and forth make sure that there is enough
+        // room to transform all ints and save them in correct order in single pass
+        const auto need_extra_large_scratch = stack_size_ < target_shellset_size;
+        scratch_.resize(need_extra_large_scratch ? 2*target_shellset_size : target_shellset_size);
+        scratch2_ = need_extra_large_scratch ? &scratch_[target_shellset_size] : primdata_[0].stack;
+      }
+
+      void initialize() {
+        assert(libint2::initialized());
+        assert(deriv_order_ <= LIBINT2_DERIV_NBODY_ORDER);
+
+        // initialize braket, if needed
+        if (braket_ == BraKet::invalid) {
+          switch(operator_rank()) {
+            case 1: braket_ = x_x; break;
+            case 2: braket_ = xx_xx; break;
+            default: assert(false);
+          }
+        }
+
+#define BOOST_PP_NBODYENGINE_MCR2(r,product)                                                                  \
+         if (static_cast<int>(oper_) == BOOST_PP_TUPLE_ELEM(2,0,product) && deriv_order_ == BOOST_PP_TUPLE_ELEM(2,1,product) ) {\
+           assert(lmax_ <= BOOST_PP_CAT(LIBINT2_MAX_AM_ ,                                                     \
+                                        BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                        \
+                                                         BOOST_PP_TUPLE_ELEM(2,0,product) )                   \
+                                       ) );                                                                   \
+           stack_size_ =                                                                                      \
+           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
+                                    BOOST_PP_CAT(libint2_need_memory_ ,                                       \
+                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                          \
+                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
+                                    ),                                                                        \
+                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
+                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
+                                                )                                                             \
+                                  )                                                                           \
+                                 )(lmax_);                                                                    \
+           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
+                                    BOOST_PP_CAT(libint2_init_ ,                                              \
+                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                          \
+                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
+                                    ),                                                                        \
+                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
+                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
+                                                )                                                             \
+                                  )                                                                           \
+                                )(&primdata_[0], lmax_, 0);                                                   \
+           buildfnptrs_ = to_ptr1(                                                                            \
+           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
+                                    BOOST_PP_CAT(libint2_build_ ,                                             \
+                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                          \
+                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
+                                    ),                                                                        \
+                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
+                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
+                                                )                                                             \
+                                  )                                                                           \
+                                )                                                                             \
+                                 );                                                                           \
+           hard_lmax_ =           BOOST_PP_CAT(                                                               \
+                                    LIBINT2_MAX_AM_ ,                                                         \
+                                    BOOST_PP_CAT(                                                             \
+                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                          \
+                                                       BOOST_PP_TUPLE_ELEM(2,0,product) ),                    \
+                                      BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),     \
+                                                    BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()        \
+                                                )                                                             \
+                                    )                                                                         \
+                                  ) + 1;                                                                      \
+           reset_scratch();                                                                                   \
+           return;                                                                                            \
+         }
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR2, 2, (BOOST_PP_NBODY_OPERATOR_INDEX_LIST, BOOST_PP_NBODY_DERIV_ORDER_LIST) )
+
+        assert(false); // either deriv_order_ or oper_ is wrong
+      } // initialize()
+
+      void finalize() {
+        if (primdata_.size() != 0) {
+
+#define BOOST_PP_NBODYENGINE_MCR3(r,product)                                                                \
+           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
+                                    BOOST_PP_CAT(libint2_cleanup_ ,                                           \
+                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                        \
+                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
+                                    ),                                                                        \
+                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
+                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
+                                                )                                                             \
+                                  )                                                                           \
+                                )(&primdata_[0]);                                                             \
+           return;
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR3, 2, (BOOST_PP_NBODY_OPERATOR_INDEX_LIST, BOOST_PP_NBODY_DERIV_ORDER_LIST) )
+
+        }
+      } // finalize()
+
+      //-------
+      // utils
+      //-------
+      inline unsigned int nparams() const;
+      inline unsigned int nopers() const;
+      /// if Params == operator_traits<oper>::oper_params_type, will return any(params)
+      /// else will set return any initialized with default value for operator_traits<type>::oper_params_type
+      /// @param throw_if_wrong_type if true, and Params != operator_traits<type>::oper_params_type, will throw std::bad_cast
+      template <typename Params>
+      static any enforce_params_type(Operator oper,
+                                     const Params& params,
+                                     bool throw_if_wrong_type = not std::is_same<Params,empty_pod>::value);
+      /// @return core eval pack corresponding to operator_traits<oper>::core_eval_type
+      any make_core_eval_pack(Operator oper) const;
+
+  }; // struct Engine
+
+  inline unsigned int Engine::nparams() const {
+    switch (oper_) {
+      case Operator::nuclear:
+        return params_.as<operator_traits<Operator::nuclear>::oper_params_type>().size();
+      default:
+        return 1;
+    }
+    return 1;
+  }
+  inline unsigned int Engine::nopers() const {
+    switch (static_cast<int>(oper_)) {
+#define BOOST_PP_NBODYENGINE_MCR4(r,data,i,elem)  case i : return operator_traits< static_cast<Operator> ( i ) >::nopers;
+BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR4, _, BOOST_PP_NBODY_OPERATOR_LIST)
+      default: break;
+    }
+    assert(false); // unreachable
+    return 0;
+  }
+
+  template <typename Params>
+  inline any Engine::enforce_params_type(Operator oper,
+                                  const Params& params,
+                                  bool throw_if_wrong_type) {
+    any result;
+    switch(static_cast<int>(oper)) {
+
+#define BOOST_PP_NBODYENGINE_MCR5(r,data,i,elem)                                                             \
+      case i :                                                                                               \
+      if (std::is_same<Params,operator_traits< static_cast<Operator> ( i ) >::oper_params_type>::value)      \
+        result = params;                                                                                     \
+      else {                                                                                                 \
+        if (throw_if_wrong_type) throw std::bad_cast();                                                      \
+        result = operator_traits<static_cast<Operator> ( i ) >::default_params();                            \
+      }                                                                                                      \
+      break;
+
+BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR5, _, BOOST_PP_NBODY_OPERATOR_LIST)
+
+      default:
+        assert(false); // missed a case?
+    }
+    return result;
+  }
+
+  inline any Engine::make_core_eval_pack(Operator oper) const {
+    any result;
+    switch(static_cast<int>(oper)) {
+
+#define BOOST_PP_NBODYENGINE_MCR6(r,data,i,elem)                                                             \
+      case i :                                                                                               \
+      result = libint2::detail::make_compressed_pair(                                                        \
+          operator_traits<static_cast<Operator> ( i ) >::core_eval_type::instance(braket_rank()*lmax_ + deriv_order_,    \
+                                                                                  std::numeric_limits<real_t>::epsilon()), \
+          libint2::detail::CoreEvalScratch<operator_traits<static_cast<Operator> ( i ) >::core_eval_type>(braket_rank()*lmax_ + deriv_order_) \
+      );                                                                                                     \
+      break;
+
+BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR_LIST)
+
+      default:
+        assert(false); // missed a case?
+    }
+    return result;
+  }
+
+  inline void Engine::init_core_ints_params(const any& params) {
+    if (oper_ == Operator::delcgtg2) {
+      // [g12,[- \Del^2, g12] = 2 (\Del g12) \cdot (\Del g12)
+      // (\Del exp(-a r_12^2) \cdot (\Del exp(-b r_12^2) = 4 a b (r_{12}^2 exp(- (a+b) r_{12}^2) )
+      // i.e. need to scale each coefficient by 4 a b
+      auto oparams = params.as<operator_traits<Operator::delcgtg2>::oper_params_type>();
+      const auto ng = oparams.size();
+      operator_traits<Operator::delcgtg2>::oper_params_type core_ints_params;
+      core_ints_params.reserve(ng*(ng+1)/2);
+      for(size_t b=0; b<ng; ++b)
+        for(size_t k=0; k<=b; ++k) {
+          const auto gexp = oparams[b].first + oparams[k].first;
+          const auto gcoeff = oparams[b].second * oparams[k].second * (b == k ? 1 : 2); // if a != b include ab and ba
+          const auto gcoeff_rescaled = 4 * oparams[b].first * oparams[k].first * gcoeff;
+          core_ints_params.push_back(std::make_pair(gexp, gcoeff_rescaled));
+        }
+      core_ints_params_ = core_ints_params;
+    }
+    else
+      core_ints_params_ = params;
+  }
+
+  inline void Engine::compute_primdata(Libint_t& primdata,
+                                       const Shell& s1, const Shell& s2,
+                                       size_t p1, size_t p2,
+                                       size_t oset) {
+
+    const auto& A = s1.O;
+    const auto& B = s2.O;
+
+    const auto alpha1 = s1.alpha[p1];
+    const auto alpha2 = s2.alpha[p2];
+
+    const auto c1 = s1.contr[0].coeff[p1];
+    const auto c2 = s2.contr[0].coeff[p2];
+
+    const auto gammap = alpha1 + alpha2;
+    const auto oogammap = 1.0 / gammap;
+    const auto rhop_over_alpha1 = alpha2 * oogammap;
+    const auto rhop = alpha1 * rhop_over_alpha1;
+    const auto Px = (alpha1 * A[0] + alpha2 * B[0]) * oogammap;
+    const auto Py = (alpha1 * A[1] + alpha2 * B[1]) * oogammap;
+    const auto Pz = (alpha1 * A[2] + alpha2 * B[2]) * oogammap;
+    const auto AB_x = A[0] - B[0];
+    const auto AB_y = A[1] - B[1];
+    const auto AB_z = A[2] - B[2];
+    const auto AB2_x = AB_x * AB_x;
+    const auto AB2_y = AB_y * AB_y;
+    const auto AB2_z = AB_z * AB_z;
+    const auto AB2 = AB2_x + AB2_y + AB2_z;
+
+    assert (LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD);
+
+    // overlap and kinetic energy ints don't use HRR, hence VRR on both centers
+    // Coulomb potential do HRR on center 1 only
+#if LIBINT2_DEFINED(eri,PA_x)
+      primdata.PA_x[0] = Px - A[0];
+#endif
+#if LIBINT2_DEFINED(eri,PA_y)
+      primdata.PA_y[0] = Py - A[1];
+#endif
+#if LIBINT2_DEFINED(eri,PA_z)
+      primdata.PA_z[0] = Pz - A[2];
+#endif
+
+    if (oper_ != Operator::nuclear) {
+
+#if LIBINT2_DEFINED(eri,PB_x)
+      primdata.PB_x[0] = Px - B[0];
+#endif
+#if LIBINT2_DEFINED(eri,PB_y)
+      primdata.PB_y[0] = Py - B[1];
+#endif
+#if LIBINT2_DEFINED(eri,PB_z)
+      primdata.PB_z[0] = Pz - B[2];
+#endif
+    }
+
+    if (oper_ == Operator::emultipole1 ||
+        oper_ == Operator::emultipole2 ||
+        oper_ == Operator::emultipole3) {
+      auto& O = params_.as<operator_traits<Operator::emultipole1>::oper_params_type>(); // same as emultipoleX
+#if LIBINT2_DEFINED(eri,BO_x)
+      primdata.BO_x[0] = B[0] - O[0];
+#endif
+#if LIBINT2_DEFINED(eri,BO_y)
+      primdata.BO_y[0] = B[1] - O[1];
+#endif
+#if LIBINT2_DEFINED(eri,BO_z)
+      primdata.BO_z[0] = B[2] - O[2];
+#endif
+    }
+
+#if LIBINT2_DEFINED(eri,oo2z)
+    primdata.oo2z[0] = 0.5*oogammap;
+#endif
+
+    if (oper_ == Operator::nuclear) { // additional factor for electrostatic potential
+      auto& params = params_.as<operator_traits<Operator::nuclear>::oper_params_type>();
+      const auto& C = params[oset].second;
+#if LIBINT2_DEFINED(eri,PC_x)
+      primdata.PC_x[0] = Px - C[0];
+#endif
+#if LIBINT2_DEFINED(eri,PC_y)
+      primdata.PC_y[0] = Py - C[1];
+#endif
+#if LIBINT2_DEFINED(eri,PC_z)
+      primdata.PC_z[0] = Pz - C[2];
+#endif
+      // elecpot uses HRR
+#if LIBINT2_DEFINED(eri,AB_x)
+      primdata.AB_x[0] = A[0] - B[0];
+#endif
+#if LIBINT2_DEFINED(eri,AB_y)
+      primdata.AB_y[0] = A[1] - B[1];
+#endif
+#if LIBINT2_DEFINED(eri,AB_z)
+      primdata.AB_z[0] = A[2] - B[2];
+#endif
+
+    }
+
+    decltype(c1) sqrt_PI(1.77245385090551602729816748334);
+    const auto xyz_pfac = sqrt_PI * sqrt(oogammap);
+    const auto ovlp_ss_x = exp(- rhop * AB2_x) * xyz_pfac * c1 * c2;
+    const auto ovlp_ss_y = exp(- rhop * AB2_y) * xyz_pfac;
+    const auto ovlp_ss_z = exp(- rhop * AB2_z) * xyz_pfac;
+
+    primdata._0_Overlap_0_x[0] = ovlp_ss_x;
+    primdata._0_Overlap_0_y[0] = ovlp_ss_y;
+    primdata._0_Overlap_0_z[0] = ovlp_ss_z;
+
+    if (oper_ == Operator::kinetic || (deriv_order_ > 0)) {
+#if LIBINT2_DEFINED(eri,two_alpha0_bra)
+      primdata.two_alpha0_bra[0] = 2.0 * alpha1;
+#endif
+#if LIBINT2_DEFINED(eri,two_alpha0_ket)
+      primdata.two_alpha0_ket[0] = 2.0 * alpha2;
+#endif
+    }
+
+    if (oper_ == Operator::nuclear) {
+#if LIBINT2_DEFINED(eri,rho12_over_alpha1) || LIBINT2_DEFINED(eri,rho12_over_alpha2)
+      if (deriv_order_ > 0) {
+#if LIBINT2_DEFINED(eri,rho12_over_alpha1)
+        primdata.rho12_over_alpha1[0] = rhop_over_alpha1;
+#endif
+#if LIBINT2_DEFINED(eri,rho12_over_alpha2)
+        primdata.rho12_over_alpha2[0] = alpha1 * oogammap;
+#endif
+      }
+#endif
+#if LIBINT2_DEFINED(eri,PC_x) && LIBINT2_DEFINED(eri,PC_y) && LIBINT2_DEFINED(eri,PC_z)
+      const auto PC2 = primdata.PC_x[0] * primdata.PC_x[0] +
+                       primdata.PC_y[0] * primdata.PC_y[0] +
+                       primdata.PC_z[0] * primdata.PC_z[0];
+      const auto U = gammap * PC2;
+      const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_;
+      auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
+      auto fm_engine_ptr = core_eval_pack_.as<detail::core_eval_pack_type<Operator::nuclear>>().first();
+      fm_engine_ptr->eval(fm_ptr, U, mmax);
+
+      decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
+      const auto q = params_.as<operator_traits<Operator::nuclear>::oper_params_type>()[oset].first;
+      const auto pfac = - q * sqrt(gammap) * two_o_sqrt_PI * ovlp_ss_x * ovlp_ss_y * ovlp_ss_z;
+      const auto m_fence = mmax + 1;
+      for(auto m=0; m!=m_fence; ++m) {
+        fm_ptr[m] *= pfac;
+      }
+#endif
+    }
+
+  } // Engine::compute_primdata()
+
+#undef BOOST_PP_NBODY_OPERATOR_LIST
+#undef BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE
+#undef BOOST_PP_NBODY_OPERATOR_INDEX_LIST
+#undef BOOST_PP_NBODY_DERIV_ORDER_TUPLE
+#undef BOOST_PP_NBODY_DERIV_ORDER_LIST
+#undef BOOST_PP_NBODYENGINE_MCR2
+#undef BOOST_PP_NBODYENGINE_MCR3
+#undef BOOST_PP_NBODYENGINE_MCR4
+#undef BOOST_PP_NBODYENGINE_MCR5
+#undef BOOST_PP_NBODYENGINE_MCR6
+
+#endif // new engine
 
 } // namespace libint2
 

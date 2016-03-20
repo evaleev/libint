@@ -68,6 +68,11 @@ namespace libint2 {
         }
     };
 
+    template <class T1, class T2>
+    compressed_pair<T1,T2> make_compressed_pair(const T1& x, const T2& y) {
+        return compressed_pair<T1,T2>(x,y);
+    }
+
   } // namespace libint2::detail
 } // namespace libint2
 #endif // header guard

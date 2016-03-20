@@ -257,7 +257,6 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
   // implement overlap as a special case of cartesian emultipole
   using OperType = typename std::conditional<std::is_same<_OperType,OverlapOper>::value,CartesianMultipoleOper<3u>,_OperType>::type;
   const std::string task = task_label(label, deriv_level);
-  const std::string task_uc = task_label(label, deriv_level);
   typedef CGShell BFType;
   typedef typename OperType::Descriptor OperDescrType;
   typedef GenIntegralSet_1_1<CGShell, OperType, typename AuxQuantaType<OperType>::type> Onebody_sh_1_1;
@@ -271,7 +270,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
 
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
-  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
+  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task,lmax));
 
   const auto nullaux = typename Onebody_sh_1_1::AuxIndexType(0u);
 
@@ -882,7 +881,6 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
                     SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
 {
   const std::string task = task_label("eri", deriv_level);
-  const std::string task_uc = task_label("ERI", deriv_level);
   typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
@@ -893,7 +891,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
-  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
+  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task,lmax));
 
   //
   // Construct graphs for each desired target integral and
@@ -1065,7 +1063,6 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
                     SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
 {
   const std::string task = task_label("3eri", deriv_level);
-  const std::string task_uc = task_label("3ERI", deriv_level);
   typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
   vector<CGShell*> shells;
   const unsigned int lmax = cparams->max_am(task);
@@ -1078,7 +1075,7 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
-  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
+  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task,lmax));
 
   //
   // Construct graphs for each desired target integral and
@@ -1256,7 +1253,6 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
                     SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
 {
   const std::string task = task_label("2eri", deriv_level);
-  const std::string task_uc = task_label("2ERI", deriv_level);
   typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
@@ -1267,7 +1263,7 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
-  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
+  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task,lmax));
 
   //
   // Construct graphs for each desired target integral and

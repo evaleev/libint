@@ -63,6 +63,7 @@ typedef Eigen::DiagonalMatrix<double, Eigen::Dynamic, Eigen::Dynamic>
 using libint2::Shell;
 using libint2::Atom;
 using libint2::BasisSet;
+using libint2::Operator;
 
 std::vector<Atom> read_geometry(const std::string& filename);
 Matrix compute_soad(const std::vector<Atom>& atoms);
@@ -70,13 +71,13 @@ Matrix compute_soad(const std::vector<Atom>& atoms);
 Matrix compute_shellblock_norm(const BasisSet& obs,
                                const Matrix& A);
 
-template <libint2::OneBodyEngine::operator_type obtype>
-std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>
+template <Operator obtype>
+std::array<Matrix, libint2::operator_traits<obtype>::nopers>
 compute_1body_ints(const BasisSet& obs,
                    const std::vector<Atom>& atoms = std::vector<Atom>());
 
 #if LIBINT2_DERIV_ONEBODY_ORDER
-template <libint2::OneBodyEngine::operator_type obtype>
+template <Operator obtype>
 std::vector<Matrix>
 compute_1body_deriv_ints(unsigned deriv_order,
                          const BasisSet& obs,
@@ -276,9 +277,9 @@ int main(int argc, char *argv[]) {
     }
 
     // compute one-body integrals
-    auto S = compute_1body_ints<libint2::OneBodyEngine::overlap>(obs)[0];
-    auto T = compute_1body_ints<libint2::OneBodyEngine::kinetic>(obs)[0];
-    auto V = compute_1body_ints<libint2::OneBodyEngine::nuclear>(obs, atoms)[0];
+    auto S = compute_1body_ints<Operator::overlap>(obs)[0];
+    auto T = compute_1body_ints<Operator::kinetic>(obs)[0];
+    auto V = compute_1body_ints<Operator::nuclear>(obs, atoms)[0];
     Matrix H = T + V;
     T.resize(0,0);
     V.resize(0,0);
@@ -435,7 +436,7 @@ int main(int argc, char *argv[]) {
 
     } while (((ediff_rel > conv) || (rms_error > conv)) && (iter < maxiter));
 
-    auto Mu = compute_1body_ints<libint2::OneBodyEngine::emultipole2>(obs);
+    auto Mu = compute_1body_ints<Operator::emultipole2>(obs);
     std::array<double,3> mu;
     std::array<double,6> qu;
     for(int xyz=0; xyz!=3; ++xyz)
@@ -453,8 +454,8 @@ int main(int argc, char *argv[]) {
       //////////
       // one-body contributions to the forces
       //////////
-      auto T1 = compute_1body_deriv_ints<libint2::OneBodyEngine::kinetic>(1, obs, atoms);
-      auto V1 = compute_1body_deriv_ints<libint2::OneBodyEngine::nuclear>(1, obs, atoms);
+      auto T1 = compute_1body_deriv_ints<Operator::kinetic>(1, obs, atoms);
+      auto V1 = compute_1body_deriv_ints<Operator::nuclear>(1, obs, atoms);
       for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
         for(auto xyz=0; xyz!=3; ++xyz, ++i) {
           auto force = 2 * (T1[i]+V1[i]).cwiseProduct(D).sum();
@@ -470,7 +471,7 @@ int main(int argc, char *argv[]) {
       // orbital energy density
       DiagonalMatrix evals_occ(evals.topRows(ndocc));
       Matrix W = C_occ * evals_occ * C_occ.transpose();
-      auto S1 = compute_1body_deriv_ints<libint2::OneBodyEngine::overlap>(1, obs, atoms);
+      auto S1 = compute_1body_deriv_ints<Operator::overlap>(1, obs, atoms);
       for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
         for(auto xyz=0; xyz!=3; ++xyz, ++i) {
           auto force = 2 * S1[i].cwiseProduct(W).sum();
@@ -600,8 +601,8 @@ Matrix compute_shellblock_norm(const BasisSet& obs,
   return Ash;
 }
 
-template <libint2::OneBodyEngine::operator_type obtype>
-std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>
+template <Operator obtype>
+std::array<Matrix, libint2::operator_traits<obtype>::nopers>
 compute_1body_ints(const BasisSet& obs,
                    const std::vector<Atom>& atoms)
 {
@@ -612,16 +613,16 @@ compute_1body_ints(const BasisSet& obs,
 #else
   const auto nthreads = 1;
 #endif
-  typedef std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers> result_type;
-  const unsigned int nopers = libint2::OneBodyEngine::operator_traits<obtype>::nopers;
+  typedef std::array<Matrix, libint2::operator_traits<obtype>::nopers> result_type;
+  const unsigned int nopers = libint2::operator_traits<obtype>::nopers;
   result_type result; for(auto& r: result) r = Matrix::Zero(n,n);
 
   // construct the 1-body integrals engine
-  std::vector<libint2::OneBodyEngine> engines(nthreads);
-  engines[0] = libint2::OneBodyEngine(obtype, obs.max_nprim(), obs.max_l(), 0);
+  std::vector<libint2::Engine> engines(nthreads);
+  engines[0] = libint2::Engine(obtype, obs.max_nprim(), obs.max_l(), 0);
   // nuclear attraction ints engine needs to know where the charges sit ...
   // the nuclei are charges in this case; in QM/MM there will also be classical charges
-  if (obtype == libint2::OneBodyEngine::nuclear) {
+  if (obtype == Operator::nuclear) {
     std::vector<std::pair<double,std::array<double,3>>> q;
     for(const auto& atom : atoms) {
       q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
@@ -680,7 +681,7 @@ compute_1body_ints(const BasisSet& obs,
 }
 
 #if LIBINT2_DERIV_ONEBODY_ORDER
-template <libint2::OneBodyEngine::operator_type obtype>
+template <Operator obtype>
 std::vector<Matrix>
 compute_1body_deriv_ints(unsigned deriv_order,
                          const BasisSet& obs,
@@ -693,17 +694,17 @@ compute_1body_deriv_ints(unsigned deriv_order,
 #else
   const auto nthreads = 1;
 #endif
-  constexpr auto nopers = libint2::OneBodyEngine::operator_traits<obtype>::nopers;
+  constexpr auto nopers = libint2::operator_traits<obtype>::nopers;
   const auto nresults = nopers * libint2::num_geometrical_derivatives(atoms.size(),deriv_order);
   typedef std::vector<Matrix> result_type;
   result_type result(nresults); for(auto& r: result) r = Matrix::Zero(n,n);
 
   // construct the 1-body integrals engine
-  std::vector<libint2::OneBodyEngine> engines(nthreads);
-  engines[0] = libint2::OneBodyEngine(obtype, obs.max_nprim(), obs.max_l(), deriv_order);
+  std::vector<libint2::Engine> engines(nthreads);
+  engines[0] = libint2::Engine(obtype, obs.max_nprim(), obs.max_l(), deriv_order);
   // nuclear attraction ints engine needs to know where the charges sit ...
   // the nuclei are charges in this case; in QM/MM there will also be classical charges
-  if (obtype == libint2::OneBodyEngine::nuclear) {
+  if (obtype == Operator::nuclear) {
     std::vector<std::pair<double,std::array<double,3>>> q;
     for(const auto& atom : atoms) {
       q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
@@ -767,7 +768,7 @@ compute_1body_deriv_ints(unsigned deriv_order,
           }
         }
         // 2. process derivatives of nuclear Coulomb operator, if needed
-        if (obtype == libint2::OneBodyEngine::nuclear) {
+        if (obtype == Operator::nuclear) {
           for(unsigned int atom=0; atom!=atoms.size(); ++atom) {
             for(unsigned int xyz=0; xyz!=3; ++xyz) {
               auto op_start = (3*atom+xyz) * nopers;
@@ -879,9 +880,9 @@ compute_shellpair_list(const BasisSet& bs1,
 #endif
 
   // construct the 2-electron repulsion integrals engine
-  using libint2::OneBodyEngine;
-  std::vector<OneBodyEngine> engines; engines.reserve(nthreads);
-  engines.emplace_back(OneBodyEngine::overlap,
+  using libint2::Engine;
+  std::vector<Engine> engines; engines.reserve(nthreads);
+  engines.emplace_back(Operator::overlap,
                        std::max(bs1.max_nprim(),bs2.max_nprim()),
                        std::max(bs1.max_l(),bs2.max_l()),
                        0);
@@ -1651,6 +1652,33 @@ void api_basic_compile_test(const BasisSet& obs) {
       for(auto f1=0; f1!=n1; ++f1)
         for(auto f2=0; f2!=n2; ++f2)
           std::cout << "  " << bf1+f1 << " " << bf2+f2 << " " << ints_shellset[f1*n2+f2] << std::endl;
+    }
+  }
+
+  {
+    using namespace libint2;
+    Engine onebody_engine(Operator::overlap, // will compute overlap ints
+        obs.max_nprim(), // max # of primitives in shells this engine will accept
+        obs.max_l()      // max angular momentum of shells this engine will accept
+    );
+    auto shell2bf = obs.shell2bf();
+    for(auto s1=0; s1!=obs.size(); ++s1) {
+      for(auto s2=0; s2!=obs.size(); ++s2) {
+
+        std::cout << "compute shell set {" << s1 << "," << s2 << "} ... ";
+        const auto* ints_shellset = onebody_engine.compute(obs[s1], obs[s2]);
+        std::cout << "done" << std::endl;
+
+        auto bf1 = shell2bf[s1];  // first basis function in first shell
+        auto n1 = obs[s1].size(); // number of basis functions in first shell
+        auto bf2 = shell2bf[s2];  // first basis function in second shell
+        auto n2 = obs[s2].size(); // number of basis functions in second shell
+
+        // this iterates over integrals in the order they are packed in array ints_shellset
+        for(auto f1=0; f1!=n1; ++f1)
+          for(auto f2=0; f2!=n2; ++f2)
+            std::cout << "  " << bf1+f1 << " " << bf2+f2 << " " << ints_shellset[f1*n2+f2] << std::endl;
+      }
     }
   }
 
