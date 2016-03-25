@@ -142,7 +142,6 @@ namespace libint2 {
       ///               the operator set, e.g. position and magnitude of the charges creating the Coulomb potential
       ///               for type == nuclear. For most values of type this is not needed.
       ///               \sa OneBodyEngine::operator_traits
-      /// \warning currently derivative integrals are not supported
       template <typename Params = empty_pod>
       OneBodyEngine(operator_type type,
                     size_t max_nprim,
@@ -922,7 +921,6 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       ///        <li> \c cGTG_times_Coulomb : ContractedGaussianGeminal </li>
       ///        <li> \c DelcGTG_square : ContractedGaussianGeminal </li>
       ///        </ol>
-      /// \warning currently only the following kernel types are suported: \c Coulomb
       /// \warning currently derivative integrals are not supported
       /// \warning currently only one-contraction Shell objects are supported; i.e. generally-contracted Shells are not yet supported
       TwoBodyEngine(size_t max_nprim, int max_l,
