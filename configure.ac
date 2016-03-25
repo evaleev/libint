@@ -1078,7 +1078,7 @@ if test "X$CXXFLAGS_OPT" = X -a "X$CXXFLAGS" = X; then
 fi
 if test "X$CXXGENFLAGS_OPT" = X -a "X$CXXGENFLAGS" = X; then
   AC_MSG_WARN([C++ optimization options are not given! For optimum performance give CXXGENFLAGS or use --with-cxxgen-optflags configure option])
-  CXXGENFLAGS_OPT=-O2
+  CXXGENFLAGS_OPT="-O2 -DNDEBUG"
 fi
 # options needed only for debugging
 CXXFLAGS_DBG=-g

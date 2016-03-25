@@ -190,7 +190,7 @@ dnl -------- Checks for compiler/linker options. ----------
 # set the optimization default if neither CXXFLAGS or --with-*-optflags were given
 if test "X$CXXFLAGS_OPT" = X -a "X$CXXFLAGS" = X; then
   AC_MSG_WARN([C++ optimization options are not given! For optimum performance give CXXFLAGS or use --with-cxx-optflags configure option])
-  CXXFLAGS_OPT=-O2
+  CXXFLAGS_OPT="-O2 -DNDEBUG"
 fi
 
 # options needed only for debugging
