@@ -84,11 +84,11 @@ compute_1body_deriv_ints(unsigned deriv_order,
                          const std::vector<Atom>& atoms);
 #endif
 
-template <libint2::MultiplicativeSphericalTwoBodyKernel Kernel = libint2::Coulomb>
+template <libint2::Operator Kernel = libint2::Operator::coulomb>
 Matrix compute_schwartz_ints(const BasisSet& bs1,
                              const BasisSet& bs2 = BasisSet(),
                              bool use_2norm = false, // use infty norm by default
-                             typename libint2::TwoBodyEngineTraits<Kernel>::oper_params_type params = typename libint2::TwoBodyEngineTraits<Kernel>::oper_params_type()
+                             typename libint2::operator_traits<Kernel>::oper_params_type params = libint2::operator_traits<Kernel>::default_params()
                             );
 Matrix compute_do_ints(const BasisSet& bs1,
                        const BasisSet& bs2 = BasisSet(),
@@ -791,11 +791,11 @@ compute_1body_deriv_ints(unsigned deriv_order,
 }
 #endif
 
-template <libint2::MultiplicativeSphericalTwoBodyKernel Kernel>
+template <libint2::Operator Kernel>
 Matrix compute_schwartz_ints(const BasisSet& bs1,
                              const BasisSet& _bs2,
                              bool use_2norm,
-                             typename libint2::TwoBodyEngineTraits<Kernel>::oper_params_type params
+                             typename libint2::operator_traits<Kernel>::oper_params_type params
                             ) {
   const BasisSet& bs2 = (_bs2.empty() ? bs1 : _bs2);
   const auto nsh1 = bs1.size();
@@ -805,18 +805,18 @@ Matrix compute_schwartz_ints(const BasisSet& bs1,
   Matrix K = Matrix::Zero(nsh1,nsh2);
 
   // construct the 2-electron repulsion integrals engine
-  typedef libint2::TwoBodyEngine<Kernel> coulomb_engine_type;
+  using libint2::Engine;
   using libint2::nthreads;
-  std::vector<coulomb_engine_type> engines(nthreads);
+  std::vector<Engine> engines(nthreads);
 
   // !!! very important: cannot screen primitives in Schwartz computation !!!
   auto epsilon = 0.;
-  engines[0] = coulomb_engine_type(bs1.max_nprim(), bs2.max_l(), 0, epsilon, params);
+  engines[0] = Engine(Kernel, bs1.max_nprim(), bs2.max_l(), 0, epsilon, params);
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
   }
 
-  std::cout << "computing Schwartz bound prerequisites (kernel=" << Kernel << ") ... ";
+  std::cout << "computing Schwartz bound prerequisites (kernel=" << (int)Kernel << ") ... ";
 
   libint2::Timers<1> timer;
   timer.set_now_overhead(25);
@@ -861,7 +861,7 @@ Matrix compute_schwartz_ints(const BasisSet& bs1,
 Matrix compute_do_ints(const BasisSet& bs1,
                        const BasisSet& bs2,
                        bool use_2norm) {
-  return compute_schwartz_ints<libint2::Delta>(bs1, bs2, use_2norm);
+  return compute_schwartz_ints<libint2::Operator::delta>(bs1, bs2, use_2norm);
 }
 
 shellpair_list_t
@@ -1046,9 +1046,9 @@ Matrix compute_2body_2index_ints(const BasisSet& bs)
   Matrix result = Matrix::Zero(n,n);
 
   // build engines for each thread
-  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
-  std::vector<coulomb_engine_type> engines(nthreads);
-  engines[0] = coulomb_engine_type(bs.max_nprim(), bs.max_l(), 0);
+  using libint2::Engine;
+  std::vector<Engine> engines(nthreads);
+  engines[0] = Engine(libint2::Operator::coulomb, bs.max_nprim(), bs.max_l(), 0);
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -1120,14 +1120,15 @@ Matrix compute_2body_fock(const BasisSet& obs,
   auto engine_precision = std::min(fock_precision / D_shblk_norm.maxCoeff(),
                                    std::numeric_limits<double>::epsilon()) / max_nprim4;
 
-  // construct the 2-electron repulsion integrals engine
-  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
-  std::vector<coulomb_engine_type> engines(nthreads);
-  engines[0] = coulomb_engine_type(obs.max_nprim(), obs.max_l(), 0);
+  // construct the 2-electron repulsion integrals engine pool
+  using libint2::Engine;
+  using libint2::Operator;
+  std::vector<Engine> engines(nthreads);
+  engines[0] = Engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 0);
   engines[0].set_precision(engine_precision); // shellset-dependent precision control will likely break positive definiteness
                                        // stick with this simple recipe
   std::cout << "compute_2body_fock:precision = " << precision << std::endl;
-  std::cout << "TwoBodyEngine::precision = " << engines[0].precision() << std::endl;
+  std::cout << "Engine::precision = " << engines[0].precision() << std::endl;
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -1292,10 +1293,10 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
   std::vector<Matrix> G(nthreads, Matrix::Zero(n,n));
 
   // construct the 2-electron repulsion integrals engine
-  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
-  std::vector<coulomb_engine_type> engines(nthreads);
-  engines[0] = coulomb_engine_type(std::max(obs.max_nprim(),D_bs.max_nprim()),
-                                   std::max(obs.max_l(), D_bs.max_l()), 0);
+  using libint2::Engine;
+  std::vector<Engine> engines(nthreads);
+  engines[0] = Engine(libint2::Operator::coulomb, std::max(obs.max_nprim(),D_bs.max_nprim()),
+                      std::max(obs.max_l(), D_bs.max_l()), 0);
   engines[0].set_precision(precision); // shellset-dependent precision control will likely break positive definiteness
                                        // stick with this simple recipe
   for(size_t i=1; i!=nthreads; ++i) {
@@ -1682,17 +1683,19 @@ void api_basic_compile_test(const BasisSet& obs) {
     }
   }
 
+  using libint2::Operator;
+
   std::vector<std::pair<double,double>> cgtg_params{{0.1,0.2}, {0.3,0.4}, {0.5, 0.6}};
   {
-    auto K = compute_schwartz_ints<libint2::cGTG>(obs, obs, false, cgtg_params);
+    auto K = compute_schwartz_ints<Operator::cgtg>(obs, obs, false, cgtg_params);
     std::cout << "cGTG Schwartz ints\n" << K << std::endl;
   }
   {
-    auto K = compute_schwartz_ints<libint2::cGTG_times_Coulomb>(obs, obs, false, cgtg_params);
+    auto K = compute_schwartz_ints<Operator::cgtg_x_coulomb>(obs, obs, false, cgtg_params);
     std::cout << "cGTG/r12 Schwartz ints\n" << K << std::endl;
   }
   {
-    auto K = compute_schwartz_ints<libint2::DelcGTG_square>(obs, obs, false, cgtg_params);
+    auto K = compute_schwartz_ints<Operator::delcgtg2>(obs, obs, false, cgtg_params);
     std::cout << "||Del.cGTG||^2 Schwartz ints\n" << K << std::endl;
   }
 

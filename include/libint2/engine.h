@@ -1837,14 +1837,16 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
     first_1body_oper=overlap,
     last_1body_oper=emultipole3,
     first_2body_oper=delta,
-    last_2body_oper=delcgtg2
+    last_2body_oper=delcgtg2,
+    first_oper=first_1body_oper,
+    last_oper=last_2body_oper
   };
 
   /// @return the particle rank of \c oper
   int rank(Operator oper) {
     int n = 0;
-    if (oper >= Operator::first_1body_oper || oper <= Operator::last_1body_oper) n = 1;
-    else if (oper >= Operator::first_2body_oper || oper <= Operator::last_2body_oper) n = 2;
+    if (oper >= Operator::first_1body_oper && oper <= Operator::last_1body_oper) n = 1;
+    else if (oper >= Operator::first_2body_oper && oper <= Operator::last_2body_oper) n = 2;
     return n;
   }
 
@@ -1911,30 +1913,42 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
   }
 
   /// types of shell sets supported by Engine, in chemist notation (i.e. '_' separates particles)
-  enum BraKet {
+  /// \warning macro \c LIBINT2_MAX_BRAKET_INDEX must equal the maximum value of this enum
+  enum class BraKet {
     x_x=0,
-    xx_xx=1,
-    xs_xx=2,
-    xs_xs=3,
-    invalid=-1
+    xx_xx,
+    xs_xx,
+    xs_xs,
+    invalid=-1,
+    first_1body_braket=x_x,
+    last_1body_braket=x_x,
+    first_2body_braket=xx_xx,
+    last_2body_braket=xs_xs,
+    first_braket=first_1body_braket,
+    last_braket=last_2body_braket
   };
+#define LIBINT2_MAX_BRAKET_INDEX 3
 
   /// @return rank of \c braket
   int rank(BraKet braket) {
     int n = 0;
     switch(braket) {
-      case x_x:
-      case xs_xs:
+      case BraKet::x_x:
+      case BraKet::xs_xs:
         n = 2; break;
-      case xs_xx:
+      case BraKet::xs_xx:
         n = 3; break;
-      case xx_xx:
+      case BraKet::xx_xx:
         n = 4; break;
       default:
         assert(false);
     }
     return n;
   }
+
+  constexpr size_t nopers_2body = (int)Operator::last_2body_oper - (int)Operator::first_2body_oper + 1;
+  constexpr size_t nbrakets_2body = 3;
+  constexpr size_t nderivorders_2body = LIBINT2_MAX_DERIV_ORDER+1;
 
   template <typename T> struct print_type;
 
@@ -1966,15 +1980,24 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST) )
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE )
 
+// make list of braket indices for n-body ints
+#define BOOST_PP_NBODY_BRAKET_INDEX_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_INC(LIBINT2_MAX_BRAKET_INDEX) )
+#define BOOST_PP_NBODY_BRAKET_INDEX_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_NBODY_BRAKET_INDEX_TUPLE )
+
 // make list of derivative orders for n-body ints
 #define BOOST_PP_NBODY_DERIV_ORDER_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_INC(LIBINT2_MAX_DERIV_ORDER) )
 #define BOOST_PP_NBODY_DERIV_ORDER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_NBODY_DERIV_ORDER_TUPLE )
 
-      typedef libint2::FmEval_Taylor<real_t, 7> coulomb_core_eval_t;
-
       /// creates a default Engine that cannot be used for computing integrals;
       /// to be used as placeholder for copying a usable engine, OR for cleanup of thread-local data
-      Engine() : oper_(Operator::invalid), braket_(BraKet::invalid), primdata_(), stack_size_(0), lmax_(-1) {}
+      Engine() :
+        oper_(Operator::invalid),
+        braket_(BraKet::invalid),
+        primdata_(),
+        stack_size_(0),
+        lmax_(-1) {
+        set_precision(std::numeric_limits<real_t>::epsilon());
+      }
 
       /// Constructs a (usable) Engine
 
@@ -1983,26 +2006,34 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       /// \param max_l the maximum angular momentum of Gaussian shell
       /// \param deriv_order if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_order ,
       ///                    (default=0)
-      /// \param params a value of type Engine::operator_traits<type>::oper_params_type specifying the parameters of
+      /// \param precision specifies the target precision with which the integrals will be computed; the default is the "epsilon"
+      ///        of \c real_t type, given by \c std::numeric_limits<real_t>::epsilon(). Currently precision control is implemented
+      ///        for two-body integrals only. The precision control is somewhat empirical,
+      ///        hence be conservative. \sa set_precision()
+      /// \param params a value of type Engine::operator_traits<oper>::oper_params_type specifying the parameters of
       ///               the operator set, e.g. position and magnitude of the charges creating the Coulomb potential
-      ///               for oper == Operator::nuclear. For most values of type this is not needed.
+      ///               for oper == Operator::nuclear. For most values of \c oper this is not needed.
       ///               \sa Engine::operator_traits
       /// \param braket a value of BraKet type
+      /// \warning currently derivative integrals are not supported
+      /// \warning currently only one-contraction Shell objects are supported; i.e. generally-contracted Shells are not yet supported
       template <typename Params = empty_pod>
       Engine(Operator oper,
           size_t max_nprim,
           int max_l,
           int deriv_order = 0,
+          real_t precision = std::numeric_limits<real_t>::epsilon(),
           Params params = empty_pod(),
           BraKet braket = BraKet::invalid) :
         oper_(oper),
         braket_(braket),
-        primdata_(max_nprim * max_nprim),
+        spbra_(max_nprim), spket_(max_nprim),
         lmax_(max_l),
         deriv_order_(deriv_order),
         params_(enforce_params_type(oper,params))
       {
-        initialize();
+        set_precision(precision);
+        initialize(max_nprim);
         core_eval_pack_ = make_core_eval_pack(oper); // must follow initialize() to ensure default braket_ has been set
         init_core_ints_params(params_);
       }
@@ -2013,10 +2044,12 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         oper_(other.oper_),
         braket_(other.braket_),
         primdata_(std::move(other.primdata_)),
+        spbra_(std::move(other.spbra_)), spket_(std::move(other.spket_)),
         stack_size_(other.stack_size_),
         lmax_(other.lmax_),
         hard_lmax_(other.hard_lmax_),
         deriv_order_(other.deriv_order_),
+        precision_(other.precision_), ln_precision_(other.ln_precision_),
         core_eval_pack_(other.core_eval_pack_),
         params_(std::move(other.params_)),
         core_ints_params_(std::move(other.core_ints_params_)),
@@ -2030,9 +2063,11 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         oper_(other.oper_),
         braket_(other.braket_),
         primdata_(other.primdata_.size()),
+        spbra_(other.spbra_), spket_(other.spket_),
         stack_size_(other.stack_size_),
         lmax_(other.lmax_),
         deriv_order_(other.deriv_order_),
+        precision_(other.precision_), ln_precision_(other.ln_precision_),
         core_eval_pack_(other.core_eval_pack_),
         params_(other.params_),
         core_ints_params_(other.core_ints_params_)
@@ -2049,10 +2084,14 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         oper_ = other.oper_;
         braket_ = other.braket_;
         primdata_ = std::move(other.primdata_);
+        spbra_ = std::move(other.spbra_);
+        spket_ = std::move(other.spket_);
         stack_size_ = other.stack_size_;
         lmax_ = other.lmax_;
         hard_lmax_ = other.hard_lmax_;
         deriv_order_ = other.deriv_order_;
+        precision_ = other.precision_;
+        ln_precision_ = other.ln_precision_;
         core_eval_pack_ = std::move(other.core_eval_pack_);
         params_ = std::move(other.params_);
         core_ints_params_ = std::move(other.core_ints_params_);
@@ -2067,9 +2106,13 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         oper_ = other.oper_;
         braket_ = other.braket_;
         primdata_.resize(other.primdata_.size());
+        spbra_ = other.spbra_;
+        spket_ = other.spket_;
         stack_size_ = other.stack_size_;
         lmax_ = other.lmax_;
         deriv_order_ = other.deriv_order_;
+        precision_ = other.precision_;
+        ln_precision_ = other.ln_precision_;
         core_eval_pack_ = other.core_eval_pack_;
         params_ = other.params_;
         core_ints_params_ = other.core_ints_params_;
@@ -2152,9 +2195,22 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
         std::array<std::reference_wrapper<const Shell>, nargs> shells{first_shell, rest_of_shells...};
 
-        if (nargs == 2 && operator_rank() == 1)
-          return compute1(shells[0], shells[1]);
-        assert(false);
+        if (operator_rank() == 1) {
+          if (nargs == 2)
+            return compute1(shells[0], shells[1]);
+        } else if (operator_rank() == 2) {
+          auto compute_ptr_idx = (((int)oper_ - (int)Operator::first_2body_oper) * nbrakets_2body + ((int)braket_ - (int)BraKet::first_2body_braket)) * nderivorders_2body + deriv_order_;
+          auto compute_ptr = compute2_ptrs_[compute_ptr_idx];
+          assert(compute_ptr != nullptr);
+          if (nargs == 2)
+            return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1], Shell::unit());
+          if (nargs == 3)
+            return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1], shells[2]);
+          if (nargs == 4)
+            return (this->*compute_ptr)(shells[0], shells[1], shells[2], shells[3]);
+        }
+
+        assert(false); // only reached if missing a feature
       }
 
       /// computes shell set of integrals
@@ -2350,25 +2406,88 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         return result;
       }
 
-      inline void compute_primdata(Libint_t& primdata,
-                                   const Shell& s1, const Shell& s2,
-                                   size_t p1, size_t p2,
-                                   size_t oset);
+      template <Operator oper, BraKet braket, size_t deriv_order>
+      inline const real_t* compute2(const Shell& s1,
+                                    const Shell& s2,
+                                    const Shell& s3,
+                                    const Shell& s4);
+
+      typedef const real_t* (Engine::*compute2_ptr_type)(const Shell& s1,
+          const Shell& s2,
+          const Shell& s3,
+          const Shell& s4);
+
+      /** this specifies target precision for computing the integrals.
+       *  target precision \f$ \epsilon \f$ is used in 3 ways:
+       *  (1) to screen out primitive pairs in ShellPair object for which
+       *      \f$ {\rm scr}_{12} = \max|c_1| \max|c_2| \exp(-\rho_{12} |AB|^2)/\gamma_{12} < \epsilon \f$ ;
+       *  (2) to screen out primitive quartets outside compute_primdata() for which \f$ {\rm scr}_{12} {\rm scr}_{34} <  \epsilon \f$;
+       *  (3) to screen out primitive quartets inside compute_primdata() for which the prefactor of \f$ F_m(\rho, T) \f$ is smaller
+       *      than \f$ \epsilon \f$ .
+       */
+      void set_precision(real_t prec) {
+        if (prec <= 0.) {
+          precision_ = 0.;
+          ln_precision_ = std::numeric_limits<real_t>::lowest();
+        }
+        else {
+          precision_ = prec;
+          ln_precision_ = std::log(precision_);
+        }
+      }
+      /// @return the target precision for computing the integrals
+      /// @sa set_precision(real_t)
+      real_t precision() const {
+        return precision_;
+      }
+
+      void print_timers() {
+#ifdef LIBINT2_ENGINE_TIMERS
+        std::cout << "timers: prereq = " << timers.read(0);
+#  ifndef LIBINT2_PROFILE // if libint's profiling was on, engine's build timer will include its overhead
+                          // do not report it, detailed profiling from libint will be printed below
+        std::cout << " build = " << timers.read(1);
+#  endif
+        std::cout << " tform = " << timers.read(2) << std::endl;
+#endif
+#ifdef LIBINT2_PROFILE
+        std::cout << "build timers: hrr = " << primdata_[0].timers->read(0)
+                << " vrr = " << primdata_[0].timers->read(1) << std::endl;
+#endif
+#ifdef LIBINT2_ENGINE_TIMERS
+#  ifdef LIBINT2_ENGINE_PROFILE_CLASS
+        for(const auto& p: class_profiles) {
+          printf("{\"%s\", %10.5lf, %10.5lf, %10.5lf, %10.5lf, %ld, %ld},\n",
+                 p.first.to_string().c_str(),
+                 p.second.prereqs,
+                 p.second.build_vrr,
+                 p.second.build_hrr,
+                 p.second.tform,
+                 p.second.nshellset,
+                 p.second.nprimset);
+        }
+#  endif
+#endif
+      }
 
     private:
       Operator oper_;
       BraKet braket_;
       std::vector<Libint_t> primdata_;
+      ShellPair spbra_, spket_;
       size_t stack_size_;  // amount allocated by libint2_init_xxx in primdata_[0].stack
       int lmax_;
       int hard_lmax_;      // max L supported by library for this operator type + 1
       size_t deriv_order_;
+      real_t precision_;
+      real_t ln_precision_;
 
       any core_eval_pack_;
 
       /// operator params
       any params_; // operator params
-      /// for some operators need core ints params that are derived from operator params
+      /// for some operators need core ints params that are computed from operator params,
+      /// e.g. integrals of \f$ f_{12}^2 \f$ are computed from parameters of \f$ f_{12} \f$
       any core_ints_params_;
       /// makes core ints params from the operator params
       void init_core_ints_params(const any& params);
@@ -2381,7 +2500,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
       void reset_scratch() {
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
-        const auto target_shellset_size = nshellsets() * ncart_max * ncart_max;
+        const auto target_shellset_size = nshellsets() * std::pow(ncart_max, braket_rank());
         // need to be able to hold 2 sets of target shellsets: the worst case occurs when dealing with
         // 1-body Coulomb ints derivatives ... have 2+natom derivative sets that are stored in scratch
         // then need to transform to solids. To avoid copying back and forth make sure that there is enough
@@ -2391,18 +2510,36 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         scratch2_ = need_extra_large_scratch ? &scratch_[target_shellset_size] : primdata_[0].stack;
       }
 
-      void initialize() {
+      inline void compute_primdata(Libint_t& primdata,
+                                   const Shell& s1, const Shell& s2,
+                                   size_t p1, size_t p2,
+                                   size_t oset);
+
+      /// 3-dim array of pointers to help dispatch efficiently based on oper_, braket_, and deriv_order_
+      static std::vector<compute2_ptr_type> compute2_ptrs_;
+
+      void initialize(size_t max_nprim = 0) {
         assert(libint2::initialized());
         assert(deriv_order_ <= LIBINT2_MAX_DERIV_ORDER);
 
         // initialize braket, if needed
         if (braket_ == BraKet::invalid) {
           switch(operator_rank()) {
-            case 1: braket_ = x_x; break;
-            case 2: braket_ = xx_xx; break;
+            case 1: braket_ = BraKet::x_x; break;
+            case 2: braket_ = BraKet::xx_xx; break;
             default: assert(false);
           }
         }
+
+        if (max_nprim != 0)
+          primdata_.resize(std::pow(max_nprim, braket_rank()));
+
+#ifdef LIBINT2_ENGINE_TIMERS
+        timers.set_now_overhead(25);
+#endif
+#ifdef LIBINT2_PROFILE
+        primdata_[0].timers->set_now_overhead(25);
+#endif
 
 #define BOOST_PP_NBODYENGINE_MCR2(r,product)                                                                  \
          if (static_cast<int>(oper_) == BOOST_PP_TUPLE_ELEM(2,0,product) && deriv_order_ == BOOST_PP_TUPLE_ELEM(2,1,product) ) {\
@@ -2465,10 +2602,10 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR2, 2, (BOOST_PP_NBODY_O
       void finalize() {
         if (primdata_.size() != 0) {
 
-#define BOOST_PP_NBODYENGINE_MCR3(r,product)                                                                \
+#define BOOST_PP_NBODYENGINE_MCR3(r,product)                                                                  \
            LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
                                     BOOST_PP_CAT(libint2_cleanup_ ,                                           \
-                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                        \
+                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                          \
                                                        BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
                                     ),                                                                        \
                                     BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
@@ -2498,7 +2635,38 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR3, 2, (BOOST_PP_NBODY_O
       /// @return core eval pack corresponding to operator_traits<oper>::core_eval_type
       any make_core_eval_pack(Operator oper) const;
 
+      //-------
+      // profiling
+      //-------
+      static bool skip_core_ints;
+
   }; // struct Engine
+
+  bool Engine::skip_core_ints = false;
+
+  namespace detail {
+    std::vector<Engine::compute2_ptr_type> init_compute2_ptrs() {
+      auto max_ncompute2_ptrs = nopers_2body * nbrakets_2body * nderivorders_2body;
+      std::vector<Engine::compute2_ptr_type> result(max_ncompute2_ptrs, nullptr);
+
+      auto compute_ptr_idx = (((int)Operator::coulomb-(int)Operator::first_2body_oper)*nbrakets_2body + ((int)BraKet::xx_xx-(int)BraKet::first_2body_braket))*nderivorders_2body;
+      result[compute_ptr_idx] = &Engine::compute2<Operator::coulomb,BraKet::xx_xx,0>;
+
+#define BOOST_PP_NBODYENGINE_MCR7(r,product)                                                                                  \
+      {  auto compute_ptr_idx = ((BOOST_PP_TUPLE_ELEM(3,0,product) - (int)Operator::first_2body_oper) * nbrakets_2body        \
+                                 + (BOOST_PP_TUPLE_ELEM(3,1,product) - (int)BraKet::first_2body_braket)) * nderivorders_2body \
+                                + BOOST_PP_TUPLE_ELEM(3,2,product) ;                                                          \
+         result[compute_ptr_idx] = &Engine::compute2<static_cast<Operator>(BOOST_PP_TUPLE_ELEM(3,0,product)),                 \
+                                                     static_cast<BraKet>(BOOST_PP_TUPLE_ELEM(3,1,product)),                   \
+                                                     BOOST_PP_TUPLE_ELEM(3,2,product)>;  }                                    \
+
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR7, 3, (BOOST_PP_NBODY_OPERATOR_INDEX_LIST, BOOST_PP_NBODY_BRAKET_INDEX_LIST, BOOST_PP_NBODY_DERIV_ORDER_LIST) )
+
+      return result;
+    }
+  } // namespace detail
+  std::vector<Engine::compute2_ptr_type> Engine::compute2_ptrs_ = detail::init_compute2_ptrs();
 
   inline unsigned int Engine::nparams() const {
     switch (oper_) {
@@ -2739,9 +2907,583 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
 
   } // Engine::compute_primdata()
 
+
+  /// computes shell set of integrals of 2-body operator
+  /// \note result is stored in the "chemists" form, i.e. (tbra1 tbra2 |tket1 tket2), in row-major order
+  template <Operator oper, BraKet braket, size_t deriv_order>
+  inline const real_t*
+  Engine::compute2(const libint2::Shell& tbra1,
+                   const libint2::Shell& tbra2,
+                   const libint2::Shell& tket1,
+                   const libint2::Shell& tket2) {
+
+    //
+    // i.e. bra and ket refer to chemists bra and ket
+    //
+
+    // can only handle 1 contraction at a time
+    assert(tbra1.ncontr() == 1 && tbra2.ncontr() == 1 &&
+           tket1.ncontr() == 1 && tket2.ncontr() == 1);
+
+    // derivatives not supported for now
+    assert(deriv_order == 0);
+
+#if LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD // standard angular momentum ordering
+    auto swap_bra = (tbra1.contr[0].l < tbra2.contr[0].l);
+    auto swap_ket = (tket1.contr[0].l < tket2.contr[0].l);
+    auto swap_braket = (tbra1.contr[0].l + tbra2.contr[0].l > tket1.contr[0].l + tket2.contr[0].l);
+#else // orca angular momentum ordering
+    auto swap_bra = (tbra1.contr[0].l > tbra2.contr[0].l);
+    auto swap_ket = (tket1.contr[0].l > tket2.contr[0].l);
+    auto swap_braket = (tbra1.contr[0].l + tbra2.contr[0].l < tket1.contr[0].l + tket2.contr[0].l);
+#endif
+    const auto& bra1 = swap_braket ? (swap_ket ? tket2 : tket1) : (swap_bra ? tbra2 : tbra1);
+    const auto& bra2 = swap_braket ? (swap_ket ? tket1 : tket2) : (swap_bra ? tbra1 : tbra2);
+    const auto& ket1 = swap_braket ? (swap_bra ? tbra2 : tbra1) : (swap_ket ? tket2 : tket1);
+    const auto& ket2 = swap_braket ? (swap_bra ? tbra1 : tbra2) : (swap_ket ? tket1 : tket2);
+
+    const bool tform = tbra1.contr[0].pure || tbra2.contr[0].pure || tket1.contr[0].pure || tket2.contr[0].pure;
+    const bool use_scratch = (swap_braket || swap_bra || swap_ket || tform);
+
+    // assert # of primitive pairs
+    auto nprim_bra1 = bra1.nprim();
+    auto nprim_bra2 = bra2.nprim();
+    auto nprim_ket1 = ket1.nprim();
+    auto nprim_ket2 = ket2.nprim();
+
+    // adjust max angular momentum, if needed
+    auto lmax = std::max(std::max(bra1.contr[0].l, bra2.contr[0].l), std::max(ket1.contr[0].l, ket2.contr[0].l));
+    assert (lmax <= lmax_);
+    if (lmax == 0) // (ss|ss) ints will be accumulated in the first element of stack
+      primdata_[0].stack[0] = 0;
+
+#ifdef LIBINT2_ENGINE_PROFILE_CLASS
+    class_id id(bra1.contr[0].l, bra2.contr[0].l, ket1.contr[0].l, ket2.contr[0].l);
+    if (class_profiles.find(id) == class_profiles.end()) {
+      class_profile dummy;
+      class_profiles[id] = dummy;
+    }
+#endif
+
+    // compute primitive data
+#ifdef LIBINT2_ENGINE_TIMERS
+    timers.start(0);
+#endif
+    {
+      auto p = 0;
+      // this is far less aggressive than should be, but proper analysis
+      // involves both bra and ket *bases* and thus cannot be done on shell-set basis
+      // probably ln_precision_/2 - 10 is enough
+      spbra_.init(bra1, bra2, ln_precision_);
+      spket_.init(ket1, ket2, ln_precision_);
+      const auto npbra = spbra_.primpairs.size();
+      const auto npket = spket_.primpairs.size();
+      for(auto pb=0; pb!=npbra; ++pb) {
+        for(auto pk=0; pk!=npket; ++pk) {
+          if (spbra_.primpairs[pb].scr + spket_.primpairs[pk].scr > ln_precision_) {
+            Libint_t& primdata = primdata_[p];
+            const auto& sbra1 = bra1;
+            const auto& sbra2 = bra2;
+            const auto& sket1 = ket1;
+            const auto& sket2 = ket2;
+            const auto& spbra = spbra_;
+            const auto& spket = spket_;
+            auto pbra = pb;
+            auto pket = pk;
+
+              const auto& A = sbra1.O;
+              const auto& B = sbra2.O;
+              const auto& C = sket1.O;
+              const auto& D = sket2.O;
+              const auto& AB = spbra.AB;
+              const auto& CD = spket.AB;
+
+              const auto& spbrapp = spbra.primpairs[pbra];
+              const auto& spketpp = spket.primpairs[pket];
+              const auto& pbra1 = spbrapp.p1;
+              const auto& pbra2 = spbrapp.p2;
+              const auto& pket1 = spketpp.p1;
+              const auto& pket2 = spketpp.p2;
+
+              const auto alpha0 = sbra1.alpha[pbra1];
+              const auto alpha1 = sbra2.alpha[pbra2];
+              const auto alpha2 = sket1.alpha[pket1];
+              const auto alpha3 = sket2.alpha[pket2];
+
+              const auto c0 = sbra1.contr[0].coeff[pbra1];
+              const auto c1 = sbra2.contr[0].coeff[pbra2];
+              const auto c2 = sket1.contr[0].coeff[pket1];
+              const auto c3 = sket2.contr[0].coeff[pket2];
+
+              const auto amtot = sbra1.contr[0].l + sket1.contr[0].l +
+                                 sbra2.contr[0].l + sket2.contr[0].l;
+
+              const auto gammap = alpha0 + alpha1;
+              const auto oogammap = spbrapp.one_over_gamma;
+              const auto rhop = alpha0 * alpha1 * oogammap;
+
+              const auto gammaq = alpha2 + alpha3;
+              const auto oogammaq = spketpp.one_over_gamma;
+              const auto rhoq = alpha2 * alpha3 * oogammaq;
+
+              const auto& P = spbrapp.P;
+              const auto& Q = spketpp.P;
+              const auto PQx = P[0] - Q[0];
+              const auto PQy = P[1] - Q[1];
+              const auto PQz = P[2] - Q[2];
+              const auto PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
+
+              const auto K12 = spbrapp.K * spketpp.K;
+              decltype(K12) two_times_M_PI_to_25(34.986836655249725693); // (2 \pi)^{5/2}
+              const auto gammapq = gammap + gammaq;
+              const auto sqrt_gammapq = sqrt(gammapq);
+              const auto oogammapq = 1.0 / (gammapq);
+              auto pfac = two_times_M_PI_to_25 * K12 * sqrt_gammapq * oogammapq;
+              pfac *= c0 * c1 * c2 * c3;
+
+              if (std::abs(pfac) >= precision_) {
+
+              const auto rho = gammap * gammaq * oogammapq;
+              const auto T = PQ2*rho;
+              auto* gm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
+              const auto mmax = amtot + deriv_order;
+
+              if (!skip_core_ints) {
+                switch (oper) {
+                  case Operator::coulomb: {
+                    const auto& core_eval_ptr = core_eval_pack_.as<detail::core_eval_pack_type<Operator::coulomb>>().first();
+                    core_eval_ptr->eval(gm_ptr, T, mmax);
+                  } break;
+                  case Operator::cgtg_x_coulomb: {
+                    const auto& core_eval_ptr = core_eval_pack_.as<detail::core_eval_pack_type<Operator::cgtg_x_coulomb>>().first();
+                    auto& core_eval_scratch = core_eval_pack_.as<detail::core_eval_pack_type<Operator::cgtg_x_coulomb>>().second();
+                    const auto& core_ints_params = core_ints_params_.as<typename operator_traits<Operator::cgtg>::oper_params_type>();
+                    core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params, &core_eval_scratch);
+                  } break;
+                  case Operator::cgtg: {
+                    const auto&  core_eval_ptr = core_eval_pack_.as<detail::core_eval_pack_type<Operator::cgtg>>().first();
+                    const auto& core_ints_params = core_ints_params_.as<typename operator_traits<Operator::cgtg>::oper_params_type>();
+                    core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
+                  } break;
+                  case Operator::delcgtg2: {
+                    const auto& core_eval_ptr = core_eval_pack_.as<detail::core_eval_pack_type<Operator::delcgtg2>>().first();
+                    const auto& core_ints_params = core_ints_params_.as<typename operator_traits<Operator::cgtg>::oper_params_type>();
+                    core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
+                  } break;
+                  case Operator::delta: {
+                    const auto& core_eval_ptr = core_eval_pack_.as<detail::core_eval_pack_type<Operator::delta>>().first();
+                    core_eval_ptr->eval(gm_ptr, rho, T, mmax);
+                  } break;
+                  default:
+                    assert(false); // unreachable
+                }
+              }
+
+              for(auto m=0; m!=mmax+1; ++m) {
+                gm_ptr[m] *= pfac;
+              }
+
+              if (mmax != 0) {
+
+          #if LIBINT2_DEFINED(eri,PA_x)
+              primdata.PA_x[0] = P[0] - A[0];
+          #endif
+          #if LIBINT2_DEFINED(eri,PA_y)
+              primdata.PA_y[0] = P[1] - A[1];
+          #endif
+          #if LIBINT2_DEFINED(eri,PA_z)
+              primdata.PA_z[0] = P[2] - A[2];
+          #endif
+          #if LIBINT2_DEFINED(eri,PB_x)
+              primdata.PB_x[0] = P[0] - B[0];
+          #endif
+          #if LIBINT2_DEFINED(eri,PB_y)
+              primdata.PB_y[0] = P[1] - B[1];
+          #endif
+          #if LIBINT2_DEFINED(eri,PB_z)
+              primdata.PB_z[0] = P[2] - B[2];
+          #endif
+
+          #if LIBINT2_DEFINED(eri,QC_x)
+              primdata.QC_x[0] = Q[0] - C[0];
+          #endif
+          #if LIBINT2_DEFINED(eri,QC_y)
+              primdata.QC_y[0] = Q[1] - C[1];
+          #endif
+          #if LIBINT2_DEFINED(eri,QC_z)
+              primdata.QC_z[0] = Q[2] - C[2];
+          #endif
+          #if LIBINT2_DEFINED(eri,QD_x)
+              primdata.QD_x[0] = Q[0] - D[0];
+          #endif
+          #if LIBINT2_DEFINED(eri,QD_y)
+              primdata.QD_y[0] = Q[1] - D[1];
+          #endif
+          #if LIBINT2_DEFINED(eri,QD_z)
+              primdata.QD_z[0] = Q[2] - D[2];
+          #endif
+
+          #if LIBINT2_DEFINED(eri,AB_x)
+              primdata.AB_x[0] = AB[0];
+          #endif
+          #if LIBINT2_DEFINED(eri,AB_y)
+              primdata.AB_y[0] = AB[1];
+          #endif
+          #if LIBINT2_DEFINED(eri,AB_z)
+              primdata.AB_z[0] = AB[2];
+          #endif
+          #if LIBINT2_DEFINED(eri,BA_x)
+              primdata.BA_x[0] = -AB[0];
+          #endif
+          #if LIBINT2_DEFINED(eri,BA_y)
+              primdata.BA_y[0] = -AB[1];
+          #endif
+          #if LIBINT2_DEFINED(eri,BA_z)
+              primdata.BA_z[0] = -AB[2];
+          #endif
+
+          #if LIBINT2_DEFINED(eri,CD_x)
+              primdata.CD_x[0] = CD[0];
+          #endif
+          #if LIBINT2_DEFINED(eri,CD_y)
+              primdata.CD_y[0] = CD[1];
+          #endif
+          #if LIBINT2_DEFINED(eri,CD_z)
+              primdata.CD_z[0] = CD[2];
+          #endif
+          #if LIBINT2_DEFINED(eri,DC_x)
+              primdata.DC_x[0] = -CD[0];
+          #endif
+          #if LIBINT2_DEFINED(eri,DC_y)
+              primdata.DC_y[0] = -CD[1];
+          #endif
+          #if LIBINT2_DEFINED(eri,DC_z)
+              primdata.DC_z[0] = -CD[2];
+          #endif
+
+              const auto gammap_o_gammapgammaq = oogammapq * gammap;
+              const auto gammaq_o_gammapgammaq = oogammapq * gammaq;
+
+              const auto Wx = (gammap_o_gammapgammaq * P[0] + gammaq_o_gammapgammaq * Q[0]);
+              const auto Wy = (gammap_o_gammapgammaq * P[1] + gammaq_o_gammapgammaq * Q[1]);
+              const auto Wz = (gammap_o_gammapgammaq * P[2] + gammaq_o_gammapgammaq * Q[2]);
+
+          #if LIBINT2_DEFINED(eri,WP_x)
+              primdata.WP_x[0] = Wx - P[0];
+          #endif
+          #if LIBINT2_DEFINED(eri,WP_y)
+              primdata.WP_y[0] = Wy - P[1];
+          #endif
+          #if LIBINT2_DEFINED(eri,WP_z)
+              primdata.WP_z[0] = Wz - P[2];
+          #endif
+          #if LIBINT2_DEFINED(eri,WQ_x)
+              primdata.WQ_x[0] = Wx - Q[0];
+          #endif
+          #if LIBINT2_DEFINED(eri,WQ_y)
+              primdata.WQ_y[0] = Wy - Q[1];
+          #endif
+          #if LIBINT2_DEFINED(eri,WQ_z)
+              primdata.WQ_z[0] = Wz - Q[2];
+          #endif
+          #if LIBINT2_DEFINED(eri,oo2z)
+              primdata.oo2z[0] = 0.5*oogammap;
+          #endif
+          #if LIBINT2_DEFINED(eri,oo2e)
+              primdata.oo2e[0] = 0.5*oogammaq;
+          #endif
+          #if LIBINT2_DEFINED(eri,oo2ze)
+              primdata.oo2ze[0] = 0.5*oogammapq;
+          #endif
+          #if LIBINT2_DEFINED(eri,roz)
+              primdata.roz[0] = rho*oogammap;
+          #endif
+          #if LIBINT2_DEFINED(eri,roe)
+              primdata.roe[0] = rho*oogammaq;
+          #endif
+
+              // using ITR?
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_x)
+              primdata.TwoPRepITR_pfac0_0_0_x[0] = - (alpha1*AB[0] + alpha3*CD[0]) * oogammap;
+          #endif
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_y)
+              primdata.TwoPRepITR_pfac0_0_0_y[0] = - (alpha1*AB[1] + alpha3*CD[1]) * oogammap;
+          #endif
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_0_z)
+              primdata.TwoPRepITR_pfac0_0_0_z[0] = - (alpha1*AB[2] + alpha3*CD[2]) * oogammap;
+          #endif
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_x)
+              primdata.TwoPRepITR_pfac0_1_0_x[0] = - (alpha1*AB[0] + alpha3*CD[0]) * oogammaq;
+          #endif
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_y)
+              primdata.TwoPRepITR_pfac0_1_0_y[0] = - (alpha1*AB[1] + alpha3*CD[1]) * oogammaq;
+          #endif
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_0_z)
+              primdata.TwoPRepITR_pfac0_1_0_z[0] = - (alpha1*AB[2] + alpha3*CD[2]) * oogammaq;
+          #endif
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_x)
+              primdata.TwoPRepITR_pfac0_0_1_x[0] = (alpha0*AB[0] + alpha2*CD[0]) * oogammap;
+          #endif
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_y)
+              primdata.TwoPRepITR_pfac0_0_1_y[0] = (alpha0*AB[1] + alpha2*CD[1]) * oogammap;
+          #endif
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_0_1_z)
+              primdata.TwoPRepITR_pfac0_0_1_z[0] = (alpha0*AB[2] + alpha2*CD[2]) * oogammap;
+          #endif
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_x)
+              primdata.TwoPRepITR_pfac0_1_1_x[0] = (alpha0*AB[0] + alpha2*CD[0]) * oogammaq;
+          #endif
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_y)
+              primdata.TwoPRepITR_pfac0_1_1_y[0] = (alpha0*AB[1] + alpha2*CD[1]) * oogammaq;
+          #endif
+          #if LIBINT2_DEFINED(eri,TwoPRepITR_pfac0_1_1_z)
+              primdata.TwoPRepITR_pfac0_1_1_z[0] = (alpha0*AB[2] + alpha2*CD[2]) * oogammaq;
+          #endif
+          #if LIBINT2_DEFINED(eri,eoz)
+              primdata.eoz[0] = gammaq*oogammap;
+          #endif
+          #if LIBINT2_DEFINED(eri,zoe)
+              primdata.zoe[0] = gammap*oogammaq;
+          #endif
+
+              // prefactors for derivative ERI relations
+              if (deriv_order > 0) {
+          #if LIBINT2_DEFINED(eri,alpha1_rho_over_zeta2)
+                primdata.alpha1_rho_over_zeta2[0] = alpha0 * (oogammap * gammaq_o_gammapgammaq);
+          #endif
+          #if LIBINT2_DEFINED(eri,alpha2_rho_over_zeta2)
+                primdata.alpha2_rho_over_zeta2[0] = alpha1 * (oogammap * gammaq_o_gammapgammaq);
+          #endif
+          #if LIBINT2_DEFINED(eri,alpha3_rho_over_eta2)
+                primdata.alpha3_rho_over_eta2[0] = alpha2 * (oogammaq * gammap_o_gammapgammaq);
+          #endif
+          #if LIBINT2_DEFINED(eri,alpha4_rho_over_eta2)
+                primdata.alpha4_rho_over_eta2[0] = alpha3 * (oogammaq * gammap_o_gammapgammaq);
+          #endif
+          #if LIBINT2_DEFINED(eri,alpha1_over_zetapluseta)
+                primdata.alpha1_over_zetapluseta[0] = alpha0 * oogammapq;
+          #endif
+          #if LIBINT2_DEFINED(eri,alpha2_over_zetapluseta)
+                primdata.alpha2_over_zetapluseta[0] = alpha1 * oogammapq;
+          #endif
+          #if LIBINT2_DEFINED(eri,alpha3_over_zetapluseta)
+                primdata.alpha3_over_zetapluseta[0] = alpha2 * oogammapq;
+          #endif
+          #if LIBINT2_DEFINED(eri,alpha4_over_zetapluseta)
+                primdata.alpha4_over_zetapluseta[0] = alpha3 * oogammapq;
+          #endif
+          #if LIBINT2_DEFINED(eri,rho12_over_alpha1)
+                primdata.rho12_over_alpha1[0] = alpha1 * oogammap;
+          #endif
+          #if LIBINT2_DEFINED(eri,rho12_over_alpha2)
+                primdata.rho12_over_alpha2[0] = alpha0 * oogammap;
+          #endif
+          #if LIBINT2_DEFINED(eri,rho34_over_alpha3)
+                primdata.rho34_over_alpha3[0] = alpha3 * oogammaq;
+          #endif
+          #if LIBINT2_DEFINED(eri,rho34_over_alpha4)
+                primdata.rho34_over_alpha4[0] = alpha2 * oogammaq;
+          #endif
+          #if LIBINT2_DEFINED(eri,two_alpha0_bra)
+                primdata.two_alpha0_bra[0] = 2.0 * alpha0;
+          #endif
+          #if LIBINT2_DEFINED(eri,two_alpha0_ket)
+                primdata.two_alpha0_ket[0] = 2.0 * alpha1;
+          #endif
+          #if LIBINT2_DEFINED(eri,two_alpha1_bra)
+                primdata.two_alpha1_bra[0] = 2.0 * alpha2;
+          #endif
+          #if LIBINT2_DEFINED(eri,two_alpha1_ket)
+                primdata.two_alpha1_ket[0] = 2.0 * alpha3;
+          #endif
+              }
+
+              } // m != 0
+
+              ++p;
+              } // prefac-based prim quartet screen
+
+          } // rough prim quartet screen based on pair values
+        } // ket prim pair
+      } // bra prim pair
+      primdata_[0].contrdepth = p;
+    }
+
+#ifdef LIBINT2_ENGINE_TIMERS
+    const auto t0 = timers.stop(0);
+#  ifdef LIBINT2_ENGINE_PROFILE_CLASS
+    class_profiles[id].prereqs += t0.count();
+    if (primdata_[0].contrdepth != 0) {
+      class_profiles[id].nshellset += 1;
+      class_profiles[id].nprimset += primdata_[0].contrdepth;
+    }
+#  endif
+#endif
+
+    // all primitive combinations screened out? return zeroes
+    if (primdata_[0].contrdepth == 0) {
+      const size_t n = bra1.size() * bra2.size() * ket1.size() * ket2.size();
+      memset(primdata_[0].stack, 0, sizeof(real_t)*n);
+      return primdata_[0].stack;
+    }
+
+    real_t* result = nullptr;
+
+    if (lmax == 0) { // (ss|ss)
+#ifdef LIBINT2_ENGINE_TIMERS
+      timers.start(1);
+#endif
+      auto& stack = primdata_[0].stack[0];
+      stack = 0;
+      for(auto p=0; p != primdata_[0].contrdepth; ++p)
+        stack += primdata_[p].LIBINT_T_SS_EREP_SS(0)[0];
+      primdata_[0].targets[0] = primdata_[0].stack;
+#ifdef LIBINT2_ENGINE_TIMERS
+      const auto t1 = timers.stop(1);
+#  ifdef LIBINT2_ENGINE_PROFILE_CLASS
+      class_profiles[id].build_vrr += t1.count();
+#  endif
+#endif
+
+      result = primdata_[0].targets[0];
+    }
+    else { // not (ss|ss)
+#ifdef LIBINT2_ENGINE_TIMERS
+#    ifdef LIBINT2_PROFILE
+      const auto t1_hrr_start = primdata_[0].timers->read(0);
+      const auto t1_vrr_start = primdata_[0].timers->read(1);
+#    endif
+      timers.start(1);
+#endif
+      LIBINT2_PREFIXED_NAME(libint2_build_eri)[bra1.contr[0].l][bra2.contr[0].l][ket1.contr[0].l][ket2.contr[0].l](&primdata_[0]);
+#ifdef LIBINT2_ENGINE_TIMERS
+      const auto t1 = timers.stop(1);
+#  ifdef LIBINT2_ENGINE_PROFILE_CLASS
+#    ifndef LIBINT2_PROFILE
+      class_profiles[id].build_vrr += t1.count();
+#    else
+      class_profiles[id].build_hrr += primdata_[0].timers->read(0) - t1_hrr_start;
+      class_profiles[id].build_vrr += primdata_[0].timers->read(1) - t1_vrr_start;
+#    endif
+#  endif
+#endif
+
+      result = primdata_[0].targets[0];
+
+#ifdef LIBINT2_ENGINE_TIMERS
+      timers.start(2);
+#endif
+
+      // if needed, permute and transform
+      if (use_scratch) {
+
+        constexpr auto using_scalar_real = std::is_same<double,real_t>::value || std::is_same<float,real_t>::value;
+        static_assert(using_scalar_real, "Libint2 C++11 API only supports fundamental real types");
+        typedef Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor > Matrix;
+
+        // a 2-d view of the 4-d source tensor
+        const auto nr1_cart = bra1.cartesian_size();
+        const auto nr2_cart = bra2.cartesian_size();
+        const auto nc1_cart = ket1.cartesian_size();
+        const auto nc2_cart = ket2.cartesian_size();
+        const auto ncol_cart = nc1_cart * nc2_cart;
+        const auto nr1 = bra1.size();
+        const auto nr2 = bra2.size();
+        const auto nc1 = ket1.size();
+        const auto nc2 = ket2.size();
+        const auto nrow = nr1 * nr2;
+        const auto ncol = nc1 * nc2;
+
+        // a 2-d view of the 4-d target tensor
+        const auto nr1_tgt = tbra1.size();
+        const auto nr2_tgt = tbra2.size();
+        const auto nc1_tgt = tket1.size();
+        const auto nc2_tgt = tket2.size();
+        const auto ncol_tgt = nc1_tgt * nc2_tgt;
+
+        // transform to solid harmonics first, then unpermute, if necessary
+        auto mainbuf = result;
+        auto scratchbuf = &scratch_[0];
+        if (bra1.contr[0].pure) {
+          libint2::solidharmonics::transform_first(bra1.contr[0].l, nr2_cart*ncol_cart,
+                                                   mainbuf, scratchbuf);
+          std::swap(mainbuf, scratchbuf);
+        }
+        if (bra2.contr[0].pure) {
+          libint2::solidharmonics::transform_inner(bra1.size(), bra2.contr[0].l, ncol_cart,
+                                                   mainbuf, scratchbuf);
+          std::swap(mainbuf, scratchbuf);
+        }
+        if (ket1.contr[0].pure) {
+          libint2::solidharmonics::transform_inner(nrow, ket1.contr[0].l, nc2_cart,
+                                                   mainbuf, scratchbuf);
+          std::swap(mainbuf, scratchbuf);
+        }
+        if (ket2.contr[0].pure) {
+          libint2::solidharmonics::transform_last(bra1.size()*bra2.size()*ket1.size(), ket2.contr[0].l,
+                                                  mainbuf, scratchbuf);
+          std::swap(mainbuf, scratchbuf);
+        }
+
+        // loop over rows of the source matrix
+        const auto* src_row_ptr = mainbuf;
+        auto tgt_ptr = scratchbuf;
+        for(auto r1=0; r1!=nr1; ++r1) {
+          for(auto r2=0; r2!=nr2; ++r2, src_row_ptr+=ncol) {
+
+            typedef Eigen::Map<const Matrix> ConstMap;
+            typedef Eigen::Map<Matrix> Map;
+            typedef Eigen::Map<Matrix, Eigen::Unaligned, Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic> > StridedMap;
+
+            // represent this source row as a matrix
+            ConstMap src_blk_mat(src_row_ptr, nc1, nc2);
+
+            // and copy to the block of the target matrix
+            if (swap_braket) {
+              // if swapped bra and ket, a row of source becomes a column of target
+              // source row {r1,r2} is mapped to target column {r1,r2} if !swap_ket, else to {r2,r1}
+              const auto tgt_col_idx = !swap_ket ? r1 * nr2 + r2 : r2 * nr1 + r1;
+              StridedMap tgt_blk_mat(tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt,
+                                     Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic>(nr2_tgt*ncol_tgt,ncol_tgt));
+              if (swap_bra)
+                tgt_blk_mat = src_blk_mat.transpose();
+              else
+                tgt_blk_mat = src_blk_mat;
+            }
+            else {
+              // source row {r1,r2} is mapped to target row {r1,r2} if !swap_bra, else to {r2,r1}
+              const auto tgt_row_idx = !swap_bra ? r1 * nr2 + r2 : r2 * nr1 + r1;
+              Map tgt_blk_mat(tgt_ptr + tgt_row_idx*ncol, nc1_tgt, nc2_tgt);
+              if (swap_ket)
+                tgt_blk_mat = src_blk_mat.transpose();
+              else
+                tgt_blk_mat = src_blk_mat;
+            }
+
+          } // end of loop
+        }   // over rows of source
+
+        result = scratchbuf;
+
+      } // if need_scratch => needed to transpose
+
+#ifdef LIBINT2_ENGINE_TIMERS
+      const auto t2 = timers.stop(2);
+#  ifdef LIBINT2_ENGINE_PROFILE_CLASS
+      class_profiles[id].tform += t2.count();
+#  endif
+#endif
+
+    } // not (ss|ss)
+
+    return result;
+  }
+
 #undef BOOST_PP_NBODY_OPERATOR_LIST
 #undef BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE
 #undef BOOST_PP_NBODY_OPERATOR_INDEX_LIST
+#undef BOOST_PP_NBODY_BRAKET_INDEX_TUPLE
+#undef BOOST_PP_NBODY_BRAKET_INDEX_LIST
 #undef BOOST_PP_NBODY_DERIV_ORDER_TUPLE
 #undef BOOST_PP_NBODY_DERIV_ORDER_LIST
 #undef BOOST_PP_NBODYENGINE_MCR2
@@ -2749,6 +3491,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
 #undef BOOST_PP_NBODYENGINE_MCR4
 #undef BOOST_PP_NBODYENGINE_MCR5
 #undef BOOST_PP_NBODYENGINE_MCR6
+#undef BOOST_PP_NBODYENGINE_MCR7
 
 #endif // new engine
 
