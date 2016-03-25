@@ -256,7 +256,7 @@ namespace libint2 {
           T_crit(30.0), // this translates in appr. 1e-15  error in upward recursion, see the note below
           delta(T_crit / (NGRID - 1)),
           one_over_delta(1.0 / delta),
-          mmax(m_max), numbers_(14, 0) {
+          mmax(m_max), numbers_(14) {
         assert(mmax <= 63);
         if (m_max >= 0)
           init();
@@ -541,7 +541,7 @@ namespace libint2 {
           T_crit(30.0), // this translates in appr. 1e-15  error in upward recursion, see the note below
           delta(T_crit / N),
           one_over_delta(1.0 / delta),
-          mmax(m_max), numbers_(14, 0) {
+          mmax(m_max), numbers_(14) {
         assert(mmax <= 63);
         if (m_max >= 0)
           init();
