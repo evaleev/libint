@@ -63,6 +63,7 @@ typedef Eigen::DiagonalMatrix<double, Eigen::Dynamic, Eigen::Dynamic>
 using libint2::Shell;
 using libint2::Atom;
 using libint2::BasisSet;
+using libint2::Operator;
 
 std::vector<Atom> read_geometry(const std::string& filename);
 Matrix compute_soad(const std::vector<Atom>& atoms);
@@ -70,24 +71,24 @@ Matrix compute_soad(const std::vector<Atom>& atoms);
 Matrix compute_shellblock_norm(const BasisSet& obs,
                                const Matrix& A);
 
-template <libint2::OneBodyEngine::operator_type obtype>
-std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>
+template <Operator obtype>
+std::array<Matrix, libint2::operator_traits<obtype>::nopers>
 compute_1body_ints(const BasisSet& obs,
                    const std::vector<Atom>& atoms = std::vector<Atom>());
 
 #if LIBINT2_DERIV_ONEBODY_ORDER
-template <libint2::OneBodyEngine::operator_type obtype>
+template <Operator obtype>
 std::vector<Matrix>
 compute_1body_deriv_ints(unsigned deriv_order,
                          const BasisSet& obs,
                          const std::vector<Atom>& atoms);
 #endif
 
-template <libint2::MultiplicativeSphericalTwoBodyKernel Kernel = libint2::Coulomb>
+template <libint2::Operator Kernel = libint2::Operator::coulomb>
 Matrix compute_schwartz_ints(const BasisSet& bs1,
                              const BasisSet& bs2 = BasisSet(),
                              bool use_2norm = false, // use infty norm by default
-                             typename libint2::TwoBodyEngineTraits<Kernel>::oper_params_type params = typename libint2::TwoBodyEngineTraits<Kernel>::oper_params_type()
+                             typename libint2::operator_traits<Kernel>::oper_params_type params = libint2::operator_traits<Kernel>::default_params()
                             );
 Matrix compute_do_ints(const BasisSet& bs1,
                        const BasisSet& bs2 = BasisSet(),
@@ -276,9 +277,9 @@ int main(int argc, char *argv[]) {
     }
 
     // compute one-body integrals
-    auto S = compute_1body_ints<libint2::OneBodyEngine::overlap>(obs)[0];
-    auto T = compute_1body_ints<libint2::OneBodyEngine::kinetic>(obs)[0];
-    auto V = compute_1body_ints<libint2::OneBodyEngine::nuclear>(obs, atoms)[0];
+    auto S = compute_1body_ints<Operator::overlap>(obs)[0];
+    auto T = compute_1body_ints<Operator::kinetic>(obs)[0];
+    auto V = compute_1body_ints<Operator::nuclear>(obs, atoms)[0];
     Matrix H = T + V;
     T.resize(0,0);
     V.resize(0,0);
@@ -435,7 +436,7 @@ int main(int argc, char *argv[]) {
 
     } while (((ediff_rel > conv) || (rms_error > conv)) && (iter < maxiter));
 
-    auto Mu = compute_1body_ints<libint2::OneBodyEngine::emultipole2>(obs);
+    auto Mu = compute_1body_ints<Operator::emultipole2>(obs);
     std::array<double,3> mu;
     std::array<double,6> qu;
     for(int xyz=0; xyz!=3; ++xyz)
@@ -453,8 +454,8 @@ int main(int argc, char *argv[]) {
       //////////
       // one-body contributions to the forces
       //////////
-      auto T1 = compute_1body_deriv_ints<libint2::OneBodyEngine::kinetic>(1, obs, atoms);
-      auto V1 = compute_1body_deriv_ints<libint2::OneBodyEngine::nuclear>(1, obs, atoms);
+      auto T1 = compute_1body_deriv_ints<Operator::kinetic>(1, obs, atoms);
+      auto V1 = compute_1body_deriv_ints<Operator::nuclear>(1, obs, atoms);
       for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
         for(auto xyz=0; xyz!=3; ++xyz, ++i) {
           auto force = 2 * (T1[i]+V1[i]).cwiseProduct(D).sum();
@@ -470,7 +471,7 @@ int main(int argc, char *argv[]) {
       // orbital energy density
       DiagonalMatrix evals_occ(evals.topRows(ndocc));
       Matrix W = C_occ * evals_occ * C_occ.transpose();
-      auto S1 = compute_1body_deriv_ints<libint2::OneBodyEngine::overlap>(1, obs, atoms);
+      auto S1 = compute_1body_deriv_ints<Operator::overlap>(1, obs, atoms);
       for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
         for(auto xyz=0; xyz!=3; ++xyz, ++i) {
           auto force = 2 * S1[i].cwiseProduct(W).sum();
@@ -600,8 +601,8 @@ Matrix compute_shellblock_norm(const BasisSet& obs,
   return Ash;
 }
 
-template <libint2::OneBodyEngine::operator_type obtype>
-std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers>
+template <Operator obtype>
+std::array<Matrix, libint2::operator_traits<obtype>::nopers>
 compute_1body_ints(const BasisSet& obs,
                    const std::vector<Atom>& atoms)
 {
@@ -612,16 +613,16 @@ compute_1body_ints(const BasisSet& obs,
 #else
   const auto nthreads = 1;
 #endif
-  typedef std::array<Matrix, libint2::OneBodyEngine::operator_traits<obtype>::nopers> result_type;
-  const unsigned int nopers = libint2::OneBodyEngine::operator_traits<obtype>::nopers;
+  typedef std::array<Matrix, libint2::operator_traits<obtype>::nopers> result_type;
+  const unsigned int nopers = libint2::operator_traits<obtype>::nopers;
   result_type result; for(auto& r: result) r = Matrix::Zero(n,n);
 
   // construct the 1-body integrals engine
-  std::vector<libint2::OneBodyEngine> engines(nthreads);
-  engines[0] = libint2::OneBodyEngine(obtype, obs.max_nprim(), obs.max_l(), 0);
+  std::vector<libint2::Engine> engines(nthreads);
+  engines[0] = libint2::Engine(obtype, obs.max_nprim(), obs.max_l(), 0);
   // nuclear attraction ints engine needs to know where the charges sit ...
   // the nuclei are charges in this case; in QM/MM there will also be classical charges
-  if (obtype == libint2::OneBodyEngine::nuclear) {
+  if (obtype == Operator::nuclear) {
     std::vector<std::pair<double,std::array<double,3>>> q;
     for(const auto& atom : atoms) {
       q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
@@ -680,7 +681,7 @@ compute_1body_ints(const BasisSet& obs,
 }
 
 #if LIBINT2_DERIV_ONEBODY_ORDER
-template <libint2::OneBodyEngine::operator_type obtype>
+template <Operator obtype>
 std::vector<Matrix>
 compute_1body_deriv_ints(unsigned deriv_order,
                          const BasisSet& obs,
@@ -693,17 +694,17 @@ compute_1body_deriv_ints(unsigned deriv_order,
 #else
   const auto nthreads = 1;
 #endif
-  constexpr auto nopers = libint2::OneBodyEngine::operator_traits<obtype>::nopers;
+  constexpr auto nopers = libint2::operator_traits<obtype>::nopers;
   const auto nresults = nopers * libint2::num_geometrical_derivatives(atoms.size(),deriv_order);
   typedef std::vector<Matrix> result_type;
   result_type result(nresults); for(auto& r: result) r = Matrix::Zero(n,n);
 
   // construct the 1-body integrals engine
-  std::vector<libint2::OneBodyEngine> engines(nthreads);
-  engines[0] = libint2::OneBodyEngine(obtype, obs.max_nprim(), obs.max_l(), deriv_order);
+  std::vector<libint2::Engine> engines(nthreads);
+  engines[0] = libint2::Engine(obtype, obs.max_nprim(), obs.max_l(), deriv_order);
   // nuclear attraction ints engine needs to know where the charges sit ...
   // the nuclei are charges in this case; in QM/MM there will also be classical charges
-  if (obtype == libint2::OneBodyEngine::nuclear) {
+  if (obtype == Operator::nuclear) {
     std::vector<std::pair<double,std::array<double,3>>> q;
     for(const auto& atom : atoms) {
       q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
@@ -767,7 +768,7 @@ compute_1body_deriv_ints(unsigned deriv_order,
           }
         }
         // 2. process derivatives of nuclear Coulomb operator, if needed
-        if (obtype == libint2::OneBodyEngine::nuclear) {
+        if (obtype == Operator::nuclear) {
           for(unsigned int atom=0; atom!=atoms.size(); ++atom) {
             for(unsigned int xyz=0; xyz!=3; ++xyz) {
               auto op_start = (3*atom+xyz) * nopers;
@@ -790,11 +791,11 @@ compute_1body_deriv_ints(unsigned deriv_order,
 }
 #endif
 
-template <libint2::MultiplicativeSphericalTwoBodyKernel Kernel>
+template <libint2::Operator Kernel>
 Matrix compute_schwartz_ints(const BasisSet& bs1,
                              const BasisSet& _bs2,
                              bool use_2norm,
-                             typename libint2::TwoBodyEngineTraits<Kernel>::oper_params_type params
+                             typename libint2::operator_traits<Kernel>::oper_params_type params
                             ) {
   const BasisSet& bs2 = (_bs2.empty() ? bs1 : _bs2);
   const auto nsh1 = bs1.size();
@@ -804,18 +805,18 @@ Matrix compute_schwartz_ints(const BasisSet& bs1,
   Matrix K = Matrix::Zero(nsh1,nsh2);
 
   // construct the 2-electron repulsion integrals engine
-  typedef libint2::TwoBodyEngine<Kernel> coulomb_engine_type;
+  using libint2::Engine;
   using libint2::nthreads;
-  std::vector<coulomb_engine_type> engines(nthreads);
+  std::vector<Engine> engines(nthreads);
 
   // !!! very important: cannot screen primitives in Schwartz computation !!!
   auto epsilon = 0.;
-  engines[0] = coulomb_engine_type(bs1.max_nprim(), bs2.max_l(), 0, epsilon, params);
+  engines[0] = Engine(Kernel, bs1.max_nprim(), bs2.max_l(), 0, epsilon, params);
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
   }
 
-  std::cout << "computing Schwartz bound prerequisites (kernel=" << Kernel << ") ... ";
+  std::cout << "computing Schwartz bound prerequisites (kernel=" << (int)Kernel << ") ... ";
 
   libint2::Timers<1> timer;
   timer.set_now_overhead(25);
@@ -860,7 +861,7 @@ Matrix compute_schwartz_ints(const BasisSet& bs1,
 Matrix compute_do_ints(const BasisSet& bs1,
                        const BasisSet& bs2,
                        bool use_2norm) {
-  return compute_schwartz_ints<libint2::Delta>(bs1, bs2, use_2norm);
+  return compute_schwartz_ints<libint2::Operator::delta>(bs1, bs2, use_2norm);
 }
 
 shellpair_list_t
@@ -879,9 +880,9 @@ compute_shellpair_list(const BasisSet& bs1,
 #endif
 
   // construct the 2-electron repulsion integrals engine
-  using libint2::OneBodyEngine;
-  std::vector<OneBodyEngine> engines; engines.reserve(nthreads);
-  engines.emplace_back(OneBodyEngine::overlap,
+  using libint2::Engine;
+  std::vector<Engine> engines; engines.reserve(nthreads);
+  engines.emplace_back(Operator::overlap,
                        std::max(bs1.max_nprim(),bs2.max_nprim()),
                        std::max(bs1.max_l(),bs2.max_l()),
                        0);
@@ -1045,9 +1046,9 @@ Matrix compute_2body_2index_ints(const BasisSet& bs)
   Matrix result = Matrix::Zero(n,n);
 
   // build engines for each thread
-  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
-  std::vector<coulomb_engine_type> engines(nthreads);
-  engines[0] = coulomb_engine_type(bs.max_nprim(), bs.max_l(), 0);
+  using libint2::Engine;
+  std::vector<Engine> engines(nthreads);
+  engines[0] = Engine(libint2::Operator::coulomb, bs.max_nprim(), bs.max_l(), 0);
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -1119,14 +1120,15 @@ Matrix compute_2body_fock(const BasisSet& obs,
   auto engine_precision = std::min(fock_precision / D_shblk_norm.maxCoeff(),
                                    std::numeric_limits<double>::epsilon()) / max_nprim4;
 
-  // construct the 2-electron repulsion integrals engine
-  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
-  std::vector<coulomb_engine_type> engines(nthreads);
-  engines[0] = coulomb_engine_type(obs.max_nprim(), obs.max_l(), 0);
+  // construct the 2-electron repulsion integrals engine pool
+  using libint2::Engine;
+  using libint2::Operator;
+  std::vector<Engine> engines(nthreads);
+  engines[0] = Engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 0);
   engines[0].set_precision(engine_precision); // shellset-dependent precision control will likely break positive definiteness
                                        // stick with this simple recipe
   std::cout << "compute_2body_fock:precision = " << precision << std::endl;
-  std::cout << "TwoBodyEngine::precision = " << engines[0].precision() << std::endl;
+  std::cout << "Engine::precision = " << engines[0].precision() << std::endl;
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -1291,10 +1293,10 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
   std::vector<Matrix> G(nthreads, Matrix::Zero(n,n));
 
   // construct the 2-electron repulsion integrals engine
-  typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
-  std::vector<coulomb_engine_type> engines(nthreads);
-  engines[0] = coulomb_engine_type(std::max(obs.max_nprim(),D_bs.max_nprim()),
-                                   std::max(obs.max_l(), D_bs.max_l()), 0);
+  using libint2::Engine;
+  std::vector<Engine> engines(nthreads);
+  engines[0] = Engine(libint2::Operator::coulomb, std::max(obs.max_nprim(),D_bs.max_nprim()),
+                      std::max(obs.max_l(), D_bs.max_l()), 0);
   engines[0].set_precision(precision); // shellset-dependent precision control will likely break positive definiteness
                                        // stick with this simple recipe
   for(size_t i=1; i!=nthreads; ++i) {
@@ -1654,17 +1656,46 @@ void api_basic_compile_test(const BasisSet& obs) {
     }
   }
 
+  {
+    using namespace libint2;
+    Engine onebody_engine(Operator::overlap, // will compute overlap ints
+        obs.max_nprim(), // max # of primitives in shells this engine will accept
+        obs.max_l()      // max angular momentum of shells this engine will accept
+    );
+    auto shell2bf = obs.shell2bf();
+    for(auto s1=0; s1!=obs.size(); ++s1) {
+      for(auto s2=0; s2!=obs.size(); ++s2) {
+
+        std::cout << "compute shell set {" << s1 << "," << s2 << "} ... ";
+        const auto* ints_shellset = onebody_engine.compute(obs[s1], obs[s2]);
+        std::cout << "done" << std::endl;
+
+        auto bf1 = shell2bf[s1];  // first basis function in first shell
+        auto n1 = obs[s1].size(); // number of basis functions in first shell
+        auto bf2 = shell2bf[s2];  // first basis function in second shell
+        auto n2 = obs[s2].size(); // number of basis functions in second shell
+
+        // this iterates over integrals in the order they are packed in array ints_shellset
+        for(auto f1=0; f1!=n1; ++f1)
+          for(auto f2=0; f2!=n2; ++f2)
+            std::cout << "  " << bf1+f1 << " " << bf2+f2 << " " << ints_shellset[f1*n2+f2] << std::endl;
+      }
+    }
+  }
+
+  using libint2::Operator;
+
   std::vector<std::pair<double,double>> cgtg_params{{0.1,0.2}, {0.3,0.4}, {0.5, 0.6}};
   {
-    auto K = compute_schwartz_ints<libint2::cGTG>(obs, obs, false, cgtg_params);
+    auto K = compute_schwartz_ints<Operator::cgtg>(obs, obs, false, cgtg_params);
     std::cout << "cGTG Schwartz ints\n" << K << std::endl;
   }
   {
-    auto K = compute_schwartz_ints<libint2::cGTG_times_Coulomb>(obs, obs, false, cgtg_params);
+    auto K = compute_schwartz_ints<Operator::cgtg_x_coulomb>(obs, obs, false, cgtg_params);
     std::cout << "cGTG/r12 Schwartz ints\n" << K << std::endl;
   }
   {
-    auto K = compute_schwartz_ints<libint2::DelcGTG_square>(obs, obs, false, cgtg_params);
+    auto K = compute_schwartz_ints<Operator::delcgtg2>(obs, obs, false, cgtg_params);
     std::cout << "||Del.cGTG||^2 Schwartz ints\n" << K << std::endl;
   }
 
