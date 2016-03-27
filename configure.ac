@@ -1146,6 +1146,7 @@ dnl -- special architecture options --
 # nothing so far
 
 AC_SUBST(EXTRAINCLUDE)
+AC_SUBST(EXTRADEFINES)
 
 AC_SUBST(CXXFLAGS)
 AC_SUBST(LIBDIRS)
@@ -1154,12 +1155,6 @@ AC_SUBST(LDFLAGS)
 AC_SUBST(OBJSUF)
 AC_SUBST(LIBSUF)
 
-
-dnl -------- Checks for architecture specific features. --------
-dnl (Doesn't work for cross compilation.)
-dnl AC_CHECK_SIZEOF(void*)
-
-AC_SUBST(EXTRADEFINES)
 
 dnl ---------- Checks for "standard" header files. -----------
 

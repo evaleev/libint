@@ -231,21 +231,6 @@ if test -f depcheck.u; then
 fi
 /bin/rm -f depcheck.u depcheck.c depcheck.o
 
-dnl -- special optimization options --
-
-AC_MSG_CHECKING([for additional optimization options])
-case $target in
-  rs6000-ibm-aix3.2.* | rs6000-ibm-aix4.* | powerpc-ibm-aix4.* | powerpc-ibm-aix5.*)
-    if test X$GXX != Xyes; then
-      CXXOPTIONS_OPT="$CXXOPTIONS_OPT -qnolm -qrtti"
-    fi
-    AC_MSG_RESULT([rs6000 or powerpc])
-  ;;
-  *)
-    AC_MSG_RESULT([none])
-  ;;
-esac
-
 dnl -- special architecture options --
 
 if test "X$CXXFLAGS_OPT" = X; then
