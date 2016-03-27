@@ -920,7 +920,9 @@ CXX=$withval
 CXXFLAGS_OPT=
 AC_ARG_WITH(cxx-optflags,
 [  --with-cxx-optflags     Gives optimization flags for the C++ compiler.],
-CXXFLAGS_OPT=$withval
+if test "X$withval" != "Xyes" -a "X$withval" = "Xno"; then
+  CXXFLAGS_OPT=$withval
+fi
 )
 
 AC_ARG_WITH(cxxgen,
@@ -931,7 +933,9 @@ CXXGEN=$withval
 CXXGENFLAGS_OPT=
 AC_ARG_WITH(cxxgen-optflags,
 [  --with-cxxgen-optflags  Gives optimization flags for the C++ compiler for generated source.],
-CXXGENFLAGS_OPT=$withval
+if test "X$withval" != "Xyes" -a "X$withval" = "Xno"; then
+  CXXGENFLAGS_OPT=$withval
+fi
 )
 
 AC_ARG_WITH(cxxdepend,
