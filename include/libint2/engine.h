@@ -2209,6 +2209,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         }
 
         assert(false); // only reached if missing a feature
+        return nullptr;
       }
 
       /// computes shell set of integrals
