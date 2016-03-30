@@ -43,22 +43,20 @@ struct Atom {
     double x, y, z;
 };
 
-using libint2::Shell;
-
 std::vector<Atom> read_geometry(const std::string& filename);
-std::vector<Shell> make_sto3g_basis(const std::vector<Atom>& atoms);
-size_t nbasis(const std::vector<Shell>& shells);
-std::vector<size_t> map_shell_to_basis_function(const std::vector<Shell>& shells);
+std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms);
+size_t nbasis(const std::vector<libint2::Shell>& shells);
+std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell>& shells);
 Matrix compute_soad(const std::vector<Atom>& atoms);
 Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
-                          libint2::OneBodyEngine::operator_type t,
+                          libint2::Operator t,
                           const std::vector<Atom>& atoms = std::vector<Atom>());
 
 // simple-to-read, but inefficient Fock builder; computes ~16 times as many ints as possible
-Matrix compute_2body_fock_simple(const std::vector<Shell>& shells,
+Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
                                  const Matrix& D);
 // an efficient Fock builder; *integral-driven* hence computes permutationally-unique ints once
-Matrix compute_2body_fock(const std::vector<Shell>& shells,
+Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
                                  const Matrix& D);
 
 int main(int argc, char *argv[]) {
@@ -66,6 +64,10 @@ int main(int argc, char *argv[]) {
   using std::cout;
   using std::cerr;
   using std::endl;
+
+  using libint2::Shell;
+  using libint2::Engine;
+  using libint2::Operator;
 
   try {
 
@@ -113,17 +115,17 @@ int main(int argc, char *argv[]) {
     libint2::init();
 
     // compute overlap integrals
-    auto S = compute_1body_ints(shells, libint2::OneBodyEngine::overlap);
+    auto S = compute_1body_ints(shells, Operator::overlap);
     cout << "\n\tOverlap Integrals:\n";
     cout << S << endl;
 
     // compute kinetic-energy integrals
-    auto T = compute_1body_ints(shells, libint2::OneBodyEngine::kinetic);
+    auto T = compute_1body_ints(shells, Operator::kinetic);
     cout << "\n\tKinetic-Energy Integrals:\n";
     cout << T << endl;
 
     // compute nuclear-attraction integrals
-    Matrix V = compute_1body_ints(shells, libint2::OneBodyEngine::nuclear, atoms);
+    Matrix V = compute_1body_ints(shells, Operator::nuclear, atoms);
     cout << "\n\tNuclear Attraction Integrals:\n";
     cout << V << endl;
 
@@ -322,7 +324,9 @@ std::vector<Atom> read_geometry(const std::string& filename) {
     throw "only .xyz files are accepted";
 }
 
-std::vector<Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
+std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
+
+  using libint2::Shell;
 
   std::vector<Shell> shells;
 
@@ -444,21 +448,21 @@ std::vector<Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
   return shells;
 }
 
-size_t nbasis(const std::vector<Shell>& shells) {
+size_t nbasis(const std::vector<libint2::Shell>& shells) {
   size_t n = 0;
   for (const auto& shell: shells)
     n += shell.size();
   return n;
 }
 
-size_t max_nprim(const std::vector<Shell>& shells) {
+size_t max_nprim(const std::vector<libint2::Shell>& shells) {
   size_t n = 0;
   for (auto shell: shells)
     n = std::max(shell.nprim(), n);
   return n;
 }
 
-int max_l(const std::vector<Shell>& shells) {
+int max_l(const std::vector<libint2::Shell>& shells) {
   int l = 0;
   for (auto shell: shells)
     for (auto c: shell.contr)
@@ -466,7 +470,7 @@ int max_l(const std::vector<Shell>& shells) {
   return l;
 }
 
-std::vector<size_t> map_shell_to_basis_function(const std::vector<Shell>& shells) {
+std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell>& shells) {
   std::vector<size_t> result;
   result.reserve(shells.size());
 
@@ -519,17 +523,21 @@ Matrix compute_soad(const std::vector<Atom>& atoms) {
 }
 
 Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
-                          libint2::OneBodyEngine::operator_type obtype,
+                          libint2::Operator obtype,
                           const std::vector<Atom>& atoms)
 {
+  using libint2::Shell;
+  using libint2::Engine;
+  using libint2::Operator;
+
   const auto n = nbasis(shells);
   Matrix result(n,n);
 
   // construct the overlap integrals engine
-  libint2::OneBodyEngine engine(obtype, max_nprim(shells), max_l(shells), 0);
+  Engine engine(obtype, max_nprim(shells), max_l(shells), 0);
   // nuclear attraction ints engine needs to know where the charges sit ...
   // the nuclei are charges in this case; in QM/MM there will also be classical charges
-  if (obtype == libint2::OneBodyEngine::nuclear) {
+  if (obtype == Operator::nuclear) {
     std::vector<std::pair<double,std::array<double,3>>> q;
     for(const auto& atom : atoms) {
       q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
@@ -566,14 +574,18 @@ Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
   return result;
 }
 
-Matrix compute_2body_fock_simple(const std::vector<Shell>& shells,
+Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
                                  const Matrix& D) {
+
+  using libint2::Shell;
+  using libint2::Engine;
+  using libint2::Operator;
 
   const auto n = nbasis(shells);
   Matrix G = Matrix::Zero(n,n);
 
   // construct the electron repulsion integrals engine
-  libint2::TwoBodyEngine<libint2::Coulomb> engine(max_nprim(shells), max_l(shells), 0);
+  Engine engine(Operator::coulomb, max_nprim(shells), max_l(shells), 0);
 
   auto shell2bf = map_shell_to_basis_function(shells);
 
@@ -647,8 +659,12 @@ Matrix compute_2body_fock_simple(const std::vector<Shell>& shells,
   return G;
 }
 
-Matrix compute_2body_fock(const std::vector<Shell>& shells,
+Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
                           const Matrix& D) {
+
+  using libint2::Shell;
+  using libint2::Engine;
+  using libint2::Operator;
 
   std::chrono::duration<double> time_elapsed = std::chrono::duration<double>::zero();
 
@@ -656,7 +672,7 @@ Matrix compute_2body_fock(const std::vector<Shell>& shells,
   Matrix G = Matrix::Zero(n,n);
 
   // construct the 2-electron repulsion integrals engine
-  libint2::TwoBodyEngine<libint2::Coulomb> engine(max_nprim(shells), max_l(shells), 0);
+  Engine engine(Operator::coulomb, max_nprim(shells), max_l(shells), 0);
 
   auto shell2bf = map_shell_to_basis_function(shells);
 
