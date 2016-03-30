@@ -2652,10 +2652,14 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR3, 2, (BOOST_PP_NBODY_O
       result[compute_ptr_idx] = &Engine::compute2<Operator::coulomb,BraKet::xx_xx,0>;
 
 #define BOOST_PP_NBODYENGINE_MCR7(r,product)                                                                                  \
+    if (BOOST_PP_TUPLE_ELEM(3,0,product) >= (int)Operator::first_2body_oper &&                                                \
+        BOOST_PP_TUPLE_ELEM(3,0,product) <= (int)Operator::last_2body_oper &&                                                 \
+        BOOST_PP_TUPLE_ELEM(3,1,product) >= (int)BraKet::first_2body_braket &&                                                \
+        BOOST_PP_TUPLE_ELEM(3,1,product) <= (int)BraKet::last_2body_braket )                                                  \
       {  auto compute_ptr_idx = ((BOOST_PP_TUPLE_ELEM(3,0,product) - (int)Operator::first_2body_oper) * nbrakets_2body        \
                                  + (BOOST_PP_TUPLE_ELEM(3,1,product) - (int)BraKet::first_2body_braket)) * nderivorders_2body \
                                 + BOOST_PP_TUPLE_ELEM(3,2,product) ;                                                          \
-         result[compute_ptr_idx] = &Engine::compute2<static_cast<Operator>(BOOST_PP_TUPLE_ELEM(3,0,product)),                 \
+         result.at(compute_ptr_idx) = &Engine::compute2<static_cast<Operator>(BOOST_PP_TUPLE_ELEM(3,0,product)),              \
                                                      static_cast<BraKet>(BOOST_PP_TUPLE_ELEM(3,1,product)),                   \
                                                      BOOST_PP_TUPLE_ELEM(3,2,product)>;  }                                    \
 
