@@ -37,6 +37,7 @@
 #include <libint2/solidharmonics.h>
 #include <libint2/any.h>
 #include <libint2/util/compressed_pair.h>
+#include <libint2/cxxapi.h>
 
 #include <libint2/boost/preprocessor.hpp>
 
@@ -2645,9 +2646,6 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR3, 2, (BOOST_PP_NBODY_O
     inline std::vector<Engine::compute2_ptr_type> init_compute2_ptrs() {
       auto max_ncompute2_ptrs = nopers_2body * nbrakets_2body * nderivorders_2body;
       std::vector<Engine::compute2_ptr_type> result(max_ncompute2_ptrs, nullptr);
-
-      auto compute_ptr_idx = (((int)Operator::coulomb-(int)Operator::first_2body_oper)*nbrakets_2body + ((int)BraKet::xx_xx-(int)BraKet::first_2body_braket))*nderivorders_2body;
-      result[compute_ptr_idx] = &Engine::compute2<Operator::coulomb,BraKet::xx_xx,0>;
 
 #define BOOST_PP_NBODYENGINE_MCR7(r,product)                                                                                  \
     if (BOOST_PP_TUPLE_ELEM(3,0,product) >= (int)Operator::first_2body_oper &&                                                \

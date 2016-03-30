@@ -64,6 +64,7 @@ using libint2::Shell;
 using libint2::Atom;
 using libint2::BasisSet;
 using libint2::Operator;
+using libint2::BraKet;
 
 std::vector<Atom> read_geometry(const std::string& filename);
 Matrix compute_soad(const std::vector<Atom>& atoms);
@@ -1122,7 +1123,6 @@ Matrix compute_2body_fock(const BasisSet& obs,
 
   // construct the 2-electron repulsion integrals engine pool
   using libint2::Engine;
-  using libint2::Operator;
   std::vector<Engine> engines(nthreads);
   engines[0] = Engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 0);
   engines[0].set_precision(engine_precision); // shellset-dependent precision control will likely break positive definiteness
@@ -1364,7 +1364,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
               }
             }
 
-            const auto* buf_K = engine.compute(obs[s1], D_bs[s3], obs[s2], D_bs[s4]);
+            const auto* buf_K = engine.compute2<Operator::coulomb,BraKet::xx_xx,0>(obs[s1], D_bs[s3], obs[s2], D_bs[s4]);
 
             for(auto f1=0, f1324=0; f1!=n1; ++f1) {
               const auto bf1 = f1 + bf1_first;
