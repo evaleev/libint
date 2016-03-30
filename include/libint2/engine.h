@@ -1841,7 +1841,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
   };
 
   /// @return the particle rank of \c oper
-  int rank(Operator oper) {
+  inline int rank(Operator oper) {
     int n = 0;
     if (oper >= Operator::first_1body_oper && oper <= Operator::last_1body_oper) n = 1;
     else if (oper >= Operator::first_2body_oper && oper <= Operator::last_2body_oper) n = 2;
@@ -1928,7 +1928,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 #define LIBINT2_MAX_BRAKET_INDEX 3
 
   /// @return rank of \c braket
-  int rank(BraKet braket) {
+  inline int rank(BraKet braket) {
     int n = 0;
     switch(braket) {
       case BraKet::x_x:
@@ -1945,7 +1945,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
   }
 
   constexpr size_t nopers_2body = (int)Operator::last_2body_oper - (int)Operator::first_2body_oper + 1;
-  constexpr size_t nbrakets_2body = 3;
+  constexpr size_t nbrakets_2body = (int)BraKet::last_2body_braket - (int)BraKet::first_2body_braket + 1;
   constexpr size_t nderivorders_2body = LIBINT2_MAX_DERIV_ORDER+1;
 
   template <typename T> struct print_type;
@@ -2198,7 +2198,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
             return compute1(shells[0], shells[1]);
         } else if (operator_rank() == 2) {
           auto compute_ptr_idx = (((int)oper_ - (int)Operator::first_2body_oper) * nbrakets_2body + ((int)braket_ - (int)BraKet::first_2body_braket)) * nderivorders_2body + deriv_order_;
-          auto compute_ptr = compute2_ptrs_[compute_ptr_idx];
+          auto compute_ptr = compute2_ptrs()[compute_ptr_idx];
           assert(compute_ptr != nullptr);
           if (nargs == 2)
             return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1], Shell::unit());
@@ -2515,7 +2515,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
                                    size_t oset);
 
       /// 3-dim array of pointers to help dispatch efficiently based on oper_, braket_, and deriv_order_
-      static std::vector<compute2_ptr_type> compute2_ptrs_;
+      inline const std::vector<Engine::compute2_ptr_type>& compute2_ptrs() const;
 
       void initialize(size_t max_nprim = 0) {
         assert(libint2::initialized());
@@ -2637,14 +2637,12 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR3, 2, (BOOST_PP_NBODY_O
       //-------
       // profiling
       //-------
-      static bool skip_core_ints;
+      static const bool skip_core_ints = false;
 
   }; // struct Engine
 
-  bool Engine::skip_core_ints = false;
-
   namespace detail {
-    std::vector<Engine::compute2_ptr_type> init_compute2_ptrs() {
+    inline std::vector<Engine::compute2_ptr_type> init_compute2_ptrs() {
       auto max_ncompute2_ptrs = nopers_2body * nbrakets_2body * nderivorders_2body;
       std::vector<Engine::compute2_ptr_type> result(max_ncompute2_ptrs, nullptr);
 
@@ -2669,7 +2667,11 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR7, 3, (BOOST_PP_NBODY_O
       return result;
     }
   } // namespace detail
-  std::vector<Engine::compute2_ptr_type> Engine::compute2_ptrs_ = detail::init_compute2_ptrs();
+
+  inline const std::vector<Engine::compute2_ptr_type>& Engine::compute2_ptrs() const {
+    static std::vector<compute2_ptr_type> compute2_ptrs_ = detail::init_compute2_ptrs();
+    return compute2_ptrs_;
+  }
 
   inline unsigned int Engine::nparams() const {
     switch (oper_) {
