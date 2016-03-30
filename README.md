@@ -7,4 +7,4 @@ LIBINT (version 2) - a library for the evaluation of molecular integrals of many
 See INSTALL for installation instructions.
 
 
-Copyright (C) 2004-2015 Edward F. Valeev
+Copyright (C) 2004-2016 Edward F. Valeev
