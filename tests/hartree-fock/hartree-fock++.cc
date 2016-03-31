@@ -1206,7 +1206,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
             timer.start(0);
 #endif
 
-            const auto* buf = engine.compute(obs[s1], obs[s2], obs[s3], obs[s4]);
+            const auto* buf = engine.compute2<Operator::coulomb,BraKet::xx_xx,0>(obs[s1], obs[s2], obs[s3], obs[s4]);
 
 #if defined(REPORT_INTEGRAL_TIMINGS)
             timer.stop(0);
