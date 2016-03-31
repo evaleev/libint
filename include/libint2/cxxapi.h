@@ -31,28 +31,42 @@
 #include <libint2/basis.h>
 #include <libint2/solidharmonics.h>
 
+#include <libint2/util/deprecated.h>
+#include <libint2/util/singleton.h>
+
 namespace libint2 {
 
   namespace detail {
-    static bool __initialized = false;
-  };
+    struct __initializer {
+        __initializer() {
+          libint2_static_init();
+        }
+        ~__initializer() {
+          libint2_static_cleanup();
+        }
+    };
+  } // namespace libint2::detail
 
-  inline void init() {
-    libint2_static_init();
-    detail::__initialized = true;
+  inline bool initialized() {
+    using namespace detail;
+    return managed_singleton<__initializer>::instance_exists();
   }
-  inline void cleanup() {
-    libint2_static_cleanup();
-    detail::__initialized = false;
+  inline void initialize() {
+    using namespace detail;
+    static __initializer* x = managed_singleton<__initializer>::instance();
   }
   inline void finalize() {
-    ::libint2::cleanup();
+    using namespace detail;
+    managed_singleton<__initializer>::delete_instance();
   }
-  inline bool initialized() {
-    return detail::__initialized;
+  DEPRECATED inline void init() {
+    initialize();
+  }
+  DEPRECATED inline void cleanup() {
+    finalize();
   }
 }
 
-#include <libint2/engine.h>
+#include <libint2/engine.h> // this is the end-user stuff, needs to check if library is initialized
 
 #endif /* _libint2_src_lib_libint_cxxapi_h_ */
