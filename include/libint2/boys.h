@@ -36,7 +36,7 @@
 #include <type_traits>
 
 // some features require at least C++11
-#include <libint2/cxxstd.h>
+#include <libint2/util/cxxstd.h>
 #if LIBINT2_CPLUSPLUS_STD >= 2011
 #include <memory>
 #endif

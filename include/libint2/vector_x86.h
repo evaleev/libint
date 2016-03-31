@@ -20,7 +20,7 @@
 #define _libint2_src_lib_libint_vectorx86_h_
 
 #include <cstring>
-#include <libint2/cxxstd.h>
+#include <libint2/util/cxxstd.h>
 #include <libint2/type_traits.h>
 
 #ifdef __SSE2__

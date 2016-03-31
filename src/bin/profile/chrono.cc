@@ -20,7 +20,7 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
-#include <libint2/cxxstd.h>
+#include <libint2/util/cxxstd.h>
 
 #if LIBINT2_CPLUSPLUS_STD < 2011
 # error "compiler does not support C++11, try -std=c++11 flag"
