@@ -58,15 +58,6 @@
 // uncomment if want to profile the engine even if library was configured without --enable-profile
 //#  define LIBINT2_ENGINE_TIMERS
 
-#ifdef __GNUC__
-#define DEPRECATED __attribute__((deprecated))
-#elif defined(_MSC_VER)
-#define DEPRECATED __declspec(deprecated)
-#else
-#pragma message("WARNING: You need to implement DEPRECATED for this compiler")
-#define DEPRECATED
-#endif
-
 namespace libint2 {
 
   constexpr size_t num_geometrical_derivatives(size_t ncenter,
