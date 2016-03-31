@@ -19,6 +19,8 @@
 #ifndef _libint2_include_libint2_util_singleton_h_
 #define _libint2_include_libint2_util_singleton_h_
 
+#include <memory>
+
 namespace libint2 {
   namespace detail {
 
