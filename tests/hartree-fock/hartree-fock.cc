@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
     /*** =========================== ***/
 
     // initializes the Libint integrals library ... now ready to compute
-    libint2::init();
+    libint2::initialize();
 
     // compute overlap integrals
     auto S = compute_1body_ints(shells, Operator::overlap);
@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
 
     printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
 
-    libint2::cleanup(); // done with libint
+    libint2::finalize(); // done with libint
 
   } // end of try block; if any exceptions occurred, report them and exit cleanly
 
