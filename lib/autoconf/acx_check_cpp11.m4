@@ -11,7 +11,7 @@ AC_DEFUN([ACX_CHECK_CPP11_GENERAL], [
     [AC_LANG_PROGRAM(
       [[#include <vector>
         #include <iostream>
-        #include "$srcdir/include/libint2/cxxstd.h"
+        #include "$srcdir/include/libint2/util/cxxstd.h"
         #if LIBINT2_CPLUSPLUS_STD < 2011
         # error "no C++11 support"
         #endif
@@ -38,7 +38,7 @@ AC_DEFUN([ACX_CHECK_CPP11_GENERAL], [
      [AC_LANG_PROGRAM(
        [[#include <vector>
          #include <iostream>
-         #include "$srcdir/include/libint2/cxxstd.h"
+         #include "$srcdir/include/libint2/util/cxxstd.h"
          #if LIBINT2_CPLUSPLUS_STD < 2011
          # error "no C++11 support"
          #endif
@@ -82,7 +82,7 @@ AC_DEFUN([ACX_CHECK_CPP11_CXXGEN], [
     [AC_LANG_PROGRAM(
       [[#include <vector>
         #include <iostream>
-        #include "$srcdir/include/libint2/cxxstd.h"
+        #include "$srcdir/include/libint2/util/cxxstd.h"
         #if LIBINT2_CPLUSPLUS_STD < 2011
         # error "no C++11 support"
         #endif
