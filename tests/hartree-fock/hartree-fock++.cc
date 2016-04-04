@@ -30,6 +30,7 @@
 #include <iterator>
 #include <unordered_map>
 #include <mutex>
+#include <memory>
 
 // Eigen matrix algebra library
 #include <Eigen/Dense>
@@ -254,7 +255,6 @@ int main(int argc, char *argv[]) {
       dfbs = BasisSet(dfbasisname, atoms);
       cout << "density-fitting basis set rank = " << dfbs.nbf() << endl;
     }
-    DFFockEngine dffockengine(obs,dfbs);
 #endif // HAVE_DENSITY_FITTING
 
 
@@ -334,6 +334,12 @@ int main(int argc, char *argv[]) {
     // pre-compute data for Schwartz bounds
     auto K = compute_schwartz_ints<>(obs);
 
+    // prepare for density fitting
+#ifdef HAVE_DENSITY_FITTING
+    std::unique_ptr<DFFockEngine> dffockengine(do_density_fitting ?
+      new DFFockEngine(obs,dfbs) : nullptr);
+#endif // HAVE_DENSITY_FITTING
+
     /*** =========================== ***/
     /***          SCF loop           ***/
     /*** =========================== ***/
@@ -393,7 +399,7 @@ int main(int argc, char *argv[]) {
       }
 #if HAVE_DENSITY_FITTING
       else { // do DF
-        F = H + dffockengine.compute_2body_fock_dfC(C_occ);
+        F = H + dffockengine->compute_2body_fock_dfC(C_occ);
       }
 #else
       else { assert(false); } // do_density_fitting is true but HAVE_DENSITY_FITTING is not defined! should not happen
@@ -1435,10 +1441,12 @@ DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     const auto unitshell = libint2::Shell::unit();
 
     // construct the 2-electron 3-center repulsion integrals engine
-    typedef libint2::TwoBodyEngine<libint2::Coulomb> coulomb_engine_type;
-    std::vector<coulomb_engine_type> engines(nthreads);
-    engines[0] = coulomb_engine_type(std::max(obs.max_nprim(), dfbs.max_nprim()),
-                                     std::max(obs.max_l(), dfbs.max_l()), 0);
+    // since the code assumes (xx|xs) braket, and Engine/libint only produces (xs|xx), use 4-center engine
+    std::vector<libint2::Engine> engines(nthreads);
+    engines[0] = libint2::Engine(libint2::Operator::coulomb,
+                                 std::max(obs.max_nprim(), dfbs.max_nprim()),
+                                 std::max(obs.max_l(), dfbs.max_l()), 0
+                                );
     for(size_t i=1; i!=nthreads; ++i) {
       engines[i] = engines[0];
     }
