@@ -137,7 +137,7 @@ namespace libint2 {
         return max_nprim_;
       }
       /// @return the maximum angular momentum of a contraction; -1 if uninitialized
-      size_t max_l() const {
+      long max_l() const {
         return max_l_;
       }
       /// @return the map from shell index to index of the first basis function from this shell
