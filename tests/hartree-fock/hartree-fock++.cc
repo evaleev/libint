@@ -818,7 +818,10 @@ Matrix compute_schwartz_ints(const BasisSet& bs1,
 
   // !!! very important: cannot screen primitives in Schwartz computation !!!
   auto epsilon = 0.;
-  engines[0] = Engine(Kernel, bs1.max_nprim(), bs2.max_l(), 0, epsilon, params);
+  engines[0] = Engine(Kernel,
+                      std::max(bs1.max_nprim(),bs2.max_nprim()),
+                      std::max(bs1.max_l(), bs2.max_l()),
+                      0, epsilon, params);
   for(size_t i=1; i!=nthreads; ++i) {
     engines[i] = engines[0];
   }
