@@ -44,7 +44,7 @@
 // extra PP macros
 
 #define BOOST_PP_MAKE_TUPLE_INTERNAL(z, i, last) i BOOST_PP_COMMA_IF(BOOST_PP_NOT_EQUAL(i,last))
-/// BOOST_PP_MAKE_TUPLE(n) returns (0,1,....n-1,n)
+/// BOOST_PP_MAKE_TUPLE(n) returns (0,1,....n-1)
 #define BOOST_PP_MAKE_TUPLE(n) ( BOOST_PP_REPEAT( n , BOOST_PP_MAKE_TUPLE_INTERNAL, BOOST_PP_DEC(n) ) )
 
 #include <Eigen/Core>
