@@ -81,6 +81,8 @@ namespace libint2 {
     LibraryTask& task(unsigned int i) { return tasks_.at(i); }
     /// Adds a new task. Do nothing if the task exists already.
     void add(const std::string& task_label);
+    /// @returns true if task \c task_label exists
+    bool exists(const std::string& task_label) const;
     /// Find the task by name and return the iterator pointing to it. Throws ProgrammingError, if the task is not found.
     TasksCIter find(const std::string& task_label) const;
     /// Makes this task current (must have been added already)

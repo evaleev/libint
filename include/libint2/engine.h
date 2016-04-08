@@ -1903,7 +1903,8 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
   }
 
   /// types of shell sets supported by Engine, in chemist notation (i.e. '_' separates particles)
-  /// \warning macro \c LIBINT2_MAX_BRAKET_INDEX must equal the maximum value of this enum
+  /// \warning macro \c BOOST_PP_NBODY_BRAKET_RANK_TUPLE include the ranks of all brakets in \c BraKet
+  ///          and macro \c BOOST_PP_NBODY_BRAKET_MAX_INDEX must be equal to the max value in this enum
   enum class BraKet {
     x_x=0,
     xx_xx,
@@ -1917,7 +1918,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
     first_braket=first_1body_braket,
     last_braket=last_2body_braket
   };
-#define LIBINT2_MAX_BRAKET_INDEX 3
+#define BOOST_PP_NBODY_BRAKET_MAX_INDEX 3
 
   /// @return rank of \c braket
   inline int rank(BraKet braket) {
@@ -1953,7 +1954,9 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
     public:
 
-/// list of libint task names for each Operator type. These MUST appear in the same order as in Operator
+/// list of libint task names for each Operator type.
+/// These MUST appear in the same order as in Operator.
+/// You must also update BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you add one-body ints
 #define BOOST_PP_NBODY_OPERATOR_LIST  (overlap,         \
                                       (kinetic,         \
                                       (elecpot,         \
@@ -1969,10 +1972,13 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST) )
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE )
+#define BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX 5 // 3emultipole, the 6th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last 1-body operator
 
 // make list of braket indices for n-body ints
-#define BOOST_PP_NBODY_BRAKET_INDEX_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_INC(LIBINT2_MAX_BRAKET_INDEX) )
+#define BOOST_PP_NBODY_BRAKET_INDEX_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_INC(BOOST_PP_NBODY_BRAKET_MAX_INDEX) )
 #define BOOST_PP_NBODY_BRAKET_INDEX_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_NBODY_BRAKET_INDEX_TUPLE )
+#define BOOST_PP_NBODY_BRAKET_RANK_TUPLE (2, 3, 4)
+#define BOOST_PP_NBODY_BRAKET_RANK_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_NBODY_BRAKET_RANK_TUPLE )
 
 // make list of derivative orders for n-body ints
 #define BOOST_PP_NBODY_DERIV_ORDER_TUPLE BOOST_PP_MAKE_TUPLE( BOOST_PP_INC(LIBINT2_MAX_DERIV_ORDER) )
@@ -2122,16 +2128,20 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
       /// resets operator type
       void set_oper(Operator new_oper) {
-        if (rank(new_oper) != operator_rank())
-          braket_ = BraKet::invalid;
-        oper_ = new_oper;
-        initialize();
+        if (oper_ != new_oper) {
+          if (rank(new_oper) != operator_rank())
+            braket_ = BraKet::invalid;
+          oper_ = new_oper;
+          initialize();
+        }
       }
 
       /// resets braket type
       void set_braket(BraKet new_braket) {
-        braket_ = new_braket;
-        initialize();
+        if (braket_ != new_braket) {
+          braket_ = new_braket;
+          initialize();
+        }
       }
 
       /// resets operator parameters; this may be useful e.g. if need to compute Coulomb potential
@@ -2509,105 +2519,13 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       /// 3-dim array of pointers to help dispatch efficiently based on oper_, braket_, and deriv_order_
       inline const std::vector<Engine::compute2_ptr_type>& compute2_ptrs() const;
 
-      void initialize(size_t max_nprim = 0) {
-        assert(libint2::initialized());
-        assert(deriv_order_ <= LIBINT2_MAX_DERIV_ORDER);
-
-        // initialize braket, if needed
-        if (braket_ == BraKet::invalid) {
-          switch(operator_rank()) {
-            case 1: braket_ = BraKet::x_x; break;
-            case 2: braket_ = BraKet::xx_xx; break;
-            default: assert(false);
-          }
-        }
-
-        if (max_nprim != 0)
-          primdata_.resize(std::pow(max_nprim, braket_rank()));
-
-#ifdef LIBINT2_ENGINE_TIMERS
-        timers.set_now_overhead(25);
-#endif
-#ifdef LIBINT2_PROFILE
-        primdata_[0].timers->set_now_overhead(25);
-#endif
-
-#define BOOST_PP_NBODYENGINE_MCR2(r,product)                                                                  \
-         if (static_cast<int>(oper_) == BOOST_PP_TUPLE_ELEM(2,0,product) && deriv_order_ == BOOST_PP_TUPLE_ELEM(2,1,product) ) {\
-           assert(lmax_ <= BOOST_PP_CAT(LIBINT2_MAX_AM_ ,                                                     \
-                                        BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                        \
-                                                         BOOST_PP_TUPLE_ELEM(2,0,product) )                   \
-                                       ) );                                                                   \
-           stack_size_ =                                                                                      \
-           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
-                                    BOOST_PP_CAT(libint2_need_memory_ ,                                       \
-                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                          \
-                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
-                                    ),                                                                        \
-                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
-                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
-                                                )                                                             \
-                                  )                                                                           \
-                                 )(lmax_);                                                                    \
-           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
-                                    BOOST_PP_CAT(libint2_init_ ,                                              \
-                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                          \
-                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
-                                    ),                                                                        \
-                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
-                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
-                                                )                                                             \
-                                  )                                                                           \
-                                )(&primdata_[0], lmax_, 0);                                                   \
-           buildfnptrs_ = to_ptr1(                                                                            \
-           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
-                                    BOOST_PP_CAT(libint2_build_ ,                                             \
-                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                          \
-                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
-                                    ),                                                                        \
-                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
-                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
-                                                )                                                             \
-                                  )                                                                           \
-                                )                                                                             \
-                                 );                                                                           \
-           hard_lmax_ =           BOOST_PP_CAT(                                                               \
-                                    LIBINT2_MAX_AM_ ,                                                         \
-                                    BOOST_PP_CAT(                                                             \
-                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                          \
-                                                       BOOST_PP_TUPLE_ELEM(2,0,product) ),                    \
-                                      BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),     \
-                                                    BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()        \
-                                                )                                                             \
-                                    )                                                                         \
-                                  ) + 1;                                                                      \
-           reset_scratch();                                                                                   \
-           return;                                                                                            \
-         }
-
-BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR2, 2, (BOOST_PP_NBODY_OPERATOR_INDEX_LIST, BOOST_PP_NBODY_DERIV_ORDER_LIST) )
-
-        assert(false); // either deriv_order_ or oper_ is wrong
-      } // initialize()
+      void initialize(size_t max_nprim = 0);
+      // generic _initializer
+      void _initialize();
 
       void finalize() {
         if (primdata_.size() != 0) {
-
-#define BOOST_PP_NBODYENGINE_MCR3(r,product)                                                                  \
-           LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(                                                               \
-                                    BOOST_PP_CAT(libint2_cleanup_ ,                                           \
-                                      BOOST_PP_LIST_AT(BOOST_PP_NBODY_OPERATOR_LIST,                          \
-                                                       BOOST_PP_TUPLE_ELEM(2,0,product) )                     \
-                                    ),                                                                        \
-                                    BOOST_PP_IIF( BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(2,1,product),0),       \
-                                                  BOOST_PP_TUPLE_ELEM(2,1,product), BOOST_PP_EMPTY()          \
-                                                )                                                             \
-                                  )                                                                           \
-                                )(&primdata_[0]);                                                             \
-           return;
-
-BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR3, 2, (BOOST_PP_NBODY_OPERATOR_INDEX_LIST, BOOST_PP_NBODY_DERIV_ORDER_LIST) )
-
+          libint2_cleanup_default(&primdata_[0]);
         }
       } // finalize()
 
@@ -2632,6 +2550,118 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR3, 2, (BOOST_PP_NBODY_O
       static const bool skip_core_ints = false;
 
   }; // struct Engine
+
+  // generic _initializer
+  inline void Engine::_initialize() {
+
+#define BOOST_PP_NBODYENGINE_MCR3_ncenter(product)                          \
+  BOOST_PP_TUPLE_ELEM(3,1,product)
+
+#define BOOST_PP_NBODYENGINE_MCR3_default_ncenter(product)                  \
+  BOOST_PP_IIF(                                                             \
+    BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(3,0,product),                      \
+                     BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX),           \
+    4,                                                                      \
+    2)
+
+#define BOOST_PP_NBODYENGINE_MCR3_NCENTER(product)                          \
+  BOOST_PP_IIF(                                                             \
+    BOOST_PP_NOT_EQUAL(                                                     \
+      BOOST_PP_NBODYENGINE_MCR3_ncenter(product),                           \
+      BOOST_PP_NBODYENGINE_MCR3_default_ncenter(product)                    \
+    ),                                                                      \
+    BOOST_PP_NBODYENGINE_MCR3_ncenter(product),                             \
+    BOOST_PP_EMPTY()                                                        \
+  )
+
+#define BOOST_PP_NBODYENGINE_MCR3_OPER(product)                             \
+    BOOST_PP_LIST_AT(                                                       \
+      BOOST_PP_NBODY_OPERATOR_LIST,                                         \
+      BOOST_PP_TUPLE_ELEM(3,0,product)                                      \
+    )
+
+#define BOOST_PP_NBODYENGINE_MCR3_DERIV(product)                            \
+  BOOST_PP_IIF(                                                             \
+    BOOST_PP_GREATER(BOOST_PP_TUPLE_ELEM(3,2,product),0),                   \
+    BOOST_PP_TUPLE_ELEM(3,2,product),                                       \
+    BOOST_PP_EMPTY()                                                        \
+  )
+
+#define BOOST_PP_NBODYENGINE_MCR3_task(product)                             \
+  BOOST_PP_CAT(                                                             \
+    BOOST_PP_CAT(                                                           \
+      BOOST_PP_NBODYENGINE_MCR3_ncenter(product),                           \
+      BOOST_PP_NBODYENGINE_MCR3_OPER(product)                               \
+    ),                                                                      \
+    BOOST_PP_NBODYENGINE_MCR3_DERIV(product)                                \
+  )
+
+#define BOOST_PP_NBODYENGINE_MCR3_TASK(product)                             \
+  BOOST_PP_IIF(                                                             \
+    BOOST_PP_CAT(LIBINT2_TASK_EXISTS_,                                      \
+                 BOOST_PP_NBODYENGINE_MCR3_task(product)),                  \
+    BOOST_PP_CAT(                                                           \
+      BOOST_PP_CAT(                                                         \
+        BOOST_PP_NBODYENGINE_MCR3_NCENTER(product),                         \
+        BOOST_PP_NBODYENGINE_MCR3_OPER(product)                             \
+      ),                                                                    \
+      BOOST_PP_NBODYENGINE_MCR3_DERIV(product)                              \
+    ),                                                                      \
+    default                                                                 \
+  )
+
+#define BOOST_PP_NBODYENGINE_MCR3(r,product)                                                              \
+     if (static_cast<int>(oper_) == BOOST_PP_TUPLE_ELEM(3,0,product) && static_cast<int>(rank(braket_)) == BOOST_PP_TUPLE_ELEM(3,1,product) && deriv_order_ == BOOST_PP_TUPLE_ELEM(3,2,product) ) {\
+       hard_lmax_ = BOOST_PP_CAT(                                                                         \
+           LIBINT2_MAX_AM_,                                                                               \
+           BOOST_PP_NBODYENGINE_MCR3_TASK(product)                                                        \
+         ) + 1;                                                                                           \
+       assert(lmax_ < hard_lmax_);                                                                        \
+       stack_size_ = LIBINT2_PREFIXED_NAME(                                                               \
+                       BOOST_PP_CAT(libint2_need_memory_ ,                                                \
+                                    BOOST_PP_NBODYENGINE_MCR3_TASK(product))                              \
+                     )(lmax_);                                                                            \
+       LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(libint2_init_ ,                                                \
+                                           BOOST_PP_NBODYENGINE_MCR3_TASK(product))                       \
+                            )(&primdata_[0], lmax_, 0);                                                   \
+       buildfnptrs_ = to_ptr1(                                                                            \
+         LIBINT2_PREFIXED_NAME( BOOST_PP_CAT(libint2_build_ ,                                             \
+                                           BOOST_PP_NBODYENGINE_MCR3_TASK(product))                       \
+                              ));                                                                         \
+       reset_scratch();                                                                                   \
+       return;                                                                                            \
+     }
+
+    BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR3, 3, (BOOST_PP_NBODY_OPERATOR_INDEX_LIST, BOOST_PP_NBODY_BRAKET_RANK_LIST, BOOST_PP_NBODY_DERIV_ORDER_LIST) )
+
+    assert(false); // either deriv_order_ or oper_ is wrong
+  } // _initialize<R>()
+
+  inline void Engine::initialize(size_t max_nprim) {
+    assert(libint2::initialized());
+    assert(deriv_order_ <= LIBINT2_MAX_DERIV_ORDER);
+
+    // initialize braket, if needed
+    if (braket_ == BraKet::invalid) {
+      switch(operator_rank()) {
+        case 1: braket_ = BraKet::x_x; break;
+        case 2: braket_ = BraKet::xx_xx; break;
+        default: assert(false);
+      }
+    }
+
+    if (max_nprim != 0)
+      primdata_.resize(std::pow(max_nprim, braket_rank()));
+
+#ifdef LIBINT2_ENGINE_TIMERS
+    timers.set_now_overhead(25);
+#endif
+#ifdef LIBINT2_PROFILE
+    primdata_[0].timers->set_now_overhead(25);
+#endif
+
+    _initialize();
+  }
 
   namespace detail {
     inline std::vector<Engine::compute2_ptr_type> init_compute2_ptrs() {
@@ -2925,11 +2955,11 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
 #if LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD // standard angular momentum ordering
     auto swap_bra = (tbra1.contr[0].l < tbra2.contr[0].l);
     auto swap_ket = (tket1.contr[0].l < tket2.contr[0].l);
-    auto swap_braket = (tbra1.contr[0].l + tbra2.contr[0].l > tket1.contr[0].l + tket2.contr[0].l);
+    auto swap_braket = (braket == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l > tket1.contr[0].l + tket2.contr[0].l);
 #else // orca angular momentum ordering
     auto swap_bra = (tbra1.contr[0].l > tbra2.contr[0].l);
     auto swap_ket = (tket1.contr[0].l > tket2.contr[0].l);
-    auto swap_braket = (tbra1.contr[0].l + tbra2.contr[0].l < tket1.contr[0].l + tket2.contr[0].l);
+    auto swap_braket = (braket == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l < tket1.contr[0].l + tket2.contr[0].l);
 #endif
     const auto& bra1 = swap_braket ? (swap_ket ? tket2 : tket1) : (swap_bra ? tbra2 : tbra1);
     const auto& bra2 = swap_braket ? (swap_ket ? tket1 : tket2) : (swap_bra ? tbra1 : tbra2);
@@ -3079,6 +3109,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
 
               if (mmax != 0) {
 
+                if (braket == BraKet::xx_xx) {
           #if LIBINT2_DEFINED(eri,PA_x)
               primdata.PA_x[0] = P[0] - A[0];
           #endif
@@ -3097,7 +3128,9 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
           #if LIBINT2_DEFINED(eri,PB_z)
               primdata.PB_z[0] = P[2] - B[2];
           #endif
+                }
 
+                if (braket != BraKet::xs_xs) {
           #if LIBINT2_DEFINED(eri,QC_x)
               primdata.QC_x[0] = Q[0] - C[0];
           #endif
@@ -3116,7 +3149,9 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
           #if LIBINT2_DEFINED(eri,QD_z)
               primdata.QD_z[0] = Q[2] - D[2];
           #endif
+                }
 
+                if (braket == BraKet::xx_xx) {
           #if LIBINT2_DEFINED(eri,AB_x)
               primdata.AB_x[0] = AB[0];
           #endif
@@ -3135,7 +3170,9 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
           #if LIBINT2_DEFINED(eri,BA_z)
               primdata.BA_z[0] = -AB[2];
           #endif
+                }
 
+                if (braket != BraKet::xs_xs) {
           #if LIBINT2_DEFINED(eri,CD_x)
               primdata.CD_x[0] = CD[0];
           #endif
@@ -3154,6 +3191,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
           #if LIBINT2_DEFINED(eri,DC_z)
               primdata.DC_z[0] = -CD[2];
           #endif
+                }
 
               const auto gammap_o_gammapgammaq = oogammapq * gammap;
               const auto gammaq_o_gammapgammaq = oogammapq * gammaq;
@@ -3162,6 +3200,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
               const auto Wy = (gammap_o_gammapgammaq * P[1] + gammaq_o_gammapgammaq * Q[1]);
               const auto Wz = (gammap_o_gammapgammaq * P[2] + gammaq_o_gammapgammaq * Q[2]);
 
+              if (braket == BraKet::xx_xx) {
           #if LIBINT2_DEFINED(eri,WP_x)
               primdata.WP_x[0] = Wx - P[0];
           #endif
@@ -3171,6 +3210,8 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
           #if LIBINT2_DEFINED(eri,WP_z)
               primdata.WP_z[0] = Wz - P[2];
           #endif
+              }
+              if (braket != BraKet::xs_xs) {
           #if LIBINT2_DEFINED(eri,WQ_x)
               primdata.WQ_x[0] = Wx - Q[0];
           #endif
@@ -3180,6 +3221,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
           #if LIBINT2_DEFINED(eri,WQ_z)
               primdata.WQ_z[0] = Wz - Q[2];
           #endif
+              }
           #if LIBINT2_DEFINED(eri,oo2z)
               primdata.oo2z[0] = 0.5*oogammap;
           #endif
@@ -3349,7 +3391,24 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
 #    endif
       timers.start(1);
 #endif
-      LIBINT2_PREFIXED_NAME(libint2_build_eri)[bra1.contr[0].l][bra2.contr[0].l][ket1.contr[0].l][ket2.contr[0].l](&primdata_[0]);
+
+#ifdef LIBINT2_SUPPORT_ERI
+      if (braket == BraKet::xx_xx)
+        LIBINT2_PREFIXED_NAME(libint2_build_eri)[bra1.contr[0].l][bra2.contr[0].l][ket1.contr[0].l][ket2.contr[0].l](&primdata_[0]);
+      else
+#endif
+#ifdef LIBINT2_SUPPORT_ERI3
+      if (braket == BraKet::xs_xx)
+        LIBINT2_PREFIXED_NAME(libint2_build_3eri)[bra1.contr[0].l][ket1.contr[0].l][ket2.contr[0].l](&primdata_[0]);
+      else
+#endif
+#ifdef LIBINT2_SUPPORT_ERI2
+      if (braket == BraKet::xs_xs)
+        LIBINT2_PREFIXED_NAME(libint2_build_2eri)[bra1.contr[0].l][ket1.contr[0].l](&primdata_[0]);
+      else
+#endif
+        assert(false); // unreachable
+
 #ifdef LIBINT2_ENGINE_TIMERS
       const auto t1 = timers.stop(1);
 #  ifdef LIBINT2_ENGINE_PROFILE_CLASS
@@ -3480,8 +3539,14 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
 #undef BOOST_PP_NBODY_BRAKET_INDEX_LIST
 #undef BOOST_PP_NBODY_DERIV_ORDER_TUPLE
 #undef BOOST_PP_NBODY_DERIV_ORDER_LIST
-#undef BOOST_PP_NBODYENGINE_MCR2
 #undef BOOST_PP_NBODYENGINE_MCR3
+#undef BOOST_PP_NBODYENGINE_MCR3_ncenter
+#undef BOOST_PP_NBODYENGINE_MCR3_default_ncenter
+#undef BOOST_PP_NBODYENGINE_MCR3_NCENTER
+#undef BOOST_PP_NBODYENGINE_MCR3_OPER
+#undef BOOST_PP_NBODYENGINE_MCR3_DERIV
+#undef BOOST_PP_NBODYENGINE_MCR3_task
+#undef BOOST_PP_NBODYENGINE_MCR3_TASK
 #undef BOOST_PP_NBODYENGINE_MCR4
 #undef BOOST_PP_NBODYENGINE_MCR5
 #undef BOOST_PP_NBODYENGINE_MCR6

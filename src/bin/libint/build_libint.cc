@@ -742,13 +742,22 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
   iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELL_SET_ORCA));
 #if defined(LIBINT_MAX_AM_LIST)
   for(unsigned int d=0; d<ntokens(LIBINT_MAX_AM_LIST,','); ++d) {
-    std::ostringstream oss;
-    oss << "MAX_AM";
-    if (d > 0) oss << d;
-    iface->to_params(iface->macro_define(oss.str(),token<unsigned int>(LIBINT_MAX_AM_LIST,',',d)));
+    {
+      std::ostringstream oss;
+      oss << "MAX_AM";
+      if (d > 0) oss << d;
+      iface->to_params(iface->macro_define(oss.str(),token<unsigned int>(LIBINT_MAX_AM_LIST,',',d)));
+    }
+    {
+      std::ostringstream oss;
+      oss << "MAX_AM_default";
+      if (d > 0) oss << d;
+      iface->to_params(iface->macro_define(oss.str(),token<unsigned int>(LIBINT_MAX_AM_LIST,',',d)));
+    }
   }
 #else
   iface->to_params(iface->macro_define("MAX_AM",LIBINT_MAX_AM));
+  iface->to_params(iface->macro_define("MAX_AM_default",LIBINT_MAX_AM));
 #endif
   cparams->print(os);
 
@@ -1969,5 +1978,60 @@ config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Ifac
   max_deriv_order = std::max(max_deriv_order,INCLUDE_G12DKH);
 #endif
   iface->to_params(iface->macro_define("MAX_DERIV_ORDER",max_deriv_order));
+
+  // this is only needed for preprocessor-based generic processing of all generated tasks
+  // declare all tasks in a range of valid tasks as defined or not
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  // the range is defined by max # of centers, max deriv order, and operator set
+  const size_t max_ncenter = 4;
+  for(unsigned int ncenter=0; ncenter<=max_ncenter; ++ncenter) {
+
+    std::stringstream oss;
+    oss << ncenter;
+
+    for(unsigned int d=0; d<=max_deriv_order; ++d) {
+      std::string abbrv_label, full_label;
+
+      { // 1-body ints
+        std::string ncenter_str = oss.str();
+        std::string ncenter_str_abbrv = ncenter == 2 ? std::string("") : oss.str();
+#define BOOST_PP_MCR1(r,data,elem)                                   \
+        abbrv_label = task_label(ncenter_str_abbrv + elem,d);        \
+        full_label = task_label(ncenter_str + elem,d);               \
+        iface->to_params(iface->macro_define(std::string("TASK_EXISTS_") + full_label,taskmgr.exists(abbrv_label) ? 1 : 0));
+
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
+#undef BOOST_PP_MCR1
+      }
+
+      { // 2-body ints
+
+// if using compiler without variadic macros make sure to update the number of elements below
+#define BOOST_PP_TWOBODY_TASKOPER_TUPLE ("eri",               \
+                                         "r12kg12",           \
+                                         "r12_0_g12",         \
+                                         "r12_2_g12",         \
+                                         "g12_T1_g12",        \
+                                         "g12dkh"             \
+        )
+#if not BOOST_PP_VARIADICS  // no variadic macros? you must MANUALLY specify the number of elements in the tuple here
+#  error "no variadic macro support in the compiler, upgrade"
+#else
+#  define BOOST_PP_TWOBODY_TASKOPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_TWOBODY_TASKOPER_TUPLE )
+#endif
+
+        std::string ncenter_str = oss.str();
+        std::string ncenter_str_abbrv = ncenter == 4 ? std::string("") : oss.str();
+#define BOOST_PP_MCR1(r,data,elem)                                   \
+        abbrv_label = task_label(ncenter_str_abbrv + elem,d);        \
+        full_label = task_label(ncenter_str + elem,d);               \
+        iface->to_params(iface->macro_define(std::string("TASK_EXISTS_") + full_label,taskmgr.exists(abbrv_label) ? 1 : 0));
+
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_MCR1, _, BOOST_PP_TWOBODY_TASKOPER_LIST)
+#undef BOOST_PP_MCR1
+      }
+    }
+  }
+
 }
 

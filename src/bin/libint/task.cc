@@ -49,6 +49,17 @@ LibraryTaskManager::add(const std::string& task_label)
     current_ = 0;
 }
 
+bool
+LibraryTaskManager::exists(const std::string& task_label) const
+{
+  tasks_citer end = tasks_.end();
+  for(tasks_citer t=tasks_.begin(); t!=end; ++t) {
+    if (t->label() == task_label)
+      return true;
+  }
+  return false;
+}
+
 LibraryTaskManager::TasksCIter
 LibraryTaskManager::find(const std::string& task_label) const
 {
