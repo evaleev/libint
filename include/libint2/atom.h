@@ -28,7 +28,7 @@
 #include <sstream>
 #include <vector>
 
-#include <libint2.h>
+#include <libint2/chemistry/elements.h>
 
 namespace libint2 {
 
