@@ -1187,7 +1187,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
           for(const auto& s4: obs_shellpair_list[s3]) {
             if (s4 > s4_max) break; // for each s3, s4 are stored in monotonically increasing order
 
-            if ((s1234++) % nthreads != thread_id)//s1234???
+            if ((s1234++) % nthreads != thread_id)
               continue;
 
             const auto Dnorm1234 = do_schwartz_screen ? std::max(D_shblk_norm(s1,s4),
