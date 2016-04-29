@@ -659,7 +659,7 @@ compute_1body_ints(const BasisSet& obs,
       auto bf1 = shell2bf[s1]; // first basis function in this shell
       auto n1 = obs[s1].size();
 
-      for(auto s2=0; s2<=s1; ++s2) {
+      for(auto s2=0; s2<=s1; ++s2,++s12) {
 
         if (s12 % nthreads != thread_id)
           continue;
@@ -744,7 +744,7 @@ compute_1body_deriv_ints(unsigned deriv_order,
       auto atom1 = shell2atom[s1];
       assert(atom1 != -1);
 
-      for(auto s2=0; s2<=s1; ++s2) {
+      for(auto s2=0; s2<=s1; ++s2,++s12) {
 
         if (s12 % nthreads != thread_id)
           continue;
@@ -1083,7 +1083,7 @@ Matrix compute_2body_2index_ints(const BasisSet& bs)
       auto bf1 = shell2bf[s1]; // first basis function in this shell
       auto n1 = bs[s1].size();
 
-      for(auto s2=0; s2<=s1; ++s2) {
+      for(auto s2=0; s2<=s1; ++s2,++s12) {
 
         if (s12 % nthreads != thread_id)
           continue;
@@ -1187,7 +1187,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
           for(const auto& s4: obs_shellpair_list[s3]) {
             if (s4 > s4_max) break; // for each s3, s4 are stored in monotonically increasing order
 
-            if ((s1234++) % nthreads != thread_id)
+            if ((s1234++) % nthreads != thread_id)//s1234???
               continue;
 
             const auto Dnorm1234 = do_schwartz_screen ? std::max(D_shblk_norm(s1,s4),
