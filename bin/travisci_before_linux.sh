@@ -9,5 +9,4 @@ sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
 sudo apt-get update
 #sudo apt-get install -y g++-$GCC_VERSION llvm-3.4 llvm-3.4-dev libgmp-dev libeigen3-dev libboost1.55-dev
 
-apt-get install clang-3.8
-sudo apt-get install -y g++-$GCC_VERSION llvm-3.8 llvm-3.8-dev libgmp-dev libeigen3-dev libboost1.55-dev
+sudo apt-get install -y g++-$GCC_VERSION clang-3.8 llvm-3.8 llvm-3.8-dev libgmp-dev libeigen3-dev libboost1.55-dev
