@@ -2015,7 +2015,7 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
                                          "g12dkh"             \
         )
 #if not BOOST_PP_VARIADICS  // no variadic macros? you must MANUALLY specify the number of elements in the tuple here
-#  error "no variadic macro support in the compiler, upgrade"
+#  define BOOST_PP_TWOBODY_TASKOPER_LIST BOOST_PP_TUPLE_TO_LIST( 6, BOOST_PP_TWOBODY_TASKOPER_TUPLE )
 #else
 #  define BOOST_PP_TWOBODY_TASKOPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_TWOBODY_TASKOPER_TUPLE )
 #endif
