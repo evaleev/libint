@@ -9,6 +9,8 @@ if [ "$CXX" = "g++" ]; then
 else
     # no OpenMP support in clang, will use C++11 threads
     export OPENMPFLAGS=
+    export CC=/usr/bin/clang-3.7
+    export CXX=/usr/bin/clang++-3.7
 fi
 export CXXFLAGS="-std=c++11 -Wno-enum-compare $OPENMPFLAGS"
 export LDFLAGS=$OPENMPFLAGS
