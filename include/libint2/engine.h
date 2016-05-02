@@ -29,6 +29,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <cstring>
 
 #include <libint2.h>
 #include <libint2/boys.h>
@@ -1371,8 +1372,10 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
       void initialize() {
         assert(libint2::initialized());
-        assert(lmax_ <= LIBINT2_MAX_AM_eri);
         assert(deriv_order_ <= LIBINT2_DERIV_ERI_ORDER);
+        if (lmax_ > LIBINT2_MAX_AM_eri) {
+          throw std::runtime_error("TwoBodyEngine::initialize -- angular momentum limit exceeded");
+        }
 	
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
         const auto max_shellpair_size = ncart_max * ncart_max;
@@ -2471,6 +2474,31 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 #endif
       }
 
+      class lmax_exceeded: virtual public std::runtime_error {
+        public:
+          lmax_exceeded(const char* task_name,
+                        size_t lmax_limit,
+                        size_t lmax_requested) :
+                          std::runtime_error("Engine::lmax_exceeded -- angular momentum limit exceeded"),
+                          lmax_limit_(lmax_limit),
+                          lmax_requested_(lmax_requested) {
+            strncpy(task_name_, task_name, 64);
+            task_name_[64] = '\0';
+          }
+          ~lmax_exceeded() = default;
+
+          const char* task_name() const {
+            return static_cast<const char*>(task_name_);
+          }
+          size_t lmax_limit() const { return lmax_limit_; }
+          size_t lmax_requested() const { return lmax_requested_; }
+
+        private:
+          char task_name_[65];
+          size_t lmax_limit_;
+          size_t lmax_requested_;
+      };
+
     private:
       Operator oper_;
       BraKet braket_;
@@ -2616,7 +2644,10 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
            LIBINT2_MAX_AM_,                                                                               \
            BOOST_PP_NBODYENGINE_MCR3_TASK(product)                                                        \
          ) + 1;                                                                                           \
-       assert(lmax_ < hard_lmax_);                                                                        \
+       if (lmax_ >= hard_lmax_) {                                                                          \
+         throw Engine::lmax_exceeded(BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)),         \
+                                     hard_lmax_, lmax_);                                                  \
+       }                                                                                                  \
        stack_size_ = LIBINT2_PREFIXED_NAME(                                                               \
                        BOOST_PP_CAT(libint2_need_memory_ ,                                                \
                                     BOOST_PP_NBODYENGINE_MCR3_TASK(product))                              \
