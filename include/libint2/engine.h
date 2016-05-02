@@ -2485,7 +2485,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
             strncpy(task_name_, task_name, 64);
             task_name_[64] = '\0';
           }
-          ~lmax_exceeded() = default;
+          ~lmax_exceeded() {}
 
           const char* task_name() const {
             return static_cast<const char*>(task_name_);
