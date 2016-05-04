@@ -2227,6 +2227,8 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
         const auto l1 = s1.contr[0].l;
         const auto l2 = s2.contr[0].l;
+        assert(l1 <= lmax_);
+        assert(l2 <= lmax_);
 
         // if want nuclear, make sure there is at least one nucleus .. otherwise the user likely forgot to call set_params
         if (oper_ == Operator::nuclear and nparams() == 0)
@@ -2979,6 +2981,12 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
     // can only handle 1 contraction at a time
     assert(tbra1.ncontr() == 1 && tbra2.ncontr() == 1 &&
            tket1.ncontr() == 1 && tket2.ncontr() == 1);
+
+    // angular momentum limit obeyed?
+    assert(tbra1.contr[0].l <= lmax_);
+    assert(tbra2.contr[0].l <= lmax_);
+    assert(tket1.contr[0].l <= lmax_);
+    assert(tket2.contr[0].l <= lmax_);
 
     // derivatives not supported for now
     assert(deriv_order == 0);
