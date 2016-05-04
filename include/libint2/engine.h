@@ -2049,7 +2049,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         hard_lmax_(other.hard_lmax_),
         deriv_order_(other.deriv_order_),
         precision_(other.precision_), ln_precision_(other.ln_precision_),
-        core_eval_pack_(other.core_eval_pack_),
+        core_eval_pack_(std::move(other.core_eval_pack_)),
         params_(std::move(other.params_)),
         core_ints_params_(std::move(other.core_ints_params_)),
         scratch_(std::move(other.scratch_)),
