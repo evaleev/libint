@@ -2003,6 +2003,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       /// \param oper a value of Operator type
       /// \param max_nprim the maximum number of primitives per contracted Gaussian shell
       /// \param max_l the maximum angular momentum of Gaussian shell
+      /// \throw Engine::lmax_exceeded if \c max_l exceeds the angular momentum limit of the library
       /// \param deriv_order if not 0, will compute geometric derivatives of Gaussian integrals of order \c deriv_order ,
       ///                    (default=0)
       /// \param precision specifies the target precision with which the integrals will be computed; the default is the "epsilon"
@@ -2476,6 +2477,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 #endif
       }
 
+      /// Exception class to be used when the angular momentum limit is exceeded.
       class lmax_exceeded: virtual public std::runtime_error {
         public:
           lmax_exceeded(const char* task_name,
