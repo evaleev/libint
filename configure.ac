@@ -229,7 +229,7 @@ esac
 )
 
 AC_ARG_ENABLE(eri2,
-[  --enable-eri3=N         Compile with support for up to N-th derivatives of 2-center electron repulsion integrals],
+[  --enable-eri2=N         Compile with support for up to N-th derivatives of 2-center electron repulsion integrals],
 [
 case $enableval in
   yes)
