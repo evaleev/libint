@@ -615,11 +615,7 @@ compute_1body_ints(const BasisSet& obs,
 {
   const auto n = obs.nbf();
   const auto nshells = obs.size();
-#ifdef _OPENMP
-  const auto nthreads = omp_get_max_threads();
-#else
-  const auto nthreads = 1;
-#endif
+  using libint2::nthreads;
   typedef std::array<Matrix, libint2::operator_traits<obtype>::nopers> result_type;
   const unsigned int nopers = libint2::operator_traits<obtype>::nopers;
   result_type result; for(auto& r: result) r = Matrix::Zero(n,n);
@@ -642,15 +638,7 @@ compute_1body_ints(const BasisSet& obs,
 
   auto shell2bf = obs.shell2bf();
 
-#ifdef _OPENMP
-  #pragma omp parallel
-#endif
-  {
-#ifdef _OPENMP
-    auto thread_id = omp_get_thread_num();
-#else
-    auto thread_id = 0;
-#endif
+  auto compute = [&] (int thread_id) {
 
     // loop over unique shell pairs, {s1,s2} such that s1 >= s2
     // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
@@ -682,7 +670,9 @@ compute_1body_ints(const BasisSet& obs,
 
       }
     }
-  } // omp parallel
+  }; // compute lambda
+
+  libint2::parallel_do(compute);
 
   return result;
 }
@@ -694,13 +684,9 @@ compute_1body_deriv_ints(unsigned deriv_order,
                          const BasisSet& obs,
                          const std::vector<Atom>& atoms)
 {
+  using libint2::nthreads;
   const auto n = obs.nbf();
   const auto nshells = obs.size();
-#ifdef _OPENMP
-  const auto nthreads = omp_get_max_threads();
-#else
-  const auto nthreads = 1;
-#endif
   constexpr auto nopers = libint2::operator_traits<obtype>::nopers;
   const auto nresults = nopers * libint2::num_geometrical_derivatives(atoms.size(),deriv_order);
   typedef std::vector<Matrix> result_type;
@@ -725,15 +711,7 @@ compute_1body_deriv_ints(unsigned deriv_order,
   auto shell2bf = obs.shell2bf();
   auto shell2atom = obs.shell2atom(atoms);
 
-#ifdef _OPENMP
-  #pragma omp parallel
-#endif
-  {
-#ifdef _OPENMP
-    auto thread_id = omp_get_thread_num();
-#else
-    auto thread_id = 0;
-#endif
+  auto compute = [&] (int thread_id) {
 
     // loop over unique shell pairs, {s1,s2} such that s1 >= s2
     // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
@@ -792,7 +770,9 @@ compute_1body_deriv_ints(unsigned deriv_order,
 
       }
     }
-  } // omp parallel
+  }; // compute lambda
+
+  libint2::parallel_do(compute);
 
   return result;
 }
@@ -832,7 +812,7 @@ Matrix compute_schwartz_ints(const BasisSet& bs1,
   timer.set_now_overhead(25);
   timer.start(0);
 
-  auto lambda = [&] (int thread_id) {
+  auto compute = [&] (int thread_id) {
 
     // loop over permutationally-unique set of shells
     for(auto s1=0l, s12=0l; s1!=nsh1; ++s1) {
@@ -860,7 +840,7 @@ Matrix compute_schwartz_ints(const BasisSet& bs1,
     }
   }; // thread lambda
 
-  libint2::parallel_do(lambda);
+  libint2::parallel_do(compute);
 
   timer.stop(0);
   std::cout << "done (" << timer.read(0) << " s)"<< std::endl;
@@ -883,11 +863,7 @@ compute_shellpair_list(const BasisSet& bs1,
   const auto nsh2 = bs2.size();
   const auto bs1_equiv_bs2 = (&bs1 == &bs2);
 
-#ifdef _OPENMP
-  const auto nthreads = omp_get_max_threads();
-#else
-  const auto nthreads = 1;
-#endif
+  using libint2::nthreads;
 
   // construct the 2-electron repulsion integrals engine
   using libint2::Engine;
@@ -1046,13 +1022,9 @@ conditioning_orthogonalizer(const Matrix& S, double S_condition_number_threshold
 
 Matrix compute_2body_2index_ints(const BasisSet& bs)
 {
+  using libint2::nthreads;
   const auto n = bs.nbf();
   const auto nshells = bs.size();
-#ifdef _OPENMP
-  const auto nthreads = omp_get_max_threads();
-#else
-  const auto nthreads = 1;
-#endif
   Matrix result = Matrix::Zero(n,n);
 
   // build engines for each thread
@@ -1066,15 +1038,7 @@ Matrix compute_2body_2index_ints(const BasisSet& bs)
   auto shell2bf = bs.shell2bf();
   auto unitshell = Shell::unit();
 
-#ifdef _OPENMP
-  #pragma omp parallel
-#endif
-  {
-#ifdef _OPENMP
-    auto thread_id = omp_get_thread_num();
-#else
-    auto thread_id = 0;
-#endif
+  auto compute = [&] (int thread_id) {
 
     // loop over unique shell pairs, {s1,s2} such that s1 >= s2
     // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
@@ -1102,7 +1066,9 @@ Matrix compute_2body_2index_ints(const BasisSet& bs)
 
       }
     }
-  } // omp parallel
+  }; // compute lambda
+
+  libint2::parallel_do(compute);
 
   return result;
 }
