@@ -53,7 +53,8 @@ namespace libint2 {
   }
   inline void initialize() {
     using namespace detail;
-    static __initializer* x = managed_singleton<__initializer>::instance();
+    __initializer* x = managed_singleton<__initializer>::instance();
+    assert(x != nullptr);
   }
   inline void finalize() {
     using namespace detail;
