@@ -467,8 +467,6 @@ int main(int argc, char *argv[]) {
         for(auto xyz=0; xyz!=3; ++xyz, ++i) {
           auto force = 2 * (T1[i]+V1[i]).cwiseProduct(D).sum();
           F1(atom, xyz) += force;
-//        std::cout << "one-body force=" << force << std::endl;
-//        std::cout << "derivative nuclear ints:\n" << V1[i] << std::endl;
         }
       }
 
@@ -483,8 +481,6 @@ int main(int argc, char *argv[]) {
         for(auto xyz=0; xyz!=3; ++xyz, ++i) {
           auto force = 2 * S1[i].cwiseProduct(W).sum();
           F_Pulay(atom, xyz) -= force;
-//        std::cout << "Pulay force=" << force << std::endl;
-//        std::cout << "derivative overlap ints:\n" << S1[i] << std::endl;
         }
       }
 
@@ -1402,7 +1398,7 @@ DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
   typedef btas::Tensor<double, Range1d> Tensor1d;
   typedef btas::Tensor<double, Range2d> Tensor2d;
 
-  // using first time? compute 3-center ints and transform to inv sqrt repreentation
+  // using first time? compute 3-center ints and transform to inv sqrt representation
   if (xyK.size() == 0) {
 
     const auto nshells    =  obs.size();
@@ -1570,7 +1566,7 @@ DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     xyZ = Tensor3d{0,0,0}; // release memory
 
     timer.stop(2);
-    std::cout << "time for integrals tform = " << timer.read(2) << std::endl;
+    std::cout << "time for integrals metric tform = " << timer.read(2) << std::endl;
   } // if (xyK.size() == 0)
 
   // compute exchange

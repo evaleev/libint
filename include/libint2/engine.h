@@ -88,7 +88,7 @@ namespace libint2 {
       /// \warning These must start with 0 and appear in same order as elements of BOOST_PP_ONEBODY_OPERATOR_LIST preprocessor macro.
       enum operator_type {
         overlap=0,        //!< overlap
-        kinetic=1,        //!< electronic kinetic energy, i.e. \f$ -\frac{1}{2} \Nabla^2 \f$
+        kinetic=1,        //!< electronic kinetic energy, i.e. \f$ -\frac{1}{2} \nabla^2 \f$
         nuclear=2,        //!< Coulomb potential due to point charges
         emultipole1=3,    //!< overlap + (Cartesian) electric dipole moment, \f$ x_O, y_O, z_O \f$, where \f$ x_O \equiv x - O_x \f$ is relative to origin \f$ \vec{O} \f$
         emultipole2=4,    //!< emultipole1 + (Cartesian) electric quadrupole moment, \f$ x^2, xy, xz, y^2, yz, z^2 \f$
@@ -1815,7 +1815,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
   /// \warning for the sake of nbody() order operators by # of particles
   enum class Operator {
     overlap=0,        //!< overlap
-    kinetic,          //!< electronic kinetic energy, i.e. \f$ -\frac{1}{2} \Nabla^2 \f$
+    kinetic,          //!< electronic kinetic energy, i.e. \f$ -\frac{1}{2} \nabla^2 \f$
     nuclear,          //!< Coulomb potential due to point charges
     emultipole1,      //!< overlap + (Cartesian) electric dipole moment, \f$ x_O, y_O, z_O \f$, where \f$ x_O \equiv x - O_x \f$ is relative to origin \f$ \vec{O} \f$
     emultipole2,      //!< emultipole1 + (Cartesian) electric quadrupole moment, \f$ x^2, xy, xz, y^2, yz, z^2 \f$
