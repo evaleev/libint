@@ -351,30 +351,19 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           ////////////
           // loop over unique derivative index combinations
           ////////////
-          // skip 1 center -- all derivatives with respect to that center can be
-          // recovered using translational invariance conditions
-          // which center to skip? (A = 0, B = 1, C = 2)
-          // case1: operator is coordinate-independent (overlap, kinetic) -> B
-          // case2: operator is coordinate-dependent (elecpot, emultipole) -> C
-          constexpr bool coordinate_independent_oper = std::is_same<_OperType,OverlapOper>::value ||
-                                                       std::is_same<_OperType,KineticOper>::value;
-          constexpr unsigned int center_to_skip = (coordinate_independent_oper) ? 1 : 2;
-          constexpr unsigned int num_deriv_centers = (coordinate_independent_oper) ? 2 : 3;
-          DerivIndexIterator<num_deriv_centers - 1> diter(deriv_level);
+          // NB translational invariance is now handled by CR_DerivGauss
+          DerivIndexIterator<2> diter(deriv_level);
           bool last_deriv = false;
           do {
             BFType a(la);
             BFType b(lb);
             
-            for(unsigned int c=0, center=0; c<num_deriv_centers; ++c) {
-              if (c == center_to_skip)
-                continue;
+            for(unsigned int c=0; c!=2; ++c) {
               const unsigned int ndir = std::is_same<BFType,CGShell>::value ? 3 : 1;
               for(unsigned int xyz=0; xyz<ndir; ++xyz) {
-                if (c == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (c == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (c == 0) a.deriv().inc(xyz, diter.value(xyz));
+                if (c == 1) b.deriv().inc(xyz, diter.value(3 + xyz));
               }
-              ++center;
             }
 
             // operator component loop

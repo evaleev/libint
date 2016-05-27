@@ -40,16 +40,19 @@ namespace libint2 {
   } PermutationalSymmetry;
 
   /** OperatorProperties describes various properties of an operator or operator set
-      np -- number of particles
-      multi -- true if multiplicative
-      psymmetry -- symmetry with respect to permutation of bra and ket
+      @tparam NP number of particles
+      @tparam multi true if multiplicative
+      @tparam psymmetry symmetry with respect to permutation of bra and ket
+      @tparam origin_dependent true if operator is origin-dependent
     */
-  template <unsigned int NP, bool multi, PermutationalSymmetry::type psymmetry>
+  template <unsigned int NP, bool multi, PermutationalSymmetry::type psymmetry,
+            bool origin_dependent = false>
     class OperatorProperties {
     public:
-      static const unsigned int np = NP;
-      static const bool multiplicative = multi;
-      static const PermutationalSymmetry::type psymm = psymmetry;
+      static constexpr unsigned int np = NP;
+      static constexpr bool multiplicative = multi;
+      static constexpr PermutationalSymmetry::type psymm = psymmetry;
+      static constexpr bool odep = origin_dependent;
     };
 
   /** OperSet is the base class for all (sets of) operators.
@@ -72,6 +75,9 @@ namespace libint2 {
         or anti-Hermitian w.r.t. particle p */
       virtual int hermitian(int p) const =0;
 
+      /// is operator origin-dependent?
+      virtual bool origin_dependent() const =0;
+
       /// Number of operators in the set
       virtual unsigned int num_oper() const =0;
     };
@@ -88,6 +94,8 @@ namespace libint2 {
       int psymm(int i, int j) const;
       /// Implementation of OperSet::hermitian()
       int hermitian(int p) const;
+      /// Implementation of OperSet::origin_dependent()
+      bool origin_dependent() const { return Props::odep; }
 
       bool operator==(const Oper&) const;
 
@@ -203,6 +211,7 @@ namespace libint2 {
 
   typedef OperatorProperties<1,false,PermutationalSymmetry::nonsymm> Nonmultiplicative1Body_Props;
   typedef OperatorProperties<1,true, PermutationalSymmetry::nonsymm> Multiplicative1Body_Props;
+  typedef OperatorProperties<1,true, PermutationalSymmetry::nonsymm, true> MultiplicativeODep1Body_Props;
   typedef OperatorProperties<2,true, PermutationalSymmetry::symm> MultiplicativeSymm2Body_Props;
   typedef OperatorProperties<2,true, PermutationalSymmetry::nonsymm> MultiplicativeNonsymm2Body_Props;
   typedef OperatorProperties<2,false,PermutationalSymmetry::symm> NonmultiplicativeSymm2Body_Props;
@@ -222,23 +231,26 @@ namespace libint2 {
   };
   typedef GenOper< GenMultSymmOper_Descr<2>  > GenMultSymm2BodyOper;
 
-#define BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR(r,mult,prefix)                                        \
-    struct prefix ## _Descr : public Contractable<prefix ## _Descr> {                                       \
-      typedef mult ## 1Body_Props Properties;                                                               \
+#define BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR(r,propprefix,opname)                                  \
+    struct opname ## _Descr : public Contractable<opname ## _Descr> {                                       \
+      typedef propprefix ## 1Body_Props Properties;                                                         \
       static const unsigned int max_key = 1;                                                                \
       unsigned int key() const { return 0; }                                                                \
-      std::string description() const { return #prefix; }                                                   \
-      std::string label() const { return #prefix; }                                                         \
+      std::string description() const { return #opname; }                                                   \
+      std::string label() const { return #opname; }                                                         \
       int psymm(int i, int j) const { assert(false); }                                                      \
       int hermitian(int i) const { return +1; }                                                             \
     };                                                                                                      \
-    typedef GenOper<prefix ## _Descr> prefix ## Oper;                                                       \
+    typedef GenOper<opname ## _Descr> opname ## Oper;                                                       \
 
 #define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (Kinetic, BOOST_PP_NIL)
 BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, Nonmultiplicative, BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST)
 #undef BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST
-#define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (Overlap, (ElecPot, BOOST_PP_NIL))
+#define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (Overlap, BOOST_PP_NIL)
 BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, Multiplicative, BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST)
+#undef BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST
+#define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (ElecPot, BOOST_PP_NIL)
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, MultiplicativeODep, BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST)
 #undef BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST
 
 /// cartesian multipole operator:
@@ -246,7 +258,7 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, Multipli
 template <unsigned int NDIM>
 struct CartesianMultipole_Descr : public Contractable<CartesianMultipole_Descr<NDIM>>,
                                   public OriginDerivative<NDIM> {
-  typedef Multiplicative1Body_Props Properties;
+  typedef MultiplicativeODep1Body_Props Properties;
   using OriginDerivative<NDIM>::max_key;
 
   CartesianMultipole_Descr() { }

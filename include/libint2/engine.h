@@ -2255,12 +2255,10 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
         // how many shell sets will be returned?
         auto num_shellsets = nshellsets();
-        // Libint computes derivatives with respect to one center fewer, will use translational invariance to recover
-        const auto geometry_independent_operator = not (oper_ == Operator::nuclear);
-        const auto num_deriv_centers_computed = geometry_independent_operator ? braket_rank()-1 : braket_rank();
-        auto num_shellsets_computed = nopers() *
-                                      num_geometrical_derivatives(num_deriv_centers_computed,
-                                                                  deriv_order_);
+        // Libint computes derivatives with respect to basis functions only, must
+        // must use translational invariance to recover derivatives w.r.t. operator degrees of freedom
+        const auto geometry_independent_operator = oper_ == Operator::overlap || oper_ == Operator::kinetic;
+        auto num_shellsets_computed = nopers() * num_geometrical_derivatives(2, deriv_order_);
         // size of ints block computed by Libint
         const auto target_buf_size = num_shellsets_computed * ncart12;
 
@@ -2382,33 +2380,6 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
           } // loop cartesian shell set
 
         } // tform to solids
-
-        // if computing derivatives of ints of geometry-independent operators
-        // compute the omitted derivatives using translational invariance
-        if (deriv_order_ > 0 && geometry_independent_operator) {
-          assert(deriv_order_ == 1); // assuming 1st-order derivs here, arbitrary order later
-
-          const auto nints_computed = n12*num_shellsets_computed; // target # of ints is twice this
-
-          // make sure there is enough room left in libint stack
-          // if not, copy into scratch2_
-          if (not tform_to_solids) {
-            const auto stack_size_remaining = stack_size_ - (result-primdata_[0].stack) - nints_computed;
-            const auto copy_to_scratch2 = stack_size_remaining < nints_computed;
-            if (copy_to_scratch2) {
-              // this is tricky ... copy does not allow scratch2_ in [result, result + nints_computed)
-              // but this would only happen in scratch2_ == result, but definition of scratch2_ ensures this
-              std::copy(result, result + nints_computed, scratch2_);
-              result = scratch2_;
-            }
-          }
-
-          const auto src = result;
-          const auto dest = result + nints_computed;
-          for(auto f=0ul; f!=nints_computed; ++f) {
-            dest[f] = -src[f];
-          }
-        } // rebuild omitted derivatives of Cartesian ints
 
         return result;
       }

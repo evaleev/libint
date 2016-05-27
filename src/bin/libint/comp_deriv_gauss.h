@@ -41,21 +41,48 @@ namespace libint2 {
       void add(unsigned int L, bool vectorize);
   };
 
-  /** compute relation for derivative 2-e ERI. part+where specify the function
-   * to be differentiated.
+  /** Compute relation for (geometric) derivative Gaussian ints of generic type \c IntType . It either
+   * reduces derivative Gaussian to other Gaussians, or optionally relates derivative integral
+   * to other integrals using translational invariance relation. The advantage of the
+   * latter is that it can be applied to contracted and solid harmonics integrals, and reduces the total
+   * number of derivatives to be computed.
+   *
+   * @tparam IntType integral type
+   * @tparam part particle index of the function to be differentiated
+   * @tparam where position of the function to be differentiated
+   * @tparam trans_inv_part if non-negative, specifies the particle index of the function
+   *         whose derivatives will be computed using translational invariance
+   * @tparam trans_inv_where the position of the function
+   *         whose derivatives will be computed using translational invariance
+   * @note Translational will be used iff
+   *         @code part == trans_inv_part && where == trans_inv_where @endcode
   */
-    template <class IntType, int part, FunctionPosition where>
-      class CR_DerivGauss : public GenericRecurrenceRelation< CR_DerivGauss<IntType,part,where>,
+    template <class IntType,
+              int part,
+              FunctionPosition where,
+              int trans_inv_part = -1,
+              FunctionPosition trans_inv_where = InBra>
+      class CR_DerivGauss : public GenericRecurrenceRelation< CR_DerivGauss<IntType,part,where,trans_inv_part,trans_inv_where>,
                                                               typename IntType::BasisFunctionType,
                                                               IntType >
     {
+    private:
+      static constexpr auto trans_inv_oper = not IntType::OperType::Properties::odep;
+      // can use translational invariance iff the operator is translationally-invariant
+      static constexpr auto using_trans_inv = trans_inv_oper &&
+          (part == trans_inv_part) &&
+          (where == trans_inv_where);
+
     public:
       typedef CR_DerivGauss ThisType;
       typedef typename IntType::BasisFunctionType BasisFunctionType;
       typedef IntType TargetType;
       typedef GenericRecurrenceRelation<ThisType,BasisFunctionType,TargetType> ParentType;
       friend class GenericRecurrenceRelation<ThisType,BasisFunctionType,TargetType>;
-      static const unsigned int max_nchildren = 2;
+      // # of children varies:
+      // 1. translational invariance makes num_functions - 1 children
+      // 2. direct differentiation always makes at most 2 Gaussians
+      static constexpr unsigned int max_nchildren = using_trans_inv ? (IntType::num_bf - 1) : 2;
 
       using ParentType::Instance;
 
@@ -95,9 +122,11 @@ namespace libint2 {
 #endif
     };
 
-  template <class IntType, int part, FunctionPosition where>
-  CR_DerivGauss<IntType,part,where>::CR_DerivGauss(const SafePtr< TargetType >& Tint,
-                                                   unsigned int dir) :
+  template <class IntType, int part, FunctionPosition where,
+            int trans_inv_part, FunctionPosition trans_inv_where>
+  CR_DerivGauss<IntType,part,where,trans_inv_part,trans_inv_where>::CR_DerivGauss(
+      const SafePtr< TargetType >& Tint,
+      unsigned int dir) :
     ParentType(Tint,dir)
     {
       using namespace libint2::algebra;
@@ -110,12 +139,6 @@ namespace libint2 {
       const typename IntType::OperType& oper = Tint->oper();
 
       // WARNING assuming one function per position
-      { // can't apply to contracted basis functions
-        if (where == InBra && Tint->bra(part,0).contracted())
-          return;
-        if (where == InKet && Tint->ket(part,0).contracted())
-          return;
-      }
 
       // the Gaussian must be differentiated in direction dir
       {
@@ -125,77 +148,138 @@ namespace libint2 {
           return;
       }
 
+      // if not using translational invariance ...
+      // can expand derivatives of primitive Gaussians only
+      if (not using_trans_inv) {
+        if (where == InBra && Tint->bra(part,0).contracted())
+          return;
+        if (where == InKet && Tint->ket(part,0).contracted())
+          return;
+      }
+
       typedef typename IntType::BraType IBraType;
       typedef typename IntType::KetType IKetType;
       IBraType* bra = new IBraType(Tint->bra());
       IKetType* ket = new IKetType(Tint->ket());
 
-      if (where == InBra) {
-        F a(bra->member(part,0));
+      if (not using_trans_inv) { // differentiate
 
-        // add a+1
-        F ap1(bra->member(part,0) + _1);
-        ap1.deriv().dec(dir);
-        bra->set_member(ap1,part,0);
-        auto int_ap1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
-        bra->set_member(a,part,0);
-        if (is_simple()) {
-          std::ostringstream oss;
-          oss << "two_alpha" << part << "_bra";
-          expr_ = Scalar(oss.str()) * int_ap1;  nflops_+=1;
-        }
+        if (where == InBra) {
+          F a(bra->member(part,0));
 
-        // See if a-1 exists
-        F am1(bra->member(part,0) - _1);
-        if (exists(am1)) {
-          am1.deriv().dec(dir);
-          bra->set_member(am1,part,0);
-          auto int_am1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
+          // add a+1
+          F ap1(bra->member(part,0) + _1);
+          ap1.deriv().dec(dir);
+          bra->set_member(ap1,part,0);
+          auto int_ap1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
           bra->set_member(a,part,0);
           if (is_simple()) {
-            expr_ -= Scalar(a[dir]) * int_am1;  nflops_+=2;
+            std::ostringstream oss;
+            oss << "two_alpha" << part << "_bra";
+            expr_ = Scalar(oss.str()) * int_ap1;  nflops_+=1;
           }
-        }
-        return;
-      }
 
-      if (where == InKet) {
-        F a(ket->member(part,0));
-
-        // add a+1
-        F ap1(ket->member(part,0) + _1);
-        ap1.deriv().dec(dir);
-        ket->set_member(ap1,part,0);
-        auto int_ap1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
-        ket->set_member(a,part,0);
-        if (is_simple()) {
-          std::ostringstream oss;
-          oss << "two_alpha" << part << "_ket";
-          expr_ = Scalar(oss.str()) * int_ap1;  nflops_+=1;
+          // See if a-1 exists
+          F am1(bra->member(part,0) - _1);
+          if (exists(am1)) {
+            am1.deriv().dec(dir);
+            bra->set_member(am1,part,0);
+            auto int_am1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
+            bra->set_member(a,part,0);
+            if (is_simple()) {
+              expr_ -= Scalar(a[dir]) * int_am1;  nflops_+=2;
+            }
+          }
+          return;
         }
 
-        // See if a-1 exists
-        F am1(ket->member(part,0) - _1);
-        if (exists(am1)) {
-          am1.deriv().dec(dir);
-          ket->set_member(am1,part,0);
-          auto int_am1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
+        if (where == InKet) {
+          F a(ket->member(part,0));
+
+          // add a+1
+          F ap1(ket->member(part,0) + _1);
+          ap1.deriv().dec(dir);
+          ket->set_member(ap1,part,0);
+          auto int_ap1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
           ket->set_member(a,part,0);
           if (is_simple()) {
-            expr_ -= Scalar(a[dir]) * int_am1;  nflops_+=2;
+            std::ostringstream oss;
+            oss << "two_alpha" << part << "_ket";
+            expr_ = Scalar(oss.str()) * int_ap1;  nflops_+=1;
+          }
+
+          // See if a-1 exists
+          F am1(ket->member(part,0) - _1);
+          if (exists(am1)) {
+            am1.deriv().dec(dir);
+            ket->set_member(am1,part,0);
+            auto int_am1 = this->add_child(IntType::Instance(*bra,*ket,aux,oper));
+            ket->set_member(a,part,0);
+            if (is_simple()) {
+              expr_ -= Scalar(a[dir]) * int_am1;  nflops_+=2;
+            }
+          }
+          return;
+        }
+      } else {  // use translational invariance
+
+        // remove one deriv quantum from the target function
+        if (where == InBra) bra->member(part,0).deriv().dec(dir);
+        if (where == InKet) ket->member(part,0).deriv().dec(dir);
+
+        int term_count = 0;
+        for (int p = 0; p != IntType::num_particles; ++p) {
+          if (p != trans_inv_part || trans_inv_where != InBra) {
+            F a(bra->member(p, 0));
+            F da(a);
+            da.deriv().inc(dir);
+            bra->set_member(da, p, 0);
+            auto int_da = this->add_child(IntType::Instance(*bra, *ket, aux, oper));
+            bra->set_member(a, p, 0);
+            if (is_simple()) {
+              std::ostringstream oss;
+              if (term_count == 0)
+                expr_ = Scalar(-1) * int_da;
+              else
+                expr_ -= int_da;
+              ++term_count;
+              nflops_ += 1;
+            }
+          }
+          if (p != trans_inv_part || trans_inv_where != InKet) {
+            F a(ket->member(p, 0));
+            F da(a);
+            da.deriv().inc(dir);
+            ket->set_member(da, p, 0);
+            auto int_da = this->add_child(IntType::Instance(*bra, *ket, aux, oper));
+            ket->set_member(a, p, 0);
+            if (is_simple()) {
+              std::ostringstream oss;
+              if (term_count == 0)
+                expr_ = Scalar(-1) * int_da;
+              else
+                expr_ -= int_da;
+              ++term_count;
+              nflops_ += 1;
+            }
           }
         }
-        return;
       }
 
       return;
     }
 
 #if LIBINT_ENABLE_GENERIC_CODE
-  template <class IntType, int part, FunctionPosition where>
+  template <class IntType, int part, FunctionPosition where,
+            int trans_inv_part, FunctionPosition trans_inv_where>
   bool
-  CR_DerivGauss<IntType,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
+  CR_DerivGauss<IntType,part,where,trans_inv_part,trans_inv_where>::has_generic(
+      const SafePtr<CompilationParameters>& cparams
+      ) const
     {
+      // not implemented generic relation for translational invariance yet
+      if (using_trans_inv) return false;
+
       if (TrivialBFSet<BasisFunctionType>::result)
         return false;
 
@@ -223,16 +307,20 @@ namespace libint2 {
       return false;
     }
 
-  template <class IntType, int part, FunctionPosition where>
+  template <class IntType, int part, FunctionPosition where,
+            int trans_inv_part, FunctionPosition trans_inv_where>
     std::string
-    CR_DerivGauss<IntType,part,where>::generic_header() const
+    CR_DerivGauss<IntType,part,where,trans_inv_part,trans_inv_where>::generic_header() const
     {
       return std::string("GenericGaussDeriv.h");
     }
 
-  template <class IntType, int part, FunctionPosition where>
+  template <class IntType, int part, FunctionPosition where,
+            int trans_inv_part, FunctionPosition trans_inv_where>
       std::string
-      CR_DerivGauss<IntType,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
+      CR_DerivGauss<IntType,part,where,trans_inv_part,trans_inv_where>::generic_instance(
+          const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args
+        ) const
     {
       std::ostringstream oss;
 
