@@ -527,7 +527,12 @@ std::vector<Atom> read_geometry(const std::string& filename) {
 
   std::cout << "Will read geometry from " << filename << std::endl;
   std::ifstream is(filename);
-  assert(is.good());
+  if (not is.good()) {
+    char errmsg[256] = "Could not open file ";
+    strncpy(errmsg+20, filename.c_str(), 235);
+    errmsg[255] = '\0';
+    throw std::runtime_error(errmsg);
+  }
 
   // to prepare for MPI parallelization, we will read the entire file into a string that can be
   // broadcast to everyone, then converted to an std::istringstream object that can be used just like std::ifstream
