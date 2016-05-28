@@ -31,13 +31,13 @@
 #define _libint2_libint2types_h_
 //make sure the 4 lines below stay at line # 34-37 for timing script to work, or edit timing script
 #define LIBINT2_MAX_VECLEN 1
-constexpr unsigned int am0 = 1;
-constexpr unsigned int am1 = 1;
-constexpr unsigned int am2 = 1;
-constexpr unsigned int am3 = 1;
-constexpr unsigned int am_tot = am0 + am1 + am2 + am3;
+constexpr auto am0 = 1u;
+constexpr auto am1 = 1u;
+constexpr auto am2 = 1u;
+constexpr auto am3 = 1u;
+constexpr auto am_tot = am0 + am1 + am2 + am3;
 int bool_test = 0;
-constexpr size_t npts = am_tot / 2 + 1;
+constexpr auto npts = am_tot / 2 + 1;
 
 #define ALIGNED_STORAGE __attribute__((aligned(256)))
 
@@ -242,8 +242,8 @@ std::cout<<"number of points"<<npts<<endl;
   //------------------------------------------------------
   // compute recurrence prefactors, Rys roots and weights
   //------------------------------------------------------
-//  constexpr size_t am_tot = am0 + am1 + am2 + am3;
-//  constexpr size_t npts = am_tot/2 + 1;
+//  constexpr auto am_tot = am0 + am1 + am2 + am3;
+//  constexpr auto npts = am_tot/2 + 1;
 
   std::vector<Libint_t> erieval(contrdepth4 + 1);
 #if LIBINT2_FLOP_COUNT

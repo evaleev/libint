@@ -79,7 +79,7 @@ namespace libint2 {
       }
 
     private:
-      constexpr static size_t ntimers = N;
+      constexpr static auto ntimers = N;
       dur_t timers_[ntimers];
       time_point_t tstart_[ntimers];
       dur_t overhead_; // the duration of now() call ... use this to automatically adjust reported timings is you need fine-grained timing

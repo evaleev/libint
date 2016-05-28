@@ -431,7 +431,7 @@ namespace libint2 {
 
   public:
 
-    static constexpr CartesianAxis axis = Axis;
+    static constexpr auto axis = Axis;
 
     /// As far as SetIterator is concerned, CGF1d is a set of one CGF1d
     typedef CGF1d iter_type;
@@ -620,7 +620,7 @@ namespace libint2 {
 
   public:
 
-    static constexpr CartesianAxis axis = Axis;
+    static constexpr auto axis = Axis;
 
     /// CGShell1d is a set CGF1d's
     typedef CGF1d<Axis> iter_type;

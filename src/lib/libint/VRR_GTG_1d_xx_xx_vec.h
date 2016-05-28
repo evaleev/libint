@@ -24,10 +24,6 @@
 #include <libint2.h>
 #include <util_types.h>
 
-
-//    constexpr unsigned int am_tot = 20;
-// constexpr int npts = am_tot/2 + 1; 
-
 namespace libint2 {
 
   /** builds (ab| GTG_1d |cd), the shell set of 2-dimensional integrals needed for Rys quadrature evaluation of 2-body ints.

@@ -183,7 +183,7 @@ namespace libint2 {
       typedef GenericRecurrenceRelation<ThisType,BasisFunctionType,TargetType> ParentType;
       friend class GenericRecurrenceRelation<ThisType,BasisFunctionType,TargetType>;
       static const unsigned int max_nchildren = 9;
-      static constexpr CartesianAxis axis = Axis;
+      static constexpr auto axis = Axis;
 
       using ParentType::Instance;
 

@@ -31,11 +31,11 @@
 #define _libint2_libint2types_h_
 
 #define LIBINT2_MAX_VECLEN 1
-constexpr unsigned int am0 = 2;
-constexpr unsigned int am1 = 2;
-constexpr unsigned int am2 = 2;
-constexpr unsigned int am3 = 2;
-constexpr unsigned int am_tot = am0 + am1 + am2 + am3;
+constexpr auto am0 = 1u;
+constexpr auto am1 = 0u;
+constexpr auto am2 = 1u;
+constexpr auto am3 = 0u;
+constexpr auto am_tot = am0 + am1 + am2 + am3;
 int bool_test = 0;
 
 

@@ -1847,7 +1847,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
     struct default_operator_traits {
         typedef struct {} oper_params_type;
         static oper_params_type default_params() { return oper_params_type{}; }
-        static constexpr unsigned int nopers = 1;
+        static constexpr auto nopers = 1u;
         typedef struct _core_eval_type {
             template <typename ...params> static std::shared_ptr<_core_eval_type> instance(params...) { return nullptr; }
         } core_eval_type;
@@ -1870,13 +1870,13 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       /// Cartesian coordinates of the origin with respect to which the dipole moment is defined
       typedef std::array<double, 3> oper_params_type;
       static oper_params_type default_params() { return oper_params_type{{0.0,0.0,0.0}}; }
-      static constexpr unsigned int nopers = 4; //!< overlap + 3 dipole components
+      static constexpr auto nopers = 4u; //!< overlap + 3 dipole components
   };
   template <> struct operator_traits<Operator::emultipole2> : public operator_traits<Operator::emultipole1> {
-      static constexpr unsigned int nopers = operator_traits<Operator::emultipole1>::nopers + 6; //!< overlap + 3 dipoles + 6 quadrupoles
+      static constexpr auto nopers = operator_traits<Operator::emultipole1>::nopers + 6; //!< overlap + 3 dipoles + 6 quadrupoles
   };
   template <> struct operator_traits<Operator::emultipole3> : public operator_traits<Operator::emultipole1> {
-      static constexpr unsigned int nopers = operator_traits<Operator::emultipole2>::nopers + 10;
+      static constexpr auto nopers = operator_traits<Operator::emultipole2>::nopers + 10;
   };
 
   template <> struct operator_traits<Operator::coulomb> : public detail::default_operator_traits {
@@ -2194,7 +2194,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       /// \note result is stored in row-major order
       template <typename ... ShellPack>
       const real_t* compute(const libint2::Shell& first_shell, const ShellPack&... rest_of_shells) {
-        constexpr size_t nargs = 1 + sizeof...(rest_of_shells);
+        constexpr auto nargs = 1 + sizeof...(rest_of_shells);
         assert(nargs == braket_rank());
 
         std::array<std::reference_wrapper<const Shell>, nargs> shells{first_shell, rest_of_shells...};

@@ -82,7 +82,7 @@ namespace libint2 {
       // # of children varies:
       // 1. translational invariance makes num_functions - 1 children
       // 2. direct differentiation always makes at most 2 Gaussians
-      static constexpr unsigned int max_nchildren = using_trans_inv ? (IntType::num_bf - 1) : 2;
+      static constexpr auto max_nchildren = using_trans_inv ? (IntType::num_bf - 1) : 2u;
 
       using ParentType::Instance;
 

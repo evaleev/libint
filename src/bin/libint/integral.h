@@ -110,11 +110,11 @@ namespace libint2 {
       /// This is the real type of basis functions
       typedef typename BraSetType::bfs_type BasisFunctionType;
       /// The number of particles
-      static constexpr int num_particles = BraSetType::num_particles;
+      static constexpr auto num_particles = BraSetType::num_particles;
       static_assert(BraSetType::num_particles == KetSetType::num_particles,
                     "number of particles in bra and ket must be same");
       /// The total number of basis functions
-      static constexpr int num_bf = BraSetType::num_bf + KetSetType::num_bf;
+      static constexpr auto num_bf = BraSetType::num_bf + KetSetType::num_bf;
 
       /** No constructors are public since this is a singleton-like quantity.
           Instead, access is provided through Instance().

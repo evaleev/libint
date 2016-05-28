@@ -43,9 +43,9 @@ namespace libint2 {
     /// The iterator through ArrayBraket
     typedef ArrayBraket<typename BFS::iter_type,NP> iter_type;
     /// The total # of particles
-    static constexpr int num_particles = NP;
+    static constexpr auto num_particles = NP;
     /// The total # of basis functions = # of particles (since 1 bf / particle)
-    static constexpr int num_bf = NP;
+    static constexpr auto num_bf = NP;
     
     typedef BFS bfs_type;
     typedef bfs_type& bfs_ref;

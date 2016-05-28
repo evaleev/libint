@@ -49,10 +49,10 @@ namespace libint2 {
             bool origin_dependent = false>
     class OperatorProperties {
     public:
-      static constexpr unsigned int np = NP;
-      static constexpr bool multiplicative = multi;
-      static constexpr PermutationalSymmetry::type psymm = psymmetry;
-      static constexpr bool odep = origin_dependent;
+      static constexpr auto np = NP;
+      static constexpr auto multiplicative = multi;
+      static constexpr auto psymm = psymmetry;
+      static constexpr auto odep = origin_dependent;
     };
 
   /** OperSet is the base class for all (sets of) operators.
