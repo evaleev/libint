@@ -231,36 +231,42 @@ namespace libint2 {
         for (int p = 0; p != IntType::num_particles; ++p) {
           if (p != trans_inv_part || trans_inv_where != InBra) {
             F a(bra->member(p, 0));
-            F da(a);
-            da.deriv().inc(dir);
-            bra->set_member(da, p, 0);
-            auto int_da = this->add_child(IntType::Instance(*bra, *ket, aux, oper));
-            bra->set_member(a, p, 0);
-            if (is_simple()) {
-              std::ostringstream oss;
-              if (term_count == 0)
-                expr_ = Scalar(-1) * int_da;
-              else
-                expr_ -= int_da;
-              ++term_count;
-              nflops_ += 1;
+            if (not a.is_unit()) {
+              F da(a);
+              da.deriv().inc(dir);
+              bra->set_member(da, p, 0);
+              auto int_da =
+                  this->add_child(IntType::Instance(*bra, *ket, aux, oper));
+              bra->set_member(a, p, 0);
+              if (is_simple()) {
+                std::ostringstream oss;
+                if (term_count == 0)
+                  expr_ = Scalar(-1) * int_da;
+                else
+                  expr_ -= int_da;
+                ++term_count;
+                nflops_ += 1;
+              }
             }
           }
           if (p != trans_inv_part || trans_inv_where != InKet) {
             F a(ket->member(p, 0));
-            F da(a);
-            da.deriv().inc(dir);
-            ket->set_member(da, p, 0);
-            auto int_da = this->add_child(IntType::Instance(*bra, *ket, aux, oper));
-            ket->set_member(a, p, 0);
-            if (is_simple()) {
-              std::ostringstream oss;
-              if (term_count == 0)
-                expr_ = Scalar(-1) * int_da;
-              else
-                expr_ -= int_da;
-              ++term_count;
-              nflops_ += 1;
+            if (not a.is_unit()) {
+              F da(a);
+              da.deriv().inc(dir);
+              ket->set_member(da, p, 0);
+              auto int_da =
+                  this->add_child(IntType::Instance(*bra, *ket, aux, oper));
+              ket->set_member(a, p, 0);
+              if (is_simple()) {
+                std::ostringstream oss;
+                if (term_count == 0)
+                  expr_ = Scalar(-1) * int_da;
+                else
+                  expr_ -= int_da;
+                ++term_count;
+                nflops_ += 1;
+              }
             }
           }
         }
