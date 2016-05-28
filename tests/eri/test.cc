@@ -306,82 +306,10 @@ void test_4eri(unsigned int deriv_order,
 
                     //
                     // extract Libint integrals
-                    // for derivative integrals this involves
-                    // using translational invariance to reconstruct
                     //
                     std::vector<LIBINT2_REALTYPE> new_eri;
-                    if (deriv_order == 0)
-                      new_eri.push_back( scale_target * inteval[0].targets[0][ijkl * veclen + v] );
-
-                    // derivatives w.r.t. center 2 skipped and must be reconstructed using the translational invariance
-                    if (deriv_order == 1) {
-                      for (unsigned int di = 0; di < nderiv; ++di) {
-                        LIBINT2_REALTYPE value;
-                        if (di<6)
-                          value = scale_target * inteval[0].targets[di][ijkl * veclen + v];
-                        else if (di>=9)
-                          value = scale_target * inteval[0].targets[di-3][ijkl * veclen + v];
-                        else // (di>=6 || di<=8)
-                          value = -scale_target * (inteval[0].targets[di-6][ijkl * veclen + v] +
-                              inteval[0].targets[di-3][ijkl * veclen + v] +
-                              inteval[0].targets[di][ijkl * veclen + v]);
-                        new_eri.push_back(value);
-                      }
-                    }
-
-                    // derivatives w.r.t. center 2 are skipped and must be reconstructed using the translational invariance
-                    if (deriv_order == 2) {
-                      const unsigned int NumCenters = 4;
-                      LIBINT2_REALTYPE libint_eri[3*(NumCenters-1)][3*(NumCenters-1)];
-                      for(unsigned int di=0,dij=0; di<3*(NumCenters-1); di++) {
-                        for(unsigned int dj=di; dj<3*(NumCenters-1); dj++, ++dij){
-                          const LIBINT2_REALTYPE value = scale_target * inteval[0].targets[dij][ijkl * veclen + v];
-                          libint_eri[di][dj] = value;
-                          libint_eri[dj][di] = value;
-                        }
-                      }
-
-                      for(unsigned int di=0; di<3*NumCenters; di++) {
-                        for(unsigned int dj=di; dj<3*NumCenters; dj++){
-
-                          const int ci = di/3;
-                          const int cj = dj/3;
-                          const int xyzi = di%3;
-                          const int xyzj = dj%3;
-
-                          LIBINT2_REALTYPE value = 0.0;
-
-                          // d2/dCidCj = d2/dAidAj + d2/dAidBj + d2/dAidDj + d2/dBidAj + d2/dBidBj + d2/dBidDj + d2/dDidAj + d2/dDidBj + d2/dDidDj
-                          if (ci == 2 && cj == 2) {
-                            value = libint_eri[xyzi][xyzj] + libint_eri[xyzi][xyzj+3] + libint_eri[xyzi][xyzj+6] +
-                                    libint_eri[xyzi+3][xyzj] + libint_eri[xyzi+3][xyzj+3] + libint_eri[xyzi+3][xyzj+6] +
-                                    libint_eri[xyzi+6][xyzj] + libint_eri[xyzi+6][xyzj+3] + libint_eri[xyzi+6][xyzj+6];
-                          }
-                          // d2/dCidDj = - d2/dAidDj - d2/dBidDj - -d2/dDidDj
-                          else if (ci == 2) {
-                            value = -libint_eri[xyzi][dj-3] - libint_eri[xyzi+3][dj-3] - libint_eri[xyzi+6][dj-3] ;
-                          }
-                          // d2/dXidCj = - d2/dXidAj - d2/dXidBj - -d2/dXidDj (X=A,B)
-                          else if (cj == 2) {
-                            value = -libint_eri[di][xyzj] - libint_eri[di][xyzj+3] - libint_eri[di][xyzj+6] ;
-                          }
-                          // d2/dDidDj
-                          else if (ci == 3) {
-                            value = libint_eri[di-3][dj-3];
-                          }
-                          // d2/dXidDj (X=A,B)
-                          else if (cj == 3) {
-                            value = libint_eri[di][dj-3];
-                          }
-                          // d2/dXidYj (X=A,B)
-                          else {
-                            value = libint_eri[di][dj];
-                          }
-
-                          new_eri.push_back(value);
-                        }
-                      }
-                    }
+                    for(auto d=0; d!=nderiv; ++d)
+                      new_eri.push_back( scale_target * inteval[0].targets[d][ijkl * veclen + v] );
 
                     //
                     // compare reference and libint integrals
@@ -638,62 +566,12 @@ void test_3eri(unsigned int deriv_order,
                   }
                 }
 
+                //
+                // extract Libint integrals
+                //
                 std::vector<LIBINT2_REALTYPE> new_eri;
-
-                if (deriv_order == 0)
-                  new_eri.push_back( scale_target * inteval[0].targets[0][ijk * veclen + v] );
-
-                // derivatives w.r.t. center 0 are skipped and must be reconstructed using the translational invariance
-                if (deriv_order == 1) {
-                  for (unsigned int di = 0; di < nderiv; ++di) {
-                    if (di>=3)
-                      new_eri.push_back( scale_target * inteval[0].targets[di-3][ijk * veclen + v] );
-                    else // (di<3)
-                      new_eri.push_back( -scale_target * (inteval[0].targets[di][ijk * veclen + v] +
-                                                          inteval[0].targets[di+3][ijk * veclen + v])
-                                                          );
-                  }
-                }
-
-                // derivatives w.r.t. center 0 are skipped and must be reconstructed using the translational invariance
-                if (deriv_order == 2) {
-                  const unsigned int NumCenters = 3;
-                  LIBINT2_REALTYPE libint_eri[3*(NumCenters-1)][3*(NumCenters-1)];
-                  for(unsigned int di=0,dij=0; di<3*(NumCenters-1); di++) {
-                    for(unsigned int dj=di; dj<3*(NumCenters-1); dj++, ++dij){
-                      const LIBINT2_REALTYPE value = scale_target * inteval[0].targets[dij][ijk * veclen + v];
-                      libint_eri[di][dj] = value;
-                      libint_eri[dj][di] = value;
-                    }
-                  }
-
-                  for(unsigned int di=0; di<3*NumCenters; di++) {
-                    for(unsigned int dj=di; dj<3*NumCenters; dj++){
-
-                      const int ci = di/3;
-                      const int cj = dj/3;
-                      const int xyzi = di%3;
-                      const int xyzj = dj%3;
-
-                      LIBINT2_REALTYPE value = 0.0;
-
-                      // d2/dAidAj = d2/dBidBj + d2/dBidCj + d2/dCidBj + d2/dCidCj
-                      if (ci == 0 && cj == 0) {
-                        value = libint_eri[xyzi][xyzj] + libint_eri[xyzi][3+xyzj] + libint_eri[xyzi+3][xyzj] + libint_eri[3+xyzi][3+xyzj];
-                      }
-                      // d2/dAidXj = - d2/dBidXj - -d2/dCidXj
-                      else if (ci == 0) {
-                        value = -libint_eri[xyzi][dj-3] - libint_eri[3+xyzi][dj-3];
-                      }
-                      // rest
-                      else {
-                        value = libint_eri[di-3][dj-3];
-                      }
-
-                      new_eri.push_back(value);
-                    }
-                  }
-                }
+                for(auto d=0; d!=nderiv; ++d)
+                  new_eri.push_back( scale_target * inteval[0].targets[d][ijk * veclen + v] );
 
                 for (unsigned int di = 0; di < nderiv; ++di) {
                   const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);
@@ -900,60 +778,12 @@ void test_2eri(unsigned int deriv_order,
                   }
                 }
 
+                //
+                // extract Libint integrals
+                //
                 std::vector<LIBINT2_REALTYPE> new_eri;
-
-                if (deriv_order == 0)
-                  new_eri.push_back(scale_target * inteval[0].targets[0][ij * veclen + v]);
-
-                // derivatives w.r.t. center 0 are skipped and must be reconstructed using the translational invariance
-                if (deriv_order == 1) {
-                  for (unsigned int di = 0; di < nderiv; ++di) {
-                    if (di>=3)
-                      new_eri.push_back(scale_target * inteval[0].targets[di-3][ij * veclen + v]);
-                    else // (di<3)
-                      new_eri.push_back(-scale_target * inteval[0].targets[di][ij * veclen + v]);
-                  }
-                }
-
-                // derivatives w.r.t. center 0 are skipped and must be reconstructed using the translational invariance
-                if (deriv_order == 2) {
-
-                  LIBINT2_REALTYPE libint_eri[3][3];
-                  for(int di=0,dij=0; di<3; di++) {
-                    for(int dj=di; dj<3; dj++, ++dij){
-                      const LIBINT2_REALTYPE value = scale_target * inteval[0].targets[dij][ij * veclen + v];
-                      libint_eri[di][dj] = value;
-                      libint_eri[dj][di] = value;
-                    }
-                  }
-
-                  for(int di=0; di<6; di++) {
-                    for(int dj=di; dj<6; dj++){
-
-                      const int ci = di/3;
-                      const int cj = dj/3;
-                      const int xyzi = di%3;
-                      const int xyzj = dj%3;
-
-                      LIBINT2_REALTYPE value = 0.0;
-
-                      // d2/dAidAj
-                      if (ci == 0 && cj == 0) {
-                        value = libint_eri[xyzi][xyzj];
-                      }
-                      // d2/dAidBj
-                      else if (ci == 0) {
-                        value = -libint_eri[xyzi][xyzj];
-                      }
-                      // rest
-                      else {
-                        value = libint_eri[xyzi][xyzj];
-                      }
-
-                      new_eri.push_back(value);
-                    }
-                  }
-                }
+                for(auto d=0; d!=nderiv; ++d)
+                  new_eri.push_back( scale_target * inteval[0].targets[d][ij * veclen + v] );
 
                 for (unsigned int di = 0; di < nderiv; ++di) {
                   const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);

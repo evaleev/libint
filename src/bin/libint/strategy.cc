@@ -50,11 +50,6 @@ namespace libint2 {
 # define LIBINT_SHELLQUARTET_STRATEGY LIBINT_SHELLQUARTET_STRATEGY_0B0D
 #endif
 
-  constexpr auto trans_inv_1body_part_to_skip = 0;
-  constexpr auto trans_inv_1body_where_to_skip = InKet;
-  constexpr auto trans_inv_2body_part_to_skip = 1;
-  constexpr auto trans_inv_2body_where_to_skip = InKet;
-
   //
   // Particle 0 is most significant for storage, hence want to perform HRR on it last,
   // when functions of particle 1 are ready. This will maximize the length of the loops
@@ -329,8 +324,8 @@ namespace libint2 {
     };
   template <> struct MasterStrategy<Kinetic_1_1_int> {
       typedef mpl::list<
-        CR_DerivGauss<Kinetic_1_1_int,0,InBra,trans_inv_1body_part_to_skip,trans_inv_1body_where_to_skip>,
-        CR_DerivGauss<Kinetic_1_1_int,0,InKet,trans_inv_1body_part_to_skip,trans_inv_1body_where_to_skip>,
+        CR_DerivGauss<Kinetic_1_1_int,0,InBra,trinvskip1_part,trinvskip1_where>,
+        CR_DerivGauss<Kinetic_1_1_int,0,InKet,trinvskip1_part,trinvskip1_where>,
         CR_XYZ_1_1<CGF,KineticOper>
       > value;
     };
@@ -356,8 +351,8 @@ namespace libint2 {
     };
   template <> struct MasterStrategy<CMultipole_1_1_int> {
       typedef mpl::list<
-        CR_DerivGauss<CMultipole_1_1_int,0,InBra,trans_inv_1body_part_to_skip,trans_inv_1body_where_to_skip>,
-        CR_DerivGauss<CMultipole_1_1_int,0,InKet,trans_inv_1body_part_to_skip,trans_inv_1body_where_to_skip>,
+        CR_DerivGauss<CMultipole_1_1_int,0,InBra,trinvskip1_part,trinvskip1_where>,
+        CR_DerivGauss<CMultipole_1_1_int,0,InKet,trinvskip1_part,trinvskip1_where>,
         CR_XYZ_1_1<CGF,CartesianMultipoleOper<3u>>
       > value;
     };

@@ -943,11 +943,8 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           ////////////
           // loop over unique derivative index combinations
           ////////////
-          // skip 1 center -- all derivatives with respect to that center can be
-          // recovered using translational invariance conditions
-          // which center to skip? -> A = 0, B = 1, C = 2, D = 3
-          const unsigned int center_to_skip = 2;
-          DerivIndexIterator<3> diter(deriv_level);
+          // NB translational invariance is now handled by CR_DerivGauss
+          DerivIndexIterator<4> diter(deriv_level);
           std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
           bool last_deriv = false;
           do {
@@ -956,17 +953,13 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             CGShell c(lc);
             CGShell d(ld);
 
-            unsigned int center = 0;
             for(unsigned int i=0; i<4; ++i) {
-              if (i == center_to_skip)
-                continue;
               for(unsigned int xyz=0; xyz<3; ++xyz) {
-                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 2) c.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 3) d.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (i == 0) a.deriv().inc(xyz, diter.value(3 * i + xyz));
+                if (i == 1) b.deriv().inc(xyz, diter.value(3 * i + xyz));
+                if (i == 2) c.deriv().inc(xyz, diter.value(3 * i + xyz));
+                if (i == 3) d.deriv().inc(xyz, diter.value(3 * i + xyz));
               }
-              ++center;
             }
 
             SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(a,b,c,d,mType(0u));
@@ -1129,11 +1122,8 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           ////////////
           // loop over unique derivative index combinations
           ////////////
-          // skip 1 center -- all derivatives with respect to that center can be
-          // recovered using translational invariance conditions
-          // which center to skip? -> the non-dummy one in bra -> A = 0, B = 1
-          const unsigned int center_to_skip = (dummy_center == 0) ? 1 : 0;
-          DerivIndexIterator<2> diter(deriv_level);
+          // NB translational invariance is now handled by CR_DerivGauss
+          DerivIndexIterator<3> diter(deriv_level);
           std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
           bool last_deriv = false;
           do {
@@ -1148,7 +1138,7 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
             unsigned int center = 0;
             for(unsigned int i=0; i<4; ++i) {
-              if (i == center_to_skip || i == dummy_center)
+              if (i == dummy_center)
                 continue;
               for(unsigned int xyz=0; xyz<3; ++xyz) {
                 if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
@@ -1200,6 +1190,8 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             label += "eri3";
             label += abcd_label;
           }
+
+          std::cout << "working on " << label << " ... "; std::cout.flush();
 
           std::string prefix(cparams->source_directory());
           std::deque<std::string> decl_filenames;
@@ -1313,11 +1305,8 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           ////////////
           // loop over unique derivative index combinations
           ////////////
-          // skip 1 center -- all derivatives with respect to that center can be
-          // recovered using translational invariance conditions
-          // which center to skip? -> the non-dummy one in bra -> A = 0, B = 1
-          const unsigned int center_to_skip = (dummy_center1 == 0) ? 1 : 0;
-          DerivIndexIterator<1> diter(deriv_level);
+          // NB translational invariance is now handled by CR_DerivGauss
+          DerivIndexIterator<2> diter(deriv_level);
           std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
           bool last_deriv = false;
           do {
@@ -1334,7 +1323,7 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
             unsigned int center = 0;
             for(unsigned int i=0; i<4; ++i) {
-              if (i == center_to_skip || i == dummy_center1 || i == dummy_center2)
+              if (i == dummy_center1 || i == dummy_center2)
                 continue;
               for(unsigned int xyz=0; xyz<3; ++xyz) {
                 if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
@@ -1388,6 +1377,8 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             label += "eri2";
             label += abcd_label;
           }
+
+          std::cout << "working on " << label << " ... "; std::cout.flush();
 
           std::string prefix(cparams->source_directory());
           std::deque<std::string> decl_filenames;
