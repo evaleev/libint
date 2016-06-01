@@ -81,10 +81,10 @@ compute_1body_ints(const BasisSet& obs,
 #if LIBINT2_DERIV_ONEBODY_ORDER
 template <Operator obtype>
 std::vector<Matrix>
-compute_1body_deriv_ints(unsigned deriv_order,
+compute_1body_ints_deriv(unsigned deriv_order,
                          const BasisSet& obs,
                          const std::vector<Atom>& atoms);
-#endif
+#endif // LIBINT2_DERIV_ONEBODY_ORDER
 
 template <libint2::Operator Kernel = libint2::Operator::coulomb>
 Matrix compute_schwartz_ints(const BasisSet& bs1,
@@ -120,6 +120,17 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                                   bool D_is_sheldiagonal = false, // set D_is_shelldiagonal if doing SOAD
                                   double precision = std::numeric_limits<double>::epsilon() // discard contributions smaller than this
                                  );
+
+#if LIBINT2_DERIV_ERI_ORDER
+std::vector<Matrix>
+compute_2body_fock_deriv(unsigned deriv_order,
+                         const BasisSet& obs,
+                         const std::vector<Atom>& atoms,
+                         const Matrix& D,
+                         double precision = std::numeric_limits<double>::epsilon(), // discard contributions smaller than this
+                         const Matrix& Schwartz = Matrix() // K_ij = sqrt(||(ij|ij)||_\infty); if empty, do not Schwartz screen
+                        );
+#endif // LIBINT2_DERIV_ERI_ORDER
 
 // returns {X,X^{-1},S_condition_number_after_conditioning}, where
 // X is the generalized square-root-inverse such that X.transpose() * S * X = I
@@ -454,15 +465,15 @@ int main(int argc, char *argv[]) {
     std::cout << "** equadrupole = ";std::copy(qu.begin(), qu.end(), std::ostream_iterator<double>(std::cout, " ")); std::cout << std::endl;
 
 #if LIBINT2_DERIV_ONEBODY_ORDER
-    // compute forces
+    // compute 1-e forces
     {
       Matrix F1 = Matrix::Zero(atoms.size(), 3);
       Matrix F_Pulay = Matrix::Zero(atoms.size(), 3);
       //////////
       // one-body contributions to the forces
       //////////
-      auto T1 = compute_1body_deriv_ints<Operator::kinetic>(1, obs, atoms);
-      auto V1 = compute_1body_deriv_ints<Operator::nuclear>(1, obs, atoms);
+      auto T1 = compute_1body_ints_deriv<Operator::kinetic>(1, obs, atoms);
+      auto V1 = compute_1body_ints_deriv<Operator::nuclear>(1, obs, atoms);
       for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
         for(auto xyz=0; xyz!=3; ++xyz, ++i) {
           auto force = 2 * (T1[i]+V1[i]).cwiseProduct(D).sum();
@@ -476,7 +487,7 @@ int main(int argc, char *argv[]) {
       // orbital energy density
       DiagonalMatrix evals_occ(evals.topRows(ndocc));
       Matrix W = C_occ * evals_occ * C_occ.transpose();
-      auto S1 = compute_1body_deriv_ints<Operator::overlap>(1, obs, atoms);
+      auto S1 = compute_1body_ints_deriv<Operator::overlap>(1, obs, atoms);
       for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
         for(auto xyz=0; xyz!=3; ++xyz, ++i) {
           auto force = 2 * S1[i].cwiseProduct(W).sum();
@@ -493,6 +504,30 @@ int main(int argc, char *argv[]) {
       for(int atom=0; atom!=atoms.size(); ++atom)
         for(int xyz=0; xyz!=3; ++xyz)
           std::cout << F_Pulay(atom,xyz) << " ";
+      std::cout << std::endl;
+    }
+#endif // LIBINT2_DERIV_ONEBODY_ORDER
+
+#if LIBINT2_DERIV_ERI_ORDER
+    // compute 2-e forces
+    {
+      Matrix F2 = Matrix::Zero(atoms.size(), 3);
+
+      //////////
+      // two-body contributions to the forces
+      //////////
+      auto G1 = compute_2body_fock_deriv(1, obs, atoms, D);
+      for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
+        for(auto xyz=0; xyz!=3; ++xyz, ++i) {
+          auto force = G1[i].cwiseProduct(D).sum();
+          F2(atom, xyz) += force;
+        }
+      }
+
+      std::cout << "** 2-body forces = ";
+      for(int atom=0; atom!=atoms.size(); ++atom)
+        for(int xyz=0; xyz!=3; ++xyz)
+          std::cout << F2(atom,xyz) << " ";
       std::cout << std::endl;
     }
 #endif
@@ -681,7 +716,7 @@ compute_1body_ints(const BasisSet& obs,
 #if LIBINT2_DERIV_ONEBODY_ORDER
 template <Operator obtype>
 std::vector<Matrix>
-compute_1body_deriv_ints(unsigned deriv_order,
+compute_1body_ints_deriv(unsigned deriv_order,
                          const BasisSet& obs,
                          const std::vector<Atom>& atoms)
 {
@@ -1247,6 +1282,211 @@ Matrix compute_2body_fock(const BasisSet& obs,
 #endif
 
   Matrix GG = 0.5 * (G[0] + G[0].transpose());
+
+  std::cout << "# of integrals = " << num_ints_computed << std::endl;
+
+  // symmetrize the result and return
+  return GG;
+}
+
+#if LIBINT2_DERIV_ERI_ORDER
+std::vector<Matrix>
+compute_2body_fock_deriv(unsigned deriv_order,
+                         const BasisSet& obs,
+                         const std::vector<Atom>& atoms,
+                         const Matrix& D,
+                         double precision,
+                         const Matrix& Schwartz) {
+
+  const auto n = obs.nbf();
+  const auto nshells = obs.size();
+  assert(deriv_order == 1);
+  const auto nderiv = atoms.size() * 3;
+  using libint2::nthreads;
+  std::vector<Matrix> G(nthreads * nderiv, Matrix::Zero(n,n));
+
+  const auto do_schwartz_screen = Schwartz.cols() != 0 && Schwartz.rows() != 0;
+  Matrix D_shblk_norm; // matrix of infty-norms of shell blocks
+  if (do_schwartz_screen) {
+    D_shblk_norm = compute_shellblock_norm(obs, D);
+  }
+
+  auto fock_precision = precision;
+  // engine precision controls primitive truncation, assume worst-case scenario (all primitive combinations add up constructively)
+  auto max_nprim = obs.max_nprim();
+  auto max_nprim4 = max_nprim*max_nprim*max_nprim*max_nprim;
+  auto engine_precision = std::min(fock_precision / D_shblk_norm.maxCoeff(),
+                                   std::numeric_limits<double>::epsilon()) / max_nprim4;
+
+  // construct the 2-electron repulsion integrals engine pool
+  using libint2::Engine;
+  std::vector<Engine> engines(nthreads);
+  engines[0] = Engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), deriv_order);
+  engines[0].set_precision(engine_precision); // shellset-dependent precision control will likely break positive definiteness
+                                       // stick with this simple recipe
+  std::cout << "compute_2body_fock:precision = " << precision << std::endl;
+  std::cout << "Engine::precision = " << engines[0].precision() << std::endl;
+  for(size_t i=1; i!=nthreads; ++i) {
+    engines[i] = engines[0];
+  }
+  std::atomic<size_t> num_ints_computed{0};
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+  std::vector<libint2::Timers<1>> timers(nthreads);
+#endif
+
+  auto shell2bf = obs.shell2bf();
+  auto shell2atom = obs.shell2atom(atoms);
+
+  auto lambda = [&] (int thread_id) {
+
+    auto& engine = engines[thread_id];
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+    auto& timer = timers[thread_id];
+    timer.clear();
+    timer.set_now_overhead(25);
+#endif
+
+    size_t shell_atoms[4];
+
+    // loop over permutationally-unique set of shells
+    for(auto s1=0l, s1234=0l; s1!=nshells; ++s1) {
+
+      auto bf1_first = shell2bf[s1]; // first basis function in this shell
+      auto n1 = obs[s1].size();// number of basis functions in this shell
+      shell_atoms[0] = shell2atom[s1];
+
+      for(const auto& s2: obs_shellpair_list[s1]) {
+
+        auto bf2_first = shell2bf[s2];
+        auto n2 = obs[s2].size();
+        shell_atoms[1] = shell2atom[s2];
+
+        const auto Dnorm12 = do_schwartz_screen ? D_shblk_norm(s1,s2) : 0.;
+
+        for(auto s3=0; s3<=s1; ++s3) {
+
+          auto bf3_first = shell2bf[s3];
+          auto n3 = obs[s3].size();
+          shell_atoms[2] = shell2atom[s3];
+
+          const auto Dnorm123 = do_schwartz_screen ? std::max(D_shblk_norm(s1,s3),
+                                                              std::max(D_shblk_norm(s2,s3),Dnorm12)
+                                                             )
+                                                   : 0.;
+
+          const auto s4_max = (s1 == s3) ? s2 : s3;
+          for(const auto& s4: obs_shellpair_list[s3]) {
+            if (s4 > s4_max) break; // for each s3, s4 are stored in monotonically increasing order
+
+            if ((s1234++) % nthreads != thread_id)
+              continue;
+
+            const auto Dnorm1234 = do_schwartz_screen ? std::max(D_shblk_norm(s1,s4),
+                                                                 std::max(D_shblk_norm(s2,s4),
+                                                                          std::max(D_shblk_norm(s3,s4),Dnorm123)
+                                                                         )
+                                                                )
+                                                      : 0.;
+
+            if (do_schwartz_screen && Dnorm1234 * Schwartz(s1,s2) * Schwartz(s3,s4) < fock_precision)
+              continue;
+
+            auto bf4_first = shell2bf[s4];
+            auto n4 = obs[s4].size();
+            shell_atoms[3] = shell2atom[s3];
+
+            const auto n1234 = n1*n2*n3*n4;
+            num_ints_computed += 12 * n1234;
+
+            // compute the permutational degeneracy (i.e. # of equivalents) of the given shell set
+            auto s12_deg = (s1 == s2) ? 1.0 : 2.0;
+            auto s34_deg = (s3 == s4) ? 1.0 : 2.0;
+            auto s12_34_deg = (s1 == s3) ? (s2 == s4 ? 1.0 : 2.0) : 2.0;
+            auto s1234_deg = s12_deg * s34_deg * s12_34_deg;
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+            timer.start(0);
+#endif
+
+            const auto* buf = engine.compute2<Operator::coulomb,BraKet::xx_xx,1>(obs[s1], obs[s2], obs[s3], obs[s4]);
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+            timer.stop(0);
+#endif
+
+            // 1) each shell set of integrals contributes up to 6 shell sets of the Fock matrix:
+            //    F(a,b) += (ab|cd) * D(c,d)
+            //    F(c,d) += (ab|cd) * D(a,b)
+            //    F(b,d) -= 1/4 * (ab|cd) * D(a,c)
+            //    F(b,c) -= 1/4 * (ab|cd) * D(a,d)
+            //    F(a,c) -= 1/4 * (ab|cd) * D(b,d)
+            //    F(a,d) -= 1/4 * (ab|cd) * D(b,c)
+            // 2) each permutationally-unique integral (shell set) must be scaled by its degeneracy,
+            //    i.e. the number of the integrals/sets equivalent to it
+            // 3) the end result must be symmetrized
+            for(auto d=0; d!=12; ++d, buf+=n1234) {
+              const auto a = d/3;
+              const auto xyz = d%3;
+
+              auto& g = G[thread_id * nderiv + shell_atoms[a] * 3 + xyz];
+
+            for(auto f1=0, f1234=0; f1!=n1; ++f1) {
+              const auto bf1 = f1 + bf1_first;
+              for(auto f2=0; f2!=n2; ++f2) {
+                const auto bf2 = f2 + bf2_first;
+                for(auto f3=0; f3!=n3; ++f3) {
+                  const auto bf3 = f3 + bf3_first;
+                  for(auto f4=0; f4!=n4; ++f4, ++f1234) {
+                    const auto bf4 = f4 + bf4_first;
+
+                    const auto value = buf[f1234];
+
+                    const auto value_scal_by_deg = value * s1234_deg;
+
+                    g(bf1,bf2) += D(bf3,bf4) * value_scal_by_deg;
+                    g(bf3,bf4) += D(bf1,bf2) * value_scal_by_deg;
+                    g(bf1,bf3) -= 0.25 * D(bf2,bf4) * value_scal_by_deg;
+                    g(bf2,bf4) -= 0.25 * D(bf1,bf3) * value_scal_by_deg;
+                    g(bf1,bf4) -= 0.25 * D(bf2,bf3) * value_scal_by_deg;
+                    g(bf2,bf3) -= 0.25 * D(bf1,bf4) * value_scal_by_deg;
+                  }
+                }
+              }
+            }
+            } // d \in [0,12)
+
+          }
+        }
+      }
+    }
+
+  }; // end of lambda
+
+  libint2::parallel_do(lambda);
+
+  // accumulate contributions from all threads
+  for(size_t t=1; t!=nthreads; ++t) {
+    for(auto d=0; d!=nderiv; ++d) {
+      G[d] += G[t*nderiv + d];
+    }
+  }
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+  double time_for_ints = 0.0;
+  for(auto& t: timers) {
+    time_for_ints += t.read(0);
+  }
+  std::cout << "time for integrals = " << time_for_ints << std::endl;
+  for(int t=0; t!=nthreads; ++t)
+    engines[t].print_timers();
+#endif
+
+  std::vector<Matrix> GG(nderiv);
+  for(auto d=0; d!=nderiv; ++d) {
+    GG[d] = 0.5 * (G[d] + G[d].transpose());
+  }
 
   std::cout << "# of integrals = " << num_ints_computed << std::endl;
 

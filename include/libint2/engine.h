@@ -2015,7 +2015,6 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       ///               for oper == Operator::nuclear. For most values of \c oper this is not needed.
       ///               \sa Engine::operator_traits
       /// \param braket a value of BraKet type
-      /// \warning currently derivative integrals are not supported
       /// \warning currently only one-contraction Shell objects are supported; i.e. generally-contracted Shells are not yet supported
       template <typename Params = empty_pod>
       Engine(Operator oper,
@@ -2049,6 +2048,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         lmax_(other.lmax_),
         hard_lmax_(other.hard_lmax_),
         deriv_order_(other.deriv_order_),
+        nshellsets_(other.nshellsets_),
         precision_(other.precision_), ln_precision_(other.ln_precision_),
         core_eval_pack_(std::move(other.core_eval_pack_)),
         params_(std::move(other.params_)),
@@ -2067,6 +2067,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         stack_size_(other.stack_size_),
         lmax_(other.lmax_),
         deriv_order_(other.deriv_order_),
+        nshellsets_(other.nshellsets_),
         precision_(other.precision_), ln_precision_(other.ln_precision_),
         core_eval_pack_(other.core_eval_pack_),
         params_(other.params_),
@@ -2090,6 +2091,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         lmax_ = other.lmax_;
         hard_lmax_ = other.hard_lmax_;
         deriv_order_ = other.deriv_order_;
+        nshellsets_ = other.nshellsets_;
         precision_ = other.precision_;
         ln_precision_ = other.ln_precision_;
         core_eval_pack_ = std::move(other.core_eval_pack_);
@@ -2111,6 +2113,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         stack_size_ = other.stack_size_;
         lmax_ = other.lmax_;
         deriv_order_ = other.deriv_order_;
+        nshellsets_ = other.nshellsets_;
         precision_ = other.precision_;
         ln_precision_ = other.ln_precision_;
         core_eval_pack_ = other.core_eval_pack_;
@@ -2165,29 +2168,6 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
         const unsigned int num_operator_geometrical_derivatives = (oper_ == Operator::nuclear) ? this->nparams() : 0;
         const auto ncenters = braket_rank() + num_operator_geometrical_derivatives;
         return nopers() * num_geometrical_derivatives(ncenters,deriv_order_);
-      }
-
-      /// Given the Cartesian geometric derivative index that refers to center set
-      /// (0...n-1) with one center omitted compute the derivative index referring
-      /// to the full center set
-      /// \param deriv_idx index of the derivative referring to the set with center \c omitted_center omitted
-      /// \param deriv_order order of the geometric derivative
-      /// \param ncenters number of centers in the full set
-      /// \param omitted_center the omitted center, must be less than \c ncenters.
-      /// \return the index of the derivative referring to full set
-      static unsigned int to_target_deriv_index(unsigned int deriv_idx,
-                                                unsigned int deriv_order,
-                                                unsigned int ncenters,
-                                                unsigned int omitted_center) {
-        auto ncenters_reduced = ncenters - 1;
-        auto nderiv_1d = 3 * ncenters_reduced;
-        assert(deriv_idx < num_geometrical_derivatives(ncenters_reduced,deriv_order));
-        switch (deriv_order) {
-          case 1: return deriv_idx >= omitted_center*3 ? deriv_idx+3 : deriv_idx;
-          default: assert(deriv_order<=1); // not implemented, won't be needed when Libint computes all derivatives
-        }
-        assert(false); // unreachable
-        return 0;
       }
 
       /// computes shell set of integrals
@@ -2253,8 +2233,6 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
         auto nparam_sets = nparams();
 
-        // how many shell sets will be returned?
-        auto num_shellsets = nshellsets();
         // Libint computes derivatives with respect to basis functions only, must
         // must use translational invariance to recover derivatives w.r.t. operator degrees of freedom
         const auto geometry_independent_operator = oper_ == Operator::overlap || oper_ == Operator::kinetic;
@@ -2482,7 +2460,8 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       size_t stack_size_;  // amount allocated by libint2_init_xxx in primdata_[0].stack
       int lmax_;
       int hard_lmax_;      // max L supported by library for this operator type + 1
-      size_t deriv_order_;
+      int deriv_order_;
+      int nshellsets_;     // updated by reset_scratch
       real_t precision_;
       real_t ln_precision_;
 
@@ -2503,8 +2482,9 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       buildfnptr_t* buildfnptrs_;
 
       void reset_scratch() {
+        nshellsets_ = nshellsets();
         const auto ncart_max = (lmax_+1)*(lmax_+2)/2;
-        const auto target_shellset_size = nshellsets() * std::pow(ncart_max, braket_rank());
+        const auto target_shellset_size = nshellsets_ * std::pow(ncart_max, braket_rank());
         // need to be able to hold 2 sets of target shellsets: the worst case occurs when dealing with
         // 1-body Coulomb ints derivatives ... have 2+natom derivative sets that are stored in scratch
         // then need to transform to solids. To avoid copying back and forth make sure that there is enough
@@ -2961,9 +2941,6 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
     assert(tket1.contr[0].l <= lmax_);
     assert(tket2.contr[0].l <= lmax_);
 
-    // derivatives not supported for now
-    assert(deriv_order == 0);
-
 #if LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD // standard angular momentum ordering
     auto swap_bra = (tbra1.contr[0].l < tbra2.contr[0].l);
     auto swap_ket = (tket1.contr[0].l < tket2.contr[0].l);
@@ -3375,9 +3352,13 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
       return primdata_[0].stack;
     }
 
+    // point to (the beginning of) the target ints
     real_t* result = nullptr;
 
-    if (lmax == 0) { // (ss|ss)
+    // compute directly (ss|ss)
+    const auto compute_directly = lmax==0 && deriv_order==0;
+
+    if (compute_directly) {
 #ifdef LIBINT2_ENGINE_TIMERS
       timers.start(1);
 #endif
@@ -3394,8 +3375,8 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
 #endif
 
       result = primdata_[0].targets[0];
-    }
-    else { // not (ss|ss)
+    } // compute directly
+    else { // call libint
 #ifdef LIBINT2_ENGINE_TIMERS
 #    ifdef LIBINT2_PROFILE
       const auto t1_hrr_start = primdata_[0].timers->read(0);
@@ -3404,22 +3385,8 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
       timers.start(1);
 #endif
 
-#ifdef LIBINT2_SUPPORT_ERI
-      if (braket == BraKet::xx_xx)
-        LIBINT2_PREFIXED_NAME(libint2_build_eri)[bra1.contr[0].l][bra2.contr[0].l][ket1.contr[0].l][ket2.contr[0].l](&primdata_[0]);
-      else
-#endif
-#ifdef LIBINT2_SUPPORT_ERI3
-      if (braket == BraKet::xs_xx)
-        LIBINT2_PREFIXED_NAME(libint2_build_3eri)[bra1.contr[0].l][ket1.contr[0].l][ket2.contr[0].l](&primdata_[0]);
-      else
-#endif
-#ifdef LIBINT2_SUPPORT_ERI2
-      if (braket == BraKet::xs_xs)
-        LIBINT2_PREFIXED_NAME(libint2_build_2eri)[bra1.contr[0].l][ket1.contr[0].l](&primdata_[0]);
-      else
-#endif
-        assert(false); // unreachable
+      buildfnptrs_[((bra1.contr[0].l*hard_lmax_ + bra2.contr[0].l)*hard_lmax_ + ket1.contr[0].l)*hard_lmax_ + ket2.contr[0].l](&primdata_[0]);
+      result = primdata_[0].targets[0];
 
 #ifdef LIBINT2_ENGINE_TIMERS
       const auto t1 = timers.stop(1);
@@ -3432,8 +3399,6 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
 #    endif
 #  endif
 #endif
-
-      result = primdata_[0].targets[0];
 
 #ifdef LIBINT2_ENGINE_TIMERS
       timers.start(2);
@@ -3465,70 +3430,82 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
         const auto nc1_tgt = tket1.size();
         const auto nc2_tgt = tket2.size();
         const auto ncol_tgt = nc1_tgt * nc2_tgt;
+        const auto n_tgt = nr1_tgt * nr2_tgt * ncol_tgt;
 
-        // transform to solid harmonics first, then unpermute, if necessary
-        auto mainbuf = result;
-        auto scratchbuf = &scratch_[0];
-        if (bra1.contr[0].pure) {
-          libint2::solidharmonics::transform_first(bra1.contr[0].l, nr2_cart*ncol_cart,
-                                                   mainbuf, scratchbuf);
-          std::swap(mainbuf, scratchbuf);
-        }
-        if (bra2.contr[0].pure) {
-          libint2::solidharmonics::transform_inner(bra1.size(), bra2.contr[0].l, ncol_cart,
-                                                   mainbuf, scratchbuf);
-          std::swap(mainbuf, scratchbuf);
-        }
-        if (ket1.contr[0].pure) {
-          libint2::solidharmonics::transform_inner(nrow, ket1.contr[0].l, nc2_cart,
-                                                   mainbuf, scratchbuf);
-          std::swap(mainbuf, scratchbuf);
-        }
-        if (ket2.contr[0].pure) {
-          libint2::solidharmonics::transform_last(bra1.size()*bra2.size()*ket1.size(), ket2.contr[0].l,
-                                                  mainbuf, scratchbuf);
-          std::swap(mainbuf, scratchbuf);
-        }
+        for(int s=0; s!=nshellsets_; ++s) {
 
-        // loop over rows of the source matrix
-        const auto* src_row_ptr = mainbuf;
-        auto tgt_ptr = scratchbuf;
-        for(auto r1=0; r1!=nr1; ++r1) {
-          for(auto r2=0; r2!=nr2; ++r2, src_row_ptr+=ncol) {
+          // transform to solid harmonics first, then unpermute, if necessary
+          auto mainbuf = primdata_[0].targets[s];
+          auto scratchbuf = &scratch_[0];
+          if (bra1.contr[0].pure) {
+            libint2::solidharmonics::transform_first(bra1.contr[0].l, nr2_cart*ncol_cart,
+                                                     mainbuf, scratchbuf);
+            std::swap(mainbuf, scratchbuf);
+          }
+          if (bra2.contr[0].pure) {
+            libint2::solidharmonics::transform_inner(bra1.size(), bra2.contr[0].l, ncol_cart,
+                                                     mainbuf, scratchbuf);
+            std::swap(mainbuf, scratchbuf);
+          }
+          if (ket1.contr[0].pure) {
+            libint2::solidharmonics::transform_inner(nrow, ket1.contr[0].l, nc2_cart,
+                                                     mainbuf, scratchbuf);
+            std::swap(mainbuf, scratchbuf);
+          }
+          if (ket2.contr[0].pure) {
+            libint2::solidharmonics::transform_last(bra1.size()*bra2.size()*ket1.size(), ket2.contr[0].l,
+                                                    mainbuf, scratchbuf);
+            std::swap(mainbuf, scratchbuf);
+          }
 
-            typedef Eigen::Map<const Matrix> ConstMap;
-            typedef Eigen::Map<Matrix> Map;
-            typedef Eigen::Map<Matrix, Eigen::Unaligned, Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic> > StridedMap;
+          // loop over rows of the source matrix
+          const auto* src_row_ptr = mainbuf;
+          auto tgt_ptr = scratchbuf;
+          for(auto r1=0; r1!=nr1; ++r1) {
+            for(auto r2=0; r2!=nr2; ++r2, src_row_ptr+=ncol) {
 
-            // represent this source row as a matrix
-            ConstMap src_blk_mat(src_row_ptr, nc1, nc2);
+              typedef Eigen::Map<const Matrix> ConstMap;
+              typedef Eigen::Map<Matrix> Map;
+              typedef Eigen::Map<Matrix, Eigen::Unaligned, Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic> > StridedMap;
 
-            // and copy to the block of the target matrix
-            if (swap_braket) {
-              // if swapped bra and ket, a row of source becomes a column of target
-              // source row {r1,r2} is mapped to target column {r1,r2} if !swap_ket, else to {r2,r1}
-              const auto tgt_col_idx = !swap_ket ? r1 * nr2 + r2 : r2 * nr1 + r1;
-              StridedMap tgt_blk_mat(tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt,
-                                     Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic>(nr2_tgt*ncol_tgt,ncol_tgt));
-              if (swap_bra)
-                tgt_blk_mat = src_blk_mat.transpose();
-              else
-                tgt_blk_mat = src_blk_mat;
-            }
-            else {
-              // source row {r1,r2} is mapped to target row {r1,r2} if !swap_bra, else to {r2,r1}
-              const auto tgt_row_idx = !swap_bra ? r1 * nr2 + r2 : r2 * nr1 + r1;
-              Map tgt_blk_mat(tgt_ptr + tgt_row_idx*ncol, nc1_tgt, nc2_tgt);
-              if (swap_ket)
-                tgt_blk_mat = src_blk_mat.transpose();
-              else
-                tgt_blk_mat = src_blk_mat;
-            }
+              // represent this source row as a matrix
+              ConstMap src_blk_mat(src_row_ptr, nc1, nc2);
 
-          } // end of loop
-        }   // over rows of source
+              // and copy to the block of the target matrix
+              if (swap_braket) {
+                // if swapped bra and ket, a row of source becomes a column of target
+                // source row {r1,r2} is mapped to target column {r1,r2} if !swap_ket, else to {r2,r1}
+                const auto tgt_col_idx = !swap_ket ? r1 * nr2 + r2 : r2 * nr1 + r1;
+                StridedMap tgt_blk_mat(tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt,
+                                       Eigen::Stride<Eigen::Dynamic,Eigen::Dynamic>(nr2_tgt*ncol_tgt,ncol_tgt));
+                if (swap_bra)
+                  tgt_blk_mat = src_blk_mat.transpose();
+                else
+                  tgt_blk_mat = src_blk_mat;
+              }
+              else {
+                // source row {r1,r2} is mapped to target row {r1,r2} if !swap_bra, else to {r2,r1}
+                const auto tgt_row_idx = !swap_bra ? r1 * nr2 + r2 : r2 * nr1 + r1;
+                Map tgt_blk_mat(tgt_ptr + tgt_row_idx*ncol, nc1_tgt, nc2_tgt);
+                if (swap_ket)
+                  tgt_blk_mat = src_blk_mat.transpose();
+                else
+                  tgt_blk_mat = src_blk_mat;
+              }
 
-        result = scratchbuf;
+            } // end of loop
+          }   // over rows of source
+
+          // if there is only 1 shell set, leave the ints wherever they are now and update result
+          // else may need to copy them back
+          if (nshellsets_ == 1)
+            result = scratchbuf;
+          else {
+            const auto target_ptr = primdata_[0].targets[0] + s*n_tgt;
+            if (scratchbuf != target_ptr)
+              std::copy(scratchbuf, scratchbuf+n_tgt, target_ptr);
+          }
+        } // loop over shellsets
 
       } // if need_scratch => needed to transpose
 
