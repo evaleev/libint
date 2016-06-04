@@ -19,7 +19,7 @@
 
 #include <iostream>
 #include <libint/util.h>
-#include <libint/deriv_iter.h>
+#include <libint/intpart_iter.h>
 #include <libint/buildtest.h>
 #include <libint/bfset.h>
 #include <libint/master_ints_list.h>
@@ -63,7 +63,7 @@ namespace {
     // set this to the order of deriv ERI
     // will pick up from command line eventually
     const unsigned int deriv_order = 0;
-    DerivIndexIterator<4u> diter(deriv_order);
+    CartesianDerivIterator<4u> diter(deriv_order);
 
     //
     // generate all targets

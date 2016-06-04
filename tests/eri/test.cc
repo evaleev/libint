@@ -26,7 +26,7 @@
 #include <cassert>
 
 #include <libint2.h>
-#include <deriv_iter.h>
+#include <libint2/intpart_iter.h>
 #include <eri.h>
 #include <prep_libint2.h>
 #include <libint2/cgshell_ordering.h>
@@ -176,8 +176,8 @@ void test_4eri(unsigned int deriv_order,
           am[3] = l3;
           RandomShellSet<4u> rsqset(am, veclen, contrdepth);
 
-          DerivIndexIterator<4> diter(deriv_order);
-          const unsigned int nderiv = diter.range_rank();
+          CartesianDerivIterator<4> diter(deriv_order);
+          const unsigned int nderiv = diter.range_size();
 
           const double* A = &(rsqset.R[0][0]);
           const double* B = &(rsqset.R[1][0]);
@@ -286,12 +286,12 @@ void test_4eri(unsigned int deriv_order,
                             const LIBINT2_REF_REALTYPE c3 = rsqset.coef[3][v][p3];
                             const LIBINT2_REF_REALTYPE c0123 = c0 * c1 * c2 * c3;
 
-                            DerivIndexIterator<4> diter(deriv_order);
+                            CartesianDerivIterator<4> diter(deriv_order);
                             bool last_deriv = false;
                             unsigned int di = 0;
                             do {
                               ref_eri[di++] += c0123
-                                  * eri(diter.values(), l0, m0, n0, alpha0, Aref,
+                                  * eri(&(*diter)[0], l0, m0, n0, alpha0, Aref,
                                         l1, m1, n1, alpha1, Bref, l2, m2, n2,
                                         alpha2, Cref, l3, m3, n3, alpha3, Dref, 0);
                               last_deriv = diter.last();
@@ -453,8 +453,8 @@ void test_3eri(unsigned int deriv_order,
         am[2] = l2;
         RandomShellSet<3u> rsqset(am, veclen, contrdepth);
 
-        DerivIndexIterator<3> diter(deriv_order);
-        const unsigned int nderiv = diter.range_rank();
+        CartesianDerivIterator<3> diter(deriv_order);
+        const unsigned int nderiv = diter.range_size();
 
         const double* A = &(rsqset.R[0][0]);
         const double* B = &(rsqset.R[1][0]);
@@ -543,15 +543,16 @@ void test_3eri(unsigned int deriv_order,
                       const LIBINT2_REF_REALTYPE c2 = rsqset.coef[2][v][p2];
                       const LIBINT2_REF_REALTYPE c012 = c0 * c1 * c2;
 
-                      DerivIndexIterator<3> diter(deriv_order);
+                      CartesianDerivIterator<3> diter(deriv_order);
                       bool last_deriv = false;
                       unsigned int di = 0;
                       do {
                         // convert 3-center deriv indices into 4-center deriv indices
                         unsigned int deriv_level[12];
-                        std::copy(diter.values(), diter.values()+3, deriv_level);
+                        auto* deriv3_level = &(*diter)[0];
+                        std::copy(deriv3_level, deriv3_level+3, deriv_level);
                         std::fill(deriv_level+3, deriv_level+6, 0u);
-                        std::copy(diter.values()+3, diter.values()+9, deriv_level+6);
+                        std::copy(deriv3_level+3, deriv3_level+9, deriv_level+6);
 
                         ref_eri[di++] += c012
                             * eri(deriv_level, l0, m0, n0, alpha0, Aref, 0u, 0u,
@@ -685,8 +686,8 @@ void test_2eri(unsigned int deriv_order,
         am[1] = l1;
         RandomShellSet<2u> rsqset(am, veclen, contrdepth);
 
-        DerivIndexIterator<2> diter(deriv_order);
-        const unsigned int nderiv = diter.range_rank();
+        CartesianDerivIterator<2> diter(deriv_order);
+        const unsigned int nderiv = diter.range_size();
 
         const double* A = &(rsqset.R[0][0]);
         const double* B = &(rsqset.R[1][0]);
@@ -755,15 +756,16 @@ void test_2eri(unsigned int deriv_order,
                       const LIBINT2_REF_REALTYPE c1 = rsqset.coef[1][v][p1];
                       const LIBINT2_REF_REALTYPE c01 = c0 * c1;
 
-                      DerivIndexIterator<2> diter(deriv_order);
+                      CartesianDerivIterator<2> diter(deriv_order);
                       bool last_deriv = false;
                       unsigned int di = 0;
                       do {
                         // convert 2-center deriv indices into 4-center deriv indices
                         unsigned int deriv_level[12];
-                        std::copy(diter.values(), diter.values()+3, deriv_level);
+                        auto* deriv2_level = &(*diter)[0];
+                        std::copy(deriv2_level, deriv2_level+3, deriv_level);
                         std::fill(deriv_level+3, deriv_level+6, 0u);
-                        std::copy(diter.values()+3, diter.values()+6, deriv_level+6);
+                        std::copy(deriv2_level+3, deriv2_level+6, deriv_level+6);
                         std::fill(deriv_level+9, deriv_level+12, 0u);
 
                         ref_eri[di++] += c01

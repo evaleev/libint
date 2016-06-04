@@ -51,7 +51,7 @@
 #include <dims.h>
 #include <purgeable.h>
 #include <buildtest.h>
-#include <deriv_iter.h>
+#include <libint2/intpart_iter.h>
 
 #include <master_ints_list.h>
 
@@ -352,7 +352,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           // loop over unique derivative index combinations
           ////////////
           // NB translational invariance is now handled by CR_DerivGauss
-          DerivIndexIterator<2> diter(deriv_level);
+          CartesianDerivIterator<2> diter(deriv_level);
           bool last_deriv = false;
           do {
             BFType a(la);
@@ -361,8 +361,8 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
             for(unsigned int c=0; c!=2; ++c) {
               const unsigned int ndir = std::is_same<BFType,CGShell>::value ? 3 : 1;
               for(unsigned int xyz=0; xyz<ndir; ++xyz) {
-                if (c == 0) a.deriv().inc(xyz, diter.value(xyz));
-                if (c == 1) b.deriv().inc(xyz, diter.value(3 + xyz));
+                if (c == 0) a.deriv().inc(xyz, (*diter).at(xyz));
+                if (c == 1) b.deriv().inc(xyz, (*diter).at(3 + xyz));
               }
             }
 
@@ -944,7 +944,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           // loop over unique derivative index combinations
           ////////////
           // NB translational invariance is now handled by CR_DerivGauss
-          DerivIndexIterator<4> diter(deriv_level);
+          CartesianDerivIterator<4> diter(deriv_level);
           std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
           bool last_deriv = false;
           do {
@@ -955,10 +955,10 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
             for(unsigned int i=0; i<4; ++i) {
               for(unsigned int xyz=0; xyz<3; ++xyz) {
-                if (i == 0) a.deriv().inc(xyz, diter.value(3 * i + xyz));
-                if (i == 1) b.deriv().inc(xyz, diter.value(3 * i + xyz));
-                if (i == 2) c.deriv().inc(xyz, diter.value(3 * i + xyz));
-                if (i == 3) d.deriv().inc(xyz, diter.value(3 * i + xyz));
+                if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * i + xyz));
+                if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * i + xyz));
+                if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * i + xyz));
+                if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * i + xyz));
               }
             }
 
@@ -1123,7 +1123,7 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           // loop over unique derivative index combinations
           ////////////
           // NB translational invariance is now handled by CR_DerivGauss
-          DerivIndexIterator<3> diter(deriv_level);
+          CartesianDerivIterator<3> diter(deriv_level);
           std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
           bool last_deriv = false;
           do {
@@ -1141,10 +1141,10 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
               if (i == dummy_center)
                 continue;
               for(unsigned int xyz=0; xyz<3; ++xyz) {
-                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 2) c.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 3) d.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * center + xyz));
               }
               ++center;
             }
@@ -1306,7 +1306,7 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           // loop over unique derivative index combinations
           ////////////
           // NB translational invariance is now handled by CR_DerivGauss
-          DerivIndexIterator<2> diter(deriv_level);
+          CartesianDerivIterator<2> diter(deriv_level);
           std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
           bool last_deriv = false;
           do {
@@ -1326,10 +1326,10 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
               if (i == dummy_center1 || i == dummy_center2)
                 continue;
               for(unsigned int xyz=0; xyz<3; ++xyz) {
-                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 2) c.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 3) d.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * center + xyz));
               }
               ++center;
             }

@@ -28,7 +28,7 @@
 #include <rr.h>
 #include <iter.h>
 #include <util.h>
-#include <deriv_iter.h>
+#include <libint2/intpart_iter.h>
 #include <policy_spec.h>
 #include <global_macros.h>
 
@@ -819,8 +819,8 @@ void profile_4eri(unsigned int deriv_order) {
             continue;
 #endif
 
-          DerivIndexIterator<4> diter(deriv_order);
-          const unsigned int nderiv = diter.range_rank();
+          CartesianDerivIterator<4> diter(deriv_order);
+          const unsigned int nderiv = diter.range_size();
           unsigned int am[4];
           am[0] = l0;
           am[1] = l1;
@@ -1008,8 +1008,8 @@ void profile_3eri(unsigned int deriv_order) {
             continue;
 #endif
 
-          DerivIndexIterator<3> diter(deriv_order);
-          const unsigned int nderiv = diter.range_rank();
+          CartesianDerivIterator<3> diter(deriv_order);
+          const unsigned int nderiv = diter.range_size();
           unsigned int am[3];
           am[0] = l0;
           am[1] = l1;
@@ -1182,8 +1182,8 @@ void test_bagel(unsigned int deriv_order) {
           am[3] = l3;
           RandomShellSet<4u> rsqset(am, veclen, contrdepth);
 
-          DerivIndexIterator<4> diter(deriv_order);
-          const unsigned int nderiv = diter.range_rank();
+          CartesianDerivIterator<4> diter(deriv_order);
+          const unsigned int nderiv = diter.range_size();
 
           CGShell sh0(am[0]);
           CGShell sh1(am[1]);
@@ -1352,8 +1352,8 @@ void profile_bagel_4eri(unsigned int deriv_order) {
           //if (not (l0 <= l1 && l2 <= l3 && l0+l1>=l2+l3))
           //  continue;
 
-          DerivIndexIterator<4> diter(deriv_order);
-          const unsigned int nderiv = diter.range_rank();
+          CartesianDerivIterator<4> diter(deriv_order);
+          const unsigned int nderiv = diter.range_size();
           unsigned int am[4];
           am[0] = l0;
           am[1] = l1;
@@ -1478,8 +1478,8 @@ void profile_bagel_3eri(unsigned int deriv_order) {
           //if (not (l0 <= l1 && l2 <= l3 && l0+l1>=l2+l3))
           //  continue;
 
-          DerivIndexIterator<3> diter(deriv_order);
-          const unsigned int nderiv = diter.range_rank();
+          CartesianDerivIterator<3> diter(deriv_order);
+          const unsigned int nderiv = diter.range_size();
           unsigned int am[3];
           am[0] = l0;
           am[1] = l1;
