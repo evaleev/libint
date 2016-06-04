@@ -1120,10 +1120,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
   std::vector<Matrix> G(nthreads, Matrix::Zero(n,n));
 
   const auto do_schwartz_screen = Schwartz.cols() != 0 && Schwartz.rows() != 0;
-  Matrix D_shblk_norm; // matrix of infty-norms of shell blocks
-  if (do_schwartz_screen) {
-    D_shblk_norm = compute_shellblock_norm(obs, D);
-  }
+  Matrix D_shblk_norm = compute_shellblock_norm(obs, D); // matrix of infty-norms of shell blocks
 
   auto fock_precision = precision;
   // engine precision controls primitive truncation, assume worst-case scenario (all primitive combinations add up constructively)
@@ -1306,10 +1303,7 @@ compute_2body_fock_deriv(unsigned deriv_order,
   std::vector<Matrix> G(nthreads * nderiv, Matrix::Zero(n,n));
 
   const auto do_schwartz_screen = Schwartz.cols() != 0 && Schwartz.rows() != 0;
-  Matrix D_shblk_norm; // matrix of infty-norms of shell blocks
-  if (do_schwartz_screen) {
-    D_shblk_norm = compute_shellblock_norm(obs, D);
-  }
+  Matrix D_shblk_norm = compute_shellblock_norm(obs, D); // matrix of infty-norms of shell blocks
 
   auto fock_precision = precision;
   // engine precision controls primitive truncation, assume worst-case scenario (all primitive combinations add up constructively)
@@ -1395,7 +1389,7 @@ compute_2body_fock_deriv(unsigned deriv_order,
 
             auto bf4_first = shell2bf[s4];
             auto n4 = obs[s4].size();
-            shell_atoms[3] = shell2atom[s3];
+            shell_atoms[3] = shell2atom[s4];
 
             const auto n1234 = n1*n2*n3*n4;
             num_ints_computed += 12 * n1234;
@@ -1427,10 +1421,11 @@ compute_2body_fock_deriv(unsigned deriv_order,
             //    i.e. the number of the integrals/sets equivalent to it
             // 3) the end result must be symmetrized
             for(auto d=0; d!=12; ++d, buf+=n1234) {
-              const auto a = d/3;
-              const auto xyz = d%3;
+              const int a = d/3;
+              const int xyz = d%3;
 
-              auto& g = G[thread_id * nderiv + shell_atoms[a] * 3 + xyz];
+              auto coord = shell_atoms[a] * 3 + xyz;
+              auto& g = G[thread_id * nderiv + coord];
 
             for(auto f1=0, f1234=0; f1!=n1; ++f1) {
               const auto bf1 = f1 + bf1_first;
@@ -1493,6 +1488,7 @@ compute_2body_fock_deriv(unsigned deriv_order,
   // symmetrize the result and return
   return GG;
 }
+#endif
 
 Matrix compute_2body_fock_general(const BasisSet& obs,
                                   const Matrix& D,
