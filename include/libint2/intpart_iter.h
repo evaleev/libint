@@ -17,8 +17,8 @@
  *
  */
 
-#ifndef _libint2_src_bin_libint_intpartiter_h_
-#define _libint2_src_bin_libint_intpartiter_h_
+#ifndef _libint2_include_libint2_intpartiter_h_
+#define _libint2_include_libint2_intpartiter_h_
 
 #include <cstdint>
 #include <numeric>
