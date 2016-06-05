@@ -22,7 +22,7 @@
 
 #include <rr.h>
 #include <iter.h>
-#include <libint2/intpart_iter.h>
+#include <libint2/deriv_iter.h>
 #include <policy_spec.h>
 #include <global_macros.h>
 #include <cgshell_ordering.h>
@@ -39,10 +39,10 @@ constexpr auto am_tot = am0 + am1 + am2 + am3;
 int bool_test = 0;
 
 
-#include <libint2/vector.h>
-#include <libint2/memory.h>
-#include <libint2/intrinsic_operations.h>
-#include <libint2/timer.h>
+#include <libint2/util/vector.h>
+#include <libint2/util/memory.h>
+#include <libint2/util/intrinsic_operations.h>
+#include <libint2/util/timer.h>
 typedef struct {
     LIBINT2_REALTYPE AB_x[LIBINT2_MAX_VECLEN];
     LIBINT2_REALTYPE AB_y[LIBINT2_MAX_VECLEN];
@@ -75,7 +75,7 @@ typedef struct {
 
 #include <VRR_GTG_1d_xx_xx.h>
 #include <libint/util.h>
-#include <libint/intpart_iter.h>
+#include <libint2/deriv_iter.h>
 #include <test_eri/eri.h>
 
 #ifdef LIBINT_HAVE_LIBROOTS

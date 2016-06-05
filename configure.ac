@@ -1381,7 +1381,7 @@ if test "X$libint_user_defined_real" != "X"; then
  CXXFLAGS="$CXXFLAGS -Iinclude -I$srcdir/src/lib/libint"
  AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM(
-    [[#include <libint2/vector.h>
+    [[#include <libint2/util/vector.h>
       $libint_user_defined_real_includes
       
     ]],

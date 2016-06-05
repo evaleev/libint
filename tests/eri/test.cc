@@ -26,7 +26,7 @@
 #include <cassert>
 
 #include <libint2.h>
-#include <libint2/intpart_iter.h>
+#include <libint2/deriv_iter.h>
 #include <eri.h>
 #include <prep_libint2.h>
 #include <libint2/cgshell_ordering.h>

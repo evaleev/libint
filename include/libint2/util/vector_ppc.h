@@ -19,7 +19,7 @@
 #ifndef _libint2_src_lib_libint_vectorppc_h_
 #define _libint2_src_lib_libint_vectorppc_h_
 
-#include <libint2/type_traits.h>
+#include <libint2/util/type_traits.h>
 
 // clang on BG/Q defines __VECTOR4DOUBLE__ and intrinsics in this header file
 #if defined(__clang__) && defined(__bgq__)

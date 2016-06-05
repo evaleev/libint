@@ -34,9 +34,9 @@
 #include <libint2.h>
 #include <libint2/boys.h>
 #include <libint2/shell.h>
-#include <libint2/timer.h>
+#include <libint2/util/timer.h>
 #include <libint2/solidharmonics.h>
-#include <libint2/any.h>
+#include <libint2/util/any.h>
 #include <libint2/util/compressed_pair.h>
 #include <libint2/cxxapi.h>
 

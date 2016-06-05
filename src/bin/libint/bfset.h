@@ -25,7 +25,7 @@
 #include <cassert>
 #include <numeric>
 #include <sstream>
-#include <libint2/stdarray.h>
+#include <stdarray.h>
 #include <smart_ptr.h>
 #include <polyconstr.h>
 #include <hashable.h>

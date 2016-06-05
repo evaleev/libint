@@ -51,7 +51,7 @@
 #include <dims.h>
 #include <purgeable.h>
 #include <buildtest.h>
-#include <libint2/intpart_iter.h>
+#include <libint2/deriv_iter.h>
 
 #include <master_ints_list.h>
 

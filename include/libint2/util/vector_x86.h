@@ -21,7 +21,7 @@
 
 #include <cstring>
 #include <libint2/util/cxxstd.h>
-#include <libint2/type_traits.h>
+#include <libint2/util/type_traits.h>
 
 #ifdef __SSE2__
 

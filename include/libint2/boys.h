@@ -28,7 +28,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <stdexcept>
-#include <libint2/vector.h>
+#include <libint2/util/vector.h>
 #include <cassert>
 #include <vector>
 #include <algorithm>

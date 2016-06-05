@@ -17,8 +17,8 @@
  *
  */
 
-#ifndef _libint2_include_libint2_intpartiter_h_
-#define _libint2_include_libint2_intpartiter_h_
+#ifndef _libint2_include_libint2_util_intpartiter_h_
+#define _libint2_include_libint2_util_intpartiter_h_
 
 #include <cstdint>
 #include <numeric>
@@ -127,8 +127,28 @@ namespace libint2 {
       }
 
       /// returns the rank (index) of partition \c part in the partition range
-      static size_t rank(const value_type part) {
-    	  assert(false); // not yet implemented
+      template <typename Seq>
+      static intmax_t rank(Seq part) {
+    	  auto k = detail::size(part);
+    	  decltype(k) count = 0;
+    	  intmax_t result = 0;
+    	  auto part_i = part[0];
+    	  for(decltype(k) i=0; i!=k; ) {
+    		  if (part_i > 0) {
+    			  ++count;
+    			  --part_i;
+        		  intmax_t contrib_i = 1;
+    			  for(decltype(count) c=0; c!=count; ++c) {
+    				  contrib_i *= (i+c); result /= (c+1);
+    			  }
+    			  result += contrib_i;
+    		  }
+    		  if (part_i == 0) {
+    			  ++i;
+    			  part_i = part[i];
+    		  }
+    	  }
+    	  return result;
       }
 
     private:

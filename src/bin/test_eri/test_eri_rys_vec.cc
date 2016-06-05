@@ -22,7 +22,7 @@
 #include <x86intrin.h>
 //#include <rr.h>
 #include <iter.h>
-#include <libint2/intpart_iter.h>
+#include <libint2/deriv_iter.h>
 #include <policy_spec.h>
 #include <global_macros.h>
 #include <cgshell_ordering.h>
@@ -41,9 +41,9 @@ constexpr auto npts = am_tot / 2 + 1;
 
 #define ALIGNED_STORAGE __attribute__((aligned(256)))
 
-#include <libint2/vector.h>
-#include <libint2/memory.h>
-#include <libint2/intrinsic_operations.h>
+#include <libint2/util/vector.h>
+#include <libint2/util/memory.h>
+#include <libint2/util/intrinsic_operations.h>
 #include "../../../../../libint_master/include/libint2/timer.h"
 
 typedef struct {
@@ -78,7 +78,7 @@ typedef struct {
 
 #include <VRR_GTG_1d_xx_xx_vec.h>
 #include <libint/util.h>
-#include <libint/intpart_iter.h>
+#include <libint2/deriv_iter.h>
 #include <test_eri/eri.h>
 #ifdef LIBINT_HAVE_LIBROOTS
 # include <roots/roots.hpp>
