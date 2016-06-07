@@ -106,7 +106,7 @@ namespace libint2 {
         return partition_;
       }
 
-      Sequence* operator->() const {
+      const Sequence* operator->() const {
         return &partition_;
       }
 
