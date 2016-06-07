@@ -1936,7 +1936,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       case BraKet::xx_xx:
         n = 4; break;
       default:
-        assert(false);
+        assert(false && "missing case in switch");
     }
     return n;
   }
@@ -2203,7 +2203,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
             return (this->*compute_ptr)(shells[0], shells[1], shells[2], shells[3]);
         }
 
-        assert(false); // only reached if missing a feature
+        assert(false && "missing feature"); // only reached if missing a feature
         return targets_;
       }
 
@@ -2306,7 +2306,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
                   result += primdata_[p12].LIBINT_T_S_ELECPOT_S(0)[0];
                   break;
               default:
-                assert(false);
+                assert(false && "missing case in switch");
             }
           }
           else {
@@ -2659,7 +2659,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
 
     BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR3, 3, (BOOST_PP_NBODY_OPERATOR_INDEX_LIST, BOOST_PP_NBODY_BRAKET_RANK_LIST, BOOST_PP_NBODY_DERIV_ORDER_LIST) )
 
-    assert(false); // either deriv_order_ or oper_ is wrong
+    assert(false && "missing case in \"switch\""); // either deriv_order_ or oper_ is wrong
   } // _initialize<R>()
 
   inline void Engine::initialize(size_t max_nprim) {
@@ -2671,7 +2671,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODYENGINE_MCR5, _, BOOST_PP_ONEBODY_OPER
       switch(operator_rank()) {
         case 1: braket_ = BraKet::x_x; break;
         case 2: braket_ = BraKet::xx_xx; break;
-        default: assert(false);
+        default: assert(false && "missing case in switch");
       }
     }
 
@@ -2747,7 +2747,7 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT ( BOOST_PP_NBODYENGINE_MCR7, 3, (BOOST_PP_NBODY_O
 BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR4, _, BOOST_PP_NBODY_OPERATOR_LIST)
       default: break;
     }
-    assert(false); // unreachable
+    assert(false && "missing case in switch"); // unreachable
     return 0;
   }
 
@@ -2771,7 +2771,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR4, _, BOOST_PP_NBODY_OPERATOR
 BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR5, _, BOOST_PP_NBODY_OPERATOR_LIST)
 
       default:
-        assert(false); // missed a case?
+        assert(false && "missing case in switch"); // missed a case?
     }
     return result;
   }
@@ -2792,7 +2792,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR5, _, BOOST_PP_NBODY_OPERATOR
 BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR_LIST)
 
       default:
-        assert(false); // missed a case?
+        assert(false && "missing case in switch"); // missed a case?
     }
     return result;
   }
@@ -3141,7 +3141,7 @@ BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_NBODYENGINE_MCR6, _, BOOST_PP_NBODY_OPERATOR
                     core_eval_ptr->eval(gm_ptr, rho, T, mmax);
                   } break;
                   default:
-                    assert(false); // unreachable
+                    assert(false && "missing case in a switch");  // unreachable
                 }
               }
 
