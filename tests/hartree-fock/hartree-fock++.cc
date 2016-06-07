@@ -1910,31 +1910,6 @@ DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
 
 // should be a unit test somewhere
 void api_basic_compile_test(const BasisSet& obs) {
-
-  libint2::OneBodyEngine onebody_engine(libint2::OneBodyEngine::overlap, // will compute overlap ints
-                                        obs.max_nprim(), // max # of primitives in shells this engine will accept
-                                        obs.max_l()      // max angular momentum of shells this engine will accept
-                                       );
-  auto shell2bf = obs.shell2bf();
-  for(auto s1=0; s1!=obs.size(); ++s1) {
-    for(auto s2=0; s2!=obs.size(); ++s2) {
-
-      std::cout << "compute shell set {" << s1 << "," << s2 << "} ... ";
-      const auto* ints_shellset = onebody_engine.compute(obs[s1], obs[s2]);
-      std::cout << "done" << std::endl;
-
-      auto bf1 = shell2bf[s1];  // first basis function in first shell
-      auto n1 = obs[s1].size(); // number of basis functions in first shell
-      auto bf2 = shell2bf[s2];  // first basis function in second shell
-      auto n2 = obs[s2].size(); // number of basis functions in second shell
-
-      // this iterates over integrals in the order they are packed in array ints_shellset
-      for(auto f1=0; f1!=n1; ++f1)
-        for(auto f2=0; f2!=n2; ++f2)
-          std::cout << "  " << bf1+f1 << " " << bf2+f2 << " " << ints_shellset[f1*n2+f2] << std::endl;
-    }
-  }
-
   {
     using namespace libint2;
     Engine onebody_engine(Operator::overlap, // will compute overlap ints
