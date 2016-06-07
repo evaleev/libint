@@ -784,7 +784,7 @@ else
 fi
 
 AC_ARG_ENABLE(fma,
-[  --enable-fma-instr      Generate FMA (fused multiply-add) instructions (must be supported by hardware to benefit).],
+[  --enable-fma            Generate FMA (fused multiply-add) instructions (must be supported by hardware to benefit).],
 [
 case $enableval in
   yes)
