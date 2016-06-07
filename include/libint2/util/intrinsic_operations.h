@@ -19,23 +19,29 @@
 #ifndef _libint2_include_libint2intrinsicoperations_h_
 #define _libint2_include_libint2intrinsicoperations_h_
 
+#include <libint2/config.h>
+
 #ifdef __cplusplus
 
 namespace libint2 {
 
   //@{ Floating-point-Multiply-Add (FMA) instructions. Redefine these operations using native FMA instructions, if available (see, e.g. vector_x86.h)
 
+#ifdef LIBINT_HAS_CXX11
   /// @return x*y+z
   template <typename X, typename Y, typename Z>
-  inline Z fma_plus(X x, Y y, Z z) {
+  inline auto fma_plus(X x, Y y, Z z) -> decltype(x*y+z) {
     return x*y + z;
   }
 
   /// @return x*y-z
   template <typename X, typename Y, typename Z>
-  inline Z fma_minus(X x, Y y, Z z) {
+  inline auto fma_minus(X x, Y y, Z z) -> decltype(x*y-z) {
     return x*y - z;
   }
+#else  // LIBINT_HAS_CXX11
+#  error "support for FMA requires compiler capable of C++11 or later"
+#endif // LIBINT_HAS_CXX11
 
   //@}
 
