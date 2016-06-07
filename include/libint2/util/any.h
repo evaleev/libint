@@ -2,8 +2,8 @@
 // and modified slightly.
 // this code is in public domain
 
-#ifndef _libint2_include_libint2_any_h_
-#define _libint2_include_libint2_any_h_
+#ifndef _libint2_include_libint2_util_any_h_
+#define _libint2_include_libint2_util_any_h_
 
 #include <type_traits>
 #include <utility>
