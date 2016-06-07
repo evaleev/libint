@@ -130,6 +130,14 @@ compute_2body_fock_deriv(unsigned deriv_order,
                          double precision = std::numeric_limits<double>::epsilon(), // discard contributions smaller than this
                          const Matrix& Schwartz = Matrix() // K_ij = sqrt(||(ij|ij)||_\infty); if empty, do not Schwartz screen
                         );
+std::vector<Matrix>
+compute_2body_fock_deriv_simple(unsigned deriv_order,
+                         const BasisSet& obs,
+                         const std::vector<Atom>& atoms,
+                         const Matrix& D,
+                         double precision = std::numeric_limits<double>::epsilon(), // discard contributions smaller than this
+                         const Matrix& Schwartz = Matrix() // K_ij = sqrt(||(ij|ij)||_\infty); if empty, do not Schwartz screen
+                        );
 #endif // LIBINT2_DERIV_ERI_ORDER
 
 // returns {X,X^{-1},S_condition_number_after_conditioning}, where
@@ -464,9 +472,9 @@ int main(int argc, char *argv[]) {
     std::cout << "** edipole = "; std::copy(mu.begin(), mu.end(), std::ostream_iterator<double>(std::cout, " ")); std::cout << std::endl;
     std::cout << "** equadrupole = ";std::copy(qu.begin(), qu.end(), std::ostream_iterator<double>(std::cout, " ")); std::cout << std::endl;
 
+    { // compute force
 #if LIBINT2_DERIV_ONEBODY_ORDER
-    // compute 1-e forces
-    {
+      // compute 1-e forces
       Matrix F1 = Matrix::Zero(atoms.size(), 3);
       Matrix F_Pulay = Matrix::Zero(atoms.size(), 3);
       //////////
@@ -505,18 +513,17 @@ int main(int argc, char *argv[]) {
         for(int xyz=0; xyz!=3; ++xyz)
           std::cout << F_Pulay(atom,xyz) << " ";
       std::cout << std::endl;
-    }
 #endif // LIBINT2_DERIV_ONEBODY_ORDER
 
 #if LIBINT2_DERIV_ERI_ORDER
-    // compute 2-e forces
-    {
+      // compute 2-e forces
       Matrix F2 = Matrix::Zero(atoms.size(), 3);
 
       //////////
       // two-body contributions to the forces
       //////////
       auto G1 = compute_2body_fock_deriv(1, obs, atoms, D);
+//      auto G1 = compute_2body_fock_deriv_simple(1, obs, atoms, D);
       for(auto atom=0, i=0; atom!=atoms.size(); ++atom) {
         for(auto xyz=0; xyz!=3; ++xyz, ++i) {
           auto force = G1[i].cwiseProduct(D).sum();
@@ -529,8 +536,56 @@ int main(int argc, char *argv[]) {
         for(int xyz=0; xyz!=3; ++xyz)
           std::cout << F2(atom,xyz) << " ";
       std::cout << std::endl;
-    }
 #endif
+
+      // if support 1-e and 2-e derivatives compute nuclear repulsion force and the total force
+#if LIBINT2_DERIV_ONEBODY_ORDER && LIBINT2_DERIV_ERI_ORDER
+      // compute nuclear repulsion forces
+      Matrix N1 = Matrix::Zero(atoms.size(), 3);
+      //////////
+      // nuclear repulsion contribution to the forces
+      //////////
+      for(auto a1=1; a1!=atoms.size(); ++a1) {
+        const auto& atom1 = atoms[a1];
+        for(auto a2=0; a2<a1; ++a2) {
+          const auto& atom2 = atoms[a2];
+
+          auto x12 = atom1.x - atom2.x;
+          auto y12 = atom1.y - atom2.y;
+          auto z12 = atom1.z - atom2.z;
+          auto r12_2 = x12*x12 + y12*y12 + z12*z12;
+          auto r12 = sqrt(r12_2);
+          auto r12_3 = r12 * r12_2;
+
+          auto z1z2_over_r12_3 = atom1.atomic_number * atom2.atomic_number / r12_3;
+
+          auto fx = -x12 * z1z2_over_r12_3;
+          auto fy = -y12 * z1z2_over_r12_3;
+          auto fz = -z12 * z1z2_over_r12_3;
+          N1(a1, 0) += fx;
+          N1(a1, 1) += fy;
+          N1(a1, 2) += fz;
+          N1(a2, 0) -= fx;
+          N1(a2, 1) -= fy;
+          N1(a2, 2) -= fz;
+        }
+      }
+
+      std::cout << "** nuclear repulsion forces = ";
+      for(int atom=0; atom!=atoms.size(); ++atom)
+        for(int xyz=0; xyz!=3; ++xyz)
+          std::cout << N1(atom,xyz) << " ";
+      std::cout << std::endl;
+
+      auto F = F1 + F_Pulay + F2 + N1;
+      std::cout << "** Hartree-Fock forces = ";
+      for(int atom=0; atom!=atoms.size(); ++atom)
+        for(int xyz=0; xyz!=3; ++xyz)
+          std::cout << F(atom,xyz) << " ";
+      std::cout << std::endl;
+#endif
+
+    }
 
     printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
 
@@ -676,6 +731,8 @@ compute_1body_ints(const BasisSet& obs,
 
   auto compute = [&] (int thread_id) {
 
+    const auto& buf = engines[thread_id].results();
+
     // loop over unique shell pairs, {s1,s2} such that s1 >= s2
     // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
     for(auto s1=0l, s12=0l; s1!=nshells; ++s1) {
@@ -694,11 +751,11 @@ compute_1body_ints(const BasisSet& obs,
         auto n12 = n1 * n2;
 
         // compute shell pair; return is the pointer to the buffer
-        const auto* buf = engines[thread_id].compute(obs[s1], obs[s2]);
+        engines[thread_id].compute(obs[s1], obs[s2]);
 
-        for(unsigned int op=0; op!=nopers; ++op, buf+=n12) {
+        for(unsigned int op=0; op!=nopers; ++op) {
           // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
-          Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+          Eigen::Map<const Matrix> buf_mat(buf[op], n1, n2);
           result[op].block(bf1, bf2, n1, n2) = buf_mat;
           if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
             result[op].block(bf2, bf1, n2, n1) = buf_mat.transpose();
@@ -749,6 +806,8 @@ compute_1body_ints_deriv(unsigned deriv_order,
 
   auto compute = [&] (int thread_id) {
 
+    const auto& buf = engines[thread_id].results();
+
     // loop over unique shell pairs, {s1,s2} such that s1 >= s2
     // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
     for(auto s1=0l, s12=0l; s1!=nshells; ++s1) {
@@ -770,17 +829,18 @@ compute_1body_ints_deriv(unsigned deriv_order,
         auto n12 = n1 * n2;
 
         // compute shell pair; return is the pointer to the buffer
-        const auto* buf = engines[thread_id].compute(obs[s1], obs[s2]);
+        engines[thread_id].compute(obs[s1], obs[s2]);
 
         assert(deriv_order == 1); // the loop structure below needs to be generalized for higher-order derivatives
+        size_t buf_idx = 0;
         // 1. process derivatives with respect to the Gaussian origins first ...
         for(unsigned int d=0; d!=6; ++d) { // 2 centers x 3 axes = 6 cartesian geometric derivatives
           auto atom = d < 3 ? atom1 : atom2;
           auto op_start = (3*atom+d%3) * nopers;
           auto op_fence = op_start + nopers;
-          for(unsigned int op=op_start; op!=op_fence; ++op, buf+=n12) {
+          for(unsigned int op=op_start; op!=op_fence; ++op, ++buf_idx) {
             // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
-            Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+            Eigen::Map<const Matrix> buf_mat(buf[buf_idx], n1, n2);
 //            std::cout << "s1=" << s1 << " s2=" << s2 << " x=" << (3*atom+d%3) << " op=" << op-op_start << ":\n";
 //            std::cout << buf_mat << std::endl;
             result[op].block(bf1, bf2, n1, n2) += buf_mat;
@@ -794,8 +854,8 @@ compute_1body_ints_deriv(unsigned deriv_order,
             for(unsigned int xyz=0; xyz!=3; ++xyz) {
               auto op_start = (3*atom+xyz) * nopers;
               auto op_fence = op_start + nopers;
-              for(unsigned int op=op_start; op!=op_fence; ++op, buf+=n12) {
-                Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+              for(unsigned int op=op_start; op!=op_fence; ++op, ++buf_idx) {
+                Eigen::Map<const Matrix> buf_mat(buf[buf_idx], n1, n2);
                 result[op].block(bf1, bf2, n1, n2) += buf_mat;
                 if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
                   result[op].block(bf2, bf1, n2, n1) += buf_mat.transpose();
@@ -850,6 +910,8 @@ Matrix compute_schwartz_ints(const BasisSet& bs1,
 
   auto compute = [&] (int thread_id) {
 
+    const auto& buf = engines[thread_id].results();
+
     // loop over permutationally-unique set of shells
     for(auto s1=0l, s12=0l; s1!=nsh1; ++s1) {
 
@@ -864,10 +926,10 @@ Matrix compute_schwartz_ints(const BasisSet& bs1,
         auto n2 = bs2[s2].size();
         auto n12 = n1*n2;
 
-        const auto* buf = engines[thread_id].compute(bs1[s1], bs2[s2], bs1[s1], bs2[s2]);
+        engines[thread_id].compute(bs1[s1], bs2[s2], bs1[s1], bs2[s2]);
 
         // the diagonal elements are the Schwartz ints ... use Map.diagonal()
-        Eigen::Map<const Matrix> buf_mat(buf, n12, n12);
+        Eigen::Map<const Matrix> buf_mat(buf[0], n12, n12);
         auto norm2 = use_2norm ? buf_mat.diagonal().norm() : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
         K(s1,s2) = std::sqrt(norm2);
         if (bs1_equiv_bs2) K(s2,s1) = K(s1,s2);
@@ -925,6 +987,7 @@ compute_shellpair_list(const BasisSet& bs1,
   auto compute = [&] (int thread_id) {
 
     auto& engine = engines[thread_id];
+    const auto& buf = engine.results();
 
     // loop over permutationally-unique set of shells
     for(auto s1=0l, s12=0l; s1!=nsh1; ++s1) {
@@ -946,8 +1009,8 @@ compute_shellpair_list(const BasisSet& bs1,
         bool significant = on_same_center;
         if (not on_same_center) {
           auto n2 = bs2[s2].size();
-          const auto* buf = engines[thread_id].compute(bs1[s1], bs2[s2]);
-          Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+          engines[thread_id].compute(bs1[s1], bs2[s2]);
+          Eigen::Map<const Matrix> buf_mat(buf[0], n1, n2);
           auto norm = buf_mat.norm();
           significant = (norm >= threshold);
         }
@@ -1076,6 +1139,9 @@ Matrix compute_2body_2index_ints(const BasisSet& bs)
 
   auto compute = [&] (int thread_id) {
 
+    auto& engine = engines[thread_id];
+    const auto& buf = engine.results();
+
     // loop over unique shell pairs, {s1,s2} such that s1 >= s2
     // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
     for(auto s1=0l, s12=0l; s1!=nshells; ++s1) {
@@ -1092,10 +1158,10 @@ Matrix compute_2body_2index_ints(const BasisSet& bs)
         auto n2 = bs[s2].size();
 
         // compute shell pair; return is the pointer to the buffer
-        const auto* buf = engines[thread_id].compute(bs[s1], unitshell, bs[s2], unitshell);
+        engine.compute(bs[s1], unitshell, bs[s2], unitshell);
 
         // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
-        Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+        Eigen::Map<const Matrix> buf_mat(buf[0], n1, n2);
         result.block(bf1, bf2, n1, n2) = buf_mat;
         if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
         result.block(bf2, bf1, n2, n1) = buf_mat.transpose();
@@ -1152,6 +1218,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
 
     auto& engine = engines[thread_id];
     auto& g = G[thread_id];
+    const auto& buf = engine.results();
 
 #if defined(REPORT_INTEGRAL_TIMINGS)
     auto& timer = timers[thread_id];
@@ -1214,7 +1281,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
             timer.start(0);
 #endif
 
-            const auto* buf = engine.compute2<Operator::coulomb,BraKet::xx_xx,0>(obs[s1], obs[s2], obs[s3], obs[s4]);
+            engine.compute2<Operator::coulomb,BraKet::xx_xx,0>(obs[s1], obs[s2], obs[s3], obs[s4]);
 
 #if defined(REPORT_INTEGRAL_TIMINGS)
             timer.stop(0);
@@ -1239,7 +1306,7 @@ Matrix compute_2body_fock(const BasisSet& obs,
                   for(auto f4=0; f4!=n4; ++f4, ++f1234) {
                     const auto bf4 = f4 + bf4_first;
 
-                    const auto value = buf[f1234];
+                    const auto value = buf[0][f1234];
 
                     const auto value_scal_by_deg = value * s1234_deg;
 
@@ -1335,6 +1402,7 @@ compute_2body_fock_deriv(unsigned deriv_order,
   auto lambda = [&] (int thread_id) {
 
     auto& engine = engines[thread_id];
+    const auto& buf = engine.results();
 
 #if defined(REPORT_INTEGRAL_TIMINGS)
     auto& timer = timers[thread_id];
@@ -1392,7 +1460,6 @@ compute_2body_fock_deriv(unsigned deriv_order,
             shell_atoms[3] = shell2atom[s4];
 
             const auto n1234 = n1*n2*n3*n4;
-            num_ints_computed += 12 * n1234;
 
             // compute the permutational degeneracy (i.e. # of equivalents) of the given shell set
             auto s12_deg = (s1 == s2) ? 1.0 : 2.0;
@@ -1404,7 +1471,8 @@ compute_2body_fock_deriv(unsigned deriv_order,
             timer.start(0);
 #endif
 
-            const auto* buf = engine.compute2<Operator::coulomb,BraKet::xx_xx,1>(obs[s1], obs[s2], obs[s3], obs[s4]);
+            engine.compute2<Operator::coulomb,BraKet::xx_xx,1>(obs[s1], obs[s2], obs[s3], obs[s4]);
+            num_ints_computed += 12 * n1234;
 
 #if defined(REPORT_INTEGRAL_TIMINGS)
             timer.stop(0);
@@ -1420,7 +1488,7 @@ compute_2body_fock_deriv(unsigned deriv_order,
             // 2) each permutationally-unique integral (shell set) must be scaled by its degeneracy,
             //    i.e. the number of the integrals/sets equivalent to it
             // 3) the end result must be symmetrized
-            for(auto d=0; d!=12; ++d, buf+=n1234) {
+            for(auto d=0; d!=12; ++d) {
               const int a = d/3;
               const int xyz = d%3;
 
@@ -1436,7 +1504,7 @@ compute_2body_fock_deriv(unsigned deriv_order,
                   for(auto f4=0; f4!=n4; ++f4, ++f1234) {
                     const auto bf4 = f4 + bf4_first;
 
-                    const auto value = buf[f1234];
+                    const auto value = buf[d][f1234];
 
                     const auto value_scal_by_deg = value * s1234_deg;
 
@@ -1488,6 +1556,203 @@ compute_2body_fock_deriv(unsigned deriv_order,
   // symmetrize the result and return
   return GG;
 }
+
+std::vector<Matrix>
+compute_2body_fock_deriv_simple(unsigned deriv_order,
+                         const BasisSet& obs,
+                         const std::vector<Atom>& atoms,
+                         const Matrix& D,
+                         double precision,
+                         const Matrix& Schwartz) {
+
+  const auto n = obs.nbf();
+  const auto nshells = obs.size();
+  assert(deriv_order == 1);
+  const auto nderiv = atoms.size() * 3;
+  using libint2::nthreads;
+  std::vector<Matrix> G(nthreads * nderiv, Matrix::Zero(n,n));
+
+  const auto do_schwartz_screen = false;
+  Matrix D_shblk_norm = compute_shellblock_norm(obs, D); // matrix of infty-norms of shell blocks
+
+  auto fock_precision = precision;
+  // engine precision controls primitive truncation, assume worst-case scenario (all primitive combinations add up constructively)
+  auto max_nprim = obs.max_nprim();
+  auto max_nprim4 = max_nprim*max_nprim*max_nprim*max_nprim;
+  auto engine_precision = std::min(fock_precision / D_shblk_norm.maxCoeff(),
+                                   std::numeric_limits<double>::epsilon()) / max_nprim4;
+
+  // construct the 2-electron repulsion integrals engine pool
+  using libint2::Engine;
+  std::vector<Engine> engines(nthreads);
+  engines[0] = Engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), deriv_order);
+  engines[0].set_precision(engine_precision); // shellset-dependent precision control will likely break positive definiteness
+                                       // stick with this simple recipe
+  std::cout << "compute_2body_fock:precision = " << precision << std::endl;
+  std::cout << "Engine::precision = " << engines[0].precision() << std::endl;
+  for(size_t i=1; i!=nthreads; ++i) {
+    engines[i] = engines[0];
+  }
+  std::atomic<size_t> num_ints_computed{0};
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+  std::vector<libint2::Timers<1>> timers(nthreads);
+#endif
+
+  auto shell2bf = obs.shell2bf();
+  auto shell2atom = obs.shell2atom(atoms);
+
+  auto lambda = [&] (int thread_id) {
+
+    auto& engine = engines[thread_id];
+    const auto& buf = engine.results();
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+    auto& timer = timers[thread_id];
+    timer.clear();
+    timer.set_now_overhead(25);
+#endif
+
+    size_t shell_atoms[4];
+
+    // loop over permutationally-unique set of shells
+    for(auto s1=0l, s1234=0l; s1!=nshells; ++s1) {
+
+      auto bf1_first = shell2bf[s1]; // first basis function in this shell
+      auto n1 = obs[s1].size();// number of basis functions in this shell
+      shell_atoms[0] = shell2atom[s1];
+
+      for(auto s2=0l; s2!=nshells; ++s2) {
+
+        auto bf2_first = shell2bf[s2];
+        auto n2 = obs[s2].size();
+        shell_atoms[1] = shell2atom[s2];
+
+        for(auto s3=0; s3!=nshells; ++s3) {
+
+          auto bf3_first = shell2bf[s3];
+          auto n3 = obs[s3].size();
+          shell_atoms[2] = shell2atom[s3];
+
+          for(auto s4=0; s4!=nshells; ++s4) {
+
+            if ((s1234++) % nthreads != thread_id)
+              continue;
+
+            auto bf4_first = shell2bf[s4];
+            auto n4 = obs[s4].size();
+            shell_atoms[3] = shell2atom[s4];
+
+            const auto n1234 = n1*n2*n3*n4;
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+            timer.start(0);
+#endif
+
+            engine.compute2<Operator::coulomb,BraKet::xx_xx,1>(obs[s1], obs[s2], obs[s3], obs[s4]);
+            num_ints_computed += 12 * n1234;
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+            timer.stop(0);
+#endif
+
+            for(auto d=0; d!=12; ++d) {
+              const int a = d/3;
+              const int xyz = d%3;
+
+              auto coord = shell_atoms[a] * 3 + xyz;
+              auto& g = G[thread_id * nderiv + coord];
+
+            for(auto f1=0, f1234=0; f1!=n1; ++f1) {
+              const auto bf1 = f1 + bf1_first;
+              for(auto f2=0; f2!=n2; ++f2) {
+                const auto bf2 = f2 + bf2_first;
+                for(auto f3=0; f3!=n3; ++f3) {
+                  const auto bf3 = f3 + bf3_first;
+                  for(auto f4=0; f4!=n4; ++f4, ++f1234) {
+                    const auto bf4 = f4 + bf4_first;
+
+                    const auto value = buf[d][f1234];
+
+                    g(bf1,bf2) += 2 * D(bf3,bf4) * value;
+                  }
+                }
+              }
+            }
+            } // d \in [0,12)
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+            timer.start(0);
+#endif
+
+            engine.compute2<Operator::coulomb,BraKet::xx_xx,1>(obs[s1], obs[s3], obs[s2], obs[s4]);
+            num_ints_computed += 12 * n1234;
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+            timer.stop(0);
+#endif
+
+            for(auto d=0; d!=12; ++d) {
+              int a = d/3;
+              if (a == 1)
+                a = 2;
+              else if (a == 2)
+                a = 1;
+              const int xyz = d%3;
+
+              auto coord = shell_atoms[a] * 3 + xyz;
+              auto& g = G[thread_id * nderiv + coord];
+
+            for(auto f1=0, f1324=0; f1!=n1; ++f1) {
+              const auto bf1 = f1 + bf1_first;
+              for(auto f3=0; f3!=n3; ++f3) {
+                const auto bf3 = f3 + bf3_first;
+                for(auto f2=0; f2!=n2; ++f2) {
+                  const auto bf2 = f2 + bf2_first;
+                  for(auto f4=0; f4!=n4; ++f4, ++f1324) {
+                    const auto bf4 = f4 + bf4_first;
+
+                    const auto value = buf[d][f1324];
+
+                    g(bf1,bf2) -= D(bf3,bf4) * value;
+                  }
+                }
+              }
+            }
+            } // d \in [0,12)
+
+          }
+        }
+      }
+    }
+
+  }; // end of lambda
+
+  libint2::parallel_do(lambda);
+
+  // accumulate contributions from all threads
+  for(size_t t=1; t!=nthreads; ++t) {
+    for(auto d=0; d!=nderiv; ++d) {
+      G[d] += G[t*nderiv + d];
+    }
+  }
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+  double time_for_ints = 0.0;
+  for(auto& t: timers) {
+    time_for_ints += t.read(0);
+  }
+  std::cout << "time for integrals = " << time_for_ints << std::endl;
+  for(int t=0; t!=nthreads; ++t)
+    engines[t].print_timers();
+#endif
+
+  G.resize(nderiv);
+
+  std::cout << "# of integrals = " << num_ints_computed << std::endl;
+
+  return G;
+}
 #endif
 
 Matrix compute_2body_fock_general(const BasisSet& obs,
@@ -1521,6 +1786,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
 
     auto& engine = engines[thread_id];
     auto& g = G[thread_id];
+    const auto& buf = engine.results();
 
     // loop over permutationally-unique set of shells
     for(auto s1=0l, s1234=0l; s1!=nshells; ++s1) {
@@ -1556,7 +1822,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
               auto s34_deg = (s3 == s4) ? 1.0 : 2.0;
               auto s1234_deg = s12_deg * s34_deg;
               //auto s1234_deg = s12_deg;
-              const auto* buf_J = engine.compute(obs[s1], obs[s2], D_bs[s3], D_bs[s4]);
+              engine.compute(obs[s1], obs[s2], D_bs[s3], D_bs[s4]);
 
               for(auto f1=0, f1234=0; f1!=n1; ++f1) {
                 const auto bf1 = f1 + bf1_first;
@@ -1567,7 +1833,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                     for(auto f4=0; f4!=n4; ++f4, ++f1234) {
                       const auto bf4 = f4 + bf4_first;
 
-                      const auto value = buf_J[f1234];
+                      const auto value = buf[0][f1234];
                       const auto value_scal_by_deg = value * s1234_deg;
                       g(bf1,bf2) += 2.0 * D(bf3,bf4) * value_scal_by_deg;
                     }
@@ -1576,7 +1842,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
               }
             }
 
-            const auto* buf_K = engine.compute2<Operator::coulomb,BraKet::xx_xx,0>(obs[s1], D_bs[s3], obs[s2], D_bs[s4]);
+            engine.compute2<Operator::coulomb,BraKet::xx_xx,0>(obs[s1], D_bs[s3], obs[s2], D_bs[s4]);
 
             for(auto f1=0, f1324=0; f1!=n1; ++f1) {
               const auto bf1 = f1 + bf1_first;
@@ -1587,7 +1853,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs,
                   for(auto f4=0; f4!=n4; ++f4, ++f1324) {
                     const auto bf4 = f4 + bf4_first;
 
-                    const auto value = buf_K[f1324];
+                    const auto value = buf[0][f1324];
                     const auto value_scal_by_deg = value * s12_deg;
                     g(bf1,bf2) -= D(bf3,bf4) * value_scal_by_deg;
                   }
@@ -1686,6 +1952,9 @@ DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
       auto thread_id = 0;
   #endif
 
+      auto& engine = engines[thread_id];
+      const auto& results = engine.results();
+
       // loop over permutationally-unique set of shells
       for(auto s1=0l, s123=0l; s1!=nshells; ++s1) {
 
@@ -1711,7 +1980,8 @@ DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
             timer.start(0);
   #endif
 
-            const auto* buf = engines[thread_id].compute(obs[s1], obs[s2], dfbs[s3], unitshell);
+            engine.compute(obs[s1], obs[s2], dfbs[s3], unitshell);
+            const auto* buf = results[0];
 
   #ifndef _OPENMP
             timer.stop(0);
@@ -1877,11 +2147,13 @@ void api_basic_compile_test(const BasisSet& obs) {
         obs.max_l()      // max angular momentum of shells this engine will accept
     );
     auto shell2bf = obs.shell2bf();
+    const auto& results = onebody_engine.results();
     for(auto s1=0; s1!=obs.size(); ++s1) {
       for(auto s2=0; s2!=obs.size(); ++s2) {
 
         std::cout << "compute shell set {" << s1 << "," << s2 << "} ... ";
-        const auto* ints_shellset = onebody_engine.compute(obs[s1], obs[s2]);
+        onebody_engine.compute(obs[s1], obs[s2]);
+        const auto* ints_shellset = results[0];
         std::cout << "done" << std::endl;
 
         auto bf1 = shell2bf[s1];  // first basis function in first shell

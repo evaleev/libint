@@ -49,12 +49,39 @@ FPref = [ 0.35526531023214,   0.123067513497363,  0.14210612409289, \
 FPtol = 1e-9
 FPok = False if LIBINT_ONEBODY_DERIV>0 else True
 
+F1ref = [-5.43569555885951, -1.88298017648151, -2.17427822354382, \
+          3.47022732532752, -2.96798871197376,  2.59189820356784, \
+          1.96546823353199,  4.85096888845526, -0.417619980024024 ]
+F1tol = 1e-9
+F1ok = False if LIBINT_ONEBODY_DERIV>0 else True
+
+F2ref = [ 2.95100851676078,  1.02225933691908,  1.18040340670247, \
+         -1.89116113658198,  1.64868682622021, -1.42151545975317, \
+         -1.0598473801788 , -2.67094616313929,  0.241112053050697 ]
+F2tol = 1e-9
+F2ok = False if LIBINT_ERI_DERIV>0 else True
+
+N1ref = [ 2.01500148345464 ,  0.698016989334019,  0.806000593381856, \
+         -1.28187870177    ,  1.07670120714609 , -0.951756216776298, \
+         -0.733122781684634, -1.77471819648011 ,  0.145755623394443 ]
+N1tol = 1e-10
+N1ok = False if LIBINT_ONEBODY_DERIV>0 and LIBINT_ERI_DERIV>0 else True
+
+Fref = [ -0.114420248668043 , -0.039636336821566 , -0.0457680994672225, \
+          0.0729288451097068, -0.0618587006295552,  0.0543214912849466, \
+          0.0414914035583673,  0.101495037451119 , -0.00855339181771989 ]
+Ftol = 1e-9
+Fok = False if LIBINT_ONEBODY_DERIV>0 and LIBINT_ERI_DERIV>0 else True
+
 for line in sys.stdin:
     match1 = re.match('\*\* Hartree-Fock energy =' + pat_numbers(1), line)
     match2 = re.match('\*\* edipole =' + pat_numbers(3), line)
     match3 = re.match('\*\* equadrupole =' + pat_numbers(6), line)
     match4 = re.match('\*\* 1-body forces =' + pat_numbers(9), line)
     match5 = re.match('\*\* Pulay forces =' + pat_numbers(9), line)
+    match6 = re.match('\*\* 2-body forces =' + pat_numbers(9), line)
+    match7 = re.match('\*\* nuclear repulsion forces =' + pat_numbers(9), line)
+    match8 = re.match('\*\* Hartree-Fock forces =' + pat_numbers(9), line)
     if match1:
         eok = validate("HF energy", match1.groups(), eref, etol, line)
     elif match2:
@@ -65,10 +92,16 @@ for line in sys.stdin:
         F1ok = validate("1-body force", match4.groups(), F1ref, F1tol, line)
     elif match5:
         FPok = validate("Pulay force", match5.groups(), FPref, FPtol, line)
+    elif match6:
+        F2ok = validate("2-body force", match6.groups(), F2ref, F2tol, line)
+    elif match7:
+        N1ok = validate("nuclear repulsion force", match7.groups(), N1ref, N1tol, line)
+    elif match8:
+        Fok = validate("HF force", match8.groups(), Fref, Ftol, line)
     else:
         print(line,end="")
 
-ok = eok and muok and Qok and F1ok and FPok
+ok = eok and muok and Qok and F1ok and FPok and F2ok and N1ok and Fok
 if not ok: sys.exit(1)
 
 
