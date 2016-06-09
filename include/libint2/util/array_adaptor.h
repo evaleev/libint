@@ -23,14 +23,13 @@
 #include <cassert>
 #include <cstdlib>
 #include <type_traits>
+#include <vector>
 
 namespace libint2 {
 namespace detail {
 
 /// allocator that uses an externally-managed stack-allocated array for
-/// allocations
-/// up to max_size, for larger allocations uses heap.
-/// the bounds
+/// allocations up to max_size, for larger allocations uses heap.
 template <class T, std::size_t N>
 class ext_stack_allocator {
  public:
@@ -93,7 +92,9 @@ class ext_stack_allocator {
                          const ext_stack_allocator<T1, N1>& y) noexcept;
 
  private:
-  bool pointer_on_stack(T* ptr) const { return stack_ <= ptr && ptr < stack_ + N; }
+  bool pointer_on_stack(T* ptr) const {
+    return stack_ <= ptr && ptr < stack_ + N;
+  }
 };
 
 template <class T, std::size_t N>
