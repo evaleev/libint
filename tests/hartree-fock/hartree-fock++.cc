@@ -644,7 +644,34 @@ int main(int argc, char* argv[]) {
         }
       }
       std::cout << std::endl;
-#endif  // LIBINT2_DERIV_ONEBODY_ORDER
+#endif  // LIBINT2_DERIV_ONEBODY_ORDER > 1
+
+#if LIBINT2_DERIV_ERI_ORDER > 1
+      // compute 2-e forces
+      Matrix H2 = Matrix::Zero(ncoords, ncoords);
+
+      //////////
+      // two-body contributions to the forces
+      //////////
+      auto G2 = compute_2body_fock_deriv(2, obs, atoms, D);
+      for (auto row = 0, i = 0; row != ncoords; ++row) {
+        for (auto col = row; col != ncoords; ++col, ++i) {
+          // identity prefactor since E(HF) = trace(H + F, D) = trace(2H + G, D)
+          std::cout << "Fock matrix 2nd deriv (" << row << "," << col << "):\n"
+                    << G2[i] << std::endl;
+          auto hess = G2[i].cwiseProduct(D).sum();
+          H2(row, col) += hess;
+        }
+      }
+
+      std::cout << "** 2-body hessian = ";
+      for (auto row = 0, i = 0; row != ncoords; ++row) {
+        for (auto col = row; col != ncoords; ++col) {
+          std::cout << H2(row, col) << " ";
+        }
+      }
+      std::cout << std::endl;
+#endif
     }
     printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
 
@@ -1522,8 +1549,11 @@ std::vector<Matrix> compute_2body_fock_deriv(unsigned deriv_order,
                                              const Matrix& Schwartz) {
   const auto n = obs.nbf();
   const auto nshells = obs.size();
-  assert(deriv_order == 1);
-  const auto nderiv = atoms.size() * 3;
+  const auto nderiv_shellset =
+      libint2::num_geometrical_derivatives(4, deriv_order); // # of derivs for each shell quartet
+  const auto nderiv = libint2::num_geometrical_derivatives(
+      atoms.size(), deriv_order);  // total # of derivs
+  const auto ncoords_times_two = (atoms.size() * 3) * 2;
   using libint2::nthreads;
   std::vector<Matrix> G(nthreads * nderiv, Matrix::Zero(n, n));
 
@@ -1634,36 +1664,13 @@ std::vector<Matrix> compute_2body_fock_deriv(unsigned deriv_order,
             auto s12_34_deg = (s1 == s3) ? (s2 == s4 ? 1.0 : 2.0) : 2.0;
             auto s1234_deg = s12_deg * s34_deg * s12_34_deg;
 
-#if defined(REPORT_INTEGRAL_TIMINGS)
-            timer.start(0);
-#endif
-
-            engine.compute2<Operator::coulomb, BraKet::xx_xx, 1>(
-                obs[s1], obs[s2], obs[s3], obs[s4]);
-            num_ints_computed += 12 * n1234;
-
-#if defined(REPORT_INTEGRAL_TIMINGS)
-            timer.stop(0);
-#endif
-
-            // 1) each shell set of integrals contributes up to 6 shell sets of
-            // the Fock matrix:
-            //    F(a,b) += (ab|cd) * D(c,d)
-            //    F(c,d) += (ab|cd) * D(a,b)
-            //    F(b,d) -= 1/4 * (ab|cd) * D(a,c)
-            //    F(b,c) -= 1/4 * (ab|cd) * D(a,d)
-            //    F(a,c) -= 1/4 * (ab|cd) * D(b,d)
-            //    F(a,d) -= 1/4 * (ab|cd) * D(b,c)
-            // 2) each permutationally-unique integral (shell set) must be
-            // scaled by its degeneracy,
-            //    i.e. the number of the integrals/sets equivalent to it
-            // 3) the end result must be symmetrized
-            for (auto d = 0; d != 12; ++d) {
-              const int a = d / 3;
-              const int xyz = d % 3;
-
-              auto coord = shell_atoms[a] * 3 + xyz;
-              auto& g = G[thread_id * nderiv + coord];
+            // computes contribution from shell set \c idx to the operator matrix with
+            // index \c op
+            auto add_shellset_to_dest = [&](
+                std::size_t op, std::size_t idx, double scale = 1.0) {
+              auto& g = G[op];
+              auto shset = buf[idx];
+              const auto weight = scale * s1234_deg;
 
               for (auto f1 = 0, f1234 = 0; f1 != n1; ++f1) {
                 const auto bf1 = f1 + bf1_first;
@@ -1674,21 +1681,91 @@ std::vector<Matrix> compute_2body_fock_deriv(unsigned deriv_order,
                     for (auto f4 = 0; f4 != n4; ++f4, ++f1234) {
                       const auto bf4 = f4 + bf4_first;
 
-                      const auto value = buf[d][f1234];
+                      const auto value = shset[f1234];
 
-                      const auto value_scal_by_deg = value * s1234_deg;
+                      const auto wvalue = value * weight;
 
-                      g(bf1, bf2) += D(bf3, bf4) * value_scal_by_deg;
-                      g(bf3, bf4) += D(bf1, bf2) * value_scal_by_deg;
-                      g(bf1, bf3) -= 0.25 * D(bf2, bf4) * value_scal_by_deg;
-                      g(bf2, bf4) -= 0.25 * D(bf1, bf3) * value_scal_by_deg;
-                      g(bf1, bf4) -= 0.25 * D(bf2, bf3) * value_scal_by_deg;
-                      g(bf2, bf3) -= 0.25 * D(bf1, bf4) * value_scal_by_deg;
+                      g(bf1, bf2) += D(bf3, bf4) * wvalue;
+                      g(bf3, bf4) += D(bf1, bf2) * wvalue;
+                      g(bf1, bf3) -= 0.25 * D(bf2, bf4) * wvalue;
+                      g(bf2, bf4) -= 0.25 * D(bf1, bf3) * wvalue;
+                      g(bf1, bf4) -= 0.25 * D(bf2, bf3) * wvalue;
+                      g(bf2, bf3) -= 0.25 * D(bf1, bf4) * wvalue;
                     }
                   }
                 }
               }
-            }  // d \in [0,12)
+            };
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+            timer.start(0);
+#endif
+
+            engine.compute2<Operator::coulomb, BraKet::xx_xx, 1>(
+                obs[s1], obs[s2], obs[s3], obs[s4]);
+            num_ints_computed += nderiv_shellset * n1234;
+
+#if defined(REPORT_INTEGRAL_TIMINGS)
+            timer.stop(0);
+#endif
+
+            switch(deriv_order) {
+              case 0: {
+                add_shellset_to_dest(thread_id, 0);
+              } break;
+
+              case 1: {
+                for (auto d = 0; d != 12; ++d) {
+                  const int a = d / 3;
+                  const int xyz = d % 3;
+
+                  auto coord = shell_atoms[a] * 3 + xyz;
+                  auto& g = G[thread_id * nderiv + coord];
+
+                  add_shellset_to_dest(thread_id * nderiv + coord, d);
+
+                }  // d \in [0,12)
+              } break;
+
+              case 2: {
+// computes upper triangle index
+// n2 = matrix size times 2
+// i,j = (unordered) indices
+#define upper_triangle_index(n2, i, j)                           \
+  (std::min((i), (j))) * ((n2) - (std::min((i), (j))) - 1) / 2 + \
+      (std::max((i), (j)))
+                // look over shellsets in the order in which they appear
+                std::size_t shellset_idx = 0;
+                for (auto c1 = 0; c1 != 4; ++c1) {
+                  auto a1 = shell_atoms[c1];
+                  auto coord1 = 3 * a1;
+                  for (auto xyz1 = 0; xyz1 != 3; ++xyz1, ++coord1) {
+                    for (auto c2 = c1; c2 != 4; ++c2) {
+                      auto a2 = shell_atoms[c2];
+                      auto xyz2_start = (c1 == c2) ? xyz1 : 0;
+                      auto coord2 = 3 * a2 + xyz2_start;
+                      for (auto xyz2 = xyz2_start; xyz2 != 3;
+                           ++xyz2, ++coord2) {
+                        double scale =
+                            (coord1 == coord2 && c1 != c2) ? 2.0 : 1.0;
+
+                        const auto coord12 = upper_triangle_index(
+                            ncoords_times_two, coord1, coord2);
+                        auto op = thread_id * nderiv + coord12;
+                        add_shellset_to_dest(op, shellset_idx, scale);
+                        ++shellset_idx;
+                      }
+                    }
+                  }
+                }
+              } break;
+#undef upper_triangle_index
+
+              default:
+                assert(deriv_order <= 2 &&
+                       "support for 3rd and higher derivatives of the Fock "
+                       "matrix not yet implemented");
+            }
           }
         }
       }
