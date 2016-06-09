@@ -42,6 +42,7 @@
 #include <libint2/solidharmonics.h>
 #include <libint2/util/any.h>
 #include <libint2/util/array_adaptor.h>
+#include <libint2/util/intpart_iter.h>
 #include <libint2/util/compressed_pair.h>
 #include <libint2/util/timer.h>
 
@@ -610,15 +611,22 @@ class Engine {
     // # of targets computed by libint
     const auto ntargets =
         nopers() * num_geometrical_derivatives(2, deriv_order_);
+    // size of ints block computed by Libint
+    const auto target_buf_size = ntargets * ncart12;
 
     // Libint computes derivatives with respect to basis functions only, must
     // must use translational invariance to recover derivatives w.r.t. operator
     // degrees of freedom
+    // will compute derivs w.r.t. 2 Gaussian centers + (if nuclear) nparam_sets
+    // operator centers
     const auto geometry_independent_operator =
         oper_ == Operator::overlap || oper_ == Operator::kinetic;
-    auto num_shellsets_computed = ntargets;  // may increase later
-    // size of ints block computed by Libint
-    const auto target_buf_size = num_shellsets_computed * ncart12;
+    const auto nderivcenters_shset =
+        2 + (oper_ == Operator::nuclear ? nparam_sets : 0);
+    const auto nderivcoord = 3 * nderivcenters_shset;
+    const auto num_shellsets_computed =
+        nopers() *
+        num_geometrical_derivatives(nderivcenters_shset, deriv_order_);
 
     // will use scratch_ if:
     // - Coulomb ints are computed 1 charge at a time, contributions are
@@ -632,11 +640,6 @@ class Engine {
     const auto lmax = std::max(l1, l2);
     assert(lmax <= lmax_);
 
-    // where cartesian ints are located varies, sometimes we compute them in
-    // scratch, etc.
-    // this is the most likely location
-    auto cartesian_ints = primdata_[0].stack;
-
     // simple (s|s) ints will be computed directly and accumulated in the first
     // element of stack
     const auto compute_directly =
@@ -644,10 +647,12 @@ class Engine {
         (oper_ == Operator::overlap || oper_ == Operator::nuclear);
     if (compute_directly) {
       primdata_[0].stack[0] = 0;
-    } else if (accumulate_ints_in_scratch) {
-      memset(static_cast<void*>(&scratch_[0]), 0,
-             sizeof(real_t) * target_buf_size);
+      targets_[0] = primdata_[0].stack;
     }
+
+    if (accumulate_ints_in_scratch)
+      std::fill(begin(scratch_),
+                begin(scratch_) + num_shellsets_computed * ncart12, 0.0);
 
     // loop over accumulation batches
     for (auto pset = 0u; pset != nparam_sets; ++pset) {
@@ -662,8 +667,7 @@ class Engine {
       primdata_[0].contrdepth = p12;
 
       if (compute_directly) {
-        set_targets = true;
-        auto& result = cartesian_ints[0];
+        auto& result = primdata_[0].stack[0];
         switch (oper_) {
           case Operator::overlap:
             for (auto p12 = 0; p12 != primdata_[0].contrdepth; ++p12)
@@ -678,61 +682,234 @@ class Engine {
           default:
             assert(false && "missing case in switch");
         }
+        primdata_[0].targets[0] = &result;
       } else {
         buildfnptrs_[s1.contr[0].l * hard_lmax_ + s2.contr[0].l](&primdata_[0]);
-        cartesian_ints = primdata_[0].targets[0];
 
         if (accumulate_ints_in_scratch) {
           set_targets = true;
-          cartesian_ints = &scratch_[0];
-
-          // 1. copy targets into scratch one by one
-          auto s_target = cartesian_ints;
-          for (auto s = 0; s != ntargets; ++s, s_target += ncart12)
-            std::transform(primdata_[0].targets[s],
-                           primdata_[0].targets[s] + ncart12, s_target,
-                           s_target, std::plus<real_t>());
+          // - for non-derivative ints and first derivative ints the target
+          //   ints computed by libint will appear at the front of targets_
+          // - for second and higher derivs need to re-index targets, hence
+          //   will accumulate later, when computing operator derivatives via
+          //   transinv
+          if (deriv_order_ <= 1) {
+            // accumulate targets computed by libint for this pset into the
+            // accumulated targets in scratch
+            auto s_target = &scratch_[0];
+            for (auto s = 0; s != ntargets; ++s, s_target += ncart12)
+              if (pset != 0)
+                std::transform(primdata_[0].targets[s],
+                               primdata_[0].targets[s] + ncart12, s_target,
+                               s_target, std::plus<real_t>());
+              else
+                std::copy(primdata_[0].targets[s],
+                          primdata_[0].targets[s] + ncart12,
+                          s_target);
+          }
 
           // 2. reconstruct derivatives of nuclear ints for each nucleus
           //    using translational invariance
+          // NB this is done in cartesian basis, otherwise would have to tform
+          // to solids contributions from every atom, rather than the running
+          // total at the end
           if (deriv_order_ > 0) {
-            assert(deriv_order_ == 1 && "feature not implemented");
-            // first 6 shellsets are derivatives with respect to Gaussian
-            // positions
-            // following them are derivs with respect to nuclear coordinates
-            // (3 per nucleus)
-            assert(ntargets == 6 && "unexpected # of targets");
-            auto dest = &scratch_[0] + (6 + pset * 3) * ncart12;
-            for (auto s = 0; s != 3; ++s, dest += ncart12) {
-              auto src = primdata_[0].targets[s];
-              for (auto i = 0; i != ncart12; ++i) {
-                dest[i] = -src[i];
+            switch (deriv_order_) {
+              case 1: {
+                // first 6 shellsets are derivatives with respect to Gaussian
+                // positions
+                // following them are derivs with respect to nuclear coordinates
+                // (3 per nucleus)
+                assert(ntargets == 6 && "unexpected # of targets");
+                auto dest = &scratch_[0] + (6 + pset * 3) * ncart12;
+                for (auto s = 0; s != 3; ++s, dest += ncart12) {
+                  auto src = primdata_[0].targets[s];
+                  for (auto i = 0; i != ncart12; ++i) {
+                    dest[i] = -src[i];
+                  }
+                }
+                dest -= 3 * ncart12;
+                for (auto s = 3; s != 6; ++s, dest += ncart12) {
+                  auto src = primdata_[0].targets[s];
+                  for (auto i = 0; i != ncart12; ++i) {
+                    dest[i] -= src[i];
+                  }
+                }
+              } break;
+
+              case 2: {
+                // computes upper triangle index
+                // n2 = matrix size times 2
+                // i,j = indices, i<j
+#define upper_triangle_index_ord(n2, i, j) ((i) * ((n2) - (i) - 1) / 2 + (j))
+                // same as above, but orders i and j
+#define upper_triangle_index(n2, i, j) \
+  upper_triangle_index_ord(n2, std::min((i), (j)), std::max((i), (j)))
+
+                // accumulate ints for this pset to scratch in locations
+                // remapped to overall deriv index
+                const auto ncoords_times_two = nderivcoord * 2;
+                for (auto d0 = 0, d01 = 0; d0 != 6; ++d0) {
+                  for (auto d1 = d0; d1 != 6; ++d1, ++d01) {
+                    const auto d01_full =
+                        upper_triangle_index_ord(ncoords_times_two, d0, d1);
+                    auto tgt = &scratch_[d01_full*ncart12];
+                    if (pset != 0)
+                      std::transform(primdata_[0].targets[d01],
+                                     primdata_[0].targets[d01] + ncart12, tgt,
+                                     tgt, std::plus<real_t>());
+                    else
+                      std::copy(primdata_[0].targets[d01],
+                                primdata_[0].targets[d01] + ncart12,
+                                tgt);
+                  }
+                }
+
+                // use translational invariance to build derivatives w.r.t.
+                // operator centers
+                {
+                  // mixed derivatives: first deriv w.r.t. Gaussian, second
+                  // w.r.t. operator coord pset
+                  const auto c1 = 2 + pset;
+                  for (auto c0 = 0; c0 != 2; ++c0) {
+                    for (auto xyz0 = 0; xyz0 != 3; ++xyz0) {
+                      const auto coord0 = c0*3 + xyz0;
+                      for (auto xyz1 = 0; xyz1 != 3; ++xyz1) {
+                        const auto coord1 = c1*3 + xyz1;  // coord1 > coord0
+
+                        const auto coord01_abs = upper_triangle_index_ord(
+                            ncoords_times_two, coord0, coord1);
+                        auto tgt = &scratch_[coord01_abs*ncart12];
+
+                        // d2 / dAi dOj = - d2 / dAi dAj
+                        {
+                          auto coord1_A = xyz1;
+                          const auto coord01_A = upper_triangle_index(
+                              12, coord0, coord1_A);
+                          const auto src = primdata_[0].targets[coord01_A];
+                          for (auto i = 0; i != ncart12; ++i) tgt[i] = -src[i];
+                        }
+
+                        // d2 / dAi dOj -= d2 / dAi dBj
+                        {
+                          auto coord1_B = 3 + xyz1;
+                          const auto coord01_B = upper_triangle_index(
+                              12, coord0, coord1_B);
+                          const auto src = primdata_[0].targets[coord01_B];
+                          for (auto i = 0; i != ncart12; ++i) tgt[i] -= src[i];
+                        }
+                      }
+                    }
+                  }
+                }  // mixed derivs
+                {
+                  // operator derivs
+                  const auto c0 = 2 + pset;
+                  const auto c1 = c0;
+                  for (auto xyz0 = 0; xyz0 != 3; ++xyz0) {
+                    const auto coord0 = c0*3 + xyz0;
+                    for (auto xyz1 = xyz0; xyz1 != 3; ++xyz1) {
+                      const auto coord1 = c1*3 + xyz1;  // coord1 > coord0
+
+                      const auto coord01_abs = upper_triangle_index_ord(
+                          ncoords_times_two, coord0, coord1);
+                      auto tgt = &scratch_[coord01_abs*ncart12];
+
+                      // d2 / dOi dOj = d2 / dAi dAj
+                      {
+                        auto coord0_A = xyz0;
+                        auto coord1_A = xyz1;
+                        const auto coord01_AA = upper_triangle_index_ord(
+                            12, coord0_A, coord1_A);
+                        const auto src = primdata_[0].targets[coord01_AA];
+                        for (auto i = 0; i != ncart12; ++i) tgt[i] = src[i];
+                      }
+
+                      // d2 / dOi dOj += d2 / dAi dBj
+                      {
+                        auto coord0_A = xyz0;
+                        auto coord1_B = 3 + xyz1;
+                        const auto coord01_AB = upper_triangle_index_ord(
+                            12, coord0_A, coord1_B);
+                        const auto src = primdata_[0].targets[coord01_AB];
+                        for (auto i = 0; i != ncart12; ++i) tgt[i] += src[i];
+                      }
+
+                      // d2 / dOi dOj += d2 / dBi dAj
+                      {
+                        auto coord0_B = 3 + xyz0;
+                        auto coord1_A = xyz1;
+                        const auto coord01_BA = upper_triangle_index_ord(
+                            12, coord1_A, coord0_B);
+                        const auto src = primdata_[0].targets[coord01_BA];
+                        for (auto i = 0; i != ncart12; ++i) tgt[i] += src[i];
+                      }
+
+                      // d2 / dOi dOj += d2 / dBi dBj
+                      {
+                        auto coord0_B = 3 + xyz0;
+                        auto coord1_B = 3 + xyz1;
+                        const auto coord01_BB = upper_triangle_index_ord(
+                            12, coord0_B, coord1_B);
+                        const auto src = primdata_[0].targets[coord01_BB];
+                        for (auto i = 0; i != ncart12; ++i) tgt[i] += src[i];
+                      }
+
+                    }
+                  }
+                }  // operator derivs
+
+#undef upper_triangle_index
+              } break;
+
+              default: {
+                assert(deriv_order_ <= 2 && "feature not implemented");
+
+                // 1. since # of derivatives changes, remap derivatives computed
+                //    by libint; targets_ will hold the "remapped" pointers to
+                //    the data
+                using ShellSetDerivIterator =
+                    libint2::FixedOrderedIntegerPartitionIterator<
+                        std::vector<unsigned int>>;
+                ShellSetDerivIterator shellset_gaussian_diter(deriv_order_, 2);
+                ShellSetDerivIterator shellset_full_diter(deriv_order_,
+                                                          nderivcenters_shset);
+                std::vector<unsigned int> full_deriv(3*nderivcenters_shset, 0);
+                std::size_t s = 0;
+                while (shellset_gaussian_diter) {  // loop over derivs computed
+                                                   // by libint
+                  const auto& s1s2_deriv = *shellset_gaussian_diter;
+                  std::copy(begin(s1s2_deriv), end(s1s2_deriv),
+                            begin(full_deriv));
+                  const auto full_rank =
+                      ShellSetDerivIterator::rank(full_deriv);
+                  targets_[full_rank] = primdata_[0].targets[s];
+                }
+                // use translational invariance to build derivatives w.r.t.
+                // operator centers
+
               }
-            }
-            dest -= 3 * ncart12;
-            for (auto s = 3; s != 6; ++s, dest += ncart12) {
-              auto src = primdata_[0].targets[s];
-              for (auto i = 0; i != ncart12; ++i) {
-                dest[i] -= src[i];
-              }
-            }
-            num_shellsets_computed += 3;  // just added 3 shell sets
+
+            }  // deriv_order_ switch
           }                               // reconstruct derivatives
         }
       }  // ltot != 0
     }    // pset (accumulation batches)
 
     if (tform_to_solids) {
+      set_targets = false;
       // where do spherical ints go?
       auto* spherical_ints =
-          (cartesian_ints == &scratch_[0]) ? scratch2_ : &scratch_[0];
+          (accumulate_ints_in_scratch) ? scratch2_ : &scratch_[0];
 
       // transform to solid harmonics, one shell set at a time:
       // for each computed shell set ...
       for (auto s = 0ul; s != num_shellsets_computed;
-           ++s, cartesian_ints += ncart12, spherical_ints += n12) {
-        // .. and compute the destination
-        targets_[s] = spherical_ints;
+           ++s, spherical_ints += n12) {
+        auto cartesian_ints = accumulate_ints_in_scratch
+                                  ? &scratch_[s * ncart12]
+                                  : primdata_[0].targets[s];
+        // transform
         if (s1.contr[0].pure && s2.contr[0].pure) {
           libint2::solidharmonics::tform(l1, l2, cartesian_ints,
                                          spherical_ints);
@@ -744,16 +921,17 @@ class Engine {
             libint2::solidharmonics::tform_cols(n1, l2, cartesian_ints,
                                                 spherical_ints);
         }
+        // .. and compute the destination
+        targets_[s] = spherical_ints;
       }     // loop cartesian shell set
     }       // tform to solids
-    else {  // set targets to cartesian ints
-      if (set_targets) {
-        for (auto s = 0ul; s != num_shellsets_computed;
-             ++s, cartesian_ints += ncart12) {
-          targets_[s] = cartesian_ints;  // if !accumulate_ints_in_scratch this
-                                         // assumes libint returns
-                                         // densely-packed targets targets
-        }
+
+    if (set_targets) {
+      for (auto s = 0ul; s != num_shellsets_computed; ++s) {
+        auto cartesian_ints = accumulate_ints_in_scratch
+                                  ? &scratch_[s * ncart12]
+                                  : primdata_[0].targets[s];
+        targets_[s] = cartesian_ints;
       }
     }
 
@@ -903,8 +1081,8 @@ class Engine {
         nshsets * std::pow(ncart_max, braket_rank());
     // need to be able to hold 2 sets of target shellsets: the worst case occurs
     // when dealing with
-    // 1-body Coulomb ints derivatives ... have 2+natom derivative sets that are
-    // stored in scratch
+    // 1-body Coulomb ints derivatives ... have 2+natom 1st-order derivative sets
+    // (and many more of 2nd and higher) that are stored in scratch
     // then need to transform to solids. To avoid copying back and forth make
     // sure that there is enough
     // room to transform all ints and save them in correct order in single pass
