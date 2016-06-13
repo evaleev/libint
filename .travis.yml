@@ -14,8 +14,22 @@ matrix:
       env: GCC_VERSION=4.8
     - compiler: clang
       env: GCC_VERSION=4.9
-before_install:
-  - ./bin/travisci_before_$TRAVIS_OS_NAME.sh
+sudo: false
+addons:
+  apt:
+    sources:
+      - george-edison55-precise-backports
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-precise-3.7
+      - boost-latest
+    packages:
+      - g++-4.8
+      - g++-4.9
+      - g++-5
+      - clang-3.7
+      - libgmp-dev
+      - libeigen3-dev
+      - libboost1.55-dev
 script:
   - ./bin/travisci_build_$TRAVIS_OS_NAME.sh
 after_failure:
