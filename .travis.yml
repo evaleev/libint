@@ -20,16 +20,18 @@ addons:
     sources:
       - george-edison55-precise-backports
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-precise-3.7
+#      - llvm-toolchain-precise-3.7
       - boost-latest
     packages:
       - g++-4.8
       - g++-4.9
       - g++-5
-      - clang-3.7
+# llvm.org apt repo is down
+#      - clang-3.7
       - libgmp-dev
       - libeigen3-dev
       - libboost1.55-dev
+install: true
 script:
   - ./bin/travisci_build_$TRAVIS_OS_NAME.sh
 after_failure:
