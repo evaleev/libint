@@ -122,8 +122,9 @@ Matrix compute_2body_fock_general(
     );
 
 #if LIBINT2_DERIV_ERI_ORDER
+template <unsigned deriv_order>
 std::vector<Matrix> compute_2body_fock_deriv(
-    unsigned deriv_order, const BasisSet& obs, const std::vector<Atom>& atoms,
+    const BasisSet& obs, const std::vector<Atom>& atoms,
     const Matrix& D,
     double precision = std::numeric_limits<
         double>::epsilon(),  // discard contributions smaller than this
@@ -463,6 +464,8 @@ int main(int argc, char* argv[]) {
 
     } while (((ediff_rel > conv) || (rms_error > conv)) && (iter < maxiter));
 
+    printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
+
     auto Mu = compute_1body_ints<Operator::emultipole2>(obs);
     std::array<double, 3> mu;
     std::array<double, 6> qu;
@@ -532,7 +535,7 @@ int main(int argc, char* argv[]) {
       //////////
       // two-body contributions to the forces
       //////////
-      auto G1 = compute_2body_fock_deriv(1, obs, atoms, D);
+      auto G1 = compute_2body_fock_deriv<1>(obs, atoms, D);
       for (auto atom = 0, i = 0; atom != atoms.size(); ++atom) {
         for (auto xyz = 0; xyz != 3; ++xyz, ++i) {
           // identity prefactor since E(HF) = trace(H + F, D) = trace(2H + G, D)
@@ -551,7 +554,7 @@ int main(int argc, char* argv[]) {
 // total force
 #if LIBINT2_DERIV_ONEBODY_ORDER && LIBINT2_DERIV_ERI_ORDER
       // compute nuclear repulsion forces
-      Matrix N1 = Matrix::Zero(atoms.size(), 3);
+      Matrix FN = Matrix::Zero(atoms.size(), 3);
       //////////
       // nuclear repulsion contribution to the forces
       //////////
@@ -573,21 +576,21 @@ int main(int argc, char* argv[]) {
           auto fx = -x12 * z1z2_over_r12_3;
           auto fy = -y12 * z1z2_over_r12_3;
           auto fz = -z12 * z1z2_over_r12_3;
-          N1(a1, 0) += fx;
-          N1(a1, 1) += fy;
-          N1(a1, 2) += fz;
-          N1(a2, 0) -= fx;
-          N1(a2, 1) -= fy;
-          N1(a2, 2) -= fz;
+          FN(a1, 0) += fx;
+          FN(a1, 1) += fy;
+          FN(a1, 2) += fz;
+          FN(a2, 0) -= fx;
+          FN(a2, 1) -= fy;
+          FN(a2, 2) -= fz;
         }
       }
 
       std::cout << "** nuclear repulsion forces = ";
       for (int atom = 0; atom != atoms.size(); ++atom)
-        for (int xyz = 0; xyz != 3; ++xyz) std::cout << N1(atom, xyz) << " ";
+        for (int xyz = 0; xyz != 3; ++xyz) std::cout << FN(atom, xyz) << " ";
       std::cout << std::endl;
 
-      auto F = F1 + F_Pulay + F2 + N1;
+      auto F = F1 + F_Pulay + F2 + FN;
       std::cout << "** Hartree-Fock forces = ";
       for (int atom = 0; atom != atoms.size(); ++atom)
         for (int xyz = 0; xyz != 3; ++xyz) std::cout << F(atom, xyz) << " ";
@@ -653,12 +656,10 @@ int main(int argc, char* argv[]) {
       //////////
       // two-body contributions to the forces
       //////////
-      auto G2 = compute_2body_fock_deriv(2, obs, atoms, D);
+      auto G2 = compute_2body_fock_deriv<2>(obs, atoms, D);
       for (auto row = 0, i = 0; row != ncoords; ++row) {
         for (auto col = row; col != ncoords; ++col, ++i) {
           // identity prefactor since E(HF) = trace(H + F, D) = trace(2H + G, D)
-          std::cout << "Fock matrix 2nd deriv (" << row << "," << col << "):\n"
-                    << G2[i] << std::endl;
           auto hess = G2[i].cwiseProduct(D).sum();
           H2(row, col) += hess;
         }
@@ -672,8 +673,79 @@ int main(int argc, char* argv[]) {
       }
       std::cout << std::endl;
 #endif
+
+// if support 1-e and 2-e 2nd derivatives compute nuclear repulsion hessian and
+// the total hessian
+#if LIBINT2_DERIV_ONEBODY_ORDER > 1 && LIBINT2_DERIV_ERI_ORDER > 1
+      // compute nuclear repulsion hessian
+      // NB only the upper triangle is computed!!!
+      Matrix HN = Matrix::Zero(ncoords, ncoords);
+
+      //////////
+      // nuclear repulsion contribution to the hessian
+      //////////
+      for (auto a1 = 1; a1 != atoms.size(); ++a1) {
+        const auto& atom1 = atoms[a1];
+        for (auto a2 = 0; a2 < a1; ++a2) {
+          const auto& atom2 = atoms[a2];
+
+          auto x12 = atom1.x - atom2.x;
+          auto y12 = atom1.y - atom2.y;
+          auto z12 = atom1.z - atom2.z;
+          auto x12_2 = x12 * x12;
+          auto y12_2 = y12 * y12;
+          auto z12_2 = z12 * z12;
+          auto r12_2 = x12 * x12 + y12 * y12 + z12 * z12;
+          auto r12 = sqrt(r12_2);
+          auto r12_5 = r12 * r12_2 * r12_2;
+
+          auto z1z2_over_r12_5 =
+              atom1.atomic_number * atom2.atomic_number / r12_5;
+
+          HN(3*a1 + 0, 3*a1 + 0) += z1z2_over_r12_5 * (3*x12_2 - r12_2);
+          HN(3*a1 + 1, 3*a1 + 1) += z1z2_over_r12_5 * (3*y12_2 - r12_2);
+          HN(3*a1 + 2, 3*a1 + 2) += z1z2_over_r12_5 * (3*z12_2 - r12_2);
+          HN(3*a1 + 0, 3*a1 + 1) += z1z2_over_r12_5 * (3*x12*y12);
+          HN(3*a1 + 0, 3*a1 + 2) += z1z2_over_r12_5 * (3*x12*z12);
+          HN(3*a1 + 1, 3*a1 + 2) += z1z2_over_r12_5 * (3*y12*z12);
+
+          HN(3*a2 + 0, 3*a2 + 0) += z1z2_over_r12_5 * (3*x12_2 - r12_2);
+          HN(3*a2 + 1, 3*a2 + 1) += z1z2_over_r12_5 * (3*y12_2 - r12_2);
+          HN(3*a2 + 2, 3*a2 + 2) += z1z2_over_r12_5 * (3*z12_2 - r12_2);
+          HN(3*a2 + 0, 3*a2 + 1) += z1z2_over_r12_5 * (3*x12*y12);
+          HN(3*a2 + 0, 3*a2 + 2) += z1z2_over_r12_5 * (3*x12*z12);
+          HN(3*a2 + 1, 3*a2 + 2) += z1z2_over_r12_5 * (3*y12*z12);
+
+          HN(3*a2 + 0, 3*a1 + 0) -= z1z2_over_r12_5 * (3*x12_2 - r12_2);
+          HN(3*a2 + 1, 3*a1 + 1) -= z1z2_over_r12_5 * (3*y12_2 - r12_2);
+          HN(3*a2 + 2, 3*a1 + 2) -= z1z2_over_r12_5 * (3*z12_2 - r12_2);
+          HN(3*a2 + 1, 3*a1 + 0) -= z1z2_over_r12_5 * (3*y12*x12);
+          HN(3*a2 + 2, 3*a1 + 0) -= z1z2_over_r12_5 * (3*z12*x12);
+          HN(3*a2 + 2, 3*a1 + 1) -= z1z2_over_r12_5 * (3*z12*y12);
+          HN(3*a2 + 0, 3*a1 + 1) -= z1z2_over_r12_5 * (3*x12*y12);
+          HN(3*a2 + 0, 3*a1 + 2) -= z1z2_over_r12_5 * (3*x12*z12);
+          HN(3*a2 + 1, 3*a1 + 2) -= z1z2_over_r12_5 * (3*y12*z12);
+        }
+      }
+
+      std::cout << "** nuclear repulsion hessian = ";
+      for (auto row = 0, i = 0; row != ncoords; ++row) {
+        for (auto col = row; col != ncoords; ++col) {
+          std::cout << HN(row, col) << " ";
+        }
+      }
+      std::cout << std::endl;
+
+      auto H = H1 + H_Pulay + H2 + HN;
+      std::cout << "** Hartree-Fock hessian = ";
+      for (auto row = 0, i = 0; row != ncoords; ++row) {
+        for (auto col = row; col != ncoords; ++col) {
+          std::cout << H(row, col) << " ";
+        }
+      }
+      std::cout << std::endl;
+#endif
     }
-    printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
 
     libint2::finalize();  // done with libint
 
@@ -1542,8 +1614,8 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
 }
 
 #if LIBINT2_DERIV_ERI_ORDER
-std::vector<Matrix> compute_2body_fock_deriv(unsigned deriv_order,
-                                             const BasisSet& obs,
+template <unsigned deriv_order>
+std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
                                              const std::vector<Atom>& atoms,
                                              const Matrix& D, double precision,
                                              const Matrix& Schwartz) {
@@ -1667,7 +1739,7 @@ std::vector<Matrix> compute_2body_fock_deriv(unsigned deriv_order,
             // computes contribution from shell set \c idx to the operator matrix with
             // index \c op
             auto add_shellset_to_dest = [&](
-                std::size_t op, std::size_t idx, double scale = 1.0) {
+                std::size_t op, std::size_t idx, int coord1, int coord2, double scale = 1.0) {
               auto& g = G[op];
               auto shset = buf[idx];
               const auto weight = scale * s1234_deg;
@@ -1682,7 +1754,6 @@ std::vector<Matrix> compute_2body_fock_deriv(unsigned deriv_order,
                       const auto bf4 = f4 + bf4_first;
 
                       const auto value = shset[f1234];
-
                       const auto wvalue = value * weight;
 
                       g(bf1, bf2) += D(bf3, bf4) * wvalue;
@@ -1701,7 +1772,7 @@ std::vector<Matrix> compute_2body_fock_deriv(unsigned deriv_order,
             timer.start(0);
 #endif
 
-            engine.compute2<Operator::coulomb, BraKet::xx_xx, 1>(
+            engine.compute2<Operator::coulomb, BraKet::xx_xx, deriv_order>(
                 obs[s1], obs[s2], obs[s3], obs[s4]);
             num_ints_computed += nderiv_shellset * n1234;
 
@@ -1709,9 +1780,10 @@ std::vector<Matrix> compute_2body_fock_deriv(unsigned deriv_order,
             timer.stop(0);
 #endif
 
-            switch(deriv_order) {
+            switch (deriv_order) {
               case 0: {
-                add_shellset_to_dest(thread_id, 0);
+                int coord1 = 0, coord2 = 0;
+                add_shellset_to_dest(thread_id, 0, coord1, coord2);
               } break;
 
               case 1: {
@@ -1722,7 +1794,9 @@ std::vector<Matrix> compute_2body_fock_deriv(unsigned deriv_order,
                   auto coord = shell_atoms[a] * 3 + xyz;
                   auto& g = G[thread_id * nderiv + coord];
 
-                  add_shellset_to_dest(thread_id * nderiv + coord, d);
+                  int coord1 = 0, coord2 = 0;
+
+                  add_shellset_to_dest(thread_id * nderiv + coord, d, coord1, coord2);
 
                 }  // d \in [0,12)
               } break;
@@ -1752,7 +1826,7 @@ std::vector<Matrix> compute_2body_fock_deriv(unsigned deriv_order,
                         const auto coord12 = upper_triangle_index(
                             ncoords_times_two, coord1, coord2);
                         auto op = thread_id * nderiv + coord12;
-                        add_shellset_to_dest(op, shellset_idx, scale);
+                        add_shellset_to_dest(op, shellset_idx, coord1, coord2, scale);
                         ++shellset_idx;
                       }
                     }
