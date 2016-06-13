@@ -622,6 +622,8 @@ Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
           // Coulomb contribution to the Fock matrix is from {s1,s2,s3,s4} integrals
           engine.compute(shells[s1], shells[s2], shells[s3], shells[s4]);
           const auto* buf_1234 = buf[0];
+          if (buf_1234 == nullptr)
+            continue; // if all integrals screened out, skip to next quartet
 
           // we don't have an analog of Eigen for tensors (yet ... see github.com/BTAS/BTAS, under development)
           // hence some manual labor here:
@@ -743,6 +745,9 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
           const auto tstart = std::chrono::high_resolution_clock::now();
 
           engine.compute(shells[s1], shells[s2], shells[s3], shells[s4]);
+          const auto* buf_1234 = buf[0];
+          if (buf_1234 == nullptr)
+            continue; // if all integrals screened out, skip to next quartet
 
           const auto tstop = std::chrono::high_resolution_clock::now();
           time_elapsed += tstop - tstart;
@@ -767,7 +772,7 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
                 for(auto f4=0; f4!=n4; ++f4, ++f1234) {
                   const auto bf4 = f4 + bf4_first;
 
-                  const auto value = buf[0][f1234];
+                  const auto value = buf_1234[f1234];
 
                   const auto value_scal_by_deg = value * s1234_deg;
 

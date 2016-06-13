@@ -529,9 +529,12 @@ class Engine {
   /// on the operator set. \sa compute_nshellsets()
   unsigned int nshellsets() const { return targets_.size(); }
 
-  /// computes target shell sets of integrals
-  /// @return vector of pointers to target shell sets
-  /// \note resulting shell sets are stored in row-major order
+  /// Computes target shell sets of integrals.
+
+  /// @return vector of pointers to target shell sets, the number of sets = Engine::nshellsets();
+  ///         if the first pointer equals \c nullptr then all elements were screened out.
+  /// \note resulting shell sets are stored in row-major order.
+  /// \note Call Engine::compute1() or Engine::compute2() directly to avoid extra copies.
   template <typename... ShellPack>
   const target_ptr_vec& compute(const libint2::Shell& first_shell,
                                 const ShellPack&... rest_of_shells) {
@@ -567,8 +570,8 @@ class Engine {
     return targets_;
   }
 
-  /// computes target shell sets of integrals
-  /// @return vector of pointers to target shell sets
+  /// Computes target shell sets of 1-body integrals.
+  /// @return vector of pointers to target shell sets, the number of sets = Engine::nshellsets()
   /// \note resulting shell sets are stored in row-major order
   const target_ptr_vec& compute1(const libint2::Shell& s1,
                                  const libint2::Shell& s2) {
@@ -938,6 +941,13 @@ class Engine {
     return targets_;
   }
 
+  /// Computes target shell sets of 2-body integrals.
+  /// @tparam oper operator
+  /// @tparam braket the integral type
+  /// @tparam deriv_order the derivative order, values greater than 2 not yet supported
+  /// @return vector of pointers to target shell sets, the number of sets = Engine::nshellsets();
+  ///         if the first pointer equals \c nullptr then all elements were screened out.
+  /// \note resulting shell sets are stored in row-major order
   template <Operator oper, BraKet braket, size_t deriv_order>
   inline const target_ptr_vec& compute2(const Shell& s1, const Shell& s2,
                                         const Shell& s3, const Shell& s4);
@@ -2035,11 +2045,9 @@ inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
 #endif
 
-  // all primitive combinations screened out? return zeroes
+  // all primitive combinations screened out? set 1st target ptr to nullptr
   if (primdata_[0].contrdepth == 0) {
-    const size_t n = bra1.size() * bra2.size() * ket1.size() * ket2.size();
-    memset(primdata_[0].stack, 0, sizeof(real_t) * n);
-    targets_[0] = primdata_[0].stack;
+    targets_[0] = nullptr;
     return targets_;
   }
 

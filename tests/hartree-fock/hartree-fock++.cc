@@ -1182,6 +1182,7 @@ Matrix compute_schwartz_ints(
         auto n12 = n1 * n2;
 
         engines[thread_id].compute(bs1[s1], bs2[s2], bs1[s1], bs2[s2]);
+        assert(buf[0] != nullptr && "to compute Schwartz ints turn off primitive screening");
 
         // the diagonal elements are the Schwartz ints ... use Map.diagonal()
         Eigen::Map<const Matrix> buf_mat(buf[0], n12, n12);
@@ -1412,6 +1413,8 @@ Matrix compute_2body_2index_ints(const BasisSet& bs) {
 
         // compute shell pair; return is the pointer to the buffer
         engine.compute(bs[s1], unitshell, bs[s2], unitshell);
+        if (buf[0] == nullptr)
+          continue; // if all integrals screened out, skip to next shell set
 
         // "map" buffer to a const Eigen Matrix, and copy it to the
         // corresponding blocks of the result
@@ -1542,6 +1545,9 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
 
             engine.compute2<Operator::coulomb, BraKet::xx_xx, 0>(
                 obs[s1], obs[s2], obs[s3], obs[s4]);
+            const auto* buf_1234 = buf[0];
+            if (buf_1234 == nullptr)
+              continue; // if all integrals screened out, skip to next quartet
 
 #if defined(REPORT_INTEGRAL_TIMINGS)
             timer.stop(0);
@@ -1568,7 +1574,7 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
                   for (auto f4 = 0; f4 != n4; ++f4, ++f1234) {
                     const auto bf4 = f4 + bf4_first;
 
-                    const auto value = buf[0][f1234];
+                    const auto value = buf_1234[f1234];
 
                     const auto value_scal_by_deg = value * s1234_deg;
 
@@ -1774,6 +1780,8 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
 
             engine.compute2<Operator::coulomb, BraKet::xx_xx, deriv_order>(
                 obs[s1], obs[s2], obs[s3], obs[s4]);
+            if (buf[0] == nullptr)
+              continue; // if all integrals screened out, skip to next quartet
             num_ints_computed += nderiv_shellset * n1234;
 
 #if defined(REPORT_INTEGRAL_TIMINGS)
@@ -1941,20 +1949,23 @@ Matrix compute_2body_fock_general(const BasisSet& obs, const Matrix& D,
               auto s34_deg = (s3 == s4) ? 1.0 : 2.0;
               auto s1234_deg = s12_deg * s34_deg;
               // auto s1234_deg = s12_deg;
-              engine.compute(obs[s1], obs[s2], D_bs[s3], D_bs[s4]);
+              engine.compute2<Operator::coulomb, BraKet::xx_xx, 0>(
+                  obs[s1], obs[s2], D_bs[s3], D_bs[s4]);
+              const auto* buf_1234 = buf[0];
+              if (buf_1234 != nullptr) {
+                for (auto f1 = 0, f1234 = 0; f1 != n1; ++f1) {
+                  const auto bf1 = f1 + bf1_first;
+                  for (auto f2 = 0; f2 != n2; ++f2) {
+                    const auto bf2 = f2 + bf2_first;
+                    for (auto f3 = 0; f3 != n3; ++f3) {
+                      const auto bf3 = f3 + bf3_first;
+                      for (auto f4 = 0; f4 != n4; ++f4, ++f1234) {
+                        const auto bf4 = f4 + bf4_first;
 
-              for (auto f1 = 0, f1234 = 0; f1 != n1; ++f1) {
-                const auto bf1 = f1 + bf1_first;
-                for (auto f2 = 0; f2 != n2; ++f2) {
-                  const auto bf2 = f2 + bf2_first;
-                  for (auto f3 = 0; f3 != n3; ++f3) {
-                    const auto bf3 = f3 + bf3_first;
-                    for (auto f4 = 0; f4 != n4; ++f4, ++f1234) {
-                      const auto bf4 = f4 + bf4_first;
-
-                      const auto value = buf[0][f1234];
-                      const auto value_scal_by_deg = value * s1234_deg;
-                      g(bf1, bf2) += 2.0 * D(bf3, bf4) * value_scal_by_deg;
+                        const auto value = buf_1234[f1234];
+                        const auto value_scal_by_deg = value * s1234_deg;
+                        g(bf1, bf2) += 2.0 * D(bf3, bf4) * value_scal_by_deg;
+                      }
                     }
                   }
                 }
@@ -1963,6 +1974,9 @@ Matrix compute_2body_fock_general(const BasisSet& obs, const Matrix& D,
 
             engine.compute2<Operator::coulomb, BraKet::xx_xx, 0>(
                 obs[s1], D_bs[s3], obs[s2], D_bs[s4]);
+            const auto* buf_1324 = buf[0];
+            if (buf_1324 == nullptr)
+              continue; // if all integrals screened out, skip to next quartet
 
             for (auto f1 = 0, f1324 = 0; f1 != n1; ++f1) {
               const auto bf1 = f1 + bf1_first;
@@ -1973,7 +1987,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs, const Matrix& D,
                   for (auto f4 = 0; f4 != n4; ++f4, ++f1324) {
                     const auto bf4 = f4 + bf4_first;
 
-                    const auto value = buf[0][f1324];
+                    const auto value = buf_1324[f1324];
                     const auto value_scal_by_deg = value * s12_deg;
                     g(bf1, bf2) -= D(bf3, bf4) * value_scal_by_deg;
                   }
@@ -2101,6 +2115,8 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
 
             engine.compute(obs[s1], obs[s2], dfbs[s3], unitshell);
             const auto* buf = results[0];
+            if (buf == nullptr)
+              continue;
 
 #ifndef _OPENMP
             timer.stop(0);
