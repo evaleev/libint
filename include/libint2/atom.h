@@ -24,8 +24,10 @@
 # error "libint2/atom.h requires C++11 support"
 #endif
 
+#include <array>
 #include <iostream>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 #include <libint2/chemistry/elements.h>
@@ -95,6 +97,17 @@ namespace libint2 {
     }
 
     return atoms;
+  }
+
+  /// converts a vector of <code>Atom</code>s to a vector of point charges
+  std::vector<std::pair<double, std::array<double, 3>>> make_point_charges(
+      const std::vector<libint2::Atom>& atoms) {
+    std::vector<std::pair<double, std::array<double, 3>>> q(atoms.size());
+    for (const auto& atom : atoms) {
+      q.emplace_back(static_cast<double>(atom.atomic_number),
+                     std::array<double, 3>{atom.x, atom.y, atom.z});
+    }
+    return q;
   }
 
 } // namespace libint2
