@@ -877,12 +877,7 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
   // the nuclei are charges in this case; in QM/MM there will also be classical
   // charges
   if (obtype == Operator::nuclear) {
-    std::vector<std::pair<double, std::array<double, 3>>> q;
-    for (const auto& atom : atoms) {
-      q.push_back({static_cast<double>(atom.atomic_number),
-                   {{atom.x, atom.y, atom.z}}});
-    }
-    engines[0].set_params(q);
+    engines[0].set_params(libint2::make_point_charges(atoms));
   }
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];

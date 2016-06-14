@@ -110,6 +110,7 @@ namespace libint2 {
             signed char lx, ly, lz;
             FOR_CART(lx, ly, lz, l_)
               full_coeff[pure_idx * ncart + cart_idx] = coeff(l_, m, lx, ly, lz);
+              //std::cout << "Solid(" << (int)l_ << "," << (int)m << ") += Cartesian(" << (int)lx << "," << (int)ly << "," << (int)lz << ") * " << full_coeff[pure_idx * ncart + cart_idx] << std::endl;
               ++cart_idx;
             END_FOR_CART
           }

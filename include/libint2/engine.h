@@ -1571,6 +1571,10 @@ template <Operator oper, BraKet braket, size_t deriv_order>
 inline const Engine::target_ptr_vec& Engine::compute2(
     const libint2::Shell& tbra1, const libint2::Shell& tbra2,
     const libint2::Shell& tket1, const libint2::Shell& tket2) {
+  assert(oper == oper_ && "Engine::compute2 -- operator mismatch");
+  assert(braket == braket_ && "Engine::compute2 -- braket mismatch");
+  assert(deriv_order == deriv_order_ &&
+         "Engine::compute2 -- deriv_order mismatch");
   //
   // i.e. bra and ket refer to chemists bra and ket
   //
