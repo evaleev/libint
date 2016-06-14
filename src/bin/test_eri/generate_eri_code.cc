@@ -19,7 +19,7 @@
 
 #include <iostream>
 #include <libint/util.h>
-#include <libint/deriv_iter.h>
+#include <libint2/deriv_iter.h>
 #include <libint/buildtest.h>
 #include <libint/bfset.h>
 #include <libint/master_ints_list.h>
@@ -63,7 +63,7 @@ namespace {
     // set this to the order of deriv ERI
     // will pick up from command line eventually
     const unsigned int deriv_order = 0;
-    DerivIndexIterator<4u> diter(deriv_order);
+    CartesianDerivIterator<4u> diter(deriv_order);
 
     //
     // generate all targets
@@ -72,10 +72,10 @@ namespace {
     // iterate over the distribution of all derivative quanta among 12 different directions
     bool last_deriv = false;
     do {
-      CGShell a(l[0]);  for(unsigned int xyz=0; xyz<3; ++xyz) a.deriv().inc(xyz, diter.value(0+xyz));
-      CGShell b(l[1]);  for(unsigned int xyz=0; xyz<3; ++xyz) b.deriv().inc(xyz, diter.value(3+xyz));
-      CGShell c(l[2]);  for(unsigned int xyz=0; xyz<3; ++xyz) c.deriv().inc(xyz, diter.value(6+xyz));
-      CGShell d(l[3]);  for(unsigned int xyz=0; xyz<3; ++xyz) d.deriv().inc(xyz, diter.value(9+xyz));
+      CGShell a(l[0]);  for(unsigned int xyz=0; xyz<3; ++xyz) a.deriv().inc(xyz, (*diter)[0+xyz]);
+      CGShell b(l[1]);  for(unsigned int xyz=0; xyz<3; ++xyz) b.deriv().inc(xyz, (*diter)[3+xyz]);
+      CGShell c(l[2]);  for(unsigned int xyz=0; xyz<3; ++xyz) c.deriv().inc(xyz, (*diter)[6+xyz]);
+      CGShell d(l[3]);  for(unsigned int xyz=0; xyz<3; ++xyz) d.deriv().inc(xyz, (*diter)[9+xyz]);
 
       const SafePtr<ERIQtet> abcd0 = ERIQtet::Instance(a,b,c,d, 0u);
       targets.push_back(abcd0);

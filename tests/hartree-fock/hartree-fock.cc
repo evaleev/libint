@@ -547,6 +547,9 @@ Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
 
   auto shell2bf = map_shell_to_basis_function(shells);
 
+  // buf[0] points to the target shell set after every call  to engine.compute()
+  const auto& buf = engine.results();
+
   // loop over unique shell pairs, {s1,s2} such that s1 >= s2
   // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
   for(auto s1=0; s1!=shells.size(); ++s1) {
@@ -560,10 +563,10 @@ Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
       auto n2 = shells[s2].size();
 
       // compute shell pair; return is the pointer to the buffer
-      const auto* buf = engine.compute(shells[s1], shells[s2]);
+      engine.compute(shells[s1], shells[s2]);
 
       // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
-      Eigen::Map<const Matrix> buf_mat(buf, n1, n2);
+      Eigen::Map<const Matrix> buf_mat(buf[0], n1, n2);
       result.block(bf1, bf2, n1, n2) = buf_mat;
       if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
       result.block(bf2, bf1, n2, n1) = buf_mat.transpose();
@@ -588,6 +591,9 @@ Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
   Engine engine(Operator::coulomb, max_nprim(shells), max_l(shells), 0);
 
   auto shell2bf = map_shell_to_basis_function(shells);
+
+  // buf[0] points to the target shell set after every call  to engine.compute()
+  const auto& buf = engine.results();
 
   // loop over shell pairs of the Fock matrix, {s1,s2}
   // Fock matrix is symmetric, but skipping it here for simplicity (see compute_2body_fock)
@@ -614,7 +620,10 @@ Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
           auto n4 = shells[s4].size();
 
           // Coulomb contribution to the Fock matrix is from {s1,s2,s3,s4} integrals
-          const auto* buf_1234 = engine.compute(shells[s1], shells[s2], shells[s3], shells[s4]);
+          engine.compute(shells[s1], shells[s2], shells[s3], shells[s4]);
+          const auto* buf_1234 = buf[0];
+          if (buf_1234 == nullptr)
+            continue; // if all integrals screened out, skip to next quartet
 
           // we don't have an analog of Eigen for tensors (yet ... see github.com/BTAS/BTAS, under development)
           // hence some manual labor here:
@@ -635,7 +644,8 @@ Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
           }
 
           // exchange contribution to the Fock matrix is from {s1,s3,s2,s4} integrals
-          const auto* buf_1324 = engine.compute(shells[s1], shells[s3], shells[s2], shells[s4]);
+          engine.compute(shells[s1], shells[s3], shells[s2], shells[s4]);
+          const auto* buf_1324 = buf[0];
 
           for(auto f1=0, f1324=0; f1!=n1; ++f1) {
             const auto bf1 = f1 + bf1_first;
@@ -675,6 +685,8 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
   Engine engine(Operator::coulomb, max_nprim(shells), max_l(shells), 0);
 
   auto shell2bf = map_shell_to_basis_function(shells);
+
+  const auto& buf = engine.results();
 
   // The problem with the simple Fock builder is that permutational symmetries of the Fock,
   // density, and two-electron integrals are not taken into account to reduce the cost.
@@ -732,7 +744,10 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
 
           const auto tstart = std::chrono::high_resolution_clock::now();
 
-          const auto* buf = engine.compute(shells[s1], shells[s2], shells[s3], shells[s4]);
+          engine.compute(shells[s1], shells[s2], shells[s3], shells[s4]);
+          const auto* buf_1234 = buf[0];
+          if (buf_1234 == nullptr)
+            continue; // if all integrals screened out, skip to next quartet
 
           const auto tstop = std::chrono::high_resolution_clock::now();
           time_elapsed += tstop - tstart;
@@ -757,7 +772,7 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
                 for(auto f4=0; f4!=n4; ++f4, ++f1234) {
                   const auto bf4 = f4 + bf4_first;
 
-                  const auto value = buf[f1234];
+                  const auto value = buf_1234[f1234];
 
                   const auto value_scal_by_deg = value * s1234_deg;
 

@@ -22,7 +22,7 @@
 #include <x86intrin.h>
 //#include <rr.h>
 #include <iter.h>
-#include <deriv_iter.h>
+#include <libint2/deriv_iter.h>
 #include <policy_spec.h>
 #include <global_macros.h>
 #include <cgshell_ordering.h>
@@ -41,9 +41,9 @@ constexpr auto npts = am_tot / 2 + 1;
 
 #define ALIGNED_STORAGE __attribute__((aligned(256)))
 
-#include <libint2/vector.h>
-#include <libint2/memory.h>
-#include <libint2/intrinsic_operations.h>
+#include <libint2/util/vector.h>
+#include <libint2/util/memory.h>
+#include <libint2/util/intrinsic_operations.h>
 #include "../../../../../libint_master/include/libint2/timer.h"
 
 typedef struct {
@@ -78,7 +78,7 @@ typedef struct {
 
 #include <VRR_GTG_1d_xx_xx_vec.h>
 #include <libint/util.h>
-#include <libint/deriv_iter.h>
+#include <libint2/deriv_iter.h>
 #include <test_eri/eri.h>
 #ifdef LIBINT_HAVE_LIBROOTS
 # include <roots/roots.hpp>
@@ -201,8 +201,8 @@ std::cout<<"number of points"<<npts<<endl;
   const uint contrdepth4 = contrdepth * contrdepth * contrdepth * contrdepth;
 
   const unsigned int deriv_order = 0;
-  DerivIndexIterator<4> diter(deriv_order);
-  const unsigned int nderiv = diter.range_rank();
+  CartesianDerivIterator<4> diter(deriv_order);
+  const unsigned int nderiv = diter.range_size();
 
   CGShell sh0(am[0]);
   CGShell sh1(am[1]);
@@ -470,11 +470,11 @@ std::cout<<"number of points"<<npts<<endl;
 
                     const LIBINT2_REF_REALTYPE c0123 = c0[p0] * c1[p1] * c2[p2] * c3[p3];
 
-                    DerivIndexIterator<4> diter(deriv_order);
+                    CartesianDerivIterator<4> diter(deriv_order);
                     bool last_deriv = false;
                     unsigned int di = 0;
                     do {
-                      ref_eri[di++] += c0123 * eri(diter.values(),
+                      ref_eri[di++] += c0123 * eri(&(*diter)[0],
                                                    l0,m0,n0,a0,Aref,
                                                    l1,m1,n1,a1,Bref,
                                                    l2,m2,n2,a2,Cref,

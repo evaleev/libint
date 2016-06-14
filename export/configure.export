@@ -349,7 +349,7 @@ if test "X$libint_user_defined_real" != "X"; then
  AC_MSG_CHECKING([if Libint real type is usable])
  AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM(
-    [[#include <libint2/vector.h>
+    [[#include <libint2/util/vector.h>
       $libint_user_defined_real_includes
       
     ]],

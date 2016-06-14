@@ -22,7 +22,7 @@
 
 #include <rr.h>
 #include <iter.h>
-#include <deriv_iter.h>
+#include <libint2/deriv_iter.h>
 #include <policy_spec.h>
 #include <global_macros.h>
 #include <cgshell_ordering.h>
@@ -39,10 +39,10 @@ constexpr auto am_tot = am0 + am1 + am2 + am3;
 int bool_test = 0;
 
 
-#include <libint2/vector.h>
-#include <libint2/memory.h>
-#include <libint2/intrinsic_operations.h>
-#include <libint2/timer.h>
+#include <libint2/util/vector.h>
+#include <libint2/util/memory.h>
+#include <libint2/util/intrinsic_operations.h>
+#include <libint2/util/timer.h>
 typedef struct {
     LIBINT2_REALTYPE AB_x[LIBINT2_MAX_VECLEN];
     LIBINT2_REALTYPE AB_y[LIBINT2_MAX_VECLEN];
@@ -75,7 +75,7 @@ typedef struct {
 
 #include <VRR_GTG_1d_xx_xx.h>
 #include <libint/util.h>
-#include <libint/deriv_iter.h>
+#include <libint2/deriv_iter.h>
 #include <test_eri/eri.h>
 
 #ifdef LIBINT_HAVE_LIBROOTS
@@ -197,8 +197,8 @@ int main(int argc, char** argv)
   const uint contrdepth4 = contrdepth * contrdepth * contrdepth * contrdepth;
 
   const unsigned int deriv_order = 0;
-  DerivIndexIterator<4> diter(deriv_order);
-  const unsigned int nderiv = diter.range_rank();
+  CartesianDerivIterator<4> diter(deriv_order);
+  const unsigned int nderiv = diter.range_size();
 
   CGShell sh0(am[0]);
   CGShell sh1(am[1]);
@@ -468,11 +468,11 @@ int main(int argc, char** argv)
 
                     const LIBINT2_REF_REALTYPE c0123 = c0[p0] * c1[p1] * c2[p2] * c3[p3];
 
-                    DerivIndexIterator<4> diter(deriv_order);
+                    CartesianDerivIterator<4> diter(deriv_order);
                     bool last_deriv = false;
                     unsigned int di = 0;
                     do {
-                      ref_eri[di++] += c0123 * eri(diter.values(),
+                      ref_eri[di++] += c0123 * eri(&(*diter)[0],
                                                    l0,m0,n0,a0,Aref,
                                                    l1,m1,n1,a1,Bref,
                                                    l2,m2,n2,a2,Cref,

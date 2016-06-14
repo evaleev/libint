@@ -26,7 +26,7 @@
 #include <rr.h>
 #include <iter.h>
 #include <util.h>
-#include <deriv_iter.h>
+#include <libint2/deriv_iter.h>
 #include <policy_spec.h>
 #include <global_macros.h>
 
@@ -71,8 +71,8 @@ int main(int argc, char** argv)
   RandomShellSet<4> rsqset(am, veclen, contrdepth);
 
   const unsigned int deriv_order = 0;
-  DerivIndexIterator<4> diter(deriv_order);
-  const unsigned int nderiv = diter.range_rank();
+  CartesianDerivIterator<4> diter(deriv_order);
+  const unsigned int nderiv = diter.range_size();
 
   CGShell sh0(am[0]);
   CGShell sh1(am[1]);

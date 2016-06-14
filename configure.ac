@@ -1,5 +1,5 @@
 define([libint_mmm_version],[2.2.0])
-define([libint_buildid],[alpha])
+define([libint_buildid],[beta1])
 define([libint_so_version],[2:0:0])
 
 dnl --------- Begin ---------
@@ -784,7 +784,7 @@ else
 fi
 
 AC_ARG_ENABLE(fma,
-[  --enable-fma-instr      Generate FMA (fused multiply-add) instructions (must be supported by hardware to benefit).],
+[  --enable-fma            Generate FMA (fused multiply-add) instructions (needs C++11 and must be supported by hardware to benefit).],
 [
 case $enableval in
   yes)
@@ -1381,7 +1381,7 @@ if test "X$libint_user_defined_real" != "X"; then
  CXXFLAGS="$CXXFLAGS -Iinclude -I$srcdir/src/lib/libint"
  AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM(
-    [[#include <libint2/vector.h>
+    [[#include <libint2/util/vector.h>
       $libint_user_defined_real_includes
       
     ]],

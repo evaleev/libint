@@ -351,8 +351,8 @@ namespace libint2 {
     };
   template <> struct MasterStrategy<CMultipole_1_1_int> {
       typedef mpl::list<
-        CR_DerivGauss<CMultipole_1_1_int,0,InBra,trinvskip1_part,trinvskip1_where>,
-        CR_DerivGauss<CMultipole_1_1_int,0,InKet,trinvskip1_part,trinvskip1_where>,
+        CR_DerivGauss<CMultipole_1_1_int,0,InBra>,
+        CR_DerivGauss<CMultipole_1_1_int,0,InKet>,
         CR_XYZ_1_1<CGF,CartesianMultipoleOper<3u>>
       > value;
     };

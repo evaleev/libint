@@ -26,6 +26,7 @@
 
 #include <array>
 #include <vector>
+#include <algorithm>
 
 #include <libint2/shell.h>
 #include <libint2/cgshell_ordering.h>
@@ -109,6 +110,7 @@ namespace libint2 {
             signed char lx, ly, lz;
             FOR_CART(lx, ly, lz, l_)
               full_coeff[pure_idx * ncart + cart_idx] = coeff(l_, m, lx, ly, lz);
+              //std::cout << "Solid(" << (int)l_ << "," << (int)m << ") += Cartesian(" << (int)lx << "," << (int)ly << "," << (int)lz << ") * " << full_coeff[pure_idx * ncart + cart_idx] << std::endl;
               ++cart_idx;
             END_FOR_CART
           }
@@ -235,7 +237,7 @@ namespace libint2 {
       const auto& coefs = SolidHarmonicsCoefficients<Real>::instance(l);
 
       const auto n = 2*l+1;
-      memset(tgt,0,n*n2*sizeof(Real));
+      std::fill(tgt, tgt + n * n2, 0);
 
       // loop over shg
       for(size_t s=0; s!=n; ++s) {
@@ -273,7 +275,7 @@ namespace libint2 {
       const auto npure2 = 2*l2+1;
       const auto ncart2inner = ncart2 * inner_dim;
       const auto npure2inner = npure2 * inner_dim;
-      memset(target_blk, 0, npure1*npure2inner*sizeof(real_t));
+      std::fill(target_blk, target_blk + npure1 * npure2inner, 0);
 
       // loop over blocks of inner dimension
       const size_t inner_blk_size = 8;
@@ -336,7 +338,7 @@ namespace libint2 {
       const auto n = 2*l+1;
       const auto nc_n2 = nc * n2;
       const auto n_n2 = n * n2;
-      memset(tgt,0,n1*n_n2*sizeof(Real));
+      std::fill(tgt, tgt + n1 * n_n2, 0);
 
       // loop over shg
       for(size_t s=0; s!=n; ++s) {
@@ -372,7 +374,7 @@ namespace libint2 {
 
       const auto nc = (l+1)*(l+2)/2;
       const auto n = 2*l+1;
-      memset(tgt,0,n1*n*sizeof(Real));
+      std::fill(tgt, tgt + n1 * n, 0);
 
       // loop over shg
       for(size_t s=0; s!=n; ++s) {
@@ -410,7 +412,7 @@ namespace libint2 {
       const auto npure_row = 2*l_row+1;
       const auto npure_col = 2*l_col+1;
       const auto npure = npure_row * npure_col;
-      memset(target_blk, 0, n1*npure*sizeof(Real));
+      std::fill(target_blk, target_blk + n1 * npure, 0);
 
       for(size_t i1=0; i1!=n1; ++i1, source_blk+=ncart, target_blk+=npure) {
         // loop over row shg
@@ -458,7 +460,7 @@ namespace libint2 {
       const auto ncart_col = (l_col+1)*(l_col+2)/2;
       const auto npure_row = 2*l_row+1;
       const auto npure_col = 2*l_col+1;
-      memset(target_blk, 0, npure_row*npure_col*sizeof(real_t));
+      std::fill(target_blk, target_blk + npure_row * npure_col, 0);
 
       // loop over row shg
       for(size_t s1=0; s1!=npure_row; ++s1) {

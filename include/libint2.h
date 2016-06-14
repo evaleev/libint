@@ -28,12 +28,12 @@
 #define LIBINT_T_S_KINETIC_S _aB_s___0___Kinetic_s___0___Ab__up_
 #define LIBINT_T_S_ELECPOT_S(mValue) _aB_s___0___ElecPot_s___0___Ab__up_##mValue
 
-#include <libint2/intrinsic_types.h>
+#include <libint2/util/intrinsic_types.h>
 #include <libint2_params.h>
 #include <libint2_types.h>
 
 #if defined(__cplusplus)
-# include <libint2/type_traits.h>
+# include <libint2/util/type_traits.h>
   namespace libint2 {
     typedef LIBINT2_REALTYPE realvec_t;
     typedef libint2::vector_traits<LIBINT2_REALTYPE>::value_type real_t;

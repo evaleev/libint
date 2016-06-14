@@ -25,7 +25,7 @@
 
 #include <algorithm>
 
-#include <libint2/type_traits.h>
+#include <libint2/util/type_traits.h>
 
 namespace libint2 {
 
