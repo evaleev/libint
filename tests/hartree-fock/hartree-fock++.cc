@@ -1176,8 +1176,10 @@ Matrix compute_schwartz_ints(
         auto n2 = bs2[s2].size();
         auto n12 = n1 * n2;
 
-        engines[thread_id].compute(bs1[s1], bs2[s2], bs1[s1], bs2[s2]);
-        assert(buf[0] != nullptr && "to compute Schwartz ints turn off primitive screening");
+        engines[thread_id].compute2<Kernel, BraKet::xx_xx, 0>(bs1[s1], bs2[s2],
+                                                              bs1[s1], bs2[s2]);
+        assert(buf[0] != nullptr &&
+               "to compute Schwartz ints turn off primitive screening");
 
         // the diagonal elements are the Schwartz ints ... use Map.diagonal()
         Eigen::Map<const Matrix> buf_mat(buf[0], n12, n12);
@@ -1381,6 +1383,7 @@ Matrix compute_2body_2index_ints(const BasisSet& bs) {
   std::vector<Engine> engines(nthreads);
   engines[0] =
       Engine(libint2::Operator::coulomb, bs.max_nprim(), bs.max_l(), 0);
+  engines[0].set_braket(BraKet::xs_xs);
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -1407,7 +1410,7 @@ Matrix compute_2body_2index_ints(const BasisSet& bs) {
         auto n2 = bs[s2].size();
 
         // compute shell pair; return is the pointer to the buffer
-        engine.compute(bs[s1], unitshell, bs[s2], unitshell);
+        engine.compute(bs[s1], bs[s2]);
         if (buf[0] == nullptr)
           continue; // if all integrals screened out, skip to next shell set
 
@@ -2009,22 +2012,17 @@ Matrix compute_2body_fock_general(const BasisSet& obs, const Matrix& D,
 
 #ifdef HAVE_DENSITY_FITTING
 
-// uncomment if want to compute statistics of shell blocks
-//#define COMPUTE_DF_INTS_STATS 1
-
 Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
-#ifdef _OPENMP
-  const auto nthreads = omp_get_max_threads();
-#else
-  const auto nthreads = 1;
-#endif
+
+  using libint2::nthreads;
 
   const auto n = obs.nbf();
   const auto ndf = dfbs.nbf();
-#ifndef _OPENMP
-  libint2::Timers<5> timer;
-  timer.set_now_overhead(25);
-#endif  // not defined _OPENMP
+
+  libint2::Timers<1> wall_timer;
+  wall_timer.set_now_overhead(25);
+  std::vector<libint2::Timers<5>> timers(nthreads);
+  for(auto& timer: timers) timer.set_now_overhead(25);
 
   typedef btas::RangeNd<CblasRowMajor, std::array<long, 1>> Range1d;
   typedef btas::RangeNd<CblasRowMajor, std::array<long, 2>> Range2d;
@@ -2034,9 +2032,12 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
   // using first time? compute 3-center ints and transform to inv sqrt
   // representation
   if (xyK.size() == 0) {
+
+    wall_timer.start(0);
+
     const auto nshells = obs.size();
     const auto nshells_df = dfbs.size();
-    const auto unitshell = libint2::Shell::unit();
+    const auto& unitshell = libint2::Shell::unit();
 
     // construct the 2-electron 3-center repulsion integrals engine
     // since the code assumes (xx|xs) braket, and Engine/libint only produces
@@ -2045,6 +2046,7 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     engines[0] = libint2::Engine(libint2::Operator::coulomb,
                                  std::max(obs.max_nprim(), dfbs.max_nprim()),
                                  std::max(obs.max_l(), dfbs.max_l()), 0);
+    engines[0].set_braket(BraKet::xs_xx);
     for (size_t i = 1; i != nthreads; ++i) {
       engines[i] = engines[0];
     }
@@ -2052,152 +2054,68 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     auto shell2bf = obs.shell2bf();
     auto shell2bf_df = dfbs.shell2bf();
 
-    Tensor3d xyZ{n, n, ndf};
+    Tensor3d Zxy{ndf, n, n};
 
-#if COMPUTE_DF_INTS_STATS
-    const double count_threshold = 1e-7;
-    std::atomic<size_t> nints{0};   // number of ints in shell blocks with
-                                    // Frobenius norm > count_threshold
-    std::atomic<size_t> nints2{0};  // number of ints in shell blocks with
-                                    // Frobenius norm/elem > count_threshold
-    typedef btas::Tensor<char, Range3d> Tensor3dBool;
-    const size_t nobs_per_mol = 24;   // cc-pVDZ
-    const size_t ndfbs_per_mol = 84;  // cc-pVDZ-RI
-    const size_t nmols = n / nobs_per_mol;
-    Tensor3dBool nonzero_mol_blocks{
-        nmols, nmols, nmols};  // number of molecule blocks that contain shell
-                               // blocks with Frobenius norm > count_threshold
-    Tensor3d mol_blocks_frob2{
-        nmols, nmols,
-        nmols};  // sum of Frobenius norms squared in each molecule block
-    std::fill(nonzero_mol_blocks.begin(), nonzero_mol_blocks.end(), 0);
-    std::fill(mol_blocks_frob2.begin(), mol_blocks_frob2.end(), 0.);
-#endif  // COMPUTE_DF_INTS_STATS
-
-#ifdef _OPENMP
-#pragma omp parallel
-#endif
-    {
-#ifdef _OPENMP
-      auto thread_id = omp_get_thread_num();
-#else
-      auto thread_id = 0;
-#endif
+    auto lambda = [&](int thread_id) {
 
       auto& engine = engines[thread_id];
+      auto& timer = timers[thread_id];
       const auto& results = engine.results();
 
       // loop over permutationally-unique set of shells
-      for (auto s1 = 0l, s123 = 0l; s1 != nshells; ++s1) {
-        auto bf1_first = shell2bf[s1];  // first basis function in this shell
-        auto n1 = obs[s1].size();  // number of basis functions in this shell
+      for (auto s1 = 0l, s123 = 0l; s1 != nshells_df; ++s1) {
+        auto bf1_first = shell2bf_df[s1];  // first basis function in this shell
+        auto n1 = dfbs[s1].size();  // number of basis functions in this shell
 
         for (auto s2 = 0; s2 != nshells; ++s2) {
           auto bf2_first = shell2bf[s2];
           auto n2 = obs[s2].size();
           const auto n12 = n1 * n2;
 
-          for (auto s3 = 0; s3 != nshells_df; ++s3, ++s123) {
+          for (auto s3 = 0; s3 != nshells; ++s3, ++s123) {
             if (s123 % nthreads != thread_id) continue;
 
-            auto bf3_first = shell2bf_df[s3];
-            auto n3 = dfbs[s3].size();
+            auto bf3_first = shell2bf[s3];
+            auto n3 = obs[s3].size();
             const auto n123 = n12 * n3;
 
-#ifndef _OPENMP
             timer.start(0);
-#endif
 
-            engine.compute(obs[s1], obs[s2], dfbs[s3], unitshell);
+            engine.compute2<Operator::coulomb, BraKet::xs_xx, 0>(
+                dfbs[s1], unitshell, obs[s2], obs[s3]);
             const auto* buf = results[0];
             if (buf == nullptr)
               continue;
 
-#ifndef _OPENMP
             timer.stop(0);
-#endif
-
-#if COMPUTE_DF_INTS_STATS
-            const auto buf_2norm =
-                sqrt(std::inner_product(buf, buf + n123, buf, 0.));
-            const auto buf_2norm_scaled = sqrt(buf_2norm * buf_2norm / n123);
-            const auto buf_infnorm = std::abs(*std::max_element(
-                buf, buf + n123,
-                [](double a, double b) { return std::abs(a) < std::abs(b); }));
-            if (buf_2norm > count_threshold) {
-              nints += n123;
-
-              nonzero_mol_blocks(bf1_first / nobs_per_mol,
-                                 bf2_first / nobs_per_mol,
-                                 bf3_first / ndfbs_per_mol) = 1;
-            }
-            if (buf_2norm_scaled > count_threshold) {
-              nints2 += n123;
-            }
-            mol_blocks_frob2(bf1_first / nobs_per_mol, bf2_first / nobs_per_mol,
-                             bf3_first / ndfbs_per_mol) +=
-                buf_2norm * buf_2norm;
-#endif  // COMPUTE_DF_INTS_STATS
-
-#ifndef _OPENMP
             timer.start(1);
-#endif
 
             auto lower_bound = {bf1_first, bf2_first, bf3_first};
             auto upper_bound = {bf1_first + n1, bf2_first + n2, bf3_first + n3};
             auto view = btas::make_view(
-                xyZ.range().slice(lower_bound, upper_bound), xyZ.storage());
+                Zxy.range().slice(lower_bound, upper_bound), Zxy.storage());
             std::copy(buf, buf + n123, view.begin());
 
-#ifndef _OPENMP
             timer.stop(1);
-#endif
-
           }  // s3
         }    // s2
       }      // s1
 
-    }  // omp parallel
+    };  // lambda
 
-#ifndef _OPENMP
-    std::cout << "time for integrals = " << timer.read(0) << std::endl;
-    std::cout << "time for copying into BTAS = " << timer.read(1) << std::endl;
-    engines[0].print_timers();
-#endif  // not defined _OPENMP
+    libint2::parallel_do(lambda);
 
-#if COMPUTE_DF_INTS_STATS
-    {
-      const auto nints_per_molblock =
-          nobs_per_mol * nobs_per_mol * ndfbs_per_mol;
-      const size_t nints_mols =
-          std::count(nonzero_mol_blocks.begin(), nonzero_mol_blocks.end(), 1) *
-          nints_per_molblock;
-      const size_t nints_mols2 =
-          std::count_if(mol_blocks_frob2.begin(), mol_blocks_frob2.end(),
-                        [&](double a) { return sqrt(a) > count_threshold; }) *
-          nints_per_molblock;
-      const size_t nints_mols3 =
-          std::count_if(mol_blocks_frob2.begin(), mol_blocks_frob2.end(),
-                        [&](double a) {
-                          return sqrt(a) / nints_per_molblock > count_threshold;
-                        }) *
-          nints_per_molblock;
-      std::cout << "# of ints in shell blocks with norm greater than "
-                << count_threshold << " = " << nints << std::endl;
-      std::cout << "# of ints in shell blocks with scaled norm greater than "
-                << count_threshold << " = " << nints2 << std::endl;
-      std::cout << "# of ints in molecule blocks whose any shell-block norm "
-                   "was greater than "
-                << count_threshold << " = " << nints_mols << std::endl;
-      std::cout << "# of ints in molecule blocks with norm greater than "
-                << count_threshold << " = " << nints_mols2 << std::endl;
-      std::cout << "# of ints in molecule blocks with scaled norm greater than "
-                << count_threshold << " = " << nints_mols3 << std::endl;
-      std::cout << "# of total ints = " << n * n * ndf << std::endl;
-    }
-#endif  // COMPUTE_DF_INTS_STATS
+    wall_timer.stop(0);
 
-    timer.start(2);
+    double ints_time = 0;
+    for(const auto& timer: timers) ints_time += timer.read(0);
+    std::cout << "time for Zxy integrals = " << ints_time << " (total from all threads)" << std::endl;
+    double copy_time = 0;
+    for(const auto& timer: timers) copy_time += timer.read(1);
+    std::cout << "time for copying into BTAS = " << copy_time << " (total from all threads)"<< std::endl;
+    std::cout << "wall time for Zxy integrals + copy = " << wall_timer.read(0) << std::endl;
+
+    timers[0].start(2);
 
     Matrix V = compute_2body_2index_ints(dfbs);
     Eigen::LLT<Matrix> V_LLt(V);
@@ -2217,16 +2135,16 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     std::copy(Linv.data(), Linv.data() + ndf * ndf, K.begin());
 
     xyK = Tensor3d{n, n, ndf};
-    btas::contract(1.0, xyZ, {1, 2, 3}, K, {3, 4}, 0.0, xyK, {1, 2, 4});
-    xyZ = Tensor3d{0, 0, 0};  // release memory
+    btas::contract(1.0, Zxy, {1, 2, 3}, K, {1, 4}, 0.0, xyK, {2, 3, 4});
+    Zxy = Tensor3d{0, 0, 0};  // release memory
 
-    timer.stop(2);
-    std::cout << "time for integrals metric tform = " << timer.read(2)
+    timers[0].stop(2);
+    std::cout << "time for integrals metric tform = " << timers[0].read(2)
               << std::endl;
   }  // if (xyK.size() == 0)
 
   // compute exchange
-  timer.start(3);
+  timers[0].start(3);
 
   const auto nocc = Cocc.cols();
   Tensor2d Co{n, nocc};
@@ -2237,19 +2155,19 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
   Tensor2d G{n, n};
   btas::contract(1.0, xiK, {1, 2, 3}, xiK, {4, 2, 3}, 0.0, G, {1, 4});
 
-  timer.stop(3);
-  std::cout << "time for exchange = " << timer.read(3) << std::endl;
+  timers[0].stop(3);
+  std::cout << "time for exchange = " << timers[0].read(3) << std::endl;
 
   // compute Coulomb
-  timer.start(4);
+  timers[0].start(4);
 
   Tensor1d Jtmp{ndf};
   btas::contract(1.0, xiK, {1, 2, 3}, Co, {1, 2}, 0.0, Jtmp, {3});
   xiK = Tensor3d{0, 0, 0};
   btas::contract(2.0, xyK, {1, 2, 3}, Jtmp, {3}, -1.0, G, {1, 2});
 
-  timer.stop(4);
-  std::cout << "time for coulomb = " << timer.read(4) << std::endl;
+  timers[0].stop(4);
+  std::cout << "time for coulomb = " << timers[0].read(4) << std::endl;
 
   // copy result to an Eigen::Matrix
   Matrix result(n, n);
@@ -2375,7 +2293,8 @@ void api_basic_compile_test(const BasisSet& obs) {
     }
   }
 
-  {  // test 2-index deriv ints
+#if LIBINT2_DERIV_ERI_ORDER
+  {  // test deriv 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 1);
     Engine eri2_engine = eri4_engine;
     eri2_engine.set_braket(BraKet::xs_xs);
@@ -2402,11 +2321,53 @@ void api_basic_compile_test(const BasisSet& obs) {
           for (auto f1 = 0, f12 = 0; f1 != n1; ++f1)
             for (auto f2 = 0; f2 != n2; ++f2, ++f12)
               assert(std::abs(buf4[f12] - buf2[f12]) < 1e-12 &&
-                     "2-center deriv ints test failed");
+                     "deriv 2-center ints test failed");
         }
 
       }
     }
   }
+#endif
+
+#if LIBINT2_DERIV_ERI_ORDER > 1
+  {  // test 2nd deriv 2-index ints
+    Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 2);
+    Engine eri2_engine = eri4_engine;
+    eri2_engine.set_braket(BraKet::xs_xs);
+    auto shell2bf = obs.shell2bf();
+    const auto& results4 = eri4_engine.results();
+    const auto& results2 = eri2_engine.results();
+    for (auto s1 = 0; s1 != obs.size(); ++s1) {
+      for (auto s2 = 0; s2 != obs.size(); ++s2) {
+        eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], Shell::unit());
+        eri2_engine.compute(obs[s1], obs[s2]);
+
+        auto bf1 = shell2bf[s1];   // first basis function in first shell
+        auto n1 = obs[s1].size();  // number of basis functions in first shell
+        auto bf2 = shell2bf[s2];   // first basis function in second shell
+        auto n2 = obs[s2].size();  // number of basis functions in second shell
+
+        // loop over derivative shell sets
+        for (auto d1 = 0, d12 = 0; d1 != 6; ++d1) {
+          const auto dd1 = d1 < 3 ? d1 : d1 + 3;
+          for (auto d2 = d1; d2 != 6; ++d2, ++d12) {
+            const auto dd2 = d2 < 3 ? d2 : d2 + 3;
+            const auto dd12 = dd1 * (24 - dd1 - 1) / 2 + dd2;
+            const auto* buf4 = results4[dd12];
+            const auto* buf2 = results2[d12];
+
+            // this iterates over integrals in the order they are packed in
+            // array
+            // ints_shellset
+            for (auto f1 = 0, f12 = 0; f1 != n1; ++f1)
+              for (auto f2 = 0; f2 != n2; ++f2, ++f12)
+                assert(std::abs(buf4[f12] - buf2[f12]) < 1e-12 &&
+                       "2nd deriv 2-center ints test failed");
+          }
+        }
+      }
+    }
+  }
+#endif
 
 }
