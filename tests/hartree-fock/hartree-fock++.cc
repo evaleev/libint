@@ -2260,35 +2260,33 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
 
 // should be a unit test somewhere
 void api_basic_compile_test(const BasisSet& obs) {
-  {
-    using namespace libint2;
-    Engine onebody_engine(
-        Operator::overlap,  // will compute overlap ints
-        obs.max_nprim(),    // max # of primitives in shells this engine will
-                            // accept
-        obs.max_l()  // max angular momentum of shells this engine will accept
-        );
-    auto shell2bf = obs.shell2bf();
-    const auto& results = onebody_engine.results();
-    for (auto s1 = 0; s1 != obs.size(); ++s1) {
-      for (auto s2 = 0; s2 != obs.size(); ++s2) {
-        std::cout << "compute shell set {" << s1 << "," << s2 << "} ... ";
-        onebody_engine.compute(obs[s1], obs[s2]);
-        const auto* ints_shellset = results[0];
-        std::cout << "done" << std::endl;
+  using namespace libint2;
+  Engine onebody_engine(
+      Operator::overlap,  // will compute overlap ints
+      obs.max_nprim(),    // max # of primitives in shells this engine will
+                          // accept
+      obs.max_l()  // max angular momentum of shells this engine will accept
+      );
+  auto shell2bf = obs.shell2bf();
+  const auto& results = onebody_engine.results();
+  for (auto s1 = 0; s1 != obs.size(); ++s1) {
+    for (auto s2 = 0; s2 != obs.size(); ++s2) {
+      std::cout << "compute shell set {" << s1 << "," << s2 << "} ... ";
+      onebody_engine.compute(obs[s1], obs[s2]);
+      const auto* ints_shellset = results[0];
+      std::cout << "done" << std::endl;
 
-        auto bf1 = shell2bf[s1];   // first basis function in first shell
-        auto n1 = obs[s1].size();  // number of basis functions in first shell
-        auto bf2 = shell2bf[s2];   // first basis function in second shell
-        auto n2 = obs[s2].size();  // number of basis functions in second shell
+      auto bf1 = shell2bf[s1];   // first basis function in first shell
+      auto n1 = obs[s1].size();  // number of basis functions in first shell
+      auto bf2 = shell2bf[s2];   // first basis function in second shell
+      auto n2 = obs[s2].size();  // number of basis functions in second shell
 
-        // this iterates over integrals in the order they are packed in array
-        // ints_shellset
-        for (auto f1 = 0; f1 != n1; ++f1)
-          for (auto f2 = 0; f2 != n2; ++f2)
-            std::cout << "  " << bf1 + f1 << " " << bf2 + f2 << " "
-                      << ints_shellset[f1 * n2 + f2] << std::endl;
-      }
+      // this iterates over integrals in the order they are packed in array
+      // ints_shellset
+      for (auto f1 = 0; f1 != n1; ++f1)
+        for (auto f2 = 0; f2 != n2; ++f2)
+          std::cout << "  " << bf1 + f1 << " " << bf2 + f2 << " "
+                    << ints_shellset[f1 * n2 + f2] << std::endl;
     }
   }
 
@@ -2311,4 +2309,104 @@ void api_basic_compile_test(const BasisSet& obs) {
         compute_schwartz_ints<Operator::delcgtg2>(obs, obs, false, cgtg_params);
     std::cout << "||Del.cGTG||^2 Schwartz ints\n" << K << std::endl;
   }
+
+  {  // test 2-index ints
+    Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l());
+    Engine eri2_engine = eri4_engine;
+    eri2_engine.set_braket(BraKet::xs_xs);
+    auto shell2bf = obs.shell2bf();
+    const auto& results4 = eri4_engine.results();
+    const auto& results2 = eri2_engine.results();
+    for (auto s1 = 0; s1 != obs.size(); ++s1) {
+      for (auto s2 = 0; s2 != obs.size(); ++s2) {
+        eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], Shell::unit());
+        eri2_engine.compute(obs[s1], obs[s2]);
+
+        auto bf1 = shell2bf[s1];   // first basis function in first shell
+        auto n1 = obs[s1].size();  // number of basis functions in first shell
+        auto bf2 = shell2bf[s2];   // first basis function in second shell
+        auto n2 = obs[s2].size();  // number of basis functions in second shell
+
+        const auto* buf4 = results4[0];
+        const auto* buf2 = results2[0];
+
+        // this iterates over integrals in the order they are packed in array
+        // ints_shellset
+        for (auto f1 = 0, f12 = 0; f1 != n1; ++f1)
+          for (auto f2 = 0; f2 != n2; ++f2, ++f12)
+            assert(std::abs(buf4[f12] - buf2[f12]) < 1e-12 &&
+                   "2-center ints test failed");
+      }
+    }
+  }
+  {  // test 3-index ints
+    Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l());
+    Engine eri3_engine = eri4_engine;
+    eri3_engine.set_braket(BraKet::xs_xx);
+    auto shell2bf = obs.shell2bf();
+    const auto& results4 = eri4_engine.results();
+    const auto& results3 = eri3_engine.results();
+    for (auto s1 = 0; s1 != obs.size(); ++s1) {
+      for (auto s2 = 0; s2 != obs.size(); ++s2) {
+        for (auto s3 = 0; s3 != obs.size(); ++s3) {
+          eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], obs[s3]);
+          eri3_engine.compute(obs[s1], obs[s2], obs[s3]);
+
+          auto bf1 = shell2bf[s1];   // first basis function in first shell
+          auto n1 = obs[s1].size();  // number of basis functions in first shell
+          auto bf2 = shell2bf[s2];   // first basis function in second shell
+          auto n2 =
+              obs[s2].size();       // number of basis functions in second shell
+          auto bf3 = shell2bf[s3];  // first basis function in third shell
+          auto n3 = obs[s3].size();  // number of basis functions in third shell
+
+          const auto* buf4 = results4[0];
+          const auto* buf3 = results3[0];
+
+          // this iterates over integrals in the order they are packed in array
+          // ints_shellset
+          for (auto f1 = 0, f123 = 0; f1 != n1; ++f1)
+            for (auto f2 = 0; f2 != n2; ++f2)
+              for (auto f3 = 0; f3 != n3; ++f3, ++f123)
+                assert(std::abs(buf4[f123] - buf3[f123]) < 1e-12 &&
+                       "3-center ints test failed");
+        }
+      }
+    }
+  }
+
+  {  // test 2-index deriv ints
+    Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 1);
+    Engine eri2_engine = eri4_engine;
+    eri2_engine.set_braket(BraKet::xs_xs);
+    auto shell2bf = obs.shell2bf();
+    const auto& results4 = eri4_engine.results();
+    const auto& results2 = eri2_engine.results();
+    for (auto s1 = 0; s1 != obs.size(); ++s1) {
+      for (auto s2 = 0; s2 != obs.size(); ++s2) {
+        eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], Shell::unit());
+        eri2_engine.compute(obs[s1], obs[s2]);
+
+        auto bf1 = shell2bf[s1];   // first basis function in first shell
+        auto n1 = obs[s1].size();  // number of basis functions in first shell
+        auto bf2 = shell2bf[s2];   // first basis function in second shell
+        auto n2 = obs[s2].size();  // number of basis functions in second shell
+
+        // loop over derivative shell sets
+        for(auto d=0; d!=6; ++d) {
+          const auto* buf4 = results4[d<3 ? d : d+3];
+          const auto* buf2 = results2[d];
+
+          // this iterates over integrals in the order they are packed in array
+          // ints_shellset
+          for (auto f1 = 0, f12 = 0; f1 != n1; ++f1)
+            for (auto f2 = 0; f2 != n2; ++f2, ++f12)
+              assert(std::abs(buf4[f12] - buf2[f12]) < 1e-12 &&
+                     "2-center deriv ints test failed");
+        }
+
+      }
+    }
+  }
+
 }

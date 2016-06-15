@@ -1565,8 +1565,8 @@ inline void Engine::compute_primdata(Libint_t& primdata, const Shell& s1,
 }  // Engine::compute_primdata()
 
 /// computes shell set of integrals of 2-body operator
-/// \note result is stored in the "chemists" form, i.e. (tbra1 tbra2 |tket1
-/// tket2), in row-major order
+/// \note result is stored in the "chemists"/Mulliken form, (tbra1 tbra2 |tket1
+/// tket2), i.e. bra and ket are in chemists meaning; result is packed in row-major order.
 template <Operator oper, BraKet braket, size_t deriv_order>
 inline const Engine::target_ptr_vec& Engine::compute2(
     const libint2::Shell& tbra1, const libint2::Shell& tbra2,
@@ -1627,6 +1627,8 @@ inline const Engine::target_ptr_vec& Engine::compute2(
   auto lmax = std::max(std::max(bra1.contr[0].l, bra2.contr[0].l),
                        std::max(ket1.contr[0].l, ket2.contr[0].l));
   assert(lmax <= lmax_);
+  const auto lmax_bra = std::max(bra1.contr[0].l, bra2.contr[0].l);
+  const auto lmax_ket = std::max(ket1.contr[0].l, ket2.contr[0].l);
 
 #ifdef LIBINT2_ENGINE_PROFILE_CLASS
   class_id id(bra1.contr[0].l, bra2.contr[0].l, ket1.contr[0].l,
@@ -1878,7 +1880,7 @@ inline const Engine::target_ptr_vec& Engine::compute2(
               const auto Wz =
                   (gammap_o_gammapgammaq * P[2] + gammaq_o_gammapgammaq * Q[2]);
 
-              if (braket == BraKet::xx_xx) {
+              if (deriv_order > 0 || lmax_bra > 0) {
 #if LIBINT2_DEFINED(eri, WP_x)
                 primdata.WP_x[0] = Wx - P[0];
 #endif
@@ -1889,7 +1891,7 @@ inline const Engine::target_ptr_vec& Engine::compute2(
                 primdata.WP_z[0] = Wz - P[2];
 #endif
               }
-              if (braket != BraKet::xs_xs) {
+              if (deriv_order > 0 || lmax_ket > 0) {
 #if LIBINT2_DEFINED(eri, WQ_x)
                 primdata.WQ_x[0] = Wx - Q[0];
 #endif
@@ -2083,11 +2085,21 @@ inline const Engine::target_ptr_vec& Engine::compute2(
     timers.start(1);
 #endif
 
-    buildfnptrs_[((bra1.contr[0].l * hard_lmax_ + bra2.contr[0].l) *
-                      hard_lmax_ +
-                  ket1.contr[0].l) *
-                     hard_lmax_ +
-                 ket2.contr[0].l](&primdata_[0]);
+    if (braket == BraKet::xx_xx)
+      buildfnptrs_[((bra1.contr[0].l * hard_lmax_ + bra2.contr[0].l) *
+                        hard_lmax_ +
+                    ket1.contr[0].l) *
+                       hard_lmax_ +
+                   ket2.contr[0].l](&primdata_[0]);
+    else if (braket == BraKet::xs_xx)
+      buildfnptrs_[(bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l) *
+                       hard_lmax_ +
+                   ket2.contr[0].l](&primdata_[0]);
+    else if (braket == BraKet::xs_xs)
+      buildfnptrs_[bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l](
+          &primdata_[0]);
+    else
+      assert(false && "invalid braket");
 
 #ifdef LIBINT2_ENGINE_TIMERS
     const auto t1 = timers.stop(1);
