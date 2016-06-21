@@ -62,6 +62,9 @@ class ext_stack_allocator {
 
   explicit ext_stack_allocator(array_type& array) noexcept
       : stack_(&array[0]), free_(stack_) {}
+  template <typename U, typename = typename std::enable_if<std::is_same<const U,T>::value>>
+  explicit ext_stack_allocator(U (&array)[N]) noexcept
+      : stack_(const_cast<T*>(&array[0])), free_(stack_) {}
 
   template <class _Up>
   struct rebind {

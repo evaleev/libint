@@ -306,7 +306,7 @@ class Engine {
   static constexpr auto max_ntargets =
       std::extent<decltype(std::declval<Libint_t>().targets), 0>::value;
   using target_ptr_vec =
-      std::vector<real_t*, detail::ext_stack_allocator<real_t*, max_ntargets>>;
+      std::vector<const real_t*, detail::ext_stack_allocator<const real_t*, max_ntargets>>;
 
   /// creates a default Engine that cannot be used for computing integrals;
   /// to be used as placeholder for copying a usable engine, OR for cleanup of
@@ -662,7 +662,7 @@ class Engine {
   void reset_scratch() {
     const auto nshsets = compute_nshellsets();
     targets_.resize(nshsets);
-    set_targets_ = (&targets_[0] != primdata_[0].targets);
+    set_targets_ = (&targets_[0] != const_cast<const real_t**>(primdata_[0].targets));
     const auto ncart_max = (lmax_ + 1) * (lmax_ + 2) / 2;
     const auto target_shellset_size =
         nshsets * std::pow(ncart_max, braket_rank());
