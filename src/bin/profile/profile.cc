@@ -362,7 +362,7 @@ int main(int argc, char* argv[]) {
 
 #ifndef SKIP_GEMM
   const int nn = 2048;
-  profile(DGEMMKernel(nn, 1.0, "dgemm"), 1);
+  profile(DGEMMKernel(nn, 1.0, "dgemm (2048,2048) x (2048,2048)"), 1);
 #endif
 
 #ifndef SKIP_EXP
