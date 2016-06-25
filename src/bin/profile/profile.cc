@@ -314,7 +314,8 @@ struct DGEMMKernel : public VectorOpKernel<double> {
 
 int main(int argc, char* argv[]) {
   if (argc < 2 or argc > 4) {
-    std::cout << "Usage: profile_Gm mmax T nrepeats" << std::endl;
+    std::cout << "Description: profiles secondary compute-intensive kernels (Boys, daxpy, etc.)" << std::endl;
+    std::cout << "Usage: profile mmax T nrepeats" << std::endl;
     return 1;
   }
   const int mmax  = atoi(argv[1]);

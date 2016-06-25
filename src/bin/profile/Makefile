@@ -39,7 +39,7 @@ $(COMP1OBJ):: $(LIBINTDIR)/buildtest.h
 #
 # making target2
 #
-COMP2 = profile_Gm
+COMP2 = profile
 COMP2SRC = $(COMP2).cc
 COMP2OBJ = $(COMP2SRC:%.cc=%.o)
 
