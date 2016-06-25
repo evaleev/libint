@@ -18,11 +18,12 @@
  */
 
 #include "libint2/boys.h"
-#include "libint2/timer.h"
+#include "libint2/util/timer.h"
 #include <ctime>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <initializer_list>
 #include <iterator>
 #include <functional>
 #include <numeric>
@@ -132,6 +133,15 @@ struct VectorOpKernel {
       for(size_t i=0; i<args_.size(); ++i) {
         args_[i] = new Real[veclen];
         std::fill(args_[i], args_[i] + veclen, T);
+      }
+    }
+    VectorOpKernel(std::initializer_list<size_t> sizes, Real T,
+                   std::string label)
+        : result_(*sizes.begin(), Real(0)), args_(sizes.size() - 1), label_(label) {
+      auto size_iter = sizes.begin() + 1;
+      for (size_t i = 0; i < args_.size(); ++i, ++size_iter) {
+        args_[i] = new Real[*size_iter];
+        std::fill(args_[i], args_[i] + *size_iter, T);
       }
     }
     ~VectorOpKernel() {
@@ -267,29 +277,39 @@ struct DGEMMKernel : public VectorOpKernel<double> {
   typedef double Real;
   DGEMMKernel(size_t n,
               Real T,
-              std::string label) : VectorOpKernel<Real>(n*n, 2, T, label), n_(n) {
+              std::string label) : VectorOpKernel<Real>(n*n, 2, T, label), m_(n), n_(n), k_(n) {
+    c_ = &VectorOpKernel<Real>::result_[0];
+    a_ = VectorOpKernel<Real>::args_[0];
+    b_ = VectorOpKernel<Real>::args_[1];
+  }
+  DGEMMKernel(size_t m, size_t n, size_t k, Real T, std::string label)
+      : VectorOpKernel<Real>({m * n, m * k, k * n}, T, label),
+        m_(m),
+        n_(n),
+        k_(k) {
     c_ = &VectorOpKernel<Real>::result_[0];
     a_ = VectorOpKernel<Real>::args_[0];
     b_ = VectorOpKernel<Real>::args_[1];
   }
   void eval() const {
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, n_, n_, n_,
-                1.0, a_, n_,
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m_, n_, k_,
+                1.0, a_, k_,
                 b_, n_, 1.0, c_, n_);
   }
   Real sum() const {
-    return std::accumulate(c_, c_+n_*n_, 0.0);
+    return std::accumulate(c_, c_+m_*n_, 0.0);
   }
   // approximate
   size_t ops_per_eval() const {
-    return n_ * n_ * n_ * 2;
+    return m_ * n_ * k_ * 2;
   }
 
-  Real* c_;
-  const Real* a_;
-  const Real* b_;
+  Real* c_;  // m by n
+  const Real* a_;  // m by k
+  const Real* b_;  // k by n
+  size_t m_;
   size_t n_;
-
+  size_t k_;
 };
 
 int main(int argc, char* argv[]) {
