@@ -24,10 +24,11 @@ namespace libint2 {
       any() = default;
       any(const any& that) : handle_(that.clone()) {}
       any(any&& that) : handle_(std::move(that.handle_)) { }
-      template<typename U> any(U&& value)
-          : handle_(new handle<StorageType<U>>(std::forward<U>(value)))
-      {
-      }
+      template <typename U,
+                typename = typename std::enable_if<not std::is_same<
+                    any, typename std::decay<U>::type>::value>::type>
+      any(U&& value)
+          : handle_(new handle<StorageType<U>>(std::forward<U>(value))) {}
 
       any& operator=(const any& a)
       {
@@ -35,15 +36,15 @@ namespace libint2 {
         std::swap(*this, tmp);
         return *this;
       }
-      template <typename U>
-      any& operator=(U a)
-      {
+      template <typename U,
+                typename = typename std::enable_if<not std::is_same<
+                    any, typename std::decay<U>::type>::value>::type>
+      any& operator=(U a) {
         any tmp(std::forward<U>(a));
         std::swap(*this, tmp);
         return *this;
       }
-      any& operator=(any&& a)
-      {
+      any& operator=(any&& a) {
         std::swap(handle_, a.handle_);
         return *this;
       }
