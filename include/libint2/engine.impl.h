@@ -87,6 +87,23 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 #define BOOST_PP_NBODY_DERIV_ORDER_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_NBODY_DERIV_ORDER_TUPLE)
 
+
+/// the runtime version of \c operator_traits<oper>::default_params()
+libint2::any
+default_params(const Operator& oper) {
+  switch (static_cast<int>(oper)) {
+#define BOOST_PP_NBODYENGINE_MCR1(r, data, i, elem) \
+  case i:                                           \
+    return operator_traits<static_cast<Operator>(i)>::default_params();
+    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR1, _,
+                             BOOST_PP_NBODY_OPERATOR_LIST)
+    default:
+      break;
+  }
+  assert(false && "missing case in switch");  // unreachable
+  return libint2::any();
+}
+
 /// Computes target shell sets of integrals.
 
 /// @return vector of pointers to target shell sets, the number of sets =

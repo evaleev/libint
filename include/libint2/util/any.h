@@ -21,6 +21,7 @@ namespace libint2 {
       template<class T>
       using StorageType = typename std::decay<T>::type;
 
+      /// constructs a default any object which evaluates to false
       any() = default;
       any(const any& that) : handle_(that.clone()) {}
       any(any&& that) : handle_(std::move(that.handle_)) { }
@@ -49,7 +50,7 @@ namespace libint2 {
         return *this;
       }
 
-      operator bool() const { return bool(handle_); }
+      bool empty() const { return handle_ == nullptr; }
 
       template<class U> bool is() const
       {
@@ -93,7 +94,7 @@ namespace libint2 {
       }
 
       template<class U>
-      operator U()
+      explicit operator U()
       {
           return as<StorageType<U>>();
       }

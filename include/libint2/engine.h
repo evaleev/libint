@@ -215,6 +215,10 @@ struct operator_traits<Operator::delta>
       core_eval_type;  // core ints are too trivial to bother
 };
 
+/// the runtime version of \c operator_traits<oper>::default_params()
+libint2::any
+default_params(const Operator& oper);
+
 namespace detail {
 template <typename core_eval_type>
 using __core_eval_pack_type =
