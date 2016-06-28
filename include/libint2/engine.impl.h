@@ -691,12 +691,37 @@ unsigned int Engine::nopers() const {
   return 0;
 }
 
+template <>
+__libint2_engine_inline any Engine::enforce_params_type<any>(
+    Operator oper, const any& params, bool throw_if_wrong_type) {
+  any result;
+  switch (static_cast<int>(oper)) {
+#define BOOST_PP_NBODYENGINE_MCR5A(r, data, i, elem)                        \
+  case i:                                                                   \
+    if (params.is<operator_traits<static_cast<Operator>(                    \
+                                 i)>::oper_params_type>()) {                \
+      result = params;                                                      \
+    } else {                                                                \
+      if (throw_if_wrong_type) throw std::bad_cast();                       \
+      result = operator_traits<static_cast<Operator>(i)>::default_params(); \
+    }                                                                       \
+    break;
+
+    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR5A, _,
+                             BOOST_PP_NBODY_OPERATOR_LIST)
+
+    default:
+      assert(false && "missing case in switch");  // missed a case?
+  }
+  return result;
+}
+
 template <typename Params>
 __libint2_engine_inline any Engine::enforce_params_type(
     Operator oper, const Params& params, bool throw_if_wrong_type) {
   any result;
   switch (static_cast<int>(oper)) {
-#define BOOST_PP_NBODYENGINE_MCR5(r, data, i, elem)                         \
+#define BOOST_PP_NBODYENGINE_MCR5B(r, data, i, elem)                         \
   case i:                                                                   \
     if (std::is_same<Params, operator_traits<static_cast<Operator>(         \
                                  i)>::oper_params_type>::value) {           \
@@ -707,7 +732,7 @@ __libint2_engine_inline any Engine::enforce_params_type(
     }                                                                       \
     break;
 
-    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR5, _,
+    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR5B, _,
                              BOOST_PP_NBODY_OPERATOR_LIST)
 
     default:
