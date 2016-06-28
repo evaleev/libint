@@ -1506,10 +1506,26 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         buildfnidx =
             (bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l) * hard_lmax_ +
             ket2.contr[0].l;
+#ifdef ERI3_PURE_SH
+        if (bra1.contr[0].l > 1)
+          assert(bra1.contr[0].pure &&
+                 "library assumes a solid harmonics shell in bra of a 3-center "
+                 "2-body int, but a cartesian shell given");
+#endif
         break;
 
       case BraKet::xs_xs:
         buildfnidx = bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l;
+#ifdef ERI2_PURE_SH
+        if (bra1.contr[0].l > 1)
+          assert(bra1.contr[0].pure &&
+                 "library assumes solid harmonics shells in a 2-center "
+                 "2-body int, but a cartesian shell given in bra");
+        if (ket1.contr[0].l > 1)
+          assert(ket1.contr[0].pure &&
+                 "library assumes solid harmonics shells in a 2-center "
+                 "2-body int, but a cartesian shell given in bra");
+#endif
         break;
 
       default:
