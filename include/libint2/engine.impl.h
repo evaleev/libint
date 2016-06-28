@@ -117,7 +117,7 @@ template <typename... ShellPack>
 __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
     const libint2::Shell& first_shell, const ShellPack&... rest_of_shells) {
   constexpr auto nargs = 1 + sizeof...(rest_of_shells);
-  assert(nargs == braket_rank());
+  assert(nargs == braket_rank() && "# of arguments to compute() does not match the braket type");
 
   std::array<std::reference_wrapper<const Shell>, nargs> shells{{
       first_shell, rest_of_shells...}};
@@ -133,7 +133,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
                                nderivorders_2body +
                            deriv_order_;
     auto compute_ptr = compute2_ptrs()[compute_ptr_idx];
-    assert(compute_ptr != nullptr);
+    assert(compute_ptr != nullptr && "2-body compute function not found");
     if (nargs == 2)
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
                                   Shell::unit());
@@ -155,12 +155,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
 __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
     const libint2::Shell& s1, const libint2::Shell& s2) {
   // can only handle 1 contraction at a time
-  assert(s1.ncontr() == 1 && s2.ncontr() == 1);
+  assert((s1.ncontr() == 1 && s2.ncontr() == 1) &&
+         "generally-contracted shells not yet supported");
 
   const auto l1 = s1.contr[0].l;
   const auto l2 = s2.contr[0].l;
-  assert(l1 <= lmax_);
-  assert(l2 <= lmax_);
+  assert(l1 <= lmax_ && "the angular momentum limit is exceeded");
+  assert(l2 <= lmax_ && "the angular momentum limit is exceeded");
 
   // if want nuclear, make sure there is at least one nucleus .. otherwise the
   // user likely forgot to call set_params
@@ -183,7 +184,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   const auto nprim1 = s1.nprim();
   const auto nprim2 = s2.nprim();
   const auto nprimpairs = nprim1 * nprim2;
-  assert(nprimpairs <= primdata_.size());
+  assert(nprimpairs <= primdata_.size() && "the max number of primitive pairs exceeded");
 
   auto nparam_sets = nparams();
 
@@ -218,7 +219,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
   // adjust max angular momentum, if needed
   const auto lmax = std::max(l1, l2);
-  assert(lmax <= lmax_);
+  assert(lmax <= lmax_ && "the angular momentum limit is exceeded");
 
   // simple (s|s) ints will be computed directly and accumulated in the first
   // element of stack
@@ -236,7 +237,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
   // loop over accumulation batches
   for (auto pset = 0u; pset != nparam_sets; ++pset) {
-    if (oper_ != Operator::nuclear) assert(nparam_sets == 1);
+    if (oper_ != Operator::nuclear) assert(nparam_sets == 1 && "unexpected number of operator parameters");
 
     auto p12 = 0;
     for (auto p1 = 0; p1 != nprim1; ++p1) {
@@ -581,12 +582,31 @@ __libint2_engine_inline void Engine::_initialize() {
 
   assert(
       false &&
-      "missing case in \"switch\"");  // either deriv_order_ or oper_ is wrong
+      "missing case in switch");  // either deriv_order_ or oper_ is wrong
 }  // _initialize<R>()
 
 __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
-  assert(libint2::initialized());
-  assert(deriv_order_ <= LIBINT2_MAX_DERIV_ORDER);
+  assert(libint2::initialized() && "libint is not initialized");
+  assert(deriv_order_ <= LIBINT2_MAX_DERIV_ORDER &&
+         "exceeded the max derivative order of the library");
+
+  // validate braket
+#ifndef INCLUDE_ONEBODY
+  assert(braket_ != BraKet::x_x &&
+         "this braket type not supported by the library; give --enable-1body to configure");
+#endif
+#ifndef INCLUDE_ERI
+  assert(braket_ != BraKet::xx_xx &&
+         "this braket type not supported by the library; give --enable-eri to configure");
+#endif
+#ifndef INCLUDE_ERI3
+  assert((braket_ != BraKet::xs_xx && braket_ != BraKet::xx_xs) &&
+         "this braket type not supported by the library; give --enable-eri3 to configure");
+#endif
+#ifndef INCLUDE_ERI2
+  assert(braket_ != BraKet::xs_xs &&
+         "this braket type not supported by the library; give --enable-eri2 to configure");
+#endif
 
   // initialize braket, if needed
   if (braket_ == BraKet::invalid) braket_ = default_braket(oper_);
@@ -817,7 +837,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
   const auto AB2_z = AB_z * AB_z;
   const auto AB2 = AB2_x + AB2_y + AB2_z;
 
-  assert(LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD);
+  assert(LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD && "non-standard shell ordering");
 
 // overlap and kinetic energy ints don't use HRR, hence VRR on both centers
 // Coulomb potential do HRR on center 1 only
@@ -963,14 +983,14 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   //
 
   // can only handle 1 contraction at a time
-  assert(tbra1.ncontr() == 1 && tbra2.ncontr() == 1 && tket1.ncontr() == 1 &&
-         tket2.ncontr() == 1);
+  assert((tbra1.ncontr() == 1 && tbra2.ncontr() == 1 && tket1.ncontr() == 1 &&
+          tket2.ncontr() == 1) && "generally-contracted shells are not yet supported");
 
   // angular momentum limit obeyed?
-  assert(tbra1.contr[0].l <= lmax_);
-  assert(tbra2.contr[0].l <= lmax_);
-  assert(tket1.contr[0].l <= lmax_);
-  assert(tket2.contr[0].l <= lmax_);
+  assert(tbra1.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
+  assert(tbra2.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
+  assert(tket1.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
+  assert(tket2.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
 
 #if LIBINT2_SHELLQUARTET_SET == \
     LIBINT2_SHELLQUARTET_SET_STANDARD  // standard angular momentum ordering
@@ -1012,7 +1032,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   // adjust max angular momentum, if needed
   auto lmax = std::max(std::max(bra1.contr[0].l, bra2.contr[0].l),
                        std::max(ket1.contr[0].l, ket2.contr[0].l));
-  assert(lmax <= lmax_);
+  assert(lmax <= lmax_ && "the angular momentum limit is exceeded");
   const auto lmax_bra = std::max(bra1.contr[0].l, bra2.contr[0].l);
   const auto lmax_ket = std::max(ket1.contr[0].l, ket2.contr[0].l);
 
