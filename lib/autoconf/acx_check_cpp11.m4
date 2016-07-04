@@ -15,11 +15,14 @@ AC_DEFUN([ACX_CHECK_CPP11_GENERAL], [
         #if LIBINT2_CPLUSPLUS_STD < 2011
         # error "no C++11 support"
         #endif
+        auto f(int x, double y) -> decltype(x*y) {
+          return x*y;
+        }
       ]],
       [[
        std::vector<double> reals(10, 0.0);
-       for (auto i=reals.begin(); i!= reals.end(); i++) {
-         std::cout << *i << "\n";
+       for (const auto &i: reals) {
+         std::cout << i << "\n";
        }
       ]]
      )
@@ -33,7 +36,7 @@ AC_DEFUN([ACX_CHECK_CPP11_GENERAL], [
   if test "X$acx_have_cxx11" = "Xno"; then
     old_CXXFLAGS=$CXXFLAGS
     CXXFLAGS="$CXXFLAGS -std=c++11"
-    ADDED_DASHSTD=1
+    CXXFLAGS_ADDED_DASHSTD=1
     AC_COMPILE_IFELSE(
      [AC_LANG_PROGRAM(
        [[#include <vector>
@@ -42,11 +45,14 @@ AC_DEFUN([ACX_CHECK_CPP11_GENERAL], [
          #if LIBINT2_CPLUSPLUS_STD < 2011
          # error "no C++11 support"
          #endif
+         auto f(int x, double y) -> decltype(x*y) {
+           return x*y;
+         }
        ]],
        [[
         std::vector<double> reals(10, 0.0);
-        for (auto i=reals.begin(); i!= reals.end(); i++) {
-          std::cout << *i << "\n";
+        for (const auto &i: reals) {
+          std::cout << i << "\n";
         }
        ]]
       )
@@ -86,6 +92,9 @@ AC_DEFUN([ACX_CHECK_CPP11_CXXGEN], [
         #if LIBINT2_CPLUSPLUS_STD < 2011
         # error "no C++11 support"
         #endif
+        auto f(int x, double y) -> decltype(x*y) {
+          return x*y;
+        }
       ]],
       [[
        std::vector<double> reals(10, 0.0);
@@ -97,6 +106,7 @@ AC_DEFUN([ACX_CHECK_CPP11_CXXGEN], [
     ],
     [
      CXXGEN_SUPPORTS_CPP11=yes
+     AC_DEFINE(LIBINT_HAS_CXX11_CXXGEN)
      AC_MSG_RESULT([yes])
     ],
     [
@@ -109,37 +119,6 @@ AC_DEFUN([ACX_CHECK_CPP11_CXXGEN], [
   CXX=$ref_CXX
   CXXFLAGS=$ref_CXXFLAGS
 
-  AC_LANG_RESTORE  
-])
-
-AC_DEFUN([ACX_CHECK_CPP11_LAMBDA], [
-  AC_LANG_SAVE
-  AC_LANG([C++])
-
-  acx_have_cxx11_lambda=no
-  AC_MSG_CHECKING([CXX for C++11 lambdas support])
-  AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM(
-      [[#include <vector>
-        #include <algorithm>
-      ]],
-      [[
-       std::vector<double> reals(10, 0.0);
-       reals[5] = 1.0;
-       auto v = std::find_if(reals.begin(), reals.end(),
-                             [](double i){
-                               return (i == 1.0);
-                             }
-                            );
-      ]]
-     )
-    ],
-    [acx_have_cxx11_lambda=yes
-     AC_DEFINE(LIBINT_HAS_CXX11_LAMBDA)
-    ]
-  )
-  AC_MSG_RESULT([$acx_have_cxx11_lambda])
-  
   AC_LANG_RESTORE  
 ])
 
@@ -426,9 +405,6 @@ AC_DEFUN([ACX_CHECK_ARRAY], [
 AC_DEFUN([ACX_CHECK_CPP11],
 [
   ACX_CHECK_CPP11_GENERAL
-  if test "X$acx_have_cxx11" = "Xyes"; then
-    ACX_CHECK_CPP11_LAMBDA
-  fi
   ACX_CHECK_SHARED_PTR
   ACX_CHECK_TYPE_TRAITS
   ACX_CHECK_ARRAY

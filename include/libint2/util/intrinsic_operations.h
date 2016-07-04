@@ -27,7 +27,8 @@ namespace libint2 {
 
   //@{ Floating-point-Multiply-Add (FMA) instructions. Redefine these operations using native FMA instructions, if available (see, e.g. vector_x86.h)
 
-#ifdef LIBINT_HAS_CXX11
+#if defined(LIBINT_GENERATE_FMA)
+# if defined(LIBINT_HAS_CXX11)
   /// @return x*y+z
   template <typename X, typename Y, typename Z>
   inline auto fma_plus(X x, Y y, Z z) -> decltype(x*y+z) {
@@ -39,9 +40,10 @@ namespace libint2 {
   inline auto fma_minus(X x, Y y, Z z) -> decltype(x*y-z) {
     return x*y - z;
   }
-#else  // LIBINT_HAS_CXX11
+# else   // LIBINT_HAS_CXX11
 #  error "support for FMA requires compiler capable of C++11 or later"
-#endif // LIBINT_HAS_CXX11
+# endif  // LIBINT_HAS_CXX11
+#endif   // LIBINT_GENERATE_FMA
 
   //@}
 

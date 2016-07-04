@@ -783,11 +783,13 @@ else
   AC_MSG_ERROR([Cannot generate specialized evaluator types yet])
 fi
 
+libint_generate_gma=0
 AC_ARG_ENABLE(fma,
 [  --enable-fma            Generate FMA (fused multiply-add) instructions (needs C++11 and must be supported by hardware to benefit).],
 [
 case $enableval in
   yes)
+    libint_generate_gma=1
     AC_DEFINE(LIBINT_GENERATE_FMA)
     AC_MSG_RESULT([Will generate FMA instructions])
   ;;
@@ -1199,6 +1201,12 @@ ACX_CHECK_CPP11
 
 if test "X$acx_have_cxx11" = "Xno"; then
   AC_MSG_ERROR([C++11 support is required to compile the Libint compiler. Obtain a recent C++ compiler that supports C++11, or consider using a pregenerated library])
+fi
+
+# to support FMA CXXGEN must be able to compile C++11
+# NB -std=c++11 is not added to CXXGENFLAGS automatically!
+if test "X$libint_generate_gma" = "X1" -a "X$CXXGEN_SUPPORTS_CPP11" = "Xno"; then
+  AC_MSG_ERROR([CXXGEN must support C++11 to provide FMA support. Add -std=c++11 to CXXGENFLAGS.])
 fi
 
 dnl ------------------ Check for gmp C++ interface -----------------------

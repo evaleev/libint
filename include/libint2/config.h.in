@@ -191,8 +191,8 @@
    -------------------------- */
 // see lib/autoconf/ac_check_cpp11.m4
 
+/* define if CXX compiler can compile C++11 */
 #undef LIBINT_HAS_CXX11
-#undef LIBINT_HAS_CXX11_LAMBDA
 
 /* define if array has fill member function. */
 #undef LIBINT_ARRAY_HAS_FILL

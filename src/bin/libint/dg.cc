@@ -234,14 +234,6 @@ namespace{
     }
   };
 
-#if !LIBINT_HAS_CXX11_LAMBDA
-  struct __compare_by_nparents {
-      bool operator()(DGVertex::ArcSetType::value_type a,
-                      DGVertex::ArcSetType::value_type b) {
-        return a->dest()->num_entry_arcs() < b->dest()->num_entry_arcs();
-      }
-  };
-#endif
   std::vector<DGVertex::ArcSetType::value_type> sort_children_by_nparents(DGVertex::ArcSetType::const_iterator begin,
                                  DGVertex::ArcSetType::const_iterator end) {
     // std::sort works only for containers that support random access
@@ -249,17 +241,12 @@ namespace{
 //    for(DGVertex::ArcSetType::const_iterator i=begin; i!=end; ++i)
 //      sorted_children.push_back(*i);
     std::vector<DGVertex::ArcSetType::value_type> sorted_children(begin, end);
-#if LIBINT_HAS_CXX11_LAMBDA
     std::sort(sorted_children.begin(), sorted_children.end(),
               [](DGVertex::ArcSetType::value_type a,
                  DGVertex::ArcSetType::value_type b) {
           return a->dest()->num_entry_arcs() < b->dest()->num_entry_arcs();
         }
       );
-#else
-    std::sort(sorted_children.begin(), sorted_children.end(),
-              __compare_by_nparents());
-#endif
     return sorted_children;
   }
 }
@@ -1303,21 +1290,11 @@ unsigned int min_size_to_alloc)
 
     // need extra buffers for targets if some are not unrolled ( and not decontracted)
     //const bool need_copies_of_targets = nonunrolled_targets(targets_);
-#if LIBINT_HAS_CXX11_LAMBDA
     const bool need_copies_of_targets = std::find_if(targets_.begin(),
                                                      targets_.end(),
                                                      [](SafePtr<DGVertex> i){
       return DecontractedIntegralSet()(i) == false && UnrolledIntegralSet()(i) == false;
     }) != targets_.end();
-#else
-    bool need_copies_of_targets = false;
-    for(auto t=targets_.begin(); t!=targets_.end(); ++t) {
-      if (DecontractedIntegralSet()(*t) == false && UnrolledIntegralSet()(*t) == false) {
-        need_copies_of_targets = true;
-        break;
-      }
-    }
-#endif
 
     iregistry()->accumulate_targets_directly(!need_copies_of_targets);
 
