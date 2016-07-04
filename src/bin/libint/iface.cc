@@ -289,6 +289,23 @@ Libint2Iface::~Libint2Iface()
         li_ << ctext_->macro_endif(); // >= C++11
       }
       li_ << ctext_->close_block();
+
+      // need special initializer for flop constructors
+      if (cparams_->count_flops()) {
+        oss_.str(null_str_);
+        oss_ << ctext_->type_name<void>() << " "
+           << ctext_->label_to_name(cparams_->api_prefix() + "libint2_init_flopcounter_" + tlabel)
+           << "(" << ctext_->inteval_type_name(tlabel)
+           << "* inteval_vector, int inteval_vector_length)";
+
+        li_ << oss_.str() << ctext_->open_block();
+        // TODO convert to ForLoop object
+        li_ << "for(int v=1; v!=inteval_vector_length; ++v)"
+            << ctext_->open_block()
+            << ctext_->assign("inteval_vector[v].nflops", "inteval_vector[0].nflops") << ";" << endl
+            << ctext_->close_block()
+            << ctext_->close_block();
+      }
     }
 
     i = 0;
