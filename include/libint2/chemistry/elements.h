@@ -16,7 +16,6 @@
  *
  */
 
-#pragma once
 #ifndef LIBINT2_CHEMISTRY_ELEMENTS_H
 #define LIBINT2_CHEMISTRY_ELEMENTS_H
 
