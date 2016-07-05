@@ -114,7 +114,9 @@ namespace libint2 {
       std::vector<std::string> li_decls_;   // _init_
       std::vector<std::string> lm_decls_;   // _need_memory_
       std::vector<std::string> lc_decls_;   // _cleanup_
-      
+
+      std::string lf_decl_;   // _init_flopcounter
+
       typedef std::basic_ofstream<char> fstream;
       
       fstream th_;

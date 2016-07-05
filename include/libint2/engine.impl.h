@@ -25,6 +25,7 @@
 
 #include <libint2/boys.h>
 #include <libint2/boost/preprocessor.hpp>
+#include <libint2/boost/preprocessor/facilities/is_1.hpp>
 
 // extra PP macros
 
@@ -569,6 +570,9 @@ __libint2_engine_inline void Engine::_initialize() {
     LIBINT2_PREFIXED_NAME(                                                     \
         BOOST_PP_CAT(libint2_init_, BOOST_PP_NBODYENGINE_MCR3_TASK(product)))  \
     (&primdata_[0], lmax_, 0);                                                 \
+    BOOST_PP_IF(BOOST_PP_IS_1(LIBINT2_FLOP_COUNT),                             \
+      LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)                          \
+    (&primdata_[0], primdata_.size()), BOOST_PP_EMPTY());                      \
     buildfnptrs_ = to_ptr1(LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(                 \
         libint2_build_, BOOST_PP_NBODYENGINE_MCR3_TASK(product))));            \
     reset_scratch();                                                           \

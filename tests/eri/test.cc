@@ -134,6 +134,9 @@ void test_4eri(unsigned int deriv_order,
 #if INCLUDE_ERI >= 2
   if (deriv_order == 2) LIBINT2_PREFIXED_NAME(libint2_init_eri2)(&inteval[0], lmax, 0);
 #endif
+#ifdef LIBINT2_FLOP_COUNT
+  LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(&inteval[0], max_contrdepth4);
+#endif
 
   lmax = std::min(lmax_max, lmax);
 
@@ -414,6 +417,9 @@ void test_3eri(unsigned int deriv_order,
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_init_3eri2)(&inteval[0], lmax, 0);
 #endif
+#ifdef LIBINT2_FLOP_COUNT
+  LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(&inteval[0], max_contrdepth3);
+#endif
 
   auto lmax0 = std::min(lmax_max, lmax);
   auto lmax1 = std::min(lmax_max, lmax_default);
@@ -662,6 +668,9 @@ void test_2eri(unsigned int deriv_order,
 #if INCLUDE_ERI2 >= 2
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_init_2eri2)(&inteval[0], lmax, 0);
+#endif
+#ifdef LIBINT2_FLOP_COUNT
+  LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(&inteval[0], contrdepth2);
 #endif
 
   lmax = std::min(lmax_max, lmax);
