@@ -785,7 +785,7 @@ fi
 
 libint_generate_gma=0
 AC_ARG_ENABLE(fma,
-[  --enable-fma            Generate FMA (fused multiply-add) instructions (needs C++11 and must be supported by hardware to benefit).],
+[  --enable-fma            Generate FMA (fused multiply-add) instructions (CXXGEN must support C++11; to benefit must have FMA-capable hardware and compiler).],
 [
 case $enableval in
   yes)
@@ -820,7 +820,7 @@ AC_MSG_RESULT([Will copy integrals to the buffer])
 ])
 
 AC_ARG_ENABLE(flop-counter,
-[  --enable-flop-counter   Support FLOP counting by the library.],
+[  --enable-flop-counter   Support (approximate) FLOP counting by the library. CXXGEN must support C++11!],
 [
 case $enableval in
   yes)
@@ -837,7 +837,7 @@ esac
 ])
 
 AC_ARG_ENABLE(profile,
-[  --enable-profile        Turn on profiling instrumentation of the library. Generated code will require C++11!],
+[  --enable-profile        Turn on profiling instrumentation of the library. CXXGEN must support C++11!],
 [
 case $enableval in
   yes)
