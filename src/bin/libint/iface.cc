@@ -154,6 +154,25 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
     ih_ << lc_fdec << ctext_->end_of_stat() << endl;
   }
 
+  // if counting flops, need additional initializer function
+  if (cparams_->count_flops()) {
+    oss_.str(null_str_);
+    oss_ << "#ifdef __cplusplus\n#ifdef LIBINT2_FLOP_COUNT\nextern \"C++\" template <typename EvalType> void "
+       << ctext_->label_to_name(cparams->api_prefix() + "libint2_init_flopcounter")
+       << "(EvalType* inteval_vector, int inteval_vector_size)"
+       << ctext_->open_block();
+      // TODO convert to ForLoop object
+    oss_ << "for(int v=1; v!=inteval_vector_size; ++v)"
+        << ctext_->open_block()
+        << ctext_->assign("inteval_vector[v].nflops", "inteval_vector[0].nflops")
+        << ctext_->close_block()
+        << ctext_->close_block();
+    oss_ << "#endif\n#endif\n";
+
+    lf_decl_ = oss_.str();
+    ih_ << lf_decl_ << ctext_->end_of_stat() << endl;
+  }
+
   ih_ << ctext_->code_postfix() << endl;
   
   si_ << si_fdec << ctext_->open_block();
@@ -289,23 +308,6 @@ Libint2Iface::~Libint2Iface()
         li_ << ctext_->macro_endif(); // >= C++11
       }
       li_ << ctext_->close_block();
-
-      // need special initializer for flop constructors
-      if (cparams_->count_flops()) {
-        oss_.str(null_str_);
-        oss_ << ctext_->type_name<void>() << " "
-           << ctext_->label_to_name(cparams_->api_prefix() + "libint2_init_flopcounter_" + tlabel)
-           << "(" << ctext_->inteval_type_name(tlabel)
-           << "* inteval_vector, int inteval_vector_length)";
-
-        li_ << oss_.str() << ctext_->open_block();
-        // TODO convert to ForLoop object
-        li_ << "for(int v=1; v!=inteval_vector_length; ++v)"
-            << ctext_->open_block()
-            << ctext_->assign("inteval_vector[v].nflops", "inteval_vector[0].nflops") << ";" << endl
-            << ctext_->close_block()
-            << ctext_->close_block();
-      }
     }
 
     i = 0;

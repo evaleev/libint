@@ -569,6 +569,9 @@ __libint2_engine_inline void Engine::_initialize() {
     LIBINT2_PREFIXED_NAME(                                                     \
         BOOST_PP_CAT(libint2_init_, BOOST_PP_NBODYENGINE_MCR3_TASK(product)))  \
     (&primdata_[0], lmax_, 0);                                                 \
+    BOOST_PP_IF(LIBINT2_FLOP_COUNT,                                            \
+      LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)                          \
+    (&primdata_[0], primdata_.size()),0);                                      \
     buildfnptrs_ = to_ptr1(LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(                 \
         libint2_build_, BOOST_PP_NBODYENGINE_MCR3_TASK(product))));            \
     reset_scratch();                                                           \
