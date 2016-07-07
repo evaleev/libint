@@ -1187,6 +1187,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                           .first();
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax);
                 } break;
+                case Operator::r12: {
+                  const auto& core_eval_ptr =
+                      core_eval_pack_
+                          .as<detail::core_eval_pack_type<Operator::r12>>()
+                          .first();
+                  core_eval_ptr->eval(gm_ptr, rho, T, mmax);
+                } break;
                 default:
                   assert(false && "missing case in a switch");  // unreachable
               }
