@@ -16,9 +16,6 @@
  *
  */
 
-// prototype for the Boys function engines (Boys function = Fm(T))
-// the Chebyshev extrapolation code is based on that by Frank Neese
-
 #ifndef _libint2_src_lib_libint_boysfwd_h_
 #define _libint2_src_lib_libint_boysfwd_h_
 
@@ -39,14 +36,12 @@ namespace libint2 {
   template<typename Real, int INTERPOLATION_ORDER>
   class FmEval_Taylor;
 
-  template<typename Real, int k>
+  template<typename Real, int K>
     struct GaussianGmEval;
 
   namespace detail {
-
     /// some evaluators need thread-local scratch, but most don't
     template <typename CoreEval> struct CoreEvalScratch;
-
   }  // namespace detail
 
   template <typename GmEvalFunction>
