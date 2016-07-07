@@ -37,6 +37,7 @@
 
 // some features require at least C++11
 #include <libint2/util/cxxstd.h>
+#include <libint2/boys_fwd.h>
 #if LIBINT2_CPLUSPLUS_STD >= 2011
 #include <memory>
 #endif
@@ -1537,25 +1538,101 @@ namespace libint2 {
   };
 
   template <typename GmEvalFunction>
-  struct GenericGmEval {
+  struct GenericGmEval : private GmEvalFunction {
 
-      GenericGmEval(unsigned int mmax, double precision) : mmax_(mmax), precision_(precision) {}
+    typedef typename GmEvalFunction::value_type Real;
 
-      static std::shared_ptr<GenericGmEval> instance(unsigned int mmax, double precision = 0.0) {
+      GenericGmEval(int mmax, Real precision) : GmEvalFunction(mmax, precision),
+          mmax_(mmax), precision_(precision) {}
+
+      static std::shared_ptr<GenericGmEval> instance(int mmax, Real precision = 0.0) {
         return std::make_shared<GenericGmEval>(mmax, precision);
       }
 
       template <typename Real, typename... ExtraArgs>
-      void eval(Real* Gm, Real rho, Real T, size_t mmax, ExtraArgs... args) {
+      void eval(Real* Gm, Real rho, Real T, int mmax, ExtraArgs... args) {
         assert(mmax <= mmax_);
-        GmEvalFunction eval_;
-        eval_(Gm, rho, T, mmax, std::forward(args)...);
+        (GmEvalFunction(*this))(Gm, rho, T, mmax, std::forward(args)...);
       }
 
+      /// @return the maximum value of m for which the \f$ G_m(\rho, T) \f$ can be computed with this object
+      int max_m() const { return mmax_; }
+      /// @return the precision with which this object can compute the Boys function
+      Real precision() const { return precision_; }
+
     private:
-      unsigned int mmax_;
-      double precision_;
+      int mmax_;
+      Real precision_;
   };
+
+  namespace os_core_ints {
+  template <typename Real, int K> struct r12_xx_K_gm_eval;
+  }
+
+  namespace detail {
+  /// r12_xx_K_gm_eval<1> needs extra scratch data
+  template <typename Real>
+  struct CoreEvalScratch<os_core_ints::r12_xx_K_gm_eval<Real, 1>> {
+    std::vector<Real> Fm_;
+    CoreEvalScratch() = default;
+    CoreEvalScratch(int mmax) { init(mmax); }
+
+   private:
+    void init(int mmax) { Fm_.resize(mmax + 1); }
+  };
+  }
+
+  /// Obara-Saika core ints code
+  namespace os_core_ints {
+
+    /// core integral evaluator delta function kernels
+  template <typename Real>
+  struct delta_gm_eval {
+    typedef Real value_type;
+
+    delta_gm_eval(unsigned int, Real) {}
+    void operator()(Real* Gm, Real rho, Real T, int mmax) {
+      constexpr static auto one_over_two_pi = 1.0 / (2.0 * M_PI);
+      const auto G0 = exp(-T) * rho * one_over_two_pi;
+      std::fill(Gm, Gm + mmax + 1, G0);
+    }
+  };
+
+  /// core integral evaluator for \f$ r_{12}^K \f$ kernel
+  /// @tparam K currently supported \c K=1 (use Boys engine directly for \c K=-1)
+  /// @note need extra scratch for Boys function values when \c K==1, cannot reuse
+  ///       the Gm vector for scratch
+  template <typename Real, int K>
+  struct r12_xx_K_gm_eval;
+
+  template <typename Real>
+  struct r12_xx_K_gm_eval<Real, 1>
+      : private detail::CoreEvalScratch<r12_xx_K_gm_eval<Real, 1>> {
+    typedef detail::CoreEvalScratch<r12_xx_K_gm_eval<Real, 1>> base_type;
+    typedef Real value_type;
+
+    r12_xx_K_gm_eval(unsigned int mmax, Real precision)
+        : base_type(mmax) {
+      fm_eval_ = FmEval_Taylor<Real>::instance(mmax + 1, precision);
+    }
+    void operator()(Real* Gm, Real rho, Real T, int mmax) {
+      fm_eval_->eval(&base_type::Fm_[0], T, mmax + 1);
+      auto T_plus_m_plus_one = T + 1.0;
+      Gm[0] = T_plus_m_plus_one * base_type::Fm_[0] - T * base_type::Fm_[1];
+      auto minus_m = -1.0;
+      T_plus_m_plus_one += 1.0;
+      for (auto m = 1; m <= mmax;
+           ++m, minus_m -= 1.0, T_plus_m_plus_one += 1.0) {
+        Gm[m] =
+            minus_m * base_type::Fm_[m - 1] + T_plus_m_plus_one * base_type::Fm_[m] - T * base_type::Fm_[m + 1];
+      }
+    }
+
+   private:
+    std::shared_ptr<FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+  };
+
+  }  // namespace os_core_ints
 
   /*
    *  Slater geminal fitting is available only if have LAPACK

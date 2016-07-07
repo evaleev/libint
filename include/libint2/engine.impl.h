@@ -63,7 +63,8 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
     (elecpot,                        \
      (1emultipole,                   \
       (2emultipole,                  \
-       (3emultipole, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL)))))))))))
+       (3emultipole,                 \
+        (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))

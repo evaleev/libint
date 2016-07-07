@@ -68,13 +68,7 @@ namespace libint2 {
 /// represented as a vector of
 /// {\f$ \alpha_i \f$, \f$ c_i \f$ } pairs
 typedef std::vector<std::pair<double, double>> ContractedGaussianGeminal;
-struct delta_gm_eval {
-  void operator()(double* Gm, double rho, double T, int mmax) {
-    const static auto one_over_two_pi = 1.0 / (2.0 * M_PI);
-    const auto G0 = exp(-T) * rho * one_over_two_pi;
-    std::fill(Gm, Gm + mmax + 1, G0);
-  }
-};
+
 constexpr size_t num_geometrical_derivatives(size_t ncenter,
                                              size_t deriv_order) {
   return (deriv_order > 0)
@@ -89,7 +83,7 @@ __libint2_engine_inline typename std::remove_all_extents<T>::type* to_ptr1(T (&a
 
 /// types of operators (operator sets) supported by Engine.
 /// \warning These must start with 0 and appear in same order as elements of
-/// BOOST_PP_ONEBODY_OPERATOR_LIST preprocessor macro.
+/// BOOST_PP_NBODY_OPERATOR_LIST preprocessor macro (aliases do not need to be included).
 /// \warning for the sake of nbody() order operators by # of particles
 enum class Operator {
   overlap = 0,  //!< overlap
@@ -103,16 +97,19 @@ enum class Operator {
   emultipole3,  //!< emultipole2 + (Cartesian) electric octupole moment, \f$
                 //! x^3, x^2y, x^2z, xy^2, xyz, xz^2, y^3, y^2z, yz^2, z^3 \f$
   delta,        //!< \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
-  coulomb,      //!< (2-body) Coulomb operator
-  cgtg,         //!< contracted Gaussian geminal
-  cgtg_x_coulomb,  //!< contracted Gaussian geminal times Coulomb
-  delcgtg2,        //!< |Delta . contracted Gaussian geminal|^2
+  coulomb,      //!< (2-body) Coulomb operator = \f$ r_{12}^{-1} \f$
+  r12_m1 = coulomb,        //!< alias for Operator::coulomb
+  cgtg,                    //!< contracted Gaussian geminal
+  cgtg_x_coulomb,          //!< contracted Gaussian geminal times Coulomb
+  delcgtg2,                //!< |Delta . contracted Gaussian geminal|^2
+  r12,                     //!< anti-Coulomb operator, \f$ r_{12} \f$
+  r12_1 = r12,             //!< alias for Operator::r12
   invalid = -1,    // do not modify this
   // keep this updated
   first_1body_oper = overlap,
   last_1body_oper = emultipole3,
   first_2body_oper = delta,
-  last_2body_oper = delcgtg2,
+  last_2body_oper = r12_1,
   first_oper = first_1body_oper,
   last_oper = last_2body_oper
 };
@@ -211,8 +208,15 @@ struct operator_traits<Operator::delcgtg2>
 template <>
 struct operator_traits<Operator::delta>
     : public detail::default_operator_traits {
-  typedef libint2::GenericGmEval<delta_gm_eval>
+  typedef libint2::GenericGmEval<libint2::os_core_ints::delta_gm_eval<real_t>>
       core_eval_type;  // core ints are too trivial to bother
+};
+
+template <>
+struct operator_traits<Operator::r12>
+    : public detail::default_operator_traits {
+  typedef libint2::GenericGmEval<libint2::os_core_ints::r12_xx_K_gm_eval<real_t, 1>>
+      core_eval_type;
 };
 
 /// the runtime version of \c operator_traits<oper>::default_params()

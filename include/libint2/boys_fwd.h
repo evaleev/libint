@@ -52,6 +52,12 @@ namespace libint2 {
   template <typename GmEvalFunction>
   struct GenericGmEval;
 
+  /// Obara-Saika core ints code
+  namespace os_core_ints {
+  template <typename Real> struct delta_gm_eval;
+  template <typename Real, int K> struct r12_xx_K_gm_eval;
+  }  // namespace os_core_ints
+
   /*
    *  Slater geminal fitting is available only if have LAPACK
    */
