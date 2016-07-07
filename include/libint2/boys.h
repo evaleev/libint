@@ -1444,8 +1444,8 @@ namespace libint2 {
 
         std::fill(Gm, Gm+mmax+1, Real(0));
 
-        const double sqrt_rho = sqrt(rho);
-        const double oo_sqrt_rho = 1.0/sqrt_rho;
+        const auto sqrt_rho = sqrt(rho);
+        const auto oo_sqrt_rho = 1/sqrt_rho;
         if (k == -1) {
           void* _scr = (scr == 0) ? this : scr;
           auto& scratch = *(reinterpret_cast<detail::CoreEvalScratch<GaussianGmEval<Real, -1>>*>(_scr));
@@ -1458,31 +1458,31 @@ namespace libint2 {
         const citer gend = geminal.end();
         for(citer i=geminal.begin(); i!= gend; ++i) {
 
-          const double gamma = i->first;
-          const double gcoef = i->second;
-          const double rhog = rho + gamma;
-          const double oorhog = 1.0/rhog;
+          const auto gamma = i->first;
+          const auto gcoef = i->second;
+          const auto rhog = rho + gamma;
+          const auto oorhog = 1/rhog;
 
-          const double gorg = gamma * oorhog;
-          const double rorg = rho * oorhog;
-          const double sqrt_rho_org = sqrt_rho * oorhog;
-          const double sqrt_rhog = sqrt(rhog);
-          const double sqrt_rorg = sqrt_rho_org * sqrt_rhog;
+          const auto gorg = gamma * oorhog;
+          const auto rorg = rho * oorhog;
+          const auto sqrt_rho_org = sqrt_rho * oorhog;
+          const auto sqrt_rhog = sqrt(rhog);
+          const auto sqrt_rorg = sqrt_rho_org * sqrt_rhog;
 
           /// (ss|g12|ss)
-          const Real const_SQRTPI_2(0.88622692545275801364908374167057259139877472806119); /* sqrt(pi)/2 */
-          const double SS_K0G12_SS = gcoef * oo_sqrt_rho * const_SQRTPI_2 * rorg * sqrt_rorg * exp(-gorg*T);
+          constexpr Real const_SQRTPI_2(0.88622692545275801364908374167057259139877472806119); /* sqrt(pi)/2 */
+          const auto SS_K0G12_SS = gcoef * oo_sqrt_rho * const_SQRTPI_2 * rorg * sqrt_rorg * exp(-gorg*T);
 
           if (k == -1) {
             void* _scr = (scr == 0) ? this : scr;
             auto& scratch = *(reinterpret_cast<detail::CoreEvalScratch<GaussianGmEval<Real, -1>>*>(_scr));
 
-            const double rorgT = rorg * T;
+            const auto rorgT = rorg * T;
             fm_eval_->eval(&scratch.Fm_[0], rorgT, mmax);
 
 #if 1
-            const Real const_2_SQRTPI(1.12837916709551257389615890312154517);   /* 2/sqrt(pi)     */
-            const Real pfac = const_2_SQRTPI * sqrt_rhog * SS_K0G12_SS;
+            constexpr Real const_2_SQRTPI(1.12837916709551257389615890312154517);   /* 2/sqrt(pi)     */
+            const auto pfac = const_2_SQRTPI * sqrt_rhog * SS_K0G12_SS;
             scratch.oorhog_i[0] = pfac;
             for(int i=1; i<=mmax; i++) {
               scratch.g_i[i] = scratch.g_i[i-1] * gamma;
@@ -1500,7 +1500,7 @@ namespace libint2 {
           }
 
           if (k == 0) {
-            double ss_oper_ss_m = SS_K0G12_SS;
+            auto ss_oper_ss_m = SS_K0G12_SS;
             Gm[0] += ss_oper_ss_m;
             for(int m=1; m<=mmax; ++m) {
               ss_oper_ss_m *= gorg;
@@ -1511,12 +1511,12 @@ namespace libint2 {
           if (k == 2) {
 
             /// (ss|g12*r12^2|ss)
-            const double rorgT = rorg * T;
-            const double SS_K2G12_SS_0 = (1.5 + rorgT) * (SS_K0G12_SS * oorhog);
-            const double SS_K2G12_SS_m1 = rorg * (SS_K0G12_SS * oorhog);
+            const auto rorgT = rorg * T;
+            const auto SS_K2G12_SS_0 = (1.5 + rorgT) * (SS_K0G12_SS * oorhog);
+            const auto SS_K2G12_SS_m1 = rorg * (SS_K0G12_SS * oorhog);
 
-            double SS_K2G12_SS_gorg_m = SS_K2G12_SS_0 ;
-            double SS_K2G12_SS_gorg_m1 = SS_K2G12_SS_m1;
+            auto SS_K2G12_SS_gorg_m = SS_K2G12_SS_0 ;
+            auto SS_K2G12_SS_gorg_m1 = SS_K2G12_SS_m1;
             Gm[0] += SS_K2G12_SS_gorg_m;
             for(int m=1; m<=mmax; ++m) {
               SS_K2G12_SS_gorg_m *= gorg;
