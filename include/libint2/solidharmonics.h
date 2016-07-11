@@ -269,7 +269,6 @@ namespace libint2 {
       const auto& coefs1 = SolidHarmonicsCoefficients<Real>::instance(l1);
       const auto& coefs2 = SolidHarmonicsCoefficients<Real>::instance(l2);
 
-      const auto ncart1 = (l1+1)*(l1+2)/2;
       const auto ncart2 = (l2+1)*(l2+2)/2;
       const auto npure1 = 2*l1+1;
       const auto npure2 = 2*l2+1;
@@ -456,7 +455,6 @@ namespace libint2 {
       const auto& coefs_row = SolidHarmonicsCoefficients<Real>::instance(l_row);
       const auto& coefs_col = SolidHarmonicsCoefficients<Real>::instance(l_col);
 
-      const auto ncart_row = (l_row+1)*(l_row+2)/2;
       const auto ncart_col = (l_col+1)*(l_col+2)/2;
       const auto npure_row = 2*l_row+1;
       const auto npure_col = 2*l_col+1;
@@ -541,7 +539,6 @@ namespace libint2 {
       return transform_first(l_row, ncol, source_blk, target_blk);
       const auto& coefs_row = SolidHarmonicsCoefficients<Real>::instance(l_row);
 
-      const auto ncart_row = (l_row+1)*(l_row+2)/2;
       const auto npure_row = 2*l_row+1;
 
       // loop over row shg

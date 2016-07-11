@@ -178,7 +178,6 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   const auto ncart1 = s1.cartesian_size();
   const auto ncart2 = s2.cartesian_size();
   const auto ncart12 = ncart1 * ncart2;
-  const auto nops = nopers();
 
   const auto tform_to_solids = s1.contr[0].pure || s2.contr[0].pure;
 
@@ -195,16 +194,12 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
   // # of targets computed by libint
   const auto ntargets = nopers() * num_geometrical_derivatives(2, deriv_order_);
-  // size of ints block computed by Libint
-  const auto target_buf_size = ntargets * ncart12;
 
   // Libint computes derivatives with respect to basis functions only, must
   // must use translational invariance to recover derivatives w.r.t. operator
   // degrees of freedom
   // will compute derivs w.r.t. 2 Gaussian centers + (if nuclear) nparam_sets
   // operator centers
-  const auto geometry_independent_operator =
-      oper_ == Operator::overlap || oper_ == Operator::kinetic;
   const auto nderivcenters_shset =
       2 + (oper_ == Operator::nuclear ? nparam_sets : 0);
   const auto nderivcoord = 3 * nderivcenters_shset;
@@ -840,7 +835,6 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
   const auto AB2_x = AB_x * AB_x;
   const auto AB2_y = AB_y * AB_y;
   const auto AB2_z = AB_z * AB_z;
-  const auto AB2 = AB2_x + AB2_y + AB2_z;
 
   assert(LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD && "non-standard shell ordering");
 
