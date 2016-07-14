@@ -27,7 +27,7 @@
 
 #include <libint2/util/cxxstd.h>
 #if LIBINT2_CPLUSPLUS_STD < 2011
-#error "libint2/engine.h requires C++11 support"
+# error "libint2/engine.h requires C++11 support"
 #endif
 
 #include <algorithm>
