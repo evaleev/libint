@@ -262,6 +262,16 @@ namespace libint2 {
         }
         return path;
       }
+      
+      /// converts fortran scientific-notation floats that use d/D instead of e/E in \c str
+      /// @param[in,out] str string in which chars 'd' and 'D' are replaced with 'e' and 'E',
+      ///                respectively
+      static void fortran_dfloats_to_efloats(std::string& str) {
+        for(auto& ch: str) {
+          if (ch == 'd') ch = 'e';
+          if (ch == 'D') ch = 'E';
+        }
+      }
 
     public:
 
@@ -282,26 +292,26 @@ namespace libint2 {
         }
         std::vector<std::vector<libint2::Shell>> ref_shells(118); // 118 = number of chemical elements
 
-        std::string comment, rest;
+        std::string line, rest;
 
         // skip till first basis
-        while(std::getline(is, comment) && comment != "****") {
+        while(std::getline(is, line) && line != "****") {
         }
 
         size_t Z;
         auto nextbasis = true, nextshell = false;
         // read lines till end
-        while(std::getline(is, comment)) {
+        while(std::getline(is, line)) {
           // skipping empties and starting with '!' (the comment delimiter)
-          if (comment.empty() || comment[0] == '!') continue;
-          if (comment == "****") {
+          if (line.empty() || line[0] == '!') continue;
+          if (line == "****") {
             nextbasis = true;
             nextshell = false;
             continue;
           }
           if (nextbasis) {
             nextbasis = false;
-            std::istringstream iss(comment);
+            std::istringstream iss(line);
             std::string elemsymbol;
             iss >> elemsymbol >> rest;
 
@@ -326,7 +336,7 @@ namespace libint2 {
             continue;
           }
           if (nextshell) {
-            std::istringstream iss(comment);
+            std::istringstream iss(line);
             std::string amlabel;
             unsigned nprim;
             iss >> amlabel >> nprim >> rest;
@@ -336,8 +346,9 @@ namespace libint2 {
               std::vector<double> exps;
               std::vector<double> coeffs;
               for(auto p = 0; p!=nprim; ++p) {
-                while(std::getline(is, comment) && (comment.empty() || comment[0] == '!')) {}
-                std::istringstream iss(comment);
+                while(std::getline(is, line) && (line.empty() || line[0] == '!')) {}
+                fortran_dfloats_to_efloats(line);
+                std::istringstream iss(line);
                 double e, c;
                 iss >> e >> c;
                 exps.emplace_back(e);
@@ -358,8 +369,9 @@ namespace libint2 {
               std::vector<double> exps;
               std::vector<double> coeffs_s, coeffs_p;
               for(auto p = 0; p!=nprim; ++p) {
-                while(std::getline(is, comment) && (comment.empty() || comment[0] == '!')) {}
-                std::istringstream iss(comment);
+                while(std::getline(is, line) && (line.empty() || line[0] == '!')) {}
+                fortran_dfloats_to_efloats(line);
+                std::istringstream iss(line);
                 double e, c1, c2;
                 iss >> e >> c1 >> c2;
                 exps.emplace_back(e);
