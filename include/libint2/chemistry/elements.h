@@ -148,7 +148,7 @@ namespace libint2 {
        {114, "flerovium",    "Fl"},
        {115, "moscovium",    "Mc"},
        {116, "livermorium",  "Lv"},
-       {117, "tennesine",    "Ts"},
+       {117, "tennessine",   "Ts"},
        {118, "oganesson",    "Og"}
       };
   }
