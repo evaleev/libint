@@ -16,8 +16,8 @@
  *
  */
 
-#ifndef LIBINT2_CHEMISTRY_ELEMENTS_H
-#define LIBINT2_CHEMISTRY_ELEMENTS_H
+#ifndef INCLUDE_LIBINT2_CHEMISTRY_ELEMENTS_H_
+#define INCLUDE_LIBINT2_CHEMISTRY_ELEMENTS_H_
 
 #include <string>
 #include <vector>
@@ -154,4 +154,4 @@ namespace libint2 {
   }
 }
 
-#endif /* end of include guard: LIBINT2_CHEMISTRY_ELEMENTS_H */
+#endif  // INCLUDE_LIBINT2_CHEMISTRY_ELEMENTS_H_
