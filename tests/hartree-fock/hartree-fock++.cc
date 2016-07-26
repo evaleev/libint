@@ -45,6 +45,7 @@
 // Libint Gaussian integrals library
 #include <libint2/diis.h>
 #include <libint2/util/intpart_iter.h>
+#include <libint2/chemistry/sto3g_atomic_density.h>
 #include <libint2.hpp>
 
 #if defined(_OPENMP)
@@ -807,12 +808,7 @@ Matrix compute_soad(const std::vector<Atom>& atoms) {
   size_t nao = 0;
   for (const auto& atom : atoms) {
     const auto Z = atom.atomic_number;
-    if (Z == 1 || Z == 2)  // H, He
-      nao += 1;
-    else if (Z <= 10)  // Li - Ne
-      nao += 5;
-    else
-      throw "SOAD with Z > 10 is not yet supported";
+    nao += libint2::sto3g_num_ao(Z);
   }
 
   // compute the minimal basis density
@@ -820,18 +816,10 @@ Matrix compute_soad(const std::vector<Atom>& atoms) {
   size_t ao_offset = 0;  // first AO of this atom
   for (const auto& atom : atoms) {
     const auto Z = atom.atomic_number;
-    if (Z == 1 || Z == 2) {         // H, He
-      D(ao_offset, ao_offset) = Z;  // all electrons go to the 1s
-      ao_offset += 1;
-    } else if (Z <= 10) {
-      D(ao_offset, ao_offset) = 2;  // 2 electrons go to the 1s
-      D(ao_offset + 1, ao_offset + 1) =
-          (Z == 3) ? 1 : 2;  // Li? only 1 electron in 2s, else 2 electrons
-      // smear the remaining electrons in 2p orbitals
-      const double num_electrons_per_2p = (Z > 4) ? (double)(Z - 4) / 3 : 0;
-      for (auto xyz = 0; xyz != 3; ++xyz)
-        D(ao_offset + 2 + xyz, ao_offset + 2 + xyz) = num_electrons_per_2p;
-      ao_offset += 5;
+    const auto& occvec = libint2::sto3g_ao_occupation_vector(Z);
+    for(const auto& occ: occvec) {
+      D(ao_offset, ao_offset) = occ;
+      ++ao_offset;
     }
   }
 
