@@ -143,13 +143,13 @@ namespace libint2 {
        {109, "meitnerium",   "Mt"},
        {110, "darmstadtium", "Ds"},
        {111, "roentgenium",  "Rg"},
-       {112, "ununbium",     "Uub"},
-       {113, "ununtrium",    "Uut"},
-       {114, "ununquadium",  "Uuq"},
-       {115, "ununpentium",  "Uup"},
-       {116, "ununhexium",   "Uuh"},
-       {117, "ununseptium",  "Uus"},
-       {118, "ununoctium",   "Uuo"}
+       {112, "copernicium",  "Cn"},
+       {113, "nihonium",     "Nh"},
+       {114, "flerovium",    "Fl"},
+       {115, "moscovium",    "Mc"},
+       {116, "livermorium",  "Lv"},
+       {117, "tennesine",    "Ts"},
+       {118, "oganesson",    "Og"}
       };
   }
 }
