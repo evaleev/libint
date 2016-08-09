@@ -922,7 +922,7 @@ CXX=$withval
 CXXFLAGS_OPT=
 AC_ARG_WITH(cxx-optflags,
 [  --with-cxx-optflags     Gives optimization flags for the C++ compiler.],
-if test "X$withval" != "Xyes" -a "X$withval" = "Xno"; then
+if test "X$withval" != "Xyes" -a "X$withval" != "Xno"; then
   CXXFLAGS_OPT=$withval
 fi
 )
@@ -935,7 +935,7 @@ CXXGEN=$withval
 CXXGENFLAGS_OPT=
 AC_ARG_WITH(cxxgen-optflags,
 [  --with-cxxgen-optflags  Gives optimization flags for the C++ compiler for generated source.],
-if test "X$withval" != "Xyes" -a "X$withval" = "Xno"; then
+if test "X$withval" != "Xyes" -a "X$withval" != "Xno"; then
   CXXGENFLAGS_OPT=$withval
 fi
 )
@@ -1092,9 +1092,6 @@ CXXFLAGS_DBG=-g
 CXXFLAGS_MISC=
 
 # now form CXXGENFLAGS ...
-if test "X$CXXGENFLAGS" = X; then
-  CXXGENFLAGS=$CXXFLAGS
-fi
 if test $DEBUG = yes; then
  CXXGENFLAGS="$CXXGENFLAGS $CXXFLAGS_DBG $CXXFLAGS_MISC"
  LDFLAGS="$LDFLAGS -g"
@@ -1103,6 +1100,9 @@ elif test $DEBUG = opt; then
  LDFLAGS="$LDFLAGS -g"
 else
  CXXGENFLAGS="$CXXGENFLAGS $CXXGENFLAGS_OPT $CXXFLAGS_MISC"
+fi
+if test "X$CXXGENFLAGS" = X; then
+  CXXGENFLAGS=$CXXFLAGS
 fi
 
 # ... and CXXFLAGS
