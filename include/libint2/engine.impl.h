@@ -91,7 +91,7 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 
 
 /// the runtime version of \c operator_traits<oper>::default_params()
-libint2::any
+__libint2_engine_inline libint2::any
 default_params(const Operator& oper) {
   switch (static_cast<int>(oper)) {
 #define BOOST_PP_NBODYENGINE_MCR1(r, data, i, elem) \
@@ -687,7 +687,7 @@ Engine::compute2_ptrs() const {
   return compute2_ptrs_;
 }
 
-unsigned int Engine::nparams() const {
+__libint2_engine_inline unsigned int Engine::nparams() const {
   switch (oper_) {
     case Operator::nuclear:
       return params_.as<operator_traits<Operator::nuclear>::oper_params_type>()
@@ -697,7 +697,7 @@ unsigned int Engine::nparams() const {
   }
   return 1;
 }
-unsigned int Engine::nopers() const {
+__libint2_engine_inline unsigned int Engine::nopers() const {
   switch (static_cast<int>(oper_)) {
 #define BOOST_PP_NBODYENGINE_MCR4(r, data, i, elem) \
   case i:                                           \
@@ -761,7 +761,7 @@ __libint2_engine_inline any Engine::enforce_params_type(
   return result;
 }
 
-any Engine::make_core_eval_pack(Operator oper) const {
+__libint2_engine_inline any Engine::make_core_eval_pack(Operator oper) const {
   any result;
   switch (static_cast<int>(oper)) {
 #define BOOST_PP_NBODYENGINE_MCR6(r, data, i, elem)                          \
