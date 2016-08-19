@@ -26,6 +26,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <locale>
 #include <vector>
 #include <stdexcept>
 
@@ -277,14 +279,20 @@ namespace libint2 {
 
       /** reads in all basis sets from a Gaussian94-formatted basis set file (see https://bse.pnl.gov/bse/portal)
        *  @param[in] file_dot_g94 file name
+       *  @param[in] force_cartesian_d force use of Cartesian d shells, if true
+       *  @param[in] locale_name specifies the locale to use
        *  @throw std::runtime_error if the path is not valid, or cannot be determined
        *  @return vector of basis sets for each element
+       *  @warning the included library basis sets should be parsed using POSIX locale
        */
       static std::vector<std::vector<libint2::Shell>> read_g94_basis_library(std::string file_dot_g94,
-                                                                             bool force_cartesian_d = false) {
+                                                                             bool force_cartesian_d = false,
+                                                                             std::string locale_name = std::string("POSIX")) {
 
+        std::locale locale(locale_name);
         std::cout << "Will read basis set from " << file_dot_g94 << std::endl;
         std::ifstream is(file_dot_g94);
+        is.imbue(locale);
         if (not is.good()) {
           std::ostringstream oss;
           oss << "BasisSet::read_g94_basis_library(): could not open \"" << file_dot_g94 << "\"" << std::endl;
@@ -298,6 +306,11 @@ namespace libint2 {
         while(std::getline(is, line) && line != "****") {
         }
 
+        auto line_to_stringstream = [=](const std::string& line) -> std::istringstream {
+          std::istringstream iss(line);
+          iss.imbue(locale);
+          return iss;
+        };
         size_t Z;
         auto nextbasis = true, nextshell = false;
         // read lines till end
@@ -311,7 +324,7 @@ namespace libint2 {
           }
           if (nextbasis) {
             nextbasis = false;
-            std::istringstream iss(line);
+            auto iss = line_to_stringstream(line);
             std::string elemsymbol;
             iss >> elemsymbol >> rest;
 
@@ -336,7 +349,7 @@ namespace libint2 {
             continue;
           }
           if (nextshell) {
-            std::istringstream iss(line);
+            auto iss = line_to_stringstream(line);
             std::string amlabel;
             unsigned nprim;
             iss >> amlabel >> nprim >> rest;
@@ -348,7 +361,7 @@ namespace libint2 {
               for(auto p = 0; p!=nprim; ++p) {
                 while(std::getline(is, line) && (line.empty() || line[0] == '!')) {}
                 fortran_dfloats_to_efloats(line);
-                std::istringstream iss(line);
+                auto iss = line_to_stringstream(line);
                 double e, c;
                 iss >> e >> c;
                 exps.emplace_back(e);
@@ -371,7 +384,7 @@ namespace libint2 {
               for(auto p = 0; p!=nprim; ++p) {
                 while(std::getline(is, line) && (line.empty() || line[0] == '!')) {}
                 fortran_dfloats_to_efloats(line);
-                std::istringstream iss(line);
+                auto iss = line_to_stringstream(line);
                 double e, c1, c2;
                 iss >> e >> c1 >> c2;
                 exps.emplace_back(e);
