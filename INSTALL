@@ -3,10 +3,10 @@ For (more) complete instructions please refer to https://github.com/evaleev/libi
 The installation procedure for the impatient and/or experts:
 0) create configure in the source directory:
    $ ./autogen.sh
-1) create a directory for object files:
+1) create a directory for object files (you cannot build in the source directory):
    $ mkdir ../build; cd ../build
 2) configure the package:
-   $ ../configure
+   $ ../src_dir/configure
    Most often you will need to specify command-line options to configure.
    To obtain a list of configure options run 'configure --help'.
 
