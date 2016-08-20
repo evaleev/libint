@@ -289,7 +289,7 @@ namespace libint2 {
                                                                              bool force_cartesian_d = false,
                                                                              std::string locale_name = std::string("POSIX")) {
 
-        std::locale locale(locale_name);
+        std::locale locale(locale_name.c_str());  // TODO omit c_str() with up-to-date stdlib
         std::cout << "Will read basis set from " << file_dot_g94 << std::endl;
         std::ifstream is(file_dot_g94);
         is.imbue(locale);
