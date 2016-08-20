@@ -26,7 +26,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <locale>
 #include <vector>
 #include <stdexcept>
