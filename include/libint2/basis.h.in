@@ -305,11 +305,10 @@ namespace libint2 {
         while(std::getline(is, line) && line != "****") {
         }
 
-        auto line_to_stringstream = [=](const std::string& line) -> std::istringstream {
-          std::istringstream iss(line);
-          iss.imbue(locale);
-          return iss;
-        };
+#define LIBINT2_LINE_TO_STRINGSTREAM(line) \
+        std::istringstream iss(line); \
+        iss.imbue(locale);
+        
         size_t Z;
         auto nextbasis = true, nextshell = false;
         // read lines till end
@@ -323,7 +322,7 @@ namespace libint2 {
           }
           if (nextbasis) {
             nextbasis = false;
-            auto iss = line_to_stringstream(line);
+            LIBINT2_LINE_TO_STRINGSTREAM(line);
             std::string elemsymbol;
             iss >> elemsymbol >> rest;
 
@@ -348,7 +347,7 @@ namespace libint2 {
             continue;
           }
           if (nextshell) {
-            auto iss = line_to_stringstream(line);
+            LIBINT2_LINE_TO_STRINGSTREAM(line);
             std::string amlabel;
             unsigned nprim;
             iss >> amlabel >> nprim >> rest;
@@ -360,7 +359,7 @@ namespace libint2 {
               for(auto p = 0; p!=nprim; ++p) {
                 while(std::getline(is, line) && (line.empty() || line[0] == '!')) {}
                 fortran_dfloats_to_efloats(line);
-                auto iss = line_to_stringstream(line);
+                LIBINT2_LINE_TO_STRINGSTREAM(line);
                 double e, c;
                 iss >> e >> c;
                 exps.emplace_back(e);
@@ -383,7 +382,7 @@ namespace libint2 {
               for(auto p = 0; p!=nprim; ++p) {
                 while(std::getline(is, line) && (line.empty() || line[0] == '!')) {}
                 fortran_dfloats_to_efloats(line);
-                auto iss = line_to_stringstream(line);
+                LIBINT2_LINE_TO_STRINGSTREAM(line);
                 double e, c1, c2;
                 iss >> e >> c1 >> c2;
                 exps.emplace_back(e);
@@ -409,7 +408,9 @@ namespace libint2 {
             }
           }
         }
-
+        
+#undef LIBINT2_LINE_TO_STRINGSTREAM
+        
         return ref_shells;
       }
 
