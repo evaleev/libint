@@ -2,7 +2,7 @@ LIBINT (version 2) - a library for the evaluation of molecular integrals of many
 
 - master status: [![Build Status](https://travis-ci.org/evaleev/libint.svg?branch=master)](https://travis-ci.org/evaleev/libint)
 - project page: http://libint.valeyev.net/
-- e-mail - libint@valeyev.edu
+- e-mail - libint@valeyev.net
 
 See INSTALL for installation instructions.
 
