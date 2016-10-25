@@ -22,6 +22,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <cstddef>
 #include <type_traits>
 #include <vector>
 
@@ -73,7 +74,8 @@ class ext_stack_allocator {
 
   T* allocate(std::size_t n) {
     assert(stack_ != nullptr && "array_view_allocator not initialized");
-    if (stack_ + N - free_ >= n) {  // have free space on stack
+    if (stack_ + N - free_ >=
+        static_cast<std::ptrdiff_t>(n)) {  // have free space on stack
       const auto result = free_;
       free_ += n;
       return result;
