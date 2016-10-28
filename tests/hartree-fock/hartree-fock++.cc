@@ -87,7 +87,7 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
 #endif  // LIBINT2_DERIV_ONEBODY_ORDER
 
 template <libint2::Operator Kernel = libint2::Operator::coulomb>
-Matrix compute_schwartz_ints(
+Matrix compute_schwarz_ints(
     const BasisSet& bs1, const BasisSet& bs2 = BasisSet(),
     bool use_2norm = false,  // use infty norm by default
     typename libint2::operator_traits<Kernel>::oper_params_type params =
@@ -111,8 +111,8 @@ Matrix compute_2body_fock(
     const BasisSet& obs, const Matrix& D,
     double precision = std::numeric_limits<
         double>::epsilon(),  // discard contributions smaller than this
-    const Matrix& Schwartz = Matrix()  // K_ij = sqrt(||(ij|ij)||_\infty); if
-                                       // empty, do not Schwartz screen
+    const Matrix& Schwarz = Matrix()  // K_ij = sqrt(||(ij|ij)||_\infty); if
+                                       // empty, do not Schwarz screen
     );
 // an Fock builder that can accept densities expressed a separate basis
 Matrix compute_2body_fock_general(
@@ -129,8 +129,8 @@ std::vector<Matrix> compute_2body_fock_deriv(
     const Matrix& D,
     double precision = std::numeric_limits<
         double>::epsilon(),  // discard contributions smaller than this
-    const Matrix& Schwartz = Matrix()  // K_ij = sqrt(||(ij|ij)||_\infty); if
-                                       // empty, do not Schwartz screen
+    const Matrix& Schwarz = Matrix()  // K_ij = sqrt(||(ij|ij)||_\infty); if
+                                       // empty, do not Schwarz screen
     );
 #endif  // LIBINT2_DERIV_ERI_ORDER
 
@@ -346,8 +346,8 @@ int main(int argc, char* argv[]) {
       }
     }
 
-    // pre-compute data for Schwartz bounds
-    auto K = compute_schwartz_ints<>(obs);
+    // pre-compute data for Schwarz bounds
+    auto K = compute_schwarz_ints<>(obs);
 
 // prepare for density fitting
 #ifdef HAVE_DENSITY_FITTING
@@ -1119,7 +1119,7 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
 #endif
 
 template <libint2::Operator Kernel>
-Matrix compute_schwartz_ints(
+Matrix compute_schwarz_ints(
     const BasisSet& bs1, const BasisSet& _bs2, bool use_2norm,
     typename libint2::operator_traits<Kernel>::oper_params_type params) {
   const BasisSet& bs2 = (_bs2.empty() ? bs1 : _bs2);
@@ -1134,7 +1134,7 @@ Matrix compute_schwartz_ints(
   using libint2::nthreads;
   std::vector<Engine> engines(nthreads);
 
-  // !!! very important: cannot screen primitives in Schwartz computation !!!
+  // !!! very important: cannot screen primitives in Schwarz computation !!!
   auto epsilon = 0.;
   engines[0] = Engine(Kernel, std::max(bs1.max_nprim(), bs2.max_nprim()),
                       std::max(bs1.max_l(), bs2.max_l()), 0, epsilon, params);
@@ -1142,7 +1142,7 @@ Matrix compute_schwartz_ints(
     engines[i] = engines[0];
   }
 
-  std::cout << "computing Schwartz bound prerequisites (kernel=" << (int)Kernel
+  std::cout << "computing Schwarz bound prerequisites (kernel=" << (int)Kernel
             << ") ... ";
 
   libint2::Timers<1> timer;
@@ -1167,9 +1167,9 @@ Matrix compute_schwartz_ints(
         engines[thread_id].compute2<Kernel, BraKet::xx_xx, 0>(bs1[s1], bs2[s2],
                                                               bs1[s1], bs2[s2]);
         assert(buf[0] != nullptr &&
-               "to compute Schwartz ints turn off primitive screening");
+               "to compute Schwarz ints turn off primitive screening");
 
-        // the diagonal elements are the Schwartz ints ... use Map.diagonal()
+        // the diagonal elements are the Schwarz ints ... use Map.diagonal()
         Eigen::Map<const Matrix> buf_mat(buf[0], n12, n12);
         auto norm2 = use_2norm ? buf_mat.diagonal().norm()
                                : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
@@ -1189,7 +1189,7 @@ Matrix compute_schwartz_ints(
 
 Matrix compute_do_ints(const BasisSet& bs1, const BasisSet& bs2,
                        bool use_2norm) {
-  return compute_schwartz_ints<libint2::Operator::delta>(bs1, bs2, use_2norm);
+  return compute_schwarz_ints<libint2::Operator::delta>(bs1, bs2, use_2norm);
 }
 
 shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
@@ -1419,13 +1419,13 @@ Matrix compute_2body_2index_ints(const BasisSet& bs) {
 }
 
 Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
-                          double precision, const Matrix& Schwartz) {
+                          double precision, const Matrix& Schwarz) {
   const auto n = obs.nbf();
   const auto nshells = obs.size();
   using libint2::nthreads;
   std::vector<Matrix> G(nthreads, Matrix::Zero(n, n));
 
-  const auto do_schwartz_screen = Schwartz.cols() != 0 && Schwartz.rows() != 0;
+  const auto do_schwarz_screen = Schwarz.cols() != 0 && Schwarz.rows() != 0;
   Matrix D_shblk_norm =
       compute_shellblock_norm(obs, D);  // matrix of infty-norms of shell blocks
 
@@ -1480,14 +1480,14 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
         auto bf2_first = shell2bf[s2];
         auto n2 = obs[s2].size();
 
-        const auto Dnorm12 = do_schwartz_screen ? D_shblk_norm(s1, s2) : 0.;
+        const auto Dnorm12 = do_schwarz_screen ? D_shblk_norm(s1, s2) : 0.;
 
         for (auto s3 = 0; s3 <= s1; ++s3) {
           auto bf3_first = shell2bf[s3];
           auto n3 = obs[s3].size();
 
           const auto Dnorm123 =
-              do_schwartz_screen
+              do_schwarz_screen
                   ? std::max(D_shblk_norm(s1, s3),
                              std::max(D_shblk_norm(s2, s3), Dnorm12))
                   : 0.;
@@ -1501,15 +1501,15 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
             if ((s1234++) % nthreads != thread_id) continue;
 
             const auto Dnorm1234 =
-                do_schwartz_screen
+                do_schwarz_screen
                     ? std::max(
                           D_shblk_norm(s1, s4),
                           std::max(D_shblk_norm(s2, s4),
                                    std::max(D_shblk_norm(s3, s4), Dnorm123)))
                     : 0.;
 
-            if (do_schwartz_screen &&
-                Dnorm1234 * Schwartz(s1, s2) * Schwartz(s3, s4) <
+            if (do_schwarz_screen &&
+                Dnorm1234 * Schwarz(s1, s2) * Schwarz(s3, s4) <
                     fock_precision)
               continue;
 
@@ -1610,7 +1610,7 @@ template <unsigned deriv_order>
 std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
                                              const std::vector<Atom>& atoms,
                                              const Matrix& D, double precision,
-                                             const Matrix& Schwartz) {
+                                             const Matrix& Schwarz) {
   const auto n = obs.nbf();
   const auto nshells = obs.size();
   const auto nderiv_shellset =
@@ -1621,7 +1621,7 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
   using libint2::nthreads;
   std::vector<Matrix> G(nthreads * nderiv, Matrix::Zero(n, n));
 
-  const auto do_schwartz_screen = Schwartz.cols() != 0 && Schwartz.rows() != 0;
+  const auto do_schwarz_screen = Schwarz.cols() != 0 && Schwarz.rows() != 0;
   Matrix D_shblk_norm =
       compute_shellblock_norm(obs, D);  // matrix of infty-norms of shell blocks
 
@@ -1681,7 +1681,7 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
         auto n2 = obs[s2].size();
         shell_atoms[1] = shell2atom[s2];
 
-        const auto Dnorm12 = do_schwartz_screen ? D_shblk_norm(s1, s2) : 0.;
+        const auto Dnorm12 = do_schwarz_screen ? D_shblk_norm(s1, s2) : 0.;
 
         for (auto s3 = 0; s3 <= s1; ++s3) {
           auto bf3_first = shell2bf[s3];
@@ -1689,7 +1689,7 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
           shell_atoms[2] = shell2atom[s3];
 
           const auto Dnorm123 =
-              do_schwartz_screen
+              do_schwarz_screen
                   ? std::max(D_shblk_norm(s1, s3),
                              std::max(D_shblk_norm(s2, s3), Dnorm12))
                   : 0.;
@@ -1703,15 +1703,15 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
             if ((s1234++) % nthreads != thread_id) continue;
 
             const auto Dnorm1234 =
-                do_schwartz_screen
+                do_schwarz_screen
                     ? std::max(
                           D_shblk_norm(s1, s4),
                           std::max(D_shblk_norm(s2, s4),
                                    std::max(D_shblk_norm(s3, s4), Dnorm123)))
                     : 0.;
 
-            if (do_schwartz_screen &&
-                Dnorm1234 * Schwartz(s1, s2) * Schwartz(s3, s4) <
+            if (do_schwarz_screen &&
+                Dnorm1234 * Schwarz(s1, s2) * Schwarz(s3, s4) <
                     fock_precision)
               continue;
 
@@ -2202,18 +2202,18 @@ void api_basic_compile_test(const BasisSet& obs) {
       {0.1, 0.2}, {0.3, 0.4}, {0.5, 0.6}};
   {
     auto K =
-        compute_schwartz_ints<Operator::cgtg>(obs, obs, false, cgtg_params);
-    std::cout << "cGTG Schwartz ints\n" << K << std::endl;
+        compute_schwarz_ints<Operator::cgtg>(obs, obs, false, cgtg_params);
+    std::cout << "cGTG Schwarz ints\n" << K << std::endl;
   }
   {
-    auto K = compute_schwartz_ints<Operator::cgtg_x_coulomb>(obs, obs, false,
+    auto K = compute_schwarz_ints<Operator::cgtg_x_coulomb>(obs, obs, false,
                                                              cgtg_params);
-    std::cout << "cGTG/r12 Schwartz ints\n" << K << std::endl;
+    std::cout << "cGTG/r12 Schwarz ints\n" << K << std::endl;
   }
   {
     auto K =
-        compute_schwartz_ints<Operator::delcgtg2>(obs, obs, false, cgtg_params);
-    std::cout << "||Del.cGTG||^2 Schwartz ints\n" << K << std::endl;
+        compute_schwarz_ints<Operator::delcgtg2>(obs, obs, false, cgtg_params);
+    std::cout << "||Del.cGTG||^2 Schwarz ints\n" << K << std::endl;
   }
 
   {  // test 2-index ints
