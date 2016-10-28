@@ -884,7 +884,9 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
       auto bf1 = shell2bf[s1];  // first basis function in this shell
       auto n1 = obs[s1].size();
 
-      for (auto s2 = 0; s2 <= s1; ++s2, ++s12) {
+      auto s1_offset = s1 * (s1+1) / 2;
+      for (auto s2: obs_shellpair_list[s1]) {
+        auto s12 = s1_offset + s2;
         if (s12 % nthreads != thread_id) continue;
 
         auto bf2 = shell2bf[s2];
@@ -968,7 +970,9 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
       auto atom1 = shell2atom[s1];
       assert(atom1 != -1);
 
-      for (auto s2 = 0; s2 <= s1; ++s2, ++s12) {
+      auto s1_offset = s1 * (s1+1) / 2;
+      for (auto s2: obs_shellpair_list[s1]) {
+        auto s12 = s1_offset + s2;
         if (s12 % nthreads != thread_id) continue;
 
         auto bf2 = shell2bf[s2];
