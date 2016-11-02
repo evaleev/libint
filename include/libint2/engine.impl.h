@@ -179,8 +179,6 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   const auto ncart2 = s2.cartesian_size();
   const auto ncart12 = ncart1 * ncart2;
 
-  const auto tform_to_solids = s1.contr[0].pure || s2.contr[0].pure;
-
   // assert # of primitive pairs
   const auto nprim1 = s1.nprim();
   const auto nprim2 = s2.nprim();
@@ -217,6 +215,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   // adjust max angular momentum, if needed
   const auto lmax = std::max(l1, l2);
   assert(lmax <= lmax_ && "the angular momentum limit is exceeded");
+
+  // N.B. for l=0 no need to transform to solid harmonics
+  // this is a workaround for the corner case of to oper_ == Operator::nuclear,
+  // and solid harmonics (s|s) integral ... beware the integral storage state
+  // machine
+  const auto tform_to_solids =
+      (s1.contr[0].pure || s2.contr[0].pure) && lmax != 0;
 
   // simple (s|s) ints will be computed directly and accumulated in the first
   // element of stack
