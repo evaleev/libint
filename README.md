@@ -4,7 +4,6 @@ LIBINT (version 2) - a library for the evaluation of molecular integrals of many
 - project page: http://libint.valeyev.net/
 - e-mail - libint@valeyev.net
 
-See INSTALL for installation instructions.
-
+See [the wiki](https://github.com/evaleev/libint/wiki) for installation and usage instructions.
 
 Copyright (C) 2004-2016 Edward F. Valeev
