@@ -47,8 +47,36 @@ namespace libint2 {
     }
   }
 
-  /// reads the list of atoms from a file in the standard XYZ format supported by most chemistry software
-  inline std::vector<Atom> read_dotxyz(std::istream& is) {
+  namespace constants {
+  /// the 2014 CODATA reference set, available at DOI 10.1103/RevModPhys.88.035009
+  struct codata_2014 {
+    static constexpr double bohr_to_angstrom = 0.52917721067;
+    static constexpr double angstrom_to_bohr = 1 / bohr_to_angstrom;
+  };
+  /// the 2010 CODATA reference set, available at DOI 10.1103/RevModPhys.84.1527
+  struct codata_2010 {
+    static constexpr double bohr_to_angstrom = 0.52917721092;
+    static constexpr double angstrom_to_bohr = 1 / bohr_to_angstrom;
+  };
+  }  // namespace constants
+
+  /// reads the list of atoms from a file in the standard XYZ format supported
+  /// by most chemistry software (see <a
+  /// href="https://en.wikipedia.org/wiki/XYZ_file_format">the Wikipedia
+  /// page</a>)
+  /// \param is[in] the std::istream object from which the data will be read
+  /// \param bohr_to_angstrom[in] the conversion factor from Bohr (atomic unit
+  /// of length; Libint uses atomic units throughout) to angstrom (in which
+  /// the Cartesian coordinates are given in the XYZ file). The default is
+  /// the 2010 CODATA value given by the
+  /// libint2::constants::codata_2010::bohr_to_angstrom
+  /// constant.
+  /// \return a std::vector of Atom objects
+  /// \throw std::runtime_error if cannot parse the contents of \c is
+  inline std::vector<Atom> read_dotxyz(
+      std::istream& is,
+      const double bohr_to_angstrom = constants::codata_2010::bohr_to_angstrom) {
+    const double angstrom_to_bohr = 1 / bohr_to_angstrom;
     // first line = # of atoms
     size_t natom;
     is >> natom;
@@ -82,15 +110,14 @@ namespace libint2 {
         }
       }
       if (Z == -1) {
-        std::cerr << "read_dotxyz: element symbol \"" << element_symbol << "\" is not recognized" << std::endl;
-        throw "Did not recognize element symbol in .xyz file";
+        std::ostringstream oss;
+        oss << "read_dotxyz: element symbol \"" << element_symbol << "\" is not recognized" << std::endl;
+        throw std::runtime_error(oss.str().c_str());
       }
 
       atoms[i].atomic_number = Z;
 
       // .xyz files report Cartesian coordinates in angstroms; convert to bohr
-      const auto angstrom_to_bohr = 1 / 0.52917721092; // 2010 CODATA value
-      //const auto angstrom_to_bohr = 1 / 0.529177249; // 1986 CODATA value, used by MPQC
       atoms[i].x = x * angstrom_to_bohr;
       atoms[i].y = y * angstrom_to_bohr;
       atoms[i].z = z * angstrom_to_bohr;
