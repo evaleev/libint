@@ -26,8 +26,11 @@
 
 #include <deque>
 
+#pragma GCC diagnostic push
+#pragma GCC system_header
 #include <Eigen/Core>
 #include <Eigen/QR>
+#pragma GCC diagnostic pop
 
 namespace libint2 {
 

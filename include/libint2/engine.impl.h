@@ -21,7 +21,10 @@
 
 #include "./engine.h"
 
+#pragma GCC diagnostic push
+#pragma GCC system_header
 #include <Eigen/Core>
+#pragma GCC diagnostic pop
 
 #include <libint2/boys.h>
 #include <libint2/boost/preprocessor.hpp>
