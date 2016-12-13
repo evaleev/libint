@@ -42,6 +42,8 @@
   using std::dynamic_pointer_cast;
 #endif
 
+namespace libint2 {
+namespace detail {
 /** Can be used to determine whether a type is a SafePtr */
 template <typename T>
 struct IsSafePtr {
@@ -64,6 +66,8 @@ template <typename T>
 struct IsSafePtr< const SafePtr<T>& > {
   enum { result = true };
 };
+}  // namespace detail
+}  // namespace libint2
 
 #endif
 
