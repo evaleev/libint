@@ -423,7 +423,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = @top_srcdir@/src/bin \
+INPUT                  = @top_srcdir@/src/bin/libint \
                          @top_srcdir@/src/lib/libint \
                          @top_srcdir@/include \
                          @top_srcdir@/doc
@@ -449,7 +449,7 @@ RECURSIVE              = YES
 # excluded from the INPUT source files. This way you can easily exclude a 
 # subdirectory from a directory tree whose root is specified with the INPUT tag.
 
-EXCLUDE                = 
+EXCLUDE                = @top_srcdir@/src/bin/libint/build_libint.cc
 
 # The EXCLUDE_SYMLINKS tag can be used select whether or not files or directories 
 # that are symbolic links (a Unix filesystem feature) are excluded from the input.

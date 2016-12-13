@@ -89,13 +89,14 @@ enum class Operator {
   overlap = 0,  //!< overlap
   kinetic,  //!< electronic kinetic energy, i.e. \f$ -\frac{1}{2} \nabla^2 \f$
   nuclear,  //!< Coulomb potential due to point charges
-  emultipole1,  //!< overlap + (Cartesian) electric dipole moment, \f$ x_O, y_O,
-                //! z_O \f$, where \f$ x_O \equiv x - O_x \f$ is relative to
-  //! origin \f$ \vec{O} \f$
-  emultipole2,  //!< emultipole1 + (Cartesian) electric quadrupole moment, \f$
-                //! x^2, xy, xz, y^2, yz, z^2 \f$
-  emultipole3,  //!< emultipole2 + (Cartesian) electric octupole moment, \f$
-                //! x^3, x^2y, x^2z, xy^2, xyz, xz^2, y^3, y^2z, yz^2, z^3 \f$
+  emultipole1,  //!< overlap + (Cartesian) electric dipole moment,
+                //! \f$ x_O, y_O, z_O \f$, where
+                //! \f$ x_O \equiv x - O_x \f$ is relative to
+                //! origin \f$ \vec{O} \f$
+  emultipole2,  //!< emultipole1 + (Cartesian) electric quadrupole moment,
+                //! \f$ x^2, xy, xz, y^2, yz, z^2 \f$
+  emultipole3,  //!< emultipole2 + (Cartesian) electric octupole moment,
+              //! \f$ x^3, x^2y, x^2z, xy^2, xyz, xz^2, y^3, y^2z, yz^2, z^3 \f$
   delta,        //!< \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   coulomb,      //!< (2-body) Coulomb operator = \f$ r_{12}^{-1} \f$
   r12_m1 = coulomb,        //!< alias for Operator::coulomb
