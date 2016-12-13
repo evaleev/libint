@@ -396,7 +396,7 @@ namespace libint2 {
           }
         }
 #else // not SSE2 nor AVX available
-        for(int m=m_min; m<=m_max; ++m, d+=INTERPOLATION_ORDER) {
+        for(m=m_min; m<=m_max; ++m, d+=INTERPOLATION_ORDER) {
           Fm[m] = d[0]
                 + xd * (d[1] + xd * (d[2] + xd * d[3]));
 
@@ -602,23 +602,16 @@ namespace libint2 {
         const Real xd = x_over_delta - (Real)iv - 0.5; // this ranges from -0.5 to 0.5
         const int m_min = 0;
 
-#if defined(__AVX__) || defined(__SSE2__)
+#if defined(__AVX__)
         const auto x2 = xd*xd;
         const auto x3 = x2*xd;
         const auto x4 = x2*x2;
         const auto x5 = x2*x3;
         const auto x6 = x3*x3;
         const auto x7 = x3*x4;
-#  if defined (__AVX__)
         libint2::simd::VectorAVXDouble x0vec(1., xd, x2, x3);
         libint2::simd::VectorAVXDouble x1vec(x4, x5, x6, x7);
-#  else // defined(__SSE2__)
-        libint2::simd::VectorSSEDouble x0vec(1., xd);
-        libint2::simd::VectorSSEDouble x1vec(x2, x3);
-        libint2::simd::VectorSSEDouble x2vec(x4, x5);
-        libint2::simd::VectorSSEDouble x3vec(x6, x7);
-#  endif
-#endif // SSE2 || AVX
+#endif // AVX
 
         const Real *d = c + (ORDERp1) * (iv * (mmax+1) + m_min); // ptr to the interpolation data for m=mmin
         int m = m_min;
@@ -664,34 +657,8 @@ namespace libint2 {
             Fm[m] = horizontal_add(d0v * x0vec + d1v * x1vec);
           }
         }
-#elif defined(__SSE2__) && 0 // no SSE yet
-        if (m_max-m >=1) {
-          const int unroll_size = 2;
-          const int m_fence = (m_max + 2 - unroll_size);
-          for(; m<m_fence; m+=unroll_size, d+=ORDERp1*unroll_size) {
-            libint2::simd::VectorSSEDouble d00v, d01v, d10v, d11v;
-            d00v.load_aligned(d);
-            d01v.load_aligned(d+2);
-            d10v.load_aligned(d+4); // d + ORDERp1
-            d11v.load_aligned(d+6);
-            libint2::simd::VectorSSEDouble fm00 = d00v * x0vec;
-            libint2::simd::VectorSSEDouble fm01 = d01v * x1vec;
-            libint2::simd::VectorSSEDouble fm10 = d10v * x0vec;
-            libint2::simd::VectorSSEDouble fm11 = d11v * x1vec;
-            libint2::simd::VectorSSEDouble sum01 = horizontal_add(fm00, fm10) + horizontal_add(fm01, fm11);
-            sum01.convert(&Fm[m]);
-          }
-        } // unroll_size=2
-        { // no unrolling
-          for(; m<=m_max; ++m, d+=ORDERp1) {
-            libint2::simd::VectorSSEDouble d0vec, d1vec;
-            d0vec.load_aligned(d);
-            d1vec.load_aligned(d+2);
-            Fm[m] = horizontal_add(d0vec * x0vec + d1vec * x1vec);
-          }
-        }
-#else // not SSE2 nor AVX available
-        for(int m=m_min; m<=m_max; ++m, d+=ORDERp1) {
+#else // AVX not available
+        for(m=m_min; m<=m_max; ++m, d+=ORDERp1) {
           Fm[m] = d[0]
                 + xd * (d[1]
                 + xd * (d[2]
@@ -1612,8 +1579,9 @@ namespace libint2 {
 
   /// core integral evaluator for \f$ r_{12}^K \f$ kernel
   /// @tparam K currently supported \c K=1 (use Boys engine directly for \c K=-1)
-  /// @note need extra scratch for Boys function values when \c K==1, cannot reuse
-  ///       the Gm vector for scratch
+  /// @note need extra scratch for Boys function values when \c K==1,
+  ///       the Gm vector is not long enough for scratch
+
   template <typename Real, int K>
   struct r12_xx_K_gm_eval;
 

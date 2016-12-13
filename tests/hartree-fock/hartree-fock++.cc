@@ -33,12 +33,9 @@
 #include <vector>
 
 // Eigen matrix algebra library
-#pragma GCC diagnostic push
-#pragma GCC system_header
 #include <Eigen/Cholesky>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
-#pragma GCC diagnostic pop
 
 // have BTAS library?
 #ifdef LIBINT2_HAVE_BTAS

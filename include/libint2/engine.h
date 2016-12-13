@@ -155,7 +155,7 @@ template <>
 struct operator_traits<Operator::nuclear>
     : public detail::default_operator_traits {
   /// point charges and their positions
-  typedef std::vector<std::pair<double, std::array<double, 3>>>
+  typedef std::vector<std::pair<real_t, std::array<real_t, 3>>>
       oper_params_type;
   static oper_params_type default_params() { return oper_params_type{}; }
   typedef libint2::FmEval_Taylor<double, 7> core_eval_type;
@@ -168,7 +168,7 @@ struct operator_traits<Operator::emultipole1>
   /// moment is defined
   typedef std::array<double, 3> oper_params_type;
   static oper_params_type default_params() {
-    return oper_params_type{{0.0, 0.0, 0.0}};
+    return oper_params_type{{0,0,0}};
   }
   static constexpr auto nopers = 4u;  //!< overlap + 3 dipole components
 };
@@ -189,7 +189,7 @@ struct operator_traits<Operator::emultipole3>
 template <>
 struct operator_traits<Operator::coulomb>
     : public detail::default_operator_traits {
-  typedef libint2::FmEval_Chebyshev3<double> core_eval_type;
+  typedef libint2::FmEval_Chebyshev3<real_t> core_eval_type;
 };
 namespace detail {
 template <int K>
@@ -212,7 +212,7 @@ template <>
 struct operator_traits<Operator::delta>
     : public detail::default_operator_traits {
   typedef libint2::GenericGmEval<libint2::os_core_ints::delta_gm_eval<real_t>>
-      core_eval_type;  // core ints are too trivial to bother
+      core_eval_type;
 };
 
 template <>
