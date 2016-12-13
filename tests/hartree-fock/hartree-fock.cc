@@ -27,11 +27,8 @@
 #include <chrono>
 
 // Eigen matrix algebra library
-#pragma GCC diagnostic push
-#pragma GCC system_header
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
-#pragma GCC diagnostic pop
 
 // Libint Gaussian integrals library
 #include <libint2.hpp>
