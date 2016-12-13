@@ -67,7 +67,7 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
      (1emultipole,                   \
       (2emultipole,                  \
        (3emultipole,                 \
-        (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL))))))))))))
+        (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL)))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
@@ -1195,6 +1195,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                           .as<detail::core_eval_pack_type<Operator::r12>>()
                           .first();
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax);
+                } break;
+                case Operator::erfdamped_coulomb: {
+                  const auto& core_eval_ptr =
+                      core_eval_pack_
+                          .as<detail::core_eval_pack_type<Operator::erfdamped_coulomb>>()
+                          .first();
+                  auto core_ints_params =
+                      core_ints_params_.as<typename operator_traits<
+                          Operator::erfdamped_coulomb>::oper_params_type>();
+                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
                 } break;
                 default:
                   assert(false && "missing case in a switch");  // unreachable

@@ -1552,7 +1552,7 @@ namespace libint2 {
       template <typename Real, typename... ExtraArgs>
       void eval(Real* Gm, Real rho, Real T, int mmax, ExtraArgs... args) {
         assert(mmax <= mmax_);
-        (GmEvalFunction(*this))(Gm, rho, T, mmax, std::forward(args)...);
+        (GmEvalFunction(*this))(Gm, rho, T, mmax, std::forward<ExtraArgs>(args)...);
       }
 
       /// @return the maximum value of m for which the \f$ G_m(\rho, T) \f$ can be computed with this object
@@ -1565,8 +1565,10 @@ namespace libint2 {
       Real precision_;
   };
 
+  // these Gm engines need extra scratch data
   namespace os_core_ints {
   template <typename Real, int K> struct r12_xx_K_gm_eval;
+  template <typename Real> struct erfdamped_coulomb_gm_eval;
   }
 
   namespace detail {
@@ -1579,6 +1581,16 @@ namespace libint2 {
 
    private:
     void init(int mmax) { Fm_.resize(mmax + 1); }
+  };
+  /// erfdamped_coulomb_gm_eval needs extra scratch data
+  template <typename Real>
+  struct CoreEvalScratch<os_core_ints::erfdamped_coulomb_gm_eval<Real>> {
+    std::vector<Real> Fm_;
+    CoreEvalScratch() = default;
+    CoreEvalScratch(int mmax) { init(mmax); }
+
+   private:
+    void init(int mmax) { Fm_.resize(mmax); }
   };
   }
 
@@ -1630,6 +1642,41 @@ namespace libint2 {
 
    private:
     std::shared_ptr<FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+  };
+
+  /// core integral evaluator for \f$ (1 - \mathrm{erf}(\omega r)) / r \f$ kernel
+  /// @note need extra scratch for Boys function values,
+  ///       since need to call Boys engine twice
+  template <typename Real>
+  struct erfdamped_coulomb_gm_eval : private
+  detail::CoreEvalScratch<erfdamped_coulomb_gm_eval<Real>> {
+    typedef detail::CoreEvalScratch<erfdamped_coulomb_gm_eval<Real>> base_type;
+    typedef Real value_type;
+
+    erfdamped_coulomb_gm_eval(unsigned int mmax, Real precision)
+        : base_type(mmax) {
+      fm_eval_ = FmEval_Taylor<Real>::instance(mmax, precision);
+    }
+    void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega) {
+      fm_eval_->eval(&base_type::Fm_[0], T, mmax);
+      std::copy(base_type::Fm_.cbegin(), base_type::Fm_.cbegin() + mmax, Gm);
+      if (omega > 0) {
+        auto omega2 = omega * omega;
+        auto omega2_over_omega2_plus_rho = omega2 / (omega2 + rho);
+        fm_eval_->eval(&base_type::Fm_[0], T * omega2_over_omega2_plus_rho,
+                       mmax);
+
+        auto ooversqrto2prho_exp_2mplus1 =
+            std::sqrt(omega2_over_omega2_plus_rho);
+        for (auto m = 0; m <= mmax;
+             ++m, ooversqrto2prho_exp_2mplus1 *= omega2_over_omega2_plus_rho) {
+          Gm[m] -= ooversqrto2prho_exp_2mplus1 * base_type::Fm_[m];
+        }
+      }
+    }
+
+     private:
+      std::shared_ptr<FmEval_Taylor<Real>> fm_eval_;  // need for odd K
   };
 
   }  // namespace os_core_ints

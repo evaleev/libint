@@ -2222,6 +2222,12 @@ void api_basic_compile_test(const BasisSet& obs) {
         compute_schwarz_ints<Operator::delcgtg2>(obs, obs, false, cgtg_params);
     std::cout << "||Del.cGTG||^2 Schwarz ints\n" << K << std::endl;
   }
+  double erfdamp_param = 1.0;
+  {
+    auto K =
+        compute_schwarz_ints<Operator::erfdamped_coulomb>(obs, obs, false, erfdamp_param);
+    std::cout << "erfdamped Schwarz ints\n" << K << std::endl;
+  }
 
   {  // test 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l());

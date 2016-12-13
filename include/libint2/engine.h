@@ -105,12 +105,14 @@ enum class Operator {
   delcgtg2,                //!< |Delta . contracted Gaussian geminal|^2
   r12,                     //!< anti-Coulomb operator, \f$ r_{12} \f$
   r12_1 = r12,             //!< alias for Operator::r12
+  erfdamped_coulomb,       //!< error-function-damped Coulomb operator,
+                           //! \f$ (1 - \mathrm{erf}(\omega r))/r \f$
   invalid = -1,    // do not modify this
   // keep this updated
   first_1body_oper = overlap,
   last_1body_oper = emultipole3,
   first_2body_oper = delta,
-  last_2body_oper = r12_1,
+  last_2body_oper = erfdamped_coulomb,
   first_oper = first_1body_oper,
   last_oper = last_2body_oper
 };
@@ -217,6 +219,18 @@ template <>
 struct operator_traits<Operator::r12>
     : public detail::default_operator_traits {
   typedef libint2::GenericGmEval<libint2::os_core_ints::r12_xx_K_gm_eval<real_t, 1>>
+      core_eval_type;
+};
+
+template <>
+struct operator_traits<Operator::erfdamped_coulomb>
+    : public detail::default_operator_traits {
+  /// the damping parameter (0=no damping, +infinity = total damping)
+  typedef real_t oper_params_type;
+  static oper_params_type default_params() {
+    return oper_params_type{0};
+  }
+  typedef libint2::GenericGmEval<libint2::os_core_ints::erfdamped_coulomb_gm_eval<real_t>>
       core_eval_type;
 };
 
