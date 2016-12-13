@@ -1627,7 +1627,7 @@ namespace libint2 {
     }
     void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega) {
       fm_eval_->eval(&base_type::Fm_[0], T, mmax);
-      std::copy(base_type::Fm_.cbegin(), base_type::Fm_.cbegin() + mmax, Gm);
+      std::copy(base_type::Fm_.cbegin(), base_type::Fm_.cbegin() + mmax + 1, Gm);
       if (omega > 0) {
         auto omega2 = omega * omega;
         auto omega2_over_omega2_plus_rho = omega2 / (omega2 + rho);
