@@ -1544,10 +1544,8 @@ namespace libint2 {
   struct CoreEvalScratch<os_core_ints::r12_xx_K_gm_eval<Real, 1>> {
     std::vector<Real> Fm_;
     CoreEvalScratch() = default;
-    CoreEvalScratch(int mmax) { init(mmax); }
-
-   private:
-    void init(int mmax) { Fm_.resize(mmax + 1); }
+    // need to store Fm(T) for m = 0 .. mmax+1
+    explicit CoreEvalScratch(int mmax) { Fm_.resize(mmax+2); }
   };
   /// erfdamped_coulomb_gm_eval needs extra scratch data
   template <typename Real>
