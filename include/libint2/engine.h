@@ -119,16 +119,19 @@ enum class Operator {
   r12,
   /// alias for Operator::r12
   r12_1 = r12,
-  /// error-function-damped Coulomb operator,
-  /// \f$ (1 - \mathrm{erf}(\omega r))/r \f$
-  erfdamped_coulomb,
+  /// erf-attenuated Coulomb operator,
+  /// \f$ \mathrm{erf}(\omega r)/r \f$
+  erf_coulomb,
+  /// erfc-attenuated Coulomb operator,
+  /// \f$ \mathrm{erfc}(\omega r)/r \f$
+  erfc_coulomb,
   // do not modify this
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this updated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   first_1body_oper = overlap,
   last_1body_oper = emultipole3,
   first_2body_oper = delta,
-  last_2body_oper = erfdamped_coulomb,
+  last_2body_oper = erfc_coulomb,
   first_oper = first_1body_oper,
   last_oper = last_2body_oper
 };
@@ -239,14 +242,25 @@ struct operator_traits<Operator::r12>
 };
 
 template <>
-struct operator_traits<Operator::erfdamped_coulomb>
+struct operator_traits<Operator::erf_coulomb>
     : public detail::default_operator_traits {
-  /// the damping parameter (0=no damping, +infinity = total damping)
+  /// the attenuation parameter (0 = zero potential, +infinity = no attenuation)
   typedef real_t oper_params_type;
   static oper_params_type default_params() {
     return oper_params_type{0};
   }
-  typedef libint2::GenericGmEval<libint2::os_core_ints::erfdamped_coulomb_gm_eval<real_t>>
+  typedef libint2::GenericGmEval<libint2::os_core_ints::erf_coulomb_gm_eval<real_t>>
+      core_eval_type;
+};
+template <>
+struct operator_traits<Operator::erfc_coulomb>
+    : public detail::default_operator_traits {
+  /// the attenuation parameter (0 = no attenuation, +infinity = zero potential)
+  typedef real_t oper_params_type;
+  static oper_params_type default_params() {
+    return oper_params_type{0};
+  }
+  typedef libint2::GenericGmEval<libint2::os_core_ints::erfc_coulomb_gm_eval<real_t>>
       core_eval_type;
 };
 

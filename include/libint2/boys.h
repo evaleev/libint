@@ -1535,7 +1535,7 @@ namespace libint2 {
   // these Gm engines need extra scratch data
   namespace os_core_ints {
   template <typename Real, int K> struct r12_xx_K_gm_eval;
-  template <typename Real> struct erfdamped_coulomb_gm_eval;
+  template <typename Real> struct erfc_coulomb_gm_eval;
   }
 
   namespace detail {
@@ -1547,9 +1547,9 @@ namespace libint2 {
     // need to store Fm(T) for m = 0 .. mmax+1
     explicit CoreEvalScratch(int mmax) { Fm_.resize(mmax+2); }
   };
-  /// erfdamped_coulomb_gm_eval needs extra scratch data
+  /// erfc_coulomb_gm_eval needs extra scratch data
   template <typename Real>
-  struct CoreEvalScratch<os_core_ints::erfdamped_coulomb_gm_eval<Real>> {
+  struct CoreEvalScratch<os_core_ints::erfc_coulomb_gm_eval<Real>> {
     std::vector<Real> Fm_;
     CoreEvalScratch() = default;
     // need to store Fm(T) for m = 0 .. mmax
@@ -1608,16 +1608,47 @@ namespace libint2 {
     std::shared_ptr<FmEval_Taylor<Real>> fm_eval_;  // need for odd K
   };
 
-  /// core integral evaluator for \f$ (1 - \mathrm{erf}(\omega r)) / r \f$ kernel
+  /// core integral evaluator for \f$ \mathrm{erf}(\omega r) / r \f$ kernel
+  template <typename Real>
+  struct erf_coulomb_gm_eval {
+    typedef Real value_type;
+
+    erf_coulomb_gm_eval(unsigned int mmax, Real precision) {
+      fm_eval_ = FmEval_Taylor<Real>::instance(mmax, precision);
+    }
+    void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega) {
+      if (omega > 0) {
+        auto omega2 = omega * omega;
+        auto omega2_over_omega2_plus_rho = omega2 / (omega2 + rho);
+        fm_eval_->eval(Gm, T * omega2_over_omega2_plus_rho,
+                       mmax);
+
+        auto ooversqrto2prho_exp_2mplus1 =
+            std::sqrt(omega2_over_omega2_plus_rho);
+        for (auto m = 0; m <= mmax;
+             ++m, ooversqrto2prho_exp_2mplus1 *= omega2_over_omega2_plus_rho) {
+          Gm[m] *= ooversqrto2prho_exp_2mplus1;
+        }
+      }
+      else {
+        std::fill(Gm, Gm+mmax+1, real_t{0});
+      }
+    }
+
+     private:
+      std::shared_ptr<FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+  };
+
+  /// core integral evaluator for \f$ \mathrm{erfc}(\omega r) / r \f$ kernel
   /// @note need extra scratch for Boys function values,
   ///       since need to call Boys engine twice
   template <typename Real>
-  struct erfdamped_coulomb_gm_eval : private
-  detail::CoreEvalScratch<erfdamped_coulomb_gm_eval<Real>> {
-    typedef detail::CoreEvalScratch<erfdamped_coulomb_gm_eval<Real>> base_type;
+  struct erfc_coulomb_gm_eval : private
+  detail::CoreEvalScratch<erfc_coulomb_gm_eval<Real>> {
+    typedef detail::CoreEvalScratch<erfc_coulomb_gm_eval<Real>> base_type;
     typedef Real value_type;
 
-    erfdamped_coulomb_gm_eval(unsigned int mmax, Real precision)
+    erfc_coulomb_gm_eval(unsigned int mmax, Real precision)
         : base_type(mmax) {
       fm_eval_ = FmEval_Taylor<Real>::instance(mmax, precision);
     }

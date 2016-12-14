@@ -51,7 +51,8 @@ namespace libint2 {
   namespace os_core_ints {
   template <typename Real> struct delta_gm_eval;
   template <typename Real, int K> struct r12_xx_K_gm_eval;
-  template <typename Real> struct erfdamped_coulomb_gm_eval;
+  template <typename Real> struct erf_coulomb_gm_eval;
+  template <typename Real> struct erfc_coulomb_gm_eval;
   }  // namespace os_core_ints
 
   /*
