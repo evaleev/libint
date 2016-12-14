@@ -1552,10 +1552,8 @@ namespace libint2 {
   struct CoreEvalScratch<os_core_ints::erfdamped_coulomb_gm_eval<Real>> {
     std::vector<Real> Fm_;
     CoreEvalScratch() = default;
-    CoreEvalScratch(int mmax) { init(mmax); }
-
-   private:
-    void init(int mmax) { Fm_.resize(mmax); }
+    // need to store Fm(T) for m = 0 .. mmax
+    explicit CoreEvalScratch(int mmax) { Fm_.resize(mmax+1); }
   };
   }
 
