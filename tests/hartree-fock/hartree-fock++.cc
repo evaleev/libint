@@ -2219,11 +2219,16 @@ void api_basic_compile_test(const BasisSet& obs) {
         compute_schwarz_ints<Operator::delcgtg2>(obs, obs, false, cgtg_params);
     std::cout << "||Del.cGTG||^2 Schwarz ints\n" << K << std::endl;
   }
-  double erfdamp_param = 1.0;
+  double attenuation_omega = 1.0;
   {
     auto K =
-        compute_schwarz_ints<Operator::erfdamped_coulomb>(obs, obs, false, erfdamp_param);
-    std::cout << "erfdamped Schwarz ints\n" << K << std::endl;
+        compute_schwarz_ints<Operator::erfc_coulomb>(obs, obs, false, attenuation_omega);
+    std::cout << "erfc_coulomb Schwarz ints\n" << K << std::endl;
+  }
+  {
+    auto K =
+        compute_schwarz_ints<Operator::erf_coulomb>(obs, obs, false, attenuation_omega);
+    std::cout << "erf_coulomb Schwarz ints\n" << K << std::endl;
   }
 
   {  // test 2-index ints
