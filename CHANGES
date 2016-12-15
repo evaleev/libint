@@ -3,8 +3,12 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2016-xx-yy: 2.3.0-beta.2
-  - added erf-damped Coulomb
+- 2017-xx-yy: 2.3.0-beta.3
+  - zzz
+
+- 2016-12-15: 2.3.0-beta.2
+  - fixed a bug in r12 core integrals code
+  - added erf- and erfc-attenuated Coulomb integrals
   - sanitize Eigen includes
 
 - 2016-11-23: 2.3.0-beta.1
