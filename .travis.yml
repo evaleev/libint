@@ -14,9 +14,6 @@ matrix:
       env: GCC_VERSION=4.8
     - compiler: clang
       env: GCC_VERSION=4.9
-  allow_failures:
-    - compiler: clang      # until llvm.org apt server is back up
-      env: GCC_VERSION=5   #
 sudo: false
 addons:
   apt:
