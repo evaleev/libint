@@ -35,12 +35,14 @@
 #include <limits>
 #include <type_traits>
 
-// some features require at least C++11
+// from now on at least C++11 is required by default
 #include <libint2/util/cxxstd.h>
-#include <libint2/boys_fwd.h>
-#if LIBINT2_CPLUSPLUS_STD >= 2011
-#include <memory>
+#if LIBINT2_CPLUSPLUS_STD < 2011
+# error "Libint2 C++ API requires C++11 support"
 #endif
+
+#include <libint2/boys_fwd.h>
+#include <memory>
 
 #if HAVE_LAPACK // use F77-type interface for now, switch to LAPACKE later
 extern "C" void dgesv_(const int* n,
@@ -268,8 +270,6 @@ namespace libint2 {
         }
       }
 
-      // some features require at least C++11
-#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
       static const std::shared_ptr<FmEval_Chebyshev3>& instance(int m_max, double = 0.0) {
 
@@ -284,7 +284,6 @@ namespace libint2 {
 
         return instance_;
       }
-#endif
 
       /// @return the maximum value of m for which the Boys function can be computed with this object
       int max_m() const { return mmax; }
@@ -553,8 +552,6 @@ namespace libint2 {
         }
       }
 
-      // some features require at least C++11
-#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
       static const std::shared_ptr<FmEval_Chebyshev7>& instance(int m_max, double = 0.0) {
 
@@ -569,7 +566,6 @@ namespace libint2 {
 
         return instance_;
       }
-#endif
 
       /// @return the maximum value of m for which the Boys function can be computed with this object
       int max_m() const { return mmax; }
@@ -815,8 +811,6 @@ namespace libint2 {
         delete[] grid_;
       }
 
-      // some features require at least C++11
-#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
       static const std::shared_ptr<FmEval_Taylor>& instance(unsigned int mmax, Real precision) {
@@ -834,7 +828,6 @@ namespace libint2 {
 
         return instance_;
       }
-#endif
 
       /// @return the maximum value of m for which this object can compute the Boys function
       int max_m() const { return max_m_ - INTERPOLATION_ORDER + 1; }
@@ -1364,8 +1357,6 @@ namespace libint2 {
       ~GaussianGmEval() {
       }
 
-      // some features require at least C++11
-#if LIBINT2_CPLUSPLUS_STD >= 2011
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
       static const std::shared_ptr<GaussianGmEval>& instance(unsigned int mmax, Real precision) {
@@ -1383,7 +1374,6 @@ namespace libint2 {
 
         return instance_;
       }
-#endif
 
       /// @return the maximum value of m for which the \f$ G_m(\rho, T) \f$ can be computed with this object
       int max_m() const { return mmax_; }
