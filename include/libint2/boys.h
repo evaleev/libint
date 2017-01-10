@@ -1621,7 +1621,7 @@ namespace libint2 {
         }
       }
       else {
-        std::fill(Gm, Gm+mmax+1, real_t{0});
+        std::fill(Gm, Gm+mmax+1, Real{0});
       }
     }
 
