@@ -62,7 +62,7 @@ const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any i
 /// change to true to skip verification and do some timing simulation
 const bool do_timing_only = true;
 
-libint2::FmEval_Chebyshev3 fmeval_chebyshev(18);
+libint2::FmEval_Chebyshev7 fmeval_chebyshev(18);
 libint2::FmEval_Taylor<double,6> fmeval_taylor(18, 1e-15);
 
 // profile using a realistic basis set

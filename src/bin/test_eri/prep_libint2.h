@@ -28,7 +28,7 @@
 #include <libint2/boys.h>
 #include <time.h>
 
-extern libint2::FmEval_Chebyshev3<double> fmeval_chebyshev;
+extern libint2::FmEval_Chebyshev7<double> fmeval_chebyshev;
 extern libint2::FmEval_Taylor<double,6> fmeval_taylor;
 
 #ifdef PREP_LIBINT2_SKIP_BOOST

@@ -4,7 +4,7 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - 2017-xx-yy: 2.3.0-beta.3
-  - boys.h requires C++11
+  - boys.h requires C++11; Chebyshev7 is the default Boys engine, Chebyshev3 is gone.
 
 - 2016-12-15: 2.3.0-beta.2
   - fixed a bug in r12 core integrals code

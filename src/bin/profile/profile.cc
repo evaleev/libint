@@ -95,7 +95,7 @@ namespace dice {
  */
 template <typename Kernel> void profile(const Kernel& k, int nrepeats);
 
-template <unsigned InterpolationOrder = 3>
+template <unsigned InterpolationOrder = 7>
 void do_chebyshev(int mmax, int nrepeats);
 template <unsigned InterpolationOrder = 7>
 void do_taylor(int mmax, int nrepeats);
@@ -392,9 +392,7 @@ int main(int argc, char* argv[]) {
 # endif
 #endif
 #ifndef SKIP_CHEBYSHEV
-  do_chebyshev<3>(mmax, nrepeats);
   do_chebyshev<7>(mmax, nrepeats);
-  do_chebyshev<33>(mmax, nrepeats);
 #endif
 #ifndef SKIP_TAYLOR
   do_taylor<3>(mmax, nrepeats);
@@ -447,10 +445,8 @@ void do_chebyshev(int mmax, int nrepeats) {
   const double T_max = 30.0; // values >= T_max are handled by recursion
   const double scale_unit32_to_T = T_max / std::numeric_limits<uint32_t>::max();
 
-  typedef typename std::conditional<InterpolationOrder==7,
-                                    libint2::FmEval_Chebyshev7<>,
-                                    libint2::FmEval_Chebyshev3<>
-                                   >::type fmeval_t;
+  if (InterpolationOrder != 7) abort();
+  typedef libint2::FmEval_Chebyshev7<> fmeval_t;
   fmeval_t fmeval_cheb(mmax);
   std::cout << "done initialization:" << std::endl;
   std::fill(Fm_array_sum, Fm_array_sum+mmax+1, 0.0);

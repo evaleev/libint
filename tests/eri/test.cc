@@ -40,7 +40,7 @@ const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any i
 /// change to true to skip verification and do some timing simulation
 const bool do_timing_only = false;
 
-libint2::FmEval_Chebyshev3<double> fmeval_chebyshev(std::max(LIBINT_MAX_AM,4)*4 + 2);
+libint2::FmEval_Chebyshev7<double> fmeval_chebyshev(std::max(LIBINT_MAX_AM,4)*4 + 2);
 libint2::FmEval_Taylor<double,6> fmeval_taylor(std::max(LIBINT_MAX_AM,4)*4 + 2, 1e-15);
 
 namespace {

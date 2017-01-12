@@ -34,7 +34,7 @@ using namespace libint2;
     erieval.contrdepth = 1;
 #endif
     // - initialize Boys function evaluator
-    FmEval_Chebyshev3 fmeval(max_am);
+    FmEval_Chebyshev7 fmeval(max_am);
     //-------------------------------------------------------------------------------------
 
     //

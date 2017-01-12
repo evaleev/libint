@@ -28,9 +28,6 @@ namespace libint2 {
   struct FmEval_Reference2;
 
   template <typename Real>
-  class FmEval_Chebyshev3;
-
-  template <typename Real>
   class FmEval_Chebyshev7;
 
   template<typename Real, int INTERPOLATION_ORDER>

@@ -208,7 +208,7 @@ struct operator_traits<Operator::emultipole3>
 template <>
 struct operator_traits<Operator::coulomb>
     : public detail::default_operator_traits {
-  typedef libint2::FmEval_Chebyshev3<real_t> core_eval_type;
+  typedef libint2::FmEval_Chebyshev7<real_t> core_eval_type;
 };
 namespace detail {
 template <int K>

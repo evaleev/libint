@@ -235,301 +235,17 @@ namespace libint2 {
   };
 
   /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
-    * using 3-rd order Chebyshev interpolation.
-    * based on the code from ORCA by Dr. Frank Neese.
-    */
-  template <typename Real = double>
-  class FmEval_Chebyshev3 {
-
-      static const int NGRID = 4096; //!< number of grid points
-      static const int INTERPOLATION_ORDER = 4;   //!< interpolation order + 1
-      static const bool INTERPOLATION_AND_RECURSION = false; //!< compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
-
-      const Real T_crit;          //!< critical value of T above which safe to use upward recusion
-      const Real delta;           //!< grid size
-      const Real one_over_delta;  //! 1/delta
-      int mmax;                     //!< the maximum m that is tabulated
-      ExpensiveNumbers<double> numbers_;
-      Real *c; /* the Chebyshev coefficients table, NGRID by mmax*interpolation_order */
-
-    public:
-      /// \param m_max maximum value of the Boys function index; set to -1 to skip initialization
-      /// \param precision the desired precision
-      FmEval_Chebyshev3(int m_max, double = 0.0) :
-          T_crit(30.0), // this translates in appr. 1e-15  error in upward recursion, see the note below
-          delta(T_crit / (NGRID - 1)),
-          one_over_delta(1.0 / delta),
-          mmax(m_max), numbers_(14) {
-        assert(mmax <= 63);
-        if (m_max >= 0)
-          init();
-      }
-      ~FmEval_Chebyshev3() {
-        if (mmax >= 0) {
-          free(c);
-        }
-      }
-
-      /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
-      static const std::shared_ptr<FmEval_Chebyshev3>& instance(int m_max, double = 0.0) {
-
-        // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::shared_ptr<FmEval_Chebyshev3>{};
-
-        const bool need_new_instance = !instance_ || (instance_ && instance_->max_m() < m_max);
-        if (need_new_instance) {
-          auto new_instance = std::make_shared<FmEval_Chebyshev3>(m_max);
-          instance_ = new_instance; // thread-safe
-        }
-
-        return instance_;
-      }
-
-      /// @return the maximum value of m for which the Boys function can be computed with this object
-      int max_m() const { return mmax; }
-
-      /// fills in Fm with computed Boys function values for m in [0,mmax]
-      /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
-      /// @param[in] x the Boys function argument
-      /// @param[in] mmax the maximum value of m for which Boys function will be computed; mmax must be <= the value returned by max_m
-      inline void eval(Real* Fm, Real x, int m_max) const {
-
-        // large T => use upward recursion
-        // cost = 1 div + 1 sqrt + (1 + 2*(m-1)) muls
-        if (x > T_crit) {
-          const double one_over_x = 1.0/x;
-          Fm[0] = 0.88622692545275801365 * sqrt(one_over_x); // see Eq. (9.8.9) in Helgaker-Jorgensen-Olsen
-          if (m_max == 0)
-            return;
-          // this upward recursion formula omits - e^(-x)/(2x), which for x>T_crit is <1e-15
-          for (int i = 1; i <= m_max; i++)
-            Fm[i] = Fm[i - 1] * numbers_.ihalf[i] * one_over_x; // see Eq. (9.8.13)
-          return;
-        }
-
-        // ---------------------------------------------
-        // small and intermediate arguments => interpolate Fm and (optional) downward recursion
-        // ---------------------------------------------
-        // about which point on the grid to interpolate?
-        const double xd = x * one_over_delta;
-        const int iv = int(xd); // the interval
-        // INTERPOLATION_AND_RECURSION== true? evaluate by interpolation for LARGEST m only
-        // INTERPOLATION_AND_RECURSION==false? evaluate by interpolation for ALL m
-        const int m_min = INTERPOLATION_AND_RECURSION ? m_max : 0;
-
-#if defined(__AVX__) || defined(__SSE2__)
-        const auto x2 = xd*xd;
-        const auto x3 = x2*xd;
-#  if defined (__AVX__)
-        libint2::simd::VectorAVXDouble xvec(1., xd, x2, x3);
-#  else // defined(__SSE2__)
-        libint2::simd::VectorSSEDouble x0vec(1., xd);
-        libint2::simd::VectorSSEDouble x1vec(x2, x3);
-#  endif
-#endif // SSE2 || AVX
-
-        const Real *d = c + INTERPOLATION_ORDER * (iv * (mmax+1) + m_min); // ptr to the interpolation data for m=mmin
-        int m = m_min;
-#if defined(__AVX__)
-        if (m_max-m >=3) {
-          const int unroll_size = 4;
-          const int m_fence = (m_max + 2 - unroll_size);
-          for(; m<m_fence; m+=unroll_size, d+=INTERPOLATION_ORDER*unroll_size) {
-            libint2::simd::VectorAVXDouble d0v, d1v, d2v, d3v;
-            d0v.load_aligned(d);
-            d1v.load_aligned(d+INTERPOLATION_ORDER);
-            d2v.load_aligned(d+2*INTERPOLATION_ORDER);
-            d3v.load_aligned(d+3*INTERPOLATION_ORDER);
-            libint2::simd::VectorAVXDouble fm0 = d0v * xvec;
-            libint2::simd::VectorAVXDouble fm1 = d1v * xvec;
-            libint2::simd::VectorAVXDouble fm2 = d2v * xvec;
-            libint2::simd::VectorAVXDouble fm3 = d3v * xvec;
-            libint2::simd::VectorAVXDouble sum0123 = horizontal_add(fm0, fm1, fm2, fm3);
-            sum0123.convert(&Fm[m]);
-          }
-        } // unroll_size=4
-        if (m_max-m >=1) {
-          const int unroll_size = 2;
-          const int m_fence = (m_max + 2 - unroll_size);
-          for(; m<m_fence; m+=unroll_size, d+=INTERPOLATION_ORDER*unroll_size) {
-            libint2::simd::VectorAVXDouble d0v, d1v;
-            d0v.load_aligned(d);
-            d1v.load_aligned(d+INTERPOLATION_ORDER);
-            libint2::simd::VectorAVXDouble fm0 = d0v * xvec;
-            libint2::simd::VectorAVXDouble fm1 = d1v * xvec;
-            libint2::simd::VectorSSEDouble sum01 = horizontal_add(fm0, fm1);
-            sum01.convert(&Fm[m]);
-          }
-        } // unroll_size=2
-        { // no unrolling
-          for(; m<=m_max; ++m, d+=INTERPOLATION_ORDER) {
-            libint2::simd::VectorAVXDouble dvec;
-            dvec.load_aligned(d);
-            Fm[m] = horizontal_add(dvec * xvec);
-          }
-        }
-#elif defined(__SSE2__)
-        if (m_max-m >=1) {
-          const int unroll_size = 2;
-          const int m_fence = (m_max + 2 - unroll_size);
-          for(; m<m_fence; m+=unroll_size, d+=INTERPOLATION_ORDER*unroll_size) {
-            libint2::simd::VectorSSEDouble d00v, d01v, d10v, d11v;
-            d00v.load_aligned(d);
-            d01v.load_aligned(d+2);
-            d10v.load_aligned(d+4); // d + INTERPOLATION_ORDER
-            d11v.load_aligned(d+6);
-            libint2::simd::VectorSSEDouble fm00 = d00v * x0vec;
-            libint2::simd::VectorSSEDouble fm01 = d01v * x1vec;
-            libint2::simd::VectorSSEDouble fm10 = d10v * x0vec;
-            libint2::simd::VectorSSEDouble fm11 = d11v * x1vec;
-            libint2::simd::VectorSSEDouble sum01 = horizontal_add(fm00, fm10) + horizontal_add(fm01, fm11);
-            sum01.convert(&Fm[m]);
-          }
-        } // unroll_size=2
-        { // no unrolling
-          for(; m<=m_max; ++m, d+=INTERPOLATION_ORDER) {
-            libint2::simd::VectorSSEDouble d0vec, d1vec;
-            d0vec.load_aligned(d);
-            d1vec.load_aligned(d+2);
-            Fm[m] = horizontal_add(d0vec * x0vec + d1vec * x1vec);
-          }
-        }
-#else // not SSE2 nor AVX available
-        for(m=m_min; m<=m_max; ++m, d+=INTERPOLATION_ORDER) {
-          Fm[m] = d[0]
-                + xd * (d[1] + xd * (d[2] + xd * d[3]));
-
-          //        // check against the reference value
-          //        if (false) {
-          //          double refvalue = FmEval_Reference2<double>::eval(x, m, 1e-15); // compute F(T)
-          //          if (abs(refvalue - Fm[m]) > 1e-10) {
-          //            std::cout << "T = " << x << " m = " << m << " cheb = "
-          //                      << Fm[m] << " ref = " << refvalue << std::endl;
-          //          }
-          //        }
-        }
-#endif
-
-
-        // use downward recursion (Eq. (9.8.14) in HJO)
-        // WARNING: do not turn this on ... on modern CPU exp is very slow
-        if (INTERPOLATION_AND_RECURSION && m_max > 0) {
-          const bool INTERPOLATION_AND_RECURSION_is_slow_on_modern_CPU = false;
-          assert(INTERPOLATION_AND_RECURSION_is_slow_on_modern_CPU);
-          const Real x2 = 2.0 * x;
-          const Real exp_x = exp(-x);
-          for (int m = m_max - 1; m >= 0; m--)
-            Fm[m] = (Fm[m + 1] * x2 + exp_x) * numbers_.twoi1[m];
-        }
-      }
-
-    private:
-
-      /* ----------------------------------------------------------------------------
-       This function here creates the expansion coefficients for a single interval
-
-       ON INPUT  a,b  : the interval boundaries
-       cc   : a pointer to the appropriate place in
-       the coefficient table
-       m    : the F[m] to generate
-       ON OUTPUT cc   : cc[0]-cc[3] hold the coefficients
-       ---------------------------------------------------------------------------- */
-      void MakeCoeffs(double a, double b, Real *cc, int m) {
-        int k, j;
-        double f[128], ac[128], Fm[128];
-        double sum;
-        // characterize the interval
-        double TwoDelta = b - a;
-        double Delta = 0.5 * TwoDelta;
-        double HalfDelta = 0.5 * Delta;
-        double XXX = a + Delta;
-
-        const double absolute_precision = 1e-100; // compute as precisely as possible
-        FmEval_Reference2<double>::eval(Fm, XXX, m + INTERPOLATION_ORDER + 20,
-                                        absolute_precision);
-
-        for (k = 0; k <= INTERPOLATION_ORDER + 20; k++) {
-          if ((k % 2) == 0)
-            f[k] = Fm[k + m];
-          else
-            f[k] = -Fm[k + m];
-        }
-        // calculate the coefficients a
-        double fac;
-        for (j = 0; j < INTERPOLATION_ORDER; j++) {
-          if (j == 0)
-            fac = 1.0;
-          else
-            fac = 2.0 * pow(HalfDelta, (double) j);
-          sum = 0.0;
-          for (k = 0; k < 10; k++)
-            sum += f[j + 2 * k] * pow(HalfDelta, (double) (2 * k)) / numbers_.fac[k]
-                / numbers_.fac[k + j];
-          ac[j] = fac * sum;
-        }
-        // calculate the coefficients c that are Gill's f's
-        double arg = -XXX / Delta;
-        double arg2 = arg * arg;
-        double arg3 = arg2 * arg;
-        auto cc0 = (ac[0] - ac[2]) + (ac[1] - 3.0 * ac[3]) * arg
-            + 2.0 * ac[2] * arg2 + 4.0 * ac[3] * arg3;
-
-        auto cc1 = (2.0 * ac[1] - 6.0 * ac[3]) + 8.0 * ac[2] * arg
-            + 24.0 * ac[3] * arg2;
-        auto cc2 = 8.0 * ac[2] + 48.0 * ac[3] * arg;
-        auto cc3 = 32.0 * ac[3];
-        cc[0] = cc0;
-        cc[1] = cc1;
-        cc[2] = cc2;
-        cc[3] = cc3;
-      }
-
-      /* ----------------------------------------------------------------------------
-       This function makes the expansion coefficients for all intervals
-
-
-       ON INPUT  m    : the highest F[m] to generate
-
-       ON OUTPUT  c   : the coefficients c[m][i] are generated
-       ---------------------------------------------------------------------------- */
-      void init() {
-        int iv, im;
-
-        // get memory
-        void* result;
-        if (posix_memalign(&result,
-                           4*sizeof(Real),
-                           (mmax + 1) * NGRID * INTERPOLATION_ORDER * sizeof(Real)))
-          throw std::bad_alloc();
-        c = static_cast<Real*>(result);
-
-        // make expansion coefficients for each grid value of T
-        for (iv = 0; iv < NGRID; iv++) {
-          const auto a = iv * delta;
-          const auto b = a + delta;
-
-          // loop over all m values and make the coefficients
-          for (im = 0; im <= mmax; im++) {
-            MakeCoeffs(a, b, c + (iv * (mmax+1) + im) * INTERPOLATION_ORDER, im);
-          }
-        }
-      }
-
-  };
-
-  /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
     * using 7-th order Chebyshev interpolation.
     */
   template <typename Real = double>
   class FmEval_Chebyshev7 {
 
-      static const int N = 60;      //!< number of interpolation intervals
       static const int ORDER = 7;   //!, interpolation order
       static const int ORDERp1 = ORDER+1;   //!< ORDER + 1
 
       const Real T_crit;          //!< critical value of T above which safe to use upward recusion
-      const Real delta;           //!< interval size
-      const Real one_over_delta;  //! 1/delta
+      Real delta;           //!< interval size
+      Real one_over_delta;  //! 1/delta
       int mmax;                   //!< the maximum m that is tabulated
       ExpensiveNumbers<double> numbers_;
       Real *c; /* the Chebyshev coefficients table, N by mmax*interpolation_order */
@@ -539,8 +255,6 @@ namespace libint2 {
       /// \param precision the desired precision
       FmEval_Chebyshev7(int m_max, double = 0.0) :
           T_crit(30.0), // this translates in appr. 1e-15  error in upward recursion, see the note below
-          delta(T_crit / N),
-          one_over_delta(1.0 / delta),
           mmax(m_max), numbers_(14) {
         assert(mmax <= 63);
         if (m_max >= 0)
@@ -684,7 +398,18 @@ namespace libint2 {
 
 #include <libint2/boys_cheb7.h>
 
-        assert(mmax <= cheb_table_mmax);
+        if (mmax > cheb_table_mmax)
+          throw std::runtime_error(
+              "FmEval_Chebyshev7::init() : requested mmax exceeds the "
+              "hard-coded mmax");
+        if (T_crit != cheb_table_tmax)
+          throw std::runtime_error(
+              "FmEval_Chebyshev7::init() : boys_cheb7.h does not match "
+              "FmEval_Chebyshev7");
+        delta = cheb_table_delta;
+        one_over_delta = 1 / delta;
+        const int N = cheb_table_nintervals;
+
         // get memory
         void* result;
         posix_memalign(&result, ORDERp1*sizeof(Real), (mmax + 1) * N * ORDERp1 * sizeof(Real));
@@ -1350,7 +1075,6 @@ namespace libint2 {
         // for k=-1 need to evaluate the Boys function
         if (k == -1) {
           fm_eval_ = FmEval_Taylor<Real>::instance(mmax_, precision_);
-//          fm_eval_ = FmEval_Chebyshev3::instance(mmax_);
         }
       }
 
