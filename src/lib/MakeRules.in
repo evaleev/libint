@@ -14,6 +14,10 @@ export:: source
 	for i in $(LIBSRCDIR)/*.h; do \
 	 $(INSTALL) $(INSTALLLIBOPT) $${i} $(TOPDIR)/$(EXPORTDIR)/include; \
         done
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2
+	for i in $(LIBSRCDIR)/libint2/*.h; do \
+	 $(INSTALL) $(INSTALLLIBOPT) $${i} $(TOPDIR)/$(EXPORTDIR)/include/libint2; \
+        done
 
 $(TOPDIR)/lib/$(TARGET): source
 	cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR)
@@ -85,7 +89,7 @@ rm_libsrcdir:
 	-rm -f source
 	-rm -f make_libsrcdir
 
-source: make_libsrcdir $(LIBSRCDIR)/Makefile $(LIBSRCDIR)/libint2_params.h
+source: make_libsrcdir $(LIBSRCDIR)/Makefile $(LIBSRCDIR)/libint2/libint2_params.h
 	echo "Last time library source was generated:\c" > $@
 	date >> $@
 
@@ -110,6 +114,6 @@ fi;
 $(LIBSRCDIR)/Makefile: make_libsrcdir $(SRCDIR)/Makefile.library
 	cp -f $(SRCDIR)/Makefile.library $@
 
-$(LIBSRCDIR)/libint2_params.h: $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER) $(LIBSRCDIR)/Makefile
-	cd $(LIBSRCLINK); $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER)
+$(LIBSRCDIR)/libint2/libint2_params.h: $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER) $(LIBSRCDIR)/Makefile
+	cd $(LIBSRCLINK); mkdir -p libint2; $(TOPOBJDIR)/src/bin/$(NAME)/$(COMPILER)
 

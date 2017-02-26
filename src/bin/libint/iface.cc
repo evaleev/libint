@@ -27,9 +27,9 @@ using namespace libint2;
 
 namespace {
   const char mh_name[] = "libint2.h";
-  const char th_name[] = "libint2_types.h";
-  const char ph_name[] = "libint2_params.h";
-  const char ih_name[] = "libint2_iface.h";
+  const char th_name[] = "libint2/libint2_types.h";
+  const char ph_name[] = "libint2/libint2_params.h";
+  const char ih_name[] = "libint2/libint2_iface.h";
   const char ii_name[] = "libint2_iface_internal.h";
   const char si_name[] = "libint2_static_init.cc";
   const char sc_name[] = "libint2_static_cleanup.cc";
