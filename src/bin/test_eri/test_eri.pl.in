@@ -107,7 +107,7 @@ if ($scpexportdest eq "") {
 }
 else {
   printf STDOUT "Exporting generated source to $scpexportdest using the following command:\n";
-  my $cmd = "scp $source_filename $header_filename libint2_params.h libint2_iface.h libint2_iface_internal.h test_eri_conf.h Make.compute_eri $scpexportdest";
+  my $cmd = "scp $source_filename $header_filename libint2/libint2_params.h libint2/libint2_iface.h libint2_iface_internal.h test_eri_conf.h Make.compute_eri $scpexportdest";
   printf STDOUT "$cmd\n";
   system("scp $cmd");
 }
