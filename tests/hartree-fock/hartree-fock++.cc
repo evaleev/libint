@@ -1173,10 +1173,11 @@ Matrix compute_schwarz_ints(
         assert(buf[0] != nullptr &&
                "to compute Schwarz ints turn off primitive screening");
 
-        // the diagonal elements are the Schwarz ints ... use Map.diagonal()
+        // to apply Schwarz inequality to individual integrals must use the diagonal elements
+        // to apply it to sets of functions (e.g. shells) use the whole shell-set of ints here
         Eigen::Map<const Matrix> buf_mat(buf[0], n12, n12);
-        auto norm2 = use_2norm ? buf_mat.diagonal().norm()
-                               : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
+        auto norm2 = use_2norm ? buf_mat.norm()
+                               : buf_mat.lpNorm<Eigen::Infinity>();
         K(s1, s2) = std::sqrt(norm2);
         if (bs1_equiv_bs2) K(s2, s1) = K(s1, s2);
       }
