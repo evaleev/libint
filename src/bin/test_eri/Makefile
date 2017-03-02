@@ -4,6 +4,10 @@ ifndef SRCDIR
 endif
 -include $(TOPDIR)/src/bin/MakeVars
 
+# Prepend this dir as include to CPPFLAGS
+# (This means that the generated sources in this dir get preference over the
+# global ones in $(TOPDIR)/include
+$(eval CPPFLAGS = -I. $(value CPPFLAGS))
 # include headers the object include directory
 CPPFLAGS += -I$(TOPDIR)/include
 # include headers from the compiler directory (should go away soon)
@@ -12,15 +16,13 @@ CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/bin/libint
 CPPFLAGS += -I$(TOPDIR)/src/bin/libint
 # include headers from the library directory
 CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/lib/libint
-# include generated headers from the current directory
-CPPFLAGS += -I.
 
 ifndef COMPUTE_XX_ERI_XX_SRC
   -include Make.compute_eri
 endif
 CXXGENSRC = libint2_init.cc libint2_static_init.cc libint2_static_cleanup.cc $(COMPUTE_XX_ERI_XX_SRC)
 CXXGENOBJ = $(CXXGENSRC:%.cc=%.o)
-CXXGENHDRS = test_eri_conf.h libint2_types.h libint2_params.h libint2_iface.h libint2_iface_internal.h $(CXXGENSRC:%.cc=%.h)
+CXXGENHDRS = test_eri_conf.h libint2/libint2_types.h libint2/libint2_params.h libint2/libint2_iface.h libint2_iface_internal.h $(CXXGENSRC:%.cc=%.h)
 LIBINTDIR = $(TOPDIR)/src/bin/libint
 LIBINT = $(LIBINTDIR)/libINT.a
 CGSHELLOBJ = $(LIBINTDIR)/gauss.o $(LIBINTDIR)/iter.o $(LIBINTDIR)/policy.o \
@@ -43,6 +45,7 @@ CXXTEST2SRC = $(TEST2).cc
 CXXTEST2OBJ = $(CXXTEST2SRC:%.cc=%.o)
 
 $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
+	mkdir -p libint2
 	cd ../libint; $(MAKE) $(LIBINT)
 	$(CXX) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
 

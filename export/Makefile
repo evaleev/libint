@@ -28,8 +28,8 @@ $(TOPDIR)/$(EXPORTDIR)/configure:: exportdir strip_some_preproc_symb
 
 # some preprocessor symbols need to be stripped/replaced since they can be redefined by the user of the exported library
 strip_some_preproc_symb:: exportdir
-	cat $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h | sed -e '/^#ifndef LIBINT2_ALIGN_SIZE/,/^#endif/d' | sed -e '/^#ifndef LIBINT2_REALTYPE/,/^#endif/d' > $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h.tmp
-	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h.tmp $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h
+	cat $(TOPDIR)/$(EXPORTDIR)/include/libint2/libint2_params.h | sed -e '/^#ifndef LIBINT2_ALIGN_SIZE/,/^#endif/d' | sed -e '/^#ifndef LIBINT2_REALTYPE/,/^#endif/d' > $(TOPDIR)/$(EXPORTDIR)/include/libint2/libint2_params.h.tmp
+	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2/libint2_params.h.tmp $(TOPDIR)/$(EXPORTDIR)/include/libint2/libint2_params.h
 	cat $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.in | grep -v LIBINT_ALIGN_SIZE | grep -v HAVE_POSIX_MEMALIGN | grep -v  LIBINT_USER_DEFINED_REAL > $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp \
  && printf "/* EXTRA DEFINES DETERMINED BY CONFIGURE OF THE EXPORTED LIBRARY */\n#ifndef _libint2_include_libint2_config_h_1\n#define _libint2_include_libint2_config_h_1\n#undef LIBINT2_ALIGN_SIZE\n#undef HAVE_POSIX_MEMALIGN\n#undef LIBINT2_REALTYPE\n#endif // header guard #2\n" >> $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.in
@@ -38,7 +38,7 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/libint2.pc.in $(TOPDIR)/$(EXPORTDIR)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/INSTALL.export $(TOPDIR)/$(EXPORTDIR)/INSTALL
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/LICENSE.export $(TOPDIR)/$(EXPORTDIR)/LICENSE
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/README $(TOPDIR)/$(EXPORTDIR)/README
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/README.md $(TOPDIR)/$(EXPORTDIR)/README.md
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/COPYING.LIB $(TOPDIR)/$(EXPORTDIR)/COPYING
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/CITATION $(TOPDIR)/$(EXPORTDIR)/CITATION
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/MakeVars.export $(TOPDIR)/$(EXPORTDIR)/MakeVars.in
