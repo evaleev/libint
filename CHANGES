@@ -3,8 +3,12 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2017-xx-yy: 2.3.0-beta.4
+- 2017-xx-yy: 2.3.0-beta.5
   - 
+
+- 2017-03-06: 2.3.0-beta.4
+  - fixed include path handling of in-place vs. installed generated headers (HT https://github.com/mfherbst)
+  - fixed 2-norm Schwarz computation in hf++
 
 - 2017-01-12: 2.3.0-beta.3
   - boys.h requires C++11; Chebyshev7 is the default Boys engine, Chebyshev3 is gone.

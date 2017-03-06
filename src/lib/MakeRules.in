@@ -24,6 +24,7 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util/generated
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)$(VERSION)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)$(VERSION)/config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION).h $(DESTDIR)$(includedir)
@@ -31,6 +32,7 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/chemistry/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/util/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/util/generated/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util/generated
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	gunzip -c $(SRCTOPDIR)/external/boost.tar.gz | tar -xf - -C $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 
