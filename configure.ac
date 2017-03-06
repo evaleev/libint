@@ -1,5 +1,5 @@
 define([libint_mmm_version],[2.3.0])
-define([libint_buildid],[beta.3])
+define([libint_buildid],[beta.4])
 define([libint_so_version],[2:2:0])
 
 dnl --------- Begin ---------
@@ -1146,6 +1146,9 @@ AC_SUBST(CXXDEPENDFLAGS)
 dnl -- special architecture options --
 
 # nothing so far
+
+dnl -- extra define for internal includes --
+EXTRADEFINES=-D__COMPILING_LIBINT2=1
 
 AC_SUBST(EXTRAINCLUDE)
 AC_SUBST(EXTRADEFINES)

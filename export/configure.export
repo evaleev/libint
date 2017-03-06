@@ -1,5 +1,5 @@
 define([libint_mmm_version],[2.3.0])
-define([libint_buildid],[beta.3])
+define([libint_buildid],[beta.4])
 define([libint_so_version],[2:2:0])
 
 dnl --------- Begin ---------
@@ -276,9 +276,10 @@ AC_SUBST(CXXDEPENDFLAGS)
 
 
 dnl -------- Checks for architecture specific features. --------
-dnl (Doesn't work for cross compilation.)
-dnl AC_CHECK_SIZEOF(void*)
+# nothing so far
 
+dnl -------- extra define for internal includes --------
+EXTRADEFINES=-D__COMPILING_LIBINT2=1
 AC_SUBST(EXTRADEFINES)
 
 dnl ---------- Checks for header files. -----------

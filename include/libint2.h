@@ -29,8 +29,8 @@
 #define LIBINT_T_S_ELECPOT_S(mValue) _aB_s___0___ElecPot_s___0___Ab__up_##mValue
 
 #include <libint2/util/intrinsic_types.h>
-#include <libint2_params.h>
-#include <libint2_types.h>
+#include <libint2/util/generated/libint2_params.h>
+#include <libint2/util/generated/libint2_types.h>
 
 #if defined(__cplusplus)
 # include <libint2/util/type_traits.h>
@@ -42,5 +42,5 @@
 
 #endif /* header guard */
 
-#include "libint2_iface.h"
+#include <libint2/util/generated/libint2_iface.h>
 

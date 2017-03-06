@@ -20,7 +20,7 @@
 #define _libint2_src_lib_libint_libint2memory_h_
 
 #include <cstdlib>
-#include <libint2_params.h>
+#include <libint2/util/generated/libint2_params.h>
 
 namespace libint2 {
 
