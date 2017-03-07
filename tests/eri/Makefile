@@ -2,7 +2,7 @@ TOPDIR=../..
 ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
--include $(TOPDIR)/src/tests/MakeVars
+-include $(TOPDIR)/tests/MakeVars
 
 # include headers the object include directory
 CPPFLAGS += -I$(TOPDIR)/include
