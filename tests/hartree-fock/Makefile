@@ -77,6 +77,7 @@ $(TOPDIR)/include/libint2/boost/preprocessor.hpp: $(SRCDIR)/$(TOPDIR)/external/b
 
 depend:: $(CXXTEST1DEP) $(CXXTEST2DEP)
 
+ifneq ($(DODEPEND),no)
 ifneq ($(CXXDEPENDSUF),none)
 %.d:: %.cc $(TOPDIR)/include/libint2/boost/preprocessor.hpp
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
@@ -89,3 +90,4 @@ endif
 
 -include $(CXXTEST1DEP)
 -include $(CXXTEST2DEP)
+endif

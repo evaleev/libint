@@ -95,6 +95,7 @@ realclean:: clean
 
 distclean:: realclean
 
+ifneq ($(DODEPEND),no)
 ifneq ($(CXXDEPENDSUF),none)
 %.d: %.cc
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
@@ -108,4 +109,4 @@ endif
 -include $(LIBCXXDEP)
 -include $(BUILDCXXDEP)
 -include $(TESTCXXDEP)
-        
+endif

@@ -57,6 +57,7 @@ targetclean:: clean
 
 depend:: $(CXXTESTDEP)
 
+ifneq ($(DODEPEND),no)
 ifneq ($(CXXDEPENDSUF),none)
 %.d: %.cc
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
@@ -68,3 +69,4 @@ else
 endif
 
 -include $(CXXTESTDEP)
+endif
