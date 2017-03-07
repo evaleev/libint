@@ -1446,7 +1446,7 @@ AC_CONFIG_FILES([src/bin/test_eri/run_time_eri.pl],[chmod +x src/bin/test_eri/ru
 AC_CONFIG_FILES([src/bin/test_eri/stdtests.pl],[chmod +x src/bin/test_eri/stdtests.pl])
 AC_CONFIG_FILES([src/bin/test_eri/run_timing_suite.pl],[chmod +x src/bin/test_eri/run_timing_suite.pl])
 AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/libint/MakeVars.features
-                src/tests/MakeVars
+                tests/MakeVars
                 doc/MakeVars doc/MakeRules doc/progman/macros.tex doc/classdoc/doxygen.cfg
                 include/libint2/cgshell_ordering.h include/libint2/basis.h libint2.pc)
 
