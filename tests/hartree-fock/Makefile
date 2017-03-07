@@ -90,4 +90,8 @@ endif
 
 -include $(CXXTEST1DEP)
 -include $(CXXTEST2DEP)
+else
+
+%.cc:: $(TOPDIR)/include/libint2/boost/preprocessor.hpp
+
 endif

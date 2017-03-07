@@ -100,7 +100,7 @@ realclean::
 check::
 	for dir in $(CHECKSUBDIRS); \
 	  do \
-	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) check) || exit 1; \
+	    (cd $${dir} && $(MAKE) check) || exit 1; \
 	  done
 
 install-pdf:: pdf
