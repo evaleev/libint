@@ -2,10 +2,10 @@ TOPDIR=../..
 ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
--include $(TOPDIR)/src/bin/MakeVars
+-include $(TOPDIR)/src/tests/MakeVars
 
 # include headers the object include directory
-CPPFLAGS += -I$(TOPDIR)/include -I$(TOPDIR)/include/libint2
+CPPFLAGS += -I$(TOPDIR)/include
 # include headers from the compiler directory
 CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/bin/libint
 # include headers from the src/bin/test_eri directory

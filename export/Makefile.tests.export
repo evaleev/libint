@@ -4,7 +4,7 @@ SRCDIR = ..
 -include ../MakeVars
 -include ../MakeVars.features
 
-CPPFLAGS := -I../include -I../include/libint2 -Ieri -Ihartree-fock -DPREP_LIBINT2_SKIP_BOOST -DSRCDATADIR=\"$(SRCDIR)/lib/basis\" $(CPPFLAGS)
+CPPFLAGS := -I../include -Ieri -Ihartree-fock -DPREP_LIBINT2_SKIP_BOOST -DSRCDATADIR=\"$(SRCDIR)/lib/basis\" $(CPPFLAGS)
 COMPUTE_LIB = -L../lib -lint2
 
 check:: check1 check2 check3
