@@ -8,12 +8,15 @@ env:
   - GCC_VERSION=4.8
   - GCC_VERSION=4.9
   - GCC_VERSION=5
+  - GCC_VERSION=6
 matrix:
   exclude:
     - compiler: clang
       env: GCC_VERSION=4.8
     - compiler: clang
       env: GCC_VERSION=4.9
+    - compiler: clang
+      env: GCC_VERSION=5
 sudo: false
 addons:
   apt:
@@ -26,6 +29,7 @@ addons:
       - g++-4.8
       - g++-4.9
       - g++-5
+      - g++-6
       - clang-3.8
       - libgmp-dev
       - libeigen3-dev
