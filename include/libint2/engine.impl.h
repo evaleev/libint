@@ -64,17 +64,19 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
   (overlap,                          \
    (kinetic,                         \
     (elecpot,                        \
-     (1emultipole,                   \
-      (2emultipole,                  \
-       (3emultipole,                 \
-        (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL))))))))))))))
+     (elecpot,                       \
+      (elecpot,                      \
+       (1emultipole,                 \
+        (2emultipole,                \
+         (3emultipole,               \
+          (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE)
 #define BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX \
-  5  // 3emultipole, the 6th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
+  7  // 3emultipole, the 8th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
      // 1-body operator
 
 // make list of braket indices for n-body ints
@@ -163,6 +165,10 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   assert((s1.ncontr() == 1 && s2.ncontr() == 1) &&
          "generally-contracted shells not yet supported");
 
+  const auto oper_is_nuclear =
+      (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
+       oper_ == Operator::erfc_nuclear);
+
   const auto l1 = s1.contr[0].l;
   const auto l2 = s2.contr[0].l;
   assert(l1 <= lmax_ && "the angular momentum limit is exceeded");
@@ -170,9 +176,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
   // if want nuclear, make sure there is at least one nucleus .. otherwise the
   // user likely forgot to call set_params
-  if (oper_ == Operator::nuclear && nparams() == 0)
+  if (oper_is_nuclear && nparams() == 0)
     throw std::runtime_error(
-        "Engine<nuclear>, but no charges found; forgot to call "
+        "Engine<*nuclear>, but no charges found; forgot to call "
         "set_params()?");
 
   const auto n1 = s1.size();
@@ -201,8 +207,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   // degrees of freedom
   // will compute derivs w.r.t. 2 Gaussian centers + (if nuclear) nparam_sets
   // operator centers
-  const auto nderivcenters_shset =
-      2 + (oper_ == Operator::nuclear ? nparam_sets : 0);
+  const auto nderivcenters_shset = 2 + (oper_is_nuclear ? nparam_sets : 0);
   const auto nderivcoord = 3 * nderivcenters_shset;
   const auto num_shellsets_computed =
       nopers() * num_geometrical_derivatives(nderivcenters_shset, deriv_order_);
@@ -213,14 +218,14 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   // - derivatives on the missing center need to be reconstructed (no need to
   // accumulate into scratch though)
   // NB ints in scratch are packed in order
-  const auto accumulate_ints_in_scratch = (oper_ == Operator::nuclear);
+  const auto accumulate_ints_in_scratch = oper_is_nuclear;
 
   // adjust max angular momentum, if needed
   const auto lmax = std::max(l1, l2);
   assert(lmax <= lmax_ && "the angular momentum limit is exceeded");
 
   // N.B. for l=0 no need to transform to solid harmonics
-  // this is a workaround for the corner case of to oper_ == Operator::nuclear,
+  // this is a workaround for the corner case of oper_ == Operator::*nuclear,
   // and solid harmonics (s|s) integral ... beware the integral storage state
   // machine
   const auto tform_to_solids =
@@ -230,7 +235,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   // element of stack
   const auto compute_directly =
       lmax == 0 && deriv_order_ == 0 &&
-      (oper_ == Operator::overlap || oper_ == Operator::nuclear);
+      (oper_ == Operator::overlap || oper_is_nuclear);
   if (compute_directly) {
     primdata_[0].stack[0] = 0;
     targets_[0] = primdata_[0].stack;
@@ -242,7 +247,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
   // loop over accumulation batches
   for (auto pset = 0u; pset != nparam_sets; ++pset) {
-    if (oper_ != Operator::nuclear) assert(nparam_sets == 1 && "unexpected number of operator parameters");
+    if (!oper_is_nuclear)
+      assert(nparam_sets == 1 && "unexpected number of operator parameters");
 
     auto p12 = 0;
     for (auto p1 = 0; p1 != nprim1; ++p1) {
@@ -262,6 +268,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
                       primdata_[p12]._0_Overlap_0_z[0];
           break;
         case Operator::nuclear:
+        case Operator::erf_nuclear:
+        case Operator::erfc_nuclear:
           for (auto p12 = 0; p12 != primdata_[0].contrdepth; ++p12)
             result += primdata_[p12].LIBINT_T_S_ELECPOT_S(0)[0];
           break;
@@ -700,6 +708,10 @@ __libint2_engine_inline unsigned int Engine::nparams() const {
     case Operator::nuclear:
       return params_.as<operator_traits<Operator::nuclear>::oper_params_type>()
           .size();
+    case Operator::erf_nuclear:
+    case Operator::erfc_nuclear:
+      return std::get<1>(params_.as<operator_traits<Operator::erfc_nuclear>::oper_params_type>())
+          .size();
     default:
       return 1;
   }
@@ -858,7 +870,10 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
   primdata.PA_z[0] = Pz - A[2];
 #endif
 
-  if (oper_ != Operator::nuclear) {
+  const auto oper_is_nuclear =
+      (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
+       oper_ == Operator::erfc_nuclear);
+  if (!oper_is_nuclear) {
 #if LIBINT2_DEFINED(eri, PB_x)
     primdata.PB_x[0] = Px - B[0];
 #endif
@@ -889,32 +904,6 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
   primdata.oo2z[0] = 0.5 * oogammap;
 #endif
 
-  if (oper_ ==
-      Operator::nuclear) {  // additional factor for electrostatic potential
-    auto& params =
-        params_.as<operator_traits<Operator::nuclear>::oper_params_type>();
-    const auto& C = params[oset].second;
-#if LIBINT2_DEFINED(eri, PC_x)
-    primdata.PC_x[0] = Px - C[0];
-#endif
-#if LIBINT2_DEFINED(eri, PC_y)
-    primdata.PC_y[0] = Py - C[1];
-#endif
-#if LIBINT2_DEFINED(eri, PC_z)
-    primdata.PC_z[0] = Pz - C[2];
-#endif
-// elecpot uses HRR
-#if LIBINT2_DEFINED(eri, AB_x)
-    primdata.AB_x[0] = A[0] - B[0];
-#endif
-#if LIBINT2_DEFINED(eri, AB_y)
-    primdata.AB_y[0] = A[1] - B[1];
-#endif
-#if LIBINT2_DEFINED(eri, AB_z)
-    primdata.AB_z[0] = A[2] - B[2];
-#endif
-  }
-
   decltype(c1) sqrt_PI(1.77245385090551602729816748334);
   const auto xyz_pfac = sqrt_PI * sqrt(oogammap);
   const auto ovlp_ss_x = exp(-rhop * AB2_x) * xyz_pfac * c1 * c2;
@@ -934,7 +923,34 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 #endif
   }
 
-  if (oper_ == Operator::nuclear) {
+  if (oper_is_nuclear) {
+
+    auto& params = (oper_ == Operator::nuclear) ?
+        params_.as<operator_traits<Operator::nuclear>::oper_params_type>() :
+        std::get<1>(params_.as<operator_traits<Operator::erfc_nuclear>::oper_params_type>());
+
+    const auto& C = params[oset].second;
+    const auto& q = params[oset].first;
+#if LIBINT2_DEFINED(eri, PC_x)
+    primdata.PC_x[0] = Px - C[0];
+#endif
+#if LIBINT2_DEFINED(eri, PC_y)
+    primdata.PC_y[0] = Py - C[1];
+#endif
+#if LIBINT2_DEFINED(eri, PC_z)
+    primdata.PC_z[0] = Pz - C[2];
+#endif
+// elecpot uses HRR
+#if LIBINT2_DEFINED(eri, AB_x)
+    primdata.AB_x[0] = A[0] - B[0];
+#endif
+#if LIBINT2_DEFINED(eri, AB_y)
+    primdata.AB_y[0] = A[1] - B[1];
+#endif
+#if LIBINT2_DEFINED(eri, AB_z)
+    primdata.AB_z[0] = A[2] - B[2];
+#endif
+
 #if LIBINT2_DEFINED(eri, rho12_over_alpha1) || \
     LIBINT2_DEFINED(eri, rho12_over_alpha2)
     if (deriv_order_ > 0) {
@@ -954,15 +970,32 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
     const auto U = gammap * PC2;
     const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_;
     auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
-    auto fm_engine_ptr =
-        core_eval_pack_.as<detail::core_eval_pack_type<Operator::nuclear>>()
+    if (oper_ == Operator::nuclear) {
+      auto fm_engine_ptr =
+          core_eval_pack_.as<detail::core_eval_pack_type<Operator::nuclear>>()
+          .first();
+      fm_engine_ptr->eval(fm_ptr, U, mmax);
+    } else if (oper_ == Operator::erf_nuclear) {
+      const auto& core_eval_ptr =
+          core_eval_pack_
+            .as<detail::core_eval_pack_type<Operator::erf_nuclear>>()
             .first();
-    fm_engine_ptr->eval(fm_ptr, U, mmax);
+      auto core_ints_params =
+          std::get<0>(core_ints_params_.as<typename operator_traits<
+            Operator::erf_nuclear>::oper_params_type>());
+      core_eval_ptr->eval(fm_ptr, rhop, U, mmax, core_ints_params);
+    } else if (oper_ == Operator::erfc_nuclear) {
+      const auto& core_eval_ptr =
+          core_eval_pack_
+            .as<detail::core_eval_pack_type<Operator::erfc_nuclear>>()
+            .first();
+      auto core_ints_params =
+          std::get<0>(core_ints_params_.as<typename operator_traits<
+            Operator::erfc_nuclear>::oper_params_type>());
+      core_eval_ptr->eval(fm_ptr, rhop, U, mmax, core_ints_params);
+    }
 
     decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
-    const auto q =
-        params_.as<operator_traits<Operator::nuclear>::oper_params_type>()[oset]
-            .first;
     const auto pfac =
         -q * sqrt(gammap) * two_o_sqrt_PI * ovlp_ss_x * ovlp_ss_y * ovlp_ss_z;
     const auto m_fence = mmax + 1;

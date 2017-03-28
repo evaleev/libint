@@ -38,6 +38,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -92,6 +93,12 @@ enum class Operator {
   kinetic,
   /// Coulomb potential due to point charges
   nuclear,
+  /// erf-attenuated point-charge Coulomb operator,
+  /// \f$ \mathrm{erf}(\omega r)/r \f$
+  erf_nuclear,
+  /// erfc-attenuated point-charge Coulomb operator,
+  /// \f$ \mathrm{erfc}(\omega r)/r \f$
+  erfc_nuclear,
   /// overlap + (Cartesian) electric dipole moment,
   //! \f$ x_O, y_O, z_O \f$, where
   //! \f$ x_O \equiv x - O_x \f$ is relative to
@@ -178,6 +185,34 @@ struct operator_traits<Operator::nuclear>
       oper_params_type;
   static oper_params_type default_params() { return oper_params_type{}; }
   typedef const libint2::FmEval_Taylor<double, 7> core_eval_type;
+};
+
+template <>
+struct operator_traits<Operator::erf_nuclear>
+    : public detail::default_operator_traits {
+  /// the attenuation parameter (0 = zero potential, +infinity = no attenuation)
+  /// + point charges and positions
+  typedef std::tuple<
+      real_t, typename operator_traits<Operator::nuclear>::oper_params_type>
+      oper_params_type;
+  static oper_params_type default_params() {
+    return std::make_tuple(0,operator_traits<Operator::nuclear>::default_params());
+  }
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::erf_coulomb_gm_eval<real_t>>
+      core_eval_type;
+};
+
+template <>
+struct operator_traits<Operator::erfc_nuclear>
+    : public detail::default_operator_traits {
+  /// the attenuation parameter (0 = no attenuation, +infinity = zero potential)
+  /// + point charges and positions
+  typedef typename operator_traits<Operator::erf_nuclear>::oper_params_type oper_params_type;
+  static oper_params_type default_params() {
+    return std::make_tuple(0,operator_traits<Operator::nuclear>::default_params());
+  }
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::erfc_coulomb_gm_eval<real_t>>
+      core_eval_type;
 };
 
 template <>
@@ -373,6 +408,7 @@ class Engine {
     set_precision(std::numeric_limits<real_t>::epsilon());
   }
 
+  // clang-format off
   /// Constructs a (usable) Engine
 
   /// \param oper a value of Operator type
@@ -397,12 +433,14 @@ class Engine {
   /// of
   ///               the operator set, e.g. position and magnitude of the charges
   ///               creating the Coulomb potential
-  ///               for oper == Operator::nuclear. For most values of \c oper
+  ///               for oper == Operator::nuclear, etc.
+  /// For most values of \c oper
   ///               this is not needed.
   ///               \sa Engine::operator_traits
   /// \param braket a value of BraKet type
   /// \warning currently only one-contraction Shell objects are supported; i.e.
   /// generally-contracted Shells are not yet supported
+  // clang-format on
   template <typename Params = empty_pod>
   Engine(Operator oper, size_t max_nprim, int max_l, int deriv_order = 0,
          real_t precision = std::numeric_limits<real_t>::epsilon(),
@@ -707,7 +745,10 @@ class Engine {
   /// reports the number of shell sets that each call to compute() produces.
   unsigned int compute_nshellsets() const {
     const unsigned int num_operator_geometrical_derivatives =
-        (oper_ == Operator::nuclear) ? this->nparams() : 0;
+        (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
+         oper_ == Operator::erfc_nuclear)
+            ? this->nparams()
+            : 0;
     const auto ncenters = braket_rank() + num_operator_geometrical_derivatives;
     return nopers() * num_geometrical_derivatives(ncenters, deriv_order_);
   }
