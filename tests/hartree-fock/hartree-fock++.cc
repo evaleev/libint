@@ -75,9 +75,11 @@ Matrix compute_soad(const std::vector<Atom>& atoms);
 // computes norm of shell-blocks of A
 Matrix compute_shellblock_norm(const BasisSet& obs, const Matrix& A);
 
-template <Operator obtype>
+template <Operator obtype, typename OperatorParams = typename libint2::operator_traits<obtype>::oper_params_type>
 std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
-    const BasisSet& obs, const std::vector<Atom>& atoms = std::vector<Atom>());
+    const BasisSet& obs,
+    OperatorParams oparams =
+        OperatorParams());
 
 #if LIBINT2_DERIV_ONEBODY_ORDER
 template <Operator obtype>
@@ -288,7 +290,7 @@ int main(int argc, char* argv[]) {
     // compute one-body integrals
     auto S = compute_1body_ints<Operator::overlap>(obs)[0];
     auto T = compute_1body_ints<Operator::kinetic>(obs)[0];
-    auto V = compute_1body_ints<Operator::nuclear>(obs, atoms)[0];
+    auto V = compute_1body_ints<Operator::nuclear>(obs, libint2::make_point_charges(atoms))[0];
     Matrix H = T + V;
     T.resize(0, 0);
     V.resize(0, 0);
@@ -846,9 +848,9 @@ Matrix compute_shellblock_norm(const BasisSet& obs, const Matrix& A) {
   return Ash;
 }
 
-template <Operator obtype>
+template <Operator obtype, typename OperatorParams>
 std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
-    const BasisSet& obs, const std::vector<Atom>& atoms) {
+    const BasisSet& obs, OperatorParams oparams) {
   const auto n = obs.nbf();
   const auto nshells = obs.size();
   using libint2::nthreads;
@@ -861,12 +863,11 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
   // construct the 1-body integrals engine
   std::vector<libint2::Engine> engines(nthreads);
   engines[0] = libint2::Engine(obtype, obs.max_nprim(), obs.max_l(), 0);
+  // pass operator params to the engine, e.g.
   // nuclear attraction ints engine needs to know where the charges sit ...
   // the nuclei are charges in this case; in QM/MM there will also be classical
   // charges
-  if (obtype == Operator::nuclear) {
-    engines[0].set_params(libint2::make_point_charges(atoms));
-  }
+  engines[0].set_params(oparams);
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -2170,7 +2171,8 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
 #endif  // HAVE_DENSITY_FITTING
 
 // should be a unit test somewhere
-void api_basic_compile_test(const BasisSet& obs) {
+void api_basic_compile_test(const BasisSet& obs,
+                            const std::vector<Atom>& atoms) {
   using namespace libint2;
   Engine onebody_engine(
       Operator::overlap,  // will compute overlap ints
@@ -2230,6 +2232,21 @@ void api_basic_compile_test(const BasisSet& obs) {
     auto K =
         compute_schwarz_ints<Operator::erf_coulomb>(obs, obs, false, attenuation_omega);
     std::cout << "erf_coulomb Schwarz ints\n" << K << std::endl;
+  }
+  {
+    auto V = compute_1body_ints<Operator::nuclear>(
+        obs,
+        libint2::make_point_charges(atoms))[0];
+    std::cout << "nuclear ints\n" << V << std::endl;
+    auto V_erfc = compute_1body_ints<Operator::erfc_nuclear>(
+        obs,
+        std::make_tuple(attenuation_omega, libint2::make_point_charges(atoms)))[0];
+    std::cout << "erfc_nuclear ints\n" << V_erfc << std::endl;
+    auto V_erf = compute_1body_ints<Operator::erf_nuclear>(
+        obs,
+        std::make_tuple(attenuation_omega, libint2::make_point_charges(atoms)))[0];
+    std::cout << "erf_nuclear ints\n" << V_erf << std::endl;
+    std::cout << "V - (V_erfc + V_erf)" << Matrix(V - V_erfc - V_erf) << std::endl;
   }
 
   {  // test 2-index ints
