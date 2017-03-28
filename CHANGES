@@ -3,8 +3,13 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2017-xx-yy: 2.3.0-beta.5
-  - 
+- 2017-xx-yy: 2.3.0-beta.6
+  -
+
+- 2017-03-28: 2.3.0-beta.5
+  - now use bundled boost preprocessor only
+  - added erf- and erfc-attenuated Coulomb 1-body ints
+  - improved const-correctness of C++11 API
 
 - 2017-03-06: 2.3.0-beta.4
   - fixed include path handling of in-place vs. installed generated headers (HT https://github.com/mfherbst)
