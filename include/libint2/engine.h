@@ -177,7 +177,7 @@ struct operator_traits<Operator::nuclear>
   typedef std::vector<std::pair<real_t, std::array<real_t, 3>>>
       oper_params_type;
   static oper_params_type default_params() { return oper_params_type{}; }
-  typedef libint2::FmEval_Taylor<double, 7> core_eval_type;
+  typedef const libint2::FmEval_Taylor<double, 7> core_eval_type;
 };
 
 template <>
@@ -208,7 +208,7 @@ struct operator_traits<Operator::emultipole3>
 template <>
 struct operator_traits<Operator::coulomb>
     : public detail::default_operator_traits {
-  typedef libint2::FmEval_Chebyshev7<real_t> core_eval_type;
+  typedef const libint2::FmEval_Chebyshev7<real_t> core_eval_type;
 };
 namespace detail {
 template <int K>
@@ -230,14 +230,14 @@ struct operator_traits<Operator::delcgtg2>
 template <>
 struct operator_traits<Operator::delta>
     : public detail::default_operator_traits {
-  typedef libint2::GenericGmEval<libint2::os_core_ints::delta_gm_eval<real_t>>
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::delta_gm_eval<real_t>>
       core_eval_type;
 };
 
 template <>
 struct operator_traits<Operator::r12>
     : public detail::default_operator_traits {
-  typedef libint2::GenericGmEval<libint2::os_core_ints::r12_xx_K_gm_eval<real_t, 1>>
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::r12_xx_K_gm_eval<real_t, 1>>
       core_eval_type;
 };
 
@@ -249,7 +249,7 @@ struct operator_traits<Operator::erf_coulomb>
   static oper_params_type default_params() {
     return oper_params_type{0};
   }
-  typedef libint2::GenericGmEval<libint2::os_core_ints::erf_coulomb_gm_eval<real_t>>
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::erf_coulomb_gm_eval<real_t>>
       core_eval_type;
 };
 template <>
@@ -260,7 +260,7 @@ struct operator_traits<Operator::erfc_coulomb>
   static oper_params_type default_params() {
     return oper_params_type{0};
   }
-  typedef libint2::GenericGmEval<libint2::os_core_ints::erfc_coulomb_gm_eval<real_t>>
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::erfc_coulomb_gm_eval<real_t>>
       core_eval_type;
 };
 
@@ -743,6 +743,7 @@ class Engine {
   __libint2_engine_inline const std::vector<Engine::compute2_ptr_type>&
   compute2_ptrs() const;
 
+  // max_nprim=0 avoids resizing primdata_
   __libint2_engine_inline void initialize(size_t max_nprim = 0);
   // generic _initializer
   __libint2_engine_inline void _initialize();

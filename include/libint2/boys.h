@@ -267,14 +267,14 @@ namespace libint2 {
       }
 
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
-      static const std::shared_ptr<FmEval_Chebyshev7>& instance(int m_max, double = 0.0) {
+      static std::shared_ptr<const FmEval_Chebyshev7> instance(int m_max, double = 0.0) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::shared_ptr<FmEval_Chebyshev7>{};
+        static auto instance_ = std::shared_ptr<const FmEval_Chebyshev7>{};
 
         const bool need_new_instance = !instance_ || (instance_ && instance_->max_m() < m_max);
         if (need_new_instance) {
-          auto new_instance = std::make_shared<FmEval_Chebyshev7>(m_max);
+          auto new_instance = std::make_shared<const FmEval_Chebyshev7>(m_max);
           instance_ = new_instance; // thread-safe
         }
 
@@ -538,16 +538,16 @@ namespace libint2 {
 
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
-      static const std::shared_ptr<FmEval_Taylor>& instance(unsigned int mmax, Real precision) {
+      static std::shared_ptr<const FmEval_Taylor> instance(unsigned int mmax, Real precision) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::shared_ptr<FmEval_Taylor>{};
+        static auto instance_ = std::shared_ptr<const FmEval_Taylor>{};
 
         const bool need_new_instance = !instance_ ||
                                        (instance_ && (instance_->max_m() < mmax ||
                                                       instance_->precision() > precision));
         if (need_new_instance) {
-          auto new_instance = std::make_shared<FmEval_Taylor>(mmax, precision);
+          auto new_instance = std::make_shared<const FmEval_Taylor>(mmax, precision);
           instance_ = new_instance; // thread-safe
         }
 
@@ -1083,16 +1083,16 @@ namespace libint2 {
 
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
-      static const std::shared_ptr<GaussianGmEval>& instance(unsigned int mmax, Real precision) {
+      static std::shared_ptr<const GaussianGmEval> instance(unsigned int mmax, Real precision) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::shared_ptr<GaussianGmEval>{};
+        static auto instance_ = std::shared_ptr<const GaussianGmEval>{};
 
         const bool need_new_instance = !instance_ ||
                                        (instance_ && (instance_->max_m() < mmax ||
                                                       instance_->precision() > precision));
         if (need_new_instance) {
-          auto new_instance = std::make_shared<GaussianGmEval>(mmax, precision);
+          auto new_instance = std::make_shared<const GaussianGmEval>(mmax, precision);
           instance_ = new_instance; // thread-safe
         }
 
@@ -1213,7 +1213,7 @@ namespace libint2 {
     private:
       int mmax_;
       Real precision_; //< absolute precision
-      std::shared_ptr<FmEval_Taylor<Real>> fm_eval_;
+      std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;
 
       ExpensiveNumbers<Real> numbers_;
   };
@@ -1226,12 +1226,12 @@ namespace libint2 {
       GenericGmEval(int mmax, Real precision) : GmEvalFunction(mmax, precision),
           mmax_(mmax), precision_(precision) {}
 
-      static std::shared_ptr<GenericGmEval> instance(int mmax, Real precision = 0.0) {
-        return std::make_shared<GenericGmEval>(mmax, precision);
+      static std::shared_ptr<const GenericGmEval> instance(int mmax, Real precision = 0.0) {
+        return std::make_shared<const GenericGmEval>(mmax, precision);
       }
 
       template <typename Real, typename... ExtraArgs>
-      void eval(Real* Gm, Real rho, Real T, int mmax, ExtraArgs... args) {
+      void eval(Real* Gm, Real rho, Real T, int mmax, ExtraArgs... args) const {
         assert(mmax <= mmax_);
         (GmEvalFunction(*this))(Gm, rho, T, mmax, std::forward<ExtraArgs>(args)...);
       }
@@ -1280,7 +1280,7 @@ namespace libint2 {
     typedef Real value_type;
 
     delta_gm_eval(unsigned int, Real) {}
-    void operator()(Real* Gm, Real rho, Real T, int mmax) {
+    void operator()(Real* Gm, Real rho, Real T, int mmax) const {
       constexpr static auto one_over_two_pi = 1.0 / (2.0 * M_PI);
       const auto G0 = exp(-T) * rho * one_over_two_pi;
       std::fill(Gm, Gm + mmax + 1, G0);
@@ -1319,7 +1319,7 @@ namespace libint2 {
     }
 
    private:
-    std::shared_ptr<FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+    std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;  // need for odd K
   };
 
   /// core integral evaluator for \f$ \mathrm{erf}(\omega r) / r \f$ kernel
@@ -1330,7 +1330,7 @@ namespace libint2 {
     erf_coulomb_gm_eval(unsigned int mmax, Real precision) {
       fm_eval_ = FmEval_Taylor<Real>::instance(mmax, precision);
     }
-    void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega) {
+    void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega) const {
       if (omega > 0) {
         auto omega2 = omega * omega;
         auto omega2_over_omega2_plus_rho = omega2 / (omega2 + rho);
@@ -1350,7 +1350,7 @@ namespace libint2 {
     }
 
      private:
-      std::shared_ptr<FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+      std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;  // need for odd K
   };
 
   /// core integral evaluator for \f$ \mathrm{erfc}(\omega r) / r \f$ kernel
@@ -1385,7 +1385,7 @@ namespace libint2 {
     }
 
      private:
-      std::shared_ptr<FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+      std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;  // need for odd K
   };
 
   }  // namespace os_core_ints
