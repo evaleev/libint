@@ -160,12 +160,13 @@ struct default_operator_traits {
   } oper_params_type;
   static oper_params_type default_params() { return oper_params_type{}; }
   static constexpr auto nopers = 1u;
-  typedef struct _core_eval_type {
+  struct _core_eval_type {
     template <typename... params>
-    static std::shared_ptr<_core_eval_type> instance(params...) {
+    static std::shared_ptr<const _core_eval_type> instance(params...) {
       return nullptr;
     }
-  } core_eval_type;
+  };
+  using core_eval_type = const _core_eval_type;
 };
 }  // namespace detail
 

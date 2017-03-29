@@ -1009,8 +1009,9 @@ namespace libint2 {
 
     /// some evaluators need thread-local scratch, but most don't
     template <typename CoreEval> struct CoreEvalScratch {
-        CoreEvalScratch() = default;
-        CoreEvalScratch(int) { }
+      CoreEvalScratch(const CoreEvalScratch&) = default;
+      CoreEvalScratch(CoreEvalScratch&&) = default;
+      explicit CoreEvalScratch(int) { }
     };
     /// GaussianGmEval<Real,-1> needs extra scratch data
     template <typename Real>
@@ -1019,8 +1020,9 @@ namespace libint2 {
       std::vector<Real> g_i;
       std::vector<Real> r_i;
       std::vector<Real> oorhog_i;
-      CoreEvalScratch() = default;
-      CoreEvalScratch(int mmax) {
+      CoreEvalScratch(const CoreEvalScratch&) = default;
+      CoreEvalScratch(CoreEvalScratch&&) = default;
+      explicit CoreEvalScratch(int mmax) {
         init(mmax);
       }
       private:
@@ -1083,16 +1085,16 @@ namespace libint2 {
 
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
-      static std::shared_ptr<const GaussianGmEval> instance(unsigned int mmax, Real precision) {
+      static std::shared_ptr<GaussianGmEval> instance(unsigned int mmax, Real precision) {
 
         // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::shared_ptr<const GaussianGmEval>{};
+        static auto instance_ = std::shared_ptr<GaussianGmEval>{};
 
         const bool need_new_instance = !instance_ ||
                                        (instance_ && (instance_->max_m() < mmax ||
                                                       instance_->precision() > precision));
         if (need_new_instance) {
-          auto new_instance = std::make_shared<const GaussianGmEval>(mmax, precision);
+          auto new_instance = std::make_shared<GaussianGmEval>(mmax, precision);
           instance_ = new_instance; // thread-safe
         }
 
@@ -1257,7 +1259,8 @@ namespace libint2 {
   template <typename Real>
   struct CoreEvalScratch<os_core_ints::r12_xx_K_gm_eval<Real, 1>> {
     std::vector<Real> Fm_;
-    CoreEvalScratch() = default;
+    CoreEvalScratch(const CoreEvalScratch&) = default;
+    CoreEvalScratch(CoreEvalScratch&&) = default;
     // need to store Fm(T) for m = 0 .. mmax+1
     explicit CoreEvalScratch(int mmax) { Fm_.resize(mmax+2); }
   };
@@ -1265,7 +1268,8 @@ namespace libint2 {
   template <typename Real>
   struct CoreEvalScratch<os_core_ints::erfc_coulomb_gm_eval<Real>> {
     std::vector<Real> Fm_;
-    CoreEvalScratch() = default;
+    CoreEvalScratch(const CoreEvalScratch&) = default;
+    CoreEvalScratch(CoreEvalScratch&&) = default;
     // need to store Fm(T) for m = 0 .. mmax
     explicit CoreEvalScratch(int mmax) { Fm_.resize(mmax+1); }
   };
