@@ -190,7 +190,7 @@ namespace libint2 {
         return result;
       }
 
-      // see http://www.gaussian.com/g_tech/g_ur/m_basis_sets.htm
+      // see http://gaussian.com/basissets/
       bool gaussian_cartesian_d_convention(const std::string& canonical_name) {
         // 3-21??g??, 4-31g??
         if (canonical_name.find("3-21")    == 0 ||
