@@ -1,6 +1,7 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2016 Edward F. Valeev
+ *  Copyright (C) 2004-2017 Edward F. Valeev
+
+ *  This file is part of Libint.
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Library General Public License, version 2,
