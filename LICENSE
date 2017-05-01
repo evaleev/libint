@@ -1,18 +1,17 @@
-LIBINT - a library for the evaluation of molecular integrals of two-body
+Libint (version 1) - a library for the evaluation of molecular integrals of two-body
 operators over Gaussian functions
-Copyright (C) 1996-2014 Edward F. Valeev and Justin T. Fermann 
+Copyright (C) 1996-2017 Edward F. Valeev and Justin T. Fermann
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
+Most of the source code of the Libint code generator
+can be redistributed and/or modified under the terms of the GNU General Public License, version 3,
+as published by the Free Software Foundation (see the accompanying file COPYING;
+if you did not receive this file refer to <http://www.gnu.org/licenses/>).
+The rest of Libint, including the generated source, can be distributed under
+the GNU Lesser General Public License, version 3, (see the file COPYING.LESSER,
+or <http://www.gnu.org/licenses/>). The applicable license is specified in each
+source file. If not indicated, the applicable license is GNU LGPL, version 3 (not GPL).
 
-This program is distributed in the hope that it will be useful,
+Libint is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-

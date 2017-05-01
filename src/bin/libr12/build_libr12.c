@@ -1,3 +1,23 @@
+/*
+ *  Copyright (C) 1996-2017 Edward F. Valeev and Justin T. Fermann
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 /*---------------------------------------------------------------------------------------------
   This code generates Level 0 and 1 routines for computing non-standard two-electron integrals
   necessary in linear R12-methods. Evaluation is performed in Cartesian environment
@@ -21,6 +41,7 @@
 #include <stdlib.h>
 #include <libr12/build_libr12.h>
 #include <constants.h>
+#include <copyright.h>
 #include <libint_config.h>
 
 FILE *outfile, *vrr_header, *hrr_header, *libr12_header, *init_code;
@@ -53,6 +74,10 @@ int main()
   vrr_header = fopen("./r12_vrr_header.h","w");
   libr12_header = fopen("./libr12.h","w");
   init_code = fopen("./init_libr12.cc","w");
+  copyright(hrr_header);
+  copyright(vrr_header);
+  copyright(libr12_header);
+  copyright(init_code);
 
   /*----------------------------------------
     Getting the new_am from user and making

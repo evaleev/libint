@@ -1,9 +1,30 @@
+/*
+ *  Copyright (C) 1996-2017 Edward F. Valeev and Justin T. Fermann
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <libint/build_libint.h>
 #include <constants.h>
+#include <copyright.h>
 
 extern FILE *outfile, *vrr_header;
 extern void punt(char *);
@@ -110,6 +131,7 @@ void emit_vrr_build_macro()
       sprintf(function_name,"build_%c0%c0",am_letter[la],am_letter[lc]);
       sprintf(code_name,"build_%c0%c0.h",am_letter[la],am_letter[lc]);
       code = fopen(code_name,"w");
+      copyright(code);
 
       /*target
         |I0[],I1[]

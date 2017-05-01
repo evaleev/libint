@@ -1,7 +1,28 @@
+/*
+ *  Copyright (C) 1996-2017 Edward F. Valeev and Justin T. Fermann
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include <math.h>
 #include <stdio.h>
 #include <libderiv/build_libderiv.h>
 #include <constants.h>
+#include <copyright.h>
 
 extern FILE *outfile, *libint_src, *d1hrr_header;
 extern LibderivParams_t Params;
@@ -53,6 +74,7 @@ void emit_d1hrr_build_macro()
       sprintf(function_name,"d1hrr3_build_%c%c",am_letter[am_in[0]],am_letter[am_in[1]]);
       sprintf(code_name,"d1hrr3_build_%c%c.h",am_letter[am_in[0]],am_letter[am_in[1]]);
       code = fopen(code_name,"w");
+      copyright(code);
 
       fprintf(code,"#ifndef _libderiv_%s\n",function_name);
       fprintf(code,"#define _libderiv_%s\n",function_name);
@@ -133,6 +155,7 @@ void emit_d1hrr_build_macro()
       sprintf(function_name,"d1hrr1_build_%c%c",am_letter[am_in[0]],am_letter[am_in[1]]);
       sprintf(code_name,"d1hrr1_build_%c%c.h",am_letter[am_in[0]],am_letter[am_in[1]]);
       code = fopen(code_name,"w");
+      copyright(code);
 
       fprintf(code,"#ifndef _libderiv_%s\n",function_name);
       fprintf(code,"#define _libderiv_%s\n",function_name);

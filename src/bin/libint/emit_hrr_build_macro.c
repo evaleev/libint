@@ -1,7 +1,28 @@
+/*
+ *  Copyright (C) 1996-2017 Edward F. Valeev and Justin T. Fermann
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include <math.h>
 #include <stdio.h>
 #include <libint/build_libint.h>
 #include <constants.h>
+#include <copyright.h>
 
 extern FILE *outfile, *hrr_header;
 extern LibintParams_t Params;
@@ -71,6 +92,7 @@ void emit_hrr_build_macro()
       sprintf(function_name,"hrr3_build_%c%c",am_letter[am_in[0]],am_letter[am_in[1]]);
       sprintf(code_name,"%s.h",function_name);
       code = fopen(code_name,"w");
+      copyright(code);
 
       fprintf(code,"#ifndef _libint_%s\n",function_name);
       fprintf(code,"#define _libint_%s\n",function_name);
@@ -152,6 +174,8 @@ void emit_hrr_build_macro()
       sprintf(function_name,"hrr1_build_%c%c",am_letter[am_in[0]],am_letter[am_in[1]]);
       sprintf(code_name,"%s.h",function_name);
       code = fopen(code_name,"w");
+      copyright(code);
+
       fprintf(code,"#ifndef _libint_%s\n",function_name);
       fprintf(code,"#define _libint_%s\n",function_name);
       fprintf(code,"  /* This machine-generated function computes a quartet of (%c%c| integrals */\n\n",

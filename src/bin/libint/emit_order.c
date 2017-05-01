@@ -1,3 +1,23 @@
+/*
+ *  Copyright (C) 1996-2017 Edward F. Valeev and Justin T. Fermann
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 /*------------------------------------------------------------------------------------------------------
   Builds a library of functions-calls for applying HRR and VRR
  ------------------------------------------------------------------------------------------------------*/
@@ -8,6 +28,7 @@
 #include <libint/mem_man.h>
 #include <libint/build_libint.h>
 #include <constants.h>
+#include <copyright.h>
 #define MAXNODE 20000
 #define NONODE -1000000
 #define SSSSNODE -1111
@@ -137,6 +158,10 @@ void emit_order()
       vrr_code = fopen(vrr_code_name,"w");
       inline_vrr_list = fopen(inline_vrr_list_name,"w");
       inline_hrr_list = fopen(inline_hrr_list_name,"w");
+      copyright(hrr_code);
+      copyright(vrr_code);
+      copyright(inline_hrr_list);
+      copyright(inline_vrr_list);
 
       /*-----------------------------------
 	Write the overhead to the HRR code

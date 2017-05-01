@@ -1,3 +1,23 @@
+/*
+ *  Copyright (C) 1996-2017 Edward F. Valeev and Justin T. Fermann
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 /*------------------------------------------------------------------------------------------------------
                                            BUILD_LIBINT
   		       Written by Dr. Justin T. Fermann and Edward F. Valeev
@@ -30,6 +50,7 @@
 #include <string.h>
 #include <libint/build_libint.h>
 #include <constants.h>
+#include <copyright.h>
 #include <libint_config.h>
 
 /* Global data */
@@ -64,6 +85,10 @@ int main()
   hrr_header = fopen("./hrr_header.h","w");
   libint_header = fopen("./libint.h","w");
   init_code = fopen("./init_libint.cc","w");
+  copyright(vrr_header);
+  copyright(hrr_header);
+  copyright(libint_header);
+  copyright(init_code);
 
   new_am = LIBINT_MAX_AM;
   if (new_am <= 0)

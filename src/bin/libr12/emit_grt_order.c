@@ -1,3 +1,23 @@
+/*
+ *  Copyright (C) 1996-2017 Edward F. Valeev and Justin T. Fermann
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 /*------------------------------------------------------------------------------------------------------
   Builds a library of functions-calls for applying HRR and VRR
  ------------------------------------------------------------------------------------------------------*/
@@ -6,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libr12/mem_man.h>
+#include <copyright.h>
 #include <libint_config.h>
 #include <libr12/build_libr12.h>
 #include <constants.h>
@@ -125,6 +146,8 @@ int emit_grt_order()
       vrr_code_name[16] = am_letter[lc-ld];
       vrr_code_name[17] = am_letter[ld];
       vrr_code = fopen(vrr_code_name,"w");
+      copyright(hrr_code);
+      copyright(vrr_code);
 
       /*-----------------------------------
 	Write the overhead to the HRR code

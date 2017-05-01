@@ -1,5 +1,5 @@
-define([libint_mmm_version],[1.1.6])
-define([libint_buildid],[stable])
+define([libint_mmm_version],[1.2.0])
+define([libint_buildid],[])
 define([libint_so_version],[1:0:0])
 
 dnl Process this file with autoconf to produce a configure script.
