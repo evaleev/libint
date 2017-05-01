@@ -33,15 +33,12 @@
 #include <unordered_map>
 #include <vector>
 
-// Eigen matrix algebra library
-#include <Eigen/Cholesky>
-#include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
-
 // have BTAS library?
 #ifdef LIBINT2_HAVE_BTAS
-#include <btas/btas.h>
-#endif  // LIBINT2_HAVE_BTAS
+# include <btas/btas.h>
+#else  // LIBINT2_HAVE_BTAS
+# error "libint2::lcao requires BTAS"
+#endif
 
 // Libint Gaussian integrals library
 #include <libint2/diis.h>
@@ -53,9 +50,12 @@
 #include <omp.h>
 #endif
 
-// uncomment if want to report integral timings
-// N.B. integral engine timings are controled in engine.h
-#define REPORT_INTEGRAL_TIMINGS
+typedef btas::RangeNd<CblasRowMajor, std::array<long, 2>> Range2;
+typedef btas::RangeNd<CblasRowMajor, std::array<long, 3>> Range3;
+typedef btas::RangeNd<CblasRowMajor, std::array<long, 4>> Range4;
+typedef btas::Tensor<double, Range2> Tensor2d;
+typedef btas::Tensor<double, Range3> Tensor3d;
+typedef btas::Tensor<double, Range3> Tensor4d;
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
     Matrix;  // import dense, dynamically sized Matrix type from Eigen;
@@ -66,27 +66,25 @@ typedef Eigen::DiagonalMatrix<double, Eigen::Dynamic, Eigen::Dynamic>
     DiagonalMatrix;
 
 using libint2::Shell;
-using libint2::Atom;
+using libint2::libint2::Atom;
 using libint2::BasisSet;
 using libint2::Operator;
 using libint2::BraKet;
 
-std::vector<Atom> read_geometry(const std::string& filename);
-Matrix compute_soad(const std::vector<Atom>& atoms);
+std::vector<libint2::Atom> read_geometry(const std::string& filename);
+Matrix compute_soad(const std::vector<libint2::Atom>& atoms);
 // computes norm of shell-blocks of A
 Matrix compute_shellblock_norm(const BasisSet& obs, const Matrix& A);
 
-template <Operator obtype, typename OperatorParams = typename libint2::operator_traits<obtype>::oper_params_type>
+template <Operator obtype>
 std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
-    const BasisSet& obs,
-    OperatorParams oparams =
-        OperatorParams());
+    const BasisSet& obs, const std::vector<libint2::Atom>& atoms = std::vector<libint2::Atom>());
 
 #if LIBINT2_DERIV_ONEBODY_ORDER
 template <Operator obtype>
 std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
                                              const BasisSet& obs,
-                                             const std::vector<Atom>& atoms);
+                                             const std::vector<libint2::Atom>& atoms);
 #endif  // LIBINT2_DERIV_ONEBODY_ORDER
 
 template <libint2::Operator Kernel = libint2::Operator::coulomb>
@@ -128,7 +126,7 @@ Matrix compute_2body_fock_general(
 #if LIBINT2_DERIV_ERI_ORDER
 template <unsigned deriv_order>
 std::vector<Matrix> compute_2body_fock_deriv(
-    const BasisSet& obs, const std::vector<Atom>& atoms,
+    const BasisSet& obs, const std::vector<libint2::Atom>& atoms,
     const Matrix& D,
     double precision = std::numeric_limits<
         double>::epsilon(),  // discard contributions smaller than this
@@ -207,7 +205,7 @@ int main(int argc, char* argv[]) {
     do_density_fitting = (argc > 3);
     const auto dfbasisname = do_density_fitting ? argv[3] : "";
 #endif
-    std::vector<Atom> atoms = read_geometry(filename);
+    std::vector<libint2::Atom> atoms = read_geometry(filename);
 
     // set up thread pool
     {
@@ -253,7 +251,7 @@ int main(int argc, char* argv[]) {
 
     libint2::Shell::do_enforce_unit_normalization(false);
 
-    cout << "Atomic Cartesian coordinates (a.u.):" << endl;
+    cout << "libint2::Atomic Cartesian coordinates (a.u.):" << endl;
     for (const auto& a : atoms)
       std::cout << a.atomic_number << " " << a.x << " " << a.y << " " << a.z
                 << std::endl;
@@ -350,7 +348,7 @@ int main(int argc, char* argv[]) {
     }
 
     // pre-compute data for Schwarz bounds
-    auto K = compute_schwarz_ints<>(obs);
+    auto K = compute_schwarz_ints<>(obs, BasisSet(), true);
 
 // prepare for density fitting
 #ifdef HAVE_DENSITY_FITTING
@@ -773,7 +771,7 @@ int main(int argc, char* argv[]) {
   return 0;
 }
 
-std::vector<Atom> read_geometry(const std::string& filename) {
+std::vector<libint2::Atom> read_geometry(const std::string& filename) {
   std::cout << "Will read geometry from " << filename << std::endl;
   std::ifstream is(filename);
   if (not is.good()) {
@@ -802,11 +800,11 @@ std::vector<Atom> read_geometry(const std::string& filename) {
     throw "only .xyz files are accepted";
 }
 
-// computes Superposition-Of-Atomic-Densities guess for the molecular density
+// computes Superposition-Of-libint2::Atomic-Densities guess for the molecular density
 // matrix
 // in minimal basis; occupies subshells by smearing electrons evenly over the
 // orbitals
-Matrix compute_soad(const std::vector<Atom>& atoms) {
+Matrix compute_soad(const std::vector<libint2::Atom>& atoms) {
   // compute number of atomic orbitals
   size_t nao = 0;
   for (const auto& atom : atoms) {
@@ -851,7 +849,7 @@ Matrix compute_shellblock_norm(const BasisSet& obs, const Matrix& A) {
 
 template <Operator obtype, typename OperatorParams>
 std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
-    const BasisSet& obs, OperatorParams oparams) {
+    const BasisSet& obs, OperatorParams params) {
   const auto n = obs.nbf();
   const auto nshells = obs.size();
   using libint2::nthreads;
@@ -864,11 +862,13 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
   // construct the 1-body integrals engine
   std::vector<libint2::Engine> engines(nthreads);
   engines[0] = libint2::Engine(obtype, obs.max_nprim(), obs.max_l(), 0);
-  // pass operator params to the engine, e.g.
   // nuclear attraction ints engine needs to know where the charges sit ...
   // the nuclei are charges in this case; in QM/MM there will also be classical
   // charges
-  engines[0].set_params(oparams);
+  if (obtype == Operator::nuclear || obtype == Operator::erf_nuclear ||
+      obtype == Operator::erfc_nuclear) {
+    engines[0].set_params(params);
+  }
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -885,9 +885,9 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
     for (auto s1 = 0l, s12 = 0l; s1 != nshells; ++s1) {
       auto bf1 = shell2bf[s1];  // first basis function in this shell
       auto n1 = obs[s1].size();
-
       auto s1_offset = s1 * (s1+1) / 2;
-      for (auto s2: obs_shellpair_list[s1]) {
+
+      for(auto s2: obs_shellpair_list[s1]) {
         auto s12 = s1_offset + s2;
         if (s12 % nthreads != thread_id) continue;
 
@@ -921,7 +921,7 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
 template <Operator obtype>
 std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
                                              const BasisSet& obs,
-                                             const std::vector<Atom>& atoms) {
+                                             const std::vector<libint2::Atom>& atoms) {
   using libint2::nthreads;
   const auto n = obs.nbf();
   const auto nshells = obs.size();
@@ -973,7 +973,7 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
       assert(atom1 != -1);
 
       auto s1_offset = s1 * (s1+1) / 2;
-      for (auto s2: obs_shellpair_list[s1]) {
+      for(auto s2: obs_shellpair_list[s1]) {
         auto s12 = s1_offset + s2;
         if (s12 % nthreads != thread_id) continue;
 
@@ -1175,11 +1175,10 @@ Matrix compute_schwarz_ints(
         assert(buf[0] != nullptr &&
                "to compute Schwarz ints turn off primitive screening");
 
-        // to apply Schwarz inequality to individual integrals must use the diagonal elements
-        // to apply it to sets of functions (e.g. shells) use the whole shell-set of ints here
+        // the diagonal elements are the Schwarz ints ... use Map.diagonal()
         Eigen::Map<const Matrix> buf_mat(buf[0], n12, n12);
-        auto norm2 = use_2norm ? buf_mat.norm()
-                               : buf_mat.lpNorm<Eigen::Infinity>();
+        auto norm2 = use_2norm ? buf_mat.diagonal().norm()
+                               : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
         K(s1, s2) = std::sqrt(norm2);
         if (bs1_equiv_bs2) K(s2, s1) = K(s1, s2);
       }
@@ -1546,6 +1545,9 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
             timer.stop(0);
 #endif
 
+            Eigen::Map<MatrixXd> buf_1234_map(buf_1234, n12, n34);
+            assert(buf_1234_map.norm() < Schwarz(s1, s2) * Schwarz(s3, s4));
+
             // 1) each shell set of integrals contributes up to 6 shell sets of
             // the Fock matrix:
             //    F(a,b) += (ab|cd) * D(c,d)
@@ -1615,7 +1617,7 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
 #if LIBINT2_DERIV_ERI_ORDER
 template <unsigned deriv_order>
 std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
-                                             const std::vector<Atom>& atoms,
+                                             const std::vector<libint2::Atom>& atoms,
                                              const Matrix& D, double precision,
                                              const Matrix& Schwarz) {
   const auto n = obs.nbf();
@@ -2172,8 +2174,7 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
 #endif  // HAVE_DENSITY_FITTING
 
 // should be a unit test somewhere
-void api_basic_compile_test(const BasisSet& obs,
-                            const std::vector<Atom>& atoms) {
+void api_basic_compile_test(const BasisSet& obs) {
   using namespace libint2;
   Engine onebody_engine(
       Operator::overlap,  // will compute overlap ints
@@ -2222,32 +2223,6 @@ void api_basic_compile_test(const BasisSet& obs,
     auto K =
         compute_schwarz_ints<Operator::delcgtg2>(obs, obs, false, cgtg_params);
     std::cout << "||Del.cGTG||^2 Schwarz ints\n" << K << std::endl;
-  }
-  double attenuation_omega = 1.0;
-  {
-    auto K =
-        compute_schwarz_ints<Operator::erfc_coulomb>(obs, obs, false, attenuation_omega);
-    std::cout << "erfc_coulomb Schwarz ints\n" << K << std::endl;
-  }
-  {
-    auto K =
-        compute_schwarz_ints<Operator::erf_coulomb>(obs, obs, false, attenuation_omega);
-    std::cout << "erf_coulomb Schwarz ints\n" << K << std::endl;
-  }
-  {
-    auto V = compute_1body_ints<Operator::nuclear>(
-        obs,
-        libint2::make_point_charges(atoms))[0];
-    std::cout << "nuclear ints\n" << V << std::endl;
-    auto V_erfc = compute_1body_ints<Operator::erfc_nuclear>(
-        obs,
-        std::make_tuple(attenuation_omega, libint2::make_point_charges(atoms)))[0];
-    std::cout << "erfc_nuclear ints\n" << V_erfc << std::endl;
-    auto V_erf = compute_1body_ints<Operator::erf_nuclear>(
-        obs,
-        std::make_tuple(attenuation_omega, libint2::make_point_charges(atoms)))[0];
-    std::cout << "erf_nuclear ints\n" << V_erf << std::endl;
-    std::cout << "V - (V_erfc + V_erf)" << Matrix(V - V_erfc - V_erf) << std::endl;
   }
 
   {  // test 2-index ints
