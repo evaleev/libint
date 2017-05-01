@@ -80,7 +80,6 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/eri/test.cc $(TOPDIR)/$(EXPORTDIR)/tests/eri/test.cc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/test_eri/eri.h $(TOPDIR)/$(EXPORTDIR)/tests/eri/eri.h
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/test_eri/prep_libint2.h $(TOPDIR)/$(EXPORTDIR)/tests/eri/prep_libint2.h
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/libint/deriv_iter.h $(TOPDIR)/$(EXPORTDIR)/tests/eri/deriv_iter.h
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock.cc $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock.cc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock++.cc $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock++.cc
