@@ -1052,6 +1052,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   const std::string tlabel = taskmgr.current().label();
 
+  decl << context->copyright();
   decl << context->std_header();
   std::string comment("This code computes "); comment += label; comment += "\n";
   if (context->comments_on())
@@ -1073,6 +1074,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   // Generate function's definition
   //
 
+  def << context->copyright();
   // include standard headers
   def << context->std_header();
   // include declarations for all function calls:

@@ -50,6 +50,8 @@ namespace libint2 {
     virtual std::string code_prefix() const =0;
     /// produces postfix to function declarations or definitions
     virtual std::string code_postfix() const =0;
+    /// copyright() returns the copyright statement
+    virtual std::string copyright() const =0;
     /// std_header() returns declarations necessary for every source file
     virtual std::string std_header() const =0;
     /// std_function_header() returns declarations and definitions necessary for every function
@@ -211,6 +213,8 @@ namespace libint2 {
     std::string code_prefix() const;
     /// Implementation of CodeContext::code_postfix()
     std::string code_postfix() const;
+    /// Implementation of CodeContext::copyright()
+    std::string copyright() const;
     /// Implementation of CodeContext::std_header()
     std::string std_header() const;
     /// Implementation of CodeContext::std_function_header()

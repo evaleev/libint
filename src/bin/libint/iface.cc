@@ -57,6 +57,14 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   sc_((cparams_->source_directory() + sc_name).c_str()),
   li_((cparams_->source_directory() + li_name).c_str())
 {
+  th_ << ctext_->copyright();
+  ph_ << ctext_->copyright();
+  ih_ << ctext_->copyright();
+  ii_ << ctext_->copyright();
+  si_ << ctext_->copyright();
+  sc_ << ctext_->copyright();
+  li_ << ctext_->copyright();
+
   header_guard_open(th_,"libint2types");
   header_guard_open(ph_,"libint2params");
   header_guard_open(ih_,"libint2iface");
