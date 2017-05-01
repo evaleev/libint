@@ -9,7 +9,7 @@ if you did not receive this file refer to http://www.gnu.org/licenses/).
 The rest of Libint, including the generated source, can be distributed under
 the GNU Lesser General Public License, version 3, (see the file COPYING.LESSER,
 or http://www.gnu.org/licenses/). The applicable license is specified in each
-source file. If not indicated, the applicable license is GNU GPL, version 3 (not LGPL).
+source file. If not indicated, the applicable license is GNU LGPL, version 3 (not GPL).
 
 Libint is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
