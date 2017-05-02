@@ -6,8 +6,10 @@ Following is a brief summary of changes made in each release of Libint.
 - 2017-xx-yy: 2.4.0
   -
 
-- 2017-04-28: 2.3.0
+- 2017-05-02: 2.3.0
   - bumped the compiler source license to GPLv3, generated code is LGPLv3.
+  - replaced non-standard-conforming libint2::any with a homegrown C++17-conforming any;
+    std::any is used if available.
   
 - 2017-03-29: 2.3.0-beta.6
   - minor bug fixes introduced in beta.5
