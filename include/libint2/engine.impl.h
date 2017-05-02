@@ -795,7 +795,7 @@ __libint2_engine_inline any Engine::make_core_eval_pack(Operator oper) const {
         libint2::detail::CoreEvalScratch<                                    \
             operator_traits<static_cast<Operator>(i)>::core_eval_type>(      \
             braket_rank() * lmax_ + deriv_order_));                          \
-    assert(any_cast<detail::core_eval_pack_type<static_cast<Operator>(i)>*>( \
+    assert(any_cast<detail::core_eval_pack_type<static_cast<Operator>(i)>>( \
                &result) != nullptr);                                         \
     break;
 
