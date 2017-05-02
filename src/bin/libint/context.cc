@@ -1,7 +1,7 @@
 /*
  *  Copyright (C) 2004-2017 Edward F. Valeev
  *
- * This file is part of Libint.
+ *  This file is part of Libint.
  *
  *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -217,7 +217,7 @@ CppCodeContext::copyright() const {
   oss << "/*"<< endl
       << " *  Copyright (C) 2004-2017 Edward F. Valeev" << endl
       << " *" << endl
-      << " *  This file is part of Libint." << endl
+ *  This file is part of Libint." << endl
       << " *" << endl
       << " *  Libint is free software: you can redistribute it and/or modify" << endl
       << " *  it under the terms of the GNU Lesser General Public License as published by" << endl
