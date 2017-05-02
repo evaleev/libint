@@ -708,11 +708,11 @@ Engine::compute2_ptrs() const {
 __libint2_engine_inline unsigned int Engine::nparams() const {
   switch (oper_) {
     case Operator::nuclear:
-      return params_.as<operator_traits<Operator::nuclear>::oper_params_type>()
+      return any_cast<const operator_traits<Operator::nuclear>::oper_params_type&>(params_)
           .size();
     case Operator::erf_nuclear:
     case Operator::erfc_nuclear:
-      return std::get<1>(params_.as<operator_traits<Operator::erfc_nuclear>::oper_params_type>())
+      return std::get<1>(any_cast<const operator_traits<Operator::erfc_nuclear>::oper_params_type&>(params_))
           .size();
     default:
       return 1;
@@ -738,15 +738,15 @@ __libint2_engine_inline any Engine::enforce_params_type<any>(
     Operator oper, const any& params, bool throw_if_wrong_type) {
   any result;
   switch (static_cast<int>(oper)) {
-#define BOOST_PP_NBODYENGINE_MCR5A(r, data, i, elem)                        \
-  case i:                                                                   \
-    if (params.is<operator_traits<static_cast<Operator>(                    \
-                                 i)>::oper_params_type>()) {                \
-      result = params;                                                      \
-    } else {                                                                \
-      if (throw_if_wrong_type) throw std::bad_cast();                       \
-      result = operator_traits<static_cast<Operator>(i)>::default_params(); \
-    }                                                                       \
+#define BOOST_PP_NBODYENGINE_MCR5A(r, data, i, elem)                           \
+  case i:                                                                      \
+    if (any_cast<operator_traits<static_cast<Operator>(i)>::oper_params_type>( \
+            &params) != nullptr) {                                             \
+      result = params;                                                         \
+    } else {                                                                   \
+      if (throw_if_wrong_type) throw bad_any_cast();                           \
+      result = operator_traits<static_cast<Operator>(i)>::default_params();    \
+    }                                                                          \
     break;
 
     BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR5A, _,
@@ -814,7 +814,7 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
     // (a+b) r_{12}^2) )
     // i.e. need to scale each coefficient by 4 a b
     auto oparams =
-        params.as<operator_traits<Operator::delcgtg2>::oper_params_type>();
+        any_cast<const operator_traits<Operator::delcgtg2>::oper_params_type&>(params);
     const auto ng = oparams.size();
     operator_traits<Operator::delcgtg2>::oper_params_type core_ints_params;
     core_ints_params.reserve(ng * (ng + 1) / 2);
@@ -890,8 +890,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 
   if (oper_ == Operator::emultipole1 || oper_ == Operator::emultipole2 ||
       oper_ == Operator::emultipole3) {
-    auto& O = params_.as<operator_traits<
-        Operator::emultipole1>::oper_params_type>();  // same as emultipoleX
+    const auto& O = any_cast<const operator_traits<
+        Operator::emultipole1>::oper_params_type&>(params_);  // same as emultipoleX
 #if LIBINT2_DEFINED(eri, BO_x)
     primdata.BO_x[0] = B[0] - O[0];
 #endif
@@ -928,9 +928,9 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 
   if (oper_is_nuclear) {
 
-    auto& params = (oper_ == Operator::nuclear) ?
-        params_.as<operator_traits<Operator::nuclear>::oper_params_type>() :
-        std::get<1>(params_.as<operator_traits<Operator::erfc_nuclear>::oper_params_type>());
+    const auto& params = (oper_ == Operator::nuclear) ?
+        any_cast<const operator_traits<Operator::nuclear>::oper_params_type&>(params_) :
+        std::get<1>(any_cast<const operator_traits<Operator::erfc_nuclear>::oper_params_type&>(params_));
 
     const auto& C = params[oset].second;
     const auto& q = params[oset].first;
@@ -975,26 +975,24 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
     auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
     if (oper_ == Operator::nuclear) {
       auto fm_engine_ptr =
-          core_eval_pack_.as<detail::core_eval_pack_type<Operator::nuclear>>()
+          any_cast<const detail::core_eval_pack_type<Operator::nuclear>&>(core_eval_pack_)
           .first();
       fm_engine_ptr->eval(fm_ptr, U, mmax);
     } else if (oper_ == Operator::erf_nuclear) {
       const auto& core_eval_ptr =
-          core_eval_pack_
-            .as<detail::core_eval_pack_type<Operator::erf_nuclear>>()
+          any_cast<const detail::core_eval_pack_type<Operator::erf_nuclear>&>(core_eval_pack_)
             .first();
       auto core_ints_params =
-          std::get<0>(core_ints_params_.as<typename operator_traits<
-            Operator::erf_nuclear>::oper_params_type>());
+          std::get<0>(any_cast<const typename operator_traits<
+            Operator::erf_nuclear>::oper_params_type&>(core_ints_params_));
       core_eval_ptr->eval(fm_ptr, rhop, U, mmax, core_ints_params);
     } else if (oper_ == Operator::erfc_nuclear) {
       const auto& core_eval_ptr =
-          core_eval_pack_
-            .as<detail::core_eval_pack_type<Operator::erfc_nuclear>>()
+          any_cast<const detail::core_eval_pack_type<Operator::erfc_nuclear>&>(core_eval_pack_)
             .first();
       auto core_ints_params =
-          std::get<0>(core_ints_params_.as<typename operator_traits<
-            Operator::erfc_nuclear>::oper_params_type>());
+          std::get<0>(any_cast<const typename operator_traits<
+            Operator::erfc_nuclear>::oper_params_type&>(core_ints_params_));
       core_eval_ptr->eval(fm_ptr, rhop, U, mmax, core_ints_params);
     }
 
@@ -1177,79 +1175,70 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
               switch (oper) {
                 case Operator::coulomb: {
                   const auto& core_eval_ptr =
-                      core_eval_pack_
-                          .as<detail::core_eval_pack_type<Operator::coulomb>>()
+                      any_cast<const detail::core_eval_pack_type<Operator::coulomb>&>(core_eval_pack_)
                           .first();
                   core_eval_ptr->eval(gm_ptr, T, mmax);
                 } break;
                 case Operator::cgtg_x_coulomb: {
                   const auto& core_eval_ptr =
-                      core_eval_pack_
-                          .as<detail::core_eval_pack_type<
-                              Operator::cgtg_x_coulomb>>()
+                      any_cast<const detail::core_eval_pack_type<
+                              Operator::cgtg_x_coulomb>&>(core_eval_pack_)
                           .first();
-                  auto& core_eval_scratch = core_eval_pack_
-                                                .as<detail::core_eval_pack_type<
-                                                    Operator::cgtg_x_coulomb>>()
+                  auto& core_eval_scratch = any_cast<detail::core_eval_pack_type<
+                                                    Operator::cgtg_x_coulomb>&>(core_eval_pack_)
                                                 .second();
                   const auto& core_ints_params =
-                      core_ints_params_.as<typename operator_traits<
-                          Operator::cgtg>::oper_params_type>();
+                      any_cast<const typename operator_traits<
+                      Operator::cgtg>::oper_params_type&>(core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params,
                                       &core_eval_scratch);
                 } break;
                 case Operator::cgtg: {
                   const auto& core_eval_ptr =
-                      core_eval_pack_
-                          .as<detail::core_eval_pack_type<Operator::cgtg>>()
+                      any_cast<const detail::core_eval_pack_type<Operator::cgtg>&>(core_eval_pack_)
                           .first();
                   const auto& core_ints_params =
-                      core_ints_params_.as<typename operator_traits<
-                          Operator::cgtg>::oper_params_type>();
+                      any_cast<const typename operator_traits<
+                          Operator::cgtg>::oper_params_type&>(core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
                 } break;
                 case Operator::delcgtg2: {
                   const auto& core_eval_ptr =
-                      core_eval_pack_
-                          .as<detail::core_eval_pack_type<Operator::delcgtg2>>()
+                      any_cast<const detail::core_eval_pack_type<Operator::delcgtg2>&>(core_eval_pack_)
                           .first();
                   const auto& core_ints_params =
-                      core_ints_params_.as<typename operator_traits<
-                          Operator::cgtg>::oper_params_type>();
+                      any_cast<const typename operator_traits<
+                          Operator::cgtg>::oper_params_type&>(core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
                 } break;
                 case Operator::delta: {
                   const auto& core_eval_ptr =
-                      core_eval_pack_
-                          .as<detail::core_eval_pack_type<Operator::delta>>()
+                      any_cast<const detail::core_eval_pack_type<Operator::delta>&>(core_eval_pack_)
                           .first();
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax);
                 } break;
                 case Operator::r12: {
                   const auto& core_eval_ptr =
-                      core_eval_pack_
-                          .as<detail::core_eval_pack_type<Operator::r12>>()
+                      any_cast<const detail::core_eval_pack_type<Operator::r12>&>(core_eval_pack_)
                           .first();
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax);
                 } break;
                 case Operator::erf_coulomb: {
                   const auto& core_eval_ptr =
-                      core_eval_pack_
-                          .as<detail::core_eval_pack_type<Operator::erf_coulomb>>()
+                      any_cast<const detail::core_eval_pack_type<Operator::erf_coulomb>&>(core_eval_pack_)
                           .first();
                   auto core_ints_params =
-                      core_ints_params_.as<typename operator_traits<
-                          Operator::erf_coulomb>::oper_params_type>();
+                      any_cast<const typename operator_traits<
+                          Operator::erf_coulomb>::oper_params_type&>(core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
                 } break;
                 case Operator::erfc_coulomb: {
                   const auto& core_eval_ptr =
-                      core_eval_pack_
-                          .as<detail::core_eval_pack_type<Operator::erfc_coulomb>>()
+                      any_cast<const detail::core_eval_pack_type<Operator::erfc_coulomb>&>(core_eval_pack_)
                           .first();
                   auto core_ints_params =
-                      core_ints_params_.as<typename operator_traits<
-                          Operator::erfc_coulomb>::oper_params_type>();
+                      any_cast<const typename operator_traits<
+                          Operator::erfc_coulomb>::oper_params_type&>(core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
                 } break;
                 default:
