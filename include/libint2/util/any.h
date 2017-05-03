@@ -33,6 +33,14 @@ namespace libint2 {
 #if __cplusplus >= 201703L
 using std::any;
 #else
+
+namespace detail {
+// true if decayed T is Base, or is derived from it
+template <typename Base, typename T>
+using disable_if_same_or_derived = typename std::enable_if<
+    !std::is_base_of<Base, typename std::decay<T>::type>::value>::type;
+};
+
 /// a partial C++17 std::any implementation (and less efficient than can be)
 class any {
  public:
@@ -40,7 +48,8 @@ class any {
   any() : impl_(nullptr) {}
   any(const any& other) : impl_(other.impl_->clone()) {}
   any(any&& other) = default;
-  template <class ValueType>
+  template <typename ValueType,
+            typename = detail::disable_if_same_or_derived<any, ValueType> >
   any(ValueType&& value)
       : impl_(new impl<typename std::decay<ValueType>::type>(
             std::forward<ValueType>(value))) {}
@@ -54,9 +63,10 @@ class any {
     impl_ = std::move(rhs.impl_);
     return *this;
   }
-  template<typename ValueType>
-  any& operator=( ValueType&& rhs ) {
-    impl_ = decltype(impl_)(new impl<typename std::decay<ValueType>::type> (
+  template <typename ValueType,
+            typename = detail::disable_if_same_or_derived<any, ValueType> >
+  any& operator=(ValueType&& rhs) {
+    impl_ = decltype(impl_)(new impl<typename std::decay<ValueType>::type>(
         std::forward<ValueType>(rhs)));
     return *this;
   }
