@@ -64,6 +64,7 @@ ExternalProject_Add(libderiv_library
                -DBUILD_FPIC=${BUILD_FPIC}
                -DLIBC_INTERJECT=${LIBC_INTERJECT}
                -DLibintint_DIR=${STAGED_INSTALL_PREFIX}/share/cmake/Libint
+               -DMERGE_LIBDERIV_INCLUDEDIR=${MERGE_LIBDERIV_INCLUDEDIR}
     CMAKE_CACHE_ARGS -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS} 
                      -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS} 
     DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/libderiv-src

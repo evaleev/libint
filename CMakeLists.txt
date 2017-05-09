@@ -4,8 +4,8 @@ project(Libint
         VERSION 1.2.0
         LANGUAGES C CXX)
 set(Libint_AUTHORS      "Edward F. Valeev and Justin T. Fermann")
-set(Libint_DESCRIPTION  "Parallel implementation of the Effective Fragment Potential (EFP) method")
-set(Libint_URL          "https://libefp.github.io/")
+set(Libint_DESCRIPTION  "Library for the evaluation of molecular integrals of two-body operators over Gaussian functions")
+set(Libint_URL          "http://libint.valeyev.net")
 set(Libint_LICENSE      "GPL-3.0 for generator; LGPL-3.0 for generated")
 
 cmake_minimum_required(VERSION 3.0)
@@ -23,9 +23,7 @@ endif()
 option_with_print(ENABLE_GENERIC "Enable mostly static linking in shared library" OFF)
 option_with_flags(ENABLE_XHOST "Enable processor-specific optimization" ON
                     "-xHost" "-march=native")
-# CODE_COVERAGE should be tested and probably propagated to external projects
-#option_with_flags(ENABLE_CODE_COVERAGE "Enables details on code coverage" OFF
-#                    "-ftest-coverage")
+option_with_print(MERGE_LIBDERIV_INCLUDEDIR "Install libderiv headers to libint namespace. Psi4 wants ON" OFF)
 
 ######################### Process & Validate Options ###########################
 include(autocmake_safeguards)

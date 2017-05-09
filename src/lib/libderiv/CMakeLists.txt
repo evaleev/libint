@@ -25,10 +25,18 @@ endif()
 
 # <<<  Install  >>>
 
-install(FILES ${CMAKE_BINARY_DIR}/libderiv.h
-              ${CMAKE_BINARY_DIR}/d1hrr_header.h
-              ${CMAKE_BINARY_DIR}/deriv_header.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libint)
+if(${MERGE_LIBDERIV_INCLUDEDIR})
+    install(FILES ${CMAKE_BINARY_DIR}/libderiv.h
+                  ${CMAKE_BINARY_DIR}/d1hrr_header.h
+                  ${CMAKE_BINARY_DIR}/deriv_header.h
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libint)
+else()
+    install(FILES ${CMAKE_BINARY_DIR}/libderiv.h
+                  ${CMAKE_BINARY_DIR}/d1hrr_header.h
+                  ${CMAKE_BINARY_DIR}/deriv_header.h
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libderiv)
+endif()
+
 install(TARGETS deriv
         EXPORT "${PN}Targets"
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -36,8 +44,9 @@ install(TARGETS deriv
 
 # <<<  Export Interface  >>>
 
+math(EXPR _max_am "${MAX_AM_ERI}+1")
 target_compile_definitions(deriv INTERFACE USING_${NS}
-                                           MAX_AM_ERI=${MAX_AM_ERI})
+                                           MAX_AM_ERI=${_max_am})
 target_include_directories(deriv INTERFACE
                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 

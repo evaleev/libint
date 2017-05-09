@@ -33,8 +33,9 @@ install(TARGETS int
 
 # <<<  Export Interface  >>>
 
+math(EXPR _max_am "${MAX_AM_ERI}+1")
 target_compile_definitions(int INTERFACE USING_${NS}
-                                         MAX_AM_ERI=${MAX_AM_ERI})
+                                         MAX_AM_ERI=${_max_am})
 target_include_directories(int INTERFACE
                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
