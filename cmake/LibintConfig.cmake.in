@@ -1,0 +1,178 @@
+# LibintConfig.cmake
+# ------------------
+#
+# Libint cmake module.
+# This module sets the following variables in your project:
+#
+# ::
+#
+#   Libint_FOUND - true if Libint and all required components found on the system
+#   Libint_VERSION - Libint version in format Major.Minor.Release
+#   Libint_INCLUDE_DIRS - Directories where Libint and libderiv headers are located.
+#   Libint_INCLUDE_DIR - same as DIRS
+#   Libint_DEFINITIONS - definitions necessary to use Libint
+#   Libint_LIBRARIES - Libint and libderiv libraries to link against.
+#   Libint_LIBRARY - same as LIBRARIES
+#   Libint_MAX_AM_ERI - maximum angular momentum level of Libint libraries
+#
+#
+# Available components: shared static MAX_AM_ERI
+#
+# ::
+#
+#   shared - search for only shared library
+#   static - search for only static library
+#   [3, 10] - search for library with angular momentum >= this integer
+#
+#
+# Exported targets:
+#
+# ::
+#
+# If Libint is found, this module defines the following :prop_tgt:`IMPORTED`
+# targets. Target is shared _or_ static, so, for both, use separate, not
+# overlapping, installations. ::
+#
+#   Libint::libint - the main libint and libderiv libraries with headers & defs attached.
+#   Libint::int - the main libint library with header & defs attached.
+#   Libint::deriv - the main libderiv library with header & defs attached.
+#
+#
+# Suggested usage:
+#
+# ::
+#
+#   find_package(Libint)
+#   find_package(Libint 1.1.6 EXACT CONFIG REQUIRED COMPONENTS shared 6)
+#
+#
+# The following variables can be set to guide the search for this package:
+#
+# ::
+#
+#   Libint_DIR - CMake variable, set to directory containing this Config file
+#   CMAKE_PREFIX_PATH - CMake variable, set to root directory of this package
+#   PATH - environment variable, set to bin directory of this package
+#   CMAKE_DISABLE_FIND_PACKAGE_Libint - CMake variable, disables 
+#     find_package(Libint) when not REQUIRED, perhaps to force internal build
+
+@PACKAGE_INIT@
+
+set(PN Libint)
+set (_valid_components
+    static
+    shared
+    3
+    4
+    5
+    6
+    7
+    8
+    9
+    10
+)
+
+# find includes
+unset(_temp_h CACHE)
+find_path(_temp_h
+          NAMES libint/libint.h
+          PATHS ${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@
+          NO_DEFAULT_PATH)
+if(_temp_h)
+    set(${PN}_INCLUDE_DIR "${_temp_h}")
+    set(${PN}_INCLUDE_DIRS ${${PN}_INCLUDE_DIR})
+else()
+    set(${PN}_FOUND 0)
+    if(NOT CMAKE_REQUIRED_QUIET)
+        message(STATUS "${PN}Config missing component: header (${PN}: ${_temp_h})")
+    endif()
+endif()
+
+# find library: shared, static, or whichever
+set(_hold_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+list(FIND ${PN}_FIND_COMPONENTS "shared" _seek_shared)
+list(FIND ${PN}_FIND_COMPONENTS "static" _seek_static)
+if(_seek_shared GREATER -1)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_SHARED_LIBRARY_SUFFIX})
+elseif(_seek_static GREATER -1)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
+endif()
+unset(_temp_int CACHE)
+find_library(_temp_int
+             NAMES int
+             PATHS ${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_LIBDIR@
+             NO_DEFAULT_PATH)
+unset(_temp_deriv CACHE)
+find_library(_temp_deriv
+             NAMES deriv
+             PATHS ${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_LIBDIR@
+             NO_DEFAULT_PATH)
+if(_temp_int AND _temp_deriv)
+    set(${PN}_LIBRARY "${_temp_int} ${_temp_deriv}")
+    if(_seek_shared GREATER -1)
+        set(${PN}_shared_FOUND 1)
+    elseif(_seek_static GREATER -1)
+        set(${PN}_static_FOUND 1)
+    endif()
+else()
+    if(_seek_shared GREATER -1)
+        if(NOT CMAKE_REQUIRED_QUIET)
+            message(STATUS "${PN}Config missing component: shared libraries (int: ${_temp_int}, deriv: ${_temp_deriv})")
+        endif()
+    elseif(_seek_static GREATER -1)
+        if(NOT CMAKE_REQUIRED_QUIET)
+            message(STATUS "${PN}Config missing component: static libraries (int: ${_temp_int}, deriv: ${_temp_deriv})")
+        endif()
+    else()
+        set(${PN}_FOUND 0)
+        if(NOT CMAKE_REQUIRED_QUIET)
+            message(STATUS "${PN}Config missing component: libraries (int: ${_temp_int}, deriv: ${_temp_deriv})")
+        endif()
+    endif()
+endif()
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${_hold_library_suffixes})
+set(${PN}_LIBRARIES ${${PN}_LIBRARY})
+
+# check AM component
+#   * Psi4 uses MAX_AM_ERI (formerly LIBINT_OPT_AM) for AM control
+#   * libint.h uses LIBINT_MAX_AM = MAX_AM_ERI + 1
+#   * libint.h uses LIBINT_OPT_AM = ceiling(LIBINT_MAX_AM / 2)
+file(READ ${${PN}_INCLUDE_DIR}/libint/libint.h _contents)
+string(REGEX MATCH "define LIBINT_MAX_AM (.|..)" DA_LINE ${_contents})
+math(EXPR ${PN}_MAX_AM_ERI ${CMAKE_MATCH_1}-1)
+foreach(_comp IN LISTS ${PN}_FIND_COMPONENTS)
+    list(FIND _valid_components ${_comp} _seek_am)
+    if(_seek_am GREATER 1)  # component is AM, not shared or static
+        # detected >= requested
+        if(NOT ${${PN}_MAX_AM_ERI} LESS ${_comp})
+            set(${PN}_${_comp}_FOUND 1)
+        else()
+            if(NOT CMAKE_REQUIRED_QUIET)
+                message(STATUS "${PN}Config missing component: requested AM ${_comp} > ${${PN}_MAX_AM_ERI} detected in ${${PN}_LIBRARY}")
+            endif()
+        endif()
+    endif()
+endforeach()
+set(${PN}_DEFINITIONS "USING_${PN};MAX_AM_ERI=${${PN}_MAX_AM_ERI}")
+
+check_required_components(${PN})
+
+#-----------------------------------------------------------------------------
+# Don't include targets if this file is being picked up by another
+# project which has already built this as a subproject
+#-----------------------------------------------------------------------------
+if(NOT TARGET ${PN}::int)
+    include("${CMAKE_CURRENT_LIST_DIR}/LibintintTargets.cmake")
+endif()
+if(NOT TARGET ${PN}::deriv)
+    include("${CMAKE_CURRENT_LIST_DIR}/LibintderivTargets.cmake")
+endif()
+if(NOT TARGET ${PN}::libint)
+    add_library(${PN}::libint UNKNOWN IMPORTED)
+    set_target_properties(${PN}::libint PROPERTIES
+        IMPORTED_LOCATION                 "${_temp_deriv}"
+        INTERFACE_INCLUDE_DIRECTORIES     "${${PN}_INCLUDE_DIRS}"
+        INTERFACE_COMPILE_DEFINITIONS     "${${PN}_DEFINITIONS}"
+        IMPORTED_LINK_INTERFACE_LANGUAGES "CXX"
+        INTERFACE_LINK_LIBRARIES          ${PN}::int)
+endif()
