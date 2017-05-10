@@ -207,6 +207,12 @@ namespace libint2 {
 
   };
 
+  // explicit instantiation declaration, definitions are gauss.cc
+  template<>
+  std::array<LIBINT2_UINT_LEAST64, OriginDerivative<1u>::max_deriv+1> OriginDerivative<1u>::key_l_offset;
+  template<>
+  std::array<LIBINT2_UINT_LEAST64, OriginDerivative<3u>::max_deriv+1> OriginDerivative<3u>::key_l_offset;
+
   template <unsigned NDIM>
   OriginDerivative<NDIM> operator-(const OriginDerivative<NDIM>& A, const OriginDerivative<NDIM>& B) {
     OriginDerivative<NDIM> Diff(A);
