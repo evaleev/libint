@@ -30,7 +30,7 @@ namespace libint2 {
 
   template <typename T>
   struct vector_traits {
-      typedef T value_type;
+      typedef T scalar_type;
       static const size_t extent = 1;
   };
 

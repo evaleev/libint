@@ -184,7 +184,7 @@ template <>
 struct operator_traits<Operator::nuclear>
     : public detail::default_operator_traits {
   /// point charges and their positions
-  typedef std::vector<std::pair<real_t, std::array<real_t, 3>>>
+  typedef std::vector<std::pair<scalar_type, std::array<scalar_type, 3>>>
       oper_params_type;
   static oper_params_type default_params() { return oper_params_type{}; }
   typedef const libint2::FmEval_Taylor<double, 7> core_eval_type;
@@ -196,12 +196,12 @@ struct operator_traits<Operator::erf_nuclear>
   /// the attenuation parameter (0 = zero potential, +infinity = no attenuation)
   /// + point charges and positions
   typedef std::tuple<
-      real_t, typename operator_traits<Operator::nuclear>::oper_params_type>
+      scalar_type, typename operator_traits<Operator::nuclear>::oper_params_type>
       oper_params_type;
   static oper_params_type default_params() {
     return std::make_tuple(0,operator_traits<Operator::nuclear>::default_params());
   }
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::erf_coulomb_gm_eval<real_t>>
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::erf_coulomb_gm_eval<scalar_type>>
       core_eval_type;
 };
 
@@ -214,7 +214,7 @@ struct operator_traits<Operator::erfc_nuclear>
   static oper_params_type default_params() {
     return std::make_tuple(0,operator_traits<Operator::nuclear>::default_params());
   }
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::erfc_coulomb_gm_eval<real_t>>
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::erfc_coulomb_gm_eval<scalar_type>>
       core_eval_type;
 };
 
@@ -246,12 +246,12 @@ struct operator_traits<Operator::emultipole3>
 template <>
 struct operator_traits<Operator::coulomb>
     : public detail::default_operator_traits {
-  typedef const libint2::FmEval_Chebyshev7<real_t> core_eval_type;
+  typedef const libint2::FmEval_Chebyshev7<scalar_type> core_eval_type;
 };
 namespace detail {
 template <int K>
 struct cgtg_operator_traits : public detail::default_operator_traits {
-  typedef libint2::GaussianGmEval<real_t, K> core_eval_type;
+  typedef libint2::GaussianGmEval<scalar_type, K> core_eval_type;
   typedef ContractedGaussianGeminal oper_params_type;
 };
 }  // namespace detail
@@ -268,14 +268,14 @@ struct operator_traits<Operator::delcgtg2>
 template <>
 struct operator_traits<Operator::delta>
     : public detail::default_operator_traits {
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::delta_gm_eval<real_t>>
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::delta_gm_eval<scalar_type>>
       core_eval_type;
 };
 
 template <>
 struct operator_traits<Operator::r12>
     : public detail::default_operator_traits {
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::r12_xx_K_gm_eval<real_t, 1>>
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::r12_xx_K_gm_eval<scalar_type, 1>>
       core_eval_type;
 };
 
@@ -283,22 +283,22 @@ template <>
 struct operator_traits<Operator::erf_coulomb>
     : public detail::default_operator_traits {
   /// the attenuation parameter (0 = zero potential, +infinity = no attenuation)
-  typedef real_t oper_params_type;
+  typedef scalar_type oper_params_type;
   static oper_params_type default_params() {
     return oper_params_type{0};
   }
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::erf_coulomb_gm_eval<real_t>>
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::erf_coulomb_gm_eval<scalar_type>>
       core_eval_type;
 };
 template <>
 struct operator_traits<Operator::erfc_coulomb>
     : public detail::default_operator_traits {
   /// the attenuation parameter (0 = no attenuation, +infinity = zero potential)
-  typedef real_t oper_params_type;
+  typedef scalar_type oper_params_type;
   static oper_params_type default_params() {
     return oper_params_type{0};
   }
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::erfc_coulomb_gm_eval<real_t>>
+  typedef const libint2::GenericGmEval<libint2::os_core_ints::erfc_coulomb_gm_eval<scalar_type>>
       core_eval_type;
 };
 
@@ -397,7 +397,7 @@ class Engine {
   static constexpr auto max_ntargets =
       std::extent<decltype(std::declval<Libint_t>().targets), 0>::value;
   using target_ptr_vec =
-      std::vector<const real_t*, detail::ext_stack_allocator<const real_t*, max_ntargets>>;
+      std::vector<const value_type*, detail::ext_stack_allocator<const value_type*, max_ntargets>>;
 
   /// creates a default Engine that cannot be used for computing integrals;
   /// to be used as placeholder for copying a usable engine, OR for cleanup of
@@ -408,7 +408,7 @@ class Engine {
         primdata_(),
         stack_size_(0),
         lmax_(-1) {
-    set_precision(std::numeric_limits<real_t>::epsilon());
+    set_precision(std::numeric_limits<scalar_type>::epsilon());
   }
 
   // clang-format off
@@ -425,8 +425,8 @@ class Engine {
   ///                    (default=0)
   /// \param precision specifies the target precision with which the integrals
   /// will be computed; the default is the "epsilon"
-  ///        of \c real_t type, given by \c
-  ///        std::numeric_limits<real_t>::epsilon(). Currently precision control
+  ///        of \c scalar_type type, given by \c
+  ///        std::numeric_limits<scalar_type>::epsilon(). Currently precision control
   ///        is implemented
   ///        for two-body integrals only. The precision control is somewhat
   ///        empirical,
@@ -446,7 +446,7 @@ class Engine {
   // clang-format on
   template <typename Params = empty_pod>
   Engine(Operator oper, size_t max_nprim, int max_l, int deriv_order = 0,
-         real_t precision = std::numeric_limits<real_t>::epsilon(),
+         scalar_type precision = std::numeric_limits<scalar_type>::epsilon(),
          Params params = empty_pod(), BraKet braket = BraKet::invalid)
       : oper_(oper),
         braket_(braket),
@@ -639,18 +639,18 @@ class Engine {
    * the prefactor of \f$ F_m(\rho, T) \f$ is smaller
    *      than \f$ \epsilon \f$ .
    */
-  void set_precision(real_t prec) {
+  void set_precision(scalar_type prec) {
     if (prec <= 0.) {
       precision_ = 0.;
-      ln_precision_ = std::numeric_limits<real_t>::lowest();
+      ln_precision_ = std::numeric_limits<scalar_type>::lowest();
     } else {
       precision_ = prec;
       ln_precision_ = std::log(precision_);
     }
   }
   /// @return the target precision for computing the integrals
-  /// @sa set_precision(real_t)
-  real_t precision() const { return precision_; }
+  /// @sa set_precision(scalar_type)
+  scalar_type precision() const { return precision_; }
 
   void print_timers() {
 #ifdef LIBINT2_ENGINE_TIMERS
@@ -714,8 +714,8 @@ class Engine {
   int lmax_;
   int hard_lmax_;  // max L supported by library for this operator type + 1
   int deriv_order_;
-  real_t precision_;
-  real_t ln_precision_;
+  scalar_type precision_;
+  scalar_type ln_precision_;
 
   any core_eval_pack_;
 
@@ -736,9 +736,9 @@ class Engine {
   /// hence must set its contents explicitly
   bool set_targets_;
 
-  std::vector<real_t>
+  std::vector<value_type>
       scratch_;       // for transposes and/or transforming to solid harmonics
-  real_t* scratch2_;  // &scratch_[0] points to the first block large enough to
+  value_type* scratch2_;  // &scratch_[0] points to the first block large enough to
                       // hold all target ints
   // scratch2_ points to second such block. It could point into scratch_ or at
   // primdata_[0].stack
@@ -759,7 +759,7 @@ class Engine {
   void reset_scratch() {
     const auto nshsets = compute_nshellsets();
     targets_.resize(nshsets);
-    set_targets_ = (&targets_[0] != const_cast<const real_t**>(primdata_[0].targets));
+    set_targets_ = (&targets_[0] != const_cast<const value_type**>(primdata_[0].targets));
     const auto ncart_max = (lmax_ + 1) * (lmax_ + 2) / 2;
     const auto target_shellset_size =
         nshsets * std::pow(ncart_max, braket_rank());

@@ -297,7 +297,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
             if (pset != 0)
               std::transform(primdata_[0].targets[s],
                              primdata_[0].targets[s] + ncart12, s_target,
-                             s_target, std::plus<real_t>());
+                             s_target, std::plus<value_type>());
             else
               std::copy(primdata_[0].targets[s],
                         primdata_[0].targets[s] + ncart12, s_target);
@@ -352,7 +352,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
                   if (pset != 0)
                     std::transform(primdata_[0].targets[d01],
                                    primdata_[0].targets[d01] + ncart12, tgt,
-                                   tgt, std::plus<real_t>());
+                                   tgt, std::plus<value_type>());
                   else
                     std::copy(primdata_[0].targets[d01],
                               primdata_[0].targets[d01] + ncart12, tgt);
@@ -791,11 +791,11 @@ __libint2_engine_inline any Engine::make_core_eval_pack(Operator oper) const {
     result = libint2::detail::make_compressed_pair(                          \
         operator_traits<static_cast<Operator>(i)>::core_eval_type::instance( \
             braket_rank() * lmax_ + deriv_order_,                            \
-            std::numeric_limits<real_t>::epsilon()),                         \
+            std::numeric_limits<scalar_type>::epsilon()),                    \
         libint2::detail::CoreEvalScratch<                                    \
             operator_traits<static_cast<Operator>(i)>::core_eval_type>(      \
             braket_rank() * lmax_ + deriv_order_));                          \
-    assert(any_cast<detail::core_eval_pack_type<static_cast<Operator>(i)>>( \
+    assert(any_cast<detail::core_eval_pack_type<static_cast<Operator>(i)>>(  \
                &result) != nullptr);                                         \
     break;
 
@@ -1615,11 +1615,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
     // if needed, permute and transform
     if (use_scratch) {
-      constexpr auto using_scalar_real = std::is_same<double, real_t>::value ||
-                                         std::is_same<float, real_t>::value;
+      constexpr auto using_scalar_real = std::is_same<double, value_type>::value ||
+                                         std::is_same<float, value_type>::value;
       static_assert(using_scalar_real,
                     "Libint2 C++11 API only supports fundamental real types");
-      typedef Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic,
+      typedef Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic,
                             Eigen::RowMajor>
           Matrix;
 

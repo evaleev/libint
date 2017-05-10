@@ -323,7 +323,7 @@ namespace libint2 {
 
   template <>
   struct vector_traits<simd::VectorSSEDouble> {
-      typedef double value_type;
+      typedef double scalar_type;
       static const size_t extent = 2;
   };
 
@@ -617,7 +617,7 @@ namespace libint2 {
 
   template <>
   struct vector_traits<simd::VectorSSEFloat> {
-      typedef float value_type;
+      typedef float scalar_type;
       static const size_t extent = 4;
   };
 
@@ -970,7 +970,7 @@ namespace libint2 {
 
   template <>
   struct vector_traits<simd::VectorAVXDouble> {
-      typedef double value_type;
+      typedef double scalar_type;
       static const size_t extent = 4;
   };
 

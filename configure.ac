@@ -1386,7 +1386,7 @@ if test "X$libint_user_defined_real" != "X"; then
  AC_MSG_CHECKING([if $libint_user_defined_real is usable])
  # by default should look for SIMD vector types in src/lib/libint
  copy2_CXXFLAGS=$CXXFLAGS
- CXXFLAGS="$CXXFLAGS -Iinclude -I$srcdir/src/lib/libint"
+ CXXFLAGS="$CXXFLAGS -I$srcdir/include -Iinclude -I$srcdir/src/lib/libint"
  AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM(
     [[#include <libint2/util/vector.h>

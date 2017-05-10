@@ -181,7 +181,7 @@ namespace libint2 {
 
   template <>
   struct vector_traits<simd::VectorQPXDouble> {
-      typedef double value_type;
+      typedef double scalar_type;
       static const size_t extent = 4;
   };
 
@@ -349,7 +349,7 @@ namespace libint2 {
 
   template <>
   struct vector_traits<simd::VectorFP2Double> {
-      typedef double value_type;
+      typedef double scalar_type;
       static const size_t extent = 2;
   };
 

@@ -37,8 +37,8 @@
 #if defined(__cplusplus)
 # include <libint2/util/type_traits.h>
   namespace libint2 {
-    typedef LIBINT2_REALTYPE realvec_t;
-    typedef libint2::vector_traits<LIBINT2_REALTYPE>::value_type real_t;
+    using value_type = LIBINT2_REALTYPE;
+    typedef libint2::vector_traits<value_type>::scalar_type scalar_type;
   }; /* namespace libint2 */
 #endif /* C++ only */
 

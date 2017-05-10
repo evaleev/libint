@@ -51,7 +51,7 @@ namespace libint2 {
     template <typename Real>
     class SolidHarmonicsCoefficients {
       public:
-        typedef ::libint2::real_t real_t;
+        typedef ::libint2::value_type real_t;
 
         SolidHarmonicsCoefficients() : l_(-1) {
         }
