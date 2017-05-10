@@ -22,15 +22,15 @@
 #define _libint2_src_lib_libint_vectorx86_h_
 
 #include <cstring>
+#include <cmath>
+#include <iostream>
+
 #include <libint2/util/cxxstd.h>
 #include <libint2/util/type_traits.h>
 
-#ifdef __SSE2__
+#include <x86intrin.h>
 
-#include <emmintrin.h>
-#include <immintrin.h>
-#include <cmath>
-#include <iostream>
+#ifdef __SSE2__
 
 namespace libint2 { namespace simd {
 
@@ -335,8 +335,6 @@ namespace libint2 {
 
 #ifdef __SSE__
 
-#include <xmmintrin.h>
-
 namespace libint2 { namespace simd {
 
   /**
@@ -628,8 +626,6 @@ namespace libint2 {
 #endif // SSE-only
 
 #ifdef __AVX__
-
-#include <immintrin.h>
 
 namespace libint2 { namespace simd {
 
