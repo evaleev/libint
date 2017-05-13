@@ -31,7 +31,7 @@
 #include <copyright.h>
 #include <libint_config.h>
 
-#define MAXNODE 5000
+#define MAXNODE 200000
 #define NONODE -1000000
 #define NUMPARENTS 21
 

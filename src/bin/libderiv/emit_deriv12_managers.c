@@ -31,8 +31,8 @@
 #include <copyright.h>
 #include <libint_config.h>
 
-#define MAXNODE 10000
-#define MAX_NUM_TARGET_VRR_NODES 2000
+#define MAXNODE 200000
+#define MAX_NUM_TARGET_VRR_NODES 20000
 #define NONODE -1000000
 #define NUMPARENTS 40
 
