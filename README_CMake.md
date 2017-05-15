@@ -42,8 +42,8 @@ those used internally by Libint and found in the installed header files:
 4 | 5 | 3 | 4 | 3
 **5** | **6** | **3** | **5** | **4**
 6 | 7 | 4 | 6 | 5
-7 | 8 | 4 |
-8 | 9 | 5 |
+7 | 8 | 4 | 7 | 6
+8 | 9 | 5 | 8 | 7
 
 For orientation on an atom such as Neon, the default **5** gets you conventional cc-pV5Z for energies, cc-pVQZ for gradients, cc-pVTZ for frequencies and density-fitted cc-pVQZ for energies, cc-pVTZ for gradients, cc-pVDZ for frequencies.
 
@@ -60,7 +60,7 @@ See [CMakeLists.txt](CMakeLists.txt) for options details and additional options.
 This project installs with `LibintConfig.cmake` and `LibintConfigVersion.cmake` files suitable for use with CMake [`find_package()`](https://cmake.org/cmake/help/v3.2/command/find_package.html) in `CONFIG` mode.
 
 * `find_package(Libint)` - find any Libint libraries and headers
-* `find_package(Libint 1.1.6 EXACT CONFIG REQUIRED COMPONENTS shared 6)` - find Libint exactly version 1.1.6 built with shared libraries and `MAX_AM_ERI` >= 6 or die trying
+* `find_package(Libint 1.2.0 EXACT CONFIG REQUIRED COMPONENTS shared 6)` - find Libint exactly version 1.2.0 built with shared libraries and `MAX_AM_ERI` >= 6 or die trying
 
 See [LibintConfig.cmake.in](cmake/LibintConfig.cmake.in) for details of how to detect the Config file and what CMake variables and targets are exported to your project.
 
