@@ -103,9 +103,6 @@ void emit_deriv12_managers()
   int num_children;
   int offset;
 
-  class nodes[MAXNODE];    /* Stack of nodes */
-  class *hrr_nodes = &(nodes[0]);
-  class *vrr_nodes;
   int target_data;
   int done;
   int max_stack_size = 0;
@@ -126,6 +123,9 @@ void emit_deriv12_managers()
   char inline_hrr_list_name[80];
   FILE *hrr_code, *vrr_code, *inline_vrr_list, *inline_hrr_list;
 
+  class *nodes = malloc(MAXNODE*sizeof(class));    /* Stack of nodes */
+  class *hrr_nodes = nodes;
+  class *vrr_nodes;
 
   for(la=0;la<=new_am;la++) {
     lb_max = la/2;
@@ -715,6 +715,7 @@ void emit_deriv12_managers()
     }
     }
   }
+  free(nodes);
   return;
 }
 
