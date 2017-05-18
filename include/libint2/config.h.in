@@ -158,6 +158,9 @@
 /* Specifies the ordering of cartesian Gaussians in a shell. Allowed values are defined at the bottom of this file -- also see configure.in*/
 #undef LIBINT_CGSHELL_ORDERING
 
+/* Specifies the ordering of solid harmonics Gaussians in a shell. Allowed values are defined at the bottom of this file -- also see configure.in*/
+#undef LIBINT_SHGSHELL_ORDERING
+
 /* Specifies the class of shell sets generated. Allowed values are defined at the bottom of this file -- also see configure.in*/
 #undef LIBINT_SHELL_SET
 
@@ -257,13 +260,20 @@
 #undef LIBINT_HAS_EIGEN
 
 /*
-  Known orderings of cartesian functions
+  Known orderings of cartesian Gaussians
 */
 #undef LIBINT_CGSHELL_ORDERING_STANDARD
 #undef LIBINT_CGSHELL_ORDERING_INTV3
 #undef LIBINT_CGSHELL_ORDERING_GAMESS
 #undef LIBINT_CGSHELL_ORDERING_ORCA
 #undef LIBINT_CGSHELL_ORDERING_BAGEL
+
+/*
+  Known orderings of solid harmonic Gaussians
+*/
+#undef LIBINT_SHGSHELL_ORDERING_STANDARD
+#undef LIBINT_SHGSHELL_ORDERING_GAUSSIAN
+
 /*
   Known sets of shell sets
 */

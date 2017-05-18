@@ -158,6 +158,32 @@ PKGCONFIGDIR=$withval
 )
 AC_SUBST(PKGCONFIGDIR)
 
+# these definitions must match configure.ac
+LIBINT_SHGSHELL_ORDERING_STANDARD=1
+LIBINT_SHGSHELL_ORDERING_GAUSSIAN=2
+libint_shgshell_ordering=standard
+AC_ARG_WITH(shgauss-ordering,
+[  --with-shgauss-ordering          Use one of the following known orderings for shells of solid harmonic Gaussians:
+                                    standard -- standard ordering (-l, -l+1 ... l)
+                                    gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+                                    The default is standard.],
+[
+libint_shgshell_ordering=$withval
+])
+AC_MSG_RESULT([Using $libint_shgshell_ordering ordering of solid harmonic Gaussians])
+case $libint_shgshell_ordering in
+  standard)
+    libint_shgshell_ordering=$LIBINT_SHGSHELL_ORDERING_STANDARD
+  ;;
+  gaussian)
+    libint_shgshell_ordering=$LIBINT_SHGSHELL_ORDERING_GAUSSIAN
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --with-solidharmgauss-ordering ($withval)])
+  ;;
+esac
+AC_DEFINE_UNQUOTED(LIBINT_SHGSHELL_ORDERING,$libint_shgshell_ordering)
+
 dnl --------- Want absolute path for srcdir, not relative. ---------
 
 if test X$ac_srcdir_defaulted = Xyes; then

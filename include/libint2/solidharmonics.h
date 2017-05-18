@@ -106,8 +106,13 @@ namespace libint2 {
           const unsigned short ncart = (l_ + 1) * (l_ + 2) / 2;
           std::vector<Real> full_coeff(npure * ncart);
 
-          for(signed char m=-l_; m<=l_; ++m) {
-            const signed char pure_idx = m + l_;
+#if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
+          for(signed char pure_idx=0, m=-l_; pure_idx!=npure; ++pure_idx, ++m) {
+#elif LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_GAUSSIAN
+          for(signed char pure_idx=0, m=0; pure_idx!=npure; ++pure_idx, m=(m>0?-m:1-m)) {
+#else
+#  error "unknown value of macro LIBINT_SHGSHELL_ORDERING"
+#endif
             signed char cart_idx = 0;
             signed char lx, ly, lz;
             FOR_CART(lx, ly, lz, l_)

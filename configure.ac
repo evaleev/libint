@@ -97,6 +97,33 @@ AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_GAMESS,$LIBINT_CGSHELL_ORDERING_GAMES
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_ORCA,$LIBINT_CGSHELL_ORDERING_ORCA)
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_BAGEL,$LIBINT_CGSHELL_ORDERING_BAGEL)
 
+LIBINT_SHGSHELL_ORDERING_STANDARD=1
+LIBINT_SHGSHELL_ORDERING_GAUSSIAN=2
+libint_shgshell_ordering=standard
+AC_ARG_WITH(shgauss-ordering,
+[  --with-shgauss-ordering          Use one of the following known orderings for shells of solid harmonic Gaussians:
+                                    standard -- standard ordering (-l, -l+1 ... l)
+                                    gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+                                    The default is standard.],
+[
+libint_shgshell_ordering=$withval
+])
+AC_MSG_RESULT([Using $libint_shgshell_ordering ordering of solid harmonic Gaussians])
+case $libint_shgshell_ordering in
+  standard)
+    libint_shgshell_ordering=$LIBINT_SHGSHELL_ORDERING_STANDARD
+  ;;
+  gaussian)
+    libint_shgshell_ordering=$LIBINT_SHGSHELL_ORDERING_GAUSSIAN
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --with-solidharmgauss-ordering ($withval)])
+  ;;
+esac
+AC_DEFINE_UNQUOTED(LIBINT_SHGSHELL_ORDERING,$libint_shgshell_ordering)
+AC_DEFINE_UNQUOTED(LIBINT_SHGSHELL_ORDERING_STANDARD,$LIBINT_SHGSHELL_ORDERING_STANDARD)
+AC_DEFINE_UNQUOTED(LIBINT_SHGSHELL_ORDERING_GAUSSIAN,$LIBINT_SHGSHELL_ORDERING_GAUSSIAN)
+
 LIBINT_SHELL_SET_STANDARD=1   AC_SUBST(LIBINT_SHELL_SET_STANDARD)
 LIBINT_SHELL_SET_ORCA=2      AC_SUBST(LIBINT_SHELL_SET_ORCA)
 libint_shell_set=standard
