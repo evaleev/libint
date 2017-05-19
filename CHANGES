@@ -3,11 +3,9 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2017-xx-yy: 2.3.2
-  -
-
-- 2017-05-03: 2.3.1
-  - minor fixes to libint2::any
+- 2017-05-18: 2.4.0-beta.1
+  - added support for configurable solid harmonic order (standard and GaussianXX only)
+  - real_t -> scalar_type and realvec_t -> value_type
 
 - 2017-05-02: 2.3.0
   - bumped the compiler source license to GPLv3, generated code is LGPLv3.
