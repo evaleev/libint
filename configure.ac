@@ -1,5 +1,5 @@
 define([libint_mmm_version],[2.4.0])
-define([libint_buildid],[beta.1])
+define([libint_buildid],[beta.2])
 define([libint_so_version],[2:2:0])
 
 dnl --------- Begin ---------
@@ -1475,7 +1475,7 @@ AC_CONFIG_FILES([src/bin/test_eri/run_timing_suite.pl],[chmod +x src/bin/test_er
 AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/libint/MakeVars.features
                 tests/MakeVars
                 doc/MakeVars doc/MakeRules doc/progman/macros.tex doc/classdoc/doxygen.cfg
-                include/libint2/cgshell_ordering.h include/libint2/basis.h libint2.pc)
+                include/libint2/basis.h libint2.pc)
 
 dnl --------- Done! ---------
 AC_OUTPUT

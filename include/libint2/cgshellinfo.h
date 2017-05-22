@@ -368,6 +368,66 @@ namespace libint2 {
     }
   };
 
+  // see http://www.cmbi.ru.nl/molden/molden_format.html
+  template <unsigned int lmax> struct CGShellOrderingGenerator<CGShellOrdering_MOLDEN,lmax> {
+    static void compute(int (&cartindex)[lmax+1][lmax+1][lmax+1]) {
+
+      for (unsigned int am = 0; am <= 4u; ++am) {
+
+        if (am == 0) {
+          cartindex[0][0][0] = 0;
+          continue;
+        }
+        if (am == 1) {
+          cartindex[1][1][0] = 0;
+          cartindex[1][0][1] = 1;
+          cartindex[1][0][0] = 2;
+          continue;
+        }
+        if (am == 2) {
+          cartindex[2][2][0] = 0;
+          cartindex[2][0][2] = 1;
+          cartindex[2][0][0] = 2;
+          cartindex[2][1][1] = 3;
+          cartindex[2][1][0] = 4;
+          cartindex[2][0][1] = 5;
+          continue;
+        }
+        if (am == 3) {
+          cartindex[3][3][0] = 0;
+          cartindex[3][0][3] = 1;
+          cartindex[3][0][0] = 2;
+          cartindex[3][1][2] = 3;
+          cartindex[3][2][1] = 4;
+          cartindex[3][2][0] = 5;
+          cartindex[3][1][0] = 6;
+          cartindex[3][0][1] = 7;
+          cartindex[3][0][2] = 8;
+          cartindex[3][1][1] = 9;
+          continue;
+        }
+        if (am == 4) {
+          cartindex[4][4][0] = 0;
+          cartindex[4][0][4] = 1;
+          cartindex[4][0][0] = 2;
+          cartindex[4][3][1] = 3;
+          cartindex[4][3][0] = 4;
+          cartindex[4][1][3] = 5;
+          cartindex[4][0][3] = 6;
+          cartindex[4][1][0] = 7;
+          cartindex[4][0][1] = 8;
+          cartindex[4][2][2] = 9;
+          cartindex[4][2][0] = 10;
+          cartindex[4][0][2] = 11;
+          cartindex[4][2][1] = 12;
+          cartindex[4][1][2] = 13;
+          cartindex[4][1][1] = 14;
+          continue;
+        }
+      }
+    }
+  };
+
   template <CGShellOrdering Ord, unsigned int lmax> struct CGShellOrderingData {
 
     struct Triple {

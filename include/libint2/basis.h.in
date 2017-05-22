@@ -148,15 +148,54 @@ namespace libint2 {
       const std::vector<size_t>& shell2bf() const {
         return shell2bf_;
       }
-      /// Computes the map from shells to the corresponding atoms in \c atoms. If no atom matches the origin of a shell, it is mapped to -1.
+      /// Computes the map from this object's shells to the corresponding atoms in \c atoms. If no atom matches the origin of a shell, it is mapped to -1.
       /// @note coordinates must match \em exactly , i.e. shell2atom[k] == l iff atoms[l].x == *this[k].O[0] && atoms[l].y == *this[k].O[1] &&  atoms[l].z == *this[k].O[2]
       /// @return the map from shell index to the atom in the list \c atoms that coincides with its origin;
       std::vector<long> shell2atom(const std::vector<Atom>& atoms) const {
+        return shell2atom(*this, atoms, false);
+      }
+      /// Computes the map from \c atoms to the corresponding shells in this object. Coordinates are compared bit-wise (@sa BasisSet::shell2atom() )
+      /// @return the map from atom index to the vector of shell indices whose origins conincide with the atom;
+      /// @note this does not assume that \c shells are ordered in the order of atoms, as does BasisSet
+      std::vector<std::vector<long>> atom2shell(const std::vector<Atom>& atoms) const {
+        return atom2shell(atoms, *this);
+      }
+      
+      /// Computes the map from \c shells to the corresponding atoms in \c atoms. Coordinates are compared bit-wise, i.e.
+      /// shell2atom[k] == l iff atoms[l].x == *this[k].O[0] && atoms[l].y == *this[k].O[1] &&  atoms[l].z == *this[k].O[2]
+      /// @param throw_if_no_match If true, and no atom matches the origin of a shell, throw a std::runtime_error.
+      ///        Otherwise such shells will be mapped to -1.
+      /// @return the map from shell index to the atom in the list \c atoms that coincides with its origin;
+      /// @throw std::runtime_error if throw_if_no_match is true and for at least one shell no matching atom is found.
+      static std::vector<long> shell2atom(const std::vector<Shell>& shells, const std::vector<Atom>& atoms, bool throw_if_no_match = false) {
         std::vector<long> result;
-        result.reserve(size());
-        for(const auto& s: *this) {
+        result.reserve(shells.size());
+        for(const auto& s: shells) {
           auto a = std::find_if(atoms.begin(), atoms.end(), [&s](const Atom& a){ return s.O[0] == a.x && s.O[1] == a.y && s.O[2] == a.z; } );
-          result.push_back( a != atoms.end() ? a - atoms.begin() : -1);
+          const auto found_match = (a != atoms.end());
+          if (throw_if_no_match && !found_match)
+            throw std::runtime_error("shell2atom: no matching atom found");
+          result.push_back( found_match ? a - atoms.begin() : -1);
+        }
+        return result;
+      }
+      /// Computes the map from \c atoms to the corresponding shells in \c shells. Coordinates are compared bit-wise (@sa BasisSet::shell2atom() )
+      /// @return the map from atom index to the vector of shell indices whose origins conincide with the atom;
+      /// @note this does not assume that \c shells are ordered in the order of atoms, as does BasisSet
+      static std::vector<std::vector<long>> atom2shell(const std::vector<Atom>& atoms, const std::vector<Shell>& shells) {
+        std::vector<std::vector<long>> result;
+        result.resize(atoms.size());
+        size_t iatom = 0;
+        for(const auto& a: atoms) {
+          auto s = shells.begin();
+          while (s != shells.end()) {
+            s = std::find_if(s, shells.end(), [&a](const Shell& s){ return s.O[0] == a.x && s.O[1] == a.y && s.O[2] == a.z; } );
+            if (s != shells.end()) {
+              result[iatom].push_back( s - shells.begin());
+              ++s;
+            }
+          }
+          ++iatom;
         }
         return result;
       }

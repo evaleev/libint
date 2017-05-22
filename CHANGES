@@ -3,6 +3,13 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2017-xx-yy: 2.4.0-beta.3
+  -
+
+- 2017-05-18: 2.4.0-beta.2
+  - cgshell_ordering.h is no longer preprocessed by configure, and has shgshell_ordering.h counterpart
+  - added molden exporter
+  
 - 2017-05-18: 2.4.0-beta.1
   - added support for configurable solid harmonic order (standard and GaussianXX only)
   - real_t -> scalar_type and realvec_t -> value_type

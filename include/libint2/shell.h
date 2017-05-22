@@ -218,6 +218,22 @@ namespace libint2 {
         return unitshell;
       }
 
+      /// @return the coefficient of primitive \c p in contraction \c c assuming unit normalized primitive
+      ///         (coeff contains coefficients of normalization-free primitives; @sa Shell::renorm() )
+      real_t coeff_normalized(size_t c, size_t p) const {
+        const auto alpha = this->alpha.at(p);
+        assert(alpha >= 0.0);
+        const auto l = contr.at(c).l;
+        assert(l <= 15); // due to df_Kminus1[] a 64-bit integer type; kinda ridiculous restriction anyway
+
+        using libint2::math::df_Kminus1;
+        const auto sqrt_Pi_cubed = real_t{5.56832799683170784528481798212};
+        const auto two_alpha = 2 * alpha;
+        const auto two_alpha_to_am32 = pow(two_alpha,l+1) * sqrt(two_alpha);
+        const auto one_over_N = sqrt((sqrt_Pi_cubed * df_Kminus1[2*l] )/(pow(2,l) * two_alpha_to_am32));
+        return contr.at(c).coeff[p] * one_over_N;
+      }
+
     private:
 
       // this makes a unit shell

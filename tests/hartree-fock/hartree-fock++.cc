@@ -47,6 +47,7 @@
 #include <libint2/diis.h>
 #include <libint2/util/intpart_iter.h>
 #include <libint2/chemistry/sto3g_atomic_density.h>
+#include <libint2/lcao/molden.h>
 #include <libint2.hpp>
 
 #if defined(_OPENMP)
@@ -313,6 +314,7 @@ int main(int argc, char* argv[]) {
         conditioning_orthogonalizer(S, S_condition_number_threshold);
 
     Matrix D;
+    Matrix C;
     Matrix C_occ;
     Matrix evals;
     {  // use SOAD as the guess density
@@ -337,7 +339,7 @@ int main(int argc, char* argv[]) {
         // where
         // F' = X.transpose() . F . X; the original C is obtained as C = X . C'
         Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(X.transpose() * F * X);
-        auto C = X * eig_solver.eigenvectors();
+        C = X * eig_solver.eigenvectors();
 
         // compute density, D = C(occ) . C(occ)T
         C_occ = C.leftCols(ndocc);
@@ -450,7 +452,7 @@ int main(int argc, char* argv[]) {
       Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(X.transpose() * F_diis *
                                                        X);
       evals = eig_solver.eigenvalues();
-      auto C = X * eig_solver.eigenvectors();
+      C = X * eig_solver.eigenvectors();
 
       // compute density, D = C(occ) . C(occ)T
       C_occ = C.leftCols(ndocc);
@@ -469,6 +471,18 @@ int main(int argc, char* argv[]) {
     } while (((ediff_rel > conv) || (rms_error > conv)) && (iter < maxiter));
 
     printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
+
+    // dump orbs to a molden file
+    {
+      Eigen::VectorXd occs(C.cols());
+      occs.setZero();
+      for(size_t o=0; o!=ndocc; ++o)
+        occs[o] = 2.0;
+
+      libint2::molden::Export xport(atoms, obs, C, occs, evals);
+      std::ofstream molden_file("hf++.molden");
+      xport.write(molden_file);
+    }
 
     auto Mu = compute_1body_ints<Operator::emultipole2>(obs);
     std::array<double, 3> mu;

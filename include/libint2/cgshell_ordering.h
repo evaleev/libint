@@ -44,7 +44,8 @@ namespace libint2 {
     CGShellOrdering_IntV3        = LIBINT_CGSHELL_ORDERING_INTV3,
     CGShellOrdering_GAMESS       = LIBINT_CGSHELL_ORDERING_GAMESS,
     CGShellOrdering_ORCA         = LIBINT_CGSHELL_ORDERING_ORCA,
-    CGShellOrdering_BAGEL        = LIBINT_CGSHELL_ORDERING_BAGEL
+    CGShellOrdering_BAGEL        = LIBINT_CGSHELL_ORDERING_BAGEL,
+    CGShellOrdering_MOLDEN
   };
 
 };
@@ -215,5 +216,16 @@ namespace libint2 {
 #define END_FOR_CART }}
 
 #endif // Bagel ordering
+
+/// these always-available macros encode orderings assumed by Molden
+
+#define INT_CARTINDEX_MOLDEN(am,i,j) CGShellInfo< CGShellOrderingData<CGShellOrdering_MOLDEN,4u> >::cartindex(am,i,j)
+
+/* FOR_CART_MOLDEN(i,j,k,am)
+ *   END_FOR_CART_MOLDEN
+ */
+#define FOR_CART_MOLDEN(i,j,k,am) for(int __xyz=0; __xyz<INT_NCART(am); ++__xyz) { \
+                             CGShellInfo< CGShellOrderingData<CGShellOrdering_MOLDEN,4u> >::cartindex_to_ijk(am,__xyz,i,j,k);
+#define END_FOR_CART_MOLDEN }
 
 #endif // header guard
