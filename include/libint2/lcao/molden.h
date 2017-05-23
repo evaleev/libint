@@ -162,8 +162,11 @@ class Export {
          << std::endl
          << std::setw(8) << "Occup=" << occupancies_(imo) << std::endl;
       for (int iao = 0; iao < coefs_.rows(); ++iao) {
-        os << std::setw(6) << (ao_map_[iao] + 1) << std::setw(16)
-           << coefs_(iao, imo) << std::endl;
+        const auto C_ao_mo = coefs_(iao, imo);
+        if (std::abs(C_ao_mo) >= 5e-11) {
+          os << std::setw(6) << (ao_map_[iao] + 1) << std::setw(16)
+             << C_ao_mo << std::endl;
+        }
       }  // end loop over AOs
     }    // end loop over MOs
   }
