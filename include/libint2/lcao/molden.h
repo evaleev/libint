@@ -255,9 +255,7 @@ class Export {
             int i, j, k;
             FOR_CART_MOLDEN(i, j, k, l)
             const auto ao_in_shell = INT_CARTINDEX(l, i, j);
-            std::cout << "L=" << l << " AO={" << i << "," << j << "," << k << "}, standard cart index = " << ao_in_shell << std::endl;
             ao_map_[ao + ao_in_shell] = ao_molden;
-            std::cout << "mapped standard AO " << ao + ao_in_shell << " to MOLDEN AO " << ao_molden << std::endl;
             ++ao_molden;
             END_FOR_CART_MOLDEN
             ao += INT_NCART(l);
