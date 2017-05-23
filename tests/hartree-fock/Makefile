@@ -63,7 +63,7 @@ $(TEST1) $(TEST2): CXXFLAGS=$(CXXGENFLAGS)
 $(TEST1) $(TEST2): LD=$(CXXGEN)
 
 clean::
-	-rm -rf $(TEST1) $(TEST2) *.o *.d
+	-rm -rf $(TEST1) $(TEST2) *.o *.d *.molden
 
 distclean:: realclean
 	-rm -rf $(TOPDIR)/include/libint2/boost
