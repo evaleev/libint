@@ -68,7 +68,7 @@ class Export {
   /// - p (l=1) shells are Cartesian, not solid harmonics
   /// - d, f, and g (l=2..4) shells are all Cartesian or all solid harmonics
   /// - there are no shells with l>5
-  template <typename Coeffs, typename Energies, typename Occs>
+  template <typename Coeffs, typename Occs, typename Energies = Eigen::MatrixXd>
   Export(const std::vector<Atom>& atoms, const std::vector<Shell>& basis,
          const Coeffs& coefficients, const Occs& occupancies,
          const Energies& energies = Energies(),
@@ -85,10 +85,12 @@ class Export {
     initialize_bf_map();
   }
 
+  /// writes "[Molden Format]" to ostream \c os
   void write_prologue(std::ostream& os) const {
     os << "[Molden Format]" << std::endl;
   }
 
+  /// writes the "[Atoms]" section to ostream \c os
   void write_atoms(std::ostream& os) const {
     os << "[Atoms] AU" << std::endl;
 
@@ -105,6 +107,8 @@ class Export {
     }
   }
 
+  /// writes the "[GTO]" section, as well as optional Cartesian/solid harmonics
+  /// keywords, to ostream \c os
   void write_basis(std::ostream& os) const {
     os << "[GTO]" << std::endl;
     for (size_t iatom = 0; iatom < atoms_.size(); ++iatom) {
@@ -148,6 +152,7 @@ class Export {
     }
   }
 
+  /// writes the "[MO]" section to ostream \c os
   void write_lcao(std::ostream& os) const {
     // TODO Open shell cases
     os << "[MO]" << std::endl;
@@ -171,7 +176,17 @@ class Export {
     }    // end loop over MOs
   }
 
+  /// writes "prologue", atoms, basis, and LCAOs to ostream \c os
   void write(std::ostream& os) const {
+    write_prologue(os);
+    write_atoms(os);
+    write_basis(os);
+    write_lcao(os);
+  }
+
+  /// same as write(ostream), but creates new file named \c filename
+  void write(const std::string& filename) const {
+    std::ofstream os(filename);
     write_prologue(os);
     write_atoms(os);
     write_basis(os);
