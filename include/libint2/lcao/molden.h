@@ -206,7 +206,7 @@ class Export {
           case 1:
             if (contr.pure)
               throw std::runtime_error(
-                  "molden::Export cannot handle solid harmonic p shells");
+                  "molden::Export cannot handle solid harmonics p shells");
             break;
           case 2:
           case 3:
@@ -217,7 +217,7 @@ class Export {
             if (!contr.pure ^ dfg_is_cart_[contr.l - 2])
               throw std::runtime_error(
                   "molden::Export only supports all-Cartesian or "
-                  "all-Solid-Harmonic d/f/g shells");
+                  "all-solid-harmonics d/f/g shells");
           }
 
           default: {}  // l = 0 is fine
