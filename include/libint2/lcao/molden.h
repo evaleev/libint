@@ -68,7 +68,7 @@ class Export {
   /// - p (l=1) shells are Cartesian, not solid harmonics
   /// - d, f, and g (l=2..4) shells are all Cartesian or all solid harmonics
   /// - there are no shells with l>5
-  template <typename Coeffs, typename Occs, typename Energies = Eigen::MatrixXd>
+  template <typename Coeffs, typename Occs, typename Energies = Eigen::VectorXd>
   Export(const std::vector<Atom>& atoms, const std::vector<Shell>& basis,
          const Coeffs& coefficients, const Occs& occupancies,
          const Energies& energies = Energies(),
