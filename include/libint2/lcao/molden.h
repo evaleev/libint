@@ -154,10 +154,9 @@ class Export {
 
   /// writes the "[MO]" section to ostream \c os
   void write_lcao(std::ostream& os) const {
-    // TODO Open shell cases
     os << "[MO]" << std::endl;
-    os << std::fixed << std::setprecision(10);
     for (int imo = 0; imo < coefs_.cols(); ++imo) {
+      os << std::fixed << std::setprecision(10);
       os << std::setw(8) << "Sym=" << (labels_.empty() ? "" : labels_.at(imo))
          << std::endl
          << std::setw(8) << "Ene=" << std::setw(16)
@@ -166,10 +165,11 @@ class Export {
          << (spins_.empty() ? "Alpha" : (spins_.at(imo) ? "Alpha" : "Beta"))
          << std::endl
          << std::setw(8) << "Occup=" << occupancies_(imo) << std::endl;
+      os << std::scientific << std::uppercase << std::setprecision(10);
       for (int iao = 0; iao < coefs_.rows(); ++iao) {
         const auto C_ao_mo = coefs_(iao, imo);
         if (std::abs(C_ao_mo) >= 5e-11) {
-          os << std::setw(6) << (ao_map_[iao] + 1) << std::setw(16)
+          os << std::setw(6) << (ao_map_[iao] + 1) << " " << std::setw(16)
              << C_ao_mo << std::endl;
         }
       }  // end loop over AOs
