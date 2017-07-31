@@ -472,6 +472,19 @@ AS_HELP_STRING([--with-1body-opt-am=N],[Optimize 1-e ints maximally for up to an
 ]
 )
 
+MULTIPOLE_MAX_ORDER=10
+AC_ARG_WITH(multipole-max-order,
+AS_HELP_STRING([--with-multipole-max-order=N],[Maximum order of spherical multipole integrals. The default is 10. There is no maximum]),
+[
+  case $withval in 
+    *) 
+      MULTIPOLE_MAX_ORDER=$withval
+    ;;
+  esac
+]
+)
+AC_DEFINE_UNQUOTED(MULTIPOLE_MAX_ORDER,$MULTIPOLE_MAX_ORDER)  
+
 if test X$INCLUDE_ONEBODY != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ONEBODY,$INCLUDE_ONEBODY)
   LIBINT_SUPPORTS_ONEBODY=yes
