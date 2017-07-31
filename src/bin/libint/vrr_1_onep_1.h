@@ -55,7 +55,7 @@ namespace libint2 {
       using ParentType::target_;
       using ParentType::is_simple;
 
-      /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
+      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
       VRR_1_Overlap_1(const SafePtr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "OSVRROverlap"; }
@@ -197,7 +197,7 @@ namespace libint2 {
       using ParentType::target_;
       using ParentType::is_simple;
 
-      /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
+      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
       VRR_1_Overlap_1_1d(const SafePtr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return std::string("OSVRROverlap") + to_string(axis); }
@@ -346,7 +346,7 @@ namespace libint2 {
       using ParentType::target_;
       using ParentType::is_simple;
 
-      /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
+      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
       VRR_1_Kinetic_1(const SafePtr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "OSVRRKinetic"; }

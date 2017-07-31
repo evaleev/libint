@@ -56,7 +56,7 @@ namespace libint2 {
       using ParentType::target_;
       using ParentType::is_simple;
 
-      /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
+      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
       VRR_11_R12kG12_11(const SafePtr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "VRR"; }

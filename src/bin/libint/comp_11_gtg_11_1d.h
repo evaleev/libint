@@ -54,7 +54,7 @@ namespace libint2 {
       using ParentType::target_;
       using ParentType::is_simple;
 
-      /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
+      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
       CR_11_GTG_11_1d(const SafePtr<TargetType>&, unsigned int dir);
       static std::string descr() { return "CR"; }
 
