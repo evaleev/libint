@@ -47,6 +47,8 @@ namespace libint2 {
   typedef GenIntegralSet_1_1<CGF,ElecPotOper,mType> ElecPot_1_1_int;
   typedef GenIntegralSet_1_1<CGShell,CartesianMultipoleOper<3u>,EmptySet> CMultipole_1_1_sh;
   typedef GenIntegralSet_1_1<CGF,CartesianMultipoleOper<3u>,EmptySet> CMultipole_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,SphericalMultipoleOper,EmptySet> SMultipole_1_1_sh;
+  typedef GenIntegralSet_1_1<CGF,SphericalMultipoleOper,EmptySet> SMultipole_1_1_int;
 
   typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,OverlapOper,EmptySet> Overlap_1_1_sh_x;
   typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper,EmptySet> Overlap_1_1_sh_y;
@@ -128,6 +130,8 @@ namespace libint2 {
   CMultipole_1_1_int_x,
   CMultipole_1_1_int_y,
   CMultipole_1_1_int_z,
+  SMultipole_1_1_sh,
+  SMultipole_1_1_int,
 #endif
   TwoPRep_11_11_sq,
   TwoPRep_11_11_int,

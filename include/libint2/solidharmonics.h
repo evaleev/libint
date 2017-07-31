@@ -30,6 +30,10 @@
 #include <vector>
 #include <algorithm>
 
+// if using from the Libint compiler, need to define real type with which will be computing
+#ifndef LIBINT2_REALTYPE
+#  define LIBINT2_REALTYPE double
+#endif
 #include <libint2/shell.h>
 #include <libint2/cgshell_ordering.h>
 
@@ -77,8 +81,8 @@ namespace libint2 {
 
         static const SolidHarmonicsCoefficients& instance(unsigned int l) {
           static std::vector<SolidHarmonicsCoefficients> shg_coefs(SolidHarmonicsCoefficients::CtorHelperIter(0),
-                                                                   SolidHarmonicsCoefficients::CtorHelperIter(LIBINT_MAX_AM+1));
-          assert(l <= LIBINT_MAX_AM);
+                                                                   SolidHarmonicsCoefficients::CtorHelperIter(11));
+          assert(l <= 10);  // see coeff() for explanation of the upper limit on l
           return shg_coefs[l];
         }
 
@@ -178,7 +182,7 @@ namespace libint2 {
             return 0.0;
 
           assert(l <= 10); // libint2::math::fac[] is only defined up to 20
-          Real pfac = sqrt( ((Real(fac[2*lx]*fac[2*ly]*fac[2*lz]))/fac[2*l]) *
+          Real pfac = sqrt( ((Real(fac[2*lx])*Real(fac[2*ly])*Real(fac[2*lz]))/fac[2*l]) *
                             ((Real(fac[l-abs_m]))/(fac[l])) *
                             (Real(1)/fac[l+abs_m]) *
                             (Real(1)/(fac[lx]*fac[ly]*fac[lz]))

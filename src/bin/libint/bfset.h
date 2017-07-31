@@ -96,6 +96,7 @@ namespace libint2 {
   template <unsigned NDIM = 3>
   class OriginDerivative : public Hashable<LIBINT2_UINT_LEAST64,ReferToKey> {
 
+    static_assert(NDIM == 1 || NDIM == 3, "OriginDerivative<NDIM>: only NDIM=1 or NDIM=3 are supported");
   public:
     OriginDerivative() : valid_(true) {
       for(auto d=0u; d!=NDIM; ++d) d_[d] = 0u;
@@ -160,10 +161,14 @@ namespace libint2 {
         unsigned nxy = d_[1] + d_[2];
         unsigned l = nxy + d_[0];
         LIBINT2_UINT_LEAST64 key = nxy*(nxy+1)/2 + d_[2];
-        return key + key_l_offset.at(l);
+        const auto result = key + key_l_offset.at(l);
+        assert(result < max_key);
+        return result;
       }
       if (NDIM == 1u) {
-        return d_[0];
+        const auto result = d_[0];
+        assert(result < max_key);
+        return result;
       }
       assert(false);
     }
@@ -427,11 +432,12 @@ namespace libint2 {
 
 #if 1
   /// Cartesian components of 3D CGF = 1D CGF
-  /// @note reference to particular cartesian axis embedded in type
+  /// @note reference to particular cartesian axis embedded in type, so that for
+  /// example axis-dependent RRs can correctly infer geometric constants
   template <CartesianAxis Axis>
-  class CGF1d : public IncableBFSet, public Hashable<LIBINT2_UINT_LEAST64,ComputeKey>,
-                public Contractable< CGF1d<Axis> > {
-
+  class CGF1d : public IncableBFSet,
+                public Hashable<LIBINT2_UINT_LEAST64, ComputeKey>,
+                public Contractable<CGF1d<Axis> > {
     unsigned int qn_[1];
     OriginDerivative<1u> deriv_;
     bool unit_; //< if true, this is a unit Gaussian (exponent = 0)

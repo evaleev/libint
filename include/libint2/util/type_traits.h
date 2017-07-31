@@ -21,6 +21,8 @@
 #ifndef _libint2_include_libint2_typetraits_h_
 #define _libint2_include_libint2_typetraits_h_
 
+#include <cstdlib>
+
 namespace libint2 {
 
   template <typename T>
@@ -31,7 +33,7 @@ namespace libint2 {
   template <typename T>
   struct vector_traits {
       typedef T scalar_type;
-      static const size_t extent = 1;
+      static const std::size_t extent = 1;
   };
 
 } // namespace libint2

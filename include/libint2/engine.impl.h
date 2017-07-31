@@ -71,14 +71,15 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
        (1emultipole,                 \
         (2emultipole,                \
          (3emultipole,               \
-          (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL))))))))))))))))
+           (sphemultipole,           \
+          (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL)))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE)
 #define BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX \
-  7  // 3emultipole, the 8th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
+  8  // sphemultipole, the 9th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
      // 1-body operator
 
 // make list of braket indices for n-body ints
@@ -901,6 +902,22 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 #endif
 #if LIBINT2_DEFINED(eri, BO_z)
     primdata.BO_z[0] = B[2] - O[2];
+#endif
+  }
+  if (oper_ == Operator::sphemultipole) {
+    const auto& O = any_cast<const operator_traits<
+        Operator::emultipole1>::oper_params_type&>(params_);
+#if LIBINT2_DEFINED(eri, PO_x)
+    primdata.PO_x[0] = Px - O[0];
+#endif
+#if LIBINT2_DEFINED(eri, PO_y)
+    primdata.PO_y[0] = Py - O[1];
+#endif
+#if LIBINT2_DEFINED(eri, PO_z)
+    primdata.PO_z[0] = Pz - O[2];
+#endif
+#if LIBINT2_DEFINED(eri, PO2)
+    primdata.PO2[0] = (Px - O[0])*(Px - O[0]) + (Py - O[1])*(Py - O[1]) + (Pz - O[2])*(Pz - O[2]);
 #endif
   }
 

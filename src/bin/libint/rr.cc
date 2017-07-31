@@ -404,15 +404,23 @@ namespace libint2 { namespace algebra {
   const SafePtr<RecurrenceRelation::ExprType>& operator+=(SafePtr<RecurrenceRelation::ExprType>& A,
                                                           const SafePtr<DGVertex>& B) {
     typedef RecurrenceRelation::ExprType Oper;
-    const SafePtr<Oper>& Sum = A + B;
-    A = Sum;
+    if (A) {
+      const SafePtr<Oper>& Sum = A + B;
+      A = Sum;
+    }
+    else
+      A = Scalar(1) * B;
     return A;
   }
   const SafePtr<RecurrenceRelation::ExprType>& operator-=(SafePtr<RecurrenceRelation::ExprType>& A,
                                                           const SafePtr<DGVertex>& B) {
     typedef RecurrenceRelation::ExprType Oper;
-    const SafePtr<Oper>& Diff = A - B;
-    A = Diff;
+    if (A) {
+      const SafePtr<Oper>& Diff = A - B;
+      A = Diff;
+    }
+    else
+      A = Scalar(-1) * B;
     return A;
   }
   const SafePtr<RecurrenceRelation::ExprType>& operator*=(SafePtr<RecurrenceRelation::ExprType>& A,

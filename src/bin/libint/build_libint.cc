@@ -37,6 +37,7 @@
 #include <libint2/config.h>
 #include <global_macros.h>
 #include <libint2/cgshell_ordering.h>
+#include <libint2/shgshell_ordering.h>
 
 #include <default_params.h>
 #include <rr.h>
@@ -238,14 +239,19 @@ namespace {
     typedef EmptySet type;
   };
 
-  template <typename OperDescrType> OperDescrType make_descr(int, int, int) {
+  template <typename OperDescrType> OperDescrType make_descr(int, int, int = 0) {
     return OperDescrType();
   }
   template <> CartesianMultipole_Descr<3u> make_descr<CartesianMultipole_Descr<3u>>(int x, int y, int z) {
     CartesianMultipole_Descr<3u> result;
+    // cartesian multipole quanta
     result.inc(0,x);
     result.inc(1,y);
     result.inc(2,z);
+    return result;
+  }
+  template <> SphericalMultipole_Descr make_descr<SphericalMultipole_Descr>(int l, int m, int) {
+    SphericalMultipole_Descr result(l,m);
     return result;
   }
 }
@@ -300,19 +306,6 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
              )
             continue;
 
-          // unroll only if max_am <= cparams->max_am_opt(task)
-          using std::max;
-          const unsigned int max_am = max(la,lb);
-          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const bool need_to_unroll = l_to_cgshellsize(la)*l_to_cgshellsize(lb) <= cparams->unroll_threshold();
-          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
-
-          dg->registry()->unroll_threshold(unroll_threshold);
-          dg->registry()->do_cse(need_to_optimize);
-          dg->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
-          // Need to accumulate integrals?
-          dg->registry()->accumulate_targets(cparams->accumulate_targets());
-
           // this will hold all target shell sets
           std::vector< SafePtr<Onebody_sh_1_1> > targets;
 
@@ -343,6 +336,18 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
               FOR_CART(x,y,z,multipole_order)
                 descrs.push_back(make_descr<OperDescrType>(x,y,z));
               END_FOR_CART
+            }
+          }
+          if (std::is_same<_OperType,SphericalMultipoleOper>::value) {
+            // reset descriptors array
+            descrs.resize(0);
+            // iterate over operators and construct their descriptors
+            for(int l=0; l<=MULTIPOLE_MAX_ORDER; ++l) {
+              // we iterate over them same way as over solid harmonic Gaussian shells
+              int m;
+              FOR_SOLIDHARM(l,m)
+                descrs.push_back(make_descr<OperDescrType>(l,m));
+              END_FOR_SOLIDHARM
             }
           }
 
@@ -378,6 +383,21 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
             last_deriv = diter.last();
             if (!last_deriv) diter.next();
           } while (!last_deriv); // loop over derivatives
+
+          // unroll only if max_am <= cparams->max_am_opt(task)
+          using std::max;
+          const unsigned int max_am = max(la,lb);
+          const auto nopers = descrs.size();
+          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
+          // decide whether to unroll based on the aggregate size of undifferentiated quartets
+          const bool need_to_unroll = nopers * l_to_cgshellsize(la)*l_to_cgshellsize(lb) <= cparams->unroll_threshold();
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
+
+          dg->registry()->unroll_threshold(unroll_threshold);
+          dg->registry()->do_cse(need_to_optimize);
+          dg->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
+          // Need to accumulate integrals?
+          dg->registry()->accumulate_targets(cparams->accumulate_targets());
 
           // shove all targets on the graph, IN ORDER
           for(auto t = targets.begin(); t!=targets.end(); ++t) {
@@ -459,23 +479,25 @@ void try_main (int argc, char* argv[])
 #ifdef INCLUDE_ONEBODY
 
 // if using compiler without variadic macros make sure to update the number of elements below
-#define BOOST_PP_ONEBODY_TASK_TUPLE ("overlap",               \
-                                     "kinetic",               \
-                                     "elecpot",               \
-                                     "1emultipole",           \
-                                     "2emultipole",           \
-                                     "3emultipole"            \
+#define BOOST_PP_ONEBODY_TASK_TUPLE (overlap,               \
+                                     kinetic,               \
+                                     elecpot,               \
+                                     1emultipole,           \
+                                     2emultipole,           \
+                                     3emultipole,           \
+                                     sphemultipole    \
                                     )
 #define BOOST_PP_ONEBODY_TASK_OPER_TUPLE (OverlapOper,                    \
                                           KineticOper,                    \
                                           ElecPotOper,                    \
                                           CartesianMultipoleOper<3u>,     \
                                           CartesianMultipoleOper<3u>,     \
-                                          CartesianMultipoleOper<3u>      \
+                                          CartesianMultipoleOper<3u>,     \
+                                          SphericalMultipoleOper          \
                                          )
 #if not BOOST_PP_VARIADICS  // no variadic macros? you must MANUALLY specify the number of elements in the tuple here
-#  define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( 6, BOOST_PP_ONEBODY_TASK_TUPLE )
-#  define BOOST_PP_ONEBODY_TASK_OPER_LIST BOOST_PP_TUPLE_TO_LIST( 6, BOOST_PP_ONEBODY_TASK_OPER_TUPLE )
+#  define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( 7, BOOST_PP_ONEBODY_TASK_TUPLE )
+#  define BOOST_PP_ONEBODY_TASK_OPER_LIST BOOST_PP_TUPLE_TO_LIST( 7, BOOST_PP_ONEBODY_TASK_OPER_TUPLE )
 #else
 #  define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_TUPLE )
 #  define BOOST_PP_ONEBODY_TASK_OPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_OPER_TUPLE )
@@ -483,7 +505,7 @@ void try_main (int argc, char* argv[])
 
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
 #define BOOST_PP_ONEBODY_MCR1(r,data,elem)          \
-    taskmgr.add( task_label(elem,d) );
+    taskmgr.add( task_label(BOOST_PP_STRINGIZE(elem),d) );
 
 BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
 #undef BOOST_PP_ONEBODY_MCR1
@@ -563,7 +585,7 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
   }
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
 #define BOOST_PP_ONEBODY_MCR6(r,data,elem)          \
-    cparams->num_bf(task_label(elem, d),     2);
+    cparams->num_bf(task_label(BOOST_PP_STRINGIZE(elem), d),     2);
     BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR6, _, BOOST_PP_ONEBODY_TASK_LIST)
 #   undef BOOST_PP_ONEBODY_MCR6
   }
@@ -754,7 +776,7 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
 #ifdef INCLUDE_ONEBODY
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
 #   define BOOST_PP_ONEBODY_MCR7(r,data,i,elem)          \
-    build_onebody_1b_1k< BOOST_PP_LIST_AT (BOOST_PP_ONEBODY_TASK_OPER_LIST, i) >(os,elem,cparams,iface,d);
+    build_onebody_1b_1k< BOOST_PP_LIST_AT (BOOST_PP_ONEBODY_TASK_OPER_LIST, i) >(os,BOOST_PP_STRINGIZE(elem),cparams,iface,d);
     BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODY_MCR7, _, BOOST_PP_ONEBODY_TASK_LIST)
 #   undef BOOST_PP_ONEBODY_MCR7
   }
@@ -827,8 +849,9 @@ print_header(std::ostream& os)
 {
   os << "----------------------------------------------" << endl;
   os << " build_libint2: optimizing integrals compiler " << endl;
-  os << "                by Edward F. Valeev           " << endl;
-  os << "                and ideas by countless others " << endl;
+  os << "                        by Edward F. Valeev           " << endl;
+  os << "                and ideas by Justin Fermann   "
+     << "                         and Curtis Janssen   " << endl;
   os << "----------------------------------------------" << endl << endl;
 }
 
@@ -1977,8 +2000,8 @@ config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Ifac
         std::string ncenter_str = oss.str();
         std::string ncenter_str_abbrv = ncenter == 2 ? std::string("") : oss.str();
 #define BOOST_PP_MCR1(r,data,elem)                                   \
-        abbrv_label = task_label(ncenter_str_abbrv + elem,d);        \
-        full_label = task_label(ncenter_str + elem,d);               \
+        abbrv_label = task_label(ncenter_str_abbrv + BOOST_PP_STRINGIZE(elem),d);        \
+        full_label = task_label(ncenter_str + BOOST_PP_STRINGIZE(elem),d);               \
         iface->to_params(iface->macro_define(std::string("TASK_EXISTS_") + full_label,taskmgr.exists(abbrv_label) ? 1 : 0));
 
 BOOST_PP_LIST_FOR_EACH ( BOOST_PP_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)

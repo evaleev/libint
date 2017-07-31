@@ -283,41 +283,27 @@ namespace libint2 {
       VRR_b_1_Overlap_1_int_z
       > value;
     };
-# if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
+  // TODO create TwoCenterOSTactic to be able to optimally apply bidirectional strategies
   template <> struct MasterStrategy<ElecPot_1_1_sh> {
       typedef mpl::list<
       HRR_ab_1_ElecPot_1_sh,
+//      HRR_ba_1_ElecPot_1_sh,
       CR_DerivGauss<ElecPot_1_1_sh,0,InBra>,
       CR_DerivGauss<ElecPot_1_1_sh,0,InKet>,
       VRR_a_1_ElecPot_1_sh
+//      VRR_b_1_ElecPot_1_sh
       > value;
     };
   template <> struct MasterStrategy<ElecPot_1_1_int> {
       typedef mpl::list<
       HRR_ab_1_ElecPot_1_int,
+//      HRR_ba_1_ElecPot_1_int,
       CR_DerivGauss<ElecPot_1_1_int,0,InBra>,
       CR_DerivGauss<ElecPot_1_1_int,0,InKet>,
       VRR_a_1_ElecPot_1_int
+//      VRR_b_1_ElecPot_1_int
       > value;
     };
-# else //  // 0B0D strategy
-  template <> struct MasterStrategy<ElecPot_1_1_sh> {
-      typedef mpl::list<
-      HRR_ba_1_ElecPot_1_sh,
-      CR_DerivGauss<ElecPot_1_1_sh,0,InBra>,
-      CR_DerivGauss<ElecPot_1_1_sh,0,InKet>,
-      VRR_b_1_ElecPot_1_sh
-      > value;
-    };
-  template <> struct MasterStrategy<ElecPot_1_1_int> {
-      typedef mpl::list<
-      HRR_ba_1_ElecPot_1_int,
-      CR_DerivGauss<ElecPot_1_1_int,0,InBra>,
-      CR_DerivGauss<ElecPot_1_1_int,0,InKet>,
-      VRR_b_1_ElecPot_1_int
-      > value;
-    };
-# endif // strategy: A0 or 0B
   template <> struct MasterStrategy<Kinetic_1_1_sh> {
       typedef mpl::list<
         CR_XYZ_1_1<CGShell,KineticOper>
@@ -370,6 +356,22 @@ namespace libint2 {
   template <> struct MasterStrategy<CMultipole_1_1_int_z> {
       typedef mpl::list<
         CR_XYZ_1_1<CGF1d<CartesianAxis_Z>,CartesianMultipoleOper<1u>>
+      > value;
+    };
+  template <> struct MasterStrategy<SMultipole_1_1_sh> {
+      typedef mpl::list<
+        CR_DerivGauss<SMultipole_1_1_sh,0,InBra>,
+        CR_DerivGauss<SMultipole_1_1_sh,0,InKet>,
+        VRR_a_1_SMultipole_1_sh,
+        VRR_b_1_SMultipole_1_sh
+      > value;
+    };
+  template <> struct MasterStrategy<SMultipole_1_1_int> {
+      typedef mpl::list<
+          CR_DerivGauss<SMultipole_1_1_int,0,InBra>,
+          CR_DerivGauss<SMultipole_1_1_int,0,InKet>,
+          VRR_a_1_SMultipole_1_int,
+          VRR_b_1_SMultipole_1_int
       > value;
     };
 #endif // LIBINT_SUPPORT_ONEBODYINTS

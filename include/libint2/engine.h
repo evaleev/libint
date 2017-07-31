@@ -84,7 +84,8 @@ constexpr size_t num_geometrical_derivatives(size_t ncenter,
 template <typename T, unsigned N>
 __libint2_engine_inline typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]);
 
-/// types of operators (operator sets) supported by Engine.
+/// \brief types of operators (operator sets) supported by Engine.
+
 /// \warning These must start with 0 and appear in same order as elements of
 /// BOOST_PP_NBODY_OPERATOR_LIST preprocessor macro (aliases do not need to be included).
 /// \warning for the sake of nbody() order operators by # of particles
@@ -112,6 +113,12 @@ enum class Operator {
   /// emultipole2 + (Cartesian) electric octupole moment,
   //! \f$ x^3, x^2y, x^2z, xy^2, xyz, xz^2, y^3, y^2z, yz^2, z^3 \f$
   emultipole3,
+  /// (electric) spherical multipole moments,
+  //! \f$ O_{l,m} \equiv \mathcal{N}^{\text{sign}(m)}_{l,|m|} \f$ where \f$ \f$ \mathcal{N}^{\pm}_{l,m} \f$
+  //! is defined in J.M. Pérez-Jordá and W. Yang, J Chem Phys 104, 8003 (1996), DOI 10.1063/1.468354 .
+  //! To obtain the real solid harmonics \f$ C^m_l \f$ and \f$ S^m_l \f$ defined in https://en.wikipedia.org/wiki/Solid_harmonics
+  //! multiply these harmonics by \f$ (-1)^m \sqrt{(2 - \delta_{m,0}) (l + |m|)! (l - |m|)!} \f$ .
+  sphemultipole,
   /// \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   delta,
   /// (2-body) Coulomb operator = \f$ r_{12}^{-1} \f$
@@ -138,7 +145,7 @@ enum class Operator {
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this updated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   first_1body_oper = overlap,
-  last_1body_oper = emultipole3,
+  last_1body_oper = sphemultipole,
   first_2body_oper = delta,
   last_2body_oper = erfc_coulomb,
   first_oper = first_1body_oper,
@@ -241,6 +248,12 @@ struct operator_traits<Operator::emultipole3>
     : public operator_traits<Operator::emultipole1> {
   static constexpr auto nopers =
       operator_traits<Operator::emultipole2>::nopers + 10;
+};
+template <>
+struct operator_traits<Operator::sphemultipole>
+    : public operator_traits<Operator::emultipole1> {
+  static constexpr auto nopers =
+      (MULTIPOLE_MAX_ORDER + 1) * (MULTIPOLE_MAX_ORDER + 1);
 };
 
 template <>

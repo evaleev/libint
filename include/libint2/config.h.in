@@ -83,6 +83,9 @@
 /* Max optimized AM for one-body ints */
 #undef ONEBODY_OPT_AM
 
+/* Max order of spherical multipole ints */
+#undef MULTIPOLE_MAX_ORDER
+
 /* Max AM for ERI (same for all derivatives; if not defined see ERI_MAX_AM_LIST) */
 #undef ERI_MAX_AM
 

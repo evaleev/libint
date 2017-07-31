@@ -19,13 +19,15 @@
  */
 
 
-#ifndef _libint2_include_libint2_util_preprocessor_libint2params_h_
-#define _libint2_include_libint2_util_preprocessor_libint2params_h_
+#ifndef _libint2_include_libint2_util_generated_libint2params_h_
+#define _libint2_include_libint2_util_generated_libint2params_h_
 
 #ifndef __COMPILING_LIBINT2
 #  include <libint2/libint2_params.h>
 #else
+# if __has_include(<libint2_params.h>)
 #  include <libint2_params.h>
+# endif
 #endif
 
-#endif /* _libint2_include_libint2_util_preprocessor_libint2params_h_ */
+#endif /* _libint2_include_libint2_util_generated_libint2params_h_ */
