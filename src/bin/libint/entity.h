@@ -21,6 +21,7 @@
 #ifndef _libint2_src_bin_libint_entity_h_
 #define _libint2_src_bin_libint_entity_h_
 
+#include <iomanip>
 #include <string>
 #include <sstream>
 #include <dgvertex.h>
@@ -70,7 +71,7 @@ namespace libint2 {
   /// Converts x to its string representation
   template <typename T>
     std::string to_string(const T& x) {
-    std::ostringstream oss;  oss << x;  return oss.str();
+    std::ostringstream oss;  oss << std::scientific << std::setprecision(std::numeric_limits<T>::digits10 + 1) << x;  return oss.str();
   }
 
   /**
