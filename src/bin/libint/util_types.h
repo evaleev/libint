@@ -26,9 +26,9 @@
 typedef enum {
   InBra=0, InKet=1
 } FunctionPosition;
-typedef enum {
-  BraToKet=0, KetToBra=1
-} FunctionMovement;
+enum class BraketDirection {
+  BraToKet=0, KetToBra=1, None=2
+};
 typedef enum {
   CartesianAxis_X=0, CartesianAxis_Y=1, CartesianAxis_Z=2
 } CartesianAxis;

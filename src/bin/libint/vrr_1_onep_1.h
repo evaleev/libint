@@ -749,7 +749,7 @@ namespace libint2 {
 
             if (am1_exists) {
               auto Am1B = make_child(am1, b, O_l_m);
-              if (is_simple()) { subexpr = Scalar(a[dir]) * Am1B;  nflops_+=1; }
+              if (is_simple()) { subexpr += Scalar(a[dir]) * Am1B;  nflops_+=1; }
             }
             if (bm1_exists) {
               auto ABm1 = make_child(a, bm1, O_l_m);

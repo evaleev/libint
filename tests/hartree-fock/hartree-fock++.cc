@@ -485,68 +485,77 @@ int main(int argc, char* argv[]) {
     }
 
     auto Mu = compute_1body_ints<Operator::emultipole3>(obs);
+
     std::array<double, 3> mu;
-    std::array<double, 6> qu;
-    std::array<double, 10> oct;
     for (int xyz = 0; xyz != 3; ++xyz)
       mu[xyz] = -2 *
                 D.cwiseProduct(Mu[xyz + 1])
                     .sum();  // 2 = alpha + beta, -1 = electron charge
-    for (int k = 0; k != 6; ++k)
-      qu[k] = -2 *
-              D.cwiseProduct(Mu[k + 4])
-                  .sum();  // 2 = alpha + beta, -1 = electron charge
-    for (int k = 0; k != 10; ++k)
-      oct[k] = -2 *
-              D.cwiseProduct(Mu[k + 10])
-                  .sum();  // 2 = alpha + beta, -1 = electron charge
     std::cout << "** edipole = ";
     std::copy(mu.begin(), mu.end(),
               std::ostream_iterator<double>(std::cout, " "));
     std::cout << std::endl;
+
+    std::array<double, 6> qu;
+    for (int k = 0; k != 6; ++k)
+      qu[k] = -2 *
+              D.cwiseProduct(Mu[k + 4])
+                  .sum();  // 2 = alpha + beta, -1 = electron charge
     std::cout << "** equadrupole = ";
     std::copy(qu.begin(), qu.end(),
               std::ostream_iterator<double>(std::cout, " "));
     std::cout << std::endl;
-    std::cout << "** eoctupole = ";
-    std::copy(oct.begin(), oct.end(),
-              std::ostream_iterator<double>(std::cout, " "));
-    std::cout << std::endl;
+
+    std::array<double, 10> oct;
+    for (int k = 0; k != 10; ++k)
+      oct[k] = -2 *
+              D.cwiseProduct(Mu[k + 10])
+                  .sum();  // 2 = alpha + beta, -1 = electron charge
+//    std::cout << "** eoctupole = ";
+//    std::copy(oct.begin(), oct.end(),
+//              std::ostream_iterator<double>(std::cout, " "));
+//    std::cout << std::endl;
 
     // use spherical moments
     auto SMu = compute_1body_ints<Operator::sphemultipole>(obs);
     {
+#if MULTIPOLE_MAX_ORDER > 0
       std::array<double, 3> mu;
-      std::array<double, 5> qu;
-      std::array<double, 7> oct;
       for (int xyz = 0; xyz != 3; ++xyz)
         mu[xyz] = -2 *
                   D.cwiseProduct(SMu[xyz + 1])
                       .sum();  // 2 = alpha + beta, -1 = electron charge
-      for (int k = 0; k != 5; ++k)
-        qu[k] = -2 *
-                D.cwiseProduct(SMu[k + 4])
-                    .sum();  // 2 = alpha + beta, -1 = electron charge
-      for (int k = 0; k != 7; ++k)
-        oct[k] = -2 *
-                D.cwiseProduct(SMu[k + 9])
-                    .sum();  // 2 = alpha + beta, -1 = electron charge
       std::cout << "** sph edipole = ";
       std::copy(mu.begin(), mu.end(),
                 std::ostream_iterator<double>(std::cout, " "));
       std::cout << std::endl;
+#endif
+#if MULTIPOLE_MAX_ORDER > 1
+      std::array<double, 5> qu;
+      for (int k = 0; k != 5; ++k)
+        qu[k] = -2 *
+                D.cwiseProduct(SMu[k + 4])
+                    .sum();  // 2 = alpha + beta, -1 = electron charge
       std::cout << "** sph equadrupole = ";
       std::copy(qu.begin(), qu.end(),
                 std::ostream_iterator<double>(std::cout, " "));
       std::cout << std::endl;
-      std::cout << "** sph eoctupole = ";
-      std::copy(oct.begin(), oct.end(),
-                std::ostream_iterator<double>(std::cout, " "));
-      std::cout << std::endl;
-    }
+#endif
+#if MULTIPOLE_MAX_ORDER > 2
+      std::array<double, 7> oct;
+      for (int k = 0; k != 7; ++k)
+        oct[k] = -2 *
+                D.cwiseProduct(SMu[k + 9])
+                    .sum();  // 2 = alpha + beta, -1 = electron charge
+//      std::cout << "** sph eoctupole = ";
+//      std::copy(oct.begin(), oct.end(),
+//                std::ostream_iterator<double>(std::cout, " "));
+//      std::cout << std::endl;
 
-//    // recompute C^3_0 from xxz, yyz, and zzz
-//    std::cout << "C^3_0 - (2zzz - 3xxz - 3yyz)/12:\n" << ((2.*Mu[19] - 3.*Mu[12] - 3.*Mu[17])/12 - SMu[12]) << std::endl;
+      // recompute C^3_0 from xxz, yyz, and zzz
+    std::cout << "C^3_0 - (2zzz - 3xxz - 3yyz)/12:\n" << ((2.*Mu[19] - 3.*Mu[12] - 3.*Mu[17])/12 - SMu[12]).norm() << std::endl;
+#endif
+    }
 
     {  // compute force
 #if LIBINT2_DERIV_ONEBODY_ORDER

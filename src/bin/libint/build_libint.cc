@@ -33,6 +33,10 @@
 #include <fstream>
 #include <vector>
 #include <boost/preprocessor.hpp>
+#if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
+#  error "your compiler does not provide variadic macros (but does support C++11), something is seriously broken, please create an issue at https://github.com/evaleev/libint/issues"
+#endif
+
 
 #include <libint2/config.h>
 #include <global_macros.h>
@@ -268,6 +272,13 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
   typedef typename OperType::Descriptor OperDescrType;
   typedef GenIntegralSet_1_1<CGShell, OperType, typename AuxQuantaType<OperType>::type> Onebody_sh_1_1;
 
+  // optionally skip derivative property ints
+#ifdef DISABLE_ONEBODY_PROPERTY_DERIVS
+  const auto property_operator = !(std::is_same<_OperType,OverlapOper>::value || std::is_same<_OperType,KineticOper>::value || std::is_same<_OperType,ElecPotOper>::value);
+  if (property_operator && deriv_level > 0)
+    return;
+#endif
+
   vector<BFType*> shells;
   unsigned int lmax = cparams->max_am(task);
   for(unsigned int l=0; l<=lmax; l++) {
@@ -292,7 +303,6 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
   //
   SafePtr<DirectedGraph> dg(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy());
-  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
   SafePtr<CodeContext> context(new CppCodeContext(cparams));
   SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
 
@@ -305,6 +315,8 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
               )
              )
             continue;
+
+          SafePtr<Tactic> tactic(new TwoCenter_OS_Tactic(la,lb));
 
           // this will hold all target shell sets
           std::vector< SafePtr<Onebody_sh_1_1> > targets;
@@ -478,7 +490,7 @@ void try_main (int argc, char* argv[])
 #endif
 #ifdef INCLUDE_ONEBODY
 
-// if using compiler without variadic macros make sure to update the number of elements below
+// overlap, kinetic, elecpot cannot be omitted
 #define BOOST_PP_ONEBODY_TASK_TUPLE (overlap,               \
                                      kinetic,               \
                                      elecpot,               \
@@ -495,13 +507,8 @@ void try_main (int argc, char* argv[])
                                           CartesianMultipoleOper<3u>,     \
                                           SphericalMultipoleOper          \
                                          )
-#if not BOOST_PP_VARIADICS  // no variadic macros? you must MANUALLY specify the number of elements in the tuple here
-#  define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( 7, BOOST_PP_ONEBODY_TASK_TUPLE )
-#  define BOOST_PP_ONEBODY_TASK_OPER_LIST BOOST_PP_TUPLE_TO_LIST( 7, BOOST_PP_ONEBODY_TASK_OPER_TUPLE )
-#else
-#  define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_TUPLE )
-#  define BOOST_PP_ONEBODY_TASK_OPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_OPER_TUPLE )
-#endif
+#define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_TUPLE )
+#define BOOST_PP_ONEBODY_TASK_OPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_OPER_TUPLE )
 
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
 #define BOOST_PP_ONEBODY_MCR1(r,data,elem)          \
@@ -1954,6 +1961,11 @@ config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Ifac
 #ifdef INCLUDE_ONEBODY
   iface->to_params(iface->macro_define("SUPPORT_ONEBODY",1));
   iface->to_params(iface->macro_define("DERIV_ONEBODY_ORDER",INCLUDE_ONEBODY));
+#ifdef DISABLE_ONEBODY_PROPERTY_DERIVS
+  iface->to_params(iface->macro_define("DERIV_ONEBODY_PROPERTY_ORDER",0));
+#else
+  iface->to_params(iface->macro_define("DERIV_ONEBODY_PROPERTY_ORDER",INCLUDE_ONEBODY));
+#endif
   max_deriv_order = std::max(max_deriv_order,INCLUDE_ONEBODY);
 #endif
 #ifdef INCLUDE_ERI
@@ -2010,7 +2022,6 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
 
       { // 2-body ints
 
-// if using compiler without variadic macros make sure to update the number of elements below
 #define BOOST_PP_TWOBODY_TASKOPER_TUPLE ("eri",               \
                                          "r12kg12",           \
                                          "r12_0_g12",         \
@@ -2018,11 +2029,7 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
                                          "g12_T1_g12",        \
                                          "g12dkh"             \
         )
-#if not BOOST_PP_VARIADICS  // no variadic macros? you must MANUALLY specify the number of elements in the tuple here
-#  define BOOST_PP_TWOBODY_TASKOPER_LIST BOOST_PP_TUPLE_TO_LIST( 6, BOOST_PP_TWOBODY_TASKOPER_TUPLE )
-#else
-#  define BOOST_PP_TWOBODY_TASKOPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_TWOBODY_TASKOPER_TUPLE )
-#endif
+#define BOOST_PP_TWOBODY_TASKOPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_TWOBODY_TASKOPER_TUPLE )
 
         std::string ncenter_str = oss.str();
         std::string ncenter_str_abbrv = ncenter == 4 ? std::string("") : oss.str();

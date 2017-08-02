@@ -863,8 +863,43 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 
   assert(LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD && "non-standard shell ordering");
 
-// overlap and kinetic energy ints don't use HRR, hence VRR on both centers
-// Coulomb potential do HRR on center 1 only
+  const auto oper_is_nuclear =
+      (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
+       oper_ == Operator::erfc_nuclear);
+
+  // need to use HRR? see strategy.cc
+  const auto l1 = s1.contr[0].l;
+  const auto l2 = s2.contr[0].l;
+  const bool use_hrr = (oper_is_nuclear || oper_ == Operator::sphemultipole) && l1 > 0 && l2 > 0;
+  // unlike the 2-body ints, can go both ways, determine which way to go (the logic must match TwoCenter_OS_Tactic)
+  const bool hrr_ket_to_bra = l1 >= l2;
+  if (use_hrr) {
+    if (hrr_ket_to_bra) {
+#if LIBINT2_DEFINED(eri, AB_x)
+    primdata.AB_x[0] = AB_x;
+#endif
+#if LIBINT2_DEFINED(eri, AB_y)
+    primdata.AB_y[0] = AB_y;
+#endif
+#if LIBINT2_DEFINED(eri, AB_z)
+    primdata.AB_z[0] = AB_z;
+#endif
+    }
+    else {
+#if LIBINT2_DEFINED(eri, BA_x)
+    primdata.BA_x[0] = - AB_x;
+#endif
+#if LIBINT2_DEFINED(eri, BA_y)
+    primdata.BA_y[0] = - AB_y;
+#endif
+#if LIBINT2_DEFINED(eri, BA_z)
+    primdata.BA_z[0] = - AB_z;
+#endif
+    }
+  }
+
+  // figure out whether will do VRR on center A and/or B
+//  if ((!use_hrr && l1 > 0) || hrr_ket_to_bra) {
 #if LIBINT2_DEFINED(eri, PA_x)
   primdata.PA_x[0] = Px - A[0];
 #endif
@@ -874,11 +909,9 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 #if LIBINT2_DEFINED(eri, PA_z)
   primdata.PA_z[0] = Pz - A[2];
 #endif
-
-  const auto oper_is_nuclear =
-      (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
-       oper_ == Operator::erfc_nuclear);
-  if (!oper_is_nuclear) {
+//  }
+//
+//  if ((!use_hrr && l2 > 0) || !hrr_ket_to_bra) {
 #if LIBINT2_DEFINED(eri, PB_x)
     primdata.PB_x[0] = Px - B[0];
 #endif
@@ -888,7 +921,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 #if LIBINT2_DEFINED(eri, PB_z)
     primdata.PB_z[0] = Pz - B[2];
 #endif
-  }
+//  }
 
   if (oper_ == Operator::emultipole1 || oper_ == Operator::emultipole2 ||
       oper_ == Operator::emultipole3) {
@@ -960,16 +993,6 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 #endif
 #if LIBINT2_DEFINED(eri, PC_z)
     primdata.PC_z[0] = Pz - C[2];
-#endif
-// elecpot uses HRR
-#if LIBINT2_DEFINED(eri, AB_x)
-    primdata.AB_x[0] = A[0] - B[0];
-#endif
-#if LIBINT2_DEFINED(eri, AB_y)
-    primdata.AB_y[0] = A[1] - B[1];
-#endif
-#if LIBINT2_DEFINED(eri, AB_z)
-    primdata.AB_z[0] = A[2] - B[2];
 #endif
 
 #if LIBINT2_DEFINED(eri, rho12_over_alpha1) || \

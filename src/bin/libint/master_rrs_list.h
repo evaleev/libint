@@ -130,11 +130,11 @@ namespace libint2 {
   typedef VRR_1_ElecPot_1<CGShell,InKet> VRR_b_1_ElecPot_1_sh;
   typedef VRR_1_ElecPot_1<CGF,InKet> VRR_b_1_ElecPot_1_int;
 
-  // stay away from HRR for now to be sure that multipoles are computed as precisely as possible
-//  typedef HRR<SMultipole_1_1_sh,CGShell,0,InBra,0,InKet,0> HRR_ab_1_SMultipole_1_sh;
-//  typedef HRR<SMultipole_1_1_int,CGF,0,InBra,0,InKet,0> HRR_ab_1_SMultipole_1_int;
-//  typedef HRR<SMultipole_1_1_sh,CGShell,0,InKet,0,InBra,0> HRR_ba_1_SMultipole_1_sh;
-//  typedef HRR<SMultipole_1_1_int,CGF,0,InKet,0,InBra,0> HRR_ba_1_SMultipole_1_int;
+  // TODO investigate whether need to stay away from HRR for now to be sure that multipoles are computed as precisely as possible
+  typedef HRR<SMultipole_1_1_sh,CGShell,0,InBra,0,InKet,0> HRR_ab_1_SMultipole_1_sh;
+  typedef HRR<SMultipole_1_1_int,CGF,0,InBra,0,InKet,0> HRR_ab_1_SMultipole_1_int;
+  typedef HRR<SMultipole_1_1_sh,CGShell,0,InKet,0,InBra,0> HRR_ba_1_SMultipole_1_sh;
+  typedef HRR<SMultipole_1_1_int,CGF,0,InKet,0,InBra,0> HRR_ba_1_SMultipole_1_int;
   typedef VRR_1_SMultipole_1<CGShell,InBra> VRR_a_1_SMultipole_1_sh;
   typedef VRR_1_SMultipole_1<CGF,InBra> VRR_a_1_SMultipole_1_int;
   typedef VRR_1_SMultipole_1<CGShell,InKet> VRR_b_1_SMultipole_1_sh;

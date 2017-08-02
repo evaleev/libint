@@ -287,21 +287,21 @@ namespace libint2 {
   template <> struct MasterStrategy<ElecPot_1_1_sh> {
       typedef mpl::list<
       HRR_ab_1_ElecPot_1_sh,
-//      HRR_ba_1_ElecPot_1_sh,
+      HRR_ba_1_ElecPot_1_sh,
       CR_DerivGauss<ElecPot_1_1_sh,0,InBra>,
       CR_DerivGauss<ElecPot_1_1_sh,0,InKet>,
-      VRR_a_1_ElecPot_1_sh
-//      VRR_b_1_ElecPot_1_sh
+      VRR_a_1_ElecPot_1_sh,
+      VRR_b_1_ElecPot_1_sh
       > value;
     };
   template <> struct MasterStrategy<ElecPot_1_1_int> {
       typedef mpl::list<
       HRR_ab_1_ElecPot_1_int,
-//      HRR_ba_1_ElecPot_1_int,
+      HRR_ba_1_ElecPot_1_int,
       CR_DerivGauss<ElecPot_1_1_int,0,InBra>,
       CR_DerivGauss<ElecPot_1_1_int,0,InKet>,
-      VRR_a_1_ElecPot_1_int
-//      VRR_b_1_ElecPot_1_int
+      VRR_a_1_ElecPot_1_int,
+      VRR_b_1_ElecPot_1_int
       > value;
     };
   template <> struct MasterStrategy<Kinetic_1_1_sh> {
@@ -360,6 +360,8 @@ namespace libint2 {
     };
   template <> struct MasterStrategy<SMultipole_1_1_sh> {
       typedef mpl::list<
+        HRR_ab_1_SMultipole_1_sh,
+        HRR_ba_1_SMultipole_1_sh,
         CR_DerivGauss<SMultipole_1_1_sh,0,InBra>,
         CR_DerivGauss<SMultipole_1_1_sh,0,InKet>,
         VRR_a_1_SMultipole_1_sh,
@@ -368,6 +370,8 @@ namespace libint2 {
     };
   template <> struct MasterStrategy<SMultipole_1_1_int> {
       typedef mpl::list<
+          HRR_ab_1_SMultipole_1_int,
+          HRR_ba_1_SMultipole_1_int,
           CR_DerivGauss<SMultipole_1_1_int,0,InBra>,
           CR_DerivGauss<SMultipole_1_1_int,0,InKet>,
           VRR_a_1_SMultipole_1_int,

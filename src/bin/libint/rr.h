@@ -134,10 +134,14 @@ namespace libint2 {
     */
     virtual bool invariant_type() const;
     /**
-     *
-     * @return 1 if recurrence relation transfers quanta from lower to higher particles, -1 if vice versa, and 0 if neither
+     * @return 1 if recurrence relation transfers quanta from particle \c from to particle \c to  where \c from < \c to , -1 if \c from > \c to , and 0 if neither
      */
     virtual int partindex_direction() const { return 0; }
+    /**
+     * @return BraketDirection::BraToKet if recurrence relation transfers quanta from function in bra to function in ket,
+     *         BraketDirection::KetToBra if the transfer is from ket to bra, and BraketDirection::None if neither.
+     */
+    virtual BraketDirection braket_direction() const { return BraketDirection::None; }
     /**
      * @return the total size of the children of this RR
      */

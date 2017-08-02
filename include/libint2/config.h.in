@@ -62,6 +62,9 @@
 /* Support 1-body derivatives up to this order */
 #undef INCLUDE_ONEBODY
 
+/* Disable support for 1-body property derivatives */
+#undef DISABLE_ONEBODY_PROPERTY_DERIVS
+
 /* Support ERI derivatives up to this order */
 #undef INCLUDE_ERI
 

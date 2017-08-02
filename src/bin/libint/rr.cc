@@ -409,7 +409,7 @@ namespace libint2 { namespace algebra {
       A = Sum;
     }
     else
-      A = Scalar(1) * B;
+      A = Scalar(0) + B;
     return A;
   }
   const SafePtr<RecurrenceRelation::ExprType>& operator-=(SafePtr<RecurrenceRelation::ExprType>& A,
@@ -420,7 +420,7 @@ namespace libint2 { namespace algebra {
       A = Diff;
     }
     else
-      A = Scalar(-1) * B;
+      A = Scalar(0) - B;
     return A;
   }
   const SafePtr<RecurrenceRelation::ExprType>& operator*=(SafePtr<RecurrenceRelation::ExprType>& A,

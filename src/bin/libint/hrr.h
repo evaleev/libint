@@ -76,6 +76,16 @@ namespace libint2 {
       static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
       virtual ~HRR();
 
+      /// overrides RecurrenceRelation::braket_direction()
+      BraketDirection braket_direction() const {
+        if (loc_b == InBra && loc_a == InKet)
+          return BraketDirection::BraToKet;
+        else if (loc_b == InKet && loc_a == InBra)
+          return BraketDirection::KetToBra;
+        else
+          return BraketDirection::None;
+      }
+
       /** is this recurrence relation parameterized by a direction.
           the default is false if BasisFunctionSet is CGShell,
           true otherwise. */

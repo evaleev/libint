@@ -213,6 +213,17 @@ esac
 ]
 )
 
+AC_ARG_ENABLE(1body-property-derivs,
+AS_HELP_STRING([--disable-1body-property-derivs],[Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot). These derivatives are enabled by default to save compile time.]),
+[
+case $enableval in
+  no)
+    DISABLE_ONEBODY_PROPERTY_DERIVS=1
+    AC_DEFINE(DISABLE_ONEBODY_PROPERTY_DERIVS)
+  ;;
+esac
+])
+
 AC_ARG_ENABLE(eri,
 AS_HELP_STRING([--enable-eri=N],[Compile with support for up to N-th derivatives of electron repulsion integrals]),
 [
