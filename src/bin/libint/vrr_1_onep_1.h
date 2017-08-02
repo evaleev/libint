@@ -727,7 +727,7 @@ namespace libint2 {
           };
 
           // Build on A or B if either bra or ket has quanta, otherwise build multipole quanta
-          if (Tint->bra(0,0).norm() != 0 || Tint->bra(0,0).norm() != 0) {
+          if (Tint->bra(0,0).norm() != 0 || Tint->ket(0,0).norm() != 0) {
             // build A or B
 
             // bf quantum on the build center subtracted by 1
