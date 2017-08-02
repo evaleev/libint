@@ -47,6 +47,11 @@ namespace libint2 {
     virtual ~Tactic() {}
 
     virtual RR optimal_rr(const rr_stack& stack) const =0;
+
+    // make return true if need to debug Tactic classes
+    static constexpr bool class_debug() {
+      return false;
+    }
   };
 
   /** FirstChoiceTactic simply chooses the first RR
@@ -131,6 +136,25 @@ namespace libint2 {
       RR optimal_rr(const rr_stack& stack) const;
     private:
       bool increase_;
+  };
+
+  /**
+   * TwoCenter_OS_Tactic decides graph build for <bra0|ket0>
+   */
+  class TwoCenter_OS_Tactic : public Tactic {
+    public:
+      /**
+       * @param lbra0
+       * @param lket0
+       */
+    TwoCenter_OS_Tactic(unsigned lbra0,
+                        unsigned lket0) : Tactic(), lbra0_(lbra0), lket0_(lket0) {}
+      virtual ~TwoCenter_OS_Tactic() {}
+
+      RR optimal_rr(const rr_stack& stack) const;
+    private:
+      unsigned lbra0_;
+      unsigned lket0_;
   };
 
   /**
