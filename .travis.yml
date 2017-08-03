@@ -5,18 +5,18 @@ compiler:
   - clang
   - gcc
 env:
-  - GCC_VERSION=4.8
   - GCC_VERSION=4.9
   - GCC_VERSION=5
   - GCC_VERSION=6
+  - GCC_VERSION=7
 matrix:
   exclude:
-    - compiler: clang
-      env: GCC_VERSION=4.8
     - compiler: clang
       env: GCC_VERSION=4.9
     - compiler: clang
       env: GCC_VERSION=5
+    - compiler: clang
+      env: GCC_VERSION=6
 sudo: false
 addons:
   apt:
@@ -26,10 +26,10 @@ addons:
       - llvm-toolchain-precise-3.8
       - boost-latest
     packages:
-      - g++-4.8
       - g++-4.9
       - g++-5
       - g++-6
+      - g++-7
       - clang-3.8
       - libgmp-dev
       - libeigen3-dev
