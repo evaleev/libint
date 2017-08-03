@@ -118,6 +118,11 @@ enum class Operator {
   //! is defined in J.M. Pérez-Jordá and W. Yang, J Chem Phys 104, 8003 (1996), DOI 10.1063/1.468354 .
   //! To obtain the real solid harmonics \f$ C^m_l \f$ and \f$ S^m_l \f$ defined in https://en.wikipedia.org/wiki/Solid_harmonics
   //! multiply these harmonics by \f$ (-1)^m \sqrt{(2 - \delta_{m,0}) (l + |m|)! (l - |m|)!} \f$ .
+  //! The operator set includes multipoles of order up to \f$ l_{\rm max} = \f$ MULTIPOLE_MAX_ORDER (for a total of \f$ (l_{\rm max}+1)^2 \f$ operators),
+  //! in the order of increasing \c l , with the operators of same \c l but different \c m ordered according to the solid harmonics ordering
+  //! specified at configure time (see macro FOR_SOLIDHARM in shgshell_ordering.h.in). For example, for the CCA standard solid harmonics
+  //! ordering the operators will appear in the following order
+  //! \f$ \mathcal{N}^+_{0,0} , \mathcal{N}^-_{1,1}, \mathcal{N}^+_{1,0}, \mathcal{N}^+_{1,1}, \mathcal{N}^-_{2,2}, \mathcal{N}^-_{2,1}, \mathcal{N}^+_{2,0}, \mathcal{N}^+_{2,1}, \mathcal{N}^+_{2,2}. \dots \f$ .
   sphemultipole,
   /// \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   delta,
