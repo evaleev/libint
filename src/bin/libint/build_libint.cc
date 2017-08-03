@@ -272,13 +272,6 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
   typedef typename OperType::Descriptor OperDescrType;
   typedef GenIntegralSet_1_1<CGShell, OperType, typename AuxQuantaType<OperType>::type> Onebody_sh_1_1;
 
-  // optionally skip derivative property ints
-#ifdef DISABLE_ONEBODY_PROPERTY_DERIVS
-  const auto property_operator = !(std::is_same<_OperType,OverlapOper>::value || std::is_same<_OperType,KineticOper>::value || std::is_same<_OperType,ElecPotOper>::value);
-  if (property_operator && deriv_level > 0)
-    return;
-#endif
-
   vector<BFType*> shells;
   unsigned int lmax = cparams->max_am(task);
   for(unsigned int l=0; l<=lmax; l++) {
@@ -291,6 +284,13 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
   iface->to_params(iface->macro_define( std::string("MAX_AM_") + task,lmax));
 
   const auto nullaux = typename Onebody_sh_1_1::AuxIndexType(0u);
+
+  // optionally skip derivative property ints
+#ifdef DISABLE_ONEBODY_PROPERTY_DERIVS
+  const auto property_operator = !(std::is_same<_OperType,OverlapOper>::value || std::is_same<_OperType,KineticOper>::value || std::is_same<_OperType,ElecPotOper>::value);
+  if (property_operator && deriv_level > 0)
+    return;
+#endif
 
   //
   // Construct graphs for each desired target integral and
