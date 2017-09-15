@@ -106,7 +106,7 @@ class ext_stack_allocator {
 template <class T, std::size_t N>
 inline bool operator==(const ext_stack_allocator<T, N>& x,
                        const ext_stack_allocator<T, N>& y) noexcept {
-  return x.a_ == y.a_;
+  return x.stack_ == y.stack_ && x.free_ == y.free_;
 }
 
 template <class T, std::size_t N>
