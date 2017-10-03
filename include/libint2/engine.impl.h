@@ -146,12 +146,12 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
     assert(compute_ptr != nullptr && "2-body compute function not found");
     if (nargs == 2)
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
-                                  Shell::unit());
+                                  Shell::unit(), nullptr, nullptr);
     if (nargs == 3)
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
-                                  shells[2]);
+                                  shells[2], nullptr, nullptr);
     if (nargs == 4)
-      return (this->*compute_ptr)(shells[0], shells[1], shells[2], shells[3]);
+      return (this->*compute_ptr)(shells[0], shells[1], shells[2], shells[3], nullptr, nullptr);
   }
 
   assert(false && "missing feature");  // only reached if missing a feature
@@ -1055,7 +1055,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 template <Operator oper, BraKet braket, size_t deriv_order>
 __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     const libint2::Shell& tbra1, const libint2::Shell& tbra2,
-    const libint2::Shell& tket1, const libint2::Shell& tket2) {
+    const libint2::Shell& tket1, const libint2::Shell& tket2,
+    const ShellPair* sp1, const ShellPair* sp2) {
   assert(oper == oper_ && "Engine::compute2 -- operator mismatch");
   assert(braket == braket_ && "Engine::compute2 -- braket mismatch");
   assert(deriv_order == deriv_order_ &&
@@ -1137,21 +1138,19 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     // involves both bra and ket *bases* and thus cannot be done on shell-set
     // basis
     // probably ln_precision_/2 - 10 is enough
-    spbra_.init(bra1, bra2, ln_precision_);
-    spket_.init(ket1, ket2, ln_precision_);
-    const auto npbra = spbra_.primpairs.size();
+    const ShellPair& spbra = (sp1 == nullptr) ? (spbra_.init(bra1, bra2, ln_precision_), spbra_) : *sp1;
+    const ShellPair& spket = (sp2 == nullptr) ? (spket_.init(ket1, ket2, ln_precision_), spket_) : *sp2;
+    const auto npbra = spbra.primpairs.size();
     const auto npket = spket_.primpairs.size();
     for (auto pb = 0; pb != npbra; ++pb) {
       for (auto pk = 0; pk != npket; ++pk) {
-        if (spbra_.primpairs[pb].scr + spket_.primpairs[pk].scr >
+        if (spbra.primpairs[pb].scr + spket_.primpairs[pk].scr >
             ln_precision_) {
           Libint_t& primdata = primdata_[p];
           const auto& sbra1 = bra1;
           const auto& sbra2 = bra2;
           const auto& sket1 = ket1;
           const auto& sket2 = ket2;
-          const auto& spbra = spbra_;
-          const auto& spket = spket_;
           auto pbra = pb;
           auto pket = pk;
 

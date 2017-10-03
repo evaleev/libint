@@ -623,6 +623,8 @@ class Engine {
       const libint2::Shell& first_shell, const ShellPack&... rest_of_shells);
 
   /// Computes target shell sets of 1-body integrals.
+  /// @param[in] s1
+  /// @param[in] s2
   /// @return vector of pointers to target shell sets, the number of sets = Engine::nshellsets()
   /// \note resulting shell sets are stored in row-major order
   __libint2_engine_inline const target_ptr_vec& compute1(
@@ -632,6 +634,12 @@ class Engine {
   /// @tparam oper operator
   /// @tparam braket the integral type
   /// @tparam deriv_order the derivative order, values greater than 2 not yet supported
+  /// @param[in] s1
+  /// @param[in] s2
+  /// @param[in] s3
+  /// @param[in] s4
+  /// @param[in] sp1
+  /// @param[in] sp2
   /// @return vector of pointers to target shell sets, the number of sets = Engine::nshellsets();
   ///         if the first pointer equals \c nullptr then all elements were screened out.
   /// \note resulting shell sets are stored in row-major order
@@ -639,12 +647,16 @@ class Engine {
   __libint2_engine_inline const target_ptr_vec& compute2(const Shell& s1,
                                                          const Shell& s2,
                                                          const Shell& s3,
-                                                         const Shell& s4);
+                                                         const Shell& s4,
+                                                         const ShellPair* sp1 = nullptr,
+                                                         const ShellPair* sp2 = nullptr);
 
   typedef const target_ptr_vec& (Engine::*compute2_ptr_type)(const Shell& s1,
                                                              const Shell& s2,
                                                              const Shell& s3,
-                                                             const Shell& s4);
+                                                             const Shell& s4,
+                                                             const ShellPair* sp1,
+                                                             const ShellPair* sp2);
 
   /** this specifies target precision for computing the integrals.
    *  target precision \f$ \epsilon \f$ is used in 3 ways:
