@@ -591,15 +591,21 @@ namespace libint2 {
       const bool sxsx = sh_a.zero() && sh_c.zero();
       bool ahlrichs_simplification = false;
       bool unit_s = false;
+      bool part0_has_unit = false;
+      bool part1_has_unit = false;
       if (xsxs) {
         ahlrichs_simplification = (sh_a.pure_sh() && sh_b.is_unit()) ||
                                   (sh_c.pure_sh() && sh_d.is_unit());
         unit_s = sh_b.is_unit();
+        part0_has_unit = sh_b.is_unit();
+        part1_has_unit = sh_d.is_unit();
       }
       if (sxsx) {
         ahlrichs_simplification = (sh_b.pure_sh() && sh_a.is_unit()) ||
                                   (sh_d.pure_sh() && sh_c.is_unit());
         unit_s = sh_a.is_unit();
+        part0_has_unit = sh_a.is_unit();
+        part1_has_unit = sh_c.is_unit();
       }
 
       const OriginDerivative<3u> dA = target_->bra(0,0).deriv();
@@ -669,13 +675,15 @@ namespace libint2 {
         }
         for(unsigned int xyz=0; xyz<3; ++xyz) {
           if (sh_a.deriv().d(xyz) > 0) {
-            oss << "," << args->symbol(arg++);
+            // see the dA-1 clause: (ab|cd)^m is skipped
+            oss << "," << (part0_has_unit ? std::to_string(0) : args->symbol(arg++));
             oss << "," << args->symbol(arg++);
           }
           else
             oss << ",0,0";
           if (sh_b.deriv().d(xyz) > 0) {
-            oss << "," << args->symbol(arg++);
+            // see the dB-1 clause: (ab|cd)^m is skipped
+            oss << "," << (part0_has_unit ? std::to_string(0) : args->symbol(arg++));
             oss << "," << args->symbol(arg++);
           }
           else
