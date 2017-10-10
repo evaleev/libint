@@ -270,7 +270,7 @@ namespace libint2 {
   const LIBINT2_REALTYPE* c2 = inteval->ecoef2; \
   unsigned int dv = 0; \
   bool has_unit = srcA == nullptr; \
-  if (!has_unit) \
+  if (!has_unit) { \
     for(unsigned int d = 0; d < Nd; ++d) { \
       for(unsigned int v=0; v<veclen; ++v, ++dv) { \
         target[dv] +=  di * (c1[v] * srcA_ptr[dv] - c2[v] * srcB_ptr[dv]); \
