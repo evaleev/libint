@@ -49,7 +49,6 @@ namespace libint2 {
     /// Will unroll the integral sets with size <= unroll_threshold. Default is 0 (no unrolling).
     unsigned int unroll_threshold() const { return unroll_threshold_; }
     void unroll_threshold(unsigned int ut) {
-      assert((ut == 0 || ut == std::numeric_limits<unsigned int>::max()) && "GraphRegistry::unroll_threshold: only supported no unrolling (numeric_limits<unsigned int>::max()) or no unrolling (0)");
       unroll_threshold_ = ut;
     }
     /// Minimum size when can unroll
