@@ -43,7 +43,7 @@ namespace libint2 {
     static const LIBINT2_UINT_LEAST64 max_quantum_number = 100;
     
     virtual ~QuantumSet() {}
-    virtual const std::string label() const =0;
+    virtual std::string label() const =0;
 
     /// Number of quantum numbers in the set
     virtual unsigned int num_quanta() const =0;
@@ -72,7 +72,7 @@ namespace libint2 {
     ~QuantumNumbers();
     
     bool operator==(const QuantumNumbers&) const;
-    const std::string label() const;
+    std::string label() const;
 
     /// Increment quantum number i
     void inc(unsigned int i) { ++qn_.at(i); }
@@ -176,7 +176,7 @@ namespace libint2 {
     }
 
   template<typename T, unsigned int N>
-    const std::string
+    std::string
     QuantumNumbers<T,N>::label() const
     {
       std::ostringstream oss;
@@ -215,7 +215,7 @@ namespace libint2 {
     ~QuantumNumbersA();
     
     bool operator==(const QuantumNumbersA&) const;
-    const std::string label() const;
+    std::string label() const;
 
     /// Increment quantum number i
     void inc(unsigned int i) { ++qn_[i]; }
@@ -343,7 +343,7 @@ namespace libint2 {
     }
 
   template<typename T, unsigned int N>
-    const std::string
+    std::string
     QuantumNumbersA<T,N>::label() const
     {
       std::ostringstream oss;
@@ -373,7 +373,7 @@ namespace libint2 {
     ~QuantumNumbersA() {}
     
     bool operator==(const QuantumNumbersA&) const { return true; }
-    const std::string label() const { return "{}"; }
+    std::string label() const { return "{}"; }
 
     /// Increment quantum number i
     void inc(unsigned int i) { throw std::runtime_error("QuantumNumbersA<T,0>::inc -- no quantum numbers to increment"); }

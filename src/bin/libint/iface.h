@@ -76,17 +76,17 @@ namespace libint2 {
       //  li_ << s << endl;
       //}
 
-      const std::string macro(const std::string& label) {
+      std::string macro(const std::string& label) {
         std::string result("LIBINT2_");  result += label;
         return result;
       }
       
-      const std::string macro(const std::string& task_label, const std::string& label) {
+      std::string macro(const std::string& task_label, const std::string& label) {
         std::string result("LIBINT2_");  result += label;  if (task_label != "") { result += "_";  result += task_label; }
         return result;
       }
       
-      template <typename T> const std::string macro_define(const std::string& label, const T& value) {
+      template <typename T> std::string macro_define(const std::string& label, const T& value) {
         oss_ .str(null_str_);
         oss_ << "#ifndef " << macro(label) << endl;
         oss_ << "# define " << macro(label) << " " << value << endl;
@@ -94,13 +94,13 @@ namespace libint2 {
         return oss_.str();
       }
       
-      template <typename T> const std::string macro_define(const std::string& task_label, const std::string& label, const T& value) {
+      template <typename T> std::string macro_define(const std::string& task_label, const std::string& label, const T& value) {
         oss_ .str(null_str_);
         oss_ << "#define " << macro(task_label,label) << " " << value << endl;
         return oss_.str();
       }
       
-      template <typename T> const std::string var_declare_v(const std::string& label) {
+      template <typename T> std::string var_declare_v(const std::string& label) {
         return ctext_->declare_v(ctext_->type_name<T>(),ctext_->label_to_name(label),macro("MAX_VECLEN"));
       }      
       

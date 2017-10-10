@@ -111,7 +111,7 @@ namespace libint2 {
       assert(false);
     }
     /// Return a compact label
-    const std::string label() const {
+    std::string label() const {
       char result[NDIM+1];
       for(auto xyz=0u; xyz<NDIM; ++xyz) result[xyz] = '0' + n_[xyz];
       result[NDIM] = '\0';

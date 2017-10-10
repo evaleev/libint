@@ -114,7 +114,7 @@ CGF::~CGF()
 {
 }
 
-const std::string
+std::string
 CGF::label() const
 {
   // unit *functions* are treated as regular s functions so that (ss|ss)^(m) = (unit s|ss)^(m)
@@ -257,7 +257,7 @@ CGShell::~CGShell()
 {
 }
 
-const std::string
+std::string
 CGShell::label() const
 {
   if (is_unit()) return "unit";
