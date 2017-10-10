@@ -621,12 +621,13 @@ namespace libint2 {
             const OriginDerivative<3u> dAm1(dA - _d1);
             if (exists(dAm1)) { // yes
               a.deriv() = dAm1;
-              auto AB = factory.make_child(a,b,m);
+              auto AB_m = factory.make_child(a,b,m);
+              auto AB_mp1 = factory.make_child(a,b,m+1);
               if (is_simple()) {
-                if (where == InBra) { // building on A
-                  expr_ -= Vector(dA)[dxyz] * Scalar("rho12_over_alpha1") * AB;  nflops_ += 3; }
-                if (where == InKet) { // building on B
-                  expr_ += Vector(dA)[dxyz] * Scalar("rho12_over_alpha2") * AB;  nflops_ += 3; }
+                if (where == InBra) { // building on A -> derivative of (PA)_i and (PC)_i prefactors w.r.t A_i
+                  expr_ -= Vector(dA)[dxyz] * (Scalar("rho12_over_alpha1") * AB_m + Scalar("rho12_over_alpha2") * AB_mp1);  nflops_ += 5; }
+                if (where == InKet) { // building on B -> derivative of (PB)_i and (PC)_i prefactors w.r.t A_i
+                  expr_ += Vector(dA)[dxyz] * Scalar("rho12_over_alpha2") * (AB_m - AB_mp1);  nflops_ += 4; }
               }
               a.deriv() = dA;
             }
@@ -637,12 +638,13 @@ namespace libint2 {
             const OriginDerivative<3u> dBm1(dB - _d1);
             if (exists(dBm1)) { // yes
               b.deriv() = dBm1;
-              auto AB = factory.make_child(a,b,m);
+              auto AB_m = factory.make_child(a,b,m);
+              auto AB_mp1 = factory.make_child(a,b,m+1);
               if (is_simple()) {
-                if (where == InBra) { // building on A
-                  expr_ += Vector(dB)[dxyz] * Scalar("rho12_over_alpha1") * AB;  nflops_ += 3; }
-                if (where == InKet) { // building on B
-                  expr_ -= Vector(dB)[dxyz] * Scalar("rho12_over_alpha2") * AB;  nflops_ += 3; }
+                if (where == InBra) { // building on A -> derivative of (PA)_i and (PC)_i prefactors w.r.t B_i
+                  expr_ += Vector(dB)[dxyz] * Scalar("rho12_over_alpha1") * (AB_m - AB_mp1);  nflops_ += 4; }
+                if (where == InKet) { // building on B -> derivative of (PB)_i and (PC)_i prefactors w.r.t B_i
+                  expr_ -= Vector(dB)[dxyz] * (Scalar("rho12_over_alpha2") * AB_m + Scalar("rho12_over_alpha1") * AB_mp1);  nflops_ += 5; }
               }
               b.deriv() = dB;
             }
