@@ -38,6 +38,8 @@ using namespace std;
 using namespace libint2;
 
 long living_count = 0;
+const unsigned int use_integrals = std::numeric_limits<unsigned int>::max();
+const unsigned int use_quartets = 0;
 
 namespace {
   int try_main (int argc, char* argv[]);
@@ -375,8 +377,6 @@ namespace {
   void
   test4()
   {
-    const unsigned int use_integrals = 1000000000;
-    const unsigned int use_quartets = 1;
     RunBuildTest<TwoPRep_11_11_sq>(sh_p,sh_s,sh_p,sh_s,0,use_quartets);
     RunBuildTest<TwoPRep_11_11_sq>(sh_p,sh_p,sh_p,sh_p,0,use_quartets);
     RunBuildTest<TwoPRep_11_11_sq>(sh_p,sh_p,sh_p,sh_p,0,use_integrals);
@@ -386,9 +386,6 @@ namespace {
   void
   test5()
   {
-    const unsigned int use_integrals = 1000000000;
-    const unsigned int use_quartets = 1;
-
     CGShell::set_contracted_default_value(true);
     const bool contracted_targets_old_value = cparams->contracted_targets();
     cparams->contracted_targets(true);
@@ -405,9 +402,6 @@ namespace {
   void
   test6()
   {
-    const unsigned int use_integrals = 1000000000;
-    const unsigned int use_quartets = 1;
-
     CGShell::set_contracted_default_value(true);
     const bool contracted_targets_old_value = cparams->contracted_targets();
     cparams->contracted_targets(true);
@@ -466,9 +460,6 @@ namespace {
   void
   test8()
   {
-    const unsigned int use_integrals = 1000000000;
-    const unsigned int use_quartets = 1;
-
     CGShell::set_contracted_default_value(true);
     const bool contracted_targets_old_value = cparams->contracted_targets();
     cparams->contracted_targets(true);

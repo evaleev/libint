@@ -188,7 +188,7 @@ namespace libint2 {
       /// Use default alignment by default
       static const unsigned int align_size = 0;
       /// Produce quartet-level code by default
-      static const unsigned int unroll_threshold = 1;
+      static const unsigned int unroll_threshold = 0;
       /// Where to put generated library source
       static const std::string source_directory;
       /// API prefix

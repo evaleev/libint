@@ -183,7 +183,10 @@ namespace libint2 {
       /// Reimplements DGVertex::unregister()
       void unregister() const;
 
-      protected:
+      /// If consists of precomputed elements, override this to return true
+      virtual bool auto_unroll() const { return false; }
+
+   protected:
       // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
       GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
       /// computes a key. it's protected so that derived classes can use it to implement smart caching in constructors

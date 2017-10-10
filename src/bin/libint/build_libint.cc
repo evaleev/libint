@@ -31,6 +31,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <limits>
 #include <vector>
 #include <boost/preprocessor.hpp>
 #if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
@@ -403,7 +404,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
           // decide whether to unroll based on the aggregate size of undifferentiated quartets
           const bool need_to_unroll = nopers * l_to_cgshellsize(la)*l_to_cgshellsize(lb) <= cparams->unroll_threshold();
-          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? std::numeric_limits<unsigned int>::max() : 0;
 
           dg->registry()->unroll_threshold(unroll_threshold);
           dg->registry()->do_cse(need_to_optimize);
@@ -959,7 +960,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
           const bool need_to_unroll = l_to_cgshellsize(la)*l_to_cgshellsize(lb)*
                                       l_to_cgshellsize(lc)*l_to_cgshellsize(ld) <= cparams->unroll_threshold();
-          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? std::numeric_limits<unsigned int>::max() : 0;
           dg_xxxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxxx->registry()->do_cse(need_to_optimize);
           dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
@@ -1142,7 +1143,7 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const bool need_to_unroll = l_to_cgshellsize(lbra)*
                                       l_to_cgshellsize(lc)*
                                       l_to_cgshellsize(ld) <= cparams->unroll_threshold();
-          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? std::numeric_limits<unsigned int>::max() : 0;
           dg_xxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxx->registry()->do_cse(need_to_optimize);
           dg_xxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
@@ -1326,7 +1327,7 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
           const bool need_to_unroll = l_to_cgshellsize(lbra)*
                                       l_to_cgshellsize(lket) <= cparams->unroll_threshold();
-          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? std::numeric_limits<unsigned int>::max() : 0;
           dg_xxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxx->registry()->do_cse(need_to_optimize);
           dg_xxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));

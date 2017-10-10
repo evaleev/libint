@@ -35,24 +35,35 @@ namespace libint2 {
      from which BFS derives.
   */
 
-  /// (ss|ss) shell quartet is not precomputed, but the integral is
+  namespace detail {
+    template <typename Bra>
+    bool is_nonderiv_ss_product(Bra&& bra) {
+      return bra.member(0,0).zero() && bra.member(1,0).zero() &&
+          bra.member(0,0).contracted() == false && bra.member(1,0).contracted() == false &&
+          bra.member(0,0).deriv().zero() && bra.member(1,0).deriv().zero();
+    };
+  }
+  /// uncontracted (ss|ss)^{(m)} integral is precomputed (but not shell quartet)
   template <>
   inline bool
   GenIntegralSet_11_11<CGF,TwoPRep,mType>::this_precomputed() const
   {
-    /// uncontracted (ss|ss)^{(m)} are precomputed
-    if (parent_type::bra_.member(0,0).zero() && parent_type::bra_.member(1,0).zero() &&
-        parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero() &&
-        parent_type::bra_.member(0,0).contracted() == false && parent_type::bra_.member(1,0).contracted() == false &&
-        parent_type::ket_.member(0,0).contracted() == false && parent_type::ket_.member(1,0).contracted() == false &&
-        parent_type::bra_.member(0,0).deriv().zero() && parent_type::bra_.member(1,0).deriv().zero() &&
-        parent_type::ket_.member(0,0).deriv().zero() && parent_type::ket_.member(1,0).deriv().zero()
-       )
+    if (detail::is_nonderiv_ss_product(parent_type::bra_) && detail::is_nonderiv_ss_product(parent_type::ket_))
       return true;
     else
       return false;
   }
 
+  /// always unroll (ss|ss)^(m) shell set
+  template <>
+  inline bool
+  GenIntegralSet_11_11< CGShell ,TwoPRep,mType>::auto_unroll() const
+  {
+    if (detail::is_nonderiv_ss_product(parent_type::bra_) && detail::is_nonderiv_ss_product(parent_type::ket_))
+      return true;
+    else
+      return false;
+  }
 
 };
 

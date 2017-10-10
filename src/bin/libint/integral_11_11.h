@@ -93,7 +93,10 @@ namespace libint2 {
       /// Reimplements DGVertex::unregister()
       void unregister() const;
 
-    private:
+      /// Implements GenIntegralSet::auto_unroll()
+      bool auto_unroll() const;
+
+   private:
       /// This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
       GenIntegralSet_11_11(const OperType& oper, const BraType& bra, const KetType& ket, const AuxIndexType& aux);
 
@@ -103,7 +106,7 @@ namespace libint2 {
       /// Implements DGVertex::this_precomputed()
       bool this_precomputed() const;
 
-    };
+  };
 
 #if USE_INT_KEY_TO_HASH
   template <class BFS, class Oper, class AuxQuanta>
@@ -201,13 +204,7 @@ namespace libint2 {
       singl_manager_.remove(this_ptr);
     }
 
-  template <class BFS, class Oper, class AuxQuanta>
-    bool
-    GenIntegralSet_11_11<BFS,Oper,AuxQuanta>::this_precomputed() const
-    {
-      return false;
-    }
-
+  // this_precomputed() and auto_unroll() will be specialized, the nonspecialized version is in integral_11_11.impl.h
 };
 
 #endif

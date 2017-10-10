@@ -386,6 +386,7 @@ DGVertex::set_symbol(const std::string& symbol)
   if (referred_vertex_ && referred_vertex_->symbol_set())
     ;//assert(referred_vertex_->symbol() == symbol);
   else {
+    //assert(symbol_.empty());  // should not need to assign twice ... why need to overwrite symbol?
     symbol_ = symbol;
 #if DEBUG
     cout << "Set symbol for " << description() << " to " << symbol << endl;

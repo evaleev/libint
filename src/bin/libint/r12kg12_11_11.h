@@ -32,17 +32,23 @@ namespace libint2 {
   inline bool
     GenIntegralSet_11_11<CGF,R12kG12,mType>::this_precomputed() const
     {
-#if USE_BRAKET_H
       if (parent_type::bra_.member(0,0).zero() && parent_type::bra_.member(1,0).zero() &&
           parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero())
-#else
-      if (parent_type::bra_.member(0,0)->zero() && parent_type::bra_.member(1,0)->zero() &&
-          parent_type::ket_.member(0,0)->zero() && parent_type::ket_.member(1,0)->zero())
-#endif
         return true;
       else
          return false;
     }
+
+template <>
+inline bool
+GenIntegralSet_11_11<CGShell,R12kG12,mType>::auto_unroll() const
+{
+  if (parent_type::bra_.member(0,0).zero() && parent_type::bra_.member(1,0).zero() &&
+      parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero())
+    return true;
+  else
+    return false;
+}
 };
 
 #endif

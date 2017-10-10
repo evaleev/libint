@@ -32,6 +32,9 @@
 #include <master_ints_list.h>
 #include <master_rrs_list.h>
 
+#include <integral_1_1.impl.h>
+#include <integral_11_11.impl.h>
+
 // MPL is painful
 #include <boost/mpl/list.hpp>
 #include <boost/mpl/for_each.hpp>
@@ -516,10 +519,12 @@ namespace libint2 {
 #endif
         using namespace boost;
         using namespace boost::mpl::placeholders;
-        // Try to unroll first, if this is a shell set
+        // If this is a shell set, try unrolling if
+        // 1. size > unroll_size, or
+        // 2. auto_unroll is true
         const unsigned int size = integral->size();
         const bool can_unroll = not TrivialBFSet<typename T::BasisFunctionType>::result &&
-                                (size <= dg->registry()->unroll_threshold());
+            (size <= dg->registry()->unroll_threshold() || tptr->auto_unroll());
 //        std::cout << "  size=" << size << " can unroll? " << (can_unroll ? "yes" : "no") << std::endl;
 //        if (not can_unroll) {
 //          std::cout << "    unroll_threshold=" << dg->registry()->unroll_threshold()

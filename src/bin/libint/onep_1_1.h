@@ -46,6 +46,24 @@ namespace libint2 {
       return false;
   }
 
+/// always unroll (s|V|s)^(m)
+template <>
+inline bool
+GenIntegralSet_1_1<CGShell,ElecPotOper,mType>::auto_unroll() const
+{
+  /// uncontracted (s|s) are precomputed
+  if (parent_type::bra_.member(0,0).zero() &&
+      parent_type::ket_.member(0,0).zero() &&
+      parent_type::bra_.member(0,0).contracted() == false &&
+      parent_type::ket_.member(0,0).contracted() == false &&
+      parent_type::bra_.member(0,0).deriv().zero() &&
+      parent_type::ket_.member(0,0).deriv().zero()
+      )
+    return true;
+  else
+    return false;
+}
+
 };
 
 #endif

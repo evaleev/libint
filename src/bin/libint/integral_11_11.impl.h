@@ -18,35 +18,26 @@
  *
  */
 
-#include <graph_registry.h>
+#ifndef _libint2_src_bin_libint_integral1111impl_h_
+#define _libint2_src_bin_libint_integral1111impl_h_
 
-using namespace libint2;
+namespace libint2 {
 
-GraphRegistry::GraphRegistry() :
-  accumulate_targets_(false), return_targets_(true), unroll_threshold_(0), uncontract_(false), ignore_missing_prereqs_(false),
-  do_cse_(false), condense_expr_(false), stack_name_("inteval->stack"), current_timer_(-1)
+template <class BFS, class Oper, class AuxQuanta>
+bool
+GenIntegralSet_11_11<BFS,Oper,AuxQuanta>::this_precomputed() const
 {
+  return false;
 }
 
-GraphRegistry::~GraphRegistry()
+template <class BFS, class Oper, class AuxQuanta>
+bool
+GenIntegralSet_11_11<BFS,Oper,AuxQuanta>::auto_unroll() const
 {
+  return false;
 }
 
-GraphRegistry*
-GraphRegistry::clone() const {
-  GraphRegistry* gr = new GraphRegistry;
-  *gr = *this;
-  return gr;
-}
+};
 
-////
+#endif
 
-InternalGraphRegistry::InternalGraphRegistry() :
-  accumulate_targets_directly_(false),
-  size_of_target_accum_(0)
-{
-}
-
-InternalGraphRegistry::~InternalGraphRegistry()
-{
-}

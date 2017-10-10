@@ -19,6 +19,7 @@
  */
 
 #include <fstream>
+#include <limits>
 
 #include <rr.h>
 #include <dg.h>
@@ -114,7 +115,7 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
     const bool need_to_optimize = (max_am <= cparams->max_am_opt());
     dg->registry()->do_cse(need_to_optimize);
   }
-  dg->registry()->condense_expr(condense_expr(1000000000,cparams->max_vector_length()>1));
+  dg->registry()->condense_expr(condense_expr(std::numeric_limits<unsigned int>::max(),cparams->max_vector_length()>1));
   dg->registry()->ignore_missing_prereqs(true);  // assume all prerequisites are available -- if some are not, something is VERY broken
 
 #if PRINT_DAG_GRAPHVIZ
@@ -247,7 +248,7 @@ RecurrenceRelation::generate_graph_(const SafePtr<DirectedGraph>& dg)
   SafePtr<Strategy> strat(new Strategy);
   SafePtr<Tactic> ntactic(new NullTactic);
   // Always need to unroll integral sets first
-  dg->registry()->unroll_threshold(1000000000);
+  dg->registry()->unroll_threshold(std::numeric_limits<unsigned int>::max());
   dg->apply(strat,ntactic);
 #if DEBUG
   cout << "RecurrenceRelation::generate_code -- the number of integral sets + integrals = " << dg->num_vertices() << endl;
