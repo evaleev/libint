@@ -1138,13 +1138,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     // involves both bra and ket *bases* and thus cannot be done on shell-set
     // basis
     // probably ln_precision_/2 - 10 is enough
-    const ShellPair& spbra = (sp1 == nullptr) ? (spbra_.init(bra1, bra2, ln_precision_), spbra_) : *sp1;
-    const ShellPair& spket = (sp2 == nullptr) ? (spket_.init(ket1, ket2, ln_precision_), spket_) : *sp2;
+    const ShellPair& spbra = (sp1 == nullptr) ? (spbra_.init(bra1, bra2, ln_precision_), spbra_) : 
+                             swap_braket ? *sp2 : *sp1;
+    const ShellPair& spket = (sp2 == nullptr) ? (spket_.init(ket1, ket2, ln_precision_), spket_) : 
+                             swap_braket ? *sp1 : *sp2;
+
     const auto npbra = spbra.primpairs.size();
-    const auto npket = spket_.primpairs.size();
+    const auto npket = spket.primpairs.size();
     for (auto pb = 0; pb != npbra; ++pb) {
       for (auto pk = 0; pk != npket; ++pk) {
-        if (spbra.primpairs[pb].scr + spket_.primpairs[pk].scr >
+        if (spbra.primpairs[pb].scr + spket.primpairs[pk].scr >
             ln_precision_) {
           Libint_t& primdata = primdata_[p];
           const auto& sbra1 = bra1;
