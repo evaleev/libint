@@ -800,7 +800,7 @@ namespace {
 // Handles "trivial" nodes. A node is trivial is it satisfies the following conditions:
 // 0) not a target
 // 1) has only one child
-// 2) the exit arc is of a trivial type (DGArvDirect or IntegralSet_to_Integral applied to node of size 1)
+// 2) the exit arc is of a trivial type (DGArcDirect or IntegralSet_to_Integral applied to node of size 1)
 //
 // By "handling" I mean either removing the node from the graph or making a node refer to another node so that
 // no code is generated for it.
