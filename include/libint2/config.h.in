@@ -161,13 +161,13 @@
 /* if can be controlled with posix_memalign, alignment size */
 #undef LIBINT_ALIGN_SIZE
 
-/* Specifies the ordering of cartesian Gaussians in a shell. Allowed values are defined at the bottom of this file -- also see configure.in*/
+/* Specifies the ordering of cartesian Gaussians in a shell. Allowed values are defined at the bottom of this file -- also see configure.in */
 #undef LIBINT_CGSHELL_ORDERING
 
-/* Specifies the ordering of solid harmonics Gaussians in a shell. Allowed values are defined at the bottom of this file -- also see configure.in*/
+/* Specifies the ordering of solid harmonics Gaussians in a shell. Allowed values are defined at the bottom of this file -- also see configure.in */
 #undef LIBINT_SHGSHELL_ORDERING
 
-/* Specifies the class of shell sets generated. Allowed values are defined at the bottom of this file -- also see configure.in*/
+/* Specifies the class of shell sets generated. Allowed values are defined at the bottom of this file -- also see configure.in */
 #undef LIBINT_SHELL_SET
 
 /* User-defined real type */
