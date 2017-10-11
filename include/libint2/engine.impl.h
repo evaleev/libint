@@ -1056,11 +1056,14 @@ template <Operator oper, BraKet braket, size_t deriv_order>
 __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     const libint2::Shell& tbra1, const libint2::Shell& tbra2,
     const libint2::Shell& tket1, const libint2::Shell& tket2,
-    const ShellPair* sp1, const ShellPair* sp2) {
+    const ShellPair* tspbra, const ShellPair* tspket) {
   assert(oper == oper_ && "Engine::compute2 -- operator mismatch");
   assert(braket == braket_ && "Engine::compute2 -- braket mismatch");
   assert(deriv_order == deriv_order_ &&
          "Engine::compute2 -- deriv_order mismatch");
+  assert(((tspbra == nullptr && tspket == nullptr) || (tspbra != nullptr && tspket != nullptr)) &&
+         "Engine::compute2 -- expects zero or two ShellPair objects");
+
   //
   // i.e. bra and ket refer to chemists bra and ket
   //
@@ -1077,33 +1080,38 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
 #if LIBINT2_SHELLQUARTET_SET == \
     LIBINT2_SHELLQUARTET_SET_STANDARD  // standard angular momentum ordering
-  auto swap_bra = (tbra1.contr[0].l < tbra2.contr[0].l);
-  auto swap_ket = (tket1.contr[0].l < tket2.contr[0].l);
-  auto swap_braket =
+  const auto swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
+  const auto swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
+  const auto swap_braket =
       ((braket == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l >
                                      tket1.contr[0].l + tket2.contr[0].l)) ||
       braket == BraKet::xx_xs;
 #else  // orca angular momentum ordering
-  auto swap_bra = (tbra1.contr[0].l > tbra2.contr[0].l);
-  auto swap_ket = (tket1.contr[0].l > tket2.contr[0].l);
-  auto swap_braket =
+  const auto swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
+  const auto swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
+  const auto swap_braket =
       ((braket == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l <
                                      tket1.contr[0].l + tket2.contr[0].l)) ||
       braket == BraKet::xx_xs;
   assert(false && "feature not implemented");
 #endif
   const auto& bra1 =
-      swap_braket ? (swap_ket ? tket2 : tket1) : (swap_bra ? tbra2 : tbra1);
+      swap_braket ? (swap_tket ? tket2 : tket1) : (swap_tbra ? tbra2 : tbra1);
   const auto& bra2 =
-      swap_braket ? (swap_ket ? tket1 : tket2) : (swap_bra ? tbra1 : tbra2);
+      swap_braket ? (swap_tket ? tket1 : tket2) : (swap_tbra ? tbra1 : tbra2);
   const auto& ket1 =
-      swap_braket ? (swap_bra ? tbra2 : tbra1) : (swap_ket ? tket2 : tket1);
+      swap_braket ? (swap_tbra ? tbra2 : tbra1) : (swap_tket ? tket2 : tket1);
   const auto& ket2 =
-      swap_braket ? (swap_bra ? tbra1 : tbra2) : (swap_ket ? tket1 : tket2);
+      swap_braket ? (swap_tbra ? tbra1 : tbra2) : (swap_tket ? tket1 : tket2);
+  const auto swap_bra = swap_braket ? swap_tket : swap_tbra;
+  const auto swap_ket = swap_braket ? swap_tbra : swap_tket;
+  // "permute" also the user-provided shell pair data
+  const auto* spbra_precomputed = swap_braket ? tspket : tspbra;
+  const auto* spket_precomputed = swap_braket ? tspbra : tspket;
 
-  const auto tform = tbra1.contr[0].pure || tbra2.contr[0].pure ||
-                     tket1.contr[0].pure || tket2.contr[0].pure;
-  const auto permute = swap_braket || swap_bra || swap_ket;
+  const auto tform = bra1.contr[0].pure || bra2.contr[0].pure ||
+                     ket1.contr[0].pure || ket2.contr[0].pure;
+  const auto permute = swap_braket || swap_tbra || swap_tket;
   const auto use_scratch = permute || tform;
 
   // assert # of primitive pairs
@@ -1134,16 +1142,44 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
   {
     auto p = 0;
-    // this is far less aggressive than should be, but proper analysis
+    // initialize shell pairs, if not given ...
+    // using ln_precision_ is far less aggressive than should be, but proper analysis
     // involves both bra and ket *bases* and thus cannot be done on shell-set
-    // basis
-    // probably ln_precision_/2 - 10 is enough
-    const ShellPair& spbra = (sp1 == nullptr) ? (spbra_.init(bra1, bra2, ln_precision_), spbra_) : *sp1;
-    const ShellPair& spket = (sp2 == nullptr) ? (spket_.init(ket1, ket2, ln_precision_), spket_) : *sp2;
+    // basis ... probably ln_precision_/2 - 10 is enough
+    const ShellPair& spbra = spbra_precomputed ? *spbra_precomputed : (spbra_.init(bra1, bra2, ln_precision_), spbra_) ;
+    const ShellPair& spket = spket_precomputed ? *spket_precomputed : (spket_.init(ket1, ket2, ln_precision_), spket_);
+    // determine whether shell pair data refers to the actual ({bra1,bra2}) or swapped ({bra2,bra1}) pairs
+    // if computed the shell pair data here then it's always in actual order, otherwise check swap_bra/swap_ket
+    const auto spbra_is_swapped = spbra_precomputed ? swap_bra : false;
+    const auto spket_is_swapped = spket_precomputed ? swap_ket : false;
+
+    using real_t = Shell::real_t;
+    // swapping bra turns AB into BA = -AB
+    real_t BA[3];
+    if (spbra_is_swapped) {
+      for(auto xyz=0; xyz!=3; ++xyz)
+        BA[xyz] = - spbra_precomputed->AB[xyz];
+    }
+    const auto& AB = spbra_is_swapped ? BA : spbra.AB;
+    // swapping ket turns CD into DC = -CD
+    real_t DC[3];
+    if (spket_is_swapped) {
+      for(auto xyz=0; xyz!=3; ++xyz)
+        DC[xyz] = - spket_precomputed->AB[xyz];
+    }
+    const auto& CD = spket_is_swapped ? DC : spket.AB;
+
+    const auto& A = bra1.O;
+    const auto& B = bra2.O;
+    const auto& C = ket1.O;
+    const auto& D = ket2.O;
+
+    // compute all primitive quartet data
     const auto npbra = spbra.primpairs.size();
-    const auto npket = spket_.primpairs.size();
+    const auto npket = spket.primpairs.size();
     for (auto pb = 0; pb != npbra; ++pb) {
       for (auto pk = 0; pk != npket; ++pk) {
+        // primitive quartet screening
         if (spbra.primpairs[pb].scr + spket_.primpairs[pk].scr >
             ln_precision_) {
           Libint_t& primdata = primdata_[p];
@@ -1154,19 +1190,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           auto pbra = pb;
           auto pket = pk;
 
-          const auto& A = sbra1.O;
-          const auto& B = sbra2.O;
-          const auto& C = sket1.O;
-          const auto& D = sket2.O;
-          const auto& AB = spbra.AB;
-          const auto& CD = spket.AB;
-
           const auto& spbrapp = spbra.primpairs[pbra];
           const auto& spketpp = spket.primpairs[pket];
-          const auto& pbra1 = spbrapp.p1;
-          const auto& pbra2 = spbrapp.p2;
-          const auto& pket1 = spketpp.p1;
-          const auto& pket2 = spketpp.p2;
+          // if shell-pair data given by user
+          const auto& pbra1 = spbra_is_swapped ? spbrapp.p2 : spbrapp.p1;
+          const auto& pbra2 = spbra_is_swapped ? spbrapp.p1 : spbrapp.p2;
+          const auto& pket1 = spket_is_swapped ? spketpp.p2 : spketpp.p1;
+          const auto& pket2 = spket_is_swapped ? spketpp.p1 : spketpp.p2;
 
           const auto alpha0 = sbra1.alpha[pbra1];
           const auto alpha1 = sbra2.alpha[pbra2];
@@ -1741,7 +1771,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                     {9, 10, 11, 6, 7, 8, 0, 1, 2, 3, 4, 5}},
                    {{6, 7, 8, 9, 10, 11, 3, 4, 5, 0, 1, 2},
                     {9, 10, 11, 6, 7, 8, 3, 4, 5, 0, 1, 2}}}};
-              s_target = mapDerivIndex1[swap_braket][swap_bra][swap_ket][s];
+              s_target = mapDerivIndex1[swap_braket][swap_tbra][swap_tket][s];
             } break;
 
             case 2: {
@@ -1794,7 +1824,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                      6,  17, 27, 63, 64, 37, 45, 52, 7,  18, 28, 68, 38,
                      46, 53, 8,  19, 29, 33, 34, 35, 3,  14, 24, 42, 43,
                      4,  15, 25, 50, 5,  16, 26, 0,  1,  2,  12, 13, 23}}}};
-              s_target = mapDerivIndex2[swap_braket][swap_bra][swap_ket][s];
+              s_target = mapDerivIndex2[swap_braket][swap_tbra][swap_tket][s];
             } break;
 
             default:
@@ -1819,24 +1849,24 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 // of
                 // target
                 // source row {r1,r2} is mapped to target column {r1,r2} if
-                // !swap_ket, else to {r2,r1}
+                // !swap_tket, else to {r2,r1}
                 const auto tgt_col_idx =
-                    !swap_ket ? r1 * nr2 + r2 : r2 * nr1 + r1;
+                    !swap_tket ? r1 * nr2 + r2 : r2 * nr1 + r1;
                 StridedMap tgt_blk_mat(
                     tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt,
                     Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
                         nr2_tgt * ncol_tgt, ncol_tgt));
-                if (swap_bra)
+                if (swap_tbra)
                   tgt_blk_mat = src_blk_mat.transpose();
                 else
                   tgt_blk_mat = src_blk_mat;
               } else {
                 // source row {r1,r2} is mapped to target row {r1,r2} if
-                // !swap_bra, else to {r2,r1}
+                // !swap_tbra, else to {r2,r1}
                 const auto tgt_row_idx =
-                    !swap_bra ? r1 * nr2 + r2 : r2 * nr1 + r1;
+                    !swap_tbra ? r1 * nr2 + r2 : r2 * nr1 + r1;
                 Map tgt_blk_mat(tgt_ptr + tgt_row_idx * ncol, nc1_tgt, nc2_tgt);
-                if (swap_ket)
+                if (swap_tket)
                   tgt_blk_mat = src_blk_mat.transpose();
                 else
                   tgt_blk_mat = src_blk_mat;

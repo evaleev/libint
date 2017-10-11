@@ -630,33 +630,41 @@ class Engine {
   __libint2_engine_inline const target_ptr_vec& compute1(
       const libint2::Shell& s1, const libint2::Shell& s2);
 
-  /// Computes target shell sets of 2-body integrals.
+  /// Computes target shell sets of 2-body integrals, @code  @endcode
+  /// @note result is stored in the "chemists"/Mulliken form, @code (bra1 bra2|ket1 ket2) @endcode;
+  /// the "physicists"/Dirac bra-ket form is @code <bra1 ket1|bra2 ket2> @endcode, where @c bra1 and @c bra2
+  /// refer to particle 1, and @c ket1 and @c ket2 refer to particle 2.
   /// @tparam oper operator
   /// @tparam braket the integral type
   /// @tparam deriv_order the derivative order, values greater than 2 not yet supported
-  /// @param[in] s1
-  /// @param[in] s2
-  /// @param[in] s3
-  /// @param[in] s4
-  /// @param[in] sp1
-  /// @param[in] sp2
+  /// @param[in] bra1 the first shell in the Mulliken bra
+  /// @param[in] bra2 the second shell in the Mulliken bra
+  /// @param[in] ket1 the first shell in the Mulliken ket
+  /// @param[in] ket2 the second shell in the Mulliken ket
+  /// @param[in] spbra ShellPair data for shell pair @c {bra1,bra2}
+  /// @param[in] spket ShellPair data for shell pair @c {ket1,ket2}
   /// @return vector of pointers to target shell sets, the number of sets = Engine::nshellsets();
   ///         if the first pointer equals \c nullptr then all elements were screened out.
-  /// \note resulting shell sets are stored in row-major order
+  /// @note the result integrals are packed in shell sets in row-major order
+  /// (i.e. function index of shell ket2 has stride 1, function index of shell ket1 has
+  /// stride nket2, etc.).
+  /// @note internally the integrals are evaluated with shells permuted to according to the canonical
+  /// order predefined at the library generation time (see macro @c LIBINT_SHELL_SET ). To minimize the overhead it is recommended to
+  /// organize your shell loop nests in the order best suited for your particular instance of Libint library.
   template <Operator oper, BraKet braket, size_t deriv_order>
-  __libint2_engine_inline const target_ptr_vec& compute2(const Shell& s1,
-                                                         const Shell& s2,
-                                                         const Shell& s3,
-                                                         const Shell& s4,
-                                                         const ShellPair* sp1 = nullptr,
-                                                         const ShellPair* sp2 = nullptr);
+  __libint2_engine_inline const target_ptr_vec& compute2(const Shell& bra1,
+                                                         const Shell& bra2,
+                                                         const Shell& ket1,
+                                                         const Shell& ket2,
+                                                         const ShellPair* spbra = nullptr,
+                                                         const ShellPair* spket = nullptr);
 
-  typedef const target_ptr_vec& (Engine::*compute2_ptr_type)(const Shell& s1,
-                                                             const Shell& s2,
-                                                             const Shell& s3,
-                                                             const Shell& s4,
-                                                             const ShellPair* sp1,
-                                                             const ShellPair* sp2);
+  typedef const target_ptr_vec& (Engine::*compute2_ptr_type)(const Shell& bra1,
+                                                             const Shell& bra2,
+                                                             const Shell& ket1,
+                                                             const Shell& ket2,
+                                                             const ShellPair* spbra,
+                                                             const ShellPair* spket);
 
   /** this specifies target precision for computing the integrals.
    *  target precision \f$ \epsilon \f$ is used in 3 ways:

@@ -289,7 +289,7 @@ namespace libint2 {
         for(auto p=0; p!=np; ++p) {
           real_t max_ln_c = - std::numeric_limits<real_t>::max();
           for(auto& c: contr) {
-            max_ln_c = std::max(max_ln_c, log(std::abs(c.coeff[p])));
+            max_ln_c = std::max(max_ln_c, std::log(std::abs(c.coeff[p])));
           }
           max_ln_coeff[p] = max_ln_c;
         }
@@ -338,8 +338,14 @@ namespace libint2 {
         primpairs.reserve(max_nprim*max_nprim);
         for(int i=0; i!=3; ++i) AB[i] = 0.;
       }
+      ShellPair(const Shell& s1, const Shell& s2, real_t ln_prec) {
+        init(s1, s2, ln_prec);
+      }
 
-      // initializes "expensive" primitive pair data; primitive pairs are
+      /// initializes "expensive" primitive pair data; a pair of primitives with exponents \f$ \{\alpha_a,\alpha_b\} \f$
+      /// located at \f$ \{ \vec{A},\vec{B} \} \f$ whose max coefficients in contractions are \f$ \{ \max{|c_a|} , \max{|c_b|} \} \f$ is screened-out (omitted)
+      /// if \f$ \exp(-|\vec{A}-\vec{B}|^2 \alpha_a * \alpha_b / (\alpha_a + \alpha_b)) \max{|c_a|} \max{|c_b|} \leq \epsilon \f$
+      /// where \f$ \epsilon \f$ is the desired precision of the integrals.
       void init(const Shell& s1, const Shell& s2, const real_t& ln_prec) {
 
         primpairs.clear();

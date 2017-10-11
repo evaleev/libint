@@ -54,6 +54,9 @@
 #include <omp.h>
 #endif
 
+/// to use precomputed shell pair data must decide on max precision a priori
+const auto max_engine_precision = std::numeric_limits<double>::epsilon() / 1e10;
+
 // uncomment if want to report integral timings
 // N.B. integral engine timings are controled in engine.h
 #define REPORT_INTEGRAL_TIMINGS
@@ -102,14 +105,17 @@ Matrix compute_do_ints(const BasisSet& bs1, const BasisSet& bs2 = BasisSet(),
 
 using shellpair_list_t = std::unordered_map<size_t, std::vector<size_t>>;
 shellpair_list_t obs_shellpair_list;  // shellpair list for OBS
+using shellpair_data_t = std::vector<std::vector<std::shared_ptr<libint2::ShellPair>>>;  // in same order as shellpair_list_t
+shellpair_data_t obs_shellpair_data;  // shellpair data for OBS
 
 /// computes non-negligible shell pair list; shells \c i and \c j form a
 /// non-negligible
 /// pair if they share a center or the Frobenius norm of their overlap is
 /// greater than threshold
-shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
-                                        const BasisSet& bs2 = BasisSet(),
-                                        double threshold = 1e-12);
+std::tuple<shellpair_list_t,shellpair_data_t>
+compute_shellpairs(const BasisSet& bs1,
+                   const BasisSet& bs2 = BasisSet(),
+                   double threshold = 1e-12);
 
 Matrix compute_2body_fock(
     const BasisSet& obs, const Matrix& D,
@@ -279,7 +285,7 @@ int main(int argc, char* argv[]) {
 
     // compute OBS non-negligible shell-pair list
     {
-      obs_shellpair_list = compute_shellpair_list(obs);
+      std::tie(obs_shellpair_list, obs_shellpair_data) = compute_shellpairs(obs);
       size_t nsp = 0;
       for (auto& sp : obs_shellpair_list) {
         nsp += sp.second.size();
@@ -1266,9 +1272,10 @@ Matrix compute_do_ints(const BasisSet& bs1, const BasisSet& bs2,
   return compute_schwarz_ints<libint2::Operator::delta>(bs1, bs2, use_2norm);
 }
 
-shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
-                                        const BasisSet& _bs2,
-                                        const double threshold) {
+std::tuple<shellpair_list_t,shellpair_data_t>
+compute_shellpairs(const BasisSet& bs1,
+                   const BasisSet& _bs2,
+                   const double threshold) {
   const BasisSet& bs2 = (_bs2.empty() ? bs1 : _bs2);
   const auto nsh1 = bs1.size();
   const auto nsh2 = bs2.size();
@@ -1293,7 +1300,7 @@ shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
   timer.set_now_overhead(25);
   timer.start(0);
 
-  shellpair_list_t result;
+  shellpair_list_t splist;
 
   std::mutex mx;
 
@@ -1305,8 +1312,8 @@ shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
     // loop over permutationally-unique set of shells
     for (auto s1 = 0l, s12 = 0l; s1 != nsh1; ++s1) {
       mx.lock();
-      if (result.find(s1) == result.end())
-        result.insert(std::make_pair(s1, std::vector<size_t>()));
+      if (splist.find(s1) == splist.end())
+        splist.insert(std::make_pair(s1, std::vector<size_t>()));
       mx.unlock();
 
       auto n1 = bs1[s1].size();  // number of basis functions in this shell
@@ -1327,7 +1334,7 @@ shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
 
         if (significant) {
           mx.lock();
-          result[s1].emplace_back(s2);
+          splist[s1].emplace_back(s2);
           mx.unlock();
         }
       }
@@ -1336,12 +1343,12 @@ shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
 
   libint2::parallel_do(compute);
 
-  // resort shell list in increasing order, i.e. result[s][s1] < result[s][s2]
-  // if s1 < s2
+  // resort shell list in increasing order, i.e. splist[s][s1] < splist[s][s2] if s1 < s2
+  // N.B. only parallelized over 1 shell index
   auto sort = [&](int thread_id) {
     for (auto s1 = 0l; s1 != nsh1; ++s1) {
       if (s1 % nthreads == thread_id) {
-        auto& list = result[s1];
+        auto& list = splist[s1];
         std::sort(list.begin(), list.end());
       }
     }
@@ -1349,10 +1356,26 @@ shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
 
   libint2::parallel_do(sort);
 
+  // compute shellpair data assuming that we are computing to default_epsilon
+  // N.B. only parallelized over 1 shell index
+  const auto ln_max_engine_precision = std::log(max_engine_precision);
+  shellpair_data_t spdata(splist.size());
+  auto make_spdata = [&](int thread_id) {
+    for (auto s1 = 0l; s1 != nsh1; ++s1) {
+      if (s1 % nthreads == thread_id) {
+        for(const auto& s2 : splist[s1]) {
+          spdata[s1].emplace_back(std::make_shared<libint2::ShellPair>(bs1[s1],bs2[s2],ln_max_engine_precision));
+        }
+      }
+    }
+  };  // end of make_spdata
+
+  libint2::parallel_do(make_spdata);
+
   timer.stop(0);
   std::cout << "done (" << timer.read(0) << " s)" << std::endl;
 
-  return result;
+  return std::make_tuple(splist,spdata);
 }
 
 // returns {X,X^{-1},rank,A_condition_number,result_A_condition_number}, where
@@ -1511,6 +1534,9 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
   auto engine_precision = std::min(fock_precision / D_shblk_norm.maxCoeff(),
                                    std::numeric_limits<double>::epsilon()) /
                           max_nprim4;
+  assert(engine_precision > max_engine_precision &&
+      "using precomputed shell pair data limits the max engine precision"
+  " ... make max_engine_precision smalle and recompile");
 
   // construct the 2-electron repulsion integrals engine pool
   using libint2::Engine;
@@ -1550,9 +1576,14 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
       auto bf1_first = shell2bf[s1];  // first basis function in this shell
       auto n1 = obs[s1].size();       // number of basis functions in this shell
 
+      auto sp12_iter = obs_shellpair_data.at(s1).begin();
+
       for (const auto& s2 : obs_shellpair_list[s1]) {
         auto bf2_first = shell2bf[s2];
         auto n2 = obs[s2].size();
+
+        const auto* sp12 = sp12_iter->get();
+        ++sp12_iter;
 
         const auto Dnorm12 = do_schwarz_screen ? D_shblk_norm(s1, s2) : 0.;
 
@@ -1566,11 +1597,17 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
                              std::max(D_shblk_norm(s2, s3), Dnorm12))
                   : 0.;
 
+          auto sp34_iter = obs_shellpair_data.at(s3).begin();
+
           const auto s4_max = (s1 == s3) ? s2 : s3;
           for (const auto& s4 : obs_shellpair_list[s3]) {
             if (s4 > s4_max)
               break;  // for each s3, s4 are stored in monotonically increasing
                       // order
+
+            // must update the iter even if going to skip s4
+            const auto* sp34 = sp34_iter->get();
+            ++sp34_iter;
 
             if ((s1234++) % nthreads != thread_id) continue;
 
@@ -1604,7 +1641,7 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
 #endif
 
             engine.compute2<Operator::coulomb, BraKet::xx_xx, 0>(
-                obs[s1], obs[s2], obs[s3], obs[s4]);
+                obs[s1], obs[s2], obs[s3], obs[s4], sp12, sp34);
             const auto* buf_1234 = buf[0];
             if (buf_1234 == nullptr)
               continue; // if all integrals screened out, skip to next quartet
