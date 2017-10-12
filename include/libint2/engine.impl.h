@@ -1180,7 +1180,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     for (auto pb = 0; pb != npbra; ++pb) {
       for (auto pk = 0; pk != npket; ++pk) {
         // primitive quartet screening
-        if (spbra.primpairs[pb].scr + spket_.primpairs[pk].scr >
+        if (spbra.primpairs[pb].scr + spket.primpairs[pk].scr >
             ln_precision_) {
           Libint_t& primdata = primdata_[p];
           const auto& sbra1 = bra1;
