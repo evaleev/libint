@@ -283,7 +283,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
       }
       primdata_[0].targets[0] = &result;
     } else {
-      buildfnptrs_[s1.contr[0].l * hard_lmax_ + s2.contr[0].l](&primdata_[0]);
+      const auto buildfnidx = s1.contr[0].l * hard_lmax_ + s2.contr[0].l;
+      assert(buildfnptrs_[buildfnidx] && "null build function ptr");
+      buildfnptrs_[buildfnidx](&primdata_[0]);
 
       if (accumulate_ints_in_scratch) {
         set_targets = true;
