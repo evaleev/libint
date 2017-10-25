@@ -1,5 +1,5 @@
 define([libint_mmm_version],[2.4.0])
-define([libint_buildid],[beta.4])
+define([libint_buildid],[])
 define([libint_so_version],[2:2:0])
 
 dnl --------- Begin ---------

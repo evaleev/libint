@@ -3,8 +3,8 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2017-xx-yy: 2.4.0-beta.5
-  -
+- 2017-10-25: 2.4.0
+  - changed default to use user-provided boost over bundled boost + minor fixes
 
 - 2017-10-11: 2.4.0-beta.4
   - added support for precomputed pair data use in 2-body C++ API
