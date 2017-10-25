@@ -23,6 +23,8 @@
 
 #include "./engine.h"
 
+#include <iterator>
+
 #pragma GCC diagnostic push
 #pragma GCC system_header
 #include <Eigen/Core>
@@ -245,8 +247,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   }
 
   if (accumulate_ints_in_scratch)
-    std::fill(begin(scratch_),
-              begin(scratch_) + num_shellsets_computed * ncart12, 0.0);
+    std::fill(std::begin(scratch_),
+              std::begin(scratch_) + num_shellsets_computed * ncart12, 0.0);
 
   // loop over accumulation batches
   for (auto pset = 0u; pset != nparam_sets; ++pset) {
@@ -473,8 +475,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
               while (shellset_gaussian_diter) {  // loop over derivs computed
                                                  // by libint
                 const auto& s1s2_deriv = *shellset_gaussian_diter;
-                std::copy(begin(s1s2_deriv), end(s1s2_deriv),
-                          begin(full_deriv));
+                std::copy(std::begin(s1s2_deriv), std::end(s1s2_deriv),
+                          std::begin(full_deriv));
                 const auto full_rank = ShellSetDerivIterator::rank(full_deriv);
                 targets_[full_rank] = primdata_[0].targets[s];
               }
