@@ -31,8 +31,14 @@
 #pragma GCC diagnostic pop
 
 #include <libint2/boys.h>
-#include <libint2/boost/preprocessor.hpp>
-#include <libint2/boost/preprocessor/facilities/is_1.hpp>
+// use libint-packages preprocessor only if not already available
+#if __has_include(<boost/preprocessor.hpp>)
+#  include <boost/preprocessor.hpp>
+#  include <boost/preprocessor/facilities/is_1.hpp>
+#else
+#  include <libint2/boost/preprocessor.hpp>
+#  include <libint2/boost/preprocessor/facilities/is_1.hpp>
+#endif
 
 // extra PP macros
 
