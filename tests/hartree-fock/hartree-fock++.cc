@@ -2221,17 +2221,17 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     Matrix I = Matrix::Identity(ndf, ndf);
     auto L = V_LLt.matrixL();
     Matrix V_L = L;
-    Matrix Linv = L.solve(I).transpose();
+    Matrix Linv_t = L.solve(I).transpose();
     // check
     //  std::cout << "||V - L L^t|| = " << (V - V_L * V_L.transpose()).norm() <<
     //  std::endl;
-    //  std::cout << "||I - L L^-1^t|| = " << (I - V_L *
-    //  Linv.transpose()).norm() << std::endl;
-    //  std::cout << "||V^-1 - L^-1 L^-1^t|| = " << (V.inverse() - Linv *
-    //  Linv.transpose()).norm() << std::endl;
+    //  std::cout << "||I - L L^-1|| = " << (I - V_L *
+    //  Linv_t.transpose()).norm() << std::endl;
+    //  std::cout << "||V^-1 - L^-1^t L^-1|| = " << (V.inverse() - Linv_t *
+    //  Linv_t.transpose()).norm() << std::endl;
 
     Tensor2d K{ndf, ndf};
-    std::copy(Linv.data(), Linv.data() + ndf * ndf, K.begin());
+    std::copy(Linv_t.data(), Linv_t.data() + ndf * ndf, K.begin());
 
     xyK = Tensor3d{n, n, ndf};
     btas::contract(1.0, Zxy, {1, 2, 3}, K, {1, 4}, 0.0, xyK, {2, 3, 4});
