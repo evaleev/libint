@@ -3,7 +3,7 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2017-xx-yy: 2.4.1
+- 2017-11-06: 2.4.1
   - plugged leaky Engine::set_{param,oper,braket}
   - fixed uninitialized value use by libint2::molden::Export
 
