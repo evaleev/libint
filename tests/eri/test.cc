@@ -426,6 +426,11 @@ void test_3eri(unsigned int deriv_order,
   auto lmax1 = std::min(lmax_max, lmax_default);
   auto lmax2 = std::min(lmax_max, lmax_default);
 
+  // reference code only supports Cartesian gaussians
+#if ERI3_PURE_SH
+  lmax0 = 1;
+#endif
+
   for (unsigned int l0 = 0; l0 <= lmax0; ++l0) {
     for (unsigned int l1 = 0; l1 <= lmax1; ++l1) {
       for (unsigned int l2 = 0; l2 <= lmax2; ++l2) {
@@ -675,6 +680,11 @@ void test_2eri(unsigned int deriv_order,
 #endif
 
   lmax = std::min(lmax_max, lmax);
+
+  // reference code only supports Cartesian gaussians
+#if ERI2_PURE_SH
+  lmax = 1;
+#endif
 
   for (unsigned int l0 = 0; l0 <= lmax; ++l0) {
     for (unsigned int l1 = 0; l1 <= lmax; ++l1) {
