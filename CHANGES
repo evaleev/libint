@@ -5,6 +5,7 @@ Following is a brief summary of changes made in each release of Libint.
 
 - 2017-xx-yy: 2.4.1
   - plugged leaky Engine::set_{param,oper,braket}
+  - fixed uninitialized value use by libint2::molden::Export
 
 - 2017-10-25: 2.4.0
   - changed default to use user-provided boost over bundled boost + minor fixes

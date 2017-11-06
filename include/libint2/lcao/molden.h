@@ -202,7 +202,7 @@ class Export {
   std::vector<std::string> labels_;
   std::vector<bool> spins_;
   mutable bool
-      dfg_is_cart_[3];  // whether {d, f, g} shells are cartesian (true) or
+      dfg_is_cart_[3] = {true, true, true};  // whether {d, f, g} shells are cartesian (true) or
                         // solid harmonics (false)
   std::vector<std::vector<long>>
       atom2shell_;  // maps atom -> shell indices in basis_
