@@ -589,6 +589,8 @@ __libint2_engine_inline void Engine::_initialize() {
           BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)),         \
           hard_lmax_, lmax_);                                                  \
     }                                                                          \
+    if (stack_size_ > 0)                                                       \
+      libint2_cleanup_default(&primdata_[0]);                                  \
     stack_size_ = LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(                          \
         libint2_need_memory_, BOOST_PP_NBODYENGINE_MCR3_TASK(product)))(       \
         lmax_);                                                                \

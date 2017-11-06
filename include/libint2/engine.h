@@ -468,8 +468,10 @@ class Engine {
          Params params = empty_pod(), BraKet braket = BraKet::invalid)
       : oper_(oper),
         braket_(braket),
+        primdata_(),
         spbra_(max_nprim),
         spket_(max_nprim),
+        stack_size_(0),
         lmax_(max_l),
         deriv_order_(deriv_order),
         params_(enforce_params_type(oper, params)) {
