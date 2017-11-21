@@ -28,7 +28,9 @@
 #include <libint2/util/cxxstd.h>
 #include <libint2/util/type_traits.h>
 
-#include <x86intrin.h>
+#if defined(__SSE2__) || defined(__SSE__) || defined(__AVX__)
+#  include <x86intrin.h>
+#endif
 
 #ifdef __SSE2__
 
