@@ -18,7 +18,7 @@ The literature citation for the present version in bibtex format is:
   author = "E.~F.~Valeev",
   title = “Libint: A library for the evaluation of molecular integrals of many-body operators over Gaussian functions",
   howpublished = "http://libint.valeyev.net/",
-  note = "version 2.4.1",
+  note = "version 2.4.2",
   year =         2017
 }
 
