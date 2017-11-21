@@ -60,6 +60,7 @@ namespace libint2 {
   inline void initialize() {
     using namespace detail;
     __initializer* x = managed_singleton<__initializer>::instance();
+    (void)x;  // to suppress unused variable warning (not guaranteed to work) TODO revise when upgrade to C++17
     assert(x != nullptr);
   }
   inline void finalize() {

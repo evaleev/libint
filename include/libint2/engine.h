@@ -389,6 +389,7 @@ inline BraKet default_braket(const Operator& oper) {
     } break;
     default:
       assert(false && "missing case in switch");
+      result = BraKet::invalid;
   }
   return result;
 }
