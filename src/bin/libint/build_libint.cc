@@ -288,10 +288,18 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
 
   // optionally skip derivative property ints
 #ifdef DISABLE_ONEBODY_PROPERTY_DERIVS
-  const auto property_operator = !(std::is_same<_OperType,OverlapOper>::value || std::is_same<_OperType,KineticOper>::value || std::is_same<_OperType,ElecPotOper>::value);
+  const auto property_operator = !(std::is_same<_OperType,OverlapOper>::value ||
+                                   std::is_same<_OperType,KineticOper>::value ||
+                                   std::is_same<_OperType,ElecPotOper>::value);
   if (property_operator && deriv_level > 0)
     return;
 #endif
+  // derivatives of spherical multipole integrals are not implemented
+  {
+    if (std::is_same<_OperType,SphericalMultipoleOper>::value && deriv_level > 0)
+      throw std::invalid_argument("derivatives of spherical multipole ints are not yet implemented");
+  }
+
 
   //
   // Construct graphs for each desired target integral and
