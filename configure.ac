@@ -213,16 +213,19 @@ esac
 ]
 )
 
+DISABLE_ONEBODY_PROPERTY_DERIVS=1
 AC_ARG_ENABLE(1body-property-derivs,
-AS_HELP_STRING([--disable-1body-property-derivs],[Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot). These derivatives are enabled by default to save compile time.]),
+AS_HELP_STRING([--enable-1body-property-derivs],[Enable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot). These derivatives are disabled by default to save compile time.]),
 [
 case $enableval in
-  no)
-    DISABLE_ONEBODY_PROPERTY_DERIVS=1
-    AC_DEFINE(DISABLE_ONEBODY_PROPERTY_DERIVS)
+  yes)
+    DISABLE_ONEBODY_PROPERTY_DERIVS=0
   ;;
 esac
 ])
+if test X$DISABLE_ONEBODY_PROPERTY_DERIVS != 0; then
+  AC_DEFINE(DISABLE_ONEBODY_PROPERTY_DERIVS)
+fi
 
 AC_ARG_ENABLE(eri,
 AS_HELP_STRING([--enable-eri=N],[Compile with support for up to N-th derivatives of electron repulsion integrals]),
@@ -483,9 +486,9 @@ AS_HELP_STRING([--with-1body-opt-am=N],[Optimize 1-e ints maximally for up to an
 ]
 )
 
-MULTIPOLE_MAX_ORDER=10
+MULTIPOLE_MAX_ORDER=4
 AC_ARG_WITH(multipole-max-order,
-AS_HELP_STRING([--with-multipole-max-order=N],[Maximum order of spherical multipole integrals. The default is 10. There is no maximum]),
+AS_HELP_STRING([--with-multipole-max-order=N],[Maximum order of spherical multipole integrals. The default is 4. There is no maximum]),
 [
   case $withval in 
     *) 
