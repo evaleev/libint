@@ -3,6 +3,10 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2018-xx-yy: 2.4.3
+  - resolved issue 90
+  - resolved issue 91: fixed formatting errors in def2-sv(p)-c, def2-tzvp-c, and def2-tzvpp-c basis set definitions
+
 - 2017-11-21: 2.4.2
   - fixed vector.h for use on non-x86 platforms
 
