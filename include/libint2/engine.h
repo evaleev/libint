@@ -102,18 +102,18 @@ enum class Operator {
   /// erfc-attenuated point-charge Coulomb operator,
   /// \f$ \mathrm{erfc}(\omega r)/r \f$
   erfc_nuclear,
-  /// overlap + (Cartesian) electric dipole moment,
+  //! overlap + (Cartesian) electric dipole moment,
   //! \f$ x_O, y_O, z_O \f$, where
   //! \f$ x_O \equiv x - O_x \f$ is relative to
   //! origin \f$ \vec{O} \f$
   emultipole1,
-  /// emultipole1 + (Cartesian) electric quadrupole moment,
+  //! emultipole1 + (Cartesian) electric quadrupole moment,
   //! \f$ x^2, xy, xz, y^2, yz, z^2 \f$
   emultipole2,
-  /// emultipole2 + (Cartesian) electric octupole moment,
+  //! emultipole2 + (Cartesian) electric octupole moment,
   //! \f$ x^3, x^2y, x^2z, xy^2, xyz, xz^2, y^3, y^2z, yz^2, z^3 \f$
   emultipole3,
-  /// (electric) spherical multipole moments,
+  //! (electric) spherical multipole moments,
   //! \f$ O_{l,m} \equiv \mathcal{N}^{\text{sign}(m)}_{l,|m|} \f$ where \f$ \f$ \mathcal{N}^{\pm}_{l,m} \f$
   //! is defined in J.M. Pérez-Jordá and W. Yang, J Chem Phys 104, 8003 (1996), DOI 10.1063/1.468354 .
   //! To obtain the real solid harmonics \f$ C^m_l \f$ and \f$ S^m_l \f$ defined in https://en.wikipedia.org/wiki/Solid_harmonics
