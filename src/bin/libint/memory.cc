@@ -80,7 +80,8 @@ SafePtr<MemoryManager::MemBlock>
 MemoryManager::find_block(const Address& address)
 {
   typedef memblkset::iterator iter;
-  iter blk = find_if(blks_.begin(),blks_.end(),bind2nd(ptr_fun(MemBlock::address_eq),address));
+  using std::placeholders::_1;
+  iter blk = find_if(blks_.begin(),blks_.end(),std::bind(MemBlock::address_eq,_1,address));
   if (blk == blks_.end())
     throw std::runtime_error("MemoryManager::find_block() -- didn't find a block at this address");
   else
