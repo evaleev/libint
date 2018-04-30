@@ -27,11 +27,18 @@
 #include <string>
 #include <cassert>
 
+// Include C++17 any header
+#if __cplusplus >= 201703L
+#include <any>
+#endif
+
 namespace libint2 {
 
 // use C++17 std::any, if available
 #if __cplusplus >= 201703L
 using std::any;
+using std::any_cast;
+using std::bad_any_cast;
 #else
 
 namespace detail {
