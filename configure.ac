@@ -1097,7 +1097,6 @@ if test "X$CXXGEN" = X; then
   CXXGEN=$CXX
 fi
 AC_SUBST(CXXGEN)
-AC_SUBST(CXXGENFLAGS)
 
 # discard CXXFLAGS provided by the C++ detection macros
 initial_CXXFLAGS="$CXXFLAGS"
@@ -1207,6 +1206,7 @@ AC_SUBST(EXTRAINCLUDE)
 AC_SUBST(EXTRADEFINES)
 
 AC_SUBST(CXXFLAGS)
+AC_SUBST(CXXGENFLAGS)
 AC_SUBST(LIBDIRS)
 AC_SUBST(LD)
 AC_SUBST(LDFLAGS)
@@ -1261,6 +1261,7 @@ fi
 
 # to support FMA CXXGEN must be able to compile C++11
 # NB -std=c++11 is not added to CXXGENFLAGS automatically!
+ACX_CHECK_CPP11_CXXGEN
 if test "X$libint_generate_gma" = "X1" -a "X$CXXGEN_SUPPORTS_CPP11" = "Xno"; then
   AC_MSG_ERROR([CXXGEN must support C++11 to provide FMA support. Add -std=c++11 to CXXGENFLAGS.])
 fi
