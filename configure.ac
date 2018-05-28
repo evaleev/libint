@@ -1305,50 +1305,10 @@ AC_ARG_ENABLE(mpfr,
  ]
 )
 
-dnl ------------------ Check for shared_ptr -----------------------
+dnl ------------------ Check for Boost library -----------------------
 
-HAVE_SHARED_PTR=no
-AC_MSG_CHECKING([for Boost::shared_ptr])
-AC_COMPILE_IFELSE(
-  [AC_LANG_PROGRAM(
-    [[#include <boost/shared_ptr.hpp>
-    ]],
-    [[
-     boost::shared_ptr<int> a(new int);
-     boost::shared_ptr<int> b = a;
-    ]]
-   )
-  ],
-  [AC_MSG_RESULT([yes])
-   HAVE_SHARED_PTR=boost
-   AC_DEFINE(HAVE_SHARED_PTR_IN_BOOST)
-  ],
-  [
-    AC_MSG_RESULT([no])
-  ]
-)
-
-if test "X$HAVE_SHARED_PTR" = "Xno"; then
-  AC_MSG_CHECKING([for std::shared_ptr])
-  AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM(
-      [[#include <memory>
-      ]],
-      [[
-        std::shared_ptr<int> a(new int);
-        std::shared_ptr<int> b = a;
-      ]]
-     )
-    ],
-    [AC_MSG_RESULT([yes])
-     HAVE_SHARED_PTR=std
-    ],
-    [
-      AC_MSG_RESULT([no])
-      AC_MSG_ERROR([shared_ptr is required. Please download Boost from boost.org or use C++ compiler that supports shared_ptr.])
-    ]
-  )
-fi
+dnl Boost.Preprocessor requires 1.57
+AX_BOOST_BASE([1.57],, [AC_MSG_ERROR([libint compiler needs Boost 1.57 or later, download from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])])
 
 AC_MSG_CHECKING([for Boost::mpl::for_each])
 AC_COMPILE_IFELSE(
@@ -1374,6 +1334,51 @@ AC_COMPILE_IFELSE(
   ]
 )
 
+dnl ------------------ Check for shared_ptr -----------------------
+
+HAVE_SHARED_PTR=no
+AC_MSG_CHECKING([for std::shared_ptr])
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM(
+      [[#include <memory>
+      ]],
+      [[
+        std::shared_ptr<int> a(new int);
+        std::shared_ptr<int> b = a;
+      ]]
+     )
+    ],
+    [AC_MSG_RESULT([yes])
+     HAVE_SHARED_PTR=std
+    ],
+    [
+      AC_MSG_RESULT([no])
+    ]
+  )
+
+if test "X$HAVE_SHARED_PTR" = "Xno"; then
+  AC_MSG_CHECKING([for Boost::shared_ptr])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <boost/shared_ptr.hpp>
+      ]],
+      [[
+       boost::shared_ptr<int> a(new int);
+       boost::shared_ptr<int> b = a;
+      ]]
+     )
+    ],
+    [AC_MSG_RESULT([yes])
+     HAVE_SHARED_PTR=boost
+     AC_DEFINE(HAVE_SHARED_PTR_IN_BOOST)
+    ],
+    [
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([shared_ptr is required. Please download Boost from boost.org or use C++ compiler that supports std::shared_ptr.])
+    ]
+  )
+fi
+
 dnl ------------------ Check for Eigen library -----------------------
 
 ACX_CHECK_EIGEN
@@ -1383,7 +1388,7 @@ fi
 
 dnl -- Checks for typedefs, structures, and compiler characteristics. --
 AC_TYPE_SIZE_T
-
+``
 CPPFLAGS="$CPPFLAGS" CXX="$CXX" CXXFLAGS="$CXXFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
 LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB"

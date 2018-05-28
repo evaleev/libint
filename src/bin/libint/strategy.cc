@@ -66,7 +66,7 @@ namespace libint2 {
   template <class T> struct MasterStrategy;
 #if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
   template <> struct MasterStrategy<TwoPRep_11_11_sq> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_TwoPRep_11_sh,
     HRR_cd_11_TwoPRep_11_sh,
     Deriv_a_11_TwoPRep_11_sh,
@@ -82,7 +82,7 @@ namespace libint2 {
     > value;
   };
   template <> struct MasterStrategy<TwoPRep_11_11_int> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_TwoPRep_11_int,
     HRR_cd_11_TwoPRep_11_int,
     Deriv_a_11_TwoPRep_11_int,
@@ -99,7 +99,7 @@ namespace libint2 {
   };
 #else  // 0B0D strategy
   template <> struct MasterStrategy<TwoPRep_11_11_sq> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ba_11_TwoPRep_11_sh,
     HRR_dc_11_TwoPRep_11_sh,
     Deriv_a_11_TwoPRep_11_sh,
@@ -115,7 +115,7 @@ namespace libint2 {
     > value;
   };
   template <> struct MasterStrategy<TwoPRep_11_11_int> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ba_11_TwoPRep_11_int,
     HRR_dc_11_TwoPRep_11_int,
     Deriv_a_11_TwoPRep_11_int,
@@ -134,7 +134,7 @@ namespace libint2 {
 
 #if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
   template <> struct MasterStrategy<R12kG12_11_11_sq> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_R12kG12_11_sh,
     HRR_cd_11_R12kG12_11_sh,
     VRR_a_11_R12kG12_11_sh,
@@ -142,7 +142,7 @@ namespace libint2 {
     > value;
   };
   template <> struct MasterStrategy<R12kG12_11_11_int> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_R12kG12_11_int,
     HRR_cd_11_R12kG12_11_int,
     VRR_a_11_R12kG12_11_int,
@@ -151,7 +151,7 @@ namespace libint2 {
   };
 #else // 0B0D strategy
   template <> struct MasterStrategy<R12kG12_11_11_sq> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ba_11_R12kG12_11_sh,
     HRR_dc_11_R12kG12_11_sh,
     VRR_b_11_R12kG12_11_sh,
@@ -159,7 +159,7 @@ namespace libint2 {
     > value;
   };
   template <> struct MasterStrategy<R12kG12_11_11_int> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ba_11_R12kG12_11_int,
     HRR_dc_11_R12kG12_11_int,
     VRR_b_11_R12kG12_11_int,
@@ -169,56 +169,56 @@ namespace libint2 {
 #endif
 
   template <> struct MasterStrategy<R12kR12lG12_11_11_sq> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_R12kR12lG12_11_sh,
     HRR_cd_11_R12kR12lG12_11_sh,
     CR_11_R12kR12lG12_11_sh
     > value;
   };
   template <> struct MasterStrategy<R12kR12lG12_11_11_int> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_R12kR12lG12_11_int,
     HRR_cd_11_R12kR12lG12_11_int,
     CR_11_R12kR12lG12_11_int
     > value;
   };
   template <> struct MasterStrategy<TiG12_11_11_sq> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_TiG12_11_sh,
     HRR_cd_11_TiG12_11_sh,
     CR_11_TiG12_11_sh
     > value;
   };
   template <> struct MasterStrategy<TiG12_11_11_int> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_TiG12_11_int,
     HRR_cd_11_TiG12_11_int,
     CR_11_TiG12_11_int
     > value;
   };
   template <> struct MasterStrategy<G12TiG12_11_11_sq> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_G12TiG12_11_sh,
     HRR_cd_11_G12TiG12_11_sh,
     CR_11_G12TiG12_11_sh
     > value;
   };
   template <> struct MasterStrategy<G12TiG12_11_11_int> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_G12TiG12_11_int,
     HRR_cd_11_G12TiG12_11_int,
     CR_11_G12TiG12_11_int
     > value;
   };
   template <> struct MasterStrategy<DivG12prime_xTx_11_11_sq> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_DivG12prime_xTx_sh,
     HRR_cd_11_DivG12prime_xTx_sh,
     CR_11_DivG12prime_xTx_11_sh
     > value;
   };
   template <> struct MasterStrategy<DivG12prime_xTx_11_11_int> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_DivG12prime_xTx_int,
     HRR_cd_11_DivG12prime_xTx_int,
     CR_11_DivG12prime_xTx_11_int
@@ -226,26 +226,26 @@ namespace libint2 {
   };
 #if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
   template <> struct MasterStrategy<DummySymmIntegral_11_11_sq> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_Dummy_11_sh,
     HRR_cd_11_Dummy_11_sh
     > value;
   };
   template <> struct MasterStrategy<DummySymmIntegral_11_11_int> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ab_11_Dummy_11_int,
     HRR_cd_11_Dummy_11_int
     > value;
   };
 #else // 0B0D strategy
   template <> struct MasterStrategy<DummySymmIntegral_11_11_sq> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ba_11_Dummy_11_sh,
     HRR_dc_11_Dummy_11_sh
     > value;
   };
   template <> struct MasterStrategy<DummySymmIntegral_11_11_int> {
-    typedef mpl::list<
+    typedef boost::mpl::list<
     HRR_ba_11_Dummy_11_int,
     HRR_dc_11_Dummy_11_int
     > value;
@@ -254,41 +254,41 @@ namespace libint2 {
 
 #if LIBINT_SUPPORT_ONEBODYINTS
   template <> struct MasterStrategy<Overlap_1_1_sh_x> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_XYZ_1_1<CGShell1d<CartesianAxis_X>,OverlapOper>
       > value;
     };
   template <> struct MasterStrategy<Overlap_1_1_sh_y> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_XYZ_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper>
       > value;
     };
   template <> struct MasterStrategy<Overlap_1_1_sh_z> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_XYZ_1_1<CGShell1d<CartesianAxis_Z>,OverlapOper>
       > value;
     };
   template <> struct MasterStrategy<Overlap_1_1_int_x> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
       VRR_a_1_Overlap_1_int_x,
       VRR_b_1_Overlap_1_int_x
       > value;
     };
   template <> struct MasterStrategy<Overlap_1_1_int_y> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
       VRR_a_1_Overlap_1_int_y,
       VRR_b_1_Overlap_1_int_y
       > value;
     };
   template <> struct MasterStrategy<Overlap_1_1_int_z> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
       VRR_a_1_Overlap_1_int_z,
       VRR_b_1_Overlap_1_int_z
       > value;
     };
   // TODO create TwoCenterOSTactic to be able to optimally apply bidirectional strategies
   template <> struct MasterStrategy<ElecPot_1_1_sh> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
       HRR_ab_1_ElecPot_1_sh,
       HRR_ba_1_ElecPot_1_sh,
       CR_DerivGauss<ElecPot_1_1_sh,0,InBra>,
@@ -298,7 +298,7 @@ namespace libint2 {
       > value;
     };
   template <> struct MasterStrategy<ElecPot_1_1_int> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
       HRR_ab_1_ElecPot_1_int,
       HRR_ba_1_ElecPot_1_int,
       CR_DerivGauss<ElecPot_1_1_int,0,InBra>,
@@ -308,61 +308,61 @@ namespace libint2 {
       > value;
     };
   template <> struct MasterStrategy<Kinetic_1_1_sh> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_XYZ_1_1<CGShell,KineticOper>
       > value;
     };
   template <> struct MasterStrategy<Kinetic_1_1_int> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_DerivGauss<Kinetic_1_1_int,0,InBra,trinvskip1_part,trinvskip1_where>,
         CR_DerivGauss<Kinetic_1_1_int,0,InKet,trinvskip1_part,trinvskip1_where>,
         CR_XYZ_1_1<CGF,KineticOper>
       > value;
     };
   template <> struct MasterStrategy<Kinetic_1_1_int_x> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_XYZ_1_1<CGF1d<CartesianAxis_X>,KineticOper>
       > value;
     };
   template <> struct MasterStrategy<Kinetic_1_1_int_y> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_XYZ_1_1<CGF1d<CartesianAxis_Y>,KineticOper>
       > value;
     };
   template <> struct MasterStrategy<Kinetic_1_1_int_z> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_XYZ_1_1<CGF1d<CartesianAxis_Z>,KineticOper>
       > value;
     };
   template <> struct MasterStrategy<CMultipole_1_1_sh> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_XYZ_1_1<CGShell,CartesianMultipoleOper<3u>>
       > value;
     };
   template <> struct MasterStrategy<CMultipole_1_1_int> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_DerivGauss<CMultipole_1_1_int,0,InBra>,
         CR_DerivGauss<CMultipole_1_1_int,0,InKet>,
         CR_XYZ_1_1<CGF,CartesianMultipoleOper<3u>>
       > value;
     };
   template <> struct MasterStrategy<CMultipole_1_1_int_x> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_XYZ_1_1<CGF1d<CartesianAxis_X>,CartesianMultipoleOper<1u>>
       > value;
     };
   template <> struct MasterStrategy<CMultipole_1_1_int_y> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_XYZ_1_1<CGF1d<CartesianAxis_Y>,CartesianMultipoleOper<1u>>
       > value;
     };
   template <> struct MasterStrategy<CMultipole_1_1_int_z> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         CR_XYZ_1_1<CGF1d<CartesianAxis_Z>,CartesianMultipoleOper<1u>>
       > value;
     };
   template <> struct MasterStrategy<SMultipole_1_1_sh> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
         HRR_ab_1_SMultipole_1_sh,
         HRR_ba_1_SMultipole_1_sh,
         CR_DerivGauss<SMultipole_1_1_sh,0,InBra>,
@@ -372,7 +372,7 @@ namespace libint2 {
       > value;
     };
   template <> struct MasterStrategy<SMultipole_1_1_int> {
-      typedef mpl::list<
+      typedef boost::mpl::list<
           HRR_ab_1_SMultipole_1_int,
           HRR_ba_1_SMultipole_1_int,
           CR_DerivGauss<SMultipole_1_1_int,0,InBra>,
@@ -384,7 +384,7 @@ namespace libint2 {
 #endif // LIBINT_SUPPORT_ONEBODYINTS
 
   template <typename T> struct MasterStrategy {
-      typedef mpl::list<> value;
+      typedef boost::mpl::list<> value;
   };
 
   /// transform<RRType> encapsulates RRType and the action associated with RRType
