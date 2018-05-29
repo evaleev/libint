@@ -1307,8 +1307,28 @@ AC_ARG_ENABLE(mpfr,
 
 dnl ------------------ Check for Boost library -----------------------
 
-dnl Boost.Preprocessor requires 1.57
-AX_BOOST_BASE([1.57],, [AC_MSG_ERROR([libint compiler needs Boost 1.57 or later, download from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])])
+dnl Boost.Preprocessor requires 1.30 (which introduced MPL; Preprocessor was introduced in 1.29)
+AX_BOOST_BASE([1.30],, [AC_MSG_ERROR([libint compiler needs Boost 1.30 or later, download from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])])
+
+AC_MSG_CHECKING([for variadic macro support in Boost.Preprocessor])
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM(
+    [[#include <boost/preprocessor.hpp>
+      #if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
+      #  error "your compiler does not provide variadic macros (but does support C++11), something is seriously broken, please create an issue at https://github.com/evaleev/libint/issues"
+      #endif
+    ]],
+    [[
+    ]]
+   )
+  ],
+  [AC_MSG_RESULT([yes])
+  ],
+  [
+    AC_MSG_RESULT([no])
+    AC_MSG_ERROR([Boost.Preprocessor with variadic macro support is required. Download latest boost from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])
+  ]
+)
 
 AC_MSG_CHECKING([for Boost::mpl::for_each])
 AC_COMPILE_IFELSE(
@@ -1330,7 +1350,7 @@ AC_COMPILE_IFELSE(
   ],
   [
     AC_MSG_RESULT([no])
-    AC_MSG_ERROR([Boost::mpl is required. Please use the latest Boost library from boost.org and/or most standard-compliant C++ compiler.])
+    AC_MSG_ERROR([Boost::mpl is required. Download latest boost from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])
   ]
 )
 
