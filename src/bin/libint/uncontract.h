@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <assert.h>
+#include <cassert>
 #include <rr.h>
 #include <integral.h>
 #include <iter.h>

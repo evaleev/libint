@@ -29,7 +29,7 @@
 #include <deque>
 #include <algorithm>
 #include <stdexcept>
-#include <assert.h>
+#include <cassert>
 
 #include <global_macros.h>
 #include <exception.h>

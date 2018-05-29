@@ -18,6 +18,7 @@
  *
  */
 
+#include <cassert>
 #include <cstdio>
 #include <context.h>
 #include <codeblock.h>

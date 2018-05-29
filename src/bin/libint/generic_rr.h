@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <assert.h>
+#include <cassert>
 #include <boost/type_traits/is_same.hpp>
 
 #include <dgvertex.h>
