@@ -21,6 +21,7 @@
 #ifndef _libint2_src_bin_libint_integral_h_
 #define _libint2_src_bin_libint_integral_h_
 
+#include <cassert>
 #include <smart_ptr.h>
 #include <dgvertex.h>
 #include <oper.h>
