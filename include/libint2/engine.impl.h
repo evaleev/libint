@@ -1738,8 +1738,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
       for (auto s = 0; s != ntargets; ++s) {
         // when permuting derivatives may need to permute shellsets also, not
         // just integrals
-        // within shellsets; this will poins where source shellset s should end
-        // up
+        // within shellsets; this will point to where source shellset s should end up
         auto s_target = s;
 
         auto source =
