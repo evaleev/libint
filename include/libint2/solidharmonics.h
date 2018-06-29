@@ -472,7 +472,7 @@ namespace libint2 {
       std::fill(target_blk, target_blk + npure_row * npure_col, 0);
 
       // loop over row shg
-      for(size_t s1=0; s1!=npure_row; ++s1) {
+      for(auto s1=0; s1!=npure_row; ++s1) {
         const auto nc1 = coefs_row.nnz(s1);      // # of cartesians contributing to shg s1
         const auto* c1_idxs = coefs_row.row_idx(s1); // indices of cartesians contributing to shg s1
         const auto* c1_vals = coefs_row.row_values(s1); // coefficients of cartesians contributing to shg s1
@@ -480,7 +480,7 @@ namespace libint2 {
         auto target_blk_s1 = target_blk + s1 * npure_col;
 
         // loop over col shg
-        for(size_t s2=0; s2!=npure_col; ++s2) {
+        for(auto s2=0; s2!=npure_col; ++s2) {
           const auto nc2 = coefs_col.nnz(s2);      // # of cartesians contributing to shg s2
           const auto* c2_idxs = coefs_col.row_idx(s2); // indices of cartesians contributing to shg s2
           const auto* c2_vals = coefs_col.row_values(s2); // coefficients of cartesians contributing to shg s2
@@ -515,13 +515,13 @@ namespace libint2 {
       const auto npure_col = 2*l_col+1;
 
       // loop over rows
-      for(size_t r1=0; r1!=nrow; ++r1) {
+      for(auto r1=0ul; r1!=nrow; ++r1) {
 
         auto source_blk_r1 = source_blk + r1 * ncart_col;
         auto target_blk_r1 = target_blk + r1 * npure_col;
 
         // loop over col shg
-        for(size_t s2=0; s2!=npure_col; ++s2) {
+        for(auto s2=0; s2!=npure_col; ++s2) {
           const auto nc2 = coefs_col.nnz(s2);      // # of cartesians contributing to shg s2
           const auto* c2_idxs = coefs_col.row_idx(s2); // indices of cartesians contributing to shg s2
           const auto* c2_vals = coefs_col.row_values(s2); // coefficients of cartesians contributing to shg s2
@@ -553,7 +553,7 @@ namespace libint2 {
       const auto npure_row = 2*l_row+1;
 
       // loop over row shg
-      for(size_t s1=0; s1!=npure_row; ++s1) {
+      for(auto s1=0; s1!=npure_row; ++s1) {
         const auto nc1 = coefs_row.nnz(s1);      // # of cartesians contributing to shg s1
         const auto* c1_idxs = coefs_row.row_idx(s1); // indices of cartesians contributing to shg s1
         const auto* c1_vals = coefs_row.row_values(s1); // coefficients of cartesians contributing to shg s1
@@ -561,7 +561,7 @@ namespace libint2 {
         auto target_blk_s1 = target_blk + s1 * ncol;
 
         // loop over cols
-        for(size_t c2=0; c2!=ncol; ++c2) {
+        for(auto c2=0; c2!=ncol; ++c2) {
 
           Real s1_c2_value = 0.0;
           auto source_blk_c2_offset = source_blk + c2;

@@ -105,12 +105,12 @@ namespace libint2 {
         }
         
         // for each atom find the corresponding basis components
-        for(auto a=0; a<atoms.size(); ++a) {
+        for(auto a=0ul; a<atoms.size(); ++a) {
 
           auto Z = atoms[a].atomic_number;
           
           // add each component in order
-          for(auto comp_idx=0; comp_idx!=component_basis_sets.size(); ++comp_idx) {
+          for(auto comp_idx=0ul; comp_idx!=component_basis_sets.size(); ++comp_idx) {
             const auto& component_basis_set = component_basis_sets[comp_idx];
             if (!component_basis_set[Z].empty()) {  // found? add shells in order
               for(auto s: component_basis_set[Z]) {
@@ -397,14 +397,14 @@ namespace libint2 {
           if (nextshell) {
             LIBINT2_LINE_TO_STRINGSTREAM(line);
             std::string amlabel;
-            unsigned nprim;
+            std::size_t nprim;
             iss >> amlabel >> nprim >> rest;
             if (amlabel != "SP" && amlabel != "sp") {
               assert(amlabel.size() == 1);
               auto l = Shell::am_symbol_to_l(amlabel[0]);
               std::vector<double> exps;
               std::vector<double> coeffs;
-              for(auto p = 0; p!=nprim; ++p) {
+              for(decltype(nprim) p = 0; p!=nprim; ++p) {
                 while(std::getline(is, line) && (line.empty() || line[0] == '!')) {}
                 fortran_dfloats_to_efloats(line);
                 LIBINT2_LINE_TO_STRINGSTREAM(line);
@@ -427,7 +427,7 @@ namespace libint2 {
             else { // split the SP shells
               std::vector<double> exps;
               std::vector<double> coeffs_s, coeffs_p;
-              for(auto p = 0; p!=nprim; ++p) {
+              for(decltype(nprim) p = 0; p!=nprim; ++p) {
                 while(std::getline(is, line) && (line.empty() || line[0] == '!')) {}
                 fortran_dfloats_to_efloats(line);
                 LIBINT2_LINE_TO_STRINGSTREAM(line);

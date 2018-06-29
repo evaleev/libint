@@ -92,7 +92,7 @@ namespace libint2 {
 
     // rest of lines are atoms
     std::vector<Atom> atoms(natom);
-    for (auto i = 0; i < natom; i++) {
+    for (size_t i = 0; i < natom; i++) {
       // read line
       std::string line;
       std::getline(is, line);

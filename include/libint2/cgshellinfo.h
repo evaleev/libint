@@ -441,8 +441,8 @@ namespace libint2 {
       CGShellOrderingGenerator<Ord,lmax>::compute(cartindex);
       // then use it to compute cartindex_to_ijk
       for(unsigned int l=0; l<=lmax; ++l) {
-        for(int i=0; i<=l; ++i) {
-          for(int j=0; j<=l-i; ++j) {
+        for(unsigned int i=0; i<=l; ++i) {
+          for(unsigned int j=0; j<=l-i; ++j) {
             const int c = cartindex[l][i][j];
             cartindex_to_ijk[l][c] = Triple(i,j,l-i-j);
           }

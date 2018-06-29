@@ -51,8 +51,8 @@ namespace libint2 {
                                                            6190283353629375LL}};
     /// bc(i,j) = binomial coefficient, i! / (j! (i-j)!)
     template <typename Int> int64_t bc(Int i, Int j) {
-      assert(i < fac.size());
-      assert(j < fac.size());
+      assert(i < Int(fac.size()));
+      assert(j < Int(fac.size()));
       assert(i >= j);
       return fac[i] / (fac[j] * fac[i-j]);
     }
@@ -254,7 +254,7 @@ namespace libint2 {
         const auto np = nprim();
         for(auto& c: contr) {
           assert(c.l <= 15); // due to df_Kminus1[] a 64-bit integer type; kinda ridiculous restriction anyway
-          for(auto p=0; p!=np; ++p) {
+          for(auto p=0ul; p!=np; ++p) {
             assert(alpha[p] >= 0.0);
             if (alpha[p] != 0.) {
               const auto two_alpha = 2 * alpha[p];
@@ -269,15 +269,15 @@ namespace libint2 {
           if (do_enforce_unit_normalization()) {
             // compute the self-overlap of the , scale coefficients by its inverse square root
             double norm{0};
-            for(auto p=0; p!=np; ++p) {
-              for(auto q=0; q<=p; ++q) {
+            for(auto p=0ul; p!=np; ++p) {
+              for(decltype(p) q=0ul; q<=p; ++q) {
                 auto gamma = alpha[p] + alpha[q];
                 norm += (p==q ? 1.0 : 2.0) * df_Kminus1[2*c.l] * sqrt_Pi_cubed * c.coeff[p] * c.coeff[q] /
                         (pow(2,c.l) * pow(gamma,c.l+1) * sqrt(gamma));
               }
             }
             auto normalization_factor = 1.0 / sqrt(norm);
-            for(auto p=0; p!=np; ++p) {
+            for(auto p=0ul; p!=np; ++p) {
               c.coeff[p] *= normalization_factor;
             }
           }
@@ -286,7 +286,7 @@ namespace libint2 {
 
         // update max log coefficients
         max_ln_coeff.resize(np);
-        for(auto p=0; p!=np; ++p) {
+        for(auto p=0ul; p!=np; ++p) {
           real_t max_ln_c = - std::numeric_limits<real_t>::max();
           for(auto& c: contr) {
             max_ln_c = std::max(max_ln_c, std::log(std::abs(c.coeff[p])));
@@ -305,7 +305,7 @@ namespace libint2 {
     }
     os << std::endl;
 
-    for(auto i=0; i<sh.alpha.size(); ++i) {
+    for(auto i=0ul; i<sh.alpha.size(); ++i) {
       os << "  " << sh.alpha[i];
       for(const auto& c: sh.contr) {
         os << " " << c.coeff.at(i);
