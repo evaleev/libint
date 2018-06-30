@@ -90,7 +90,7 @@ void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
                         auto f1234 = ((f1 * n2 + f2) * n3 + f3) * n4 + f4;
                         auto ff1234 = ((ff1 * nn2 + ff2) * nn3 + ff3) * nn4 + ff4;
 
-                        REQUIRE(shellset[dd][ff1234] == Approx(shellset_ref[d][f1234]).margin(deriv_level == 1 ? 1e-12 : 1e-14));
+                        REQUIRE(shellset[dd][ff1234] == Approx(shellset_ref[d][f1234]).margin(deriv_order == 1 ? 1e-12 : 1e-14));
                       }
                     }
                   }
