@@ -67,7 +67,7 @@ void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
           auto n3 = obs[s3].size(); // number of basis functions in third shell
           auto n4 = obs[s4].size(); // number of basis functions in fourth shell
 
-          auto validate = [&](auto permuter) {
+          auto validate = [&](std::tuple<int, int, int, int> (&permuter)(int,int,int,int)) {
             int ss1, ss2, ss3, ss4;
             std::tie(ss1, ss2, ss3, ss4) = permuter(s1, s2, s3, s4);
 
