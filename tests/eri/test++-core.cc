@@ -114,7 +114,7 @@ void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
                   if (aa[0]) dd = xyz;
                   else if (aa[1]) dd = 3 + xyz;
                   else if (aa[2]) dd = 6 + xyz;
-                  else if (aa[3]) dd = 3 + xyz;
+                  else if (aa[3]) dd = 9 + xyz;
                   else
                     assert(false);
                 }
