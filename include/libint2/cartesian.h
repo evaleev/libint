@@ -53,7 +53,7 @@ inline void scale<double, 4>(double* intset, const std::array<std::pair<double*,
       const auto scalar01 = coeffs[0].first[f0] * coeffs[1].first[f1];
       for(auto f2=0ul; f2 != coeffs[2].second; ++f2) {
         const auto scalar012 = scalar01 * coeffs[2].first[f2];
-        for(auto f3=0ul; f3 != coeffs[3].second; ++f2) {
+        for(auto f3=0ul; f3 != coeffs[3].second; ++f3) {
           const auto scalar0123 = scalar012 * coeffs[3].first[f3];
           *data *= scalar0123;
           ++data;

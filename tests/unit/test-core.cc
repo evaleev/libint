@@ -14,52 +14,71 @@ TEST_CASE("Engine::set", "[engine]") {
 }
 
 TEST_CASE("cartesian uniform normalization", "[engine]") {
-#ifdef LIBINT2_SUPPORT_ONEBODY
+#if defined(LIBINT2_SUPPORT_ONEBODY) && defined(LIBINT2_SUPPORT_ERI)
   if (LIBINT_CGSHELL_ORDERING != LIBINT_CGSHELL_ORDERING_STANDARD)
     return;
 
-  const auto lmax = std::min(3,LIBINT2_MAX_AM_overlap);
-  auto engine = Engine(Operator::overlap, 1, lmax);
+  auto check_std_2 = [](auto& S) {
+    REQUIRE(S[0] == Approx(1.));
+    REQUIRE(S[7] == Approx(1./3));
+    REQUIRE(S[14] == Approx(1./3));
+    REQUIRE(S[21] == Approx(1.));
+    REQUIRE(S[28] == Approx(1./3));
+    REQUIRE(S[35] == Approx(1.));
+  };
+
+  auto check_uniform = [](int l, auto& S) {
+    const auto n = (l+1)*(l+2)/2;
+    for(int i=0; i!=n; ++i) {
+      REQUIRE(S[i*n+i] == Approx(1.));
+    }
+  };
+
+  auto check_std_3 = [](auto& S) {
+    REQUIRE(S[0] == Approx(1.));
+    REQUIRE(S[11] == Approx(1./5));
+    REQUIRE(S[22] == Approx(1./5));
+    REQUIRE(S[33] == Approx(1./5));
+    REQUIRE(S[44] == Approx(1./15));
+    REQUIRE(S[55] == Approx(1./5));
+    REQUIRE(S[66] == Approx(1.));
+    REQUIRE(S[77] == Approx(1./5));
+    REQUIRE(S[88] == Approx(1./5));
+    REQUIRE(S[99] == Approx(1.));
+  };
+
   std::vector<Shell> obs{Shell{{1.0}, {{2, false, {1.0}}}, {{0.0, 0.0, 0.0}}},
                          Shell{{1.0}, {{3, false, {1.0}}}, {{0.0, 0.0, 0.0}}}};
-  engine.compute(obs[0], obs[0]);
-  REQUIRE(engine.results()[0][0] == Approx(1.));
-  REQUIRE(engine.results()[0][7] == Approx(1./3));
-  REQUIRE(engine.results()[0][14] == Approx(1./3));
-  REQUIRE(engine.results()[0][21] == Approx(1.));
-  REQUIRE(engine.results()[0][28] == Approx(1./3));
-  REQUIRE(engine.results()[0][35] == Approx(1.));
-  engine.set(CartesianShellNormalization::uniform).compute(obs[0], obs[0]);
-  REQUIRE(engine.results()[0][0] == Approx(1.));
-  REQUIRE(engine.results()[0][7] == Approx(1.));
-  REQUIRE(engine.results()[0][14] == Approx(1.));
-  REQUIRE(engine.results()[0][21] == Approx(1.));
-  REQUIRE(engine.results()[0][28] == Approx(1.));
-  REQUIRE(engine.results()[0][35] == Approx(1.));
+  {
+    const auto lmax = std::min(3,LIBINT2_MAX_AM_overlap);
+    auto engine = Engine(Operator::overlap, 1, lmax);
+    engine.compute(obs[0], obs[0]);
+    check_std_2(engine.results()[0]);
+    engine.set(CartesianShellNormalization::uniform).compute(obs[0], obs[0]);
+    check_uniform(2, engine.results()[0]);
 
-  if (lmax >= 3) {
-    engine.set(CartesianShellNormalization::standard).compute(obs[1], obs[1]);
-    REQUIRE(engine.results()[0][0] == Approx(1.));
-    REQUIRE(engine.results()[0][11] == Approx(1./5));
-    REQUIRE(engine.results()[0][22] == Approx(1./5));
-    REQUIRE(engine.results()[0][33] == Approx(1./5));
-    REQUIRE(engine.results()[0][44] == Approx(1./15));
-    REQUIRE(engine.results()[0][55] == Approx(1./5));
-    REQUIRE(engine.results()[0][66] == Approx(1.));
-    REQUIRE(engine.results()[0][77] == Approx(1./5));
-    REQUIRE(engine.results()[0][88] == Approx(1./5));
-    REQUIRE(engine.results()[0][99] == Approx(1.));
-    engine.set(CartesianShellNormalization::uniform).compute(obs[1], obs[1]);
-    REQUIRE(engine.results()[0][0] == Approx(1.));
-    REQUIRE(engine.results()[0][11] == Approx(1.));
-    REQUIRE(engine.results()[0][22] == Approx(1.));
-    REQUIRE(engine.results()[0][33] == Approx(1.));
-    REQUIRE(engine.results()[0][44] == Approx(1.));
-    REQUIRE(engine.results()[0][55] == Approx(1.));
-    REQUIRE(engine.results()[0][66] == Approx(1.));
-    REQUIRE(engine.results()[0][77] == Approx(1.));
-    REQUIRE(engine.results()[0][88] == Approx(1.));
-    REQUIRE(engine.results()[0][99] == Approx(1.));
+    if (lmax >= 3) {
+      engine.set(CartesianShellNormalization::standard).compute(obs[1], obs[1]);
+      check_std_3(engine.results()[0]);
+      engine.set(CartesianShellNormalization::uniform).compute(obs[1], obs[1]);
+      check_uniform(3, engine.results()[0]);
+    }
   }
+  {
+    const auto lmax = std::min(3,LIBINT2_MAX_AM_eri);
+    auto engine = Engine(Operator::delta, 1, lmax);
+    engine.compute(Shell::unit(), obs[0], obs[0], Shell::unit());
+    check_std_2(engine.results()[0]);
+    engine.set(CartesianShellNormalization::uniform).compute(obs[0], Shell::unit(), Shell::unit(), obs[0]);
+    check_uniform(2, engine.results()[0]);
+
+    if (lmax >= 3) {
+      engine.set(CartesianShellNormalization::standard).compute(Shell::unit(), obs[1], Shell::unit(), obs[1]);
+      check_std_3(engine.results()[0]);
+      engine.set(CartesianShellNormalization::uniform).compute(obs[1], Shell::unit(), obs[1], Shell::unit());
+      check_uniform(3, engine.results()[0]);
+    }
+  }
+
 #endif  // LIBINT2_SUPPORT_ONEBODY
 }
