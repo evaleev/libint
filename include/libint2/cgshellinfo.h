@@ -428,7 +428,7 @@ namespace libint2 {
     }
   };
 
-  template <CGShellOrdering Ord, unsigned int lmax> struct CGShellOrderingData {
+  template <CGShellOrdering Ord, unsigned int lmax = LIBINT_CARTGAUSS_MAX_AM> struct CGShellOrderingData {
 
     struct Triple {
       Triple() : i(0), j(0), k(0) {}

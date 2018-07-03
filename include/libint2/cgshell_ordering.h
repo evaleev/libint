@@ -149,7 +149,7 @@ namespace libint2 {
  * j = the exponent of y
  * for this ordering there is no formula
  */
-#define INT_CARTINDEX(am,i,j) CGShellInfo< CGShellOrderingData<CGShellOrdering_GAMESS,LIBINT_CARTGAUSS_MAX_AM> >::cartindex(am,i,j)
+#define INT_CARTINDEX(am,i,j) CGShellInfo< CGShellOrderingData<CGShellOrdering_GAMESS> >::cartindex(am,i,j)
 
 /* This sets up the above loop over cartesian exponents as follows
  * FOR_CART(i,j,k,am)
@@ -157,7 +157,7 @@ namespace libint2 {
  *   END_FOR_CART
  */
 #define FOR_CART(i,j,k,am) for(int __xyz=0; __xyz<INT_NCART(am); ++__xyz) { \
-                             CGShellInfo< CGShellOrderingData<CGShellOrdering_GAMESS,LIBINT_CARTGAUSS_MAX_AM> >::cartindex_to_ijk(am,__xyz,i,j,k);
+                             CGShellInfo< CGShellOrderingData<CGShellOrdering_GAMESS> >::cartindex_to_ijk(am,__xyz,i,j,k);
 #define END_FOR_CART }
 
 #endif // GAMESS ordering
@@ -171,7 +171,7 @@ namespace libint2 {
  * j = the exponent of y
  * for this ordering there is no formula
  */
-#define INT_CARTINDEX(am,i,j) CGShellInfo< CGShellOrderingData<CGShellOrdering_ORCA,LIBINT_CARTGAUSS_MAX_AM> >::cartindex(am,i,j)
+#define INT_CARTINDEX(am,i,j) CGShellInfo< CGShellOrderingData<CGShellOrdering_ORCA> >::cartindex(am,i,j)
 
 /* This sets up the above loop over cartesian exponents as follows
  * FOR_CART(i,j,k,am)
@@ -179,7 +179,7 @@ namespace libint2 {
  *   END_FOR_CART
  */
 #define FOR_CART(i,j,k,am) for(int __xyz=0; __xyz<INT_NCART(am); ++__xyz) { \
-                             CGShellInfo< CGShellOrderingData<CGShellOrdering_ORCA,LIBINT_CARTGAUSS_MAX_AM> >::cartindex_to_ijk(am,__xyz,i,j,k);
+                             CGShellInfo< CGShellOrderingData<CGShellOrdering_ORCA> >::cartindex_to_ijk(am,__xyz,i,j,k);
 #define END_FOR_CART }
 
 #endif // ORCA ordering
