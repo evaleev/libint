@@ -194,7 +194,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   // if want nuclear, make sure there is at least one nucleus .. otherwise the
   // user likely forgot to call set_params
   if (oper_is_nuclear && nparams() == 0)
-    throw std::runtime_error(
+    throw std::logic_error(
         "Engine<*nuclear>, but no charges found; forgot to call "
         "set_params()?");
 
@@ -542,6 +542,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
     }
   }
 
+  if (cartesian_shell_normalization() == CartesianShellNormalization::uniform) {
+    std::array<std::reference_wrapper<const Shell>, 2> shells{s1,s2};
+    for (auto s = 0ul; s != num_shellsets_computed; ++s) {
+      uniform_normalize_cartesian_shells(const_cast<value_type*>(targets_[s]), shells);
+    }
+  }
+
   return targets_;
 }
 
@@ -644,6 +651,10 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   assert(braket_ != BraKet::xs_xs &&
          "this braket type not supported by the library; give --enable-eri2 to configure");
 #endif
+
+  // make sure it's no default initialized
+  if (lmax_ < 0)
+    throw using_default_initialized();
 
   // initialize braket, if needed
   if (braket_ == BraKet::invalid) braket_ = default_braket(oper_);
@@ -1985,6 +1996,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
 #endif
   }  // not (ss|ss)
+
+  if (cartesian_shell_normalization() == CartesianShellNormalization::uniform) {
+    std::array<std::reference_wrapper<const Shell>, 4> shells{bra1, bra2, ket1, ket2};
+    for (auto s = 0ul; s != targets_.size(); ++s) {
+      uniform_normalize_cartesian_shells(const_cast<value_type*>(targets_[s]), shells);
+    }
+  }
 
   return targets_;
 }

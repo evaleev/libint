@@ -27,6 +27,12 @@
 
 namespace libint2 {
 
+  /// Normalization convention for Cartesian Gaussian shells
+  enum class CartesianShellNormalization {
+    standard,  // same normalization factor for every function in shell (default)
+    uniform    // different normalization factors so that each function has same norm
+  };
+
   namespace detail {
     inline int notxyz(int a, int b) {
       assert(a != b);
@@ -479,8 +485,6 @@ namespace libint2 {
 
   template <typename OrderingData> OrderingData CGShellInfo<OrderingData>::data_;
 
-
-
-};
+};  // namespace libint2
 
 #endif // header guard

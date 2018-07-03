@@ -62,7 +62,7 @@ class Export {
   /// @param spincases the vector of spin cases (size = # LCAOs; true = spin-up
   ///        or m_s=1/2, false = spin-down or m_s=-1/2); the default is
   ///        to assign spin-up to each LCAO
-  /// @throw std::runtime_error if the basis does not conforms Molden
+  /// @throw std::logic_error if the basis does not conforms Molden
   ///        requirements
   /// @note Molden can only handle basis sets that:
   /// - p (l=1) shells are Cartesian, not solid harmonics
@@ -210,20 +210,20 @@ class Export {
       ao_map_;  // maps from AO order of basis_ to the order assumed by Molden
                 // (atoms->shells, bf in shells ordered in the Molden order)
 
-  /// @throw std::runtime_error if the basis does not conforms Molden
+  /// @throw std::logic_error if the basis does not conforms Molden
   ///        requirements
   const std::vector<Shell>& validate(const std::vector<Shell>& shells) const {
     bool dfg_found[] = {false, false, false};
     for (const auto& shell : shells) {
       for (const auto& contr : shell.contr) {
         if (contr.l > 4)
-          throw std::runtime_error(
+          throw std::logic_error(
               "molden::Export cannot handle shells with l > 4");
 
         switch (contr.l) {
           case 1:
             if (contr.pure)
-              throw std::runtime_error(
+              throw std::logic_error(
                   "molden::Export cannot handle solid harmonics p shells");
             break;
           case 2:
@@ -233,7 +233,7 @@ class Export {
               dfg_is_cart_[contr.l - 2] = !contr.pure;
             }
             if (!contr.pure ^ dfg_is_cart_[contr.l - 2])
-              throw std::runtime_error(
+              throw std::logic_error(
                   "molden::Export only supports all-Cartesian or "
                   "all-solid-harmonics d/f/g shells");
           }

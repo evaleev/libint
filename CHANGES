@@ -12,6 +12,13 @@ Following is a brief summary of changes made in each release of Libint.
   - resolved issue 97: checks variadic macro support in boost.preprocessor for the libint compiler
   - C++ API produces correct 2- and 3-center 2-e derivatives
   - added minimal non-HF validation tests for C++ API (only 2-body Coulomb)
+  - removed the following deprecated features:
+    - libint2::init
+    - libint2::cleanup
+  - deprecated the following features:
+    - Engine::set_oper (use Engine::set)
+    - Engine::set_braket (use Engine::set)
+  - minor C++ API improvements
 
 - 2017-11-21: 2.4.2
   - fixed vector.h for use on non-x86 platforms

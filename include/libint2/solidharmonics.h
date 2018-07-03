@@ -18,8 +18,8 @@
  *
  */
 
-#ifndef _libint2_src_lib_libint_solidharmonics_h_
-#define _libint2_src_lib_libint_solidharmonics_h_
+#ifndef _libint2_include_solidharmonics_h_
+#define _libint2_include_solidharmonics_h_
 
 #include <libint2/util/cxxstd.h>
 #if LIBINT2_CPLUSPLUS_STD < 2011
@@ -604,4 +604,4 @@ namespace libint2 {
 
 } // namespace libint2
 
-#endif /* _libint2_src_lib_libint_solidharmonics_h_ */
+#endif  /* _libint2_include_solidharmonics_h_ */

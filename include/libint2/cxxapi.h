@@ -67,12 +67,6 @@ namespace libint2 {
     using namespace detail;
     managed_singleton<__initializer>::delete_instance();
   }
-  DEPRECATED inline void init() {
-    initialize();
-  }
-  DEPRECATED inline void cleanup() {
-    finalize();
-  }
 }
 
 #include <libint2/engine.h> // this is the end-user stuff, needs to check if library is initialized

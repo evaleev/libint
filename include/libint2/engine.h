@@ -48,6 +48,7 @@
 #include <libint2/boys_fwd.h>
 #include <libint2/shell.h>
 #include <libint2/solidharmonics.h>
+#include <libint2/cartesian.h>
 #include <libint2/util/any.h>
 #include <libint2/util/array_adaptor.h>
 #include <libint2/util/intpart_iter.h>
@@ -420,13 +421,15 @@ class Engine {
 
   /// creates a default Engine that cannot be used for computing integrals;
   /// to be used as placeholder for copying a usable engine, OR for cleanup of
-  /// thread-local data
+  /// thread-local data. Nontrivial use of a default-initialized Engine will
+  /// cause an exception of type Engine::using_default_initialized
   Engine()
       : oper_(Operator::invalid),
         braket_(BraKet::invalid),
         primdata_(),
         stack_size_(0),
-        lmax_(-1) {
+        lmax_(-1),
+        deriv_order_(0) {
     set_precision(std::numeric_limits<scalar_type>::epsilon());
   }
 
@@ -435,8 +438,8 @@ class Engine {
 
   /// \param oper a value of Operator type
   /// \param max_nprim the maximum number of primitives per contracted Gaussian
-  /// shell
-  /// \param max_l the maximum angular momentum of Gaussian shell
+  /// shell (must be greater than 0)
+  /// \param max_l the maximum angular momentum of Gaussian shell (>=0)
   /// \throw Engine::lmax_exceeded if \c max_l exceeds the angular momentum
   /// limit of the library
   /// \param deriv_order if not 0, will compute geometric derivatives of
@@ -477,6 +480,7 @@ class Engine {
         deriv_order_(deriv_order),
         params_(enforce_params_type(oper, params)) {
     set_precision(precision);
+    assert(max_nprim > 0);
     initialize(max_nprim);
     core_eval_pack_ = make_core_eval_pack(oper);  // must follow initialize() to
                                                   // ensure default braket_ has
@@ -576,31 +580,48 @@ class Engine {
   /// rank of the braket
   int braket_rank() const { return rank(braket_); }
 
-  /// resets operator type
-  void set_oper(Operator new_oper) {
+  /// (re)sets operator type to \c new_oper
+  /// @deprecated as of 2.5.0
+  DEPRECATED void set_oper(Operator new_oper) {
+    set(new_oper);
+  }
+
+  /// (re)sets operator type to @c new_oper
+  /// @param[in] new_oper Operator whose integrals will be computed with the next call to Engine::compute()
+  Engine& set(Operator new_oper) {
     if (oper_ != new_oper) {
       if (rank(new_oper) != operator_rank()) braket_ = BraKet::invalid;
       oper_ = new_oper;
       initialize();
     }
+    return *this;
   }
 
-  /// resets braket type
-  void set_braket(BraKet new_braket) {
+  /// (re)sets braket type
+  /// @deprecated as of 2.5.0
+  DEPRECATED void set_braket(BraKet new_braket) {
+    set(new_braket);
+  }
+
+  /// (re)sets braket type to @c new_braket
+  /// @param[in] new_braket integrals BraKet that will be computed with the next call to Engine::compute()
+  Engine& set(BraKet new_braket) {
     if (braket_ != new_braket) {
       braket_ = new_braket;
       initialize();
     }
+    return *this;
   }
 
   /// resets operator parameters; this may be useful e.g. if need to compute
   /// Coulomb potential
   /// integrals over batches of charges for the sake of parallelism.
   template <typename Params>
-  void set_params(const Params& params) {
+  Engine& set_params(const Params& params) {
     params_ = params;
     init_core_ints_params(params_);
     reset_scratch();
+    return *this;
   }
 
   /// returns a vector that will hold pointers to shell sets computed with
@@ -670,7 +691,8 @@ class Engine {
                                                              const ShellPair* spket);
 
   /** this specifies target precision for computing the integrals.
-   *  target precision \f$ \epsilon \f$ is used in 3 ways:
+   * @param[in] prec the target precision
+   * @note target precision \f$ \epsilon \f$ is used in 3 ways:
    *  (1) to screen out primitive pairs in ShellPair object for which
    *      \f$ {\rm scr}_{12} = \max|c_1| \max|c_2| \exp(-\rho_{12}
    * |AB|^2)/\gamma_{12} < \epsilon \f$ ;
@@ -680,7 +702,7 @@ class Engine {
    * the prefactor of \f$ F_m(\rho, T) \f$ is smaller
    *      than \f$ \epsilon \f$ .
    */
-  void set_precision(scalar_type prec) {
+  Engine& set_precision(scalar_type prec) {
     if (prec <= 0.) {
       precision_ = 0.;
       ln_precision_ = std::numeric_limits<scalar_type>::lowest();
@@ -688,10 +710,24 @@ class Engine {
       precision_ = prec;
       ln_precision_ = std::log(precision_);
     }
+    return *this;
   }
   /// @return the target precision for computing the integrals
   /// @sa set_precision(scalar_type)
   scalar_type precision() const { return precision_; }
+
+  /// @return the Cartesian Gaussian normalization convention
+  CartesianShellNormalization cartesian_shell_normalization() const {
+    return cartesian_shell_normalization_;
+  }
+
+  /// @param[in] norm the normalization convention for Cartesian Gaussians
+  /// @note the default convention is CartesianShellNormalization_Standard
+  /// @return reference to @c this for daisy-chaining
+  Engine& set(CartesianShellNormalization norm) {
+    cartesian_shell_normalization_ = norm;
+    return *this;
+  }
 
   void print_timers() {
 #ifdef LIBINT2_ENGINE_TIMERS
@@ -720,11 +756,11 @@ class Engine {
   }
 
   /// Exception class to be used when the angular momentum limit is exceeded.
-  class lmax_exceeded : virtual public std::runtime_error {
+  class lmax_exceeded : virtual public std::logic_error {
    public:
     lmax_exceeded(const char* task_name, size_t lmax_limit,
                   size_t lmax_requested)
-        : std::runtime_error(
+        : std::logic_error(
               "Engine::lmax_exceeded -- angular momentum limit exceeded"),
           lmax_limit_(lmax_limit),
           lmax_requested_(lmax_requested) {
@@ -745,6 +781,16 @@ class Engine {
     size_t lmax_requested_;
   };
 
+  /// Exception class to be used when using default-initialized Engine
+  class using_default_initialized : virtual public std::logic_error {
+   public:
+    using_default_initialized()
+        : std::logic_error(
+        "Engine::using_default_initialized -- attempt to use a default-initialized Engine") {
+    }
+    ~using_default_initialized() noexcept {}
+  };
+
  private:
   Operator oper_;
   BraKet braket_;
@@ -757,6 +803,9 @@ class Engine {
   int deriv_order_;
   scalar_type precision_;
   scalar_type ln_precision_;
+
+  // specifies the normalization convention for Cartesian Gaussians
+  CartesianShellNormalization cartesian_shell_normalization_;
 
   any core_eval_pack_;
 

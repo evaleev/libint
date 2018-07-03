@@ -401,11 +401,11 @@ namespace libint2 {
 #include <libint2/boys_cheb7.h>
 
         if (mmax > cheb_table_mmax)
-          throw std::runtime_error(
+          throw std::logic_error(
               "FmEval_Chebyshev7::init() : requested mmax exceeds the "
               "hard-coded mmax");
         if (T_crit != cheb_table_tmax)
-          throw std::runtime_error(
+          throw std::logic_error(
               "FmEval_Chebyshev7::init() : boys_cheb7.h does not match "
               "FmEval_Chebyshev7");
         delta = cheb_table_delta;
