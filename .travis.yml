@@ -23,8 +23,10 @@ addons:
     sources:
       - george-edison55-precise-backports
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-precise
       - boost-latest
+      - llvm-toolchain-trusty-5.0
+      - llvm-toolchain-trusty-6.0
+      - llvm-toolchain-trusty
     packages:
       - g++-5
       - g++-6
