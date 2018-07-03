@@ -72,8 +72,6 @@ void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
 #ifdef LIBINT2_SUPPORT_ERI
   constexpr const int ncenters = 4;
   const auto max_l = obs.max_l();
-  if (!LIBINT2_SUPPORT_ERI)
-    return;
   if (deriv_order > LIBINT2_DERIV_ERI_ORDER)
     return;
   switch(deriv_order) {
@@ -210,11 +208,9 @@ void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
 
 template <unsigned int deriv_order>
 void validate3(const BasisSet& obs, const BasisSet& dfbs, const std::vector<Atom>& atoms) {
-#ifdef LIBINT2_SUPPORT_ERI3
+#if defined(LIBINT2_SUPPORT_ERI) && defined(LIBINT2_SUPPORT_ERI3)
   constexpr const int ncenters = 3;
   const auto max_l = std::max(obs.max_l(), dfbs.max_l());
-  if (!LIBINT2_SUPPORT_ERI || !LIBINT2_SUPPORT_ERI3)
-    return;
   if (deriv_order > LIBINT2_DERIV_ERI_ORDER || deriv_order > LIBINT2_DERIV_ERI3_ORDER)
     return;
   switch(deriv_order) {
@@ -359,10 +355,8 @@ void validate3(const BasisSet& obs, const BasisSet& dfbs, const std::vector<Atom
 
 template <unsigned int deriv_order>
 void validate2(const BasisSet& obs, const std::vector<Atom>& atoms) {
-#ifdef LIBINT2_SUPPORT_ERI2
+#if defined(LIBINT2_SUPPORT_ERI) && defined(LIBINT2_SUPPORT_ERI2)
   constexpr const int ncenters = 2;
-  if (!LIBINT2_SUPPORT_ERI || !LIBINT2_SUPPORT_ERI2)
-    return;
   if (deriv_order > LIBINT2_DERIV_ERI_ORDER || deriv_order > LIBINT2_DERIV_ERI2_ORDER)
     return;
   switch(deriv_order) {
