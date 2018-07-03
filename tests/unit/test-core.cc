@@ -14,7 +14,8 @@ TEST_CASE("Engine::set", "[engine]") {
 }
 
 TEST_CASE("cartesian uniform normalization", "[engine]") {
-  if (!LIBINT2_SUPPORT_ONEBODY || LIBINT_CGSHELL_ORDERING != LIBINT_CGSHELL_ORDERING_STANDARD)
+#ifdef LIBINT2_SUPPORT_ONEBODY
+  if (LIBINT_CGSHELL_ORDERING != LIBINT_CGSHELL_ORDERING_STANDARD)
     return;
 
   const auto lmax = std::min(3,LIBINT2_MAX_AM_overlap);
@@ -60,4 +61,5 @@ TEST_CASE("cartesian uniform normalization", "[engine]") {
     REQUIRE(engine.results()[0][88] == Approx(1.));
     REQUIRE(engine.results()[0][99] == Approx(1.));
   }
+#endif  // LIBINT2_SUPPORT_ONEBODY
 }

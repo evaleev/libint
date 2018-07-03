@@ -69,6 +69,7 @@ int merge_deriv2(int natoms, int d1, int d2) {
 
 template <unsigned int deriv_order>
 void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
+#ifdef LIBINT2_SUPPORT_ERI
   constexpr const int ncenters = 4;
   const auto max_l = obs.max_l();
   if (!LIBINT2_SUPPORT_ERI)
@@ -204,10 +205,12 @@ void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
       }
     }
   }
+#endif  // LIBINT2_SUPPORT_ERI
 }
 
 template <unsigned int deriv_order>
 void validate3(const BasisSet& obs, const BasisSet& dfbs, const std::vector<Atom>& atoms) {
+#ifdef LIBINT2_SUPPORT_ERI3
   constexpr const int ncenters = 3;
   const auto max_l = std::max(obs.max_l(), dfbs.max_l());
   if (!LIBINT2_SUPPORT_ERI || !LIBINT2_SUPPORT_ERI3)
@@ -351,10 +354,12 @@ void validate3(const BasisSet& obs, const BasisSet& dfbs, const std::vector<Atom
       }
     }
   }
+#endif  // LIBINT2_SUPPORT_ERI3
 }
 
 template <unsigned int deriv_order>
 void validate2(const BasisSet& obs, const std::vector<Atom>& atoms) {
+#ifdef LIBINT2_SUPPORT_ERI2
   constexpr const int ncenters = 2;
   if (!LIBINT2_SUPPORT_ERI || !LIBINT2_SUPPORT_ERI2)
     return;
@@ -495,6 +500,7 @@ void validate2(const BasisSet& obs, const std::vector<Atom>& atoms) {
 
     }
   }
+#endif  // LIBINT2_SUPPORT_ERI2
 }
 
 TEST_CASE( "2-e 4-c integrals permute correctly", "[permute-2e-4c]" ) {
