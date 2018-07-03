@@ -1,17 +1,5 @@
 #include "catch.hpp"
-
-#include <libint2.hpp>
-
-using std::cout;
-using std::cerr;
-using std::endl;
-
-using libint2::Atom;
-using libint2::BasisSet;
-using libint2::Shell;
-using libint2::Engine;
-using libint2::Operator;
-using libint2::BraKet;
+#include "fixture.h"
 
 std::tuple<int, int, int, int> permute4_1234(int i1, int i2, int i3, int i4) {
   return std::make_tuple(i1,i2,i3,i4);
@@ -82,8 +70,22 @@ int merge_deriv2(int natoms, int d1, int d2) {
 template <unsigned int deriv_order>
 void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
   constexpr const int ncenters = 4;
-  if (deriv_order > LIBINT2_MAX_DERIV_ORDER)
+  const auto max_l = obs.max_l();
+  if (!LIBINT2_SUPPORT_ERI)
     return;
+  if (deriv_order > LIBINT2_DERIV_ERI_ORDER)
+    return;
+  switch(deriv_order) {
+    case 0:
+      if (max_l > LIBINT2_MAX_AM_eri)
+        return;
+    case 1:
+      if (max_l > LIBINT2_MAX_AM_eri1)
+        return;
+    case 2:
+      if (max_l > LIBINT2_MAX_AM_eri2)
+        return;
+  }
 
   const auto abs_precision = deriv_order == 0 ? 1e-13 : 1e-12;
 
@@ -119,8 +121,8 @@ void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
             engine.compute(obs[ss1], obs[ss2], obs[ss3], obs[ss4]);
             const auto& shellset = engine.results();  // location of the computed integrals
 
+            REQUIRE(shellset[0] != nullptr);
             for(int d=0; d!=nderiv_shellset; ++d) {
-              REQUIRE(shellset[d] != nullptr);
 
               auto compare = [&](int dd) {
                 int nn1, nn2, nn3, nn4;
@@ -184,7 +186,6 @@ void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
                 default:
                   assert(false);  // can't compare yet deriv_order > 2
               }
-              REQUIRE(shellset[dd] != nullptr);
               compare(dd);
 
             }  // d
@@ -208,19 +209,32 @@ void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
 template <unsigned int deriv_order>
 void validate3(const BasisSet& obs, const BasisSet& dfbs, const std::vector<Atom>& atoms) {
   constexpr const int ncenters = 3;
-  if (deriv_order > LIBINT2_MAX_DERIV_ORDER)
+  const auto max_l = std::max(obs.max_l(), dfbs.max_l());
+  if (!LIBINT2_SUPPORT_ERI || !LIBINT2_SUPPORT_ERI3)
     return;
+  if (deriv_order > LIBINT2_DERIV_ERI_ORDER || deriv_order > LIBINT2_DERIV_ERI3_ORDER)
+    return;
+  switch(deriv_order) {
+    case 0:
+      if (max_l > LIBINT2_MAX_AM_eri || max_l > LIBINT2_MAX_AM_3eri)
+        return;
+    case 1:
+      if (max_l > LIBINT2_MAX_AM_eri1 || max_l > LIBINT2_MAX_AM_3eri1)
+        return;
+    case 2:
+      if (max_l > LIBINT2_MAX_AM_eri2 || max_l > LIBINT2_MAX_AM_3eri2)
+        return;
+  }
   const auto xsxx = LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD;
   if (!xsxx)
     return;  // not yet implemented
   const auto abs_precision = deriv_order == 1 ? 1e-12 : 1e-13;
 
   const auto max_nprim = std::max(obs.max_nprim(), dfbs.max_nprim());
-  const auto max_l = std::max(obs.max_l(), dfbs.max_l());
   Engine engine_ref(Operator::coulomb, max_nprim, max_l, deriv_order);
-  engine_ref.set_braket(BraKet::xx_xx);
+  engine_ref.set(BraKet::xx_xx);
   Engine engine(Operator::coulomb, max_nprim, max_l, deriv_order);
-  engine.set_braket(xsxx ? BraKet::xs_xx : BraKet::xx_xs);
+  engine.set(xsxx ? BraKet::xs_xx : BraKet::xx_xs);
 
   const auto nderiv_shellset_ref =
       libint2::num_geometrical_derivatives(4, deriv_order); // # of derivs for reference shell *quartet*
@@ -252,9 +266,9 @@ void validate3(const BasisSet& obs, const BasisSet& dfbs, const std::vector<Atom
           assert(xsxx);
           engine.compute(dfbs[ss1], obs[ss2], obs[ss3]);
           const auto &shellset = engine.results();  // location of the computed integrals
+          REQUIRE(shellset[0] != nullptr);
 
           for (int d = 0; d != nderiv_shellset_ref; ++d) {
-            REQUIRE(shellset_ref[d] != nullptr);
 
             auto compare = [&](int dd) {
               assert(xsxx);  // xxxs is not implemented
@@ -325,7 +339,6 @@ void validate3(const BasisSet& obs, const BasisSet& dfbs, const std::vector<Atom
               default:
                 assert(false);  // can't compare yet deriv_order > 2
             }
-            REQUIRE(shellset[dd] != nullptr);
             compare(dd);
 
           }  // d
@@ -343,18 +356,31 @@ void validate3(const BasisSet& obs, const BasisSet& dfbs, const std::vector<Atom
 template <unsigned int deriv_order>
 void validate2(const BasisSet& obs, const std::vector<Atom>& atoms) {
   constexpr const int ncenters = 2;
-  if (deriv_order > LIBINT2_MAX_DERIV_ORDER)
+  if (!LIBINT2_SUPPORT_ERI || !LIBINT2_SUPPORT_ERI2)
     return;
+  if (deriv_order > LIBINT2_DERIV_ERI_ORDER || deriv_order > LIBINT2_DERIV_ERI2_ORDER)
+    return;
+  switch(deriv_order) {
+    case 0:
+      if (obs.max_l() > LIBINT2_MAX_AM_eri || obs.max_l() > LIBINT2_MAX_AM_2eri)
+        return;
+    case 1:
+      if (obs.max_l() > LIBINT2_MAX_AM_eri1 || obs.max_l() > LIBINT2_MAX_AM_2eri1)
+        return;
+    case 2:
+      if (obs.max_l() > LIBINT2_MAX_AM_eri2 || obs.max_l() > LIBINT2_MAX_AM_2eri2)
+        return;
+  }
   const auto xsxs = LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD;
   if (!xsxs)
     return;  // not yet implemented
   const auto abs_precision = deriv_order == 1 ? 1e-12 : 1e-13;
 
   Engine engine_ref(Operator::coulomb, obs.max_nprim(), obs.max_l(), deriv_order);
-  engine_ref.set_braket(BraKet::xx_xx);
+  engine_ref.set(BraKet::xx_xx);
   Engine engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), deriv_order);
   assert(xsxs);
-  engine.set_braket(BraKet::xs_xs);
+  engine.set(BraKet::xs_xs);
 
   const auto nderiv_shellset_ref =
       libint2::num_geometrical_derivatives(4, deriv_order); // # of derivs for reference shell *quartet*
@@ -383,8 +409,8 @@ void validate2(const BasisSet& obs, const std::vector<Atom>& atoms) {
         engine.compute(obs[ss1], obs[ss2]);
         const auto &shellset = engine.results();  // location of the computed integrals
 
+        REQUIRE(shellset[0] != nullptr);
         for (int d = 0; d != nderiv_shellset_ref; ++d) {
-          REQUIRE(shellset_ref[d] != nullptr);
 
           auto compare = [&](int dd) {
             assert(xsxs);  // xxxs is not implemented
@@ -459,7 +485,6 @@ void validate2(const BasisSet& obs, const std::vector<Atom>& atoms) {
             default:
               assert(false);  // can't compare yet deriv_order > 2
           }
-          REQUIRE(shellset[dd] != nullptr);
           compare(dd);
 
         }  // d
@@ -472,11 +497,9 @@ void validate2(const BasisSet& obs, const std::vector<Atom>& atoms) {
   }
 }
 
-auto atoms = std::vector<Atom>{ {8, 0.,0.,0.}, {8, 0.,0.,2.}, {1, 0.,-1.,-1.}, {1, 0.,1.,3.}};
-auto obs = BasisSet("6-31g**", atoms);
-auto dfbs = BasisSet("aug-cc-pvdz", atoms);
-
 TEST_CASE( "2-e 4-c integrals permute correctly", "[permute-2e-4c]" ) {
+
+  using namespace libint2::unit;
 
   SECTION( "deriv_order=0" ) {
     validate4<0>(obs, atoms);
@@ -491,6 +514,8 @@ TEST_CASE( "2-e 4-c integrals permute correctly", "[permute-2e-4c]" ) {
 
 TEST_CASE( "2-e 3-c integrals permute correctly", "[permute-2e-3c]" ) {
 
+  using namespace libint2::unit;
+
   SECTION( "deriv_order=0" ) {
     validate3<0>(obs, dfbs, atoms);
   }  // section
@@ -503,6 +528,8 @@ TEST_CASE( "2-e 3-c integrals permute correctly", "[permute-2e-3c]" ) {
 }
 
 TEST_CASE( "2-e 2-c integrals permute correctly", "[permute-2e-2c]" ) {
+
+  using namespace libint2::unit;
 
   SECTION( "deriv_order=0" ) {
     validate2<0>(dfbs, atoms);

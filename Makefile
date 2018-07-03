@@ -7,7 +7,7 @@ endif
 -include $(TOPDIR)/src/lib/MakeVars
 
 SUBDIRS = src
-CHECKSUBDIRS = tests/eri tests/hartree-fock
+CHECKSUBDIRS = tests/eri tests/unit tests/hartree-fock
 CLEANSUBDIRS = $(SUBDIRS) $(CHECKSUBDIRS)
 ALLSUBDIRS = $(CLEANSUBDIRS) doc $(CHECKSUBDIRS)
 
