@@ -54,6 +54,7 @@
 #include <libint2/util/intpart_iter.h>
 #include <libint2/util/compressed_pair.h>
 #include <libint2/util/timer.h>
+#include <libint2/cgshellinfo.h>
 
 // the engine will be profiled by default if library was configured with
 // --enable-profile
@@ -429,7 +430,8 @@ class Engine {
         primdata_(),
         stack_size_(0),
         lmax_(-1),
-        deriv_order_(0) {
+        deriv_order_(0),
+        cartesian_shell_normalization_(CartesianShellNormalization::standard) {
     set_precision(std::numeric_limits<scalar_type>::epsilon());
   }
 
@@ -478,6 +480,7 @@ class Engine {
         stack_size_(0),
         lmax_(max_l),
         deriv_order_(deriv_order),
+        cartesian_shell_normalization_(CartesianShellNormalization::standard),
         params_(enforce_params_type(oper, params)) {
     set_precision(precision);
     assert(max_nprim > 0);
@@ -502,6 +505,7 @@ class Engine {
         deriv_order_(other.deriv_order_),
         precision_(other.precision_),
         ln_precision_(other.ln_precision_),
+        cartesian_shell_normalization_(other.cartesian_shell_normalization_),
         core_eval_pack_(std::move(other.core_eval_pack_)),
         params_(std::move(other.params_)),
         core_ints_params_(std::move(other.core_ints_params_)),
@@ -523,6 +527,7 @@ class Engine {
         deriv_order_(other.deriv_order_),
         precision_(other.precision_),
         ln_precision_(other.ln_precision_),
+        cartesian_shell_normalization_(other.cartesian_shell_normalization_),
         core_eval_pack_(other.core_eval_pack_),
         params_(other.params_),
         core_ints_params_(other.core_ints_params_) {
@@ -544,6 +549,7 @@ class Engine {
     deriv_order_ = other.deriv_order_;
     precision_ = other.precision_;
     ln_precision_ = other.ln_precision_;
+    cartesian_shell_normalization_ = other.cartesian_shell_normalization_;
     core_eval_pack_ = std::move(other.core_eval_pack_);
     params_ = std::move(other.params_);
     core_ints_params_ = std::move(other.core_ints_params_);
@@ -567,6 +573,7 @@ class Engine {
     deriv_order_ = other.deriv_order_;
     precision_ = other.precision_;
     ln_precision_ = other.ln_precision_;
+    cartesian_shell_normalization_ = other.cartesian_shell_normalization_;
     core_eval_pack_ = other.core_eval_pack_;
     params_ = other.params_;
     core_ints_params_ = other.core_ints_params_;
