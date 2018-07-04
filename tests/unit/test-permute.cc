@@ -78,12 +78,20 @@ void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
     case 0:
       if (max_l > LIBINT2_MAX_AM_eri)
         return;
+    break;
     case 1:
+#if LIBINT2_DERIV_ERI_ORDER > 0
       if (max_l > LIBINT2_MAX_AM_eri1)
         return;
+#endif
+    break;
     case 2:
+#if LIBINT2_DERIV_ERI_ORDER > 1
       if (max_l > LIBINT2_MAX_AM_eri2)
         return;
+#endif
+    break;
+    default: abort();
   }
 
   const auto abs_precision = deriv_order == 0 ? 1e-13 : 1e-12;
@@ -217,12 +225,20 @@ void validate3(const BasisSet& obs, const BasisSet& dfbs, const std::vector<Atom
     case 0:
       if (max_l > LIBINT2_MAX_AM_eri || max_l > LIBINT2_MAX_AM_3eri)
         return;
+    break;
     case 1:
+#if LIBINT2_DERIV_ERI_ORDER > 0 && LIBINT2_DERIV_ERI3_ORDER > 0
       if (max_l > LIBINT2_MAX_AM_eri1 || max_l > LIBINT2_MAX_AM_3eri1)
         return;
+#endif
+    break;
     case 2:
+#if LIBINT2_DERIV_ERI_ORDER > 1 && LIBINT2_DERIV_ERI3_ORDER > 1
       if (max_l > LIBINT2_MAX_AM_eri2 || max_l > LIBINT2_MAX_AM_3eri2)
         return;
+#endif
+    break;
+    default: abort();
   }
   const auto xsxx = LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD;
   if (!xsxx)
@@ -363,12 +379,20 @@ void validate2(const BasisSet& obs, const std::vector<Atom>& atoms) {
     case 0:
       if (obs.max_l() > LIBINT2_MAX_AM_eri || obs.max_l() > LIBINT2_MAX_AM_2eri)
         return;
+    break;
     case 1:
+#if LIBINT2_DERIV_ERI_ORDER > 0 && LIBINT2_DERIV_ERI2_ORDER > 0
       if (obs.max_l() > LIBINT2_MAX_AM_eri1 || obs.max_l() > LIBINT2_MAX_AM_2eri1)
         return;
+#endif
+    break;
     case 2:
+#if LIBINT2_DERIV_ERI_ORDER > 1 && LIBINT2_DERIV_ERI2_ORDER > 1
       if (obs.max_l() > LIBINT2_MAX_AM_eri2 || obs.max_l() > LIBINT2_MAX_AM_2eri2)
         return;
+#endif
+    break;
+    default: abort();
   }
   const auto xsxs = LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD;
   if (!xsxs)

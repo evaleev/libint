@@ -31,21 +31,6 @@ inline void scale<double, 2>(double* intset, const std::array<std::pair<double*,
 }
 
 template <>
-inline void scale<double, 3>(double* intset, const std::array<std::pair<double*,size_t>, 3>& coeffs) {
-  auto* data = intset;
-  for(auto f0=0ul; f0 != coeffs[0].second; ++f0) {
-    for(auto f1=0ul; f1 != coeffs[1].second; ++f1) {
-      const auto scalar01 = coeffs[0].first[f0] * coeffs[1].first[f1];
-      for(auto f2=0ul; f2 != coeffs[2].second; ++f2) {
-        const auto scalar012 = scalar01 * coeffs[2].first[f2];
-        *data *= scalar012;
-        ++data;
-      }
-    }
-  }
-}
-
-template <>
 inline void scale<double, 4>(double* intset, const std::array<std::pair<double*,size_t>, 4>& coeffs) {
   auto* data = intset;
   for(auto f0=0ul; f0 != coeffs[0].second; ++f0) {

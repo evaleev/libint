@@ -13,39 +13,39 @@ TEST_CASE("Engine::set", "[engine]") {
   REQUIRE_NOTHROW(Engine(Operator::overlap, 1, 0).set(CartesianShellNormalization::uniform).set_precision(1e-20).set(Operator::overlap).set(BraKet::x_x));
 }
 
+template <typename RealBuf> void check_uniform(int l, RealBuf && S) {
+  const auto n = (l+1)*(l+2)/2;
+  for(int i=0; i!=n; ++i) {
+    REQUIRE(S[i*n+i] == Approx(1.));
+  }
+};
+
+template <typename RealBuf> void check_std_2(RealBuf && S) {
+  REQUIRE(S[0] == Approx(1.));
+  REQUIRE(S[7] == Approx(1./3));
+  REQUIRE(S[14] == Approx(1./3));
+  REQUIRE(S[21] == Approx(1.));
+  REQUIRE(S[28] == Approx(1./3));
+  REQUIRE(S[35] == Approx(1.));
+};
+
+template <typename RealBuf> void check_std_3(RealBuf && S) {
+  REQUIRE(S[0] == Approx(1.));
+  REQUIRE(S[11] == Approx(1./5));
+  REQUIRE(S[22] == Approx(1./5));
+  REQUIRE(S[33] == Approx(1./5));
+  REQUIRE(S[44] == Approx(1./15));
+  REQUIRE(S[55] == Approx(1./5));
+  REQUIRE(S[66] == Approx(1.));
+  REQUIRE(S[77] == Approx(1./5));
+  REQUIRE(S[88] == Approx(1./5));
+  REQUIRE(S[99] == Approx(1.));
+};
+
 TEST_CASE("cartesian uniform normalization", "[engine]") {
 #if defined(LIBINT2_SUPPORT_ONEBODY) && defined(LIBINT2_SUPPORT_ERI)
   if (LIBINT_CGSHELL_ORDERING != LIBINT_CGSHELL_ORDERING_STANDARD)
     return;
-
-  auto check_std_2 = [](auto& S) {
-    REQUIRE(S[0] == Approx(1.));
-    REQUIRE(S[7] == Approx(1./3));
-    REQUIRE(S[14] == Approx(1./3));
-    REQUIRE(S[21] == Approx(1.));
-    REQUIRE(S[28] == Approx(1./3));
-    REQUIRE(S[35] == Approx(1.));
-  };
-
-  auto check_uniform = [](int l, auto& S) {
-    const auto n = (l+1)*(l+2)/2;
-    for(int i=0; i!=n; ++i) {
-      REQUIRE(S[i*n+i] == Approx(1.));
-    }
-  };
-
-  auto check_std_3 = [](auto& S) {
-    REQUIRE(S[0] == Approx(1.));
-    REQUIRE(S[11] == Approx(1./5));
-    REQUIRE(S[22] == Approx(1./5));
-    REQUIRE(S[33] == Approx(1./5));
-    REQUIRE(S[44] == Approx(1./15));
-    REQUIRE(S[55] == Approx(1./5));
-    REQUIRE(S[66] == Approx(1.));
-    REQUIRE(S[77] == Approx(1./5));
-    REQUIRE(S[88] == Approx(1./5));
-    REQUIRE(S[99] == Approx(1.));
-  };
 
   std::vector<Shell> obs{Shell{{1.0}, {{2, false, {1.0}}}, {{0.0, 0.0, 0.0}}},
                          Shell{{1.0}, {{3, false, {1.0}}}, {{0.0, 0.0, 0.0}}}};
