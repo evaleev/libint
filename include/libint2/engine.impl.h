@@ -597,10 +597,22 @@ __libint2_engine_inline void Engine::_initialize() {
     hard_lmax_ = BOOST_PP_CAT(LIBINT2_MAX_AM_,                                 \
                               BOOST_PP_NBODYENGINE_MCR3_TASK(product)) +       \
                  1;                                                            \
-    if (lmax_ >= hard_lmax_) {                                                 \
+    hard_default_lmax_ =                                                       \
+    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_,   \
+                              BOOST_PP_NBODYENGINE_MCR3_task(product))),       \
+                              BOOST_PP_CAT(LIBINT2_MAX_AM_,                    \
+                                           BOOST_PP_CAT(default,               \
+                                                        BOOST_PP_NBODYENGINE_MCR3_DERIV(product) \
+                                                       )                       \
+                                          ) + 1, std::numeric_limits<int>::max()); \
+    const auto lmax =                                                          \
+    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_,   \
+                              BOOST_PP_NBODYENGINE_MCR3_task(product))),       \
+      std::max(hard_lmax_,hard_default_lmax_), hard_lmax_);                    \
+    if (lmax_ >= lmax) {                                                       \
       throw Engine::lmax_exceeded(                                             \
           BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)),         \
-          hard_lmax_, lmax_);                                                  \
+          lmax, lmax_);                                                        \
     }                                                                          \
     if (stack_size_ > 0)                                                       \
       libint2_cleanup_default(&primdata_[0]);                                  \
@@ -1661,8 +1673,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
       case BraKet::xs_xx:
       case BraKet::xx_xs:
+        assert(LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri == 1);
         buildfnidx =
-            (bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l) * hard_lmax_ +
+            (bra1.contr[0].l * hard_default_lmax_ + ket1.contr[0].l) * hard_default_lmax_ +
             ket2.contr[0].l;
 #ifdef ERI3_PURE_SH
         if (bra1.contr[0].l > 1)
