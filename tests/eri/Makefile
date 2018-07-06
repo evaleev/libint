@@ -30,7 +30,7 @@ CXXTESTOBJ = $(CXXTESTSRC:%.cc=%.$(OBJSUF))
 CXXTESTDEP = $(CXXTESTSRC:%.cc=%.$(DEPSUF))
 
 check:: $(TEST)
-	./$(TEST) 0 3 && ./$(TEST) 1 2 && ./$(TEST) 2 1
+	./$(TEST) 0 2 && ./$(TEST) 1 1 && ./$(TEST) 2 1
 
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ) $(COMPILER_LIB) $(COMPUTE_LIB)
