@@ -132,6 +132,37 @@ namespace libint2 {
         init();
       }
 
+      /// @brief Construct from a vector of atoms and the per-element basis set specification
+
+      /**
+       * @param[in] atoms \c std::vector of Atom objects
+       * @param[in] name the basis set name
+       * @param[in] throw_if_no_match If true, and the basis is not found for this atomic number, throw a std::logic_error.
+       *       Otherwise omit the basis quietly.
+       * @throw std::logic_error if throw_if_no_match is true and for at least one atom no matching basis is found.
+       * \note All instances of the same chemical element receive the same basis set.
+       */
+      BasisSet(const std::vector<Atom>& atoms,
+               const std::vector<std::vector<Shell>>& element_bases,
+               std::string name = "",
+               const bool throw_if_no_match = false) : name_(std::move(name)) {
+        // for each atom find the corresponding basis components
+        for(auto a=0ul; a<atoms.size(); ++a) {
+
+          auto Z = atoms[a].atomic_number;
+
+          if (element_bases.size() > Z && !element_bases[Z].empty()) {  // found? add shells in order
+            for(auto s: element_bases[Z]) {
+              this->push_back(std::move(s));
+              this->back().move({{atoms[a].x, atoms[a].y, atoms[a].z}});
+            } // shell loop
+          }
+          else if (throw_if_no_match) {  // not found? throw, if needed
+            throw std::logic_error(std::string("did not find the basis for Z=") + std::to_string(Z) + " in the element_bases");
+          }
+        } // atom loop
+      }
+
       /// forces solid harmonics/Cartesian Gaussians
       /// @param solid if true, force all shells with L>1 to be solid harmonics, otherwise force all shells to Cartesian
       void set_pure(bool solid) {
