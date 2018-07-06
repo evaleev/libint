@@ -23,7 +23,7 @@ namespace libint2 {
 namespace unit {
 
 static auto atoms = std::vector<Atom>{ {8, 0.,0.,0.}, {8, 0.,0.,2.}, {1, 0.,-1.,-1.}, {1, 0.,1.,3.}};
-static auto obs = BasisSet("6-31g**", atoms);
+static auto obs = BasisSet("6-31g*", atoms);
 static auto dfbs = BasisSet("aug-cc-pvdz", atoms);
 
 }
