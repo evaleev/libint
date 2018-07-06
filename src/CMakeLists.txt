@@ -6,13 +6,12 @@ math(EXPR MAX_AM_ERI "${MAX_AM_ERI}-1")
 
 ExternalProject_Add(libint_compiler
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin/libint
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+    CMAKE_ARGS -DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}
+               -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+               -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                -DMAX_AM_ERI=${MAX_AM_ERI}
-    CMAKE_CACHE_ARGS -DCMAKE_MODULE_PATH:STRING=${CMAKE_MODULE_PATH}
-                     -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
-    INSTALL_COMMAND DESTDIR=${CMAKE_BINARY_DIR}/stage ${CMAKE_MAKE_PROGRAM} install
     )
 
 ExternalProject_Add(libint_library
@@ -22,41 +21,46 @@ ExternalProject_Add(libint_library
     # download generalized to generating source by running libint_compiler
     DOWNLOAD_COMMAND ${STAGED_INSTALL_PREFIX}/bin/libint_compiler
     LOG_DOWNLOAD 1
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+    BINARY_DIR ${CMAKE_BINARY_DIR}/libint-src
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+               -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+               -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
                -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
                -DCMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}
                -DMAX_AM_ERI=${MAX_AM_ERI}
                -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
                -DBUILD_FPIC=${BUILD_FPIC}
                -DLIBC_INTERJECT=${LIBC_INTERJECT}
-    CMAKE_CACHE_ARGS -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
-                     -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}
-    BINARY_DIR ${CMAKE_BINARY_DIR}/libint-src
-    INSTALL_COMMAND DESTDIR=${CMAKE_BINARY_DIR}/stage ${CMAKE_MAKE_PROGRAM} install
     )
 
 ExternalProject_Add(libderiv_compiler
     DEPENDS libint_library
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin/libderiv
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+               -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                -DMAX_AM_ERI=${MAX_AM_ERI}
                -DLibintint_DIR=${STAGED_INSTALL_PREFIX}/share/cmake/Libint
-    CMAKE_CACHE_ARGS -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
-    INSTALL_COMMAND DESTDIR=${CMAKE_BINARY_DIR}/stage ${CMAKE_MAKE_PROGRAM} install
     )
 
 ExternalProject_Add(libderiv_library
     DEPENDS libderiv_compiler
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libderiv
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+    DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/libderiv-src
+    # download generalized to generating source by running libderiv_compiler
+    DOWNLOAD_COMMAND ${STAGED_INSTALL_PREFIX}/bin/libderiv_compiler
+    LOG_DOWNLOAD 1
+    BINARY_DIR ${CMAKE_BINARY_DIR}/libderiv-src
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+               -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+               -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
                -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
                -DCMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}
                -DMAX_AM_ERI=${MAX_AM_ERI}
@@ -65,13 +69,6 @@ ExternalProject_Add(libderiv_library
                -DLIBC_INTERJECT=${LIBC_INTERJECT}
                -DLibintint_DIR=${STAGED_INSTALL_PREFIX}/share/cmake/Libint
                -DMERGE_LIBDERIV_INCLUDEDIR=${MERGE_LIBDERIV_INCLUDEDIR}
-    CMAKE_CACHE_ARGS -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
-                     -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}
-    DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/libderiv-src
-    DOWNLOAD_COMMAND ${STAGED_INSTALL_PREFIX}/bin/libderiv_compiler
-    LOG_DOWNLOAD 1
-    BINARY_DIR ${CMAKE_BINARY_DIR}/libderiv-src
-    INSTALL_COMMAND DESTDIR=${CMAKE_BINARY_DIR}/stage ${CMAKE_MAKE_PROGRAM} install
     )
 
 # Note that libint_library and libderiv_library could build in parallel
