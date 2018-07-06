@@ -81,6 +81,13 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/eri/test.cc $(TOPDIR)/$(EXPORTDIR)/tests/eri/test.cc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/test_eri/eri.h $(TOPDIR)/$(EXPORTDIR)/tests/eri/eri.h
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/test_eri/prep_libint2.h $(TOPDIR)/$(EXPORTDIR)/tests/eri/prep_libint2.h
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests/unit
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/catch.hpp $(TOPDIR)/$(EXPORTDIR)/tests/unit/catch.hpp
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/fixture.h $(TOPDIR)/$(EXPORTDIR)/tests/unit/fixture.h
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/test.cc $(TOPDIR)/$(EXPORTDIR)/tests/unit/test.cc
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/test-core.cc $(TOPDIR)/$(EXPORTDIR)/tests/unit/test-core.cc
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/test-permute.cc $(TOPDIR)/$(EXPORTDIR)/tests/unit/test-permute.cc
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/test-1body.cc $(TOPDIR)/$(EXPORTDIR)/tests/unit/test-1body.cc
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock.cc $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock.cc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock++.cc $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock++.cc
