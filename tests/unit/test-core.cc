@@ -42,7 +42,7 @@ template <typename RealBuf> void check_std_3(RealBuf && S) {
   REQUIRE(S[99] == Approx(1.));
 };
 
-TEST_CASE("cartesian uniform normalization", "[engine]") {
+TEST_CASE("cartesian uniform normalization", "[engine][conventions]") {
 #if defined(LIBINT2_SUPPORT_ONEBODY) && defined(LIBINT2_SUPPORT_ERI)
   if (LIBINT_CGSHELL_ORDERING != LIBINT_CGSHELL_ORDERING_STANDARD)
     return;
