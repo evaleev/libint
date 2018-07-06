@@ -80,11 +80,11 @@ int main()
   /*-------------------------------
     Initialize files and libraries
    -------------------------------*/
-  outfile = fopen("./output.dat", "w");
-  vrr_header = fopen("./vrr_header.h","w");
-  hrr_header = fopen("./hrr_header.h","w");
-  libint_header = fopen("./libint.h","w");
-  init_code = fopen("./init_libint.cc","w");
+  outfile = fopen("output.dat", "w");
+  vrr_header = fopen("vrr_header.h","w");
+  hrr_header = fopen("hrr_header.h","w");
+  libint_header = fopen("libint.h","w");
+  init_code = fopen("init_libint.cc","w");
   copyright(vrr_header);
   copyright(hrr_header);
   copyright(libint_header);

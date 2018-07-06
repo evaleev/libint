@@ -58,11 +58,11 @@ int main()
   /*-------------------------------
     Initialize files and libraries
    -------------------------------*/
-  outfile = fopen("./output.dat", "w");
-  d1hrr_header = fopen("./d1hrr_header.h","w");
-  deriv_header = fopen("./deriv_header.h","w");
-  libderiv_header = fopen("./libderiv.h","w");
-  init_code = fopen("./init_libderiv.cc","w");
+  outfile = fopen("output.dat", "w");
+  d1hrr_header = fopen("d1hrr_header.h","w");
+  deriv_header = fopen("deriv_header.h","w");
+  libderiv_header = fopen("libderiv.h","w");
+  init_code = fopen("init_libderiv.cc","w");
   copyright(d1hrr_header);
   copyright(deriv_header);
   copyright(libderiv_header);
@@ -129,7 +129,7 @@ int main()
 
   /* Setting up init_libderiv.c, header.h */
   fprintf(init_code,"#include <stdlib.h>\n");
-  fprintf(init_code,"#include <strings.h>\n");
+  fprintf(init_code,"#include <string.h>\n");
   fprintf(init_code,"#include <libint/libint.h>\n");
   fprintf(init_code,"#include \"libderiv.h\"\n");
   fprintf(init_code,"#include \"d1hrr_header.h\"\n\n");
@@ -179,7 +179,7 @@ int main()
   fprintf(init_code,"  libderiv->int_stack = (double *) malloc(libderiv1_stack_size[max_am]*sizeof(double));\n");
   fprintf(init_code,"  memory += libderiv1_stack_size[max_am];\n");
   fprintf(init_code,"  libderiv->zero_stack = (double *) malloc(max_cart_class_size*sizeof(double));\n");
-  fprintf(init_code,"  bzero((char *)libderiv->zero_stack,max_cart_class_size*sizeof(double));\n");
+  fprintf(init_code,"  memset((char *)libderiv->zero_stack,0,max_cart_class_size*sizeof(double));\n");
   fprintf(init_code,"  memory += max_cart_class_size;\n");
   fprintf(init_code,"  libderiv->PrimQuartet = (prim_data *) malloc(max_num_prim_quartets*sizeof(prim_data));\n");
   fprintf(init_code,"  memory += max_num_prim_quartets*sizeof(prim_data)/sizeof(double);\n");
@@ -205,7 +205,7 @@ int main()
   fprintf(init_code,"  libderiv->int_stack = (double *) malloc(libderiv12_stack_size[max_am]*sizeof(double));\n");
   fprintf(init_code,"  memory += libderiv12_stack_size[max_am];\n");
   fprintf(init_code,"  libderiv->zero_stack = (double *) malloc(max_cart_class_size*sizeof(double));\n");
-  fprintf(init_code,"  bzero((char *)libderiv->zero_stack,max_cart_class_size*sizeof(double));\n");
+  fprintf(init_code,"  memset((char *)libderiv->zero_stack,0,max_cart_class_size*sizeof(double));\n");
   fprintf(init_code,"  memory += max_cart_class_size;\n");
   fprintf(init_code,"  libderiv->PrimQuartet = (prim_data *) malloc(max_num_prim_quartets*sizeof(prim_data));\n");
   fprintf(init_code,"  memory += max_num_prim_quartets*sizeof(prim_data)/sizeof(double);\n");
