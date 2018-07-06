@@ -156,7 +156,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
                              static_cast<int>(BraKet::first_2body_braket))) *
                                nderivorders_2body +
                            deriv_order_;
-    auto compute_ptr = compute2_ptrs()[compute_ptr_idx];
+    auto compute_ptr = compute2_ptrs().at(compute_ptr_idx);
     assert(compute_ptr != nullptr && "2-body compute function not found");
     if (nargs == 2)
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],

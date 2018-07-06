@@ -26,9 +26,9 @@ CXXTEST1SRC = $(TEST1).cc $(TEST1)-core.cc $(TEST1)-permute.cc $(TEST1)-1body.cc
 CXXTEST1OBJ = $(CXXTEST1SRC:%.cc=%.$(OBJSUF))
 CXXTEST1DEP = $(CXXTEST1SRC:%.cc=%.$(DEPSUF))
 
-check:: check2
+check:: check1
 
-check2::
+check1::
 
 ifeq ($(CXXGEN_SUPPORTS_CPP11),yes)
  ifeq ($(LIBINT_SUPPORTS_ONEBODY),yes)
@@ -40,7 +40,7 @@ ifeq ($(CXXGEN_SUPPORTS_CPP11),yes)
 $(TEST1): $(CXXTEST1OBJ) $(COMPUTE_LIB)
 	$(CXX) -o $@ $(LDFLAGS) $^ $(SYSLIBS)
 
-check2:: $(TEST1)
+check1:: $(TEST1)
 	./$^
 
      endif
@@ -52,6 +52,7 @@ endif
 
 # Source files for timer and tester are to be compiled using CXXGEN
 $(TEST1): CXX=$(CXXGEN)
+$(TEST1): CXXDEPEND=$(CXXGEN)
 $(TEST1): CXXFLAGS=$(CXXGENFLAGS)
 $(TEST1): LD=$(CXXGEN)
 
@@ -74,12 +75,12 @@ depend:: $(CXXTEST1DEP)
 ifneq ($(DODEPEND),no)
 ifneq ($(CXXDEPENDSUF),none)
 %.d:: %.cc $(TOPDIR)/include/libint2/boost/preprocessor.hpp
-	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
+	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXGENFLAGS) $< > /dev/null
 	sed 's/^$*.o/$*.$(OBJSUF) $*.d/g' < $(*F).$(CXXDEPENDSUF) > $(@F)
 	/bin/rm -f $(*F).$(CXXDEPENDSUF)
 else
 %.d:: %.cc $(TOPDIR)/include/libint2/boost/preprocessor.hpp
-	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< | sed 's/^$*.o/$*.$(OBJSUF) $*.d/g' > $(@F)
+	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXGENFLAGS) $< | sed 's/^$*.o/$*.$(OBJSUF) $*.d/g' > $(@F)
 endif
 
 -include $(CXXTEST1DEP)
