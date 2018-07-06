@@ -342,6 +342,12 @@ namespace libint2 {
         init(s1, s2, ln_prec);
       }
 
+      void resize(std::size_t max_nprim) {
+        const auto max_nprim2 = max_nprim * max_nprim;
+        if (max_nprim * max_nprim > primpairs.size())
+          primpairs.resize(max_nprim2);
+      }
+
       /// initializes "expensive" primitive pair data; a pair of primitives with exponents \f$ \{\alpha_a,\alpha_b\} \f$
       /// located at \f$ \{ \vec{A},\vec{B} \} \f$ whose max coefficients in contractions are \f$ \{ \max{|c_a|} , \max{|c_b|} \} \f$ is screened-out (omitted)
       /// if \f$ \exp(-|\vec{A}-\vec{B}|^2 \alpha_a * \alpha_b / (\alpha_a + \alpha_b)) \max{|c_a|} \max{|c_b|} \leq \epsilon \f$

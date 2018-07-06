@@ -597,11 +597,16 @@ class Engine {
 
   /// (re)sets operator type to @c new_oper
   /// @param[in] new_oper Operator whose integrals will be computed with the next call to Engine::compute()
+  /// @note this resets braket and params to their respective defaults for @c new_oper
   Engine& set(Operator new_oper) {
     if (oper_ != new_oper) {
-      if (rank(new_oper) != operator_rank()) braket_ = BraKet::invalid;
       oper_ = new_oper;
+      braket_ = default_braket(oper_);
+      params_ = default_params(oper_);
       initialize();
+      core_eval_pack_ = make_core_eval_pack(oper_);  // must follow initialize() to
+                                                     // ensure default braket_ has
+                                                     // been set
     }
     return *this;
   }
@@ -630,6 +635,40 @@ class Engine {
     params_ = params;
     init_core_ints_params(params_);
     reset_scratch();
+    return *this;
+  }
+
+  /// @return the maximum number of primitives that this engine can handle
+  std::size_t max_nprim() const {
+    assert(spbra_.primpairs.size() == spket_.primpairs.size());
+    return static_cast<std::size_t>(std::sqrt(spbra_.primpairs.size()));
+  }
+
+  /// reset the maximum number of primitives
+  /// @param[in] n the maximum number of primitives
+  /// @note left unchanged if the value returned by Engine::max_nprim is greater than @c n
+  Engine& set_max_nprim(std::size_t n) {
+    if (n*n > spbra_.primpairs.size()) {
+      spbra_.resize(n);
+      spket_.resize(n);
+      initialize(n);
+    }
+    return *this;
+  }
+
+  /// @return the maximum angular momentum that this engine can handle
+  std::size_t max_l() const {
+    return lmax_;
+  }
+
+  /// reset the maximum angular momentum
+  /// @param[in] L the maximum angular momentum
+  /// @note left unchanged if the value returned by Engine::max_l is greater than @c L
+  Engine& set_max_l(std::size_t L) {
+    if (L >= lmax_) {
+      lmax_ = L;
+      initialize();
+    }
     return *this;
   }
 
