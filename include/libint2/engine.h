@@ -777,6 +777,7 @@ class Engine {
     return *this;
   }
 
+  /// prints the contents of timers to standard output
   void print_timers() {
 #ifdef LIBINT2_ENGINE_TIMERS
     std::cout << "timers: prereq = " << timers.read(0);
