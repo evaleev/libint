@@ -27,6 +27,7 @@
 #endif
 
 #include <atomic>
+#include <cassert>
 
 #include <libint2.h>  // NB this loads libint2/config.h
 
