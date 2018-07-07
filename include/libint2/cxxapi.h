@@ -26,6 +26,8 @@
 # error "Libint2 C++ API requires C++11 support"
 #endif
 
+#include <atomic>
+
 #include <libint2.h>  // NB this loads libint2/config.h
 
 #ifdef LIBINT_USER_DEFINED_REAL
