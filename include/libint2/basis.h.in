@@ -438,8 +438,8 @@ namespace libint2 {
               if (amlabel != "SP" && amlabel != "sp") {
                 assert(amlabel.size() == 1);
                 auto l = Shell::am_symbol_to_l(amlabel[0]);
-                std::vector<double> exps;
-                std::vector<double> coeffs;
+                svector<double> exps;
+                svector<double> coeffs;
                 for (decltype(nprim) p = 0; p != nprim; ++p) {
                   while (std::getline(is, line) && (line.empty() || line[0] == '!')) {}
                   fortran_dfloats_to_efloats(line);
@@ -452,16 +452,16 @@ namespace libint2 {
                 auto pure = force_cartesian_d ? (l > 2) : (l > 1);
                 ref_shells[Z].push_back(
                     libint2::Shell{
-                        exps,
+                        std::move(exps),
                         {
-                            {l, pure, coeffs}
+                            {l, pure, std::move(coeffs)}
                         },
                         {{0.0, 0.0, 0.0}}
                     }
                 );
               } else { // split the SP shells
-                std::vector<double> exps;
-                std::vector<double> coeffs_s, coeffs_p;
+                svector<double> exps;
+                svector<double> coeffs_s, coeffs_p;
                 for (decltype(nprim) p = 0; p != nprim; ++p) {
                   while (std::getline(is, line) && (line.empty() || line[0] == '!')) {}
                   fortran_dfloats_to_efloats(line);
@@ -481,9 +481,9 @@ namespace libint2 {
                     }
                 );
                 ref_shells[Z].push_back(
-                    libint2::Shell{exps,
+                    libint2::Shell{std::move(exps),
                                    {
-                                       {1, false, coeffs_p}
+                                       {1, false, std::move(coeffs_p)}
                                    },
                                    {{0.0, 0.0, 0.0}}
                     }

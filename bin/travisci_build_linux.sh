@@ -32,6 +32,6 @@ cd export_build
 tar -xvzf libint-*.tgz
 rm -f libint-*.tgz
 cd libint-*
-./configure CPPFLAGS='-I/usr/include/eigen3'
+./configure CPPFLAGS='-I/usr/include/eigen3 -DLIBINT2_DISABLE_BOOST_CONTAINER_SMALL_VECTOR=1'
 make -j2
 make check

@@ -26,7 +26,6 @@
 # error "libint2/shell.h requires C++11 support"
 #endif
 
-
 #include <iostream>
 #include <array>
 #include <vector>
@@ -34,6 +33,8 @@
 #include <cmath>
 
 #include <libint2.h>
+
+#include <libint2/util/small_vector.h>
 
 namespace libint2 {
 
@@ -84,7 +85,8 @@ namespace libint2 {
       struct Contraction {
           int l;
           bool pure;
-          std::vector<real_t> coeff;
+          svector<real_t> coeff;
+
           bool operator==(const Contraction& other) const {
             return &other == this || (l == other.l && pure == other.pure && coeff == other.coeff);
           }
@@ -99,15 +101,15 @@ namespace libint2 {
           }
       };
 
-      std::vector<real_t> alpha; //!< exponents
-      std::vector<Contraction> contr;      //!< contractions
+      svector<real_t> alpha; //!< exponents
+      svector<Contraction> contr;      //!< contractions
       std::array<real_t, 3> O;   //!< origin
-      std::vector<real_t> max_ln_coeff; //!< maximum ln of (absolute) contraction coefficient for each primitive
+      svector<real_t> max_ln_coeff; //!< maximum ln of (absolute) contraction coefficient for each primitive
 
       Shell() = default;
       Shell(const Shell&) = default;
       // intel does not support "move ctor = default"
-      Shell(Shell&& other) :
+      Shell(Shell&& other) noexcept :
         alpha(std::move(other.alpha)),
         contr(std::move(other.contr)),
         O(std::move(other.O)),
@@ -115,15 +117,15 @@ namespace libint2 {
       }
       Shell& operator=(const Shell&) = default;
       // intel does not support "move asgnmt = default"
-      Shell& operator=(Shell&& other) {
+      Shell& operator=(Shell&& other) noexcept {
         alpha = std::move(other.alpha);
         contr = std::move(other.contr);
         O = std::move(other.O);
         max_ln_coeff = std::move(other.max_ln_coeff);
         return *this;
       }
-      Shell(std::vector<real_t> _alpha,
-            std::vector<Contraction> _contr,
+      Shell(svector<real_t> _alpha,
+            svector<Contraction> _contr,
             std::array<real_t, 3> _O) :
               alpha(std::move(_alpha)),
               contr(std::move(_contr)),
@@ -240,7 +242,7 @@ namespace libint2 {
       struct make_unit{};
       Shell(make_unit) :
         alpha{0.0},                           // exponent = 0
-        contr{Contraction{0, false, {1.0}}},  // contraction coefficient = 1
+        contr{{0, false, {1.0}}},  // contraction coefficient = 1
         O{{0.0, 0.0, 0.0}},                   // placed at origin
         max_ln_coeff{0.0} {
       }

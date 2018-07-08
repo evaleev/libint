@@ -1,6 +1,24 @@
 #include "catch.hpp"
 #include "fixture.h"
 
+TEST_CASE("Shell ctor", "[shell]") {
+  REQUIRE_NOTHROW(Shell{});
+  auto s0 = Shell{};
+  REQUIRE(s0.alpha.empty());
+  REQUIRE(s0.contr.empty());
+  REQUIRE(s0.max_ln_coeff.empty());
+
+  REQUIRE_NOTHROW(Shell{{1.0}, {{2, false, {1.0}}}, {{0.0, 0.0, 0.0}}});
+  auto s1 = Shell{{1.0}, {{2, false, {1.0}}}, {{0.0, 0.0, 0.0}}};
+  REQUIRE(s1.alpha == libint2::svector<double>{1.0});
+  REQUIRE(s1.contr.size() == 1);
+  REQUIRE(s1.contr[0].l == 2);
+  REQUIRE(s1.contr[0].pure == false);
+  REQUIRE(s1.contr[0].coeff.size() == 1);
+  REQUIRE(s1.contr[0].coeff[0] == Approx(1.64592278064949)); // (2./\[Pi])^(3/4) 2^l \[Alpha]^((2l+3)/4) / Sqrt[(2l-1)!!]
+  REQUIRE(s1.O == std::array<double,3>{0.0, 0.0, 0.0});
+}
+
 TEST_CASE("Engine ctor", "[engine]") {
   REQUIRE_NOTHROW(Engine{});
   auto a = Engine{};
