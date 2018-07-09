@@ -98,7 +98,7 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/Makefile.doc.export $(TOPDIR)/$(EXPORTDIR)/doc/Makefile.in
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/fortran
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/Makefile.fortran.export $(TOPDIR)/$(EXPORTDIR)/fortran/Makefile
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/fortran/*.F90 $(TOPDIR)/$(EXPORTDIR)/fortran
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/*.F90 $(TOPDIR)/$(EXPORTDIR)/fortran
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/external
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/external/boost.tar.gz $(TOPDIR)/$(EXPORTDIR)/external/boost.tar.gz
 	$(TOPOBJDIR)/config.status --config > $(TOPDIR)/$(EXPORTDIR)/compiler.config
