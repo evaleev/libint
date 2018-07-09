@@ -21,6 +21,7 @@
 #ifndef _libint2_src_bin_libint_vrr1onep1_h_
 #define _libint2_src_bin_libint_vrr1onep1_h_
 
+#include <cassert>
 #include <generic_rr.h>
 #include <onep_1_1.h>
 

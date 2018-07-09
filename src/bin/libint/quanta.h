@@ -21,6 +21,7 @@
 #ifndef _libint2_src_bin_libint_quanta_h_
 #define _libint2_src_bin_libint_quanta_h_
 
+#include <cassert>
 #include <vector>
 #include <smart_ptr.h>
 #include <global_macros.h>

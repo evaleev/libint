@@ -31,11 +31,17 @@
 #pragma GCC diagnostic pop
 
 #include <libint2/boys.h>
-// use libint-packages preprocessor only if not already available
-#if __has_include(<boost/preprocessor.hpp>)
-#  include <boost/preprocessor.hpp>
-#  include <boost/preprocessor/facilities/is_1.hpp>
-#else
+// use libint-bundled preprocessor only if Boost.Preprocessor version 1.57 or later not already available
+#if __has_include(<boost/version.hpp>) && __has_include(<boost/preprocessor.hpp>)
+#  include <boost/version.hpp>  // read in version and do version check
+#  if defined(BOOST_VERSION)
+#    if (BOOST_VERSION / 100000 == 1) && ((BOOST_VERSION / 100 % 1000) >= 57)
+#      include <boost/preprocessor.hpp>
+#      include <boost/preprocessor/facilities/is_1.hpp>
+#    endif  // boost version > 1.57
+#  endif  // defined(BOOST_VERSION)
+#endif  // found system boost/preprocessor.hpp
+#if !defined(BOOST_PREPROCESSOR_HPP)  // if preprocessor.hpp not yet included, use the bundled copy
 #  include <libint2/boost/preprocessor.hpp>
 #  include <libint2/boost/preprocessor/facilities/is_1.hpp>
 #endif
@@ -150,7 +156,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
                              static_cast<int>(BraKet::first_2body_braket))) *
                                nderivorders_2body +
                            deriv_order_;
-    auto compute_ptr = compute2_ptrs()[compute_ptr_idx];
+    auto compute_ptr = compute2_ptrs().at(compute_ptr_idx);
     assert(compute_ptr != nullptr && "2-body compute function not found");
     if (nargs == 2)
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
@@ -188,7 +194,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   // if want nuclear, make sure there is at least one nucleus .. otherwise the
   // user likely forgot to call set_params
   if (oper_is_nuclear && nparams() == 0)
-    throw std::runtime_error(
+    throw std::logic_error(
         "Engine<*nuclear>, but no charges found; forgot to call "
         "set_params()?");
 
@@ -536,6 +542,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
     }
   }
 
+  if (cartesian_shell_normalization() == CartesianShellNormalization::uniform) {
+    std::array<std::reference_wrapper<const Shell>, 2> shells{s1,s2};
+    for (auto s = 0ul; s != num_shellsets_computed; ++s) {
+      uniform_normalize_cartesian_shells(const_cast<value_type*>(targets_[s]), shells);
+    }
+  }
+
   return targets_;
 }
 
@@ -584,10 +597,22 @@ __libint2_engine_inline void Engine::_initialize() {
     hard_lmax_ = BOOST_PP_CAT(LIBINT2_MAX_AM_,                                 \
                               BOOST_PP_NBODYENGINE_MCR3_TASK(product)) +       \
                  1;                                                            \
-    if (lmax_ >= hard_lmax_) {                                                 \
+    hard_default_lmax_ =                                                       \
+    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_,   \
+                              BOOST_PP_NBODYENGINE_MCR3_task(product))),       \
+                              BOOST_PP_CAT(LIBINT2_MAX_AM_,                    \
+                                           BOOST_PP_CAT(default,               \
+                                                        BOOST_PP_NBODYENGINE_MCR3_DERIV(product) \
+                                                       )                       \
+                                          ) + 1, std::numeric_limits<int>::max()); \
+    const auto lmax =                                                          \
+    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_,   \
+                              BOOST_PP_NBODYENGINE_MCR3_task(product))),       \
+      std::max(hard_lmax_,hard_default_lmax_), hard_lmax_);                    \
+    if (lmax_ >= lmax) {                                                       \
       throw Engine::lmax_exceeded(                                             \
           BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)),         \
-          hard_lmax_, lmax_);                                                  \
+          lmax, lmax_);                                                        \
     }                                                                          \
     if (stack_size_ > 0)                                                       \
       libint2_cleanup_default(&primdata_[0]);                                  \
@@ -638,6 +663,10 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   assert(braket_ != BraKet::xs_xs &&
          "this braket type not supported by the library; give --enable-eri2 to configure");
 #endif
+
+  // make sure it's no default initialized
+  if (lmax_ < 0)
+    throw using_default_initialized();
 
   // initialize braket, if needed
   if (braket_ == BraKet::invalid) braket_ = default_braket(oper_);
@@ -1644,8 +1673,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
       case BraKet::xs_xx:
       case BraKet::xx_xs:
+        assert(LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri == 1);
         buildfnidx =
-            (bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l) * hard_lmax_ +
+            (bra1.contr[0].l * hard_default_lmax_ + ket1.contr[0].l) * hard_default_lmax_ +
             ket2.contr[0].l;
 #ifdef ERI3_PURE_SH
         if (bra1.contr[0].l > 1)
@@ -1732,8 +1762,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
       for (auto s = 0; s != ntargets; ++s) {
         // when permuting derivatives may need to permute shellsets also, not
         // just integrals
-        // within shellsets; this will poins where source shellset s should end
-        // up
+        // within shellsets; this will point to where source shellset s should end up
         auto s_target = s;
 
         auto source =
@@ -1774,69 +1803,128 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
               break;  // nothing to do
 
             case 1: {
-              const unsigned mapDerivIndex1[2][2][2][12] = {
-                  {{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
-                    {0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8}},
-                   {{3, 4, 5, 0, 1, 2, 6, 7, 8, 9, 10, 11},
-                    {3, 4, 5, 0, 1, 2, 9, 10, 11, 6, 7, 8}}},
-                  {{{6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5},
-                    {9, 10, 11, 6, 7, 8, 0, 1, 2, 3, 4, 5}},
-                   {{6, 7, 8, 9, 10, 11, 3, 4, 5, 0, 1, 2},
-                    {9, 10, 11, 6, 7, 8, 3, 4, 5, 0, 1, 2}}}};
-              s_target = mapDerivIndex1[swap_braket][swap_tbra][swap_tket][s];
+              switch(braket_) {
+                case BraKet::xx_xx: {
+                  const unsigned mapDerivIndex1_xxxx[2][2][2][12] = {
+                      {{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+                        {0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8}},
+                       {{3, 4, 5, 0, 1, 2, 6, 7, 8, 9, 10, 11},
+                        {3, 4, 5, 0, 1, 2, 9, 10, 11, 6, 7, 8}}},
+                      {{{6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5},
+                        {9, 10, 11, 6, 7, 8, 0, 1, 2, 3, 4, 5}},
+                       {{6, 7, 8, 9, 10, 11, 3, 4, 5, 0, 1, 2},
+                        {9, 10, 11, 6, 7, 8, 3, 4, 5, 0, 1, 2}}}};
+                  s_target = mapDerivIndex1_xxxx[swap_braket][swap_tbra][swap_tket][s];
+                }
+                  break;
+
+                case BraKet::xs_xx: {
+                  assert(swap_bra == false);
+                  assert(swap_braket == false);
+                  const unsigned mapDerivIndex1_xsxx[2][9] = {
+                      {0,1,2,3,4,5,6,7,8},
+                      {0,1,2,6,7,8,3,4,5}
+                  };
+                  s_target = mapDerivIndex1_xsxx[swap_tket][s];
+                }
+                  break;
+
+                case BraKet::xs_xs: {
+                  assert(swap_bra == false);
+                  assert(swap_ket == false);
+                  assert(swap_braket == false);
+                  s_target = s;
+                }
+                  break;
+
+                default:
+                  assert(false && "this backet type not yet supported for 1st geometric derivatives");
+              }
             } break;
 
             case 2: {
-              const unsigned mapDerivIndex2[2][2][2][78] = {
-                  {{{0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
-                     13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-                     26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
-                     39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
-                     52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
-                     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77},
-                    {0,  1,  2,  3,  4,  5,  9,  10, 11, 6,  7,  8,  12,
-                     13, 14, 15, 16, 20, 21, 22, 17, 18, 19, 23, 24, 25,
-                     26, 30, 31, 32, 27, 28, 29, 33, 34, 35, 39, 40, 41,
-                     36, 37, 38, 42, 43, 47, 48, 49, 44, 45, 46, 50, 54,
-                     55, 56, 51, 52, 53, 72, 73, 74, 60, 65, 69, 75, 76,
-                     61, 66, 70, 77, 62, 67, 71, 57, 58, 59, 63, 64, 68}},
-                   {{33, 34, 35, 3,  14, 24, 36, 37, 38, 39, 40, 41, 42,
-                     43, 4,  15, 25, 44, 45, 46, 47, 48, 49, 50, 5,  16,
-                     26, 51, 52, 53, 54, 55, 56, 0,  1,  2,  6,  7,  8,
-                     9,  10, 11, 12, 13, 17, 18, 19, 20, 21, 22, 23, 27,
-                     28, 29, 30, 31, 32, 57, 58, 59, 60, 61, 62, 63, 64,
-                     65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77},
-                    {33, 34, 35, 3,  14, 24, 39, 40, 41, 36, 37, 38, 42,
-                     43, 4,  15, 25, 47, 48, 49, 44, 45, 46, 50, 5,  16,
-                     26, 54, 55, 56, 51, 52, 53, 0,  1,  2,  9,  10, 11,
-                     6,  7,  8,  12, 13, 20, 21, 22, 17, 18, 19, 23, 30,
-                     31, 32, 27, 28, 29, 72, 73, 74, 60, 65, 69, 75, 76,
-                     61, 66, 70, 77, 62, 67, 71, 57, 58, 59, 63, 64, 68}}},
-                  {{{57, 58, 59, 60, 61, 62, 6,  17, 27, 36, 44, 51, 63,
-                     64, 65, 66, 67, 7,  18, 28, 37, 45, 52, 68, 69, 70,
-                     71, 8,  19, 29, 38, 46, 53, 72, 73, 74, 9,  20, 30,
-                     39, 47, 54, 75, 76, 10, 21, 31, 40, 48, 55, 77, 11,
-                     22, 32, 41, 49, 56, 0,  1,  2,  3,  4,  5,  12, 13,
-                     14, 15, 16, 23, 24, 25, 26, 33, 34, 35, 42, 43, 50},
-                    {72, 73, 74, 60, 65, 69, 9,  20, 30, 39, 47, 54, 75,
-                     76, 61, 66, 70, 10, 21, 31, 40, 48, 55, 77, 62, 67,
-                     71, 11, 22, 32, 41, 49, 56, 57, 58, 59, 6,  17, 27,
-                     36, 44, 51, 63, 64, 7,  18, 28, 37, 45, 52, 68, 8,
-                     19, 29, 38, 46, 53, 0,  1,  2,  3,  4,  5,  12, 13,
-                     14, 15, 16, 23, 24, 25, 26, 33, 34, 35, 42, 43, 50}},
-                   {{57, 58, 59, 60, 61, 62, 36, 44, 51, 6,  17, 27, 63,
-                     64, 65, 66, 67, 37, 45, 52, 7,  18, 28, 68, 69, 70,
-                     71, 38, 46, 53, 8,  19, 29, 72, 73, 74, 39, 47, 54,
-                     9,  20, 30, 75, 76, 40, 48, 55, 10, 21, 31, 77, 41,
-                     49, 56, 11, 22, 32, 33, 34, 35, 3,  14, 24, 42, 43,
-                     4,  15, 25, 50, 5,  16, 26, 0,  1,  2,  12, 13, 23},
-                    {72, 73, 74, 60, 65, 69, 39, 47, 54, 9,  20, 30, 75,
-                     76, 61, 66, 70, 40, 48, 55, 10, 21, 31, 77, 62, 67,
-                     71, 41, 49, 56, 11, 22, 32, 57, 58, 59, 36, 44, 51,
-                     6,  17, 27, 63, 64, 37, 45, 52, 7,  18, 28, 68, 38,
-                     46, 53, 8,  19, 29, 33, 34, 35, 3,  14, 24, 42, 43,
-                     4,  15, 25, 50, 5,  16, 26, 0,  1,  2,  12, 13, 23}}}};
-              s_target = mapDerivIndex2[swap_braket][swap_tbra][swap_tket][s];
+              switch(braket_) {
+                case BraKet::xx_xx: {
+                  const unsigned mapDerivIndex2_xxxx[2][2][2][78] = {
+                      {{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                         13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+                         26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+                         39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
+                         52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
+                         65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77},
+                        {0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8, 12,
+                         13, 14, 15, 16, 20, 21, 22, 17, 18, 19, 23, 24, 25,
+                         26, 30, 31, 32, 27, 28, 29, 33, 34, 35, 39, 40, 41,
+                         36, 37, 38, 42, 43, 47, 48, 49, 44, 45, 46, 50, 54,
+                         55, 56, 51, 52, 53, 72, 73, 74, 60, 65, 69, 75, 76,
+                         61, 66, 70, 77, 62, 67, 71, 57, 58, 59, 63, 64, 68}},
+                       {{33, 34, 35, 3, 14, 24, 36, 37, 38, 39, 40, 41, 42,
+                         43, 4, 15, 25, 44, 45, 46, 47, 48, 49, 50, 5, 16,
+                         26, 51, 52, 53, 54, 55, 56, 0, 1, 2, 6, 7, 8,
+                         9, 10, 11, 12, 13, 17, 18, 19, 20, 21, 22, 23, 27,
+                         28, 29, 30, 31, 32, 57, 58, 59, 60, 61, 62, 63, 64,
+                         65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77},
+                        {33, 34, 35, 3, 14, 24, 39, 40, 41, 36, 37, 38, 42,
+                         43, 4, 15, 25, 47, 48, 49, 44, 45, 46, 50, 5, 16,
+                         26, 54, 55, 56, 51, 52, 53, 0, 1, 2, 9, 10, 11,
+                         6, 7, 8, 12, 13, 20, 21, 22, 17, 18, 19, 23, 30,
+                         31, 32, 27, 28, 29, 72, 73, 74, 60, 65, 69, 75, 76,
+                         61, 66, 70, 77, 62, 67, 71, 57, 58, 59, 63, 64, 68}}},
+                      {{{57, 58, 59, 60, 61, 62, 6, 17, 27, 36, 44, 51, 63,
+                         64, 65, 66, 67, 7, 18, 28, 37, 45, 52, 68, 69, 70,
+                         71, 8, 19, 29, 38, 46, 53, 72, 73, 74, 9, 20, 30,
+                         39, 47, 54, 75, 76, 10, 21, 31, 40, 48, 55, 77, 11,
+                         22, 32, 41, 49, 56, 0, 1, 2, 3, 4, 5, 12, 13,
+                         14, 15, 16, 23, 24, 25, 26, 33, 34, 35, 42, 43, 50},
+                        {72, 73, 74, 60, 65, 69, 9, 20, 30, 39, 47, 54, 75,
+                         76, 61, 66, 70, 10, 21, 31, 40, 48, 55, 77, 62, 67,
+                         71, 11, 22, 32, 41, 49, 56, 57, 58, 59, 6, 17, 27,
+                         36, 44, 51, 63, 64, 7, 18, 28, 37, 45, 52, 68, 8,
+                         19, 29, 38, 46, 53, 0, 1, 2, 3, 4, 5, 12, 13,
+                         14, 15, 16, 23, 24, 25, 26, 33, 34, 35, 42, 43, 50}},
+                       {{57, 58, 59, 60, 61, 62, 36, 44, 51, 6, 17, 27, 63,
+                         64, 65, 66, 67, 37, 45, 52, 7, 18, 28, 68, 69, 70,
+                         71, 38, 46, 53, 8, 19, 29, 72, 73, 74, 39, 47, 54,
+                         9, 20, 30, 75, 76, 40, 48, 55, 10, 21, 31, 77, 41,
+                         49, 56, 11, 22, 32, 33, 34, 35, 3, 14, 24, 42, 43,
+                         4, 15, 25, 50, 5, 16, 26, 0, 1, 2, 12, 13, 23},
+                        {72, 73, 74, 60, 65, 69, 39, 47, 54, 9, 20, 30, 75,
+                         76, 61, 66, 70, 40, 48, 55, 10, 21, 31, 77, 62, 67,
+                         71, 41, 49, 56, 11, 22, 32, 57, 58, 59, 36, 44, 51,
+                         6, 17, 27, 63, 64, 37, 45, 52, 7, 18, 28, 68, 38,
+                         46, 53, 8, 19, 29, 33, 34, 35, 3, 14, 24, 42, 43,
+                         4, 15, 25, 50, 5, 16, 26, 0, 1, 2, 12, 13, 23}}}};
+                  s_target = mapDerivIndex2_xxxx[swap_braket][swap_tbra][swap_tket][s];
+                }
+                  break;
+
+                case BraKet::xs_xx: {
+                  assert(swap_bra == false);
+                  assert(swap_braket == false);
+                  const unsigned mapDerivIndex2_xsxx[2][45] = {
+                      {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
+                       12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+                       24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
+                       36, 37, 38, 39, 40, 41, 42, 43, 44},
+                      {0,  1,  2,  6,  7,  8,  3,  4,  5,  9,  10, 14,
+                       15, 16, 11, 12, 13, 17, 21, 22, 23, 18, 19, 20,
+                       39, 40, 41, 27, 32, 36, 42, 43, 28, 33, 37, 44,
+                       29, 34, 38, 24, 25, 26, 30, 31, 35}};
+                  s_target = mapDerivIndex2_xsxx[swap_tket][s];
+                }
+                  break;
+
+                case BraKet::xs_xs: {
+                  assert(swap_bra == false);
+                  assert(swap_ket == false);
+                  assert(swap_braket == false);
+                  s_target = s;
+                }
+                  break;
+
+                default:
+                  assert(false && "this backet type not yet supported for 2st geometric derivatives");
+              }
             } break;
 
             default:
@@ -1921,6 +2009,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
 #endif
   }  // not (ss|ss)
+
+  if (cartesian_shell_normalization() == CartesianShellNormalization::uniform) {
+    std::array<std::reference_wrapper<const Shell>, 4> shells{bra1, bra2, ket1, ket2};
+    for (auto s = 0ul; s != targets_.size(); ++s) {
+      uniform_normalize_cartesian_shells(const_cast<value_type*>(targets_[s]), shells);
+    }
+  }
 
   return targets_;
 }

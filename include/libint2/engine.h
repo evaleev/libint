@@ -48,11 +48,13 @@
 #include <libint2/boys_fwd.h>
 #include <libint2/shell.h>
 #include <libint2/solidharmonics.h>
+#include <libint2/cartesian.h>
 #include <libint2/util/any.h>
 #include <libint2/util/array_adaptor.h>
 #include <libint2/util/intpart_iter.h>
 #include <libint2/util/compressed_pair.h>
 #include <libint2/util/timer.h>
+#include <libint2/cgshellinfo.h>
 
 // the engine will be profiled by default if library was configured with
 // --enable-profile
@@ -102,18 +104,18 @@ enum class Operator {
   /// erfc-attenuated point-charge Coulomb operator,
   /// \f$ \mathrm{erfc}(\omega r)/r \f$
   erfc_nuclear,
-  /// overlap + (Cartesian) electric dipole moment,
+  //! overlap + (Cartesian) electric dipole moment,
   //! \f$ x_O, y_O, z_O \f$, where
   //! \f$ x_O \equiv x - O_x \f$ is relative to
   //! origin \f$ \vec{O} \f$
   emultipole1,
-  /// emultipole1 + (Cartesian) electric quadrupole moment,
+  //! emultipole1 + (Cartesian) electric quadrupole moment,
   //! \f$ x^2, xy, xz, y^2, yz, z^2 \f$
   emultipole2,
-  /// emultipole2 + (Cartesian) electric octupole moment,
+  //! emultipole2 + (Cartesian) electric octupole moment,
   //! \f$ x^3, x^2y, x^2z, xy^2, xyz, xz^2, y^3, y^2z, yz^2, z^3 \f$
   emultipole3,
-  /// (electric) spherical multipole moments,
+  //! (electric) spherical multipole moments,
   //! \f$ O_{l,m} \equiv \mathcal{N}^{\text{sign}(m)}_{l,|m|} \f$ where \f$ \f$ \mathcal{N}^{\pm}_{l,m} \f$
   //! is defined in J.M. Pérez-Jordá and W. Yang, J Chem Phys 104, 8003 (1996), DOI 10.1063/1.468354 .
   //! To obtain the real solid harmonics \f$ C^m_l \f$ and \f$ S^m_l \f$ defined in https://en.wikipedia.org/wiki/Solid_harmonics
@@ -420,13 +422,16 @@ class Engine {
 
   /// creates a default Engine that cannot be used for computing integrals;
   /// to be used as placeholder for copying a usable engine, OR for cleanup of
-  /// thread-local data
+  /// thread-local data. Nontrivial use of a default-initialized Engine will
+  /// cause an exception of type Engine::using_default_initialized
   Engine()
       : oper_(Operator::invalid),
         braket_(BraKet::invalid),
         primdata_(),
         stack_size_(0),
-        lmax_(-1) {
+        lmax_(-1),
+        deriv_order_(0),
+        cartesian_shell_normalization_(CartesianShellNormalization::standard) {
     set_precision(std::numeric_limits<scalar_type>::epsilon());
   }
 
@@ -435,8 +440,8 @@ class Engine {
 
   /// \param oper a value of Operator type
   /// \param max_nprim the maximum number of primitives per contracted Gaussian
-  /// shell
-  /// \param max_l the maximum angular momentum of Gaussian shell
+  /// shell (must be greater than 0)
+  /// \param max_l the maximum angular momentum of Gaussian shell (>=0)
   /// \throw Engine::lmax_exceeded if \c max_l exceeds the angular momentum
   /// limit of the library
   /// \param deriv_order if not 0, will compute geometric derivatives of
@@ -475,8 +480,10 @@ class Engine {
         stack_size_(0),
         lmax_(max_l),
         deriv_order_(deriv_order),
+        cartesian_shell_normalization_(CartesianShellNormalization::standard),
         params_(enforce_params_type(oper, params)) {
     set_precision(precision);
+    assert(max_nprim > 0);
     initialize(max_nprim);
     core_eval_pack_ = make_core_eval_pack(oper);  // must follow initialize() to
                                                   // ensure default braket_ has
@@ -495,9 +502,11 @@ class Engine {
         stack_size_(other.stack_size_),
         lmax_(other.lmax_),
         hard_lmax_(other.hard_lmax_),
+        hard_default_lmax_(other.hard_default_lmax_),
         deriv_order_(other.deriv_order_),
         precision_(other.precision_),
         ln_precision_(other.ln_precision_),
+        cartesian_shell_normalization_(other.cartesian_shell_normalization_),
         core_eval_pack_(std::move(other.core_eval_pack_)),
         params_(std::move(other.params_)),
         core_ints_params_(std::move(other.core_ints_params_)),
@@ -519,6 +528,7 @@ class Engine {
         deriv_order_(other.deriv_order_),
         precision_(other.precision_),
         ln_precision_(other.ln_precision_),
+        cartesian_shell_normalization_(other.cartesian_shell_normalization_),
         core_eval_pack_(other.core_eval_pack_),
         params_(other.params_),
         core_ints_params_(other.core_ints_params_) {
@@ -537,9 +547,11 @@ class Engine {
     stack_size_ = other.stack_size_;
     lmax_ = other.lmax_;
     hard_lmax_ = other.hard_lmax_;
+    hard_default_lmax_ = other.hard_default_lmax_;
     deriv_order_ = other.deriv_order_;
     precision_ = other.precision_;
     ln_precision_ = other.ln_precision_;
+    cartesian_shell_normalization_ = other.cartesian_shell_normalization_;
     core_eval_pack_ = std::move(other.core_eval_pack_);
     params_ = std::move(other.params_);
     core_ints_params_ = std::move(other.core_ints_params_);
@@ -563,6 +575,7 @@ class Engine {
     deriv_order_ = other.deriv_order_;
     precision_ = other.precision_;
     ln_precision_ = other.ln_precision_;
+    cartesian_shell_normalization_ = other.cartesian_shell_normalization_;
     core_eval_pack_ = other.core_eval_pack_;
     params_ = other.params_;
     core_ints_params_ = other.core_ints_params_;
@@ -576,31 +589,87 @@ class Engine {
   /// rank of the braket
   int braket_rank() const { return rank(braket_); }
 
-  /// resets operator type
-  void set_oper(Operator new_oper) {
-    if (oper_ != new_oper) {
-      if (rank(new_oper) != operator_rank()) braket_ = BraKet::invalid;
-      oper_ = new_oper;
-      initialize();
-    }
+  /// (re)sets operator type to \c new_oper
+  /// @deprecated as of 2.5.0
+  DEPRECATED void set_oper(Operator new_oper) {
+    set(new_oper);
   }
 
-  /// resets braket type
-  void set_braket(BraKet new_braket) {
+  /// (re)sets operator type to @c new_oper
+  /// @param[in] new_oper Operator whose integrals will be computed with the next call to Engine::compute()
+  /// @note this resets braket and params to their respective defaults for @c new_oper
+  Engine& set(Operator new_oper) {
+    if (oper_ != new_oper) {
+      oper_ = new_oper;
+      braket_ = default_braket(oper_);
+      params_ = default_params(oper_);
+      initialize();
+      core_eval_pack_ = make_core_eval_pack(oper_);  // must follow initialize() to
+                                                     // ensure default braket_ has
+                                                     // been set
+    }
+    return *this;
+  }
+
+  /// (re)sets braket type
+  /// @deprecated as of 2.5.0
+  DEPRECATED void set_braket(BraKet new_braket) {
+    set(new_braket);
+  }
+
+  /// (re)sets braket type to @c new_braket
+  /// @param[in] new_braket integrals BraKet that will be computed with the next call to Engine::compute()
+  Engine& set(BraKet new_braket) {
     if (braket_ != new_braket) {
       braket_ = new_braket;
       initialize();
     }
+    return *this;
   }
 
   /// resets operator parameters; this may be useful e.g. if need to compute
   /// Coulomb potential
   /// integrals over batches of charges for the sake of parallelism.
   template <typename Params>
-  void set_params(const Params& params) {
+  Engine& set_params(const Params& params) {
     params_ = params;
     init_core_ints_params(params_);
     reset_scratch();
+    return *this;
+  }
+
+  /// @return the maximum number of primitives that this engine can handle
+  std::size_t max_nprim() const {
+    assert(spbra_.primpairs.size() == spket_.primpairs.size());
+    return static_cast<std::size_t>(std::sqrt(spbra_.primpairs.size()));
+  }
+
+  /// reset the maximum number of primitives
+  /// @param[in] n the maximum number of primitives
+  /// @note left unchanged if the value returned by Engine::max_nprim is greater than @c n
+  Engine& set_max_nprim(std::size_t n) {
+    if (n*n > spbra_.primpairs.size()) {
+      spbra_.resize(n);
+      spket_.resize(n);
+      initialize(n);
+    }
+    return *this;
+  }
+
+  /// @return the maximum angular momentum that this engine can handle
+  std::size_t max_l() const {
+    return lmax_;
+  }
+
+  /// reset the maximum angular momentum
+  /// @param[in] L the maximum angular momentum
+  /// @note left unchanged if the value returned by Engine::max_l is greater than @c L
+  Engine& set_max_l(std::size_t L) {
+    if (L >= lmax_) {
+      lmax_ = L;
+      initialize();
+    }
+    return *this;
   }
 
   /// returns a vector that will hold pointers to shell sets computed with
@@ -670,7 +739,8 @@ class Engine {
                                                              const ShellPair* spket);
 
   /** this specifies target precision for computing the integrals.
-   *  target precision \f$ \epsilon \f$ is used in 3 ways:
+   * @param[in] prec the target precision
+   * @note target precision \f$ \epsilon \f$ is used in 3 ways:
    *  (1) to screen out primitive pairs in ShellPair object for which
    *      \f$ {\rm scr}_{12} = \max|c_1| \max|c_2| \exp(-\rho_{12}
    * |AB|^2)/\gamma_{12} < \epsilon \f$ ;
@@ -680,7 +750,7 @@ class Engine {
    * the prefactor of \f$ F_m(\rho, T) \f$ is smaller
    *      than \f$ \epsilon \f$ .
    */
-  void set_precision(scalar_type prec) {
+  Engine& set_precision(scalar_type prec) {
     if (prec <= 0.) {
       precision_ = 0.;
       ln_precision_ = std::numeric_limits<scalar_type>::lowest();
@@ -688,11 +758,26 @@ class Engine {
       precision_ = prec;
       ln_precision_ = std::log(precision_);
     }
+    return *this;
   }
   /// @return the target precision for computing the integrals
   /// @sa set_precision(scalar_type)
   scalar_type precision() const { return precision_; }
 
+  /// @return the Cartesian Gaussian normalization convention
+  CartesianShellNormalization cartesian_shell_normalization() const {
+    return cartesian_shell_normalization_;
+  }
+
+  /// @param[in] norm the normalization convention for Cartesian Gaussians
+  /// @note the default convention is CartesianShellNormalization_Standard
+  /// @return reference to @c this for daisy-chaining
+  Engine& set(CartesianShellNormalization norm) {
+    cartesian_shell_normalization_ = norm;
+    return *this;
+  }
+
+  /// prints the contents of timers to standard output
   void print_timers() {
 #ifdef LIBINT2_ENGINE_TIMERS
     std::cout << "timers: prereq = " << timers.read(0);
@@ -720,11 +805,11 @@ class Engine {
   }
 
   /// Exception class to be used when the angular momentum limit is exceeded.
-  class lmax_exceeded : virtual public std::runtime_error {
+  class lmax_exceeded : virtual public std::logic_error {
    public:
     lmax_exceeded(const char* task_name, size_t lmax_limit,
                   size_t lmax_requested)
-        : std::runtime_error(
+        : std::logic_error(
               "Engine::lmax_exceeded -- angular momentum limit exceeded"),
           lmax_limit_(lmax_limit),
           lmax_requested_(lmax_requested) {
@@ -745,6 +830,16 @@ class Engine {
     size_t lmax_requested_;
   };
 
+  /// Exception class to be used when using default-initialized Engine
+  class using_default_initialized : virtual public std::logic_error {
+   public:
+    using_default_initialized()
+        : std::logic_error(
+        "Engine::using_default_initialized -- attempt to use a default-initialized Engine") {
+    }
+    ~using_default_initialized() noexcept {}
+  };
+
  private:
   Operator oper_;
   BraKet braket_;
@@ -753,10 +848,16 @@ class Engine {
   size_t stack_size_;  // amount allocated by libint2_init_xxx in
                        // primdata_[0].stack
   int lmax_;
-  int hard_lmax_;  // max L supported by library for this operator type + 1
+  int hard_lmax_;  // max L supported by library for this operator type (i.e. LIBINT2_MAX_AM_<task><deriv_order>) + 1
+  int hard_default_lmax_;  // max L supported by library for default operator type
+                           // (i.e. LIBINT2_MAX_AM_default<deriv_order>) + 1
+                           // this is only set and used if LIBINT2_CENTER_DEPENDENT_MAX_AM_<task><deriv_order> == 1
   int deriv_order_;
   scalar_type precision_;
   scalar_type ln_precision_;
+
+  // specifies the normalization convention for Cartesian Gaussians
+  CartesianShellNormalization cartesian_shell_normalization_;
 
   any core_eval_pack_;
 

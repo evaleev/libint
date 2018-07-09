@@ -26,7 +26,6 @@
 # error "libint2/shell.h requires C++11 support"
 #endif
 
-
 #include <iostream>
 #include <array>
 #include <vector>
@@ -34,6 +33,8 @@
 #include <cmath>
 
 #include <libint2.h>
+
+#include <libint2/util/small_vector.h>
 
 namespace libint2 {
 
@@ -51,8 +52,8 @@ namespace libint2 {
                                                            6190283353629375LL}};
     /// bc(i,j) = binomial coefficient, i! / (j! (i-j)!)
     template <typename Int> int64_t bc(Int i, Int j) {
-      assert(i < fac.size());
-      assert(j < fac.size());
+      assert(i < Int(fac.size()));
+      assert(j < Int(fac.size()));
       assert(i >= j);
       return fac[i] / (fac[j] * fac[i-j]);
     }
@@ -84,7 +85,8 @@ namespace libint2 {
       struct Contraction {
           int l;
           bool pure;
-          std::vector<real_t> coeff;
+          svector<real_t> coeff;
+
           bool operator==(const Contraction& other) const {
             return &other == this || (l == other.l && pure == other.pure && coeff == other.coeff);
           }
@@ -99,15 +101,15 @@ namespace libint2 {
           }
       };
 
-      std::vector<real_t> alpha; //!< exponents
-      std::vector<Contraction> contr;      //!< contractions
+      svector<real_t> alpha; //!< exponents
+      svector<Contraction> contr;      //!< contractions
       std::array<real_t, 3> O;   //!< origin
-      std::vector<real_t> max_ln_coeff; //!< maximum ln of (absolute) contraction coefficient for each primitive
+      svector<real_t> max_ln_coeff; //!< maximum ln of (absolute) contraction coefficient for each primitive
 
       Shell() = default;
       Shell(const Shell&) = default;
       // intel does not support "move ctor = default"
-      Shell(Shell&& other) :
+      Shell(Shell&& other) noexcept :
         alpha(std::move(other.alpha)),
         contr(std::move(other.contr)),
         O(std::move(other.O)),
@@ -115,15 +117,15 @@ namespace libint2 {
       }
       Shell& operator=(const Shell&) = default;
       // intel does not support "move asgnmt = default"
-      Shell& operator=(Shell&& other) {
+      Shell& operator=(Shell&& other) noexcept {
         alpha = std::move(other.alpha);
         contr = std::move(other.contr);
         O = std::move(other.O);
         max_ln_coeff = std::move(other.max_ln_coeff);
         return *this;
       }
-      Shell(std::vector<real_t> _alpha,
-            std::vector<Contraction> _contr,
+      Shell(svector<real_t> _alpha,
+            svector<Contraction> _contr,
             std::array<real_t, 3> _O) :
               alpha(std::move(_alpha)),
               contr(std::move(_contr)),
@@ -240,7 +242,7 @@ namespace libint2 {
       struct make_unit{};
       Shell(make_unit) :
         alpha{0.0},                           // exponent = 0
-        contr{Contraction{0, false, {1.0}}},  // contraction coefficient = 1
+        contr{{0, false, {1.0}}},  // contraction coefficient = 1
         O{{0.0, 0.0, 0.0}},                   // placed at origin
         max_ln_coeff{0.0} {
       }
@@ -254,7 +256,7 @@ namespace libint2 {
         const auto np = nprim();
         for(auto& c: contr) {
           assert(c.l <= 15); // due to df_Kminus1[] a 64-bit integer type; kinda ridiculous restriction anyway
-          for(auto p=0; p!=np; ++p) {
+          for(auto p=0ul; p!=np; ++p) {
             assert(alpha[p] >= 0.0);
             if (alpha[p] != 0.) {
               const auto two_alpha = 2 * alpha[p];
@@ -269,15 +271,15 @@ namespace libint2 {
           if (do_enforce_unit_normalization()) {
             // compute the self-overlap of the , scale coefficients by its inverse square root
             double norm{0};
-            for(auto p=0; p!=np; ++p) {
-              for(auto q=0; q<=p; ++q) {
+            for(auto p=0ul; p!=np; ++p) {
+              for(decltype(p) q=0ul; q<=p; ++q) {
                 auto gamma = alpha[p] + alpha[q];
                 norm += (p==q ? 1.0 : 2.0) * df_Kminus1[2*c.l] * sqrt_Pi_cubed * c.coeff[p] * c.coeff[q] /
                         (pow(2,c.l) * pow(gamma,c.l+1) * sqrt(gamma));
               }
             }
             auto normalization_factor = 1.0 / sqrt(norm);
-            for(auto p=0; p!=np; ++p) {
+            for(auto p=0ul; p!=np; ++p) {
               c.coeff[p] *= normalization_factor;
             }
           }
@@ -286,7 +288,7 @@ namespace libint2 {
 
         // update max log coefficients
         max_ln_coeff.resize(np);
-        for(auto p=0; p!=np; ++p) {
+        for(auto p=0ul; p!=np; ++p) {
           real_t max_ln_c = - std::numeric_limits<real_t>::max();
           for(auto& c: contr) {
             max_ln_c = std::max(max_ln_c, std::log(std::abs(c.coeff[p])));
@@ -305,7 +307,7 @@ namespace libint2 {
     }
     os << std::endl;
 
-    for(auto i=0; i<sh.alpha.size(); ++i) {
+    for(auto i=0ul; i<sh.alpha.size(); ++i) {
       os << "  " << sh.alpha[i];
       for(const auto& c: sh.contr) {
         os << " " << c.coeff.at(i);
@@ -340,6 +342,12 @@ namespace libint2 {
       }
       ShellPair(const Shell& s1, const Shell& s2, real_t ln_prec) {
         init(s1, s2, ln_prec);
+      }
+
+      void resize(std::size_t max_nprim) {
+        const auto max_nprim2 = max_nprim * max_nprim;
+        if (max_nprim * max_nprim > primpairs.size())
+          primpairs.resize(max_nprim2);
       }
 
       /// initializes "expensive" primitive pair data; a pair of primitives with exponents \f$ \{\alpha_a,\alpha_b\} \f$

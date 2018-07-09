@@ -27,6 +27,12 @@
 
 namespace libint2 {
 
+  /// Normalization convention for Cartesian Gaussian shells
+  enum class CartesianShellNormalization {
+    standard,  // same normalization factor for every function in shell (default)
+    uniform    // different normalization factors so that each function has same norm
+  };
+
   namespace detail {
     inline int notxyz(int a, int b) {
       assert(a != b);
@@ -428,7 +434,7 @@ namespace libint2 {
     }
   };
 
-  template <CGShellOrdering Ord, unsigned int lmax> struct CGShellOrderingData {
+  template <CGShellOrdering Ord, unsigned int lmax = LIBINT_CARTGAUSS_MAX_AM> struct CGShellOrderingData {
 
     struct Triple {
       Triple() : i(0), j(0), k(0) {}
@@ -441,8 +447,8 @@ namespace libint2 {
       CGShellOrderingGenerator<Ord,lmax>::compute(cartindex);
       // then use it to compute cartindex_to_ijk
       for(unsigned int l=0; l<=lmax; ++l) {
-        for(int i=0; i<=l; ++i) {
-          for(int j=0; j<=l-i; ++j) {
+        for(unsigned int i=0; i<=l; ++i) {
+          for(unsigned int j=0; j<=l-i; ++j) {
             const int c = cartindex[l][i][j];
             cartindex_to_ijk[l][c] = Triple(i,j,l-i-j);
           }
@@ -479,8 +485,6 @@ namespace libint2 {
 
   template <typename OrderingData> OrderingData CGShellInfo<OrderingData>::data_;
 
-
-
-};
+};  // namespace libint2
 
 #endif // header guard

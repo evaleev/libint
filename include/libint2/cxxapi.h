@@ -26,16 +26,14 @@
 # error "Libint2 C++ API requires C++11 support"
 #endif
 
+#include <atomic>
+#include <cassert>
+
 #include <libint2.h>  // NB this loads libint2/config.h
 
 #ifdef LIBINT_USER_DEFINED_REAL
 # error "C++11 API does not support with user-defined real types yet; omit --with-real-type when configuring"
 #endif
-
-#include <libint2/chemistry/elements.h>
-#include <libint2/atom.h>
-#include <libint2/basis.h>
-#include <libint2/solidharmonics.h>
 
 #include <libint2/util/deprecated.h>
 #include <libint2/util/singleton.h>
@@ -51,29 +49,48 @@ namespace libint2 {
           libint2_static_cleanup();
         }
     };
+
+    static std::atomic<bool>& verbose_accessor() {
+      static std::atomic<bool> value{true};
+      return value;
+    }
   } // namespace libint2::detail
 
   inline bool initialized() {
     using namespace detail;
     return managed_singleton<__initializer>::instance_exists();
   }
-  inline void initialize() {
-    using namespace detail;
-    __initializer* x = managed_singleton<__initializer>::instance();
-    (void)x;  // to suppress unused variable warning (not guaranteed to work) TODO revise when upgrade to C++17
-    assert(x != nullptr);
+  /// initializes the libint library.
+  /// @param[in] verbose boolean flag that controls the verbosity of messages produced by libint in std::cout . If false, no messages
+  //             will be produced. The default is true.
+  inline void initialize(bool verbose = true) {
+    if (!initialized()) {
+      using namespace detail;
+      __initializer *x = managed_singleton<__initializer>::instance();
+      (void) x;  // to suppress unused variable warning (not guaranteed to work) TODO revise when upgrade to C++17
+      assert(x != nullptr);
+      verbose_accessor() = verbose;
+    }
   }
+  /// finalizes the libint library.
   inline void finalize() {
-    using namespace detail;
-    managed_singleton<__initializer>::delete_instance();
+    if (initialized()) {
+      using namespace detail;
+      managed_singleton<__initializer>::delete_instance();
+      verbose_accessor() = true;
+    }
   }
-  DEPRECATED inline void init() {
-    initialize();
-  }
-  DEPRECATED inline void cleanup() {
-    finalize();
+  /// Accessor for the verbose flag
+  /// @return true if the library is permitted to generate diagnostic messages to std::cout
+  inline bool verbose() {
+    return detail::verbose_accessor();
   }
 }
+
+#include <libint2/chemistry/elements.h>
+#include <libint2/atom.h>
+#include <libint2/basis.h>
+#include <libint2/solidharmonics.h>
 
 #include <libint2/engine.h> // this is the end-user stuff, needs to check if library is initialized
 

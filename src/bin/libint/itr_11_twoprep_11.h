@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <assert.h>
+#include <cassert>
 #include <dgvertex.h>
 #include <rr.h>
 #include <twoprep_11_11.h>

@@ -74,7 +74,7 @@ namespace libint2 {
   /// libint2::constants::codata_2010::bohr_to_angstrom
   /// constant.
   /// \return a std::vector of Atom objects
-  /// \throw std::runtime_error if cannot parse the contents of \c is
+  /// \throw std::logic_error if cannot parse the contents of \c is
   inline std::vector<Atom> read_dotxyz(
       std::istream& is,
       const double bohr_to_angstrom = constants::codata_2010::bohr_to_angstrom) {
@@ -92,7 +92,7 @@ namespace libint2 {
 
     // rest of lines are atoms
     std::vector<Atom> atoms(natom);
-    for (auto i = 0; i < natom; i++) {
+    for (size_t i = 0; i < natom; i++) {
       // read line
       std::string line;
       std::getline(is, line);
@@ -114,7 +114,7 @@ namespace libint2 {
       if (Z == -1) {
         std::ostringstream oss;
         oss << "read_dotxyz: element symbol \"" << element_symbol << "\" is not recognized" << std::endl;
-        throw std::runtime_error(oss.str().c_str());
+        throw std::logic_error(oss.str().c_str());
       }
 
       atoms[i].atomic_number = Z;

@@ -837,12 +837,12 @@ namespace libint2 { namespace simd {
 #elif defined(__FMA4__)
   inline VectorAVXDouble fma_plus(VectorAVXDouble a, VectorAVXDouble b, VectorAVXDouble c) {
     VectorAVXDouble d;
-    d.d = _mm256_facc_pd(a.d, b.d, c.d);
+    d.d = _mm256_macc_pd(a.d, b.d, c.d);
     return d;
   }
   inline VectorAVXDouble fma_minus(VectorAVXDouble a, VectorAVXDouble b, VectorAVXDouble c) {
     VectorAVXDouble d;
-    d.d = _mm256_fsub_pd(a.d, b.d, c.d);
+    d.d = _mm256_msub_pd(a.d, b.d, c.d);
     return d;
   }
 #endif

@@ -778,7 +778,7 @@ std::vector<libint2::Atom> read_geometry(const std::string& filename) {
     char errmsg[256] = "Could not open file ";
     strncpy(errmsg + 20, filename.c_str(), 235);
     errmsg[255] = '\0';
-    throw std::runtime_error(errmsg);
+    throw std::ios_base::failure(errmsg);
   }
 
   // to prepare for MPI parallelization, we will read the entire file into a
@@ -1377,7 +1377,7 @@ Matrix compute_2body_2index_ints(const BasisSet& bs) {
   std::vector<Engine> engines(nthreads);
   engines[0] =
       Engine(libint2::Operator::coulomb, bs.max_nprim(), bs.max_l(), 0);
-  engines[0].set_braket(BraKet::xs_xs);
+  engines[0].set(BraKet::xs_xs);
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -2043,7 +2043,7 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     engines[0] = libint2::Engine(libint2::Operator::coulomb,
                                  std::max(obs.max_nprim(), dfbs.max_nprim()),
                                  std::max(obs.max_l(), dfbs.max_l()), 0);
-    engines[0].set_braket(BraKet::xs_xx);
+    engines[0].set(BraKet::xs_xx);
     for (size_t i = 1; i != nthreads; ++i) {
       engines[i] = engines[0];
     }
@@ -2228,7 +2228,7 @@ void api_basic_compile_test(const BasisSet& obs) {
   {  // test 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l());
     Engine eri2_engine = eri4_engine;
-    eri2_engine.set_braket(BraKet::xs_xs);
+    eri2_engine.set(BraKet::xs_xs);
     auto shell2bf = obs.shell2bf();
     const auto& results4 = eri4_engine.results();
     const auto& results2 = eri2_engine.results();
@@ -2257,7 +2257,7 @@ void api_basic_compile_test(const BasisSet& obs) {
   {  // test 3-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l());
     Engine eri3_engine = eri4_engine;
-    eri3_engine.set_braket(BraKet::xs_xx);
+    eri3_engine.set(BraKet::xs_xx);
     auto shell2bf = obs.shell2bf();
     const auto& results4 = eri4_engine.results();
     const auto& results3 = eri3_engine.results();
@@ -2294,7 +2294,7 @@ void api_basic_compile_test(const BasisSet& obs) {
   {  // test deriv 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 1);
     Engine eri2_engine = eri4_engine;
-    eri2_engine.set_braket(BraKet::xs_xs);
+    eri2_engine.set(BraKet::xs_xs);
     auto shell2bf = obs.shell2bf();
     const auto& results4 = eri4_engine.results();
     const auto& results2 = eri2_engine.results();
@@ -2330,7 +2330,7 @@ void api_basic_compile_test(const BasisSet& obs) {
   {  // test 2nd deriv 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 2);
     Engine eri2_engine = eri4_engine;
-    eri2_engine.set_braket(BraKet::xs_xs);
+    eri2_engine.set(BraKet::xs_xs);
     auto shell2bf = obs.shell2bf();
     const auto& results4 = eri4_engine.results();
     const auto& results2 = eri2_engine.results();
