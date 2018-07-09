@@ -5,6 +5,7 @@ set -e
 if [ "$CXX" = "g++" ]; then
     export CC=/usr/bin/gcc-$GCC_VERSION
     export CXX=/usr/bin/g++-$GCC_VERSION
+    export FC=/usr/bin/gfortran-$GCC_VERSION
     export OPENMPFLAGS=-fopenmp
     export EXTRAFLAGS=
 else
@@ -12,6 +13,7 @@ else
     export OPENMPFLAGS=
     export CC=/usr/bin/clang-5.0
     export CXX=/usr/bin/clang++-5.0
+    export FC=/usr/bin/gfortran-$GCC_VERSION
     # Boost 1.55 is too old, override Boost.PP detection of variadic macro support
     export EXTRAFLAGS="-DBOOST_PP_VARIADICS=1"
 fi
@@ -32,6 +34,9 @@ cd export_build
 tar -xvzf libint-*.tgz
 rm -f libint-*.tgz
 cd libint-*
-./configure CPPFLAGS='-I/usr/include/eigen3'
+./configure CPPFLAGS='-I/usr/include/eigen3' --enable-fortran
 make -j2
 make check
+# build F03 interface
+make fortran
+fortran/fortran_example
