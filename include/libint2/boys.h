@@ -414,7 +414,15 @@ namespace libint2 {
 
         // get memory
         void* result;
-        posix_memalign(&result, ORDERp1*sizeof(Real), (mmax + 1) * N * ORDERp1 * sizeof(Real));
+        int status = posix_memalign(&result, ORDERp1*sizeof(Real), (mmax + 1) * N * ORDERp1 * sizeof(Real));
+        if (status != 0) {
+          if (status == EINVAL)
+            throw std::logic_error(
+              "FmEval_Chebyshev7::init() : posix_memalign failed, alignment must be a power of 2 at least as large as sizeof(void *)");
+          if (status == ENOMEM)
+            throw std::bad_alloc();
+          abort();  // should be unreachable
+        }
         c = static_cast<Real*>(result);
 
         // copy contents of static table into c
