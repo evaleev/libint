@@ -9,7 +9,7 @@ define([AC_CACHE_SAVE], )dnl for debugging configure.in
 AC_PREREQ(2.57)
 AC_INIT([Libint2],[libint_mmm_version],[libint@valeyev.net],[libint2])
 AC_CONFIG_SRCDIR(include/libint2.h)
-AC_CONFIG_HEADER(include/libint2/config.h)
+AC_CONFIG_HEADERS(include/libint2/config.h)
 AC_CONFIG_AUX_DIR(bin)
 AC_CONFIG_MACRO_DIR([lib/autoconf])
 
@@ -229,6 +229,7 @@ if test "$enable_fortran" = yes; then
         AC_MSG_WARN([No Fortran compiler was given! Will try to find one, but not guaranteed to be the best choice...])
     fi
     AC_PROG_FC
+    AC_FC_LIBRARY_LDFLAGS
     if test "X$FC" = "X"; then
         enable_fortran=no
         AC_MSG_WARN([No Fortran compiler was found! Fortran wrappers are not built.])

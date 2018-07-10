@@ -9,7 +9,7 @@ define([AC_CACHE_SAVE], )dnl for debugging configure.in
 AC_PREREQ([2.68])
 AC_INIT([Libint2],[libint_mmm_version],[libint@valeyev.net],[libint2])
 AC_CONFIG_SRCDIR(src/bin/libint/rr.h)
-AC_CONFIG_HEADER(include/libint2/config.h)
+AC_CONFIG_HEADERS(include/libint2/config.h)
 AC_CONFIG_AUX_DIR(bin)
 AC_CONFIG_MACRO_DIR([lib/autoconf])
 
