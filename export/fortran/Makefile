@@ -19,7 +19,7 @@ fortran_incldefs.h: $(TOPDIR)/include/libint2_types.h
 	awk -F'[][]' '/targets\[/ { print "#define LIBINT2_MAX_NTARGETS " $$2 }' $< >>$@
 
 fortran_example: fortran_example.o libint_f.o
-	$(LTLINK) $(FC) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
+	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) $(FCLIBS) -o $@ $^
 
 make_test::
 
