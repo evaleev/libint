@@ -10,13 +10,15 @@ COMPUTE_LIB = -L../lib -lint2
 
 default:: fortran_example check_test libint_f.o
 
-libint_f.o: fortran_incldefs.h
+libint_f.o: libint2_types_f.h fortran_incldefs.h
+
+libint2_types_f.h: $(TOPDIR)/include/libint2_types.h
+	$(CXXCPP) $(CPPFLAGS) $< | $(PYTHON) c_to_f.py Libint_t > $@
 
 fortran_example.o: libint_f.o
 
 fortran_incldefs.h: $(TOPDIR)/include/libint2_types.h
-	grep '^#' $< | grep -v '#include' > $@; \
-	awk -F'[][]' '/targets\[/ { print "#define LIBINT2_MAX_NTARGETS " $$2 }' $< >>$@
+	grep '^#' $< | grep -v '#include' > $@
 
 fortran_example: fortran_example.o libint_f.o
 	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) $(FCLIBS) -o $@ $^
@@ -48,6 +50,6 @@ test: test.o test-eri.o libint_f.o
 	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) $(FCLIBS) -o $@ $^
 
 clean::
-	-rm -f *.o *.mod fortran_example test fortran_incldefs.h
+	-rm -f *.o *.mod fortran_example libint2_types_f.h test fortran_incldefs.h
 
 distclean:: clean
