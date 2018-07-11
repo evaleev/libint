@@ -104,8 +104,7 @@ namespace libint2 {
 
       // .xyz files report element labels, hence convert to atomic numbers
       int Z = -1;
-      using libint2::chemistry::element_info;
-      for(const auto& e: element_info) {
+      for(const auto& e: libint2::chemistry::get_element_info()) {
         if (strcaseequal(e.symbol, element_symbol)) {
           Z = e.Z;
           break;

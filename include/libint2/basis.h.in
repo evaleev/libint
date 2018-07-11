@@ -411,8 +411,7 @@ namespace libint2 {
               iss >> elemsymbol >> rest;
 
               bool found = false;
-              using libint2::chemistry::element_info;
-              for (const auto &e: element_info) {
+              for (const auto &e: libint2::chemistry::get_element_info()) {
                 if (strcaseequal(e.symbol, elemsymbol)) {
                   Z = e.Z;
                   found = true;
