@@ -22,6 +22,7 @@
 #define _libint2_src_bin_libint_entity_h_
 
 #include <iomanip>
+#include <limits>
 #include <string>
 #include <sstream>
 #include <dgvertex.h>
