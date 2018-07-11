@@ -3,7 +3,10 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2018-xx-yy: 2.5.0
+- 2018-xx-yy: 2.5.0-beta.2
+  -
+
+- 2018-07-11: 2.5.0-beta.1
   - resolved issue 90
   - resolved issue 91: fixed formatting errors in def2-sv(p)-c, def2-tzvp-c, and def2-tzvpp-c basis set definitions
   - resolved issue 95
