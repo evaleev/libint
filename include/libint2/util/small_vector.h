@@ -23,7 +23,9 @@
 
 #if __has_include(<boost/container/small_vector.hpp>) && !defined(LIBINT2_DISABLE_BOOST_CONTAINER_SMALL_VECTOR)
 #  define LIBINT2_HAS_BOOST_CONTAINER_SMALL_VECTOR_H 1
-#  define LIBINT2_SVEC_STATIC_INDEX_RANK 6
+#  if !defined(LIBINT2_SVECTOR_OPTIMIZED_RANK)  // user can override by defining LIBINT2_SVECTOR_OPTIMIZED_RANK
+#    define LIBINT2_SVECTOR_OPTIMIZED_RANK 6
+#  endif
 #  include <boost/container/small_vector.hpp>
 #else
 #  include <vector>
@@ -32,7 +34,8 @@
 namespace libint2 {
 
 #if defined(LIBINT2_HAS_BOOST_CONTAINER_SMALL_VECTOR_H)
-template <typename T> using svector = boost::container::small_vector<T, LIBINT2_SVEC_STATIC_INDEX_RANK>;
+#define LIBINT2_USES_BOOST_CONTAINER_SMALL_VECTOR_AS_SVECTOR 1
+template <typename T> using svector = boost::container::small_vector<T, LIBINT2_SVECTOR_OPTIMIZED_RANK>;
 #else
 template <typename T> using svector = std::vector<T>;
 #endif
