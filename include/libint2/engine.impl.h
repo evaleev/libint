@@ -1671,12 +1671,32 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             ket2.contr[0].l;
         break;
 
+      case BraKet::xx_xs: assert(false && "this braket is not supported");
       case BraKet::xs_xx:
-      case BraKet::xx_xs:
-        assert(LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri == 1);
+        /// lmax might be center dependent
+        int ket_lmax = hard_lmax_;
+        switch (deriv_order_) {
+          case 0:
+#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri
+            ket_lmax = hard_default_lmax_;
+#endif
+          break;
+          case 1:
+#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri1
+            ket_lmax = hard_default_lmax_;
+#endif
+            break;
+          case 2:
+#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri2
+            ket_lmax = hard_default_lmax_;
+#endif
+            break;
+          default:
+            assert(false && "deriv_order>2 not yet supported");
+        }
         buildfnidx =
-            (bra1.contr[0].l * hard_default_lmax_ + ket1.contr[0].l) * hard_default_lmax_ +
-            ket2.contr[0].l;
+            (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
+                ket2.contr[0].l;
 #ifdef ERI3_PURE_SH
         if (bra1.contr[0].l > 1)
           assert(bra1.contr[0].pure &&
