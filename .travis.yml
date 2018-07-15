@@ -5,13 +5,14 @@ compiler:
   - clang
   - gcc
 env:
+  matrix:
+    - GCC_VERSION=5
+    - GCC_VERSION=6
+    - GCC_VERSION=7
+    - GCC_VERSION=8
   global:
     - BUILD_PREFIX=/home/travis/_build
     - INSTALL_PREFIX=/home/travis/_install
-  - GCC_VERSION=5
-  - GCC_VERSION=6
-  - GCC_VERSION=7
-  - GCC_VERSION=8
 matrix:
   exclude:
     - compiler: clang
