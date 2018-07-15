@@ -1671,8 +1671,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             ket2.contr[0].l;
         break;
 
-      case BraKet::xx_xs: assert(false && "this braket is not supported");
-      case BraKet::xs_xx:
+      case BraKet::xx_xs: assert(false && "this braket is not supported"); break;
+      case BraKet::xs_xx: {
         /// lmax might be center dependent
         int ket_lmax = hard_lmax_;
         switch (deriv_order_) {
@@ -1680,7 +1680,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri
             ket_lmax = hard_default_lmax_;
 #endif
-          break;
+            break;
           case 1:
 #ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri1
             ket_lmax = hard_default_lmax_;
@@ -1691,8 +1691,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             ket_lmax = hard_default_lmax_;
 #endif
             break;
-          default:
-            assert(false && "deriv_order>2 not yet supported");
+          default:assert(false && "deriv_order>2 not yet supported");
         }
         buildfnidx =
             (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
@@ -1703,7 +1702,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                  "library assumes a solid harmonics shell in bra of a 3-center "
                  "2-body int, but a cartesian shell given");
 #endif
-        break;
+      } break;
 
       case BraKet::xs_xs:
         buildfnidx = bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l;
