@@ -157,14 +157,14 @@ class Export {
     os << "[MO]" << std::endl;
     for (int imo = 0; imo < coefs_.cols(); ++imo) {
       os << std::fixed << std::setprecision(10);
-      os << std::setw(8) << "Sym=" << (labels_.empty() ? "" : labels_.at(imo))
+      os << std::setw(8) << "Sym= " << (labels_.empty() ? "" : labels_.at(imo))
          << std::endl
-         << std::setw(8) << "Ene=" << std::setw(16)
+         << std::setw(8) << "Ene= " << std::setw(16)
          << (energies_.rows() == 0 ? 0.0 : energies_(imo)) << std::endl
-         << std::setw(8) << "Spin="
+         << std::setw(8) << "Spin= "
          << (spins_.empty() ? "Alpha" : (spins_.at(imo) ? "Alpha" : "Beta"))
          << std::endl
-         << std::setw(8) << "Occup=" << occupancies_(imo) << std::endl;
+         << std::setw(8) << "Occup= " << occupancies_(imo) << std::endl;
       os << std::scientific << std::uppercase << std::setprecision(10);
       for (int iao = 0; iao < coefs_.rows(); ++iao) {
         const auto C_ao_mo = coefs_(iao, imo);
