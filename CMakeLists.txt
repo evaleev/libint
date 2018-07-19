@@ -30,7 +30,7 @@ include(autocmake_safeguards)
 include(autocmake_static_library)
 
 ################################# Main Project #################################
-set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/staged)
+set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/stage)
 
 add_subdirectory(src)
 include(GNUInstallDirs)
