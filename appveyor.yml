@@ -1,18 +1,27 @@
-image: Visual Studio 2017
-clone_depth: 5
+clone_depth: 1
+platform: x64
 
-install:
-  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+image:
+  - Visual Studio 2015
+  - Visual Studio 2017
+
+configuration:
+  - Debug
 
 before_build:
   - mkdir build && cd build
-  - cmake -A x64
+  - cmake -A %PLATFORM%
+          -DCMAKE_BUILD_TYPE=%CONFIGURATION%
+          -DENABLE_XHOST=OFF
           -DCMAKE_C_FLAGS="/wd4101 /wd4996"
           -DCMAKE_CXX_FLAGS="/wd4101 /wd4996"
           ..
 
 build_script:
   - cmake --build .
+          --config %CONFIGURATION%
 
 after_build:
-  - cmake --build . --target install
+  - cmake --build .
+          --config %CONFIGURATION%
+          --target install
