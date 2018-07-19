@@ -12,6 +12,7 @@ before_build:
   - mkdir build && cd build
   - cmake -A %PLATFORM%
           -DCMAKE_BUILD_TYPE=%CONFIGURATION%
+          -DMAX_AM_ERI=8
           -DENABLE_XHOST=OFF
           -DCMAKE_C_FLAGS="/wd4101 /wd4996"
           -DCMAKE_CXX_FLAGS="/wd4101 /wd4996"
