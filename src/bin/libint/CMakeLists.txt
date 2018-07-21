@@ -28,6 +28,11 @@ else()
   set_target_properties(libint_compiler PROPERTIES COMPILE_FLAGS "-std=c99")
 endif()
 
+if(MSVC)
+    # Increase stack size from 1 MB to 4 MB
+    set_target_properties(libint_compiler PROPERTIES LINK_FLAGS "/STACK:4194304")
+endif(MSVC)
+
 math(EXPR LIBINT_MAX_AM ${MAX_AM_ERI}+1)
 math(EXPR LIBINT_OPT_AM "${MAX_AM_ERI}/2 + ${MAX_AM_ERI}%2")
 target_compile_definitions(libint_compiler
