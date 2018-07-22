@@ -62,6 +62,8 @@ class Export {
   /// @param spincases the vector of spin cases (size = # LCAOs; true = spin-up
   ///        or m_s=1/2, false = spin-down or m_s=-1/2); the default is
   ///        to assign spin-up to each LCAO
+  /// @param coefficient_epsilon omit LCAO coefficients with absolute magnitude smaller than this value; set to 0 to write
+  ///        all coefficients (some Molden parsers, e.g. Avogadro2, require this)
   /// @throw std::logic_error if the basis does not conforms Molden
   ///        requirements
   /// @note Molden can only handle basis sets that:
@@ -74,14 +76,16 @@ class Export {
          const Energies& energies = Energies(),
          const std::vector<std::string>& symmetry_labels =
              std::vector<std::string>(),
-         const std::vector<bool>& spincases = std::vector<bool>())
+         const std::vector<bool>& spincases = std::vector<bool>(),
+         double coefficient_epsilon = 5e-11)
       : atoms_(atoms),
         basis_(validate(basis)),
         coefs_(coefficients),
         occupancies_(occupancies),
         energies_(energies),
         labels_(symmetry_labels),
-        spins_(spincases) {
+        spins_(spincases),
+        coefficient_epsilon_(coefficient_epsilon) {
     initialize_bf_map();
   }
 
@@ -167,9 +171,9 @@ class Export {
          << std::setw(8) << "Occup= " << occupancies_(imo) << std::endl;
       os << std::scientific << std::uppercase << std::setprecision(10);
       for (int iao = 0; iao < coefs_.rows(); ++iao) {
-        const auto C_ao_mo = coefs_(iao, imo);
-        if (std::abs(C_ao_mo) >= 5e-11) {
-          os << std::setw(6) << (ao_map_[iao] + 1) << " " << std::setw(16)
+        const auto C_ao_mo = coefs_(ao_map_[iao], imo);
+        if (std::abs(C_ao_mo) >= coefficient_epsilon_) {
+          os << std::setw(6) << (iao + 1) << " " << std::setw(16)
              << C_ao_mo << std::endl;
         }
       }  // end loop over AOs
@@ -201,6 +205,7 @@ class Export {
   Eigen::VectorXd energies_;
   std::vector<std::string> labels_;
   std::vector<bool> spins_;
+  double coefficient_epsilon_;
   mutable bool
       dfg_is_cart_[3] = {true, true, true};  // whether {d, f, g} shells are cartesian (true) or
                         // solid harmonics (false)
