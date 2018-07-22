@@ -207,8 +207,9 @@ class Export {
   std::vector<std::vector<long>>
       atom2shell_;  // maps atom -> shell indices in basis_
   std::vector<long>
-      ao_map_;  // maps from AO order of basis_ to the order assumed by Molden
+      ao_map_;  // maps from the AOs ordered according to Molden
                 // (atoms->shells, bf in shells ordered in the Molden order)
+                // to the AOs ordered according to basis_
 
   /// @throw std::logic_error if the basis does not conforms Molden
   ///        requirements
@@ -265,7 +266,7 @@ class Export {
             int m;
             FOR_SOLIDHARM_MOLDEN(l, m)
             const auto ao_in_shell = INT_SOLIDHARMINDEX(l, m);
-            ao_map_[ao + ao_in_shell] = ao_molden;
+            ao_map_[ao_molden] = ao + ao_in_shell;
             ++ao_molden;
             END_FOR_SOLIDHARM_MOLDEN
             ao += 2 * l + 1;
@@ -273,7 +274,7 @@ class Export {
             int i, j, k;
             FOR_CART_MOLDEN(i, j, k, l)
             const auto ao_in_shell = INT_CARTINDEX(l, i, j);
-            ao_map_[ao + ao_in_shell] = ao_molden;
+            ao_map_[ao_molden] = ao + ao_in_shell;
             ++ao_molden;
             END_FOR_CART_MOLDEN
             ao += INT_NCART(l);
