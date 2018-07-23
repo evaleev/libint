@@ -268,19 +268,20 @@ CONTAINS
       INTEGER, PARAMETER :: dp = C_DOUBLE
       REAL(KIND=dp), INTENT(IN) :: alpha1, alpha2, alpha3, alpha4
       REAL(KIND=dp), DIMENSION(3), INTENT(IN) :: A, B, C, D
-      REAL(KIND=dp), DIMENSION(0:), INTENT(IN) :: F
+      REAL(KIND=dp), DIMENSION(am1+am2+am3+am4+1), INTENT(IN) :: F
       INTEGER, INTENT(IN) :: deriv_order
 
       REAL(KIND=dp), PARAMETER :: pi = 4*atan(1.0_dp)
-      INTEGER, PARAMETER, DIMENSION(0:2) :: n_targets = [1, 12, 78]
+      INTEGER, PARAMETER, DIMENSION(3) :: n_targets = [1, 12, 78]
       TYPE(libint_t), DIMENSION(1) :: erieval
-      REAL(KIND=dp), DIMENSION(0:UBOUND(F, 1)) :: ssss
-      INTEGER :: max_am, n1, n2, n3, n4, na, nb, nc, nd, ishell, i_target
+      REAL(KIND=dp), DIMENSION(am1+am2+am3+am4+1) :: ssss
+      INTEGER :: am, max_am, n1, n2, n3, n4, na, nb, nc, nd, ishell, i_target
       REAL(KIND=dp) :: gammap, AB2, CD2, PQ2, rhop, rhoq, gammaq, gammapq, K1, K2, pfac
       REAL(KIND=dp), DIMENSION(3) :: P, Q, QC, QD, PQ, PA, PB, W
       REAL(KIND=dp), DIMENSION(:), POINTER :: eri_shell_set
       PROCEDURE(libint2_build), POINTER :: build_eri
 
+      am = am1+am2+am3+am4
       max_am = MAXVAL([am1, am2, am3, am4])
 
       IF (deriv_order == 0) CALL libint2_init_eri(erieval, max_am, C_NULL_PTR)
@@ -478,67 +479,67 @@ CONTAINS
       ssss = pfac*F
 
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_0
-      IF (UBOUND(ssss, 1) >= 0) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_0(1) = ssss(0)
+      IF (am >= 0) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_0(1) = ssss(1)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_1
-      IF (UBOUND(ssss, 1) >= 1) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_1(1) = ssss(1)
+      IF (am >= 1) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_1(1) = ssss(2)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_2
-      IF (UBOUND(ssss, 1) >= 2) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_2(1) = ssss(2)
+      IF (am >= 2) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_2(1) = ssss(3)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_3
-      IF (UBOUND(ssss, 1) >= 3) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_3(1) = ssss(3)
+      IF (am >= 3) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_3(1) = ssss(4)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_4
-      IF (UBOUND(ssss, 1) >= 4) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_4(1) = ssss(4)
+      IF (am >= 4) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_4(1) = ssss(5)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_5
-      IF (UBOUND(ssss, 1) >= 5) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_5(1) = ssss(5)
+      IF (am >= 5) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_5(1) = ssss(6)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_6
-      IF (UBOUND(ssss, 1) >= 6) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_6(1) = ssss(6)
+      IF (am >= 6) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_6(1) = ssss(7)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_7
-      IF (UBOUND(ssss, 1) >= 7) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_7(1) = ssss(7)
+      IF (am >= 7) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_7(1) = ssss(8)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_8
-      IF (UBOUND(ssss, 1) >= 8) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_8(1) = ssss(8)
+      IF (am >= 8) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_8(1) = ssss(9)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_9
-      IF (UBOUND(ssss, 1) >= 9) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_9(1) = ssss(9)
+      IF (am >= 9) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_9(1) = ssss(10)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_10
-      IF (UBOUND(ssss, 1) >= 10) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_10(1) = ssss(10)
+      IF (am >= 10) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_10(1) = ssss(11)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_11
-      IF (UBOUND(ssss, 1) >= 11) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_11(1) = ssss(11)
+      IF (am >= 11) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_11(1) = ssss(12)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_12
-      IF (UBOUND(ssss, 1) >= 12) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_12(1) = ssss(12)
+      IF (am >= 12) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_12(1) = ssss(13)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_13
-      IF (UBOUND(ssss, 1) >= 13) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_13(1) = ssss(13)
+      IF (am >= 13) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_13(1) = ssss(14)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_14
-      IF (UBOUND(ssss, 1) >= 14) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_14(1) = ssss(14)
+      IF (am >= 14) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_14(1) = ssss(15)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_15
-      IF (UBOUND(ssss, 1) >= 15) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_15(1) = ssss(15)
+      IF (am >= 15) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_15(1) = ssss(16)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_16
-      IF (UBOUND(ssss, 1) >= 16) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_16(1) = ssss(16)
+      IF (am >= 16) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_16(1) = ssss(17)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_17
-      IF (UBOUND(ssss, 1) >= 17) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_17(1) = ssss(17)
+      IF (am >= 17) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_17(1) = ssss(18)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_18
-      IF (UBOUND(ssss, 1) >= 17) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_18(1) = ssss(18)
+      IF (am >= 18) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_18(1) = ssss(19)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_19
-      IF (UBOUND(ssss, 1) >= 17) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_19(1) = ssss(19)
+      IF (am >= 19) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_19(1) = ssss(20)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_20
-      IF (UBOUND(ssss, 1) >= 17) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_20(1) = ssss(20)
+      IF (am >= 20) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_20(1) = ssss(21)
 #endif
 
       IF (deriv_order == 0) CALL C_F_PROCPOINTER(libint2_build_eri(am4, am3, am2, am1), build_eri)
@@ -557,7 +558,7 @@ CONTAINS
       n4 = (am4 + 1)*(am4 + 2)/2
 
       WRITE (*, "(A14,I1)") "deriv order = ", deriv_order
-      DO i_target = 1, n_targets(deriv_order)
+      DO i_target = 1, n_targets(deriv_order+1)
          WRITE (*, "(A5,1X,I2)") "Shell-set #", i_target
          CALL C_F_POINTER(erieval(1)%targets(i_target), eri_shell_set, SHAPE=[n1*n2*n3*n4])
 
