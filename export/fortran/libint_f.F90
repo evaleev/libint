@@ -38,14 +38,14 @@ MODULE libint_f
 #endif
 
 #ifdef INCLUDE_ERI2
-   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri, 0:libint2_max_am_eri, 0:libint2_max_am_eri), &
+   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri, 0:libint2_max_am_eri), &
       BIND(C) :: libint2_build_2eri
 #if INCLUDE_ERI2 >= 1
-   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri1, 0:libint2_max_am_eri1, 0:libint2_max_am_eri1), &
+   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri1, 0:libint2_max_am_eri1), &
       BIND(C) :: libint2_build_2eri1
 #endif
 #if INCLUDE_ERI2 >= 2
-   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri2, 0:libint2_max_am_eri2, 0:libint2_max_am_eri2), &
+   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri2, 0:libint2_max_am_eri2), &
       BIND(C) :: libint2_build_2eri2
 #endif
 #endif
