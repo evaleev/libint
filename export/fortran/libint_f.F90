@@ -260,286 +260,315 @@ MODULE libint_f
 
 #ifdef INCLUDE_ERI
 CONTAINS
-   SUBROUTINE compute_eri(am1, alpha1, A, &
-                          am2, alpha2, B, &
-                          am3, alpha3, C, &
-                          am4, alpha4, D, F, deriv_order) bind(c, name='compute_eri_f')
-      INTEGER, INTENT(IN) :: am1, am2, am3, am4
+   SUBROUTINE compute_eri(contrdepth, deriv_order, am1, c1, alpha1, A, &
+                          am2, c2, alpha2, B, &
+                          am3, c3, alpha3, C, &
+                          am4, c4, alpha4, D, F, erieval) bind(c, name='compute_eri_f')
       INTEGER, PARAMETER :: dp = C_DOUBLE
-      REAL(KIND=dp), INTENT(IN) :: alpha1, alpha2, alpha3, alpha4
+      INTEGER, PARAMETER :: i = C_INT
+      INTEGER(KIND=i), INTENT(IN) :: contrdepth
+      INTEGER(KIND=i), INTENT(IN) :: deriv_order
+      INTEGER(KIND=i), INTENT(IN) :: am1, am2, am3, am4
+      REAL(KIND=dp), DIMENSION(contrdepth), INTENT(IN) :: c1, c2, c3, c4
+      REAL(KIND=dp), DIMENSION(contrdepth), INTENT(IN) :: alpha1, alpha2, alpha3, alpha4
       REAL(KIND=dp), DIMENSION(3), INTENT(IN) :: A, B, C, D
-      REAL(KIND=dp), DIMENSION(am1+am2+am3+am4+1), INTENT(IN) :: F
-      INTEGER, INTENT(IN) :: deriv_order
-
-      REAL(KIND=dp), PARAMETER :: pi = 4*atan(1.0_dp)
-      INTEGER, PARAMETER, DIMENSION(3) :: n_targets = [1, 12, 78]
-      TYPE(libint_t), DIMENSION(1) :: erieval
-      REAL(KIND=dp), DIMENSION(am1+am2+am3+am4+1) :: ssss
-      INTEGER :: am, max_am, n1, n2, n3, n4, na, nb, nc, nd, ishell, i_target
-      REAL(KIND=dp) :: gammap, AB2, CD2, PQ2, rhop, rhoq, gammaq, gammapq, K1, K2, pfac
+      REAL(KIND=dp), DIMENSION(am1 + am2 + am3 + am4 + 1 + deriv_order, contrdepth**4), INTENT(IN) :: F
+      TYPE(libint_t), DIMENSION(contrdepth**4), INTENT(OUT) :: erieval
+      REAL(KIND=dp) :: gammap, AB2, CD2, PQ2, rhop, rhoq, gammaq, gammapq, K1, K2, pfac, C1234, &
+                       alpha1_, alpha2_, alpha3_, alpha4_
       REAL(KIND=dp), DIMENSION(3) :: P, Q, QC, QD, PQ, PA, PB, W
-      REAL(KIND=dp), DIMENSION(:), POINTER :: eri_shell_set
+      INTEGER(KIND=i) :: p1, p2, p3, p4, p1234, am, max_am, am_tot
+      REAL(KIND=dp), PARAMETER :: pi = 4*atan(1.0_dp)
       PROCEDURE(libint2_build), POINTER :: build_eri
 
-      am = am1+am2+am3+am4
+      am = am1 + am2 + am3 + am4
       max_am = MAXVAL([am1, am2, am3, am4])
 
-      IF (deriv_order == 0) CALL libint2_init_eri(erieval, max_am, C_NULL_PTR)
-#if INCLUDE_ERI >= 1
-      IF (deriv_order == 1) CALL libint2_init_eri1(erieval, max_am, C_NULL_PTR)
-#endif
-#if INCLUDE_ERI >= 2
-      IF (deriv_order == 2) CALL libint2_init_eri2(erieval, max_am, C_NULL_PTR)
-#endif
+      p1234 = 0
+      DO p1 = 1, contrdepth
+         DO p2 = 1, contrdepth
+            DO p3 = 1, contrdepth
+               DO p4 = 1, contrdepth
 
-#if LIBINT2_CONTRACTED_INTS
-      erieval(1)%contrdepth = 1
-#endif
+                  p1234 = p1234 + 1
+                  alpha1_ = alpha1(p1)
+                  alpha2_ = alpha2(p2)
+                  alpha3_ = alpha3(p3)
+                  alpha4_ = alpha4(p4)
 
-      gammap = alpha1 + alpha2
-      P = (alpha1*A + alpha2*B)/gammap
-      PA = P - A
-      PB = P - B
-      AB2 = SUM((A - B)*(A - B))
+                  gammap = alpha1_ + alpha2_
+                  P = (alpha1_*A + alpha2_*B)/gammap
+                  PA = P - A
+                  PB = P - B
+                  AB2 = SUM((A - B)*(A - B))
 
 #if LIBINT2_DEFINED_PA_x
-      erieval(1)%PA_x(1) = PA(1)
+                  erieval(p1234)%PA_x(1) = PA(1)
 #endif
 #if LIBINT2_DEFINED_PA_y
-      erieval(1)%PA_y(1) = PA(2)
+                  erieval(p1234)%PA_y(1) = PA(2)
 #endif
 #if LIBINT2_DEFINED_PA_z
-      erieval(1)%PA_z(1) = PA(3)
+                  erieval(p1234)%PA_z(1) = PA(3)
 #endif
 #if LIBINT2_DEFINED_AB_x
-      erieval(1)%AB_x(1) = A(1) - B(1)
+                  erieval(p1234)%AB_x(1) = A(1) - B(1)
 #endif
 #if LIBINT2_DEFINED_AB_y
-      erieval(1)%AB_y(1) = A(2) - B(2)
+                  erieval(p1234)%AB_y(1) = A(2) - B(2)
 #endif
 #if LIBINT2_DEFINED_AB_z
-      erieval(1)%AB_z(1) = A(3) - B(3)
+                  erieval(p1234)%AB_z(1) = A(3) - B(3)
 #endif
 #if LIBINT2_DEFINED_PB_x
-      erieval(1)%PB_x(1) = PB(1)
+                  erieval(p1234)%PB_x(1) = PB(1)
 #endif
 #if LIBINT2_DEFINED_PB_y
-      erieval(1)%PB_y(1) = PB(2)
+                  erieval(p1234)%PB_y(1) = PB(2)
 #endif
 #if LIBINT2_DEFINED_PB_z
-      erieval(1)%PB_z(1) = PB(3)
+                  erieval(p1234)%PB_z(1) = PB(3)
 #endif
 #if LIBINT2_DEFINED_BA_x
-      erieval(1)%BA_x(1) = B(1) - A(1)
+                  erieval(p1234)%BA_x(1) = B(1) - A(1)
 #endif
 #if LIBINT2_DEFINED_BA_y
-      erieval(1)%BA_y(1) = B(2) - A(2)
+                  erieval(p1234)%BA_y(1) = B(2) - A(2)
 #endif
 #if LIBINT2_DEFINED_BA_z
-      erieval(1)%BA_z(1) = B(3) - A(3)
+                  erieval(p1234)%BA_z(1) = B(3) - A(3)
 #endif
 #if LIBINT2_DEFINED_oo2z
-      erieval(1)%oo2z(1) = 0.5_dp/gammap
+                  erieval(p1234)%oo2z(1) = 0.5_dp/gammap
 #endif
-      gammaq = alpha3 + alpha4
-      gammapq = gammap*gammaq/(gammap + gammaq)
-      Q = (alpha3*C + alpha4*D)/gammaq
-      QC = Q - C
-      QD = Q - D
-      CD2 = SUM((C - D)*(C - D))
+                  gammaq = alpha3_ + alpha4_
+                  gammapq = gammap*gammaq/(gammap + gammaq)
+                  Q = (alpha3_*C + alpha4_*D)/gammaq
+                  QC = Q - C
+                  QD = Q - D
+                  CD2 = SUM((C - D)*(C - D))
+
 #if LIBINT2_DEFINED_QC_x
-      erieval(1)%QC_x(1) = QC(1)
+                  erieval(p1234)%QC_x(1) = QC(1)
 #endif
 #if LIBINT2_DEFINED_QC_y
-      erieval(1)%QC_y(1) = QC(2)
+                  erieval(p1234)%QC_y(1) = QC(2)
 #endif
 #if LIBINT2_DEFINED_QC_z
-      erieval(1)%QC_z(1) = QC(3)
+                  erieval(p1234)%QC_z(1) = QC(3)
 #endif
 #if LIBINT2_DEFINED_QD_x
-      erieval(1)%QD_x(1) = QD(1)
+                  erieval(p1234)%QD_x(1) = QD(1)
 #endif
 #if LIBINT2_DEFINED_QD_y
-      erieval(1)%QD_y(1) = QD(2)
+                  erieval(p1234)%QD_y(1) = QD(2)
 #endif
 #if LIBINT2_DEFINED_QD_z
-      erieval(1)%QD_z(1) = QD(3)
+                  erieval(p1234)%QD_z(1) = QD(3)
 #endif
 #if LIBINT2_DEFINED_CD_x
-      erieval(1)%CD_x(1) = C(1) - D(1)
+                  erieval(p1234)%CD_x(1) = C(1) - D(1)
 #endif
 #if LIBINT2_DEFINED_CD_y
-      erieval(1)%CD_y(1) = C(2) - D(2)
+                  erieval(p1234)%CD_y(1) = C(2) - D(2)
 #endif
 #if LIBINT2_DEFINED_CD_z
-      erieval(1)%CD_z(1) = C(3) - D(3)
+                  erieval(p1234)%CD_z(1) = C(3) - D(3)
 #endif
 #if LIBINT2_DEFINED_DC_x
-      erieval(1)%DC_x(1) = D(1) - C(1)
+                  erieval(p1234)%DC_x(1) = D(1) - C(1)
 #endif
 #if LIBINT2_DEFINED_DC_y
-      erieval(1)%DC_y(1) = D(2) - C(2)
+                  erieval(p1234)%DC_y(1) = D(2) - C(2)
 #endif
 #if LIBINT2_DEFINED_DC_z
-      erieval(1)%DC_z(1) = D(3) - C(3)
+                  erieval(p1234)%DC_z(1) = D(3) - C(3)
 #endif
 #if LIBINT2_DEFINED_oo2e
-      erieval(1)%oo2e(1) = 0.5_dp/gammaq
+                  erieval(p1234)%oo2e(1) = 0.5_dp/gammaq
 #endif
-      PQ = P - Q
-      PQ2 = SUM(PQ*PQ)
-      W = (gammap*P + gammaq*Q)/(gammap + gammaq)
+                  PQ = P - Q
+                  PQ2 = SUM(PQ*PQ)
+                  W = (gammap*P + gammaq*Q)/(gammap + gammaq)
+
 #if LIBINT2_DEFINED_WP_x
-      erieval(1)%WP_x(1) = W(1) - P(1)
+                  erieval(p1234)%WP_x(1) = W(1) - P(1)
 #endif
 #if LIBINT2_DEFINED_WP_y
-      erieval(1)%WP_y(1) = W(2) - P(2)
+                  erieval(p1234)%WP_y(1) = W(2) - P(2)
 #endif
 #if LIBINT2_DEFINED_WP_z
-      erieval(1)%WP_z(1) = W(3) - P(3)
+                  erieval(p1234)%WP_z(1) = W(3) - P(3)
 #endif
 #if LIBINT2_DEFINED_WQ_x
-      erieval(1)%WQ_x(1) = W(1) - Q(1)
+                  erieval(p1234)%WQ_x(1) = W(1) - Q(1)
 #endif
 #if LIBINT2_DEFINED_WQ_y
-      erieval(1)%WQ_y(1) = W(2) - Q(2)
+                  erieval(p1234)%WQ_y(1) = W(2) - Q(2)
 #endif
 #if LIBINT2_DEFINED_WQ_z
-      erieval(1)%WQ_z(1) = W(3) - Q(3)
+                  erieval(p1234)%WQ_z(1) = W(3) - Q(3)
 #endif
 #if LIBINT2_DEFINED_oo2ze
-      erieval(1)%oo2ze(1) = 0.5_dp/(gammap + gammaq)
+                  erieval(p1234)%oo2ze(1) = 0.5_dp/(gammap + gammaq)
 #endif
 
 #if LIBINT2_DEFINED_roz
-      erieval(1)%roz(1) = gammapq/gammap
+                  erieval(p1234)%roz(1) = gammapq/gammap
 #endif
 #if LIBINT2_DEFINED_roe
-      erieval(1)%roe(1) = gammapq/gammaq
+                  erieval(p1234)%roe(1) = gammapq/gammaq
 #endif
-      IF (deriv_order > 0) THEN
+                  IF (deriv_order > 0) THEN
 #if LIBINT2_DEFINED_alpha1_rho_over_zeta2
-         erieval(1)%alpha1_rho_over_zeta2(1) = alpha1*gammapq/(gammap*gammap)
+                     erieval(p1234)%alpha1_rho_over_zeta2(1) = alpha1_*gammapq/(gammap*gammap)
 #endif
 #if LIBINT2_DEFINED_alpha2_rho_over_zeta2
-         erieval(1)%alpha2_rho_over_zeta2(1) = alpha2*gammapq/(gammap*gammap)
+                     erieval(p1234)%alpha2_rho_over_zeta2(1) = alpha2_*gammapq/(gammap*gammap)
 #endif
 #if LIBINT2_DEFINED_alpha3_rho_over_eta2
-         erieval(1)%alpha3_rho_over_eta2(1) = alpha3*gammapq/(gammaq*gammaq)
+                     erieval(p1234)%alpha3_rho_over_eta2(1) = alpha3_*gammapq/(gammaq*gammaq)
 #endif
 #if LIBINT2_DEFINED_alpha4_rho_over_eta2
-         erieval(1)%alpha4_rho_over_eta2(1) = alpha4*gammapq/(gammaq*gammaq)
+                     erieval(p1234)%alpha4_rho_over_eta2(1) = alpha4_*gammapq/(gammaq*gammaq)
 #endif
 #if LIBINT2_DEFINED_alpha1_over_zetapluseta
-         erieval(1)%alpha1_over_zetapluseta(1) = alpha1/(gammap + gammaq)
+                     erieval(p1234)%alpha1_over_zetapluseta(1) = alpha1_/(gammap + gammaq)
 #endif
 #if LIBINT2_DEFINED_alpha2_over_zetapluseta
-         erieval(1)%alpha2_over_zetapluseta(1) = alpha2/(gammap + gammaq)
+                     erieval(p1234)%alpha2_over_zetapluseta(1) = alpha2_/(gammap + gammaq)
 #endif
 #if LIBINT2_DEFINED_alpha3_over_zetapluseta
-         erieval(1)%alpha3_over_zetapluseta(1) = alpha3/(gammap + gammaq)
+                     erieval(p1234)%alpha3_over_zetapluseta(1) = alpha3_/(gammap + gammaq)
 #endif
 #if LIBINT2_DEFINED_alpha4_over_zetapluseta
-         erieval(1)%alpha4_over_zetapluseta(1) = alpha4/(gammap + gammaq)
+                     erieval(p1234)%alpha4_over_zetapluseta(1) = alpha4_/(gammap + gammaq)
 #endif
-         rhop = alpha1*alpha2/gammap
+                     rhop = alpha1_*alpha2_/gammap
 #if LIBINT2_DEFINED_rho12_over_alpha1
-         erieval(1)%rho12_over_alpha1(1) = rhop/alpha1
+                     erieval(p1234)%rho12_over_alpha1(1) = rhop/alpha1_
 #endif
 #if LIBINT2_DEFINED_rho12_over_alpha2
-         erieval(1)%rho12_over_alpha2(1) = rhop/alpha2
+                     erieval(p1234)%rho12_over_alpha2(1) = rhop/alpha2_
 #endif
-         rhoq = alpha3*alpha4/gammaq
+                     rhoq = alpha3_*alpha4_/gammaq
 #if LIBINT2_DEFINED_rho34_over_alpha3
-         erieval(1)%rho34_over_alpha3(1) = rhoq/alpha3
-#endif
-#if LIBINT2_DEFINED_rho34_over_alpha3
-            erieval(1)%rho34_over_alpha3(1) = rhoq/alpha3
+                     erieval(p1234)%rho34_over_alpha3(1) = rhoq/alpha3_
 #endif
 #if LIBINT2_DEFINED_rho34_over_alpha4
-            erieval(1)%rho34_over_alpha4(1) = rhoq/alpha4
+                     erieval(p1234)%rho34_over_alpha4(1) = rhoq/alpha4_
 #endif
 #if LIBINT2_DEFINED_two_alpha0_bra
-         erieval(1)%two_alpha0_bra(1) = 2.0_dp*alpha1
+                     erieval(p1234)%two_alpha0_bra(1) = 2.0_dp*alpha1_
 #endif
 #if LIBINT2_DEFINED_two_alpha0_ket
-         erieval(1)%two_alpha0_ket(1) = 2.0_dp*alpha2
+                     erieval(p1234)%two_alpha0_ket(1) = 2.0_dp*alpha2_
 #endif
 #if LIBINT2_DEFINED_two_alpha1_ket
-         erieval(1)%two_alpha1_ket(1) = 2.0_dp*alpha4
+                     erieval(p1234)%two_alpha1_ket(1) = 2.0_dp*alpha4_
 #endif
 #if LIBINT2_DEFINED_two_alpha1_bra
-         erieval(1)%two_alpha1_bra(1) = 2.0_dp*alpha3
+                     erieval(p1234)%two_alpha1_bra(1) = 2.0_dp*alpha3_
 #endif
-      ENDIF
-      K1 = exp(-alpha1*alpha2*AB2/gammap)
-      K2 = exp(-alpha3*alpha4*CD2/gammaq)
-      pfac = 2*pi**2.5_dp*K1*K2/(gammap*gammaq*SQRT(gammap + gammaq))
+                  ENDIF
+                  K1 = exp(-alpha1_*alpha2_*AB2/gammap)
+                  K2 = exp(-alpha3_*alpha4_*CD2/gammaq)
+                  pfac = 2*pi**2.5_dp*K1*K2/(gammap*gammaq*SQRT(gammap + gammaq))
+                  C1234 = c1(p1)*c2(p2)*c3(p3)*c4(p4)
 
-      ssss = pfac*F
+                  am_tot = am + deriv_order
 
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_0
-      IF (am >= 0) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_0(1) = ssss(1)
+                  IF (am_tot >= 0) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_0(1) = &
+                     C1234*pfac*F(1, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_1
-      IF (am >= 1) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_1(1) = ssss(2)
+                  IF (am_tot >= 1) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_1(1) = &
+                     C1234*pfac*F(2, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_2
-      IF (am >= 2) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_2(1) = ssss(3)
+                  IF (am_tot >= 2) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_2(1) = &
+                     C1234*pfac*F(3, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_3
-      IF (am >= 3) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_3(1) = ssss(4)
+                  IF (am_tot >= 3) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_3(1) = &
+                     C1234*pfac*F(4, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_4
-      IF (am >= 4) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_4(1) = ssss(5)
+                  IF (am_tot >= 4) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_4(1) = &
+                     C1234*pfac*F(5, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_5
-      IF (am >= 5) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_5(1) = ssss(6)
+                  IF (am_tot >= 5) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_5(1) = &
+                     C1234*pfac*F(6, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_6
-      IF (am >= 6) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_6(1) = ssss(7)
+                  IF (am_tot >= 6) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_6(1) = &
+                     C1234*pfac*F(7, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_7
-      IF (am >= 7) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_7(1) = ssss(8)
+                  IF (am_tot >= 7) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_7(1) = &
+                     C1234*pfac*F(8, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_8
-      IF (am >= 8) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_8(1) = ssss(9)
+                  IF (am_tot >= 8) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_8(1) = &
+                     C1234*pfac*F(9, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_9
-      IF (am >= 9) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_9(1) = ssss(10)
+                  IF (am_tot >= 9) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_9(1) = &
+                     C1234*pfac*F(10, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_10
-      IF (am >= 10) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_10(1) = ssss(11)
+                  IF (am_tot >= 10) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_10(1) = &
+                     C1234*pfac*F(11, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_11
-      IF (am >= 11) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_11(1) = ssss(12)
+                  IF (am_tot >= 11) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_11(1) = &
+                     C1234*pfac*F(12, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_12
-      IF (am >= 12) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_12(1) = ssss(13)
+                  IF (am_tot >= 12) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_12(1) = &
+                     C1234*pfac*F(13, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_13
-      IF (am >= 13) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_13(1) = ssss(14)
+                  IF (am_tot >= 13) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_13(1) = &
+                     C1234*pfac*F(14, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_14
-      IF (am >= 14) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_14(1) = ssss(15)
+                  IF (am_tot >= 14) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_14(1) = &
+                     C1234*pfac*F(15, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_15
-      IF (am >= 15) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_15(1) = ssss(16)
+                  IF (am_tot >= 15) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_15(1) = &
+                     C1234*pfac*F(16, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_16
-      IF (am >= 16) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_16(1) = ssss(17)
+                  IF (am_tot >= 16) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_16(1) = &
+                     C1234*pfac*F(17, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_17
-      IF (am >= 17) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_17(1) = ssss(18)
+                  IF (am_tot >= 17) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_17(1) = &
+                     C1234*pfac*F(18, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_18
-      IF (am >= 18) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_18(1) = ssss(19)
+                  IF (am_tot >= 18) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_18(1) = &
+                     C1234*pfac*F(19, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_19
-      IF (am >= 19) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_19(1) = ssss(20)
+                  IF (am_tot >= 19) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_19(1) = &
+                     C1234*pfac*F(20, p1234)
 #endif
 #ifdef LIBINT2_DEFINED__aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_20
-      IF (am >= 20) erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_20(1) = ssss(21)
+                  IF (am_tot >= 20) erieval(p1234)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_20(1) = &
+                     C1234*pfac*F(21, p1234)
+#endif
+               ENDDO
+            ENDDO
+         ENDDO
+      ENDDO
+
+#if LIBINT2_CONTRACTED_INTS
+      erieval(1)%contrdepth = p1234
 #endif
 
       IF (deriv_order == 0) CALL C_F_PROCPOINTER(libint2_build_eri(am4, am3, am2, am1), build_eri)
@@ -551,39 +580,6 @@ CONTAINS
 #endif
 
       CALL build_eri(erieval)
-
-      n1 = (am1 + 1)*(am1 + 2)/2
-      n2 = (am2 + 1)*(am2 + 2)/2
-      n3 = (am3 + 1)*(am3 + 2)/2
-      n4 = (am4 + 1)*(am4 + 2)/2
-
-      WRITE (*, "(A14,I1)") "deriv order = ", deriv_order
-      DO i_target = 1, n_targets(deriv_order+1)
-         WRITE (*, "(A5,1X,I2)") "Shell-set #", i_target
-         CALL C_F_POINTER(erieval(1)%targets(i_target), eri_shell_set, SHAPE=[n1*n2*n3*n4])
-
-         ishell = 0
-         DO na = 1, n1
-            DO nb = 1, n2
-               DO nc = 1, n3
-                  DO nd = 1, n4
-                     ishell = ishell + 1
-                     WRITE (*, "(A5, I4, A11, F21.17)") &
-                        "Elem ", ishell, ", (ab|cd) = ", eri_shell_set(ishell)
-                  ENDDO
-               ENDDO
-            ENDDO
-         ENDDO
-      ENDDO
-
-      IF (deriv_order == 0) CALL libint2_cleanup_eri(erieval)
-#if INCLUDE_ERI >= 1
-      IF (deriv_order == 1) CALL libint2_cleanup_eri1(erieval)
-#endif
-#if INCLUDE_ERI >= 2
-      IF (deriv_order == 2) CALL libint2_cleanup_eri2(erieval)
-#endif
-
    END SUBROUTINE
 #endif
 
