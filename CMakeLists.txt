@@ -1,7 +1,7 @@
 cmake_policy(SET CMP0048 NEW)  # project_VERSION* variables populated from project(... VERSION x.x.x) string
 
 project(Libint
-        VERSION 1.2.0
+        VERSION 1.2.1
         LANGUAGES C CXX)
 set(Libint_AUTHORS      "Edward F. Valeev and Justin T. Fermann")
 set(Libint_DESCRIPTION  "Library for the evaluation of molecular integrals of two-body operators over Gaussian functions")
