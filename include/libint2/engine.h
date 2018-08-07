@@ -665,7 +665,7 @@ class Engine {
   /// @param[in] L the maximum angular momentum
   /// @note left unchanged if the value returned by Engine::max_l is greater than @c L
   Engine& set_max_l(std::size_t L) {
-    if (L >= lmax_) {
+    if (L >= static_cast<std::size_t>(lmax_)) {
       lmax_ = L;
       initialize();
     }

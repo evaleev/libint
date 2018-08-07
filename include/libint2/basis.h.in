@@ -110,7 +110,7 @@ namespace libint2 {
         // for each atom find the corresponding basis components
         for(auto a=0ul; a<atoms.size(); ++a) {
 
-          auto Z = atoms[a].atomic_number;
+          const std::size_t Z = atoms[a].atomic_number;
           
           // add each component in order
           for(auto comp_idx=0ul; comp_idx!=component_basis_sets.size(); ++comp_idx) {
