@@ -5,6 +5,7 @@ Following is a brief summary of changes made in each release of Libint.
 
 - 2018-xx-yy: 2.5.0-beta.2
   - fixed molden exporter
+  - 2-body core engine singleton re-initialization is thread-safe
 
 - 2018-07-11: 2.5.0-beta.1
   - resolved issue 90
