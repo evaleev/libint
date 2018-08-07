@@ -1106,13 +1106,13 @@ namespace libint2 {
         assert(mmax >= 0);
         assert(precision >= 0);
         // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::make_shared<const GaussianGmEval>(mmax, precision);
+        static auto instance_ = std::make_shared<GaussianGmEval>(mmax, precision);
 
         while (instance_->max_m() < mmax || instance_->precision() > precision) {
           static std::mutex mtx;
           std::lock_guard<std::mutex> lck(mtx);
           if (instance_->max_m() < mmax || instance_->precision() > precision) {
-            auto new_instance = std::make_shared<const GaussianGmEval>(mmax, precision);
+            auto new_instance = std::make_shared<GaussianGmEval>(mmax, precision);
             instance_ = new_instance;
           }
         }
