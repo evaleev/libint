@@ -35,6 +35,7 @@
 #include <vector>
 #include <algorithm>
 #include <limits>
+#include <mutex>
 #include <type_traits>
 
 // from now on at least C++11 is required by default
@@ -271,13 +272,17 @@ namespace libint2 {
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
       static std::shared_ptr<const FmEval_Chebyshev7> instance(int m_max, double = 0.0) {
 
+        assert(m_max >= 0);
         // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::shared_ptr<const FmEval_Chebyshev7>{};
+        static auto instance_ = std::make_shared<const FmEval_Chebyshev7>(m_max);
 
-        const bool need_new_instance = !instance_ || (instance_ && instance_->max_m() < m_max);
-        if (need_new_instance) {
-          auto new_instance = std::make_shared<const FmEval_Chebyshev7>(m_max);
-          instance_ = new_instance; // thread-safe
+        while (instance_->max_m() < m_max) {
+          static std::mutex mtx;
+          std::lock_guard<std::mutex> lck(mtx);
+          if (instance_->max_m() < m_max) {
+            auto new_instance = std::make_shared<const FmEval_Chebyshev7>(m_max);
+            instance_ = new_instance;
+          }
         }
 
         return instance_;
@@ -549,16 +554,18 @@ namespace libint2 {
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
       static std::shared_ptr<const FmEval_Taylor> instance(unsigned int mmax, Real precision) {
-
+        assert(mmax >= 0);
+        assert(precision >= 0);
         // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::shared_ptr<const FmEval_Taylor>{};
+        static auto instance_ = std::make_shared<const FmEval_Taylor>(mmax, precision);
 
-        const bool need_new_instance = !instance_ ||
-                                       (instance_ && (instance_->max_m() < mmax ||
-                                                      instance_->precision() > precision));
-        if (need_new_instance) {
-          auto new_instance = std::make_shared<const FmEval_Taylor>(mmax, precision);
-          instance_ = new_instance; // thread-safe
+        while (instance_->max_m() < mmax || instance_->precision() > precision) {
+          static std::mutex mtx;
+          std::lock_guard<std::mutex> lck(mtx);
+          if (instance_->max_m() < mmax || instance_->precision() > precision) {
+            auto new_instance = std::make_shared<const FmEval_Taylor>(mmax, precision);
+            instance_ = new_instance;
+          }
         }
 
         return instance_;
@@ -1096,16 +1103,18 @@ namespace libint2 {
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
       static std::shared_ptr<GaussianGmEval> instance(unsigned int mmax, Real precision) {
-
+        assert(mmax >= 0);
+        assert(precision >= 0);
         // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::shared_ptr<GaussianGmEval>{};
+        static auto instance_ = std::make_shared<const GaussianGmEval>(mmax, precision);
 
-        const bool need_new_instance = !instance_ ||
-                                       (instance_ && (instance_->max_m() < mmax ||
-                                                      instance_->precision() > precision));
-        if (need_new_instance) {
-          auto new_instance = std::make_shared<GaussianGmEval>(mmax, precision);
-          instance_ = new_instance; // thread-safe
+        while (instance_->max_m() < mmax || instance_->precision() > precision) {
+          static std::mutex mtx;
+          std::lock_guard<std::mutex> lck(mtx);
+          if (instance_->max_m() < mmax || instance_->precision() > precision) {
+            auto new_instance = std::make_shared<const GaussianGmEval>(mmax, precision);
+            instance_ = new_instance;
+          }
         }
 
         return instance_;
