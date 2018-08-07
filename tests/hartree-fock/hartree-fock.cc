@@ -288,7 +288,7 @@ std::vector<Atom> read_dotxyz(std::istream& is) {
       Z = 17;
     else {
       std::cerr << "read_dotxyz: element label \"" << element_label << "\" is not recognized" << std::endl;
-      throw "Did not recognize element label in .xyz file";
+      throw std::invalid_argument("Did not recognize element label in .xyz file");
     }
 
     atoms[i].atomic_number = Z;
@@ -322,7 +322,7 @@ std::vector<Atom> read_geometry(const std::string& filename) {
   if ( filename.rfind(".xyz") != std::string::npos)
     return read_dotxyz(iss);
   else
-    throw "only .xyz files are accepted";
+    throw std::invalid_argument("only .xyz files are accepted");
 }
 
 std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
@@ -563,7 +563,7 @@ Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
       auto bf2 = shell2bf[s2];
       auto n2 = shells[s2].size();
 
-      // compute shell pair; return is the pointer to the buffer
+      // compute shell pair
       engine.compute(shells[s1], shells[s2]);
 
       // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
@@ -677,7 +677,7 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
   using libint2::Engine;
   using libint2::Operator;
 
-  std::chrono::duration<double> time_elapsed = std::chrono::duration<double>::zero();
+  auto time_elapsed = std::chrono::duration<double>::zero();
 
   const auto n = nbasis(shells);
   Matrix G = Matrix::Zero(n,n);
