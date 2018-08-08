@@ -242,9 +242,9 @@ namespace libint2 {
       struct make_unit{};
       Shell(make_unit) :
         alpha{0.0},                           // exponent = 0
-        contr{{0, false, {1.0}}},  // contraction coefficient = 1
-        O{{0.0, 0.0, 0.0}},                   // placed at origin
-        max_ln_coeff{0.0} {
+        contr{{0, false, {1}}},  // contraction coefficient = 1
+        O{{0, 0, 0}},                   // placed at origin
+        max_ln_coeff{0} {
       }
 
       /// embeds normalization constants into contraction coefficients. Do this before computing integrals.
@@ -257,8 +257,8 @@ namespace libint2 {
         for(auto& c: contr) {
           assert(c.l <= 15); // due to df_Kminus1[] a 64-bit integer type; kinda ridiculous restriction anyway
           for(auto p=0ul; p!=np; ++p) {
-            assert(alpha[p] >= 0.0);
-            if (alpha[p] != 0.) {
+            assert(alpha[p] >= 0);
+            if (alpha[p] != 0) {
               const auto two_alpha = 2 * alpha[p];
               const auto two_alpha_to_am32 = pow(two_alpha,c.l+1) * sqrt(two_alpha);
               const auto normalization_factor = sqrt(pow(2,c.l) * two_alpha_to_am32/(sqrt_Pi_cubed * df_Kminus1[2*c.l] ));
@@ -274,11 +274,11 @@ namespace libint2 {
             for(auto p=0ul; p!=np; ++p) {
               for(decltype(p) q=0ul; q<=p; ++q) {
                 auto gamma = alpha[p] + alpha[q];
-                norm += (p==q ? 1.0 : 2.0) * df_Kminus1[2*c.l] * sqrt_Pi_cubed * c.coeff[p] * c.coeff[q] /
+                norm += (p==q ? 1 : 2) * df_Kminus1[2*c.l] * sqrt_Pi_cubed * c.coeff[p] * c.coeff[q] /
                         (pow(2,c.l) * pow(gamma,c.l+1) * sqrt(gamma));
               }
             }
-            auto normalization_factor = 1.0 / sqrt(norm);
+            auto normalization_factor = 1 / sqrt(norm);
             for(auto p=0ul; p!=np; ++p) {
               c.coeff[p] *= normalization_factor;
             }
@@ -340,7 +340,7 @@ namespace libint2 {
         primpairs.reserve(max_nprim*max_nprim);
         for(int i=0; i!=3; ++i) AB[i] = 0.;
       }
-      ShellPair(const Shell& s1, const Shell& s2, real_t ln_prec) {
+      template <typename Real> ShellPair(const Shell& s1, const Shell& s2, Real ln_prec) {
         init(s1, s2, ln_prec);
       }
 
@@ -354,7 +354,7 @@ namespace libint2 {
       /// located at \f$ \{ \vec{A},\vec{B} \} \f$ whose max coefficients in contractions are \f$ \{ \max{|c_a|} , \max{|c_b|} \} \f$ is screened-out (omitted)
       /// if \f$ \exp(-|\vec{A}-\vec{B}|^2 \alpha_a * \alpha_b / (\alpha_a + \alpha_b)) \max{|c_a|} \max{|c_b|} \leq \epsilon \f$
       /// where \f$ \epsilon \f$ is the desired precision of the integrals.
-      void init(const Shell& s1, const Shell& s2, const real_t& ln_prec) {
+      template <typename Real> void init(const Shell& s1, const Shell& s2, Real ln_prec) {
 
         primpairs.clear();
 
@@ -373,7 +373,7 @@ namespace libint2 {
             const auto& a1 = s1.alpha[p1];
             const auto& a2 = s2.alpha[p2];
             const auto gamma = a1 + a2;
-            const auto oogamma = 1.0 / gamma;
+            const auto oogamma = 1 / gamma;
 
             const auto rho = a1 * a2 * oogamma;
             const auto minus_rho_times_AB2 = -rho*AB2;

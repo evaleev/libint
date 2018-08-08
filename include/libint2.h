@@ -35,12 +35,8 @@
 #include <libint2/util/generated/libint2_types.h>
 
 #if defined(__cplusplus)
-# include <libint2/util/type_traits.h>
-  namespace libint2 {
-    typedef LIBINT2_REALTYPE value_type;
-    typedef libint2::vector_traits<value_type>::scalar_type scalar_type;
-  }; /* namespace libint2 */
-#endif /* C++ only */
+#include <libint2/numeric.h>
+#endif
 
 #endif /* header guard */
 

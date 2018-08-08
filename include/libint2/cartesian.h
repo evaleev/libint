@@ -16,37 +16,43 @@ namespace libint2 {
 namespace detail {
 
 template <typename Real, std::size_t N>
-inline void scale(Real* intset, const std::array<std::pair<Real*,size_t>, N>& coeffs);
+struct scale; /* {
+  void operator()(Real* intset, const std::array<std::pair<Real*,size_t>, N>& coeffs);
+}; */
 
-template <>
-inline void scale<double, 2>(double* intset, const std::array<std::pair<double*,size_t>, 2>& coeffs) {
-  auto* data = intset;
-  for(auto f0=0ul; f0 != coeffs[0].second; ++f0) {
-    for(auto f1=0ul; f1 != coeffs[1].second; ++f1) {
-      const auto scalar01 = coeffs[0].first[f0] * coeffs[1].first[f1];
-      *data *= scalar01;
-      ++data;
+template <typename Real>
+struct scale<Real, 2> {
+  inline void operator()(Real* intset, const std::array<std::pair<Real*,size_t>, 2>& coeffs) {
+    auto* data = intset;
+    for(auto f0=0ul; f0 != coeffs[0].second; ++f0) {
+      for(auto f1=0ul; f1 != coeffs[1].second; ++f1) {
+        const auto scalar01 = coeffs[0].first[f0] * coeffs[1].first[f1];
+        *data *= scalar01;
+        ++data;
+      }
     }
   }
-}
+};
 
-template <>
-inline void scale<double, 4>(double* intset, const std::array<std::pair<double*,size_t>, 4>& coeffs) {
-  auto* data = intset;
-  for(auto f0=0ul; f0 != coeffs[0].second; ++f0) {
-    for(auto f1=0ul; f1 != coeffs[1].second; ++f1) {
-      const auto scalar01 = coeffs[0].first[f0] * coeffs[1].first[f1];
-      for(auto f2=0ul; f2 != coeffs[2].second; ++f2) {
-        const auto scalar012 = scalar01 * coeffs[2].first[f2];
-        for(auto f3=0ul; f3 != coeffs[3].second; ++f3) {
-          const auto scalar0123 = scalar012 * coeffs[3].first[f3];
-          *data *= scalar0123;
-          ++data;
+template <typename Real>
+struct scale<Real, 4> {
+  inline void operator()(Real* intset, const std::array<std::pair<Real*,size_t>, 4>& coeffs) {
+    auto* data = intset;
+    for(auto f0=0ul; f0 != coeffs[0].second; ++f0) {
+      for(auto f1=0ul; f1 != coeffs[1].second; ++f1) {
+        const auto scalar01 = coeffs[0].first[f0] * coeffs[1].first[f1];
+        for(auto f2=0ul; f2 != coeffs[2].second; ++f2) {
+          const auto scalar012 = scalar01 * coeffs[2].first[f2];
+          for(auto f3=0ul; f3 != coeffs[3].second; ++f3) {
+            const auto scalar0123 = scalar012 * coeffs[3].first[f3];
+            *data *= scalar0123;
+            ++data;
+          }
         }
       }
     }
   }
-}
+};
 
 // df_of_i_minux_1[i] = (i-1)!! , df_of_i_minux_1[0] = 1, df_of_i_minux_1[1] = 1, df_of_i_minux_1[2] = 1, df_of_i_minux_1[3] = 2, df_of_i_minux_1[4] = 3, etc.
 template <typename Real>
@@ -73,7 +79,8 @@ make_cart_coeffs(int lmax) {
     int ixyz = 0;
     int ix, iy, iz;
     FOR_CART(ix,iy,iz,l)
-      result[l][ixyz] = std::sqrt(dfm1.at(2*l) / (dfm1.at(2*ix) * dfm1.at(2*iy) * dfm1.at(2*iz)) );
+      using std::sqrt;
+      result[l][ixyz] = sqrt(dfm1.at(2*l) / (dfm1.at(2*ix) * dfm1.at(2*iy) * dfm1.at(2*iz)) );
       ++ixyz;
     END_FOR_CART
   }
@@ -96,7 +103,7 @@ inline void uniform_normalize_cartesian_shells(Real* intset, std::array<std::ref
     coeffs[c] = std::make_pair(shells[c].get().contr[0].pure ? &pure_coeffs[0] : &cart_coeffs[shells[c].get().contr[0].l][0], shells[c].get().size());
   }
 
-  detail::scale<Real, N>(intset, coeffs);
+  detail::scale<Real, N>{}(intset, coeffs);
 };
 
 }  // namespace libint2

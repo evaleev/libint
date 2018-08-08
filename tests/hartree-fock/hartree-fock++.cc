@@ -1631,9 +1631,9 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
 
             // compute the permutational degeneracy (i.e. # of equivalents) of
             // the given shell set
-            auto s12_deg = (s1 == s2) ? 1.0 : 2.0;
-            auto s34_deg = (s3 == s4) ? 1.0 : 2.0;
-            auto s12_34_deg = (s1 == s3) ? (s2 == s4 ? 1.0 : 2.0) : 2.0;
+            auto s12_deg = (s1 == s2) ? 1 : 2;
+            auto s34_deg = (s3 == s4) ? 1 : 2;
+            auto s12_34_deg = (s1 == s3) ? (s2 == s4 ? 1 : 2) : 2;
             auto s1234_deg = s12_deg * s34_deg * s12_34_deg;
 
 #if defined(REPORT_INTEGRAL_TIMINGS)

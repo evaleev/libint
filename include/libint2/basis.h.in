@@ -455,7 +455,7 @@ namespace libint2 {
                         {
                             {l, pure, std::move(coeffs)}
                         },
-                        {{0.0, 0.0, 0.0}}
+                        {{0, 0, 0}}
                     }
                 );
               } else { // split the SP shells
@@ -476,7 +476,7 @@ namespace libint2 {
                                    {
                                        {0, false, coeffs_s}
                                    },
-                                   {{0.0, 0.0, 0.0}}
+                                   {{0, 0, 0}}
                     }
                 );
                 ref_shells.at(Z).push_back(
@@ -484,7 +484,7 @@ namespace libint2 {
                                    {
                                        {1, false, std::move(coeffs_p)}
                                    },
-                                   {{0.0, 0.0, 0.0}}
+                                   {{0, 0, 0}}
                     }
                 );
               }

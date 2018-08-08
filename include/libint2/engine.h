@@ -201,7 +201,11 @@ struct operator_traits<Operator::nuclear>
   typedef std::vector<std::pair<scalar_type, std::array<scalar_type, 3>>>
       oper_params_type;
   static oper_params_type default_params() { return oper_params_type{}; }
-  typedef const libint2::FmEval_Taylor<double, 7> core_eval_type;
+#ifndef LIBINT_USER_DEFINED_REAL
+  typedef const libint2::FmEval_Taylor<scalar_type, 7> core_eval_type;
+#else
+  typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
+#endif
 };
 
 template <>
@@ -266,7 +270,12 @@ struct operator_traits<Operator::sphemultipole>
 template <>
 struct operator_traits<Operator::coulomb>
     : public detail::default_operator_traits {
+#ifndef LIBINT_USER_DEFINED_REAL
   typedef const libint2::FmEval_Chebyshev7<scalar_type> core_eval_type;
+  //typedef const libint2::FmEval_Taylor<scalar_type, 7> core_eval_type;
+#else
+  typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
+#endif
 };
 namespace detail {
 template <int K>
@@ -756,7 +765,8 @@ class Engine {
       ln_precision_ = std::numeric_limits<scalar_type>::lowest();
     } else {
       precision_ = prec;
-      ln_precision_ = std::log(precision_);
+      using std::log;
+      ln_precision_ = log(precision_);
     }
     return *this;
   }

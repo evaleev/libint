@@ -145,30 +145,34 @@ namespace libint2 {
   template<typename Real>
   struct FmEval_Reference {
 
-      /// computes a single value of \f$ F_m(T) \f$ using MacLaurin series.
-      static Real eval(Real T, size_t m, Real absolute_precision) {
+      static std::shared_ptr<const FmEval_Reference> instance(int /* mmax */, Real /* precision */) {
+
+        // thread-safe per C++11 standard [6.7.4]
+        static auto instance_ = std::make_shared<const FmEval_Reference>();
+
+        return instance_;
+      }
+
+      /// computes a single value of \f$ F_m(T) \f$ using MacLaurin series to full precision of @c Real
+      static Real eval(Real T, size_t m) {
         assert(m < 100);
         static const Real T_crit = std::numeric_limits<Real>::is_bounded == true ? -log( std::numeric_limits<Real>::min() * 100.5 / 2. ) : Real(0) ;
         if (std::numeric_limits<Real>::is_bounded && T > T_crit)
           throw std::overflow_error("FmEval_Reference<Real>::eval: Real lacks precision for the given value of argument T");
-        Real denom = (m + 0.5);
-        Real term = 0.5 * exp(-T) / denom;
-        Real old_term = 0.0;
+        static const Real half = Real(1)/2;
+        Real denom = (m + half);
+        Real term = exp(-T) / (2 * denom);
+        Real old_term = 0;
         Real sum = term;
-        //Real rel_error;
-        Real epsilon;
-        const Real relative_zero = std::numeric_limits<Real>::epsilon();
-        const Real absolute_precision_o_1000 = absolute_precision * 0.001;
+        const Real epsilon = get_epsilon(T);
         do {
-          denom += 1.0;
+          denom += 1;
           old_term = term;
           term = old_term * T / denom;
           sum += term;
-          //rel_error = term / sum;
-          // stop if adding a term smaller or equal to absolute_precision/1000 and smaller than relative_zero * sum
-          // When sum is small in absolute value, the second threshold is more important
-          epsilon = _local_min_macro(absolute_precision_o_1000, sum*relative_zero);
-        } while (term > epsilon || old_term < term);
+          //rel_error = term / sum , hence iterate until rel_error = epsilon
+          // however, must ensure that contributions are decreasing to ensure that omitted contributions are smaller than epsilon
+        } while (term > sum * epsilon || old_term < term);
 
         return sum;
       }
@@ -177,23 +181,14 @@ namespace libint2 {
       /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
       /// @param[in] T the Boys function argument
       /// @param[in] mmax the maximum value of m for which Boys function will be computed;
-      /// @param[in] absolute_precision the absolute precision to which to compute the result
-      static void eval(Real* Fm, Real T, size_t mmax, Real absolute_precision) {
+      static void eval(Real* Fm, Real T, size_t mmax) {
 
         // evaluate for mmax using MacLaurin series
         // it converges fastest for the largest m -> use it to compute Fmmax(T)
         //  see JPC 94, 5564 (1990).
         for(size_t m=0; m<=mmax; ++m)
-          Fm[m] = eval(T, m, absolute_precision);
+          Fm[m] = eval(T, m);
         return;
-        /** downward recursion does not maintain absolute precision, only relative precision, and cannot be used for T > 10
-        if (mmax > 0) {
-          const Real T2 = 2.0 * T;
-          const Real exp_T = exp(-T);
-          for (int m = mmax - 1; m >= 0; m--)
-            Fm[m] = (Fm[m + 1] * T2 + exp_T) / (2 * m + 1);
-        }
-        */
       }
 
   };
@@ -215,15 +210,14 @@ namespace libint2 {
       /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
       /// @param[in] t the Boys function argument
       /// @param[in] mmax the maximum value of m for which Boys function will be computed;
-      /// @param[in] absolute_precision the absolute precision to which to compute the result
-      static void eval(Real* Fm, Real t, size_t mmax, Real absolute_precision) {
+      static void eval(Real* Fm, Real t, size_t mmax) {
 
         if (t < Real(30)) {
-          FmEval_Reference<Real>::eval(Fm,t,mmax,absolute_precision);
+          FmEval_Reference<Real>::eval(Fm,t,mmax);
         }
         else {
           const Real two_over_sqrt_pi{1.128379167095512573896158903121545171688101258657997713688171443421284936882986828973487320404214727};
-          const Real K = 1.0/two_over_sqrt_pi;
+          const Real K = 1/two_over_sqrt_pi;
 
           auto t2 = 2*t;
           auto et = exp(-t);
@@ -243,6 +237,8 @@ namespace libint2 {
     */
   template <typename Real = double>
   class FmEval_Chebyshev7 {
+
+      static_assert(std::is_same<Real,double>::value, "FmEval_Chebyshev7 only supports double as the real type");
 
       static const int ORDER = 7;   //!, interpolation order
       static const int ORDERp1 = ORDER+1;   //!< ORDER + 1
@@ -388,7 +384,7 @@ namespace libint2 {
 
           //        // check against the reference value
           //        if (false) {
-          //          double refvalue = FmEval_Reference2<double>::eval(x, m, 1e-15); // compute F(T)
+          //          double refvalue = FmEval_Reference2<double>::eval(x, m); // compute F(T)
           //          if (abs(refvalue - Fm[m]) > 1e-10) {
           //            std::cout << "T = " << x << " m = " << m << " cheb = "
           //                      << Fm[m] << " ref = " << refvalue << std::endl;
@@ -456,12 +452,14 @@ namespace libint2 {
   template<typename Real = double, int INTERPOLATION_ORDER = 7>
   class FmEval_Taylor {
     public:
+      static_assert(std::is_same<Real,double>::value, "FmEval_Taylor only supports double as the real type");
+
       static const int max_interp_order = 8;
       static const bool INTERPOLATION_AND_RECURSION = false; // compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
       const double soft_zero_;
 
       /// Constructs the object to be able to compute Boys funcion for m in [0,mmax], with relative \c precision
-      FmEval_Taylor(unsigned int mmax, Real precision) :
+      FmEval_Taylor(unsigned int mmax, Real precision = std::numeric_limits<Real>::epsilon()) :
           soft_zero_(1e-6), cutoff_(precision), numbers_(
               INTERPOLATION_ORDER + 1, 2 * (mmax + INTERPOLATION_ORDER - 1)) {
 
@@ -542,7 +540,7 @@ namespace libint2 {
         /*--- do the mmax first ---*/
         for (int T_idx = max_T_; T_idx >= 0; --T_idx) {
           const double T = T_idx * delT_;
-          libint2::FmEval_Reference2<double>::eval(grid_[T_idx], T, max_m_, 1e-100);
+          libint2::FmEval_Reference2<double>::eval(grid_[T_idx], T, max_m_);
         }
       }
 
@@ -699,7 +697,7 @@ namespace libint2 {
 
           // check against the reference value
 //          if (false) {
-//            double refvalue = FmEval_Reference2<double>::eval(T, mmax, 1e-15); // compute F(T) with m=mmax
+//            double refvalue = FmEval_Reference2<double>::eval(T, mmax); // compute F(T) with m=mmax
 //            if (abs(refvalue - Fm[mmax]) > 1e-14) {
 //              std::cout << "T = " << T << " m = " << mmax << " cheb = "
 //                  << Fm[mmax] << " ref = " << refvalue << std::endl;
@@ -1083,6 +1081,11 @@ namespace libint2 {
   template<typename Real, int k>
   struct GaussianGmEval : private detail::CoreEvalScratch<GaussianGmEval<Real,k>> // N.B. empty-base optimization
   {
+#ifndef LIBINT_USER_DEFINED_REAL
+      using FmEvalType = libint2::FmEval_Taylor<double>;
+#else
+      using FmEvalType = libint2::FmEval_Reference<scalar_type>;
+#endif
 
       /**
        * @param[in] mmax the evaluator will be used to compute Gm(T) for 0 <= m <= mmax
@@ -1094,7 +1097,7 @@ namespace libint2 {
         assert(k == -1 || k == 0 || k == 2);
         // for k=-1 need to evaluate the Boys function
         if (k == -1) {
-          fm_eval_ = FmEval_Taylor<Real>::instance(mmax_, precision_);
+          fm_eval_ = FmEvalType::instance(mmax_, precision_);
         }
       }
 
@@ -1235,7 +1238,7 @@ namespace libint2 {
     private:
       int mmax_;
       Real precision_; //< absolute precision
-      std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;
+      std::shared_ptr<const FmEvalType> fm_eval_;
 
       ExpensiveNumbers<Real> numbers_;
   };
@@ -1325,9 +1328,15 @@ namespace libint2 {
     typedef detail::CoreEvalScratch<r12_xx_K_gm_eval<Real, 1>> base_type;
     typedef Real value_type;
 
+#ifndef LIBINT_USER_DEFINED_REAL
+    using FmEvalType = libint2::FmEval_Taylor<double>;
+#else
+    using FmEvalType = libint2::FmEval_Reference<scalar_type>;
+#endif
+
     r12_xx_K_gm_eval(unsigned int mmax, Real precision)
         : base_type(mmax) {
-      fm_eval_ = FmEval_Taylor<Real>::instance(mmax + 1, precision);
+      fm_eval_ = FmEvalType::instance(mmax + 1, precision);
     }
     void operator()(Real* Gm, Real rho, Real T, int mmax) {
       fm_eval_->eval(&base_type::Fm_[0], T, mmax + 1);
@@ -1343,7 +1352,7 @@ namespace libint2 {
     }
 
    private:
-    std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+    std::shared_ptr<const FmEvalType> fm_eval_;  // need for odd K
   };
 
   /// core integral evaluator for \f$ \mathrm{erf}(\omega r) / r \f$ kernel
@@ -1351,8 +1360,14 @@ namespace libint2 {
   struct erf_coulomb_gm_eval {
     typedef Real value_type;
 
+#ifndef LIBINT_USER_DEFINED_REAL
+    using FmEvalType = libint2::FmEval_Taylor<double>;
+#else
+    using FmEvalType = libint2::FmEval_Reference<scalar_type>;
+#endif
+
     erf_coulomb_gm_eval(unsigned int mmax, Real precision) {
-      fm_eval_ = FmEval_Taylor<Real>::instance(mmax, precision);
+      fm_eval_ = FmEvalType::instance(mmax, precision);
     }
     void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega) const {
       if (omega > 0) {
@@ -1361,8 +1376,9 @@ namespace libint2 {
         fm_eval_->eval(Gm, T * omega2_over_omega2_plus_rho,
                        mmax);
 
+        using std::sqrt;
         auto ooversqrto2prho_exp_2mplus1 =
-            std::sqrt(omega2_over_omega2_plus_rho);
+            sqrt(omega2_over_omega2_plus_rho);
         for (auto m = 0; m <= mmax;
              ++m, ooversqrto2prho_exp_2mplus1 *= omega2_over_omega2_plus_rho) {
           Gm[m] *= ooversqrto2prho_exp_2mplus1;
@@ -1374,7 +1390,7 @@ namespace libint2 {
     }
 
      private:
-      std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+      std::shared_ptr<const FmEvalType> fm_eval_;  // need for odd K
   };
 
   /// core integral evaluator for \f$ \mathrm{erfc}(\omega r) / r \f$ kernel
@@ -1386,9 +1402,15 @@ namespace libint2 {
     typedef detail::CoreEvalScratch<erfc_coulomb_gm_eval<Real>> base_type;
     typedef Real value_type;
 
+    #ifndef LIBINT_USER_DEFINED_REAL
+    using FmEvalType = libint2::FmEval_Taylor<double>;
+#else
+    using FmEvalType = libint2::FmEval_Reference<scalar_type>;
+#endif
+
     erfc_coulomb_gm_eval(unsigned int mmax, Real precision)
         : base_type(mmax) {
-      fm_eval_ = FmEval_Taylor<Real>::instance(mmax, precision);
+      fm_eval_ = FmEvalType::instance(mmax, precision);
     }
     void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega) {
       fm_eval_->eval(&base_type::Fm_[0], T, mmax);
@@ -1399,8 +1421,9 @@ namespace libint2 {
         fm_eval_->eval(&base_type::Fm_[0], T * omega2_over_omega2_plus_rho,
                        mmax);
 
+        using std::sqrt;
         auto ooversqrto2prho_exp_2mplus1 =
-            std::sqrt(omega2_over_omega2_plus_rho);
+            sqrt(omega2_over_omega2_plus_rho);
         for (auto m = 0; m <= mmax;
              ++m, ooversqrto2prho_exp_2mplus1 *= omega2_over_omega2_plus_rho) {
           Gm[m] -= ooversqrto2prho_exp_2mplus1 * base_type::Fm_[m];
@@ -1409,7 +1432,7 @@ namespace libint2 {
     }
 
      private:
-      std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+      std::shared_ptr<const FmEvalType> fm_eval_;  // need for odd K
   };
 
   }  // namespace os_core_ints
@@ -1526,12 +1549,13 @@ namespace libint2 {
 
     // first rescale cc for ff[x] to match the norm of f[x]
     Real ffnormfac = 0.0;
+    using std::sqrt;
     for(unsigned int i=0; i<n; ++i)
       for(unsigned int j=0; j<n; ++j)
-        ffnormfac += cc[i] * cc[j]/std::sqrt(aa[i] + aa[j]);
-    const Real Nf = std::sqrt(2.0 * zeta) * zeta;
-    const Real Nff = std::sqrt(2.0) / (std::sqrt(ffnormfac) *
-        std::sqrt(std::sqrt(M_PI)));
+        ffnormfac += cc[i] * cc[j]/sqrt(aa[i] + aa[j]);
+    const Real Nf = sqrt(2.0 * zeta) * zeta;
+    const Real Nff = sqrt(2.0) / (sqrt(ffnormfac) *
+        sqrt(sqrt(M_PI)));
     for(unsigned int i=0; i<n; ++i) cc[i] *= -Nff/Nf;
 
     Real lambda0 = 1000; // damping factor is initially set to 1000, eventually should end up at 0
@@ -1562,9 +1586,9 @@ namespace libint2 {
 
         for(unsigned int i=0; i<npts; ++i) {
           const Real x = xi[i];
-          err[i] = (fstg(zeta, x) - fngtg(cc, aa, x)) * std::sqrt(ww(x));
+          err[i] = (fstg(zeta, x) - fngtg(cc, aa, x)) * sqrt(ww(x));
         }
-        errnormI = norm(err)/std::sqrt((Real)npts);
+        errnormI = norm(err)/sqrt((Real)npts);
 
 //        std::cout << "|err|=" << errnormI << std::endl;
         converged = std::abs((errnormI - errnormIm1)/errnormIm1) <= epsilon;
@@ -1573,7 +1597,7 @@ namespace libint2 {
 
         for(unsigned int i=0; i<npts; ++i) {
           const Real x2 = xi[i] * xi[i];
-          const Real sqrt_ww_x = std::sqrt(ww(xi[i]));
+          const Real sqrt_ww_x = sqrt(ww(xi[i]));
           const unsigned int ioffset = i * nparams;
           for(unsigned int j=0; j<n; ++j)
             J[ioffset+j] = (std::exp(-aa[j] * x2)) * sqrt_ww_x;
@@ -1621,9 +1645,9 @@ namespace libint2 {
             std::vector<double> err_0(npts);
             for(unsigned int i=0; i<npts; ++i) {
               const double x = xi[i];
-              err_0[i] = (fstg(zeta, x) - fngtg(cc_0, aa_0, x)) * std::sqrt(ww(x));
+              err_0[i] = (fstg(zeta, x) - fngtg(cc_0, aa_0, x)) * sqrt(ww(x));
             }
-            const double errnorm_0 = norm(err_0)/std::sqrt((double)npts);
+            const double errnorm_0 = norm(err_0)/sqrt((double)npts);
             if (errnorm_0 < errnormI) {
               cc = cc_0;
               aa = aa_0;

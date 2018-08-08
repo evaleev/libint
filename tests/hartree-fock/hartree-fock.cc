@@ -34,7 +34,8 @@
 // Libint Gaussian integrals library
 #include <libint2.hpp>
 
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+using real_t = libint2::scalar_type;
+typedef Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         Matrix;  // import dense, dynamically sized Matrix type from Eigen;
                  // this is a matrix with row-major storage (http://en.wikipedia.org/wiki/Row-major_order)
                  // to meet the layout of the integrals returned by the Libint integral library
@@ -172,11 +173,11 @@ int main(int argc, char *argv[]) {
     /*** =========================== ***/
 
     const auto maxiter = 100;
-    const auto conv = 1e-12;
+    const real_t conv = 1e-12;
     auto iter = 0;
-    auto rmsd = 0.0;
-    auto ediff = 0.0;
-    auto ehf = 0.0;
+    real_t rmsd = 0.0;
+    real_t ediff = 0.0;
+    real_t ehf = 0.0;
     do {
       const auto tstart = std::chrono::high_resolution_clock::now();
       ++iter;
@@ -539,9 +540,9 @@ Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
   // nuclear attraction ints engine needs to know where the charges sit ...
   // the nuclei are charges in this case; in QM/MM there will also be classical charges
   if (obtype == Operator::nuclear) {
-    std::vector<std::pair<double,std::array<double,3>>> q;
+    std::vector<std::pair<real_t,std::array<real_t,3>>> q;
     for(const auto& atom : atoms) {
-      q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
+      q.push_back( {static_cast<real_t>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
     }
     engine.set_params(q);
   }

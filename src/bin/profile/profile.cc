@@ -486,7 +486,7 @@ void do_taylor(int mmax, int nrepeats) {
   const double T_max = 30.0; // values >= T_max are handled by recursion
   const double scale_unit32_to_T = T_max / std::numeric_limits<uint32_t>::max();
 
-  libint2::FmEval_Taylor<double, InterpolationOrder> fmeval(mmax, 1e-15);
+  libint2::FmEval_Taylor<double, InterpolationOrder> fmeval(mmax);
   std::fill(Fm_array_sum, Fm_array_sum+mmax+1, 0.0);
   timer.clear();
   timer.start(0);

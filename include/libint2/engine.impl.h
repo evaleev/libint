@@ -889,7 +889,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
   const auto c2 = s2.contr[0].coeff[p2];
 
   const auto gammap = alpha1 + alpha2;
-  const auto oogammap = 1.0 / gammap;
+  const auto oogammap = 1 / gammap;
   const auto rhop_over_alpha1 = alpha2 * oogammap;
   const auto rhop = alpha1 * rhop_over_alpha1;
   const auto Px = (alpha1 * A[0] + alpha2 * B[0]) * oogammap;
@@ -1052,7 +1052,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
     const auto PC2 = primdata.PC_x[0] * primdata.PC_x[0] +
                      primdata.PC_y[0] * primdata.PC_y[0] +
                      primdata.PC_z[0] * primdata.PC_z[0];
-    const auto U = gammap * PC2;
+    const scalar_type U = gammap * PC2;
+    const scalar_type rho = rhop;
     const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_;
     auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
     if (oper_ == Operator::nuclear) {
@@ -1067,7 +1068,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
       auto core_ints_params =
           std::get<0>(any_cast<const typename operator_traits<
             Operator::erf_nuclear>::oper_params_type&>(core_ints_params_));
-      core_eval_ptr->eval(fm_ptr, rhop, U, mmax, core_ints_params);
+      core_eval_ptr->eval(fm_ptr, rho, U, mmax, core_ints_params);
     } else if (oper_ == Operator::erfc_nuclear) {
       const auto& core_eval_ptr =
           any_cast<const detail::core_eval_pack_type<Operator::erfc_nuclear>&>(core_eval_pack_)
@@ -1075,7 +1076,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
       auto core_ints_params =
           std::get<0>(any_cast<const typename operator_traits<
             Operator::erfc_nuclear>::oper_params_type&>(core_ints_params_));
-      core_eval_ptr->eval(fm_ptr, rhop, U, mmax, core_ints_params);
+      core_eval_ptr->eval(fm_ptr, rho, U, mmax, core_ints_params);
     }
 
     decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
@@ -1277,8 +1278,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           pfac *= c0 * c1 * c2 * c3;
 
           if (std::abs(pfac) >= precision_) {
-            const auto rho = gammap * gammaq * oogammapq;
-            const auto T = PQ2 * rho;
+            const scalar_type rho = gammap * gammaq * oogammapq;
+            const scalar_type T = PQ2 * rho;
             auto* gm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
             const auto mmax = amtot + deriv_order;
 
@@ -1745,10 +1746,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
     // if needed, permute and transform
     if (use_scratch) {
-      constexpr auto using_scalar_real = std::is_same<double, value_type>::value ||
-                                         std::is_same<float, value_type>::value;
+      constexpr auto using_scalar_real = sizeof(value_type) == sizeof(scalar_type);
       static_assert(using_scalar_real,
-                    "Libint2 C++11 API only supports fundamental real types");
+                    "Libint2 C++11 API only supports scalar real types");
       typedef Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic,
                             Eigen::RowMajor>
           Matrix;
