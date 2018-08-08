@@ -173,6 +173,9 @@
 /* User-defined real type */
 #undef LIBINT_USER_DEFINED_REAL
 
+/* Include statements needed to use LIBINT_USER_DEFINED_REAL */
+#undef LIBINT_USER_DEFINED_REAL_INCLUDES
+
 /*Generate FMA instructions? */
 #undef LIBINT_GENERATE_FMA
 

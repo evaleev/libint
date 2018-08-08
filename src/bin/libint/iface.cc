@@ -80,7 +80,13 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   if (cparams_->accumulate_targets())
     ph_ << macro_define("ACCUM_INTS",1);
   const std::string realtype(cparams_->realtype());
-  ph_ << macro_define("REALTYPE",realtype);
+  {
+    // does LIBINT_USER_DEFINED_REAL need extra include statements?
+#ifdef LIBINT_USER_DEFINED_REAL_INCLUDES
+    ph_ << LIBINT_USER_DEFINED_REAL_INCLUDES << std::endl;
+#endif
+    ph_ << macro_define("REALTYPE", realtype);
+  }
   if (cparams_->contracted_targets())
     ph_ << macro_define("CONTRACTED_INTS",1);
   
