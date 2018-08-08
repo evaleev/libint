@@ -18,9 +18,6 @@
  *
  */
 
-// prototype for the Boys function engines (Boys function = Fm(T))
-// the Chebyshev extrapolation code is based on that by Frank Neese
-
 #ifndef _libint2_src_lib_libint_boys_h_
 #define _libint2_src_lib_libint_boys_h_
 
@@ -37,6 +34,7 @@
 #include <limits>
 #include <mutex>
 #include <type_traits>
+#include <memory>
 
 // from now on at least C++11 is required by default
 #include <libint2/util/cxxstd.h>
@@ -45,7 +43,6 @@
 #endif
 
 #include <libint2/boys_fwd.h>
-#include <memory>
 #include <libint2/numeric.h>
 
 #if HAVE_LAPACK // use F77-type interface for now, switch to LAPACKE later

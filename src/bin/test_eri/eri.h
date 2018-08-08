@@ -86,60 +86,6 @@ struct ExpensiveMath {
     }
 };
 
-/*!
-  calc_f()
-
-  This function computes infamous integral Fn(t). For its definition
-  see Obara and Saika paper, or Shavitt's chapter in the
-  Methods in Computational Physics book (see reference below).
-  This piece of code is from Dr. Justin Fermann's program CINTS
-
- \ingroup (QT)
-*/
-template <typename Real> void calc_f(Real* F, int n, Real t)
-{
-  static ExpensiveMath expmath;
-  int i, m, k;
-  int m2;
-  Real t2;
-  Real num;
-  Real sum;
-  Real term1, term2;
-  static Real K = 1.0/M_2_SQRTPI;
-  Real et;
-
-  if (t>20.0){   /* For big t's do upward recursion */
-    t2 = 2*t;
-    et = exp(-t);
-    t = sqrt(t);
-    F[0] = K*erf(t)/t;
-    for(m=0; m<=n-1; m++){
-      F[m+1] = ((2*m + 1)*F[m] - et)/(t2);
-    }
-  }
-  else {        /* For smaller t's compute F with highest n using
-                   asymptotic series (see I. Shavitt in
-                   Methods in Computational Physics, ed. B. Alder eta l,
-                   vol 2, 1963, page 8) */
-    et = exp(-t);
-    t2 = 2*t;
-    m2 = 2*n;
-    num = expmath.df[m2];
-    i=0;
-    sum = 1.0/(m2+1);
-    do{
-      i++;
-      num = num*t2;
-      term1 = num/expmath.df[m2+2*i+2];
-      sum += term1;
-    } while (term1 > EPS && i < expmath.MAXFAC);
-    F[n] = sum*et;
-    for(m=n-1;m>=0;m--){        /* And then do downward recursion */
-      F[m] = (t2*F[m+1] + et)/(2*m+1);
-    }
-  }
-}
-
 namespace {
   template <typename Int>
   int parity(Int a) {
