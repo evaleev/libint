@@ -46,6 +46,7 @@
 
 #include <libint2/boys_fwd.h>
 #include <memory>
+#include <libint2/numeric.h>
 
 #if HAVE_LAPACK // use F77-type interface for now, switch to LAPACKE later
 extern "C" void dgesv_(const int* n,

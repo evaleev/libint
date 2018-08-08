@@ -294,7 +294,7 @@
 #undef HAVE_STDINT_H
 
 /* have MPFR library ? */
-#undef HAVE_MPFR
+#undef LIBINT_HAS_MPFR
 
 /* have posix_memalign ? */
 #undef HAVE_POSIX_MEMALIGN
