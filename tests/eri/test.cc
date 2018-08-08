@@ -319,7 +319,7 @@ void test_4eri(unsigned int deriv_order,
                     // compare reference and libint integrals
                     //
                     for (unsigned int di = 0; di < nderiv; ++di) {
-                      const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - double(new_eri[di]));
+                      const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
                       const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
                       if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
                         std::cout << "Elem " << ijkl << " di= " << di << " v="
@@ -587,7 +587,7 @@ void test_3eri(unsigned int deriv_order,
                   new_eri.push_back( scale_target * inteval[0].targets[d][ijk * veclen + v] );
 
                 for (unsigned int di = 0; di < nderiv; ++di) {
-                  const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);
+                  const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
                   const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
                   if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
                     std::cout << "Elem " << ijk << " di= " << di << " v="
