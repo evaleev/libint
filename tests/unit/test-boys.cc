@@ -1,102 +1,47 @@
 #include "catch.hpp"
-#include "fixture.h"
 
-TEST_CASE("Shell ctor", "[shell]") {
-  REQUIRE_NOTHROW(Shell{});
-  auto s0 = Shell{};
-  REQUIRE(s0.alpha.empty());
-  REQUIRE(s0.contr.empty());
-  REQUIRE(s0.max_ln_coeff.empty());
+#include <type_traits>
 
-  REQUIRE_NOTHROW(Shell{{1.0}, {{2, false, {1.0}}}, {{0.0, 0.0, 0.0}}});
-  auto s1 = Shell{{1.0}, {{2, false, {1.0}}}, {{0.0, 0.0, 0.0}}};
-  REQUIRE(s1.alpha == libint2::svector<double>{1.0});
-  REQUIRE(s1.contr.size() == 1);
-  REQUIRE(s1.contr[0].l == 2);
-  REQUIRE(s1.contr[0].pure == false);
-  REQUIRE(s1.contr[0].coeff.size() == 1);
-  REQUIRE(s1.contr[0].coeff[0] == Approx(1.64592278064949)); // (2./\[Pi])^(3/4) 2^l \[Alpha]^((2l+3)/4) / Sqrt[(2l-1)!!]
-  REQUIRE(s1.O == std::array<double,3>{0.0, 0.0, 0.0});
-}
+#include <libint2/config.h>
+#include "../../src/bin/test_eri/eri.h"
 
-TEST_CASE("Engine ctor", "[engine]") {
-  REQUIRE_NOTHROW(Engine{});
-  auto a = Engine{};
-}
+#ifdef LIBINT_HAS_MPFR
+TEST_CASE("Boys reference values", "[boys]") {
+  using scalar_type = libint2::scalar_type;
 
-TEST_CASE("Engine::set", "[engine]") {
-  REQUIRE_THROWS_AS(Engine{}.set(Operator::overlap), Engine::using_default_initialized);
-  REQUIRE_THROWS_AS(Engine{}.set(BraKet::x_x), Engine::using_default_initialized);
-  REQUIRE_NOTHROW(Engine{}.set(CartesianShellNormalization::uniform));
-  REQUIRE_NOTHROW(Engine(Operator::overlap, 1, 0).set(CartesianShellNormalization::uniform).set_precision(1e-20).set(Operator::overlap).set(BraKet::x_x));
-}
-
-template <typename RealBuf> void check_uniform(int l, RealBuf && S) {
-  const auto n = (l+1)*(l+2)/2;
-  for(int i=0; i!=n; ++i) {
-    REQUIRE(S[i*n+i] == Approx(1.));
+  const int mmax = 40;
+  const int nbits_ref = 1024;
+  std::vector<LIBINT2_REF_REALTYPE> T_ref_values;
+  std::vector<double> T_values;
+  T_ref_values.push_back(LIBINT2_REF_REALTYPE(0, nbits_ref));
+  T_values.push_back(0);
+  for(int i=0; i!=12; ++i) {
+    using std::sqrt;
+    using std::pow;
+    T_ref_values.push_back(pow(sqrt(LIBINT2_REF_REALTYPE(10, nbits_ref)), i) / 1000);
+    T_values.push_back(pow(sqrt(10.),i) / 1000.);
   }
-};
 
-template <typename RealBuf> void check_std_2(RealBuf && S) {
-  REQUIRE(S[0] == Approx(1.));
-  REQUIRE(S[7] == Approx(1./3));
-  REQUIRE(S[14] == Approx(1./3));
-  REQUIRE(S[21] == Approx(1.));
-  REQUIRE(S[28] == Approx(1./3));
-  REQUIRE(S[35] == Approx(1.));
-};
-
-template <typename RealBuf> void check_std_3(RealBuf && S) {
-  REQUIRE(S[0] == Approx(1.));
-  REQUIRE(S[11] == Approx(1./5));
-  REQUIRE(S[22] == Approx(1./5));
-  REQUIRE(S[33] == Approx(1./5));
-  REQUIRE(S[44] == Approx(1./15));
-  REQUIRE(S[55] == Approx(1./5));
-  REQUIRE(S[66] == Approx(1.));
-  REQUIRE(S[77] == Approx(1./5));
-  REQUIRE(S[88] == Approx(1./5));
-  REQUIRE(S[99] == Approx(1.));
-};
-
-TEST_CASE("cartesian uniform normalization", "[engine][conventions]") {
-#if defined(LIBINT2_SUPPORT_ONEBODY) && defined(LIBINT2_SUPPORT_ERI)
-  if (LIBINT_CGSHELL_ORDERING != LIBINT_CGSHELL_ORDERING_STANDARD)
-    return;
-
-  std::vector<Shell> obs{Shell{{1.0}, {{2, false, {1.0}}}, {{0.0, 0.0, 0.0}}},
-                         Shell{{1.0}, {{3, false, {1.0}}}, {{0.0, 0.0, 0.0}}}};
-  {
-    const auto lmax = std::min(3,LIBINT2_MAX_AM_overlap);
-    auto engine = Engine(Operator::overlap, 1, lmax);
-    engine.compute(obs[0], obs[0]);
-    check_std_2(engine.results()[0]);
-    engine.set(CartesianShellNormalization::uniform).compute(obs[0], obs[0]);
-    check_uniform(2, engine.results()[0]);
-
-    if (lmax >= 3) {
-      engine.set(CartesianShellNormalization::standard).compute(obs[1], obs[1]);
-      check_std_3(engine.results()[0]);
-      engine.set(CartesianShellNormalization::uniform).compute(obs[1], obs[1]);
-      check_uniform(3, engine.results()[0]);
+  if (!std::is_same<LIBINT2_REF_REALTYPE,scalar_type>::value) {
+    auto Fm_ref_values = new LIBINT2_REF_REALTYPE[mmax+1];
+    auto Fm_values = new scalar_type[mmax+1];
+    for(int t=0; t!=T_ref_values.size(); ++t) {
+      auto Tref = T_ref_values[t];
+      auto T = T_values[t];
+//      std::cout << "std::numeric_limits<LIBINT2_REF_REALTYPE>::epsilon() = " << libint2::get_epsilon(Tref).get_d() << std::endl;
+      libint2::FmEval_Reference<LIBINT2_REF_REALTYPE>::eval(Fm_ref_values, Tref, mmax);
+      auto fm_eval = libint2::FmEval_Chebyshev7<scalar_type>::instance(mmax);
+      //auto fm_eval = libint2::FmEval_Taylor<scalar_type, 3>::instance(mmax);
+      fm_eval->eval(Fm_values, T, mmax);
+      for(int m=0; m<=mmax; ++m) {
+        const LIBINT2_REF_REALTYPE value = libint2::sstream_convert<LIBINT2_REF_REALTYPE>(Fm_values[m]);
+        const LIBINT2_REF_REALTYPE abs_error = abs(Fm_ref_values[m] - value);
+        const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / Fm_ref_values[m]);
+        printf("m=%d T=%e ref_value=%20.15e abs_error=%e, relabs_error=%e\n", m, T, Fm_ref_values[m].get_d(), abs_error.get_d(), relabs_error.get_d());
+        REQUIRE(abs_error.get_d() == Approx(0.0).margin(10*std::numeric_limits<scalar_type>::epsilon()) );  // Boys engine
+        REQUIRE(relabs_error.get_d() == Approx(0.0).margin(1000*std::numeric_limits<scalar_type>::epsilon()) );
+      }
     }
   }
-  {
-    const auto lmax = std::min(3,LIBINT2_MAX_AM_eri);
-    auto engine = Engine(Operator::delta, 1, lmax);
-    engine.compute(Shell::unit(), obs[0], obs[0], Shell::unit());
-    check_std_2(engine.results()[0]);
-    engine.set(CartesianShellNormalization::uniform).compute(obs[0], Shell::unit(), Shell::unit(), obs[0]);
-    check_uniform(2, engine.results()[0]);
-
-    if (lmax >= 3) {
-      engine.set(CartesianShellNormalization::standard).compute(Shell::unit(), obs[1], Shell::unit(), obs[1]);
-      check_std_3(engine.results()[0]);
-      engine.set(CartesianShellNormalization::uniform).compute(obs[1], Shell::unit(), obs[1], Shell::unit());
-      check_uniform(3, engine.results()[0]);
-    }
-  }
-
-#endif  // LIBINT2_SUPPORT_ONEBODY
 }
+#endif  // LIBINT_HAS_MPFR
