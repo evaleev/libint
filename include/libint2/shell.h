@@ -252,6 +252,7 @@ namespace libint2 {
       /// \note this is now private
       void renorm() {
         using libint2::math::df_Kminus1;
+        using std::pow;
         const auto sqrt_Pi_cubed = real_t{5.56832799683170784528481798212};
         const auto np = nprim();
         for(auto& c: contr) {

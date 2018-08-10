@@ -158,6 +158,7 @@ namespace libint2 {
           throw std::overflow_error("FmEval_Reference<Real>::eval: Real lacks precision for the given value of argument T");
         static const Real half = Real(1)/2;
         Real denom = (m + half);
+        using std::exp;
         Real term = exp(-T) / (2 * denom);
         Real old_term = 0;
         Real sum = term;
