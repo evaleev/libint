@@ -237,27 +237,36 @@ namespace libint2 {
   template <typename Real = double>
   class FmEval_Chebyshev7 {
 
+#include <libint2/boys_cheb7.h>
+
       static_assert(std::is_same<Real,double>::value, "FmEval_Chebyshev7 only supports double as the real type");
 
-      static const int ORDER = 7;   //!, interpolation order
-      static const int ORDERp1 = ORDER+1;   //!< ORDER + 1
+      static constexpr const int ORDER = interpolation_order;   //!, interpolation order
+      static constexpr const int ORDERp1 = ORDER+1;   //!< ORDER + 1
 
-      const Real T_crit;          //!< critical value of T above which safe to use upward recusion
-      Real delta;           //!< interval size
-      Real one_over_delta;  //! 1/delta
+      static constexpr const Real T_crit = cheb_table_tmax;          //!< critical value of T above which safe to use upward recusion
+      static constexpr Real delta = cheb_table_delta;           //!< interval size
+      static constexpr Real one_over_delta = 1/delta;  //! 1/delta
+
       int mmax;                   //!< the maximum m that is tabulated
       ExpensiveNumbers<double> numbers_;
-      Real *c; /* the Chebyshev coefficients table, N by mmax*interpolation_order */
+      Real *c; /* the Chebyshev coefficients table, T_crit*one_over_delta by mmax*ORDERp1 */
 
     public:
       /// \param m_max maximum value of the Boys function index; set to -1 to skip initialization
-      /// \param precision the desired precision
-      FmEval_Chebyshev7(int m_max, double = 0.0) :
-          T_crit(30.0), // this translates in appr. 1e-15  error in upward recursion, see the note below
+      /// \param precision the desired relative precision
+      /// \throw std::invalid_argument if \c m_max is greater than \c cheb_table_mmax (see boys_cheb7.h)
+      /// \throw std::invalid_argument if \c precision is smaller than std::numeric_limits<double>::epsilon()
+      FmEval_Chebyshev7(int m_max, double precision = std::numeric_limits<double>::epsilon()) :
           mmax(m_max), numbers_(14) {
-        assert(mmax <= 63);
+        if (precision < std::numeric_limits<double>::epsilon())
+          throw std::invalid_argument(std::string("FmEval_Chebyshev7 does not support precision smaller than ") + std::to_string(std::numeric_limits<double>::epsilon()));
+        if (mmax > cheb_table_mmax)
+          throw std::invalid_argument(
+              "FmEval_Chebyshev7::init() : requested mmax exceeds the "
+              "hard-coded mmax");
         if (m_max >= 0)
-          init();
+          init_table();
       }
       ~FmEval_Chebyshev7() {
         if (mmax >= 0) {
@@ -296,11 +305,11 @@ namespace libint2 {
         // large T => use upward recursion
         // cost = 1 div + 1 sqrt + (1 + 2*(m-1)) muls
         if (x > T_crit) {
-          const double one_over_x = 1.0/x;
+          const double one_over_x = 1/x;
           Fm[0] = 0.88622692545275801365 * sqrt(one_over_x); // see Eq. (9.8.9) in Helgaker-Jorgensen-Olsen
           if (m_max == 0)
             return;
-          // this upward recursion formula omits - e^(-x)/(2x), which for x>T_crit is <1e-15
+          // this upward recursion formula omits - e^(-x)/(2x), which for x>T_crit is small enough to guarantee full double precision
           for (int i = 1; i <= m_max; i++)
             Fm[i] = Fm[i - 1] * numbers_.ihalf[i] * one_over_x; // see Eq. (9.8.13)
           return;
@@ -397,25 +406,11 @@ namespace libint2 {
 
     private:
 
-      void init() {
-
-#include <libint2/boys_cheb7.h>
-
-        if (mmax > cheb_table_mmax)
-          throw std::logic_error(
-              "FmEval_Chebyshev7::init() : requested mmax exceeds the "
-              "hard-coded mmax");
-        if (T_crit != cheb_table_tmax)
-          throw std::logic_error(
-              "FmEval_Chebyshev7::init() : boys_cheb7.h does not match "
-              "FmEval_Chebyshev7");
-        delta = cheb_table_delta;
-        one_over_delta = 1 / delta;
-        const int N = cheb_table_nintervals;
+      void init_table() {
 
         // get memory
         void* result;
-        int status = posix_memalign(&result, ORDERp1*sizeof(Real), (mmax + 1) * N * ORDERp1 * sizeof(Real));
+        int status = posix_memalign(&result, ORDERp1*sizeof(Real), (mmax + 1) * cheb_table_nintervals * ORDERp1 * sizeof(Real));
         if (status != 0) {
           if (status == EINVAL)
             throw std::logic_error(
@@ -428,13 +423,19 @@ namespace libint2 {
 
         // copy contents of static table into c
         // need all intervals
-        for (int iv = 0; iv < N; ++iv) {
+        for (std::size_t iv = 0; iv < cheb_table_nintervals; ++iv) {
           // but only values of m up to mmax
           std::copy(cheb_table[iv], cheb_table[iv]+(mmax+1)*ORDERp1, c+(iv*(mmax+1))*ORDERp1);
         }
       }
 
   }; // FmEval_Chebyshev7
+
+  template <typename Real>
+#if LIBINT2_CONSTEXPR_STATICS
+  constexpr
+#endif
+  double FmEval_Chebyshev7<Real>::cheb_table[FmEval_Chebyshev7<Real>::cheb_table_nintervals][(FmEval_Chebyshev7<Real>::cheb_table_mmax+1)*(FmEval_Chebyshev7<Real>::interpolation_order+1)];
 
 #ifndef STATIC_OON
 #define STATIC_OON
