@@ -220,7 +220,6 @@ Libint2Iface::~Libint2Iface()
 
   // For each task, generate the evaluator type
   th_ << "#include <libint2/util/vector.h>" << std::endl;
-  th_ << "#include <libint2/util/memory.h>" << std::endl;
   th_ << "#include <libint2/util/intrinsic_operations.h>" << std::endl;
   th_ << "#include <libint2/util/timer.h>" << std::endl; // in case LIBINT2_PROFILE is on
   generate_inteval_type(th_);
@@ -544,7 +543,11 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
     os << ctext_->macro_if(macro("PROFILE"));
     os << ctext_->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
     os << ctext_->comment("profiling timers. Libint must be configured with --enable-profile to allow profiling.") << std::endl;
-    os << ctext_->declare(ctext_->mutable_modifier() + "libint2::Timers<2>*",std::string("timers")); // 1 timer for HRR and 1 timer for VRR
+    os << "#ifdef __cplusplus" << std::endl
+       << ctext_->declare(ctext_->mutable_modifier() + "libint2::Timers<2>*",std::string("timers")) // 1 timer for HRR and 1 timer for VRR
+       << "#else // timers are not accessible from C" << std::endl
+       << "  void* timers;" << std::endl
+       << "#endif" << std::endl;
     os << ctext_->macro_endif(); // >= C++11
     os << ctext_->macro_endif();
 

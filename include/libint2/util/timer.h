@@ -21,6 +21,8 @@
 #ifndef _libint2_src_lib_libint_timer_h_
 #define _libint2_src_lib_libint_timer_h_
 
+#ifdef __cplusplus
+
 #include <libint2/util/cxxstd.h>
 
 #if LIBINT2_CPLUSPLUS_STD >= 2011
@@ -90,6 +92,8 @@ namespace libint2 {
 } // namespace libint2
 
 #endif // C++11 or later
+
+#endif  // defined(__cplusplus)
 
 #endif // header guard
 
