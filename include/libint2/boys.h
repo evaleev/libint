@@ -163,6 +163,7 @@ namespace libint2 {
         Real old_term = 0;
         Real sum = term;
         const Real epsilon = get_epsilon(T);
+        const Real epsilon_divided_10 = epsilon / 10;
         do {
           denom += 1;
           old_term = term;
@@ -170,7 +171,7 @@ namespace libint2 {
           sum += term;
           //rel_error = term / sum , hence iterate until rel_error = epsilon
           // however, must ensure that contributions are decreasing to ensure that omitted contributions are smaller than epsilon
-        } while (term > sum * epsilon || old_term < term);
+        } while (term > sum * epsilon_divided_10 || old_term < term);
 
         return sum;
       }
@@ -192,10 +193,10 @@ namespace libint2 {
   };
 
   /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
-    * using multi-algorithm approach (upward precision for T>=30, and asymptotic summation for T<30).
+    * using multi-algorithm approach (upward recursion for T>=117, and asymptotic summation for T<117).
     * This is slow and should be used for reference purposes, e.g. computing the interpolation tables.
     * Precision is not always guaranteed as it is limited by the precision of \c Real type.
-    * When \c Real is \c double, can maintain 1e-14 precision for up to m=38 and 0<=T<=1e9 .
+    * When \c Real is \c double, can maintain absolute precision of epsilon for up to m=40.
     *
     * @tparam Real the type to use for all floating-point computations.
     *         Must be able to compute logarithm, exponential, square root, and error function, i.e.
@@ -210,7 +211,7 @@ namespace libint2 {
       /// @param[in] mmax the maximum value of m for which Boys function will be computed;
       static void eval(Real* Fm, Real t, size_t mmax) {
 
-        if (t < Real(30)) {
+        if (t < Real(117)) {
           FmEval_Reference<Real>::eval(Fm,t,mmax);
         }
         else {
