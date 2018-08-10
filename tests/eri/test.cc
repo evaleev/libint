@@ -31,6 +31,7 @@
 #include <eri.h>
 #include <prep_libint2.h>
 #include <libint2/cgshell_ordering.h>
+#include <libint2/util/memory.h>
 
 using namespace std;
 using namespace libint2;

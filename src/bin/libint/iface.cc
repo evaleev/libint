@@ -103,7 +103,7 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   std::string pfix = oss_.str();
   si_ << pfix;
   sc_ << pfix;
-  li_ << pfix;
+  li_ << "#include <libint2/util/memory.h>" << endl << pfix; // moved from libint2.h to here
 
   // print out declarations for the array of pointers to evaluator functions
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
