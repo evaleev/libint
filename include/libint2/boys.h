@@ -445,7 +445,7 @@ namespace libint2 {
 
   /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
     * using Taylor interpolation of up to 8-th order.
-    * @tparam Real the type to use for all floating-point computations. Must support std::exp, std::pow, std::fabs, std::max, and std::floor.
+    * @tparam Real the type to use for all floating-point computations. Following expressions must be valid: exp(Real), pow(Real), fabs(Real), max(Real), and floor(Real).
     * @tparam INTERPOLATION_ORDER the interpolation order. The higher the order the less memory this object will need, but the computational cost will increase (usually very slightly)
     */
   template<typename Real = double, int INTERPOLATION_ORDER = 7>
