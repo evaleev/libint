@@ -552,7 +552,7 @@ namespace libint2 {
 
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
-      static std::shared_ptr<const FmEval_Taylor> instance(unsigned int mmax, Real precision) {
+      static std::shared_ptr<const FmEval_Taylor> instance(unsigned int mmax, Real precision = std::numeric_limits<Real>::epsilon()) {
         assert(mmax >= 0);
         assert(precision >= 0);
         // thread-safe per C++11 standard [6.7.4]
@@ -1106,7 +1106,7 @@ namespace libint2 {
 
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
-      static std::shared_ptr<GaussianGmEval> instance(unsigned int mmax, Real precision) {
+      static std::shared_ptr<GaussianGmEval> instance(unsigned int mmax, Real precision = std::numeric_limits<Real>::epsilon()) {
         assert(mmax >= 0);
         assert(precision >= 0);
         // thread-safe per C++11 standard [6.7.4]
@@ -1251,7 +1251,7 @@ namespace libint2 {
       GenericGmEval(int mmax, Real precision) : GmEvalFunction(mmax, precision),
           mmax_(mmax), precision_(precision) {}
 
-      static std::shared_ptr<const GenericGmEval> instance(int mmax, Real precision = 0.0) {
+      static std::shared_ptr<const GenericGmEval> instance(int mmax, Real precision = std::numeric_limits<Real>::epsilon()) {
         return std::make_shared<const GenericGmEval>(mmax, precision);
       }
 
