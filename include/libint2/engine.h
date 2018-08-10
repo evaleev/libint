@@ -202,7 +202,7 @@ struct operator_traits<Operator::nuclear>
       oper_params_type;
   static oper_params_type default_params() { return oper_params_type{}; }
 #ifndef LIBINT_USER_DEFINED_REAL
-  typedef const libint2::FmEval_Taylor<scalar_type, 7> core_eval_type;
+  typedef const libint2::FmEval_Chebyshev7<scalar_type> core_eval_type;
 #else
   typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
 #endif
@@ -272,7 +272,6 @@ struct operator_traits<Operator::coulomb>
     : public detail::default_operator_traits {
 #ifndef LIBINT_USER_DEFINED_REAL
   typedef const libint2::FmEval_Chebyshev7<scalar_type> core_eval_type;
-  //typedef const libint2::FmEval_Taylor<scalar_type, 7> core_eval_type;
 #else
   typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
 #endif
