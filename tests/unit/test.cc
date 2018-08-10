@@ -22,6 +22,10 @@
 
 #include "catch.hpp"
 #include <libint2.hpp>
+#include <libint2/statics_definition.h>
+
+// minimal testing of usability from C
+extern "C" void test_c_api();
 
 int main( int argc, char* argv[] )
 {
@@ -30,7 +34,14 @@ int main( int argc, char* argv[] )
   // initializes the Libint integrals library ... now ready to compute
   libint2::initialize();
 
+#ifdef LIBINT_HAS_MPFR
+  // default to 256 bits of precision for mpf_class
+  mpf_set_default_prec(256);
+#endif
+
   int result = session.run( argc, argv );
+
+  test_c_api();
 
   libint2::finalize(); // done with libint
 
