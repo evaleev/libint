@@ -1096,7 +1096,7 @@ namespace libint2 {
   struct GaussianGmEval : private detail::CoreEvalScratch<GaussianGmEval<Real,k>> // N.B. empty-base optimization
   {
 #ifndef LIBINT_USER_DEFINED_REAL
-      using FmEvalType = libint2::FmEval_Taylor<double>;
+      using FmEvalType = libint2::FmEval_Chebyshev7<double>;
 #else
       using FmEvalType = libint2::FmEval_Reference<scalar_type>;
 #endif
@@ -1343,7 +1343,7 @@ namespace libint2 {
     typedef Real value_type;
 
 #ifndef LIBINT_USER_DEFINED_REAL
-    using FmEvalType = libint2::FmEval_Taylor<double>;
+    using FmEvalType = libint2::FmEval_Chebyshev7<double>;
 #else
     using FmEvalType = libint2::FmEval_Reference<scalar_type>;
 #endif
@@ -1375,7 +1375,7 @@ namespace libint2 {
     typedef Real value_type;
 
 #ifndef LIBINT_USER_DEFINED_REAL
-    using FmEvalType = libint2::FmEval_Taylor<double>;
+    using FmEvalType = libint2::FmEval_Chebyshev7<double>;
 #else
     using FmEvalType = libint2::FmEval_Reference<scalar_type>;
 #endif
@@ -1417,7 +1417,7 @@ namespace libint2 {
     typedef Real value_type;
 
     #ifndef LIBINT_USER_DEFINED_REAL
-    using FmEvalType = libint2::FmEval_Taylor<double>;
+    using FmEvalType = libint2::FmEval_Chebyshev7<double>;
 #else
     using FmEvalType = libint2::FmEval_Reference<scalar_type>;
 #endif
