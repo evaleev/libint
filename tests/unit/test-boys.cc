@@ -3,7 +3,6 @@
 #include <type_traits>
 
 #include <libint2/config.h>
-#include "../../src/bin/test_eri/eri.h"
 
 #ifdef LIBINT_HAS_MPFR
 TEST_CASE("Boys reference values", "[boys]") {
