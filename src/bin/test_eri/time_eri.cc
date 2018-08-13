@@ -28,6 +28,7 @@
 #include <iter.h>
 #include <util.h>
 #include <libint2/deriv_iter.h>
+#include <libint2/util/memory.h>
 #include <policy_spec.h>
 #include <global_macros.h>
 
