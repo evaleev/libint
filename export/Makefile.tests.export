@@ -44,10 +44,10 @@ check4:: $(TEST4)
  endif
 endif
 
-CXXTEST2SRC = $(TEST2).cc $(TEST2)-core.cc $(TEST2)-permute.cc $(TEST2)-1body.cc $(TEST2)-boys.cc $(TEST2)-c-api.cc c-api-util.cc
+CXXTEST2SRC = $(TEST2).cc $(TEST2)-core.cc $(TEST2)-permute.cc $(TEST2)-1body.cc $(TEST2)-boys.cc $(TEST2)-c-api.cc unit/c-api-util.cc
 CXXTEST2OBJ = $(CXXTEST2SRC:%.cc=%.o)
 CXXTEST2DEP = $(CXXTEST2SRC:%.cc=%.$(DEPSUF))
-CTEST2SRC = c-api.c
+CTEST2SRC = unit/c-api.c
 CTEST2OBJ = $(CTEST2SRC:%.c=%.o)
 
 
