@@ -205,6 +205,14 @@ namespace libint2 {
   template<typename Real>
   struct FmEval_Reference2 {
 
+      static std::shared_ptr<const FmEval_Reference2> instance(int /* mmax */, Real /* precision */) {
+
+        // thread-safe per C++11 standard [6.7.4]
+        static auto instance_ = std::make_shared<const FmEval_Reference2>();
+
+        return instance_;
+      }
+
       /// fills up an array of Fm(T) for m in [0,mmax]
       /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
       /// @param[in] t the Boys function argument
