@@ -24,9 +24,6 @@
 #include <libint2.hpp>
 #include <libint2/statics_definition.h>
 
-// minimal testing of usability from C
-extern "C" void test_c_api();
-
 int main( int argc, char* argv[] )
 {
   Catch::Session session;
@@ -40,8 +37,6 @@ int main( int argc, char* argv[] )
 #endif
 
   int result = session.run( argc, argv );
-
-  test_c_api();
 
   libint2::finalize(); // done with libint
 

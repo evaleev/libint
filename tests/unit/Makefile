@@ -24,10 +24,10 @@ CXXDEPENDSUF = none
 CXXDEPENDFLAGS = -M
 
 TEST1 = test
-CXXTEST1SRC = $(TEST1).cc $(TEST1)-core.cc $(TEST1)-permute.cc $(TEST1)-1body.cc $(TEST1)-boys.cc
+CXXTEST1SRC = $(TEST1).cc $(TEST1)-core.cc $(TEST1)-permute.cc $(TEST1)-1body.cc $(TEST1)-boys.cc $(TEST1)-c-api.cc c-api-util.cc
 CXXTEST1OBJ = $(CXXTEST1SRC:%.cc=%.$(OBJSUF))
 CXXTEST1DEP = $(CXXTEST1SRC:%.cc=%.$(DEPSUF))
-CTEST1SRC = $(TEST1)-c-api.c
+CTEST1SRC = c-api.c
 CTEST1OBJ = $(CTEST1SRC:%.c=%.$(OBJSUF))
 
 check:: check1
