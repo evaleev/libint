@@ -127,7 +127,7 @@ _compute_eri(Libint_t* erieval,
 
 void init_c_api(unsigned int max_am) {
   libint2_init_eri(&erieval, max_am, 0);
-  F = malloc(sizeof(double)*(max_am+1));
+  F = malloc(sizeof(double)*(4*max_am+1));
 #if LIBINT_CONTRACTED_INTS
   /* if have support for contracted integrals, set the contraction length to 1 */
   erieval.contrdepth = 1;
