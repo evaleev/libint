@@ -18,6 +18,10 @@
  *
  */
 
+#include "libint2/util/generated/libint2_params.h"
+#ifndef LIBINT2_REALTYPE
+#define LIBINT2_REALTYPE double
+#endif
 #include "libint2/boys.h"
 #include "libint2/util/timer.h"
 #include <ctime>
