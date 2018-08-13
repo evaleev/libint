@@ -431,11 +431,17 @@ namespace libint2 {
 
   }; // FmEval_Chebyshev7
 
-  template <typename Real>
 #if LIBINT2_CONSTEXPR_STATICS
+  template <typename Real>
   constexpr
-#endif
   double FmEval_Chebyshev7<Real>::cheb_table[FmEval_Chebyshev7<Real>::cheb_table_nintervals][(FmEval_Chebyshev7<Real>::cheb_table_mmax+1)*(FmEval_Chebyshev7<Real>::interpolation_order+1)];
+#else
+  // clang needs an explicit specifalization declaration to avoid warning
+#  ifdef __clang__
+  template <typename Real>
+  double FmEval_Chebyshev7<Real>::cheb_table[FmEval_Chebyshev7<Real>::cheb_table_nintervals][(FmEval_Chebyshev7<Real>::cheb_table_mmax+1)*(FmEval_Chebyshev7<Real>::interpolation_order+1)];
+#  endif
+#endif
 
 #ifndef STATIC_OON
 #define STATIC_OON
