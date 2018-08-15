@@ -22,6 +22,7 @@ TEST4 = hartree-fock/hartree-fock++
 
 check2::
 check3::
+check4::
 
 ifeq ($(LIBINT_HAS_CXX11),yes)
  ifeq ($(LIBINT_SUPPORTS_ONEBODY),yes)
