@@ -30,8 +30,8 @@ $(TOPDIR)/$(EXPORTDIR)/configure:: exportdir strip_some_preproc_symb
 strip_some_preproc_symb:: exportdir
 	cat $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h | sed -e '/^#ifndef LIBINT2_ALIGN_SIZE/,/^#endif/d' | sed -e '/^#ifndef LIBINT2_REALTYPE/,/^#endif/d' > $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h.tmp
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h.tmp $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h
-	cat $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.in | grep -v LIBINT_ALIGN_SIZE | grep -v HAVE_POSIX_MEMALIGN | grep -v  LIBINT_USER_DEFINED_REAL | grep -v "LIBINT_SHGSHELL_ORDERING " > $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp \
- && printf "/* EXTRA DEFINES DETERMINED BY CONFIGURE OF THE EXPORTED LIBRARY */\n#ifndef _libint2_include_libint2_config_h_1\n#define _libint2_include_libint2_config_h_1\n#undef LIBINT2_ALIGN_SIZE\n#undef HAVE_POSIX_MEMALIGN\n#undef LIBINT2_REALTYPE\n#undef LIBINT_SHGSHELL_ORDERING\n#endif /* header guard #2 */\n" >> $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp
+	cat $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.in | grep -v LIBINT_ALIGN_SIZE | grep -v LIBINT_HAS_MPFR | grep -v HAVE_POSIX_MEMALIGN | grep -v  LIBINT_USER_DEFINED_REAL | grep -v "LIBINT_SHGSHELL_ORDERING " > $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp \
+ && printf "/* EXTRA DEFINES DETERMINED BY CONFIGURE OF THE EXPORTED LIBRARY */\n#ifndef _libint2_include_libint2_config_h_1\n#define _libint2_include_libint2_config_h_1\n#undef LIBINT2_ALIGN_SIZE\n#undef HAVE_POSIX_MEMALIGN\n#undef LIBINT_HAS_MPFR\n#undef LIBINT2_REALTYPE\n#undef LIBINT_SHGSHELL_ORDERING\n#endif /* header guard #2 */\n" >> $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.in
 
 exportdir::
@@ -84,10 +84,8 @@ exportdir::
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests/unit
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/catch.hpp $(TOPDIR)/$(EXPORTDIR)/tests/unit/catch.hpp
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/fixture.h $(TOPDIR)/$(EXPORTDIR)/tests/unit/fixture.h
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/test.cc $(TOPDIR)/$(EXPORTDIR)/tests/unit/test.cc
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/test-core.cc $(TOPDIR)/$(EXPORTDIR)/tests/unit/test-core.cc
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/test-permute.cc $(TOPDIR)/$(EXPORTDIR)/tests/unit/test-permute.cc
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/test-1body.cc $(TOPDIR)/$(EXPORTDIR)/tests/unit/test-1body.cc
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/*.cc $(TOPDIR)/$(EXPORTDIR)/tests/unit
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/*.c $(TOPDIR)/$(EXPORTDIR)/tests/unit
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock.cc $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock.cc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock++.cc $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock++.cc

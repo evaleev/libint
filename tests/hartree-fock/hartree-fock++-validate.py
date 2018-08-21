@@ -27,7 +27,7 @@ if os.path.exists(path_to_libfeatures):
     yes = True
     execfile(path_to_libfeatures)
 
-eref = [-76.003354058456]
+eref = [-76.003354058454]
 etol = 5e-12
 
 muref = [-0.263282355852899, -0.0912036834147694, -0.105312942341114]

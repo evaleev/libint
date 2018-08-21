@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2017 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -22,6 +22,7 @@
 #define _libint2_src_bin_libint_entity_h_
 
 #include <iomanip>
+#include <limits>
 #include <string>
 #include <sstream>
 #include <dgvertex.h>

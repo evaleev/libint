@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2017 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -1098,7 +1098,8 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
   vector<CGShell*> shells;
   const unsigned int lmax = cparams->max_am(task);
   const unsigned int lmax_default = const_cast<const CompilationParameters*>(cparams.get())->max_am(task, 1);
-  iface->to_params(iface->macro_define( std::string("CENTER_DEPENDENT_MAX_AM_") + task, 1));
+  if (lmax != lmax_default)
+    iface->to_params(iface->macro_define( std::string("CENTER_DEPENDENT_MAX_AM_") + task, 1));
 
   for(unsigned int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));

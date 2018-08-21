@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2017 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -18,9 +18,6 @@
  *
  */
 
-// prototype for the Boys function engines (Boys function = Fm(T))
-// the Chebyshev extrapolation code is based on that by Frank Neese
-
 #ifndef _libint2_src_lib_libint_boys_h_
 #define _libint2_src_lib_libint_boys_h_
 
@@ -35,7 +32,9 @@
 #include <vector>
 #include <algorithm>
 #include <limits>
+#include <mutex>
 #include <type_traits>
+#include <memory>
 
 // from now on at least C++11 is required by default
 #include <libint2/util/cxxstd.h>
@@ -44,7 +43,7 @@
 #endif
 
 #include <libint2/boys_fwd.h>
-#include <memory>
+#include <libint2/numeric.h>
 
 #if HAVE_LAPACK // use F77-type interface for now, switch to LAPACKE later
 extern "C" void dgesv_(const int* n,
@@ -143,30 +142,36 @@ namespace libint2 {
   template<typename Real>
   struct FmEval_Reference {
 
-      /// computes a single value of \f$ F_m(T) \f$ using MacLaurin series.
-      static Real eval(Real T, size_t m, Real absolute_precision) {
+      static std::shared_ptr<const FmEval_Reference> instance(int /* mmax */, Real /* precision */) {
+
+        // thread-safe per C++11 standard [6.7.4]
+        static auto instance_ = std::make_shared<const FmEval_Reference>();
+
+        return instance_;
+      }
+
+      /// computes a single value of \f$ F_m(T) \f$ using MacLaurin series to full precision of @c Real
+      static Real eval(Real T, size_t m) {
         assert(m < 100);
         static const Real T_crit = std::numeric_limits<Real>::is_bounded == true ? -log( std::numeric_limits<Real>::min() * 100.5 / 2. ) : Real(0) ;
         if (std::numeric_limits<Real>::is_bounded && T > T_crit)
           throw std::overflow_error("FmEval_Reference<Real>::eval: Real lacks precision for the given value of argument T");
-        Real denom = (m + 0.5);
-        Real term = 0.5 * exp(-T) / denom;
-        Real old_term = 0.0;
+        static const Real half = Real(1)/2;
+        Real denom = (m + half);
+        using std::exp;
+        Real term = exp(-T) / (2 * denom);
+        Real old_term = 0;
         Real sum = term;
-        //Real rel_error;
-        Real epsilon;
-        const Real relative_zero = std::numeric_limits<Real>::epsilon();
-        const Real absolute_precision_o_1000 = absolute_precision * 0.001;
+        const Real epsilon = get_epsilon(T);
+        const Real epsilon_divided_10 = epsilon / 10;
         do {
-          denom += 1.0;
+          denom += 1;
           old_term = term;
           term = old_term * T / denom;
           sum += term;
-          //rel_error = term / sum;
-          // stop if adding a term smaller or equal to absolute_precision/1000 and smaller than relative_zero * sum
-          // When sum is small in absolute value, the second threshold is more important
-          epsilon = _local_min_macro(absolute_precision_o_1000, sum*relative_zero);
-        } while (term > epsilon || old_term < term);
+          //rel_error = term / sum , hence iterate until rel_error = epsilon
+          // however, must ensure that contributions are decreasing to ensure that omitted contributions are smaller than epsilon
+        } while (term > sum * epsilon_divided_10 || old_term < term);
 
         return sum;
       }
@@ -175,32 +180,23 @@ namespace libint2 {
       /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
       /// @param[in] T the Boys function argument
       /// @param[in] mmax the maximum value of m for which Boys function will be computed;
-      /// @param[in] absolute_precision the absolute precision to which to compute the result
-      static void eval(Real* Fm, Real T, size_t mmax, Real absolute_precision) {
+      static void eval(Real* Fm, Real T, size_t mmax) {
 
         // evaluate for mmax using MacLaurin series
         // it converges fastest for the largest m -> use it to compute Fmmax(T)
         //  see JPC 94, 5564 (1990).
         for(size_t m=0; m<=mmax; ++m)
-          Fm[m] = eval(T, m, absolute_precision);
+          Fm[m] = eval(T, m);
         return;
-        /** downward recursion does not maintain absolute precision, only relative precision, and cannot be used for T > 10
-        if (mmax > 0) {
-          const Real T2 = 2.0 * T;
-          const Real exp_T = exp(-T);
-          for (int m = mmax - 1; m >= 0; m--)
-            Fm[m] = (Fm[m + 1] * T2 + exp_T) / (2 * m + 1);
-        }
-        */
       }
 
   };
 
   /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
-    * using multi-algorithm approach (upward precision for T>=30, and asymptotic summation for T<30).
+    * using multi-algorithm approach (upward recursion for T>=117, and asymptotic summation for T<117).
     * This is slow and should be used for reference purposes, e.g. computing the interpolation tables.
     * Precision is not always guaranteed as it is limited by the precision of \c Real type.
-    * When \c Real is \c double, can maintain 1e-14 precision for up to m=38 and 0<=T<=1e9 .
+    * When \c Real is \c double, can maintain absolute precision of epsilon for up to m=40.
     *
     * @tparam Real the type to use for all floating-point computations.
     *         Must be able to compute logarithm, exponential, square root, and error function, i.e.
@@ -209,19 +205,26 @@ namespace libint2 {
   template<typename Real>
   struct FmEval_Reference2 {
 
+      static std::shared_ptr<const FmEval_Reference2> instance(int /* mmax */, Real /* precision */) {
+
+        // thread-safe per C++11 standard [6.7.4]
+        static auto instance_ = std::make_shared<const FmEval_Reference2>();
+
+        return instance_;
+      }
+
       /// fills up an array of Fm(T) for m in [0,mmax]
       /// @param[out] Fm array to be filled in with the Boys function values, must be at least mmax+1 elements long
       /// @param[in] t the Boys function argument
       /// @param[in] mmax the maximum value of m for which Boys function will be computed;
-      /// @param[in] absolute_precision the absolute precision to which to compute the result
-      static void eval(Real* Fm, Real t, size_t mmax, Real absolute_precision) {
+      static void eval(Real* Fm, Real t, size_t mmax) {
 
-        if (t < Real(30)) {
-          FmEval_Reference<Real>::eval(Fm,t,mmax,absolute_precision);
+        if (t < Real(117)) {
+          FmEval_Reference<Real>::eval(Fm,t,mmax);
         }
         else {
           const Real two_over_sqrt_pi{1.128379167095512573896158903121545171688101258657997713688171443421284936882986828973487320404214727};
-          const Real K = 1.0/two_over_sqrt_pi;
+          const Real K = 1/two_over_sqrt_pi;
 
           auto t2 = 2*t;
           auto et = exp(-t);
@@ -242,25 +245,36 @@ namespace libint2 {
   template <typename Real = double>
   class FmEval_Chebyshev7 {
 
-      static const int ORDER = 7;   //!, interpolation order
-      static const int ORDERp1 = ORDER+1;   //!< ORDER + 1
+#include <libint2/boys_cheb7.h>
 
-      const Real T_crit;          //!< critical value of T above which safe to use upward recusion
-      Real delta;           //!< interval size
-      Real one_over_delta;  //! 1/delta
+      static_assert(std::is_same<Real,double>::value, "FmEval_Chebyshev7 only supports double as the real type");
+
+      static constexpr const int ORDER = interpolation_order;   //!, interpolation order
+      static constexpr const int ORDERp1 = ORDER+1;   //!< ORDER + 1
+
+      static constexpr const Real T_crit = cheb_table_tmax;          //!< critical value of T above which safe to use upward recusion
+      static constexpr Real delta = cheb_table_delta;           //!< interval size
+      static constexpr Real one_over_delta = 1/delta;  //! 1/delta
+
       int mmax;                   //!< the maximum m that is tabulated
       ExpensiveNumbers<double> numbers_;
-      Real *c; /* the Chebyshev coefficients table, N by mmax*interpolation_order */
+      Real *c; /* the Chebyshev coefficients table, T_crit*one_over_delta by mmax*ORDERp1 */
 
     public:
       /// \param m_max maximum value of the Boys function index; set to -1 to skip initialization
-      /// \param precision the desired precision
-      FmEval_Chebyshev7(int m_max, double = 0.0) :
-          T_crit(30.0), // this translates in appr. 1e-15  error in upward recursion, see the note below
+      /// \param precision the desired relative precision
+      /// \throw std::invalid_argument if \c m_max is greater than \c cheb_table_mmax (see boys_cheb7.h)
+      /// \throw std::invalid_argument if \c precision is smaller than std::numeric_limits<double>::epsilon()
+      FmEval_Chebyshev7(int m_max, double precision = std::numeric_limits<double>::epsilon()) :
           mmax(m_max), numbers_(14) {
-        assert(mmax <= 63);
+        if (precision < std::numeric_limits<double>::epsilon())
+          throw std::invalid_argument(std::string("FmEval_Chebyshev7 does not support precision smaller than ") + std::to_string(std::numeric_limits<double>::epsilon()));
+        if (mmax > cheb_table_mmax)
+          throw std::invalid_argument(
+              "FmEval_Chebyshev7::init() : requested mmax exceeds the "
+              "hard-coded mmax");
         if (m_max >= 0)
-          init();
+          init_table();
       }
       ~FmEval_Chebyshev7() {
         if (mmax >= 0) {
@@ -271,13 +285,17 @@ namespace libint2 {
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
       static std::shared_ptr<const FmEval_Chebyshev7> instance(int m_max, double = 0.0) {
 
+        assert(m_max >= 0);
         // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::shared_ptr<const FmEval_Chebyshev7>{};
+        static auto instance_ = std::make_shared<const FmEval_Chebyshev7>(m_max);
 
-        const bool need_new_instance = !instance_ || (instance_ && instance_->max_m() < m_max);
-        if (need_new_instance) {
-          auto new_instance = std::make_shared<const FmEval_Chebyshev7>(m_max);
-          instance_ = new_instance; // thread-safe
+        while (instance_->max_m() < m_max) {
+          static std::mutex mtx;
+          std::lock_guard<std::mutex> lck(mtx);
+          if (instance_->max_m() < m_max) {
+            auto new_instance = std::make_shared<const FmEval_Chebyshev7>(m_max);
+            instance_ = new_instance;
+          }
         }
 
         return instance_;
@@ -295,11 +313,11 @@ namespace libint2 {
         // large T => use upward recursion
         // cost = 1 div + 1 sqrt + (1 + 2*(m-1)) muls
         if (x > T_crit) {
-          const double one_over_x = 1.0/x;
+          const double one_over_x = 1/x;
           Fm[0] = 0.88622692545275801365 * sqrt(one_over_x); // see Eq. (9.8.9) in Helgaker-Jorgensen-Olsen
           if (m_max == 0)
             return;
-          // this upward recursion formula omits - e^(-x)/(2x), which for x>T_crit is <1e-15
+          // this upward recursion formula omits - e^(-x)/(2x), which for x>T_crit is small enough to guarantee full double precision
           for (int i = 1; i <= m_max; i++)
             Fm[i] = Fm[i - 1] * numbers_.ihalf[i] * one_over_x; // see Eq. (9.8.13)
           return;
@@ -382,7 +400,7 @@ namespace libint2 {
 
           //        // check against the reference value
           //        if (false) {
-          //          double refvalue = FmEval_Reference2<double>::eval(x, m, 1e-15); // compute F(T)
+          //          double refvalue = FmEval_Reference2<double>::eval(x, m); // compute F(T)
           //          if (abs(refvalue - Fm[m]) > 1e-10) {
           //            std::cout << "T = " << x << " m = " << m << " cheb = "
           //                      << Fm[m] << " ref = " << refvalue << std::endl;
@@ -396,36 +414,42 @@ namespace libint2 {
 
     private:
 
-      void init() {
-
-#include <libint2/boys_cheb7.h>
-
-        if (mmax > cheb_table_mmax)
-          throw std::logic_error(
-              "FmEval_Chebyshev7::init() : requested mmax exceeds the "
-              "hard-coded mmax");
-        if (T_crit != cheb_table_tmax)
-          throw std::logic_error(
-              "FmEval_Chebyshev7::init() : boys_cheb7.h does not match "
-              "FmEval_Chebyshev7");
-        delta = cheb_table_delta;
-        one_over_delta = 1 / delta;
-        const int N = cheb_table_nintervals;
+      void init_table() {
 
         // get memory
         void* result;
-        posix_memalign(&result, ORDERp1*sizeof(Real), (mmax + 1) * N * ORDERp1 * sizeof(Real));
+        int status = posix_memalign(&result, ORDERp1*sizeof(Real), (mmax + 1) * cheb_table_nintervals * ORDERp1 * sizeof(Real));
+        if (status != 0) {
+          if (status == EINVAL)
+            throw std::logic_error(
+              "FmEval_Chebyshev7::init() : posix_memalign failed, alignment must be a power of 2 at least as large as sizeof(void *)");
+          if (status == ENOMEM)
+            throw std::bad_alloc();
+          abort();  // should be unreachable
+        }
         c = static_cast<Real*>(result);
 
         // copy contents of static table into c
         // need all intervals
-        for (int iv = 0; iv < N; ++iv) {
+        for (std::size_t iv = 0; iv < cheb_table_nintervals; ++iv) {
           // but only values of m up to mmax
           std::copy(cheb_table[iv], cheb_table[iv]+(mmax+1)*ORDERp1, c+(iv*(mmax+1))*ORDERp1);
         }
       }
 
   }; // FmEval_Chebyshev7
+
+#if LIBINT2_CONSTEXPR_STATICS
+  template <typename Real>
+  constexpr
+  double FmEval_Chebyshev7<Real>::cheb_table[FmEval_Chebyshev7<Real>::cheb_table_nintervals][(FmEval_Chebyshev7<Real>::cheb_table_mmax+1)*(FmEval_Chebyshev7<Real>::interpolation_order+1)];
+#else
+  // clang needs an explicit specifalization declaration to avoid warning
+#  ifdef __clang__
+  template <typename Real>
+  double FmEval_Chebyshev7<Real>::cheb_table[FmEval_Chebyshev7<Real>::cheb_table_nintervals][(FmEval_Chebyshev7<Real>::cheb_table_mmax+1)*(FmEval_Chebyshev7<Real>::interpolation_order+1)];
+#  endif
+#endif
 
 #ifndef STATIC_OON
 #define STATIC_OON
@@ -436,18 +460,20 @@ namespace libint2 {
 
   /** Computes the Boys function, \$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \$,
     * using Taylor interpolation of up to 8-th order.
-    * @tparam Real the type to use for all floating-point computations. Must support std::exp, std::pow, std::fabs, std::max, and std::floor.
+    * @tparam Real the type to use for all floating-point computations. Following expressions must be valid: exp(Real), pow(Real), fabs(Real), max(Real), and floor(Real).
     * @tparam INTERPOLATION_ORDER the interpolation order. The higher the order the less memory this object will need, but the computational cost will increase (usually very slightly)
     */
   template<typename Real = double, int INTERPOLATION_ORDER = 7>
   class FmEval_Taylor {
     public:
+      static_assert(std::is_same<Real,double>::value, "FmEval_Taylor only supports double as the real type");
+
       static const int max_interp_order = 8;
       static const bool INTERPOLATION_AND_RECURSION = false; // compute F_lmax(T) and then iterate down to F_0(T)? Else use interpolation only
       const double soft_zero_;
 
       /// Constructs the object to be able to compute Boys funcion for m in [0,mmax], with relative \c precision
-      FmEval_Taylor(unsigned int mmax, Real precision) :
+      FmEval_Taylor(unsigned int mmax, Real precision = std::numeric_limits<Real>::epsilon()) :
           soft_zero_(1e-6), cutoff_(precision), numbers_(
               INTERPOLATION_ORDER + 1, 2 * (mmax + INTERPOLATION_ORDER - 1)) {
 
@@ -528,7 +554,7 @@ namespace libint2 {
         /*--- do the mmax first ---*/
         for (int T_idx = max_T_; T_idx >= 0; --T_idx) {
           const double T = T_idx * delT_;
-          libint2::FmEval_Reference2<double>::eval(grid_[T_idx], T, max_m_, 1e-100);
+          libint2::FmEval_Reference2<double>::eval(grid_[T_idx], T, max_m_);
         }
       }
 
@@ -540,17 +566,19 @@ namespace libint2 {
 
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
-      static std::shared_ptr<const FmEval_Taylor> instance(unsigned int mmax, Real precision) {
-
+      static std::shared_ptr<const FmEval_Taylor> instance(unsigned int mmax, Real precision = std::numeric_limits<Real>::epsilon()) {
+        assert(mmax >= 0);
+        assert(precision >= 0);
         // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::shared_ptr<const FmEval_Taylor>{};
+        static auto instance_ = std::make_shared<const FmEval_Taylor>(mmax, precision);
 
-        const bool need_new_instance = !instance_ ||
-                                       (instance_ && (instance_->max_m() < mmax ||
-                                                      instance_->precision() > precision));
-        if (need_new_instance) {
-          auto new_instance = std::make_shared<const FmEval_Taylor>(mmax, precision);
-          instance_ = new_instance; // thread-safe
+        while (instance_->max_m() < mmax || instance_->precision() > precision) {
+          static std::mutex mtx;
+          std::lock_guard<std::mutex> lck(mtx);
+          if (instance_->max_m() < mmax || instance_->precision() > precision) {
+            auto new_instance = std::make_shared<const FmEval_Taylor>(mmax, precision);
+            instance_ = new_instance;
+          }
         }
 
         return instance_;
@@ -683,7 +711,7 @@ namespace libint2 {
 
           // check against the reference value
 //          if (false) {
-//            double refvalue = FmEval_Reference2<double>::eval(T, mmax, 1e-15); // compute F(T) with m=mmax
+//            double refvalue = FmEval_Reference2<double>::eval(T, mmax); // compute F(T) with m=mmax
 //            if (abs(refvalue - Fm[mmax]) > 1e-14) {
 //              std::cout << "T = " << T << " m = " << mmax << " cheb = "
 //                  << Fm[mmax] << " ref = " << refvalue << std::endl;
@@ -1067,6 +1095,11 @@ namespace libint2 {
   template<typename Real, int k>
   struct GaussianGmEval : private detail::CoreEvalScratch<GaussianGmEval<Real,k>> // N.B. empty-base optimization
   {
+#ifndef LIBINT_USER_DEFINED_REAL
+      using FmEvalType = libint2::FmEval_Chebyshev7<double>;
+#else
+      using FmEvalType = libint2::FmEval_Reference<scalar_type>;
+#endif
 
       /**
        * @param[in] mmax the evaluator will be used to compute Gm(T) for 0 <= m <= mmax
@@ -1078,7 +1111,7 @@ namespace libint2 {
         assert(k == -1 || k == 0 || k == 2);
         // for k=-1 need to evaluate the Boys function
         if (k == -1) {
-          fm_eval_ = FmEval_Taylor<Real>::instance(mmax_, precision_);
+          fm_eval_ = FmEvalType::instance(mmax_, precision_);
         }
       }
 
@@ -1087,17 +1120,19 @@ namespace libint2 {
 
       /// Singleton interface allows to manage the lone instance;
       /// adjusts max m and precision values as needed in thread-safe fashion
-      static std::shared_ptr<GaussianGmEval> instance(unsigned int mmax, Real precision) {
-
+      static std::shared_ptr<GaussianGmEval> instance(unsigned int mmax, Real precision = std::numeric_limits<Real>::epsilon()) {
+        assert(mmax >= 0);
+        assert(precision >= 0);
         // thread-safe per C++11 standard [6.7.4]
-        static auto instance_ = std::shared_ptr<GaussianGmEval>{};
+        static auto instance_ = std::make_shared<GaussianGmEval>(mmax, precision);
 
-        const bool need_new_instance = !instance_ ||
-                                       (instance_ && (instance_->max_m() < mmax ||
-                                                      instance_->precision() > precision));
-        if (need_new_instance) {
-          auto new_instance = std::make_shared<GaussianGmEval>(mmax, precision);
-          instance_ = new_instance; // thread-safe
+        while (instance_->max_m() < mmax || instance_->precision() > precision) {
+          static std::mutex mtx;
+          std::lock_guard<std::mutex> lck(mtx);
+          if (instance_->max_m() < mmax || instance_->precision() > precision) {
+            auto new_instance = std::make_shared<GaussianGmEval>(mmax, precision);
+            instance_ = new_instance;
+          }
         }
 
         return instance_;
@@ -1217,7 +1252,7 @@ namespace libint2 {
     private:
       int mmax_;
       Real precision_; //< absolute precision
-      std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;
+      std::shared_ptr<const FmEvalType> fm_eval_;
 
       ExpensiveNumbers<Real> numbers_;
   };
@@ -1230,7 +1265,7 @@ namespace libint2 {
       GenericGmEval(int mmax, Real precision) : GmEvalFunction(mmax, precision),
           mmax_(mmax), precision_(precision) {}
 
-      static std::shared_ptr<const GenericGmEval> instance(int mmax, Real precision = 0.0) {
+      static std::shared_ptr<const GenericGmEval> instance(int mmax, Real precision = std::numeric_limits<Real>::epsilon()) {
         return std::make_shared<const GenericGmEval>(mmax, precision);
       }
 
@@ -1307,9 +1342,15 @@ namespace libint2 {
     typedef detail::CoreEvalScratch<r12_xx_K_gm_eval<Real, 1>> base_type;
     typedef Real value_type;
 
+#ifndef LIBINT_USER_DEFINED_REAL
+    using FmEvalType = libint2::FmEval_Chebyshev7<double>;
+#else
+    using FmEvalType = libint2::FmEval_Reference<scalar_type>;
+#endif
+
     r12_xx_K_gm_eval(unsigned int mmax, Real precision)
         : base_type(mmax) {
-      fm_eval_ = FmEval_Taylor<Real>::instance(mmax + 1, precision);
+      fm_eval_ = FmEvalType::instance(mmax + 1, precision);
     }
     void operator()(Real* Gm, Real rho, Real T, int mmax) {
       fm_eval_->eval(&base_type::Fm_[0], T, mmax + 1);
@@ -1325,7 +1366,7 @@ namespace libint2 {
     }
 
    private:
-    std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+    std::shared_ptr<const FmEvalType> fm_eval_;  // need for odd K
   };
 
   /// core integral evaluator for \f$ \mathrm{erf}(\omega r) / r \f$ kernel
@@ -1333,8 +1374,14 @@ namespace libint2 {
   struct erf_coulomb_gm_eval {
     typedef Real value_type;
 
+#ifndef LIBINT_USER_DEFINED_REAL
+    using FmEvalType = libint2::FmEval_Chebyshev7<double>;
+#else
+    using FmEvalType = libint2::FmEval_Reference<scalar_type>;
+#endif
+
     erf_coulomb_gm_eval(unsigned int mmax, Real precision) {
-      fm_eval_ = FmEval_Taylor<Real>::instance(mmax, precision);
+      fm_eval_ = FmEvalType::instance(mmax, precision);
     }
     void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega) const {
       if (omega > 0) {
@@ -1343,8 +1390,9 @@ namespace libint2 {
         fm_eval_->eval(Gm, T * omega2_over_omega2_plus_rho,
                        mmax);
 
+        using std::sqrt;
         auto ooversqrto2prho_exp_2mplus1 =
-            std::sqrt(omega2_over_omega2_plus_rho);
+            sqrt(omega2_over_omega2_plus_rho);
         for (auto m = 0; m <= mmax;
              ++m, ooversqrto2prho_exp_2mplus1 *= omega2_over_omega2_plus_rho) {
           Gm[m] *= ooversqrto2prho_exp_2mplus1;
@@ -1356,7 +1404,7 @@ namespace libint2 {
     }
 
      private:
-      std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+      std::shared_ptr<const FmEvalType> fm_eval_;  // need for odd K
   };
 
   /// core integral evaluator for \f$ \mathrm{erfc}(\omega r) / r \f$ kernel
@@ -1368,9 +1416,15 @@ namespace libint2 {
     typedef detail::CoreEvalScratch<erfc_coulomb_gm_eval<Real>> base_type;
     typedef Real value_type;
 
+    #ifndef LIBINT_USER_DEFINED_REAL
+    using FmEvalType = libint2::FmEval_Chebyshev7<double>;
+#else
+    using FmEvalType = libint2::FmEval_Reference<scalar_type>;
+#endif
+
     erfc_coulomb_gm_eval(unsigned int mmax, Real precision)
         : base_type(mmax) {
-      fm_eval_ = FmEval_Taylor<Real>::instance(mmax, precision);
+      fm_eval_ = FmEvalType::instance(mmax, precision);
     }
     void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega) {
       fm_eval_->eval(&base_type::Fm_[0], T, mmax);
@@ -1381,8 +1435,9 @@ namespace libint2 {
         fm_eval_->eval(&base_type::Fm_[0], T * omega2_over_omega2_plus_rho,
                        mmax);
 
+        using std::sqrt;
         auto ooversqrto2prho_exp_2mplus1 =
-            std::sqrt(omega2_over_omega2_plus_rho);
+            sqrt(omega2_over_omega2_plus_rho);
         for (auto m = 0; m <= mmax;
              ++m, ooversqrto2prho_exp_2mplus1 *= omega2_over_omega2_plus_rho) {
           Gm[m] -= ooversqrto2prho_exp_2mplus1 * base_type::Fm_[m];
@@ -1391,7 +1446,7 @@ namespace libint2 {
     }
 
      private:
-      std::shared_ptr<const FmEval_Taylor<Real>> fm_eval_;  // need for odd K
+      std::shared_ptr<const FmEvalType> fm_eval_;  // need for odd K
   };
 
   }  // namespace os_core_ints
@@ -1508,12 +1563,13 @@ namespace libint2 {
 
     // first rescale cc for ff[x] to match the norm of f[x]
     Real ffnormfac = 0.0;
+    using std::sqrt;
     for(unsigned int i=0; i<n; ++i)
       for(unsigned int j=0; j<n; ++j)
-        ffnormfac += cc[i] * cc[j]/std::sqrt(aa[i] + aa[j]);
-    const Real Nf = std::sqrt(2.0 * zeta) * zeta;
-    const Real Nff = std::sqrt(2.0) / (std::sqrt(ffnormfac) *
-        std::sqrt(std::sqrt(M_PI)));
+        ffnormfac += cc[i] * cc[j]/sqrt(aa[i] + aa[j]);
+    const Real Nf = sqrt(2.0 * zeta) * zeta;
+    const Real Nff = sqrt(2.0) / (sqrt(ffnormfac) *
+        sqrt(sqrt(M_PI)));
     for(unsigned int i=0; i<n; ++i) cc[i] *= -Nff/Nf;
 
     Real lambda0 = 1000; // damping factor is initially set to 1000, eventually should end up at 0
@@ -1544,9 +1600,9 @@ namespace libint2 {
 
         for(unsigned int i=0; i<npts; ++i) {
           const Real x = xi[i];
-          err[i] = (fstg(zeta, x) - fngtg(cc, aa, x)) * std::sqrt(ww(x));
+          err[i] = (fstg(zeta, x) - fngtg(cc, aa, x)) * sqrt(ww(x));
         }
-        errnormI = norm(err)/std::sqrt((Real)npts);
+        errnormI = norm(err)/sqrt((Real)npts);
 
 //        std::cout << "|err|=" << errnormI << std::endl;
         converged = std::abs((errnormI - errnormIm1)/errnormIm1) <= epsilon;
@@ -1555,7 +1611,7 @@ namespace libint2 {
 
         for(unsigned int i=0; i<npts; ++i) {
           const Real x2 = xi[i] * xi[i];
-          const Real sqrt_ww_x = std::sqrt(ww(xi[i]));
+          const Real sqrt_ww_x = sqrt(ww(xi[i]));
           const unsigned int ioffset = i * nparams;
           for(unsigned int j=0; j<n; ++j)
             J[ioffset+j] = (std::exp(-aa[j] * x2)) * sqrt_ww_x;
@@ -1603,9 +1659,9 @@ namespace libint2 {
             std::vector<double> err_0(npts);
             for(unsigned int i=0; i<npts; ++i) {
               const double x = xi[i];
-              err_0[i] = (fstg(zeta, x) - fngtg(cc_0, aa_0, x)) * std::sqrt(ww(x));
+              err_0[i] = (fstg(zeta, x) - fngtg(cc_0, aa_0, x)) * sqrt(ww(x));
             }
-            const double errnorm_0 = norm(err_0)/std::sqrt((double)npts);
+            const double errnorm_0 = norm(err_0)/sqrt((double)npts);
             if (errnorm_0 < errnormI) {
               cc = cc_0;
               aa = aa_0;

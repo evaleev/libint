@@ -11,6 +11,8 @@ CPPFLAGS += -I$(TOPDIR)/include
 CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/lib/libint
 # include the data directory path as a definition
 CPPFLAGS += -DSRCDATADIR=\"$(SRCDIR)/$(TOPDIR)/lib/basis\"
+# initialize statics explicitly in test.cc
+CPPFLAGS += -DLIBINT2_CONSTEXPR_STATICS=0
 
 COMPILER_LIB = $(TOPDIR)/src/bin/libint/libINT.a
 COMPUTE_LIB = -lint2
@@ -22,9 +24,11 @@ CXXDEPENDSUF = none
 CXXDEPENDFLAGS = -M
 
 TEST1 = test
-CXXTEST1SRC = $(TEST1).cc $(TEST1)-core.cc $(TEST1)-permute.cc $(TEST1)-1body.cc
+CXXTEST1SRC = $(TEST1).cc $(TEST1)-core.cc $(TEST1)-permute.cc $(TEST1)-1body.cc $(TEST1)-boys.cc $(TEST1)-c-api.cc c-api-util.cc
 CXXTEST1OBJ = $(CXXTEST1SRC:%.cc=%.$(OBJSUF))
 CXXTEST1DEP = $(CXXTEST1SRC:%.cc=%.$(DEPSUF))
+CTEST1SRC = c-api.c
+CTEST1OBJ = $(CTEST1SRC:%.c=%.$(OBJSUF))
 
 check:: check1
 
@@ -37,7 +41,7 @@ ifeq ($(CXXGEN_SUPPORTS_CPP11),yes)
     ifeq ($(LIBINT_CONTRACTED_INTS),yes)
      ifeq ($(LIBINT_SHELL_SET),1)
 
-$(TEST1): $(CXXTEST1OBJ) $(COMPUTE_LIB)
+$(TEST1): $(CXXTEST1OBJ) $(CTEST1OBJ) $(COMPUTE_LIB)
 	$(LD) -o $@ $(LDFLAGS) $^ $(SYSLIBS)
 
 check1:: $(TEST1)

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2017 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -62,6 +62,8 @@ class Export {
   /// @param spincases the vector of spin cases (size = # LCAOs; true = spin-up
   ///        or m_s=1/2, false = spin-down or m_s=-1/2); the default is
   ///        to assign spin-up to each LCAO
+  /// @param coefficient_epsilon omit LCAO coefficients with absolute magnitude smaller than this value; set to 0 to write
+  ///        all coefficients (some Molden parsers, e.g. Avogadro2, require this)
   /// @throw std::logic_error if the basis does not conforms Molden
   ///        requirements
   /// @note Molden can only handle basis sets that:
@@ -74,14 +76,16 @@ class Export {
          const Energies& energies = Energies(),
          const std::vector<std::string>& symmetry_labels =
              std::vector<std::string>(),
-         const std::vector<bool>& spincases = std::vector<bool>())
+         const std::vector<bool>& spincases = std::vector<bool>(),
+         double coefficient_epsilon = 5e-11)
       : atoms_(atoms),
         basis_(validate(basis)),
         coefs_(coefficients),
         occupancies_(occupancies),
         energies_(energies),
         labels_(symmetry_labels),
-        spins_(spincases) {
+        spins_(spincases),
+        coefficient_epsilon_(coefficient_epsilon) {
     initialize_bf_map();
   }
 
@@ -99,7 +103,7 @@ class Export {
     auto iatom = 0;
     for (const auto& atom : atoms_) {
       auto Z = atom.atomic_number;
-      os << std::setw(4) << libint2::chemistry::element_info[Z - 1].symbol
+      os << std::setw(4) << libint2::chemistry::get_element_info().at(Z - 1).symbol
          << std::setw(6) << (iatom + 1) << std::setw(6) << Z << std::setw(14)
          << atom.x << std::setw(14) << atom.y << std::setw(14) << atom.z
          << std::endl;
@@ -157,19 +161,19 @@ class Export {
     os << "[MO]" << std::endl;
     for (int imo = 0; imo < coefs_.cols(); ++imo) {
       os << std::fixed << std::setprecision(10);
-      os << std::setw(8) << "Sym=" << (labels_.empty() ? "" : labels_.at(imo))
+      os << std::setw(8) << "Sym= " << (labels_.empty() ? "" : labels_.at(imo))
          << std::endl
-         << std::setw(8) << "Ene=" << std::setw(16)
+         << std::setw(8) << "Ene= " << std::setw(16)
          << (energies_.rows() == 0 ? 0.0 : energies_(imo)) << std::endl
-         << std::setw(8) << "Spin="
+         << std::setw(8) << "Spin= "
          << (spins_.empty() ? "Alpha" : (spins_.at(imo) ? "Alpha" : "Beta"))
          << std::endl
-         << std::setw(8) << "Occup=" << occupancies_(imo) << std::endl;
+         << std::setw(8) << "Occup= " << occupancies_(imo) << std::endl;
       os << std::scientific << std::uppercase << std::setprecision(10);
       for (int iao = 0; iao < coefs_.rows(); ++iao) {
-        const auto C_ao_mo = coefs_(iao, imo);
-        if (std::abs(C_ao_mo) >= 5e-11) {
-          os << std::setw(6) << (ao_map_[iao] + 1) << " " << std::setw(16)
+        const auto C_ao_mo = coefs_(ao_map_[iao], imo);
+        if (std::abs(C_ao_mo) >= coefficient_epsilon_) {
+          os << std::setw(6) << (iao + 1) << " " << std::setw(16)
              << C_ao_mo << std::endl;
         }
       }  // end loop over AOs
@@ -201,14 +205,16 @@ class Export {
   Eigen::VectorXd energies_;
   std::vector<std::string> labels_;
   std::vector<bool> spins_;
+  double coefficient_epsilon_;
   mutable bool
       dfg_is_cart_[3] = {true, true, true};  // whether {d, f, g} shells are cartesian (true) or
                         // solid harmonics (false)
   std::vector<std::vector<long>>
       atom2shell_;  // maps atom -> shell indices in basis_
   std::vector<long>
-      ao_map_;  // maps from AO order of basis_ to the order assumed by Molden
+      ao_map_;  // maps from the AOs ordered according to Molden
                 // (atoms->shells, bf in shells ordered in the Molden order)
+                // to the AOs ordered according to basis_
 
   /// @throw std::logic_error if the basis does not conforms Molden
   ///        requirements
@@ -265,7 +271,7 @@ class Export {
             int m;
             FOR_SOLIDHARM_MOLDEN(l, m)
             const auto ao_in_shell = INT_SOLIDHARMINDEX(l, m);
-            ao_map_[ao + ao_in_shell] = ao_molden;
+            ao_map_[ao_molden] = ao + ao_in_shell;
             ++ao_molden;
             END_FOR_SOLIDHARM_MOLDEN
             ao += 2 * l + 1;
@@ -273,7 +279,7 @@ class Export {
             int i, j, k;
             FOR_CART_MOLDEN(i, j, k, l)
             const auto ao_in_shell = INT_CARTINDEX(l, i, j);
-            ao_map_[ao + ao_in_shell] = ao_molden;
+            ao_map_[ao_molden] = ao + ao_in_shell;
             ++ao_molden;
             END_FOR_CART_MOLDEN
             ao += INT_NCART(l);

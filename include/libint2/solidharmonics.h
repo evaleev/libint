@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2017 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -159,7 +159,7 @@ namespace libint2 {
           See IJQC 54, 83 (1995), eqn (15). If m is negative, imaginary part is computed, whereas
           a positive m indicates that the real part of spherical harmonic Ylm is requested.
          ---------------------------------------------------------------------------------------------*/
-        static double coeff(int l, int m, int lx, int ly, int lz) {
+        static Real coeff(int l, int m, int lx, int ly, int lz) {
           using libint2::math::fac;
           using libint2::math::df_Kminus1;
           using libint2::math::bc;

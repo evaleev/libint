@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2017 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -80,7 +80,13 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   if (cparams_->accumulate_targets())
     ph_ << macro_define("ACCUM_INTS",1);
   const std::string realtype(cparams_->realtype());
-  ph_ << macro_define("REALTYPE",realtype);
+  {
+    // does LIBINT_USER_DEFINED_REAL need extra include statements?
+#ifdef LIBINT_USER_DEFINED_REAL_INCLUDES
+    ph_ << LIBINT_USER_DEFINED_REAL_INCLUDES << std::endl;
+#endif
+    ph_ << macro_define("REALTYPE", realtype);
+  }
   if (cparams_->contracted_targets())
     ph_ << macro_define("CONTRACTED_INTS",1);
   
@@ -97,7 +103,7 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   std::string pfix = oss_.str();
   si_ << pfix;
   sc_ << pfix;
-  li_ << pfix;
+  li_ << "#include <libint2/util/memory.h>" << endl << pfix; // moved from libint2.h to here
 
   // print out declarations for the array of pointers to evaluator functions
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
@@ -214,7 +220,6 @@ Libint2Iface::~Libint2Iface()
 
   // For each task, generate the evaluator type
   th_ << "#include <libint2/util/vector.h>" << std::endl;
-  th_ << "#include <libint2/util/memory.h>" << std::endl;
   th_ << "#include <libint2/util/intrinsic_operations.h>" << std::endl;
   th_ << "#include <libint2/util/timer.h>" << std::endl; // in case LIBINT2_PROFILE is on
   generate_inteval_type(th_);
@@ -538,7 +543,11 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
     os << ctext_->macro_if(macro("PROFILE"));
     os << ctext_->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
     os << ctext_->comment("profiling timers. Libint must be configured with --enable-profile to allow profiling.") << std::endl;
-    os << ctext_->declare(ctext_->mutable_modifier() + "libint2::Timers<2>*",std::string("timers")); // 1 timer for HRR and 1 timer for VRR
+    os << "#ifdef __cplusplus" << std::endl
+       << ctext_->declare(ctext_->mutable_modifier() + "libint2::Timers<2>*",std::string("timers")) // 1 timer for HRR and 1 timer for VRR
+       << "#else // timers are not accessible from C" << std::endl
+       << "  void* timers;" << std::endl
+       << "#endif" << std::endl;
     os << ctext_->macro_endif(); // >= C++11
     os << ctext_->macro_endif();
 

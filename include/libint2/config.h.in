@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2017 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -173,6 +173,9 @@
 /* User-defined real type */
 #undef LIBINT_USER_DEFINED_REAL
 
+/* Include statements needed to use LIBINT_USER_DEFINED_REAL */
+#undef LIBINT_USER_DEFINED_REAL_INCLUDES
+
 /*Generate FMA instructions? */
 #undef LIBINT_GENERATE_FMA
 
@@ -294,7 +297,7 @@
 #undef HAVE_STDINT_H
 
 /* have MPFR library ? */
-#undef HAVE_MPFR
+#undef LIBINT_HAS_MPFR
 
 /* have posix_memalign ? */
 #undef HAVE_POSIX_MEMALIGN

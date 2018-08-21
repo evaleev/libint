@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2017 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -20,6 +20,8 @@
 
 #ifndef _libint2_src_lib_libint_timer_h_
 #define _libint2_src_lib_libint_timer_h_
+
+#ifdef __cplusplus
 
 #include <libint2/util/cxxstd.h>
 
@@ -90,6 +92,8 @@ namespace libint2 {
 } // namespace libint2
 
 #endif // C++11 or later
+
+#endif  // defined(__cplusplus)
 
 #endif // header guard
 

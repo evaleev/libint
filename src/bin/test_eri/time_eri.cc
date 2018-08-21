@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2017 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -28,6 +28,7 @@
 #include <iter.h>
 #include <util.h>
 #include <libint2/deriv_iter.h>
+#include <libint2/util/memory.h>
 #include <policy_spec.h>
 #include <global_macros.h>
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2017 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -29,78 +29,6 @@
 #include <stdlib.h>
 
 #include <libint2/boys.h>
-
-#if defined(__cplusplus)
-#if HAVE_MPFR
-# include <cstddef>
-# include <gmpxx.h>
-# include <mpfr.h>
- typedef mpf_class LIBINT2_REF_REALTYPE;
- /// implement exp for mpf_class using MPFR ... I do not claim to know what issues the rounding presents here
- inline mpf_class exp(mpf_class x) {
-   mpfr_t x_r; mpfr_init(x_r);
-   mpfr_set_f(x_r, x.get_mpf_t(), MPFR_RNDN);
-
-   mpfr_t expx_r; mpfr_init(expx_r);
-   mpfr_exp(expx_r, x_r, MPFR_RNDN);
-
-   mpf_t expx;
-   mpf_init(expx);
-   mpfr_get_f(expx, expx_r, MPFR_RNDN);
-   mpf_class result(expx);
-   return result;
- }
- /// implement pow for mpf_class using MPFR ... I do not claim to know what issues the rounding presents here
- inline mpf_class pow(mpf_class x, int a) {
-   mpf_t x_to_a;
-   mpf_init(x_to_a);
-   if (a >= 0)
-     mpf_pow_ui(x_to_a, x.get_mpf_t(), (unsigned int) a);
-   else
-     mpf_pow_ui(x_to_a, x.get_mpf_t(), (unsigned int) (-a));
-   mpf_class result(x_to_a);
-   if (a < 0)
-     result = 1.0 / result;
-   return result;
- }
- /// implement erf for mpf_class using MPFR ... I do not claim to know what issues the rounding presents here
- inline mpf_class erf(mpf_class x) {
-   mpfr_t x_r; mpfr_init(x_r);
-   mpfr_set_f(x_r, x.get_mpf_t(), MPFR_RNDN);
-
-   mpfr_t erfx_r; mpfr_init(erfx_r);
-   mpfr_erf(erfx_r, x_r, MPFR_RNDN);
-
-   mpf_t erfx;
-   mpf_init(erfx);
-   mpfr_get_f(erfx, erfx_r, MPFR_RNDN);
-   mpf_class result(erfx);
-   return result;
- }
- /// implement log for mpf_class using MPFR ... I do not claim to know what issues the rounding presents here
- inline mpf_class log(mpf_class x) {
-   mpfr_t x_r; mpfr_init(x_r);
-   mpfr_set_f(x_r, x.get_mpf_t(), MPFR_RNDN);
-
-   mpfr_t logx_r; mpfr_init(logx_r);
-   mpfr_log(logx_r, x_r, MPFR_RNDN);
-
-   mpf_t logx;
-   mpf_init(logx);
-   mpfr_get_f(logx, logx_r, MPFR_RNDN);
-   mpf_class result(logx);
-   return result;
- }
-
-#else
- typedef double LIBINT2_REF_REALTYPE;
-#endif
-#else
- typedef double LIBINT2_REF_REALTYPE;
-#endif
-
-#define EPS 1.0E-17     /* Absolute precision in computing Fm(t)
-                           (see recursion:calc_fij() ) */
 
 struct ExpensiveMath {
 #if defined(__clusplus)
@@ -157,60 +85,6 @@ struct ExpensiveMath {
       return sqrt_twoalpha1_over_pi * sqrtsqrt_twoalpha1_over_pi * (2 * pow(sqrt_alpha1,l1+m1+n1))/sqrt(df[2*l1]*df[2*m1]*df[2*n1]);
     }
 };
-
-/*!
-  calc_f()
-
-  This function computes infamous integral Fn(t). For its definition
-  see Obara and Saika paper, or Shavitt's chapter in the
-  Methods in Computational Physics book (see reference below).
-  This piece of code is from Dr. Justin Fermann's program CINTS
-
- \ingroup (QT)
-*/
-template <typename Real> void calc_f(Real* F, int n, Real t)
-{
-  static ExpensiveMath expmath;
-  int i, m, k;
-  int m2;
-  Real t2;
-  Real num;
-  Real sum;
-  Real term1, term2;
-  static Real K = 1.0/M_2_SQRTPI;
-  Real et;
-
-  if (t>20.0){   /* For big t's do upward recursion */
-    t2 = 2*t;
-    et = exp(-t);
-    t = sqrt(t);
-    F[0] = K*erf(t)/t;
-    for(m=0; m<=n-1; m++){
-      F[m+1] = ((2*m + 1)*F[m] - et)/(t2);
-    }
-  }
-  else {        /* For smaller t's compute F with highest n using
-                   asymptotic series (see I. Shavitt in
-                   Methods in Computational Physics, ed. B. Alder eta l,
-                   vol 2, 1963, page 8) */
-    et = exp(-t);
-    t2 = 2*t;
-    m2 = 2*n;
-    num = expmath.df[m2];
-    i=0;
-    sum = 1.0/(m2+1);
-    do{
-      i++;
-      num = num*t2;
-      term1 = num/expmath.df[m2+2*i+2];
-      sum += term1;
-    } while (term1 > EPS && i < expmath.MAXFAC);
-    F[n] = sum*et;
-    for(m=n-1;m>=0;m--){        /* And then do downward recursion */
-      F[m] = (t2*F[m+1] + et)/(2*m+1);
-    }
-  }
-}
 
 namespace {
   template <typename Int>
@@ -306,8 +180,7 @@ inline LIBINT2_REF_REALTYPE eri(unsigned int l1, unsigned int m1, unsigned int n
 
   const int ltot = l1+l2+l3+l4+m1+m2+m3+m4+n1+n2+n3+n4;
   F = new LIBINT2_REF_REALTYPE[ltot+1];
-  //calc_f<LIBINT2_REF_REALTYPE>(F,ltot,PQ2*gammapq);
-  libint2::FmEval_Reference2<LIBINT2_REF_REALTYPE>::eval(F,PQ2*gammapq,ltot,1e-15);
+  libint2::FmEval_Reference2<LIBINT2_REF_REALTYPE>::eval(F,PQ2*gammapq,ltot);
 
 #define DEBUG 0
 #if DEBUG

@@ -1,6 +1,6 @@
-define([libint_mmm_version],[2.4.2])
-define([libint_buildid],[])
-define([libint_so_version],[2:2:0])
+define([libint_mmm_version],[2.5.0])
+define([libint_buildid],[beta.2])
+define([libint_so_version],[2:3:0])
 
 dnl --------- Begin ---------
 dnl Process this file with autoconf to produce a configure script.
@@ -1292,7 +1292,7 @@ AC_ARG_ENABLE(mpfr,
       )
      ],
      [AC_MSG_RESULT([yes])
-      AC_DEFINE(HAVE_MPFR)
+      AC_DEFINE(LIBINT_HAS_MPFR)
      ],
      [
       AC_MSG_RESULT([no])

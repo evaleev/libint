@@ -1,6 +1,6 @@
-define([libint_mmm_version],[2.4.2])
-define([libint_buildid],[])
-define([libint_so_version],[2:2:0])
+define([libint_mmm_version],[2.5.0])
+define([libint_buildid],[beta.2])
+define([libint_so_version],[2:3:0])
 
 dnl --------- Begin ---------
 dnl Process this file with autoconf to produce a configure script.
@@ -370,6 +370,38 @@ else # no posix_memalign = death
  echo "did not find posix_memalign ... this SHOULD NOT happen. Cannot proceed."
  exit 1
 fi
+
+dnl ---------- Check for optional MPFR library (needed for high-precision testing) --------
+AC_ARG_ENABLE(mpfr,
+ AS_HELP_STRING([--enable-mpfr],[Use MPFR library to test Libint integrals in high precision.]),
+ [
+  case $enableval in
+   yes)
+    AC_CHECK_HEADER(mpfr.h,[
+     AC_MSG_CHECKING([if MPFR library is usable])
+      LIBS="-lmpfr $LIBS"
+      AC_LINK_IFELSE(
+       [AC_LANG_PROGRAM(
+       [[#include <mpfr.h>
+       ]],
+       [[
+        mpfr_t x;  mpfr_init(x);
+       ]]
+      )
+     ],
+     [AC_MSG_RESULT([yes])
+      AC_DEFINE(LIBINT_HAS_MPFR)
+     ],
+     [
+      AC_MSG_RESULT([no])
+     ]
+    )
+    ]
+   )
+   ;;
+  esac
+ ]
+)
 
 dnl ------------------ Check for real type. If given, check if it is usable -----------------------
 

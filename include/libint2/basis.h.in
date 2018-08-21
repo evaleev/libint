@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2017 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -110,13 +110,13 @@ namespace libint2 {
         // for each atom find the corresponding basis components
         for(auto a=0ul; a<atoms.size(); ++a) {
 
-          auto Z = atoms[a].atomic_number;
+          const std::size_t Z = atoms[a].atomic_number;
           
           // add each component in order
           for(auto comp_idx=0ul; comp_idx!=component_basis_sets.size(); ++comp_idx) {
             const auto& component_basis_set = component_basis_sets[comp_idx];
-            if (!component_basis_set[Z].empty()) {  // found? add shells in order
-              for(auto s: component_basis_set[Z]) {
+            if (!component_basis_set.at(Z).empty()) {  // found? add shells in order
+              for(auto s: component_basis_set.at(Z)) {
                 this->push_back(std::move(s));
                 this->back().move({{atoms[a].x, atoms[a].y, atoms[a].z}});
               } // shell loop
@@ -151,8 +151,8 @@ namespace libint2 {
 
           auto Z = atoms[a].atomic_number;
 
-          if (element_bases.size() > Z && !element_bases[Z].empty()) {  // found? add shells in order
-            for(auto s: element_bases[Z]) {
+          if (element_bases.size() > Z && !element_bases.at(Z).empty()) {  // found? add shells in order
+            for(auto s: element_bases.at(Z)) {
               this->push_back(std::move(s));
               this->back().move({{atoms[a].x, atoms[a].y, atoms[a].z}});
             } // shell loop
@@ -411,8 +411,7 @@ namespace libint2 {
               iss >> elemsymbol >> rest;
 
               bool found = false;
-              using libint2::chemistry::element_info;
-              for (const auto &e: element_info) {
+              for (const auto &e: libint2::chemistry::get_element_info()) {
                 if (strcaseequal(e.symbol, elemsymbol)) {
                   Z = e.Z;
                   found = true;
@@ -450,13 +449,13 @@ namespace libint2 {
                   coeffs.emplace_back(c);
                 }
                 auto pure = force_cartesian_d ? (l > 2) : (l > 1);
-                ref_shells[Z].push_back(
+                ref_shells.at(Z).push_back(
                     libint2::Shell{
                         std::move(exps),
                         {
                             {l, pure, std::move(coeffs)}
                         },
-                        {{0.0, 0.0, 0.0}}
+                        {{0, 0, 0}}
                     }
                 );
               } else { // split the SP shells
@@ -472,20 +471,20 @@ namespace libint2 {
                   coeffs_s.emplace_back(c1);
                   coeffs_p.emplace_back(c2);
                 }
-                ref_shells[Z].push_back(
+                ref_shells.at(Z).push_back(
                     libint2::Shell{exps,
                                    {
                                        {0, false, coeffs_s}
                                    },
-                                   {{0.0, 0.0, 0.0}}
+                                   {{0, 0, 0}}
                     }
                 );
-                ref_shells[Z].push_back(
+                ref_shells.at(Z).push_back(
                     libint2::Shell{std::move(exps),
                                    {
                                        {1, false, std::move(coeffs_p)}
                                    },
-                                   {{0.0, 0.0, 0.0}}
+                                   {{0, 0, 0}}
                     }
                 );
               }
