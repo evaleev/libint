@@ -19,6 +19,15 @@ MODULE libint_f
 #ifdef LIBINT2_MAX_AM_eri2
    INTEGER, PARAMETER :: libint2_max_am_eri2 = LIBINT2_MAX_AM_eri2
 #endif
+#ifdef LIBINT2_MAX_AM_3eri
+   INTEGER, PARAMETER :: libint2_max_am_3eri = LIBINT2_MAX_AM_3eri
+#endif
+#ifdef LIBINT2_MAX_AM_3eri1
+   INTEGER, PARAMETER :: libint2_max_am_3eri1 = LIBINT2_MAX_AM_3eri1
+#endif
+#ifdef LIBINT2_MAX_AM_3eri2
+   INTEGER, PARAMETER :: libint2_max_am_3eri2 = LIBINT2_MAX_AM_3eri2
+#endif
 
    INTEGER, PARAMETER :: libint2_max_veclen = LIBINT2_MAX_VECLEN
 
@@ -51,14 +60,14 @@ MODULE libint_f
 #endif
 
 #ifdef INCLUDE_ERI3
-   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri, 0:libint2_max_am_eri, 0:libint2_max_am_eri), &
+   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_3eri, 0:libint2_max_am_eri, 0:libint2_max_am_eri), &
       BIND(C) :: libint2_build_3eri
 #if INCLUDE_ERI3 >= 1
-   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri1, 0:libint2_max_am_eri1, 0:libint2_max_am_eri1), &
+   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_3eri1, 0:libint2_max_am_eri1, 0:libint2_max_am_eri1), &
       BIND(C) :: libint2_build_3eri1
 #endif
 #if INCLUDE_ERI3 >= 2
-   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri2, 0:libint2_max_am_eri2, 0:libint2_max_am_eri2), &
+   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_3eri2, 0:libint2_max_am_eri2, 0:libint2_max_am_eri2), &
       BIND(C) :: libint2_build_3eri2
 #endif
 #endif
