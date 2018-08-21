@@ -4,6 +4,7 @@
 #include <libint2.h>
 #include <libint2/util/generated/libint2_params.h>
 #include <libint2/util/generated/libint2_types.h>
+#include <libint2/util/memory.h>
 #include <libint2/boys.h>
 #include <iomanip>
 

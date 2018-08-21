@@ -31,7 +31,7 @@ def parse_c_struct_fields(fields):
     for f in fields:
         words = f.split()
         var = words.pop()
-        m = re.match("(\w*)(?:\[(\d+)\])?", var)
+        m = re.match("(\w*)(?:\[(\w+)\])?", var)
         name.append(m.group(1))
         size.append(m.group(2))
         dtype.append(' '.join(words))
