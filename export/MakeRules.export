@@ -3,7 +3,13 @@ all:: default
 
 default:: $(TOPDIR)/lib/$(TARGET)
 
-install:: install_inc install_target install_pkgconfig install_data
+INSTALL_TARGETS = install_inc install_target install_pkgconfig install_data
+
+ifeq ($(ENABLE_FORTRAN),yes)
+    INSTALL_TARGETS += install_fortran
+endif
+
+install:: $(INSTALL_TARGETS)
 
 install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
@@ -33,6 +39,9 @@ install_data::
 install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)
 	$(LTINST) $(INSTALL) $(INSTALLLIBOPT) $< $(DESTDIR)$(libdir)
+
+install_fortran:: fortran
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/fortran/libint_f.mod $(DESTDIR)$(includedir)
 
 install-pdf:: pdf
 	(cd doc && make install-pdf) || exit 1

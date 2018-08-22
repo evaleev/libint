@@ -203,7 +203,7 @@
 /* --------------------------
   have C++ features?
    -------------------------- */
-// see lib/autoconf/ac_check_cpp11.m4
+/* see lib/autoconf/ac_check_cpp11.m4 */
 
 /* define if CXX compiler can compile C++11 */
 #undef LIBINT_HAS_CXX11
@@ -302,4 +302,4 @@
 /* have posix_memalign ? */
 #undef HAVE_POSIX_MEMALIGN
 
-#endif // header guard
+#endif /* header guard */

@@ -9,7 +9,7 @@ define([AC_CACHE_SAVE], )dnl for debugging configure.in
 AC_PREREQ(2.57)
 AC_INIT([Libint2],[libint_mmm_version],[libint@valeyev.net],[libint2])
 AC_CONFIG_SRCDIR(include/libint2.h)
-AC_CONFIG_HEADER(include/libint2/config.h)
+AC_CONFIG_HEADERS(include/libint2/config.h)
 AC_CONFIG_AUX_DIR(bin)
 AC_CONFIG_MACRO_DIR([lib/autoconf])
 
@@ -100,6 +100,16 @@ AS_HELP_STRING([--with-cxx-optflags],[Gives optimization flags for the C++ compi
 if test "X$withval" != "Xyes" -a "X$withval" != "Xno"; then
   CXXFLAGS_OPT=$withval
 fi
+)
+
+AC_ARG_ENABLE(fortran,
+AS_HELP_STRING([--enable-fortran],[Build fortran 2003 bindings and fortran example (default=no)]),
+ENABLE_FORTRAN=$enableval, ENABLE_FORTRAN=no
+)
+
+AC_ARG_WITH(fc,
+AS_HELP_STRING([--with-fc],[Gives the name of the Fortran compiler to use]),
+FC=$withval
 )
 
 AC_ARG_WITH(ranlib,
@@ -214,6 +224,18 @@ CXXFLAGS="$initial_CXXFLAGS"
 
 AC_CHECK_PROG(AR,ar,ar)
 
+if test "$enable_fortran" = yes; then
+    if test "X$FC" = "X"; then
+        AC_MSG_WARN([No Fortran compiler was given! Will try to find one, but not guaranteed to be the best choice...])
+    fi
+    AC_PROG_FC
+    AC_FC_LIBRARY_LDFLAGS
+    if test "X$FC" = "X"; then
+        enable_fortran=no
+        AC_MSG_WARN([No Fortran compiler was found! Fortran wrappers are not built.])
+    fi
+fi
+
 dnl -------- Checks for compiler/linker options. ----------
 
 # set the optimization default if neither CXXFLAGS or --with-*-optflags were given
@@ -301,6 +323,9 @@ AC_SUBST(LIBSUF)
 AC_SUBST(CXXDEPENDSUF)
 AC_SUBST(CXXDEPENDFLAGS)
 
+AC_SUBST(ENABLE_FORTRAN)
+AC_SUBST(FC)
+AC_SUBST(FCFLAGS)
 
 dnl -------- Checks for architecture specific features. --------
 # nothing so far

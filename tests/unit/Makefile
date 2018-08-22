@@ -42,7 +42,7 @@ ifeq ($(CXXGEN_SUPPORTS_CPP11),yes)
      ifeq ($(LIBINT_SHELL_SET),1)
 
 $(TEST1): $(CXXTEST1OBJ) $(CTEST1OBJ) $(COMPUTE_LIB)
-	$(CXX) -o $@ $(LDFLAGS) $^ $(SYSLIBS)
+	$(LD) -o $@ $(LDFLAGS) $^ $(SYSLIBS)
 
 check1:: $(TEST1)
 	./$^
