@@ -1,4 +1,6 @@
 TOPDIR = ..
+SRCDIR = ..
+
 -include ../MakeSuffixRules
 -include ../MakeVars
 -include ../MakeVars.features
@@ -6,7 +8,7 @@ TOPDIR = ..
 FCFLAGS := -I../include -I../include/libint2 -D__COMPILING_LIBINT2=1 $(FCFLAGS)
 COMPUTE_LIB = -L../lib -lint2
 
-.PHONY: clean distclean default make_test check_test
+.PHONY: clean distclean default make_test check_test unpack_boost
 
 default:: fortran_example check_test libint_f.o
 
@@ -48,6 +50,11 @@ endif
 
 test: test.o test-eri.o libint_f.o
 	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) $(FCLIBS) -o $@ $^
+
+test.o :: unpack_boost
+
+unpack_boost::
+	gunzip -c $(SRCDIR)/external/boost.tar.gz | tar -xf - -C $(TOPDIR)/include/libint2
 
 clean::
 	-rm -f *.o *.mod fortran_example libint2_types_f.h test fortran_incldefs.h
