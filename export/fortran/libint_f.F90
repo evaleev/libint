@@ -269,10 +269,10 @@ MODULE libint_f
 
 #ifdef INCLUDE_ERI
 CONTAINS
-   SUBROUTINE compute_eri(contrdepth, deriv_order, am1, c1, alpha1, A, &
-                          am2, c2, alpha2, B, &
-                          am3, c3, alpha3, C, &
-                          am4, c4, alpha4, D, F, erieval) bind(c, name='compute_eri_f')
+   SUBROUTINE compute_eri_f(contrdepth, deriv_order, am1, c1, alpha1, A, &
+                            am2, c2, alpha2, B, &
+                            am3, c3, alpha3, C, &
+                            am4, c4, alpha4, D, F, erieval) bind(c)
       INTEGER, PARAMETER :: dp = C_DOUBLE
       INTEGER, PARAMETER :: i = C_INT
       INTEGER(KIND=i), INTENT(IN) :: contrdepth
