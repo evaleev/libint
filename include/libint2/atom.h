@@ -1,18 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Library General Public License, version 2,
- *  as published by the Free Software Foundation.
+ *  This file is part of Libint.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Lesser General Public License for more details.
  *
- *  You should have received a copy of the GNU Library General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -72,7 +74,7 @@ namespace libint2 {
   /// libint2::constants::codata_2010::bohr_to_angstrom
   /// constant.
   /// \return a std::vector of Atom objects
-  /// \throw std::runtime_error if cannot parse the contents of \c is
+  /// \throw std::logic_error if cannot parse the contents of \c is
   inline std::vector<Atom> read_dotxyz(
       std::istream& is,
       const double bohr_to_angstrom = constants::codata_2010::bohr_to_angstrom) {
@@ -90,7 +92,7 @@ namespace libint2 {
 
     // rest of lines are atoms
     std::vector<Atom> atoms(natom);
-    for (auto i = 0; i < natom; i++) {
+    for (size_t i = 0; i < natom; i++) {
       // read line
       std::string line;
       std::getline(is, line);
@@ -102,8 +104,7 @@ namespace libint2 {
 
       // .xyz files report element labels, hence convert to atomic numbers
       int Z = -1;
-      using libint2::chemistry::element_info;
-      for(const auto& e: element_info) {
+      for(const auto& e: libint2::chemistry::get_element_info()) {
         if (strcaseequal(e.symbol, element_symbol)) {
           Z = e.Z;
           break;
@@ -112,7 +113,7 @@ namespace libint2 {
       if (Z == -1) {
         std::ostringstream oss;
         oss << "read_dotxyz: element symbol \"" << element_symbol << "\" is not recognized" << std::endl;
-        throw std::runtime_error(oss.str().c_str());
+        throw std::logic_error(oss.str().c_str());
       }
 
       atoms[i].atomic_number = Z;

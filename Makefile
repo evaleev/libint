@@ -7,7 +7,7 @@ endif
 -include $(TOPDIR)/src/lib/MakeVars
 
 SUBDIRS = src
-CHECKSUBDIRS = tests/eri tests/hartree-fock
+CHECKSUBDIRS = tests/eri tests/unit tests/hartree-fock
 CLEANSUBDIRS = $(SUBDIRS) $(CHECKSUBDIRS)
 ALLSUBDIRS = $(CLEANSUBDIRS) doc $(CHECKSUBDIRS)
 
@@ -100,7 +100,7 @@ realclean::
 check::
 	for dir in $(CHECKSUBDIRS); \
 	  do \
-	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) check) || exit 1; \
+	    (cd $${dir} && $(MAKE) check) || exit 1; \
 	  done
 
 install-pdf:: pdf

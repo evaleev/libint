@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -49,6 +50,8 @@ namespace libint2 {
     virtual std::string code_prefix() const =0;
     /// produces postfix to function declarations or definitions
     virtual std::string code_postfix() const =0;
+    /// copyright() returns the copyright statement
+    virtual std::string copyright() const =0;
     /// std_header() returns declarations necessary for every source file
     virtual std::string std_header() const =0;
     /// std_function_header() returns declarations and definitions necessary for every function
@@ -210,6 +213,8 @@ namespace libint2 {
     std::string code_prefix() const;
     /// Implementation of CodeContext::code_postfix()
     std::string code_postfix() const;
+    /// Implementation of CodeContext::copyright()
+    std::string copyright() const;
     /// Implementation of CodeContext::std_header()
     std::string std_header() const;
     /// Implementation of CodeContext::std_function_header()

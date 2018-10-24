@@ -1,22 +1,27 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
+#include "libint2/util/generated/libint2_params.h"
+#ifndef LIBINT2_REALTYPE
+#define LIBINT2_REALTYPE double
+#endif
 #include "libint2/boys.h"
 #include "libint2/util/timer.h"
 #include <ctime>
@@ -485,7 +490,7 @@ void do_taylor(int mmax, int nrepeats) {
   const double T_max = 30.0; // values >= T_max are handled by recursion
   const double scale_unit32_to_T = T_max / std::numeric_limits<uint32_t>::max();
 
-  libint2::FmEval_Taylor<double, InterpolationOrder> fmeval(mmax, 1e-15);
+  libint2::FmEval_Taylor<double, InterpolationOrder> fmeval(mmax);
   std::fill(Fm_array_sum, Fm_array_sum+mmax+1, 0.0);
   timer.clear();
   timer.start(0);

@@ -3,7 +3,13 @@ all:: default
 
 default:: $(TOPDIR)/lib/$(TARGET)
 
-install:: install_inc install_target install_pkgconfig install_data
+INSTALL_TARGETS = install_inc install_target install_pkgconfig install_data
+
+ifeq ($(ENABLE_FORTRAN),yes)
+    INSTALL_TARGETS += install_fortran
+endif
+
+install:: $(INSTALL_TARGETS)
 
 install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
@@ -14,8 +20,12 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2/config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/chemistry/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/lcao
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/lcao/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/lcao
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/util/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util/generated
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/util/generated/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util/generated
 	gunzip -c $(SRCTOPDIR)/external/boost.tar.gz | tar -xf - -C $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 
 install_pkgconfig::
@@ -29,6 +39,9 @@ install_data::
 install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)
 	$(LTINST) $(INSTALL) $(INSTALLLIBOPT) $< $(DESTDIR)$(libdir)
+
+install_fortran:: fortran
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/fortran/libint_f.mod $(DESTDIR)$(includedir)
 
 install-pdf:: pdf
 	(cd doc && make install-pdf) || exit 1

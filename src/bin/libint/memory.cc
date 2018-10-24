@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -79,7 +80,8 @@ SafePtr<MemoryManager::MemBlock>
 MemoryManager::find_block(const Address& address)
 {
   typedef memblkset::iterator iter;
-  iter blk = find_if(blks_.begin(),blks_.end(),bind2nd(ptr_fun(MemBlock::address_eq),address));
+  using std::placeholders::_1;
+  iter blk = find_if(blks_.begin(),blks_.end(),std::bind(MemBlock::address_eq,_1,address));
   if (blk == blks_.end())
     throw std::runtime_error("MemoryManager::find_block() -- didn't find a block at this address");
   else

@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -45,13 +46,13 @@ void CR_XYZ_1_1<CGShell,OverlapOper,EmptySet>::compute(const CGShell& a, const C
   using libint2::algebra::operator*;
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,OverlapOper,EmptySet>> factory_X(this);
-  auto _X = factory_X.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm());
+  auto ab_X = factory_X.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm());
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper,EmptySet>> factory_Y(this);
-  auto _Y = factory_Y.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm());
+  auto ab_Y = factory_Y.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm());
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_Z>,OverlapOper,EmptySet>> factory_Z(this);
-  auto _Z = factory_Z.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm());
+  auto ab_Z = factory_Z.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm());
 }
 
 template<>
@@ -84,16 +85,16 @@ void CR_XYZ_1_1<CGF,OverlapOper,EmptySet>::compute(const CGF& a, const CGF& b, c
   using libint2::algebra::operator*;
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGF1d<CartesianAxis_X>,OverlapOper,EmptySet>> factory_X(this);
-  auto _X = factory_X.make_child(a[CartesianAxis_X],b[CartesianAxis_X]);
+  auto ab_X = factory_X.make_child(a[CartesianAxis_X],b[CartesianAxis_X]);
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGF1d<CartesianAxis_Y>,OverlapOper,EmptySet>> factory_Y(this);
-  auto _Y = factory_Y.make_child(a[CartesianAxis_Y],b[CartesianAxis_Y]);
+  auto ab_Y = factory_Y.make_child(a[CartesianAxis_Y],b[CartesianAxis_Y]);
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGF1d<CartesianAxis_Z>,OverlapOper,EmptySet>> factory_Z(this);
-  auto _Z = factory_Z.make_child(a[CartesianAxis_Z],b[CartesianAxis_Z]);
+  auto ab_Z = factory_Z.make_child(a[CartesianAxis_Z],b[CartesianAxis_Z]);
 
   if (is_simple()) {
-    expr_ = _X * _Y * _Z;
+    expr_ = ab_X * ab_Y * ab_Z;
     nflops_ += 2;
   }
 
@@ -106,13 +107,13 @@ void CR_XYZ_1_1<CGShell,KineticOper,EmptySet>::compute(const CGShell& a, const C
   using namespace libint2::braket;
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,OverlapOper,EmptySet>> factory_X(this);
-  auto _X = factory_X.make_child(a.norm() + a.deriv().norm() + 1,b.norm() + b.deriv().norm() + 1);
+  auto ab_X = factory_X.make_child(a.norm() + a.deriv().norm() + 1,b.norm() + b.deriv().norm() + 1);
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper,EmptySet>> factory_Y(this);
-  auto _Y = factory_Y.make_child(a.norm() + a.deriv().norm() + 1,b.norm() + b.deriv().norm() + 1);
+  auto ab_Y = factory_Y.make_child(a.norm() + a.deriv().norm() + 1,b.norm() + b.deriv().norm() + 1);
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_Z>,OverlapOper,EmptySet>> factory_Z(this);
-  auto _Z = factory_Z.make_child(a.norm() + a.deriv().norm() + 1,b.norm() + b.deriv().norm() + 1);
+  auto ab_Z = factory_Z.make_child(a.norm() + a.deriv().norm() + 1,b.norm() + b.deriv().norm() + 1);
 }
 
 
@@ -205,13 +206,13 @@ void CR_XYZ_1_1<CGShell,CartesianMultipoleOper<3u>,EmptySet>::compute(const CGSh
   using libint2::algebra::operator*;
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,OverlapOper,EmptySet>> factory_X(this);
-  auto _X = factory_X.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm() + oper.descr().norm());
+  auto ab_X = factory_X.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm() + oper.descr().norm());
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper,EmptySet>> factory_Y(this);
-  auto _Y = factory_Y.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm() + oper.descr().norm());
+  auto ab_Y = factory_Y.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm() + oper.descr().norm());
 
   ChildFactory<ThisType,GenIntegralSet_1_1<CGShell1d<CartesianAxis_Z>,OverlapOper,EmptySet>> factory_Z(this);
-  auto _Z = factory_Z.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm() + oper.descr().norm());
+  auto ab_Z = factory_Z.make_child(a.norm() + a.deriv().norm(),b.norm() + b.deriv().norm() + oper.descr().norm());
 }
 
 template<>
@@ -233,7 +234,7 @@ void CR_XYZ_1_1<CGF,CartesianMultipoleOper<3u>,EmptySet>::compute(const CGF& a,
                                   CartesianMultipoleOper<1u>,
                                   EmptySet>
               > factory_X(this);
-  auto _X = factory_X.make_child(a[CartesianAxis_X],b[CartesianAxis_X],
+  auto ab_X = factory_X.make_child(a[CartesianAxis_X],b[CartesianAxis_X],
                                  EmptySet(),
                                  Descr1d(oper.descr()[CartesianAxis_X]));
 
@@ -242,7 +243,7 @@ void CR_XYZ_1_1<CGF,CartesianMultipoleOper<3u>,EmptySet>::compute(const CGF& a,
                                   CartesianMultipoleOper<1u>,
                                   EmptySet>
               > factory_Y(this);
-  auto _Y = factory_Y.make_child(a[CartesianAxis_Y],b[CartesianAxis_Y],
+  auto ab_Y = factory_Y.make_child(a[CartesianAxis_Y],b[CartesianAxis_Y],
                                  EmptySet(),
                                  Descr1d(oper.descr()[CartesianAxis_Y]));
 
@@ -251,11 +252,11 @@ void CR_XYZ_1_1<CGF,CartesianMultipoleOper<3u>,EmptySet>::compute(const CGF& a,
                                   CartesianMultipoleOper<1u>,
                                   EmptySet>
               > factory_Z(this);
-  auto _Z = factory_Z.make_child(a[CartesianAxis_Z],b[CartesianAxis_Z],
+  auto ab_Z = factory_Z.make_child(a[CartesianAxis_Z],b[CartesianAxis_Z],
                                  EmptySet(),
                                  Descr1d(oper.descr()[CartesianAxis_Z]));
 
-  expr_ = _X * _Y * _Z;
+  expr_ = ab_X * ab_Y * ab_Z;
   nflops_ += 2;
 
 }

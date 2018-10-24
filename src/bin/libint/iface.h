@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -75,17 +76,17 @@ namespace libint2 {
       //  li_ << s << endl;
       //}
 
-      const std::string macro(const std::string& label) {
+      std::string macro(const std::string& label) {
         std::string result("LIBINT2_");  result += label;
         return result;
       }
       
-      const std::string macro(const std::string& task_label, const std::string& label) {
+      std::string macro(const std::string& task_label, const std::string& label) {
         std::string result("LIBINT2_");  result += label;  if (task_label != "") { result += "_";  result += task_label; }
         return result;
       }
       
-      template <typename T> const std::string macro_define(const std::string& label, const T& value) {
+      template <typename T> std::string macro_define(const std::string& label, const T& value) {
         oss_ .str(null_str_);
         oss_ << "#ifndef " << macro(label) << endl;
         oss_ << "# define " << macro(label) << " " << value << endl;
@@ -93,13 +94,13 @@ namespace libint2 {
         return oss_.str();
       }
       
-      template <typename T> const std::string macro_define(const std::string& task_label, const std::string& label, const T& value) {
+      template <typename T> std::string macro_define(const std::string& task_label, const std::string& label, const T& value) {
         oss_ .str(null_str_);
         oss_ << "#define " << macro(task_label,label) << " " << value << endl;
         return oss_.str();
       }
       
-      template <typename T> const std::string var_declare_v(const std::string& label) {
+      template <typename T> std::string var_declare_v(const std::string& label) {
         return ctext_->declare_v(ctext_->type_name<T>(),ctext_->label_to_name(label),macro("MAX_VECLEN"));
       }      
       

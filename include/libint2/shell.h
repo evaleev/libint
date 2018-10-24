@@ -1,18 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Library General Public License, version 2,
- *  as published by the Free Software Foundation.
+ *  This file is part of Libint.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Lesser General Public License for more details.
  *
- *  You should have received a copy of the GNU Library General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -24,7 +26,6 @@
 # error "libint2/shell.h requires C++11 support"
 #endif
 
-
 #include <iostream>
 #include <array>
 #include <vector>
@@ -32,6 +33,8 @@
 #include <cmath>
 
 #include <libint2.h>
+
+#include <libint2/util/small_vector.h>
 
 namespace libint2 {
 
@@ -49,8 +52,8 @@ namespace libint2 {
                                                            6190283353629375LL}};
     /// bc(i,j) = binomial coefficient, i! / (j! (i-j)!)
     template <typename Int> int64_t bc(Int i, Int j) {
-      assert(i < fac.size());
-      assert(j < fac.size());
+      assert(i < Int(fac.size()));
+      assert(j < Int(fac.size()));
       assert(i >= j);
       return fac[i] / (fac[j] * fac[i-j]);
     }
@@ -82,7 +85,8 @@ namespace libint2 {
       struct Contraction {
           int l;
           bool pure;
-          std::vector<real_t> coeff;
+          svector<real_t> coeff;
+
           bool operator==(const Contraction& other) const {
             return &other == this || (l == other.l && pure == other.pure && coeff == other.coeff);
           }
@@ -97,15 +101,15 @@ namespace libint2 {
           }
       };
 
-      std::vector<real_t> alpha; //!< exponents
-      std::vector<Contraction> contr;      //!< contractions
+      svector<real_t> alpha; //!< exponents
+      svector<Contraction> contr;      //!< contractions
       std::array<real_t, 3> O;   //!< origin
-      std::vector<real_t> max_ln_coeff; //!< maximum ln of (absolute) contraction coefficient for each primitive
+      svector<real_t> max_ln_coeff; //!< maximum ln of (absolute) contraction coefficient for each primitive
 
       Shell() = default;
       Shell(const Shell&) = default;
       // intel does not support "move ctor = default"
-      Shell(Shell&& other) :
+      Shell(Shell&& other) noexcept :
         alpha(std::move(other.alpha)),
         contr(std::move(other.contr)),
         O(std::move(other.O)),
@@ -113,15 +117,15 @@ namespace libint2 {
       }
       Shell& operator=(const Shell&) = default;
       // intel does not support "move asgnmt = default"
-      Shell& operator=(Shell&& other) {
+      Shell& operator=(Shell&& other) noexcept {
         alpha = std::move(other.alpha);
         contr = std::move(other.contr);
         O = std::move(other.O);
         max_ln_coeff = std::move(other.max_ln_coeff);
         return *this;
       }
-      Shell(std::vector<real_t> _alpha,
-            std::vector<Contraction> _contr,
+      Shell(svector<real_t> _alpha,
+            svector<Contraction> _contr,
             std::array<real_t, 3> _O) :
               alpha(std::move(_alpha)),
               contr(std::move(_contr)),
@@ -216,15 +220,31 @@ namespace libint2 {
         return unitshell;
       }
 
+      /// @return the coefficient of primitive \c p in contraction \c c assuming unit normalized primitive
+      ///         (coeff contains coefficients of normalization-free primitives; @sa Shell::renorm() )
+      real_t coeff_normalized(size_t c, size_t p) const {
+        const auto alpha = this->alpha.at(p);
+        assert(alpha >= 0.0);
+        const auto l = contr.at(c).l;
+        assert(l <= 15); // due to df_Kminus1[] a 64-bit integer type; kinda ridiculous restriction anyway
+
+        using libint2::math::df_Kminus1;
+        const auto sqrt_Pi_cubed = real_t{5.56832799683170784528481798212};
+        const auto two_alpha = 2 * alpha;
+        const auto two_alpha_to_am32 = pow(two_alpha,l+1) * sqrt(two_alpha);
+        const auto one_over_N = sqrt((sqrt_Pi_cubed * df_Kminus1[2*l] )/(pow(2,l) * two_alpha_to_am32));
+        return contr.at(c).coeff[p] * one_over_N;
+      }
+
     private:
 
       // this makes a unit shell
       struct make_unit{};
       Shell(make_unit) :
         alpha{0.0},                           // exponent = 0
-        contr{Contraction{0, false, {1.0}}},  // contraction coefficient = 1
-        O{{0.0, 0.0, 0.0}},                   // placed at origin
-        max_ln_coeff{0.0} {
+        contr{{0, false, {1}}},  // contraction coefficient = 1
+        O{{0, 0, 0}},                   // placed at origin
+        max_ln_coeff{0} {
       }
 
       /// embeds normalization constants into contraction coefficients. Do this before computing integrals.
@@ -232,13 +252,14 @@ namespace libint2 {
       /// \note this is now private
       void renorm() {
         using libint2::math::df_Kminus1;
+        using std::pow;
         const auto sqrt_Pi_cubed = real_t{5.56832799683170784528481798212};
         const auto np = nprim();
         for(auto& c: contr) {
           assert(c.l <= 15); // due to df_Kminus1[] a 64-bit integer type; kinda ridiculous restriction anyway
-          for(auto p=0; p!=np; ++p) {
-            assert(alpha[p] >= 0.0);
-            if (alpha[p] != 0.) {
+          for(auto p=0ul; p!=np; ++p) {
+            assert(alpha[p] >= 0);
+            if (alpha[p] != 0) {
               const auto two_alpha = 2 * alpha[p];
               const auto two_alpha_to_am32 = pow(two_alpha,c.l+1) * sqrt(two_alpha);
               const auto normalization_factor = sqrt(pow(2,c.l) * two_alpha_to_am32/(sqrt_Pi_cubed * df_Kminus1[2*c.l] ));
@@ -251,15 +272,15 @@ namespace libint2 {
           if (do_enforce_unit_normalization()) {
             // compute the self-overlap of the , scale coefficients by its inverse square root
             double norm{0};
-            for(auto p=0; p!=np; ++p) {
-              for(auto q=0; q<=p; ++q) {
+            for(auto p=0ul; p!=np; ++p) {
+              for(decltype(p) q=0ul; q<=p; ++q) {
                 auto gamma = alpha[p] + alpha[q];
-                norm += (p==q ? 1.0 : 2.0) * df_Kminus1[2*c.l] * sqrt_Pi_cubed * c.coeff[p] * c.coeff[q] /
+                norm += (p==q ? 1 : 2) * df_Kminus1[2*c.l] * sqrt_Pi_cubed * c.coeff[p] * c.coeff[q] /
                         (pow(2,c.l) * pow(gamma,c.l+1) * sqrt(gamma));
               }
             }
-            auto normalization_factor = 1.0 / sqrt(norm);
-            for(auto p=0; p!=np; ++p) {
+            auto normalization_factor = 1 / sqrt(norm);
+            for(auto p=0ul; p!=np; ++p) {
               c.coeff[p] *= normalization_factor;
             }
           }
@@ -268,10 +289,10 @@ namespace libint2 {
 
         // update max log coefficients
         max_ln_coeff.resize(np);
-        for(auto p=0; p!=np; ++p) {
+        for(auto p=0ul; p!=np; ++p) {
           real_t max_ln_c = - std::numeric_limits<real_t>::max();
           for(auto& c: contr) {
-            max_ln_c = std::max(max_ln_c, log(std::abs(c.coeff[p])));
+            max_ln_c = std::max(max_ln_c, std::log(std::abs(c.coeff[p])));
           }
           max_ln_coeff[p] = max_ln_c;
         }
@@ -287,7 +308,7 @@ namespace libint2 {
     }
     os << std::endl;
 
-    for(auto i=0; i<sh.alpha.size(); ++i) {
+    for(auto i=0ul; i<sh.alpha.size(); ++i) {
       os << "  " << sh.alpha[i];
       for(const auto& c: sh.contr) {
         os << " " << c.coeff.at(i);
@@ -320,9 +341,21 @@ namespace libint2 {
         primpairs.reserve(max_nprim*max_nprim);
         for(int i=0; i!=3; ++i) AB[i] = 0.;
       }
+      template <typename Real> ShellPair(const Shell& s1, const Shell& s2, Real ln_prec) {
+        init(s1, s2, ln_prec);
+      }
 
-      // initializes "expensive" primitive pair data; primitive pairs are
-      void init(const Shell& s1, const Shell& s2, const real_t& ln_prec) {
+      void resize(std::size_t max_nprim) {
+        const auto max_nprim2 = max_nprim * max_nprim;
+        if (max_nprim * max_nprim > primpairs.size())
+          primpairs.resize(max_nprim2);
+      }
+
+      /// initializes "expensive" primitive pair data; a pair of primitives with exponents \f$ \{\alpha_a,\alpha_b\} \f$
+      /// located at \f$ \{ \vec{A},\vec{B} \} \f$ whose max coefficients in contractions are \f$ \{ \max{|c_a|} , \max{|c_b|} \} \f$ is screened-out (omitted)
+      /// if \f$ \exp(-|\vec{A}-\vec{B}|^2 \alpha_a * \alpha_b / (\alpha_a + \alpha_b)) \max{|c_a|} \max{|c_b|} \leq \epsilon \f$
+      /// where \f$ \epsilon \f$ is the desired precision of the integrals.
+      template <typename Real> void init(const Shell& s1, const Shell& s2, Real ln_prec) {
 
         primpairs.clear();
 
@@ -341,7 +374,7 @@ namespace libint2 {
             const auto& a1 = s1.alpha[p1];
             const auto& a2 = s2.alpha[p2];
             const auto gamma = a1 + a2;
-            const auto oogamma = 1.0 / gamma;
+            const auto oogamma = 1 / gamma;
 
             const auto rho = a1 * a2 * oogamma;
             const auto minus_rho_times_AB2 = -rho*AB2;

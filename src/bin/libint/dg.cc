@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -799,7 +800,7 @@ namespace {
 // Handles "trivial" nodes. A node is trivial is it satisfies the following conditions:
 // 0) not a target
 // 1) has only one child
-// 2) the exit arc is of a trivial type (DGArvDirect or IntegralSet_to_Integral applied to node of size 1)
+// 2) the exit arc is of a trivial type (DGArcDirect or IntegralSet_to_Integral applied to node of size 1)
 //
 // By "handling" I mean either removing the node from the graph or making a node refer to another node so that
 // no code is generated for it.
@@ -1051,6 +1052,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   const std::string tlabel = taskmgr.current().label();
 
+  decl << context->copyright();
   decl << context->std_header();
   std::string comment("This code computes "); comment += label; comment += "\n";
   if (context->comments_on())
@@ -1072,6 +1074,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   // Generate function's definition
   //
 
+  def << context->copyright();
   // include standard headers
   def << context->std_header();
   // include declarations for all function calls:

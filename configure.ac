@@ -1,6 +1,6 @@
-define([libint_mmm_version],[2.3.0])
-define([libint_buildid],[beta.3])
-define([libint_so_version],[2:2:0])
+define([libint_mmm_version],[2.5.0])
+define([libint_buildid],[beta.2])
+define([libint_so_version],[2:3:0])
 
 dnl --------- Begin ---------
 dnl Process this file with autoconf to produce a configure script.
@@ -9,7 +9,7 @@ define([AC_CACHE_SAVE], )dnl for debugging configure.in
 AC_PREREQ([2.68])
 AC_INIT([Libint2],[libint_mmm_version],[libint@valeyev.net],[libint2])
 AC_CONFIG_SRCDIR(src/bin/libint/rr.h)
-AC_CONFIG_HEADER(include/libint2/config.h)
+AC_CONFIG_HEADERS(include/libint2/config.h)
 AC_CONFIG_AUX_DIR(bin)
 AC_CONFIG_MACRO_DIR([lib/autoconf])
 
@@ -46,26 +46,27 @@ AC_SUBST(LIBINT_SO_VERSION)
 dnl --------- Features ---------
 
 AC_ARG_WITH(api-prefix,
-[  --with-api-prefix       Prepend this string to every name in the library API (except for the types).],
+AS_HELP_STRING([--with-api-prefix],[Prepend this string to every name in the library API (except for the types).]),
 [
 AC_DEFINE_UNQUOTED(LIBINT_API_PREFIX,"$withval")
 echo Using API prefix: $withval
 ])
 
-LIBINT_CGSHELL_ORDERING_STANDARD=1   AC_SUBST(LIBINT_CGSHELL_ORDERING_STANDARD)
-LIBINT_CGSHELL_ORDERING_INTV3=2      AC_SUBST(LIBINT_CGSHELL_ORDERING_INTV3)
-LIBINT_CGSHELL_ORDERING_GAMESS=3     AC_SUBST(LIBINT_CGSHELL_ORDERING_GAMESS)
-LIBINT_CGSHELL_ORDERING_ORCA=4       AC_SUBST(LIBINT_CGSHELL_ORDERING_ORCA)
-LIBINT_CGSHELL_ORDERING_BAGEL=5      AC_SUBST(LIBINT_CGSHELL_ORDERING_BAGEL)
+LIBINT_CGSHELL_ORDERING_STANDARD=1
+LIBINT_CGSHELL_ORDERING_INTV3=2
+LIBINT_CGSHELL_ORDERING_GAMESS=3
+LIBINT_CGSHELL_ORDERING_ORCA=4
+LIBINT_CGSHELL_ORDERING_BAGEL=5
 libint_cgshell_ordering=standard
 AC_ARG_WITH(cartgauss-ordering,
-[  --with-cartgauss-ordering   Use one of the following known orderings for shells of cartesian Gaussians:
-                               standard -- standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...)
-                               intv3  -- intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx)
-                               gamess -- GAMESS ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
-                               orca -- ORCA ordering (hydrid between GAMESS and standard)
-                               bagel -- axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)
-                               The default is standard.],
+[  --with-cartgauss-ordering
+                         Use one of the following known orderings for shells of cartesian Gaussians:
+                           standard -- standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...)
+                           intv3  -- intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx)
+                           gamess -- GAMESS ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
+                           orca -- ORCA ordering (hydrid between GAMESS and standard)
+                           bagel -- axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)
+                         The default is standard.],
 [
 libint_cgshell_ordering=$withval
 ])
@@ -97,26 +98,54 @@ AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_GAMESS,$LIBINT_CGSHELL_ORDERING_GAMES
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_ORCA,$LIBINT_CGSHELL_ORDERING_ORCA)
 AC_DEFINE_UNQUOTED(LIBINT_CGSHELL_ORDERING_BAGEL,$LIBINT_CGSHELL_ORDERING_BAGEL)
 
+LIBINT_SHGSHELL_ORDERING_STANDARD=1
+LIBINT_SHGSHELL_ORDERING_GAUSSIAN=2
+libint_shgshell_ordering=standard
+AC_ARG_WITH(shgauss-ordering,
+[  --with-shgauss-ordering
+                         Use one of the following known orderings for shells of solid harmonic Gaussians:
+                           standard -- standard ordering (-l, -l+1 ... l)
+                           gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+                         The default is standard.],
+[
+libint_shgshell_ordering=$withval
+])
+AC_MSG_RESULT([Using $libint_shgshell_ordering ordering of solid harmonic Gaussians])
+case $libint_shgshell_ordering in
+  standard)
+    libint_shgshell_ordering=$LIBINT_SHGSHELL_ORDERING_STANDARD
+  ;;
+  gaussian)
+    libint_shgshell_ordering=$LIBINT_SHGSHELL_ORDERING_GAUSSIAN
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --with-solidharmgauss-ordering ($withval)])
+  ;;
+esac
+AC_DEFINE_UNQUOTED(LIBINT_SHGSHELL_ORDERING,$libint_shgshell_ordering)
+AC_DEFINE_UNQUOTED(LIBINT_SHGSHELL_ORDERING_STANDARD,$LIBINT_SHGSHELL_ORDERING_STANDARD)
+AC_DEFINE_UNQUOTED(LIBINT_SHGSHELL_ORDERING_GAUSSIAN,$LIBINT_SHGSHELL_ORDERING_GAUSSIAN)
+
 LIBINT_SHELL_SET_STANDARD=1   AC_SUBST(LIBINT_SHELL_SET_STANDARD)
 LIBINT_SHELL_SET_ORCA=2      AC_SUBST(LIBINT_SHELL_SET_ORCA)
 libint_shell_set=standard
 AC_ARG_WITH(shell-set,
-[  --with-shell-set     The library will support computation of shell sets sets subject to these restrictions:
-                               standard -- standard ordering:
-                                           for (ab|cd):
-                                           l(a) >= l(b),
-                                           l(c) >= l(d),
-                                           l(a)+l(b) <= l(c)+l(d)
-                                           for (b|cd):
-                                           l(c) >= l(d)
-                               orca -- ORCA ordering:
-                                           for (ab|cd):
-                                           l(a) <= l(b),
-                                           l(c) <= l(d),
-                                           l(a) < l(c) || (l(a) == l(c) && l(b) < l(d))
-                                           for (b|cd):
-                                           l(c) <= l(d)
-                               The default is standard.],
+[  --with-shell-set       The library will support computation of shell sets sets subject to these restrictions:
+                           standard -- standard ordering:
+                             for (ab|cd):
+                               l(a) >= l(b),
+                               l(c) >= l(d),
+                               l(a)+l(b) <= l(c)+l(d)
+                             for (b|cd):
+                               l(c) >= l(d)
+                           orca -- ORCA ordering:
+                             for (ab|cd):
+                               l(a) <= l(b),
+                               l(c) <= l(d),
+                               l(a) < l(c) || (l(a) == l(c) && l(b) < l(d))
+                             for (b|cd):
+                               l(c) <= l(d)
+                          The default is standard.],
 [
 libint_shell_set=$withval
 ])
@@ -138,7 +167,7 @@ AC_DEFINE_UNQUOTED(LIBINT_SHELL_SET_STANDARD,$LIBINT_SHELL_SET_STANDARD)
 AC_DEFINE_UNQUOTED(LIBINT_SHELL_SET_ORCA,$LIBINT_SHELL_SET_ORCA)
 
 AC_ARG_ENABLE(debug,
-[  --enable-debug          Compile with debugging options],
+AS_HELP_STRING([--enable-debug],[Compile with debugging options]),
 [
 case $enableval in
   yes)
@@ -163,7 +192,7 @@ esac
 EXCLUDED_DIRS=
 
 AC_ARG_ENABLE(1body,
-[  --enable-1body=N        Compile with support for up to N-th derivatives of 1-body integrals],
+AS_HELP_STRING([--enable-1body=N],[Compile with support for up to N-th derivatives of 1-body integrals]),
 [
 case $enableval in
   yes)
@@ -184,8 +213,22 @@ esac
 ]
 )
 
+DISABLE_ONEBODY_PROPERTY_DERIVS=1
+AC_ARG_ENABLE(1body-property-derivs,
+AS_HELP_STRING([--enable-1body-property-derivs],[Enable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot). These derivatives are disabled by default to save compile time.]),
+[
+case $enableval in
+  yes)
+    DISABLE_ONEBODY_PROPERTY_DERIVS=0
+  ;;
+esac
+])
+if test X$DISABLE_ONEBODY_PROPERTY_DERIVS != 0; then
+  AC_DEFINE(DISABLE_ONEBODY_PROPERTY_DERIVS)
+fi
+
 AC_ARG_ENABLE(eri,
-[  --enable-eri=N          Compile with support for up to N-th derivatives of electron repulsion integrals],
+AS_HELP_STRING([--enable-eri=N],[Compile with support for up to N-th derivatives of electron repulsion integrals]),
 [
 case $enableval in
   yes)
@@ -207,7 +250,7 @@ esac
 )
 
 AC_ARG_ENABLE(eri3,
-[  --enable-eri3=N         Compile with support for up to N-th derivatives of 3-center electron repulsion integrals],
+AS_HELP_STRING([--enable-eri3=N],[Compile with support for up to N-th derivatives of 3-center electron repulsion integrals]),
 [
 case $enableval in
   yes)
@@ -229,7 +272,7 @@ esac
 )
 
 AC_ARG_ENABLE(eri2,
-[  --enable-eri2=N         Compile with support for up to N-th derivatives of 2-center electron repulsion integrals],
+AS_HELP_STRING([--enable-eri2=N],[Compile with support for up to N-th derivatives of 2-center electron repulsion integrals]),
 [
 case $enableval in
   yes)
@@ -251,7 +294,7 @@ esac
 )
 
 AC_ARG_ENABLE(g12,
-[  --enable-g12=N          Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors],
+AS_HELP_STRING([--enable-g12=N],[Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors]),
 [
 case $enableval in
   yes)
@@ -273,7 +316,7 @@ esac
 )
 
 AC_ARG_ENABLE(g12dkh,
-[  --enable-g12dkh=N       Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors],
+AS_HELP_STRING([--enable-g12dkh=N],[Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors]),
 [
 case $enableval in
   yes)
@@ -296,7 +339,7 @@ esac
 
 LIBINT_MAX_AM=4
 AC_ARG_WITH(max-am,
-[  --with-max-am=N      Support Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...],
+AS_HELP_STRING([--with-max-am=N],[Support Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...]),
 [
   case $withval in 
     *,*)
@@ -322,7 +365,7 @@ AC_DEFINE_UNQUOTED(LIBINT_MAX_AM,$LIBINT_MAX_AM)
 
 LIBINT_OPT_AM=$((($LIBINT_MAX_AM/2)+1))
 AC_ARG_WITH(opt-am,
-[  --with-opt-am=N       Optimize maximally for up to angular momentum N (N <= max-am).],
+AS_HELP_STRING([--with-opt-am=N],[Optimize maximally for up to angular momentum N (N <= max-am).]),
 [
   case $withval in 
     *,*)
@@ -343,7 +386,7 @@ AC_DEFINE_UNQUOTED(LIBINT_OPT_AM,$LIBINT_OPT_AM)
 
 ERI_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(eri-max-am,
-[  --with-eri-max-am=N      Support ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...],
+AS_HELP_STRING([--with-eri-max-am=N],[Support ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...]),
 [
   case $withval in 
     *,*)
@@ -369,7 +412,7 @@ AC_ARG_WITH(eri-max-am,
 
 ERI_OPT_AM=$LIBINT_OPT_AM
 AC_ARG_WITH(eri-opt-am,
-[  --with-eri-opt-am=N       Optimize ERIs maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...],
+AS_HELP_STRING([--with-eri-opt-am=N],[Optimize ERIs maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...]),
 [
   case $withval in 
     *,*)
@@ -398,7 +441,7 @@ fi
 
 ONEBODY_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(1body-max-am,
-[  --with-1body-max-am=N      Support 1-e ints for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...],
+AS_HELP_STRING([--with-1body-max-am=N],[Support 1-e ints for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...]),
 [
   case $withval in 
     *,*)
@@ -424,7 +467,7 @@ AC_ARG_WITH(1body-max-am,
 
 ONEBODY_OPT_AM=$LIBINT_OPT_AM
 AC_ARG_WITH(1body-opt-am,
-[  --with-1body-opt-am=N       Optimize 1-e ints maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...],
+AS_HELP_STRING([--with-1body-opt-am=N],[Optimize 1-e ints maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...]),
 [
   case $withval in 
     *,*)
@@ -443,6 +486,19 @@ AC_ARG_WITH(1body-opt-am,
 ]
 )
 
+MULTIPOLE_MAX_ORDER=4
+AC_ARG_WITH(multipole-max-order,
+AS_HELP_STRING([--with-multipole-max-order=N],[Maximum order of spherical multipole integrals. The default is 4. There is no maximum]),
+[
+  case $withval in 
+    *) 
+      MULTIPOLE_MAX_ORDER=$withval
+    ;;
+  esac
+]
+)
+AC_DEFINE_UNQUOTED(MULTIPOLE_MAX_ORDER,$MULTIPOLE_MAX_ORDER)  
+
 if test X$INCLUDE_ONEBODY != Xno; then
   AC_DEFINE_UNQUOTED(INCLUDE_ONEBODY,$INCLUDE_ONEBODY)
   LIBINT_SUPPORTS_ONEBODY=yes
@@ -454,7 +510,7 @@ fi
 # check max am for 3-center ERIs, if needed
 ERI3_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(eri3-max-am,
-[  --with-eri3-max-am=N     Support 3-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...],
+AS_HELP_STRING([--with-eri3-max-am=N],[Support 3-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...]),
 [
   case $withval in 
     *,*)
@@ -480,7 +536,7 @@ AC_ARG_WITH(eri3-max-am,
 
 ERI3_OPT_AM=$LIBINT_OPT_AM
 AC_ARG_WITH(eri3-opt-am,
-[  --with-eri3-opt-am=N       Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...],
+AS_HELP_STRING([--with-eri3-opt-am=N],[Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...]),
 [
   case $withval in 
     *,*)
@@ -500,7 +556,7 @@ AC_ARG_WITH(eri3-opt-am,
 )
 
 AC_ARG_ENABLE(eri3-pure-sh,
-[  --enable-eri3-pure-sh   Assume the "unpaired" center of 3-center electron repulsion integrals will be transformed to pure solid harmonics],
+AS_HELP_STRING([--enable-eri3-pure-sh],[Assume the "unpaired" center of 3-center electron repulsion integrals will be transformed to pure solid harmonics]),
 [
 case $enableval in
   yes)
@@ -525,7 +581,7 @@ fi
 # check max am for 2-center ERIs, if needed
 ERI2_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(eri2-max-am,
-[  --with-eri2-max-am=N     Support 2-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...],
+AS_HELP_STRING([--with-eri2-max-am=N],[Support 2-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...]),
 [
   case $withval in 
     *,*)
@@ -551,7 +607,7 @@ AC_ARG_WITH(eri2-max-am,
 
 ERI2_OPT_AM=$LIBINT_OPT_AM
 AC_ARG_WITH(eri2-opt-am,
-[  --with-eri2-opt-am=N       Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...],
+AS_HELP_STRING([--with-eri2-opt-am=N],[Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am).  Can specify values for each derivative levels as a list N0,N1,N2...]),
 [
   case $withval in 
     *,*)
@@ -571,7 +627,7 @@ AC_ARG_WITH(eri2-opt-am,
 )
 
 AC_ARG_ENABLE(eri2-pure-sh,
-[  --enable-eri2-pure-sh   Assume the 2-center electron repulsion integrals will be transformed to pure solid harmonics],
+AS_HELP_STRING([--enable-eri2-pure-sh],[Assume the 2-center electron repulsion integrals will be transformed to pure solid harmonics]),
 [
 case $enableval in
   yes)
@@ -596,7 +652,7 @@ fi
 # check max am for G12 integrals, if needed
 G12_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(g12-max-am,
-[  --with-g12-max-am=N       Support integrals for G12 methods of angular momentum up to N.],
+AS_HELP_STRING([--with-g12-max-am=N],[Support integrals for G12 methods of angular momentum up to N.]),
 if test $withval -le 0; then
   AC_MSG_ERROR([Invalid value for --with-g12-max-am ($withval)])
 else
@@ -606,14 +662,14 @@ fi
 
 G12_OPT_AM=$LIBINT_OPT_AM
 AC_ARG_WITH(g12-opt-am,
-[  --with-g12-opt-am=N       Optimize G12 integrals for up to angular momentum N (N <= max-am).],
+AS_HELP_STRING([--with-g12-opt-am=N],[Optimize G12 integrals for up to angular momentum N (N <= max-am).]),
 if test $withval -le $G12_MAX_AM; then
   G12_OPT_AM=$withval
 fi
 )
 
 AC_ARG_ENABLE(t1g12-support,
-[  --disable-t1g12-support Libint will not support [Ti,G12] integrals],
+AS_HELP_STRING([--disable-t1g12-support],[Libint will not support [Ti,G12] integrals]),
 [
 case $enableval in
   yes)
@@ -632,7 +688,7 @@ esac
 )
 
 AC_ARG_ENABLE(composite-evaluators,
-[  --disable-composite-evaluators   Libint will not use composite evaluators (i.e. every evaluator wil compute one integral type only)],
+AS_HELP_STRING([--disable-composite-evaluators],[Libint will not use composite evaluators (i.e. every evaluator wil compute one integral type only)]),
 [
 case $enableval in
   yes)
@@ -667,7 +723,7 @@ fi
 # check max am for G12DKH integrals, if needed
 G12DKH_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(g12dkh-max-am,
-[  --with-g12dkh-max-am=N  Support integrals for relativistic G12 methods of angular momentum up to N.],
+AS_HELP_STRING([--with-g12dkh-max-am=N],[Support integrals for relativistic G12 methods of angular momentum up to N.]),
 if test $withval -le 0; then
   AC_MSG_ERROR([Invalid value for --with-g12dkh-max-am ($withval)])
 else
@@ -677,7 +733,7 @@ fi
 
 G12DKH_OPT_AM=$LIBINT_OPT_AM
 AC_ARG_WITH(g12dkh-opt-am,
-[  --with-g12dkh-opt-am=N  Optimize G12DKH integrals for up to angular momentum N (N <= max-am).],
+AS_HELP_STRING([--with-g12dkh-opt-am=N],[Optimize G12DKH integrals for up to angular momentum N (N <= max-am).]),
 if test $withval -le $G12DKH_MAX_AM; then
   G12DKH_OPT_AM=$withval
 fi
@@ -693,7 +749,7 @@ fi
 
 LIBINT_UNROLLING_THRESHOLD=100
 AC_ARG_ENABLE(unrolling,
-[  --enable-unrolling      Unroll shell sets into integrals (--enable-unrolling=S will unroll shell sets larger than S).],
+AS_HELP_STRING([--enable-unrolling],[Unroll shell sets into integrals (--enable-unrolling=S will unroll shell sets larger than S).]),
 [
 case $enableval in
   yes)
@@ -718,7 +774,7 @@ if test X$LIBINT_UNROLLING_THRESHOLD != X; then
 fi
 
 AC_ARG_ENABLE(generic-code,
-[  --enable-generic-code   Use manually-written generic code.],
+AS_HELP_STRING([--enable-generic-code],[Use manually-written generic code.]),
 [
 case $enableval in
   yes)
@@ -733,7 +789,7 @@ esac
 
 LIBINT_VECTOR_LENGTH=1
 AC_ARG_WITH(vector-length,
-[  --with-vector-length=N  Compute integrals in vectors of length N.],
+AS_HELP_STRING([--with-vector-length=N],[Compute integrals in vectors of length N.]),
 [
 if test $withval -gt 0; then
   LIBINT_VECTOR_LENGTH=$withval
@@ -745,7 +801,7 @@ fi
 if test $LIBINT_VECTOR_LENGTH -gt 1; then
   LIBINT_VECTOR_METHOD=block
   AC_ARG_WITH(vector-method,
-  [  --with-vector-method    Specifies how to vectorize integrals. Allowed values are 'block' (default), and 'line'.],
+  AS_HELP_STRING([--with-vector-method],[Specifies how to vectorize integrals. Allowed values are 'block' (default), and 'line'.]),
   [
   LIBINT_VECTOR_METHOD=$withval
   ])
@@ -785,7 +841,7 @@ fi
 
 libint_generate_gma=0
 AC_ARG_ENABLE(fma,
-[  --enable-fma            Generate FMA (fused multiply-add) instructions (CXXGEN must support C++11; to benefit must have FMA-capable hardware and compiler).],
+AS_HELP_STRING([--enable-fma],[Generate FMA (fused multiply-add) instructions (CXXGEN must support C++11; to benefit must have FMA-capable hardware and compiler)]),
 [
 case $enableval in
   yes)
@@ -803,7 +859,7 @@ esac
 ])
 
 AC_ARG_ENABLE(accum-ints,
-[  --enable-accum-ints     Accumulate integrals to the buffer, rather than copy.],
+AS_HELP_STRING([--enable-accum-ints],[Accumulate integrals to the buffer, rather than copy.]),
 [
 case $enableval in
   yes)
@@ -820,7 +876,7 @@ AC_MSG_RESULT([Will copy integrals to the buffer])
 ])
 
 AC_ARG_ENABLE(flop-counter,
-[  --enable-flop-counter   Support (approximate) FLOP counting by the library. CXXGEN must support C++11!],
+AS_HELP_STRING([--enable-flop-counter],[Support (approximate) FLOP counting by the library. CXXGEN must support C++11!]),
 [
 case $enableval in
   yes)
@@ -837,7 +893,7 @@ esac
 ])
 
 AC_ARG_ENABLE(profile,
-[  --enable-profile        Turn on profiling instrumentation of the library. CXXGEN must support C++11!],
+AS_HELP_STRING([--enable-profile],[Turn on profiling instrumentation of the library. CXXGEN must support C++11!]),
 [
 case $enableval in
   yes)
@@ -855,7 +911,7 @@ esac
 
 acx_contracted_ints=yes
 AC_ARG_ENABLE(contracted-ints,
-[  --enable-contracted-ints     Turn on support for contracted integrals.],
+AS_HELP_STRING([--enable-contracted-ints],[Turn on support for contracted integrals.]),
 [
 case $enableval in
   no)
@@ -876,7 +932,7 @@ dnl
 dnl Preferred strategies for evaluation
 dnl
 AC_ARG_WITH(eri-strategy,
-[  --with-eri-strategy     Compute ERIs using the following strategy. This option is for experts ONLY.],
+AS_HELP_STRING([--with-eri-strategy],[Compute ERIs using the following strategy. This option is for experts ONLY.]),
 [
   case $withval in
     OS)
@@ -897,7 +953,7 @@ AC_MSG_RESULT([Using ERI strategy: $withval])
 
 BUILDID="libint_buildid"
 AC_ARG_WITH(build-id,
-[  --with-build-id         Gives an identifier for the build.],
+AS_HELP_STRING([--with-build-id],[Gives an identifier for the build.]),
 BUILDID=$withval
 )
 AC_SUBST(BUILDID)
@@ -915,87 +971,87 @@ AC_SUBST(LIBINT_VERSION)
 ac_default_prefix="/usr/local/libint/$LIBINT_VERSION"
 
 AC_ARG_WITH(cxx,
-[  --with-cxx              Gives the name of the C++ compiler to use.],
+AS_HELP_STRING([--with-cxx],[Gives the name of the C++ compiler to use.]),
 CXX=$withval
 )
 
 CXXFLAGS_OPT=
 AC_ARG_WITH(cxx-optflags,
-[  --with-cxx-optflags     Gives optimization flags for the C++ compiler.],
+AS_HELP_STRING([--with-cxx-optflags],[Gives optimization flags for the C++ compiler.]),
 if test "X$withval" != "Xyes" -a "X$withval" != "Xno"; then
   CXXFLAGS_OPT=$withval
 fi
 )
 
 AC_ARG_WITH(cxxgen,
-[  --with-cxxgen           Gives the name of the C++ compiler to compile generated code.],
+AS_HELP_STRING([--with-cxxgen],[Gives the name of the C++ compiler to compile generated code.]),
 CXXGEN=$withval
 )
 
 CXXGENFLAGS_OPT=
 AC_ARG_WITH(cxxgen-optflags,
-[  --with-cxxgen-optflags  Gives optimization flags for the C++ compiler for generated source.],
+AS_HELP_STRING([--with-cxxgen-optflags],[Gives optimization flags for the C++ compiler for generated source.]),
 if test "X$withval" != "Xyes" -a "X$withval" != "Xno"; then
   CXXGENFLAGS_OPT=$withval
 fi
 )
 
 AC_ARG_WITH(cxxdepend,
-[  --with-cxxdepend        Gives the name of the C++ compiler with which to extract dependency information.],
+AS_HELP_STRING([--with-cxxdepend],[Gives the name of the C++ compiler with which to extract dependency information.]),
 CXXDEPEND=$withval
 )
 
 AC_ARG_WITH(ranlib,
-[  --with-ranlib           Gives the name of the ranlib program.],
+AS_HELP_STRING([--with-ranlib],[Gives the name of the ranlib program.]),
 RANLIB=$withval
 )
 
 AC_ARG_WITH(ar,
-[  --with-ar               Names the archive creator.],
+AS_HELP_STRING([--with-ar],[Names the archive creator.]),
 AR=$withval
 )
 
 ARFLAGS=r
 AC_ARG_WITH(ar-flags,
-[  --with-ar-flags         Flags for the the archive creator.],
+AS_HELP_STRING([--with-ar-flags],[Flags for the the archive creator.]),
 ARFLAGS=$withval
 )
 AC_SUBST(ARFLAGS)
 
 AC_ARG_WITH(ld,
-[  --with-ld               Names the object linker.],
+AS_HELP_STRING([--with-ld],[Names the object linker.]),
 LD=$withval
 )
 
 libintincludedir=$includedir
 AC_ARG_WITH(libint-includedir,
-[  --with-libint-includedir       Specifies include file install subdir.],
+AS_HELP_STRING([--with-libint-includedir],[Specifies include file install subdir.]),
 libintincludedir=$withval
 )
 AC_SUBST(libintincludedir)
 
 EXPORTDIR=libint-$LIBINT_VERSION
 AC_ARG_WITH(libint-exportdir,
-[  --with-libint-exportdir Specifies export directory name. Default is libint-<version>.],
+AS_HELP_STRING([--with-libint-exportdir],[Specifies export directory name. Default is libint-<version>.]),
 EXPORTDIR=$withval
 )
 AC_SUBST(EXPORTDIR)
 
 AC_ARG_WITH(incdirs,
-[  --with-incdirs          Specifies include directories (-Idir1 -Idir2).],
+AS_HELP_STRING([--with-incdirs],[Specifies include directories (-Idir1 -Idir2).]),
 EXTRAINCDIRS=$withval
 CPPFLAGS=$withval
 echo Using extra include directories: $withval
 )
 
 AC_ARG_WITH(libs,
-[  --with-libs             Specifies libraries (-llib1 -llib2).],
+AS_HELP_STRING([--with-libs],[Specifies libraries (-llib1 -llib2).]),
 LIBS=$withval
 echo Using extra libraries: $withval
 )
 
 AC_ARG_WITH(libdirs,
-[  --with-libdirs          Specifies library directories (-Ldir1 -Ldir2).],
+AS_HELP_STRING([--with-libdirs],[Specifies library directories (-Ldir1 -Ldir2).]),
 LIBDIRS=$withval
 LDFLAGS=$withval
 echo Using extra library directories: $withval
@@ -1003,14 +1059,14 @@ echo Using extra library directories: $withval
 
 SCRATCHDIR=tmp
 AC_ARG_WITH(scratchdir,
-[  --with-scratchdir       Specifies the location for the machine-generated library source and object files.],
+AS_HELP_STRING([--with-scratchdir],[Specifies the location for the machine-generated library source and object files.]),
 SCRATCHDIR=$withval
 )
 AC_SUBST(SCRATCHDIR)
 
 PKGCONFIGDIR='$(libdir)/pkgconfig'
 AC_ARG_WITH(pkgconfigdir,
-[  --with-pkgconfigdir     Specifies the location to put pkg-config's data file. Default is $(libdir)/pkgconfig.],
+AS_HELP_STRING([--with-pkgconfigdir],[Specifies the location to put pkg-config's data file. Default is $(libdir)/pkgconfig.]),
 PKGCONFIGDIR=$withval
 )
 AC_SUBST(PKGCONFIGDIR)
@@ -1041,7 +1097,6 @@ if test "X$CXXGEN" = X; then
   CXXGEN=$CXX
 fi
 AC_SUBST(CXXGEN)
-AC_SUBST(CXXGENFLAGS)
 
 # discard CXXFLAGS provided by the C++ detection macros
 initial_CXXFLAGS="$CXXFLAGS"
@@ -1151,6 +1206,7 @@ AC_SUBST(EXTRAINCLUDE)
 AC_SUBST(EXTRADEFINES)
 
 AC_SUBST(CXXFLAGS)
+AC_SUBST(CXXGENFLAGS)
 AC_SUBST(LIBDIRS)
 AC_SUBST(LD)
 AC_SUBST(LDFLAGS)
@@ -1172,7 +1228,7 @@ if test "X$have_posix_memalign" != "X0"; then
  # see default_params.cc to see this logic in action
  LIBINT_ALIGN_SIZE=default  # this will be interpreted as "use the default alignment"
  AC_ARG_WITH(align-size,
- [  --with-align-size       (EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics.],
+ AS_HELP_STRING([--with-align-size],[(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics.]),
   [
    if test "X$withval" != "Xdefault"; then
     LIBINT_ALIGN_SIZE=$withval
@@ -1205,6 +1261,7 @@ fi
 
 # to support FMA CXXGEN must be able to compile C++11
 # NB -std=c++11 is not added to CXXGENFLAGS automatically!
+ACX_CHECK_CPP11_CXXGEN
 if test "X$libint_generate_gma" = "X1" -a "X$CXXGEN_SUPPORTS_CPP11" = "Xno"; then
   AC_MSG_ERROR([CXXGEN must support C++11 to provide FMA support. Add -std=c++11 to CXXGENFLAGS.])
 fi
@@ -1218,7 +1275,7 @@ fi
 
 dnl ---------- Check for optional MPFR library (needed for high-precision testing) --------
 AC_ARG_ENABLE(mpfr,
- [  --enable-mpfr           Use MPFR library to test Libint integrals in high precision.],
+ AS_HELP_STRING([--enable-mpfr],[Use MPFR library to test Libint integrals in high precision.]),
  [
   case $enableval in
    yes)
@@ -1235,7 +1292,7 @@ AC_ARG_ENABLE(mpfr,
       )
      ],
      [AC_MSG_RESULT([yes])
-      AC_DEFINE(HAVE_MPFR)
+      AC_DEFINE(LIBINT_HAS_MPFR)
      ],
      [
       AC_MSG_RESULT([no])
@@ -1248,50 +1305,30 @@ AC_ARG_ENABLE(mpfr,
  ]
 )
 
-dnl ------------------ Check for shared_ptr -----------------------
+dnl ------------------ Check for Boost library -----------------------
 
-HAVE_SHARED_PTR=no
-AC_MSG_CHECKING([for Boost::shared_ptr])
+dnl Boost.Preprocessor requires 1.30 (which introduced MPL; Preprocessor was introduced in 1.29)
+AX_BOOST_BASE([1.30],, [AC_MSG_ERROR([libint compiler needs Boost 1.30 or later, download from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])])
+
+AC_MSG_CHECKING([for variadic macro support in Boost.Preprocessor])
 AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM(
-    [[#include <boost/shared_ptr.hpp>
+    [[#include <boost/preprocessor.hpp>
+      #if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
+      #  error "your compiler does not provide variadic macros (but does support C++11), something is seriously broken, please create an issue at https://github.com/evaleev/libint/issues"
+      #endif
     ]],
     [[
-     boost::shared_ptr<int> a(new int);
-     boost::shared_ptr<int> b = a;
     ]]
    )
   ],
   [AC_MSG_RESULT([yes])
-   HAVE_SHARED_PTR=boost
-   AC_DEFINE(HAVE_SHARED_PTR_IN_BOOST)
   ],
   [
     AC_MSG_RESULT([no])
+    AC_MSG_ERROR([Boost.Preprocessor with variadic macro support is required. Download latest boost from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])
   ]
 )
-
-if test "X$HAVE_SHARED_PTR" = "Xno"; then
-  AC_MSG_CHECKING([for std::shared_ptr])
-  AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM(
-      [[#include <memory>
-      ]],
-      [[
-        std::shared_ptr<int> a(new int);
-        std::shared_ptr<int> b = a;
-      ]]
-     )
-    ],
-    [AC_MSG_RESULT([yes])
-     HAVE_SHARED_PTR=std
-    ],
-    [
-      AC_MSG_RESULT([no])
-      AC_MSG_ERROR([shared_ptr is required. Please download Boost from boost.org or use C++ compiler that supports shared_ptr.])
-    ]
-  )
-fi
 
 AC_MSG_CHECKING([for Boost::mpl::for_each])
 AC_COMPILE_IFELSE(
@@ -1313,9 +1350,54 @@ AC_COMPILE_IFELSE(
   ],
   [
     AC_MSG_RESULT([no])
-    AC_MSG_ERROR([Boost::mpl is required. Please use the latest Boost library from boost.org and/or most standard-compliant C++ compiler.])
+    AC_MSG_ERROR([Boost::mpl is required. Download latest boost from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])
   ]
 )
+
+dnl ------------------ Check for shared_ptr -----------------------
+
+HAVE_SHARED_PTR=no
+AC_MSG_CHECKING([for std::shared_ptr])
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM(
+      [[#include <memory>
+      ]],
+      [[
+        std::shared_ptr<int> a(new int);
+        std::shared_ptr<int> b = a;
+      ]]
+     )
+    ],
+    [AC_MSG_RESULT([yes])
+     HAVE_SHARED_PTR=std
+    ],
+    [
+      AC_MSG_RESULT([no])
+    ]
+  )
+
+if test "X$HAVE_SHARED_PTR" = "Xno"; then
+  AC_MSG_CHECKING([for Boost::shared_ptr])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <boost/shared_ptr.hpp>
+      ]],
+      [[
+       boost::shared_ptr<int> a(new int);
+       boost::shared_ptr<int> b = a;
+      ]]
+     )
+    ],
+    [AC_MSG_RESULT([yes])
+     HAVE_SHARED_PTR=boost
+     AC_DEFINE(HAVE_SHARED_PTR_IN_BOOST)
+    ],
+    [
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([shared_ptr is required. Please download Boost from boost.org or use C++ compiler that supports std::shared_ptr.])
+    ]
+  )
+fi
 
 dnl ------------------ Check for Eigen library -----------------------
 
@@ -1326,7 +1408,7 @@ fi
 
 dnl -- Checks for typedefs, structures, and compiler characteristics. --
 AC_TYPE_SIZE_T
-
+``
 CPPFLAGS="$CPPFLAGS" CXX="$CXX" CXXFLAGS="$CXXFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
 LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB"
@@ -1361,7 +1443,7 @@ AC_SUBST(CXX_COMPATIBLE_WITH_CXXGEN)
 dnl ------------------ Check if real type is given and is usable with CXXGEN -----------------------
 
 AC_ARG_WITH(real-type,
-[  --with-real-type        Compute all integrals using the given real type (default: double).],
+AS_HELP_STRING([--with-real-type],[Compute all integrals using the given real type (default: double).]),
 [
 AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_REAL,"$withval")
 libint_user_defined_real=$withval
@@ -1376,7 +1458,7 @@ if test "X$libint_user_defined_real" != "X"; then
  CXXFLAGS=$CXXGENFLAGS
  
  AC_ARG_WITH(real-type-includes,
-  [  --with-real-type-includes Additional includes necessary to use the real type (default: none).],
+  AS_HELP_STRING([--with-real-type-includes],[Additional includes necessary to use the real type (default: none).]),
   [
    AC_DEFINE_UNQUOTED(LIBINT_USER_DEFINED_REAL_INCLUDES,"$withval")
    libint_user_defined_real_includes=$withval
@@ -1386,7 +1468,7 @@ if test "X$libint_user_defined_real" != "X"; then
  AC_MSG_CHECKING([if $libint_user_defined_real is usable])
  # by default should look for SIMD vector types in src/lib/libint
  copy2_CXXFLAGS=$CXXFLAGS
- CXXFLAGS="$CXXFLAGS -Iinclude -I$srcdir/src/lib/libint"
+ CXXFLAGS="$CXXFLAGS -I$srcdir/include -Iinclude -I$srcdir/src/lib/libint"
  AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM(
     [[#include <libint2/util/vector.h>
@@ -1432,8 +1514,8 @@ ENABLESHARED=yes
 AC_SUBST(ENABLESHARED)
 
 dnl -- configure tester --
-TESTER_ARGS="(\"1 0 1 0 1\", \"1 0 1 0 10000\", \"1 1 1 1 1\", \"1 1 1 1 10000\", \"2 0 2 0 1\", \"2 1 2 0 10000\", \"1 1 1 1 10000 16 0\", \"1 1 1 1 10000 16 1\", \"1 1 1 1 10000 1 1\", \"1 1 1 1 1 16 0\", \"1 1 1 1 1 16 1\", \"1 1 1 1 10000 16 0 1\")"
-TESTER_ARGS_LONG="(\"3 0 3 0 10000\", \"4 0 4 0 10000\", \"2 2 2 2 1\", \"2 2 2 2 10000\")"
+TESTER_ARGS="(\"1 0 1 0 0\", \"1 0 1 0 10000\", \"1 1 1 1 0\", \"1 1 1 1 10000\", \"2 0 2 0 0\", \"2 1 2 0 10000\", \"1 1 1 1 10000 16 0\", \"1 1 1 1 10000 16 1\", \"1 1 1 1 10000 1 1\", \"1 1 1 1 0 16 0\", \"1 1 1 1 0 16 1\", \"1 1 1 1 10000 16 0 1\")"
+TESTER_ARGS_LONG="(\"3 0 3 0 10000\", \"4 0 4 0 10000\", \"2 2 2 2 0\", \"2 2 2 2 10000\")"
 AC_SUBST(TESTER_ARGS)
 AC_SUBST(TESTER_ARGS_LONG)
 
@@ -1446,8 +1528,9 @@ AC_CONFIG_FILES([src/bin/test_eri/run_time_eri.pl],[chmod +x src/bin/test_eri/ru
 AC_CONFIG_FILES([src/bin/test_eri/stdtests.pl],[chmod +x src/bin/test_eri/stdtests.pl])
 AC_CONFIG_FILES([src/bin/test_eri/run_timing_suite.pl],[chmod +x src/bin/test_eri/run_timing_suite.pl])
 AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/libint/MakeVars.features
+                tests/MakeVars
                 doc/MakeVars doc/MakeRules doc/progman/macros.tex doc/classdoc/doxygen.cfg
-                include/libint2/cgshell_ordering.h include/libint2/basis.h libint2.pc)
+                include/libint2/basis.h libint2.pc)
 
 dnl --------- Done! ---------
 AC_OUTPUT

@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -33,7 +34,8 @@
 // Libint Gaussian integrals library
 #include <libint2.hpp>
 
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+using real_t = libint2::scalar_type;
+typedef Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
         Matrix;  // import dense, dynamically sized Matrix type from Eigen;
                  // this is a matrix with row-major storage (http://en.wikipedia.org/wiki/Row-major_order)
                  // to meet the layout of the integrals returned by the Libint integral library
@@ -171,11 +173,11 @@ int main(int argc, char *argv[]) {
     /*** =========================== ***/
 
     const auto maxiter = 100;
-    const auto conv = 1e-12;
+    const real_t conv = 1e-12;
     auto iter = 0;
-    auto rmsd = 0.0;
-    auto ediff = 0.0;
-    auto ehf = 0.0;
+    real_t rmsd = 0.0;
+    real_t ediff = 0.0;
+    real_t ehf = 0.0;
     do {
       const auto tstart = std::chrono::high_resolution_clock::now();
       ++iter;
@@ -287,7 +289,7 @@ std::vector<Atom> read_dotxyz(std::istream& is) {
       Z = 17;
     else {
       std::cerr << "read_dotxyz: element label \"" << element_label << "\" is not recognized" << std::endl;
-      throw "Did not recognize element label in .xyz file";
+      throw std::invalid_argument("Did not recognize element label in .xyz file");
     }
 
     atoms[i].atomic_number = Z;
@@ -321,7 +323,7 @@ std::vector<Atom> read_geometry(const std::string& filename) {
   if ( filename.rfind(".xyz") != std::string::npos)
     return read_dotxyz(iss);
   else
-    throw "only .xyz files are accepted";
+    throw std::invalid_argument("only .xyz files are accepted");
 }
 
 std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
@@ -538,9 +540,9 @@ Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
   // nuclear attraction ints engine needs to know where the charges sit ...
   // the nuclei are charges in this case; in QM/MM there will also be classical charges
   if (obtype == Operator::nuclear) {
-    std::vector<std::pair<double,std::array<double,3>>> q;
+    std::vector<std::pair<real_t,std::array<real_t,3>>> q;
     for(const auto& atom : atoms) {
-      q.push_back( {static_cast<double>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
+      q.push_back( {static_cast<real_t>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
     }
     engine.set_params(q);
   }
@@ -562,7 +564,7 @@ Matrix compute_1body_ints(const std::vector<libint2::Shell>& shells,
       auto bf2 = shell2bf[s2];
       auto n2 = shells[s2].size();
 
-      // compute shell pair; return is the pointer to the buffer
+      // compute shell pair
       engine.compute(shells[s1], shells[s2]);
 
       // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
@@ -676,7 +678,7 @@ Matrix compute_2body_fock(const std::vector<libint2::Shell>& shells,
   using libint2::Engine;
   using libint2::Operator;
 
-  std::chrono::duration<double> time_elapsed = std::chrono::duration<double>::zero();
+  auto time_elapsed = std::chrono::duration<double>::zero();
 
   const auto n = nbasis(shells);
   Matrix G = Matrix::Zero(n,n);

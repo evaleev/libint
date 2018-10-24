@@ -1,25 +1,28 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
 #ifndef _libint2_src_bin_libint_entity_h_
 #define _libint2_src_bin_libint_entity_h_
 
+#include <iomanip>
+#include <limits>
 #include <string>
 #include <sstream>
 #include <dgvertex.h>
@@ -69,7 +72,7 @@ namespace libint2 {
   /// Converts x to its string representation
   template <typename T>
     std::string to_string(const T& x) {
-    std::ostringstream oss;  oss << x;  return oss.str();
+    std::ostringstream oss;  oss << std::scientific << std::setprecision(std::numeric_limits<T>::digits10 + 1) << x;  return oss.str();
   }
 
   /**

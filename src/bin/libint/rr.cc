@@ -1,23 +1,25 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
 #include <fstream>
+#include <limits>
 
 #include <rr.h>
 #include <dg.h>
@@ -113,7 +115,7 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
     const bool need_to_optimize = (max_am <= cparams->max_am_opt());
     dg->registry()->do_cse(need_to_optimize);
   }
-  dg->registry()->condense_expr(condense_expr(1000000000,cparams->max_vector_length()>1));
+  dg->registry()->condense_expr(condense_expr(std::numeric_limits<unsigned int>::max(),cparams->max_vector_length()>1));
   dg->registry()->ignore_missing_prereqs(true);  // assume all prerequisites are available -- if some are not, something is VERY broken
 
 #if PRINT_DAG_GRAPHVIZ
@@ -246,7 +248,7 @@ RecurrenceRelation::generate_graph_(const SafePtr<DirectedGraph>& dg)
   SafePtr<Strategy> strat(new Strategy);
   SafePtr<Tactic> ntactic(new NullTactic);
   // Always need to unroll integral sets first
-  dg->registry()->unroll_threshold(1000000000);
+  dg->registry()->unroll_threshold(std::numeric_limits<unsigned int>::max());
   dg->apply(strat,ntactic);
 #if DEBUG
   cout << "RecurrenceRelation::generate_code -- the number of integral sets + integrals = " << dg->num_vertices() << endl;
@@ -403,15 +405,23 @@ namespace libint2 { namespace algebra {
   const SafePtr<RecurrenceRelation::ExprType>& operator+=(SafePtr<RecurrenceRelation::ExprType>& A,
                                                           const SafePtr<DGVertex>& B) {
     typedef RecurrenceRelation::ExprType Oper;
-    const SafePtr<Oper>& Sum = A + B;
-    A = Sum;
+    if (A) {
+      const SafePtr<Oper>& Sum = A + B;
+      A = Sum;
+    }
+    else
+      A = Scalar(0) + B;
     return A;
   }
   const SafePtr<RecurrenceRelation::ExprType>& operator-=(SafePtr<RecurrenceRelation::ExprType>& A,
                                                           const SafePtr<DGVertex>& B) {
     typedef RecurrenceRelation::ExprType Oper;
-    const SafePtr<Oper>& Diff = A - B;
-    A = Diff;
+    if (A) {
+      const SafePtr<Oper>& Diff = A - B;
+      A = Diff;
+    }
+    else
+      A = Scalar(0) - B;
     return A;
   }
   const SafePtr<RecurrenceRelation::ExprType>& operator*=(SafePtr<RecurrenceRelation::ExprType>& A,

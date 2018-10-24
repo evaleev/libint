@@ -2,10 +2,10 @@ TOPDIR=../..
 ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
--include $(TOPDIR)/src/bin/MakeVars
+-include $(TOPDIR)/tests/MakeVars
 
 # include headers the object include directory
-CPPFLAGS += -I$(TOPDIR)/include -I$(TOPDIR)/include/libint2
+CPPFLAGS += -I$(TOPDIR)/include
 # include headers from the compiler directory
 CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/bin/libint
 # include headers from the src/bin/test_eri directory
@@ -30,7 +30,7 @@ CXXTESTOBJ = $(CXXTESTSRC:%.cc=%.$(OBJSUF))
 CXXTESTDEP = $(CXXTESTSRC:%.cc=%.$(DEPSUF))
 
 check:: $(TEST)
-	./$(TEST) 0 3 && ./$(TEST) 1 2 && ./$(TEST) 2 1
+	./$(TEST) 0 2 && ./$(TEST) 1 1 && ./$(TEST) 2 1
 
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ) $(COMPILER_LIB) $(COMPUTE_LIB)
@@ -57,6 +57,7 @@ targetclean:: clean
 
 depend:: $(CXXTESTDEP)
 
+ifneq ($(DODEPEND),no)
 ifneq ($(CXXDEPENDSUF),none)
 %.d: %.cc
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
@@ -68,3 +69,5 @@ else
 endif
 
 -include $(CXXTESTDEP)
+endif
+

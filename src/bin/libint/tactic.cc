@@ -1,22 +1,24 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
+#include <cassert>
 #include <cstdlib>
 #include <ctime>
 #include <dg.h>
@@ -143,73 +145,159 @@ ParticleDirectionTactic::optimal_rr(const rr_stack& stack) const {
   return RR();
 }
 
+TwoCenter_OS_Tactic::RR TwoCenter_OS_Tactic::optimal_rr(
+    const rr_stack& stack) const {
+  RR result;
+
+  if (!stack.empty()) {
+    auto use_hrr = lbra0_ > 0 && lket0_ > 0;
+
+    // try to apply HRR first
+    if (use_hrr) {
+      for (auto& t : stack) {
+        if (t->braket_direction() ==
+            BraketDirection::None)  // skip all non-HRR RRs
+          continue;
+
+        if (class_debug()) {
+          std::cout << "TwoCenter_OS_Tactic: considering " << t->label()
+                    << std::endl;
+        }
+
+        //
+        // this HRR is useful if it shifts the quanta towards the particle with
+        // greater total quanta
+        if (t->braket_direction() == BraketDirection::KetToBra &&
+            lbra0_ >= lket0_) {
+          result = t;
+          continue;
+        }
+        else if (t->braket_direction() == BraketDirection::BraToKet &&
+                 lbra0_ < lket0_) {
+          result = t;
+          continue;
+        }
+      }
+    }
+
+    if (!result) {  // else use the non-HRR relation with smallest size of children
+       // (to reduce the memory bandwidth demand)
+      size_t max_result_size = std::numeric_limits<size_t>::max();
+      size_t nties = 0;
+      for (auto& t : stack) {
+        if (t->braket_direction() ==
+            BraketDirection::None) {  // skip all HRR RRs
+          if (class_debug()) {
+              std::cout << "TwoCenter_OS_Tactic: considering " << t->label()
+                        << std::endl;
+          }
+          if (t->size_of_children() == max_result_size) ++nties;
+          else if (t->size_of_children() < max_result_size) {
+            result = t;
+            max_result_size = t->size_of_children();
+            nties = 0;
+          }
+        }
+      }
+
+      // TODO determine how to resolve ties in 2-center OS tactic
+//      if (nties > 1) {
+//        std::cout << "TwoCenter_OS_Tactic: found more than one RR with same "
+//                     "(optimal) size of children"
+//                  << std::endl;
+//        assert(nties == 0);
+//      }
+
+    }
+
+    if (class_debug()) {
+      if (result)
+        std::cout << "TwoCenter_OS_Tactic: picked " << result->label()
+                  << std::endl;
+      else
+        std::cout << "TwoCenter_OS_Tactic: picked none" << std::endl;
+    }
+  }
+
+  return result;
+}
+
 FourCenter_OS_Tactic::RR
 FourCenter_OS_Tactic::optimal_rr(const rr_stack& stack) const {
 
-  if (stack.empty())
-    return RR();
-
-  // grab the quantum numbers of the target set of these RRs
-  unsigned lbra0, lket0, lbra1, lket1;
-  SafePtr<TwoPRep_11_11_sq> abcd_ptr = dynamic_pointer_cast<TwoPRep_11_11_sq>(stack[0]->rr_target());
-  if (abcd_ptr) {
-    lbra0 = abcd_ptr->bra(0,0).norm();
-    lbra1 = abcd_ptr->bra(1,0).norm();
-    lket0 = abcd_ptr->ket(0,0).norm();
-    lket1 = abcd_ptr->ket(1,0).norm();
-  }
-  else {
-    SafePtr<TwoPRep_11_11_int> abcd_ptr = dynamic_pointer_cast<TwoPRep_11_11_int>(stack[0]->rr_target());
-    if (abcd_ptr) {
-      lbra0 = abcd_ptr->bra(0,0).norm();
-      lbra1 = abcd_ptr->bra(1,0).norm();
-      lket0 = abcd_ptr->ket(0,0).norm();
-      lket1 = abcd_ptr->ket(1,0).norm();
-    }
-    else {
-      assert(false); // should not be possible
-    }
-  }
-
-  auto l0 = lbra0_ + lket0_;
-  auto l1 = lbra1_ + lket1_;
-  auto l1_ge_l0 = l1 >= l0;
-  auto use_itr = l0 > 0 && l1 > 0;
-
-  // try to apply ITR first
-  if (use_itr) {
-    for (auto& t : stack) {
-
-      if (t->partindex_direction() == 0) // skip all non-ITR RRs
-        continue;
-
-      //
-      // this ITR is useful if it shifts the quanta towards the particle with greater total quanta
-      if (t->partindex_direction() == +1 && l1_ge_l0)
-        return t;
-      if (t->partindex_direction() == -1 && not l1_ge_l0)
-        return t;
-    }
-  }
-  // else use the non-ITR relation with smallest size of children (to reduce the memory bandwidth demand)
   RR result;
-  size_t max_result_size = std::numeric_limits<size_t>::max();
-  size_t nbests = 0;
-  for (auto& t : stack) {
-    if (t->partindex_direction() == 0) { // skip all ITR RRs
-      if (t->size_of_children() < max_result_size)
-        ++nbests;
-      if (t->size_of_children() < max_result_size) {
-        result = t;
-        max_result_size = t->size_of_children();
-        nbests = 1;
+
+  if (!stack.empty()) {
+    auto l0 = lbra0_ + lket0_;
+    auto l1 = lbra1_ + lket1_;
+    auto l1_ge_l0 = l1 >= l0;
+    auto use_itr = l0 > 0 && l1 > 0;
+
+    // try to apply ITR first
+    if (use_itr) {
+      for (auto& t : stack) {
+        if (t->partindex_direction() == 0)  // skip all non-ITR RRs
+          continue;
+
+        if (class_debug()) {
+          std::cout << "FourCenter_OS_Tactic: considering " << t->label()
+                    << std::endl;
+        }
+
+        //
+        // this ITR is useful if it shifts the quanta towards the particle with
+        // greater total quanta
+        if (t->partindex_direction() == +1 && l1_ge_l0) {
+          result = t;
+          continue;
+        }
+        else if (t->partindex_direction() == -1 && not l1_ge_l0) {
+          result = t;
+          continue;
+        }
       }
     }
-  }
 
-  if (nbests > 1) {
-    std::cout << "FourCenter_OS_Tactic: found more than one RR with same (optimal) size of children" << std::endl;
-    assert(nbests == 1);
+    if (!result) {
+      // else use the non-ITR relation with smallest size of children (to reduce
+      // the memory bandwidth demand) note that there is no need to check if
+      // transfer direction matches the strategic direction since only non-ITR
+      // 2-body OS strategies will include transfers in single direction
+      size_t max_result_size = std::numeric_limits<size_t>::max();
+      size_t nties = 0;
+      for (auto& t : stack) {
+        if (t->partindex_direction() == 0) {  // skip all ITR RRs
+
+          if (class_debug()) {
+            std::cout << "FourCenter_OS_Tactic: considering " << t->label()
+                      << std::endl;
+          }
+
+          if (t->size_of_children() == max_result_size) ++nties;
+          else if (t->size_of_children() < max_result_size) {
+            result = t;
+            max_result_size = t->size_of_children();
+            nties = 0;
+          }
+        }
+      }
+
+      // TODO determine how to resolve ties in 4-center OS tactic
+//      if (nties > 0) {
+//        std::cout << "FourCenter_OS_Tactic: found more than one RR with same "
+//                     "(optimal) size of children"
+//                  << std::endl;
+//        assert(nties == 0);
+//      }
+    }
+
+    if (class_debug()) {
+      if (result)
+        std::cout << "FourCenter_OS_Tactic: picked " << result->label()
+                  << std::endl;
+      else
+        std::cout << "FourCenter_OS_Tactic: picked none" << std::endl;
+    }
   }
 
   return result;

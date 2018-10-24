@@ -1,18 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Library General Public License, version 2,
- *  as published by the Free Software Foundation.
+ *  This file is part of Libint.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Lesser General Public License for more details.
  *
- *  You should have received a copy of the GNU Library General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -20,15 +22,17 @@
 #define _libint2_src_lib_libint_vectorx86_h_
 
 #include <cstring>
+#include <cmath>
+#include <iostream>
+
 #include <libint2/util/cxxstd.h>
 #include <libint2/util/type_traits.h>
 
-#ifdef __SSE2__
+#if defined(__SSE2__) || defined(__SSE__) || defined(__AVX__)
+#  include <x86intrin.h>
+#endif
 
-#include <emmintrin.h>
-#include <immintrin.h>
-#include <cmath>
-#include <iostream>
+#ifdef __SSE2__
 
 namespace libint2 { namespace simd {
 
@@ -321,7 +325,7 @@ namespace libint2 {
 
   template <>
   struct vector_traits<simd::VectorSSEDouble> {
-      typedef double value_type;
+      typedef double scalar_type;
       static const size_t extent = 2;
   };
 
@@ -332,8 +336,6 @@ namespace libint2 {
 #endif // SSE2-only
 
 #ifdef __SSE__
-
-#include <xmmintrin.h>
 
 namespace libint2 { namespace simd {
 
@@ -615,7 +617,7 @@ namespace libint2 {
 
   template <>
   struct vector_traits<simd::VectorSSEFloat> {
-      typedef float value_type;
+      typedef float scalar_type;
       static const size_t extent = 4;
   };
 
@@ -626,8 +628,6 @@ namespace libint2 {
 #endif // SSE-only
 
 #ifdef __AVX__
-
-#include <immintrin.h>
 
 namespace libint2 { namespace simd {
 
@@ -837,12 +837,12 @@ namespace libint2 { namespace simd {
 #elif defined(__FMA4__)
   inline VectorAVXDouble fma_plus(VectorAVXDouble a, VectorAVXDouble b, VectorAVXDouble c) {
     VectorAVXDouble d;
-    d.d = _mm256_facc_pd(a.d, b.d, c.d);
+    d.d = _mm256_macc_pd(a.d, b.d, c.d);
     return d;
   }
   inline VectorAVXDouble fma_minus(VectorAVXDouble a, VectorAVXDouble b, VectorAVXDouble c) {
     VectorAVXDouble d;
-    d.d = _mm256_fsub_pd(a.d, b.d, c.d);
+    d.d = _mm256_msub_pd(a.d, b.d, c.d);
     return d;
   }
 #endif
@@ -968,7 +968,7 @@ namespace libint2 {
 
   template <>
   struct vector_traits<simd::VectorAVXDouble> {
-      typedef double value_type;
+      typedef double scalar_type;
       static const size_t extent = 4;
   };
 

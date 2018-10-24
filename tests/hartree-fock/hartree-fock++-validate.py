@@ -27,7 +27,7 @@ if os.path.exists(path_to_libfeatures):
     yes = True
     execfile(path_to_libfeatures)
 
-eref = [-76.003354058456]
+eref = [-76.003354058454]
 etol = 5e-12
 
 muref = [-0.263282355852899, -0.0912036834147694, -0.105312942341114]
@@ -36,6 +36,13 @@ mutol = 1e-9
 Qref = [-7.01719638259305, 0.0246243455752736, -0.576201298992812,
         -8.04716669233508, 0.638204908066147,  -6.35134519438538  ]
 Qtol = 1e-8
+
+smuref = [-muref[1]/2, muref[2], -muref[0]/2]
+smutol = 1e-9
+
+sQref = [Qref[1]/4, -Qref[4]/2, (2*Qref[5] - Qref[0] - Qref[3])/4,
+         -Qref[2]/2, (Qref[0] - Qref[3])/8  ]
+sQtol = 1e-8
 
 F1ref = [-5.43569555885951, -1.88298017648151, -2.17427822354382,
           3.47022732532752, -2.96798871197376,  2.59189820356784,
@@ -101,6 +108,8 @@ for line in sys.stdin:
     match11 = re.match('\*\* 2-body hessian =' + pat_numbers(45), line)
     match12 = re.match('\*\* nuclear repulsion hessian =' + pat_numbers(45), line)
     match13 = re.match('\*\* Hartree-Fock hessian =' + pat_numbers(45), line)
+    match14 = re.match('\*\* sph edipole =' + pat_numbers(3), line)
+    match15 = re.match('\*\* sph equadrupole =' + pat_numbers(5), line)
     if match1:
         eok = validate("HF energy", match1.groups(), eref, etol, line)
     elif match2:
@@ -127,10 +136,14 @@ for line in sys.stdin:
         HNok = validate("nuclear repulsion hessian", match12.groups(), HNref, HNtol, line)
     elif match13:
         Hok = validate("HF hessian", match13.groups(), Href, Htol, line)
+    elif match14:
+        smuok = validate("spherical electric dipole moment", match14.groups(), smuref, smutol, line)
+    elif match15:
+        sQok = validate("spherical electric quadrupole moment", match15.groups(), sQref, sQtol, line)
     else:
         print(line,end="")
 
-ok = eok and muok and Qok and F1ok and FPok and F2ok and FNok and Fok and H1ok and HPok and H2ok and HNok and Hok
+ok = eok and muok and Qok and F1ok and FPok and F2ok and FNok and Fok and H1ok and HPok and H2ok and HNok and Hok and smuok and sQok
 if not ok: sys.exit(1)
 
 

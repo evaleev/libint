@@ -2,7 +2,7 @@ TOPDIR=../..
 ifndef SRCDIR
   SRCDIR=$(shell pwd)
 endif
--include $(TOPDIR)/src/bin/MakeVars
+-include $(TOPDIR)/tests/MakeVars
 -include $(TOPDIR)/src/lib/libint/MakeVars.features
 
 # include headers the object include directory
@@ -66,7 +66,7 @@ clean::
 	-rm -rf $(TEST1) $(TEST2) *.o *.d
 
 distclean:: realclean
-	-rm -rf $(TOPDIR)/include/libint2/boost
+	-rm -rf $(TOPDIR)/include/libint2/boost hf++.molden
 
 realclean:: clean
 
@@ -77,6 +77,7 @@ $(TOPDIR)/include/libint2/boost/preprocessor.hpp: $(SRCDIR)/$(TOPDIR)/external/b
 
 depend:: $(CXXTEST1DEP) $(CXXTEST2DEP)
 
+ifneq ($(DODEPEND),no)
 ifneq ($(CXXDEPENDSUF),none)
 %.d:: %.cc $(TOPDIR)/include/libint2/boost/preprocessor.hpp
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
@@ -89,3 +90,8 @@ endif
 
 -include $(CXXTEST1DEP)
 -include $(CXXTEST2DEP)
+else
+
+%.cc:: $(TOPDIR)/include/libint2/boost/preprocessor.hpp
+
+endif

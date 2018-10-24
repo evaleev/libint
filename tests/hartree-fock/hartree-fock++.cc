@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -46,11 +47,15 @@
 #include <libint2/diis.h>
 #include <libint2/util/intpart_iter.h>
 #include <libint2/chemistry/sto3g_atomic_density.h>
+#include <libint2/lcao/molden.h>
 #include <libint2.hpp>
 
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
+
+/// to use precomputed shell pair data must decide on max precision a priori
+const auto max_engine_precision = std::numeric_limits<double>::epsilon() / 1e10;
 
 // uncomment if want to report integral timings
 // N.B. integral engine timings are controled in engine.h
@@ -75,9 +80,11 @@ Matrix compute_soad(const std::vector<Atom>& atoms);
 // computes norm of shell-blocks of A
 Matrix compute_shellblock_norm(const BasisSet& obs, const Matrix& A);
 
-template <Operator obtype>
+template <Operator obtype, typename OperatorParams = typename libint2::operator_traits<obtype>::oper_params_type>
 std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
-    const BasisSet& obs, const std::vector<Atom>& atoms = std::vector<Atom>());
+    const BasisSet& obs,
+    OperatorParams oparams =
+        OperatorParams());
 
 #if LIBINT2_DERIV_ONEBODY_ORDER
 template <Operator obtype>
@@ -98,14 +105,17 @@ Matrix compute_do_ints(const BasisSet& bs1, const BasisSet& bs2 = BasisSet(),
 
 using shellpair_list_t = std::unordered_map<size_t, std::vector<size_t>>;
 shellpair_list_t obs_shellpair_list;  // shellpair list for OBS
+using shellpair_data_t = std::vector<std::vector<std::shared_ptr<libint2::ShellPair>>>;  // in same order as shellpair_list_t
+shellpair_data_t obs_shellpair_data;  // shellpair data for OBS
 
 /// computes non-negligible shell pair list; shells \c i and \c j form a
 /// non-negligible
 /// pair if they share a center or the Frobenius norm of their overlap is
 /// greater than threshold
-shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
-                                        const BasisSet& bs2 = BasisSet(),
-                                        double threshold = 1e-12);
+std::tuple<shellpair_list_t,shellpair_data_t>
+compute_shellpairs(const BasisSet& bs1,
+                   const BasisSet& bs2 = BasisSet(),
+                   double threshold = 1e-12);
 
 Matrix compute_2body_fock(
     const BasisSet& obs, const Matrix& D,
@@ -275,7 +285,7 @@ int main(int argc, char* argv[]) {
 
     // compute OBS non-negligible shell-pair list
     {
-      obs_shellpair_list = compute_shellpair_list(obs);
+      std::tie(obs_shellpair_list, obs_shellpair_data) = compute_shellpairs(obs);
       size_t nsp = 0;
       for (auto& sp : obs_shellpair_list) {
         nsp += sp.second.size();
@@ -288,7 +298,7 @@ int main(int argc, char* argv[]) {
     // compute one-body integrals
     auto S = compute_1body_ints<Operator::overlap>(obs)[0];
     auto T = compute_1body_ints<Operator::kinetic>(obs)[0];
-    auto V = compute_1body_ints<Operator::nuclear>(obs, atoms)[0];
+    auto V = compute_1body_ints<Operator::nuclear>(obs, libint2::make_point_charges(atoms))[0];
     Matrix H = T + V;
     T.resize(0, 0);
     V.resize(0, 0);
@@ -310,6 +320,7 @@ int main(int argc, char* argv[]) {
         conditioning_orthogonalizer(S, S_condition_number_threshold);
 
     Matrix D;
+    Matrix C;
     Matrix C_occ;
     Matrix evals;
     {  // use SOAD as the guess density
@@ -334,7 +345,7 @@ int main(int argc, char* argv[]) {
         // where
         // F' = X.transpose() . F . X; the original C is obtained as C = X . C'
         Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(X.transpose() * F * X);
-        auto C = X * eig_solver.eigenvectors();
+        C = X * eig_solver.eigenvectors();
 
         // compute density, D = C(occ) . C(occ)T
         C_occ = C.leftCols(ndocc);
@@ -447,7 +458,7 @@ int main(int argc, char* argv[]) {
       Eigen::SelfAdjointEigenSolver<Matrix> eig_solver(X.transpose() * F_diis *
                                                        X);
       evals = eig_solver.eigenvalues();
-      auto C = X * eig_solver.eigenvectors();
+      C = X * eig_solver.eigenvectors();
 
       // compute density, D = C(occ) . C(occ)T
       C_occ = C.leftCols(ndocc);
@@ -467,25 +478,90 @@ int main(int argc, char* argv[]) {
 
     printf("** Hartree-Fock energy = %20.12f\n", ehf + enuc);
 
-    auto Mu = compute_1body_ints<Operator::emultipole2>(obs);
+    // dump orbs to a molden file
+    {
+      Eigen::VectorXd occs(C.cols());
+      occs.setZero();
+      for(size_t o=0; o!=ndocc; ++o)
+        occs[o] = 2.0;
+
+      libint2::molden::Export xport(atoms, obs, C, occs, evals);
+      std::ofstream molden_file("hf++.molden");
+      xport.write(molden_file);
+    }
+
+    auto Mu = compute_1body_ints<Operator::emultipole3>(obs);
+
     std::array<double, 3> mu;
-    std::array<double, 6> qu;
     for (int xyz = 0; xyz != 3; ++xyz)
       mu[xyz] = -2 *
                 D.cwiseProduct(Mu[xyz + 1])
                     .sum();  // 2 = alpha + beta, -1 = electron charge
-    for (int k = 0; k != 6; ++k)
-      qu[k] = -2 *
-              D.cwiseProduct(Mu[k + 4])
-                  .sum();  // 2 = alpha + beta, -1 = electron charge
     std::cout << "** edipole = ";
     std::copy(mu.begin(), mu.end(),
               std::ostream_iterator<double>(std::cout, " "));
     std::cout << std::endl;
+
+    std::array<double, 6> qu;
+    for (int k = 0; k != 6; ++k)
+      qu[k] = -2 *
+              D.cwiseProduct(Mu[k + 4])
+                  .sum();  // 2 = alpha + beta, -1 = electron charge
     std::cout << "** equadrupole = ";
     std::copy(qu.begin(), qu.end(),
               std::ostream_iterator<double>(std::cout, " "));
     std::cout << std::endl;
+
+    std::array<double, 10> oct;
+    for (int k = 0; k != 10; ++k)
+      oct[k] = -2 *
+              D.cwiseProduct(Mu[k + 10])
+                  .sum();  // 2 = alpha + beta, -1 = electron charge
+//    std::cout << "** eoctupole = ";
+//    std::copy(oct.begin(), oct.end(),
+//              std::ostream_iterator<double>(std::cout, " "));
+//    std::cout << std::endl;
+
+    // use spherical moments
+    auto SMu = compute_1body_ints<Operator::sphemultipole>(obs);
+    {
+#if MULTIPOLE_MAX_ORDER > 0
+      std::array<double, 3> mu;
+      for (int xyz = 0; xyz != 3; ++xyz)
+        mu[xyz] = -2 *
+                  D.cwiseProduct(SMu[xyz + 1])
+                      .sum();  // 2 = alpha + beta, -1 = electron charge
+      std::cout << "** sph edipole = ";
+      std::copy(mu.begin(), mu.end(),
+                std::ostream_iterator<double>(std::cout, " "));
+      std::cout << std::endl;
+#endif
+#if MULTIPOLE_MAX_ORDER > 1
+      std::array<double, 5> qu;
+      for (int k = 0; k != 5; ++k)
+        qu[k] = -2 *
+                D.cwiseProduct(SMu[k + 4])
+                    .sum();  // 2 = alpha + beta, -1 = electron charge
+      std::cout << "** sph equadrupole = ";
+      std::copy(qu.begin(), qu.end(),
+                std::ostream_iterator<double>(std::cout, " "));
+      std::cout << std::endl;
+#endif
+#if MULTIPOLE_MAX_ORDER > 2
+      std::array<double, 7> oct;
+      for (int k = 0; k != 7; ++k)
+        oct[k] = -2 *
+                D.cwiseProduct(SMu[k + 9])
+                    .sum();  // 2 = alpha + beta, -1 = electron charge
+//      std::cout << "** sph eoctupole = ";
+//      std::copy(oct.begin(), oct.end(),
+//                std::ostream_iterator<double>(std::cout, " "));
+//      std::cout << std::endl;
+
+      // recompute C^3_0 from xxz, yyz, and zzz
+    std::cout << "C^3_0 - (2zzz - 3xxz - 3yyz)/12:\n" << ((2.*Mu[19] - 3.*Mu[12] - 3.*Mu[17])/12 - SMu[12]).norm() << std::endl;
+#endif
+    }
 
     {  // compute force
 #if LIBINT2_DERIV_ONEBODY_ORDER
@@ -846,9 +922,9 @@ Matrix compute_shellblock_norm(const BasisSet& obs, const Matrix& A) {
   return Ash;
 }
 
-template <Operator obtype>
+template <Operator obtype, typename OperatorParams>
 std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
-    const BasisSet& obs, const std::vector<Atom>& atoms) {
+    const BasisSet& obs, OperatorParams oparams) {
   const auto n = obs.nbf();
   const auto nshells = obs.size();
   using libint2::nthreads;
@@ -861,12 +937,11 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
   // construct the 1-body integrals engine
   std::vector<libint2::Engine> engines(nthreads);
   engines[0] = libint2::Engine(obtype, obs.max_nprim(), obs.max_l(), 0);
+  // pass operator params to the engine, e.g.
   // nuclear attraction ints engine needs to know where the charges sit ...
   // the nuclei are charges in this case; in QM/MM there will also be classical
   // charges
-  if (obtype == Operator::nuclear) {
-    engines[0].set_params(libint2::make_point_charges(atoms));
-  }
+  engines[0].set_params(oparams);
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -1173,10 +1248,11 @@ Matrix compute_schwarz_ints(
         assert(buf[0] != nullptr &&
                "to compute Schwarz ints turn off primitive screening");
 
-        // the diagonal elements are the Schwarz ints ... use Map.diagonal()
+        // to apply Schwarz inequality to individual integrals must use the diagonal elements
+        // to apply it to sets of functions (e.g. shells) use the whole shell-set of ints here
         Eigen::Map<const Matrix> buf_mat(buf[0], n12, n12);
-        auto norm2 = use_2norm ? buf_mat.diagonal().norm()
-                               : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
+        auto norm2 = use_2norm ? buf_mat.norm()
+                               : buf_mat.lpNorm<Eigen::Infinity>();
         K(s1, s2) = std::sqrt(norm2);
         if (bs1_equiv_bs2) K(s2, s1) = K(s1, s2);
       }
@@ -1196,9 +1272,10 @@ Matrix compute_do_ints(const BasisSet& bs1, const BasisSet& bs2,
   return compute_schwarz_ints<libint2::Operator::delta>(bs1, bs2, use_2norm);
 }
 
-shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
-                                        const BasisSet& _bs2,
-                                        const double threshold) {
+std::tuple<shellpair_list_t,shellpair_data_t>
+compute_shellpairs(const BasisSet& bs1,
+                   const BasisSet& _bs2,
+                   const double threshold) {
   const BasisSet& bs2 = (_bs2.empty() ? bs1 : _bs2);
   const auto nsh1 = bs1.size();
   const auto nsh2 = bs2.size();
@@ -1223,7 +1300,7 @@ shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
   timer.set_now_overhead(25);
   timer.start(0);
 
-  shellpair_list_t result;
+  shellpair_list_t splist;
 
   std::mutex mx;
 
@@ -1235,8 +1312,8 @@ shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
     // loop over permutationally-unique set of shells
     for (auto s1 = 0l, s12 = 0l; s1 != nsh1; ++s1) {
       mx.lock();
-      if (result.find(s1) == result.end())
-        result.insert(std::make_pair(s1, std::vector<size_t>()));
+      if (splist.find(s1) == splist.end())
+        splist.insert(std::make_pair(s1, std::vector<size_t>()));
       mx.unlock();
 
       auto n1 = bs1[s1].size();  // number of basis functions in this shell
@@ -1257,7 +1334,7 @@ shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
 
         if (significant) {
           mx.lock();
-          result[s1].emplace_back(s2);
+          splist[s1].emplace_back(s2);
           mx.unlock();
         }
       }
@@ -1266,12 +1343,12 @@ shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
 
   libint2::parallel_do(compute);
 
-  // resort shell list in increasing order, i.e. result[s][s1] < result[s][s2]
-  // if s1 < s2
+  // resort shell list in increasing order, i.e. splist[s][s1] < splist[s][s2] if s1 < s2
+  // N.B. only parallelized over 1 shell index
   auto sort = [&](int thread_id) {
     for (auto s1 = 0l; s1 != nsh1; ++s1) {
       if (s1 % nthreads == thread_id) {
-        auto& list = result[s1];
+        auto& list = splist[s1];
         std::sort(list.begin(), list.end());
       }
     }
@@ -1279,10 +1356,26 @@ shellpair_list_t compute_shellpair_list(const BasisSet& bs1,
 
   libint2::parallel_do(sort);
 
+  // compute shellpair data assuming that we are computing to default_epsilon
+  // N.B. only parallelized over 1 shell index
+  const auto ln_max_engine_precision = std::log(max_engine_precision);
+  shellpair_data_t spdata(splist.size());
+  auto make_spdata = [&](int thread_id) {
+    for (auto s1 = 0l; s1 != nsh1; ++s1) {
+      if (s1 % nthreads == thread_id) {
+        for(const auto& s2 : splist[s1]) {
+          spdata[s1].emplace_back(std::make_shared<libint2::ShellPair>(bs1[s1],bs2[s2],ln_max_engine_precision));
+        }
+      }
+    }
+  };  // end of make_spdata
+
+  libint2::parallel_do(make_spdata);
+
   timer.stop(0);
   std::cout << "done (" << timer.read(0) << " s)" << std::endl;
 
-  return result;
+  return std::make_tuple(splist,spdata);
 }
 
 // returns {X,X^{-1},rank,A_condition_number,result_A_condition_number}, where
@@ -1375,7 +1468,7 @@ Matrix compute_2body_2index_ints(const BasisSet& bs) {
   std::vector<Engine> engines(nthreads);
   engines[0] =
       Engine(libint2::Operator::coulomb, bs.max_nprim(), bs.max_l(), 0);
-  engines[0].set_braket(BraKet::xs_xs);
+  engines[0].set(BraKet::xs_xs);
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -1441,6 +1534,9 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
   auto engine_precision = std::min(fock_precision / D_shblk_norm.maxCoeff(),
                                    std::numeric_limits<double>::epsilon()) /
                           max_nprim4;
+  assert(engine_precision > max_engine_precision &&
+      "using precomputed shell pair data limits the max engine precision"
+  " ... make max_engine_precision smalle and recompile");
 
   // construct the 2-electron repulsion integrals engine pool
   using libint2::Engine;
@@ -1480,9 +1576,14 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
       auto bf1_first = shell2bf[s1];  // first basis function in this shell
       auto n1 = obs[s1].size();       // number of basis functions in this shell
 
+      auto sp12_iter = obs_shellpair_data.at(s1).begin();
+
       for (const auto& s2 : obs_shellpair_list[s1]) {
         auto bf2_first = shell2bf[s2];
         auto n2 = obs[s2].size();
+
+        const auto* sp12 = sp12_iter->get();
+        ++sp12_iter;
 
         const auto Dnorm12 = do_schwarz_screen ? D_shblk_norm(s1, s2) : 0.;
 
@@ -1496,11 +1597,17 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
                              std::max(D_shblk_norm(s2, s3), Dnorm12))
                   : 0.;
 
+          auto sp34_iter = obs_shellpair_data.at(s3).begin();
+
           const auto s4_max = (s1 == s3) ? s2 : s3;
           for (const auto& s4 : obs_shellpair_list[s3]) {
             if (s4 > s4_max)
               break;  // for each s3, s4 are stored in monotonically increasing
                       // order
+
+            // must update the iter even if going to skip s4
+            const auto* sp34 = sp34_iter->get();
+            ++sp34_iter;
 
             if ((s1234++) % nthreads != thread_id) continue;
 
@@ -1524,9 +1631,9 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
 
             // compute the permutational degeneracy (i.e. # of equivalents) of
             // the given shell set
-            auto s12_deg = (s1 == s2) ? 1.0 : 2.0;
-            auto s34_deg = (s3 == s4) ? 1.0 : 2.0;
-            auto s12_34_deg = (s1 == s3) ? (s2 == s4 ? 1.0 : 2.0) : 2.0;
+            auto s12_deg = (s1 == s2) ? 1 : 2;
+            auto s34_deg = (s3 == s4) ? 1 : 2;
+            auto s12_34_deg = (s1 == s3) ? (s2 == s4 ? 1 : 2) : 2;
             auto s1234_deg = s12_deg * s34_deg * s12_34_deg;
 
 #if defined(REPORT_INTEGRAL_TIMINGS)
@@ -1534,7 +1641,7 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
 #endif
 
             engine.compute2<Operator::coulomb, BraKet::xx_xx, 0>(
-                obs[s1], obs[s2], obs[s3], obs[s4]);
+                obs[s1], obs[s2], obs[s3], obs[s4], sp12, sp34);
             const auto* buf_1234 = buf[0];
             if (buf_1234 == nullptr)
               continue; // if all integrals screened out, skip to next quartet
@@ -2038,7 +2145,7 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     engines[0] = libint2::Engine(libint2::Operator::coulomb,
                                  std::max(obs.max_nprim(), dfbs.max_nprim()),
                                  std::max(obs.max_l(), dfbs.max_l()), 0);
-    engines[0].set_braket(BraKet::xs_xx);
+    engines[0].set(BraKet::xs_xx);
     for (size_t i = 1; i != nthreads; ++i) {
       engines[i] = engines[0];
     }
@@ -2114,17 +2221,17 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     Matrix I = Matrix::Identity(ndf, ndf);
     auto L = V_LLt.matrixL();
     Matrix V_L = L;
-    Matrix Linv = L.solve(I).transpose();
+    Matrix Linv_t = L.solve(I).transpose();
     // check
     //  std::cout << "||V - L L^t|| = " << (V - V_L * V_L.transpose()).norm() <<
     //  std::endl;
-    //  std::cout << "||I - L L^-1^t|| = " << (I - V_L *
-    //  Linv.transpose()).norm() << std::endl;
-    //  std::cout << "||V^-1 - L^-1 L^-1^t|| = " << (V.inverse() - Linv *
-    //  Linv.transpose()).norm() << std::endl;
+    //  std::cout << "||I - L L^-1|| = " << (I - V_L *
+    //  Linv_t.transpose()).norm() << std::endl;
+    //  std::cout << "||V^-1 - L^-1^t L^-1|| = " << (V.inverse() - Linv_t *
+    //  Linv_t.transpose()).norm() << std::endl;
 
     Tensor2d K{ndf, ndf};
-    std::copy(Linv.data(), Linv.data() + ndf * ndf, K.begin());
+    std::copy(Linv_t.data(), Linv_t.data() + ndf * ndf, K.begin());
 
     xyK = Tensor3d{n, n, ndf};
     btas::contract(1.0, Zxy, {1, 2, 3}, K, {1, 4}, 0.0, xyK, {2, 3, 4});
@@ -2169,7 +2276,8 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
 #endif  // HAVE_DENSITY_FITTING
 
 // should be a unit test somewhere
-void api_basic_compile_test(const BasisSet& obs) {
+void api_basic_compile_test(const BasisSet& obs,
+                            const std::vector<Atom>& atoms) {
   using namespace libint2;
   Engine onebody_engine(
       Operator::overlap,  // will compute overlap ints
@@ -2230,11 +2338,26 @@ void api_basic_compile_test(const BasisSet& obs) {
         compute_schwarz_ints<Operator::erf_coulomb>(obs, obs, false, attenuation_omega);
     std::cout << "erf_coulomb Schwarz ints\n" << K << std::endl;
   }
+  {
+    auto V = compute_1body_ints<Operator::nuclear>(
+        obs,
+        libint2::make_point_charges(atoms))[0];
+    std::cout << "nuclear ints\n" << V << std::endl;
+    auto V_erfc = compute_1body_ints<Operator::erfc_nuclear>(
+        obs,
+        std::make_tuple(attenuation_omega, libint2::make_point_charges(atoms)))[0];
+    std::cout << "erfc_nuclear ints\n" << V_erfc << std::endl;
+    auto V_erf = compute_1body_ints<Operator::erf_nuclear>(
+        obs,
+        std::make_tuple(attenuation_omega, libint2::make_point_charges(atoms)))[0];
+    std::cout << "erf_nuclear ints\n" << V_erf << std::endl;
+    std::cout << "V - (V_erfc + V_erf)" << Matrix(V - V_erfc - V_erf) << std::endl;
+  }
 
   {  // test 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l());
     Engine eri2_engine = eri4_engine;
-    eri2_engine.set_braket(BraKet::xs_xs);
+    eri2_engine.set(BraKet::xs_xs);
     auto shell2bf = obs.shell2bf();
     const auto& results4 = eri4_engine.results();
     const auto& results2 = eri2_engine.results();
@@ -2263,7 +2386,7 @@ void api_basic_compile_test(const BasisSet& obs) {
   {  // test 3-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l());
     Engine eri3_engine = eri4_engine;
-    eri3_engine.set_braket(BraKet::xs_xx);
+    eri3_engine.set(BraKet::xs_xx);
     auto shell2bf = obs.shell2bf();
     const auto& results4 = eri4_engine.results();
     const auto& results3 = eri3_engine.results();
@@ -2300,7 +2423,7 @@ void api_basic_compile_test(const BasisSet& obs) {
   {  // test deriv 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 1);
     Engine eri2_engine = eri4_engine;
-    eri2_engine.set_braket(BraKet::xs_xs);
+    eri2_engine.set(BraKet::xs_xs);
     auto shell2bf = obs.shell2bf();
     const auto& results4 = eri4_engine.results();
     const auto& results2 = eri2_engine.results();
@@ -2336,7 +2459,7 @@ void api_basic_compile_test(const BasisSet& obs) {
   {  // test 2nd deriv 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 2);
     Engine eri2_engine = eri4_engine;
-    eri2_engine.set_braket(BraKet::xs_xs);
+    eri2_engine.set(BraKet::xs_xs);
     auto shell2bf = obs.shell2bf();
     const auto& results4 = eri4_engine.results();
     const auto& results2 = eri2_engine.results();

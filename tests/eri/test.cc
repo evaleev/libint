@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -30,6 +31,7 @@
 #include <eri.h>
 #include <prep_libint2.h>
 #include <libint2/cgshell_ordering.h>
+#include <libint2/util/memory.h>
 
 using namespace std;
 using namespace libint2;
@@ -318,7 +320,7 @@ void test_4eri(unsigned int deriv_order,
                     // compare reference and libint integrals
                     //
                     for (unsigned int di = 0; di < nderiv; ++di) {
-                      const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - double(new_eri[di]));
+                      const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
                       const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
                       if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
                         std::cout << "Elem " << ijkl << " di= " << di << " v="
@@ -424,6 +426,11 @@ void test_3eri(unsigned int deriv_order,
   auto lmax0 = std::min(lmax_max, lmax);
   auto lmax1 = std::min(lmax_max, lmax_default);
   auto lmax2 = std::min(lmax_max, lmax_default);
+
+  // reference code only supports Cartesian gaussians
+#if ERI3_PURE_SH
+  lmax0 = 1;
+#endif
 
   for (unsigned int l0 = 0; l0 <= lmax0; ++l0) {
     for (unsigned int l1 = 0; l1 <= lmax1; ++l1) {
@@ -581,7 +588,7 @@ void test_3eri(unsigned int deriv_order,
                   new_eri.push_back( scale_target * inteval[0].targets[d][ijk * veclen + v] );
 
                 for (unsigned int di = 0; di < nderiv; ++di) {
-                  const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);
+                  const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
                   const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
                   if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
                     std::cout << "Elem " << ijk << " di= " << di << " v="
@@ -674,6 +681,11 @@ void test_2eri(unsigned int deriv_order,
 #endif
 
   lmax = std::min(lmax_max, lmax);
+
+  // reference code only supports Cartesian gaussians
+#if ERI2_PURE_SH
+  lmax = 1;
+#endif
 
   for (unsigned int l0 = 0; l0 <= lmax; ++l0) {
     for (unsigned int l1 = 0; l1 <= lmax; ++l1) {

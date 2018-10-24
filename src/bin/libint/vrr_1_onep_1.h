@@ -1,25 +1,27 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
 #ifndef _libint2_src_bin_libint_vrr1onep1_h_
 #define _libint2_src_bin_libint_vrr1onep1_h_
 
+#include <cassert>
 #include <generic_rr.h>
 #include <onep_1_1.h>
 
@@ -54,7 +56,7 @@ namespace libint2 {
       using ParentType::target_;
       using ParentType::is_simple;
 
-      /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
+      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
       VRR_1_Overlap_1(const SafePtr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "OSVRROverlap"; }
@@ -196,7 +198,7 @@ namespace libint2 {
       using ParentType::target_;
       using ParentType::is_simple;
 
-      /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
+      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
       VRR_1_Overlap_1_1d(const SafePtr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return std::string("OSVRROverlap") + to_string(axis); }
@@ -345,7 +347,7 @@ namespace libint2 {
       using ParentType::target_;
       using ParentType::is_simple;
 
-      /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
+      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
       VRR_1_Kinetic_1(const SafePtr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "OSVRRKinetic"; }
@@ -620,12 +622,13 @@ namespace libint2 {
             const OriginDerivative<3u> dAm1(dA - _d1);
             if (exists(dAm1)) { // yes
               a.deriv() = dAm1;
-              auto AB = factory.make_child(a,b,m);
+              auto AB_m = factory.make_child(a,b,m);
+              auto AB_mp1 = factory.make_child(a,b,m+1);
               if (is_simple()) {
-                if (where == InBra) { // building on A
-                  expr_ -= Vector(dA)[dxyz] * Scalar("rho12_over_alpha1") * AB;  nflops_ += 3; }
-                if (where == InKet) { // building on B
-                  expr_ += Vector(dA)[dxyz] * Scalar("rho12_over_alpha2") * AB;  nflops_ += 3; }
+                if (where == InBra) { // building on A -> derivative of (PA)_i and (PC)_i prefactors w.r.t A_i
+                  expr_ -= Vector(dA)[dxyz] * (Scalar("rho12_over_alpha1") * AB_m + Scalar("rho12_over_alpha2") * AB_mp1);  nflops_ += 5; }
+                if (where == InKet) { // building on B -> derivative of (PB)_i and (PC)_i prefactors w.r.t A_i
+                  expr_ += Vector(dA)[dxyz] * Scalar("rho12_over_alpha2") * (AB_m - AB_mp1);  nflops_ += 4; }
               }
               a.deriv() = dA;
             }
@@ -636,12 +639,13 @@ namespace libint2 {
             const OriginDerivative<3u> dBm1(dB - _d1);
             if (exists(dBm1)) { // yes
               b.deriv() = dBm1;
-              auto AB = factory.make_child(a,b,m);
+              auto AB_m = factory.make_child(a,b,m);
+              auto AB_mp1 = factory.make_child(a,b,m+1);
               if (is_simple()) {
-                if (where == InBra) { // building on A
-                  expr_ += Vector(dB)[dxyz] * Scalar("rho12_over_alpha1") * AB;  nflops_ += 3; }
-                if (where == InKet) { // building on B
-                  expr_ -= Vector(dB)[dxyz] * Scalar("rho12_over_alpha2") * AB;  nflops_ += 3; }
+                if (where == InBra) { // building on A -> derivative of (PA)_i and (PC)_i prefactors w.r.t B_i
+                  expr_ += Vector(dB)[dxyz] * Scalar("rho12_over_alpha1") * (AB_m - AB_mp1);  nflops_ += 4; }
+                if (where == InKet) { // building on B -> derivative of (PB)_i and (PC)_i prefactors w.r.t B_i
+                  expr_ -= Vector(dB)[dxyz] * (Scalar("rho12_over_alpha2") * AB_m + Scalar("rho12_over_alpha1") * AB_mp1);  nflops_ += 5; }
               }
               b.deriv() = dB;
             }
@@ -652,6 +656,240 @@ namespace libint2 {
 
       return;
     }
+
+  /** VRR Recurrence Relation for 1-e spherical multipole moment aka regular solid harmonics integrals.
+    * \tparam where specifies whether angular momentum is decreased, in bra or ket.
+  */
+  template <class BFSet, FunctionPosition where>
+    class VRR_1_SMultipole_1 : public GenericRecurrenceRelation< VRR_1_SMultipole_1<BFSet,where>,
+                                                                 BFSet,
+                                                                 GenIntegralSet_1_1<BFSet,SphericalMultipoleOper,EmptySet> >
+  {
+  public:
+    typedef VRR_1_SMultipole_1 ThisType;
+    typedef BFSet BasisFunctionType;
+    typedef SphericalMultipoleOper OperType;
+    typedef GenIntegralSet_1_1<BFSet,SphericalMultipoleOper,EmptySet> TargetType;
+    typedef GenericRecurrenceRelation<ThisType,BFSet,TargetType> ParentType;
+    friend class GenericRecurrenceRelation<ThisType,BFSet,TargetType>;
+    static const unsigned int max_nchildren = 8;
+
+    using ParentType::Instance;
+
+    /// Default directionality
+    static bool directional() { return ParentType::default_directional(); }
+
+  private:
+    using ParentType::RecurrenceRelation::expr_;
+    using ParentType::RecurrenceRelation::nflops_;
+    using ParentType::target_;
+    using ParentType::is_simple;
+    using typename ParentType::RecurrenceRelation::ExprType;
+
+    static std::string descr() { return "OSVRRSMultipole"; }
+
+    /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
+    VRR_1_SMultipole_1(const SafePtr<TargetType>& Tint, unsigned int dir) :
+        ParentType(Tint,dir)
+        {
+          using namespace libint2::algebra;
+          using namespace libint2::prefactor;
+          using namespace libint2::braket;
+          using Sign = SphericalMultipoleQuanta::Sign;
+          using F = BFSet;
+          const F& _1 = unit<F>(dir);
+
+          { // can't apply to contracted basis functions
+            F a(Tint->bra(0,0));
+            F b(Tint->ket(0,0));
+            if (a.contracted() ||
+                b.contracted())
+              return;
+          }
+
+          // implementation follows J.M. Pérez-Jordá and W. Yang, J Chem Phys 107, 1218 (1997).
+          // Eqs. (58-61) for gaussian quanta, and
+          // J.M. Pérez-Jordá and W. Yang, J Chem Phys 104, 8003 (1996), Eqs. (23-27) for multipole quanta
+          const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
+          const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
+          const bool deriv = dA.zero() == false ||
+              dB.zero() == false;
+          if (deriv)  // derivative relations not yet implemented
+            return;
+
+          auto O_l_m = Tint->oper()->descr();
+          const auto l = O_l_m.l();
+          const auto m = O_l_m.m();
+          const auto sign = O_l_m.sign();
+
+          typedef TargetType ChildType;
+          ChildFactory<ThisType,ChildType> factory(this);
+
+          auto make_child = [&](const F& bra, const F& ket, const OperType::Descriptor& descr) -> SafePtr<DGVertex> {
+            return factory.make_child(bra, ket, EmptySet(), descr);
+          };
+
+          // Build on A or B if either bra or ket has quanta, otherwise build multipole quanta
+          if (Tint->bra(0,0).norm() != 0 || Tint->ket(0,0).norm() != 0) {
+            // build A or B
+
+            // bf quantum on the build center subtracted by 1
+            auto a = ( where == InBra ? Tint->bra(0,0) - _1 : Tint->bra(0,0) );
+            if (!exists(a)) return;
+            auto b = ( where == InKet ? Tint->ket(0,0) - _1 : Tint->ket(0,0) );
+            if (!exists(b)) return;
+
+            //
+            // first 2 terms are common to Eqs. (58-60)
+            //
+            auto AB = make_child(a, b, O_l_m);
+            if (is_simple()) { expr_ = Vector(where == InBra ? "PA" : "PB")[dir] * AB; nflops_+=1; }
+
+            auto am1 = a - _1; auto am1_exists = exists(am1);
+            auto bm1 = b - _1; auto bm1_exists = exists(bm1);
+
+            SafePtr<ExprType> subexpr;  // to be multiplied by 1/(2 zeta)
+
+            if (am1_exists) {
+              auto Am1B = make_child(am1, b, O_l_m);
+              if (is_simple()) { subexpr += Scalar(a[dir]) * Am1B;  nflops_+=1; }
+            }
+            if (bm1_exists) {
+              auto ABm1 = make_child(a, bm1, O_l_m);
+              if (is_simple()) { subexpr += Scalar(b[dir]) * ABm1;  nflops_+=1; }
+            }
+
+            // Eq. (58)
+            // (a|N_{l,m}|b) += 0.5 * ((a|N_{l-1,m+1}|b) - (a|N_{l-1,m-1}|b))
+            auto O_lm1_mp1 = SphericalMultipole_Descr(l-1, m+1, sign);
+            if (exists(O_lm1_mp1)) {
+              auto AB_O_lm1_mp1 = make_child(a, b, O_lm1_mp1);
+              if (is_simple() && dir == 0) {
+                subexpr += Scalar(O_lm1_mp1.phase() > 0 ? 0.5 : -0.5) * AB_O_lm1_mp1;
+                nflops_ += 1;
+              }
+            }
+
+            auto O_lm1_mm1 = SphericalMultipole_Descr(l-1, m-1, sign);
+            if (exists(O_lm1_mm1)) {
+              auto AB_O_lm1_mm1 = make_child(a, b, O_lm1_mm1);
+              if (is_simple() && dir == 0) {
+                subexpr -= Scalar(O_lm1_mm1.phase() > 0 ? 0.5 : -0.5) * AB_O_lm1_mm1;
+                nflops_ += 1;
+              }
+            }
+
+            // Eq. (59)
+            // (a|N^{+-}_{l,m}|b) {+-}= 0.5 * ((a|N^{-+}_{l-1,m+1}|b) + (a|N^{-+}_{l-1,m-1}|b))
+            const auto m_pfac = sign == Sign::plus ? 1 : -1;
+            auto Om_lm1_mp1 = SphericalMultipole_Descr(l-1, m+1, flip(sign));
+            if (exists(Om_lm1_mp1)) {
+              auto AB_Om_lm1_mp1 = make_child(a, b, Om_lm1_mp1);
+              if (is_simple() && dir == 1) {
+                subexpr += Scalar(m_pfac * (Om_lm1_mp1.phase() > 0 ? 0.5 : -0.5)) * AB_Om_lm1_mp1;
+                nflops_ += 1;
+              }
+            }
+
+            auto Om_lm1_mm1 = SphericalMultipole_Descr(l-1, m-1, flip(sign));
+            if (exists(Om_lm1_mm1)) {
+              auto AB_Om_lm1_mm1 = make_child(a, b, Om_lm1_mm1);
+              if (is_simple() && dir == 1) {
+                subexpr += Scalar(m_pfac * (Om_lm1_mm1.phase() > 0 ? 0.5 : -0.5)) * AB_Om_lm1_mm1;
+                nflops_ += 1;
+              }
+            }
+
+            // Eq. (60)
+            auto O_lm1_m = SphericalMultipole_Descr(l-1, m, sign);
+            if (exists(O_lm1_m)) {
+              auto AB_O_lm1_m = make_child(a, b, O_lm1_m);
+              if (is_simple() && dir == 2) {
+                subexpr += AB_O_lm1_m;
+                nflops_ += 1;
+              }
+            }
+
+            if (is_simple()) {
+              if(subexpr)
+                expr_ += Scalar("oo2z") * subexpr;
+            }
+          }
+          else {
+            // build multipole quanta only if dir == 0
+            if (dir != 0) return;
+            auto a = Tint->bra(0,0);
+            auto b = Tint->ket(0,0);
+
+            if (l == m) {
+              if (l == 0) {                  // Eq.
+                assert(sign == Sign::plus);  // Eq. (24) should not be needed
+                                             // since N^-_{0,0} should just be
+                                             // omitted above
+                typedef GenIntegralSet_1_1<BFSet, CartesianMultipoleOper<3u>, EmptySet>
+                    OverlapType;
+                ChildFactory<ThisType, OverlapType> overlap_factory(this);
+                auto S00 = overlap_factory.make_child(a, b);
+                if (is_simple()) {
+                  expr_ = Scalar(1) * S00;  // Eq. (25) and Eq. (61)
+                }
+              } else {
+                SafePtr<ExprType> subexpr;  // to be multiplied by - 1/(2 m)
+
+                // Eqs. (25-26)
+                // (0|N^+_{m,m}|0) = -(1/(2m)) ( x (0|N^+_{m-1,m-1}|0) - y
+                // (0|N^-_{m-1,m-1}|0) )
+                auto Op_lm1_mm1 =
+                    SphericalMultipole_Descr(l - 1, m - 1, Sign::plus);
+                auto AB_Op_lm1_mm1 = make_child(a, b, Op_lm1_mm1);
+                if (is_simple()) {
+                  subexpr = Scalar(sign == Sign::plus ? "PO_x" : "PO_y") *
+                            AB_Op_lm1_mm1;
+                }
+                auto Om_lm1_mm1 =
+                    SphericalMultipole_Descr(l - 1, m - 1, Sign::minus);
+                if (exists(Om_lm1_mm1)) {
+                  auto AB_Om_lm1_mm1 = make_child(a, b, Om_lm1_mm1);
+                  if (is_simple()) {
+                    if (sign == Sign::plus)
+                      subexpr -= Scalar("PO_y") * AB_Om_lm1_mm1;
+                    else  // sign == Sign::minus
+                      subexpr += Scalar("PO_x") * AB_Om_lm1_mm1;
+                  }
+                }
+                if (is_simple()) {
+                  assert(subexpr);
+                  expr_ = Scalar(-0.5 / m) * subexpr;
+                }
+              }
+            } else {                      // l != m, use Eq. 27
+              SafePtr<ExprType> subexpr;  // to be multiplied by 1/((l+m)(l-m))
+
+              auto O_lm1_m = SphericalMultipole_Descr(l - 1, m, sign);
+              if (exists(O_lm1_m)) {
+                auto AB_O_lm1_m = make_child(a, b, O_lm1_m);
+                if (is_simple())
+                  subexpr = Scalar((2 * l - 1)) * Scalar("PO_z") * AB_O_lm1_m;
+              }
+
+              auto O_lm2_m = SphericalMultipole_Descr(l - 2, m, sign);
+              if (exists(O_lm2_m)) {
+                auto AB_O_lm2_m = make_child(a, b, O_lm2_m);
+                if (is_simple())
+                  subexpr -= Scalar("PO2") * AB_O_lm2_m;
+              }
+
+              if (is_simple()) {
+                assert(subexpr);
+                expr_ = Scalar(1.0 / ((l + m) * (l - m))) * subexpr;
+              }
+            }
+          }
+
+          return;
+        }
+
+    };  // VRR_1_SMultipole_1
 
 }; // namespace libint2
 

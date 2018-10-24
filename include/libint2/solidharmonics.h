@@ -1,23 +1,25 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Library General Public License, version 2,
- *  as published by the Free Software Foundation.
+ *  This file is part of Libint.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Lesser General Public License for more details.
  *
- *  You should have received a copy of the GNU Library General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
-#ifndef _libint2_src_lib_libint_solidharmonics_h_
-#define _libint2_src_lib_libint_solidharmonics_h_
+#ifndef _libint2_include_solidharmonics_h_
+#define _libint2_include_solidharmonics_h_
 
 #include <libint2/util/cxxstd.h>
 #if LIBINT2_CPLUSPLUS_STD < 2011
@@ -28,6 +30,10 @@
 #include <vector>
 #include <algorithm>
 
+// if using from the Libint compiler, need to define real type with which will be computing
+#ifndef LIBINT2_REALTYPE
+#  define LIBINT2_REALTYPE double
+#endif
 #include <libint2/shell.h>
 #include <libint2/cgshell_ordering.h>
 
@@ -49,7 +55,7 @@ namespace libint2 {
     template <typename Real>
     class SolidHarmonicsCoefficients {
       public:
-        typedef ::libint2::real_t real_t;
+        typedef ::libint2::value_type real_t;
 
         SolidHarmonicsCoefficients() : l_(-1) {
         }
@@ -75,8 +81,8 @@ namespace libint2 {
 
         static const SolidHarmonicsCoefficients& instance(unsigned int l) {
           static std::vector<SolidHarmonicsCoefficients> shg_coefs(SolidHarmonicsCoefficients::CtorHelperIter(0),
-                                                                   SolidHarmonicsCoefficients::CtorHelperIter(LIBINT_MAX_AM+1));
-          assert(l <= LIBINT_MAX_AM);
+                                                                   SolidHarmonicsCoefficients::CtorHelperIter(11));
+          assert(l <= 10);  // see coeff() for explanation of the upper limit on l
           return shg_coefs[l];
         }
 
@@ -104,8 +110,13 @@ namespace libint2 {
           const unsigned short ncart = (l_ + 1) * (l_ + 2) / 2;
           std::vector<Real> full_coeff(npure * ncart);
 
-          for(signed char m=-l_; m<=l_; ++m) {
-            const signed char pure_idx = m + l_;
+#if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
+          for(signed char pure_idx=0, m=-l_; pure_idx!=npure; ++pure_idx, ++m) {
+#elif LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_GAUSSIAN
+          for(signed char pure_idx=0, m=0; pure_idx!=npure; ++pure_idx, m=(m>0?-m:1-m)) {
+#else
+#  error "unknown value of macro LIBINT_SHGSHELL_ORDERING"
+#endif
             signed char cart_idx = 0;
             signed char lx, ly, lz;
             FOR_CART(lx, ly, lz, l_)
@@ -148,7 +159,7 @@ namespace libint2 {
           See IJQC 54, 83 (1995), eqn (15). If m is negative, imaginary part is computed, whereas
           a positive m indicates that the real part of spherical harmonic Ylm is requested.
          ---------------------------------------------------------------------------------------------*/
-        static double coeff(int l, int m, int lx, int ly, int lz) {
+        static Real coeff(int l, int m, int lx, int ly, int lz) {
           using libint2::math::fac;
           using libint2::math::df_Kminus1;
           using libint2::math::bc;
@@ -171,7 +182,7 @@ namespace libint2 {
             return 0.0;
 
           assert(l <= 10); // libint2::math::fac[] is only defined up to 20
-          Real pfac = sqrt( ((Real(fac[2*lx]*fac[2*ly]*fac[2*lz]))/fac[2*l]) *
+          Real pfac = sqrt( ((Real(fac[2*lx])*Real(fac[2*ly])*Real(fac[2*lz]))/fac[2*l]) *
                             ((Real(fac[l-abs_m]))/(fac[l])) *
                             (Real(1)/fac[l+abs_m]) *
                             (Real(1)/(fac[lx]*fac[ly]*fac[lz]))
@@ -461,7 +472,7 @@ namespace libint2 {
       std::fill(target_blk, target_blk + npure_row * npure_col, 0);
 
       // loop over row shg
-      for(size_t s1=0; s1!=npure_row; ++s1) {
+      for(auto s1=0; s1!=npure_row; ++s1) {
         const auto nc1 = coefs_row.nnz(s1);      // # of cartesians contributing to shg s1
         const auto* c1_idxs = coefs_row.row_idx(s1); // indices of cartesians contributing to shg s1
         const auto* c1_vals = coefs_row.row_values(s1); // coefficients of cartesians contributing to shg s1
@@ -469,7 +480,7 @@ namespace libint2 {
         auto target_blk_s1 = target_blk + s1 * npure_col;
 
         // loop over col shg
-        for(size_t s2=0; s2!=npure_col; ++s2) {
+        for(auto s2=0; s2!=npure_col; ++s2) {
           const auto nc2 = coefs_col.nnz(s2);      // # of cartesians contributing to shg s2
           const auto* c2_idxs = coefs_col.row_idx(s2); // indices of cartesians contributing to shg s2
           const auto* c2_vals = coefs_col.row_values(s2); // coefficients of cartesians contributing to shg s2
@@ -504,13 +515,13 @@ namespace libint2 {
       const auto npure_col = 2*l_col+1;
 
       // loop over rows
-      for(size_t r1=0; r1!=nrow; ++r1) {
+      for(auto r1=0ul; r1!=nrow; ++r1) {
 
         auto source_blk_r1 = source_blk + r1 * ncart_col;
         auto target_blk_r1 = target_blk + r1 * npure_col;
 
         // loop over col shg
-        for(size_t s2=0; s2!=npure_col; ++s2) {
+        for(auto s2=0; s2!=npure_col; ++s2) {
           const auto nc2 = coefs_col.nnz(s2);      // # of cartesians contributing to shg s2
           const auto* c2_idxs = coefs_col.row_idx(s2); // indices of cartesians contributing to shg s2
           const auto* c2_vals = coefs_col.row_values(s2); // coefficients of cartesians contributing to shg s2
@@ -542,7 +553,7 @@ namespace libint2 {
       const auto npure_row = 2*l_row+1;
 
       // loop over row shg
-      for(size_t s1=0; s1!=npure_row; ++s1) {
+      for(auto s1=0; s1!=npure_row; ++s1) {
         const auto nc1 = coefs_row.nnz(s1);      // # of cartesians contributing to shg s1
         const auto* c1_idxs = coefs_row.row_idx(s1); // indices of cartesians contributing to shg s1
         const auto* c1_vals = coefs_row.row_values(s1); // coefficients of cartesians contributing to shg s1
@@ -550,7 +561,7 @@ namespace libint2 {
         auto target_blk_s1 = target_blk + s1 * ncol;
 
         // loop over cols
-        for(size_t c2=0; c2!=ncol; ++c2) {
+        for(auto c2=0; c2!=ncol; ++c2) {
 
           Real s1_c2_value = 0.0;
           auto source_blk_c2_offset = source_blk + c2;
@@ -593,4 +604,4 @@ namespace libint2 {
 
 } // namespace libint2
 
-#endif /* _libint2_src_lib_libint_solidharmonics_h_ */
+#endif  /* _libint2_include_solidharmonics_h_ */

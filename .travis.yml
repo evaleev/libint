@@ -5,32 +5,46 @@ compiler:
   - clang
   - gcc
 env:
-  - GCC_VERSION=4.8
-  - GCC_VERSION=4.9
-  - GCC_VERSION=5
+  matrix:
+    - GCC_VERSION=5
+    - GCC_VERSION=6
+    - GCC_VERSION=7
+    - GCC_VERSION=8
+  global:
+    - BUILD_PREFIX=/home/travis/_build
+    - INSTALL_PREFIX=/home/travis/_install
 matrix:
   exclude:
     - compiler: clang
-      env: GCC_VERSION=4.8
+      env: GCC_VERSION=5
     - compiler: clang
-      env: GCC_VERSION=4.9
+      env: GCC_VERSION=6
+    - compiler: clang
+      env: GCC_VERSION=7
 sudo: false
 addons:
   apt:
     sources:
-      - george-edison55-precise-backports
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-precise-3.8
       - boost-latest
+      - llvm-toolchain-trusty-6.0
     packages:
-      - g++-4.8
-      - g++-4.9
       - g++-5
-      - clang-3.8
+      - g++-6
+      - g++-7
+      - g++-8
+      - clang-6.0
+      - gfortran-5
+      - gfortran-6
+      - gfortran-7
+      - gfortran-8
       - libgmp-dev
       - libeigen3-dev
       - libboost1.55-dev
 install: true
+before_install:
+  - env
+  - mkdir -p ${BUILD_PREFIX} && mkdir -p ${INSTALL_PREFIX}
 script:
   - ./bin/travisci_build_$TRAVIS_OS_NAME.sh
 after_failure:

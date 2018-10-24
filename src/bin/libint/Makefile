@@ -27,7 +27,7 @@ oper.cc iter.cc policy.cc strategy.cc policy_spec.cc flop.cc \
 prefactors.cc context.cc memory.cc tactic.cc codeblock.cc dims.cc code.cc \
 iface.cc class_registry.cc algebra.cc graph_registry.cc drtree.cc task.cc \
 extract.cc util.cc purgeable.cc buildtest.cc comp_deriv_gauss.cc \
-comp_xyz.cc
+comp_xyz.cc multipole.cc
 LIBCXXOBJ = $(LIBCXXSRC:%.cc=%.$(OBJSUF))
 LIBCXXDEP = $(LIBCXXSRC:%.cc=%.$(DEPSUF))
 LIBOBJ = $(LIBCXXOBJ)
@@ -95,6 +95,7 @@ realclean:: clean
 
 distclean:: realclean
 
+ifneq ($(DODEPEND),no)
 ifneq ($(CXXDEPENDSUF),none)
 %.d: %.cc
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
@@ -108,4 +109,4 @@ endif
 -include $(LIBCXXDEP)
 -include $(BUILDCXXDEP)
 -include $(TESTCXXDEP)
-        
+endif

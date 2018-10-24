@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -46,6 +47,8 @@ namespace libint2 {
   typedef GenIntegralSet_1_1<CGF,ElecPotOper,mType> ElecPot_1_1_int;
   typedef GenIntegralSet_1_1<CGShell,CartesianMultipoleOper<3u>,EmptySet> CMultipole_1_1_sh;
   typedef GenIntegralSet_1_1<CGF,CartesianMultipoleOper<3u>,EmptySet> CMultipole_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,SphericalMultipoleOper,EmptySet> SMultipole_1_1_sh;
+  typedef GenIntegralSet_1_1<CGF,SphericalMultipoleOper,EmptySet> SMultipole_1_1_int;
 
   typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,OverlapOper,EmptySet> Overlap_1_1_sh_x;
   typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper,EmptySet> Overlap_1_1_sh_y;
@@ -127,6 +130,8 @@ namespace libint2 {
   CMultipole_1_1_int_x,
   CMultipole_1_1_int_y,
   CMultipole_1_1_int_z,
+  SMultipole_1_1_sh,
+  SMultipole_1_1_int,
 #endif
   TwoPRep_11_11_sq,
   TwoPRep_11_11_int,

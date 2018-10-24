@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Lesser General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -25,6 +26,12 @@
 #include <algorithm>
 
 namespace libint2 {
+
+  /// Normalization convention for Cartesian Gaussian shells
+  enum class CartesianShellNormalization {
+    standard,  // same normalization factor for every function in shell (default)
+    uniform    // different normalization factors so that each function has same norm
+  };
 
   namespace detail {
     inline int notxyz(int a, int b) {
@@ -367,7 +374,67 @@ namespace libint2 {
     }
   };
 
-  template <CGShellOrdering Ord, unsigned int lmax> struct CGShellOrderingData {
+  // see http://www.cmbi.ru.nl/molden/molden_format.html
+  template <unsigned int lmax> struct CGShellOrderingGenerator<CGShellOrdering_MOLDEN,lmax> {
+    static void compute(int (&cartindex)[lmax+1][lmax+1][lmax+1]) {
+
+      for (unsigned int am = 0; am <= 4u; ++am) {
+
+        if (am == 0) {
+          cartindex[0][0][0] = 0;
+          continue;
+        }
+        if (am == 1) {
+          cartindex[1][1][0] = 0;
+          cartindex[1][0][1] = 1;
+          cartindex[1][0][0] = 2;
+          continue;
+        }
+        if (am == 2) {
+          cartindex[2][2][0] = 0;
+          cartindex[2][0][2] = 1;
+          cartindex[2][0][0] = 2;
+          cartindex[2][1][1] = 3;
+          cartindex[2][1][0] = 4;
+          cartindex[2][0][1] = 5;
+          continue;
+        }
+        if (am == 3) {
+          cartindex[3][3][0] = 0;
+          cartindex[3][0][3] = 1;
+          cartindex[3][0][0] = 2;
+          cartindex[3][1][2] = 3;
+          cartindex[3][2][1] = 4;
+          cartindex[3][2][0] = 5;
+          cartindex[3][1][0] = 6;
+          cartindex[3][0][1] = 7;
+          cartindex[3][0][2] = 8;
+          cartindex[3][1][1] = 9;
+          continue;
+        }
+        if (am == 4) {
+          cartindex[4][4][0] = 0;
+          cartindex[4][0][4] = 1;
+          cartindex[4][0][0] = 2;
+          cartindex[4][3][1] = 3;
+          cartindex[4][3][0] = 4;
+          cartindex[4][1][3] = 5;
+          cartindex[4][0][3] = 6;
+          cartindex[4][1][0] = 7;
+          cartindex[4][0][1] = 8;
+          cartindex[4][2][2] = 9;
+          cartindex[4][2][0] = 10;
+          cartindex[4][0][2] = 11;
+          cartindex[4][2][1] = 12;
+          cartindex[4][1][2] = 13;
+          cartindex[4][1][1] = 14;
+          continue;
+        }
+      }
+    }
+  };
+
+  template <CGShellOrdering Ord, unsigned int lmax = LIBINT_CARTGAUSS_MAX_AM> struct CGShellOrderingData {
 
     struct Triple {
       Triple() : i(0), j(0), k(0) {}
@@ -380,8 +447,8 @@ namespace libint2 {
       CGShellOrderingGenerator<Ord,lmax>::compute(cartindex);
       // then use it to compute cartindex_to_ijk
       for(unsigned int l=0; l<=lmax; ++l) {
-        for(int i=0; i<=l; ++i) {
-          for(int j=0; j<=l-i; ++j) {
+        for(unsigned int i=0; i<=l; ++i) {
+          for(unsigned int j=0; j<=l-i; ++j) {
             const int c = cartindex[l][i][j];
             cartindex_to_ijk[l][c] = Triple(i,j,l-i-j);
           }
@@ -418,8 +485,6 @@ namespace libint2 {
 
   template <typename OrderingData> OrderingData CGShellInfo<OrderingData>::data_;
 
-
-
-};
+};  // namespace libint2
 
 #endif // header guard

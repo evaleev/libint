@@ -1,18 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Library General Public License, version 2,
- *  as published by the Free Software Foundation.
+ *  This file is part of Libint.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ *  GNU Lesser General Public License for more details.
  *
- *  You should have received a copy of the GNU Library General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -29,18 +31,14 @@
 #define LIBINT_T_S_ELECPOT_S(mValue) _aB_s___0___ElecPot_s___0___Ab__up_##mValue
 
 #include <libint2/util/intrinsic_types.h>
-#include <libint2_params.h>
-#include <libint2_types.h>
+#include <libint2/util/generated/libint2_params.h>
+#include <libint2/util/generated/libint2_types.h>
 
 #if defined(__cplusplus)
-# include <libint2/util/type_traits.h>
-  namespace libint2 {
-    typedef LIBINT2_REALTYPE realvec_t;
-    typedef libint2::vector_traits<LIBINT2_REALTYPE>::value_type real_t;
-  }; /* namespace libint2 */
-#endif /* C++ only */
+#include <libint2/numeric.h>
+#endif
 
 #endif /* header guard */
 
-#include "libint2_iface.h"
+#include <libint2/util/generated/libint2_iface.h>
 

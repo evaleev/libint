@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -128,6 +129,16 @@ namespace libint2 {
   typedef VRR_1_ElecPot_1<CGF,InBra> VRR_a_1_ElecPot_1_int;
   typedef VRR_1_ElecPot_1<CGShell,InKet> VRR_b_1_ElecPot_1_sh;
   typedef VRR_1_ElecPot_1<CGF,InKet> VRR_b_1_ElecPot_1_int;
+
+  // TODO investigate whether need to stay away from HRR for now to be sure that multipoles are computed as precisely as possible
+  typedef HRR<SMultipole_1_1_sh,CGShell,0,InBra,0,InKet,0> HRR_ab_1_SMultipole_1_sh;
+  typedef HRR<SMultipole_1_1_int,CGF,0,InBra,0,InKet,0> HRR_ab_1_SMultipole_1_int;
+  typedef HRR<SMultipole_1_1_sh,CGShell,0,InKet,0,InBra,0> HRR_ba_1_SMultipole_1_sh;
+  typedef HRR<SMultipole_1_1_int,CGF,0,InKet,0,InBra,0> HRR_ba_1_SMultipole_1_int;
+  typedef VRR_1_SMultipole_1<CGShell,InBra> VRR_a_1_SMultipole_1_sh;
+  typedef VRR_1_SMultipole_1<CGF,InBra> VRR_a_1_SMultipole_1_int;
+  typedef VRR_1_SMultipole_1<CGShell,InKet> VRR_b_1_SMultipole_1_sh;
+  typedef VRR_1_SMultipole_1<CGF,InKet> VRR_b_1_SMultipole_1_int;
 #endif
 
   typedef VRR_11_TwoPRep_11<CGShell,0,InBra> VRR_a_11_TwoPRep_11_sh;

@@ -1,19 +1,20 @@
 /*
- *  This file is a part of Libint.
- *  Copyright (C) 2004-2014 Edward F. Valeev
+ *  Copyright (C) 2004-2018 Edward F. Valeev
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  Libint is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see http://www.gnu.org/licenses/.
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -43,7 +44,7 @@ namespace libint2 {
   public:
     virtual ~BFSet() {}
     virtual unsigned int num_bf() const =0;
-    virtual const std::string label() const =0;
+    virtual std::string label() const =0;
 
   protected:
     BFSet() {}
@@ -95,6 +96,7 @@ namespace libint2 {
   template <unsigned NDIM = 3>
   class OriginDerivative : public Hashable<LIBINT2_UINT_LEAST64,ReferToKey> {
 
+    static_assert(NDIM == 1 || NDIM == 3, "OriginDerivative<NDIM>: only NDIM=1 or NDIM=3 are supported");
   public:
     OriginDerivative() : valid_(true) {
       for(auto d=0u; d!=NDIM; ++d) d_[d] = 0u;
@@ -159,15 +161,19 @@ namespace libint2 {
         unsigned nxy = d_[1] + d_[2];
         unsigned l = nxy + d_[0];
         LIBINT2_UINT_LEAST64 key = nxy*(nxy+1)/2 + d_[2];
-        return key + key_l_offset.at(l);
+        const auto result = key + key_l_offset.at(l);
+        assert(result < max_key);
+        return result;
       }
       if (NDIM == 1u) {
-        return d_[0];
+        const auto result = d_[0];
+        assert(result < max_key);
+        return result;
       }
       assert(false);
     }
     /// Return a compact label
-    const std::string label() const {
+    std::string label() const {
       char result[NDIM+1];
       for(auto xyz=0u; xyz<NDIM; ++xyz) result[xyz] = '0' + d_[xyz];
       result[NDIM] = '\0';
@@ -205,6 +211,12 @@ namespace libint2 {
     static std::array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1> key_l_offset;
 
   };
+
+  // explicit instantiation declaration, definitions are gauss.cc
+  template<>
+  std::array<LIBINT2_UINT_LEAST64, OriginDerivative<1u>::max_deriv+1> OriginDerivative<1u>::key_l_offset;
+  template<>
+  std::array<LIBINT2_UINT_LEAST64, OriginDerivative<3u>::max_deriv+1> OriginDerivative<3u>::key_l_offset;
 
   template <unsigned NDIM>
   OriginDerivative<NDIM> operator-(const OriginDerivative<NDIM>& A, const OriginDerivative<NDIM>& B) {
@@ -256,7 +268,7 @@ namespace libint2 {
     OriginDerivative<3u>& deriv() { return deriv_; }
 
     /// Return a compact label
-    const std::string label() const;
+    std::string label() const;
     /// Returns the number of basis functions in the set
     unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
     /// Returns the angular momentum
@@ -348,7 +360,7 @@ namespace libint2 {
     OriginDerivative<3u>& deriv() { return deriv_; }
 
     /// Return a compact label
-    const std::string label() const;
+    std::string label() const;
     /// Returns the number of basis functions in the set (always 1)
     unsigned int num_bf() const { return 1; };
     /// Returns the quantum number along \c axis
@@ -420,11 +432,12 @@ namespace libint2 {
 
 #if 1
   /// Cartesian components of 3D CGF = 1D CGF
-  /// @note reference to particular cartesian axis embedded in type
+  /// @note reference to particular cartesian axis embedded in type, so that for
+  /// example axis-dependent RRs can correctly infer geometric constants
   template <CartesianAxis Axis>
-  class CGF1d : public IncableBFSet, public Hashable<LIBINT2_UINT_LEAST64,ComputeKey>,
-                public Contractable< CGF1d<Axis> > {
-
+  class CGF1d : public IncableBFSet,
+                public Hashable<LIBINT2_UINT_LEAST64, ComputeKey>,
+                public Contractable<CGF1d<Axis> > {
     unsigned int qn_[1];
     OriginDerivative<1u> deriv_;
     bool unit_; //< if true, this is a unit Gaussian (exponent = 0)
@@ -487,7 +500,7 @@ namespace libint2 {
     OriginDerivative<1u>& deriv() { return deriv_; }
 
     /// Return a compact label
-    const std::string label() const {
+    std::string label() const {
       // unit *functions* are treated as regular qn-0 functions so that (00|00)^(m) = (unit 0|00)^(m)
       std::ostringstream oss;
       oss << to_string(Axis) << qn_[0];
@@ -653,7 +666,7 @@ namespace libint2 {
     OriginDerivative<1u>& deriv() { return deriv_; }
 
     /// Return a compact label
-    const std::string label() const {
+    std::string label() const {
       // unit *functions* are treated as regular qn-0 functions so that (00|00)^(m) = (unit 0|00)^(m)
       std::ostringstream oss;
       auto axis_label = to_string(Axis);
@@ -770,7 +783,7 @@ namespace libint2 {
     OriginDerivative& deriv() { return deriv_; }
 
     /// Return a compact label
-    const std::string label() const;
+    std::string label() const;
     /// Returns the number of basis functions in the set
     unsigned int num_bf() const { return 2*qn_[0]+1; };
     /// Returns the angular momentum
@@ -831,7 +844,7 @@ namespace libint2 {
     OriginDerivative& deriv() { return deriv_; }
 
     /// Return a compact label
-    const std::string label() const;
+    std::string label() const;
     /// Returns the number of basis functions in the set (always 1)
     unsigned int num_bf() const { return 1; };
     /// Returns the angular momentum
