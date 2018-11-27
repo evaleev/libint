@@ -114,6 +114,7 @@ class Export {
   /// writes the "[GTO]" section, as well as optional Cartesian/solid harmonics
   /// keywords, to ostream \c os
   void write_basis(std::ostream& os) const {
+    bool f_found = false;
     os << "[GTO]" << std::endl;
     for (size_t iatom = 0; iatom < atoms_.size(); ++iatom) {
       os << std::setw(4) << (iatom + 1) << std::setw(4) << 0 << std::endl;
@@ -121,6 +122,10 @@ class Export {
         const Shell& sh = basis_.at(ish);
         if (sh.contr.size() == 1) {
           const auto& contr = sh.contr[0];
+          const auto l = contr.l;
+          assert(l <= 4);  // only up to g functions are supported
+          if (l == 3)
+            f_found = true;
           const auto nprim = contr.coeff.size();
           os << std::setw(4) << Shell::am_symbol(contr.l) << std::setw(6)
              << nprim << std::setw(6) << "1.00" << std::endl;
@@ -140,15 +145,18 @@ class Export {
 
     // write solid harmonic/cartesian tags
     {
-      // default is cartesians throughout
+      // Molden default is cartesians throughout
+      // dfg_is_cart_ is set to true even if there are no shells of a given type
       if (dfg_is_cart_[0]) {   // cartesian d
         if (!dfg_is_cart_[1])  // solid harmonic f
           os << "[7F]" << std::endl;
       } else {                   // solid harmonic d
         if (!dfg_is_cart_[1]) {  // solid harmonic f
           os << "[5D7F]" << std::endl;
-        } else {  // cartesian f
+        } else if (f_found) {  // cartesian f
           os << "[5D10F]" << std::endl;
+        } else {  // no f functions
+          os << "[5D]" << std::endl;
         }
       }
       if (!dfg_is_cart_[2])  // solid harmonic g
@@ -207,7 +215,7 @@ class Export {
   std::vector<bool> spins_;
   double coefficient_epsilon_;
   mutable bool
-      dfg_is_cart_[3] = {true, true, true};  // whether {d, f, g} shells are cartesian (true) or
+      dfg_is_cart_[3];  // whether {d, f, g} shells are cartesian (true) or
                         // solid harmonics (false)
   std::vector<std::vector<long>>
       atom2shell_;  // maps atom -> shell indices in basis_
@@ -220,6 +228,8 @@ class Export {
   ///        requirements
   const std::vector<Shell>& validate(const std::vector<Shell>& shells) const {
     bool dfg_found[] = {false, false, false};
+    for(int i=0; i!=sizeof(dfg_is_cart_)/sizeof(bool); ++i)
+      dfg_is_cart_[i] = true;
     for (const auto& shell : shells) {
       for (const auto& contr : shell.contr) {
         if (contr.l > 4)
@@ -237,6 +247,7 @@ class Export {
           case 4: {
             if (!dfg_found[contr.l - 2]) {
               dfg_is_cart_[contr.l - 2] = !contr.pure;
+              dfg_found[contr.l - 2] = true;
             }
             if (!contr.pure ^ dfg_is_cart_[contr.l - 2])
               throw std::logic_error(
