@@ -6,6 +6,7 @@ Following is a brief summary of changes made in each release of Libint.
 - 2018-xx-yy: 2.5.0-beta.3
   - validation target in exported library works correctly in absence of C++11 API
   - cleanup of molden exporter
+  - Boost.Container's small_vector is only usable if the Boost version >= 1.61
 
 - 2018-08-13: 2.5.0-beta.2
   - fixed molden exporter
