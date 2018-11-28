@@ -5,20 +5,24 @@ Following is a brief summary of changes made in each release of Libint.
 
 - 2018-xx-yy: 2.5.0-beta.3
   - validation target in exported library works correctly in absence of C++11 API
+  - cleanup of molden exporter
+  - Boost.Container's small_vector is only usable if the Boost version >= 1.61
 
-- 2018-xx-yy: 2.5.0-beta.2
+- 2018-08-13: 2.5.0-beta.2
   - fixed molden exporter
   - 2-body core engine singleton re-initialization is thread-safe
   - improved precision of Chebyshev Boys engine and made it the default for 1-e Coulomb ints
   - fixed precision handling in reference Boys engine to support arbitrary precision
   - resolved issue #105: libint2.h is again usable from C, added unit test
+  - shell uses Boost.Container's small_vector is available
 
 - 2018-07-11: 2.5.0-beta.1
   - resolved issue 90
   - resolved issue 91: fixed formatting errors in def2-sv(p)-c, def2-tzvp-c, and def2-tzvpp-c basis set definitions
   - resolved issue 95
   - minor fixes for C++17 (includes PR 96 HT https://github.com/mfherbst)
-  - [generated lib only] ensure system boost/preprocessor.hpp is more recent than 1.57; reverts to bundled boost is system boost is too old
+  - [generated lib only] ensure system boost/preprocessor.hpp is 1.57 or more recent;
+    reverts to bundled boost is system boost is too old
   - resolved issue 97: checks variadic macro support in boost.preprocessor for the libint compiler
   - C++ API produces correct 2- and 3-center 2-e derivatives
   - added minimal non-HF validation tests for C++ API (only 2-body Coulomb)

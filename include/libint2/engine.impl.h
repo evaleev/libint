@@ -38,7 +38,7 @@
 #    if (BOOST_VERSION / 100000 == 1) && ((BOOST_VERSION / 100 % 1000) >= 57)
 #      include <boost/preprocessor.hpp>
 #      include <boost/preprocessor/facilities/is_1.hpp>
-#    endif  // boost version > 1.57
+#    endif  // boost version >= 1.57
 #  endif  // defined(BOOST_VERSION)
 #endif  // found system boost/preprocessor.hpp
 #if !defined(BOOST_PREPROCESSOR_HPP)  // if preprocessor.hpp not yet included, use the bundled copy

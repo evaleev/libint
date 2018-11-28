@@ -151,7 +151,7 @@ namespace libint2 {
 
           auto Z = atoms[a].atomic_number;
 
-          if (element_bases.size() > Z && !element_bases.at(Z).empty()) {  // found? add shells in order
+          if (decltype(Z)(element_bases.size()) > Z && !element_bases.at(Z).empty()) {  // found? add shells in order
             for(auto s: element_bases.at(Z)) {
               this->push_back(std::move(s));
               this->back().move({{atoms[a].x, atoms[a].y, atoms[a].z}});
