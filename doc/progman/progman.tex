@@ -633,18 +633,286 @@ To see how to use \LIBINT\ for efficient computation of integrals over
 
 \section{Notes on using \LIBINT\ from Fortran \label{ssec:fort} }
 
-Although \LIBINT\ source is written in C++, it should be possible to use the library
-from Fortran programs. (Un)fortunately, I am not a Fortran programmer. Thus I can
-only provide general guidelines here.
+\subsection{Modern Fortran}
 
-One of the main issues is the number of Fortran standards available. The most recent standard, Fortran 2003,
-seems to have the best support for interoperability with C programs, but its compiler support is stil lacking.
-Unfortunately, the most popular standard, Fortran 77, is also the most restrictive.
+Codes that compile with Fortran standard 2003 or later can easily access \LIBINT\ via its Fortran bindings.
+The Fortran API is located in the fortran subdirectory of \LIBINT\ and is organised as follows:
+\begin{itemize}
+    \item {\tt libint2\_types\_f.h} -- definitions for the integral evaluator types (generated)
+    \item {\tt libint\_f.F90} -- prototypes for functions and data (not generated)
+    \item {\tt fortran\_example.F90} -- Fortran example: four-center two-body Coulomb integrals over primitive Gaussians and derivatives (not generated)
+\end{itemize}
 
-In general, C functions can be easily called from Fortran programs, but sharing data structures
+The Fortran API currently has support for two-, three- and four-center Coulomb integrals and its derivatives.
+Some parts of \LIBINT\ C++ API that do not provide a C interface are missing - most notably the Boys function engine.
+For {\tt LIBINT2\_REALTYPE} only {\tt float} and {\tt double} ({\tt c\_float} and {\tt c\_double} in Fortran) are currently supported.
+If specific functions of Libint are missing (integrals other than Coulomb), it is easy to contribute them to \LIBINT\ ({\tt libint\_f.F90}),
+or to write Fortran bindings for these in your own code.
+
+The provided Fortran bindings are an exact translation of the C API.
+The definition of the Fortran derived type {\tt Libint\_t} is shown in Listing \ref{lst:libinttf}.
+The only notable difference to the corresponding C struct (Listing \ref{lst:libintt}) is that variable names starting with an underscore in C are prefixed with a letter {\tt f} in Fortran.
+Refer to Listing \ref{lst:apif} for Fortran prototypes of procedures and data.
+
+\begin{lstlisting}[label=lst:libinttf,caption=Fortran definition of the \LIBINT\ integral evaluator type.]{}
+type, bind(c) :: Libint_t
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: f_aB_s___0___ElecPot_s___0___Ab__up_0
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: f_aB_s___0___ElecPot_s___0___Ab__up_1
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: f_aB_s___0___ElecPot_s___0___Ab__up_2
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: f_aB_s___0___ElecPot_s___0___Ab__up_3
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: f_aB_s___0___ElecPot_s___0___Ab__up_4
+   ! and so on until 4 * LIBINT2_MAX_AM_ERI
+
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: WP_x, WP_y, WP_z
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: WQ_x, WQ_y, WQ_z
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: PA_x, PA_y, PA_z
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: QC_x, QC_y, QC_z
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: AB_x, AB_y, AB_z
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: CD_x, CD_y, CD_z
+
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: oo2z
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: oo2e
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: oo2ze
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: roz
+   real(LIBINT2_REALTYPE), dimension(VECLEN) :: roe
+
+   type(c_ptr)                                      :: stack
+   type(c_ptr)                                      :: vstack
+   type(c_ptr), dimension(LIBINT2_MAX_NTARGETS_eri) :: targets
+   integer(c_int)                                   :: veclen
+
+   type(c_ptr)    :: nflops
+   integer(c_int) :: zero_out_targets
+end type
+\end{lstlisting}
+
+\begin{lstlisting}[label=lst:apif,caption=\LIBINT\ Fortran API procedures and data.]{}
+subroutine libint2_static_init() bind(C)
+end subroutine
+
+subroutine libint2_static_cleanup() bind(C)
+end subroutine
+
+
+! ERI-specific API
+
+subroutine libint2_init_eri(libint, max_am, buf) bind(C)
+   type(libint_t), dimension(*) :: libint
+   integer(kind=c_int), value   :: max_am
+   type(c_ptr), value           :: buf
+end subroutine
+
+subroutine libint2_cleanup_eri(libint) bind(C)
+   type(libint_t), dimension(*) :: libint
+end subroutine
+
+function libint2_need_memory_eri(max_am) bind(C)
+   integer(kind=c_int), value :: max_am
+   integer(kind=c_size_t)     :: libint2_need_memory_eri
+end function
+
+type(c_funptr), &
+   dimension(0:LIBINT2_MAX_AM_eri, 0:LIBINT2_MAX_AM_eri, &
+             0:LIBINT2_MAX_AM_eri, 0:LIBINT2_MAX_AM_eri), &
+   bind(c) :: libint2_build_eri
+\end{lstlisting}
+
+Using \LIBINT\ from Fortran requires the Fortran builtin {\tt iso\_c\_binding} module in order to ensure compatibility between Fortran and C data types.
+Fortran pointers are not directly interoperable with C pointers, therefore special datatypes for C pointers ({\tt c\_ptr} and {\tt c\_funptr}) and methods
+from {\tt iso\_c\_binding} to convert to Fortran pointers ({\tt c\_f\_pointer} and {\tt c\_f\_procpointer}) are needed.
+If your code should be compatible with different configurations of libint compiler, you need to use conditional compilation based on the macros provided
+in {\tt libint2/config.h} (such as macro {\tt LIBINT\_CONTRACTED\_INTS}, see listing \ref{lst:usefortran}).
+
+An example subroutine that demonstrates how to actually calculate integrals using \LIBINT\ is provided in Listing \ref{lst:usefortran}.
+This example is a translation of Listing \ref{lst:usecpp} to Fortran and evaluates four-center two-body Coulomb integrals over primitive Gaussians.
+See {\tt fortran\_example.F90} for an example of how to deal with contracted Gaussians and derivatives.
+
+\begin{lstlisting}[label=lst:usefortran, caption=Using \LIBINT\ from Fortran.]{}
+! include libint configuration-specific macros (may not be needed)
+#include <libint2/config.h>
+
+module libint_f_example
+
+   USE iso_c_binding  ! C interoperability
+   USE libint_f       ! libint fortran bindings
+
+   implicit none
+
+contains
+
+   ! This subroutine evaluates ERI over 4 primitive Gaussian shells.
+   ! See compute_eri_f in fortran/libint_f.F90 for an example of how
+   ! to deal with contracted Gaussians.
+   subroutine compute_eri(am1, alpha1, A, &
+                          am2, alpha2, B, &
+                          am3, alpha3, C, &
+                          am4, alpha4, D)
+
+      integer, parameter :: dp = c_double ! C interoperable double type
+      integer, parameter :: i = c_int     ! C interoperable int type
+
+      integer(kind=i), intent(in) :: am1, am2, am3, am4
+      real(kind=dp), intent(in) :: alpha1, alpha2, alpha3, alpha4
+      real(kind=dp), intent(in), dimension(3) :: A, B, C, D
+
+      real(kind=dp) :: gammap, AB2, CD2, PQ2, gammaq, gammapq, K1, K2, pfac
+      real(kind=dp), allocatable, dimension(:) :: F
+      real(kind=dp), dimension(:), pointer :: eri_shell_set
+      real(kind=dp), dimension(3) :: P, Q, QC, QD, PQ, PA, PB, W
+      real(kind=dp), parameter :: pi = 4*atan(1.0_dp)
+      integer(kind=i) :: n1, n2, n3, n4, na, nb, nc, nd, ishell, max_am, am
+
+      type(libint_t), dimension(1) :: erieval
+
+      procedure(libint2_build), pointer :: build_eri
+
+      ! I will assume that libint2_static_init() has been called elsewhere!
+
+      !
+      ! initialize (usually outside this function)
+      !
+
+      max_am = maxval([am1, am2, am3, am4])
+      call libint2_init_eri(erieval, max_am, C_NULL_PTR)
+
+#if LIBINT_CONTRACTED_INTS
+      ! if have support for contracted integrals, set the contraction length to 1
+      erieval(1)%contrdepth = 1
+#endif
+
+      !
+      ! Compute requisite data
+      !
+
+      gammap = alpha1 + alpha2
+      P = (alpha1*A + alpha2*B)/gammap
+      PA = P - A
+      PB = P - B
+      AB2 = sum((A - B)*(A - B))
+
+      erieval(1)%PA_x(1) = PA(1)
+      erieval(1)%PA_y(1) = PA(2)
+      erieval(1)%PA_z(1) = PA(3)
+      erieval(1)%AB_x(1) = A(1) - B(1)
+      erieval(1)%AB_y(1) = A(2) - B(2)
+      erieval(1)%AB_z(1) = A(3) - B(3)
+      erieval(1)%oo2z(1) = 0.5_dp/gammap
+
+      gammaq = alpha3 + alpha4
+      gammapq = gammap*gammaq/(gammap + gammaq)
+      Q = (alpha3*C + alpha4*D)/gammaq
+      QC = Q - C
+      QD = Q - D
+      CD2 = sum((C - D)*(C - D))
+
+      erieval(1)%QC_x(1) = QC(1)
+      erieval(1)%QC_y(1) = QC(2)
+      erieval(1)%QC_z(1) = QC(3)
+      erieval(1)%CD_x(1) = C(1) - D(1)
+      erieval(1)%CD_y(1) = C(2) - D(2)
+      erieval(1)%CD_z(1) = C(3) - D(3)
+      erieval(1)%oo2e(1) = 0.5_dp/gammaq
+
+      PQ = P - Q
+      PQ2 = sum(PQ*PQ)
+      W = (gammap*P + gammaq*Q)/(gammap + gammaq)
+
+      erieval(1)%WP_x(1) = W(1) - P(1)
+      erieval(1)%WP_y(1) = W(2) - P(2)
+      erieval(1)%WP_z(1) = W(3) - P(3)
+      erieval(1)%WQ_x(1) = W(1) - Q(1)
+      erieval(1)%WQ_y(1) = W(2) - Q(2)
+      erieval(1)%WQ_z(1) = W(3) - Q(3)
+      erieval(1)%oo2ze(1) = 0.5_dp/(gammap + gammaq)
+
+      erieval(1)%roz(1) = gammapq/gammap
+      erieval(1)%roe(1) = gammapq/gammaq
+
+      K1 = exp(-alpha1*alpha2*AB2/gammap)
+      K2 = exp(-alpha3*alpha4*CD2/gammaq)
+      pfac = 2*pi**2.5_dp*K1*K2/(gammap*gammaq*sqrt(gammap + gammaq))
+
+      am = am1 + am2 + am3 + am4
+
+      !
+      ! evaluate Boys function F_m for all m in [0, am]
+      !
+
+      ! here we omit the evaluation of Boys function values F(m+1)
+      ! these would be calculated externally since libint Boys function engine is not
+      ! accessible from Fortran
+      allocate F(am + 1)
+      F(1) = ...
+      F(2) = ...
+      ...
+      F(am + 1) = ...
+
+      if (am >= 0) &
+         erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_0(1) = pfac*F(1)
+      if (am >= 1) &
+         erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_1(1) = pfac*F(2)
+      if (am >= 2) &
+         erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_2(1) = pfac*F(3)
+      if (am >= 3) &
+         erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_3(1) = pfac*F(4)
+      if (am >= 4) &
+         erieval(1)%f_aB_s___0__s___1___TwoPRep_s___0__s___1___Ab__up_4(1) = pfac*F(5)
+      ! etc.
+
+      !
+      ! compute ERIs
+      !
+
+      ! convert C function pointer libint2_build_eri(am4, am3, am2, am1) to
+      ! Fortran procedure pointer build_eri
+      call c_f_procpointer(libint2_build_eri(am4, am3, am2, am1), build_eri)
+
+      ! call function to compute ERIs
+      call build_eri(erieval)
+
+      !
+      ! Print out the integrals
+      !
+
+      n1 = (am1 + 1)*(am1 + 2)/2
+      n2 = (am2 + 1)*(am2 + 2)/2
+      n3 = (am3 + 1)*(am3 + 2)/2
+      n4 = (am4 + 1)*(am4 + 2)/2
+
+      ! get C pointer to targets and convert to Fortran pointer eri_shell_set
+      call c_f_pointer(erieval(1)%targets(1), eri_shell_set, shape=[n1*n2*n3*n4])
+
+      ishell = 0
+      do na = 1, n1
+         do nb = 1, n2
+            do nc = 1, n3
+               do nd = 1, n4
+                  ishell = ishell + 1
+                  print *, "a = ", na, &
+                     "b = ", nb, &
+                     "c = ", nc, &
+                     "d = ", nd, &
+                     "(ab|cd) = ", eri_shell_set(ishell)
+               enddo
+            enddo
+         enddo
+      enddo
+
+      !
+      ! cleanup (usually outside this function)
+      !
+
+      call libint2_cleanup_eri(erieval)
+   end subroutine
+
+end module
+\end{lstlisting}
+
+\subsection{Fortran 77}
+Codes written in Fortran 77 can not use the Fortran bindings included in {\tt LIBINT}.
+In general, C functions can be easily called from Fortran 77 programs, but sharing data structures
 is not straightforward. Thus the main culprit is how to modify  {\tt Libint\_eri\_t} objects
-from Fortran. Fortran 2003 provides direct support for binding C data structures to
-Fortran types. Older Fortran standards can access C data structures indirectly, via
+from Fortran. Older Fortran standards can access C data structures indirectly, via
 common blocks. An (non-working) example of how a Fortran subroutine can manipulate {\tt Libint\_eri\_t}
 is shown in Listing \ref{lst:usefort}. The
 common block {\tt erieval} referened in that Listing is created by declaring
@@ -687,8 +955,8 @@ The caveat of accessing C data structures from Fortran programs is that the memb
 declared in the common block in the exact order in which they appear in the definition of {\tt Libint\_eri\_t}.
 The actual definition of {\tt Libint\_eri\_t} in \libinttypesh\ must always be consulted.
 
-Calling \LIBINT\ functions from Fortran should be straightforward. Using the function pointer array {\tt libint2\_build\_eri} is probably
-not feasible in older Fortran standards, but perhaps can be accomplished in Fortran 2003. Actual function names must be used instead, i.e.,
+Calling \LIBINT\ functions from Fortran should be straightforward. Using the function pointer array {\tt libint2\_build\_eri} may
+not be feasible in older Fortran standards. Actual function names must be used instead, i.e.,
 a C++ expression
 \begin{verbatim}
 libint2_build_eri[1][0][2][0](&erival);
@@ -701,9 +969,6 @@ where {\tt
 \_aB\_p\_\_0\_\_d\_\_1\_\_\_TwoERep\_s\_\_0\_\_s\_\_1\_\_\_Ab\_\_up\_0} is the
 name of the function to which \\
 {\tt libint2\_build\_eri[1][0][2][0]} points.
-
-Please send in your comments on how to actually make \LIBINT\ work from Fortran.
-
 
 \appendix
 \appendixpage

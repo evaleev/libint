@@ -6,7 +6,7 @@ PROGRAM fortran_example
 
    USE ISO_C_BINDING, ONLY: C_DOUBLE, C_F_POINTER, C_F_PROCPOINTER, C_NULL_PTR
    USE libint_f, ONLY: libint_t, libint2_static_init, libint2_static_cleanup, libint2_build, libint2_max_am_eri, &
-      compute_eri
+      compute_eri_f
 
 #ifdef INCLUDE_ERI
    USE libint_f, ONLY: libint2_init_eri, libint2_cleanup_eri
@@ -60,7 +60,7 @@ PROGRAM fortran_example
 #ifdef INCLUDE_ERI
    deriv_order = 0
    CALL libint2_init_eri(erieval, max_am, C_NULL_PTR)
-   CALL compute_eri(1, deriv_order, am1, c1, alpha1, A, &
+   CALL compute_eri_f(1, deriv_order, am1, c1, alpha1, A, &
                     am2, c2, alpha2, B, &
                     am3, c3, alpha3, C, &
                     am4, c4, alpha4, D, &
@@ -71,7 +71,7 @@ PROGRAM fortran_example
 #if INCLUDE_ERI >= 1
    deriv_order = 1
    CALL libint2_init_eri1(erieval, max_am, C_NULL_PTR)
-   CALL compute_eri(1, deriv_order, am1, c1, alpha1, A, &
+   CALL compute_eri_f(1, deriv_order, am1, c1, alpha1, A, &
                     am2, c2, alpha2, B, &
                     am3, c3, alpha3, C, &
                     am4, c4, alpha4, D, &
@@ -82,7 +82,7 @@ PROGRAM fortran_example
 #if INCLUDE_ERI >= 2
    deriv_order = 2
    CALL libint2_init_eri2(erieval, max_am, C_NULL_PTR)
-   CALL compute_eri(1, deriv_order, am1, c1, alpha1, A, &
+   CALL compute_eri_f(1, deriv_order, am1, c1, alpha1, A, &
                     am2, c2, alpha2, B, &
                     am3, c3, alpha3, C, &
                     am4, c4, alpha4, D, &

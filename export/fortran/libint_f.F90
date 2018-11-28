@@ -60,14 +60,14 @@ MODULE libint_f
 #endif
 
 #ifdef INCLUDE_ERI3
-   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_3eri, 0:libint2_max_am_eri, 0:libint2_max_am_eri), &
+   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_3eri, 0:libint2_max_am, 0:libint2_max_am), &
       BIND(C) :: libint2_build_3eri
 #if INCLUDE_ERI3 >= 1
-   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_3eri1, 0:libint2_max_am_eri1, 0:libint2_max_am_eri1), &
+   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_3eri1, 0:libint2_max_am, 0:libint2_max_am), &
       BIND(C) :: libint2_build_3eri1
 #endif
 #if INCLUDE_ERI3 >= 2
-   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_3eri2, 0:libint2_max_am_eri2, 0:libint2_max_am_eri2), &
+   TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_3eri2, 0:libint2_max_am, 0:libint2_max_am), &
       BIND(C) :: libint2_build_3eri2
 #endif
 #endif
@@ -269,10 +269,10 @@ MODULE libint_f
 
 #ifdef INCLUDE_ERI
 CONTAINS
-   SUBROUTINE compute_eri(contrdepth, deriv_order, am1, c1, alpha1, A, &
-                          am2, c2, alpha2, B, &
-                          am3, c3, alpha3, C, &
-                          am4, c4, alpha4, D, F, erieval) bind(c, name='compute_eri_f')
+   SUBROUTINE compute_eri_f(contrdepth, deriv_order, am1, c1, alpha1, A, &
+                            am2, c2, alpha2, B, &
+                            am3, c3, alpha3, C, &
+                            am4, c4, alpha4, D, F, erieval) bind(c)
       INTEGER, PARAMETER :: dp = C_DOUBLE
       INTEGER, PARAMETER :: i = C_INT
       INTEGER(KIND=i), INTENT(IN) :: contrdepth
