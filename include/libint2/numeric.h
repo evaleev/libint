@@ -127,12 +127,17 @@ inline int get_max_digits10(const Real& value) {
 }
 
 template <typename To, typename From>
-  To sstream_convert(From && from) {
-    std::stringstream ss;
-    ss << std::scientific << std::setprecision(get_max_digits10(from)) << from;
-    To to(ss.str().c_str());
-    return to;
-  }
+std::enable_if_t<!std::is_same<std::decay_t<To>,std::decay_t<From>>::value,To> sstream_convert(From && from) {
+std::stringstream ss;
+ss << std::scientific << std::setprecision(get_max_digits10(from)) << from;
+To to(ss.str().c_str());
+return to;
+}
+
+template <typename To>
+To sstream_convert(const To& from) {
+  return from;
+}
 
 };  // namespace libint2
 

@@ -7,8 +7,8 @@ TEST_CASE("electrostatic potential", "[engine][1-body]") {
     return;
 
   std::vector<Shell> obs{
-      Shell{{1.0, 3.0}, {{2, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
-      Shell{{2.0, 5.0}, {{2, true, {1.0, 0.2}}}, {{1.0, 1.0, 1.0}}}};
+      Shell{{1.0, 3.0}, {{0, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
+      Shell{{2.0, 5.0}, {{0, true, {1.0, 0.2}}}, {{1.0, 1.0, 1.0}}}};
   {
     using namespace libint2::unit;
 

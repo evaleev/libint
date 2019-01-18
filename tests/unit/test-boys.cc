@@ -3,6 +3,7 @@
 #include <type_traits>
 
 #include <libint2/config.h>
+#include <libint2/boys.h>
 
 #ifdef LIBINT_HAS_MPFR
 TEST_CASE("Boys reference values", "[boys]") {
