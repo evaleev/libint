@@ -32,6 +32,9 @@
 #include <prep_libint2.h>
 #include <libint2/cgshell_ordering.h>
 #include <libint2/util/memory.h>
+#if !LIBINT2_CONSTEXPR_STATICS
+#  include <libint2/statics_definition.h>
+#endif
 
 using namespace std;
 using namespace libint2;

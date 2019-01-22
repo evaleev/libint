@@ -49,6 +49,9 @@
 #include <libint2/chemistry/sto3g_atomic_density.h>
 #include <libint2/lcao/molden.h>
 #include <libint2.hpp>
+#if !LIBINT2_CONSTEXPR_STATICS
+#  include <libint2/statics_definition.h>
+#endif
 
 #if defined(_OPENMP)
 #include <omp.h>
