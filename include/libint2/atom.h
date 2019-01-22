@@ -134,7 +134,8 @@ namespace libint2 {
                                                             vector<
                                                                 libint2::Atom>&
                                                                 atoms) {
-    std::vector<std::pair<double, std::array<double, 3>>> q(atoms.size());
+    std::vector<std::pair<double, std::array<double, 3>>> q;
+    q.reserve(atoms.size());
     for (const auto& atom : atoms) {
       q.emplace_back(static_cast<double>(atom.atomic_number),
                      std::array<double, 3>{{atom.x, atom.y, atom.z}});
