@@ -6,6 +6,8 @@ SRCDIR = ..
 
 CPPFLAGS := -I../include -I../include/libint2 -Ieri -Ihartree-fock -DPREP_LIBINT2_SKIP_BOOST -DSRCDATADIR=\"$(SRCDIR)/lib/basis\" $(CPPFLAGS)
 COMPUTE_LIB = -L../lib -lint2
+# initialize statics explicitly in test.cc
+CPPFLAGS += -DLIBINT2_CONSTEXPR_STATICS=0
 
 check:: check1 check2 check3 check4
 
