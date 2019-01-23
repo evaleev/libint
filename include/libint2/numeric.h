@@ -8,6 +8,7 @@
 #include <libint2/config.h>
 #include <sstream>
 #include <iomanip>
+#include <type_traits>
 
 #if LIBINT_HAS_MPFR
 # include <cstddef>
@@ -127,11 +128,12 @@ inline int get_max_digits10(const Real& value) {
 }
 
 template <typename To, typename From>
-std::enable_if_t<!std::is_same<std::decay_t<To>,std::decay_t<From>>::value,To> sstream_convert(From && from) {
-std::stringstream ss;
-ss << std::scientific << std::setprecision(get_max_digits10(from)) << from;
-To to(ss.str().c_str());
-return to;
+typename std::enable_if<!std::is_same<typename std::decay<To>::type, typename std::decay<From>::type >::value,To>::type
+sstream_convert(From && from) {
+  std::stringstream ss;
+  ss << std::scientific << std::setprecision(get_max_digits10(from)) << from;
+  To to(ss.str().c_str());
+  return to;
 }
 
 template <typename To>
