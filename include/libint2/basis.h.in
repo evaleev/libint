@@ -377,12 +377,13 @@ namespace libint2 {
 
         std::locale locale(locale_name.c_str());  // TODO omit c_str() with up-to-date stdlib
         std::vector<std::vector<libint2::Shell>> ref_shells(118); // 118 = number of chemical elements
-        if (libint2::verbose())
-          std::cout << "Will read basis set from " << file_dot_g94 << std::endl;
         std::ifstream is(file_dot_g94);
         is.imbue(locale);
 
         if (is.good()) {
+          if (libint2::verbose())
+            std::cout << "Will read basis set from " << file_dot_g94 << std::endl;
+
           std::string line, rest;
 
           // skip till first basis
