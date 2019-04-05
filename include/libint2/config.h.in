@@ -268,6 +268,9 @@
 /* define if Eigen library is available. */
 #undef LIBINT_HAS_EIGEN
 
+/* define if system-wide Boost.Preprocessor is available */
+#undef LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS
+
 /*
   Known orderings of cartesian Gaussians
 */

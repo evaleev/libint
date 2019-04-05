@@ -31,17 +31,10 @@
 #pragma GCC diagnostic pop
 
 #include <libint2/boys.h>
-// use libint-bundled preprocessor only if Boost.Preprocessor version 1.57 or later not already available
-#if __has_include(<boost/version.hpp>) && __has_include(<boost/preprocessor.hpp>)
-#  include <boost/version.hpp>  // read in version and do version check
-#  if defined(BOOST_VERSION)
-#    if (BOOST_VERSION / 100000 == 1) && ((BOOST_VERSION / 100 % 1000) >= 57)
-#      include <boost/preprocessor.hpp>
-#      include <boost/preprocessor/facilities/is_1.hpp>
-#    endif  // boost version >= 1.57
-#  endif  // defined(BOOST_VERSION)
-#endif  // found system boost/preprocessor.hpp
-#if !defined(BOOST_PREPROCESSOR_HPP)  // if preprocessor.hpp not yet included, use the bundled copy
+#if LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS
+# include <boost/preprocessor.hpp>
+# include <boost/preprocessor/facilities/is_1.hpp>
+#else  // use bundled boost
 #  include <libint2/boost/preprocessor.hpp>
 #  include <libint2/boost/preprocessor/facilities/is_1.hpp>
 #endif

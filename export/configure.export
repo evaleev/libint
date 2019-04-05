@@ -332,6 +332,7 @@ if test "X$have_boost" = "Xyes"; then
     [AC_MSG_RESULT([yes])
      HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS=1
      CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+     AC_DEFINE(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
      # no need to touch LDFLAGS: we don't use compiled boost libs
     ],
     [
