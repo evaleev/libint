@@ -6,8 +6,9 @@
 #define _libint2_include_numeric_h_
 
 #include <libint2/config.h>
-#include <sstream>
 #include <iomanip>
+#include <limits>
+#include <sstream>
 #include <type_traits>
 
 #if LIBINT_HAS_MPFR
