@@ -55,6 +55,7 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/autoconf/libtool.m4 $(TOPDIR)/$(EXPORTDIR)/lib/autoconf
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/autoconf/lt*.m4 $(TOPDIR)/$(EXPORTDIR)/lib/autoconf
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/autoconf/acx*.m4 $(TOPDIR)/$(EXPORTDIR)/lib/autoconf
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/autoconf/ax*.m4 $(TOPDIR)/$(EXPORTDIR)/lib/autoconf
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/lib/basis
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/basis/* $(TOPDIR)/$(EXPORTDIR)/lib/basis
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/include
