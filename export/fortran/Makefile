@@ -53,8 +53,10 @@ test: test.o test-eri.o libint_f.o
 
 test.o :: unpack_boost
 
+ifneq ($(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS),1)
 unpack_boost::
 	gunzip -c $(SRCDIR)/external/boost.tar.gz | tar -xf - -C $(TOPDIR)/include/libint2
+endif
 
 clean::
 	-rm -f *.o *.mod fortran_example libint2_types_f.h test fortran_incldefs.h

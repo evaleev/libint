@@ -72,26 +72,39 @@ realclean:: clean
 
 targetclean:: clean
 
+.PHONY: boost_pp
+
+ifneq ($(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS),1)
+
+boost_pp: $(TOPDIR)/include/libint2/boost/preprocessor.hpp
+
 $(TOPDIR)/include/libint2/boost/preprocessor.hpp: $(SRCDIR)/$(TOPDIR)/external/boost.tar.gz
 	gunzip -c $(SRCDIR)/$(TOPDIR)/external/boost.tar.gz | tar -xf - -C $(TOPDIR)/include/libint2
+
+else
+
+boost_pp:
+
+endif
 
 depend:: $(CXXTEST1DEP) $(CXXTEST2DEP)
 
 ifneq ($(DODEPEND),no)
 ifneq ($(CXXDEPENDSUF),none)
-%.d:: %.cc $(TOPDIR)/include/libint2/boost/preprocessor.hpp
+%.d:: %.cc boost_pp
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
 	sed 's/^$*.o/$*.$(OBJSUF) $*.d/g' < $(*F).$(CXXDEPENDSUF) > $(@F)
 	/bin/rm -f $(*F).$(CXXDEPENDSUF)
 else
-%.d:: %.cc $(TOPDIR)/include/libint2/boost/preprocessor.hpp
+%.d:: %.cc boost_pp
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< | sed 's/^$*.o/$*.$(OBJSUF) $*.d/g' > $(@F)
 endif
 
 -include $(CXXTEST1DEP)
 -include $(CXXTEST2DEP)
+
 else
 
-%.cc:: $(TOPDIR)/include/libint2/boost/preprocessor.hpp
+%.cc:: boost_pp
 
 endif

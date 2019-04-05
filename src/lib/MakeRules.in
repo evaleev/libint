@@ -20,6 +20,8 @@ $(TOPDIR)/lib/$(TARGET): source
 
 install:: install_inc install_target install_pkgconfig install_data
 
+HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS = @HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@
+
 install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
@@ -36,7 +38,7 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/util/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/util/generated/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util/generated
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	gunzip -c $(SRCTOPDIR)/external/boost.tar.gz | tar -xf - -C $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	if test "X$(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)" = "X0"; then `gunzip -c $(SRCTOPDIR)/external/boost.tar.gz | tar -xf - -C $(DESTDIR)$(includedir)/$(NAME)$(VERSION)`; fi
 
 install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)

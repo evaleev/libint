@@ -311,6 +311,38 @@ else
     esac
 fi
 
+dnl ------------------ Check for Boost library -----------------------
+# Modern Boost.Preprocessor was introduced in 1.29
+AX_BOOST_BASE([1.29],[have_boost=yes],[have_boost=no])
+
+HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS=0
+if test "X$have_boost" = "Xyes"; then
+  AC_MSG_CHECKING([for variadic macro support in Boost.Preprocessor])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <boost/preprocessor.hpp>
+        #if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
+        #  error "your compiler does not provide variadic macros (but does support C++11), something is seriously broken, please create an issue at https://github.com/evaleev/libint/issues"
+        #endif
+      ]],
+      [[
+      ]]
+     )
+    ],
+    [AC_MSG_RESULT([yes])
+     HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS=1
+     CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+     # no need to touch LDFLAGS: we don't use compiled boost libs
+    ],
+    [
+      AC_MSG_RESULT([no])
+      HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS=0
+      AC_MSG_WARN([Boost.Preprocessor with variadic macro support not detected. Will use the bundled Boost.Preprocessor. To avoid this obtain boost 1.57 or higher (with some compilers older boost can also be used) from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])
+    ]
+  )
+fi
+AC_SUBST(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+
 AC_SUBST(EXTRAINCLUDE)
 
 AC_SUBST(CXX)

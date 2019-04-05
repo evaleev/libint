@@ -69,8 +69,12 @@ $(TEST2).o :: unpack_boost
 $(TEST3).o :: unpack_boost
 $(TEST4).o :: unpack_boost
 
+ifneq ($(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS),1)
 unpack_boost::
 	gunzip -c $(SRCDIR)/external/boost.tar.gz | tar -xf - -C $(TOPDIR)/include/libint2
+else
+unpack_boost::
+endif
 
 clean:: targetclean
 	-rm -f */*.o */*.d
