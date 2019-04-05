@@ -20,6 +20,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <ctime>
 #include <smart_ptr.h>
 
 #ifndef _libint2_src_bin_libint_tactic_h_
