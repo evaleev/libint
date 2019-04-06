@@ -23,7 +23,7 @@ endif()
 option_with_print(ENABLE_GENERIC "Enable mostly static linking in shared library" OFF)
 option_with_flags(ENABLE_XHOST "Enable processor-specific optimization" ON
                     "-xHost" "-march=native")
-option_with_print(MERGE_LIBDERIV_INCLUDEDIR "Install libderiv headers to libint namespace. Psi4 wants ON" OFF)
+option_with_print(MERGE_LIBDERIV_INCLUDEDIR "Install libderiv headers to libint namespace. Psi4 1.1-1.3 wants ON" OFF)
 
 ######################### Process & Validate Options ###########################
 include(autocmake_safeguards)
@@ -37,6 +37,8 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 set(PN ${PROJECT_NAME})
+
+configure_file(cmake/libint.pc.in libint.pc @ONLY)
 
 # <<<  Install  >>>
 
@@ -60,3 +62,6 @@ write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${PN}ConfigVersion.
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PN}Config.cmake
               ${CMAKE_CURRENT_BINARY_DIR}/${PN}ConfigVersion.cmake
         DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+
+install(FILES ${PROJECT_BINARY_DIR}/libint.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
