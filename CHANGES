@@ -3,11 +3,11 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2018-xx-yy: 2.5.0
+- 2018-04-05: 2.5.0
+  - New Fortran bindings to Libint by Patrick Seewald (https://github.com/pseewald); requires Fortran 2003 or later.
   - validation target in exported library works correctly in absence of C++11 API
   - cleanup of molden exporter
   - Boost.Container's small_vector is only usable if the Boost version >= 1.61
-  - New Fortran bindings to Libint by Patrick Seewald (https://github.com/pseewald); requires Fortran 2003 or later.
   - resolved issues #107, #115: missing #include's
   - resolves issues #108: do not use bundled boost if possible
   - resolved issue #118: workaround broken Intel C++ 2019 compiler bug
