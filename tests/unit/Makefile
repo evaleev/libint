@@ -73,37 +73,33 @@ targetclean:: clean
 
 depend:: $(CXXTEST1DEP)
 
-.PHONE: boost_pp
-
+#########
+# unpack bundled boost if needed
+#########
 ifneq ($(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS),1)
+
+BOOST_UNPACK = $(TOPDIR)/include/libint2/boost/preprocessor.hpp
 
 $(TOPDIR)/include/libint2/boost/preprocessor.hpp: $(SRCDIR)/$(TOPDIR)/external/boost.tar.gz
 	gunzip -c $(SRCDIR)/$(TOPDIR)/external/boost.tar.gz | tar -xf - -C $(TOPDIR)/include/libint2
 
-boost_pp: $(TOPDIR)/include/libint2/boost/preprocessor.hpp
-
-else
-
-boost_pp:
+$(CXXTEST1SRC):: $(BOOST_UNPACK)
 
 endif
 
-depend:: $(CXXTEST1DEP)
-
+#########
+# extract header dependencies
+#########
 ifneq ($(DODEPEND),no)
 ifneq ($(CXXDEPENDSUF),none)
-%.d:: %.cc boost_pp
+%.d:: %.cc
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXGENFLAGS) $< > /dev/null
 	sed 's/^$*.o/$*.$(OBJSUF) $*.d/g' < $(*F).$(CXXDEPENDSUF) > $(@F)
 	/bin/rm -f $(*F).$(CXXDEPENDSUF)
 else
-%.d:: %.cc boost_pp
+%.d:: %.cc
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXGENFLAGS) $< | sed 's/^$*.o/$*.$(OBJSUF) $*.d/g' > $(@F)
 endif
 
 -include $(CXXTEST1DEP)
-else
-
-%.cc:: boost_pp
-
 endif
