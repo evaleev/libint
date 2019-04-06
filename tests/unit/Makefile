@@ -78,12 +78,10 @@ depend:: $(CXXTEST1DEP)
 #########
 ifneq ($(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS),1)
 
-BOOST_UNPACK = $(TOPDIR)/include/libint2/boost/preprocessor.hpp
-
 $(TOPDIR)/include/libint2/boost/preprocessor.hpp: $(SRCDIR)/$(TOPDIR)/external/boost.tar.gz
 	gunzip -c $(SRCDIR)/$(TOPDIR)/external/boost.tar.gz | tar -xf - -C $(TOPDIR)/include/libint2
 
-$(CXXTEST1SRC):: $(BOOST_UNPACK)
+$(CXXTEST1SRC):: $(TOPDIR)/include/libint2/boost/preprocessor.hpp
 
 endif
 

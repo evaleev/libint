@@ -8,7 +8,7 @@ SRCDIR = ..
 FCFLAGS := -I../include -I../include/libint2 -D__COMPILING_LIBINT2=1 $(FCFLAGS)
 COMPUTE_LIB = -L../lib -lint2
 
-.PHONY: clean distclean default make_test check_test unpack_boost
+.PHONY: clean distclean default make_test check_test
 
 default:: fortran_example check_test libint_f.o
 
@@ -51,11 +51,13 @@ endif
 test: test.o test-eri.o libint_f.o
 	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) $(FCLIBS) -o $@ $^
 
-test.o :: unpack_boost
-
 ifneq ($(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS),1)
-unpack_boost::
+
+$(TOPDIR)/include/libint2/boost/preprocessor.hpp:: $(SRCDIR)/external/boost.tar.gz
 	gunzip -c $(SRCDIR)/external/boost.tar.gz | tar -xf - -C $(TOPDIR)/include/libint2
+
+test.cc test-eri.cc :: $(TOPDIR)/include/libint2/boost/preprocessor.hpp
+
 endif
 
 clean::
