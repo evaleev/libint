@@ -33,7 +33,7 @@ make export
 
 # try building exported lib in Release mode without system boost to check the bundled boost unpacking and use
 if [ "$BUILD_TYPE" = "Release" ]; then
-  sudo apt-get remove libboost-dev
+  sudo apt-get remove --purge libboost-dev
 fi
 cd ${BUILD_PREFIX}
 mkdir -p export_build
