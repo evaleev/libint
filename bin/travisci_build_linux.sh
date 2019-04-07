@@ -31,6 +31,10 @@ make check
 cd src/bin/test_eri; ./stdtests.pl; cd ../../..
 make export
 
+# try building exported lib in Release mode without system boost to check the bundled boost unpacking and use
+if [ "$BUILD_TYPE" = "Release" ]; then
+  sudo apt-get remove libboost-dev
+fi
 cd ${BUILD_PREFIX}
 mkdir -p export_build
 mv build/libint-*.tgz export_build
