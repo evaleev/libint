@@ -10,8 +10,6 @@ addons:
   apt:
     sources: &base_sources
       - ubuntu-toolchain-r-test
-    sources: &boost_sources
-      - boost-latest
     sources: &clang8_sources
       - llvm-toolchain-xenial-8
     packages: &base_packages
@@ -19,7 +17,8 @@ addons:
       - libeigen3-dev
       - automake
     packages: &boost_packages
-      - libboost1.55-dev
+      - - libboost-all-dev
+
 
 matrix:
   fast_finish: true
@@ -30,7 +29,6 @@ matrix:
         apt:
           sources:
             - *base_sources
-            - *boost_sources
           packages:
             - *base_packages
             - *boost_packages
@@ -52,7 +50,6 @@ matrix:
         apt:
           sources:
             - *base_sources
-            - *boost_sources
           packages:
             - *base_packages
             - *boost_packages
@@ -74,7 +71,6 @@ matrix:
         apt:
           sources:
             - *base_sources
-            - *boost_sources
           packages:
             - *base_packages
             - *boost_packages
@@ -96,7 +92,6 @@ matrix:
         apt:
           sources:
             - *base_sources
-            - *boost_sources
           packages:
             - *base_packages
             - *boost_packages
@@ -118,7 +113,6 @@ matrix:
         apt:
           sources:
             - *base_sources
-            - *boost_sources
             - *clang8_sources
           packages:
             - *base_packages
