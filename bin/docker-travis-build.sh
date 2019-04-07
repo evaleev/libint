@@ -22,8 +22,7 @@ echo "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main" | tee -a /et
 apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
 #apt-add-repository -y "ppa:boost-latest/ppa"
 apt-get -yq update >> ~/apt-get-update.log
-#apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 gfortran-5 gfortran-6 gfortran-7 gfortran-8 libgmp-dev libeigen3-dev automake libboost1.55-all-dev clang-8 libc++-8-dev libc++abi-8-dev gdb
-apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 gfortran-5 gfortran-6 gfortran-7 gfortran-8 libgmp-dev libeigen3-dev automake clang-8 libc++-8-dev libc++abi-8-dev gdb
+apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 gfortran-5 gfortran-6 gfortran-7 gfortran-8 libgmp-dev libeigen3-dev automake libboost-dev clang-8 libc++-8-dev libc++abi-8-dev gdb
 mkdir -p ${TRAVIS_BUILD_TOPDIR}
 cd ${TRAVIS_BUILD_TOPDIR}
 git clone https://github.com/evaleev/libint.git ${TRAVIS_BUILD_TOPDIR}/evaleev/libint
@@ -78,7 +77,7 @@ trap clean_up SIGHUP SIGINT SIGTERM
 
 ##############################################################
 # build a dev image
-docker build -t libint-travis-debug .
+docker build --no-cache -t libint-travis-debug .
 
 ##############################################################
 # extra admin tasks, uncomment as needed
