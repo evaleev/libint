@@ -16,9 +16,7 @@ addons:
       - libgmp-dev
       - libeigen3-dev
       - automake
-    packages: &boost_packages
-      - - libboost-all-dev
-
+      - libboost-dev
 
 matrix:
   fast_finish: true
@@ -31,7 +29,6 @@ matrix:
             - *base_sources
           packages:
             - *base_packages
-            - *boost_packages
             - g++-5
             - gfortran-5
     - compiler: gcc
@@ -52,7 +49,6 @@ matrix:
             - *base_sources
           packages:
             - *base_packages
-            - *boost_packages
             - g++-6
             - gfortran-6
     - compiler: gcc
@@ -73,7 +69,6 @@ matrix:
             - *base_sources
           packages:
             - *base_packages
-            - *boost_packages
             - g++-7
             - gfortran-7
     - compiler: gcc
@@ -94,7 +89,6 @@ matrix:
             - *base_sources
           packages:
             - *base_packages
-            - *boost_packages
             - g++-8
             - gfortran-8
     - compiler: gcc
@@ -116,7 +110,6 @@ matrix:
             - *clang8_sources
           packages:
             - *base_packages
-            - *boost_packages
             - clang-8
             - libc++-8-dev
             - libc++abi-8-dev
