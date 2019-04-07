@@ -1,46 +1,146 @@
 os:
   - linux
 language: cpp
-compiler:
-  - clang
-  - gcc
+dist: xenial
 env:
-  matrix:
-    - GCC_VERSION=5
-    - GCC_VERSION=6
-    - GCC_VERSION=7
-    - GCC_VERSION=8
   global:
     - BUILD_PREFIX=/home/travis/_build
     - INSTALL_PREFIX=/home/travis/_install
-matrix:
-  exclude:
-    - compiler: clang
-      env: GCC_VERSION=5
-    - compiler: clang
-      env: GCC_VERSION=6
-    - compiler: clang
-      env: GCC_VERSION=7
-sudo: false
 addons:
   apt:
-    sources:
+    sources: &base_sources
       - ubuntu-toolchain-r-test
+    sources: &boost_sources
       - boost-latest
-      - llvm-toolchain-trusty-6.0
-    packages:
-      - g++-5
-      - g++-6
-      - g++-7
-      - g++-8
-      - clang-6.0
-      - gfortran-5
-      - gfortran-6
-      - gfortran-7
-      - gfortran-8
+    sources: &clang8_sources
+      - llvm-toolchain-xenial-8
+    packages: &base_packages
       - libgmp-dev
       - libeigen3-dev
+      - automake
+    packages: &boost_packages
       - libboost1.55-dev
+
+matrix:
+  fast_finish: true
+  include:
+    - compiler: gcc
+      env: GCC_VERSION=5 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - *base_sources
+            - *boost_sources
+          packages:
+            - *base_packages
+            - *boost_packages
+            - g++-5
+            - gfortran-5
+    - compiler: gcc
+      env: GCC_VERSION=5 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-5
+            - gfortran-5
+    - compiler: gcc
+      env: GCC_VERSION=6 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - *base_sources
+            - *boost_sources
+          packages:
+            - *base_packages
+            - *boost_packages
+            - g++-6
+            - gfortran-6
+    - compiler: gcc
+      env: GCC_VERSION=6 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-6
+            - gfortran-6
+    - compiler: gcc
+      env: GCC_VERSION=7 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - *base_sources
+            - *boost_sources
+          packages:
+            - *base_packages
+            - *boost_packages
+            - g++-7
+            - gfortran-7
+    - compiler: gcc
+      env: GCC_VERSION=7 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-7
+            - gfortran-7
+    - compiler: gcc
+      env: GCC_VERSION=8 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - *base_sources
+            - *boost_sources
+          packages:
+            - *base_packages
+            - *boost_packages
+            - g++-8
+            - gfortran-8
+    - compiler: gcc
+      env: GCC_VERSION=8 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-8
+            - gfortran-8
+    - compiler: clang
+      env: CLANG_VERSION=8 GCC_VERSION=8 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - *base_sources
+            - *boost_sources
+            - *clang8_sources
+          packages:
+            - *base_packages
+            - *boost_packages
+            - clang-8
+            - libc++-8-dev
+            - libc++abi-8-dev
+            - gfortran-8
+    - compiler: clang
+      env: CLANG_VERSION=8 GCC_VERSION=8 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+            - *clang8_sources
+          packages:
+            - *base_packages
+            - clang-8
+            - libc++-8-dev
+            - libc++abi-8-dev
+            - gfortran-8
+
 install: true
 before_install:
   - env

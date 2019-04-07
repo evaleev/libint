@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# this script builds a 'Trusty' env docker image used by Travis-CI for Libint project
+# this script builds a 'Xenial' env docker image used by Travis-CI for Libint project
 #
 # to run bash in the image: docker run -it libint-travis-debug bash -l
 # see https://github.com/evaleev/libint/wiki/Travis-CI-Administration-Notes for further instructions
@@ -18,11 +18,12 @@ setup=setup.sh
 cat > $setup << END
 #!/bin/sh
 curl -sSL "http://apt.llvm.org/llvm-snapshot.gpg.key" | apt-key add -
-echo "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main" | tee -a /etc/apt/sources.list > /dev/null
+echo "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main" | tee -a /etc/apt/sources.list > /dev/null
 apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-apt-add-repository -y "ppa:boost-latest/ppa"
+#apt-add-repository -y "ppa:boost-latest/ppa"
 apt-get -yq update >> ~/apt-get-update.log
-apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 gfortran-5 gfortran-6 gfortran-7 gfortran-8 libgmp-dev libeigen3-dev libboost1.55-all-dev clang-6.0
+#apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 gfortran-5 gfortran-6 gfortran-7 gfortran-8 libgmp-dev libeigen3-dev automake libboost1.55-all-dev clang-8 libc++-8-dev libc++abi-8-dev gdb
+apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 gfortran-5 gfortran-6 gfortran-7 gfortran-8 libgmp-dev libeigen3-dev automake clang-8 libc++-8-dev libc++abi-8-dev gdb
 mkdir -p ${TRAVIS_BUILD_TOPDIR}
 cd ${TRAVIS_BUILD_TOPDIR}
 git clone https://github.com/evaleev/libint.git ${TRAVIS_BUILD_TOPDIR}/evaleev/libint
@@ -45,8 +46,9 @@ chmod +x $build
 ##############################################################
 # make Dockerfile
 cat > Dockerfile << END
-# Travis default 'Trusty' image
-FROM travisci/ci-garnet:packer-1503972846
+# Travis default 'Xenial' image
+# for up-to-date info: https://docs.travis-ci.com/user/common-build-problems/#troubleshooting-locally-in-a-docker-image
+FROM travisci/ci-sardonyx:packer-1541445940-e193d27
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
