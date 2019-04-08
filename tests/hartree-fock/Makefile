@@ -52,10 +52,10 @@ check2:: $(TEST2)
 endif
 
 $(TEST1): $(CXXTEST1OBJ) $(COMPILER_LIB) $(COMPUTE_LIB)
-	$(LD) -o $@ $(LDFLAGS) $^ $(SYSLIBS)
+	$(LD) -o $@ $(CXXFLAGS) $(LDFLAGS) $^ $(SYSLIBS)
 
 $(TEST2): $(CXXTEST2OBJ) $(COMPILER_LIB) $(COMPUTE_LIB)
-	$(LD) -o $@ $(LDFLAGS) $^ $(SYSLIBS) -lpthread
+	$(LD) -o $@ $(CXXFLAGS) $(LDFLAGS) $^ $(SYSLIBS) -lpthread
 
 # Source files for timer and tester are to be compiled using CXXGEN
 $(TEST1) $(TEST2): CXX=$(CXXGEN)

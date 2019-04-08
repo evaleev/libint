@@ -34,7 +34,7 @@ check:: $(TEST)
 
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ) $(COMPILER_LIB) $(COMPUTE_LIB)
-	$(LD) -o $@ $(LDFLAGS) $^ $(SYSLIBS)
+	$(LD) -o $@ $(CXXFLAGS) $(LDFLAGS) $^ $(SYSLIBS)
 else
 $(TEST):
 	echo "Cannot test generated code! $(CXXGEN) is not compatible with $(CXXCOMP)"

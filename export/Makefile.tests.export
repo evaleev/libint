@@ -16,7 +16,7 @@ check1:: $(TEST1)
 	./$(TEST1) 0 2 && ./$(TEST1) 1 1 && ./$(TEST1) 2 1
 
 $(TEST1): eri/test.o
-	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
+	$(LTLINK) $(CXX) $(CXXFLAGS) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
 
 TEST2 = unit/test
 TEST3 = hartree-fock/hartree-fock
@@ -55,13 +55,13 @@ CTEST2OBJ = $(CTEST2SRC:%.c=%.o)
 
 
 $(TEST2): $(CXXTEST2OBJ) $(CTEST2OBJ)
-	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
+	$(LTLINK) $(CXX) $(CXXFLAGS) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
 
 $(TEST3): $(TEST3).o
-	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
+	$(LTLINK) $(CXX) $(CXXFLAGS) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -o $@ $^
 
 $(TEST4): $(TEST4).o
-	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -lpthread -o $@ $^
+	$(LTLINK) $(CXX) $(CXXFLAGS) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) -lpthread -o $@ $^
 
 ifneq ($(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS),1)
 
