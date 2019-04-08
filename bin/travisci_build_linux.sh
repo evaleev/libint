@@ -35,7 +35,7 @@ make export
 
 # try building exported lib in Release mode without system boost to check the bundled boost unpacking and use
 if [ "$BUILD_TYPE" = "Release" ]; then
-  sudo apt-get purge libboost-dev
+  sudo apt-get purge libboost-dev libboost1.58-dev
   # why is boost still found afterwards?
   sudo apt list --installed | grep boost
 fi
