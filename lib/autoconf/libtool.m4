@@ -14,7 +14,7 @@ m4_define([_LT_COPYING], [dnl
 
 # GNU Libtool is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of of the License, or
+# the Free Software Foundation; either version 2 of of the License, or
 # (at your option) any later version.
 #
 # As a special exception to the GNU General Public License, if you
@@ -28,7 +28,7 @@ m4_define([_LT_COPYING], [dnl
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ])
 
 # serial 58 LT_INIT
