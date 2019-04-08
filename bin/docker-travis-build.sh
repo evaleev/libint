@@ -22,7 +22,7 @@ echo "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main" | tee -a /et
 apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
 #apt-add-repository -y "ppa:boost-latest/ppa"
 apt-get -yq update >> ~/apt-get-update.log
-apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 gfortran-5 gfortran-6 gfortran-7 gfortran-8 libgmp-dev libeigen3-dev automake libboost-dev clang-8 libc++-8-dev libc++abi-8-dev gdb
+apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 gfortran-5 gfortran-6 gfortran-7 gfortran-8 libgmp-dev automake cmake libboost-dev clang-8 libc++-8-dev libc++abi-8-dev gdb
 mkdir -p ${TRAVIS_BUILD_TOPDIR}
 cd ${TRAVIS_BUILD_TOPDIR}
 git clone https://github.com/evaleev/libint.git ${TRAVIS_BUILD_TOPDIR}/evaleev/libint
@@ -38,7 +38,7 @@ cd /home/travis/_build
 export BUILD_PREFIX=/home/travis/_build
 export INSTALL_PREFIX=/home/travis/_install
 export TRAVIS_BUILD_DIR=${TRAVIS_BUILD_TOPDIR}/evaleev/libint
-./travisci_build_linux.sh
+${TRAVIS_BUILD_DIR}/bin/travisci_build_linux.sh
 END
 chmod +x $build
 
@@ -64,7 +64,6 @@ RUN /home/travis/_build/$setup
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # copy travis scripts
-ADD travisci_build_linux.sh /home/travis/_build/travisci_build_linux.sh
 ADD $build /home/travis/_build/$build
 END
 

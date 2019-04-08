@@ -14,8 +14,8 @@ addons:
       - llvm-toolchain-xenial-8
     packages: &base_packages
       - libgmp-dev
-      - libeigen3-dev
       - automake
+      - cmake # for eigen
       - libboost-dev
 
 matrix:
