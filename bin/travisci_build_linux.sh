@@ -19,7 +19,7 @@ else
     export EXTRAFLAGS="-stdlib=libc++"
 fi
 export CXXFLAGS="-std=c++11 -Wno-enum-compare $OPENMPFLAGS $EXTRAFLAGS"
-export LDFLAGS="$OPENMPFLAGS $EXTRAFLAGS"
+export LDFLAGS=$OPENMPFLAGS
 export LIBINT_NUM_THREADS=2
 
 cd ${TRAVIS_BUILD_DIR}
