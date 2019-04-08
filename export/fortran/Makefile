@@ -11,7 +11,13 @@ CPPFLAGS += -DPREP_LIBINT2_SKIP_BOOST
 
 .PHONY: clean distclean default make_test check_test
 
-default:: fortran_example check_test libint_f.o
+default::
+make_test::
+check_test::
+
+ifeq ($(ENABLE_FORTRAN),yes)
+
+default:: fortran_example check_test
 
 libint_f.o: libint2_types_f.h fortran_incldefs.h
 
@@ -25,10 +31,6 @@ fortran_incldefs.h: $(TOPDIR)/include/libint2_types.h
 
 fortran_example: fortran_example.o libint_f.o
 	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) $(FCLIBS) -o $@ $^
-
-make_test::
-
-check_test::
 
 ifeq ($(LIBINT_HAS_CXX11),yes)
  ifeq ($(LIBINT_SUPPORTS_ONEBODY),yes)
@@ -60,6 +62,8 @@ $(TOPDIR)/include/libint2/boost/preprocessor.hpp:: $(SRCDIR)/external/boost.tar.
 test.cc test-eri.cc :: $(TOPDIR)/include/libint2/boost/preprocessor.hpp
 
 endif
+
+endif # ENABLE_FORTRAN=yes
 
 clean::
 	-rm -f *.o *.mod fortran_example libint2_types_f.h test fortran_incldefs.h
