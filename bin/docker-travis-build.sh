@@ -38,7 +38,7 @@ cd /home/travis/_build
 export BUILD_PREFIX=/home/travis/_build
 export INSTALL_PREFIX=/home/travis/_install
 export TRAVIS_BUILD_DIR=${TRAVIS_BUILD_TOPDIR}/evaleev/libint
-${TRAVIS_BUILD_DIR}/bin/travisci_build_linux.sh
+${TRAVIS_BUILD_TOPDIR}/evaleev/libint/bin/travisci_build_linux.sh
 END
 chmod +x $build
 
