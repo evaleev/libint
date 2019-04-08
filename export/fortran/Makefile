@@ -7,6 +7,7 @@ SRCDIR = ..
 
 FCFLAGS := -I../include -I../include/libint2 -D__COMPILING_LIBINT2=1 $(FCFLAGS)
 COMPUTE_LIB = -L../lib -lint2
+CPPFLAGS += -DPREP_LIBINT2_SKIP_BOOST
 
 .PHONY: clean distclean default make_test check_test
 
