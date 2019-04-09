@@ -46,7 +46,7 @@ default:: build_libint
 all:: default
 
 build_libint: $(BUILDCXXOBJ) $(LIBTARGET)
-	$(CXX) -o $@ $(LDFLAGS) $^ $(SYSLIBS) 
+	$(CXX) -o $@ $(CXXFLAGS) $(LDFLAGS) $^ $(SYSLIBS)
 
 depend:: $(TESTCXXDEP) $(BUILDCXXDEP) $(LIBCXXDEP)
 
@@ -54,7 +54,7 @@ run_test:: test
 	./test
 
 test: $(TESTCXXOBJ) $(LIBTARGET)
-	$(CXX) -o $@ $(LDFLAGS) $^ $(SYSLIBS) 
+	$(CXX) -o $@ $(CXXFLAGS) $(LDFLAGS) $^ $(SYSLIBS)
 
 $(LIBTARGET): $(LIBOBJ)
 	/bin/rm -f $@

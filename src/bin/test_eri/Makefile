@@ -44,11 +44,11 @@ CXXTEST2OBJ = $(CXXTEST2SRC:%.cc=%.o)
 
 $(ERICOMP): $(CXXERICOMPOBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	cd ../libint; $(MAKE) $(LIBINT)
-	$(CXX) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
+	$(CXX) -o $@ $^ $(SYSLIBS) $(CXXFLAGS) $(LDFLAGS)
 
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
 $(TEST): $(CXXTESTOBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
-	$(CXX) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
+	$(CXX) -o $@ $^ $(SYSLIBS) $(CXXGENFLAGS) $(LDFLAGS)
 else
 $(TEST):
 	echo "Cannot test generated code! $(CXXGEN) is not compatible with $(CXXCOMP)"
@@ -56,10 +56,10 @@ $(TEST):
 endif
 
 $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)  $(CGSHELLOBJ)
-	$(CXX) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
+	$(CXX) -o $@ $^ $(SYSLIBS) $(CXXGENFLAGS) $(LDFLAGS)
 
 $(TEST2): $(CXXTEST2OBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
-	$(CXX) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
+	$(CXX) -o $@ $^ $(SYSLIBS) $(CXXGENFLAGS) $(LDFLAGS)
 
 # Assume that CXXGEN has the weaker frontend of the two (there is no reason to not use it then as CXX)
 # hence use it *only* to compile generated source if CXXGEN is compatible with CXX

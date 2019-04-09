@@ -32,7 +32,7 @@ $(COMP1): LDFLAGS := -pg $(LDFLAGS)
 
 $(COMP1): $(COMP1OBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	cd ../libint; $(MAKE) $(LIBINT)
-	$(LD) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
+	$(LD) -o $@ $^ $(SYSLIBS) $(CXXFLAGS) $(LDFLAGS)
 
 $(COMP1OBJ):: $(LIBINTDIR)/buildtest.h
 
@@ -44,7 +44,7 @@ COMP2SRC = $(COMP2).cc
 COMP2OBJ = $(COMP2SRC:%.cc=%.o)
 
 $(COMP2): $(COMP2OBJ)
-	$(CXX) -o $@ $^ $(SYSLIBS) $(BLAS) $(LDFLAGS)
+	$(CXX) -o $@ $^ $(SYSLIBS) $(BLAS) $(CXXFLAGS) $(LDFLAGS)
 
 $(COMP2OBJ):: $(TOPDIR)/include/libint2/boys.h
 
