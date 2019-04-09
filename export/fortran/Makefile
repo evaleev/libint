@@ -30,7 +30,7 @@ fortran_incldefs.h: $(TOPDIR)/include/libint2_types.h
 	grep '^#' $< | grep -v '#include' > $@
 
 fortran_example: fortran_example.o libint_f.o
-	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) $(FCLIBS) -o $@ $^
+	$(LTLINK) $(CXX) $(CXXFLAGS) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) $(FCLIBS) -o $@ $^
 
 ifeq ($(LIBINT_HAS_CXX11),yes)
  ifeq ($(LIBINT_SUPPORTS_ONEBODY),yes)
@@ -52,7 +52,7 @@ check_test:: make_test
 endif
 
 test: test.o test-eri.o libint_f.o
-	$(LTLINK) $(CXX) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) $(FCLIBS) -o $@ $^
+	$(LTLINK) $(CXX) $(CXXFLAGS) $(LDFLAGS) $(COMPUTE_LIB) $(SYSLIBS) $(FCLIBS) -o $@ $^
 
 ifneq ($(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS),1)
 
