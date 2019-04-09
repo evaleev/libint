@@ -13,6 +13,7 @@ Following is a brief summary of changes made in each release of Libint.
   - resolved issue #118: workaround broken Intel C++ 2019 compiler bug
   - updated libtool and catch2
   - resolved numerous linking issues with -stdlib flags
+  - Molden exporter supports crystaline orbitals (JMOL extension)
 
 - 2018-08-13: 2.5.0-beta.2
   - fixed molden exporter
