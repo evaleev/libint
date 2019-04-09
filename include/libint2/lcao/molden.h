@@ -302,7 +302,9 @@ class Export {
 
 };  // Export
 
-class Export_CO: public Export{
+/// Extension of the Molden exporter to support JMOL extensions for crystal
+/// orbitals (see <a>https://sourceforge.net/p/jmol/code/HEAD/tree/trunk/Jmol/src/org/jmol/adapter/readers/quantum/MoldenReader.java#l25</a>)
+class PBCExport: public Export{
    public:
   /// @tparam Coeffs the type of LCAO coefficient matrix
   /// @tparam Energies the type of LCAO energy vector
@@ -314,6 +316,7 @@ class Export_CO: public Export{
   ///        \c basis and by the ordering conventions of this Libint
   ///        configuration)
   /// @param occupancies the vector of occupancies (size = # LCAOs)
+  /// @param space_group (base-0) index of the space group in the International Tables of Crystalligraphy (https://it.iucr.org/Ac/)
   /// @param energies the vector of energies (size = # of LCAOs); the default is
   ///        to assign zero to each LCAO
   /// @param symmetry_labels the vector of symmetry labels (size = # LCAOs); the
@@ -328,12 +331,12 @@ class Export_CO: public Export{
   /// - d, f, and g (l=2..4) shells are all Cartesian or all solid harmonics
   /// - there are no shells with l>5
   template <typename Coeffs, typename Occs, typename Energies = Eigen::VectorXd>
-  Export_CO(const std::vector<Atom>& atoms,
+  PBCExport(const std::vector<Atom>& atoms,
          const Eigen::VectorXd& cell_axes,
          const std::vector<Shell>& basis,
          const Coeffs& coefficients,
          const Occs& occupancies,
-         const int& space_group,
+         int space_group,
          const Energies& energies = Energies(),
          const std::vector<std::string>& symmetry_labels =
              std::vector<std::string>(),
@@ -379,9 +382,9 @@ class Export_CO: public Export{
 
 private:
   Eigen::VectorXd cell_axes_;
-  const int& space_group_;
+  int space_group_;
 
-}; // Export_CO
+}; // PBCExport
 
 }  // namespace molden
 }  // namespace libint2
