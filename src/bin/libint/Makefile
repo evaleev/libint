@@ -14,7 +14,7 @@ endif
 NAME = libint
 VERSION = 2
 
-CXXFLAGS += -I. -I$(SRCDIR)
+CPPFLAGS += -I. -I$(SRCDIR)
 
 RANLIB = ranlib
 OBJSUF = o
