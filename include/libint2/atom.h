@@ -92,7 +92,7 @@ __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
   // rest of lines are atoms (and unit cell parameters, if pbc = true)
   const auto nlines_expected = natom + (pbc ? 3 : 0);
   std::vector<Atom> atoms(natom, Atom{0, 0.0, 0.0, 0.0});
-  std::array<std::array<double, 3>, 3> unit_cell({{0.0, 0.0, 0.0}});
+  std::array<std::array<double, 3>, 3> unit_cell({{{0.0, 0.0, 0.0}}});
   bool found_abc[3] = {false, false, false};
   for (auto line = 0, atom_index = 0; line < nlines_expected; ++line) {
     if (is.eof())
