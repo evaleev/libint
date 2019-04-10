@@ -40,6 +40,10 @@ namespace libint2 {
       int atomic_number;
       double x, y, z;
   };
+  inline bool operator==(const Atom& atom1, const Atom& atom2) {
+    return atom1.atomic_number == atom2.atomic_number && atom1.x == atom2.x &&
+           atom1.y == atom2.y && atom1.z == atom2.z;
+  }
 
   namespace constants {
   /// the 2014 CODATA reference set, available at DOI 10.1103/RevModPhys.88.035009
@@ -71,6 +75,7 @@ inline std::tuple<std::vector<libint2::Atom>,
 __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
                       const bool pbc = false) {
   using libint2::Atom;
+  const std::string caller = std::string("libint2::read_dotxyz") + (pbc ? "_pbc" : "");
 
   // first line = # of atoms
   size_t natom;
@@ -88,12 +93,13 @@ __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
   const auto nlines_expected = natom + (pbc ? 3 : 0);
   std::vector<Atom> atoms(natom, Atom{0, 0.0, 0.0, 0.0});
   std::array<std::array<double, 3>, 3> unit_cell({{0.0, 0.0, 0.0}});
+  bool found_abc[3] = {false, false, false};
   for (auto line = 0, atom_index = 0; line < nlines_expected; ++line) {
     if (is.eof())
-      throw std::runtime_error(std::string("libint2::read_dotxyz: expected ") +
-                               std::to_string(nlines_expected) +
-                               " sets of coordinates but only " +
-                               std::to_string(line) + " received");
+      throw std::logic_error(caller + ": expected " +
+                             std::to_string(nlines_expected) +
+                             " sets of coordinates but only " +
+                             std::to_string(line) + " received");
 
     // read line
     std::string linestr;
@@ -131,28 +137,46 @@ __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
       if (strcaseequal("CC", element_symbol))
         axis = 2;
       if (axis != -1) {
+        if (found_abc[axis] == true)
+          throw std::logic_error(
+              caller + ": unit cell parameter along Cartesian axis " +
+              std::to_string(axis) + " appears more than once");
         assign_xyz(unit_cell[axis], x, y, z);
+        found_abc[axis] = true;
       }
     }
 
     // .xyz files report element labels, hence convert to atomic numbers
     if (axis == -1) {
       int Z = -1;
-      using libint2::chemistry::element_info;
-      for (const auto &e : element_info) {
+      for (const auto &e : libint2::chemistry::get_element_info()) {
         if (strcaseequal(e.symbol, element_symbol)) {
           Z = e.Z;
           break;
         }
       }
       if (Z == -1) {
-        std::cerr << "libint2::read_dotxyz: element symbol \"" << element_symbol
-                  << "\" is not recognized" << std::endl;
-        throw "Did not recognize element symbol in .xyz file";
+        std::ostringstream oss;
+        oss << caller << ": element symbol \"" << element_symbol
+            << "\" is not recognized" << std::endl;
+        throw std::logic_error(oss.str().c_str());
       }
 
+      if (pbc && atom_index == atoms.size()) { // if PBC, check for too many atoms
+        throw std::logic_error(caller + ": too many atoms");
+      }
       assign_atom(atoms[atom_index++], Z, x, y, z);
     }
+  }
+
+  // make sure all 3 axes were specified
+  if (pbc) {
+    for(auto xyz=0; xyz!=3; ++xyz)
+      if (found_abc[xyz] == false) {
+        throw std::logic_error(caller +
+                               ": unit cell parameter along Cartesian axis " +
+                               std::to_string(xyz) + " not given");
+      }
   }
 
   return std::make_tuple(atoms, unit_cell);
