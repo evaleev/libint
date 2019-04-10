@@ -3,7 +3,10 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2018-04-09: 2.5.0
+- xxxx-yy-zz: 2.6.0-beta.1
+  - can read PBC-extended XYZ files
+
+- 2019-04-09: 2.5.0
   - New Fortran bindings to Libint by Patrick Seewald (https://github.com/pseewald); requires Fortran 2003 or later.
   - validation target in exported library works correctly in absence of C++11 API
   - cleanup of molden exporter
