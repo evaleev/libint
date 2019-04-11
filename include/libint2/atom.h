@@ -29,6 +29,7 @@
 #include <array>
 #include <iostream>
 #include <sstream>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -94,7 +95,7 @@ __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
   std::vector<Atom> atoms(natom, Atom{0, 0.0, 0.0, 0.0});
   std::array<std::array<double, 3>, 3> unit_cell({{{0.0, 0.0, 0.0}}});
   bool found_abc[3] = {false, false, false};
-  for (auto line = 0, atom_index = 0; line < nlines_expected; ++line) {
+  for (size_t line = 0, atom_index = 0; line < nlines_expected; ++line) {
     if (is.eof())
       throw std::logic_error(caller + ": expected " +
                              std::to_string(nlines_expected) +
