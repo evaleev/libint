@@ -944,6 +944,222 @@ namespace libint2 { namespace simd {
 #endif
     return result;
   }
+
+
+
+
+  /**
+   * SIMD vector of 8 single-precision floating-point real numbers, operations on which use AVX instructions
+   * available on recent x86 hardware from Intel (starting with Sandy Bridge processors released in 2011)
+   * and AMD (starting with Bulldozer released in 2011).
+   */
+  struct VectorAVXFloat {
+
+      typedef float T;
+      __m256 d;
+
+      /**
+       * creates a vector of default-initialized values.
+       */
+      VectorAVXFloat() {}
+
+      /** Initializes all elements to the same value
+       *  @param a the value to which all elements will be set
+       */
+      VectorAVXFloat(T a) {
+        d = _mm256_set_ps(a, a, a, a, a, a, a, a);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorAVXFloat(T (&a)[8]) {
+        d = _mm256_loadu_ps(&a[0]);
+      }
+
+      /**
+       * creates a vector of values initialized by an ordinary static-sized array
+       */
+      VectorAVXFloat(T a0, T a1, T a2, T a3, T a4, T a5, T a6, T a7) {
+        d = _mm256_set_ps(a0, a1, a2, a3, a4, a5, a6, a7);
+      }
+
+      VectorAVXFloat& operator=(T a) {
+        d = _mm256_set_ps(a, a, a, a, a, a, a, a);
+        return *this;
+      }
+
+      VectorAVXFloat& operator+=(VectorAVXFloat a) {
+        d = _mm256_add_ps(d, a.d);
+        return *this;
+      }
+
+      VectorAVXFloat& operator-=(VectorAVXFloat a) {
+        d = _mm256_sub_ps(d, a.d);
+        return *this;
+      }
+
+      VectorAVXFloat operator-() const {
+        // TODO improve using bitflips
+        const static __m256 minus_one = _mm256_set_ps(-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0);;
+        VectorAVXFloat result;
+        result.d = _mm256_mul_ps(this->d, minus_one);
+        return result;
+      }
+
+      explicit operator float() const {
+        float d0[8];
+        ::memcpy(&(d0[0]), &d, sizeof(__m256));
+        // this segfaults on OS X
+//        _mm256_storeu_ps(&d0[0], d);
+//        // aligned alternative requires C++11's alignas, but efficiency should not matter here
+//        //        alignas(__m256) float d0[8];
+//        //        _mm256_store_ps(&(d0[0]), d);
+        return d0[0];
+      }
+
+      explicit operator double() const {
+              const float result_flt = this->operator float();
+              return result_flt;
+      }
+
+      void convert(T(&a)[8]) const {
+        _mm256_storeu_ps(&a[0], d);
+      }
+  };
+
+  //@{ arithmetic operators
+  inline VectorAVXFloat operator*(double a, VectorAVXFloat b) {
+    VectorAVXFloat c;
+    VectorAVXFloat _a(a);
+    c.d = _mm256_mul_ps(_a.d, b.d);
+    return c;
+  }
+
+  inline VectorAVXFloat operator*(VectorAVXFloat a, double b) {
+    VectorAVXFloat c;
+    VectorAVXFloat _b(b);
+    c.d = _mm256_mul_ps(a.d, _b.d);
+    return c;
+  }
+
+  inline VectorAVXFloat operator*(int a, VectorAVXFloat b) {
+    if (a == 1)
+      return b;
+    else {
+      VectorAVXFloat c;
+      VectorAVXFloat _a((float)a);
+      c.d = _mm256_mul_ps(_a.d, b.d);
+      return c;
+    }
+  }
+
+  inline VectorAVXFloat operator*(VectorAVXFloat a, int b) {
+    if (b == 1)
+      return a;
+    else {
+      VectorAVXFloat c;
+      VectorAVXFloat _b((float)b);
+      c.d = _mm256_mul_ps(a.d, _b.d);
+      return c;
+    }
+  }
+
+  inline VectorAVXFloat operator*(VectorAVXFloat a, VectorAVXFloat b) {
+    VectorAVXFloat c;
+    c.d = _mm256_mul_ps(a.d, b.d);
+    return c;
+  }
+
+  inline VectorAVXFloat operator+(VectorAVXFloat a, VectorAVXFloat b) {
+    VectorAVXFloat c;
+    c.d = _mm256_add_ps(a.d, b.d);
+    return c;
+  }
+
+  inline VectorAVXFloat operator-(VectorAVXFloat a, VectorAVXFloat b) {
+    VectorAVXFloat c;
+    c.d = _mm256_sub_ps(a.d, b.d);
+    return c;
+  }
+
+  inline VectorAVXFloat operator/(VectorAVXFloat a, VectorAVXFloat b) {
+    VectorAVXFloat c;
+    c.d = _mm256_div_ps(a.d, b.d);
+    return c;
+  }
+
+#if defined(__FMA__)
+  inline VectorAVXFloat fma_plus(VectorAVXFloat a, VectorAVXFloat b, VectorAVXFloat c) {
+    VectorAVXFloat d;
+    d.d = _mm256_fmadd_ps(a.d, b.d, c.d);
+    return d;
+  }
+  inline VectorAVXFloat fma_minus(VectorAVXFloat a, VectorAVXFloat b, VectorAVXFloat c) {
+    VectorAVXFloat d;
+    d.d = _mm256_fmsub_ps(a.d, b.d, c.d);
+    return d;
+  }
+#elif defined(__FMA4__)
+  inline VectorAVXFloat fma_plus(VectorAVXFloat a, VectorAVXFloat b, VectorAVXFloat c) {
+    VectorAVXFloat d;
+    d.d = _mm256_facc_ps(a.d, b.d, c.d);
+    return d;
+  }
+  inline VectorAVXFloat fma_minus(VectorAVXFloat a, VectorAVXFloat b, VectorAVXFloat c) {
+    VectorAVXFloat d;
+    d.d = _mm256_fsub_ps(a.d, b.d, c.d);
+    return d;
+  }
+#endif
+
+  //@}
+
+  //@{ standard functions
+  inline VectorAVXFloat exp(VectorAVXFloat a) {
+#if HAVE_INTEL_SVML
+    VectorAVXFloat result;
+    result.d = _mm256_exp_ps(a.d);
+#else
+    float a_d[8]; a.convert(a_d);
+    for(int i=0; i<8; ++i) a_d[i] = ::exp(a_d[i]);
+    VectorAVXFloat result(a_d);
+#endif
+    return result;
+  }
+  inline VectorAVXFloat sqrt(VectorAVXFloat a) {
+#if HAVE_INTEL_SVML
+    VectorAVXFloat result;
+    result.d = _mm256_sqrt_ps(a.d);
+#else
+    float a_d[8]; a.convert(a_d);
+    for(int i=0; i<8; ++i) a_d[i] = ::sqrt(a_d[i]);
+    VectorAVXFloat result(a_d);
+#endif
+    return result;
+  }
+  inline VectorAVXFloat erf(VectorAVXFloat a) {
+#if HAVE_INTEL_SVML
+    VectorAVXFloat result;
+    result.d = _mm256_erf_ps(a.d);
+#else
+    float a_d[8]; a.convert(a_d);
+    for(int i=0; i<8; ++i) a_d[i] = ::erf(a_d[i]);
+    VectorAVXFloat result(a_d);
+#endif
+    return result;
+  }
+  inline VectorAVXFloat erfc(VectorAVXFloat a) {
+#if HAVE_INTEL_SVML
+    VectorAVXFloat result;
+    result.d = _mm256_erfc_ps(a.d);
+#else
+    float a_d[8]; a.convert(a_d);
+    for(int i=0; i<8; ++i) a_d[i] = ::erfc(a_d[i]);
+    VectorAVXFloat result(a_d);
+#endif
+    return result;
+  }
   //@}
 
 };}; // namespace libint2::simd
@@ -953,6 +1169,14 @@ inline std::ostream& operator<<(std::ostream& os, libint2::simd::VectorAVXDouble
   double ad[4];
   a.convert(ad);
   os << "{" << ad[0] << "," << ad[1] << "," << ad[2] << "," << ad[3] << "}";
+  return os;
+}
+
+//@{ standard stream operations
+inline std::ostream& operator<<(std::ostream& os, libint2::simd::VectorAVXFloat a) {
+  float ad[8];
+  a.convert(ad);
+  os << "{" << ad[0] << "," << ad[1] << "," << ad[2] << "," << ad[3] << "," << ad[4]<< "," << ad[5]<< ","  << ad[6]<< "," << ad[7] << "}";
   return os;
 }
 //@}
@@ -978,9 +1202,9 @@ namespace libint2 {
 
 #endif // AVX-only
 
+
 #ifdef LIBINT2_HAVE_AGNER_VECTORCLASS
 #include <vectorclass.h>
 #endif
 
 #endif // header guard
-

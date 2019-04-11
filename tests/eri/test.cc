@@ -213,7 +213,7 @@ void test_4eri(unsigned int deriv_order,
           for(int k=0; k<nrepeats; ++k) {
 
           // this prepares the data
-          prep_libint2(inteval, rsqset, 0, deriv_order);
+          prep_libint2(&inteval[0], rsqset, 0, deriv_order);
 
           //  now use Libint to compute
           double scale_target = 1.0;
