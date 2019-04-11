@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_globalmacros_h_
 #define _libint2_src_bin_libint_globalmacros_h_
@@ -6,7 +25,7 @@
 #define LIBINT_CARTGAUSS_MAX_AM 32
 
 /// For developers only
-#define LIBINT_SUPPORT_ONEBODYINTS 0
+#define LIBINT_SUPPORT_ONEBODYINTS 1
 
 /// Set to 1 to enable various safety checks which are normally too expensive to perform
 #define CHECK_SAFETY 0
@@ -53,6 +72,9 @@
 /// If set to 0 then complex expressions will be condensed into single-line
 /// expressions, which should help linewise vectorization
 #define DISABLE_SUBTREES 0
+
+/// Set to 1 to produce GraphViz-formatted DAGs
+#define PRINT_DAG_GRAPHVIZ 0
 
 /// Produce massive amounts of debugging info
 #define DEBUG 0

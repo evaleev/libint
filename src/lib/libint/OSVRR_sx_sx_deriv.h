@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_lib_libint_osvrrsxsxderiv_h_
 #define _libint2_src_lib_libint_osvrrsxsxderiv_h_
@@ -5,7 +24,7 @@
 #include <cstdlib>
 #include <libint2.h>
 #include <util_types.h>
-#include <cgshell_ordering.h>
+#include <libint2/cgshell_ordering.h>
 
 namespace libint2 {
 
@@ -243,35 +262,53 @@ namespace libint2 {
           END_FOR_CART
         }
 
-#define dcontrA(target,srcA,srcB,id,ecoef1,ecoef2) { \
+#define OSVRR_SX_SX_DERIV_DCONTR_A(target,srcA,srcB,id,ecoef1,ecoef2) { \
   const LIBINT2_REALTYPE* srcA_ptr = srcA + bm10d0_offset; \
   const LIBINT2_REALTYPE* srcB_ptr = srcB + bm10d0_offset; \
   const LIBINT2_REALTYPE di = (LIBINT2_REALTYPE)id; \
   const LIBINT2_REALTYPE* c1 = inteval->ecoef1; \
   const LIBINT2_REALTYPE* c2 = inteval->ecoef2; \
   unsigned int dv = 0; \
-  for(unsigned int d = 0; d < Nd; ++d) { \
-    for(unsigned int v=0; v<veclen; ++v, ++dv) { \
-      target[dv] +=  di * (c1[v] * srcA_ptr[dv] - c2[v] * srcB_ptr[dv]); \
+  bool has_unit = srcA == nullptr; \
+  if (!has_unit) { \
+    for(unsigned int d = 0; d < Nd; ++d) { \
+      for(unsigned int v=0; v<veclen; ++v, ++dv) { \
+        target[dv] +=  di * (c1[v] * srcA_ptr[dv] - c2[v] * srcB_ptr[dv]); \
+      } \
+    } \
+  } else { \
+    for(unsigned int d = 0; d < Nd; ++d) { \
+      for(unsigned int v=0; v<veclen; ++v, ++dv) { \
+        target[dv] -=  di * c2[v] * srcB_ptr[dv]); \
+      } \
     } \
   } \
 }
 
-#define dcontrB(target,srcA,srcB,id,ecoef1,ecoef2) { \
+#define OSVRR_SX_SX_DERIV_DCONTR_B(target,srcA,srcB,id,ecoef1,ecoef2) { \
   const LIBINT2_REALTYPE* srcA_ptr = srcA + bm10d0_offset; \
   const LIBINT2_REALTYPE* srcB_ptr = srcB + bm10d0_offset; \
   const LIBINT2_REALTYPE di = (LIBINT2_REALTYPE)id; \
   const LIBINT2_REALTYPE* c1 = inteval->ecoef1; \
   const LIBINT2_REALTYPE* c2 = inteval->ecoef2; \
   unsigned int dv = 0; \
-  for(unsigned int d = 0; d < Nd; ++d) { \
-    for(unsigned int v=0; v<veclen; ++v, ++dv) { \
-      target[dv] -=  di * (c1[v] * srcA_ptr[dv] + c2[v] * srcB_ptr[dv]); \
+  bool has_unit = srcA == nullptr; \
+  if (!has_unit) { \
+    for(unsigned int d = 0; d < Nd; ++d) { \
+      for(unsigned int v=0; v<veclen; ++v, ++dv) { \
+        target[dv] -=  di * (c1[v] * srcA_ptr[dv] + c2[v] * srcB_ptr[dv]); \
+      } \
+    } \
+  } else { \
+    for(unsigned int d = 0; d < Nd; ++d) { \
+      for(unsigned int v=0; v<veclen; ++v, ++dv) { \
+        target[dv] -=  di * c2[v] * srcB_ptr[dv]; \
+      } \
     } \
   } \
 }
 
-#define dcontrCD(target,srcA,id,ecoef1) { \
+#define OSVRR_SX_SX_DERIV_DCONTR_CD(target,srcA,id,ecoef1) { \
   const LIBINT2_REALTYPE* srcA_ptr = srcA + bm10d0_offset; \
   const LIBINT2_REALTYPE di = (LIBINT2_REALTYPE)id; \
   const LIBINT2_REALTYPE* c1 = inteval->ecoef1; \
@@ -286,61 +323,63 @@ namespace libint2 {
         // if Da_x-1 exists
 #if LIBINT2_DEFINED(any,rho12_over_alpha2) && LIBINT2_DEFINED(any,alpha1_rho_over_zeta2)
         if (Da_x > 0 && xyz == x){
-          dcontrA(target,src5,src6,Da_x,rho12_over_alpha2,alpha1_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_A(target,src5,src6,Da_x,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src5 == nullptr ? 3 : 5) * NdV;
 #endif
         }
         if (Da_y > 0 && xyz == y){
-          dcontrA(target,src11,src12,Da_y,rho12_over_alpha2,alpha1_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_A(target,src11,src12,Da_y,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src11 == nullptr ? 3 : 5) * NdV;
 #endif
         }
         if (Da_z > 0 && xyz == z){
-          dcontrA(target,src17,src18,Da_z,rho12_over_alpha2,alpha1_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_A(target,src17,src18,Da_z,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src17 == nullptr ? 3 : 5) * NdV;
 #endif
         }
 #endif
+
         // if Db_x-1 exists
 #if LIBINT2_DEFINED(any,rho12_over_alpha2) && LIBINT2_DEFINED(any,alpha2_rho_over_zeta2)
         if (Db_x > 0 && xyz == x){
-          dcontrB(target,src7,src8,Db_x,rho12_over_alpha2,alpha2_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_B(target,src7,src8,Db_x,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src7 == nullptr ? 3 : 5) * NdV;
 #endif
         }
         if (Db_y > 0 && xyz == y){
-          dcontrB(target,src13,src14,Db_y,rho12_over_alpha2,alpha2_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_B(target,src13,src14,Db_y,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src13 == nullptr ? 3 : 5) * NdV;
 #endif
         }
         if (Db_z > 0 && xyz == z){
-          dcontrB(target,src19,src20,Db_z,rho12_over_alpha2,alpha2_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_B(target,src19,src20,Db_z,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src19 == nullptr ? 3 : 5) * NdV;
 #endif
         }
 #endif
+
         // if Dc_x-1 exists
 #if LIBINT2_DEFINED(any,alpha3_over_zetapluseta)
         if (Dc_x > 0 && xyz == x){
-          dcontrCD(target,src9,Dc_x,alpha3_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src9,Dc_x,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dc_y > 0 && xyz == y){
-          dcontrCD(target,src15,Dc_y,alpha3_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src15,Dc_y,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dc_z > 0 && xyz == z){
-          dcontrCD(target,src21,Dc_z,alpha3_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src21,Dc_z,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
@@ -349,19 +388,19 @@ namespace libint2 {
         // if Dd_x-1 exists
 #if LIBINT2_DEFINED(any,alpha4_over_zetapluseta)
         if (Dd_x > 0 && xyz == x){
-          dcontrCD(target,src10,Dd_x,alpha4_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src10,Dd_x,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dd_y > 0 && xyz == y){
-          dcontrCD(target,src16,Dd_y,alpha4_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src16,Dd_y,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dd_z > 0 && xyz == z){
-          dcontrCD(target,src22,Dd_z,alpha4_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src22,Dd_z,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
@@ -567,104 +606,68 @@ namespace libint2 {
           END_FOR_CART
         }
 
-#define dcontrA(target,srcA,srcB,id,ecoef1,ecoef2) { \
-  const LIBINT2_REALTYPE* srcA_ptr = srcA + bm10d0_offset; \
-  const LIBINT2_REALTYPE* srcB_ptr = srcB + bm10d0_offset; \
-  const LIBINT2_REALTYPE di = (LIBINT2_REALTYPE)id; \
-  const LIBINT2_REALTYPE* c1 = inteval->ecoef1; \
-  const LIBINT2_REALTYPE* c2 = inteval->ecoef2; \
-  unsigned int dv = 0; \
-  for(unsigned int d = 0; d < Nd; ++d) { \
-    for(unsigned int v=0; v<veclen; ++v, ++dv) { \
-      target[dv] +=  di * (c1[v] * srcA_ptr[dv] - c2[v] * srcB_ptr[dv]); \
-    } \
-  } \
-}
-
-#define dcontrB(target,srcA,srcB,id,ecoef1,ecoef2) { \
-  const LIBINT2_REALTYPE* srcA_ptr = srcA + bm10d0_offset; \
-  const LIBINT2_REALTYPE* srcB_ptr = srcB + bm10d0_offset; \
-  const LIBINT2_REALTYPE di = (LIBINT2_REALTYPE)id; \
-  const LIBINT2_REALTYPE* c1 = inteval->ecoef1; \
-  const LIBINT2_REALTYPE* c2 = inteval->ecoef2; \
-  unsigned int dv = 0; \
-  for(unsigned int d = 0; d < Nd; ++d) { \
-    for(unsigned int v=0; v<veclen; ++v, ++dv) { \
-      target[dv] -=  di * (c1[v] * srcA_ptr[dv] + c2[v] * srcB_ptr[dv]); \
-    } \
-  } \
-}
-
-#define dcontrCD(target,srcA,id,ecoef1) { \
-  const LIBINT2_REALTYPE* srcA_ptr = srcA + bm10d0_offset; \
-  const LIBINT2_REALTYPE di = (LIBINT2_REALTYPE)id; \
-  const LIBINT2_REALTYPE* c1 = inteval->ecoef1; \
-  unsigned int dv = 0; \
-  for(unsigned int d = 0; d < Nd; ++d) { \
-    for(unsigned int v=0; v<veclen; ++v, ++dv) { \
-      target[dv] +=  di * c1[v] * srcA_ptr[dv]; \
-    } \
-  } \
-}
-
         // if Da_x-1 exists
 #if LIBINT2_DEFINED(any,rho12_over_alpha2) && LIBINT2_DEFINED(any,alpha1_rho_over_zeta2)
         if (Da_x > 0 && xyz == x){
-          dcontrA(target,src5,src6,Da_x,rho12_over_alpha2,alpha1_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_A(target,src5,src6,Da_x,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src5 == nullptr ? 3 : 5) * NdV;
 #endif
         }
         if (Da_y > 0 && xyz == y){
-          dcontrA(target,src11,src12,Da_y,rho12_over_alpha2,alpha1_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_A(target,src11,src12,Da_y,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src11 == nullptr ? 3 : 5) * NdV;
 #endif
         }
         if (Da_z > 0 && xyz == z){
-          dcontrA(target,src17,src18,Da_z,rho12_over_alpha2,alpha1_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_A(target,src17,src18,Da_z,rho12_over_alpha2,alpha1_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src17 == nullptr ? 3 : 5) * NdV;
 #endif
         }
 #endif
+#undef OSVRR_SX_SX_DERIV_DCONTR_A
+
         // if Db_x-1 exists
 #if LIBINT2_DEFINED(any,rho12_over_alpha2) && LIBINT2_DEFINED(any,alpha2_rho_over_zeta2)
         if (Db_x > 0 && xyz == x){
-          dcontrB(target,src7,src8,Db_x,rho12_over_alpha2,alpha2_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_B(target,src7,src8,Db_x,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src7 == nullptr ? 3 : 5) * NdV;
 #endif
         }
         if (Db_y > 0 && xyz == y){
-          dcontrB(target,src13,src14,Db_y,rho12_over_alpha2,alpha2_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_B(target,src13,src14,Db_y,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src13 == nullptr ? 3 : 5) * NdV;
 #endif
         }
         if (Db_z > 0 && xyz == z){
-          dcontrB(target,src19,src20,Db_z,rho12_over_alpha2,alpha2_rho_over_zeta2);
+          OSVRR_SX_SX_DERIV_DCONTR_B(target,src19,src20,Db_z,rho12_over_alpha2,alpha2_rho_over_zeta2);
 #if LIBINT2_FLOP_COUNT
-          inteval->nflops[0] += 5 * NdV;
+          inteval->nflops[0] += (src19 == nullptr ? 3 : 5) * NdV;
 #endif
         }
 #endif
+#undef OSVRR_SX_SX_DERIV_DCONTR_B
+
         // if Dc_x-1 exists
 #if LIBINT2_DEFINED(any,alpha3_over_zetapluseta)
         if (Dc_x > 0 && xyz == x){
-          dcontrCD(target,src9,Dc_x,alpha3_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src9,Dc_x,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dc_y > 0 && xyz == y){
-          dcontrCD(target,src15,Dc_y,alpha3_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src15,Dc_y,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dc_z > 0 && xyz == z){
-          dcontrCD(target,src21,Dc_z,alpha3_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src21,Dc_z,alpha3_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
@@ -673,24 +676,25 @@ namespace libint2 {
         // if Dd_x-1 exists
 #if LIBINT2_DEFINED(any,alpha4_over_zetapluseta)
         if (Dd_x > 0 && xyz == x){
-          dcontrCD(target,src10,Dd_x,alpha4_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src10,Dd_x,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dd_y > 0 && xyz == y){
-          dcontrCD(target,src16,Dd_y,alpha4_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src16,Dd_y,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
         }
         if (Dd_z > 0 && xyz == z){
-          dcontrCD(target,src22,Dd_z,alpha4_over_zetapluseta);
+          OSVRR_SX_SX_DERIV_DCONTR_CD(target,src22,Dd_z,alpha4_over_zetapluseta);
 #if LIBINT2_FLOP_COUNT
           inteval->nflops[0] += 3 * NdV;
 #endif
         }
 #endif
+#undef OSVRR_SX_SX_DERIV_DCONTR_CD
 
         target += NdV;
 

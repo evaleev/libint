@@ -1,5 +1,25 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <fstream>
+#include <limits>
 
 #include <rr.h>
 #include <dg.h>
@@ -49,10 +69,14 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   }
 
   const SafePtr<DGVertex> target_vptr = rr_target();
+#if DEBUG
   std::cout << "RecurrenceRelation::generate_code: target = " << target_vptr->label() << std::endl;
+#endif
 
   const SafePtr<CompilationParameters>& cparams = context->cparams();
-  SafePtr<DirectedGraph> dg = generate_graph_();
+  SafePtr<DirectedGraph> dg(new DirectedGraph);
+  dg->set_label(context->label_to_name(label_to_funcname(funcname)));
+  generate_graph_(dg);
 
   // Intermediates in RR code are either are automatic variables or have to go on vstack
   dg->registry()->stack_name("inteval->vstack");
@@ -91,12 +115,12 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
     const bool need_to_optimize = (max_am <= cparams->max_am_opt());
     dg->registry()->do_cse(need_to_optimize);
   }
-  dg->registry()->condense_expr(condense_expr(1000000000,cparams->max_vector_length()>1));
+  dg->registry()->condense_expr(condense_expr(std::numeric_limits<unsigned int>::max(),cparams->max_vector_length()>1));
   dg->registry()->ignore_missing_prereqs(true);  // assume all prerequisites are available -- if some are not, something is VERY broken
 
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
   {
-    std::basic_ofstream<char> dotfile("graph_rr.strat.dot");
+    std::basic_ofstream<char> dotfile(dg->label() + ".strat.dot");
     dg->print_to_dot(false,dotfile);
   }
 #endif
@@ -107,9 +131,9 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
   // Traverse the graph
   dg->optimize_rr_out(context);
   dg->traverse();
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
     {
-      std::basic_ofstream<char> dotfile("graph_rr.expr.dot");
+      std::basic_ofstream<char> dotfile(dg->label() + ".expr.dot");
       dg->print_to_dot(false,dotfile);
     }
 #endif
@@ -132,9 +156,9 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
     std::cout << *t << std::endl;
 #endif
 
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
     {
-      std::basic_ofstream<char> dotfile("graph_rr.symb.dot");
+      std::basic_ofstream<char> dotfile(dg->label() + ".symb.dot");
       dg->print_to_dot(false,dotfile);
     }
 #endif
@@ -213,9 +237,8 @@ RecurrenceRelation::generate_generic_code(const SafePtr<CodeContext>& context,
 }
 
 SafePtr<DirectedGraph>
-RecurrenceRelation::generate_graph_()
+RecurrenceRelation::generate_graph_(const SafePtr<DirectedGraph>& dg)
 {
-  SafePtr<DirectedGraph> dg(new DirectedGraph);
   dg->append_target(rr_target());
   for(unsigned int c=0; c<num_children(); c++)
     dg->append_vertex(rr_child(c));
@@ -225,7 +248,7 @@ RecurrenceRelation::generate_graph_()
   SafePtr<Strategy> strat(new Strategy);
   SafePtr<Tactic> ntactic(new NullTactic);
   // Always need to unroll integral sets first
-  dg->registry()->unroll_threshold(1000000000);
+  dg->registry()->unroll_threshold(std::numeric_limits<unsigned int>::max());
   dg->apply(strat,ntactic);
 #if DEBUG
   cout << "RecurrenceRelation::generate_code -- the number of integral sets + integrals = " << dg->num_vertices() << endl;
@@ -235,7 +258,7 @@ RecurrenceRelation::generate_graph_()
     dg->apply_at<&DGVertex::not_need_to_compute>(rr_child(c));
   // Apply recurrence relations using existing vertices on the graph (i.e.
   // such that no new vertices appear)
-  SafePtr<Tactic> ztactic(new ZeroNewVerticesTactic(dg));
+  SafePtr<Tactic> ztactic(new FewestNewVerticesTactic(dg));
   dg->apply(strat,ztactic);
 #if DEBUG
   cout << "RecurrenceRelation::generate_code -- should be same as previous = " << dg->num_vertices() << endl;
@@ -347,6 +370,16 @@ RecurrenceRelation::generic_instance(const SafePtr<CodeContext>& context, const 
   throw std::logic_error("RecurrenceRelation::generic_instance() -- should not be called! Check if DerivedRecurrenceRelation::generic_instance() is implemented");
 }
 
+size_t
+RecurrenceRelation::size_of_children() const {
+  const auto nchildren = this->num_children();
+  size_t result = 0;
+  for(auto c=0; c!=nchildren; ++c) {
+    result += this->rr_child(c)->size();
+  }
+  return result;
+}
+
 namespace libint2 { namespace algebra {
   /// these operators are extremely useful to write compact expressions
   SafePtr<RecurrenceRelation::ExprType> operator+(const SafePtr<DGVertex>& A,
@@ -372,15 +405,23 @@ namespace libint2 { namespace algebra {
   const SafePtr<RecurrenceRelation::ExprType>& operator+=(SafePtr<RecurrenceRelation::ExprType>& A,
                                                           const SafePtr<DGVertex>& B) {
     typedef RecurrenceRelation::ExprType Oper;
-    const SafePtr<Oper>& Sum = A + B;
-    A = Sum;
+    if (A) {
+      const SafePtr<Oper>& Sum = A + B;
+      A = Sum;
+    }
+    else
+      A = Scalar(0) + B;
     return A;
   }
   const SafePtr<RecurrenceRelation::ExprType>& operator-=(SafePtr<RecurrenceRelation::ExprType>& A,
                                                           const SafePtr<DGVertex>& B) {
     typedef RecurrenceRelation::ExprType Oper;
-    const SafePtr<Oper>& Diff = A - B;
-    A = Diff;
+    if (A) {
+      const SafePtr<Oper>& Diff = A - B;
+      A = Diff;
+    }
+    else
+      A = Scalar(0) - B;
     return A;
   }
   const SafePtr<RecurrenceRelation::ExprType>& operator*=(SafePtr<RecurrenceRelation::ExprType>& A,

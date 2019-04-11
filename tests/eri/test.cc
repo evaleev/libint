@@ -1,32 +1,70 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 /// This program tests Libint library by computing 2-body repulsion integrals (4, 3, and 2-center varieties)
 /// and (optionally) their derivatives using Libint and a dumb but fool-proof reference method
 
 #include <iostream>
 #include <cmath>
 #include <sys/time.h>
-
-#include <rr.h>
-#include <iter.h>
-#include <util.h>
-#include <deriv_iter.h>
-#include <policy_spec.h>
-#include <global_macros.h>
+#include <cassert>
 
 #include <libint2.h>
-#include <test_eri/eri.h>
-#include <test_eri/prep_libint2.h>
+#include <libint2/deriv_iter.h>
+#include <eri.h>
+#include <prep_libint2.h>
+#include <libint2/cgshell_ordering.h>
+#include <libint2/util/memory.h>
+#if !LIBINT2_CONSTEXPR_STATICS
+#  include <libint2/statics_definition.h>
+#endif
 
 using namespace std;
 using namespace libint2;
 
-const double ABSOLUTE_DEVIATION_THRESHOLD = 1.0E-14; // indicate failure if any integral differs in absolute sense by more than this
-const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-8; // indicate failure if any integral differs in relative sense by more than this
+const double ABSOLUTE_DEVIATION_THRESHOLD = 1.0E-15; // indicate failure if any integral differs in absolute sense by more than this
+const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any integral differs in relative sense by more than this
 
 /// change to true to skip verification and do some timing simulation
 const bool do_timing_only = false;
 
-libint2::FmEval_Chebyshev3 fmeval_chebyshev(LIBINT_MAX_AM*4 + 2);
-libint2::FmEval_Taylor<double,6> fmeval_taylor(LIBINT_MAX_AM*4+2, 1e-15);
+libint2::FmEval_Chebyshev7<double> fmeval_chebyshev(std::max(LIBINT_MAX_AM,4)*4 + 2);
+libint2::FmEval_Taylor<double,6> fmeval_taylor(std::max(LIBINT_MAX_AM,4)*4 + 2, 1e-15);
+
+namespace {
+  const char am_letters[] = "spdfghiklm";
+
+  std::string am_to_symbol(unsigned int l, bool contracted = false) {
+    std::string result;
+    do {
+      const unsigned int digit = l % 10u;
+      char letter = am_letters[digit];
+      if (contracted)
+        letter = toupper(letter);
+      result.insert(result.begin(), letter);
+      l /= 10;
+    } while (l != 0);
+
+    return result;
+  }
+}
 
 // test 4, 3, and 2-center integrals
 #ifdef INCLUDE_ERI
@@ -48,7 +86,7 @@ int main(int argc, char** argv) {
   const unsigned int deriv_order = (argc == 2 || argc == 3) ? atoi(argv[1]) : 0u;
   const unsigned int lmax_max = (argc == 3) ? atoi(argv[2]) : UINT_MAX;
 
-  // static initialziation of the library (one needs to happen once per process)
+  // static initialization of the library (only needs to happen once per process)
   LIBINT2_PREFIXED_NAME(libint2_static_init)();
 
   // run the tests
@@ -86,20 +124,23 @@ void test_4eri(unsigned int deriv_order,
   const uint max_contrdepth4 = max_contrdepth * max_contrdepth * max_contrdepth * max_contrdepth;
 
   unsigned int lmax;
-  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_ERI;
+  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_eri;
 #if INCLUDE_ERI >= 1
-  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_ERI1;
+  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_eri1;
 #endif
 #if INCLUDE_ERI >= 2
-  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_ERI2;
+  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_eri2;
 #endif
-  std::vector<Libint_t> inteval(max_contrdepth4);
+  Libint_t* inteval = libint2::malloc<Libint_t>(max_contrdepth4);
   if (deriv_order == 0) LIBINT2_PREFIXED_NAME(libint2_init_eri)(&inteval[0], lmax, 0);
 #if INCLUDE_ERI >= 1
   if (deriv_order == 1) LIBINT2_PREFIXED_NAME(libint2_init_eri1)(&inteval[0], lmax, 0);
 #endif
 #if INCLUDE_ERI >= 2
   if (deriv_order == 2) LIBINT2_PREFIXED_NAME(libint2_init_eri2)(&inteval[0], lmax, 0);
+#endif
+#ifdef LIBINT2_FLOP_COUNT
+  LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(&inteval[0], max_contrdepth4);
 #endif
 
   lmax = std::min(lmax_max, lmax);
@@ -143,13 +184,8 @@ void test_4eri(unsigned int deriv_order,
           am[3] = l3;
           RandomShellSet<4u> rsqset(am, veclen, contrdepth);
 
-          DerivIndexIterator<4> diter(deriv_order);
-          const unsigned int nderiv = diter.range_rank();
-
-          CGShell sh0(am[0]);
-          CGShell sh1(am[1]);
-          CGShell sh2(am[2]);
-          CGShell sh3(am[3]);
+          CartesianDerivIterator<4> diter(deriv_order);
+          const unsigned int nderiv = diter.range_size();
 
           const double* A = &(rsqset.R[0][0]);
           const double* B = &(rsqset.R[1][0]);
@@ -163,8 +199,8 @@ void test_4eri(unsigned int deriv_order,
           const int nrepeats = do_timing_only ? 50*(lmax-l0+1)*(lmax-l1+1)*(lmax-l2+1)*(lmax-l3+1) : 1;
 
           cout << (do_timing_only ? "Timing " : "Testing ")
-               << " (" << sh0.label() << sh1.label() << "|"
-               << sh2.label() << sh3.label() << ") ";
+               << " (" << am_to_symbol(am[0]) << am_to_symbol(am[1]) << "|"
+               << am_to_symbol(am[2]) << am_to_symbol(am[3]) << ") ";
           if (deriv_order > 0) {
             cout << " deriv order = " << deriv_order;
           }
@@ -219,36 +255,20 @@ void test_4eri(unsigned int deriv_order,
           // since the reference implementation computes integrals one at a time (not one shell-set at a time)
           // the outer loop is over the basis functions
 
-          typedef SubIteratorBase<CGShell> iter;
-          SafePtr<iter> sh0_iter(new iter(sh0));
-          SafePtr<iter> sh1_iter(new iter(sh1));
-          SafePtr<iter> sh2_iter(new iter(sh2));
-          SafePtr<iter> sh3_iter(new iter(sh3));
-
           bool success = true;
           int ijkl = 0;
-          for (sh0_iter->init(); int(*sh0_iter); ++(*sh0_iter)) {
-            for (sh1_iter->init(); int(*sh1_iter); ++(*sh1_iter)) {
-              for (sh2_iter->init(); int(*sh2_iter); ++(*sh2_iter)) {
-                for (sh3_iter->init(); int(*sh3_iter); ++(*sh3_iter), ijkl++) {
 
-                  CGF bf0 = sh0_iter->elem();
-                  CGF bf1 = sh1_iter->elem();
-                  CGF bf2 = sh2_iter->elem();
-                  CGF bf3 = sh3_iter->elem();
+          int l0, m0, n0;
+          FOR_CART(l0, m0, n0, am[0])
 
-                  uint l0 = bf0.qn(0);
-                  uint m0 = bf0.qn(1);
-                  uint n0 = bf0.qn(2);
-                  uint l1 = bf1.qn(0);
-                  uint m1 = bf1.qn(1);
-                  uint n1 = bf1.qn(2);
-                  uint l2 = bf2.qn(0);
-                  uint m2 = bf2.qn(1);
-                  uint n2 = bf2.qn(2);
-                  uint l3 = bf3.qn(0);
-                  uint m3 = bf3.qn(1);
-                  uint n3 = bf3.qn(2);
+            int l1, m1, n1;
+            FOR_CART(l1, m1, n1, am[1])
+
+              int l2, m2, n2;
+              FOR_CART(l2, m2, n2, am[2])
+
+                int l3, m3, n3;
+                FOR_CART(l3, m3, n3, am[3])
 
                   for (uint v = 0; v < veclen; v++) {
 
@@ -274,12 +294,12 @@ void test_4eri(unsigned int deriv_order,
                             const LIBINT2_REF_REALTYPE c3 = rsqset.coef[3][v][p3];
                             const LIBINT2_REF_REALTYPE c0123 = c0 * c1 * c2 * c3;
 
-                            DerivIndexIterator<4> diter(deriv_order);
+                            CartesianDerivIterator<4> diter(deriv_order);
                             bool last_deriv = false;
                             unsigned int di = 0;
                             do {
                               ref_eri[di++] += c0123
-                                  * eri(diter.values(), l0, m0, n0, alpha0, Aref,
+                                  * eri(&(*diter)[0], l0, m0, n0, alpha0, Aref,
                                         l1, m1, n1, alpha1, Bref, l2, m2, n2,
                                         alpha2, Cref, l3, m3, n3, alpha3, Dref, 0);
                               last_deriv = diter.last();
@@ -294,88 +314,16 @@ void test_4eri(unsigned int deriv_order,
 
                     //
                     // extract Libint integrals
-                    // for derivative integrals this involves
-                    // using translational invariance to reconstruct
                     //
                     std::vector<LIBINT2_REALTYPE> new_eri;
-                    if (deriv_order == 0)
-                      new_eri.push_back( scale_target * inteval[0].targets[0][ijkl * veclen + v] );
-
-                    // derivatives w.r.t. center 2 skipped and must be reconstructed using the translational invariance
-                    if (deriv_order == 1) {
-                      for (unsigned int di = 0; di < nderiv; ++di) {
-                        LIBINT2_REALTYPE value;
-                        if (di<6)
-                          value = scale_target * inteval[0].targets[di][ijkl * veclen + v];
-                        else if (di>=9)
-                          value = scale_target * inteval[0].targets[di-3][ijkl * veclen + v];
-                        else // (di>=6 || di<=8)
-                          value = -scale_target * (inteval[0].targets[di-6][ijkl * veclen + v] +
-                              inteval[0].targets[di-3][ijkl * veclen + v] +
-                              inteval[0].targets[di][ijkl * veclen + v]);
-                        new_eri.push_back(value);
-                      }
-                    }
-
-                    // derivatives w.r.t. center 2 are skipped and must be reconstructed using the translational invariance
-                    if (deriv_order == 2) {
-                      const unsigned int NumCenters = 4;
-                      LIBINT2_REALTYPE libint_eri[3*(NumCenters-1)][3*(NumCenters-1)];
-                      for(unsigned int di=0,dij=0; di<3*(NumCenters-1); di++) {
-                        for(unsigned int dj=di; dj<3*(NumCenters-1); dj++, ++dij){
-                          const LIBINT2_REALTYPE value = scale_target * inteval[0].targets[dij][ijkl * veclen + v];
-                          libint_eri[di][dj] = value;
-                          libint_eri[dj][di] = value;
-                        }
-                      }
-
-                      for(unsigned int di=0; di<3*NumCenters; di++) {
-                        for(unsigned int dj=di; dj<3*NumCenters; dj++){
-
-                          const int ci = di/3;
-                          const int cj = dj/3;
-                          const int xyzi = di%3;
-                          const int xyzj = dj%3;
-
-                          LIBINT2_REALTYPE value = 0.0;
-
-                          // d2/dCidCj = d2/dAidAj + d2/dAidBj + d2/dAidDj + d2/dBidAj + d2/dBidBj + d2/dBidDj + d2/dDidAj + d2/dDidBj + d2/dDidDj
-                          if (ci == 2 && cj == 2) {
-                            value = libint_eri[xyzi][xyzj] + libint_eri[xyzi][xyzj+3] + libint_eri[xyzi][xyzj+6] +
-                                    libint_eri[xyzi+3][xyzj] + libint_eri[xyzi+3][xyzj+3] + libint_eri[xyzi+3][xyzj+6] +
-                                    libint_eri[xyzi+6][xyzj] + libint_eri[xyzi+6][xyzj+3] + libint_eri[xyzi+6][xyzj+6];
-                          }
-                          // d2/dCidDj = - d2/dAidDj - d2/dBidDj - -d2/dDidDj
-                          else if (ci == 2) {
-                            value = -libint_eri[xyzi][dj-3] - libint_eri[xyzi+3][dj-3] - libint_eri[xyzi+6][dj-3] ;
-                          }
-                          // d2/dXidCj = - d2/dXidAj - d2/dXidBj - -d2/dXidDj (X=A,B)
-                          else if (cj == 2) {
-                            value = -libint_eri[di][xyzj] - libint_eri[di][xyzj+3] - libint_eri[di][xyzj+6] ;
-                          }
-                          // d2/dDidDj
-                          else if (ci == 3) {
-                            value = libint_eri[di-3][dj-3];
-                          }
-                          // d2/dXidDj (X=A,B)
-                          else if (cj == 3) {
-                            value = libint_eri[di][dj-3];
-                          }
-                          // d2/dXidYj (X=A,B)
-                          else {
-                            value = libint_eri[di][dj];
-                          }
-
-                          new_eri.push_back(value);
-                        }
-                      }
-                    }
+                    for(auto d=0; d!=nderiv; ++d)
+                      new_eri.push_back( scale_target * inteval[0].targets[d][ijkl * veclen + v] );
 
                     //
                     // compare reference and libint integrals
                     //
                     for (unsigned int di = 0; di < nderiv; ++di) {
-                      const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - double(new_eri[di]));
+                      const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
                       const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
                       if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
                         std::cout << "Elem " << ijkl << " di= " << di << " v="
@@ -387,10 +335,11 @@ void test_4eri(unsigned int deriv_order,
                     }
 
                   } // end of vector loop
-                }
-              }
-            }
-          }
+                  ++ijkl;
+                END_FOR_CART
+              END_FOR_CART
+            END_FOR_CART
+          END_FOR_CART
 
           cout << (success ? "ok" : "failed") << std::endl;
 
@@ -420,6 +369,7 @@ void test_4eri(unsigned int deriv_order,
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(&inteval[0]);
 #endif
+  free(inteval);
 
   // record end wall time, compute total wall time spent here
   gettimeofday(&tod,0);
@@ -445,15 +395,23 @@ void test_3eri(unsigned int deriv_order,
   const uint max_contrdepth = 3;
   const uint max_contrdepth3 = max_contrdepth * max_contrdepth * max_contrdepth;
 
+  unsigned int lmax_default = LIBINT2_MAX_AM;
+#if defined(LIBINT2_MAX_AM1)
+  if (deriv_order == 1) lmax_default = LIBINT2_MAX_AM1;
+#endif
+#if defined(LIBINT2_MAX_AM2)
+  if (deriv_order == 2) lmax_default = LIBINT2_MAX_AM2;
+#endif
+
   unsigned int lmax;
-  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_3ERI;
+  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_3eri;
 #if INCLUDE_ERI3 >= 1
-  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_3ERI1;
+  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_3eri1;
 #endif
 #if INCLUDE_ERI3 >= 2
-  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_3ERI2;
+  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_3eri2;
 #endif
-  std::vector<Libint_t> inteval(max_contrdepth3);
+  Libint_t* inteval = libint2::malloc<Libint_t>(max_contrdepth3);
   if (deriv_order == 0)
     LIBINT2_PREFIXED_NAME(libint2_init_3eri)(&inteval[0], lmax, 0);
 #if INCLUDE_ERI3 >= 1
@@ -464,12 +422,22 @@ void test_3eri(unsigned int deriv_order,
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_init_3eri2)(&inteval[0], lmax, 0);
 #endif
+#ifdef LIBINT2_FLOP_COUNT
+  LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(&inteval[0], max_contrdepth3);
+#endif
 
-  lmax = std::min(lmax_max, lmax);
+  auto lmax0 = std::min(lmax_max, lmax);
+  auto lmax1 = std::min(lmax_max, lmax_default);
+  auto lmax2 = std::min(lmax_max, lmax_default);
 
-  for (unsigned int l0 = 0; l0 <= lmax; ++l0) {
-    for (unsigned int l1 = 0; l1 <= lmax; ++l1) {
-      for (unsigned int l2 = 0; l2 <= lmax; ++l2) {
+  // reference code only supports Cartesian gaussians
+#if ERI3_PURE_SH
+  lmax0 = 1;
+#endif
+
+  for (unsigned int l0 = 0; l0 <= lmax0; ++l0) {
+    for (unsigned int l1 = 0; l1 <= lmax1; ++l1) {
+      for (unsigned int l2 = 0; l2 <= lmax2; ++l2) {
 
         // record start wall time
         struct timeval tod;
@@ -501,12 +469,8 @@ void test_3eri(unsigned int deriv_order,
         am[2] = l2;
         RandomShellSet<3u> rsqset(am, veclen, contrdepth);
 
-        DerivIndexIterator<3> diter(deriv_order);
-        const unsigned int nderiv = diter.range_rank();
-
-        CGShell sh0(am[0]);
-        CGShell sh1(am[1]);
-        CGShell sh2(am[2]);
+        CartesianDerivIterator<3> diter(deriv_order);
+        const unsigned int nderiv = diter.range_size();
 
         const double* A = &(rsqset.R[0][0]);
         const double* B = &(rsqset.R[1][0]);
@@ -515,15 +479,10 @@ void test_3eri(unsigned int deriv_order,
         LIBINT2_REF_REALTYPE Bref[3]; for(int i=0; i<3; ++i) Bref[i] = B[i];
         LIBINT2_REF_REALTYPE Cref[3]; for(int i=0; i<3; ++i) Cref[i] = C[i];
 
-        typedef SubIteratorBase<CGShell> iter;
-        SafePtr<iter> sh0_iter(new iter(sh0));
-        SafePtr<iter> sh1_iter(new iter(sh1));
-        SafePtr<iter> sh2_iter(new iter(sh2));
-
         const int nrepeats = do_timing_only ? 1000*(lmax-l0+1)*(lmax-l1+1)*(lmax-l2+1) : 1;
 
         cout << (do_timing_only ? "Timing " : "Testing ")
-             << "(" << sh0.label() << "|" << sh1.label() << sh2.label()
+             << "(" << am_to_symbol(am[0]) << "|" << am_to_symbol(am[1]) << am_to_symbol(am[2])
              << ") ";
         if (deriv_order > 0) {
           cout << " deriv order = " << deriv_order;
@@ -572,23 +531,15 @@ void test_3eri(unsigned int deriv_order,
 
         bool success = true;
         int ijk = 0;
-        for (sh0_iter->init(); int(*sh0_iter); ++(*sh0_iter)) {
-          for (sh1_iter->init(); int(*sh1_iter); ++(*sh1_iter)) {
-            for (sh2_iter->init(); int(*sh2_iter); ++(*sh2_iter), ijk++) {
 
-              CGF bf0 = sh0_iter->elem();
-              CGF bf1 = sh1_iter->elem();
-              CGF bf2 = sh2_iter->elem();
+        int l0, m0, n0;
+        FOR_CART(l0, m0, n0, am[0])
 
-              uint l0 = bf0.qn(0);
-              uint m0 = bf0.qn(1);
-              uint n0 = bf0.qn(2);
-              uint l1 = bf1.qn(0);
-              uint m1 = bf1.qn(1);
-              uint n1 = bf1.qn(2);
-              uint l2 = bf2.qn(0);
-              uint m2 = bf2.qn(1);
-              uint n2 = bf2.qn(2);
+          int l1, m1, n1;
+          FOR_CART(l1, m1, n1, am[1])
+
+            int l2, m2, n2;
+            FOR_CART(l2, m2, n2, am[2])
 
               for (uint v = 0; v < veclen; v++) {
 
@@ -608,15 +559,16 @@ void test_3eri(unsigned int deriv_order,
                       const LIBINT2_REF_REALTYPE c2 = rsqset.coef[2][v][p2];
                       const LIBINT2_REF_REALTYPE c012 = c0 * c1 * c2;
 
-                      DerivIndexIterator<3> diter(deriv_order);
+                      CartesianDerivIterator<3> diter(deriv_order);
                       bool last_deriv = false;
                       unsigned int di = 0;
                       do {
                         // convert 3-center deriv indices into 4-center deriv indices
                         unsigned int deriv_level[12];
-                        std::copy(diter.values(), diter.values()+3, deriv_level);
+                        auto* deriv3_level = &(*diter)[0];
+                        std::copy(deriv3_level, deriv3_level+3, deriv_level);
                         std::fill(deriv_level+3, deriv_level+6, 0u);
-                        std::copy(diter.values()+3, diter.values()+9, deriv_level+6);
+                        std::copy(deriv3_level+3, deriv3_level+9, deriv_level+6);
 
                         ref_eri[di++] += c012
                             * eri(deriv_level, l0, m0, n0, alpha0, Aref, 0u, 0u,
@@ -631,65 +583,15 @@ void test_3eri(unsigned int deriv_order,
                   }
                 }
 
+                //
+                // extract Libint integrals
+                //
                 std::vector<LIBINT2_REALTYPE> new_eri;
-
-                if (deriv_order == 0)
-                  new_eri.push_back( scale_target * inteval[0].targets[0][ijk * veclen + v] );
-
-                // derivatives w.r.t. center 0 are skipped and must be reconstructed using the translational invariance
-                if (deriv_order == 1) {
-                  for (unsigned int di = 0; di < nderiv; ++di) {
-                    if (di>=3)
-                      new_eri.push_back( scale_target * inteval[0].targets[di-3][ijk * veclen + v] );
-                    else // (di<3)
-                      new_eri.push_back( -scale_target * (inteval[0].targets[di][ijk * veclen + v] +
-                                                          inteval[0].targets[di+3][ijk * veclen + v])
-                                                          );
-                  }
-                }
-
-                // derivatives w.r.t. center 0 are skipped and must be reconstructed using the translational invariance
-                if (deriv_order == 2) {
-                  const unsigned int NumCenters = 3;
-                  LIBINT2_REALTYPE libint_eri[3*(NumCenters-1)][3*(NumCenters-1)];
-                  for(unsigned int di=0,dij=0; di<3*(NumCenters-1); di++) {
-                    for(unsigned int dj=di; dj<3*(NumCenters-1); dj++, ++dij){
-                      const LIBINT2_REALTYPE value = scale_target * inteval[0].targets[dij][ijk * veclen + v];
-                      libint_eri[di][dj] = value;
-                      libint_eri[dj][di] = value;
-                    }
-                  }
-
-                  for(unsigned int di=0; di<3*NumCenters; di++) {
-                    for(unsigned int dj=di; dj<3*NumCenters; dj++){
-
-                      const int ci = di/3;
-                      const int cj = dj/3;
-                      const int xyzi = di%3;
-                      const int xyzj = dj%3;
-
-                      LIBINT2_REALTYPE value = 0.0;
-
-                      // d2/dAidAj = d2/dBidBj + d2/dBidCj + d2/dCidBj + d2/dCidCj
-                      if (ci == 0 && cj == 0) {
-                        value = libint_eri[xyzi][xyzj] + libint_eri[xyzi][3+xyzj] + libint_eri[xyzi+3][xyzj] + libint_eri[3+xyzi][3+xyzj];
-                      }
-                      // d2/dAidXj = - d2/dBidXj - -d2/dCidXj
-                      else if (ci == 0) {
-                        value = -libint_eri[xyzi][dj-3] - libint_eri[3+xyzi][dj-3];
-                      }
-                      // rest
-                      else {
-                        value = libint_eri[di-3][dj-3];
-                      }
-
-                      new_eri.push_back(value);
-                    }
-                  }
-                }
+                for(auto d=0; d!=nderiv; ++d)
+                  new_eri.push_back( scale_target * inteval[0].targets[d][ijk * veclen + v] );
 
                 for (unsigned int di = 0; di < nderiv; ++di) {
-                  const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);
+                  const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
                   const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
                   if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
                     std::cout << "Elem " << ijk << " di= " << di << " v="
@@ -701,9 +603,10 @@ void test_3eri(unsigned int deriv_order,
                 }
 
               } // end of vector loop
-            }
-          }
-        }
+              ++ijk;
+            END_FOR_CART
+          END_FOR_CART
+        END_FOR_CART
 
         cout << (success ? "ok" : "failed") << endl;
 
@@ -732,6 +635,7 @@ void test_3eri(unsigned int deriv_order,
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_cleanup_3eri2)(&inteval[0]);
 #endif
+  free(inteval);
 
   // record end wall time, compute total wall time spent here
   gettimeofday(&tod,0);
@@ -757,14 +661,14 @@ void test_2eri(unsigned int deriv_order,
   const uint contrdepth2 = contrdepth * contrdepth;
 
   unsigned int lmax;
-  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_2ERI;
+  if (deriv_order == 0) lmax = LIBINT2_MAX_AM_2eri;
 #if INCLUDE_ERI2 >= 1
-  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_2ERI1;
+  if (deriv_order == 1) lmax = LIBINT2_MAX_AM_2eri1;
 #endif
 #if INCLUDE_ERI2 >= 2
-  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_2ERI2;
+  if (deriv_order == 2) lmax = LIBINT2_MAX_AM_2eri2;
 #endif
-  std::vector<Libint_t> inteval(contrdepth2);
+  Libint_t* inteval = libint2::malloc<Libint_t>(contrdepth2);
   if (deriv_order == 0)
     LIBINT2_PREFIXED_NAME(libint2_init_2eri)(&inteval[0], lmax, 0);
 #if INCLUDE_ERI2 >= 1
@@ -775,8 +679,16 @@ void test_2eri(unsigned int deriv_order,
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_init_2eri2)(&inteval[0], lmax, 0);
 #endif
+#ifdef LIBINT2_FLOP_COUNT
+  LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(&inteval[0], contrdepth2);
+#endif
 
   lmax = std::min(lmax_max, lmax);
+
+  // reference code only supports Cartesian gaussians
+#if ERI2_PURE_SH
+  lmax = 1;
+#endif
 
   for (unsigned int l0 = 0; l0 <= lmax; ++l0) {
     for (unsigned int l1 = 0; l1 <= lmax; ++l1) {
@@ -798,24 +710,17 @@ void test_2eri(unsigned int deriv_order,
         am[1] = l1;
         RandomShellSet<2u> rsqset(am, veclen, contrdepth);
 
-        DerivIndexIterator<2> diter(deriv_order);
-        const unsigned int nderiv = diter.range_rank();
-
-        CGShell sh0(am[0]);
-        CGShell sh1(am[1]);
+        CartesianDerivIterator<2> diter(deriv_order);
+        const unsigned int nderiv = diter.range_size();
 
         const double* A = &(rsqset.R[0][0]);
         const double* B = &(rsqset.R[1][0]);
         LIBINT2_REF_REALTYPE Aref[3]; for(int i=0; i<3; ++i) Aref[i] = A[i];
         LIBINT2_REF_REALTYPE Bref[3]; for(int i=0; i<3; ++i) Bref[i] = B[i];
 
-        typedef SubIteratorBase<CGShell> iter;
-        SafePtr<iter> sh0_iter(new iter(sh0));
-        SafePtr<iter> sh1_iter(new iter(sh1));
-
         prep_libint2(inteval, rsqset, 0, deriv_order);
 
-        cout << "Testing (" << sh0.label() << "|" << sh1.label() << ") ";
+        cout << "Testing (" << am_to_symbol(am[0]) << "|" << am_to_symbol(am[1]) << ") ";
         if (deriv_order > 0) {
           cout << " deriv order = " << deriv_order;
         }
@@ -853,18 +758,12 @@ void test_2eri(unsigned int deriv_order,
 
         bool success = true;
         int ij = 0;
-        for (sh0_iter->init(); int(*sh0_iter); ++(*sh0_iter)) {
-          for (sh1_iter->init(); int(*sh1_iter); ++(*sh1_iter), ij++) {
 
-              CGF bf0 = sh0_iter->elem();
-              CGF bf1 = sh1_iter->elem();
+        int l0, m0, n0;
+        FOR_CART(l0, m0, n0, am[0])
 
-              uint l0 = bf0.qn(0);
-              uint m0 = bf0.qn(1);
-              uint n0 = bf0.qn(2);
-              uint l1 = bf1.qn(0);
-              uint m1 = bf1.qn(1);
-              uint n1 = bf1.qn(2);
+          int l1, m1, n1;
+          FOR_CART(l1, m1, n1, am[1])
 
               for (uint v = 0; v < veclen; v++) {
 
@@ -881,15 +780,16 @@ void test_2eri(unsigned int deriv_order,
                       const LIBINT2_REF_REALTYPE c1 = rsqset.coef[1][v][p1];
                       const LIBINT2_REF_REALTYPE c01 = c0 * c1;
 
-                      DerivIndexIterator<2> diter(deriv_order);
+                      CartesianDerivIterator<2> diter(deriv_order);
                       bool last_deriv = false;
                       unsigned int di = 0;
                       do {
                         // convert 2-center deriv indices into 4-center deriv indices
                         unsigned int deriv_level[12];
-                        std::copy(diter.values(), diter.values()+3, deriv_level);
+                        auto* deriv2_level = &(*diter)[0];
+                        std::copy(deriv2_level, deriv2_level+3, deriv_level);
                         std::fill(deriv_level+3, deriv_level+6, 0u);
-                        std::copy(diter.values()+3, diter.values()+6, deriv_level+6);
+                        std::copy(deriv2_level+3, deriv2_level+6, deriv_level+6);
                         std::fill(deriv_level+9, deriv_level+12, 0u);
 
                         ref_eri[di++] += c01
@@ -904,60 +804,12 @@ void test_2eri(unsigned int deriv_order,
                   }
                 }
 
+                //
+                // extract Libint integrals
+                //
                 std::vector<LIBINT2_REALTYPE> new_eri;
-
-                if (deriv_order == 0)
-                  new_eri.push_back(scale_target * inteval[0].targets[0][ij * veclen + v]);
-
-                // derivatives w.r.t. center 0 are skipped and must be reconstructed using the translational invariance
-                if (deriv_order == 1) {
-                  for (unsigned int di = 0; di < nderiv; ++di) {
-                    if (di>=3)
-                      new_eri.push_back(scale_target * inteval[0].targets[di-3][ij * veclen + v]);
-                    else // (di<3)
-                      new_eri.push_back(-scale_target * inteval[0].targets[di][ij * veclen + v]);
-                  }
-                }
-
-                // derivatives w.r.t. center 0 are skipped and must be reconstructed using the translational invariance
-                if (deriv_order == 2) {
-
-                  LIBINT2_REALTYPE libint_eri[3][3];
-                  for(int di=0,dij=0; di<3; di++) {
-                    for(int dj=di; dj<3; dj++, ++dij){
-                      const LIBINT2_REALTYPE value = scale_target * inteval[0].targets[dij][ij * veclen + v];
-                      libint_eri[di][dj] = value;
-                      libint_eri[dj][di] = value;
-                    }
-                  }
-
-                  for(int di=0; di<6; di++) {
-                    for(int dj=di; dj<6; dj++){
-
-                      const int ci = di/3;
-                      const int cj = dj/3;
-                      const int xyzi = di%3;
-                      const int xyzj = dj%3;
-
-                      LIBINT2_REALTYPE value = 0.0;
-
-                      // d2/dAidAj
-                      if (ci == 0 && cj == 0) {
-                        value = libint_eri[xyzi][xyzj];
-                      }
-                      // d2/dAidBj
-                      else if (ci == 0) {
-                        value = -libint_eri[xyzi][xyzj];
-                      }
-                      // rest
-                      else {
-                        value = libint_eri[xyzi][xyzj];
-                      }
-
-                      new_eri.push_back(value);
-                    }
-                  }
-                }
+                for(auto d=0; d!=nderiv; ++d)
+                  new_eri.push_back( scale_target * inteval[0].targets[d][ij * veclen + v] );
 
                 for (unsigned int di = 0; di < nderiv; ++di) {
                   const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);
@@ -972,8 +824,9 @@ void test_2eri(unsigned int deriv_order,
                 }
 
               } // end of vector loop
-          }
-        }
+              ++ij;
+          END_FOR_CART
+        END_FOR_CART
 
         cout << (success ? "ok" : "failed") << endl;
 
@@ -987,6 +840,7 @@ void test_2eri(unsigned int deriv_order,
 #if INCLUDE_ERI2 >= 2
   if (deriv_order == 2) LIBINT2_PREFIXED_NAME(libint2_cleanup_2eri2)(&inteval[0]);
 #endif
+  free(inteval);
 
 }
 #endif // INCLUDE_ERI2

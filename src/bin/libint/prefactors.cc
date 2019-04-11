@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <cstdio>
 #include <smart_ptr.h>
@@ -166,6 +185,19 @@ Prefactors::Prefactors() :
     rho_o_alpha12[p] = roz_ptr;
   }
 
+
+  //
+  // precomputed 1-d ints
+  //
+  {
+    for(unsigned int xyz=0; xyz!=3; ++xyz) {
+      std::ostringstream oss;
+      oss << "_0_Overlap_0_" << to_string(CartesianAxis(xyz));
+      rdptr p(new rdouble(oss.str()));
+      Overlap00_1d[xyz] = p;
+    }
+  }
+
 #if CTIMEENTITIES_SINGLETONS
   for(unsigned int i=0; i<NMAX; i++) {
     N_i[i] = prefactor::Scalar((double)i);
@@ -182,12 +214,6 @@ SafePtr<Prefactors::cdouble>
 Prefactors::Cdouble(double a)
 {
   return prefactor::Scalar(a);
-#if 0
-  SafePtr<cdouble> tmp(new cdouble(a));
-  typedef CTimeSingletons<double>::ManagerType ManagerType;
-  const ManagerType::value_type& result = CTimeSingletons<double>::Manager()->find(tmp);
-  return result.second;
-#endif
 }
 #endif
 

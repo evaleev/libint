@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_dg_h_
 #define _libint2_src_bin_libint_dg_h_
@@ -10,7 +29,7 @@
 #include <deque>
 #include <algorithm>
 #include <stdexcept>
-#include <assert.h>
+#include <cassert>
 
 #include <global_macros.h>
 #include <exception.h>
@@ -34,8 +53,10 @@ namespace libint2 {
   class InternalGraphRegistry;
 
   /** DirectedGraph is an implementation of a directed graph
-      composed of vertices represented by DGVertex objects. The objects
-      are allocated on free store and the graph is implemented as
+      composed of vertices represented by DGVertex objects. Most important operations
+      will assume that this is a DAG, i.e. there are no directed cycles.
+
+      \note The objects are allocated on free store and the graph is implemented as
       an object of type 'vertices'.
    */
 
@@ -83,13 +104,13 @@ namespace libint2 {
 
   public:
 
-    /** This constructor doesn't do much. Actual initialization of the graph
+    /** Creates an empty DAG. Actual initialization of the graph
         must be done using append_target */
     DirectedGraph();
     ~DirectedGraph();
 
     /// Returns the number of vertices
-    const unsigned int num_vertices() const { return stack_.size(); }
+    unsigned int num_vertices() const { return stack_.size(); }
 #if 0
     /// Returns all vertices
     const vertices& all_vertices() const { return stack_; }
@@ -293,6 +314,11 @@ namespace libint2 {
     SafePtr<GraphRegistry>& registry() { return registry_; }
     const SafePtr<GraphRegistry>& registry() const { return registry_; }
 
+    /// return the graph label
+    const std::string& label() const { return label_; }
+    /// sets label to \c new_label
+    void set_label(const std::string& new_label) { label_ = new_label; }
+
     /// return true if there are vertices with 0 children but not pre-computed
     bool missing_prerequisites() const;
 
@@ -304,6 +330,9 @@ namespace libint2 {
     targets targets_;
     /// addresses of blocks which accumulate targets
     addresses target_accums_;
+
+    // graph label, used for annotating internal work, e.g. graphviz plots
+    std::string label_;
 
     typedef std::map<std::string,bool> FuncNameContainer;
     /** Maintains the list of names of functions calls to which have been generated so far.

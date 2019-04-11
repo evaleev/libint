@@ -34,10 +34,13 @@ $(TOPDIR)/lib/$(NAMEV).la: $(LIBOBJ)
 	$(LTLINK) $(CXX) -o $@ -objectlist libobjlist $(LTLINKLIBOPTS)
 	-rm -f libobjlist
 
-check:
+fortran: all
+	(cd fortran && make) || exit 1
+
+check: all
 	(cd tests && make check) || exit 1
 
-.PHONY: doc
+.PHONY: doc fortran
 doc:
 	(cd doc && make) || exit 1
 

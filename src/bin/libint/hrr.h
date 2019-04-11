@@ -1,3 +1,23 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #ifndef _libint2_src_bin_libint_hrr_h_
 #define _libint2_src_bin_libint_hrr_h_
 
@@ -6,7 +26,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <assert.h>
+#include <cassert>
 #include <rr.h>
 #include <integral.h>
 #include <algebra.h>
@@ -56,6 +76,16 @@ namespace libint2 {
       static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
       virtual ~HRR();
 
+      /// overrides RecurrenceRelation::braket_direction()
+      BraketDirection braket_direction() const {
+        if (loc_b == InBra && loc_a == InKet)
+          return BraketDirection::BraToKet;
+        else if (loc_b == InKet && loc_a == InBra)
+          return BraketDirection::KetToBra;
+        else
+          return BraketDirection::None;
+      }
+
       /** is this recurrence relation parameterized by a direction.
           the default is false if BasisFunctionSet is CGShell,
           true otherwise. */
@@ -66,7 +96,7 @@ namespace libint2 {
       }
 
       /// Implementation of RecurrenceRelation::num_children()
-      const unsigned int num_children() const {return nchildren_;};
+      unsigned int num_children() const {return nchildren_;};
       /// returns pointer to the target
       SafePtr<TargetType> target() const {return target_;};
       /// child(i) returns pointer to i-th child
@@ -155,7 +185,7 @@ namespace libint2 {
       IKetType* ket = new IKetType(Tint->ket());
 
       //
-      // InBra and InKet cases have to treated explicitly since BraType and KetType don't have to match
+      // InBra and InKet cases have to be treated explicitly since BraType and KetType don't have to match
       //
       if (loc_a == InKet && loc_b == InBra) {
         F a(ket->member(part,pos_a));
@@ -610,8 +640,12 @@ namespace libint2 {
     {
         unsigned int np = IntType::OperType::Properties::np;
         bool low = true;
-        if (part == np -1)
+        if (part == np - 1)
           low = false;
+        // corner case: # of particles == 1
+        if (np == 1) { // to match the interface of np != 1 need to add insert dummy argument
+          low = true;
+        }
         return low;
     }
 

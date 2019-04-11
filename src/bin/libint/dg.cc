@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <cstdio>
 #include <functional>
@@ -38,7 +57,7 @@ namespace {
 
 
 DirectedGraph::DirectedGraph() :
-  stack_(), targets_(), func_names_(),
+  stack_(), targets_(), target_accums_(), label_("graph"), func_names_(),
   registry_(SafePtr<GraphRegistry>(new GraphRegistry)),
   iregistry_(SafePtr<InternalGraphRegistry>(new InternalGraphRegistry)),
   first_to_compute_()
@@ -216,14 +235,6 @@ namespace{
     }
   };
 
-#if !HAVE_CXX11_LAMBDA
-  struct __compare_by_nparents {
-      bool operator()(DGVertex::ArcSetType::value_type a,
-                      DGVertex::ArcSetType::value_type b) {
-        return a->dest()->num_entry_arcs() < b->dest()->num_entry_arcs();
-      }
-  };
-#endif
   std::vector<DGVertex::ArcSetType::value_type> sort_children_by_nparents(DGVertex::ArcSetType::const_iterator begin,
                                  DGVertex::ArcSetType::const_iterator end) {
     // std::sort works only for containers that support random access
@@ -231,17 +242,12 @@ namespace{
 //    for(DGVertex::ArcSetType::const_iterator i=begin; i!=end; ++i)
 //      sorted_children.push_back(*i);
     std::vector<DGVertex::ArcSetType::value_type> sorted_children(begin, end);
-#if HAVE_CXX11_LAMBDA
     std::sort(sorted_children.begin(), sorted_children.end(),
               [](DGVertex::ArcSetType::value_type a,
                  DGVertex::ArcSetType::value_type b) {
           return a->dest()->num_entry_arcs() < b->dest()->num_entry_arcs();
         }
       );
-#else
-    std::sort(sorted_children.begin(), sorted_children.end(),
-              __compare_by_nparents());
-#endif
     return sorted_children;
   }
 }
@@ -414,13 +420,13 @@ DirectedGraph::print_to_dot(bool symbols, std::ostream& os) const
       SafePtr<DGVertex> next = current_vertex->postcalc();
       if (current_vertex && next) {
         os << "  " << current_vertex->graph_label() << " -> "
-           << next->graph_label() << " [ style = dotted ]";
+           << next->graph_label() << " [ style = dotted constraint = false ]";
       }
       current_vertex = next;
     } while (current_vertex != 0);
   }
 
-  os << "}" << endl;
+  os << endl << "}" << endl;
 }
 
 void
@@ -517,16 +523,7 @@ void
 DirectedGraph::optimize_rr_out(const SafePtr<CodeContext>& context)
 {
   replace_rr_with_expr();
-#if DEBUG
-    {
-      std::basic_ofstream<char> dotfile("graph.expr0.dot");
-      this->print_to_dot(false,dotfile);
-    }
-#endif
-  // TODO remove_trivial_arithmetics() seems to be broken when working with [Ti,G12], fix!
-#if 1
   remove_trivial_arithmetics();
-#endif
   handle_trivial_nodes(context);
   remove_disconnected_vertices();
   find_subtrees();
@@ -700,6 +697,7 @@ DirectedGraph::remove_trivial_arithmetics()
 {
   using libint2::prefactor::Scalar;
   const SafePtr< CTimeEntity<double> > const_one_point_zero = Scalar(1.0);
+  const SafePtr< CTimeEntity<double> > const_zero_point_zero = Scalar(0.0);
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
@@ -711,10 +709,15 @@ DirectedGraph::remove_trivial_arithmetics()
       typedef DGVertex::ArcSetType::const_iterator aciter;
       aciter a = oper_cast->first_exit_arc();
       SafePtr<DGVertex> left = (*a)->dest();  ++a;
-      SafePtr<DGVertex> right = (*a)->dest();
+      SafePtr<DGVertex> right = oper_cast->num_exit_arcs()>1 ? (*a)->dest() : left; // num_exit_arcs==1 is a corner case, e.g. 1*1
 
-      // 1.0 * x = x
-      if (left->equiv(const_one_point_zero) && left->num_entry_arcs() == 1) {
+      using libint2::algebra::OperatorTypes;
+      
+      // 1.0 * x = x || 0.0 + x = x
+      if (left->num_entry_arcs() == 1 &&
+          ((oper_cast->type() == OperatorTypes::Times && left->equiv(const_one_point_zero)) ||
+           (oper_cast->type() == OperatorTypes::Plus && left->equiv(const_zero_point_zero))    )
+         ) {
 #if DEBUG
         const bool success = remove_vertex_at((vptr),right);
         if (success)
@@ -723,9 +726,12 @@ DirectedGraph::remove_trivial_arithmetics()
         remove_vertex_at((vptr),right);
 #endif
       }
-
-      // x * 1.0 = x
-      if (right->equiv(const_one_point_zero) && right->num_entry_arcs() == 1) {
+      // x * 1.0 = x || x + 0.0 = x
+      else
+      if (right->num_entry_arcs() == 1 &&
+          ((oper_cast->type() == OperatorTypes::Times && right->equiv(const_one_point_zero)) ||
+           (oper_cast->type() == OperatorTypes::Plus && right->equiv(const_zero_point_zero))    )
+         ) {
 #if DEBUG
         const bool success = remove_vertex_at((vptr),left);
         if (success)
@@ -794,7 +800,7 @@ namespace {
 // Handles "trivial" nodes. A node is trivial is it satisfies the following conditions:
 // 0) not a target
 // 1) has only one child
-// 2) the exit arc is of a trivial type (DGArvDirect or IntegralSet_to_Integral applied to node of size 1)
+// 2) the exit arc is of a trivial type (DGArcDirect or IntegralSet_to_Integral applied to node of size 1)
 //
 // By "handling" I mean either removing the node from the graph or making a node refer to another node so that
 // no code is generated for it.
@@ -953,24 +959,23 @@ DirectedGraph::remove_disconnected_vertices()
 {
   typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
-  for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
+  for(iter v=stack_.begin(); v!=stack_.end();) {
     const ver_ptr& vptr = vertex_ptr(*v);
+    iter vnext = v; ++vnext; // note the next value of iterator before trying to erase
     if ((vptr)->num_entry_arcs() == 0 && (vptr)->num_exit_arcs() == 0 && (vptr)->is_a_target() == false) {
 #if DEBUG
       cout << "Trying to erase disconnected vertex " << (vptr)->description() << " num_vertices = " << num_vertices() << endl;
 #endif
-      iter vprev = v; --vprev;
       try { del_vertex(v); }
       catch (CannotPerformOperation& v) {
 #if DEBUG
         cout << "But couldn't!!!" << endl;
 #endif
-        ++vprev;
         throw v;
       }
-      // current vertex was erased, so need to decrease the iterator as well
-      v = vprev;
     }
+    // update the iterator
+    v = vnext;
   }
 }
 
@@ -1047,6 +1052,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   const std::string tlabel = taskmgr.current().label();
 
+  decl << context->copyright();
   decl << context->std_header();
   std::string comment("This code computes "); comment += label; comment += "\n";
   if (context->comments_on())
@@ -1068,6 +1074,7 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
   // Generate function's definition
   //
 
+  def << context->copyright();
   // include standard headers
   def << context->std_header();
   // include declarations for all function calls:
@@ -1101,6 +1108,16 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
 
   // then ...
   if (missing_prereqs) { // need to compute prerequisites?
+
+    // if profiling is on, start the next timer, after stopping the current timer (if possible)
+    if (registry()->current_timer() >= 0) {
+      const int current_timer = registry()->current_timer();
+      def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
+      if (current_timer > 0)
+        def << "inteval->timers->stop(" << current_timer << ");" << std::endl;
+      def << "inteval->timers->start(" << current_timer+1 << ");" << std::endl;
+      def << context->macro_endif();
+    }
 
     //
     // need to zero out space for all missing prerequisites -- prereq evaluator will accumulate into that space
@@ -1146,10 +1163,37 @@ DirectedGraph::generate_code(const SafePtr<CodeContext>& context, const SafePtr<
         << registry()->stack_name()
         << ")" << context->end_of_stat() << endl;
     def << contr_loop->close() << endl;
+
+    // if profiling is on, start the next timer, after stopping the current timer (if possible)
+    if (registry()->current_timer() >= 0) {
+      const int current_timer = registry()->current_timer();
+      def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
+      def << "inteval->timers->stop(" << current_timer+1 << ");" << std::endl;
+      if (current_timer > 0)
+        def << "inteval->timers->start(" << current_timer << ");" << std::endl;
+      def << context->macro_endif();
+    }
+
+  }
+
+  // if profiling=on and the current timer is outermost, start it
+  // if this is not outermost timer, it has been started outside of this function
+  if (registry()->current_timer() == 0) {
+    def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
+    def << "inteval->timers->start(0);" << std::endl;
+    def << context->macro_endif();
   }
 
   // now print out the code for this graph
   print_def(context,def,dims,args);
+
+  // if profiling=on and the current timer is outermost, stop it
+  // if this is not outermost timer, it is managed outside of this function
+  if (registry()->current_timer() == 0) {
+    def << context->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
+    def << "inteval->timers->stop(0);" << std::endl;
+    def << context->macro_endif();
+  }
 
   def << context->close_block() << endl;
   def << context->code_postfix();
@@ -1249,21 +1293,11 @@ unsigned int min_size_to_alloc)
 
     // need extra buffers for targets if some are not unrolled ( and not decontracted)
     //const bool need_copies_of_targets = nonunrolled_targets(targets_);
-#if HAVE_CXX11_LAMBDA
     const bool need_copies_of_targets = std::find_if(targets_.begin(),
                                                      targets_.end(),
                                                      [](SafePtr<DGVertex> i){
       return DecontractedIntegralSet()(i) == false && UnrolledIntegralSet()(i) == false;
     }) != targets_.end();
-#else
-    bool need_copies_of_targets = false;
-    for(auto t=targets_.begin(); t!=targets_.end(); ++t) {
-      if (DecontractedIntegralSet()(*t) == false && UnrolledIntegralSet()(*t) == false) {
-        need_copies_of_targets = true;
-        break;
-      }
-    }
-#endif
 
     iregistry()->accumulate_targets_directly(!need_copies_of_targets);
 
@@ -1993,7 +2027,7 @@ DirectedGraph::print_def(const SafePtr<CodeContext>& context, std::ostream& os,
       // print out a recurrence relation
       if (current_vertex->num_exit_arcs() != 0) {
         // printing a recurrence relation
-        std::cout << "DirectedGraph::print_def(): a RR making " << current_vertex->description() << std::endl;
+        //std::cout << "DirectedGraph::print_def(): a RR making " << current_vertex->description() << std::endl;
         typedef DGArcRR arc_type;
         SafePtr<arc_type>
             arc_ptr =
@@ -2385,7 +2419,7 @@ namespace libint2 {
         std::cout << "PrerequisitesExtractor: " << v->description() << " is a member of a shell set, will add that instead"<< std::endl;
 #endif
         if ( vertices.end() == find(vertices.begin(), vertices.end(), parent_shellset) ) {
-          vertices.push_front(parent_shellset);
+          vertices.push_back(parent_shellset);
 #if DEBUG
           std::cout << "PrerequisitesExtractor: extracted " << parent_shellset->description() << std::endl;
 #endif
@@ -2397,7 +2431,7 @@ namespace libint2 {
         }
       }
       else {
-        vertices.push_front(v);
+        vertices.push_back(v);
 #if DEBUG
         std::cout << "PrerequisitesExtractor: extracted " << v->description() << std::endl;
 #endif
@@ -2405,7 +2439,7 @@ namespace libint2 {
 
 #else
 
-      vertices.push_front(v);
+      vertices.push_back(v);
 #if DEBUG
       std::cout << "PrerequisitesExtractor: extracted " << v->description() << std::endl;
 #endif

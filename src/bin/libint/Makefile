@@ -14,7 +14,7 @@ endif
 NAME = libint
 VERSION = 2
 
-CXXFLAGS += -I. -I$(SRCDIR)
+CPPFLAGS += -I. -I$(SRCDIR)
 
 RANLIB = ranlib
 OBJSUF = o
@@ -26,13 +26,12 @@ LIBCXXSRC = default_params.cc rr.cc dg.cc dgvertex.cc dgarc.cc gauss.cc \
 oper.cc iter.cc policy.cc strategy.cc policy_spec.cc flop.cc \
 prefactors.cc context.cc memory.cc tactic.cc codeblock.cc dims.cc code.cc \
 iface.cc class_registry.cc algebra.cc graph_registry.cc drtree.cc task.cc \
-extract.cc util.cc purgeable.cc buildtest.cc comp_deriv_gauss.cc
+extract.cc util.cc purgeable.cc buildtest.cc comp_deriv_gauss.cc \
+comp_xyz.cc multipole.cc
 LIBCXXOBJ = $(LIBCXXSRC:%.cc=%.$(OBJSUF))
 LIBCXXDEP = $(LIBCXXSRC:%.cc=%.$(DEPSUF))
 LIBOBJ = $(LIBCXXOBJ)
 LIBTARGET = libINT.a
-
-LIBCXXINC = cgshellinfo.h cgshell_ordering.h
 
 BUILDCXXSRC = build_libint.cc
 BUILDCXXOBJ = $(BUILDCXXSRC:%.cc=%.$(OBJSUF))
@@ -44,8 +43,10 @@ TESTCXXDEP = $(TESTCXXSRC:%.cc=%.$(DEPSUF))
 
 default:: build_libint
 
+all:: default
+
 build_libint: $(BUILDCXXOBJ) $(LIBTARGET)
-	$(CXX) -o $@ $(LDFLAGS) $^ $(SYSLIBS) 
+	$(CXX) -o $@ $(CXXFLAGS) $(LDFLAGS) $^ $(SYSLIBS)
 
 depend:: $(TESTCXXDEP) $(BUILDCXXDEP) $(LIBCXXDEP)
 
@@ -53,7 +54,7 @@ run_test:: test
 	./test
 
 test: $(TESTCXXOBJ) $(LIBTARGET)
-	$(CXX) -o $@ $(LDFLAGS) $^ $(SYSLIBS) 
+	$(CXX) -o $@ $(CXXFLAGS) $(LDFLAGS) $^ $(SYSLIBS)
 
 $(LIBTARGET): $(LIBOBJ)
 	/bin/rm -f $@
@@ -72,13 +73,11 @@ $(LIBTARGET): $(LIBOBJ)
 graph.dot: test
 	./$^
 
-install:: install_inc
+install::
 
-install_inc:: $(LIBCXXINC)
-	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $^ $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+install_inc::
 
-clean:: oclean targetclean dependclean
+clean:: oclean targetclean dependclean miscclean
 
 oclean::
 	-rm -f *.$(OBJSUF)
@@ -89,11 +88,14 @@ targetclean::
 dependclean::
 	-rm -f *.$(DEPSUF)
 
+miscclean::
+	-rm -f *.dot
+
 realclean:: clean
 
 distclean:: realclean
-	-rm -f cgshell_ordering.h
 
+ifneq ($(DODEPEND),no)
 ifneq ($(CXXDEPENDSUF),none)
 %.d: %.cc
 	$(CXXDEPEND) $(CXXDEPENDFLAGS) -c $(CPPFLAGS) $(CXXFLAGS) $< > /dev/null
@@ -107,4 +109,4 @@ endif
 -include $(LIBCXXDEP)
 -include $(BUILDCXXDEP)
 -include $(TESTCXXDEP)
-        
+endif

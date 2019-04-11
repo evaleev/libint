@@ -1,9 +1,28 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <iostream>
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <assert.h>
+#include <cassert>
 #include <rr.h>
 #include <integral.h>
 #include <iter.h>
@@ -39,8 +58,20 @@ namespace libint2 {
     IntegralSet_to_Integrals(const SafePtr<I>&);
     virtual ~IntegralSet_to_Integrals() {}
 
+    /// Return an instance if applicable, or a null pointer otherwise
+    static SafePtr<IntegralSet_to_Integrals<I>> Instance(const SafePtr<TargetType>& Tint, unsigned int dir) {
+      assert(dir == 0);
+      // attempt to construct
+      SafePtr<IntegralSet_to_Integrals<I>> this_ptr(new IntegralSet_to_Integrals<I>(Tint));
+      // if succeeded (nchildren > 0) do post-construction
+      assert(this_ptr->num_children() != 0);
+      return this_ptr;
+    }
+    static bool directional() { return false; }
+
+
     /// Implementation of RecurrenceRelation::num_children()
-    const unsigned int num_children() const { return children_.size(); };
+    unsigned int num_children() const { return children_.size(); };
     /// target() returns pointer to target
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer i-th child
@@ -65,7 +96,8 @@ namespace libint2 {
 
     /// Implementation of RecurrenceRelation::generate_label()
     std::string generate_label() const {
-      throw std::runtime_error("IntegralSet_to_Integrals::label() -- code for this RR is never generated, so this function should never be used");
+      return "IntegralSet_to_Integrals";
+      //throw std::runtime_error("IntegralSet_to_Integrals::label() -- code for this RR is never generated, so this function should never be used");
     }
     /// Reimplementation of RecurrenceRelation::spfunction_call()
     std::string spfunction_call(const SafePtr<CodeContext>& context,

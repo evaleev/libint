@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_rr_h_
 #define _libint2_src_bin_libint_rr_h_
@@ -91,7 +110,7 @@ namespace libint2 {
         however, for some ERI classes (ss|ps) the actual number may be
         smaller.
     */
-    virtual const unsigned int num_children() const =0;
+    virtual unsigned int num_children() const =0;
     /// Returns i-th child
     virtual SafePtr<DGVertex> rr_child(unsigned int i) const =0;
     /// Returns the target
@@ -115,10 +134,18 @@ namespace libint2 {
     */
     virtual bool invariant_type() const;
     /**
-     *
-     * @return 1 if recurrence relation transfers quanta from lower to higher particles, -1 if vice versa, and 0 if neither
+     * @return 1 if recurrence relation transfers quanta from particle \c from to particle \c to  where \c from < \c to , -1 if \c from > \c to , and 0 if neither
      */
     virtual int partindex_direction() const { return 0; }
+    /**
+     * @return BraketDirection::BraToKet if recurrence relation transfers quanta from function in bra to function in ket,
+     *         BraketDirection::KetToBra if the transfer is from ket to bra, and BraketDirection::None if neither.
+     */
+    virtual BraketDirection braket_direction() const { return BraketDirection::None; }
+    /**
+     * @return the total size of the children of this RR
+     */
+    size_t size_of_children() const;
 
     /**
       label() returns a unique, short, descriptive label of this RR
@@ -183,9 +210,9 @@ namespace libint2 {
     }
     private:
 
-    /** used by generate_code to create a (new) computation graph that computes sets of integrals using the RR
+    /** used by generate_code to initialize the computation graph that computes sets of integrals using the RR
     */
-    SafePtr<DirectedGraph> generate_graph_();
+    SafePtr<DirectedGraph> generate_graph_(const SafePtr<DirectedGraph>& dg);
     /** assigns "target" symbol to the target vertex and "src<i>" to the i-th child vertex. Also
         appends these symbols to S. */
     void assign_symbols_(SafePtr<CodeSymbols>& S);

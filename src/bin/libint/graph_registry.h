@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_tforms_h_
 #define _libint2_src_bin_libint_tforms_h_
@@ -27,9 +46,11 @@ namespace libint2 {
     /// Return pointers to targets via Libint_t::targets? Default is true.
     bool return_targets() const { return return_targets_; }
     void return_targets(bool rt) { return_targets_ = rt; }
-    /// Will unroll the integral sets with size <= unroll_threshold. Default is 1 (no unrolling).
+    /// Will unroll the integral sets with size <= unroll_threshold. Default is 0 (no unrolling).
     unsigned int unroll_threshold() const { return unroll_threshold_; }
-    void unroll_threshold(unsigned int ut) { unroll_threshold_ = std::max(ut,1u); }
+    void unroll_threshold(unsigned int ut) {
+      unroll_threshold_ = ut;
+    }
     /// Minimum size when can unroll
     /// Will uncontract the integral sets if true. Default is no uncontracting
     bool uncontract() const { return uncontract_; }
@@ -46,6 +67,9 @@ namespace libint2 {
     /// Condense expressions? The default is false.
     bool condense_expr() const { return condense_expr_; }
     void condense_expr(bool ce) { condense_expr_ = ce; }
+    /// if -1, no profiling, otherwise, indicates the current timer
+    int current_timer() const { return current_timer_; }
+    void current_timer(int ct) { current_timer_ = ct; }
     
     private:
     bool accumulate_targets_;
@@ -56,6 +80,7 @@ namespace libint2 {
     bool do_cse_;
     bool condense_expr_;
     std::string stack_name_;
+    int current_timer_;
   };
   
   /**

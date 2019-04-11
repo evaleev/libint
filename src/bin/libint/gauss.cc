@@ -1,4 +1,24 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
+#include <cassert>
 #include <iostream>
 #include <sstream>
 #include <ctype.h>
@@ -17,7 +37,9 @@ namespace libint2 {
                                              220, 286, 364, 455, 560, 680, 816, 969, 1140, 1330,
                                              1540, 1771, 2024, 2300, 2600, 2925, 3276, 3654, 4060, 4495,
                                              4960, 5456, 5984};
-  LIBINT2_UINT_LEAST64 oderiv_key_l_offset_[] = { 0, 1, 4, 10, 20};
+  LIBINT2_UINT_LEAST64 oderiv_1d_key_l_offset_[] = { 0, 1, 2, 3, 4};
+  LIBINT2_UINT_LEAST64 oderiv_2d_key_l_offset_[] = { 0, 1, 3, 6, 10};
+  LIBINT2_UINT_LEAST64 oderiv_3d_key_l_offset_[] = { 0, 1, 4, 10, 20};
 
   template<typename T, std::size_t N>
   std::array<T,N> make_std_array(T* data) {
@@ -31,8 +53,13 @@ std::array<LIBINT2_UINT_LEAST64, CGShell::max_qn+1> CGF::key_l_offset(
     make_std_array<LIBINT2_UINT_LEAST64,CGShell::max_qn+1>(cgshell_key_l_offset_)
     );
 
-std::array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1> OriginDerivative::key_l_offset(
-    make_std_array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1>(oderiv_key_l_offset_)
+template<>
+std::array<LIBINT2_UINT_LEAST64, OriginDerivative<1u>::max_deriv+1> OriginDerivative<1u>::key_l_offset(
+    make_std_array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1>(oderiv_1d_key_l_offset_)
+    );
+template<>
+std::array<LIBINT2_UINT_LEAST64, OriginDerivative<3u>::max_deriv+1> OriginDerivative<3u>::key_l_offset(
+    make_std_array<LIBINT2_UINT_LEAST64, OriginDerivative::max_deriv+1>(oderiv_3d_key_l_offset_)
     );
 
 namespace {
@@ -49,22 +76,6 @@ namespace {
 
     return result;
   }
-}
-
-OriginDerivative
-libint2::operator-(const OriginDerivative& A, const OriginDerivative& B) {
-  OriginDerivative Diff(A);
-  for(unsigned int xyz=0; xyz<3; ++xyz)
-    Diff.dec(xyz,B.d(xyz));
-  return Diff;
-}
-
-bool
-libint2::operator==(const OriginDerivative& A, const OriginDerivative& B) {
-  for(unsigned int xyz=0; xyz<3; ++xyz)
-    if (A.d(xyz) != B.d(xyz))
-      return false;
-  return true;
 }
 
 CGF::CGF() : pure_sh_(false), unit_(false)
@@ -104,7 +115,7 @@ CGF::~CGF()
 {
 }
 
-const std::string
+std::string
 CGF::label() const
 {
   // unit *functions* are treated as regular s functions so that (ss|ss)^(m) = (unit s|ss)^(m)
@@ -247,7 +258,7 @@ CGShell::~CGShell()
 {
 }
 
-const std::string
+std::string
 CGShell::label() const
 {
   if (is_unit()) return "unit";

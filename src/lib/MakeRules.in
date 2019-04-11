@@ -3,6 +3,8 @@
 
 default:: $(TOPDIR)/lib/$(TARGET)
 
+all:: default
+
 export:: source
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/src
 	for i in $(LIBSRCDIR)/*.cc; do \
@@ -16,19 +18,41 @@ export:: source
 $(TOPDIR)/lib/$(TARGET): source
 	cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR)
 
-install:: install_inc install_target
+install:: install_inc install_target install_pkgconfig install_data
+
+HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS = @HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@
 
 install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/lcao
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util/generated
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)$(VERSION)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2_config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_intrinsic_types.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_intrinsic_operations.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/$(NAME)$(VERSION)/config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION).h $(DESTDIR)$(includedir)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION).hpp $(DESTDIR)$(includedir)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/chemistry/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/lcao/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/lcao
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/util/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/$(NAME)$(VERSION)/util/generated/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util/generated
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	if test "X$(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)" = "X0"; then `gunzip -c $(SRCTOPDIR)/external/boost.tar.gz | tar -xf - -C $(DESTDIR)$(includedir)/$(NAME)$(VERSION)`; fi
 
 install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)
 	$(LTINST) $(INSTALL) $(INSTALLLIBOPT) $< $(DESTDIR)$(libdir)
+
+ifdef pkgconfigdir
+install_pkgconfig::
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(pkgconfigdir)
+	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(DESTDIR)$(pkgconfigdir)
+endif
+
+install_data::
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(datadir)/basis
+	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/basis/* $(DESTDIR)$(datadir)/basis
 
 uninstall::
 	-rm -f $(DESTDIR)$(libdir)/$(TARGET)

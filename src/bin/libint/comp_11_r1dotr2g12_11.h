@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_cr11r1dotr2g1211_h_
 #define _libint2_src_bin_libint_cr11r1dotr2g1211_h_
@@ -7,7 +26,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <assert.h>
+#include <cassert>
 #include <dgvertex.h>
 #include <rr.h>
 #include <rr.templ.h>
@@ -48,7 +67,7 @@ namespace libint2 {
     virtual ~CR_11_R1dotR2G12_11() {}
 
     /// Implementation of RecurrenceRelation::num_children()
-    const unsigned int num_children() const { return nchildren_; };
+    unsigned int num_children() const { return nchildren_; };
     /// target() returns pointer to the i-th child
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer to the i-th child

@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_dgvertex_h_
 #define _libint2_src_bin_libint_dgvertex_h_
@@ -61,7 +80,7 @@ namespace libint2 {
     /// make_a_target() marks this vertex as a target
     void make_a_target();
     /// is_a_target() returns true if this vertex is a target
-    const bool is_a_target() const { return target_;};
+    bool is_a_target() const { return target_;};
     /** add_exit_arc(arc) adds arc as an arc connecting to children of this vertex.
         Thus, arcs are owned by their PARENTS. This function is virtual because
         certain types of vertices have duplicate references to children in their
@@ -107,13 +126,13 @@ namespace libint2 {
     virtual bool equiv(const SafePtr<DGVertex>&) const =0;
 
     /** precomputed() returns whether this DGVertex is precomputed. See
-    precomputed_this() for description.
+    this_precomputed() for description.
     */
     bool precomputed() const;
 
     /** Returns the amount of memory (in floating-point words) to be allocated for the vertex.
       */
-    virtual const unsigned int size() const =0;
+    virtual unsigned int size() const =0;
 
     /** label() returns a unique, short, descriptive label of DGVertex (e.g. "( p_x s | 1/r_{12} | d_xy s )^{(1)}")
     */
@@ -198,11 +217,11 @@ namespace libint2 {
     /// If vertex is a singleton then remove it from the SingletonManager. Must be reimplemented in derived singleton class
     virtual void unregister() const;
 
-  protected:
+  public:
 
     /** this_precomputed() is used by precomputed() to determine whether this
         object really is precomputed. E.g. (ss|ss) shell is considered not
-        precomputed, i.e. precomputed_this() will return false. But the (ss|ss)
+        precomputed, i.e. this_precomputed() will return false. But the (ss|ss)
         integral is considered precomputed. Usually the shell vertex
         will refer to the integral vertex. Thus calling precomputed() on it
         will return true.

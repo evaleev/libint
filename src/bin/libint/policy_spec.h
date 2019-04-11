@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <vector>
 #include <smart_ptr.h>
@@ -16,7 +35,8 @@ namespace libint2 {
 
   /**
   StdLibintTDPolicy<CGShell>::init_subobj initializes CGFs in canonical order.
-   The functions in order are produced using the following C++ loop:
+  Several canonical orderings are supported. The default is the CCA ordering in which
+  the functions in a shell are produced using the following C++ loop:
 
    for(int i=0; i<=am; i++) {
      qn[0] = am - i;
@@ -39,6 +59,40 @@ namespace libint2 {
   void
   StdLibintTDPolicy<CGShell>::dealloc_subobj(std::vector<StdLibintTDPolicy<CGShell>::subobj_stype>& subobj);
   /* source is in policy_spec.cc */
+
+  /**
+  StdLibintTDPolicy<CGShell1d>::init_subobj initializes CGF1d's in canonical order.
+   */
+
+  template <CartesianAxis Axis>
+  struct StdLibintTDPolicy< CGShell1d<Axis> > {
+      typedef CGShell1d<Axis> obj_type;
+      typedef typename obj_type::iter_type subobj_type;
+      /// how these objects are stored
+      typedef typename TypeTraits<obj_type>::StorageType obj_stype;
+      /// how these subobjects are stored
+      typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
+
+      /// This function allocates subobj of obj (e.g. basis functions contained in a shell)
+      static void init_subobj(const obj_stype& cgshell, std::vector<subobj_stype>& cgfs)
+      {
+        if (cgshell.is_unit()) {
+          cgfs.push_back(CGF1d<Axis>::unit());
+        }
+        else {
+          unsigned int am = TypeTraits<CGShell1d<Axis>>::const_ref(cgshell).qn();
+          for(unsigned int q=0; q<=am; ++q) {
+            subobj_stype cgf(q);
+            cgf.deriv() = cgshell.deriv();
+            if (cgshell.contracted()) cgf.contract();
+            cgfs.push_back(cgf);
+          }
+        }
+      }
+      static void dealloc_subobj(vector<subobj_stype>& subobj)
+      {
+      }
+    };
 
   /** StdLibintTDPolicy<GenIntegralSet> describes how integral sets are composed
       of integrals in canonical order.
@@ -178,6 +232,36 @@ namespace libint2 {
       }
     };
   
+#if LIBINT_SUPPORT_ONEBODYINTS
+  template <typename BFS, typename Oper, typename AuxQuanta>
+    struct StdLibintTDPolicy< GenIntegralSet_1_1<BFS,Oper,AuxQuanta> >
+    {
+      typedef GenIntegralSet_1_1<BFS,Oper,AuxQuanta> obj_type;
+      typedef typename obj_type::iter_type subobj_type;
+      typedef SubIteratorBase< typename obj_type::parent_type > parent_siter;
+      /// how these objects are stored
+      typedef typename TypeTraits<obj_type>::StorageType obj_stype;
+      /// how these subobjects are stored
+      typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
+
+      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
+
+        // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
+        parent_siter gis_siter(obj);
+        for(gis_siter.init(); gis_siter; ++gis_siter) {
+          const SafePtr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
+          const SafePtr<subobj_type> curr_subobj =
+            subobj_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), *curr_gis_ptr->aux().get(), *curr_gis_ptr->oper().get());
+          subobj.push_back(curr_subobj);
+        }
+      }
+
+      // Nothing is done here because GenIntegralSet_1_1 objects are Singleton-like and don't need to be destroyed
+      static void dealloc_subobj(std::vector< SafePtr< subobj_type > >& subobj) {
+      }
+    };
+#endif // LIBINT_SUPPORT_ONEBODYINTS
+
   template <typename BFS, typename Oper, typename AuxQuanta>
     struct StdLibintTDPolicy< GenIntegralSet_11_11<BFS,Oper,AuxQuanta> >
     {

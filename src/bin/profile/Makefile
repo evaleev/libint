@@ -18,6 +18,8 @@ LIBINT = $(LIBINTDIR)/libINT.a
 CGSHELLOBJ = $(LIBINTDIR)/gauss.o $(LIBINTDIR)/iter.o $(LIBINTDIR)/policy.o \
 $(LIBINTDIR)/policy_spec.o $(LIBINTDIR)/default_params.o
 
+default:: all
+
 #
 # making target1
 #
@@ -30,26 +32,28 @@ $(COMP1): LDFLAGS := -pg $(LDFLAGS)
 
 $(COMP1): $(COMP1OBJ) $(LIBINTDIR)/buildtest.o $(LIBINT)
 	cd ../libint; $(MAKE) $(LIBINT)
-	$(LD) -o $@ $^ $(SYSLIBS) $(LDFLAGS)
+	$(LD) -o $@ $^ $(SYSLIBS) $(CXXFLAGS) $(LDFLAGS)
 
 $(COMP1OBJ):: $(LIBINTDIR)/buildtest.h
 
 #
 # making target2
 #
-COMP2 = profile_Gm
+COMP2 = profile
 COMP2SRC = $(COMP2).cc
 COMP2OBJ = $(COMP2SRC:%.cc=%.o)
 
 $(COMP2): $(COMP2OBJ)
-	$(CXX) -o $@ $^ -lboost_chrono -lboost_system $(SYSLIBS) $(LDFLAGS)
+	$(CXX) -o $@ $^ $(SYSLIBS) $(BLAS) $(CXXFLAGS) $(LDFLAGS)
 
-$(COMP2OBJ):: $(TOPDIR)/src/lib/libint/boys.h
+$(COMP2OBJ):: $(TOPDIR)/include/libint2/boys.h
+
+all:: $(COMP2)
 
 clean::
 	-rm -rf $(COMP1) $(COMP2) *.o *.d
 
 realclean:: clean
-	-rm -rf *.h *.cc *.dot *.log
+	-rm -rf *.dot *.log
 
 distclean:: realclean

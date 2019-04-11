@@ -1,6 +1,6 @@
-define([libint_mmm_version],[2.0.5])
-define([libint_buildid],[stable])
-define([libint_so_version],[2:0:0])
+define([libint_mmm_version],[2.5.0])
+define([libint_buildid],[])
+define([libint_so_version],[2:3:0])
 
 dnl --------- Begin ---------
 dnl Process this file with autoconf to produce a configure script.
@@ -9,9 +9,17 @@ define([AC_CACHE_SAVE], )dnl for debugging configure.in
 AC_PREREQ(2.57)
 AC_INIT([Libint2],[libint_mmm_version],[libint@valeyev.net],[libint2])
 AC_CONFIG_SRCDIR(include/libint2.h)
-AC_CONFIG_HEADER(include/libint2_config.h)
+AC_CONFIG_HEADERS(include/libint2/config.h)
 AC_CONFIG_AUX_DIR(bin)
 AC_CONFIG_MACRO_DIR([lib/autoconf])
+
+dnl --- Can only compile in-place!!! ---
+abs_builddir=`pwd -P`
+rel_srcdir=`dirname $0`
+abs_srcdir=`cd $rel_srcdir; pwd -P`
+if test "X$abs_builddir" != "X$abs_srcdir"; then
+  AC_MSG_ERROR([** Only in-place build is supported for exported libraries!])
+fi
 
 dnl --- Compiling C++ only ---
 AC_LANG(C++)
@@ -41,7 +49,7 @@ AC_SUBST(LIBINT_SO_VERSION)
 dnl --------- Features ---------
 
 AC_ARG_ENABLE(debug,
-[  --enable-debug          Compile with debugging options],
+AS_HELP_STRING([--enable-debug],[Compile with debugging options (default=no)]),
 [
 case $enableval in
   yes)
@@ -64,7 +72,7 @@ esac
 
 BUILDID="libint_buildid"
 AC_ARG_WITH(build-id,
-[  --with-build-id         Gives an identifier for the build.],
+AS_HELP_STRING([--with-build-id],[Gives an identifier for the build]),
 BUILDID=$withval
 )
 AC_SUBST(BUILDID)
@@ -82,62 +90,72 @@ AC_SUBST(LIBINT_VERSION)
 ac_default_prefix="/usr/local/libint/$LIBINT_VERSION"
 
 AC_ARG_WITH(cxx,
-[  --with-cxx              Gives the name of the C++ compiler to use.],
+AS_HELP_STRING([--with-cxx],[Gives the name of the C++ compiler to use]),
 CXX=$withval
 )
 
-CXXOPTIONS_OPT=
+CXXFLAGS_OPT=
 AC_ARG_WITH(cxx-optflags,
-[  --with-cxx-optflags     Gives optimization flags for the C++ compiler.],
-CXXOPTIONS_OPT=$withval
+AS_HELP_STRING([--with-cxx-optflags],[Gives optimization flags for the C++ compiler]),
+if test "X$withval" != "Xyes" -a "X$withval" != "Xno"; then
+  CXXFLAGS_OPT=$withval
+fi
+)
+
+AC_ARG_ENABLE(fortran,
+AS_HELP_STRING([--enable-fortran],[Build fortran 2003 bindings and fortran example (default=no)]),
+ENABLE_FORTRAN=$enableval, ENABLE_FORTRAN=no
+)
+
+AC_ARG_WITH(fc,
+AS_HELP_STRING([--with-fc],[Gives the name of the Fortran compiler to use]),
+FC=$withval
 )
 
 AC_ARG_WITH(ranlib,
-[  --with-ranlib           Gives the name of the ranlib program.],
+AS_HELP_STRING([--with-ranlib],[Gives the name of the ranlib program]),
 RANLIB=$withval
 )
 
 AC_ARG_WITH(ar,
-[  --with-ar               Names the archive creator.],
+AS_HELP_STRING([--with-ar],[Names the archive creator]),
 AR=$withval
 )
 
 ARFLAGS=r
 AC_ARG_WITH(ar-flags,
-[  --with-ar-flags         Flags for the the archive creator.],
+AS_HELP_STRING([--with-ar-flags],[Flags for the the archive creator]),
 ARFLAGS=$withval
 )
 AC_SUBST(ARFLAGS)
 
 AC_ARG_WITH(ld,
-[  --with-ld               Names the object linker.],
+AS_HELP_STRING([--with-ld],[Names the object linker]),
 LD=$withval
 )
 
 libintincludedir=$includedir
 AC_ARG_WITH(libint-includedir,
-[  --with-libint-includedir       Specifies include file install subdir.],
+AS_HELP_STRING([--with-libint-includedir],[Specifies include file install subdir]),
 libintincludedir=$withval
 )
 AC_SUBST(libintincludedir)
 
 AC_ARG_WITH(incdirs,
-[  --with-incdirs          Specifies include directories (-Idir1 -Idir2).],
+AS_HELP_STRING([--with-incdirs],[Specifies include directories (-Idir1 -Idir2)]),
 EXTRAINCDIRS=$withval
 CPPFLAGS=$withval
 echo Using extra include directories: $withval
 )
 
 AC_ARG_WITH(libs,
-[  --with-libs             Specifies libraries (-llib1 -llib2).],
+AS_HELP_STRING([--with-libs],[Specifies libraries (-llib1 -llib2)]),
 LIBS=$withval
 echo Using extra libraries: $withval
 )
 
-LDFLAGS=
-LIBDIRS=
 AC_ARG_WITH(libdirs,
-[  --with-libdirs          Specifies library directories (-Ldir1 -Ldir2).],
+AS_HELP_STRING([--with-libdirs],[Specifies library directories (-Ldir1 -Ldir2)]),
 LIBDIRS=$withval
 LDFLAGS=$withval
 echo Using extra library directories: $withval
@@ -145,10 +163,37 @@ echo Using extra library directories: $withval
 
 PKGCONFIGDIR='$(libdir)/pkgconfig'
 AC_ARG_WITH(pkgconfigdir,
-[  --with-pkgconfigdir     Specifies the location to put pkg-config's data file. Default is $(libdir)/pkgconfig.],
+AS_HELP_STRING([--with-pkgconfigdir],[Specifies the location to put pkg-config's data file. Default is $(libdir)/pkgconfig]),
 PKGCONFIGDIR=$withval
 )
 AC_SUBST(PKGCONFIGDIR)
+
+# these definitions must match configure.ac
+LIBINT_SHGSHELL_ORDERING_STANDARD=1
+LIBINT_SHGSHELL_ORDERING_GAUSSIAN=2
+libint_shgshell_ordering=standard
+AC_ARG_WITH(shgauss-ordering,
+[  --with-shgauss-ordering
+                         Use one of the following known orderings for shells of solid harmonic Gaussians:
+                           standard -- standard ordering (-l, -l+1 ... l)
+                           gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+                         The default is standard.],
+[
+libint_shgshell_ordering=$withval
+])
+AC_MSG_RESULT([Using $libint_shgshell_ordering ordering of solid harmonic Gaussians])
+case $libint_shgshell_ordering in
+  standard)
+    libint_shgshell_ordering=$LIBINT_SHGSHELL_ORDERING_STANDARD
+  ;;
+  gaussian)
+    libint_shgshell_ordering=$LIBINT_SHGSHELL_ORDERING_GAUSSIAN
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --with-solidharmgauss-ordering ($withval)])
+  ;;
+esac
+AC_DEFINE_UNQUOTED(LIBINT_SHGSHELL_ORDERING,$libint_shgshell_ordering)
 
 dnl --------- Want absolute path for srcdir, not relative. ---------
 
@@ -179,12 +224,24 @@ CXXFLAGS="$initial_CXXFLAGS"
 
 AC_CHECK_PROG(AR,ar,ar)
 
+if test "$enable_fortran" = yes; then
+    if test "X$FC" = "X"; then
+        AC_MSG_WARN([No Fortran compiler was given! Will try to find one, but not guaranteed to be the best choice...])
+    fi
+    AC_PROG_FC
+    AC_FC_LIBRARY_LDFLAGS
+    if test "X$FC" = "X"; then
+        enable_fortran=no
+        AC_MSG_WARN([No Fortran compiler was found! Fortran wrappers are not built.])
+    fi
+fi
+
 dnl -------- Checks for compiler/linker options. ----------
 
 # set the optimization default if neither CXXFLAGS or --with-*-optflags were given
 if test "X$CXXFLAGS_OPT" = X -a "X$CXXFLAGS" = X; then
   AC_MSG_WARN([C++ optimization options are not given! For optimum performance give CXXFLAGS or use --with-cxx-optflags configure option])
-  CXXFLAGS_OPT=-O2
+  CXXFLAGS_OPT="-O2 -DNDEBUG"
 fi
 
 # options needed only for debugging
@@ -223,41 +280,22 @@ if test -f depcheck.u; then
 fi
 /bin/rm -f depcheck.u depcheck.c depcheck.o
 
-dnl -- special optimization options --
-
-AC_MSG_CHECKING([for additional optimization options])
-case $target in
-  rs6000-ibm-aix3.2.* | rs6000-ibm-aix4.* | powerpc-ibm-aix4.* | powerpc-ibm-aix5.*)
-    if test X$GXX != Xyes; then
-      CXXOPTIONS_OPT="$CXXOPTIONS_OPT -qnolm -qrtti"
-    fi
-    AC_MSG_RESULT([rs6000 or powerpc])
-  ;;
-  *)
-    AC_MSG_RESULT([none])
-  ;;
-esac
-
 dnl -- special architecture options --
 
-if test "X$CXXOPTIONS_OPT" = X; then
+if test "X$CXXFLAGS_OPT" = X; then
   AC_MSG_WARN([C++ optimization options are not given! For optimum performance use --with-cxx-optflags configure option])
 fi
 
-dnl ----------- check for GNU libc++-v3 prerelease bug ---------------
+dnl -- language options --
 
-if test X$GXX = Xyes; then
-AC_MSG_CHECKING([for GNU libc++-v3 prerelease bug])
-AC_LINK_IFELSE([AC_LANG_SOURCE(
-[[#include <stdio.h>
-#include <$iostream>
-]],[[
-]])],[
-AC_MSG_RESULT([no])
-],
-EXTRADEFINES="$EXTRADEFINES -D_ISOC99_SOURCE=1"
-AC_MSG_RESULT([yes])
-);
+ACX_CHECK_CPP11_GENERAL
+AC_SUBST(LIBINT_HAS_CXX11,$acx_have_cxx11)
+
+dnl ------------------ Check for Eigen library -----------------------
+
+ACX_CHECK_EIGEN
+if test "X$acx_have_eigen" = "Xyes"; then
+  AC_SUBST(LIBINT_HAS_EIGEN,$acx_have_eigen)
 fi
 
 dnl -- other options --
@@ -273,21 +311,60 @@ else
     esac
 fi
 
+dnl ------------------ Check for Boost library -----------------------
+# Modern Boost.Preprocessor was introduced in 1.29
+AX_BOOST_BASE([1.29],[have_boost=yes],[have_boost=no])
+
+HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS=0
+if test "X$have_boost" = "Xyes"; then
+  AC_MSG_CHECKING([for variadic macro support in Boost.Preprocessor])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <boost/preprocessor.hpp>
+        #if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
+        #  error "your compiler does not provide variadic macros (but does support C++11), something is seriously broken, please create an issue at https://github.com/evaleev/libint/issues"
+        #endif
+      ]],
+      [[
+      ]]
+     )
+    ],
+    [AC_MSG_RESULT([yes])
+     HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS=1
+     CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+     AC_DEFINE(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+     # no need to touch LDFLAGS: we don't use compiled boost libs
+    ],
+    [
+      AC_MSG_RESULT([no])
+      HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS=0
+      AC_MSG_WARN([Boost.Preprocessor with variadic macro support not detected. Will use the bundled Boost.Preprocessor. To avoid this obtain boost 1.57 or higher (with some compilers older boost can also be used) from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])
+    ]
+  )
+fi
+AC_SUBST(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+
 AC_SUBST(EXTRAINCLUDE)
 
 AC_SUBST(CXX)
 AC_SUBST(CXXFLAGS)
 AC_SUBST(LIBDIRS)
+AC_SUBST(LD)
+AC_SUBST(LDFLAGS)
 AC_SUBST(OBJSUF)
 AC_SUBST(LIBSUF)
 AC_SUBST(CXXDEPENDSUF)
 AC_SUBST(CXXDEPENDFLAGS)
 
+AC_SUBST(ENABLE_FORTRAN)
+AC_SUBST(FC)
+AC_SUBST(FCFLAGS)
 
 dnl -------- Checks for architecture specific features. --------
-dnl (Doesn't work for cross compilation.)
-dnl AC_CHECK_SIZEOF(void*)
+# nothing so far
 
+dnl -------- extra define for internal includes --------
+EXTRADEFINES=-D__COMPILING_LIBINT2=1
 AC_SUBST(EXTRADEFINES)
 
 dnl ---------- Checks for header files. -----------
@@ -306,7 +383,7 @@ if test "X$have_posix_memalign" != "X0"; then
  # see default_params.cc to see this logic in action
  LIBINT_ALIGN_SIZE=default  # this will be interpreted as "use the default alignment"
  AC_ARG_WITH(align-size,
-  [  --with-align-size       (EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics.],
+  AS_HELP_STRING([--with-align-size],[(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics]),
   [
    if test "X$withval" != "Xdefault"; then
     LIBINT_ALIGN_SIZE=$withval
@@ -327,10 +404,42 @@ else # no posix_memalign = death
  exit 1
 fi
 
+dnl ---------- Check for optional MPFR library (needed for high-precision testing) --------
+AC_ARG_ENABLE(mpfr,
+ AS_HELP_STRING([--enable-mpfr],[Use MPFR library to test Libint integrals in high precision.]),
+ [
+  case $enableval in
+   yes)
+    AC_CHECK_HEADER(mpfr.h,[
+     AC_MSG_CHECKING([if MPFR library is usable])
+      LIBS="-lmpfr $LIBS"
+      AC_LINK_IFELSE(
+       [AC_LANG_PROGRAM(
+       [[#include <mpfr.h>
+       ]],
+       [[
+        mpfr_t x;  mpfr_init(x);
+       ]]
+      )
+     ],
+     [AC_MSG_RESULT([yes])
+      AC_DEFINE(LIBINT_HAS_MPFR)
+     ],
+     [
+      AC_MSG_RESULT([no])
+     ]
+    )
+    ]
+   )
+   ;;
+  esac
+ ]
+)
+
 dnl ------------------ Check for real type. If given, check if it is usable -----------------------
 
 AC_ARG_WITH(real-type,
- [  --with-real-type       Compute all integrals using the given real type.],
+ AS_HELP_STRING([--with-real-type],[Compute all integrals using the given real type]),
  [
   AC_DEFINE_UNQUOTED(LIBINT2_REALTYPE,[$withval])
   libint_user_defined_real=$withval
@@ -348,7 +457,7 @@ if test "X$libint_user_defined_real" != "X"; then
  CXXFLAGS="$CXXFLAGS -Iinclude"
  
  AC_ARG_WITH(real-type-includes,
-  [  --with-real-type-includes Additional includes necessary to use the real type (default: none).],
+  AS_HELP_STRING([--with-real-type-includes],[Additional includes necessary to use the real type (default: none)]),
   [
    AC_DEFINE_UNQUOTED(LIBINT2_REALTYPE_INCLUDES,"$withval")
    libint_user_defined_real_includes=$withval
@@ -358,7 +467,7 @@ if test "X$libint_user_defined_real" != "X"; then
  AC_MSG_CHECKING([if Libint real type is usable])
  AC_COMPILE_IFELSE(
   [AC_LANG_PROGRAM(
-    [[#include <vector.h>
+    [[#include <libint2/util/vector.h>
       $libint_user_defined_real_includes
       
     ]],
@@ -389,6 +498,11 @@ CPPFLAGS="$CPPFLAGS" \
 LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
 LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB"
 
+dnl --------- expand some variables -----------
+DATADIR_ABSOLUTE=`eval echo $datarootdir`/libint/$LIBINT_VERSION
+echo $DATADIR_ABSOLUTE
+AC_SUBST(DATADIR_ABSOLUTE)
+
 dnl --------- Check for documentation tools ---------
 
 AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin:/opt/local/bin)
@@ -398,6 +512,7 @@ AC_PATH_PROG(DVIPS,dvips,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(LATEX,latex,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(LATEX2HTML,latex2html,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(BIBTEX,bibtex,,$PATH:/usr/local/bin:/opt/local/bin)
+AC_CHECK_PROGS(PYTHON,python python3 python2 python2.7,python)
 
 dnl --------- Shared library configuration. ---------
 
@@ -409,7 +524,7 @@ LIBSUF=la
 ENABLESHARED=yes
 AC_SUBST(ENABLESHARED)
 
-AC_CONFIG_FILES(MakeVars MakeRules MakeSuffixRules doc/Makefile libint2.pc)
+AC_CONFIG_FILES(MakeVars MakeRules MakeSuffixRules doc/Makefile include/libint2/basis.h libint2.pc)
 
 dnl --------- Done! ---------
 AC_OUTPUT

@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_defaultparams_h_
 #define _libint2_src_bin_libint_defaultparams_h_
@@ -25,8 +44,8 @@ namespace libint2 {
     CompilationParameters();
     ~CompilationParameters();
     
-    /// returns max AM for task t
-    unsigned int max_am(std::string t = "") const;
+    /// returns max AM for task \c t and center \c c
+    unsigned int max_am(std::string t = "", unsigned int c = 0) const;
     /// returns max AM for which to produce optimal code for task t
     unsigned int max_am_opt(std::string t = "") const;
     /// returns number of basis functions in integrals for task t
@@ -67,6 +86,10 @@ namespace libint2 {
     bool count_flops() const {
       return count_flops_;
     }
+    /// whether profiling instrumentation is enabled
+    bool profile() const {
+      return profile_;
+    }
     /// whether target integrals are accumulated
     bool accumulate_targets() const {
       return accumulate_targets_;
@@ -84,8 +107,8 @@ namespace libint2 {
       return default_task_name_;
     }
     
-    /// set max AM for task t
-    void max_am(const std::string& t, unsigned int a);
+    /// set max AM for task \c t and center \c c
+    void max_am(const std::string& t, unsigned int a, unsigned int c=0);
     /// set max AM for task t
     void max_am_opt(const std::string& t, unsigned int a);
     /// set num of basis functions for task t
@@ -126,6 +149,10 @@ namespace libint2 {
     void count_flops(bool a) {
       count_flops_ = a;
     }
+    /// set to instrument profiling
+    void profile(bool a) {
+      profile_ = a;
+    }
     /// accumulate targets?
     void accumulate_targets(bool a) {
       accumulate_targets_ = a;
@@ -161,7 +188,7 @@ namespace libint2 {
       /// Use default alignment by default
       static const unsigned int align_size = 0;
       /// Produce quartet-level code by default
-      static const unsigned int unroll_threshold = 1;
+      static const unsigned int unroll_threshold = 0;
       /// Where to put generated library source
       static const std::string source_directory;
       /// API prefix
@@ -172,6 +199,8 @@ namespace libint2 {
       static const bool use_C_linking = true;
       /// Do not count FLOPs by default
       static const bool count_flops = false;
+      /// Do not profile by default
+      static const bool profile = false;
       /// Do not accumulate targets by default
       static const bool accumulate_targets = false;
       /// Use double for computations
@@ -184,13 +213,13 @@ namespace libint2 {
 
     struct TaskParameters {
       /// max AM
-      unsigned int max_am;
+      std::vector<unsigned int> max_am;
       /// max AM for "optimized" integrals
       unsigned int max_am_opt;
       /// number of basis functions
       unsigned int num_bf;
 
-      TaskParameters() : max_am(0u), max_am_opt(0u), num_bf(0u) {}
+      TaskParameters() : max_am(1, 0u), max_am_opt(0u), num_bf(0u) {}
     };
     /// Parameters for tasks
     std::map<std::string,TaskParameters> task_params_;
@@ -219,6 +248,8 @@ namespace libint2 {
     bool use_C_linking_;
     /// whether to count FLOPs
     bool count_flops_;
+    /// whether to turn on profiling instrumentation
+    bool profile_;
     /// whether to accumulate targets
     bool accumulate_targets_;
     /// name of the floating-point type

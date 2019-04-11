@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <stdexcept>
 #include <task.h>
@@ -29,6 +48,17 @@ LibraryTaskManager::add(const std::string& task_label)
   // make the first added task current
   if (tasks_.size() == 1)
     current_ = 0;
+}
+
+bool
+LibraryTaskManager::exists(const std::string& task_label) const
+{
+  tasks_citer end = tasks_.end();
+  for(tasks_citer t=tasks_.begin(); t!=end; ++t) {
+    if (t->label() == task_label)
+      return true;
+  }
+  return false;
 }
 
 LibraryTaskManager::TasksCIter

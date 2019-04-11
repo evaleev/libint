@@ -1,0 +1,147 @@
+os:
+  - linux
+language: cpp
+dist: xenial
+env:
+  global:
+    - BUILD_PREFIX=/home/travis/_build
+    - INSTALL_PREFIX=/home/travis/_install
+addons:
+  apt:
+    sources: &base_sources
+      - ubuntu-toolchain-r-test
+    sources: &clang8_sources
+      - llvm-toolchain-xenial-8
+    packages: &base_packages
+      - libgmp-dev
+      - automake
+      - cmake # for eigen
+      - libboost-dev
+
+matrix:
+  fast_finish: true
+  include:
+    - compiler: gcc
+      env: GCC_VERSION=5 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-5
+            - gfortran-5
+    - compiler: gcc
+      env: GCC_VERSION=5 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-5
+            - gfortran-5
+    - compiler: gcc
+      env: GCC_VERSION=6 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-6
+            - gfortran-6
+    - compiler: gcc
+      env: GCC_VERSION=6 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-6
+            - gfortran-6
+    - compiler: gcc
+      env: GCC_VERSION=7 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-7
+            - gfortran-7
+    - compiler: gcc
+      env: GCC_VERSION=7 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-7
+            - gfortran-7
+    - compiler: gcc
+      env: GCC_VERSION=8 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-8
+            - gfortran-8
+    - compiler: gcc
+      env: GCC_VERSION=8 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+          packages:
+            - *base_packages
+            - g++-8
+            - gfortran-8
+    - compiler: clang
+      env: CLANG_VERSION=8 GCC_VERSION=8 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - *base_sources
+            - *clang8_sources
+          packages:
+            - *base_packages
+            - clang-8
+            - libc++-8-dev
+            - libc++abi-8-dev
+            - gfortran-8
+    - compiler: clang
+      env: CLANG_VERSION=8 GCC_VERSION=8 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - *base_sources
+            - *clang8_sources
+          packages:
+            - *base_packages
+            - clang-8
+            - libc++-8-dev
+            - libc++abi-8-dev
+            - gfortran-8
+
+install: true
+before_install:
+  - env
+  - mkdir -p ${BUILD_PREFIX} && mkdir -p ${INSTALL_PREFIX}
+script:
+  - ./bin/travisci_build_$TRAVIS_OS_NAME.sh
+after_failure:
+  - cat include/libint2/config.h
+  - cat config.log
+  - cat export_build/config.log
+  - ls -l export_build
+notifications:
+  email:
+    recipients:
+      - libint+travisci@valeyev.net
+    on_success: change
+    on_failure: always

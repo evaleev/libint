@@ -3,7 +3,8 @@ The recommended installation procedure:
    Most often you will need to specify command-line options to configure.
    To obtain a list of configure options run 'configure --help'.
 2) make
-3) make install
+3) optional: make check
+4) make install
 
 Report all problems to libint@valeyev.net
 

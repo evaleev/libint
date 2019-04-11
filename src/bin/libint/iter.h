@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <vector>
 #include <smart_ptr.h>
@@ -27,7 +46,7 @@ namespace libint2 {
   
   public:
     /// Returns a number of iterations (number of elements in a set over which to iterate).
-    virtual const unsigned int num_iter() const =0;
+    virtual unsigned int num_iter() const =0;
     /// Initializes the iterator.
     virtual void init() =0;
     /// Iterates to the next element. Only prefix form is provided.
@@ -69,7 +88,7 @@ namespace libint2 {
     cp_rettype pelem() const;
 
     /// Returns a number of iterations (number of elements in a set over which to iterate).
-    const unsigned int num_iter() const;
+    unsigned int num_iter() const;
     /// Initializes the iterator.
     void init();
     /// Iterates to the next element. Only prefix form is provided.
@@ -135,7 +154,7 @@ namespace libint2 {
     }
 
   template <class T, template <class> class P>
-    const unsigned int
+    unsigned int
     SubIteratorBase<T,P>::num_iter() const
     {
       return subobj_.size();
@@ -152,7 +171,7 @@ namespace libint2 {
     typename SubIteratorBase<T,P>::cp_rettype
     SubIteratorBase<T,P>::pelem() const
     {
-      return PElemImpl<iter_type,IsSafePtr<iref>::result>::pelem(elem());
+      return PElemImpl<iter_type,detail::IsSafePtr<iref>::result>::pelem(elem());
     }
 
 #if 0

@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_genericrr_h_
 #define _libint2_src_bin_libint_genericrr_h_
@@ -7,7 +26,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <assert.h>
+#include <cassert>
 #include <boost/type_traits/is_same.hpp>
 
 #include <dgvertex.h>
@@ -51,7 +70,7 @@ namespace libint2 {
       }
 
       /// Implementation of RecurrenceRelation::num_children()
-      const unsigned int num_children() const { return children_.size(); };
+      unsigned int num_children() const { return children_.size(); };
       /// Implementation of RecurrenceRelation::rr_target()
       SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target_); }
       /// Implementation of RecurrenceRelation::rr_child()
@@ -76,13 +95,13 @@ namespace libint2 {
         target_(Tint), dir_(dir) {
         children_.reserve(RRImpl::max_nchildren);
       }
-      /** is this recurrence relation parameterized by a direction.
-          the default is false if BasisFunctionSet is CGShell,
-          true otherwise. */
+      /** is this recurrence relation parameterized by a direction (x, y, or z).
+          true if BasisFunctionSet is CGF,
+          false otherwise. */
       static bool default_directional() {
-        if (boost::is_same<BasisFunctionType,CGShell>::value)
-          return false;
-        return true;
+        if (boost::is_same<BasisFunctionType,CGF>::value)
+          return true;
+        return false;
       }
 
       unsigned int dir() const { return dir_; }
@@ -143,6 +162,14 @@ namespace libint2 {
                                         const AuxIndexType& aux = AuxIndexType(),
                                         const OperType& oper = OperType()) {
       auto i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(A,B,C,D,aux,oper));
+      return rr_->add_child(i);
+    }
+    /// make_child
+    const SafePtr<DGVertex>& make_child(const F& A,
+                                        const F& B,
+                                        const AuxIndexType& aux = AuxIndexType(),
+                                        const OperType& oper = OperType()) {
+      auto i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(A,B,aux,oper));
       return rr_->add_child(i);
     }
     /// make a child from a wedge of physicists' brackets

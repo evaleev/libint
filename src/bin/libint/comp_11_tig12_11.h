@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_cr11tig1211_h_
 #define _libint2_src_bin_libint_cr11tig1211_h_
@@ -37,7 +56,7 @@ namespace libint2 {
       using ParentType::is_simple;
       template<class RR, class C> friend class ChildFactory;
 
-      /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
+      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
       CR_11_TiG12_11(const SafePtr<TargetType>&, unsigned int dir);
       static std::string descr() { return "CR"; }
 

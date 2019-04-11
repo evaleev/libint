@@ -1,3 +1,23 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #ifndef PREP_LIBINT2_SKIP_BOOST
 # include <boost/random.hpp>
 #endif
@@ -6,10 +26,10 @@
 #include <vector>
 #include <cstdlib>
 #include <libint2.h>
-#include <boys.h>
+#include <libint2/boys.h>
 #include <time.h>
 
-extern libint2::FmEval_Chebyshev3 fmeval_chebyshev;
+extern libint2::FmEval_Chebyshev7<double> fmeval_chebyshev;
 extern libint2::FmEval_Taylor<double,6> fmeval_taylor;
 
 #ifdef PREP_LIBINT2_SKIP_BOOST
@@ -703,9 +723,8 @@ void prep_libint2(LibintEval* erievals,
                                                                                  + gammaq));
             pfac *= c0 * c1 * c2 * c3;
 
-            //calc_f(F, amtot, PQ2 * gammapq);
-            //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
-            fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
+            libint2::FmEval_Reference2<double>::eval(F,PQ2*gammapq,amtot);
+            //fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
             //fmeval_taylor.eval(F,PQ2*gammapq,amtot);
 
             // using dangerous macros from libint2.h
@@ -1060,9 +1079,8 @@ void prep_libint2(LibintEval* erievals,
                                                                                  + gammaq));
             pfac *= c0 * c1 * c2 * c3;
 
-            //calc_f(F, amtot, PQ2 * gammapq);
-            //libint2::FmEval_Reference<double>::eval(F,PQ2*gammapq,amtot,1e-15);
-            fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
+            libint2::FmEval_Reference2<double>::eval(F,PQ2*gammapq,amtot);
+            //fmeval_chebyshev.eval(F,PQ2*gammapq,amtot);
             //fmeval_taylor.eval(F,PQ2*gammapq,amtot);
 
             // using dangerous macros from libint2.h

@@ -1,7 +1,27 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_integral_h_
 #define _libint2_src_bin_libint_integral_h_
 
+#include <cassert>
 #include <smart_ptr.h>
 #include <dgvertex.h>
 #include <oper.h>
@@ -91,6 +111,12 @@ namespace libint2 {
       typedef Oper OperType;
       /// This is the real type of basis functions
       typedef typename BraSetType::bfs_type BasisFunctionType;
+      /// The number of particles
+      static constexpr auto num_particles = BraSetType::num_particles;
+      static_assert(BraSetType::num_particles == KetSetType::num_particles,
+                    "number of particles in bra and ket must be same");
+      /// The total number of basis functions
+      static constexpr auto num_bf = BraSetType::num_bf + KetSetType::num_bf;
 
       /** No constructors are public since this is a singleton-like quantity.
           Instead, access is provided through Instance().
@@ -112,7 +138,7 @@ namespace libint2 {
         return PtrComp::equiv(this,v);
       }
       /// Specialization of DGVertex::size()
-      virtual const unsigned int size() const;
+      virtual unsigned int size() const;
       /// Specialization of DGVertex::label()
       virtual const std::string& label() const;
       /// Specialization of DGVertex::id()
@@ -158,7 +184,10 @@ namespace libint2 {
       /// Reimplements DGVertex::unregister()
       void unregister() const;
 
-      protected:
+      /// If consists of precomputed elements, override this to return true
+      virtual bool auto_unroll() const { return false; }
+
+   protected:
       // Basic Integral constructor. It is protected so that derived classes don't have to behave like singletons
       GenIntegralSet(const Oper& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux);
       /// computes a key. it's protected so that derived classes can use it to implement smart caching in constructors
@@ -366,7 +395,7 @@ namespace libint2 {
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const unsigned int
+    unsigned int
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::size() const
     {
       if (size_ > 0)

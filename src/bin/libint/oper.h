@@ -1,14 +1,37 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_oper_h_
 #define _libint2_src_bin_libint_oper_h_
 
 #include <string>
+
+#include <boost/preprocessor/list/for_each.hpp>
+
 #include <hashable.h>
 #include <global_macros.h>
 #include <util.h>
 #include <iter.h>
 #include <vectorn.h>
 #include <contractable.h>
+#include <multipole.h>
 
 namespace libint2 {
 
@@ -19,16 +42,19 @@ namespace libint2 {
   } PermutationalSymmetry;
 
   /** OperatorProperties describes various properties of an operator or operator set
-      np -- number of particles
-      multi -- true if multiplicative
-      psymmetry -- symmetry with respect to permutation of bra and ket
+      @tparam NP number of particles
+      @tparam multi true if multiplicative
+      @tparam psymmetry symmetry with respect to permutation of bra and ket
+      @tparam origin_dependent true if operator is origin-dependent
     */
-  template <unsigned int NP, bool multi, PermutationalSymmetry::type psymmetry>
+  template <unsigned int NP, bool multi, PermutationalSymmetry::type psymmetry,
+            bool origin_dependent = false>
     class OperatorProperties {
     public:
-      static const unsigned int np = NP;
-      static const bool multiplicative = multi;
-      static const PermutationalSymmetry::type psymm = psymmetry;
+      static constexpr auto np = NP;
+      static constexpr auto multiplicative = multi;
+      static constexpr auto psymm = psymmetry;
+      static constexpr auto odep = origin_dependent;
     };
 
   /** OperSet is the base class for all (sets of) operators.
@@ -51,8 +77,11 @@ namespace libint2 {
         or anti-Hermitian w.r.t. particle p */
       virtual int hermitian(int p) const =0;
 
+      /// is operator origin-dependent?
+      virtual bool origin_dependent() const =0;
+
       /// Number of operators in the set
-      virtual const unsigned int num_oper() const =0;
+      virtual unsigned int num_oper() const =0;
     };
 
   /** Oper is OperSet characterized by properties Props
@@ -67,6 +96,8 @@ namespace libint2 {
       int psymm(int i, int j) const;
       /// Implementation of OperSet::hermitian()
       int hermitian(int p) const;
+      /// Implementation of OperSet::origin_dependent()
+      bool origin_dependent() const { return Props::odep; }
 
       bool operator==(const Oper&) const;
 
@@ -136,7 +167,7 @@ namespace libint2 {
       /// GenOper is not a set
       typedef GenOper iter_type;
 
-      const unsigned int num_oper() const { return 1; };
+      unsigned int num_oper() const { return 1; };
       /// Implementation of Hashable::key()
       unsigned int key() const { return descr_.key(); }
       /// Range of key is [0,Descr::max_key)
@@ -147,12 +178,14 @@ namespace libint2 {
       std::string label() const { return descr_.label(); }
       /// Return the descriptor object
       Descr& descr() { return descr_; }
+      /// Return the descriptor object
+      const Descr& descr() const { return descr_; }
 
       GenOper(Descr descr = Descr()) : descr_(descr) {}
       GenOper(const SafePtr<GenOper>& o) : descr_(o->descr_) {}
       GenOper(const SafePtr<OperSet>& o) : descr_(require_dynamic_cast<GenOper,OperSet>(o)->descr_) {}
       GenOper(const SafePtr<ConstructablePolymorphically>& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(o)->descr_) {}
-      GenOper(const ConstructablePolymorphically& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(&o)->descr_) {}
+      explicit GenOper(const ConstructablePolymorphically& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(&o)->descr_) {}
       virtual ~GenOper() {}
 
     private:
@@ -179,8 +212,10 @@ namespace libint2 {
 //////////////////////////////
 
   typedef OperatorProperties<1,false,PermutationalSymmetry::nonsymm> Nonmultiplicative1Body_Props;
-  typedef OperatorProperties<2,true,PermutationalSymmetry::symm> MultiplicativeSymm2Body_Props;
-  typedef OperatorProperties<2,true,PermutationalSymmetry::nonsymm> MultiplicativeNonsymm2Body_Props;
+  typedef OperatorProperties<1,true, PermutationalSymmetry::nonsymm> Multiplicative1Body_Props;
+  typedef OperatorProperties<1,true, PermutationalSymmetry::nonsymm, true> MultiplicativeODep1Body_Props;
+  typedef OperatorProperties<2,true, PermutationalSymmetry::symm> MultiplicativeSymm2Body_Props;
+  typedef OperatorProperties<2,true, PermutationalSymmetry::nonsymm> MultiplicativeNonsymm2Body_Props;
   typedef OperatorProperties<2,false,PermutationalSymmetry::symm> NonmultiplicativeSymm2Body_Props;
   typedef OperatorProperties<2,false,PermutationalSymmetry::nonsymm> NonmultiplicativeNonsymm2Body_Props;
 
@@ -198,32 +233,79 @@ namespace libint2 {
   };
   typedef GenOper< GenMultSymmOper_Descr<2>  > GenMultSymm2BodyOper;
 
-  /** OnePSep is a general one-body operator with separable (in cartesian sense) kernel
-  */
-  struct OnePSep_Descr : public Contractable<OnePSep_Descr> {
-    typedef Nonmultiplicative1Body_Props Properties;
-    static const unsigned int max_key = 1;
-    unsigned int key() const { return 0; }
-    std::string description() const { return "OnePSep"; }
-    std::string label() const { return "OnePSep"; }
-    int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
-  };
-  typedef GenOper<OnePSep_Descr> OnePSep;
+#define BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR(r,propprefix,opname)                                  \
+    struct opname ## _Descr : public Contractable<opname ## _Descr> {                                       \
+      typedef propprefix ## 1Body_Props Properties;                                                         \
+      static const unsigned int max_key = 1;                                                                \
+      unsigned int key() const { return 0; }                                                                \
+      std::string description() const { return #opname; }                                                   \
+      std::string label() const { return #opname; }                                                         \
+      int psymm(int i, int j) const { assert(false); }                                                      \
+      int hermitian(int i) const { return +1; }                                                             \
+    };                                                                                                      \
+    typedef GenOper<opname ## _Descr> opname ## Oper;                                                       \
 
-  /** OnePNonSep is a general one-body operator with non-separable (in cartesian sense) kernel
-  */
-  struct OnePNonSep_Descr : public Contractable<OnePNonSep_Descr> {
-    typedef Nonmultiplicative1Body_Props Properties;
-    static const unsigned int max_key = 1;
-    unsigned int key() const { return 0; }
-    std::string description() const { return "OnePNonSep"; }
-    std::string label() const { return "OnePNonSep"; }
-    int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
-  };
-  typedef GenOper<OnePNonSep_Descr> OnePNonSep;
+#define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (Kinetic, BOOST_PP_NIL)
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, Nonmultiplicative, BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST)
+#undef BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST
+#define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (Overlap, BOOST_PP_NIL)
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, Multiplicative, BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST)
+#undef BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST
+#define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (ElecPot, BOOST_PP_NIL)
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, MultiplicativeODep, BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST)
+#undef BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST
 
+/// cartesian multipole operator in \c NDIM dimensions
+/// \f$ \hat{O}(\vec{k}) \equiv \vec{r}^{\cdot \vec{k}} = r_1^{k_1} r_2^{k_2} \cdots \f$
+/// \internal OriginDerivative<NDIM> is used to store cartesian multipole quanta, not the derivative quanta
+template <unsigned int NDIM>
+struct CartesianMultipole_Descr : public Contractable<CartesianMultipole_Descr<NDIM>>,
+                                  public CartesianMultipoleQuanta<NDIM> {
+  typedef MultiplicativeODep1Body_Props Properties;
+  using CartesianMultipoleQuanta<NDIM>::max_key;
+
+  CartesianMultipole_Descr() { }
+  CartesianMultipole_Descr(unsigned int k) { assert(NDIM==1u); this->inc(0,k); }
+  std::string description() const {
+    std::string descr("CartesianMultipole[");
+    std::ostringstream oss;
+    for(unsigned i=0; i!=NDIM; ++i) {
+      oss << (*this)[i];
+      if (i+1 != NDIM) oss << ",";
+    }
+    return descr + oss.str() + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { assert(false); }
+  int hermitian(int i) const { return +1; }
+};
+template <unsigned int NDIM> using CartesianMultipoleOper = GenOper<CartesianMultipole_Descr<NDIM>>;
+
+/** Represents quantum numbers of \em real spherical multipole operator
+ * defined in Eqs. 5 and 6 of J.M. Pérez-Jordá and W. Yang, J Chem Phys 104, 8003 (1996).
+ * ( \f$ m \geq 0 \f$ corresponds to moments \f$ \mathcal{N}^+ \f$ , \f$ m < 0 \f$ corresponds to \f$ \mathcal{N}^- \f$ )
+ */
+struct SphericalMultipole_Descr : public Contractable<SphericalMultipole_Descr>, public SphericalMultipoleQuanta {
+  typedef MultiplicativeODep1Body_Props Properties;
+  using SphericalMultipoleQuanta::max_key;
+  using SphericalMultipoleQuanta::Sign;
+
+  /// Default ctor makes a 0th-order multipole
+  SphericalMultipole_Descr() : SphericalMultipole_Descr(0,0) { }
+  /// constructs \f$ \mathcal{N}^{+}_{l,m} \f$ if \f$ m \geq 0 \f$, otherwise constructs \f$ \mathcal{N}^{-}_{l,m} \f$
+  SphericalMultipole_Descr(int l, int m) : SphericalMultipoleQuanta(l,m) {}
+  SphericalMultipole_Descr(int l, int m, Sign sign) : SphericalMultipoleQuanta(l,m,sign) {}
+  SphericalMultipole_Descr(const SphericalMultipoleQuanta& quanta) : SphericalMultipoleQuanta(quanta) {}
+
+  std::string description() const {
+    std::string descr = std::string("SphericalMultipole[") + std::to_string(this->l()) + "," + std::to_string((this->sign() == Sign::plus ? 1 : -1) * this->m()) + "]";
+    return descr;
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { assert(false); }
+  int hermitian(int i) const { return +1; }
+};
+using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
 
   /** TwoPRep is the two-body repulsion operator.
   */
@@ -234,9 +316,22 @@ namespace libint2 {
     std::string description() const { return "1/r_{12}"; }
     std::string label() const { return "TwoPRep"; }
     int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
+    int hermitian(int i) const { return +1; }
   };
   typedef GenOper<TwoPRep_Descr> TwoPRep;
+
+  /** GTG_1d is the two-body 1-dimensional Gaussian geminal
+  */
+  struct GTG_1d_Descr : public Contractable<GTG_1d_Descr> {
+    typedef MultiplicativeSymm2Body_Props Properties;
+    static const unsigned int max_key = 1;
+    unsigned int key() const { return 0; }
+    std::string description() const { return "GTG_1d"; }
+    std::string label() const { return "GTG_1d"; }
+    int psymm(int i, int j) const { assert(false); }
+    int hermitian(int i) const { return +1; }
+  };
+  typedef GenOper<GTG_1d_Descr> GTG_1d;
 
   /** R12_k_G12 is a two-body operator of form r_{12}^k * exp(-\gamma * r_{12}),
       where k is an integer and \gamma is a positive real number.

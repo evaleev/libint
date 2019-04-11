@@ -6,7 +6,7 @@ my $shellquartet_set = @LIBINT_SHELL_SET@;
 
 my @MakeVars = ("CXXGEN='icpc -m64 -std=c++0x' CXXGENFLAGS='-O3 -xCORE-AVX-I -ansi-alias'",
 		"CXXGEN='clang++ -m64 -std=c++0x' CXXGENFLAGS='-O3 -march=native -mavx'");
-my @UnrollingThresholds = ("100000000000", "1");
+my @UnrollingThresholds = ("4294967295", "0");
 my @VectorLengths = ("1");
 my @VectorizationMethods = ("0");
 my @DoCSE = ("0", "1");

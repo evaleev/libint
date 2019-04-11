@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_vrr11r12kg1211_h_
 #define _libint2_src_bin_libint_vrr11r12kg1211_h_
@@ -37,7 +56,7 @@ namespace libint2 {
       using ParentType::target_;
       using ParentType::is_simple;
 
-      /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
+      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
       VRR_11_R12kG12_11(const SafePtr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "VRR"; }
@@ -72,7 +91,8 @@ namespace libint2 {
         using namespace libint2::algebra;
         using namespace libint2::prefactor;
         const int K = Tint->oper()->descr().K();
-        const R12kG12 oK(K);
+        typedef R12_k_G12_Descr R12kG12Descr;
+        const R12kG12 oK((R12kG12Descr(K)));
         const unsigned int m = Tint->aux()->elem(0);
         const F _1 = unit<F>(dir);
 
@@ -91,10 +111,10 @@ namespace libint2 {
         }
 
         // does not work for derivative integrals (yet or ever)
-        const OriginDerivative dA = Tint->bra(0,0).deriv();
-        const OriginDerivative dB = Tint->ket(0,0).deriv();
-        const OriginDerivative dC = Tint->bra(1,0).deriv();
-        const OriginDerivative dD = Tint->ket(1,0).deriv();
+        const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
+        const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
+        const OriginDerivative<3u> dC = Tint->bra(1,0).deriv();
+        const OriginDerivative<3u> dD = Tint->ket(1,0).deriv();
         const bool deriv = dA.zero() == false ||
             dB.zero() == false ||
             dC.zero() == false ||
@@ -124,23 +144,23 @@ namespace libint2 {
             if (exists(am1)) {
               auto Am1BCD_m = factory.make_child(am1,b,c,d,m,oK);
               auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
+              if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
             }
             const F& bm1 = b - _1;
             if (exists(bm1)) {
               auto ABm1CD_m = factory.make_child(a,bm1,c,d,m,oK);
               auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
+              if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
             }
             const F& cm1 = c - _1;
             if (exists(cm1)) {
               auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
             }
             const F& dm1 = d - _1;
             if (exists(dm1)) {
               auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1,oK);
-              if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
             }
             return;
           }
@@ -160,23 +180,23 @@ namespace libint2 {
             if (exists(am1)) {
               auto Am1BCD_m = factory.make_child(am1,b,c,d,m,oK);
               auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
+              if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
             }
             const F& bm1 = b - _1;
             if (exists(bm1)) {
               auto ABm1CD_m = factory.make_child(a,bm1,c,d,m,oK);
               auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
+              if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
             }
             const F& cm1 = c - _1;
             if (exists(cm1)) {
               auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
             }
             const F& dm1 = d - _1;
             if (exists(dm1)) {
               auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1,oK);
-              if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
             }
             return;
           }
@@ -196,23 +216,23 @@ namespace libint2 {
             if (exists(cm1)) {
               auto ABCm1D_m = factory.make_child(a,b,cm1,d,m,oK);
               auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
+              if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
             }
             const F& dm1 = d - _1;
             if (exists(dm1)) {
               auto ABCDm1_m = factory.make_child(a,b,c,dm1,m,oK);
               auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1,oK);
-              if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
+              if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
             }
             const F& am1 = a - _1;
             if (exists(am1)) {
               auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
             }
             const F& bm1 = b - _1;
             if (exists(bm1)) {
               auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
             }
             return;
           }
@@ -232,23 +252,23 @@ namespace libint2 {
             if (exists(cm1)) {
               auto ABCm1D_m = factory.make_child(a,b,cm1,d,m,oK);
               auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
+              if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
             }
             const F& dm1 = d - _1;
             if (exists(dm1)) {
               auto ABCDm1_m = factory.make_child(a,b,c,dm1,m,oK);
               auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1,oK);
-              if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
+              if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
             }
             const F& am1 = a - _1;
             if (exists(am1)) {
               auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
             }
             const F& bm1 = b - _1;
             if (exists(bm1)) {
               auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1,oK);
-              if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
             }
             return;
           }
@@ -295,15 +315,15 @@ namespace libint2 {
             const F& am1 = a - _1;
             if (exists(am1)) {
               auto Am1BCD_K = factory.make_child(am1,b,c,d,0u,oK);
-              if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("R12kG12_pfac1_0") * Am1BCD_K;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("R12kG12_pfac1_0") * Am1BCD_K;  nflops_+=3; }
             }
             const F& cm1 = c - _1;
             if (exists(cm1)) {
               auto ABCm1D_K = factory.make_child(a,b,cm1,d,0u,oK);
-              if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("R12kG12_pfac2") * ABCm1D_K;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("R12kG12_pfac2") * ABCm1D_K;  nflops_+=3; }
             }
             if (K != 0) {
-              const R12kG12 oKm2(K-2);
+              const R12kG12 oKm2((R12kG12Descr(K-2)));
               auto Ap1BCD_Km2 = factory.make_child(a+_1,b,c,d,0u,oKm2);
               auto ABCp1D_Km2 = factory.make_child(a,b,c+_1,d,0u,oKm2);
               auto ABCD_Km2 = factory.make_child(a,b,c,d,0u,oKm2);
@@ -325,15 +345,15 @@ namespace libint2 {
             const F& cm1 = c - _1;
             if (exists(cm1)) {
               auto ABCm1D_K = factory.make_child(a,b,cm1,d,0u,oK);
-              if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("R12kG12_pfac1_1") * ABCm1D_K;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("R12kG12_pfac1_1") * ABCm1D_K;  nflops_+=3; }
             }
             const F& am1 = a - _1;
             if (exists(am1)) {
               auto Am1BCD_K = factory.make_child(am1,b,c,d,0u,oK);
-              if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("R12kG12_pfac2") * Am1BCD_K;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("R12kG12_pfac2") * Am1BCD_K;  nflops_+=3; }
             }
             if (K != 0) {
-              const R12kG12 oKm2(K-2);
+              const R12kG12 oKm2((R12kG12Descr(K-2)));
               auto ABCp1D_Km2 = factory.make_child(a,b,c+_1,d,0u,oKm2);
               auto Ap1BCD_Km2 = factory.make_child(a+_1,b,c,d,0u,oKm2);
               auto ABCD_Km2 = factory.make_child(a,b,c,d,0u,oKm2);
@@ -358,15 +378,15 @@ namespace libint2 {
             const F& bm1 = b - _1;
             if (exists(bm1)) {
               auto ABm1CD_K = factory.make_child(a,bm1,c,d,0u,oK);
-              if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("R12kG12_pfac1_0") * ABm1CD_K;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("R12kG12_pfac1_0") * ABm1CD_K;  nflops_+=3; }
             }
             const F& dm1 = d - _1;
             if (exists(dm1)) {
               auto ABCDm1_K = factory.make_child(a,b,c,dm1,0u,oK);
-              if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("R12kG12_pfac2") * ABCDm1_K;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("R12kG12_pfac2") * ABCDm1_K;  nflops_+=3; }
             }
             if (K != 0) {
-              const R12kG12 oKm2(K-2);
+              const R12kG12 oKm2((R12kG12Descr(K-2)));
               auto ABp1CD_Km2 = factory.make_child(a,b+_1,c,d,0u,oKm2);
               auto ABCDp1_Km2 = factory.make_child(a,b,c,d+_1,0u,oKm2);
               auto ABCD_Km2 = factory.make_child(a,b,c,d,0u,oKm2);
@@ -388,15 +408,15 @@ namespace libint2 {
             const F& dm1 = d - _1;
             if (exists(dm1)) {
               auto ABCDm1_K = factory.make_child(a,b,c,dm1,0u,oK);
-              if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("R12kG12_pfac1_1") * ABCDm1_K;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("R12kG12_pfac1_1") * ABCDm1_K;  nflops_+=3; }
             }
             const F& bm1 = b - _1;
             if (exists(bm1)) {
               auto ABm1CD_K = factory.make_child(a,bm1,c,d,0u,oK);
-              if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("R12kG12_pfac2") * ABm1CD_K;  nflops_+=3; }
+              if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("R12kG12_pfac2") * ABm1CD_K;  nflops_+=3; }
             }
             if (K != 0) {
-              const R12kG12 oKm2(K-2);
+              const R12kG12 oKm2((R12kG12Descr(K-2)));
               auto ABCDp1_Km2 = factory.make_child(a,b,c,d+_1,0u,oKm2);
               auto ABp1CD_Km2 = factory.make_child(a,b+_1,c,d,0u,oKm2);
               auto ABCD_Km2 = factory.make_child(a,b,c,d,0u,oKm2);

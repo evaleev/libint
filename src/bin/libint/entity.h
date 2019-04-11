@@ -1,7 +1,28 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_entity_h_
 #define _libint2_src_bin_libint_entity_h_
 
+#include <iomanip>
+#include <limits>
 #include <string>
 #include <sstream>
 #include <dgvertex.h>
@@ -51,7 +72,7 @@ namespace libint2 {
   /// Converts x to its string representation
   template <typename T>
     std::string to_string(const T& x) {
-    std::ostringstream oss;  oss << x;  return oss.str();
+    std::ostringstream oss;  oss << std::scientific << std::setprecision(std::numeric_limits<T>::digits10 + 1) << x;  return oss.str();
   }
 
   /**
@@ -103,7 +124,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
     }
 
     /// Implementation of DGVertex::size()
-    const unsigned int size() const { return 1; }
+    unsigned int size() const { return 1; }
 
     /// Implementation of DGVertex::equiv()
     bool equiv(const SafePtr<DGVertex>& a) const
@@ -183,7 +204,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
         }
 
       /// Implementation of DGVertex::size()
-      const unsigned int size() const { return 1; }
+      unsigned int size() const { return 1; }
 
       /// Implementation of DGVertex::equiv()
       bool equiv(const SafePtr<DGVertex>& a) const
@@ -203,12 +224,12 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
       /// Implementation of DGVertex::label()
       const std::string& label() const
       {
-	return Entity::id();
+        return Entity::id();
       }
       /// Implementation of DGVertex::id()
       const std::string& id() const
       {
-	return label();
+        return label();
       }
       /// Implementation of DGVertex::description()
       std::string description() const
@@ -224,7 +245,13 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
 
       /// Implements Hashable::key()
       typename DGVertex::KeyReturnType key() const {
-        return static_cast<typename DGVertex::KeyReturnType>(value());
+        if (std::is_floating_point<T>::value) {
+          if (not std::is_same<T,double>::value)
+            throw std::runtime_error("CTimeEntity<Real> only supported when Real==double");
+          return static_cast<typename DGVertex::KeyReturnType>(*reinterpret_cast<const unsigned long*>(&value_));
+        }
+        else
+          return static_cast<typename DGVertex::KeyReturnType>(value());
       }
 
     private:

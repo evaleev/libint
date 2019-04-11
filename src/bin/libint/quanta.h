@@ -1,7 +1,27 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_quanta_h_
 #define _libint2_src_bin_libint_quanta_h_
 
+#include <cassert>
 #include <vector>
 #include <smart_ptr.h>
 #include <global_macros.h>
@@ -24,10 +44,10 @@ namespace libint2 {
     static const LIBINT2_UINT_LEAST64 max_quantum_number = 100;
     
     virtual ~QuantumSet() {}
-    virtual const std::string label() const =0;
+    virtual std::string label() const =0;
 
     /// Number of quantum numbers in the set
-    virtual const unsigned int num_quanta() const =0;
+    virtual unsigned int num_quanta() const =0;
     /// Increment i-th quantum number
     virtual void inc(unsigned int i) =0;
     /// Decrement i-th quantum number
@@ -53,7 +73,7 @@ namespace libint2 {
     ~QuantumNumbers();
     
     bool operator==(const QuantumNumbers&) const;
-    const std::string label() const;
+    std::string label() const;
 
     /// Increment quantum number i
     void inc(unsigned int i) { ++qn_.at(i); }
@@ -72,7 +92,7 @@ namespace libint2 {
     }
 
     /// Return i-th quantum number
-    const unsigned int num_quanta() const {
+    unsigned int num_quanta() const {
       return qn_.size();
     }
 
@@ -157,7 +177,7 @@ namespace libint2 {
     }
 
   template<typename T, unsigned int N>
-    const std::string
+    std::string
     QuantumNumbers<T,N>::label() const
     {
       std::ostringstream oss;
@@ -196,7 +216,7 @@ namespace libint2 {
     ~QuantumNumbersA();
     
     bool operator==(const QuantumNumbersA&) const;
-    const std::string label() const;
+    std::string label() const;
 
     /// Increment quantum number i
     void inc(unsigned int i) { ++qn_[i]; }
@@ -220,7 +240,7 @@ namespace libint2 {
     }
 
     /// Implementation of QuantumSet::num_quanta()
-    const unsigned int num_quanta() const {
+    unsigned int num_quanta() const {
       return N;
     }
 
@@ -324,7 +344,7 @@ namespace libint2 {
     }
 
   template<typename T, unsigned int N>
-    const std::string
+    std::string
     QuantumNumbersA<T,N>::label() const
     {
       std::ostringstream oss;
@@ -354,7 +374,7 @@ namespace libint2 {
     ~QuantumNumbersA() {}
     
     bool operator==(const QuantumNumbersA&) const { return true; }
-    const std::string label() const { return "{}"; }
+    std::string label() const { return "{}"; }
 
     /// Increment quantum number i
     void inc(unsigned int i) { throw std::runtime_error("QuantumNumbersA<T,0>::inc -- no quantum numbers to increment"); }
@@ -365,7 +385,7 @@ namespace libint2 {
     /// Return i-th quantum number
     const T elem(unsigned int i) const { throw std::runtime_error("QuantumNumbersA<T,0>::inc -- no quantum numbers to return"); }
     /// Implementation of QuantumSet::num_quanta()
-    const unsigned int num_quanta() const { return 0; }
+    unsigned int num_quanta() const { return 0; }
 
     /// Implements Hashable::key()
     LIBINT2_UINT_LEAST64 key() const { return 0; }

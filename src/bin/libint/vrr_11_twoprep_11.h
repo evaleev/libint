@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_vrr11twoprep11_h_
 #define _libint2_src_bin_libint_vrr11twoprep11_h_
@@ -36,7 +55,7 @@ namespace libint2 {
       using ParentType::target_;
       using ParentType::is_simple;
 
-      /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
+      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
       VRR_11_TwoPRep_11(const SafePtr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "OSVRR"; }
@@ -87,10 +106,10 @@ namespace libint2 {
       }
 
       // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89)
-      const OriginDerivative dA = Tint->bra(0,0).deriv();
-      const OriginDerivative dB = Tint->ket(0,0).deriv();
-      const OriginDerivative dC = Tint->bra(1,0).deriv();
-      const OriginDerivative dD = Tint->ket(1,0).deriv();
+      const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
+      const OriginDerivative<3u> dC = Tint->bra(1,0).deriv();
+      const OriginDerivative<3u> dD = Tint->ket(1,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false ||
           dC.zero() == false ||
@@ -152,9 +171,9 @@ namespace libint2 {
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(a)[dir] * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(a[dir]) * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
 #endif
         }
         const F& bm1 = b - _1;
@@ -163,20 +182,20 @@ namespace libint2 {
           auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(b)[dir] * Scalar("oo2z") * (Scalar("roz") * ABm1CD_mp1 - ABm1CD_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(b[dir]) * Scalar("oo2z") * (Scalar("roz") * ABm1CD_mp1 - ABm1CD_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
 #endif
         }
         const F& cm1 = c - _1;
         if (exists(cm1)) {
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
-          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
           auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
-          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
         }
       }
       // Build on B
@@ -204,9 +223,9 @@ namespace libint2 {
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(a)[dir] * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(a[dir]) * Scalar("oo2z") * (Scalar("roz") * Am1BCD_mp1 - Am1BCD_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2z") * (Am1BCD_m - Scalar("roz") * Am1BCD_mp1);  nflops_+=5; }
 #endif
         }
         // simplified 3-center VRR due to Ahlrichs (PCCP 6, 5119 (2004))
@@ -217,20 +236,20 @@ namespace libint2 {
           auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(b)[dir] * Scalar("oo2z") * (Scalar("roz") * ABm1CD_mp1 - ABm1CD_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(b[dir]) * Scalar("oo2z") * (Scalar("roz") * ABm1CD_mp1 - ABm1CD_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2z") * (ABm1CD_m - Scalar("roz") * ABm1CD_mp1);  nflops_+=5; }
 #endif
         }
         const F& cm1 = c - _1;
         if (exists(cm1)) {
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
-          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2ze") * ABCm1D_mp1;  nflops_+=3; }
         }
         const F& dm1 = d - _1;
         if (exists(dm1)) {
           auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
-          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2ze") * ABCDm1_mp1;  nflops_+=3; }
         }
       }
       // Build on C
@@ -260,9 +279,9 @@ namespace libint2 {
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(c)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(c[dir]) * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
 #endif
         }
         const F& dm1 = d - _1;
@@ -271,20 +290,20 @@ namespace libint2 {
           auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(d)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCDm1_mp1 - ABCDm1_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(d[dir]) * Scalar("oo2e") * (Scalar("roe") * ABCDm1_mp1 - ABCDm1_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
 #endif
         }
         const F& am1 = a - _1;
         if (exists(am1)) {
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
-          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
           auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
-          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
         }
       }
       // Build on D
@@ -312,9 +331,9 @@ namespace libint2 {
           auto ABCm1D_mp1 = factory.make_child(a,b,cm1,d,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(c)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(c[dir]) * Scalar("oo2e") * (Scalar("roe") * ABCm1D_mp1 - ABCm1D_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(c)[dir] * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(c[dir]) * Scalar("oo2e") * (ABCm1D_m - Scalar("roe") * ABCm1D_mp1);  nflops_+=5; }
 #endif
         }
         // simplified 3-center VRR due to Ahlrichs (PCCP 6, 5119 (2004))
@@ -325,20 +344,20 @@ namespace libint2 {
           auto ABCDm1_mp1 = factory.make_child(a,b,c,dm1,m+1);
 #if LIBINT_GENERATE_FMA
           // this form is amenable to generation of fmsub
-          if (is_simple()) { expr_ -= Vector(d)[dir] * Scalar("oo2e") * (Scalar("roe") * ABCDm1_mp1 - ABCDm1_m);  nflops_+=5; }
+          if (is_simple()) { expr_ -= Scalar(d[dir]) * Scalar("oo2e") * (Scalar("roe") * ABCDm1_mp1 - ABCDm1_m);  nflops_+=5; }
 #else
-          if (is_simple()) { expr_ += Vector(d)[dir] * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
+          if (is_simple()) { expr_ += Scalar(d[dir]) * Scalar("oo2e") * (ABCDm1_m - Scalar("roe") * ABCDm1_mp1);  nflops_+=5; }
 #endif
         }
         const F& am1 = a - _1;
         if (exists(am1)) {
           auto Am1BCD_mp1 = factory.make_child(am1,b,c,d,m+1);
-          if (is_simple()) { expr_ += Vector(a)[dir] * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(a[dir]) * Scalar("oo2ze") * Am1BCD_mp1;  nflops_+=3; }
         }
         const F& bm1 = b - _1;
         if (exists(bm1)) {
           auto ABm1CD_mp1 = factory.make_child(a,bm1,c,d,m+1);
-          if (is_simple()) { expr_ += Vector(b)[dir] * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
+          if (is_simple()) { expr_ += Scalar(b[dir]) * Scalar("oo2ze") * ABm1CD_mp1;  nflops_+=3; }
         }
       }
 
@@ -359,13 +378,13 @@ namespace libint2 {
           if (is_simple() && dxyz != dir) // for integrals only consider derivatives in THE build direction
             continue;
 
-          OriginDerivative _d1; _d1.inc(dxyz);
+          OriginDerivative<3u> _d1; _d1.inc(dxyz);
 
           SafePtr<DGVertex> _nullptr;
 
           // dA - _1?
           {
-            const OriginDerivative dAm1(dA - _d1);
+            const OriginDerivative<3u> dAm1(dA - _d1);
             if (exists(dAm1)) { // yes
               a.deriv() = dAm1;
               auto ABCD_m = (part == 0 && not part0_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
@@ -396,7 +415,7 @@ namespace libint2 {
 
           // dB - _1?
           {
-            const OriginDerivative dBm1(dB - _d1);
+            const OriginDerivative<3u> dBm1(dB - _d1);
             if (exists(dBm1)) { // yes
               b.deriv() = dBm1;
               auto ABCD_m = (part == 0 && not part0_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
@@ -427,7 +446,7 @@ namespace libint2 {
 
           // dC - _1?
           {
-            const OriginDerivative dCm1(dC - _d1);
+            const OriginDerivative<3u> dCm1(dC - _d1);
             if (exists(dCm1)) { // yes
               c.deriv() = dCm1;
               auto ABCD_m = (part == 1 && not part1_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
@@ -458,7 +477,7 @@ namespace libint2 {
 
           // dD - _1?
           {
-            const OriginDerivative dDm1(dD - _d1);
+            const OriginDerivative<3u> dDm1(dD - _d1);
             if (exists(dDm1)) { // yes
               d.deriv() = dDm1;
               auto ABCD_m = (part == 1 && not part1_has_unit) ? factory.make_child(a,b,c,d,m) : _nullptr;
@@ -539,10 +558,10 @@ namespace libint2 {
       const bool xsxs = sh_b.zero() && sh_d.zero();
       const bool sxsx = sh_a.zero() && sh_c.zero();
 
-      const OriginDerivative dA = target_->bra(0,0).deriv();
-      const OriginDerivative dB = target_->ket(0,0).deriv();
-      const OriginDerivative dC = target_->bra(1,0).deriv();
-      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const OriginDerivative<3u> dA = target_->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = target_->ket(0,0).deriv();
+      const OriginDerivative<3u> dC = target_->bra(1,0).deriv();
+      const OriginDerivative<3u> dD = target_->ket(1,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false ||
           dC.zero() == false ||
@@ -572,21 +591,27 @@ namespace libint2 {
       const bool sxsx = sh_a.zero() && sh_c.zero();
       bool ahlrichs_simplification = false;
       bool unit_s = false;
+      bool part0_has_unit = false;
+      bool part1_has_unit = false;
       if (xsxs) {
         ahlrichs_simplification = (sh_a.pure_sh() && sh_b.is_unit()) ||
                                   (sh_c.pure_sh() && sh_d.is_unit());
         unit_s = sh_b.is_unit();
+        part0_has_unit = sh_b.is_unit();
+        part1_has_unit = sh_d.is_unit();
       }
       if (sxsx) {
         ahlrichs_simplification = (sh_b.pure_sh() && sh_a.is_unit()) ||
                                   (sh_d.pure_sh() && sh_c.is_unit());
         unit_s = sh_a.is_unit();
+        part0_has_unit = sh_a.is_unit();
+        part1_has_unit = sh_c.is_unit();
       }
 
-      const OriginDerivative dA = target_->bra(0,0).deriv();
-      const OriginDerivative dB = target_->ket(0,0).deriv();
-      const OriginDerivative dC = target_->bra(1,0).deriv();
-      const OriginDerivative dD = target_->ket(1,0).deriv();
+      const OriginDerivative<3u> dA = target_->bra(0,0).deriv();
+      const OriginDerivative<3u> dB = target_->ket(0,0).deriv();
+      const OriginDerivative<3u> dC = target_->bra(1,0).deriv();
+      const OriginDerivative<3u> dD = target_->ket(1,0).deriv();
       const bool deriv = dA.zero() == false ||
           dB.zero() == false ||
           dC.zero() == false ||
@@ -650,13 +675,15 @@ namespace libint2 {
         }
         for(unsigned int xyz=0; xyz<3; ++xyz) {
           if (sh_a.deriv().d(xyz) > 0) {
-            oss << "," << args->symbol(arg++);
+            // see the dA-1 clause: (ab|cd)^m is skipped
+            oss << "," << (part0_has_unit ? std::to_string(0) : args->symbol(arg++));
             oss << "," << args->symbol(arg++);
           }
           else
             oss << ",0,0";
           if (sh_b.deriv().d(xyz) > 0) {
-            oss << "," << args->symbol(arg++);
+            // see the dB-1 clause: (ab|cd)^m is skipped
+            oss << "," << (part0_has_unit ? std::to_string(0) : args->symbol(arg++));
             oss << "," << args->symbol(arg++);
           }
           else

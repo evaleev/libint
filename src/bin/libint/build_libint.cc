@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 /**
   This program produces optimized source code to compute matrix elements (integrals)
@@ -10,11 +29,21 @@
   Blacksburg (August 2006 - present)
   */
 
-#include <libint2_config.h>
-
 #include <iostream>
 #include <fstream>
+#include <limits>
 #include <vector>
+#include <boost/preprocessor.hpp>
+#if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
+#  error "your compiler does not provide variadic macros (but does support C++11), something is seriously broken, please create an issue at https://github.com/evaleev/libint/issues"
+#endif
+
+
+#include <libint2/config.h>
+#include <global_macros.h>
+#include <libint2/cgshell_ordering.h>
+#include <libint2/shgshell_ordering.h>
+
 #include <default_params.h>
 #include <rr.h>
 #include <dg.h>
@@ -29,7 +58,7 @@
 #include <dims.h>
 #include <purgeable.h>
 #include <buildtest.h>
-#include <deriv_iter.h>
+#include <libint2/deriv_iter.h>
 
 #include <master_ints_list.h>
 
@@ -117,10 +146,33 @@ T token(const char* c_str,
   return result;
 }
 
+/**
+ * Returns the number of tokens.
+ * @param c_str input string
+ * @param delimiter delimiter/separator character
+ * @return the number of tokens
+ */
+inline size_t ntokens(const char* c_str,
+                      char delimiter) {
+  size_t n = 1;
+
+  // replace all occurences of delimiter in str with whitespaces
+  std::string str(c_str);
+  std::cout << "ntokens: str=" << str << std::endl;
+  std::string::size_type pos;
+  while ((pos = str.find(delimiter)) != std::string::npos) {
+    str[pos] = ' ';
+    ++n;
+  }
+
+  return n;
+}
+
 static void try_main (int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
+  int return_code = 0;
   try {
     try_main(argc,argv);
   }
@@ -128,21 +180,21 @@ int main(int argc, char* argv[])
     cout << endl
          << "  WARNING! Caught a standard exception:" << endl
          << "    " << a.what() << endl << endl;
+    return_code = 1;
   }
-  return 0;
+  catch(...) {
+    cout << endl
+         << "  WARNING! Caught an unknown exception" << endl << endl;
+    return_code = 1;
+  }
+
+  return return_code;
 }
 
 static void print_header(std::ostream& os);
 static void print_config(std::ostream& os);
 // Put all configuration-specific API elements in here
 static void config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface);
-
-#ifdef INCLUDE_ONEBODY
-  static void build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                                                 SafePtr<Libint2Iface>& iface);
-  static void build_OnePNonSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                                                    SafePtr<Libint2Iface>& iface);
-#endif
 
 #ifdef INCLUDE_ERI
 #define USE_GENERIC_ERI_BUILD 1
@@ -177,6 +229,262 @@ static void build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParame
                                 SafePtr<Libint2Iface>& iface);
 #endif
 
+#ifdef INCLUDE_ONEBODY
+
+#  if  LIBINT_SUPPORT_ONEBODYINTS == 0
+#  error "change LIBINT_SUPPORT_ONEBODYINTS in global_macros.h to 1 if need 1-body ints"
+# endif
+
+namespace {
+  template <typename OperType> struct AuxQuantaType;
+  template <> struct AuxQuantaType<ElecPotOper> {
+    typedef mType type;
+  };
+  template <typename OperType> struct AuxQuantaType {
+    typedef EmptySet type;
+  };
+
+  template <typename OperDescrType> OperDescrType make_descr(int, int, int = 0) {
+    return OperDescrType();
+  }
+  template <> CartesianMultipole_Descr<3u> make_descr<CartesianMultipole_Descr<3u>>(int x, int y, int z) {
+    CartesianMultipole_Descr<3u> result;
+    // cartesian multipole quanta
+    result.inc(0,x);
+    result.inc(1,y);
+    result.inc(2,z);
+    return result;
+  }
+  template <> SphericalMultipole_Descr make_descr<SphericalMultipole_Descr>(int l, int m, int) {
+    SphericalMultipole_Descr result(l,m);
+    return result;
+  }
+}
+
+template <typename _OperType>
+void
+build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<CompilationParameters>& cparams,
+                    SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
+{
+  // implement overlap as a special case of cartesian emultipole
+  using OperType = typename std::conditional<std::is_same<_OperType,OverlapOper>::value,CartesianMultipoleOper<3u>,_OperType>::type;
+  const std::string task = task_label(label, deriv_level);
+  typedef CGShell BFType;
+  typedef typename OperType::Descriptor OperDescrType;
+  typedef GenIntegralSet_1_1<CGShell, OperType, typename AuxQuantaType<OperType>::type> Onebody_sh_1_1;
+
+  vector<BFType*> shells;
+  unsigned int lmax = cparams->max_am(task);
+  for(unsigned int l=0; l<=lmax; l++) {
+    shells.push_back(new BFType(l));
+  }
+  ImplicitDimensions::set_default_dims(cparams);
+
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  taskmgr.current(task);
+  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task,lmax));
+
+  const auto nullaux = typename Onebody_sh_1_1::AuxIndexType(0u);
+
+  // optionally skip derivative property ints
+#ifdef DISABLE_ONEBODY_PROPERTY_DERIVS
+  const auto property_operator = !(std::is_same<_OperType,OverlapOper>::value ||
+                                   std::is_same<_OperType,KineticOper>::value ||
+                                   std::is_same<_OperType,ElecPotOper>::value);
+  if (property_operator && deriv_level > 0)
+    return;
+#endif
+  // derivatives of spherical multipole integrals are not implemented
+  {
+    if (std::is_same<_OperType,SphericalMultipoleOper>::value && deriv_level > 0)
+      throw std::invalid_argument("derivatives of spherical multipole ints are not yet implemented");
+  }
+
+
+  //
+  // Construct graphs for each desired target integral and
+  // 1) generate source code for the found traversal path
+  // 2) extract all remaining unresolved recurrence relations and
+  //    append them to the stack. Such unresolved RRs are RRs applied
+  //    to sets of integrals (rather than to individual integrals).
+  // 3) at the end, for each unresolved recurrence relation generate
+  //    explicit source code
+  //
+  SafePtr<DirectedGraph> dg(new DirectedGraph);
+  SafePtr<Strategy> strat(new Strategy());
+  SafePtr<CodeContext> context(new CppCodeContext(cparams));
+  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
+
+  for(unsigned int la=0; la<=lmax; la++) {
+    for(unsigned int lb=0; lb<=lmax; lb++) {
+
+          // skip s|s overlap and elecpot integrals -- no need to involve LIBINT here
+          if (deriv_level == 0 && la == 0 && lb == 0 &&
+              (std::is_same<_OperType,OverlapOper>::value || std::is_same<_OperType,ElecPotOper>::value
+              )
+             )
+            continue;
+
+          SafePtr<Tactic> tactic(new TwoCenter_OS_Tactic(la,lb));
+
+          // this will hold all target shell sets
+          std::vector< SafePtr<Onebody_sh_1_1> > targets;
+
+          /////////////////////////////////
+          // loop over operator components
+          /////////////////////////////////
+          // most important operators have 1 component ...
+          std::vector<OperDescrType> descrs(1); // operator descriptors
+          // important EXCEPTION: multipole moments
+          if (std::is_same<_OperType,CartesianMultipoleOper<3u>>::value) {
+            // reset descriptors array
+            descrs.resize(0);
+
+            // parse the label ... 1emultipole means include multipoles of order 0 (overlap) and 1 (dipole)
+            unsigned int max_multipole_order = 0;
+            assert(label != "overlap");
+            auto key_pos = label.find("emultipole");
+            assert(key_pos != std::string::npos);
+            std::string tmp = label; tmp.erase(key_pos,std::string::npos);
+            istringstream iss(tmp);
+            iss >> max_multipole_order;
+            assert(max_multipole_order > 0);
+
+            // iterate over operators and construct their descriptors
+            for(int multipole_order=0; multipole_order<=max_multipole_order; ++multipole_order) {
+              // we iterate over them same way as over cartesian Gaussian shells
+              int x, y, z;
+              FOR_CART(x,y,z,multipole_order)
+                descrs.push_back(make_descr<OperDescrType>(x,y,z));
+              END_FOR_CART
+            }
+          }
+          if (std::is_same<_OperType,SphericalMultipoleOper>::value) {
+            // reset descriptors array
+            descrs.resize(0);
+            // iterate over operators and construct their descriptors
+            for(int l=0; l<=MULTIPOLE_MAX_ORDER; ++l) {
+              // we iterate over them same way as over solid harmonic Gaussian shells
+              int m;
+              FOR_SOLIDHARM(l,m)
+                descrs.push_back(make_descr<OperDescrType>(l,m));
+              END_FOR_SOLIDHARM
+            }
+          }
+
+          // derivative index is the outermost (slowest running)
+          // operator component is second slowest
+
+          ////////////
+          // loop over unique derivative index combinations
+          ////////////
+          // NB translational invariance is now handled by CR_DerivGauss
+          CartesianDerivIterator<2> diter(deriv_level);
+          bool last_deriv = false;
+          do {
+            BFType a(la);
+            BFType b(lb);
+            
+            for(unsigned int c=0; c!=2; ++c) {
+              const unsigned int ndir = std::is_same<BFType,CGShell>::value ? 3 : 1;
+              for(unsigned int xyz=0; xyz<ndir; ++xyz) {
+                if (c == 0) a.deriv().inc(xyz, (*diter).at(xyz));
+                if (c == 1) b.deriv().inc(xyz, (*diter).at(3 + xyz));
+              }
+            }
+
+            // operator component loop
+            for(unsigned int op=0; op!=descrs.size(); ++op) {
+              OperType oper(descrs[op]);
+
+              SafePtr<Onebody_sh_1_1> target = Onebody_sh_1_1::Instance(a,b,nullaux,oper);
+              targets.push_back(target);
+            } // loop over operator components
+            
+            last_deriv = diter.last();
+            if (!last_deriv) diter.next();
+          } while (!last_deriv); // loop over derivatives
+
+          // unroll only if max_am <= cparams->max_am_opt(task)
+          using std::max;
+          const unsigned int max_am = max(la,lb);
+          const auto nopers = descrs.size();
+          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
+          // decide whether to unroll based on the aggregate size of undifferentiated quartets
+          const bool need_to_unroll = nopers * l_to_cgshellsize(la)*l_to_cgshellsize(lb) <= cparams->unroll_threshold();
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? std::numeric_limits<unsigned int>::max() : 0;
+
+          dg->registry()->unroll_threshold(unroll_threshold);
+          dg->registry()->do_cse(need_to_optimize);
+          dg->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
+          // Need to accumulate integrals?
+          dg->registry()->accumulate_targets(cparams->accumulate_targets());
+
+          // shove all targets on the graph, IN ORDER
+          for(auto t = targets.begin(); t!=targets.end(); ++t) {
+            SafePtr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,Onebody_sh_1_1>(*t);
+            dg->append_target(t_ptr);
+          }
+
+          // make label that characterizes this set of targets
+          std::string eval_label;
+          {
+            std::ostringstream oss;
+            oss << cparams->api_prefix() << "_" << label;
+            if (deriv_level > 0)
+              oss << "deriv" << deriv_level;
+            BFType a(la);
+            BFType b(lb);
+            oss << "_" << a.label() << "_" << b.label();
+            eval_label = oss.str();
+          }
+
+          std::cout << "working on " << eval_label << " ... "; std::cout.flush();
+
+          std::string prefix(cparams->source_directory());
+          std::deque<std::string> decl_filenames;
+          std::deque<std::string> def_filenames;
+
+          // this will generate code for this targets, and potentially generate code for its prerequisites
+          GenerateCode(dg, context, cparams, strat, tactic, memman,
+                       decl_filenames, def_filenames,
+                       prefix, eval_label, false);
+
+          // update max stack size and # of targets
+          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
+          tparams->max_stack_size(max_am, memman->max_memory_used());
+          tparams->max_ntarget(targets.size());
+          //os << " Max memory used = " << memman->max_memory_used() << std::endl;
+
+          // set pointer to the top-level evaluator function
+          ostringstream oss;
+          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_" << task << "[" << la << "][" << lb << "] = "
+              << context->label_to_name(label_to_funcname(eval_label))
+              << context->end_of_stat() << endl;
+          iface->to_static_init(oss.str());
+
+          // need to declare this function internally
+          for(std::deque<std::string>::const_iterator i=decl_filenames.begin();
+              i != decl_filenames.end();
+              ++i) {
+            oss.str("");
+            oss << "#include <" << *i << ">" << endl;
+            iface->to_int_iface(oss.str());
+          }
+
+#if DEBUG
+          os << "Max memory used = " << memman->max_memory_used() << endl;
+#endif
+          dg->reset();
+          memman->reset();
+
+          std::cout << "done" << std::endl;
+
+    } // end of b loop
+  } // end of a loop
+}
+#endif
+
 void try_main (int argc, char* argv[])
 {
   std::ostream& os = cout;
@@ -184,9 +492,39 @@ void try_main (int argc, char* argv[])
   // First must declare the tasks
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.add("default");
+#if defined(LIBINT_MAX_AM_LIST)
+  for(unsigned int d=1; d<ntokens(LIBINT_MAX_AM_LIST,','); ++d) {
+    taskmgr.add( task_label("default", d) );
+  }
+#endif
 #ifdef INCLUDE_ONEBODY
+
+// overlap, kinetic, elecpot cannot be omitted
+#define BOOST_PP_ONEBODY_TASK_TUPLE (overlap,               \
+                                     kinetic,               \
+                                     elecpot,               \
+                                     1emultipole,           \
+                                     2emultipole,           \
+                                     3emultipole,           \
+                                     sphemultipole    \
+                                    )
+#define BOOST_PP_ONEBODY_TASK_OPER_TUPLE (OverlapOper,                    \
+                                          KineticOper,                    \
+                                          ElecPotOper,                    \
+                                          CartesianMultipoleOper<3u>,     \
+                                          CartesianMultipoleOper<3u>,     \
+                                          CartesianMultipoleOper<3u>,     \
+                                          SphericalMultipoleOper          \
+                                         )
+#define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_TUPLE )
+#define BOOST_PP_ONEBODY_TASK_OPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_OPER_TUPLE )
+
   for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
-    taskmgr.add( task_label("onebody",d) );
+#define BOOST_PP_ONEBODY_MCR1(r,data,elem)          \
+    taskmgr.add( task_label(BOOST_PP_STRINGIZE(elem),d) );
+
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
+#undef BOOST_PP_ONEBODY_MCR1
   }
 #endif
 #ifdef INCLUDE_ERI
@@ -223,13 +561,52 @@ void try_main (int argc, char* argv[])
 
   cparams->max_am("default",LIBINT_MAX_AM);
   cparams->max_am_opt("default",LIBINT_OPT_AM);
-  cparams->num_bf("default",4);
-#ifdef INCLUDE_ONEBODY
-  for(unsigned int d=0; d<=0; ++d) {
-    cparams->max_am( task_label("onebody", d) ,ONEBODY_MAX_AM);
-    cparams->max_am_opt( task_label("onebody", d) ,ONEBODY_OPT_AM);
+#if defined(LIBINT_MAX_AM_LIST)
+  for(unsigned int d=0; d<ntokens(LIBINT_MAX_AM_LIST,','); ++d) {
+    cparams->max_am( task_label("default", d), token<unsigned int>(LIBINT_MAX_AM_LIST,',',d));
   }
 #endif
+#if defined(LIBINT_OPT_AM_LIST)
+  for(unsigned int d=0; d<ntokens(LIBINT_OPT_AM_LIST,','); ++d) {
+    cparams->max_am_opt( task_label("default", d), token<unsigned int>(LIBINT_OPT_AM_LIST,',',d));
+  }
+#endif
+  cparams->num_bf("default",4);
+
+#ifdef INCLUDE_ONEBODY
+  for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
+
+#if defined(ONEBODY_MAX_AM_LIST)
+#   define BOOST_PP_ONEBODY_MCR2(r,data,elem)          \
+    cparams->max_am( task_label(elem, d),     token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR2, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR2
+#elif defined(ONEBODY_MAX_AM)
+#   define BOOST_PP_ONEBODY_MCR3(r,data,elem)          \
+    cparams->max_am( task_label(elem, d),     ONEBODY_MAX_AM);
+    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR3, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR3
+#endif
+#if defined(ONEBODY_OPT_AM_LIST)
+#   define BOOST_PP_ONEBODY_MCR4(r,data,elem)          \
+    cparams->max_am_opt( task_label(elem, d)     ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR4, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR4
+#elif defined(ONEBODY_OPT_AM)
+#   define BOOST_PP_ONEBODY_MCR5(r,data,elem)          \
+    cparams->max_am_opt( task_label(elem, d)     , ONEBODY_OPT_AM);
+    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR5, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR5
+#endif
+  }
+  for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
+#define BOOST_PP_ONEBODY_MCR6(r,data,elem)          \
+    cparams->num_bf(task_label(BOOST_PP_STRINGIZE(elem), d),     2);
+    BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR6, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR6
+  }
+#endif // INCLUDE_ONEBODY
+
 #ifdef INCLUDE_ERI
   for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
 #if defined(ERI_MAX_AM_LIST)
@@ -258,6 +635,14 @@ void try_main (int argc, char* argv[])
     cparams->max_am_opt( task_label("3eri", d) ,token<unsigned int>(ERI3_OPT_AM_LIST,',',d));
 #elif defined(ERI3_OPT_AM)
     cparams->max_am_opt( task_label("3eri", d) , ERI3_OPT_AM);
+#endif
+
+#if defined(LIBINT_MAX_AM_LIST)
+    cparams->max_am( task_label("3eri", d), cparams->max_am(task_label("default", d)), 1 );
+    cparams->max_am( task_label("3eri", d), cparams->max_am(task_label("default", d)), 2 );
+#else
+    cparams->max_am( task_label("3eri", d), cparams->max_am("default"), 1 );
+    cparams->max_am( task_label("3eri", d), cparams->max_am("default"), 2 );
 #endif
   }
   for(unsigned int d=0; d<=INCLUDE_ERI3; ++d) {
@@ -329,6 +714,9 @@ void try_main (int argc, char* argv[])
 #if LIBINT_FLOP_COUNT
   cparams->count_flops(true);
 #endif
+#if LIBINT_PROFILE
+  cparams->profile(true);
+#endif
 #if LIBINT_ACCUM_INTS
   cparams->accumulate_targets(true);
 #else
@@ -380,11 +768,34 @@ void try_main (int argc, char* argv[])
   iface->to_params(iface->macro_define("SHELLQUARTET_SET",LIBINT_SHELL_SET));
   iface->to_params(iface->macro_define("SHELLQUARTET_SET_STANDARD",LIBINT_SHELL_SET_STANDARD));
   iface->to_params(iface->macro_define("SHELLQUARTET_SET_ORCA",LIBINT_SHELL_SET_ORCA));
+#if defined(LIBINT_MAX_AM_LIST)
+  for(unsigned int d=0; d<ntokens(LIBINT_MAX_AM_LIST,','); ++d) {
+    {
+      std::ostringstream oss;
+      oss << "MAX_AM";
+      if (d > 0) oss << d;
+      iface->to_params(iface->macro_define(oss.str(),token<unsigned int>(LIBINT_MAX_AM_LIST,',',d)));
+    }
+    {
+      std::ostringstream oss;
+      oss << "MAX_AM_default";
+      if (d > 0) oss << d;
+      iface->to_params(iface->macro_define(oss.str(),token<unsigned int>(LIBINT_MAX_AM_LIST,',',d)));
+    }
+  }
+#else
+  iface->to_params(iface->macro_define("MAX_AM",LIBINT_MAX_AM));
+  iface->to_params(iface->macro_define("MAX_AM_default",LIBINT_MAX_AM));
+#endif
   cparams->print(os);
 
 #ifdef INCLUDE_ONEBODY
-  build_OnePSep_1b_1k(os,cparams,iface,d);
-  //build_OnePNonSep_2b_2k(os,cparams,iface,d);
+  for(unsigned int d=0; d<=INCLUDE_ONEBODY; ++d) {
+#   define BOOST_PP_ONEBODY_MCR7(r,data,i,elem)          \
+    build_onebody_1b_1k< BOOST_PP_LIST_AT (BOOST_PP_ONEBODY_TASK_OPER_LIST, i) >(os,BOOST_PP_STRINGIZE(elem),cparams,iface,d);
+    BOOST_PP_LIST_FOR_EACH_I ( BOOST_PP_ONEBODY_MCR7, _, BOOST_PP_ONEBODY_TASK_LIST)
+#   undef BOOST_PP_ONEBODY_MCR7
+  }
 #endif
 #ifdef INCLUDE_ERI
 # if !USE_GENERIC_ERI_BUILD
@@ -454,8 +865,9 @@ print_header(std::ostream& os)
 {
   os << "----------------------------------------------" << endl;
   os << " build_libint2: optimizing integrals compiler " << endl;
-  os << "                by Edward F. Valeev           " << endl;
-  os << "                and ideas by countless others " << endl;
+  os << "                        by Edward F. Valeev           " << endl;
+  os << "                and ideas by Justin Fermann   "
+     << "                         and Curtis Janssen   " << endl;
   os << "----------------------------------------------" << endl << endl;
 }
 
@@ -500,166 +912,6 @@ print_config(std::ostream& os)
 #endif
 }
 
-#ifdef INCLUDE_ONEBODY
-void
-build_OnePSep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
-                    SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
-{
-  const std::string task = task_label("onebody", deriv_level);
-  const std::string task_uc = task_label("ONEBODY", deriv_level);
-  typedef OnePSep_1_1_sq OnePSep_sh_1_1;
-  vector<CGShell*> shells;
-  unsigned int lmax = cparams->max_am(task);
-  for(unsigned int l=0; l<=lmax; l++) {
-    shells.push_back(new CGShell(l));
-  }
-  ImplicitDimensions::set_default_dims(cparams);
-
-  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  taskmgr.current(task);
-  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
-
-  //
-  // Construct graphs for each desired target integral and
-  // 1) generate source code for the found traversal path
-  // 2) extract all remaining unresolved recurrence relations and
-  //    append them to the stack. Such unresolved RRs are RRs applied
-  //    to sets of integrals (rather than to individual integrals).
-  // 3) at the end, for each unresolved recurrence relation generate
-  //    explicit source code
-  //
-  SafePtr<DirectedGraph> dg(new DirectedGraph);
-  SafePtr<Strategy> strat(new Strategy());
-  SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-  SafePtr<CodeContext> context(new CppCodeContext(cparams));
-  SafePtr<MemoryManager> memman(new WorstFitMemoryManager());
-
-  for(unsigned int la=0; la<=lmax; la++) {
-    for(unsigned int lb=0; lb<=lmax; lb++) {
-
-          // skip s|s integrals -- no need to involve LIBINT here
-          if (deriv_level == 0 && la == 0 && lb == 0)
-            continue;
-
-#if STUDY_MEMORY_USAGE
-          const int lim = 1;
-          if (! (la == lim && lb == lim) )
-            continue;
-#endif
-
-          // unroll only if max_am <= cparams->max_am_opt(task)
-          using std::max;
-          const unsigned int max_am = max(la,lb);
-          const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
-          const unsigned int unroll_threshold = need_to_optimize ? cparams->unroll_threshold() : 0;
-          dg->registry()->unroll_threshold(unroll_threshold);
-          dg->registry()->do_cse(need_to_optimize);
-          dg->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
-          // Need to accumulate integrals?
-          dg->registry()->accumulate_targets(cparams->accumulate_targets());
-
-          ////////////
-          // loop over unique derivative index combinations
-          ////////////
-          // skip 1 center -- all derivatives with respect to that center can be
-          // recovered using translational invariance conditions
-          // which center to skip? -> A = 0, B = 1
-          const unsigned int center_to_skip = 1;
-          DerivIndexIterator<1> diter(deriv_level);
-          std::vector< SafePtr<OnePSep_sh_1_1> > targets;
-          bool last_deriv = false;
-          do {
-            CGShell a(la);
-            CGShell b(lb);
-
-            unsigned int center = 0;
-            for(unsigned int i=0; i<2; ++i) {
-              if (i == center_to_skip)
-                continue;
-              for(unsigned int xyz=0; xyz<3; ++xyz) {
-                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
-              }
-              ++center;
-            }
-
-            SafePtr<OnePSep_sh_1_1> abcd = OnePSep_sh_1_1::Instance(a,b,mType(0u));
-            targets.push_back(abcd);
-            last_deriv = diter.last();
-            if (!last_deriv) diter.next();
-          } while (!last_deriv);
-          // append all derivatives as targets to the graph
-          for(std::vector< SafePtr<OnePSep_sh_1_1> >::const_iterator t=targets.begin();
-              t != targets.end();
-              ++t) {
-            SafePtr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,OnePSep_sh_1_1>(*t);
-            dg->append_target(t_ptr);
-          }
-
-          // make label that characterizes this set of targets
-          // use the label of the nondifferentiated integral as a base
-          std::string ab_label;
-          {
-            CGShell a(la);
-            CGShell b(lb);
-            SafePtr<OnePSep_sh_1_1> ab = OnePSep_sh_1_1::Instance(a,b,mType(0u));
-            ab_label = ab->label();
-          }
-          // + derivative level (if deriv_level > 0)
-          std::string label;
-          {
-            label = cparams->api_prefix();
-            if (deriv_level != 0) {
-              std::ostringstream oss;
-              oss << "deriv" << deriv_level;
-              label += oss.str();
-            }
-            label += ab_label;
-          }
-
-          std::string prefix(cparams->source_directory());
-          std::deque<std::string> decl_filenames;
-          std::deque<std::string> def_filenames;
-
-          // this will generate code for this targets, and potentially generate code for its prerequisites
-          GenerateCode(dg, context, cparams, strat, tactic, memman,
-                       decl_filenames, def_filenames,
-                       prefix, label, false);
-
-          // update max stack size and # of targets
-          const SafePtr<TaskParameters>& tparams = taskmgr.current().params();
-          tparams->max_stack_size(max_am, memman->max_memory_used());
-          tparams->max_ntarget(targets.size());
-          //os << " Max memory used = " << memman->max_memory_used() << std::endl;
-
-          // set pointer to the top-level evaluator function
-          ostringstream oss;
-          oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_" << task << "[" << la << "][" << lb << "] = "
-              << context->label_to_name(label_to_funcname(label))
-              << context->end_of_stat() << endl;
-          iface->to_static_init(oss.str());
-
-          // need to declare this function internally
-          for(std::deque<std::string>::const_iterator i=decl_filenames.begin();
-              i != decl_filenames.end();
-              ++i) {
-            oss.str("");
-            oss << "#include <" << *i << ">" << endl;
-            iface->to_int_iface(oss.str());
-          }
-
-#if DEBUG
-          os << "Max memory used = " << memman->max_memory_used() << endl;
-#endif
-          dg->reset();
-          memman->reset();
-
-        } // end of d loop
-      } // end of c loop
-    } // end of b loop
-  } // end of a loop
-}
-#endif
 
 #ifdef INCLUDE_ERI
 void
@@ -667,7 +919,6 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
                     SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
 {
   const std::string task = task_label("eri", deriv_level);
-  const std::string task_uc = task_label("ERI", deriv_level);
   typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
@@ -678,7 +929,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
-  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
+  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task,lmax));
 
   //
   // Construct graphs for each desired target integral and
@@ -717,22 +968,23 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
           const bool need_to_unroll = l_to_cgshellsize(la)*l_to_cgshellsize(lb)*
                                       l_to_cgshellsize(lc)*l_to_cgshellsize(ld) <= cparams->unroll_threshold();
-          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? std::numeric_limits<unsigned int>::max() : 0;
           dg_xxxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxxx->registry()->do_cse(need_to_optimize);
           dg_xxxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
           //dg_xxxx->registry()->condense_expr(true);
           // Need to accumulate integrals?
           dg_xxxx->registry()->accumulate_targets(cparams->accumulate_targets());
+          // need to profile?
+          if (cparams->profile()) {
+            dg_xxxx->registry()->current_timer(0);
+          }
 
           ////////////
           // loop over unique derivative index combinations
           ////////////
-          // skip 1 center -- all derivatives with respect to that center can be
-          // recovered using translational invariance conditions
-          // which center to skip? -> A = 0, B = 1, C = 2, D = 3
-          const unsigned int center_to_skip = 2;
-          DerivIndexIterator<3> diter(deriv_level);
+          // NB translational invariance is now handled by CR_DerivGauss
+          CartesianDerivIterator<4> diter(deriv_level);
           std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
           bool last_deriv = false;
           do {
@@ -741,17 +993,13 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             CGShell c(lc);
             CGShell d(ld);
 
-            unsigned int center = 0;
             for(unsigned int i=0; i<4; ++i) {
-              if (i == center_to_skip)
-                continue;
               for(unsigned int xyz=0; xyz<3; ++xyz) {
-                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 2) c.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 3) d.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * i + xyz));
+                if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * i + xyz));
+                if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * i + xyz));
+                if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * i + xyz));
               }
-              ++center;
             }
 
             SafePtr<TwoPRep_sh_11_11> abcd = TwoPRep_sh_11_11::Instance(a,b,c,d,mType(0u));
@@ -790,11 +1038,13 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             label += abcd_label;
           }
 
+          std::cout << "working on " << label << " ... "; std::cout.flush();
+
           std::string prefix(cparams->source_directory());
           std::deque<std::string> decl_filenames;
           std::deque<std::string> def_filenames;
 
-          // this will generate code for this targets, and potentially generate code for its prerequisites
+          // this will generate code for these targets, and potentially generate code for its prerequisites
           GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
                        decl_filenames, def_filenames,
                        prefix, label, false);
@@ -827,6 +1077,8 @@ build_TwoPRep_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           dg_xxxx->reset();
           memman->reset();
 
+          std::cout << "done" << std::endl;
+
         } // end of d loop
       } // end of c loop
     } // end of b loop
@@ -842,12 +1094,13 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
                     SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
 {
   const std::string task = task_label("3eri", deriv_level);
-  const std::string task_uc = task_label("3ERI", deriv_level);
-  const std::string task_default("default");
   typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
   vector<CGShell*> shells;
   const unsigned int lmax = cparams->max_am(task);
-  const unsigned int lmax_default = deriv_level > 0 ? cparams->max_am(task_default) : lmax;
+  const unsigned int lmax_default = const_cast<const CompilationParameters*>(cparams.get())->max_am(task, 1);
+  if (lmax != lmax_default)
+    iface->to_params(iface->macro_define( std::string("CENTER_DEPENDENT_MAX_AM_") + task, 1));
+
   for(unsigned int l=0; l<=lmax; l++) {
     shells.push_back(new CGShell(l));
   }
@@ -855,7 +1108,7 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
-  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
+  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task,lmax));
 
   //
   // Construct graphs for each desired target integral and
@@ -900,7 +1153,7 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const bool need_to_unroll = l_to_cgshellsize(lbra)*
                                       l_to_cgshellsize(lc)*
                                       l_to_cgshellsize(ld) <= cparams->unroll_threshold();
-          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? std::numeric_limits<unsigned int>::max() : 0;
           dg_xxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxx->registry()->do_cse(need_to_optimize);
           dg_xxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
@@ -911,11 +1164,8 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           ////////////
           // loop over unique derivative index combinations
           ////////////
-          // skip 1 center -- all derivatives with respect to that center can be
-          // recovered using translational invariance conditions
-          // which center to skip? -> the non-dummy one in bra -> A = 0, B = 1
-          const unsigned int center_to_skip = (dummy_center == 0) ? 1 : 0;
-          DerivIndexIterator<2> diter(deriv_level);
+          // NB translational invariance is now handled by CR_DerivGauss
+          CartesianDerivIterator<3> diter(deriv_level);
           std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
           bool last_deriv = false;
           do {
@@ -930,13 +1180,13 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
             unsigned int center = 0;
             for(unsigned int i=0; i<4; ++i) {
-              if (i == center_to_skip || i == dummy_center)
+              if (i == dummy_center)
                 continue;
               for(unsigned int xyz=0; xyz<3; ++xyz) {
-                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 2) c.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 3) d.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * center + xyz));
               }
               ++center;
             }
@@ -982,6 +1232,8 @@ build_TwoPRep_1b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             label += "eri3";
             label += abcd_label;
           }
+
+          std::cout << "working on " << label << " ... "; std::cout.flush();
 
           std::string prefix(cparams->source_directory());
           std::deque<std::string> decl_filenames;
@@ -1033,7 +1285,6 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
                     SafePtr<Libint2Iface>& iface, unsigned int deriv_level)
 {
   const std::string task = task_label("2eri", deriv_level);
-  const std::string task_uc = task_label("2ERI", deriv_level);
   typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
@@ -1044,7 +1295,7 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   taskmgr.current(task);
-  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task_uc,lmax));
+  iface->to_params(iface->macro_define( std::string("MAX_AM_") + task,lmax));
 
   //
   // Construct graphs for each desired target integral and
@@ -1086,7 +1337,7 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
           const bool need_to_unroll = l_to_cgshellsize(lbra)*
                                       l_to_cgshellsize(lket) <= cparams->unroll_threshold();
-          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? 1000000000 : 1;
+          const unsigned int unroll_threshold = need_to_optimize && need_to_unroll ? std::numeric_limits<unsigned int>::max() : 0;
           dg_xxx->registry()->unroll_threshold(unroll_threshold);
           dg_xxx->registry()->do_cse(need_to_optimize);
           dg_xxx->registry()->condense_expr(condense_expr(cparams->unroll_threshold(),cparams->max_vector_length()>1));
@@ -1096,11 +1347,8 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
           ////////////
           // loop over unique derivative index combinations
           ////////////
-          // skip 1 center -- all derivatives with respect to that center can be
-          // recovered using translational invariance conditions
-          // which center to skip? -> the non-dummy one in bra -> A = 0, B = 1
-          const unsigned int center_to_skip = (dummy_center1 == 0) ? 1 : 0;
-          DerivIndexIterator<1> diter(deriv_level);
+          // NB translational invariance is now handled by CR_DerivGauss
+          CartesianDerivIterator<2> diter(deriv_level);
           std::vector< SafePtr<TwoPRep_sh_11_11> > targets;
           bool last_deriv = false;
           do {
@@ -1117,13 +1365,13 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
 
             unsigned int center = 0;
             for(unsigned int i=0; i<4; ++i) {
-              if (i == center_to_skip || i == dummy_center1 || i == dummy_center2)
+              if (i == dummy_center1 || i == dummy_center2)
                 continue;
               for(unsigned int xyz=0; xyz<3; ++xyz) {
-                if (i == 0) a.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 1) b.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 2) c.deriv().inc(xyz, diter.value(3 * center + xyz));
-                if (i == 3) d.deriv().inc(xyz, diter.value(3 * center + xyz));
+                if (i == 0) a.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 1) b.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 2) c.deriv().inc(xyz, (*diter).at(3 * center + xyz));
+                if (i == 3) d.deriv().inc(xyz, (*diter).at(3 * center + xyz));
               }
               ++center;
             }
@@ -1171,6 +1419,8 @@ build_TwoPRep_1b_1k(std::ostream& os, const SafePtr<CompilationParameters>& cpar
             label += "eri2";
             label += abcd_label;
           }
+
+          std::cout << "working on " << label << " ... "; std::cout.flush();
 
           std::string prefix(cparams->source_directory());
           std::deque<std::string> decl_filenames;
@@ -1573,8 +1823,6 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
   SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
   SafePtr<Strategy> strat(new Strategy);
   SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-  //SafePtr<Tactic> tactic(new RandomChoiceTactic());
-  //SafePtr<Tactic> tactic(new FewestNewVerticesTactic(dg_xxxx));
   for(int la=0; la<=lmax; la++) {
     for(int lb=0; lb<=lmax; lb++) {
       for(int lc=0; lc<=lmax; lc++) {
@@ -1720,25 +1968,92 @@ build_G12DKH_2b_2k(std::ostream& os, const SafePtr<CompilationParameters>& cpara
 void
 config_to_api(const SafePtr<CompilationParameters>& cparams, SafePtr<Libint2Iface>& iface)
 {
+  int max_deriv_order = 0;
+#ifdef INCLUDE_ONEBODY
+  iface->to_params(iface->macro_define("SUPPORT_ONEBODY",1));
+  iface->to_params(iface->macro_define("DERIV_ONEBODY_ORDER",INCLUDE_ONEBODY));
+#ifdef DISABLE_ONEBODY_PROPERTY_DERIVS
+  iface->to_params(iface->macro_define("DERIV_ONEBODY_PROPERTY_ORDER",0));
+#else
+  iface->to_params(iface->macro_define("DERIV_ONEBODY_PROPERTY_ORDER",INCLUDE_ONEBODY));
+#endif
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_ONEBODY);
+#endif
 #ifdef INCLUDE_ERI
   iface->to_params(iface->macro_define("SUPPORT_ERI",1));
   iface->to_params(iface->macro_define("DERIV_ERI_ORDER",INCLUDE_ERI));
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_ERI);
 #endif
 #ifdef INCLUDE_ERI3
   iface->to_params(iface->macro_define("SUPPORT_ERI3",1));
   iface->to_params(iface->macro_define("DERIV_ERI3_ORDER",INCLUDE_ERI3));
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_ERI3);
 #endif
 #ifdef INCLUDE_ERI2
   iface->to_params(iface->macro_define("SUPPORT_ERI2",1));
   iface->to_params(iface->macro_define("DERIV_ERI2_ORDER",INCLUDE_ERI2));
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_ERI2);
 #endif
 #ifdef INCLUDE_G12
   iface->to_params(iface->macro_define("SUPPORT_G12",1));
   iface->to_params(iface->macro_define("DERIV_G12_ORDER",INCLUDE_G12));
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_G12);
 #endif
 #ifdef INCLUDE_G12DKH
   iface->to_params(iface->macro_define("SUPPORT_G12DKH",1));
   iface->to_params(iface->macro_define("DERIV_G12DKH_ORDER",INCLUDE_G12DKH));
+  max_deriv_order = std::max(max_deriv_order,INCLUDE_G12DKH);
 #endif
+  iface->to_params(iface->macro_define("MAX_DERIV_ORDER",max_deriv_order));
+
+  // this is only needed for preprocessor-based generic processing of all generated tasks
+  // declare all tasks in a range of valid tasks as defined or not
+  LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
+  // the range is defined by max # of centers, max deriv order, and operator set
+  const size_t max_ncenter = 4;
+  for(unsigned int ncenter=0; ncenter<=max_ncenter; ++ncenter) {
+
+    std::stringstream oss;
+    oss << ncenter;
+
+    for(unsigned int d=0; d<=max_deriv_order; ++d) {
+      std::string abbrv_label, full_label;
+
+      { // 1-body ints
+        std::string ncenter_str = oss.str();
+        std::string ncenter_str_abbrv = ncenter == 2 ? std::string("") : oss.str();
+#define BOOST_PP_MCR1(r,data,elem)                                   \
+        abbrv_label = task_label(ncenter_str_abbrv + BOOST_PP_STRINGIZE(elem),d);        \
+        full_label = task_label(ncenter_str + BOOST_PP_STRINGIZE(elem),d);               \
+        iface->to_params(iface->macro_define(std::string("TASK_EXISTS_") + full_label,taskmgr.exists(abbrv_label) ? 1 : 0));
+
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
+#undef BOOST_PP_MCR1
+      }
+
+      { // 2-body ints
+
+#define BOOST_PP_TWOBODY_TASKOPER_TUPLE ("eri",               \
+                                         "r12kg12",           \
+                                         "r12_0_g12",         \
+                                         "r12_2_g12",         \
+                                         "g12_T1_g12",        \
+                                         "g12dkh"             \
+        )
+#define BOOST_PP_TWOBODY_TASKOPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_TWOBODY_TASKOPER_TUPLE )
+
+        std::string ncenter_str = oss.str();
+        std::string ncenter_str_abbrv = ncenter == 4 ? std::string("") : oss.str();
+#define BOOST_PP_MCR1(r,data,elem)                                   \
+        abbrv_label = task_label(ncenter_str_abbrv + elem,d);        \
+        full_label = task_label(ncenter_str + elem,d);               \
+        iface->to_params(iface->macro_define(std::string("TASK_EXISTS_") + full_label,taskmgr.exists(abbrv_label) ? 1 : 0));
+
+BOOST_PP_LIST_FOR_EACH ( BOOST_PP_MCR1, _, BOOST_PP_TWOBODY_TASKOPER_LIST)
+#undef BOOST_PP_MCR1
+      }
+    }
+  }
+
 }
 

@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <string>
 #include <fstream>
@@ -38,6 +57,14 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   sc_((cparams_->source_directory() + sc_name).c_str()),
   li_((cparams_->source_directory() + li_name).c_str())
 {
+  th_ << ctext_->copyright();
+  ph_ << ctext_->copyright();
+  ih_ << ctext_->copyright();
+  ii_ << ctext_->copyright();
+  si_ << ctext_->copyright();
+  sc_ << ctext_->copyright();
+  li_ << ctext_->copyright();
+
   header_guard_open(th_,"libint2types");
   header_guard_open(ph_,"libint2params");
   header_guard_open(ih_,"libint2iface");
@@ -48,10 +75,18 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   ph_ << macro_define("ALIGN_SIZE", cparams_->align_size());
   if (cparams_->count_flops())
     ph_ << macro_define("FLOP_COUNT",1);
+  if (cparams_->profile())
+    ph_ << macro_define("PROFILE",1);
   if (cparams_->accumulate_targets())
     ph_ << macro_define("ACCUM_INTS",1);
   const std::string realtype(cparams_->realtype());
-  ph_ << macro_define("REALTYPE",realtype);
+  {
+    // does LIBINT_USER_DEFINED_REAL need extra include statements?
+#ifdef LIBINT_USER_DEFINED_REAL_INCLUDES
+    ph_ << LIBINT_USER_DEFINED_REAL_INCLUDES << std::endl;
+#endif
+    ph_ << macro_define("REALTYPE", realtype);
+  }
   if (cparams_->contracted_targets())
     ph_ << macro_define("CONTRACTED_INTS",1);
   
@@ -68,20 +103,21 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   std::string pfix = oss_.str();
   si_ << pfix;
   sc_ << pfix;
-  li_ << pfix;
+  li_ << "#include <libint2/util/memory.h>" << endl << pfix; // moved from libint2.h to here
 
   // print out declarations for the array of pointers to evaluator functions
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
   typedef LibraryTaskManager::TasksCIter tciter;
   for(tciter t=taskmgr.first(); t!=taskmgr.plast(); ++t) {
     const std::string& tlabel = t->label();
-    const unsigned int lmax = cparams_->max_am(tlabel) + 1;
     const unsigned int nbf = cparams_->num_bf(tlabel);
 
     ostringstream oss;
     oss << "void (*" << ctext->label_to_name(cparams->api_prefix()) << "libint2_build_" << tlabel;
     for(unsigned int c=0; c<nbf; ++c) {
-      oss << "[" << lmax << "]";
+      const unsigned int lmax = const_cast<const CompilationParameters*>(cparams_.get())->max_am(tlabel, c);
+      oss << "[" << lmax+1 << "]";
+      std::cout << "task=" << tlabel << " center=" << c << " lmax=" << lmax << std::endl;
     }
     oss << ")(" << ctext_->const_modifier() << ctext_->inteval_type_name(tlabel) << "*);" << endl;
     ih_ << "extern " << oss.str();
@@ -133,6 +169,25 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
     ih_ << lc_fdec << ctext_->end_of_stat() << endl;
   }
 
+  // if counting flops, need additional initializer function
+  if (cparams_->count_flops()) {
+    oss_.str(null_str_);
+    oss_ << "#ifdef __cplusplus\n#ifdef LIBINT2_FLOP_COUNT\nextern \"C++\" template <typename EvalType> void "
+       << ctext_->label_to_name(cparams->api_prefix() + "libint2_init_flopcounter")
+       << "(EvalType* inteval_vector, int inteval_vector_size)"
+       << ctext_->open_block();
+      // TODO convert to ForLoop object
+    oss_ << "for(int v=1; v!=inteval_vector_size; ++v)"
+        << ctext_->open_block()
+        << ctext_->assign("inteval_vector[v].nflops", "inteval_vector[0].nflops")
+        << ctext_->close_block()
+        << ctext_->close_block();
+    oss_ << "#endif\n#endif\n";
+
+    lf_decl_ = oss_.str();
+    ih_ << lf_decl_ << ctext_->end_of_stat() << endl;
+  }
+
   ih_ << ctext_->code_postfix() << endl;
   
   si_ << si_fdec << ctext_->open_block();
@@ -164,9 +219,9 @@ Libint2Iface::~Libint2Iface()
   }
 
   // For each task, generate the evaluator type
-  th_ << "#include <vector.h>" << std::endl;
-  th_ << "#include <libint2_memory.h>" << std::endl;
-  th_ << "#include <libint2_intrinsic_operations.h>" << std::endl;
+  th_ << "#include <libint2/util/vector.h>" << std::endl;
+  th_ << "#include <libint2/util/intrinsic_operations.h>" << std::endl;
+  th_ << "#include <libint2/util/timer.h>" << std::endl; // in case LIBINT2_PROFILE is on
   generate_inteval_type(th_);
 
   // libint2_iface.h needs macros to help forming prefixed names in API
@@ -260,6 +315,12 @@ Libint2Iface::~Libint2Iface()
         li_ << "inteval->nflops = new " << macro("UINT_LEAST64") << ";" << endl;
         li_ << "inteval->nflops[0] = 0;" << endl;
       }
+      if (cparams_->profile()) { // zero out the timers
+        li_ << ctext_->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
+        li_ << "inteval->timers = new libint2::Timers<2>;" << endl;
+        li_ << "inteval->timers->clear();" << endl;
+        li_ << ctext_->macro_endif(); // >= C++11
+      }
       li_ << ctext_->close_block();
     }
 
@@ -274,6 +335,12 @@ Libint2Iface::~Libint2Iface()
         // free the counter and set the pointer to zero
         li_ << "delete inteval->nflops;" << endl;
         li_ << "inteval->nflops = 0;" << endl;
+      }
+      if (cparams_->profile()) {
+        li_ << ctext_->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
+        li_ << "delete inteval->timers;" << endl;
+        li_ << "inteval->timers = 0;" << endl;
+        li_ << ctext_->macro_endif(); // >= C++11
       }
       li_ << ctext_->close_block();
     }
@@ -471,6 +538,17 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
     os << ctext_->macro_if(macro("FLOP_COUNT"));
     os << ctext_->comment("FLOP counter. Libint must be configured with --enable-flop-counter to allow FLOP counting. It is user's reponsibility to set zero nflops before computing integrals.") << std::endl;
     os << ctext_->declare(ctext_->mutable_modifier() + macro("UINT_LEAST64*"),std::string("nflops"));
+    os << ctext_->macro_endif();
+
+    os << ctext_->macro_if(macro("PROFILE"));
+    os << ctext_->macro_if("LIBINT2_CPLUSPLUS_STD >= 2011");
+    os << ctext_->comment("profiling timers. Libint must be configured with --enable-profile to allow profiling.") << std::endl;
+    os << "#ifdef __cplusplus" << std::endl
+       << ctext_->declare(ctext_->mutable_modifier() + "libint2::Timers<2>*",std::string("timers")) // 1 timer for HRR and 1 timer for VRR
+       << "#else // timers are not accessible from C" << std::endl
+       << "  void* timers;" << std::endl
+       << "#endif" << std::endl;
+    os << ctext_->macro_endif(); // >= C++11
     os << ctext_->macro_endif();
 
     os << ctext_->macro_if(macro("ACCUM_INTS"));

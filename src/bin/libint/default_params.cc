@@ -1,5 +1,24 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
-#include <libint2_config.h>
+#include <libint2/config.h>
 #include <default_params.h>
 #include <task.h>
 #include <cassert>
@@ -21,6 +40,7 @@ CompilationParameters::CompilationParameters() :
   single_evaltype_(Defaults::single_evaltype),
   use_C_linking_(Defaults::use_C_linking),
   count_flops_(Defaults::count_flops),
+  profile_(Defaults::profile),
   accumulate_targets_(Defaults::accumulate_targets),
   realtype_(Defaults::realtype),
   contracted_targets_(Defaults::contracted_targets)
@@ -59,6 +79,7 @@ CompilationParameters::print(std::ostream& os) const
   os << "API_PREFIX           = " << api_prefix() << endl;
   os << "USE_C_LINKING        = " << (use_C_linking() ? "true" : "false") << endl;
   os << "COUNT_FLOPS          = " << (count_flops() ? "true" : "false") << endl;
+  os << "PROFILE              = " << (profile() ? "true" : "false") << endl;
   os << "ACCUMULATE_TARGETS   = " << (accumulate_targets() ? "true" : "false") << endl;
   os << "REALTYPE             = " << (realtype()) << endl;
   os << "CONTRACTED_TARGETS   = " << (contracted_targets() ? "true" : "false") << endl;
@@ -76,17 +97,17 @@ CompilationParameters::task_exists(const std::string& t) const
 }
 
 unsigned int
-CompilationParameters::max_am(std::string t) const
+CompilationParameters::max_am(std::string t, unsigned int c) const
 {
   if (t.empty()) t = default_task_name();
   task_exists(t);
 
   typedef std::map<std::string,TaskParameters>::const_iterator citer;
   citer ti = task_params_.find(t);
-  if (ti != task_params_.end())
-    return ti->second.max_am;
-  else
-    return task_params_.find(default_task_name())->second.max_am;
+  auto max_am = (ti != task_params_.end()) ?
+      ti->second.max_am :
+      task_params_.find(default_task_name())->second.max_am;
+  return (c < max_am.size()) ? max_am[c] : max_am[0];
 }
 
 unsigned int
@@ -130,19 +151,22 @@ CompilationParameters::add_task(const std::string& t)
 }
 
 void
-CompilationParameters::max_am(const std::string& t, unsigned int ma)
+CompilationParameters::max_am(const std::string& t, unsigned int ma, unsigned int c)
 {
   task_exists(t);
 
   typedef std::map<std::string,TaskParameters>::iterator iter;
   iter ti = task_params_.find(t);
-  if (ti != task_params_.end())
-    ti->second.max_am = ma;
+  if (ti != task_params_.end()) {
+    if (ti->second.max_am.size() <= c)
+      ti->second.max_am.resize(c+1);
+    ti->second.max_am[c] = ma;
+  }
   else {
     add_task(t);
-    max_am(t,ma);
+    max_am(t,ma,c);
   }
-  std::cout << "CompilationParameters::max_am: task=" << t << " max_am=" << ma << std::endl;
+  std::cout << "CompilationParameters::max_am: task=" << t << " max_am=" << ma << " center=" << c << std::endl;
 }
 
 void
@@ -204,6 +228,6 @@ libint2::label_to_funcname(const std::string& label)
 bool
 libint2::condense_expr(unsigned int unroll_threshold, bool vectorize)
 {
-  bool condense_expr = unroll_threshold > 1 && vectorize;
+  bool condense_expr = unroll_threshold > 0 && vectorize;
   return condense_expr;
 }

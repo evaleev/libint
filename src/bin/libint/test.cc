@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <boost/bind.hpp>
 #include <iostream>
@@ -19,6 +38,8 @@ using namespace std;
 using namespace libint2;
 
 long living_count = 0;
+const unsigned int use_integrals = std::numeric_limits<unsigned int>::max();
+const unsigned int use_quartets = 0;
 
 namespace {
   int try_main (int argc, char* argv[]);
@@ -356,8 +377,6 @@ namespace {
   void
   test4()
   {
-    const unsigned int use_integrals = 1000000000;
-    const unsigned int use_quartets = 1;
     RunBuildTest<TwoPRep_11_11_sq>(sh_p,sh_s,sh_p,sh_s,0,use_quartets);
     RunBuildTest<TwoPRep_11_11_sq>(sh_p,sh_p,sh_p,sh_p,0,use_quartets);
     RunBuildTest<TwoPRep_11_11_sq>(sh_p,sh_p,sh_p,sh_p,0,use_integrals);
@@ -367,9 +386,6 @@ namespace {
   void
   test5()
   {
-    const unsigned int use_integrals = 1000000000;
-    const unsigned int use_quartets = 1;
-
     CGShell::set_contracted_default_value(true);
     const bool contracted_targets_old_value = cparams->contracted_targets();
     cparams->contracted_targets(true);
@@ -386,9 +402,6 @@ namespace {
   void
   test6()
   {
-    const unsigned int use_integrals = 1000000000;
-    const unsigned int use_quartets = 1;
-
     CGShell::set_contracted_default_value(true);
     const bool contracted_targets_old_value = cparams->contracted_targets();
     cparams->contracted_targets(true);
@@ -447,9 +460,6 @@ namespace {
   void
   test8()
   {
-    const unsigned int use_integrals = 1000000000;
-    const unsigned int use_quartets = 1;
-
     CGShell::set_contracted_default_value(true);
     const bool contracted_targets_old_value = cparams->contracted_targets();
     cparams->contracted_targets(true);

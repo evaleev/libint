@@ -1,13 +1,14 @@
 #include <iostream>
 #include <algorithm>
+
 #include <libint2.h>
-#include <boys.h>
+#include <libint2/boys.h>
 
 using namespace std;
 using namespace libint2;
 
 /** This function evaluates ERI over 4 primitive Gaussian shells.
-    See doc/sample/test_eri.cc for an example of how to deal with
+    See tests/eri/test.cc for an example of how to deal with
     contracted Gaussians.
 
     For simplicity, many details are omitted here, e.g. normalization.
@@ -33,7 +34,7 @@ using namespace libint2;
     erieval.contrdepth = 1;
 #endif
     // - initialize Boys function evaluator
-    FmEval_Chebyshev3 fmeval(max_am);
+    FmEval_Chebyshev7 fmeval(max_am);
     //-------------------------------------------------------------------------------------
 
     //

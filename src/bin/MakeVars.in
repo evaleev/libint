@@ -35,6 +35,7 @@ CXX = @CXX@
 CXXCOMP = @CXX@
 CXXGEN = @CXXGEN@
 CXX_COMPATIBLE_WITH_CXXGEN = @CXX_COMPATIBLE_WITH_CXXGEN@
+CXXGEN_SUPPORTS_CPP11 = @CXXGEN_SUPPORTS_CPP11@
 
 CXXDEPEND = @CXXDEPEND@
 
@@ -59,12 +60,13 @@ includedir=@libintincludedir@
 RANLIB = @RANLIB@
 COMPRESS = gzip
 UNCOMPRESS = gzip -d
+PYTHON = @PYTHON@
 
 # first check for generated include files in the machine dependent directories
 # and then for include files in the src directory
 INCLUDE = -I$(TOPDIR)/src/bin -I$(TOPDIR)/include -I$(SRCTOPDIR)/include \
           -I$(SRCTOPDIR)/src/bin @CPPFLAGS@
-DEFINES = @DEFS@ @EXTRADEFINES@
+DEFINES = @DEFS@ @EXTRADEFINES@ -D__COMPILING_LIBINT2=1
 
 CPPFLAGS = $(DEFINES) $(INCLUDE)
 CXXFLAGS = @CXXFLAGS@
@@ -73,3 +75,5 @@ CXXGENFLAGS = @CXXGENFLAGS@
 SYSLIBS = @LIBS@
 
 TARGET_HEADERS = $(HEADERS:%=$(top_objdir)/include/libint/%)
+
+LIBINT_HAS_EIGEN = @LIBINT_HAS_EIGEN@

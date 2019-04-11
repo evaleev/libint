@@ -1,6 +1,26 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <cmath>
 #include <cstdlib>
+#include <ctime>
 #include <smart_ptr.h>
 
 #ifndef _libint2_src_bin_libint_tactic_h_
@@ -28,6 +48,11 @@ namespace libint2 {
     virtual ~Tactic() {}
 
     virtual RR optimal_rr(const rr_stack& stack) const =0;
+
+    // make return true if need to debug Tactic classes
+    static constexpr bool class_debug() {
+      return false;
+    }
   };
 
   /** FirstChoiceTactic simply chooses the first RR
@@ -112,6 +137,25 @@ namespace libint2 {
       RR optimal_rr(const rr_stack& stack) const;
     private:
       bool increase_;
+  };
+
+  /**
+   * TwoCenter_OS_Tactic decides graph build for <bra0|ket0>
+   */
+  class TwoCenter_OS_Tactic : public Tactic {
+    public:
+      /**
+       * @param lbra0
+       * @param lket0
+       */
+    TwoCenter_OS_Tactic(unsigned lbra0,
+                        unsigned lket0) : Tactic(), lbra0_(lbra0), lket0_(lket0) {}
+      virtual ~TwoCenter_OS_Tactic() {}
+
+      RR optimal_rr(const rr_stack& stack) const;
+    private:
+      unsigned lbra0_;
+      unsigned lket0_;
   };
 
   /**

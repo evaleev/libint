@@ -38,7 +38,7 @@ ENABLESHARED = @ENABLESHARED@
 
 ifeq ($(ENABLESHARED),yes)
   SHELL = @SHELL@  # LIBTOOL will provide the appropriate shell here
-  LIBTOOL = $(SHELL) $(TOPDIR)/libtool
+  LIBTOOL = $(SHELL) $(TOPDIR)/libtool --quiet
   LTLINK = $(LIBTOOL) --mode=link --tag=CXX     # LIBTOOL needs clues in some settings
   ifneq ($(BUILDID),)
     LTLINKLIBOPTS = -rpath $(libdir) -release $(BUILDID) -version-info $(LIBINT_SO_VERSION)
@@ -65,11 +65,15 @@ CXXDEPENDFLAGS = @CXXDEPENDFLAGS@
 CXX = @CXX@
 CXXCOMP = @CXX@
 CXXGEN = @CXXGEN@
+CXXGEN_SUPPORTS_CPP11 = @CXXGEN_SUPPORTS_CPP11@
 
 CXXDEPEND = @CXX@
 
 AR = @AR@
 ARFLAGS = @ARFLAGS@
+
+LD = @LD@
+LDFLAGS = @LDFLAGS@
 
 INSTALL = @INSTALL@
 INSTALLDIROPT = -d -m 0755
@@ -85,6 +89,7 @@ bindir=@bindir@
 libdir=@libdir@
 includedir=@libintincludedir@
 pkgconfigdir=@PKGCONFIGDIR@
+datadir=@datarootdir@/libint/$(LIBINT_VERSION)
 
 RANLIB = @RANLIB@
 COMPRESS = gzip
@@ -95,7 +100,7 @@ LN_S = @LN_S@
 # and then for include files in the src directory
 INCLUDE = -I$(TOPDIR)/src/bin -I$(TOPDIR)/src/bin/libint -I$(TOPDIR)/include -I$(SRCTOPDIR)/include -I$(SRCTOPDIR)/src/bin \
 	  @CPPFLAGS@ -I$(SRCTOPDIR)/src/lib/libint -I$(SRCTOPDIR)/src/bin/libint
-DEFINES = @DEFS@ @EXTRADEFINES@
+DEFINES = @DEFS@ @EXTRADEFINES@ -D__COMPILING_LIBINT2=1
 
 CPPFLAGS = $(DEFINES) $(INCLUDE)
 CXXFLAGS = @CXXFLAGS@
@@ -104,3 +109,5 @@ CXXGENFLAGS = @CXXGENFLAGS@
 SYSLIBS = @LIBS@
 
 TARGET_HEADERS = $(HEADERS:%=$(top_objdir)/include/libint/%)
+
+LIBINT_HAS_EIGEN = @LIBINT_HAS_EIGEN@

@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_integral11_h_
 #define _libint2_src_bin_libint_integral11_h_
@@ -76,7 +95,10 @@ namespace libint2 {
       /// Reimplements DGVertex::unregister()
       void unregister() const;
 
-    private:
+      /// Implements GenIntegralSet::auto_unroll()
+      bool auto_unroll() const;
+
+   private:
       /// This constructor is also private and not implemented since all Integral's are Singletons. Use Instance instead.
       GenIntegralSet_1_1(const OperType& oper, const BraType& bra, const KetType& ket, const AuxIndexType& aux);
 
@@ -97,7 +119,7 @@ namespace libint2 {
 #endif
   
   template <class BFS, class Oper, class AuxQuanta>
-    GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::GenIntegralSet_11_11(const OperType& oper, const BraType& bra, const KetType& ket,  const AuxIndexType& aux) :
+    GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::GenIntegralSet_1_1(const OperType& oper, const BraType& bra, const KetType& ket,  const AuxIndexType& aux) :
     parent_type(oper, bra, ket, aux)
     {
       if (bra.num_members(0) != 1)
@@ -110,7 +132,7 @@ namespace libint2 {
     }
 
   template <class BFS, class Oper, class AuxQuanta>
-    GenIntegralSet_11_11<BFS,Oper,AuxQuanta>::~GenIntegralSet_1_1()
+    GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::~GenIntegralSet_1_1()
     {
 #if DEBUG
       std::cout << "GenIntegralSet_1_1: destructed " << this->label() << std::endl;
@@ -174,13 +196,7 @@ namespace libint2 {
       singl_manager_.remove(this_ptr);
     }
 
-  template <class BFS, class Oper, class AuxQuanta>
-    bool
-    GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::this_precomputed() const
-    {
-      return false;
-    }
-
+  // this_precomputed() and auto_unroll() will be specialized, the nonspecialized version is in integral_11_11.impl.h
 };
 
 #endif

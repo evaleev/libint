@@ -1,29 +1,49 @@
 
+-include ./MakeVars
+
+all:: default
+
 default:: $(TOPDIR)/lib/$(TARGET)
 
-install:: install_inc install_target install_pkgconfig
+INSTALL_TARGETS = install_inc install_target install_pkgconfig install_data
+
+ifeq ($(ENABLE_FORTRAN),yes)
+    INSTALL_TARGETS += install_fortran
+endif
+
+install:: $(INSTALL_TARGETS)
 
 install_inc:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_intrinsic_types.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_intrinsic_operations.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_iface.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_types.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_params.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/cgshellinfo.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/cgshell_ordering.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/vector*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2_config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/boys.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2.h $(DESTDIR)$(includedir)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2.hpp $(DESTDIR)$(includedir)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2_*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/include/libint2/config.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/chemistry/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/chemistry
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/lcao
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/lcao/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/lcao
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/util/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util/generated
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/include/libint2/util/generated/*.h $(DESTDIR)$(includedir)/$(NAME)$(VERSION)/util/generated
+	if test "X$(HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)" = "X0"; then `gunzip -c $(SRCTOPDIR)/external/boost.tar.gz | tar -xf - -C $(DESTDIR)$(includedir)/$(NAME)$(VERSION)`; fi
 
 install_pkgconfig::
-	$(INSTALL) $(INSTALLDIROPT) $(pkgconfigdir)
-	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(pkgconfigdir)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(pkgconfigdir)
+	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(DESTDIR)$(pkgconfigdir)
+
+install_data::
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(datadir)/basis
+	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/basis/* $(DESTDIR)$(datadir)/basis
 
 install_target:: $(TOPDIR)/lib/$(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(libdir)
 	$(LTINST) $(INSTALL) $(INSTALLLIBOPT) $< $(DESTDIR)$(libdir)
+
+install_fortran:: fortran
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/fortran/libint_f.mod $(DESTDIR)$(includedir)
 
 install-pdf:: pdf
 	(cd doc && make install-pdf) || exit 1
@@ -54,7 +74,7 @@ clean:: oclean targetclean
 	cd doc; make clean
 
 distclean:: clean
-	-rm -rf MakeVars MakeRules MakeSuffixRules config.* depcheck* autom4* libtool include/libint2_config.h
+	-rm -rf MakeVars MakeRules MakeSuffixRules config.* depcheck* autom4* libtool include/libint2/config.h libint2.pc
 	cd tests; make distclean
 	cd doc; make distclean
 

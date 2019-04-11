@@ -1,6 +1,29 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #ifndef _libint2_src_bin_libint_masterintslist_h_
 #define _libint2_src_bin_libint_masterintslist_h_
 
+// need extra-long mpl list
+#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
+#define BOOST_MPL_LIMIT_LIST_SIZE 50
 #include <boost/mpl/list.hpp>
 
 #include <bfset.h>
@@ -16,10 +39,36 @@ namespace libint2 {
   // one-electron integrals
   //////////////////////////
 #if LIBINT_SUPPORT_ONEBODYINTS
-  typedef GenIntegralSet_1_1<CGShell,OnePSep,EmptySet> OnePSep_1_1_sq;
-  typedef GenIntegralSet_1_1<CGF,OnePSep,EmptySet> OnePSep_1_1_int;
-  typedef GenIntegralSet_1_1<CGShell,OnePNonSep,mType> OnePNonSep_1_1_sq;
-  typedef GenIntegralSet_1_1<CGF,OnePNonSep,mType> OnePNonSep_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,OverlapOper,EmptySet> Overlap_1_1_sh;
+  typedef GenIntegralSet_1_1<CGF,OverlapOper,EmptySet> Overlap_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,KineticOper,EmptySet> Kinetic_1_1_sh;
+  typedef GenIntegralSet_1_1<CGF,KineticOper,EmptySet> Kinetic_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,ElecPotOper,mType> ElecPot_1_1_sh;
+  typedef GenIntegralSet_1_1<CGF,ElecPotOper,mType> ElecPot_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,CartesianMultipoleOper<3u>,EmptySet> CMultipole_1_1_sh;
+  typedef GenIntegralSet_1_1<CGF,CartesianMultipoleOper<3u>,EmptySet> CMultipole_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,SphericalMultipoleOper,EmptySet> SMultipole_1_1_sh;
+  typedef GenIntegralSet_1_1<CGF,SphericalMultipoleOper,EmptySet> SMultipole_1_1_int;
+
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,OverlapOper,EmptySet> Overlap_1_1_sh_x;
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_Y>,OverlapOper,EmptySet> Overlap_1_1_sh_y;
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_Z>,OverlapOper,EmptySet> Overlap_1_1_sh_z;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_X>,OverlapOper,EmptySet> Overlap_1_1_int_x;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Y>,OverlapOper,EmptySet> Overlap_1_1_int_y;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Z>,OverlapOper,EmptySet> Overlap_1_1_int_z;
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,KineticOper,EmptySet> Kinetic_1_1_sh_x;
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_Y>,KineticOper,EmptySet> Kinetic_1_1_sh_y;
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_Z>,KineticOper,EmptySet> Kinetic_1_1_sh_z;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_X>,KineticOper,EmptySet> Kinetic_1_1_int_x;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Y>,KineticOper,EmptySet> Kinetic_1_1_int_y;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Z>,KineticOper,EmptySet> Kinetic_1_1_int_z;
+
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_X>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_sh_x;
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_Y>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_sh_y;
+  typedef GenIntegralSet_1_1<CGShell1d<CartesianAxis_Z>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_sh_z;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_X>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_int_x;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Y>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_int_y;
+  typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Z>,CartesianMultipoleOper<1u>,EmptySet> CMultipole_1_1_int_z;
 #endif
 
   //////////////////////////
@@ -53,12 +102,36 @@ namespace libint2 {
   /** All known types go into this typelist
       Every type must have a corresponding instantiation of MasterStrategy in strategy.cc
     */
-  typedef mpl::list<
+  typedef boost::mpl::list<
 #if LIBINT_SUPPORT_ONEBODYINTS
-  OnePSep_1_1_sq,
-  OnePSep_1_1_int,
-  OnePNonSep_1_1_sq,
-  OnePNonSep_1_1_int,
+  Overlap_1_1_sh,
+  Overlap_1_1_int,
+  Overlap_1_1_sh_x,
+  Overlap_1_1_int_x,
+  Overlap_1_1_sh_y,
+  Overlap_1_1_int_y,
+  Overlap_1_1_sh_z,
+  Overlap_1_1_int_z,
+  Kinetic_1_1_sh,
+  Kinetic_1_1_int,
+  Kinetic_1_1_sh_x,
+  Kinetic_1_1_int_x,
+  Kinetic_1_1_sh_y,
+  Kinetic_1_1_int_y,
+  Kinetic_1_1_sh_z,
+  Kinetic_1_1_int_z,
+  ElecPot_1_1_sh,
+  ElecPot_1_1_int,
+  CMultipole_1_1_sh,
+  CMultipole_1_1_int,
+  CMultipole_1_1_sh_x,
+  CMultipole_1_1_sh_y,
+  CMultipole_1_1_sh_z,
+  CMultipole_1_1_int_x,
+  CMultipole_1_1_int_y,
+  CMultipole_1_1_int_z,
+  SMultipole_1_1_sh,
+  SMultipole_1_1_int,
 #endif
   TwoPRep_11_11_sq,
   TwoPRep_11_11_int,

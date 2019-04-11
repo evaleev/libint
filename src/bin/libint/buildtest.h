@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #ifndef _libint2_src_bin_libint_buildtest_h_
 #define _libint2_src_bin_libint_buildtest_h_
@@ -130,6 +149,7 @@ namespace libint2 {
       os << "Building " << complabel << std::endl;
 
       SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
+      dg_xxxx->set_label(complabel);
 
       // configure the graph
       dg_xxxx->registry()->do_cse(need_to_optimize);
@@ -208,9 +228,9 @@ namespace libint2 {
                bool have_parent) {
 
     dg->apply(strat,tactic);
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
     {
-      std::basic_ofstream<char> dotfile("graph.strat.dot");
+      std::basic_ofstream<char> dotfile(dg->label() + ".strat.dot");
       dg->print_to_dot(false,dotfile);
     }
 #endif
@@ -230,9 +250,9 @@ namespace libint2 {
     dg->traverse();
     //dg->debug_print_traversal(cout);
 
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
     {
-      std::basic_ofstream<char> dotfile("graph.expr.dot");
+      std::basic_ofstream<char> dotfile(dg->label() + ".expr.dot");
       dg->print_to_dot(false,dotfile);
     }
 #endif
@@ -253,10 +273,10 @@ namespace libint2 {
     // extract all external symbols
     extract_symbols(dg);
 
-#if DEBUG
+#if PRINT_DAG_GRAPHVIZ
     {
-      std::basic_ofstream<char> dotfile2("graph.symb.dot");
-      dg->print_to_dot(true,dotfile2);
+      std::basic_ofstream<char> dotfile(dg->label() + ".symb.dot");
+      dg->print_to_dot(true,dotfile);
     }
 #endif
 
@@ -277,6 +297,9 @@ namespace libint2 {
       dg_prereq->registry()->return_targets(false);
       dg_prereq->registry()->accumulate_targets(true);
       dg_prereq->registry()->stack_name("stack");
+      if (dg->registry()->current_timer() >= 0) {
+        dg_prereq->registry()->current_timer( dg->registry()->current_timer() + 1 );
+      }
 
       // now is the "right" time to reset dg
       // reset graph of the previous computation so that the vertices that will be targets on the new graph

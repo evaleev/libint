@@ -1,4 +1,24 @@
+/*
+ *  Copyright (C) 2004-2019 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
+#include <cassert>
 #include <cstdio>
 #include <context.h>
 #include <codeblock.h>
@@ -189,6 +209,33 @@ CppCodeContext::code_postfix() const
     return "#ifdef __cplusplus\n};\n#endif\n";
   }
   return "";
+}
+
+std::string
+CppCodeContext::copyright() const {
+  std::ostringstream oss;
+  using std::endl;
+  oss << "/*"<< endl
+      << " *  Copyright (C) 2004-2019 Edward F. Valeev" << endl
+      << " *" << endl
+      << " *  This file is part of Libint." << endl
+      << " *" << endl
+      << " *  Libint is free software: you can redistribute it and/or modify" << endl
+      << " *  it under the terms of the GNU Lesser General Public License as published by" << endl
+      << " *  the Free Software Foundation, either version 3 of the License, or" << endl
+      << " *  (at your option) any later version." <<endl
+      << " *" << endl
+      << " *  Libint is distributed in the hope that it will be useful," << endl
+      << " *  but WITHOUT ANY WARRANTY; without even the implied warranty of" << endl
+      << " *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the" << endl
+      << " *  GNU Lesser General Public License for more details." << endl
+      << " *" << endl
+      << " *  You should have received a copy of the GNU Lesser General Public License" << endl
+      << " *  along with Libint.  If not, see <http://www.gnu.org/licenses/>." << endl
+      << " *" << endl
+      << " */" << endl
+      << endl;
+  return oss.str();
 }
 
 std::string

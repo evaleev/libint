@@ -7,14 +7,17 @@ endif
 -include $(TOPDIR)/src/lib/MakeVars
 
 SUBDIRS = src
-CLEANSUBDIRS = src tests/eri
-ALLSUBDIRS = $(CLEANSUBDIRS) doc tests/eri
+CHECKSUBDIRS = tests/eri tests/unit tests/hartree-fock
+CLEANSUBDIRS = $(SUBDIRS) $(CHECKSUBDIRS)
+ALLSUBDIRS = $(CLEANSUBDIRS) doc $(CHECKSUBDIRS)
 
 default::
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(JOBS)) || exit 1; \
 	  done
+
+all:: default
 
 ifndef DODEPEND
 DODEPENDOPT = "DODEPEND=no"
@@ -27,7 +30,7 @@ export::
 	  done
 	(cd export && $(MAKE) $(DODEPENDOPT) export) || exit 1;
 
-install:: install_pkgconfig
+install:: all install_pkgconfig install_inc install_data
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install) || exit 1; \
@@ -35,17 +38,21 @@ install:: install_pkgconfig
 
 ifdef pkgconfigdir
 install_pkgconfig:: 
-	$(INSTALL) $(INSTALLDIROPT) $(pkgconfigdir)
-	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(pkgconfigdir)
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(pkgconfigdir)
+	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(DESTDIR)$(pkgconfigdir)
 endif
 
-install_inc::
+install_data::
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(datadir)/basis
+	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/basis/* $(DESTDIR)$(datadir)/basis
+
+install_inc:: all
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install_inc) || exit 1; \
 	  done
 
-install_target::
+install_target:: all
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install_target) || exit 1; \
@@ -72,10 +79,11 @@ oclean::
 distclean::
 	for dir in $(ALLSUBDIRS); \
 	  do \
-	    (cd $${dir} && $(MAKE) DODEPEND=no distclean) || exit 1; \
+	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
 	-rm -rf autom4te.cache config.status config.log conf*.file conf*.dir *.dSYM depcheck* libtool \
-Makedirlist include
+Makedirlist libint2.pc include/libint2
+	test -f libint2.pc.in || rm -rf include/libint2
 
 targetclean::
 	for dir in $(SUBDIRS); \
@@ -90,9 +98,9 @@ realclean::
 	  done
 
 check::
-	for dir in tests/eri; \
+	for dir in $(CHECKSUBDIRS); \
 	  do \
-	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) check) || exit 1; \
+	    (cd $${dir} && $(MAKE) check) || exit 1; \
 	  done
 
 install-pdf:: pdf

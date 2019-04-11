@@ -14,6 +14,8 @@ default::
 	    (cd $${dir} && $(MAKE) $(JOBS)) || exit 1; \
 	  done
 
+all:: default
+
 ifndef DODEPEND
 DODEPENDOPT = "DODEPEND=no"
 endif
@@ -62,7 +64,7 @@ distclean::
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) distclean) || exit 1; \
 	  done
-	-rm -rf MakeVars MakeRules
+	-rm -rf MakeVars
 
 targetclean::
 	for dir in $(SUBDIRS); \
