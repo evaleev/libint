@@ -24,9 +24,9 @@ CXXDEPENDSUF = none
 CXXDEPENDFLAGS = -M
 
 TEST1 = test
-CXXTEST1SRC = $(TEST1).cc $(TEST1)-core.cc $(TEST1)-permute.cc \
-  $(TEST1)-1body.cc $(TEST1)-boys.cc $(TEST1)-c-api.cc $(TEST1)-shell-order.cc \
-  c-api-util.cc
+CXXTEST1SRC = test.cc test-core.cc test-permute.cc \
+  test-1body.cc test-boys.cc test-c-api.cc test-shell-order.cc \
+  test-util.cc c-api-util.cc
 CXXTEST1OBJ = $(CXXTEST1SRC:%.cc=%.$(OBJSUF))
 CXXTEST1DEP = $(CXXTEST1SRC:%.cc=%.$(DEPSUF))
 CTEST1SRC = c-api.c

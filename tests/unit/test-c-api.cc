@@ -47,11 +47,9 @@ TEST_CASE("C API", "[c-api]") {
   Shell sh2{{alpha2}, {{am2, false, {1.0}}}, {B[0], B[1], B[2]}};
   Shell sh3{{alpha3}, {{am3, false, {1.0}}}, {C[0], C[1], C[2]}};
   Shell sh4{{alpha4}, {{am4, false, {1.0}}}, {D[0], D[1], D[2]}};
-  {
-    libint2::Engine engine(libint2::Operator::coulomb, 1, max_am);
-    engine.compute(sh1, sh2, sh3, sh4);
-    cpp_result = engine.results()[0];
-  }
+  libint2::Engine engine(libint2::Operator::coulomb, 1, max_am);
+  engine.compute(sh1, sh2, sh3, sh4);
+  cpp_result = engine.results()[0];
 
   unsigned int n1, n2, n3, n4;
   int a, b, c, d, abcd;
