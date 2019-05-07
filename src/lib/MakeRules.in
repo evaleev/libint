@@ -1,5 +1,5 @@
 
-.PHONY: default export install install_inc install_target clean oclean distclean targetclean realclean
+.PHONY: default export install install_inc install_pkgconfig install_cmake install_target clean oclean distclean targetclean realclean
 
 default:: $(TOPDIR)/lib/$(TARGET)
 
@@ -18,7 +18,7 @@ export:: source
 $(TOPDIR)/lib/$(TARGET): source
 	cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR)
 
-install:: install_inc install_target install_pkgconfig install_data
+install:: install_inc install_target install_pkgconfig install_cmake install_data
 
 HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS = @HAVE_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@
 
@@ -48,6 +48,12 @@ ifdef pkgconfigdir
 install_pkgconfig::
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(pkgconfigdir)
 	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(DESTDIR)$(pkgconfigdir)
+endif
+
+ifdef cmakedir
+install_cmake::
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(cmakedir)
+	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/FindLibint2.cmake $(DESTDIR)$(cmakedir)
 endif
 
 install_data::

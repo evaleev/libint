@@ -5,7 +5,7 @@ all:: default
 
 default:: $(TOPDIR)/lib/$(TARGET)
 
-INSTALL_TARGETS = install_inc install_target install_pkgconfig install_data
+INSTALL_TARGETS = install_inc install_target install_pkgconfig install_cmake install_cmake install_data
 
 ifeq ($(ENABLE_FORTRAN),yes)
     INSTALL_TARGETS += install_fortran
@@ -33,6 +33,10 @@ install_inc:: $(TOPDIR)/lib/$(TARGET)
 install_pkgconfig::
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(pkgconfigdir)
 	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(DESTDIR)$(pkgconfigdir)
+
+install_cmake::
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(cmakedir)
+	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/FindLibint2.cmake $(DESTDIR)$(cmakedir)
 
 install_data::
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(datadir)/basis

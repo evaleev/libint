@@ -30,7 +30,7 @@ export::
 	  done
 	(cd export && $(MAKE) $(DODEPENDOPT) export) || exit 1;
 
-install:: all install_pkgconfig install_inc install_data
+install:: all install_pkgconfig install_cmake install_inc install_data
 	for dir in $(SUBDIRS); \
 	  do \
 	    (cd $${dir} && $(MAKE) $(DODEPENDOPT) install) || exit 1; \
@@ -40,6 +40,12 @@ ifdef pkgconfigdir
 install_pkgconfig:: 
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(pkgconfigdir)
 	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(DESTDIR)$(pkgconfigdir)
+endif
+
+ifdef cmakedir
+install_cmake::
+	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(cmakedir)
+	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/FindLibint2.cmake $(DESTDIR)$(cmakedir)
 endif
 
 install_data::

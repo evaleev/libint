@@ -83,6 +83,7 @@ bindir=@bindir@
 libdir=@libdir@
 includedir=@libintincludedir@
 pkgconfigdir=@PKGCONFIGDIR@
+cmakedir=@CMAKEDIR@
 datadir=@datarootdir@/libint/$(LIBINT_VERSION)
 
 RANLIB = @RANLIB@
