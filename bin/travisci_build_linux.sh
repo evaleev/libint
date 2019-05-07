@@ -46,7 +46,7 @@ cd export_build
 tar -xvzf libint-*.tgz
 rm -f libint-*.tgz
 cd libint-*
-./configure CPPFLAGS="-I${INSTALL_PREFIX}/eigen3/include/eigen3 -DLIBINT2_DISABLE_BOOST_CONTAINER_SMALL_VECTOR=1" --enable-fortran --with-prefix=${INSTALL_PREFIX}/libint2
+./configure CPPFLAGS="-I${INSTALL_PREFIX}/eigen3/include/eigen3 -DLIBINT2_DISABLE_BOOST_CONTAINER_SMALL_VECTOR=1" --enable-fortran --prefix=${INSTALL_PREFIX}/libint2
 make -j2
 make check
 
