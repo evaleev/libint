@@ -46,9 +46,29 @@ cd export_build
 tar -xvzf libint-*.tgz
 rm -f libint-*.tgz
 cd libint-*
-./configure CPPFLAGS="-I${INSTALL_PREFIX}/eigen3/include/eigen3 -DLIBINT2_DISABLE_BOOST_CONTAINER_SMALL_VECTOR=1" --enable-fortran
+./configure CPPFLAGS="-I${INSTALL_PREFIX}/eigen3/include/eigen3 -DLIBINT2_DISABLE_BOOST_CONTAINER_SMALL_VECTOR=1" --enable-fortran --with-prefix=${INSTALL_PREFIX}/libint2
 make -j2
 make check
+
 # build F03 interface
 make fortran
 fortran/fortran_example
+
+# install and test installed lib
+make install
+mkdir cmake
+cd cmake
+cat > CMakeLists.txt <<EOF
+cmake_minimum_required(VERSION 3.8)
+find_package(Libint2 2.6.0 MODULE QUIET REQUIRED)
+add_executable(hf++ EXCLUDE_FROM_ALL ../tests/hartree-fock/hartree-fock++.cc)
+target_link_libraries(hf++ Libint2::LibintCXX)
+EOF
+cmake . -DCMAKE_MODULE_PATH=${INSTALL_PREFIX}/libint2/lib/cmake/libint2
+cmake --build . --target hf++
+./hf++ ../tests/hartree-fock/h2o_rotated.xyz | python ../tests/hartree-fock/hartree-fock++-validate.py ../MakeVars.features
+cd ..
+rm -rf cmake
+
+# clean out installed libint files
+rm -rf ${INSTALL_PREFIX}/libint2
