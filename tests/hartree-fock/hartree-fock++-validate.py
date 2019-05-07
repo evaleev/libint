@@ -25,7 +25,7 @@ if os.path.exists(path_to_libfeatures):
     # define boolean constants used in MakeVars.features
     no = False
     yes = True
-    execfile(path_to_libfeatures)
+    exec(open(path_to_libfeatures).read())
 
 eref = [-76.003354058454]
 etol = 5e-12
