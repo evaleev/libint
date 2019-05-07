@@ -597,12 +597,6 @@ class Engine {
   /// rank of the braket
   int braket_rank() const { return rank(braket_); }
 
-  /// (re)sets operator type to \c new_oper
-  /// @deprecated as of 2.5.0
-  DEPRECATED void set_oper(Operator new_oper) {
-    set(new_oper);
-  }
-
   /// (re)sets operator type to @c new_oper
   /// @param[in] new_oper Operator whose integrals will be computed with the next call to Engine::compute()
   /// @note this resets braket and params to their respective defaults for @c new_oper
@@ -617,12 +611,6 @@ class Engine {
                                                      // been set
     }
     return *this;
-  }
-
-  /// (re)sets braket type
-  /// @deprecated as of 2.5.0
-  DEPRECATED void set_braket(BraKet new_braket) {
-    set(new_braket);
   }
 
   /// (re)sets braket type to @c new_braket
