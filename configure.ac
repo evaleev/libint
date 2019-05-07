@@ -1,5 +1,5 @@
-define([libint_mmm_version],[2.5.0])
-define([libint_buildid],[])
+define([libint_mmm_version],[2.6.0])
+define([libint_buildid],[beta.1])
 define([libint_so_version],[2:3:0])
 
 dnl --------- Begin ---------
@@ -1070,6 +1070,13 @@ AS_HELP_STRING([--with-pkgconfigdir],[Specifies the location to put pkg-config's
 PKGCONFIGDIR=$withval
 )
 AC_SUBST(PKGCONFIGDIR)
+
+CMAKEDIR='$(libdir)/cmake/libint2'
+AC_ARG_WITH(cmakedir,
+AS_HELP_STRING([--with-cmakedir],[Specifies the location to put FindLibint2.cmake file. Default is $(libdir)/cmake/libint2.]),
+CMAKEDIR=$withval
+)
+AC_SUBST(CMAKEDIR)
 
 dnl --------- Want absolute path for srcdir, not relative. ---------
 

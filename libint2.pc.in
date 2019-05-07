@@ -3,7 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: libint2
+Name: @PACKAGE_NAME@
 Description: a library for the evaluation of molecular integrals of many-body operators over Gaussian functions
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lint2

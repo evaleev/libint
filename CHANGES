@@ -3,8 +3,10 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- xxxx-yy-zz: 2.6.0-beta.1
+- 2019-05-07: 2.6.0-beta.1
   - can read PBC-extended XYZ files
+  - provided (pkg-config based) FindLibint2.cmake module for CMake projects
+  - removed Engine::set_{oper,braket} deprecated in 2.5.0, use Engine::set instead
 
 - 2019-04-09: 2.5.0
   - New Fortran bindings to Libint by Patrick Seewald (https://github.com/pseewald); requires Fortran 2003 or later.
