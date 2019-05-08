@@ -61,8 +61,9 @@ cd cmake
 cat > CMakeLists.txt <<EOF
 cmake_minimum_required(VERSION 3.8)
 find_package(Libint2 2.6.0 MODULE QUIET REQUIRED)
+find_package(Threads)  # for some reason clang does not link in threading support even though we are using C++ threads
 add_executable(hf++ EXCLUDE_FROM_ALL ../tests/hartree-fock/hartree-fock++.cc)
-target_link_libraries(hf++ Libint2::LibintCXX)
+target_link_libraries(hf++ Libint2::LibintCXX ${CMAKE_THREAD_LIBS_INIT})
 EOF
 cmake . -DCMAKE_MODULE_PATH=${INSTALL_PREFIX}/libint2/lib/cmake/libint2
 cmake --build . --target hf++
