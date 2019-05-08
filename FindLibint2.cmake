@@ -40,7 +40,13 @@ endif()
 
 find_package(PkgConfig)
 if (PKG_CONFIG_FOUND)
-    pkg_check_modules(PC_LIBINT2 QUIET libint2)
+    # point pkg-config to the location of this tree's libint2.pc
+    set(ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_LIST_DIR}/../../pkgconfig:$ENV{PKG_CONFIG_PATH}")
+    if(LIBINT2_FIND_QUIETLY)
+        pkg_check_modules(PC_LIBINT2 QUIET libint2)
+    else()
+        pkg_check_modules(PC_LIBINT2 libint2)
+    endif()
     set(LIBINT2_VERSION ${PC_LIBINT2_VERSION})
 
     find_path(LIBINT2_INCLUDE_DIR
