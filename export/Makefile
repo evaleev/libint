@@ -30,9 +30,15 @@ $(TOPDIR)/$(EXPORTDIR)/configure:: exportdir strip_some_preproc_symb
 strip_some_preproc_symb:: exportdir
 	cat $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h | sed -e '/^#ifndef LIBINT2_ALIGN_SIZE/,/^#endif/d' | sed -e '/^#ifndef LIBINT2_REALTYPE/,/^#endif/d' > $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h.tmp
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h.tmp $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h
+	-rm $(TOPDIR)/$(EXPORTDIR)/include/libint2_params.h.tmp
 	cat $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.in | grep -v LIBINT_ALIGN_SIZE | grep -v LIBINT_HAS_MPFR | grep -v HAVE_POSIX_MEMALIGN | grep -v  LIBINT_USER_DEFINED_REAL | grep -v "LIBINT_SHGSHELL_ORDERING " | grep -v "LIBINT_HAS_EIGEN " | grep -v "LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS " > $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp \
  && printf "/* EXTRA DEFINES DETERMINED BY CONFIGURE OF THE EXPORTED LIBRARY */\n#ifndef _libint2_include_libint2_config_h_1\n#define _libint2_include_libint2_config_h_1\n#undef LIBINT2_ALIGN_SIZE\n#undef HAVE_POSIX_MEMALIGN\n#undef LIBINT_HAS_MPFR\n#undef LIBINT2_REALTYPE\n#undef LIBINT_SHGSHELL_ORDERING\n#undef LIBINT_HAS_EIGEN\n#undef LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS\n#endif /* header guard #2 */\n" >> $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp
+	cat $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.in | grep -v LIBINT_ALIGN_SIZE | grep -v LIBINT_HAS_MPFR | grep -v HAVE_POSIX_MEMALIGN | grep -v  LIBINT_USER_DEFINED_REAL | grep -v "LIBINT_SHGSHELL_ORDERING " | grep -v "LIBINT_HAS_EIGEN " | grep -v "LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS " > $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.make.tmp \
+ && printf "/* EXTRA DEFINES DETERMINED BY CONFIGURE OF THE EXPORTED LIBRARY */\n#ifndef _libint2_include_libint2_config_h_1\n#define _libint2_include_libint2_config_h_1\n#cmakedefine LIBINT2_ALIGN_SIZE @LIBINT2_ALIGN_SIZE@\n#cmakedefine HAVE_POSIX_MEMALIGN 1\n#cmakedefine LIBINT_HAS_MPFR 1\n#cmakedefine LIBINT2_REALTYPE @LIBINT2_REALTYPE@\n#cmakedefine LIBINT_SHGSHELL_ORDERING @LIBINT_SHGSHELL_ORDERING@\n#cmakedefine LIBINT_HAS_EIGEN 1\n#cmakedefine LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1\n#endif /* header guard #2 */\n" >> $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.cmake.tmp
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.in
+	-rm $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.tmp
+	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.cmake.tmp $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.cmake.in
+	-rm $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.cmake.tmp
 
 exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/libint2.pc.in $(TOPDIR)/$(EXPORTDIR)
@@ -46,7 +52,7 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/MakeVars.export $(TOPDIR)/$(EXPORTDIR)/MakeVars.in
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/MakeRules.export $(TOPDIR)/$(EXPORTDIR)/MakeRules.in
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/MakeSuffixRules $(TOPDIR)/$(EXPORTDIR)/MakeSuffixRules.in
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/Makefile.export $(TOPDIR)/$(EXPORTDIR)/Makefile
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/Makefile.export $(TOPDIR)/$(EXPORTDIR)/Makefile.in
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/configure.export $(TOPDIR)/$(EXPORTDIR)/configure.ac
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/bin
 	-$(INSTALL) $(INSTALLSCRIPTOPT) $(SRCTOPDIR)/bin/config.* $(TOPDIR)/$(EXPORTDIR)/bin
@@ -78,7 +84,7 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/src/lib/libint/MakeVars.features $(TOPDIR)/$(EXPORTDIR)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/lib/libint/*.h $(TOPDIR)/$(EXPORTDIR)/include
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/Makefile.tests.export $(TOPDIR)/$(EXPORTDIR)/tests/Makefile
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/Makefile.tests.export $(TOPDIR)/$(EXPORTDIR)/tests/Makefile.in
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests/eri
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/eri/test.cc $(TOPDIR)/$(EXPORTDIR)/tests/eri/test.cc
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/test_eri/eri.h $(TOPDIR)/$(EXPORTDIR)/tests/eri/eri.h
@@ -104,11 +110,17 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/doc/Libint_Logo3_alt.eps $(TOPDIR)/$(EXPORTDIR)/doc/Libint_Logo3_alt.eps
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/Makefile.doc.export $(TOPDIR)/$(EXPORTDIR)/doc/Makefile.in
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/fortran
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/Makefile $(TOPDIR)/$(EXPORTDIR)/fortran
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/Makefile $(TOPDIR)/$(EXPORTDIR)/fortran/Makefile.in
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/*.F90 $(TOPDIR)/$(EXPORTDIR)/fortran
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/*.cc $(TOPDIR)/$(EXPORTDIR)/fortran
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/c_to_f.py $(TOPDIR)/$(EXPORTDIR)/fortran/c_to_f.py
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/external
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/external/boost.tar.gz $(TOPDIR)/$(EXPORTDIR)/external/boost.tar.gz
 	$(TOPOBJDIR)/config.status --config > $(TOPDIR)/$(EXPORTDIR)/compiler.config
-
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/CMakeLists.txt.export $(TOPDIR)/$(EXPORTDIR)/CMakeLists.txt
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/cmake
+	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/cmake/modules
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/modules/*.cmake $(TOPDIR)/$(EXPORTDIR)/cmake/modules
+	echo "set(LIBINT2_LIBRARY_CXX_SRC" > $(TOPDIR)/$(EXPORTDIR)/srclist.cmake
+	ls $(TOPDIR)/$(EXPORTDIR)/src >> $(TOPDIR)/$(EXPORTDIR)/srclist.cmake
+	echo ") >> $(TOPDIR)/$(EXPORTDIR)/srclist.cmake

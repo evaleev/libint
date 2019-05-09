@@ -1,0 +1,78 @@
+cmake_minimum_required(VERSION 3.8) # introduced C++ standards as features
+
+project(Libint LANGUAGES CXX C)
+
+# Set Libint version ===================================================================================================
+set(LIBINT_MAJOR_VERSION 2)
+set(LIBINT_MINOR_VERSION 6)
+set(LIBINT_MICRO_VERSION 0)
+set(LIBINT_VERSION "${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION}")
+
+# Add module directory and modules =====================================================================================
+
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules/")
+include(CheckCXXSourceCompiles)
+include(CheckFunctionExists)
+include(CMakeDependentOption)
+include(CMakePackageConfigHelpers)
+include(FeatureSummary)
+include(RedefaultableOption)
+
+# Options ==============================================================================================================
+
+redefaultable_option(ENABLE_FORTRAN "Fortran03+ Libint interface" OFF)
+redefaultable_option(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
+if (NOT LIBINT2_REALTYPE)
+    set(LIBINT2_REALTYPE double)
+endif()
+
+if (ENABLE_FORTRAN)
+    enable_language(FORTRAN)
+endif(ENABLE_FORTRAN)
+
+# Features =============================================================================================================
+
+if (ENABLE_MPFR)
+    find_package(MPFR)
+    if (TARGET MPFR::GMPXX)
+        set(LIBINT_HAS_MPFR 1)
+    endif()
+endif()
+
+find_package(Eigen3)
+if (EIGEN3_FOUND)
+    add_library(Libint2_Eigen INTERFACE)
+    set_property(TARGET Libint2_Eigen PROPERTY
+                 INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
+    install(TARGETS Libint2_Eigen EXPORT libint COMPONENT libint)
+    set(LIBINT_HAS_EIGEN 1)
+endif (EIGEN3_FOUND)
+
+# Libint library =======================================================================================================
+
+include(srclist.cmake)
+set(LIB_CXX_SRC )
+foreach(FN IN LISTS LIBINT2_LIBRARY_CXX_SRC)
+    list(APPEND LIB_CXX_SRC "src/${FN}")
+endforeach()
+add_library(int2 ${LIB_CXX_SRC})
+target_include_directories(int2 PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_compile_definitions(int2 PRIVATE __COMPILING_LIBINT2)
+target_compile_features(int2 PRIVATE "cxx_std_11")
+if (TARGET MPFR::GMPXX)
+  target_link_libraries(int2 PUBLIC MPFR::GMPXX)
+endif()
+
+# LibintCXX library ====================================================================================================
+
+add_library(Libint2_LibraryCXX INTERFACE)
+target_compile_features(Libint2_LibraryCXX INTERFACE "cxx_std_11")
+target_link_libraries(Libint2_LibraryCXX INTERFACE int2 Libint2_Eigen)
+
+# Configure files ======================================================================================================
+
+configure_file(
+        ${PROJECT_SOURCE_DIR}/include/libint2/config.h.cmake.in
+        ${PROJECT_BINARY_DIR}/include/libint2/config.h
+        @ONLY
+)

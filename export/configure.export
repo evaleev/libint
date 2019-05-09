@@ -531,7 +531,7 @@ LIBSUF=la
 ENABLESHARED=yes
 AC_SUBST(ENABLESHARED)
 
-AC_CONFIG_FILES(MakeVars MakeRules MakeSuffixRules doc/Makefile include/libint2/basis.h libint2.pc)
+AC_CONFIG_FILES(Makefile MakeVars MakeRules MakeSuffixRules doc/Makefile include/libint2/basis.h tests/Makefile fortran/Makefile libint2.pc)
 
 dnl --------- Done! ---------
 AC_OUTPUT
