@@ -56,8 +56,8 @@ fortran/fortran_example
 
 # install and test installed lib
 make install
-mkdir cmake
-cd cmake
+mkdir cmake_test
+cd cmake_test
 cat > CMakeLists.txt <<EOF
 cmake_minimum_required(VERSION 3.8)
 find_package(Libint2 2.6.0 MODULE QUIET REQUIRED)
@@ -69,7 +69,7 @@ cmake . -DCMAKE_MODULE_PATH=${INSTALL_PREFIX}/libint2/lib/cmake/libint2
 cmake --build . --target hf++
 ./hf++ ../tests/hartree-fock/h2o_rotated.xyz | python ../tests/hartree-fock/hartree-fock++-validate.py ../MakeVars.features
 cd ..
-rm -rf cmake
+rm -rf cmake_test
 
 # clean out installed libint files
 rm -rf ${INSTALL_PREFIX}/libint2
