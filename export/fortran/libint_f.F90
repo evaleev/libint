@@ -12,12 +12,18 @@ MODULE libint_f
 #endif
 #ifdef LIBINT2_MAX_AM_default
    INTEGER, PARAMETER :: libint2_max_am_default = LIBINT2_MAX_AM_default
+#else
+#  error "LIBINT2_MAX_AM_default is expected to be defined, libint2_params.h is misgenerated"
 #endif
 #ifdef LIBINT2_MAX_AM_default1
    INTEGER, PARAMETER :: libint2_max_am_default1 = LIBINT2_MAX_AM_default1
+#else
+   INTEGER, PARAMETER :: libint2_max_am_default1 = LIBINT2_MAX_AM_default
 #endif
 #ifdef LIBINT2_MAX_AM_default2
    INTEGER, PARAMETER :: libint2_max_am_default2 = LIBINT2_MAX_AM_default2
+#else
+   INTEGER, PARAMETER :: libint2_max_am_default2 = LIBINT2_MAX_AM_default
 #endif
 #ifdef LIBINT2_MAX_AM_eri
    INTEGER, PARAMETER :: libint2_max_am_eri = LIBINT2_MAX_AM_eri
