@@ -653,6 +653,10 @@ The provided Fortran bindings are an exact translation of the C API.
 The definition of the Fortran derived type {\tt Libint\_t} is shown in Listing \ref{lst:libinttf}.
 The only notable difference to the corresponding C struct (Listing \ref{lst:libintt}) is that variable names starting with an underscore in C are prefixed with a letter {\tt f} in Fortran.
 Refer to Listing \ref{lst:apif} for Fortran prototypes of procedures and data.
+Note that the index order of multidimensional arrays is reverse in fortran
+compared to C due to row-major vs. column-major order such that e.g. {\tt
+libint2\_build\_eri[am1][am2][am3][am4]} in C corresponds to {\tt
+libint2\_build\_eri(am4, am3, am2, am1)} in Fortran.
 
 \begin{lstlisting}[label=lst:libinttf,caption=Fortran definition of the \LIBINT\ integral evaluator type.]{}
 type, bind(c) :: Libint_t
@@ -661,7 +665,7 @@ type, bind(c) :: Libint_t
    real(LIBINT2_REALTYPE), dimension(VECLEN) :: f_aB_s___0___ElecPot_s___0___Ab__up_2
    real(LIBINT2_REALTYPE), dimension(VECLEN) :: f_aB_s___0___ElecPot_s___0___Ab__up_3
    real(LIBINT2_REALTYPE), dimension(VECLEN) :: f_aB_s___0___ElecPot_s___0___Ab__up_4
-   ! and so on until 4 * LIBINT2_MAX_AM_ERI
+   ! and so on until 4 * LIBINT2_MAX_AM_eri
 
    real(LIBINT2_REALTYPE), dimension(VECLEN) :: WP_x, WP_y, WP_z
    real(LIBINT2_REALTYPE), dimension(VECLEN) :: WQ_x, WQ_y, WQ_z
@@ -721,7 +725,9 @@ Using \LIBINT\ from Fortran requires the Fortran builtin {\tt iso\_c\_binding} m
 Fortran pointers are not directly interoperable with C pointers, therefore special datatypes for C pointers ({\tt c\_ptr} and {\tt c\_funptr}) and methods
 from {\tt iso\_c\_binding} to convert to Fortran pointers ({\tt c\_f\_pointer} and {\tt c\_f\_procpointer}) are needed.
 If your code should be compatible with different configurations of libint compiler, you need to use conditional compilation based on the macros provided
-in {\tt libint2/config.h} (such as macro {\tt LIBINT\_CONTRACTED\_INTS}, see listing \ref{lst:usefortran}).
+in {\tt libint2/config.h} and {\tt libint2/libint2\_params.h} such as the
+macros {\tt LIBINT2\_MAX\_AM\_eri} and {\tt LIBINT\_CONTRACTED\_INTS} (for
+their use see listings \ref{lst:libinttf} and \ref{lst:usefortran}).
 
 An example subroutine that demonstrates how to actually calculate integrals using \LIBINT\ is provided in Listing \ref{lst:usefortran}.
 This example is a translation of Listing \ref{lst:usecpp} to Fortran and evaluates four-center two-body Coulomb integrals over primitive Gaussians.
@@ -730,6 +736,7 @@ See {\tt fortran\_example.F90} for an example of how to deal with contracted Gau
 \begin{lstlisting}[label=lst:usefortran, caption=Using \LIBINT\ from Fortran.]{}
 ! include libint configuration-specific macros (may not be needed)
 #include <libint2/config.h>
+#include <libint2/libint2_params.h>
 
 module libint_f_example
 
