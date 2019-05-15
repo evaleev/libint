@@ -118,7 +118,7 @@ target_include_directories(int2 INTERFACE
         )
 target_compile_definitions(int2 PRIVATE __COMPILING_LIBINT2)
 target_compile_definitions(int2 INTERFACE $<BUILD_INTERFACE:__COMPILING_LIBINT2>)
-target_compile_features(int2 PRIVATE "cxx_std_11")
+target_compile_features(int2 PUBLIC "cxx_std_11")
 if (TARGET MPFR::GMPXX)
   target_link_libraries(int2 PUBLIC MPFR::GMPXX)
 endif()
@@ -162,16 +162,34 @@ set(utests_src
         tests/unit/test-util.cc
 )
 
-set(executable unit_tests)
-add_executable(${executable} EXCLUDE_FROM_ALL tests/unit/test.cc ${utests_src})
-target_link_libraries(${executable} Libint2_LibraryCXX)
-target_compile_definitions(${executable} PUBLIC ${TEST_FEATURE_DEFINITIONS})
-add_test(unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target ${executable})
+add_executable(unit_tests EXCLUDE_FROM_ALL tests/unit/test.cc ${utests_src})
+target_link_libraries(unit_tests Libint2_LibraryCXX)
+target_compile_definitions(unit_tests PUBLIC ${TEST_FEATURE_DEFINITIONS})
+add_test(unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests)
 set_tests_properties(unit/build PROPERTIES FIXTURES_SETUP UNIT_TESTS_EXEC)
 add_test(NAME unit/run
-        COMMAND $<TARGET_FILE:${executable}>)
+        COMMAND $<TARGET_FILE:unit_tests>)
 set_tests_properties(unit/run
         PROPERTIES FIXTURES_REQUIRED UNIT_TESTS_EXEC)
+
+add_executable(eritest EXCLUDE_FROM_ALL tests/eri/test.cc)
+target_link_libraries(eritest int2)
+target_include_directories(eritest PRIVATE ${CMAKE_SOURCE_DIR}/tests/eri)
+target_compile_definitions(eritest PRIVATE ${TEST_FEATURE_DEFINITIONS})
+add_test(eritest/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target eritest)
+set_tests_properties(eritest/build PROPERTIES FIXTURES_SETUP ERITEST_EXEC)
+add_test(NAME eritest/run0
+        COMMAND $<TARGET_FILE:eritest> 0 2)
+set_tests_properties(eritest/run0
+        PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
+add_test(NAME eritest/run1
+         COMMAND $<TARGET_FILE:eritest> 1 1)
+set_tests_properties(eritest/run1
+                     PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
+add_test(NAME eritest/run2
+         COMMAND $<TARGET_FILE:eritest> 2 1)
+set_tests_properties(eritest/run2
+                     PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
 
 # Configure files ======================================================================================================
 
