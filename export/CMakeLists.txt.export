@@ -17,6 +17,7 @@ include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
 include(FeatureSummary)
 include(RedefaultableOption)
+include(CMakePushCheckState)
 
 # Options ==============================================================================================================
 
@@ -29,6 +30,22 @@ endif()
 if (ENABLE_FORTRAN)
     enable_language(FORTRAN)
 endif(ENABLE_FORTRAN)
+
+# SHG ordering
+# these are known orderings, must match config.h
+set(LIBINT_SHGSHELL_ORDERING_STANDARD 1)
+set(LIBINT_SHGSHELL_ORDERING_GAUSSIAN 2)
+set(LIBINT2_SHGAUSS_ORDERING "standard" CACHE STRING "Use one of the following known orderings for shells of solid harmonic Gaussians:
+  standard -- standard ordering (-l, -l+1 ... l)
+  gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+The default is standard.")
+if (LIBINT2_SHGAUSS_ORDERING STREQUAL "standard")
+    set(LIBINT_SHGSHELL_ORDERING ${LIBINT_SHGSHELL_ORDERING_STANDARD})
+endif()
+if (LIBINT2_SHGAUSS_ORDERING STREQUAL "gaussian")
+    set(LIBINT_SHGSHELL_ORDERING ${LIBINT_SHGSHELL_ORDERING_GAUSSIAN})
+endif()
+
 
 # Features =============================================================================================================
 
@@ -48,6 +65,43 @@ if (EIGEN3_FOUND)
     set(LIBINT_HAS_EIGEN 1)
 endif (EIGEN3_FOUND)
 
+find_package(Boost 1.29)
+if (Boost_FOUND)
+
+        cmake_push_check_state()
+
+        list(APPEND CMAKE_REQUIRED_FLAGS "-std=c++11")
+        list(APPEND CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR})
+
+        check_cxx_source_compiles("
+        #include <boost/preprocessor.hpp>
+        #if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
+        #  error \"your compiler does not provide variadic macros (but does support C++11), something is seriously broken, please create an issue at https://github.com/evaleev/libint/issues\"
+        #endif
+        int main() { return 0;}
+        "
+        LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+
+        cmake_pop_check_state()
+
+endif(Boost_FOUND)
+
+# Set install paths ====================================================================================================
+
+set(LIBINT2_INSTALL_BINDIR "bin"
+        CACHE PATH "LIBINT2 binary install directory")
+set(LIBINT2_INSTALL_INCLUDEDIR "include"
+        CACHE PATH "LIBINT2 INCLUDE install directory")
+set(LIBINT2_INSTALL_LIBDIR "lib"
+        CACHE PATH "LIBINT2 LIB install directory")
+set(LIBINT2_INSTALL_DATADIR "share/libint2/${LIBINT2_VERSION}"
+        CACHE PATH "LIBINT2 DATA install directory")
+# TODO this matches Automake value, should be adjusted to the convention: share/libint2/${LIBINT2_EXT_VERSION}/doc
+set(LIBINT2_INSTALL_DOCDIR "share/doc/libint2"
+        CACHE PATH "LIBINT2 DOC install directory")
+set(LIBINT2_INSTALL_CMAKEDIR "lib/cmake/libint2"
+        CACHE PATH "LIBINT2 CMAKE install directory")
+
 # Libint library =======================================================================================================
 
 include(srclist.cmake)
@@ -57,7 +111,13 @@ foreach(FN IN LISTS LIBINT2_LIBRARY_CXX_SRC)
 endforeach()
 add_library(int2 ${LIB_CXX_SRC})
 target_include_directories(int2 PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(int2 INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BUILD_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_BUILD_DIR}/include/libint2>
+        $<INSTALL_INTERFACE:${LIBINT2_INSTALL_INCLUDEDIR}>
+        )
 target_compile_definitions(int2 PRIVATE __COMPILING_LIBINT2)
+target_compile_definitions(int2 INTERFACE $<BUILD_INTERFACE:__COMPILING_LIBINT2>)
 target_compile_features(int2 PRIVATE "cxx_std_11")
 if (TARGET MPFR::GMPXX)
   target_link_libraries(int2 PUBLIC MPFR::GMPXX)
@@ -65,9 +125,53 @@ endif()
 
 # LibintCXX library ====================================================================================================
 
-add_library(Libint2_LibraryCXX INTERFACE)
-target_compile_features(Libint2_LibraryCXX INTERFACE "cxx_std_11")
-target_link_libraries(Libint2_LibraryCXX INTERFACE int2 Libint2_Eigen)
+if (LIBINT_HAS_EIGEN)
+  add_library(Libint2_LibraryCXX INTERFACE)
+  target_compile_features(Libint2_LibraryCXX INTERFACE "cxx_std_11")
+  target_link_libraries(Libint2_LibraryCXX INTERFACE int2 Libint2_Eigen)
+  if (LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+      target_include_directories(Libint2_LibraryCXX INTERFACE ${Boost_INCLUDE_DIR})
+  else(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+      message(FATAL_ERROR "unpacking bundled Boost not supported yet")
+  endif(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+  set(DATADIR_ABSOLUTE ${LIBINT2_INSTALL_DATADIR})
+  target_compile_definitions(Libint2_LibraryCXX INTERFACE
+          $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">)
+endif(LIBINT_HAS_EIGEN)
+
+# Tests ====================================================================================================
+
+add_custom_target(check USES_TERMINAL
+        COMMAND "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target check_unit
+        )
+
+enable_testing(true)
+add_custom_target(check_unit USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
+
+set(utests_src
+        tests/unit/c-api.c
+        tests/unit/c-api-util.cc
+        tests/unit/catch.hpp
+        tests/unit/fixture.h
+        tests/unit/test-1body.cc
+        tests/unit/test-boys.cc
+        tests/unit/test-c-api.cc
+        tests/unit/test-core.cc
+        tests/unit/test-permute.cc
+        tests/unit/test-shell-order.cc
+        tests/unit/test-util.cc
+)
+
+set(executable unit_tests)
+add_executable(${executable} EXCLUDE_FROM_ALL tests/unit/test.cc ${utests_src})
+target_link_libraries(${executable} Libint2_LibraryCXX)
+target_compile_definitions(${executable} PUBLIC ${TEST_FEATURE_DEFINITIONS})
+add_test(unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target ${executable})
+set_tests_properties(unit/build PROPERTIES FIXTURES_SETUP UNIT_TESTS_EXEC)
+add_test(NAME unit/run
+        COMMAND $<TARGET_FILE:${executable}>)
+set_tests_properties(unit/run
+        PROPERTIES FIXTURES_REQUIRED UNIT_TESTS_EXEC)
 
 # Configure files ======================================================================================================
 
@@ -76,3 +180,57 @@ configure_file(
         ${PROJECT_BINARY_DIR}/include/libint2/config.h
         @ONLY
 )
+
+configure_file(
+        ${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in
+        ${PROJECT_BINARY_DIR}/include/libint2/basis.h
+        @ONLY
+)
+
+configure_file(
+        ${PROJECT_SOURCE_DIR}/libint2.pc.in
+        ${PROJECT_BINARY_DIR}/libint2.pc
+        @ONLY
+)
+
+# install config files
+install(FILES ${PROJECT_BINARY_DIR}/libint2.pc
+        DESTINATION lib/pkgconfig)
+
+# Create the version file
+write_basic_package_version_file(libint2-config-version.cmake
+        VERSION ${LIBINT_VERSION} COMPATIBILITY AnyNewerVersion)
+
+# Create the targets file
+#export(EXPORT libint2
+#        FILE "${PROJECT_BINARY_DIR}/libint2-targets.cmake")
+
+## Create the configure file
+#configure_package_config_file(cmake/mpqc-config.cmake.in
+#        "${PROJECT_BINARY_DIR}/mpqc-config.cmake"
+#        INSTALL_DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
+#        PATH_VARS CMAKE_INSTALL_PREFIX LIBINT2_INSTALL_BINDIR
+#        LIBINT2_INSTALL_INCLUDEDIR LIBINT2_INSTALL_LIBDIR
+#        LIBINT2_INSTALL_DOCDIR LIBINT2_INSTALL_CMAKEDIR)
+#
+## Install config, version, and target files
+#install(EXPORT libint2
+#        FILE "libint2-targets.cmake"
+#        DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
+#        COMPONENT libint2-config)
+#install(FILES
+#        "${PROJECT_BINARY_DIR}/libint2-config.cmake"
+#        "${PROJECT_BINARY_DIR}/libint2-config-version.cmake"
+#        DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
+#        COMPONENT libint2-config)
+#add_custom_target(install-config
+#        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=libint2-config -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+#        COMMENT "Installing Libint2 config components")
+
+feature_summary(WHAT ALL
+        DESCRIPTION "=== Libint2 Package/Feature Info ===")
+
+###############################################################################
+# appendix: misc details
+###############################################################################
+SET(CMAKE_COLOR_MAKEFILE ON)
