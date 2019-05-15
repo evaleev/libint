@@ -18,37 +18,16 @@
  *
  */
 
-#ifndef PREP_LIBINT2_SKIP_BOOST
-# include <boost/random.hpp>
-#endif
-
 #include <cmath>
 #include <vector>
 #include <cstdlib>
+#include <random>
 #include <libint2.h>
 #include <libint2/boys.h>
 #include <time.h>
 
 extern libint2::FmEval_Chebyshev7<double> fmeval_chebyshev;
 extern libint2::FmEval_Taylor<double,6> fmeval_taylor;
-
-#ifdef PREP_LIBINT2_SKIP_BOOST
-struct RandomDie {
-    RandomDie(double lower, double upper, long seed = -1) : lower_(lower), frange_(upper - lower), seed_(seed)
-    {
-      if (seed == -1)
-        srandom(time(NULL));
-      else
-        srandom((unsigned int)seed);
-    }
-    double operator()() const {
-      return lower_ + random() * frange_ / intrange_;
-    }
-    double lower_, frange_;
-    unsigned int seed_;
-    static const long intrange_ = (1l<<31) - 1;
-};
-#endif
 
 typedef unsigned int uint;
 template <unsigned int N>
@@ -60,25 +39,20 @@ struct RandomShellSet {
 
       std::copy(am, am+N, l);
 
-#ifndef PREP_LIBINT2_SKIP_BOOST
-      boost::mt19937 rng;                 // produces randomness out of thin air
-      // rng.seed(1352054452);            // uncomment to make results repeatable
-      boost::uniform_real<> rdist(0.1, 3.0);  // distribution that maps to 0.1 .. 3.0
-      boost::variate_generator<boost::mt19937&, boost::uniform_real<> >
-               die(rng, rdist);             // glues randomness with mapping
-#else
-      RandomDie die(0.1, 3.0);
-#endif
+      std::random_device rd;
+      std::mt19937 rng(rd());                 // produces randomness out of thin air
+      std::uniform_real_distribution<> rdist(0.1, 3.0);  // distribution that maps to 0.1 .. 3.0
+      auto die = [&rng, &rdist]() -> double { return rdist(rng); };             // glues randomness with mapping
 
       for(uint c=0; c<N; ++c) {
 
-        R[c].resize(3);  generate(R[c].begin(), R[c].end(), die);
+        R[c].resize(3);  std::generate(R[c].begin(), R[c].end(), die);
 
         exp[c].resize(veclen);
         coef[c].resize(veclen);
         for(uint v=0; v<veclen; ++v) {
-          exp[c][v].resize(contrdepth); generate(exp[c][v].begin(), exp[c][v].end(), die);
-          coef[c][v].resize(contrdepth); generate(coef[c][v].begin(), coef[c][v].end(), die);
+          exp[c][v].resize(contrdepth); std::generate(exp[c][v].begin(), exp[c][v].end(), die);
+          coef[c][v].resize(contrdepth); std::generate(coef[c][v].begin(), coef[c][v].end(), die);
         }
       }
 

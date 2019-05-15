@@ -4,7 +4,7 @@ SRCDIR = ..
 -include ../MakeVars
 -include ../MakeVars.features
 
-CPPFLAGS := -I../include -I../include/libint2 -Ieri -Ihartree-fock -DPREP_LIBINT2_SKIP_BOOST -DSRCDATADIR=\"$(SRCDIR)/lib/basis\" $(CPPFLAGS)
+CPPFLAGS := -I../include -I../include/libint2 -Ieri -Ihartree-fock -DSRCDATADIR=\"$(SRCDIR)/lib/basis\" $(CPPFLAGS)
 COMPUTE_LIB = -L../lib -lint2
 # initialize statics explicitly in test.cc
 CPPFLAGS += -DLIBINT2_CONSTEXPR_STATICS=0
