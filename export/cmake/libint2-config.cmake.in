@@ -1,0 +1,32 @@
+# - CMAKE Config file for the Libint2 package
+# This will define the following CMake cache variables
+#
+#    LIBINT2_FOUND           - true if libint2.h header and libint2 library were found
+#    LIBINT2_VERSION         - the libint2 version
+#    LIBINT2_INCLUDE_DIRS    - (deprecated: use the CMake IMPORTED targets listed below) list of libint2 include directories
+#    LIBINT2_LIBRARIES       - (deprecated: use the CMake IMPORTED targets listed below) list of libint2 libraries
+#
+# and the following imported targets
+#
+#     Libint2::int2          - library only
+#     Libint2::cxx           - (if Eigen + Boost was found at the library configure time) library + C++11 API
+#
+# Author: Eduard Valeyev - libint@valeyev.net
+
+# Set package version
+set(LIBINT2_VERSION "@PACKAGE_VERSION@")
+
+@PACKAGE_INIT@
+
+set(LIBINT2_LIBRARIES Libint2::int2)
+set(LIBINT2_INCLUDE_DIRS "@PACKAGE_LIBINT2_INSTALL_INCLUDEDIR@")
+
+# Include library IMPORT targets
+if(NOT TARGET Libint2::int2)
+  include("${CMAKE_CURRENT_LIST_DIR}/libint2-targets.cmake")
+  if(NOT TARGET Libint2::int2)
+    message(FATAL_ERROR "expected Libint2::int2 among imported Libint2 targets")
+  endif()
+endif()
+
+set(LIBINT2_FOUND TRUE)

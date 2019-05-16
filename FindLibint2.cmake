@@ -27,8 +27,8 @@
 #
 # and the following imported targets
 #
-#     Libint2::Libint        - library only
-#     Libint2::LibintCXX     - library + C++11 API; may need to add dependence on Eigen3 and/or Boost.Preprocessor if
+#     Libint2::int2          - library only
+#     Libint2::cxx           - library + C++11 API; may need to add dependence on Eigen3 and/or Boost.Preprocessor if
 #                              was not found by Libint at configure time
 #
 # Author: Eduard Valeyev - libint@valeyev.net
@@ -87,24 +87,24 @@ if (PKG_CONFIG_FOUND)
     endif()
 
     if(LIBINT2_FOUND AND NOT TARGET Libint2::Libint)
-        add_library(Libint2::Libint INTERFACE IMPORTED)
-        set_target_properties(Libint2::Libint PROPERTIES
+        add_library(Libint2::int2 INTERFACE IMPORTED)
+        set_target_properties(Libint2::int2 PROPERTIES
                 INTERFACE_INCLUDE_DIRECTORIES "${LIBINT2_INCLUDE_DIR};${LIBINT2_INCLUDE_DIR}/libint2"
                 )
-        set_target_properties(Libint2::Libint PROPERTIES
+        set_target_properties(Libint2::int2 PROPERTIES
                 INTERFACE_LINK_LIBRARIES ${LIBINT2_LIBRARY}
+                )
+        set_target_properties(Libint2::int2 PROPERTIES
+                INTERFACE_COMPILE_FEATURES "cxx_std_11"
                 )
     endif()
 
-    if(LIBINT2_FOUND AND NOT TARGET Libint2::LibintCXX)
-        add_library(Libint2::LibintCXX INTERFACE IMPORTED)
-        set_target_properties(Libint2::LibintCXX PROPERTIES
+    if(LIBINT2_FOUND AND NOT TARGET Libint2::cxx)
+        add_library(Libint2::cxx INTERFACE IMPORTED)
+        set_target_properties(Libint2::cxx PROPERTIES
                 INTERFACE_INCLUDE_DIRECTORIES "${LIBINT2_INCLUDE_DIRS}"
                 )
-        set_target_properties(Libint2::LibintCXX PROPERTIES
-                INTERFACE_COMPILE_FEATURES "cxx_std_11"
-                )
-        target_link_libraries(Libint2::LibintCXX INTERFACE Libint2::Libint)
+        target_link_libraries(Libint2::cxx INTERFACE Libint2::int2)
     endif()
 
 else(PKG_CONFIG_FOUND)

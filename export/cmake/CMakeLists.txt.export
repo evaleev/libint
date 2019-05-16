@@ -28,7 +28,7 @@ if (NOT LIBINT2_REALTYPE)
 endif()
 
 if (ENABLE_FORTRAN)
-    enable_language(FORTRAN)
+    enable_language(../fortran)
 endif(ENABLE_FORTRAN)
 
 # SHG ordering
@@ -58,10 +58,10 @@ endif()
 
 find_package(Eigen3)
 if (EIGEN3_FOUND)
-    add_library(Libint2_Eigen INTERFACE)
-    set_property(TARGET Libint2_Eigen PROPERTY
+    add_library(Eigen INTERFACE)
+    set_property(TARGET Eigen PROPERTY
                  INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
-    install(TARGETS Libint2_Eigen EXPORT libint COMPONENT libint)
+    install(TARGETS Eigen  EXPORT libint2 COMPONENT Eigen)
     set(LIBINT_HAS_EIGEN 1)
 endif (EIGEN3_FOUND)
 
@@ -84,7 +84,16 @@ if (Boost_FOUND)
 
         cmake_pop_check_state()
 
+else (Boost_FOUND)
+
+    execute_process(
+            COMMAND ${CMAKE_COMMAND} -E tar xzf ../../external/boost.tar.gz
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2
+            )
+
 endif(Boost_FOUND)
+
+find_package(PythonInterp)
 
 # Set install paths ====================================================================================================
 
@@ -110,7 +119,7 @@ foreach(FN IN LISTS LIBINT2_LIBRARY_CXX_SRC)
     list(APPEND LIB_CXX_SRC "src/${FN}")
 endforeach()
 add_library(int2 ${LIB_CXX_SRC})
-target_include_directories(int2 PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(int2 PRIVATE include)
 target_include_directories(int2 INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BUILD_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BUILD_DIR}/include/libint2>
@@ -123,20 +132,36 @@ if (TARGET MPFR::GMPXX)
   target_link_libraries(int2 PUBLIC MPFR::GMPXX)
 endif()
 
+# Add library to the list of installed components
+install(TARGETS int2 EXPORT libint2
+        COMPONENT int2
+        LIBRARY DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+        ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+        # includes are installed by the include/CMakeLists.txt.include.export
+        # INCLUDES DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
+        )
+add_subdirectory(include)
+
 # LibintCXX library ====================================================================================================
 
 if (LIBINT_HAS_EIGEN)
-  add_library(Libint2_LibraryCXX INTERFACE)
-  target_compile_features(Libint2_LibraryCXX INTERFACE "cxx_std_11")
-  target_link_libraries(Libint2_LibraryCXX INTERFACE int2 Libint2_Eigen)
+  add_library(cxx INTERFACE)
+  target_compile_features(cxx INTERFACE "cxx_std_11")
+  target_link_libraries(cxx INTERFACE int2 Eigen)
   if (LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
-      target_include_directories(Libint2_LibraryCXX INTERFACE ${Boost_INCLUDE_DIR})
-  else(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
-      message(FATAL_ERROR "unpacking bundled Boost not supported yet")
+      target_include_directories(cxx INTERFACE ${Boost_INCLUDE_DIR})
   endif(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
   set(DATADIR_ABSOLUTE ${LIBINT2_INSTALL_DATADIR})
-  target_compile_definitions(Libint2_LibraryCXX INTERFACE
+  target_compile_definitions(cxx INTERFACE
           $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">)
+  # Add library to the list of installed components
+  install(TARGETS cxx EXPORT libint2
+          COMPONENT cxx
+          LIBRARY DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+          ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+          # includes are installed by the include/CMakeLists.txt.include.export
+          # INCLUDES DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
+          )
 endif(LIBINT_HAS_EIGEN)
 
 # Tests ====================================================================================================
@@ -163,8 +188,7 @@ set(utests_src
 )
 
 add_executable(unit_tests EXCLUDE_FROM_ALL tests/unit/test.cc ${utests_src})
-target_link_libraries(unit_tests Libint2_LibraryCXX)
-target_compile_definitions(unit_tests PUBLIC ${TEST_FEATURE_DEFINITIONS})
+target_link_libraries(unit_tests cxx)
 add_test(unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests)
 set_tests_properties(unit/build PROPERTIES FIXTURES_SETUP UNIT_TESTS_EXEC)
 add_test(NAME unit/run
@@ -175,7 +199,6 @@ set_tests_properties(unit/run
 add_executable(eritest EXCLUDE_FROM_ALL tests/eri/test.cc)
 target_link_libraries(eritest int2)
 target_include_directories(eritest PRIVATE ${CMAKE_SOURCE_DIR}/tests/eri)
-target_compile_definitions(eritest PRIVATE ${TEST_FEATURE_DEFINITIONS})
 add_test(eritest/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target eritest)
 set_tests_properties(eritest/build PROPERTIES FIXTURES_SETUP ERITEST_EXEC)
 add_test(NAME eritest/run0
@@ -191,6 +214,44 @@ add_test(NAME eritest/run2
 set_tests_properties(eritest/run2
                      PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
 
+add_executable(hartree-fock EXCLUDE_FROM_ALL tests/hartree-fock/hartree-fock.cc)
+target_link_libraries(hartree-fock cxx)
+add_test(hftest/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hartree-fock)
+set_tests_properties(hftest/build PROPERTIES FIXTURES_SETUP HFTEST_EXEC)
+if (PYTHONINTERP_FOUND)
+  add_test(NAME hftest/run
+           COMMAND COMMAND ${CMAKE_COMMAND}
+          -DtestName=hartree-fock
+          -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o.xyz
+          -DsrcDir=${CMAKE_SOURCE_DIR}
+          -DpythonExec=${PYTHON_EXECUTABLE}
+          -P ${CMAKE_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
+else()
+  add_test(NAME hftest/run
+          COMMAND $<TARGET_FILE:hartree-fock> ${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o.xyz)
+endif()
+set_tests_properties(hftest/run
+        PROPERTIES FIXTURES_REQUIRED HFTEST_EXEC)
+
+add_executable(hartree-fock++ EXCLUDE_FROM_ALL tests/hartree-fock/hartree-fock++.cc)
+target_link_libraries(hartree-fock++ cxx)
+add_test(hf++test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hartree-fock++)
+set_tests_properties(hf++test/build PROPERTIES FIXTURES_SETUP HFXXTEST_EXEC)
+if (PYTHONINTERP_FOUND)
+    add_test(NAME hf++test/run
+            COMMAND COMMAND ${CMAKE_COMMAND}
+            -DtestName=hartree-fock++
+            -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz
+            -DsrcDir=${CMAKE_SOURCE_DIR}
+            -DpythonExec=${PYTHON_EXECUTABLE}
+            -P ${CMAKE_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
+else()
+    add_test(NAME hf++test/run
+            COMMAND $<TARGET_FILE:hartree-fock++> ${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz)
+endif()
+set_tests_properties(hf++test/run
+        PROPERTIES FIXTURES_REQUIRED HFXXTEST_EXEC)
+
 # Configure files ======================================================================================================
 
 configure_file(
@@ -200,13 +261,13 @@ configure_file(
 )
 
 configure_file(
-        ${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in
+        include/libint2/basis.h.in
         ${PROJECT_BINARY_DIR}/include/libint2/basis.h
         @ONLY
 )
 
 configure_file(
-        ${PROJECT_SOURCE_DIR}/libint2.pc.in
+        libint2.pc.in
         ${PROJECT_BINARY_DIR}/libint2.pc
         @ONLY
 )
@@ -219,31 +280,28 @@ install(FILES ${PROJECT_BINARY_DIR}/libint2.pc
 write_basic_package_version_file(libint2-config-version.cmake
         VERSION ${LIBINT_VERSION} COMPATIBILITY AnyNewerVersion)
 
-# Create the targets file
-#export(EXPORT libint2
-#        FILE "${PROJECT_BINARY_DIR}/libint2-targets.cmake")
-
 ## Create the configure file
-#configure_package_config_file(cmake/mpqc-config.cmake.in
-#        "${PROJECT_BINARY_DIR}/mpqc-config.cmake"
-#        INSTALL_DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
-#        PATH_VARS CMAKE_INSTALL_PREFIX LIBINT2_INSTALL_BINDIR
-#        LIBINT2_INSTALL_INCLUDEDIR LIBINT2_INSTALL_LIBDIR
-#        LIBINT2_INSTALL_DOCDIR LIBINT2_INSTALL_CMAKEDIR)
-#
+configure_package_config_file(cmake/libint2-config.cmake.in
+        "${PROJECT_BINARY_DIR}/libint2-config.cmake"
+        INSTALL_DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
+        PATH_VARS CMAKE_INSTALL_PREFIX LIBINT2_INSTALL_BINDIR
+        LIBINT2_INSTALL_INCLUDEDIR LIBINT2_INSTALL_LIBDIR
+        LIBINT2_INSTALL_DOCDIR LIBINT2_INSTALL_CMAKEDIR)
+
 ## Install config, version, and target files
-#install(EXPORT libint2
-#        FILE "libint2-targets.cmake"
-#        DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
-#        COMPONENT libint2-config)
-#install(FILES
-#        "${PROJECT_BINARY_DIR}/libint2-config.cmake"
-#        "${PROJECT_BINARY_DIR}/libint2-config-version.cmake"
-#        DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
-#        COMPONENT libint2-config)
-#add_custom_target(install-config
-#        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=libint2-config -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
-#        COMMENT "Installing Libint2 config components")
+install(EXPORT libint2
+        FILE "libint2-targets.cmake"
+        DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
+        NAMESPACE Libint2::
+        COMPONENT libint2-config)
+install(FILES
+        "${PROJECT_BINARY_DIR}/libint2-config.cmake"
+        "${PROJECT_BINARY_DIR}/libint2-config-version.cmake"
+        DESTINATION "${LIBINT2_INSTALL_CMAKEDIR}"
+        COMPONENT libint2-config)
+add_custom_target(install-config
+        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=libint2-config -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+        COMMENT "Installing Libint2 config components")
 
 feature_summary(WHAT ALL
         DESCRIPTION "=== Libint2 Package/Feature Info ===")

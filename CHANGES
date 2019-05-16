@@ -3,6 +3,11 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2019-05-16: 2.6.0-beta.2
+  - initial support for CMake build of exported library; for consistency, renamed imported targets in FindLibint2.cmake
+    introduced in beta.1
+  - resolved issue #127: incorrect dimensions of 3-center ERI function pointer array used by Fortran interface
+
 - 2019-05-07: 2.6.0-beta.1
   - can read PBC-extended XYZ files
   - provided (pkg-config based) FindLibint2.cmake module for CMake projects

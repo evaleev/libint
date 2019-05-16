@@ -117,8 +117,11 @@ exportdir::
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/external
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/external/boost.tar.gz $(TOPDIR)/$(EXPORTDIR)/external/boost.tar.gz
 	$(TOPOBJDIR)/config.status --config > $(TOPDIR)/$(EXPORTDIR)/compiler.config
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/CMakeLists.txt.export $(TOPDIR)/$(EXPORTDIR)/CMakeLists.txt
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/CMakeLists.txt.export $(TOPDIR)/$(EXPORTDIR)/CMakeLists.txt
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/CMakeLists.txt.include.export $(TOPDIR)/$(EXPORTDIR)/include/CMakeLists.txt
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/cmake
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/libint2-config.cmake.in $(TOPDIR)/$(EXPORTDIR)/cmake/libint2-config.cmake.in
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/hftest.cmake $(TOPDIR)/$(EXPORTDIR)/cmake/hftest.cmake
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/cmake/modules
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/modules/*.cmake $(TOPDIR)/$(EXPORTDIR)/cmake/modules
 	echo "set(LIBINT2_LIBRARY_CXX_SRC" > $(TOPDIR)/$(EXPORTDIR)/srclist.cmake
