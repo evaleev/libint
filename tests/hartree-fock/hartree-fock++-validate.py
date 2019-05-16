@@ -20,8 +20,16 @@ def validate(label, data, refdata, tolerance, textline):
     if (ok): print(label, "check: passed")
     return ok
 
+assert(len(sys.argv) > 1)
+# first arg is the path to MakeVars.features
 path_to_libfeatures = sys.argv[1]
-if os.path.exists(path_to_libfeatures): 
+# second arg is the input file, if missing read sys.stdin
+try:
+    instr = open(sys.argv[2]) if len(sys.argv) > 2 else sys.stdin
+except Exception as e:
+    sys.exit(2)
+
+if os.path.exists(path_to_libfeatures):
     # define boolean constants used in MakeVars.features
     no = False
     yes = True
@@ -94,7 +102,7 @@ Href = [0.10278518545586, 0.022126031631778, -0.0110723782691211, -0.03638248530
 Htol = 1e-9
 Hok = False if LIBINT_ONEBODY_DERIV>1 and LIBINT_ERI_DERIV>1 else True
 
-for line in sys.stdin:
+for line in instr:
     match1 = re.match('\*\* Hartree-Fock energy =' + pat_numbers(1), line)
     match2 = re.match('\*\* edipole =' + pat_numbers(3), line)
     match3 = re.match('\*\* equadrupole =' + pat_numbers(6), line)

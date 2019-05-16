@@ -1,11 +1,18 @@
 from __future__ import print_function
 import sys, re, math
 
+# first arg is the input file, if missing read sys.stdin
+try:
+    instr = open(sys.argv[1]) if len(sys.argv) > 1 else sys.stdin
+except Exception as e:
+    sys.exit(2)
+
+
 eref = -74.942080057698
 tol = 1e-11
 
 returncode = 1
-for line in sys.stdin:
+for line in instr:
     print(line,end="")
     x = re.match('\*\* Hartree-Fock energy =\s*([-\d.]+)', line)
     if x:
