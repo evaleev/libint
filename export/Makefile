@@ -114,6 +114,7 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/*.F90 $(TOPDIR)/$(EXPORTDIR)/fortran
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/*.cc $(TOPDIR)/$(EXPORTDIR)/fortran
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/c_to_f.py $(TOPDIR)/$(EXPORTDIR)/fortran/c_to_f.py
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/make_defs.py $(TOPDIR)/$(EXPORTDIR)/fortran/make_defs.py
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/external
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/external/boost.tar.gz $(TOPDIR)/$(EXPORTDIR)/external/boost.tar.gz
 	$(TOPOBJDIR)/config.status --config > $(TOPDIR)/$(EXPORTDIR)/compiler.config

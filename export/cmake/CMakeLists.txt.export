@@ -28,7 +28,7 @@ if (NOT LIBINT2_REALTYPE)
 endif()
 
 if (ENABLE_FORTRAN)
-    enable_language(../fortran)
+    enable_language(Fortran)
 endif(ENABLE_FORTRAN)
 
 # SHG ordering
@@ -67,31 +67,32 @@ endif (EIGEN3_FOUND)
 
 find_package(Boost 1.29)
 if (Boost_FOUND)
+    cmake_push_check_state()
 
-        cmake_push_check_state()
+    list(APPEND CMAKE_REQUIRED_FLAGS "-std=c++11")
+    list(APPEND CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR})
 
-        list(APPEND CMAKE_REQUIRED_FLAGS "-std=c++11")
-        list(APPEND CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR})
-
-        check_cxx_source_compiles("
+    check_cxx_source_compiles("
         #include <boost/preprocessor.hpp>
         #if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
         #  error \"your compiler does not provide variadic macros (but does support C++11), something is seriously broken, please create an issue at https://github.com/evaleev/libint/issues\"
         #endif
         int main() { return 0;}
         "
-        LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+            LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
 
-        cmake_pop_check_state()
+    cmake_pop_check_state()
+else(Boost_FOUND)
+    set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 0)
+endif(Boost_FOUND)
 
-else (Boost_FOUND)
-
+# if usable Boost.Preprocessor not found install the bundled version
+if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
     execute_process(
             COMMAND ${CMAKE_COMMAND} -E tar xzf ../../external/boost.tar.gz
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2
-            )
-
-endif(Boost_FOUND)
+    )
+endif()
 
 find_package(PythonInterp)
 
@@ -121,9 +122,9 @@ endforeach()
 add_library(int2 ${LIB_CXX_SRC})
 target_include_directories(int2 PRIVATE include)
 target_include_directories(int2 INTERFACE
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BUILD_DIR}/include>
-        $<BUILD_INTERFACE:${PROJECT_BUILD_DIR}/include/libint2>
-        $<INSTALL_INTERFACE:${LIBINT2_INSTALL_INCLUDEDIR}>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}>
         )
 target_compile_definitions(int2 PRIVATE __COMPILING_LIBINT2)
 target_compile_definitions(int2 INTERFACE $<BUILD_INTERFACE:__COMPILING_LIBINT2>)
@@ -139,7 +140,7 @@ install(TARGETS int2 EXPORT libint2
         ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
         # includes are installed by the include/CMakeLists.txt.include.export
         # INCLUDES DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
-        )
+       )
 add_subdirectory(include)
 
 # LibintCXX library ====================================================================================================
@@ -164,37 +165,10 @@ if (LIBINT_HAS_EIGEN)
           )
 endif(LIBINT_HAS_EIGEN)
 
-# Tests ====================================================================================================
-
-add_custom_target(check USES_TERMINAL
-        COMMAND "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target check_unit
-        )
+# Tests ================================================================================================================
 
 enable_testing(true)
-add_custom_target(check_unit USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
-
-set(utests_src
-        tests/unit/c-api.c
-        tests/unit/c-api-util.cc
-        tests/unit/catch.hpp
-        tests/unit/fixture.h
-        tests/unit/test-1body.cc
-        tests/unit/test-boys.cc
-        tests/unit/test-c-api.cc
-        tests/unit/test-core.cc
-        tests/unit/test-permute.cc
-        tests/unit/test-shell-order.cc
-        tests/unit/test-util.cc
-)
-
-add_executable(unit_tests EXCLUDE_FROM_ALL tests/unit/test.cc ${utests_src})
-target_link_libraries(unit_tests cxx)
-add_test(unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests)
-set_tests_properties(unit/build PROPERTIES FIXTURES_SETUP UNIT_TESTS_EXEC)
-add_test(NAME unit/run
-        COMMAND $<TARGET_FILE:unit_tests>)
-set_tests_properties(unit/run
-        PROPERTIES FIXTURES_REQUIRED UNIT_TESTS_EXEC)
+add_custom_target(check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
 
 add_executable(eritest EXCLUDE_FROM_ALL tests/eri/test.cc)
 target_link_libraries(eritest int2)
@@ -206,51 +180,144 @@ add_test(NAME eritest/run0
 set_tests_properties(eritest/run0
         PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
 add_test(NAME eritest/run1
-         COMMAND $<TARGET_FILE:eritest> 1 1)
+        COMMAND $<TARGET_FILE:eritest> 1 1)
 set_tests_properties(eritest/run1
-                     PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
+        PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
 add_test(NAME eritest/run2
-         COMMAND $<TARGET_FILE:eritest> 2 1)
+        COMMAND $<TARGET_FILE:eritest> 2 1)
 set_tests_properties(eritest/run2
-                     PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
+        PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
 
-add_executable(hartree-fock EXCLUDE_FROM_ALL tests/hartree-fock/hartree-fock.cc)
-target_link_libraries(hartree-fock cxx)
-add_test(hftest/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hartree-fock)
-set_tests_properties(hftest/build PROPERTIES FIXTURES_SETUP HFTEST_EXEC)
-if (PYTHONINTERP_FOUND)
-  add_test(NAME hftest/run
-           COMMAND COMMAND ${CMAKE_COMMAND}
-          -DtestName=hartree-fock
-          -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o.xyz
-          -DsrcDir=${CMAKE_SOURCE_DIR}
-          -DpythonExec=${PYTHON_EXECUTABLE}
-          -P ${CMAKE_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
-else()
-  add_test(NAME hftest/run
-          COMMAND $<TARGET_FILE:hartree-fock> ${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o.xyz)
-endif()
-set_tests_properties(hftest/run
-        PROPERTIES FIXTURES_REQUIRED HFTEST_EXEC)
+if (LIBINT_HAS_EIGEN)
+    set(utests_src
+            tests/unit/c-api.c
+            tests/unit/c-api-util.cc
+            tests/unit/catch.hpp
+            tests/unit/fixture.h
+            tests/unit/test-1body.cc
+            tests/unit/test-boys.cc
+            tests/unit/test-c-api.cc
+            tests/unit/test-core.cc
+            tests/unit/test-permute.cc
+            tests/unit/test-shell-order.cc
+            tests/unit/test-util.cc
+            )
+    add_executable(unit_tests EXCLUDE_FROM_ALL tests/unit/test.cc ${utests_src})
+    target_link_libraries(unit_tests cxx)
+    add_test(unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests)
+    set_tests_properties(unit/build PROPERTIES FIXTURES_SETUP UNIT_TESTS_EXEC)
+    add_test(NAME unit/run
+            COMMAND $<TARGET_FILE:unit_tests>)
+    set_tests_properties(unit/run
+            PROPERTIES FIXTURES_REQUIRED UNIT_TESTS_EXEC)
 
-add_executable(hartree-fock++ EXCLUDE_FROM_ALL tests/hartree-fock/hartree-fock++.cc)
-target_link_libraries(hartree-fock++ cxx)
-add_test(hf++test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hartree-fock++)
-set_tests_properties(hf++test/build PROPERTIES FIXTURES_SETUP HFXXTEST_EXEC)
-if (PYTHONINTERP_FOUND)
-    add_test(NAME hf++test/run
-            COMMAND COMMAND ${CMAKE_COMMAND}
-            -DtestName=hartree-fock++
-            -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz
-            -DsrcDir=${CMAKE_SOURCE_DIR}
-            -DpythonExec=${PYTHON_EXECUTABLE}
-            -P ${CMAKE_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
-else()
-    add_test(NAME hf++test/run
-            COMMAND $<TARGET_FILE:hartree-fock++> ${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz)
-endif()
-set_tests_properties(hf++test/run
-        PROPERTIES FIXTURES_REQUIRED HFXXTEST_EXEC)
+    add_executable(hartree-fock EXCLUDE_FROM_ALL tests/hartree-fock/hartree-fock.cc)
+    target_link_libraries(hartree-fock cxx)
+    add_test(hftest/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hartree-fock)
+    set_tests_properties(hftest/build PROPERTIES FIXTURES_SETUP HFTEST_EXEC)
+    if (PYTHONINTERP_FOUND)
+        add_test(NAME hftest/run
+                COMMAND COMMAND ${CMAKE_COMMAND}
+                -DtestName=hartree-fock
+                -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o.xyz
+                -DsrcDir=${CMAKE_SOURCE_DIR}
+                -DpythonExec=${PYTHON_EXECUTABLE}
+                -P ${CMAKE_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
+    else()
+        add_test(NAME hftest/run
+                COMMAND $<TARGET_FILE:hartree-fock> ${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o.xyz)
+    endif()
+    set_tests_properties(hftest/run
+            PROPERTIES FIXTURES_REQUIRED HFTEST_EXEC)
+
+    add_executable(hartree-fock++ EXCLUDE_FROM_ALL tests/hartree-fock/hartree-fock++.cc)
+    target_link_libraries(hartree-fock++ cxx)
+    add_test(hf++test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hartree-fock++)
+    set_tests_properties(hf++test/build PROPERTIES FIXTURES_SETUP HFXXTEST_EXEC)
+    if (PYTHONINTERP_FOUND)
+        add_test(NAME hf++test/run
+                COMMAND COMMAND ${CMAKE_COMMAND}
+                -DtestName=hartree-fock++
+                -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz
+                -DsrcDir=${CMAKE_SOURCE_DIR}
+                -DpythonExec=${PYTHON_EXECUTABLE}
+                -P ${CMAKE_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
+    else()
+        add_test(NAME hf++test/run
+                COMMAND $<TARGET_FILE:hartree-fock++> ${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz)
+    endif()
+    set_tests_properties(hf++test/run
+            PROPERTIES FIXTURES_REQUIRED HFXXTEST_EXEC)
+endif (LIBINT_HAS_EIGEN)
+
+# Fortran bindings =====================================================================================================
+
+if (ENABLE_FORTRAN)
+    # preprocess libint2.h ... this is a guess for non-unix
+    if (UNIX)
+
+        # preprocessed libint.h
+        add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/fortran/libint2.h.i
+                COMMAND ${CMAKE_C_COMPILER} -E -D__COMPILING_LIBINT2 -I${PROJECT_SOURCE_DIR}/include -I${PROJECT_BINARY_DIR}/include
+                -I${PROJECT_BINARY_DIR}/include/libint2 ${CMAKE_SOURCE_DIR}/include/libint2.h -o ${CMAKE_BINARY_DIR}/fortran/libint2.h.i
+                DEPENDS ${CMAKE_SOURCE_DIR}/include/libint2.h
+                COMMENT "Generating libint2.h.i"
+                )
+    else()
+        message(FATAL_ERROR "Cannot run preprocessor on non-Unix systems, disable Fortran to proceed")
+    endif()
+
+    # translated Libint_t
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/fortran/libint2_types_f.h
+            COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/fortran/c_to_f.py ${CMAKE_BINARY_DIR}/fortran/libint2.h.i ${CMAKE_BINARY_DIR}/fortran/libint2_types_f.h Libint_t
+            DEPENDS ${CMAKE_BINARY_DIR}/fortran/libint2.h.i
+            COMMENT "Generating libint2_types_f.h"
+            )
+
+    # extracted defines from libint2_types.h
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/fortran/fortran_incldefs.h
+            COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/fortran/make_defs.py ${CMAKE_SOURCE_DIR}/include/libint2_types.h ${CMAKE_BINARY_DIR}/fortran/fortran_incldefs.h
+            DEPENDS ${CMAKE_SOURCE_DIR}/include/libint2_types.h
+            COMMENT "Generating fortran_incldefs.h"
+            )
+
+    # build module
+    add_library(libint_f OBJECT fortran/libint_f.F90 ${CMAKE_BINARY_DIR}/fortran/libint2_types_f.h ${CMAKE_BINARY_DIR}/fortran/fortran_incldefs.h)
+    target_include_directories(libint_f PUBLIC include fortran)
+    target_compile_definitions(libint_f PUBLIC __COMPILING_LIBINT2)
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/libint_f.mod
+                       COMMAND ${CMAKE_COMMAND} -E "message(STATUS \"Building Fortran module libint_f.mod\")"
+                       DEPENDS libint_f
+                       VERBATIM USES_TERMINAL)
+
+    # tests
+    add_executable(fortran_example EXCLUDE_FROM_ALL fortran/fortran_example.F90)
+    target_link_libraries(fortran_example libint_f int2)
+    add_test(fortran_example/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_example)
+    set_tests_properties(fortran_example/build PROPERTIES FIXTURES_SETUP FORTRAN_EXAMPLE_EXEC)
+    add_test(NAME fortran_example/run
+            COMMAND $<TARGET_FILE:fortran_example>)
+    set_tests_properties(fortran_example/run
+            PROPERTIES FIXTURES_REQUIRED FORTRAN_EXAMPLE_EXEC)
+
+    if (LIBINT_HAS_EIGEN)
+        add_executable(fortran_test EXCLUDE_FROM_ALL fortran/test.cc fortran/test-eri.cc)
+        target_link_libraries(fortran_test libint_f cxx)
+        add_test(fortran_test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_test)
+        set_tests_properties(fortran_test/build PROPERTIES FIXTURES_SETUP FORTRAN_TEST_EXEC)
+        add_test(NAME fortran_test/run
+                COMMAND $<TARGET_FILE:fortran_test>)
+        set_tests_properties(fortran_test/run
+                PROPERTIES FIXTURES_REQUIRED FORTRAN_TEST_EXEC)
+    endif (LIBINT_HAS_EIGEN)
+
+    # install targets
+    install(FILES ${CMAKE_BINARY_DIR}/libint_f.mod
+            COMPONENT int2
+            DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
+            )
+
+endif(ENABLE_FORTRAN)
 
 # Configure files ======================================================================================================
 

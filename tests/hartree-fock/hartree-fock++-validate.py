@@ -151,6 +151,8 @@ for line in instr:
     else:
         print(line,end="")
 
+if len(sys.argv) > 2:
+    instr.close()
 ok = eok and muok and Qok and F1ok and FPok and F2ok and FNok and Fok and H1ok and HPok and H2ok and HNok and Hok and smuok and sQok
 if not ok: sys.exit(1)
 

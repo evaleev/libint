@@ -5,15 +5,10 @@
 Convert selected C structs to Fortran derived types.
 
 Usage:
-C input to stdin, Fortran output to stdout.
-Specify names of C structs to be converted as command line arguments.
+c_to_f.py <C input file> <Fortran output file> <C struct name(s)>
 '''
 
 import re, sys
-
-c_struct_names = sys.argv[1:]
-c_in = sys.stdin
-f_out = sys.stdout
 
 def extract_c_struct_fields(c_code, struct_name):
     struct_re = re.compile("^\s*typedef\s*struct\s*\{([^\}]*)\}\s*"+struct_name+"\s*;",re.MULTILINE | re.DOTALL)
@@ -55,6 +50,15 @@ def convert_type_c_to_f(dtype):
     elif dtype == "int":
         return "integer(c_int)"
 
+if (len(sys.argv) < 4):
+    sys.exit(1)
+try:
+    c_in = open(sys.argv[1], 'r')
+    f_out = open(sys.argv[2], 'w')
+except Exception as e:
+    sys.exit(1)
+c_struct_names = sys.argv[3:]
+
 instring = c_in.read()
 
 for name in c_struct_names:
@@ -72,3 +76,5 @@ for name in c_struct_names:
             f_out.write("   {} :: {}\n".format(t, v))
     f_out.write("end type\n")
 
+c_in.close()
+f_out.close()

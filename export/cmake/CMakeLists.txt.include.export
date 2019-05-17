@@ -3,6 +3,12 @@ install(DIRECTORY libint2
         COMPONENT int2
         DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
         )
+if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+    install(DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2/boost
+            COMPONENT int2
+            DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2"
+            )
+endif()
 install(FILES libint2.h
         COMPONENT int2
         DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"

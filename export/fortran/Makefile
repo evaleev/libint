@@ -20,8 +20,11 @@ default:: fortran_example check_test
 
 libint_f.o: libint2_types_f.h fortran_incldefs.h
 
-libint2_types_f.h: $(TOPDIR)/include/libint2.h
-	$(CXXCPP) $(CPPFLAGS) $(CXXFLAGS) $< | $(PYTHON) c_to_f.py Libint_t > $@
+$(TOPDIR)/include/libint2.h.i: $(TOPDIR)/include/libint2.h
+	$(CXXCPP) $(CPPFLAGS) $(CXXFLAGS) $< > $@
+
+libint2_types_f.h: $(TOPDIR)/include/libint2.h.i
+	$(PYTHON) c_to_f.py $< $@ Libint_t
 
 fortran_example.o: libint_f.o
 

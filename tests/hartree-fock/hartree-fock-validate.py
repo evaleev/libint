@@ -21,4 +21,7 @@ for line in instr:
             returncode = 0
             print("Hartree-Fock energy check: passed")
 
+if len(sys.argv) > 1:
+    instr.close()
+
 sys.exit(returncode)
