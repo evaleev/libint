@@ -62,7 +62,7 @@ if [ "$CXX_TYPE" = "clang" ]; then
   # install the exported lib for testing
   make install
 else
-  cmake . -DENABLE_FORTRAN -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}/libint2 -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}/eigen3
+  cmake . -DENABLE_FORTRAN=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}/libint2 -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}/eigen3
   cmake --build . --target check
   cmake --build . --target install
 fi
