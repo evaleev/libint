@@ -222,7 +222,7 @@ if (LIBINT_HAS_EIGEN)
                 -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o.xyz
                 -DsrcDir=${CMAKE_SOURCE_DIR}
                 -DpythonExec=${PYTHON_EXECUTABLE}
-                -P ${CMAKE_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
+                -P ${CMAKE_SOURCE_DIR}/cmake/hftest.cmake)
     else()
         add_test(NAME hftest/run
                 COMMAND $<TARGET_FILE:hartree-fock> ${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o.xyz)
@@ -241,7 +241,7 @@ if (LIBINT_HAS_EIGEN)
                 -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz
                 -DsrcDir=${CMAKE_SOURCE_DIR}
                 -DpythonExec=${PYTHON_EXECUTABLE}
-                -P ${CMAKE_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
+                -P ${CMAKE_SOURCE_DIR}/cmake/hftest.cmake)
     else()
         add_test(NAME hf++test/run
                 COMMAND $<TARGET_FILE:hartree-fock++> ${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz)
