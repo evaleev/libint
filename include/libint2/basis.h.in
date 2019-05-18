@@ -329,24 +329,32 @@ namespace libint2 {
 #elif defined(SRCDATADIR)
           path = std::string{SRCDATADIR};
 #else
-          path = std::string("@DATADIR_ABSOLUTE@") + std::string("/basis");
+          path = std::string("@DATADIR_ABSOLUTE@");
 #endif
         }
-        // validate path
+        // validate basis_path = path + "/basis"
+        std::string basis_path = path + std::string("/basis");
         bool error = true;
         std::error_code ec;
-        if (not path.empty()) {
-          struct stat sb;
-          error = (::stat(path.c_str(), &sb) == -1);
-          error = error && not S_ISDIR(sb.st_mode);
-          if (error)
-            ec = std::error_code(errno, std::generic_category());
+        auto validate_basis_path = [&basis_path, &error, &ec]() -> void {
+          if (not basis_path.empty()) {
+            struct stat sb;
+            error = (::stat(basis_path.c_str(), &sb) == -1);
+            error = error && not S_ISDIR(sb.st_mode);
+            if (error)
+              ec = std::error_code(errno, std::generic_category());
+          }
+        };
+        validate_basis_path();
+        if (error) { // try without "/basis"
+          basis_path = path;
+          validate_basis_path();
         }
         if (error) {
-          std::ostringstream oss; oss << "BasisSet::data_path(): path \"" << path << "\" is not valid";
+          std::ostringstream oss; oss << "BasisSet::data_path(): path \"" << path << "{/basis}\" is not valid";
           throw std::system_error(ec, oss.str());
         }
-        return path;
+        return basis_path;
       }
       
       /// converts fortran scientific-notation floats that use d/D instead of e/E in \c str

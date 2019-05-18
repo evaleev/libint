@@ -14,7 +14,7 @@
 # Author: Eduard Valeyev - libint@valeyev.net
 
 # Set package version
-set(LIBINT2_VERSION "@PACKAGE_VERSION@")
+set(LIBINT2_VERSION "@LIBINT_VERSION@")
 
 @PACKAGE_INIT@
 

@@ -114,10 +114,9 @@ set(LIBINT2_INSTALL_INCLUDEDIR "include"
         CACHE PATH "LIBINT2 INCLUDE install directory")
 set(LIBINT2_INSTALL_LIBDIR "lib"
         CACHE PATH "LIBINT2 LIB install directory")
-set(LIBINT2_INSTALL_DATADIR "share/libint2/${LIBINT2_VERSION}"
+set(LIBINT2_INSTALL_DATADIR "share/libint/${LIBINT_VERSION}"
         CACHE PATH "LIBINT2 DATA install directory")
-# TODO this matches Automake value, should be adjusted to the convention: share/libint2/${LIBINT2_EXT_VERSION}/doc
-set(LIBINT2_INSTALL_DOCDIR "share/doc/libint2"
+set(LIBINT2_INSTALL_DOCDIR "share/libint/${LIBINT_VERSION}/doc"
         CACHE PATH "LIBINT2 DOC install directory")
 set(LIBINT2_INSTALL_CMAKEDIR "lib/cmake/libint2"
         CACHE PATH "LIBINT2 CMAKE install directory")
@@ -153,6 +152,12 @@ install(TARGETS int2 EXPORT libint2
        )
 add_subdirectory(include)
 
+# install basis set library
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/lib/basis
+        COMPONENT int2
+        DESTINATION "${LIBINT2_INSTALL_DATADIR}"
+        )
+
 # LibintCXX library ====================================================================================================
 
 if (LIBINT_HAS_EIGEN)
@@ -162,10 +167,10 @@ if (LIBINT_HAS_EIGEN)
   if (LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
       target_include_directories(cxx INTERFACE ${Boost_INCLUDE_DIR})
   endif(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
-  set(DATADIR_ABSOLUTE ${LIBINT2_INSTALL_DATADIR})
+  get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_DATADIR}" ABSOLUTE)
   target_compile_definitions(cxx INTERFACE
-          SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis"
-          DATADIR="${CMAKE_INSTALL_PATH}/lib/basis")
+          $<BUILD_INTERFACE:SRCDATADIR="${CMAKE_SOURCE_DIR}/lib/basis">
+          $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
   # Add library to the list of installed components
   install(TARGETS cxx EXPORT libint2
           COMPONENT cxx
