@@ -3,7 +3,7 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2019-05-17: 2.6.0-beta.2
+- 2019-05-18: 2.6.0-beta.2
   - implemented CMake build of exported library:
     - autotools build is deprecated; CMake is primary
     - for consistency, renamed imported targets in FindLibint2.cmake introduced in beta.1
