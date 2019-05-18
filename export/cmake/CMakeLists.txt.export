@@ -46,6 +46,11 @@ if (LIBINT2_SHGAUSS_ORDERING STREQUAL "gaussian")
     set(LIBINT_SHGSHELL_ORDERING ${LIBINT_SHGSHELL_ORDERING_GAUSSIAN})
 endif()
 
+check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
+if (HAVE_POSIX_MEMALIGN)
+    set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics")
+    mark_as_advanced(LIBINT2_ALIGN_SIZE)
+endif(HAVE_POSIX_MEMALIGN)
 
 # Features =============================================================================================================
 
@@ -94,7 +99,12 @@ if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
     )
 endif()
 
-find_package(PythonInterp)
+# Python is optional, unless ...
+if (ENABLE_FORTRAN)  # ... need fortran
+    find_package(PythonInterp REQUIRED)
+else()
+    find_package(PythonInterp)
+endif()
 
 # Set install paths ====================================================================================================
 
@@ -154,7 +164,8 @@ if (LIBINT_HAS_EIGEN)
   endif(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
   set(DATADIR_ABSOLUTE ${LIBINT2_INSTALL_DATADIR})
   target_compile_definitions(cxx INTERFACE
-          $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">)
+          SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis"
+          DATADIR="${CMAKE_INSTALL_PATH}/lib/basis")
   # Add library to the list of installed components
   install(TARGETS cxx EXPORT libint2
           COMPONENT cxx
