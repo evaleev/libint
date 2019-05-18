@@ -1,10 +1,8 @@
 The recommended installation procedure:
-1) ./configure
-   Most often you will need to specify command-line options to configure.
-   To obtain a list of configure options run 'configure --help'.
-2) make
-3) optional: make check
-4) make install
+1) mkdir build; cd build; cmake .
+   Most often you will need to specify command-line options to cmake, such as CMAKE_CXX_COMPILER.
+2) cmake --build . --target check
+3) cmake --build . --target install
 
 Report all problems to libint@valeyev.net
 
