@@ -1,7 +1,7 @@
 
 macro(runtest)
 
-    set(OUTPUT_FILE_NAME "${CMAKE_BINARY_DIR}/tests/hartree-fock/${testName}.out")
+    set(OUTPUT_FILE_NAME "${CMAKE_BINARY_DIR}/${testName}.out")
 
     set(CHECK_CMD "${pythonExec}" "${srcDir}/tests/hartree-fock/${testName}-validate.py")
     if (${testName} STREQUAL "hartree-fock++")
