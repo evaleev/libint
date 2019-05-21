@@ -3,6 +3,7 @@
 #
 #    LIBINT2_FOUND           - true if libint2.h header and libint2 library were found
 #    LIBINT2_VERSION         - the libint2 version
+#    LIBINT2_EXT_VERSION     - the libint2 version including the (optional) buildid, such as beta.3
 #    LIBINT2_INCLUDE_DIRS    - (deprecated: use the CMake IMPORTED targets listed below) list of libint2 include directories
 #    LIBINT2_LIBRARIES       - (deprecated: use the CMake IMPORTED targets listed below) list of libint2 libraries
 #
@@ -15,6 +16,7 @@
 
 # Set package version
 set(LIBINT2_VERSION "@LIBINT_VERSION@")
+set(LIBINT2_EXT_VERSION "@LIBINT_EXT_VERSION@")
 
 @PACKAGE_INIT@
 
