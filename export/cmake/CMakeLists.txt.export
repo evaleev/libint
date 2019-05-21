@@ -129,7 +129,7 @@ foreach(FN IN LISTS LIBINT2_LIBRARY_CXX_SRC)
     list(APPEND LIB_CXX_SRC "src/${FN}")
 endforeach()
 add_library(int2 ${LIB_CXX_SRC})
-target_include_directories(int2 PRIVATE include)
+target_include_directories(int2 PRIVATE include ${PROJECT_BINARY_DIR}/include)
 target_include_directories(int2 INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
