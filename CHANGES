@@ -5,6 +5,7 @@ Following is a brief summary of changes made in each release of Libint.
 
 - 2019-05-21: 2.6.0-beta.3
   - CMake build of exported library works out-of-source
+  - released standard and mpqc4 libraries assume spherical harmonics for 2- and 3-center integrals
 
 - 2019-05-18: 2.6.0-beta.2
   - implemented CMake build of exported library:
