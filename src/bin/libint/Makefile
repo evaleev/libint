@@ -45,6 +45,8 @@ default:: build_libint
 
 all:: default
 
+export:: build_libint
+
 build_libint: $(BUILDCXXOBJ) $(LIBTARGET)
 	$(CXX) -o $@ $(CXXFLAGS) $(LDFLAGS) $^ $(SYSLIBS)
 
