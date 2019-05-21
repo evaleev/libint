@@ -10,9 +10,9 @@ set(LIBINT_BUILDID "beta.3")
 set(LIBINT_VERSION "${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION}")
 if (LIBINT_BUILDID)
     set(LIBINT_EXT_VERSION "${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION}-${LIBINT_BUILDID")
-else
+else(LIBINT_BUILDID)
     set(LIBINT_EXT_VERSION ${LIBINT_VERSION})
-endif()
+endif(LIBINT_BUILDID)
 
             # Add module directory and modules =====================================================================================
 
