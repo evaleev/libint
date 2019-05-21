@@ -246,8 +246,9 @@ if (LIBINT_HAS_EIGEN)
     set_tests_properties(hftest/run
             PROPERTIES FIXTURES_REQUIRED HFTEST_EXEC)
 
+    find_package(Threads)  # for some reason clang does not link in threading support even though we are using C++ threads
     add_executable(hartree-fock++ EXCLUDE_FROM_ALL tests/hartree-fock/hartree-fock++.cc)
-    target_link_libraries(hartree-fock++ cxx)
+    target_link_libraries(hartree-fock++ cxx ${CMAKE_THREAD_LIBS_INIT})
     add_test(hf++test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hartree-fock++)
     set_tests_properties(hf++test/build PROPERTIES FIXTURES_SETUP HFXXTEST_EXEC)
     if (PYTHONINTERP_FOUND)
