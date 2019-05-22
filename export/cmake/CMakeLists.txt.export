@@ -108,9 +108,9 @@ endif()
 # Python is optional, unless ...
 if (ENABLE_FORTRAN)  # ... need fortran
     find_package(PythonInterp REQUIRED)
-else()
+else(ENABLE_FORTRAN)
     find_package(PythonInterp)
-endif()
+endif(ENABLE_FORTRAN)
 
 # Set install paths ====================================================================================================
 
@@ -365,6 +365,8 @@ configure_file(
 # install config files
 install(FILES ${PROJECT_BINARY_DIR}/libint2.pc
         DESTINATION lib/pkgconfig)
+install(FILES ${PROJECT_BINARY_DIR}/include/libint2/config.h
+        DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2")
 
 # Create the version file
 write_basic_package_version_file(libint2-config-version.cmake
