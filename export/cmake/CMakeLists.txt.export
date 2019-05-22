@@ -362,10 +362,12 @@ configure_file(
         @ONLY
 )
 
-# install config files
+# install cmake-processed files
 install(FILES ${PROJECT_BINARY_DIR}/libint2.pc
         DESTINATION lib/pkgconfig)
 install(FILES ${PROJECT_BINARY_DIR}/include/libint2/config.h
+        DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2")
+install(FILES ${PROJECT_BINARY_DIR}/include/libint2/basis.h
         DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2")
 
 # Create the version file
