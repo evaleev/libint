@@ -100,7 +100,7 @@ endif(Boost_FOUND)
 # if usable Boost.Preprocessor not found install the bundled version
 if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
     execute_process(
-            COMMAND ${CMAKE_COMMAND} -E tar xzf ../../external/boost.tar.gz
+            COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_SOURCE_DIR}/external/boost.tar.gz
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2
     )
 endif()
