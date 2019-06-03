@@ -70,7 +70,9 @@ bool strcaseequal(const std::string &a, const std::string &b) {
          });
 }
 
-/// reads the list of atoms from a file in the standard or PBC-extended XYZ format \sa libint2::read_dotxyz \sa libint2::read_dotxyz_pbc
+/// reads the list of atoms from a file in the standard or PBC-extended XYZ format
+/// \sa libint2::read_dotxyz
+/// \sa libint2::read_dotxyz_pbc
 inline std::tuple<std::vector<libint2::Atom>,
                   std::array<std::array<double, 3>, 3>>
 __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
@@ -212,7 +214,8 @@ inline std::vector<Atom> read_dotxyz(
 /// reads the list of atoms from a file in the PBC-extended XYZ format
 /// \note The unit cell vectors in PBC-extended XYZ file are specified as atoms with
 ///       element symbols "AA", "BB", and "CC" (N.B. the element symbols are not
-///       case-sensitive). If a unit cell vector is omitted, it is assumed to be zero. Omitting all three unit cell vectors is equivalent to an infinite unit cell (no periodicity in any direction).
+///       case-sensitive).
+/// Omitting all three unit cell vectors is equivalent to an infinite unit cell (no periodicity in any direction).
 /// \param is[in] the std::istream object from which the data will be read
 /// \param bohr_to_angstrom[in] the conversion factor from Bohr (atomic unit
 /// of length; Libint uses atomic units throughout) to angstrom (in which
@@ -220,10 +223,9 @@ inline std::vector<Atom> read_dotxyz(
 /// the 2010 CODATA value given by the
 /// libint2::constants::codata_2010::bohr_to_angstrom
 /// constant.
-/// \return a std::vector of Atom objects
-/// \throw std::logic_error if cannot parse the contents of \c is
 /// \return a tuple composed of the list of atoms and an array of 3
 ///         unit cell vectors, \c A , \c B , and \c C .
+/// \throw std::logic_error if cannot parse the contents of \c is
 inline auto read_dotxyz_pbc(
     std::istream &is,
     const double bohr_to_angstrom = constants::codata_2010::bohr_to_angstrom)
