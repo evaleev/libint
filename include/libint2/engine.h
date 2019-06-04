@@ -591,11 +591,14 @@ class Engine {
     return *this;
   }
 
-  /// returns the particle rank of the operator
+  /// @return the particle rank of the operator
   int operator_rank() const { return rank(oper_); }
 
-  /// rank of the braket
+  /// @return rank of the braket
   int braket_rank() const { return rank(braket_); }
+
+  /// @return the braket
+  decltype(braket_) braket() const { return braket_; }
 
   /// (re)sets operator type to @c new_oper
   /// @param[in] new_oper Operator whose integrals will be computed with the next call to Engine::compute()
