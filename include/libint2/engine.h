@@ -597,6 +597,9 @@ class Engine {
   /// @return rank of the braket
   int braket_rank() const { return rank(braket_); }
 
+  /// @return the operator
+  decltype(oper_) oper() const { return oper_; }
+
   /// @return the braket
   decltype(braket_) braket() const { return braket_; }
 
