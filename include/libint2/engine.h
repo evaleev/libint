@@ -598,10 +598,10 @@ class Engine {
   int braket_rank() const { return rank(braket_); }
 
   /// @return the operator
-  decltype(oper_) oper() const { return oper_; }
+  Operator oper() const { return oper_; }
 
   /// @return the braket
-  decltype(braket_) braket() const { return braket_; }
+  BraKet braket() const { return braket_; }
 
   /// (re)sets operator type to @c new_oper
   /// @param[in] new_oper Operator whose integrals will be computed with the next call to Engine::compute()

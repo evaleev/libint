@@ -1087,13 +1087,13 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 /// \note result is stored in the "chemists"/Mulliken form, (tbra1 tbra2 |tket1
 /// tket2), i.e. bra and ket are in chemists meaning; result is packed in
 /// row-major order.
-template <Operator oper, BraKet braket, size_t deriv_order>
+template <Operator op, BraKet bk, size_t deriv_order>
 __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     const libint2::Shell& tbra1, const libint2::Shell& tbra2,
     const libint2::Shell& tket1, const libint2::Shell& tket2,
     const ShellPair* tspbra, const ShellPair* tspket) {
-  assert(oper == oper_ && "Engine::compute2 -- operator mismatch");
-  assert(braket == braket_ && "Engine::compute2 -- braket mismatch");
+  assert(op == oper_ && "Engine::compute2 -- operator mismatch");
+  assert(bk == braket_ && "Engine::compute2 -- braket mismatch");
   assert(deriv_order == deriv_order_ &&
          "Engine::compute2 -- deriv_order mismatch");
   assert(((tspbra == nullptr && tspket == nullptr) || (tspbra != nullptr && tspket != nullptr)) &&
@@ -1118,16 +1118,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   const auto swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
   const auto swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
   const auto swap_braket =
-      ((braket == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l >
+      ((braket_ == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l >
                                      tket1.contr[0].l + tket2.contr[0].l)) ||
-      braket == BraKet::xx_xs;
+        braket_ == BraKet::xx_xs;
 #else  // orca angular momentum ordering
   const auto swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
   const auto swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
   const auto swap_braket =
-      ((braket == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l <
+      ((braket_ == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l <
                                      tket1.contr[0].l + tket2.contr[0].l)) ||
-      braket == BraKet::xx_xs;
+        braket_ == BraKet::xx_xs;
   assert(false && "feature not implemented");
 #endif
   const auto& bra1 =
@@ -1277,7 +1277,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             const auto mmax = amtot + deriv_order;
 
             if (!skip_core_ints) {
-              switch (oper) {
+              switch (oper_) {
                 case Operator::coulomb: {
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<Operator::coulomb>&>(core_eval_pack_)
@@ -1356,7 +1356,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             }
 
             if (mmax != 0) {
-              if (braket == BraKet::xx_xx) {
+              if (braket_ == BraKet::xx_xx) {
 #if LIBINT2_DEFINED(eri, PA_x)
                 primdata.PA_x[0] = P[0] - A[0];
 #endif
@@ -1377,7 +1377,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
               }
 
-              if (braket != BraKet::xs_xs) {
+              if (braket_ != BraKet::xs_xs) {
 #if LIBINT2_DEFINED(eri, QC_x)
                 primdata.QC_x[0] = Q[0] - C[0];
 #endif
@@ -1398,7 +1398,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
               }
 
-              if (braket == BraKet::xx_xx) {
+              if (braket_ == BraKet::xx_xx) {
 #if LIBINT2_DEFINED(eri, AB_x)
                 primdata.AB_x[0] = AB[0];
 #endif
@@ -1419,7 +1419,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
               }
 
-              if (braket != BraKet::xs_xs) {
+              if (braket_ != BraKet::xs_xs) {
 #if LIBINT2_DEFINED(eri, CD_x)
                 primdata.CD_x[0] = CD[0];
 #endif
@@ -1656,7 +1656,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
 
     size_t buildfnidx;
-    switch (braket) {
+    switch (braket_) {
       case BraKet::xx_xx:
         buildfnidx =
             ((bra1.contr[0].l * hard_lmax_ + bra2.contr[0].l) * hard_lmax_ +
