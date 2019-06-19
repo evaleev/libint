@@ -1122,7 +1122,7 @@ namespace libint2 {
             double Gm = 0.0;
             for(int i=0, ij=0; i!=16; ++i) {
               for (int j = 0; j != 16; ++j, ++ij) {
-                Gm_val += c_tuint[ij] * tvec[i] * uvec[j];
+                Gm += c_tuint[ij] * tvec[i] * uvec[j];
               }
             }
 #endif // AVX
