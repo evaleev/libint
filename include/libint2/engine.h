@@ -148,13 +148,19 @@ enum class Operator {
   /// erfc-attenuated Coulomb operator,
   /// \f$ \mathrm{erfc}(\omega r)/r \f$
   erfc_coulomb,
+  /// Slater-type geminal, \f$ \mathrm{exp}(-\zeta r_{12}) \f$
+  stg,
+  /// Slater-type geminal times Coulomb, , \f$ \mathrm{exp}(-\zeta r_{12}) / r_{12} \f$
+  stg_x_coulomb,
+  /// alias for Operator::stg_x_coulomb
+  yukawa = stg_x_coulomb,
   // do not modify this
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this updated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   first_1body_oper = overlap,
   last_1body_oper = sphemultipole,
   first_2body_oper = delta,
-  last_2body_oper = erfc_coulomb,
+  last_2body_oper = stg_x_coulomb,
   first_oper = first_1body_oper,
   last_oper = last_2body_oper
 };
@@ -327,6 +333,30 @@ struct operator_traits<Operator::erfc_coulomb>
     return oper_params_type{0};
   }
   typedef const libint2::GenericGmEval<libint2::os_core_ints::erfc_coulomb_gm_eval<scalar_type>>
+      core_eval_type;
+};
+
+template <>
+struct operator_traits<Operator::stg>
+    : public detail::default_operator_traits {
+  /// the attenuation parameter (0 = constant, infinity = delta-function)
+  typedef scalar_type oper_params_type;
+  static oper_params_type default_params() {
+    return oper_params_type{0};
+  }
+  typedef const libint2::TennoGmEval<scalar_type>
+      core_eval_type;
+};
+
+template <>
+struct operator_traits<Operator::stg_x_coulomb>
+    : public detail::default_operator_traits {
+  /// the attenuation parameter (0 = coulomb, infinity = delta-function)
+  typedef scalar_type oper_params_type;
+  static oper_params_type default_params() {
+    return oper_params_type{0};
+  }
+  typedef const libint2::TennoGmEval<scalar_type>
       core_eval_type;
 };
 

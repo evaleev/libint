@@ -79,7 +79,7 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
         (2emultipole,                \
          (3emultipole,               \
            (sphemultipole,           \
-          (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL)))))))))))))))))
+          (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL)))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
@@ -1345,6 +1345,26 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                       any_cast<const typename operator_traits<
                           Operator::erfc_coulomb>::oper_params_type&>(core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
+                } break;
+                case Operator::stg: {
+                  const auto& core_eval_ptr =
+                      any_cast<const detail::core_eval_pack_type<Operator::stg>&>(core_eval_pack_)
+                          .first();
+                  auto zeta =
+                      any_cast<const typename operator_traits<
+                          Operator::stg>::oper_params_type&>(core_ints_params_);
+                  const auto one_over_rho = gammapq * oogammap * oogammaq;
+                  core_eval_ptr->eval_slater(gm_ptr, one_over_rho, T, mmax, zeta);
+                } break;
+                case Operator::stg_x_coulomb: {
+                  const auto& core_eval_ptr =
+                      any_cast<const detail::core_eval_pack_type<Operator::stg>&>(core_eval_pack_)
+                          .first();
+                  auto zeta =
+                      any_cast<const typename operator_traits<
+                          Operator::stg>::oper_params_type&>(core_ints_params_);
+                  const auto one_over_rho = gammapq * oogammap * oogammaq;
+                  core_eval_ptr->eval_yukawa(gm_ptr, one_over_rho, T, mmax, zeta);
                 } break;
                 default:
                   assert(false && "missing case in a switch");  // unreachable

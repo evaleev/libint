@@ -35,6 +35,9 @@ namespace libint2 {
   template<typename Real, int INTERPOLATION_ORDER>
   class FmEval_Taylor;
 
+  template<typename Real>
+  struct TennoGmEval;
+
   template<typename Real, int K>
     struct GaussianGmEval;
 

@@ -785,45 +785,117 @@ namespace libint2 {
   };
 
 
+  namespace detail {
+  constexpr float pow10(long exp) {
+    return (exp == 0) ? 1. : ((exp > 0) ? 10. * pow10(exp-1) : 0.1 * pow10(exp+1));
+  }
+  }
+
   //////////////////////////////////////////////////////////
   /// core integral for Yukawa and exponential interactions
   //////////////////////////////////////////////////////////
 
-#if 0
   /**
-   * Evaluates core integral for the Yukawa potential \f$ \exp(- \zeta r) / r \f$
+   * Evaluates core integral for Gaussian integrals over the Yukawa potential \f$ \exp(- \zeta r) / r \f$ and
+   * the exponential interaction \f$ \exp(- \zeta r) \f$
    * @tparam Real real type
    */
   template<typename Real>
-  struct YukawaGmEval {
+  struct TennoGmEval {
 
-      static const int mmin = -1;
+  private:
 
-      ///
-      YukawaGmEval(unsigned int mmax, Real precision) :
+    #include <libint2/tenno_cheb.h>
+
+      static_assert(std::is_same<Real,double>::value, "TennoGmEval only supports double as the real type");
+
+      static const int mmin_ = -1;
+      static constexpr const Real Tmax = (1 << cheb_table_tmaxlog2); //!< critical value of T above which use upward recursion
+      static constexpr const Real Umax = detail::pow10(cheb_table_umaxlog10); //!< max value of U for which to interpolate (throw if outside the range)
+      static constexpr const Real Umin = detail::pow10(cheb_table_uminlog10); //!< min value of U for which to interpolate (throw if outside the range)
+      static constexpr const std::size_t ORDERp1 = interpolation_order + 1;
+
+  public:
+      /// \param m_max maximum value of the Gm function index
+      /// \param precision the desired *absolute* precision (relative precision for most intervals will be below epsilon, but for large T/U values and high m relative precision is low
+      /// \throw std::invalid_argument if \c m_max is greater than \c cheb_table_mmax (see tenno_cheb.h)
+      /// \throw std::invalid_argument if \c precision is smaller than std::numeric_limits<double>::epsilon()
+      TennoGmEval(unsigned int mmax, Real precision = -1) :
         mmax_(mmax), precision_(precision),
-        numbers_(),
-        Gm_0_U_(256) // should be enough to hold up to G_{255}(0,U)
-      { }
+        numbers_()
+      {
+//        if (precision < std::max(std::numeric_limits<double>::epsilon(), cheb_table_maxabserror))
+//          throw std::invalid_argument(std::string("TennoGmEval does not support precision smaller than ") + std::to_string(std::numeric_limits<double>::epsilon()));
+        if (mmax > cheb_table_mmax)
+          throw std::invalid_argument(
+              "TennoGmEval::init() : requested mmax exceeds the "
+              "hard-coded mmax");
+        init_table();
+      }
 
-      unsigned int max_m() const { return mmax; }
+      ~TennoGmEval() {
+        if (c_ != nullptr)
+          free(c_);
+      }
+
+      /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
+      static std::shared_ptr<const TennoGmEval> instance(int m_max, double = 0) {
+
+        assert(m_max >= 0);
+        // thread-safe per C++11 standard [6.7.4]
+        static auto instance_ = std::make_shared<const TennoGmEval>(m_max);
+
+        while (instance_->max_m() < m_max) {
+          static std::mutex mtx;
+          std::lock_guard<std::mutex> lck(mtx);
+          if (instance_->max_m() < m_max) {
+            auto new_instance = std::make_shared<const TennoGmEval>(m_max);
+            instance_ = new_instance;
+          }
+        }
+
+        return instance_;
+      }
+
+      unsigned int max_m() const { return mmax_; }
       /// @return the precision with which this object can compute the result
       Real precision() const { return precision_; }
 
       ///
-      void eval_yukawa(Real* Gm, Real T, Real U, size_t mmax, Real absolute_precision) {
-        assert(false); // not yet implemented
+      void eval_yukawa(Real* Gm, Real one_over_rho, Real T, size_t mmax, Real zeta) const {
+        assert(mmax <= mmax_);
+        const auto U = 0.25 * zeta * zeta * one_over_rho;
+        if (T > Tmax) {
+          eval_Gm_s1(Gm, T, U, mmax, 0); // no need for G_-1
+        } else {
+          interpolate_Gm<false>(Gm, T, U, 0, mmax);
+        }
       }
       ///
-      void eval_slater(Real* Gm, Real T, Real U, size_t mmax, Real absolute_precision) {
-        assert(false); // not yet implemented
+      void eval_slater(Real* Gm, Real one_over_rho, Real T, size_t mmax, Real zeta) const {
+        assert(mmax <= mmax_);
+        const auto U = 0.25 * zeta * zeta * one_over_rho;
+        const auto zeta_over_two_rho = 0.5 * zeta * one_over_rho;
+        if (T > Tmax) {
+          eval_Gm_s1(Gm, T, U, mmax, -1);
+        } else {
+          interpolate_Gm<true>(Gm, T, U, zeta_over_two_rho, mmax);
+        }
       }
+
+  private:
 
       /// Scheme 1 of Ten-no: upward recursion from \f$ G_{-1} (T,U) \f$ and \f$ G_0 (T,U) \f$
       /// T must be non-zero!
-      /// @param[out] Gm \f$ G_m(T,U), m=-1..mmax \f$
-      static void eval_yukawa_s1(Real* Gm, Real T, Real U, size_t mmax) {
-        Real G_m1;
+      /// @param[out] Gm \f$ G_m(T,U), m=mmin..mmax \f$ , i.e. @c Gm[m] \f$ = G_{\mathrm{mmin} + m}(T,U) \f$
+      /// @param[in] T the value of \f$ T \f$
+      /// @param[in] U the value of \f$ U \f$
+      /// @param[in] mmax the maximum value of \f$ m \f$
+      /// @param[in] mmin the minimum value of \f$ m \f$ ; the only valid values are 0 and -1
+      static void eval_Gm_s1(Real* Gm, Real T, Real U, size_t mmax, long mmin) {
+        assert(mmin == 0 || mmin == -1);
+        assert(T > 0);
+        assert(U > 0);
 
         const Real sqrt_U = sqrt(U);
         const Real sqrt_T = sqrt(T);
@@ -833,203 +905,287 @@ namespace libint2 {
         const Real kappa = sqrt_U - sqrt_T;
         const Real lambda = sqrt_U + sqrt_T;
         const Real sqrtPi_over_4(0.44311346272637900682454187083528629569938736403060);
-        const Real pfac = sqrtPi_over_4 * exp_mT;
-        const Real erfc_k = exp(kappa*kappa) * (1 - erf(kappa));
-        const Real erfc_l = exp(lambda*lambda) * (1 - erf(lambda));
+        const Real pfac = sqrtPi_over_4;
+        const Real erfc_k = exp(kappa*kappa - T) * erfc(kappa);
+        const Real erfc_l = exp(lambda*lambda - T) * erfc(lambda);
 
-        Gm[0] = pfac * (erfc_k + erfc_l) * oo_sqrt_U;
-        Gm[1] = pfac * (erfc_k - erfc_l) * oo_sqrt_T;
+        Real G_m1_value;
+        Real& G_m1 = (mmin == -1) ? Gm[0] : G_m1_value;
+        G_m1 = pfac * (erfc_k + erfc_l) * oo_sqrt_U;
+        Real& G_0 = (mmin == -1) ? Gm[1] : Gm[0];
+        G_0 = pfac * (erfc_k - erfc_l) * oo_sqrt_T;
+
         if (mmax > 0) {
 
           // first application of URR
           const Real oo_two_T = 0.5 / T;
           const Real two_U = 2.0 * U;
 
-          for(unsigned int m=1, two_m_minus_1=1; m<=mmax; ++m, two_m_minus_1+=2) {
-            Gm[m+1] = oo_two_T * ( two_m_minus_1 * Gm[m] + two_U * Gm[m-1] - exp_mT);
+          Real* Gmm1 = &G_m1;
+          Real* Gm0 = &G_0;
+          Real* Gmp1 = Gm0 + 1;
+          for(unsigned int m=1, two_m_minus_1=1; m<=mmax; ++m, two_m_minus_1+=2, ++Gmp1) {
+            *Gmp1 = oo_two_T * ( two_m_minus_1 * *Gm0 + two_U * *Gmm1 - exp_mT);
+            Gmm1 = Gm0;
+            Gm0 = Gmp1;
           }
         }
 
         return;
       }
 
-      /// Scheme 2 of Ten-no:
-      /// - evaluate G_m(0,U) for m = mmax ... mmax+n, where n is the number of terms in Maclaurin expansion
-      ///   how? see eval_yukawa_Gm0U
-      /// - then MacLaurin expansion for \f$ G_{m_{\rm max}}(T,U) \f$ and \f$ G_{m_{\rm max}-1}(T,U) \f$
-      /// - then downward recursion
-      /// @param[out] Gm \f$ G_m(T,U), m=-1..mmax \f$
-      void eval_yukawa_s2(Real* Gm, Real T, Real U, size_t mmax) {
+      /// compute core integrals by Chebyshev interpolation
+      /// @tparam[in] exp if true, will compute core integrals of the exponential operator, otherwise will compute Yukawa
+      /// @param[out] Gm_vec if @c exp==false Gm_vec[m]=\f$ G_m(T,U), m=0..mmax \f$, otherwise Gm_vec[m]=\f$ \frac{\zeta}{2 \rho} \left( G_{m-1}(T,U) - G_m(T,U) \right), m=0..mmax \f$ ; must be at least @c mmax+1 elements long
+      /// @param[in] T the value of \f$ T \f$
+      /// @param[in] U the value of \f$ U \f$
+      /// @param[in] zeta_over_two_rho the value of \f$ \frac{\zeta}{2 \rho} \f$, only used if @c exp==true
+      /// @param[in] mmax the maximum value of \f$ m \f$
+      template <bool exp>
+      void interpolate_Gm(Real* Gm_vec, Real T, Real U, Real zeta_over_two_rho, long mmax) const {
+        assert(T >= 0);
+        assert(U >= Umin && U <= Umax);
 
-        // TODO estimate the number of expansion terms for the given precision
-        const int expansion_order = 60;
-        eval_yukawa_Gm0U(Gm_0_U_, U, mmax - 1 + expansion_order);
+        // maps x in [0,2] to [-1/2,1/2] in a linear fashion
+        auto linear_map_02 = [](Real x) {
+          assert(x >= 0 && x <= 2);
+          return (x - 1) * 0.5;
+        };
+        // maps x in [a, 2*a] to [-1/2,1/2] in a logarithmic fashion
+        auto log2_map = [](Real x, Real one_over_a) {
+          return std::log2(x * one_over_a) - 0.5;
+        };
+        // maps x in [a, 10*a] to [-1/2,1/2] in a logarithmic fashion
+        auto log10_map = [](Real x, Real one_over_a) {
+          return std::log10(x * one_over_a) - 0.5;
+        };
 
-        // Maclaurin
+        // which interval does this T fall into?
+        const int Tint = T < 2 ? 0 : int(std::floor(std::log2(T)));  assert(Tint >= 0 && Tint < 10);
+        // precomputed 1 / 2^K
+        const constexpr Real one_over_2K[] = {1, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.0078125, 0.00390625, .001953125};
+        // which interval does this U fall into?
+        const int Uint = int(std::floor(std::log10(U / Umin))); assert(Uint >= 0 && Uint < 10);
+        // precomputed 1 / 10^(cheb_table_uminlog10 + K)
+        const constexpr Real one_over_10K[] = {1. / detail::pow10(cheb_table_uminlog10),
+                                               1. / detail::pow10(cheb_table_uminlog10+1),
+                                               1. / detail::pow10(cheb_table_uminlog10+2),
+                                               1. / detail::pow10(cheb_table_uminlog10+3),
+                                               1. / detail::pow10(cheb_table_uminlog10+4),
+                                               1. / detail::pow10(cheb_table_uminlog10+5),
+                                               1. / detail::pow10(cheb_table_uminlog10+6),
+                                               1. / detail::pow10(cheb_table_uminlog10+7),
+                                               1. / detail::pow10(cheb_table_uminlog10+8),
+                                               1. / detail::pow10(cheb_table_uminlog10+9)};
+        const Real t = Tint == 0 ? linear_map_02(T) : log2_map(T, one_over_2K[Tint]); // this ranges from -0.5 to 0.5
+        const Real u = log10_map(U, one_over_10K[Uint]); // this ranges from -0.5 to 0.5
 
+        const int interval = Tint * 10 + Uint;
 
-        // downward recursion
-        //Gm[m + 1] = 1/(2 U) (E^-T - (2 m + 3) Gm[[m + 2]] + 2 T Gm[[m + 3]])
-        const Real one_over_twoU = 0.5 / U;
-        const Real one_over_twoU = 2.0 * T;
-        const Real exp_mT = exp(-T);
-        for(int m=mmax-2; m>=-1; --m)
-          Gm[m] = one_over_twoU (exp_mT - numbers_.twoi1[m+1] * Gm[m+1] + twoT Gm[m+2])
+#if !defined(__AVX__)
+#  error "TennoGmEval requires AVX support"
+#endif
 
-        // testing ...
-        std::copy(Gm_0_U_.begin()+1, Gm_0_U_.begin()+mmax+2, Gm);
+#if defined(__AVX__)
+        assert(ORDERp1 == 16);
+        const auto t2 = t*t;
+        const auto t3 = t2*t;
+        const auto t4 = t2*t2;
+        const auto t5 = t2*t3;
+        const auto t6 = t3*t3;
+        const auto t7 = t3*t4;
+        const auto t8 = t4*t4;
+        const auto t9 = t4*t5;
+        const auto t10 = t5*t5;
+        const auto t11 = t5*t6;
+        const auto t12 = t6*t6;
+        const auto t13 = t6*t7;
+        const auto t14 = t7*t7;
+        const auto t15 = t7*t8;
+        const auto u2 = u*u;
+        const auto u3 = u2*u;
+        const auto u4 = u2*u2;
+        const auto u5 = u2*u3;
+        const auto u6 = u3*u3;
+        const auto u7 = u3*u4;
+        const auto u8 = u4*u4;
+        const auto u9 = u4*u5;
+        const auto u10 = u5*u5;
+        const auto u11 = u5*u6;
+        const auto u12 = u6*u6;
+        const auto u13 = u6*u7;
+        const auto u14 = u7*u7;
+        const auto u15 = u7*u8;
+        libint2::simd::VectorAVXDouble u0vec(1., u, u2, u3);
+        libint2::simd::VectorAVXDouble u1vec(u4, u5, u6, u7);
+        libint2::simd::VectorAVXDouble u2vec(u8, u9, u10, u11);
+        libint2::simd::VectorAVXDouble u3vec(u12, u13, u14, u15);
+#endif // AVX
 
-        return;
-      }
+#if defined(__AVX__)
+        const long mmin = (exp == true) ? -1 : 0;
+        Real Gmm1 = 0.0;
+        for(long m=mmin; m<=mmax; ++m){
+            const Real *c_tuint = c_ + (ORDERp1) * (ORDERp1) * (interval * (mmax_ - mmin_ + 1) + (m - mmin_)); // ptr to the interpolation data for m=mmin
+            libint2::simd::VectorAVXDouble c00v, c01v, c02v, c03v, c10v, c11v, c12v, c13v,
+                                           c20v, c21v, c22v, c23v, c30v, c31v, c32v, c33v,
+                                           c40v, c41v, c42v, c43v, c50v, c51v, c52v, c53v,
+                                           c60v, c61v, c62v, c63v, c70v, c71v, c72v, c73v;
+            libint2::simd::VectorAVXDouble c80v, c81v, c82v, c83v, c90v, c91v, c92v, c93v,
+                                           ca0v, ca1v, ca2v, ca3v, cb0v, cb1v, cb2v, cb3v,
+                                           cc0v, cc1v, cc2v, cc3v, cd0v, cd1v, cd2v, cd3v,
+                                           ce0v, ce1v, ce2v, ce3v, cf0v, cf1v, cf2v, cf3v;
+            c00v.load_aligned(c_tuint);                c01v.load_aligned((c_tuint+4));
+            c02v.load_aligned(c_tuint+8);              c03v.load_aligned((c_tuint+12));
+            libint2::simd::VectorAVXDouble t0vec(1, 1, 1, 1);
+            libint2::simd::VectorAVXDouble t0 = t0vec * (c00v * u0vec + c01v * u1vec + c02v * u2vec + c03v * u3vec);
+            c10v.load_aligned(c_tuint      +ORDERp1);  c11v.load_aligned((c_tuint+4)   +ORDERp1);
+            c12v.load_aligned((c_tuint+8)  +ORDERp1);  c13v.load_aligned((c_tuint+12)  +ORDERp1);
+            libint2::simd::VectorAVXDouble t1vec(t, t, t, t);
+            libint2::simd::VectorAVXDouble t1 = t1vec * (c10v * u0vec + c11v * u1vec + c12v * u2vec + c13v * u3vec);
+            c20v.load_aligned(c_tuint    +2*ORDERp1);  c21v.load_aligned((c_tuint+4) +2*ORDERp1);
+            c22v.load_aligned((c_tuint+8)+2*ORDERp1);  c23v.load_aligned((c_tuint+12)+2*ORDERp1);
+            libint2::simd::VectorAVXDouble t2vec(t2, t2, t2, t2);
+            libint2::simd::VectorAVXDouble t2 = t2vec * (c20v * u0vec + c21v * u1vec + c22v * u2vec + c23v * u3vec);
+            c30v.load_aligned(c_tuint    +3*ORDERp1);  c31v.load_aligned((c_tuint+4) +3*ORDERp1);
+            c32v.load_aligned((c_tuint+8)+3*ORDERp1);  c33v.load_aligned((c_tuint+12)+3*ORDERp1);
+            libint2::simd::VectorAVXDouble t3vec(t3, t3, t3, t3);
+            libint2::simd::VectorAVXDouble t3 = t3vec * (c30v * u0vec + c31v * u1vec + c32v * u2vec + c33v * u3vec);
+            libint2::simd::VectorAVXDouble t0123 = horizontal_add(t0, t1, t2, t3);
 
-      /// Scheme 3 of Ten-no:
-      /// - evaluate G_m(0,U) for m = 0 ... mmax+n, where n is the max order of terms in Maclaurin expansion
-      ///   how? see eval_yukawa_Gm0U
-      /// - then MacLaurin expansion for \f$ G_{m}(T,U) \f$ for m = 0 ... mmax
-      /// @param[out] Gm \f$ G_m(T,U), m=-1..mmax \f$
-      void eval_yukawa_s3(Real* Gm, Real T, Real U, size_t mmax) {
+            c40v.load_aligned(c_tuint    +4*ORDERp1);  c41v.load_aligned((c_tuint+4) +4*ORDERp1);
+            c42v.load_aligned((c_tuint+8)+4*ORDERp1);  c43v.load_aligned((c_tuint+12)+4*ORDERp1);
+            libint2::simd::VectorAVXDouble t4vec(t4, t4, t4, t4);
+            libint2::simd::VectorAVXDouble t4 = t4vec * (c40v * u0vec + c41v * u1vec + c42v * u2vec + c43v * u3vec);
+            c50v.load_aligned(c_tuint    +5*ORDERp1);  c51v.load_aligned((c_tuint+4) +5*ORDERp1);
+            c52v.load_aligned((c_tuint+8)+5*ORDERp1);  c53v.load_aligned((c_tuint+12)+5*ORDERp1);
+           libint2::simd::VectorAVXDouble t5vec(t5, t5, t5, t5);
+            libint2::simd::VectorAVXDouble t5 = t5vec * (c50v * u0vec + c51v * u1vec + c52v * u2vec + c53v * u3vec);
+            c60v.load_aligned(c_tuint    +6*ORDERp1);  c61v.load_aligned((c_tuint+4) +6*ORDERp1);
+            c62v.load_aligned((c_tuint+8)+6*ORDERp1);  c63v.load_aligned((c_tuint+12)+6*ORDERp1);
+            libint2::simd::VectorAVXDouble t6vec(t6, t6, t6, t6);
+            libint2::simd::VectorAVXDouble t6 = t6vec * (c60v * u0vec + c61v * u1vec + c62v * u2vec + c63v * u3vec);
+            c70v.load_aligned(c_tuint    +7*ORDERp1);  c71v.load_aligned((c_tuint+4) +7*ORDERp1);
+            c72v.load_aligned((c_tuint+8)+7*ORDERp1);  c73v.load_aligned((c_tuint+12)+7*ORDERp1);
+            libint2::simd::VectorAVXDouble t7vec(t7, t7, t7, t7);
+            libint2::simd::VectorAVXDouble t7 = t7vec * (c70v * u0vec + c71v * u1vec + c72v * u2vec + c73v * u3vec);
+            libint2::simd::VectorAVXDouble t4567 = horizontal_add(t4, t5, t6, t7);
 
-        // Ten-no's prescription:
-        //
+            c80v.load_aligned(c_tuint    +8*ORDERp1);  c81v.load_aligned((c_tuint+4) +8*ORDERp1);
+            c82v.load_aligned((c_tuint+8)+8*ORDERp1);  c83v.load_aligned((c_tuint+12)+8*ORDERp1);
+            libint2::simd::VectorAVXDouble t8vec(t8, t8, t8, t8);
+            libint2::simd::VectorAVXDouble t8 = t8vec * (c80v * u0vec + c81v * u1vec + c82v * u2vec + c83v * u3vec);
+            c90v.load_aligned(c_tuint    +9*ORDERp1);  c91v.load_aligned((c_tuint+4) +9*ORDERp1);
+            c92v.load_aligned((c_tuint+8)+9*ORDERp1);  c93v.load_aligned((c_tuint+12)+9*ORDERp1);
+            libint2::simd::VectorAVXDouble t9vec(t9, t9, t9, t9);
+            libint2::simd::VectorAVXDouble t9 = t9vec * (c90v * u0vec + c91v * u1vec + c92v * u2vec + c93v * u3vec);
+            ca0v.load_aligned(c_tuint    +10*ORDERp1);  ca1v.load_aligned((c_tuint+4) +10*ORDERp1);
+            ca2v.load_aligned((c_tuint+8)+10*ORDERp1);  ca3v.load_aligned((c_tuint+12)+10*ORDERp1);
+            libint2::simd::VectorAVXDouble tavec(t10, t10, t10, t10);
+            libint2::simd::VectorAVXDouble ta = tavec * (ca0v * u0vec + ca1v * u1vec + ca2v * u2vec + ca3v * u3vec);
+            cb0v.load_aligned(c_tuint    +11*ORDERp1);  cb1v.load_aligned((c_tuint+4) +11*ORDERp1);
+            cb2v.load_aligned((c_tuint+8)+11*ORDERp1);  cb3v.load_aligned((c_tuint+12)+11*ORDERp1);
+            libint2::simd::VectorAVXDouble tbvec(t11, t11, t11, t11);
+            libint2::simd::VectorAVXDouble tb = tbvec * (cb0v * u0vec + cb1v * u1vec + cb2v * u2vec + cb3v * u3vec);
+            libint2::simd::VectorAVXDouble t89ab = horizontal_add(t8, t9, ta, tb);
 
-        assert(false);
+            cc0v.load_aligned(c_tuint    +12*ORDERp1);  cc1v.load_aligned((c_tuint+4) +12*ORDERp1);
+            cc2v.load_aligned((c_tuint+8)+12*ORDERp1);  cc3v.load_aligned((c_tuint+12)+12*ORDERp1);
+            libint2::simd::VectorAVXDouble tcvec(t12, t12, t12, t12);
+            libint2::simd::VectorAVXDouble tc = tcvec * (cc0v * u0vec + cc1v * u1vec + cc2v * u2vec + cc3v * u3vec);
+            cd0v.load_aligned(c_tuint    +13*ORDERp1);  cd1v.load_aligned((c_tuint+4) +13*ORDERp1);
+            cd2v.load_aligned((c_tuint+8)+13*ORDERp1);  cd3v.load_aligned((c_tuint+12)+13*ORDERp1);
+            libint2::simd::VectorAVXDouble tdvec(t13, t13, t13, t13);
+            libint2::simd::VectorAVXDouble td = tdvec * (cd0v * u0vec + cd1v * u1vec + cd2v * u2vec + cd3v * u3vec);
+            ce0v.load_aligned(c_tuint    +14*ORDERp1);  ce1v.load_aligned((c_tuint+4) +14*ORDERp1);
+            ce2v.load_aligned((c_tuint+8)+14*ORDERp1);  ce3v.load_aligned((c_tuint+12)+14*ORDERp1);
+            libint2::simd::VectorAVXDouble tevec(t14, t14, t14, t14);
+            libint2::simd::VectorAVXDouble te = tevec * (ce0v * u0vec + ce1v * u1vec + ce2v * u2vec + ce3v * u3vec);
+            cf0v.load_aligned(c_tuint    +15*ORDERp1);  cf1v.load_aligned((c_tuint+4)+15*ORDERp1);
+            cf2v.load_aligned((c_tuint+8)+15*ORDERp1);  cf3v.load_aligned((c_tuint+4)+15*ORDERp1);
+            libint2::simd::VectorAVXDouble tfvec(t15, t15, t15, t15);
+            libint2::simd::VectorAVXDouble tf = tfvec * (cf0v * u0vec + cf1v * u1vec + cf2v * u2vec + cf3v * u3vec);
+            libint2::simd::VectorAVXDouble tcdef = horizontal_add(tc, td, te, tf);
 
-        // testing ...
-        std::copy(Gm_0_U_.begin()+1, Gm_0_U_.begin()+mmax+2, Gm);
+            auto tall = horizontal_add(t0123, t4567, t89ab, tcdef);
+            const auto Gm = horizontal_add(tall);
 
-        return;
-      }
-
-
-      /**
-       * computes prerequisites for MacLaurin expansion of Gm(T,U)
-       * for m in [-1,mmax); uses Ten-no's prescription, i.e.
-       *
-       *
-       * @param[out] Gm0U
-       * @param[in] U
-       * @param[in] mmax
-       */
-      void eval_yukawa_Gm0U(Real* Gm0U, Real U, int mmax, int mmin = -1) {
-
-        // Ten-no's prescription:
-        // start with Gm*(0,T)
-        // 1) for U < 5, m* = -1
-        // 2) for U > 5, m* = min(U,mmax)
-        int mstar;
-
-        // G_{-1} (0,U) is easy
-        if (U < 5.0) {
-          mstar = -1;
-
-          const Real sqrt_U = sqrt(U);
-          const Real exp_U = exp(U);
-          const Real oo_sqrt_U = 1 / sqrt_U;
-          const Real sqrtPi_over_2(
-              0.88622692545275801364908374167057259139877472806119);
-          const Real pfac = sqrtPi_over_2 * exp_U;
-          const Real erfc_sqrt_U = 1.0 - erf(sqrt_U);
-          Gm_0_U_[0] = pfac * exp_U * oo_sqrt_U * erfc_sqrt_U;
-          // can get G0 for "free"
-          // this is the l'Hopital-transformed expression for G_0 (0,T)
-//          const Real sqrtPi(
-//              1.7724538509055160272981674833411451827975494561224);
-//          Gm_0_U_[1] = 1.0 - exp_U * sqrtPi * sqrt_U * erfc_sqrt_U;
-        }
-        else { // use continued fraction for m*
-          mstar = std::min((size_t)U,(size_t)mmax);
-          const bool implemented = false;
-          assert(implemented == true);
-        }
-
-        { // use recursion if needed
-          const Real two_U = 2.0 * U;
-          // simplified URR
-          if (mmax > mstar) {
-            for(int m=mstar+1; m<=mmax; ++m) {
-              Gm_0_U_[m+1] = numbers_.twoi1[m] * (1.0 - two_U * Gm_0_U_[m]);
+            // double check
+            if (false) {
+              std::vector<double> uvec(16);
+              std::vector<double> tvec(16);
+              uvec[0] = 1;
+              tvec[0] = 1;
+              for(int i=1; i!=16; ++i) {
+                uvec[i] = uvec[i-1] * u;
+                tvec[i] = tvec[i-1] * t;
+              }
+              double Gm_val = 0.0;
+              for(int i=0, ij=0; i!=16; ++i) {
+                for (int j = 0; j != 16; ++j, ++ij) {
+                  Gm_val += c_tuint[ij] * tvec[i] * uvec[j];
+                }
+              }
+              assert(std::abs(Gm_val - Gm) < 1e-25 || std::abs(Gm_val - Gm)/Gm < 100 * std::numeric_limits<double>::epsilon());
             }
-          }
 
-          // simplified DRR
-          if (mstar > mmin) { // instead of -1 because we trigger this only for U > 5
-            const Real one_over_U = 2.0 / two_U;
-            for(int m=mstar-1; m>=mmin; --m) {
-              Gm_0_U_[m+1] = one_over_U * ( 0.5 - numbers_.ihalf[m+2] * Gm_0_U_[m+2]);
+            if (exp == false) {
+              Gm_vec[m] = Gm;
             }
-          }
+            else {
+              if (m != -1) {
+                Gm_vec[m] = (Gmm1 - Gm) * zeta_over_two_rho;
+              }
+              Gmm1 = Gm;
+            }
         }
-
-        // testing ...
-        std::copy(Gm_0_U_.begin()+1, Gm_0_U_.begin()+mmax+2, Gm0U);
+#endif // AVX
 
         return;
-      }
-
-
-      /// computes a single value of G_{-1}(T,U)
-      static Real eval_Gm1(Real T, Real U) {
-        const Real sqrt_U = sqrt(U);
-        const Real sqrt_T = sqrt(T);
-        const Real exp_mT = exp(-T);
-        const Real kappa = sqrt_U - sqrt_T;
-        const Real lambda = sqrt_U + sqrt_T;
-        const Real sqrtPi_over_4(0.44311346272637900682454187083528629569938736403060);
-        const Real result = sqrtPi_over_4 * exp_mT *
-            (exp(kappa*kappa) * (1 - erf(kappa)) + exp(lambda*lambda) * (1 - erf(lambda))) / sqrt_U;
-        return result;
-      }
-      /// computes a single value of G_0(T,U)
-      static Real eval_G0(Real T, Real U) {
-        const Real sqrt_U = sqrt(U);
-        const Real sqrt_T = sqrt(T);
-        const Real exp_mT = exp(-T);
-        const Real kappa = sqrt_U - sqrt_T;
-        const Real lambda = sqrt_U + sqrt_T;
-        const Real sqrtPi_over_4(0.44311346272637900682454187083528629569938736403060);
-        const Real result = sqrtPi_over_4 * exp_mT *
-            (exp(kappa*kappa) * (1 - erf(kappa)) - exp(lambda*lambda) * (1 - erf(lambda))) / sqrt_T;
-        return result;
-      }
-      /// computes \f$ G_{-1}(T,U) \f$ and \f$ G_{0}(T,U) \f$ , both are needed for Yukawa and Slater integrals
-      /// @param[out] result result[0] contains \f$ G_{-1}(T,U) \f$, result[1] contains \f$ G_{0}(T,U) \f$
-      static void eval_G_m1_0(Real* result, Real T, Real U) {
-        const Real sqrt_U = sqrt(U);
-        const Real sqrt_T = sqrt(T);
-        const Real oo_sqrt_U = 1 / sqrt_U;
-        const Real oo_sqrt_T = 1 / sqrt_T;
-        const Real exp_mT = exp(-T);
-        const Real kappa = sqrt_U - sqrt_T;
-        const Real lambda = sqrt_U + sqrt_T;
-        const Real sqrtPi_over_4(0.44311346272637900682454187083528629569938736403060);
-        const Real pfac = sqrtPi_over_4 * exp_mT;
-        const Real erfc_k = exp(kappa*kappa) * (1 - erf(kappa));
-        const Real erfc_l = exp(lambda*lambda) * (1 - erf(lambda));
-        result[0] = pfac * (erfc_k + erfc_l) * oo_sqrt_U;
-        result[1] = pfac * (erfc_k - erfc_l) * oo_sqrt_T;
-      }
-
-      /// computes a single value of G(T,U) using MacLaurin series.
-      static Real eval_MacLaurinT(Real T, Real U, size_t m, Real absolute_precision) {
-        assert(false); // not yet implemented
-        return 0.0;
       }
 
     private:
-      std::vector<Real> Gm_0_U_; // used for MacLaurin expansion
       unsigned int mmax_;
       Real precision_;
       ExpensiveNumbers<Real> numbers_;
+      Real* c_ = nullptr;
 
-      // since evaluation may involve several functions, will store some intermediate constants here
-      // to avoid the cost of extra parameters
-      //Real exp_U_;
-      //Real exp_mT_;
+      void init_table() {
 
-      size_t count_tenno_algorithm_branches[3]; // counts the number of times each branch Ten-no algorithm
-                                                // was picked
+        // get memory
+        void* result;
+        int status = posix_memalign(&result, std::max(sizeof(Real), 32ul), (mmax_ - mmin_ + 1) * cheb_table_nintervals * ORDERp1 * ORDERp1 * sizeof(Real));
+        if (status != 0) {
+          if (status == EINVAL)
+            throw std::logic_error(
+              "TennoGmEval::init() : posix_memalign failed, alignment must be a power of 2 at least as large as sizeof(void *)");
+          if (status == ENOMEM)
+            throw std::bad_alloc();
+          abort();  // should be unreachable
+        }
+        c_ = static_cast<Real*>(result);
 
-  };
+        // copy contents of static table into c
+        // need all intervals
+        for (std::size_t iv = 0; iv < cheb_table_nintervals; ++iv) {
+          // but only values of m up to mmax
+          std::copy(cheb_table[iv], cheb_table[iv]+((mmax_-mmin_)+1)*ORDERp1*ORDERp1, c_+(iv*((mmax_-mmin_)+1))*ORDERp1*ORDERp1);
+        }
+      }
+
+
+  };  // TennoGmEval
+
+#if LIBINT2_CONSTEXPR_STATICS
+  template <typename Real>
+  constexpr
+  double TennoGmEval<Real>::cheb_table[TennoGmEval<Real>::cheb_table_nintervals][(TennoGmEval<Real>::cheb_table_mmax+2)*(TennoGmEval<Real>::interpolation_order+1)*(TennoGmEval<Real>::interpolation_order+1)];
+#else
+  // clang needs an explicit specifalization declaration to avoid warning
+#  ifdef __clang__
+  template <typename Real>
+  double TennoGmEval<Real>::cheb_table[TennoGmEval<Real>::cheb_table_nintervals][(TennoGmEval<Real>::cheb_table_mmax+2)*(TennoGmEval<Real>::interpolation_order+1)*(TennoGmEval<Real>::interpolation_order+1)];
+#  endif
 #endif
 
   template<typename Real, int k>
@@ -1152,7 +1308,7 @@ namespace libint2 {
        * @param[in] T
        * @param[in] mmax mmax the maximum value of m for which Boys function will be computed;
        *                 it must be <= the value returned by max_m() (this is not checked)
-       * @param[in] geminal the Gaussian geminal for which the core integral \f$ Gm(\rho, T) \f$ is computed
+       * @param[in] geminal the Gaussian geminal for which the core integral \f$ Gm(\rho, T) \f$ is computed; a contracted Gaussian geminal is represented as a vector of pairs, each of which specifies the exponent (first) and contraction coefficient (second) of the primitive Gaussian geminal
        * @param[in] scr if \c k ==-1 and need this to be reentrant, must provide ptr to
        *                the per-thread \c libint2::detail::CoreEvalScratch<GaussianGmEval<Real,-1>> object;
        *                no need to specify \c scr otherwise
