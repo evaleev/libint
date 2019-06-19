@@ -983,7 +983,7 @@ namespace libint2 {
         const int interval = Tint * 10 + Uint;
 
 #if !defined(__AVX__)
-#  error "TennoGmEval requires AVX support"
+#  warning "TennoGmEval requires AVX support for best performance"
 #endif
 
 #if defined(__AVX__)
@@ -1022,11 +1022,11 @@ namespace libint2 {
         libint2::simd::VectorAVXDouble u3vec(u12, u13, u14, u15);
 #endif // AVX
 
-#if defined(__AVX__)
         const long mmin = (exp == true) ? -1 : 0;
         Real Gmm1 = 0.0;
         for(long m=mmin; m<=mmax; ++m){
             const Real *c_tuint = c_ + (ORDERp1) * (ORDERp1) * (interval * (mmax_ - mmin_ + 1) + (m - mmin_)); // ptr to the interpolation data for m=mmin
+#if defined(__AVX__)
             libint2::simd::VectorAVXDouble c00v, c01v, c02v, c03v, c10v, c11v, c12v, c13v,
                                            c20v, c21v, c22v, c23v, c30v, c31v, c32v, c33v,
                                            c40v, c41v, c42v, c43v, c50v, c51v, c52v, c53v,
@@ -1109,25 +1109,23 @@ namespace libint2 {
 
             auto tall = horizontal_add(t0123, t4567, t89ab, tcdef);
             const auto Gm = horizontal_add(tall);
-
-            // double check
-            if (false) {
-              std::vector<double> uvec(16);
-              std::vector<double> tvec(16);
-              uvec[0] = 1;
-              tvec[0] = 1;
-              for(int i=1; i!=16; ++i) {
-                uvec[i] = uvec[i-1] * u;
-                tvec[i] = tvec[i-1] * t;
-              }
-              double Gm_val = 0.0;
-              for(int i=0, ij=0; i!=16; ++i) {
-                for (int j = 0; j != 16; ++j, ++ij) {
-                  Gm_val += c_tuint[ij] * tvec[i] * uvec[j];
-                }
-              }
-              assert(std::abs(Gm_val - Gm) < 1e-25 || std::abs(Gm_val - Gm)/Gm < 100 * std::numeric_limits<double>::epsilon());
+#else  // AVX
+            // no AVX, use explicit loops (probably slow)
+            double uvec[16];
+            double tvec[16];
+            uvec[0] = 1;
+            tvec[0] = 1;
+            for(int i=1; i!=16; ++i) {
+              uvec[i] = uvec[i-1] * u;
+              tvec[i] = tvec[i-1] * t;
             }
+            double Gm = 0.0;
+            for(int i=0, ij=0; i!=16; ++i) {
+              for (int j = 0; j != 16; ++j, ++ij) {
+                Gm_val += c_tuint[ij] * tvec[i] * uvec[j];
+              }
+            }
+#endif // AVX
 
             if (exp == false) {
               Gm_vec[m] = Gm;
@@ -1139,7 +1137,6 @@ namespace libint2 {
               Gmm1 = Gm;
             }
         }
-#endif // AVX
 
         return;
       }
