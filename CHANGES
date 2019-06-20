@@ -3,7 +3,7 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2019-xx-yy: 2.6.0-beta.4
+- 2019-06-19: 2.6.0-beta.4
   - implemented analytic evaluation of (derivative) Slater and Yukawa integrals
 
 - 2019-05-22: 2.6.0-beta.3
