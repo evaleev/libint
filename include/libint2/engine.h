@@ -166,14 +166,13 @@ enum class Operator {
 };
 
 /// @return the particle rank of \c oper
-inline int rank(Operator oper) {
-  int n = 0;
-  if (oper >= Operator::first_1body_oper && oper <= Operator::last_1body_oper)
-    n = 1;
-  else if (oper >= Operator::first_2body_oper &&
+inline constexpr int rank(Operator oper) {
+  return (oper >= Operator::first_1body_oper &&
+          oper <= Operator::last_1body_oper)
+          ? 1 :
+         ((oper >= Operator::first_2body_oper &&
            oper <= Operator::last_2body_oper)
-    n = 2;
-  return n;
+           ? 2 : 0);
 }
 
 namespace detail {
