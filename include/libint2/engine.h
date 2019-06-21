@@ -165,14 +165,16 @@ enum class Operator {
   last_oper = last_2body_oper
 };
 
+/// @param[in] oper an Operator object
 /// @return the particle rank of \c oper
+/// @throw std::logic_error if an invalid @c oper given
 inline constexpr int rank(Operator oper) {
   return (oper >= Operator::first_1body_oper &&
           oper <= Operator::last_1body_oper)
           ? 1 :
          ((oper >= Operator::first_2body_oper &&
            oper <= Operator::last_2body_oper)
-           ? 2 : 0);
+           ? 2 : throw std::logic_error("rank(Operator): invalid operator given"));
 }
 
 namespace detail {
@@ -395,42 +397,21 @@ enum class BraKet {
 };
 #define BOOST_PP_NBODY_BRAKET_MAX_INDEX 4
 
-/// @return rank of \c braket
-inline int rank(BraKet braket) {
-  int n = 0;
-  switch (braket) {
-    case BraKet::x_x:
-    case BraKet::xs_xs:
-      n = 2;
-      break;
-    case BraKet::xs_xx:
-    case BraKet::xx_xs:
-      n = 3;
-      break;
-    case BraKet::xx_xx:
-      n = 4;
-      break;
-    default:
-      assert(false && "missing case in switch");
-  }
-  return n;
+/// @param[in] braket a BraKet object
+/// @return rank of @c braket
+/// @throw std::logic_error if invalid @c braket given
+inline constexpr int rank(BraKet braket) {
+  return (braket==BraKet::x_x || braket==BraKet::xs_xs) ? 2 :
+         ((braket==BraKet::xs_xx || braket==BraKet::xx_xs) ? 3 :
+          ((braket==BraKet::xx_xx) ? 4 : throw std::logic_error("rank(BraKet): invalid braket given")));
 }
 
-/// @return the default braket for \c oper
-inline BraKet default_braket(const Operator& oper) {
-  BraKet result;
-  switch (rank(oper)) {
-    case 1: {
-      result = BraKet::x_x;
-    } break;
-    case 2: {
-      result = BraKet::xx_xx;
-    } break;
-    default:
-      assert(false && "missing case in switch");
-      result = BraKet::invalid;
-  }
-  return result;
+/// @param[in] oper an Operator object
+/// @return the default braket for @c oper
+/// @throw std::logic_error if invalid @c oper given
+inline constexpr BraKet default_braket(Operator oper) {
+  return (rank(oper)==1) ? BraKet::x_x :
+         ((rank(oper)==2) ? BraKet::xx_xx : throw std::logic_error("default_braket(Operator): invalid operator given"));
 }
 
 constexpr size_t nopers_2body = static_cast<int>(Operator::last_2body_oper) -
