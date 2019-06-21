@@ -99,10 +99,17 @@ endif(Boost_FOUND)
 
 # if usable Boost.Preprocessor not found install the bundled version
 if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2)
     execute_process(
             COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_SOURCE_DIR}/external/boost.tar.gz
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2
+            RESULT_VARIABLE UNPACK_BOOST_RESULT
+            OUTPUT_VARIABLE UNPACK_BOOST_OUTPUT
+            ERROR_VARIABLE UNPACK_BOOST_OUTPUT
     )
+    if (NOT UNPACK_BOOST_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to unpack the bundled Boost! The tar command output:\n${UNPACK_BOOST_OUTPUT}")
+    endif()
 endif()
 
 # Python is optional, unless ...
