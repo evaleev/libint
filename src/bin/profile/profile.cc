@@ -48,11 +48,9 @@ typedef MKL_INT BLAS_INT;
 # define SKIP_ERF
 # define SKIP_CHEBYSHEV
 # define SKIP_TAYLOR
-//# define SKIP_STGNG
-//# define SKIP_YUKAWA
-#endif
 # define SKIP_STGNG
 # define SKIP_YUKAWA
+#endif
 
 #define AVOID_AUTO_VECTORIZATION 1 // set to 0 to measure performance within vectorizable loops
                                    // the default is to measure performance of a single call
@@ -105,7 +103,8 @@ void do_chebyshev(int mmax, int nrepeats);
 template <unsigned InterpolationOrder = 7>
 void do_taylor(int mmax, int nrepeats);
 template <OperType O> void do_stg6g(int mmax, double T, double rho, int nrepeats);
-void do_yukawa(int mmax, double T, double U, int nrepeats);
+template <bool exp = false>
+void do_stg(int mmax, double T, double U, int nrepeats);
 
 template <typename Real, Real (Function)(Real) >
 struct BasicKernel {
@@ -317,6 +316,8 @@ struct DGEMMKernel : public VectorOpKernel<double> {
   size_t k_;
 };
 
+const double stg_zeta = 1.0;
+
 int main(int argc, char* argv[]) {
   if (argc < 2 or argc > 4) {
     std::cout << "Description: profiles secondary compute-intensive kernels (Boys, daxpy, etc.)" << std::endl;
@@ -325,9 +326,7 @@ int main(int argc, char* argv[]) {
   }
   const int mmax  = atoi(argv[1]);
   const double T  = atol(argv[2]);
-  const double stg_zeta = 0.10;
   const double rho = 1.0;
-  const double U = stg_zeta * stg_zeta / (4 * rho);
   const int nrepeats  = atoi(argv[3]);
 
   using libint2::simd::VectorSSEDouble;
@@ -400,7 +399,7 @@ int main(int argc, char* argv[]) {
   do_chebyshev<7>(mmax, nrepeats);
 #endif
 #ifndef SKIP_TAYLOR
-  do_taylor<3>(mmax, nrepeats);
+//  do_taylor<3>(mmax, nrepeats);
   do_taylor<7>(mmax, nrepeats);
 #endif
 #ifndef SKIP_STGNG
@@ -410,7 +409,8 @@ int main(int argc, char* argv[]) {
   do_stg6g<f12_t_f12>(mmax, T, rho, nrepeats);
 #endif
 #ifndef SKIP_YUKAWA
-  //do_yukawa(mmax, T, U, nrepeats);
+  do_stg<true>(mmax, T, rho, nrepeats);
+  do_stg<false>(mmax, T, rho, nrepeats);
 #endif
   return 0;
 }
@@ -522,13 +522,16 @@ void do_stg6g(int mmax, double T, double rho, int nrepeats) {
   double* Gm_array = new double[mmax+1];
   double* Gm_array_sum = new double[mmax+1];
 
-  const size_t ng = 9;
+  const size_t ng = 6;
   std::vector< std::pair<double,double> > stg_ng(ng);
   //stg_ng[0] = make_pair(4.0001, 1.0);
 #if 1
 #if HAVE_LAPACK
-  libint2::stg_ng_fit(ng, 1.0, stg_ng);
+  libint2::stg_ng_fit(ng, stg_zeta, stg_ng);
 #else
+  if (stg_zeta != 1.0) {
+    throw std::runtime_error("without lapack stg_zeta is hardwired to 0.1");
+  }
   stg_ng[0] = make_pair(0.16015391600067220691727771683865433704907890673261,
                         0.20306992259915090794062652264516576964313257462623);
   stg_ng[1] = make_pair(0.58691138376032812074703122125162923674902800850316,
@@ -583,17 +586,19 @@ void do_stg6g(int mmax, double T, double rho, int nrepeats) {
   delete[] Gm_array_sum;
 }
 
-#if 0
-void do_yukawa(int mmax, double T, double U, int nrepeats) {
-  std::cout << "===================== Gm Yukawa ======================" << std::endl;
-  double* Gm_array = new double[mmax+2];
-  double* Gm_array_sum = new double[mmax+2];
-  double Gm[2]; // contains G_-1 and G_0
+template <bool exp>
+void do_stg(int mmax, double T, double rho, int nrepeats) {
+  const std::string label = (exp ? "STG" : "Yukawa");
+  std::cout << "===================== Gm " << label << " ======================" << std::endl;
+  double* Gm_array = new double[mmax+1];
+  double* Gm_array_sum = new double[mmax+1];
+  const auto one_over_rho = 1./rho;
 
-  libint2::YukawaGmEval<double> yukawa_eval(mmax, 1e-15);
-  std::fill(Gm_array_sum, Gm_array_sum+mmax+2, 0.0);
+  libint2::TennoGmEval<double> tenno_eval(mmax, 1e-15);
+  std::fill(Gm_array_sum, Gm_array_sum+mmax+1, 0.0);
   timer.clear();
   timer.start(0);
+
 #if AVOID_AUTO_VECTORIZATION
 #pragma novector
 #endif
@@ -601,21 +606,19 @@ void do_yukawa(int mmax, double T, double U, int nrepeats) {
   {
     // this computes all Gm for up to mmax
 //    asm("#tag1");
-//    yukawa_eval.eval_yukawa_s1(Gm_array, T, U, mmax);
-//    yukawa_eval.eval_yukawa_s2(Gm_array, T, U, mmax);
-    yukawa_eval.eval_yukawa_Gm0U(Gm_array, U, mmax);
+    if (exp)
+      tenno_eval.eval_slater(Gm_array, one_over_rho, T, mmax, stg_zeta);
+    else
+      tenno_eval.eval_yukawa(Gm_array, one_over_rho, T, mmax, stg_zeta);
     for(int m=0; m<=mmax; ++m)
       Gm_array_sum[m] += Gm_array[m];
 
-//    Gm_array_sum[0] += libint2::YukawaGmEval_Reference<double>::eval_Gm1(T, U);
-//    Gm_array_sum[1] += libint2::YukawaGmEval_Reference<double>::eval_G0(T, U);
     T += 0.00001; // to ward-off unrealistic compiler optimizations
-    U += 0.000001;
   }
   timer.stop(0);
 
-  std::cout << "sum of Gm (STG):" << std::endl;
-  std::copy(Gm_array_sum, Gm_array_sum+mmax+2, std::ostream_iterator<double>(std::cout,"\n"));
+  std::cout << "sum of Gm (" << label << "):" << std::endl;
+  std::copy(Gm_array_sum, Gm_array_sum+mmax+1, std::ostream_iterator<double>(std::cout,"\n"));
 
   cout << "Time = " << fixed << timer.read(0) << endl;
   cout << "Rate = " << fixed << nrepeats / timer.read(0)  << endl;
@@ -623,4 +626,3 @@ void do_yukawa(int mmax, double T, double U, int nrepeats) {
   delete[] Gm_array;
   delete[] Gm_array_sum;
 }
-#endif
