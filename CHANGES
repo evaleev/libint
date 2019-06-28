@@ -3,6 +3,9 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2019-xx-yy: 2.6.0-beta.6
+  - Ten-no Gm evaluation for m=-1,0 does not use interpolation to guarantee ~1e-14 precision
+
 - 2019-06-20: 2.6.0-beta.5
   - fixed bundled boost unpacking issues in exported lib CMake build
   - rank() and default_braket() are constexpr
