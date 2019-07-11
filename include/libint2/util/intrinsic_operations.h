@@ -63,7 +63,11 @@ namespace libint2 {
 /** X[i] = a*Y[i] */
 #define _libint2_static_api_scale_vec_short_(X,Y,nelem,a,vl) for(int i=0, iv=0; i < (nelem)/(vl); ++i) { for(int v=0; v < (vl); ++v, ++iv) { (X)[iv] = (a)[v] * (Y)[iv]; } }
 /** X[i] += a*Y[i] */
-#define _libint2_static_api_inc_short_(X,Y,nelem,a) for(int i=0; i < (nelem); ++i) { (X)[i] = libint2::fma_plus((a),(Y)[i],(X)[i]); }
+#if defined(LIBINT_GENERATE_FMA)
+# define _libint2_static_api_inc_short_(X,Y,nelem,a) for(int i=0; i < (nelem); ++i) { (X)[i] = libint2::fma_plus((a),(Y)[i],(X)[i]); }
+#else
+# define _libint2_static_api_inc_short_(X,Y,nelem,a) for(int i=0; i < (nelem); ++i) { (X)[i] += (a) * (Y)[i]; }
+#endif
 /** X[i] += Y[i] */
 #define _libint2_static_api_inc1_short_(X,Y,nelem) for(int i=0; i < (nelem); ++i) { (X)[i] += (Y)[i]; }
 
