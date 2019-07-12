@@ -50,7 +50,7 @@ namespace libint2 {
         }
     };
 
-    static std::atomic<bool>& verbose_accessor() {
+    inline std::atomic<bool>& verbose_accessor() {
       static std::atomic<bool> value{true};
       return value;
     }
