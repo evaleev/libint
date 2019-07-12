@@ -3,6 +3,10 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2019-xx-yy: 2.6.0
+  - fixed control of output verbosity
+  - updated docs to point out the ninja/ar issues on macos (see #135)
+
 - 2019-07-09: 2.6.0-beta.6
   - Ten-no Gm evaluation for m=-1,0 does not use interpolation to guarantee ~1e-14 absolute precision
   - resolved issue #134: incomplete std::any functionality in libc++ on pre 10.14 macos
