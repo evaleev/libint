@@ -290,6 +290,8 @@ if (ENABLE_FORTRAN)
     # preprocess libint2.h ... this is a guess for non-unix
     if (UNIX)
 
+        file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/fortran)
+
         # preprocessed libint.h
         add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/fortran/libint2.h.i
                 COMMAND ${CMAKE_C_COMPILER} -E -D__COMPILING_LIBINT2 -I${PROJECT_SOURCE_DIR}/include -I${PROJECT_BINARY_DIR}/include
@@ -317,8 +319,12 @@ if (ENABLE_FORTRAN)
 
     # build module
     add_library(libint_f OBJECT fortran/libint_f.F90 ${CMAKE_BINARY_DIR}/fortran/libint2_types_f.h ${CMAKE_BINARY_DIR}/fortran/fortran_incldefs.h)
-    target_include_directories(libint_f PUBLIC include fortran)
-    target_compile_definitions(libint_f PUBLIC __COMPILING_LIBINT2)
+    target_include_directories(libint_f PUBLIC
+            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/fortran>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}>)
+    target_compile_definitions(libint_f PRIVATE __COMPILING_LIBINT2)
     add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/libint_f.mod
                        COMMAND ${CMAKE_COMMAND} -E "message(STATUS \"Building Fortran module libint_f.mod\")"
                        DEPENDS libint_f
