@@ -1,4 +1,0 @@
-[submodule "doc/wiki"]
-	path = doc/wiki
-	url = git@github.com:evaleev/libint.wiki.git
-	active = false
