@@ -388,9 +388,15 @@ namespace libint2 {
             p.p1 = p1;
             p.p2 = p2;
             p.K = exp(minus_rho_times_AB2) * oogamma;
-            p.P[0] = (a1 * A[0] + a2 * B[0]) * oogamma;
-            p.P[1] = (a1 * A[1] + a2 * B[1]) * oogamma;
-            p.P[2] = (a1 * A[2] + a2 * B[2]) * oogamma;
+            if (AB2 == 0.) {  // this buys a bit more precision
+              p.P[0] = A[0];
+              p.P[1] = A[1];
+              p.P[2] = A[2];
+            } else {
+              p.P[0] = (a1 * A[0] + a2 * B[0]) * oogamma;
+              p.P[1] = (a1 * A[1] + a2 * B[1]) * oogamma;
+              p.P[2] = (a1 * A[2] + a2 * B[2]) * oogamma;
+            }
             p.one_over_gamma = oogamma;
 
             ++c;
