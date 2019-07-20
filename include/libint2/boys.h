@@ -937,7 +937,7 @@ namespace libint2 {
             G_0 = sqrtPi_over_2 * erf(sqrt_T) / sqrt_T;
           }
         }
-        else if (T > 0) {  // U > 0
+        else if (T > std::numeric_limits<Real>::epsilon()) {  // U > 0
           const Real sqrt_U = sqrt(U);
           const Real sqrt_T = sqrt(T);
           const Real oo_sqrt_T = 1 / sqrt_T;
