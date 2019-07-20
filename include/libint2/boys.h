@@ -786,7 +786,7 @@ namespace libint2 {
 
 
   namespace detail {
-  constexpr float pow10(long exp) {
+  constexpr double pow10(long exp) {
     return (exp == 0) ? 1. : ((exp > 0) ? 10. * pow10(exp-1) : 0.1 * pow10(exp+1));
   }
   }
