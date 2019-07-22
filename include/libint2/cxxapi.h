@@ -55,8 +55,8 @@ namespace libint2 {
       static std::atomic<bool> value{true};
       return value;
     }
-    inline std::ostream& verbose_stream_accessor() {
-      static std::ostream value{std::clog};
+    inline std::ostream*& verbose_stream_accessor() {
+      static std::ostream* value = &std::clog;
       return value;
     }
   } // namespace libint2::detail
@@ -86,7 +86,7 @@ namespace libint2 {
     if (!initialized()) {
       initialize(true);
       using namespace detail;
-      verbose_stream_accessor() = os;
+      verbose_stream_accessor() = &os;
     }
   }
   /// finalizes the libint library.
@@ -95,17 +95,18 @@ namespace libint2 {
       using namespace detail;
       managed_singleton<__initializer>::delete_instance();
       verbose_accessor() = true;
+      verbose_stream_accessor() = &std::clog;
     }
   }
   /// Accessor for the disgnostics stream
   /// @return the stream to which the diagnostics will be written if verbose() returns true
   inline std::ostream& verbose_stream() {
-    return detail::verbose_stream_accessor();
+    return *detail::verbose_stream_accessor();
   }
   /// Accessor for the verbose flag
   /// @return true if the library is permitted to generate diagnostic messages to the stream returned by verbose_stream()
   inline bool verbose() {
-    return detail::verbose_accessor();
+    return detail::verb
   }
 }
 
