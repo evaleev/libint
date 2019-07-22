@@ -37,7 +37,6 @@
 #include <Eigen/Cholesky>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
-#include <unsupported/Eigen/CXX11/Tensor>
 
 // have BTAS library?
 #ifdef LIBINT2_HAVE_BTAS
@@ -173,9 +172,6 @@ struct DFFockEngine {
 };
 #endif  // HAVE_DENSITY_FITTING
 
-void api_basic_compile_test(const BasisSet& obs,
-                            const std::vector<Atom>& atoms);
-
 namespace libint2 {
 int nthreads;
 
@@ -265,7 +261,7 @@ int main(int argc, char* argv[]) {
     cout << "Nuclear repulsion energy = " << std::setprecision(15) << enuc
          << endl;
 
-    //libint2::Shell::do_enforce_unit_normalization(true);
+    libint2::Shell::do_enforce_unit_normalization(false);
 
     cout << "Atomic Cartesian coordinates (a.u.):" << endl;
     for (const auto& a : atoms)
@@ -273,7 +269,6 @@ int main(int argc, char* argv[]) {
                 << std::endl;
 
     BasisSet obs(basisname, atoms);
-    obs.set_pure(true);
     cout << "orbital basis set rank = " << obs.nbf() << endl;
 
 #ifdef HAVE_DENSITY_FITTING
@@ -290,9 +285,6 @@ int main(int argc, char* argv[]) {
 
     // initializes the Libint integrals library ... now ready to compute
     libint2::initialize();
-
-    api_basic_compile_test(obs, atoms);
-    abort();
 
     // compute OBS non-negligible shell-pair list
     {
@@ -370,39 +362,6 @@ int main(int argc, char* argv[]) {
 
     // pre-compute data for Schwarz bounds
     auto K = compute_schwarz_ints<>(obs);
-    // test Schwarz bounds
-    {
-      for(int norm_type=0; norm_type!=2; ++norm_type) {
-        const auto use_2norm = norm_type == 0;
-        auto K = compute_schwarz_ints<>(obs, obs, use_2norm);
-        libint2::Engine engine(libint2::Operator::coulomb, obs.max_nprim(), obs.max_l(), 0);
-        int s1idx = 0;
-        for (auto &&s1 : obs) {
-          int s2idx = 0;
-          for (auto &&s2 : obs) {
-            int s3idx = 0;
-            const auto n12 = s1.size() * s2.size();
-            for (auto &&s3 : obs) {
-              int s4idx = 0;
-              for (auto &&s4 : obs) {
-                const auto n34 = s3.size() * s4.size();
-                engine.compute2<libint2::Operator::coulomb, libint2::BraKet::xx_xx, 0>(s1, s2, s3, s4);
-
-                Eigen::Map<const Matrix> buf_mat(engine.results()[0], n12, n34);
-                const auto norm = use_2norm ? buf_mat.norm()
-                                            : buf_mat.lpNorm<Eigen::Infinity>();
-                if (K(s1idx,s2idx) * K(s3idx,s4idx) - norm < -10 * std::numeric_limits<double>::epsilon())
-                  throw std::logic_error("Schwarz inequality violated");
-                ++s4idx;
-              }
-              ++s3idx;
-            }
-            ++s2idx;
-          }
-          ++s1idx;
-        }
-      }
-    }
 
 // prepare for density fitting
 #ifdef HAVE_DENSITY_FITTING
@@ -2398,7 +2357,7 @@ void api_basic_compile_test(const BasisSet& obs,
     std::cout << "V - (V_erfc + V_erf)" << Matrix(V - V_erfc - V_erf) << std::endl;
   }
 
-  if (0) {  // test 2-index ints
+  {  // test 2-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l());
     Engine eri2_engine = eri4_engine;
     eri2_engine.set(BraKet::xs_xs);
@@ -2427,7 +2386,7 @@ void api_basic_compile_test(const BasisSet& obs,
       }
     }
   }
-  if (0) {  // test 3-index ints
+  {  // test 3-index ints
     Engine eri4_engine(Operator::coulomb, obs.max_nprim(), obs.max_l());
     Engine eri3_engine = eri4_engine;
     eri3_engine.set(BraKet::xs_xx);
@@ -2461,70 +2420,6 @@ void api_basic_compile_test(const BasisSet& obs,
         }
       }
     }
-  }
-
-  { // test 4-index ints
-    Eigen::Tensor<double,4> eri4(obs.nbf(), obs.nbf(), obs.nbf(), obs.nbf());
-    Engine eri4_engine(Operator::yukawa, obs.max_nprim(), obs.max_l());
-    eri4_engine.set_params(1.0);
-//    precise fit of exp(-r12) on [0,10)
-//    Engine eri4_engine(Operator::cgtg, obs.max_nprim(), obs.max_l());
-//    std::vector<std::pair<double,double>> cgtg =
-//    {{0.10535330565471572,0.08616353459042002},{0.22084823136587992,0.08653979627551414},{0.3543431104992702,0.08803697599356214},{0.48305514665749105,0.09192519612306953},{0.6550035700167584,0.10079776426873248},{1.1960917050801643,0.11666110644901695},{2.269278814810891,0.14081371547404428},{5.953990617813977,0.13410255216448014},{18.31911063199608,0.0772095196191394},{66.98443868169818,0.049343985939540556},{367.24137290439205,0.03090625839896873},{5.655142311118115,-0.017659052507938647}};
-//    eri4_engine.set_params(cgtg);
-    auto shell2bf = obs.shell2bf();
-    const auto &results4 = eri4_engine.results();
-    for (auto s1 = 0; s1 != obs.size(); ++s1) {
-      for (auto s2 = 0; s2 != obs.size(); ++s2) {
-        for (auto s3 = 0; s3 != obs.size(); ++s3) {
-          for (auto s4 = 0; s4 != obs.size(); ++s4) {
-            eri4_engine.compute(obs[s1], obs[s2], obs[s3], obs[s4]);
-
-            auto bf1 = shell2bf[s1]; // first basis function in first shell
-            auto n1 =
-                obs[s1].size();      // number of basis functions in first shell
-            auto bf2 = shell2bf[s2]; // first basis function in second shell
-            auto n2 =
-                obs[s2].size(); // number of basis functions in second shell
-            auto bf3 = shell2bf[s3]; // first basis function in third shell
-            auto n3 =
-                obs[s3].size();      // number of basis functions in third shell
-            auto bf4 = shell2bf[s4]; // first basis function in fourth shell
-            auto n4 =
-                obs[s4].size(); // number of basis functions in fourth shell
-
-            const auto *buf4 = results4[0];
-
-            // this iterates over integrals in the order they are packed in array ints_shellset
-            for (auto f1 = 0, f1234 = 0; f1 != n1; ++f1) {
-              long ff1 = f1 + bf1;
-              for (auto f2 = 0; f2 != n2; ++f2) {
-                long ff2 = f2 + bf2;
-                for (auto f3 = 0; f3 != n3; ++f3) {
-                  long ff3 = f3 + bf3;
-                  for (auto f4 = 0; f4 != n4; ++f4, ++f1234) {
-                    long ff4 = f4 + bf4;
-                    eri4({ff1, ff2, ff3, ff4}) = buf4[f1234];
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    const auto n = obs.nbf();
-    std::cout << "eri4:\n";
-    for(auto f1=0; f1!=n; ++f1) {
-      for(auto f2=0; f2!=n; ++f2) {
-        for(auto f3=0; f3!=n; ++f3) {
-          for(auto f4=0; f4!=n; ++f4) {
-            std::cout << eri4(f1,f2,f3,f4) << ",";
-          }
-        }
-      }
-    }
-    std::cout << std::endl;
   }
 
 #if LIBINT2_DERIV_ERI_ORDER
