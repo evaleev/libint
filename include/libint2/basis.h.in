@@ -44,6 +44,40 @@
 
 namespace libint2 {
 
+  /// Computes the number of basis functions in a range of shells
+  /// @tparam a range type
+  /// @param[in] shells a sequence of shells
+  /// @return the number of basis functions
+  template <typename ShellRange> size_t nbf(ShellRange && shells) {
+    size_t n = 0;
+    for (const auto& shell: std::forward<ShellRange>(shells))
+      n += shell.size();
+    return n;
+  }
+
+  /// Computes the maximum number of primitives in any Shell among a range of shells
+  /// @tparam a range type
+  /// @param[in] shells a sequence of shells
+  /// @return the maximum number of primitives
+  template <typename ShellRange> size_t max_nprim(ShellRange && shells) {
+    size_t n = 0;
+    for (auto shell: std::forward<ShellRange>(shells))
+      n = std::max(shell.nprim(), n);
+    return n;
+  }
+
+  /// Computes the maximum angular momentum quantum number @c l in any Shell among a range of shells
+  /// @tparam a range type
+  /// @param[in] shells a sequence of shells
+  /// @return the maximum angular momentum
+  template <typename ShellRange> int max_l(ShellRange && shells) {
+    int l = 0;
+    for (auto shell: std::forward<ShellRange>(shells))
+      for (auto c: shell.contr)
+        l = std::max(c.l, l);
+    return l;
+  }
+
   /// BasisSet is a slightly decorated \c std::vector of \c libint2::Shell objects.
   class BasisSet : public std::vector<libint2::Shell> {
     public:
@@ -249,9 +283,9 @@ namespace libint2 {
       std::vector<size_t> shell2bf_;
 
       void init() {
-        nbf_ = nbf(*this);
-        max_nprim_ = max_nprim(*this);
-        max_l_ = max_l(*this);
+        nbf_ = libint2::nbf(*this);
+        max_nprim_ = libint2::max_nprim(*this);
+        max_l_ = libint2::max_l(*this);
         shell2bf_ = compute_shell2bf(*this);
       }
 
@@ -513,26 +547,16 @@ namespace libint2 {
         return ref_shells;
       }
 
-      static size_t nbf(const std::vector<libint2::Shell>& shells) {
-        size_t n = 0;
-        for (const auto& shell: shells)
-          n += shell.size();
-        return n;
+      DEPRECATED static size_t nbf(const std::vector<libint2::Shell>& shells) {
+        return libint2::nbf(shells);
       }
 
-      static size_t max_nprim(const std::vector<libint2::Shell>& shells) {
-        size_t n = 0;
-        for (auto shell: shells)
-          n = std::max(shell.nprim(), n);
-        return n;
+      DEPRECATED static size_t max_nprim(const std::vector<libint2::Shell>& shells) {
+        return libint2::max_nprim(shells);
       }
 
-      static int max_l(const std::vector<libint2::Shell>& shells) {
-        int l = 0;
-        for (auto shell: shells)
-          for (auto c: shell.contr)
-            l = std::max(c.l, l);
-        return l;
+      DEPRECATED static int max_l(const std::vector<libint2::Shell>& shells) {
+        return libint2::max_l(shells);
       }
 
       static std::vector<size_t> compute_shell2bf(const std::vector<libint2::Shell>& shells) {
