@@ -106,7 +106,7 @@ namespace libint2 {
   /// Accessor for the verbose flag
   /// @return true if the library is permitted to generate diagnostic messages to the stream returned by verbose_stream()
   inline bool verbose() {
-    return detail::verb
+    return detail::verbose_accessor();
   }
 }
 
