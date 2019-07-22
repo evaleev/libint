@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <cstdio>
 #include <functional>
 #include <iostream>
 #include <limits>
@@ -790,28 +791,30 @@ class Engine {
     return *this;
   }
 
-  /// prints the contents of timers to standard output
-  void print_timers() {
+  /// prints the contents of timers to @c os
+  void print_timers(std::ostream& os = std::cout) {
 #ifdef LIBINT2_ENGINE_TIMERS
-    std::cout << "timers: prereq = " << timers.read(0);
+    os << "timers: prereq = " << timers.read(0);
 #ifndef LIBINT2_PROFILE  // if libint's profiling was on, engine's build timer
                          // will include its overhead
     // do not report it, detailed profiling from libint will be printed below
-    std::cout << " build = " << timers.read(1);
+    os << " build = " << timers.read(1);
 #endif
-    std::cout << " tform = " << timers.read(2) << std::endl;
+    os << " tform = " << timers.read(2) << std::endl;
 #endif
 #ifdef LIBINT2_PROFILE
-    std::cout << "build timers: hrr = " << primdata_[0].timers->read(0)
-              << " vrr = " << primdata_[0].timers->read(1) << std::endl;
+    os << "build timers: hrr = " << primdata_[0].timers->read(0)
+       << " vrr = " << primdata_[0].timers->read(1) << std::endl;
 #endif
 #ifdef LIBINT2_ENGINE_TIMERS
 #ifdef LIBINT2_ENGINE_PROFILE_CLASS
     for (const auto& p : class_profiles) {
-      printf("{\"%s\", %10.5lf, %10.5lf, %10.5lf, %10.5lf, %ld, %ld},\n",
+      char buf[1024];
+      std::snprintf(buf, sizeof(buf), "{\"%s\", %10.5lf, %10.5lf, %10.5lf, %10.5lf, %ld, %ld},",
              p.first.to_string().c_str(), p.second.prereqs, p.second.build_vrr,
              p.second.build_hrr, p.second.tform, p.second.nshellset,
              p.second.nprimset);
+      os << buf << std::endl;
     }
 #endif
 #endif

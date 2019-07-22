@@ -28,6 +28,7 @@
 
 #include <atomic>
 #include <cassert>
+#include <iostream>
 
 #include <libint2.h>  // NB this loads libint2/config.h
 
@@ -54,15 +55,21 @@ namespace libint2 {
       static std::atomic<bool> value{true};
       return value;
     }
+    inline std::ostream& verbose_stream_accessor() {
+      static std::ostream value{std::clog};
+      return value;
+    }
   } // namespace libint2::detail
 
+  /// checks if the libint has been initialized.
+  /// @return true, if libint2::initialize() has been called since the last (if any) call to libint2::finalize()
   inline bool initialized() {
     using namespace detail;
     return managed_singleton<__initializer>::instance_exists();
   }
-  /// initializes the libint library.
-  /// @param[in] verbose boolean flag that controls the verbosity of messages produced by libint in std::cout . If false, no messages
-  //             will be produced. The default is true.
+  /// initializes the libint library if not currently initialized, no-op otherwise
+  /// @param[in] verbose boolean flag that controls the verbosity of messages produced by libint in std::clog . If false, no messages
+  ///            will be produced. The default is true.
   inline void initialize(bool verbose = true) {
     if (!initialized()) {
       using namespace detail;
@@ -70,6 +77,16 @@ namespace libint2 {
       (void) x;  // to suppress unused variable warning (not guaranteed to work) TODO revise when upgrade to C++17
       assert(x != nullptr);
       verbose_accessor() = verbose;
+    }
+  }
+
+  /// initializes the libint library if not currently initialized, no-op otherwise
+  /// @param[in] os the output stream to which verbose diagnostics will be written (if @c initialize(true) is used, will write to @c std::clog )
+  inline void initialize(std::ostream& os) {
+    if (!initialized()) {
+      initialize(true);
+      using namespace detail;
+      verbose_stream_accessor() = os;
     }
   }
   /// finalizes the libint library.
@@ -80,8 +97,13 @@ namespace libint2 {
       verbose_accessor() = true;
     }
   }
+  /// Accessor for the disgnostics stream
+  /// @return the stream to which the diagnostics will be written if verbose() returns true
+  inline std::ostream& verbose_stream() {
+    return detail::verbose_stream_accessor();
+  }
   /// Accessor for the verbose flag
-  /// @return true if the library is permitted to generate diagnostic messages to std::cout
+  /// @return true if the library is permitted to generate diagnostic messages to the stream returned by verbose_stream()
   inline bool verbose() {
     return detail::verbose_accessor();
   }

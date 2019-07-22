@@ -424,7 +424,7 @@ namespace libint2 {
 
         if (is.good()) {
           if (libint2::verbose())
-            std::cout << "Will read basis set from " << file_dot_g94 << std::endl;
+            libint2::verbose_stream() << "Will read basis set from " << file_dot_g94 << std::endl;
 
           std::string line, rest;
 

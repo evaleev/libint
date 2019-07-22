@@ -267,6 +267,19 @@ namespace libint2 {
       /// \throw std::invalid_argument if \c precision is smaller than std::numeric_limits<double>::epsilon()
       FmEval_Chebyshev7(int m_max, double precision = std::numeric_limits<double>::epsilon()) :
           mmax(m_max), numbers_(14) {
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
+# if !defined(__AVX__) && defined(NDEBUG)
+        if (libint2::verbose()) {
+          static printed_performance_warning = false;
+          if (!printed_performance_warning) {
+            libint2::verbose_stream()
+                << "libint2::FmEval_Chebyshev7 on x86(-64) platforms needs AVX support for best performance"
+                << std::endl;
+            printed_performance_warning = true;
+          }
+        }
+# endif
+#endif
         if (precision < std::numeric_limits<double>::epsilon())
           throw std::invalid_argument(std::string("FmEval_Chebyshev7 does not support precision smaller than ") + std::to_string(std::numeric_limits<double>::epsilon()));
         if (mmax > cheb_table_mmax)
@@ -476,6 +489,20 @@ namespace libint2 {
       FmEval_Taylor(unsigned int mmax, Real precision = std::numeric_limits<Real>::epsilon()) :
           soft_zero_(1e-6), cutoff_(precision), numbers_(
               INTERPOLATION_ORDER + 1, 2 * (mmax + INTERPOLATION_ORDER - 1)) {
+
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
+# if !defined(__AVX__) && defined(NDEBUG)
+        if (libint2::verbose()) {
+          static printed_performance_warning = false;
+          if (!printed_performance_warning) {
+            libint2::verbose_stream()
+                << "libint2::FmEval_Taylor on x86(-64) platforms needs AVX support for best performance"
+                << std::endl;
+            printed_performance_warning = true;
+          }
+        }
+# endif
+#endif
 
         assert(mmax <= 63);
 
@@ -826,11 +853,26 @@ namespace libint2 {
       TennoGmEval(unsigned int mmax, Real precision = -1) :
         mmax_(mmax), precision_(precision),
         numbers_() {
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
+# if !defined(__AVX__) && defined(NDEBUG)
+        if (libint2::verbose()) {
+          static printed_performance_warning = false;
+          if (!printed_performance_warning) {
+            libint2::verbose_stream()
+                << "libint2::TennoGmEval on x86(-64) platforms needs AVX support for best performance"
+                << std::endl;
+            printed_performance_warning = true;
+          }
+        }
+# endif
+#endif
+
 //        if (precision_ < maxabsprecision)
 //          throw std::invalid_argument(
 //              std::string(
 //                  "TennoGmEval does not support precision smaller than ") +
 //              std::to_string(maxabsprecision));
+
         if (mmax > cheb_table_mmax)
           throw std::invalid_argument(
               "TennoGmEval::init() : requested mmax exceeds the "
@@ -1063,10 +1105,6 @@ namespace libint2 {
         const Real u = log10_map(U, one_over_10K[Uint]); // this ranges from -0.5 to 0.5
 
         const int interval = Tint * 10 + Uint;
-
-#if !defined(__AVX__)
-#  warning "TennoGmEval requires AVX support for best performance"
-#endif
 
 #if defined(__AVX__)
         assert(ORDERp1 == 16);
