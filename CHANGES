@@ -3,8 +3,7 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2019-xx-yy: 2.6.0-beta.7
-  - fixed control of output verbosity
+- 2019-07-22: 2.6.0-beta.7
   - updated docs to point out the ninja/ar issues on macos (see #135)
   - added Molpro-sources (aug-)cc-pVXZ-JKFIT basis sets
   - resolved #136: Fortran module was not built correctly with out-of-source (cmake) build
