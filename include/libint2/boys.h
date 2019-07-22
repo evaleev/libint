@@ -44,6 +44,7 @@
 
 #include <libint2/boys_fwd.h>
 #include <libint2/numeric.h>
+#include <libint2/initialize.h>
 
 #if HAVE_LAPACK // use F77-type interface for now, switch to LAPACKE later
 extern "C" void dgesv_(const int* n,
@@ -270,7 +271,7 @@ namespace libint2 {
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
 # if !defined(__AVX__) && defined(NDEBUG)
         if (libint2::verbose()) {
-          static printed_performance_warning = false;
+          static bool printed_performance_warning = false;
           if (!printed_performance_warning) {
             libint2::verbose_stream()
                 << "libint2::FmEval_Chebyshev7 on x86(-64) platforms needs AVX support for best performance"
@@ -493,7 +494,7 @@ namespace libint2 {
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
 # if !defined(__AVX__) && defined(NDEBUG)
         if (libint2::verbose()) {
-          static printed_performance_warning = false;
+          static bool printed_performance_warning = false;
           if (!printed_performance_warning) {
             libint2::verbose_stream()
                 << "libint2::FmEval_Taylor on x86(-64) platforms needs AVX support for best performance"
@@ -856,7 +857,7 @@ namespace libint2 {
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
 # if !defined(__AVX__) && defined(NDEBUG)
         if (libint2::verbose()) {
-          static printed_performance_warning = false;
+          static bool printed_performance_warning = false;
           if (!printed_performance_warning) {
             libint2::verbose_stream()
                 << "libint2::TennoGmEval on x86(-64) platforms needs AVX support for best performance"
