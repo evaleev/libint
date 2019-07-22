@@ -69,8 +69,8 @@ namespace libint2 {
   }
   /// initializes the libint library if not currently initialized, no-op otherwise
   /// @param[in] verbose boolean flag that controls the verbosity of messages produced by libint in std::clog . If false, no messages
-  ///            will be produced. The default is true.
-  inline void initialize(bool verbose = true) {
+  ///            will be produced. The default is false.
+  inline void initialize(bool verbose = false) {
     if (!initialized()) {
       using namespace detail;
       __initializer *x = managed_singleton<__initializer>::instance();
