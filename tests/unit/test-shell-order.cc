@@ -21,27 +21,26 @@ TEST_CASE("solid harmonics", "[engine]") {
 
 #if defined(LIBINT2_SUPPORT_ONEBODY)
     const auto lmax = std::min(2, LIBINT2_MAX_AM_elecpot);
-    auto engine = Engine(Operator::nuclear, 2, lmax);
-    engine.set_params(make_point_charges(atoms));
+    if (lmax >= 2) {
+      auto engine = Engine(Operator::nuclear, 2, lmax);
+      engine.set_params(make_point_charges(atoms));
 
-    engine.compute(obs[0], obs[2]);
-    auto ints02 = engine.results()[0];
-    std::vector<double> PD_ints(ints02, ints02 + 15);
-    engine.compute(obs[1], obs[2]);
-    auto ints12 = engine.results()[0];
-    std::vector<double> pD_ints(ints12, ints12 + 15);
+      engine.compute(obs[0], obs[2]);
+      auto ints02 = engine.results()[0];
+      std::vector<double> PD_ints(ints02, ints02 + 15);
+      engine.compute(obs[1], obs[2]);
+      auto ints12 = engine.results()[0];
+      std::vector<double> pD_ints(ints12, ints12 + 15);
 
-    int ix, iy, iz;
-    int xyz = 0;
-    FOR_CART(ix,iy,iz,1)
+      int ix, iy, iz;
+      int xyz = 0;
+      FOR_CART(ix, iy, iz, 1)
       int lm;
       if (ix == 1) {
         lm = INT_SOLIDHARMINDEX(1, 1);
-      }
-      else if (iy == 1) {
+      } else if (iy == 1) {
         lm = INT_SOLIDHARMINDEX(1, -1);
-      }
-      else if (iz == 1) {
+      } else if (iz == 1) {
         lm = INT_SOLIDHARMINDEX(1, 0);
       }
 
@@ -51,8 +50,9 @@ TEST_CASE("solid harmonics", "[engine]") {
         REQUIRE(PD_ints[sph_f1f2] == Approx(pD_ints[cart_f1f2]));
       }
 
-    ++xyz;
-    END_FOR_CART
+      ++xyz;
+      END_FOR_CART
+    }
 
 #endif // LIBINT2_SUPPORT_ONEBODY
   }  // SECTION("solid harmonic p")

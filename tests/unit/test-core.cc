@@ -69,32 +69,41 @@ TEST_CASE("cartesian uniform normalization", "[engine][conventions]") {
                          Shell{{1.0}, {{3, false, {1.0}}}, {{0.0, 0.0, 0.0}}}};
   {
     const auto lmax = std::min(3,LIBINT2_MAX_AM_overlap);
-    auto engine = Engine(Operator::overlap, 1, lmax);
-    engine.compute(obs[0], obs[0]);
-    check_std_2(engine.results()[0]);
-    engine.set(CartesianShellNormalization::uniform).compute(obs[0], obs[0]);
-    check_uniform(2, engine.results()[0]);
+    if (lmax >= 2) {
+      auto engine = Engine(Operator::overlap, 1, lmax);
+      engine.compute(obs[0], obs[0]);
+      check_std_2(engine.results()[0]);
+      engine.set(CartesianShellNormalization::uniform).compute(obs[0], obs[0]);
+      check_uniform(2, engine.results()[0]);
 
-    if (lmax >= 3) {
-      engine.set(CartesianShellNormalization::standard).compute(obs[1], obs[1]);
-      check_std_3(engine.results()[0]);
-      engine.set(CartesianShellNormalization::uniform).compute(obs[1], obs[1]);
-      check_uniform(3, engine.results()[0]);
+      if (lmax >= 3) {
+        engine.set(CartesianShellNormalization::standard)
+            .compute(obs[1], obs[1]);
+        check_std_3(engine.results()[0]);
+        engine.set(CartesianShellNormalization::uniform)
+            .compute(obs[1], obs[1]);
+        check_uniform(3, engine.results()[0]);
+      }
     }
   }
   {
     const auto lmax = std::min(3,LIBINT2_MAX_AM_eri);
-    auto engine = Engine(Operator::delta, 1, lmax);
-    engine.compute(Shell::unit(), obs[0], obs[0], Shell::unit());
-    check_std_2(engine.results()[0]);
-    engine.set(CartesianShellNormalization::uniform).compute(obs[0], Shell::unit(), Shell::unit(), obs[0]);
-    check_uniform(2, engine.results()[0]);
+    if (lmax >= 2) {
+      auto engine = Engine(Operator::delta, 1, lmax);
+      engine.compute(Shell::unit(), obs[0], obs[0], Shell::unit());
+      check_std_2(engine.results()[0]);
+      engine.set(CartesianShellNormalization::uniform)
+          .compute(obs[0], Shell::unit(), Shell::unit(), obs[0]);
+      check_uniform(2, engine.results()[0]);
 
-    if (lmax >= 3) {
-      engine.set(CartesianShellNormalization::standard).compute(Shell::unit(), obs[1], Shell::unit(), obs[1]);
-      check_std_3(engine.results()[0]);
-      engine.set(CartesianShellNormalization::uniform).compute(obs[1], Shell::unit(), obs[1], Shell::unit());
-      check_uniform(3, engine.results()[0]);
+      if (lmax >= 3) {
+        engine.set(CartesianShellNormalization::standard)
+            .compute(Shell::unit(), obs[1], Shell::unit(), obs[1]);
+        check_std_3(engine.results()[0]);
+        engine.set(CartesianShellNormalization::uniform)
+            .compute(obs[1], Shell::unit(), obs[1], Shell::unit());
+        check_uniform(3, engine.results()[0]);
+      }
     }
   }
 
