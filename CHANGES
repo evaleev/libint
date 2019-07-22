@@ -3,12 +3,16 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2019-xx-yy: 2.6.0
+- 2019-xx-yy: 2.6.0-beta.7
   - fixed control of output verbosity
   - updated docs to point out the ninja/ar issues on macos (see #135)
   - added Molpro-sources (aug-)cc-pVXZ-JKFIT basis sets
-  - resolved #136: Fortran module was not built correctly with out-or-source (cmake) build
-Thanks
+  - resolved #136: Fortran module was not built correctly with out-of-source (cmake) build
+  - fixed residual precision issues with exponential integrals
+  - libint2::initialize() now by default turns off diagnostic messages;
+     do libint2::initialize(true) to keep receiving diagnostics in std::clog (insteadf of std::cout)
+  - libint2::initialize(std::ostream& os) will write the diagnostics to os
+
 - 2019-07-09: 2.6.0-beta.6
   - Ten-no Gm evaluation for m=-1,0 does not use interpolation to guarantee ~1e-14 absolute precision
   - resolved issue #134: incomplete std::any functionality in libc++ on pre 10.14 macos
