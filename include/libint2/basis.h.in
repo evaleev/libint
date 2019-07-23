@@ -374,7 +374,7 @@ namespace libint2 {
           if (not basis_path.empty()) {
             struct stat sb;
             error = (::stat(basis_path.c_str(), &sb) == -1);
-            error = error && not S_ISDIR(sb.st_mode);
+            error = error || not S_ISDIR(sb.st_mode);
             if (error)
               ec = std::error_code(errno, std::generic_category());
           }
