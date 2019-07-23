@@ -47,7 +47,7 @@ namespace libint2 {
     };
 
     inline std::atomic<bool>& verbose_accessor() {
-      static std::atomic<bool> value{true};
+      static std::atomic<bool> value{false};
       return value;
     }
     inline std::ostream*& verbose_stream_accessor() {
@@ -99,9 +99,14 @@ namespace libint2 {
     return *detail::verbose_stream_accessor();
   }
   /// Accessor for the verbose flag
-  /// @return true if the library is permitted to generate diagnostic messages to the stream returned by verbose_stream()
+  /// @return true if the library is permitted to generate diagnostic messages to the stream returned by verbose_stream(); always returns false
+  ///         if @c initialized()==false
   inline bool verbose() {
-    return detail::verbose_accessor();
+    if (initialized()) {
+      return detail::verbose_accessor();
+    } else {
+      return false;
+    }
   }
 }
 
