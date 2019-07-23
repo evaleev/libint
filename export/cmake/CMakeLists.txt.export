@@ -318,7 +318,8 @@ if (ENABLE_FORTRAN)
             )
 
     # build module
-    add_library(libint_f OBJECT fortran/libint_f.F90 ${CMAKE_BINARY_DIR}/fortran/libint2_types_f.h ${CMAKE_BINARY_DIR}/fortran/fortran_incldefs.h)
+    add_library(libint_f OBJECT fortran/libint_f.F90)
+    set_source_files_properties(fortran/libint_f.F90 PROPERTIES OBJECT_DEPENDS "${CMAKE_BINARY_DIR}/fortran/libint2_types_f.h;${CMAKE_BINARY_DIR}/fortran/fortran_incldefs.h")
     target_include_directories(libint_f PUBLIC
             $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
             $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
