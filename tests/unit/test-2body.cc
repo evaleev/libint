@@ -31,8 +31,6 @@ TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
 
   if (LIBINT2_MAX_AM_eri >= max_l) {
     for (int k = -1; k <= 0; ++k) {
-      using namespace libint2::unit;
-
       auto engine = Engine(k == 0 ? Operator::stg : Operator::yukawa, max_nprim, max_l);
       engine.set_params(1.0);
       const auto &results = engine.results();

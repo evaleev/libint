@@ -5,7 +5,7 @@
 #include <libint2/shgshell_ordering.h>
 
 
-TEST_CASE("solid harmonics", "[engine]") {
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "solid harmonics", "[engine]") {
 
   std::vector<Shell> obs{
       Shell{{1.0, 3.0}, {{1, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
@@ -17,8 +17,6 @@ TEST_CASE("solid harmonics", "[engine]") {
   // test that integrals with p solid harmonics are correctly computed
   // N.B. since by default BasisSet makes p's cartesian this is rarely (if at all) tested in production
   SECTION("solid harmonic p") {
-    using namespace libint2::unit;
-
 #if defined(LIBINT2_SUPPORT_ONEBODY)
     const auto lmax = std::min(2, LIBINT2_MAX_AM_elecpot);
     if (lmax >= 2) {

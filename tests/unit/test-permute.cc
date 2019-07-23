@@ -521,9 +521,7 @@ void validate2(const BasisSet& obs, const std::vector<Atom>& atoms) {
 #endif  // LIBINT2_SUPPORT_ERI2
 }
 
-TEST_CASE( "2-e 4-c integrals permute correctly", "[engine][permute]" ) {
-
-  using namespace libint2::unit;
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "2-e 4-c integrals permute correctly", "[engine][permute]" ) {
 
   SECTION( "deriv_order=0" ) {
     validate4<0>(obs, atoms);
@@ -536,9 +534,7 @@ TEST_CASE( "2-e 4-c integrals permute correctly", "[engine][permute]" ) {
   }  // section
 }
 
-TEST_CASE( "2-e 3-c integrals permute correctly", "[engine][permute]" ) {
-
-  using namespace libint2::unit;
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "2-e 3-c integrals permute correctly", "[engine][permute]" ) {
 
   SECTION( "deriv_order=0" ) {
     validate3<0>(obs, dfbs, atoms);
@@ -551,9 +547,7 @@ TEST_CASE( "2-e 3-c integrals permute correctly", "[engine][permute]" ) {
   }  // section
 }
 
-TEST_CASE( "2-e 2-c integrals permute correctly", "[engine][permute]" ) {
-
-  using namespace libint2::unit;
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "2-e 2-c integrals permute correctly", "[engine][permute]" ) {
 
   SECTION( "deriv_order=0" ) {
     validate2<0>(dfbs, atoms);

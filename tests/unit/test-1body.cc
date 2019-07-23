@@ -1,7 +1,7 @@
 #include "catch.hpp"
 #include "fixture.h"
 
-TEST_CASE("electrostatic potential", "[engine][1-body]") {
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[engine][1-body]") {
 #if defined(LIBINT2_SUPPORT_ONEBODY)
   if (LIBINT_SHGSHELL_ORDERING != LIBINT_SHGSHELL_ORDERING_STANDARD)
     return;
@@ -10,8 +10,6 @@ TEST_CASE("electrostatic potential", "[engine][1-body]") {
       Shell{{1.0, 3.0}, {{2, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
       Shell{{2.0, 5.0}, {{2, true, {1.0, 0.2}}}, {{1.0, 1.0, 1.0}}}};
   {
-    using namespace libint2::unit;
-
     const auto lmax = std::min(3, LIBINT2_MAX_AM_elecpot);
     if (lmax >= 2) {
       auto engine = Engine(Operator::nuclear, 2, lmax);
