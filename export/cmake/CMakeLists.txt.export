@@ -29,6 +29,7 @@ include(CMakePushCheckState)
 
 redefaultable_option(ENABLE_FORTRAN "Fortran03+ Libint interface" OFF)
 redefaultable_option(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
+redefaultable_option(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build in one shot static and shared library variants. Uses -fPIC." OFF)
 if (NOT LIBINT2_REALTYPE)
     set(LIBINT2_REALTYPE double)
 endif()
@@ -155,11 +156,13 @@ if (NOT CMAKE_CXX_EXTENSIONS)
   set_target_properties(int2_obj PROPERTIES CXX_EXTENSIONS OFF)
 endif(NOT CMAKE_CXX_EXTENSIONS)
 
+if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
+  set_target_properties(int2_obj PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
 # shared and static libraries built from the same object files
 if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
-  set_target_properties(int2_obj PROPERTIES POSITION_INDEPENDENT_CODE ON)
   add_library(int2 SHARED $<TARGET_OBJECTS:int2_obj>)
-  set_target_properties(int2 PROPERTIES POSITION_INDEPENDENT_CODE ON)
   add_library(int2_static STATIC $<TARGET_OBJECTS:int2_obj>)
   target_include_directories(int2_static INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
