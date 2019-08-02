@@ -145,7 +145,6 @@ endforeach()
 add_library(int2_obj OBJECT ${LIB_CXX_SRC})
 target_include_directories(int2_obj PRIVATE include ${PROJECT_BINARY_DIR}/include)
 # Compile static library with position independent code
-set_target_properties(int2_obj PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_compile_definitions(int2_obj PRIVATE __COMPILING_LIBINT2)
 target_compile_features(int2_obj PUBLIC "cxx_std_11")
@@ -157,32 +156,46 @@ if (NOT CMAKE_CXX_EXTENSIONS)
 endif(NOT CMAKE_CXX_EXTENSIONS)
 
 # shared and static libraries built from the same object files
-add_library(int2 SHARED $<TARGET_OBJECTS:int2_obj>)
-add_library(int2_static STATIC $<TARGET_OBJECTS:int2_obj>)
-
-target_include_directories(int2 INTERFACE
+if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
+  set_target_properties(int2_obj PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  add_library(int2 SHARED $<TARGET_OBJECTS:int2_obj>)
+  set_target_properties(int2 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  add_library(int2_static STATIC $<TARGET_OBJECTS:int2_obj>)
+  target_include_directories(int2_static INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}>
         )
-
-target_include_directories(int2_static INTERFACE
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}>
-        )
-
-target_compile_definitions(int2 INTERFACE $<BUILD_INTERFACE:__COMPILING_LIBINT2>)
-target_compile_definitions(int2_static INTERFACE $<BUILD_INTERFACE:__COMPILING_LIBINT2>)
-
-# Add libraries to the list of installed components
-install(TARGETS int2 int2_static EXPORT libint2
+  target_compile_definitions(int2_static INTERFACE $<BUILD_INTERFACE:__COMPILING_LIBINT2>)
+  # Add libraries to the list of installed components
+  install(TARGETS int2_static EXPORT libint2
         COMPONENT int2
         LIBRARY DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
         ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
         # includes are installed by the include/CMakeLists.txt.include.export
         # INCLUDES DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
        )
+else()
+  add_library(int2 $<TARGET_OBJECTS:int2_obj>)
+endif()
+# In any case, there will exist a target named "int2": diminish code length by
+# add just once the needed includes, flags and install directives.
+  target_include_directories(int2 INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}>
+        )
+  target_compile_definitions(int2 INTERFACE $<BUILD_INTERFACE:__COMPILING_LIBINT2>)
+  # Add libraries to the list of installed components
+  install(TARGETS int2 EXPORT libint2
+        COMPONENT int2
+        LIBRARY DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+        ARCHIVE DESTINATION "${LIBINT2_INSTALL_LIBDIR}"
+        # includes are installed by the include/CMakeLists.txt.include.export
+        # INCLUDES DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
+       )
+
+
 add_subdirectory(include)
 
 # install basis set library
@@ -196,7 +209,11 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/lib/basis
 if (LIBINT_HAS_EIGEN)
   add_library(cxx INTERFACE)
   target_compile_features(cxx INTERFACE "cxx_std_11")
-  target_link_libraries(cxx INTERFACE int2 Eigen)
+  if (TARGET int2_static)
+    target_link_libraries(cxx INTERFACE int2_static Eigen)
+  else()
+    target_link_libraries(cxx INTERFACE int2 Eigen)
+  endif()
   if (LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
       target_include_directories(cxx INTERFACE ${Boost_INCLUDE_DIR})
   endif(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
@@ -220,7 +237,11 @@ enable_testing(true)
 add_custom_target(check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
 
 add_executable(eritest EXCLUDE_FROM_ALL tests/eri/test.cc)
-target_link_libraries(eritest int2_static)
+if (TARGET int2_static)
+    target_link_libraries(eritest int2_static)
+  else ()
+    target_link_libraries(eritest int2)
+endif()
 target_include_directories(eritest PRIVATE ${CMAKE_SOURCE_DIR}/tests/eri)
 
 add_test(eritest/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target eritest)
