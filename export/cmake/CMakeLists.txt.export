@@ -195,7 +195,6 @@ endif()
         # INCLUDES DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
        )
 
-
 add_subdirectory(include)
 
 # install basis set library
@@ -209,7 +208,7 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/lib/basis
 if (LIBINT_HAS_EIGEN)
   add_library(cxx INTERFACE)
   target_compile_features(cxx INTERFACE "cxx_std_11")
-  if (TARGET int2_static)
+  if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
     target_link_libraries(cxx INTERFACE int2_static Eigen)
   else()
     target_link_libraries(cxx INTERFACE int2 Eigen)
@@ -237,9 +236,9 @@ enable_testing(true)
 add_custom_target(check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
 
 add_executable(eritest EXCLUDE_FROM_ALL tests/eri/test.cc)
-if (TARGET int2_static)
+if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
     target_link_libraries(eritest int2_static)
-  else ()
+else ()
     target_link_libraries(eritest int2)
 endif()
 target_include_directories(eritest PRIVATE ${CMAKE_SOURCE_DIR}/tests/eri)
@@ -372,7 +371,9 @@ if (ENABLE_FORTRAN)
 
     # tests
     add_executable(fortran_example EXCLUDE_FROM_ALL fortran/fortran_example.F90)
-    target_link_libraries(fortran_example libint_f int2_static)
+    if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
+      target_link_libraries(fortran_example libint_f int2_static)
+    endif()
     add_test(fortran_example/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_example)
     set_tests_properties(fortran_example/build PROPERTIES FIXTURES_SETUP FORTRAN_EXAMPLE_EXEC)
     add_test(NAME fortran_example/run
