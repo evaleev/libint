@@ -332,8 +332,8 @@ if (ENABLE_FORTRAN)
                        VERBATIM USES_TERMINAL)
 
     # tests
-    add_executable(fortran_example EXCLUDE_FROM_ALL fortran/fortran_example.F90)
-    target_link_libraries(fortran_example libint_f int2)
+    add_executable(fortran_example EXCLUDE_FROM_ALL fortran/fortran_example.F90 $<TARGET_OBJECTS:libint_f>)
+    target_link_libraries(fortran_example int2)
     add_test(fortran_example/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_example)
     set_tests_properties(fortran_example/build PROPERTIES FIXTURES_SETUP FORTRAN_EXAMPLE_EXEC)
     add_test(NAME fortran_example/run
@@ -342,8 +342,8 @@ if (ENABLE_FORTRAN)
             PROPERTIES FIXTURES_REQUIRED FORTRAN_EXAMPLE_EXEC)
 
     if (LIBINT_HAS_EIGEN)
-        add_executable(fortran_test EXCLUDE_FROM_ALL fortran/test.cc fortran/test-eri.cc)
-        target_link_libraries(fortran_test libint_f cxx)
+        add_executable(fortran_test EXCLUDE_FROM_ALL fortran/test.cc fortran/test-eri.cc $<TARGET_OBJECTS:libint_f>)
+        target_link_libraries(fortran_test cxx)
         add_test(fortran_test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_test)
         set_tests_properties(fortran_test/build PROPERTIES FIXTURES_SETUP FORTRAN_TEST_EXEC)
         add_test(NAME fortran_test/run
