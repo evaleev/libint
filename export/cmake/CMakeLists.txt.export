@@ -14,7 +14,7 @@ else(LIBINT_BUILDID)
     set(LIBINT_EXT_VERSION ${LIBINT_VERSION})
 endif(LIBINT_BUILDID)
 
-            # Add module directory and modules =====================================================================================
+# Add module directory and modules =====================================================================================
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules/")
 include(CheckCXXSourceCompiles)
