@@ -45,8 +45,8 @@ TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
     for (int k = -1; k <= 0; ++k) {
       auto engine = Engine(k == 0 ? Operator::stg : Operator::yukawa, max_nprim, max_l);
       const auto scale = 2.3;
-      engine.set_params(1.0).set_scale(scale);
-      REQUIRE(engine.scale() == scale);
+      engine.set_params(1.0).prescale_by(scale);
+      REQUIRE(engine.prescaled_by() == scale);
       const auto &results = engine.results();
       auto engine_ref =
           Engine(k == 0 ? Operator::cgtg : Operator::cgtg_x_coulomb, max_nprim, max_l);

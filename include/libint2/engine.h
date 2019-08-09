@@ -798,14 +798,14 @@ class Engine {
   }
 
   /// @return the scaling factor by which the target integrals are multiplied
-  scalar_type scale() const {
+  scalar_type prescaled_by() const {
     return scale_;
   }
 
   /// @param[in] sc the scaling factor by which the target integrals are multiplied
   /// @note the default factor is 1
   /// @return reference to @c this for daisy-chaining
-  Engine& set_scale(scalar_type sc) {
+  Engine& prescale_by(scalar_type sc) {
     scale_ = sc;
     return *this;
   }

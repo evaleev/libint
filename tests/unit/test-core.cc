@@ -28,8 +28,8 @@ TEST_CASE("Engine::set", "[engine]") {
   REQUIRE_THROWS_AS(Engine{}.set(Operator::overlap), Engine::using_default_initialized);
   REQUIRE_THROWS_AS(Engine{}.set(BraKet::x_x), Engine::using_default_initialized);
   REQUIRE_NOTHROW(Engine{}.set(CartesianShellNormalization::uniform));
-  REQUIRE_NOTHROW(Engine{}.set_scale(1.5));
-  REQUIRE_NOTHROW(Engine(Operator::overlap, 1, 0).set(CartesianShellNormalization::uniform).set_precision(1e-20).set(Operator::overlap).set_scale(1.3).set(BraKet::x_x));
+  REQUIRE_NOTHROW(Engine{}.prescale_by(1.5));
+  REQUIRE_NOTHROW(Engine(Operator::overlap, 1, 0).set(CartesianShellNormalization::uniform).set_precision(1e-20).set(Operator::overlap).prescale_by(1.3).set(BraKet::x_x));
 }
 
 template <typename RealBuf> void check_uniform(int l, RealBuf && S) {

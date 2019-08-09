@@ -16,7 +16,7 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
       engine.set_params(make_point_charges(atoms));
 
       const auto scale = 2.3;
-      engine.set_scale(scale);
+      engine.prescale_by(scale);
       engine.compute(obs[0], obs[0]);
       {
         std::vector<double> shellset_ref = {
@@ -38,7 +38,7 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
         }
       }
 
-      engine.set_scale(1);
+      engine.prescale_by(1);
       engine.compute(obs[0], obs[1]);
       {
         std::vector<double> shellset_ref = {
