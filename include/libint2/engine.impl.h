@@ -994,7 +994,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 
   decltype(c1) sqrt_PI(1.77245385090551602729816748334);
   const auto xyz_pfac = sqrt_PI * sqrt(oogammap);
-  const auto ovlp_ss_x = exp(-rhop * AB2_x) * xyz_pfac * c1 * c2;
+  const auto ovlp_ss_x = exp(-rhop * AB2_x) * xyz_pfac * c1 * c2 * scale_;
   const auto ovlp_ss_y = exp(-rhop * AB2_y) * xyz_pfac;
   const auto ovlp_ss_z = exp(-rhop * AB2_z) * xyz_pfac;
 
@@ -1268,7 +1268,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           const auto sqrt_gammapq = sqrt(gammapq);
           const auto oogammapq = 1.0 / (gammapq);
           auto pfac = two_times_M_PI_to_25 * K12 * sqrt_gammapq * oogammapq;
-          pfac *= c0 * c1 * c2 * c3;
+          pfac *= c0 * c1 * c2 * c3 * scale_;
 
           if (std::abs(pfac) >= precision_) {
             const scalar_type rho = gammap * gammaq * oogammapq;

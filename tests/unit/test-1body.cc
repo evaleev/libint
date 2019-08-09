@@ -15,6 +15,8 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
       auto engine = Engine(Operator::nuclear, 2, lmax);
       engine.set_params(make_point_charges(atoms));
 
+      const auto scale = 2.3;
+      engine.set_scale(scale);
       engine.compute(obs[0], obs[0]);
       {
         std::vector<double> shellset_ref = {
@@ -32,10 +34,11 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
             -1.478824785355970e-02, 0.000000000000000e+00,
             -1.241040347301479e+01};
         for (int i = 0; i != 25; ++i) {
-          REQUIRE(engine.results()[0][i] == Approx(shellset_ref[i]));
+          REQUIRE(engine.results()[0][i]/scale == Approx(shellset_ref[i]));
         }
       }
 
+      engine.set_scale(1);
       engine.compute(obs[0], obs[1]);
       {
         std::vector<double> shellset_ref = {

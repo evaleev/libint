@@ -450,7 +450,8 @@ class Engine {
         stack_size_(0),
         lmax_(-1),
         deriv_order_(0),
-        cartesian_shell_normalization_(CartesianShellNormalization::standard) {
+        cartesian_shell_normalization_(CartesianShellNormalization::standard),
+        scale_(1) {
     set_precision(std::numeric_limits<scalar_type>::epsilon());
   }
 
@@ -500,6 +501,7 @@ class Engine {
         lmax_(max_l),
         deriv_order_(deriv_order),
         cartesian_shell_normalization_(CartesianShellNormalization::standard),
+        scale_(1),
         params_(enforce_params_type(oper, params)) {
     set_precision(precision);
     assert(max_nprim > 0);
@@ -526,6 +528,7 @@ class Engine {
         precision_(other.precision_),
         ln_precision_(other.ln_precision_),
         cartesian_shell_normalization_(other.cartesian_shell_normalization_),
+        scale_(other.scale_),
         core_eval_pack_(std::move(other.core_eval_pack_)),
         params_(std::move(other.params_)),
         core_ints_params_(std::move(other.core_ints_params_)),
@@ -548,6 +551,7 @@ class Engine {
         precision_(other.precision_),
         ln_precision_(other.ln_precision_),
         cartesian_shell_normalization_(other.cartesian_shell_normalization_),
+        scale_(other.scale_),
         core_eval_pack_(other.core_eval_pack_),
         params_(other.params_),
         core_ints_params_(other.core_ints_params_) {
@@ -571,6 +575,7 @@ class Engine {
     precision_ = other.precision_;
     ln_precision_ = other.ln_precision_;
     cartesian_shell_normalization_ = other.cartesian_shell_normalization_;
+    scale_ = other.scale_;
     core_eval_pack_ = std::move(other.core_eval_pack_);
     params_ = std::move(other.params_);
     core_ints_params_ = std::move(other.core_ints_params_);
@@ -595,6 +600,7 @@ class Engine {
     precision_ = other.precision_;
     ln_precision_ = other.ln_precision_;
     cartesian_shell_normalization_ = other.cartesian_shell_normalization_;
+    scale_ = other.scale_;
     core_eval_pack_ = other.core_eval_pack_;
     params_ = other.params_;
     core_ints_params_ = other.core_ints_params_;
@@ -791,6 +797,19 @@ class Engine {
     return *this;
   }
 
+  /// @return the scaling factor by which the target integrals are multiplied
+  scalar_type scale() const {
+    return scale_;
+  }
+
+  /// @param[in] sc the scaling factor by which the target integrals are multiplied
+  /// @note the default factor is 1
+  /// @return reference to @c this for daisy-chaining
+  Engine& set_scale(scalar_type sc) {
+    scale_ = sc;
+    return *this;
+  }
+
   /// prints the contents of timers to @c os
   void print_timers(std::ostream& os = std::cout) {
 #ifdef LIBINT2_ENGINE_TIMERS
@@ -874,6 +893,9 @@ class Engine {
 
   // specifies the normalization convention for Cartesian Gaussians
   CartesianShellNormalization cartesian_shell_normalization_;
+
+  // the target integrals are scaled by this factor (of course it is actually the core integrals that are scaled)
+  scalar_type scale_;
 
   any core_eval_pack_;
 
