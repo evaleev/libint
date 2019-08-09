@@ -3,6 +3,11 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2019-08-09: 2.7.0-beta.1
+  - PR #142: fixed cmake build of fortran interface (HT @pseewald )
+  - PR #141: can buile shared and static libs in one shot (HT @francesco-bosia )
+  - added Engine::{set_}scale that allows scaling target ints
+
 - 2019-07-23: 2.6.0
   - fixed initialization order error in unit test
   - unit tests pass valgrind memcheck
