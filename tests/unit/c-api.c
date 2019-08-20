@@ -7,6 +7,10 @@
 Libint_t erieval;
 double* F;
 
+#ifndef M_PI
+#    define M_PI 3.1415926535897932384626433832795
+#endif
+
 /* computes F[0] .. F[max_m] */
 extern void calc_f(double* F, double T, unsigned int max_m);
 
