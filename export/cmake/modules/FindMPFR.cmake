@@ -8,9 +8,13 @@
 # Once done this will define
 #
 #  MPFR_FOUND - system has MPFR lib with correct version
-#  MPFR_INCLUDES - the MPFR include directory
-#  MPFR_LIBRARIES - the MPFR library
+#  MPFR_INCLUDE - the MPFR include directory
+#  MPFR_LIBRARY - the MPFR library
 #  MPFR_VERSION - MPFR version
+#  MPFR::GMP
+#  MPFR::GMPXX
+#  MPFR::MPFR
+#  MPFR::MPFRXX
 
 # Copyright (c) 2006, 2007 Montel Laurent, <montel@kde.org>
 # Copyright (c) 2008, 2009 Gael Guennebaud, <g.gael@free.fr>
@@ -18,7 +22,7 @@
 # Copyright (c) 2015 Jack Poulson, <jack.poulson@gmail.com>
 # Redistribution and use is allowed according to the terms of the BSD license.
 
-find_path(MPFR_INCLUDES NAMES mpfr.h PATHS $ENV{GMPDIR} $ENV{MPFRDIR}
+find_path(MPFR_INCLUDE NAMES mpfr.h PATHS $ENV{GMPDIR} $ENV{MPFRDIR}
         ${INCLUDE_INSTALL_DIR})
 
 # Set MPFR_FIND_VERSION to 1.0.0 if no minimum version is specified
@@ -36,9 +40,9 @@ if(NOT MPFR_FIND_VERSION)
             "${MPFR_FIND_VERSION_MAJOR}.${MPFR_FIND_VERSION_MINOR}.${MPFR_FIND_VERSION_PATCH}")
 endif()
 
-if(MPFR_INCLUDES)
+if(MPFR_INCLUDE)
     # Query MPFR_VERSION
-    file(READ "${MPFR_INCLUDES}/mpfr.h" _mpfr_version_header)
+    file(READ "${MPFR_INCLUDE}/mpfr.h" _mpfr_version_header)
 
     string(REGEX MATCH "define[ \t]+MPFR_VERSION_MAJOR[ \t]+([0-9]+)"
             _mpfr_major_version_match "${_mpfr_version_header}")
@@ -56,38 +60,66 @@ if(MPFR_INCLUDES)
     # Check whether found version exceeds minimum required
     if(${MPFR_VERSION} VERSION_LESS ${MPFR_FIND_VERSION})
         set(MPFR_VERSION_OK FALSE)
-        message(STATUS "MPFR version ${MPFR_VERSION} found in ${MPFR_INCLUDES}, "
+        message(STATUS "MPFR version ${MPFR_VERSION} found in ${MPFR_INCLUDE}, "
                 "but at least version ${MPFR_FIND_VERSION} is required")
     else()
         set(MPFR_VERSION_OK TRUE)
     endif()
 endif()
 
-find_library(MPFR_LIBRARIES mpfr
+find_library(MPFR_LIBRARY mpfr
         PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MPFR DEFAULT_MSG
-        MPFR_INCLUDES MPFR_LIBRARIES MPFR_VERSION_OK)
-mark_as_advanced(MPFR_INCLUDES MPFR_LIBRARIES)
+        MPFR_INCLUDE MPFR_LIBRARY MPFR_VERSION_OK)
+mark_as_advanced(MPFR_INCLUDE MPFR_LIBRARY)
 
-if(MPFR_INCLUDES AND MPFR_LIBRARIES AND NOT TARGET MPFR::Library)
+if(MPFR_INCLUDE AND MPFR_LIBRARY AND NOT TARGET MPFR::Library)
     add_library(MPFR::Library INTERFACE IMPORTED)
-    set_target_properties(MPFR::Library PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES ${MPFR_INCLUDES}
-            )
-    set_target_properties(MPFR::Library PROPERTIES
-            INTERFACE_LINK_LIBRARIES ${MPFR_LIBRARIES}
-            )
+    set_target_properties(MPFR::Library
+        PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${MPFR_INCLUDE}
+                   INTERFACE_LINK_LIBRARIES ${MPFR_LIBRARY})
 endif()
 
-find_path(GMPXX_INCLUDES NAMES gmpxx.h PATHS $ENV{GMPDIR} $ENV{MPFRDIR}
-        ${INCLUDE_INSTALL_DIR})
-message(STATUS "GMPXX_INCLUDES=${GMPXX_INCLUDES}")
-if(GMPXX_INCLUDES AND TARGET MPFR::Library AND NOT TARGET MPFR::GMPXX)
+# from GMP, Libint2 build_libint needs the C++ header and MPFR needs the C library
+#                           test needs the C++ library
+find_path(GMP_INCLUDE
+    NAMES gmp.h
+    PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${INCLUDE_INSTALL_DIR})
+find_library(GMP_LIBRARY
+    NAMES gmp
+    PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR})
+
+if (GMP_INCLUDE AND GMP_LIBRARY AND NOT TARGET MPFR::GMP)
+    add_library(MPFR::GMP INTERFACE IMPORTED)
+    set_target_properties(MPFR::GMP
+        PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE}
+                   INTERFACE_LINK_LIBRARIES ${GMP_LIBRARY})
+endif()
+
+if (TARGET MPFR::GMP AND TARGET MPFR::Library AND NOT TARGET MPFR::MPFR)
+    add_library(MPFR::MPFR INTERFACE IMPORTED)
+    target_link_libraries(MPFR::MPFR INTERFACE MPFR::Library MPFR::GMP)
+endif()
+
+
+find_path(GMPXX_INCLUDE
+    NAMES gmpxx.h
+    PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${INCLUDE_INSTALL_DIR})
+find_library(GMPXX_LIBRARY
+    NAMES gmpxx
+    PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR})
+
+if (GMPXX_INCLUDE AND GMPXX_LIBRARY AND TARGET MPFR::GMP AND NOT TARGET MPFR::GMPXX)
     add_library(MPFR::GMPXX INTERFACE IMPORTED)
-    target_link_libraries(MPFR::GMPXX INTERFACE MPFR::Library)
-    set_target_properties(MPFR::Library PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES ${GMPXX_INCLUDES}
-            )
+    set_target_properties(MPFR::GMPXX
+        PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${GMPXX_INCLUDE}
+                   INTERFACE_LINK_LIBRARIES ${GMPXX_LIBRARY})
+    target_link_libraries(MPFR::GMPXX INTERFACE MPFR::GMP)
+endif()
+
+if (TARGET MPFR::GMPXX AND TARGET MPFR::Library AND NOT TARGET MPFR::MPFRXX)
+    add_library(MPFR::MPFRXX INTERFACE IMPORTED)
+    target_link_libraries(MPFR::MPFRXX INTERFACE MPFR::Library MPFR::GMPXX)
 endif()
