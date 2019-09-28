@@ -1,27 +1,27 @@
-#cmake_policy(SET CMP0048 NEW)  # project_VERSION* variables populated from project(... VERSION x.x.x) string
+cmake_minimum_required(VERSION 3.8)  #TODO
 
 project(Libint2
-#        VERSION 1.2.1
-#        LANGUAGES C CXX)
-        LANGUAGES C CXX)
-set(Libint_AUTHORS      "Edward F. Valeev")
-set(Libint_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
-set(Libint_URL          "https://github.com/evaleev/libint")
-#set(Libint_LICENSE      "GPL-3.0 for generator; LGPL-3.0 for generated")
+        LANGUAGES CXX)
+set(Libint2_AUTHORS      "Edward F. Valeev")
+set(Libint2_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
+set(Libint2_URL          "https://github.com/evaleev/libint")
+#set(Libint2_LICENSE      "GPL-3.0 for generator; LGPL-3.0 for generated")
 
-cmake_minimum_required(VERSION 3.0)  #TODO
 cmake_policy(SET CMP0074 NEW)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
                               ${PROJECT_SOURCE_DIR}/export/cmake/modules)
 
 
 ################################### Options ####################################
+include(int_versions)
 include(user_has_defined)
 include(psi4OptionsTools)
 
 #  <<< General  >>>
 
 option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
+option_with_print(BUILD_SHARED "Build at least shared library" OFF)
+option_with_print(BUILD_STATIC "Build at least static library" ON)
 
 #  <<<  Which Integrals Classes, Which Derivative Levels  >>>
 
@@ -254,8 +254,8 @@ option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
 
 ######################## Process & Validate Options ###########################
 include(autocmake_safeguards)
-include(shell_orderings)
-include(ints_types)
+include(int_orderings)
+include(int_am)
 
 # req'd for now (no FindGMP.cmake, though one at Elemental project)
 find_package(MPFR REQUIRED)
@@ -263,12 +263,9 @@ get_property(_loc TARGET MPFR::Library PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
 message("iid ${_loc}")
 get_property(_loc TARGET MPFR::Library PROPERTY INTERFACE_LINK_LIBRARIES)
 message("ill ${_loc}")
-if (TARGET MPFR::GMPXX)
+if (TARGET MPFR::MPFRXX)
     set(LIBINT_HAS_MPFR 1)
-    message("top linking")
 endif()
-message("MPFR ${MPFR_INCLUDES}")
-message("GMP  ${GMPXX_INCLUDES}")
 
 unset(_temp_h CACHE)
 find_path(_temp_h
