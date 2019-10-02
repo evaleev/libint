@@ -5,12 +5,11 @@ project(Libint2
 set(Libint2_AUTHORS      "Edward F. Valeev")
 set(Libint2_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
 set(Libint2_URL          "https://github.com/evaleev/libint")
-#set(Libint2_LICENSE      "GPL-3.0 for generator; LGPL-3.0 for generated")
+set(Libint2_LICENSE      "GPL-3.0 for generator; LGPL-3.0 for generated")
 
 cmake_policy(SET CMP0074 NEW)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
                               ${PROJECT_SOURCE_DIR}/export/cmake/modules)
-
 
 ################################### Options ####################################
 include(int_versions)
@@ -25,7 +24,7 @@ option_with_print(BUILD_STATIC "Build at least static library" ON)
 
 #  <<<  Which Integrals Classes, Which Derivative Levels  >>>
 
-option_with_default(ENABLE_1BODY
+option_with_default(ENABLE_ONEBODY
   "Compile with support for up to N-th derivatives of 1-body integrals (-1 for OFF)" 0)
 option_with_default(ENABLE_ERI
   "Compile with support for up to N-th derivatives of electron repulsion integrals (-1 for OFF)" 0)
@@ -33,6 +32,10 @@ option_with_default(ENABLE_ERI3
   "Compile with support for up to N-th derivatives of 3-center electron repulsion integrals (-1 for OFF)" -1)
 option_with_default(ENABLE_ERI2
   "Compile with support for up to N-th derivatives of 2-center electron repulsion integrals (-1 for OFF)" -1)
+option_with_default(ENABLE_G12
+  "Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors (-1 for OFF)" -1)
+option_with_default(ENABLE_G12DKH
+  "Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors (-1 for OFF)" -1)
 
 #  <<<  Ordering Conventions  >>>
 
@@ -63,6 +66,10 @@ option_with_default(LIBINT2_SHELL_SET
         l(a) < l(c) || (l(a) == l(c) && l(b) < l(d))
       for (b|cd):
         l(c) <= l(d)" standard)
+option_with_print(ERI3_PURE_SH
+  "Assume the 'unpaired' center of 3-center ERIs will be transformed to pure solid harmonics" OFF)
+option_with_print(ERI2_PURE_SH
+  "Assume the 2-center ERIs will be transformed to pure solid harmonics" OFF)
 
 #  <<<  How High Angular Momentum  >>>
 
@@ -71,12 +78,26 @@ option_with_default(LIBINT_MAX_AM
    Can specify values for each derivative levels as a semicolon-separated string N0,N1,N2..." 4)
 option_with_default(LIBINT_OPT_AM
   "Optimize maximally for up to angular momentum N (N <= max-am). (default: (max_am/2)+1)" 3)
+option_with_default(MULTIPOLE_MAX_ORDER
+  "Maximum order of spherical multipole integrals. There is no maximum" 4)
+option_with_default(ONEBODY_MAX_AM
+  "Support 1-e ints for Gaussians of angular momentum up to N.
+   Can specify values for each derivative as a semicolon-separated string N0,N1,N2..." 4)
+option_with_default(ONEBODY_OPT_AM
+  "Optimize 1-e ints maximally for up to angular momentum N (N <= max-am).
+   Can specify values for each derivative levels as a semicolor-separated string N0,N1,N2..." 3)
 option_with_default(ERI_MAX_AM
   "Support ERIs for Gaussians of angular momentum up to N.
    Can specify values for each derivative levels as a semicolon-separated string N0;N1;N2..." 4)
 option_with_default(ERI_OPT_AM
   "Optimize ERIs maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolon-separated string N0,N1,N2... (default: (eri_max_am/2)+1)" -1)
+   Can specify values for each derivative levels as a semicolon-separated string N0,N1,N2... (default: (max_am/2)+1)" 3)
+option_with_default(ERI3_MAX_AM
+  "Support 3-center ERIs for Gaussians of angular momentum up to N.
+   Can specify values for each derivative levels as a semicolon-separated string N0,N1,N2..." 4)
+option_with_default(ERI3_OPT_AM
+  "Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).
+   Can specify values for each derivative levels as a semicolon-separated string N0,N1,N2... (default: (max_am/2)+1)" 3)
 
 #  <<<  Miscellaneous  >>>
 
@@ -86,8 +107,7 @@ option_with_default(LIBINT_ERI_STRATEGY
 option_with_print(LIBINT_USE_COMPOSITE_EVALUATORS
   "Libint will use composite evaluators (i.e. every evaluator will compute one integral type only)" ON)
 option_with_print(LIBINT_SINGLE_EVALTYPE
-  "Generate single evaluator type (i.e. all tasks use the same evaluator)
-   LAB: looks effectively hardcoded in configure, RT error if OFF" ON)
+  "Generate single evaluator type (i.e. all tasks use the same evaluator)" ON)
 
 #option_with_print(BUILD_SHARED_LIBS "Build final library as shared, not static" OFF)
 #option_with_default(BUILD_FPIC "Libraries will be compiled with position independent code" ON)
@@ -115,15 +135,6 @@ option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
 #CONFIGURE                            integrals (all but overlap, kinetic, elecpot). These
 #CONFIGURE                            derivatives are disabled by default to save compile
 #CONFIGURE                            time.
-#CONFIGURE    --enable-g12=N          Compile with support for N-th derivatives of MP2-F12
-#CONFIGURE                            energies with Gaussian factors
-#CONFIGURE    --enable-g12dkh=N       Compile with support for N-th derivatives of
-#CONFIGURE                            DKH-MP2-F12 energies with Gaussian factors
-#CONFIGURE    --enable-eri3-pure-sh   Assume the "unpaired" center of 3-center electron
-#CONFIGURE                            repulsion integrals will be transformed to pure
-#CONFIGURE                            solid harmonics
-#CONFIGURE    --enable-eri2-pure-sh   Assume the 2-center electron repulsion integrals
-#CONFIGURE                            will be transformed to pure solid harmonics
 #CONFIGURE    --disable-t1g12-support Libint will not support [Ti,G12] integrals
 #CONFIGURE    --enable-unrolling      Unroll shell sets into integrals
 #CONFIGURE                            (--enable-unrolling=S will unroll shell sets larger
@@ -153,21 +164,6 @@ option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
 #CONFIGURE    --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
 #CONFIGURE    --with-api-prefix       Prepend this string to every name in the library API
 #CONFIGURE                            (except for the types).
-#CONFIGURE    --with-1body-max-am=N   Support 1-e ints for Gaussians of angular momentum
-#CONFIGURE                            up to N. Can specify values for each derivative
-#CONFIGURE                            levels as a list N0,N1,N2...
-#CONFIGURE    --with-1body-opt-am=N   Optimize 1-e ints maximally for up to angular
-#CONFIGURE                            momentum N (N <= max-am). Can specify values for
-#CONFIGURE                            each derivative levels as a list N0,N1,N2...
-#CONFIGURE    --with-multipole-max-order=N
-#CONFIGURE                            Maximum order of spherical multipole integrals. The
-#CONFIGURE                            default is 4. There is no maximum
-#CONFIGURE    --with-eri3-max-am=N    Support 3-center ERIs for Gaussians of angular
-#CONFIGURE                            momentum up to N. Can specify values for each
-#CONFIGURE                            derivative levels as a list N0,N1,N2...
-#CONFIGURE    --with-eri3-opt-am=N    Optimize 3-center ERIs maximally for up to angular
-#CONFIGURE                            momentum N (N <= max-am). Can specify values for
-#CONFIGURE                            each derivative levels as a list N0,N1,N2...
 #CONFIGURE    --with-eri2-max-am=N    Support 2-center ERIs for Gaussians of angular
 #CONFIGURE                            momentum up to N. Can specify values for each
 #CONFIGURE                            derivative levels as a list N0,N1,N2...
@@ -254,26 +250,62 @@ option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
 
 ######################## Process & Validate Options ###########################
 include(autocmake_safeguards)
+include(CheckFunctionExists)
 include(int_orderings)
 include(int_am)
 
+check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
+if (HAVE_POSIX_MEMALIGN)
+    set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics")
+endif()
+
+# again, req'd for now
+set(LIBINT_HAS_CXX11 1)
+
 # req'd for now (no FindGMP.cmake, though one at Elemental project)
 find_package(MPFR REQUIRED)
-get_property(_loc TARGET MPFR::Library PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-message("iid ${_loc}")
-get_property(_loc TARGET MPFR::Library PROPERTY INTERFACE_LINK_LIBRARIES)
-message("ill ${_loc}")
+#get_property(_loc TARGET MPFR::Library PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+#message("iid ${_loc}")
+#get_property(_loc TARGET MPFR::Library PROPERTY INTERFACE_LINK_LIBRARIES)
+#message("ill ${_loc}")
 if (TARGET MPFR::MPFRXX)
     set(LIBINT_HAS_MPFR 1)
 endif()
 
+find_package(Boost 1.57 REQUIRED)
+if (TARGET Boost::boost)  # the header-only target
+    set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
+endif()
+
+find_package(Eigen3 REQUIRED)
+if (TARGET Eigen3::Eigen)
+    set(LIBINT_HAS_EIGEN 1)
+endif()
+
 unset(_temp_h CACHE)
-find_path(_temp_h
-          NAMES stdint.h)
+find_path(_temp_h NAMES stdint.h)
 if(_temp_h)
     set (HAVE_STDINT_H 1)
 endif()
 
+booleanize01(ERI3_PURE_SH)
+booleanize01(ERI2_PURE_SH)
+booleanize01(LIBINT_SINGLE_EVALTYPE)
+
+set(LIBINT_USE_TYPE_TRAITS 1)
+set(LIBINT_USE_MEMORY 1)
+set(LIBINT_USE_ARRAY 1)
+set(LIBINT_HAS_STD_TYPE_TRAITS 1)
+set(LIBINT_HAS_STD_SHARED_PTR 1)
+set(LIBINT_HAS_STD_MAKE_SHARED 1)
+set(LIBINT_HAS_STD_ARRAY 1)
+set(LIBINT_ARRAY_HAS_FILL 1)
+set(LIBINT_CONTRACTED_INTS 1)
+set(LIBINT_ALIGN_SIZE 0)
+set(LIBINT_ENABLE_UNROLLING 100)
+set(DISABLE_ONEBODY_PROPERTY_DERIVS 1)
+set(LIBINT_HOST_ARCH "x86_64-pc-linux-gnu")
+set(LIBINT_TARGET_ARCH "x86_64-pc-linux-gnu")
 ################################# Main Project #################################
 set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/stage)
 
@@ -288,30 +320,33 @@ if (ENABLE_FORTRAN)
 endif()
 
 configure_file(include/libint2/config.h.cmake.in include/libint2/config.h @ONLY)
+set(DATADIR_ABSOLUTE ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION})
+configure_file(include/libint2/basis.h.in include/libint2/basis.h @ONLY)
 ##configure_file(cmake/libint.pc.in libint.pc @ONLY)
 
-## <<<  Install  >>>
-#
-#install(DIRECTORY ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-#                  ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
-#                  ${STAGED_INSTALL_PREFIX}/share
-#        DESTINATION ${CMAKE_INSTALL_PREFIX}
-#        USE_SOURCE_PERMISSIONS
-#        PATTERN "*header*" EXCLUDE)
-#
-## <<<  Export Config  >>>
-#
-## GNUInstallDirs "DATADIR" wrong here; CMake search path wants "share".
-#set(CMAKECONFIG_INSTALL_DIR "share/cmake/${PN}")
-#configure_package_config_file(cmake/${PN}Config.cmake.in
-#                              "${CMAKE_CURRENT_BINARY_DIR}/${PN}Config.cmake"
-#                              INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-#write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${PN}ConfigVersion.cmake
-#                                 VERSION ${${PN}_VERSION}
-#                                 COMPATIBILITY SameMajorVersion)
-#install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PN}Config.cmake
-#              ${CMAKE_CURRENT_BINARY_DIR}/${PN}ConfigVersion.cmake
-#        DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-#
+# <<<  Install  >>>
+
+install(DIRECTORY ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
+                  #${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}
+                  ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
+                  ${STAGED_INSTALL_PREFIX}/share
+        DESTINATION ${CMAKE_INSTALL_PREFIX}
+        USE_SOURCE_PERMISSIONS)
+
+# <<<  Export Config  >>>
+
+# GNUInstallDirs "DATADIR" wrong here; CMake search path wants "share".
+set(CMAKECONFIG_INSTALL_DIR "share/cmake/${PN}")
+message("share ${CMAKECONFIG_INSTALL_DIR}")
+configure_package_config_file(cmake/${PN}Config.cmake.in
+                              "${CMAKE_CURRENT_BINARY_DIR}/${PN}Config.cmake"
+                              INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${PN}ConfigVersion.cmake
+                                 VERSION ${${PN}_VERSION}
+                                 COMPATIBILITY SameMajorVersion)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PN}Config.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/${PN}ConfigVersion.cmake
+        DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+
 #install(FILES ${PROJECT_BINARY_DIR}/libint.pc
 #        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)

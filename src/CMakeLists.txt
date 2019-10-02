@@ -5,6 +5,7 @@ include(GNUInstallDirs)
 #math(EXPR MAX_AM_ERI "${MAX_AM_ERI}-1")
 
 ExternalProject_Add(generator
+    BUILD_ALWAYS 1
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin/libint
     CMAKE_ARGS -DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}
                -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
@@ -13,10 +14,12 @@ ExternalProject_Add(generator
                -DLibint2_BINARY_DIR=${Libint2_BINARY_DIR}
                -DLibint2_ROOT=${Libint2_SOURCE_DIR}
                -DMPFR_ROOT=${MPFR_ROOT}
+               -DBOOST_ROOT=${BOOST_ROOT}
     CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS})
 
 ExternalProject_Add(library
     DEPENDS generator
+    BUILD_ALWAYS 1
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libint
     DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/libint-src
     # download generalized to generating source by running build_libint generator

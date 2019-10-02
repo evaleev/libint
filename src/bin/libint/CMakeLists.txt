@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+find_package(Boost 1.57 REQUIRED)
+
 # <<<  Build  >>>
 
 add_library(INT
@@ -46,7 +48,7 @@ add_library(INT
 )
 
 add_executable(build_libint build_libint.cc)
-target_link_libraries(build_libint INT)
+target_link_libraries(build_libint INT Boost::boost)
 
 add_executable(test test.cc)
 target_link_libraries(test INT)
@@ -54,10 +56,9 @@ target_link_libraries(test INT)
 target_compile_definitions(INT
     PRIVATE -D__COMPILING_LIBINT2=1)
 
-target_include_directories(INT PUBLIC ${PROJECT_SOURCE_DIR}
-                                      ${Libint2_ROOT}/include/
-                                      ${Libint2_BINARY_DIR}/include/
-)
+target_include_directories(INT PUBLIC ${Libint2_BINARY_DIR}/include/
+                                      ${PROJECT_SOURCE_DIR}
+                                      ${Libint2_ROOT}/include/)
 
 set_target_properties(build_libint test
     PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
