@@ -24,6 +24,15 @@ macro(option_with_print variable msge default)
    option(${variable} ${msge} ${default})
 endmacro(option_with_print)
 
+# Call to cast T/F, ON/OFF, 0/1, etc. to 0/1, usually for ifdef purposes.
+macro(booleanize01 variable)
+    if(${${variable}})
+        set(${variable} 1)
+    else()
+        set(${variable} 0)
+    endif()
+endmacro(booleanize01)
+
 #Wraps an option with a default other than ON/OFF and prints it
 #NOTE: Can't combine with above b/c CMake handles ON/OFF options specially
 #NOTE2: CMAKE_BUILD_TYPE (and other CMake variables) are always defined so need
