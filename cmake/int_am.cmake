@@ -1,37 +1,13 @@
-
-#LIBINT_OPT_AM_LIST
-#LIBINT_MAX_AM_LIST
-#
-#ERI_OPT_AM
-#ERI_OPT_AM_LIST
-#ERI_MAX_AM
-#ERI_MAX_AM_LIST
-#
-#ERI2_OPT_AM
-#ERI2_OPT_AM_LIST
-#ERI2_MAX_AM
-#ERI2_MAX_AM_LIST
-#
-#ERI3_OPT_AM
-#ERI3_OPT_AM_LIST
-#ERI3_MAX_AM
-#ERI3_MAX_AM_LIST
-#
-#LIBINT_ONEBODY_DERIV
-#LIBINT_SUPPORTS_ONEBODY
-#ONEBODY_OPT_AM
-#ONEBODY_OPT_AM_LIST
-#ONEBODY_MAX_AM
-#ONEBODY_MAX_AM_LIST
-#
-#G12_OPT_AM
-#G12_MAX_AM
-#
-#G12DKH_OPT_AM
-#G12DKH_MAX_AM
+# handle the defaulting and setting of the following variables
+# * ENABLE_[ONEBODY|ERI|ERI2|ERI3|G12|G12DKH]
+# * [LIBINT|ONEBODY|ERI|ERI2|ERI3|G12|G12DKH]_[MAX|OPT]_AM[|_LIST]
+# * LIBINT_ONEBODY_DERIV
+# * LIBINT_SUPPORTS_ONEBODY
 
 
-# <<<  LIBINT  >>>
+message(STATUS "Processing integrals classes ...")
+
+# <<<  overall defaults (LIBINT_MAX/OPT_AM)  >>>
 
 list(LENGTH LIBINT_MAX_AM _lam)
 if (_lam GREATER 1)
@@ -49,7 +25,6 @@ else()
         message(FATAL "Invalid value for LIBINT_MAX_AM (${LIBINT_MAX_AM}).")
     endif()
 endif()
-#message(STATUS "LIBINT integrals enabled to max AM ${LIBINT_MAX_AM} ${LIBINT_MAX_AM_LIST}")
 
 list(LENGTH LIBINT_OPT_AM _lam)
 if (_lam GREATER 1)
@@ -61,221 +36,83 @@ if (_lam GREATER 1)
 else()
     if (NOT _user_LIBINT_OPT_AM)
         math(EXPR LIBINT_OPT_AM "${_max_LIBINT_MAX_AM}/2 + 1")
+        #math(EXPR LIBINT_OPT_AM "${_max_LIBINT_MAX_AM}/2 + ${_max_LIBINT_MAX_AM}%2")
     endif()
 
     if (LIBINT_OPT_AM GREATER LIBINT_MAX_AM)
         message(FATAL "Invalid value for LIBINT_OPT_AM (${LIBINT_OPT_AM} !<= ${LIBINT_MAX_AM}).")
     endif()
 endif()
-#message(STATUS "LIBINT integrals enabled to opt AM ${LIBINT_OPT_AM} ${LIBINT_OPT_AM_LIST}")
 
 
-# <<<  ONEBODY  >>>
+# <<<  Macro  >>>
 
-if (ENABLE_ONEBODY GREATER_EQUAL 0)
-    set(INCLUDE_ONEBODY ${ENABLE_ONEBODY})
-    set(LIBINT_SUPPORTS_ONEBODY yes)
-    set(LIBINT_ONEBODY_DERIV ${INCLUDE_ONEBODY})
-    message(STATUS "Enabling integrals class ONEBODY to derivative ${INCLUDE_ONEBODY}")
-else()
-    set(INCLUDE_ONEBODY "-1")
-    set(ONEBODY_MAX_AM "")
-    set(ONEBODY_MAX_AM_LIST "")
-    message(STATUS "Disabling integrals class ONEBODY")
-endif()
-
-if (ENABLE_ONEBODY GREATER_EQUAL 0)
-    list(LENGTH ONEBODY_MAX_AM _lam)
-    if (_lam GREATER 1)
-        list(JOIN ONEBODY_MAX_AM "," _sam)
-        execute_process (COMMAND bash -c "echo ${_sam} | tr , '\n' | sort -n | tail -n1"
-                         OUTPUT_VARIABLE _max_ONEBODY_MAX_AM)
-        set(ONEBODY_MAX_AM_LIST ${_sam})
-        set(ONEBODY_MAX_AM "")
+macro(process_integrals_class class)
+    if (ENABLE_${class} GREATER_EQUAL 0)
+        set(INCLUDE_${class} ${ENABLE_${class}})
+        if (${class} STREQUAL ONEBODY)
+            set(LIBINT_SUPPORTS_${class} yes)
+            set(LIBINT_${class}_DERIV ${INCLUDE_${class}})
+        endif()
+        message(STATUS "Enabling integrals class ${class} to derivative ${INCLUDE_${class}}")
     else()
-        if (NOT _user_ONEBODY_MAX_AM)
-            set(ONEBODY_MAX_AM "")
-            set(_max_ONEBODY_MAX_AM ${LIBINT_MAX_AM})
+        set(INCLUDE_${class} "-1")
+        set(${class}_MAX_AM "")
+        set(${class}_MAX_AM_LIST "")
+        message(STATUS "Disabling integrals class ${class}")
+    endif()
+    
+    if (ENABLE_${class} GREATER_EQUAL 0)
+        list(LENGTH ${class}_MAX_AM _lam)
+        if (_lam GREATER 1)
+            list(JOIN ${class}_MAX_AM "," _sam)
+            execute_process (COMMAND bash -c "echo ${_sam} | tr , '\n' | sort -n | tail -n1"
+                             OUTPUT_VARIABLE _max_${class}_MAX_AM)
+            set(${class}_MAX_AM_LIST ${_sam})
+            set(${class}_MAX_AM "")
         else()
-            set(_max_ONEBODY_MAX_AM ${ONEBODY_MAX_AM})
-            if (ONEBODY_MAX_AM GREATER_EQUAL 8)
-                message(FATAL "Value for ONEBODY_MAX_AM too high (${ONEBODY_MAX_AM}). Are you sure you know what you are doing?")
-            elseif (ONEBODY_MAX_AM LESS_EQUAL 0)
-                message(FATAL "Invalid value for ONEBODY_MAX_AM (${ONEBODY_MAX_AM}).")
+            if (NOT _user_${class}_MAX_AM)
+                set(${class}_MAX_AM "")
+                set(_max_${class}_MAX_AM ${LIBINT_MAX_AM})
+            else()
+                # _max_* variable in case want to default opt_am from some day
+                set(_max_${class}_MAX_AM ${${class}_MAX_AM})
+                if (${class}_MAX_AM GREATER_EQUAL 8)
+                    message(FATAL "Value for ${class}_MAX_AM too high (${${class}_MAX_AM}). Are you sure you know what you are doing?")
+                elseif (${class}_MAX_AM LESS_EQUAL 0)
+                    message(FATAL "Invalid value for ${class}_MAX_AM (${${class}_MAX_AM}).")
+                endif()
             endif()
         endif()
-    endif()
-    message(STATUS "Enabling integrals class ONEBODY to max AM ${ONEBODY_MAX_AM}${ONEBODY_MAX_AM_LIST}")
-
-    list(LENGTH ONEBODY_OPT_AM _lam)
-    if (_lam GREATER 1)
-        list(JOIN ONEBODY_OPT_AM "," _sam)
-        execute_process (COMMAND bash -c "echo ${_sam} | tr , '\n' | sort -n | tail -n1"
-                         OUTPUT_VARIABLE _max_ONEBODY_OPT_AM)
-        set(ONEBODY_OPT_AM_LIST ${_sam})
-        set(ONEBODY_OPT_AM "")
-    else()
-        if (_user_ONEBODY_OPT_AM)
-            if (ONEBODY_OPT_AM GREATER ONEBODY_MAX_AM)
-                message(FATAL "Invalid value for ONEBODY_OPT_AM (${ONEBODY_OPT_AM} !<= ${ONEBODY_MAX_AM}).")
-            endif()
+        message(STATUS "Enabling integrals class ${class} to max AM ${${class}_MAX_AM}${${class}_MAX_AM_LIST} (else ${LIBINT_MAX_AM})")
+    
+        list(LENGTH ${class}_OPT_AM _lam)
+        if (_lam GREATER 1)
+            list(JOIN ${class}_OPT_AM "," _sam)
+            execute_process (COMMAND bash -c "echo ${_sam} | tr , '\n' | sort -n | tail -n1"
+                             OUTPUT_VARIABLE _max_${class}_OPT_AM)
+            set(${class}_OPT_AM_LIST ${_sam})
+            set(${class}_OPT_AM "")
         else()
-            set(ONEBODY_OPT_AM "")
+            if (_user_${class}_OPT_AM)
+                if (${class}_OPT_AM GREATER ${class}_MAX_AM)
+                    message(FATAL "Invalid value for ${class}_OPT_AM (${${class}_OPT_AM} !<= ${${class}_MAX_AM}).")
+                endif()
+            else()
+                set(${class}_OPT_AM "")
+            endif()
+    
         endif()
-    #        #math(EXPR ONEBODY_OPT_AM "${_max_ONEBODY_MAX_AM}/2 + ${_max_ONEBODY_MAX_AM}%2")
-    #        math(EXPR ONEBODY_OPT_AM "${_max_ONEBODY_MAX_AM}/2 + 1")
-
+        message(STATUS "Enabling integrals class ${class} to opt AM ${${class}_OPT_AM}${${class}_OPT_AM_LIST} (else ${LIBINT_OPT_AM})")
     endif()
-    message(STATUS "Enabling integrals class ONEBODY to opt AM ${ONEBODY_OPT_AM}${ONEBODY_OPT_AM_LIST}")
-endif()
+endmacro()
 
 
-# <<<  ERI  >>>
+process_integrals_class(ONEBODY)
+process_integrals_class(ERI)
+process_integrals_class(ERI3)
+process_integrals_class(ERI2)
 
-if (ENABLE_ERI GREATER_EQUAL 0)
-    set(INCLUDE_ERI ${ENABLE_ERI})
-    message(STATUS "Enabling integrals class ERI to derivative ${INCLUDE_ERI}")
-else()
-    set(INCLUDE_ERI "-1")
-    set(ERI_MAX_AM "")
-    set(ERI_MAX_AM_LIST "")
-    message(STATUS "Disabling integrals class ERI")
-endif()
-
-if (ENABLE_ERI GREATER_EQUAL 0)
-    list(LENGTH ERI_MAX_AM _lam)
-    if (_lam GREATER 1)
-        list(JOIN ERI_MAX_AM "," _sam)
-        execute_process (COMMAND bash -c "echo ${_sam} | tr , '\n' | sort -n | tail -n1"
-                         OUTPUT_VARIABLE _max_ERI_MAX_AM)
-        set(ERI_MAX_AM_LIST ${_sam})
-        set(ERI_MAX_AM "")
-    else()
-        if (NOT _user_ERI_MAX_AM)
-            set(ERI_MAX_AM ${LIBINT_MAX_AM})
-        endif()
-        set(_max_ERI_MAX_AM ${ERI_MAX_AM})
-
-        if (ERI_MAX_AM GREATER_EQUAL 8)
-            message(FATAL "Value for ERI_MAX_AM too high (${ERI_MAX_AM}). Are you sure you know what you are doing?")
-        elseif (ERI_MAX_AM LESS_EQUAL 0)
-            message(FATAL "Invalid value for ERI_MAX_AM (${ERI_MAX_AM}).")
-        endif()
-    endif()
-    message(STATUS "Enabling integrals class ERI to max AM ${ERI_MAX_AM}${ERI_MAX_AM_LIST}")
-
-    list(LENGTH ERI_OPT_AM _lam)
-    if (_lam GREATER 1)
-        list(JOIN ERI_OPT_AM "," _sam)
-        execute_process (COMMAND bash -c "echo ${_sam} | tr , '\n' | sort -n | tail -n1"
-                         OUTPUT_VARIABLE _max_ERI_OPT_AM)
-        set(ERI_OPT_AM_LIST ${_sam})
-        set(ERI_OPT_AM "")
-    else()
-        if (NOT _user_ERI_OPT_AM)
-            set(ERI_OPT_AM ${LIBINT_OPT_AM})
-        endif()
-    #        #math(EXPR ERI_OPT_AM "${_max_ERI_MAX_AM}/2 + ${_max_ERI_MAX_AM}%2")
-    #        math(EXPR ERI_OPT_AM "${_max_ERI_MAX_AM}/2 + 1")
-
-        if (ERI_OPT_AM GREATER ERI_MAX_AM)
-            message(FATAL "Invalid value for ERI_OPT_AM (${ERI_OPT_AM} !<= ${ERI_MAX_AM}).")
-        endif()
-    endif()
-    message(STATUS "Enabling integrals class ERI to opt AM ${ERI_OPT_AM}${ERI_OPT_AM_LIST}")
-endif()
-
-
-# <<<  ERI3  >>>
-
-if (ENABLE_ERI3 GREATER_EQUAL 0)
-    set(INCLUDE_ERI3 ${ENABLE_ERI3})
-    message(STATUS "Enabling integrals class ERI3 to derivative ${INCLUDE_ERI3}")
-else()
-    set(INCLUDE_ERI3 "-1")
-    set(ERI3_MAX_AM "")
-    set(ERI3_MAX_AM_LIST "")
-    message(STATUS "Disabling integrals class ERI3")
-endif()
-
-if (ENABLE_ERI3 GREATER_EQUAL 0)
-    list(LENGTH ERI3_MAX_AM _lam)
-    if (_lam GREATER 1)
-        list(JOIN ERI3_MAX_AM "," _sam)
-        execute_process (COMMAND bash -c "echo ${_sam} | tr , '\n' | sort -n | tail -n1"
-                         OUTPUT_VARIABLE _max_ERI3_MAX_AM)
-        set(ERI3_MAX_AM_LIST ${_sam})
-        set(ERI3_MAX_AM "")
-    else()
-        if (NOT _user_ERI3_MAX_AM)
-            set(ERI3_MAX_AM ${LIBINT_MAX_AM})
-        endif()
-        set(_max_ERI3_MAX_AM ${ERI3_MAX_AM})
-
-        if (ERI3_MAX_AM GREATER_EQUAL 8)
-            message(FATAL "Value for ERI3_MAX_AM too high (${ERI3_MAX_AM}). Are you sure you know what you are doing?")
-        elseif (ERI3_MAX_AM LESS_EQUAL 0)
-            message(FATAL "Invalid value for ERI3_MAX_AM (${ERI3_MAX_AM}).")
-        endif()
-    endif()
-    message(STATUS "Enabling integrals class ERI3 to max AM ${ERI3_MAX_AM}${ERI3_MAX_AM_LIST}")
-
-    list(LENGTH ERI3_OPT_AM _lam)
-    if (_lam GREATER 1)
-        list(JOIN ERI3_OPT_AM "," _sam)
-        execute_process (COMMAND bash -c "echo ${_sam} | tr , '\n' | sort -n | tail -n1"
-                         OUTPUT_VARIABLE _max_ERI3_OPT_AM)
-        set(ERI3_OPT_AM_LIST ${_sam})
-        set(ERI3_OPT_AM "")
-    else()
-        if (NOT _user_ERI3_OPT_AM)
-            set(ERI3_OPT_AM ${LIBINT_OPT_AM})
-        endif()
-    #        #math(EXPR ERI3_OPT_AM "${_max_ERI3_MAX_AM}/2 + ${_max_ERI3_MAX_AM}%2")
-    #        math(EXPR ERI3_OPT_AM "${_max_ERI3_MAX_AM}/2 + 1")
-
-        if (ERI3_OPT_AM GREATER ERI3_MAX_AM)
-            message(FATAL "Invalid value for ERI3_OPT_AM (${ERI3_OPT_AM} !<= ${ERI3_MAX_AM}).")
-        endif()
-    endif()
-    message(STATUS "Enabling integrals class ERI3 to opt AM ${ERI3_OPT_AM}${ERI3_OPT_AM_LIST}")
-endif()
-
-
-# <<<  ERI2  >>>
-
-if (ENABLE_ERI2 GREATER_EQUAL 0)
-    set(INCLUDE_ERI2 ${ENABLE_ERI2})
-    message(STATUS "Enabling integrals class ERI2 to derivative ${INCLUDE_ERI2}")
-else()
-    set(INCLUDE_ERI2 "-1")
-    set(ERI2_MAX_AM "")
-    set(ERI2_MAX_AM_LIST "")
-    message(STATUS "Disabling integrals class ERI2")
-endif()
-
-
-# <<<  G12  >>>
-
-if (ENABLE_G12 GREATER_EQUAL 0)
-    set(INCLUDE_G12 ${ENABLE_G12})
-    message(STATUS "Enabling integrals class G12 to derivative ${INCLUDE_G12}")
-else()
-    set(INCLUDE_G12 "-1")
-    set(G12_MAX_AM "")
-    set(G12_MAX_AM_LIST "")
-    message(STATUS "Disabling integrals class G12")
-endif()
-
-
-# <<<  G12DKH  >>>
-
-if (ENABLE_G12DKH GREATER_EQUAL 0)
-    set(INCLUDE_G12DKH ${ENABLE_G12DKH})
-    message(STATUS "Enabling integrals class G12DKH to derivative ${INCLUDE_G12DKH}")
-else()
-    set(INCLUDE_G12DKH "-1")
-    set(G12DKH_MAX_AM "")
-    set(G12DKH_MAX_AM_LIST "")
-    message(STATUS "Disabling integrals class G12DKH")
-endif()
+# discrepancy, as configure doesn't do AM_LIST for these
+process_integrals_class(G12)
+process_integrals_class(G12DKH)

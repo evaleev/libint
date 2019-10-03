@@ -37,6 +37,10 @@ option_with_default(ENABLE_G12
 option_with_default(ENABLE_G12DKH
   "Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors (-1 for OFF)" -1)
 
+option_with_print(DISABLE_ONEBODY_PROPERTY_DERIVS
+  "Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
+   These derivatives are disabled by default to save compile time. (enable with OFF)" ON)
+
 #  <<<  Ordering Conventions  >>>
 
 option_with_default(LIBINT2_SHGAUSS_ORDERING
@@ -73,41 +77,70 @@ option_with_print(ERI2_PURE_SH
 
 #  <<<  How High Angular Momentum  >>>
 
+# example for "semicolon-separated string": `-DENABLE_ERI3=2 -DERI3_MAX_AM="5;4;3"`
+
 option_with_default(LIBINT_MAX_AM
   "Support Gaussians of angular momentum up to N.
-   Can specify values for each derivative levels as a semicolon-separated string N0,N1,N2..." 4)
+   Can specify values for each derivative levels as a semicolon-separated string" 4)
 option_with_default(LIBINT_OPT_AM
   "Optimize maximally for up to angular momentum N (N <= max-am). (default: (max_am/2)+1)" 3)
+
 option_with_default(MULTIPOLE_MAX_ORDER
   "Maximum order of spherical multipole integrals. There is no maximum" 4)
 option_with_default(ONEBODY_MAX_AM
   "Support 1-e ints for Gaussians of angular momentum up to N.
-   Can specify values for each derivative as a semicolon-separated string N0,N1,N2..." 4)
+   Can specify values for each derivative as a semicolon-separated string" 4)
 option_with_default(ONEBODY_OPT_AM
   "Optimize 1-e ints maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolor-separated string N0,N1,N2..." 3)
+   Can specify values for each derivative levels as a semicolon-separated string" 3)
+
 option_with_default(ERI_MAX_AM
   "Support ERIs for Gaussians of angular momentum up to N.
-   Can specify values for each derivative levels as a semicolon-separated string N0;N1;N2..." 4)
+   Can specify values for each derivative levels as a semicolon-separated string" 4)
 option_with_default(ERI_OPT_AM
   "Optimize ERIs maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolon-separated string N0,N1,N2... (default: (max_am/2)+1)" 3)
+   Can specify values for each derivative levels as a semicolon-separated string (default: (max_am/2)+1)" 3)
+
 option_with_default(ERI3_MAX_AM
   "Support 3-center ERIs for Gaussians of angular momentum up to N.
-   Can specify values for each derivative levels as a semicolon-separated string N0,N1,N2..." 4)
+   Can specify values for each derivative levels as a semicolon-separated string" 4)
 option_with_default(ERI3_OPT_AM
   "Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolon-separated string N0,N1,N2... (default: (max_am/2)+1)" 3)
+   Can specify values for each derivative levels as a semicolon-separated string (default: (max_am/2)+1)" 3)
+
+option_with_default(ERI2_MAX_AM
+  "Support 2-center ERIs for Gaussians of angular momentum up to N.
+    Can specify values for each derivative levels as a semicolon-separated string" 4)
+option_with_default(ERI2_OPT_AM
+  "Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am).
+   Can specify values for each derivative levels as a semicolon-separated string" 3)
+
+option_with_default(G12_MAX_AM
+  "Support integrals for G12 methods of angular momentum up to N." 4)
+option_with_default(G12_OPT_AM
+  "Optimize G12 integrals for up to angular momentum N (N <= max-am)." 3)
+
+option_with_default(G12DKH_MAX_AM
+  "Support integrals for relativistic G12 methods of angular momentum up to N." 4)
+option_with_default(G12DKH_OPT_AM
+  "Optimize G12DKH integrals for up to angular momentum N (N <= max-am)." 3)
 
 #  <<<  Miscellaneous  >>>
 
+option_with_print(LIBINT_CONTRACTED_INTS
+  "Turn on support for contracted integrals." ON)
 option_with_default(LIBINT_ERI_STRATEGY
-  "Compute ERIs using the following strategy. This option is for experts ONLY.
-   LAB: looks to be hardcoded in configure. NO" 1)
+  "Compute ERIs using the following strategy. This option is for experts ONLY." 1)
 option_with_print(LIBINT_USE_COMPOSITE_EVALUATORS
   "Libint will use composite evaluators (i.e. every evaluator will compute one integral type only)" ON)
 option_with_print(LIBINT_SINGLE_EVALTYPE
   "Generate single evaluator type (i.e. all tasks use the same evaluator)" ON)
+option_with_default(LIBINT_ENABLE_UNROLLING
+  "Unroll shell sets into integrals (will unroll shell sets larger than N) (no->0, yes->1000000000)" 100)
+option_with_default(LIBINT_ALIGN_SIZE
+  "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of
+   sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics. LAB: LIBINT for bin, LIBINT2 for lib?" 0)
+
 
 #option_with_print(BUILD_SHARED_LIBS "Build final library as shared, not static" OFF)
 #option_with_default(BUILD_FPIC "Libraries will be compiled with position independent code" ON)
@@ -125,20 +158,7 @@ option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
 #CONFIGURE    --host=HOST       cross-compile to build programs to run on HOST [BUILD]
 #CONFIGURE    --target=TARGET   configure for building compilers for TARGET [HOST]
 #CONFIGURE  
-#CONFIGURE  Optional Features:
-#CONFIGURE    --disable-option-checking  ignore unrecognized --enable/--with options
-#CONFIGURE    --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
-#CONFIGURE    --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-#CONFIGURE    --enable-debug          Compile with debugging options
-#CONFIGURE    --enable-1body-property-derivs
-#CONFIGURE                            Enable geometric derivatives of 1-body property
-#CONFIGURE                            integrals (all but overlap, kinetic, elecpot). These
-#CONFIGURE                            derivatives are disabled by default to save compile
-#CONFIGURE                            time.
 #CONFIGURE    --disable-t1g12-support Libint will not support [Ti,G12] integrals
-#CONFIGURE    --enable-unrolling      Unroll shell sets into integrals
-#CONFIGURE                            (--enable-unrolling=S will unroll shell sets larger
-#CONFIGURE                            than S).
 #CONFIGURE    --enable-generic-code   Use manually-written generic code.
 #CONFIGURE    --enable-fma            Generate FMA (fused multiply-add) instructions
 #CONFIGURE                            (CXXGEN must support C++11; to benefit must have
@@ -149,8 +169,6 @@ option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
 #CONFIGURE                            CXXGEN must support C++11!
 #CONFIGURE    --enable-profile        Turn on profiling instrumentation of the library.
 #CONFIGURE                            CXXGEN must support C++11!
-#CONFIGURE    --enable-contracted-ints
-#CONFIGURE                            Turn on support for contracted integrals.
 #CONFIGURE    --enable-mpfr           Use MPFR library to test Libint integrals in high
 #CONFIGURE                            precision.
 #CONFIGURE    --enable-shared[=PKGS]  build shared libraries [default=no]
@@ -164,36 +182,10 @@ option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
 #CONFIGURE    --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
 #CONFIGURE    --with-api-prefix       Prepend this string to every name in the library API
 #CONFIGURE                            (except for the types).
-#CONFIGURE    --with-eri2-max-am=N    Support 2-center ERIs for Gaussians of angular
-#CONFIGURE                            momentum up to N. Can specify values for each
-#CONFIGURE                            derivative levels as a list N0,N1,N2...
-#CONFIGURE    --with-eri2-opt-am=N    Optimize 2-center ERIs maximally for up to angular
-#CONFIGURE                            momentum N (N <= max-am). Can specify values for
-#CONFIGURE                            each derivative levels as a list N0,N1,N2...
-#CONFIGURE    --with-g12-max-am=N     Support integrals for G12 methods of angular
-#CONFIGURE                            momentum up to N.
-#CONFIGURE    --with-g12-opt-am=N     Optimize G12 integrals for up to angular momentum N
-#CONFIGURE                            (N <= max-am).
-#CONFIGURE    --with-g12dkh-max-am=N  Support integrals for relativistic G12 methods of
-#CONFIGURE                            angular momentum up to N.
-#CONFIGURE    --with-g12dkh-opt-am=N  Optimize G12DKH integrals for up to angular momentum
-#CONFIGURE                            N (N <= max-am).
 #CONFIGURE    --with-vector-length=N  Compute integrals in vectors of length N.
 #CONFIGURE    --with-vector-method    Specifies how to vectorize integrals. Allowed values
 #CONFIGURE                            are 'block' (default), and 'line'.
 #CONFIGURE    --with-build-id         Gives an identifier for the build.
-#CONFIGURE    --with-cxx              Gives the name of the C++ compiler to use.
-#CONFIGURE    --with-cxx-optflags     Gives optimization flags for the C++ compiler.
-#CONFIGURE    --with-cxxgen           Gives the name of the C++ compiler to compile
-#CONFIGURE                            generated code.
-#CONFIGURE    --with-cxxgen-optflags  Gives optimization flags for the C++ compiler for
-#CONFIGURE                            generated source.
-#CONFIGURE    --with-cxxdepend        Gives the name of the C++ compiler with which to
-#CONFIGURE                            extract dependency information.
-#CONFIGURE    --with-ranlib           Gives the name of the ranlib program.
-#CONFIGURE    --with-ar               Names the archive creator.
-#CONFIGURE    --with-ar-flags         Flags for the the archive creator.
-#CONFIGURE    --with-ld               Names the object linker.
 #CONFIGURE    --with-libint-includedir
 #CONFIGURE                            Specifies include file install subdir.
 #CONFIGURE    --with-libint-exportdir Specifies export directory name. Default is
@@ -207,10 +199,6 @@ option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
 #CONFIGURE                            file. Default is $(libdir)/pkgconfig.
 #CONFIGURE    --with-cmakedir         Specifies the location to put FindLibint2.cmake
 #CONFIGURE                            file. Default is $(libdir)/cmake/libint2.
-#CONFIGURE    --with-align-size       (EXPERT) if posix_memalign is available, this will
-#CONFIGURE                            specify alignment of Libint data, in units of
-#CONFIGURE                            sizeof(LIBINT2_REALTYPE). Default is to use built-in
-#CONFIGURE                            heuristics.
 #CONFIGURE    --with-boost[=ARG]      use Boost library from a standard location
 #CONFIGURE                            (ARG=yes), from the specified location (ARG=<path>),
 #CONFIGURE                            or disable it (ARG=no) [ARG=yes]
@@ -259,15 +247,19 @@ if (HAVE_POSIX_MEMALIGN)
     set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics")
 endif()
 
-# again, req'd for now
+# C++11 required for now. enforced in targets
 set(LIBINT_HAS_CXX11 1)
+set(LIBINT_USE_TYPE_TRAITS 1)
+set(LIBINT_USE_MEMORY 1)
+set(LIBINT_USE_ARRAY 1)
+set(LIBINT_HAS_STD_TYPE_TRAITS 1)
+set(LIBINT_HAS_STD_SHARED_PTR 1)
+set(LIBINT_HAS_STD_MAKE_SHARED 1)
+set(LIBINT_HAS_STD_ARRAY 1)
+set(LIBINT_ARRAY_HAS_FILL 1)
 
 # req'd for now (no FindGMP.cmake, though one at Elemental project)
 find_package(MPFR REQUIRED)
-#get_property(_loc TARGET MPFR::Library PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-#message("iid ${_loc}")
-#get_property(_loc TARGET MPFR::Library PROPERTY INTERFACE_LINK_LIBRARIES)
-#message("ill ${_loc}")
 if (TARGET MPFR::MPFRXX)
     set(LIBINT_HAS_MPFR 1)
 endif()
@@ -285,27 +277,16 @@ endif()
 unset(_temp_h CACHE)
 find_path(_temp_h NAMES stdint.h)
 if(_temp_h)
-    set (HAVE_STDINT_H 1)
+    set(HAVE_STDINT_H 1)
 endif()
 
 booleanize01(ERI3_PURE_SH)
 booleanize01(ERI2_PURE_SH)
 booleanize01(LIBINT_SINGLE_EVALTYPE)
+booleanize01(LIBINT_USE_COMPOSITE_EVALUATORS)
+booleanize01(LIBINT_CONTRACTED_INTS)
+booleanize01(DISABLE_ONEBODY_PROPERTY_DERIVS)
 
-set(LIBINT_USE_TYPE_TRAITS 1)
-set(LIBINT_USE_MEMORY 1)
-set(LIBINT_USE_ARRAY 1)
-set(LIBINT_HAS_STD_TYPE_TRAITS 1)
-set(LIBINT_HAS_STD_SHARED_PTR 1)
-set(LIBINT_HAS_STD_MAKE_SHARED 1)
-set(LIBINT_HAS_STD_ARRAY 1)
-set(LIBINT_ARRAY_HAS_FILL 1)
-set(LIBINT_CONTRACTED_INTS 1)
-set(LIBINT_ALIGN_SIZE 0)
-set(LIBINT_ENABLE_UNROLLING 100)
-set(DISABLE_ONEBODY_PROPERTY_DERIVS 1)
-set(LIBINT_HOST_ARCH "x86_64-pc-linux-gnu")
-set(LIBINT_TARGET_ARCH "x86_64-pc-linux-gnu")
 ################################# Main Project #################################
 set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/stage)
 
