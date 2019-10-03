@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
+cmake_policy(SET CMP0074 NEW)
 project(library LANGUAGES CXX)
 
 #set(CMAKE_CXX_STANDARD 11)
@@ -21,9 +22,6 @@ find_package(MPFR REQUIRED)
 
 # <<<  Build  >>>
 
-#target_include_directories (chemps2-obj PRIVATE ${CheMPS2_SOURCE_DIR}/CheMPS2/include/chemps2
-#                                                 $<TARGET_PROPERTY:tgt::hdf5,INTERFACE_INCLUDE_DIRECTORIES>)
-
 file(GLOB sources_list "${CMAKE_BINARY_DIR}/*.cc")
 
 add_library(int-obj OBJECT ${sources_list})
@@ -34,10 +32,10 @@ target_compile_features(int-obj PUBLIC "cxx_std_11")
 
 #target_include_directories(int-obj PUBLIC ${CMAKE_BINARY_DIR}
 target_include_directories(int-obj PRIVATE ${CMAKE_BINARY_DIR}
-                                            ${Libint2_BINARY_DIR}/include/
-                                            ${CMAKE_SOURCE_DIR}
-                                            ${Libint2_ROOT}/include/
-                                           $<TARGET_PROPERTY:MPFR::GMPXX,INTERFACE_INCLUDE_DIRECTORIES>)
+                                           ${Libint2_BINARY_DIR}/include/
+                                           ${CMAKE_SOURCE_DIR}
+                                           ${Libint2_ROOT}/include/
+                                           $<TARGET_PROPERTY:MPFR::GMPXX,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
 if (BUILD_SHARED)
