@@ -31,44 +31,29 @@
 //#define LIBINT_MICRO_VERSION
 //#define LIBINT_MAJOR_VERSION
 
-// 2
-//#define DUMMY "@DUMMY@"
-//#define LIBINT_MICRO_VERSION "@LIBINT_MICRO_VERSION@"
-//#define LIBINT_MAJOR_VERSION "@LIBINT_MAJOR_VERSION@"
-
-// 3 -- define+arg
+// 2 -- define+arg
 //#define DUMMY @DUMMY@
 //#define LIBINT_MICRO_VERSION @LIBINT_MICRO_VERSION@
 //#define LIBINT_MAJOR_VERSION @LIBINT_MAJOR_VERSION@
 
 
-// 4 -- cm
+// 3 -- cm
 //#cmakedefine DUMMY
 //#cmakedefine LIBINT_MICRO_VERSION
 //#cmakedefine LIBINT_MAJOR_VERSION
 
-// 5
-//#cmakedefine DUMMY "@DUMMY@"
-//#cmakedefine LIBINT_MICRO_VERSION "@LIBINT_MICRO_VERSION@"
-//#cmakedefine LIBINT_MAJOR_VERSION "@LIBINT_MAJOR_VERSION@"
-
-// 6 -- cm+arg
+// 4 -- cm+arg
 //#cmakedefine DUMMY @DUMMY@
 //#cmakedefine LIBINT_MICRO_VERSION @LIBINT_MICRO_VERSION@
 //#cmakedefine LIBINT_MAJOR_VERSION @LIBINT_MAJOR_VERSION@
 
 
-// 7 -- cm01
+// 5 -- cm01
 //#cmakedefine01 DUMMY
 //#cmakedefine01 LIBINT_MICRO_VERSION
 //#cmakedefine01 LIBINT_MAJOR_VERSION
 
-// 8
-//#cmakedefine01 DUMMY "@DUMMY@"
-//#cmakedefine01 LIBINT_MICRO_VERSION "@LIBINT_MICRO_VERSION@"
-//#cmakedefine01 LIBINT_MAJOR_VERSION "@LIBINT_MAJOR_VERSION@"
-
-// 9 -- cm01+arg
+// 6 -- cm01+arg
 //#cmakedefine01 DUMMY @DUMMY@
 //#cmakedefine01 LIBINT_MICRO_VERSION @LIBINT_MICRO_VERSION@
 //#cmakedefine01 LIBINT_MAJOR_VERSION @LIBINT_MAJOR_VERSION@
@@ -260,10 +245,10 @@
 #define LIBINT_SINGLE_EVALTYPE @LIBINT_SINGLE_EVALTYPE@
 
 /* Generate composite evaluators? */
-#cmakedefine01 LIBINT_USE_COMPOSITE_EVALUATORS
+#define LIBINT_USE_COMPOSITE_EVALUATORS @LIBINT_USE_COMPOSITE_EVALUATORS@
 
 /* Strategy for ERI evaluation */
-#cmakedefine LIBINT_ERI_STRATEGY @LIBINT_ERI_STRATEGY@
+#define LIBINT_ERI_STRATEGY @LIBINT_ERI_STRATEGY@
 
 /* --------------------------
   have C++ features?

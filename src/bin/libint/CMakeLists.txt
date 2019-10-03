@@ -4,9 +4,9 @@ project(generator LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${Libint2_ROOT}/export/cmake/modules)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+#set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Boost 1.57 REQUIRED)
 
@@ -53,8 +53,8 @@ target_link_libraries(build_libint INT Boost::boost)
 add_executable(test test.cc)
 target_link_libraries(test INT)
 
-target_compile_definitions(INT
-    PRIVATE -D__COMPILING_LIBINT2=1)
+target_compile_definitions(INT PRIVATE -D__COMPILING_LIBINT2=1)
+target_compile_features(INT PUBLIC "cxx_std_11")
 
 target_include_directories(INT PUBLIC ${Libint2_BINARY_DIR}/include/
                                       ${PROJECT_SOURCE_DIR}
