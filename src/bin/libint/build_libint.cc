@@ -785,7 +785,12 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
   }
 #else
   iface->to_params(iface->macro_define("MAX_AM",LIBINT_MAX_AM));
-  iface->to_params(iface->macro_define("MAX_AM_default",LIBINT_MAX_AM));
+  for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
+    std::ostringstream oss;
+    oss << "MAX_AM_default";
+    if (d > 0) oss << d;
+    iface->to_params(iface->macro_define(oss.str(),LIBINT_MAX_AM));
+  }
 #endif
   cparams->print(os);
 
