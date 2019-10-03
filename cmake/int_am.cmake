@@ -6,6 +6,20 @@
 
 
 message(STATUS "Processing integrals classes ...")
+message("${_user_LIBINT_MAX_AM}")
+message("${_user_LIBINT_OPT_AM}")
+message("${_user_ONEBODY_MAX_AM}")
+message("${_user_ONEBODY_OPT_AM}")
+message("${_user_ERI_MAX_AM}")
+message("${_user_ERI_OPT_AM}")
+message("${_user_ERI3_MAX_AM}")
+message("${_user_ERI3_OPT_AM}")
+message("${_user_ERI2_MAX_AM}")
+message("${_user_ERI2_OPT_AM}")
+message("${_user_G12_MAX_AM}")
+message("${_user_G12_OPT_AM}")
+message("${_user_G12DKH_MAX_AM}")
+message("${_user_G12DKH_OPT_AM}")
 
 # <<<  overall defaults (LIBINT_MAX/OPT_AM)  >>>
 
@@ -133,3 +147,19 @@ set(_user_G12_MAX_AM "")
 set(_user_G12_OPT_AM "")
 set(_user_G12DKH_MAX_AM "")
 set(_user_G12DKH_OPT_AM "")
+
+message("${_user_LIBINT_MAX_AM}")
+message("${_user_LIBINT_OPT_AM}")
+message("${_user_ONEBODY_MAX_AM}")
+message("${_user_ONEBODY_OPT_AM}")
+message("${_user_ERI_MAX_AM}")
+message("${_user_ERI_OPT_AM}")
+message("${_user_ERI3_MAX_AM}")
+message("${_user_ERI3_OPT_AM}")
+message("${_user_ERI2_MAX_AM}")
+message("${_user_ERI2_OPT_AM}")
+message("${_user_G12_MAX_AM}")
+message("${_user_G12_OPT_AM}")
+message("${_user_G12DKH_MAX_AM}")
+message("${_user_G12DKH_OPT_AM}")
+
