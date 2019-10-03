@@ -36,4 +36,6 @@ ExternalProject_Add(library
                -DLIBINT_MAJOR_SOVERSION=${LIBINT_MAJOR_SOVERSION}
                -DBUILD_SHARED=${BUILD_SHARED}
                -DBUILD_STATIC=${BUILD_STATIC}
+               -DMPFR_ROOT=${MPFR_ROOT}
+               -DBOOST_ROOT=${BOOST_ROOT}
     CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS})

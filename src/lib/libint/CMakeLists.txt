@@ -17,6 +17,7 @@ find_package(Eigen3 REQUIRED)
     #message("ill ${_ill}")
     #message("iid ${_iid}")
 
+find_package(MPFR REQUIRED)
 
 # <<<  Build  >>>
 
@@ -36,6 +37,7 @@ target_include_directories(int-obj PRIVATE ${CMAKE_BINARY_DIR}
                                             ${Libint2_BINARY_DIR}/include/
                                             ${CMAKE_SOURCE_DIR}
                                             ${Libint2_ROOT}/include/
+                                           $<TARGET_PROPERTY:MPFR::GMPXX,INTERFACE_INCLUDE_DIRECTORIES>)
 )
 
 if (BUILD_SHARED)

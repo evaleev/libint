@@ -116,3 +116,20 @@ process_integrals_class(ERI2)
 # discrepancy, as configure doesn't do AM_LIST for these
 process_integrals_class(G12)
 process_integrals_class(G12DKH)
+
+
+# reset for reprocessing
+set(_user_LIBINT_MAX_AM "")
+set(_user_LIBINT_OPT_AM "")
+set(_user_ONEBODY_MAX_AM "")
+set(_user_ONEBODY_OPT_AM "")
+set(_user_ERI_MAX_AM "")
+set(_user_ERI_OPT_AM "")
+set(_user_ERI3_MAX_AM "")
+set(_user_ERI3_OPT_AM "")
+set(_user_ERI2_MAX_AM "")
+set(_user_ERI2_OPT_AM "")
+set(_user_G12_MAX_AM "")
+set(_user_G12_OPT_AM "")
+set(_user_G12DKH_MAX_AM "")
+set(_user_G12DKH_OPT_AM "")
