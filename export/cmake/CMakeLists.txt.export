@@ -169,7 +169,7 @@ if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}>
         )
-  target_compile_definitions(int2_static INTERFACE $<BUILD_INTERFACE:__COMPILING_LIBINT2>)
+  target_compile_features(int2_static INTERFACE "cxx_std_11")
   # Add libraries to the list of installed components
   install(TARGETS int2_static EXPORT libint2
         COMPONENT int2
@@ -181,14 +181,14 @@ if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
 else()
   add_library(int2 $<TARGET_OBJECTS:int2_obj>)
 endif()
-# In any case, there will exist a target named "int2": diminish code length by
-# add just once the needed includes, flags and install directives.
+  # In any case, there will exist a target named "int2": diminish code length by
+  # add just once the needed includes, flags and install directives.
   target_include_directories(int2 INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}>
         )
-  target_compile_definitions(int2 INTERFACE $<BUILD_INTERFACE:__COMPILING_LIBINT2>)
+  target_compile_features(int2 INTERFACE "cxx_std_11")
   # Add libraries to the list of installed components
   install(TARGETS int2 EXPORT libint2
         COMPONENT int2
