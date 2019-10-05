@@ -40,6 +40,8 @@ else()
     if (WITH_OPT_AM EQUAL -1)
         math(EXPR LIBINT_OPT_AM "${_max_LIBINT_MAX_AM}/2 + 1")
         #math(EXPR LIBINT_OPT_AM "${_max_LIBINT_MAX_AM}/2 + ${_max_LIBINT_MAX_AM}%2")
+    else()
+        set(LIBINT_OPT_AM ${WITH_OPT_AM})
     endif()
 
     if (LIBINT_OPT_AM GREATER _max_LIBINT_MAX_AM)
