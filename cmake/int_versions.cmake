@@ -27,7 +27,7 @@ foreach(ver ${_libint_configure_ac})
 endforeach()
 
 set(LIBINT_VERSION ${Libint2_VERSION}-${LIBINT_TWEAK_VERSION})
-message(STATUS "Libint Full ${LIBINT_VERSION} Numeric ${Libint2_VERSION}")
+message(STATUS "Version: Full ${LIBINT_VERSION} Numeric ${Libint2_VERSION}")
 
 
 # <<<  ABI Version  >>>
@@ -44,4 +44,4 @@ endforeach()
 
 set(LIBINT_SOVERSION ${LIBINT_CURRENT_SOVERSION}:${LIBINT_REVISION_SOVERSION}:${LIBINT_AGE_SOVERSION})
 math(EXPR LIBINT_MAJOR_SOVERSION "${LIBINT_CURRENT_SOVERSION} - ${LIBINT_AGE_SOVERSION}")
-message(STATUS "Libint SO Full ${LIBINT_SOVERSION} Major ${LIBINT_MAJOR_SOVERSION}")
+message(STATUS "SO Version: Full ${LIBINT_SOVERSION} Major ${LIBINT_MAJOR_SOVERSION}")

@@ -1,4 +1,11 @@
-# known solid harmonic Gaussian orderings
+# handle the setting of the following variables
+# * LIBINT_SHGSHELL_ORDERING*
+# * LIBINT_CGSHELL_ORDERING*
+# * LIBINT_SHELL_SET*
+
+
+# <<<  solid harmonic Gaussian orderings  >>>
+
 set(LIBINT_SHGSHELL_ORDERING_STANDARD 1)
 set(LIBINT_SHGSHELL_ORDERING_GAUSSIAN 2)
 
@@ -11,7 +18,8 @@ else()
 endif()
 
 
-# known Cartesian Gaussian orderings
+# <<<  Cartesian Gaussian orderings  >>>
+
 set(LIBINT_CGSHELL_ORDERING_STANDARD 1)
 set(LIBINT_CGSHELL_ORDERING_INTV3 2)
 set(LIBINT_CGSHELL_ORDERING_GAMESS 3)
@@ -33,7 +41,8 @@ else()
 endif()
 
 
-# known shell subset orderings
+# <<<  shell subset orderings  >>>
+
 set(LIBINT_SHELL_SET_STANDARD 1)
 set(LIBINT_SHELL_SET_ORCA 2)
 
