@@ -485,7 +485,7 @@ configured with {\tt --enable-flop-counter}).
 {\bf Note} that currently the \LIBINT\ compiler minimizes the amount of code it
 generates by taking advantage of the permutational symmetry of the integrals.
 This means that only certain combinations of the angular momenta can be handled.
-In standard configuration \LIBINT\ can evaluate a shell quartet $({\bf ab}|{\bf cd})$ if $\lambda({\bf a}) \geq \lambda({\bf b})$, $\lambda({\bf c}) \geq \lambda({\bf d})$, and $\lambda({\bf c}) + \lambda({\bf d}) \geq \lambda({\bf a}) + \lambda({\bf b})$.
+In standard configuration \LIBINT\ can evaluate a shell quartet $({\bf ab}|{\bf cd})$ if $\lambda({\bf a}) \geq \lambda({\bf b})$, $\lambda({\bf c}) \geq \lambda({\bf d})$, and $\lambda({\bf a}) + \lambda({\bf b}) \geq \lambda({\bf c}) + \lambda({\bf d})$.
 (There is also the ordering used by {\tt ORCA} program for which \LIBINT\ can be
 configured --- it will not be discussed here). If one needs to compute a quartet that doesn't conform the rule,
 e.g. of type $(pf|sd)$, permutational symmetry of integrals can be utilized to compute such quartet:

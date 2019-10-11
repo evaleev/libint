@@ -135,7 +135,7 @@ AC_ARG_WITH(shell-set,
                              for (ab|cd):
                                l(a) >= l(b),
                                l(c) >= l(d),
-                               l(a)+l(b) <= l(c)+l(d)
+                               l(a)+l(b) >= l(c)+l(d)
                              for (b|cd):
                                l(c) >= l(d)
                            orca -- ORCA ordering:
