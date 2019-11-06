@@ -536,7 +536,12 @@ class Engine {
         set_targets_(other.set_targets_),
         scratch_(std::move(other.scratch_)),
         scratch2_(other.scratch2_),
-        buildfnptrs_(other.buildfnptrs_) {}
+        buildfnptrs_(other.buildfnptrs_) {
+    // leave other in an unusable (but valid) state
+    other.oper_ = Operator::invalid;
+    other.braket_ = BraKet::invalid;
+    other.scratch2_ = nullptr;
+  }
 
   /// (deep) copy constructor
   Engine(const Engine& other)
@@ -584,6 +589,10 @@ class Engine {
     scratch_ = std::move(other.scratch_);
     scratch2_ = other.scratch2_;
     buildfnptrs_ = other.buildfnptrs_;
+    // leave other in an unusable state
+    other.oper_ = Operator::invalid;
+    other.braket_ = BraKet::invalid;
+    other.scratch2_ = nullptr;
     return *this;
   }
 
