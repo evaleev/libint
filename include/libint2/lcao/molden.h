@@ -310,13 +310,14 @@ class PBCExport: public Export{
   /// @tparam Energies the type of LCAO energy vector
   /// @tparam Occs the type of LCAO occupancy vector
   /// @param atoms the set of atoms
+  /// @param cell_axes the primitive vectors of the unit cell
   /// @param basis the set of shells; must meet Molden requirements (see below)
   /// @param coefficients the matrix of LCAO coefficients (columns are LCAOs,
   ///        rows are AOs; AOs are ordered according to the order of shells in
   ///        \c basis and by the ordering conventions of this Libint
   ///        configuration)
   /// @param occupancies the vector of occupancies (size = # LCAOs)
-  /// @param space_group (base-0) index of the space group in the International Tables of Crystalligraphy (https://it.iucr.org/Ac/)
+  /// @param space_group (base-0) index of the space group in the International Tables of Crystallography (https://it.iucr.org/Ac/)
   /// @param energies the vector of energies (size = # of LCAOs); the default is
   ///        to assign zero to each LCAO
   /// @param symmetry_labels the vector of symmetry labels (size = # LCAOs); the
@@ -332,7 +333,7 @@ class PBCExport: public Export{
   /// - there are no shells with l>5
   template <typename Coeffs, typename Occs, typename Energies = Eigen::VectorXd>
   PBCExport(const std::vector<Atom>& atoms,
-         const Eigen::VectorXd& cell_axes,
+         const std::array<Eigen::VectorXd, 3>& cell_axes,
          const std::vector<Shell>& basis,
          const Coeffs& coefficients,
          const Occs& occupancies,
@@ -364,9 +365,12 @@ class PBCExport: public Export{
   void write_cell_axes(std::ostream& os) const {
 
     os << "[CellAxes] (Ang)" << std::endl;
-    os << std::setw(4) << cell_axes_[0] << std::setw(12) << 0.0 << std::setw(12) << 0.0 << std::endl;
-    os << std::setw(4) << 0.0 << std::setw(12) << cell_axes_[1] << std::setw(12) << 0.0 << std::endl;
-    os << std::setw(4) << 0.0 << std::setw(12) << 0.0 << std::setw(12) << cell_axes_[2] << std::endl;
+    os << std::setw(12) << cell_axes_[0][0] << std::setw(12) << cell_axes_[0][1]
+       << std::setw(12) << cell_axes_[0][2] << std::endl;
+    os << std::setw(12) << cell_axes_[1][0] << std::setw(12) << cell_axes_[1][1]
+       << std::setw(12) << cell_axes_[1][2] << std::endl;
+    os << std::setw(12) << cell_axes_[2][0] << std::setw(12) << cell_axes_[2][1]
+       << std::setw(12) << cell_axes_[2][2] << std::endl;
   }
 
   void write(const std::string& filename) const {
@@ -381,7 +385,7 @@ class PBCExport: public Export{
   }
 
 private:
-  Eigen::VectorXd cell_axes_;
+  std::array<Eigen::VectorXd, 3> cell_axes_;
   int space_group_;
 
 }; // PBCExport
