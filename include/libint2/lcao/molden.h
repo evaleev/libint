@@ -333,7 +333,7 @@ class PBCExport: public Export{
   /// - there are no shells with l>5
   template <typename Coeffs, typename Occs, typename Energies = Eigen::VectorXd>
   PBCExport(const std::vector<Atom>& atoms,
-         const std::array<Eigen::VectorXd, 3>& cell_axes,
+         const std::array<Eigen::Vector3d, 3>& cell_axes,
          const std::vector<Shell>& basis,
          const Coeffs& coefficients,
          const Occs& occupancies,
@@ -385,7 +385,7 @@ class PBCExport: public Export{
   }
 
 private:
-  std::array<Eigen::VectorXd, 3> cell_axes_;
+  std::array<Eigen::Vector3d, 3> cell_axes_;
   int space_group_;
 
 }; // PBCExport
