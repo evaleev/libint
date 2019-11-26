@@ -364,7 +364,7 @@ class PBCExport: public Export{
   /// writes the "[CellAxes]" section to ostream \c os
   void write_cell_axes(std::ostream& os) const {
 
-    os << "[CellAxes] (Ang)" << std::endl;
+    os << "[CellAxes] (Angs)" << std::endl;
     os << std::setw(12) << cell_axes_[0][0] << std::setw(12) << cell_axes_[0][1]
        << std::setw(12) << cell_axes_[0][2] << std::endl;
     os << std::setw(12) << cell_axes_[1][0] << std::setw(12) << cell_axes_[1][1]
