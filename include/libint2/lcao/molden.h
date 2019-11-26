@@ -21,6 +21,7 @@
 #ifndef INCLUDE_LIBINT2_LCAO_MOLDEN_H_
 #define INCLUDE_LIBINT2_LCAO_MOLDEN_H_
 
+#include <cmath>
 #include <iomanip>
 #include <ostream>
 #include <string>
@@ -48,7 +49,7 @@ class Export {
   /// @tparam Coeffs the type of LCAO coefficient matrix
   /// @tparam Energies the type of LCAO energy vector
   /// @tparam Occs the type of LCAO occupancy vector
-  /// @param atoms the set of atoms
+  /// @param atoms the set of atoms (coordinates in atomic units)
   /// @param basis the set of shells; must meet Molden requirements (see below)
   /// @param coefficients the matrix of LCAO coefficients (columns are LCAOs,
   ///        rows are AOs; AOs are ordered according to the order of shells in
@@ -62,6 +63,7 @@ class Export {
   /// @param spincases the vector of spin cases (size = # LCAOs; true = spin-up
   ///        or m_s=1/2, false = spin-down or m_s=-1/2); the default is
   ///        to assign spin-up to each LCAO
+  /// @param bohr_to_angstrom the conversion factor from bohr to angstrom; the default is CODATA 2018 value
   /// @param coefficient_epsilon omit LCAO coefficients with absolute magnitude smaller than this value; set to 0 to write
   ///        all coefficients (some Molden parsers, e.g. Avogadro2, require this)
   /// @throw std::logic_error if the basis does not conforms Molden
@@ -77,6 +79,7 @@ class Export {
          const std::vector<std::string>& symmetry_labels =
              std::vector<std::string>(),
          const std::vector<bool>& spincases = std::vector<bool>(),
+         const double bohr_to_angstrom = constants::codata_2018::bohr_to_angstrom,
          double coefficient_epsilon = 5e-11)
       : atoms_(atoms),
         basis_(validate(basis)),
@@ -85,6 +88,7 @@ class Export {
         energies_(energies),
         labels_(symmetry_labels),
         spins_(spincases),
+        bohr_to_angstrom_(bohr_to_angstrom),
         coefficient_epsilon_(coefficient_epsilon) {
     initialize_bf_map();
   }
@@ -96,7 +100,7 @@ class Export {
 
   /// writes the "[Atoms]" section to ostream \c os
   void write_atoms(std::ostream& os) const {
-    os << "[Atoms] AU" << std::endl;
+    os << "[Atoms] Angs" << std::endl;
 
     os.fill(' ');
     os << std::fixed << std::setprecision(8);
@@ -104,8 +108,10 @@ class Export {
     for (const auto& atom : atoms_) {
       auto Z = atom.atomic_number;
       os << std::setw(4) << libint2::chemistry::get_element_info().at(Z - 1).symbol
-         << std::setw(6) << (iatom + 1) << std::setw(6) << Z << std::setw(14)
-         << atom.x << std::setw(14) << atom.y << std::setw(14) << atom.z
+         << std::setw(6) << (iatom + 1) << std::setw(6) << Z
+         << std::setw(14) << bohr_to_angstrom_ * atom.x
+         << std::setw(14) << bohr_to_angstrom_ * atom.y
+         << std::setw(14) << bohr_to_angstrom_ * atom.z
          << std::endl;
       ++iatom;
     }
@@ -205,6 +211,10 @@ class Export {
     write_lcao(os);
   }
 
+  double bohr_to_angstrom() const {
+    return bohr_to_angstrom_;
+  }
+
  private:
   const std::vector<Atom>& atoms_;
   const std::vector<Shell>& basis_;
@@ -213,6 +223,7 @@ class Export {
   Eigen::VectorXd energies_;
   std::vector<std::string> labels_;
   std::vector<bool> spins_;
+  double bohr_to_angstrom_;
   double coefficient_epsilon_;
   mutable bool
       dfg_is_cart_[3];  // whether {d, f, g} shells are cartesian (true) or
@@ -309,8 +320,8 @@ class PBCExport: public Export{
   /// @tparam Coeffs the type of LCAO coefficient matrix
   /// @tparam Energies the type of LCAO energy vector
   /// @tparam Occs the type of LCAO occupancy vector
-  /// @param atoms the set of atoms
-  /// @param cell_axes the primitive vectors of the unit cell
+  /// @param atoms the set of atoms (coordinates in atomic units)
+  /// @param cell_axes the primitive vectors of the unit cell (in atomic units)
   /// @param basis the set of shells; must meet Molden requirements (see below)
   /// @param coefficients the matrix of LCAO coefficients (columns are LCAOs,
   ///        rows are AOs; AOs are ordered according to the order of shells in
@@ -325,6 +336,7 @@ class PBCExport: public Export{
   /// @param spincases the vector of spin cases (size = # LCAOs; true = spin-up
   ///        or m_s=1/2, false = spin-down or m_s=-1/2); the default is
   ///        to assign spin-up to each LCAO
+  /// @param bohr_to_angstrom the conversion factor from bohr to angstrom; the default is CODATA 2018 value
   /// @throw std::logic_error if the basis does not conforms Molden
   ///        requirements
   /// @note Molden can only handle basis sets that:
@@ -341,8 +353,9 @@ class PBCExport: public Export{
          const Energies& energies = Energies(),
          const std::vector<std::string>& symmetry_labels =
              std::vector<std::string>(),
-         const std::vector<bool>& spincases = std::vector<bool>())
-      : Export(atoms, basis, coefficients, occupancies, energies, symmetry_labels, spincases),
+         const std::vector<bool>& spincases = std::vector<bool>(),
+         const double bohr_to_angstrom = constants::codata_2018::bohr_to_angstrom)
+      : Export(atoms, basis, coefficients, occupancies, energies, symmetry_labels, spincases, bohr_to_angstrom),
         cell_axes_(cell_axes),
         space_group_(space_group)
   {
@@ -361,16 +374,29 @@ class PBCExport: public Export{
     os << "x, y, z" << std::endl;
   }
 
-  /// writes the "[CellAxes]" section to ostream \c os
+  /// writes the "[Cell]" section to ostream \c os
   void write_cell_axes(std::ostream& os) const {
 
-    os << "[CellAxes] (Angs)" << std::endl;
-    os << std::setw(12) << cell_axes_[0][0] << std::setw(12) << cell_axes_[0][1]
-       << std::setw(12) << cell_axes_[0][2] << std::endl;
-    os << std::setw(12) << cell_axes_[1][0] << std::setw(12) << cell_axes_[1][1]
-       << std::setw(12) << cell_axes_[1][2] << std::endl;
-    os << std::setw(12) << cell_axes_[2][0] << std::setw(12) << cell_axes_[2][1]
-       << std::setw(12) << cell_axes_[2][2] << std::endl;
+    // https://sourceforge.net/p/jmol/code/HEAD/tree/trunk/Jmol/src/org/jmol/adapter/readers/quantum/MoldenReader.java#l107
+    // suggests that [Cell] defaults to angstroms
+    os << "[Cell]" << std::endl;
+    {
+      // convert vectors to abcɑβɣ
+      const double a = cell_axes_[0].norm();
+      const double b = cell_axes_[1].norm();
+      const double c = cell_axes_[2].norm();
+      const double ɑ = std::acos(cell_axes_[1].dot(cell_axes_[2]) / (b * c));
+      const double β = std::acos(cell_axes_[0].dot(cell_axes_[2]) / (a * c));
+      const double ɣ = std::acos(cell_axes_[0].dot(cell_axes_[1]) / (a * b));
+      const double radian_to_degree = 180 / M_PI;
+      os << std::setw(12) << a * bohr_to_angstrom()
+         << std::setw(12) << b * bohr_to_angstrom()
+         << std::setw(12) << c * bohr_to_angstrom()
+         << std::setw(12) << ɑ * radian_to_degree
+         << std::setw(12) << β * radian_to_degree
+         << std::setw(12) << ɣ * radian_to_degree
+         << std::endl;
+    }
   }
 
   void write(const std::string& filename) const {
