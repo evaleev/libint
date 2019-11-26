@@ -100,7 +100,7 @@ RandomChoiceTactic::RandomChoiceTactic() : Tactic()
 {
   // Initialize state randomly
   time_t crap;
-  srandom(time(&crap));
+  srand(time(&crap));
 }
 
 RandomChoiceTactic::RR
