@@ -242,6 +242,7 @@ add_custom_target(check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
 
 add_executable(eritest EXCLUDE_FROM_ALL tests/eri/test.cc)
 target_link_libraries(eritest ${int2_library})
+target_compile_definitions(eritest PRIVATE __COMPILING_LIBINT2)
 target_include_directories(eritest PRIVATE ${CMAKE_SOURCE_DIR}/tests/eri)
 
 add_test(eritest/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target eritest)
@@ -275,6 +276,7 @@ if (LIBINT_HAS_EIGEN)
             tests/unit/test-util.cc
             )
     add_executable(unit_tests EXCLUDE_FROM_ALL tests/unit/test.cc ${utests_src})
+    target_compile_definitions(unit_tests PRIVATE __COMPILING_LIBINT2)
     target_link_libraries(unit_tests cxx)
     add_test(unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests)
     set_tests_properties(unit/build PROPERTIES FIXTURES_SETUP UNIT_TESTS_EXEC)
@@ -284,6 +286,7 @@ if (LIBINT_HAS_EIGEN)
             PROPERTIES FIXTURES_REQUIRED UNIT_TESTS_EXEC)
 
     add_executable(hartree-fock EXCLUDE_FROM_ALL tests/hartree-fock/hartree-fock.cc)
+    target_compile_definitions(hartree-fock PRIVATE __COMPILING_LIBINT2)
     target_link_libraries(hartree-fock cxx)
     add_test(hftest/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hartree-fock)
     set_tests_properties(hftest/build PROPERTIES FIXTURES_SETUP HFTEST_EXEC)
@@ -304,6 +307,7 @@ if (LIBINT_HAS_EIGEN)
 
     find_package(Threads)  # for some reason clang does not link in threading support even though we are using C++ threads
     add_executable(hartree-fock++ EXCLUDE_FROM_ALL tests/hartree-fock/hartree-fock++.cc)
+    target_compile_definitions(hartree-fock++ PRIVATE __COMPILING_LIBINT2)
     target_link_libraries(hartree-fock++ cxx ${CMAKE_THREAD_LIBS_INIT})
     add_test(hf++test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hartree-fock++)
     set_tests_properties(hf++test/build PROPERTIES FIXTURES_SETUP HFXXTEST_EXEC)
@@ -372,6 +376,7 @@ if (ENABLE_FORTRAN)
 
     # tests
     add_executable(fortran_example EXCLUDE_FROM_ALL fortran/fortran_example.F90 $<TARGET_OBJECTS:libint_f>)
+    target_compile_definitions(fortran_example PRIVATE __COMPILING_LIBINT2)
     target_link_libraries(fortran_example ${int2_library})
 
     add_test(fortran_example/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_example)
@@ -383,6 +388,7 @@ if (ENABLE_FORTRAN)
 
     if (LIBINT_HAS_EIGEN)
         add_executable(fortran_test EXCLUDE_FROM_ALL fortran/test.cc fortran/test-eri.cc $<TARGET_OBJECTS:libint_f>)
+        target_compile_definitions(fortran_test PRIVATE __COMPILING_LIBINT2)
         target_link_libraries(fortran_test cxx)
         add_test(fortran_test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_test)
         set_tests_properties(fortran_test/build PROPERTIES FIXTURES_SETUP FORTRAN_TEST_EXEC)
