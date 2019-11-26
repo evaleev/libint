@@ -32,7 +32,9 @@
 #include <iterator>
 #include <functional>
 #include <numeric>
+#ifndef _MSC_VER
 #include <cxxabi.h>
+#endif
 
 #ifndef SKIP_AXPY
 #  include <mkl_cblas.h>
