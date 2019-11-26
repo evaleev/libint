@@ -3,8 +3,9 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2019-11-25: 2.7.0-beta.2
+- 2019-11-26: 2.7.0-beta.2
   - resolves issue #143: definition of M_PI in c-api.c may be missing
+  - resolves issue #144: 'make export' works is building compiler in-source
   - resolves issue #150: missing c++11 compile feature inherited by int2 target from int2-obj
   - PBCExport can handle monoclinic unit cells
 
