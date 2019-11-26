@@ -2,8 +2,8 @@
 #include <libint2/atom.h>
 
 using libint2::Atom;
-using libint2::constants::codata_2010;
 using libint2::constants::codata_2014;
+using libint2::constants::codata_2018;
 
 TEST_CASE("XYZ reader", "[util]") {
   { // fewer atoms than #atoms is not OK
@@ -57,7 +57,7 @@ TEST_CASE("XYZ reader", "[util]") {
     auto atoms = libint2::read_dotxyz(sstr);
     REQUIRE(atoms.size() == 2);
     REQUIRE(atoms[0] == Atom{8, 0., 0., 0.});
-    REQUIRE(atoms[1] == Atom{8, 0., 0., 1. / codata_2010::bohr_to_angstrom});
+    REQUIRE(atoms[1] == Atom{8, 0., 0., 1. / codata_2018::bohr_to_angstrom});
   }
   { // validate use of conversion factor
     std::stringstream sstr;
@@ -75,12 +75,12 @@ TEST_CASE("XYZ reader", "[util]") {
     std::tie(atoms, cell) = libint2::read_dotxyz_pbc(sstr);
     REQUIRE(atoms.size() == 2);
     REQUIRE(atoms[0] == Atom{8, 0., 0., 0.});
-    REQUIRE(atoms[1] == Atom{8, 0., 0., 1. / codata_2010::bohr_to_angstrom});
+    REQUIRE(atoms[1] == Atom{8, 0., 0., 1. / codata_2018::bohr_to_angstrom});
     REQUIRE(cell[0] ==
-            std::array<double, 3>{2. / codata_2010::bohr_to_angstrom, 0., 0.});
+            std::array<double, 3>{2. / codata_2018::bohr_to_angstrom, 0., 0.});
     REQUIRE(cell[1] ==
-            std::array<double, 3>{0., 3. / codata_2010::bohr_to_angstrom, 0.});
+            std::array<double, 3>{0., 3. / codata_2018::bohr_to_angstrom, 0.});
     REQUIRE(cell[2] ==
-            std::array<double, 3>{0., 0., 4. / codata_2010::bohr_to_angstrom});
+            std::array<double, 3>{0., 0., 4. / codata_2018::bohr_to_angstrom});
   }
 }

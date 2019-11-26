@@ -47,6 +47,11 @@ namespace libint2 {
   }
 
   namespace constants {
+  /// the 2018 CODATA reference set, available at https://physics.nist.gov/cuu/pdf/wall_2018.pdf
+  struct codata_2018 {
+    static constexpr double bohr_to_angstrom = 0.529177210903;
+    static constexpr double angstrom_to_bohr = 1 / bohr_to_angstrom;
+  };
   /// the 2014 CODATA reference set, available at DOI 10.1103/RevModPhys.88.035009
   struct codata_2014 {
     static constexpr double bohr_to_angstrom = 0.52917721067;
@@ -197,14 +202,14 @@ namespace libint2 {
 /// \param bohr_to_angstrom[in] the conversion factor from Bohr (atomic unit
 /// of length; Libint uses atomic units throughout) to angstrom (in which
 /// the Cartesian coordinates are given in the XYZ file). The default is
-/// the 2010 CODATA value given by the
-/// libint2::constants::codata_2010::bohr_to_angstrom
+/// the 2018 CODATA value given by the
+/// libint2::constants::codata_2018::bohr_to_angstrom
 /// constant.
 /// \return a std::vector of Atom objects
 /// \throw std::logic_error if cannot parse the contents of \c is
 inline std::vector<Atom> read_dotxyz(
     std::istream &is,
-    const double bohr_to_angstrom = constants::codata_2010::bohr_to_angstrom) {
+    const double bohr_to_angstrom = constants::codata_2018::bohr_to_angstrom) {
   std::vector<Atom> atoms;
   std::tie(atoms, std::ignore) =
       __libint2_read_dotxyz(is, bohr_to_angstrom, false);
@@ -220,15 +225,15 @@ inline std::vector<Atom> read_dotxyz(
 /// \param bohr_to_angstrom[in] the conversion factor from Bohr (atomic unit
 /// of length; Libint uses atomic units throughout) to angstrom (in which
 /// the Cartesian coordinates are given in the XYZ file). The default is
-/// the 2010 CODATA value given by the
-/// libint2::constants::codata_2010::bohr_to_angstrom
+/// the 2018 CODATA value given by the
+/// libint2::constants::codata_2018::bohr_to_angstrom
 /// constant.
 /// \return a tuple composed of the list of atoms and an array of 3
 ///         unit cell vectors, \c A , \c B , and \c C .
 /// \throw std::logic_error if cannot parse the contents of \c is
 inline auto read_dotxyz_pbc(
     std::istream &is,
-    const double bohr_to_angstrom = constants::codata_2010::bohr_to_angstrom)
+    const double bohr_to_angstrom = constants::codata_2018::bohr_to_angstrom)
     -> decltype(__libint2_read_dotxyz(is, bohr_to_angstrom, true)) {
   return __libint2_read_dotxyz(is, bohr_to_angstrom, true);
 }
