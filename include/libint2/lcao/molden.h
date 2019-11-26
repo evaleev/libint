@@ -100,7 +100,7 @@ class Export {
 
   /// writes the "[Atoms]" section to ostream \c os
   void write_atoms(std::ostream& os) const {
-    os << "[Atoms] Angs" << std::endl;
+    os << "[Atoms] AU" << std::endl;
 
     os.fill(' ');
     os << std::fixed << std::setprecision(8);
@@ -109,9 +109,9 @@ class Export {
       auto Z = atom.atomic_number;
       os << std::setw(4) << libint2::chemistry::get_element_info().at(Z - 1).symbol
          << std::setw(6) << (iatom + 1) << std::setw(6) << Z
-         << std::setw(14) << bohr_to_angstrom_ * atom.x
-         << std::setw(14) << bohr_to_angstrom_ * atom.y
-         << std::setw(14) << bohr_to_angstrom_ * atom.z
+         << std::setw(14) << atom.x
+         << std::setw(14) << atom.y
+         << std::setw(14) << atom.z
          << std::endl;
       ++iatom;
     }
