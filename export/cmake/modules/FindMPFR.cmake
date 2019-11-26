@@ -67,8 +67,10 @@ if(MPFR_INCLUDE)
     endif()
 endif()
 
-find_library(MPFR_LIBRARY mpfr
-        PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR})
+find_library(MPFR_LIBRARY
+    NAMES mpfr
+          mpfr_static
+    PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MPFR DEFAULT_MSG
@@ -89,6 +91,7 @@ find_path(GMP_INCLUDE
     PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${INCLUDE_INSTALL_DIR})
 find_library(GMP_LIBRARY
     NAMES gmp
+          gmp_static
     PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR})
 
 if (GMP_INCLUDE AND GMP_LIBRARY AND NOT TARGET MPFR::GMP)
@@ -109,6 +112,7 @@ find_path(GMPXX_INCLUDE
     PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${INCLUDE_INSTALL_DIR})
 find_library(GMPXX_LIBRARY
     NAMES gmpxx
+          gmpxx_static
     PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR})
 
 if (GMPXX_INCLUDE AND GMPXX_LIBRARY AND TARGET MPFR::GMP AND NOT TARGET MPFR::GMPXX)
