@@ -200,7 +200,7 @@ namespace libint2 {
     StdRandomizePolicy(double scale) : scale_(scale) {
       // Initialize state randomly
       time_t t;
-      srandom(time(&t));
+      srand(time(&t));
     }
 
     unsigned int noise(unsigned int nrrs) const {
