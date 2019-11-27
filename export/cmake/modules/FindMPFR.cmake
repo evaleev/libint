@@ -24,7 +24,7 @@
 
 message("prefix: ${CMAKE_FIND_LIBRARY_PREFIXES}")
 message("suffix: ${CMAKE_FIND_LIBRARY_SUFFIXES}")
-list(APPEND CMAKE_FIND_LIBRARY_SUFFIXES ".dll")
+list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 ".dll")
 message("suffix: ${CMAKE_FIND_LIBRARY_SUFFIXES}")
 message("root: ${MPFR_ROOT}")
 
@@ -121,6 +121,7 @@ find_path(GMPXX_INCLUDE
 find_library(GMPXX_LIBRARY
     NAMES gmpxx
 #          gmpxx_static
+          gmp  # gmp.dll on Win c-f conda package contains cxx (actually a copy of mpir, a drop-in replacement for gmp)
     PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR}
     PATH_SUFFIXES bin ${MPFR_ROOT}/bin)
 
