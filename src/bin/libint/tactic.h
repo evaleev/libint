@@ -204,7 +204,7 @@ namespace libint2 {
     }
 
     unsigned int noise(unsigned int nrrs) const {
-      unsigned long rand = rand();
+      unsigned long rand = (unsigned long)rand();
       const unsigned long range = RAND_MAX;
       const unsigned int result = static_cast<unsigned int>(std::floor(nrrs*scale_*rand/range));
       return result;
