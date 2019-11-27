@@ -22,6 +22,10 @@
 # Copyright (c) 2015 Jack Poulson, <jack.poulson@gmail.com>
 # Redistribution and use is allowed according to the terms of the BSD license.
 
+message("prefix: ${CMAKE_FIND_LIBRARY_PREFIXES}")
+message("suffix: ${CMAKE_FIND_LIBRARY_SUFFIXES}")
+message("root: ${MPFR_ROOT}")
+
 find_path(MPFR_INCLUDE NAMES mpfr.h PATHS $ENV{GMPDIR} $ENV{MPFRDIR}
         ${INCLUDE_INSTALL_DIR})
 
@@ -69,8 +73,9 @@ endif()
 
 find_library(MPFR_LIBRARY
     NAMES mpfr
-          mpfr_static
-    PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR})
+#          mpfr_static
+    PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR}
+    PATH_SUFFIXES ${MPFR_ROOT}/bin)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MPFR DEFAULT_MSG
@@ -91,8 +96,9 @@ find_path(GMP_INCLUDE
     PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${INCLUDE_INSTALL_DIR})
 find_library(GMP_LIBRARY
     NAMES gmp
-          gmp_static
-    PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR})
+#          gmp_static
+    PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR}
+    PATH_SUFFIXES ${MPFR_ROOT}/bin)
 
 if (GMP_INCLUDE AND GMP_LIBRARY AND NOT TARGET MPFR::GMP)
     add_library(MPFR::GMP INTERFACE IMPORTED)
@@ -112,8 +118,9 @@ find_path(GMPXX_INCLUDE
     PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${INCLUDE_INSTALL_DIR})
 find_library(GMPXX_LIBRARY
     NAMES gmpxx
-          gmpxx_static
-    PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR})
+#          gmpxx_static
+    PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR}
+    PATH_SUFFIXES ${MPFR_ROOT}/bin)
 
 if (GMPXX_INCLUDE AND GMPXX_LIBRARY AND TARGET MPFR::GMP AND NOT TARGET MPFR::GMPXX)
     add_library(MPFR::GMPXX INTERFACE IMPORTED)
