@@ -21,7 +21,9 @@
 #ifndef _libint2_src_lib_libint_vector_h_
 #define _libint2_src_lib_libint_vector_h_
 
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
 #if defined(__cplusplus)
 
