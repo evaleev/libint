@@ -36,6 +36,10 @@
 #include <type_traits>
 #include <memory>
 
+#ifdef _MSC_VER
+#define posix_memalign(p, a, s) (((*(p)) = _aligned_malloc((s), (a))), *(p) ?0 :errno)
+#endif
+
 // from now on at least C++11 is required by default
 #include <libint2/util/cxxstd.h>
 #if LIBINT2_CPLUSPLUS_STD < 2011
