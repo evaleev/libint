@@ -36,8 +36,14 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef _MSC_VER
+
+#ifdef _MSC_VER
+#include <io.h>
+#define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
+#define PATH_SEPARATOR "\\"
+#else
 #include <unistd.h>
+#define PATH_SEPARATOR "/"
 #endif
 
 #include <libint2.h>
@@ -137,7 +143,7 @@ namespace libint2 {
         
         // read in ALL basis set components
         for(const auto& basis_component_name: basis_component_names) {
-          auto file_dot_g94 = basis_lib_path + "/" + basis_component_name + ".g94";
+          auto file_dot_g94 = basis_lib_path + PATH_SEPARATOR + basis_component_name + ".g94";
         
           // use same cartesian_d convention for all components!
           component_basis_sets.emplace_back(read_g94_basis_library(file_dot_g94, force_cartesian_d, throw_if_no_match));
@@ -159,7 +165,7 @@ namespace libint2 {
             }
             else if (throw_if_no_match) {  // not found? throw, if needed
               std::string errmsg(std::string("did not find the basis for this Z in ") +
-                      basis_lib_path + "/" + basis_component_names[comp_idx] + ".g94");
+                      basis_lib_path + PATH_SEPARATOR + basis_component_names[comp_idx] + ".g94");
               throw std::logic_error(errmsg);
             }
           } // basis component loop
@@ -369,7 +375,7 @@ namespace libint2 {
 #endif
         }
         // validate basis_path = path + "/basis"
-        std::string basis_path = path + std::string("/basis");
+        std::string basis_path = path + PATH_SEPARATOR + std::string("basis");
         bool error = true;
         std::error_code ec;
         auto validate_basis_path = [&basis_path, &error, &ec]() -> void {
