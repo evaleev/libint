@@ -1292,7 +1292,11 @@ namespace libint2 {
 
         // get memory
         void* result;
+#ifdef _MSC_VER
+        int status = posix_memalign(&result, std::max(sizeof(Real), 32ull), (mmax_ - mmin_ + 1) * cheb_table_nintervals * ORDERp1 * ORDERp1 * sizeof(Real));
+#else
         int status = posix_memalign(&result, std::max(sizeof(Real), 32ul), (mmax_ - mmin_ + 1) * cheb_table_nintervals * ORDERp1 * ORDERp1 * sizeof(Real));
+#endif
         if (status != 0) {
           if (status == EINVAL)
             throw std::logic_error(
