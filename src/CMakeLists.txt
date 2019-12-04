@@ -1,9 +1,6 @@
 include(ExternalProject)
 include(GNUInstallDirs)
 
-## correcting for this repo being one off from Psi4 conventions
-#math(EXPR MAX_AM_ERI "${MAX_AM_ERI}-1")
-
 ExternalProject_Add(generator
     BUILD_ALWAYS 1
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin/libint
@@ -13,30 +10,50 @@ ExternalProject_Add(generator
                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                -DLibint2_BINARY_DIR=${Libint2_BINARY_DIR}
                -DLibint2_ROOT=${Libint2_SOURCE_DIR}
-               -DMPFR_ROOT=${MPFR_ROOT}
                -DBOOST_ROOT=${BOOST_ROOT}
+               -DMPFR_ROOT=${MPFR_ROOT}
     CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS})
 
-ExternalProject_Add(library
+ExternalProject_Add(export
     DEPENDS generator
     BUILD_ALWAYS 1
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libint
-    DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/libint-src
+    DOWNLOAD_DIR ${EXPORT_INSTALL_PREFIX}/src
     # download generalized to generating source by running build_libint generator
     DOWNLOAD_COMMAND ${STAGED_INSTALL_PREFIX}/bin/build_libint
     LOG_DOWNLOAD 1
-    BINARY_DIR ${CMAKE_BINARY_DIR}/libint-src
-    CMAKE_ARGS -DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}
-               -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
-               -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-               -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-               -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
-               -DCMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXPORT_INSTALL_PREFIX}
+               -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}  # unused but we're declaring the language so need to detect compiler
                -DLibint2_BINARY_DIR=${Libint2_BINARY_DIR}
                -DLibint2_ROOT=${Libint2_SOURCE_DIR}
-               -DLIBINT_MAJOR_SOVERSION=${LIBINT_MAJOR_SOVERSION}
-               -DBUILD_SHARED=${BUILD_SHARED}
-               -DBUILD_STATIC=${BUILD_STATIC}
-               -DMPFR_ROOT=${MPFR_ROOT}
-               -DBOOST_ROOT=${BOOST_ROOT}
     CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS})
+ExternalProject_Add_Step(export tar
+    DEPENDEES install
+    COMMAND ${CMAKE_COMMAND} -E tar "cfvz" "Libint2-export.tgz" "${EXPORT_INSTALL_PREFIX}"
+    WORKING_DIRECTORY ${Libint2_BINARY_DIR}
+    COMMENT "Building export tarball"
+    ALWAYS TRUE
+    EXCLUDE_FROM_MAIN FALSE)
+
+if(NOT EXPORT_ONLY)
+    ExternalProject_Add(library
+        DEPENDS export
+        BUILD_ALWAYS 1
+        # download generalized to generating source by unpacking source tarball
+        URL "${Libint2_BINARY_DIR}/Libint2-export.tgz"
+        #DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/src/library-prefix/src/library"
+        DOWNLOAD_DIR <SOURCE_DIR>
+        LOG_DOWNLOAD 1
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
+                   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+                   -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
+                   -DCMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}
+                   -DBUILD_SHARED=${BUILD_SHARED}
+                   -DBUILD_STATIC=${BUILD_STATIC}
+                   -DBOOST_ROOT=${BOOST_ROOT}
+                   -DEigen3_ROOT=${Eigen3_ROOT}
+                   -DMPFR_ROOT=${MPFR_ROOT}
+                   -DLIBINT2_SHGAUSS_ORDERING=${LIBINT2_SHGAUSS_ORDERING}
+        CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS})
+endif()

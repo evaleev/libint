@@ -24,7 +24,9 @@
 
 message("prefix: ${CMAKE_FIND_LIBRARY_PREFIXES}")
 message("suffix: ${CMAKE_FIND_LIBRARY_SUFFIXES}")
-list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 ".dll")
+if(MSVC)
+    list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 ".dll")
+endif()
 message("suffix: ${CMAKE_FIND_LIBRARY_SUFFIXES}")
 message("root: ${MPFR_ROOT}")
 

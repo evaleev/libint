@@ -355,4 +355,8 @@
 /* have posix_memalign ? */
 #cmakedefine HAVE_POSIX_MEMALIGN @HAVE_POSIX_MEMALIGN@
 
+#if @EXPORT_MODE@
+#include "libint2/config2.h"
+#endif
+
 #endif /* header guard */

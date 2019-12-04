@@ -11,6 +11,25 @@ cmake_policy(SET CMP0074 NEW)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
                               ${PROJECT_SOURCE_DIR}/export/cmake/modules)
 
+################################### Overview ###################################
+# The build is structured into three parts:
+# * generator
+#   - build src/bin/libint/ into executable `build_libint`
+#   - pretty quick, runs in parallel
+#   - consumes all the enable/max/opt integral options and all orderings options except solid harmonic
+# * export
+#   - run `build_libint` to generate thousands of C++ source files (that upon
+#     compilation can become a Libint2 library) and combine them with other
+#     static source files in src/lib/libint/ and general static files (e.g.,
+#     include/ and docs/) into an independent tarball ready for distribution.
+#   - really slow for non-trivial angular momenta, runs in serial
+#   - consumes no options
+#   - `cmake -DEXPORT_ONLY=ON` to stop after this step and collect source tarball
+# * library
+#   - unpack the export tarball and build the library and install into stage/
+#   - duration depends on number of integrals requested, runs in parallel
+#   - consumes solid harmonic ordering and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR
+
 ################################### Options ####################################
 include(int_versions)
 include(psi4OptionsTools)
@@ -20,6 +39,7 @@ include(psi4OptionsTools)
 option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
 option_with_print(BUILD_SHARED "Build at least shared library" OFF)
 option_with_print(BUILD_STATIC "Build at least static library" ON)
+option_with_print(EXPORT_ONLY "Halt when tarball of library source has been generated. OFF proceeds to build the library." OFF)
 
 #  <<<  Which Integrals Classes, Which Derivative Levels  >>>
 
@@ -140,16 +160,9 @@ option_with_default(LIBINT_ALIGN_SIZE
   "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of
    sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics. LAB: LIBINT for bin, LIBINT2 for lib?" 0)
 
-
-#option_with_print(BUILD_SHARED_LIBS "Build final library as shared, not static" OFF)
-#option_with_default(BUILD_FPIC "Libraries will be compiled with position independent code" ON)
-#if(${BUILD_SHARED_LIBS} AND NOT ${BUILD_FPIC})
-#    message(FATAL_ERROR "BUILD_SHARED_LIBS ON and BUILD_FPIC OFF are incompatible, as shared library requires position independent code")
-#endif()
 #option_with_print(ENABLE_GENERIC "Enable mostly static linking in shared library" OFF)
 #option_with_flags(ENABLE_XHOST "Enable processor-specific optimization" ON
 #                    "-xHost" "-march=native")
-#option_with_print(MERGE_LIBDERIV_INCLUDEDIR "Install libderiv headers to libint namespace. Psi4 1.1-1.3 wants ON" OFF)
 option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
 
 #CONFIGURE  System types:
@@ -207,9 +220,9 @@ option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
 #CONFIGURE                            this parameter only if default library detection
 #CONFIGURE                            fails and you know exactly where your boost
 #CONFIGURE                            libraries are located.
-#CONFIGURE    --with-real-type        Compute all integrals using the given real type
+#CONFIGURE    --with-real-type        Compute all integrals using the given real type           LIBINT_USER_DEFINED_REAL
 #CONFIGURE                            (default: double).
-#CONFIGURE    --with-real-type-includes
+#CONFIGURE    --with-real-type-includes                                                         LIBINT_USER_DEFINED_REAL_INCLUDES
 #CONFIGURE                            Additional includes necessary to use the real type
 #CONFIGURE                            (default: none).
 #CONFIGURE    --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
@@ -288,21 +301,22 @@ booleanize01(DISABLE_ONEBODY_PROPERTY_DERIVS)
 
 ################################# Main Project #################################
 set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/stage)
+set(EXPORT_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/export)  # TODO switch to something like libint-2.7.0-beta.2
 
 add_subdirectory(src)
 include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
-
-set(PN ${PROJECT_NAME})
 
 if (ENABLE_FORTRAN)
     enable_language(Fortran)
 endif()
 
+set(EXPORT_MODE 0)
 configure_file(include/libint2/config.h.cmake.in include/libint2/config.h @ONLY)
-set(DATADIR_ABSOLUTE ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION})
-configure_file(include/libint2/basis.h.in include/libint2/basis.h @ONLY)
-##configure_file(cmake/libint.pc.in libint.pc @ONLY)
+set(EXPORT_MODE 1)
+configure_file(include/libint2/config.h.cmake.in export/include/libint2/config.h @ONLY)
+configure_file(include/libint2/config2.h.cmake.in export/include/libint2/config2.h.cmake.in COPYONLY)
+
+configure_file(cmake/int_computed.cmake.in cmake/int_computed.cmake @ONLY)
 
 # <<<  Install  >>>
 
@@ -312,21 +326,3 @@ install(DIRECTORY ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
                   ${STAGED_INSTALL_PREFIX}/share
         DESTINATION ${CMAKE_INSTALL_PREFIX}
         USE_SOURCE_PERMISSIONS)
-
-# <<<  Export Config  >>>
-
-# GNUInstallDirs "DATADIR" wrong here; CMake search path wants "share".
-set(CMAKECONFIG_INSTALL_DIR "share/cmake/${PN}")
-message("share ${CMAKECONFIG_INSTALL_DIR}")
-configure_package_config_file(cmake/${PN}Config.cmake.in
-                              "${CMAKE_CURRENT_BINARY_DIR}/${PN}Config.cmake"
-                              INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${PN}ConfigVersion.cmake
-                                 VERSION ${${PN}_VERSION}
-                                 COMPATIBILITY SameMajorVersion)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PN}Config.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/${PN}ConfigVersion.cmake
-        DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-
-#install(FILES ${PROJECT_BINARY_DIR}/libint.pc
-#        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
