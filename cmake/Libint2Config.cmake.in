@@ -14,15 +14,38 @@
 ##   Libint2_LIBRARIES - Libint2 and libderiv libraries to link against.
 ##   Libint2_LIBRARY - same as LIBRARIES
 ##   Libint2_MAX_AM_ERI - maximum angular momentum level of Libint2 libraries
-##
-##
-## Available components: shared static MAX_AM_ERI
-##
-## ::
-##
-##   shared - search for only shared library
-##   static - search for only static library
+#
+#
+# Available components:
+#
+# ::
+#
+#   shared - search for only shared library
+#   static - search for only static library
 ##   [3, 10] - search for library with angular momentum >= this integer
+#
+#                    sph        cart       shell_set  used_by
+#                    --------   --------   ---------  -------
+#   sss - search for standard + standard + standard = mpqc4
+#   sso - search for                     + orca
+#   sis - search for          + intv3    + standard
+#   sio - search for                     + orca
+#   sgs - search for          + gamess   + standard = gamess
+#   sgo - search for                     + orca
+#   sos - search for          + orca     + standard
+#   soo - search for                     + orca     = orca
+#   sbs - search for          + bagel    + standard = bagel
+#   sbo - search for                     + orca
+#   gss - search for gaussian + standard + standard = psi4
+#   gso - search for                     + orca
+#   gis - search for          + intv3    + standard
+#   gio - search for                     + orca
+#   ggs - search for          + gamess   + standard
+#   ggo - search for                     + orca
+#   gos - search for          + orca     + standard
+#   goo - search for                     + orca
+#   gbs - search for          + bagel    + standard
+#   gbo - search for                     + orca
 #
 #
 # Exported targets:
@@ -53,7 +76,7 @@
 #   Libint2_DIR - CMake variable, set to directory containing this Config file
 #   CMAKE_PREFIX_PATH - CMake variable, set to root directory of this package
 #   PATH - environment variable, set to bin directory of this package
-#   CMAKE_DISABLE_FIND_PACKAGE_Libint2 - CMake variable, disables 
+#   CMAKE_DISABLE_FIND_PACKAGE_Libint2 - CMake variable, disables
 #     find_package(Libint2) when not REQUIRED, perhaps to force internal build
 
 @PACKAGE_INIT@
@@ -70,6 +93,26 @@ set (_valid_components
 #    8
 #    9
 #    10
+    sss
+    sso
+    sis
+    sio
+    sgs
+    sgo
+    sos
+    soo
+    sbs
+    sbo
+    gss
+    gso
+    gis
+    gio
+    ggs
+    ggo
+    gos
+    goo
+    gbs
+    gbo
 )
 
 if(@BUILD_SHARED@)
@@ -97,6 +140,51 @@ list(FIND ${PN}_FIND_COMPONENTS "static" _seek_static)
 #        message(STATUS "${PN}Config missing component: header (${PN}: ${_temp_h})")
 #    endif()
 #endif()
+
+# check orderings component
+if    ((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(${PN}_sss_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(${PN}_sso_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(${PN}_sis_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(${PN}_sio_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(${PN}_sgs_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(${PN}_sgo_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(${PN}_sos_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(${PN}_soo_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(${PN}_sbs_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(${PN}_sbo_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(${PN}_gss_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(${PN}_gso_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(${PN}_gis_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(${PN}_gio_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(${PN}_ggs_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(${PN}_ggo_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(${PN}_gos_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(${PN}_goo_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(${PN}_gbs_FOUND 1)
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(${PN}_gbo_FOUND 1)
+else()
+    message(STATUS "${PN}Config: indeterminate orderings")
+endif()
 
 ## check AM component
 ##   * Psi4 uses MAX_AM_ERI (formerly LIBINT_OPT_AM) for AM control
@@ -160,7 +248,6 @@ if(NOT TARGET ${PN}::cxx)
     include(CMakeFindDependencyMacro)
     if(NOT TARGET Eigen3::Eigen)
         find_dependency(Eigen3)
-    #    find_dependency(TargetHDF5 @TargetHDF5_VERSION@ EXACT)
     endif()
 
     get_property(_loc TARGET ${PN}::cxx PROPERTY LOCATION)

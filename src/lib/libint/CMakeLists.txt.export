@@ -1,0 +1,200 @@
+cmake_minimum_required(VERSION 3.0)
+cmake_policy(SET CMP0074 NEW)
+project(library
+        LANGUAGES CXX)
+
+set(library_AUTHORS      "Edward F. Valeev")
+set(library_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
+set(library_URL          "https://github.com/evaleev/libint")
+set(library_LICENSE      "LGPL-3.0")
+
+#set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_EXTENSIONS OFF)
+
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+message("CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}")
+
+################################### Options ####################################
+include(psi4OptionsTools)
+include(int_computed)
+
+#  <<< General  >>>
+
+option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
+option_with_print(BUILD_SHARED "Build at least shared library" OFF)
+option_with_print(BUILD_STATIC "Build at least static library" ON)
+
+#  <<<  Ordering Conventions  >>>
+
+option_with_default(LIBINT2_SHGAUSS_ORDERING
+  "Ordering for shells of solid harmonic Gaussians:
+    standard -- standard ordering (-l, -l+1 ... l)
+    gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)" standard)
+
+set(LIBINT2_CARTGAUSS_ORDERING ${LIBINT2_CARTGAUSS_ORDERING})
+message(STATUS "Setting option LIBINT2_CARTGAUSS_ORDERING: ${LIBINT2_CARTGAUSS_ORDERING} (fixed at generation-time)")
+
+set(LIBINT2_SHELL_SET ${LIBINT2_SHELL_SET})
+message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (fixed at generation-time)")
+
+######################## Process & Validate Options ###########################
+include(autocmake_safeguards)
+include(CheckFunctionExists)
+include(int_orderings)
+
+check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
+if (HAVE_POSIX_MEMALIGN)
+    set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics")
+endif()
+
+if (NOT LIBINT2_REALTYPE)
+    set(LIBINT2_REALTYPE double)
+endif()
+
+## C++11 required for now. enforced in targets
+#set(LIBINT_HAS_CXX11 1)
+#set(LIBINT_USE_TYPE_TRAITS 1)
+#set(LIBINT_USE_MEMORY 1)
+#set(LIBINT_USE_ARRAY 1)
+#set(LIBINT_HAS_STD_TYPE_TRAITS 1)
+#set(LIBINT_HAS_STD_SHARED_PTR 1)
+#set(LIBINT_HAS_STD_MAKE_SHARED 1)
+#set(LIBINT_HAS_STD_ARRAY 1)
+#set(LIBINT_ARRAY_HAS_FILL 1)
+
+# req'd for now (no FindGMP.cmake, though one at Elemental project)
+find_package(MPFR REQUIRED)
+if (TARGET MPFR::MPFRXX)
+    set(LIBINT_HAS_MPFR 1)
+endif()
+
+find_package(Boost 1.57 REQUIRED)
+if (TARGET Boost::boost)  # the header-only target
+    set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
+endif()
+
+find_package(Eigen3 REQUIRED)
+if (TARGET Eigen3::Eigen)
+    set(LIBINT_HAS_EIGEN 1)
+endif()
+
+################################# Main Project #################################
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+set(NS Libint2)
+set(PN ${PROJECT_NAME})
+
+message("CMAKE_BINARY_DIR   ${CMAKE_BINARY_DIR}")
+message("Libint2_BINARY_DIR ${Libint2_BINARY_DIR}")
+message("CMAKE_SOURCE_DIR   ${CMAKE_SOURCE_DIR}")
+message("Libint2_ROOT       ${Libint2_ROOT}")
+
+#if (ENABLE_FORTRAN)
+#    enable_language(Fortran)
+#endif()
+
+# <<<  Build  >>>
+
+configure_file(include/libint2/config2.h.cmake.in include/libint2/config2.h @ONLY)
+
+file(GLOB sources_list "${CMAKE_SOURCE_DIR}/src/*.cc")
+
+add_library(int-obj OBJECT ${sources_list})
+
+target_compile_definitions(int-obj PRIVATE -D__COMPILING_LIBINT2=1)
+target_compile_features(int-obj PUBLIC "cxx_std_11")
+
+target_include_directories(int-obj PRIVATE ${CMAKE_BINARY_DIR}/include/
+                                           ${CMAKE_SOURCE_DIR}/src/
+                                           ${CMAKE_SOURCE_DIR}/include/
+                                           ${CMAKE_SOURCE_DIR}/include/libint2/
+                                           $<TARGET_PROPERTY:MPFR::GMPXX,INTERFACE_INCLUDE_DIRECTORIES>)
+
+if (BUILD_SHARED)
+    set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+endif()
+
+if (BUILD_SHARED)
+    add_library           (int-shared SHARED  $<TARGET_OBJECTS:int-obj>)
+    target_link_libraries (int-shared INTERFACE Eigen3::Eigen)
+    set_target_properties (int-shared PROPERTIES SOVERSION ${LIBINT_MAJOR_SOVERSION}
+                                                 MACOSX_RPATH ON
+                                                 OUTPUT_NAME "int2"
+                                                 EXPORT_NAME "cxx")
+    target_include_directories(int-shared INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+endif()
+
+if (BUILD_STATIC)
+    add_library           (int-static STATIC  $<TARGET_OBJECTS:int-obj>)
+    target_link_libraries (int-static INTERFACE Eigen3::Eigen)
+    set_target_properties (int-static PROPERTIES OUTPUT_NAME "int2"
+                                                 EXPORT_NAME "cxx")
+    target_include_directories(int-static INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+endif()
+
+if (BUILD_SHARED)
+    add_library (int-library ALIAS int-shared)
+elseif (BUILD_STATIC)
+    add_library (int-library ALIAS int-static)
+endif()
+
+# <<<  Install  >>>
+
+install(DIRECTORY ${CMAKE_BINARY_DIR}/include/
+                  ${CMAKE_SOURCE_DIR}/include/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        FILES_MATCHING PATTERN "*.h"
+                       PATTERN "*.hpp")
+
+install(FILES ${CMAKE_SOURCE_DIR}/src/libint2_iface.h
+              ${CMAKE_SOURCE_DIR}/src/libint2_iface_internal.h
+              ${CMAKE_SOURCE_DIR}/src/libint2_params.h
+              ${CMAKE_SOURCE_DIR}/src/libint2_types.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libint2)
+
+#target_include_directories(int-obj PRIVATE ${CMAKE_BINARY_DIR})
+
+if (BUILD_SHARED)
+    install (TARGETS int-shared
+             EXPORT "${NS}Targets-shared"
+             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()
+
+if (BUILD_STATIC)
+    install (TARGETS int-static
+             EXPORT "${NS}Targets-static"
+             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()
+
+
+# <<<  Export Config  >>>
+
+# GNUInstallDirs "DATADIR" wrong here; CMake search path wants "share".
+set(CMAKECONFIG_INSTALL_DIR "share/cmake/${NS}")
+configure_package_config_file(cmake/${NS}Config.cmake.in
+                              "${CMAKE_CURRENT_BINARY_DIR}/${NS}Config.cmake"
+                              INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${NS}ConfigVersion.cmake
+                                 VERSION ${${NS}_VERSION}
+                                 COMPATIBILITY SameMajorVersion)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${NS}Config.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/${NS}ConfigVersion.cmake
+        DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+
+configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
+
+if (BUILD_SHARED)
+    install(EXPORT "${NS}Targets-shared"
+                   NAMESPACE "${NS}::"
+                   DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+endif()
+
+if (BUILD_STATIC)
+    install(EXPORT "${NS}Targets-static"
+                   NAMESPACE "${NS}::"
+                   DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+endif()

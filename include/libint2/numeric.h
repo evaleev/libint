@@ -10,6 +10,7 @@
 #include <limits>
 #include <sstream>
 #include <type_traits>
+#include <cmath>
 
 #if LIBINT_HAS_MPFR
 # include <cstddef>
