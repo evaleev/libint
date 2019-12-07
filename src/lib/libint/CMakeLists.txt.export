@@ -38,6 +38,12 @@ message(STATUS "Setting option LIBINT2_CARTGAUSS_ORDERING: ${LIBINT2_CARTGAUSS_O
 set(LIBINT2_SHELL_SET ${LIBINT2_SHELL_SET})
 message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (fixed at generation-time)")
 
+#  <<<  Miscellaneous  >>>
+
+option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
+                  "-xHost" "-march=native" "/arch:AVX2")
+option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
+
 ######################## Process & Validate Options ###########################
 include(autocmake_safeguards)
 include(CheckFunctionExists)
@@ -85,15 +91,6 @@ include(CMakePackageConfigHelpers)
 
 set(NS Libint2)
 set(PN ${PROJECT_NAME})
-
-message("CMAKE_BINARY_DIR   ${CMAKE_BINARY_DIR}")
-message("Libint2_BINARY_DIR ${Libint2_BINARY_DIR}")
-message("CMAKE_SOURCE_DIR   ${CMAKE_SOURCE_DIR}")
-message("Libint2_ROOT       ${Libint2_ROOT}")
-
-#if (ENABLE_FORTRAN)
-#    enable_language(Fortran)
-#endif()
 
 # <<<  Build  >>>
 

@@ -12,7 +12,20 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
                               ${PROJECT_SOURCE_DIR}/export/cmake/modules)
 
 ################################### Overview ###################################
+
+# CMake build overview:
+#
+#    >>> ls
+#    cmake/  COPYING  src/  tests/  ...
+#    >>> cmake -H. -Bbuild -DCMAKE_INSTALL_PREFIX=/path/to/install-libint ...
+#    ...
+#    -- Generating done
+#    -- Build files have been written to: /current/dir/build
+#    >>> cd build && cmake --build . -j`getconf _NPROCESSORS_ONLN`
+#    >>> cmake --build . --target install
+
 # The build is structured into three parts:
+#
 # * generator
 #   - build src/bin/libint/ into executable `build_libint`
 #   - pretty quick, runs in parallel
@@ -24,11 +37,12 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
 #     include/ and docs/) into an independent tarball ready for distribution.
 #   - really slow for non-trivial angular momenta, runs in serial
 #   - consumes no options
-#   - `cmake -DEXPORT_ONLY=ON` to stop after this step and collect source tarball
+#   - `cmake --build . --target export` to stop after this step and collect source tarball
 # * library
 #   - unpack the export tarball and build the library and install into stage/
 #   - duration depends on number of integrals requested, runs in parallel
 #   - consumes solid harmonic ordering and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR
+#   - the default target `cmake --build .` includes this final library build
 
 ################################### Options ####################################
 include(int_versions)
@@ -36,10 +50,19 @@ include(psi4OptionsTools)
 
 #  <<< General  >>>
 
-option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
+option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
 option_with_print(BUILD_SHARED "Build at least shared library" OFF)
 option_with_print(BUILD_STATIC "Build at least static library" ON)
-option_with_print(EXPORT_ONLY "Halt when tarball of library source has been generated. OFF proceeds to build the library." OFF)
+option_with_print(ENABLE_CXX11API "Build C++11 API in addition to basic library (requires Eigen)" ON)
+option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
+
+if(NOT ENABLE_CXX11API)
+    message(FATAL_ERROR "The plain library withough C++11 API is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the plain library, raise an issue on GitHub and ping @loriab.")
+endif()
+
+if(ENABLE_FORTRAN)
+    message(FATAL_ERROR "The Fortran interface is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the Fortran interface, raise an issue on GitHub and ping @loriab.")
+endif()
 
 #  <<<  Which Integrals Classes, Which Derivative Levels  >>>
 
@@ -96,7 +119,7 @@ option_with_print(ERI2_PURE_SH
 
 #  <<<  How High Angular Momentum  >>>
 
-# example for "semicolon-separated string": `-DENABLE_ERI3=2 -DWITH_ERI3_MAX_AM="5;4;3"`
+#  example for "semicolon-separated string": `-DENABLE_ERI3=2 -DWITH_ERI3_MAX_AM="5;4;3"`
 
 option_with_default(WITH_MAX_AM
   "Support Gaussians of angular momentum up to N.
@@ -159,11 +182,11 @@ option_with_default(LIBINT_ENABLE_UNROLLING
 option_with_default(LIBINT_ALIGN_SIZE
   "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of
    sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics. LAB: LIBINT for bin, LIBINT2 for lib?" 0)
-
-#option_with_print(ENABLE_GENERIC "Enable mostly static linking in shared library" OFF)
-#option_with_flags(ENABLE_XHOST "Enable processor-specific optimization" ON
-#                    "-xHost" "-march=native")
-option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
+option_with_print(LIBINT_GENERATE_FMA
+  "Generate FMA (fused multiply-add) instructions (to benefit mush have FMA-capable hardware and compiler)" OFF)
+option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
+                  "-xHost" "-march=native" "/arch:AVX2")
+option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
 
 #CONFIGURE  System types:
 #CONFIGURE    --build=BUILD     configure for building on BUILD [guessed]
@@ -172,9 +195,6 @@ option_with_print(ENABLE_FORTRAN "Build Fortran 90 interface" OFF)
 #CONFIGURE  
 #CONFIGURE    --disable-t1g12-support Libint will not support [Ti,G12] integrals
 #CONFIGURE    --enable-generic-code   Use manually-written generic code.
-#CONFIGURE    --enable-fma            Generate FMA (fused multiply-add) instructions
-#CONFIGURE                            (CXXGEN must support C++11; to benefit must have
-#CONFIGURE                            FMA-capable hardware and compiler)
 #CONFIGURE    --enable-accum-ints     Accumulate integrals to the buffer, rather than
 #CONFIGURE                            copy.
 #CONFIGURE    --enable-flop-counter   Support (approximate) FLOP counting by the library.
@@ -298,6 +318,7 @@ booleanize01(LIBINT_SINGLE_EVALTYPE)
 booleanize01(LIBINT_USE_COMPOSITE_EVALUATORS)
 booleanize01(LIBINT_CONTRACTED_INTS)
 booleanize01(DISABLE_ONEBODY_PROPERTY_DERIVS)
+booleanize01(LIBINT_GENERATE_FMA)
 
 ################################# Main Project #################################
 set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/stage)
@@ -310,9 +331,9 @@ if (ENABLE_FORTRAN)
     enable_language(Fortran)
 endif()
 
-set(EXPORT_MODE 0)
+set(_EXPORT_MODE 0)
 configure_file(include/libint2/config.h.cmake.in include/libint2/config.h @ONLY)
-set(EXPORT_MODE 1)
+set(_EXPORT_MODE 1)
 configure_file(include/libint2/config.h.cmake.in export/include/libint2/config.h @ONLY)
 configure_file(include/libint2/config2.h.cmake.in export/include/libint2/config2.h.cmake.in COPYONLY)
 

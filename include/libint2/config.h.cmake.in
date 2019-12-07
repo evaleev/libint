@@ -227,7 +227,7 @@
 #undef LIBINT_USER_DEFINED_REAL_INCLUDES
 
 /*Generate FMA instructions? */
-#undef LIBINT_GENERATE_FMA
+#cmakedefine LIBINT_GENERATE_FMA @LIBINT_GENERATE_FMA@
 
 /* Accumulate integrals to the buffer? */
 #undef LIBINT_ACCUM_INTS
@@ -355,7 +355,7 @@
 /* have posix_memalign ? */
 #cmakedefine HAVE_POSIX_MEMALIGN @HAVE_POSIX_MEMALIGN@
 
-#if @EXPORT_MODE@
+#if @_EXPORT_MODE@
 #include "libint2/config2.h"
 #endif
 
