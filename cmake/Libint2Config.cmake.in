@@ -6,14 +6,14 @@
 #
 # ::
 #
-##   Libint2_FOUND - true if Libint2 and all required components found on the system
+#   Libint2_FOUND - true if Libint2 and all required components found on the system
 ##   Libint2_VERSION - Libint2 version in format Major.Minor.Release
 ##   Libint2_INCLUDE_DIRS - Directories where Libint2 and libderiv headers are located.
 ##   Libint2_INCLUDE_DIR - same as DIRS
 ##   Libint2_DEFINITIONS - definitions necessary to use Libint2
 ##   Libint2_LIBRARIES - Libint2 and libderiv libraries to link against.
 ##   Libint2_LIBRARY - same as LIBRARIES
-##   Libint2_MAX_AM_ERI - maximum angular momentum level of Libint2 libraries
+#   Libint2_MAX_AM_ERI - maximum angular momentum level of Libint2 libraries
 #
 #
 # Available components:
@@ -22,7 +22,10 @@
 #
 #   shared - search for only shared library
 #   static - search for only static library
-##   [3, 10] - search for library with angular momentum >= this integer
+#
+#   e[2, 7] - search for library including energy ERI integrals with angular momentum >= this integer
+#   g[2, 7] - search for library including gradient ERI integrals with angular momentum >= this integer
+#   h[2, 7] - search for library including Hessian ERI integrals with angular momentum >= this integer
 #
 #                    sph        cart       shell_set  used_by
 #                    --------   --------   ---------  -------
@@ -53,12 +56,10 @@
 # ::
 #
 # If Libint2 is found, this module defines the following :prop_tgt:`IMPORTED`
-## targets. Target is shared _or_ static, so, for both, use separate, not
-## overlapping, installations. ::
-##
-##   Libint::libint - the main libint and libderiv libraries with headers & defs attached.
-##   Libint::int - the main libint library with header & defs attached.
-##   Libint::deriv - the main libderiv library with header & defs attached.
+# targets. ::
+#
+##   Libint2::int2 - library only
+#   Libint2::cxx - library + C++11 API
 #
 #
 # Suggested usage:
@@ -66,7 +67,7 @@
 # ::
 #
 #   find_package(Libint2)
-##   find_package(Libint 1.1.6 EXACT CONFIG REQUIRED COMPONENTS shared 6)
+#   find_package(Libint2 2.7.0 CONFIG REQUIRED COMPONENTS shared gss e5 g5)
 #
 #
 # The following variables can be set to guide the search for this package:
@@ -85,14 +86,26 @@ set(PN Libint2)
 set (_valid_components
     static
     shared
-#    3
-#    4
-#    5
-#    6
-#    7
-#    8
-#    9
-#    10
+
+    e2
+    e3
+    e4
+    e5
+    e6
+    e7
+    g2
+    g3
+    g4
+    g5
+    g6
+    g7
+    h2
+    h3
+    h4
+    h5
+    h6
+    h7
+
     sss
     sso
     sis
@@ -115,6 +128,7 @@ set (_valid_components
     gbo
 )
 
+# check library style component
 if(@BUILD_SHARED@)
     set(${PN}_shared_FOUND 1)
 endif()
@@ -124,22 +138,11 @@ endif()
 list(FIND ${PN}_FIND_COMPONENTS "shared" _seek_shared)
 list(FIND ${PN}_FIND_COMPONENTS "static" _seek_static)
 
-
-## find includes
-#unset(_temp_h CACHE)
-#find_path(_temp_h
-#          NAMES libint/libint.h
-#          PATHS ${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@
-#          NO_DEFAULT_PATH)
-#if(_temp_h)
-#    set(${PN}_INCLUDE_DIR "${_temp_h}")
-#    set(${PN}_INCLUDE_DIRS ${${PN}_INCLUDE_DIR})
-#else()
-#    set(${PN}_FOUND 0)
-#    if(NOT CMAKE_REQUIRED_QUIET)
-#        message(STATUS "${PN}Config missing component: header (${PN}: ${_temp_h})")
-#    endif()
-#endif()
+# check AM & derivative component
+set(${PN}_MAX_AM_ERI @Libint2_MAX_AM_ERI@)
+foreach(_eri @Libint2_ERI_COMPONENTS@)
+    set(${PN}_${_eri}_FOUND 1)
+endforeach()
 
 # check orderings component
 if    ((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 1))
@@ -186,40 +189,10 @@ else()
     message(STATUS "${PN}Config: indeterminate orderings")
 endif()
 
-## check AM component
-##   * Psi4 uses MAX_AM_ERI (formerly LIBINT_OPT_AM) for AM control
-##   * libint.h uses LIBINT_MAX_AM = MAX_AM_ERI + 1
-##   * libint.h uses LIBINT_OPT_AM = ceiling(LIBINT_MAX_AM / 2)
-#file(READ ${${PN}_INCLUDE_DIR}/libint/libint.h _contents)
-#string(REGEX MATCH "define LIBINT_MAX_AM (.|..)" DA_LINE ${_contents})
-#math(EXPR ${PN}_MAX_AM_ERI ${CMAKE_MATCH_1}-1)
-#foreach(_comp IN LISTS ${PN}_FIND_COMPONENTS)
-#    list(FIND _valid_components ${_comp} _seek_am)
-#    if(_seek_am GREATER 1)  # component is AM, not shared or static
-#        # detected >= requested
-#        if(NOT ${${PN}_MAX_AM_ERI} LESS ${_comp})
-#            set(${PN}_${_comp}_FOUND 1)
-#        else()
-#            if(NOT CMAKE_REQUIRED_QUIET)
-#                message(STATUS "${PN}Config missing component: requested AM ${_comp} > ${${PN}_MAX_AM_ERI} detected in ${${PN}_LIBRARY}")
-#            endif()
-#        endif()
-#    endif()
-#endforeach()
 #set(${PN}_DEFINITIONS "USING_${PN};MAX_AM_ERI=${${PN}_MAX_AM_ERI}")
 
 check_required_components(${PN})
 
-##-----------------------------------------------------------------------------
-## Don't include targets if this file is being picked up by another
-## project which has already built this as a subproject
-##-----------------------------------------------------------------------------
-#if(NOT TARGET ${PN}::int)
-#    include("${CMAKE_CURRENT_LIST_DIR}/LibintintTargets.cmake")
-#endif()
-#if(NOT TARGET ${PN}::deriv)
-#    include("${CMAKE_CURRENT_LIST_DIR}/LibintderivTargets.cmake")
-#endif()
 #if(NOT TARGET ${PN}::libint)
 #    add_library(${PN}::libint UNKNOWN IMPORTED)
 #    set_target_properties(${PN}::libint PROPERTIES

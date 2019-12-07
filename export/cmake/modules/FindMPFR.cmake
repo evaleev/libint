@@ -22,13 +22,13 @@
 # Copyright (c) 2015 Jack Poulson, <jack.poulson@gmail.com>
 # Redistribution and use is allowed according to the terms of the BSD license.
 
-message("prefix: ${CMAKE_FIND_LIBRARY_PREFIXES}")
-message("suffix: ${CMAKE_FIND_LIBRARY_SUFFIXES}")
+#message("prefix: ${CMAKE_FIND_LIBRARY_PREFIXES}")
+#message("suffix: ${CMAKE_FIND_LIBRARY_SUFFIXES}")
 if(MSVC)
     list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 ".dll")
 endif()
-message("suffix: ${CMAKE_FIND_LIBRARY_SUFFIXES}")
-message("root: ${MPFR_ROOT}")
+#message("suffix: ${CMAKE_FIND_LIBRARY_SUFFIXES}")
+#message("root: ${MPFR_ROOT}")
 
 find_path(MPFR_INCLUDE NAMES mpfr.h PATHS $ENV{GMPDIR} $ENV{MPFRDIR}
         ${INCLUDE_INSTALL_DIR})
