@@ -23,7 +23,7 @@ include(int_computed)
 
 option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
 option_with_print(BUILD_SHARED "Build at least shared library" OFF)
-option_with_print(BUILD_STATIC "Build at least static library" ON)
+option_with_print(BUILD_STATIC "Build at least static library (see BUILD_FPIC)" ON)
 
 #  <<<  Ordering Conventions  >>>
 
@@ -42,6 +42,7 @@ message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (fixed at
 
 option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
                   "-xHost" "-march=native" "/arch:AVX2")
+option_with_default(BUILD_FPIC "Compile lone static library with position independent code (all libraries are fpic when BUILD_SHARED=ON)" OFF)
 option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
 
 ######################## Process & Validate Options ###########################
@@ -109,7 +110,7 @@ target_include_directories(int-obj PRIVATE ${CMAKE_BINARY_DIR}/include/
                                            ${CMAKE_SOURCE_DIR}/include/libint2/
                                            $<TARGET_PROPERTY:MPFR::GMPXX,INTERFACE_INCLUDE_DIRECTORIES>)
 
-if (BUILD_SHARED)
+if (BUILD_SHARED OR BUILD_FPIC)
     set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
 endif()
 
