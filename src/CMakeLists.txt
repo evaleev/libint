@@ -52,6 +52,7 @@ ExternalProject_Add(library
                -DBUILD_SHARED=${BUILD_SHARED}
                -DBUILD_STATIC=${BUILD_STATIC}
                -DENABLE_XHOST=${ENABLE_XHOST}
+               -DBUILD_FPIC=${BUILD_FPIC}
                -DBOOST_ROOT=${BOOST_ROOT}
                -DEigen3_ROOT=${Eigen3_ROOT}
                -DMPFR_ROOT=${MPFR_ROOT}
