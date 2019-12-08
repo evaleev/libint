@@ -300,17 +300,20 @@ find_package(Boost 1.57 REQUIRED)
 if (TARGET Boost::boost)  # the header-only target
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
 endif()
+message(STATUS "A")
 
 find_package(Eigen3 REQUIRED)
 if (TARGET Eigen3::Eigen)
     set(LIBINT_HAS_EIGEN 1)
 endif()
+message(STATUS "AA1")
 
 unset(_temp_h CACHE)
 find_path(_temp_h NAMES stdint.h)
 if(_temp_h)
     set(HAVE_STDINT_H 1)
 endif()
+message(STATUS "AA2")
 
 booleanize01(ERI3_PURE_SH)
 booleanize01(ERI2_PURE_SH)
@@ -319,13 +322,16 @@ booleanize01(LIBINT_USE_COMPOSITE_EVALUATORS)
 booleanize01(LIBINT_CONTRACTED_INTS)
 booleanize01(DISABLE_ONEBODY_PROPERTY_DERIVS)
 booleanize01(LIBINT_GENERATE_FMA)
+message(STATUS "AA3")
 
 ################################# Main Project #################################
 set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/stage)
 set(EXPORT_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/export)  # TODO switch to something like libint-2.7.0-beta.2
+message(STATUS "AA4")
 
 add_subdirectory(src)
 include(GNUInstallDirs)
+message(STATUS "AA5")
 
 if (ENABLE_FORTRAN)
     enable_language(Fortran)
@@ -338,6 +344,7 @@ configure_file(include/libint2/config.h.cmake.in export/include/libint2/config.h
 configure_file(include/libint2/config2.h.cmake.in export/include/libint2/config2.h.cmake.in COPYONLY)
 
 configure_file(cmake/int_computed.cmake.in cmake/int_computed.cmake @ONLY)
+message(STATUS "AA6")
 
 # <<<  Install  >>>
 

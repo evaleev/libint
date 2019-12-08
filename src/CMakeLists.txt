@@ -1,6 +1,7 @@
 include(ExternalProject)
 include(GNUInstallDirs)
 
+message(STATUS "BBB0")
 ExternalProject_Add(generator
     BUILD_ALWAYS 1
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin/libint
@@ -14,6 +15,7 @@ ExternalProject_Add(generator
                -DMPFR_ROOT=${MPFR_ROOT}
     CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS})
 
+message(STATUS "BBB1")
 ExternalProject_Add(export
     DEPENDS generator
     BUILD_ALWAYS 1
@@ -23,6 +25,7 @@ ExternalProject_Add(export
     DOWNLOAD_COMMAND ${STAGED_INSTALL_PREFIX}/bin/build_libint
     LOG_DOWNLOAD 1
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXPORT_INSTALL_PREFIX}
+               -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}  # unused but since CXX declared will need to detect compiler
                -DLibint2_BINARY_DIR=${Libint2_BINARY_DIR}
                -DLibint2_ROOT=${Libint2_SOURCE_DIR}
