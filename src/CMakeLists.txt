@@ -45,7 +45,8 @@ ExternalProject_Add(library
     BUILD_ALWAYS 1
     # download generalized to generating source by unpacking source tarball
     URL "${Libint2_BINARY_DIR}/Libint2-export.tgz"
-    DOWNLOAD_DIR <SOURCE_DIR>
+    #DOWNLOAD_DIR <SOURCE_DIR>
+    DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/src/library-prefix/src/library"
     LOG_DOWNLOAD 1
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
