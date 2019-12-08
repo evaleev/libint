@@ -30,6 +30,7 @@ ExternalProject_Add(export
                -DLibint2_BINARY_DIR=${Libint2_BINARY_DIR}
                -DLibint2_ROOT=${Libint2_SOURCE_DIR}
     CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS})
+message(STATUS "BBB2")
 ExternalProject_Add_Step(export tar
     DEPENDEES install
     COMMAND ${CMAKE_COMMAND} -E tar "cfvz" "Libint2-export.tgz" "${EXPORT_INSTALL_PREFIX}"
@@ -37,6 +38,7 @@ ExternalProject_Add_Step(export tar
     COMMENT "Building export tarball"
     ALWAYS TRUE
     EXCLUDE_FROM_MAIN FALSE)
+message(STATUS "BBB3")
 
 ExternalProject_Add(library
     DEPENDS export
@@ -58,3 +60,4 @@ ExternalProject_Add(library
                -DMPFR_ROOT=${MPFR_ROOT}
                -DLIBINT2_SHGAUSS_ORDERING=${LIBINT2_SHGAUSS_ORDERING}
     CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS})
+message(STATUS "BBB4")
