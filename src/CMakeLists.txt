@@ -1,7 +1,6 @@
 include(ExternalProject)
 include(GNUInstallDirs)
 
-message(STATUS "BBB0")
 ExternalProject_Add(generator
     BUILD_ALWAYS 1
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bin/libint
@@ -15,7 +14,6 @@ ExternalProject_Add(generator
                -DMPFR_ROOT=${MPFR_ROOT}
     CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS})
 
-message(STATUS "BBB1")
 ExternalProject_Add(export
     DEPENDS generator
     BUILD_ALWAYS 1
@@ -30,7 +28,6 @@ ExternalProject_Add(export
                -DLibint2_BINARY_DIR=${Libint2_BINARY_DIR}
                -DLibint2_ROOT=${Libint2_SOURCE_DIR}
     CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS})
-message(STATUS "BBB2")
 ExternalProject_Add_Step(export tar
     DEPENDEES install
     COMMAND ${CMAKE_COMMAND} -E tar "cfvz" "Libint2-export.tgz" "${EXPORT_INSTALL_PREFIX}"
@@ -38,15 +35,14 @@ ExternalProject_Add_Step(export tar
     COMMENT "Building export tarball"
     ALWAYS TRUE
     EXCLUDE_FROM_MAIN FALSE)
-message(STATUS "BBB3")
 
 ExternalProject_Add(library
     DEPENDS export
     BUILD_ALWAYS 1
     # download generalized to generating source by unpacking source tarball
     URL "${Libint2_BINARY_DIR}/Libint2-export.tgz"
-    #DOWNLOAD_DIR <SOURCE_DIR>
     DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/src/library-prefix/src/library"
+    # DOWNLOAD_DIR <SOURCE_DIR>  # this is tidier but fails on Windows
     LOG_DOWNLOAD 1
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -61,4 +57,3 @@ ExternalProject_Add(library
                -DMPFR_ROOT=${MPFR_ROOT}
                -DLIBINT2_SHGAUSS_ORDERING=${LIBINT2_SHGAUSS_ORDERING}
     CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS})
-message(STATUS "BBB4")
