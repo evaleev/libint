@@ -52,7 +52,7 @@ include(psi4OptionsTools)
 
 option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
 option_with_print(BUILD_SHARED "Build at least shared library" OFF)
-option_with_print(BUILD_STATIC "Build at least static library" ON)
+option_with_print(BUILD_STATIC "Build at least static library (see BUILD_FPIC)" ON)
 option_with_print(ENABLE_CXX11API "Build C++11 API in addition to basic library (requires Eigen)" ON)
 option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
 
@@ -186,6 +186,7 @@ option_with_print(LIBINT_GENERATE_FMA
   "Generate FMA (fused multiply-add) instructions (to benefit mush have FMA-capable hardware and compiler)" OFF)
 option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
                   "-xHost" "-march=native" "/arch:AVX2")
+option_with_default(BUILD_FPIC "Compile lone static library with position independent code (all libraries are fpic when BUILD_SHARED=ON)" OFF)
 option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
 
 #CONFIGURE  System types:
