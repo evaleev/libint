@@ -191,9 +191,27 @@ endif()
 set(${PN}_${_ordering}_FOUND 1)
 
 
+# thanks, https://stackoverflow.com/a/9328525
+function(dump_cmake_variables)
+    get_cmake_property(_variableNames VARIABLES)
+    list (SORT _variableNames)
+    foreach (_variableName ${_variableNames})
+        if (ARGV0)
+            unset(MATCHED)
+            string(REGEX MATCH ${ARGV0} MATCHED ${_variableName})
+            if (NOT MATCHED)
+                continue()
+            endif()
+        endif()
+        message(STATUS "${ARGV1}${_variableName}=${${_variableName}}")
+    endforeach()
+endfunction()
+
+
 if(NOT CMAKE_REQUIRED_QUIET)
     message(STATUS "${PN}Config components requested: ${${PN}_FIND_COMPONENTS}")
-    message(STATUS "${PN}Config components: shared (${${PN}_shared_FOUND}), static (${${PN}_static_FOUND}), ordering (${${PN}_${_ordering}_FOUND}), ERI AM (${${PN}_ERI_COMPONENTS})")
+    message(STATUS "${PN}Config components found: type (shared: ${${PN}_shared_FOUND}; static: ${${PN}_static_FOUND}), ordering (${_ordering}: ${${PN}_${_ordering}_FOUND}), ERI AM (@Libint2_ERI_COMPONENTS@)")
+    dump_cmake_variables("^Libint2_[A-Za-z0-9_]+_FOUND$" "${PN}Config components found: ")
 endif()
 
 check_required_components(${PN})
