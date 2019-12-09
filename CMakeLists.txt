@@ -184,6 +184,8 @@ option_with_default(LIBINT_ALIGN_SIZE
    sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics. LAB: LIBINT for bin, LIBINT2 for lib?" 0)
 option_with_print(LIBINT_GENERATE_FMA
   "Generate FMA (fused multiply-add) instructions (to benefit mush have FMA-capable hardware and compiler)" OFF)
+option_with_print(LIBINT_ENABLE_GENERIC_CODE
+  "Use manually-written generic code" OFF)
 option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
                   "-xHost" "-march=native" "/arch:AVX2")
 option_with_default(BUILD_FPIC "Compile lone static library with position independent code (all libraries are fpic when BUILD_SHARED=ON)" OFF)
@@ -195,7 +197,6 @@ option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed
 #CONFIGURE    --target=TARGET   configure for building compilers for TARGET [HOST]
 #CONFIGURE  
 #CONFIGURE    --disable-t1g12-support Libint will not support [Ti,G12] integrals
-#CONFIGURE    --enable-generic-code   Use manually-written generic code.
 #CONFIGURE    --enable-accum-ints     Accumulate integrals to the buffer, rather than
 #CONFIGURE                            copy.
 #CONFIGURE    --enable-flop-counter   Support (approximate) FLOP counting by the library.
@@ -301,20 +302,17 @@ find_package(Boost 1.57 REQUIRED)
 if (TARGET Boost::boost)  # the header-only target
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
 endif()
-message(STATUS "A")
 
 find_package(Eigen3 REQUIRED)
 if (TARGET Eigen3::Eigen)
     set(LIBINT_HAS_EIGEN 1)
 endif()
-message(STATUS "AA1")
 
 unset(_temp_h CACHE)
 find_path(_temp_h NAMES stdint.h)
 if(_temp_h)
     set(HAVE_STDINT_H 1)
 endif()
-message(STATUS "AA2")
 
 booleanize01(ERI3_PURE_SH)
 booleanize01(ERI2_PURE_SH)
@@ -323,16 +321,14 @@ booleanize01(LIBINT_USE_COMPOSITE_EVALUATORS)
 booleanize01(LIBINT_CONTRACTED_INTS)
 booleanize01(DISABLE_ONEBODY_PROPERTY_DERIVS)
 booleanize01(LIBINT_GENERATE_FMA)
-message(STATUS "AA3")
+booleanize01(LIBINT_ENABLE_GENERIC_CODE)
 
 ################################# Main Project #################################
 set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/stage)
 set(EXPORT_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/export)  # TODO switch to something like libint-2.7.0-beta.2
-message(STATUS "AA4")
 
 add_subdirectory(src)
 include(GNUInstallDirs)
-message(STATUS "AA5")
 
 if (ENABLE_FORTRAN)
     enable_language(Fortran)
@@ -345,7 +341,6 @@ configure_file(include/libint2/config.h.cmake.in export/include/libint2/config.h
 configure_file(include/libint2/config2.h.cmake.in export/include/libint2/config2.h.cmake.in COPYONLY)
 
 configure_file(cmake/int_computed.cmake.in cmake/int_computed.cmake @ONLY)
-message(STATUS "AA6")
 
 # <<<  Install  >>>
 

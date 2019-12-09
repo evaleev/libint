@@ -200,7 +200,7 @@
 #cmakedefine LIBINT_ENABLE_UNROLLING @LIBINT_ENABLE_UNROLLING@
 
 /* Whether generic code can be used */
-#undef LIBINT_ENABLE_GENERIC_CODE
+#cmakedefine LIBINT_ENABLE_GENERIC_CODE @LIBINT_ENABLE_GENERIC_CODE@
 
 /* maximum length of vectors */
 #undef LIBINT_VECTOR_LENGTH

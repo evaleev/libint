@@ -7,12 +7,11 @@
 # ::
 #
 #   Libint2_FOUND - true if Libint2 and all required components found on the system
-##   Libint2_VERSION - Libint2 version in format Major.Minor.Release
-##   Libint2_INCLUDE_DIRS - Directories where Libint2 and libderiv headers are located.
-##   Libint2_INCLUDE_DIR - same as DIRS
-##   Libint2_DEFINITIONS - definitions necessary to use Libint2
-##   Libint2_LIBRARIES - Libint2 and libderiv libraries to link against.
-##   Libint2_LIBRARY - same as LIBRARIES
+#   Libint2_VERSION - Libint2 version in format Major.Minor.Release
+#   Libint2_INCLUDE_DIRS - Directories where Libint2 and libderiv headers are located.
+#   Libint2_INCLUDE_DIR - same as DIRS
+#   Libint2_LIBRARIES - Libint2 and libderiv libraries to link against.
+#   Libint2_LIBRARY - same as LIBRARIES
 #   Libint2_MAX_AM_ERI - maximum angular momentum level of Libint2 libraries
 #
 #
@@ -220,15 +219,6 @@ endif()
 
 check_required_components(${PN})
 
-#if(NOT TARGET ${PN}::libint)
-#    add_library(${PN}::libint UNKNOWN IMPORTED)
-#    set_target_properties(${PN}::libint PROPERTIES
-#        IMPORTED_LOCATION                 "${_temp_deriv}"
-#        INTERFACE_INCLUDE_DIRECTORIES     "${${PN}_INCLUDE_DIRS}"
-#        INTERFACE_COMPILE_DEFINITIONS     "${${PN}_DEFINITIONS}"
-#        IMPORTED_LINK_INTERFACE_LANGUAGES "CXX"
-#        INTERFACE_LINK_LIBRARIES          ${PN}::int)
-#endif()
 
 #-----------------------------------------------------------------------------
 # Don't include targets if this file is being picked up by another
@@ -260,9 +250,9 @@ if(NOT TARGET ${PN}::cxx)
     get_property(_iid TARGET ${PN}::cxx PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
     set(${PN}_INCLUDE_DIRS ${_iid})
 
-    message("Libint2::cxx")
-    message("loc ${_loc}")
-    message("ill ${_ill}")
-    message("id  ${_id}")
-    message("iid ${_iid}")
+    #message("Libint2::cxx")
+    #message("loc ${_loc}")
+    #message("ill ${_ill}")
+    #message("id  ${_id}")
+    #message("iid ${_iid}")
 endif()
