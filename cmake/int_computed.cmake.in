@@ -1,3 +1,9 @@
+# This file communicates top-level CMake configuration results to
+#   export stage (in a very minor way that could be worked around) and to
+#   library stage (in a major way). If the superbuild was run continuously
+#   (generator->export->library), these would be more properly passed
+#   through the ExternalProject_Add commands. However, since library is
+#   commonly built separately from tarball, this file is better storage.
 
 # <<<  Build Version  >>>
 

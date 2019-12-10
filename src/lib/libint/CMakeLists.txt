@@ -12,36 +12,15 @@ include(int_computed)  # for macros.tex
 
 # <<<  Install  >>>
 
-#    $(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/lib/basis
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/basis/* $(TOPDIR)/$(EXPORTDIR)/lib/basis
-#    $(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests
-#    $(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests/eri
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/eri/test.cc $(TOPDIR)/$(EXPORTDIR)/tests/eri/test.cc
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/test_eri/eri.h $(TOPDIR)/$(EXPORTDIR)/tests/eri/eri.h
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/bin/test_eri/prep_libint2.h $(TOPDIR)/$(EXPORTDIR)/tests/eri/prep_libint2.h
-#    $(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests/unit
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/catch.hpp $(TOPDIR)/$(EXPORTDIR)/tests/unit/catch.hpp
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/fixture.h $(TOPDIR)/$(EXPORTDIR)/tests/unit/fixture.h
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/*.cc $(TOPDIR)/$(EXPORTDIR)/tests/unit
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/unit/*.c $(TOPDIR)/$(EXPORTDIR)/tests/unit
-#    $(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock.cc $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock.cc
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock++.cc $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock++.cc
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/h2o.xyz $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/h2o.xyz
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/h2o_rotated.xyz $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/h2o_rotated.xyz
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock-validate.py $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock-validate.py
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/tests/hartree-fock/hartree-fock++-validate.py $(TOPDIR)/$(EXPORTDIR)/tests/hartree-fock/hartree-fock++-validate.py
 #    $(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/fortran
 #    -$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/*.F90 $(TOPDIR)/$(EXPORTDIR)/fortran
 #    -$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/*.cc $(TOPDIR)/$(EXPORTDIR)/fortran
 #    -$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/c_to_f.py $(TOPDIR)/$(EXPORTDIR)/fortran/c_to_f.py
 #    -$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/fortran/make_defs.py $(TOPDIR)/$(EXPORTDIR)/fortran/make_defs.py
-#    -$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/CMakeLists.txt.include.export $(TOPDIR)/$(EXPORTDIR)/include/CMakeLists.txt
 #    -$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/hftest.cmake $(TOPDIR)/$(EXPORTDIR)/cmake/hftest.cmake
 
-
 # <<<  Install General  >>>
- 
+
 install(FILES ${Libint2_ROOT}/export/LICENSE.export
         RENAME LICENSE
         DESTINATION ${CMAKE_INSTALL_PREFIX})
@@ -68,11 +47,30 @@ install(DIRECTORY ${Libint2_ROOT}/doc/progman/
         DESTINATION ${CMAKE_INSTALL_PREFIX}/doc
         FILES_MATCHING PATTERN "*.cc")
 
+install(DIRECTORY ${Libint2_ROOT}/tests/
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/tests
+        FILES_MATCHING PATTERN "*.c"
+                       PATTERN "*.cc"
+                       PATTERN "*.h"
+                       PATTERN "*.hpp"
+                       PATTERN "*.py"
+                       PATTERN "*.xyz"
+                       PATTERN "CMakeLists.txt")
+
+install(FILES ${Libint2_ROOT}/src/bin/test_eri/eri.h
+              ${Libint2_ROOT}/src/bin/test_eri/prep_libint2.h
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/tests/eri)
+
+install(DIRECTORY ${Libint2_ROOT}/lib/basis
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}
+        #DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/basis
+        FILES_MATCHING PATTERN "*.g94")
+
 # <<<  Install CMake  >>>
 
 install(FILES ${Libint2_ROOT}/cmake/autocmake_safeguards.cmake
               ${Libint2_ROOT}/cmake/int_orderings.cmake
-              ${Libint2_ROOT}/cmake/psi4OptionsTools.cmake      
+              ${Libint2_ROOT}/cmake/psi4OptionsTools.cmake
               ${Libint2_ROOT}/cmake/Libint2Config.cmake.in
               ${Libint2_ROOT}/cmake/libint2.pc.cmake.in
               ${Libint2_ROOT}/export/cmake/modules/FindMPFR.cmake

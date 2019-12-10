@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.8)
 cmake_policy(SET CMP0074 NEW)
 project(library
         LANGUAGES CXX)
@@ -24,6 +24,17 @@ include(int_computed)
 option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
 option_with_print(BUILD_SHARED "Build at least shared library" OFF)
 option_with_print(BUILD_STATIC "Build at least static library (see BUILD_FPIC)" ON)
+option_with_print(ENABLE_CXX11API "Build C++11 API in addition to basic library (requires Eigen)" ON)
+option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
+option_with_print(BUILD_TESTING "Compile the testing infrastructure" ON)
+
+if(NOT ENABLE_CXX11API)
+    message(FATAL_ERROR "The plain library withough C++11 API is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the plain library, raise an issue on GitHub and ping @loriab.")
+endif()
+
+if(ENABLE_FORTRAN)
+    message(FATAL_ERROR "The Fortran interface is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the Fortran interface, raise an issue on GitHub and ping @loriab.")
+endif()
 
 #  <<<  Ordering Conventions  >>>
 
@@ -33,10 +44,10 @@ option_with_default(LIBINT2_SHGAUSS_ORDERING
     gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)" standard)
 
 set(LIBINT2_CARTGAUSS_ORDERING ${LIBINT2_CARTGAUSS_ORDERING})
-message(STATUS "Setting option LIBINT2_CARTGAUSS_ORDERING: ${LIBINT2_CARTGAUSS_ORDERING} (fixed at generation-time)")
+message(STATUS "Setting option LIBINT2_CARTGAUSS_ORDERING: ${LIBINT2_CARTGAUSS_ORDERING} (read-only from generation-time)")
 
 set(LIBINT2_SHELL_SET ${LIBINT2_SHELL_SET})
-message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (fixed at generation-time)")
+message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (read-only from generation-time)")
 
 #  <<<  Miscellaneous  >>>
 
@@ -166,6 +177,10 @@ if (BUILD_STATIC)
              ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 
+if (BUILD_TESTING)
+    enable_testing(true)
+    add_subdirectory(tests)
+endif()
 
 # <<<  Export Config  >>>
 

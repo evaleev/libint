@@ -55,6 +55,7 @@ option_with_print(BUILD_SHARED "Build at least shared library" OFF)
 option_with_print(BUILD_STATIC "Build at least static library (see BUILD_FPIC)" ON)
 option_with_print(ENABLE_CXX11API "Build C++11 API in addition to basic library (requires Eigen)" ON)
 option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
+option_with_print(BUILD_TESTING "Compile the testing infrastructure" ON)
 
 if(NOT ENABLE_CXX11API)
     message(FATAL_ERROR "The plain library withough C++11 API is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the plain library, raise an issue on GitHub and ping @loriab.")
@@ -183,7 +184,7 @@ option_with_default(LIBINT_ALIGN_SIZE
   "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of
    sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics. LAB: LIBINT for bin, LIBINT2 for lib?" 0)
 option_with_print(LIBINT_GENERATE_FMA
-  "Generate FMA (fused multiply-add) instructions (to benefit mush have FMA-capable hardware and compiler)" OFF)
+  "Generate FMA (fused multiply-add) instructions (to benefit must have FMA-capable hardware and compiler)" OFF)
 option_with_print(LIBINT_ENABLE_GENERIC_CODE
   "Use manually-written generic code" OFF)
 option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
@@ -205,11 +206,6 @@ option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed
 #CONFIGURE                            CXXGEN must support C++11!
 #CONFIGURE    --enable-mpfr           Use MPFR library to test Libint integrals in high
 #CONFIGURE                            precision.
-#CONFIGURE    --enable-shared[=PKGS]  build shared libraries [default=no]
-#CONFIGURE    --enable-static[=PKGS]  build static libraries [default=yes]
-#CONFIGURE    --enable-fast-install[=PKGS]
-#CONFIGURE                            optimize for fast installation [default=yes]
-#CONFIGURE    --disable-libtool-lock  avoid locking (might break parallel builds)
 #CONFIGURE  
 #CONFIGURE  Optional Packages:
 #CONFIGURE    --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -224,51 +220,23 @@ option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed
 #CONFIGURE                            Specifies include file install subdir.
 #CONFIGURE    --with-libint-exportdir Specifies export directory name. Default is
 #CONFIGURE                            libint-<version>.
-#CONFIGURE    --with-incdirs          Specifies include directories (-Idir1 -Idir2).
-#CONFIGURE    --with-libs             Specifies libraries (-llib1 -llib2).
-#CONFIGURE    --with-libdirs          Specifies library directories (-Ldir1 -Ldir2).
 #CONFIGURE    --with-scratchdir       Specifies the location for the machine-generated
 #CONFIGURE                            library source and object files.
 #CONFIGURE    --with-pkgconfigdir     Specifies the location to put pkg-config's data
 #CONFIGURE                            file. Default is $(libdir)/pkgconfig.
 #CONFIGURE    --with-cmakedir         Specifies the location to put FindLibint2.cmake
 #CONFIGURE                            file. Default is $(libdir)/cmake/libint2.
-#CONFIGURE    --with-boost[=ARG]      use Boost library from a standard location
-#CONFIGURE                            (ARG=yes), from the specified location (ARG=<path>),
-#CONFIGURE                            or disable it (ARG=no) [ARG=yes]
-#CONFIGURE    --with-boost-libdir=LIB_DIR
-#CONFIGURE                            Force given directory for boost libraries. Note that
-#CONFIGURE                            this will override library path detection, so use
-#CONFIGURE                            this parameter only if default library detection
-#CONFIGURE                            fails and you know exactly where your boost
-#CONFIGURE                            libraries are located.
 #CONFIGURE    --with-real-type        Compute all integrals using the given real type           LIBINT_USER_DEFINED_REAL
 #CONFIGURE                            (default: double).
 #CONFIGURE    --with-real-type-includes                                                         LIBINT_USER_DEFINED_REAL_INCLUDES
 #CONFIGURE                            Additional includes necessary to use the real type
 #CONFIGURE                            (default: none).
-#CONFIGURE    --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
-#CONFIGURE                            both]
 #CONFIGURE    --with-aix-soname=aix|svr4|both
 #CONFIGURE                            shared library versioning (aka "SONAME") variant to
 #CONFIGURE                            provide on AIX, [default=aix].
 #CONFIGURE    --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
 #CONFIGURE    --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
 #CONFIGURE                            compiler's sysroot if not specified).
-#CONFIGURE  
-#CONFIGURE  Some influential environment variables:
-#CONFIGURE    CXX         C++ compiler command
-#CONFIGURE    CXXFLAGS    C++ compiler flags
-#CONFIGURE    LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
-#CONFIGURE                nonstandard directory <lib dir>
-#CONFIGURE    LIBS        libraries to pass to the linker, e.g. -l<library>
-#CONFIGURE    CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
-#CONFIGURE                you have headers in a nonstandard directory <include dir>
-#CONFIGURE    CXXCPP      C++ preprocessor
-#CONFIGURE    CC          C compiler command
-#CONFIGURE    CFLAGS      C compiler flags
-#CONFIGURE    LT_SYS_LIBRARY_PATH
-#CONFIGURE                User-defined run-time library search path.
 
 ######################## Process & Validate Options ###########################
 include(autocmake_safeguards)
@@ -327,6 +295,9 @@ booleanize01(LIBINT_ENABLE_GENERIC_CODE)
 set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/stage)
 set(EXPORT_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/export)  # TODO switch to something like libint-2.7.0-beta.2
 
+if (BUILD_TESTING)
+    enable_testing()
+endif()
 add_subdirectory(src)
 include(GNUInstallDirs)
 
@@ -345,7 +316,7 @@ configure_file(cmake/int_computed.cmake.in cmake/int_computed.cmake @ONLY)
 # <<<  Install  >>>
 
 install(DIRECTORY ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-                  #${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}
+                  # BINDIR excluded b/c `build_libint` not really for distribution
                   ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
                   ${STAGED_INSTALL_PREFIX}/share
         DESTINATION ${CMAKE_INSTALL_PREFIX}
