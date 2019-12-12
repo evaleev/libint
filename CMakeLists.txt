@@ -17,12 +17,11 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
 #
 #    >>> ls
 #    cmake/  COPYING  src/  tests/  ...
-#    >>> cmake -H. -Bbuild -DCMAKE_INSTALL_PREFIX=/path/to/install-libint ...
+#    >>> cmake -H. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/install-libint ...
 #    ...
 #    -- Generating done
 #    -- Build files have been written to: /current/dir/build
-#    >>> cd build && cmake --build . -j`getconf _NPROCESSORS_ONLN`
-#    >>> cmake --build . --target install
+#    >>> cd build && cmake --build . --target install -j`getconf _NPROCESSORS_ONLN`
 
 # The build is structured into three parts:
 #
@@ -192,11 +191,6 @@ option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MS
 option_with_default(BUILD_FPIC "Compile lone static library with position independent code (all libraries are fpic when BUILD_SHARED=ON)" OFF)
 option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
 
-#CONFIGURE  System types:
-#CONFIGURE    --build=BUILD     configure for building on BUILD [guessed]
-#CONFIGURE    --host=HOST       cross-compile to build programs to run on HOST [BUILD]
-#CONFIGURE    --target=TARGET   configure for building compilers for TARGET [HOST]
-#CONFIGURE  
 #CONFIGURE    --disable-t1g12-support Libint will not support [Ti,G12] integrals
 #CONFIGURE    --enable-accum-ints     Accumulate integrals to the buffer, rather than
 #CONFIGURE                            copy.
@@ -208,20 +202,14 @@ option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed
 #CONFIGURE                            precision.
 #CONFIGURE  
 #CONFIGURE  Optional Packages:
-#CONFIGURE    --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
-#CONFIGURE    --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
 #CONFIGURE    --with-api-prefix       Prepend this string to every name in the library API
 #CONFIGURE                            (except for the types).
 #CONFIGURE    --with-vector-length=N  Compute integrals in vectors of length N.
 #CONFIGURE    --with-vector-method    Specifies how to vectorize integrals. Allowed values
 #CONFIGURE                            are 'block' (default), and 'line'.
 #CONFIGURE    --with-build-id         Gives an identifier for the build.
-#CONFIGURE    --with-libint-includedir
-#CONFIGURE                            Specifies include file install subdir.
 #CONFIGURE    --with-libint-exportdir Specifies export directory name. Default is
 #CONFIGURE                            libint-<version>.
-#CONFIGURE    --with-scratchdir       Specifies the location for the machine-generated
-#CONFIGURE                            library source and object files.
 #CONFIGURE    --with-pkgconfigdir     Specifies the location to put pkg-config's data
 #CONFIGURE                            file. Default is $(libdir)/pkgconfig.
 #CONFIGURE    --with-cmakedir         Specifies the location to put FindLibint2.cmake
@@ -231,12 +219,6 @@ option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed
 #CONFIGURE    --with-real-type-includes                                                         LIBINT_USER_DEFINED_REAL_INCLUDES
 #CONFIGURE                            Additional includes necessary to use the real type
 #CONFIGURE                            (default: none).
-#CONFIGURE    --with-aix-soname=aix|svr4|both
-#CONFIGURE                            shared library versioning (aka "SONAME") variant to
-#CONFIGURE                            provide on AIX, [default=aix].
-#CONFIGURE    --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
-#CONFIGURE    --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
-#CONFIGURE                            compiler's sysroot if not specified).
 
 ######################## Process & Validate Options ###########################
 include(autocmake_safeguards)

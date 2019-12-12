@@ -20,7 +20,11 @@
 #include "simd_wrapped_vector.hpp"
 #include <iostream>
 #include <cmath>
-#include <x86intrin.h>
+#if defined(_MSC_VER)
+#  include <intrin.h>
+#elif
+#  include <x86intrin.h>
+#endif
 //#include <rr.h>
 #include <iter.h>
 #include <libint2/deriv_iter.h>

@@ -3,7 +3,9 @@
 //This header was generatef by generate_vector.cpp
 
 #include <iostream>
-#include <x86intrin.h>
+#ifndef(_MSC_VER)
+#   include <x86intrin.h>
+#endif
 #include "immintrin.h"
 #include <cstring>
 #include <cmath>
