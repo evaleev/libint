@@ -12,6 +12,13 @@ find_package(Boost 1.57 REQUIRED)
 
 # <<<  Build  >>>
 
+if(MSVC)
+    # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
+    add_definitions("/D_USE_MATH_DEFINES")
+    # Set the exception handling model
+    add_definitions("/EHsc")
+endif()
+
 add_library(INT
     algebra.cc
     buildtest.cc
