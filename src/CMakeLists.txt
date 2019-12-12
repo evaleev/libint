@@ -63,4 +63,4 @@ ExternalProject_Add(library
                -DBUILD_TESTING=${BUILD_TESTING}
     CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}
                      -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
-    TEST_COMMAND ${CMAKE_CTEST_COMMAND})
+    TEST_COMMAND ${CMAKE_CTEST_COMMAND} --extra-verbose --output-on-failure)
