@@ -15,20 +15,20 @@ target_include_directories(eritest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/eri
 target_link_libraries(eritest MPFR::MPFRXX)
 target_compile_definitions(eritest PRIVATE -D__COMPILING_LIBINT2=1)
 
-add_test(eritest/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target eritest)
-set_tests_properties(eritest/build PROPERTIES FIXTURES_SETUP ERITEST_EXEC)
-add_test(NAME eritest/run0
-        COMMAND $<TARGET_FILE:eritest> 0 2)
-set_tests_properties(eritest/run0
-        PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
-add_test(NAME eritest/run1
-        COMMAND $<TARGET_FILE:eritest> 1 1)
-set_tests_properties(eritest/run1
-        PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
-add_test(NAME eritest/run2
-        COMMAND $<TARGET_FILE:eritest> 2 1)
-set_tests_properties(eritest/run2
-        PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
+add_test(eritest_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target eritest)
+set_tests_properties(eritest_build PROPERTIES FIXTURES_SETUP ERITEST_EXEC)
+add_test(NAME eritest_run0
+         COMMAND $<TARGET_FILE:eritest> 0 2)
+set_tests_properties(eritest_run0
+                     PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
+add_test(NAME eritest_run1
+         COMMAND $<TARGET_FILE:eritest> 1 1)
+set_tests_properties(eritest_run1
+                     PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
+add_test(NAME eritest_run2
+         COMMAND $<TARGET_FILE:eritest> 2 1)
+set_tests_properties(eritest_run2
+                     PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
 
 enable_language(C)
 if (ENABLE_CXX11API)
@@ -51,13 +51,13 @@ if (ENABLE_CXX11API)
                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../include/libint2)
     target_link_libraries(unit_tests MPFR::MPFRXX)
     target_compile_definitions(unit_tests PRIVATE -D__COMPILING_LIBINT2=1)
-    set_source_files_properties(unit/c-api.c PROPERTIES LANGUAGE C)
+    set_source_files_properties(unit_c-api.c PROPERTIES LANGUAGE C)
 
-    add_test(unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests)
-    set_tests_properties(unit/build PROPERTIES FIXTURES_SETUP UNIT_TESTS_EXEC)
-    add_test(NAME unit/run
+    add_test(unit_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target unit_tests)
+    set_tests_properties(unit_build PROPERTIES FIXTURES_SETUP UNIT_TESTS_EXEC)
+    add_test(NAME unit_run
             COMMAND $<TARGET_FILE:unit_tests>)
-    set_tests_properties(unit/run
+    set_tests_properties(unit_run
             PROPERTIES FIXTURES_REQUIRED UNIT_TESTS_EXEC)
 
     add_executable(hartree-fock EXCLUDE_FROM_ALL hartree-fock/hartree-fock.cc)
@@ -69,10 +69,10 @@ if (ENABLE_CXX11API)
     target_link_libraries(hartree-fock MPFR::MPFRXX)
     target_compile_definitions(hartree-fock PRIVATE -D__COMPILING_LIBINT2=1)
 
-    add_test(hftest/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hartree-fock)
-    set_tests_properties(hftest/build PROPERTIES FIXTURES_SETUP HFTEST_EXEC)
+    add_test(hftest_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target hartree-fock)
+    set_tests_properties(hftest_build PROPERTIES FIXTURES_SETUP HFTEST_EXEC)
     if (PYTHONINTERP_FOUND)
-        add_test(NAME hftest/run
+        add_test(NAME hftest_run
                 COMMAND COMMAND ${CMAKE_COMMAND}
                 -DtestName=hartree-fock
                 -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o.xyz
@@ -80,10 +80,10 @@ if (ENABLE_CXX11API)
                 -DpythonExec=${PYTHON_EXECUTABLE}
                 -P ${CMAKE_SOURCE_DIR}/cmake/hftest.cmake)
     else()
-        add_test(NAME hftest/run
+        add_test(NAME hftest_run
                 COMMAND $<TARGET_FILE:hartree-fock> ${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o.xyz)
     endif()
-    set_tests_properties(hftest/run
+    set_tests_properties(hftest_run
             PROPERTIES FIXTURES_REQUIRED HFTEST_EXEC)
 
     find_package(Threads)  # for some reason clang does not link in threading support even though we are using C++ threads
@@ -96,10 +96,10 @@ if (ENABLE_CXX11API)
     target_link_libraries(hartree-fock++ MPFR::MPFRXX)
     target_compile_definitions(hartree-fock++ PRIVATE -D__COMPILING_LIBINT2=1)
 
-    add_test(hf++test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hartree-fock++)
-    set_tests_properties(hf++test/build PROPERTIES FIXTURES_SETUP HFXXTEST_EXEC)
+    add_test(hf++test_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target hartree-fock++)
+    set_tests_properties(hf++test_build PROPERTIES FIXTURES_SETUP HFXXTEST_EXEC)
     if (PYTHONINTERP_FOUND)
-        add_test(NAME hf++test/run
+        add_test(NAME hf++test_run
                 COMMAND COMMAND ${CMAKE_COMMAND}
                 -DtestName=hartree-fock++
                 -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz
@@ -107,9 +107,9 @@ if (ENABLE_CXX11API)
                 -DpythonExec=${PYTHON_EXECUTABLE}
                 -P ${CMAKE_SOURCE_DIR}/cmake/hftest.cmake)
     else()
-        add_test(NAME hf++test/run
+        add_test(NAME hf++test_run
                 COMMAND $<TARGET_FILE:hartree-fock++> ${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz)
     endif()
-    set_tests_properties(hf++test/run
+    set_tests_properties(hf++test_run
             PROPERTIES FIXTURES_REQUIRED HFXXTEST_EXEC)
 endif ()

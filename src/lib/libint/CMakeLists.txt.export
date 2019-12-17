@@ -66,6 +66,7 @@ if (HAVE_POSIX_MEMALIGN)
     set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics")
 endif()
 if (MSVC)
+    set(HAVE_POSIX_MEMALIGN 1)  # aliased it
     set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "(LAB) I so don't understand the option handling of ALIGN_SIZE")
 endif()
 
