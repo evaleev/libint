@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2018 Edward F. Valeev
+ *  Copyright (C) 2018-2020 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
