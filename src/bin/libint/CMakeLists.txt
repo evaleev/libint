@@ -89,11 +89,12 @@ message("GMPXX  ${GMPXX_INCLUDE} ${GMPXX_LIBRARY}")
 #else()
 #  set_target_properties(libint_compiler PROPERTIES COMPILE_FLAGS "-std=c99")
 #endif()
-#
-#if(MSVC)
-#    # Increase stack size from 1 MB to 4 MB
-#    set_target_properties(libint_compiler PROPERTIES LINK_FLAGS "/STACK:4194304")
-#endif()
+
+if(MSVC)
+    # Increase stack size from 1 MB to 4 MB
+    set_target_properties(build_libint PROPERTIES LINK_FLAGS "/STACK:4194304")
+endif()
+
 
 # <<<  Install  >>>
 

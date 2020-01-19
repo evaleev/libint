@@ -68,8 +68,6 @@ endif()
 if (MSVC)
     set(HAVE_POSIX_MEMALIGN 1)  # aliased it
     set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "(LAB) I so don't understand the option handling of ALIGN_SIZE")
-    # Increase stack size from 1 MB to 4 MB
-    set_target_properties(libint_compiler PROPERTIES LINK_FLAGS "/STACK:4194304")
 endif()
 
 if (NOT LIBINT2_REALTYPE)
@@ -136,6 +134,11 @@ target_include_directories(int-obj PRIVATE ${CMAKE_BINARY_DIR}/include/
 
 if (BUILD_SHARED OR BUILD_FPIC)
     set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+endif()
+
+if (MSVC)
+    # Increase stack size from 1 MB to 4 MB
+    set_target_properties(int-obj PROPERTIES LINK_FLAGS "/STACK:4194304")
 endif()
 
 if (BUILD_SHARED)
