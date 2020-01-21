@@ -27,6 +27,10 @@
 #include <bfset.h>
 #include <singl_stack.h>
 
+#ifdef _MSC_VER
+#define strdup _strdup
+#endif
+
 #define CTIMEENTITIES_SINGLETONS 1
 
 namespace libint2 {
