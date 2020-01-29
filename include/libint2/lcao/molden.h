@@ -385,16 +385,16 @@ class PBCExport: public Export{
       const double a = cell_axes_[0].norm();
       const double b = cell_axes_[1].norm();
       const double c = cell_axes_[2].norm();
-      const double ɑ = std::acos(cell_axes_[1].dot(cell_axes_[2]) / (b * c));
-      const double β = std::acos(cell_axes_[0].dot(cell_axes_[2]) / (a * c));
-      const double ɣ = std::acos(cell_axes_[0].dot(cell_axes_[1]) / (a * b));
+      const double alpha = std::acos(cell_axes_[1].dot(cell_axes_[2]) / (b * c));
+      const double beta = std::acos(cell_axes_[0].dot(cell_axes_[2]) / (a * c));
+      const double gamma = std::acos(cell_axes_[0].dot(cell_axes_[1]) / (a * b));
       const double radian_to_degree = 180 / M_PI;
       os << std::setw(12) << a * bohr_to_angstrom()
          << std::setw(12) << b * bohr_to_angstrom()
          << std::setw(12) << c * bohr_to_angstrom()
-         << std::setw(12) << ɑ * radian_to_degree
-         << std::setw(12) << β * radian_to_degree
-         << std::setw(12) << ɣ * radian_to_degree
+         << std::setw(12) << alpha * radian_to_degree
+         << std::setw(12) << beta * radian_to_degree
+         << std::setw(12) << gamma * radian_to_degree
          << std::endl;
     }
   }
