@@ -27,6 +27,7 @@ include(CMakePushCheckState)
 
 # Options ==============================================================================================================
 
+redefaultable_option(REQUIRE_CXX_API "Fortran03+ Libint interface" ON)
 redefaultable_option(ENABLE_FORTRAN "Fortran03+ Libint interface" OFF)
 redefaultable_option(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
 redefaultable_option(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build in one shot static and shared library variants. Uses -fPIC." OFF)
@@ -98,8 +99,13 @@ if (TARGET Eigen)
   get_property(EIGEN3_INCLUDE_DIR TARGET Eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
   message(STATUS "Found Eigen3: EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
   install(TARGETS Eigen  EXPORT libint2 COMPONENT Eigen)
-  set(LIBINT_HAS_EIGEN 1)
+  set(LIBINT_HAS_CXX_API 1)
+else(TARGET Eigen)
+  set(LIBINT_HAS_CXX_API 0)
 endif(TARGET Eigen)
+if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
+  message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DREQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
+endif()
 
 find_package(Boost 1.29)
 if (Boost_FOUND)
@@ -238,7 +244,7 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/lib/basis
 
 # LibintCXX library ====================================================================================================
 
-if (LIBINT_HAS_EIGEN)
+if (LIBINT_HAS_CXX_API)
   add_library(cxx INTERFACE)
   target_compile_features(cxx INTERFACE "cxx_std_11")
   target_link_libraries(cxx INTERFACE ${int2_library} Eigen)
@@ -257,7 +263,7 @@ if (LIBINT_HAS_EIGEN)
           # includes are installed by the include/CMakeLists.txt.include.export
           # INCLUDES DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
           )
-endif(LIBINT_HAS_EIGEN)
+endif(LIBINT_HAS_CXX_API)
 
 # Tests ================================================================================================================
 
@@ -284,7 +290,7 @@ add_test(NAME eritest/run2
 set_tests_properties(eritest/run2
         PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
 
-if (LIBINT_HAS_EIGEN)
+if (LIBINT_HAS_CXX_API)
     set(utests_src
             tests/unit/c-api.c
             tests/unit/c-api-util.cc
@@ -349,7 +355,7 @@ if (LIBINT_HAS_EIGEN)
     endif()
     set_tests_properties(hf++test/run
             PROPERTIES FIXTURES_REQUIRED HFXXTEST_EXEC)
-endif (LIBINT_HAS_EIGEN)
+endif (LIBINT_HAS_CXX_API)
 
 # Fortran bindings =====================================================================================================
 
@@ -410,7 +416,7 @@ if (ENABLE_FORTRAN)
     set_tests_properties(fortran_example/run
             PROPERTIES FIXTURES_REQUIRED FORTRAN_EXAMPLE_EXEC)
 
-    if (LIBINT_HAS_EIGEN)
+    if (LIBINT_HAS_CXX_API)
         add_executable(fortran_test EXCLUDE_FROM_ALL fortran/test.cc fortran/test-eri.cc $<TARGET_OBJECTS:libint_f>)
         target_compile_definitions(fortran_test PRIVATE __COMPILING_LIBINT2)
         target_link_libraries(fortran_test cxx)
@@ -420,7 +426,7 @@ if (ENABLE_FORTRAN)
                 COMMAND $<TARGET_FILE:fortran_test>)
         set_tests_properties(fortran_test/run
                 PROPERTIES FIXTURES_REQUIRED FORTRAN_TEST_EXEC)
-    endif (LIBINT_HAS_EIGEN)
+    endif (LIBINT_HAS_CXX_API)
 
     # install targets
     install(FILES ${CMAKE_BINARY_DIR}/libint_f.mod
