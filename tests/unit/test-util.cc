@@ -55,17 +55,19 @@ TEST_CASE("XYZ reader", "[util]") {
     std::stringstream sstr;
     sstr << "2\n\nO 0 0 0\nO 0 0 1\n";
     auto atoms = libint2::read_dotxyz(sstr);
+    const auto angstrom_to_bohr = 1 / codata_2018::bohr_to_angstrom;
     REQUIRE(atoms.size() == 2);
     REQUIRE(atoms[0] == Atom{8, 0., 0., 0.});
-    REQUIRE(atoms[1] == Atom{8, 0., 0., 1. / codata_2018::bohr_to_angstrom});
+    REQUIRE(atoms[1] == Atom{8, 0., 0., 1. * angstrom_to_bohr});
   }
   { // validate use of conversion factor
     std::stringstream sstr;
     sstr << "2\n\nO 0 0 0\nO 0 0 1\n";
     auto atoms = libint2::read_dotxyz(sstr, codata_2014::bohr_to_angstrom);
+    const auto angstrom_to_bohr = 1 / codata_2014::bohr_to_angstrom;
     REQUIRE(atoms.size() == 2);
     REQUIRE(atoms[0] == Atom{8, 0., 0., 0.});
-    REQUIRE(atoms[1] == Atom{8, 0., 0., 1. / codata_2014::bohr_to_angstrom});
+    REQUIRE(atoms[1] == Atom{8, 0., 0., 1. * angstrom_to_bohr});
   }
   { // validate PBS results
     std::stringstream sstr;
@@ -73,14 +75,15 @@ TEST_CASE("XYZ reader", "[util]") {
     std::vector<Atom> atoms;
     std::array<std::array<double, 3>, 3> cell;
     std::tie(atoms, cell) = libint2::read_dotxyz_pbc(sstr);
+    const auto angstrom_to_bohr = 1 / codata_2018::bohr_to_angstrom;
     REQUIRE(atoms.size() == 2);
     REQUIRE(atoms[0] == Atom{8, 0., 0., 0.});
-    REQUIRE(atoms[1] == Atom{8, 0., 0., 1. / codata_2018::bohr_to_angstrom});
+    REQUIRE(atoms[1] == Atom{8, 0., 0., 1. * angstrom_to_bohr});
     REQUIRE(cell[0] ==
-            std::array<double, 3>{2. / codata_2018::bohr_to_angstrom, 0., 0.});
+            std::array<double, 3>{2. * angstrom_to_bohr, 0., 0.});
     REQUIRE(cell[1] ==
-            std::array<double, 3>{0., 3. / codata_2018::bohr_to_angstrom, 0.});
+            std::array<double, 3>{0., 3. * angstrom_to_bohr, 0.});
     REQUIRE(cell[2] ==
-            std::array<double, 3>{0., 0., 4. / codata_2018::bohr_to_angstrom});
+            std::array<double, 3>{0., 0., 4. * angstrom_to_bohr});
   }
 }
