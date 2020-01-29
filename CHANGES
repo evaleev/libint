@@ -6,6 +6,7 @@ Following is a brief summary of changes made in each release of Libint.
 - 2019-xx-yy: 2.7.0-beta.3
   - added 2018 CODATA bohr->angstrom conversion, made the default throughout
   - Molden exporters use angstroms to avoid extra reliance on its readers' conversion
+  - resolves issue #158: check for false-positive Eigen search
 
 - 2019-11-26: 2.7.0-beta.2
   - resolves issue #143: definition of M_PI in c-api.c may be missing

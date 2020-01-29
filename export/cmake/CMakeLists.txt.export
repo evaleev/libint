@@ -68,14 +68,38 @@ if (ENABLE_MPFR)
     endif()
 endif()
 
-find_package(Eigen3)
-if (EIGEN3_FOUND)
-    add_library(Eigen INTERFACE)
+# look for Eigen
+# prefer CMake-configured-and-installed instance
+# re:NO_CMAKE_PACKAGE_REGISTRY: eigen3 registers its *build* tree with the user package registry ...
+#                               to avoid issues with wiped build directory look for installed eigen
+find_package(Eigen3 NO_MODULE QUIET NO_CMAKE_PACKAGE_REGISTRY)
+if (TARGET Eigen3::Eigen)
+  add_library(Eigen INTERFACE)
+  foreach(prop INTERFACE_INCLUDE_DIRECTORIES INTERFACE_COMPILE_DEFINITIONS INTERFACE_COMPILE_OPTIONS INTERFACE_LINK_LIBRARIES INTERFACE_POSITION_INDEPENDENT_CODE)
+    get_property(EIGEN3_${prop} TARGET Eigen3::Eigen PROPERTY ${prop})
     set_property(TARGET Eigen PROPERTY
-                 INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
-    install(TARGETS Eigen  EXPORT libint2 COMPONENT Eigen)
-    set(LIBINT_HAS_EIGEN 1)
-endif (EIGEN3_FOUND)
+        ${prop} ${EIGEN3_${prop}})
+  endforeach()
+else (TARGET Eigen3::Eigen)
+  # otherwise use FindEigen3.cmake module possibly installed somewhere in the path
+  # but make sure EIGEN3_INCLUDE_DIR exists!
+  find_package(Eigen3)
+  if (EIGEN3_FOUND)
+    if (NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
+      message(WARNING "Eigen3 is \"found\", but the reported EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR} does not exist; likely corrupt Eigen3 build registered in user or system package registry; specify EIGEN3_INCLUDE_DIR manually or (better) configure (with CMake) and install Eigen3 package")
+    else(NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
+      add_library(Eigen INTERFACE)
+      set_property(TARGET Eigen PROPERTY
+          INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
+    endif(NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
+  endif (EIGEN3_FOUND)
+endif (TARGET Eigen3::Eigen)
+if (TARGET Eigen)
+  get_property(EIGEN3_INCLUDE_DIR TARGET Eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+  message(STATUS "Found Eigen3: EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
+  install(TARGETS Eigen  EXPORT libint2 COMPONENT Eigen)
+  set(LIBINT_HAS_EIGEN 1)
+endif(TARGET Eigen)
 
 find_package(Boost 1.29)
 if (Boost_FOUND)
