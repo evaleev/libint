@@ -8,7 +8,7 @@ except Exception as e:
     sys.exit(2)
 
 
-eref = -74.942080057698
+eref = -74.942080057696
 tol = 1e-11
 
 returncode = 1
