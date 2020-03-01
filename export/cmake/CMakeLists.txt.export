@@ -27,7 +27,7 @@ include(CMakePushCheckState)
 
 # Options ==============================================================================================================
 
-redefaultable_option(REQUIRE_CXX_API "Fortran03+ Libint interface" ON)
+redefaultable_option(REQUIRE_CXX_API "C++11 Libint interface" ON)
 redefaultable_option(ENABLE_FORTRAN "Fortran03+ Libint interface" OFF)
 redefaultable_option(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
 redefaultable_option(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build in one shot static and shared library variants. Uses -fPIC." OFF)
