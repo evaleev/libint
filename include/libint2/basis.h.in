@@ -170,10 +170,13 @@ namespace libint2 {
 
       /**
        * @param[in] atoms \c std::vector of Atom objects
+       * @param[in] element_bases vector of shell sequences for each element; if @c throw_if_no_match is false,
+       *            ok for @c element_bases[Z] to be nonempty or
+       *            not exist (e.g. if @c element_bases.size()<=Z )
        * @param[in] name the basis set name
        * @param[in] throw_if_no_match If true, and the basis is not found for this atomic number, throw a std::logic_error.
        *       Otherwise omit the basis quietly.
-       * @throw std::logic_error if throw_if_no_match is true and for at least one atom no matching basis is found.
+       * @throw std::logic_error if throw_if_no_match is true and for at least one atom with no matching (or empty) basis is found.
        * \note All instances of the same chemical element receive the same basis set.
        */
       BasisSet(const std::vector<Atom>& atoms,
