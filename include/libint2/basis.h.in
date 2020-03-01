@@ -195,6 +195,8 @@ namespace libint2 {
             throw std::logic_error(std::string("did not find the basis for Z=") + std::to_string(Z) + " in the element_bases");
           }
         } // atom loop
+
+        init();
       }
 
       /// forces solid harmonics/Cartesian Gaussians
