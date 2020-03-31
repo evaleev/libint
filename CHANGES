@@ -3,7 +3,10 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2019-xx-yy: 2.7.0-beta.4
+- 2019-03-31: 2.7.0-beta.5
+  - made usable as a CMake subproject
+
+- 2019-03-01: 2.7.0-beta.4
   - PR #159: fixed description of cmake option REQUIRE_CXX_API
   - resolved issue #164: per-elem BasisSet ctor missing init() (HT @swillow)
 
