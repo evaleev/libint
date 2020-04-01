@@ -870,9 +870,9 @@ print_header(std::ostream& os)
 {
   os << "----------------------------------------------" << endl;
   os << " build_libint2: optimizing integrals compiler " << endl;
-  os << "                        by Edward F. Valeev           " << endl;
-  os << "                and ideas by Justin Fermann   "
-     << "                         and Curtis Janssen   " << endl;
+  os << "                        by Edward F. Valeev   " << endl;
+  os << "                and ideas by Justin Fermann   " << endl;
+  os << "                         and Curtis Janssen   " << endl;
   os << "----------------------------------------------" << endl << endl;
 }
 
