@@ -363,7 +363,10 @@ endif (LIBINT_HAS_CXX_API)
 # Fortran bindings =====================================================================================================
 
 if (ENABLE_FORTRAN)
-    # preprocess libint2.h ... this is a guess for non-unix
+    # specify the location of modules
+    set(CMAKE_Fortran_MODULE_DIRECTORY "${PROJECT_BINARY_DIR}/fortran/modules/")
+
+    # preprocess libint2.h ... this is a guess for UNIX systems only
     if (UNIX)
 
         file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/fortran)
@@ -402,14 +405,12 @@ if (ENABLE_FORTRAN)
             $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/fortran>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_INCLUDEDIR}>)
     target_compile_definitions(libint_f PRIVATE __COMPILING_LIBINT2)
-    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/libint_f.mod
-                       COMMAND ${CMAKE_COMMAND} -E "message(STATUS \"Building Fortran module libint_f.mod\")"
-                       DEPENDS libint_f
-                       VERBATIM USES_TERMINAL)
+    set_property(TARGET libint_f PROPERTY Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/fortran/modules)
 
     # tests
-    add_executable(fortran_example-libint2 EXCLUDE_FROM_ALL fortran/fortran_example.F90 $<TARGET_OBJECTS:libint_f>)
-    target_link_libraries(fortran_example-libint2 ${int2_library})
+    add_executable(fortran_example-libint2 EXCLUDE_FROM_ALL fortran/fortran_example.F90)
+    target_link_libraries(fortran_example-libint2 ${int2_library} libint_f)
+    target_include_directories(fortran_example-libint2 PRIVATE $<TARGET_PROPERTY:libint_f,Fortran_MODULE_DIRECTORY>)
 
     add_test(fortran_example-libint2/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_example-libint2)
     set_tests_properties(fortran_example-libint2/build PROPERTIES FIXTURES_SETUP FORTRAN_EXAMPLE_EXEC)
@@ -420,7 +421,8 @@ if (ENABLE_FORTRAN)
 
     if (LIBINT_HAS_CXX_API)
         add_executable(fortran_test-libint2 EXCLUDE_FROM_ALL fortran/test.cc fortran/test-eri.cc $<TARGET_OBJECTS:libint_f>)
-        target_link_libraries(fortran_test-libint2 libint2_cxx)
+        target_link_libraries(fortran_test-libint2 libint2_cxx libint_f)
+        target_include_directories(fortran_test-libint2 PRIVATE $<TARGET_PROPERTY:libint_f,Fortran_MODULE_DIRECTORY>)
         add_test(fortran_test-libint2/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_test-libint2)
         set_tests_properties(fortran_test-libint2/build PROPERTIES FIXTURES_SETUP FORTRAN_TEST_EXEC)
         add_test(NAME fortran_test-libint2/run
@@ -429,11 +431,11 @@ if (ENABLE_FORTRAN)
                 PROPERTIES FIXTURES_REQUIRED FORTRAN_TEST_EXEC)
     endif (LIBINT_HAS_CXX_API)
 
-    # install targets
-    install(FILES ${CMAKE_BINARY_DIR}/libint_f.mod
-            COMPONENT fortran
-            DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
-            )
+    # install Fortran modules
+    install(DIRECTORY "${CMAKE_Fortran_MODULE_DIRECTORY}"
+        COMPONENT fortran
+        DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
+        )
 
 endif(ENABLE_FORTRAN)
 
