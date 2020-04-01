@@ -23,7 +23,7 @@ set(LIBINT2_EXT_VERSION "@LIBINT_EXT_VERSION@")
 set(LIBINT2_LIBRARIES Libint2::int2)
 set(LIBINT2_INCLUDE_DIRS "@PACKAGE_LIBINT2_INSTALL_INCLUDEDIR@")
 
-# Include library IMPORT targets
+# Import library targets
 if(NOT TARGET Libint2::libint2)
   include("${CMAKE_CURRENT_LIST_DIR}/libint2-targets.cmake")
   if(NOT TARGET Libint2::libint2)
@@ -31,17 +31,31 @@ if(NOT TARGET Libint2::libint2)
   endif()
 endif()
 
+# Need Threads::Threads
+if (NOT TARGET Threads::Threads)
+  find_package(Threads QUIET REQUIRED)
+endif(NOT TARGET Threads::Threads)
+
+# this aliases _target_name (if defined) to _alias_name
+# this also sets IMPORTED_GLOBAL on _target_name to true
+macro(alias_target _alias_name _target_name)
+  if (TARGET ${_target_name} AND NOT TARGET ${_alias_name})
+    get_property(${_target_name}_is_global_set TARGET ${_target_name} PROPERTY IMPORTED_GLOBAL SET)
+    if (${_target_name}_is_global_set)
+      get_property(${_target_name}_is_global TARGET ${_target_name} PROPERTY IMPORTED_GLOBAL)
+      if (NOT ${_target_name}_is_global)
+        set_property(TARGET ${_target_name} PROPERTY IMPORTED_GLOBAL TRUE)
+      endif(NOT ${_target_name}_is_global)
+    endif(${_target_name}_is_global_set)
+    add_library(${_alias_name} ALIAS ${_target_name})
+  endif(TARGET ${_target_name} AND NOT TARGET ${_alias_name})
+endmacro(alias_target)
+
 # alias new target names to old namespaced targets
-add_library(Libint2::int2 ALIAS Libint2::libint2)
-if (TARGET Libint2::libint2-static)
-  add_library(Libint2::int2-static ALIAS Libint2::libint2-static)
-  add_library(Libint2::int2_static ALIAS Libint2::libint2-static)
-endif(TARGET Libint2::libint2-static)
-if (TARGET Libint2::libint2_Eigen)
-  add_library(Libint2::Eigen ALIAS Libint2::libint2_Eigen)
-endif (TARGET Libint2::libint2_Eigen)
-if (TARGET Libint2::libint2_cxx)
-  add_library(Libint2::cxx ALIAS Libint2::libint2_cxx)
-endif (TARGET Libint2::libint2_cxx)
+alias_target(Libint2::int2 Libint2::libint2)
+alias_target(Libint2::int2-static Libint2::libint2-static)
+alias_target(Libint2::int2_static Libint2::libint2-static)
+alias_target(Libint2::Eigen Libint2::libint2_Eigen)
+alias_target(Libint2::cxx Libint2::libint2_cxx)
 
 set(LIBINT2_FOUND TRUE)

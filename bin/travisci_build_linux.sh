@@ -72,12 +72,12 @@ mkdir cmake_test
 cd cmake_test
 cat > CMakeLists.txt <<EOF
 cmake_minimum_required(VERSION 3.8)
+project(hf++)
 find_package(Libint2 2.7.0 REQUIRED)
-find_package(Threads)  # for some reason clang does not link in threading support even though we are using C++ threads
 add_executable(hf++ EXCLUDE_FROM_ALL ../tests/hartree-fock/hartree-fock++.cc)
-target_link_libraries(hf++ Libint2::cxx \${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(hf++ Libint2::cxx)
 EOF
-cmake . -DCMAKE_MODULE_PATH=${INSTALL_PREFIX}/libint2/lib/cmake/libint2 -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}/libint2
+cmake . -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}/libint2
 cmake --build . --target hf++
 ./hf++ ../tests/hartree-fock/h2o_rotated.xyz | python ../tests/hartree-fock/hartree-fock++-validate.py ../MakeVars.features
 cd ..
