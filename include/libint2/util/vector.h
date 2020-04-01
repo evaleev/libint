@@ -21,11 +21,10 @@
 #ifndef _libint2_src_lib_libint_vector_h_
 #define _libint2_src_lib_libint_vector_h_
 
-#include <unistd.h>
-
 #if defined(__cplusplus)
 
 #include <algorithm>
+#include <cstddef>
 
 #include <libint2/util/type_traits.h>
 
@@ -42,7 +41,7 @@ namespace libint2 {
    * Vector<N,T> is used by vectorized Libint library as fixed-length vectors amenable for SIMD-style parallelism
    * Vectorization via this class should be the last-resort measure if no specialized implementation is available
    */
-  template <size_t N, typename T>
+  template <std::size_t N, typename T>
     struct Vector {
 
       T d[N];
@@ -67,19 +66,19 @@ namespace libint2 {
       }
 
       Vector& operator=(T a) {
-        for(size_t i=0; i<N; ++i)
+        for(std::size_t i=0; i<N; ++i)
           d[i] = a;
         return *this;
       }
 
       Vector& operator+=(Vector a) {
-        for(size_t i=0; i<N; ++i)
+        for(std::size_t i=0; i<N; ++i)
           d[i] += a.d[i];
         return *this;
       }
 
       Vector& operator-=(Vector a) {
-        for(size_t i=0; i<N; ++i)
+        for(std::size_t i=0; i<N; ++i)
           d[i] -= a.d[i];
         return *this;
       }
@@ -91,74 +90,74 @@ namespace libint2 {
   };
 
   //@{ arithmetic operators
-  template <size_t N, typename T>
+  template <std::size_t N, typename T>
   Vector<N,T> operator*(T a, Vector<N,T> b) {
     Vector<N,T> c;
-    for(size_t i=0; i<N; ++i)
+    for(std::size_t i=0; i<N; ++i)
       c.d[i] = a * b.d[i];
     return c;
   }
 
-  template <size_t N, typename T>
+  template <std::size_t N, typename T>
   Vector<N,T> operator*(Vector<N,T> a, T b) {
     Vector<N,T> c;
-    for(size_t i=0; i<N; ++i)
+    for(std::size_t i=0; i<N; ++i)
       c.d[i] = b * a.d[i];
     return c;
   }
 
-  template <size_t N, typename T>
+  template <std::size_t N, typename T>
   Vector<N,T> operator*(int a, Vector<N,T> b) {
     if (a == 1)
       return b;
     else {
       Vector<N, T> c;
-      for (size_t i = 0; i < N; ++i)
+      for (std::size_t i = 0; i < N; ++i)
         c.d[i] = a * b.d[i];
       return c;
     }
   }
 
-  template <size_t N, typename T>
+  template <std::size_t N, typename T>
   Vector<N,T> operator*(Vector<N,T> a, int b) {
     if (b == 1)
       return a;
     else {
       Vector<N, T> c;
-      for (size_t i = 0; i < N; ++i)
+      for (std::size_t i = 0; i < N; ++i)
         c.d[i] = b * a.d[i];
       return c;
     }
   }
 
-  template <size_t N, typename T>
+  template <std::size_t N, typename T>
   Vector<N,T> operator*(Vector<N,T> a, Vector<N,T> b) {
     Vector<N,T> c;
-    for(size_t i=0; i<N; ++i)
+    for(std::size_t i=0; i<N; ++i)
       c.d[i] = a.d[i] * b.d[i];
     return c;
   }
 
-  template <size_t N, typename T>
+  template <std::size_t N, typename T>
   Vector<N,T> operator+(Vector<N,T> a, Vector<N,T> b) {
     Vector<N,T> c;
-    for(size_t i=0; i<N; ++i)
+    for(std::size_t i=0; i<N; ++i)
       c.d[i] = a.d[i] + b.d[i];
     return c;
   }
 
-  template <size_t N, typename T>
+  template <std::size_t N, typename T>
   Vector<N,T> operator-(Vector<N,T> a, Vector<N,T> b) {
     Vector<N,T> c;
-    for(size_t i=0; i<N; ++i)
+    for(std::size_t i=0; i<N; ++i)
       c.d[i] = a.d[i] - b.d[i];
     return c;
   }
 
-  template <size_t N, typename T>
+  template <std::size_t N, typename T>
   Vector<N,T> operator/(Vector<N,T> a, Vector<N,T> b) {
     Vector<N,T> c;
-    for(size_t i=0; i<N; ++i)
+    for(std::size_t i=0; i<N; ++i)
       c.d[i] = a.d[i] / b.d[i];
     return c;
   }
@@ -170,15 +169,15 @@ namespace libint2 {
 
 namespace libint2 {
 
-  template <size_t N, typename T>
+  template <std::size_t N, typename T>
   struct is_vector<simd::Vector<N,T> > {
       static const bool value = true;
   };
 
-  template <size_t N, typename T>
+  template <std::size_t N, typename T>
   struct vector_traits<simd::Vector<N,T> > {
       typedef T value_type;
-      static const size_t extent = N;
+      static const std::size_t extent = N;
   };
 
 } // namespace libint2
