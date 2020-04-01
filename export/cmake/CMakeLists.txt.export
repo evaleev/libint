@@ -325,6 +325,7 @@ if (LIBINT_HAS_CXX_API)
         add_test(NAME hf-libint2/run
                 COMMAND COMMAND ${CMAKE_COMMAND}
                 -DtestName=hf-libint2
+                -DfileName=hartree-fock
                 -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o.xyz
                 -DsrcDir=${CMAKE_SOURCE_DIR}
                 -DpythonExec=${PYTHON_EXECUTABLE}
@@ -346,6 +347,7 @@ if (LIBINT_HAS_CXX_API)
         add_test(NAME hf++-libint2/run
                 COMMAND COMMAND ${CMAKE_COMMAND}
                 -DtestName=hf++-libint2
+                -DfileName=hartree-fock
                 -DtestArgs=${CMAKE_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz
                 -DsrcDir=${CMAKE_SOURCE_DIR}
                 -DpythonExec=${PYTHON_EXECUTABLE}

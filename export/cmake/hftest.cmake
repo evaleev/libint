@@ -3,8 +3,8 @@ macro(runtest)
 
     set(OUTPUT_FILE_NAME "${CMAKE_BINARY_DIR}/${testName}.out")
 
-    set(CHECK_CMD "${pythonExec}" "${srcDir}/tests/hartree-fock/${testName}-validate.py")
-    if (${testName} STREQUAL "hartree-fock++")
+    set(CHECK_CMD "${pythonExec}" "${srcDir}/tests/hartree-fock/${fileName}-validate.py")
+    if (${fileName} STREQUAL "hartree-fock++")
         set(CHECK_ARGS "${srcDir}/MakeVars.features")
     endif()
 
