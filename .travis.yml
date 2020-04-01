@@ -1,17 +1,13 @@
 os:
   - linux
 language: cpp
-dist: xenial
+dist: bionic
 env:
   global:
     - BUILD_PREFIX=/home/travis/_build
     - INSTALL_PREFIX=/home/travis/_install
 addons:
   apt:
-    sources: &base_sources
-      - ubuntu-toolchain-r-test
-    sources: &clang8_sources
-      - llvm-toolchain-xenial-8
     packages: &base_packages
       - libgmp-dev
       - automake
@@ -22,31 +18,9 @@ matrix:
   fast_finish: true
   include:
     - compiler: gcc
-      env: GCC_VERSION=5 BUILD_TYPE=Debug
-      addons:
-        apt:
-          sources:
-            - *base_sources
-          packages:
-            - *base_packages
-            - g++-5
-            - gfortran-5
-    - compiler: gcc
-      env: GCC_VERSION=5 BUILD_TYPE=Release
-      addons:
-        apt:
-          sources:
-            - *base_sources
-          packages:
-            - *base_packages
-            - g++-5
-            - gfortran-5
-    - compiler: gcc
       env: GCC_VERSION=6 BUILD_TYPE=Debug
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-6
@@ -55,8 +29,6 @@ matrix:
       env: GCC_VERSION=6 BUILD_TYPE=Release
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-6
@@ -65,8 +37,6 @@ matrix:
       env: GCC_VERSION=7 BUILD_TYPE=Debug
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-7
@@ -75,8 +45,6 @@ matrix:
       env: GCC_VERSION=7 BUILD_TYPE=Release
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-7
@@ -85,8 +53,6 @@ matrix:
       env: GCC_VERSION=8 BUILD_TYPE=Debug
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-8
@@ -95,19 +61,34 @@ matrix:
       env: GCC_VERSION=8 BUILD_TYPE=Release
       addons:
         apt:
-          sources:
-            - *base_sources
           packages:
             - *base_packages
             - g++-8
             - gfortran-8
+    - compiler: gcc
+      env: GCC_VERSION=9 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+          packages:
+            - *base_packages
+            - g++-9
+            - gfortran-9
+    - compiler: gcc
+      env: GCC_VERSION=9 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+          packages:
+            - *base_packages
+            - g++-9
+            - gfortran-9
     - compiler: clang
       env: CLANG_VERSION=8 GCC_VERSION=8 BUILD_TYPE=Debug
       addons:
         apt:
-          sources:
-            - *base_sources
-            - *clang8_sources
           packages:
             - *base_packages
             - clang-8
@@ -118,15 +99,40 @@ matrix:
       env: CLANG_VERSION=8 GCC_VERSION=8 BUILD_TYPE=Release
       addons:
         apt:
-          sources:
-            - *base_sources
-            - *clang8_sources
           packages:
             - *base_packages
             - clang-8
             - libc++-8-dev
             - libc++abi-8-dev
             - gfortran-8
+    - compiler: clang
+      env: CLANG_VERSION=9 GCC_VERSION=8 BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - *base_packages
+            - g++-8
+            - gfortran-8
+            - clang-9
+            - libc++-9-dev
+            - libc++abi-9-dev
+    - compiler: clang
+      env: CLANG_VERSION=9 GCC_VERSION=8 BUILD_TYPE=Release
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - *base_packages
+            - g++-8
+            - gfortran-8
+            - clang-9
+            - libc++-9-dev
+            - libc++abi-9-dev
 
 install: true
 before_install:

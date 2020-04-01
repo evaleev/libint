@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# this script builds a 'Xenial' env docker image used by Travis-CI for Libint project
+# this script builds a 'Bionic' env docker image used by Travis-CI for Libint project
 #
 # to run bash in the image: docker run -it libint-travis-debug bash -l
 # see https://github.com/evaleev/libint/wiki/Travis-CI-Administration-Notes for further instructions
@@ -18,11 +18,10 @@ setup=setup.sh
 cat > $setup << END
 #!/bin/sh
 curl -sSL "http://apt.llvm.org/llvm-snapshot.gpg.key" | apt-key add -
-echo "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main" | tee -a /etc/apt/sources.list > /dev/null
+echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main" | tee -a /etc/apt/sources.list > /dev/null
 apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-#apt-add-repository -y "ppa:boost-latest/ppa"
 apt-get -yq update >> ~/apt-get-update.log
-apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-5 g++-6 g++-7 g++-8 gfortran-5 gfortran-6 gfortran-7 gfortran-8 libgmp-dev automake cmake libboost-dev clang-8 libc++-8-dev libc++abi-8-dev gdb
+apt-get -yq --no-install-suggests --no-install-recommends --force-yes install g++-6 g++-7 g++-8 g++-9 gfortran-6 gfortran-7 gfortran-8 gfortran-9 libgmp-dev automake cmake libboost-dev clang-8 clang-9 gdb
 mkdir -p ${TRAVIS_BUILD_TOPDIR}
 cd ${TRAVIS_BUILD_TOPDIR}
 git clone https://github.com/evaleev/libint.git ${TRAVIS_BUILD_TOPDIR}/evaleev/libint
@@ -45,9 +44,8 @@ chmod +x $build
 ##############################################################
 # make Dockerfile
 cat > Dockerfile << END
-# Travis default 'Xenial' image
-# for up-to-date info: https://docs.travis-ci.com/user/common-build-problems/#troubleshooting-locally-in-a-docker-image
-FROM travisci/ci-sardonyx:packer-1541445940-e193d27
+# Travis default 'Bionic' image
+FROM travisci/ci-ubuntu-1804:packer-1582574251-a9b1ae58
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
