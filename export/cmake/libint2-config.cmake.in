@@ -24,11 +24,24 @@ set(LIBINT2_LIBRARIES Libint2::int2)
 set(LIBINT2_INCLUDE_DIRS "@PACKAGE_LIBINT2_INSTALL_INCLUDEDIR@")
 
 # Include library IMPORT targets
-if(NOT TARGET Libint2::int2)
+if(NOT TARGET Libint2::libint2)
   include("${CMAKE_CURRENT_LIST_DIR}/libint2-targets.cmake")
-  if(NOT TARGET Libint2::int2)
-    message(FATAL_ERROR "expected Libint2::int2 among imported Libint2 targets")
+  if(NOT TARGET Libint2::libint2)
+    message(FATAL_ERROR "expected Libint2::libint2 among imported Libint2 targets")
   endif()
 endif()
+
+# alias new target names to old namespaced targets
+add_library(Libint2::int2 ALIAS Libint2::libint2)
+if (TARGET Libint2::libint2-static)
+  add_library(Libint2::int2-static ALIAS Libint2::libint2-static)
+  add_library(Libint2::int2_static ALIAS Libint2::libint2-static)
+endif(TARGET Libint2::libint2-static)
+if (TARGET Libint2::libint2_Eigen)
+  add_library(Libint2::Eigen ALIAS Libint2::libint2_Eigen)
+endif (TARGET Libint2::libint2_Eigen)
+if (TARGET Libint2::libint2_cxx)
+  add_library(Libint2::cxx ALIAS Libint2::libint2_cxx)
+endif (TARGET Libint2::libint2_cxx)
 
 set(LIBINT2_FOUND TRUE)
