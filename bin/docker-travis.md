@@ -1,5 +1,5 @@
 # Docker Travis container notes
-This method requires Docker installed on your local machine. This also assumes that you start at the top of the TTG source tree.
+This method requires Docker installed on your local machine. This also assumes that you start at the top of the Libint source tree.
 1. Create a Travis-CI 'Bionic' docker image: `cd bin; ./docker-travis-build.sh`
 2. Run shell in a container using the newly created image: `docker run -it libint-travis-debug bash -l`; if you want to run debugger you want to add `--privileged` flag, as in: `docker run --privileged -it libint-travis-debug bash -l`
 3. `cd /home/travis/_build`
