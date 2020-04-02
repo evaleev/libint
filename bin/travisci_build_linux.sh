@@ -49,23 +49,9 @@ tar -xvzf libint-*.tgz
 rm -f libint-*.tgz
 cd libint-*
 
-# test deprecated autotools build only with clang, use cmake for gnu
-if [ "$CXX_TYPE" = "clang" ]; then
-  ./configure CPPFLAGS="-I${INSTALL_PREFIX}/eigen3/include/eigen3 -DLIBINT2_DISABLE_BOOST_CONTAINER_SMALL_VECTOR=1" --enable-fortran --prefix=${INSTALL_PREFIX}/libint2
-  make -j2
-  make check
-
-  # build F03 interface
-  make fortran
-  fortran/fortran_example
-
-  # install the exported lib for testing
-  make install
-else
-  cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DENABLE_FORTRAN=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}/libint2 -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}/eigen3
-  cmake --build . --target check
-  cmake --build . --target install
-fi
+cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DENABLE_FORTRAN=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}/libint2 -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}/eigen3
+cmake --build . --target check
+cmake --build . --target install
 
 # test the exported lib
 mkdir cmake_test
