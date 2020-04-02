@@ -20,7 +20,7 @@ realclean::
 
 export:: exportdir tgz strip_some_preproc_symb
 
-tgz:: exportdir
+tgz:: exportdir strip_some_preproc_symb
 	(cd $(TOPDIR) && $(TAR) -czf $(EXPORTDIR).tgz $(EXPORTDIR) && rm -rf $(EXPORTDIR))
 
 # some preprocessor symbols need to be stripped/replaced since they can be redefined by the user of the exported library
