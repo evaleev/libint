@@ -60,8 +60,9 @@ cat > CMakeLists.txt <<EOF
 cmake_minimum_required(VERSION 3.8)
 project(hf++)
 find_package(Libint2 2.7.0 REQUIRED)
+find_package(Threads::Threads)  # clang does not autolink threads even though we are using std::thread
 add_executable(hf++ EXCLUDE_FROM_ALL ../tests/hartree-fock/hartree-fock++.cc)
-target_link_libraries(hf++ Libint2::cxx)
+target_link_libraries(hf++ Libint2::cxx Threads::Threads)
 EOF
 cmake . -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}/libint2
 cmake --build . --target hf++
