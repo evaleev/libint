@@ -3,9 +3,10 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2019-04-01: 2.7.0-beta.5
+- 2019-04-02: 2.7.0-beta.5
   - made usable as a CMake subproject
   - the deprecated autotools build harness has been removed from the exported library; CMake is the only way to build exported libs
+  - reduced compilation noise in generated code
 
 - 2019-03-01: 2.7.0-beta.4
   - PR #159: fixed description of cmake option REQUIRE_CXX_API

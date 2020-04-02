@@ -197,7 +197,7 @@ std::string
 CppCodeContext::code_prefix() const
 {
   if (cparams()->use_C_linking()) {
-    return "#ifdef __cplusplus\nextern \"C\" {\n#endif\n";
+    return "#ifdef __cplusplus\nLIBINT_PRAGMA_CLANG(diagnostic push)\nLIBINT_PRAGMA_CLANG(diagnostic ignored \"-Wunused-variable\")\nLIBINT_PRAGMA_GCC(diagnostic push)\nLIBINT_PRAGMA_GCC(diagnostic ignored \"-Wunused-variable\")\nextern \"C\" {\n#endif\n";
   }
   return "";
 }
@@ -206,7 +206,7 @@ std::string
 CppCodeContext::code_postfix() const
 {
   if (cparams()->use_C_linking()) {
-    return "#ifdef __cplusplus\n};\n#endif\n";
+    return "#ifdef __cplusplus\n};\nLIBINT_PRAGMA_CLANG(diagnostic pop)\nLIBINT_PRAGMA_GCC(diagnostic pop)\n#endif\n";
   }
   return "";
 }
