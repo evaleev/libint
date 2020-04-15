@@ -1,4 +1,4 @@
-//Name: Jonathan Dullea 
+//Name: Jonathan Dullea
 //jdullea@umass.edu
 //This header was generatef by generate_vector.cpp
 
@@ -7,7 +7,6 @@
 #include "immintrin.h"
 #include <cstring>
 #include <cmath>
-using namespace std;
 
 template <typename Real, unsigned int n>
 class VectorSIMD{
@@ -162,19 +161,19 @@ public:
 		return r;
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,2> a){ 
+	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,2> a){
 		double ad[2];
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << "}";
 		return os;
 		}
-	
+
 	inline double reduce(VectorSIMD<double,2> a){
-		
+
 	       __m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
 	      double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
 	      return new_eri_double;
-	}	
+	}
 
 
 
@@ -322,7 +321,7 @@ public:
 		return r;
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,3> a){ 
+	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,3> a){
 		double ad[3];
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << "}";
@@ -334,7 +333,7 @@ public:
 	       __m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
 	      double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
 	      return new_eri_double;
-	}	
+	}
 
 
 
@@ -484,7 +483,7 @@ public:
 		return r;
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,4> a){ 
+	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,4> a){
 		double ad[4];
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << "}";
@@ -495,7 +494,7 @@ public:
 	       __m256d s = _mm256_hadd_pd(a._avx0,a._avx0);
 	      double new_eri_double =  ((double*)&s)[0] + ((double*)&s)[2];
 	      return new_eri_double;
-	}	
+	}
 
 
 
@@ -680,7 +679,7 @@ public:
 		return r;
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,5> a){ 
+	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,5> a){
 		double ad[5];
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << ","  << ad[4] << "}";
@@ -696,7 +695,7 @@ public:
 		s = _mm256_hadd_pd(a._avx1,a._avx1);
 		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
 		return new_eri_double;
-	}	
+	}
 
 template <typename Real>
 class VectorSIMD<Real,6>{
@@ -883,7 +882,7 @@ public:
 		return r;
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,6> a){ 
+	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,6> a){
 		double ad[6];
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << ","  << ad[4] << ","  << ad[5] << "}";
@@ -899,7 +898,7 @@ public:
 		s = _mm256_hadd_pd(a._avx1,a._avx1);
 		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
 		return new_eri_double;
-	}	
+	}
 
 template <typename Real>
 class VectorSIMD<Real,7>{
@@ -1074,7 +1073,7 @@ public:
 		return r;
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,7> a){ 
+	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,7> a){
 		double ad[7];
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << ","  << ad[4] << ","  << ad[5] << ","  << ad[6] << "}";
@@ -1090,7 +1089,7 @@ public:
 		s = _mm256_hadd_pd(a._avx1,a._avx1);
 		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
 		return new_eri_double;
-	}	
+	}
 
 
 template <typename Real>
@@ -1268,7 +1267,7 @@ public:
 		return r;
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,8> a){ 
+	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,8> a){
 		double ad[8];
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << ","  << ad[4] << ","  << ad[5] << ","  << ad[6] << ","  << ad[7] << "}";
@@ -1281,7 +1280,7 @@ public:
 		s = _mm256_hadd_pd(a._avx1,a._avx1);
 		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
 		return new_eri_double;
-	}	
+	}
 
 template <typename Real>
 class VectorSIMD<Real,9>{
@@ -1501,7 +1500,7 @@ public:
 		return r;
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,9> a){ 
+	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,9> a){
 		double ad[9];
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << ","  << ad[4] << ","  << ad[5] << ","  << ad[6] << ","  << ad[7] << ","  << ad[8] << "}";
@@ -1520,7 +1519,7 @@ public:
 		s = _mm256_hadd_pd(a._avx2,a._avx2);
 		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
 		return new_eri_double;
-	}	
+	}
 
 
 
@@ -1746,7 +1745,7 @@ public:
 		return r;
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,10> a){ 
+	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,10> a){
 		double ad[10];
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << ","  << ad[4] << ","  << ad[5] << ","  << ad[6] << ","  << ad[7] << ","  << ad[8] << ","  << ad[9] << "}";
@@ -1764,7 +1763,7 @@ public:
 		s = _mm256_hadd_pd(a._avx2,a._avx2);
 		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
 		return new_eri_double;
-	}	
+	}
 
 template <typename Real>
 class VectorSIMD<Real,11>{
@@ -1968,7 +1967,7 @@ public:
 		return r;
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,11> a){ 
+	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,11> a){
 		double ad[11];
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << ","  << ad[4] << ","  << ad[5] << ","  << ad[6] << ","  << ad[7] << ","  << ad[8] << ","  << ad[9] << ","  << ad[10] << "}";
@@ -1986,7 +1985,7 @@ public:
 		s = _mm256_hadd_pd(a._avx2,a._avx2);
 		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
 		return new_eri_double;
-	}	
+	}
 
 
 template <typename Real>
@@ -2193,12 +2192,12 @@ public:
 		return r;
 	}
 
-	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,12> a){ 
+	inline std::ostream& operator<<(std::ostream& os, VectorSIMD<double,12> a){
 		double ad[12];
 		a.convert(ad);
 		os << "{" << ad[0] << ","  << ad[1] << ","  << ad[2] << ","  << ad[3] << ","  << ad[4] << ","  << ad[5] << ","  << ad[6] << ","  << ad[7] << ","  << ad[8] << ","  << ad[9] << ","  << ad[10] << ","  << ad[11] << "}";
 		return os;
-	}  
+	}
 
 
 
@@ -2210,4 +2209,4 @@ public:
 		s = _mm256_hadd_pd(a._avx2,a._avx2);
 		new_eri_double +=  ((double*)&s)[0] + ((double*)&s)[2];
 		return new_eri_double;
-	}	
+	}

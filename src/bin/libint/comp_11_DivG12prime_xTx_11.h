@@ -27,8 +27,6 @@
 
 #define USE_R12kR12lG12 1
 
-using namespace std;
-
 namespace libint2 {
 
   /** Compute relation for 2-e integrals of the DivG12prime_xTx operators.

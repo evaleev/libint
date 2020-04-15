@@ -37,8 +37,6 @@
 #  include <braket.h>
 #endif
 
-using namespace std;
-
 extern long living_count;
 
 namespace libint2 {
@@ -428,7 +426,7 @@ namespace libint2 {
     std::string
     genintegralset_label(const BraSetType& bra, const KetSetType& ket, const SafePtr<AuxQuanta>& aux, const SafePtr<Op>& O)
     {
-      ostringstream os;
+      std::ostringstream os;
       os << "< ";
       for(unsigned int p=0; p<Op::Properties::np; p++) {
         unsigned int nbra = bra.num_members(p);
@@ -480,7 +478,7 @@ namespace libint2 {
     std::string
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::description() const
     {
-    ostringstream os;
+    std::ostringstream os;
     os << " GenIntegralSet: " << label();
     const std::string descr = os.str();
     return descr;

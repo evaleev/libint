@@ -24,8 +24,6 @@
 #include <generic_rr.h>
 #include <twoprep_11_11.h>
 
-using namespace std;
-
 namespace libint2 {
 
   /** VRR Recurrence Relation for 2-e ERI. part specifies for which particle
@@ -66,7 +64,7 @@ namespace libint2 {
       {
         typedef typename TargetType::AuxIndexType mType;
         static SafePtr<mType> aux0(new mType(0u));
-        ostringstream os;
+        std::ostringstream os;
         os << descr() << "P" << part << to_string(where)
            << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
         return os.str();

@@ -25,8 +25,6 @@
 #ifndef _libint2_src_bin_libint_memory_h_
 #define _libint2_src_bin_libint_memory_h_
 
-using namespace std;
-
 namespace libint2 {
 
   /**
@@ -91,13 +89,13 @@ namespace libint2 {
                                  const SafePtr<MemoryBlock>& j) {
         return i->size() < j->size();
       }
-      /** Returns true if the size of *i equals sz. Note that the arguments are 
+      /** Returns true if the size of *i equals sz. Note that the arguments are
           not passed by reference since this function is designed to be converted
           to std::pointer_to_binary_function, which adds references to the arguments */
       static bool size_eq(SafePtr<MemoryBlock> i, Size sz) {
         return i->size() == sz;
       }
-      /** Returns true if the size of *i greater or equal than sz. Note that the arguments are 
+      /** Returns true if the size of *i greater or equal than sz. Note that the arguments are
           not passed by reference since this function is designed to be converted
           to std::pointer_to_binary_function, which adds references to the arguments */
       static bool size_geq(SafePtr<MemoryBlock> i, Size sz) {
@@ -108,7 +106,7 @@ namespace libint2 {
                                     const SafePtr<MemoryBlock>& j) {
         return i->address() < j->address();
       }
-      /** Returns true if the address of *i equals a. Note that the arguments are 
+      /** Returns true if the address of *i equals a. Note that the arguments are
           not passed by reference since this function is designed to be converted
           to std::pointer_to_binary_function, which adds references to the arguments */
       static bool address_eq(SafePtr<MemoryBlock> i, Address a) {

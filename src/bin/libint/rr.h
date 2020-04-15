@@ -36,8 +36,6 @@
 #include <util_types.h>
 #include <global_macros.h>
 
-using namespace std;
-
 namespace libint2 {
 
   class DGVertex;
@@ -180,7 +178,7 @@ namespace libint2 {
     unsigned int nflops() const { return nflops_; }
 
     /// RecurrenceRelation is managed by SingletonStack but doesn't need to keep track of instance ID
-    void inst_id(const SingletonStack<RecurrenceRelation,string>::InstanceID& i) {}
+    void inst_id(const SingletonStack<RecurrenceRelation, std::string>::InstanceID& i) {}
 
     protected:
     unsigned int nflops_;
@@ -262,7 +260,7 @@ namespace libint2 {
 
   // Instantiate the RRStack
   typedef RRStackBase<RecurrenceRelation> RRStack;
-  
+
 };
 
 //#include <vrr_11_twoprep_11.h>

@@ -39,8 +39,6 @@
 #include <default_params.h>
 #include <util.h>
 
-using namespace std;
-
 namespace libint2 {
 
   /** RRImpl must inherit GenericRecurrenceRelation<RRImpl>
@@ -52,7 +50,7 @@ namespace libint2 {
       typedef Target TargetType;
       typedef RecurrenceRelation ParentType;
       typedef ParentType::ExprType ExprType;
-      
+
       /// Return an instance if applicable, or a null pointer otherwise
       static SafePtr<RRImpl> Instance(const SafePtr<TargetType>& Tint, unsigned int dir) {
         // screen out calls with nondefault extra parameters
@@ -81,11 +79,11 @@ namespace libint2 {
       bool is_simple() const {
         return TrivialBFSet<BasisFunctionType>::result;
       }
-      
+
       /// Implementation of RecurrenceRelation::generate_label()
       std::string generate_label() const
       {
-        ostringstream os;
+        std::ostringstream os;
         os << RRImpl::descr() << " " << target_->label();
         return os.str();
       }
@@ -135,9 +133,9 @@ namespace libint2 {
         return add_child(i);
       }
 #endif
-      
+
       SafePtr<TargetType> target_;
-      
+
     private:
       unsigned int dir_;
       std::vector< SafePtr<DGVertex> > children_;
@@ -151,9 +149,9 @@ namespace libint2 {
     typedef typename ChildType::BasisFunctionType F;
     typedef typename ChildType::AuxIndexType AuxIndexType;
     typedef typename ChildType::OperType OperType;
-      
+
     ChildFactory(GenRR* rr) : rr_(rr) {}
-    
+
     /// make_child
     const SafePtr<DGVertex>& make_child(const F& A,
                                         const F& B,
@@ -230,11 +228,11 @@ namespace libint2 {
       ket_lc += make_pair(Scalar(1.0),ket);
       wedge(bra_lc,ket_lc,aux,oper);
     }
-    
+
     private:
       GenRR* rr_;
   };
-  
+
 };
 
 #endif

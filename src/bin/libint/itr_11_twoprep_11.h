@@ -37,9 +37,6 @@
 #include <default_params.h>
 #include <util.h>
 
-using namespace std;
-
-
 namespace libint2 {
 
   /** ITR (Interelectron Transfer Relation) for 2-e ERI. part specifies for which particle
@@ -120,7 +117,7 @@ namespace libint2 {
     {
       typedef typename TargetType::AuxIndexType mType;
       static SafePtr<mType> aux0(new mType(0u));
-      ostringstream os;
+      std::ostringstream os;
       // ITR recurrence relation code is independent of m (it never appears anywhere in equations), hence
       // to avoid generating identical code make sure that the (unique) label does not contain m
       os << "ITR Part" << part << " " << to_string(where) << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());

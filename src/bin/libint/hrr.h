@@ -37,8 +37,6 @@
 #include <task.h>
 #include <context.h>
 
-using namespace std;
-
 namespace libint2 {
 
   /** A generic Horizontal Recurrence Relation:
@@ -357,6 +355,8 @@ namespace libint2 {
       // in transfer have zero quanta. The reason is that for the HRR quartet level code to work correctly
       // I must use these particular instances of HRR to generate the source.
 
+      using std::swap;
+
       // only register RRs with for shell sets
       if (TrivialBFSet<F>::result)
         return false;
@@ -501,7 +501,7 @@ namespace libint2 {
     std::string
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::generate_label() const
     {
-        ostringstream os;
+        std::ostringstream os;
 
         os << "HRR Part " << part << " "
             << (loc_a == InBra ? "bra" : "ket") << " " << pos_a << "  "
@@ -552,7 +552,7 @@ namespace libint2 {
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::spfunction_call(
         const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
         {
-        ostringstream os;
+        std::ostringstream os;
         os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
                   // First argument is the library object
                   << "(inteval, "
@@ -616,7 +616,7 @@ namespace libint2 {
           os << "," << hsr;
         if (expl_low_dim())
           os << "," << lsr;
-        os << ")" << context->end_of_stat() << endl;
+        os << ")" << context->end_of_stat() << std::endl;
         return os.str();
         }
 

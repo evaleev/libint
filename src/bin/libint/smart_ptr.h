@@ -26,13 +26,15 @@
 #if HAVE_SHARED_PTR_IN_BOOST
   #include <boost/shared_ptr.hpp>
   #include <boost/enable_shared_from_this.hpp>
-  using namespace boost;
 
   // For now I'll do a cheat since templated typedefs are not standard
   // Should probably at least derive SafePtr from shared_ptr
   #define SafePtr boost::shared_ptr
   #define EnableSafePtrFromThis boost::enable_shared_from_this
   #define SafePtr_from_this shared_from_this
+  using boost::const_pointer_cast;
+  using boost::dynamic_pointer_cast;
+  using boost::static_pointer_cast;
 #else
   #include <memory>
   // For now I'll do a cheat since templated typedefs are not standard
@@ -40,7 +42,9 @@
   #define SafePtr std::shared_ptr
   #define EnableSafePtrFromThis std::enable_shared_from_this
   #define SafePtr_from_this shared_from_this
+  using std::const_pointer_cast;
   using std::dynamic_pointer_cast;
+  using std::static_pointer_cast;
 #endif
 
 namespace libint2 {

@@ -23,12 +23,10 @@
 
 #include <integral.h>
 
-using namespace std;
-
 namespace libint2 {
 
   // these integrals are never precomputed
-  
+
 };
 
 #endif

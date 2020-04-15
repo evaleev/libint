@@ -23,10 +23,8 @@
 
 #include <integral.h>
 
-using namespace std;
-
 namespace libint2 {
-  
+
   /**
      Generic integral over a one-body operator with one bfs for each particle in bra and ket.
   */
@@ -41,7 +39,7 @@ namespace libint2 {
       typedef AuxQuanta AuxIndexType;
       typedef GenIntegralSet_1_1<BFS,Oper,AuxQuanta> this_type;
       typedef GenIntegralSet< OperType, IncableBFSet, BraType, KetType, AuxIndexType > parent_type;
-      
+
       /// this is a set of these subobjects
       typedef GenIntegralSet_1_1<typename BFS::iter_type, typename Oper::iter_type, typename AuxQuanta::iter_type> iter_type;
       typedef typename parent_type::key_type key_type;
@@ -117,7 +115,7 @@ namespace libint2 {
 #else
 #  error "USE_INT_KEY_TO_HASH must be set"
 #endif
-  
+
   template <class BFS, class Oper, class AuxQuanta>
     GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::GenIntegralSet_1_1(const OperType& oper, const BraType& bra, const KetType& ket,  const AuxIndexType& aux) :
     parent_type(oper, bra, ket, aux)
@@ -171,15 +169,15 @@ namespace libint2 {
       BFSRef bra0_ref(new BFS(bra0));
       BFSRef ket0_ref(new BFS(ket0));
 #endif
-      vector<BFSRef> vbra0;  vbra0.push_back(bra0_ref);
-      vector<BFSRef> vket0;  vket0.push_back(ket0_ref);
-      vector< vector<BFSRef> > vvbra;  vvbra.push_back(vbra0);
-      vector< vector<BFSRef> > vvket;  vvket.push_back(vket0);
+      std::vector<BFSRef> vbra0;  vbra0.push_back(bra0_ref);
+      std::vector<BFSRef> vket0;  vket0.push_back(ket0_ref);
+      std::vector< std::vector<BFSRef> > vvbra;  vvbra.push_back(vbra0);
+      std::vector< std::vector<BFSRef> > vvket;  vvket.push_back(vket0);
       BraType bra(vvbra);
       KetType ket(vvket);
       return Instance(bra,ket,aux,oper);
     }
-  
+
   template <class BFS, class Oper, class AuxQuanta>
     bool
     GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::operator==(const this_type& a) const

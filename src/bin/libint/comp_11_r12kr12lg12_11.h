@@ -25,8 +25,6 @@
 #include <integral_11_11.h>
 #include <gaussoper.h>
 
-using namespace std;
-
 namespace libint2 {
 
   /** Compute relation for integrals of operator R12k_R12l_G12.

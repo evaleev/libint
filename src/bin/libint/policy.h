@@ -27,7 +27,6 @@
 
 #include <boost/type_traits/is_same.hpp>
 
-using namespace std;
 
 namespace libint2 {
 
@@ -37,7 +36,7 @@ namespace libint2 {
   */
   template <class T, bool exists>
     struct ExistsDefaultSubobjAllocator;
-  
+
   template <class T>
     struct ExistsDefaultSubobjAllocator<T,true>{
       typedef T obj_type;
@@ -45,17 +44,17 @@ namespace libint2 {
       typedef typename TypeTraits<obj_type>::StorageType subobj_stype;
       typedef typename obj_type::iter_type subobj_type;
 
-      static void default_init_subobj(const obj_stype& obj, vector<subobj_stype>& subobj)
+      static void default_init_subobj(const obj_stype& obj, std::vector<subobj_stype>& subobj)
       {
         subobj.push_back(obj);
       }
-      static void default_dealloc_subobj(vector<subobj_stype>& subobj)
+      static void default_dealloc_subobj(std::vector<subobj_stype>& subobj)
       {
       }
     };
-      
-    
-  /** 
+
+
+  /**
       StdLibintTDPolicy<T> is the default type-specific policy.
   */
   template < class T>
@@ -68,12 +67,12 @@ namespace libint2 {
       typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
       /// This function allocates subobj of obj (e.g. basis functions contained in a shell)
-      static void init_subobj(const obj_stype& obj, vector<subobj_stype>& subobj)
+      static void init_subobj(const obj_stype& obj, std::vector<subobj_stype>& subobj)
       {
         // If types are not the same then this function should not be used -- user must provide a specialization
         ExistsDefaultSubobjAllocator< T, boost::is_same<obj_type,subobj_type>::value >::default_init_subobj(obj,subobj);
       }
-      static void dealloc_subobj(vector<subobj_stype>& subobj)
+      static void dealloc_subobj(std::vector<subobj_stype>& subobj)
       {
         // If types are not the same then this function should not be used -- user must provide a specialization
         ExistsDefaultSubobjAllocator< T, boost::is_same<obj_type,subobj_type>::value >::default_dealloc_subobj(subobj);
@@ -102,7 +101,7 @@ namespace libint2 {
     {
       return max_set_size_to_unroll_;
     }
-    
+
   };
 
 
@@ -130,7 +129,7 @@ namespace libint2 {
     /*
       typedef typename TDPol<T>::obj_type obj_type;
       typedef typename obj_type::iter_type subobj_type;
-      
+
       static void init_subobj(const SafePtr<obj_type>& obj, const vector< SafePtr<subobj_type> >& subobj)
       {
         TDPol<T>::init_subobj(obj,subobj);
@@ -150,7 +149,7 @@ namespace libint2 {
      }
   };
 
-  
+
 };
 
 

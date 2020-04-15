@@ -25,8 +25,6 @@
 #include <tig12_11_11.h>
 #include <gaussoper.h>
 
-using namespace std;
-
 namespace libint2 {
 
   /** Compute relation for 2-e integrals of the Ti_G12 operators.

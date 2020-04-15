@@ -24,6 +24,7 @@
 #include <codeblock.h>
 #include <default_params.h>
 
+using namespace std;
 using namespace libint2;
 
 namespace libint2 {
@@ -270,7 +271,7 @@ CppCodeContext::declare(const std::string& type,
                         const std::string& name) const
 {
   ostringstream oss;
-  
+
   oss << type << " " << name << end_of_stat() << endl;
 
   return oss.str();
@@ -282,7 +283,7 @@ CppCodeContext::declare_v(const std::string& type,
 			  const std::string& nelem) const
 {
   ostringstream oss;
-  
+
   oss << type << " " << name << "[" << nelem << "]" << end_of_stat() << endl;
 
   return oss.str();
@@ -294,7 +295,7 @@ CppCodeContext::decldef(const std::string& type,
                         const std::string& value)
 {
   ostringstream oss;
-  
+
   oss << type << " " << assign(name,value);
 
   return oss.str();
@@ -320,7 +321,7 @@ CppCodeContext::assign_(const std::string& name,
 			bool accum)
 {
   ostringstream oss;
-  
+
   if (vectorize_) {
     std::string symb0 = unique_fp_name();
     std::string symb1 = unique_fp_name();
@@ -335,7 +336,7 @@ CppCodeContext::assign_(const std::string& name,
       <<  symbol_to_pointer(value) << end_of_stat() << endl;
       oss << "__assume_aligned(" << symb1 << ", 16)" << end_of_stat() << endl;
     }
-    
+
     oss << start_expr();
     oss << symb0 << "[v]" << (accum ? " += " : " = ")
     << (symb1_is_a_const ? value : symb1)
@@ -377,7 +378,7 @@ CppCodeContext::assign_binary_expr_(const std::string& name,
 				    bool accum)
 {
   ostringstream oss;
-  
+
   if (vectorize_) {
     std::string symb0 = unique_fp_name();
     std::string symb1 = unique_fp_name();
@@ -400,7 +401,7 @@ CppCodeContext::assign_binary_expr_(const std::string& name,
       << symbol_to_pointer(right) << end_of_stat() << endl;
       oss << "__assume_aligned(" << symb2 << ", 16)" << end_of_stat() << endl;
     }
-    
+
     oss << start_expr();
     oss << symb0 << "[v]" << (accum ? " += " : " = ")
     << (symb1_is_a_const ? left : symb1)
@@ -536,7 +537,7 @@ CppCodeContext::symbol_to_pointer(const std::string& symbol)
     oss << "(&(" << symbol << "))";
     return oss.str();
   }
-  
+
   // if this quantity is a part of Libint_t then the symbol is a vector
   // otherwise it's a constant
   loc = symbol.find("inteval");

@@ -34,9 +34,6 @@
 #include <dims.h>
 #include <bfset.h>
 
-using namespace std;
-
-
 namespace libint2 {
 
   /** Uncontract_Integral_base is dummy class used for dynamic casts only
@@ -80,12 +77,12 @@ namespace libint2 {
 
   private:
     SafePtr<TargetType> target_;
-    vector< SafePtr<ChildType> > children_;
+    std::vector< SafePtr<ChildType> > children_;
 
     // contracting integrals only depends on the number of integrals in a set
     // can simplify this to only refer to that number
     std::string generate_label() const {
-      ostringstream os;
+      std::ostringstream os;
       os << "Generic Contract";
       return os.str();
     }
@@ -174,19 +171,19 @@ namespace libint2 {
       bvecdim = vecdim * bdim;
     }
 
-    ostringstream os;
+    std::ostringstream os;
     // contraction = reduction
     if (vectorize == false || !TrivialBFSet<BFSet>::result || context->cparams()->vectorize_by_line()) {
       os << "_libint2_static_api_inc1_short_("
          << context->value_to_pointer(rr_target()->symbol()) << ","
          << context->value_to_pointer(rr_child(0)->symbol()) << ","
          << bvecdim->id()
-         << ")" << context->end_of_stat() << endl;
+         << ")" << context->end_of_stat() << std::endl;
     }
     else { // blockwise vectorize for a single integral
       os << "_libint2_static_api_inc1_short_("
          << context->value_to_pointer(rr_target()->symbol()) << "+vi,"
-         << context->value_to_pointer(rr_child(0)->symbol()) << ",1)" << context->end_of_stat() << endl;
+         << context->value_to_pointer(rr_child(0)->symbol()) << ",1)" << context->end_of_stat() << std::endl;
     }
     unsigned int& nflops_ref = const_cast<unsigned int&>(nflops_);
     nflops_ref += target_->size();

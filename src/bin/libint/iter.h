@@ -30,20 +30,17 @@
 // gcc 3.4 doesn't seem to allow
 //#define ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
 
-
-using namespace std;
-
 namespace libint2 {
 
   struct DummyIterator;
-  
+
   /** Iterator provides a base class for all object iterator classes. It iterates over
       certain objects as if they were sets of some other data. For example, Iterator can
       be implemented for iterating over Gaussian functions within shells, or over integrals within shell
       sets of integrals.
   */
   class SubIterator {
-  
+
   public:
     /// Returns a number of iterations (number of elements in a set over which to iterate).
     virtual unsigned int num_iter() const =0;
@@ -81,7 +78,7 @@ namespace libint2 {
     typedef const ConstructablePolymorphically& cp_rettype;
     SubIteratorBase(const tref&);
     virtual ~SubIteratorBase();
-    
+
     /// Returns current element
     const iref& elem() const;
     /// Returns current element. Implements SubIterator's pelem().
@@ -95,10 +92,10 @@ namespace libint2 {
     SubIterator& operator++();
     /// This is used to check whether current element exists. Returns 1 if it does.
     operator int() const;
-    
+
   protected:
     const tref obj_;
-    vector<iref> subobj_;
+    std::vector<iref> subobj_;
 
   private:
     /// the iteration counter (starts at 0)
@@ -129,7 +126,7 @@ namespace libint2 {
         return elem;
       }
     };
-    
+
   };
 
   template <class T, template <class> class P>
@@ -142,7 +139,7 @@ namespace libint2 {
       init_subobj();
 #endif
     }
-  
+
   template <class T, template <class> class P>
     SubIteratorBase<T,P>::~SubIteratorBase()
     {
@@ -159,7 +156,7 @@ namespace libint2 {
     {
       return subobj_.size();
     }
-  
+
   template <class T, template <class> class P>
     const typename SubIteratorBase<T,P>::iref&
     SubIteratorBase<T,P>::elem() const
@@ -182,7 +179,7 @@ namespace libint2 {
       return dynamic_pointer_cast<ConstructablePolymorphically,iter_type>(elem());
     }
 #endif
-  
+
   template <class T, template <class> class P>
     void
     SubIteratorBase<T,P>::init()
@@ -217,7 +214,7 @@ namespace libint2 {
   {
       P<T>::dealloc_subobj(subobj_);
   }
-  
+
 };
 
 #endif

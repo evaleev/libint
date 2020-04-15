@@ -7,10 +7,6 @@
 
 #include <libint2.hpp>
 
-using std::cout;
-using std::cerr;
-using std::endl;
-
 using libint2::Atom;
 using libint2::BasisSet;
 using libint2::Shell;

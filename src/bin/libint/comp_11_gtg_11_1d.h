@@ -24,8 +24,6 @@
 #include <generic_rr.h>
 #include <util_types.h>
 
-using namespace std;
-
 namespace libint2 {
 
   /** Compute relation for 1-dimensional Gaussian-type geminal integrals

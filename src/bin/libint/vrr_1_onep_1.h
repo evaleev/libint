@@ -25,8 +25,6 @@
 #include <generic_rr.h>
 #include <onep_1_1.h>
 
-using namespace std;
-
 namespace libint2 {
 
   /** VRR Recurrence Relation for 1-e overlap integrals.
@@ -533,7 +531,7 @@ namespace libint2 {
       {
         typedef typename TargetType::AuxIndexType mType;
         static SafePtr<mType> aux0(new mType(0u));
-        ostringstream os;
+        std::ostringstream os;
         os << descr() <<  to_string(where)
            << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
         return os.str();

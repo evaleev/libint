@@ -24,8 +24,6 @@
 #include <generic_rr.h>
 #include <gaussoper.h>
 
-using namespace std;
-
 namespace libint2 {
 
   /** Compute relation for 2-e integrals of the G12_Ti_G12 operators.

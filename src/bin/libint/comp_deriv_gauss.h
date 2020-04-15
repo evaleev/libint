@@ -24,8 +24,6 @@
 #include <generic_rr.h>
 #include <set>
 
-using namespace std;
-
 namespace libint2 {
 
   class CR_DerivGauss_GenericInstantiator {
@@ -107,7 +105,7 @@ namespace libint2 {
       {
         typedef typename TargetType::AuxIndexType mType;
         static SafePtr<mType> aux0(new mType(0u));
-        ostringstream os;
+        std::ostringstream os;
         os << descr() << "P" << part << to_string(where)
            << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
         return os.str();
