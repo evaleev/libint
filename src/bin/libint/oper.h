@@ -37,9 +37,9 @@ namespace libint2 {
 
   /** Permutational symmetries: antisymmetric(anti), symmetric(symm), nonsymmetric (nonsymm),
       some more complicated symmetry (nonstd) */
-  typedef struct {
+  struct PermutationalSymmetry {
     typedef enum {anti=-1, symm=1, nonsymm=0, nonstd=-2} type;
-  } PermutationalSymmetry;
+  };
 
   /** OperatorProperties describes various properties of an operator or operator set
       @tparam NP number of particles
