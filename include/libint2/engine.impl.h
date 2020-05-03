@@ -344,13 +344,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
             } break;
 
             case 2: {
-// computes upper triangle index
-// n2 = matrix size times 2
-// i,j = indices, i<j
-#define upper_triangle_index_ord(n2, i, j) ((i) * ((n2) - (i)-1) / 2 + (j))
-// same as above, but orders i and j
-#define upper_triangle_index(n2, i, j) \
-  upper_triangle_index_ord(n2, std::min((i), (j)), std::max((i), (j)))
+              // computes upper triangle index
+              // n2 = matrix size times 2
+              // i,j = indices, i<j
+              auto upper_triangle_index_ord = [](int n2, int i, int j) {
+                return i * (n2 - i -1) / 2 + j;
+              };
+              // same as above, but orders i and j
+              auto upper_triangle_index = [&](int n2, int i, int j) {
+                return upper_triangle_index_ord(n2, std::min(i, j), std::max(i, j));
+              };
 
               // accumulate ints for this pset to scratch in locations
               // remapped to overall deriv index
@@ -463,7 +466,6 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
                 }
               }  // operator derivs
 
-#undef upper_triangle_index
             } break;
 
             default: {

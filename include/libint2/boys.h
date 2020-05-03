@@ -120,8 +120,6 @@ namespace libint2 {
       std::vector<Real> bc_;
   };
 
-#define _local_min_macro(a,b) ((a) > (b) ? (a) : (b))
-
   /** Computes the Boys function, \f$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \f$,
     * using single algorithm (asymptotic expansion). Slow for the sake of precision control.
     * Useful in two cases:
