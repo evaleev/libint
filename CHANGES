@@ -3,6 +3,9 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2019-xx-yy: 2.7.0-beta.6
+  - Molden PBC exporter works for 1 and 2 dimensional crystals
+
 - 2019-04-02: 2.7.0-beta.5
   - made usable as a CMake subproject
   - the deprecated autotools build harness has been removed from the exported library; CMake is the only way to build exported libs

@@ -385,9 +385,14 @@ class PBCExport: public Export{
       const double a = cell_axes_[0].norm();
       const double b = cell_axes_[1].norm();
       const double c = cell_axes_[2].norm();
-      const double alpha = std::acos(cell_axes_[1].dot(cell_axes_[2]) / (b * c));
-      const double beta = std::acos(cell_axes_[0].dot(cell_axes_[2]) / (a * c));
-      const double gamma = std::acos(cell_axes_[0].dot(cell_axes_[1]) / (a * b));
+      const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
+      const bool nonzero_a = a >= eps;
+      const bool nonzero_b = b >= eps;
+      const bool nonzero_c = c >= eps;
+      static constexpr double right_angle = M_PI / 4;
+      const double alpha = nonzero_b && nonzero_c ? std::acos(cell_axes_[1].dot(cell_axes_[2]) / (b * c)) : right_angle;
+      const double beta = nonzero_a && nonzero_c ? std::acos(cell_axes_[0].dot(cell_axes_[2]) / (a * c)) : right_angle;
+      const double gamma = nonzero_a && nonzero_b ? std::acos(cell_axes_[0].dot(cell_axes_[1]) / (a * b)) : right_angle;
       const double radian_to_degree = 180 / M_PI;
       os << std::setw(12) << a * bohr_to_angstrom()
          << std::setw(12) << b * bohr_to_angstrom()
