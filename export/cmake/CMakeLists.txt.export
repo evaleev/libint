@@ -194,7 +194,9 @@ endif()
 # shared and static libraries built from the same object files
 if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
   add_library(libint2 SHARED $<TARGET_OBJECTS:libint2_obj>)
+  set_target_properties(libint2 PROPERTIES LIBRARY_OUTPUT_NAME int2)
   add_library(libint2-static STATIC $<TARGET_OBJECTS:libint2_obj>)
+  set_target_properties(libint2-static PROPERTIES ARCHIVE_OUTPUT_NAME int2)
   target_include_directories(libint2-static INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
@@ -213,6 +215,11 @@ if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
        )
 else()
   add_library(libint2 $<TARGET_OBJECTS:libint2_obj>)
+  if (BUILD_SHARED_LIBS)
+    set_target_properties(libint2 PROPERTIES LIBRARY_OUTPUT_NAME int2)
+  else(BUILD_SHARED_LIBS)
+    set_target_properties(libint2 PROPERTIES ARCHIVE_OUTPUT_NAME int2)
+  endif(BUILD_SHARED_LIBS)
 endif()
 # In any case, there will exist a target named "int2": diminish code length by
 # add just once the needed includes, flags and install directives.
