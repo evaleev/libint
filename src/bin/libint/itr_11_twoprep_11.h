@@ -399,7 +399,7 @@ namespace libint2 {
           dD.zero() == false;
       assert(deriv == false);
 
-      oss << "using namespace libint2;" << endl;
+      oss << "using namespace libint2;" << std::endl;
 
       if (deriv == false) { // for regular integrals I know exactly how many prerequisites I need
         if(xsxs) {

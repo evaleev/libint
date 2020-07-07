@@ -505,7 +505,7 @@ namespace libint2 {
           unit_s = sh_a.is_unit();
         }
 
-        oss << "using namespace libint2;" << endl;
+        oss << "using namespace libint2;" << std::endl;
         if (K == -1) {
           if (xsxs) {
             oss << "libint2::OSVRR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",";

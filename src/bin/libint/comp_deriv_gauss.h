@@ -329,7 +329,7 @@ namespace libint2 {
     {
       std::ostringstream oss;
 
-      oss << "using namespace libint2;" << endl;
+      oss << "using namespace libint2;" << std::endl;
 
       BasisFunctionType sh(where == InBra ? target_->bra(part,0) : target_->ket(part,0));
 
