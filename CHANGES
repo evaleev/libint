@@ -3,19 +3,25 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2019-xx-yy: 2.7.0-beta.6
-  - Molden PBC exporter works for 1 and 2 dimensional crystals
+- 2020-xx-yy: 2.7.0
+  -
 
-- 2019-04-02: 2.7.0-beta.5
+- 2020-07-07: 2.7.0-beta.6
+  - Molden PBC exporter works for 1 and 2 dimensional crystals
+  - reverted library names changed in 2.7.0-beta.5 to libint2.<suffix>
+  - PRs #166, #169
+  - standard library release bumped up to l=10 spherical multipoles
+
+- 2020-04-02: 2.7.0-beta.5
   - made usable as a CMake subproject
   - the deprecated autotools build harness has been removed from the exported library; CMake is the only way to build exported libs
   - reduced compilation noise in generated code
 
-- 2019-03-01: 2.7.0-beta.4
+- 2020-03-01: 2.7.0-beta.4
   - PR #159: fixed description of cmake option REQUIRE_CXX_API
   - resolved issue #164: per-elem BasisSet ctor missing init() (HT @swillow)
 
-- 2019-01-29: 2.7.0-beta.3
+- 2020-01-29: 2.7.0-beta.3
   - added 2018 CODATA bohr->angstrom conversion, made the default throughout
   - Molden exporters use angstroms to avoid extra reliance on its readers' conversion
   - resolves issue #158: check for false-positive Eigen search
