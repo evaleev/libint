@@ -24,8 +24,6 @@
 #include <integral.h>
 #include <integral_11_11.h>
 
-using namespace std;
-
 namespace libint2 {
 
   template <>

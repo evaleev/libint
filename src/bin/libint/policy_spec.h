@@ -89,7 +89,7 @@ namespace libint2 {
           }
         }
       }
-      static void dealloc_subobj(vector<subobj_stype>& subobj)
+      static void dealloc_subobj(std::vector<subobj_stype>& subobj)
       {
       }
     };
@@ -116,7 +116,7 @@ namespace libint2 {
       typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
       static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
-        
+
         std::vector< SubIterator* > siters_inord; // subiterators used to iterate over each set (in the above order)
 	typedef std::vector< std::vector< SubIterator* > > bra_siters_type;
 	typedef std::vector< std::vector< SubIterator* > > ket_siters_type;
@@ -160,7 +160,7 @@ namespace libint2 {
 
           typename Oper::iter_type oper(oper_siter.elem());
           typename AuxQuanta::iter_type aux(aux_siter.elem());
-          
+
           // Construct and initialize bra
           typename BraSetType::iter_type bra;
           for(unsigned int p=0; p<np; p++) {
@@ -214,7 +214,7 @@ namespace libint2 {
 	    }
 	  }
 	  bra_siters.clear();
-	  
+
 	  const ket_iter ki_end = ket_siters.end();
 	  for(ket_iter ki=ket_siters.begin(); ki != ki_end; ++ki) {
 	    const ket_elem_iter kij_end = ki->end();
@@ -231,7 +231,7 @@ namespace libint2 {
       static void dealloc_subobj(std::vector< SafePtr<subobj_type> >& subobj) {
       }
     };
-  
+
 #if LIBINT_SUPPORT_ONEBODYINTS
   template <typename BFS, typename Oper, typename AuxQuanta>
     struct StdLibintTDPolicy< GenIntegralSet_1_1<BFS,Oper,AuxQuanta> >
@@ -322,7 +322,7 @@ namespace libint2 {
       }
     };
 #endif
-  
+
   /** StdLibintTDPolicy<R12kG12_11_11> should go away soon.
   */
 
@@ -354,7 +354,7 @@ namespace libint2 {
       }
     };
 
-  
+
   /** StdLibintTDPolicy<TiG12_11_11> should go away soon.
   */
 
@@ -479,7 +479,7 @@ namespace libint2 {
       static void dealloc_subobj(std::vector< SafePtr< R1dotR2G12_11_11<typename BFS::iter_type> > >& subobj) {
       }
     };
-  
+
 };
 
 #endif

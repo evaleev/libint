@@ -23,8 +23,6 @@
 
 #include <generic_rr.h>
 
-using namespace std;
-
 namespace libint2 {
 
   /**

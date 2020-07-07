@@ -27,9 +27,6 @@
 #include <global_macros.h>
 #include <iter.h>
 
-using namespace std;
-
-
 namespace libint2 {
 
   /** QuantumSet is the base class for all (sets of) quantum numbers.
@@ -42,7 +39,7 @@ namespace libint2 {
     typedef DummyIterator iter_type;
     /// Quantum numbers lie in range [0,max_quantum_number)
     static const LIBINT2_UINT_LEAST64 max_quantum_number = 100;
-    
+
     virtual ~QuantumSet() {}
     virtual std::string label() const =0;
 
@@ -58,20 +55,20 @@ namespace libint2 {
   */
   template<typename T, unsigned int N> class QuantumNumbers : public QuantumSet {
 
-    vector<T> qn_;
+    std::vector<T> qn_;
 
   public:
     typedef QuantumSet parent_type;
     /// QuantumSet is a set of one QuantumSet
     typedef QuantumNumbers iter_type;
 
-    QuantumNumbers(const vector<T>& qn);
+    QuantumNumbers(const std::vector<T>& qn);
     QuantumNumbers(const SafePtr<QuantumNumbers>&);
     QuantumNumbers(const SafePtr<QuantumSet>&);
     QuantumNumbers(const SafePtr<ConstructablePolymorphically>&);
     QuantumNumbers(const ConstructablePolymorphically&);
     ~QuantumNumbers();
-    
+
     bool operator==(const QuantumNumbers&) const;
     std::string label() const;
 
@@ -85,7 +82,7 @@ namespace libint2 {
 #endif
       --qn_.at(i);
     }
-    
+
     /// Return i-th quantum number
     const T elem(unsigned int i) const {
       return qn_.at(i);
@@ -118,11 +115,11 @@ namespace libint2 {
       }
       return max_key;
     }
-    
+
   };
 
   template<typename T, unsigned int N>
-    QuantumNumbers<T,N>::QuantumNumbers(const vector<T>& qn) :
+    QuantumNumbers<T,N>::QuantumNumbers(const std::vector<T>& qn) :
     qn_(qn)
     {
     }
@@ -132,7 +129,7 @@ namespace libint2 {
     qn_(sptr->qn_)
     {
     }
-  
+
   template<typename T, unsigned int N>
     QuantumNumbers<T,N>::QuantumNumbers(const SafePtr<QuantumSet>& sptr)
     {
@@ -156,7 +153,7 @@ namespace libint2 {
 
       qn_ = sptr_cast->qn_;
     }
-    
+
   template<typename T, unsigned int N>
     QuantumNumbers<T,N>::QuantumNumbers(const ConstructablePolymorphically& sptr)
     {
@@ -189,10 +186,10 @@ namespace libint2 {
       oss << "}";
       return oss.str();
     }
-  
+
   //typedef QuantumNumbers<unsigned int,0> NullQuantumSet;
-  
-  
+
+
   /**
      QuantumNumbersA<T,N> is a set of N quantum numbers of type T implemented in terms of a C-style array.
      QuantumNumbersA is faster than QuantumNumbers but is not as safe!
@@ -209,12 +206,12 @@ namespace libint2 {
     // Set all quanta to val
     QuantumNumbersA(const T& val);
     QuantumNumbersA(const T* qn);
-    QuantumNumbersA(const vector<T>& qn);
+    QuantumNumbersA(const std::vector<T>& qn);
     QuantumNumbersA(const SafePtr<QuantumNumbersA>&);
     QuantumNumbersA(const SafePtr<QuantumSet>&);
     QuantumNumbersA(const SafePtr<ConstructablePolymorphically>&);
     ~QuantumNumbersA();
-    
+
     bool operator==(const QuantumNumbersA&) const;
     std::string label() const;
 
@@ -228,7 +225,7 @@ namespace libint2 {
 #endif
       --qn_[i];
     }
-    
+
     /// Return i-th quantum number
     const T elem(unsigned int i) const {
       return qn_[i];
@@ -266,7 +263,7 @@ namespace libint2 {
       }
       return max_key;
     }
-    
+
   };
 
   template<typename T, unsigned int N>
@@ -284,7 +281,7 @@ namespace libint2 {
     }
 
   template<typename T, unsigned int N>
-    QuantumNumbersA<T,N>::QuantumNumbersA(const vector<T>& qn)
+    QuantumNumbersA<T,N>::QuantumNumbersA(const std::vector<T>& qn)
     {
       for(int i=0; i<N; i++)
         qn_[i] = qn[i];
@@ -297,7 +294,7 @@ namespace libint2 {
       for(unsigned int i=0; i<N; i++)
         qn_[i] = qn[i];
     }
-  
+
   template<typename T, unsigned int N>
     QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<QuantumSet>& sptr)
     {
@@ -324,7 +321,7 @@ namespace libint2 {
       for(int i=0; i<N; i++)
         qn_[i] = qn[i];
     }
-    
+
   template<typename T, unsigned int N>
     QuantumNumbersA<T,N>::~QuantumNumbersA()
     {
@@ -350,13 +347,13 @@ namespace libint2 {
       std::ostringstream oss;
       oss << "{";
       if (N > 0)
-	oss << qn_[0];
+        oss << qn_[0];
       for(unsigned int i=1; i<N; i++)
         oss << "," << qn_[i];
       oss << "}";
       return oss.str();
     }
-  
+
   /** partial specialization of QuantumNumbersA for the case N=0 */
   template<typename T> class QuantumNumbersA<T,0> : public QuantumSet {
 
@@ -367,12 +364,12 @@ namespace libint2 {
 
     QuantumNumbersA() {}
     QuantumNumbersA(const T* qn) {}
-    QuantumNumbersA(const vector<T>& qn) {}
+    QuantumNumbersA(const std::vector<T>& qn) {}
     QuantumNumbersA(const SafePtr<QuantumNumbersA>&) {}
     QuantumNumbersA(const SafePtr<QuantumSet>&) {}
     QuantumNumbersA(const SafePtr<ConstructablePolymorphically>&) {}
     ~QuantumNumbersA() {}
-    
+
     bool operator==(const QuantumNumbersA&) const { return true; }
     std::string label() const { return "{}"; }
 
@@ -392,7 +389,7 @@ namespace libint2 {
 
     /// key is in range [0,max_key())
     LIBINT2_UINT_LEAST64 max_key() const { return 1; }
-    
+
   };
 
   /// Default implementation of QuantumNumbers
@@ -409,7 +406,7 @@ namespace libint2 {
      mType is the type that describes the auxiliary index of standard 2-body repulsion integrals
   */
   typedef DefaultQuantumNumbers<unsigned int,1>::Result mType;
-  
+
 };
 
 #endif

@@ -24,10 +24,8 @@
 #include <integral.h>
 #include <integral_11_11.h>
 
-using namespace std;
-
 namespace libint2 {
-  
+
   /**
      RidotRjG12_11_11 --
      integral over RidotRj_G12 operator with one bfs for each particle in bra and ket.
@@ -38,7 +36,7 @@ namespace libint2 {
   typedef GenIntegralSet_11_11<CGF,R2dotR2_G12,EmptySet> R2dotR2G12_11_11_int;
   typedef GenIntegralSet_11_11<CGShell,R1dotR2_G12,EmptySet> R1dotR2G12_11_11_sq;
   typedef GenIntegralSet_11_11<CGF,R1dotR2_G12,EmptySet> R1dotR2G12_11_11_int;
-  
+
 #if 0
   template <class BFS> class R1dotR2G12_11_11 :
     public GenIntegralSet< R1dotR2_G12, IncableBFSet, typename DefaultTwoPBraket<BFS>::Result, typename DefaultTwoPBraket<BFS>::Result, EmptySet >
@@ -50,7 +48,7 @@ namespace libint2 {
       typedef typename DefaultTwoPBraket<BFS>::Result KetType;
       typedef EmptySet AuxIndexType;
       typedef R1dotR2G12_11_11<BFS> this_type;
-      
+
       /// R1dotR2G12_11_11 is a set of these subobjects
       typedef R1dotR2G12_11_11<typename BFS::iter_type> iter_type;
       /// This is the immediate parent
@@ -61,7 +59,7 @@ namespace libint2 {
       typedef typename parent_type::key_type key_type;
       /// This the type of the object that manages GenIntegralSet's as Singletons
       typedef SingletonStack<R1dotR2G12_11_11,key_type> SingletonManagerType;
-      
+
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
       */
@@ -99,7 +97,7 @@ namespace libint2 {
 #else
 #  error "USE_INT_KEY_TO_HASH must be set"
 #endif
-  
+
   template <class BFS>
     R1dotR2G12_11_11<BFS>::R1dotR2G12_11_11(const BraType& bra, const KetType& ket,  const AuxIndexType& aux) :
     parent_type(R1dotR2_G12(),bra, ket, aux)
@@ -159,18 +157,18 @@ namespace libint2 {
       BFSRef ket0_ref(new BFS(ket0));
       BFSRef ket1_ref(new BFS(ket1));
 #endif
-      vector<BFSRef> vbra0;  vbra0.push_back(bra0_ref);
-      vector<BFSRef> vbra1;  vbra1.push_back(bra1_ref);
-      vector<BFSRef> vket0;  vket0.push_back(ket0_ref);
-      vector<BFSRef> vket1;  vket1.push_back(ket1_ref);
-      vector< vector<BFSRef> > vvbra;  vvbra.push_back(vbra0);  vvbra.push_back(vbra1);
-      vector< vector<BFSRef> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
+      std::vector<BFSRef> vbra0;  vbra0.push_back(bra0_ref);
+      std::vector<BFSRef> vbra1;  vbra1.push_back(bra1_ref);
+      std::vector<BFSRef> vket0;  vket0.push_back(ket0_ref);
+      std::vector<BFSRef> vket1;  vket1.push_back(ket1_ref);
+      std::vector< std::vector<BFSRef> > vvbra;  vvbra.push_back(vbra0);  vvbra.push_back(vbra1);
+      std::vector< std::vector<BFSRef> > vvket;  vvket.push_back(vket0);  vvket.push_back(vket1);
       BraType bra(vvbra);
       KetType ket(vvket);
-      AuxIndexType aux(vector<int>(0));
+      AuxIndexType aux(std::vector<int>(0));
       return Instance(bra,ket,aux);
     }
-  
+
   template <class BFS>
     bool
     R1dotR2G12_11_11<BFS>::operator==(const R1dotR2G12_11_11<BFS>& a) const
@@ -195,19 +193,19 @@ namespace libint2 {
       return label_;
     };
 #endif
-  
+
   template <class BFS>
     bool
     R1dotR2G12_11_11<BFS>::this_precomputed() const
     {
       return false;
     }
-  
+
   /// the following typedefs are useful
   typedef R1dotR2G12_11_11<CGShell> R1dotR2G12_11_11_sq;
   typedef R1dotR2G12_11_11<CGF> R1dotR2G12_11_11_int;
 #endif
-  
+
 };
 
 #endif

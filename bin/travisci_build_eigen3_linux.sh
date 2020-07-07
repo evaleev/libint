@@ -27,9 +27,10 @@ cmake --version
 export INSTALL_DIR=${INSTALL_PREFIX}/eigen3
 if [ ! -d "${INSTALL_DIR}" ]; then
     cd ${BUILD_PREFIX}
-    wget -q http://bitbucket.org/eigen/eigen/get/3.3.5.tar.bz2
-    tar -xjf 3.3.5.tar.bz2
-    cd eigen-*
+    eigen_version=3.3.5
+    wget -q https://gitlab.com/libeigen/eigen/-/archive/${eigen_version}/eigen-${eigen_version}.tar.bz2
+    tar -xjf eigen-${eigen_version}.tar.bz2
+    cd eigen-${eigen_version}
     mkdir build
     cd build
     cmake .. -DCMAKE_CXX_COMPILER=$CXX \

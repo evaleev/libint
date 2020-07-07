@@ -27,6 +27,7 @@
 #include <dims.h>
 #include <task.h>
 
+using namespace std;
 using namespace libint2;
 
 namespace libint2 {

@@ -24,10 +24,8 @@
 #include <integral.h>
 #include <integral_11_11.h>
 
-using namespace std;
-
 namespace libint2 {
-  
+
   /**
      Most basic type -- TwoPRep_11_11 --
      has one bfs for each particle in bra and ket.

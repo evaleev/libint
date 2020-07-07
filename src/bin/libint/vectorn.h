@@ -43,10 +43,10 @@ namespace libint2 {
         data_[i] -= a.data_[i];
       return *this;
     }
-    
+
     /// 1-norm
     T norm1() const { T result(0); for(int i=0; i<N; ++i) result += abs(data_[i]); return result; }
-    
+
     T& operator[](int i) {
       assert(i>=0 && i<N);
       return data_[i];
@@ -58,7 +58,7 @@ namespace libint2 {
     private:
       T data_[N];
   };
-  
+
   template<typename T, int N>
   VectorN<T,N> operator+(const VectorN<T,N>& a,
                          const VectorN<T,N>& b) {
@@ -73,7 +73,7 @@ namespace libint2 {
     result -= b;
     return result;
   }
-  
+
   template <typename T, int N>
   inline VectorN<T,N> unit_vector(int i) {
     assert(i >= 0 && i < N);
@@ -81,7 +81,7 @@ namespace libint2 {
     result[i] += 1;
     return result;
   }
-  
+
   // useful typedefs
   typedef VectorN<int,3> IntVec3;
   inline IntVec3 unit_intvec3(int i) {
@@ -94,7 +94,7 @@ namespace libint2 {
         return true;
     return false;
   }
-  
+
 }
 
 #endif /* header guard */

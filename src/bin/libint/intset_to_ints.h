@@ -31,9 +31,6 @@
 #ifndef _libint2_src_bin_libint_intsettoints_h_
 #define _libint2_src_bin_libint_intsettoints_h_
 
-using namespace std;
-
-
 namespace libint2 {
 
   /** IntegralSet_to_Integrals_base is dummy class used for dynamic casts only
@@ -92,7 +89,7 @@ namespace libint2 {
 
   private:
     SafePtr<TargetType> target_;
-    vector< SafePtr<ChildType> > children_;
+    std::vector< SafePtr<ChildType> > children_;
 
     /// Implementation of RecurrenceRelation::generate_label()
     std::string generate_label() const {
@@ -103,7 +100,7 @@ namespace libint2 {
     std::string spfunction_call(const SafePtr<CodeContext>& context,
                                 const SafePtr<ImplicitDimensions>& dims) const
     {
-      throw logic_error("IntegralSet_to_Integrals::spfunction_call -- should not call this function");
+      throw std::logic_error("IntegralSet_to_Integrals::spfunction_call -- should not call this function");
     }
 
   };

@@ -24,12 +24,10 @@
 #ifndef _libint2_src_bin_libint_dims_h_
 #define _libint2_src_bin_libint_dims_h_
 
-using namespace std;
-
 namespace libint2 {
-  
+
   using namespace EntityTypes;
-  
+
   /** ImplicitDimensions describes basis functions or other "degrees of freedom"
       not actively engaged in a recurrence relation. For example, horizontal
       AM transfer to obtain a (dd|ps) integral from (fp|ps) and (dp|ps) does
@@ -37,12 +35,12 @@ namespace libint2 {
       routine specific to this integral, only a routine specific to the (dd| part.
       Such function will require the information about the rank of the |ps) part.
       This information is encoded in ImplicitDimensions.
-      
+
       Another special dimension is the vector length...
   */
-  
+
   class ImplicitDimensions {
-    public:    
+    public:
     /// Explicitly initialize both quantities. Their exact type is not known.
     ImplicitDimensions(const SafePtr<Entity>& high,
                        const SafePtr<Entity>& low,
@@ -52,7 +50,7 @@ namespace libint2 {
     /// Handy constructor to initialize dimensions as compile-time (static) quatities
     ImplicitDimensions(int high, int low, int vec);
     ~ImplicitDimensions() {}
-    
+
     /// Returns the high dimension
     SafePtr<Entity> high() const { return high_; }
     /// Returns the low dimension
@@ -71,33 +69,33 @@ namespace libint2 {
     const std::string& low_label() const { return low_label_; }
     /// Returns the label of the vector dimension
     const std::string& vecdim_label() const { return vecdim_label_; }
-    
+
     /// Sets default ImplicitDimension object
     static void set_default_dims(const SafePtr<CompilationParameters>& cparams);
     /// Default ImplicitDimension object
     static SafePtr<ImplicitDimensions> default_dims();
-    
+
     private:
     // Dimensions can be runtime or compile-time quantities
     const SafePtr<Entity> high_;
     const SafePtr<Entity> low_;
     const SafePtr<Entity> vecdim_;
-    
+
     // checks if the dimensions are CTImeEntities
     void init_();
     bool high_is_static_;
     bool low_is_static_;
     bool vecdim_is_static_;
-    // Cached labels for 
+    // Cached labels for
     std::string high_label_;
     std::string low_label_;
     std::string vecdim_label_;
-    
+
     /// Default dimension
     static SafePtr<ImplicitDimensions> default_dims_;
-    
+
   };
-  
+
 };
 
 #endif

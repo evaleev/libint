@@ -28,9 +28,6 @@
 
 #define USE_HRR_FOR_TiG12 1
 
-using namespace std;
-
-
 namespace libint2 {
 
   class DGVertex;
