@@ -24,11 +24,8 @@
 #include <string>
 #include <memory.h>
 
-using namespace std;
-
-
 namespace libint2 {
-  
+
   /**
     Externally accessible registry of information about a graph. Used to control how many algorithms
     behave (e.g. which transformation rules are allowed, etc.)
@@ -37,7 +34,7 @@ namespace libint2 {
     public:
     GraphRegistry();
     ~GraphRegistry();
-    
+
     GraphRegistry* clone() const;
 
     /// Accumulate (true) or assign (false) target vertices? The default is to assign.
@@ -70,7 +67,7 @@ namespace libint2 {
     /// if -1, no profiling, otherwise, indicates the current timer
     int current_timer() const { return current_timer_; }
     void current_timer(int ct) { current_timer_ = ct; }
-    
+
     private:
     bool accumulate_targets_;
     bool return_targets_;
@@ -82,7 +79,7 @@ namespace libint2 {
     std::string stack_name_;
     int current_timer_;
   };
-  
+
   /**
     Internal registry of information. Encapsulates info which should not be controled by the user,
   */
@@ -90,19 +87,19 @@ namespace libint2 {
     public:
     InternalGraphRegistry();
     ~InternalGraphRegistry();
-    
+
     /// Are targets computed, then accumulated, or accumulated directly? The latter possible only if all targets are unrolled.
     bool accumulate_targets_directly() const { return accumulate_targets_directly_; }
     void accumulate_targets_directly(bool atd) { accumulate_targets_directly_ = atd; }
     /// The size of the buffer at the beginning of stack allocated to hold accumulated targets
     MemoryManager::Size size_of_target_accum() const { return size_of_target_accum_; }
     void size_of_target_accum(const MemoryManager::Size& sota) { size_of_target_accum_ = sota; }
-    
+
     private:
     bool accumulate_targets_directly_;
     MemoryManager::Size size_of_target_accum_;
   };
-  
+
 }
 
 #endif

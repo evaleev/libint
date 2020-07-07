@@ -26,8 +26,6 @@
 #ifndef _libint2_src_bin_libint_tactic_h_
 #define _libint2_src_bin_libint_tactic_h_
 
-using namespace std;
-
 namespace libint2 {
 
   class DirectedGraph;
@@ -42,7 +40,7 @@ namespace libint2 {
   class Tactic {
     public:
     typedef SafePtr<RecurrenceRelation> RR;
-    typedef vector<RR> rr_stack;
+    typedef std::vector<RR> rr_stack;
 
     Tactic() {}
     virtual ~Tactic() {}

@@ -154,7 +154,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
     /// Implementation of DGVertex::description()
     std::string description() const
     {
-      ostringstream os;
+      std::ostringstream os;
       os << "RTimeEntity: " << id();
       const std::string descr = os.str();
       return descr;
@@ -234,7 +234,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
       /// Implementation of DGVertex::description()
       std::string description() const
       {
-        ostringstream os;
+        std::ostringstream os;
         os << "CTimeEntity: " << id();
         const std::string descr = os.str();
         return descr;
@@ -290,7 +290,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
     operator*(const SafePtr< RTimeEntity<T> >& A, const SafePtr< CTimeEntity<U> >& B)
     {
       typedef RTimeEntity< typename ProductType<T,U>::result > prodtype;
-      ostringstream oss;
+      std::ostringstream oss;
       oss << A->id() << "*" << B->id();
       // TODO this should be false, but the logic of DirectedGraph construction depends on this being true
       const bool not_precomputed = true;

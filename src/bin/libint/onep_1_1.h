@@ -24,10 +24,8 @@
 #include <integral.h>
 #include <integral_1_1.h>
 
-using namespace std;
-
 namespace libint2 {
-  
+
   /// (s|V|s) (V=electrostatic potential operator) shell quartet is not precomputed, but the integral is
   template <>
   inline bool

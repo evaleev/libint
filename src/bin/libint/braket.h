@@ -47,7 +47,7 @@ namespace libint2 {
     static constexpr auto num_particles = NP;
     /// The total # of basis functions = # of particles (since 1 bf / particle)
     static constexpr auto num_bf = NP;
-    
+
     typedef BFS bfs_type;
     typedef bfs_type& bfs_ref;
     typedef const BFS& bfs_cref;
@@ -56,7 +56,7 @@ namespace libint2 {
         Provided only for compatibility for generic subiterator algorithms */
     ArrayBraket();
     ArrayBraket(const BFS* braket);
-    ArrayBraket(const vector<vector<BFS> >& braket);
+    ArrayBraket(const std::vector<std::vector<BFS> >& braket);
     ~ArrayBraket();
 
     /// Comparison function
@@ -85,14 +85,14 @@ namespace libint2 {
 
   private:
     BFS bfs_[NP];
-    
+
     // this function resets all cached values
     void reset_cache();
 #if COMPUTE_SIZE_DIRECTLY
     mutable unsigned int size_;
 #endif
   };
-  
+
   template <class BFS, unsigned int NP>
   ArrayBraket<BFS,NP>::ArrayBraket()
   {
@@ -100,7 +100,7 @@ namespace libint2 {
     size_ = 0;
 #endif
   }
-  
+
   template <class BFS, unsigned int NP>
   ArrayBraket<BFS,NP>::ArrayBraket(const BFS* braket) {
     for(int i=0; i<NP; i++)
@@ -109,9 +109,9 @@ namespace libint2 {
     size_ = 0;
 #endif
   }
-  
+
   template <class BFS, unsigned int NP>
-  ArrayBraket<BFS,NP>::ArrayBraket(const vector<vector<BFS> >& braket) {
+  ArrayBraket<BFS,NP>::ArrayBraket(const std::vector<std::vector<BFS> >& braket) {
     assert(braket.size()==NP);
     for(unsigned int i=0; i<NP; i++) {
       assert(braket[i].size()==1);
@@ -121,10 +121,10 @@ namespace libint2 {
     size_ = 0;
 #endif
   }
-  
+
   template <class BFS, unsigned int NP>
   ArrayBraket<BFS,NP>::~ArrayBraket() {}
-  
+
   template <class BFS, unsigned int NP>
   bool
   ArrayBraket<BFS,NP>::operator==(const ArrayBraket<BFS,NP>& a) const {
@@ -133,14 +133,14 @@ namespace libint2 {
         return false;
     return true;
   }
-  
+
   template <class BFS, unsigned int NP>
   typename ArrayBraket<BFS,NP>::bfs_cref
   ArrayBraket<BFS,NP>::member(unsigned int p, unsigned int i) const {
     assert(i==0 && p<NP);
     return bfs_[p];
   }
-  
+
   template <class BFS, unsigned int NP>
   typename ArrayBraket<BFS,NP>::bfs_ref
   ArrayBraket<BFS,NP>::member(unsigned int p, unsigned int i) {
@@ -148,14 +148,14 @@ namespace libint2 {
     reset_cache();
     return bfs_[p];
   }
-  
+
   template <class BFS, unsigned int NP>
   SubIterator*
   ArrayBraket<BFS,NP>::member_subiter(unsigned int p, unsigned int i) const {
     assert(i==0 && p<NP);
     return static_cast<SubIterator*>(new SubIteratorBase<BFS>( member(p,i) ) );
   }
-  
+
   template <class BFS, unsigned int NP>
   void
   ArrayBraket<BFS,NP>::set_member(const BFS& f, unsigned int p, unsigned int i) {
@@ -163,7 +163,7 @@ namespace libint2 {
     reset_cache();
     bfs_[p] = f;
   }
-  
+
   template <class BFS, unsigned int NP>
   void
   ArrayBraket<BFS,NP>::set_member(const ConstructablePolymorphically& f, unsigned int p, unsigned int i) {
@@ -171,7 +171,7 @@ namespace libint2 {
     reset_cache();
     bfs_[p] = BFS(f);
   }
-  
+
   template <class BFS, unsigned int NP>
   LIBINT2_UINT_LEAST64
   ArrayBraket<BFS,NP>::key() const {
@@ -184,7 +184,7 @@ namespace libint2 {
     assert(key < this->max_key());
     return key;
   }
-  
+
   template <class BFS, unsigned int NP>
   LIBINT2_UINT_LEAST64
   ArrayBraket<BFS,NP>::max_key() const {
@@ -194,7 +194,7 @@ namespace libint2 {
     }
     return max_key;
   }
-  
+
 #if COMPUTE_SIZE_DIRECTLY
   template <class BFS, unsigned int NP>
   unsigned int
@@ -209,7 +209,7 @@ namespace libint2 {
     return size_;
   }
 #endif
-  
+
   template <class BFS, unsigned int NP>
   void
   ArrayBraket<BFS,NP>::reset_cache() {
@@ -265,7 +265,7 @@ namespace libint2 {
   private:
     std::pair<BFS,BFS> bfs_;
   };
-  
+
   /// these objects help to construct BraketPairs
   namespace braket {
     /// Physicists bra
@@ -285,7 +285,7 @@ namespace libint2 {
       return BraketPair<F,CKet>(f1,f2);
     }
   };
-  
+
   template <class BFS, BraketType BKTypeL,  BraketType BKTypeR>
   algebra::Wedge< BraketPair<BFS,BKTypeL>, BraketPair<BFS,BKTypeR> >
   operator^(const BraketPair<BFS,BKTypeL>& L, const BraketPair<BFS,BKTypeR>& R) {

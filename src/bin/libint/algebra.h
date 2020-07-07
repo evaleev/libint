@@ -48,7 +48,7 @@ namespace libint2 {
     class AlgebraicOperator :
     public DGVertex
     {
-      
+
     public:
       typedef algebra::OperatorTypes OperatorTypes;
       typedef algebra::OperatorTypes::OperatorType OperatorType;
@@ -71,7 +71,7 @@ namespace libint2 {
         {
 #if DEBUG
           if (num_exit_arcs() != 2)
-            cout << "AlgebraicOperator<DGVertex> copy constructor: number of children != 2" << endl;
+            std::cout << "AlgebraicOperator<DGVertex> copy constructor: number of children != 2" << std::endl;
           else {
 
 	    typedef DGVertex::ArcSetType::const_iterator aciter;
@@ -80,13 +80,13 @@ namespace libint2 {
 	    auto right_arg = (*a)->dest();
 
             if (left_ != left_arg && left_ != right_arg)
-              cout << "AlgebraicOperator<DGVertex> copy constructor: invalid left operand given" << endl; 
+              std::cout << "AlgebraicOperator<DGVertex> copy constructor: invalid left operand given" << std::endl;
             if (right_ != left_arg && right_ != right_arg)
-              cout << "AlgebraicOperator<DGVertex> copy constructor: invalid right operand given" << endl;
+              std::cout << "AlgebraicOperator<DGVertex> copy constructor: invalid right operand given" << std::endl;
           }
 #endif
         }
-      
+
       /// Returns the OperatorType
       OperatorType type() const { return OT_; }
       /// Returns the left argument
@@ -124,15 +124,15 @@ namespace libint2 {
 #if ALGEBRAICOPERATOR_USE_SAFEPTR
         // Find out why sometimes equivalent left_ and a->left_ have non-equivalent pointers
         if (left_->equiv(a->left()) && left_ != a->left_) {
-          cout << "Left arguments are equivalent but pointers differ!" << endl;
-          cout << left_->description() << endl;
-          cout << a->left_->description() << endl;
+          std::cout << "Left arguments are equivalent but pointers differ!" << std::endl;
+          std::cout << left_->description() << std::endl;
+          std::cout << a->left_->description() << std::endl;
         }
         // Find out why sometimes equivalent right_ and a->right_ have non-equivalent pointers
         if (right_->equiv(a->right()) && right_ != a->right_) {
-          cout << "Left arguments are equivalent but pointers differ!" << endl;
-          cout << right_->description() << endl;
-          cout << a->right_->description() << endl;
+          std::cout << "Left arguments are equivalent but pointers differ!" << std::endl;
+          std::cout << right_->description() << std::endl;
+          std::cout << a->right_->description() << std::endl;
         }
 #endif
         if (OT_ == a->OT_) {
@@ -148,7 +148,7 @@ namespace libint2 {
         else
           return false;
       }
-      
+
       /// Implements DGVertex::label()
       const std::string& label() const
       {
@@ -162,7 +162,7 @@ namespace libint2 {
       /// Implements DGVertex::description()
       std::string description() const
       {
-        ostringstream os;
+        std::ostringstream os;
         os << "( ( " << left_->description() << " ) "
            << algebra::OperatorSymbol[OT_] << " ( "
            << right_->description() << " ) )";
@@ -175,17 +175,16 @@ namespace libint2 {
       {
         throw CannotAddArc("AlgebraicOperator::del_exit_arcs() -- cannot safely use del_exit_arcs on operator vertices.");
       }
-      
+
       /// Implements Hashable::key()
       typename DGVertex::KeyReturnType key() const { return 0; }
-      
+
       void print(std::ostream& os) const {
         DGVertex::print(os);
-        using std::endl;
         std::string prefix("AlgebraicOperator::print: ");
-        os << prefix << "this = " << this << endl;
-        os << prefix << "left_ = " << left_ << endl;
-        os << prefix << "right_ = " << right_ << endl;
+        os << prefix << "this = " << this << std::endl;
+        os << prefix << "left_ = " << left_ << std::endl;
+        os << prefix << "right_ = " << right_ << std::endl;
       }
 
     private:
@@ -201,7 +200,7 @@ namespace libint2 {
 
       std::string label_;
     };
-    
+
   /*
   template <>
     void
@@ -216,7 +215,7 @@ namespace libint2 {
         throw std::runtime_error("AlgebraicOperator<DGVertex>::add_exit_arc -- trying to add an arc to a vertex not equivalent to either argument.");
     }
   */
-  
+
   /** represents linear combination of objects of type T with coefficients of type C
    */
   template <class C, class T>
@@ -224,11 +223,11 @@ namespace libint2 {
     public:
       typedef std::pair<C,T> term_t;
       typedef std::vector<term_t> data_t;
-      
+
       LinearCombination() {}
       // shallow copy constructor -- used by operator^
       LinearCombination(data_t* data) { swap(*data,data_); delete data; }
-      
+
       LinearCombination& operator+=(const term_t& t) {
         data_.push_back(t);
         return *this;
@@ -239,7 +238,7 @@ namespace libint2 {
     private:
       data_t data_;
   };
-  
+
   namespace algebra {
     /// Wedge is a typeholder for the result of a wedge product
     template <class L, class R>
@@ -275,7 +274,7 @@ namespace libint2 {
       }
     return result;
   }
-  
+
   template <class C, class Tl, class Tr>
   typename LinearCombination<C, algebra::Wedge<Tl,Tr> >::data_t*
   operator^(const Tl& L,
@@ -288,7 +287,7 @@ namespace libint2 {
     }
     return result;
   }
-  
+
 };
 
 #endif

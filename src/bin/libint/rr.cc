@@ -34,6 +34,7 @@
 #include <prefactors.h>
 #include <singl_stack.h>
 
+using namespace std;
 using namespace libint2;
 using namespace libint2::prefactor;
 

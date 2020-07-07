@@ -38,9 +38,6 @@
 #include <context.h>
 #include <default_params.h>
 
-using namespace std;
-
-
 namespace libint2 {
 
   /** Compute relation for 2-e integrals of the r2.r2 x G12 operators.
@@ -93,15 +90,15 @@ namespace libint2 {
     /// registers this RR with the stack, if needed
     bool register_with_rrstack() const;
 #endif
-    
+
     static const unsigned int max_nchildren_ = 3;
     SafePtr<TargetType> target_;
     SafePtr<ChildType> children_[max_nchildren_];
     unsigned int nchildren_;
- 
+
     std::string generate_label() const
     {
-      ostringstream os;
+      std::ostringstream os;
       os << "RR ( " << rr_target()->label() << " )";
       return os.str();
     }
@@ -131,19 +128,19 @@ namespace libint2 {
       F sh_c(Tint->bra(1,0));
       F sh_d(Tint->ket(1,0));
 
-      vector<F> bra;
-      vector<F> ket;
+      std::vector<F> bra;
+      std::vector<F> ket;
       bra.push_back(sh_a);
       bra.push_back(sh_c);
       ket.push_back(sh_b);
       ket.push_back(sh_d);
 
-      vector<F>* bra_ref = &bra;
-      vector<F>* ket_ref = &ket;
+      auto* bra_ref = &bra;
+      auto* ket_ref = &ket;
 
       const unsigned int ndirs = is_simple() ? 3 : 1;
       for(int xyz=0; xyz<ndirs; xyz++) {
-        
+
 	// c+1_i d+1_i
 	bra_ref->operator[](1).inc(xyz);
 	ket_ref->operator[](1).inc(xyz);
@@ -160,7 +157,7 @@ namespace libint2 {
 	ket_ref->operator[](1).dec(xyz);
       }
     }
-  
+
   template <template <class> class I, class F>
     SafePtr< typename CR_11_R2dotR2G12_11<I,F>::ChildType >
     CR_11_R2dotR2G12_11<I,F>::child(unsigned int i) const
