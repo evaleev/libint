@@ -49,6 +49,8 @@ enum SHGShellOrdering {
 namespace libint2 {
 inline int INT_SOLIDHARMINDEX(int l, int m) { return m + l; }
 }
+LIBINT_DEPRECATED("please use libint2::INT_SOLIDHARMINDEX instead")
+inline int INT_SOLIDHARMINDEX(int l, int m) { return libint2::INT_SOLIDHARMINDEX(l, m); }
 
 /* This sets up the above loop over cartesian exponents as follows
  * int m;
@@ -72,6 +74,8 @@ inline int INT_SOLIDHARMINDEX(int l, int m) {
   return 2 * std::abs(m) + (m > 0 ? -1 : 0);
 }
 }
+LIBINT_DEPRECATED("please use libint2::INT_SOLIDHARMINDEX instead")
+inline int INT_SOLIDHARMINDEX(int l, int m) { return libint2::INT_SOLIDHARMINDEX(l, m); }
 
 /* This sets up the above loop over cartesian exponents as follows
  * int m;
@@ -91,6 +95,8 @@ inline int INT_SOLIDHARMINDEX_MOLDEN(int l, int m) {
   return 2 * std::abs(m) + (m > 0 ? -1 : 0);
 }
 }
+LIBINT_DEPRECATED("please use libint2::INT_SOLIDHARMINDEX_MOLDEN instead")
+inline int INT_SOLIDHARMINDEX_MOLDEN(int l, int m) { return libint2::INT_SOLIDHARMINDEX_MOLDEN(l, m); }
 
 #define FOR_SOLIDHARM_MOLDEN(l, m) \
   for ((m) = 0; (m) != (l) + 1; (m) = ((m) > 0 ? -(m) : 1 - (m))) {
