@@ -46,7 +46,9 @@ enum SHGShellOrdering {
  * m = real solid harmonic index (|m| = the absolute value of the projection of
  * the angular momentum on the z axis) m runs from -l to l
  */
+namespace libint2 {
 inline int INT_SOLIDHARMINDEX(int l, int m) { return m + l; }
+}
 
 /* This sets up the above loop over cartesian exponents as follows
  * int m;
@@ -65,8 +67,10 @@ inline int INT_SOLIDHARMINDEX(int l, int m) { return m + l; }
  * m = real solid harmonic index (|m| = the absolute value of the projection of
  * the angular momentum on the z axis) m runs as 0, +1, -1, +2, -2 ... +l, -l
  */
+namespace libint2 {
 inline int INT_SOLIDHARMINDEX(int l, int m) {
   return 2 * std::abs(m) + (m > 0 ? -1 : 0);
+}
 }
 
 /* This sets up the above loop over cartesian exponents as follows
@@ -82,8 +86,10 @@ inline int INT_SOLIDHARMINDEX(int l, int m) {
 
 /// these always-available macros encode orderings assumed by Molden
 
+namespace libint2 {
 inline int INT_SOLIDHARMINDEX_MOLDEN(int l, int m) {
   return 2 * std::abs(m) + (m > 0 ? -1 : 0);
+}
 }
 
 #define FOR_SOLIDHARM_MOLDEN(l, m) \
