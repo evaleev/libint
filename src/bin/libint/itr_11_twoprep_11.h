@@ -84,13 +84,13 @@ namespace libint2 {
 
 #if 1
     /// Implementation of RecurrenceRelation::num_children()
-    unsigned int num_children() const { return children_.size(); };
+    unsigned int num_children() const override { return children_.size(); }
     /// Implementation of RecurrenceRelation::rr_target()
-    SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target_); }
+    SafePtr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target_); }
     /// Implementation of RecurrenceRelation::rr_child()
-    SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(children_.at(i)); }
+    SafePtr<DGVertex> rr_child(unsigned int i) const override { return static_pointer_cast<DGVertex,ChildType>(children_.at(i)); }
     /// Implementation of RecurrenceRelation::is_simple()
-    bool is_simple() const {
+    bool is_simple() const override {
       return TrivialBFSet<BFSet>::result;
     }
 #endif
@@ -113,7 +113,7 @@ namespace libint2 {
       return *(children_.end()-1);
     }
 
-    std::string generate_label() const
+    std::string generate_label() const override
     {
       typedef typename TargetType::AuxIndexType mType;
       static SafePtr<mType> aux0(new mType(0u));
@@ -126,11 +126,11 @@ namespace libint2 {
 
 #if LIBINT_ENABLE_GENERIC_CODE
     /// Implementation of RecurrenceRelation::has_generic()
-    bool has_generic(const SafePtr<CompilationParameters>& cparams) const;
+    bool has_generic(const SafePtr<CompilationParameters>& cparams) const override;
     /// Implementation of RecurrenceRelation::generic_header()
-    std::string generic_header() const;
+    std::string generic_header() const override;
     /// Implementation of RecurrenceRelation::generic_instance()
-    std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const;
+    std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const override;
 #endif
   };
 
