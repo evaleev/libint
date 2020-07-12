@@ -1841,9 +1841,9 @@ namespace libint2 {
   void stg_ng_fit(unsigned int n,
                  Real zeta,
                  std::vector< std::pair<Real, Real> >& geminal,
-                 Real xmin = 0.0,
-                 Real xmax = 10.0,
-                 unsigned int npts = 1001) {
+                 Real xmin,
+                 Real xmax,
+                 unsigned int npts) {
 
     // initial guess
     std::vector<Real> cc(n, 1.0); // coefficients
