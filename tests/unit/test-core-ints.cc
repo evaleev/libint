@@ -6,7 +6,7 @@
 #include <libint2/boys.h>
 
 #ifdef LIBINT_HAS_MPFR
-TEST_CASE("Boys reference values", "[core-ints]") {
+TEST_CASE("Boys reference values", "[core-ints][precision]") {
   using scalar_type = libint2::scalar_type;
 
   const int mmax = 40;
