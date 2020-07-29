@@ -69,6 +69,21 @@
    mpf_class result(erfx, prec);
    return result;
  }
+ /// implement acos for mpf_class using MPFR ... I do not claim to know what issues the rounding presents here
+ inline mpf_class acos(mpf_class x) {
+   const auto prec = x.get_prec();
+   mpfr_t x_r; mpfr_init2(x_r, prec);
+   mpfr_set_f(x_r, x.get_mpf_t(), MPFR_RNDN);
+
+   mpfr_t acosx_r; mpfr_init2(acosx_r, prec);
+   mpfr_acos(acosx_r, x_r, MPFR_RNDN);
+
+   mpf_t acosx;
+   mpf_init2(acosx, prec);
+   mpfr_get_f(acosx, acosx_r, MPFR_RNDN);
+   mpf_class result(acosx, prec);
+   return result;
+ }
  /// implement log for mpf_class using MPFR ... I do not claim to know what issues the rounding presents here
  inline mpf_class log(mpf_class x) {
    const auto prec = x.get_prec();

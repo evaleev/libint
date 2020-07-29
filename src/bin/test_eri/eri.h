@@ -74,28 +74,38 @@ struct ExpensiveMath {
       delete[] bc;
     }
 
+    static ExpensiveMath& instance() {
+      static ExpensiveMath expmath;
+      return expmath;
+    }
+
+    template <typename Real>
+    static Real pi() {
+      using std::acos;
+      static const Real pi = acos(Real{-1});
+      return pi;
+    }
+
     template <typename Real>
     Real norm_const(unsigned int l1, unsigned int m1, unsigned int n1,
                     Real alpha1, const Real* A)
     {
-      const Real sqrt_twoalpha1_over_pi = sqrt(2*alpha1/M_PI);
+      const Real sqrt_twoalpha1_over_pi = sqrt(2*alpha1/pi<Real>());
       const Real sqrtsqrt_twoalpha1_over_pi = sqrt(sqrt_twoalpha1_over_pi);
       const Real sqrt_alpha1 = sqrt(alpha1);
 
-      return sqrt_twoalpha1_over_pi * sqrtsqrt_twoalpha1_over_pi * (2 * pow(sqrt_alpha1,l1+m1+n1))/sqrt(df[2*l1]*df[2*m1]*df[2*n1]);
+      return sqrt_twoalpha1_over_pi * sqrtsqrt_twoalpha1_over_pi * (pow(2 * sqrt_alpha1,l1+m1+n1))/sqrt(df[2*l1]*df[2*m1]*df[2*n1]);
     }
 };
 
-namespace {
-  template <typename Int>
-  int parity(Int a) {
-    if (a%2 == 1) return -1;
-    return 1;
-  }
-}
-
 namespace libint2 {
   int min(int t1, unsigned int t2) { return t1 > (int)t2 ? (int)t2 : t1; }
+
+template <typename Int>
+int parity(Int a) {
+  if (a%2 == 1) return -1;
+  return 1;
+}
 };
 
 /*!
@@ -118,7 +128,7 @@ inline LIBINT2_REF_REALTYPE eri(unsigned int l1, unsigned int m1, unsigned int n
                                 LIBINT2_REF_REALTYPE alpha4, const LIBINT2_REF_REALTYPE* D,
                                 int norm_flag)
 {
-  static ExpensiveMath expmath;
+  ExpensiveMath& expmath = ExpensiveMath::instance();
 
   const LIBINT2_REF_REALTYPE gammap = alpha1 + alpha2;
   const LIBINT2_REF_REALTYPE Px = (alpha1*A[0] + alpha2*B[0])/gammap;
@@ -167,7 +177,7 @@ inline LIBINT2_REF_REALTYPE eri(unsigned int l1, unsigned int m1, unsigned int n
 
   K1 = exp(-alpha1*alpha2*AB2/gammap);
   K2 = exp(-alpha3*alpha4*CD2/gammaq);
-  const LIBINT2_REF_REALTYPE m_pi = M_PI;
+  const LIBINT2_REF_REALTYPE m_pi = expmath.pi<LIBINT2_REF_REALTYPE>();
   const LIBINT2_REF_REALTYPE m_pi_2 = m_pi * m_pi;
   pfac = 2*sqrt(m_pi_2 * m_pi_2 * m_pi)*K1*K2/(gammap*gammaq*sqrt(gammap+gammaq));
 
@@ -281,7 +291,7 @@ inline LIBINT2_REF_REALTYPE eri(unsigned int l1, unsigned int m1, unsigned int n
       u2max = lq / 2;
       for (u1 = 0; u1 <= u1max; u1++) {
         for (u2 = 0; u2 <= u2max; u2++) {
-          Gx = parity(lp) * flp[lp] * flq[lq] * expmath.fac[lp]
+          Gx = libint2::parity(lp) * flp[lp] * flq[lq] * expmath.fac[lp]
               * expmath.fac[lq] * pow(gammap, u1 - lp) * pow(gammaq, u2 - lq)
               * expmath.fac[lp + lq - 2 * u1 - 2 * u2]
               * pow(gammapq, lp + lq - 2 * u1 - 2 * u2)
@@ -294,7 +304,7 @@ inline LIBINT2_REF_REALTYPE eri(unsigned int l1, unsigned int m1, unsigned int n
               for (v1 = 0; v1 <= v1max; v1++) {
                 for (v2 = 0; v2 <= v2max; v2++) {
                   Gy =
-                      parity(mp) * fmp[mp] * fmq[mq] * expmath.fac[mp]
+                      libint2::parity(mp) * fmp[mp] * fmq[mq] * expmath.fac[mp]
                           * expmath.fac[mq] * pow(gammap, v1 - mp)
                           * pow(gammaq, v2 - mq)
                           * expmath.fac[mp + mq - 2 * v1 - 2 * v2]
@@ -308,7 +318,7 @@ inline LIBINT2_REF_REALTYPE eri(unsigned int l1, unsigned int m1, unsigned int n
                       w2max = nq / 2;
                       for (w1 = 0; w1 <= w1max; w1++) {
                         for (w2 = 0; w2 <= w2max; w2++) {
-                          Gz = parity(np) * fnp[np] * fnq[nq] * expmath.fac[np]
+                          Gz = libint2::parity(np) * fnp[np] * fnq[nq] * expmath.fac[np]
                               * expmath.fac[nq] * pow(gammap, w1 - np)
                               * pow(gammaq, w2 - nq)
                               * expmath.fac[np + nq - 2 * w1 - 2 * w2]
@@ -326,7 +336,7 @@ inline LIBINT2_REF_REALTYPE eri(unsigned int l1, unsigned int m1, unsigned int n
                                     - 2 * u2 - 2 * v1 - 2 * v2 - 2 * w1 - 2 * w2
                                     - tx - ty - tz;
                                 result += Gx * Gy * Gz * F[zeta]
-                                    * parity(tx + ty + tz)
+                                    * libint2::parity(tx + ty + tz)
                                     * pow(PQx,
                                           lp + lq - 2 * u1 - 2 * u2 - 2 * tx)
                                     * pow(PQy,
@@ -391,6 +401,7 @@ inline LIBINT2_REF_REALTYPE eri(const unsigned int* deriv_index,
                                 unsigned int l4, unsigned int m4, unsigned int n4,
                                 LIBINT2_REF_REALTYPE alpha4, const LIBINT2_REF_REALTYPE* D,
                                 int norm_flag) {
+  ExpensiveMath& expmath = ExpensiveMath::instance();
   const unsigned int deriv_order = std::accumulate(deriv_index, deriv_index+12, 0u);
   if (deriv_order == 0)
     return eri(l1, m1, n1, alpha1, A,
@@ -441,7 +452,7 @@ inline LIBINT2_REF_REALTYPE eri(const unsigned int* deriv_index,
                         qn[1][0], qn[1][1], qn[1][2], alpha[1], B,
                         qn[2][0], qn[2][1], qn[2][2], alpha[2], C,
                         qn[3][0], qn[3][1], qn[3][2], alpha[3], D,
-                        norm_flag) *
+                        0) *
                     2.0 * alpha[dc];
     --qn[dc][dxyz];
 
@@ -452,10 +463,19 @@ inline LIBINT2_REF_REALTYPE eri(const unsigned int* deriv_index,
                     qn[1][0], qn[1][1], qn[1][2], alpha[1], B,
                     qn[2][0], qn[2][1], qn[2][2], alpha[2], C,
                     qn[3][0], qn[3][1], qn[3][2], alpha[3], D,
-                    norm_flag) *
+                    0) *
                     (qn[dc][dxyz] + 1);
       ++qn[dc][dxyz];
     }
+
+    // N.B. computed using non-normalized Gaussians, normalize the result now
+    if (norm_flag > 0) {
+      result *= expmath.norm_const(l1,m1,n1,alpha1,A);
+      result *= expmath.norm_const(l2,m2,n2,alpha2,B);
+      result *= expmath.norm_const(l3,m3,n3,alpha3,C);
+      result *= expmath.norm_const(l4,m4,n4,alpha4,D);
+    }
+
     return result;
   }
   assert(false); // unreachable;
