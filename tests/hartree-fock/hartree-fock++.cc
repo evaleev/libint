@@ -1251,7 +1251,7 @@ Matrix compute_schwarz_ints(
         assert(buf[0] != nullptr &&
                "to compute Schwarz ints turn off primitive screening");
 
-        // to apply Schwarz inequality to individual integrals must use the diagonal elements
+        // to apply Schwarz inequality to individual integrals must use the "diagonal" elements
         // to apply it to sets of functions (e.g. shells) use the whole shell-set of ints here
         Eigen::Map<const Matrix> buf_mat(buf[0], n12, n12);
         auto norm2 = use_2norm ? buf_mat.norm()

@@ -1177,8 +1177,8 @@ Matrix compute_schwarz_ints(
 
         // the diagonal elements are the Schwarz ints ... use Map.diagonal()
         Eigen::Map<const Matrix> buf_mat(buf[0], n12, n12);
-        auto norm2 = use_2norm ? buf_mat.diagonal().norm()
-                               : buf_mat.diagonal().lpNorm<Eigen::Infinity>();
+        auto norm2 = use_2norm ? buf_mat.norm()
+                               : buf_mat.lpNorm<Eigen::Infinity>();
         K(s1, s2) = std::sqrt(norm2);
         if (bs1_equiv_bs2) K(s2, s1) = K(s1, s2);
       }
