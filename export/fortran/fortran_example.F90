@@ -86,8 +86,8 @@ PROGRAM fortran_example
                     am2, c2, alpha2, B, &
                     am3, c3, alpha3, C, &
                     am4, c4, alpha4, D, &
-                    F, deriv_order, erieval)
-   CALL print_eri(am1, am2, am3, am4, erieval)
+                    F, erieval)
+   CALL print_eri(am1, am2, am3, am4, deriv_order, erieval)
    CALL libint2_cleanup_eri2(erieval)
 #endif
 #endif
