@@ -1,7 +1,6 @@
 PROGRAM fortran_example
 
 #include <libint2/config.h>
-#include <libint2/util/generated/libint2_params.h>
 #include "fortran_incldefs.h"
 
    USE ISO_C_BINDING, ONLY: C_DOUBLE, C_F_POINTER, C_F_PROCPOINTER, C_NULL_PTR
