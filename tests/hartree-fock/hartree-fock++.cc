@@ -1914,7 +1914,7 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
 // n2 = matrix size times 2
 // i,j = (unordered) indices
 #define upper_triangle_index(n2, i, j)                           \
-  (std::min((i), (j))) * ((n2) - (std::min((i), (j))) - 1) / 2 + \
+  (std::min((i), (j))) * (n2 - (std::min((i), (j))) - 1) / 2 + \
       (std::max((i), (j)))
                 // look over shellsets in the order in which they appear
                 std::size_t shellset_idx = 0;

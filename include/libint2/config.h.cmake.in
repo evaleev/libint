@@ -355,6 +355,49 @@
 /* have posix_memalign ? */
 #cmakedefine HAVE_POSIX_MEMALIGN @HAVE_POSIX_MEMALIGN@
 
+/* compiler type detection */
+#define LIBINT_COMPILER_ID_GNU 0
+#define LIBINT_COMPILER_ID_Clang 1
+#define LIBINT_COMPILER_ID_AppleClang 2
+#define LIBINT_COMPILER_ID_XLClang 3
+#define LIBINT_COMPILER_ID_Intel 4
+#if defined(__INTEL_COMPILER_BUILD_DATE)  /* macros like __ICC and even __INTEL_COMPILER can be affected by command options like -no-icc */
+# define LIBINT_COMPILER_ID LIBINT_COMPILER_ID_Intel
+# define LIBINT_COMPILER_IS_ICC 1
+#endif
+#if defined(__clang__) && !defined(LIBINT_COMPILER_IS_ICC)
+# define LIBINT_COMPILER_IS_CLANG 1
+# if defined(__apple_build_version__)
+#  define LIBINT_COMPILER_ID LIBINT_COMPILER_ID_AppleClang
+# elif defined(__ibmxl__)
+#  define LIBINT_COMPILER_ID LIBINT_COMPILER_ID_XLClang
+# else
+#  define LIBINT_COMPILER_ID LIBINT_COMPILER_ID_Clang
+# endif
+#endif
+#if defined(__GNUG__) && !defined(LIBINT_COMPILER_IS_ICC) && !defined(LIBINT_COMPILER_IS_CLANG)
+# define LIBINT_COMPILER_ID LIBINT_COMPILER_ID_GNU
+# define LIBINT_COMPILER_IS_GCC 1
+#endif
+
+/* ----------- pragma helpers ---------------*/
+#define LIBINT_PRAGMA(x) _Pragma(#x)
+/* same as LIBINT_PRAGMA(x), but expands x */
+#define LIBINT_XPRAGMA(x) LIBINT_PRAGMA(x)
+/* "concats" a and b with a space in between */
+#define LIBINT_CONCAT(a,b) a b
+#if defined(LIBINT_COMPILER_IS_CLANG)
+#define LIBINT_PRAGMA_CLANG(x) LIBINT_XPRAGMA( LIBINT_CONCAT(clang,x) )
+#else
+#define LIBINT_PRAGMA_CLANG(x)
+#endif
+#if defined(LIBINT_COMPILER_IS_GCC)
+#define LIBINT_PRAGMA_GCC(x) LIBINT_XPRAGMA( LIBINT_CONCAT(GCC,x) )
+#else
+#define LIBINT_PRAGMA_GCC(x)
+#endif
+
+
 #if @_EXPORT_MODE@
 #include "libint2/config2.h"
 #endif
