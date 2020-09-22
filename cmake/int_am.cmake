@@ -8,7 +8,7 @@
 #   out the energy/gradient/hessian ERI AM levels at the CMake level
 #   so that Libint2Config components may be defined and client codes can
 #   require the detected library include gradient integrals up to AM=5 with
-#   `find_package(Libint2 COMPONENTS G5)`
+#   `find_package(Libint2 COMPONENTS g5)`
 
 
 message(STATUS "Processing integrals classes ...")
@@ -30,7 +30,7 @@ if (_lam GREATER 1)
                      OUTPUT_VARIABLE _max_LIBINT_MAX_AM)
 
     set(LIBINT_MAX_AM_LIST ${_sam})
-    set(LIBINT_MAX_AM "")
+    set(LIBINT_MAX_AM ${_max_LIBINT_MAX_AM})  # only overall LIBINT, not specific integrals classes, sets both MAX_AM & MAX_AM_LIST
 else()
     set(_candidate0_E ${WITH_MAX_AM})
     set(_candidate0_G "-1")
@@ -53,7 +53,7 @@ if (_lam GREATER 1)
     execute_process (COMMAND bash -c "echo ${_sam} | tr , '\n' | sort -n | tail -n1"
                      OUTPUT_VARIABLE _max_LIBINT_OPT_AM)
     set(LIBINT_OPT_AM_LIST ${_sam})
-    set(LIBINT_OPT_AM "")
+    set(LIBINT_OPT_AM ${_max_LIBINT_OPT_AM})  # only overall LIBINT, not specific integrals classes, sets both OPT_AM & OPT_AM_LIST
 else()
     set(LIBINT_OPT_AM_LIST "")
     if (WITH_OPT_AM EQUAL -1)

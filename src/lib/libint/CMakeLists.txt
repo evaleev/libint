@@ -66,6 +66,9 @@ install(DIRECTORY ${Libint2_ROOT}/lib/basis
         #DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/basis
         FILES_MATCHING PATTERN "*.g94")
 
+install(FILES ${Libint2_ROOT}/external/boost.tar.gz
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/external)
+
 # <<<  Install CMake  >>>
 
 install(FILES ${Libint2_ROOT}/cmake/autocmake_safeguards.cmake

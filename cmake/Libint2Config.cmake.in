@@ -22,9 +22,9 @@
 #   shared - search for only shared library
 #   static - search for only static library
 #
-#   e[2, 7] - search for library including energy ERI integrals with angular momentum >= this integer
-#   g[2, 7] - search for library including gradient ERI integrals with angular momentum >= this integer
-#   h[2, 7] - search for library including Hessian ERI integrals with angular momentum >= this integer
+#   e[2, 8] - search for library including energy ERI integrals with angular momentum >= this integer
+#   g[2, 8] - search for library including gradient ERI integrals with angular momentum >= this integer
+#   h[2, 8] - search for library including Hessian ERI integrals with angular momentum >= this integer
 #
 #                    sph        cart       shell_set  used_by
 #                    --------   --------   ---------  -------
@@ -92,18 +92,21 @@ set (_valid_components
     e5
     e6
     e7
+    e8
     g2
     g3
     g4
     g5
     g6
     g7
+    g8
     h2
     h3
     h4
     h5
     h6
     h7
+    h8
 
     sss
     sso

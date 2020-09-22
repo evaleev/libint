@@ -145,7 +145,8 @@ option_with_default(WITH_ERI_OPT_AM
 
 option_with_default(WITH_ERI3_MAX_AM
   "Support 3-center ERIs for Gaussians of angular momentum up to N.
-   Can specify values for each derivative levels as a semicolon-separated string" -1)
+   Can specify values for each derivative levels as a semicolon-separated string
+   Set WITH_MAX_AM to mirror this option." -1)
 option_with_default(WITH_ERI3_OPT_AM
   "Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative levels as a semicolon-separated string (default: (max_am/2)+1)" -1)

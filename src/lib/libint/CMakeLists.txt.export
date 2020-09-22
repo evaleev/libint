@@ -91,9 +91,25 @@ if (TARGET MPFR::MPFRXX)
     set(LIBINT_HAS_MPFR 1)
 endif()
 
-find_package(Boost 1.57 REQUIRED)
+find_package(Boost 1.57)
 if (TARGET Boost::boost)  # the header-only target
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
+else()
+    set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 0)
+
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2)
+    execute_process(
+            COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_SOURCE_DIR}/external/boost.tar.gz
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2
+            RESULT_VARIABLE UNPACK_BOOST_RESULT
+            OUTPUT_VARIABLE UNPACK_BOOST_OUTPUT
+            ERROR_VARIABLE UNPACK_BOOST_OUTPUT
+    )
+    message(STATUS "Unpacking bundled Boost")
+    if (NOT UNPACK_BOOST_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to unpack the bundled Boost! The tar command output:\n${UNPACK_BOOST_OUTPUT}")
+    endif()
+
 endif()
 
 find_package(Eigen3 REQUIRED)
