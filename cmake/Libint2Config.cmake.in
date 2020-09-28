@@ -25,6 +25,12 @@
 #   e[2, 8] - search for library including energy ERI integrals with angular momentum >= this integer
 #   g[2, 8] - search for library including gradient ERI integrals with angular momentum >= this integer
 #   h[2, 8] - search for library including Hessian ERI integrals with angular momentum >= this integer
+#   eri2_e[2, 8] - search for library including energy ERI2 integrals with angular momentum >= this integer
+#   eri2_g[2, 8] - search for library including gradient ERI2 integrals with angular momentum >= this integer
+#   eri2_h[2, 8] - search for library including Hessian ERI2 integrals with angular momentum >= this integer
+#   eri3_e[2, 8] - search for library including energy ERI2 integrals with angular momentum >= this integer
+#   eri3_g[2, 8] - search for library including gradient ERI2 integrals with angular momentum >= this integer
+#   eri3_h[2, 8] - search for library including Hessian ERI2 integrals with angular momentum >= this integer
 #
 #                    sph        cart       shell_set  used_by
 #                    --------   --------   ---------  -------
@@ -107,6 +113,50 @@ set (_valid_components
     h6
     h7
     h8
+
+    eri2_e2
+    eri2_e3
+    eri2_e4
+    eri2_e5
+    eri2_e6
+    eri2_e7
+    eri2_e8
+    eri2_g2
+    eri2_g3
+    eri2_g4
+    eri2_g5
+    eri2_g6
+    eri2_g7
+    eri2_g8
+    eri2_h2
+    eri2_h3
+    eri2_h4
+    eri2_h5
+    eri2_h6
+    eri2_h7
+    eri2_h8
+
+    eri3_e2
+    eri3_e3
+    eri3_e4
+    eri3_e5
+    eri3_e6
+    eri3_e7
+    eri3_e8
+    eri3_g2
+    eri3_g3
+    eri3_g4
+    eri3_g5
+    eri3_g6
+    eri3_g7
+    eri3_g8
+    eri3_h2
+    eri3_h3
+    eri3_h4
+    eri3_h5
+    eri3_h6
+    eri3_h7
+    eri3_h8
 
     sss
     sso
