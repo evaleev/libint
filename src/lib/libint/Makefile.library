@@ -17,12 +17,12 @@ default:: $(TOPDIR)/lib/$(TARGET) local_install_generated_headers
 # NOTE: the library is made from scratch every time and the prerequisite variable is not used to avoid overflow
 $(TOPDIR)/lib/$(NAME).a: $(LIBOBJ)
 	/bin/rm -f $@
-	find . -name '*.$(OBJSUF)' -print0 | xargs -0 $(AR) $(ARFLAGS) $@
+	find . -name '*.$(OBJSUF)' -print0 | sort -z | xargs -0 $(AR) $(ARFLAGS) $@
 	$(RANLIB) $@
 
 # this is how shared library is made
 $(TOPDIR)/lib/$(NAME).la: $(LIBOBJ)
-	find . -name '*.$(OBJSUF)' -print > libobjlist
+	find . -name '*.$(OBJSUF)' -print | sort > libobjlist
 	$(LTLINK) $(CXX) -o $@ -objectlist libobjlist $(LTLINKLIBOPTS)
 	-rm -f libobjlist
 
