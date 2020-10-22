@@ -38,6 +38,9 @@
 
 #ifdef _MSC_VER
 #define posix_memalign(p, a, s) (((*(p)) = _aligned_malloc((s), (a))), *(p) ?0 :errno)
+#define posix_memfree(p) ((_aligned_free((p))))
+#else
+#define posix_memfree(p) ((free((p))))
 #endif
 
 // from now on at least C++11 is required by default
@@ -296,7 +299,7 @@ namespace libint2 {
       }
       ~FmEval_Chebyshev7() {
         if (mmax >= 0) {
-          free(c);
+          posix_memfree(c);
         }
       }
 
@@ -887,7 +890,7 @@ namespace libint2 {
 
       ~TennoGmEval() {
         if (c_ != nullptr)
-          free(c_);
+          posix_memfree(c_);
       }
 
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
