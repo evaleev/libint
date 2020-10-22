@@ -187,7 +187,7 @@ process_integrals_class(ERI2)
 process_integrals_class(G12)
 process_integrals_class(G12DKH)
 
-# form list of active <deriv><max_am> strings to use in Libint2Config
+# form list of active <class>_<deriv><max_am> strings to use in Libint2Config
 set(Libint2_ERI_COMPONENTS "")
 foreach(_cls ERI;ERI2;ERI3)
     string(TOLOWER ${_cls} _lbl)
@@ -215,4 +215,3 @@ foreach(_cls ERI;ERI2;ERI3)
 endforeach()
 message(STATUS "Library will satisfy ERI AM components: ${Libint2_ERI_COMPONENTS}")
 
-# TODO add components for non-eri ints: eri3 -or- eri3_2 for hess -or- eri3_h3 for hess AM=3

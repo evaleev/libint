@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)  #TODO
+cmake_minimum_required(VERSION 3.8)
 
 project(Libint2
         LANGUAGES CXX)
@@ -120,6 +120,8 @@ option_with_print(ERI2_PURE_SH
 #  <<<  How High Angular Momentum  >>>
 
 #  example for "semicolon-separated string": `-DENABLE_ERI3=2 -DWITH_ERI3_MAX_AM="5;4;3"`
+
+#  high MAX_AM generating >20k files may require `ulimit -s 65535` for linking library target on Linux to avert "ld: Argument list too long"
 
 option_with_default(WITH_MAX_AM
   "Support Gaussians of angular momentum up to N.

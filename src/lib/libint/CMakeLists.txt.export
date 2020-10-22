@@ -13,11 +13,12 @@ set(library_LICENSE      "LGPL-3.0")
 #set(CMAKE_CXX_EXTENSIONS OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-message("CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}")
 
 ################################### Options ####################################
 include(psi4OptionsTools)
 include(int_computed)
+
+#  high MAX_AM generating >20k files may require `ulimit -s 65535` for linking library target on Linux to avert "ld: Argument list too long"
 
 #  <<< General  >>>
 
@@ -92,7 +93,7 @@ if (TARGET MPFR::MPFRXX)
 endif()
 
 find_package(Boost 1.57)
-if (TARGET Boost::boost)  # the header-only target
+if (TARGET Boost::boost)  # the header-only target. when CMake min reaches v3.15, can switch out for Boost::headers
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
 else()
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 0)

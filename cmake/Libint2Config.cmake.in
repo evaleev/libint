@@ -272,6 +272,8 @@ endif()
 
 check_required_components(${PN})
 
+# make detectable the various cmake modules exported alongside
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
 #-----------------------------------------------------------------------------
 # Don't include targets if this file is being picked up by another
@@ -291,6 +293,13 @@ if(NOT TARGET ${PN}::cxx)
     include(CMakeFindDependencyMacro)
     if(NOT TARGET Eigen3::Eigen)
         find_dependency(Eigen3)
+    endif()
+
+    if (@LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)
+        # Boost headers _not_ unpacked to within `include/libint2/`
+        if (NOT TARGET Boost::boost)
+            find_dependency(Boost 1.57)
+        endif()
     endif()
 
     get_property(_loc TARGET ${PN}::cxx PROPERTY LOCATION)

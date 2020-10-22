@@ -77,7 +77,6 @@ endif()
 
 find_library(MPFR_LIBRARY
     NAMES mpfr
-#          mpfr_static
     PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR}
     PATH_SUFFIXES bin ${MPFR_ROOT}/bin)
 
@@ -100,7 +99,6 @@ find_path(GMP_INCLUDE
     PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${INCLUDE_INSTALL_DIR})
 find_library(GMP_LIBRARY
     NAMES gmp
-#          gmp_static
     PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${LIB_INSTALL_DIR}
     PATH_SUFFIXES bin ${MPFR_ROOT}/bin)
 
