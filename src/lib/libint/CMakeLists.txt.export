@@ -14,13 +14,19 @@ set(library_LICENSE      "LGPL-3.0")
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+################################### Overview ###################################
+
+# * high MAX_AM generating >20k files may require `ulimit -s 65535` for linking
+#   library target on Linux to avert "ld: Argument list too long"
+# * when building for packaging, absense or presence of Boost determines whether
+#   libint2/boost headers are installed or not
+
 ################################### Options ####################################
 include(psi4OptionsTools)
 include(int_computed)
 
-#  high MAX_AM generating >20k files may require `ulimit -s 65535` for linking library target on Linux to avert "ld: Argument list too long"
 
-#  <<< General  >>>
+#  <<<  General  >>>
 
 option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
 option_with_print(BUILD_SHARED "Build at least shared library" OFF)

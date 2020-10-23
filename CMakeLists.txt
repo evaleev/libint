@@ -47,7 +47,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
 include(int_versions)
 include(psi4OptionsTools)
 
-#  <<< General  >>>
+#  <<<  General  >>>
 
 option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
 option_with_print(BUILD_SHARED "Build at least shared library" OFF)
