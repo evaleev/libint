@@ -1865,7 +1865,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 break;
 
               default:
-                assert(false && "This backet type not yet supported for geometric derivatives");
+                assert(false && "This braket type not yet supported for geometric derivatives");
             }
           }
           // if permuting derivatives ints must update their derivative index
