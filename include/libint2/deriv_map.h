@@ -68,11 +68,11 @@ namespace libint2 {
             switch(ncenters) {
               //BraKet::xx_xx  
               case 4: {
-                return &braket_xx_xx_maps[deriv_order_ - 1];
+                return &braket_xx_xx()[deriv_order_ - 1];
               }
               //BraKet::xs_xx
               case 3: {
-                return &braket_xs_xx_maps[deriv_order_ - 1];
+                return &braket_xs_xx()[deriv_order_ - 1];
               }
               default: 
                 assert(false && "This braket type not yet supported for geometric derivatives");
