@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include <vector>
 #include <algorithm>
+// Okay this is a problem
+//#include "engine.h"
 
 namespace libint2 {
 
@@ -40,16 +42,46 @@ namespace libint2 {
     class DerivMapGenerator { 
       public:
         // TODO here generate all arrays statically up to LIBINT2_MAX_DERIV_ORDER
+        //  For 4 centers: Make a vector of DerivMap arrays, one for each deriv order
+        //  For 3 centers: Make a vector of DerivMap arrays, one for each deriv order
+        using results = std::vector<std::vector<std::vector<std::vector<int>>>>;
 
+        static std::vector<results> braket_xx_xx_maps;
+        static std::vector<results> braket_xs_xx_maps;
+
+        static void initialize() { 
+        // For Braket::xx_xx and Braket::xs_xx, build vector 
+        // of mapDerivIndex arrays for each deriv order
+            for (int i = 0; i < LIBINT2_MAX_DERIV_ORDER; i++) {
+                braket_xx_xx_maps.push_back(DerivMapGenerator::generate_deriv_index_map(i + 1, 4));
+                braket_xs_xx_maps.push_back(DerivMapGenerator::generate_deriv_index_map(i + 1, 3));
+            }
+        }
+
+        static results* instance(int deriv_order_, int ncenters) {
+            // access and return the one that is needed  
+            switch(ncenters) {
+              //BraKet::xx_xx  
+              case 4: {
+                return &braket_xx_xx_maps[deriv_order_ - 1];
+              }
+              //BraKet::xs_xx
+              case 3: {
+                return &braket_xs_xx_maps[deriv_order_ - 1];
+              }
+              default: 
+                assert(false && "This braket type not yet supported for geometric derivatives");
+            }
+        }
       private:
         // Functions required for generating the maps.
         // Combinations with repitition. 
         // Combinations of size 'k' from 'n' elements stored in vector 'inp'.
         // Requires instantiating vector 'out' and vector of vectors 'result', which stores every combination.
-        void cwr_recursion(std::vector<int> inp,
-                                  std::vector<int> &out,
-                                  std::vector<std::vector<int>> &result,
-                                  int k, int i, int n)
+        static void cwr_recursion(std::vector<int> inp,
+                           std::vector<int> &out,
+                           std::vector<std::vector<int>> &result,
+                           int k, int i, int n)
         {   
             // base case: if combination size is k, add to result 
             if (out.size() == k){
@@ -67,7 +99,7 @@ namespace libint2 {
         // How many shell set derivatives
         // k is number of centers, n is deriv order.
         // Assumes coordinate-independent operator, 3 coordinates per center
-        int how_many_derivs(int k, int n) {
+        static int how_many_derivs(int k, int n) {
             int val = 1;
             int factorial = 1;
             for (int i=0; i < n; i++) {
@@ -76,22 +108,6 @@ namespace libint2 {
             }   
             val /= factorial;
             return val;
-        }
-
-        // Cartesian product of a series of vectors
-        std::vector<std::vector<int>> cartesian_product (const std::vector<std::vector<int>>& v) {
-            std::vector<std::vector<int>> s = {{}};
-            for (const auto& u : v) {
-                std::vector<std::vector<int>> r;
-                for (const auto& x : s) {
-                    for (const auto y : u) {
-                        r.push_back(x);
-                        r.back().push_back(y);
-                    }
-                }
-                s = std::move(r);
-            }   
-            return s;
         }
 
         // Create array which is of size (nderivs, deriv_order)
@@ -108,7 +124,7 @@ namespace libint2 {
         //         15 16 17
         //            18 19
         //               20
-        std::vector<std::vector<int>> generate_multi_index_lookup(int nparams, int deriv_order) {
+        static std::vector<std::vector<int>> generate_multi_index_lookup(int nparams, int deriv_order) {
             using namespace std;
             // Generate vector of indices 0 through nparams-1
             vector<int> inp;
@@ -124,10 +140,10 @@ namespace libint2 {
         }
 
         // Function which computes mapDerivIndex 
-        std::vector<std::vector<std::vector<std::vector<int>>>> 
-        generate_deriv_index_map(int deriv_order, BraKet braket_)
+        static std::vector<std::vector<std::vector<std::vector<int>>>> generate_deriv_index_map(int deriv_order, int ncenters)
         {
             using namespace std;
+
             // Number of possible derivatives
             int nderivs = how_many_derivs(ncenters, deriv_order); // e.g. for 4 center: 12,78,364,1365
             // Number of differentiable parameters in a shell set (assumes 3 cartesian components each center)
@@ -139,6 +155,7 @@ namespace libint2 {
             vector<int> swap_ket_perm;
             vector<vector<int>> swap_combos;
             // TODO switch to checking BraKet types
+            // Would like to check BraKet types here instead, but get errors if i try to include engine.h
             if (ncenters == 4){
                 swap_braket_perm = {6,7,8,9,10,11,0,1,2,3,4,5};
                 swap_bra_perm = {3,4,5,0,1,2,6,7,8,9,10,11};
@@ -153,14 +170,14 @@ namespace libint2 {
                                {1, 1, 0},
                                {1, 1, 1}};
             }
-            // TODO switch to checking BraKet types
-            // TODO should I add BraKet::xx_xs?
             if (ncenters == 3){
                 swap_braket_perm = {0,1,2,3,4,5,6,7,8};
                 swap_bra_perm = {0,1,2,3,4,5,6,7,8};
                 swap_ket_perm = {0,1,2,6,7,8,3,4,5};
                 swap_combos = {{0,0,0}, {0,0,1}};
+            // TODO should I add BraKet::xx_xs?
             }
+
             // Initialize mapDerivIndex. First three dimensions are either 0 or 1
             // acting as a bool for whether to swap braket, swap bra, or swap ket.
             // Last index is the integer map.
@@ -196,13 +213,9 @@ namespace libint2 {
                     // Sort permuted indices into order of upper triangle indices, i <= j <= k...
                     sort(permuted_indices.begin(), permuted_indices.end());
 
-                    // Now we need to map back to the 1d index.
-                    // There are two easy ways to do this.
-                    // The first is to construct a (deriv_order)-dimensional array, where each element is a 1d buffer index.
-                    // Then we can just index the array with 'permuted_indices' to find the 1d index
-                    // This is very fast, but has large memory requirement at higher orders for storing the array.
-                    // Instead, we can loop through 'lookup' until 'permuted_indices' matches an entry, and then that entry is the desired 1d buffer index.
-                    // This requires many more loops, but is cheaper memory wise.
+                    // Since the vector of vectors 'lookup' generated by generate_multi_index_lookup is sorted such that  
+                    // each vector is elementwise <= the next vector, we can use binary search to find the new 1d index 
+                    // from the permuted multidimensional index
                     int new_idx = 0;
                     auto it = lower_bound(lookup.begin(), lookup.end(), permuted_indices);
                     if (it != lookup.end()) new_idx = it - lookup.begin();
@@ -212,7 +225,7 @@ namespace libint2 {
             return mapDerivIndex;
         }
 
-    } // class definition
+    }; // class definition
 
   } // namespace libint2::derivmap
 
