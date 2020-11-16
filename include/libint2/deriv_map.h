@@ -30,34 +30,39 @@
 #include <stdlib.h>
 #include <vector>
 #include <algorithm>
-// Okay this is a problem
+// Initially tried this so I could look at BraKet type directly, rather than `ncenters`, but failed 
 //#include "engine.h"
 
 namespace libint2 {
 
   namespace derivmap {
-
-  // Singleton class to statically initialize all mapDerivIndex arrays up to 
-  // the order that the library supports     
+    // This class statically initializes all index permutation maps 
+    // for all deriv_orders up to LIBINT2_MAX_DERIV_ORDER
     class DerivMapGenerator { 
       public:
-        // TODO here generate all arrays statically up to LIBINT2_MAX_DERIV_ORDER
-        //  For 4 centers: Make a vector of DerivMap arrays, one for each deriv order
-        //  For 3 centers: Make a vector of DerivMap arrays, one for each deriv order
         using results = std::vector<std::vector<std::vector<std::vector<int>>>>;
-
-        static std::vector<results> braket_xx_xx_maps;
-        static std::vector<results> braket_xs_xx_maps;
-
+        // Called when Libint is initialized. 
+        // Statically Generate all mapDerivIndex arrays up to LIBINT2_MAX_DERIV_ORDER
+        // for both BraKet::xx_xx and BraKet::xs_xx and store in a vector
         static void initialize() { 
-        // For Braket::xx_xx and Braket::xs_xx, build vector 
-        // of mapDerivIndex arrays for each deriv order
             for (int i = 0; i < LIBINT2_MAX_DERIV_ORDER; i++) {
                 braket_xx_xx_maps.push_back(DerivMapGenerator::generate_deriv_index_map(i + 1, 4));
                 braket_xs_xx_maps.push_back(DerivMapGenerator::generate_deriv_index_map(i + 1, 3));
             }
         }
 
+        // Helper functions for declaring/building/calling the maps in both intialize() and instance() 
+        static std::vector<results>& braket_xx_xx() {
+            static std::vector<results> braket_xx_xx_maps;
+            return braket_xx_xx_maps;
+        }
+
+        static std::vector<results>& braket_xs_xx() {
+            static std::vector<results> braket_xs_xx_maps;
+            return braket_xs_xx_maps;
+        }
+
+        // TODO can this be generalized better for all BraKet types?
         static results* instance(int deriv_order_, int ncenters) {
             // access and return the one that is needed  
             switch(ncenters) {
@@ -139,7 +144,7 @@ namespace libint2 {
             return combos;
         }
 
-        // Function which computes mapDerivIndex 
+        // Function which computes mapDerivIndex array
         static std::vector<std::vector<std::vector<std::vector<int>>>> generate_deriv_index_map(int deriv_order, int ncenters)
         {
             using namespace std;
