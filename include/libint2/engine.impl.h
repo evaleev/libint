@@ -1696,6 +1696,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
       case BraKet::xx_xs: assert(false && "this braket is not supported"); break;
       case BraKet::xs_xx: {
+        // TODO, now that we have arbitrary-order deriv maps, this logic is no longer needed, right?
+        // just set:
+        //int ket_lmax = hard_default_lmax_;
         /// lmax might be center dependent
         int ket_lmax = hard_lmax_;
         switch (deriv_order_) {
