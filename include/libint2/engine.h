@@ -1010,6 +1010,8 @@ class Engine {
   // profiling
   //-------
   static const bool skip_core_ints = false;
+
+  std::vector<std::vector<std::vector<std::vector<int>>>> *mapDerivIndex;
 };  // struct Engine
 
 
