@@ -46,8 +46,8 @@ namespace libint2 {
         // for both BraKet::xx_xx and BraKet::xs_xx and store in a vector
         static void initialize() { 
             for (int i = 0; i < LIBINT2_MAX_DERIV_ORDER; i++) {
-                braket_xx_xx_maps.push_back(DerivMapGenerator::generate_deriv_index_map(i + 1, 4));
-                braket_xs_xx_maps.push_back(DerivMapGenerator::generate_deriv_index_map(i + 1, 3));
+                braket_xx_xx().push_back(DerivMapGenerator::generate_deriv_index_map(i + 1, 4));
+                braket_xs_xx().push_back(DerivMapGenerator::generate_deriv_index_map(i + 1, 3));
             }
         }
 
@@ -84,9 +84,9 @@ namespace libint2 {
         // Combinations of size 'k' from 'n' elements stored in vector 'inp'.
         // Requires instantiating vector 'out' and vector of vectors 'result', which stores every combination.
         static void cwr_recursion(std::vector<int> inp,
-                           std::vector<int> &out,
-                           std::vector<std::vector<int>> &result,
-                           int k, int i, int n)
+                                  std::vector<int> &out,
+                                  std::vector<std::vector<int>> &result,
+                                  int k, int i, int n)
         {   
             // base case: if combination size is k, add to result 
             if (out.size() == k){
