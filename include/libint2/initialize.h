@@ -33,7 +33,7 @@
 #include <libint2.h>
 #include <libint2/util/deprecated.h>
 #include <libint2/util/singleton.h>
-// TEMP TODO
+// TEMP TODO remove when DerivMapGenerator is added to static_init
 #include "deriv_map.h"
 
 namespace libint2 {
