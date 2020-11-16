@@ -33,6 +33,8 @@
 #include <libint2.h>
 #include <libint2/util/deprecated.h>
 #include <libint2/util/singleton.h>
+// TEMP TODO
+#include "deriv_map.h"
 
 namespace libint2 {
 
@@ -40,6 +42,8 @@ namespace libint2 {
     struct __initializer {
         __initializer() {
           libint2_static_init();
+        // TODO TEMP: initialize here for now, eventually maybe add to static_init
+        libint2::derivmap::DerivMapGenerator::initialize();
         }
         ~__initializer() {
           libint2_static_cleanup();
