@@ -22,6 +22,7 @@
 #define _libint2_src_lib_libint_engineimpl_h_
 
 #include "./engine.h"
+#include "./deriv_map.h"
 
 #include <iterator>
 
@@ -665,6 +666,14 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   if (braket_ == BraKet::invalid) braket_ = default_braket(oper_);
 
   if (max_nprim != 0) primdata_.resize(std::pow(max_nprim, braket_rank()));
+
+  // Grab pointer to derivative index permutation map
+  if (deriv_order_ > 0) {
+    int ncenters;
+    if (braket_ == BraKet::xx_xx) ncenters = 4; 
+    if (braket_ == BraKet::xs_xx) ncenters = 3; 
+    mapDerivIndex = libint2::derivmap::DerivMapGenerator::instance(deriv_order_, ncenters);
+  }
 
   // initialize targets
   {
@@ -1844,16 +1853,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           // if permuting derivatives ints must update their derivative index
           // There is only one mapDerivIndex, and it is always the same number of dimensions for all deriv_orders.
           // TODO are there other BraKet types that need to be added here? Would require adding support to function 'generate_deriv_index_map'
-          if (deriv_order >= 1){
+          if (deriv_order > 0){
             switch(braket_) {
               case BraKet::xx_xx: {
-                s_target = mapDerivIndex[swap_braket][swap_tbra][swap_tket][s];
+                s_target = (*mapDerivIndex)[swap_braket][swap_tbra][swap_tket][s];
               }
                 break;
               case BraKet::xs_xx: {
                 assert(swap_bra == false);
                 assert(swap_braket == false);
-                s_target = mapDerivIndex[0][0][swap_tket][s];
+                s_target = (*mapDerivIndex)[0][0][swap_tket][s];
               }
                 break;
               case BraKet::xs_xs: {
