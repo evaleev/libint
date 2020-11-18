@@ -667,19 +667,6 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
 
   if (max_nprim != 0) primdata_.resize(std::pow(max_nprim, braket_rank()));
 
-  // Grab pointer to derivative index permutation map
-  if (deriv_order_ > 0) {
-    // Only need derivative index permutation map for BraKet::xx_xx and BraKet::xs_xx
-    switch(braket_) {
-      case BraKet::xx_xx: {
-        mapDerivIndex = libint2::DerivMapGenerator::instance(deriv_order_, braket_);
-      }
-      case BraKet::xs_xx: {
-        mapDerivIndex = libint2::DerivMapGenerator::instance(deriv_order_, braket_);
-      }
-    }
-  }
-
   // initialize targets
   {
     decltype(targets_)::allocator_type alloc(primdata_[0].targets);
@@ -1701,41 +1688,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
       case BraKet::xx_xs: assert(false && "this braket is not supported"); break;
       case BraKet::xs_xx: {
-        // TODO, now that we have arbitrary-order deriv maps, this logic is no longer needed, right?
-        // just set:
-        //int ket_lmax = hard_default_lmax_;
-        /// lmax might be center dependent
-        int ket_lmax = hard_lmax_;
-        switch (deriv_order_) {
-          case 0:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-          case 1:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri1
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-          case 2:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri2
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-// TODO 3rd and 4th derivatives not tested
-//          case 3:
-//#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri3
-//            ket_lmax = hard_default_lmax_;
-//#endif
-//            break;
-//          case 4:
-//#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri4
-//            ket_lmax = hard_default_lmax_;
-//#endif
-//            break;
-//        default:assert(false && "deriv_order>4 not yet supported");
-          default:assert(false && "deriv_order>2 not yet supported");
-        }
+        const int ket_lmax = (hard_default_lmax_ == std::numeric_limits<int>::max()) ? hard_lmax_ : hard_default_lmax_;
+
         buildfnidx =
             (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
                 ket2.contr[0].l;
@@ -1859,9 +1813,10 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           auto tgt_ptr = target;
 
           // if permuting derivatives ints must update their derivative index
-          // There is only one mapDerivIndex, and it is always the same number of dimensions for all deriv_orders.
-          // TODO are there other BraKet types that need to be added here? Would require adding support to DerivMapGenerator::generate_deriv_index_map
+          // Additional BraKet types would require adding support to DerivMapGenerator::generate_deriv_index_map
           if (deriv_order > 0){
+            // Load mapDerivIndex pointer 
+            mapDerivIndex = libint2::DerivMapGenerator::instance(deriv_order_, braket_);
             switch(braket_) {
               case BraKet::xx_xx: {
                 s_target = (*mapDerivIndex)[swap_braket][swap_tbra][swap_tket][s];
