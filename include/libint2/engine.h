@@ -56,6 +56,7 @@
 #include <libint2/util/compressed_pair.h>
 #include <libint2/util/timer.h>
 #include <libint2/cgshellinfo.h>
+#include <libint2/braket.h>
 
 // the engine will be profiled by default if library was configured with
 // --enable-profile

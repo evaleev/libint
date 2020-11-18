@@ -669,10 +669,15 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
 
   // Grab pointer to derivative index permutation map
   if (deriv_order_ > 0) {
-    int ncenters;
-    if (braket_ == BraKet::xx_xx) ncenters = 4; 
-    if (braket_ == BraKet::xs_xx) ncenters = 3; 
-    mapDerivIndex = libint2::derivmap::DerivMapGenerator::instance(deriv_order_, ncenters);
+    // Only need derivative index permutation map for BraKet::xx_xx and BraKet::xs_xx
+    switch(braket_) {
+      case BraKet::xx_xx: {
+        mapDerivIndex = libint2::DerivMapGenerator::instance(deriv_order_, braket_);
+      }
+      case BraKet::xs_xx: {
+        mapDerivIndex = libint2::DerivMapGenerator::instance(deriv_order_, braket_);
+      }
+    }
   }
 
   // initialize targets

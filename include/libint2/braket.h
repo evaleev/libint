@@ -27,7 +27,6 @@
 #endif
 
 namespace libint2 {
-
     /// types of shell sets supported by Engine, in chemist notation (i.e. '_'
     /// separates particles)
     /// \warning macro \c BOOST_PP_NBODY_BRAKET_RANK_TUPLE include the ranks of all
@@ -48,7 +47,6 @@ namespace libint2 {
       first_braket = first_1body_braket,
       last_braket = last_2body_braket
     };
-
 
 } // namespace libint2
 
