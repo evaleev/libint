@@ -43,7 +43,7 @@ namespace libint2 {
         __initializer() {
           libint2_static_init();
         // TODO TEMP: initialize here for now, eventually maybe add to static_init
-        libint2::derivmap::DerivMapGenerator::initialize();
+        libint2::DerivMapGenerator::initialize();
         }
         ~__initializer() {
           libint2_static_cleanup();
