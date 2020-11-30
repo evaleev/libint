@@ -47,8 +47,6 @@ namespace libint2 {
     */
   class DerivMapGenerator { 
     public:
-      //using results = std::vector<std::vector<std::vector<std::vector<int>>>>;
-      using results = Tensor<int>; 
       // Statically generate all mapDerivIndex arrays up to LIBINT2_MAX_DERIV_ORDER
       // for both BraKet::xx_xx and BraKet::xs_xx and store in a vector
       static void initialize() { 
@@ -59,17 +57,17 @@ namespace libint2 {
       }
 
       // Helper functions for declaring/building/calling the maps in both initialize() and instance() 
-      static std::vector<results>& braket_xx_xx() {
-          static std::vector<results> braket_xx_xx_maps;
+      static std::vector<Tensor<int>>& braket_xx_xx() {
+          static std::vector<Tensor<int>> braket_xx_xx_maps;
           return braket_xx_xx_maps;
       }
 
-      static std::vector<results>& braket_xs_xx() {
-          static std::vector<results> braket_xs_xx_maps;
+      static std::vector<Tensor<int>>& braket_xs_xx() {
+          static std::vector<Tensor<int>> braket_xs_xx_maps;
           return braket_xs_xx_maps;
       }
 
-      static results& instance(int deriv_order_, BraKet braket_) {
+      static Tensor<int>& instance(int deriv_order_, BraKet braket_) {
           // access and return the one that is needed  
           switch(braket_) {
             case BraKet::xx_xx: {
@@ -150,7 +148,6 @@ namespace libint2 {
       }
 
       // Function which computes mapDerivIndex array
-      //static std::vector<std::vector<std::vector<std::vector<int>>>> generate_deriv_index_map(int deriv_order, BraKet braket_)
       static Tensor<int> generate_deriv_index_map(int deriv_order, BraKet braket_)
       {
           using namespace std;
@@ -200,12 +197,6 @@ namespace libint2 {
           // Last index is the integer map.
           // Note that BraKet::xx_xx uses the whole thing, BraKet::xs_xx, only need [0][0][:][:] slice
           // and BraKet::xx_sx, only need [0][:][0][:] slice
-
-            // 2 x 2 x 2 x nderivs array of zeros
-          //vector<vector<vector<vector<int>>>> mapDerivIndex(2, vector<vector<vector<int>>>
-          //                                                 (2, vector<vector<int>>
-          //                                                 (2, vector<int>
-          //                                                 (nderivs, 0))));
           Tensor<int> mapDerivIndex{2,2,2,nderivs};
 
           // Get lookup which maps flattened upper triangle index to the multidimensional index 
@@ -239,8 +230,6 @@ namespace libint2 {
                   int new_idx = 0;
                   auto it = lower_bound(lookup.begin(), lookup.end(), permuted_indices);
                   if (it != lookup.end()) new_idx = it - lookup.begin();
-                  //mapDerivIndex[swap_braket][swap_bra][swap_ket][i] = new_idx;
-                  //mapDerivIndex(swap_braket,swap_bra,swap_ket,i) = new_idx;
                   (*mapDerivIndex.data(swap_braket,swap_bra,swap_ket,i)) = new_idx;
               }
           }
