@@ -57,17 +57,17 @@ namespace libint2 {
       }
 
       // Helper functions for declaring/building/calling the maps in both initialize() and instance() 
-      static std::vector<Tensor<int>>& braket_xx_xx() {
-          static std::vector<Tensor<int>> braket_xx_xx_maps;
+      static std::vector<Tensor<size_t>>& braket_xx_xx() {
+          static std::vector<Tensor<size_t>> braket_xx_xx_maps;
           return braket_xx_xx_maps;
       }
 
-      static std::vector<Tensor<int>>& braket_xs_xx() {
-          static std::vector<Tensor<int>> braket_xs_xx_maps;
+      static std::vector<Tensor<size_t>>& braket_xs_xx() {
+          static std::vector<Tensor<size_t>> braket_xs_xx_maps;
           return braket_xs_xx_maps;
       }
 
-      static Tensor<int>& instance(int deriv_order_, BraKet braket_) {
+      static Tensor<size_t>& instance(int deriv_order_, BraKet braket_) {
           // access and return the one that is needed  
           switch(braket_) {
             case BraKet::xx_xx: {
@@ -86,17 +86,17 @@ namespace libint2 {
       // Combinations with repitition. 
       // Combinations of size 'k' from 'n' elements stored in vector 'inp'.
       // Requires instantiating vector 'out' and vector of vectors 'result', which stores every combination.
-      static void cwr_recursion(std::vector<int> inp,
-                                std::vector<int> &out,
-                                std::vector<std::vector<int>> &result,
-                                int k, int i, int n)
+      static void cwr_recursion(std::vector<size_t> inp,
+                                std::vector<size_t> &out,
+                                std::vector<std::vector<size_t>> &result,
+                                size_t k, size_t i, size_t n)
       {   
           // base case: if combination size is k, add to result 
           if (out.size() == k){
               result.push_back(out);
               return;
           }
-          for (int j = i; j < n; j++){
+          for (size_t j = i; j < n; j++){
               out.push_back(inp[j]);
               cwr_recursion(inp, out, result, k, j, n);
               // backtrack - remove current element from solution
@@ -107,10 +107,10 @@ namespace libint2 {
       // How many shell set derivatives
       // k is number of centers, n is deriv order.
       // Assumes coordinate-independent operator, 3 coordinates per center
-      static int how_many_derivs(int k, int n) {
-          int val = 1;
-          int factorial = 1;
-          for (int i=0; i < n; i++) {
+      static size_t how_many_derivs(size_t k, size_t n) {
+          size_t val = 1;
+          size_t factorial = 1;
+          for (size_t i=0; i < n; i++) {
               val *= (3 * k + i); 
               factorial *= i + 1;
           }   
@@ -132,31 +132,31 @@ namespace libint2 {
       //         15 16 17
       //            18 19
       //               20
-      static std::vector<std::vector<int>> generate_multi_index_lookup(int nparams, int deriv_order) {
+      static std::vector<std::vector<size_t>> generate_multi_index_lookup(size_t nparams, size_t deriv_order) {
           using namespace std;
           // Generate vector of indices 0 through nparams-1
-          vector<int> inp;
-          for (int i = 0; i < nparams; i++) {
+          vector<size_t> inp;
+          for (size_t i = 0; i < nparams; i++) {
               inp.push_back(i);
           }
           // Generate all possible combinations with repitition. 
           // These are upper triangle indices, and the length of them is the total number of derivatives
-          vector<int> out;
-          vector<vector<int>> combos;
+          vector<size_t> out;
+          vector<vector<size_t>> combos;
           cwr_recursion(inp, out, combos, deriv_order, 0, nparams);
           return combos;
       }
 
       // Function which computes mapDerivIndex array
-      static Tensor<int> generate_deriv_index_map(int deriv_order, BraKet braket_)
+      static Tensor<size_t> generate_deriv_index_map(size_t deriv_order, BraKet braket_)
       {
           using namespace std;
           // Check BraKet type to determine permutations, number of centers
-          vector<int> swap_braket_perm;
-          vector<int> swap_bra_perm;
-          vector<int> swap_ket_perm;
-          vector<vector<int>> swap_combos;
-          int ncenters;
+          vector<size_t> swap_braket_perm;
+          vector<size_t> swap_bra_perm;
+          vector<size_t> swap_ket_perm;
+          vector<vector<size_t>> swap_combos;
+          size_t ncenters;
           switch(braket_) {
             case BraKet::xx_xx: {
               swap_braket_perm = {6,7,8,9,10,11,0,1,2,3,4,5};
@@ -188,34 +188,35 @@ namespace libint2 {
           }
 
           // Number of possible derivatives
-          int nderivs = how_many_derivs(ncenters, deriv_order); // e.g. for 4 center: 12,78,364,1365
+          auto nderivs = how_many_derivs(ncenters, deriv_order); // e.g. for 4 center: 12,78,364,1365
           // Number of differentiable parameters in a shell set (assumes 3 cartesian components each center)
-          int nparams = ncenters * 3;
+          auto nparams = ncenters * 3;
 
           // Initialize mapDerivIndex. First three dimensions are either 0 or 1
           // acting as a bool for whether to swap braket, swap bra, or swap ket.
           // Last index is the integer map.
           // Note that BraKet::xx_xx uses the whole thing, BraKet::xs_xx, only need [0][0][:][:] slice
           // and BraKet::xx_sx, only need [0][:][0][:] slice
-          Tensor<int> mapDerivIndex{2,2,2,nderivs};
+          size_t swap_dim = 2;
+          Tensor<size_t> mapDerivIndex{swap_dim,swap_dim,swap_dim,nderivs};
 
           // Get lookup which maps flattened upper triangle index to the multidimensional index 
           // in terms of full array axes. Each axis of this multidimensional array represents
           // a different partial derivative of the shell set
-          vector<vector<int>> lookup = generate_multi_index_lookup(nparams, deriv_order);
+          vector<vector<size_t>> lookup = generate_multi_index_lookup(nparams, deriv_order);
       
           // Now loop over every combination of swap_* 
-          for (int swap = 0; swap < swap_combos.size(); swap++){
-              int swap_braket = swap_combos[swap][0];
-              int swap_bra = swap_combos[swap][1];
-              int swap_ket = swap_combos[swap][2];
+          for (size_t swap = 0; swap < swap_combos.size(); swap++){
+              auto swap_braket = swap_combos[swap][0];
+              auto swap_bra = swap_combos[swap][1];
+              auto swap_ket = swap_combos[swap][2];
               // For every single derivative index, lookup its multidimensional index
               // and apply the permutation rules for this Braket type
-              for (int i = 0; i < nderivs; i++){
-                  vector<int> multi_idx = lookup[i];
-                  vector<int> permuted_indices;
-                  for (int j=0; j < multi_idx.size(); j++){
-                      int idx = multi_idx[j];
+              for (size_t i = 0; i < nderivs; i++){
+                  vector<size_t> multi_idx = lookup[i];
+                  vector<size_t> permuted_indices;
+                  for (size_t j=0; j < multi_idx.size(); j++){
+                      size_t idx = multi_idx[j];
                       if (swap_braket == 1) idx = swap_braket_perm[idx];
                       if (swap_bra == 1) idx = swap_bra_perm[idx];
                       if (swap_ket == 1) idx = swap_ket_perm[idx];
@@ -227,7 +228,7 @@ namespace libint2 {
                   // Since the vector of vectors 'lookup' generated by generate_multi_index_lookup is sorted such that  
                   // each vector is elementwise <= the next vector, we can use binary search to find the new 1d index 
                   // from the permuted multidimensional index
-                  int new_idx = 0;
+                  size_t new_idx = 0;
                   auto it = lower_bound(lookup.begin(), lookup.end(), permuted_indices);
                   if (it != lookup.end()) new_idx = it - lookup.begin();
                   (*mapDerivIndex.data(swap_braket,swap_bra,swap_ket,i)) = new_idx;
