@@ -1815,19 +1815,15 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           // if permuting derivatives ints must update their derivative index
           // Additional BraKet types would require adding support to DerivMapGenerator::generate_deriv_index_map
           if (deriv_order > 0){
-            // Load mapDerivIndex pointer 
-            //mapDerivIndex = libint2::DerivMapGenerator::instance(deriv_order_, braket_);
             Tensor<int>& mapDerivIndex = libint2::DerivMapGenerator::instance(deriv_order_, braket_);
             switch(braket_) {
               case BraKet::xx_xx: {
-                //s_target = (*mapDerivIndex)[swap_braket][swap_tbra][swap_tket][s];
                 s_target = mapDerivIndex((int)swap_braket,(int)swap_tbra,(int)swap_tket,s);
               }
                 break;
               case BraKet::xs_xx: {
                 assert(swap_bra == false);
                 assert(swap_braket == false);
-                //s_target = (*mapDerivIndex)[0][0][swap_tket][s];
                 s_target = mapDerivIndex(0,0,(int)swap_tket,s);
               }
                 break;
