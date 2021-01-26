@@ -7,6 +7,18 @@ set(Libint2_DESCRIPTION  "High-performance library for computing Gaussian integr
 set(Libint2_URL          "https://github.com/evaleev/libint")
 set(Libint2_LICENSE      "GPL-3.0 for generator; LGPL-3.0 for generated")
 
+# Set Libint version ===================================================================================================
+set(LIBINT_MAJOR_VERSION 2)
+set(LIBINT_MINOR_VERSION 7)
+set(LIBINT_MICRO_VERSION 0)
+set(LIBINT_BUILDID "beta.6")
+set(LIBINT_VERSION "${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION}")
+if (LIBINT_BUILDID)
+    set(LIBINT_EXT_VERSION "${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION}-${LIBINT_BUILDID}")
+else(LIBINT_BUILDID)
+    set(LIBINT_EXT_VERSION ${LIBINT_VERSION})
+endif(LIBINT_BUILDID)
+
 cmake_policy(SET CMP0074 NEW)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
                               ${PROJECT_SOURCE_DIR}/export/cmake/modules)
@@ -277,26 +289,29 @@ booleanize01(LIBINT_GENERATE_FMA)
 booleanize01(LIBINT_ENABLE_GENERIC_CODE)
 
 ################################# Main Project #################################
-set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/stage)
-set(EXPORT_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/export)  # TODO switch to something like libint-2.7.0-beta.2
+set(EXPORT_STAGE_DIR ${CMAKE_BINARY_DIR}/libint-${LIBINT_EXT_VERSION})
 
 if (BUILD_TESTING)
     enable_testing()
 endif()
-add_subdirectory(src)
 include(GNUInstallDirs)
 
 if (ENABLE_FORTRAN)
     enable_language(Fortran)
 endif()
 
+configure_file(cmake/int_computed.cmake.in cmake/int_computed.cmake @ONLY)
+
+# postscriptum
 set(_EXPORT_MODE 0)
 configure_file(include/libint2/config.h.cmake.in include/libint2/config.h @ONLY)
 set(_EXPORT_MODE 1)
 configure_file(include/libint2/config.h.cmake.in export/include/libint2/config.h @ONLY)
 configure_file(include/libint2/config2.h.cmake.in export/include/libint2/config2.h.cmake.in COPYONLY)
 
-configure_file(cmake/int_computed.cmake.in cmake/int_computed.cmake @ONLY)
+
+# dive in
+add_subdirectory(src)
 
 # <<<  Install  >>>
 
