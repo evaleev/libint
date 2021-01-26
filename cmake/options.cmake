@@ -1,7 +1,4 @@
-###This file contains functions used throughout the Psi4 build.  Like source
-###code, the build system should be factored and common code extracted out into
-###functions/macros.  If you find repetitive code throughout the build scripts
-###this is the place to add it (make sure you document it too).
+### based on https://github.com/psi4/psi4/blob/master/cmake/psi4OptionsTools.cmake
 
 #Macro for printing an option in a consistent manner
 #
@@ -26,10 +23,19 @@ endmacro(option_with_print)
 
 # Call to cast T/F, ON/OFF, 0/1, etc. to 0/1, usually for ifdef purposes.
 macro(booleanize01 variable)
-    if(${${variable}})
-        set(${variable} 1)
-    else()
-        set(${variable} 0)
+    if (DEFINED ${variable} OR DEFINED CACHE{${variable}})
+        if(${variable})
+            set(_new_value 1)
+        else()
+            set(_new_value 0)
+        endif()
+        if (DEFINED CACHE{${variable}})
+            get_property(_cache_type CACHE ${variable} PROPERTY TYPE)
+            get_property(_cache_docstring CACHE ${variable} PROPERTY HELPSTRING)
+            set(${variable} ${_new_value} CACHE ${_cache_type} "${_cache_docstring}" FORCE)
+        else()
+            set(${variable} ${_new_value})
+        endif()
     endif()
 endmacro(booleanize01)
 

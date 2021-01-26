@@ -73,7 +73,7 @@ install(FILES ${Libint2_ROOT}/external/boost.tar.gz
 
 install(FILES ${Libint2_ROOT}/cmake/autocmake_safeguards.cmake
               ${Libint2_ROOT}/cmake/int_orderings.cmake
-              ${Libint2_ROOT}/cmake/psi4OptionsTools.cmake
+              ${Libint2_ROOT}/cmake/options.cmake
               ${Libint2_ROOT}/cmake/Libint2Config.cmake.in
               ${Libint2_ROOT}/cmake/libint2.pc.cmake.in
               ${Libint2_ROOT}/export/cmake/modules/FindMPFR.cmake

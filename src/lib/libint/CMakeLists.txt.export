@@ -22,7 +22,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 #   libint2/boost headers are installed or not
 
 ################################### Options ####################################
-include(psi4OptionsTools)
+include(options)
 include(int_computed)
 
 

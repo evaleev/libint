@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.13)  # CACHE operator
 
 project(Libint2
         LANGUAGES CXX)
@@ -21,7 +21,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
 #    ...
 #    -- Generating done
 #    -- Build files have been written to: /current/dir/build
-#    >>> cd build && cmake --build . --target install -j`getconf _NPROCESSORS_ONLN`
+#    >>> cmake --build build --target install -j`getconf _NPROCESSORS_ONLN`
 
 # The build is structured into three parts:
 #
@@ -36,23 +36,23 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
 #     include/ and docs/) into an independent tarball ready for distribution.
 #   - really slow for non-trivial angular momenta, runs in serial
 #   - consumes no options
-#   - `cmake --build . --target export` to stop after this step and collect source tarball
+#   - build target `export` to stop after this step and collect source tarball
 # * library
 #   - unpack the export tarball and build the library and install into stage/
 #   - duration depends on number of integrals requested, runs in parallel
 #   - consumes solid harmonic ordering and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR
-#   - the default target `cmake --build .` includes this final library build
+#   - the default target build includes this final library build
 
 ################################### Options ####################################
 include(int_versions)
-include(psi4OptionsTools)
+include(options)
 
 #  <<<  General  >>>
 
 option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
 option_with_print(BUILD_SHARED "Build at least shared library" OFF)
 option_with_print(BUILD_STATIC "Build at least static library (see BUILD_FPIC)" ON)
-option_with_print(ENABLE_CXX11API "Build C++11 API in addition to basic library (requires Eigen)" ON)
+option_with_print(ENABLE_CXX11API "Build C++11 API in addition to basic library (requires Eigen, Boost is optional but strongly recommended)" ON)
 option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
 option_with_print(BUILD_TESTING "Compile the testing infrastructure" ON)
 
