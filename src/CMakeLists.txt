@@ -7,11 +7,11 @@ add_subdirectory(lib/libint)
 # <<<  Build Library  >>>
 
 ExternalProject_Add(library
-    DEPENDS libint-export
+    DEPENDS libint-library-export
     BUILD_ALWAYS 1
     # download generalized to generating source by unpacking source tarball
     URL "${EXPORT_STAGE_DIR}.tgz"
-    DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/src/library-prefix/src/library"
+    DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/library-build"
     # DOWNLOAD_DIR <SOURCE_DIR>  # this is tidier but fails on Windows
     LOG_DOWNLOAD 1
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}"

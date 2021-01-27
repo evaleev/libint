@@ -78,9 +78,9 @@ if(MSVC)
     set_target_properties(build_libint PROPERTIES LINK_FLAGS "/STACK:4194304")
 endif()
 
-add_executable(libint-libcompiler_test test.cc)
-target_link_libraries(libint-libcompiler_test libint-libcompiler)
+add_executable(libint-libcompiler-test test.cc)
+target_link_libraries(libint-libcompiler-test libint-libcompiler)
 
-set_target_properties(build_libint libint-libcompiler_test
+set_target_properties(build_libint libint-libcompiler-test
     PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
