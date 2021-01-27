@@ -1,9 +1,4 @@
-#add_custom_target(check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
-
-# TODO: I suspect that the build tests could be built automatically,
-#   rather than as tests, then only the executions are add_test. Also, if
-#   tests were built after install, then could use find_library(Libint2)
-#   and link against that rather than reincluding all these source includes.
+add_custom_target(check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V)
 
 add_executable(eritest EXCLUDE_FROM_ALL eri/test.cc)
 target_link_libraries(eritest int-library)  # plain int2 target, actually
@@ -30,8 +25,8 @@ add_test(NAME eritest_run2
 set_tests_properties(eritest_run2
                      PROPERTIES FIXTURES_REQUIRED ERITEST_EXEC)
 
-enable_language(C)
 if (ENABLE_CXX11API)
+    enable_language(C)
     add_executable(unit_tests EXCLUDE_FROM_ALL
         unit/test.cc
         unit/c-api.c

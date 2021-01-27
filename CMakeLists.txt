@@ -63,10 +63,11 @@ include(options)
 
 option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
 option_with_print(BUILD_SHARED "Build at least shared library" OFF)
-option_with_print(BUILD_STATIC "Build at least static library (see BUILD_FPIC)" ON)
+option_with_print(BUILD_STATIC "Build at least static library (see )" ON)
 option_with_print(ENABLE_CXX11API "Build C++11 API in addition to basic library (requires Eigen, Boost is optional but strongly recommended)" ON)
 option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
 option_with_print(BUILD_TESTING "Compile the testing infrastructure" ON)
+option_with_default(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT "[EXPERT] Build generated library as a subproject; if FALSE will configure and build separately" OFF)
 
 if(NOT ENABLE_CXX11API)
     message(FATAL_ERROR "The plain library withough C++11 API is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the plain library, raise an issue on GitHub and ping @loriab.")
@@ -290,6 +291,7 @@ booleanize01(LIBINT_ENABLE_GENERIC_CODE)
 
 ################################# Main Project #################################
 set(EXPORT_STAGE_DIR ${CMAKE_BINARY_DIR}/libint-${LIBINT_EXT_VERSION})
+set(STAGED_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/library-install-stage")
 
 if (BUILD_TESTING)
     enable_testing()
@@ -301,23 +303,15 @@ if (ENABLE_FORTRAN)
 endif()
 
 configure_file(cmake/int_computed.cmake.in cmake/int_computed.cmake @ONLY)
-
-# postscriptum
 set(_EXPORT_MODE 0)
 configure_file(include/libint2/config.h.cmake.in include/libint2/config.h @ONLY)
 set(_EXPORT_MODE 1)
-configure_file(include/libint2/config.h.cmake.in export/include/libint2/config.h @ONLY)
-configure_file(include/libint2/config2.h.cmake.in export/include/libint2/config2.h.cmake.in COPYONLY)
-
+configure_file(include/libint2/config.h.cmake.in ${EXPORT_STAGE_DIR}/include/libint2/config.h @ONLY)
+configure_file(include/libint2/config2.h.cmake.in ${EXPORT_STAGE_DIR}/include/libint2/config2.h.cmake.in COPYONLY)
 
 # dive in
 add_subdirectory(src)
 
 # <<<  Install  >>>
 
-install(DIRECTORY ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-                  # BINDIR excluded b/c `build_libint` not really for distribution
-                  ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
-                  ${STAGED_INSTALL_PREFIX}/share
-        DESTINATION ${CMAKE_INSTALL_PREFIX}
-        USE_SOURCE_PERMISSIONS)
+# nothing to install here

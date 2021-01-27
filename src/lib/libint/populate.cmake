@@ -33,7 +33,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/src/bin/test_eri/eri.h"
 
 # Q: why is this different from current export location?
 file(INSTALL "${PROJECT_SOURCE_DIR}/lib/basis/"
-        DESTINATION "${EXPORT_STAGE_DIR}/lib/basis/libint/${LIBINT_VERSION}"
+        DESTINATION "${EXPORT_STAGE_DIR}/lib/basis"
         FILES_MATCHING PATTERN "*.g94")
 
 file(INSTALL "${PROJECT_SOURCE_DIR}/external/boost.tar.gz"
@@ -55,7 +55,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/include/libint2.h"
         DESTINATION "${EXPORT_STAGE_DIR}/include")
 
 file(INSTALL "${PROJECT_SOURCE_DIR}/include/libint2/"
-        DESTINATION "${EXPORT_STAGE_DIR}/include"
+        DESTINATION "${EXPORT_STAGE_DIR}/include/libint2"
         FILES_MATCHING PATTERN "*.h")
 
 file(INSTALL "${PROJECT_SOURCE_DIR}/src/bin/libint/util_types.h"

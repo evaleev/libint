@@ -8,10 +8,6 @@ set(library_DESCRIPTION  "High-performance library for computing Gaussian integr
 set(library_URL          "https://github.com/evaleev/libint")
 set(library_LICENSE      "LGPL-3.0")
 
-#set(CMAKE_CXX_STANDARD 11)
-#set(CMAKE_CXX_STANDARD_REQUIRED ON)
-#set(CMAKE_CXX_EXTENSIONS OFF)
-
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 ################################### Overview ###################################
@@ -104,10 +100,10 @@ if (TARGET Boost::boost)  # the header-only target. when CMake min reaches v3.15
 else()
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 0)
 
-    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2)
+    file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/libint2)
     execute_process(
-            COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_SOURCE_DIR}/external/boost.tar.gz
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2
+            COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/external/boost.tar.gz
+            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/include/libint2
             RESULT_VARIABLE UNPACK_BOOST_RESULT
             OUTPUT_VARIABLE UNPACK_BOOST_OUTPUT
             ERROR_VARIABLE UNPACK_BOOST_OUTPUT
@@ -131,6 +127,21 @@ include(CMakePackageConfigHelpers)
 set(NS Libint2)
 set(PN ${PROJECT_NAME})
 
+# Set install paths ====================================================================================================
+
+set(LIBINT2_INSTALL_BINDIR "bin"
+        CACHE PATH "LIBINT2 binary install directory")
+set(LIBINT2_INSTALL_INCLUDEDIR "include"
+        CACHE PATH "LIBINT2 INCLUDE install directory")
+set(LIBINT2_INSTALL_LIBDIR "lib"
+        CACHE PATH "LIBINT2 LIB install directory")
+set(LIBINT2_INSTALL_DATADIR "share/libint/${LIBINT_VERSION}"
+        CACHE PATH "LIBINT2 DATA install directory")
+set(LIBINT2_INSTALL_DOCDIR "share/libint/${LIBINT_VERSION}/doc"
+        CACHE PATH "LIBINT2 DOC install directory")
+set(LIBINT2_INSTALL_CMAKEDIR "lib/cmake/libint2"
+        CACHE PATH "LIBINT2 CMAKE install directory")
+
 # <<<  Build  >>>
 
 if(MSVC)
@@ -147,12 +158,12 @@ file(GLOB sources_list "${CMAKE_SOURCE_DIR}/src/*.cc")
 add_library(int-obj OBJECT ${sources_list})
 
 target_compile_definitions(int-obj PRIVATE -D__COMPILING_LIBINT2=1)
-target_compile_features(int-obj PUBLIC "cxx_std_11")
+target_compile_features(int-obj PRIVATE "cxx_std_11")
 
-target_include_directories(int-obj PRIVATE ${CMAKE_BINARY_DIR}/include/
-                                           ${CMAKE_SOURCE_DIR}/src/
-                                           ${CMAKE_SOURCE_DIR}/include/
-                                           ${CMAKE_SOURCE_DIR}/include/libint2/
+target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
+                                           ${PROJECT_SOURCE_DIR}/src/
+                                           ${PROJECT_SOURCE_DIR}/include/
+                                           ${PROJECT_SOURCE_DIR}/include/libint2/
                                            $<TARGET_PROPERTY:MPFR::GMPXX,INTERFACE_INCLUDE_DIRECTORIES>)
 
 if (BUILD_SHARED OR BUILD_FPIC)
@@ -164,6 +175,7 @@ if (MSVC)
     set_target_properties(int-obj PROPERTIES LINK_FLAGS "/STACK:4194304")
 endif()
 
+get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_DATADIR}" ABSOLUTE)
 if (BUILD_SHARED)
     add_library           (int-shared SHARED  $<TARGET_OBJECTS:int-obj>)
     target_link_libraries (int-shared INTERFACE Eigen3::Eigen)
@@ -172,6 +184,10 @@ if (BUILD_SHARED)
                                                  OUTPUT_NAME "int2"
                                                  EXPORT_NAME "cxx")
     target_include_directories(int-shared INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    target_compile_features(int-shared INTERFACE "cxx_std_11")
+    target_compile_definitions(int-shared INTERFACE
+          $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
+          $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
 endif()
 
 if (BUILD_STATIC)
@@ -180,6 +196,10 @@ if (BUILD_STATIC)
     set_target_properties (int-static PROPERTIES OUTPUT_NAME "int2"
                                                  EXPORT_NAME "cxx")
     target_include_directories(int-static INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    target_compile_features(int-static INTERFACE "cxx_std_11")
+    target_compile_definitions(int-static INTERFACE
+          $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
+          $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
 endif()
 
 if (BUILD_SHARED)
@@ -190,19 +210,19 @@ endif()
 
 # <<<  Install  >>>
 
-install(DIRECTORY ${CMAKE_BINARY_DIR}/include/
-                  ${CMAKE_SOURCE_DIR}/include/
+install(DIRECTORY ${PROJECT_BINARY_DIR}/include/
+                  ${PROJECT_SOURCE_DIR}/include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         FILES_MATCHING PATTERN "*.h"
                        PATTERN "*.hpp")
 
-install(FILES ${CMAKE_SOURCE_DIR}/src/libint2_iface.h
-              ${CMAKE_SOURCE_DIR}/src/libint2_iface_internal.h
-              ${CMAKE_SOURCE_DIR}/src/libint2_params.h
-              ${CMAKE_SOURCE_DIR}/src/libint2_types.h
+install(FILES ${PROJECT_SOURCE_DIR}/src/libint2_iface.h
+              ${PROJECT_SOURCE_DIR}/src/libint2_iface_internal.h
+              ${PROJECT_SOURCE_DIR}/src/libint2_params.h
+              ${PROJECT_SOURCE_DIR}/src/libint2_types.h
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libint2)
 
-#target_include_directories(int-obj PRIVATE ${CMAKE_BINARY_DIR})
+#target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR})
 
 if (BUILD_SHARED)
     install (TARGETS int-shared
