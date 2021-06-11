@@ -154,7 +154,7 @@ namespace libint2 {
       /// computes a single value of \f$ F_m(T) \f$ using MacLaurin series to full precision of @c Real
       static Real eval(Real T, size_t m) {
         assert(m < 100);
-        static const Real T_crit = std::numeric_limits<Real>::is_bounded == true ? -log( std::numeric_limits<Real>::min() * 100.5 / 2. ) : Real(0) ;
+        static const Real T_crit = std::numeric_limits<Real>::is_bounded ? -log( std::numeric_limits<Real>::min() * 100.5 / 2. ) : Real(0) ;
         if (std::numeric_limits<Real>::is_bounded && T > T_crit)
           throw std::overflow_error("FmEval_Reference<Real>::eval: Real lacks precision for the given value of argument T");
         static const Real half = Real(1)/2;
@@ -970,7 +970,7 @@ namespace libint2 {
         Real G_m1 = 0;
         Real G_0 = 0;
         if (U == 0) {  // \sqrt{U} G_{-1} is finite, need to handle that case separately
-          assert(compute_Gm1 == false);
+          assert(!compute_Gm1);
           if (T < std::numeric_limits<Real>::epsilon()) {
             G_0 = 1;
           }
@@ -1158,7 +1158,7 @@ namespace libint2 {
           mmin_interp = 1;
         }
         else
-          mmin_interp = (exp == true) ? -1 : 0;
+          mmin_interp = exp ? -1 : 0;
 
         // now compute the rest
         for(long m=mmin_interp; m<=mmax; ++m){
@@ -1264,7 +1264,7 @@ namespace libint2 {
             }
 #endif // AVX
 
-            if (exp == false) {
+            if (!exp) {
               Gm_vec[m] = Gm;
             }
             else {

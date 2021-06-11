@@ -293,7 +293,7 @@ namespace libint2 {
       // - allow uncontraction
       // - no need to return targets via inteval->targets_ -- their locations are known by the parent graph (see allocate_mem)
       dg_prereq->registry()->uncontract(true);
-      assert(cparams->contracted_targets() == true);
+      assert(cparams->contracted_targets());
       dg_prereq->registry()->return_targets(false);
       dg_prereq->registry()->accumulate_targets(true);
       dg_prereq->registry()->stack_name("stack");

@@ -37,7 +37,7 @@ namespace libint2 {
 
       bool result = false;
 
-      if (boost::is_base_of<DGVertex,T>::value == true) { // can only purge DGVertex objects
+      if (boost::is_base_of<DGVertex,T>::value) { // can only purge DGVertex objects
         result = true;
       }
 

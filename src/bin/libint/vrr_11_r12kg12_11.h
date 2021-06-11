@@ -113,11 +113,11 @@ namespace libint2 {
         const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
         const OriginDerivative<3u> dC = Tint->bra(1,0).deriv();
         const OriginDerivative<3u> dD = Tint->ket(1,0).deriv();
-        const bool deriv = dA.zero() == false ||
-            dB.zero() == false ||
-            dC.zero() == false ||
-            dD.zero() == false;
-        assert(deriv == false);
+        const bool deriv = !dA.zero() ||
+            !dB.zero() ||
+            !dC.zero() ||
+            !dD.zero();
+        assert(!deriv);
 
 
         typedef TargetType ChildType;
