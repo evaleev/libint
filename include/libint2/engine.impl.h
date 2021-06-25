@@ -849,7 +849,7 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
     // (\Del exp(-a r_12^2) \cdot (\Del exp(-b r_12^2) = 4 a b (r_{12}^2 exp(-
     // (a+b) r_{12}^2) )
     // i.e. need to scale each coefficient by 4 a b
-    auto oparams =
+    const auto& oparams =
         any_cast<const operator_traits<Operator::delcgtg2>::oper_params_type&>(params);
     const auto ng = oparams.size();
     operator_traits<Operator::delcgtg2>::oper_params_type core_ints_params;
@@ -1058,7 +1058,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
       const auto& core_eval_ptr =
           any_cast<const detail::core_eval_pack_type<Operator::erf_nuclear>&>(core_eval_pack_)
             .first();
-      auto core_ints_params =
+      const auto& core_ints_params =
           std::get<0>(any_cast<const typename operator_traits<
             Operator::erf_nuclear>::oper_params_type&>(core_ints_params_));
       core_eval_ptr->eval(fm_ptr, rho, U, mmax, core_ints_params);
@@ -1066,7 +1066,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
       const auto& core_eval_ptr =
           any_cast<const detail::core_eval_pack_type<Operator::erfc_nuclear>&>(core_eval_pack_)
             .first();
-      auto core_ints_params =
+      const auto& core_ints_params =
           std::get<0>(any_cast<const typename operator_traits<
             Operator::erfc_nuclear>::oper_params_type&>(core_ints_params_));
       core_eval_ptr->eval(fm_ptr, rho, U, mmax, core_ints_params);
@@ -1332,7 +1332,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<Operator::erf_coulomb>&>(core_eval_pack_)
                           .first();
-                  auto core_ints_params =
+                  const auto& core_ints_params =
                       any_cast<const typename operator_traits<
                           Operator::erf_coulomb>::oper_params_type&>(core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
@@ -1341,7 +1341,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<Operator::erfc_coulomb>&>(core_eval_pack_)
                           .first();
-                  auto core_ints_params =
+                  const auto& core_ints_params =
                       any_cast<const typename operator_traits<
                           Operator::erfc_coulomb>::oper_params_type&>(core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
