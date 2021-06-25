@@ -1050,7 +1050,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
     const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_;
     auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
     if (oper_ == Operator::nuclear) {
-      auto fm_engine_ptr =
+      const auto& fm_engine_ptr =
           any_cast<const detail::core_eval_pack_type<Operator::nuclear>&>(core_eval_pack_)
           .first();
       fm_engine_ptr->eval(fm_ptr, U, mmax);
