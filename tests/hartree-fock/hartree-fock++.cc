@@ -1286,7 +1286,7 @@ compute_shellpairs(const BasisSet& bs1,
 
   using libint2::nthreads;
 
-  // construct the 2-electron repulsion integrals engine
+  // construct the overlap integral engines
   using libint2::Engine;
   std::vector<Engine> engines;
   engines.reserve(nthreads);
