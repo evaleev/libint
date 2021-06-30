@@ -1181,8 +1181,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     // using ln_precision_ is far less aggressive than should be, but proper analysis
     // involves both bra and ket *bases* and thus cannot be done on shell-set
     // basis ... probably ln_precision_/2 - 10 is enough
-    const ShellPair& spbra = spbra_precomputed ? *spbra_precomputed : (spbra_.init(bra1, bra2, ln_precision_), spbra_) ;
-    const ShellPair& spket = spket_precomputed ? *spket_precomputed : (spket_.init(ket1, ket2, ln_precision_), spket_);
+    const auto target_shellpair_ln_precision = ln_precision_;
+    const ShellPair& spbra = (spbra_precomputed && spbra_precomputed->ln_prec <= target_shellpair_ln_precision) ? *spbra_precomputed : (spbra_.init(bra1, bra2, target_shellpair_ln_precision), spbra_) ;
+    const ShellPair& spket = (spket_precomputed && spket_precomputed->ln_prec <= target_shellpair_ln_precision) ? *spket_precomputed : (spket_.init(ket1, ket2, target_shellpair_ln_precision), spket_);
     // determine whether shell pair data refers to the actual ({bra1,bra2}) or swapped ({bra2,bra1}) pairs
     // if computed the shell pair data here then it's always in actual order, otherwise check swap_bra/swap_ket
     const auto spbra_is_swapped = spbra_precomputed ? swap_bra : false;
