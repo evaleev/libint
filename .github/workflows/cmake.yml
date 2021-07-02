@@ -27,7 +27,7 @@ jobs:
       BUILD_CONFIG : >
         -G Ninja
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DCMAKE_PREFIX_PATH=/usr/local/opt/bison
+        -DCMAKE_PREFIX_PATH=/usr/local/Cellar/eigen/3.3.9;/usr/local/opt/bison
         -DBUILD_SHARED_LIBS=OFF
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
         -DENABLE_FORTRAN=ON
@@ -79,7 +79,7 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}/build/compiler
       run: |
-        ${{github.workspace}}/configure --with-max-am=2,2 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
+        CPPFLAGS="-I/usr/local/include/eigen3" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2,2 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
         make -j2
         make check
         cd src/bin/test_eri && ./stdtests.pl && cd ../../..
