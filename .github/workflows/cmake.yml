@@ -45,13 +45,16 @@ jobs:
 
     - name: Install prerequisite MacOS packages
       if: ${{ matrix.os == 'macos-latest' }}
-      run: brew install ninja gcc@10 boost eigen bison ccache automake
+      run: |
+        brew install ninja gcc@10 boost eigen bison ccache automake
+        echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
 
     - name: Install prerequisites Ubuntu packages
       if: ${{ matrix.os == 'ubuntu-20.04' }}
       run: |
         sudo apt-get update
         sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libboost-dev libeigen3-dev ccache
+        echo "FC=/usr/bin/gfortran-9" >> $GITHUB_ENV
 
     - name: Prepare ccache timestamp
       id: ccache_cache_timestamp
