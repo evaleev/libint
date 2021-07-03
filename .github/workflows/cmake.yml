@@ -5,6 +5,17 @@ on: [push, pull_request]
 #env:
 
 jobs:
+  skip_check:
+    runs-on: ${{ matrix.os }}
+    # Map a step output to a job output
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@3.4.0
+        with:
+          cancel_others: 'true'
+
   build:
     strategy:
       fail-fast: false
@@ -19,6 +30,8 @@ jobs:
 
     name: "${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }}"
     runs-on: ${{ matrix.os }}
+    needs: skip_check
+    if: ${{ needs.skip_check.outputs.should_skip != 'true' }}
     env:
       CXX : ${{ matrix.cxx }}
       CCACHE_DIR : ${{github.workspace}}/build/.ccache
