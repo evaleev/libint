@@ -32,31 +32,44 @@ jobs:
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
         -DENABLE_FORTRAN=ON
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/library/install
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
     steps:
     - uses: actions/checkout@v2
 
+    - id: skip_check
+      name: Check if can skip
+      uses: fkirc/skip-duplicate-actions@v3.4.0
+      with:
+        cancel_others: 'true'
+
     - name: Create Build Environment
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       # Some projects don't allow in-source building, so create a separate build directory
       # We'll use this as our working directory for all subsequent commands
       run: |
         cmake -E make_directory ${{github.workspace}}/build/compiler
         cmake -E make_directory ${{github.workspace}}/build/library
+        cmake -E make_directory ${{github.workspace}}/build/library_test
 
     - name: Install prerequisite MacOS packages
-      if: ${{ matrix.os == 'macos-latest' }}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-latest' }}
       run: |
         brew install ninja gcc@10 boost eigen bison ccache automake
         echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
+        echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
 
     - name: Install prerequisites Ubuntu packages
-      if: ${{ matrix.os == 'ubuntu-20.04' }}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
       run: |
         sudo apt-get update
         sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libboost-dev libeigen3-dev ccache
         echo "FC=/usr/bin/gfortran-9" >> $GITHUB_ENV
+        echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
 
     - name: Prepare ccache timestamp
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       id: ccache_cache_timestamp
       shell: cmake -P {0}
       run: |
@@ -64,6 +77,7 @@ jobs:
         message("::set-output name=timestamp::${current_date}")
 
     - name: Setup ccache cache files
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       uses: actions/cache@v1.1.0
       with:
         path: ${{github.workspace}}/build/.ccache
@@ -72,28 +86,49 @@ jobs:
           ${{ matrix.config.name }}-ccache-
 
     - name: Generate configure script
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash
       working-directory: ${{github.workspace}}
       run: ./autogen.sh && ls -l ${{github.workspace}}/configure
 
     - name: Generate Libint library
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       # Use a bash shell so we can use the same syntax for environment variable
       # access regardless of the host operating system
       shell: bash
       working-directory: ${{github.workspace}}/build/compiler
       run: |
-        CPPFLAGS="-I/usr/local/include/eigen3" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2,2 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
-        make -j2
+        CPPFLAGS="-I$EIGEN3_INCLUDE_DIR" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2,2 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
+        make -j3
         make check
         cd src/bin/test_eri && ./stdtests.pl && cd ../../..
         make export
 
-    - name: Build Libint library
+    - name: Build+test+install Libint library
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash
       working-directory: ${{github.workspace}}/build/library
       run: |
         tar -xzf ../compiler/libint-2*.tgz
         cd libint-2*
+        echo "LIBINT_EXPORTED_DIR=`pwd`" >> $GITHUB_ENV
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
         cmake --build build --target check
         cmake --build build --target install
+
+    - name: Test installed Libint library
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      shell: bash
+      working-directory: ${{github.workspace}}/build/library_test
+      run: |
+        cat > CMakeLists.txt <<EOF
+        cmake_minimum_required(VERSION 3.8)
+        project(hf++)
+        find_package(Libint2 2.7.0 REQUIRED)
+        find_package(Threads)  # clang does not autolink threads even though we are using std::thread
+        add_executable(hf++ EXCLUDE_FROM_ALL $LIBINT_EXPORTED_DIR/tests/hartree-fock/hartree-fock++.cc)
+        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
+        EOF
+        cmake . -DCMAKE_PREFIX_PATH=${{github.workspace}}/build/library/install
+        cmake --build . --target hf++
+        ./hf++ $LIBINT_EXPORTED_DIR/tests/hartree-fock/h2o_rotated.xyz | python $LIBINT_EXPORTED_DIR/tests/hartree-fock/hartree-fock++-validate.py $LIBINT_EXPORTED_DIR/MakeVars.features

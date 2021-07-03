@@ -4,7 +4,7 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - 2020-xx-yy: 2.7.0
-  -
+  - switched from Travis CI to GitHub Actions
 
 - 2020-07-07: 2.7.0-beta.6
   - Molden PBC exporter works for 1 and 2 dimensional crystals
