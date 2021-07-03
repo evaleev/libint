@@ -5,17 +5,6 @@ on: [push, pull_request]
 #env:
 
 jobs:
-  skip_check:
-    runs-on: ${{ matrix.os }}
-    # Map a step output to a job output
-    outputs:
-      should_skip: ${{ steps.skip_check.outputs.should_skip }}
-    steps:
-      - id: skip_check
-        uses: fkirc/skip-duplicate-actions@3.4.0
-        with:
-          cancel_others: 'true'
-
   build:
     strategy:
       fail-fast: false
@@ -30,8 +19,6 @@ jobs:
 
     name: "${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }}"
     runs-on: ${{ matrix.os }}
-    needs: skip_check
-    if: ${{ needs.skip_check.outputs.should_skip != 'true' }}
     env:
       CXX : ${{ matrix.cxx }}
       CCACHE_DIR : ${{github.workspace}}/build/.ccache
@@ -45,11 +32,20 @@ jobs:
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
         -DENABLE_FORTRAN=ON
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/library/install
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
     steps:
     - uses: actions/checkout@v2
 
+    - id: skip_check
+      name: Check if can skip
+      uses: fkirc/skip-duplicate-actions@v3.4.0
+      with:
+        cancel_others: 'true'
+
     - name: Create Build Environment
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       # Some projects don't allow in-source building, so create a separate build directory
       # We'll use this as our working directory for all subsequent commands
       run: |
@@ -58,14 +54,14 @@ jobs:
         cmake -E make_directory ${{github.workspace}}/build/library_test
 
     - name: Install prerequisite MacOS packages
-      if: ${{ matrix.os == 'macos-latest' }}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-latest' }}
       run: |
         brew install ninja gcc@10 boost eigen bison ccache automake
         echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
 
     - name: Install prerequisites Ubuntu packages
-      if: ${{ matrix.os == 'ubuntu-20.04' }}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
       run: |
         sudo apt-get update
         sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libboost-dev libeigen3-dev ccache
@@ -73,6 +69,7 @@ jobs:
         echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
 
     - name: Prepare ccache timestamp
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       id: ccache_cache_timestamp
       shell: cmake -P {0}
       run: |
@@ -80,6 +77,7 @@ jobs:
         message("::set-output name=timestamp::${current_date}")
 
     - name: Setup ccache cache files
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       uses: actions/cache@v1.1.0
       with:
         path: ${{github.workspace}}/build/.ccache
@@ -88,11 +86,13 @@ jobs:
           ${{ matrix.config.name }}-ccache-
 
     - name: Generate configure script
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash
       working-directory: ${{github.workspace}}
       run: ./autogen.sh && ls -l ${{github.workspace}}/configure
 
     - name: Generate Libint library
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       # Use a bash shell so we can use the same syntax for environment variable
       # access regardless of the host operating system
       shell: bash
@@ -105,6 +105,7 @@ jobs:
         make export
 
     - name: Build+test+install Libint library
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash
       working-directory: ${{github.workspace}}/build/library
       run: |
@@ -116,6 +117,7 @@ jobs:
         cmake --build build --target install
 
     - name: Test installed Libint library
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash
       working-directory: ${{github.workspace}}/build/library_test
       run: |
