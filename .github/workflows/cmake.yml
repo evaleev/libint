@@ -49,6 +49,7 @@ jobs:
       run: |
         brew install ninja gcc@10 boost eigen bison ccache automake
         echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
+        echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
 
     - name: Install prerequisites Ubuntu packages
       if: ${{ matrix.os == 'ubuntu-20.04' }}
@@ -56,6 +57,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libboost-dev libeigen3-dev ccache
         echo "FC=/usr/bin/gfortran-9" >> $GITHUB_ENV
+        echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
 
     - name: Prepare ccache timestamp
       id: ccache_cache_timestamp
@@ -83,7 +85,7 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}/build/compiler
       run: |
-        CPPFLAGS="-I/usr/local/include/eigen3" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2,2 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
+        CPPFLAGS="-I$EIGEN3_INCLUDE_DIR" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2,2 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
         make -j2
         make check
         cd src/bin/test_eri && ./stdtests.pl && cd ../../..
