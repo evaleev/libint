@@ -42,6 +42,7 @@ jobs:
       run: |
         cmake -E make_directory ${{github.workspace}}/build/compiler
         cmake -E make_directory ${{github.workspace}}/build/library
+        cmake -E make_directory ${{github.workspace}}/build/library_test
 
     - name: Install prerequisite MacOS packages
       if: ${{ matrix.os == 'macos-latest' }}
@@ -88,12 +89,29 @@ jobs:
         cd src/bin/test_eri && ./stdtests.pl && cd ../../..
         make export
 
-    - name: Build Libint library
+    - name: Build+test+install Libint library
       shell: bash
       working-directory: ${{github.workspace}}/build/library
       run: |
         tar -xzf ../compiler/libint-2*.tgz
         cd libint-2*
+        echo "LIBINT_EXPORTED_DIR=`pwd`" >> $GITHUB_ENV
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
         cmake --build build --target check
         cmake --build build --target install
+
+    - name: Test installed Libint library
+      shell: bash
+      working-directory: ${{github.workspace}}/build/library_test
+      run: |
+        cat > CMakeLists.txt <<EOF
+        cmake_minimum_required(VERSION 3.8)
+        project(hf++)
+        find_package(Libint2 2.7.0 REQUIRED)
+        find_package(Threads::Threads)  # clang does not autolink threads even though we are using std::thread
+        add_executable(hf++ EXCLUDE_FROM_ALL $LIBINT_EXPORTED_DIR/tests/hartree-fock/hartree-fock++.cc)
+        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
+        EOF
+        cmake . -DCMAKE_PREFIX_PATH=${{github.workspace}}/build/library/install
+        cmake --build . --target hf++
+        ./hf++ $LIBINT_EXPORTED_DIR/tests/hartree-fock/h2o_rotated.xyz | python $LIBINT_EXPORTED_DIR/tests/hartree-fock/hartree-fock++-validate.py $LIBINT_EXPORTED_DIR/MakeVars.features
