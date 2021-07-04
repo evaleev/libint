@@ -1852,8 +1852,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   break;
 
                 case BraKet::xs_xx: {
-                  assert(swap_bra == false);
-                  assert(swap_braket == false);
+                  assert(!swap_bra);
+                  assert(!swap_braket);
                   const unsigned mapDerivIndex1_xsxx[2][9] = {
                       {0,1,2,3,4,5,6,7,8},
                       {0,1,2,6,7,8,3,4,5}
@@ -1863,9 +1863,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   break;
 
                 case BraKet::xs_xs: {
-                  assert(swap_bra == false);
-                  assert(swap_ket == false);
-                  assert(swap_braket == false);
+                  assert(!swap_bra);
+                  assert(!swap_ket);
+                  assert(!swap_braket);
                   s_target = s;
                 }
                   break;
@@ -1932,8 +1932,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   break;
 
                 case BraKet::xs_xx: {
-                  assert(swap_bra == false);
-                  assert(swap_braket == false);
+                  assert(!swap_bra);
+                  assert(!swap_braket);
                   const unsigned mapDerivIndex2_xsxx[2][45] = {
                       {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
                        12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
@@ -1948,9 +1948,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   break;
 
                 case BraKet::xs_xs: {
-                  assert(swap_bra == false);
-                  assert(swap_ket == false);
-                  assert(swap_braket == false);
+                  assert(!swap_bra);
+                  assert(!swap_ket);
+                  assert(!swap_braket);
                   s_target = s;
                 }
                   break;

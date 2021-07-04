@@ -13,7 +13,7 @@ TEST_CASE("Shell ctor", "[shell]") {
   REQUIRE(s1.alpha == libint2::svector<double>{1});
   REQUIRE(s1.contr.size() == 1);
   REQUIRE(s1.contr[0].l == 2);
-  REQUIRE(s1.contr[0].pure == false);
+  REQUIRE(!s1.contr[0].pure);
   REQUIRE(s1.contr[0].coeff.size() == 1);
   REQUIRE(s1.contr[0].coeff[0] == Approx(1.64592278064949)); // (2./\[Pi])^(3/4) 2^l \[Alpha]^((2l+3)/4) / Sqrt[(2l-1)!!]
   REQUIRE(s1.O == std::array<double,3>{0, 0, 0});
