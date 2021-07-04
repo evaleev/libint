@@ -29,7 +29,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
 #
 #    >>> ls
 #    cmake/  COPYING  src/  tests/  ...
-#    >>> cmake -H. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/install-libint ...
+#    >>> cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/install-libint ...
 #    ...
 #    -- Generating done
 #    -- Build files have been written to: /current/dir/build
@@ -70,7 +70,7 @@ option_with_print(BUILD_TESTING "Compile the testing infrastructure" ON)
 option_with_default(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT "[EXPERT] Build generated library as a subproject; if FALSE will configure and build separately" OFF)
 
 if(NOT ENABLE_CXX11API)
-    message(FATAL_ERROR "The plain library withough C++11 API is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the plain library, raise an issue on GitHub and ping @loriab.")
+    message(FATAL_ERROR "The plain library without C++11 API is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the plain library, raise an issue on GitHub and ping @loriab.")
 endif()
 
 if(ENABLE_FORTRAN)
