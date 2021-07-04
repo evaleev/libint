@@ -145,7 +145,7 @@ __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
       if (strcaseequal("CC", element_symbol))
         axis = 2;
       if (axis != -1) {
-        if (found_abc[axis] == true)
+        if (found_abc[axis])
           throw std::logic_error(
               caller + ": unit cell parameter along Cartesian axis " +
               std::to_string(axis) + " appears more than once");
@@ -180,7 +180,7 @@ __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
   // make sure all 3 axes were specified
   if (pbc) {
     for(auto xyz=0; xyz!=3; ++xyz)
-      if (found_abc[xyz] == false) {
+      if (!found_abc[xyz]) {
         throw std::logic_error(caller +
                                ": unit cell parameter along Cartesian axis " +
                                std::to_string(xyz) + " not given");

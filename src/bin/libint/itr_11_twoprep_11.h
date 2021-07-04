@@ -172,10 +172,10 @@ namespace libint2 {
         const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
         const OriginDerivative<3u> dC = Tint->bra(1,0).deriv();
         const OriginDerivative<3u> dD = Tint->ket(1,0).deriv();
-        const bool deriv = dA.zero() == false ||
-            dB.zero() == false ||
-            dC.zero() == false ||
-            dD.zero() == false;
+        const bool deriv = !dA.zero() ||
+            !dB.zero() ||
+            !dC.zero() ||
+            !dD.zero();
         if (deriv)
           return;
       }
@@ -361,13 +361,13 @@ namespace libint2 {
       const OriginDerivative<3u> dB = target_->ket(0,0).deriv();
       const OriginDerivative<3u> dC = target_->bra(1,0).deriv();
       const OriginDerivative<3u> dD = target_->ket(1,0).deriv();
-      const bool deriv = dA.zero() == false ||
-          dB.zero() == false ||
-          dC.zero() == false ||
-          dD.zero() == false;
-      assert(deriv == false);
+      const bool deriv = !dA.zero() ||
+          !dB.zero() ||
+          !dC.zero() ||
+          !dD.zero();
+      assert(!deriv);
 
-      if (deriv == false) {
+      if (!deriv) {
         return std::string("ITR_xs_xs.h");
       }
       else {
@@ -393,15 +393,15 @@ namespace libint2 {
       const OriginDerivative<3u> dB = target_->ket(0,0).deriv();
       const OriginDerivative<3u> dC = target_->bra(1,0).deriv();
       const OriginDerivative<3u> dD = target_->ket(1,0).deriv();
-      const bool deriv = dA.zero() == false ||
-          dB.zero() == false ||
-          dC.zero() == false ||
-          dD.zero() == false;
-      assert(deriv == false);
+      const bool deriv = !dA.zero() ||
+          !dB.zero() ||
+          !dC.zero() ||
+          !dD.zero();
+      assert(!deriv);
 
       oss << "using namespace libint2;" << std::endl;
 
-      if (deriv == false) { // for regular integrals I know exactly how many prerequisites I need
+      if (!deriv) { // for regular integrals I know exactly how many prerequisites I need
         if(xsxs) {
           oss << "libint2::ITR_xs_xs<" << part << "," << sh_a.norm() << "," << sh_c.norm() << ",true,";
         }

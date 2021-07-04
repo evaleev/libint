@@ -44,7 +44,7 @@ namespace libint2 {
 
       enum XYZ {x=0, y=1, z=2};
       assert(CartesianAxis == x || CartesianAxis == y || CartesianAxis == z);
-      assert(vectorize == false);
+      assert(!vectorize);
 
       const unsigned int veclen = vectorize ? inteval->veclen : 1;
 

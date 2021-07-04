@@ -505,11 +505,11 @@ namespace libint2 {
       // unit *functions* are treated as regular qn-0 functions so that (00|00)^(m) = (unit 0|00)^(m)
       std::ostringstream oss;
       oss << to_string(Axis) << qn_[0];
-      if (deriv_.zero() == false) oss << "_" << deriv_.label();
+      if (!deriv_.zero()) oss << "_" << deriv_.label();
 
       // I don't handle labels of contracted CGF1d because I don't think I need them
       // make sure just in case
-      assert(this->contracted() == false);
+      assert(!this->contracted());
 
       return oss.str();
     }
@@ -536,7 +536,7 @@ namespace libint2 {
 
     /// Implementation of IncableBFSet::inc().
     void inc(unsigned int dir, unsigned int c = 1u) {
-      assert(is_unit() == false);
+      assert(!is_unit());
       assert(dir==0);
       if (valid())
         qn_[0] += c;
@@ -673,11 +673,11 @@ namespace libint2 {
       auto axis_label = to_string(Axis);
       axis_label[0] = std::toupper(axis_label[0]);
       oss << axis_label << qn_[0];
-      if (deriv_.zero() == false) oss << "_" << deriv_.label();
+      if (!deriv_.zero()) oss << "_" << deriv_.label();
 
       // I don't handle labels of contracted CGF1d because I don't think I need them
       // make sure just in case
-      assert(this->contracted() == false);
+      assert(!this->contracted());
 
       return oss.str();
     }

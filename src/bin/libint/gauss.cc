@@ -123,7 +123,7 @@ CGF::label() const
   //if (is_unit()) return "unit_";
   unsigned int am = qn_[0] + qn_[1] + qn_[2];
   std::string deriv_label;
-  if (deriv_.zero() == false) deriv_label = deriv_.label();
+  if (!deriv_.zero()) deriv_label = deriv_.label();
   const std::string am_string = am_to_symbol(am, contracted());
   std::ostringstream oss;
   oss << (pure_sh_ && am>0 ? "W" : "") << am_string << deriv_label << "_";
@@ -188,7 +188,7 @@ CGF::dec(unsigned int i, unsigned int c)
 void
 CGF::inc(unsigned int i, unsigned int c)
 {
-  assert(is_unit() == false);
+  assert(!is_unit());
   if (i<3 && valid())
     qn_[i] += c;
 }
@@ -207,7 +207,7 @@ CGF::print(std::ostream& os) const
 
 CGF
 libint2::operator+(const CGF& A, const CGF& B) {
-  assert(A.is_unit() == false && B.is_unit() == false);
+  assert(!A.is_unit() && !B.is_unit());
   CGF Sum(A);
   for(unsigned int xyz=0; xyz<3; ++xyz)
     Sum.inc(xyz,B.qn(xyz));
@@ -308,7 +308,7 @@ CGShell::dec(unsigned int i, unsigned int c)
 void
 CGShell::inc(unsigned int i, unsigned int c)
 {
-  assert(is_unit() == false);
+  assert(!is_unit());
   if (i == 0 && valid())
     qn_[0] += c;
 }
@@ -327,7 +327,7 @@ CGShell::print(std::ostream& os) const
 
 CGShell
 libint2::operator+(const CGShell& A, const CGShell& B) {
-  assert(A.is_unit() == false && B.is_unit() == false);
+  assert(!A.is_unit() && !B.is_unit());
   CGShell Sum(A);
   Sum.inc(0,B.qn(0));
   Sum.deriv_ += B.deriv_;

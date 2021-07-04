@@ -81,8 +81,8 @@ namespace libint2 {
       // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89)
       const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
       const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
-      const bool deriv = dA.zero() == false ||
-          dB.zero() == false;
+      const bool deriv = !dA.zero() ||
+          !dB.zero();
 
       typedef TargetType ChildType;
       ChildFactory<ThisType,ChildType> factory(this);
@@ -226,8 +226,8 @@ namespace libint2 {
       // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89)
       const OriginDerivative<1u> dA = Tint->bra(0,0).deriv();
       const OriginDerivative<1u> dB = Tint->ket(0,0).deriv();
-      const bool deriv = dA.zero() == false ||
-                         dB.zero() == false;
+      const bool deriv = !dA.zero() ||
+                         !dB.zero();
 
       typedef TargetType ChildType;
       ChildFactory<ThisType,ChildType> factory(this);
@@ -372,8 +372,8 @@ namespace libint2 {
       // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89)
       const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
       const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
-      const bool deriv = dA.zero() == false ||
-          dB.zero() == false;
+      const bool deriv = !dA.zero() ||
+          !dB.zero();
 
       typedef TargetType Child1Type;
       ChildFactory<ThisType,Child1Type> factory(this);
@@ -560,8 +560,8 @@ namespace libint2 {
       // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89)
       const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
       const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
-      const bool deriv = dA.zero() == false ||
-          dB.zero() == false;
+      const bool deriv = !dA.zero() ||
+          !dB.zero();
 
       typedef TargetType ChildType;
       ChildFactory<ThisType,ChildType> factory(this);
@@ -710,8 +710,8 @@ namespace libint2 {
           // J.M. Pérez-Jordá and W. Yang, J Chem Phys 104, 8003 (1996), Eqs. (23-27) for multipole quanta
           const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
           const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
-          const bool deriv = dA.zero() == false ||
-              dB.zero() == false;
+          const bool deriv = !dA.zero() ||
+              !dB.zero();
           if (deriv)  // derivative relations not yet implemented
             return;
 

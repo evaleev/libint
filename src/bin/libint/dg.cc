@@ -101,7 +101,7 @@ DirectedGraph::add_vertex(const SafePtr<DGVertex>& vertex)
 {
   // if vertex is precomputed -- can replicate it without consequences
   // else check if it's on already
-  if (vertex->precomputed() == false) {
+  if (!vertex->precomputed()) {
     SafePtr<DGVertex> vcopy_on_graph = vertex_is_on(vertex);
     if (vcopy_on_graph)
       return vcopy_on_graph;
@@ -855,7 +855,7 @@ DirectedGraph::handle_trivial_nodes(const SafePtr<CodeContext>& context)
       if (arc_cast) {
         // remove the vertex, if possible
         // if this is a target -- cannot remove
-        if ((vptr)->is_a_target() == false)
+        if (!(vptr)->is_a_target())
           remove_vertex_at((vptr),arc->dest());
       }
     }
@@ -962,7 +962,7 @@ DirectedGraph::remove_disconnected_vertices()
   for(iter v=stack_.begin(); v!=stack_.end();) {
     const ver_ptr& vptr = vertex_ptr(*v);
     iter vnext = v; ++vnext; // note the next value of iterator before trying to erase
-    if ((vptr)->num_entry_arcs() == 0 && (vptr)->num_exit_arcs() == 0 && (vptr)->is_a_target() == false) {
+    if ((vptr)->num_entry_arcs() == 0 && (vptr)->num_exit_arcs() == 0 && !(vptr)->is_a_target()) {
 #if DEBUG
       cout << "Trying to erase disconnected vertex " << (vptr)->description() << " num_vertices = " << num_vertices() << endl;
 #endif
@@ -1296,7 +1296,7 @@ unsigned int min_size_to_alloc)
     const bool need_copies_of_targets = std::find_if(targets_.begin(),
                                                      targets_.end(),
                                                      [](SafePtr<DGVertex> i){
-      return DecontractedIntegralSet()(i) == false && UnrolledIntegralSet()(i) == false;
+      return !DecontractedIntegralSet()(i) && !UnrolledIntegralSet()(i);
     }) != targets_.end();
 
     iregistry()->accumulate_targets_directly(!need_copies_of_targets);
@@ -2300,7 +2300,7 @@ DirectedGraph::find_subtrees_from(const SafePtr<DGVertex>& v)
 namespace {
   struct PrerequisiteNotComputed {
       bool operator()(const DirectedGraph::vertices::value_type& v) {
-        return v.second->precomputed() == false && v.second->num_exit_arcs() == 0;
+        return !v.second->precomputed() && v.second->num_exit_arcs() == 0;
       }
   };
 }
@@ -2309,7 +2309,7 @@ namespace {
 bool
 DirectedGraph::missing_prerequisites() const {
   bool missing_prereqs = false;
-  if (this->registry()->ignore_missing_prereqs() == false) {
+  if (!this->registry()->ignore_missing_prereqs()) {
 #if 0
   missing_prereqs =
       find_if(this->stack_.begin(), this->stack_.end(), [](const vertices::value_type& v) {
@@ -2390,7 +2390,7 @@ namespace libint2 {
     std::cout << "PrerequisitesExtractor: considering " << v->description() << std::endl;
     v->print(std::cout);
 #endif
-    if (v->precomputed() == false &&
+    if (!v->precomputed() &&
         v->num_exit_arcs() == 0) {
 #if DEBUG
       std::cout << "PrerequisitesExtractor: found candidate " << v->description() << std::endl;
@@ -2402,7 +2402,7 @@ namespace libint2 {
       bool member_of_shellset = false;
       SafePtr<DGVertex> parent_shellset;
       typedef DGVertex::ArcSetType::const_iterator citer;
-      for(citer i=v->entry_arcs().begin(); i != v->entry_arcs().end() && member_of_shellset==false; ++i) {
+      for(citer i=v->entry_arcs().begin(); i != v->entry_arcs().end() && !member_of_shellset; ++i) {
         const SafePtr<DGArc>& arc = *i;
         SafePtr<DGArcRR> arc_cast = dynamic_pointer_cast<DGArcRR,DGArc>(arc);
         if (arc_cast) {
