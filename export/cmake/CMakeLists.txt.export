@@ -231,6 +231,8 @@ target_include_directories(libint2 INTERFACE
 target_compile_features(libint2 INTERFACE "cxx_std_11")
 # need to define __COMPILING_LIBINT2 whenever using libint targets in the build tree
 target_compile_definitions(libint2 INTERFACE $<BUILD_INTERFACE:__COMPILING_LIBINT2>)
+# Alias libint2 -> Libint2::int2 for in-source builds
+add_library(Libint2::int2 ALIAS libint2) 
 # Add libraries to the list of installed components
 install(TARGETS libint2 EXPORT libint2
     COMPONENT libint2
@@ -275,6 +277,8 @@ if (LIBINT_HAS_CXX_API)
           # includes are installed by the include/CMakeLists.txt.include.export
           # INCLUDES DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
           )
+  # Alias libint2_cxx -> Libint2::cxx for in-source builds
+  add_library(Libint2::cxx ALIAS libint2_cxx)
 endif(LIBINT_HAS_CXX_API)
 
 # Tests ================================================================================================================

@@ -389,7 +389,7 @@ class PBCExport: public Export{
       const bool nonzero_a = a >= eps;
       const bool nonzero_b = b >= eps;
       const bool nonzero_c = c >= eps;
-      static constexpr double right_angle = M_PI / 4;
+      static constexpr double right_angle = M_PI / 2;
       const double alpha = nonzero_b && nonzero_c ? std::acos(cell_axes_[1].dot(cell_axes_[2]) / (b * c)) : right_angle;
       const double beta = nonzero_a && nonzero_c ? std::acos(cell_axes_[0].dot(cell_axes_[2]) / (a * c)) : right_angle;
       const double gamma = nonzero_a && nonzero_b ? std::acos(cell_axes_[0].dot(cell_axes_[1]) / (a * b)) : right_angle;

@@ -34,8 +34,8 @@ namespace libint2 {
     /// uncontracted (s|s) are precomputed
     if (parent_type::bra_.member(0,0).zero() &&
         parent_type::ket_.member(0,0).zero() &&
-        parent_type::bra_.member(0,0).contracted() == false &&
-        parent_type::ket_.member(0,0).contracted() == false &&
+        !parent_type::bra_.member(0,0).contracted() &&
+        !parent_type::ket_.member(0,0).contracted() &&
         parent_type::bra_.member(0,0).deriv().zero() &&
         parent_type::ket_.member(0,0).deriv().zero()
        )
@@ -52,8 +52,8 @@ GenIntegralSet_1_1<CGShell,ElecPotOper,mType>::auto_unroll() const
   /// uncontracted (s|s) are precomputed
   if (parent_type::bra_.member(0,0).zero() &&
       parent_type::ket_.member(0,0).zero() &&
-      parent_type::bra_.member(0,0).contracted() == false &&
-      parent_type::ket_.member(0,0).contracted() == false &&
+      !parent_type::bra_.member(0,0).contracted() &&
+      !parent_type::ket_.member(0,0).contracted() &&
       parent_type::bra_.member(0,0).deriv().zero() &&
       parent_type::ket_.member(0,0).deriv().zero()
       )

@@ -173,7 +173,7 @@ namespace libint2 {
 
     std::ostringstream os;
     // contraction = reduction
-    if (vectorize == false || !TrivialBFSet<BFSet>::result || context->cparams()->vectorize_by_line()) {
+    if (!vectorize || !TrivialBFSet<BFSet>::result || context->cparams()->vectorize_by_line()) {
       os << "_libint2_static_api_inc1_short_("
          << context->value_to_pointer(rr_target()->symbol()) << ","
          << context->value_to_pointer(rr_child(0)->symbol()) << ","
