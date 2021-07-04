@@ -50,7 +50,7 @@ endmacro(booleanize01)
 macro(option_with_default variable msge default)
 print_option(${variable} ${default})
 if(NOT DEFINED ${variable} OR "${${variable}}" STREQUAL "")
-   set(${variable} ${default} CACHE STRING ${msge} FORCE)
+   set(${variable} "${default}" CACHE STRING "${msge}" FORCE)
 endif()
 endmacro(option_with_default)
 
