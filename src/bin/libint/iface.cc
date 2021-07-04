@@ -35,7 +35,7 @@ namespace {
   const char si_name[] = "libint2_static_init.cc";
   const char sc_name[] = "libint2_static_cleanup.cc";
   const char li_name[] = "libint2_init.cc";
-  
+
   inline void header_guard_open(std::ostream& os, const std::string& label) {
     os << "#ifndef _libint2_" << label << "_h_" << endl
        << "#define _libint2_" << label << "_h_" << endl << endl;
@@ -89,7 +89,7 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   }
   if (cparams_->contracted_targets())
     ph_ << macro_define("CONTRACTED_INTS",1);
-  
+
   ih_ << "#ifdef __cplusplus\n# include <cstddef>\n#else\n# include <stddef.h>\n#endif" << endl
       << ctext_->code_prefix();
 
@@ -123,13 +123,13 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
     ih_ << "extern " << oss.str();
     si_ << oss.str();
   }
-  
+
   // Declare library constructor/destructor
   oss_.str(null_str_);
   oss_ << ctext_->type_name<void>() << " "
        << ctext_->label_to_name(cparams->api_prefix() + "libint2_static_init") << "()";
   std::string si_fdec(oss_.str());
-  
+
   oss_.str(null_str_);
   oss_ << ctext_->type_name<void>() << " "
        << ctext_->label_to_name(cparams->api_prefix() + "libint2_static_cleanup") << "()";
@@ -149,7 +149,7 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
 	     << "* inteval, int max_am, void* buf)";
     std::string li_fdec(oss_.str());
     li_decls_.push_back(li_fdec);
-  
+
     oss_.str(null_str_);
     oss_ << ctext_->type_name<size_t>() << " "
 	     << ctext_->label_to_name(cparams->api_prefix() + "libint2_need_memory_" + tlabel)
@@ -189,10 +189,10 @@ Libint2Iface::Libint2Iface(const SafePtr<CompilationParameters>& cparams,
   }
 
   ih_ << ctext_->code_postfix() << endl;
-  
+
   si_ << si_fdec << ctext_->open_block();
   sc_ << sc_fdec << ctext_->open_block();
-  
+
 }
 
 Libint2Iface::~Libint2Iface()
@@ -238,7 +238,7 @@ Libint2Iface::~Libint2Iface()
     ih_ << "#define __prescanned_libint2_defined__(taskname,symbol) LIBINT2_DEFINED_##symbol##_##taskname" << std::endl << std::endl;
 
 
-  
+
   header_guard_close(th_);
   header_guard_close(ph_);
   header_guard_close(ih_);
@@ -431,9 +431,9 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
   const tciter tend = cparams_->single_evaltype() ? taskmgr.first()+1 : taskmgr.plast();
   for(tciter t=taskmgr.first(); t!=tend; ++t) {
     const SafePtr<TaskExternSymbols> tsymbols = t->symbols();
-    
+
     // Prologue
-    os << "typedef struct {" << std::endl;
+    os << "typedef struct ";
 
     //
     // Declare external symbols
@@ -455,6 +455,8 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
       symbols = tsymbols->symbols();
       tlabel = t->label();
     }
+
+    os << ctext_->inteval_type_name(tlabel) << " {" << std::endl;
 
     // Spend some effort to ensure reasonable ordering/grouping of symbols in the list, e.g.
     // all symbols of form PrefixIndex (e.g. crazyprefixN) will be grouped together in the order of increasing Index.
@@ -563,7 +565,7 @@ Libint2Iface::generate_inteval_type(std::ostream& os)
 
     // Epilogue
     os << "} " << ctext_->inteval_type_name(tlabel) << ctext_->end_of_stat() << std::endl;
-    
+
   }
 
   // If generating single evaluator type, create aliases from the specialized types to the actual type
