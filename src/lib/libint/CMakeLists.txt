@@ -46,6 +46,15 @@ add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
 
 # <<<  Build Library  >>>
 
+# make sure CMAKE_C_COMPILER is defined
+include(CheckLanguage)
+check_language(C)
+if(CMAKE_C_COMPILER)
+    enable_language(C)
+else()
+    message(FATAL_ERROR "No C language support; invoke CMake with -DCMAKE_C_COMPILER=/path/to/C/compiler to resolve")
+endif()
+
 if (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
 
     if (EXISTS "${EXPORT_STAGE_DIR}.tgz")
@@ -63,7 +72,7 @@ else(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
 
     include(ExternalProject)
     include(GNUInstallDirs)
-    
+
     ExternalProject_Add(library
             DEPENDS libint-library-export
             BUILD_ALWAYS 1
