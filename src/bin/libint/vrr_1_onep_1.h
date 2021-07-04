@@ -527,7 +527,7 @@ namespace libint2 {
       /** Re-Implementation of GenericRecurrenceRelation::generate_label():
           ElecPot VRR recurrence relation is invariant of m, hence
           to avoid generating identical code make sure that the (unique) label has m=0. */
-      std::string generate_label() const
+      std::string generate_label() const override
       {
         typedef typename TargetType::AuxIndexType mType;
         static SafePtr<mType> aux0(new mType(0u));

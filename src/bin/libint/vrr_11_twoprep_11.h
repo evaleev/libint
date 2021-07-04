@@ -60,7 +60,7 @@ namespace libint2 {
       /** Re-Implementation of GenericRecurrenceRelation::generate_label():
           TwoPRep VRR recurrence relations codes are independent of m (it never appears anywhere in equations), hence
           to avoid generating identical code make sure that the (unique) label has m=0. */
-      std::string generate_label() const
+      std::string generate_label() const override
       {
         typedef typename TargetType::AuxIndexType mType;
         static SafePtr<mType> aux0(new mType(0u));
@@ -72,11 +72,11 @@ namespace libint2 {
 
   #if LIBINT_ENABLE_GENERIC_CODE
       /// Implementation of RecurrenceRelation::has_generic()
-      bool has_generic(const SafePtr<CompilationParameters>& cparams) const;
+      bool has_generic(const SafePtr<CompilationParameters>& cparams) const override;
       /// Implementation of RecurrenceRelation::generic_header()
-      std::string generic_header() const;
+      std::string generic_header() const override;
       /// Implementation of RecurrenceRelation::generic_instance()
-      std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const;
+      std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const override;
   #endif
     };
 

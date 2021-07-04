@@ -131,33 +131,33 @@ namespace libint2 {
       /// Comparison operator
       virtual bool operator==(const GenIntegralSet&) const;
       /// Specialization of DGVertex::equiv()
-      bool equiv(const SafePtr<DGVertex>& v) const
+      bool equiv(const SafePtr<DGVertex>& v) const override
       {
         return PtrComp::equiv(this,v);
       }
       /// Specialization of DGVertex::size()
-      virtual unsigned int size() const;
+      unsigned int size() const override;
       /// Specialization of DGVertex::label()
-      virtual const std::string& label() const;
+      const std::string& label() const override;
       /// Specialization of DGVertex::id()
-      virtual const std::string& id() const;
+      const std::string& id() const override;
       /// Specialization of DGVertex::description()
-      virtual std::string description() const;
+      std::string description() const override;
 
       /// Implementation of IntegralSet::num_part
-      unsigned int num_part() const { return OperType::Properties::np; }
+      unsigned int num_part() const override { return OperType::Properties::np; }
       /// Implementation of IntegralSet::num_func_bra
-      virtual unsigned int num_func_bra(unsigned int p) const { return bra_.num_members(p); }
+      unsigned int num_func_bra(unsigned int p) const override { return bra_.num_members(p); }
       /// Implementation of IntegralSet::num_func_ket
-      virtual unsigned int num_func_ket(unsigned int p) const { return ket_.num_members(p); }
+      unsigned int num_func_ket(unsigned int p) const override { return ket_.num_members(p); }
       /// Implementation of IntegralSet::bra() const
-      typename BraSetType::bfs_cref bra(unsigned int p, unsigned int i) const;
+      typename BraSetType::bfs_cref bra(unsigned int p, unsigned int i) const override;
       /// Implementation of IntegralSet::ket() const
-      typename KetSetType::bfs_cref ket(unsigned int p, unsigned int i) const;
+      typename KetSetType::bfs_cref ket(unsigned int p, unsigned int i) const override;
       /// Implementation of IntegralSet::bra()
-      typename BraSetType::bfs_ref bra(unsigned int p, unsigned int i);
+      typename BraSetType::bfs_ref bra(unsigned int p, unsigned int i) override;
       /// Implementation of IntegralSet::ket()
-      typename KetSetType::bfs_ref ket(unsigned int p, unsigned int i);
+      typename KetSetType::bfs_ref ket(unsigned int p, unsigned int i) override;
 
       typedef BraSetType BraType;
       typedef KetSetType KetType;
@@ -174,13 +174,13 @@ namespace libint2 {
       const SafePtr<AuxQuanta> aux() const;
 
       /// Implements Hashable::key()
-      DGVertex::KeyReturnType key() const {
+      DGVertex::KeyReturnType key() const override {
         if (key_ == 0) compute_key();
         return key_;
       }
 
       /// Reimplements DGVertex::unregister()
-      void unregister() const;
+      void unregister() const override;
 
       /// If consists of precomputed elements, override this to return true
       virtual bool auto_unroll() const { return false; }
@@ -214,7 +214,7 @@ namespace libint2 {
       /// set size to sz
       void set_size(unsigned int sz);
       /// Specialization of DGVertex::this_precomputed()
-      virtual bool this_precomputed() const { return false; }
+      bool this_precomputed() const override { return false; }
       /// Resets all cached values
       void reset_cache() { key_ = 0; size_ = 0; }
 
@@ -243,7 +243,7 @@ namespace libint2 {
       // unique label -- no 2 GenIntegralSet instances can have the same label!
       mutable std::string label_;
       // generates label_
-      std::string generate_label() const;
+      std::string generate_label() const /*override*/;
       // key
       mutable key_type key_;
 

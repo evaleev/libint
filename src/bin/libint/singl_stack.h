@@ -148,7 +148,7 @@ namespace libint2 {
     citer_type end() const { return map_.end(); }
 
     // Implementation of PurgeableStack::purge()
-    virtual void purge() {
+    void purge() override {
       for(iter_type i = map_.begin(); i!=map_.end();) {
         const T* v = i->second.second.get();
         if (PurgingPolicy::purge(v))
