@@ -334,6 +334,7 @@ namespace libint2 {
 
       std::vector<PrimPairData> primpairs;
       real_t AB[3];
+      real_t ln_prec = std::numeric_limits<real_t>::lowest();
 
       ShellPair() : primpairs() { for(int i=0; i!=3; ++i) AB[i] = 0.; }
 
@@ -341,8 +342,8 @@ namespace libint2 {
         primpairs.reserve(max_nprim*max_nprim);
         for(int i=0; i!=3; ++i) AB[i] = 0.;
       }
-      template <typename Real> ShellPair(const Shell& s1, const Shell& s2, Real ln_prec) {
-        init(s1, s2, ln_prec);
+      template <typename Real> ShellPair(const Shell& s1, const Shell& s2, Real ln_prec) : ln_prec(ln_prec) {
+        init(s1, s2, this->ln_prec);
       }
 
       void resize(std::size_t max_nprim) {

@@ -849,7 +849,7 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
     // (\Del exp(-a r_12^2) \cdot (\Del exp(-b r_12^2) = 4 a b (r_{12}^2 exp(-
     // (a+b) r_{12}^2) )
     // i.e. need to scale each coefficient by 4 a b
-    auto oparams =
+    const auto& oparams =
         any_cast<const operator_traits<Operator::delcgtg2>::oper_params_type&>(params);
     const auto ng = oparams.size();
     operator_traits<Operator::delcgtg2>::oper_params_type core_ints_params;
@@ -1050,7 +1050,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
     const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_;
     auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
     if (oper_ == Operator::nuclear) {
-      auto fm_engine_ptr =
+      const auto& fm_engine_ptr =
           any_cast<const detail::core_eval_pack_type<Operator::nuclear>&>(core_eval_pack_)
           .first();
       fm_engine_ptr->eval(fm_ptr, U, mmax);
@@ -1058,7 +1058,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
       const auto& core_eval_ptr =
           any_cast<const detail::core_eval_pack_type<Operator::erf_nuclear>&>(core_eval_pack_)
             .first();
-      auto core_ints_params =
+      const auto& core_ints_params =
           std::get<0>(any_cast<const typename operator_traits<
             Operator::erf_nuclear>::oper_params_type&>(core_ints_params_));
       core_eval_ptr->eval(fm_ptr, rho, U, mmax, core_ints_params);
@@ -1066,7 +1066,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
       const auto& core_eval_ptr =
           any_cast<const detail::core_eval_pack_type<Operator::erfc_nuclear>&>(core_eval_pack_)
             .first();
-      auto core_ints_params =
+      const auto& core_ints_params =
           std::get<0>(any_cast<const typename operator_traits<
             Operator::erfc_nuclear>::oper_params_type&>(core_ints_params_));
       core_eval_ptr->eval(fm_ptr, rho, U, mmax, core_ints_params);
@@ -1181,8 +1181,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     // using ln_precision_ is far less aggressive than should be, but proper analysis
     // involves both bra and ket *bases* and thus cannot be done on shell-set
     // basis ... probably ln_precision_/2 - 10 is enough
-    const ShellPair& spbra = spbra_precomputed ? *spbra_precomputed : (spbra_.init(bra1, bra2, ln_precision_), spbra_) ;
-    const ShellPair& spket = spket_precomputed ? *spket_precomputed : (spket_.init(ket1, ket2, ln_precision_), spket_);
+    const auto target_shellpair_ln_precision = ln_precision_;
+    const ShellPair& spbra = (spbra_precomputed && spbra_precomputed->ln_prec <= target_shellpair_ln_precision) ? *spbra_precomputed : (spbra_.init(bra1, bra2, target_shellpair_ln_precision), spbra_) ;
+    const ShellPair& spket = (spket_precomputed && spket_precomputed->ln_prec <= target_shellpair_ln_precision) ? *spket_precomputed : (spket_.init(ket1, ket2, target_shellpair_ln_precision), spket_);
     // determine whether shell pair data refers to the actual ({bra1,bra2}) or swapped ({bra2,bra1}) pairs
     // if computed the shell pair data here then it's always in actual order, otherwise check swap_bra/swap_ket
     const auto spbra_is_swapped = spbra_precomputed ? swap_bra : false;
@@ -1332,7 +1333,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<Operator::erf_coulomb>&>(core_eval_pack_)
                           .first();
-                  auto core_ints_params =
+                  const auto& core_ints_params =
                       any_cast<const typename operator_traits<
                           Operator::erf_coulomb>::oper_params_type&>(core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
@@ -1341,7 +1342,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<Operator::erfc_coulomb>&>(core_eval_pack_)
                           .first();
-                  auto core_ints_params =
+                  const auto& core_ints_params =
                       any_cast<const typename operator_traits<
                           Operator::erfc_coulomb>::oper_params_type&>(core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
