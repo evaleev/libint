@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.12) # add_compile_definitions
 cmake_policy(SET CMP0074 NEW)
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/export/cmake/modules)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 # <<<  Build  >>>
 

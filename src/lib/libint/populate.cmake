@@ -39,13 +39,16 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/lib/basis/"
 file(INSTALL "${PROJECT_SOURCE_DIR}/external/boost.tar.gz"
         DESTINATION "${EXPORT_STAGE_DIR}/external")
 
-file(INSTALL "${PROJECT_SOURCE_DIR}/cmake/autocmake_safeguards.cmake"
-        "${PROJECT_SOURCE_DIR}/cmake/int_orderings.cmake"
-        "${PROJECT_SOURCE_DIR}/cmake/options.cmake"
-        "${PROJECT_SOURCE_DIR}/cmake/Libint2Config.cmake.in"
+file(INSTALL "${PROJECT_SOURCE_DIR}/cmake/modules/autocmake_safeguards.cmake"
+        "${PROJECT_SOURCE_DIR}/cmake/modules/int_orderings.cmake"
+        "${PROJECT_SOURCE_DIR}/cmake/modules/options.cmake"
+        "${PROJECT_SOURCE_DIR}/cmake/modules/FindMPFR.cmake"
+        "${PROJECT_SOURCE_DIR}/cmake/modules/AddCustomTargetSubproject.cmake"
+        "${PROJECT_BINARY_DIR}/cmake/modules/int_computed.cmake"
+        DESTINATION "${EXPORT_STAGE_DIR}/cmake/modules")
+
+file(INSTALL "${PROJECT_SOURCE_DIR}/cmake/Libint2Config.cmake.in"
         "${PROJECT_SOURCE_DIR}/cmake/libint2.pc.cmake.in"
-        "${PROJECT_SOURCE_DIR}/export/cmake/modules/FindMPFR.cmake"
-        "${PROJECT_BINARY_DIR}/cmake/int_computed.cmake"
         DESTINATION "${EXPORT_STAGE_DIR}/cmake")
 
 configure_file("${PROJECT_SOURCE_DIR}/src/lib/libint/CMakeLists.txt.export" "${EXPORT_STAGE_DIR}/CMakeLists.txt" COPYONLY)

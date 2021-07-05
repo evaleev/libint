@@ -20,8 +20,7 @@ else(LIBINT_BUILDID)
 endif(LIBINT_BUILDID)
 
 cmake_policy(SET CMP0074 NEW)
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake
-                              ${PROJECT_SOURCE_DIR}/export/cmake/modules)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 ################################### Overview ###################################
 

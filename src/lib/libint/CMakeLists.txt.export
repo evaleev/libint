@@ -8,7 +8,7 @@ set(library_DESCRIPTION  "High-performance library for computing Gaussian integr
 set(library_URL          "https://github.com/evaleev/libint")
 set(library_LICENSE      "LGPL-3.0")
 
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 ################################### Overview ###################################
 
