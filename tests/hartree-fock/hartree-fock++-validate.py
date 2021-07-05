@@ -34,7 +34,7 @@ if os.path.exists(path_to_libfeatures):
     no = False
     yes = True
     exec(open(path_to_libfeatures).read())
-else
+else:
     sys.exit(2)
 
 eref = [-76.003354058439]
