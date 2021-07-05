@@ -120,6 +120,13 @@ if (TARGET Eigen3::Eigen)
     set(LIBINT_HAS_EIGEN 1)
 endif()
 
+# Python is optional, unless ...
+if (ENABLE_FORTRAN)  # ... need fortran
+    find_package(PythonInterp REQUIRED)
+else(ENABLE_FORTRAN)
+    find_package(PythonInterp)
+endif(ENABLE_FORTRAN)
+
 ################################# Main Project #################################
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
