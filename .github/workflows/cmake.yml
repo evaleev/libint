@@ -93,6 +93,7 @@ jobs:
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG -DWITH_MAX_AM="2;2" -DERI_MAX_AM_LIST=2,2 -DERI3_MAX_AM_LIST=3,2 -DENABLE_ERI=1 -DENABLE_ERI3=1 -DENABLE_ONEBODY=1 -DDISABLE_ONEBODY_PROPERTY_DERIVS=ON -WMULTIPOLE_MAX_ORDER=2
         cmake --build build
+        cmake --build build --target install
         #cd src/bin/test_eri && ./stdtests.pl && cd ../../..
 
     - name: Test installed Libint library
