@@ -25,6 +25,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/tests/"
         PATTERN "*.hpp"
         PATTERN "*.py"
         PATTERN "*.xyz"
+        PATTERN "*.cmake"
         PATTERN "CMakeLists.txt")
 
 file(INSTALL "${PROJECT_SOURCE_DIR}/src/bin/test_eri/eri.h"
@@ -67,5 +68,9 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/src/bin/libint/util_types.h"
 file(INSTALL "${PROJECT_SOURCE_DIR}/src/lib/libint/"
         DESTINATION "${EXPORT_STAGE_DIR}/include/libint2"
         FILES_MATCHING PATTERN "*.h")
+
+# TODO generate this list by the compiler
+file(GLOB generated_sources_list RELATIVE "${EXPORT_STAGE_DIR}" "${EXPORT_STAGE_DIR}/src/*.cc")
+file(WRITE ${EXPORT_STAGE_DIR}/srclist.cmake "set(LIBINT2_LIBRARY_CXX_SRC \"${generated_sources_list}\" )")
 
 

@@ -25,6 +25,7 @@ configure_file("features.in" "${EXPORT_STAGE_DIR}/features" @ONLY)
 
 add_custom_command(OUTPUT ${EXPORT_STAGE_DIR}/CMakeLists.txt
         DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/populate.cmake"
+                libint-library-generate
         COMMAND ${CMAKE_COMMAND}
         "-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
         "-DPROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}"

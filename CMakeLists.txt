@@ -289,8 +289,8 @@ booleanize01(LIBINT_GENERATE_FMA)
 booleanize01(LIBINT_ENABLE_GENERIC_CODE)
 
 ################################# Main Project #################################
-set(EXPORT_STAGE_DIR ${CMAKE_BINARY_DIR}/libint-${LIBINT_EXT_VERSION})
-set(STAGED_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/library-install-stage")
+set(EXPORT_STAGE_DIR ${PROJECT_BINARY_DIR}/libint-${LIBINT_EXT_VERSION})
+set(STAGED_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/library-install-stage")
 
 if (BUILD_TESTING)
     enable_testing()
@@ -301,7 +301,7 @@ if (ENABLE_FORTRAN)
     enable_language(Fortran)
 endif()
 
-configure_file(cmake/int_computed.cmake.in cmake/int_computed.cmake @ONLY)
+configure_file(cmake/modules/int_computed.cmake.in cmake/modules/int_computed.cmake @ONLY)
 set(_EXPORT_MODE 0)
 configure_file(include/libint2/config.h.cmake.in include/libint2/config.h @ONLY)
 set(_EXPORT_MODE 1)

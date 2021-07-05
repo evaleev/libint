@@ -160,9 +160,10 @@ endif()
 
 configure_file(include/libint2/config2.h.cmake.in include/libint2/config2.h @ONLY)
 
-file(GLOB sources_list "${CMAKE_SOURCE_DIR}/src/*.cc")
+include(srclist.cmake)
+message(STATUS "LIBINT2_LIBRARY_CXX_SRC=${LIBINT2_LIBRARY_CXX_SRC}")
 
-add_library(int-obj OBJECT ${sources_list})
+add_library(int-obj OBJECT "${LIBINT2_LIBRARY_CXX_SRC}")
 
 target_compile_definitions(int-obj PRIVATE -D__COMPILING_LIBINT2=1)
 target_compile_features(int-obj PRIVATE "cxx_std_11")
