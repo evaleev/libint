@@ -36,7 +36,7 @@ macro(runtest)
                 RESULT_VARIABLE
                 CAT_RESULT
                 )
-        message(FATAL_ERROR "Error running ${CHECK_CMD} with args " ${CHECK_ARGS} ${OUTPUT_FILE_NAME})
+        message(FATAL_ERROR "Error running ${CHECK_CMD} with args " ${CHECK_ARGS} " " ${OUTPUT_FILE_NAME})
     endif(CHECK_RESULT)
 
 endmacro(runtest)

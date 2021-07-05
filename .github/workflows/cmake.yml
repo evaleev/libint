@@ -32,6 +32,14 @@ jobs:
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
         -DENABLE_FORTRAN=OFF
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
+        -DWITH_MAX_AM=2;2
+        -DERI_MAX_AM_LIST=2,2
+        -DERI3_MAX_AM_LIST=3,2
+        -DENABLE_ERI=1
+        -DENABLE_ERI3=1
+        -DENABLE_ONEBODY=1
+        -DDISABLE_ONEBODY_PROPERTY_DERIVS=ON
+        -DMULTIPOLE_MAX_ORDER=2
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
@@ -84,15 +92,25 @@ jobs:
         restore-keys: |
           ${{ matrix.config.name }}-ccache-
 
-    - name: Generate Libint library
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-      # Use a bash shell so we can use the same syntax for environment variable
-      # access regardless of the host operating system
+    - name: Generate+build Libint library (ExternalProject)
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type == 'Debug'}}
       shell: bash
       working-directory: ${{github.workspace}}
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG -DWITH_MAX_AM="2;2" -DERI_MAX_AM_LIST=2,2 -DERI3_MAX_AM_LIST=3,2 -DENABLE_ERI=1 -DENABLE_ERI3=1 -DENABLE_ONEBODY=1 -DDISABLE_ONEBODY_PROPERTY_DERIVS=ON -WMULTIPOLE_MAX_ORDER=2
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
         cmake --build build
+        cmake --build build --target install
+        #cd src/bin/test_eri && ./stdtests.pl && cd ../../..
+
+    - name: Generate+build Libint library (FetchContent)
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type != 'Debug'}}
+      shell: bash
+      working-directory: ${{github.workspace}}
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG
+        cmake --build build --target libint-library-export
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG
+        cmake --build build --target check-libint2
         cmake --build build --target install
         #cd src/bin/test_eri && ./stdtests.pl && cd ../../..
 

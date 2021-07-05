@@ -66,7 +66,7 @@ if (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
         )
         FetchContent_MakeAvailable(libint-library)
     else()
-        message(WARNING "LIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON but library has not been exported yet; build target libint-export first, then rerun cmake")
+        message(WARNING "LIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON but library has not been exported yet; build target libint-library-export first, then rerun cmake")
     endif()
 
 else(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
