@@ -31,7 +31,7 @@ jobs:
         -DBUILD_SHARED_LIBS=OFF
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
         -DENABLE_FORTRAN=OFF
-        -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
+        -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
         -DWITH_MAX_AM=2;2
         -DERI_MAX_AM_LIST=2,2
         -DERI3_MAX_AM_LIST=3,2
@@ -59,6 +59,7 @@ jobs:
       run: |
         cmake -E make_directory ${{github.workspace}}/build
         cmake -E make_directory ${{github.workspace}}/test_installed_library
+        cmake -E make_directory ${{github.workspace}}/installed
 
     - name: Install prerequisite MacOS packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-latest' }}
@@ -127,6 +128,6 @@ jobs:
         add_executable(hf++ EXCLUDE_FROM_ALL ${{github.workspace}}/tests/hartree-fock/hartree-fock++.cc)
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
-        cmake . -DCMAKE_PREFIX_PATH=${{github.workspace}}/install
+        cmake . -DCMAKE_PREFIX_PATH=${{github.workspace}}/installed
         cmake --build . --target hf++
         ./hf++ ${{github.workspace}}/tests/hartree-fock/h2o_rotated.xyz | python ${{github.workspace}}/tests/hartree-fock/hartree-fock++-validate.py ${{github.workspace}}/build/libint-2*/features
