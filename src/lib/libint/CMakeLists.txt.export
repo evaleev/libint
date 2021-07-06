@@ -77,17 +77,6 @@ if (NOT LIBINT2_REALTYPE)
     set(LIBINT2_REALTYPE double)
 endif()
 
-## C++11 required for now. enforced in targets
-#set(LIBINT_HAS_CXX11 1)
-#set(LIBINT_USE_TYPE_TRAITS 1)
-#set(LIBINT_USE_MEMORY 1)
-#set(LIBINT_USE_ARRAY 1)
-#set(LIBINT_HAS_STD_TYPE_TRAITS 1)
-#set(LIBINT_HAS_STD_SHARED_PTR 1)
-#set(LIBINT_HAS_STD_MAKE_SHARED 1)
-#set(LIBINT_HAS_STD_ARRAY 1)
-#set(LIBINT_ARRAY_HAS_FILL 1)
-
 # req'd for now (no FindGMP.cmake, though one at Elemental project)
 find_package(MPFR)
 if (TARGET MPFR::MPFRXX)
