@@ -89,7 +89,7 @@ endif()
 #set(LIBINT_ARRAY_HAS_FILL 1)
 
 # req'd for now (no FindGMP.cmake, though one at Elemental project)
-find_package(MPFR REQUIRED)
+find_package(MPFR)
 if (TARGET MPFR::MPFRXX)
     set(LIBINT_HAS_MPFR 1)
 endif()
@@ -171,8 +171,10 @@ target_compile_features(int-obj PRIVATE "cxx_std_11")
 target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
                                            ${PROJECT_SOURCE_DIR}/src/
                                            ${PROJECT_SOURCE_DIR}/include/
-                                           ${PROJECT_SOURCE_DIR}/include/libint2/
-                                           $<TARGET_PROPERTY:MPFR::GMPXX,INTERFACE_INCLUDE_DIRECTORIES>)
+                                           ${PROJECT_SOURCE_DIR}/include/libint2/)
+if (TARGET MPFR::MPFRXX)
+  target_link_libraries(int-obj PRIVATE MPFR::MPFRXX)
+endif(TARGET MPFR::MPFRXX)
 
 if (BUILD_SHARED OR BUILD_FPIC)
     set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
@@ -187,6 +189,9 @@ get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTA
 if (BUILD_SHARED)
     add_library           (int-shared SHARED  $<TARGET_OBJECTS:int-obj>)
     target_link_libraries (int-shared INTERFACE Eigen3::Eigen)
+    if (TARGET MPFR::MPFRXX)
+      target_link_libraries (int-shared INTERFACE MPFR::MPFRXX)
+    endif (TARGET MPFR::MPFRXX)
     set_target_properties (int-shared PROPERTIES SOVERSION ${LIBINT_MAJOR_SOVERSION}
                                                  MACOSX_RPATH ON
                                                  OUTPUT_NAME "int2"
@@ -201,6 +206,9 @@ endif()
 if (BUILD_STATIC)
     add_library           (int-static STATIC  $<TARGET_OBJECTS:int-obj>)
     target_link_libraries (int-static INTERFACE Eigen3::Eigen)
+    if (TARGET MPFR::MPFRXX)
+      target_link_libraries (int-static INTERFACE MPFR::MPFRXX)
+    endif (TARGET MPFR::MPFRXX)
     set_target_properties (int-static PROPERTIES OUTPUT_NAME "int2"
                                                  EXPORT_NAME "cxx")
     target_include_directories(int-static INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)

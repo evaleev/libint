@@ -8,7 +8,6 @@ target_include_directories(eritest-libint2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/e
                                            ${CMAKE_CURRENT_SOURCE_DIR}/../src
                                            ${CMAKE_CURRENT_SOURCE_DIR}/../include
                                            ${CMAKE_CURRENT_SOURCE_DIR}/../include/libint2)
-target_link_libraries(eritest-libint2 MPFR::MPFRXX)
 target_compile_definitions(eritest-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
 add_test(libint2/eritest/build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target eritest-libint2)
@@ -54,7 +53,6 @@ if (ENABLE_CXX11API)
                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../src
                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../include
                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../include/libint2)
-    target_link_libraries(unit_tests-libint2 MPFR::MPFRXX)
     target_compile_definitions(unit_tests-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
     add_test(libint2/unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests-libint2)
@@ -70,7 +68,6 @@ if (ENABLE_CXX11API)
                                                     ${CMAKE_CURRENT_SOURCE_DIR}/../src
                                                     ${CMAKE_CURRENT_SOURCE_DIR}/../include
                                                     ${CMAKE_CURRENT_SOURCE_DIR}/../include/libint2)
-    target_link_libraries(hf-libint2 MPFR::MPFRXX)
     target_compile_definitions(hf-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
     add_test(libint2/hf/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf-libint2)
@@ -99,7 +96,6 @@ if (ENABLE_CXX11API)
                                                       ${CMAKE_CURRENT_SOURCE_DIR}/../src
                                                       ${CMAKE_CURRENT_SOURCE_DIR}/../include
                                                       ${CMAKE_CURRENT_SOURCE_DIR}/../include/libint2)
-    target_link_libraries(hf++-libint2 MPFR::MPFRXX)
     target_compile_definitions(hf++-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
     add_test(libint2/hf++/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf++-libint2)

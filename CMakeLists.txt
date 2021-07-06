@@ -262,7 +262,7 @@ set(LIBINT_HAS_STD_ARRAY 1)
 set(LIBINT_ARRAY_HAS_FILL 1)
 
 # req'd for now (no FindGMP.cmake, though one at Elemental project)
-find_package(MPFR REQUIRED)
+find_package(MPFR)
 if (TARGET MPFR::MPFRXX)
     set(LIBINT_HAS_MPFR 1)
 endif()
