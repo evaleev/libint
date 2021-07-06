@@ -35,6 +35,11 @@
    mpf_init2(expx, prec);
    mpfr_get_f(expx, expx_r, MPFR_RNDN);
    mpf_class result(expx, prec);
+
+   mpfr_clear(x_r);
+   mpfr_clear(expx_r);
+   mpf_clear(expx);
+
    return result;
  }
  /// implement pow for mpf_class using MPFR ... I do not claim to know what issues the rounding presents here
@@ -49,6 +54,7 @@
    mpf_class result(x_to_a, prec);
    if (a < 0)
      result = 1.0 / result;
+   mpf_clear(x_to_a);
    return result;
  }
 #ifndef _MSC_VER
@@ -70,6 +76,11 @@
    mpf_init2(erfx, prec);
    mpfr_get_f(erfx, erfx_r, MPFR_RNDN);
    mpf_class result(erfx, prec);
+
+   mpfr_clear(x_r);
+   mpfr_clear(erfx_r);
+   mpf_clear(erfx);
+
    return result;
  }
  /// implement acos for mpf_class using MPFR ... I do not claim to know what issues the rounding presents here
@@ -85,6 +96,11 @@
    mpf_init2(acosx, prec);
    mpfr_get_f(acosx, acosx_r, MPFR_RNDN);
    mpf_class result(acosx, prec);
+
+   mpfr_clear(x_r);
+   mpfr_clear(acosx_r);
+   mpf_clear(acosx);
+
    return result;
  }
  /// implement log for mpf_class using MPFR ... I do not claim to know what issues the rounding presents here
@@ -100,6 +116,11 @@
    mpf_init2(logx, prec);
    mpfr_get_f(logx, logx_r, MPFR_RNDN);
    mpf_class result(logx, prec);
+
+   mpfr_clear(x_r);
+   mpfr_clear(logx_r);
+   mpf_clear(logx);
+
    return result;
  }
 #endif
