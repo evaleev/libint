@@ -299,9 +299,6 @@
 /* have stdint.h ? */
 #undef HAVE_STDINT_H
 
-/* have MPFR library ? */
-#undef LIBINT_HAS_MPFR
-
 /* have posix_memalign ? */
 #undef HAVE_POSIX_MEMALIGN
 

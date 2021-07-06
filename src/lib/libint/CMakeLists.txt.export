@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 3.8)
 cmake_policy(SET CMP0074 NEW)
-project(library
+project(Libint2
         LANGUAGES CXX)
 
 set(library_AUTHORS      "Edward F. Valeev")
 set(library_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
 set(library_URL          "https://github.com/evaleev/libint")
 set(library_LICENSE      "LGPL-3.0")
+
+set(NS Libint2)  # Namespace
+set(PN ${PROJECT_NAME}) # ProjectName
+set(pnv libint2) # projectnameversion
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
@@ -25,13 +29,16 @@ include(int_computed)
 #  <<<  General  >>>
 
 option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
-option_with_print(BUILD_SHARED "Build at least shared library" OFF)
-option_with_print(BUILD_STATIC "Build at least static library (see BUILD_FPIC)" ON)
-option_with_print(ENABLE_CXX11API "Build C++11 API in addition to basic library (requires Eigen)" ON)
+option_with_print(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3)" ON)
 option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
 option_with_print(BUILD_TESTING "Compile the testing infrastructure" ON)
+option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
+option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build in one shot static and shared library variants. Uses -fPIC." OFF)
+if (NOT LIBINT2_REALTYPE)
+    set(LIBINT2_REALTYPE double)
+endif()
 
-if(NOT ENABLE_CXX11API)
+if(NOT REQUIRE_CXX_API)
     message(FATAL_ERROR "The plain library withough C++11 API is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the plain library, raise an issue on GitHub and ping @loriab.")
 endif()
 
@@ -56,7 +63,6 @@ message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (read-onl
 
 option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
                   "-xHost" "-march=native" "/arch:AVX2")
-option_with_default(BUILD_FPIC "Compile lone static library with position independent code (all libraries are fpic when BUILD_SHARED=ON)" OFF)
 option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
 
 ######################## Process & Validate Options ###########################
@@ -78,10 +84,9 @@ if (NOT LIBINT2_REALTYPE)
 endif()
 
 # req'd for now (no FindGMP.cmake, though one at Elemental project)
-find_package(MPFR)
-if (TARGET MPFR::MPFRXX)
-    set(LIBINT_HAS_MPFR 1)
-endif()
+if (ENABLE_MPFR)
+  find_package(MPFR REQUIRED)
+endif(ENABLE_MPFR)
 
 find_package(Boost 1.57)
 if (TARGET Boost::boost)  # the header-only target. when CMake min reaches v3.15, can switch out for Boost::headers
@@ -104,9 +109,46 @@ else()
 
 endif()
 
-find_package(Eigen3 REQUIRED)
+# look for Eigen
+# prefer CMake-configured-and-installed instance
+# re:NO_CMAKE_PACKAGE_REGISTRY: eigen3 registers its *build* tree with the user package registry ...
+#                               to avoid issues with wiped build directory look for installed eigen
+find_package(Eigen3 NO_MODULE QUIET NO_CMAKE_PACKAGE_REGISTRY)
 if (TARGET Eigen3::Eigen)
-    set(LIBINT_HAS_EIGEN 1)
+  add_library(libint-Eigen3 INTERFACE)
+  foreach(prop INTERFACE_INCLUDE_DIRECTORIES INTERFACE_COMPILE_DEFINITIONS INTERFACE_COMPILE_OPTIONS INTERFACE_LINK_LIBRARIES INTERFACE_POSITION_INDEPENDENT_CODE)
+    get_property(EIGEN3_${prop} TARGET Eigen3::Eigen PROPERTY ${prop})
+    set_property(TARGET libint-Eigen3 PROPERTY
+        ${prop} ${EIGEN3_${prop}})
+  endforeach()
+else (TARGET Eigen3::Eigen)
+  # otherwise use FindEigen3.cmake module possibly installed somewhere in the path
+  # but make sure EIGEN3_INCLUDE_DIR exists!
+  find_package(Eigen3)
+  if (EIGEN3_FOUND)
+    if (NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
+      message(WARNING "Eigen3 is \"found\", but the reported EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR} does not exist; likely corrupt Eigen3 build registered in user or system package registry; specify EIGEN3_INCLUDE_DIR manually or (better) configure (with CMake) and install Eigen3 package")
+    else(NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
+      add_library(libint-Eigen3 INTERFACE)
+      set_property(TARGET libint-Eigen3 PROPERTY
+          INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
+    endif(NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
+  endif (EIGEN3_FOUND)
+endif (TARGET Eigen3::Eigen)
+if (TARGET libint-Eigen3)
+  get_property(EIGEN3_INCLUDE_DIR TARGET libint-Eigen3 PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+  message(STATUS "Found Eigen3: EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
+  install(TARGETS libint-Eigen3 EXPORT "${pnv}-targets-static" COMPONENT Eigen3)
+endif(TARGET libint-Eigen3)
+
+if (TARGET libint-Eigen3)
+  set(LIBINT_HAS_EIGEN 1)
+  set(LIBINT_HAS_CXX_API 1)
+else(TARGET libint-Eigen3)
+  set(LIBINT_HAS_CXX_API 0)
+endif(TARGET libint-Eigen3)
+if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
+  message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DREQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
 endif()
 
 # Python is optional, unless ...
@@ -120,9 +162,6 @@ endif(ENABLE_FORTRAN)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-set(NS Libint2)
-set(PN ${PROJECT_NAME})
-
 # Set install paths ====================================================================================================
 
 set(LIBINT2_INSTALL_BINDIR "bin"
@@ -135,7 +174,7 @@ set(LIBINT2_INSTALL_DATADIR "share/libint/${LIBINT_VERSION}"
         CACHE PATH "LIBINT2 DATA install directory")
 set(LIBINT2_INSTALL_DOCDIR "share/libint/${LIBINT_VERSION}/doc"
         CACHE PATH "LIBINT2 DOC install directory")
-set(LIBINT2_INSTALL_CMAKEDIR "lib/cmake/libint2"
+set(LIBINT2_INSTALL_CMAKEDIR "lib/cmake/${pnv}"
         CACHE PATH "LIBINT2 CMAKE install directory")
 
 # <<<  Build  >>>
@@ -161,12 +200,12 @@ target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
                                            ${PROJECT_SOURCE_DIR}/src/
                                            ${PROJECT_SOURCE_DIR}/include/
                                            ${PROJECT_SOURCE_DIR}/include/libint2/)
-if (TARGET MPFR::MPFRXX)
-  target_link_libraries(int-obj PRIVATE MPFR::MPFRXX)
-endif(TARGET MPFR::MPFRXX)
 
-if (BUILD_SHARED OR BUILD_FPIC)
-    set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
+  set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+endif()
+if (NOT BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
+  set(BUILD_STATIC_LIBS 1)
 endif()
 
 if (MSVC)
@@ -175,12 +214,9 @@ if (MSVC)
 endif()
 
 get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_DATADIR}" ABSOLUTE)
-if (BUILD_SHARED)
+if (BUILD_SHARED_LIBS)
     add_library           (int-shared SHARED  $<TARGET_OBJECTS:int-obj>)
-    target_link_libraries (int-shared INTERFACE Eigen3::Eigen)
-    if (TARGET MPFR::MPFRXX)
-      target_link_libraries (int-shared INTERFACE MPFR::MPFRXX)
-    endif (TARGET MPFR::MPFRXX)
+    target_link_libraries (int-shared INTERFACE libint-Eigen3)
     set_target_properties (int-shared PROPERTIES SOVERSION ${LIBINT_MAJOR_SOVERSION}
                                                  MACOSX_RPATH ON
                                                  OUTPUT_NAME "int2"
@@ -192,12 +228,9 @@ if (BUILD_SHARED)
           $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
 endif()
 
-if (BUILD_STATIC)
+if (BUILD_STATIC_LIBS)
     add_library           (int-static STATIC  $<TARGET_OBJECTS:int-obj>)
-    target_link_libraries (int-static INTERFACE Eigen3::Eigen)
-    if (TARGET MPFR::MPFRXX)
-      target_link_libraries (int-static INTERFACE MPFR::MPFRXX)
-    endif (TARGET MPFR::MPFRXX)
+    target_link_libraries (int-static INTERFACE libint-Eigen3)
     set_target_properties (int-static PROPERTIES OUTPUT_NAME "int2"
                                                  EXPORT_NAME "cxx")
     target_include_directories(int-static INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
@@ -207,9 +240,9 @@ if (BUILD_STATIC)
           $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
 endif()
 
-if (BUILD_SHARED)
+if (BUILD_SHARED_LIBS)
     add_library (int-library ALIAS int-shared)
-elseif (BUILD_STATIC)
+elseif (BUILD_STATIC_LIBS)
     add_library (int-library ALIAS int-static)
 endif()
 
@@ -229,15 +262,15 @@ install(FILES ${PROJECT_SOURCE_DIR}/src/libint2_iface.h
 
 #target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR})
 
-if (BUILD_SHARED)
+if (BUILD_SHARED_LIBS)
     install (TARGETS int-shared
-             EXPORT "${NS}Targets-shared"
+             EXPORT "${pnv}-targets-shared"
              LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 
-if (BUILD_STATIC)
+if (BUILD_STATIC_LIBS)
     install (TARGETS int-static
-             EXPORT "${NS}Targets-static"
+             EXPORT "${pnv}-targets-static"
              ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 
@@ -249,29 +282,28 @@ endif()
 # <<<  Export Config  >>>
 
 # GNUInstallDirs "DATADIR" wrong here; CMake search path wants "share".
-set(CMAKECONFIG_INSTALL_DIR "share/cmake/${NS}")
-configure_package_config_file(cmake/${NS}Config.cmake.in
-                              "${CMAKE_CURRENT_BINARY_DIR}/${NS}Config.cmake"
-                              INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR})
-write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${NS}ConfigVersion.cmake
-                                 VERSION ${${NS}_VERSION}
+configure_package_config_file(cmake/${pnv}-config.cmake.in
+                              "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake"
+                              INSTALL_DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
+                                 VERSION ${LIBINT_VERSION}
                                  COMPATIBILITY SameMajorVersion)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${NS}Config.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/${NS}ConfigVersion.cmake
-        DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
+        DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
 
 configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
 
-if (BUILD_SHARED)
-    install(EXPORT "${NS}Targets-shared"
+if (BUILD_SHARED_LIBS)
+    install(EXPORT "${pnv}-targets-shared"
                    NAMESPACE "${NS}::"
-                   DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+                   DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
 endif()
 
-if (BUILD_STATIC)
-    install(EXPORT "${NS}Targets-static"
+if (BUILD_STATIC_LIBS)
+    install(EXPORT "${pnv}-targets-static"
                    NAMESPACE "${NS}::"
-                   DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+                   DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
 endif()

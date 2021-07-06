@@ -6,7 +6,7 @@
 
 # _candidate variables not needed for config.h but are used to figure
 #   out the energy/gradient/hessian ERI AM levels at the CMake level
-#   so that Libint2Config components may be defined and client codes can
+#   so that libint2-config components may be defined and client codes can
 #   require the detected library include gradient integrals up to AM=5 with
 #   `find_package(Libint2 COMPONENTS g5)`
 

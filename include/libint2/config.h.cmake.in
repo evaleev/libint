@@ -349,9 +349,6 @@
 /* have stdint.h ? */
 #cmakedefine HAVE_STDINT_H @HAVE_STDINT_H@
 
-/* have MPFR library ? */
-#cmakedefine LIBINT_HAS_MPFR @LIBINT_HAS_MPFR@
-
 /* have posix_memalign ? */
 #cmakedefine HAVE_POSIX_MEMALIGN @HAVE_POSIX_MEMALIGN@
 

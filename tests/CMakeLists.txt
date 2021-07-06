@@ -9,6 +9,10 @@ target_include_directories(eritest-libint2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/e
                                            ${CMAKE_CURRENT_SOURCE_DIR}/../include
                                            ${CMAKE_CURRENT_SOURCE_DIR}/../include/libint2)
 target_compile_definitions(eritest-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
+if (TARGET MPFR::MPFRXX)
+    target_compile_definitions(eritest-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
+    target_link_libraries(eritest-libint2 PRIVATE MPFR::MPFRXX)
+endif(TARGET MPFR::MPFRXX)
 
 add_test(libint2/eritest/build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target eritest-libint2)
 set_tests_properties(libint2/eritest/build PROPERTIES FIXTURES_SETUP LIBINT2_ERITEST_EXEC)
@@ -54,6 +58,10 @@ if (ENABLE_CXX11API)
                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../include
                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../include/libint2)
     target_compile_definitions(unit_tests-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
+    if (TARGET MPFR::MPFRXX)
+        target_compile_definitions(unit_tests-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
+        target_link_libraries(unit_tests-libint2 PRIVATE MPFR::MPFRXX)
+    endif(TARGET MPFR::MPFRXX)
 
     add_test(libint2/unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests-libint2)
     set_tests_properties(libint2/unit/build PROPERTIES FIXTURES_SETUP LIBINT2_UNIT_TESTS_EXEC)

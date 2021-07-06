@@ -51,9 +51,6 @@
 /* define if system-wide Boost.Preprocessor is available */
 #cmakedefine LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS @LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@
 
-/* have MPFR library ? */
-#cmakedefine LIBINT_HAS_MPFR @LIBINT_HAS_MPFR@
-
 /* have posix_memalign ? */
 #cmakedefine HAVE_POSIX_MEMALIGN @HAVE_POSIX_MEMALIGN@
 

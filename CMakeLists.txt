@@ -65,14 +65,12 @@ include(options)
 #  <<<  General  >>>
 
 option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
-option_with_print(BUILD_SHARED "Build at least shared library" OFF)
-option_with_print(BUILD_STATIC "Build at least static library (see )" ON)
-option_with_print(ENABLE_CXX11API "Build C++11 API in addition to basic library (requires Eigen, Boost is optional but strongly recommended)" ON)
-option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
-option_with_print(BUILD_TESTING "Compile the testing infrastructure" ON)
+option_with_default(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3; Boost is optional but strongly recommended)" ON)
+option_with_default(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
+option_with_default(BUILD_TESTING "Compile the testing infrastructure" ON)
 option_with_default(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT "[EXPERT] Build generated library as a subproject; if FALSE will configure and build separately" OFF)
 
-if(NOT ENABLE_CXX11API)
+if(NOT REQUIRE_CXX_API)
     message(FATAL_ERROR "The plain library without C++11 API is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the plain library, raise an issue on GitHub and ping @loriab.")
 endif()
 
@@ -261,20 +259,9 @@ set(LIBINT_HAS_STD_MAKE_SHARED 1)
 set(LIBINT_HAS_STD_ARRAY 1)
 set(LIBINT_ARRAY_HAS_FILL 1)
 
-# req'd for now (no FindGMP.cmake, though one at Elemental project)
-find_package(MPFR)
-if (TARGET MPFR::MPFRXX)
-    set(LIBINT_HAS_MPFR 1)
-endif()
-
 find_package(Boost 1.57 REQUIRED)
 if (TARGET Boost::boost)  # the header-only target
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
-endif()
-
-find_package(Eigen3 REQUIRED)
-if (TARGET Eigen3::Eigen)
-    set(LIBINT_HAS_EIGEN 1)
 endif()
 
 unset(_temp_h CACHE)

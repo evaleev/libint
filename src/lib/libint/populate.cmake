@@ -48,7 +48,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/cmake/modules/autocmake_safeguards.cmake"
         "${PROJECT_BINARY_DIR}/cmake/modules/int_computed.cmake"
         DESTINATION "${EXPORT_STAGE_DIR}/cmake/modules")
 
-file(INSTALL "${PROJECT_SOURCE_DIR}/cmake/Libint2Config.cmake.in"
+file(INSTALL "${PROJECT_SOURCE_DIR}/cmake/libint2-config.cmake.in"
         "${PROJECT_SOURCE_DIR}/cmake/libint2.pc.cmake.in"
         DESTINATION "${EXPORT_STAGE_DIR}/cmake")
 

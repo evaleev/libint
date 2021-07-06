@@ -1,4 +1,4 @@
-# Libint2Config.cmake
+# libint2-config.cmake
 # -------------------
 #
 # Libint2 cmake module.
@@ -87,7 +87,9 @@
 
 @PACKAGE_INIT@
 
-set(PN Libint2)
+set(PN Libint2)  # ProjectName
+set(pnv libint2)  # projectnameversion
+set(NS Libint2)  # NameSpace
 set (_valid_components
     static
     shared
@@ -181,10 +183,10 @@ set (_valid_components
 )
 
 # check library style component
-if(@BUILD_SHARED@)
+if(@BUILD_SHARED_LIBS@)
     set(${PN}_shared_FOUND 1)
 endif()
-if(@BUILD_STATIC@)
+if(@BUILD_STATIC_LIBS@)
     set(${PN}_static_FOUND 1)
 endif()
 list(FIND ${PN}_FIND_COMPONENTS "shared" _seek_shared)
@@ -279,22 +281,18 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 # Don't include targets if this file is being picked up by another
 # project which has already built this as a subproject
 #-----------------------------------------------------------------------------
-if(NOT TARGET ${PN}::cxx)
+if(NOT TARGET ${NS}::cxx)
     if(_seek_static GREATER -1)
-        include("${CMAKE_CURRENT_LIST_DIR}/${PN}Targets-static.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-static.cmake")
     elseif(_seek_shared GREATER -1)
-        include("${CMAKE_CURRENT_LIST_DIR}/${PN}Targets-shared.cmake")
-    elseif(@BUILD_SHARED@)
-        include("${CMAKE_CURRENT_LIST_DIR}/${PN}Targets-shared.cmake")
-    elseif(@BUILD_STATIC@)
-        include("${CMAKE_CURRENT_LIST_DIR}/${PN}Targets-static.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-shared.cmake")
+    elseif(@BUILD_SHARED_LIBS@)
+        include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-shared.cmake")
+    elseif(@BUILD_STATIC_LIBS@)
+        include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-static.cmake")
     endif()
 
     include(CMakeFindDependencyMacro)
-    if(NOT TARGET Eigen3::Eigen)
-        find_dependency(Eigen3)
-    endif()
-
     if (@LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)
         # Boost headers _not_ unpacked to within `include/libint2/`
         if (NOT TARGET Boost::boost)
@@ -302,14 +300,14 @@ if(NOT TARGET ${PN}::cxx)
         endif()
     endif()
 
-    get_property(_loc TARGET ${PN}::cxx PROPERTY LOCATION)
+    get_property(_loc TARGET ${NS}::cxx PROPERTY LOCATION)
     set(${PN}_LIBRARY ${_loc})
-    get_property(_ill TARGET ${PN}::cxx PROPERTY INTERFACE_LINK_LIBRARIES)
+    get_property(_ill TARGET ${NS}::cxx PROPERTY INTERFACE_LINK_LIBRARIES)
     set(${PN}_LIBRARIES ${_ill})
 
-    get_property(_id TARGET ${PN}::cxx PROPERTY INCLUDE_DIRECTORIES)
+    get_property(_id TARGET ${NS}::cxx PROPERTY INCLUDE_DIRECTORIES)
     set(${PN}_INCLUDE_DIR ${_id})
-    get_property(_iid TARGET ${PN}::cxx PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+    get_property(_iid TARGET ${NS}::cxx PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
     set(${PN}_INCLUDE_DIRS ${_iid})
 
     #message("Libint2::cxx")

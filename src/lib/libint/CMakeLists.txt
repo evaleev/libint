@@ -73,7 +73,7 @@ if (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
         )
         FetchContent_MakeAvailable(libint-library)
     else()
-        message(WARNING "LIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON but library has not been exported yet; build target libint-library-export first, this will make library build/test targets ('check', 'install') available")
+        message(WARNING "LIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON but library has not been exported yet; build target 'libint-library-export' first, this will make library build/test targets ('check', 'install') available")
     endif()
 
 else(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
