@@ -42,10 +42,16 @@ add_custom_command(OUTPUT "${EXPORT_STAGE_DIR}.tgz"
         WORKING_DIRECTORY "${EXPORT_STAGE_DIR}/.."
         DEPENDS libint-library-generate libint-library-populate
         COMMENT "Exporting Libint2 library")
-add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
+if (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
+    # rerun cmake if building as subproject to unpack and consume the library as subproject
+    add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz"
+            COMMAND ${CMAKE_COMMAND} -S "${CMAKE_SOURCE_DIR}" -B "${CMAKE_BINARY_DIR}")
+else (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
+    add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
+endif (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
 
 
-# <<<  Build Library  >>>
+    # <<<  Build Library  >>>
 
 # make sure CMAKE_C_COMPILER is defined
 include(CheckLanguage)
@@ -59,6 +65,7 @@ endif()
 if (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
 
     if (EXISTS "${EXPORT_STAGE_DIR}.tgz")
+        message("Unpacking ${EXPORT_STAGE_DIR}.tgz and setting up as a subproject")
         include(FetchContent)
         FetchContent_Declare(
             libint-library
@@ -66,7 +73,7 @@ if (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
         )
         FetchContent_MakeAvailable(libint-library)
     else()
-        message(WARNING "LIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON but library has not been exported yet; build target libint-library-export first, then rerun cmake")
+        message(WARNING "LIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON but library has not been exported yet; build target libint-library-export first, this will make library build/test targets ('check', 'install') available")
     endif()
 
 else(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)

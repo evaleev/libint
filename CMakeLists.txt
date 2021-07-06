@@ -41,7 +41,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 #   - pretty quick, runs in parallel
 #   - consumes all the enable/max/opt integral options and all orderings options except solid harmonic
 # * export
-#   - run `build_libint` to generate thousands of C++ source files (that upon
+#   - run `build_libint` to generate library source (C++) files (that upon
 #     compilation can become a Libint2 library) and combine them with other
 #     static source files in src/lib/libint/ and general static files (e.g.,
 #     include/ and docs/) into an independent tarball ready for distribution.
@@ -49,10 +49,14 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 #   - consumes no options
 #   - build target `export` to stop after this step and collect source tarball
 # * library
-#   - unpack the export tarball and build the library and install into stage/
-#   - duration depends on number of integrals requested, runs in parallel
-#   - consumes solid harmonic ordering and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR
-#   - the default target build includes this final library build
+#   - can be build as a subproject (FetchContent) or completely insulated (bare ExternalProject; default)
+#   - if building via bare ExternalProject:
+#     - unpack the export tarball and build the library and install into stage/
+#     - duration depends on number of integrals requested, runs in parallel
+#     - consumes solid harmonic ordering and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR
+#     - the default target build includes this final library build
+#   - if building via FetchContent:
+#     - must build libint-library-export target before library *build* targets appear
 
 ################################### Options ####################################
 include(int_versions)
