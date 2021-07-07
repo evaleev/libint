@@ -111,6 +111,7 @@ endif()
 
 # look for Eigen
 # prefer CMake-configured-and-installed instance
+# N.B. due to the variety of ways to get Eigen will set up our own target
 # re:NO_CMAKE_PACKAGE_REGISTRY: eigen3 registers its *build* tree with the user package registry ...
 #                               to avoid issues with wiped build directory look for installed eigen
 find_package(Eigen3 NO_MODULE QUIET NO_CMAKE_PACKAGE_REGISTRY)
@@ -217,6 +218,9 @@ get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTA
 if (BUILD_SHARED_LIBS)
     add_library           (int-shared SHARED  $<TARGET_OBJECTS:int-obj>)
     target_link_libraries (int-shared INTERFACE libint-Eigen3)
+    if (TARGET Boost::boost)
+      target_link_libraries (int-shared INTERFACE Boost::boost)
+    endif(TARGET Boost::boost)
     set_target_properties (int-shared PROPERTIES SOVERSION ${LIBINT_MAJOR_SOVERSION}
                                                  MACOSX_RPATH ON
                                                  OUTPUT_NAME "int2"
@@ -231,6 +235,9 @@ endif()
 if (BUILD_STATIC_LIBS)
     add_library           (int-static STATIC  $<TARGET_OBJECTS:int-obj>)
     target_link_libraries (int-static INTERFACE libint-Eigen3)
+    if (TARGET Boost::boost)
+      target_link_libraries (int-static INTERFACE Boost::boost)
+    endif(TARGET Boost::boost)
     set_target_properties (int-static PROPERTIES OUTPUT_NAME "int2"
                                                  EXPORT_NAME "cxx")
     target_include_directories(int-static INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)

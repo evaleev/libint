@@ -296,7 +296,7 @@ if(NOT TARGET ${NS}::cxx)
     if (@LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)
         # Boost headers _not_ unpacked to within `include/libint2/`
         if (NOT TARGET Boost::boost)
-            find_dependency(Boost 1.57)
+            find_dependency(Boost 1.57 REQUIRED)
         endif()
     endif()
 
