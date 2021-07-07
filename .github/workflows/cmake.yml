@@ -30,7 +30,7 @@ jobs:
         -DCMAKE_PREFIX_PATH=/usr/local/Cellar/eigen/3.3.9;/usr/local/opt/bison
         -DBUILD_SHARED_LIBS=OFF
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
-        -DENABLE_FORTRAN=OFF
+        -DENABLE_FORTRAN=ON
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
         -DWITH_MAX_AM=2;2
         -DERI_MAX_AM_LIST=2,2
