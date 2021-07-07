@@ -81,6 +81,37 @@ else(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
     include(ExternalProject)
     include(GNUInstallDirs)
 
+    list(APPEND library_CMAKE_ARGS
+            -G${CMAKE_GENERATOR}
+            -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+            -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
+            -DCMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}
+            -DCMAKE_INSTALL_DATAROOTDIR=${CMAKE_INSTALL_DATAROOTDIR}
+            -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+            -DREQUIRE_CXX_API=${REQUIRE_CXX_API}
+            -DENABLE_FORTRAN=${ENABLE_FORTRAN}
+            -DLIBINT2_SHGAUSS_ORDERING=${LIBINT2_SHGAUSS_ORDERING}
+            -DBUILD_TESTING=${BUILD_TESTING}
+            )
+    if (CMAKE_C_COMPILER)
+        list(APPEND library_CMAKE_ARGS
+                "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+                )
+    endif(CMAKE_C_COMPILER)
+    if (ENABLE_FORTRAN AND CMAKE_Fortran_COMPILER)
+        list(APPEND library_CMAKE_ARGS
+                "-DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}"
+                )
+    endif(ENABLE_FORTRAN AND CMAKE_Fortran_COMPILER)
+    if (CMAKE_PREFIX_PATH)
+        list(APPEND library_CMAKE_ARGS
+                "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+                )
+    endif(CMAKE_PREFIX_PATH)
+    message(STATUS "invoking ExternalProject_add to build+test Libint library with library_CMAKE_ARGS=${library_CMAKE_ARGS}")
+
     ExternalProject_Add(library
             DEPENDS libint-library-export
             BUILD_ALWAYS 1
@@ -88,19 +119,7 @@ else(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
             URL "${EXPORT_STAGE_DIR}.tgz"
             # DOWNLOAD_DIR <SOURCE_DIR>  # this is tidier but fails on Windows
             LOG_DOWNLOAD 1
-            CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
-            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}  # for a C API test
-            -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
-            -DCMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}
-            -DCMAKE_INSTALL_DATAROOTDIR=${CMAKE_INSTALL_DATAROOTDIR}
-            -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-            -DBOOST_ROOT=${BOOST_ROOT}
-            -DEigen3_ROOT=${Eigen3_ROOT}
-            -DMPFR_ROOT=${MPFR_ROOT}
-            -DLIBINT2_SHGAUSS_ORDERING=${LIBINT2_SHGAUSS_ORDERING}
-            -DBUILD_TESTING=${BUILD_TESTING}
+            CMAKE_ARGS "${library_CMAKE_ARGS}"
             CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}
             -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
             TEST_COMMAND ${CMAKE_CTEST_COMMAND} --extra-verbose --output-on-failure)
