@@ -17,7 +17,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/doc/progman/progman.tex"
 file(INSTALL "${PROJECT_SOURCE_DIR}/doc/progman/" DESTINATION "${EXPORT_STAGE_DIR}/doc"
         FILES_MATCHING PATTERN "*.cc")
 
-file(INSTALL "${PROJECT_SOURCE_DIR}/tests/"
+file(INSTALL "${PROJECT_SOURCE_DIR}/src/lib/libint/tests/"
         DESTINATION "${EXPORT_STAGE_DIR}/tests"
         FILES_MATCHING PATTERN "*.c"
         PATTERN "*.cc"

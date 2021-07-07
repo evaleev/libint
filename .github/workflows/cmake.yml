@@ -125,9 +125,9 @@ jobs:
         project(hf++)
         find_package(Libint2 2.7.0 REQUIRED)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
-        add_executable(hf++ EXCLUDE_FROM_ALL ${{github.workspace}}/tests/hartree-fock/hartree-fock++.cc)
+        add_executable(hf++ EXCLUDE_FROM_ALL ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++.cc)
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
         cmake . -DCMAKE_PREFIX_PATH=${{github.workspace}}/installed
         cmake --build . --target hf++
-        ./hf++ ${{github.workspace}}/tests/hartree-fock/h2o_rotated.xyz | python ${{github.workspace}}/tests/hartree-fock/hartree-fock++-validate.py ${{github.workspace}}/build/libint-2*/features
+        ./hf++ ${{github.workspace}}/src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ${{github.workspace}}/build/libint-2*/features

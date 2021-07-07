@@ -3,11 +3,8 @@ add_custom_target_subproject(libint2 check USES_TERMINAL COMMAND ${CMAKE_CTEST_C
 
 add_executable(eritest-libint2 EXCLUDE_FROM_ALL eri/test.cc)
 target_link_libraries(eritest-libint2 int-library)  # N.B. plain library
-target_include_directories(eritest-libint2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/eri
-                                           ${CMAKE_CURRENT_BINARY_DIR}/../include
-                                           ${CMAKE_CURRENT_SOURCE_DIR}/../src
-                                           ${CMAKE_CURRENT_SOURCE_DIR}/../include
-                                           ${CMAKE_CURRENT_SOURCE_DIR}/../include/libint2)
+target_include_directories(eritest-libint2 PRIVATE eri
+        ${CMAKE_CURRENT_BINARY_DIR}/../include)
 target_compile_definitions(eritest-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 if (TARGET MPFR::MPFRXX)
     target_compile_definitions(eritest-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
@@ -53,10 +50,7 @@ if (LIBINT_HAS_CXX_API)
     add_executable(unit_tests-libint2 EXCLUDE_FROM_ALL
         ${unit_tests-src})
     target_link_libraries(unit_tests-libint2 int-cxx-library) # N.B. cxx library
-    target_include_directories(unit_tests-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include
-                                                  ${CMAKE_CURRENT_SOURCE_DIR}/../src
-                                                  ${CMAKE_CURRENT_SOURCE_DIR}/../include
-                                                  ${CMAKE_CURRENT_SOURCE_DIR}/../include/libint2)
+    target_include_directories(unit_tests-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
     target_compile_definitions(unit_tests-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
     if (TARGET MPFR::MPFRXX)
         target_compile_definitions(unit_tests-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
@@ -72,10 +66,7 @@ if (LIBINT_HAS_CXX_API)
 
     add_executable(hf-libint2 EXCLUDE_FROM_ALL hartree-fock/hartree-fock.cc)
     target_link_libraries(hf-libint2 int-cxx-library) # N.B. cxx library
-    target_include_directories(hf-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include
-                                                    ${CMAKE_CURRENT_SOURCE_DIR}/../src
-                                                    ${CMAKE_CURRENT_SOURCE_DIR}/../include
-                                                    ${CMAKE_CURRENT_SOURCE_DIR}/../include/libint2)
+    target_include_directories(hf-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
     target_compile_definitions(hf-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
     add_test(libint2/hf/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf-libint2)
@@ -92,7 +83,7 @@ if (LIBINT_HAS_CXX_API)
                  -P ${PROJECT_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
     else()
         add_test(NAME libint2/hf/run
-                COMMAND $<TARGET_FILE:hartree-fock> ${PROJECT_SOURCE_DIR}/tests/hartree-fock/h2o.xyz)
+                COMMAND $<TARGET_FILE:hartree-fock> hartree-fock/h2o.xyz)
     endif()
     set_tests_properties(libint2/hf/run
             PROPERTIES FIXTURES_REQUIRED LIBINT2_HFTEST_EXEC)
@@ -100,10 +91,7 @@ if (LIBINT_HAS_CXX_API)
     find_package(Threads)  # for some reason clang does not link in threading support even though we are using C++ threads
     add_executable(hf++-libint2 EXCLUDE_FROM_ALL hartree-fock/hartree-fock++.cc)
     target_link_libraries(hf++-libint2 int-cxx-library ${CMAKE_THREAD_LIBS_INIT})  # N.B. cxx library
-    target_include_directories(hf++-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include
-                                                      ${CMAKE_CURRENT_SOURCE_DIR}/../src
-                                                      ${CMAKE_CURRENT_SOURCE_DIR}/../include
-                                                      ${CMAKE_CURRENT_SOURCE_DIR}/../include/libint2)
+    target_include_directories(hf++-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
     target_compile_definitions(hf++-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
     add_test(libint2/hf++/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf++-libint2)
@@ -120,7 +108,7 @@ if (LIBINT_HAS_CXX_API)
                 -P ${PROJECT_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
     else()
         add_test(NAME libint2/hf++/run
-                COMMAND $<TARGET_FILE:hf++-libint2> ${PROJECT_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz)
+                COMMAND $<TARGET_FILE:hf++-libint2> hartree-fock/h2o_rotated.xyz)
     endif()
     set_tests_properties(libint2/hf++/run
             PROPERTIES FIXTURES_REQUIRED LIBINT2_HFXXTEST_EXEC)
