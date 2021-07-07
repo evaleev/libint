@@ -20,7 +20,7 @@
 
 #define CATCH_CONFIG_RUNNER
 
-#include "../tests/unit/catch.hpp"
+#include "../unit/catch.hpp"
 #include <libint2.hpp>
 
 #ifdef FC_DUMMY_MAIN

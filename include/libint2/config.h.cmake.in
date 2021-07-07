@@ -26,38 +26,6 @@
 #ifndef _libint2_include_libint2config_h_
 #define _libint2_include_libint2config_h_
 
-// 1 -- define
-//#define DUMMY
-//#define LIBINT_MICRO_VERSION
-//#define LIBINT_MAJOR_VERSION
-
-// 2 -- define+arg
-//#define DUMMY @DUMMY@
-//#define LIBINT_MICRO_VERSION @LIBINT_MICRO_VERSION@
-//#define LIBINT_MAJOR_VERSION @LIBINT_MAJOR_VERSION@
-
-
-// 3 -- cm
-//#cmakedefine DUMMY
-//#cmakedefine LIBINT_MICRO_VERSION
-//#cmakedefine LIBINT_MAJOR_VERSION
-
-// 4 -- cm+arg
-//#cmakedefine DUMMY @DUMMY@
-//#cmakedefine LIBINT_MICRO_VERSION @LIBINT_MICRO_VERSION@
-//#cmakedefine LIBINT_MAJOR_VERSION @LIBINT_MAJOR_VERSION@
-
-
-// 5 -- cm01
-//#cmakedefine01 DUMMY
-//#cmakedefine01 LIBINT_MICRO_VERSION
-//#cmakedefine01 LIBINT_MAJOR_VERSION
-
-// 6 -- cm01+arg
-//#cmakedefine01 DUMMY @DUMMY@
-//#cmakedefine01 LIBINT_MICRO_VERSION @LIBINT_MICRO_VERSION@
-//#cmakedefine01 LIBINT_MAJOR_VERSION @LIBINT_MAJOR_VERSION@
-
 /* The host architecture. */
 #cmakedefine LIBINT_HOST_ARCH "@LIBINT_HOST_ARCH@"
 

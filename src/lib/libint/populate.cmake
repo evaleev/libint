@@ -23,6 +23,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/tests/"
         PATTERN "*.cc"
         PATTERN "*.h"
         PATTERN "*.hpp"
+        PATTERN "*.F90"
         PATTERN "*.py"
         PATTERN "*.xyz"
         PATTERN "*.cmake"
@@ -36,6 +37,11 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/src/bin/test_eri/eri.h"
 file(INSTALL "${PROJECT_SOURCE_DIR}/lib/basis/"
         DESTINATION "${EXPORT_STAGE_DIR}/lib/basis"
         FILES_MATCHING PATTERN "*.g94")
+
+# Fortran
+file(INSTALL "${PROJECT_SOURCE_DIR}/src/lib/libint/fortran/"
+        DESTINATION "${EXPORT_STAGE_DIR}/fortran"
+        FILES_MATCHING PATTERN "*.F90" PATTERN "*.py")
 
 file(INSTALL "${PROJECT_SOURCE_DIR}/external/boost.tar.gz"
         DESTINATION "${EXPORT_STAGE_DIR}/external")

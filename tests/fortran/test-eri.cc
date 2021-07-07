@@ -1,13 +1,12 @@
-#include "../tests/unit/catch.hpp"
-#include "../tests/eri/prep_libint2.h"
-#include <libint2/config.h>
+#include "../eri/prep_libint2.h"
+#include "../unit/catch.hpp"
+#include <iomanip>
 #include <libint2.h>
+#include <libint2/boys.h>
+#include <libint2/config.h>
 #include <libint2/util/generated/libint2_params.h>
 #include <libint2/util/generated/libint2_types.h>
 #include <libint2/util/memory.h>
-#include <libint2/boys.h>
-#include <iomanip>
-
 
 #ifdef __cplusplus
 extern "C" /* prevent C++ name mangling */

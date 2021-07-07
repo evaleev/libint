@@ -30,7 +30,7 @@ include(int_computed)
 
 option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
 option_with_print(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3)" ON)
-option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
+option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires C and Fortran)" OFF)
 option_with_print(BUILD_TESTING "Compile the testing infrastructure" ON)
 option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build in one shot static and shared library variants. Uses -fPIC." OFF)
@@ -38,12 +38,14 @@ if (NOT LIBINT2_REALTYPE)
     set(LIBINT2_REALTYPE double)
 endif()
 
-if(NOT REQUIRE_CXX_API)
-    message(FATAL_ERROR "The plain library withough C++11 API is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the plain library, raise an issue on GitHub and ping @loriab.")
-endif()
-
 if(ENABLE_FORTRAN)
-    message(FATAL_ERROR "The Fortran interface is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the Fortran interface, raise an issue on GitHub and ping @loriab.")
+  include(CheckLanguage)
+  check_language(Fortran)
+  if (CMAKE_Fortran_COMPILER)
+    enable_language(Fortran)
+  else(CMAKE_Fortran_COMPILER)
+    message(FATAL_ERROR "Given ENABLE_FORTRAN=ON but could not find Fortran compiler, provide via CMAKE_Fortran_COMPILER")
+  endif(CMAKE_Fortran_COMPILER)
 endif()
 
 #  <<<  Ordering Conventions  >>>
@@ -61,8 +63,6 @@ message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (read-onl
 
 #  <<<  Miscellaneous  >>>
 
-option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
-                  "-xHost" "-march=native" "/arch:AVX2")
 option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
 
 ######################## Process & Validate Options ###########################
@@ -186,7 +186,7 @@ message(STATUS "LIBINT2_LIBRARY_CXX_SRC=${LIBINT2_LIBRARY_CXX_SRC}")
 add_library(int-obj OBJECT "${LIBINT2_LIBRARY_CXX_SRC}")
 
 target_compile_definitions(int-obj PRIVATE -D__COMPILING_LIBINT2=1)
-target_compile_features(int-obj PUBLIC "cxx_std_11") # N.B. PUBLIC to make int-{static/shared} require C++11
+target_compile_features(int-obj PUBLIC "cxx_std_11") # N.B. PUBLIC to make int-{static/shared} require C++11?
 
 target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
                                            ${PROJECT_SOURCE_DIR}/src/
@@ -219,6 +219,7 @@ if (BUILD_SHARED_LIBS)
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
       $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}>)
+    target_compile_features(int-shared INTERFACE "cxx_std_11")
 
     # C++ library
     if (REQUIRE_CXX_API)
@@ -245,6 +246,7 @@ if (BUILD_STATIC_LIBS)
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
       $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}>)
+    target_compile_features(int-static INTERFACE "cxx_std_11")
 
     # C++ library
     if (REQUIRE_CXX_API)
@@ -290,6 +292,73 @@ elseif (BUILD_STATIC_LIBS)
       add_library (Libint2::cxx ALIAS int-cxx-static)
     endif(TARGET int-cxx-static)
 endif()
+
+# Fortran bindings =====================================================================================================
+
+if (ENABLE_FORTRAN)
+    # specify the location of modules
+    set(CMAKE_Fortran_MODULE_DIRECTORY "${PROJECT_BINARY_DIR}/fortran/modules/")
+
+    # preprocess libint2.h ... this is a guess for UNIX systems only
+    # N.B. Requires C compiler!
+    if (UNIX)
+
+        file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/fortran)
+
+        include(CheckLanguage)
+        check_language(C)
+        if (CMAKE_C_COMPILER)
+          enable_language(C)
+        else(CMAKE_C_COMPILER)
+          message(FATAL_ERROR "Given ENABLE_FORTRAN=ON but could not find C compiler needed to generate Fortran bindings, provide via CMAKE_C_COMPILER")
+        endif(CMAKE_C_COMPILER)
+
+        # preprocessed libint.h
+        add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/fortran/libint2.h.i
+                COMMAND ${CMAKE_C_COMPILER} -E -D__COMPILING_LIBINT2 -I${PROJECT_SOURCE_DIR}/include -I${PROJECT_SOURCE_DIR}/src -I${PROJECT_BINARY_DIR}/include
+                -I${PROJECT_BINARY_DIR}/include/libint2 ${PROJECT_SOURCE_DIR}/include/libint2.h -o ${PROJECT_BINARY_DIR}/fortran/libint2.h.i
+                DEPENDS ${PROJECT_SOURCE_DIR}/include/libint2.h
+                COMMENT "Generating libint2.h.i"
+                )
+    else()
+        message(FATAL_ERROR "Cannot run preprocessor on non-Unix systems, disable Fortran to proceed")
+    endif()
+
+    # translated Libint_t
+    add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/fortran/libint2_types_f.h
+            COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/fortran/c_to_f.py ${PROJECT_BINARY_DIR}/fortran/libint2.h.i ${PROJECT_BINARY_DIR}/fortran/libint2_types_f.h Libint_t
+            DEPENDS ${PROJECT_BINARY_DIR}/fortran/libint2.h.i
+            COMMENT "Generating libint2_types_f.h"
+            )
+
+    # extracted defines from libint2_types.h
+    add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/fortran/fortran_incldefs.h
+            COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/fortran/make_defs.py ${PROJECT_SOURCE_DIR}/src/libint2_types.h ${PROJECT_BINARY_DIR}/fortran/fortran_incldefs.h
+            DEPENDS ${PROJECT_SOURCE_DIR}/src/libint2_types.h
+            COMMENT "Generating fortran_incldefs.h"
+            )
+
+    # build module
+    add_library(libint_f OBJECT fortran/libint_f.F90)
+    set_source_files_properties(fortran/libint_f.F90 PROPERTIES OBJECT_DEPENDS "${PROJECT_BINARY_DIR}/fortran/libint2_types_f.h;${PROJECT_BINARY_DIR}/fortran/fortran_incldefs.h")
+    target_include_directories(libint_f PUBLIC
+            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/fortran>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}>)
+    target_compile_definitions(libint_f PRIVATE __COMPILING_LIBINT2)
+    set_property(TARGET libint_f PROPERTY Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/fortran/modules)
+
+    # Fortran tests merged into rest of tests
+
+    # install Fortran modules
+    install(DIRECTORY "${CMAKE_Fortran_MODULE_DIRECTORY}"
+        COMPONENT fortran
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+        )
+
+endif(ENABLE_FORTRAN)
 
 # <<<  Install  >>>
 

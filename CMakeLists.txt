@@ -74,10 +74,6 @@ if(NOT REQUIRE_CXX_API)
     message(FATAL_ERROR "The plain library without C++11 API is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the plain library, raise an issue on GitHub and ping @loriab.")
 endif()
 
-if(ENABLE_FORTRAN)
-    message(FATAL_ERROR "The Fortran interface is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the Fortran interface, raise an issue on GitHub and ping @loriab.")
-endif()
-
 #  <<<  Which Integrals Classes, Which Derivative Levels  >>>
 
 option_with_default(ENABLE_ONEBODY
@@ -287,10 +283,6 @@ if (BUILD_TESTING)
     enable_testing()
 endif()
 include(GNUInstallDirs)
-
-if (ENABLE_FORTRAN)
-    enable_language(Fortran)
-endif()
 
 configure_file(cmake/modules/int_computed.cmake.in cmake/modules/int_computed.cmake @ONLY)
 set(_EXPORT_MODE 0)

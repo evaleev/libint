@@ -125,4 +125,35 @@ if (LIBINT_HAS_CXX_API)
     set_tests_properties(libint2/hf++/run
             PROPERTIES FIXTURES_REQUIRED LIBINT2_HFXXTEST_EXEC)
 
-endif ()
+endif (LIBINT_HAS_CXX_API)
+
+if (ENABLE_FORTRAN)
+
+    # tests
+    add_executable(fortran_example-libint2 EXCLUDE_FROM_ALL fortran/fortran_example.F90)
+    target_link_libraries(fortran_example-libint2 libint2 libint_f)
+    target_include_directories(fortran_example-libint2 PRIVATE $<TARGET_PROPERTY:libint_f,Fortran_MODULE_DIRECTORY>)
+    target_compile_definitions(fortran_example-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
+
+    add_test(libint2/fortran_example/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_example-libint2)
+    set_tests_properties(libint2/fortran_example/build PROPERTIES FIXTURES_SETUP LIBINT2_FORTRAN_EXAMPLE_EXEC)
+    add_test(NAME libint2/fortran_example/run
+            COMMAND $<TARGET_FILE:fortran_example-libint2>)
+    set_tests_properties(libint2/fortran_example/run
+            PROPERTIES FIXTURES_REQUIRED LIBINT2_FORTRAN_EXAMPLE_EXEC)
+
+    if (LIBINT_HAS_CXX_API)
+        add_executable(fortran_test-libint2 EXCLUDE_FROM_ALL fortran/test.cc fortran/test-eri.cc $<TARGET_OBJECTS:libint_f>)
+        target_link_libraries(fortran_test-libint2 libint2_cxx libint_f)
+        target_include_directories(fortran_test-libint2 PRIVATE $<TARGET_PROPERTY:libint_f,Fortran_MODULE_DIRECTORY>)
+        target_compile_definitions(fortran_test-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
+
+        add_test(libint2/fortran_test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_test-libint2)
+        set_tests_properties(libint2/fortran_test/build PROPERTIES FIXTURES_SETUP LIBINT2_FORTRAN_TEST_EXEC)
+        add_test(NAME libint2/fortran_test/run
+                COMMAND $<TARGET_FILE:fortran_test-libint2>)
+        set_tests_properties(libint2/fortran_test/run
+                PROPERTIES FIXTURES_REQUIRED LIBINT2_FORTRAN_TEST_EXEC)
+    endif (LIBINT_HAS_CXX_API)
+
+endif (ENABLE_FORTRAN)
