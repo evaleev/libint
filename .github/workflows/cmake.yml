@@ -56,6 +56,7 @@ jobs:
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       # Some projects don't allow in-source building, so create a separate build directory
       # We'll use this as our working directory for all subsequent commands
+      # N.B. can't seem to create ${{github.workspace}}/install for some reason, use 'installed'
       run: |
         cmake -E make_directory ${{github.workspace}}/build
         cmake -E make_directory ${{github.workspace}}/test_installed_library
