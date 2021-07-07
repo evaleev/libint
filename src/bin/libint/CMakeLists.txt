@@ -62,8 +62,8 @@ set_target_properties(libint-libcompiler PROPERTIES LIBRARY_OUTPUT_NAME int2-lib
 find_package(Boost 1.57 REQUIRED)
 target_link_libraries(libint-libcompiler PUBLIC Boost::boost)
 
-find_package(MPFR REQUIRED) # only GMP is actually required ...
-target_link_libraries(libint-libcompiler PUBLIC MPFR::MPFRXX)
+find_package(MPFR REQUIRED) # only GMPXX is actually required ...
+target_link_libraries(libint-libcompiler PUBLIC MPFR::GMPXX)
 message("MPFR   ${MPFR_INCLUDE} ${MPFR_LIBRARY}")
 message("GMP    ${GMP_INCLUDE} ${GMP_LIBRARY}")
 message("GMPXX  ${GMPXX_INCLUDE} ${GMPXX_LIBRARY}")
