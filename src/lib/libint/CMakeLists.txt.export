@@ -165,18 +165,9 @@ include(CMakePackageConfigHelpers)
 
 # Set install paths ====================================================================================================
 
-set(LIBINT2_INSTALL_BINDIR "bin"
-        CACHE PATH "LIBINT2 binary install directory")
-set(LIBINT2_INSTALL_INCLUDEDIR "include"
-        CACHE PATH "LIBINT2 INCLUDE install directory")
-set(LIBINT2_INSTALL_LIBDIR "lib"
-        CACHE PATH "LIBINT2 LIB install directory")
-set(LIBINT2_INSTALL_DATADIR "share/libint/${LIBINT_VERSION}"
-        CACHE PATH "LIBINT2 DATA install directory")
-set(LIBINT2_INSTALL_DOCDIR "share/libint/${LIBINT_VERSION}/doc"
-        CACHE PATH "LIBINT2 DOC install directory")
-set(LIBINT2_INSTALL_CMAKEDIR "lib/cmake/${pnv}"
-        CACHE PATH "LIBINT2 CMAKE install directory")
+# use defaults, but define another for CMake files
+set(CMAKE_INSTALL_CMAKEDIR "lib/cmake/${pnv}"
+    CACHE PATH "Installation directory for CMake files")
 
 # <<<  Build  >>>
 
@@ -214,7 +205,7 @@ if (MSVC)
     set_target_properties(int-obj PROPERTIES LINK_FLAGS "/STACK:4194304")
 endif()
 
-get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_DATADIR}" ABSOLUTE)
+get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}" ABSOLUTE)
 if (BUILD_SHARED_LIBS)
     add_library           (int-shared SHARED  $<TARGET_OBJECTS:int-obj>)
     target_link_libraries (int-shared INTERFACE libint-Eigen3)
@@ -281,6 +272,11 @@ if (BUILD_STATIC_LIBS)
              ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 
+# install basis set library
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/lib/basis
+        DESTINATION "${CMAKE_INSTALL_DATADIR}"
+        )
+
 if (BUILD_TESTING)
     enable_testing(true)
     add_subdirectory(tests)
@@ -291,13 +287,13 @@ endif()
 # GNUInstallDirs "DATADIR" wrong here; CMake search path wants "share".
 configure_package_config_file(cmake/${pnv}-config.cmake.in
                               "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake"
-                              INSTALL_DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
+                              INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR})
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
                                  VERSION ${LIBINT_VERSION}
                                  COMPATIBILITY SameMajorVersion)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake
               ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
-        DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
+        DESTINATION ${CMAKE_INSTALL_CMAKEDIR})
 
 configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
@@ -306,11 +302,11 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
 if (BUILD_SHARED_LIBS)
     install(EXPORT "${pnv}-targets-shared"
                    NAMESPACE "${NS}::"
-                   DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
+                   DESTINATION ${CMAKE_INSTALL_CMAKEDIR})
 endif()
 
 if (BUILD_STATIC_LIBS)
     install(EXPORT "${pnv}-targets-static"
                    NAMESPACE "${NS}::"
-                   DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
+                   DESTINATION ${CMAKE_INSTALL_CMAKEDIR})
 endif()
