@@ -186,12 +186,13 @@ message(STATUS "LIBINT2_LIBRARY_CXX_SRC=${LIBINT2_LIBRARY_CXX_SRC}")
 add_library(int-obj OBJECT "${LIBINT2_LIBRARY_CXX_SRC}")
 
 target_compile_definitions(int-obj PRIVATE -D__COMPILING_LIBINT2=1)
-target_compile_features(int-obj PRIVATE "cxx_std_11")
+target_compile_features(int-obj PUBLIC "cxx_std_11") # N.B. PUBLIC to make int-{static/shared} require C++11
 
 target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
                                            ${PROJECT_SOURCE_DIR}/src/
                                            ${PROJECT_SOURCE_DIR}/include/
-                                           ${PROJECT_SOURCE_DIR}/include/libint2/)
+                                           ${PROJECT_SOURCE_DIR}/include/libint2/
+                                           )
 
 if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
   set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
@@ -208,40 +209,86 @@ endif()
 get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}" ABSOLUTE)
 if (BUILD_SHARED_LIBS)
     add_library           (int-shared SHARED  $<TARGET_OBJECTS:int-obj>)
-    target_link_libraries (int-shared INTERFACE libint-Eigen3)
-    if (TARGET Boost::boost)
-      target_link_libraries (int-shared INTERFACE Boost::boost)
-    endif(TARGET Boost::boost)
     set_target_properties (int-shared PROPERTIES SOVERSION ${LIBINT_MAJOR_SOVERSION}
                                                  MACOSX_RPATH ON
                                                  OUTPUT_NAME "int2"
-                                                 EXPORT_NAME "cxx")
-    target_include_directories(int-shared INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-    target_compile_features(int-shared INTERFACE "cxx_std_11")
-    target_compile_definitions(int-shared INTERFACE
-          $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-          $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
+                                                 EXPORT_NAME "int2")
+    target_include_directories(int-shared INTERFACE
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}>)
+
+    # C++ library
+    if (REQUIRE_CXX_API)
+      add_library(int-cxx-shared INTERFACE)
+      target_link_libraries (int-cxx-shared INTERFACE int-shared libint-Eigen3)
+      if (TARGET Boost::boost)
+        target_link_libraries (int-cxx-shared INTERFACE Boost::boost)
+      endif(TARGET Boost::boost)
+      target_compile_features(int-cxx-shared INTERFACE "cxx_std_11")
+      target_compile_definitions(int-cxx-shared INTERFACE
+            $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
+            $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
+      set_target_properties (int-cxx-shared PROPERTIES EXPORT_NAME "cxx")
+    endif(REQUIRE_CXX_API)
 endif()
 
 if (BUILD_STATIC_LIBS)
     add_library           (int-static STATIC  $<TARGET_OBJECTS:int-obj>)
-    target_link_libraries (int-static INTERFACE libint-Eigen3)
-    if (TARGET Boost::boost)
-      target_link_libraries (int-static INTERFACE Boost::boost)
-    endif(TARGET Boost::boost)
     set_target_properties (int-static PROPERTIES OUTPUT_NAME "int2"
-                                                 EXPORT_NAME "cxx")
-    target_include_directories(int-static INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-    target_compile_features(int-static INTERFACE "cxx_std_11")
-    target_compile_definitions(int-static INTERFACE
-          $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-          $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
+                                                 EXPORT_NAME "int2")
+    target_include_directories(int-static INTERFACE
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}>)
+
+    # C++ library
+    if (REQUIRE_CXX_API)
+      add_library(int-cxx-static INTERFACE)
+      target_link_libraries (int-cxx-static INTERFACE int-static libint-Eigen3)
+      if (TARGET Boost::boost)
+        target_link_libraries (int-cxx-static INTERFACE Boost::boost)
+      endif(TARGET Boost::boost)
+      target_compile_features(int-cxx-static INTERFACE "cxx_std_11")
+      target_compile_definitions(int-cxx-static INTERFACE
+            $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
+            $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
+
+      set_target_properties (int-cxx-static PROPERTIES EXPORT_NAME "cxx")
+    endif(REQUIRE_CXX_API)
 endif()
 
 if (BUILD_SHARED_LIBS)
     add_library (int-library ALIAS int-shared)
+    if (TARGET int-cxx-shared)
+      add_library (int-cxx-library ALIAS int-cxx-shared)
+    endif(TARGET int-cxx-shared)
 elseif (BUILD_STATIC_LIBS)
     add_library (int-library ALIAS int-static)
+    if (TARGET int-cxx-static)
+      add_library (int-cxx-library ALIAS int-cxx-static)
+    endif(TARGET int-cxx-static)
+endif()
+
+# Legacy (pre-2.7.0) aliases ===========================================================================================
+if (BUILD_SHARED_LIBS)
+    add_library (libint2 ALIAS int-shared)
+    add_library (Libint2::int2 ALIAS int-shared)
+    if (TARGET int-cxx-shared)
+      add_library (libint2_cxx ALIAS int-cxx-shared)
+      add_library (Libint2::cxx ALIAS int-cxx-shared)
+    endif(TARGET int-cxx-shared)
+elseif (BUILD_STATIC_LIBS)
+    add_library (libint2 ALIAS int-static)
+    add_library (Libint2::int2 ALIAS int-static)
+    if (TARGET int-cxx-static)
+      add_library (libint2_cxx ALIAS int-cxx-static)
+      add_library (Libint2::cxx ALIAS int-cxx-static)
+    endif(TARGET int-cxx-static)
 endif()
 
 # <<<  Install  >>>
@@ -264,12 +311,22 @@ if (BUILD_SHARED_LIBS)
     install (TARGETS int-shared
              EXPORT "${pnv}-targets-shared"
              LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    if (TARGET int-cxx-shared)
+      install (TARGETS int-cxx-shared
+               EXPORT "${pnv}-targets-shared"
+               LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    endif(TARGET int-cxx-shared)
 endif()
 
 if (BUILD_STATIC_LIBS)
     install (TARGETS int-static
              EXPORT "${pnv}-targets-static"
              ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    if (TARGET int-cxx-static)
+      install (TARGETS int-cxx-static
+               EXPORT "${pnv}-targets-static"
+               ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    endif(TARGET int-cxx-static)
 endif()
 
 # install basis set library

@@ -2,7 +2,7 @@ include(AddCustomTargetSubproject)
 add_custom_target_subproject(libint2 check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/")
 
 add_executable(eritest-libint2 EXCLUDE_FROM_ALL eri/test.cc)
-target_link_libraries(eritest-libint2 int-library)  # plain int2 target, actually
+target_link_libraries(eritest-libint2 int-library)  # N.B. plain library
 target_include_directories(eritest-libint2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/eri
                                            ${CMAKE_CURRENT_BINARY_DIR}/../include
                                            ${CMAKE_CURRENT_SOURCE_DIR}/../src
@@ -29,7 +29,7 @@ add_test(NAME libint2/eritest/run2
 set_tests_properties(libint2/eritest/run2
         PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
 
-if (ENABLE_CXX11API)
+if (LIBINT_HAS_CXX_API)
     set(unit_tests-src unit/test.cc
             unit/test-1body.cc
             unit/test-2body.cc
@@ -52,7 +52,7 @@ if (ENABLE_CXX11API)
     endif(CMAKE_C_COMPILER)
     add_executable(unit_tests-libint2 EXCLUDE_FROM_ALL
         ${unit_tests-src})
-    target_link_libraries(unit_tests-libint2 int-library) #cxx)
+    target_link_libraries(unit_tests-libint2 int-cxx-library) # N.B. cxx library
     target_include_directories(unit_tests-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include
                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../src
                                                   ${CMAKE_CURRENT_SOURCE_DIR}/../include
@@ -71,7 +71,7 @@ if (ENABLE_CXX11API)
             PROPERTIES FIXTURES_REQUIRED LIBINT2_UNIT_TESTS_EXEC)
 
     add_executable(hf-libint2 EXCLUDE_FROM_ALL hartree-fock/hartree-fock.cc)
-    target_link_libraries(hf-libint2 int-library) #cxx)
+    target_link_libraries(hf-libint2 int-cxx-library) # N.B. cxx library
     target_include_directories(hf-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include
                                                     ${CMAKE_CURRENT_SOURCE_DIR}/../src
                                                     ${CMAKE_CURRENT_SOURCE_DIR}/../include
@@ -99,7 +99,7 @@ if (ENABLE_CXX11API)
 
     find_package(Threads)  # for some reason clang does not link in threading support even though we are using C++ threads
     add_executable(hf++-libint2 EXCLUDE_FROM_ALL hartree-fock/hartree-fock++.cc)
-    target_link_libraries(hf++-libint2 int-library ${CMAKE_THREAD_LIBS_INIT})  #cxx
+    target_link_libraries(hf++-libint2 int-cxx-library ${CMAKE_THREAD_LIBS_INIT})  # N.B. cxx library
     target_include_directories(hf++-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include
                                                       ${CMAKE_CURRENT_SOURCE_DIR}/../src
                                                       ${CMAKE_CURRENT_SOURCE_DIR}/../include
