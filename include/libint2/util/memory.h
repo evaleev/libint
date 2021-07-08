@@ -24,6 +24,10 @@
 #include <cstdlib>
 #include <libint2/util/generated/libint2_params.h>
 
+#ifdef _MSC_VER
+#define posix_memalign(p, a, s) (((*(p)) = _aligned_malloc((s), (a))), *(p) ?0 :errno)
+#endif
+
 namespace libint2 {
 
   /// Aligned version of malloc().

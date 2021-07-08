@@ -100,16 +100,16 @@ RandomChoiceTactic::RandomChoiceTactic() : Tactic()
 {
   // Initialize state randomly
   time_t crap;
-  srandom(time(&crap));
+  srand(time(&crap));
 }
 
 RandomChoiceTactic::RR
 RandomChoiceTactic::optimal_rr(const rr_stack& stack) const {
   if (!stack.empty()) {
     unsigned int size = stack.size();
-    unsigned long rand = random();
+    unsigned long ulrand = static_cast<unsigned long>(rand());
     const unsigned long range = RAND_MAX;
-    long choice = (long)(rand * size - 1)/range;
+    long choice = (long)(ulrand * size - 1)/range;
     return stack[choice];
   }
   else

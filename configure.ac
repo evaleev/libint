@@ -510,7 +510,7 @@ fi
 # check max am for 3-center ERIs, if needed
 ERI3_MAX_AM=$LIBINT_MAX_AM
 AC_ARG_WITH(eri3-max-am,
-AS_HELP_STRING([--with-eri3-max-am=N],[Support 3-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...]),
+AS_HELP_STRING([--with-eri3-max-am=N],[Support 3-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2.... Set --with-max-am to mirror this option.]),
 [
   case $withval in 
     *,*)

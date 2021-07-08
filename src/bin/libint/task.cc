@@ -69,7 +69,9 @@ LibraryTaskManager::find(const std::string& task_label) const
     if (t->label() == task_label)
       return t;
   }
-  throw ProgrammingError("LibraryTaskManager::find() -- the task not found");
+  char buffer[100];
+  sprintf(buffer, "LibraryTaskManager::find() -- the task not found: %s", task_label.c_str());
+  throw ProgrammingError(buffer);
 }
 
 void

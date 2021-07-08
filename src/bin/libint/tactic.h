@@ -198,13 +198,13 @@ namespace libint2 {
     StdRandomizePolicy(double scale) : scale_(scale) {
       // Initialize state randomly
       time_t t;
-      srandom(time(&t));
+      srand(time(&t));
     }
 
     unsigned int noise(unsigned int nrrs) const {
-      unsigned long rand = random();
+      unsigned long ulrand = static_cast<unsigned long>(rand());
       const unsigned long range = RAND_MAX;
-      const unsigned int result = static_cast<unsigned int>(std::floor(nrrs*scale_*rand/range));
+      const unsigned int result = static_cast<unsigned int>(std::floor(nrrs*scale_*ulrand/range));
       return result;
     }
 
