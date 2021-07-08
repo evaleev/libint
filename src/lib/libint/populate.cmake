@@ -1,5 +1,6 @@
-configure_file("${PROJECT_SOURCE_DIR}/export/LICENSE.export" "${EXPORT_STAGE_DIR}/LICENSE" COPYONLY)
-configure_file("${PROJECT_SOURCE_DIR}/export/INSTALL.export"
+set(LIBRARY_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/lib/libint)
+configure_file("${LIBRARY_SOURCE_DIR}/LICENSE.export" "${EXPORT_STAGE_DIR}/LICENSE" COPYONLY)
+configure_file("${LIBRARY_SOURCE_DIR}/INSTALL.export"
         "${EXPORT_STAGE_DIR}/INSTALL" COPYONLY)
 
 file(INSTALL "${PROJECT_SOURCE_DIR}/COPYING"
@@ -17,7 +18,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/doc/progman/progman.tex"
 file(INSTALL "${PROJECT_SOURCE_DIR}/doc/progman/" DESTINATION "${EXPORT_STAGE_DIR}/doc"
         FILES_MATCHING PATTERN "*.cc")
 
-file(INSTALL "${PROJECT_SOURCE_DIR}/src/lib/libint/tests/"
+file(INSTALL "${LIBRARY_SOURCE_DIR}/tests/"
         DESTINATION "${EXPORT_STAGE_DIR}/tests"
         FILES_MATCHING PATTERN "*.c"
         PATTERN "*.cc"
@@ -39,7 +40,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/lib/basis/"
         FILES_MATCHING PATTERN "*.g94")
 
 # Fortran
-file(INSTALL "${PROJECT_SOURCE_DIR}/src/lib/libint/fortran/"
+file(INSTALL "${LIBRARY_SOURCE_DIR}/fortran/"
         DESTINATION "${EXPORT_STAGE_DIR}/fortran"
         FILES_MATCHING PATTERN "*.F90" PATTERN "*.py")
 
@@ -58,7 +59,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/cmake/libint2-config.cmake.in"
         "${PROJECT_SOURCE_DIR}/cmake/libint2.pc.cmake.in"
         DESTINATION "${EXPORT_STAGE_DIR}/cmake")
 
-configure_file("${PROJECT_SOURCE_DIR}/src/lib/libint/CMakeLists.txt.export" "${EXPORT_STAGE_DIR}/CMakeLists.txt" COPYONLY)
+configure_file("${LIBRARY_SOURCE_DIR}/CMakeLists.txt.export" "${EXPORT_STAGE_DIR}/CMakeLists.txt" COPYONLY)
 
 file(INSTALL "${PROJECT_SOURCE_DIR}/include/libint2.h"
         "${PROJECT_SOURCE_DIR}/include/libint2.hpp"
@@ -71,7 +72,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/include/libint2/"
 file(INSTALL "${PROJECT_SOURCE_DIR}/src/bin/libint/util_types.h"
         DESTINATION "${EXPORT_STAGE_DIR}/include/libint2")
 
-file(INSTALL "${PROJECT_SOURCE_DIR}/src/lib/libint/"
+file(INSTALL "${LIBRARY_SOURCE_DIR}/"
         DESTINATION "${EXPORT_STAGE_DIR}/include/libint2"
         FILES_MATCHING PATTERN "*.h")
 
