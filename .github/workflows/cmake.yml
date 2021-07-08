@@ -101,6 +101,7 @@ jobs:
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
         cmake --build build
+        cmake --build build --target check-libint2compiler
         cmake --build build --target install
         #cd src/bin/test_eri && ./stdtests.pl && cd ../../..
 
@@ -111,6 +112,7 @@ jobs:
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG
         cmake --build build --target libint-library-export
+        cmake --build build --target check-libint2compiler
         cmake --build build --target check-libint2
         cmake --build build --target install
         #cd src/bin/test_eri && ./stdtests.pl && cd ../../..

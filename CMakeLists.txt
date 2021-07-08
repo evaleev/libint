@@ -61,13 +61,12 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 ################################### Options ####################################
 include(int_versions)
 include(options)
+include(CTest) # defines BUILD_TESTING option
 
 #  <<<  General  >>>
 
-option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
 option_with_default(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3; Boost is optional but strongly recommended)" ON)
 option_with_default(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
-option_with_default(BUILD_TESTING "Compile the testing infrastructure" ON)
 option_with_default(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT "[EXPERT] Build generated library as a subproject; if FALSE will configure and build separately" OFF)
 
 if(NOT REQUIRE_CXX_API)
@@ -296,7 +295,10 @@ add_subdirectory(src)
 
 # <<<  Test  >>>
 
-add_subdirectory(tests)
+if (BUILD_TESTING)
+    enable_testing(true)
+    add_subdirectory(tests)
+endif()
 
 # <<<  Install  >>>
 
