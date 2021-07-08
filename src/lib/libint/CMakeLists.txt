@@ -122,7 +122,23 @@ else(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
             CMAKE_ARGS "${library_CMAKE_ARGS}"
             CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}
             -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
-            TEST_COMMAND ${CMAKE_CTEST_COMMAND} --extra-verbose --output-on-failure)
+            TEST_COMMAND ""
+            USES_TERMINAL_CONFIGURE TRUE
+            USES_TERMINAL_BUILD TRUE
+            USES_TERMINAL_INSTALL TRUE
+            STEP_TARGETS configure
+            BUILD_BYPRODUCTS ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR} ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}
+            )
+    ExternalProject_Get_property(library BINARY_DIR)
+
+    # instead of running tests by default, replicate check-libint2 target here and use it to invoke library's check-libint2 target
+    if (BUILD_TESTING) # enable_testing was already invoked at the top
+      include(AddCustomTargetSubproject)
+      add_custom_target_subproject(libint2 check USES_TERMINAL
+              COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/"
+              WORKING_DIRECTORY ${BINARY_DIR}
+              DEPENDS library-configure)
+    endif(BUILD_TESTING)
 
     foreach(_dir ${CMAKE_INSTALL_LIBDIR} ${CMAKE_INSTALL_INCLUDEDIR} ${CMAKE_INSTALL_DATAROOTDIR})
       install(DIRECTORY ${STAGED_INSTALL_PREFIX}/${_dir}
