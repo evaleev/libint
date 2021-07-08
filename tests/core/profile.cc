@@ -36,9 +36,16 @@
 #include <cxxabi.h>
 #endif
 
-#ifndef SKIP_AXPY
+#if __has_include(<mkl_cblas.h>) || __has_include(<cblas.h>)
+# define HAVE_CBLAS
+#endif
+
+#if __has_include(<mkl_cblas.h>)
 #  include <mkl_cblas.h>
 typedef MKL_INT BLAS_INT;
+#elif __has_include(<cblas.h>)
+#  include <cblas.h>
+typedef long BLAS_INT;
 #endif
 
 #ifdef SKIP_ALL
@@ -190,10 +197,11 @@ struct AXPYKernel : public VectorOpKernel<Real> {
   Real a_;
   Real* y_;
   Real const* x_;
-  BLAS_INT n_;
+  long n_;
 
 };
 
+#ifdef HAVE_CBLAS
 struct DAXPYKernel : public VectorOpKernel<double> {
   typedef double ResultType;
   typedef double Real;
@@ -221,6 +229,7 @@ struct DAXPYKernel : public VectorOpKernel<double> {
   size_t n_;
 
 };
+#endif  // HAVE_CBLAS
 
 template <typename Real>
 struct DOTKernel : public VectorOpKernel<Real> {
@@ -247,10 +256,11 @@ struct DOTKernel : public VectorOpKernel<Real> {
   mutable Real result_;
   Real const* x1_;
   Real const* x2_;
-  BLAS_INT n_;
+  long n_;
 
 };
 
+#ifdef HAVE_CBLAS
 struct DDOTKernel : public VectorOpKernel<double> {
   typedef double ResultType;
   typedef double Real;
@@ -277,7 +287,9 @@ struct DDOTKernel : public VectorOpKernel<double> {
   size_t n_;
 
 };
+#endif
 
+#ifdef HAVE_CBLAS
 struct DGEMMKernel : public VectorOpKernel<double> {
   typedef double ResultType;
   typedef double Real;
@@ -317,6 +329,7 @@ struct DGEMMKernel : public VectorOpKernel<double> {
   size_t n_;
   size_t k_;
 };
+#endif  // HAVE_CBLAS
 
 const double stg_zeta = 1.0;
 
@@ -331,8 +344,10 @@ int main(int argc, char* argv[]) {
   const double rho = 1.0;
   const int nrepeats  = atoi(argv[3]);
 
+#if defined(__SSE2__)
   using libint2::simd::VectorSSEDouble;
   const VectorSSEDouble T_sse(T);
+#endif
 #if defined(__AVX__)
   using libint2::simd::VectorAVXDouble;
   const VectorAVXDouble T_avx(T);
@@ -348,9 +363,13 @@ int main(int argc, char* argv[]) {
 
 #ifndef SKIP_AXPY
   const int n = 128;
+#ifdef HAVE_CBLAS
   profile(DAXPYKernel(n, 1.0, 1.0, "daxpy"), nrepeats);
+#endif
   profile(AXPYKernel<double>(n, 1.0, 1.0, "axpy [double]"), nrepeats);
+#if defined(__SSE2__)
   profile(AXPYKernel<VectorSSEDouble>(n, 1.0, 1.0, "axpy [SSE]"), nrepeats);
+#endif
 #  if defined(__AVX__)
   profile(AXPYKernel<VectorAVXDouble>(n, 1.0, 1.0, "axpy [AVX]"), nrepeats);
 #  endif
@@ -358,9 +377,13 @@ int main(int argc, char* argv[]) {
 
 #ifndef SKIP_DOT
   //const int n = 4096;
+# ifdef HAVE_CBLAS
   profile(DDOTKernel(n, 1.0, "ddot"), nrepeats);
+# endif
   profile(DOTKernel<double>(n, 1.0, "dot [double]"), nrepeats);
+# if defined(__SSE2__)
   profile(DOTKernel<VectorSSEDouble>(n, 1.0, "dot [SSE]"), nrepeats);
+# endif
 # if defined(__AVX__)
   profile(DOTKernel<VectorAVXDouble>(n, 1.0, "dot [AVX]"), nrepeats);
 # endif
@@ -368,31 +391,41 @@ int main(int argc, char* argv[]) {
 
 #ifndef SKIP_GEMM
   const int nn = 2048;
+# ifdef HAVE_CBLAS
   profile(DGEMMKernel(nn, 1.0, "dgemm (2048,2048) x (2048,2048)"), 1);
+# endif
 #endif
 
 #ifndef SKIP_EXP
   profile(BasicKernel<double,std::exp>(-T,"exp(-T) [double]", -0.00001), nrepeats);
+# if defined(__SSE2__)
   profile(BasicKernel<VectorSSEDouble,libint2::simd::exp>(-T,"exp(-T) [SSE]", -0.00001), nrepeats);
+# endif
 # if defined(__AVX__)
   profile(BasicKernel<VectorAVXDouble,libint2::simd::exp>(-T,"exp(-T) [AVX]", -0.00001), nrepeats);
 # endif
 #endif
 #ifndef SKIP_SQRT
   profile(BasicKernel<double,std::sqrt>(T,"sqrt(T) [double]"), nrepeats);
+# if defined(__SSE2__)
   profile(BasicKernel<VectorSSEDouble,libint2::simd::sqrt>(T,"sqrt(T) [SSE]"), nrepeats);
+#endif
 # if defined(__AVX__)
   profile(BasicKernel<VectorAVXDouble,libint2::simd::sqrt>(T,"sqrt(T) [AVX]"), nrepeats);
 # endif
 #endif
 #ifndef SKIP_ERF
   profile(BasicKernel<double,erf>(T,"erf(T) [double]"), nrepeats);
+# if defined(__SSE2__)
   profile(BasicKernel<VectorSSEDouble,libint2::simd::erf>(T,"erf(T) [SSE]"), nrepeats);
+#endif
 # if defined(__AVX__)
   profile(BasicKernel<VectorAVXDouble,libint2::simd::erf>(T,"erf(T) [AVX]"), nrepeats);
 # endif
   profile(BasicKernel<double,erfc>(T,"erfc(T) [double]"), nrepeats);
+# if defined(__SSE2__)
   profile(BasicKernel<VectorSSEDouble,libint2::simd::erfc>(T,"erfc(T) [SSE]"), nrepeats);
+# endif
 # if defined(__AVX__)
   profile(BasicKernel<VectorAVXDouble,libint2::simd::erfc>(T,"erfc(T) [AVX]"), nrepeats);
 # endif

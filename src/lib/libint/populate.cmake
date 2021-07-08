@@ -29,8 +29,8 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/src/lib/libint/tests/"
         PATTERN "*.cmake"
         PATTERN "CMakeLists.txt")
 
-file(INSTALL "${PROJECT_SOURCE_DIR}/src/bin/test_eri/eri.h"
-             "${PROJECT_SOURCE_DIR}/src/bin/test_eri/prep_libint2.h"
+file(INSTALL "${PROJECT_SOURCE_DIR}/tests/eri/eri.h"
+             "${PROJECT_SOURCE_DIR}/tests/eri/prep_libint2.h"
         DESTINATION "${EXPORT_STAGE_DIR}/tests/eri")
 
 # Q: why is this different from current export location?

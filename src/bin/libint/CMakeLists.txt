@@ -48,7 +48,7 @@ add_library(libint-libcompiler
     util.cc
 )
 
-target_compile_definitions(libint-libcompiler PRIVATE -D__COMPILING_LIBINT2=1)
+target_compile_definitions(libint-libcompiler PUBLIC -D__COMPILING_LIBINT2=1)
 target_compile_features(libint-libcompiler PUBLIC "cxx_std_11")
 set_target_properties(libint-libcompiler PROPERTIES CXX_EXTENSIONS OFF)
 
@@ -77,9 +77,6 @@ if(MSVC)
     set_target_properties(build_libint PROPERTIES LINK_FLAGS "/STACK:4194304")
 endif()
 
-add_executable(libint-libcompiler-test EXCLUDE_FROM_ALL test.cc)
-target_link_libraries(libint-libcompiler-test libint-libcompiler)
-
-set_target_properties(build_libint libint-libcompiler-test
+set_target_properties(build_libint
     PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 

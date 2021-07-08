@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)  # CACHE operator
 
-project(Libint2
+project(Libint2Compiler
         LANGUAGES CXX)
 set(Libint2_AUTHORS      "Edward F. Valeev")
 set(Libint2_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
@@ -291,8 +291,12 @@ set(_EXPORT_MODE 1)
 configure_file(include/libint2/config.h.cmake.in ${EXPORT_STAGE_DIR}/include/libint2/config.h @ONLY)
 configure_file(include/libint2/config2.h.cmake.in ${EXPORT_STAGE_DIR}/include/libint2/config2.h.cmake.in COPYONLY)
 
-# dive in
+# compiler
 add_subdirectory(src)
+
+# <<<  Test  >>>
+
+add_subdirectory(tests)
 
 # <<<  Install  >>>
 
