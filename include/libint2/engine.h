@@ -620,7 +620,7 @@ class Engine {
   /// @return the particle rank of the operator
   int operator_rank() const { return rank(oper_); }
 
-  /// @return rank of the braket
+  /// @return rank of the braket (e.g., 2 for (a|b), 3 for (a|bc), etc.)
   int braket_rank() const { return rank(braket_); }
 
   /// @return the operator
