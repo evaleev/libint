@@ -17,7 +17,7 @@ my $makevars = "";
 (usage() and die) if ($#ARGV < 4 || $#ARGV > 7);
 
 my $max_am = 5;
-my $ericomp = "generate_eri_code";
+my $ericomp = "libint-libcompiler-test-eri-generate";
 
 my $la = $ARGV[0];
 my $lb = $ARGV[1];
