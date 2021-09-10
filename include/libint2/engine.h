@@ -629,6 +629,9 @@ class Engine {
   /// @return the braket
   BraKet braket() const { return braket_; }
 
+  /// @return the order of geometrical derivatives
+  int deriv_order() const { return deriv_order_; }
+
   /// (re)sets operator type to @c new_oper
   /// @param[in] new_oper Operator whose integrals will be computed with the next call to Engine::compute()
   /// @note this resets braket and params to their respective defaults for @c new_oper

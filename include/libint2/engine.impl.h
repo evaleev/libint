@@ -1087,14 +1087,14 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 /// \note result is stored in the "chemists"/Mulliken form, (tbra1 tbra2 |tket1
 /// tket2), i.e. bra and ket are in chemists meaning; result is packed in
 /// row-major order.
-template <Operator op, BraKet bk, size_t deriv_order>
+template <Operator op, BraKet bk, size_t der>
 __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     const libint2::Shell& tbra1, const libint2::Shell& tbra2,
     const libint2::Shell& tket1, const libint2::Shell& tket2,
     const ShellPair* tspbra, const ShellPair* tspket) {
   assert(op == oper_ && "Engine::compute2 -- operator mismatch");
   assert(bk == braket_ && "Engine::compute2 -- braket mismatch");
-  assert(deriv_order == deriv_order_ &&
+  assert(der == deriv_order_ &&
          "Engine::compute2 -- deriv_order mismatch");
   assert(((tspbra == nullptr && tspket == nullptr) || (tspbra != nullptr && tspket != nullptr)) &&
          "Engine::compute2 -- expects zero or two ShellPair objects");
@@ -1275,7 +1275,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             const scalar_type rho = gammap * gammaq * oogammapq;
             const scalar_type T = PQ2 * rho;
             auto* gm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
-            const auto mmax = amtot + deriv_order;
+            const auto mmax = amtot + deriv_order_;
 
             if (!skip_core_ints) {
               switch (oper_) {
@@ -1471,7 +1471,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
               const auto Wz =
                   (gammap_o_gammapgammaq * P[2] + gammaq_o_gammapgammaq * Q[2]);
 
-              if (deriv_order > 0 || lmax_bra > 0) {
+              if (deriv_order_ > 0 || lmax_bra > 0) {
 #if LIBINT2_DEFINED(eri, WP_x)
                 primdata.WP_x[0] = Wx - P[0];
 #endif
@@ -1482,7 +1482,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 primdata.WP_z[0] = Wz - P[2];
 #endif
               }
-              if (deriv_order > 0 || lmax_ket > 0) {
+              if (deriv_order_ > 0 || lmax_ket > 0) {
 #if LIBINT2_DEFINED(eri, WQ_x)
                 primdata.WQ_x[0] = Wx - Q[0];
 #endif
@@ -1566,7 +1566,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
 
               // prefactors for derivative ERI relations
-              if (deriv_order > 0) {
+              if (deriv_order_ > 0) {
 #if LIBINT2_DEFINED(eri, alpha1_rho_over_zeta2)
                 primdata.alpha1_rho_over_zeta2[0] =
                     alpha0 * (oogammap * gammaq_o_gammapgammaq);
@@ -1649,7 +1649,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   }
 
   // compute directly (ss|ss)
-  const auto compute_directly = lmax == 0 && deriv_order == 0;
+  const auto compute_directly = lmax == 0 && deriv_order_ == 0;
 
   if (compute_directly) {
 #ifdef LIBINT2_ENGINE_TIMERS
@@ -1831,7 +1831,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           auto tgt_ptr = target;
 
           // if permuting derivatives ints must update their derivative index
-          switch (deriv_order) {
+          switch (deriv_order_) {
             case 0:
               break;  // nothing to do
 
