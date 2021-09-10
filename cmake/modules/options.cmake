@@ -44,14 +44,28 @@ endmacro(booleanize01)
 #NOTE2: CMAKE_BUILD_TYPE (and other CMake variables) are always defined so need
 #       to further check for if they are the NULL string.  This is also why we
 #       need the force
+#NOTE3: If option X does not start with LIBINT_ will look for LIBINT_X first; if
+#       not given will look for X and assign LIBINT_X to its value
 #
 #Syntax: option_with_default(<option name> <description> <default value>)
 #
 macro(option_with_default variable msge default)
-print_option(${variable} ${default})
-if(NOT DEFINED ${variable} OR "${${variable}}" STREQUAL "")
-   set(${variable} "${default}" CACHE STRING "${msge}" FORCE)
-endif()
+    if (${variable} MATCHES "^LIBINT_")
+        print_option(${variable} ${default})
+        if(NOT DEFINED ${variable} OR "${${variable}}" STREQUAL "")
+            set(${variable} "${default}" CACHE STRING "${msge}" FORCE)
+        endif()
+    else ()
+        set(_libint_var LIBINT_${variable})
+        print_option(${_libint_var} ${default})
+        if(NOT DEFINED ${_libint_var} OR "${${_libint_var}}" STREQUAL "")
+            if(DEFINED ${variable} AND (NOT "${${variable}}" STREQUAL ""))
+                set(${_libint_var} "${variable}" CACHE STRING "${msge}" FORCE)
+            else()
+                set(${_libint_var} "${default}" CACHE STRING "${msge}" FORCE)
+            endif()
+        endif()
+    endif()
 endmacro(option_with_default)
 
 include(CheckCCompilerFlag)

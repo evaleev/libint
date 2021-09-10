@@ -22,38 +22,21 @@
 #   shared - search for only shared library
 #   static - search for only static library
 #
-#   e[2, 8] - search for library including energy ERI integrals with angular momentum >= this integer
-#   g[2, 8] - search for library including gradient ERI integrals with angular momentum >= this integer
-#   h[2, 8] - search for library including Hessian ERI integrals with angular momentum >= this integer
-#   eri2_e[2, 8] - search for library including energy ERI2 integrals with angular momentum >= this integer
-#   eri2_g[2, 8] - search for library including gradient ERI2 integrals with angular momentum >= this integer
-#   eri2_h[2, 8] - search for library including Hessian ERI2 integrals with angular momentum >= this integer
-#   eri3_e[2, 8] - search for library including energy ERI2 integrals with angular momentum >= this integer
-#   eri3_g[2, 8] - search for library including gradient ERI2 integrals with angular momentum >= this integer
-#   eri3_h[2, 8] - search for library including Hessian ERI2 integrals with angular momentum >= this integer
+#   onebody_dD_lL    - search for library including 1-body integrals with derivative order D (D=0..4) and max angular momentum up to L (L=2..10)
+#   twobody_cC_dD_lL - search for library including 2-body integrals with C centers, derivative order D (D=0..4), and max angular momentum up to L (L=2..10)
 #
-#                    sph        cart       shell_set  used_by
-#                    --------   --------   ---------  -------
-#   sss - search for standard + standard + standard = mpqc4
-#   sso - search for                     + orca
-#   sis - search for          + intv3    + standard
-#   sio - search for                     + orca
-#   sgs - search for          + gamess   + standard = gamess
-#   sgo - search for                     + orca
-#   sos - search for          + orca     + standard
-#   soo - search for                     + orca     = orca
-#   sbs - search for          + bagel    + standard = bagel
-#   sbo - search for                     + orca
-#   gss - search for gaussian + standard + standard = psi4
-#   gso - search for                     + orca
-#   gis - search for          + intv3    + standard
-#   gio - search for                     + orca
-#   ggs - search for          + gamess   + standard
-#   ggo - search for                     + orca
-#   gos - search for          + orca     + standard
-#   goo - search for                     + orca
-#   gbs - search for          + bagel    + standard
-#   gbo - search for                     + orca
+#                   cart       shell_set  used_by
+#                   --------   ---------  -------
+#   ss - search for standard + standard = mpqc4, psi4
+#   so - search for          + orca
+#   is - search for intv3    + standard = mpqc3
+#   io - search for          + orca
+#   gs - search for gamess   + standard = gamess
+#   go - search for          + orca
+#   os - search for orca     + standard
+#   oo - search for          + orca     = orca
+#   bs - search for bagel    + standard = bagel
+#   bo - search for          + orca
 #
 #
 # Exported targets:
@@ -72,7 +55,7 @@
 # ::
 #
 #   find_package(Libint2)
-#   find_package(Libint2 2.7.0 CONFIG REQUIRED COMPONENTS shared gss e5 g5)
+#   find_package(Libint2 2.7.0 CONFIG REQUIRED COMPONENTS shared ss twobody_c4_d0_l5 twobody_c4_d1_l4)
 #
 #
 # The following variables can be set to guide the search for this package:
@@ -94,92 +77,35 @@ set (_valid_components
     static
     shared
 
-    e2
-    e3
-    e4
-    e5
-    e6
-    e7
-    e8
-    g2
-    g3
-    g4
-    g5
-    g6
-    g7
-    g8
-    h2
-    h3
-    h4
-    h5
-    h6
-    h7
-    h8
+    twobody_c4_d0_l2
+    twobody_c4_d0_l3
+    twobody_c4_d0_l4
+    twobody_c4_d0_l5
+    twobody_c4_d0_l6
+    twobody_c4_d0_l7
+    twobody_c4_d0_l8
+    twobody_c4_d0_l9
+    twobody_c4_d0_l10
+    twobody_c4_d1_l2
+    twobody_c4_d1_l3
+    twobody_c4_d1_l4
+    twobody_c4_d1_l5
+    twobody_c4_d1_l6
+    twobody_c4_d1_l7
+    twobody_c4_d1_l8
+    twobody_c4_d1_l9
+    twobody_c4_d1_l10
 
-    eri2_e2
-    eri2_e3
-    eri2_e4
-    eri2_e5
-    eri2_e6
-    eri2_e7
-    eri2_e8
-    eri2_g2
-    eri2_g3
-    eri2_g4
-    eri2_g5
-    eri2_g6
-    eri2_g7
-    eri2_g8
-    eri2_h2
-    eri2_h3
-    eri2_h4
-    eri2_h5
-    eri2_h6
-    eri2_h7
-    eri2_h8
-
-    eri3_e2
-    eri3_e3
-    eri3_e4
-    eri3_e5
-    eri3_e6
-    eri3_e7
-    eri3_e8
-    eri3_g2
-    eri3_g3
-    eri3_g4
-    eri3_g5
-    eri3_g6
-    eri3_g7
-    eri3_g8
-    eri3_h2
-    eri3_h3
-    eri3_h4
-    eri3_h5
-    eri3_h6
-    eri3_h7
-    eri3_h8
-
-    sss
-    sso
-    sis
-    sio
-    sgs
-    sgo
-    sos
-    soo
-    sbs
-    sbo
-    gss
-    gso
-    gis
-    gio
-    ggs
-    ggo
-    gos
-    goo
-    gbs
-    gbo
+    ss
+    so
+    is
+    io
+    gs
+    go
+    os
+    oo
+    bs
+    bo
 )
 
 # check library style component
@@ -194,6 +120,7 @@ list(FIND ${PN}_FIND_COMPONENTS "static" _seek_static)
 
 # check AM & derivative component
 set(${PN}_MAX_AM_ERI @Libint2_MAX_AM_ERI@)
+set(${PN}_MAX_AM_TWOBODY4 @Libint2_MAX_AM_TWOBODY4@)
 foreach(_eri @Libint2_ERI_COMPONENTS@)
     set(${PN}_${_eri}_FOUND 1)
 endforeach()

@@ -65,13 +65,12 @@ include(CTest) # defines BUILD_TESTING option
 
 #  <<<  General  >>>
 
-option_with_default(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3; Boost is optional but strongly recommended)" ON)
-option_with_default(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
+### compiler-only
 option_with_default(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT "[EXPERT] Build generated library as a subproject; if FALSE will configure and build separately" OFF)
 
-if(NOT REQUIRE_CXX_API)
-    message(FATAL_ERROR "The plain library without C++11 API is not hooked into this pure-CMake Libint2 buildsystem. For immediate use, switch to the original Libtool+CMake buildsystem. For help expanding this buildsystem to the plain library, raise an issue on GitHub and ping @loriab.")
-endif()
+### library-only
+option_with_default(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3; Boost is optional but strongly recommended)" ON)
+option_with_default(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
 
 #  <<<  Which Integrals Classes, Which Derivative Levels  >>>
 
@@ -137,14 +136,15 @@ option_with_default(WITH_MAX_AM
    Can specify values for each derivative levels as a semicolon-separated string" 4)
 option_with_default(WITH_OPT_AM
   "Optimize maximally for up to angular momentum N (N <= max-am). (default: (libint_max_am/2)+1)" -1)
+message(STATUS "WITH_OPT_AM=${WITH_OPT_AM}")
 
 option_with_default(MULTIPOLE_MAX_ORDER
   "Maximum order of spherical multipole integrals. There is no maximum" 4)
 option_with_default(WITH_ONEBODY_MAX_AM
-  "Support 1-e ints for Gaussians of angular momentum up to N.
+  "Support 1-body ints for Gaussians of angular momentum up to N.
    Can specify values for each derivative as a semicolon-separated string. (default: (libint_max_am/2)+1)" -1)
 option_with_default(WITH_ONEBODY_OPT_AM
-  "Optimize 1-e ints maximally for up to angular momentum N (N <= max-am).
+  "Optimize 1-body ints maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative levels as a semicolon-separated string" -1)
 
 option_with_default(WITH_ERI_MAX_AM
