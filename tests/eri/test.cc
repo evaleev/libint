@@ -68,15 +68,15 @@ namespace {
 
 // test 4, 3, and 2-center integrals
 #ifdef INCLUDE_ERI
-void test_4eri(unsigned int deriv_order,
+bool test_4eri(unsigned int deriv_order,
                unsigned int lmax_max);
 #endif
 #ifdef INCLUDE_ERI3
-void test_3eri(unsigned int deriv_order,
+bool test_3eri(unsigned int deriv_order,
                unsigned int lmax_max);
 #endif
 #ifdef INCLUDE_ERI2
-void test_2eri(unsigned int deriv_order,
+bool test_2eri(unsigned int deriv_order,
                unsigned int lmax_max);
 #endif
 
@@ -89,28 +89,31 @@ int main(int argc, char** argv) {
   // static initialization of the library (only needs to happen once per process)
   LIBINT2_PREFIXED_NAME(libint2_static_init)();
 
+  bool success = true;
   // run the tests
 #ifdef INCLUDE_ERI
-  test_4eri(deriv_order, lmax_max);
+  success &= test_4eri(deriv_order, lmax_max);
 #endif
 #ifdef INCLUDE_ERI3
-  test_3eri(deriv_order, lmax_max);
+  success &= test_3eri(deriv_order, lmax_max);
 #endif
 #ifdef INCLUDE_ERI2
-  test_2eri(deriv_order, lmax_max);
+  success &= test_2eri(deriv_order, lmax_max);
 #endif
 
   // cleanup static library data (once per process)
   LIBINT2_PREFIXED_NAME(libint2_static_cleanup)();
 
-  return 0;
+  return success ? 0 : 1;
 }
 
 #ifdef INCLUDE_ERI
-void test_4eri(unsigned int deriv_order,
+bool test_4eri(unsigned int deriv_order,
                unsigned int lmax_max) {
 
-  if (deriv_order > INCLUDE_ERI) return;
+  if (deriv_order > INCLUDE_ERI) return true;
+
+  bool test_success = true;
 
   // record start wall time
   struct timeval tod;
@@ -343,6 +346,7 @@ void test_4eri(unsigned int deriv_order,
 
           cout << (success ? "ok" : "failed") << std::endl;
 
+          test_success &= success;
           } // checking computed values vs. the reference
 
           } // end of nrepeats
@@ -375,14 +379,18 @@ void test_4eri(unsigned int deriv_order,
   gettimeofday(&tod,0);
   const double end_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
   std::cout << "wall time = " << (end_wall_time - start_wall_time) << " seconds" << std::endl;
+
+  return test_success;
 }
 #endif // INCLUDE_ERI
 
 #ifdef INCLUDE_ERI3
-void test_3eri(unsigned int deriv_order,
+bool test_3eri(unsigned int deriv_order,
                unsigned int lmax_max) {
 
-  if (deriv_order > INCLUDE_ERI3) return;
+  if (deriv_order > INCLUDE_ERI3) return true;
+
+  bool test_success = true;
 
   // record start wall time
   struct timeval tod;
@@ -610,6 +618,7 @@ void test_3eri(unsigned int deriv_order,
 
         cout << (success ? "ok" : "failed") << endl;
 
+        test_success &= success;
         } // checking computed values vs. the reference
 
         } // end of nrepeats
@@ -641,6 +650,8 @@ void test_3eri(unsigned int deriv_order,
   gettimeofday(&tod,0);
   const double end_wall_time = tod.tv_sec + 0.000001 * tod.tv_usec;
   std::cout << "wall time = " << (end_wall_time - start_wall_time) << " seconds" << std::endl;
+
+  return test_success;
 }
 #endif // INCLUDE_ERI3
 
@@ -648,7 +659,9 @@ void test_3eri(unsigned int deriv_order,
 void test_2eri(unsigned int deriv_order,
                unsigned int lmax_max) {
 
-  if (deriv_order > INCLUDE_ERI2) return;
+  if (deriv_order > INCLUDE_ERI2) return true;
+
+  bool test_success = true;
 
   typedef unsigned int uint;
 
@@ -830,6 +843,7 @@ void test_2eri(unsigned int deriv_order,
 
         cout << (success ? "ok" : "failed") << endl;
 
+        test_success &= success;
     }
   }
 
@@ -842,5 +856,6 @@ void test_2eri(unsigned int deriv_order,
 #endif
   free(inteval);
 
+  return test_success;
 }
 #endif // INCLUDE_ERI2
