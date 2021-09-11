@@ -313,9 +313,10 @@ if (LIBINT_HAS_CXX_API)
             tests/unit/fixture.h
             tests/unit/test-1body.cc
             tests/unit/test-2body.cc
-            tests/unit/test-core-ints.cc
+            tests/unit/test-basis.cc
             tests/unit/test-c-api.cc
             tests/unit/test-core.cc
+            tests/unit/test-core-ints.cc
             tests/unit/test-permute.cc
             tests/unit/test-precision.cc
             tests/unit/test-shell-order.cc
