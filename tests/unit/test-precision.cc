@@ -9,7 +9,11 @@
 #include <libint2/config.h>
 #include <libint2/numeric.h>
 #include <libint2/engine.h>
-#include <test_eri/eri.h>
+#if defined(NO_LIBINT_COMPILER_CODE)
+# include "../eri/eri.h"
+#else
+# include <test_eri/eri.h>
+#endif
 
 #ifdef LIBINT_HAS_MPFR
 TEST_CASE("ERI reference values", "[2-body][precision]") {

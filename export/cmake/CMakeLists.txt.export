@@ -317,10 +317,12 @@ if (LIBINT_HAS_CXX_API)
             tests/unit/test-c-api.cc
             tests/unit/test-core.cc
             tests/unit/test-permute.cc
+            tests/unit/test-precision.cc
             tests/unit/test-shell-order.cc
             tests/unit/test-util.cc
             )
     add_executable(unit_tests-libint2 EXCLUDE_FROM_ALL tests/unit/test.cc ${utests_src})
+    target_compile_definitions(unit_tests-libint2 PRIVATE -DNO_LIBINT_COMPILER_CODE)
     target_link_libraries(unit_tests-libint2 libint2_cxx)
     add_test(libint2/unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests-libint2)
     set_tests_properties(libint2/unit/build PROPERTIES FIXTURES_SETUP LIBINT2_UNIT_TESTS_EXEC)
