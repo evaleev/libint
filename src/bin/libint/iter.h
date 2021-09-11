@@ -82,16 +82,16 @@ namespace libint2 {
     /// Returns current element
     const iref& elem() const;
     /// Returns current element. Implements SubIterator's pelem().
-    cp_rettype pelem() const;
+    cp_rettype pelem() const override;
 
     /// Returns a number of iterations (number of elements in a set over which to iterate).
-    unsigned int num_iter() const;
+    unsigned int num_iter() const override;
     /// Initializes the iterator.
-    void init();
+    void init() override;
     /// Iterates to the next element. Only prefix form is provided.
-    SubIterator& operator++();
+    SubIterator& operator++() override;
     /// This is used to check whether current element exists. Returns 1 if it does.
-    operator int() const;
+    operator int() const override;
 
   protected:
     const tref obj_;

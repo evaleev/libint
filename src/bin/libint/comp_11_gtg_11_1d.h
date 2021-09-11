@@ -58,11 +58,11 @@ namespace libint2 {
 
 #if LIBINT_ENABLE_GENERIC_CODE
     /// Implementation of RecurrenceRelation::has_generic()
-    bool has_generic(const SafePtr<CompilationParameters>& cparams) const { return true; }
+    bool has_generic(const SafePtr<CompilationParameters>& cparams) const override { return true; }
     /// Implementation of RecurrenceRelation::generic_header()
-    std::string generic_header() const { return "VRR_GTG_1d_xx_xx.h"; }
+    std::string generic_header() const override { return "VRR_GTG_1d_xx_xx.h"; }
     /// Implementation of RecurrenceRelation::generic_instance()
-    std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const;
+    std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const override;
 #endif
     };
 

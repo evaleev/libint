@@ -209,7 +209,7 @@ namespace libint2 {
     virtual ~WorstFitMemoryManager();
 
     /// Implementation of MemoryManager::alloc()
-    Address alloc(const Size& size);
+    Address alloc(const Size& size) override;
 
   private:
     /// If seacrh_exact_ == true -- look for exact fit first
@@ -228,7 +228,7 @@ namespace libint2 {
     virtual ~BestFitMemoryManager();
 
     /// Implementation of MemoryManager::alloc()
-    Address alloc(const Size& size);
+    Address alloc(const Size& size) override;
 
   private:
     /// If seacrh_exact_ == true -- look for exact fit first
@@ -247,7 +247,7 @@ namespace libint2 {
     virtual ~FirstFitMemoryManager();
 
     /// Implementation of MemoryManager::alloc()
-    Address alloc(const Size& size);
+    Address alloc(const Size& size) override;
 
   private:
     /// If seacrh_exact_ == true -- look for exact fit first
@@ -264,7 +264,7 @@ namespace libint2 {
     virtual ~LastFitMemoryManager();
 
     /// Implementation of MemoryManager::alloc()
-    Address alloc(const Size& size);
+    Address alloc(const Size& size) override;
 
   private:
     /// If seacrh_exact_ == true -- look for exact fit first

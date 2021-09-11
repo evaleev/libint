@@ -70,12 +70,12 @@ namespace libint2 {
     ~QuantumNumbers();
 
     bool operator==(const QuantumNumbers&) const;
-    std::string label() const;
+    std::string label() const override;
 
     /// Increment quantum number i
-    void inc(unsigned int i) { ++qn_.at(i); }
+    void inc(unsigned int i) override { ++qn_.at(i); }
     /// Decrement quantum number i
-    void dec(unsigned int i) {
+    void dec(unsigned int i) override {
 #if CHECK_SAFETY
       if (qn_.at(i) == T(0))
         throw std::runtime_error("QuantumNumbers::dec -- quantum number already zero");
@@ -94,7 +94,7 @@ namespace libint2 {
     }
 
     /// Implements Hashable::key()
-    LIBINT2_UINT_LEAST64 key() const {
+    LIBINT2_UINT_LEAST64 key() const override {
       LIBINT2_UINT_LEAST64 key = 0;
       LIBINT2_UINT_LEAST64 pfac = 1;
       const int maxi = ((int)num_quanta()) - 1;
@@ -213,12 +213,12 @@ namespace libint2 {
     ~QuantumNumbersA();
 
     bool operator==(const QuantumNumbersA&) const;
-    std::string label() const;
+    std::string label() const override;
 
     /// Increment quantum number i
-    void inc(unsigned int i) { ++qn_[i]; }
+    void inc(unsigned int i) override { ++qn_[i]; }
     /// Decrement quantum number i
-    void dec(unsigned int i) {
+    void dec(unsigned int i) override {
 #if CHECK_SAFETY
       if (qn_[i] == T(0))
         throw std::runtime_error("QuantumNumbersA::dec -- quantum number already zero");
@@ -237,12 +237,12 @@ namespace libint2 {
     }
 
     /// Implementation of QuantumSet::num_quanta()
-    unsigned int num_quanta() const {
+    unsigned int num_quanta() const override {
       return N;
     }
 
     /// Implements Hashable::key()
-    LIBINT2_UINT_LEAST64 key() const {
+    LIBINT2_UINT_LEAST64 key() const override {
       LIBINT2_UINT_LEAST64 key = 0;
       LIBINT2_UINT_LEAST64 pfac = 1;
       const int maxi = ((int)num_quanta()) - 1;
@@ -371,21 +371,21 @@ namespace libint2 {
     ~QuantumNumbersA() {}
 
     bool operator==(const QuantumNumbersA&) const { return true; }
-    std::string label() const { return "{}"; }
+    std::string label() const override { return "{}"; }
 
     /// Increment quantum number i
-    void inc(unsigned int i) { throw std::runtime_error("QuantumNumbersA<T,0>::inc -- no quantum numbers to increment"); }
+    void inc(unsigned int i) override { throw std::runtime_error("QuantumNumbersA<T,0>::inc -- no quantum numbers to increment"); }
     /// Decrement quantum number i
-    void dec(unsigned int i) {
+    void dec(unsigned int i) override {
       throw std::runtime_error("QuantumNumbersA<T,0>::inc -- no quantum numbers to decrement");
     }
     /// Return i-th quantum number
     const T elem(unsigned int i) const { throw std::runtime_error("QuantumNumbersA<T,0>::inc -- no quantum numbers to return"); }
     /// Implementation of QuantumSet::num_quanta()
-    unsigned int num_quanta() const { return 0; }
+    unsigned int num_quanta() const override { return 0; }
 
     /// Implements Hashable::key()
-    LIBINT2_UINT_LEAST64 key() const { return 0; }
+    LIBINT2_UINT_LEAST64 key() const override { return 0; }
 
     /// key is in range [0,max_key())
     LIBINT2_UINT_LEAST64 max_key() const { return 1; }
