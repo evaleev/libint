@@ -433,27 +433,30 @@ namespace libint2 {
 
           std::string line, rest;
 
-          // skip till first basis
-          while (std::getline(is, line) && line != "****") {
-          }
-
 #define LIBINT2_LINE_TO_STRINGSTREAM(line) \
         std::istringstream iss(line); \
         iss.imbue(locale);
 
           size_t Z;
           auto nextbasis = true, nextshell = false;
+          bool first_element = true;
           // read lines till end
-          while (std::getline(is, line)) {
+          do {
             // skipping empties and starting with '!' (the comment delimiter)
             if (line.empty() || line[0] == '!') continue;
             if (line == "****") {
+              // old (EMSL) basis set exchange g94 format marks the beginning of data by ****
+              // new (MolSSI) basis set exchange g94 format does not start with ****
+              // so if found **** and still waiting for the first element, this is new g94 format, skip to next line
+              if (first_element)
+                continue;
               nextbasis = true;
               nextshell = false;
               continue;
             }
             if (nextbasis) {
               nextbasis = false;
+              first_element = false;
               LIBINT2_LINE_TO_STRINGSTREAM(line);
               std::string elemsymbol;
               iss >> elemsymbol >> rest;
@@ -537,7 +540,7 @@ namespace libint2 {
                 );
               }
             }
-          }
+          } while (std::getline(is, line));
 
 #undef LIBINT2_LINE_TO_STRINGSTREAM
         }
