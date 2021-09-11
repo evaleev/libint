@@ -1314,8 +1314,8 @@ AC_ARG_ENABLE(mpfr,
 
 dnl ------------------ Check for Boost library -----------------------
 
-dnl Boost.Preprocessor requires 1.30 (which introduced MPL; Preprocessor was introduced in 1.29)
-AX_BOOST_BASE([1.30],, [AC_MSG_ERROR([libint compiler needs Boost 1.30 or later (needs Boost 1.57 if don't want to use bundled Boost.Preprocessor and be able to use clang), download from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])])
+dnl Boost.Preprocessor requires 1.57
+AX_BOOST_BASE([1.57],, [AC_MSG_ERROR([libint compiler needs Boost 1.57 or later (needs Boost 1.57 if don't want to use bundled Boost.Preprocessor and be able to use clang), download from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])])
 CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
 # no need to update LDFLAGS: we are not using precompoiled boost
 
