@@ -1222,8 +1222,6 @@ AC_SUBST(LIBSUF)
 
 
 dnl ---------- Checks for "standard" header files. -----------
-
-AC_HEADER_STDC
 AC_CHECK_HEADERS(limits.h stdint.h)
 
 dnl ---------- Check for posix_memalign ----------------------
