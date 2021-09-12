@@ -39,7 +39,8 @@
 using namespace std;
 using namespace libint2;
 
-const double ABSOLUTE_DEVIATION_THRESHOLD = 1.0E-15; // indicate failure if any integral differs in absolute sense by more than this
+const double ABSOLUTE_DEVIATION_THRESHOLD = 5.0E-15; // indicate failure if any integral differs in absolute sense by more than this
+                                                     // loss of precision in HRR likely limits precision for high-L (e.g. (dd|dd)), absolute precision of lower AM should be closer to epsilon
 const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any integral differs in relative sense by more than this
 
 /// change to true to skip verification and do some timing simulation
