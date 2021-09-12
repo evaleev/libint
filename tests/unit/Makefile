@@ -49,13 +49,6 @@ $(TEST1): $(CXXTEST1OBJ) $(CTEST1OBJ) $(COMPUTE_LIB)
 check1:: $(TEST1)
 	./$^
 
-     endif
-    endif
-   endif
-  endif
- endif
-endif
-
 # Source files for timer and tester are to be compiled using CXXGEN
 $(TEST1): CXX=$(CXXGEN)
 $(TEST1): CXXDEPEND=$(CXXGEN)
@@ -100,4 +93,11 @@ else
 endif
 
 -include $(CXXTEST1DEP)
+endif
+
+     endif
+    endif
+   endif
+  endif
+ endif
 endif
