@@ -304,6 +304,14 @@ add_test(NAME libint2/eritest/run2
         COMMAND $<TARGET_FILE:eritest-libint2> 2 1)
 set_tests_properties(libint2/eritest/run2
         PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
+add_test(NAME libint2/eritest/run3
+        COMMAND $<TARGET_FILE:eritest-libint2> 3 1)
+set_tests_properties(libint2/eritest/run3
+        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
+add_test(NAME libint2/eritest/run4
+        COMMAND $<TARGET_FILE:eritest-libint2> 4 1)
+set_tests_properties(libint2/eritest/run4
+        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
 
 if (LIBINT_HAS_CXX_API)
     set(utests_src
