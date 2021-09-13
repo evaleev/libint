@@ -26,7 +26,7 @@ CXXDEPENDFLAGS = -M
 TEST1 = test
 CXXTEST1SRC = test.cc test-core.cc test-permute.cc \
   test-1body.cc test-core-ints.cc test-c-api.cc test-shell-order.cc \
-  test-util.cc c-api-util.cc test-2body.cc test-precision.cc
+  test-util.cc c-api-util.cc test-2body.cc test-precision.cc test-basis.cc
 CXXTEST1OBJ = $(CXXTEST1SRC:%.cc=%.$(OBJSUF))
 CXXTEST1DEP = $(CXXTEST1SRC:%.cc=%.$(DEPSUF))
 CTEST1SRC = c-api.c
@@ -48,13 +48,6 @@ $(TEST1): $(CXXTEST1OBJ) $(CTEST1OBJ) $(COMPUTE_LIB)
 
 check1:: $(TEST1)
 	./$^
-
-     endif
-    endif
-   endif
-  endif
- endif
-endif
 
 # Source files for timer and tester are to be compiled using CXXGEN
 $(TEST1): CXX=$(CXXGEN)
@@ -100,4 +93,11 @@ else
 endif
 
 -include $(CXXTEST1DEP)
+endif
+
+     endif
+    endif
+   endif
+  endif
+ endif
 endif

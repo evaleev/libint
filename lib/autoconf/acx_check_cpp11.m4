@@ -72,7 +72,7 @@ AC_DEFUN([ACX_CHECK_CPP11_GENERAL], [
 ])
 
 #
-# check if CXXGEN provides C++11 support with CXXGENFLAGS, without any additional flags
+# check if CXXGEN provides C++11 support with CXXGENFLAGS, possibly by appending -std=c++11 to CXXGENFLAGS
 #
 AC_DEFUN([ACX_CHECK_CPP11_CXXGEN], [
   AC_LANG_SAVE
@@ -84,6 +84,7 @@ AC_DEFUN([ACX_CHECK_CPP11_CXXGEN], [
   ref_CXXFLAGS=$CXXFLAGS
   CXXFLAGS=$CXXGENFLAGS
   
+  CXXGEN_SUPPORTS_CPP11=no
   AC_COMPILE_IFELSE(
     [AC_LANG_PROGRAM(
       [[#include <vector>
@@ -108,12 +109,43 @@ AC_DEFUN([ACX_CHECK_CPP11_CXXGEN], [
      CXXGEN_SUPPORTS_CPP11=yes
      AC_DEFINE(LIBINT_HAS_CXX11_CXXGEN)
      AC_MSG_RESULT([yes])
-    ],
-    [
-     CXXGEN_SUPPORTS_CPP11=no
-     AC_MSG_RESULT([no])
     ]
   )
+  # if not found, try adding -std flag
+  if test "X$CXXGEN_SUPPORTS_CPP11" = "Xno"; then
+    CXXFLAGS="$CXXFLAGS -std=c++11"
+    CXXGENFLAGS="$CXXGENFLAGS -std=c++11"
+    CXXGENFLAGS_ADDED_DASHSTD=1
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM(
+       [[#include <vector>
+         #include <iostream>
+         #include "$srcdir/include/libint2/util/cxxstd.h"
+         #if LIBINT2_CPLUSPLUS_STD < 2011
+         # error "no C++11 support"
+         #endif
+          auto f(int x, double y) -> decltype(x*y) {
+            return x*y;
+          }
+       ]],
+       [[
+         std::vector<double> reals(10, 0.0);
+         for (const auto& i: reals) {
+           std::cout << i << "\n";
+         }
+       ]]
+      )],
+      [
+        CXXGEN_SUPPORTS_CPP11=yes
+        AC_DEFINE(LIBINT_HAS_CXX11_CXXGEN)
+        AC_MSG_RESULT([yes])
+      ],
+      [
+        AC_MSG_RESULT([no])
+      ]
+    )
+  fi
+
   AC_SUBST(CXXGEN_SUPPORTS_CPP11)
   # revert CXX and CXXFLAGS
   CXX=$ref_CXX

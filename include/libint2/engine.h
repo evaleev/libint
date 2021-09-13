@@ -601,7 +601,7 @@ class Engine {
   /// @return the particle rank of the operator
   int operator_rank() const { return rank(oper_); }
 
-  /// @return rank of the braket
+  /// @return rank of the braket (e.g., 2 for (a|b), 3 for (a|bc), etc.)
   int braket_rank() const { return rank(braket_); }
 
   /// @return the operator
@@ -609,6 +609,9 @@ class Engine {
 
   /// @return the braket
   BraKet braket() const { return braket_; }
+
+  /// @return the order of geometrical derivatives
+  int deriv_order() const { return deriv_order_; }
 
   /// (re)sets operator type to @c new_oper
   /// @param[in] new_oper Operator whose integrals will be computed with the next call to Engine::compute()

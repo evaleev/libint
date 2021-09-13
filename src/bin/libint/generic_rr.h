@@ -68,20 +68,20 @@ namespace libint2 {
       }
 
       /// Implementation of RecurrenceRelation::num_children()
-      unsigned int num_children() const { return children_.size(); };
+      unsigned int num_children() const override { return children_.size(); }
       /// Implementation of RecurrenceRelation::rr_target()
-      SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target_); }
+      SafePtr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target_); }
       /// Implementation of RecurrenceRelation::rr_child()
-      SafePtr<DGVertex> rr_child(unsigned int i) const {
+      SafePtr<DGVertex> rr_child(unsigned int i) const override {
         return children_.at(i);
       }
       /// Implementation of RecurrenceRelation::is_simple()
-      bool is_simple() const {
+      bool is_simple() const override {
         return TrivialBFSet<BasisFunctionType>::result;
       }
 
       /// Implementation of RecurrenceRelation::generate_label()
-      std::string generate_label() const
+      std::string generate_label() const override
       {
         std::ostringstream os;
         os << RRImpl::descr() << " " << target_->label();

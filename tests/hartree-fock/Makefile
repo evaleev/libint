@@ -44,12 +44,6 @@ check1:: $(TEST1)
 
 check2:: $(TEST2)
 	./$^ $(SRCDIR)/h2o_rotated.xyz | $(PYTHON) $(SRCDIR)/$^-validate.py ../../src/lib/libint/MakeVars.features
-     endif
-    endif
-   endif
-  endif
- endif
-endif
 
 $(TEST1): $(CXXTEST1OBJ) $(COMPILER_LIB) $(COMPUTE_LIB)
 	$(LD) -o $@ $(CXXFLAGS) $(LDFLAGS) $^ $(SYSLIBS)
@@ -104,4 +98,11 @@ endif
 -include $(CXXTEST1DEP)
 -include $(CXXTEST2DEP)
 
+endif
+
+     endif
+    endif
+   endif
+  endif
+ endif
 endif

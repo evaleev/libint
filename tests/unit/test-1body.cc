@@ -62,5 +62,17 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
     }
   }
 
+  // see https://github.com/evaleev/libint/issues/199
+  {
+    const auto lmax = std::min(3, LIBINT2_MAX_AM_elecpot);
+    if (lmax >= 2) {
+      const auto deriv_order = INCLUDE_ONEBODY;
+      auto engine = Engine(Operator::nuclear, 2, lmax, deriv_order);
+      engine.set_params(make_point_charges(atoms));
+      const auto& buf = engine.results();
+      REQUIRE(libint2::num_geometrical_derivatives(atoms.size() + 2, deriv_order) == buf.size());
+    }
+  }
+
 #endif // LIBINT2_SUPPORT_ONEBODY
 }

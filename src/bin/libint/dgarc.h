@@ -57,7 +57,7 @@ namespace libint2 {
     virtual ~DGArcDirect() {}
 
     /// Overload of DGArc::print()
-    void print(std::ostream& os) const
+    void print(std::ostream& os) const override
       {
         os << "DGArcDirect: connects " << orig().get() << " to " << dest().get();
       }
@@ -92,9 +92,9 @@ namespace libint2 {
     virtual ~DGArcRel();
 
     /// Implementation of DGArcRR::rr()
-    SafePtr<RecurrenceRelation> rr() const { return dynamic_pointer_cast<RecurrenceRelation,ArcRel>(rel_); }
+    SafePtr<RecurrenceRelation> rr() const override { return dynamic_pointer_cast<RecurrenceRelation,ArcRel>(rel_); }
     /// Overload of DGArc::print()
-    void print(std::ostream& os) const
+    void print(std::ostream& os) const override
       {
         os << "DGArcRel<T>: connects " << orig().get() << " to " << dest().get() << std::endl;
       }

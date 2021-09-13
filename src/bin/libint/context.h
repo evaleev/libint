@@ -25,7 +25,7 @@
 #define _libint2_src_bin_libint_codecontext_h_
 
 namespace libint2 {
-  
+
   class ForLoop;
 
   /**
@@ -34,7 +34,7 @@ namespace libint2 {
   class CodeContext {
   public:
     virtual ~CodeContext() {}
-    
+
     /// Returns the CompilationParameters used to create this context
     const SafePtr<CompilationParameters>& cparams() const;
 
@@ -141,7 +141,7 @@ namespace libint2 {
     virtual std::string end_of_stat() const =0;
     /// converts a value to a pointer
     virtual std::string value_to_pointer(const std::string& val) const =0;
-    
+
     /** returns a ForLoop object.
       */
     virtual SafePtr<ForLoop> for_loop(std::string& varname, const SafePtr<Entity>& less_than,
@@ -210,110 +210,110 @@ namespace libint2 {
     virtual ~CppCodeContext();
 
     /// Implementation of CodeContext::code_prefix()
-    std::string code_prefix() const;
+    std::string code_prefix() const override;
     /// Implementation of CodeContext::code_postfix()
-    std::string code_postfix() const;
+    std::string code_postfix() const override;
     /// Implementation of CodeContext::copyright()
-    std::string copyright() const;
+    std::string copyright() const override;
     /// Implementation of CodeContext::std_header()
-    std::string std_header() const;
+    std::string std_header() const override;
     /// Implementation of CodeContext::std_function_header()
-    std::string std_function_header() const;
+    std::string std_function_header() const override;
     /// Implementation of CodeContext::label_to_name(label)
-    std::string label_to_name(const std::string& label) const;
+    std::string label_to_name(const std::string& label) const override;
     /// Implementation of CodeContext::declare()
     std::string declare(const std::string& type,
-                        const std::string& name) const;
+                        const std::string& name) const override;
     /// Implementation of CodeContext::declare_v()
     std::string declare_v(const std::string& type,
 			  const std::string& name,
-			  const std::string& nelem) const;
+			  const std::string& nelem) const override;
     // Implementation of CodeContext::decldef()
     std::string decldef(const std::string& type,
                         const std::string& name,
-                        const std::string& value);
+                        const std::string& value) override;
     /// Implementation of CodeContext::assign()
     std::string assign(const std::string& name,
-                       const std::string& value);
+                       const std::string& value) override;
     /// Implementation of CodeContext::accumulate()
     std::string accumulate(const std::string& name,
-			   const std::string& value);
+			   const std::string& value) override;
     /// Implementation of CodeContext::assign_binary_expr()
     std::string assign_binary_expr(const std::string& name,
                                    const std::string& left,
                                    const std::string& oper,
-                                   const std::string& right);
+                                   const std::string& right) override;
     // Implementation of CodeContext::assign_ternary_expr()
     std::string assign_ternary_expr(const std::string& name,
                                     const std::string& arg1,
                                     const std::string& oper1,
                                     const std::string& arg2,
                                     const std::string& oper2,
-                                    const std::string& arg3);
+                                    const std::string& arg3) override;
     /// Implementation of CodeContext::accumulate_binary_expr()
     std::string accumulate_binary_expr(const std::string& name,
 				       const std::string& left,
 				       const std::string& oper,
-				       const std::string& right);
+				       const std::string& right) override;
     // Implementation of CodeContext::accumulate_ternary_expr()
     std::string accumulate_ternary_expr(const std::string& name,
                                         const std::string& arg1,
                                         const std::string& oper1,
                                         const std::string& arg2,
                                         const std::string& oper2,
-                                        const std::string& arg3);
+                                        const std::string& arg3) override;
     /// Implementation of CodeContext::stack_address()
-    std::string stack_address(const DGVertex::Address& a) const;
+    std::string stack_address(const DGVertex::Address& a) const override;
 
     /// Implementation of CodeContext::macro_define()
-    std::string macro_define(const std::string& name) const;
+    std::string macro_define(const std::string& name) const override;
     /// Implementation of CodeContext::macro_define()
-    std::string macro_define(const std::string& name, const std::string& value) const;
+    std::string macro_define(const std::string& name, const std::string& value) const override;
     /// Implementation of CodeContext::macro_if()
-    virtual std::string macro_if(const std::string& name) const;
+    std::string macro_if(const std::string& name) const override;
     /// Implementation of CodeContext::macro_ifdef()
-    virtual std::string macro_ifdef(const std::string& name) const;
+    std::string macro_ifdef(const std::string& name) const override;
     /// Implementation of CodeContext::macro_endif()
-    virtual std::string macro_endif() const;
+    std::string macro_endif() const override;
 
     /// Implementation of CodeContext::comment(statement)
-    std::string comment(const std::string& statement) const;
+    std::string comment(const std::string& statement) const override;
     /// Implementation of CodeContext::open_block()
-    std::string open_block() const;
+    std::string open_block() const override;
     /// Implementation of CodeContext::close_block()
-    std::string close_block() const;
+    std::string close_block() const override;
     /// Implementation of CodeContext::end_of_stat()
-    std::string end_of_stat() const;
+    std::string end_of_stat() const override;
     /// Implementation of CodeContext::value_to_pointer()
-    std::string value_to_pointer(const std::string& val) const;
+    std::string value_to_pointer(const std::string& val) const override;
     /// Implementation of CodeContext::for_loop()
     SafePtr<ForLoop> for_loop(std::string& varname, const SafePtr<Entity>& less_than,
-                              const SafePtr<Entity>& start_at) const;
+                              const SafePtr<Entity>& start_at) const override;
 
     /// Implementation of CodeContext::inteval_type_name()
-    std::string inteval_type_name(const std::string& task) const;
+    std::string inteval_type_name(const std::string& task) const override;
     /// Implementation of CodeContext::inteval_spec_type_name()
-    std::string inteval_spec_type_name(const std::string& task) const;
+    std::string inteval_spec_type_name(const std::string& task) const override;
     /// Implementation of CodeContext::inteval_spec_type_name()
-    std::string inteval_gen_type_name() const;
+    std::string inteval_gen_type_name() const override;
 
   private:
     bool vectorize_;
 
     /// Implementation of CodeContext::unique_fp_name()
-    std::string unique_fp_name() const;
+    std::string unique_fp_name() const override;
     /// Implementation of CodeContext::unique_int_name()
-    std::string unique_int_name() const;
+    std::string unique_int_name() const override;
     ///
     std::string symbol_to_pointer(const std::string& symbol);
 
-    std::string void_type() const;
-    std::string int_type() const;
-    std::string size_type() const;
-    std::string fp_type() const;
-    std::string ptr_fp_type() const;
-    std::string const_modifier() const;
-    std::string mutable_modifier() const;
+    std::string void_type() const override;
+    std::string int_type() const override;
+    std::string size_type() const override;
+    std::string fp_type() const override;
+    std::string ptr_fp_type() const override;
+    std::string const_modifier() const override;
+    std::string mutable_modifier() const override;
 
     std::string start_expr() const;
     std::string end_expr() const;

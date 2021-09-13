@@ -332,6 +332,7 @@ void compute_eri_c(int &contrdepth, int &deriv_order, int &am1, double *c1, doub
 #endif
 }
 
+// threshold = max allowed relative error
 bool test_eri_c_f(int &contrdepth, int &am1, double *c1, double *alpha1, double *A,
                      int &am2, double *c2, double *alpha2, double *B,
                      int &am3, double *c3, double *alpha3, double *C,
@@ -436,11 +437,12 @@ bool test_eri_c_f(int &contrdepth, int &am1, double *c1, double *alpha1, double 
         for(int c=0; c<n3; c++) {
           for(int d=0; d<n4; d++, nel++) {
             const double abs_error = abs(*eri_shell_set_c - *eri_shell_set_f);
-            if(abs_error > threshold) {
+            const double rel_error = abs_error / abs(*eri_shell_set_c);
+            if(rel_error > threshold) {
               std::cout << std::setprecision(17) << "Elem " << nel << " di= " << deriv_order <<
                 ", : C = " << *eri_shell_set_c
                 << ", Fortran = " << *eri_shell_set_f
-                << ", abs_error = " << abs_error << std::endl;
+                << ", rel_error = " << rel_error << std::endl;
               success = false;
             }
             ++eri_shell_set_c; ++eri_shell_set_f;
@@ -479,7 +481,7 @@ bool test_eri_c_f(int &contrdepth, int &am1, double *c1, double *alpha1, double 
 
 TEST_CASE("Fortran ERI", "[eri]") {
 
-  const double threshold = 1.0E-16;
+  const double threshold = std::numeric_limits<double>::epsilon() * 10;
 
   int am1 = std::min(1, LIBINT2_MAX_AM_eri);
   int am2 = std::min(0, LIBINT2_MAX_AM_eri);

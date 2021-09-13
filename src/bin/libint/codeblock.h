@@ -52,9 +52,9 @@ namespace libint2 {
     virtual ~ForLoop();
 
     /// Implementation of CodeBlock::open()
-    std::string open();
+    std::string open() override;
     /// Implementation of CodeBlock::close()
-    std::string close();
+    std::string close() override;
 
     private:
     std::string varname_;
