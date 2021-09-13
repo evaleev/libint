@@ -2045,7 +2045,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   }  // not (ss|ss)
 
   if (cartesian_shell_normalization() == CartesianShellNormalization::uniform) {
-    std::array<std::reference_wrapper<const Shell>, 4> shells{bra1, bra2, ket1, ket2};
+    std::array<std::reference_wrapper<const Shell>, 4> shells{tbra1, tbra2, tket1, tket2};
     for (auto s = 0ul; s != targets_.size(); ++s) {
       uniform_normalize_cartesian_shells(const_cast<value_type*>(targets_[s]), shells);
     }

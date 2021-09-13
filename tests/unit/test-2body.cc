@@ -77,3 +77,84 @@ TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
   }
 
 }
+
+// see https://github.com/evaleev/libint/issues/216
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "bra-ket permutation", "[engine][2-body]") {
+  using libint2::Shell;
+  using libint2::BasisSet;
+  using libint2::Operator;
+  using libint2::Engine;
+  std::vector<Shell> shells;
+  shells.push_back({
+      {0.8378385011e+02, 0.1946956493e+02, 0.6332106784e+01}, // exponents
+      {// P shell, spherical=false, contraction coefficients
+       {1, false, {0.1559162750, 0.6076837186, 0.3919573931}}},
+      {{0, 0, 0}} // origin coordinates
+  });
+  shells.push_back({
+      {0.2964817927e+01, 0.9043639676e+00, 0.3489317337e+00}, // exponents
+      {// D shell, spherical=false, contraction coefficients
+       {2, false, {0.2197679508, 0.6555473627, 0.2865732590}}},
+      {{0, 0, 0}} // origin coordinates
+  });
+
+  auto obs = BasisSet();
+  for (auto&& shell : shells) {
+    obs.push_back(std::move(shell));
+  }
+  auto shell2bf = BasisSet::compute_shell2bf(obs);
+
+  auto engine =
+      Engine(libint2::Operator::coulomb, libint2::max_nprim(obs),
+                      libint2::max_l(obs), 0);
+  auto engine_kb =
+      Engine(libint2::Operator::coulomb, libint2::max_nprim(obs),
+             libint2::max_l(obs), 0);
+  // Force uniform normalised Cartesian functions
+  engine.set(libint2::CartesianShellNormalization::uniform);
+  engine_kb.set(libint2::CartesianShellNormalization::uniform);
+  const auto &buf = engine.results();
+  const auto &buf_kb = engine_kb.results();
+
+  for (auto s1 = 0; s1 != obs.size(); ++s1) {
+    const auto bf1_first = shell2bf[s1]; // first basis function in this shell
+    auto n1 = obs[s1].size();            // number of basis functions in shell 1
+    for (auto s2 = 0; s2 != obs.size(); ++s2) {
+      const auto bf2_first = shell2bf[s2]; // first basis function in this shell
+      auto n2 = obs[s2].size(); // number of basis functions in shell 2
+      for (auto s3 = 0; s3 != obs.size(); ++s3) {
+        const auto bf3_first =
+            shell2bf[s3];         // first basis function in this shell
+        auto n3 = obs[s3].size(); // number of basis functions in shell 3
+        for (auto s4 = 0; s4 != obs.size(); ++s4) {
+          const auto bf4_first =
+              shell2bf[s4];         // first basis function in this shell
+          auto n4 = obs[s4].size(); // number of basis functions in shell 4
+          engine.compute2<Operator::coulomb, libint2::BraKet::xx_xx, 0>(
+              obs[s1], obs[s2], obs[s3], obs[s4]);
+          const auto *buf_1234 = buf[0];
+          engine_kb.compute2<Operator::coulomb, libint2::BraKet::xx_xx, 0>(
+              obs[s3], obs[s4], obs[s1], obs[s2]);
+          const auto *buf_3412 = buf_kb[0];
+          for (auto f1 = 0ul, f1234 = 0ul; f1 != n1; ++f1) {
+            const auto bf1 = f1 + bf1_first;
+            for (auto f2 = 0ul; f2 != n2; ++f2) {
+              const auto bf2 = f2 + bf2_first;
+              for (auto f3 = 0ul; f3 != n3; ++f3) {
+                const auto bf3 = f3 + bf3_first;
+                for (auto f4 = 0ul; f4 != n4; ++f4, ++f1234) {
+                  const auto bf4 = f4 + bf4_first;
+                  const auto integral = buf_1234[f1234];
+                  const auto f3412 = ((f3 * n4 + f4)*n1 + f1)*n2 + f2;
+                  const auto integral_kb = buf_3412[f3412];
+                  REQUIRE(std::abs(integral-integral_kb) < 1e-14);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
