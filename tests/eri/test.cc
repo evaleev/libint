@@ -657,7 +657,7 @@ bool test_3eri(unsigned int deriv_order,
 #endif // INCLUDE_ERI3
 
 #ifdef INCLUDE_ERI2
-void test_2eri(unsigned int deriv_order,
+bool test_2eri(unsigned int deriv_order,
                unsigned int lmax_max) {
 
   if (deriv_order > INCLUDE_ERI2) return true;
