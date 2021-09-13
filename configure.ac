@@ -1222,8 +1222,6 @@ AC_SUBST(LIBSUF)
 
 
 dnl ---------- Checks for "standard" header files. -----------
-
-AC_HEADER_STDC
 AC_CHECK_HEADERS(limits.h stdint.h)
 
 dnl ---------- Check for posix_memalign ----------------------
@@ -1263,14 +1261,14 @@ acx_with_boost=yes
 ACX_CHECK_CPP11
 
 if test "X$acx_have_cxx11" = "Xno"; then
-  AC_MSG_ERROR([C++11 support is required to compile the Libint compiler. Obtain a recent C++ compiler that supports C++11, or consider using a pregenerated library])
+  AC_MSG_ERROR([C++11 support is required to compile the Libint compiler. Obtain a recent C++ compiler that supports C++11 and set CXX to the its path.])
 fi
 
 # to support FMA CXXGEN must be able to compile C++11
 # NB -std=c++11 is not added to CXXGENFLAGS automatically!
 ACX_CHECK_CPP11_CXXGEN
-if test "X$libint_generate_gma" = "X1" -a "X$CXXGEN_SUPPORTS_CPP11" = "Xno"; then
-  AC_MSG_ERROR([CXXGEN must support C++11 to provide FMA support. Add -std=c++11 to CXXGENFLAGS.])
+if test "X$CXXGEN_SUPPORTS_CPP11" = "Xno"; then
+  AC_MSG_ERROR([C++11 support is required to compile the Libint library. Obtain a recent C++ compiler that supports C++11 and set CXXGEN to the its path.])
 fi
 
 dnl ------------------ Check for gmp C++ interface -----------------------
