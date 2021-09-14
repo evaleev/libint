@@ -56,6 +56,7 @@
 #include <libint2/util/compressed_pair.h>
 #include <libint2/util/timer.h>
 #include <libint2/cgshellinfo.h>
+#include <libint2/braket.h>
 
 // the engine will be profiled by default if library was configured with
 // --enable-profile
@@ -376,26 +377,6 @@ using core_eval_pack_type =
     __core_eval_pack_type<typename operator_traits<Op>::core_eval_type>;
 }
 
-/// types of shell sets supported by Engine, in chemist notation (i.e. '_'
-/// separates particles)
-/// \warning macro \c BOOST_PP_NBODY_BRAKET_RANK_TUPLE include the ranks of all
-/// brakets in \c BraKet
-///          and macro \c BOOST_PP_NBODY_BRAKET_MAX_INDEX must be equal to the
-///          max value in this enum
-enum class BraKet {
-  x_x = 0,
-  xx_xx,
-  xs_xx,
-  xx_xs,
-  xs_xs,
-  invalid = -1,
-  first_1body_braket = x_x,
-  last_1body_braket = x_x,
-  first_2body_braket = xx_xx,
-  last_2body_braket = xs_xs,
-  first_braket = first_1body_braket,
-  last_braket = last_2body_braket
-};
 #define BOOST_PP_NBODY_BRAKET_MAX_INDEX 4
 
 /// @param[in] braket a BraKet object

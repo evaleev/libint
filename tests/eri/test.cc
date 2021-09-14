@@ -43,6 +43,10 @@ const double ABSOLUTE_DEVIATION_THRESHOLD = 5.0E-14; // indicate failure if any 
                                                      // loss of precision in HRR likely limits precision for high-L (e.g. (dp|dd), (dd|dd), etc.)
 const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any integral differs in relative sense by more than this
 
+double absolute_derivation_threshold(int deriv_order) {
+  return ABSOLUTE_DEVIATION_THRESHOLD * std::pow(3., deriv_order > 2 ? deriv_order-2 : 0);
+}
+
 /// change to true to skip verification and do some timing simulation
 const bool do_timing_only = false;
 
@@ -93,13 +97,16 @@ int main(int argc, char** argv) {
   bool success = true;
   // run the tests
 #ifdef INCLUDE_ERI
-  success &= test_4eri(deriv_order, lmax_max);
+  if (deriv_order <= 4)
+    success &= test_4eri(deriv_order, lmax_max);
 #endif
 #ifdef INCLUDE_ERI3
-  success &= test_3eri(deriv_order, lmax_max);
+  if (deriv_order <= 4)
+    success &= test_3eri(deriv_order, lmax_max);
 #endif
 #ifdef INCLUDE_ERI2
-  success &= test_2eri(deriv_order, lmax_max);
+  if (deriv_order <= 4)
+    success &= test_2eri(deriv_order, lmax_max);
 #endif
 
   // cleanup static library data (once per process)
@@ -135,6 +142,12 @@ bool test_4eri(unsigned int deriv_order,
 #if INCLUDE_ERI >= 2
   if (deriv_order == 2) lmax = LIBINT2_MAX_AM_eri2;
 #endif
+#if INCLUDE_ERI >= 3
+  if (deriv_order == 3) lmax = LIBINT2_MAX_AM_eri3;
+#endif
+#if INCLUDE_ERI >= 4
+  if (deriv_order == 4) lmax = LIBINT2_MAX_AM_eri4;
+#endif
   Libint_t* inteval = libint2::malloc<Libint_t>(max_contrdepth4);
   if (deriv_order == 0) LIBINT2_PREFIXED_NAME(libint2_init_eri)(&inteval[0], lmax, 0);
 #if INCLUDE_ERI >= 1
@@ -142,6 +155,12 @@ bool test_4eri(unsigned int deriv_order,
 #endif
 #if INCLUDE_ERI >= 2
   if (deriv_order == 2) LIBINT2_PREFIXED_NAME(libint2_init_eri2)(&inteval[0], lmax, 0);
+#endif
+#if INCLUDE_ERI >= 3
+  if (deriv_order == 3) LIBINT2_PREFIXED_NAME(libint2_init_eri3)(&inteval[0], lmax, 0);
+#endif
+#if INCLUDE_ERI >= 4
+  if (deriv_order == 4) LIBINT2_PREFIXED_NAME(libint2_init_eri4)(&inteval[0], lmax, 0);
 #endif
 #ifdef LIBINT2_FLOP_COUNT
   LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(&inteval[0], max_contrdepth4);
@@ -178,6 +197,14 @@ bool test_4eri(unsigned int deriv_order,
 #endif
 #if INCLUDE_ERI >= 2
           if (deriv_order == 2 && LIBINT2_PREFIXED_NAME(libint2_build_eri2)[l0][l1][l2][l3] == 0)
+            continue;
+#endif
+#if INCLUDE_ERI >= 3
+          if (deriv_order == 3 && LIBINT2_PREFIXED_NAME(libint2_build_eri3)[l0][l1][l2][l3] == 0)
+            continue;
+#endif
+#if INCLUDE_ERI >= 4
+          if (deriv_order == 4 && LIBINT2_PREFIXED_NAME(libint2_build_eri4)[l0][l1][l2][l3] == 0)
             continue;
 #endif
 
@@ -235,6 +262,14 @@ bool test_4eri(unsigned int deriv_order,
           else if (deriv_order == 2)
             LIBINT2_PREFIXED_NAME(libint2_build_eri2)[am[0]][am[1]][am[2]][am[3]](&inteval[0]);
 #endif
+#if INCLUDE_ERI >= 3
+          else if (deriv_order == 3)
+            LIBINT2_PREFIXED_NAME(libint2_build_eri3)[am[0]][am[1]][am[2]][am[3]](&inteval[0]);
+#endif
+#if INCLUDE_ERI >= 4
+          else if (deriv_order == 4)
+            LIBINT2_PREFIXED_NAME(libint2_build_eri4)[am[0]][am[1]][am[2]][am[3]](&inteval[0]);
+#endif
 #endif
 #if LIBINT_CONTRACTED_INTS
           inteval[0].contrdepth = contrdepth4;
@@ -250,6 +285,16 @@ bool test_4eri(unsigned int deriv_order,
 #if INCLUDE_ERI >= 2
           else if (deriv_order == 2)
             LIBINT2_PREFIXED_NAME(libint2_build_eri2)[am[0]][am[1]][am[2]][am[3]](
+                &inteval[0]);
+#endif
+#if INCLUDE_ERI >= 3
+          else if (deriv_order == 3)
+            LIBINT2_PREFIXED_NAME(libint2_build_eri3)[am[0]][am[1]][am[2]][am[3]](
+                &inteval[0]);
+#endif
+#if INCLUDE_ERI >= 4
+          else if (deriv_order == 4)
+            LIBINT2_PREFIXED_NAME(libint2_build_eri4)[am[0]][am[1]][am[2]][am[3]](
                 &inteval[0]);
 #endif
 
@@ -329,11 +374,13 @@ bool test_4eri(unsigned int deriv_order,
                     for (unsigned int di = 0; di < nderiv; ++di) {
                       const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
                       const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
-                      if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
+                      if (relabs_error > RELATIVE_DEVIATION_THRESHOLD &&
+                          abs_error > absolute_derivation_threshold(deriv_order)) {
                         std::cout << "Elem " << ijkl << " di= " << di << " v="
                             << v << " : ref = " << ref_eri[di]
                             << " libint = " << new_eri[di]
-                            << " relabs_error = " << relabs_error << endl;
+                            << " relabs_error = " << relabs_error
+                            << " abs_error = " << abs_error << endl;
                         success = false;
                       }
                     }
@@ -368,11 +415,19 @@ bool test_4eri(unsigned int deriv_order,
     LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(&inteval[0]);
 #if INCLUDE_ERI >= 1
   if (deriv_order == 1)
-    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(&inteval[0]);
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri1)(&inteval[0]);
 #endif
 #if INCLUDE_ERI >= 2
   if (deriv_order == 2)
-    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(&inteval[0]);
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri2)(&inteval[0]);
+#endif
+#if INCLUDE_ERI >= 3
+  if (deriv_order == 3)
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri3)(&inteval[0]);
+#endif
+#if INCLUDE_ERI >= 4
+  if (deriv_order == 4)
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri4)(&inteval[0]);
 #endif
   free(inteval);
 
@@ -411,6 +466,12 @@ bool test_3eri(unsigned int deriv_order,
 #if defined(LIBINT2_MAX_AM2)
   if (deriv_order == 2) lmax_default = LIBINT2_MAX_AM2;
 #endif
+#if defined(LIBINT2_MAX_AM3)
+  if (deriv_order == 3) lmax_default = LIBINT2_MAX_AM3;
+#endif
+#if defined(LIBINT2_MAX_AM4)
+  if (deriv_order == 4) lmax_default = LIBINT2_MAX_AM4;
+#endif
 
   unsigned int lmax;
   if (deriv_order == 0) lmax = LIBINT2_MAX_AM_3eri;
@@ -419,6 +480,12 @@ bool test_3eri(unsigned int deriv_order,
 #endif
 #if INCLUDE_ERI3 >= 2
   if (deriv_order == 2) lmax = LIBINT2_MAX_AM_3eri2;
+#endif
+#if INCLUDE_ERI3 >= 3
+  if (deriv_order == 3) lmax = LIBINT2_MAX_AM_3eri3;
+#endif
+#if INCLUDE_ERI3 >= 4
+  if (deriv_order == 4) lmax = LIBINT2_MAX_AM_3eri4;
 #endif
   Libint_t* inteval = libint2::malloc<Libint_t>(max_contrdepth3);
   if (deriv_order == 0)
@@ -430,6 +497,14 @@ bool test_3eri(unsigned int deriv_order,
 #if INCLUDE_ERI3 >= 2
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_init_3eri2)(&inteval[0], lmax, 0);
+#endif
+#if INCLUDE_ERI3 >= 3
+  if (deriv_order == 3)
+    LIBINT2_PREFIXED_NAME(libint2_init_3eri3)(&inteval[0], lmax, 0);
+#endif
+#if INCLUDE_ERI3 >= 4
+  if (deriv_order == 4)
+    LIBINT2_PREFIXED_NAME(libint2_init_3eri4)(&inteval[0], lmax, 0);
 #endif
 #ifdef LIBINT2_FLOP_COUNT
   LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(&inteval[0], max_contrdepth3);
@@ -462,6 +537,14 @@ bool test_3eri(unsigned int deriv_order,
 #endif
 #if INCLUDE_ERI3 >= 2
         if (deriv_order == 2 && LIBINT2_PREFIXED_NAME(libint2_build_3eri2)[l0][l1][l2] == 0)
+          continue;
+#endif
+#if INCLUDE_ERI3 >= 3
+        if (deriv_order == 3 && LIBINT2_PREFIXED_NAME(libint2_build_3eri3)[l0][l1][l2] == 0)
+          continue;
+#endif
+#if INCLUDE_ERI3 >= 4
+        if (deriv_order == 4 && LIBINT2_PREFIXED_NAME(libint2_build_3eri4)[l0][l1][l2] == 0)
           continue;
 #endif
 
@@ -521,6 +604,14 @@ bool test_3eri(unsigned int deriv_order,
         if (deriv_order == 2)
           LIBINT2_PREFIXED_NAME(libint2_build_3eri2)[am[0]][am[1]][am[2]](&inteval[0]);
 #endif
+#if INCLUDE_ERI3 >= 3
+        if (deriv_order == 3)
+          LIBINT2_PREFIXED_NAME(libint2_build_3eri3)[am[0]][am[1]][am[2]](&inteval[0]);
+#endif
+#if INCLUDE_ERI3 >= 4
+        if (deriv_order == 4)
+          LIBINT2_PREFIXED_NAME(libint2_build_3eri4)[am[0]][am[1]][am[2]](&inteval[0]);
+#endif
 #endif
 #if LIBINT_CONTRACTED_INTS
         inteval[0].contrdepth = contrdepth3;
@@ -534,6 +625,14 @@ bool test_3eri(unsigned int deriv_order,
 #if INCLUDE_ERI3 >= 2
         if (deriv_order == 2)
           LIBINT2_PREFIXED_NAME(libint2_build_3eri2)[am[0]][am[1]][am[2]](&inteval[0]);
+#endif
+#if INCLUDE_ERI3 >= 3
+        if (deriv_order == 3)
+          LIBINT2_PREFIXED_NAME(libint2_build_3eri3)[am[0]][am[1]][am[2]](&inteval[0]);
+#endif
+#if INCLUDE_ERI3 >= 4
+        if (deriv_order == 4)
+          LIBINT2_PREFIXED_NAME(libint2_build_3eri4)[am[0]][am[1]][am[2]](&inteval[0]);
 #endif
 
         if (not do_timing_only) {
@@ -602,7 +701,8 @@ bool test_3eri(unsigned int deriv_order,
                 for (unsigned int di = 0; di < nderiv; ++di) {
                   const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
                   const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
-                  if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
+                  if (relabs_error > RELATIVE_DEVIATION_THRESHOLD &&
+                      abs_error > absolute_derivation_threshold(deriv_order)) {
                     std::cout << "Elem " << ijk << " di= " << di << " v="
                         << v << " : ref = " << ref_eri[di]
                         << " libint = " << new_eri[di]
@@ -645,6 +745,14 @@ bool test_3eri(unsigned int deriv_order,
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_cleanup_3eri2)(&inteval[0]);
 #endif
+#if INCLUDE_ERI3 >= 3
+  if (deriv_order == 3)
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_3eri3)(&inteval[0]);
+#endif
+#if INCLUDE_ERI3 >= 4
+  if (deriv_order == 4)
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_3eri4)(&inteval[0]);
+#endif
   free(inteval);
 
   // record end wall time, compute total wall time spent here
@@ -657,7 +765,7 @@ bool test_3eri(unsigned int deriv_order,
 #endif // INCLUDE_ERI3
 
 #ifdef INCLUDE_ERI2
-void test_2eri(unsigned int deriv_order,
+bool test_2eri(unsigned int deriv_order,
                unsigned int lmax_max) {
 
   if (deriv_order > INCLUDE_ERI2) return true;
@@ -682,6 +790,12 @@ void test_2eri(unsigned int deriv_order,
 #if INCLUDE_ERI2 >= 2
   if (deriv_order == 2) lmax = LIBINT2_MAX_AM_2eri2;
 #endif
+#if INCLUDE_ERI2 >= 3
+  if (deriv_order == 3) lmax = LIBINT2_MAX_AM_2eri3;
+#endif
+#if INCLUDE_ERI2 >= 4
+  if (deriv_order == 4) lmax = LIBINT2_MAX_AM_2eri4;
+#endif
   Libint_t* inteval = libint2::malloc<Libint_t>(contrdepth2);
   if (deriv_order == 0)
     LIBINT2_PREFIXED_NAME(libint2_init_2eri)(&inteval[0], lmax, 0);
@@ -692,6 +806,14 @@ void test_2eri(unsigned int deriv_order,
 #if INCLUDE_ERI2 >= 2
   if (deriv_order == 2)
     LIBINT2_PREFIXED_NAME(libint2_init_2eri2)(&inteval[0], lmax, 0);
+#endif
+#if INCLUDE_ERI2 >= 3
+  if (deriv_order == 3)
+    LIBINT2_PREFIXED_NAME(libint2_init_2eri3)(&inteval[0], lmax, 0);
+#endif
+#if INCLUDE_ERI2 >= 4
+  if (deriv_order == 4)
+    LIBINT2_PREFIXED_NAME(libint2_init_2eri4)(&inteval[0], lmax, 0);
 #endif
 #ifdef LIBINT2_FLOP_COUNT
   LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(&inteval[0], contrdepth2);
@@ -716,6 +838,14 @@ void test_2eri(unsigned int deriv_order,
 #endif
 #if INCLUDE_ERI2 >= 2
         if (deriv_order == 2 && LIBINT2_PREFIXED_NAME(libint2_build_2eri2)[l0][l1] == 0)
+          continue;
+#endif
+#if INCLUDE_ERI2 >= 3
+        if (deriv_order == 3 && LIBINT2_PREFIXED_NAME(libint2_build_2eri3)[l0][l1] == 0)
+          continue;
+#endif
+#if INCLUDE_ERI2 >= 4
+        if (deriv_order == 4 && LIBINT2_PREFIXED_NAME(libint2_build_2eri4)[l0][l1] == 0)
           continue;
 #endif
 
@@ -755,6 +885,14 @@ void test_2eri(unsigned int deriv_order,
         if (deriv_order == 2)
           LIBINT2_PREFIXED_NAME(libint2_build_2eri2)[am[0]][am[1]](&inteval[0]);
 #endif
+#if INCLUDE_ERI2 >= 3
+        if (deriv_order == 3)
+          LIBINT2_PREFIXED_NAME(libint2_build_2eri3)[am[0]][am[1]](&inteval[0]);
+#endif
+#if INCLUDE_ERI2 >= 4
+        if (deriv_order == 4)
+          LIBINT2_PREFIXED_NAME(libint2_build_2eri4)[am[0]][am[1]](&inteval[0]);
+#endif
 #endif
 #if LIBINT_CONTRACTED_INTS
         inteval[0].contrdepth = contrdepth2;
@@ -768,6 +906,14 @@ void test_2eri(unsigned int deriv_order,
 #if INCLUDE_ERI2 >= 2
         if (deriv_order == 2)
           LIBINT2_PREFIXED_NAME(libint2_build_2eri2)[am[0]][am[1]](&inteval[0]);
+#endif
+#if INCLUDE_ERI2 >= 3
+        if (deriv_order == 3)
+          LIBINT2_PREFIXED_NAME(libint2_build_2eri3)[am[0]][am[1]](&inteval[0]);
+#endif
+#if INCLUDE_ERI2 >= 4
+        if (deriv_order == 4)
+          LIBINT2_PREFIXED_NAME(libint2_build_2eri4)[am[0]][am[1]](&inteval[0]);
 #endif
 
         bool success = true;
@@ -828,7 +974,8 @@ void test_2eri(unsigned int deriv_order,
                 for (unsigned int di = 0; di < nderiv; ++di) {
                   const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);
                   const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
-                  if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
+                  if (relabs_error > RELATIVE_DEVIATION_THRESHOLD &&
+                      abs_error > absolute_derivation_threshold(deriv_order)) {
                     std::cout << "Elem " << ij << " di= " << di << " v="
                         << v << " : ref = " << ref_eri[di]
                         << " libint = " << new_eri[di]
@@ -854,6 +1001,12 @@ void test_2eri(unsigned int deriv_order,
 #endif
 #if INCLUDE_ERI2 >= 2
   if (deriv_order == 2) LIBINT2_PREFIXED_NAME(libint2_cleanup_2eri2)(&inteval[0]);
+#endif
+#if INCLUDE_ERI2 >= 3
+  if (deriv_order == 3) LIBINT2_PREFIXED_NAME(libint2_cleanup_2eri3)(&inteval[0]);
+#endif
+#if INCLUDE_ERI2 >= 4
+  if (deriv_order == 4) LIBINT2_PREFIXED_NAME(libint2_cleanup_2eri4)(&inteval[0]);
 #endif
   free(inteval);
 

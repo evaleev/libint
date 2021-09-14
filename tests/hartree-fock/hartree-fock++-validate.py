@@ -35,6 +35,10 @@ if os.path.exists(path_to_libfeatures):
     yes = True
     exec(open(path_to_libfeatures).read())
 
+# ignore test if ERI_MAX_AM  is too low
+if LIBINT_ERI_MAX_AM<2:
+    sys.exit(0)
+
 eref = [-76.003354058439]
 etol = 5e-12
 
