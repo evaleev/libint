@@ -370,7 +370,8 @@ bool test_4eri(unsigned int deriv_order,
                     for (unsigned int di = 0; di < nderiv; ++di) {
                       const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
                       const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
-                      if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
+                      if (relabs_error > RELATIVE_DEVIATION_THRESHOLD &&
+                          abs_error > ABSOLUTE_DEVIATION_THRESHOLD * std::pow(3., deriv_order > 2 ? deriv_order-2 : 0)) {
                         std::cout << "Elem " << ijkl << " di= " << di << " v="
                             << v << " : ref = " << ref_eri[di]
                             << " libint = " << new_eri[di]
