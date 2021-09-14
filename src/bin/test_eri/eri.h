@@ -99,7 +99,7 @@ struct ExpensiveMath {
 };
 
 namespace libint2 {
-  int min(int t1, unsigned int t2) { return t1 > (int)t2 ? (int)t2 : t1; }
+  inline int min(int t1, unsigned int t2) { return t1 > (int)t2 ? (int)t2 : t1; }
 
 template <typename Int>
 int parity(Int a) {
