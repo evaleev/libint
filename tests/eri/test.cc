@@ -43,6 +43,10 @@ const double ABSOLUTE_DEVIATION_THRESHOLD = 5.0E-14; // indicate failure if any 
                                                      // loss of precision in HRR likely limits precision for high-L (e.g. (dp|dd), (dd|dd), etc.)
 const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any integral differs in relative sense by more than this
 
+double absolute_derivation_threshold(int deriv_order) {
+  return ABSOLUTE_DEVIATION_THRESHOLD * std::pow(3., deriv_order > 2 ? deriv_order-2 : 0);
+}
+
 /// change to true to skip verification and do some timing simulation
 const bool do_timing_only = false;
 
@@ -371,7 +375,7 @@ bool test_4eri(unsigned int deriv_order,
                       const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
                       const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
                       if (relabs_error > RELATIVE_DEVIATION_THRESHOLD &&
-                          abs_error > ABSOLUTE_DEVIATION_THRESHOLD * std::pow(3., deriv_order > 2 ? deriv_order-2 : 0)) {
+                          abs_error > absolute_derivation_threshold(deriv_order)) {
                         std::cout << "Elem " << ijkl << " di= " << di << " v="
                             << v << " : ref = " << ref_eri[di]
                             << " libint = " << new_eri[di]
@@ -697,7 +701,8 @@ bool test_3eri(unsigned int deriv_order,
                 for (unsigned int di = 0; di < nderiv; ++di) {
                   const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
                   const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
-                  if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
+                  if (relabs_error > RELATIVE_DEVIATION_THRESHOLD &&
+                      abs_error > absolute_derivation_threshold(deriv_order)) {
                     std::cout << "Elem " << ijk << " di= " << di << " v="
                         << v << " : ref = " << ref_eri[di]
                         << " libint = " << new_eri[di]
@@ -969,7 +974,8 @@ bool test_2eri(unsigned int deriv_order,
                 for (unsigned int di = 0; di < nderiv; ++di) {
                   const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - new_eri[di]);
                   const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
-                  if (relabs_error > RELATIVE_DEVIATION_THRESHOLD && abs_error > ABSOLUTE_DEVIATION_THRESHOLD) {
+                  if (relabs_error > RELATIVE_DEVIATION_THRESHOLD &&
+                      abs_error > absolute_derivation_threshold(deriv_order)) {
                     std::cout << "Elem " << ij << " di= " << di << " v="
                         << v << " : ref = " << ref_eri[di]
                         << " libint = " << new_eri[di]
