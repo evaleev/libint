@@ -22,6 +22,7 @@ Following is a brief summary of changes made in each release of Libint.
   - PR #180: min boost version = 1.57 (HT @e-kwsm)
   - issues #173, #183: check for existence of macro __has_include before using it
   - PR #171: fewer macros (HT @e-kwsm)
+  - PR #168: typedef struct {} X -> struct X {} (HT @e-kwsm)
 
 - 2020-07-07: 2.7.0-beta.6
   - Molden PBC exporter works for 1 and 2 dimensional crystals
