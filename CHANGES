@@ -3,8 +3,23 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2020-xx-yy: 2.7.0
-  - switched from Travis CI to GitHub Actions
+- 2021-09-13: 2.7.0
+  - precision tracking of shell-pair data, respected by Engine::compute2
+  - fixed excessive lock contention when computing 1-e Coulomb ("nuclear") ints on many threads
+  - allow access to the Engine dispatch table via compute2_ptrs()
+  - issue #216: uniform Cartesian convention fixed for 2-body integrals computed with internal permutation
+  - PR #212, #211: Travis CI -> GH actions
+  - PR #210: verbose-- (HT @e-kwsm)
+  - PR #207: make namespaced cmake targets available during build (HT @wavefunction91)
+  - issue #206: can read G94 files from the "new" Basis Set Exchange
+  - issue #202: upgraded Catch2 to 2.13.4 to support macos/arm64
+  - issue #199: fixed libint2::make_point_charges(atoms)
+  - issue #195: eri test return nonzero if regression detected + looser abs precision tolerance
+  - PR #193: improved build reproducibility (HT @bmwiedemann)
+  - issue #188: more robust comparison in fortran/test-eri
+  - PR #185, #184: fix fortran_example (HT @susilehtola)
+  - PR #180: min boost version = 1.57 (HT @e-kwsm)
+  - issues #173, #183: check for existence of macro __has_include before using it
 
 - 2020-07-07: 2.7.0-beta.6
   - Molden PBC exporter works for 1 and 2 dimensional crystals

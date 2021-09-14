@@ -22,6 +22,7 @@
 #define _libint2_src_lib_libint_engineimpl_h_
 
 #include "./engine.h"
+#include "./deriv_map.h"
 
 #include <iterator>
 
@@ -801,7 +802,7 @@ __libint2_engine_inline any Engine::enforce_params_type(
     Operator oper, const Params& params, bool throw_if_wrong_type) {
   any result;
   switch (static_cast<int>(oper)) {
-#define BOOST_PP_NBODYENGINE_MCR5B(r, data, i, elem)                         \
+#define BOOST_PP_NBODYENGINE_MCR5B(r, data, i, elem)                        \
   case i:                                                                   \
     if (std::is_same<Params, operator_traits<static_cast<Operator>(         \
                                  i)>::oper_params_type>::value) {           \
@@ -1694,22 +1695,21 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         /// lmax might be center dependent
         int ket_lmax = hard_lmax_;
         switch (deriv_order_) {
-          case 0:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-          case 1:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri1
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-          case 2:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri2
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-          default:assert(false && "deriv_order>2 not yet supported");
+#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                         \
+  case i:                                                                   \
+    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri,   \
+                                           BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), \
+                                              i,     \
+                                              BOOST_PP_EMPTY())             \
+                                          )                                 \
+                             ),       \
+                              ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY()); \
+    break;
+
+          BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR8, _,
+                                   BOOST_PP_NBODY_DERIV_ORDER_LIST)
+
+          default:assert(false && "missing case in switch");
         }
         buildfnidx =
             (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
@@ -1834,138 +1834,31 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           auto tgt_ptr = target;
 
           // if permuting derivatives ints must update their derivative index
-          switch (deriv_order_) {
-            case 0:
-              break;  // nothing to do
-
-            case 1: {
-              switch(braket_) {
-                case BraKet::xx_xx: {
-                  const unsigned mapDerivIndex1_xxxx[2][2][2][12] = {
-                      {{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
-                        {0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8}},
-                       {{3, 4, 5, 0, 1, 2, 6, 7, 8, 9, 10, 11},
-                        {3, 4, 5, 0, 1, 2, 9, 10, 11, 6, 7, 8}}},
-                      {{{6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5},
-                        {9, 10, 11, 6, 7, 8, 0, 1, 2, 3, 4, 5}},
-                       {{6, 7, 8, 9, 10, 11, 3, 4, 5, 0, 1, 2},
-                        {9, 10, 11, 6, 7, 8, 3, 4, 5, 0, 1, 2}}}};
-                  s_target = mapDerivIndex1_xxxx[swap_braket][swap_tbra][swap_tket][s];
-                }
-                  break;
-
-                case BraKet::xs_xx: {
-                  assert(!swap_bra);
-                  assert(!swap_braket);
-                  const unsigned mapDerivIndex1_xsxx[2][9] = {
-                      {0,1,2,3,4,5,6,7,8},
-                      {0,1,2,6,7,8,3,4,5}
-                  };
-                  s_target = mapDerivIndex1_xsxx[swap_tket][s];
-                }
-                  break;
-
-                case BraKet::xs_xs: {
-                  assert(!swap_bra);
-                  assert(!swap_ket);
-                  assert(!swap_braket);
-                  s_target = s;
-                }
-                  break;
-
-                default:
-                  assert(false && "this backet type not yet supported for 1st geometric derivatives");
+          // Additional BraKet types would require adding support to DerivMapGenerator::generate_deriv_index_map
+          if (deriv_order_){
+            Tensor<size_t>& mapDerivIndex = libint2::DerivMapGenerator::instance(deriv_order_, braket_);
+            switch(braket_) {
+              case BraKet::xx_xx: {
+                s_target = mapDerivIndex((size_t)swap_braket,(size_t)swap_tbra,(size_t)swap_tket,(size_t)s);
               }
-            } break;
-
-            case 2: {
-              switch(braket_) {
-                case BraKet::xx_xx: {
-                  const unsigned mapDerivIndex2_xxxx[2][2][2][78] = {
-                      {{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-                         13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-                         26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
-                         39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
-                         52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
-                         65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77},
-                        {0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8, 12,
-                         13, 14, 15, 16, 20, 21, 22, 17, 18, 19, 23, 24, 25,
-                         26, 30, 31, 32, 27, 28, 29, 33, 34, 35, 39, 40, 41,
-                         36, 37, 38, 42, 43, 47, 48, 49, 44, 45, 46, 50, 54,
-                         55, 56, 51, 52, 53, 72, 73, 74, 60, 65, 69, 75, 76,
-                         61, 66, 70, 77, 62, 67, 71, 57, 58, 59, 63, 64, 68}},
-                       {{33, 34, 35, 3, 14, 24, 36, 37, 38, 39, 40, 41, 42,
-                         43, 4, 15, 25, 44, 45, 46, 47, 48, 49, 50, 5, 16,
-                         26, 51, 52, 53, 54, 55, 56, 0, 1, 2, 6, 7, 8,
-                         9, 10, 11, 12, 13, 17, 18, 19, 20, 21, 22, 23, 27,
-                         28, 29, 30, 31, 32, 57, 58, 59, 60, 61, 62, 63, 64,
-                         65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77},
-                        {33, 34, 35, 3, 14, 24, 39, 40, 41, 36, 37, 38, 42,
-                         43, 4, 15, 25, 47, 48, 49, 44, 45, 46, 50, 5, 16,
-                         26, 54, 55, 56, 51, 52, 53, 0, 1, 2, 9, 10, 11,
-                         6, 7, 8, 12, 13, 20, 21, 22, 17, 18, 19, 23, 30,
-                         31, 32, 27, 28, 29, 72, 73, 74, 60, 65, 69, 75, 76,
-                         61, 66, 70, 77, 62, 67, 71, 57, 58, 59, 63, 64, 68}}},
-                      {{{57, 58, 59, 60, 61, 62, 6, 17, 27, 36, 44, 51, 63,
-                         64, 65, 66, 67, 7, 18, 28, 37, 45, 52, 68, 69, 70,
-                         71, 8, 19, 29, 38, 46, 53, 72, 73, 74, 9, 20, 30,
-                         39, 47, 54, 75, 76, 10, 21, 31, 40, 48, 55, 77, 11,
-                         22, 32, 41, 49, 56, 0, 1, 2, 3, 4, 5, 12, 13,
-                         14, 15, 16, 23, 24, 25, 26, 33, 34, 35, 42, 43, 50},
-                        {72, 73, 74, 60, 65, 69, 9, 20, 30, 39, 47, 54, 75,
-                         76, 61, 66, 70, 10, 21, 31, 40, 48, 55, 77, 62, 67,
-                         71, 11, 22, 32, 41, 49, 56, 57, 58, 59, 6, 17, 27,
-                         36, 44, 51, 63, 64, 7, 18, 28, 37, 45, 52, 68, 8,
-                         19, 29, 38, 46, 53, 0, 1, 2, 3, 4, 5, 12, 13,
-                         14, 15, 16, 23, 24, 25, 26, 33, 34, 35, 42, 43, 50}},
-                       {{57, 58, 59, 60, 61, 62, 36, 44, 51, 6, 17, 27, 63,
-                         64, 65, 66, 67, 37, 45, 52, 7, 18, 28, 68, 69, 70,
-                         71, 38, 46, 53, 8, 19, 29, 72, 73, 74, 39, 47, 54,
-                         9, 20, 30, 75, 76, 40, 48, 55, 10, 21, 31, 77, 41,
-                         49, 56, 11, 22, 32, 33, 34, 35, 3, 14, 24, 42, 43,
-                         4, 15, 25, 50, 5, 16, 26, 0, 1, 2, 12, 13, 23},
-                        {72, 73, 74, 60, 65, 69, 39, 47, 54, 9, 20, 30, 75,
-                         76, 61, 66, 70, 40, 48, 55, 10, 21, 31, 77, 62, 67,
-                         71, 41, 49, 56, 11, 22, 32, 57, 58, 59, 36, 44, 51,
-                         6, 17, 27, 63, 64, 37, 45, 52, 7, 18, 28, 68, 38,
-                         46, 53, 8, 19, 29, 33, 34, 35, 3, 14, 24, 42, 43,
-                         4, 15, 25, 50, 5, 16, 26, 0, 1, 2, 12, 13, 23}}}};
-                  s_target = mapDerivIndex2_xxxx[swap_braket][swap_tbra][swap_tket][s];
-                }
-                  break;
-
-                case BraKet::xs_xx: {
-                  assert(!swap_bra);
-                  assert(!swap_braket);
-                  const unsigned mapDerivIndex2_xsxx[2][45] = {
-                      {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
-                       12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-                       24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
-                       36, 37, 38, 39, 40, 41, 42, 43, 44},
-                      {0,  1,  2,  6,  7,  8,  3,  4,  5,  9,  10, 14,
-                       15, 16, 11, 12, 13, 17, 21, 22, 23, 18, 19, 20,
-                       39, 40, 41, 27, 32, 36, 42, 43, 28, 33, 37, 44,
-                       29, 34, 38, 24, 25, 26, 30, 31, 35}};
-                  s_target = mapDerivIndex2_xsxx[swap_tket][s];
-                }
-                  break;
-
-                case BraKet::xs_xs: {
-                  assert(!swap_bra);
-                  assert(!swap_ket);
-                  assert(!swap_braket);
-                  s_target = s;
-                }
-                  break;
-
-                default:
-                  assert(false && "this backet type not yet supported for 2st geometric derivatives");
+                break;
+              case BraKet::xs_xx: {
+                assert(!swap_bra);
+                assert(!swap_braket);
+                s_target = mapDerivIndex((size_t)0,(size_t)0,(size_t)swap_tket,(size_t)s);
               }
-            } break;
+                break;
+              case BraKet::xs_xs: {
+                assert(!swap_bra);
+                assert(!swap_ket);
+                assert(!swap_braket);
+                s_target = s;
+              }
+                break;
 
-            default:
-              assert(false &&
-                     "3-rd and higher derivatives not yet generalized");
+              default:
+                assert(false && "This braket type not yet supported for geometric derivatives");
+            }
           }
 
           for (auto r1 = 0; r1 != nr1; ++r1) {
