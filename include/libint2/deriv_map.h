@@ -83,7 +83,7 @@ namespace libint2 {
 
     private:
       // Functions required for generating the maps.
-      // Combinations with repitition. 
+      // Combinations with repetition.
       // Combinations of size 'k' from 'n' elements stored in vector 'inp'.
       // Requires instantiating vector 'out' and vector of vectors 'result', which stores every combination.
       static void cwr_recursion(std::vector<size_t> inp,
