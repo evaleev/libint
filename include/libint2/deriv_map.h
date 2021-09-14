@@ -49,10 +49,21 @@ namespace libint2 {
     public:
       // Statically generate all mapDerivIndex arrays up to LIBINT2_MAX_DERIV_ORDER
       // for both BraKet::xx_xx and BraKet::xs_xx and store in a vector
-      static void initialize() { 
-          for (int i = 0; i < LIBINT2_MAX_DERIV_ORDER; i++) {
-              braket_xx_xx().push_back(DerivMapGenerator::generate_deriv_index_map(i + 1, BraKet::xx_xx));
-              braket_xs_xx().push_back(DerivMapGenerator::generate_deriv_index_map(i + 1, BraKet::xs_xx));
+      static void initialize() {
+          int max_deriv_order = 0;
+#if defined(LIBINT2_MAX_DERIV_ORDER)
+          max_deriv_order = LIBINT2_MAX_DERIV_ORDER;
+#else  // defined(LIBINT2_MAX_DERIV_ORDER)
+#  ifdef INCLUDE_ERI
+          if (INCLUDE_ERI > max_deriv_order) max_deriv_order = INCLUDE_ERI;
+#  endif  // INCLUDE_ERI
+#  ifdef INCLUDE_ERI3
+          if (INCLUDE_ERI3 > max_deriv_order) max_deriv_order = INCLUDE_ERI3;
+#  endif  // INCLUDE_ERI3
+#endif  // defined(LIBINT2_MAX_DERIV_ORDER)
+          for (int d = 1; d <= max_deriv_order; ++d) {
+              braket_xx_xx().push_back(DerivMapGenerator::generate_deriv_index_map(d, BraKet::xx_xx));
+              braket_xs_xx().push_back(DerivMapGenerator::generate_deriv_index_map(d, BraKet::xs_xx));
           }
       }
 
