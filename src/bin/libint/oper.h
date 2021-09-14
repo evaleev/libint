@@ -37,9 +37,9 @@ namespace libint2 {
 
   /** Permutational symmetries: antisymmetric(anti), symmetric(symm), nonsymmetric (nonsymm),
       some more complicated symmetry (nonstd) */
-  typedef struct {
+  struct PermutationalSymmetry {
     typedef enum {anti=-1, symm=1, nonsymm=0, nonstd=-2} type;
-  } PermutationalSymmetry;
+  };
 
   /** OperatorProperties describes various properties of an operator or operator set
       @tparam NP number of particles
@@ -228,8 +228,8 @@ namespace libint2 {
     unsigned int key() const { return 0; }
     std::string description() const { return "generic multiplicative symmetric operator"; }
     std::string label() const { return "GenMultSymmOper"; }
-    int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
+    int psymm(int i, int j) const { abort(); }
+    int hermitian(int i) const { abort(); }
   };
   typedef GenOper< GenMultSymmOper_Descr<2>  > GenMultSymm2BodyOper;
 
@@ -240,7 +240,7 @@ namespace libint2 {
       unsigned int key() const { return 0; }                                                                \
       std::string description() const { return #opname; }                                                   \
       std::string label() const { return #opname; }                                                         \
-      int psymm(int i, int j) const { assert(false); }                                                      \
+      int psymm(int i, int j) const { abort(); }                                                      \
       int hermitian(int i) const { return +1; }                                                             \
     };                                                                                                      \
     typedef GenOper<opname ## _Descr> opname ## Oper;                                                       \
@@ -276,7 +276,7 @@ struct CartesianMultipole_Descr : public Contractable<CartesianMultipole_Descr<N
     return descr + oss.str() + "]";
   }
   std::string label() const { return description(); }
-  int psymm(int i, int j) const { assert(false); }
+  int psymm(int i, int j) const { abort(); }
   int hermitian(int i) const { return +1; }
 };
 template <unsigned int NDIM> using CartesianMultipoleOper = GenOper<CartesianMultipole_Descr<NDIM>>;
@@ -302,7 +302,7 @@ struct SphericalMultipole_Descr : public Contractable<SphericalMultipole_Descr>,
     return descr;
   }
   std::string label() const { return description(); }
-  int psymm(int i, int j) const { assert(false); }
+  int psymm(int i, int j) const { abort(); }
   int hermitian(int i) const { return +1; }
 };
 using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
@@ -315,7 +315,7 @@ using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
     unsigned int key() const { return 0; }
     std::string description() const { return "1/r_{12}"; }
     std::string label() const { return "TwoPRep"; }
-    int psymm(int i, int j) const { assert(false); }
+    int psymm(int i, int j) const { abort(); }
     int hermitian(int i) const { return +1; }
   };
   typedef GenOper<TwoPRep_Descr> TwoPRep;
@@ -328,7 +328,7 @@ using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
     unsigned int key() const { return 0; }
     std::string description() const { return "GTG_1d"; }
     std::string label() const { return "GTG_1d"; }
-    int psymm(int i, int j) const { assert(false); }
+    int psymm(int i, int j) const { abort(); }
     int hermitian(int i) const { return +1; }
   };
   typedef GenOper<GTG_1d_Descr> GTG_1d;
@@ -347,8 +347,8 @@ using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
     std::string description() const { return label_(K_, this->contracted()); }
     std::string label() const { return symbol_(K_, this->contracted()); }
     int K() const { return K_; }
-    int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
+    int psymm(int i, int j) const { abort(); }
+    int hermitian(int i) const { abort(); }
   private:
     R12_k_G12_Descr();
     static std::string label_(int K, bool contracted);
@@ -372,8 +372,8 @@ using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
     unsigned int key() const;
     std::string description() const { return label_(K_,L_, this->contracted()); }
     std::string label() const { return symbol_(K_,L_, this->contracted()); }
-    int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
+    int psymm(int i, int j) const { abort(); }
+    int hermitian(int i) const { abort(); }
   private:
     R12k_R12l_G12_Descr();
     static std::string label_(const IntVec3& K, const IntVec3& L, bool contracted);
@@ -397,7 +397,7 @@ using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
     std::string description() const { return label_(K_, this->contracted()); }
     std::string label() const { return symbol_(K_, this->contracted()); }
     int K() const { return K_; }
-    int psymm(int i, int j) const { assert(false); }
+    int psymm(int i, int j) const { abort(); }
     int hermitian(int i) const { if (i != K_) return +1; else return -1; }
   private:
     Ti_G12_Descr();
@@ -422,7 +422,7 @@ using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
     std::string description() const { return label_(K_, this->contracted()); }
     std::string label() const { return symbol_(K_, this->contracted()); }
     int K() const { return K_; }
-    int psymm(int i, int j) const { assert(false); }
+    int psymm(int i, int j) const { abort(); }
     int hermitian(int i) const { return +1; }
   private:
     G12_Ti_G12_Descr();
@@ -440,8 +440,8 @@ using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
     unsigned int key() const { return 0; }
     std::string description() const { return "r_1.r_1 x G12"; }
     std::string label() const { return "R1dotR1_G12"; }
-    int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
+    int psymm(int i, int j) const { abort(); }
+    int hermitian(int i) const { abort(); }
   };
   typedef GenOper< R1dotR1_G12_Descr > R1dotR1_G12;
 
@@ -453,8 +453,8 @@ using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
     unsigned int key() const { return 0; }
     std::string description() const { return "r_2.r_2 x G12"; }
     std::string label() const { return "R2dotR2_G12"; }
-    int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
+    int psymm(int i, int j) const { abort(); }
+    int hermitian(int i) const { abort(); }
   };
   typedef GenOper< R2dotR2_G12_Descr > R2dotR2_G12;
 
@@ -466,8 +466,8 @@ using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
     unsigned int key() const { return 0; }
     std::string description() const { return "r_1.r_2 x G12"; }
     std::string label() const { return "R1dotR2_G12"; }
-    int psymm(int i, int j) const { assert(false); }
-    int hermitian(int i) const { assert(false); }
+    int psymm(int i, int j) const { abort(); }
+    int hermitian(int i) const { abort(); }
   };
   typedef GenOper< R1dotR2_G12_Descr > R1dotR2_G12;
 
@@ -483,7 +483,7 @@ using SphericalMultipoleOper = GenOper<SphericalMultipole_Descr>;
     std::string description() const { return label_(I_); }
     std::string label() const { return symbol_(I_); }
     int I() const { return I_; }
-    int psymm(int i, int j) const { assert(false); }
+    int psymm(int i, int j) const { abort(); }
     int hermitian(int i) const { if (i != I_) return +1; else return -1; }
     private:
       DivG12prime_xTx_Descr();

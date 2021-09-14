@@ -90,6 +90,7 @@ namespace libint2 {
             default: 
               assert(false && "Derivative index permutation maps for this braket type not yet supported.");
           }
+          std::abort();
       }
 
     private:
