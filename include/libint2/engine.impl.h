@@ -800,7 +800,7 @@ __libint2_engine_inline any Engine::enforce_params_type(
     Operator oper, const Params& params, bool throw_if_wrong_type) {
   any result;
   switch (static_cast<int>(oper)) {
-#define BOOST_PP_NBODYENGINE_MCR5B(r, data, i, elem)                         \
+#define BOOST_PP_NBODYENGINE_MCR5B(r, data, i, elem)                        \
   case i:                                                                   \
     if (std::is_same<Params, operator_traits<static_cast<Operator>(         \
                                  i)>::oper_params_type>::value) {           \
@@ -1693,22 +1693,21 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         /// lmax might be center dependent
         int ket_lmax = hard_lmax_;
         switch (deriv_order_) {
-          case 0:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-          case 1:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri1
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-          case 2:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri2
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-          default:assert(false && "deriv_order>2 not yet supported");
+#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                         \
+  case i:                                                                   \
+    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri,   \
+                                           BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), \
+                                              i,     \
+                                              BOOST_PP_EMPTY())             \
+                                          )                                 \
+                             ),       \
+                              ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY()); \
+    break;
+
+          BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR8, _,
+                                   BOOST_PP_NBODY_DERIV_ORDER_LIST)
+
+          default:assert(false && "missing case in switch");
         }
         buildfnidx =
             (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
@@ -1834,7 +1833,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
           // if permuting derivatives ints must update their derivative index
           // Additional BraKet types would require adding support to DerivMapGenerator::generate_deriv_index_map
-          if (deriv_order){
+          if (deriv_order_){
             Tensor<size_t>& mapDerivIndex = libint2::DerivMapGenerator::instance(deriv_order_, braket_);
             switch(braket_) {
               case BraKet::xx_xx: {
