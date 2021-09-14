@@ -955,11 +955,14 @@ class Engine {
                                                 const Shell& s2, size_t p1,
                                                 size_t p2, size_t oset);
 
+public:
   /// 3-dim array of pointers to help dispatch efficiently based on oper_,
   /// braket_, and deriv_order_
+  /// @note public since 2.7.0 to support efficient dispatch in user code
   __libint2_engine_inline const std::vector<Engine::compute2_ptr_type>&
   compute2_ptrs() const;
 
+private:
   // max_nprim=0 avoids resizing primdata_
   __libint2_engine_inline void initialize(size_t max_nprim = 0);
   // generic _initializer
