@@ -167,21 +167,26 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "bra-ket permutation", "[engine]
   }
 }
 
-#if INCLUDE_ERI >= 3
-TEST_CASE("high-order derivatives", "[engine][2-body]") {
+TEST_CASE("eri geometric derivatives", "[engine][2-body]") {
 
   std::vector<Shell> obs{
       // pseudorandom p
-      Shell{{1.0}, {{1, false, {1.0}}}, {{0.0, 0.0, 0.0}}},
+      Shell{{1.0, 0.3}, {{1, false, {0.9, 0.3}}}, {{0.0, 0.0, 0.0}}},
       // pseudorandom p
-      Shell{{2.0}, {{1, false, {1.0}}}, {{1.0, 1.0, 1.0}}},
+      Shell{{2.0, 0.4}, {{1, false, {0.8, -0.2}}}, {{1.0, 1.0, 1.0}}},
   };
   const auto max_nprim = libint2::max_nprim(obs);
   const auto max_l = libint2::max_l(obs);
 
-  if (LIBINT2_MAX_AM_eri3 >= max_l) {
-    const auto deriv_order = 3;
-    auto engine = Engine(Operator::coulomb, max_nprim, max_l, deriv_order);
+  {
+    const auto deriv_order = INCLUDE_ERI;
+    Engine engine;
+    try {
+      engine = Engine(Operator::coulomb, max_nprim, max_l, deriv_order);
+    }
+    catch (Engine::lmax_exceeded&) {  // skip the test if lmax exceeded
+      return;
+    }
     const auto& buf = engine.results();
 
     libint2::CartesianDerivIterator<4> diter(deriv_order);
@@ -226,10 +231,10 @@ TEST_CASE("high-order derivatives", "[engine][2-body]") {
                 std::vector<LIBINT2_REF_REALTYPE> ref_eri(nderiv, 0.0);
 
                 uint p0123 = 0;
-                for (uint p0 = 0; p0 < obs[s0].ncontr(); p0++) {
-                  for (uint p1 = 0; p1 < obs[s1].ncontr(); p1++) {
-                    for (uint p2 = 0; p2 < obs[s2].ncontr(); p2++) {
-                      for (uint p3 = 0; p3 < obs[s3].ncontr(); p3++, p0123++) {
+                for (uint p0 = 0; p0 < obs[s0].nprim(); p0++) {
+                  for (uint p1 = 0; p1 < obs[s1].nprim(); p1++) {
+                    for (uint p2 = 0; p2 < obs[s2].nprim(); p2++) {
+                      for (uint p3 = 0; p3 < obs[s3].nprim(); p3++, p0123++) {
 
                         const LIBINT2_REF_REALTYPE alpha0 = obs[s0].alpha[p0];
                         const LIBINT2_REF_REALTYPE alpha1 = obs[s1].alpha[p1];
@@ -289,7 +294,7 @@ TEST_CASE("high-order derivatives", "[engine][2-body]") {
                   REQUIRE(!not_ok);
                 }
 
-              } // end of vector loop
+              }
               ++ijkl;
               END_FOR_CART
               END_FOR_CART
@@ -304,4 +309,3 @@ TEST_CASE("high-order derivatives", "[engine][2-body]") {
     }
   }
 }
-#endif // INCLUDE_ERI >= 3
