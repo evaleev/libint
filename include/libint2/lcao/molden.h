@@ -292,7 +292,7 @@ class Export {
           if (pure) {
             int m;
             FOR_SOLIDHARM_MOLDEN(l, m)
-            const auto ao_in_shell = INT_SOLIDHARMINDEX(l, m);
+            const auto ao_in_shell = libint2::INT_SOLIDHARMINDEX(l, m);
             ao_map_[ao_molden] = ao + ao_in_shell;
             ++ao_molden;
             END_FOR_SOLIDHARM_MOLDEN
