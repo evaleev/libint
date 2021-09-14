@@ -664,8 +664,8 @@ SafePtr<ForLoop>
 CppCodeContext::for_loop(std::string& varname, const SafePtr<Entity>& less_than,
                          const SafePtr<Entity>& start_at) const
 {
-  // no implemented
-  assert(false);
+  // not implemented
+  abort();
 }
 
 std::string
