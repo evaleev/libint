@@ -36,6 +36,14 @@ check:: check1
 
 check1::
 
+clean::
+
+distclean:: realclean
+
+realclean:: clean
+
+targetclean:: clean
+
 ifeq ($(CXXGEN_SUPPORTS_CPP11),yes)
  ifeq ($(LIBINT_SUPPORTS_ONEBODY),yes)
   ifeq ($(LIBINT_SUPPORTS_ERI),yes)
@@ -57,12 +65,6 @@ $(TEST1): LD=$(CXXGEN)
 
 clean::
 	-rm -rf $(TEST1) *.o *.d
-
-distclean:: realclean
-
-realclean:: clean
-
-targetclean:: clean
 
 depend:: $(CXXTEST1DEP)
 

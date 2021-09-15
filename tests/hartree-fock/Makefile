@@ -33,6 +33,12 @@ check:: check1 check2
 check1::
 check2::
 
+clean::
+
+realclean:: clean
+
+targetclean:: clean
+
 ifeq ($(CXXGEN_SUPPORTS_CPP11),yes)
  ifeq ($(LIBINT_SUPPORTS_ONEBODY),yes)
   ifeq ($(LIBINT_SUPPORTS_ERI),yes)
@@ -61,10 +67,6 @@ clean::
 
 distclean:: realclean
 	-rm -rf $(TOPDIR)/include/libint2/boost hf++.molden
-
-realclean:: clean
-
-targetclean:: clean
 
 #########
 # unpack bundled boost if needed
