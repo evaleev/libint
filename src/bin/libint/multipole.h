@@ -121,7 +121,7 @@ namespace libint2 {
     /* ---------------
      * key computation
      * --------------- */
-    const constexpr static unsigned max_qn = LIBINT_CARTGAUSS_MAX_AM;
+    constexpr static unsigned max_qn = LIBINT_CARTGAUSS_MAX_AM;
 
     // nkeys[L] is the number of possible CartesianMultipoleQuanta with \c norm() == L
     // \note for NDIM=1 nkeys[L] = 1
@@ -185,7 +185,7 @@ namespace libint2 {
     class SphericalMultipoleQuanta : public Hashable<LIBINT2_UINT_LEAST64,ReferToKey> {
      public:
       enum Sign {plus, minus};
-      const constexpr static unsigned max_qn = LIBINT_CARTGAUSS_MAX_AM;
+      constexpr static unsigned max_qn = LIBINT_CARTGAUSS_MAX_AM;
 
       /// constructs an object in default (unusable) state
       SphericalMultipoleQuanta() : SphericalMultipoleQuanta(0,1) {}
