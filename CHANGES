@@ -7,6 +7,7 @@ Following is a brief summary of changes made in each release of Libint.
   - precision tracking of shell-pair data, respected by Engine::compute2
   - fixed excessive lock contention when computing 1-e Coulomb ("nuclear") ints on many threads
   - allow access to the Engine dispatch table via compute2_ptrs()
+  - fixed definitions of def2-tzvpd-c and def2-tzvppd-c bases for Hf
   - issue #216: uniform Cartesian convention fixed for 2-body integrals computed with internal permutation
   - PR #212, #211: Travis CI -> GH actions
   - PR #210: verbose-- (HT @e-kwsm)
