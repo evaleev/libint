@@ -529,33 +529,33 @@ Cell[BoxData[
     RowBox[{"WriteLine", "[", 
      RowBox[{"ofile", ",", 
       RowBox[{
-      "\"\<static constexpr const std::size_t interpolation_order=\>\"", "<>", 
+      "\"\<static constexpr std::size_t interpolation_order=\>\"", "<>",
        RowBox[{"ToCString", "[", "order", "]"}], "<>", "\"\<;\>\""}]}], "]"}],
      ";"}], "\[IndentingNewLine]", 
    RowBox[{
     RowBox[{"WriteLine", "[", 
      RowBox[{"ofile", ",", 
       RowBox[{
-      "\"\<static constexpr const double cheb_table_tmax=\>\"", "<>", 
+      "\"\<static constexpr double cheb_table_tmax=\>\"", "<>",
        RowBox[{"ToCString", "[", "Tmax", "]"}], "<>", "\"\<;\>\""}]}], "]"}], 
     ";"}], "\[IndentingNewLine]", 
    RowBox[{
     RowBox[{"WriteLine", "[", 
      RowBox[{"ofile", ",", 
-      RowBox[{"\"\<static constexpr const double cheb_table_delta=\>\"", "<>", 
+      RowBox[{"\"\<static constexpr double cheb_table_delta=\>\"", "<>",
        RowBox[{"ToCString", "[", "delta", "]"}], "<>", "\"\<;\>\""}]}], "]"}],
      ";"}], "\[IndentingNewLine]", 
    RowBox[{
     RowBox[{"WriteLine", "[", 
      RowBox[{"ofile", ",", 
-      RowBox[{"\"\<static constexpr const std::size_t cheb_table_mmax=\>\"", "<>", 
+      RowBox[{"\"\<static constexpr std::size_t cheb_table_mmax=\>\"", "<>",
        RowBox[{"ToCString", "[", "mmax", "]"}], "<>", "\"\<;\>\""}]}], "]"}], 
     ";"}], "\[IndentingNewLine]", 
    RowBox[{
     RowBox[{"WriteLine", "[", 
      RowBox[{"ofile", ",", 
       RowBox[{
-      "\"\<static constexpr const std::size_t cheb_table_nintervals=\>\"", "<>", 
+      "\"\<static constexpr std::size_t cheb_table_nintervals=\>\"", "<>",
        RowBox[{"ToCString", "[", 
         RowBox[{"Tmax", "*", "nintervals"}], "]"}], "<>", "\"\<;\>\""}]}], 
      "]"}], ";"}], "\[IndentingNewLine]", 
