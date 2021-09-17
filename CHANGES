@@ -3,6 +3,9 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2021-xx-yy: 2.7.1
+  - fixed tracking of shell-pair data
+
 - 2021-09-14: 2.7.0
   - precision tracking of shell-pair data, respected by Engine::compute2
   - fixed excessive lock contention when computing 1-e Coulomb ("nuclear") ints on many threads

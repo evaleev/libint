@@ -1186,12 +1186,14 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     // involves both bra and ket *bases* and thus cannot be done on shell-set
     // basis ... probably ln_precision_/2 - 10 is enough
     const auto target_shellpair_ln_precision = ln_precision_;
-    const ShellPair& spbra = (spbra_precomputed && spbra_precomputed->ln_prec <= target_shellpair_ln_precision) ? *spbra_precomputed : (spbra_.init(bra1, bra2, target_shellpair_ln_precision), spbra_) ;
-    const ShellPair& spket = (spket_precomputed && spket_precomputed->ln_prec <= target_shellpair_ln_precision) ? *spket_precomputed : (spket_.init(ket1, ket2, target_shellpair_ln_precision), spket_);
+    const auto recompute_spbra = !spbra_precomputed || spbra_precomputed->ln_prec > target_shellpair_ln_precision;
+    const auto recompute_spket = !spket_precomputed || spket_precomputed->ln_prec > target_shellpair_ln_precision;
+    const ShellPair& spbra = recompute_spbra ? (spbra_.init(bra1, bra2, target_shellpair_ln_precision), spbra_) : *spbra_precomputed;
+    const ShellPair& spket = recompute_spket ? (spket_.init(ket1, ket2, target_shellpair_ln_precision), spket_) : *spket_precomputed;
     // determine whether shell pair data refers to the actual ({bra1,bra2}) or swapped ({bra2,bra1}) pairs
     // if computed the shell pair data here then it's always in actual order, otherwise check swap_bra/swap_ket
-    const auto spbra_is_swapped = spbra_precomputed ? swap_bra : false;
-    const auto spket_is_swapped = spket_precomputed ? swap_ket : false;
+    const auto spbra_is_swapped = recompute_spbra ? false : swap_bra;
+    const auto spket_is_swapped = recompute_spket ? false : swap_ket;
 
     using real_t = Shell::real_t;
     // swapping bra turns AB into BA = -AB
