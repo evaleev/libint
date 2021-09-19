@@ -1071,13 +1071,6 @@ PKGCONFIGDIR=$withval
 )
 AC_SUBST(PKGCONFIGDIR)
 
-CMAKEDIR='$(libdir)/cmake/libint2'
-AC_ARG_WITH(cmakedir,
-AS_HELP_STRING([--with-cmakedir],[Specifies the location to put FindLibint2.cmake file. Default is $(libdir)/cmake/libint2.]),
-CMAKEDIR=$withval
-)
-AC_SUBST(CMAKEDIR)
-
 dnl --------- Want absolute path for srcdir, not relative. ---------
 
 if test X$ac_srcdir_defaulted = Xyes; then

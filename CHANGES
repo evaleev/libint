@@ -4,7 +4,9 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - 2021-xx-yy: 2.7.1
-  - fixed tracking of shell-pair data
+  - PR 224: fixed tracking of shell-pair data
+  - PR 223: removed redundant const qualifier (HT @e-kwsm)
+  - issue 222: fixed compiler tree's install target
 
 - 2021-09-14: 2.7.0
   - precision tracking of shell-pair data, respected by Engine::compute2

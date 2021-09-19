@@ -50,12 +50,6 @@ install_pkgconfig::
 	$(INSTALL) $(INSTALLLIBOPT) $(TOPDIR)/libint2.pc $(DESTDIR)$(pkgconfigdir)
 endif
 
-ifdef cmakedir
-install_cmake::
-	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(cmakedir)
-	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/FindLibint2.cmake $(DESTDIR)$(cmakedir)
-endif
-
 install_data::
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(datadir)/basis
 	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/lib/basis/* $(DESTDIR)$(datadir)/basis
