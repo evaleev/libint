@@ -785,7 +785,7 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
   }
 #else
   iface->to_params(iface->macro_define("MAX_AM",LIBINT_MAX_AM));
-  unsigned int max_deriv = 0;
+  int max_deriv = 0;
 #ifdef INCLUDE_ONEBODY
   max_deriv = std::max(INCLUDE_ONEBODY, max_deriv);
 #endif
@@ -798,7 +798,7 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
 #ifdef INCLUDE_ERI2
   max_deriv = std::max(INCLUDE_ERI2, max_deriv);
 #endif
-  for(unsigned int d=0; d<=max_deriv; ++d) {
+  for(int d=0; d<=max_deriv; ++d) {
     std::ostringstream oss;
     oss << "MAX_AM_default";
     if (d > 0) oss << d;
