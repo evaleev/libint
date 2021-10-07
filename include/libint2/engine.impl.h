@@ -119,7 +119,7 @@ default_params(const Operator& oper) {
       break;
   }
   assert(false && "missing case in switch");  // unreachable
-  return libint2::any();
+  abort();
 }
 
 /// Computes target shell sets of integrals.
@@ -164,7 +164,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
   }
 
   assert(false && "missing feature");  // only reached if missing a feature
-  return targets_;
+  abort();
 }
 
 /// Computes target shell sets of 1-body integrals.
@@ -636,6 +636,7 @@ __libint2_engine_inline void Engine::_initialize() {
   assert(
       false &&
       "missing case in switch");  // either deriv_order_ or oper_ is wrong
+  abort();
 }  // _initialize<R>()
 
 __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
@@ -769,7 +770,7 @@ __libint2_engine_inline unsigned int Engine::nopers() const {
       break;
   }
   assert(false && "missing case in switch");  // unreachable
-  return 0;
+  abort();
 }
 
 template <>
@@ -793,6 +794,7 @@ __libint2_engine_inline any Engine::enforce_params_type<any>(
 
     default:
       assert(false && "missing case in switch");  // missed a case?
+      abort();
   }
   return result;
 }
@@ -818,6 +820,7 @@ __libint2_engine_inline any Engine::enforce_params_type(
 
     default:
       assert(false && "missing case in switch");  // missed a case?
+      abort();
   }
   return result;
 }
@@ -843,6 +846,7 @@ __libint2_engine_inline any Engine::make_core_eval_pack(Operator oper) const {
 
     default:
       assert(false && "missing case in switch");  // missed a case?
+      abort();
   }
   return result;
 }
@@ -1133,6 +1137,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                                      tket1.contr[0].l + tket2.contr[0].l)) ||
         braket_ == BraKet::xx_xs;
   assert(false && "feature not implemented");
+  abort();
 #endif
   const auto& bra1 =
       swap_braket ? (swap_tket ? tket2 : tket1) : (swap_tbra ? tbra2 : tbra1);
@@ -1375,6 +1380,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 } break;
                 default:
                   assert(false && "missing case in a switch");  // unreachable
+                  abort();
               }
             }
 
@@ -1692,7 +1698,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             ket2.contr[0].l;
         break;
 
-      case BraKet::xx_xs: assert(false && "this braket is not supported"); break;
+      case BraKet::xx_xs: assert(false && "this braket is not supported"); abort(); break;
       case BraKet::xs_xx: {
         /// lmax might be center dependent
         int ket_lmax = hard_lmax_;
@@ -1711,7 +1717,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR8, _,
                                    BOOST_PP_NBODY_DERIV_ORDER_LIST)
 
-          default:assert(false && "missing case in switch");
+          default: assert(false && "missing case in switch"); abort();
         }
         buildfnidx =
             (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
@@ -1740,6 +1746,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
       default:
         assert(false && "invalid braket");
+        abort();
     }
 
     assert(buildfnptrs_[buildfnidx] && "null build function ptr");
@@ -1860,6 +1867,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
               default:
                 assert(false && "This braket type not yet supported for geometric derivatives");
+                abort();
             }
           }
 
