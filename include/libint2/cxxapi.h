@@ -32,6 +32,10 @@
 # error "C++11 API does not support with user-defined real types yet; omit --with-real-type when configuring"
 #endif
 
+#if !defined(INCLUDE_ONEBODY) || !(defined(INCLUDE_ERI) || defined(INCLUDE_ERI3) || defined(INCLUDE_ERI2))
+# error "C++ API is only supported if both 1-body and some (eri, eri3, eri2) 2-body integrals are enabled"
+#endif
+
 #include <libint2/initialize.h>
 #include <libint2/chemistry/elements.h>
 #include <libint2/atom.h>
