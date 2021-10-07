@@ -59,10 +59,6 @@
 // without --enable-profile
 //#  define LIBINT2_ENGINE_TIMERS
 
-#if !defined(INCLUDE_ONEBODY) || !(defined(INCLUDE_ERI) || defined(INCLUDE_ERI3) || defined(INCLUDE_ERI4))
-# error "Libint's modern C++ API is only supported if both 1-body and some 2-bod integrals are enabled"
-#endif
-
 namespace libint2 {
 
 template <typename T, unsigned N>
