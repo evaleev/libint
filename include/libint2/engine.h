@@ -766,12 +766,15 @@ class Engine {
     if (prec <= 0.) {
       precision_ = 0.;
       ln_precision_ = std::numeric_limits<scalar_type>::lowest();
-    } else {
+      return *this;
+    }
+    if (prec > 0.) {  // split single if/else to avoid speculative execution of else branch on Apple M1 with apple clang 13.0.0
       precision_ = prec;
       using std::log;
       ln_precision_ = log(precision_);
+      return *this;
     }
-    return *this;
+    abort();
   }
   /// @return the target precision for computing the integrals
   /// @sa set_precision(scalar_type)
