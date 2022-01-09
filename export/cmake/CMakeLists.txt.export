@@ -194,7 +194,7 @@ endif()
 # shared and static libraries built from the same object files
 if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
   add_library(libint2 SHARED $<TARGET_OBJECTS:libint2_obj>)
-  set_target_properties(libint2 PROPERTIES LIBRARY_OUTPUT_NAME int2)
+  set_target_properties(libint2 PROPERTIES LIBRARY_OUTPUT_NAME int2 VERSION 2.0.4 SOVERSION 2)
   add_library(libint2-static STATIC $<TARGET_OBJECTS:libint2_obj>)
   set_target_properties(libint2-static PROPERTIES ARCHIVE_OUTPUT_NAME int2)
   target_include_directories(libint2-static INTERFACE
