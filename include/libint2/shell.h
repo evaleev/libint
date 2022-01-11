@@ -124,14 +124,20 @@ namespace libint2 {
         max_ln_coeff = std::move(other.max_ln_coeff);
         return *this;
       }
+      /// @param embed_normalization_into_coefficients if true, will embed normalization factors into coefficients, else will use the coefficients in @p _contr as given
       Shell(svector<real_t> _alpha,
             svector<Contraction> _contr,
-            std::array<real_t, 3> _O) :
+            std::array<real_t, 3> _O,
+            bool embed_normalization_into_coefficients = true) :
               alpha(std::move(_alpha)),
               contr(std::move(_contr)),
               O(std::move(_O)) {
         // embed normalization factors into contraction coefficients
-        renorm();
+        if (embed_normalization_into_coefficients)
+          renorm();
+        else {
+          update_max_ln_coeff();
+        }
       }
 
       Shell& move(std::array<real_t, 3> new_origin) {
@@ -236,6 +242,24 @@ namespace libint2 {
         return contr.at(c).coeff[p] * one_over_N;
       }
 
+      /// extract primitive shell
+
+      /// @param p the index of the primitive to extract
+      /// @param unit_normalized whether to produce unit-normalized primitive; set to false to produce normalization-free primitive
+      /// @return a primitive Shell
+      Shell extract_primitive(size_t p, bool unit_normalized = true) const {
+        assert(p < nprim());
+        svector<Contraction> prim_contr;
+        prim_contr.reserve(ncontr());
+        for(auto&& c: contr) {
+          prim_contr.emplace_back(Contraction{c.l, c.pure, {1.}});
+        }
+        return Shell({alpha[p]},
+                     prim_contr,
+                     O,
+                     unit_normalized);
+      }
+
     private:
 
       // this makes a unit shell
@@ -287,9 +311,13 @@ namespace libint2 {
 
         }
 
+        update_max_ln_coeff();
+      }
+
+      void update_max_ln_coeff() {
         // update max log coefficients
-        max_ln_coeff.resize(np);
-        for(auto p=0ul; p!=np; ++p) {
+        max_ln_coeff.resize(nprim());
+        for(auto p=0ul; p!=nprim(); ++p) {
           real_t max_ln_c = - std::numeric_limits<real_t>::max();
           for(auto& c: contr) {
             max_ln_c = std::max(max_ln_c, std::log(std::abs(c.coeff[p])));
@@ -319,22 +347,70 @@ namespace libint2 {
     return os;
   }
 
-  /// ShellPair pre-computes shell-pair data, primitive pairs are screened to finite precision
+  // clang-format off
+  /// @brief describes method for primitive screening used by ShellPair and Engine
+  ///
+  /// @note *Rationale*. Since Engine::compute2() can compute primitive data on-the-fly it needs cheap methods for screening primitives.
+  ///       - ScreeningMethod::Original was the fast approach that works well for uncontracted integrals over spherical (L=0) Gaussians, but can introduce significant errors in integrals over nonspherical and contracted Gaussians.
+  ///       - ScreeningMethod::Conservative addresses the weaknesses of the original method and works well across the board.
+  ///       - ScreeningMethod::Schwarz and ScreeningMethod::SchwarzInf should be used when it is possible to precompute the shell pair data _and_ the data can be computed for a specific operator type. These approaches provide rigorous guarantees of precision.
+  enum class ScreeningMethod {
+    /// standard screening method:
+    /// - omit primitive pair if \f$ {\rm ln_scr} \equiv \max|c_a| \max|c_b| \exp(- \alpha_a \alpha_b |AB|^2 / (\alpha_a + \alpha_b) ) < \epsilon \f$
+    /// - omit primitive 2-body integral if `spbra.primpairs[pb].ln_scr + spket.primpairs[pk].ln_scr < log(ε)` or `scale * c_a * c_b * c_c * c_d * spbrapp.K * spketpp.K / sqrt(spbrapp.gamma + spketpp.gamma) < ε`
+    Original = 0x0001,
+    /// conservative screening:
+    /// - omit primitive pair if \f$ {\rm ln_scr} \equiv (k_a k_b) \max|c_a| \max|c_b| \exp(- \rho |AB|^2 ) \sqrt{2 \pi^{5/2}} \max( (\max_i|PA_i|)^{L_a} (\max_i|PB_i|)^{L_b}, L_a! L_b! / (\alpha_a + \alpha_b)^{L_a+L_b} ) / (\alpha_a + \alpha_b) < \epsilon \f$
+    /// - omit primitive 2-body integral if `spbra.primpairs[pb].ln_scr + spket.primpairs[pk].ln_scr < log(ε)` or `scale * c_a * c_b * c_c * c_d * max(1, spbrapp.nonsph_screen_fac * spketpp.nonsph_screen_fac) * spbrapp.K * spketpp.K / sqrt(spbrapp.gamma + spketpp.gamma) < ε / (npbra * npket)`
+    Conservative = 0x0010,
+    /// Schwarz screening method using Frobenius norm:
+    /// - omit primitive pair if \f$ {\rm ln_scr} \equiv (k_a k_b) \max|c_a| \max|c_b| K_{ab}  < \epsilon \f$, where \f$ K_{ab} \equiv \sqrt{||(ab|ab)||_2} \f$
+    /// - omit primitive 2-body integral if `spbra.primpairs[pb].ln_scr + spket.primpairs[pk].ln_scr < log(ε)`
+    Schwarz = 0x0100,
+    /// Schwarz screening method using infinity norm:
+    /// - omit primitive pair if \f$ {\rm ln_scr} \equiv (k_a k_b)  \max|c_a| \max|c_b| K_{ab}  < \epsilon \f$, where \f$ K_{ab} \equiv \sqrt{\max{|(ab|ab)|}} \f$
+    /// - omit primitive 2-body integral if `spbra.primpairs[pb].ln_scr + spket.primpairs[pk].ln_scr < log(ε)`
+    SchwarzInf = 0x1000,
+    Invalid = 0x0000
+  };
+  // clang-format on
+
+  namespace detail {
+    inline ScreeningMethod& default_screening_method_accessor() {
+      static ScreeningMethod default_screening_method = ScreeningMethod::Original;
+      return default_screening_method;
+    }
+  }
+
+  inline ScreeningMethod default_screening_method() {
+    return detail::default_screening_method_accessor();
+  }
+
+  inline void default_screening_method(ScreeningMethod screening_method) {
+    detail::default_screening_method_accessor() = screening_method;
+  }
+
+  /// ShellPair contains pre-computed shell-pair data, primitive pairs are screened to finite precision
   struct ShellPair {
       typedef Shell::real_t real_t;
 
+      // clang-format off
+      /// PrimPairData contains pre-computed primitive pair data
       struct PrimPairData {
           real_t P[3]; //!< \f$ (\alpha_1 \vec{A} + \alpha_2 \vec{B})/(\alpha_1 + \alpha_2) \f$
-          real_t K;
-          real_t one_over_gamma;
-          real_t scr;
-          int p1;
-          int p2;
+          real_t K;    //!< \f$ \sqrt{2} \pi^{5/4} \exp(-|\vec{A}-\vec{B}|^2 \alpha_a * \alpha_b / (\alpha_a + \alpha_b)) / (\alpha_a + \alpha_b)  \f$
+          real_t one_over_gamma; //!< \f$ 1 / (\alpha_a + \alpha_b)  \f$
+          real_t nonsph_screen_fac; //!< used only when `screening_method_==ScreeningMethod::Conservative`: approximate upper bound for the modulation of the integrals due to nonspherical bra: \f$  \max( (\max_i|PA_i|)^{L_a} (\max_i|PB_i|)^{L_b}, L_a! L_b! / (\alpha_a + \alpha_b)^{L_a+L_b} ) \f$
+          real_t ln_scr; //!< natural log of the primitive pair screening factor (see ScreeningMethod )
+          int p1;  //!< first primitive index
+          int p2;  //!< second primitive index
       };
+      // clang-format on
 
       std::vector<PrimPairData> primpairs;
       real_t AB[3];
       real_t ln_prec = std::numeric_limits<real_t>::lowest();
+      ScreeningMethod screening_method_ = ScreeningMethod::Invalid;
 
       ShellPair() : primpairs() { for(int i=0; i!=3; ++i) AB[i] = 0.; }
 
@@ -342,8 +418,23 @@ namespace libint2 {
         primpairs.reserve(max_nprim*max_nprim);
         for(int i=0; i!=3; ++i) AB[i] = 0.;
       }
-      template <typename Real> ShellPair(const Shell& s1, const Shell& s2, Real ln_prec) : ln_prec(ln_prec) {
-        init(s1, s2, this->ln_prec);
+      template <typename Real> ShellPair(const Shell& s1, const Shell& s2, Real ln_prec, ScreeningMethod screening_method = default_screening_method()) {
+        init(s1, s2, ln_prec, screening_method);
+      }
+      template <typename Real,
+          typename SchwarzFactorEvaluator>
+      ShellPair(const Shell& s1, const Shell& s2, Real ln_prec, ScreeningMethod screening_method,
+                SchwarzFactorEvaluator&& schwarz_factor_evaluator) {
+        init(s1, s2, ln_prec, screening_method,
+             std::forward<SchwarzFactorEvaluator>(schwarz_factor_evaluator));
+      }
+
+      /// makes this equivalent to a default-initialized ShellPair, however the memory allocated in primpairs is not released
+      void reset() {
+        primpairs.clear();
+        for(int i=0; i!=3; ++i) AB[i] = 0.;
+        ln_prec = std::numeric_limits<real_t>::lowest();
+        screening_method_ = ScreeningMethod::Invalid;
       }
 
       void resize(std::size_t max_nprim) {
@@ -352,11 +443,12 @@ namespace libint2 {
           primpairs.resize(max_nprim2);
       }
 
-      /// initializes "expensive" primitive pair data; a pair of primitives with exponents \f$ \{\alpha_a,\alpha_b\} \f$
-      /// located at \f$ \{ \vec{A},\vec{B} \} \f$ whose max coefficients in contractions are \f$ \{ \max{|c_a|} , \max{|c_b|} \} \f$ is screened-out (omitted)
-      /// if \f$ \exp(-|\vec{A}-\vec{B}|^2 \alpha_a * \alpha_b / (\alpha_a + \alpha_b)) \max{|c_a|} \max{|c_b|} \leq \epsilon \f$
-      /// where \f$ \epsilon \f$ is the desired precision of the integrals.
-      template <typename Real> void init(const Shell& s1, const Shell& s2, Real ln_prec) {
+      /// initializes the shell pair data using original or conservative screening methods
+      template <typename Real> void init(const Shell& s1, const Shell& s2, Real ln_prec,
+                ScreeningMethod screening_method = ScreeningMethod::Original) {
+        assert(screening_method == ScreeningMethod::Original || screening_method == ScreeningMethod::Conservative);
+
+        using std::log;
 
         primpairs.clear();
 
@@ -368,9 +460,19 @@ namespace libint2 {
           AB2 += AB[i]*AB[i];
         }
 
+        auto max_l = [](const Shell& s) {
+          using std::begin;
+          using std::end;
+          return std::max_element(begin(s.contr), end(s.contr), [](const Shell::Contraction& c1, const Shell::Contraction& c2) { return c1.l < c2.l; })->l;
+        };
+        const auto max_l1 = max_l(s1);
+        const auto max_l2 = max_l(s2);
+
+        const auto nprim1 = s1.alpha.size();
+        const auto nprim2 = s2.alpha.size();
         size_t c = 0;
-        for(size_t p1=0; p1!=s1.alpha.size(); ++p1) {
-          for(size_t p2=0; p2!=s2.alpha.size(); ++p2) {
+        for(size_t p1=0; p1!=nprim1; ++p1) {
+          for(size_t p2=0; p2!=nprim2; ++p2) {
 
             const auto& a1 = s1.alpha[p1];
             const auto& a2 = s2.alpha[p2];
@@ -379,30 +481,151 @@ namespace libint2 {
 
             const auto rho = a1 * a2 * oogamma;
             const auto minus_rho_times_AB2 = -rho*AB2;
-            const auto screen_fac = minus_rho_times_AB2 + s1.max_ln_coeff[p1] + s2.max_ln_coeff[p2];
-            if (screen_fac < ln_prec)
+            real_t ln_screen_fac = minus_rho_times_AB2 + s1.max_ln_coeff[p1] + s2.max_ln_coeff[p2];
+            if (screening_method == ScreeningMethod::Original && ln_screen_fac < ln_prec)
               continue;
+
+            real_t P[3];
+            if (AB2 == 0.) {  // this buys a bit more precision
+              P[0] = A[0];
+              P[1] = A[1];
+              P[2] = A[2];
+            } else {
+              P[0] = (a1 * A[0] + a2 * B[0]) * oogamma;
+              P[1] = (a1 * A[1] + a2 * B[1]) * oogamma;
+              P[2] = (a1 * A[2] + a2 * B[2]) * oogamma;
+            }
+
+            // conservative screening:
+            // - partitions the error among all primitive pairs (use \epsilon / nprim to screen, instead of \epsilon itself), and
+            // - accounts for the proper spherical gaussian prefactor in the integrals (namely, adds extra \sqrt{2 \pi^{52}}/\gamma_{ab} factor)
+            // - accounts for the nonspherical gaussians ... namely
+            //   magnitude of primitive (ab|00) integral for nonzero L differs from that of (00|00) by the magnitude of:
+            //   - (max_i|PA_i|)^La (max_i|PB_i|)^Lb when A-B separation is large, or
+            //   - La! Lb! / gammap^(La+Lb) when the separation is small
+            real_t nonspherical_scr_factor = 0;
+            if (screening_method == ScreeningMethod::Conservative) {
+              const auto maxabs_PA_i_to_l1 =
+                  std::pow(std::max(std::max(std::abs(P[0] - A[0]),
+                                             std::abs(P[1] - A[1])),
+                                    std::abs(P[2] - A[2])),
+                           max_l1);
+              const auto maxabs_PB_i_to_l2 =
+                  std::pow(std::max(std::max(std::abs(P[0] - B[0]),
+                                             std::abs(P[1] - B[1])),
+                                    std::abs(P[2] - B[2])),
+                           max_l2);
+              const auto fac_l1_fac_l2_oogamma_to_l =
+                  math::fac[max_l1] * math::fac[max_l2] *
+                  std::pow(oogamma, max_l1 + max_l2);
+              nonspherical_scr_factor =
+                  std::max(maxabs_PA_i_to_l1 * maxabs_PB_i_to_l2,
+                           fac_l1_fac_l2_oogamma_to_l);
+              const auto ln_nonspherical_scr_factor =
+                  log(std::max(nonspherical_scr_factor, static_cast<real_t>(1)));
+
+              constexpr decltype(rho) ln_sqrt_two_times_M_PI_to_1pt25 =
+                  1.777485947591722872387900; // \ln(\sqrt{2} (\pi)^{5/4})
+              const auto ln_spherical_scr_extra_factor =
+                  ln_sqrt_two_times_M_PI_to_1pt25 +
+                  log(oogamma);
+              const auto ln_nprim = log(nprim1*nprim2);
+              ln_screen_fac += ln_spherical_scr_extra_factor +
+                               ln_nonspherical_scr_factor + ln_nprim;
+              if (ln_screen_fac < ln_prec)
+                continue;
+            }
 
             primpairs.resize(c+1);
             PrimPairData& p = primpairs[c];
-            p.scr = screen_fac;
+            p.ln_scr = ln_screen_fac;
             p.p1 = p1;
             p.p2 = p2;
-            p.K = exp(minus_rho_times_AB2) * oogamma;
-            if (AB2 == 0.) {  // this buys a bit more precision
-              p.P[0] = A[0];
-              p.P[1] = A[1];
-              p.P[2] = A[2];
-            } else {
-              p.P[0] = (a1 * A[0] + a2 * B[0]) * oogamma;
-              p.P[1] = (a1 * A[1] + a2 * B[1]) * oogamma;
-              p.P[2] = (a1 * A[2] + a2 * B[2]) * oogamma;
-            }
+            constexpr decltype(rho) sqrt_two_times_M_PI_to_1pt25 =
+                5.9149671727956128778; // \sqrt{2} (\pi)^{5/4}
+            p.K = sqrt_two_times_M_PI_to_1pt25 * exp(minus_rho_times_AB2) * oogamma;
+            p.P[0] = P[0];
+            p.P[1] = P[1];
+            p.P[2] = P[2];
+            p.nonsph_screen_fac = nonspherical_scr_factor;
             p.one_over_gamma = oogamma;
 
             ++c;
           }
         }
+
+        this->ln_prec = ln_prec;
+        this->screening_method_ = screening_method;
+      }
+
+      /// initializes the shell pair data using Schwarz screening methods
+      template <typename Real, typename SchwarzFactorEvaluator> void init(const Shell& s1, const Shell& s2, Real ln_prec,
+                ScreeningMethod screening_method,
+                SchwarzFactorEvaluator&& schwarz_factor_evaluator) {
+        assert(screening_method == ScreeningMethod::Schwarz || screening_method == ScreeningMethod::SchwarzInf);
+
+        using std::log;
+
+        primpairs.clear();
+
+        const auto& A = s1.O;
+        const auto& B = s2.O;
+        real_t AB2 = 0.;
+        for(int i=0; i!=3; ++i) {
+          AB[i] = A[i] - B[i];
+          AB2 += AB[i]*AB[i];
+        }
+
+        const auto nprim1 = s1.alpha.size();
+        const auto nprim2 = s2.alpha.size();
+        const auto nprim12 = nprim1 * nprim2;
+        size_t c = 0;
+        for(size_t p1=0; p1!=nprim1; ++p1) {
+          for(size_t p2=0; p2!=nprim2; ++p2) {
+
+            const auto ln_screen_fac = log(nprim12 * schwarz_factor_evaluator(s1, p1, s2, p2)) + s1.max_ln_coeff[p1] + s2.max_ln_coeff[p2];
+            if (ln_screen_fac < ln_prec)
+              continue;
+
+            const auto& a1 = s1.alpha[p1];
+            const auto& a2 = s2.alpha[p2];
+            const auto gamma = a1 + a2;
+            const auto oogamma = 1 / gamma;
+
+            const auto rho = a1 * a2 * oogamma;
+            const auto minus_rho_times_AB2 = -rho*AB2;
+
+            real_t P[3];
+            if (AB2 == 0.) {  // this buys a bit more precision
+              P[0] = A[0];
+              P[1] = A[1];
+              P[2] = A[2];
+            } else {
+              P[0] = (a1 * A[0] + a2 * B[0]) * oogamma;
+              P[1] = (a1 * A[1] + a2 * B[1]) * oogamma;
+              P[2] = (a1 * A[2] + a2 * B[2]) * oogamma;
+            }
+
+            primpairs.resize(c+1);
+            PrimPairData& p = primpairs[c];
+            p.ln_scr = ln_screen_fac;
+            p.p1 = p1;
+            p.p2 = p2;
+            constexpr decltype(rho) sqrt_two_times_M_PI_to_1pt25 =
+                5.9149671727956128778; // \sqrt{2} (\pi)^{5/4}
+            p.K = sqrt_two_times_M_PI_to_1pt25 * exp(minus_rho_times_AB2) * oogamma;
+            p.P[0] = P[0];
+            p.P[1] = P[1];
+            p.P[2] = P[2];
+            p.nonsph_screen_fac = 0;
+            p.one_over_gamma = oogamma;
+
+            ++c;
+          }
+        }
+
+        this->ln_prec = ln_prec;
+        this->screening_method_ = screening_method;
       }
 
   };
