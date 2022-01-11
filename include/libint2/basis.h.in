@@ -50,7 +50,7 @@ namespace libint2 {
   /// @return the number of basis functions
   template <typename ShellRange> size_t nbf(ShellRange && shells) {
     size_t n = 0;
-    for (const auto& shell: std::forward<ShellRange>(shells))
+    for (auto&& shell: std::forward<ShellRange>(shells))
       n += shell.size();
     return n;
   }
@@ -61,7 +61,7 @@ namespace libint2 {
   /// @return the maximum number of primitives
   template <typename ShellRange> size_t max_nprim(ShellRange && shells) {
     size_t n = 0;
-    for (auto shell: std::forward<ShellRange>(shells))
+    for (auto&& shell: std::forward<ShellRange>(shells))
       n = std::max(shell.nprim(), n);
     return n;
   }
@@ -72,16 +72,27 @@ namespace libint2 {
   /// @return the maximum angular momentum
   template <typename ShellRange> int max_l(ShellRange && shells) {
     int l = 0;
-    for (auto shell: std::forward<ShellRange>(shells))
-      for (auto c: shell.contr)
+    for (auto&& shell: std::forward<ShellRange>(shells))
+      for (auto&& c: shell.contr)
         l = std::max(c.l, l);
     return l;
+  }
+
+  /// Computes the maximum size of any Shell among a range of shells
+  /// @tparam a range type
+  /// @param[in] shells a sequence of shells
+  /// @return the maximum size of a shell in @p shells
+  template <typename ShellRange> size_t max_size(ShellRange && shells) {
+    size_t n = 0;
+    for (auto&& shell: std::forward<ShellRange>(shells))
+      n = std::max(shell.size(), n);
+    return n;
   }
 
   /// BasisSet is a slightly decorated \c std::vector of \c libint2::Shell objects.
   class BasisSet : public std::vector<libint2::Shell> {
     public:
-      BasisSet() : name_(""), nbf_(-1), max_nprim_(0), max_l_(-1) {}
+      BasisSet() : name_(""), nbf_(-1), max_nprim_(0), max_l_(-1), max_size_(0) {}
       BasisSet(const BasisSet&) = default;
       BasisSet(BasisSet&& other) :
         std::vector<libint2::Shell>(std::move(other)),
@@ -89,6 +100,7 @@ namespace libint2 {
         nbf_(other.nbf_),
         max_nprim_(other.max_nprim_),
         max_l_(other.max_l_),
+        max_size_(other.max_size_),
         shell2bf_(std::move(other.shell2bf_))
       {
       }
@@ -211,17 +223,21 @@ namespace libint2 {
         init();
       }
 
-      /// @return the number of basis functions in the basis; -1 if uninitialized
+      /// @return the number of basis functions in the basis; -1, if `*this` is in a null (default-initialized) state
       long nbf() const {
         return nbf_;
       }
-      /// @return the maximum number of primitives in a contracted Shell, i.e. maximum contraction length; 0 if uninitialized
+      /// @return the maximum number of primitives in a contracted Shell, i.e. maximum contraction length; 0, if `*this` is in a null (default-initialized) state
       size_t max_nprim() const {
         return max_nprim_;
       }
-      /// @return the maximum angular momentum of a contraction; -1 if uninitialized
+      /// @return the maximum angular momentum of a contraction; -1, if `*this` is in a null (default-initialized) state
       long max_l() const {
         return max_l_;
+      }
+      /// @return the maximum size of a shell; 0, if `*this` is in a null (default-initialized) state
+      size_t max_size() const {
+        return max_nprim_;
       }
       /// @return the map from shell index to index of the first basis function from this shell
       /// \note basis functions are ordered as shells, i.e. shell2bf[i] >= shell2bf[j] iff i >= j
@@ -285,12 +301,14 @@ namespace libint2 {
       long nbf_;
       size_t max_nprim_;
       int max_l_;
+      size_t max_size_;
       std::vector<size_t> shell2bf_;
 
       void init() {
         nbf_ = libint2::nbf(*this);
         max_nprim_ = libint2::max_nprim(*this);
         max_l_ = libint2::max_l(*this);
+        max_size_ = libint2::max_size(*this);
         shell2bf_ = compute_shell2bf(*this);
       }
 
