@@ -1816,10 +1816,15 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
       auto n1 = obs[s1].size();       // number of basis functions in this shell
       shell_atoms[0] = shell2atom[s1];
 
+      auto sp12_iter = obs_shellpair_data.at(s1).begin();
+
       for (const auto& s2 : obs_shellpair_list[s1]) {
         auto bf2_first = shell2bf[s2];
         auto n2 = obs[s2].size();
         shell_atoms[1] = shell2atom[s2];
+
+        const auto* sp12 = sp12_iter->get();
+        ++sp12_iter;
 
         const auto Dnorm12 = do_schwarz_screen ? D_shblk_norm(s1, s2) : 0.;
 
@@ -1834,11 +1839,17 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
                              std::max(D_shblk_norm(s2, s3), Dnorm12))
                   : 0.;
 
+          auto sp34_iter = obs_shellpair_data.at(s3).begin();
+
           const auto s4_max = (s1 == s3) ? s2 : s3;
           for (const auto& s4 : obs_shellpair_list[s3]) {
             if (s4 > s4_max)
               break;  // for each s3, s4 are stored in monotonically increasing
                       // order
+
+            // must update the iter even if going to skip s4
+            const auto* sp34 = sp34_iter->get();
+            ++sp34_iter;
 
             if ((s1234++) % nthreads != thread_id) continue;
 
@@ -1907,7 +1918,7 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
             // vary precision for each shellset to guarantee precision of the contribution to the Fock matrix
             engine.set_precision(Dnorm1234 != 0. ? fock_precision / Dnorm1234 : needed_engine_precision);
             engine.compute2<Operator::coulomb, BraKet::xx_xx, deriv_order>(
-                obs[s1], obs[s2], obs[s3], obs[s4]);
+                obs[s1], obs[s2], obs[s3], obs[s4], sp12, sp34);
             if (buf[0] == nullptr)
               continue; // if all integrals screened out, skip to next quartet
             num_ints_computed += nderiv_shellset * n1234;
