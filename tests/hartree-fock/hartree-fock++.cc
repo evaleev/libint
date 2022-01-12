@@ -1375,12 +1375,13 @@ compute_shellpairs(const BasisSet& bs1,
   }
   shellpair_data_t spdata(splist.size());
   auto make_spdata = [&](int thread_id) {
-    auto schwarz_factor_evaluator = [engine = &engines[thread_id]](const Shell& s1, size_t p1, const Shell& s2, size_t p2) -> double {
-      auto& buf = engine->results();
+    auto schwarz_factor_evaluator = [&](const Shell& s1, size_t p1, const Shell& s2, size_t p2) -> double {
+      auto& engine = engines[thread_id];
+      auto& buf = engine.results();
       auto ps1 = s1.extract_primitive(p1, false);
       auto ps2 = s2.extract_primitive(p2, false);
       const auto n12 = ps1.size() * ps2.size();
-      engine->compute(ps1, ps2, ps1, ps2);
+      engine.compute(ps1, ps2, ps1, ps2);
       if (buf[0]) {
         Eigen::Map<const Matrix> buf_mat(buf[0], n12, n12);
         auto norm2 = screening_method == ScreeningMethod::SchwarzInf ? buf_mat.lpNorm<Eigen::Infinity>() : buf_mat.norm();
