@@ -60,6 +60,9 @@
 /// to use precomputed shell pair data must decide on max precision a priori
 const auto max_engine_precision = std::numeric_limits<double>::epsilon() / 1e10;
 
+// use conservative screening method
+constexpr auto screening_method = libint2::ScreeningMethod::SchwarzInf;
+
 // uncomment if want to report integral timings
 // N.B. integral engine timings are controled in engine.h
 #define REPORT_INTEGRAL_TIMINGS
@@ -77,6 +80,7 @@ using libint2::Atom;
 using libint2::BasisSet;
 using libint2::Operator;
 using libint2::BraKet;
+using libint2::ScreeningMethod;
 
 std::vector<Atom> read_geometry(const std::string& filename);
 Matrix compute_soad(const std::vector<Atom>& atoms);
@@ -288,12 +292,15 @@ int main(int argc, char* argv[]) {
 
     // compute OBS non-negligible shell-pair list
     {
+      const auto tstart = std::chrono::high_resolution_clock::now();
       std::tie(obs_shellpair_list, obs_shellpair_data) = compute_shellpairs(obs);
       size_t nsp = 0;
       for (auto& sp : obs_shellpair_list) {
         nsp += sp.second.size();
       }
-      std::cout << "# of {all,non-negligible} shell-pairs = {"
+      const auto tstop = std::chrono::high_resolution_clock::now();
+      const std::chrono::duration<double> time_elapsed = tstop - tstart;
+      std::cout << "computed shell-pair data in " << time_elapsed.count() << " seconds: # of {all,non-negligible} shell-pairs = {"
                 << obs.size() * (obs.size() + 1) / 2 << "," << nsp << "}"
                 << std::endl;
     }
@@ -1292,6 +1299,7 @@ compute_shellpairs(const BasisSet& bs1,
   engines.emplace_back(Operator::overlap,
                        std::max(bs1.max_nprim(), bs2.max_nprim()),
                        std::max(bs1.max_l(), bs2.max_l()), 0);
+  engines[0].set_precision(0.);
   for (size_t i = 1; i != nthreads; ++i) {
     engines.push_back(engines[0]);
   }
@@ -1361,12 +1369,38 @@ compute_shellpairs(const BasisSet& bs1,
   // compute shellpair data assuming that we are computing to default_epsilon
   // N.B. only parallelized over 1 shell index
   const auto ln_max_engine_precision = std::log(max_engine_precision);
+  // assume shellpair data are used for Coulomb ints
+  for(auto&& eng: engines) {
+    eng.set(Operator::coulomb);
+  }
   shellpair_data_t spdata(splist.size());
   auto make_spdata = [&](int thread_id) {
+    auto schwarz_factor_evaluator = [&](const Shell& s1, size_t p1, const Shell& s2, size_t p2) -> double {
+      auto& engine = engines[thread_id];
+      auto& buf = engine.results();
+      auto ps1 = s1.extract_primitive(p1, false);
+      auto ps2 = s2.extract_primitive(p2, false);
+      const auto n12 = ps1.size() * ps2.size();
+      engine.compute(ps1, ps2, ps1, ps2);
+      if (buf[0]) {
+        Eigen::Map<const Matrix> buf_mat(buf[0], n12, n12);
+        auto norm2 = screening_method == ScreeningMethod::SchwarzInf ? buf_mat.lpNorm<Eigen::Infinity>() : buf_mat.norm();
+        return std::sqrt(norm2);
+      }
+      else
+        return 0.;
+    };
     for (auto s1 = 0l; s1 != nsh1; ++s1) {
       if (s1 % nthreads == thread_id) {
-        for(const auto& s2 : splist[s1]) {
-          spdata[s1].emplace_back(std::make_shared<libint2::ShellPair>(bs1[s1],bs2[s2],ln_max_engine_precision));
+        for (const auto &s2 : splist[s1]) {
+          if (screening_method == ScreeningMethod::Original ||
+              screening_method == ScreeningMethod::Conservative)
+            spdata[s1].emplace_back(std::make_shared<libint2::ShellPair>(
+                bs1[s1], bs2[s2], ln_max_engine_precision, screening_method));
+          else {  // Schwarz screening of primitives
+            spdata[s1].emplace_back(std::make_shared<libint2::ShellPair>(
+                bs1[s1], bs2[s2], ln_max_engine_precision, screening_method, schwarz_factor_evaluator));
+          }
         }
       }
     }
@@ -1471,6 +1505,7 @@ Matrix compute_2body_2index_ints(const BasisSet& bs) {
   engines[0] =
       Engine(libint2::Operator::coulomb, bs.max_nprim(), bs.max_l(), 0);
   engines[0].set(BraKet::xs_xs);
+  engines[0].set(ScreeningMethod::Conservative);
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -1529,27 +1564,21 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
       compute_shellblock_norm(obs, D);  // matrix of infty-norms of shell blocks
 
   auto fock_precision = precision;
-  // engine precision controls primitive truncation, assume worst-case scenario
-  // (all primitive combinations add up constructively)
+  // standard approach is to omit *contributions* to the Fock matrix smaller than fock_precision ... this relies on massive amount of error cancellation
   auto max_nprim = obs.max_nprim();
-  auto max_nprim4 = max_nprim * max_nprim * max_nprim * max_nprim;
-  auto engine_precision = std::min(fock_precision / D_shblk_norm.maxCoeff(),
-                                   std::numeric_limits<double>::epsilon()) /
-                          max_nprim4;
-  assert(engine_precision > max_engine_precision &&
+  auto needed_engine_precision = (fock_precision / D_shblk_norm.maxCoeff());
+  assert(needed_engine_precision > max_engine_precision &&
       "using precomputed shell pair data limits the max engine precision"
-  " ... make max_engine_precision smalle and recompile");
+  " ... make max_engine_precision smaller and recompile");
 
   // construct the 2-electron repulsion integrals engine pool
   using libint2::Engine;
   std::vector<Engine> engines(nthreads);
   engines[0] = Engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), 0);
-  engines[0].set_precision(engine_precision);  // shellset-dependent precision
-                                               // control will likely break
-                                               // positive definiteness
-                                               // stick with this simple recipe
+  engines[0].set(screening_method);
+  engines[0].set_precision(needed_engine_precision);  // N.B. precision will be adjusted for each shellset
   std::cout << "compute_2body_fock:precision = " << precision << std::endl;
-  std::cout << "Engine::precision = " << engines[0].precision() << std::endl;
+  std::cout << "will set Engine::precision as low as = " << engines[0].precision() << std::endl;
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -1629,8 +1658,6 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
             auto bf4_first = shell2bf[s4];
             auto n4 = obs[s4].size();
 
-            num_ints_computed += n1 * n2 * n3 * n4;
-
             // compute the permutational degeneracy (i.e. # of equivalents) of
             // the given shell set
             auto s12_deg = (s1 == s2) ? 1 : 2;
@@ -1642,11 +1669,15 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
             timer.start(0);
 #endif
 
+            // vary precision for each shellset to guarantee precision of the contribution to the Fock matrix
+            engine.set_precision(Dnorm1234 != 0. ? fock_precision / Dnorm1234 : needed_engine_precision);
             engine.compute2<Operator::coulomb, BraKet::xx_xx, 0>(
                 obs[s1], obs[s2], obs[s3], obs[s4], sp12, sp34);
             const auto* buf_1234 = buf[0];
             if (buf_1234 == nullptr)
               continue; // if all integrals screened out, skip to next quartet
+
+            num_ints_computed += n1 * n2 * n3 * n4;
 
 #if defined(REPORT_INTEGRAL_TIMINGS)
             timer.stop(0);
@@ -1739,25 +1770,22 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
       compute_shellblock_norm(obs, D);  // matrix of infty-norms of shell blocks
 
   auto fock_precision = precision;
-  // engine precision controls primitive truncation, assume worst-case scenario
-  // (all primitive combinations add up constructively)
+  // standard approach is to omit *contributions* to the Fock matrix smaller than fock_precision ... this relies on massive amount of error cancellation
   auto max_nprim = obs.max_nprim();
-  auto max_nprim4 = max_nprim * max_nprim * max_nprim * max_nprim;
-  auto engine_precision = std::min(fock_precision / D_shblk_norm.maxCoeff(),
-                                   std::numeric_limits<double>::epsilon()) /
-                          max_nprim4;
+  auto needed_engine_precision = (fock_precision / D_shblk_norm.maxCoeff());
+  assert(needed_engine_precision > max_engine_precision &&
+         "using precomputed shell pair data limits the max engine precision"
+         " ... make max_engine_precision smaller and recompile");
 
   // construct the 2-electron repulsion integrals engine pool
   using libint2::Engine;
   std::vector<Engine> engines(nthreads);
   engines[0] =
       Engine(Operator::coulomb, obs.max_nprim(), obs.max_l(), deriv_order);
-  engines[0].set_precision(engine_precision);  // shellset-dependent precision
-                                               // control will likely break
-                                               // positive definiteness
-                                               // stick with this simple recipe
+  engines[0].set(screening_method);
+  engines[0].set_precision(needed_engine_precision);  // N.B. precision will be adjusted for each shellset
   std::cout << "compute_2body_fock:precision = " << precision << std::endl;
-  std::cout << "Engine::precision = " << engines[0].precision() << std::endl;
+  std::cout << "will set Engine::precision as low as = " << engines[0].precision() << std::endl;
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
@@ -1789,10 +1817,15 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
       auto n1 = obs[s1].size();       // number of basis functions in this shell
       shell_atoms[0] = shell2atom[s1];
 
+      auto sp12_iter = obs_shellpair_data.at(s1).begin();
+
       for (const auto& s2 : obs_shellpair_list[s1]) {
         auto bf2_first = shell2bf[s2];
         auto n2 = obs[s2].size();
         shell_atoms[1] = shell2atom[s2];
+
+        const auto* sp12 = sp12_iter->get();
+        ++sp12_iter;
 
         const auto Dnorm12 = do_schwarz_screen ? D_shblk_norm(s1, s2) : 0.;
 
@@ -1807,11 +1840,17 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
                              std::max(D_shblk_norm(s2, s3), Dnorm12))
                   : 0.;
 
+          auto sp34_iter = obs_shellpair_data.at(s3).begin();
+
           const auto s4_max = (s1 == s3) ? s2 : s3;
           for (const auto& s4 : obs_shellpair_list[s3]) {
             if (s4 > s4_max)
               break;  // for each s3, s4 are stored in monotonically increasing
                       // order
+
+            // must update the iter even if going to skip s4
+            const auto* sp34 = sp34_iter->get();
+            ++sp34_iter;
 
             if ((s1234++) % nthreads != thread_id) continue;
 
@@ -1877,8 +1916,10 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
             timer.start(0);
 #endif
 
+            // vary precision for each shellset to guarantee precision of the contribution to the Fock matrix
+            engine.set_precision(Dnorm1234 != 0. ? fock_precision / Dnorm1234 : needed_engine_precision);
             engine.compute2<Operator::coulomb, BraKet::xx_xx, deriv_order>(
-                obs[s1], obs[s2], obs[s3], obs[s4]);
+                obs[s1], obs[s2], obs[s3], obs[s4], sp12, sp34);
             if (buf[0] == nullptr)
               continue; // if all integrals screened out, skip to next quartet
             num_ints_computed += nderiv_shellset * n1234;
@@ -2001,10 +2042,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs, const Matrix& D,
   engines[0] = Engine(libint2::Operator::coulomb,
                       std::max(obs.max_nprim(), D_bs.max_nprim()),
                       std::max(obs.max_l(), D_bs.max_l()), 0);
-  engines[0].set_precision(precision);  // shellset-dependent precision control
-                                        // will likely break positive
-                                        // definiteness
-                                        // stick with this simple recipe
+  engines[0].set_precision(precision);
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }

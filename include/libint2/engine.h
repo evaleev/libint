@@ -415,6 +415,7 @@ class Engine {
   } empty_pod;
 
  public:
+
   static constexpr auto max_ntargets =
       std::extent<decltype(std::declval<Libint_t>().targets), 0>::value;
   using target_ptr_vec =
@@ -446,23 +447,20 @@ class Engine {
   /// \throw Engine::lmax_exceeded if \c max_l exceeds the angular momentum
   /// limit of the library
   /// \param deriv_order if not 0, will compute geometric derivatives of
-  /// Gaussian integrals of order \c deriv_order ,
-  ///                    (default=0)
+  ///        Gaussian integrals of order \c deriv_order
+  ///        (default=0, i.e. compute nondifferentiated integrals)
   /// \param precision specifies the target precision with which the integrals
-  /// will be computed; the default is the "epsilon"
-  ///        of \c scalar_type type, given by \c
-  ///        std::numeric_limits<scalar_type>::epsilon(). Currently precision control
-  ///        is implemented
-  ///        for two-body integrals only. The precision control is somewhat
-  ///        empirical,
-  ///        hence be conservative. \sa set_precision()
-  /// \param params a value of type
-  /// Engine::operator_traits<oper>::oper_params_type specifying the parameters
-  /// of
+  ///        will be computed; the default is the
+  ///        `std::numeric_limits<scalar_type>::epsilon()`.
+  ///        Currently the precision control is implemented
+  ///        for two-body integrals only.
+  ///        \sa Engine::set_precision()
+  /// \param params a value of type `Engine::operator_traits<oper>::oper_params_type`
+  ///               specifying the parameters of
   ///               the operator set, e.g. position and magnitude of the charges
   ///               creating the Coulomb potential
-  ///               for oper == Operator::nuclear, etc.
-  /// For most values of \c oper
+  ///               for `oper == Operator::nuclear`, etc.
+  ///               For most values of \c oper
   ///               this is not needed.
   ///               \sa Engine::operator_traits
   /// \param braket a value of BraKet type
@@ -472,7 +470,8 @@ class Engine {
   template <typename Params = empty_pod>
   Engine(Operator oper, size_t max_nprim, int max_l, int deriv_order = 0,
          scalar_type precision = std::numeric_limits<scalar_type>::epsilon(),
-         Params params = empty_pod(), BraKet braket = BraKet::invalid)
+         Params params = empty_pod(), BraKet braket = BraKet::invalid,
+         ScreeningMethod screening_method = default_screening_method())
       : oper_(oper),
         braket_(braket),
         primdata_(),
@@ -481,6 +480,7 @@ class Engine {
         stack_size_(0),
         lmax_(max_l),
         deriv_order_(deriv_order),
+        screening_method_(screening_method),
         cartesian_shell_normalization_(CartesianShellNormalization::standard),
         scale_(1),
         params_(enforce_params_type(oper, params)) {
@@ -508,6 +508,7 @@ class Engine {
         deriv_order_(other.deriv_order_),
         precision_(other.precision_),
         ln_precision_(other.ln_precision_),
+        screening_method_(other.screening_method_),
         cartesian_shell_normalization_(other.cartesian_shell_normalization_),
         scale_(other.scale_),
         core_eval_pack_(std::move(other.core_eval_pack_)),
@@ -536,6 +537,7 @@ class Engine {
         deriv_order_(other.deriv_order_),
         precision_(other.precision_),
         ln_precision_(other.ln_precision_),
+        screening_method_(other.screening_method_),
         cartesian_shell_normalization_(other.cartesian_shell_normalization_),
         scale_(other.scale_),
         core_eval_pack_(other.core_eval_pack_),
@@ -560,6 +562,7 @@ class Engine {
     deriv_order_ = other.deriv_order_;
     precision_ = other.precision_;
     ln_precision_ = other.ln_precision_;
+    screening_method_ = other.screening_method_;
     cartesian_shell_normalization_ = other.cartesian_shell_normalization_;
     scale_ = other.scale_;
     core_eval_pack_ = std::move(other.core_eval_pack_);
@@ -589,6 +592,7 @@ class Engine {
     deriv_order_ = other.deriv_order_;
     precision_ = other.precision_;
     ln_precision_ = other.ln_precision_;
+    screening_method_ = other.screening_method_;
     cartesian_shell_normalization_ = other.cartesian_shell_normalization_;
     scale_ = other.scale_;
     core_eval_pack_ = other.core_eval_pack_;
@@ -612,6 +616,9 @@ class Engine {
 
   /// @return the order of geometrical derivatives
   int deriv_order() const { return deriv_order_; }
+
+  /// @return the primitive screening method
+  ScreeningMethod screening_method() const { return screening_method_; }
 
   /// (re)sets operator type to @c new_oper
   /// @param[in] new_oper Operator whose integrals will be computed with the next call to Engine::compute()
@@ -750,32 +757,41 @@ class Engine {
                                                              const ShellPair* spbra,
                                                              const ShellPair* spket);
 
-  /** this specifies target precision for computing the integrals.
-   * @param[in] prec the target precision
-   * @note target precision \f$ \epsilon \f$ is used in 3 ways:
-   *  (1) to screen out primitive pairs in ShellPair object for which
-   *      \f$ {\rm scr}_{12} = \max|c_1| \max|c_2| \exp(-\rho_{12}
-   * |AB|^2)/\gamma_{12} < \epsilon \f$ ;
-   *  (2) to screen out primitive quartets outside compute_primdata() for which
-   * \f$ {\rm scr}_{12} {\rm scr}_{34} <  \epsilon \f$;
-   *  (3) to screen out primitive quartets inside compute_primdata() for which
-   * the prefactor of \f$ F_m(\rho, T) \f$ is smaller
-   *      than \f$ \epsilon \f$ .
+  // clang-format off
+  /** this specifies target precision for computing the integrals, i.e.
+   *  the target absolute (i.e., not relative) error of the integrals.
+   *  It is used to screen out primitive integrals. For some screening
+   *  methods precision can be almost guaranteed (due to finite precision
+   *  of the precomputed interpolation tables used to evaluate the core integrals
+   *  it is not in general possible to guarantee precision rigorously).
+   *
+   *  @param[in] prec the target precision
+   *  @sa ScreeningMethod
    */
+  // clang-format on
   Engine& set_precision(scalar_type prec) {
     if (prec <= 0.) {
       precision_ = 0.;
       ln_precision_ = std::numeric_limits<scalar_type>::lowest();
-    } else {
+      return *this;
+    }
+    if (prec > 0.) {  // split single if/else to avoid speculative execution of else branch on Apple M1 with apple clang 13.0.0
       precision_ = prec;
       using std::log;
       ln_precision_ = log(precision_);
+      return *this;
     }
-    return *this;
+    abort();
   }
   /// @return the target precision for computing the integrals
   /// @sa set_precision(scalar_type)
   scalar_type precision() const { return precision_; }
+
+  /// @param screening_method method used to screen primitive contributions
+  Engine& set(ScreeningMethod screening_method) { screening_method_ = screening_method; return *this; }
+
+  /// @return the method used to screen primitive contributions
+  ScreeningMethod screening_method() const { return screening_method_; }
 
   /// @return the Cartesian Gaussian normalization convention
   CartesianShellNormalization cartesian_shell_normalization() const {
@@ -883,6 +899,7 @@ class Engine {
   int deriv_order_;
   scalar_type precision_;
   scalar_type ln_precision_;
+  ScreeningMethod screening_method_ = ScreeningMethod::Invalid;
 
   // specifies the normalization convention for Cartesian Gaussians
   CartesianShellNormalization cartesian_shell_normalization_;
