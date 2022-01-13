@@ -618,7 +618,7 @@ class Engine {
   int deriv_order() const { return deriv_order_; }
 
   /// @return the primitive screening method
-  ScreeningMethod scheening_method() const { return screening_method_; }
+  ScreeningMethod screening_method() const { return screening_method_; }
 
   /// (re)sets operator type to @c new_oper
   /// @param[in] new_oper Operator whose integrals will be computed with the next call to Engine::compute()
