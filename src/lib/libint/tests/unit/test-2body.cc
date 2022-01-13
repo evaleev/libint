@@ -1,6 +1,14 @@
 #include "catch.hpp"
 #include "fixture.h"
 
+#include <libint2/deriv_iter.h>
+
+#if defined(NO_LIBINT_COMPILER_CODE)
+# include "../eri/eri.h"
+#else
+# include <test_eri/eri.h>
+#endif
+
 TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
 
   std::vector<Shell> obs{
@@ -76,4 +84,228 @@ TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
     }
   }
 
+}
+
+// see https://github.com/evaleev/libint/issues/216
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "bra-ket permutation", "[engine][2-body]") {
+  if (LIBINT2_MAX_AM_eri < 2) return;
+  using libint2::Shell;
+  using libint2::BasisSet;
+  using libint2::Operator;
+  using libint2::Engine;
+  std::vector<Shell> shells;
+  shells.push_back({
+      {0.8378385011e+02, 0.1946956493e+02, 0.6332106784e+01}, // exponents
+      {// P shell, spherical=false, contraction coefficients
+       {1, false, {0.1559162750, 0.6076837186, 0.3919573931}}},
+      {{0, 0, 0}} // origin coordinates
+  });
+  shells.push_back({
+      {0.2964817927e+01, 0.9043639676e+00, 0.3489317337e+00}, // exponents
+      {// D shell, spherical=false, contraction coefficients
+       {2, false, {0.2197679508, 0.6555473627, 0.2865732590}}},
+      {{0, 0, 0}} // origin coordinates
+  });
+
+  auto obs = BasisSet();
+  for (auto&& shell : shells) {
+    obs.push_back(std::move(shell));
+  }
+  auto shell2bf = BasisSet::compute_shell2bf(obs);
+
+  auto engine =
+      Engine(libint2::Operator::coulomb, libint2::max_nprim(obs),
+                      libint2::max_l(obs), 0);
+  auto engine_kb =
+      Engine(libint2::Operator::coulomb, libint2::max_nprim(obs),
+             libint2::max_l(obs), 0);
+  // Force uniform normalised Cartesian functions
+  engine.set(libint2::CartesianShellNormalization::uniform);
+  engine_kb.set(libint2::CartesianShellNormalization::uniform);
+  const auto &buf = engine.results();
+  const auto &buf_kb = engine_kb.results();
+
+  for (auto s1 = 0; s1 != obs.size(); ++s1) {
+    const auto bf1_first = shell2bf[s1]; // first basis function in this shell
+    auto n1 = obs[s1].size();            // number of basis functions in shell 1
+    for (auto s2 = 0; s2 != obs.size(); ++s2) {
+      const auto bf2_first = shell2bf[s2]; // first basis function in this shell
+      auto n2 = obs[s2].size(); // number of basis functions in shell 2
+      for (auto s3 = 0; s3 != obs.size(); ++s3) {
+        const auto bf3_first =
+            shell2bf[s3];         // first basis function in this shell
+        auto n3 = obs[s3].size(); // number of basis functions in shell 3
+        for (auto s4 = 0; s4 != obs.size(); ++s4) {
+          const auto bf4_first =
+              shell2bf[s4];         // first basis function in this shell
+          auto n4 = obs[s4].size(); // number of basis functions in shell 4
+          engine.compute2<Operator::coulomb, libint2::BraKet::xx_xx, 0>(
+              obs[s1], obs[s2], obs[s3], obs[s4]);
+          const auto *buf_1234 = buf[0];
+          engine_kb.compute2<Operator::coulomb, libint2::BraKet::xx_xx, 0>(
+              obs[s3], obs[s4], obs[s1], obs[s2]);
+          const auto *buf_3412 = buf_kb[0];
+          for (auto f1 = 0ul, f1234 = 0ul; f1 != n1; ++f1) {
+            const auto bf1 = f1 + bf1_first;
+            for (auto f2 = 0ul; f2 != n2; ++f2) {
+              const auto bf2 = f2 + bf2_first;
+              for (auto f3 = 0ul; f3 != n3; ++f3) {
+                const auto bf3 = f3 + bf3_first;
+                for (auto f4 = 0ul; f4 != n4; ++f4, ++f1234) {
+                  const auto bf4 = f4 + bf4_first;
+                  const auto integral = buf_1234[f1234];
+                  const auto f3412 = ((f3 * n4 + f4)*n1 + f1)*n2 + f2;
+                  const auto integral_kb = buf_3412[f3412];
+                  REQUIRE(std::abs(integral-integral_kb) < 1e-14);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+TEST_CASE("eri geometric derivatives", "[engine][2-body]") {
+
+  std::vector<Shell> obs{
+      // pseudorandom p
+      Shell{{1.0, 0.3}, {{1, false, {0.9, 0.3}}}, {{0.0, 0.0, 0.0}}},
+      // pseudorandom p
+      Shell{{2.0, 0.4}, {{1, false, {0.8, -0.2}}}, {{1.0, 1.0, 1.0}}},
+  };
+  const auto max_nprim = libint2::max_nprim(obs);
+  const auto max_l = libint2::max_l(obs);
+
+  {
+    const auto deriv_order = INCLUDE_ERI;
+    Engine engine;
+    try {
+      engine = Engine(Operator::coulomb, max_nprim, max_l, deriv_order);
+    }
+    catch (Engine::lmax_exceeded&) {  // skip the test if lmax exceeded
+      return;
+    }
+    const auto& buf = engine.results();
+
+    libint2::CartesianDerivIterator<4> diter(deriv_order);
+    const unsigned int nderiv = diter.range_size();
+
+    const auto nshell = obs.size();
+    for (int s0 = 0; s0 != nshell; ++s0) {
+      for (int s1 = 0; s1 != nshell; ++s1) {
+        for (int s2 = 0; s2 != nshell; ++s2) {
+          for (int s3 = 0; s3 != nshell; ++s3) {
+            engine.compute(obs[s0], obs[s1], obs[s2], obs[s3]);
+
+            {
+              // compare Libint integrals against the reference method
+              // since the reference implementation computes integrals one at a time (not one shell-set at a time)
+              // the outer loop is over the basis functions
+
+              LIBINT2_REF_REALTYPE Aref[3]; for(int i=0; i<3; ++i) Aref[i] = obs[s0].O[i];
+              LIBINT2_REF_REALTYPE Bref[3]; for(int i=0; i<3; ++i) Bref[i] = obs[s1].O[i];
+              LIBINT2_REF_REALTYPE Cref[3]; for(int i=0; i<3; ++i) Cref[i] = obs[s2].O[i];
+              LIBINT2_REF_REALTYPE Dref[3]; for(int i=0; i<3; ++i) Dref[i] = obs[s3].O[i];
+
+              int ijkl = 0;
+
+              int l0, m0, n0;
+              FOR_CART(l0, m0, n0, obs[s0].contr[0].l)
+
+              int l1, m1, n1;
+              FOR_CART(l1, m1, n1, obs[s1].contr[0].l)
+
+              int l2, m2, n2;
+              FOR_CART(l2, m2, n2, obs[s2].contr[0].l)
+
+              int l3, m3, n3;
+              FOR_CART(l3, m3, n3, obs[s3].contr[0].l)
+
+              {
+
+                //
+                // compute reference integrals
+                //
+                std::vector<LIBINT2_REF_REALTYPE> ref_eri(nderiv, 0.0);
+
+                uint p0123 = 0;
+                for (uint p0 = 0; p0 < obs[s0].nprim(); p0++) {
+                  for (uint p1 = 0; p1 < obs[s1].nprim(); p1++) {
+                    for (uint p2 = 0; p2 < obs[s2].nprim(); p2++) {
+                      for (uint p3 = 0; p3 < obs[s3].nprim(); p3++, p0123++) {
+
+                        const LIBINT2_REF_REALTYPE alpha0 = obs[s0].alpha[p0];
+                        const LIBINT2_REF_REALTYPE alpha1 = obs[s1].alpha[p1];
+                        const LIBINT2_REF_REALTYPE alpha2 = obs[s2].alpha[p2];
+                        const LIBINT2_REF_REALTYPE alpha3 = obs[s3].alpha[p3];
+
+                        const LIBINT2_REF_REALTYPE c0 = obs[s0].contr[0].coeff[p0];
+                        const LIBINT2_REF_REALTYPE c1 = obs[s1].contr[0].coeff[p1];
+                        const LIBINT2_REF_REALTYPE c2 = obs[s2].contr[0].coeff[p2];
+                        const LIBINT2_REF_REALTYPE c3 = obs[s3].contr[0].coeff[p3];
+                        const LIBINT2_REF_REALTYPE c0123 = c0 * c1 * c2 * c3;
+
+                        libint2::CartesianDerivIterator<4> diter(deriv_order);
+                        bool last_deriv = false;
+                        unsigned int di = 0;
+                        do {
+                          ref_eri[di++] += c0123
+                                           * eri(&(*diter)[0], l0, m0, n0, alpha0, Aref,
+                                                 l1, m1, n1, alpha1, Bref, l2, m2, n2,
+                                                 alpha2, Cref, l3, m3, n3, alpha3, Dref, 0);
+                          last_deriv = diter.last();
+                          if (!last_deriv)
+                            diter.next();
+                        } while (!last_deriv);
+
+                      }
+                    }
+                  }
+                }
+
+                //
+                // extract Libint integrals
+                //
+                std::vector<LIBINT2_REALTYPE> new_eri;
+                for(auto d=0; d!=nderiv; ++d)
+                  new_eri.push_back( buf[d][ijkl] );
+
+                //
+                // compare reference and libint integrals
+                //
+                for (unsigned int di = 0; di < nderiv; ++di) {
+                  const double ABSOLUTE_DEVIATION_THRESHOLD = 5.0E-14; // indicate failure if any integral differs in absolute sense by more than this
+                                                                       // loss of precision in HRR likely limits precision for high-L (e.g. (dp|dd), (dd|dd), etc.)
+                  const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9; // indicate failure if any integral differs in relative sense by more than this
+
+
+                  const LIBINT2_REF_REALTYPE abs_error = abs(ref_eri[di] - LIBINT2_REF_REALTYPE(new_eri[di]));
+                  const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / ref_eri[di]);
+                  bool not_ok = relabs_error > RELATIVE_DEVIATION_THRESHOLD &&
+                            abs_error > ABSOLUTE_DEVIATION_THRESHOLD * std::pow(3., deriv_order > 2 ? deriv_order-2 : 0);
+                  if (not_ok) {
+                    std::cout << "Elem " << ijkl << " di= " << di << " : ref = " << ref_eri[di]
+                              << " libint = " << new_eri[di]
+                              << " relabs_error = " << relabs_error
+                              << " abs_error = " << abs_error << std::endl;
+                  }
+                  REQUIRE(!not_ok);
+                }
+
+              }
+              ++ijkl;
+              END_FOR_CART
+              END_FOR_CART
+              END_FOR_CART
+              END_FOR_CART
+
+            } // checking computed values vs. the reference
+
+          }
+        }
+      }
+    }
+  }
 }

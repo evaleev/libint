@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -46,7 +46,11 @@ enum SHGShellOrdering {
  * m = real solid harmonic index (|m| = the absolute value of the projection of
  * the angular momentum on the z axis) m runs from -l to l
  */
-#define INT_SOLIDHARMINDEX(l, m) ((m) + (l))
+namespace libint2 {
+inline int INT_SOLIDHARMINDEX(int l, int m) { return m + l; }
+}
+LIBINT_DEPRECATED("please use libint2::INT_SOLIDHARMINDEX instead")
+inline int INT_SOLIDHARMINDEX(int l, int m) { return libint2::INT_SOLIDHARMINDEX(l, m); }
 
 /* This sets up the above loop over cartesian exponents as follows
  * int m;
@@ -65,7 +69,13 @@ enum SHGShellOrdering {
  * m = real solid harmonic index (|m| = the absolute value of the projection of
  * the angular momentum on the z axis) m runs as 0, +1, -1, +2, -2 ... +l, -l
  */
-#define INT_SOLIDHARMINDEX(l, m) (2 * std::abs(m) + ((m) > 0 ? -1 : 0))
+namespace libint2 {
+inline int INT_SOLIDHARMINDEX(int l, int m) {
+  return 2 * std::abs(m) + (m > 0 ? -1 : 0);
+}
+}
+LIBINT_DEPRECATED("please use libint2::INT_SOLIDHARMINDEX instead")
+inline int INT_SOLIDHARMINDEX(int l, int m) { return libint2::INT_SOLIDHARMINDEX(l, m); }
 
 /* This sets up the above loop over cartesian exponents as follows
  * int m;
@@ -80,7 +90,14 @@ enum SHGShellOrdering {
 
 /// these always-available macros encode orderings assumed by Molden
 
-#define INT_SOLIDHARMINDEX_MOLDEN(l, m) (2 * std::abs(m) + ((m) > 0 ? -1 : 0))
+namespace libint2 {
+inline int INT_SOLIDHARMINDEX_MOLDEN(int l, int m) {
+  return 2 * std::abs(m) + (m > 0 ? -1 : 0);
+}
+}
+LIBINT_DEPRECATED("please use libint2::INT_SOLIDHARMINDEX_MOLDEN instead")
+inline int INT_SOLIDHARMINDEX_MOLDEN(int l, int m) { return libint2::INT_SOLIDHARMINDEX_MOLDEN(l, m); }
+
 #define FOR_SOLIDHARM_MOLDEN(l, m) \
   for ((m) = 0; (m) != (l) + 1; (m) = ((m) > 0 ? -(m) : 1 - (m))) {
 #define END_FOR_SOLIDHARM_MOLDEN }

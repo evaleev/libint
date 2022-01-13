@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -785,7 +785,20 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
   }
 #else
   iface->to_params(iface->macro_define("MAX_AM",LIBINT_MAX_AM));
-  for(unsigned int d=0; d<=INCLUDE_ERI; ++d) {
+  int max_deriv = 0;
+#ifdef INCLUDE_ONEBODY
+  max_deriv = std::max(INCLUDE_ONEBODY, max_deriv);
+#endif
+#ifdef INCLUDE_ERI
+  max_deriv = std::max(INCLUDE_ERI, max_deriv);
+#endif
+#ifdef INCLUDE_ERI3
+  max_deriv = std::max(INCLUDE_ERI3, max_deriv);
+#endif
+#ifdef INCLUDE_ERI2
+  max_deriv = std::max(INCLUDE_ERI2, max_deriv);
+#endif
+  for(int d=0; d<=max_deriv; ++d) {
     std::ostringstream oss;
     oss << "MAX_AM_default";
     if (d > 0) oss << d;

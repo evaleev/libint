@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -25,13 +25,13 @@
 #ifndef __COMPILING_LIBINT2
 #  include <libint2/libint2_params.h>
 #else
-#  if defined(__cplusplus)
+#  if defined(__has_include)
 #    if __has_include(<libint2_params.h>)
 #      include <libint2_params.h>
 #    endif
-#  else
+#  else  // defined(__has_include)
 #    include <libint2_params.h>
-#  endif
+#  endif // defined(__has_include)
 #endif
 
 #endif /* _libint2_include_libint2_util_generated_libint2params_h_ */

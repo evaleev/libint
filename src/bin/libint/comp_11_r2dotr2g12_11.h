@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -64,17 +64,17 @@ namespace libint2 {
     virtual ~CR_11_R2dotR2G12_11() {}
 
     /// Implementation of RecurrenceRelation::num_children()
-    unsigned int num_children() const { return nchildren_; };
+    unsigned int num_children() const override { return nchildren_; }
     /// target() returns pointer to the i-th child
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer to the i-th child
     SafePtr<ChildType> child(unsigned int i) const;
     /// Implementation of RecurrenceRelation::rr_target()
-    SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    SafePtr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation::rr_child()
-    SafePtr<DGVertex> rr_child(unsigned int i) const { return dynamic_pointer_cast<DGVertex,ChildType>(child(i)); }
+    SafePtr<DGVertex> rr_child(unsigned int i) const override { return dynamic_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// Implementation of RecurrenceRelation::is_simple()
-    bool is_simple() const {
+    bool is_simple() const override {
       return TrivialBFSet<BFSet>::result;
     }
 
@@ -96,7 +96,7 @@ namespace libint2 {
     SafePtr<ChildType> children_[max_nchildren_];
     unsigned int nchildren_;
 
-    std::string generate_label() const
+    std::string generate_label() const override
     {
       std::ostringstream os;
       os << "RR ( " << rr_target()->label() << " )";

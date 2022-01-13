@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -60,13 +60,23 @@ namespace libint2 {
  * am = total angular momentum
  * formula: (am*(am+1))/2 + am+1;
  */
-#define INT_NCART(am) ((((am)+2)*((am)+1))>>1)
+namespace libint2 {
+inline int INT_NCART(int am) { return ((am + 2) * (am + 1)) >> 1; }
+}
+LIBINT_DEPRECATED("please use libint2::INT_NCART instead")
+inline int INT_NCART(int am) { return libint2::INT_NCART(am); }
 
 /* For a given ang. mom., am, with n cartesian functions, compute the
  * number of cartesian functions for am+1 or am-1
  */
-#define INT_NCART_DEC(am,n) ((n)-(am)-1)
-#define INT_NCART_INC(am,n) ((n)+(am)+2)
+namespace libint2 {
+inline int INT_NCART_DEC(int am, int n) { return n - am - 1; }
+inline int INT_NCART_INC(int am, int n) { return n + am + 2; }
+}
+LIBINT_DEPRECATED("please use libint2::INT_NCART_DEC instead")
+inline int INT_NCART_DEC(int am, int n) { return libint2::INT_NCART_DEC(am, n); }
+LIBINT_DEPRECATED("please use libint2::INT_NCART_INC instead")
+inline int INT_NCART_INC(int am, int n) { return libint2::INT_NCART_INC(am, n); }
 
 //
 // Macros that define orderings
@@ -90,7 +100,13 @@ namespace libint2 {
  *      }
  *    }
  */
-#define INT_CARTINDEX(am,i,j) ( (((((am) - (i) + 1)*((am) - (i)))>>1) + (am) - (i) - (j)) )
+namespace libint2 {
+inline int INT_CARTINDEX(unsigned int am, int i, int j) {
+  return (((am - i + 1) * (am - i)) >> 1) + am - i - j;
+}
+}
+LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
+inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX(am, i, j); }
 
 /* This sets up the above loop over cartesian exponents as follows
  * int i, j, k;
@@ -126,7 +142,13 @@ namespace libint2 {
  *      }
  *    }
  */
-#define INT_CARTINDEX(am,i,j) (((((((am)+1)<<1)-(i))*((i)+1))>>1)-(j)-1)
+namespace libint2 {
+inline int INT_CARTINDEX(unsigned int am, int i, int j) {
+  return ((((am + 1) << 1)- i) * (i + 1)) >> 1 - j - 1 ;
+}
+}
+LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
+inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX(am, i, j); }
 
 /* This sets up the above loop over cartesian exponents as follows
  * FOR_CART(i,j,k,am)
@@ -149,7 +171,13 @@ namespace libint2 {
  * j = the exponent of y
  * for this ordering there is no formula
  */
-#define INT_CARTINDEX(am,i,j) CGShellInfo< CGShellOrderingData<CGShellOrdering_GAMESS> >::cartindex(am,i,j)
+namespace libint2 {
+inline int INT_CARTINDEX(unsigned int am, int i, int j) {
+  return libint2::CGShellInfo<libint2::CGShellOrderingData<libint2::CGShellOrdering_GAMESS>>::cartindex(am, i, j);
+}
+}
+LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
+inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX(am, i, j); }
 
 /* This sets up the above loop over cartesian exponents as follows
  * FOR_CART(i,j,k,am)
@@ -171,7 +199,13 @@ namespace libint2 {
  * j = the exponent of y
  * for this ordering there is no formula
  */
-#define INT_CARTINDEX(am,i,j) CGShellInfo< CGShellOrderingData<CGShellOrdering_ORCA> >::cartindex(am,i,j)
+namespace libint2 {
+inline int INT_CARTINDEX(unsigned int am, int i, int j) {
+  return libint2::CGShellInfo<libint2::CGShellOrderingData<libint2::CGShellOrdering_ORCA>>::cartindex(am, i, j);
+}
+}
+LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
+inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX(am, i, j); }
 
 /* This sets up the above loop over cartesian exponents as follows
  * FOR_CART(i,j,k,am)
@@ -203,7 +237,13 @@ namespace libint2 {
  *      }
  *    }
  */
-#define INT_CARTINDEX(am,i,j) ((((am)+((i)+(j))+2)*((am)-((i)+(j))+1)>>1)-(i)-1)
+namespace libint2 {
+inline int INT_CARTINDEX(unsigned int am, int i, int j) {
+  return ((am + (i + j) + 2) * (am - (i + j) + 1) >> 1) - i -1;
+}
+}
+LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
+inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX(am, i, j); }
 
 /* This sets up the above loop over cartesian exponents as follows
  * FOR_CART(i,j,k,am)
@@ -219,7 +259,13 @@ namespace libint2 {
 
 /// these always-available macros encode orderings assumed by Molden
 
-#define INT_CARTINDEX_MOLDEN(am,i,j) CGShellInfo< CGShellOrderingData<CGShellOrdering_MOLDEN,4u> >::cartindex(am,i,j)
+namespace libint2 {
+inline int INT_CARTINDEX_MOLDEN(unsigned int am, int i, int j) {
+  return libint2::CGShellInfo<libint2::CGShellOrderingData<libint2::CGShellOrdering_MOLDEN, 4u>>::cartindex(am, i, j);
+}
+}
+LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX_MOLDEN instead")
+inline int INT_CARTINDEX_MOLDEN(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX_MOLDEN(am, i, j); }
 
 /* FOR_CART_MOLDEN(i,j,k,am)
  *   END_FOR_CART_MOLDEN

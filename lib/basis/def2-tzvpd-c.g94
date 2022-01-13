@@ -1,4 +1,4 @@
-def2-TZVPD C-Basis set for H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar, K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Ge, As, Se, Br, Kr, Rb, Sr, Y, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd, In, Sn, Sb, Te, I, Xe, Cs, Ba, La, Hf, Ta, W, Re, Os, Ir, Pt, Au, Hg, Tl, Pb, Bi, Po, At and Rn in Gaussian-format
+!def2-TZVPD C-Basis set for H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar, K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Ga, Ge, As, Se, Br, Kr, Rb, Sr, Y, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd, In, Sn, Sb, Te, I, Xe, Cs, Ba, La, Hf, Ta, W, Re, Os, Ir, Pt, Au, Hg, Tl, Pb, Bi, Po, At and Rn in Gaussian-format
 
 ****
 H    0
@@ -4102,8 +4102,11 @@ H  1  1.00
 H  1  1.00
  0.419572  1.0
 S  1  1.00
+ 0.00319353 1.0
 P  1  1.00
+ 0.0159538 1.0
 D  1  1.00
+ 0.0743237 1.0
 ! A. Hellweg, D. Rappoport, to be published.
 ****
 Ta    0

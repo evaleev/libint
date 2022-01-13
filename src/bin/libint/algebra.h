@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -95,11 +95,11 @@ namespace libint2 {
       const SafePtr<T>& right() const { return right_; }
 
       /// Overloads DGVertex::add_exit_arc(). The default definition is used unless T = DGVertex (see algebra.cc)
-      void add_exit_arc(const SafePtr<DGArc>& a);
+      void add_exit_arc(const SafePtr<DGArc>& a) override;
       /// Implements DGVertex::size()
-      unsigned int size() const { return 1; }
+      unsigned int size() const override { return 1; }
       /// Implements DGVertex::equiv()
-      bool equiv(const SafePtr<DGVertex>& a) const
+      bool equiv(const SafePtr<DGVertex>& a) const override
       {
         if (typeid_ == a->typeid_) {
 #if ALGEBRAICOPERATOR_USE_KEY_TO_COMPARE
@@ -150,17 +150,17 @@ namespace libint2 {
       }
 
       /// Implements DGVertex::label()
-      const std::string& label() const
+      const std::string& label() const override
       {
         return label_;
       }
       /// Implements DGVertex::id()
-      const std::string& id() const
+      const std::string& id() const override
       {
         return label();
       }
       /// Implements DGVertex::description()
-      std::string description() const
+      std::string description() const override
       {
         std::ostringstream os;
         os << "( ( " << left_->description() << " ) "
@@ -171,15 +171,15 @@ namespace libint2 {
       }
 
       /// Overloads DGVertex::del_exit_arcs()
-      void del_exit_arcs()
+      void del_exit_arcs() override
       {
         throw CannotAddArc("AlgebraicOperator::del_exit_arcs() -- cannot safely use del_exit_arcs on operator vertices.");
       }
 
       /// Implements Hashable::key()
-      typename DGVertex::KeyReturnType key() const { return 0; }
+      typename DGVertex::KeyReturnType key() const override { return 0; }
 
-      void print(std::ostream& os) const {
+      void print(std::ostream& os) const override {
         DGVertex::print(os);
         std::string prefix("AlgebraicOperator::print: ");
         os << prefix << "this = " << this << std::endl;
@@ -193,7 +193,7 @@ namespace libint2 {
       SafePtr<T> right_;
 
       /// Implements DGVertex::this_precomputed()
-      bool this_precomputed() const
+      bool this_precomputed() const override
       {
         return false;
       }

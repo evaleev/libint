@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -157,7 +157,7 @@ namespace libint2 {
     /// Return false if this object is invalid
     bool valid() const { return valid_; }
     /// Implements Hashable<unsigned>::key()
-    LIBINT2_UINT_LEAST64 key() const {
+    LIBINT2_UINT_LEAST64 key() const override {
       if (NDIM == 3u) {
         unsigned nxy = d_[1] + d_[2];
         unsigned l = nxy + d_[0];
@@ -269,9 +269,9 @@ namespace libint2 {
     OriginDerivative<3u>& deriv() { return deriv_; }
 
     /// Return a compact label
-    std::string label() const;
+    std::string label() const override;
     /// Returns the number of basis functions in the set
-    unsigned int num_bf() const { return (qn_[0]+1)*(qn_[0]+2)/2; };
+    unsigned int num_bf() const override { return (qn_[0]+1)*(qn_[0]+2)/2; }
     /// Returns the angular momentum
     unsigned int qn(unsigned int xyz=0) const { return qn_[0]; }
     /// returns the angular momentum
@@ -289,13 +289,13 @@ namespace libint2 {
     void pure_sh(bool p) { pure_sh_ = p; }
 
     /// Implementation of IncableBFSet::inc().
-    void inc(unsigned int xyz, unsigned int c = 1u);
+    void inc(unsigned int xyz, unsigned int c = 1u) override;
     /// Implementation of IncableBFSet::dec().
-    void dec(unsigned int xyz, unsigned int c = 1u);
+    void dec(unsigned int xyz, unsigned int c = 1u) override;
     /// Implements IncableBFSet::norm()
-    unsigned int norm() const;
+    unsigned int norm() const override;
     /// Implements Hashable<LIBINT2_UINT_LEAST64>::key()
-    LIBINT2_UINT_LEAST64 key() const {
+    LIBINT2_UINT_LEAST64 key() const override {
       if (is_unit()) return max_key-1;
       const LIBINT2_UINT_LEAST64 result =
              ((deriv().key() * 2 +
@@ -361,9 +361,9 @@ namespace libint2 {
     OriginDerivative<3u>& deriv() { return deriv_; }
 
     /// Return a compact label
-    std::string label() const;
+    std::string label() const override;
     /// Returns the number of basis functions in the set (always 1)
-    unsigned int num_bf() const { return 1; };
+    unsigned int num_bf() const override { return 1; }
     /// Returns the quantum number along \c axis
     unsigned int qn(unsigned int axis) const;
     unsigned int operator[](unsigned int axis) const {
@@ -380,13 +380,13 @@ namespace libint2 {
     bool operator==(const CGF&) const;
 
     /// Implementation of IncableBFSet::inc().
-    void inc(unsigned int xyz, unsigned int c = 1u);
+    void inc(unsigned int xyz, unsigned int c = 1u) override;
     /// Implementation of IncableBFSet::dec().
-    void dec(unsigned int xyz, unsigned int c = 1u);
+    void dec(unsigned int xyz, unsigned int c = 1u) override;
     /// Implements IncableBFSet::norm()
-    unsigned int norm() const;
+    unsigned int norm() const override;
     /// Implements Hashable<LIBINT2_UINT_LEAST64>::key()
-    LIBINT2_UINT_LEAST64 key() const {
+    LIBINT2_UINT_LEAST64 key() const override {
       if (is_unit()) return max_key-1;
       unsigned nxy = qn_[1] + qn_[2];
       unsigned l = nxy + qn_[0];
@@ -501,7 +501,7 @@ namespace libint2 {
     OriginDerivative<1u>& deriv() { return deriv_; }
 
     /// Return a compact label
-    std::string label() const {
+    std::string label() const override {
       // unit *functions* are treated as regular qn-0 functions so that (00|00)^(m) = (unit 0|00)^(m)
       std::ostringstream oss;
       oss << to_string(Axis) << qn_[0];
@@ -516,7 +516,7 @@ namespace libint2 {
 
 
     /// Returns the number of basis functions in the set (always 1)
-    unsigned int num_bf() const { return 1; };
+    unsigned int num_bf() const override { return 1; }
     /// Returns the quantum number (what used to be "angular momentum")
     unsigned int qn(unsigned int dir = 0) const {
       assert(dir == 0);
@@ -535,14 +535,14 @@ namespace libint2 {
     }
 
     /// Implementation of IncableBFSet::inc().
-    void inc(unsigned int dir, unsigned int c = 1u) {
+    void inc(unsigned int dir, unsigned int c = 1u) override {
       assert(!is_unit());
       assert(dir==0);
       if (valid())
         qn_[0] += c;
     }
     /// Implementation of IncableBFSet::dec().
-    void dec(unsigned int dir, unsigned int c = 1u) {
+    void dec(unsigned int dir, unsigned int c = 1u) override {
       if (is_unit()) { invalidate(); return; }
       assert(dir==0);
       if (valid()) {
@@ -554,9 +554,9 @@ namespace libint2 {
       }
     }
     /// Implements IncableBFSet::norm()
-    unsigned int norm() const { return qn_[0]; }
+    unsigned int norm() const override { return qn_[0]; }
     /// Implements Hashable<LIBINT2_UINT_LEAST64>::key()
-    LIBINT2_UINT_LEAST64 key() const {
+    LIBINT2_UINT_LEAST64 key() const override {
       if (is_unit()) return max_key-1;
       const LIBINT2_UINT_LEAST64 result =
             ( deriv().key() * 2ul +
@@ -667,7 +667,7 @@ namespace libint2 {
     OriginDerivative<1u>& deriv() { return deriv_; }
 
     /// Return a compact label
-    std::string label() const {
+    std::string label() const override {
       // unit *functions* are treated as regular qn-0 functions so that (00|00)^(m) = (unit 0|00)^(m)
       std::ostringstream oss;
       auto axis_label = to_string(Axis);
@@ -684,7 +684,7 @@ namespace libint2 {
 
 
     /// Returns the number of basis functions in the set (always 1)
-    unsigned int num_bf() const { return qn_[0]+1; };
+    unsigned int num_bf() const override { return qn_[0]+1; }
     /// Returns the quantum number (what used to be "angular momentum")
     unsigned int qn(unsigned int dir=0) const {
       assert(dir == 0);
@@ -700,17 +700,17 @@ namespace libint2 {
     }
 
     /// Implementation of IncableBFSet::inc().
-    void inc(unsigned int dir, unsigned int c = 1u) {
+    void inc(unsigned int dir, unsigned int c = 1u) override {
       assert(false);
     }
     /// Implementation of IncableBFSet::dec().
-    void dec(unsigned int dir, unsigned int c = 1u) {
+    void dec(unsigned int dir, unsigned int c = 1u) override {
       assert(false);
     }
     /// Implements IncableBFSet::norm()
-    unsigned int norm() const { return qn_[0]; }
+    unsigned int norm() const override { return qn_[0]; }
     /// Implements Hashable<LIBINT2_UINT_LEAST64>::key()
-    LIBINT2_UINT_LEAST64 key() const {
+    LIBINT2_UINT_LEAST64 key() const override {
       if (is_unit()) return max_key-1;
       const LIBINT2_UINT_LEAST64 result =
             ( deriv().key() * 2ul +

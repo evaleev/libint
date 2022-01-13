@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -60,18 +60,18 @@ namespace libint2 {
     virtual ~Uncontract_Integral() {}
 
     /// Implementation of RecurrenceRelation::num_children()
-    unsigned int num_children() const { return children_.size(); };
+    unsigned int num_children() const override { return children_.size(); }
     /// target() returns pointer to target
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer i-th child
     SafePtr<ChildType> child(unsigned int i) const;
     /// Implementation of RecurrenceRelation's target()
-    SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    SafePtr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation's child()
-    SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+    SafePtr<DGVertex> rr_child(unsigned int i) const override { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// to inline this would require a unary operator (+=).
     /// instead will always implement as a function call.
-    bool is_simple() const {
+    bool is_simple() const override {
       return false;
     }
 
@@ -81,7 +81,7 @@ namespace libint2 {
 
     // contracting integrals only depends on the number of integrals in a set
     // can simplify this to only refer to that number
-    std::string generate_label() const {
+    std::string generate_label() const override {
       std::ostringstream os;
       os << "Generic Contract";
       return os.str();
@@ -89,7 +89,7 @@ namespace libint2 {
 
     //
     std::string spfunction_call(const SafePtr<CodeContext>& context,
-                                const SafePtr<ImplicitDimensions>& dims) const;
+                                const SafePtr<ImplicitDimensions>& dims) const override;
 
   };
 

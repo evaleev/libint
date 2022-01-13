@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -75,7 +75,7 @@ namespace libint2 {
       virtual ~HRR();
 
       /// overrides RecurrenceRelation::braket_direction()
-      BraketDirection braket_direction() const {
+      BraketDirection braket_direction() const override {
         if (loc_b == InBra && loc_a == InKet)
           return BraketDirection::BraToKet;
         else if (loc_b == InKet && loc_a == InBra)
@@ -94,22 +94,22 @@ namespace libint2 {
       }
 
       /// Implementation of RecurrenceRelation::num_children()
-      unsigned int num_children() const {return nchildren_;};
+      unsigned int num_children() const override {return nchildren_;}
       /// returns pointer to the target
       SafePtr<TargetType> target() const {return target_;};
       /// child(i) returns pointer to i-th child
       SafePtr<ChildType> child(unsigned int i) const;
       /// Implementation of RecurrenceRelation::target()
-      SafePtr<DGVertex> rr_target() const {return static_pointer_cast<DGVertex,TargetType>(target());}
+      SafePtr<DGVertex> rr_target() const override {return static_pointer_cast<DGVertex,TargetType>(target());}
       /// Implementation of RecurrenceRelation::child()
-      SafePtr<DGVertex> rr_child(unsigned int i) const {return static_pointer_cast<DGVertex,ChildType>(child(i));}
+      SafePtr<DGVertex> rr_child(unsigned int i) const override {return static_pointer_cast<DGVertex,ChildType>(child(i));}
       /// Implementation of RecurrenceRelation::is_simple()
-      bool is_simple() const {
+      bool is_simple() const override {
         return TrivialBFSet<BFSet>::result;
       }
       /// Implementation of RecurrenceRelation::spfunction_call()
       std::string spfunction_call(const SafePtr<CodeContext>& context,
-          const SafePtr<ImplicitDimensions>& dims) const;
+          const SafePtr<ImplicitDimensions>& dims) const override;
 
       private:
       /**
@@ -128,9 +128,9 @@ namespace libint2 {
       void oper_checks() const;
 
       /// Implementation of RecurrenceRelation::label()
-      std::string generate_label() const;
+      std::string generate_label() const override;
       /// Reimplementation of RecurrenceRelation::adapt_dims_()
-      SafePtr<ImplicitDimensions> adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const;
+      SafePtr<ImplicitDimensions> adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const override;
       /// Use instead of RecurrenceRelation::register_with_rrstack()
       bool register_with_rrstack() const;
       /** return true if the high dimension must be shown explicitly. For example,

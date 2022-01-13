@@ -9,7 +9,11 @@
 #include <libint2/config.h>
 #include <libint2/numeric.h>
 #include <libint2/engine.h>
-#include <test_eri/eri.h>
+#if defined(NO_LIBINT_COMPILER_CODE)
+# include "../eri/eri.h"
+#else
+# include <test_eri/eri.h>
+#endif
 
 #ifdef LIBINT_HAS_MPFR
 TEST_CASE("ERI reference values", "[2-body][precision]") {
@@ -57,4 +61,136 @@ TEST_CASE("ERI reference values", "[2-body][precision]") {
   }
 }
 #endif  // LIBINT_HAS_MPFR
+
+#if defined(LIBINT2_SUPPORT_ERI)
+TEST_CASE("2-body integrals precision", "[2-body][precision]") {
+  using namespace libint2;
+
+  const auto original_default_screening_method = libint2::default_screening_method();
+  libint2::default_screening_method(libint2::ScreeningMethod::Conservative);
+
+  const auto ry = 4.0;
+  const auto rz = 20.0;
+  const std::string obs_name = "sto-3g";
+  const std::string dfbs_name = "cc-pvdz";
+//  const auto ry = 5.0;
+//  const auto rz = 40.0;
+//  const std::string obs_name = "cc-pvtz";
+//  const std::string dfbs_name = "cc-pvqz-ri";
+  std::stringstream sstr;
+  sstr << "3\n\nNe 0 0 0\nNe 0 0 " << rz << "\nNe 0 " << ry << " 0\n";
+  auto atoms = libint2::read_dotxyz(sstr);
+  BasisSet obs(obs_name, atoms);
+  BasisSet dfbs(dfbs_name, atoms);
+  const auto max_nprim = std::max(obs.max_nprim(), dfbs.max_nprim());
+  const auto max_l = std::max(obs.max_l(), dfbs.max_l());
+
+  for (auto eps: {1e-8, 1e-10, 1e-12, 1e-14, 1e-16}) {
+    for (auto oper : {Operator::coulomb}) {
+      for (auto c : {2, 3, 4}) {
+#if defined(LIBINT2_SUPPORT_ERI2)
+        if (max_l > LIBINT2_MAX_AM_2eri) continue;
+#else
+        if (c == 2) continue;
+#endif
+#if defined(LIBINT2_SUPPORT_ERI3)
+        if (max_l > LIBINT2_MAX_AM_3eri) continue;
+#else
+        if (c == 3) continue;
+#endif
+#if defined(LIBINT2_SUPPORT_ERI)
+        if (max_l > LIBINT2_MAX_AM_eri) continue;
+#else
+        if (c == 4) continue;
+#endif
+
+        auto bases = (c == 4) ? std::vector<BasisSet>{obs, obs, obs, obs}
+                              : ((c == 3) ? std::vector<BasisSet>{dfbs, obs, obs}
+                                          : std::vector<BasisSet>{dfbs, dfbs});
+
+        auto braket = (c == 4)
+                          ? BraKet::xx_xx
+                          : ((c == 3) ? BraKet::xs_xx : BraKet::xs_xs);
+
+        Engine ref_engine(oper, max_nprim, max_l, 0); ref_engine.set_precision(0.0); ref_engine.set(braket);
+        Engine eps_engine(oper, max_nprim, max_l, 0); eps_engine.set_precision(eps); eps_engine.set(braket);
+
+        auto test = [&ref_engine, &eps_engine](const std::vector<const Shell*>& shells, double precision) {
+          const auto c = shells.size();
+          assert(c == 4 || c == 3 || c == 2);
+
+          const auto ref_ints =
+              (c == 4)
+                  ? ref_engine.compute(*shells[0], *shells[1], *shells[2],
+                                       *shells[3])
+                  : ((c == 3)
+                         ? ref_engine.compute(*shells[0], *shells[1], *shells[2])
+                         : ref_engine.compute(*shells[0], *shells[1]));
+          assert(ref_ints[0] != nullptr);
+
+          const auto eps_ints =
+              (c == 4)
+                  ? eps_engine.compute(*shells[0], *shells[1], *shells[2],
+                                       *shells[3])
+                  : ((c == 3)
+                         ? eps_engine.compute(*shells[0], *shells[1], *shells[2])
+                         : eps_engine.compute(*shells[0], *shells[1]));
+
+          const auto nf = std::accumulate(shells.begin(), shells.end(), 1, [](int nf, const Shell* shell_ptr) {
+            return nf * shell_ptr->size();
+          });
+
+          auto max_engine_screening_error = 0.;
+          bool engine_precision_too_low = false;
+          const auto max_allowed_exceening_error_factor = 2;
+          for (auto f = 0; f != nf; ++f) {
+            auto &ref_v = ref_ints[0][f];
+            const auto engine_screening_error =
+                (eps_ints[0] != nullptr) ? std::abs(eps_ints[0][f] - ref_v)
+                                         : std::abs(ref_v);
+            CHECK(engine_screening_error <=
+                  max_allowed_exceening_error_factor * precision);
+            if (engine_screening_error > precision) {
+              max_engine_screening_error =
+                  std::max(engine_screening_error, max_engine_screening_error);
+            }
+            if (engine_screening_error >
+                max_allowed_exceening_error_factor * precision) {
+              engine_precision_too_low = true;
+            }
+          }
+        };
+
+        std::vector<const Shell*> shells(c);
+          for(auto&& sh0: bases[0]) {
+            shells[0] = &sh0;
+            for(auto&& sh1: bases[0]) {
+              shells[1] = &sh1;
+              if (c>2) {
+              for(auto&& sh2: bases[2]) {
+                shells[2] = &sh2;
+                if (c>3) {
+                  for (auto&& sh3 : bases[3]) {
+                    shells[3] = &sh3;
+                    test(shells, eps);
+                  }
+                }
+                else {
+                  test(shells, eps);
+                }
+              }
+            } else {
+              test(shells, eps);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  libint2::default_screening_method(original_default_screening_method);
+
+}
+#endif // defined(LIBINT2_SUPPORT_ERI)
+
 

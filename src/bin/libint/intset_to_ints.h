@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -68,21 +68,21 @@ namespace libint2 {
 
 
     /// Implementation of RecurrenceRelation::num_children()
-    unsigned int num_children() const { return children_.size(); };
+    unsigned int num_children() const override { return children_.size(); }
     /// target() returns pointer to target
     SafePtr<TargetType> target() const { return target_; };
     /// child(i) returns pointer i-th child
     SafePtr<ChildType> child(unsigned int i) const;
     /// Implementation of RecurrenceRelation's target()
-    SafePtr<DGVertex> rr_target() const { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    SafePtr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation's child()
-    SafePtr<DGVertex> rr_child(unsigned int i) const { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+    SafePtr<DGVertex> rr_child(unsigned int i) const override { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// Implementation of RecurrenceRelation::is_simple()
-    bool is_simple() const {
+    bool is_simple() const override {
       return true;
     }
     /// Reimplementation of RecurrenceRelation::invariant_type()
-    bool invariant_type() const {
+    bool invariant_type() const override {
       // Converts from one BFSet to another!
       return false;
     }
@@ -92,13 +92,13 @@ namespace libint2 {
     std::vector< SafePtr<ChildType> > children_;
 
     /// Implementation of RecurrenceRelation::generate_label()
-    std::string generate_label() const {
+    std::string generate_label() const override {
       return "IntegralSet_to_Integrals";
       //throw std::runtime_error("IntegralSet_to_Integrals::label() -- code for this RR is never generated, so this function should never be used");
     }
     /// Reimplementation of RecurrenceRelation::spfunction_call()
     std::string spfunction_call(const SafePtr<CodeContext>& context,
-                                const SafePtr<ImplicitDimensions>& dims) const
+                                const SafePtr<ImplicitDimensions>& dims) const override
     {
       throw std::logic_error("IntegralSet_to_Integrals::spfunction_call -- should not call this function");
     }

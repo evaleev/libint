@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -33,6 +33,7 @@
 #include <libint2.h>
 #include <libint2/util/deprecated.h>
 #include <libint2/util/singleton.h>
+#include <libint2/deriv_map.h>
 
 namespace libint2 {
 
@@ -40,6 +41,7 @@ namespace libint2 {
     struct __initializer {
         __initializer() {
           libint2_static_init();
+          libint2::DerivMapGenerator::initialize();
         }
         ~__initializer() {
           libint2_static_cleanup();

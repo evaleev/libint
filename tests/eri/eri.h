@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -99,7 +99,7 @@ struct ExpensiveMath {
 };
 
 namespace libint2 {
-  int min(int t1, unsigned int t2) { return t1 > (int)t2 ? (int)t2 : t1; }
+  inline int min(int t1, unsigned int t2) { return t1 > (int)t2 ? (int)t2 : t1; }
 
 template <typename Int>
 int parity(Int a) {

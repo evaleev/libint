@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -217,7 +217,7 @@ CppCodeContext::copyright() const {
   std::ostringstream oss;
   using std::endl;
   oss << "/*"<< endl
-      << " *  Copyright (C) 2004-2020 Edward F. Valeev" << endl
+      << " *  Copyright (C) 2004-2021 Edward F. Valeev" << endl
       << " *" << endl
       << " *  This file is part of Libint." << endl
       << " *" << endl
@@ -664,8 +664,8 @@ SafePtr<ForLoop>
 CppCodeContext::for_loop(std::string& varname, const SafePtr<Entity>& less_than,
                          const SafePtr<Entity>& start_at) const
 {
-  // no implemented
-  assert(false);
+  // not implemented
+  abort();
 }
 
 std::string

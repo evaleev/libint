@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -52,9 +52,9 @@ namespace libint2 {
     virtual ~ForLoop();
 
     /// Implementation of CodeBlock::open()
-    std::string open();
+    std::string open() override;
     /// Implementation of CodeBlock::close()
-    std::string close();
+    std::string close() override;
 
     private:
     std::string varname_;

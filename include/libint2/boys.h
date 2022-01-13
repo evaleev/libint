@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -126,8 +126,6 @@ namespace libint2 {
     private:
       std::vector<Real> bc_;
   };
-
-#define _local_min_macro(a,b) ((a) > (b) ? (a) : (b))
 
   /** Computes the Boys function, \f$ F_m (T) = \int_0^1 u^{2m} \exp(-T u^2) \, {\rm d}u \f$,
     * using single algorithm (asymptotic expansion). Slow for the sake of precision control.
@@ -257,10 +255,10 @@ namespace libint2 {
 
       static_assert(std::is_same<Real,double>::value, "FmEval_Chebyshev7 only supports double as the real type");
 
-      static constexpr const int ORDER = interpolation_order;   //!, interpolation order
-      static constexpr const int ORDERp1 = ORDER+1;   //!< ORDER + 1
+      static constexpr int ORDER = interpolation_order;   //!, interpolation order
+      static constexpr int ORDERp1 = ORDER+1;   //!< ORDER + 1
 
-      static constexpr const Real T_crit = cheb_table_tmax;          //!< critical value of T above which safe to use upward recusion
+      static constexpr Real T_crit = cheb_table_tmax;          //!< critical value of T above which safe to use upward recusion
       static constexpr Real delta = cheb_table_delta;           //!< interval size
       static constexpr Real one_over_delta = 1/delta;  //! 1/delta
 
@@ -847,11 +845,11 @@ namespace libint2 {
       static_assert(std::is_same<Real,double>::value, "TennoGmEval only supports double as the real type");
 
       static const int mmin_ = -1;
-      static constexpr const Real Tmax = (1 << cheb_table_tmaxlog2); //!< critical value of T above which use upward recursion
-      static constexpr const Real Umax = detail::pow10(cheb_table_umaxlog10); //!< max value of U for which to interpolate
-      static constexpr const Real Umin = detail::pow10(cheb_table_uminlog10); //!< min value of U for which to interpolate
-      static constexpr const std::size_t ORDERp1 = interpolation_order + 1;
-      static constexpr const Real maxabsprecision = 1.4e-14;  //!< guaranteed abs precision of the interpolation table for m>0
+      static constexpr Real Tmax = (1 << cheb_table_tmaxlog2); //!< critical value of T above which use upward recursion
+      static constexpr Real Umax = detail::pow10(cheb_table_umaxlog10); //!< max value of U for which to interpolate
+      static constexpr Real Umin = detail::pow10(cheb_table_uminlog10); //!< min value of U for which to interpolate
+      static constexpr std::size_t ORDERp1 = interpolation_order + 1;
+      static constexpr Real maxabsprecision = 1.4e-14;  //!< guaranteed abs precision of the interpolation table for m>0
 
   public:
       /// \param m_max maximum value of the Gm function index
@@ -1095,11 +1093,11 @@ namespace libint2 {
         // which interval does this T fall into?
         const int Tint = T < 2 ? 0 : int(std::floor(std::log2(T)));  assert(Tint >= 0 && Tint < 10);
         // precomputed 1 / 2^K
-        const constexpr Real one_over_2K[] = {1, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.0078125, 0.00390625, .001953125};
+        constexpr Real one_over_2K[] = {1, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.0078125, 0.00390625, .001953125};
         // which interval does this U fall into?
         const int Uint = int(std::floor(std::log10(U / Umin))); assert(Uint >= 0 && Uint < 10);
         // precomputed 1 / 10^(cheb_table_uminlog10 + K)
-        const constexpr Real one_over_10K[] = {1. / detail::pow10(cheb_table_uminlog10),
+        constexpr Real one_over_10K[] = {1. / detail::pow10(cheb_table_uminlog10),
                                                1. / detail::pow10(cheb_table_uminlog10+1),
                                                1. / detail::pow10(cheb_table_uminlog10+2),
                                                1. / detail::pow10(cheb_table_uminlog10+3),
@@ -1152,7 +1150,7 @@ namespace libint2 {
 
         Real Gmm1 = 0.0; // will track the previous value, only used for exp==false
 
-        constexpr const bool compute_Gmm10 = true;
+        constexpr bool compute_Gmm10 = true;
         long mmin_interp;
         if (compute_Gmm10) {
           // precision of interpolation for m=-1,0 can be insufficient, just evaluate explicitly

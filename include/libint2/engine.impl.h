@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -22,6 +22,7 @@
 #define _libint2_src_lib_libint_engineimpl_h_
 
 #include "./engine.h"
+#include "./deriv_map.h"
 
 #include <iterator>
 
@@ -118,7 +119,7 @@ default_params(const Operator& oper) {
       break;
   }
   assert(false && "missing case in switch");  // unreachable
-  return libint2::any();
+  abort();
 }
 
 /// Computes target shell sets of integrals.
@@ -149,7 +150,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
                              static_cast<int>(BraKet::first_2body_braket))) *
                                nderivorders_2body +
                            deriv_order_;
-    auto compute_ptr = compute2_ptrs().at(compute_ptr_idx);
+    assert(compute_ptr_idx >= 0 && compute_ptr_idx < compute2_ptrs().size());
+    auto compute_ptr = compute2_ptrs()[compute_ptr_idx];
     assert(compute_ptr != nullptr && "2-body compute function not found");
     if (nargs == 2)
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
@@ -162,7 +164,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
   }
 
   assert(false && "missing feature");  // only reached if missing a feature
-  return targets_;
+  abort();
 }
 
 /// Computes target shell sets of 1-body integrals.
@@ -343,13 +345,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
             } break;
 
             case 2: {
-// computes upper triangle index
-// n2 = matrix size times 2
-// i,j = indices, i<j
-#define upper_triangle_index_ord(n2, i, j) ((i) * ((n2) - (i)-1) / 2 + (j))
-// same as above, but orders i and j
-#define upper_triangle_index(n2, i, j) \
-  upper_triangle_index_ord(n2, std::min((i), (j)), std::max((i), (j)))
+              // computes upper triangle index
+              // n2 = matrix size times 2
+              // i,j = indices, i<j
+              auto upper_triangle_index_ord = [](int n2, int i, int j) {
+                return i * (n2 - i -1) / 2 + j;
+              };
+              // same as above, but orders i and j
+              auto upper_triangle_index = [&](int n2, int i, int j) {
+                return upper_triangle_index_ord(n2, std::min(i, j), std::max(i, j));
+              };
 
               // accumulate ints for this pset to scratch in locations
               // remapped to overall deriv index
@@ -462,7 +467,6 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
                 }
               }  // operator derivs
 
-#undef upper_triangle_index
             } break;
 
             default: {
@@ -632,6 +636,7 @@ __libint2_engine_inline void Engine::_initialize() {
   assert(
       false &&
       "missing case in switch");  // either deriv_order_ or oper_ is wrong
+  abort();
 }  // _initialize<R>()
 
 __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
@@ -765,7 +770,7 @@ __libint2_engine_inline unsigned int Engine::nopers() const {
       break;
   }
   assert(false && "missing case in switch");  // unreachable
-  return 0;
+  abort();
 }
 
 template <>
@@ -789,6 +794,7 @@ __libint2_engine_inline any Engine::enforce_params_type<any>(
 
     default:
       assert(false && "missing case in switch");  // missed a case?
+      abort();
   }
   return result;
 }
@@ -798,7 +804,7 @@ __libint2_engine_inline any Engine::enforce_params_type(
     Operator oper, const Params& params, bool throw_if_wrong_type) {
   any result;
   switch (static_cast<int>(oper)) {
-#define BOOST_PP_NBODYENGINE_MCR5B(r, data, i, elem)                         \
+#define BOOST_PP_NBODYENGINE_MCR5B(r, data, i, elem)                        \
   case i:                                                                   \
     if (std::is_same<Params, operator_traits<static_cast<Operator>(         \
                                  i)>::oper_params_type>::value) {           \
@@ -814,6 +820,7 @@ __libint2_engine_inline any Engine::enforce_params_type(
 
     default:
       assert(false && "missing case in switch");  // missed a case?
+      abort();
   }
   return result;
 }
@@ -839,6 +846,7 @@ __libint2_engine_inline any Engine::make_core_eval_pack(Operator oper) const {
 
     default:
       assert(false && "missing case in switch");  // missed a case?
+      abort();
   }
   return result;
 }
@@ -1087,17 +1095,18 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 /// \note result is stored in the "chemists"/Mulliken form, (tbra1 tbra2 |tket1
 /// tket2), i.e. bra and ket are in chemists meaning; result is packed in
 /// row-major order.
-template <Operator op, BraKet bk, size_t deriv_order>
+template <Operator op, BraKet bk, size_t der>
 __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     const libint2::Shell& tbra1, const libint2::Shell& tbra2,
     const libint2::Shell& tket1, const libint2::Shell& tket2,
     const ShellPair* tspbra, const ShellPair* tspket) {
   assert(op == oper_ && "Engine::compute2 -- operator mismatch");
   assert(bk == braket_ && "Engine::compute2 -- braket mismatch");
-  assert(deriv_order == deriv_order_ &&
+  assert(der == deriv_order_ &&
          "Engine::compute2 -- deriv_order mismatch");
   assert(((tspbra == nullptr && tspket == nullptr) || (tspbra != nullptr && tspket != nullptr)) &&
          "Engine::compute2 -- expects zero or two ShellPair objects");
+  assert(screening_method_ != ScreeningMethod::Invalid);
 
   //
   // i.e. bra and ket refer to chemists bra and ket
@@ -1129,6 +1138,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                                      tket1.contr[0].l + tket2.contr[0].l)) ||
         braket_ == BraKet::xx_xs;
   assert(false && "feature not implemented");
+  abort();
 #endif
   const auto& bra1 =
       swap_braket ? (swap_tket ? tket2 : tket1) : (swap_tbra ? tbra2 : tbra1);
@@ -1143,6 +1153,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   // "permute" also the user-provided shell pair data
   const auto* spbra_precomputed = swap_braket ? tspket : tspbra;
   const auto* spket_precomputed = swap_braket ? tspbra : tspket;
+  assert(((spbra_precomputed && spket_precomputed) || (screening_method_ == ScreeningMethod::Original || screening_method_ == ScreeningMethod::Conservative)) && "Engine::compute2: without precomputed shell pair data can only use original or conservative screening methods");
 
   const auto tform = bra1.contr[0].pure || bra2.contr[0].pure ||
                      ket1.contr[0].pure || ket2.contr[0].pure;
@@ -1178,16 +1189,20 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   {
     auto p = 0;
     // initialize shell pairs, if not given ...
-    // using ln_precision_ is far less aggressive than should be, but proper analysis
-    // involves both bra and ket *bases* and thus cannot be done on shell-set
-    // basis ... probably ln_precision_/2 - 10 is enough
+    // since screening primitive pairs for bra is not possible without knowing the worst-case primitive data in ket (and vice versa)
+    // using ln_precision_ is not safe, but should work fine for moderate basis sets ... precompute shell pair data
+    // yourself to guarantee proper screening of primitive pairs (see Engine::set_precision() for details of how to screen
+    // primitives for a given target precision of the integrals)
     const auto target_shellpair_ln_precision = ln_precision_;
-    const ShellPair& spbra = (spbra_precomputed && spbra_precomputed->ln_prec <= target_shellpair_ln_precision) ? *spbra_precomputed : (spbra_.init(bra1, bra2, target_shellpair_ln_precision), spbra_) ;
-    const ShellPair& spket = (spket_precomputed && spket_precomputed->ln_prec <= target_shellpair_ln_precision) ? *spket_precomputed : (spket_.init(ket1, ket2, target_shellpair_ln_precision), spket_);
+    const auto recompute_spbra = !spbra_precomputed || spbra_precomputed->ln_prec > target_shellpair_ln_precision;
+    const auto recompute_spket = !spket_precomputed || spket_precomputed->ln_prec > target_shellpair_ln_precision;
+    const ShellPair& spbra = recompute_spbra ? (spbra_.init(bra1, bra2, target_shellpair_ln_precision, screening_method_), spbra_) : *spbra_precomputed;
+    const ShellPair& spket = recompute_spket ? (spket_.init(ket1, ket2, target_shellpair_ln_precision, screening_method_), spket_) : *spket_precomputed;
+    assert(spbra.screening_method_ == screening_method_ && spket.screening_method_ == screening_method_ && "Engine::compute2: received ShellPair initialized for an incompatible screening method");
     // determine whether shell pair data refers to the actual ({bra1,bra2}) or swapped ({bra2,bra1}) pairs
     // if computed the shell pair data here then it's always in actual order, otherwise check swap_bra/swap_ket
-    const auto spbra_is_swapped = spbra_precomputed ? swap_bra : false;
-    const auto spket_is_swapped = spket_precomputed ? swap_ket : false;
+    const auto spbra_is_swapped = recompute_spbra ? false : swap_bra;
+    const auto spket_is_swapped = recompute_spket ? false : swap_ket;
 
     using real_t = Shell::real_t;
     // swapping bra turns AB into BA = -AB
@@ -1213,10 +1228,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     // compute all primitive quartet data
     const auto npbra = spbra.primpairs.size();
     const auto npket = spket.primpairs.size();
+    const scalar_type npbraket = npbra*npket;
     for (auto pb = 0; pb != npbra; ++pb) {
       for (auto pk = 0; pk != npket; ++pk) {
-        // primitive quartet screening
-        if (spbra.primpairs[pb].scr + spket.primpairs[pk].scr >
+        // primitive quartet coarse screening:
+        if (spbra.primpairs[pb].ln_scr + spket.primpairs[pk].ln_scr >
             ln_precision_) {
           Libint_t& primdata = primdata_[p];
           const auto& sbra1 = bra1;
@@ -1244,8 +1260,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           const auto c2 = sket1.contr[0].coeff[pket1];
           const auto c3 = sket2.contr[0].coeff[pket2];
 
-          const auto amtot = sbra1.contr[0].l + sket1.contr[0].l +
-                             sbra2.contr[0].l + sket2.contr[0].l;
+          const auto l0 = sbra1.contr[0].l;
+          const auto l1 = sbra2.contr[0].l;
+          const auto l2 = sket1.contr[0].l;
+          const auto l3 = sket2.contr[0].l;
+          const auto l = l0 + l1 + l2 + l3;
 
           const auto gammap = alpha0 + alpha1;
           const auto oogammap = spbrapp.one_over_gamma;
@@ -1263,19 +1282,32 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           const auto PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
 
           const auto K12 = spbrapp.K * spketpp.K;
-          decltype(K12) two_times_M_PI_to_25(
-              34.986836655249725693);  // (2 \pi)^{5/2}
           const auto gammapq = gammap + gammaq;
           const auto sqrt_gammapq = sqrt(gammapq);
           const auto oogammapq = 1.0 / (gammapq);
-          auto pfac = two_times_M_PI_to_25 * K12 * sqrt_gammapq * oogammapq;
+          auto pfac = K12 * sqrt_gammapq * oogammapq;
           pfac *= c0 * c1 * c2 * c3 * scale_;
 
-          if (std::abs(pfac) >= precision_) {
+          // original and conservative methods: screen primitive integral using actual pfac
+          if (static_cast<int>(screening_method_) & (static_cast<int>(ScreeningMethod::Original) | static_cast<int>(ScreeningMethod::Conservative))) {
+            scalar_type magnitude_estimate = std::abs(pfac);
+            if (screening_method_ == ScreeningMethod::Conservative) {
+              // magnitude of primitive (ab|cd) integral for nonzero L differs from that of (00|00) geometric and exponent-dependent factor,
+              // some of which only depend on bra or ket, and some are bra-ket dependent ... here we account only for bra-only and ket-only
+              // nonspherical factors
+              const auto nonspherical_pfac_magnitude = std::max(
+                  1., spbrapp.nonsph_screen_fac * spketpp.nonsph_screen_fac);
+              magnitude_estimate *= nonspherical_pfac_magnitude * npbraket;
+            }
+            if (magnitude_estimate < precision_)
+              continue;
+          }
+
+          {
             const scalar_type rho = gammap * gammaq * oogammapq;
             const scalar_type T = PQ2 * rho;
             auto* gm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
-            const auto mmax = amtot + deriv_order;
+            const auto mmax = l + deriv_order_;
 
             if (!skip_core_ints) {
               switch (oper_) {
@@ -1369,6 +1401,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 } break;
                 default:
                   assert(false && "missing case in a switch");  // unreachable
+                  abort();
               }
             }
 
@@ -1471,7 +1504,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
               const auto Wz =
                   (gammap_o_gammapgammaq * P[2] + gammaq_o_gammapgammaq * Q[2]);
 
-              if (deriv_order > 0 || lmax_bra > 0) {
+              if (deriv_order_ > 0 || lmax_bra > 0) {
 #if LIBINT2_DEFINED(eri, WP_x)
                 primdata.WP_x[0] = Wx - P[0];
 #endif
@@ -1482,7 +1515,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 primdata.WP_z[0] = Wz - P[2];
 #endif
               }
-              if (deriv_order > 0 || lmax_ket > 0) {
+              if (deriv_order_ > 0 || lmax_ket > 0) {
 #if LIBINT2_DEFINED(eri, WQ_x)
                 primdata.WQ_x[0] = Wx - Q[0];
 #endif
@@ -1566,7 +1599,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
 
               // prefactors for derivative ERI relations
-              if (deriv_order > 0) {
+              if (deriv_order_ > 0) {
 #if LIBINT2_DEFINED(eri, alpha1_rho_over_zeta2)
                 primdata.alpha1_rho_over_zeta2[0] =
                     alpha0 * (oogammap * gammaq_o_gammapgammaq);
@@ -1649,7 +1682,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   }
 
   // compute directly (ss|ss)
-  const auto compute_directly = lmax == 0 && deriv_order == 0;
+  const auto compute_directly = lmax == 0 && deriv_order_ == 0;
 
   if (compute_directly) {
 #ifdef LIBINT2_ENGINE_TIMERS
@@ -1686,27 +1719,26 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             ket2.contr[0].l;
         break;
 
-      case BraKet::xx_xs: assert(false && "this braket is not supported"); break;
+      case BraKet::xx_xs: assert(false && "this braket is not supported"); abort(); break;
       case BraKet::xs_xx: {
         /// lmax might be center dependent
         int ket_lmax = hard_lmax_;
         switch (deriv_order_) {
-          case 0:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-          case 1:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri1
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-          case 2:
-#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri2
-            ket_lmax = hard_default_lmax_;
-#endif
-            break;
-          default:assert(false && "deriv_order>2 not yet supported");
+#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                         \
+  case i:                                                                   \
+    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri,   \
+                                           BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), \
+                                              i,     \
+                                              BOOST_PP_EMPTY())             \
+                                          )                                 \
+                             ),       \
+                              ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY()); \
+    break;
+
+          BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR8, _,
+                                   BOOST_PP_NBODY_DERIV_ORDER_LIST)
+
+          default: assert(false && "missing case in switch"); abort();
         }
         buildfnidx =
             (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
@@ -1735,6 +1767,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
       default:
         assert(false && "invalid braket");
+        abort();
     }
 
     assert(buildfnptrs_[buildfnidx] && "null build function ptr");
@@ -1831,138 +1864,32 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           auto tgt_ptr = target;
 
           // if permuting derivatives ints must update their derivative index
-          switch (deriv_order) {
-            case 0:
-              break;  // nothing to do
-
-            case 1: {
-              switch(braket_) {
-                case BraKet::xx_xx: {
-                  const unsigned mapDerivIndex1_xxxx[2][2][2][12] = {
-                      {{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
-                        {0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8}},
-                       {{3, 4, 5, 0, 1, 2, 6, 7, 8, 9, 10, 11},
-                        {3, 4, 5, 0, 1, 2, 9, 10, 11, 6, 7, 8}}},
-                      {{{6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5},
-                        {9, 10, 11, 6, 7, 8, 0, 1, 2, 3, 4, 5}},
-                       {{6, 7, 8, 9, 10, 11, 3, 4, 5, 0, 1, 2},
-                        {9, 10, 11, 6, 7, 8, 3, 4, 5, 0, 1, 2}}}};
-                  s_target = mapDerivIndex1_xxxx[swap_braket][swap_tbra][swap_tket][s];
-                }
-                  break;
-
-                case BraKet::xs_xx: {
-                  assert(!swap_bra);
-                  assert(!swap_braket);
-                  const unsigned mapDerivIndex1_xsxx[2][9] = {
-                      {0,1,2,3,4,5,6,7,8},
-                      {0,1,2,6,7,8,3,4,5}
-                  };
-                  s_target = mapDerivIndex1_xsxx[swap_tket][s];
-                }
-                  break;
-
-                case BraKet::xs_xs: {
-                  assert(!swap_bra);
-                  assert(!swap_ket);
-                  assert(!swap_braket);
-                  s_target = s;
-                }
-                  break;
-
-                default:
-                  assert(false && "this backet type not yet supported for 1st geometric derivatives");
+          // Additional BraKet types would require adding support to DerivMapGenerator::generate_deriv_index_map
+          if (deriv_order_){
+            Tensor<size_t>& mapDerivIndex = libint2::DerivMapGenerator::instance(deriv_order_, braket_);
+            switch(braket_) {
+              case BraKet::xx_xx: {
+                s_target = mapDerivIndex((size_t)swap_braket,(size_t)swap_tbra,(size_t)swap_tket,(size_t)s);
               }
-            } break;
-
-            case 2: {
-              switch(braket_) {
-                case BraKet::xx_xx: {
-                  const unsigned mapDerivIndex2_xxxx[2][2][2][78] = {
-                      {{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-                         13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-                         26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
-                         39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
-                         52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
-                         65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77},
-                        {0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8, 12,
-                         13, 14, 15, 16, 20, 21, 22, 17, 18, 19, 23, 24, 25,
-                         26, 30, 31, 32, 27, 28, 29, 33, 34, 35, 39, 40, 41,
-                         36, 37, 38, 42, 43, 47, 48, 49, 44, 45, 46, 50, 54,
-                         55, 56, 51, 52, 53, 72, 73, 74, 60, 65, 69, 75, 76,
-                         61, 66, 70, 77, 62, 67, 71, 57, 58, 59, 63, 64, 68}},
-                       {{33, 34, 35, 3, 14, 24, 36, 37, 38, 39, 40, 41, 42,
-                         43, 4, 15, 25, 44, 45, 46, 47, 48, 49, 50, 5, 16,
-                         26, 51, 52, 53, 54, 55, 56, 0, 1, 2, 6, 7, 8,
-                         9, 10, 11, 12, 13, 17, 18, 19, 20, 21, 22, 23, 27,
-                         28, 29, 30, 31, 32, 57, 58, 59, 60, 61, 62, 63, 64,
-                         65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77},
-                        {33, 34, 35, 3, 14, 24, 39, 40, 41, 36, 37, 38, 42,
-                         43, 4, 15, 25, 47, 48, 49, 44, 45, 46, 50, 5, 16,
-                         26, 54, 55, 56, 51, 52, 53, 0, 1, 2, 9, 10, 11,
-                         6, 7, 8, 12, 13, 20, 21, 22, 17, 18, 19, 23, 30,
-                         31, 32, 27, 28, 29, 72, 73, 74, 60, 65, 69, 75, 76,
-                         61, 66, 70, 77, 62, 67, 71, 57, 58, 59, 63, 64, 68}}},
-                      {{{57, 58, 59, 60, 61, 62, 6, 17, 27, 36, 44, 51, 63,
-                         64, 65, 66, 67, 7, 18, 28, 37, 45, 52, 68, 69, 70,
-                         71, 8, 19, 29, 38, 46, 53, 72, 73, 74, 9, 20, 30,
-                         39, 47, 54, 75, 76, 10, 21, 31, 40, 48, 55, 77, 11,
-                         22, 32, 41, 49, 56, 0, 1, 2, 3, 4, 5, 12, 13,
-                         14, 15, 16, 23, 24, 25, 26, 33, 34, 35, 42, 43, 50},
-                        {72, 73, 74, 60, 65, 69, 9, 20, 30, 39, 47, 54, 75,
-                         76, 61, 66, 70, 10, 21, 31, 40, 48, 55, 77, 62, 67,
-                         71, 11, 22, 32, 41, 49, 56, 57, 58, 59, 6, 17, 27,
-                         36, 44, 51, 63, 64, 7, 18, 28, 37, 45, 52, 68, 8,
-                         19, 29, 38, 46, 53, 0, 1, 2, 3, 4, 5, 12, 13,
-                         14, 15, 16, 23, 24, 25, 26, 33, 34, 35, 42, 43, 50}},
-                       {{57, 58, 59, 60, 61, 62, 36, 44, 51, 6, 17, 27, 63,
-                         64, 65, 66, 67, 37, 45, 52, 7, 18, 28, 68, 69, 70,
-                         71, 38, 46, 53, 8, 19, 29, 72, 73, 74, 39, 47, 54,
-                         9, 20, 30, 75, 76, 40, 48, 55, 10, 21, 31, 77, 41,
-                         49, 56, 11, 22, 32, 33, 34, 35, 3, 14, 24, 42, 43,
-                         4, 15, 25, 50, 5, 16, 26, 0, 1, 2, 12, 13, 23},
-                        {72, 73, 74, 60, 65, 69, 39, 47, 54, 9, 20, 30, 75,
-                         76, 61, 66, 70, 40, 48, 55, 10, 21, 31, 77, 62, 67,
-                         71, 41, 49, 56, 11, 22, 32, 57, 58, 59, 36, 44, 51,
-                         6, 17, 27, 63, 64, 37, 45, 52, 7, 18, 28, 68, 38,
-                         46, 53, 8, 19, 29, 33, 34, 35, 3, 14, 24, 42, 43,
-                         4, 15, 25, 50, 5, 16, 26, 0, 1, 2, 12, 13, 23}}}};
-                  s_target = mapDerivIndex2_xxxx[swap_braket][swap_tbra][swap_tket][s];
-                }
-                  break;
-
-                case BraKet::xs_xx: {
-                  assert(!swap_bra);
-                  assert(!swap_braket);
-                  const unsigned mapDerivIndex2_xsxx[2][45] = {
-                      {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11,
-                       12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-                       24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
-                       36, 37, 38, 39, 40, 41, 42, 43, 44},
-                      {0,  1,  2,  6,  7,  8,  3,  4,  5,  9,  10, 14,
-                       15, 16, 11, 12, 13, 17, 21, 22, 23, 18, 19, 20,
-                       39, 40, 41, 27, 32, 36, 42, 43, 28, 33, 37, 44,
-                       29, 34, 38, 24, 25, 26, 30, 31, 35}};
-                  s_target = mapDerivIndex2_xsxx[swap_tket][s];
-                }
-                  break;
-
-                case BraKet::xs_xs: {
-                  assert(!swap_bra);
-                  assert(!swap_ket);
-                  assert(!swap_braket);
-                  s_target = s;
-                }
-                  break;
-
-                default:
-                  assert(false && "this backet type not yet supported for 2st geometric derivatives");
+                break;
+              case BraKet::xs_xx: {
+                assert(!swap_bra);
+                assert(!swap_braket);
+                s_target = mapDerivIndex((size_t)0,(size_t)0,(size_t)swap_tket,(size_t)s);
               }
-            } break;
+                break;
+              case BraKet::xs_xs: {
+                assert(!swap_bra);
+                assert(!swap_ket);
+                assert(!swap_braket);
+                s_target = s;
+              }
+                break;
 
-            default:
-              assert(false &&
-                     "3-rd and higher derivatives not yet generalized");
+              default:
+                assert(false && "This braket type not yet supported for geometric derivatives");
+                abort();
+            }
           }
 
           for (auto r1 = 0; r1 != nr1; ++r1) {
@@ -2044,7 +1971,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   }  // not (ss|ss)
 
   if (cartesian_shell_normalization() == CartesianShellNormalization::uniform) {
-    std::array<std::reference_wrapper<const Shell>, 4> shells{bra1, bra2, ket1, ket2};
+    std::array<std::reference_wrapper<const Shell>, 4> shells{tbra1, tbra2, tket1, tket2};
     for (auto s = 0ul; s != targets_.size(); ++s) {
       uniform_normalize_cartesian_shells(const_cast<value_type*>(targets_[s]), shells);
     }

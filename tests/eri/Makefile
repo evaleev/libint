@@ -61,6 +61,9 @@ $(TIME): $(CXXTIMEOBJ) $(CXXGENOBJ)  $(CGSHELLOBJ)
 $(TEST2): $(CXXTEST2OBJ) $(CXXGENOBJ) $(CGSHELLOBJ)
 	$(CXX) -o $@ $^ $(SYSLIBS) $(CXXGENFLAGS) $(LDFLAGS)
 
+check:: $(TEST)
+	./$(TEST) 0 2 && ./$(TEST) 1 1 && ./$(TEST) 2 1 && ./$(TEST) 3 1 && ./$(TEST) 4 1
+
 # Assume that CXXGEN has the weaker frontend of the two (there is no reason to not use it then as CXX)
 # hence use it *only* to compile generated source if CXXGEN is compatible with CXX
 ifeq ($(CXX_COMPATIBLE_WITH_CXXGEN),yes)
@@ -87,7 +90,7 @@ clean::
 	-rm -rf $(ERICOMP) $(TEST) $(TIME) $(TEST2) *.o *.d *.dot *.log
 
 genclean::
-	-rm -rf Make.compute_eri $(CXXGENSRC) $(CXXGENOBJ) $(CXXGENHDRS) 
+	-rm -rf Make.compute_eri $(CXXGENSRC) $(CXXGENOBJ) $(CXXGENHDRS)
 
 realclean:: clean genclean
 

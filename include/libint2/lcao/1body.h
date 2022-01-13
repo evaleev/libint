@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -1065,9 +1065,9 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
             // computes upper triangle index
             // n2 = matrix size times 2
             // i,j = (unordered) indices
-#define upper_triangle_index(n2, i, j) \
-  (std::min((i), (j))) * ((n2) - (std::min((i), (j))) - 1) / 2 + \
-            (std::max((i), (j)))
+            auto upper_triangle_index = [](size_t n2, long i, long j) {
+              return std::min(i, j) * (n2 - std::min(i, j) - 1) / 2 + std::max(i, j);
+            };
 
             // look over shellsets in the order in which they appear
             std::size_t shellset_idx = 0;
@@ -1098,7 +1098,6 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
               }
             }
           } break;
-#undef upper_triangle_index
 
           default: {
             assert(false && "not yet implemented");
@@ -1805,12 +1804,12 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
               } break;
 
               case 2: {
-// computes upper triangle index
-// n2 = matrix size times 2
-// i,j = (unordered) indices
-#define upper_triangle_index(n2, i, j)                           \
-  (std::min((i), (j))) * ((n2) - (std::min((i), (j))) - 1) / 2 + \
-      (std::max((i), (j)))
+                // computes upper triangle index
+                // n2 = matrix size times 2
+                // i,j = (unordered) indices
+                auto upper_triangle_index = [](size_t n2, size_t i, size_t j) {
+                  return std::min(i, j) * (n2 - std::min(i, j) - 1) / 2 + std::max(i, j);
+                };
                 // look over shellsets in the order in which they appear
                 std::size_t shellset_idx = 0;
                 for (auto c1 = 0; c1 != 4; ++c1) {
@@ -1836,7 +1835,6 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
                   }
                 }
               } break;
-#undef upper_triangle_index
 
               default:
                 assert(deriv_order <= 2 &&

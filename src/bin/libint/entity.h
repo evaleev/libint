@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2020 Edward F. Valeev
+ *  Copyright (C) 2004-2021 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -124,10 +124,10 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
     }
 
     /// Implementation of DGVertex::size()
-    unsigned int size() const { return 1; }
+    unsigned int size() const override { return 1; }
 
     /// Implementation of DGVertex::equiv()
-    bool equiv(const SafePtr<DGVertex>& a) const
+    bool equiv(const SafePtr<DGVertex>& a) const override
     {
       if (a->typeid_ == typeid_) {
 #if USE_INT_KEY_TO_COMPARE
@@ -142,17 +142,17 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
     }
 
     /// Implementation of DGVertex::label()
-    const std::string& label() const
+    const std::string& label() const override
     {
       return Entity::id();
     }
     /// Implementation of DGVertex::id()
-    const std::string& id() const
+    const std::string& id() const override
     {
       return label();
     }
     /// Implementation of DGVertex::description()
-    std::string description() const
+    std::string description() const override
     {
       std::ostringstream os;
       os << "RTimeEntity: " << id();
@@ -160,13 +160,13 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
       return descr;
     }
     /// Implements Hashable::key()
-    typename DGVertex::KeyReturnType key() const {
+    typename DGVertex::KeyReturnType key() const override {
       return key_;
     }
 
     private:
     /// Implementation of DGVertex::this_precomputed()
-    bool this_precomputed() const
+    bool this_precomputed() const override
     {
       return precomputed_;
     }
@@ -204,10 +204,10 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
         }
 
       /// Implementation of DGVertex::size()
-      unsigned int size() const { return 1; }
+      unsigned int size() const override { return 1; }
 
       /// Implementation of DGVertex::equiv()
-      bool equiv(const SafePtr<DGVertex>& a) const
+      bool equiv(const SafePtr<DGVertex>& a) const override
       {
 	if (a->typeid_ == typeid_) {
 #if USE_INT_KEY_TO_COMPARE
@@ -222,17 +222,17 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
       }
 
       /// Implementation of DGVertex::label()
-      const std::string& label() const
+      const std::string& label() const override
       {
         return Entity::id();
       }
       /// Implementation of DGVertex::id()
-      const std::string& id() const
+      const std::string& id() const override
       {
         return label();
       }
       /// Implementation of DGVertex::description()
-      std::string description() const
+      std::string description() const override
       {
         std::ostringstream os;
         os << "CTimeEntity: " << id();
@@ -244,7 +244,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
       typename KeyTraits<T>::ReturnType value() const { return value_; }
 
       /// Implements Hashable::key()
-      typename DGVertex::KeyReturnType key() const {
+      typename DGVertex::KeyReturnType key() const override {
         if (std::is_floating_point<T>::value) {
           if (not std::is_same<T,double>::value)
             throw std::runtime_error("CTimeEntity<Real> only supported when Real==double");
@@ -258,7 +258,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
       T value_;
 
       /// Implementation of DGVertex::this_precomputed()
-      bool this_precomputed() const
+      bool this_precomputed() const override
       {
         return true;
       }
