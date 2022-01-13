@@ -43,9 +43,9 @@ if(ENABLE_FORTRAN)
   check_language(Fortran)
   if (CMAKE_Fortran_COMPILER)
     enable_language(Fortran)
-  else(CMAKE_Fortran_COMPILER)
+  else()
     message(FATAL_ERROR "Given ENABLE_FORTRAN=ON but could not find Fortran compiler, provide via CMAKE_Fortran_COMPILER")
-  endif(CMAKE_Fortran_COMPILER)
+  endif()
 endif()
 
 #  <<<  Ordering Conventions  >>>
