@@ -13,3 +13,45 @@ For (more) complete instructions please refer to https://github.com/evaleev/libi
 
 # Appendix
 
+
+####################
+
+
+-----------------------------------------------------------------------------
+## configuring libint compiler
+
+These are the most useful configure options:
+
+
+
+###  Which Integrals Classes, Which Derivative Levels
+
+* `ENABLE_ONEBODY` -- Compile with support for up to N-th derivatives of 1-body integrals. Use -1 for OFF. [Default=0]
+* `ENABLE_TWOBODY4` -- Compile with support for up to N-th derivatives of 4-center electron repulsion integrals. Use -1 for OFF. [Default=0]
+* `ENABLE_TWOBODY3` -- Compile with support for up to N-th derivatives of 3-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
+* `ENABLE_TWOBODY2` -- Compile with support for up to N-th derivatives of 2-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
+* `ENABLE_G12` -- Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
+* `ENABLE_G12DKH` -- Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
+
+
+###  How High Angular Momentum
+
+#  example for "semicolon-separated string": `-DENABLE_ERI3=2 -DWITH_ERI3_MAX_AM="5;4;3"`
+
+#  high MAX_AM generating >20k files may require `ulimit -s 65535` for linking library target on Linux to avert "ld: Argument list too long"
+
+* `WITH_MAX_AM` -- Support Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=4]
+* `WITH_OPT_AM` -- Optimize maximally for up to angular momentum N (N <= WITH_MAX_AM). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `(WITH_MAX_AM/2)+1`]
+
+### Autotools Update Guide
+
+* `--enable-eri=N` --> `-D ENABLE_ERI=N` --> `ENABLE_TWOBODY4=N`
+* `--disable-eri` --> `-D ENABLE_TWOBODY4=-1`
+* `--enable-eri3=N` --> `-D ENABLE_ERI3=N` --> `ENABLE_TWOBODY3=N`
+* `--enable-eri2=N` --> `-D ENABLE_ERI2=N` --> `ENABLE_TWOBODY2=N`
+
+* `--with-max-am=N` --> `-D WITH_MAX_AM=N`
+* `--with-max-am=N0,N1,N2` --> `-D WITH_MAX_AM="N0;N1;N2"` (notice commas becoming semicolons and quotes; this is normal CMake list syntax)
+* `--with-opt-am=N` --> `-D WITH_OPT_AM=N`
+* `--with-opt-am=N0,N1,N2` --> `-D WITH_OPT_AM="N0;N1;N2"`
+

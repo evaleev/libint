@@ -65,6 +65,8 @@ include(CTest) # defines BUILD_TESTING option
 
 #  <<<  General  >>>
 
+option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
+
 ### compiler-only
 option_with_default(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT "[EXPERT] Build generated library as a subproject; if FALSE will configure and build separately" OFF)
 
@@ -77,7 +79,7 @@ option_with_default(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires 
 option_with_default(ENABLE_ONEBODY
   "Compile with support for up to N-th derivatives of 1-body integrals (-1 for OFF)" 0)
 option_with_default(ENABLE_ERI
-  "Compile with support for up to N-th derivatives of electron repulsion integrals (-1 for OFF)" 0)
+  "Compile with support for up to N-th derivatives of 4-center electron repulsion integrals (-1 for OFF)" 0)
 option_with_default(ENABLE_ERI3
   "Compile with support for up to N-th derivatives of 3-center electron repulsion integrals (-1 for OFF)" -1)
 option_with_default(ENABLE_ERI2
@@ -133,41 +135,41 @@ option_with_print(ERI2_PURE_SH
 
 option_with_default(WITH_MAX_AM
   "Support Gaussians of angular momentum up to N.
-   Can specify values for each derivative levels as a semicolon-separated string" 4)
+   Can specify values for each derivative level as a semicolon-separated string" 4)
 option_with_default(WITH_OPT_AM
-  "Optimize maximally for up to angular momentum N (N <= max-am). (default: (libint_max_am/2)+1)" -1)
-message(STATUS "WITH_OPT_AM=${WITH_OPT_AM}")
+  "Optimize maximally for up to angular momentum N (N <= max-am).
+   Can specify values for each derivative level as a semicolon-separated string. (default: (libint_max_am/2)+1)" -1)
 
 option_with_default(MULTIPOLE_MAX_ORDER
   "Maximum order of spherical multipole integrals. There is no maximum" 4)
 option_with_default(WITH_ONEBODY_MAX_AM
   "Support 1-body ints for Gaussians of angular momentum up to N.
-   Can specify values for each derivative as a semicolon-separated string. (default: (libint_max_am/2)+1)" -1)
+   Can specify values for each derivative level as a semicolon-separated string. (default: (libint_max_am/2)+1)" -1)
 option_with_default(WITH_ONEBODY_OPT_AM
   "Optimize 1-body ints maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolon-separated string" -1)
+   Can specify values for each derivative level as a semicolon-separated string" -1)
 
 option_with_default(WITH_ERI_MAX_AM
   "Support ERIs for Gaussians of angular momentum up to N.
-   Can specify values for each derivative levels as a semicolon-separated string" -1)
+   Can specify values for each derivative level as a semicolon-separated string" -1)
 option_with_default(WITH_ERI_OPT_AM
   "Optimize ERIs maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolon-separated string (default: (max_am/2)+1)" -1)
+   Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_ERI3_MAX_AM
   "Support 3-center ERIs for Gaussians of angular momentum up to N.
-   Can specify values for each derivative levels as a semicolon-separated string
+   Can specify values for each derivative level as a semicolon-separated string
    Set WITH_MAX_AM to mirror this option." -1)
 option_with_default(WITH_ERI3_OPT_AM
   "Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolon-separated string (default: (max_am/2)+1)" -1)
+   Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_ERI2_MAX_AM
   "Support 2-center ERIs for Gaussians of angular momentum up to N.
-    Can specify values for each derivative levels as a semicolon-separated string" -1)
+    Can specify values for each derivative level as a semicolon-separated string" -1)
 option_with_default(WITH_ERI2_OPT_AM
   "Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolon-separated string" -1)
+   Can specify values for each derivative level as a semicolon-separated string" -1)
 
 option_with_default(WITH_G12_MAX_AM
   "Support integrals for G12 methods of angular momentum up to N." -1)
