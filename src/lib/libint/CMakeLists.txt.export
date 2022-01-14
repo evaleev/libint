@@ -46,7 +46,7 @@ if(ENABLE_FORTRAN)
   if (CMAKE_Fortran_COMPILER)
     enable_language(Fortran)
   else()
-    message(FATAL_ERROR "Given ENABLE_FORTRAN=ON but could not find Fortran compiler, provide via CMAKE_Fortran_COMPILER")
+    message(FATAL_ERROR "Given ENABLE_FORTRAN=ON but could not find Fortran compiler. Provide via CMAKE_Fortran_COMPILER")
   endif()
 endif()
 
@@ -124,7 +124,7 @@ if (TARGET Eigen3::Eigen)
     set_property(TARGET libint-Eigen3 PROPERTY
         ${prop} ${EIGEN3_${prop}})
   endforeach()
-else (TARGET Eigen3::Eigen)
+else()
   # otherwise use FindEigen3.cmake module possibly installed somewhere in the path
   # but make sure EIGEN3_INCLUDE_DIR exists!
   find_package(Eigen3)
@@ -135,21 +135,26 @@ else (TARGET Eigen3::Eigen)
       add_library(libint-Eigen3 INTERFACE)
       set_property(TARGET libint-Eigen3 PROPERTY
           INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
-    endif(NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
-  endif (EIGEN3_FOUND)
-endif (TARGET Eigen3::Eigen)
+    endif()
+  endif()
+endif()
 if (TARGET libint-Eigen3)
   get_property(EIGEN3_INCLUDE_DIR TARGET libint-Eigen3 PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
   message(STATUS "Found Eigen3: EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-  install(TARGETS libint-Eigen3 EXPORT "${pnv}-targets-static" COMPONENT Eigen3)
-endif(TARGET libint-Eigen3)
+  install(
+    TARGETS libint-Eigen3
+    # EXPORT "${pnv}-targets-shared"  # LAB must toggle with BUILD_SHARED_LIBS at present
+    EXPORT "${pnv}-targets-static"
+    COMPONENT Eigen3
+    )
+endif()
 
 if (TARGET libint-Eigen3)
   set(LIBINT_HAS_EIGEN 1)
   set(LIBINT_HAS_CXX_API 1)
-else(TARGET libint-Eigen3)
+else()
   set(LIBINT_HAS_CXX_API 0)
-endif(TARGET libint-Eigen3)
+endif()
 if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
   message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DREQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
 endif()
@@ -157,9 +162,9 @@ endif()
 # Python is optional, unless ...
 if (ENABLE_FORTRAN)  # ... need fortran
     find_package(PythonInterp REQUIRED)
-else(ENABLE_FORTRAN)
+else()
     find_package(PythonInterp)
-endif(ENABLE_FORTRAN)
+endif()
 
 ################################# Main Project #################################
 include(GNUInstallDirs)
@@ -303,12 +308,12 @@ if (BUILD_SHARED_LIBS)
     add_library (int-library ALIAS int-shared)
     if (TARGET int-cxx-shared)
       add_library (int-cxx-library ALIAS int-cxx-shared)
-    endif(TARGET int-cxx-shared)
+    endif()
 elseif (BUILD_STATIC_LIBS)
     add_library (int-library ALIAS int-static)
     if (TARGET int-cxx-static)
       add_library (int-cxx-library ALIAS int-cxx-static)
-    endif(TARGET int-cxx-static)
+    endif()
 endif()
 
 # Legacy (pre-2.7.0) aliases ===========================================================================================
@@ -318,14 +323,14 @@ if (BUILD_SHARED_LIBS)
     if (TARGET int-cxx-shared)
       add_library (libint2_cxx ALIAS int-cxx-shared)
       add_library (Libint2::cxx ALIAS int-cxx-shared)
-    endif(TARGET int-cxx-shared)
+    endif()
 elseif (BUILD_STATIC_LIBS)
     add_library (libint2 ALIAS int-static)
     add_library (Libint2::int2 ALIAS int-static)
     if (TARGET int-cxx-static)
       add_library (libint2_cxx ALIAS int-cxx-static)
       add_library (Libint2::cxx ALIAS int-cxx-static)
-    endif(TARGET int-cxx-static)
+    endif()
 endif()
 
 # Fortran bindings =====================================================================================================
@@ -344,9 +349,9 @@ if (ENABLE_FORTRAN)
         check_language(C)
         if (CMAKE_C_COMPILER)
           enable_language(C)
-        else(CMAKE_C_COMPILER)
+        else()
           message(FATAL_ERROR "Given ENABLE_FORTRAN=ON but could not find C compiler needed to generate Fortran bindings, provide via CMAKE_C_COMPILER")
-        endif(CMAKE_C_COMPILER)
+        endif()
 
         # preprocessed libint.h
         add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/fortran/libint2.h.i
@@ -393,7 +398,7 @@ if (ENABLE_FORTRAN)
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
         )
 
-endif(ENABLE_FORTRAN)
+endif()
 
 # <<<  Install  >>>
 
