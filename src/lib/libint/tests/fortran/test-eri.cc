@@ -480,7 +480,12 @@ bool test_eri_c_f(int &contrdepth, int &am1, double *c1, double *alpha1, double 
 
 TEST_CASE("Fortran ERI", "[eri]") {
 
-  const double threshold = std::numeric_limits<double>::epsilon() * 10;
+  // recipe from eri/test.cc
+  const double ABSOLUTE_DEVIATION_THRESHOLD = 5.0E-14; // indicate failure if any integral differs in absolute sense by more than this
+                                                       // loss of precision in HRR likely limits precision for high-L (e.g. (dp|dd), (dd|dd), etc.)
+  auto absolute_derivation_threshold = [&](int deriv_order) {
+    return ABSOLUTE_DEVIATION_THRESHOLD * std::pow(3., deriv_order > 2 ? deriv_order-2 : 0);
+  };
 
   int am1 = std::min(1, LIBINT2_MAX_AM_eri);
   int am2 = std::min(0, LIBINT2_MAX_AM_eri);
@@ -516,7 +521,7 @@ TEST_CASE("Fortran ERI", "[eri]") {
                            am2, c2, alpha2, B,
                            am3, c3, alpha3, C,
                            am4, c4, alpha4, D,
-                           deriv_order, threshold));
+                           deriv_order, absolute_derivation_threshold(deriv_order)));
 
 #if INCLUDE_ERI >= 1
    deriv_order = 1;
@@ -524,7 +529,7 @@ TEST_CASE("Fortran ERI", "[eri]") {
                            am2, c2, alpha2, B,
                            am3, c3, alpha3, C,
                            am4, c4, alpha4, D,
-                           deriv_order, threshold));
+                           deriv_order, absolute_derivation_threshold(deriv_order)));
 #endif
 
 #if INCLUDE_ERI >= 2
@@ -533,7 +538,7 @@ TEST_CASE("Fortran ERI", "[eri]") {
                           am2, c2, alpha2, B,
                           am3, c3, alpha3, C,
                           am4, c4, alpha4, D,
-                          deriv_order, threshold));
+                          deriv_order, absolute_derivation_threshold(deriv_order)));
 #endif
 #endif // INCLUDE_ERI
 }
