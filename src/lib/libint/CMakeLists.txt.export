@@ -161,10 +161,11 @@ endif()
 
 # Python is optional, unless ...
 if (ENABLE_FORTRAN)  # ... need fortran
-    find_package(PythonInterp REQUIRED)
+    find_package(Python COMPONENTS Interpreter REQUIRED)
 else()
-    find_package(PythonInterp)
+    find_package(Python COMPONENTS Interpreter)
 endif()
+
 
 ################################# Main Project #################################
 include(GNUInstallDirs)
@@ -334,14 +335,14 @@ if (ENABLE_FORTRAN)
 
     # translated Libint_t
     add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/fortran/libint2_types_f.h
-            COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/fortran/c_to_f.py ${PROJECT_BINARY_DIR}/fortran/libint2.h.i ${PROJECT_BINARY_DIR}/fortran/libint2_types_f.h Libint_t
+            COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/fortran/c_to_f.py ${PROJECT_BINARY_DIR}/fortran/libint2.h.i ${PROJECT_BINARY_DIR}/fortran/libint2_types_f.h Libint_t
             DEPENDS ${PROJECT_BINARY_DIR}/fortran/libint2.h.i
             COMMENT "Generating libint2_types_f.h"
             )
 
     # extracted defines from libint2_types.h
     add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/fortran/fortran_incldefs.h
-            COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/fortran/make_defs.py ${PROJECT_SOURCE_DIR}/src/libint2_types.h ${PROJECT_BINARY_DIR}/fortran/fortran_incldefs.h
+            COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/fortran/make_defs.py ${PROJECT_SOURCE_DIR}/src/libint2_types.h ${PROJECT_BINARY_DIR}/fortran/fortran_incldefs.h
             DEPENDS ${PROJECT_SOURCE_DIR}/src/libint2_types.h
             COMMENT "Generating fortran_incldefs.h"
             )

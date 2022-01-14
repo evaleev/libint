@@ -71,7 +71,7 @@ if (LIBINT_HAS_CXX_API)
 
     add_test(libint2/hf/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf-libint2)
     set_tests_properties(libint2/hf/build PROPERTIES FIXTURES_SETUP LIBINT2_HFTEST_EXEC)
-    if (PYTHONINTERP_FOUND)
+    if (Python_Interpreter_FOUND)
         add_test(NAME libint2/hf/run
                  COMMAND ${CMAKE_COMMAND}
                  -DexecName=hf-libint2
@@ -79,7 +79,7 @@ if (LIBINT_HAS_CXX_API)
                  -DtestArgs=${PROJECT_SOURCE_DIR}/tests/hartree-fock/h2o.xyz
                  -DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
                  -DPROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}
-                 -DpythonExec=${PYTHON_EXECUTABLE}
+                 -DpythonExec=${Python_EXECUTABLE}
                  -P ${PROJECT_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
     else()
         add_test(NAME libint2/hf/run
@@ -96,7 +96,7 @@ if (LIBINT_HAS_CXX_API)
 
     add_test(libint2/hf++/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf++-libint2)
     set_tests_properties(libint2/hf++/build PROPERTIES FIXTURES_SETUP LIBINT2_HFXXTEST_EXEC)
-    if (PYTHONINTERP_FOUND)
+    if (Python_Interpreter_FOUND)
         add_test(NAME libint2/hf++/run
                 COMMAND ${CMAKE_COMMAND}
                 -DexecName=hf++-libint2
@@ -104,7 +104,7 @@ if (LIBINT_HAS_CXX_API)
                 -DtestArgs=${PROJECT_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz
                 -DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
                 -DPROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}
-                -DpythonExec=${PYTHON_EXECUTABLE}
+                -DpythonExec=${Python_EXECUTABLE}
                 -P ${PROJECT_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
     else()
         add_test(NAME libint2/hf++/run
