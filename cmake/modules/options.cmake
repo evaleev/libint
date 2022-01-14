@@ -50,7 +50,9 @@ endmacro(booleanize01)
 #Syntax: option_with_default(<option name> <description> <default value>)
 #
 macro(option_with_default variable msge default)
-    if (${variable} MATCHES "^LIBINT_")
+    # TODO: need to namespace all Libint-specific cmake variables
+    # disabled for now, pending discussion with @loriab
+    if (TRUE OR ${variable} MATCHES "^LIBINT_")
         print_option(${variable} ${default})
         if(NOT DEFINED ${variable} OR "${${variable}}" STREQUAL "")
             set(${variable} "${default}" CACHE STRING "${msge}" FORCE)

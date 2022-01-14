@@ -1,6 +1,6 @@
 # handle the defaulting and setting of the following variables
-# * ENABLE_[ONEBODY|TWOBODY2|TWOBODY3|TWOBODY4|G12|G12DKH]
-# * [LIBINT|ONEBODY|TWOBODY2|TWOBODY3|TWOBODY4|G12|G12DKH]_[MAX|OPT]_AM[|_LIST]
+# * ENABLE_[ONEBODY|ERI2|ERI3|ERI|G12|G12DKH]
+# * [LIBINT|ONEBODY|ERI2|ERI3|ERI|G12|G12DKH]_[MAX|OPT]_AM[|_LIST]
 # * LIBINT_ONEBODY_DERIV
 # * LIBINT_SUPPORTS_ONEBODY
 
@@ -142,7 +142,11 @@ macro(process_integrals_class class)
                     endif()
                 endif()
 
-                set(${class}_MAX_AM "")
+                if (${INCLUDE_${class}} GREATER_EQUAL 0)
+                    set(${class}_MAX_AM ${LIBINT_MAX_AM})
+                else()
+                    set(${class}_MAX_AM "")
+                endif()
                 set(_max_${class}_MAX_AM ${LIBINT_MAX_AM})
             else()
                 # _max_* variable in case want to default opt_am from it some day
@@ -192,23 +196,23 @@ endmacro()
 
 
 process_integrals_class(ONEBODY)
-process_integrals_class(TWOBODY2)
-process_integrals_class(TWOBODY3)
-process_integrals_class(TWOBODY4)
+process_integrals_class(ERI2)
+process_integrals_class(ERI3)
+process_integrals_class(ERI)
 
 # discrepancy, as configure doesn't do AM_LIST for these
 process_integrals_class(G12)
 process_integrals_class(G12DKH)
 
 # form list of active <class>_<deriv><max_am> strings to use in Libint2Config
-set(Libint2_TWOBODY_COMPONENTS "")
-foreach(_cls TWOBODY2;TWOBODY3;TWOBODY4)
+set(Libint2_ERI_COMPONENTS "")
+foreach(_cls ERI2;ERI3;ERI4)
     string(TOLOWER ${_cls} _lbl)
     set(_lbl "${_lbl}_")
 
     foreach (_deriv RANGE 0 ${INCLUDE_${_cls}})
         foreach(_l RANGE 0 ${_candidate_${_cls}_d${_deriv}})
-            list(APPEND Libint2_TWOBODY_COMPONENTS "${_lbl}_d${_deriv}_l${_l}")
+            list(APPEND Libint2_ERI_COMPONENTS "${_lbl}_d${_deriv}_l${_l}")
         endforeach()
     endforeach()
 endforeach()

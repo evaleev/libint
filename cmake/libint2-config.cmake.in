@@ -23,7 +23,7 @@
 #   static - search for only static library
 #
 #   onebody_dD_lL    - search for library including 1-body integrals with derivative order D (D=0..4) and max angular momentum up to L (L=2..10)
-#   twobody_cC_dD_lL - search for library including 2-body integrals with C centers, derivative order D (D=0..4), and max angular momentum up to L (L=2..10)
+#   eri_cC_dD_lL     - search for library including 2-body integrals with C centers, derivative order D (D=0..4), and max angular momentum up to L (L=2..10)
 #
 #                   cart       shell_set  used_by
 #                   --------   ---------  -------
@@ -55,7 +55,7 @@
 # ::
 #
 #   find_package(Libint2)
-#   find_package(Libint2 2.7.0 CONFIG REQUIRED COMPONENTS shared ss twobody_c4_d0_l5 twobody_c4_d1_l4)
+#   find_package(Libint2 2.7.0 CONFIG REQUIRED COMPONENTS shared ss eri_c4_d0_l5 eri_c4_d1_l4)
 #
 #
 # The following variables can be set to guide the search for this package:
@@ -77,24 +77,24 @@ set (_valid_components
     static
     shared
 
-    twobody_c4_d0_l2
-    twobody_c4_d0_l3
-    twobody_c4_d0_l4
-    twobody_c4_d0_l5
-    twobody_c4_d0_l6
-    twobody_c4_d0_l7
-    twobody_c4_d0_l8
-    twobody_c4_d0_l9
-    twobody_c4_d0_l10
-    twobody_c4_d1_l2
-    twobody_c4_d1_l3
-    twobody_c4_d1_l4
-    twobody_c4_d1_l5
-    twobody_c4_d1_l6
-    twobody_c4_d1_l7
-    twobody_c4_d1_l8
-    twobody_c4_d1_l9
-    twobody_c4_d1_l10
+    eri_c4_d0_l2
+    eri_c4_d0_l3
+    eri_c4_d0_l4
+    eri_c4_d0_l5
+    eri_c4_d0_l6
+    eri_c4_d0_l7
+    eri_c4_d0_l8
+    eri_c4_d0_l9
+    eri_c4_d0_l10
+    eri_c4_d1_l2
+    eri_c4_d1_l3
+    eri_c4_d1_l4
+    eri_c4_d1_l5
+    eri_c4_d1_l6
+    eri_c4_d1_l7
+    eri_c4_d1_l8
+    eri_c4_d1_l9
+    eri_c4_d1_l10
 
     ss
     so
@@ -120,7 +120,6 @@ list(FIND ${PN}_FIND_COMPONENTS "static" _seek_static)
 
 # check AM & derivative component
 set(${PN}_MAX_AM_ERI @Libint2_MAX_AM_ERI@)
-set(${PN}_MAX_AM_TWOBODY4 @Libint2_MAX_AM_TWOBODY4@)
 foreach(_eri @Libint2_ERI_COMPONENTS@)
     set(${PN}_${_eri}_FOUND 1)
 endforeach()
