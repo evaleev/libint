@@ -3,11 +3,7 @@
 
 #include <libint2/deriv_iter.h>
 
-#if defined(NO_LIBINT_COMPILER_CODE)
 # include "../eri/eri.h"
-#else
-# include <test_eri/eri.h>
-#endif
 
 TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
 
