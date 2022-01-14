@@ -13,7 +13,7 @@ endif()
 
 ### compiler library
 
-add_library(libint-libcompiler
+add_library(libint-libcompiler STATIC
     algebra.cc
     buildtest.cc
     class_registry.cc

@@ -83,7 +83,7 @@ if (LIBINT_HAS_CXX_API)
                  -P ${PROJECT_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
     else()
         add_test(NAME libint2/hf/run
-                COMMAND $<TARGET_FILE:hartree-fock> hartree-fock/h2o.xyz)
+                COMMAND $<TARGET_FILE:hf-libint2> hartree-fock/h2o.xyz)
     endif()
     set_tests_properties(libint2/hf/run
             PROPERTIES FIXTURES_REQUIRED LIBINT2_HFTEST_EXEC)
