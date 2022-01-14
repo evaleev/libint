@@ -48,7 +48,7 @@ foreach(_d RANGE 0 ${_max_deriv})
     else()
         set(_candidate0_d${_d} "-1")
     endif()
-    message(VERBOSE "setting _candidate0_d${_d}=${_candidate0_d${_d}}")  # CMake 3.15 for VERBOSE
+    message(VERBOSE "setting _candidate0_d${_d}=${_candidate0_d${_d}}")
 endforeach()
 
 if (LIBINT_MAX_AM GREATER_EQUAL 8)
@@ -258,5 +258,5 @@ foreach(_cls ERI;ERI3;ERI2)
         endforeach()
     endif()
 endforeach()
-message(STATUS "Library will satisfy ERI AM components: ${Libint2_TWOBODY_COMPONENTS}")
+message(STATUS "Library will satisfy ERI AM components: ${Libint2_ERI_COMPONENTS}")
 
