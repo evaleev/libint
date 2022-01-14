@@ -147,42 +147,42 @@ option_with_default(MULTIPOLE_MAX_ORDER
   "Maximum order of spherical multipole integrals. There is no maximum" 4)
 option_with_default(WITH_ONEBODY_MAX_AM
   "Support 1-body ints for Gaussians of angular momentum up to N.
-   Can specify values for each derivative level as a semicolon-separated string. (default: (libint_max_am/2)+1)" -1)
+   Can specify values for each derivative level as a semicolon-separated string. (default: max_am)" -1)
 option_with_default(WITH_ONEBODY_OPT_AM
   "Optimize 1-body ints maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative level as a semicolon-separated string" -1)
+   Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_ERI_MAX_AM
-  "Support ERIs for Gaussians of angular momentum up to N.
-   Can specify values for each derivative level as a semicolon-separated string" -1)
+  "Support 4-center ERIs for Gaussians of angular momentum up to N.
+   Can specify values for each derivative level as a semicolon-separated string. (default: max_am)" -1)
 option_with_default(WITH_ERI_OPT_AM
-  "Optimize ERIs maximally for up to angular momentum N (N <= max-am).
+  "Optimize 4-center ERIs maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_ERI3_MAX_AM
   "Support 3-center ERIs for Gaussians of angular momentum up to N.
-   Can specify values for each derivative level as a semicolon-separated string
+   Can specify values for each derivative level as a semicolon-separated string. (default: max_am)
    Set WITH_MAX_AM to mirror this option." -1)
 option_with_default(WITH_ERI3_OPT_AM
   "Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
+   Can specify values for each derivative level as a semicolon-separated string. (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_ERI2_MAX_AM
   "Support 2-center ERIs for Gaussians of angular momentum up to N.
-    Can specify values for each derivative level as a semicolon-separated string" -1)
+    Can specify values for each derivative level as a semicolon-separated string. (default: max_am)" -1)
 option_with_default(WITH_ERI2_OPT_AM
   "Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative level as a semicolon-separated string" -1)
+   Can specify values for each derivative level as a semicolon-separated string. (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_G12_MAX_AM
-  "Support integrals for G12 methods of angular momentum up to N." -1)
+  "Support integrals for G12 methods of angular momentum up to N. (default: max_am)" -1)
 option_with_default(WITH_G12_OPT_AM
-  "Optimize G12 integrals for up to angular momentum N (N <= max-am)." -1)
+  "Optimize G12 integrals for up to angular momentum N (N <= max-am). (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_G12DKH_MAX_AM
-  "Support integrals for relativistic G12 methods of angular momentum up to N." -1)
+  "Support integrals for relativistic G12 methods of angular momentum up to N. (default: max_am)" -1)
 option_with_default(WITH_G12DKH_OPT_AM
-  "Optimize G12DKH integrals for up to angular momentum N (N <= max-am)." -1)
+  "Optimize G12DKH integrals for up to angular momentum N (N <= max-am). (default: (max_am/2)+1)" -1)
 
 #  <<<  Miscellaneous  >>>
 
