@@ -11,6 +11,7 @@
 #   `find_package(Libint2 COMPONENTS twobody_c4_d1_l5)`
 
 
+message(STATUS "LAB int.am")
 message(STATUS "Processing integrals classes ...")
 
 # <<<  overall derivatives level  >>>

@@ -62,6 +62,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 include(int_versions)
 include(options)
 include(CTest) # defines BUILD_TESTING option
+message(STATUS "Building using CMake ${CMAKE_VERSION}")
 
 #  <<<  General  >>>
 

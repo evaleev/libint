@@ -32,7 +32,7 @@ jobs:
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
         -DENABLE_FORTRAN=ON
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
-        -DWITH_MAX_AM="2;2"
+        -DWITH_MAX_AM="3;2"
         -DWITH_ERI_MAX_AM="2;2"
         -DWITH_ERI3_MAX_AM="3;2"
         -DENABLE_ERI=1
