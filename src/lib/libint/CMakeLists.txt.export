@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.16)  # UNITY_BUILD
 cmake_policy(SET CMP0074 NEW)
 project(Libint2
         LANGUAGES CXX)
@@ -184,6 +184,7 @@ include(srclist.cmake)
 message(STATUS "LIBINT2_LIBRARY_CXX_SRC=${LIBINT2_LIBRARY_CXX_SRC}")
 
 add_library(int-obj OBJECT "${LIBINT2_LIBRARY_CXX_SRC}")
+set_target_properties(int-obj PROPERTIES UNITY_BUILD TRUE) # always use unity build for int-obj
 
 target_compile_definitions(int-obj PRIVATE -D__COMPILING_LIBINT2=1)
 target_compile_features(int-obj PUBLIC "cxx_std_11") # N.B. PUBLIC to make int-{static/shared} require C++11?

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12) # add_compile_definitions
+cmake_minimum_required(VERSION 3.16) # UNITY_BUILD
 cmake_policy(SET CMP0074 NEW)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
@@ -51,6 +51,7 @@ add_library(libint-libcompiler
 target_compile_definitions(libint-libcompiler PUBLIC -D__COMPILING_LIBINT2=1)
 target_compile_features(libint-libcompiler PUBLIC "cxx_std_11")
 set_target_properties(libint-libcompiler PROPERTIES CXX_EXTENSIONS OFF)
+set_target_properties(libint-libcompiler PROPERTIES UNITY_BUILD FALSE) # do not use unity build for build_libint
 
 target_include_directories(libint-libcompiler PUBLIC ${PROJECT_BINARY_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}

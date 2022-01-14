@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)  # CACHE operator
+cmake_minimum_required(VERSION 3.16)  # UNITY_BUILD property
 
 project(Libint2Compiler
         LANGUAGES CXX)
