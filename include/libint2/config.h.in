@@ -346,7 +346,9 @@
 
 #ifdef __has_cpp_attribute
 #if __has_cpp_attribute(deprecated)
+#ifndef LIBINT_DEPRECATED
 #define LIBINT_DEPRECATED(msg) [[deprecated(msg)]]
+#endif
 #endif
 #endif
 #ifndef LIBINT_DEPRECATED

@@ -362,6 +362,16 @@
 #define LIBINT_PRAGMA_GCC(x)
 #endif
 
+#ifdef __has_cpp_attribute
+#if __has_cpp_attribute(deprecated)
+#ifndef LIBINT_DEPRECATED
+#define LIBINT_DEPRECATED(msg) [[deprecated(msg)]]
+#endif
+#endif
+#endif
+#ifndef LIBINT_DEPRECATED
+#define LIBINT_DEPRECATED(msg) LIBINT_XPRAGMA( LIBINT_CONCAT(message, msg) )
+#endif
 
 #if @_EXPORT_MODE@
 #include "libint2/config2.h"
