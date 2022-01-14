@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)  # UNITY_BUILD property
+cmake_minimum_required(VERSION 3.18)  # LIST SORT NATURAL
 
 project(Libint2Compiler
         LANGUAGES CXX)
