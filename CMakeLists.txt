@@ -260,7 +260,7 @@ set(LIBINT_HAS_STD_ARRAY 1)
 set(LIBINT_ARRAY_HAS_FILL 1)
 
 find_package(Boost 1.57 REQUIRED)
-if (TARGET Boost::boost)  # the header-only target
+if (TARGET Boost::headers)
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
 endif()
 

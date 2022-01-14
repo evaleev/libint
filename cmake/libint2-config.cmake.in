@@ -221,7 +221,7 @@ if(NOT TARGET ${NS}::cxx)
     include(CMakeFindDependencyMacro)
     if (@LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)
         # Boost headers _not_ unpacked to within `include/libint2/`
-        if (NOT TARGET Boost::boost)
+        if (NOT TARGET Boost::headers)
             find_dependency(Boost 1.57 REQUIRED)
         endif()
     endif()
