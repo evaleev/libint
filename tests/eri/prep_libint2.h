@@ -39,8 +39,7 @@ struct RandomShellSet {
 
       std::copy(am, am+N, l);
 
-      std::random_device rd;
-      std::mt19937 rng(rd());                 // produces randomness out of thin air
+      std::mt19937 rng(std::rand());
       std::uniform_real_distribution<> rdist(0.1, 3.0);  // distribution that maps to 0.1 .. 3.0
       auto die = [&rng, &rdist]() -> double { return rdist(rng); };             // glues randomness with mapping
 
