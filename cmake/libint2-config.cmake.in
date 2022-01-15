@@ -95,6 +95,71 @@ set (_valid_components
     eri_c4_d1_l8
     eri_c4_d1_l9
     eri_c4_d1_l10
+    eri_c4_d2_l2
+    eri_c4_d2_l3
+    eri_c4_d2_l4
+    eri_c4_d2_l5
+    eri_c4_d2_l6
+    eri_c4_d2_l7
+    eri_c4_d2_l8
+    eri_c4_d2_l9
+    eri_c4_d2_l10
+
+    eri_c3_d0_l2
+    eri_c3_d0_l3
+    eri_c3_d0_l4
+    eri_c3_d0_l5
+    eri_c3_d0_l6
+    eri_c3_d0_l7
+    eri_c3_d0_l8
+    eri_c3_d0_l9
+    eri_c3_d0_l10
+    eri_c3_d1_l2
+    eri_c3_d1_l3
+    eri_c3_d1_l4
+    eri_c3_d1_l5
+    eri_c3_d1_l6
+    eri_c3_d1_l7
+    eri_c3_d1_l8
+    eri_c3_d1_l9
+    eri_c3_d1_l10
+    eri_c3_d2_l2
+    eri_c3_d2_l3
+    eri_c3_d2_l4
+    eri_c3_d2_l5
+    eri_c3_d2_l6
+    eri_c3_d2_l7
+    eri_c3_d2_l8
+    eri_c3_d2_l9
+    eri_c3_d2_l10
+
+    eri_c2_d0_l2
+    eri_c2_d0_l3
+    eri_c2_d0_l4
+    eri_c2_d0_l5
+    eri_c2_d0_l6
+    eri_c2_d0_l7
+    eri_c2_d0_l8
+    eri_c2_d0_l9
+    eri_c2_d0_l10
+    eri_c2_d1_l2
+    eri_c2_d1_l3
+    eri_c2_d1_l4
+    eri_c2_d1_l5
+    eri_c2_d1_l6
+    eri_c2_d1_l7
+    eri_c2_d1_l8
+    eri_c2_d1_l9
+    eri_c2_d1_l10
+    eri_c2_d2_l2
+    eri_c2_d2_l3
+    eri_c2_d2_l4
+    eri_c2_d2_l5
+    eri_c2_d2_l6
+    eri_c2_d2_l7
+    eri_c2_d2_l8
+    eri_c2_d2_l9
+    eri_c2_d2_l10
 
     ss
     so

@@ -246,9 +246,13 @@ process_integrals_class(G12DKH)
 # form list of active <class>_<deriv><max_am> strings to use in Libint2Config
 set(Libint2_ERI_COMPONENTS "")
 foreach(_cls ERI;ERI3;ERI2)
-# todo use eri4_d0_l2 or eri_c4_d0_l2
-    string(TOLOWER ${_cls} _lbl)
-    #set(_lbl "${_lbl}_")
+    if (_cls STREQUAL "ERI")
+        set(_lbl "eri_c4")
+    elseif (_cls STREQUAL "ERI3")
+        set(_lbl "eri_c3")
+    elseif (_cls STREQUAL "ERI2")
+        set(_lbl "eri_c2")
+    endif()
 
     if (INCLUDE_${_cls} GREATER -1)
         foreach (_d RANGE 0 ${INCLUDE_${_cls}})

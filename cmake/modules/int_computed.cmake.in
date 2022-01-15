@@ -47,4 +47,5 @@ set(LIBINT2_SHELL_SET "@LIBINT2_SHELL_SET@")
 # <<<  AM Components  >>>
 
 set(Libint2_ERI_COMPONENTS "@Libint2_ERI_COMPONENTS@")
-set(Libint2_MAX_AM_ERI "@_candidate_ERI_E@")
+set(Libint2_MAX_AM_ERI "@_candidate_ERI_d0@")  # for CMake config file
+set(Libint2_ERI_MAX_AM "@_candidate_ERI_d0@")  # for features file
