@@ -480,6 +480,8 @@ bool test_eri_c_f(int &contrdepth, int &am1, double *c1, double *alpha1, double 
 
 TEST_CASE("Fortran ERI", "[eri]") {
 
+  std::srand(1973);
+
   // recipe from eri/test.cc
   const double ABSOLUTE_DEVIATION_THRESHOLD = 5.0E-14; // indicate failure if any integral differs in absolute sense by more than this
                                                        // loss of precision in HRR likely limits precision for high-L (e.g. (dp|dd), (dd|dd), etc.)
