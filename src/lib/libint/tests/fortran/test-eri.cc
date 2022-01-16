@@ -437,7 +437,7 @@ bool test_eri_c_f(int &contrdepth, int &am1, double *c1, double *alpha1, double 
           for(int d=0; d<n4; d++, nel++) {
             const double abs_error = abs(*eri_shell_set_c - *eri_shell_set_f);
             const double rel_error = abs_error / abs(*eri_shell_set_c);
-            if(rel_error > threshold) {
+            if(abs_error > threshold) {
               std::cout << std::setprecision(17) << "Elem " << nel << " di= " << deriv_order <<
                 ", : C = " << *eri_shell_set_c
                 << ", Fortran = " << *eri_shell_set_f
