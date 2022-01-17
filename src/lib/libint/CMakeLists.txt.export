@@ -35,6 +35,7 @@ option_with_print(BUILD_TESTING "Compile the testing infrastructure" ON)
 option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
 option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static" OFF)
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)
+option_with_print(EXPORT_LOCAL_TARGETS "Install CMake targets with hard-coded dependency paths. Turn OFF when building library for redistribution." ON)
 
 if (NOT LIBINT2_REALTYPE)
     set(LIBINT2_REALTYPE double)
@@ -81,10 +82,6 @@ if (MSVC)
     set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "(LAB) I so don't understand the option handling of ALIGN_SIZE")
 endif()
 
-if (NOT LIBINT2_REALTYPE)
-    set(LIBINT2_REALTYPE double)
-endif()
-
 # req'd for now (no FindGMP.cmake, though one at Elemental project)
 if (ENABLE_MPFR)
   find_package(MPFR REQUIRED)
@@ -114,8 +111,8 @@ endif()
 # look for Eigen
 # prefer CMake-configured-and-installed instance
 # N.B. due to the variety of ways to get Eigen will set up our own target
-# re:NO_CMAKE_PACKAGE_REGISTRY: eigen3 registers its *build* tree with the user package registry ...
-#                               to avoid issues with wiped build directory look for installed eigen
+# re:NO_CMAKE_PACKAGE_REGISTRY: Eigen3 registers its *build* tree with the user package registry ...
+#                               to avoid issues with wiped build directory look for installed Eigen
 find_package(Eigen3 NO_MODULE QUIET NO_CMAKE_PACKAGE_REGISTRY)
 if (TARGET Eigen3::Eigen)
   add_library(libint-Eigen3 INTERFACE)
@@ -130,7 +127,7 @@ else()
   find_package(Eigen3)
   if (EIGEN3_FOUND)
     if (NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
-      message(FATAL_ERROR "Eigen3 is \"found\", but the reported EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR} does not exist; likely corrupt Eigen3 build registered in user or system package registry; specify EIGEN3_INCLUDE_DIR manually or (better) configure (with CMake) and install Eigen3 package")
+      message(WARNING "Eigen3 is \"found\", but the reported EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR} does not exist; likely corrupt Eigen3 build registered in user or system package registry; specify EIGEN3_INCLUDE_DIR manually or (better) configure (with CMake) and install Eigen3 package")
     else()
       add_library(libint-Eigen3 INTERFACE)
       set_property(TARGET libint-Eigen3 PROPERTY
@@ -141,12 +138,6 @@ endif()
 if (TARGET libint-Eigen3)
   get_property(EIGEN3_INCLUDE_DIR TARGET libint-Eigen3 PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
   message(STATUS "Found Eigen3: EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-  install(
-    TARGETS libint-Eigen3
-    # EXPORT "${pnv}-targets-shared"  # LAB must toggle with BUILD_SHARED_LIBS at present
-    EXPORT "${pnv}-targets-static"
-    COMPONENT Eigen3
-    )
 endif()
 
 if (TARGET libint-Eigen3)
@@ -227,7 +218,7 @@ if (BUILD_SHARED_LIBS)
       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
-      $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}>)
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     target_compile_features(int-shared INTERFACE "cxx_std_11")
 
     # C++ library
@@ -238,9 +229,12 @@ if (BUILD_SHARED_LIBS)
         target_link_libraries (int-cxx-shared INTERFACE Boost::headers)
       endif()
       target_compile_features(int-cxx-shared INTERFACE "cxx_std_11")
-      target_compile_definitions(int-cxx-shared INTERFACE
-            $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-            $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
+      target_compile_definitions(
+        int-cxx-shared
+        INTERFACE
+          $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
+          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${CMAKE_INSTALL_DATADIR}">
+        )
       set_target_properties (int-cxx-shared PROPERTIES EXPORT_NAME "cxx")
     endif(REQUIRE_CXX_API)
 endif()
@@ -254,7 +248,7 @@ if (BUILD_STATIC_LIBS)
       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
-      $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}>)
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     target_compile_features(int-static INTERFACE "cxx_std_11")
 
     # C++ library
@@ -265,12 +259,15 @@ if (BUILD_STATIC_LIBS)
         target_link_libraries (int-cxx-static INTERFACE Boost::headers)
       endif()
       target_compile_features(int-cxx-static INTERFACE "cxx_std_11")
-      target_compile_definitions(int-cxx-static INTERFACE
-            $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-            $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
+      target_compile_definitions(
+        int-cxx-static
+        INTERFACE
+          $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
+          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${CMAKE_INSTALL_DATADIR}">
+        )
 
       set_target_properties (int-cxx-static PROPERTIES EXPORT_NAME "cxx")
-    endif(REQUIRE_CXX_API)
+    endif()
 endif()
 
 if (BUILD_SHARED_LIBS)
@@ -355,7 +352,7 @@ if (ENABLE_FORTRAN)
             $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
             $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
             $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/fortran>
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}>)
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     target_compile_definitions(libint_f PRIVATE __COMPILING_LIBINT2)
     set_property(TARGET libint_f PROPERTY Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/fortran/modules)
 
@@ -386,24 +383,45 @@ install(FILES ${PROJECT_SOURCE_DIR}/src/libint2_iface.h
 #target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR})
 
 if (BUILD_SHARED_LIBS)
-    install (TARGETS int-shared
-             EXPORT "${pnv}-targets-shared"
-             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
     if (TARGET int-cxx-shared)
-      install (TARGETS int-cxx-shared
-               EXPORT "${pnv}-targets-shared"
-               LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+      install(
+        TARGETS int-shared int-cxx-shared
+        EXPORT shared_set
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+      install(
+        TARGETS int-shared int-cxx-shared libint-Eigen3
+        EXPORT local_set
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+    else()
+      install(
+        TARGETS int-shared
+        EXPORT shared_set
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
     endif()
 endif()
 
 if (BUILD_STATIC_LIBS)
-    install (TARGETS int-static
-             EXPORT "${pnv}-targets-static"
-             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     if (TARGET int-cxx-static)
-      install (TARGETS int-cxx-static
-               EXPORT "${pnv}-targets-static"
-               ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+      install(
+        TARGETS int-static int-cxx-static
+        EXPORT static_set
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+      install(
+        TARGETS int-static int-cxx-static libint-Eigen3
+        EXPORT local_set
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        COMPONENT Eigen3
+        )
+    else()
+      install(
+        TARGETS int-static
+        EXPORT static_set
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      )
     endif()
 endif()
 
@@ -435,13 +453,29 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
 
 if (BUILD_SHARED_LIBS)
-    install(EXPORT "${pnv}-targets-shared"
-                   NAMESPACE "${NS}::"
-                   DESTINATION ${CMAKE_INSTALL_CMAKEDIR})
+    install(
+      EXPORT shared_set
+      FILE "${pnv}-targets-shared.cmake"
+      NAMESPACE "${NS}::"
+      DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+      )
 endif()
 
 if (BUILD_STATIC_LIBS)
-    install(EXPORT "${pnv}-targets-static"
-                   NAMESPACE "${NS}::"
-                   DESTINATION ${CMAKE_INSTALL_CMAKEDIR})
+    install(
+      EXPORT static_set
+      FILE "${pnv}-targets-static.cmake"
+      NAMESPACE "${NS}::"
+      DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+      )
 endif()
+
+if (EXPORT_LOCAL_TARGETS)
+    install(
+      EXPORT local_set
+      FILE "${pnv}-targets-local.cmake"
+      NAMESPACE "${NS}::"
+      DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+      )
+endif()
+

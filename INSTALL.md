@@ -59,6 +59,8 @@ These are the most useful configure options:
 
 ### Autotools Update Guide
 
+* When three option names present, they are for libtool+cmake --> cmake+cmake (c. #148 for Psi4 c. 2020-2021) --> cmake+cmake
+
 * `--enable-1body=N` --> `-D ENABLE_ONEBODY`
 * `--enable-eri=N` --> `-D ENABLE_ERI=N`
 * `--disable-eri` --> `-D ENABLE_ERI=-1`
@@ -90,8 +92,10 @@ These are the most useful configure options:
 * `--with-eri2-opt-am=N` --> `-D WITH_ERI2_OPT_AM=N`
 * `--with-eri2-opt-am=N0,N1,N2` --> `-D WITH_ERI2_OPT_AM="N0;N1;N2"`
 
-* `--enable-shared` --> `-D BUILD_SHARED_LIBS=ON` (standard CMake variable)
-* `--enable-static` --> `-D BUILD_SHARED_LIBS=OFF` (standard CMake variable)
+* `--enable-shared` --> `-D BUILD_SHARED=ON` --> `-D BUILD_SHARED_LIBS=ON` (standard CMake variable)
+* `--enable-static` --> `-D BUILD_STATIC=ON` --> `-D BUILD_SHARED_LIBS=OFF` (standard CMake variable)
+* `--enable-shared --enable-static` --> `-D BUILD_SHARED=ON -D BUILD_STATIC=ON` --> `-D BUILD_SHARED_LIBS=ON -D LIBINT2_BUILD_SHARED_AND_STATIC_LIBS=ON`
+* `-D ENABLE_CXX11API=ON` --> `-D REQUIRE_CXX_API=ON`
 
 * Targets
   * `libint2` --> `Libint2::int2` (internal target name `int-shared`)

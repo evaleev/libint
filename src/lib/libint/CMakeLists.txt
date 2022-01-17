@@ -1,22 +1,19 @@
-#cmake_minimum_required(VERSION 3.8)
-cmake_policy(SET CMP0074 NEW)
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_BINARY_DIR}/cmake/modules)
 
 include(GNUInstallDirs)
 include(int_computed)  # for macros.tex
 
-# <<<  Generate Library  >>>
+# <<<  Generate Library Source  >>>
 
 file(MAKE_DIRECTORY "${EXPORT_STAGE_DIR}/src")
 add_custom_command(OUTPUT "${EXPORT_STAGE_DIR}/src/libint2_params.h"
         COMMAND "${PROJECT_BINARY_DIR}/src/bin/libint/build_libint"
         WORKING_DIRECTORY "${EXPORT_STAGE_DIR}/src"
         DEPENDS "${PROJECT_BINARY_DIR}/src/bin/libint/build_libint"
-        COMMENT "Generating Libint2 library")
+        COMMENT "Generating Libint2 library source")
 add_custom_target(libint-library-generate DEPENDS "${EXPORT_STAGE_DIR}/src/libint2_params.h")
 
-# <<<  Add Metadata To The Library >>>
+# <<<  Add Metadata To The Library Source  >>>
 
 configure_file("${PROJECT_SOURCE_DIR}/doc/progman/macros.tex.in" "${EXPORT_STAGE_DIR}/doc/macros.tex" @ONLY)
 set(DATADIR_ABSOLUTE ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION})
@@ -35,20 +32,20 @@ add_custom_command(OUTPUT ${EXPORT_STAGE_DIR}/CMakeLists.txt
         COMMENT "Populating Libint2 library")
 add_custom_target(libint-library-populate DEPENDS ${EXPORT_STAGE_DIR}/CMakeLists.txt)
 
-# <<<  Export The Library >>>
+# <<<  Export The Library Source  >>>
 
 add_custom_command(OUTPUT "${EXPORT_STAGE_DIR}.tgz"
         COMMAND ${CMAKE_COMMAND} -E tar "cfvz" "${EXPORT_STAGE_DIR}.tgz" "${EXPORT_STAGE_DIR}"
         WORKING_DIRECTORY "${EXPORT_STAGE_DIR}/.."
         DEPENDS libint-library-generate libint-library-populate
-        COMMENT "Exporting Libint2 library")
+        COMMENT "Exporting tarball of Libint2 library source")
 if (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
     # rerun cmake if building as subproject to unpack and consume the library as subproject
     add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz"
             COMMAND ${CMAKE_COMMAND} -S "${CMAKE_SOURCE_DIR}" -B "${CMAKE_BINARY_DIR}")
-else (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
+else()
     add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
-endif (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
+endif()
 
 
     # <<<  Build Library  >>>
@@ -76,7 +73,7 @@ if (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
         message(WARNING "LIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON but library has not been exported yet; build target 'libint-library-export' first, this will make library build/test targets ('check', 'install') available")
     endif()
 
-else(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
+else()
 
     include(ExternalProject)
     include(GNUInstallDirs)
@@ -99,17 +96,17 @@ else(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
         list(APPEND library_CMAKE_ARGS
                 "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
                 )
-    endif(CMAKE_C_COMPILER)
+    endif()
     if (ENABLE_FORTRAN AND CMAKE_Fortran_COMPILER)
         list(APPEND library_CMAKE_ARGS
                 "-DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}"
                 )
-    endif(ENABLE_FORTRAN AND CMAKE_Fortran_COMPILER)
+    endif()
     if (CMAKE_PREFIX_PATH)
         list(APPEND library_CMAKE_ARGS
                 "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
                 )
-    endif(CMAKE_PREFIX_PATH)
+    endif()
     message(STATUS "invoking ExternalProject_add to build+test Libint library with library_CMAKE_ARGS=${library_CMAKE_ARGS}")
 
     ExternalProject_Add(library
@@ -138,7 +135,7 @@ else(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
               COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/"
               WORKING_DIRECTORY ${BINARY_DIR}
               DEPENDS library-configure)
-    endif(BUILD_TESTING)
+    endif()
 
     foreach(_dir ${CMAKE_INSTALL_LIBDIR} ${CMAKE_INSTALL_INCLUDEDIR} ${CMAKE_INSTALL_DATAROOTDIR})
       install(DIRECTORY ${STAGED_INSTALL_PREFIX}/${_dir}
@@ -146,4 +143,4 @@ else(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
               USE_SOURCE_PERMISSIONS OPTIONAL)
     endforeach()
 
-endif(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
+endif()
