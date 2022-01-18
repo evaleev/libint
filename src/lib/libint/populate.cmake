@@ -76,6 +76,9 @@ file(INSTALL "${LIBRARY_SOURCE_DIR}/"
         DESTINATION "${EXPORT_STAGE_DIR}/include/libint2"
         FILES_MATCHING PATTERN "*.h")
 
+file(INSTALL "${PROJECT_SOURCE_DIR}/src/lib/libint/engine.cpp"
+        DESTINATION "${EXPORT_STAGE_DIR}/src")
+
 # TODO generate this list by the compiler
 file(GLOB generated_sources_list RELATIVE "${EXPORT_STAGE_DIR}" "${EXPORT_STAGE_DIR}/src/*.cc")
 file(WRITE ${EXPORT_STAGE_DIR}/srclist.cmake "set(LIBINT2_LIBRARY_CXX_SRC \"${generated_sources_list}\" )")

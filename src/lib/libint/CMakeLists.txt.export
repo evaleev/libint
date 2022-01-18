@@ -201,6 +201,25 @@ if (NOT BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
   set(BUILD_STATIC_LIBS 1)
 endif()
 
+# if building CXX API make an object files needed for non-header-only version
+if (REQUIRE_CXX_API)
+  add_library(int-cxx-obj OBJECT src/engine.cpp)
+  target_compile_definitions(int-cxx-obj PUBLIC LIBINT2_DOES_NOT_INLINE_ENGINE=1 __COMPILING_LIBINT2=1)
+  target_link_libraries (int-cxx-obj PRIVATE libint-Eigen3)
+  if (TARGET Boost::boost)
+    target_link_libraries (int-cxx-obj PRIVATE Boost::boost)
+  endif(TARGET Boost::boost)
+  target_compile_features(int-cxx-obj PUBLIC "cxx_std_11")
+  target_include_directories(int-cxx-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
+                                           ${PROJECT_SOURCE_DIR}/src/
+                                           ${PROJECT_SOURCE_DIR}/include/
+                                           ${PROJECT_BINARY_DIR}/include/libint2/
+                                           )
+  if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
+    set_target_properties(int-cxx-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+  endif()
+endif()
+
 if (MSVC)
     # Increase stack size from 1 MB to 4 MB
     set_target_properties(int-obj PROPERTIES LINK_FLAGS "/STACK:4194304")
@@ -223,20 +242,27 @@ if (BUILD_SHARED_LIBS)
 
     # C++ library
     if (REQUIRE_CXX_API)
-      add_library(int-cxx-shared INTERFACE)
-      target_link_libraries (int-cxx-shared INTERFACE int-shared libint-Eigen3)
+      add_library(int-cxx-headeronly-shared INTERFACE)
+      target_link_libraries (int-cxx-headeronly-shared INTERFACE int-shared libint-Eigen3)
       if (TARGET Boost::headers)
-        target_link_libraries (int-cxx-shared INTERFACE Boost::headers)
+        target_link_libraries (int-cxx-headeronly-shared INTERFACE Boost::headers)
       endif()
-      target_compile_features(int-cxx-shared INTERFACE "cxx_std_11")
-      target_compile_definitions(
-        int-cxx-shared
+      target_compile_features(int-cxx-headeronly-shared INTERFACE "cxx_std_11")
+      target_compile_definitions(int-cxx-headeronly-shared
         INTERFACE
           $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
           $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${CMAKE_INSTALL_DATADIR}">
         )
-      set_target_properties (int-cxx-shared PROPERTIES EXPORT_NAME "cxx")
-    endif(REQUIRE_CXX_API)
+      set_target_properties (int-cxx-headeronly-shared PROPERTIES EXPORT_NAME "cxx")
+
+      # now make the compiled library
+      add_library           (int-cxx-shared SHARED  $<TARGET_OBJECTS:int-cxx-obj>)
+      set_target_properties (int-cxx-shared PROPERTIES SOVERSION ${LIBINT_MAJOR_SOVERSION}
+                                                 MACOSX_RPATH ON
+                                                 OUTPUT_NAME "int2-cxx"
+                                                 EXPORT_NAME "int2-cxx")
+      target_link_libraries(int-cxx-shared INTERFACE int-cxx-headeronly-shared)
+    endif()
 endif()
 
 if (BUILD_STATIC_LIBS)
@@ -253,21 +279,25 @@ if (BUILD_STATIC_LIBS)
 
     # C++ library
     if (REQUIRE_CXX_API)
-      add_library(int-cxx-static INTERFACE)
-      target_link_libraries (int-cxx-static INTERFACE int-static libint-Eigen3)
+      add_library(int-cxx-headeronly-static INTERFACE)
+      target_link_libraries (int-cxx-headeronly-static INTERFACE int-static libint-Eigen3)
       if (TARGET Boost::headers)
-        target_link_libraries (int-cxx-static INTERFACE Boost::headers)
+        target_link_libraries (int-cxx-headeronly-static INTERFACE Boost::headers)
       endif()
-      target_compile_features(int-cxx-static INTERFACE "cxx_std_11")
-      target_compile_definitions(
-        int-cxx-static
+      target_compile_features(int-cxx-headeronly-static INTERFACE "cxx_std_11")
+      target_compile_definitions(int-cxx-headeronly-static
         INTERFACE
           $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
           $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${CMAKE_INSTALL_DATADIR}">
         )
+      set_target_properties (int-cxx-headeronly-static PROPERTIES EXPORT_NAME "cxx")
 
-      set_target_properties (int-cxx-static PROPERTIES EXPORT_NAME "cxx")
-    endif()
+      # now make the compiled library
+      add_library           (int-cxx-static STATIC  $<TARGET_OBJECTS:int-cxx-obj>)
+      set_target_properties (int-cxx-static PROPERTIES OUTPUT_NAME "int2-cxx"
+                                                       EXPORT_NAME "int2-cxx")
+      target_link_libraries(int-cxx-static INTERFACE int-cxx-headeronly-static)
+    endif(REQUIRE_CXX_API)
 endif()
 
 if (BUILD_SHARED_LIBS)
@@ -383,14 +413,14 @@ install(FILES ${PROJECT_SOURCE_DIR}/src/libint2_iface.h
 #target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR})
 
 if (BUILD_SHARED_LIBS)
-    if (TARGET int-cxx-shared)
+    if (TARGET int-cxx-headeronly-shared AND TARGET int-cxx-shared)
       install(
-        TARGETS int-shared int-cxx-shared
+        TARGETS int-shared int-cxx-headeronly-shared int-cxx-shared
         EXPORT shared_set
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
       install(
-        TARGETS int-shared int-cxx-shared libint-Eigen3
+        TARGETS int-shared int-cxx-headeronly-shared int-cxx-shared libint-Eigen3
         EXPORT local_set
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
@@ -404,14 +434,14 @@ if (BUILD_SHARED_LIBS)
 endif()
 
 if (BUILD_STATIC_LIBS)
-    if (TARGET int-cxx-static)
+    if (TARGET int-cxx-headeronly-static AND TARGET int-cxx-static)
       install(
-        TARGETS int-static int-cxx-static
+        TARGETS int-static int-cxx-headeronly-static int-cxx-static
         EXPORT static_set
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
       install(
-        TARGETS int-static int-cxx-static libint-Eigen3
+        TARGETS int-static int-cxx-headeronly-static int-cxx-static libint-Eigen3
         EXPORT local_set
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         COMPONENT Eigen3
