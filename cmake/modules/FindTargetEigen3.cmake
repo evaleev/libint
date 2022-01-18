@@ -73,7 +73,6 @@ else()
         add_library (tgt::Eigen INTERFACE IMPORTED)
 
         get_property(_iid1 TARGET Eigen3::Eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-    message("ASDF ${_iid1}")
         set_property (TARGET tgt::Eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${_iid1})
 # set_property (TARGET tgt::eigen PROPERTY INTERFACE_LINK_LIBRARIES ${HDF5_LIBRARIES})
         #set_property (TARGET tgt::hdf5 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${HDF5_INCLUDE_DIRS})
@@ -87,7 +86,6 @@ else()
 endif()    
 
 get_property(_iid TARGET tgt::Eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-    message("QWER ${_iid}")
 set(${PN}_MESSAGE "Found Eigen3: ${_iid} (found version ${${PN}_VERSION})")
 
 include(FindPackageHandleStandardArgs)
