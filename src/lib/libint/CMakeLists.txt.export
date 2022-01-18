@@ -108,39 +108,43 @@ else()
 
 endif()
 
-# look for Eigen
-# prefer CMake-configured-and-installed instance
-# N.B. due to the variety of ways to get Eigen will set up our own target
-# re:NO_CMAKE_PACKAGE_REGISTRY: Eigen3 registers its *build* tree with the user package registry ...
-#                               to avoid issues with wiped build directory look for installed Eigen
-find_package(Eigen3 NO_MODULE QUIET NO_CMAKE_PACKAGE_REGISTRY)
-if (TARGET Eigen3::Eigen)
-  add_library(libint-Eigen3 INTERFACE)
-  foreach(prop INTERFACE_INCLUDE_DIRECTORIES INTERFACE_COMPILE_DEFINITIONS INTERFACE_COMPILE_OPTIONS INTERFACE_LINK_LIBRARIES INTERFACE_POSITION_INDEPENDENT_CODE)
-    get_property(EIGEN3_${prop} TARGET Eigen3::Eigen PROPERTY ${prop})
-    set_property(TARGET libint-Eigen3 PROPERTY
-        ${prop} ${EIGEN3_${prop}})
-  endforeach()
-else()
-  # otherwise use FindEigen3.cmake module possibly installed somewhere in the path
-  # but make sure EIGEN3_INCLUDE_DIR exists!
-  find_package(Eigen3)
-  if (EIGEN3_FOUND)
-    if (NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
-      message(WARNING "Eigen3 is \"found\", but the reported EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR} does not exist; likely corrupt Eigen3 build registered in user or system package registry; specify EIGEN3_INCLUDE_DIR manually or (better) configure (with CMake) and install Eigen3 package")
-    else()
-      add_library(libint-Eigen3 INTERFACE)
-      set_property(TARGET libint-Eigen3 PROPERTY
-          INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
-    endif()
-  endif()
-endif()
-if (TARGET libint-Eigen3)
-  get_property(EIGEN3_INCLUDE_DIR TARGET libint-Eigen3 PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-  message(STATUS "Found Eigen3: EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-endif()
+## look for Eigen
+## prefer CMake-configured-and-installed instance
+## N.B. due to the variety of ways to get Eigen will set up our own target
+## re:NO_CMAKE_PACKAGE_REGISTRY: Eigen3 registers its *build* tree with the user package registry ...
+##                               to avoid issues with wiped build directory look for installed Eigen
+#find_package(Eigen3 NO_MODULE QUIET NO_CMAKE_PACKAGE_REGISTRY)
+#if (TARGET Eigen3::Eigen)
+#  add_library(libint-Eigen3 INTERFACE)
+#  foreach(prop INTERFACE_INCLUDE_DIRECTORIES INTERFACE_COMPILE_DEFINITIONS INTERFACE_COMPILE_OPTIONS INTERFACE_LINK_LIBRARIES INTERFACE_POSITION_INDEPENDENT_CODE)
+#    get_property(EIGEN3_${prop} TARGET Eigen3::Eigen PROPERTY ${prop})
+#    set_property(TARGET libint-Eigen3 PROPERTY
+#        ${prop} ${EIGEN3_${prop}})
+#  endforeach()
+#else()
+#  # otherwise use FindEigen3.cmake module possibly installed somewhere in the path
+#  # but make sure EIGEN3_INCLUDE_DIR exists!
+#  find_package(Eigen3)
+#  if (EIGEN3_FOUND)
+#    if (NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
+#      message(WARNING "Eigen3 is \"found\", but the reported EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR} does not exist; likely corrupt Eigen3 build registered in user or system package registry; specify EIGEN3_INCLUDE_DIR manually or (better) configure (with CMake) and install Eigen3 package")
+#    else()
+#      add_library(libint-Eigen3 INTERFACE)
+#      set_property(TARGET libint-Eigen3 PROPERTY
+#          INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
+#    endif()
+#  endif()
+#endif()
+#if (TARGET libint-Eigen3)
+#  get_property(EIGEN3_INCLUDE_DIR TARGET libint-Eigen3 PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+#  message(STATUS "Found Eigen3: EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
+#endif()
 
-if (TARGET libint-Eigen3)
+#if (TARGET libint-Eigen3)
+
+find_package(TargetEigen3) # REQUIRED)
+
+if (TARGET tgt::Eigen)
   set(LIBINT_HAS_EIGEN 1)
   set(LIBINT_HAS_CXX_API 1)
 else()
@@ -243,7 +247,7 @@ if (BUILD_SHARED_LIBS)
     # C++ library
     if (REQUIRE_CXX_API)
       add_library(int-cxx-headeronly-shared INTERFACE)
-      target_link_libraries (int-cxx-headeronly-shared INTERFACE int-shared libint-Eigen3)
+      target_link_libraries (int-cxx-headeronly-shared INTERFACE int-shared tgt::Eigen)
       if (TARGET Boost::headers)
         target_link_libraries (int-cxx-headeronly-shared INTERFACE Boost::headers)
       endif()
@@ -281,7 +285,7 @@ if (BUILD_STATIC_LIBS)
     # C++ library
     if (REQUIRE_CXX_API)
       add_library(int-cxx-headeronly-static INTERFACE)
-      target_link_libraries (int-cxx-headeronly-static INTERFACE int-static libint-Eigen3)
+      target_link_libraries (int-cxx-headeronly-static INTERFACE int-static tgt::Eigen)
       if (TARGET Boost::headers)
         target_link_libraries (int-cxx-headeronly-static INTERFACE Boost::headers)
       endif()
@@ -422,7 +426,7 @@ if (BUILD_SHARED_LIBS)
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
       install(
-        TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared libint-Eigen3
+        TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared #tgt::Eigen #libint-Eigen3
         EXPORT local_set
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
@@ -443,7 +447,7 @@ if (BUILD_STATIC_LIBS)
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
       install(
-        TARGETS int-static int-cxx-static int-cxx-headeronly-static libint-Eigen3
+        TARGETS int-static int-cxx-static int-cxx-headeronly-static #tgt::Eigen #libint-Eigen3
         EXPORT local_set
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         COMPONENT Eigen3
@@ -483,6 +487,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake
 configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
+install(
+  FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindTargetEigen3.cmake
+  DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+  )
 
 if (BUILD_SHARED_LIBS)
     install(

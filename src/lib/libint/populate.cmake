@@ -52,6 +52,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/cmake/modules/autocmake_safeguards.cmake"
         "${PROJECT_SOURCE_DIR}/cmake/modules/options.cmake"
         "${PROJECT_SOURCE_DIR}/cmake/modules/FindMPFR.cmake"
         "${PROJECT_SOURCE_DIR}/cmake/modules/AddCustomTargetSubproject.cmake"
+        "${PROJECT_SOURCE_DIR}/cmake/modules/FindTargetEigen3.cmake"
         "${PROJECT_BINARY_DIR}/cmake/modules/int_computed.cmake"
         DESTINATION "${EXPORT_STAGE_DIR}/cmake/modules")
 

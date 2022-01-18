@@ -273,6 +273,18 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 # project which has already built this as a subproject
 #-----------------------------------------------------------------------------
 if(NOT TARGET ${NS}::cxx)
+    include(CMakeFindDependencyMacro)
+    if(NOT TARGET tgt::Eigen)
+        find_dependency(TargetEigen3 REQUIRED)
+    endif()
+
+    if (@LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)
+        # Boost headers _not_ unpacked to within `include/libint2/`
+        if (NOT TARGET Boost::headers)
+            find_dependency(Boost 1.57 REQUIRED)
+        endif()
+    endif()
+
     if(_seek_static GREATER -1)
         include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-static.cmake")
     elseif(_seek_shared GREATER -1)
@@ -281,14 +293,6 @@ if(NOT TARGET ${NS}::cxx)
         include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-shared.cmake")
     elseif(@BUILD_STATIC_LIBS@)
         include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-static.cmake")
-    endif()
-
-    include(CMakeFindDependencyMacro)
-    if (@LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)
-        # Boost headers _not_ unpacked to within `include/libint2/`
-        if (NOT TARGET Boost::headers)
-            find_dependency(Boost 1.57 REQUIRED)
-        endif()
     endif()
 
     get_property(_loc TARGET ${NS}::cxx PROPERTY LOCATION)
