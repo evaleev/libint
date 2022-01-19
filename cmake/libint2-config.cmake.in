@@ -22,22 +22,36 @@
 #   shared - search for only shared library
 #   static - search for only static library
 #
-#   onebody_dD_lL    - search for library including 1-body integrals with derivative order D (D=0..4) and max angular momentum up to L (L=2..10)
-#   eri_cC_dD_lL     - search for library including 2-body integrals with C centers, derivative order D (D=0..4), and max angular momentum up to L (L=2..10)
+#   onebody_dD_lL - search for library including 1-body integrals with derivative order D (D=0..4) and max angular momentum up to L (L=2..10)
+#   eri_cC_dD_lL  - search for library including 2-body integrals with C (C=2,3,4) centers, derivative order D (D=0..4), and max angular momentum up to L (L=2..10)
 #
-#                   cart       shell_set  used_by
-#                   --------   ---------  -------
-#   ss - search for standard + standard = mpqc4, psi4
-#   so - search for          + orca
-#   is - search for intv3    + standard = mpqc3
-#   io - search for          + orca
-#   gs - search for gamess   + standard = gamess
-#   go - search for          + orca
-#   os - search for orca     + standard
-#   oo - search for          + orca     = orca
-#   bs - search for bagel    + standard = bagel
-#   bo - search for          + orca
+#                    sph        cart       shell_set  used_by
+#                    --------   --------   ---------  -------
+#   sss - search for standard + standard + standard = mpqc4
+#   sso - search for                     + orca
+#   sis - search for          + intv3    + standard = mpqc3
+#   sio - search for                     + orca
+#   sgs - search for          + gamess   + standard = gamess
+#   sgo - search for                     + orca
+#   sos - search for          + orca     + standard
+#   soo - search for                     + orca     = orca
+#   sbs - search for          + bagel    + standard = bagel
+#   sbo - search for                     + orca
+#   gss - search for gaussian + standard + standard = psi4 (v1.4, v1.5)
+#   gso - search for                     + orca
+#   gis - search for          + intv3    + standard
+#   gio - search for                     + orca
+#   ggs - search for          + gamess   + standard
+#   ggo - search for                     + orca
+#   gos - search for          + orca     + standard
+#   goo - search for                     + orca
+#   gbs - search for          + bagel    + standard
+#   gbo - search for                     + orca
 #
+#   C - search for at least Libint2::int2 target
+#   CXX_ho - search for at least Libint2::cxx target
+#   CXX - search for at least Libint2::int2-cxx target
+#   Fortran - search for at least libint_f target (NYI)
 #
 # Exported targets:
 #
@@ -46,8 +60,9 @@
 # If Libint2 is found, this module defines the following :prop_tgt:`IMPORTED`
 # targets. ::
 #
-##   Libint2::int2 - library only
-#   Libint2::cxx - library + C++11 API
+#   Libint2::int2 - library with C API
+#   Libint2::cxx - Libint2::int2 plus interface to header-only C++11 API
+#   Libint2::int2-cxx - Libint2::int2 plus compiled C++11 API
 #
 #
 # Suggested usage:
@@ -55,7 +70,8 @@
 # ::
 #
 #   find_package(Libint2)
-#   find_package(Libint2 2.7.0 CONFIG REQUIRED COMPONENTS shared ss eri_c4_d0_l5 eri_c4_d1_l4)
+#   find_package(Libint2 2.7.1 CONFIG REQUIRED COMPONENTS shared sss eri_c4_d0_l5 eri_c4_d1_l4)
+#   find_package(Libint2 CONFIG REQUIRED COMPONENTS gss onebody_d0_l4 onebody_d1_l3 onebody_d2_l3 "eri_c4_d0_l${MAX_AM_ERI}" eri_c4_d1_l2 eri_c4_d2_l2 eri_c3_d0_l4 eri_c3_d1_l3 eri_c3_d2_l3 eri_c2_d0_l4 eri_c2_d1_l3 eri_c2_d2_l3) -DERI3_PURE_SH=OFF -DERI2_PURE_SH=OFF # for psi4
 #
 #
 # The following variables can be set to guide the search for this package:
@@ -70,123 +86,35 @@
 
 @PACKAGE_INIT@
 
-set(PN Libint2)  # ProjectName
 set(pnv libint2)  # projectnameversion
-set(NS Libint2)  # NameSpace
-set (_valid_components
-    static
-    shared
-
-    eri_c4_d0_l2
-    eri_c4_d0_l3
-    eri_c4_d0_l4
-    eri_c4_d0_l5
-    eri_c4_d0_l6
-    eri_c4_d0_l7
-    eri_c4_d0_l8
-    eri_c4_d0_l9
-    eri_c4_d0_l10
-    eri_c4_d1_l2
-    eri_c4_d1_l3
-    eri_c4_d1_l4
-    eri_c4_d1_l5
-    eri_c4_d1_l6
-    eri_c4_d1_l7
-    eri_c4_d1_l8
-    eri_c4_d1_l9
-    eri_c4_d1_l10
-    eri_c4_d2_l2
-    eri_c4_d2_l3
-    eri_c4_d2_l4
-    eri_c4_d2_l5
-    eri_c4_d2_l6
-    eri_c4_d2_l7
-    eri_c4_d2_l8
-    eri_c4_d2_l9
-    eri_c4_d2_l10
-
-    eri_c3_d0_l2
-    eri_c3_d0_l3
-    eri_c3_d0_l4
-    eri_c3_d0_l5
-    eri_c3_d0_l6
-    eri_c3_d0_l7
-    eri_c3_d0_l8
-    eri_c3_d0_l9
-    eri_c3_d0_l10
-    eri_c3_d1_l2
-    eri_c3_d1_l3
-    eri_c3_d1_l4
-    eri_c3_d1_l5
-    eri_c3_d1_l6
-    eri_c3_d1_l7
-    eri_c3_d1_l8
-    eri_c3_d1_l9
-    eri_c3_d1_l10
-    eri_c3_d2_l2
-    eri_c3_d2_l3
-    eri_c3_d2_l4
-    eri_c3_d2_l5
-    eri_c3_d2_l6
-    eri_c3_d2_l7
-    eri_c3_d2_l8
-    eri_c3_d2_l9
-    eri_c3_d2_l10
-
-    eri_c2_d0_l2
-    eri_c2_d0_l3
-    eri_c2_d0_l4
-    eri_c2_d0_l5
-    eri_c2_d0_l6
-    eri_c2_d0_l7
-    eri_c2_d0_l8
-    eri_c2_d0_l9
-    eri_c2_d0_l10
-    eri_c2_d1_l2
-    eri_c2_d1_l3
-    eri_c2_d1_l4
-    eri_c2_d1_l5
-    eri_c2_d1_l6
-    eri_c2_d1_l7
-    eri_c2_d1_l8
-    eri_c2_d1_l9
-    eri_c2_d1_l10
-    eri_c2_d2_l2
-    eri_c2_d2_l3
-    eri_c2_d2_l4
-    eri_c2_d2_l5
-    eri_c2_d2_l6
-    eri_c2_d2_l7
-    eri_c2_d2_l8
-    eri_c2_d2_l9
-    eri_c2_d2_l10
-
-    ss
-    so
-    is
-    io
-    gs
-    go
-    os
-    oo
-    bs
-    bo
-)
+set(L2 Libint2)  # NameSpace
 
 # check library style component
 if(@BUILD_SHARED_LIBS@)
-    set(${PN}_shared_FOUND 1)
+    set(${L2}_shared_FOUND 1)
 endif()
 if(@BUILD_STATIC_LIBS@)
-    set(${PN}_static_FOUND 1)
+    set(${L2}_static_FOUND 1)
 endif()
-list(FIND ${PN}_FIND_COMPONENTS "shared" _seek_shared)
-list(FIND ${PN}_FIND_COMPONENTS "static" _seek_static)
+list(FIND ${L2}_FIND_COMPONENTS "shared" _seek_shared)
+list(FIND ${L2}_FIND_COMPONENTS "static" _seek_static)
+
+# check library language component
+set(${L2}_C_FOUND 1)
+list(FIND ${L2}_FIND_COMPONENTS "C" _seek_C)
+if(@REQUIRE_CXX_API@)
+    set(${L2}_CXX_FOUND 1)
+endif()
+list(FIND ${L2}_FIND_COMPONENTS "CXX" _seek_CXX)
+if(@ENABLE_FORTRAN@)
+    set(${L2}_Fortran_FOUND 1)
+endif()
+list(FIND ${L2}_FIND_COMPONENTS "Fortran" _seek_Fortran)
 
 # check AM & derivative component
-set(${PN}_MAX_AM_ERI @Libint2_MAX_AM_ERI@)
+set(${L2}_MAX_AM_ERI @Libint2_MAX_AM_ERI@)
 foreach(_eri @Libint2_ERI_COMPONENTS@)
-    set(${PN}_${_eri}_FOUND 1)
+    set(${L2}_${_eri}_FOUND 1)
 endforeach()
 
 # check orderings component
@@ -231,9 +159,9 @@ elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL
 elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 2))
     set(_ordering "gbo")
 else()
-    message(STATUS "${PN}Config: indeterminate orderings")
+    message(STATUS "${L2}Config: indeterminate orderings")
 endif()
-set(${PN}_${_ordering}_FOUND 1)
+set(${L2}_${_ordering}_FOUND 1)
 
 
 # thanks, https://stackoverflow.com/a/9328525
@@ -259,11 +187,11 @@ endfunction()
 
 
 if(NOT CMAKE_REQUIRED_QUIET)
-    message(STATUS "${PN}Config components requested: ${${PN}_FIND_COMPONENTS}")
-    dump_cmake_variables("^Libint2_([A-Za-z0-9_]+)_FOUND$" "${PN}Config components found: ")
+    message(STATUS "${L2}Config components requested: ${${L2}_FIND_COMPONENTS}")
+    dump_cmake_variables("^Libint2_([A-Za-z0-9_]+)_FOUND$" "${L2}Config components found: ")
 endif()
 
-check_required_components(${PN})
+check_required_components(${L2})
 
 # make detectable the various cmake modules exported alongside
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
@@ -272,7 +200,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 # Don't include targets if this file is being picked up by another
 # project which has already built this as a subproject
 #-----------------------------------------------------------------------------
-if(NOT TARGET ${NS}::cxx)
+if(NOT TARGET ${L2}::int2)
     include(CMakeFindDependencyMacro)
     if(NOT TARGET tgt::Eigen)
         find_dependency(TargetEigen3 REQUIRED)
@@ -295,19 +223,19 @@ if(NOT TARGET ${NS}::cxx)
         include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-static.cmake")
     endif()
 
-    get_property(_loc TARGET ${NS}::cxx PROPERTY LOCATION)
-    set(${PN}_LIBRARY ${_loc})
-    get_property(_ill TARGET ${NS}::cxx PROPERTY INTERFACE_LINK_LIBRARIES)
-    set(${PN}_LIBRARIES ${_ill})
+    get_property(_loc TARGET ${L2}::cxx PROPERTY LOCATION)
+    set(${L2}_LIBRARY ${_loc})
+    get_property(_ill TARGET ${L2}::cxx PROPERTY INTERFACE_LINK_LIBRARIES)
+    set(${L2}_LIBRARIES ${_ill})
 
-    get_property(_id TARGET ${NS}::cxx PROPERTY INCLUDE_DIRECTORIES)
-    set(${PN}_INCLUDE_DIR ${_id})
-    get_property(_iid TARGET ${NS}::cxx PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-    set(${PN}_INCLUDE_DIRS ${_iid})
+    get_property(_id TARGET ${L2}::cxx PROPERTY INCLUDE_DIRECTORIES)
+    set(${L2}_INCLUDE_DIR ${_id})
+    get_property(_iid TARGET ${L2}::cxx PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+    set(${L2}_INCLUDE_DIRS ${_iid})
 
-    #message("Libint2::cxx")
-    #message("loc ${_loc}")
-    #message("ill ${_ill}")
-    #message("id  ${_id}")
-    #message("iid ${_iid}")
+    message(DEBUG "Libint2::cxx")
+    message(DEBUG "loc ${_loc}")
+    message(DEBUG "ill ${_ill}")
+    message(DEBUG "id  ${_id}")
+    message(DEBUG "iid ${_iid}")
 endif()
