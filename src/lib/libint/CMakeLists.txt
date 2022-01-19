@@ -46,6 +46,7 @@ if (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
 else()
     add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
 endif()
+add_custom_target(export DEPENDS libint-library-export)
 
 
     # <<<  Build Library  >>>
