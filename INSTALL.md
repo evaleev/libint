@@ -33,6 +33,37 @@ These are the most useful configure options:
 * `ENABLE_G12` -- Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
 * `ENABLE_G12DKH` -- Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
 
+* `DISABLE_ONEBODY_PROPERTY_DERIVS` -- Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
+   These derivatives are disabled by default to save compile time. Use OFF to enable. [Default=ON]
+
+###  Ordering Conventions
+
+* `LIBINT2_SHGAUSS_ORDERING` -- Ordering for shells of solid harmonic Gaussians. Consumed at library build-time. [Default=standard]
+  * `standard` -- standard ordering (-l, -l+1 ... l)
+  * `gaussian` -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+* `LIBINT2_CARTGAUSS_ORDERING` -- Orderings for shells of cartesian Gaussians. Consumed at generator build-time. [Default=standard]
+  * `standard` -- standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...)
+  * `intv3`  -- intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx)
+  * `gamess` -- GAMESS ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
+  * `orca` -- ORCA ordering (hydrid between GAMESS and standard)
+  * `bagel` -- axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)
+* `LIBINT2_SHELL_SET` -- Support computation of shell sets sets subject to these restrictions. Consumed at generator build-time. [Default=standard]
+  * `standard` -- standard ordering:
+      for (ab|cd):
+        l(a) >= l(b),
+        l(c) >= l(d),
+        l(a)+l(b) <= l(c)+l(d)
+      for (b|cd):
+        l(c) >= l(d)
+  * `orca` -- ORCA ordering:
+      for (ab|cd):
+        l(a) <= l(b),
+        l(c) <= l(d),
+        l(a) < l(c) || (l(a) == l(c) && l(b) < l(d))
+      for (b|cd):
+        l(c) <= l(d)
+* `ERI3_PURE_SH` -- Assume the 'unpaired' center of 3-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
+* `ERI2_PURE_SH` -- Assume the 2-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
 
 ###  How High Angular Momentum
 
@@ -67,6 +98,12 @@ These are the most useful configure options:
 * `--enable-eri3=N` --> `-D ENABLE_ERI3=N`
 * `--enable-eri2=N` --> `-D ENABLE_ERI2=N`
 
+* `--with-shgauss-ordering=label` --> `-D LIBINT2_SHGAUSS_ORDERING=label`
+* `--with-cartgauss-ordering=label` --> `-D LIBINT2_CARTGAUSS_ORDERING=label`
+* `--with-shell-set=label` --> `-D LIBINT2_SHELL_SET=label`
+* `--enable-eri3-pure-sh` --> `-D ERI3_PURE_SH=ON`
+* `--enable-eri2-pure-sh` --> `-D ERI2_PURE_SH=ON`
+
 * `--with-max-am=N` --> `-D WITH_MAX_AM=N`
 * `--with-max-am=N0,N1,N2` --> `-D WITH_MAX_AM="N0;N1;N2"` (notice semicolons and quotes. This is standard CMake list syntax)
 * `--with-opt-am=N` --> `-D WITH_OPT_AM=N`
@@ -98,7 +135,8 @@ These are the most useful configure options:
 * `-D ENABLE_CXX11API=ON` --> `-D REQUIRE_CXX_API=ON`
 
 * Targets
-  * `libint2` --> `Libint2::int2` (internal target name `int-shared`)
-  * `libint2_cxx` --> `Libint2::cxx` (internal target name `int-cxx-shared`)
+  * `libint2` --> `Libint2::int2` (internal target name `int-{shared,static}`)
+  * `libint2_cxx` --> `Libint2::cxx` (internal target name `int-cxx-headeronly-{shared,static}`)
+  * DNE --> `Libint2::int2-cxx` (internal target name `int-cxx-{shared,static}`)
 
 

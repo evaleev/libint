@@ -3,13 +3,12 @@ cmake_policy(SET CMP0074 NEW)
 project(Libint2
         LANGUAGES CXX)
 
-set(library_AUTHORS      "Edward F. Valeev")
-set(library_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
-set(library_URL          "https://github.com/evaleev/libint")
-set(library_LICENSE      "LGPL-3.0")
+set(Libint2_AUTHORS      "Edward F. Valeev")
+set(Libint2_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
+set(Libint2_URL          "https://github.com/evaleev/libint")
+set(Libint2_LICENSE      "LGPL-3.0")
 
-set(NS Libint2)  # Namespace
-set(PN ${PROJECT_NAME}) # ProjectName
+set(L2 Libint2)  # Namespace
 set(pnv libint2) # projectnameversion
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
@@ -108,39 +107,43 @@ else()
 
 endif()
 
-# look for Eigen
-# prefer CMake-configured-and-installed instance
-# N.B. due to the variety of ways to get Eigen will set up our own target
-# re:NO_CMAKE_PACKAGE_REGISTRY: Eigen3 registers its *build* tree with the user package registry ...
-#                               to avoid issues with wiped build directory look for installed Eigen
-find_package(Eigen3 NO_MODULE QUIET NO_CMAKE_PACKAGE_REGISTRY)
-if (TARGET Eigen3::Eigen)
-  add_library(libint-Eigen3 INTERFACE)
-  foreach(prop INTERFACE_INCLUDE_DIRECTORIES INTERFACE_COMPILE_DEFINITIONS INTERFACE_COMPILE_OPTIONS INTERFACE_LINK_LIBRARIES INTERFACE_POSITION_INDEPENDENT_CODE)
-    get_property(EIGEN3_${prop} TARGET Eigen3::Eigen PROPERTY ${prop})
-    set_property(TARGET libint-Eigen3 PROPERTY
-        ${prop} ${EIGEN3_${prop}})
-  endforeach()
-else()
-  # otherwise use FindEigen3.cmake module possibly installed somewhere in the path
-  # but make sure EIGEN3_INCLUDE_DIR exists!
-  find_package(Eigen3)
-  if (EIGEN3_FOUND)
-    if (NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
-      message(WARNING "Eigen3 is \"found\", but the reported EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR} does not exist; likely corrupt Eigen3 build registered in user or system package registry; specify EIGEN3_INCLUDE_DIR manually or (better) configure (with CMake) and install Eigen3 package")
-    else()
-      add_library(libint-Eigen3 INTERFACE)
-      set_property(TARGET libint-Eigen3 PROPERTY
-          INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
-    endif()
-  endif()
-endif()
-if (TARGET libint-Eigen3)
-  get_property(EIGEN3_INCLUDE_DIR TARGET libint-Eigen3 PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-  message(STATUS "Found Eigen3: EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-endif()
+## look for Eigen
+## prefer CMake-configured-and-installed instance
+## N.B. due to the variety of ways to get Eigen will set up our own target
+## re:NO_CMAKE_PACKAGE_REGISTRY: Eigen3 registers its *build* tree with the user package registry ...
+##                               to avoid issues with wiped build directory look for installed Eigen
+#find_package(Eigen3 NO_MODULE QUIET NO_CMAKE_PACKAGE_REGISTRY)
+#if (TARGET Eigen3::Eigen)
+#  add_library(libint-Eigen3 INTERFACE)
+#  foreach(prop INTERFACE_INCLUDE_DIRECTORIES INTERFACE_COMPILE_DEFINITIONS INTERFACE_COMPILE_OPTIONS INTERFACE_LINK_LIBRARIES INTERFACE_POSITION_INDEPENDENT_CODE)
+#    get_property(EIGEN3_${prop} TARGET Eigen3::Eigen PROPERTY ${prop})
+#    set_property(TARGET libint-Eigen3 PROPERTY
+#        ${prop} ${EIGEN3_${prop}})
+#  endforeach()
+#else()
+#  # otherwise use FindEigen3.cmake module possibly installed somewhere in the path
+#  # but make sure EIGEN3_INCLUDE_DIR exists!
+#  find_package(Eigen3)
+#  if (EIGEN3_FOUND)
+#    if (NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
+#      message(WARNING "Eigen3 is \"found\", but the reported EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR} does not exist; likely corrupt Eigen3 build registered in user or system package registry; specify EIGEN3_INCLUDE_DIR manually or (better) configure (with CMake) and install Eigen3 package")
+#    else()
+#      add_library(libint-Eigen3 INTERFACE)
+#      set_property(TARGET libint-Eigen3 PROPERTY
+#          INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
+#    endif()
+#  endif()
+#endif()
+#if (TARGET libint-Eigen3)
+#  get_property(EIGEN3_INCLUDE_DIR TARGET libint-Eigen3 PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+#  message(STATUS "Found Eigen3: EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
+#endif()
 
-if (TARGET libint-Eigen3)
+#if (TARGET libint-Eigen3)
+
+find_package(TargetEigen3 MODULE)
+
+if (TARGET tgt::Eigen)
   set(LIBINT_HAS_EIGEN 1)
   set(LIBINT_HAS_CXX_API 1)
 else()
@@ -183,10 +186,17 @@ include(srclist.cmake)
 message(STATUS "LIBINT2_LIBRARY_CXX_SRC=${LIBINT2_LIBRARY_CXX_SRC}")
 
 add_library(int-obj OBJECT "${LIBINT2_LIBRARY_CXX_SRC}")
-set_target_properties(int-obj PROPERTIES UNITY_BUILD TRUE) # always use unity build for int-obj
 
 target_compile_definitions(int-obj PRIVATE -D__COMPILING_LIBINT2=1)
+
 target_compile_features(int-obj PUBLIC "cxx_std_11") # N.B. PUBLIC to make int-{static/shared} require C++11?
+
+set_target_properties(int-obj PROPERTIES UNITY_BUILD TRUE) # always use unity build for int-obj
+
+if (MSVC)
+    # Increase stack size from 1 MB to 4 MB
+    set_target_properties(int-obj PROPERTIES LINK_FLAGS "/STACK:4194304")
+endif()
 
 target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
                                            ${PROJECT_SOURCE_DIR}/src/
@@ -196,117 +206,173 @@ target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
 
 if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
   set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+  set(BUILD_SHARED_LIBS 1)
 endif()
 if (NOT BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
   set(BUILD_STATIC_LIBS 1)
 endif()
 
-# if building CXX API make an object files needed for non-header-only version
+# if building CXX API, make an object lib needed for non-header-only version
 if (REQUIRE_CXX_API)
   add_library(int-cxx-obj OBJECT src/engine.cpp)
-  target_compile_definitions(int-cxx-obj PUBLIC LIBINT2_DOES_NOT_INLINE_ENGINE=1 __COMPILING_LIBINT2=1)
-  target_link_libraries (int-cxx-obj PRIVATE libint-Eigen3)
-  if (TARGET Boost::boost)
-    target_link_libraries (int-cxx-obj PRIVATE Boost::boost)
-  endif(TARGET Boost::boost)
+
+  target_compile_definitions(
+    int-cxx-obj
+    PUBLIC
+      LIBINT2_DOES_NOT_INLINE_ENGINE=1
+      __COMPILING_LIBINT2=1
+    )
+
   target_compile_features(int-cxx-obj PUBLIC "cxx_std_11")
-  target_include_directories(int-cxx-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
-                                           ${PROJECT_SOURCE_DIR}/src/
-                                           ${PROJECT_SOURCE_DIR}/include/
-                                           ${PROJECT_BINARY_DIR}/include/libint2/
-                                           )
-  if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
+
+  if (BUILD_SHARED_LIBS)
     set_target_properties(int-cxx-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+  endif()
+
+  target_include_directories(
+    int-cxx-obj
+    PRIVATE
+      ${PROJECT_BINARY_DIR}/include/
+      ${PROJECT_SOURCE_DIR}/src/
+      ${PROJECT_SOURCE_DIR}/include/
+      ${PROJECT_BINARY_DIR}/include/libint2/
+    )
+
+  target_link_libraries (int-cxx-obj PRIVATE tgt::Eigen)
+  if (TARGET Boost::headers)
+    target_link_libraries (int-cxx-obj PRIVATE Boost::headers)
   endif()
 endif()
 
-if (MSVC)
-    # Increase stack size from 1 MB to 4 MB
-    set_target_properties(int-obj PROPERTIES LINK_FLAGS "/STACK:4194304")
-endif()
-
-get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}" ABSOLUTE)
 if (BUILD_SHARED_LIBS)
-    add_library           (int-shared SHARED  $<TARGET_OBJECTS:int-obj>)
-    set_target_properties (int-shared PROPERTIES SOVERSION ${LIBINT_MAJOR_SOVERSION}
-                                                 MACOSX_RPATH ON
-                                                 OUTPUT_NAME "int2"
-                                                 EXPORT_NAME "int2")
-    target_include_directories(int-shared INTERFACE
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
-      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
-      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    add_library(int-shared SHARED $<TARGET_OBJECTS:int-obj>)
+
     target_compile_features(int-shared INTERFACE "cxx_std_11")
+
+    set_target_properties(
+      int-shared
+      PROPERTIES
+        SOVERSION ${LIBINT_MAJOR_SOVERSION}
+        MACOSX_RPATH ON
+        OUTPUT_NAME "int2"
+        EXPORT_NAME "int2"
+      )
+
+    target_include_directories(
+      int-shared
+      INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+      )
 
     # C++ library
     if (REQUIRE_CXX_API)
       add_library(int-cxx-headeronly-shared INTERFACE)
-      target_link_libraries (int-cxx-headeronly-shared INTERFACE int-shared libint-Eigen3)
-      if (TARGET Boost::headers)
-        target_link_libraries (int-cxx-headeronly-shared INTERFACE Boost::headers)
-      endif()
-      target_compile_features(int-cxx-headeronly-shared INTERFACE "cxx_std_11")
-      target_compile_definitions(int-cxx-headeronly-shared
+
+      target_compile_definitions(
+        int-cxx-headeronly-shared
         INTERFACE
           $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
           $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${CMAKE_INSTALL_DATADIR}">
         )
+
+      target_compile_features(int-cxx-headeronly-shared INTERFACE "cxx_std_11")
+
       set_target_properties (int-cxx-headeronly-shared PROPERTIES EXPORT_NAME "cxx")
 
+      target_link_libraries (int-cxx-headeronly-shared INTERFACE int-shared tgt::Eigen)
+      if (TARGET Boost::headers)
+        target_link_libraries (int-cxx-headeronly-shared INTERFACE Boost::headers)
+      endif()
+
       # now make the compiled library
-      add_library           (int-cxx-shared SHARED  $<TARGET_OBJECTS:int-cxx-obj>)
-      set_target_properties (int-cxx-shared PROPERTIES SOVERSION ${LIBINT_MAJOR_SOVERSION}
-                                                 MACOSX_RPATH ON
-                                                 OUTPUT_NAME "int2-cxx"
-                                                 EXPORT_NAME "int2-cxx")
+      add_library(int-cxx-shared SHARED $<TARGET_OBJECTS:int-cxx-obj>)
+
+      set_target_properties(
+        int-cxx-shared
+        PROPERTIES
+          SOVERSION ${LIBINT_MAJOR_SOVERSION}
+          MACOSX_RPATH ON
+          OUTPUT_NAME "int2-cxx"
+          EXPORT_NAME "int2-cxx"
+        )
+
       target_link_libraries(int-cxx-shared INTERFACE int-cxx-headeronly-shared)
     endif()
 endif()
 
 if (BUILD_STATIC_LIBS)
-    add_library           (int-static STATIC  $<TARGET_OBJECTS:int-obj>)
-    set_target_properties (int-static PROPERTIES OUTPUT_NAME "int2"
-                                                 EXPORT_NAME "int2")
-    target_include_directories(int-static INTERFACE
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
-      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
-      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+    add_library(int-static STATIC $<TARGET_OBJECTS:int-obj>)
+
     target_compile_features(int-static INTERFACE "cxx_std_11")
+
+    set_target_properties(
+      int-static
+      PROPERTIES
+        OUTPUT_NAME "int2"
+        EXPORT_NAME "int2"
+      )
+
+    target_include_directories(
+      int-static
+      INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+      )
 
     # C++ library
     if (REQUIRE_CXX_API)
       add_library(int-cxx-headeronly-static INTERFACE)
-      target_link_libraries (int-cxx-headeronly-static INTERFACE int-static libint-Eigen3)
-      if (TARGET Boost::headers)
-        target_link_libraries (int-cxx-headeronly-static INTERFACE Boost::headers)
-      endif()
-      target_compile_features(int-cxx-headeronly-static INTERFACE "cxx_std_11")
-      target_compile_definitions(int-cxx-headeronly-static
+
+      target_compile_definitions(
+        int-cxx-headeronly-static
         INTERFACE
           $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
           $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${CMAKE_INSTALL_DATADIR}">
         )
+
+      target_compile_features(int-cxx-headeronly-static INTERFACE "cxx_std_11")
+
       set_target_properties (int-cxx-headeronly-static PROPERTIES EXPORT_NAME "cxx")
 
+      target_link_libraries (int-cxx-headeronly-static INTERFACE int-static tgt::Eigen)
+      if (TARGET Boost::headers)
+        target_link_libraries (int-cxx-headeronly-static INTERFACE Boost::headers)
+      endif()
+
       # now make the compiled library
-      add_library           (int-cxx-static STATIC  $<TARGET_OBJECTS:int-cxx-obj>)
-      set_target_properties (int-cxx-static PROPERTIES OUTPUT_NAME "int2-cxx"
-                                                       EXPORT_NAME "int2-cxx")
+      add_library(int-cxx-static STATIC $<TARGET_OBJECTS:int-cxx-obj>)
+
+      set_target_properties(
+        int-cxx-static
+        PROPERTIES
+          OUTPUT_NAME "int2-cxx"
+          EXPORT_NAME "int2-cxx"
+        )
+
       target_link_libraries(int-cxx-static INTERFACE int-cxx-headeronly-static)
     endif(REQUIRE_CXX_API)
 endif()
 
 if (BUILD_SHARED_LIBS)
     add_library (int-library ALIAS int-shared)
+    if (TARGET int-cxx-headeronly-shared)
+      add_library (int-cxx-headeronly-library ALIAS int-cxx-headeronly-shared)
+    endif()
     if (TARGET int-cxx-shared)
       add_library (int-cxx-library ALIAS int-cxx-shared)
     endif()
 elseif (BUILD_STATIC_LIBS)
     add_library (int-library ALIAS int-static)
+    if (TARGET int-cxx-headeronly-static)
+      add_library (int-cxx-headeronly-library ALIAS int-cxx-headeronly-static)
+    endif()
     if (TARGET int-cxx-static)
       add_library (int-cxx-library ALIAS int-cxx-static)
     endif()
@@ -415,12 +481,13 @@ install(FILES ${PROJECT_SOURCE_DIR}/src/libint2_iface.h
 if (BUILD_SHARED_LIBS)
     if (TARGET int-cxx-headeronly-shared AND TARGET int-cxx-shared)
       install(
-        TARGETS int-shared int-cxx-headeronly-shared int-cxx-shared
+        #TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared
+        TARGETS int-shared int-cxx-headeronly-shared
         EXPORT shared_set
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
       install(
-        TARGETS int-shared int-cxx-headeronly-shared int-cxx-shared libint-Eigen3
+        TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared #tgt::Eigen #libint-Eigen3
         EXPORT local_set
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
@@ -436,12 +503,12 @@ endif()
 if (BUILD_STATIC_LIBS)
     if (TARGET int-cxx-headeronly-static AND TARGET int-cxx-static)
       install(
-        TARGETS int-static int-cxx-headeronly-static int-cxx-static
+        TARGETS int-static int-cxx-static int-cxx-headeronly-static
         EXPORT static_set
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
       install(
-        TARGETS int-static int-cxx-headeronly-static int-cxx-static libint-Eigen3
+        TARGETS int-static int-cxx-static int-cxx-headeronly-static #tgt::Eigen #libint-Eigen3
         EXPORT local_set
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         COMPONENT Eigen3
@@ -481,12 +548,16 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake
 configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
+install(
+  FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindTargetEigen3.cmake
+  DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+  )
 
 if (BUILD_SHARED_LIBS)
     install(
       EXPORT shared_set
       FILE "${pnv}-targets-shared.cmake"
-      NAMESPACE "${NS}::"
+      NAMESPACE "${L2}::"
       DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
       )
 endif()
@@ -495,7 +566,7 @@ if (BUILD_STATIC_LIBS)
     install(
       EXPORT static_set
       FILE "${pnv}-targets-static.cmake"
-      NAMESPACE "${NS}::"
+      NAMESPACE "${L2}::"
       DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
       )
 endif()
@@ -504,7 +575,7 @@ if (EXPORT_LOCAL_TARGETS)
     install(
       EXPORT local_set
       FILE "${pnv}-targets-local.cmake"
-      NAMESPACE "${NS}::"
+      NAMESPACE "${L2}::"
       DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
       )
 endif()
