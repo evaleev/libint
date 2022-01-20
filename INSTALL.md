@@ -7,24 +7,23 @@
 - test (optional): `cmake --build build --target check`
 - install the library: `cmake --build build --target install`
 
-# Build instructions
 
 For (more) complete instructions please refer to https://github.com/evaleev/libint/wiki
 
-# Appendix
 
 
-####################
 
-# CMake build overview:
-#
-#    >>> ls
-#    cmake/  COPYING  src/  tests/  ...
-#    >>> cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/install-libint ...
-#    ...
-#    -- Generating done
-#    -- Build files have been written to: /current/dir/build
-#    >>> cmake --build build --target install -j`getconf _NPROCESSORS_ONLN`
+CMake build overview:
+
+```bash
+>>> ls
+cmake/  COPYING  src/  tests/  ...
+>>> cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/install-libint ...
+...
+-- Generating done
+-- Build files have been written to: /current/dir/build
+>>> cmake --build build --target install -j`getconf _NPROCESSORS_ONLN`
+```
 
 
 | target                    | incl. | steps |     ( |  see  | below | )     |
@@ -65,36 +64,40 @@ The build is structured into three parts:
     - must build libint-library-export target before library *build* targets appear
 
 -----------------------------------------------------------------------------
-## configuring libint compiler
+# configuring libint generator
 
 These are the most useful configure options:
 
-
+* Notes
+  * Codes "G", "L", or "GL" for each option indicate whether it is consumed by the generator, the library, or both.
+    * If your final target is the export tarball, use options that include the letter "G".
+    * If you're building a library from an export tarball, use options that include the letter "L".
+    * For a continuous generator->export->library build, options supplied at the top level will be properly handed off to generator and library build.
 
 ###  Which Integrals Classes, Which Derivative Levels
 
-* `ENABLE_ONEBODY` — Compile with support for up to N-th derivatives of 1-body integrals. Use -1 for OFF. [Default=0]
-* `ENABLE_ERI` — Compile with support for up to N-th derivatives of 4-center electron repulsion integrals. Use -1 for OFF. [Default=0]
-* `ENABLE_ERI3` — Compile with support for up to N-th derivatives of 3-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
-* `ENABLE_ERI2` — Compile with support for up to N-th derivatives of 2-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
-* `ENABLE_G12` — Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
-* `ENABLE_G12DKH` — Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
+* `ENABLE_ONEBODY` — G — Compile with support for up to N-th derivatives of 1-body integrals. Use -1 for OFF. [Default=0]
+* `ENABLE_ERI` — G — Compile with support for up to N-th derivatives of 4-center electron repulsion integrals. Use -1 for OFF. [Default=0]
+* `ENABLE_ERI3` — G — Compile with support for up to N-th derivatives of 3-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
+* `ENABLE_ERI2` — G — Compile with support for up to N-th derivatives of 2-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
+* `ENABLE_G12` — G — Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
+* `ENABLE_G12DKH` — G — Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
 
-* `DISABLE_ONEBODY_PROPERTY_DERIVS` — Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
+* `DISABLE_ONEBODY_PROPERTY_DERIVS` — G — Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
    These derivatives are disabled by default to save compile time. Use OFF to enable. [Default=ON]
 
 ###  Which Ordering Convention
 
-* `LIBINT2_SHGAUSS_ORDERING` — Ordering for shells of solid harmonic Gaussians. Consumed at library build-time. [Default=standard]
+* `LIBINT2_SHGAUSS_ORDERING` — L — Ordering for shells of solid harmonic Gaussians. Consumed at library build-time. [Default=standard]
   * `standard` — standard ordering (-l, -l+1 ... l)
   * `gaussian` — the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
-* `LIBINT2_CARTGAUSS_ORDERING` — Orderings for shells of cartesian Gaussians. Consumed at generator build-time. [Default=standard]
+* `LIBINT2_CARTGAUSS_ORDERING` — G — Orderings for shells of cartesian Gaussians. Consumed at generator build-time. [Default=standard]
   * `standard` — standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...) This is ordering of the Common Component Architecture (CCA) standard for molecular integral data exchange described in ["Components for Integral Evaluation in Quantum Chemistry", J. P. Kenny, C. L. Janssen, E. F. Valeev, and T. L. Windus, J. Comp. Chem. 29, 562 (2008)](http://dx.doi.org/10.1002/jcc.20815).
   * `intv3` — intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx) This is used by IntV3, the default integral engine of [MPQC](https://github.com/evaleev/libint/wiki/www.mpqc.org). Use this to make Libint and IntV3 engines in MPQC interoperable.
   * `gamess` — [GAMESS](http://www.msg.ameslab.gov/gamess/) ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
   * `orca` — [ORCA](http://cec.mpg.de/forum/) ordering (hydrid between GAMESS and standard)
   * `bagel` — [BAGEL](https://github.com/evaleev/libint/wiki/nubakery.org) axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)
-* `LIBINT2_SHELL_SET` — Support computation of shell sets sets subject to these restrictions. Consumed at generator build-time. [Default=standard]
+* `LIBINT2_SHELL_SET` — G — Support computation of shell sets sets subject to these restrictions. Consumed at generator build-time. [Default=standard]
   * `standard` — standard ordering:
       for (ab|cd):
         l(a) >= l(b),
@@ -109,8 +112,8 @@ These are the most useful configure options:
         l(a) < l(c) || (l(a) == l(c) && l(b) < l(d))
       for (b|cd):
         l(c) <= l(d)
-* `ERI3_PURE_SH` — Assume the 'unpaired' center of 3-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
-* `ERI2_PURE_SH` — Assume the 2-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
+* `ERI3_PURE_SH` — G — Assume the 'unpaired' center of 3-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
+* `ERI2_PURE_SH` — G — Assume the 2-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
 
 ###  How High Angular Momentum
 
@@ -124,20 +127,20 @@ These are the most useful configure options:
 
   * high MAX_AM generating >20k files may require `ulimit -s 65535` for linking library target on Linux to avert "ld: Argument list too long"
 
-* `WITH_MAX_AM` — Support Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=4]
-* `WITH_OPT_AM` — Optimize maximally for up to angular momentum N (N <= WITH_MAX_AM). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `(WITH_MAX_AM/2)+1`]
+* `WITH_MAX_AM` — G — Support Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=4]
+* `WITH_OPT_AM` — G — Optimize maximally for up to angular momentum N (N <= WITH_MAX_AM). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `(WITH_MAX_AM/2)+1`]
 
-* `WITH_ONEBODY_MAX_AM` — Support 1-body ints for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
-* `WITH_ONEBODY_OPT_AM` — Optimize 1-body ints maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+* `WITH_ONEBODY_MAX_AM` — G — Support 1-body ints for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ONEBODY_OPT_AM` — G — Optimize 1-body ints maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
 
-* `WITH_ERI_MAX_AM` — Support 4-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
-* `WITH_ERI_OPT_AM` — Optimize 4-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+* `WITH_ERI_MAX_AM` — G — Support 4-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ERI_OPT_AM` — G — Optimize 4-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
 
-* `WITH_ERI3_MAX_AM` — Support 3-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
-* `WITH_ERI3_OPT_AM` — Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+* `WITH_ERI3_MAX_AM` — G — Support 3-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ERI3_OPT_AM` — G — Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
 
-* `WITH_ERI2_MAX_AM` — Support 2-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
-* `WITH_ERI2_OPT_AM` — Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+* `WITH_ERI2_MAX_AM` — G — Support 2-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ERI2_OPT_AM` — G — Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
 
 
 
