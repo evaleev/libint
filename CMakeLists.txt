@@ -1,26 +1,25 @@
 cmake_minimum_required(VERSION 3.18)  # LIST SORT NATURAL
-
-project(Libint2Compiler
-        LANGUAGES CXX)
-set(Libint2_AUTHORS      "Edward F. Valeev")
-set(Libint2_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
-set(Libint2_URL          "https://github.com/evaleev/libint")
-set(Libint2_LICENSE      "GPL-3.0 for generator; LGPL-3.0 for generated")
-
-# Set Libint version ===================================================================================================
-set(LIBINT_MAJOR_VERSION 2)
-set(LIBINT_MINOR_VERSION 7)
-set(LIBINT_MICRO_VERSION 0)
-set(LIBINT_BUILDID "beta.6")
-set(LIBINT_VERSION "${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION}")
-if (LIBINT_BUILDID)
-    set(LIBINT_EXT_VERSION "${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION}-${LIBINT_BUILDID}")
-else()
-    set(LIBINT_EXT_VERSION ${LIBINT_VERSION})
-endif()
-
 cmake_policy(SET CMP0074 NEW)
+
+############################# Version and Metadata #############################
+
+project(
+  Libint2Compiler
+  VERSION 2.7.0
+  DESCRIPTION "High-performance library for computing Gaussian integrals in quantum mechanics"
+  HOMEPAGE_URL "https://github.com/evaleev/libint"
+  LANGUAGES CXX
+  )
+
+set(${PROJECT_NAME}_AUTHORS "Edward F. Valeev")
+set(${PROJECT_NAME}_LICENSE "GPL-3.0 for generator; LGPL-3.0 for generated")
+
+# along with project(... VERSION) above, these are the authoritative version source (formerly in configure.ac)
+set(LIBINT_BUILDID "beta.6")
+set(LIBINT_SOVERSION "2:3:0")
+
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
+include(int_versions)
 
 ################################### Overview ###################################
 
@@ -59,7 +58,6 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 #     - must build libint-library-export target before library *build* targets appear
 
 ################################### Options ####################################
-include(int_versions)
 include(options)
 include(CTest) # defines BUILD_TESTING option
 message(STATUS "Building using CMake ${CMAKE_VERSION}")

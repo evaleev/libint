@@ -16,6 +16,15 @@ For (more) complete instructions please refer to https://github.com/evaleev/libi
 
 ####################
 
+# CMake build overview:
+#
+#    >>> ls
+#    cmake/  COPYING  src/  tests/  ...
+#    >>> cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/install-libint ...
+#    ...
+#    -- Generating done
+#    -- Build files have been written to: /current/dir/build
+#    >>> cmake --build build --target install -j`getconf _NPROCESSORS_ONLN`
 
 
 | target                    | incl. | steps |     ( |  see  | below | )     |

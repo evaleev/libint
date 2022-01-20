@@ -27,7 +27,6 @@ add_custom_command(OUTPUT ${EXPORT_STAGE_DIR}/CMakeLists.txt
         "-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
         "-DPROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}"
         "-DEXPORT_STAGE_DIR=${EXPORT_STAGE_DIR}"
-        "-DLIBINT_VERSION=${LIBINT_VERSION}"
         -P ${CMAKE_CURRENT_SOURCE_DIR}/populate.cmake
         COMMENT "Populating Libint2 library")
 add_custom_target(libint-library-populate DEPENDS ${EXPORT_STAGE_DIR}/CMakeLists.txt)

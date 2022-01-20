@@ -1,17 +1,24 @@
 cmake_minimum_required(VERSION 3.18)  # LIST SORT NATURAL
 cmake_policy(SET CMP0074 NEW)
-project(Libint2
-        LANGUAGES CXX)
 
-set(Libint2_AUTHORS      "Edward F. Valeev")
-set(Libint2_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
-set(Libint2_URL          "https://github.com/evaleev/libint")
-set(Libint2_LICENSE      "LGPL-3.0")
+############################# Version and Metadata #############################
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+include(int_computed)
+
+project(
+  Libint2
+  VERSION ${LIBINT_VERSION}
+  DESCRIPTION "High-performance library for computing Gaussian integrals in quantum mechanics"
+  HOMEPAGE_URL "https://github.com/evaleev/libint"
+  LANGUAGES CXX
+  )
+
+set(${PROJECT_NAME}_AUTHORS "Edward F. Valeev")
+set(${PROJECT_NAME}_LICENSE "LGPL-3.0")
 
 set(L2 Libint2)  # Namespace
 set(pnv libint2) # projectnameversion
-
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 ################################### Overview ###################################
 
@@ -22,8 +29,6 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 ################################### Options ####################################
 include(options)
-include(int_computed)
-
 
 #  <<<  General  >>>
 
@@ -170,6 +175,8 @@ include(CMakePackageConfigHelpers)
 # use defaults, but define another for CMake files
 set(CMAKE_INSTALL_CMAKEDIR "lib/cmake/${pnv}"
     CACHE PATH "Installation directory for CMake files")
+set(LIBINT2_INSTALL_BASISDIR "${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}"
+        CACHE PATH "LIBINT2 DATA install directory")
 
 # <<<  Build  >>>
 
@@ -524,7 +531,7 @@ endif()
 
 # install basis set library
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/lib/basis
-        DESTINATION "${CMAKE_INSTALL_DATADIR}"
+        DESTINATION "${LIBINT2_INSTALL_BASISDIR}"
         )
 
 if (BUILD_TESTING)
