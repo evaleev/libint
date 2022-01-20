@@ -16,14 +16,16 @@ For (more) complete instructions please refer to https://github.com/evaleev/libi
 
 ####################
 
-target                      includes steps (see below)
-------                      --------------------------
-build_libint                1    -    -    -    -    -
-check-libint2compiler       1    2    -    -    -    -
-export                      1    -    3    -    -    -
-library (default)           1    -    3    4    -    -
-check                       1    2    3    4    5    -
-install                     1    -    3    4    -    6
+
+
+| target                    | incl. | steps |     ( |  see  | below | )     |
+| ------                    | ----- | ----- | ----- | ----- | ----- | ----- |
+| build_libint              |   1   |   -   |   -   |   -   |   -   |   -   |
+| check-libint2compiler     |   1   |   2   |   -   |   -   |   -   |   -   |
+| export                    |   1   |   -   |   3   |   -   |   -   |   -   |
+| library (default)         |   1   |   -   |   3   |   4   |   -   |   -   |
+| check                     |   1   |   2   |   3   |   4   |   5   |   -   |
+| install                   |   1   |   -   |   3   |   4   |   -   |   6   |
 
 
 The build is structured into three parts:
@@ -72,17 +74,17 @@ These are the most useful configure options:
 * `DISABLE_ONEBODY_PROPERTY_DERIVS` — Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
    These derivatives are disabled by default to save compile time. Use OFF to enable. [Default=ON]
 
-###  Ordering Conventions
+###  Which Ordering Convention
 
 * `LIBINT2_SHGAUSS_ORDERING` — Ordering for shells of solid harmonic Gaussians. Consumed at library build-time. [Default=standard]
   * `standard` — standard ordering (-l, -l+1 ... l)
   * `gaussian` — the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
 * `LIBINT2_CARTGAUSS_ORDERING` — Orderings for shells of cartesian Gaussians. Consumed at generator build-time. [Default=standard]
-  * `standard` — standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...)
-  * `intv3` — intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx)
-  * `gamess` — GAMESS ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
-  * `orca` — ORCA ordering (hydrid between GAMESS and standard)
-  * `bagel` — axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)
+  * `standard` — standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...) This is ordering of the Common Component Architecture (CCA) standard for molecular integral data exchange described in ["Components for Integral Evaluation in Quantum Chemistry", J. P. Kenny, C. L. Janssen, E. F. Valeev, and T. L. Windus, J. Comp. Chem. 29, 562 (2008)](http://dx.doi.org/10.1002/jcc.20815).
+  * `intv3` — intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx) This is used by IntV3, the default integral engine of [MPQC](https://github.com/evaleev/libint/wiki/www.mpqc.org). Use this to make Libint and IntV3 engines in MPQC interoperable.
+  * `gamess` — [GAMESS](http://www.msg.ameslab.gov/gamess/) ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
+  * `orca` — [ORCA](http://cec.mpg.de/forum/) ordering (hydrid between GAMESS and standard)
+  * `bagel` — [BAGEL](https://github.com/evaleev/libint/wiki/nubakery.org) axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)
 * `LIBINT2_SHELL_SET` — Support computation of shell sets sets subject to these restrictions. Consumed at generator build-time. [Default=standard]
   * `standard` — standard ordering:
       for (ab|cd):
@@ -130,7 +132,7 @@ These are the most useful configure options:
 
 
 
-### Autotools Update Guide
+## Autotools Update Guide
 
 * Notes
   * When three option names present, they are for libtool+cmake --> cmake+cmake (c. #148 for Psi4 c. 2020-2021) --> cmake+cmake
