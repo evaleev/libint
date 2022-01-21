@@ -590,7 +590,7 @@ if (EXPORT_LOCAL_TARGETS)
       EXPORT local_set
       FILE "${pnv}-targets-local.cmake"
       NAMESPACE "${L2}::"
-      DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+      DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
       )
 endif()
 
