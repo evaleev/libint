@@ -1,17 +1,24 @@
 cmake_minimum_required(VERSION 3.18)  # LIST SORT NATURAL
 cmake_policy(SET CMP0074 NEW)
-project(Libint2
-        LANGUAGES CXX)
 
-set(Libint2_AUTHORS      "Edward F. Valeev")
-set(Libint2_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
-set(Libint2_URL          "https://github.com/evaleev/libint")
-set(Libint2_LICENSE      "LGPL-3.0")
+############################# Version and Metadata #############################
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+include(int_computed)
+
+project(
+  Libint2
+  VERSION ${LIBINT_VERSION}
+  DESCRIPTION "High-performance library for computing Gaussian integrals in quantum mechanics"
+  HOMEPAGE_URL "https://github.com/evaleev/libint"
+  LANGUAGES CXX
+  )
+
+set(${PROJECT_NAME}_AUTHORS "Edward F. Valeev")
+set(${PROJECT_NAME}_LICENSE "LGPL-3.0")
 
 set(L2 Libint2)  # Namespace
 set(pnv libint2) # projectnameversion
-
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 ################################### Overview ###################################
 
@@ -21,9 +28,8 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 #   libint2/boost headers are installed or not
 
 ################################### Options ####################################
+include(GNUInstallDirs)
 include(options)
-include(int_computed)
-
 
 #  <<<  General  >>>
 
@@ -65,7 +71,21 @@ message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (read-onl
 
 #  <<<  Miscellaneous  >>>
 
-option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
+#  <<<  Path  >>>
+
+# * use GNUInstallDirs defaults, but define others for CMake and basis files
+# * LIBINT2_ dirs are STRING, not PATH, to preserve relative paths
+
+message(STATUS "Showing option CMAKE_INSTALL_BINDIR: ${CMAKE_INSTALL_BINDIR}")
+message(STATUS "Showing option CMAKE_INSTALL_LIBDIR: ${CMAKE_INSTALL_LIBDIR}")
+message(STATUS "Showing option CMAKE_INSTALL_INCLUDEDIR: ${CMAKE_INSTALL_INCLUDEDIR}")
+message(STATUS "Showing option CMAKE_INSTALL_DATADIR: ${CMAKE_INSTALL_DATADIR}")
+set(LIBINT2_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/${pnv}"
+    CACHE STRING "Directory to which CMake files are installed")
+message(STATUS "Showing option LIBINT2_INSTALL_CMAKEDIR: ${LIBINT2_INSTALL_CMAKEDIR}")
+set(LIBINT2_INSTALL_BASISDIR "${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}"
+    CACHE STRING "Directory to which data files are installed. basis/ directory created within")
+message(STATUS "Showing option LIBINT2_INSTALL_BASISDIR: ${LIBINT2_INSTALL_BASISDIR}")
 
 ######################## Process & Validate Options ###########################
 include(autocmake_safeguards)
@@ -162,14 +182,7 @@ endif()
 
 
 ################################# Main Project #################################
-include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
-
-# Set install paths ====================================================================================================
-
-# use defaults, but define another for CMake files
-set(CMAKE_INSTALL_CMAKEDIR "lib/cmake/${pnv}"
-    CACHE PATH "Installation directory for CMake files")
 
 # <<<  Build  >>>
 
@@ -276,7 +289,7 @@ if (BUILD_SHARED_LIBS)
         int-cxx-headeronly-shared
         INTERFACE
           $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${CMAKE_INSTALL_DATADIR}">
+          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
         )
 
       target_compile_features(int-cxx-headeronly-shared INTERFACE "cxx_std_11")
@@ -334,7 +347,7 @@ if (BUILD_STATIC_LIBS)
         int-cxx-headeronly-static
         INTERFACE
           $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${CMAKE_INSTALL_DATADIR}">
+          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
         )
 
       target_compile_features(int-cxx-headeronly-static INTERFACE "cxx_std_11")
@@ -523,9 +536,10 @@ if (BUILD_STATIC_LIBS)
 endif()
 
 # install basis set library
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/lib/basis
-        DESTINATION "${CMAKE_INSTALL_DATADIR}"
-        )
+install(
+  DIRECTORY ${PROJECT_SOURCE_DIR}/lib/basis
+  DESTINATION "${LIBINT2_INSTALL_BASISDIR}"
+  )
 
 if (BUILD_TESTING)
     enable_testing(true)
@@ -537,20 +551,20 @@ endif()
 # GNUInstallDirs "DATADIR" wrong here; CMake search path wants "share".
 configure_package_config_file(cmake/${pnv}-config.cmake.in
                               "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake"
-                              INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR})
+                              INSTALL_DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
                                  VERSION ${LIBINT_VERSION}
                                  COMPATIBILITY SameMajorVersion)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake
               ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
-        DESTINATION ${CMAKE_INSTALL_CMAKEDIR})
+        DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
 
 configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
 install(
   FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindTargetEigen3.cmake
-  DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+  DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
   )
 
 if (BUILD_SHARED_LIBS)
@@ -558,7 +572,7 @@ if (BUILD_SHARED_LIBS)
       EXPORT shared_set
       FILE "${pnv}-targets-shared.cmake"
       NAMESPACE "${L2}::"
-      DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+      DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
       )
 endif()
 
@@ -567,7 +581,7 @@ if (BUILD_STATIC_LIBS)
       EXPORT static_set
       FILE "${pnv}-targets-static.cmake"
       NAMESPACE "${L2}::"
-      DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+      DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
       )
 endif()
 

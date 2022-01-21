@@ -1,47 +1,38 @@
-# Keep libtool and cmake in sync by collecting versions from configure.ac
-# If CMake becomes primary buildsys, define as `project(..., VERSION)`
+# top-level CMakeLists.txt has defined:
+# * PROJECT_VERSION_{MAJOR|MINOR|PATCH} through `project(... VERSION)`
+# * LIBINT_BUILDID
+# * LIBINT_SOVERSION
+
+# note that 3rd version integer is PATCH in CMake and MICRO in Libint
+
 
 # <<<  Build Version  >>>
 
-file(STRINGS "configure.ac" _libint_configure_ac
-     REGEX "libint_mmm_version")
-foreach(ver ${_libint_configure_ac})
-    if (ver MATCHES "^define..libint_mmm_version...([0-9]+).([0-9]+).([0-9]+)..$")
-        set(LIBINT_MAJOR_VERSION ${CMAKE_MATCH_1})
-        set(LIBINT_MINOR_VERSION ${CMAKE_MATCH_2})
-        set(LIBINT_MICRO_VERSION ${CMAKE_MATCH_3})
-    endif()
-endforeach()
+set(LIBINT_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
+set(LIBINT_MINOR_VERSION ${PROJECT_VERSION_MINOR})
+set(LIBINT_MICRO_VERSION ${PROJECT_VERSION_PATCH})
 
-set(Libint2_VERSION ${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION})
+set(LIBINT_VERSION ${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION})
 
 
 # <<<  Dev Version  >>>
 
-file(STRINGS "configure.ac" _libint_configure_ac
-     REGEX "libint_buildid")
-foreach(ver ${_libint_configure_ac})
-    if (ver MATCHES "^define..libint_buildid...([a-z0-9.]+)..$")
-        set(LIBINT_TWEAK_VERSION ${CMAKE_MATCH_1})
-    endif()
-endforeach()
+if (LIBINT_BUILDID)
+  set(LIBINT_EXT_VERSION ${LIBINT_VERSION}-${LIBINT_BUILDID})
+else()
+  set(LIBINT_EXT_VERSION ${LIBINT_VERSION})
+endif()
 
-set(LIBINT_VERSION ${Libint2_VERSION}-${LIBINT_TWEAK_VERSION})
-message(STATUS "Version: Full ${LIBINT_VERSION} Numeric ${Libint2_VERSION}")
+message(STATUS "Version: Full ${LIBINT_EXT_VERSION} Numeric ${LIBINT_VERSION}")
 
 
 # <<<  ABI Version  >>>
 
-file(STRINGS "configure.ac" _libint_configure_ac
-     REGEX "libint_so_version")
-foreach(ver ${_libint_configure_ac})
-    if (ver MATCHES "^define..libint_so_version...([0-9]+).([0-9]+).([0-9]+)..$")
-        set(LIBINT_CURRENT_SOVERSION ${CMAKE_MATCH_1})
-        set(LIBINT_REVISION_SOVERSION ${CMAKE_MATCH_2})
-        set(LIBINT_AGE_SOVERSION ${CMAKE_MATCH_3})
-    endif()
-endforeach()
+string(REPLACE ":" ";" LIBINT_SOVERSION_LIST ${LIBINT_SOVERSION})
 
-set(LIBINT_SOVERSION ${LIBINT_CURRENT_SOVERSION}:${LIBINT_REVISION_SOVERSION}:${LIBINT_AGE_SOVERSION})
+list(GET LIBINT_SOVERSION_LIST 0 LIBINT_CURRENT_SOVERSION)
+list(GET LIBINT_SOVERSION_LIST 1 LIBINT_REVISION_SOVERSION)
+list(GET LIBINT_SOVERSION_LIST 2 LIBINT_AGE_SOVERSION)
+
 math(EXPR LIBINT_MAJOR_SOVERSION "${LIBINT_CURRENT_SOVERSION} - ${LIBINT_AGE_SOVERSION}")
 message(STATUS "SO Version: Full ${LIBINT_SOVERSION} Major ${LIBINT_MAJOR_SOVERSION}")
