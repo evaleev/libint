@@ -18,7 +18,7 @@ CMake build overview:
 ```bash
 >>> ls
 cmake/  COPYING  src/  tests/  ...
->>> cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/install-libint ...
+>>> cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/future/install-libint ...
 ...
 -- Generating done
 -- Build files have been written to: /current/dir/build
@@ -52,7 +52,7 @@ The build is structured into three parts:
   - consumes no options
   - build target `export` to stop after this step and collect source tarball
 * library
-  - can be build as a subproject (FetchContent) or completely insulated (bare ExternalProject; default)
+  - can be built as a subproject (FetchContent) or completely insulated (bare ExternalProject; default)
   - if building via bare ExternalProject:
     - (4) unpack the export tarball and build the library and install into <build>/library-install-stage/
     - duration depends on number of integrals requested, runs in parallel
@@ -130,6 +130,8 @@ These are the most useful configure options:
 * `WITH_MAX_AM` — G — Support Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=4]
 * `WITH_OPT_AM` — G — Optimize maximally for up to angular momentum N (N <= WITH_MAX_AM). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `(WITH_MAX_AM/2)+1`]
 
+* `MULTIPOLE_MAX_ORDER` — G — Maximum order of spherical multipole integrals. There is no maximum. [Default=4]
+
 * `WITH_ONEBODY_MAX_AM` — G — Support 1-body ints for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
 * `WITH_ONEBODY_OPT_AM` — G — Optimize 1-body ints maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
 
@@ -165,6 +167,8 @@ These are the most useful configure options:
 * `--with-max-am=N0,N1,N2` --> `-D WITH_MAX_AM="N0;N1;N2"` (notice semicolons and quotes. This is standard CMake list syntax)
 * `--with-opt-am=N` --> `-D WITH_OPT_AM=N`
 * `--with-opt-am=N0,N1,N2` --> `-D WITH_OPT_AM="N0;N1;N2"`
+
+* `--with-multipole-max-order=N` --> `-D MULTIPOLE_MAX_ORDER=N`
 
 * `--with-1body-max-am=N` --> `-D WITH_ONEBODY_MAX_AM=N`
 * `--with-1body-max-am=N0,N1,N2` --> `-D WITH_ONEBODY_MAX_AM="N0;N1;N2"`
