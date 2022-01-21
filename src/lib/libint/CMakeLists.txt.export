@@ -71,20 +71,21 @@ message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (read-onl
 
 #  <<<  Miscellaneous  >>>
 
+#  <<<  Path  >>>
+
 # * use GNUInstallDirs defaults, but define others for CMake and basis files
 # * LIBINT2_ dirs are STRING, not PATH, to preserve relative paths
 
 message(STATUS "Showing option CMAKE_INSTALL_BINDIR: ${CMAKE_INSTALL_BINDIR}")
-option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
+message(STATUS "Showing option CMAKE_INSTALL_LIBDIR: ${CMAKE_INSTALL_LIBDIR}")
 message(STATUS "Showing option CMAKE_INSTALL_INCLUDEDIR: ${CMAKE_INSTALL_INCLUDEDIR}")
 message(STATUS "Showing option CMAKE_INSTALL_DATADIR: ${CMAKE_INSTALL_DATADIR}")
 set(LIBINT2_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/${pnv}"
     CACHE STRING "Directory to which CMake files are installed")
-message(STATUS "Setting option LIBINT2_INSTALL_CMAKEDIR: ${LIBINT2_INSTALL_CMAKEDIR}")
+message(STATUS "Showing option LIBINT2_INSTALL_CMAKEDIR: ${LIBINT2_INSTALL_CMAKEDIR}")
 set(LIBINT2_INSTALL_BASISDIR "${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}"
     CACHE STRING "Directory to which data files are installed. basis/ directory created within")
-message(STATUS "Setting option LIBINT2_INSTALL_BASISDIR: ${LIBINT2_INSTALL_BASISDIR}")
-
+message(STATUS "Showing option LIBINT2_INSTALL_BASISDIR: ${LIBINT2_INSTALL_BASISDIR}")
 
 ######################## Process & Validate Options ###########################
 include(autocmake_safeguards)

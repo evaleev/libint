@@ -21,6 +21,9 @@ set(LIBINT_SOVERSION "2:3:0")
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 include(int_versions)
 
+set(L2 Libint2)  # Namespace
+set(pnv libint2) # projectnameversion
+
 ################################### Overview ###################################
 
 # CMake build overview:
@@ -59,6 +62,7 @@ include(int_versions)
 
 ################################### Options ####################################
 include(options)
+include(GNUInstallDirs)
 include(CTest) # defines BUILD_TESTING option
 message(STATUS "Building using CMake ${CMAKE_VERSION}")
 
@@ -205,7 +209,23 @@ option_with_print(LIBINT_ENABLE_GENERIC_CODE
 option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
                   "-xHost" "-march=native" "/arch:AVX2")
 option_with_default(BUILD_FPIC "Compile lone static library with position independent code (all libraries are fpic when BUILD_SHARED=ON)" OFF)
-option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
+
+#  <<<  Path  >>>
+
+# * only relevant to library
+# * use GNUInstallDirs defaults, but define others for CMake and basis files
+# * LIBINT2_ dirs are STRING, not PATH, to preserve relative paths
+
+message(STATUS "Showing option CMAKE_INSTALL_BINDIR: ${CMAKE_INSTALL_BINDIR}")
+message(STATUS "Showing option CMAKE_INSTALL_LIBDIR: ${CMAKE_INSTALL_LIBDIR}")
+message(STATUS "Showing option CMAKE_INSTALL_INCLUDEDIR: ${CMAKE_INSTALL_INCLUDEDIR}")
+message(STATUS "Showing option CMAKE_INSTALL_DATADIR: ${CMAKE_INSTALL_DATADIR}")
+set(LIBINT2_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/${pnv}"
+    CACHE STRING "Directory to which CMake files are installed")
+message(STATUS "Showing option LIBINT2_INSTALL_CMAKEDIR: ${LIBINT2_INSTALL_CMAKEDIR}")
+set(LIBINT2_INSTALL_BASISDIR "${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}"
+    CACHE STRING "Directory to which data files are installed. basis/ directory created within")
+message(STATUS "Showing option LIBINT2_INSTALL_BASISDIR: ${LIBINT2_INSTALL_BASISDIR}")
 
 #CONFIGURE    --disable-t1g12-support Libint will not support [Ti,G12] integrals
 #CONFIGURE    --enable-accum-ints     Accumulate integrals to the buffer, rather than
@@ -285,7 +305,6 @@ set(STAGED_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/library-install-stage")
 if (BUILD_TESTING)
     enable_testing()
 endif()
-include(GNUInstallDirs)
 
 configure_file(cmake/modules/int_computed.cmake.in cmake/modules/int_computed.cmake @ONLY)
 set(_EXPORT_MODE 0)
