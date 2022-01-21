@@ -341,7 +341,7 @@ if (BUILD_STATIC_LIBS)
         int-cxx-headeronly-static
         INTERFACE
           $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${CMAKE_INSTALL_DATADIR}">
+          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
         )
 
       target_compile_features(int-cxx-headeronly-static INTERFACE "cxx_std_11")

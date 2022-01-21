@@ -1,3 +1,17 @@
+# libint compiler vs library
+
+Before you read on:
+
+* If you want to know how to _use_ a libint library in your code:
+  * if you use C++11 or later (strongly recommended): read [this](https://github.com/evaleev/libint/wiki/using-modern-CPlusPlus-API) instead
+  * if you use pre-2011 C++, C, Fortran, or any other language, refer to the [Libint Programmer's Manual](http://sourceforge.net/projects/libint/files/libint-for-beginners/progman.pdf/download)
+* If you want to know how to _generate_ a libint _library_ using the libint _compiler_, first make sure you really need to do that:
+  * if all you want is a basic library that computes integrals necessary to compute energies, use the pre-generated library labeled "lmax=6 library (standard ints only)" from the [latest release](https://github.com/evaleev/libint/releases/latest) of Libint
+  * many codes using libint, e.g. orca and mpqc, already include an appropriately configured libint library, and you do not need to generate it yourself
+  * if you do need to make a custom library, _read on_
+
+
+
 # Synopsis
 
 - configure: `cmake -S /path/to/compiler/source/tree -B build [-Dvar1=value1] [-Dvar2=value2] ...` where
