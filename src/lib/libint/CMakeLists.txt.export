@@ -494,17 +494,47 @@ install(FILES ${PROJECT_SOURCE_DIR}/src/libint2_iface.h
 if (BUILD_SHARED_LIBS)
     if (TARGET int-cxx-headeronly-shared AND TARGET int-cxx-shared)
       install(
-        #TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared
-        TARGETS int-shared int-cxx-headeronly-shared
+        TARGETS
+          int-shared
+          int-cxx-shared
+          int-cxx-headeronly-shared
+        #TARGETS int-shared int-cxx-headeronly-shared
         EXPORT shared_set
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
-      install(
-        TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared #tgt::Eigen #libint-Eigen3
-        EXPORT local_set
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
+      #install(
+      #  TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared #tgt::Eigen #libint-Eigen3
+      #  EXPORT local_set
+      #  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      #  )
+#      install(
+#        IMPORTED_RUNTIME_ARTIFACTS int-cxx-shared
+#        RUNTIME_DEPENDENCY_SET local_set
+#        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#        )
     else()
+      install(
+        TARGETS
+          int-shared
+        EXPORT shared_set
+        RUNTIME
+          COMPONENT ${L2}_RunTime
+        LIBRARY
+          COMPONENT ${L2}_RunTime
+          NAMELINK_COMPONENT ${L2}_Development
+        ARCHIVE
+          COMPONENT ${L2}_Development
+        PUBLIC_HEADER
+          COMPONENT ${L2}_Development
+        )
+#      install(
+#        EXPORT shared_set
+#        DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+#        NAMESPACE "${L2}::"
+#        FILE ${L2}-Targets-shared.cmake
+#        COMPONENT ${L2}_Development
+#        )
+
       install(
         TARGETS int-shared
         EXPORT shared_set
@@ -520,12 +550,12 @@ if (BUILD_STATIC_LIBS)
         EXPORT static_set
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
-      install(
-        TARGETS int-static int-cxx-static int-cxx-headeronly-static #tgt::Eigen #libint-Eigen3
-        EXPORT local_set
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        COMPONENT Eigen3
-        )
+      #install(
+      #  TARGETS int-static int-cxx-static int-cxx-headeronly-static #tgt::Eigen #libint-Eigen3
+      #  EXPORT local_set
+      #  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      #  COMPONENT Eigen3
+      #  )
     else()
       install(
         TARGETS int-static
@@ -585,12 +615,12 @@ if (BUILD_STATIC_LIBS)
       )
 endif()
 
-if (EXPORT_LOCAL_TARGETS)
-    install(
-      EXPORT local_set
-      FILE "${pnv}-targets-local.cmake"
-      NAMESPACE "${L2}::"
-      DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
-      )
-endif()
+#if (EXPORT_LOCAL_TARGETS)
+#    install(
+#      EXPORT local_set
+#      FILE "${pnv}-targets-local.cmake"
+#      NAMESPACE "${L2}::"
+#      DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+#      )
+#endif()
 
