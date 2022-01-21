@@ -589,6 +589,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake
               ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
         DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
 
+include(JoinPaths)
+join_paths(libdir_for_pc_file "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
+join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
+
 configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
