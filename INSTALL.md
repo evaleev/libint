@@ -8,7 +8,7 @@ Before you read on:
 * If you want to know how to _generate_ a libint _library_ using the libint _compiler_, first make sure you really need to do that:
   * if all you want is a basic library that computes integrals necessary to compute energies, use the pre-generated library labeled "lmax=6 library (standard ints only)" from the [latest release](https://github.com/evaleev/libint/releases/latest) of Libint
   * many codes using libint, e.g. orca and mpqc, already include an appropriately configured libint library, and you do not need to generate it yourself
-  * if you do need to make a custom library, _read on_
+  * if you _do_ need to make a custom library, _read on_
 
 
 
@@ -158,6 +158,17 @@ These are the most useful configure options:
 * `WITH_ERI2_MAX_AM` — G — Support 2-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
 * `WITH_ERI2_OPT_AM` — G — Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
 
+### Miscellaneous
+
+* Notes
+  * Approximate defaults are shown. Actual defaults from [GNUInstallDirs](https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html)
+
+* `CMAKE_INSTALL_BINDIR` — L — Directory to which executables and runtime libraries are installed. [Default=bin]
+* `CMAKE_INSTALL_LIBDIR` — L — Directory to which libraries are installed. [Default=lib]
+* `CMAKE_INSTALL_INCLUDEDIR` — L — Directory to which headers are installed. [Default=include]
+* `CMAKE_INSTALL_DATADIR` — L — Directory to which data files are installed. [Default=share]
+* `LIBINT2_INSTALL_CMAKEDIR` — L — Directory to which CMake files are installed. [Default=lib/cmake/libint2]
+* `LIBINT2_INSTALL_BASISDIR` — L — Directory to which data (basis) files are installed. basis/ directory created within this. [Default=share/libint/<LIBINT_VERSION>]
 
 
 ## Autotools Update Guide
