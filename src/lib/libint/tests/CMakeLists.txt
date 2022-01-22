@@ -2,7 +2,7 @@ include(AddCustomTargetSubproject)
 add_custom_target_subproject(libint2 check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/")
 
 add_executable(eritest-libint2 EXCLUDE_FROM_ALL eri/test.cc)
-target_link_libraries(eritest-libint2 int-library)  # N.B. plain library
+target_link_libraries(eritest-libint2 Libint2::int2)  # N.B. plain library
 target_include_directories(eritest-libint2 PRIVATE eri
         ${CMAKE_CURRENT_BINARY_DIR}/../include)
 target_compile_definitions(eritest-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
@@ -49,7 +49,7 @@ if (LIBINT_HAS_CXX_API)
     endif(CMAKE_C_COMPILER)
     add_executable(unit_tests-libint2 EXCLUDE_FROM_ALL
         ${unit_tests-src})
-    target_link_libraries(unit_tests-libint2 int-cxx-library) # N.B. cxx library
+    target_link_libraries(unit_tests-libint2 Libint2::cxx) # N.B. cxx header-only library
     target_include_directories(unit_tests-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
     target_compile_definitions(unit_tests-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
     if (TARGET MPFR::MPFRXX)
@@ -65,7 +65,7 @@ if (LIBINT_HAS_CXX_API)
             PROPERTIES FIXTURES_REQUIRED LIBINT2_UNIT_TESTS_EXEC)
 
     add_executable(hf-libint2 EXCLUDE_FROM_ALL hartree-fock/hartree-fock.cc)
-    target_link_libraries(hf-libint2 int-cxx-library) # N.B. cxx library
+    target_link_libraries(hf-libint2 Libint2::cxx) # N.B. cxx library
     target_include_directories(hf-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
     target_compile_definitions(hf-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
@@ -90,7 +90,7 @@ if (LIBINT_HAS_CXX_API)
 
     find_package(Threads)  # for some reason clang does not link in threading support even though we are using C++ threads
     add_executable(hf++-libint2 EXCLUDE_FROM_ALL hartree-fock/hartree-fock++.cc)
-    target_link_libraries(hf++-libint2 int-cxx-library ${CMAKE_THREAD_LIBS_INIT})  # N.B. cxx library
+    target_link_libraries(hf++-libint2 Libint2::cxx ${CMAKE_THREAD_LIBS_INIT})  # N.B. cxx library
     target_include_directories(hf++-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
     target_compile_definitions(hf++-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
@@ -119,7 +119,7 @@ if (ENABLE_FORTRAN)
 
     # tests
     add_executable(fortran_example-libint2 EXCLUDE_FROM_ALL fortran/fortran_example.F90)
-    target_link_libraries(fortran_example-libint2 libint2 libint_f)
+    target_link_libraries(fortran_example-libint2 Libint2::int2 libint_f)
     target_include_directories(fortran_example-libint2 PRIVATE $<TARGET_PROPERTY:libint_f,Fortran_MODULE_DIRECTORY>)
     target_compile_definitions(fortran_example-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
@@ -132,7 +132,7 @@ if (ENABLE_FORTRAN)
 
     if (LIBINT_HAS_CXX_API)
         add_executable(fortran_test-libint2 EXCLUDE_FROM_ALL fortran/test.cc fortran/test-eri.cc $<TARGET_OBJECTS:libint_f>)
-        target_link_libraries(fortran_test-libint2 libint2_cxx libint_f)
+        target_link_libraries(fortran_test-libint2 Libint2::cxx libint_f)
         target_include_directories(fortran_test-libint2 PRIVATE $<TARGET_PROPERTY:libint_f,Fortran_MODULE_DIRECTORY>)
         target_compile_definitions(fortran_test-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 

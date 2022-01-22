@@ -223,8 +223,9 @@ These are the most useful configure options:
 * `--prefix=path` --> `-D CMAKE_INSTALL_PREFIX=path` (standard CMake variable)
 
 * Targets
+  * All targets listed below are available. rhs of arrow targets (namespaced with `Libint2::`) are preferred. lhs of arrow targets have legacy aliases for now.
+  * Namespaced targets available through `find_package()` or `add_subdirectory()`
   * `libint2` --> `Libint2::int2` (internal target name `int-{shared,static}`)
   * `libint2_cxx` --> `Libint2::cxx` (internal target name `int-cxx-headeronly-{shared,static}`)
   * DNE --> `Libint2::int2-cxx` (internal target name `int-cxx-{shared,static}`)
-
 
