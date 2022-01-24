@@ -63,7 +63,7 @@ set(pnv libint2) # projectnameversion
 ################################### Options ####################################
 include(options)
 include(GNUInstallDirs)
-include(CTest) # defines BUILD_TESTING option
+include(CTest)
 message(STATUS "Building using CMake ${CMAKE_VERSION}")
 
 #  <<<  General  >>>
@@ -209,6 +209,8 @@ option_with_print(LIBINT_ENABLE_GENERIC_CODE
 option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
                   "-xHost" "-march=native" "/arch:AVX2")
 option_with_default(BUILD_FPIC "Compile lone static library with position independent code (all libraries are fpic when BUILD_SHARED=ON)" OFF)
+# next one defined by `include(CTest)`
+message(STATUS "Showing option BUILD_TESTING: ${BUILD_TESTING}")
 
 #  <<<  Path  >>>
 
@@ -216,6 +218,7 @@ option_with_default(BUILD_FPIC "Compile lone static library with position indepe
 # * use GNUInstallDirs defaults, but define others for CMake and basis files
 # * LIBINT2_ dirs are STRING, not PATH, to preserve relative paths
 
+# next four defined by `include(GNUInstallDirs)`
 message(STATUS "Showing option CMAKE_INSTALL_BINDIR: ${CMAKE_INSTALL_BINDIR}")
 message(STATUS "Showing option CMAKE_INSTALL_LIBDIR: ${CMAKE_INSTALL_LIBDIR}")
 message(STATUS "Showing option CMAKE_INSTALL_INCLUDEDIR: ${CMAKE_INSTALL_INCLUDEDIR}")
@@ -302,10 +305,6 @@ booleanize01(LIBINT_ENABLE_GENERIC_CODE)
 set(EXPORT_STAGE_DIR ${PROJECT_BINARY_DIR}/libint-${LIBINT_EXT_VERSION})
 set(STAGED_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/library-install-stage")
 
-if (BUILD_TESTING)
-    enable_testing()
-endif()
-
 configure_file(cmake/modules/int_computed.cmake.in cmake/modules/int_computed.cmake @ONLY)
 set(_EXPORT_MODE 0)
 configure_file(include/libint2/config.h.cmake.in include/libint2/config.h @ONLY)
@@ -319,7 +318,6 @@ add_subdirectory(src)
 # <<<  Test  >>>
 
 if (BUILD_TESTING)
-    enable_testing(true)
     add_subdirectory(tests)
 endif()
 

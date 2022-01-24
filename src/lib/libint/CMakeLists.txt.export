@@ -29,6 +29,7 @@ set(pnv libint2) # projectnameversion
 
 ################################### Options ####################################
 include(GNUInstallDirs)
+include(CTest)
 include(options)
 
 #  <<<  General  >>>
@@ -36,7 +37,6 @@ include(options)
 option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
 option_with_print(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3)" ON)
 option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires C and Fortran and Python)" OFF)
-option_with_print(BUILD_TESTING "Compile the testing infrastructure" ON)
 option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
 option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static" OFF)
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)
@@ -71,11 +71,15 @@ message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (read-onl
 
 #  <<<  Miscellaneous  >>>
 
+# next one defined by `include(CTest)`
+message(STATUS "Showing option BUILD_TESTING: ${BUILD_TESTING}")
+
 #  <<<  Path  >>>
 
 # * use GNUInstallDirs defaults, but define others for CMake and basis files
 # * LIBINT2_ dirs are STRING, not PATH, to preserve relative paths
 
+# next four defined by `include(GNUInstallDirs)`
 message(STATUS "Showing option CMAKE_INSTALL_BINDIR: ${CMAKE_INSTALL_BINDIR}")
 message(STATUS "Showing option CMAKE_INSTALL_LIBDIR: ${CMAKE_INSTALL_LIBDIR}")
 message(STATUS "Showing option CMAKE_INSTALL_INCLUDEDIR: ${CMAKE_INSTALL_INCLUDEDIR}")

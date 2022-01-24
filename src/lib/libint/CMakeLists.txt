@@ -133,7 +133,7 @@ else()
     ExternalProject_Get_property(library BINARY_DIR)
 
     # instead of running tests by default, replicate check-libint2 target here and use it to invoke library's check-libint2 target
-    if (BUILD_TESTING) # enable_testing was already invoked at the top
+    if (BUILD_TESTING)
       include(AddCustomTargetSubproject)
       add_custom_target_subproject(libint2 check USES_TERMINAL
               COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/"

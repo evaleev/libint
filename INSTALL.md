@@ -163,13 +163,14 @@ These are the most useful configure options:
 * Notes
   * Approximate defaults are shown. Actual defaults from [GNUInstallDirs](https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html)
 
-* `CMAKE_INSTALL_BINDIR` — L — Directory to which executables and runtime libraries are installed. [Default=bin]
-* `CMAKE_INSTALL_LIBDIR` — L — Directory to which libraries are installed. [Default=lib]
-* `CMAKE_INSTALL_INCLUDEDIR` — L — Directory to which headers are installed. [Default=include]
-* `CMAKE_INSTALL_DATADIR` — L — Directory to which data files are installed. [Default=share]
+* `CMAKE_INSTALL_BINDIR` — L — Directory to which executables and runtime libraries are installed. Standard CMake variable. [Default=bin]
+* `CMAKE_INSTALL_LIBDIR` — L — Directory to which libraries are installed. Standard CMake variable. [Default=lib]
+* `CMAKE_INSTALL_INCLUDEDIR` — L — Directory to which headers are installed. Standard CMake variable. [Default=include]
+* `CMAKE_INSTALL_DATADIR` — L — Directory to which data files are installed. Standard CMake variable. [Default=share]
 * `LIBINT2_INSTALL_CMAKEDIR` — L — Directory to which CMake files are installed. [Default=lib/cmake/libint2]
 * `LIBINT2_INSTALL_BASISDIR` — L — Directory to which data (basis) files are installed. basis/ directory created within this. [Default=share/libint/<LIBINT_VERSION>]
 
+* `BUILD_TESTING` — GL — Whether to build the testing infrastructure and define the `check` target. Standard CMake variable. [Default=ON]
 
 ## Autotools Update Guide
 
