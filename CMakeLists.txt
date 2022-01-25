@@ -315,6 +315,8 @@ configure_file(include/libint2/config2.h.cmake.in ${EXPORT_STAGE_DIR}/include/li
 # compiler
 add_subdirectory(src)
 
+add_subdirectory(doc)
+
 # <<<  Test  >>>
 
 if (BUILD_TESTING)

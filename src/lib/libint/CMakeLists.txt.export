@@ -255,9 +255,9 @@ if (REQUIRE_CXX_API)
       ${PROJECT_BINARY_DIR}/include/libint2/
     )
 
-  target_link_libraries (int-cxx-obj PRIVATE tgt::Eigen)
+  target_link_libraries(int-cxx-obj PRIVATE tgt::Eigen)
   if (TARGET Boost::headers)
-    target_link_libraries (int-cxx-obj PRIVATE Boost::headers)
+    target_link_libraries(int-cxx-obj PRIVATE Boost::headers)
   endif()
 endif()
 
@@ -298,11 +298,11 @@ if (BUILD_SHARED_LIBS)
 
       target_compile_features(int-cxx-headeronly-shared INTERFACE "cxx_std_11")
 
-      set_target_properties (int-cxx-headeronly-shared PROPERTIES EXPORT_NAME "cxx")
+      set_target_properties(int-cxx-headeronly-shared PROPERTIES EXPORT_NAME "cxx")
 
-      target_link_libraries (int-cxx-headeronly-shared INTERFACE int-shared tgt::Eigen)
+      target_link_libraries(int-cxx-headeronly-shared INTERFACE int-shared tgt::Eigen)
       if (TARGET Boost::headers)
-        target_link_libraries (int-cxx-headeronly-shared INTERFACE Boost::headers)
+        target_link_libraries(int-cxx-headeronly-shared INTERFACE Boost::headers)
       endif()
 
       # now make the compiled library
@@ -356,11 +356,11 @@ if (BUILD_STATIC_LIBS)
 
       target_compile_features(int-cxx-headeronly-static INTERFACE "cxx_std_11")
 
-      set_target_properties (int-cxx-headeronly-static PROPERTIES EXPORT_NAME "cxx")
+      set_target_properties(int-cxx-headeronly-static PROPERTIES EXPORT_NAME "cxx")
 
-      target_link_libraries (int-cxx-headeronly-static INTERFACE int-static tgt::Eigen)
+      target_link_libraries(int-cxx-headeronly-static INTERFACE int-static tgt::Eigen)
       if (TARGET Boost::headers)
-        target_link_libraries (int-cxx-headeronly-static INTERFACE Boost::headers)
+        target_link_libraries(int-cxx-headeronly-static INTERFACE Boost::headers)
       endif()
 
       # now make the compiled library
@@ -382,30 +382,30 @@ endif()
 # * used for tests
 
 if (BUILD_SHARED_LIBS)
-    add_library (${L2}::int2 ALIAS int-shared)
+    add_library(${L2}::int2 ALIAS int-shared)
     if (REQUIRE_CXX_API)
-        add_library (${L2}::cxx ALIAS int-cxx-headeronly-shared)
-        add_library (${L2}::int2-cxx ALIAS int-cxx-shared)
+        add_library(${L2}::cxx ALIAS int-cxx-headeronly-shared)
+        add_library(${L2}::int2-cxx ALIAS int-cxx-shared)
     endif()
 elseif (BUILD_STATIC_LIBS)
-    add_library (${L2}::int2 ALIAS int-static)
+    add_library(${L2}::int2 ALIAS int-static)
     if (REQUIRE_CXX_API)
-        add_library (${L2}::cxx ALIAS int-cxx-headeronly-static)
-        add_library (${L2}::int2-cxx ALIAS int-cxx-static)
+        add_library(${L2}::cxx ALIAS int-cxx-headeronly-static)
+        add_library(${L2}::int2-cxx ALIAS int-cxx-static)
     endif()
 endif()
 
 # Legacy (pre-2.7.0) aliases ===========================================================================================
 
 if (BUILD_SHARED_LIBS)
-    add_library (libint2 ALIAS int-shared)
+    add_library(libint2 ALIAS int-shared)
     if (REQUIRE_CXX_API)
-        add_library (libint2_cxx ALIAS int-cxx-headeronly-shared)
+        add_library(libint2_cxx ALIAS int-cxx-headeronly-shared)
     endif()
 elseif (BUILD_STATIC_LIBS)
-    add_library (libint2 ALIAS int-static)
+    add_library(libint2 ALIAS int-static)
     if (REQUIRE_CXX_API)
-        add_library (libint2_cxx ALIAS int-cxx-headeronly-static)
+        add_library(libint2_cxx ALIAS int-cxx-headeronly-static)
     endif()
 endif()
 
