@@ -282,7 +282,6 @@ if (BUILD_SHARED_LIBS)
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
       )
 
     # C++ library
@@ -340,7 +339,6 @@ if (BUILD_STATIC_LIBS)
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
       )
 
     # C++ library
@@ -478,31 +476,48 @@ endif()
 
 # <<<  Install  >>>
 
-install(DIRECTORY ${PROJECT_BINARY_DIR}/include/
-                  ${PROJECT_SOURCE_DIR}/include/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        FILES_MATCHING PATTERN "*.h"
-                       PATTERN "*.hpp")
+install(
+    DIRECTORY
+      ${PROJECT_BINARY_DIR}/include/
+      ${PROJECT_SOURCE_DIR}/include/
+    TYPE INCLUDE
+    COMPONENT ${L2}_Development
+    FILES_MATCHING
+      PATTERN "*.h"
+      PATTERN "*.hpp"
+    )
 
-install(FILES ${PROJECT_SOURCE_DIR}/src/libint2_iface.h
-              ${PROJECT_SOURCE_DIR}/src/libint2_iface_internal.h
-              ${PROJECT_SOURCE_DIR}/src/libint2_params.h
-              ${PROJECT_SOURCE_DIR}/src/libint2_types.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libint2)
+install(
+    FILES
+      ${PROJECT_SOURCE_DIR}/src/libint2_iface.h
+      ${PROJECT_SOURCE_DIR}/src/libint2_iface_internal.h
+      ${PROJECT_SOURCE_DIR}/src/libint2_params.h
+      ${PROJECT_SOURCE_DIR}/src/libint2_types.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libint2
+    COMPONENT ${L2}_Development
+    )
 
 #target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR})
 
 if (BUILD_SHARED_LIBS)
     if (TARGET int-cxx-headeronly-shared AND TARGET int-cxx-shared)
-      install(
-        TARGETS
-          int-shared
-          int-cxx-shared
-          int-cxx-headeronly-shared
-        #TARGETS int-shared int-cxx-headeronly-shared
-        EXPORT shared_set
-#        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
+        install(
+          TARGETS
+            int-shared
+            int-cxx-shared
+            int-cxx-headeronly-shared
+          EXPORT shared_set
+          RUNTIME
+            COMPONENT ${L2}_Runtime
+          LIBRARY
+            COMPONENT ${L2}_Runtime
+            NAMELINK_COMPONENT ${L2}_Development
+          ARCHIVE
+            COMPONENT ${L2}_Development
+          PUBLIC_HEADER
+            COMPONENT ${L2}_Development
+          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+          )
       #install(
       #  TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared #tgt::Eigen #libint-Eigen3
       #  EXPORT local_set
@@ -514,20 +529,21 @@ if (BUILD_SHARED_LIBS)
 #        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 #        )
     else()
-      install(
-        TARGETS
-          int-shared
-        EXPORT shared_set
-        RUNTIME
-          COMPONENT ${L2}_RunTime
-        LIBRARY
-          COMPONENT ${L2}_RunTime
-          NAMELINK_COMPONENT ${L2}_Development
-        ARCHIVE
-          COMPONENT ${L2}_Development
-        PUBLIC_HEADER
-          COMPONENT ${L2}_Development
-        )
+        install(
+          TARGETS
+            int-shared
+          EXPORT shared_set
+          RUNTIME
+            COMPONENT ${L2}_Runtime
+          LIBRARY
+            COMPONENT ${L2}_Runtime
+            NAMELINK_COMPONENT ${L2}_Development
+          ARCHIVE
+            COMPONENT ${L2}_Development
+          PUBLIC_HEADER
+            COMPONENT ${L2}_Development
+          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+          )
 #      install(
 #        EXPORT shared_set
 #        DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
@@ -536,21 +552,33 @@ if (BUILD_SHARED_LIBS)
 #        COMPONENT ${L2}_Development
 #        )
 
-      install(
-        TARGETS int-shared
-        EXPORT shared_set
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
+#      install(
+#        TARGETS int-shared
+#        EXPORT shared_set
+#        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#        )
     endif()
 endif()
 
 if (BUILD_STATIC_LIBS)
     if (TARGET int-cxx-headeronly-static AND TARGET int-cxx-static)
-      install(
-        TARGETS int-static int-cxx-static int-cxx-headeronly-static
-        EXPORT static_set
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
+        install(
+          TARGETS
+            int-static
+            int-cxx-static
+            int-cxx-headeronly-static
+          EXPORT static_set
+          RUNTIME
+            COMPONENT ${L2}_Runtime
+          LIBRARY
+            COMPONENT ${L2}_Runtime
+            NAMELINK_COMPONENT ${L2}_Development
+          ARCHIVE
+            COMPONENT ${L2}_Development
+          PUBLIC_HEADER
+            COMPONENT ${L2}_Development
+          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+          )
       #install(
       #  TARGETS int-static int-cxx-static int-cxx-headeronly-static #tgt::Eigen #libint-Eigen3
       #  EXPORT local_set
@@ -558,11 +586,21 @@ if (BUILD_STATIC_LIBS)
       #  COMPONENT Eigen3
       #  )
     else()
-      install(
-        TARGETS int-static
-        EXPORT static_set
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      )
+        install(
+          TARGETS
+            int-static
+          EXPORT static_set
+          RUNTIME
+            COMPONENT ${L2}_Runtime
+          LIBRARY
+            COMPONENT ${L2}_Runtime
+            NAMELINK_COMPONENT ${L2}_Development
+          ARCHIVE
+            COMPONENT ${L2}_Development
+          PUBLIC_HEADER
+            COMPONENT ${L2}_Development
+          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+          )
     endif()
 endif()
 
@@ -570,37 +608,43 @@ endif()
 install(
   DIRECTORY ${PROJECT_SOURCE_DIR}/lib/basis
   DESTINATION "${LIBINT2_INSTALL_BASISDIR}"
+  COMPONENT ${L2}_Development
   )
 
 if (BUILD_TESTING)
-    enable_testing(true)
     add_subdirectory(tests)
 endif()
 
 # <<<  Export Config  >>>
 
-# GNUInstallDirs "DATADIR" wrong here; CMake search path wants "share".
-configure_package_config_file(cmake/${pnv}-config.cmake.in
-                              "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake"
-                              INSTALL_DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
+configure_package_config_file(
+    cmake/${pnv}-config.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake"
+    INSTALL_DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+    NO_SET_AND_CHECK_MACRO
+    )
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
                                  VERSION ${LIBINT_VERSION}
                                  COMPATIBILITY SameMajorVersion)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
-        DESTINATION ${LIBINT2_INSTALL_CMAKEDIR})
+install(
+    FILES
+      ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake
+      ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
+      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindTargetEigen3.cmake
+    DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+    COMPONENT ${L2}_Development
+    )
 
 include(JoinPaths)
 join_paths(libdir_for_pc_file "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
 join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
 
 configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
 install(
-  FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindTargetEigen3.cmake
-  DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
-  )
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/
+    COMPONENT ${L2}_Development
+    )
 
 if (BUILD_SHARED_LIBS)
     install(
@@ -608,6 +652,7 @@ if (BUILD_SHARED_LIBS)
       FILE "${pnv}-targets-shared.cmake"
       NAMESPACE "${L2}::"
       DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+      COMPONENT ${L2}_Development
       )
 endif()
 
@@ -617,6 +662,7 @@ if (BUILD_STATIC_LIBS)
       FILE "${pnv}-targets-static.cmake"
       NAMESPACE "${L2}::"
       DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+      COMPONENT ${L2}_Development
       )
 endif()
 
