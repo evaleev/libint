@@ -25,6 +25,8 @@
 #   onebody_dD_lL - search for library including 1-body integrals with derivative order D (D=0..4) and max angular momentum up to L (L=2..10)
 #   eri_cC_dD_lL  - search for library including 2-body integrals with C (C=2,3,4) centers, derivative order D (D=0..4), and max angular momentum up to L (L=2..10)
 #
+#   impure_sh - search for library that doesn't assume 2- and 3-center integrals involve pure solid harmonics
+#
 #                    sph        cart       shell_set  used_by
 #                    --------   --------   ---------  -------
 #   sss - search for standard + standard + standard = mpqc4
@@ -52,6 +54,7 @@
 #   CXX_ho - search for at least Libint2::cxx target
 #   CXX - search for at least Libint2::int2-cxx target
 #   Fortran - search for at least libint_f target (NYI)
+#
 #
 # Exported targets:
 #
@@ -116,6 +119,12 @@ set(${L2}_MAX_AM_ERI @Libint2_MAX_AM_ERI@)
 foreach(_eri @Libint2_ERI_COMPONENTS@)
     set(${L2}_${_eri}_FOUND 1)
 endforeach()
+
+# check pure restriction component
+if((@ERI3_PURE_SH@ EQUAL 0) AND (@ERI2_PURE_SH@ EQUAL 0))
+    set(${L2}_impure_sh_FOUND 1)
+endif()
+list(FIND ${L2}_FIND_COMPONENTS "impure_sh" _seek_impure_sh)
 
 # check orderings component
 if    ((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 1))
@@ -187,6 +196,7 @@ endfunction()
 
 
 if(NOT CMAKE_REQUIRED_QUIET)
+    list(SORT ${L2}_FIND_COMPONENTS COMPARE STRING)
     message(STATUS "${L2}Config components requested: ${${L2}_FIND_COMPONENTS}")
     dump_cmake_variables("^Libint2_([A-Za-z0-9_]+)_FOUND$" "${L2}Config components found: ")
 endif()

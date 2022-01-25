@@ -8,10 +8,9 @@
 #   out the AM levels at the CMake level
 #   so that libint2-config components may be defined and client codes can
 #   require the detected library include gradient integrals up to AM=5 with
-#   `find_package(Libint2 COMPONENTS twobody_c4_d1_l5)`
+#   `find_package(Libint2 COMPONENTS eri_c4_d1_l5)`
 
 
-message(STATUS "LAB int.am")
 message(STATUS "Processing integrals classes ...")
 
 # <<<  overall derivatives level  >>>
@@ -243,15 +242,17 @@ process_integrals_class(ERI2)
 process_integrals_class(G12)
 process_integrals_class(G12DKH)
 
-# form list of active <class>_<deriv><max_am> strings to use in Libint2Config
+# form list of active class + deriv + max_am strings to use in Libint2Config
 set(Libint2_ERI_COMPONENTS "")
-foreach(_cls ERI;ERI3;ERI2)
+foreach(_cls ERI;ERI3;ERI2;ONEBODY)
     if (_cls STREQUAL "ERI")
         set(_lbl "eri_c4")
     elseif (_cls STREQUAL "ERI3")
         set(_lbl "eri_c3")
     elseif (_cls STREQUAL "ERI2")
         set(_lbl "eri_c2")
+    elseif (_cls STREQUAL "ONEBODY")
+        set(_lbl "onebody")
     endif()
 
     if (INCLUDE_${_cls} GREATER -1)
