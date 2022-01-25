@@ -60,12 +60,19 @@
 #
 # ::
 #
-# If Libint2 is found, this module defines the following :prop_tgt:`IMPORTED`
-# targets. ::
+# If Libint2 is found and no language components are requested, this module
+# defines at least the following :prop_tgt:`IMPORTED` target. ::
+#
+#   Libint2::int2 - library with C API
+#
+# If Libint2 is found, depending on components requested, available
+# dependencies, and fullness of the installation, this module defines up to the
+# following :prop_tgt:`IMPORTED` targets. ::
 #
 #   Libint2::int2 - library with C API
 #   Libint2::cxx - Libint2::int2 plus interface to header-only C++11 API
 #   Libint2::int2-cxx - Libint2::int2 plus compiled C++11 API
+#   Libint2::fortran (NYI)
 #
 #
 # Suggested usage:
@@ -106,8 +113,10 @@ list(FIND ${L2}_FIND_COMPONENTS "static" _seek_static)
 set(${L2}_C_FOUND 1)
 list(FIND ${L2}_FIND_COMPONENTS "C" _seek_C)
 if(@REQUIRE_CXX_API@)
+    set(${L2}_CXX_ho_FOUND 1)
     set(${L2}_CXX_FOUND 1)
 endif()
+list(FIND ${L2}_FIND_COMPONENTS "CXX_ho" _seek_CXX_ho)
 list(FIND ${L2}_FIND_COMPONENTS "CXX" _seek_CXX)
 if(@ENABLE_FORTRAN@)
     set(${L2}_Fortran_FOUND 1)

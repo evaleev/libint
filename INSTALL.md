@@ -230,3 +230,71 @@ These are the most useful configure options:
   * `libint2_cxx` --> `Libint2::cxx` (internal target name `int-cxx-headeronly-{shared,static}`)
   * DNE --> `Libint2::int2-cxx` (internal target name `int-cxx-{shared,static}`)
 
+
+
+## program-specific notes
+
+#### mpqc4
+
+* standard libtool configuration:
+
+  ```
+  --enable-generic-code --with-max-am=6 --with-opt-am=3 --enable-eri3=0 --enable-eri2=0 --enable-eri3-pure-sh --enable-eri2-pure-sh --enable-fma --disable-1body-property-derivs
+  ```
+
+* libtool configuration prior to Jan. 8, 2015:
+
+  ```
+  --enable-eri=0 --with-max-am=7 --with-opt-am=4 --disable-unrolling --enable-generic-code --enable-contracted-ints
+  ```
+
+#### gamess
+
+* standard libtool configuration:
+
+  ```
+  --enable-eri=0 --with-max-am=7 --with-opt-am=4 --disable-unrolling --enable-generic-code --enable-contracted-ints --with-cartgauss-ordering=gamess
+  ```
+
+#### orca
+
+* a libint library (version 2.0.2) is embedded in ORCA
+* standard libtool configuration:
+
+  ```
+  --enable-eri=2 --enable-eri3=2 --enable-eri2=2 --with-max-am=7 --with-opt-am=4 --with-eri-max-am=7,4,3 --with-eri-opt-am=4,3,2 --disable-unrolling --enable-generic-code --enable-contracted-ints --with-cartgauss-ordering=orca --with-shell-set=orca --enable-eri3-pure-sh --enable-eri2-pure-sh
+  ```
+
+#### bagel
+
+* standard libtool configuration:
+
+  ```
+  --with-max-am=4 --with-eri3-max-am=6 --with-eri2-max-am=6 --enable-eri3=1 -enable-eri=1 --enable-eri2=1 --disable-unrolling --enable-generic-code --enable-contracted-ints --with-cartgauss-ordering=bagel
+
+  ```
+
+* if you want to use spherical Gaussians only add: `--enable-eri3-pure-sh --enable-eri2-pure-sh` (some tests may fail)
+* It appears that on a Mac Libint and BAGEL must be either both static or both shared (2/3/2014)
+
+#### psi4
+
+* production CMake configuration:
+
+  ```
+  -DREQUIRE_CXX_API=ON -DLIBINT2_SHGAUSS_ORDERING=gaussian -DLIBINT2_CARTGAUSS_ORDERING=standard -DLIBINT2_SHELL_SET=standard -DENABLE_ERI=2 -DENABLE_ERI3=2 -DENABLE_ERI2=2 -DENABLE_ONEBODY=2 -DMULTIPOLE_MAX_ORDER=4 -DWITH_MAX_AM="6;5;4" -DWITH_ERI_MAX_AM="5;4;3" -DWITH_ERI3_MAX_AM="6;5;4" -DWITH_ERI2_MAX_AM="6;5;4" -DERI3_PURE_SH=OFF -DERI2_PURE_SH=OFF
+  ```
+
+* minimal detection:
+
+  ```
+  find_package(Libint2 COMPONENTS gss CXX_ho impure_sh eri_c4_d0_l3 eri_c4_d1_l2 eri_c4_d2_l2 eri_c3_d0_l4 eri_c3_d1_l3 eri_c3_d2_l3 eri_c2_d0_l4 eri_c2_d1_l3 eri_c2_d2_l3 onebody_d0_l4 onebody_d1_l3 onebody_d2_l3)
+  ```
+
+* see [notes](https://github.com/psi4/psi4/blob/master/external/upstream/libint2/CMakeLists.txt) for details of Psi4/Libint2 configuration
+
+    -DDISABLE_ONEBODY_PROPERTY_DERIVS=OFF \
+    -DENABLE_G12=1 \
+    -DWITH_G12_MAX_AM=4 \
+    -DWITH_G12_OPT_AM=3 \
+
