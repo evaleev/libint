@@ -12,6 +12,68 @@ Before you read on:
 
 
 
+# Prerequisites
+
+                                        boost   eigen   gmpxx   mpfr    
+build_libint                            *       -       *       -
+gen test                                
+library::int2                           (.tgz)  -       -       -   
+Libint2::cxx_ho                         .tgz    *       -       -
+Libint2::cxx_ho         ENABLE_MPFR=ON  .tgz    *       *       *
+Libint2::cxx            
+
+interface Libint2::cxx_ho               (*)     *       -       -
+
+TODO straighten out target names, e.g., Libint2::cxx_ho and Libint2::cxx vs cxx and int-cxx
+lib with ENABLE_MPFR/LIBINT_HAS_MPFR needs gmpxx and mpfr
+(.tgz)  unpacked if eigen found and system boost not found
+
+|                                                                      |  C O  M |   P  I  L   | E  R  S  |
+|                                                                      | C++[^1] | Fortran[^2] | C        | CMake[^3] | CMake generator | Boost[^7] | Eigen  | GMPXX   MPFR
+| --------                                                             | ------- | ----------- | -------- | --------- | --------------- | --------- | ------ | --
+| build target `build_libint`                                          | *       | -           | -        | *[^4]     | Ninja           | *[^8]     | -      | *       -
+| build target `library`                                               | *       | -           | -        | *[^5]     | Ninja           | -         | -      | -       -
+|   `-D REQUIRE_CXX_API=ON`                                            | *       | -           | -        | *[^5]     | Ninja           | (*)[^9]   | *[^11] | -       -
+|   `-D ENABLE_FORTRAN=ON`                                             | *       | *           | *        | *[^5]     | Ninja           | -         | -      |
+| build project linking C interface, `Libint2::int2`                   | * or C  | -           | * or C++ | (*)[^6]   | Ninja, Makefile | -         | -      | -       -
+| build project linking C++11 header-only interface, `Libint2::cxx_ho` | *       | -           | -        | (*)[^6]   | Ninja, Makefile | (*)[^10]  | *      | -       -
+|   `-D ENABLE_MPFR=ON`                                                | *       | -           | -        | (*)[^6]   | Ninja, Makefile | (*)[^10]  | *      | *       *
+| build project linking C++11 interface, `Libint2::cxx`                | *       | -           | -        | (*)[^6]   | Ninja, Makefile | (*)[^10]  | *[^12] |
+| build project linking Fortran interface, `Libint2::fortran`          |         | *           |          | (*)[^6]   | Ninja, Makefile |           |        |
+
+* `*` required
+* `-` not involved
+* `(*)` recommended or sought, but there's a path forward without
+
+(*) required to set up dependency for header-only interface, but not used until QC
+
+Boost: CMAKE_PREFIX_PATH BOOST_ROOT
+
+[^1] C++ compiler that supports C++11 standard. C++11 standard is the fourth most recent international standard for C++, hence most modern compilers support it fully. A common compiler flag is `-std=c++11`, which CMake will impose on the compilation.
+
+[^2] Fortran 2003
+
+[^3] CMake 3.16 or higher.
+
+[^4] Since Libint2 v2.8 TODO, the GNU toolchain has been replaced by CMake as the sole buildsystem for the Libint2 compiler, `build_libint`. See [update guide](#GNU-Autotools-Update-Guide).
+
+[^5] Since Libint2 v2.8 TODO, the CMake buildsystem for the exported library has been reworked. See [update guide](#GNU-Autotools-Update-Guide).
+
+[^6] Consuming an installed Libint2 library is simplest with CMake by employing `find_package(Libint2)` and `target_link_libraries(... Libint2::...)` commands. To facilitate consumption outside CMake, pkgconfig files are available for the C interface, and more could be provided.
+
+[^7] Boost 1.57 or higher. Only header-only (no compiled libraries) components needed.
+
+[^8] Building the Libint2 compiler needs several Boost components including MPL, Type Traits, and Preprocessor. A detectable system installation is required.
+
+[^9] Building the Libint2 library with C++11 API needs the Boost Preprocessor (PP) component. For the compiled C++11 interface, `Libint2::cxx`, the PP is actually compiled against, but for the header-only target, the PP only sets up the usage dependency. A system installation of Boost is sought, but if none suitable found, a bundled version of PP is installed within the Libint2 header namespace.
+
+[^10] Consuming an installed Libint2 library through a C++11 interface requires the Boost Preprocessor (PP) component. Depending on the library *build* environment, a copy may have been bundled/vendored with the install at `CMAKE_INSTALL_PREFIX/CMAKE_INSTALL_INCLUDEDIR/libint2/boost/`.
+
+[^11] Building the Libint2 library with C++11 API needs the header-only Eigen library. For the compiled C++11 interface, `Libint2::cxx`, Eigen is actually compiled against, but for the header-only target `Libint2::cxx_ho`, Eigen only sets up the usage dependency. A detectable (either through Eigen3Config.cmake or through location-hinting) system installation is required.
+
+[^12] Consuming an installed Libint2 library through the compiled C++11 interface, `Libint2::cxx` requires Eigen. It is *strongly* recommended that the same installation of Eigen be used both to build and consume the `Libint2::cxx` target, especially as regards configuring BLAS and other backends.
+
+
 # Synopsis
 
 - configure: `cmake -S /path/to/compiler/source/tree -B build [-Dvar1=value1] [-Dvar2=value2] ...` where
@@ -173,7 +235,7 @@ These are the most useful configure options:
 * `BUILD_TESTING` — GL — Whether to build the testing infrastructure and define the `check` target. Standard CMake variable. [Default=ON]
 * `ENABLE_MPFR` — L — Use MPFR dependency to test Libint integrals in high precision. [Default=OFF]
 
-## Autotools Update Guide
+## GNU Autotools Update Guide
 
 * Notes
   * When three option names present, they are for libtool+cmake --> cmake+cmake (c. #148 for Psi4 c. 2020-2021) --> cmake+cmake

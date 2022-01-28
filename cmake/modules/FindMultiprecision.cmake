@@ -89,8 +89,8 @@ find_path(
       $ENV{GMPDIR}
       $ENV{MPFRDIR}
       ${INCLUDE_INSTALL_DIR}
-    NO_SYSTEM_ENVIRONMENT_PATH
-    NO_CMAKE_SYSTEM_PATH
+    #NO_SYSTEM_ENVIRONMENT_PATH
+    #NO_CMAKE_SYSTEM_PATH
     )
 
 # Set MPFR_FIND_VERSION to 1.0.0 if no minimum version is specified
@@ -158,8 +158,8 @@ find_path(
       $ENV{GMPDIR}
       $ENV{MPFRDIR}
       ${INCLUDE_INSTALL_DIR}
-    NO_SYSTEM_ENVIRONMENT_PATH
-    NO_CMAKE_SYSTEM_PATH
+    #NO_SYSTEM_ENVIRONMENT_PATH
+    #NO_CMAKE_SYSTEM_PATH
     )
 
 find_library(
@@ -183,8 +183,8 @@ find_path(
       $ENV{GMPDIR}
       $ENV{MPFRDIR}
       ${INCLUDE_INSTALL_DIR}
-    NO_SYSTEM_ENVIRONMENT_PATH
-    NO_CMAKE_SYSTEM_PATH
+    #NO_SYSTEM_ENVIRONMENT_PATH
+    #NO_CMAKE_SYSTEM_PATH
     )
 
 find_library(
