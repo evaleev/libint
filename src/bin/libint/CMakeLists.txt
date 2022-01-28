@@ -59,11 +59,17 @@ set_target_properties(libint-libcompiler PROPERTIES LIBRARY_OUTPUT_NAME int2-lib
 find_package(Boost 1.57 REQUIRED)
 target_link_libraries(libint-libcompiler PUBLIC Boost::headers)
 
-find_package(MPFR REQUIRED) # only GMPXX is actually required ...
-target_link_libraries(libint-libcompiler PUBLIC MPFR::GMPXX)
-message("MPFR   ${MPFR_INCLUDE} ${MPFR_LIBRARY}")
-message("GMP    ${GMP_INCLUDE} ${GMP_LIBRARY}")
-message("GMPXX  ${GMPXX_INCLUDE} ${GMPXX_LIBRARY}")
+find_package(Multiprecision MODULE REQUIRED COMPONENTS gmpxx)
+target_link_libraries(libint-libcompiler PUBLIC Multiprecision::gmpxx)
+
+get_property(_loc TARGET Multiprecision::gmp PROPERTY LOCATION)
+message(STATUS "${Cyan}Found GMP${ColourReset}: ${_loc}")
+get_property(_loc TARGET Multiprecision::gmpxx PROPERTY LOCATION)
+message(STATUS "${Cyan}Found GMPXX${ColourReset}: ${_loc}")
+if (TARGET Multiprecision::mpfr)
+    get_property(_loc TARGET Multiprecision::mpfr PROPERTY LOCATION)
+    message(STATUS "${Cyan}Found MPFR${ColourReset}: ${_loc} (found version ${MPFR_VERSION})")
+endif()
 
 ### executables compiler and test
 

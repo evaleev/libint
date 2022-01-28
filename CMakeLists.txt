@@ -209,6 +209,7 @@ option_with_print(LIBINT_ENABLE_GENERIC_CODE
 option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
                   "-xHost" "-march=native" "/arch:AVX2")
 option_with_default(BUILD_FPIC "Compile lone static library with position independent code (all libraries are fpic when BUILD_SHARED=ON)" OFF)
+option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
 # next one defined by `include(CTest)`
 message(STATUS "Showing option BUILD_TESTING: ${BUILD_TESTING}")
 

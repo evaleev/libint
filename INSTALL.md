@@ -171,6 +171,7 @@ These are the most useful configure options:
 * `LIBINT2_INSTALL_BASISDIR` — L — Directory to which data (basis) files are installed. basis/ directory created within this. [Default=share/libint/<LIBINT_VERSION>]
 
 * `BUILD_TESTING` — GL — Whether to build the testing infrastructure and define the `check` target. Standard CMake variable. [Default=ON]
+* `ENABLE_MPFR` — L — Use MPFR dependency to test Libint integrals in high precision. [Default=OFF]
 
 ## Autotools Update Guide
 
@@ -220,6 +221,8 @@ These are the most useful configure options:
 * `--enable-static` --> `-D BUILD_STATIC=ON` --> `-D BUILD_SHARED_LIBS=OFF` (standard CMake variable)
 * `--enable-shared --enable-static` --> `-D BUILD_SHARED=ON -D BUILD_STATIC=ON` --> `-D LIBINT2_BUILD_SHARED_AND_STATIC_LIBS=ON`
 * `-D ENABLE_CXX11API=ON` --> `-D REQUIRE_CXX_API=ON`
+
+* `--enable-mpfr` --> assumed present --> `-D ENABLE_MPFR=ON`
 
 * `--prefix=path` --> `-D CMAKE_INSTALL_PREFIX=path` (standard CMake variable)
 

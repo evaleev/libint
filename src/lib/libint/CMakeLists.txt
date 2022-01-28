@@ -95,6 +95,7 @@ else()
             -DENABLE_FORTRAN=${ENABLE_FORTRAN}
             -DLIBINT2_SHGAUSS_ORDERING=${LIBINT2_SHGAUSS_ORDERING}
             -DBUILD_TESTING=${BUILD_TESTING}
+            -DENABLE_MPFR=${ENABLE_MPFR}
             )
     if (CMAKE_C_COMPILER)
         list(APPEND library_CMAKE_ARGS

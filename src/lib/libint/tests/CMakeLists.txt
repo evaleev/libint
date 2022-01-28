@@ -6,10 +6,10 @@ target_link_libraries(eritest-libint2 Libint2::int2)  # N.B. plain library
 target_include_directories(eritest-libint2 PRIVATE eri
         ${CMAKE_CURRENT_BINARY_DIR}/../include)
 target_compile_definitions(eritest-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
-if (TARGET MPFR::MPFRXX)
+if (TARGET Multiprecision::mpfr)
     target_compile_definitions(eritest-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
-    target_link_libraries(eritest-libint2 PRIVATE MPFR::MPFRXX)
-endif(TARGET MPFR::MPFRXX)
+    target_link_libraries(eritest-libint2 Multiprecision::mpfr)
+endif()
 
 add_test(libint2/eritest/build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target eritest-libint2)
 set_tests_properties(libint2/eritest/build PROPERTIES FIXTURES_SETUP LIBINT2_ERITEST_EXEC)
@@ -46,16 +46,16 @@ if (LIBINT_HAS_CXX_API)
                 unit/c-api-util.cc
                 unit/test-c-api.cc
                 )
-    endif(CMAKE_C_COMPILER)
+    endif()
     add_executable(unit_tests-libint2 EXCLUDE_FROM_ALL
         ${unit_tests-src})
     target_link_libraries(unit_tests-libint2 Libint2::cxx) # N.B. cxx header-only library
     target_include_directories(unit_tests-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
     target_compile_definitions(unit_tests-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
-    if (TARGET MPFR::MPFRXX)
+    if (TARGET Multiprecision::mpfr)
         target_compile_definitions(unit_tests-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
-        target_link_libraries(unit_tests-libint2 PRIVATE MPFR::MPFRXX)
-    endif(TARGET MPFR::MPFRXX)
+        target_link_libraries(unit_tests-libint2 Multiprecision::mpfr)
+    endif()
 
     add_test(libint2/unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests-libint2)
     set_tests_properties(libint2/unit/build PROPERTIES FIXTURES_SETUP LIBINT2_UNIT_TESTS_EXEC)
@@ -113,7 +113,7 @@ if (LIBINT_HAS_CXX_API)
     set_tests_properties(libint2/hf++/run
             PROPERTIES FIXTURES_REQUIRED LIBINT2_HFXXTEST_EXEC)
 
-endif (LIBINT_HAS_CXX_API)
+endif()
 
 if (ENABLE_FORTRAN)
 
@@ -142,6 +142,6 @@ if (ENABLE_FORTRAN)
                 COMMAND $<TARGET_FILE:fortran_test-libint2>)
         set_tests_properties(libint2/fortran_test/run
                 PROPERTIES FIXTURES_REQUIRED LIBINT2_FORTRAN_TEST_EXEC)
-    endif (LIBINT_HAS_CXX_API)
+    endif()
 
-endif (ENABLE_FORTRAN)
+endif()

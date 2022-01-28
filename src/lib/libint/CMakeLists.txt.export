@@ -107,8 +107,15 @@ endif()
 
 # req'd for now (no FindGMP.cmake, though one at Elemental project)
 if (ENABLE_MPFR)
-  find_package(MPFR REQUIRED)
-endif(ENABLE_MPFR)
+    find_package(Multiprecision MODULE REQUIRED COMPONENTS gmpxx mpfr)
+
+    get_property(_loc TARGET Multiprecision::gmp PROPERTY LOCATION)
+    message(STATUS "${Cyan}Found GMP${ColourReset}: ${_loc}")
+    get_property(_loc TARGET Multiprecision::gmpxx PROPERTY LOCATION)
+    message(STATUS "${Cyan}Found GMPXX${ColourReset}: ${_loc}")
+    get_property(_loc TARGET Multiprecision::mpfr PROPERTY LOCATION)
+    message(STATUS "${Cyan}Found MPFR${ColourReset}: ${_loc} (found version ${MPFR_VERSION})")
+endif()
 
 find_package(Boost 1.57)
 if (TARGET Boost::headers)
@@ -128,7 +135,6 @@ else()
     if (NOT UNPACK_BOOST_RESULT EQUAL 0)
         message(FATAL_ERROR "Failed to unpack the bundled Boost! The tar command output:\n${UNPACK_BOOST_OUTPUT}")
     endif()
-
 endif()
 
 ## look for Eigen
