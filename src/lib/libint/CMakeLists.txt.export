@@ -105,7 +105,19 @@ if (MSVC)
     set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "(LAB) I so don't understand the option handling of ALIGN_SIZE")
 endif()
 
-# req'd for now (no FindGMP.cmake, though one at Elemental project)
+# look for Eigen
+find_package(TargetEigen3 MODULE)
+
+if (TARGET tgt::Eigen)
+    set(LIBINT_HAS_EIGEN 1)
+    set(LIBINT_HAS_CXX_API 1)
+else()
+    set(LIBINT_HAS_CXX_API 0)
+endif()
+if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
+    message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DREQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
+endif()
+
 if (ENABLE_MPFR)
     find_package(Multiprecision MODULE REQUIRED COMPONENTS gmpxx mpfr)
 
@@ -117,23 +129,25 @@ if (ENABLE_MPFR)
     message(STATUS "${Cyan}Found MPFR${ColourReset}: ${_loc} (found version ${MPFR_VERSION})")
 endif()
 
-find_package(Boost 1.57)
-if (TARGET Boost::headers)
-    set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
-else()
-    set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 0)
+if (REQUIRE_CXX_API)
+    find_package(Boost 1.57)
+    if (TARGET Boost::headers)
+        set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
+    else()
+        set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 0)
 
-    file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/libint2)
-    execute_process(
-            COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/external/boost.tar.gz
-            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/include/libint2
-            RESULT_VARIABLE UNPACK_BOOST_RESULT
-            OUTPUT_VARIABLE UNPACK_BOOST_OUTPUT
-            ERROR_VARIABLE UNPACK_BOOST_OUTPUT
-    )
-    message(STATUS "Unpacking bundled Boost")
-    if (NOT UNPACK_BOOST_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to unpack the bundled Boost! The tar command output:\n${UNPACK_BOOST_OUTPUT}")
+        file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/libint2)
+        execute_process(
+                COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/external/boost.tar.gz
+                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/include/libint2
+                RESULT_VARIABLE UNPACK_BOOST_RESULT
+                OUTPUT_VARIABLE UNPACK_BOOST_OUTPUT
+                ERROR_VARIABLE UNPACK_BOOST_OUTPUT
+        )
+        message(STATUS "Unpacking bundled Boost")
+        if (NOT UNPACK_BOOST_RESULT EQUAL 0)
+            message(FATAL_ERROR "Failed to unpack the bundled Boost! The tar command output:\n${UNPACK_BOOST_OUTPUT}")
+        endif()
     endif()
 endif()
 
@@ -171,17 +185,6 @@ endif()
 
 #if (TARGET libint-Eigen3)
 
-find_package(TargetEigen3 MODULE)
-
-if (TARGET tgt::Eigen)
-  set(LIBINT_HAS_EIGEN 1)
-  set(LIBINT_HAS_CXX_API 1)
-else()
-  set(LIBINT_HAS_CXX_API 0)
-endif()
-if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
-  message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DREQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
-endif()
 
 # Python is optional, unless ...
 if (ENABLE_FORTRAN)  # ... need fortran
@@ -237,34 +240,34 @@ endif()
 
 # if building CXX API, make an object lib needed for non-header-only version
 if (REQUIRE_CXX_API)
-  add_library(int-cxx-obj OBJECT src/engine.cpp)
+    add_library(int-cxx-obj OBJECT src/engine.cpp)
 
-  target_compile_definitions(
-    int-cxx-obj
-    PUBLIC
-      LIBINT2_DOES_NOT_INLINE_ENGINE=1
-      __COMPILING_LIBINT2=1
-    )
+    target_compile_definitions(
+      int-cxx-obj
+      PUBLIC
+        LIBINT2_DOES_NOT_INLINE_ENGINE=1
+        __COMPILING_LIBINT2=1
+      )
 
-  target_compile_features(int-cxx-obj PUBLIC "cxx_std_11")
+    target_compile_features(int-cxx-obj PUBLIC "cxx_std_11")
 
-  if (BUILD_SHARED_LIBS)
-    set_target_properties(int-cxx-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
-  endif()
+    if (BUILD_SHARED_LIBS)
+        set_target_properties(int-cxx-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+    endif()
 
-  target_include_directories(
-    int-cxx-obj
-    PRIVATE
-      ${PROJECT_BINARY_DIR}/include/
-      ${PROJECT_SOURCE_DIR}/src/
-      ${PROJECT_SOURCE_DIR}/include/
-      ${PROJECT_BINARY_DIR}/include/libint2/
-    )
+    target_include_directories(
+      int-cxx-obj
+      PRIVATE
+        ${PROJECT_BINARY_DIR}/include/
+        ${PROJECT_SOURCE_DIR}/src/
+        ${PROJECT_SOURCE_DIR}/include/
+        ${PROJECT_BINARY_DIR}/include/libint2/
+      )
 
-  target_link_libraries(int-cxx-obj PRIVATE tgt::Eigen)
-  if (TARGET Boost::headers)
-    target_link_libraries(int-cxx-obj PRIVATE Boost::headers)
-  endif()
+    target_link_libraries(int-cxx-obj PRIVATE tgt::Eigen)
+    if (TARGET Boost::headers)
+        target_link_libraries(int-cxx-obj PRIVATE Boost::headers)
+    endif()
 endif()
 
 if (BUILD_SHARED_LIBS)
@@ -292,37 +295,37 @@ if (BUILD_SHARED_LIBS)
 
     # C++ library
     if (REQUIRE_CXX_API)
-      add_library(int-cxx-headeronly-shared INTERFACE)
+        add_library(int-cxx-headeronly-shared INTERFACE)
 
-      target_compile_definitions(
-        int-cxx-headeronly-shared
-        INTERFACE
-          $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
-        )
+        target_compile_definitions(
+          int-cxx-headeronly-shared
+          INTERFACE
+            $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
+            $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
+          )
 
-      target_compile_features(int-cxx-headeronly-shared INTERFACE "cxx_std_11")
+        target_compile_features(int-cxx-headeronly-shared INTERFACE "cxx_std_11")
 
-      set_target_properties(int-cxx-headeronly-shared PROPERTIES EXPORT_NAME "cxx")
+        set_target_properties(int-cxx-headeronly-shared PROPERTIES EXPORT_NAME "cxx")
 
-      target_link_libraries(int-cxx-headeronly-shared INTERFACE int-shared tgt::Eigen)
-      if (TARGET Boost::headers)
-        target_link_libraries(int-cxx-headeronly-shared INTERFACE Boost::headers)
-      endif()
+        target_link_libraries(int-cxx-headeronly-shared INTERFACE int-shared tgt::Eigen)
+        if (TARGET Boost::headers)
+            target_link_libraries(int-cxx-headeronly-shared INTERFACE Boost::headers)
+        endif()
 
-      # now make the compiled library
-      add_library(int-cxx-shared SHARED $<TARGET_OBJECTS:int-cxx-obj>)
+        # now make the compiled library
+        add_library(int-cxx-shared SHARED $<TARGET_OBJECTS:int-cxx-obj>)
 
-      set_target_properties(
-        int-cxx-shared
-        PROPERTIES
-          SOVERSION ${LIBINT_MAJOR_SOVERSION}
-          MACOSX_RPATH ON
-          OUTPUT_NAME "int2-cxx"
-          EXPORT_NAME "int2-cxx"
-        )
+        set_target_properties(
+          int-cxx-shared
+          PROPERTIES
+            SOVERSION ${LIBINT_MAJOR_SOVERSION}
+            MACOSX_RPATH ON
+            OUTPUT_NAME "int2-cxx"
+            EXPORT_NAME "int2-cxx"
+          )
 
-      target_link_libraries(int-cxx-shared INTERFACE int-cxx-headeronly-shared)
+        target_link_libraries(int-cxx-shared INTERFACE int-cxx-headeronly-shared)
     endif()
 endif()
 
@@ -349,35 +352,35 @@ if (BUILD_STATIC_LIBS)
 
     # C++ library
     if (REQUIRE_CXX_API)
-      add_library(int-cxx-headeronly-static INTERFACE)
+        add_library(int-cxx-headeronly-static INTERFACE)
 
-      target_compile_definitions(
-        int-cxx-headeronly-static
-        INTERFACE
-          $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
-        )
+        target_compile_definitions(
+          int-cxx-headeronly-static
+          INTERFACE
+            $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
+            $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
+          )
 
-      target_compile_features(int-cxx-headeronly-static INTERFACE "cxx_std_11")
+        target_compile_features(int-cxx-headeronly-static INTERFACE "cxx_std_11")
 
-      set_target_properties(int-cxx-headeronly-static PROPERTIES EXPORT_NAME "cxx")
+        set_target_properties(int-cxx-headeronly-static PROPERTIES EXPORT_NAME "cxx")
 
-      target_link_libraries(int-cxx-headeronly-static INTERFACE int-static tgt::Eigen)
-      if (TARGET Boost::headers)
-        target_link_libraries(int-cxx-headeronly-static INTERFACE Boost::headers)
-      endif()
+        target_link_libraries(int-cxx-headeronly-static INTERFACE int-static tgt::Eigen)
+        if (TARGET Boost::headers)
+            target_link_libraries(int-cxx-headeronly-static INTERFACE Boost::headers)
+        endif()
 
-      # now make the compiled library
-      add_library(int-cxx-static STATIC $<TARGET_OBJECTS:int-cxx-obj>)
+        # now make the compiled library
+        add_library(int-cxx-static STATIC $<TARGET_OBJECTS:int-cxx-obj>)
 
-      set_target_properties(
-        int-cxx-static
-        PROPERTIES
-          OUTPUT_NAME "int2-cxx"
-          EXPORT_NAME "int2-cxx"
-        )
+        set_target_properties(
+          int-cxx-static
+          PROPERTIES
+            OUTPUT_NAME "int2-cxx"
+            EXPORT_NAME "int2-cxx"
+          )
 
-      target_link_libraries(int-cxx-static INTERFACE int-cxx-headeronly-static)
+        target_link_libraries(int-cxx-static INTERFACE int-cxx-headeronly-static)
     endif(REQUIRE_CXX_API)
 endif()
 
@@ -483,25 +486,25 @@ endif()
 # <<<  Install  >>>
 
 install(
-    DIRECTORY
-      ${PROJECT_BINARY_DIR}/include/
-      ${PROJECT_SOURCE_DIR}/include/
-    TYPE INCLUDE
-    COMPONENT ${L2}_Development
-    FILES_MATCHING
-      PATTERN "*.h"
-      PATTERN "*.hpp"
-    )
+  DIRECTORY
+    ${PROJECT_BINARY_DIR}/include/
+    ${PROJECT_SOURCE_DIR}/include/
+  TYPE INCLUDE
+  COMPONENT ${L2}_Development
+  FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.hpp"
+  )
 
 install(
-    FILES
-      ${PROJECT_SOURCE_DIR}/src/libint2_iface.h
-      ${PROJECT_SOURCE_DIR}/src/libint2_iface_internal.h
-      ${PROJECT_SOURCE_DIR}/src/libint2_params.h
-      ${PROJECT_SOURCE_DIR}/src/libint2_types.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libint2
-    COMPONENT ${L2}_Development
-    )
+  FILES
+    ${PROJECT_SOURCE_DIR}/src/libint2_iface.h
+    ${PROJECT_SOURCE_DIR}/src/libint2_iface_internal.h
+    ${PROJECT_SOURCE_DIR}/src/libint2_params.h
+    ${PROJECT_SOURCE_DIR}/src/libint2_types.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libint2
+  COMPONENT ${L2}_Development
+  )
 
 #target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR})
 
@@ -624,22 +627,22 @@ endif()
 # <<<  Export Config  >>>
 
 configure_package_config_file(
-    cmake/${pnv}-config.cmake.in
-    "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake"
-    INSTALL_DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
-    NO_SET_AND_CHECK_MACRO
-    )
+  cmake/${pnv}-config.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake"
+  INSTALL_DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+  NO_SET_AND_CHECK_MACRO
+  )
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
                                  VERSION ${LIBINT_VERSION}
                                  COMPATIBILITY SameMajorVersion)
 install(
-    FILES
-      ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake
-      ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
-      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindTargetEigen3.cmake
-    DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
-    COMPONENT ${L2}_Development
-    )
+  FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindTargetEigen3.cmake
+  DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+  COMPONENT ${L2}_Development
+  )
 
 include(JoinPaths)
 join_paths(libdir_for_pc_file "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
@@ -647,10 +650,10 @@ join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
 
 configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
 install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/
-    COMPONENT ${L2}_Development
-    )
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/
+  COMPONENT ${L2}_Development
+  )
 
 if (BUILD_SHARED_LIBS)
     install(

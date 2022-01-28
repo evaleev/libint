@@ -107,9 +107,9 @@ else()
                 "-DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}"
                 )
     endif()
-    if (CMAKE_PREFIX_PATH)
+    if (Eigen3_DIR)
         list(APPEND library_CMAKE_ARGS
-                "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+                "-DEigen3_DIR=${Eigen3_DIR}"
                 )
     endif()
     message(STATUS "invoking ExternalProject_add to build+test Libint library with library_CMAKE_ARGS=${library_CMAKE_ARGS}")
@@ -122,8 +122,10 @@ else()
             # DOWNLOAD_DIR <SOURCE_DIR>  # this is tidier but fails on Windows
             LOG_DOWNLOAD 1
             CMAKE_ARGS "${library_CMAKE_ARGS}"
-            CMAKE_CACHE_ARGS -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}
-            -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
+            CMAKE_CACHE_ARGS
+              -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}
+              -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
+              -DCMAKE_PREFIX_PATH:STRING=${CMAKE_PREFIX_PATH}
             TEST_COMMAND ""
             USES_TERMINAL_CONFIGURE TRUE
             USES_TERMINAL_BUILD TRUE

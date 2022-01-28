@@ -8,10 +8,7 @@
 #
 #   Libint2_FOUND - true if Libint2 and all required components found on the system
 #   Libint2_VERSION - Libint2 version in format Major.Minor.Release
-#   Libint2_INCLUDE_DIRS - Directories where Libint2 and libderiv headers are located.
-#   Libint2_INCLUDE_DIR - same as DIRS
-#   Libint2_LIBRARIES - Libint2 and libderiv libraries to link against.
-#   Libint2_LIBRARY - same as LIBRARIES
+#   Libint2_EXT_VERSION - Libint2 version including the (optional) buildid, such as beta.3
 #   Libint2_MAX_AM_ERI - maximum angular momentum level of Libint2 libraries
 #
 #
@@ -99,6 +96,11 @@
 set(pnv libint2)  # projectnameversion
 set(L2 Libint2)  # NameSpace
 
+set(Libint2_EXT_VERSION @LIBINT_EXT_VERSION@)
+
+# make detectable the various cmake modules exported alongside
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+
 # check library style component
 if(@BUILD_SHARED_LIBS@)
     set(${L2}_shared_FOUND 1)
@@ -110,9 +112,22 @@ list(FIND ${L2}_FIND_COMPONENTS "shared" _seek_shared)
 list(FIND ${L2}_FIND_COMPONENTS "static" _seek_static)
 
 # check library language component
+include(CMakeFindDependencyMacro)
+
 set(${L2}_C_FOUND 1)
 list(FIND ${L2}_FIND_COMPONENTS "C" _seek_C)
 if(@REQUIRE_CXX_API@)
+    if(NOT TARGET tgt::Eigen)
+        find_dependency(TargetEigen3 REQUIRED)
+    endif()
+
+    if (@LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)
+        # Boost headers _not_ unpacked to within `include/libint2/`
+        if (NOT TARGET Boost::headers)
+            find_dependency(Boost 1.57 REQUIRED)
+        endif()
+    endif()
+
     set(${L2}_CXX_ho_FOUND 1)
     set(${L2}_CXX_FOUND 1)
 endif()
@@ -212,26 +227,11 @@ endif()
 
 check_required_components(${L2})
 
-# make detectable the various cmake modules exported alongside
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
-
 #-----------------------------------------------------------------------------
 # Don't include targets if this file is being picked up by another
 # project which has already built this as a subproject
 #-----------------------------------------------------------------------------
 if(NOT TARGET ${L2}::int2)
-    include(CMakeFindDependencyMacro)
-    if(NOT TARGET tgt::Eigen)
-        find_dependency(TargetEigen3 REQUIRED)
-    endif()
-
-    if (@LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)
-        # Boost headers _not_ unpacked to within `include/libint2/`
-        if (NOT TARGET Boost::headers)
-            find_dependency(Boost 1.57 REQUIRED)
-        endif()
-    endif()
-
     if(_seek_static GREATER -1)
         include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-static.cmake")
     elseif(_seek_shared GREATER -1)
@@ -242,17 +242,11 @@ if(NOT TARGET ${L2}::int2)
         include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-static.cmake")
     endif()
 
-    get_property(_loc TARGET ${L2}::cxx PROPERTY LOCATION)
-    set(${L2}_LIBRARY ${_loc})
-    get_property(_ill TARGET ${L2}::cxx PROPERTY INTERFACE_LINK_LIBRARIES)
-    set(${L2}_LIBRARIES ${_ill})
-
-    get_property(_id TARGET ${L2}::cxx PROPERTY INCLUDE_DIRECTORIES)
-    set(${L2}_INCLUDE_DIR ${_id})
-    get_property(_iid TARGET ${L2}::cxx PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-    set(${L2}_INCLUDE_DIRS ${_iid})
-
-    message(DEBUG "Libint2::cxx")
+    get_property(_loc TARGET ${L2}::int2 PROPERTY LOCATION)
+    get_property(_ill TARGET ${L2}::int2 PROPERTY INTERFACE_LINK_LIBRARIES)
+    get_property(_id TARGET ${L2}::int2 PROPERTY INCLUDE_DIRECTORIES)
+    get_property(_iid TARGET ${L2}::int2 PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+    message(DEBUG "Libint2::int2")
     message(DEBUG "loc ${_loc}")
     message(DEBUG "ill ${_ill}")
     message(DEBUG "id  ${_id}")
