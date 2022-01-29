@@ -1,5 +1,5 @@
 # FindTargetEigen3.cmake
-# --------------------
+# ----------------------
 #
 # Eigen3 cmake module to wrap Eigen3 suitable for Libint2, whether Eigen3Config, FindEigen3, or raw variables, in a target.
 #
@@ -63,8 +63,8 @@ else()
         endif()
     else()
         # 3rd precedence - usual variables from Eigen3Config.cmake
-        #find_package (Eigen3 QUIET CONFIG)
-        find_package (Eigen3 QUIET MODULE)
+        find_package (Eigen3 QUIET CONFIG)
+        #find_package (Eigen3 MODULE)
         if (TARGET Eigen3::Eigen)
             if (NOT ${PN}_FIND_QUIETLY)
                 message (STATUS "Eigen3 detected.")

@@ -96,7 +96,7 @@
 set(pnv libint2)  # projectnameversion
 set(L2 Libint2)  # NameSpace
 
-set(Libint2_EXT_VERSION @LIBINT_EXT_VERSION@)
+set(Libint2_EXT_VERSION "@LIBINT_EXT_VERSION@")
 
 # make detectable the various cmake modules exported alongside
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
