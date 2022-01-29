@@ -90,6 +90,8 @@ message(STATUS "Showing option LIBINT2_INSTALL_CMAKEDIR: ${LIBINT2_INSTALL_CMAKE
 set(LIBINT2_INSTALL_BASISDIR "${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}"
     CACHE STRING "Directory to which data files are installed. basis/ directory created within")
 message(STATUS "Showing option LIBINT2_INSTALL_BASISDIR: ${LIBINT2_INSTALL_BASISDIR}")
+set(LIBINT2_INSTALL_FMODDIR "${CMAKE_INSTALL_INCLUDEDIR}/${pnv}/fortran2/modules"
+    CACHE STRING "Directory to which Fortran module files are installed")
 
 ######################## Process & Validate Options ###########################
 include(autocmake_safeguards)
@@ -420,7 +422,7 @@ endif()
 
 if (ENABLE_FORTRAN)
     # specify the location of modules
-    set(CMAKE_Fortran_MODULE_DIRECTORY "${PROJECT_BINARY_DIR}/fortran/modules/")
+    set(BUILDTREE_FMODDIR "fortran/modules")
 
     # preprocess libint2.h ... this is a guess for UNIX systems only
     # N.B. Requires C compiler!
@@ -463,23 +465,36 @@ if (ENABLE_FORTRAN)
 
     # build module
     add_library(libint_f OBJECT fortran/libint_f.F90)
+
     set_source_files_properties(fortran/libint_f.F90 PROPERTIES OBJECT_DEPENDS "${PROJECT_BINARY_DIR}/fortran/libint2_types_f.h;${PROJECT_BINARY_DIR}/fortran/fortran_incldefs.h")
+    target_compile_definitions(libint_f PRIVATE __COMPILING_LIBINT2)
+
+    set_target_properties(
+      libint_f
+      PROPERTIES
+        Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/${BUILDTREE_FMODDIR}
+      )
+    if (BUILD_SHARED_LIBS)
+        set_target_properties(libint_f PROPERTIES POSITION_INDEPENDENT_CODE 1)
+    endif()
+
     target_include_directories(libint_f PUBLIC
             $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
             $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
             $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
             $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/fortran>
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-    target_compile_definitions(libint_f PRIVATE __COMPILING_LIBINT2)
-    set_property(TARGET libint_f PROPERTY Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/fortran/modules)
+            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/${BUILDTREE_FMODDIR}/>
+            $<INSTALL_INTERFACE:${LIBINT2_INSTALL_FMODDIR}>)
 
     # Fortran tests merged into rest of tests
 
     # install Fortran modules
-    install(DIRECTORY "${CMAKE_Fortran_MODULE_DIRECTORY}"
-        COMPONENT fortran
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-        )
+    install(
+      DIRECTORY
+        "${PROJECT_BINARY_DIR}/${BUILDTREE_FMODDIR}/"
+      COMPONENT "${L2}_Development_Fortran"
+      DESTINATION "${LIBINT2_INSTALL_FMODDIR}"
+      )
 
 endif()
 

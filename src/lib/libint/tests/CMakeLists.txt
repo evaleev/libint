@@ -129,10 +129,12 @@ endif()
 
 if (ENABLE_FORTRAN)
 
+    # Note: if forming compile line by hand rather than using targets, you'll need to include the Fortran module file directory:
+    #   `target_include_directories(... PRIVATE $<TARGET_PROPERTY:libint_f,Fortran_MODULE_DIRECTORY>)`
+
     # tests
     add_executable(fortran_example-libint2 EXCLUDE_FROM_ALL fortran/fortran_example.F90)
     target_link_libraries(fortran_example-libint2 Libint2::int2 libint_f)
-    target_include_directories(fortran_example-libint2 PRIVATE $<TARGET_PROPERTY:libint_f,Fortran_MODULE_DIRECTORY>)
     target_compile_definitions(fortran_example-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
     # Test 11
@@ -147,7 +149,6 @@ if (ENABLE_FORTRAN)
     if (LIBINT_HAS_CXX_API)
         add_executable(fortran_test-libint2 EXCLUDE_FROM_ALL fortran/test.cc fortran/test-eri.cc $<TARGET_OBJECTS:libint_f>)
         target_link_libraries(fortran_test-libint2 Libint2::cxx libint_f)
-        target_include_directories(fortran_test-libint2 PRIVATE $<TARGET_PROPERTY:libint_f,Fortran_MODULE_DIRECTORY>)
         target_compile_definitions(fortran_test-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
         # Test 13
