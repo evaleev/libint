@@ -14,10 +14,6 @@ Before you read on:
 
 # Prerequisites
 
-TODO straighten out target names, e.g., Libint2::cxx_ho and Libint2::cxx vs cxx and int-cxx
-lib with ENABLE_MPFR/LIBINT_HAS_MPFR needs gmpxx and mpfr
-(.tgz)  unpacked if eigen found and system boost not found
-
 | Task                                                                 | Compilers               | CMake[^3] | CMake generator | Boost[^7] | Eigen   | GMPXX[^13] | MPFR[^14] |
 | :------------------------------------------------------------------- | :---------------------: | :-------: | --------------- | :-------: | :-----: | :--------: | :-------: |
 | build target `build_libint`                                          | C++[^1]                 | 🔵[^4]    | Ninja           | 🔵[^8]    | &ndash; | 🔵         | &ndash;   |
