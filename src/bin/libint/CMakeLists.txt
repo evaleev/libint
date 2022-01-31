@@ -57,10 +57,13 @@ set_target_properties(libint-libcompiler PROPERTIES LIBRARY_OUTPUT_NAME int2-lib
 ## compiler library dependencies
 
 find_package(Boost 1.57 REQUIRED)
-target_link_libraries(libint-libcompiler PUBLIC Boost::headers)
-
 find_package(Multiprecision MODULE REQUIRED COMPONENTS gmpxx)
-target_link_libraries(libint-libcompiler PUBLIC Multiprecision::gmpxx)
+target_link_libraries(
+  libint-libcompiler
+  PUBLIC
+    Boost::headers
+    Multiprecision::gmpxx
+  )
 
 get_property(_loc TARGET Multiprecision::gmp PROPERTY LOCATION)
 message(STATUS "${Cyan}Found GMP${ColourReset}: ${_loc}")

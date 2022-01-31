@@ -281,6 +281,11 @@ These are the most useful configure options:
   * DNE --> `Libint2::int2-cxx` (internal target name `int-cxx-{shared,static}`)
 
 
+## Packagers
+
+* Decide if you want the Boost preprocessor headers bundled with Libint or if they should be a
+  build-against-time dependency of the C++11 interface. Withhold (bundle) or supply (dependency)
+  Boost detection paths from the library build accordingly. FWIW, Conda bundles.
 
 ## program-specific notes
 

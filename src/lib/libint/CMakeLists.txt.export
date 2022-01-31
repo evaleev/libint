@@ -37,7 +37,7 @@ include(options)
 option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
 option_with_print(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3)" ON)
 option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires C and Fortran and Python)" OFF)
-option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
+option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
 option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static" OFF)
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)
 option_with_print(EXPORT_LOCAL_TARGETS "Install CMake targets with hard-coded dependency paths. Turn OFF when building library for redistribution." ON)
@@ -188,8 +188,8 @@ endif()
 #if (TARGET libint-Eigen3)
 
 
-# Python is optional, unless ...
-if (ENABLE_FORTRAN)  # ... need fortran
+# Python is optionally used for testing, but for Fortran, it's required for preprocessing.
+if (ENABLE_FORTRAN)
     find_package(Python COMPONENTS Interpreter REQUIRED)
 else()
     find_package(Python COMPONENTS Interpreter)
@@ -496,6 +496,22 @@ if (ENABLE_FORTRAN)
       DESTINATION "${LIBINT2_INSTALL_FMODDIR}"
       )
 
+        install(
+          TARGETS
+            libint_f
+          EXPORT fshared_set
+          RUNTIME
+            COMPONENT ${L2}_Runtime
+          LIBRARY
+            COMPONENT ${L2}_Runtime
+            NAMELINK_COMPONENT ${L2}_Development
+          ARCHIVE
+            COMPONENT ${L2}_Development
+          PUBLIC_HEADER
+            COMPONENT ${L2}_Development
+          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+          )
+
 endif()
 
 # <<<  Install  >>>
@@ -678,6 +694,16 @@ if (BUILD_SHARED_LIBS)
       DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
       COMPONENT ${L2}_Development
       )
+
+    if(ENABLE_FORTRAN)
+        install(
+          EXPORT fshared_set
+          FILE "${pnv}-targets-shared-fortran.cmake"
+          NAMESPACE "${L2}::"
+          DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+          COMPONENT ${L2}_Development_Fortran
+          )
+    endif()
 endif()
 
 if (BUILD_STATIC_LIBS)
