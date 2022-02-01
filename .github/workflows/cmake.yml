@@ -1,4 +1,4 @@
-name: Linux/MacOS Build
+name: CI
 
 on: [push, pull_request]
 
@@ -42,10 +42,10 @@ jobs:
 
             #cxx: /usr/bin/g++-9
 
-    name: "${{ matrix.runs-on }} • ${{ matrix.cxx }} •  • ${{ matrix.build_type }} • ${{ matrix.args }}"
+    name: "${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} •  • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
     env:
-      CXX : ${{ matrix.cxx }}
+      CXX : ${{ matrix.cfg.cxx }}
       CCACHE_DIR : ${{github.workspace}}/build/.ccache
       CCACHE_COMPRESS : true
       CCACHE_COMPRESSLEVEL : 6
@@ -126,7 +126,7 @@ jobs:
           ${{ matrix.config.name }}-ccache-
 
     - name: Generate+build Libint library (ExternalProject)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type == 'Debug'}}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Debug'}}
       shell: bash
       working-directory: ${{github.workspace}}
       run: |
@@ -135,7 +135,7 @@ jobs:
         cmake --build build --target install
 
     - name: Generate+build Libint library (FetchContent)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type != 'Debug'}}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type != 'Debug'}}
       shell: bash
       working-directory: ${{github.workspace}}
       run: |
