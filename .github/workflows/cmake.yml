@@ -94,7 +94,6 @@ jobs:
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'macOS' }}
       run: |
         brew install ninja gcc@10 boost eigen ccache
-        # bison
         #echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
         #echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
 
@@ -114,7 +113,9 @@ jobs:
 
     - name: Install Windows prerequisites (part 2)
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
+      shell: bash
       run: |
+        set PATH=C:\tools\miniconda3\Scripts;C:\tools\miniconda3;C:\tools\miniconda3\Library\bin;%PATH%
         conda install ninja cmake python mpir boost eigen ccache -c conda-forge --yes
         conda info
         conda list
@@ -142,7 +143,8 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
-        cmake --build build --target check
+        cmake --build build
+        cmake --build build --target check-libint2compiler
         cmake --build build --target install
 
     - name: Generate+build Libint library (FetchContent)
