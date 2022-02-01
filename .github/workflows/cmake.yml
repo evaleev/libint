@@ -181,8 +181,6 @@ jobs:
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/test_installed_library
       run: |
-        ls ${{github.workspace}}/installed
-        ls ${{github.workspace}}\installed
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.18)
         project(hf++)
