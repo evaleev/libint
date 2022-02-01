@@ -56,7 +56,6 @@ jobs:
       BUILD_CONFIG : >
         -G Ninja
         -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
-        -DCMAKE_PREFIX_PATH=/usr/local/Cellar/eigen/3.3.9;/usr/local/opt/bison
         -DBUILD_SHARED_LIBS=OFF
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
@@ -115,7 +114,7 @@ jobs:
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
       shell: bash
       run: |
-        set PATH=C:\tools\miniconda3\Scripts;C:\tools\miniconda3;C:\tools\miniconda3\Library\bin;%PATH%
+        set PATH=/c/tools/miniconda3/Scripts:/c/tools/miniconda3:/c/tools/miniconda3/Library/bin:$PATH
         conda install ninja cmake python mpir boost eigen ccache -c conda-forge --yes
         conda info
         conda list
