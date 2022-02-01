@@ -11,34 +11,38 @@ jobs:
       matrix:
         cfg:
           #- runs-on: ubuntu-20.04
-          #  build_type: Debug
+          #  build_type: Release
           #  cxx: g++-9
 
           - runs-on: ubuntu-20.04
-            build_type: Release
+            build_type: Debug
             cxx: g++-9
+            args: >
+              -DENABLE_FORTRAN=ON
 
           #- runs-on: macos-latest
-          #  build_type: Debug
+          #  build_type: Release
           #  cxx: clang++
 
           - runs-on: macos-latest
-            build_type: Release
+            build_type: Debug
             cxx: clang++
+            args: >
+              -DENABLE_FORTRAN=ON
 
           #- runs-on: windows-2022
-          #  build_type: Debug
+          #  build_type: Release
           #  cxx: clang-cl
           #  args: >
           #    -DPYBIND11_FINDPYTHON=ON
           #    -DCMAKE_CXX_FLAGS="-D_=1"
 
           - runs-on: windows-2022
-            build_type: Release
+            build_type: Debug
             cxx: clang-cl
-            args: >
-              -DPYBIND11_FINDPYTHON=ON
-              -DCMAKE_CXX_FLAGS="-D_=1"
+            #args: >
+            #  -DPYBIND11_FINDPYTHON=ON
+            #  -DCMAKE_CXX_FLAGS="-D_=1"
 
             #cxx: /usr/bin/g++-9
 
@@ -55,7 +59,6 @@ jobs:
         -DCMAKE_PREFIX_PATH=/usr/local/Cellar/eigen/3.3.9;/usr/local/opt/bison
         -DBUILD_SHARED_LIBS=OFF
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
-        -DENABLE_FORTRAN=ON
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
         -DWITH_MAX_AM=3;2
         -DWITH_ERI_MAX_AM=2;2
@@ -90,23 +93,31 @@ jobs:
     - name: Install prerequisite MacOS packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'macOS' }}
       run: |
-        brew install ninja gcc@10 boost eigen bison ccache
-        echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
-        echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
+        brew install ninja gcc@10 boost eigen ccache
+        # bison
+        #echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
+        #echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
 
     - name: Install prerequisites Ubuntu packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Linux' }}
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libmpfr-dev libboost-dev libeigen3-dev ccache
-        echo "FC=/usr/bin/gfortran-9" >> $GITHUB_ENV
-        echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
+        sudo apt-get install ninja-build ${{ matrix.cfg.cxx }} gfortran-9 liblapack-dev libmpfr-dev libboost-dev libeigen3-dev ccache
+        #echo "FC=/usr/bin/gfortran-9" >> $GITHUB_ENV
+        #echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
 
-    - name: Install Windows prerequisites
+    - name: Install Windows prerequisites (part 1)
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
       uses: crazy-max/ghaction-chocolatey@v1
       with:
         args: install miniconda3 --yes
+
+    - name: Install Windows prerequisites (part 2)
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
+      run: |
+        conda install ninja cmake python mpir boost eigen ccache -c conda-forge --yes
+        conda info
+        conda list
 
     - name: Prepare ccache timestamp
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
@@ -139,7 +150,7 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG ${{ matrix.cfg.args }}
         cmake --build build --target libint-library-export
         cmake --build build --target check-libint2compiler
         cmake --build build --target check-libint2
