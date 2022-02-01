@@ -40,6 +40,7 @@ jobs:
           - runs-on: windows-2022
             build_type: Debug
             cxx: clang-cl
+
             #args: >
             #  -DPYBIND11_FINDPYTHON=ON
             #  -DCMAKE_CXX_FLAGS="-D_=1"
@@ -105,7 +106,8 @@ jobs:
         #echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
 
 
-    - name: Install Windows prerequisites: part 1, Create Conda Environment
+    - name: Install Windows prerequisites, part 1, Create Conda Environment
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
       uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: ""
@@ -114,7 +116,8 @@ jobs:
         conda-build-version: "*"
         show-channel-urls: true
 
-    - name: Install Windows prerequisites: part 2, Environment Information
+    - name: Install Windows prerequisites, part 2, Environment Information
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
       shell: bash -l {0}
       run: |
         conda info
