@@ -40,7 +40,7 @@ jobs:
           #    -DCMAKE_CXX_FLAGS="-D_=1"
 
           - runs-on: windows-2022
-            build_type: Debug
+            build_type: Release
             cxx: clang-cl
             cc: clang-cl
             args: >
@@ -52,7 +52,7 @@ jobs:
 
         #-DCMAKE_PREFIX_PATH=/usr/local/Cellar/eigen/3.3.9
 
-    name: "${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} •  • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
+    name: "${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
     env:
       CXX : ${{ matrix.cfg.cxx }}
@@ -152,17 +152,17 @@ jobs:
           ${{ matrix.config.name }}-ccache-
 
     - name: Generate+build Libint library (ExternalProject)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Debug'}}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type != 'Debug'}}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG ${{ matrix.cfg.args }}
         cmake --build build
         cmake --build build --target check-libint2compiler
         cmake --build build --target install
 
     - name: Generate+build Libint library (FetchContent)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type != 'Debug'}}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Debug'}}
       shell: bash
       working-directory: ${{github.workspace}}
       run: |
@@ -181,7 +181,7 @@ jobs:
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.18)
         project(hf++)
-        find_package(Libint2 2.7.0 REQUIRED)
+        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 cxx)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         add_executable(hf++ EXCLUDE_FROM_ALL ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++.cc)
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
