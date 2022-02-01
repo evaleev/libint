@@ -120,6 +120,9 @@ jobs:
         conda-build-version: "*"
         show-channel-urls: true
 
+    # Note: `shell: bash -l {0}` makes Miniconda created above for Windows available to
+    #   subsequent steps. see https://github.com/conda-incubator/setup-miniconda#usage-examples
+
     - name: Install Windows prerequisites, part 2, Environment Information
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
       shell: bash -l {0}
@@ -175,13 +178,13 @@ jobs:
 
     - name: Test installed Libint library
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-      shell: bash
+      shell: bash -l {0}
       working-directory: ${{github.workspace}}/test_installed_library
       run: |
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.18)
         project(hf++)
-        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 cxx)
+        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         add_executable(hf++ EXCLUDE_FROM_ALL ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++.cc)
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
