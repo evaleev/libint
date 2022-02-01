@@ -9,16 +9,41 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type : [ Release, Debug ]
-        os : [ macos-latest, ubuntu-20.04 ]
-        include:
-          - os: ubuntu-20.04
-            cxx: /usr/bin/g++-9
-          - os: macos-latest
+        cfg:
+          #- runs-on: ubuntu-20.04
+          #  build_type: Debug
+          #  cxx: g++-9
+
+          - runs-on: ubuntu-20.04
+            build_type: Release
+            cxx: g++-9
+
+          #- runs-on: macos-latest
+          #  build_type: Debug
+          #  cxx: clang++
+
+          - runs-on: macos-latest
+            build_type: Release
             cxx: clang++
 
-    name: "${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }}"
-    runs-on: ${{ matrix.os }}
+          #- runs-on: windows-2022
+          #  build_type: Debug
+          #  cxx: clang-cl
+          #  args: >
+          #    -DPYBIND11_FINDPYTHON=ON
+          #    -DCMAKE_CXX_FLAGS="-D_=1"
+
+          - runs-on: windows-2022
+            build_type: Release
+            cxx: clang-cl
+            args: >
+              -DPYBIND11_FINDPYTHON=ON
+              -DCMAKE_CXX_FLAGS="-D_=1"
+
+            #cxx: /usr/bin/g++-9
+
+    name: "${{ matrix.runs-on }} • ${{ matrix.cxx }} •  • ${{ matrix.build_type }} • ${{ matrix.args }}"
+    runs-on: ${{ matrix.cfg.runs-on }}
     env:
       CXX : ${{ matrix.cxx }}
       CCACHE_DIR : ${{github.workspace}}/build/.ccache
@@ -26,7 +51,7 @@ jobs:
       CCACHE_COMPRESSLEVEL : 6
       BUILD_CONFIG : >
         -G Ninja
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
         -DCMAKE_PREFIX_PATH=/usr/local/Cellar/eigen/3.3.9;/usr/local/opt/bison
         -DBUILD_SHARED_LIBS=OFF
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
@@ -63,19 +88,25 @@ jobs:
         cmake -E make_directory ${{github.workspace}}/installed
 
     - name: Install prerequisite MacOS packages
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-latest' }}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'macOS' }}
       run: |
         brew install ninja gcc@10 boost eigen bison ccache
         echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
 
     - name: Install prerequisites Ubuntu packages
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Linux' }}
       run: |
         sudo apt-get update
         sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libmpfr-dev libboost-dev libeigen3-dev ccache
         echo "FC=/usr/bin/gfortran-9" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
+
+    - name: Install Windows prerequisites
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
+      uses: crazy-max/ghaction-chocolatey@v1
+      with:
+        args: install miniconda3 --yes
 
     - name: Prepare ccache timestamp
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
@@ -100,10 +131,8 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
-        cmake --build build
-        cmake --build build --target check-libint2compiler
+        cmake --build build --target check
         cmake --build build --target install
-        #cd src/bin/test_eri && ./stdtests.pl && cd ../../..
 
     - name: Generate+build Libint library (FetchContent)
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type != 'Debug'}}
