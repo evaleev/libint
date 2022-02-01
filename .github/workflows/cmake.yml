@@ -124,6 +124,12 @@ jobs:
         conda install ninja cmake python mpir boost eigen ccache -c conda-forge --yes
         conda list
 
+    - name: Prepare compiler environment for Windows
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
     - name: Prepare ccache timestamp
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       id: ccache_cache_timestamp
