@@ -119,6 +119,22 @@ jobs:
         conda info
         conda list
 
+    - name: Install Windows prerequisites: part 1, Create Conda Environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: ""
+        add-pip-as-python-dependency: true
+        auto-activate-base: true
+        conda-build-version: "*"
+        show-channel-urls: true
+
+    - name: Install Windows prerequisites: part 2, Environment Information
+      shell: bash -l {0}
+      run: |
+        conda info
+        conda install ninja cmake python mpir boost eigen ccache -c conda-forge --yes
+        conda list
+
     - name: Prepare ccache timestamp
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       id: ccache_cache_timestamp
