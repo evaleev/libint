@@ -17,8 +17,8 @@ Before you read on:
 | Task                                                                 | Compilers               | CMake[^3] | CMake generator | Boost[^7] | Eigen   | GMPXX[^13] | MPFR[^14] |
 | :------------------------------------------------------------------- | :---------------------: | :-------: | --------------- | :-------: | :-----: | :--------: | :-------: |
 | build target `build_libint`                                          | C++[^1]                 | 🔵[^4]    | Ninja           | 🔵[^8]    | &ndash; | 🔵         | &ndash;   |
-| build target `library`                                               | C++[^1]                 | 🔵[^5]    | Ninja           | &ndash;   | &ndash; | &ndash;    | &ndash;   |
-| &emsp;&emsp;`-D REQUIRE_CXX_API=ON`                                  | C++[^1]                 | 🔵[^5]    | Ninja           | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   |
+| build target `library`                                               | C++[^1], C              | 🔵[^5]    | Ninja           | &ndash;   | &ndash; | &ndash;    | &ndash;   |
+| &emsp;&emsp;`-D REQUIRE_CXX_API=ON`                                  | C++[^1], C              | 🔵[^5]    | Ninja           | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   |
 | &emsp;&emsp;`-D ENABLE_FORTRAN=ON`                                   | C++[^1], Fortran[^2], C | 🔵[^5]    | Ninja           | &ndash;   | &ndash; | &ndash;    | &ndash;   |
 | build&nbsp;project&nbsp;_consuming_&nbsp;Libint2&nbsp;library        |
 | &emsp;C&nbsp;interface&nbsp;(I/F),&nbsp;`Libint2::int2`              | C++[^1]                 | 🔸[^6]    | Ninja, Makefile | &ndash;   | &ndash; | &ndash;    | &ndash;   |

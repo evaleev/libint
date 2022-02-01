@@ -34,7 +34,7 @@ add_custom_target(libint-library-populate DEPENDS ${EXPORT_STAGE_DIR}/CMakeLists
 # <<<  Export The Library Source  >>>
 
 add_custom_command(OUTPUT "${EXPORT_STAGE_DIR}.tgz"
-        COMMAND ${CMAKE_COMMAND} -E tar "cfvz" "${EXPORT_STAGE_DIR}.tgz" "${EXPORT_STAGE_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E tar "cfz" "${EXPORT_STAGE_DIR}.tgz" "${EXPORT_STAGE_DIR}"
         WORKING_DIRECTORY "${EXPORT_STAGE_DIR}/.."
         DEPENDS libint-library-generate libint-library-populate
         COMMENT "Exporting tarball of Libint2 library source")

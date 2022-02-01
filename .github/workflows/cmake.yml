@@ -17,6 +17,7 @@ jobs:
           - runs-on: ubuntu-20.04
             build_type: Debug
             cxx: g++-9
+            cc: gcc-9
             fc: gfortran-9
             args: >
               -DENABLE_FORTRAN=ON
@@ -41,12 +42,15 @@ jobs:
           - runs-on: windows-2022
             build_type: Debug
             cxx: clang-cl
+            cc: clang-cl
+            args: >
+              -DCMAKE_C_COMPILER=clang-cl
 
-            #args: >
-            #  -DPYBIND11_FINDPYTHON=ON
             #  -DCMAKE_CXX_FLAGS="-D_=1"
 
             #cxx: /usr/bin/g++-9
+
+        #-DCMAKE_PREFIX_PATH=/usr/local/Cellar/eigen/3.3.9
 
     name: "${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} •  • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}

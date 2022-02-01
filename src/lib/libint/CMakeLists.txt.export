@@ -212,7 +212,7 @@ configure_file(include/libint2/config2.h.cmake.in include/libint2/config2.h @ONL
 
 include(srclist.cmake)
 list(LENGTH LIBINT2_LIBRARY_CXX_SRC _source_count)
-message(STATUS "${_source_count} files in LIBINT2_LIBRARY_CXX_SRC")
+message(STATUS "Loading ${_source_count} library source files from LIBINT2_LIBRARY_CXX_SRC")
 message(DEBUG "LIBINT2_LIBRARY_CXX_SRC=${LIBINT2_LIBRARY_CXX_SRC}")
 
 add_library(int-obj OBJECT "${LIBINT2_LIBRARY_CXX_SRC}")
