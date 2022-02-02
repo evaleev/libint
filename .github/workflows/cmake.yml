@@ -128,7 +128,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda info
-        conda install ninja cmake python mpir boost eigen ccache -c conda-forge --yes
+        conda install ninja cmake=3.18 python mpir boost eigen ccache -c conda-forge --yes
         conda list
 
     - name: Prepare compiler environment for Windows
