@@ -191,13 +191,13 @@ jobs:
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         set(_src1 ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp.cc)
         set(_src2 "${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp.cc")
-        file(TO_NATIVE_PATH "${_src1}" _hf_src1)
-        file(TO_NATIVE_PATH "${_src2}" _hf_src2)
         message("_src1 ${_src1}")
         message("_src2 ${_src2}")
+        file(TO_CMAKE_PATH "${_src1}" _hf_src1)
+        file(TO_CMAKE_PATH "${_src2}" _hf_src2)
         message("_hf_src1 ${_hf_src1}")
         message("_hf_src2 ${_hf_src2}")
-        add_executable(hfpp EXCLUDE_FROM_ALL ${_hf_src1})
+        add_executable(hfpp EXCLUDE_FROM_ALL ${_hf_src2})
         target_link_libraries(hfpp Libint2::cxx Threads::Threads)
         EOF
         cmake -S . -B build -D Libint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" -D CMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
