@@ -184,11 +184,13 @@ jobs:
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.18)
         project(hf++)
+        message("CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}")
+        message("Libint2_DIR ${Libint2_DIR}")
         find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         add_executable(hf++ EXCLUDE_FROM_ALL ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++.cc)
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
-        cmake . -DCMAKE_PREFIX_PATH=${{github.workspace}}\installed -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        cmake . -DLibint2_DIR=${{github.workspace}}/installed/lib/cmake/libint2 -DCMAKE_PREFIX_PATH=${{github.workspace}}/installed -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         cmake --build . --target hf++
         ./hf++ ${{github.workspace}}/src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ${{github.workspace}}/build/libint-2*/features
