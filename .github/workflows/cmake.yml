@@ -159,7 +159,7 @@ jobs:
       shell: bash -l {0}
       working-directory: ${{github.workspace}}
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG ${{ matrix.cfg.args }}
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
         cmake --build build
         cmake --build build --target check-libint2compiler
         cmake --build build --target install
@@ -169,7 +169,7 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG ${{ matrix.cfg.args }}
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG ${{ matrix.cfg.args }}
         cmake --build build --target libint-library-export
         cmake --build build --target check-libint2compiler
         cmake --build build --target check-libint2
@@ -184,6 +184,7 @@ jobs:
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.18)
         project(hf++)
+        message("CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}")
         message("CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}")
         message("Libint2_DIR ${Libint2_DIR}")
         find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
@@ -191,6 +192,6 @@ jobs:
         add_executable(hf++ EXCLUDE_FROM_ALL ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++.cc)
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
-        cmake . -DLibint2_DIR=${{github.workspace}}/installed/lib/cmake/libint2 -DCMAKE_PREFIX_PATH=${{github.workspace}}/installed -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        cmake . -D Libint2_DIR=${{github.workspace}}/installed/lib/cmake/libint2 -D CMAKE_PREFIX_PATH=${{github.workspace}}/installed -D CMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
         cmake --build . --target hf++
         ./hf++ ${{github.workspace}}/src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ${{github.workspace}}/build/libint-2*/features
