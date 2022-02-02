@@ -200,6 +200,7 @@ jobs:
         add_executable(hfpp EXCLUDE_FROM_ALL ${_hf_src2})
         target_link_libraries(hfpp Libint2::cxx Threads::Threads)
         EOF
+        cat CMakeLists.txt
         cmake -S . -B build -D Libint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" -D CMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
         cmake --build build --target hfpp
         ./build/hfpp ${{github.workspace}}/src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp-validate.py ${{github.workspace}}/build/libint-2*/features
