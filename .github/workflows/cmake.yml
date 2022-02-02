@@ -193,6 +193,10 @@ jobs:
         set(_src2 "${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp.cc")
         file(TO_NATIVE_PATH "${_src1}" _hf_src1)
         file(TO_NATIVE_PATH "${_src2}" _hf_src2)
+        message("_src1 ${_src1}")
+        message("_src2 ${_src2}")
+        message("_hf_src1 ${_hf_src1}")
+        message("_hf_src2 ${_hf_src2}")
         add_executable(hfpp EXCLUDE_FROM_ALL ${_hf_src1})
         target_link_libraries(hfpp Libint2::cxx Threads::Threads)
         EOF
