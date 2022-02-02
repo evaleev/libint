@@ -65,6 +65,7 @@ include(options)
 include(GNUInstallDirs)
 include(CTest)
 message(STATUS "Building using CMake ${CMAKE_VERSION}")
+message(STATUS "Generating using ${CMAKE_GENERATOR}: ${CMAKE_GENERATOR_INSTANCE}")
 
 #  <<<  General  >>>
 
