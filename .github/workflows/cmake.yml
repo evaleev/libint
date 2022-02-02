@@ -170,10 +170,10 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG ${{ matrix.cfg.args }}
-        cmake --build build --target export -j1
-        cmake --build build --target check-libint2compiler -j1
-        cmake --build build --target check-libint2 -j1
-        cmake --build build --target install -j1
+        cmake --build build --target export --parallel 1
+        cmake --build build --target check-libint2compiler --parallel 1
+        cmake --build build --target check-libint2 -- parallel 1
+        cmake --build build --target install -- parallel 1
         #cd src/bin/test_eri && ./stdtests.pl && cd ../../..
 
     - name: Test installed Libint library

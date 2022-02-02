@@ -40,8 +40,10 @@ add_custom_command(OUTPUT "${EXPORT_STAGE_DIR}.tgz"
         COMMENT "Exporting tarball of Libint2 library source")
 if (LIBINT_BUILD_LIBRARY_AS_SUBPROJECT)
     # rerun cmake if building as subproject to unpack and consume the library as subproject
-    add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz"
-            COMMAND ${CMAKE_COMMAND} -S "${CMAKE_SOURCE_DIR}" -B "${CMAKE_BINARY_DIR}" -j1)
+    add_custom_target(
+      libint-library-export
+      DEPENDS "${EXPORT_STAGE_DIR}.tgz"
+      COMMAND ${CMAKE_COMMAND} -S "${CMAKE_SOURCE_DIR}" -B "${CMAKE_BINARY_DIR}")
 else()
     add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
 endif()
