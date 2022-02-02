@@ -189,9 +189,10 @@ jobs:
         message("Libint2_DIR \${Libint2_DIR}")
         find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
-        file(TO_CMAKE_PATH "${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp.cc" _hf_src2)
-        message("_hf_src2 \${_hf_src2}")
-        add_executable(hfpp EXCLUDE_FROM_ALL \${_hf_src2})
+#        file(TO_CMAKE_PATH "${{github.workspace}}\src\lib\libint\tests\hartree-fock\hartree-fock-cpp.cc" _hf_src2)
+#        message("_hf_src2 \${_hf_src2}")
+#        add_executable(hfpp EXCLUDE_FROM_ALL \${_hf_src2})
+        add_executable(hfpp EXCLUDE_FROM_ALL "../src/lib/libint/tests/hartree-fock/hartree-fock-cpp.cc")
         target_link_libraries(hfpp Libint2::cxx Threads::Threads)
         EOF
         cat CMakeLists.txt
