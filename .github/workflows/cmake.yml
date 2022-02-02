@@ -181,6 +181,7 @@ jobs:
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/test_installed_library
       run: |
+        echo $CXX
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.18)
         project(hf++)
@@ -192,6 +193,6 @@ jobs:
         add_executable(hf++ EXCLUDE_FROM_ALL ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++.cc)
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
-        cmake -S . -B build -D Libint2_DIR=${{github.workspace}}/installed/lib/cmake/libint2 -D CMAKE_PREFIX_PATH=${{github.workspace}}/installed -D CMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
+        cmake -S . -B build -D Libint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" -D CMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
         cmake --build build --target hf++
         ./build/hf++ ${{github.workspace}}/src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ${{github.workspace}}/build/libint-2*/features
