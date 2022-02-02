@@ -15,7 +15,7 @@ jobs:
           #  cxx: g++-9
 
           - runs-on: ubuntu-20.04
-            build_type: Debug
+            build_type: Release
             cxx: g++-9
             cc: gcc-9
             fc: gfortran-9
@@ -189,8 +189,11 @@ jobs:
         message("Libint2_DIR ${Libint2_DIR}")
         find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
-        file(TO_NATIVE_PATH "${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp.cc" _hf_src)
-        add_executable(hfpp EXCLUDE_FROM_ALL ${_hf_src})
+        set(_src1 ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp.cc)
+        set(_src2 "${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp.cc")
+        file(TO_NATIVE_PATH "${_src1}" _hf_src1)
+        file(TO_NATIVE_PATH "${_src2}" _hf_src2)
+        add_executable(hfpp EXCLUDE_FROM_ALL ${_hf_src1})
         target_link_libraries(hfpp Libint2::cxx Threads::Threads)
         EOF
         cmake -S . -B build -D Libint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" -D CMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
