@@ -183,15 +183,15 @@ jobs:
       run: |
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.18)
-        project(hf++)
+        project(hfpp)
         message("CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}")
         message("CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}")
         message("Libint2_DIR ${Libint2_DIR}")
         find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
-        add_executable(hf++ EXCLUDE_FROM_ALL "${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++.cc")
-        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
+        add_executable(hfpp EXCLUDE_FROM_ALL "${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp.cc")
+        target_link_libraries(hfpp Libint2::cxx Threads::Threads)
         EOF
         cmake -S . -B build -D Libint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" -D CMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
-        cmake --build build --target hf++
-        ./build/hf++ "${{github.workspace}}/src/lib/libint/tests/hartree-fock/h2o_rotated.xyz" | python "${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py" "${{github.workspace}}/build/libint-2*/features"
+        cmake --build build --target hfpp
+        ./build/hfpp ${{github.workspace}}/src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp-validate.py ${{github.workspace}}/build/libint-2*/features
