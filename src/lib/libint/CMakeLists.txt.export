@@ -243,7 +243,7 @@ if (NOT BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
 endif()
 
 # if building CXX API, make an object lib needed for non-header-only version
-if (REQUIRE_CXX_API)
+if (REQUIRE_CXX_API AND NOT MSVC)
     add_library(int-cxx-obj OBJECT src/engine.cpp)
 
     target_compile_definitions(
@@ -318,6 +318,7 @@ if (BUILD_SHARED_LIBS)
         endif()
 
         # now make the compiled library
+        if (NOT MSVC)
         add_library(int-cxx-shared SHARED $<TARGET_OBJECTS:int-cxx-obj>)
 
         set_target_properties(
@@ -330,6 +331,7 @@ if (BUILD_SHARED_LIBS)
           )
 
         target_link_libraries(int-cxx-shared INTERFACE int-cxx-headeronly-shared)
+        endif()
     endif()
 endif()
 
@@ -375,6 +377,7 @@ if (BUILD_STATIC_LIBS)
         endif()
 
         # now make the compiled library
+        if (NOT MSVC)
         add_library(int-cxx-static STATIC $<TARGET_OBJECTS:int-cxx-obj>)
 
         set_target_properties(
@@ -385,6 +388,7 @@ if (BUILD_STATIC_LIBS)
           )
 
         target_link_libraries(int-cxx-static INTERFACE int-cxx-headeronly-static)
+        endif()
     endif(REQUIRE_CXX_API)
 endif()
 
@@ -396,13 +400,17 @@ if (BUILD_SHARED_LIBS)
     add_library(${L2}::int2 ALIAS int-shared)
     if (REQUIRE_CXX_API)
         add_library(${L2}::cxx ALIAS int-cxx-headeronly-shared)
+        if (NOT MSVC)
         add_library(${L2}::int2-cxx ALIAS int-cxx-shared)
+        endif()
     endif()
 elseif (BUILD_STATIC_LIBS)
     add_library(${L2}::int2 ALIAS int-static)
     if (REQUIRE_CXX_API)
         add_library(${L2}::cxx ALIAS int-cxx-headeronly-static)
+        if (NOT MSVC)
         add_library(${L2}::int2-cxx ALIAS int-cxx-static)
+        endif()
     endif()
 endif()
 
@@ -542,11 +550,11 @@ install(
 #target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR})
 
 if (BUILD_SHARED_LIBS)
-    if (TARGET int-cxx-headeronly-shared AND TARGET int-cxx-shared)
+    if (TARGET int-cxx-headeronly-shared) # AND TARGET int-cxx-shared)
         install(
           TARGETS
             int-shared
-            int-cxx-shared
+            #int-cxx-shared
             int-cxx-headeronly-shared
           EXPORT shared_set
           RUNTIME
@@ -603,11 +611,11 @@ if (BUILD_SHARED_LIBS)
 endif()
 
 if (BUILD_STATIC_LIBS)
-    if (TARGET int-cxx-headeronly-static AND TARGET int-cxx-static)
+    if (TARGET int-cxx-headeronly-static) # AND TARGET int-cxx-static)
         install(
           TARGETS
             int-static
-            int-cxx-static
+            #int-cxx-static
             int-cxx-headeronly-static
           EXPORT static_set
           RUNTIME
