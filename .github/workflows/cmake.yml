@@ -128,7 +128,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda info
-        conda install ninja cmake=3.18 python mpir boost eigen ccache -c conda-forge --yes
+        conda install ninja cmake python mpir boost eigen ccache -c conda-forge --yes
         conda list
 
     - name: Prepare compiler environment for Windows
@@ -155,24 +155,18 @@ jobs:
           ${{ matrix.config.name }}-ccache-
 
     - name: Generate+build Libint library (ExternalProject, cplr tests)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Debug'}}
-      shell: bash -l {0}
-      working-directory: ${{github.workspace}}
-      run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
-        cmake --build build
-        cmake --build build --target check-libint2compiler
-        cmake --build build --target install
-
-    - name: Generate+build Libint library (FetchContent, full tests)
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type != 'Debug'}}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}
       run: |
-        which cmake
-        cmake --version
-        which ninja
-        ninja --version
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
+        cmake --build build --target library check install
+
+    - name: Generate+build Libint library (FetchContent, full tests)
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Debug'}}
+      shell: bash -l {0}
+      working-directory: ${{github.workspace}}
+      run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG ${{ matrix.cfg.args }}
         cmake --build build --target export
         cmake --build build --target check-libint2compiler
