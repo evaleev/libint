@@ -449,7 +449,7 @@ namespace libint2 {
 #ifdef _MSC_VER
                                                                              std::string locale_name = std::string("en-US")
 #else
-                                                                             std::string locale_name = std::string("en_US")
+                                                                             std::string locale_name = std::string("POSIX")  // "en_US"
 #endif
                                                                             ) {
 
