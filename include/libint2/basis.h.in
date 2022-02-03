@@ -446,7 +446,12 @@ namespace libint2 {
       static std::vector<std::vector<libint2::Shell>> read_g94_basis_library(std::string file_dot_g94,
                                                                              bool force_cartesian_d = false,
                                                                              bool throw_if_missing = true,
-                                                                             std::string locale_name = std::string("POSIX")) {
+#ifdef _MSC_VER
+                                                                             std::string locale_name = std::string("en-US")
+#else
+                                                                             std::string locale_name = std::string("en_US")
+#endif
+                                                                            ) {
 
         std::locale locale(locale_name.c_str());  // TODO omit c_str() with up-to-date stdlib
         std::vector<std::vector<libint2::Shell>> ref_shells(118); // 118 = number of chemical elements
