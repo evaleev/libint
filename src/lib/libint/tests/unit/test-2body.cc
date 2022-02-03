@@ -5,6 +5,8 @@
 
 # include "../eri/eri.h"
 
+typedef unsigned int uint;
+
 TEST_CASE("Slater/Yukawa integrals", "[engine][2-body]") {
 
   std::vector<Shell> obs{

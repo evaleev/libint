@@ -15,7 +15,7 @@ jobs:
           #  cxx: g++-9
 
           - runs-on: ubuntu-20.04
-            build_type: Release
+            build_type: Debug
             cxx: g++-9
             cc: gcc-9
             fc: gfortran-9
@@ -40,7 +40,7 @@ jobs:
           #    -DCMAKE_CXX_FLAGS="-D_=1"
 
           - runs-on: windows-2022
-            build_type: Release
+            build_type: Debug
             cxx: clang-cl
             cc: clang-cl
             args: >
@@ -155,7 +155,7 @@ jobs:
           ${{ matrix.config.name }}-ccache-
 
     - name: Generate+build Libint library (ExternalProject, cplr tests)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type != 'Debug'}}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Debug'}}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}
       run: |
@@ -163,7 +163,7 @@ jobs:
         cmake --build build --target library check install
 
     - name: Generate+build Libint library (FetchContent, full tests)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Debug'}}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type != 'Debug'}}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}
       run: |
