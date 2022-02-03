@@ -160,7 +160,8 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
-        cmake --build build --target library check-libint2compiler install
+        cmake --build build --target library install
+        #cmake --build build --target library check-libint2compiler install
         #cmake --build build --target library check install
 
     - name: Generate+build Libint library (FetchContent, full tests)
