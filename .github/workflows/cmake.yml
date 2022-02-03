@@ -194,6 +194,6 @@ jobs:
         target_link_libraries(hfpp Libint2::cxx Threads::Threads)
         EOF
         cat CMakeLists.txt
-        cmake -S . -B build -DCMAKE_CXX_COMPILER=${{ matrix.cfg.cxx }} -DCMAKE_C_COMPILER=${{ matrix.cfg.cc }} -DLibint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} #-DCMAKE_CXX_FLAGS="/std:c11"
+        cmake -S . -B build -G Ninja -DCMAKE_CXX_COMPILER=${{ matrix.cfg.cxx }} -DCMAKE_C_COMPILER=${{ matrix.cfg.cc }} -DLibint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} #-DCMAKE_CXX_FLAGS="/std:c11"
         cmake --build build --target hfpp
         ./build/hfpp ${{github.workspace}}/src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp-validate.py ${{github.workspace}}/build/libint-2*/features
