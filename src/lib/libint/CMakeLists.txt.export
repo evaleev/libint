@@ -277,6 +277,17 @@ endif()
 if (BUILD_SHARED_LIBS)
     add_library(int-shared SHARED $<TARGET_OBJECTS:int-obj>)
 
+    if(MSVC)
+        # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
+        target_compile_definitions(
+          int-shared
+          PUBLIC
+            _USE_MATH_DEFINES
+            "/EHsc"
+          )
+        # Set the exception handling model
+    endif()
+
     target_compile_features(int-shared INTERFACE "cxx_std_11")
 
     set_target_properties(
@@ -339,6 +350,16 @@ if (BUILD_STATIC_LIBS)
     add_library(int-static STATIC $<TARGET_OBJECTS:int-obj>)
 
     target_compile_features(int-static INTERFACE "cxx_std_11")
+
+    if(MSVC)
+        # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
+        target_compile_definitions(
+          int-static
+          PUBLIC
+            _USE_MATH_DEFINES
+            "/EHsc"
+          )
+    endif()
 
     set_target_properties(
       int-static
@@ -708,7 +729,7 @@ if (BUILD_SHARED_LIBS)
     if(ENABLE_FORTRAN)
         install(
           EXPORT fshared_set
-          FILE "${pnv}-targets-shared-fortran.cmake"
+          FILE "${pnv}-targets-fortran-shared.cmake"
           NAMESPACE "${L2}::"
           DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
           COMPONENT ${L2}_Development_Fortran
