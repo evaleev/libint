@@ -12,7 +12,7 @@ import re
 import sys
 
 def extract_c_struct_fields(c_code, struct_name):
-    struct_re = re.compile("^\s*typedef\s*struct\s*\{([^\}]*)\}\s*"+struct_name+"\s*;",re.MULTILINE | re.DOTALL)
+    struct_re = re.compile(r"^\s*typedef\s*struct\s*\{([^\}]*)\}\s*"+struct_name+r"\s*;",re.MULTILINE | re.DOTALL)
     m = struct_re.search(c_code)
     if not m: return []
     fields = m.group(1).splitlines()
@@ -27,7 +27,7 @@ def parse_c_struct_fields(fields):
     for f in fields:
         words = f.split()
         var = words.pop()
-        m = re.match("(\w*)(?:\[(\w+)\])?", var)
+        m = re.match(r"(\w*)(?:\[(\w+)\])?", var)
         name.append(m.group(1))
         size.append(m.group(2))
         dtype.append(' '.join(words))
