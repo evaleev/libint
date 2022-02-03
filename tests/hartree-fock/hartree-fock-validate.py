@@ -1,5 +1,7 @@
 from __future__ import print_function
-import sys, re, math
+import math
+import re
+import sys
 
 # first arg is the input file, if missing read sys.stdin
 try:

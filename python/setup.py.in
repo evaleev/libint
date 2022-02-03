@@ -1,7 +1,8 @@
 import setuptools
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
-import os, subprocess
+import os
+import subprocess
 
 # sources+tests
 os.sys.path.append("@PROJECT_SOURCE_DIR@")

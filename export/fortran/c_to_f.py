@@ -8,7 +8,8 @@ Usage:
 c_to_f.py <C input file> <Fortran output file> <C struct name(s)>
 '''
 
-import re, sys
+import re
+import sys
 
 def extract_c_struct_fields(c_code, struct_name):
     struct_re = re.compile("^\s*typedef\s*struct\s*\{([^\}]*)\}\s*"+struct_name+"\s*;",re.MULTILINE | re.DOTALL)

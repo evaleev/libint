@@ -1,5 +1,8 @@
 from __future__ import print_function
-import sys, re, math, os
+import math
+import os
+import re
+import sys
 
 def pat_numbers(n):
     result = ''
