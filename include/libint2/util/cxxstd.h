@@ -31,8 +31,15 @@
 # define LIBINT2_CPLUSPLUS_STD 2011
 #elif __cplusplus >= 199711L
 # define LIBINT2_CPLUSPLUS_STD 1998
+#elif defined(_MSC_VER) && __cplusplus == 199711L && _MSVC_LANG >= 201402L && _MSC_VER >= 1910
+# define LIBINT2_CPLUSPLUS_STD 2014  // really, 2017
+#elif defined(_MSC_VER) && __cplusplus == 199711L && _MSVC_LANG >= 201402L
+# define LIBINT2_CPLUSPLUS_STD 2014
+#elif defined(_MSC_VER) && __cplusplus == 199711L  // questionable check
+# define LIBINT2_CPLUSPLUS_STD 2011
 #else
-# define LIBINT2_CPLUSPLUS_STD 0 // unknown standard
+# define LIBINT2_CPLUSPLUS_STD 2011
+//# define LIBINT2_CPLUSPLUS_STD 0 // unknown standard
 #endif
 
 // workaround: standard Intel compiler (not INDE) is not standard conforming
