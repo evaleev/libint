@@ -15,7 +15,7 @@ jobs:
           #  cxx: g++-9
 
           - runs-on: ubuntu-20.04
-            build_type: Debug
+            build_type: Release
             cxx: g++-9
             cc: gcc-9
             fc: gfortran-9
@@ -40,7 +40,7 @@ jobs:
           #    -DCMAKE_CXX_FLAGS="-D_=1"
 
           - runs-on: windows-2022
-            build_type: Debug
+            build_type: Release
             cxx: clang-cl
             cc: clang-cl
             args: >
@@ -155,7 +155,7 @@ jobs:
           ${{ matrix.config.name }}-ccache-
 
     - name: Generate+build Libint library (ExternalProject, cplr tests)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Debug'}}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type != 'Debug'}}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}
       run: |
@@ -163,7 +163,7 @@ jobs:
         cmake --build build --target library check install
 
     - name: Generate+build Libint library (FetchContent, full tests)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type != 'Debug'}}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Debug'}}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}
       run: |
@@ -192,6 +192,6 @@ jobs:
         target_link_libraries(hfpp Libint2::cxx Threads::Threads)
         EOF
         cat CMakeLists.txt
-        cmake -S . -B build -D CMAKE_CXX_COMPILER=${{ matrix.cfg.cxx }} -D Libint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" -D CMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
+        cmake -S . -B build -DCMAKE_CXX_COMPILER=${{ matrix.cfg.cxx }} -DCMAKE_C_COMPILER=${{ matrix.cfg.cc }} -D Libint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" -D CMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
         cmake --build build --target hfpp
         ./build/hfpp ${{github.workspace}}/src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock-cpp-validate.py ${{github.workspace}}/build/libint-2*/features
