@@ -79,8 +79,8 @@ endif()
 add_executable(build_libint EXCLUDE_FROM_ALL build_libint.cc)
 target_link_libraries(build_libint libint-libcompiler)
 if(MSVC)
-    # Increase stack size from 1 MB to 4 MB
-    set_target_properties(build_libint PROPERTIES LINK_FLAGS "/STACK:4194304")
+    # Increase stack size from 1 MB to 8 MB
+    set_target_properties(build_libint PROPERTIES LINK_FLAGS "/STACK:8388608")
 endif()
 
 set_target_properties(build_libint

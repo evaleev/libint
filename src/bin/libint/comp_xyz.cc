@@ -176,16 +176,19 @@ void CR_XYZ_1_1<CGF1d<CartesianAxis_ ## elem>,KineticOper,EmptySet>::compute(con
     auto am1bp1 = factory.make_child(am1,bp1);                                                            \
     expr_ -= Scalar(0.5 * a[0]) * Scalar("two_alpha0_ket") * am1bp1;                                      \
     nflops_ += 3;                                                                                         \
+    printf("Exists am1 %d\n", nflops_);                                                                   \
   }                                                                                                       \
   if (exists(bm1)) {                                                                                      \
     auto ap1bm1 = factory.make_child(ap1,bm1);                                                            \
     expr_ -= Scalar(0.5 * b[0]) * Scalar("two_alpha0_bra") * ap1bm1;                                      \
     nflops_ += 3;                                                                                         \
+    printf("Exists bm1 %d\n", nflops_);                                                                   \
   }                                                                                                       \
   if (exists(am1) && exists(bm1)) {                                                                       \
     auto am1bm1 = factory.make_child(am1,bm1);                                                            \
     expr_ += Scalar(0.5 * a[0] * b[0]) * am1bm1;                                                          \
     nflops_ += 2;                                                                                         \
+    printf("Exists am1 & bm1 %d\n", nflops_);                                                             \
   }                                                                                                       \
 }
 
