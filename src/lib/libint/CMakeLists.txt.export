@@ -201,12 +201,6 @@ include(CMakePackageConfigHelpers)
 
 # <<<  Build  >>>
 
-if(MSVC)
-    # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
-    add_definitions("/D_USE_MATH_DEFINES")
-    # Set the exception handling model
-    add_definitions("/EHsc")
-endif()
 
 configure_file(include/libint2/config2.h.cmake.in include/libint2/config2.h @ONLY)
 
