@@ -161,6 +161,7 @@ jobs:
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
         cmake --build build --target library install
+        cd build && echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
         #cmake --build build --target library check-libint2compiler install
         #cmake --build build --target library check install
 
@@ -178,7 +179,15 @@ jobs:
         cmake --build build --target check-libint2compiler
         cmake --build build --target check-libint2
         cmake --build build --target install
-        #cd src/bin/test_eri && ./stdtests.pl && cd ../../..
+
+    - name: Archive Library Tarball
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Release'}}
+      uses: actions/upload-artifact@v2
+      with:
+        if-no-files-found: error
+        name: ${{ runner.os }}-${{ matrix.cfg.cxx }}
+        path: build/${{ env.ARTIFACT }}
+        retention-days: 1
 
     - name: Test installed Libint library
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
@@ -187,17 +196,17 @@ jobs:
       run: |
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.18)
-        project(hfpp LANGUAGES CXX)
+        project(hfpp) # LANGUAGES CXX)
         message("CMAKE_BUILD_TYPE \${CMAKE_BUILD_TYPE}")
         message("CMAKE_PREFIX_PATH \${CMAKE_PREFIX_PATH}")
         message("Libint2_DIR \${Libint2_DIR}")
         find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         add_executable(hfpp EXCLUDE_FROM_ALL "../src/lib/libint/tests/hartree-fock/hartree-fock-cpp.cc")
-        target_compile_features(hfpp PUBLIC "cxx_std_11")
+        #target_compile_features(hfpp PUBLIC "cxx_std_11")
         target_link_libraries(hfpp Libint2::cxx Threads::Threads)
         EOF
         cat CMakeLists.txt
-        cmake -S . -B build -G Ninja -DCMAKE_CXX_COMPILER=${{ matrix.cfg.cxx }} -DCMAKE_C_COMPILER=${{ matrix.cfg.cc }} -DLibint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} #-DCMAKE_CXX_FLAGS="/std:c11"
+        cmake -S . -B build -G Ninja -DCMAKE_CXX_COMPILER=${{ matrix.cfg.cxx }} -DCMAKE_C_COMPILER=${{ matrix.cfg.cc }} -DLibint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" #-DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
         cmake --build build --target hfpp
         ./build/hfpp ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock-cpp-validate.py ../build/libint-2*/features
