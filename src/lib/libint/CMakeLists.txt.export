@@ -201,7 +201,6 @@ include(CMakePackageConfigHelpers)
 
 # <<<  Build  >>>
 
-
 configure_file(include/libint2/config2.h.cmake.in include/libint2/config2.h @ONLY)
 
 include(srclist.cmake)
