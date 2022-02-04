@@ -207,6 +207,13 @@ jobs:
         target_link_libraries(hfpp Libint2::cxx Threads::Threads)
         EOF
         cat CMakeLists.txt
-        cmake -S . -B build -G Ninja -DCMAKE_CXX_COMPILER=${{ matrix.cfg.cxx }} -DCMAKE_C_COMPILER=${{ matrix.cfg.cc }} -DLibint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" #-DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DLibint2_DIR="${{github.workspace}}\installed\lib\cmake\libint2" -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed"
         cmake --build build --target hfpp
         ./build/hfpp ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock-cpp-validate.py ../build/libint-2*/features
+
+# Notes:
+# * Windows w/CMAKE_BUILD_TYPE=Debug gives errors like:
+#   ```
+#   In file included from D:\a\libint\libint\installed\include\libint2/diis.h:368:
+#   D:\a\libint\libint\installed\include\libint2/./engine.h(471,3): error: constructor for 'libint2::Engine' must explicitly initialize the member 'targets_' which does not have a default constructor
+#   ```
