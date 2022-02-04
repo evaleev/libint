@@ -279,12 +279,8 @@ if (BUILD_SHARED_LIBS)
 
     if(MSVC)
         # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
-        target_compile_definitions(
-          int-shared
-          PUBLIC
-            _USE_MATH_DEFINES
-            "/EHsc"
-          )
+        target_compile_definitions(int-shared PUBLIC _USE_MATH_DEFINES)
+        target_compile_options(int-shared PUBLIC "/EHsc")
         # Set the exception handling model
     endif()
 
@@ -353,12 +349,9 @@ if (BUILD_STATIC_LIBS)
 
     if(MSVC)
         # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
-        target_compile_definitions(
-          int-static
-          PUBLIC
-            _USE_MATH_DEFINES
-            "/EHsc"
-          )
+        target_compile_definitions(int-shared PUBLIC _USE_MATH_DEFINES)
+        target_compile_options(int-shared PUBLIC "/EHsc")
+        # Set the exception handling model
     endif()
 
     set_target_properties(
