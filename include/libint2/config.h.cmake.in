@@ -156,7 +156,7 @@
 #cmakedefine G12_OPT_AM @G12_OPT_AM@
 
 /* Support [Ti,G12] ? */
-#undef SUPPORT_T1G12
+#cmakedefine01 SUPPORT_T1G12
 
 /* Max AM for G12DKH method integrals */
 #cmakedefine G12DKH_MAX_AM @G12DKH_MAX_AM@

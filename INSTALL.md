@@ -147,6 +147,9 @@ These are the most useful configure options:
 * `DISABLE_ONEBODY_PROPERTY_DERIVS` — G — Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
    These derivatives are disabled by default to save compile time. Use OFF to enable. [Default=ON]
 
+* `ENABLE_T1G12_SUPPORT` — G — Enable [Ti,G12] integrals when G12 integrals are enabled. Irrelevant when `ENABLE_G12=OFF`. Use OFF to disable. [Default=ON]
+
+
 ###  Which Ordering Convention
 
 * `LIBINT2_SHGAUSS_ORDERING` — L — Ordering for shells of solid harmonic Gaussians. Consumed at library build-time. [Default=standard]

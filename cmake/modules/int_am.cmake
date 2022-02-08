@@ -242,6 +242,13 @@ process_integrals_class(ERI2)
 process_integrals_class(G12)
 process_integrals_class(G12DKH)
 
+if (ENABLE_G12 GREATER_EQUAL 0)
+    set(SUPPORT_T1G12 ${ENABLE_T1G12_SUPPORT})
+else()
+    set(SUPPORT_T1G12 OFF)
+endif()
+
+
 # form list of active class + deriv + max_am strings to use in Libint2Config
 set(Libint2_ERI_COMPONENTS "")
 foreach(_cls ERI;ERI3;ERI2;ONEBODY)

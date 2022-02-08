@@ -99,6 +99,8 @@ option_with_default(ENABLE_G12DKH
 option_with_print(DISABLE_ONEBODY_PROPERTY_DERIVS
   "Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
    These derivatives are disabled by default to save compile time. (enable with OFF)" ON)
+option_with_print(ENABLE_T1G12_SUPPORT
+  "Enable Ti,G12 integrals when G12 integrals are enabled. Irrelevant when `ENABLE_G12=OFF`. (disable with OFF)" ON)
 
 #  <<<  Ordering Conventions  >>>
 
@@ -302,6 +304,7 @@ booleanize01(LIBINT_CONTRACTED_INTS)
 booleanize01(DISABLE_ONEBODY_PROPERTY_DERIVS)
 booleanize01(LIBINT_GENERATE_FMA)
 booleanize01(LIBINT_ENABLE_GENERIC_CODE)
+booleanize01(SUPPORT_T1G12)
 
 ################################# Main Project #################################
 set(EXPORT_STAGE_DIR ${PROJECT_BINARY_DIR}/libint-${LIBINT_EXT_VERSION})
