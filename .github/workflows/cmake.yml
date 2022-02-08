@@ -201,7 +201,9 @@ jobs:
         cat CMakeLists.txt
         cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed"
         cmake --build build --target hf++
-        ./build/hf++ ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ../build/libint-2*/features
+        if [[ ${{ runner.os }} == "Windows" ]]; then
+          ./build/hf++ ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ../build/libint-2*/features
+        fi
 
 # Notes:
 # * Windows with CMAKE_BUILD_TYPE=Debug gives errors like:
