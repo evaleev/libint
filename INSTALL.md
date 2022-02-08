@@ -208,6 +208,13 @@ These are the most useful configure options:
 * `WITH_ERI2_MAX_AM` — G — Support 2-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
 * `WITH_ERI2_OPT_AM` — G — Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
 
+* `WITH_G12_MAX_AM` — G — Support integrals for G12 methods of angular momentum up to N. No specification with per-derivative list. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_G12_OPT_AM` — G — Optimize G12 integrals for up to angular momentum N (N <= max-am). No specification with per-derivative list. [Default=-1 `WITH_OPT_AM`]
+
+* `WITH_G12DKH_MAX_AM` — G — Support integrals for relativistic G12 methods of angular momentum up to N. No specification with per-derivative list. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_G12DKH_OPT_AM` — G — Optimize G12DKH integrals for up to angular momentum N (N <= max-am). No specification with per-derivative list. [Default=-1 `WITH_OPT_AM`]
+
+
 ### Miscellaneous
 
 * Notes
@@ -266,6 +273,16 @@ These are the most useful configure options:
 * `--with-eri2-max-am=N0,N1,N2` --> `-D WITH_ERI2_MAX_AM="N0;N1;N2"`
 * `--with-eri2-opt-am=N` --> `-D WITH_ERI2_OPT_AM=N`
 * `--with-eri2-opt-am=N0,N1,N2` --> `-D WITH_ERI2_OPT_AM="N0;N1;N2"`
+
+* `--enable-g12=N` --> `-D ENABLE_G12=N`
+* `--enable-g12dkh=N` --> `-D ENABLE_G12DKH`
+* `--disable-t1g12-support` --> `-D ENABLE_T1G12_SUPPORT=OFF`
+* `--with-g12-max-am=N` --> `-D WITH_G12_MAX_AM=N`
+* `--with-g12-opt-am=N` --> `-D WITH_G12_OPT_AM=N`
+* `--with-g12dkh-max-am=N` --> `-D WITH_G12DKH_MAX_AM=N`
+* `--with-g12dkh-opt-am=N` --> `-D WITH_G12DKH_OPT_AM=N`
+
+* `--disable-1body-property-derivs` --> `-D DISABLE_ONEBODY_PROPERTY_DERIVS=ON`
 
 * `--enable-shared` --> `-D BUILD_SHARED=ON` --> `-D BUILD_SHARED_LIBS=ON` (standard CMake variable)
 * `--enable-static` --> `-D BUILD_STATIC=ON` --> `-D BUILD_SHARED_LIBS=OFF` (standard CMake variable)

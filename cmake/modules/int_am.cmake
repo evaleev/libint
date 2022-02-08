@@ -233,14 +233,92 @@ macro(process_integrals_class class)
 endmacro()
 
 
+macro(process_integrals_class_alt class)
+
+    list(LENGTH ENABLE_${class} _ntokens)
+    if (NOT _ntokens EQUAL 1)
+        message(FATAL_ERROR "Invalid value for ENABLE_${class} (${ENABLE_${class}}). Use scalar of maximum derivative level, not list.")
+    endif()
+
+    if (ENABLE_${class} GREATER_EQUAL 0)
+        set(INCLUDE_${class} ${ENABLE_${class}})
+
+        foreach(_d RANGE 0 ${_max_deriv})
+            if (${_d} LESS_EQUAL ${INCLUDE_${class}})
+                # no per-d defaults. use energy
+                set(_candidate0_${class}_d${_d} ${_candidate0_d0})
+                message(VERBOSE "setting _candidate0_${class}_d${_d}=${_candidate0_${class}_d${_d}}")
+            endif()
+        endforeach()
+
+        set(LIBINT_SUPPORTS_${class} yes)
+        set(LIBINT_${class}_DERIV ${INCLUDE_${class}})
+        message(STATUS "Enabling integrals class ${class} to derivative ${INCLUDE_${class}}")
+    else()
+        set(INCLUDE_${class} "-1")
+        set(${class}_MAX_AM "")
+        message(STATUS "Disabling integrals class ${class}")
+    endif()
+
+    if (ENABLE_${class} GREATER_EQUAL 0)
+        list(LENGTH WITH_${class}_MAX_AM _ntokens)
+        if (_ntokens GREATER 1)
+            message(FATAL_ERROR "Invalid value for WITH_${class}_MAX_AM (${WITH_${class}_MAX_AM}). ENABLE_${class} derivative supports only scalar, not list length ${_ntokens}.")
+
+        else()
+            if (WITH_${class}_MAX_AM EQUAL -1)
+                foreach(_d RANGE ${INCLUDE_${class}})
+                    set(_candidate_${class}_d${_d} ${_candidate0_${class}_d0})
+                    message(VERBOSE "setting _candidate_${class}_d${_d}=${_candidate_${class}_d0}")
+                endforeach()
+
+                set(_${class}_MAX_AM_pre "")
+                set(${class}_MAX_AM ${_candidate0_${class}_d0})
+                # note: unlike usual classes, C++ code seems to want class_MAX_AM set explicitly to config.h
+            else()
+                set(_${class}_MAX_AM_pre ${WITH_${class}_MAX_AM})
+                set(${class}_MAX_AM ${WITH_${class}_MAX_AM})
+
+                foreach(_d RANGE ${INCLUDE_${class}})
+                    set(_candidate_${class}_d${_d} ${${class}_MAX_AM})
+                    message(VERBOSE "setting _candidate_${class}_d${_d}=${_candidate_${class}_d${_d}}")
+                endforeach()
+
+                if (${class}_MAX_AM GREATER_EQUAL 8)
+                    message(FATAL_ERROR "Value for ${class}_MAX_AM too high (${${class}_MAX_AM} >= 8). Are you sure you know what you are doing?")
+                elseif (${class}_MAX_AM LESS_EQUAL 0)
+                    message(FATAL_ERROR "Invalid value for ${class}_MAX_AM (${${class}_MAX_AM} <= 0).")
+                endif()
+            endif()
+        endif()
+        message(STATUS "Enabling integrals class ${class} to max AM ${_${class}_MAX_AM_pre} (else ${LIBINT_MAX_AM})")
+
+        list(LENGTH WITH_${class}_OPT_AM _ntokens)
+        if (_ntokens GREATER 1)
+            message(FATAL_ERROR "Invalid value for WITH_${class}_OPT_AM (${WITH_${class}_OPT_AM}). ENABLE_${class} derivative supports only scalar, not list length ${_ntokens}.")
+
+        else()
+            if (WITH_${class}_OPT_AM EQUAL -1)
+                set(_${class}_OPT_AM_pre "")
+                set(${class}_OPT_AM ${LIBINT_OPT_AM})
+                # note: unlike usual classes, C++ code seems to want class_MAX_AM set explicitly
+            else()
+                set(_${class}_OPT_AM_pre ${WITH_${class}_OPT_AM})
+                set(${class}_OPT_AM ${WITH_${class}_OPT_AM})
+            endif()
+        endif()
+        message(STATUS "Enabling integrals class ${class} to opt AM ${_${class}_OPT_AM_pre} (else ${LIBINT_OPT_AM})")
+    endif()
+endmacro()
+
+
 process_integrals_class(ONEBODY)
 process_integrals_class(ERI)
 process_integrals_class(ERI3)
 process_integrals_class(ERI2)
-
-# discrepancy, as configure doesn't do AM_LIST for these
-process_integrals_class(G12)
-process_integrals_class(G12DKH)
+# unlike above, these classes (1) don't do AM_LIST and (2) require value in config.h if enabled
+process_integrals_class_alt(G12)
+process_integrals_class_alt(G12DKH)
 
 if (ENABLE_G12 GREATER_EQUAL 0)
     set(SUPPORT_T1G12 ${ENABLE_T1G12_SUPPORT})
@@ -251,7 +329,7 @@ endif()
 
 # form list of active class + deriv + max_am strings to use in Libint2Config
 set(Libint2_ERI_COMPONENTS "")
-foreach(_cls ERI;ERI3;ERI2;ONEBODY)
+foreach(_cls ERI;ERI3;ERI2;ONEBODY;G12;G12DKH)
     if (_cls STREQUAL "ERI")
         set(_lbl "eri_c4")
     elseif (_cls STREQUAL "ERI3")
@@ -260,6 +338,10 @@ foreach(_cls ERI;ERI3;ERI2;ONEBODY)
         set(_lbl "eri_c2")
     elseif (_cls STREQUAL "ONEBODY")
         set(_lbl "onebody")
+    elseif (_cls STREQUAL "G12")
+        set(_lbl "g12")
+    elseif (_cls STREQUAL "G12DKH")
+        set(_lbl "g12dkh")
     endif()
 
     if (INCLUDE_${_cls} GREATER -1)
