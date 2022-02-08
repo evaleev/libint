@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build:
+  build_repo:
     strategy:
       fail-fast: false
       matrix:
@@ -46,10 +46,6 @@ jobs:
           #  args: >
           #    -DPYBIND11_FINDPYTHON=ON
           #    -DCMAKE_CXX_FLAGS="-D_=1"
-
-            #  -DCMAKE_CXX_FLAGS="-D_=1"
-
-            #cxx: /usr/bin/g++-9
 
         #-DCMAKE_PREFIX_PATH=/usr/local/Cellar/eigen/3.3.9
 
@@ -222,3 +218,65 @@ jobs:
 #   This is known issue https://gitlab.kitware.com/cmake/cmake/-/issues/20274
 #   that should be ok with CMake 3.20+ and Ninja 1.10.2+ (which we have) but broken c. Feb 2022
 #
+
+  build_export:
+    needs: build_repo
+    strategy:
+      fail-fast: false
+      matrix:
+        cfg:
+          - runs-on: ubuntu-latest
+            build_type: Release
+            args: >
+              -DBUILD_SHARED_LIBS=ON
+
+    name: "${{ matrix.cfg.runs-on }} • • • ${{ matrix.cfg.args }}"
+    runs-on: ${{ matrix.cfg.runs-on }}
+
+    steps:
+
+    # saves cloning the repo just for this file
+    - name: Write a Conda Env File
+      shell: bash -l {0}
+      run: |
+        cat > export.yaml <<EOF
+        name: test
+        channels:
+          - conda-forge
+        dependencies:
+          - cmake >=3.16
+          - ninja
+          - cxx-compiler
+          - python
+          - boost
+          - eigen
+        EOF
+        cat export.yaml
+
+    - name: Create Conda Environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: test
+        auto-activate-base: false
+        channels: conda-forge
+        environment-file: export.yaml
+        show-channel-urls: true
+
+    - name: Environment Information
+      run: |
+        conda info
+        conda list
+        which conda python cmake $CXX
+
+    - uses: actions/download-artifact@master
+      with:
+        name: Linux-g++-9
+
+    - name: Test installed Libint library
+      shell: bash -l {0}
+      run: |
+        ls
+        unzip Linux*zip
+        tar -zxf libint*tgz
+        ls
+
