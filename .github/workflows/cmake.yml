@@ -16,19 +16,19 @@ jobs:
             args: >
               -DENABLE_FORTRAN=ON
 
-          - runs-on: macos-latest
-            build_type: Release
-            cxx: clang++
-            cc: clang
-            args: >
-              -DENABLE_FORTRAN=ON
-              -DCMAKE_Fortran_COMPILER=gfortran-10
-
-          - runs-on: windows-2022
-            build_type: Release
-            cxx: clang-cl
-            cc: clang-cl
-            args: ""
+#          - runs-on: macos-latest
+#            build_type: Release
+#            cxx: clang++
+#            cc: clang
+#            args: >
+#              -DENABLE_FORTRAN=ON
+#              -DCMAKE_Fortran_COMPILER=gfortran-10
+#
+#          - runs-on: windows-2022
+#            build_type: Release
+#            cxx: clang-cl
+#            cc: clang-cl
+#            args: ""
 
           #- runs-on: ubuntu-20.04
           #  build_type: Debug
@@ -181,27 +181,27 @@ jobs:
         path: build/${{ env.ARTIFACT }}
         retention-days: 1
 
-    - name: Test installed Libint library
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-      shell: bash -l {0}
-      working-directory: ${{github.workspace}}/test_installed_library
-      run: |
-        cat > CMakeLists.txt <<EOF
-        cmake_minimum_required(VERSION 3.18)
-        project(hf++)
-        message("CMAKE_PREFIX_PATH \${CMAKE_PREFIX_PATH}")
-        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
-        find_package(Threads)  # clang does not autolink threads even though we are using std::thread
-        add_executable(hf++ EXCLUDE_FROM_ALL "../src/lib/libint/tests/hartree-fock/hartree-fock++.cc")
-        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
-        EOF
-        cat CMakeLists.txt
-        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed"
-        cmake --build build --target hf++
-        if [[ "${{ runner.os }}" != "Windows" ]]; then
-          ./build/hf++ ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ../build/libint-2*/features
-        fi
-        # above is xfail for Windows. SCF is wrong (see below), but we ensure that L2@Win builds, exports, packages ok.
+#    - name: Test installed Libint library
+#      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+#      shell: bash -l {0}
+#      working-directory: ${{github.workspace}}/test_installed_library
+#      run: |
+#        cat > CMakeLists.txt <<EOF
+#        cmake_minimum_required(VERSION 3.18)
+#        project(hf++)
+#        message("CMAKE_PREFIX_PATH \${CMAKE_PREFIX_PATH}")
+#        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
+#        find_package(Threads)  # clang does not autolink threads even though we are using std::thread
+#        add_executable(hf++ EXCLUDE_FROM_ALL "../src/lib/libint/tests/hartree-fock/hartree-fock++.cc")
+#        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
+#        EOF
+#        cat CMakeLists.txt
+#        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed"
+#        cmake --build build --target hf++
+#        if [[ "${{ runner.os }}" != "Windows" ]]; then
+#          ./build/hf++ ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ../build/libint-2*/features
+#        fi
+#        # above is xfail for Windows. SCF is wrong (see below), but we ensure that L2@Win builds, exports, packages ok.
 
 # Notes on Windows:
 # * Windows with Release and ExternalProject compiles just fine, but its hf++ SCF answer is -1115 E_h. See https://github.com/evaleev/libint/issues/235
@@ -251,7 +251,6 @@ jobs:
           - boost
           - eigen
         EOF
-        cat export.yaml
 
     - name: Create Conda Environment
       uses: conda-incubator/setup-miniconda@v2
@@ -272,11 +271,35 @@ jobs:
       with:
         name: Linux-g++-9
 
+    - name: Extract, Build, Install Libint Library
+      shell: bash -l {0}
+      run: |
+        ls -l
+        tar -zxf libint*tgz
+        ls -l
+        cmake \
+          -S. \
+          -Bbuild \
+          -G"Ninja" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
+          -DCMAKE_CXX_COMPILER=${CXX} \
+          -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
+          ${{ matrix.cfg.args }}
+        cmake --build build --target install
+
     - name: Test installed Libint library
       shell: bash -l {0}
       run: |
-        ls
-        unzip Linux*zip
-        tar -zxf libint*tgz
-        ls
+        mkdir test_installed_library && cd test_installed_library
+        cat > CMakeLists.txt <<EOF
+        cmake_minimum_required(VERSION 3.18)
+        project(hf++)
+        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
+        add_executable(hf++ "../tests/hartree-fock/hartree-fock++.cc")
+        target_link_libraries(hf++ Libint2::cxx)
+        EOF
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DLibint2_DIR="${{github.workspace}}/installed" -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}"
+        cmake --build build --target hf++
+        ./build/hf++ ../tests/hartree-fock/h2o_rotated.xyz | python ../tests/hartree-fock/hartree-fock++-validate.py ../build/libint-2*/features
 
