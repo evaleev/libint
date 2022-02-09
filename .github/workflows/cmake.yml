@@ -246,6 +246,7 @@ jobs:
 
     steps:
     - name: Write a Conda Env File
+      if: ${{ runner.os != 'Windows' }}
       shell: bash -l {0}
       run: |
         cat > export.yaml <<EOF
@@ -261,10 +262,26 @@ jobs:
           - eigen
         EOF
 
+    - name: Write a Conda Env File
+      if: ${{ runner.os == 'Windows' }}
+      shell: bash -l {0}
+      run: |
+        cat > export.yaml <<EOF
+        name: test
+        channels:
+          - conda-forge
+        dependencies:
+          - cmake >=3.16
+          - ninja
+          - python
+          - boost
+          - eigen
+        EOF
+
     - name: Create Conda Environment
       uses: conda-incubator/setup-miniconda@v2
       with:
-        activate-environment: test
+        activate-environment: ""
         auto-activate-base: true
         channels: conda-forge
         environment-file: export.yaml
