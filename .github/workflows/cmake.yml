@@ -246,44 +246,41 @@ jobs:
               -DCMAKE_BUILD_TYPE=Release
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
-              -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
 
     name: "Export • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
 
     steps:
     - name: Write a Conda Env File
-      if: ${{ runner.os != 'Windows' }}
       shell: bash -l {0}
       run: |
-        cat > export.yaml <<EOF
-        name: test
-        channels:
-          - conda-forge
-        dependencies:
-          - cmake >=3.16
-          - ninja
-          - cxx-compiler
-          - python
-          - boost
-          - eigen
-        EOF
-
-    - name: Write a Conda Env File
-      if: ${{ runner.os == 'Windows' }}
-      shell: bash -l {0}
-      run: |
-        cat > export.yaml <<EOF
-        name: test
-        channels:
-          - conda-forge
-        dependencies:
-          - cmake >=3.16
-          - ninja
-          - python
-          - boost
-          - eigen
-        EOF
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          cat > export.yaml <<EOF
+          name: test
+          channels:
+            - conda-forge
+          dependencies:
+            - cmake >=3.16
+            - ninja
+            - python
+            - boost
+            - eigen
+          EOF
+        else
+          cat > export.yaml <<EOF
+          name: test
+          channels:
+            - conda-forge
+          dependencies:
+            - cmake >=3.16
+            - ninja
+            - cxx-compiler
+            - python
+            - boost
+            - eigen
+          EOF
+        fi
+        cat export.yaml
 
     - name: Create Conda Environment
       uses: conda-incubator/setup-miniconda@v2
@@ -293,17 +290,17 @@ jobs:
         environment-file: export.yaml
         show-channel-urls: true
 
+    - name: Confound Environment wrt Boost
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash -l {0}
+      run: conda remove boost
+
     - name: Environment Information
       shell: bash -l {0}
       run: |
         conda info
         conda list
 
-    - name: Prepare compiler environment for Windows
-      if: ${{ runner.os == 'Windows' }}
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x64
 
     - uses: actions/download-artifact@master
       with:
