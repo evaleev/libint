@@ -239,6 +239,7 @@ jobs:
             args: >
               -DBUILD_SHARED_LIBS=ON
               -DCMAKE_BUILD_TYPE=Release
+              -DCMAKE_CXX_COMPILER=clang-cl
 
     name: "Export • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -267,6 +268,8 @@ jobs:
         auto-activate-base: false
         channels: conda-forge
         environment-file: export.yaml
+        show-channel-urls: true
+        conda-build-version: "*"
         show-channel-urls: true
 
 #    - name: Environment Information
