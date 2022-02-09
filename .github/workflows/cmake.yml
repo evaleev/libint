@@ -295,8 +295,9 @@ jobs:
         cmake_minimum_required(VERSION 3.18)
         project(hf++)
         find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
+        find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         add_executable(hf++ "../libint/tests/hartree-fock/hartree-fock++.cc")
-        target_link_libraries(hf++ Libint2::cxx)
+        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
         cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed;${CONDA_PREFIX}"
         cmake --build build --target hf++
