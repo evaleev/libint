@@ -356,6 +356,7 @@ if (BUILD_SHARED_LIBS)
               PROPERTIES
                 WINDOWS_EXPORT_ALL_SYMBOLS ON
           )
+        endif()
 
         target_link_libraries(int-cxx-shared INTERFACE int-cxx-headeronly-shared)
         endif()
