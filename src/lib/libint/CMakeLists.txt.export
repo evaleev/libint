@@ -228,11 +228,14 @@ target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
                                            )
 
 if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
-  set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
-  set(BUILD_SHARED_LIBS 1)
+    set(BUILD_SHARED_LIBS 1)
+    set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+    if (APPLE)
+        set_target_properties(int-obj PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+    endif()
 endif()
 if (NOT BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
-  set(BUILD_STATIC_LIBS 1)
+    set(BUILD_STATIC_LIBS 1)
 endif()
 
 # if building CXX API, make an object lib needed for non-header-only version
@@ -250,6 +253,10 @@ if (REQUIRE_CXX_API AND NOT MSVC)
 
     if (BUILD_SHARED_LIBS)
         set_target_properties(int-cxx-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+
+        if (APPLE)
+            set_target_properties(int-cxx-obj PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+        endif()
     endif()
 
     target_include_directories(
