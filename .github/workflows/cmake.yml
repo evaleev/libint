@@ -243,6 +243,7 @@ jobs:
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
               -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
+              -DCMAKE_CXX_FLAGS="/wd4018 /wd4101 /wd4996"
 
     name: "Export • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -331,7 +332,7 @@ jobs:
         find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         add_executable(hf++ EXCLUDE_FROM_ALL "../libint/tests/hartree-fock/hartree-fock++.cc")
-        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
+        target_link_libraries(hf++ Libint2::cxx Libint2::int2 Threads::Threads)
         EOF
         cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.args }}
         cmake --build build --target hf++

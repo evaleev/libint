@@ -294,6 +294,13 @@ if (BUILD_SHARED_LIBS)
             LINK_FLAGS "-undefined dynamic_lookup"
           )
     endif()
+    if (MSVC)
+        set_target_properties(
+          int-shared
+          PROPERTIES
+            WINDOWS_EXPORT_ALL_SYMBOLS ON
+      )
+    endif()
 
     target_include_directories(
       int-shared
@@ -343,6 +350,12 @@ if (BUILD_SHARED_LIBS)
                 LINK_FLAGS "-undefined dynamic_lookup"
               )
         endif()
+        if (MSVC)
+            set_target_properties(
+              int-cxx-shared
+              PROPERTIES
+                WINDOWS_EXPORT_ALL_SYMBOLS ON
+          )
 
         target_link_libraries(int-cxx-shared INTERFACE int-cxx-headeronly-shared)
         endif()
