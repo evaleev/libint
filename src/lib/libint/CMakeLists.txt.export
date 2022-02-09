@@ -294,6 +294,13 @@ if (BUILD_SHARED_LIBS)
         OUTPUT_NAME "int2"
         EXPORT_NAME "int2"
       )
+    if (APPLE)
+        set_target_properties(
+          int-shared
+          PROPERTIES
+            LINK_FLAGS "-undefined dynamic_lookup"
+          )
+    endif()
 
     target_include_directories(
       int-shared
@@ -336,6 +343,13 @@ if (BUILD_SHARED_LIBS)
             OUTPUT_NAME "int2-cxx"
             EXPORT_NAME "int2-cxx"
           )
+        if (APPLE)
+            set_target_properties(
+              int-cxx-shared
+              PROPERTIES
+                LINK_FLAGS "-undefined dynamic_lookup"
+              )
+        endif()
 
         target_link_libraries(int-cxx-shared INTERFACE int-cxx-headeronly-shared)
         endif()
