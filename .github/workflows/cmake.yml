@@ -265,12 +265,11 @@ jobs:
       uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: test
-        auto-activate-base: false
+        auto-activate-base: true
         channels: conda-forge
         environment-file: export.yaml
         show-channel-urls: true
         conda-build-version: "*"
-        show-channel-urls: true
 
 #    - name: Environment Information
 #      shell: bash -l {0}
