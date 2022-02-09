@@ -274,18 +274,14 @@ jobs:
     - name: Extract, Build, Install Libint Library
       shell: bash -l {0}
       run: |
-        ls -l
         tar -zxf libint*tgz
-        mkdir libint
-        mv libint-2*/* libint/
-        cd libint/
-        ls -l
+        mkdir libint && mv libint-2*/* libint/ && cd libint/
         cmake \
           -S. \
           -Bbuild \
           -G"Ninja" \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
+          -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed \
           -DCMAKE_CXX_COMPILER=${CXX} \
           -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.args }}
