@@ -242,7 +242,7 @@ jobs:
 
           - runs-on: windows-latest
             args: >
-              -DBUILD_SHARED_LIBS=ON
+              -DBUILD_SHARED_LIBS=OFF
               -DCMAKE_BUILD_TYPE=Release
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
