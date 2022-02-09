@@ -240,6 +240,7 @@ jobs:
               -DBUILD_SHARED_LIBS=ON
               -DCMAKE_BUILD_TYPE=Release
               -DCMAKE_CXX_COMPILER=clang-cl
+              -DCMAKE_C_COMPILER=clang-cl
 
     name: "Export • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -330,7 +331,7 @@ jobs:
         add_executable(hf++ EXCLUDE_FROM_ALL "../libint/tests/hartree-fock/hartree-fock++.cc")
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
-        cmake -S . -B build -G Ninja ${{ matrix.cfg.args }} -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed;${CONDA_PREFIX}"
+        cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed;${CONDA_PREFIX}" ${{ matrix.cfg.args }}
         cmake --build build --target hf++
         ./build/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/features
 
