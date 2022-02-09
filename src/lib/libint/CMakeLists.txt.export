@@ -295,6 +295,7 @@ if (BUILD_SHARED_LIBS)
           )
     endif()
     if (MSVC)
+        # necessary but insufficient for dll, https://github.com/evaleev/libint/issues/237
         set_target_properties(
           int-shared
           PROPERTIES
@@ -351,6 +352,7 @@ if (BUILD_SHARED_LIBS)
               )
         endif()
         if (MSVC)
+            # necessary but insufficient for dll
             set_target_properties(
               int-cxx-shared
               PROPERTIES

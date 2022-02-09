@@ -292,10 +292,17 @@ jobs:
         environment-file: export.yaml
         show-channel-urls: true
 
+    # Step is unnecessary. Its presence forces testing bundled Boost
     - name: Confound Environment wrt Boost
       if: ${{ runner.os == 'macOS' }}
       shell: bash -l {0}
       run: conda remove boost
+
+    # Step is unnecessary.
+    - name: Confound Environment wrt Eigen
+      if: ${{ runner.os == 'Linux' }}
+      shell: bash -l {0}
+      run:  rm -rf "${CONDA_PREFIX}/share/eigen3/cmake/"
 
     - name: Environment Information
       shell: bash -l {0}
