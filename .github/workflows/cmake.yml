@@ -252,35 +252,37 @@ jobs:
 
     steps:
     - name: Write a Conda Env File
+      if: ${{ runner.os != 'Windows' }}
       shell: bash -l {0}
       run: |
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          cat > export.yaml <<EOF
-          name: test
-          channels:
-            - conda-forge
-          dependencies:
-            - cmake >=3.16
-            - ninja
-            - python
-            - boost
-            - eigen
-          EOF
-        else
-          cat > export.yaml <<EOF
-          name: test
-          channels:
-            - conda-forge
-          dependencies:
-            - cmake >=3.16
-            - ninja
-            - cxx-compiler
-            - python
-            - boost
-            - eigen
-          EOF
-        fi
-        cat export.yaml
+        cat > export.yaml <<EOF
+        name: test
+        channels:
+          - conda-forge
+        dependencies:
+          - cmake >=3.16
+          - ninja
+          - cxx-compiler
+          - python
+          - boost
+          - eigen
+        EOF
+
+    - name: Write a Conda Env File
+      if: ${{ runner.os == 'Windows' }}
+      shell: bash -l {0}
+      run: |
+        cat > export.yaml <<EOF
+        name: test
+        channels:
+          - conda-forge
+        dependencies:
+          - cmake >=3.16
+          - ninja
+          - python
+          - boost
+          - eigen
+        EOF
 
     - name: Create Conda Environment
       uses: conda-incubator/setup-miniconda@v2
@@ -332,7 +334,7 @@ jobs:
         find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         add_executable(hf++ EXCLUDE_FROM_ALL "../libint/tests/hartree-fock/hartree-fock++.cc")
-        target_link_libraries(hf++ Libint2::cxx Libint2::int2 Threads::Threads)
+        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
         cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.args }}
         cmake --build build --target hf++
