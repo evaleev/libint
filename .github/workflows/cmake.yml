@@ -220,6 +220,10 @@ jobs:
 #   that should be ok with CMake 3.20+ and Ninja 1.10.2+ (which we have) but broken c. Feb 2022
 #
 
+  # for efficient debug of `build_export` job, in `build_repo` job above:
+  # * comment out all but a single Linux/Release in matrix.cfg
+  # * toggle to "export" target rather than "library" target in EP step
+  # * comment out the "hf++" step
   build_export:
     needs: build_repo
     strategy:
@@ -243,7 +247,6 @@ jobs:
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
               -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
-              -DCMAKE_CXX_FLAGS="/wd4018 /wd4101 /wd4996"
 
     name: "Export • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
