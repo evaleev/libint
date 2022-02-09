@@ -331,7 +331,7 @@ jobs:
         add_executable(hf++ EXCLUDE_FROM_ALL "../libint/tests/hartree-fock/hartree-fock++.cc")
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
-        cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed;${CONDA_PREFIX}" ${{ matrix.cfg.args }}
+        cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.args }}
         cmake --build build --target hf++
         ./build/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/features
 
