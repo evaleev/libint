@@ -108,9 +108,9 @@ if (MSVC)
 endif()
 
 # look for Eigen
-find_package(TargetEigen3 MODULE)
+find_package(Eigen3 MODULE)
 
-if (TARGET tgt::Eigen)
+if (TARGET Eigen3::Eigen)
     set(LIBINT_HAS_EIGEN 1)
     set(LIBINT_HAS_CXX_API 1)
 else()
@@ -261,7 +261,7 @@ if (REQUIRE_CXX_API AND NOT MSVC)
         ${PROJECT_BINARY_DIR}/include/libint2/
       )
 
-    target_link_libraries(int-cxx-obj PRIVATE tgt::Eigen)
+    target_link_libraries(int-cxx-obj PRIVATE Eigen3::Eigen)
     if (TARGET Boost::headers)
         target_link_libraries(int-cxx-obj PRIVATE Boost::headers)
     endif()
@@ -327,7 +327,7 @@ if (BUILD_SHARED_LIBS)
 
         set_target_properties(int-cxx-headeronly-shared PROPERTIES EXPORT_NAME "cxx")
 
-        target_link_libraries(int-cxx-headeronly-shared INTERFACE int-shared tgt::Eigen)
+        target_link_libraries(int-cxx-headeronly-shared INTERFACE int-shared Eigen3::Eigen)
         if (TARGET Boost::headers)
             target_link_libraries(int-cxx-headeronly-shared INTERFACE Boost::headers)
         endif()
@@ -408,7 +408,7 @@ if (BUILD_STATIC_LIBS)
 
         set_target_properties(int-cxx-headeronly-static PROPERTIES EXPORT_NAME "cxx")
 
-        target_link_libraries(int-cxx-headeronly-static INTERFACE int-static tgt::Eigen)
+        target_link_libraries(int-cxx-headeronly-static INTERFACE int-static Eigen3::Eigen)
         if (TARGET Boost::headers)
             target_link_libraries(int-cxx-headeronly-static INTERFACE Boost::headers)
         endif()
@@ -606,7 +606,7 @@ if (BUILD_SHARED_LIBS)
           INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
           )
       #install(
-      #  TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared #tgt::Eigen #libint-Eigen3
+      #  TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared #Eigen3::Eigen #libint-Eigen3
       #  EXPORT local_set
       #  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       #  )
@@ -667,7 +667,7 @@ if (BUILD_STATIC_LIBS)
           INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
           )
       #install(
-      #  TARGETS int-static int-cxx-static int-cxx-headeronly-static #tgt::Eigen #libint-Eigen3
+      #  TARGETS int-static int-cxx-static int-cxx-headeronly-static #Eigen3::Eigen #libint-Eigen3
       #  EXPORT local_set
       #  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
       #  COMPONENT Eigen3
@@ -717,7 +717,7 @@ install(
   FILES
     ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config-version.cmake
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindTargetEigen3.cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/FindEigen3.cmake
   DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
   COMPONENT ${L2}_Development
   )

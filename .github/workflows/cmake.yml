@@ -251,6 +251,8 @@ jobs:
     runs-on: ${{ matrix.cfg.runs-on }}
 
     steps:
+    # Note we're not checking out the repo. All src from Linux tarball generated above.
+
     - name: Write a Conda Env File
       if: ${{ runner.os != 'Windows' }}
       shell: bash -l {0}
