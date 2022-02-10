@@ -16,36 +16,34 @@ jobs:
             args: >
               -DENABLE_FORTRAN=ON
 
-#          - runs-on: macos-latest
-#            build_type: Release
-#            cxx: clang++
-#            cc: clang
-#            args: >
-#              -DENABLE_FORTRAN=ON
-#              -DCMAKE_Fortran_COMPILER=gfortran-10
-#
-#          - runs-on: windows-2022
-#            build_type: Release
-#            cxx: clang-cl
-#            cc: clang-cl
-#            args: ""
+          - runs-on: macos-latest
+            build_type: Release
+            cxx: clang++
+            cc: clang
+            args: >
+              -DENABLE_FORTRAN=ON
+              -DCMAKE_Fortran_COMPILER=gfortran-10
 
-          #- runs-on: ubuntu-20.04
-          #  build_type: Debug
-          #  cxx: g++-9
+          - runs-on: windows-2022
+            build_type: Release
+            cxx: clang-cl
+            cc: clang-cl
+            args: ""
 
-          #- runs-on: macos-latest
-          #  build_type: Debug
-          #  cxx: clang++
-          #  args: >
-          #    -DENABLE_FORTRAN=ON
+          - runs-on: ubuntu-20.04
+            build_type: Debug
+            cxx: g++-9
+            cc: gcc-9
+            fc: gfortran-9
+            args: >
+              -DENABLE_FORTRAN=ON
 
-          #- runs-on: windows-2022
-          #  build_type: Release
-          #  cxx: clang-cl
-          #  args: >
-          #    -DPYBIND11_FINDPYTHON=ON
-          #    -DCMAKE_CXX_FLAGS="-D_=1"
+          - runs-on: macos-latest
+            build_type: Debug
+            cxx: clang++
+            cc: clang
+            args: >
+              -DENABLE_FORTRAN=ON
 
         #-DCMAKE_PREFIX_PATH=/usr/local/Cellar/eigen/3.3.9
 
@@ -158,8 +156,8 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
-        cmake --build build --target export  # toggle for quick tarball to debug `build_export`
-        #cmake --build build --target library check-libint2compiler install
+        #cmake --build build --target export  # toggle for quick tarball to debug `build_export`
+        cmake --build build --target library check-libint2compiler install
         cd build && echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
 
     - name: Generate + Build Libint library (FetchContent, full tests)
@@ -182,29 +180,31 @@ jobs:
         path: build/${{ env.ARTIFACT }}
         retention-days: 1
 
-#    - name: Test installed Libint library
-#      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-#      shell: bash -l {0}
-#      working-directory: ${{github.workspace}}/test_installed_library
-#      run: |
-#        cat > CMakeLists.txt <<EOF
-#        cmake_minimum_required(VERSION 3.18)
-#        project(hf++)
-#        message("CMAKE_PREFIX_PATH \${CMAKE_PREFIX_PATH}")
-#        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
-#        find_package(Threads)  # clang does not autolink threads even though we are using std::thread
-#        add_executable(hf++ EXCLUDE_FROM_ALL "../src/lib/libint/tests/hartree-fock/hartree-fock++.cc")
-#        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
-#        EOF
-#        cat CMakeLists.txt
-#        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed"
-#        cmake --build build --target hf++
-#        if [[ "${{ runner.os }}" != "Windows" ]]; then
-#          ./build/hf++ ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ../build/libint-2*/features
-#        fi
-#        # above is xfail for Windows. SCF is wrong (see below), but we ensure that L2@Win builds, exports, packages ok.
+    - name: Test installed Libint library
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      shell: bash -l {0}
+      working-directory: ${{github.workspace}}/test_installed_library
+      run: |
+        cat > CMakeLists.txt <<EOF
+        cmake_minimum_required(VERSION 3.18)
+        project(hf++)
+        message("CMAKE_PREFIX_PATH \${CMAKE_PREFIX_PATH}")
+        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
+        find_package(Threads)  # clang does not autolink threads even though we are using std::thread
+        add_executable(hf++ EXCLUDE_FROM_ALL "../src/lib/libint/tests/hartree-fock/hartree-fock++.cc")
+        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
+        EOF
+        cat CMakeLists.txt
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed"
+        cmake --build build --target hf++
+        if [[ "${{ runner.os }}" != "Windows" ]]; then
+          # xfail for Windows. SCF is wrong (see below), but we ensure that L2@Win builds, exports, packages ok.
+          ./build/hf++ ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ../build/libint-2*/features
+        fi
 
 # Notes on Windows:
+# * Windows with BUILD_SHARED_LIBS=ON compiles just fine but can't link against. See https://github.com/evaleev/libint/issues/237
+#
 # * Windows with Release and ExternalProject compiles just fine, but its hf++ SCF answer is -1115 E_h. See https://github.com/evaleev/libint/issues/235
 #
 # * Windows with CMAKE_BUILD_TYPE=Debug gives errors like:
@@ -300,7 +300,7 @@ jobs:
       shell: bash -l {0}
       run: conda remove boost
 
-    # Step is unnecessary.
+    # Step is unnecessary. Its presence forces testing non-target Eigen installs
     - name: Confound Environment wrt Eigen
       if: ${{ runner.os == 'Linux' }}
       shell: bash -l {0}
