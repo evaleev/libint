@@ -252,6 +252,13 @@ if (REQUIRE_CXX_API)
         set_target_properties(int-cxx-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
     endif()
 
+    if(MSVC)
+        # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
+        target_compile_definitions(int-cxx-obj PUBLIC _USE_MATH_DEFINES)
+        # Set the exception handling model
+        target_compile_options(int-cxx-obj PUBLIC "/EHsc")
+    endif()
+
     target_include_directories(
       int-cxx-obj
       PRIVATE
