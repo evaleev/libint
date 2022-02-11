@@ -237,30 +237,39 @@ endif()
 
 # if building CXX API, make an object lib needed for non-header-only version
 if (REQUIRE_CXX_API)
-    add_library(int-cxx-obj OBJECT src/engine.cpp)
+    add_library(int-cxx-compiled-obj OBJECT src/engine.cpp)
 
     target_compile_definitions(
-      int-cxx-obj
+      int-cxx-compiled-obj
       PUBLIC
         LIBINT2_DOES_NOT_INLINE_ENGINE=1
         __COMPILING_LIBINT2=1
       )
 
-    target_compile_features(int-cxx-obj PUBLIC "cxx_std_11")
+    target_compile_features(int-cxx-compiled-obj PUBLIC "cxx_std_11")
 
     if (BUILD_SHARED_LIBS)
-        set_target_properties(int-cxx-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+        set_target_properties(int-cxx-compiled-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+
+        if (MSVC)
+            # necessary but insufficient for dll
+            set_target_properties(
+              int-cxx-compiled-obj
+              PROPERTIES
+                WINDOWS_EXPORT_ALL_SYMBOLS ON
+          )
+        endif()
     endif()
 
     if(MSVC)
         # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
-        target_compile_definitions(int-cxx-obj PUBLIC _USE_MATH_DEFINES)
+        target_compile_definitions(int-cxx-compiled-obj PUBLIC _USE_MATH_DEFINES)
         # Set the exception handling model
-        target_compile_options(int-cxx-obj PUBLIC "/EHsc")
+        target_compile_options(int-cxx-compiled-obj PUBLIC "/EHsc")
     endif()
 
     target_include_directories(
-      int-cxx-obj
+      int-cxx-compiled-obj
       PRIVATE
         ${PROJECT_BINARY_DIR}/include/
         ${PROJECT_SOURCE_DIR}/src/
@@ -268,9 +277,9 @@ if (REQUIRE_CXX_API)
         ${PROJECT_BINARY_DIR}/include/libint2/
       )
 
-    target_link_libraries(int-cxx-obj PRIVATE Eigen3::Eigen)
+    target_link_libraries(int-cxx-compiled-obj PRIVATE Eigen3::Eigen)
     if (TARGET Boost::headers)
-        target_link_libraries(int-cxx-obj PRIVATE Boost::headers)
+        target_link_libraries(int-cxx-compiled-obj PRIVATE Boost::headers)
     endif()
 endif()
 
@@ -278,9 +287,7 @@ if (BUILD_SHARED_LIBS)
     add_library(int-shared SHARED $<TARGET_OBJECTS:int-obj>)
 
     if(MSVC)
-        # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
         target_compile_definitions(int-shared PUBLIC _USE_MATH_DEFINES)
-        # Set the exception handling model
         target_compile_options(int-shared PUBLIC "/EHsc")
     endif()
 
@@ -340,7 +347,7 @@ if (BUILD_SHARED_LIBS)
         endif()
 
         # now make the compiled library
-        add_library(int-cxx-compiled-shared SHARED $<TARGET_OBJECTS:int-cxx-obj>)
+        add_library(int-cxx-compiled-shared SHARED $<TARGET_OBJECTS:int-cxx-compiled-obj>)
 
         if(MSVC)
             target_compile_definitions(int-cxx-compiled-shared PUBLIC _USE_MATH_DEFINES)
@@ -422,7 +429,7 @@ if (BUILD_STATIC_LIBS)
         endif()
 
         # now make the compiled library
-        add_library(int-cxx-compiled-static STATIC $<TARGET_OBJECTS:int-cxx-obj>)
+        add_library(int-cxx-compiled-static STATIC $<TARGET_OBJECTS:int-cxx-compiled-obj>)
 
         if(MSVC)
             target_compile_definitions(int-cxx-compiled-static PUBLIC _USE_MATH_DEFINES)
