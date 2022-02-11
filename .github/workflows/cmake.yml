@@ -267,10 +267,10 @@ jobs:
           - boost
           - eigen
         EOF
-        if [[ "${{ runner.os }}" != "Windows" ]]; then
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
           sed -i "s/- cxx/#- cxx/g" export.yaml
         fi
-
+        cat export.yaml
 
     - name: Create Conda Environment
       uses: conda-incubator/setup-miniconda@v2
