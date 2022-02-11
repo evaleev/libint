@@ -16,35 +16,35 @@ jobs:
             args: >
               -DENABLE_FORTRAN=ON
 
-#          - runs-on: macos-latest
-#            build_type: Release
-#            cxx: clang++
-#            cc: clang
-#            args: >
-#              -DENABLE_FORTRAN=ON
-#              -DCMAKE_Fortran_COMPILER=gfortran-10
-#
-#          - runs-on: windows-2022
-#            build_type: Release
-#            cxx: clang-cl
-#            cc: clang-cl
-#            args: ""
-#
-#          - runs-on: ubuntu-20.04
-#            build_type: Debug
-#            cxx: g++-9
-#            cc: gcc-9
-#            fc: gfortran-9
-#            args: >
-#              -DENABLE_FORTRAN=ON
-#
-#          - runs-on: macos-latest
-#            build_type: Debug
-#            cxx: clang++
-#            cc: clang
-#            args: >
-#              -DENABLE_FORTRAN=ON
-#              -DCMAKE_Fortran_COMPILER=gfortran-10
+          - runs-on: macos-latest
+            build_type: Release
+            cxx: clang++
+            cc: clang
+            args: >
+              -DENABLE_FORTRAN=ON
+              -DCMAKE_Fortran_COMPILER=gfortran-10
+
+          - runs-on: windows-2022
+            build_type: Release
+            cxx: clang-cl
+            cc: clang-cl
+            args: ""
+
+          - runs-on: ubuntu-20.04
+            build_type: Debug
+            cxx: g++-9
+            cc: gcc-9
+            fc: gfortran-9
+            args: >
+              -DENABLE_FORTRAN=ON
+
+          - runs-on: macos-latest
+            build_type: Debug
+            cxx: clang++
+            cc: clang
+            args: >
+              -DENABLE_FORTRAN=ON
+              -DCMAKE_Fortran_COMPILER=gfortran-10
 
     name: "Repo • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -94,16 +94,12 @@ jobs:
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'macOS' }}
       run: |
         brew install ninja gcc@10 boost eigen ccache
-        #echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
-        #echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
 
     - name: Install Ubuntu prerequisites
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Linux' }}
       run: |
         sudo apt-get update
         sudo apt-get install ninja-build ${{ matrix.cfg.cxx }} ${{ matrix.cfg.fc }} liblapack-dev libmpfr-dev libboost-dev libeigen3-dev ccache
-        #echo "FC=/usr/bin/gfortran-9" >> $GITHUB_ENV
-        #echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
 
     - name: Install Windows prerequisites, part 1, Create Conda Environment
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
@@ -155,8 +151,8 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
-        cmake --build build --target export  # toggle for quick tarball to debug `build_export`
-        #cmake --build build --target library check-libint2compiler install
+        #cmake --build build --target export  # toggle for quick tarball to debug `build_export`
+        cmake --build build --target library check-libint2compiler install
         cd build && echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
 
     - name: Generate & Build Libint Library (FetchContent, full tests)
@@ -179,27 +175,27 @@ jobs:
         path: build/${{ env.ARTIFACT }}
         retention-days: 1
 
-#    - name: Test Installed Libint Library
-#      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-#      shell: bash -l {0}
-#      working-directory: ${{github.workspace}}/test_installed_library
-#      run: |
-#        cat > CMakeLists.txt <<EOF
-#        cmake_minimum_required(VERSION 3.18)
-#        project(hf++)
-#        message("CMAKE_PREFIX_PATH \${CMAKE_PREFIX_PATH}")
-#        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
-#        find_package(Threads)  # clang does not autolink threads even though we are using std::thread
-#        add_executable(hf++ EXCLUDE_FROM_ALL "../src/lib/libint/tests/hartree-fock/hartree-fock++.cc")
-#        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
-#        EOF
-#        cat CMakeLists.txt
-#        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed"
-#        cmake --build build --target hf++
-#        if [[ "${{ runner.os }}" != "Windows" ]]; then
-#          # xfail for Windows. SCF is wrong (see below), but we ensure that L2@Win builds, exports, packages ok.
-#          ./build/hf++ ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ../build/libint-2*/features
-#        fi
+    - name: Test Installed Libint Library
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      shell: bash -l {0}
+      working-directory: ${{github.workspace}}/test_installed_library
+      run: |
+        cat > CMakeLists.txt <<EOF
+        cmake_minimum_required(VERSION 3.18)
+        project(hf++)
+        message("CMAKE_PREFIX_PATH \${CMAKE_PREFIX_PATH}")
+        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
+        find_package(Threads)  # clang does not autolink threads even though we are using std::thread
+        add_executable(hf++ EXCLUDE_FROM_ALL "../src/lib/libint/tests/hartree-fock/hartree-fock++.cc")
+        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
+        EOF
+        cat CMakeLists.txt
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed"
+        cmake --build build --target hf++
+        if [[ "${{ runner.os }}" != "Windows" ]]; then
+          # xfail for Windows. SCF is wrong (see below), but we ensure that L2@Win builds, exports, packages ok.
+          ./build/hf++ ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ../build/libint-2*/features
+        fi
 
 # Notes on Windows:
 # * Windows with BUILD_SHARED_LIBS=ON compiles just fine but can't link against. See https://github.com/evaleev/libint/issues/237
@@ -241,11 +237,10 @@ jobs:
 
           - runs-on: windows-latest
             args: >
-              -DBUILD_SHARED_LIBS=ON
+              -DBUILD_SHARED_LIBS=OFF
               -DCMAKE_BUILD_TYPE=Release
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
-              -DREQUIRE_CXX_API_COMPILED=OFF
 
     name: "Export • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -276,6 +271,7 @@ jobs:
     - name: Create Conda Environment
       uses: conda-incubator/setup-miniconda@v2
       with:
+        mamba-version: "*"
         activate-environment: test
         channels: conda-forge
         environment-file: export.yaml
