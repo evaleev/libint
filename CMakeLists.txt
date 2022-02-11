@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)  # LIST SORT NATURAL
+cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0074 NEW)
 
 ############################# Version and Metadata #############################

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)  # LIST SORT NATURAL
+cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0074 NEW)
 
 ############################# Version and Metadata #############################
@@ -701,11 +701,13 @@ join_paths(libdir_for_pc_file "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
 join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
 
 configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
-install(
-  FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/
-  COMPONENT ${L2}_Development
-  )
+if (NOT MSVC)
+    install(
+      FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
+      DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/
+      COMPONENT ${L2}_Development
+      )
+endif()
 
 if (BUILD_SHARED_LIBS)
     install(

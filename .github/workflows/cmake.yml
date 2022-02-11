@@ -119,7 +119,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda info
-        conda install ninja cmake python mpir boost eigen ccache -c conda-forge --yes
+        conda install ninja cmake=3.16 python mpir boost eigen ccache -c conda-forge --yes
         conda list
 
     - name: Prepare compiler environment for Windows
@@ -181,7 +181,7 @@ jobs:
       working-directory: ${{github.workspace}}/test_installed_library
       run: |
         cat > CMakeLists.txt <<EOF
-        cmake_minimum_required(VERSION 3.18)
+        cmake_minimum_required(VERSION 3.16)
         project(hf++)
         message("CMAKE_PREFIX_PATH \${CMAKE_PREFIX_PATH}")
         find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
@@ -326,7 +326,7 @@ jobs:
       run: |
         mkdir test_installed_library && cd test_installed_library
         cat > CMakeLists.txt <<EOF
-        cmake_minimum_required(VERSION 3.18)
+        cmake_minimum_required(VERSION 3.16)
         project(hf++)
         find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread

@@ -11,13 +11,23 @@
 #   `find_package(Libint2 COMPONENTS eri_c4_d1_l5)`
 
 
+macro(numerical_max_of_list ansvar liste)
+    set(_max "-100")
+    foreach(_i ${liste})
+        if (${_i} GREATER _max)
+            set(_max "${_i}")
+        endif()
+    endforeach()
+    set(${ansvar} "${_max}")
+endmacro()
+
+
 message(STATUS "Processing integrals classes ...")
 
 # <<<  overall derivatives level  >>>
 
 set(_glob_classes_derivs ${ENABLE_ONEBODY};${ENABLE_ERI};${ENABLE_ERI3};${ENABLE_ERI2};${ENABLE_G12};${ENABLE_G12DKH})
-list(SORT _glob_classes_derivs COMPARE NATURAL ORDER DESCENDING)  # CMake 3.18 for NATURAL
-list(GET _glob_classes_derivs 0 _max_deriv)
+numerical_max_of_list(_max_deriv "${_glob_classes_derivs}")
 message(STATUS "Preparing highest derivative level ${_max_deriv}")
 
 # <<<  overall max_am defaults  >>>
@@ -29,9 +39,7 @@ if (_ntokens_maxam GREATER 1)
         message(FATAL_ERROR "Invalid value for WITH_MAX_AM (${WITH_MAX_AM}). Highest ENABLE_ derivative (${_max_deriv}) requires list length ${_ntokens_xptd_max_deriv}, not ${_ntokens_maxam}.")
     endif()
 
-    set(_sorted_WITH_MAX_AM ${WITH_MAX_AM})
-    list(SORT _sorted_WITH_MAX_AM COMPARE NATURAL ORDER DESCENDING)
-    list(GET _sorted_WITH_MAX_AM 0 _max_am)
+    numerical_max_of_list(_max_am "${WITH_MAX_AM}")
 
     list(JOIN WITH_MAX_AM "," _sam)
     set(LIBINT_MAX_AM_LIST ${_sam})
@@ -83,8 +91,7 @@ if (_ntokens_optam GREATER 1)
     endforeach()
 
     list(JOIN _processed_OPT_AM_LIST "," LIBINT_OPT_AM_LIST)
-    list(SORT _processed_OPT_AM_LIST COMPARE NATURAL ORDER DESCENDING)
-    list(GET _processed_OPT_AM_LIST 0 LIBINT_OPT_AM)
+    numerical_max_of_list(LIBINT_OPT_AM "${_processed_OPT_AM_LIST}")
 else()
     if(WITH_OPT_AM EQUAL -1)
         if (_ntokens_maxam GREATER 1)
@@ -98,8 +105,7 @@ else()
             endforeach()
 
             list(JOIN _processed_OPT_AM_LIST "," LIBINT_OPT_AM_LIST)
-            list(SORT _processed_OPT_AM_LIST COMPARE NATURAL ORDER DESCENDING)
-            list(GET _processed_OPT_AM_LIST 0 LIBINT_OPT_AM)
+            numerical_max_of_list(LIBINT_OPT_AM "${_processed_OPT_AM_LIST}")
         else()
             # no opt and scalar max: default scalar opt from max
             set(LIBINT_OPT_AM_LIST "")

@@ -89,13 +89,13 @@ cmake/  COPYING  src/  tests/  ...
 
 | `--target ...`            | incl. | steps |     ( |  see  | below | )     |
 | --------------            | ----- | ----- | ----- | ----- | ----- | ----- |
-| build_libint              |   1   |   -   |   -   |   -   |   -   |   -   |
-| check-libint2compiler     |   1   |   2   |   -   |   -   |   -   |   -   |
-| export                    |   1   |   -   |   3   |   -   |   -   |   -   |
-| library (default)         |   1   |   -   |   3   |   4   |   -   |   -   |
-| check                     |   1   |   2   |   3   |   4   |   5   |   -   |
-| install                   |   1   |   -   |   3   |   4   |   -   |   6   |
-| check install             |   1   |   2   |   3   |   4   |   5   |   6   |
+| `build_libint`            |   1   |   -   |   -   |   -   |   -   |   -   |
+| `check-libint2compiler`   |   1   |   2   |   -   |   -   |   -   |   -   |
+| `export`                  |   1   |   -   |   3   |   -   |   -   |   -   |
+| `library` (default)       |   1   |   -   |   3   |   4   |   -   |   -   |
+| `check`                   |   1   |   2   |   3   |   4   |   5   |   -   |
+| `install`                 |   1   |   -   |   3   |   4   |   -   |   6   |
+| `check install`           |   1   |   2   |   3   |   4   |   5   |   6   |
 
 Use combined targets like `cmake --target check install` to avoid some unnecessary rebuilding (esp. of build_libint) that occurs with successive targets. The CMake dependency structure is imperfect.
 
@@ -298,29 +298,25 @@ These are the most useful configure options:
 
 * `--with-cmakedir=partialpath` --> `-D LIBINT2_INSTALL_CMAKEDIR=partialpath`
 
-* Targets
-  * All targets listed below are available. rhs of arrow targets (namespaced with `Libint2::`) are preferred. lhs of arrow targets have legacy aliases for now.
-  * Namespaced targets available through `find_package()` or `add_subdirectory()`
-  * `libint2` --> `Libint2::int2` (internal target name `int-{shared,static}`)
-  * `libint2_cxx` --> `Libint2::cxx` (internal target name `int-cxx-headeronly-{shared,static}`)
-  * DNE --> `Libint2::int2-cxx` (internal target name `int-cxx-compiled-{shared,static}`)
-  * never use internal names
+## Targets
+
+  * `libint2` --> `Libint2::int2`
+  * `libint2_cxx` --> `Libint2::cxx`
 
 
 
-| Namespaced Target[^16] | Component[^15] | Built by Default | Ensure Built                  | Ensure Excluded                           | Internal Target(s)[^17]             | Alias[^18]  |
-| ---------------------- | -------------- | ---------------- | ------------                  | ---------------                           | -----------------------             | ----------  |
+| Namespaced Target[^15] | Component[^16] | Built by Default | Ensure Built                  | Ensure Excluded                           | Internal Target(s)[^17]              | Alias[^18]    |
+| ---------------------- | -------------- | ---------------- | ----------------------------- | ----------------------------------------- | -----------------------------------  | ------------  |
+| `Libint2::int2`        | `C`            | yes              | always                        | impossible                                | `int-{static,shared}`                | `libint2`     |
+| `Libint2::cxx`         | `CXX_ho`       | yes              | `REQUIRE_CXX_API=ON`          | `REQUIRE_CXX_API=OFF` and withhold Eigen3 | `int-cxx-headeronly-{static,shared}` | `libint2_cxx` |
+| `Libint2::int2-cxx`    | `CXX`          | yes              | `REQUIRE_CXX_API_COMPILED=ON` | `REQUIRE_CXX_API_COMPILED=OFF`            | `int-cxx-compiled-{static,shared}`   |
+| Fortran local[^19]     | (NYI)          | no               | `ENABLE_FORTRAN=ON`           | `ENABLE_FORTRAN=OFF`                      | `libint_f`                           |
 
-| `Libint2::int2`        | `C`            | yes              | always                        | impossible                                |`int-{static,shared}`                | libint2     | 
-| `Libint2::cxx`         | `CXX_ho`       | yes              | `REQUIRE_CXX_API=ON`          | `REQUIRE_CXX_API=OFF` and withhold Eigen3 |`int-cxx-headeronly-{static,shared}` | libint2_cxx |
-| `Libint2::int2-cxx`    | `CXX`          | yes              | `REQUIRE_CXX_API_COMPILED=ON` | `REQUIRE_CXX_API_COMPILED=OFF`            |`int-cxx-compiled-{static,shared}`   |
-| `Libint2::fortran`     | (NYI)          | no               | `ENABLE_FORTRAN=ON`           | `ENABLE_FORTRAN=OFF`                      | `libint_f`                          |
-
-
-[^15]: Ensure target found in installation after `find_package(Libint2 COMPONENTS ...)`.
-[^16]: Targets for library consumer use. These are available after `find_package(Libint2)` or `add_subdirectory()`.
-[^17]: 
+[^15]: Targets for library consumer use. These are available after `find_package(Libint2)` or `add_subdirectory()`.
+[^16]: Ensure target found in installation after `find_package(Libint2 COMPONENTS ...)`.
+[^17]: Targets in src/lib/libint/CMakeLists.txt.export . Names subject to change. Use namespaced target names in any consuming code.
 [^18]: Deprecated legacy aliases. Update any uses to namespaced target.
+[^19]: The `libint_f` internal target defines the Fortran interface to Libint2. One must also link to `Libint2::int2` or `Libint2::cxx`. At present, it is not exported, and a namespaced target is not defined.
 
 
 ## Packagers
