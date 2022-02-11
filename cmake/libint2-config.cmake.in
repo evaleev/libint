@@ -1,5 +1,5 @@
 # libint2-config.cmake
-# -------------------
+# --------------------
 #
 # Libint2 cmake module.
 # This module sets the following variables in your project:
@@ -101,10 +101,10 @@ set(Libint2_EXT_VERSION "@LIBINT_EXT_VERSION@")
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
 # check library style component
-if(@BUILD_SHARED_LIBS@)
+if(@BUILD_SHARED_LIBS@)  # BUILD_SHARED_LIBS
     set(${L2}_shared_FOUND 1)
 endif()
-if(@BUILD_STATIC_LIBS@)
+if(@BUILD_STATIC_LIBS@)  # BUILD_STATIC_LIBS
     set(${L2}_static_FOUND 1)
 endif()
 list(FIND ${L2}_FIND_COMPONENTS "shared" _seek_shared)
@@ -115,7 +115,7 @@ include(CMakeFindDependencyMacro)
 
 set(${L2}_C_FOUND 1)
 list(FIND ${L2}_FIND_COMPONENTS "C" _seek_C)
-if(@REQUIRE_CXX_API@)
+if(@REQUIRE_CXX_API@)  # REQUIRE_CXX_API
     if(NOT TARGET Eigen3::Eigen)
         find_dependency(Eigen3 REQUIRED)
     endif()
@@ -132,11 +132,14 @@ if(@REQUIRE_CXX_API@)
     endif()
 
     set(${L2}_CXX_ho_FOUND 1)
-    set(${L2}_CXX_FOUND 1)
+
+    if(@REQUIRE_CXX_API_COMPILED@)  # REQUIRE_CXX_API_COMPILED
+        set(${L2}_CXX_FOUND 1)
+    endif()
 endif()
 list(FIND ${L2}_FIND_COMPONENTS "CXX_ho" _seek_CXX_ho)
 list(FIND ${L2}_FIND_COMPONENTS "CXX" _seek_CXX)
-if(@ENABLE_FORTRAN@)
+if(@ENABLE_FORTRAN@)  # ENABLE_FORTRAN
     set(${L2}_Fortran_FOUND 1)
 endif()
 list(FIND ${L2}_FIND_COMPONENTS "Fortran" _seek_Fortran)
@@ -148,12 +151,12 @@ foreach(_eri @Libint2_ERI_COMPONENTS@)
 endforeach()
 
 # check pure restriction component
-if((@ERI3_PURE_SH@ EQUAL 0) AND (@ERI2_PURE_SH@ EQUAL 0))
+if((@ERI3_PURE_SH@ EQUAL 0) AND (@ERI2_PURE_SH@ EQUAL 0))  # ERI3/ERI2_PURE_SH
     set(${L2}_impure_sh_FOUND 1)
 endif()
 list(FIND ${L2}_FIND_COMPONENTS "impure_sh" _seek_impure_sh)
 
-# check orderings component
+# check orderings component: LIBINT_SHGSHELL_ORDERING, LIBINT_CGSHELL_ORDERING, LIBINT_SHELL_SET
 if    ((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 1))
     set(_ordering "sss")
 elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 2))
@@ -239,9 +242,9 @@ if(NOT TARGET ${L2}::int2)
         include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-static.cmake")
     elseif(_seek_shared GREATER -1)
         include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-shared.cmake")
-    elseif(@BUILD_SHARED_LIBS@)
+    elseif(@BUILD_SHARED_LIBS@)  # BUILD_SHARED_LIBS
         include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-shared.cmake")
-    elseif(@BUILD_STATIC_LIBS@)
+    elseif(@BUILD_STATIC_LIBS@)  # BUILD_STATIC_LIBS
         include("${CMAKE_CURRENT_LIST_DIR}/${pnv}-targets-static.cmake")
     endif()
 

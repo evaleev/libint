@@ -76,6 +76,7 @@ option_with_default(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT "[EXPERT] Build generated
 
 ### library-only
 option_with_default(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3; Boost is optional but strongly recommended)" ON)
+option_with_default(REQUIRE_CXX_API_COMPILED "Build C++11 Compiled (not just header-only) targets (requires Eigen3; Boost strongly recommended)" ON)
 option_with_default(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
 
 option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static" OFF)

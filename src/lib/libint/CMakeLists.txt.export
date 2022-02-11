@@ -36,11 +36,16 @@ include(options)
 
 option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
 option_with_print(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3)" ON)
+option_with_print(REQUIRE_CXX_API_COMPILED "Build C++11 Compiled (not just header-only) targets (requires Eigen3)" ON)
 option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires C and Fortran and Python)" OFF)
 option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
 option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static" OFF)
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)
 option_with_print(EXPORT_LOCAL_TARGETS "Install CMake targets with hard-coded dependency paths. Turn OFF when building library for redistribution." ON)
+
+if (REQUIRE_CXX_API_COMPILED AND NOT REQUIRE_CXX_API)
+    set(REQUIRE_CXX_API 1)
+endif()
 
 if (NOT LIBINT2_REALTYPE)
     set(LIBINT2_REALTYPE double)
@@ -236,7 +241,7 @@ if (NOT BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
 endif()
 
 # if building CXX API, make an object lib needed for non-header-only version
-if (REQUIRE_CXX_API)
+if (REQUIRE_CXX_API_COMPILED)
     add_library(int-cxx-compiled-obj OBJECT src/engine.cpp)
 
     target_compile_definitions(
@@ -251,14 +256,6 @@ if (REQUIRE_CXX_API)
     if (BUILD_SHARED_LIBS)
         set_target_properties(int-cxx-compiled-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
 
-        if (MSVC)
-            # necessary but insufficient for dll
-            set_target_properties(
-              int-cxx-compiled-obj
-              PROPERTIES
-                WINDOWS_EXPORT_ALL_SYMBOLS ON
-          )
-        endif()
     endif()
 
     if(MSVC)
@@ -347,6 +344,7 @@ if (BUILD_SHARED_LIBS)
         endif()
 
         # now make the compiled library
+        if (REQUIRE_CXX_API_COMPILED)
         add_library(int-cxx-compiled-shared SHARED $<TARGET_OBJECTS:int-cxx-compiled-obj>)
 
         if(MSVC)
@@ -379,6 +377,7 @@ if (BUILD_SHARED_LIBS)
         endif()
 
         target_link_libraries(int-cxx-compiled-shared INTERFACE int-cxx-headeronly-shared)
+        endif()
     endif()
 endif()
 
@@ -429,6 +428,7 @@ if (BUILD_STATIC_LIBS)
         endif()
 
         # now make the compiled library
+        if (REQUIRE_CXX_API_COMPILED)
         add_library(int-cxx-compiled-static STATIC $<TARGET_OBJECTS:int-cxx-compiled-obj>)
 
         if(MSVC)
@@ -444,6 +444,7 @@ if (BUILD_STATIC_LIBS)
           )
 
         target_link_libraries(int-cxx-compiled-static INTERFACE int-cxx-headeronly-static)
+        endif()
     endif()
 endif()
 
@@ -455,13 +456,17 @@ if (BUILD_SHARED_LIBS)
     add_library(${L2}::int2 ALIAS int-shared)
     if (REQUIRE_CXX_API)
         add_library(${L2}::cxx ALIAS int-cxx-headeronly-shared)
+        if (REQUIRE_CXX_API_COMPILED)
         add_library(${L2}::int2-cxx ALIAS int-cxx-compiled-shared)
+        endif()
     endif()
 elseif (BUILD_STATIC_LIBS)
     add_library(${L2}::int2 ALIAS int-static)
     if (REQUIRE_CXX_API)
         add_library(${L2}::cxx ALIAS int-cxx-headeronly-static)
+        if (REQUIRE_CXX_API_COMPILED)
         add_library(${L2}::int2-cxx ALIAS int-cxx-compiled-static)
+        endif()
     endif()
 endif()
 

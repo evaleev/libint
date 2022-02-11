@@ -245,6 +245,7 @@ jobs:
               -DCMAKE_BUILD_TYPE=Release
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
+              -DREQUIRE_CXX_API_COMPILED=OFF
 
     name: "Export • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
