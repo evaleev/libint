@@ -234,15 +234,12 @@ set(LIBINT2_INSTALL_BASISDIR "${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}"
     CACHE STRING "Directory to which data files are installed. basis/ directory created within")
 message(STATUS "Showing option LIBINT2_INSTALL_BASISDIR: ${LIBINT2_INSTALL_BASISDIR}")
 
-#CONFIGURE    --disable-t1g12-support Libint will not support [Ti,G12] integrals
 #CONFIGURE    --enable-accum-ints     Accumulate integrals to the buffer, rather than
 #CONFIGURE                            copy.
 #CONFIGURE    --enable-flop-counter   Support (approximate) FLOP counting by the library.
 #CONFIGURE                            CXXGEN must support C++11!
 #CONFIGURE    --enable-profile        Turn on profiling instrumentation of the library.
 #CONFIGURE                            CXXGEN must support C++11!
-#CONFIGURE    --enable-mpfr           Use MPFR library to test Libint integrals in high
-#CONFIGURE                            precision.
 #CONFIGURE  
 #CONFIGURE  Optional Packages:
 #CONFIGURE    --with-api-prefix       Prepend this string to every name in the library API
@@ -255,8 +252,6 @@ message(STATUS "Showing option LIBINT2_INSTALL_BASISDIR: ${LIBINT2_INSTALL_BASIS
 #CONFIGURE                            libint-<version>.
 #CONFIGURE    --with-pkgconfigdir     Specifies the location to put pkg-config's data
 #CONFIGURE                            file. Default is $(libdir)/pkgconfig.
-#CONFIGURE    --with-cmakedir         Specifies the location to put FindLibint2.cmake
-#CONFIGURE                            file. Default is $(libdir)/cmake/libint2.
 #CONFIGURE    --with-real-type        Compute all integrals using the given real type           LIBINT_USER_DEFINED_REAL
 #CONFIGURE                            (default: double).
 #CONFIGURE    --with-real-type-includes                                                         LIBINT_USER_DEFINED_REAL_INCLUDES
@@ -317,17 +312,10 @@ set(_EXPORT_MODE 1)
 configure_file(include/libint2/config.h.cmake.in ${EXPORT_STAGE_DIR}/include/libint2/config.h @ONLY)
 configure_file(include/libint2/config2.h.cmake.in ${EXPORT_STAGE_DIR}/include/libint2/config2.h.cmake.in COPYONLY)
 
-# compiler
 add_subdirectory(src)
 
 add_subdirectory(doc)
 
-# <<<  Test  >>>
-
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
-
-# <<<  Install  >>>
-
-# nothing to install here

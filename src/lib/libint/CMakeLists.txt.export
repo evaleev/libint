@@ -236,7 +236,7 @@ if (NOT BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
 endif()
 
 # if building CXX API, make an object lib needed for non-header-only version
-if (REQUIRE_CXX_API AND NOT MSVC)
+if (REQUIRE_CXX_API)
     add_library(int-cxx-obj OBJECT src/engine.cpp)
 
     target_compile_definitions(
@@ -333,11 +333,10 @@ if (BUILD_SHARED_LIBS)
         endif()
 
         # now make the compiled library
-        if (NOT MSVC)
-        add_library(int-cxx-shared SHARED $<TARGET_OBJECTS:int-cxx-obj>)
+        add_library(int-cxx-compiled-shared SHARED $<TARGET_OBJECTS:int-cxx-obj>)
 
         set_target_properties(
-          int-cxx-shared
+          int-cxx-compiled-shared
           PROPERTIES
             SOVERSION ${LIBINT_MAJOR_SOVERSION}
             MACOSX_RPATH ON
@@ -346,7 +345,7 @@ if (BUILD_SHARED_LIBS)
           )
         if (APPLE)
             set_target_properties(
-              int-cxx-shared
+              int-cxx-compiled-shared
               PROPERTIES
                 LINK_FLAGS "-undefined dynamic_lookup"
               )
@@ -354,14 +353,13 @@ if (BUILD_SHARED_LIBS)
         if (MSVC)
             # necessary but insufficient for dll
             set_target_properties(
-              int-cxx-shared
+              int-cxx-compiled-shared
               PROPERTIES
                 WINDOWS_EXPORT_ALL_SYMBOLS ON
           )
         endif()
 
-        target_link_libraries(int-cxx-shared INTERFACE int-cxx-headeronly-shared)
-        endif()
+        target_link_libraries(int-cxx-compiled-shared INTERFACE int-cxx-headeronly-shared)
     endif()
 endif()
 
@@ -414,19 +412,17 @@ if (BUILD_STATIC_LIBS)
         endif()
 
         # now make the compiled library
-        if (NOT MSVC)
-        add_library(int-cxx-static STATIC $<TARGET_OBJECTS:int-cxx-obj>)
+        add_library(int-cxx-compiled-static STATIC $<TARGET_OBJECTS:int-cxx-obj>)
 
         set_target_properties(
-          int-cxx-static
+          int-cxx-compiled-static
           PROPERTIES
             OUTPUT_NAME "int2-cxx"
             EXPORT_NAME "int2-cxx"
           )
 
-        target_link_libraries(int-cxx-static INTERFACE int-cxx-headeronly-static)
-        endif()
-    endif(REQUIRE_CXX_API)
+        target_link_libraries(int-cxx-compiled-static INTERFACE int-cxx-headeronly-static)
+    endif()
 endif()
 
 # Permanent aliases ====================================================================================================
@@ -437,17 +433,13 @@ if (BUILD_SHARED_LIBS)
     add_library(${L2}::int2 ALIAS int-shared)
     if (REQUIRE_CXX_API)
         add_library(${L2}::cxx ALIAS int-cxx-headeronly-shared)
-        if (NOT MSVC)
-        add_library(${L2}::int2-cxx ALIAS int-cxx-shared)
-        endif()
+        add_library(${L2}::int2-cxx ALIAS int-cxx-compiled-shared)
     endif()
 elseif (BUILD_STATIC_LIBS)
     add_library(${L2}::int2 ALIAS int-static)
     if (REQUIRE_CXX_API)
         add_library(${L2}::cxx ALIAS int-cxx-headeronly-static)
-        if (NOT MSVC)
-        add_library(${L2}::int2-cxx ALIAS int-cxx-static)
-        endif()
+        add_library(${L2}::int2-cxx ALIAS int-cxx-compiled-static)
     endif()
 endif()
 
@@ -584,27 +576,30 @@ install(
   COMPONENT ${L2}_Development
   )
 
-#target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR})
-
 if (BUILD_SHARED_LIBS)
-    if (TARGET int-cxx-headeronly-shared) # AND TARGET int-cxx-shared)
-        install(
-          TARGETS
-            int-shared
-            #int-cxx-shared
-            int-cxx-headeronly-shared
-          EXPORT shared_set
-          RUNTIME
-            COMPONENT ${L2}_Runtime
-          LIBRARY
-            COMPONENT ${L2}_Runtime
-            NAMELINK_COMPONENT ${L2}_Development
-          ARCHIVE
-            COMPONENT ${L2}_Development
-          PUBLIC_HEADER
-            COMPONENT ${L2}_Development
-          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-          )
+    if (TARGET int-cxx-compiled-shared)
+        set(tgts int-shared int-cxx-headeronly-shared int-cxx-compiled-shared)
+    elseif (TARGET int-cxx-headeronly-shared)
+        set(tgts int-shared int-cxx-headeronly-shared)
+    else()
+        set(tgts int-shared)
+    endif()
+
+    install(
+      TARGETS
+        ${tgts}
+      EXPORT shared_set
+      RUNTIME
+        COMPONENT ${L2}_Runtime
+      LIBRARY
+        COMPONENT ${L2}_Runtime
+        NAMELINK_COMPONENT ${L2}_Development
+      ARCHIVE
+        COMPONENT ${L2}_Development
+      PUBLIC_HEADER
+        COMPONENT ${L2}_Development
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
       #install(
       #  TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared #Eigen3::Eigen #libint-Eigen3
       #  EXPORT local_set
@@ -615,80 +610,32 @@ if (BUILD_SHARED_LIBS)
 #        RUNTIME_DEPENDENCY_SET local_set
 #        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 #        )
-    else()
-        install(
-          TARGETS
-            int-shared
-          EXPORT shared_set
-          RUNTIME
-            COMPONENT ${L2}_Runtime
-          LIBRARY
-            COMPONENT ${L2}_Runtime
-            NAMELINK_COMPONENT ${L2}_Development
-          ARCHIVE
-            COMPONENT ${L2}_Development
-          PUBLIC_HEADER
-            COMPONENT ${L2}_Development
-          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-          )
-#      install(
-#        EXPORT shared_set
-#        DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
-#        NAMESPACE "${L2}::"
-#        FILE ${L2}-Targets-shared.cmake
-#        COMPONENT ${L2}_Development
-#        )
-
-#      install(
-#        TARGETS int-shared
-#        EXPORT shared_set
-#        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#        )
-    endif()
 endif()
 
 if (BUILD_STATIC_LIBS)
-    if (TARGET int-cxx-headeronly-static) # AND TARGET int-cxx-static)
-        install(
-          TARGETS
-            int-static
-            #int-cxx-static
-            int-cxx-headeronly-static
-          EXPORT static_set
-          RUNTIME
-            COMPONENT ${L2}_Runtime
-          LIBRARY
-            COMPONENT ${L2}_Runtime
-            NAMELINK_COMPONENT ${L2}_Development
-          ARCHIVE
-            COMPONENT ${L2}_Development
-          PUBLIC_HEADER
-            COMPONENT ${L2}_Development
-          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-          )
-      #install(
-      #  TARGETS int-static int-cxx-static int-cxx-headeronly-static #Eigen3::Eigen #libint-Eigen3
-      #  EXPORT local_set
-      #  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      #  COMPONENT Eigen3
-      #  )
+    if (TARGET int-cxx-compiled-static)
+        set(tgts int-static int-cxx-headeronly-static int-cxx-compiled-static)
+    elseif (TARGET int-cxx-headeronly-static)
+        set(tgts int-static int-cxx-headeronly-static)
     else()
-        install(
-          TARGETS
-            int-static
-          EXPORT static_set
-          RUNTIME
-            COMPONENT ${L2}_Runtime
-          LIBRARY
-            COMPONENT ${L2}_Runtime
-            NAMELINK_COMPONENT ${L2}_Development
-          ARCHIVE
-            COMPONENT ${L2}_Development
-          PUBLIC_HEADER
-            COMPONENT ${L2}_Development
-          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-          )
+        set(tgts int-static)
     endif()
+
+    install(
+      TARGETS
+        ${tgts}
+      EXPORT static_set
+      RUNTIME
+        COMPONENT ${L2}_Runtime
+      LIBRARY
+        COMPONENT ${L2}_Runtime
+        NAMELINK_COMPONENT ${L2}_Development
+      ARCHIVE
+        COMPONENT ${L2}_Development
+      PUBLIC_HEADER
+        COMPONENT ${L2}_Development
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
 endif()
 
 # install basis set library
@@ -741,16 +688,6 @@ if (BUILD_SHARED_LIBS)
       DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
       COMPONENT ${L2}_Development
       )
-
-    if(ENABLE_FORTRAN)
-        install(
-          EXPORT fshared_set
-          FILE "${pnv}-targets-fortran-shared.cmake"
-          NAMESPACE "${L2}::"
-          DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
-          COMPONENT ${L2}_Development_Fortran
-          )
-    endif()
 endif()
 
 if (BUILD_STATIC_LIBS)
@@ -763,6 +700,21 @@ if (BUILD_STATIC_LIBS)
       )
 endif()
 
+# not much point in exporting Fortran since it's a simple int2+includes+flags and
+#   those includes are compiler-version dependent, but this is the setup.
+#   note that FILE something like "fortran-shared" NOT "shared-fortran" or the glob
+#   confused with shared_set
+#
+#    if(ENABLE_FORTRAN)
+#        install(
+#          EXPORT fshared_set
+#          FILE "${pnv}-targets-fortran-shared.cmake"
+#          NAMESPACE "${L2}::"
+#          DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+#          COMPONENT ${L2}_Development_Fortran
+#          )
+#    endif()
+
 #if (EXPORT_LOCAL_TARGETS)
 #    install(
 #      EXPORT local_set
@@ -771,4 +723,3 @@ endif()
 #      DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
 #      )
 #endif()
-
