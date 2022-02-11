@@ -335,6 +335,11 @@ if (BUILD_SHARED_LIBS)
         # now make the compiled library
         add_library(int-cxx-compiled-shared SHARED $<TARGET_OBJECTS:int-cxx-obj>)
 
+        if(MSVC)
+            target_compile_definitions(int-cxx-compiled-shared PUBLIC _USE_MATH_DEFINES)
+            target_compile_options(int-cxx-compiled-shared PUBLIC "/EHsc")
+        endif()
+
         set_target_properties(
           int-cxx-compiled-shared
           PROPERTIES
@@ -369,9 +374,7 @@ if (BUILD_STATIC_LIBS)
     target_compile_features(int-static INTERFACE "cxx_std_11")
 
     if(MSVC)
-        # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
         target_compile_definitions(int-static PUBLIC _USE_MATH_DEFINES)
-        # Set the exception handling model
         target_compile_options(int-static PUBLIC "/EHsc")
     endif()
 
@@ -413,6 +416,11 @@ if (BUILD_STATIC_LIBS)
 
         # now make the compiled library
         add_library(int-cxx-compiled-static STATIC $<TARGET_OBJECTS:int-cxx-obj>)
+
+        if(MSVC)
+            target_compile_definitions(int-cxx-compiled-static PUBLIC _USE_MATH_DEFINES)
+            target_compile_options(int-cxx-compiled-static PUBLIC "/EHsc")
+        endif()
 
         set_target_properties(
           int-cxx-compiled-static
