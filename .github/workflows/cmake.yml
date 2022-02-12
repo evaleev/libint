@@ -230,6 +230,7 @@ jobs:
             libargs: >
               -DBUILD_SHARED_LIBS=ON
               -DLIBINT_LOCAL_EIGEN3_INSTALL=ON
+              -DEigen3_ROOT="/usr/local/miniconda/envs/onlyeigen/"
             testargs: >
               -DLIBINT_LOCAL_EIGEN3_FIND=OFF
 
