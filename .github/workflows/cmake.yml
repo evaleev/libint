@@ -229,7 +229,9 @@ jobs:
           - runs-on: ubuntu-latest
             libargs: >
               -DBUILD_SHARED_LIBS=ON
-            testargs: ""
+              -DLIBINT_LOCAL_EIGEN3_INSTALL=ON
+            testargs: >
+              -DLIBINT_LOCAL_EIGEN3_FIND=OFF
 
           - runs-on: macos-latest
             libargs: >
@@ -291,7 +293,14 @@ jobs:
       if: ${{ runner.os == 'Windows' }}
       shell: bash -l {0}
       run: rm -rf "${CONDA_PREFIX}/Library/share/eigen3/cmake/"
-      #run: rm -rf "${CONDA_PREFIX}/share/eigen3/cmake/"
+
+    # Step is unnecessary.
+    - name: Confound Environment wrt Eigen
+      if: ${{ runner.os == 'Linux' }}
+      shell: bash -l {0}
+      run: |
+        conda remove eigen
+        conda create -n onlyeigen eigen -c conda-forge
 
     - name: Environment Information
       shell: bash -l {0}
