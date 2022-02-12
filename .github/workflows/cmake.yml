@@ -16,35 +16,35 @@ jobs:
             args: >
               -DENABLE_FORTRAN=ON
 
-          - runs-on: macos-latest
-            build_type: Release
-            cxx: clang++
-            cc: clang
-            args: >
-              -DENABLE_FORTRAN=ON
-              -DCMAKE_Fortran_COMPILER=gfortran-10
-
-          - runs-on: windows-2022
-            build_type: Release
-            cxx: clang-cl
-            cc: clang-cl
-            args: ""
-
-          - runs-on: ubuntu-20.04
-            build_type: Debug
-            cxx: g++-9
-            cc: gcc-9
-            fc: gfortran-9
-            args: >
-              -DENABLE_FORTRAN=ON
-
-          - runs-on: macos-latest
-            build_type: Debug
-            cxx: clang++
-            cc: clang
-            args: >
-              -DENABLE_FORTRAN=ON
-              -DCMAKE_Fortran_COMPILER=gfortran-10
+#          - runs-on: macos-latest
+#            build_type: Release
+#            cxx: clang++
+#            cc: clang
+#            args: >
+#              -DENABLE_FORTRAN=ON
+#              -DCMAKE_Fortran_COMPILER=gfortran-10
+#
+#          - runs-on: windows-2022
+#            build_type: Release
+#            cxx: clang-cl
+#            cc: clang-cl
+#            args: ""
+#
+#          - runs-on: ubuntu-20.04
+#            build_type: Debug
+#            cxx: g++-9
+#            cc: gcc-9
+#            fc: gfortran-9
+#            args: >
+#              -DENABLE_FORTRAN=ON
+#
+#          - runs-on: macos-latest
+#            build_type: Debug
+#            cxx: clang++
+#            cc: clang
+#            args: >
+#              -DENABLE_FORTRAN=ON
+#              -DCMAKE_Fortran_COMPILER=gfortran-10
 
     name: "Repo • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -151,8 +151,8 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
-        #cmake --build build --target export  # toggle for quick tarball to debug `build_export`
-        cmake --build build --target library check-libint2compiler install
+        cmake --build build --target export  # toggle for quick tarball to debug `build_export`
+        #cmake --build build --target library check-libint2compiler install
         cd build && echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
 
     - name: Generate & Build Libint Library (FetchContent, full tests)
@@ -176,7 +176,8 @@ jobs:
         retention-days: 1
 
     - name: Test Installed Libint Library
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      if: false  # toggle for quick tarball to debug `build_export`
+      #if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/test_installed_library
       run: |
@@ -226,23 +227,25 @@ jobs:
       matrix:
         cfg:
           - runs-on: ubuntu-latest
-            args: >
+            libargs: >
               -DBUILD_SHARED_LIBS=ON
-              -DCMAKE_BUILD_TYPE=Release
+            testargs: ""
 
           - runs-on: macos-latest
-            args: >
+            libargs: >
               -DBUILD_SHARED_LIBS=ON
-              -DCMAKE_BUILD_TYPE=Release
+            testargs: ""
 
           - runs-on: windows-latest
-            args: >
+            libargs: >
               -DBUILD_SHARED_LIBS=OFF
-              -DCMAKE_BUILD_TYPE=Release
+              -DCMAKE_CXX_COMPILER=clang-cl
+              -DCMAKE_C_COMPILER=clang-cl
+            testargs: >
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
 
-    name: "Export • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.args }}"
+    name: "Export • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.libargs }}"
     runs-on: ${{ matrix.cfg.runs-on }}
 
     steps:
@@ -285,9 +288,10 @@ jobs:
 
     # Step is unnecessary. Its presence forces testing non-target Eigen installs
     - name: Confound Environment wrt Eigen
-      if: ${{ runner.os == 'Linux' }}
+      if: ${{ runner.os == 'Windows' }}
       shell: bash -l {0}
-      run:  rm -rf "${CONDA_PREFIX}/share/eigen3/cmake/"
+      run: rm -rf "${CONDA_PREFIX}/Library/share/eigen3/cmake/"
+      #run: rm -rf "${CONDA_PREFIX}/share/eigen3/cmake/"
 
     - name: Environment Information
       shell: bash -l {0}
@@ -318,7 +322,7 @@ jobs:
           -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
           -DCMAKE_CXX_COMPILER=${CXX} \
           -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
-          ${{ matrix.cfg.args }}
+          ${{ matrix.cfg.libargs }}
         cmake --build build --target install
 
     - name: Test Installed Libint library
@@ -333,7 +337,7 @@ jobs:
         add_executable(hf++ EXCLUDE_FROM_ALL "../libint/tests/hartree-fock/hartree-fock++.cc")
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
-        cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.args }}
+        cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build build --target hf++
         ./build/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/features
 
