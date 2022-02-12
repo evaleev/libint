@@ -232,7 +232,7 @@ jobs:
               -DLIBINT_LOCAL_EIGEN3_INSTALL=ON
               -DEigen3_ROOT="/usr/share/miniconda/envs/onlyeigen/"
             testargs: >
-              -DLIBINT_LOCAL_EIGEN3_FIND=OFF
+              -DLIBINT_LOCAL_EIGEN3_FIND=ON
 
           - runs-on: macos-latest
             libargs: >
