@@ -41,7 +41,7 @@ option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires C 
 option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
 option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static" OFF)
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)
-option_with_print(EXPORT_LOCAL_TARGETS "Install CMake targets with hard-coded dependency paths. Turn OFF when building library for redistribution." ON)
+option_with_print(LIBINT_LOCAL_EIGEN3_INSTALL "Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. In consumer build, set `LIBINT_LOCAL_EIGEN3_FIND=ON` before `find_package(Libint2) to load the exported Eigen3." OFF)
 
 if (REQUIRE_CXX_API_COMPILED AND NOT REQUIRE_CXX_API)
     set(REQUIRE_CXX_API 1)
@@ -627,16 +627,6 @@ if (BUILD_SHARED_LIBS)
         COMPONENT ${L2}_Development
       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
       )
-      #install(
-      #  TARGETS int-shared int-cxx-shared int-cxx-headeronly-shared #Eigen3::Eigen #libint-Eigen3
-      #  EXPORT local_set
-      #  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      #  )
-#      install(
-#        IMPORTED_RUNTIME_ARTIFACTS int-cxx-shared
-#        RUNTIME_DEPENDENCY_SET local_set
-#        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#        )
 endif()
 
 if (BUILD_STATIC_LIBS)
@@ -662,6 +652,34 @@ if (BUILD_STATIC_LIBS)
       PUBLIC_HEADER
         COMPONENT ${L2}_Development
       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+endif()
+
+if (LIBINT_LOCAL_EIGEN3_INSTALL AND TARGET Eigen3::Eigen)
+
+    add_library(Eigen INTERFACE)
+    foreach(prop
+      INTERFACE_INCLUDE_DIRECTORIES
+      INTERFACE_COMPILE_DEFINITIONS
+      INTERFACE_COMPILE_OPTIONS
+      INTERFACE_LINK_LIBRARIES
+      INTERFACE_POSITION_INDEPENDENT_CODE
+      )
+        get_property(_propval TARGET Eigen3::Eigen PROPERTY ${prop})
+        set_property(TARGET Eigen PROPERTY ${prop} ${_propval})
+    endforeach()
+
+    install(
+      TARGETS
+        Eigen
+      EXPORT local_set
+      LIBRARY
+        COMPONENT ${L2}_Eigen3
+        NAMELINK_COMPONENT ${L2}_Eigen3
+      ARCHIVE
+        COMPONENT ${L2}_Eigen3
+      PUBLIC_HEADER
+        COMPONENT ${L2}_Eigen3
       )
 endif()
 
@@ -729,6 +747,16 @@ if (BUILD_STATIC_LIBS)
       )
 endif()
 
+if (LIBINT_LOCAL_EIGEN3_INSTALL AND TARGET Eigen3::Eigen)
+    install(
+      EXPORT local_set
+      FILE "${pnv}-targets-eigen3.cmake"
+      NAMESPACE "${L2}::"
+      DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+      COMPONENT ${L2}_Eigen3
+      )
+endif()
+
 # not much point in exporting Fortran since it's a simple int2+includes+flags and
 #   those includes are compiler-version dependent, but this is the setup.
 #   note that FILE something like "fortran-shared" NOT "shared-fortran" or the glob
@@ -743,12 +771,3 @@ endif()
 #          COMPONENT ${L2}_Development_Fortran
 #          )
 #    endif()
-
-#if (EXPORT_LOCAL_TARGETS)
-#    install(
-#      EXPORT local_set
-#      FILE "${pnv}-targets-local.cmake"
-#      NAMESPACE "${L2}::"
-#      DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
-#      )
-#endif()

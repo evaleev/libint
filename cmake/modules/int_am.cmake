@@ -3,11 +3,12 @@
 # * [LIBINT|ONEBODY|ERI2|ERI3|ERI|G12|G12DKH]_[MAX|OPT]_AM[|_LIST]
 # * LIBINT_ONEBODY_DERIV
 # * LIBINT_SUPPORTS_ONEBODY
+# * SUPPORT_T1G12
 
 # _candidate variables not needed for config.h but are used to figure
-#   out the AM levels at the CMake level
-#   so that libint2-config components may be defined and client codes can
-#   require the detected library include gradient integrals up to AM=5 with
+#   out the AM levels at the CMake level so that
+#   libint2-config.cmake components may be defined and client codes can
+#   require the detected library include gradient integrals at least AM=5 with
 #   `find_package(Libint2 COMPONENTS eri_c4_d1_l5)`
 
 
@@ -40,7 +41,6 @@ if (_ntokens_maxam GREATER 1)
     endif()
 
     numerical_max_of_list(_max_am "${WITH_MAX_AM}")
-
     list(JOIN WITH_MAX_AM "," _sam)
     set(LIBINT_MAX_AM_LIST ${_sam})
     set(LIBINT_MAX_AM ${_max_am})  # only overall LIBINT, not specific integrals classes, sets both MAX_AM & MAX_AM_LIST
@@ -333,7 +333,7 @@ else()
 endif()
 
 
-# form list of active class + deriv + max_am strings to use in Libint2Config
+# form list of active class + deriv + max_am strings to use in libint2-config.cmake
 set(Libint2_ERI_COMPONENTS "")
 foreach(_cls ERI;ERI3;ERI2;ONEBODY;G12;G12DKH)
     if (_cls STREQUAL "ERI")
