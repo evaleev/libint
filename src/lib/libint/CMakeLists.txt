@@ -113,9 +113,9 @@ else()
                 "-DEigen3_DIR=${Eigen3_DIR}"
                 )
     endif()
-    if (LIBINT_LOCAL_EIGEN3_INSTALL)
+    if (LIBINT_LOCAL_Eigen3_INSTALL)
         list(APPEND library_CMAKE_ARGS
-                "-DLIBINT_LOCAL_EIGEN3_INSTALL=${LIBINT_LOCAL_EIGEN3_INSTALL}"
+                "-DLIBINT_LOCAL_Eigen3_INSTALL=${LIBINT_LOCAL_Eigen3_INSTALL}"
                 )
     endif()
     message(STATUS "invoking ExternalProject_add to build+test Libint library with library_CMAKE_ARGS=${library_CMAKE_ARGS}")

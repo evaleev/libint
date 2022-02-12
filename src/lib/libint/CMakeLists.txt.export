@@ -41,7 +41,7 @@ option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires C 
 option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
 option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static" OFF)
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)
-option_with_print(LIBINT_LOCAL_EIGEN3_INSTALL "Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. In consumer build, set `LIBINT_LOCAL_EIGEN3_FIND=ON` before `find_package(Libint2) to load the exported Eigen3." OFF)
+option_with_print(LIBINT_LOCAL_Eigen3_INSTALL "Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. In consumer build, set `LIBINT_LOCAL_Eigen3_FIND=ON` before `find_package(Libint2) to load the exported Eigen3." OFF)
 
 if (REQUIRE_CXX_API_COMPILED AND NOT REQUIRE_CXX_API)
     set(REQUIRE_CXX_API 1)
@@ -112,7 +112,6 @@ if (MSVC)
     set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "(LAB) I so don't understand the option handling of ALIGN_SIZE")
 endif()
 
-# look for Eigen
 find_package(Eigen3 MODULE)
 
 if (TARGET Eigen3::Eigen)
@@ -157,41 +156,6 @@ if (REQUIRE_CXX_API)
         endif()
     endif()
 endif()
-
-## look for Eigen
-## prefer CMake-configured-and-installed instance
-## N.B. due to the variety of ways to get Eigen will set up our own target
-## re:NO_CMAKE_PACKAGE_REGISTRY: Eigen3 registers its *build* tree with the user package registry ...
-##                               to avoid issues with wiped build directory look for installed Eigen
-#find_package(Eigen3 NO_MODULE QUIET NO_CMAKE_PACKAGE_REGISTRY)
-#if (TARGET Eigen3::Eigen)
-#  add_library(libint-Eigen3 INTERFACE)
-#  foreach(prop INTERFACE_INCLUDE_DIRECTORIES INTERFACE_COMPILE_DEFINITIONS INTERFACE_COMPILE_OPTIONS INTERFACE_LINK_LIBRARIES INTERFACE_POSITION_INDEPENDENT_CODE)
-#    get_property(EIGEN3_${prop} TARGET Eigen3::Eigen PROPERTY ${prop})
-#    set_property(TARGET libint-Eigen3 PROPERTY
-#        ${prop} ${EIGEN3_${prop}})
-#  endforeach()
-#else()
-#  # otherwise use FindEigen3.cmake module possibly installed somewhere in the path
-#  # but make sure EIGEN3_INCLUDE_DIR exists!
-#  find_package(Eigen3)
-#  if (EIGEN3_FOUND)
-#    if (NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
-#      message(WARNING "Eigen3 is \"found\", but the reported EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR} does not exist; likely corrupt Eigen3 build registered in user or system package registry; specify EIGEN3_INCLUDE_DIR manually or (better) configure (with CMake) and install Eigen3 package")
-#    else()
-#      add_library(libint-Eigen3 INTERFACE)
-#      set_property(TARGET libint-Eigen3 PROPERTY
-#          INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR})
-#    endif()
-#  endif()
-#endif()
-#if (TARGET libint-Eigen3)
-#  get_property(EIGEN3_INCLUDE_DIR TARGET libint-Eigen3 PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-#  message(STATUS "Found Eigen3: EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-#endif()
-
-#if (TARGET libint-Eigen3)
-
 
 # Python is optionally used for testing, but for Fortran, it's required for preprocessing.
 if (ENABLE_FORTRAN)
@@ -655,7 +619,7 @@ if (BUILD_STATIC_LIBS)
       )
 endif()
 
-if (LIBINT_LOCAL_EIGEN3_INSTALL AND TARGET Eigen3::Eigen)
+if (LIBINT_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
 
     add_library(Eigen INTERFACE)
     foreach(prop
@@ -747,7 +711,7 @@ if (BUILD_STATIC_LIBS)
       )
 endif()
 
-if (LIBINT_LOCAL_EIGEN3_INSTALL AND TARGET Eigen3::Eigen)
+if (LIBINT_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
     install(
       EXPORT local_set
       FILE "${pnv}-targets-eigen3.cmake"

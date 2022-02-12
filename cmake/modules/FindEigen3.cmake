@@ -4,7 +4,7 @@
 # Eigen3 cmake module to wrap Eigen3 suitable for Libint2. Copied from Eigen v3.4.0 source and modified as follows:
 # * Added `NO_CMAKE_PACKAGE_REGISTRY` to `find_package(Eigen3 ...)` to avoid issues with wiped build
 #   directory when looking for installed eigen. Eigen3 registers its *build* tree with the user package registry.
-# * Added `LIBINT_LOCAL_EIGEN3_FIND` block to forcibly load hard-coded Eigen3 location detected during Libint2 library build.
+# * Added `LIBINT_LOCAL_Eigen3_FIND` block to forcibly load hard-coded Eigen3 location detected during Libint2 library build.
 #
 # - Try to find Eigen3 lib
 #
@@ -71,7 +71,7 @@ macro(_eigen3_check_version)
   endif()
 endmacro()
 
-if (LIBINT_LOCAL_EIGEN3_FIND)
+if (LIBINT_LOCAL_Eigen3_FIND)
     include("${CMAKE_CURRENT_LIST_DIR}/libint2-targets-eigen3.cmake")
 
     if (TARGET Libint2::Eigen)

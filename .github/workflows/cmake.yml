@@ -16,35 +16,35 @@ jobs:
             args: >
               -DENABLE_FORTRAN=ON
 
-#          - runs-on: macos-latest
-#            build_type: Release
-#            cxx: clang++
-#            cc: clang
-#            args: >
-#              -DENABLE_FORTRAN=ON
-#              -DCMAKE_Fortran_COMPILER=gfortran-10
-#
-#          - runs-on: windows-2022
-#            build_type: Release
-#            cxx: clang-cl
-#            cc: clang-cl
-#            args: ""
-#
-#          - runs-on: ubuntu-20.04
-#            build_type: Debug
-#            cxx: g++-9
-#            cc: gcc-9
-#            fc: gfortran-9
-#            args: >
-#              -DENABLE_FORTRAN=ON
-#
-#          - runs-on: macos-latest
-#            build_type: Debug
-#            cxx: clang++
-#            cc: clang
-#            args: >
-#              -DENABLE_FORTRAN=ON
-#              -DCMAKE_Fortran_COMPILER=gfortran-10
+          - runs-on: macos-latest
+            build_type: Release
+            cxx: clang++
+            cc: clang
+            args: >
+              -DENABLE_FORTRAN=ON
+              -DCMAKE_Fortran_COMPILER=gfortran-10
+
+          - runs-on: windows-2022
+            build_type: Release
+            cxx: clang-cl
+            cc: clang-cl
+            args: ""
+
+          - runs-on: ubuntu-20.04
+            build_type: Debug
+            cxx: g++-9
+            cc: gcc-9
+            fc: gfortran-9
+            args: >
+              -DENABLE_FORTRAN=ON
+
+          - runs-on: macos-latest
+            build_type: Debug
+            cxx: clang++
+            cc: clang
+            args: >
+              -DENABLE_FORTRAN=ON
+              -DCMAKE_Fortran_COMPILER=gfortran-10
 
     name: "Repo • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -151,8 +151,8 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
-        cmake --build build --target export  # toggle for quick tarball to debug `build_export`
-        #cmake --build build --target library check-libint2compiler install
+        #cmake --build build --target export  # toggle for quick tarball to debug `build_export`
+        cmake --build build --target library check-libint2compiler install
         cd build && echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
 
     - name: Generate & Build Libint Library (FetchContent, full tests)
@@ -176,8 +176,8 @@ jobs:
         retention-days: 1
 
     - name: Test Installed Libint Library
-      if: false  # toggle for quick tarball to debug `build_export`
-      #if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      #if: false  # toggle for quick tarball to debug `build_export`
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/test_installed_library
       run: |
@@ -229,10 +229,10 @@ jobs:
           - runs-on: ubuntu-latest
             libargs: >
               -DBUILD_SHARED_LIBS=ON
-              -DLIBINT_LOCAL_EIGEN3_INSTALL=ON
+              -DLIBINT_LOCAL_Eigen3_INSTALL=ON
               -DEigen3_ROOT="/usr/share/miniconda/envs/onlyeigen/"
             testargs: >
-              -DLIBINT_LOCAL_EIGEN3_FIND=ON
+              -DLIBINT_LOCAL_Eigen3_FIND=ON
 
           - runs-on: macos-latest
             libargs: >
@@ -283,20 +283,20 @@ jobs:
         environment-file: export.yaml
         show-channel-urls: true
 
-    # Step is unnecessary. Its presence forces testing bundled Boost
-    - name: Confound Environment wrt Boost
+    # Step is unnecessary; remove for debugging.
+    - name: Confound Environment - test bundled Boost
       if: ${{ runner.os == 'macOS' }}
       shell: bash -l {0}
       run: conda remove boost
 
-    # Step is unnecessary. Its presence forces testing non-target Eigen installs
-    - name: Confound Environment wrt Eigen
+    # Step is unnecessary; remove for debugging.
+    - name: Confound Environment - test non-cmake-installed Eigen
       if: ${{ runner.os == 'Windows' }}
       shell: bash -l {0}
       run: rm -rf "${CONDA_PREFIX}/Library/share/eigen3/cmake/"
 
-    # Step is unnecessary.
-    - name: Confound Environment wrt Eigen
+    # Step is unnecessary; remove step and 3 "*Eigen3*" options in matrix for debugging.
+    - name: Confound Environment - test handed-off Eigen
       if: ${{ runner.os == 'Linux' }}
       shell: bash -l {0}
       run: |
