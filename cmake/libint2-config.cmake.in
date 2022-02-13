@@ -21,6 +21,8 @@
 #
 #   onebody_dD_lL - search for library including 1-body integrals with derivative order D (D=0..4) and max angular momentum up to L (L=2..10)
 #   eri_cC_dD_lL  - search for library including 2-body integrals with C (C=2,3,4) centers, derivative order D (D=0..4), and max angular momentum up to L (L=2..10)
+#   g12_dD-lL - search for library including F12 integrals with Gaussian factors with derivative order D and max angular momentum up to L
+#   g12dkh_dD-lL - search for library including F12 integrals with Gaussian factors and DKH with derivative order D and max angular momentum up to L (NYI)
 #
 #   impure_sh - search for library that doesn't assume 2- and 3-center integrals involve pure solid harmonics
 #

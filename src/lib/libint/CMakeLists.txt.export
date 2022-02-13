@@ -219,7 +219,6 @@ if (REQUIRE_CXX_API_COMPILED)
 
     if (BUILD_SHARED_LIBS)
         set_target_properties(int-cxx-compiled-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
-
     endif()
 
     if(MSVC)

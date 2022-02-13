@@ -64,8 +64,7 @@ set(pnv libint2) # projectnameversion
 include(options)
 include(GNUInstallDirs)
 include(CTest)
-message(STATUS "Building using CMake ${CMAKE_VERSION}")
-message(STATUS "Generating using ${CMAKE_GENERATOR}: ${CMAKE_GENERATOR_INSTANCE}")
+message(STATUS "Building using CMake ${CMAKE_VERSION} Generator ${CMAKE_GENERATOR}")
 
 #  <<<  General  >>>
 
