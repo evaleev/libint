@@ -14,18 +14,18 @@ Before you read on:
 
 # Prerequisites
 
-| Task                                                                 | Compilers               | CMake[^3] | CMake generator | Boost[^7] | Eigen   | GMPXX[^13] | MPFR[^14] |
-| :------------------------------------------------------------------- | :---------------------: | :-------: | --------------- | :-------: | :-----: | :--------: | :-------: |
-| build target `build_libint`                                          | C++[^1]                 | 🔵[^4]    | Ninja           | 🔵[^8]    | &ndash; | 🔵         | &ndash;   |
-| build target `library`                                               | C++[^1], C              | 🔵[^5]    | Ninja           | &ndash;   | &ndash; | &ndash;    | &ndash;   |
-| &emsp;&emsp;`-D REQUIRE_CXX_API=ON`                                  | C++[^1], C              | 🔵[^5]    | Ninja           | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   |
-| &emsp;&emsp;`-D ENABLE_FORTRAN=ON`                                   | C++[^1], Fortran[^2], C | 🔵[^5]    | Ninja           | &ndash;   | &ndash; | &ndash;    | &ndash;   |
+| Task                                                                 | Compilers               | CMake[^3] | CMake generator[^20] | Py      | Boost[^7] | Eigen   | GMPXX[^13] | MPFR[^14] |
+| :------------------------------------------------------------------- | :---------------------: | :-------: | -------------------- | :-----: | :-------: | :-----: | :--------: | :-------: |
+| build target `build_libint`                                          | C++[^1]                 | 🔵[^4]    | Ninja                | &ndash; | 🔵[^8]    | &ndash; | 🔵         | &ndash;   |
+| build target `library`                                               | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | &ndash;   | &ndash; | &ndash;    | &ndash;   |
+| &emsp;&emsp;`-D REQUIRE_CXX_API=ON`                                  | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   |
+| &emsp;&emsp;`-D ENABLE_FORTRAN=ON`                                   | C++[^1], Fortran[^2], C | 🔵[^5]    | Ninja                | 🔵[^22] | &ndash;   | &ndash; | &ndash;    | &ndash;   |
 | build&nbsp;project&nbsp;_consuming_&nbsp;Libint2&nbsp;library        |
-| &emsp;C&nbsp;interface&nbsp;(I/F),&nbsp;`Libint2::int2`              | C++[^1]                 | 🔸[^6]    | Ninja, Makefile | &ndash;   | &ndash; | &ndash;    | &ndash;   |
-| &emsp;C++11&nbsp;header&nbsp;I/F,&nbsp;`Libint2::cxx`                | C++[^1]                 | 🔸[^6]    | Ninja, Makefile | 🔸[^10]   | 🔵      | &ndash;    | &ndash;   |
-| &emsp;&emsp;`-D ENABLE_MPFR=ON`                                      | C++[^1]                 | 🔸[^6]    | Ninja, Makefile | 🔸[^10]   | 🔵      | 🔵         | 🔵        |
-| &emsp;C++11&nbsp;compiled&nbsp;I/F,&nbsp;`int2-cxx`                  | C++[^1]                 | 🔸[^6]    | Ninja, Makefile | 🔸[^10]   | 🔵[^12] | &ndash;    | &ndash;   |
-| &emsp;Fortran I/F,&nbsp;`Libint2::fortran`                           | Fortran[^2]             | 🔸[^6]    | Ninja, Makefile |           |         | &ndash;    | &ndash;   |
+| &emsp;C&nbsp;interface&nbsp;(I/F),&nbsp;`Libint2::int2`              | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | &ndash;   | &ndash; | &ndash;    | &ndash;   |
+| &emsp;C++11&nbsp;header&nbsp;I/F,&nbsp;`Libint2::cxx`                | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | &ndash;    | &ndash;   |
+| &emsp;&emsp;`-D ENABLE_MPFR=ON`                                      | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | 🔵         | 🔵        |
+| &emsp;C++11&nbsp;compiled&nbsp;I/F,&nbsp;`int2-cxx`                  | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵[^12] | &ndash;    | &ndash;   |
+| &emsp;Fortran I/F,&nbsp;`Libint2::fortran`                           | Fortran[^2]             | 🔸[^6]    | Ninja, Makefile      | &ndash; |           |         | &ndash;    | &ndash;   |
 
 * `🔵` required
 * `🔸` required or recommended, but there's a path forward without
@@ -58,6 +58,12 @@ Before you read on:
 [^13]: Building the Libint2 compiler or building the Libint2 library with `-D ENABLE_MPFR=ON` for high-precision testing requires the [GNU Multiple Precision (GMP)](https://gmplib.org/) library. A detectable system installation is required, and it must include C++ support. For Windows, the [MPIR](https://www.mpir.org) project may satisfy the requirement.
 
 [^14]: Building against the Libint2 library for the purpose of high-precision testing with define `LIBINT_HAS_MPFR=1` requires the [MPFR](https://www.mpfr.org/) library. A detectable system installation is required.
+
+[^20]: Tested CMake generators are [Ninja](https://ninja-build.org/) or [GNU Make](https://www.gnu.org/software/make/). The use of Ninja is **strongly** recommended!
+
+[^21]: Python used for testing.
+
+[^22]: Python used to process files for Fortran binding.
 
 # Synopsis
 
