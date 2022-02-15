@@ -1,16 +1,120 @@
-# libint compiler vs library
+# Libint
+
+a library for the evaluation of molecular integrals of many-body operators over Gaussian functions
+
+- master status: ![Build Status](https://github.com/evaleev/libint/actions/workflows/cmake/badge.svg)
+- master status: [![Build Status](https://travis-ci.org/evaleev/libint.svg?branch=master)](https://travis-ci.org/evaleev/libint)
+- project page: http://libint.valeyev.net/
+- e-mail - libint@valeyev.net
+
+See [the INSTALL.md file](INSTALL.md) for installation instructions and links to usage instructions.
+
+Copyright (C) 2004-2022 Edward F. Valeev
+
+-----------------------------------------------------------------------------
+
+# Libint Compiler vs Library
 
 Before you read on:
 
+* If you want a pre-build libint library, packages may be available:
+  * conda-forge (TBD)
+  * Debian (TBD)
+  * Fedora (TBD)
 * If you want to know how to _use_ a libint library in your code:
   * if you use C++11 or later (strongly recommended): read [this](https://github.com/evaleev/libint/wiki/using-modern-CPlusPlus-API) instead
   * if you use pre-2011 C++, C, Fortran, or any other language, refer to the [Libint Programmer's Manual](http://sourceforge.net/projects/libint/files/libint-for-beginners/progman.pdf/download)
-* If you want to know how to _generate_ a libint _library_ using the libint _compiler_, first make sure you really need to do that:
+* If you want to build and _use_ a libint _library_:
   * if all you want is a basic library that computes integrals necessary to compute energies, use the pre-generated library labeled "lmax=6 library (standard ints only)" from the [latest release](https://github.com/evaleev/libint/releases/latest) of Libint
   * many codes using libint, e.g. orca and mpqc, already include an appropriately configured libint library, and you do not need to generate it yourself
-  * if you _do_ need to make a custom library, _read on_
+  * _read on_ if you need compilation directions, skipping the compiler/generation parts.
+* If you want to know how to _generate_ a libint _library_ using the libint _compiler_, these are some compelling circumstances:
+  * if you need a custom libint library with choice of integral types, AM, orderings, language interfaces, etc.
+  * if you want to develop libint with new integral types, recurrence relations, and computation
+    strategies, you'll need to edit the compiler. If you are interested in working on the compiler
+    code please consider consulting with one of the Libint authors to avoid duplication of effort.
+  * if you _do_ need to generate a custom library, _read on_.
+
+-----------------------------------------------------------------------------
+
+# Overview
+
+The Libint build is structured into three parts:
+
+* generator/compiler
+  - (1) build src/bin/libint/ into compiler executable `build_libint`
+  - pretty quick, runs in parallel
+  - consumes all the enable/max/opt integral options and all orderings options except solid harmonic
+  - (2) optionally testable
+* export
+  - (3) run `build_libint` to generate library source (C++) files (that upon
+    compilation can become a Libint2 library) and combine them with other
+    static source files in src/lib/libint/ and general static files (e.g.,
+    include/ and docs/) into an independent tarball ready for distribution.
+  - really slow for non-trivial angular momenta, runs in serial
+  - consumes no options
+  - build target `export` to stop after this step and collect source tarball
+* library
+  - can be built as a subproject (FetchContent) or completely insulated (bare ExternalProject; default).
+    For FetchContent, must build libint-library-export target before library *build* targets appear
+  - (4) unpack the export tarball and build the library and install into <build>/library-install-stage/
+  - duration depends on number of integrals requested, runs in parallel
+  - consumes solid harmonic ordering and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR
+  - the default build target includes this final library build
+  - (5) optionally testable
+  - (6) install into CMAKE_INSTALL_PREFIX
+
+-----------------------------------------------------------------------------
 
 
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+
+
+Eigen3_ROOT to prefix when cmake in place
+EIGEN3_INCLUDE_DIR?
+    -D CMAKE_PREFIX_PATH="/psi/toolchainconda/envs/singleboost;/psi/toolchainconda/envs/singlegmp;/psi/toolchainconda/envs/singleeigen" \
+
+* Hint dependency locations all at the same installation prefix:
+
+  ```
+  -D CMAKE_PREFIX_PATH="/path/to/installation/prefix"
+  -D CMAKE_PREFIX_PATH="/home/miniconda/envs/l2dev"
+  ```
+
+* Hint dependency locations all at different installation prefixes:
+
+  ```
+  -D CMAKE_PREFIX_PATH="/home/miniconda/envs/onlyboost;/home/miniconda/envs/onlygmp;/home/miniconda/envs/onlyeigen"
+  ```
+
+* Hint dependency locations targeted by package:
+
+  ```
+  -D ???_ROOT="/home/miniconda/envs/onlyboost"
+  -D ???_ROOT="/home/miniconda/envs/onlygmp"
+  -D Eigen3_ROOT="/home/miniconda/envs/onlyeigen"
+  ```
+
+*
+#   Libint2_DIR - CMake variable, set to directory containing this Config file
+#   CMAKE_PREFIX_PATH - CMake variable, set to root directory of this package
+
+*******************************
 
 # Prerequisites
 
@@ -33,9 +137,9 @@ Before you read on:
 
 [^1]: C++ compiler that supports C++11 standard. C++11 standard is the fourth most recent international standard for C++, hence most modern compilers support it fully. A common compiler flag is `-std=c++11`, which CMake will impose on the compilation.
 
-[^2]: Fortran 2003 compiler.
+[^2]: Fortran 2003 compiler to enable Fortran bindings generation.
 
-[^3]: CMake 3.16 or higher.
+[^3]: [CMake](https://cmake.org/) 3.16 or higher.
 
 [^4]: Since Libint2 v2.8 TODO, the GNU toolchain has been replaced by CMake as the sole buildsystem for the Libint2 compiler, `build_libint`. See [update guide](#GNU-Autotools-Update-Guide).
 
@@ -43,7 +147,7 @@ Before you read on:
 
 [^6]: Consuming an installed Libint2 library is simplest with CMake by employing `find_package(Libint2)` and `target_link_libraries(... Libint2::...)` commands. To facilitate consumption outside CMake, pkgconfig files are available for the C interface, and more could be provided.
 
-[^7]: Boost 1.57 or higher. Only header-only (no compiled libraries) components needed.
+[^7]: [Boost](https://www.boost.org/) 1.57 or higher. Only header-only (no compiled libraries) components needed.
 
 [^8]: Building the Libint2 compiler needs several Boost components including MPL, Type Traits, and Preprocessor. A detectable system installation is required.
 
@@ -51,11 +155,11 @@ Before you read on:
 
 [^10]: Consuming an installed Libint2 library through a C++11 interface requires the Boost Preprocessor (PP) component. Depending on the library *build* environment, a copy may have been bundled/vendored with the install at `CMAKE_INSTALL_PREFIX/CMAKE_INSTALL_INCLUDEDIR/libint2/boost/`.
 
-[^11]: Building the Libint2 library with C++11 API needs the header-only Eigen library. For the compiled C++11 interface, `Libint2::cxx`, Eigen is actually compiled against, but for the header-only target `Libint2::cxx_ho`, Eigen only sets up the usage dependency. A detectable (either through Eigen3Config.cmake or through location-hinting) system installation is required.
+[^11]: Building the Libint2 library with C++11 API needs the header-only [Eigen](https://eigen.tuxfamily.org/) library. For the compiled C++11 interface, `Libint2::cxx`, Eigen is actually compiled against, but for the header-only target `Libint2::cxx_ho`, Eigen only sets up the usage dependency. A detectable (either through Eigen3Config.cmake or through location-hinting) system installation is required.
 
-[^12]: Consuming an installed Libint2 library through the compiled C++11 interface, `Libint2::int2-cxx` requires Eigen. It is *strongly* recommended that the same installation of Eigen be used both to build and consume the `Libint2::int2-cxx` target, especially as regards configuring BLAS and other backends.
+[^12]: Consuming an installed Libint2 library through the compiled C++11 interface, `Libint2::int2-cxx` requires [Eigen](https://eigen.tuxfamily.org/). It is *strongly* recommended that the same installation of Eigen be used both to build and consume the `Libint2::int2-cxx` target, especially as regards configuring BLAS and other backends.
 
-[^13]: Building the Libint2 compiler or building the Libint2 library with `-D ENABLE_MPFR=ON` for high-precision testing requires the [GNU Multiple Precision (GMP)](https://gmplib.org/) library. A detectable system installation is required, and it must include C++ support. For Windows, the [MPIR](https://www.mpir.org) project may satisfy the requirement.
+[^13]: Building the Libint2 compiler or building the Libint2 library with `-D ENABLE_MPFR=ON` for high-precision testing requires the [GNU Multiple Precision (GMP)](https://gmplib.org/) library. A detectable system installation is required, and it must include C++ support. For Windows, the [MPIR](https://www.mpir.org) project satisfies the requirement.
 
 [^14]: Building against the Libint2 library for the purpose of high-precision testing with define `LIBINT_HAS_MPFR=1` requires the [MPFR](https://www.mpfr.org/) library. A detectable system installation is required.
 
@@ -106,32 +210,6 @@ cmake/  COPYING  src/  tests/  ...
 Use combined targets like `cmake --target check install` to avoid some unnecessary rebuilding (esp. of build_libint) that occurs with successive targets. The CMake dependency structure is imperfect.
 
 
-The build is structured into three parts:
-
-* generator
-  - (1) build src/bin/libint/ into generator/compiler executable `build_libint`
-  - pretty quick, runs in parallel
-  - consumes all the enable/max/opt integral options and all orderings options except solid harmonic
-  - (2) optionally testable
-* export
-  - (3) run `build_libint` to generate library source (C++) files (that upon
-    compilation can become a Libint2 library) and combine them with other
-    static source files in src/lib/libint/ and general static files (e.g.,
-    include/ and docs/) into an independent tarball ready for distribution.
-  - really slow for non-trivial angular momenta, runs in serial
-  - consumes no options
-  - build target `export` to stop after this step and collect source tarball
-* library
-  - can be built as a subproject (FetchContent) or completely insulated (bare ExternalProject; default)
-  - if building via bare ExternalProject:
-    - (4) unpack the export tarball and build the library and install into <build>/library-install-stage/
-    - duration depends on number of integrals requested, runs in parallel
-    - consumes solid harmonic ordering and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR
-    - the default build target includes this final library build
-    - (5) optionally testable
-    - (6) install into CMAKE_INSTALL_PREFIX
-  - if building via FetchContent:
-    - must build libint-library-export target before library *build* targets appear
 
 -----------------------------------------------------------------------------
 # configuring libint generator
@@ -139,7 +217,7 @@ The build is structured into three parts:
 These are the most useful configure options:
 
 * Notes
-  * Codes "G", "L", or "GL" for each option indicate whether it is consumed by the generator, the library, or both.
+  * Codes "G", "L", or "C" for each option indicate whether it is consumed by the generator, the library, the library consumer, or a combination.
     * If your final target is the export tarball, use options that include the letter "G".
     * If you're building a library from an export tarball, use options that include the letter "L".
     * For a continuous generator->export->library build, options supplied at the top level will be properly handed off to generator and library build.
@@ -235,9 +313,29 @@ These are the most useful configure options:
 * `CMAKE_INSTALL_DATADIR` — L — Directory to which data files are installed. Standard CMake variable. [Default=share]
 * `LIBINT2_INSTALL_CMAKEDIR` — L — Directory to which CMake files are installed. [Default=lib/cmake/libint2]
 * `LIBINT2_INSTALL_BASISDIR` — L — Directory to which data (basis) files are installed. basis/ directory created within this. [Default=share/libint/<LIBINT_VERSION>]
+* `LIBINT2_INSTALL_FMODDIR — L — Directory to which Fortran module files are installed if `ENABLE_FORTRAN=ON`. [Default=include/libint2/fortran2/modules]
 
-* `BUILD_TESTING` — GL — Whether to build the testing infrastructure and define the `check` target. Standard CMake variable. [Default=ON]
-* `ENABLE_MPFR` — L — Use MPFR dependency to test Libint integrals in high precision. [Default=OFF]
+* `BUILD_TESTING` — G, L — Whether to build the testing infrastructure and define the `check` target. Standard CMake variable. [Default=ON]
+* `ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
+
+
+BUILD_SHARED_LIBS — L — Build Libint library as shared, not static. [Default=OFF]
+LIBINT2_BUILD_SHARED_AND_STATIC_LIBS — L — Build both shared and static Libint libraries in one shot. Uses `-fPIC`. [Default=OFF]
+
+    -D CMAKE_PREFIX_PATH="/psi/toolchainconda/envs/singleboost;/psi/toolchainconda/envs/singlegmp;/psi/toolchainconda/envs/singleeigen" \
+
+#   Libint2_DIR - CMake variable, set to directory containing this Config file
+#   CMAKE_PREFIX_PATH - CMake variable, set to root directory of this package
+
+* `REQUIRE_CXX_API` — L — Build C++11 Libint API. Define header-only library target and check target (requires Eigen3). [Default=ON]
+* `REQUIRE_CXX_API_COMPILED` — L — Build C++11 Libint API. Define compiled (not just header-only) targets (requires Eigen3). [Default=ON]
+* `ENABLE_FORTRAN` — L — Build Fortran03+ bindings (requires C and Fortran compilers and Python). [Default=OFF]
+
+* `LIBINT_LOCAL_Eigen3_INSTALL` — L — Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. See `LIBINT_LOCAL_Eigen3_FIND`. [Default=OFF]
+* `LIBINT_LOCAL_Eigen3_FIND` — C — Set to `ON` before `find_package(Libint2)` to load the Eigen3 target exported by `LIBINT_LOCAL_Eigen3_INSTALL=ON` if Libint library built locally. [Default=OFF]
+
+
+
 
 ## GNU Autotools Update Guide
 
@@ -330,10 +428,31 @@ These are the most useful configure options:
 * Decide if you want the Boost preprocessor headers bundled with Libint or if they should be a
   build-against-time dependency of the C++11 interface. Withhold (bundle) or supply (dependency)
   Boost detection paths from the library build accordingly. FWIW, Conda bundles.
+* Decide if you want the compiled cxx library. something like it is in use in mpqc4
 
-## program-specific notes
+-----------------------------------------------------------------------------
 
-#### mpqc4
+# Platform-Specific Notes
+
+## Linux
+
+## macOS
+
+* Apple `clang++` and [MacPorts](http://www.macports.org/) `g++` (4.8) both work with `-std=c++11` flag
+* MacPorts gmp package works fine
+* On macOS the default `ar` program lacks support for response files (e.g., https://github.com/evaleev/libint/issues/135 and see https://gitlab.kitware.com/cmake/cmake/issues/16731). Thus you should install the GNU `ar` program (e.g., using HomeBrew: `brew install binutils`) and tell CMake to use it (e.g., add `-DCMAKE_AR=/usr/local/opt/binutils/bin/ar` to the CMake command line).
+
+## Windows
+
+* Several blocking or correctness issues exist; the most thorough list is at .github/workflows/cmake.yml
+* A production path is to generate an export tarball with Linux, build static library on Windows, and consume
+* Use MPIR package for GMP
+
+-----------------------------------------------------------------------------
+
+# Program-Specific Notes
+
+### mpqc4
 
 * standard libtool configuration:
 
@@ -347,7 +466,7 @@ These are the most useful configure options:
   --enable-eri=0 --with-max-am=7 --with-opt-am=4 --disable-unrolling --enable-generic-code --enable-contracted-ints
   ```
 
-#### gamess
+### gamess
 
 * standard libtool configuration:
 
@@ -355,7 +474,7 @@ These are the most useful configure options:
   --enable-eri=0 --with-max-am=7 --with-opt-am=4 --disable-unrolling --enable-generic-code --enable-contracted-ints --with-cartgauss-ordering=gamess
   ```
 
-#### orca
+### orca
 
 * a libint library (version 2.0.2) is embedded in ORCA
 * standard libtool configuration:
@@ -364,7 +483,7 @@ These are the most useful configure options:
   --enable-eri=2 --enable-eri3=2 --enable-eri2=2 --with-max-am=7 --with-opt-am=4 --with-eri-max-am=7,4,3 --with-eri-opt-am=4,3,2 --disable-unrolling --enable-generic-code --enable-contracted-ints --with-cartgauss-ordering=orca --with-shell-set=orca --enable-eri3-pure-sh --enable-eri2-pure-sh
   ```
 
-#### bagel
+### bagel
 
 * standard libtool configuration:
 
@@ -376,7 +495,7 @@ These are the most useful configure options:
 * if you want to use spherical Gaussians only add: `--enable-eri3-pure-sh --enable-eri2-pure-sh` (some tests may fail)
 * It appears that on a Mac Libint and BAGEL must be either both static or both shared (2/3/2014)
 
-#### psi4
+### psi4
 
 * production CMake configuration:
 
@@ -392,8 +511,12 @@ These are the most useful configure options:
 
 * see [notes](https://github.com/psi4/psi4/blob/master/external/upstream/libint2/CMakeLists.txt) for details of Psi4/Libint2 configuration
 
-    -DDISABLE_ONEBODY_PROPERTY_DERIVS=OFF \
-    -DENABLE_G12=1 \
-    -DWITH_G12_MAX_AM=4 \
-    -DWITH_G12_OPT_AM=3 \
+* Psi4 near-future configuration additions:
+
+  ```
+    -DDISABLE_ONEBODY_PROPERTY_DERIVS=OFF
+    -DENABLE_G12=1
+    -DWITH_G12_MAX_AM=4
+    -DWITH_G12_OPT_AM=3
+  ```
 
