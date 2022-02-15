@@ -313,14 +313,14 @@ These are the most useful configure options:
 * `CMAKE_INSTALL_DATADIR` — L — Directory to which data files are installed. Standard CMake variable. [Default=share]
 * `LIBINT2_INSTALL_CMAKEDIR` — L — Directory to which CMake files are installed. [Default=lib/cmake/libint2]
 * `LIBINT2_INSTALL_BASISDIR` — L — Directory to which data (basis) files are installed. basis/ directory created within this. [Default=share/libint/<LIBINT_VERSION>]
-* `LIBINT2_INSTALL_FMODDIR — L — Directory to which Fortran module files are installed if `ENABLE_FORTRAN=ON`. [Default=include/libint2/fortran2/modules]
+* `LIBINT2_INSTALL_FMODDIR` — L — Directory to which Fortran module files are installed if `ENABLE_FORTRAN=ON`. [Default=include/libint2/fortran2/modules]
 
 * `BUILD_TESTING` — G, L — Whether to build the testing infrastructure and define the `check` target. Standard CMake variable. [Default=ON]
 * `ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
 
 
-BUILD_SHARED_LIBS — L — Build Libint library as shared, not static. [Default=OFF]
-LIBINT2_BUILD_SHARED_AND_STATIC_LIBS — L — Build both shared and static Libint libraries in one shot. Uses `-fPIC`. [Default=OFF]
+* `BUILD_SHARED_LIBS` — L — Build Libint library as shared, not static. [Default=OFF]
+* `LIBINT2_BUILD_SHARED_AND_STATIC_LIBS` — L — Build both shared and static Libint libraries in one shot. Uses `-fPIC`. [Default=OFF]
 
     -D CMAKE_PREFIX_PATH="/psi/toolchainconda/envs/singleboost;/psi/toolchainconda/envs/singlegmp;/psi/toolchainconda/envs/singleeigen" \
 
