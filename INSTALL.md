@@ -1,18 +1,3 @@
-# Libint
-
-a library for the evaluation of molecular integrals of many-body operators over Gaussian functions
-
-- master status: ![Build Status](https://github.com/evaleev/libint/actions/workflows/cmake/badge.svg)
-- master status: [![Build Status](https://travis-ci.org/evaleev/libint.svg?branch=master)](https://travis-ci.org/evaleev/libint)
-- project page: http://libint.valeyev.net/
-- e-mail - libint@valeyev.net
-
-See [the INSTALL.md file](INSTALL.md) for installation instructions and links to usage instructions.
-
-Copyright (C) 2004-2022 Edward F. Valeev
-
------------------------------------------------------------------------------
-
 # Libint Compiler vs Library
 
 Before you read on:
@@ -27,13 +12,14 @@ Before you read on:
 * If you want to _build and use_ a libint _library_:
   * if all you want is a basic library that computes integrals necessary to compute energies, use the pre-generated library labeled "lmax=6 library (standard ints only)" from the [latest release](https://github.com/evaleev/libint/releases/latest) of Libint
   * many codes using libint, e.g. orca and mpqc, already include an appropriately configured libint library, and you do not need to generate it yourself
-  * read on if you need compilation directions, skipping the compiler/generation parts.
+  * if you need compilation directions, _read on_, skipping the compiler/generation parts.
 * If you want to know how to _generate_ a libint _library_ using the libint _compiler_, these are some compelling circumstances:
   * if you need a custom libint library with choice of integral types, AM, orderings, language interfaces, etc.
   * if you want to develop libint with new integral types, recurrence relations, and computation
     strategies, you'll need to edit the compiler. If you are interested in working on the compiler
     code please consider consulting with one of the Libint authors to avoid duplication of effort.
-  * if you do need to generate a custom library, read on.
+  * if you do need to generate a custom library, _read on_.
+
 
 -----------------------------------------------------------------------------
 
@@ -64,59 +50,34 @@ The Libint build is structured into three parts:
   - (5) optionally testable
   - (6) install into CMAKE_INSTALL_PREFIX
 
------------------------------------------------------------------------------
+
+Command-line synopsis. See table below for `--target` choices and [section](#Configuring-Libint) for `-D options` choices.
+
+```bash
+>>> ls
+cmake/  COPYING  src/  tests/  ...
+>>> cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/future/install-libint -D options ...
+...
+-- Generating done
+-- Build files have been written to: /current/dir/build
+>>> cmake --build build --target install -j`getconf _NPROCESSORS_ONLN`
+```
+
+
+| `--target ...`            | incl. | steps |     ( |  see  | below | )     |
+| --------------            | ----- | ----- | ----- | ----- | ----- | ----- |
+| `build_libint`            |   1   |   -   |   -   |   -   |   -   |   -   |
+| `check-libint2compiler`   |   1   |   2   |   -   |   -   |   -   |   -   |
+| `export`                  |   1   |   -   |   3   |   -   |   -   |   -   |
+| `library` (default)       |   1   |   -   |   3   |   4   |   -   |   -   |
+| `check`                   |   1   |   2   |   3   |   4   |   5   |   -   |
+| `install`                 |   1   |   -   |   3   |   4   |   -   |   6   |
+| `check install`           |   1   |   2   |   3   |   4   |   5   |   6   |
+
+Use combined targets like `cmake --target check install` to avoid some unnecessary rebuilding (esp. of build_libint) that occurs with successive targets. The CMake dependency structure is imperfect.
 
 
 -----------------------------------------------------------------------------
-
-
------------------------------------------------------------------------------
-
-
------------------------------------------------------------------------------
-
-
------------------------------------------------------------------------------
-
-
------------------------------------------------------------------------------
-
-
------------------------------------------------------------------------------
-
-
-Eigen3_ROOT to prefix when cmake in place
-EIGEN3_INCLUDE_DIR?
-
-* Hint dependency locations all at the same installation prefix:
-
-  ```
-  -D CMAKE_PREFIX_PATH="/path/to/installation/prefix"
-  -D CMAKE_PREFIX_PATH="/home/miniconda/envs/l2dev"
-  ```
-
-* Hint dependency locations all at different installation prefixes:
-
-  ```
-  -D CMAKE_PREFIX_PATH="/home/miniconda/envs/onlyboost;/home/miniconda/envs/onlygmp;/home/miniconda/envs/onlyeigen"
-  ```
-
-* Hint dependency locations targeted by package:
-
-  ```
-  -D BOOST_ROOT="/home/miniconda/envs/onlyboost"
-  -D Multiprecision_ROOT="/home/miniconda/envs/onlygmp"
-  -D Eigen3_ROOT="/home/miniconda/envs/onlyeigen"
-  ```
-
-Libint2_DIR - CMake variable, set to directory containing this Config file
-* `CMAKE_PREFIX_PATH` — G L — CMake variable, set to root directory of this package [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html)
-* `BOOST_ROOT` — G L —
-* `Multiprecision_ROOT` — G L —
-* `Eigen3_ROOT` — L —
-
-
-*******************************
 
 # Prerequisites
 
@@ -171,58 +132,17 @@ Libint2_DIR - CMake variable, set to directory containing this Config file
 
 [^22]: Python used to process files for Fortran binding.
 
-# Synopsis
-
-- configure: `cmake -S /path/to/compiler/source/tree -B build [-Dvar1=value1] [-Dvar2=value2] ...` where
-  the optional CMake cache variables `var1`, `var2` are described below. Replace `build` with desired path to
-  the build directory, if desired; it will be created, if needed.
-- build: `cmake --build build`
-- test (optional): `cmake --build build --target check`
-- install the library: `cmake --build build --target install`
-
-
-For (more) complete instructions please refer to https://github.com/evaleev/libint/wiki
-
-
-
-
-CMake build overview:
-
-```bash
->>> ls
-cmake/  COPYING  src/  tests/  ...
->>> cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/future/install-libint ...
-...
--- Generating done
--- Build files have been written to: /current/dir/build
->>> cmake --build build --target install -j`getconf _NPROCESSORS_ONLN`
-```
-
-
-| `--target ...`            | incl. | steps |     ( |  see  | below | )     |
-| --------------            | ----- | ----- | ----- | ----- | ----- | ----- |
-| `build_libint`            |   1   |   -   |   -   |   -   |   -   |   -   |
-| `check-libint2compiler`   |   1   |   2   |   -   |   -   |   -   |   -   |
-| `export`                  |   1   |   -   |   3   |   -   |   -   |   -   |
-| `library` (default)       |   1   |   -   |   3   |   4   |   -   |   -   |
-| `check`                   |   1   |   2   |   3   |   4   |   5   |   -   |
-| `install`                 |   1   |   -   |   3   |   4   |   -   |   6   |
-| `check install`           |   1   |   2   |   3   |   4   |   5   |   6   |
-
-Use combined targets like `cmake --target check install` to avoid some unnecessary rebuilding (esp. of build_libint) that occurs with successive targets. The CMake dependency structure is imperfect.
-
-
 
 -----------------------------------------------------------------------------
-# configuring libint generator
 
-These are the most useful configure options:
+# Configuring Libint
 
 * Notes
   * Codes "G", "L", or "C" for each option indicate whether it is consumed by the generator, the library, the library consumer, or a combination.
     * If your final target is the export tarball, use options that include the letter "G".
     * If you're building a library from an export tarball, use options that include the letter "L".
     * For a continuous generator->export->library build, options supplied at the top level will be properly handed off to generator and library build.
+
 
 ###  Which Integrals Classes, Which Derivative Levels
 
@@ -239,18 +159,18 @@ These are the most useful configure options:
 * `ENABLE_T1G12_SUPPORT` — G — Enable [Ti,G12] integrals when G12 integrals are enabled. Irrelevant when `ENABLE_G12=OFF`. Use OFF to disable. [Default=ON]
 
 
-###  Which Ordering Convention
+###  Which Ordering Conventions
 
-* `LIBINT2_SHGAUSS_ORDERING` — L — Ordering for shells of solid harmonic Gaussians. Consumed at library build-time. [Default=standard]
+* `LIBINT2_SHGAUSS_ORDERING` — L — Ordering for shells of solid harmonic Gaussians. [Default=standard]
   * `standard` — standard ordering (-l, -l+1 ... l)
   * `gaussian` — the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
-* `LIBINT2_CARTGAUSS_ORDERING` — G — Orderings for shells of cartesian Gaussians. Consumed at generator build-time. [Default=standard]
+* `LIBINT2_CARTGAUSS_ORDERING` — G — Orderings for shells of cartesian Gaussians. [Default=standard]
   * `standard` — standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...) This is ordering of the Common Component Architecture (CCA) standard for molecular integral data exchange described in ["Components for Integral Evaluation in Quantum Chemistry", J. P. Kenny, C. L. Janssen, E. F. Valeev, and T. L. Windus, J. Comp. Chem. 29, 562 (2008)](http://dx.doi.org/10.1002/jcc.20815).
   * `intv3` — intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx) This is used by IntV3, the default integral engine of [MPQC](https://github.com/evaleev/libint/wiki/www.mpqc.org). Use this to make Libint and IntV3 engines in MPQC interoperable.
   * `gamess` — [GAMESS](http://www.msg.ameslab.gov/gamess/) ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
   * `orca` — [ORCA](http://cec.mpg.de/forum/) ordering (hydrid between GAMESS and standard)
   * `bagel` — [BAGEL](https://github.com/evaleev/libint/wiki/nubakery.org) axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)
-* `LIBINT2_SHELL_SET` — G — Support computation of shell sets sets subject to these restrictions. Consumed at generator build-time. [Default=standard]
+* `LIBINT2_SHELL_SET` — G — Support computation of shell sets sets subject to these restrictions. [Default=standard]
   * `standard` — standard ordering:
       for (ab|cd):
         l(a) >= l(b),
@@ -268,6 +188,7 @@ These are the most useful configure options:
 * `ERI3_PURE_SH` — G — Assume the 'unpaired' center of 3-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
 * `ERI2_PURE_SH` — G — Assume the 2-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
 
+
 ###  How High Angular Momentum
 
 * Notes
@@ -278,7 +199,7 @@ These are the most useful configure options:
     -- Setting option WITH_ERI3_MAX_AM: 5;4;3
     ```
 
-  * high MAX_AM generating >20k files may require `ulimit -s 65535` for linking library target on Linux to avert "ld: Argument list too long"
+  * high MAX_AM generating >20k files may require `ulimit -s 65535` for linking library target on Linux to avert "ld: Argument list too long". Unity build likely averts this.
 
 * `WITH_MAX_AM` — G — Support Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. Specify values greater or equal to `WITH_<class>_MAX_AM`; often mirrors `WITH_ERI3_MAX_AM`. [Default=4]
 * `WITH_OPT_AM` — G — Optimize maximally for up to angular momentum N (N <= WITH_MAX_AM). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `(WITH_MAX_AM/2)+1`]
@@ -304,32 +225,97 @@ These are the most useful configure options:
 * `WITH_G12DKH_OPT_AM` — G — Optimize G12DKH integrals for up to angular momentum N (N <= max-am). No specification with per-derivative list. [Default=-1 `WITH_OPT_AM`]
 
 
-### Miscellaneous
+### Compilers and Flags
+
+* `CMAKE_CXX_COMPILER` — G L — Specify C++ Compiler. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* `CMAKE_C_COMPILER` — G L — Specify C Compiler. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* `CMAKE_Fortran_COMPILER` — G L — Specify Fortran Compiler. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* `CMAKE_CXX_FLAGS` — G L — Additional C++ flags. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
+* `CMAKE_C_FLAGS` — G L — Additional C flags. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
+* `CMAKE_Fortran_FLAGS` — G L — Additional Fortran flags. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
+
+
+### Install Paths
 
 * Notes
   * Approximate defaults are shown. Actual defaults from [GNUInstallDirs](https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html)
 
-* `CMAKE_INSTALL_BINDIR` — L — Directory to which executables and runtime libraries are installed. Standard CMake variable. [Default=bin]
-* `CMAKE_INSTALL_LIBDIR` — L — Directory to which libraries are installed. Standard CMake variable. [Default=lib]
-* `CMAKE_INSTALL_INCLUDEDIR` — L — Directory to which headers are installed. Standard CMake variable. [Default=include]
-* `CMAKE_INSTALL_DATADIR` — L — Directory to which data files are installed. Standard CMake variable. [Default=share]
-* `LIBINT2_INSTALL_CMAKEDIR` — L — Directory to which CMake files are installed. [Default=lib/cmake/libint2]
-* `LIBINT2_INSTALL_BASISDIR` — L — Directory to which data (basis) files are installed. basis/ directory created within this. [Default=share/libint/<LIBINT_VERSION>]
-* `LIBINT2_INSTALL_FMODDIR` — L — Directory to which Fortran module files are installed if `ENABLE_FORTRAN=ON`. [Default=include/libint2/fortran2/modules]
-
-* `BUILD_TESTING` — G L — Whether to build the testing infrastructure and define the `check` target. Standard CMake variable. [Default=ON]
-* `ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
+* `CMAKE_INSTALL_PREFIX` — L — Directory into which library installed. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
+* `CMAKE_INSTALL_BINDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which executables and runtime libraries are installed. Standard CMake variable. [Default=bin]
+* `CMAKE_INSTALL_LIBDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which libraries are installed. Standard CMake variable. [Default=lib]
+* `CMAKE_INSTALL_INCLUDEDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which headers are installed. Standard CMake variable. [Default=include]
+* `CMAKE_INSTALL_DATADIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which data files are installed. Standard CMake variable. [Default=share]
+* `LIBINT2_INSTALL_CMAKEDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which CMake files are installed. [Default=lib/cmake/libint2]
+* `LIBINT2_INSTALL_BASISDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which data (basis) files are installed. basis/ directory created within this. [Default=share/libint/<LIBINT_VERSION>]
+* `LIBINT2_INSTALL_FMODDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which Fortran module files are installed if `ENABLE_FORTRAN=ON`. [Default=include/libint2/fortran2/modules]
 
 
-* `BUILD_SHARED_LIBS` — L — Build Libint library as shared, not static. [Default=OFF]
-* `LIBINT2_BUILD_SHARED_AND_STATIC_LIBS` — L — Build both shared and static Libint libraries in one shot. Uses `-fPIC`. [Default=OFF]
+### Detecting Dependencies
+
+* `Python_EXECUTABLE` — L — Path to Python interpreter.
+* `CMAKE_PREFIX_PATH` — G L — Set to list of root directories to look for external dependencies. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html)
+* `BOOST_ROOT` — G L C —
+* `Multiprecision_ROOT` — G L —
+* `Eigen3_ROOT` — L C — Prefix to installation location (`Eigen3_ROOT/...` exists)
+* `Libint2_DIR` — C — CMake variable, set to directory containing this Config file
+* `LIBINT_LOCAL_Eigen3_FIND` — C — Set to `ON` before `find_package(Libint2)` to load the Eigen3 target exported by `LIBINT_LOCAL_Eigen3_INSTALL=ON` if Libint library built locally. [Default=OFF]
+
+EIGEN3_INCLUDE_DIR?
+
+* Hint dependency locations all at the same installation prefix:
+
+  ```
+  -D CMAKE_PREFIX_PATH="/path/to/installation/prefix"
+  -D CMAKE_PREFIX_PATH="/home/miniconda/envs/l2dev"
+  ```
+
+* Hint dependency locations all at different installation prefixes:
+
+  ```
+  -D CMAKE_PREFIX_PATH="/home/miniconda/envs/onlyboost;/home/miniconda/envs/onlygmp;/home/miniconda/envs/onlyeigen"
+  ```
+
+* Hint dependency locations targeted by package:
+
+  ```
+  -D BOOST_ROOT="/home/miniconda/envs/onlyboost"
+  -D Multiprecision_ROOT="/home/miniconda/envs/onlygmp"
+  -D Eigen3_ROOT="/home/miniconda/envs/onlyeigen"
+  ```
+
+* Hint dependency locations targeted by <package>Config.cmake (most CMake-like): UNTESTED
+
+  ```
+  -D _DIR="/home/miniconda/envs/onlyeigen/share/eigen3/cmake/Eigen3Config.cmake"
+  -D _DIR="/home/miniconda/envs/onlyboost/lib/cmake/Boost-1.73.0/BoostConfig.cmake"
+  ```
+
+* Hint dependency locations targeted by package variables (least CMake-like): UNTESTED
+
+  ```
+  ```
+
+
+### Build Library What
 
 * `REQUIRE_CXX_API` — L — Build C++11 Libint API. Define header-only library target and check target (requires Eigen3; Boost recommended). [Default=ON]
 * `REQUIRE_CXX_API_COMPILED` — L — Build C++11 Libint API. Define compiled (not just header-only) targets (requires Eigen3; Boost recommended). [Default=ON]
 * `ENABLE_FORTRAN` — L — Build Fortran03+ module/bindings (requires C and Fortran compilers and Python). [Default=OFF]
-
+* `ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
 * `LIBINT_LOCAL_Eigen3_INSTALL` — L — Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. See `LIBINT_LOCAL_Eigen3_FIND`. [Default=OFF]
-* `LIBINT_LOCAL_Eigen3_FIND` — C — Set to `ON` before `find_package(Libint2)` to load the Eigen3 target exported by `LIBINT_LOCAL_Eigen3_INSTALL=ON` if Libint library built locally. [Default=OFF]
+
+
+### Build Library How
+
+* `CMAKE_BUILD_TYPE` — G L — [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) [Default=Release]
+* `BUILD_SHARED_LIBS` — L — Build Libint library as shared, not static. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/BUILD_SHARED_LIBS.html) [Default=OFF]
+* `LIBINT2_BUILD_SHARED_AND_STATIC_LIBS` — L — Build both shared and static Libint libraries in one shot. Uses `-fPIC`. [Default=OFF]
+* `ENABLE_XHOST` — L — Enables processor-specific optimization (with MSVC, it enables AVX2 instructions) [Default=ON]
+* `BUILD_TESTING` — G L — Whether to build the testing infrastructure and define the `check` target. [Standard CMake variable.](https://cmake.org/cmake/help/latest/command/enable_testing.html) [Default=ON]
+* `LIBINT_BUILD_LIBRARY_AS_SUBPROJECT` — G — If building compiler and library in continuous command, build generated library as a subproject; if OFF will configure and build separately (expert only). [Default=OFF]
+
+
+### Miscellaneous
 
 * `LIBINT2_REALTYPE` — L — Specifies the floating-point data type used by the library. [Default=double]
   By overriding the default it is possible to customize the library to use a lower-precision representation (which typically results in a performance boost) and/or to generate [SIMD](http://en.wikipedia.org/wiki/SIMD) vectorized code. *N.B. C++11 interface cannot be currently used with SIMD vectorized libraries!* The following values are valid:
@@ -345,11 +331,6 @@ These are the most useful configure options:
 
   **N.B.** It is also possible to use real vector types of [Agner Fog's vectorclass library](http://www.agner.org/optimize/#vectorclass), e.g. `Vec4d` and `Vec8f` for AVX. To use this library you need to add this to CPPFLAGS or CXXFLAGS: `-Ipath_to_vectorclass -DLIBINT2_HAVE_AGNER_VECTORCLASS` . On macOS, we only succeeded in using this library with a recent GNU C++ compiler, not with Clang. Not tested after CMake rework.
 
-* `CMAKE_BUILD_TYPE` — G L — Customary CMake variable. [Default=Release]
-* `LIBINT_BUILD_LIBRARY_AS_SUBPROJECT` — G — If building compiler and library in continuous command, build generated library as a subproject; if OFF will configure and build separately (expert only). [Default=OFF]
-* `ENABLE_XHOST` — L — "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
-
-
 * `LIBINT_CONTRACTED_INTS` — G — Turn on support for contracted integrals. [Default=ON]
 * `LIBINT_ERI_STRATEGY` — G — Compute ERIs using the following strategy (experts only). [Default=1]
 * `LIBINT_USE_COMPOSITE_EVALUATORS` — G — Libint will use composite evaluators (i.e. every evaluator will compute one integral type only). [Default=ON]
@@ -360,16 +341,9 @@ These are the most useful configure options:
 * `LIBINT_ENABLE_GENERIC_CODE` — G — Use manually-written generic code. [Default=OFF]
 
 
-* `CMAKE_CXX_COMPILER` — G L — Specify C++ Compiler. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
-* `CMAKE_C_COMPILER` — G L — Specify C Compiler. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
-* `CMAKE_Fortran_COMPILER` — G L — Specify Fortran Compiler. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
-* `CMAKE_CXX_FLAGS` — G L — Specify additional user flags for C++ files. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
-* `CMAKE_C_FLAGS` — G L — Specify additional user flags for C files. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
-* `CMAKE_Fortran_FLAGS` — G L — Specify additional user flags for Fortran files. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
-* `CMAKE_INSTALL_PREFIX` — L — Specify directory into which library installed. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
+-----------------------------------------------------------------------------
 
-
-## GNU Autotools Update Guide
+# GNU Autotools Update Guide
 
 * Notes
   * When three option names present, they are for libtool+cmake --> cmake+cmake (c. #148 for Psi4 c. 2020-2021) --> cmake+cmake
@@ -436,12 +410,13 @@ These are the most useful configure options:
 
 * `--with-real-type=type` --> `-D LIBINT2_REALTYPE=type`
 
-## Targets
-
-  * `libint2` --> `Libint2::int2`
-  * `libint2_cxx` --> `Libint2::cxx`
+* `libint2` --> `Libint2::int2` (target)
+* `libint2_cxx` --> `Libint2::cxx` (target)
 
 
+-----------------------------------------------------------------------------
+
+# Targets
 
 | Namespaced Target[^15] | Component[^16] | Built by Default | Ensure Built                  | Ensure Excluded                           | Internal Target(s)[^17]              | Alias[^18]    |
 | ---------------------- | -------------- | ---------------- | ----------------------------- | ----------------------------------------- | -----------------------------------  | ------------  |
@@ -457,12 +432,15 @@ These are the most useful configure options:
 [^19]: The `libint_f` internal target defines the Fortran interface to Libint2. One must also link to `Libint2::int2` or `Libint2::cxx`. At present, it is not exported, and a namespaced target is not defined.
 
 
+-----------------------------------------------------------------------------
+
 ## Packagers
 
 * Decide if you want the Boost preprocessor headers bundled with Libint or if they should be a
   build-against-time dependency of the C++11 interface. Withhold (bundle) or supply (dependency)
   Boost detection paths from the library build accordingly. FWIW, Conda bundles.
 * Decide if you want the compiled cxx library. something like it is in use in mpqc4
+
 
 -----------------------------------------------------------------------------
 
@@ -481,6 +459,7 @@ These are the most useful configure options:
 * Several blocking or correctness issues exist; the most thorough list is at .github/workflows/cmake.yml
 * A production path is to generate an export tarball with Linux, build static library on Windows, and consume
 * Use MPIR package for GMP
+
 
 -----------------------------------------------------------------------------
 
