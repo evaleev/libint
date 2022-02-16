@@ -97,6 +97,8 @@ else()
             -DLIBINT2_SHGAUSS_ORDERING=${LIBINT2_SHGAUSS_ORDERING}
             -DBUILD_TESTING=${BUILD_TESTING}
             -DENABLE_MPFR=${ENABLE_MPFR}
+            -DLIBINT2_REALTYPE=${LIBINT2_REALTYPE}
+            -DENABLE_XHOST=${ENABLE_XHOST}
             )
     if (CMAKE_C_COMPILER)
         list(APPEND library_CMAKE_ARGS
@@ -111,6 +113,11 @@ else()
     if (Eigen3_DIR)
         list(APPEND library_CMAKE_ARGS
                 "-DEigen3_DIR=${Eigen3_DIR}"
+                )
+    endif()
+    if (Eigen3_ROOT)
+        list(APPEND library_CMAKE_ARGS
+                "-DEigen3_ROOT=${Eigen3_ROOT}"
                 )
     endif()
     if (LIBINT_LOCAL_Eigen3_INSTALL)

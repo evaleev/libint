@@ -17,23 +17,23 @@ Copyright (C) 2004-2022 Edward F. Valeev
 
 Before you read on:
 
-* If you want a pre-build libint library, packages may be available:
+* If you want a pre-built libint library, packages may be available:
   * conda-forge (TBD)
   * Debian (TBD)
   * Fedora (TBD)
 * If you want to know how to _use_ a libint library in your code:
   * if you use C++11 or later (strongly recommended): read [this](https://github.com/evaleev/libint/wiki/using-modern-CPlusPlus-API) instead
   * if you use pre-2011 C++, C, Fortran, or any other language, refer to the [Libint Programmer's Manual](http://sourceforge.net/projects/libint/files/libint-for-beginners/progman.pdf/download)
-* If you want to build and _use_ a libint _library_:
+* If you want to _build and use_ a libint _library_:
   * if all you want is a basic library that computes integrals necessary to compute energies, use the pre-generated library labeled "lmax=6 library (standard ints only)" from the [latest release](https://github.com/evaleev/libint/releases/latest) of Libint
   * many codes using libint, e.g. orca and mpqc, already include an appropriately configured libint library, and you do not need to generate it yourself
-  * _read on_ if you need compilation directions, skipping the compiler/generation parts.
+  * read on if you need compilation directions, skipping the compiler/generation parts.
 * If you want to know how to _generate_ a libint _library_ using the libint _compiler_, these are some compelling circumstances:
   * if you need a custom libint library with choice of integral types, AM, orderings, language interfaces, etc.
   * if you want to develop libint with new integral types, recurrence relations, and computation
     strategies, you'll need to edit the compiler. If you are interested in working on the compiler
     code please consider consulting with one of the Libint authors to avoid duplication of effort.
-  * if you _do_ need to generate a custom library, _read on_.
+  * if you do need to generate a custom library, read on.
 
 -----------------------------------------------------------------------------
 
@@ -56,8 +56,8 @@ The Libint build is structured into three parts:
   - build target `export` to stop after this step and collect source tarball
 * library
   - can be built as a subproject (FetchContent) or completely insulated (bare ExternalProject; default).
-    For FetchContent, must build libint-library-export target before library *build* targets appear
-  - (4) unpack the export tarball and build the library and install into <build>/library-install-stage/
+    For FetchContent, must build libint-library-export target before library build targets appear
+  - (4) unpack the export tarball and build the library and install into \<build\>/library-install-stage/
   - duration depends on number of integrals requested, runs in parallel
   - consumes solid harmonic ordering and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR
   - the default build target includes this final library build
@@ -87,7 +87,6 @@ The Libint build is structured into three parts:
 
 Eigen3_ROOT to prefix when cmake in place
 EIGEN3_INCLUDE_DIR?
-    -D CMAKE_PREFIX_PATH="/psi/toolchainconda/envs/singleboost;/psi/toolchainconda/envs/singlegmp;/psi/toolchainconda/envs/singleeigen" \
 
 * Hint dependency locations all at the same installation prefix:
 
@@ -105,14 +104,17 @@ EIGEN3_INCLUDE_DIR?
 * Hint dependency locations targeted by package:
 
   ```
-  -D ???_ROOT="/home/miniconda/envs/onlyboost"
-  -D ???_ROOT="/home/miniconda/envs/onlygmp"
+  -D BOOST_ROOT="/home/miniconda/envs/onlyboost"
+  -D Multiprecision_ROOT="/home/miniconda/envs/onlygmp"
   -D Eigen3_ROOT="/home/miniconda/envs/onlyeigen"
   ```
 
-*
-#   Libint2_DIR - CMake variable, set to directory containing this Config file
-#   CMAKE_PREFIX_PATH - CMake variable, set to root directory of this package
+Libint2_DIR - CMake variable, set to directory containing this Config file
+* `CMAKE_PREFIX_PATH` — G L — CMake variable, set to root directory of this package [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html)
+* `BOOST_ROOT` — G L —
+* `Multiprecision_ROOT` — G L —
+* `Eigen3_ROOT` — L —
+
 
 *******************************
 
@@ -278,7 +280,7 @@ These are the most useful configure options:
 
   * high MAX_AM generating >20k files may require `ulimit -s 65535` for linking library target on Linux to avert "ld: Argument list too long"
 
-* `WITH_MAX_AM` — G — Support Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=4]
+* `WITH_MAX_AM` — G — Support Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. Specify values greater or equal to `WITH_<class>_MAX_AM`; often mirrors `WITH_ERI3_MAX_AM`. [Default=4]
 * `WITH_OPT_AM` — G — Optimize maximally for up to angular momentum N (N <= WITH_MAX_AM). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `(WITH_MAX_AM/2)+1`]
 
 * `MULTIPOLE_MAX_ORDER` — G — Maximum order of spherical multipole integrals. There is no maximum. [Default=4]
@@ -315,26 +317,56 @@ These are the most useful configure options:
 * `LIBINT2_INSTALL_BASISDIR` — L — Directory to which data (basis) files are installed. basis/ directory created within this. [Default=share/libint/<LIBINT_VERSION>]
 * `LIBINT2_INSTALL_FMODDIR` — L — Directory to which Fortran module files are installed if `ENABLE_FORTRAN=ON`. [Default=include/libint2/fortran2/modules]
 
-* `BUILD_TESTING` — G, L — Whether to build the testing infrastructure and define the `check` target. Standard CMake variable. [Default=ON]
+* `BUILD_TESTING` — G L — Whether to build the testing infrastructure and define the `check` target. Standard CMake variable. [Default=ON]
 * `ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
 
 
 * `BUILD_SHARED_LIBS` — L — Build Libint library as shared, not static. [Default=OFF]
 * `LIBINT2_BUILD_SHARED_AND_STATIC_LIBS` — L — Build both shared and static Libint libraries in one shot. Uses `-fPIC`. [Default=OFF]
 
-    -D CMAKE_PREFIX_PATH="/psi/toolchainconda/envs/singleboost;/psi/toolchainconda/envs/singlegmp;/psi/toolchainconda/envs/singleeigen" \
-
-#   Libint2_DIR - CMake variable, set to directory containing this Config file
-#   CMAKE_PREFIX_PATH - CMake variable, set to root directory of this package
-
-* `REQUIRE_CXX_API` — L — Build C++11 Libint API. Define header-only library target and check target (requires Eigen3). [Default=ON]
-* `REQUIRE_CXX_API_COMPILED` — L — Build C++11 Libint API. Define compiled (not just header-only) targets (requires Eigen3). [Default=ON]
-* `ENABLE_FORTRAN` — L — Build Fortran03+ bindings (requires C and Fortran compilers and Python). [Default=OFF]
+* `REQUIRE_CXX_API` — L — Build C++11 Libint API. Define header-only library target and check target (requires Eigen3; Boost recommended). [Default=ON]
+* `REQUIRE_CXX_API_COMPILED` — L — Build C++11 Libint API. Define compiled (not just header-only) targets (requires Eigen3; Boost recommended). [Default=ON]
+* `ENABLE_FORTRAN` — L — Build Fortran03+ module/bindings (requires C and Fortran compilers and Python). [Default=OFF]
 
 * `LIBINT_LOCAL_Eigen3_INSTALL` — L — Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. See `LIBINT_LOCAL_Eigen3_FIND`. [Default=OFF]
 * `LIBINT_LOCAL_Eigen3_FIND` — C — Set to `ON` before `find_package(Libint2)` to load the Eigen3 target exported by `LIBINT_LOCAL_Eigen3_INSTALL=ON` if Libint library built locally. [Default=OFF]
 
+* `LIBINT2_REALTYPE` — L — Specifies the floating-point data type used by the library. [Default=double]
+  By overriding the default it is possible to customize the library to use a lower-precision representation (which typically results in a performance boost) and/or to generate [SIMD](http://en.wikipedia.org/wiki/SIMD) vectorized code. *N.B. C++11 interface cannot be currently used with SIMD vectorized libraries!* The following values are valid:
+  * `double` -- double-precision floating-point representation of a real number;
+  * `float` -- single-precision floating-point number;
+  * `libint2::simd::VectorAVXDouble` -- vector of 4 packed doubles that can be used with [AVX](http://en.wikipedia.org/wiki/Advanced_Vector_Extensions) instructions available on reasonably-modern x86 hardware (starting with Intel Sandy Bridge and AMD Bulldozer microarchitectures, available in processors since 2011);
+  * `libint2::simd::VectorSSEDouble` -- vector of 2 packed doubles that can be used with [SSE2](http://en.wikipedia.org/wiki/SSE2) instructions available on all x86 platforms, including those released before 2011;
+  * `libint2::simd::VectorSSEFloat`  -- vector of 4 packed floats that can be used with [SSE](http://en.wikipedia.org/wiki/Streaming_SIMD_Extensions) instructions available on all x86 platforms, including those released before 2011;
+  * `libint2::simd::VectorQPXDouble` -- vector of 4 packed doubles that can be used with QPX instructions available on recent PowerPC hardware (IBM Blue Gene/Q);
+  * `libint2::simd::VectorFP2Double` -- vector of 2 packed doubles that can be used with FP2 (Double Hummer) instructions available on older PowerPC hardware (IBM Blue Gene/P).
 
+  With the exception of `float`, these are vector types implemented in Libint using compiler _intrinsics_, functions that translate directly into vector instructions. To use these vector types you may need to provide additional compiler flags that will enable support for vector instructions. For example, to enable support for AVX in Clang use the `-mavx` compiler flag. With Intel compiler use flag `-xHOST` to enable all vector instruction sets supported by the processor on which you are compiling.
+
+  **N.B.** It is also possible to use real vector types of [Agner Fog's vectorclass library](http://www.agner.org/optimize/#vectorclass), e.g. `Vec4d` and `Vec8f` for AVX. To use this library you need to add this to CPPFLAGS or CXXFLAGS: `-Ipath_to_vectorclass -DLIBINT2_HAVE_AGNER_VECTORCLASS` . On macOS, we only succeeded in using this library with a recent GNU C++ compiler, not with Clang. Not tested after CMake rework.
+
+* `CMAKE_BUILD_TYPE` — G L — Customary CMake variable. [Default=Release]
+* `LIBINT_BUILD_LIBRARY_AS_SUBPROJECT` — G — If building compiler and library in continuous command, build generated library as a subproject; if OFF will configure and build separately (expert only). [Default=OFF]
+* `ENABLE_XHOST` — L — "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
+
+
+* `LIBINT_CONTRACTED_INTS` — G — Turn on support for contracted integrals. [Default=ON]
+* `LIBINT_ERI_STRATEGY` — G — Compute ERIs using the following strategy (experts only). [Default=1]
+* `LIBINT_USE_COMPOSITE_EVALUATORS` — G — Libint will use composite evaluators (i.e. every evaluator will compute one integral type only). [Default=ON]
+* `LIBINT_SINGLE_EVALTYPE` — G — Generate single evaluator type (i.e. all tasks use the same evaluator). [Default=ON]
+* `LIBINT_ENABLE_UNROLLING` — G — Unroll shell sets into integrals (will unroll shell sets larger than N) (no->0, yes->1000000000). [Default=100]
+* `LIBINT_ALIGN_SIZE` — G — If posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics (experts only). [Default=0]
+* `LIBINT_GENERATE_FMA` — G — Generate FMA (fused multiply-add) instructions (to benefit must have FMA-capable hardware and compiler). [Default=OFF]
+* `LIBINT_ENABLE_GENERIC_CODE` — G — Use manually-written generic code. [Default=OFF]
+
+
+* `CMAKE_CXX_COMPILER` — G L — Specify C++ Compiler. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* `CMAKE_C_COMPILER` — G L — Specify C Compiler. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* `CMAKE_Fortran_COMPILER` — G L — Specify Fortran Compiler. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* `CMAKE_CXX_FLAGS` — G L — Specify additional user flags for C++ files. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
+* `CMAKE_C_FLAGS` — G L — Specify additional user flags for C files. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
+* `CMAKE_Fortran_FLAGS` — G L — Specify additional user flags for Fortran files. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
+* `CMAKE_INSTALL_PREFIX` — L — Specify directory into which library installed. [Customary CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
 
 
 ## GNU Autotools Update Guide
@@ -401,6 +433,8 @@ These are the most useful configure options:
 * `--prefix=path` --> `-D CMAKE_INSTALL_PREFIX=path` (standard CMake variable)
 
 * `--with-cmakedir=partialpath` --> `-D LIBINT2_INSTALL_CMAKEDIR=partialpath`
+
+* `--with-real-type=type` --> `-D LIBINT2_REALTYPE=type`
 
 ## Targets
 

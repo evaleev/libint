@@ -1,6 +1,6 @@
 set(LIBRARY_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/lib/libint)
 configure_file("${LIBRARY_SOURCE_DIR}/LICENSE.export" "${EXPORT_STAGE_DIR}/LICENSE" COPYONLY)
-configure_file("${LIBRARY_SOURCE_DIR}/INSTALL.export"
+configure_file("${PROJECT_SOURCE_DIR}/INSTALL.md"
         "${EXPORT_STAGE_DIR}/INSTALL" COPYONLY)
 
 file(INSTALL "${PROJECT_SOURCE_DIR}/COPYING"
@@ -55,6 +55,7 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/cmake/modules/autocmake_safeguards.cmake"
         "${PROJECT_SOURCE_DIR}/cmake/modules/FindEigen3.cmake"
         "${PROJECT_SOURCE_DIR}/cmake/modules/JoinPaths.cmake"
         "${PROJECT_BINARY_DIR}/cmake/modules/int_computed.cmake"
+        "${PROJECT_SOURCE_DIR}/cmake/modules/xhost.cmake"
         DESTINATION "${EXPORT_STAGE_DIR}/cmake/modules")
 
 file(INSTALL "${PROJECT_SOURCE_DIR}/cmake/libint2-config.cmake.in"

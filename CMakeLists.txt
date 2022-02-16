@@ -107,7 +107,8 @@ option_with_print(ENABLE_T1G12_SUPPORT
 option_with_default(LIBINT2_SHGAUSS_ORDERING
   "Ordering for shells of solid harmonic Gaussians:
     standard -- standard ordering (-l, -l+1 ... l)
-    gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)" standard)
+    gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+    Consumed at library build-time." standard)
 option_with_default(LIBINT2_CARTGAUSS_ORDERING
   "Orderings for shells of cartesian Gaussians:
     standard -- standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...)
@@ -205,14 +206,13 @@ option_with_default(LIBINT_ENABLE_UNROLLING
 option_with_default(LIBINT_ALIGN_SIZE
   "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of
    sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics. LAB: LIBINT for bin, LIBINT2 for lib?" 0)
+option_with_default(LIBINT2_REALTYPE "Specifies the floating-point data type used by the library. Consumed at library build-time." double)
 option_with_print(LIBINT_GENERATE_FMA
   "Generate FMA (fused multiply-add) instructions (to benefit must have FMA-capable hardware and compiler)" OFF)
 option_with_print(LIBINT_ENABLE_GENERIC_CODE
   "Use manually-written generic code" OFF)
-#option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
-#                  "-xHost" "-march=native" "/arch:AVX2")
-option_with_default(BUILD_FPIC "Compile lone static library with position independent code (all libraries are fpic when BUILD_SHARED=ON)" OFF)
-option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
+option_with_print(ENABLE_XHOST "Enable processor-specific optimization (with MSVC, it enables AVX2 instructions). Consumed at library build-time." ON)
+option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY). Consumed at library build-time." OFF)
 # next one defined by `include(CTest)`
 message(STATUS "Showing option BUILD_TESTING: ${BUILD_TESTING}")
 
@@ -252,8 +252,6 @@ message(STATUS "Showing option LIBINT2_INSTALL_BASISDIR: ${LIBINT2_INSTALL_BASIS
 #CONFIGURE                            libint-<version>.
 #CONFIGURE    --with-pkgconfigdir     Specifies the location to put pkg-config's data
 #CONFIGURE                            file. Default is $(libdir)/pkgconfig.
-#CONFIGURE    --with-real-type        Compute all integrals using the given real type           LIBINT_USER_DEFINED_REAL
-#CONFIGURE                            (default: double).
 #CONFIGURE    --with-real-type-includes                                                         LIBINT_USER_DEFINED_REAL_INCLUDES
 #CONFIGURE                            Additional includes necessary to use the real type
 #CONFIGURE                            (default: none).
