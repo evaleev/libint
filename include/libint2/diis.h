@@ -28,11 +28,15 @@
 
 #include <deque>
 
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC system_header
+#endif
 #include <Eigen/Core>
 #include <Eigen/QR>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 namespace libint2 {
 

@@ -34,10 +34,14 @@
 #include <libint2/shell.h>
 #include <libint2/shgshell_ordering.h>
 
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC system_header
+#endif
 #include <Eigen/Core>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 namespace libint2 {
 namespace molden {

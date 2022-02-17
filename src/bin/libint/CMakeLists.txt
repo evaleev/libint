@@ -1,7 +1,3 @@
-cmake_minimum_required(VERSION 3.16) # UNITY_BUILD
-cmake_policy(SET CMP0074 NEW)
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
-
 # <<<  Build  >>>
 
 if(MSVC)
@@ -13,7 +9,7 @@ endif()
 
 ### compiler library
 
-add_library(libint-libcompiler
+add_library(libint-libcompiler STATIC
     algebra.cc
     buildtest.cc
     class_registry.cc
@@ -61,13 +57,22 @@ set_target_properties(libint-libcompiler PROPERTIES LIBRARY_OUTPUT_NAME int2-lib
 ## compiler library dependencies
 
 find_package(Boost 1.57 REQUIRED)
-target_link_libraries(libint-libcompiler PUBLIC Boost::boost)
+find_package(Multiprecision MODULE REQUIRED COMPONENTS gmpxx)
+target_link_libraries(
+  libint-libcompiler
+  PUBLIC
+    Boost::headers
+    Multiprecision::gmpxx
+  )
 
-find_package(MPFR REQUIRED) # only GMPXX is actually required ...
-target_link_libraries(libint-libcompiler PUBLIC MPFR::GMPXX)
-message("MPFR   ${MPFR_INCLUDE} ${MPFR_LIBRARY}")
-message("GMP    ${GMP_INCLUDE} ${GMP_LIBRARY}")
-message("GMPXX  ${GMPXX_INCLUDE} ${GMPXX_LIBRARY}")
+get_property(_loc TARGET Multiprecision::gmp PROPERTY LOCATION)
+message(STATUS "${Cyan}Found GMP${ColourReset}: ${_loc}")
+get_property(_loc TARGET Multiprecision::gmpxx PROPERTY LOCATION)
+message(STATUS "${Cyan}Found GMPXX${ColourReset}: ${_loc}")
+if (TARGET Multiprecision::mpfr)
+    get_property(_loc TARGET Multiprecision::mpfr PROPERTY LOCATION)
+    message(STATUS "${Cyan}Found MPFR${ColourReset}: ${_loc} (found version ${MPFR_VERSION})")
+endif()
 
 ### executables compiler and test
 

@@ -1,40 +1,68 @@
-name: Linux/MacOS Build
+name: CI
 
 on: [push, pull_request]
 
-#env:
-
 jobs:
-  build:
+  build_repo:
     strategy:
       fail-fast: false
       matrix:
-        build_type : [ Release, Debug ]
-        os : [ macos-latest, ubuntu-20.04 ]
-        include:
-          - os: ubuntu-20.04
-            cxx: /usr/bin/g++-9
-          - os: macos-latest
-            cxx: clang++
+        cfg:
+          - runs-on: ubuntu-latest
+            build_type: Release
+            cxx: g++-9
+            cc: gcc-9
+            fc: gfortran-9
+            args: >
+              -DENABLE_FORTRAN=ON
 
-    name: "${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }}"
-    runs-on: ${{ matrix.os }}
+          - runs-on: macos-latest
+            build_type: Release
+            cxx: clang++
+            cc: clang
+            args: >
+              -DENABLE_FORTRAN=ON
+              -DCMAKE_Fortran_COMPILER=gfortran-10
+
+          - runs-on: windows-2022
+            build_type: Release
+            cxx: clang-cl
+            cc: clang-cl
+            args: ""
+
+          - runs-on: ubuntu-20.04
+            build_type: Debug
+            cxx: g++-9
+            cc: gcc-9
+            fc: gfortran-9
+            args: >
+              -DENABLE_FORTRAN=ON
+
+          - runs-on: macos-latest
+            build_type: Debug
+            cxx: clang++
+            cc: clang
+            args: >
+              -DENABLE_FORTRAN=ON
+              -DCMAKE_Fortran_COMPILER=gfortran-10
+
+    name: "Repo • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
+    runs-on: ${{ matrix.cfg.runs-on }}
     env:
-      CXX : ${{ matrix.cxx }}
+      CXX : ${{ matrix.cfg.cxx }}
+      CC : ${{ matrix.cfg.cc }}
       CCACHE_DIR : ${{github.workspace}}/build/.ccache
       CCACHE_COMPRESS : true
       CCACHE_COMPRESSLEVEL : 6
       BUILD_CONFIG : >
         -G Ninja
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DCMAKE_PREFIX_PATH=/usr/local/Cellar/eigen/3.3.9;/usr/local/opt/bison
+        -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
         -DBUILD_SHARED_LIBS=OFF
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
-        -DENABLE_FORTRAN=ON
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
-        -DWITH_MAX_AM=2;2
-        -DERI_MAX_AM_LIST=2,2
-        -DERI3_MAX_AM_LIST=3,2
+        -DWITH_MAX_AM=3;2
+        -DWITH_ERI_MAX_AM=2;2
+        -DWITH_ERI3_MAX_AM=3;2
         -DENABLE_ERI=1
         -DENABLE_ERI3=1
         -DENABLE_ONEBODY=1
@@ -62,20 +90,43 @@ jobs:
         cmake -E make_directory ${{github.workspace}}/test_installed_library
         cmake -E make_directory ${{github.workspace}}/installed
 
-    - name: Install prerequisite MacOS packages
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-latest' }}
+    - name: Install MacOS prerequisites
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'macOS' }}
       run: |
-        brew install ninja gcc@10 boost eigen bison ccache
-        echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
-        echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
+        brew install ninja gcc@10 boost eigen ccache
 
-    - name: Install prerequisites Ubuntu packages
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
+    - name: Install Ubuntu prerequisites
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Linux' }}
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libmpfr-dev libboost-dev libeigen3-dev ccache
-        echo "FC=/usr/bin/gfortran-9" >> $GITHUB_ENV
-        echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
+        sudo apt-get install ninja-build ${{ matrix.cfg.cxx }} ${{ matrix.cfg.fc }} liblapack-dev libmpfr-dev libboost-dev libeigen3-dev ccache
+
+    - name: Install Windows prerequisites, part 1, Create Conda Environment
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: ""
+        add-pip-as-python-dependency: true
+        auto-activate-base: true
+        conda-build-version: "*"
+        show-channel-urls: true
+
+    # Note: `shell: bash -l {0}` makes Miniconda created above for Windows available to
+    #   subsequent steps. see https://github.com/conda-incubator/setup-miniconda#usage-examples
+
+    - name: Install Windows prerequisites, part 2, Environment Information
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
+      shell: bash -l {0}
+      run: |
+        conda info
+        conda install ninja cmake=3.16 python mpir boost eigen ccache -c conda-forge --yes
+        conda list
+
+    - name: Prepare compiler environment for Windows
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
 
     - name: Prepare ccache timestamp
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
@@ -94,42 +145,209 @@ jobs:
         restore-keys: |
           ${{ matrix.config.name }}-ccache-
 
-    - name: Generate+build Libint library (ExternalProject)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type == 'Debug'}}
-      shell: bash
+    - name: Generate & Build Libint Library (ExternalProject, cplr tests)
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type != 'Debug'}}
+      shell: bash -l {0}
       working-directory: ${{github.workspace}}
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
-        cmake --build build
-        cmake --build build --target check-libint2compiler
-        cmake --build build --target install
-        #cd src/bin/test_eri && ./stdtests.pl && cd ../../..
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
+        #cmake --build build --target export  # toggle for quick tarball to debug `build_export`
+        cmake --build build --target library check-libint2compiler install
+        cd build && echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
 
-    - name: Generate+build Libint library (FetchContent)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type != 'Debug'}}
-      shell: bash
+    - name: Generate & Build Libint Library (FetchContent, full tests)
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Debug'}}
+      shell: bash -l {0}
       working-directory: ${{github.workspace}}
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG
-        cmake --build build --target libint-library-export
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG ${{ matrix.cfg.args }}
+        cmake --build build --target export
         cmake --build build --target check-libint2compiler
         cmake --build build --target check-libint2
         cmake --build build --target install
-        #cd src/bin/test_eri && ./stdtests.pl && cd ../../..
 
-    - name: Test installed Libint library
+    - name: Archive Library Tarball
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Release'}}
+      uses: actions/upload-artifact@v2
+      with:
+        if-no-files-found: error
+        name: ${{ runner.os }}-${{ matrix.cfg.cxx }}
+        path: build/${{ env.ARTIFACT }}
+        retention-days: 1
+
+    - name: Test Installed Libint Library
+      #if: false  # toggle for quick tarball to debug `build_export`
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-      shell: bash
+      shell: bash -l {0}
       working-directory: ${{github.workspace}}/test_installed_library
       run: |
         cat > CMakeLists.txt <<EOF
-        cmake_minimum_required(VERSION 3.8)
+        cmake_minimum_required(VERSION 3.16)
         project(hf++)
-        find_package(Libint2 2.7.1 REQUIRED)
+        message("CMAKE_PREFIX_PATH \${CMAKE_PREFIX_PATH}")
+        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
-        add_executable(hf++ EXCLUDE_FROM_ALL ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++.cc)
+        add_executable(hf++ EXCLUDE_FROM_ALL "../src/lib/libint/tests/hartree-fock/hartree-fock++.cc")
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
-        cmake . -DCMAKE_PREFIX_PATH=${{github.workspace}}/installed -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-        cmake --build . --target hf++
-        ./hf++ ${{github.workspace}}/src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ${{github.workspace}}/src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ${{github.workspace}}/build/libint-2*/features
+        cat CMakeLists.txt
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed"
+        cmake --build build --target hf++
+        if [[ "${{ runner.os }}" != "Windows" ]]; then
+          # xfail for Windows. SCF is wrong (see below), but we ensure that L2@Win builds, exports, packages ok.
+          ./build/hf++ ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ../build/libint-2*/features
+        fi
+
+# Notes on Windows:
+# * Windows with BUILD_SHARED_LIBS=ON compiles just fine but can't link against. See https://github.com/evaleev/libint/issues/237
+#
+# * Windows with Release and ExternalProject compiles just fine, but its hf++ SCF answer is -1115 E_h. See https://github.com/evaleev/libint/issues/235
+#
+# * Windows with CMAKE_BUILD_TYPE=Debug gives errors like:
+#   ```
+#   In file included from D:\a\libint\libint\installed\include\libint2/diis.h:368:
+#   D:\a\libint\libint\installed\include\libint2/./engine.h(471,3): error: constructor for 'libint2::Engine' must explicitly initialize the member 'targets_' which does not have a default constructor
+#   ```
+# * Windows+Ninja with FetchContent sequence gives errors like:
+#   ```
+#   "ninja: error: failed recompaction: Permission denied"
+#   ```
+#   This is known issue https://gitlab.kitware.com/cmake/cmake/-/issues/20274
+#   that should be ok with CMake 3.20+ and Ninja 1.10.2+ (which we have) but broken c. Feb 2022
+#
+
+  # for efficient debug of `build_export` job, in `build_repo` job above:
+  # * comment out all but a single Linux/Release in matrix.cfg
+  # * toggle to "export" target rather than "library" target in EP step
+  # * comment out the "hf++" step
+  build_export:
+    needs: build_repo
+    strategy:
+      fail-fast: false
+      matrix:
+        cfg:
+          - runs-on: ubuntu-latest
+            libargs: >
+              -DBUILD_SHARED_LIBS=ON
+              -DLIBINT_LOCAL_Eigen3_INSTALL=ON
+              -DEigen3_ROOT="/usr/share/miniconda/envs/onlyeigen/"
+            testargs: >
+              -DLIBINT_LOCAL_Eigen3_FIND=ON
+
+          - runs-on: macos-latest
+            libargs: >
+              -DBUILD_SHARED_LIBS=ON
+            testargs: ""
+
+          - runs-on: windows-latest
+            libargs: >
+              -DBUILD_SHARED_LIBS=OFF
+              -DCMAKE_CXX_COMPILER=clang-cl
+              -DCMAKE_C_COMPILER=clang-cl
+            testargs: >
+              -DCMAKE_CXX_COMPILER=clang-cl
+              -DCMAKE_C_COMPILER=clang-cl
+
+    name: "Export • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.libargs }}"
+    runs-on: ${{ matrix.cfg.runs-on }}
+
+    steps:
+    # Note we're not checking out the repo. All src from Linux tarball generated above.
+
+    - name: Write a Conda Env File
+      shell: bash -l {0}
+      run: |
+        cat > export.yaml <<EOF
+        name: test
+        channels:
+          - conda-forge
+        dependencies:
+          - cmake >=3.16
+          - ninja
+          - cxx-compiler
+          - python 3.9
+          - boost
+          - eigen
+        EOF
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          sed -i "s/- cxx/#- cxx/g" export.yaml
+        fi
+        cat export.yaml
+
+    - name: Create Conda Environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        mamba-version: "*"
+        activate-environment: test
+        channels: conda-forge
+        environment-file: export.yaml
+        show-channel-urls: true
+
+    # Step is unnecessary; remove for debugging.
+    - name: Confound Environment - test bundled Boost
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash -l {0}
+      run: conda remove boost
+
+    # Step is unnecessary; remove for debugging.
+    - name: Confound Environment - test non-cmake-installed Eigen
+      if: ${{ runner.os == 'Windows' }}
+      shell: bash -l {0}
+      run: rm -rf "${CONDA_PREFIX}/Library/share/eigen3/cmake/"
+
+    # Step is unnecessary; remove step and 3 "*Eigen3*" options in matrix for debugging.
+    - name: Confound Environment - test handed-off Eigen
+      if: ${{ runner.os == 'Linux' }}
+      shell: bash -l {0}
+      run: |
+        conda remove eigen
+        conda create -n onlyeigen eigen -c conda-forge
+
+    - name: Environment Information
+      shell: bash -l {0}
+      run: |
+        conda info
+        conda list
+
+    - name: Prepare compiler environment for Windows
+      if: ${{ runner.os == 'Windows' }}
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - uses: actions/download-artifact@master
+      with:
+        name: Linux-g++-9
+
+    - name: Extract, Build, Install Libint Library
+      shell: bash -l {0}
+      run: |
+        tar -zxf libint*tgz
+        mkdir libint && mv libint-2*/* libint/ && cd libint/
+        cmake \
+          -S. \
+          -Bbuild \
+          -G"Ninja" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
+          -DCMAKE_CXX_COMPILER=${CXX} \
+          -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
+          ${{ matrix.cfg.libargs }}
+        cmake --build build --target install
+
+    - name: Test Installed Libint library
+      shell: bash -l {0}
+      run: |
+        mkdir test_installed_library && cd test_installed_library
+        cat > CMakeLists.txt <<EOF
+        cmake_minimum_required(VERSION 3.16)
+        project(hf++)
+        find_package(Libint2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
+        find_package(Threads)  # clang does not autolink threads even though we are using std::thread
+        add_executable(hf++ EXCLUDE_FROM_ALL "../libint/tests/hartree-fock/hartree-fock++.cc")
+        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
+        EOF
+        cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
+        cmake --build build --target hf++
+        ./build/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/features
+

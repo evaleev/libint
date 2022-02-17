@@ -258,7 +258,7 @@ namespace libint2 {
       static constexpr int ORDER = interpolation_order;   //!, interpolation order
       static constexpr int ORDERp1 = ORDER+1;   //!< ORDER + 1
 
-      static constexpr Real T_crit = cheb_table_tmax;          //!< critical value of T above which safe to use upward recusion
+      static constexpr Real T_crit = cheb_table_tmax;          //!< critical value of T above which safe to use upward recursion
       static constexpr Real delta = cheb_table_delta;           //!< interval size
       static constexpr Real one_over_delta = 1/delta;  //! 1/delta
 

@@ -1,26 +1,28 @@
-cmake_minimum_required(VERSION 3.16)  # UNITY_BUILD property
-
-project(Libint2Compiler
-        LANGUAGES CXX)
-set(Libint2_AUTHORS      "Edward F. Valeev")
-set(Libint2_DESCRIPTION  "High-performance library for computing Gaussian integrals in quantum mechanics")
-set(Libint2_URL          "https://github.com/evaleev/libint")
-set(Libint2_LICENSE      "GPL-3.0 for generator; LGPL-3.0 for generated")
-
-# Set Libint version ===================================================================================================
-set(LIBINT_MAJOR_VERSION 2)
-set(LIBINT_MINOR_VERSION 7)
-set(LIBINT_MICRO_VERSION 0)
-set(LIBINT_BUILDID "beta.6")
-set(LIBINT_VERSION "${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION}")
-if (LIBINT_BUILDID)
-    set(LIBINT_EXT_VERSION "${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION}-${LIBINT_BUILDID}")
-else()
-    set(LIBINT_EXT_VERSION ${LIBINT_VERSION})
-endif()
-
+cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0074 NEW)
+
+############################# Version and Metadata #############################
+
+project(
+  Libint2Compiler
+  VERSION 2.7.1
+  DESCRIPTION "High-performance library for computing Gaussian integrals in quantum mechanics"
+  HOMEPAGE_URL "https://github.com/evaleev/libint"
+  LANGUAGES CXX
+  )
+
+set(${PROJECT_NAME}_AUTHORS "Edward F. Valeev")
+set(${PROJECT_NAME}_LICENSE "GPL-3.0 for generator; LGPL-3.0 for generated")
+
+# along with project(... VERSION) above, these are the authoritative version source (formerly in configure.ac)
+set(LIBINT_BUILDID "")
+set(LIBINT_SOVERSION "2:3:0")
+
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
+include(int_versions)
+
+set(L2 Libint2)  # Namespace
+set(pnv libint2) # projectnameversion
 
 ################################### Overview ###################################
 
@@ -59,25 +61,32 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 #     - must build libint-library-export target before library *build* targets appear
 
 ################################### Options ####################################
-include(int_versions)
 include(options)
-include(CTest) # defines BUILD_TESTING option
+include(GNUInstallDirs)
+include(CTest)
+message(STATUS "Building using CMake ${CMAKE_VERSION} Generator ${CMAKE_GENERATOR}")
 
 #  <<<  General  >>>
+
+option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
 
 ### compiler-only
 option_with_default(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT "[EXPERT] Build generated library as a subproject; if FALSE will configure and build separately" OFF)
 
 ### library-only
 option_with_default(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3; Boost is optional but strongly recommended)" ON)
+option_with_default(REQUIRE_CXX_API_COMPILED "Build C++11 Compiled (not just header-only) targets (requires Eigen3; Boost strongly recommended)" ON)
 option_with_default(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
+
+option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static" OFF)
+option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)
 
 #  <<<  Which Integrals Classes, Which Derivative Levels  >>>
 
 option_with_default(ENABLE_ONEBODY
   "Compile with support for up to N-th derivatives of 1-body integrals (-1 for OFF)" 0)
 option_with_default(ENABLE_ERI
-  "Compile with support for up to N-th derivatives of electron repulsion integrals (-1 for OFF)" 0)
+  "Compile with support for up to N-th derivatives of 4-center electron repulsion integrals (-1 for OFF)" 0)
 option_with_default(ENABLE_ERI3
   "Compile with support for up to N-th derivatives of 3-center electron repulsion integrals (-1 for OFF)" -1)
 option_with_default(ENABLE_ERI2
@@ -90,13 +99,16 @@ option_with_default(ENABLE_G12DKH
 option_with_print(DISABLE_ONEBODY_PROPERTY_DERIVS
   "Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
    These derivatives are disabled by default to save compile time. (enable with OFF)" ON)
+option_with_print(ENABLE_T1G12_SUPPORT
+  "Enable Ti,G12 integrals when G12 integrals are enabled. Irrelevant when `ENABLE_G12=OFF`. (disable with OFF)" ON)
 
 #  <<<  Ordering Conventions  >>>
 
 option_with_default(LIBINT2_SHGAUSS_ORDERING
   "Ordering for shells of solid harmonic Gaussians:
     standard -- standard ordering (-l, -l+1 ... l)
-    gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)" standard)
+    gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+    Consumed at library build-time." standard)
 option_with_default(LIBINT2_CARTGAUSS_ORDERING
   "Orderings for shells of cartesian Gaussians:
     standard -- standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...)
@@ -133,51 +145,51 @@ option_with_print(ERI2_PURE_SH
 
 option_with_default(WITH_MAX_AM
   "Support Gaussians of angular momentum up to N.
-   Can specify values for each derivative levels as a semicolon-separated string" 4)
+   Can specify values for each derivative level as a semicolon-separated string" 4)
 option_with_default(WITH_OPT_AM
-  "Optimize maximally for up to angular momentum N (N <= max-am). (default: (libint_max_am/2)+1)" -1)
-message(STATUS "WITH_OPT_AM=${WITH_OPT_AM}")
+  "Optimize maximally for up to angular momentum N (N <= max-am).
+   Can specify values for each derivative level as a semicolon-separated string. (default: (libint_max_am/2)+1)" -1)
 
 option_with_default(MULTIPOLE_MAX_ORDER
   "Maximum order of spherical multipole integrals. There is no maximum" 4)
 option_with_default(WITH_ONEBODY_MAX_AM
   "Support 1-body ints for Gaussians of angular momentum up to N.
-   Can specify values for each derivative as a semicolon-separated string. (default: (libint_max_am/2)+1)" -1)
+   Can specify values for each derivative level as a semicolon-separated string. (default: max_am)" -1)
 option_with_default(WITH_ONEBODY_OPT_AM
   "Optimize 1-body ints maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolon-separated string" -1)
+   Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_ERI_MAX_AM
-  "Support ERIs for Gaussians of angular momentum up to N.
-   Can specify values for each derivative levels as a semicolon-separated string" -1)
+  "Support 4-center ERIs for Gaussians of angular momentum up to N.
+   Can specify values for each derivative level as a semicolon-separated string. (default: max_am)" -1)
 option_with_default(WITH_ERI_OPT_AM
-  "Optimize ERIs maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolon-separated string (default: (max_am/2)+1)" -1)
+  "Optimize 4-center ERIs maximally for up to angular momentum N (N <= max-am).
+   Can specify values for each derivative level as a semicolon-separated string (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_ERI3_MAX_AM
   "Support 3-center ERIs for Gaussians of angular momentum up to N.
-   Can specify values for each derivative levels as a semicolon-separated string
+   Can specify values for each derivative level as a semicolon-separated string. (default: max_am)
    Set WITH_MAX_AM to mirror this option." -1)
 option_with_default(WITH_ERI3_OPT_AM
   "Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolon-separated string (default: (max_am/2)+1)" -1)
+   Can specify values for each derivative level as a semicolon-separated string. (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_ERI2_MAX_AM
   "Support 2-center ERIs for Gaussians of angular momentum up to N.
-    Can specify values for each derivative levels as a semicolon-separated string" -1)
+    Can specify values for each derivative level as a semicolon-separated string. (default: max_am)" -1)
 option_with_default(WITH_ERI2_OPT_AM
   "Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am).
-   Can specify values for each derivative levels as a semicolon-separated string" -1)
+   Can specify values for each derivative level as a semicolon-separated string. (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_G12_MAX_AM
-  "Support integrals for G12 methods of angular momentum up to N." -1)
+  "Support integrals for G12 methods of angular momentum up to N. (default: max_am)" -1)
 option_with_default(WITH_G12_OPT_AM
-  "Optimize G12 integrals for up to angular momentum N (N <= max-am)." -1)
+  "Optimize G12 integrals for up to angular momentum N (N <= max-am). (default: (max_am/2)+1)" -1)
 
 option_with_default(WITH_G12DKH_MAX_AM
-  "Support integrals for relativistic G12 methods of angular momentum up to N." -1)
+  "Support integrals for relativistic G12 methods of angular momentum up to N. (default: max_am)" -1)
 option_with_default(WITH_G12DKH_OPT_AM
-  "Optimize G12DKH integrals for up to angular momentum N (N <= max-am)." -1)
+  "Optimize G12DKH integrals for up to angular momentum N (N <= max-am). (default: (max_am/2)+1)" -1)
 
 #  <<<  Miscellaneous  >>>
 
@@ -194,24 +206,40 @@ option_with_default(LIBINT_ENABLE_UNROLLING
 option_with_default(LIBINT_ALIGN_SIZE
   "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of
    sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics. LAB: LIBINT for bin, LIBINT2 for lib?" 0)
+option_with_default(LIBINT2_REALTYPE "Specifies the floating-point data type used by the library. Consumed at library build-time." double)
 option_with_print(LIBINT_GENERATE_FMA
   "Generate FMA (fused multiply-add) instructions (to benefit must have FMA-capable hardware and compiler)" OFF)
 option_with_print(LIBINT_ENABLE_GENERIC_CODE
   "Use manually-written generic code" OFF)
-option_with_flags(ENABLE_XHOST "Enables processor-specific optimization (with MSVC, it enables AVX2 instructions)" ON
-                  "-xHost" "-march=native" "/arch:AVX2")
-option_with_default(BUILD_FPIC "Compile lone static library with position independent code (all libraries are fpic when BUILD_SHARED=ON)" OFF)
-option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
+option_with_print(ENABLE_XHOST "Enable processor-specific optimization (with MSVC, it enables AVX2 instructions). Consumed at library build-time." ON)
+option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY). Consumed at library build-time." OFF)
+# next one defined by `include(CTest)`
+message(STATUS "Showing option BUILD_TESTING: ${BUILD_TESTING}")
 
-#CONFIGURE    --disable-t1g12-support Libint will not support [Ti,G12] integrals
+#  <<<  Path  >>>
+
+# * only relevant to library
+# * use GNUInstallDirs defaults, but define others for CMake and basis files
+# * LIBINT2_ dirs are STRING, not PATH, to preserve relative paths
+
+# next four defined by `include(GNUInstallDirs)`
+message(STATUS "Showing option CMAKE_INSTALL_BINDIR: ${CMAKE_INSTALL_BINDIR}")
+message(STATUS "Showing option CMAKE_INSTALL_LIBDIR: ${CMAKE_INSTALL_LIBDIR}")
+message(STATUS "Showing option CMAKE_INSTALL_INCLUDEDIR: ${CMAKE_INSTALL_INCLUDEDIR}")
+message(STATUS "Showing option CMAKE_INSTALL_DATADIR: ${CMAKE_INSTALL_DATADIR}")
+set(LIBINT2_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/${pnv}"
+    CACHE STRING "Directory to which CMake files are installed")
+message(STATUS "Showing option LIBINT2_INSTALL_CMAKEDIR: ${LIBINT2_INSTALL_CMAKEDIR}")
+set(LIBINT2_INSTALL_BASISDIR "${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION}"
+    CACHE STRING "Directory to which data files are installed. basis/ directory created within")
+message(STATUS "Showing option LIBINT2_INSTALL_BASISDIR: ${LIBINT2_INSTALL_BASISDIR}")
+
 #CONFIGURE    --enable-accum-ints     Accumulate integrals to the buffer, rather than
 #CONFIGURE                            copy.
 #CONFIGURE    --enable-flop-counter   Support (approximate) FLOP counting by the library.
 #CONFIGURE                            CXXGEN must support C++11!
 #CONFIGURE    --enable-profile        Turn on profiling instrumentation of the library.
 #CONFIGURE                            CXXGEN must support C++11!
-#CONFIGURE    --enable-mpfr           Use MPFR library to test Libint integrals in high
-#CONFIGURE                            precision.
 #CONFIGURE  
 #CONFIGURE  Optional Packages:
 #CONFIGURE    --with-api-prefix       Prepend this string to every name in the library API
@@ -224,10 +252,6 @@ option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed
 #CONFIGURE                            libint-<version>.
 #CONFIGURE    --with-pkgconfigdir     Specifies the location to put pkg-config's data
 #CONFIGURE                            file. Default is $(libdir)/pkgconfig.
-#CONFIGURE    --with-cmakedir         Specifies the location to put FindLibint2.cmake
-#CONFIGURE                            file. Default is $(libdir)/cmake/libint2.
-#CONFIGURE    --with-real-type        Compute all integrals using the given real type           LIBINT_USER_DEFINED_REAL
-#CONFIGURE                            (default: double).
 #CONFIGURE    --with-real-type-includes                                                         LIBINT_USER_DEFINED_REAL_INCLUDES
 #CONFIGURE                            Additional includes necessary to use the real type
 #CONFIGURE                            (default: none).
@@ -255,7 +279,7 @@ set(LIBINT_HAS_STD_ARRAY 1)
 set(LIBINT_ARRAY_HAS_FILL 1)
 
 find_package(Boost 1.57 REQUIRED)
-if (TARGET Boost::boost)  # the header-only target
+if (TARGET Boost::headers)
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
 endif()
 
@@ -273,15 +297,11 @@ booleanize01(LIBINT_CONTRACTED_INTS)
 booleanize01(DISABLE_ONEBODY_PROPERTY_DERIVS)
 booleanize01(LIBINT_GENERATE_FMA)
 booleanize01(LIBINT_ENABLE_GENERIC_CODE)
+booleanize01(SUPPORT_T1G12)
 
 ################################# Main Project #################################
 set(EXPORT_STAGE_DIR ${PROJECT_BINARY_DIR}/libint-${LIBINT_EXT_VERSION})
 set(STAGED_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/library-install-stage")
-
-if (BUILD_TESTING)
-    enable_testing()
-endif()
-include(GNUInstallDirs)
 
 configure_file(cmake/modules/int_computed.cmake.in cmake/modules/int_computed.cmake @ONLY)
 set(_EXPORT_MODE 0)
@@ -290,16 +310,10 @@ set(_EXPORT_MODE 1)
 configure_file(include/libint2/config.h.cmake.in ${EXPORT_STAGE_DIR}/include/libint2/config.h @ONLY)
 configure_file(include/libint2/config2.h.cmake.in ${EXPORT_STAGE_DIR}/include/libint2/config2.h.cmake.in COPYONLY)
 
-# compiler
 add_subdirectory(src)
 
-# <<<  Test  >>>
+add_subdirectory(doc)
 
 if (BUILD_TESTING)
-    enable_testing(true)
     add_subdirectory(tests)
 endif()
-
-# <<<  Install  >>>
-
-# nothing to install here
