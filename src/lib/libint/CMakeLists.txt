@@ -120,6 +120,16 @@ else()
                 "-DEigen3_ROOT=${Eigen3_ROOT}"
                 )
     endif()
+    if (Boost_DIR)
+        list(APPEND library_CMAKE_ARGS
+                "-DBoost_DIR=${Boost_DIR}"
+                )
+    endif()
+    if (BOOST_ROOT)
+        list(APPEND library_CMAKE_ARGS
+                "-DBOOST_ROOT=${BOOST_ROOT}"
+                )
+    endif()
     if (LIBINT_LOCAL_Eigen3_INSTALL)
         list(APPEND library_CMAKE_ARGS
                 "-DLIBINT_LOCAL_Eigen3_INSTALL=${LIBINT_LOCAL_Eigen3_INSTALL}"

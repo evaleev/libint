@@ -1,4 +1,3 @@
-message("CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID}")
 # Need to check things per compiler brand since they're different
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
   option_with_flags(ENABLE_XHOST "Enable processor-specific optimization" ON "-xHost")

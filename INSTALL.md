@@ -36,7 +36,8 @@ The Libint build is structured into three parts:
   - (3) run `build_libint` to generate library source (C++) files (that upon
     compilation can become a Libint2 library) and combine them with other
     static source files in src/lib/libint/ and general static files (e.g.,
-    include/ and docs/) into an independent tarball ready for distribution.
+    include/ and docs/) into an independent tarball ready for distribution
+    (with its own CMake configuration, tests, etc.).
   - really slow for non-trivial angular momenta, runs in serial
   - consumes no options
   - build target `export` to stop after this step and collect source tarball
@@ -51,9 +52,10 @@ The Libint build is structured into three parts:
   - (6) install into CMAKE_INSTALL_PREFIX
 
 
-Command-line synopsis. See table below for `--target` choices and [section](#Configuring-Libint) for `-D options` choices.
+Command-line synopsis. See [table](#Build-Targets) for `--target` choices (steps refer to numbered bullets above) and [section](#Configuring-Libint) for `-D options` choices.
 
 ```bash
+>>> git clone https://github.com/evaleev/libint.git && cd libint
 >>> ls
 cmake/  COPYING  src/  tests/  ...
 >>> cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/future/install-libint -D options ...
@@ -63,8 +65,9 @@ cmake/  COPYING  src/  tests/  ...
 >>> cmake --build build --target install -j`getconf _NPROCESSORS_ONLN`
 ```
 
+### Build Targets
 
-| `--target ...`            | incl. | steps |     ( |  see  | below | )     |
+| `--target ...`            | incl. | steps |     ( |  see  | above | )     |
 | --------------            | ----- | ----- | ----- | ----- | ----- | ----- |
 | `build_libint`            |   1   |   -   |   -   |   -   |   -   |   -   |
 | `check-libint2compiler`   |   1   |   2   |   -   |   -   |   -   |   -   |
@@ -283,11 +286,11 @@ EIGEN3_INCLUDE_DIR?
   -D Eigen3_ROOT="/home/miniconda/envs/onlyeigen"
   ```
 
-* Hint dependency locations targeted by <package>Config.cmake (most CMake-like): UNTESTED
+* Hint dependency locations targeted by <package>Config.cmake (most CMake-like):
 
   ```
-  -D _DIR="/home/miniconda/envs/onlyeigen/share/eigen3/cmake/Eigen3Config.cmake"
-  -D _DIR="/home/miniconda/envs/onlyboost/lib/cmake/Boost-1.73.0/BoostConfig.cmake"
+  -D Eigen3_DIR="/home/miniconda/envs/onlyeigen/share/eigen3/cmake"
+  -D Boost_DIR="/home/miniconda/envs/onlyboost/lib/cmake/Boost-1.73.0"
   ```
 
 * Hint dependency locations targeted by package variables (least CMake-like): UNTESTED
@@ -400,23 +403,32 @@ EIGEN3_INCLUDE_DIR?
 * `--enable-shared` --> `-D BUILD_SHARED=ON` --> `-D BUILD_SHARED_LIBS=ON` (standard CMake variable)
 * `--enable-static` --> `-D BUILD_STATIC=ON` --> `-D BUILD_SHARED_LIBS=OFF` (standard CMake variable)
 * `--enable-shared --enable-static` --> `-D BUILD_SHARED=ON -D BUILD_STATIC=ON` --> `-D LIBINT2_BUILD_SHARED_AND_STATIC_LIBS=ON`
-* `-D ENABLE_CXX11API=ON` --> `-D REQUIRE_CXX_API=ON`
 
+* `-D REQUIRE_CXX_API=ON` --> `-D ENABLE_CXX11API=ON` --> `-D REQUIRE_CXX_API=ON`
 * `--enable-mpfr` --> assumed present --> `-D ENABLE_MPFR=ON`
-
 * `--prefix=path` --> `-D CMAKE_INSTALL_PREFIX=path` (standard CMake variable)
-
 * `--with-cmakedir=partialpath` --> `-D LIBINT2_INSTALL_CMAKEDIR=partialpath`
-
 * `--with-real-type=type` --> `-D LIBINT2_REALTYPE=type`
 
-* `libint2` --> `Libint2::int2` (target)
-* `libint2_cxx` --> `Libint2::cxx` (target)
+* (target) `libint2` --> `Libint2::int2`
+* (target) `libint2_cxx` --> `Libint2::cxx`
+
+* `ENV(CXX)=/path/to/c++/compiler` --> `-D CMAKE_CXX_COMPILER=/path/to/c++/compiler`
+* `ENV(CXXFLAGS)` --> `-D CMAKE_CXX_FLAGS`
+* `ENV(CPPFLAGS)=-I/path/to/boost/includes` --> -D BOOST_ROOT=/path/to/boost/prefix`
+* `ENV(FC)=/path/to/fortran/compiler` --> `-D CMAKE_Fortran_COMPILER=/path/to/fortran/compiler`
 
 
 -----------------------------------------------------------------------------
 
-# Targets
+# Consuming Libint
+
+### Programming to Access Integrals
+
+* if you use C++11 or later (strongly recommended): read [this](https://github.com/evaleev/libint/wiki/using-modern-CPlusPlus-API) instead
+* if you use pre-2011 C++, C, Fortran, or any other language, refer to the [Libint Programmer's Manual](http://sourceforge.net/projects/libint/files/libint-for-beginners/progman.pdf/download) for brief information on how to use the library in your code.
+
+### Consumption Targets
 
 | Namespaced Target[^15] | Component[^16] | Built by Default | Ensure Built                  | Ensure Excluded                           | Internal Target(s)[^17]              | Alias[^18]    |
 | ---------------------- | -------------- | ---------------- | ----------------------------- | ----------------------------------------- | -----------------------------------  | ------------  |
@@ -446,15 +458,15 @@ EIGEN3_INCLUDE_DIR?
 
 # Platform-Specific Notes
 
-## Linux
+### Linux
 
-## macOS
+### macOS
 
 * Apple `clang++` and [MacPorts](http://www.macports.org/) `g++` (4.8) both work with `-std=c++11` flag
 * MacPorts gmp package works fine
 * On macOS the default `ar` program lacks support for response files (e.g., https://github.com/evaleev/libint/issues/135 and see https://gitlab.kitware.com/cmake/cmake/issues/16731). Thus you should install the GNU `ar` program (e.g., using HomeBrew: `brew install binutils`) and tell CMake to use it (e.g., add `-DCMAKE_AR=/usr/local/opt/binutils/bin/ar` to the CMake command line).
 
-## Windows
+### Windows
 
 * Several blocking or correctness issues exist; the most thorough list is at .github/workflows/cmake.yml
 * A production path is to generate an export tarball with Linux, build static library on Windows, and consume
@@ -532,4 +544,27 @@ EIGEN3_INCLUDE_DIR?
     -DWITH_G12_MAX_AM=4
     -DWITH_G12_OPT_AM=3
   ```
+
+# Misc. Questions
+
+##### Where do I get the source code?
+
+The only way to get the compiler source is from the [Libint source code repository](https://github.com/evaleev/libint)on [GitHub](github.com). You can use a client, like GitHub app or (our favorite) [SourceTree](http://www.sourcetreeapp.com) app from Atlassian. Or from the command line: `git clone https://github.com/evaleev/libint.git`
+
+##### What happened to autoconf?
+
+Version 2.5.0 and older of the exported libint library was buildable using GNU Autoconf and [GNU Make](https://www.gnu.org/software/make/). *As of version 2.6.0 the Autoconf build is deprecated*; the exported libint library should be configured with [CMake](https://cmake.org/) and built with [any CMake-supported generator](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html), e.g. Ninja and GNU Make.
+
+Version 2.7 and older of the compiler repo was buildable using GNU Autoconf. *As of version 2.8, the Autoconf build is deprecated*; use CMake instead.  TODO 2.8
+
+##### What is the status and importance of SIMD vectorization in Libint?
+
+SIMD vectorization is the crucial contributor to performance of a modern processor core. Libint code can typically hit up to 70% of FLOP peak on a scalar core, hence on a SIMD core divide that number by the vector length (4 for AVX in double precision). The situation is only going to get worse (accelerators already use 8- and 16-wide vector units, and future mainstream processors are likely to use 8-wide units also). Hence if your method spends significant portion of its time computing integrals start rewriting your code now.
+
+Vectorization of Libint is work in progress. However, by switching to AVX we see a factor of 2-2.5 speedup of the integrals kernels compared to scalar performance, thus we are optimistic that it will be possible to attain 50% of peak on AVX hardware. It is clear that significant reorganization of the manner in which integrals are computed and digested is involved, but these costs are unavoidable.
+
+##### What compiler is best?
+
+To obtain peak performance it is *very important* to use the C++ compiler and compiler options that are appropriate for the given platform. It is impossible to provide specific recommendations for specific platforms. The `ENABLE_XHOST` option does allow the compiler to optimize for current architecture. We recommend to use a vendor compiler (e.g., Intel) before trying clang++ and g++. In some situations, however, clang++ and g++ are known to outperform the x86 vendor compiler, so we recommend trying several compilers.
+
 

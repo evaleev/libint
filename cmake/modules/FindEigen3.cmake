@@ -5,6 +5,7 @@
 # * Added `NO_CMAKE_PACKAGE_REGISTRY` to `find_package(Eigen3 ...)` to avoid issues with wiped build
 #   directory when looking for installed eigen. Eigen3 registers its *build* tree with the user package registry.
 # * Added `LIBINT_LOCAL_Eigen3_FIND` block to forcibly load hard-coded Eigen3 location detected during Libint2 library build.
+# * Move default Eigen3_FIND_VERSION_* from 2.91.0 to 3.0.0 so that it doesn't reject Eigen v3 installations.
 #
 # - Try to find Eigen3 lib
 #
@@ -35,10 +36,10 @@
 
 if(NOT Eigen3_FIND_VERSION)
   if(NOT Eigen3_FIND_VERSION_MAJOR)
-    set(Eigen3_FIND_VERSION_MAJOR 2)
+    set(Eigen3_FIND_VERSION_MAJOR 3)
   endif()
   if(NOT Eigen3_FIND_VERSION_MINOR)
-    set(Eigen3_FIND_VERSION_MINOR 91)
+    set(Eigen3_FIND_VERSION_MINOR 0)
   endif()
   if(NOT Eigen3_FIND_VERSION_PATCH)
     set(Eigen3_FIND_VERSION_PATCH 0)
