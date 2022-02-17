@@ -141,7 +141,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 # Configuring Libint
 
 * Notes
-  * Codes "G", "L", or "C" for each option indicate whether it is consumed by the generator, the library, the library consumer, or a combination.
+  * Codes "G", "L", or "C" for each option indicate whether it is consumed by the _g_enerator, the _l_ibrary, the library _c_onsumer, or a combination.
     * If your final target is the export tarball, use options that include the letter "G".
     * If you're building a library from an export tarball, use options that include the letter "L".
     * For a continuous generator->export->library build, options supplied at the top level will be properly handed off to generator and library build.
@@ -230,12 +230,12 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 
 ### Compilers and Flags
 
-* `CMAKE_CXX_COMPILER` — G L — Specify C++ Compiler. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
-* `CMAKE_C_COMPILER` — G L — Specify C Compiler. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
-* `CMAKE_Fortran_COMPILER` — G L — Specify Fortran Compiler. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
-* `CMAKE_CXX_FLAGS` — G L — Additional C++ flags. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
-* `CMAKE_C_FLAGS` — G L — Additional C flags. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
-* `CMAKE_Fortran_FLAGS` — G L — Additional Fortran flags. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
+* `CMAKE_CXX_COMPILER` — G L — Specify C++ Compiler. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* `CMAKE_C_COMPILER` — G L — Specify C Compiler. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* `CMAKE_Fortran_COMPILER` — G L — Specify Fortran Compiler. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
+* `CMAKE_CXX_FLAGS` — G L — Additional C++ flags. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
+* `CMAKE_C_FLAGS` — G L — Additional C flags. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
+* `CMAKE_Fortran_FLAGS` — G L — Additional Fortran flags. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
 
 
 ### Install Paths
@@ -243,11 +243,11 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * Notes
   * Approximate defaults are shown. Actual defaults from [GNUInstallDirs](https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html)
 
-* `CMAKE_INSTALL_PREFIX` — L — Directory into which library installed. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
-* `CMAKE_INSTALL_BINDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which executables and runtime libraries are installed. Standard CMake variable. [Default=bin]
-* `CMAKE_INSTALL_LIBDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which libraries are installed. Standard CMake variable. [Default=lib]
-* `CMAKE_INSTALL_INCLUDEDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which headers are installed. Standard CMake variable. [Default=include]
-* `CMAKE_INSTALL_DATADIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which data files are installed. Standard CMake variable. [Default=share]
+* `CMAKE_INSTALL_PREFIX` — L — Directory into which library installed. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html)
+* `CMAKE_INSTALL_BINDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which executables and runtime libraries are installed. [Standard CMake variable](https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html) [Default=bin]
+* `CMAKE_INSTALL_LIBDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which libraries are installed. [Standard CMake variable](https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html) [Default=lib]
+* `CMAKE_INSTALL_INCLUDEDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which headers are installed. [Standard CMake variable](https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html) [Default=include]
+* `CMAKE_INSTALL_DATADIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which data files are installed. [Standard CMake variable](https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html) [Default=share]
 * `LIBINT2_INSTALL_CMAKEDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which CMake files are installed. [Default=lib/cmake/libint2]
 * `LIBINT2_INSTALL_BASISDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which data (basis) files are installed. basis/ directory created within this. [Default=share/libint/<LIBINT_VERSION>]
 * `LIBINT2_INSTALL_FMODDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which Fortran module files are installed if `ENABLE_FORTRAN=ON`. [Default=include/libint2/fortran2/modules]
@@ -256,7 +256,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 ### Detecting Dependencies
 
 * `Python_EXECUTABLE` — L — Path to Python interpreter.
-* `CMAKE_PREFIX_PATH` — G L — Set to list of root directories to look for external dependencies. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html)
+* `CMAKE_PREFIX_PATH` — G L — Set to list of root directories to look for external dependencies. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html)
 * `BOOST_ROOT` — G L C —
 * `Multiprecision_ROOT` — G L —
 * `Eigen3_ROOT` — L C — Prefix to installation location (`Eigen3_ROOT/...` exists)
@@ -310,11 +310,11 @@ EIGEN3_INCLUDE_DIR?
 
 ### Build Library How
 
-* `CMAKE_BUILD_TYPE` — G L — [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) [Default=Release]
-* `BUILD_SHARED_LIBS` — L — Build Libint library as shared, not static. [Standard CMake variable.](https://cmake.org/cmake/help/latest/variable/BUILD_SHARED_LIBS.html) [Default=OFF]
+* `CMAKE_BUILD_TYPE` — G L — [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) [Default=Release]
+* `BUILD_SHARED_LIBS` — L — Build Libint library as shared, not static. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/BUILD_SHARED_LIBS.html) [Default=OFF]
 * `LIBINT2_BUILD_SHARED_AND_STATIC_LIBS` — L — Build both shared and static Libint libraries in one shot. Uses `-fPIC`. [Default=OFF]
 * `ENABLE_XHOST` — L — Enables processor-specific optimization (with MSVC, it enables AVX2 instructions) [Default=ON]
-* `BUILD_TESTING` — G L — Whether to build the testing infrastructure and define the `check` target. [Standard CMake variable.](https://cmake.org/cmake/help/latest/command/enable_testing.html) [Default=ON]
+* `BUILD_TESTING` — G L — Whether to build the testing infrastructure and define the `check` target. [Standard CMake variable](https://cmake.org/cmake/help/latest/command/enable_testing.html) [Default=ON]
 * `LIBINT_BUILD_LIBRARY_AS_SUBPROJECT` — G — If building compiler and library in continuous command, build generated library as a subproject; if OFF will configure and build separately (expert only). [Default=OFF]
 
 
@@ -525,13 +525,36 @@ EIGEN3_INCLUDE_DIR?
 * production CMake configuration:
 
   ```
-  -DREQUIRE_CXX_API=ON -DLIBINT2_SHGAUSS_ORDERING=gaussian -DLIBINT2_CARTGAUSS_ORDERING=standard -DLIBINT2_SHELL_SET=standard -DENABLE_ERI=2 -DENABLE_ERI3=2 -DENABLE_ERI2=2 -DENABLE_ONEBODY=2 -DMULTIPOLE_MAX_ORDER=4 -DWITH_MAX_AM="6;5;4" -DWITH_ERI_MAX_AM="5;4;3" -DWITH_ERI3_MAX_AM="6;5;4" -DWITH_ERI2_MAX_AM="6;5;4" -DERI3_PURE_SH=OFF -DERI2_PURE_SH=OFF
+  -D REQUIRE_CXX_API=ON
+  -D LIBINT2_SHGAUSS_ORDERING=gaussian
+  -D LIBINT2_CARTGAUSS_ORDERING=standard
+  -D LIBINT2_SHELL_SET=standard
+  -D ERI3_PURE_SH=OFF
+  -D ERI2_PURE_SH=OFF
+  -D ENABLE_ERI=2
+  -D ENABLE_ERI3=2
+  -D ENABLE_ERI2=2
+  -D ENABLE_ONEBODY=2
+  -D MULTIPOLE_MAX_ORDER=4
+  -D WITH_MAX_AM="6;5;4"
+  -D WITH_ERI_MAX_AM="5;4;3"
+  -D WITH_ERI3_MAX_AM="6;5;4"
+  -D WITH_ERI2_MAX_AM="6;5;4"
   ```
 
 * minimal detection:
 
   ```
-  find_package(Libint2 COMPONENTS gss CXX_ho impure_sh eri_c4_d0_l3 eri_c4_d1_l2 eri_c4_d2_l2 eri_c3_d0_l4 eri_c3_d1_l3 eri_c3_d2_l3 eri_c2_d0_l4 eri_c2_d1_l3 eri_c2_d2_l3 onebody_d0_l4 onebody_d1_l3 onebody_d2_l3)
+  find_package(
+    Libint2
+    COMPONENTS
+      CXX_ho
+      gss
+      impure_sh
+      eri_c4_d0_l3  eri_c3_d0_l4  eri_c2_d0_l4  onebody_d0_l4
+      eri_c4_d1_l2  eri_c3_d1_l3  eri_c2_d1_l3  onebody_d1_l3
+      eri_c4_d2_l2  eri_c3_d2_l3  eri_c2_d2_l3  onebody_d2_l3
+    )
   ```
 
 * see [notes](https://github.com/psi4/psi4/blob/master/external/upstream/libint2/CMakeLists.txt) for details of Psi4/Libint2 configuration
@@ -545,25 +568,28 @@ EIGEN3_INCLUDE_DIR?
     -DWITH_G12_OPT_AM=3
   ```
 
-# Misc. Questions
 
-##### Where do I get the source code?
+-----------------------------------------------------------------------------
+
+# Miscellaneous Questions
+
+#### Where do I get the source code?
 
 The only way to get the compiler source is from the [Libint source code repository](https://github.com/evaleev/libint)on [GitHub](github.com). You can use a client, like GitHub app or (our favorite) [SourceTree](http://www.sourcetreeapp.com) app from Atlassian. Or from the command line: `git clone https://github.com/evaleev/libint.git`
 
-##### What happened to autoconf?
+#### What happened to autoconf?
 
 Version 2.5.0 and older of the exported libint library was buildable using GNU Autoconf and [GNU Make](https://www.gnu.org/software/make/). *As of version 2.6.0 the Autoconf build is deprecated*; the exported libint library should be configured with [CMake](https://cmake.org/) and built with [any CMake-supported generator](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html), e.g. Ninja and GNU Make.
 
 Version 2.7 and older of the compiler repo was buildable using GNU Autoconf. *As of version 2.8, the Autoconf build is deprecated*; use CMake instead.  TODO 2.8
 
-##### What is the status and importance of SIMD vectorization in Libint?
+#### What is the status and importance of SIMD vectorization in Libint?
 
 SIMD vectorization is the crucial contributor to performance of a modern processor core. Libint code can typically hit up to 70% of FLOP peak on a scalar core, hence on a SIMD core divide that number by the vector length (4 for AVX in double precision). The situation is only going to get worse (accelerators already use 8- and 16-wide vector units, and future mainstream processors are likely to use 8-wide units also). Hence if your method spends significant portion of its time computing integrals start rewriting your code now.
 
 Vectorization of Libint is work in progress. However, by switching to AVX we see a factor of 2-2.5 speedup of the integrals kernels compared to scalar performance, thus we are optimistic that it will be possible to attain 50% of peak on AVX hardware. It is clear that significant reorganization of the manner in which integrals are computed and digested is involved, but these costs are unavoidable.
 
-##### What compiler is best?
+#### What compiler is best?
 
 To obtain peak performance it is *very important* to use the C++ compiler and compiler options that are appropriate for the given platform. It is impossible to provide specific recommendations for specific platforms. The `ENABLE_XHOST` option does allow the compiler to optimize for current architecture. We recommend to use a vendor compiler (e.g., Intel) before trying clang++ and g++. In some situations, however, clang++ and g++ are known to outperform the x86 vendor compiler, so we recommend trying several compilers.
 
