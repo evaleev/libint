@@ -5,7 +5,7 @@ project(Libint LANGUAGES CXX C)
 # Set Libint version ===================================================================================================
 set(LIBINT_MAJOR_VERSION 2)
 set(LIBINT_MINOR_VERSION 7)
-set(LIBINT_MICRO_VERSION 1)
+set(LIBINT_MICRO_VERSION 2)
 set(LIBINT_BUILDID "")
 set(LIBINT_VERSION "${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION}")
 if (LIBINT_BUILDID)
