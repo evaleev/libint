@@ -12,6 +12,8 @@ TEST_CASE("Boys reference values", "[core-ints][precision]") {
   const int mmax = 40;
   std::vector<LIBINT2_REF_REALTYPE> T_ref_values;
   std::vector<double> T_values;
+  T_ref_values.push_back(LIBINT2_REF_REALTYPE(33.50904838850329));
+  T_values.push_back(33.50904838850329);
   T_ref_values.push_back(LIBINT2_REF_REALTYPE(0));
   T_values.push_back(0);
   for(int i=0; i!=12; ++i) {
@@ -29,18 +31,18 @@ TEST_CASE("Boys reference values", "[core-ints][precision]") {
       auto Tref = T_ref_values[t];
       auto T = T_values[t];
       libint2::FmEval_Reference<LIBINT2_REF_REALTYPE>::eval(Fm_ref_values, Tref, mmax);
-      auto fm_eval = libint2::FmEval_Chebyshev7<scalar_type>::instance(mmax);
-//      auto fm_eval = libint2::FmEval_Taylor<scalar_type, 3>::instance(mmax);
+      //auto fm_eval = libint2::FmEval_Chebyshev7<scalar_type>::instance(mmax);
+      auto fm_eval = libint2::FmEval_Taylor<scalar_type, 7>::instance(mmax);
       fm_eval->eval(Fm_values, T, mmax);
       for(int m=0; m<=mmax; ++m) {
         const LIBINT2_REF_REALTYPE value = libint2::sstream_convert<LIBINT2_REF_REALTYPE>(Fm_values[m]);
         const LIBINT2_REF_REALTYPE abs_error = abs(Fm_ref_values[m] - value);
         const LIBINT2_REF_REALTYPE relabs_error = abs(abs_error / Fm_ref_values[m]);
-//        std::cout << "m=" << m << " T=" << Tref << " ref_value=" << Fm_ref_values[m] << " value=" << Fm_values[m];
-//        printf(" abs_error=%e, relabs_error=%e\n", abs_error.get_d(), relabs_error.get_d());
+        using libint2::sstream_convert;
+        printf("m=%d T=%e ref_value=%e value==%e abs_error=%e relabs_error=%e\n", m, sstream_convert<double>(Tref),  sstream_convert<double>(Fm_ref_values[m]), Fm_values[m], sstream_convert<double>(abs_error), sstream_convert<double>(relabs_error));
         // can only get about 14 digits of precision for extreme cases, but can guarantee absolute precision to epsilon
-        REQUIRE(abs_error.get_d() == Approx(0.0).margin(std::numeric_limits<scalar_type>::epsilon()) );
-        REQUIRE(relabs_error.get_d() == Approx(0.0).margin(125*std::numeric_limits<scalar_type>::epsilon()) );
+        REQUIRE(sstream_convert<scalar_type>(abs_error) == Approx(0.0).margin(std::numeric_limits<scalar_type>::epsilon()) );
+        REQUIRE(sstream_convert<scalar_type>(relabs_error) == Approx(0.0).margin(125*std::numeric_limits<scalar_type>::epsilon()) );
       }
     }
   }
