@@ -487,7 +487,7 @@ namespace libint2 {
       /// Constructs the object to be able to compute Boys funcion for m in [0,mmax], with relative \c precision
       FmEval_Taylor(unsigned int mmax, Real precision = std::numeric_limits<Real>::epsilon()) :
           soft_zero_(1e-6), cutoff_(precision), numbers_(
-              INTERPOLATION_ORDER + 1, 2 * (mmax + INTERPOLATION_ORDER - 1)) {
+              INTERPOLATION_ORDER + 1, 2 * (mmax + INTERPOLATION_ORDER)) {
 
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
 # if !defined(__AVX__) && defined(NDEBUG)
@@ -516,7 +516,7 @@ namespace libint2 {
             * std::pow(cutoff_ * numbers_.fac[INTERPOLATION_ORDER + 1],
                        1.0 / INTERPOLATION_ORDER);
         oodelT_ = 1.0 / delT_;
-        max_m_ = mmax + INTERPOLATION_ORDER - 1;
+        max_m_ = mmax + INTERPOLATION_ORDER;
 
         T_crit_ = new Real[max_m_ + 1]; /*--- m=0 is included! ---*/
         max_T_ = 0;
