@@ -107,11 +107,8 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "bra-ket permutation", "[engine]
       {{0, 0, 0}} // origin coordinates
   });
 
-  auto obs = BasisSet();
-  for (auto&& shell : shells) {
-    obs.push_back(std::move(shell));
-  }
-  auto shell2bf = BasisSet::compute_shell2bf(obs);
+  auto obs = BasisSet(std::move(shells));
+  const auto& shell2bf = obs.shell2bf();
 
   auto engine =
       Engine(libint2::Operator::coulomb, libint2::max_nprim(obs),
