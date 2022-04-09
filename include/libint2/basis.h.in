@@ -45,7 +45,7 @@
 namespace libint2 {
 
   /// Computes the number of basis functions in a range of shells
-  /// @tparam a range type
+  /// @tparam ShellRange a range type
   /// @param[in] shells a sequence of shells
   /// @return the number of basis functions
   template <typename ShellRange> size_t nbf(ShellRange && shells) {
@@ -56,7 +56,7 @@ namespace libint2 {
   }
 
   /// Computes the maximum number of primitives in any Shell among a range of shells
-  /// @tparam a range type
+  /// @tparam ShellRange a range type
   /// @param[in] shells a sequence of shells
   /// @return the maximum number of primitives
   template <typename ShellRange> size_t max_nprim(ShellRange && shells) {
@@ -67,7 +67,7 @@ namespace libint2 {
   }
 
   /// Computes the maximum angular momentum quantum number @c l in any Shell among a range of shells
-  /// @tparam a range type
+  /// @tparam ShellRange a range type
   /// @param[in] shells a sequence of shells
   /// @return the maximum angular momentum
   template <typename ShellRange> int max_l(ShellRange && shells) {

@@ -707,8 +707,8 @@ class Engine {
       const libint2::Shell& first_shell, const ShellPack&... rest_of_shells);
 
   /// Computes target shell sets of 1-body integrals.
-  /// @param[in] s1
-  /// @param[in] s2
+  /// @param[in] s1 bra shell
+  /// @param[in] s2 ket shell
   /// @return vector of pointers to target shell sets, the number of sets = Engine::nshellsets()
   /// \note resulting shell sets are stored in row-major order
   __libint2_engine_inline const target_ptr_vec& compute1(

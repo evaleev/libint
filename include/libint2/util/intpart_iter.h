@@ -79,7 +79,6 @@ struct FixedOrderedIntegerPartitionIterator {
   typedef typename Sequence::size_type size_type;
 
   /// \param n the positive integer to be partitioned
-  /// \param k  the number of partitions, 1 or greater
   template <typename Seq = Sequence>
   explicit FixedOrderedIntegerPartitionIterator(
       unsigned_integer_type n,
