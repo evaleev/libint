@@ -29,6 +29,7 @@ jobs:
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DCMAKE_PREFIX_PATH=/usr/local/Cellar/eigen/3.3.9;/usr/local/opt/bison
         -DBUILD_SHARED_LIBS=OFF
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
         -DENABLE_FORTRAN=ON
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/library/install
@@ -56,7 +57,7 @@ jobs:
     - name: Install prerequisite MacOS packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-latest' }}
       run: |
-        brew install ninja gcc@10 boost eigen bison ccache automake
+        brew install ninja gcc@10 boost eigen bison ccache automake python3
         echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
 
@@ -64,7 +65,7 @@ jobs:
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libboost-dev libeigen3-dev ccache
+        sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libboost-dev libeigen3-dev ccache python-numpy
         echo "FC=/usr/bin/gfortran-9" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
 
@@ -112,7 +113,7 @@ jobs:
         tar -xzf ../compiler/libint-2*.tgz
         cd libint-2*
         echo "LIBINT_EXPORTED_DIR=`pwd`" >> $GITHUB_ENV
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DPYTHON_EXECUTABLE=`which python3` $BUILD_CONFIG
         cmake --build build --target check
         cmake --build build --target install
 
@@ -132,3 +133,16 @@ jobs:
         cmake . -DCMAKE_PREFIX_PATH=${{github.workspace}}/build/library/install -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         cmake --build . --target hf++
         ./hf++ $LIBINT_EXPORTED_DIR/tests/hartree-fock/h2o_rotated.xyz | python $LIBINT_EXPORTED_DIR/tests/hartree-fock/hartree-fock++-validate.py $LIBINT_EXPORTED_DIR/MakeVars.features
+
+    - name: Build Python bindings
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      shell: bash
+      working-directory: ${{github.workspace}}/build/library
+      run: |
+        cd libint-2*
+        cd build
+        cmake . -DLIBINT2_PYTHON=ON
+        cmake --build . --target libint2-python
+        #cmake --build . --target libint2-python-test
+
+
