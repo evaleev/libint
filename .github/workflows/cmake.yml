@@ -143,6 +143,6 @@ jobs:
         cd build
         cmake . -DLIBINT2_PYTHON=ON
         cmake --build . --target libint2-python
-        #cmake --build . --target libint2-python-test
+        cmake --build . --target libint2-python-test
 
 
