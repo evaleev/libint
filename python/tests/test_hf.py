@@ -1,54 +1,53 @@
 import libint2
 
 import numpy as np
-import scipy.linalg
 
 def compute_1body_ints(oper, basis, params = None):
   engine = libint2.Engine(oper)
   if params: engine.set_params(params)
   return engine.compute_1body_ints(basis)
 
-  h = np.zeros([basis.nbf,basis.nbf])
-  bf = basis.functions
-  for i,p in enumerate(bf):
-    for j,q in enumerate(bf):
-      h[p,q] = engine.compute(*basis.shells(i,j))
-  return h
+  # h = np.zeros([basis.nbf,basis.nbf])
+  # bf = basis.functions
+  # for i,p in enumerate(bf):
+  #   for j,q in enumerate(bf):
+  #     h[p,q] = engine.compute(*basis.shells(i,j))
+  # return h
 
 
 def compute_2body_fock(D, basis):
   engine = libint2.Engine(libint2.Operator.coulomb)
   return engine.compute_2body_fock(D, basis)
 
-  F = np.zeros([basis.nbf,basis.nbf])
-  bf = basis.functions
-  for i in range(len(basis)):
-    for j in range(0,i+1):
-      for k in range(len(basis)):
-        for l in range(0,k+1):
+  # F = np.zeros([basis.nbf,basis.nbf])
+  # bf = basis.functions
+  # for i in range(len(basis)):
+  #   for j in range(0,i+1):
+  #     for k in range(len(basis)):
+  #       for l in range(0,k+1):
 
-          p,q,r,s = [bf[idx] for idx in (i,j,k,l)]
-          eri = engine.compute(*basis.shells(i,j,k,l))
-          if eri is None: continue
+  #         p,q,r,s = [bf[idx] for idx in (i,j,k,l)]
+  #         eri = engine.compute(*basis.shells(i,j,k,l))
+  #         if eri is None: continue
 
-          symm = 1.0
-          if i == j: symm /= 2
-          if k == l: symm /= 2
+  #         symm = 1.0
+  #         if i == j: symm /= 2
+  #         if k == l: symm /= 2
 
-          F[p,q] += 2*np.einsum('pqrs,rs->pq', eri, D[r,s])*2*symm
+  #         F[p,q] += 2*np.einsum('pqrs,rs->pq', eri, D[r,s])*2*symm
 
-          F[p,r] -= np.einsum('pqrs,qs->pr', eri, D[q,s])/2*symm
-          F[q,r] -= np.einsum('pqrs,ps->qr', eri, D[p,s])/2*symm
+  #         F[p,r] -= np.einsum('pqrs,qs->pr', eri, D[q,s])/2*symm
+  #         F[q,r] -= np.einsum('pqrs,ps->qr', eri, D[p,s])/2*symm
 
-          F[p,s] -= np.einsum('pqrs,qr->ps', eri, D[q,r])/2*symm
-          F[q,s] -= np.einsum('pqrs,pr->qs', eri, D[p,r])/2*symm
+  #         F[p,s] -= np.einsum('pqrs,qr->ps', eri, D[q,r])/2*symm
+  #         F[q,s] -= np.einsum('pqrs,pr->qs', eri, D[p,r])/2*symm
 
-          # J = engine.compute(*basis.shells(i,k,j,l))
-          # F[p,q] += 2*np.einsum('pqrs,rs->pq', J, D[r,s])
-          # K = engine.compute(*basis.shells(i,k,j,l))
-          # F[p,q] -= np.einsum('prqs,rs->pq', K, D[r,s])
+  #         # J = engine.compute(*basis.shells(i,k,j,l))
+  #         # F[p,q] += 2*np.einsum('pqrs,rs->pq', J, D[r,s])
+  #         # K = engine.compute(*basis.shells(i,k,j,l))
+  #         # F[p,q] -= np.einsum('prqs,rs->pq', K, D[r,s])
 
-  return F+F.T
+  # return F+F.T
 
 class RHF:
 
@@ -76,7 +75,7 @@ class RHF:
 
   def compute_density(self, F):
     ndocc = self.ndocc
-    eig, C = scipy.linalg.eigh(F,self.S)
+    eig, C = np.linalg.eigh(F,self.S)
     D = np.matmul(C[:,:ndocc], C[:,:ndocc].T)
     self.C = C
     self.D = D
