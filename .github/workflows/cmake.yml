@@ -65,7 +65,7 @@ jobs:
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libboost-dev libeigen3-dev ccache python-numpy
+        sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libboost-dev libeigen3-dev ccache python3-numpy
         echo "FC=/usr/bin/gfortran-9" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
 
