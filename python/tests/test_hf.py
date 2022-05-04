@@ -1,6 +1,7 @@
 import libint2
 
 import numpy as np
+import scipy.linalg
 
 def compute_1body_ints(oper, basis, params = None):
   engine = libint2.Engine(oper)
@@ -75,7 +76,7 @@ class RHF:
 
   def compute_density(self, F):
     ndocc = self.ndocc
-    eig, C = np.linalg.eigh(F,self.S)
+    eig, C = scipy.linalg.eigh(F,self.S)
     D = np.matmul(C[:,:ndocc], C[:,:ndocc].T)
     self.C = C
     self.D = D
