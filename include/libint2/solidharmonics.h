@@ -99,61 +99,6 @@ namespace libint2 {
           return row_offset_[r+1] - row_offset_[r];
         }
 
-      private:
-        std::vector<Real> values_;  // elements
-        std::vector<unsigned short> row_offset_; // "pointer" to the beginning of each row
-        std::vector<unsigned char> colidx_;  // column indices
-        signed char l_;        // the angular momentum quantum number
-
-        void init() {
-          const unsigned short npure = 2*l_ + 1;
-          const unsigned short ncart = (l_ + 1) * (l_ + 2) / 2;
-          std::vector<Real> full_coeff(npure * ncart);
-
-#if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
-          for(signed char pure_idx=0, m=-l_; pure_idx!=npure; ++pure_idx, ++m) {
-#elif LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_GAUSSIAN
-          for(signed char pure_idx=0, m=0; pure_idx!=npure; ++pure_idx, m=(m>0?-m:1-m)) {
-#else
-#  error "unknown value of macro LIBINT_SHGSHELL_ORDERING"
-#endif
-            signed char cart_idx = 0;
-            signed char lx, ly, lz;
-            FOR_CART(lx, ly, lz, l_)
-              full_coeff[pure_idx * ncart + cart_idx] = coeff(l_, m, lx, ly, lz);
-              //std::cout << "Solid(" << (int)l_ << "," << (int)m << ") += Cartesian(" << (int)lx << "," << (int)ly << "," << (int)lz << ") * " << full_coeff[pure_idx * ncart + cart_idx] << std::endl;
-              ++cart_idx;
-            END_FOR_CART
-          }
-
-          // compress rows
-          // 1) count nonzeroes
-          size_t nnz = 0;
-          for(size_t i=0; i!=full_coeff.size(); ++i)
-            nnz += full_coeff[i] == 0.0 ? 0 : 1;
-          // 2) allocate
-          values_.resize(nnz);
-          colidx_.resize(nnz);
-          row_offset_.resize(npure+1);
-          // 3) copy
-          {
-            unsigned short pc = 0;
-            unsigned short cnt = 0;
-            for(unsigned short p=0; p!=npure; ++p) {
-              row_offset_[p] = cnt;
-              for(unsigned short c=0; c!=ncart; ++c, ++pc) {
-                if (full_coeff[pc] != 0.0) {
-                  values_[cnt] = full_coeff[pc];
-                  colidx_[cnt] = c;
-                  ++cnt;
-                }
-              }
-            }
-            row_offset_[npure] = cnt;
-          }
-          // done
-        }
-
         /*!---------------------------------------------------------------------------------------------
           Computes coefficient of a cartesian Gaussian in a real solid harmonic Gaussian
           See IJQC 54, 83 (1995), eqn (15). If m is negative, imaginary part is computed, whereas
@@ -214,6 +159,62 @@ namespace libint2 {
           Real result = (m == 0) ? pfac*sum : M_SQRT2*pfac*sum;
           return result;
         }
+
+      private:
+        std::vector<Real> values_;  // elements
+        std::vector<unsigned short> row_offset_; // "pointer" to the beginning of each row
+        std::vector<unsigned char> colidx_;  // column indices
+        signed char l_;        // the angular momentum quantum number
+
+        void init() {
+          const unsigned short npure = 2*l_ + 1;
+          const unsigned short ncart = (l_ + 1) * (l_ + 2) / 2;
+          std::vector<Real> full_coeff(npure * ncart);
+
+#if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
+          for(signed char pure_idx=0, m=-l_; pure_idx!=npure; ++pure_idx, ++m) {
+#elif LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_GAUSSIAN
+          for(signed char pure_idx=0, m=0; pure_idx!=npure; ++pure_idx, m=(m>0?-m:1-m)) {
+#else
+#  error "unknown value of macro LIBINT_SHGSHELL_ORDERING"
+#endif
+            signed char cart_idx = 0;
+            signed char lx, ly, lz;
+            FOR_CART(lx, ly, lz, l_)
+              full_coeff[pure_idx * ncart + cart_idx] = coeff(l_, m, lx, ly, lz);
+              //std::cout << "Solid(" << (int)l_ << "," << (int)m << ") += Cartesian(" << (int)lx << "," << (int)ly << "," << (int)lz << ") * " << full_coeff[pure_idx * ncart + cart_idx] << std::endl;
+              ++cart_idx;
+            END_FOR_CART
+          }
+
+          // compress rows
+          // 1) count nonzeroes
+          size_t nnz = 0;
+          for(size_t i=0; i!=full_coeff.size(); ++i)
+            nnz += full_coeff[i] == 0.0 ? 0 : 1;
+          // 2) allocate
+          values_.resize(nnz);
+          colidx_.resize(nnz);
+          row_offset_.resize(npure+1);
+          // 3) copy
+          {
+            unsigned short pc = 0;
+            unsigned short cnt = 0;
+            for(unsigned short p=0; p!=npure; ++p) {
+              row_offset_[p] = cnt;
+              for(unsigned short c=0; c!=ncart; ++c, ++pc) {
+                if (full_coeff[pc] != 0.0) {
+                  values_[cnt] = full_coeff[pc];
+                  colidx_[cnt] = c;
+                  ++cnt;
+                }
+              }
+            }
+            row_offset_[npure] = cnt;
+          }
+          // done
+        }
+
 
         struct CtorHelperIter : public std::iterator<std::input_iterator_tag, SolidHarmonicsCoefficients> {
             unsigned int l_;
