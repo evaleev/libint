@@ -46,11 +46,12 @@ namespace molden {
 /// format](http://www.cmbi.ru.nl/molden/molden_format.html).
 class Export {
  public:
+  /// @tparam ShellSequence BasisSet or std::vector<Shell>
   /// @tparam Coeffs the type of LCAO coefficient matrix
   /// @tparam Energies the type of LCAO energy vector
   /// @tparam Occs the type of LCAO occupancy vector
   /// @param atoms the set of atoms (coordinates in atomic units)
-  /// @param basis the set of shells; must meet Molden requirements (see below)
+  /// @param basis a sequence of shells; must meet Molden requirements (see below)
   /// @param coefficients the matrix of LCAO coefficients (columns are LCAOs,
   ///        rows are AOs; AOs are ordered according to the order of shells in
   ///        \c basis and by the ordering conventions of this Libint
@@ -72,8 +73,9 @@ class Export {
   /// - p (l=1) shells are Cartesian, not solid harmonics
   /// - d, f, and g (l=2..4) shells are all Cartesian or all solid harmonics
   /// - there are no shells with l>5
-  template <typename Coeffs, typename Occs, typename Energies = Eigen::VectorXd>
-  Export(const std::vector<Atom>& atoms, const std::vector<Shell>& basis,
+  template <typename ShellSequence, typename Coeffs, typename Occs,
+            typename Energies = Eigen::VectorXd>
+  Export(const std::vector<Atom>& atoms, const ShellSequence& basis,
          const Coeffs& coefficients, const Occs& occupancies,
          const Energies& energies = Energies(),
          const std::vector<std::string>& symmetry_labels =
@@ -271,6 +273,12 @@ class Export {
       }
     }
     return shells;
+  }
+
+  /// @throw std::logic_error if the basis does not conforms Molden
+  ///        requirements
+  const std::vector<Shell>& validate(const BasisSet& bs) const {
+    return validate(bs.shells());
   }
 
   void initialize_bf_map() {
