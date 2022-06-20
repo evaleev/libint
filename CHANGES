@@ -3,6 +3,11 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2022-xx-yy: 2.8.0-beta.1
+  - PR #249: Python bindings (HT @asadchev)
+  - PR #246: BasisSet is no longer derived from vector<Shell>
+  - PR #232: introduced new primitive screening methods
+
 - 2022-06-20: 2.7.2
   - PR 251: fixed exponential integrals for large T
   - PR 243: fixed Taylor-based Boys engine (HT @bingao)
