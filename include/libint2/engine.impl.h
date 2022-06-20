@@ -1106,6 +1106,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
          "Engine::compute2 -- deriv_order mismatch");
   assert(((tspbra == nullptr && tspket == nullptr) || (tspbra != nullptr && tspket != nullptr)) &&
          "Engine::compute2 -- expects zero or two ShellPair objects");
+  assert(screening_method_ != ScreeningMethod::Invalid);
 
   //
   // i.e. bra and ket refer to chemists bra and ket
@@ -1152,6 +1153,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   // "permute" also the user-provided shell pair data
   const auto* spbra_precomputed = swap_braket ? tspket : tspbra;
   const auto* spket_precomputed = swap_braket ? tspbra : tspket;
+  assert(((spbra_precomputed && spket_precomputed) || (screening_method_ == ScreeningMethod::Original || screening_method_ == ScreeningMethod::Conservative)) && "Engine::compute2: without precomputed shell pair data can only use original or conservative screening methods");
 
   const auto tform = bra1.contr[0].pure || bra2.contr[0].pure ||
                      ket1.contr[0].pure || ket2.contr[0].pure;
@@ -1187,14 +1189,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   {
     auto p = 0;
     // initialize shell pairs, if not given ...
-    // using ln_precision_ is far less aggressive than should be, but proper analysis
-    // involves both bra and ket *bases* and thus cannot be done on shell-set
-    // basis ... probably ln_precision_/2 - 10 is enough
+    // since screening primitive pairs for bra is not possible without knowing the worst-case primitive data in ket (and vice versa)
+    // using ln_precision_ is not safe, but should work fine for moderate basis sets ... precompute shell pair data
+    // yourself to guarantee proper screening of primitive pairs (see Engine::set_precision() for details of how to screen
+    // primitives for a given target precision of the integrals)
     const auto target_shellpair_ln_precision = ln_precision_;
     const auto recompute_spbra = !spbra_precomputed || spbra_precomputed->ln_prec > target_shellpair_ln_precision;
     const auto recompute_spket = !spket_precomputed || spket_precomputed->ln_prec > target_shellpair_ln_precision;
-    const ShellPair& spbra = recompute_spbra ? (spbra_.init(bra1, bra2, target_shellpair_ln_precision), spbra_) : *spbra_precomputed;
-    const ShellPair& spket = recompute_spket ? (spket_.init(ket1, ket2, target_shellpair_ln_precision), spket_) : *spket_precomputed;
+    const ShellPair& spbra = recompute_spbra ? (spbra_.init(bra1, bra2, target_shellpair_ln_precision, screening_method_), spbra_) : *spbra_precomputed;
+    const ShellPair& spket = recompute_spket ? (spket_.init(ket1, ket2, target_shellpair_ln_precision, screening_method_), spket_) : *spket_precomputed;
+    assert(spbra.screening_method_ == screening_method_ && spket.screening_method_ == screening_method_ && "Engine::compute2: received ShellPair initialized for an incompatible screening method");
     // determine whether shell pair data refers to the actual ({bra1,bra2}) or swapped ({bra2,bra1}) pairs
     // if computed the shell pair data here then it's always in actual order, otherwise check swap_bra/swap_ket
     const auto spbra_is_swapped = recompute_spbra ? false : swap_bra;
@@ -1224,10 +1228,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     // compute all primitive quartet data
     const auto npbra = spbra.primpairs.size();
     const auto npket = spket.primpairs.size();
+    const scalar_type npbraket = npbra*npket;
     for (auto pb = 0; pb != npbra; ++pb) {
       for (auto pk = 0; pk != npket; ++pk) {
-        // primitive quartet screening
-        if (spbra.primpairs[pb].scr + spket.primpairs[pk].scr >
+        // primitive quartet coarse screening:
+        if (spbra.primpairs[pb].ln_scr + spket.primpairs[pk].ln_scr >
             ln_precision_) {
           Libint_t& primdata = primdata_[p];
           const auto& sbra1 = bra1;
@@ -1255,8 +1260,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           const auto c2 = sket1.contr[0].coeff[pket1];
           const auto c3 = sket2.contr[0].coeff[pket2];
 
-          const auto amtot = sbra1.contr[0].l + sket1.contr[0].l +
-                             sbra2.contr[0].l + sket2.contr[0].l;
+          const auto l0 = sbra1.contr[0].l;
+          const auto l1 = sbra2.contr[0].l;
+          const auto l2 = sket1.contr[0].l;
+          const auto l3 = sket2.contr[0].l;
+          const auto l = l0 + l1 + l2 + l3;
 
           const auto gammap = alpha0 + alpha1;
           const auto oogammap = spbrapp.one_over_gamma;
@@ -1274,19 +1282,32 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           const auto PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
 
           const auto K12 = spbrapp.K * spketpp.K;
-          decltype(K12) two_times_M_PI_to_25(
-              34.986836655249725693);  // (2 \pi)^{5/2}
           const auto gammapq = gammap + gammaq;
           const auto sqrt_gammapq = sqrt(gammapq);
           const auto oogammapq = 1.0 / (gammapq);
-          auto pfac = two_times_M_PI_to_25 * K12 * sqrt_gammapq * oogammapq;
+          auto pfac = K12 * sqrt_gammapq * oogammapq;
           pfac *= c0 * c1 * c2 * c3 * scale_;
 
-          if (std::abs(pfac) >= precision_) {
+          // original and conservative methods: screen primitive integral using actual pfac
+          if (static_cast<int>(screening_method_) & (static_cast<int>(ScreeningMethod::Original) | static_cast<int>(ScreeningMethod::Conservative))) {
+            scalar_type magnitude_estimate = std::abs(pfac);
+            if (screening_method_ == ScreeningMethod::Conservative) {
+              // magnitude of primitive (ab|cd) integral for nonzero L differs from that of (00|00) geometric and exponent-dependent factor,
+              // some of which only depend on bra or ket, and some are bra-ket dependent ... here we account only for bra-only and ket-only
+              // nonspherical factors
+              const auto nonspherical_pfac_magnitude = std::max(
+                  1., spbrapp.nonsph_screen_fac * spketpp.nonsph_screen_fac);
+              magnitude_estimate *= nonspherical_pfac_magnitude * npbraket;
+            }
+            if (magnitude_estimate < precision_)
+              continue;
+          }
+
+          {
             const scalar_type rho = gammap * gammaq * oogammapq;
             const scalar_type T = PQ2 * rho;
             auto* gm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
-            const auto mmax = amtot + deriv_order_;
+            const auto mmax = l + deriv_order_;
 
             if (!skip_core_ints) {
               switch (oper_) {

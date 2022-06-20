@@ -104,3 +104,4 @@ exportdir::
 	echo "set(LIBINT2_LIBRARY_CXX_SRC" > $(TOPDIR)/$(EXPORTDIR)/srclist.cmake
 	ls $(TOPDIR)/$(EXPORTDIR)/src >> $(TOPDIR)/$(EXPORTDIR)/srclist.cmake
 	echo ")" >> $(TOPDIR)/$(EXPORTDIR)/srclist.cmake
+	cp -Rap $(SRCTOPDIR)/python $(TOPDIR)/$(EXPORTDIR)/

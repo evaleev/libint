@@ -8,9 +8,9 @@ Following is a brief summary of changes made in each release of Libint.
   - PR 243: fixed Taylor-based Boys engine (HT @bingao)
 
 - 2021-09-19: 2.7.1
-  - PR 224: fixed tracking of shell-pair data
-  - PR 223: removed redundant const qualifier (HT @e-kwsm)
-  - issue 222: fixed compiler tree's install target
+  - PR #224: fixed tracking of shell-pair data
+  - PR #223: removed redundant const qualifier (HT @e-kwsm)
+  - issue #222: fixed compiler tree's install target
 
 - 2021-09-14: 2.7.0
   - precision tracking of shell-pair data, respected by Engine::compute2

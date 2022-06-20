@@ -48,9 +48,9 @@ namespace libint2 {
   /// @tparam ShellRange a range type
   /// @param[in] shells a sequence of shells
   /// @return the number of basis functions
-  template <typename ShellRange> size_t nbf(ShellRange && shells) {
+  template <typename ShellRange> size_t nbf(const ShellRange& shells) {
     size_t n = 0;
-    for (const auto& shell: std::forward<ShellRange>(shells))
+    for (auto&& shell: shells)
       n += shell.size();
     return n;
   }
@@ -59,9 +59,9 @@ namespace libint2 {
   /// @tparam ShellRange a range type
   /// @param[in] shells a sequence of shells
   /// @return the maximum number of primitives
-  template <typename ShellRange> size_t max_nprim(ShellRange && shells) {
+  template <typename ShellRange> size_t max_nprim(const ShellRange& shells) {
     size_t n = 0;
-    for (auto shell: std::forward<ShellRange>(shells))
+    for (auto&& shell: shells)
       n = std::max(shell.nprim(), n);
     return n;
   }
@@ -70,17 +70,19 @@ namespace libint2 {
   /// @tparam ShellRange a range type
   /// @param[in] shells a sequence of shells
   /// @return the maximum angular momentum
-  template <typename ShellRange> int max_l(ShellRange && shells) {
+  template <typename ShellRange> int max_l(const ShellRange& shells) {
     int l = 0;
-    for (auto shell: std::forward<ShellRange>(shells))
-      for (auto c: shell.contr)
+    for (auto&& shell: shells)
+      for (auto&& c: shell.contr)
         l = std::max(c.l, l);
     return l;
   }
 
   /// BasisSet is a slightly decorated \c std::vector of \c libint2::Shell objects.
-  class BasisSet : public std::vector<libint2::Shell> {
+  class BasisSet : private std::vector<libint2::Shell> {
     public:
+      using base_type = std::vector<libint2::Shell>;
+
       BasisSet() : name_(""), nbf_(-1), max_nprim_(0), max_l_(-1) {}
       BasisSet(const BasisSet&) = default;
       BasisSet(BasisSet&& other) :
@@ -92,6 +94,8 @@ namespace libint2 {
         shell2bf_(std::move(other.shell2bf_))
       {
       }
+      BasisSet(const base_type& other) : base_type(other) { init(); }
+      BasisSet(base_type&& other) : base_type(std::move(other)) { init(); }
       ~BasisSet() = default;
       BasisSet& operator=(const BasisSet&) = default;
 
@@ -125,27 +129,27 @@ namespace libint2 {
         auto canonical_name = canonicalize_name(name_);
         // some basis sets use cartesian d shells by convention, the convention is taken from Gaussian09
         auto force_cartesian_d = gaussian_cartesian_d_convention(canonical_name);
-        
+
         // parse the name into components
         std::vector<std::string> basis_component_names = decompose_name_into_components(canonical_name);
-        
+
         // ref_shells[component_idx][Z] => vector of Shells
         std::vector<std::vector<std::vector<libint2::Shell>>> component_basis_sets;
         component_basis_sets.reserve(basis_component_names.size());
-        
+
         // read in ALL basis set components
         for(const auto& basis_component_name: basis_component_names) {
           auto file_dot_g94 = basis_lib_path + "/" + basis_component_name + ".g94";
-        
+
           // use same cartesian_d convention for all components!
           component_basis_sets.emplace_back(read_g94_basis_library(file_dot_g94, force_cartesian_d, throw_if_no_match));
         }
-        
+
         // for each atom find the corresponding basis components
         for(auto a=0ul; a<atoms.size(); ++a) {
 
           const std::size_t Z = atoms[a].atomic_number;
-          
+
           // add each component in order
           for(auto comp_idx=0ul; comp_idx!=component_basis_sets.size(); ++comp_idx) {
             const auto& component_basis_set = component_basis_sets[comp_idx];
@@ -202,11 +206,46 @@ namespace libint2 {
         init();
       }
 
+      const base_type& shells() const {
+        return static_cast<const base_type&>(*this);
+      }
+
+      /// @return the number of shells in the basis
+      std::size_t size() const {
+        return shells().size();
+      }
+
+      /// @return iterator pointing to the first shell
+      base_type::const_iterator begin() const {
+        return shells().begin();
+      }
+
+      /// @return iterator pointing past the last shell
+      base_type::const_iterator end() const {
+        return shells().end();
+      }
+
+      using base_type::cbegin;
+      using base_type::cend;
+      using base_type::empty;
+
+      /// @param[in] i index of the element to access
+      /// @return const reference to `i`th element
+      const Shell& operator[](std::size_t i) const {
+        return shells()[i];
+      }
+
+      /// @param[in] i index of the element to access
+      /// @return const reference to `i`th element
+      const Shell& at(std::size_t i) const {
+        return shells().at(i);
+      }
+
       /// forces solid harmonics/Cartesian Gaussians
       /// @param solid if true, force all shells with L>1 to be solid harmonics, otherwise force all shells to Cartesian
       void set_pure(bool solid) {
-        for(auto& s: *this) {
-          s.contr[0].pure = solid;
+        for(size_t s=0; s!=size(); ++s) {
+          static_cast<base_type&>(*this)[s].contr[0].pure = solid;
         }
         init();
       }
@@ -240,7 +279,7 @@ namespace libint2 {
       std::vector<std::vector<long>> atom2shell(const std::vector<Atom>& atoms) const {
         return atom2shell(atoms, *this);
       }
-      
+
       /// Computes the map from \c shells to the corresponding atoms in \c atoms. Coordinates are compared bit-wise, i.e.
       /// shell2atom[k] == l iff atoms[l].x == *this[k].O[0] && atoms[l].y == *this[k].O[1] &&  atoms[l].z == *this[k].O[2]
       /// @param throw_if_no_match If true, and no atom matches the origin of a shell, throw a std::logic_error.
@@ -330,7 +369,7 @@ namespace libint2 {
         }
         return false;
       }
-      
+
       /// decompose basis set name into components
       std::vector<std::string> decompose_name_into_components(std::string name) {
         std::vector<std::string> component_names;
@@ -345,7 +384,7 @@ namespace libint2 {
 
         return component_names;
       }
-      
+
       /** determines the path to the data directory, as follows:
        *       <ol>
        *         <li> specified by LIBINT_DATA_PATH environmental variable, if defined </li>
@@ -395,7 +434,7 @@ namespace libint2 {
         }
         return basis_path;
       }
-      
+
       /// converts fortran scientific-notation floats that use d/D instead of e/E in \c str
       /// @param[in,out] str string in which chars 'd' and 'D' are replaced with 'e' and 'E',
       ///                respectively
@@ -581,7 +620,23 @@ namespace libint2 {
         return result;
       }
 
+     private:
+
+      friend inline bool operator==(const BasisSet&, const BasisSet&);
+      friend inline bool operator==(const BasisSet&, const base_type&);
+      friend inline bool operator==(const base_type&, const BasisSet&);
+
   }; // BasisSet
+
+  inline bool operator==(const BasisSet& bs1, const BasisSet& bs2) {
+    return bs1.shells() == bs2.shells();
+  }
+  inline bool operator==(const BasisSet& bs1, const BasisSet::base_type& bs2) {
+    return bs1.shells() == bs2;
+  }
+  inline bool operator==(const BasisSet::base_type& bs1, const BasisSet& bs2) {
+    return bs1 == bs2.shells();
+  }
 
 } // namespace libint2
 

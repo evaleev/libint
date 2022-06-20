@@ -8,7 +8,7 @@ TARBALL=boost_${VERSION_}.tar.bz2
 
 #### download
 if ! test -f ${TARBALL}; then
-  BOOST_URL=https://sourceforge.net/projects/boost/files/boost/${VERSION}/${TARBALL}/download
+  BOOST_URL=https://boostorg.jfrog.io/artifactory/main/release/${VERSION}/${TARBALL}
   curl -o ${TARBALL} -L ${BOOST_URL} 
 fi
 
