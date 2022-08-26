@@ -168,7 +168,7 @@ namespace libint2 {
     typename SubIteratorBase<T,P>::cp_rettype
     SubIteratorBase<T,P>::pelem() const
     {
-      return PElemImpl<iter_type,detail::IsSafePtr<iref>::result>::pelem(elem());
+      return PElemImpl<iter_type,detail::IsSafePtr<iref>::value>::pelem(elem());
     }
 
 #if 0
