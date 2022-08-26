@@ -194,7 +194,7 @@ namespace libint2 {
           case 'X': return 17;
           case 'Y': return 18;
           case 'Z': return 19;
-          default: throw "invalid angular momentum label";
+          default: throw std::invalid_argument{"invalid angular momentum label"};
         }
       }
 
