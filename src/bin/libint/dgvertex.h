@@ -305,15 +305,15 @@ namespace libint2 {
   // Nonmember predicates
   //
   /// return true if V is an unrolled IntegralSet
-  struct UnrolledIntegralSet : public std::unary_function<const SafePtr<DGVertex>&,bool> {
+  struct UnrolledIntegralSet {
     bool operator()(const SafePtr<DGVertex>& V);
   };
   /// return false if V is an unrolled IntegralSet
-  struct NotUnrolledIntegralSet : public std::unary_function<const SafePtr<DGVertex>&,bool> {
+  struct NotUnrolledIntegralSet {
     bool operator()(const SafePtr<DGVertex>& V);
   };
   /// return true if V is an Integral in an unrolled target IntegralSet
-  struct IntegralInTargetIntegralSet : public std::unary_function<const SafePtr<DGVertex>&,bool> {
+  struct IntegralInTargetIntegralSet {
     bool operator()(const SafePtr<DGVertex>& V);
   };
 

@@ -2331,7 +2331,7 @@ namespace libint2 {
   namespace {
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
     typedef DirectedGraph::targets::value_type value_type;
-    struct __NotUnrolledIntegralSet : public std::unary_function<const value_type&,bool> {
+    struct __NotUnrolledIntegralSet {
       bool operator()(const value_type& v) {
         return NotUnrolledIntegralSet()(v);
       }
