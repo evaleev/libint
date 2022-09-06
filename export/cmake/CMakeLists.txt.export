@@ -109,7 +109,7 @@ if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
   message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DREQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
 endif()
 
-if (NOT USE_BUNDLED_BOOST)
+if (NOT LIBINT_USE_BUNDLED_BOOST)
   find_package(Boost 1.29)
   if (Boost_FOUND)
     cmake_push_check_state()
@@ -133,7 +133,7 @@ if (NOT USE_BUNDLED_BOOST)
 endif()
 
 # if usable Boost.Preprocessor not found install the bundled version
-if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS OR USE_BUNDLED_BOOST)
+if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS OR LIBINT_USE_BUNDLED_BOOST)
     file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2)
     execute_process(
             COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/external/boost.tar.gz
