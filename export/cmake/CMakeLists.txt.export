@@ -33,6 +33,8 @@ redefaultable_option(ENABLE_FORTRAN "Fortran03+ Libint interface" OFF)
 redefaultable_option(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
 redefaultable_option(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build in one shot static and shared library variants. Uses -fPIC." OFF)
 redefaultable_option(LIBINT2_PYTHON "Python bindings" OFF)
+redefaultable_option(LIBINT_USE_BUNDLED_BOOST "Force use of bundled Boost" OFF)
+
 if (NOT LIBINT2_REALTYPE)
     set(LIBINT2_REALTYPE double)
 endif()
@@ -109,8 +111,9 @@ if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
   message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DREQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
 endif()
 
-find_package(Boost 1.29)
-if (Boost_FOUND)
+if (NOT LIBINT_USE_BUNDLED_BOOST)
+  find_package(Boost 1.29)
+  if (Boost_FOUND)
     cmake_push_check_state()
 
     list(APPEND CMAKE_REQUIRED_FLAGS "-std=c++11")
@@ -123,15 +126,16 @@ if (Boost_FOUND)
         #endif
         int main() { return 0;}
         "
-            LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+        LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
 
     cmake_pop_check_state()
-else(Boost_FOUND)
+  else(Boost_FOUND)
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 0)
-endif(Boost_FOUND)
+  endif(Boost_FOUND)
+endif()
 
 # if usable Boost.Preprocessor not found install the bundled version
-if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS OR LIBINT_USE_BUNDLED_BOOST)
     file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2)
     execute_process(
             COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/external/boost.tar.gz
