@@ -53,7 +53,7 @@ namespace libint2 {
   public:
     VertexAlreadyOnStack(const SafePtr<DGVertex>& vertex) :
       logic_error("DirectedGraph -- vertex already on stack"), vertex_(vertex) {}
-    ~VertexAlreadyOnStack() throw() {}
+    ~VertexAlreadyOnStack() noexcept {}
 
     SafePtr<DGVertex> vertex() const { return vertex_; }
 
@@ -70,7 +70,7 @@ namespace libint2 {
   public:
     CannotPerformOperation(const std::string& msg) :
       logic_error(msg) {}
-    virtual ~CannotPerformOperation() throw() {}
+    virtual ~CannotPerformOperation() noexcept {}
   };
 
   /// This exception used to indicate that some property is not set
