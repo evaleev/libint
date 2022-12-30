@@ -1,5 +1,7 @@
 from __future__ import print_function
-import sys, re, math
+import math
+import re
+import sys
 
 # first arg is the input file, if missing read sys.stdin
 try:
@@ -14,7 +16,7 @@ tol = 1e-11
 returncode = 1
 for line in instr:
     print(line,end="")
-    x = re.match('\*\* Hartree-Fock energy =\s*([-\d.]+)', line)
+    x = re.match(r'\*\* Hartree-Fock energy =\s*([-\d.]+)', line)
     if x:
         efound_str = x.group(1)
         if (math.fabs(eref - float(efound_str)) < tol):

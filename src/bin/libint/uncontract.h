@@ -192,7 +192,7 @@ namespace libint2 {
   }
 
   /// return true if V is a decontracted IntegralSet
-  struct DecontractedIntegralSet : public std::unary_function<const SafePtr<DGVertex>&,bool> {
+  struct DecontractedIntegralSet {
     bool operator()(const SafePtr<DGVertex>& V) {
       const unsigned int outdegree = V->num_exit_arcs();
       if (outdegree == 0) return false;

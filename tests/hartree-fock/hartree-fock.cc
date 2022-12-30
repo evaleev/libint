@@ -445,7 +445,7 @@ std::vector<libint2::Shell> make_sto3g_basis(const std::vector<Atom>& atoms) {
         break;
 
       default:
-        throw "do not know STO-3G basis for this Z";
+        throw std::invalid_argument{"do not know STO-3G basis for this Z"};
     }
 
   }
@@ -501,7 +501,7 @@ Matrix compute_soad(const std::vector<Atom>& atoms) {
     else if (Z <= 10) // Li - Ne
       nao += 5;
     else
-      throw "SOAD with Z > 10 is not yet supported";
+      throw std::invalid_argument{"SOAD with Z > 10 is not yet supported"};
   }
 
   // compute the minimal basis density

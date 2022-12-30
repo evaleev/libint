@@ -70,7 +70,7 @@ inline size_t sto3g_num_ao(size_t Z) {
   else if (Z <= 53)  // Y - I
     nao = 27;
   else
-    throw "STO-3G basis is not defined for elements with Z > 53";
+    throw std::invalid_argument{"STO-3G basis is not defined for elements with Z > 53"};
   return nao;
 }
 

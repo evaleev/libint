@@ -797,7 +797,7 @@ std::vector<libint2::Atom> read_geometry(const std::string& filename) {
   if (filename.rfind(".xyz") != std::string::npos)
     return libint2::read_dotxyz(iss);
   else
-    throw "only .xyz files are accepted";
+    throw std::invalid_argument{"only .xyz files are accepted"};
 }
 
 // computes Superposition-Of-libint2::Atomic-Densities guess for the molecular density

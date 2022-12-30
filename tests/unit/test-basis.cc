@@ -55,6 +55,7 @@ TEST_CASE("Basis", "[basis]") {
                          "cc-pvtz-f12",
                          "cc-pvtz-f12-cabs",
                          "cc-pvtz-jkfit",
+                         "cc-pvtz-mini",
                          "cc-pvtz-ri",
                          "def2-qzvp",
                          "def2-qzvp-c",
