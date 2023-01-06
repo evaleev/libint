@@ -51,12 +51,12 @@ Prefactors::Prefactors() :
       char xyz_str[] = "xyz";
       for(int xyz=0; xyz<3; xyz++) {
 
-        char XY_X_i_str[20];
+        char XY_X_i_str[sizeof(XY_X_str)+2];
         sprintf(XY_X_i_str,"%s_%c",XY_X_str,xyz_str[xyz]);
         rdptr XY_X_i_ptr(new rdouble(XY_X_i_str));
         XY_X[p][braket][xyz] = XY_X_i_ptr;
 
-        char W_XY_i_str[20];
+        char W_XY_i_str[sizeof(W_XY_str)+2];
         sprintf(W_XY_i_str,"%s_%c",W_XY_str,xyz_str[xyz]);
         rdptr W_XY_i_ptr(new rdouble(W_XY_i_str));
         W_XY[p][xyz] = W_XY_i_ptr;
@@ -70,7 +70,7 @@ Prefactors::Prefactors() :
       vX_Y[p] = vX_Y_ptr;
       const char xyz_str[] = "xyz";
       for(int xyz=0; xyz<3; xyz++) {
-        char X_Y_i_str[20];
+        char X_Y_i_str[sizeof(X_Y_str)+2];
         sprintf(X_Y_i_str,"%s_%c",X_Y_str,xyz_str[xyz]);
         rdptr X_Y_i_ptr(new rdouble(X_Y_i_str));
         X_Y[p][xyz] = X_Y_i_ptr;
@@ -81,7 +81,7 @@ Prefactors::Prefactors() :
       rdptr vY_X_ptr(new rdouble(Y_X_str));
       vY_X[p] = vY_X_ptr;
       for(int xyz=0; xyz<3; xyz++) {
-        char Y_X_i_str[20];
+        char Y_X_i_str[sizeof(Y_X_str)+2];
         sprintf(Y_X_i_str,"%s_%c",Y_X_str,xyz_str[xyz]);
         rdptr Y_X_i_ptr(new rdouble(Y_X_i_str));
         Y_X[p][xyz] = Y_X_i_ptr;

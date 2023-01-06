@@ -578,23 +578,23 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR1, _, BOOST_PP_ONEBODY_TASK_LIST)
 
 #if defined(ONEBODY_MAX_AM_LIST)
 #   define BOOST_PP_ONEBODY_MCR2(r,data,elem)          \
-    cparams->max_am( task_label(elem, d),     token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
+    cparams->max_am( task_label(BOOST_PP_STRINGIZE(elem), d),     token<unsigned int>(ONEBODY_MAX_AM_LIST,',',d));
     BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR2, _, BOOST_PP_ONEBODY_TASK_LIST)
 #   undef BOOST_PP_ONEBODY_MCR2
 #elif defined(ONEBODY_MAX_AM)
 #   define BOOST_PP_ONEBODY_MCR3(r,data,elem)          \
-    cparams->max_am( task_label(elem, d),     ONEBODY_MAX_AM);
+    cparams->max_am( task_label(BOOST_PP_STRINGIZE(elem), d),     ONEBODY_MAX_AM);
     BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR3, _, BOOST_PP_ONEBODY_TASK_LIST)
 #   undef BOOST_PP_ONEBODY_MCR3
 #endif
 #if defined(ONEBODY_OPT_AM_LIST)
 #   define BOOST_PP_ONEBODY_MCR4(r,data,elem)          \
-    cparams->max_am_opt( task_label(elem, d)     ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
+    cparams->max_am_opt( task_label(BOOST_PP_STRINGIZE(elem), d)     ,token<unsigned int>(ONEBODY_OPT_AM_LIST,',',d));
     BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR4, _, BOOST_PP_ONEBODY_TASK_LIST)
 #   undef BOOST_PP_ONEBODY_MCR4
 #elif defined(ONEBODY_OPT_AM)
 #   define BOOST_PP_ONEBODY_MCR5(r,data,elem)          \
-    cparams->max_am_opt( task_label(elem, d)     , ONEBODY_OPT_AM);
+    cparams->max_am_opt( task_label(BOOST_PP_STRINGIZE(elem), d)     , ONEBODY_OPT_AM);
     BOOST_PP_LIST_FOR_EACH ( BOOST_PP_ONEBODY_MCR5, _, BOOST_PP_ONEBODY_TASK_LIST)
 #   undef BOOST_PP_ONEBODY_MCR5
 #endif

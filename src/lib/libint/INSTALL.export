@@ -1,0 +1,7 @@
+The recommended installation procedure:
+1) configure: cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/path/to/install/tree [+ other CMake vars, such as CMAKE_CXX_COMPILER]
+2) (optional) test: cmake --build build --target check
+3) install: cmake --build build --target install:
+
+Report all problems to https://github.com/evaleev/libint/issues
+

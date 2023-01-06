@@ -26,7 +26,9 @@
 #include <stdexcept>
 #include <smart_ptr.h>
 #include <util_types.h>
+#ifndef _MSC_VER
 #include <cxxabi.h>
+#endif
 
 namespace libint2 {
   std::string to_string(FunctionPosition pos);

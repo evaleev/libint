@@ -36,7 +36,15 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#ifdef _MSC_VER
+#include <io.h>
+#define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
+#define PATH_SEPARATOR "\\"
+#else
 #include <unistd.h>
+#define PATH_SEPARATOR "/"
+#endif
 
 #include <libint2.h>
 #include <libint2/shell.h>
@@ -78,6 +86,17 @@ namespace libint2 {
     return l;
   }
 
+  /// Computes the maximum size of any Shell among a range of shells
+  /// @tparam a range type
+  /// @param[in] shells a sequence of shells
+  /// @return the maximum size of a shell in @p shells
+  template <typename ShellRange> size_t max_size(ShellRange && shells) {
+    size_t n = 0;
+    for (auto&& shell: std::forward<ShellRange>(shells))
+      n = std::max(shell.size(), n);
+    return n;
+  }
+
   /// BasisSet is a slightly decorated \c std::vector of \c libint2::Shell objects.
   class BasisSet : private std::vector<libint2::Shell> {
     public:
@@ -91,6 +110,7 @@ namespace libint2 {
         nbf_(other.nbf_),
         max_nprim_(other.max_nprim_),
         max_l_(other.max_l_),
+        max_size_(other.max_size_),
         shell2bf_(std::move(other.shell2bf_))
       {
       }
@@ -139,8 +159,8 @@ namespace libint2 {
 
         // read in ALL basis set components
         for(const auto& basis_component_name: basis_component_names) {
-          auto file_dot_g94 = basis_lib_path + "/" + basis_component_name + ".g94";
-
+          auto file_dot_g94 = basis_lib_path + PATH_SEPARATOR + basis_component_name + ".g94";
+        
           // use same cartesian_d convention for all components!
           component_basis_sets.emplace_back(read_g94_basis_library(file_dot_g94, force_cartesian_d, throw_if_no_match));
         }
@@ -161,7 +181,7 @@ namespace libint2 {
             }
             else if (throw_if_no_match) {  // not found? throw, if needed
               std::string errmsg(std::string("did not find the basis for this Z in ") +
-                      basis_lib_path + "/" + basis_component_names[comp_idx] + ".g94");
+                      basis_lib_path + PATH_SEPARATOR + basis_component_names[comp_idx] + ".g94");
               throw std::logic_error(errmsg);
             }
           } // basis component loop
@@ -250,17 +270,21 @@ namespace libint2 {
         init();
       }
 
-      /// @return the number of basis functions in the basis; -1 if uninitialized
+      /// @return the number of basis functions in the basis; -1, if `*this` is in a null (default-initialized) state
       long nbf() const {
         return nbf_;
       }
-      /// @return the maximum number of primitives in a contracted Shell, i.e. maximum contraction length; 0 if uninitialized
+      /// @return the maximum number of primitives in a contracted Shell, i.e. maximum contraction length; 0, if `*this` is in a null (default-initialized) state
       size_t max_nprim() const {
         return max_nprim_;
       }
-      /// @return the maximum angular momentum of a contraction; -1 if uninitialized
+      /// @return the maximum angular momentum of a contraction; -1, if `*this` is in a null (default-initialized) state
       long max_l() const {
         return max_l_;
+      }
+      /// @return the maximum size of a shell; 0, if `*this` is in a null (default-initialized) state
+      size_t max_size() const {
+        return max_nprim_;
       }
       /// @return the map from shell index to index of the first basis function from this shell
       /// \note basis functions are ordered as shells, i.e. shell2bf[i] >= shell2bf[j] iff i >= j
@@ -324,12 +348,14 @@ namespace libint2 {
       long nbf_;
       size_t max_nprim_;
       int max_l_;
+      size_t max_size_;
       std::vector<size_t> shell2bf_;
 
       void init() {
         nbf_ = libint2::nbf(*this);
         max_nprim_ = libint2::max_nprim(*this);
         max_l_ = libint2::max_l(*this);
+        max_size_ = libint2::max_size(*this);
         shell2bf_ = compute_shell2bf(*this);
       }
 
@@ -411,7 +437,7 @@ namespace libint2 {
 #endif
         }
         // validate basis_path = path + "/basis"
-        std::string basis_path = path + std::string("/basis");
+        std::string basis_path = path + PATH_SEPARATOR + std::string("basis");
         bool error = true;
         std::error_code ec;
         auto validate_basis_path = [&basis_path, &error, &ec]() -> void {
@@ -459,7 +485,12 @@ namespace libint2 {
       static std::vector<std::vector<libint2::Shell>> read_g94_basis_library(std::string file_dot_g94,
                                                                              bool force_cartesian_d = false,
                                                                              bool throw_if_missing = true,
-                                                                             std::string locale_name = std::string("POSIX")) {
+#ifdef _MSC_VER
+                                                                             std::string locale_name = std::string("en-US")
+#else
+                                                                             std::string locale_name = std::string("POSIX")  // "en_US"
+#endif
+                                                                            ) {
 
         std::locale locale(locale_name.c_str());  // TODO omit c_str() with up-to-date stdlib
         std::vector<std::vector<libint2::Shell>> ref_shells(118); // 118 = number of chemical elements

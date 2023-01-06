@@ -25,6 +25,7 @@
 #include <bfset.h>
 #include <stdexcept>
 #include <string>
+#include <cctype>
 #include <exception.h>
 #include <default_params.h>
 #include <string.h>
@@ -69,7 +70,7 @@ namespace {
       const unsigned int digit = l % 10u;
       char letter = StaticDefinitions::am_letters[digit];
       if (contracted)
-        letter = toupper(letter);
+        letter = std::toupper(letter);
       result.insert(result.begin(), letter);
       l /= 10;
     } while (l != 0);
