@@ -161,7 +161,8 @@ jobs:
       shell: bash -l {0}
       working-directory: ${{github.workspace}}
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON -DPYTHON_EXECUTABLE=`which python3` $BUILD_CONFIG ${{ matrix.cfg.args }}
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON $BUILD_CONFIG ${{ matrix.cfg.args }}
+        #cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON -DPYTHON_EXECUTABLE=`which python3` $BUILD_CONFIG ${{ matrix.cfg.args }}
         cmake --build build --target export
         cmake --build build --target check-libint2compiler
         cmake --build build --target check-libint2
@@ -200,7 +201,8 @@ jobs:
         fi
 
     - name: Build Python bindings (TODO-CMAKE4)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      if: false
+      #if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash
       working-directory: ${{github.workspace}}/build/library
       run: |

@@ -29,16 +29,29 @@ add_test(NAME libint2/eritest/run2
         COMMAND $<TARGET_FILE:eritest-libint2> 2 1)
 set_tests_properties(libint2/eritest/run2
         PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
+# Test 15
+add_test(NAME libint2/eritest/run3
+        COMMAND $<TARGET_FILE:eritest-libint2> 3 1)
+set_tests_properties(libint2/eritest/run3
+        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
+# Test 16
+add_test(NAME libint2/eritest/run4
+        COMMAND $<TARGET_FILE:eritest-libint2> 4 1)
+set_tests_properties(libint2/eritest/run4
+        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
 
 if (LIBINT_HAS_CXX_API)
-    set(unit_tests-src unit/test.cc
+    set(unit_tests-src
+            unit/test.cc
             unit/test-1body.cc
             unit/test-2body.cc
             unit/test-core-ints.cc
             unit/test-core.cc
             unit/test-permute.cc
             unit/test-shell-order.cc
-            unit/test-util.cc)
+            unit/test-util.cc
+            unit/test-basis.cc
+            unit/test-precision.cc)
 
     # if have C, also test C bindings
     include(CheckLanguage)
@@ -55,7 +68,7 @@ if (LIBINT_HAS_CXX_API)
         ${unit_tests-src})
     target_link_libraries(unit_tests-libint2 Libint2::cxx) # N.B. cxx header-only library
     target_include_directories(unit_tests-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
-    target_compile_definitions(unit_tests-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
+    target_compile_definitions(unit_tests-libint2 PRIVATE -D__COMPILING_LIBINT2=1 -DNO_LIBINT_COMPILER_CODE=1)
     if (TARGET Multiprecision::mpfr)
         target_compile_definitions(unit_tests-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
         target_link_libraries(unit_tests-libint2 Multiprecision::mpfr)
