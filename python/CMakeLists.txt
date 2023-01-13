@@ -35,11 +35,11 @@ endif()
 pybind11_add_module(
   libint2-python
   MODULE
-  #$<$<CXX_COMPILER_ID:MSVC>:NO_EXTRAS>
   # EXCLUDE_FROM_ALL  # why?
     src/libint2/libint2.cc
     src/libint2/engine.cc
   )
+  #$<$<CXX_COMPILER_ID:MSVC>:NO_EXTRAS>
 
 target_compile_features(libint2-python PRIVATE "cxx_std_17")
 
@@ -79,12 +79,12 @@ if (TARGET int-obj)
           PROPERTIES
             WINDOWS_EXPORT_ALL_SYMBOLS ON
           )
-        target_link_libraries(
-          libint2-python
-          PRIVATE
-            pybind11::lto
-            pybind11::windows_extras
-          )
+        #target_link_libraries(
+        #  libint2-python
+        #  PRIVATE
+        #    pybind11::lto
+        #    pybind11::windows_extras
+        #  )
 
         if(NOT MSVC AND NOT ${CMAKE_BUILD_TYPE} MATCHES Debug|RelWithDebInfo)
             message("COMPILER stripping")

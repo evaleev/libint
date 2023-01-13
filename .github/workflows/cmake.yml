@@ -80,7 +80,7 @@ jobs:
 
     - id: skip_check
       name: Check if can skip
-      uses: fkirc/skip-duplicate-actions@v3.4.0
+      uses: fkirc/skip-duplicate-actions@v5
       with:
         cancel_others: 'true'
 
@@ -145,7 +145,7 @@ jobs:
 
     - name: Setup ccache cache files
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-      uses: actions/cache@v1.1.0
+      uses: actions/cache@v3
       with:
         path: ${{github.workspace}}/build/.ccache
         key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
@@ -364,13 +364,11 @@ jobs:
         cmake --build build --target hf++
         ./build/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/features
 
-    - name: Build Python bindings (TODO-CMAKE4)
-      #if: false
+    - name: Build (again) & Test Python bindings
       shell: bash -l {0}
-      #working-directory: ${{github.workspace}}/build/library
+      working-directory: ${{github.workspace}}/libint/python
       run: |
-        cd libint/python
-        cmake . -D ENABLE_PYTHON=ON -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed"
+        cmake . -D ENABLE_PYTHON=ON -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-test
 
