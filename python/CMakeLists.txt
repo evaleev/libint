@@ -64,6 +64,11 @@ if (TARGET int-obj)
 
     target_compile_definitions(libint2-python PRIVATE __COMPILING_LIBINT2)
 
+    if(MSVC)
+        target_compile_definitions(libint2-python PRIVATE _USE_MATH_DEFINES)
+        target_compile_options(libint2-python PRIVATE "/EHsc")
+    endif()
+
     target_include_directories(
       libint2-python
       PRIVATE

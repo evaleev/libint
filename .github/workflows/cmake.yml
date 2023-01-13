@@ -278,11 +278,12 @@ jobs:
           - cmake >=3.16
           - ninja
           - cxx-compiler
-          - python 3.9
+          - python 3.10
           - boost
           - eigen
           - numpy
           - scipy
+          - pybind11
         EOF
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           sed -i "s/- cxx/#- cxx/g" export.yaml
@@ -346,6 +347,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
           -DCMAKE_CXX_COMPILER=${CXX} \
+          -DENABLE_PYTHON=ON \
           -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
         cmake --build build --target install
