@@ -48,11 +48,12 @@ if (pybind11_VERSION VERSION_GREATER_EQUAL 2.7.0)
     target_compile_definitions(libint2-python PRIVATE NDEBUG=1)
 endif()
 
-target_compile_options(libint2-python
-  PRIVATE
-    $<$<CXX_COMPILER_ID:MSVC>:/W4>
-    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
-  )
+# * too many warnings on Windows
+# target_compile_options(libint2-python
+#   PRIVATE
+#     $<$<CXX_COMPILER_ID:MSVC>:/W4>
+#     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
+#   )
 
 set_target_properties(
   libint2-python
