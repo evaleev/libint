@@ -368,7 +368,7 @@ jobs:
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/libint/python
       run: |
-        cmake . -D ENABLE_PYTHON=ON -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
+        cmake . -G Ninja -D CMAKE_BUILD_TYPE=Release -D ENABLE_PYTHON=ON -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-test
 
