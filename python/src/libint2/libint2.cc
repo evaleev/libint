@@ -24,7 +24,7 @@ template<class ... Params>
 inline Engine make_engine(
   Operator op,
   const BraKet *braket = nullptr,
-  int L = LIBINT2_MAX_AM,
+  int L = LIBINT2_MAX_AM_eri,
   int K = 10)
 {
   Engine engine(op, K, L, 0, 1e-15);
@@ -139,7 +139,7 @@ PYBIND11_MODULE(libint2, m) {
 
   libint2::initialize();
 
-  m.attr("MAX_AM") = LIBINT2_MAX_AM;
+  m.attr("MAX_AM") = LIBINT2_MAX_AM_eri;
 
   py::class_<Atom>(m,"Atom")
     .def(py::init(&make_atom<int,Double3>))
@@ -250,7 +250,7 @@ PYBIND11_MODULE(libint2, m) {
       py::init(&engine::make_engine<void>),
       py::arg("oper"),
       py::arg("braket") = nullptr,
-      py::arg("L") = LIBINT2_MAX_AM,
+      py::arg("L") = LIBINT2_MAX_AM_eri,
       py::arg("K") = 10
     )
     .def_property(

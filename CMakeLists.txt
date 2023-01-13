@@ -51,7 +51,7 @@ set(pnv libint2) # projectnameversion
 #   - consumes no options
 #   - build target `export` to stop after this step and collect source tarball
 # * library
-#   - can be build as a subproject (FetchContent) or completely insulated (bare ExternalProject; default)
+#   - can be built as a subproject (FetchContent) or completely insulated (bare ExternalProject; default)
 #   - if building via bare ExternalProject:
 #     - unpack the export tarball and build the library and install into stage/
 #     - duration depends on number of integrals requested, runs in parallel
@@ -77,6 +77,8 @@ option_with_default(LIBINT_BUILD_LIBRARY_AS_SUBPROJECT "[EXPERT] Build generated
 option_with_default(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3; Boost is optional but strongly recommended)" ON)
 option_with_default(REQUIRE_CXX_API_COMPILED "Build C++11 Compiled (not just header-only) targets (requires Eigen3; Boost strongly recommended)" ON)
 option_with_default(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires Fortran)" OFF)
+option_with_default(ENABLE_PYTHON "Build Python bindings (requires Python and Pybind11 and Eigen3)" OFF)
+option_with_default(PREFIX_PYTHON_INSTALL "For ENABLE_PYTHON=ON, whether to install the Python module in the Linux manner to CMAKE_INSTALL_PREFIX or to not install it. See target libint2-python-wheel for alternate installation in the Python manner to Python_EXECUTABLE's site-packages." OFF)
 
 option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static" OFF)
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)

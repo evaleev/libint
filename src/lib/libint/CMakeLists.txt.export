@@ -24,7 +24,7 @@ set(pnv libint2) # projectnameversion
 
 # * high MAX_AM generating >20k files may require `ulimit -s 65535` for linking
 #   library target on Linux to avert "ld: Argument list too long"
-# * when building for packaging, absense or presence of Boost determines whether
+# * when building for packaging, absence or presence of Boost determines whether
 #   libint2/boost headers are installed or not
 
 ################################### Options ####################################
@@ -39,13 +39,15 @@ option_with_print(REQUIRE_CXX_API "C++11 Libint API: define library targets + te
 option_with_print(REQUIRE_CXX_API_COMPILED "Build C++11 Compiled (not just header-only) targets (requires Eigen3)" ON)
 option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires C and Fortran and Python)" OFF)
 option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
+option_with_print(ENABLE_PYTHON "Build Python bindings (requires Python and Pybind11 and Eigen3)" OFF)
+option_with_print(PREFIX_PYTHON_INSTALL "For ENABLE_PYTHON=ON, whether to install the Python module in the Linux manner to CMAKE_INSTALL_PREFIX or to not install it. See target libint2-python-wheel for alternate installation in the Python manner to Python_EXECUTABLE's site-packages." OFF)
 option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static" OFF)
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)
 option_with_print(LIBINT_LOCAL_Eigen3_INSTALL "Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. In consumer build, set `LIBINT_LOCAL_Eigen3_FIND=ON` before `find_package(Libint2) to load the exported Eigen3." OFF)
 option_with_default(LIBINT2_REALTYPE "Specifies the floating-point data type used by the library." double)
 include(xhost)  # defines: option(ENABLE_XHOST "Enable processor-specific optimization" ON)
 
-if (REQUIRE_CXX_API_COMPILED AND NOT REQUIRE_CXX_API)
+if ((REQUIRE_CXX_API_COMPILED OR ENABLE_PYTHON) AND NOT REQUIRE_CXX_API)
     set(REQUIRE_CXX_API 1)
 endif()
 
@@ -155,8 +157,12 @@ if (REQUIRE_CXX_API)
     endif()
 endif()
 
-# Python is optionally used for testing, but for Fortran, it's required for preprocessing.
-if (ENABLE_FORTRAN)
+# Python is optionally used for testing.
+# * But for Fortran, it's additionally required for preprocessing.
+# * And for Python bindings, it's required along with its headers.
+if (ENABLE_PYTHON)
+    find_package(Python COMPONENTS Interpreter Development REQUIRED)
+elseif (ENABLE_FORTRAN)
     find_package(Python COMPONENTS Interpreter REQUIRED)
 else()
     find_package(Python COMPONENTS Interpreter)
@@ -166,7 +172,7 @@ endif()
 ################################# Main Project #################################
 include(CMakePackageConfigHelpers)
 
-# <<<  Build  >>>
+#  <<<  Build  >>>
 
 configure_file(include/libint2/config2.h.cmake.in include/libint2/config2.h @ONLY)
 
@@ -194,7 +200,7 @@ target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
                                            ${PROJECT_SOURCE_DIR}/include/libint2/
                                            )
 
-if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
+if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS OR ENABLE_PYTHON)
     set(BUILD_SHARED_LIBS 1)
     set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
 endif()
@@ -541,7 +547,13 @@ if (ENABLE_FORTRAN)
 
 endif()
 
-# <<<  Install  >>>
+# Python bindings ======================================================================================================
+
+if (ENABLE_PYTHON)
+    add_subdirectory(python)
+endif()
+
+#  <<<  Install  >>>
 
 install(
   DIRECTORY
@@ -655,7 +667,7 @@ if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
-# <<<  Export Config  >>>
+#  <<<  Export Config  >>>
 
 configure_package_config_file(
   cmake/${pnv}-config.cmake.in

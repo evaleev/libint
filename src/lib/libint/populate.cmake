@@ -44,6 +44,16 @@ file(INSTALL "${LIBRARY_SOURCE_DIR}/fortran/"
         DESTINATION "${EXPORT_STAGE_DIR}/fortran"
         FILES_MATCHING PATTERN "*.F90" PATTERN "*.py")
 
+# Python
+file(INSTALL "${PROJECT_SOURCE_DIR}/python/"
+  DESTINATION "${EXPORT_STAGE_DIR}/python"
+  FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.cc"
+    PATTERN "*.py"
+    PATTERN "*.py.in"
+    PATTERN "CMakeLists.txt")
+
 file(INSTALL "${PROJECT_SOURCE_DIR}/external/boost.tar.gz"
         DESTINATION "${EXPORT_STAGE_DIR}/external")
 

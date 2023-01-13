@@ -29,9 +29,9 @@
 #    if __has_include(<libint2_params.h>)
 #      include <libint2_params.h>
 #    endif
-#  else  // defined(__has_include)
+#  else
 #    include <libint2_params.h>
-#  endif // defined(__has_include)
+#  endif
 #endif
 
 #endif /* _libint2_include_libint2_util_generated_libint2params_h_ */

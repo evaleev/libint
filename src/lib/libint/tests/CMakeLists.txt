@@ -29,16 +29,7 @@ add_test(NAME libint2/eritest/run2
         COMMAND $<TARGET_FILE:eritest-libint2> 2 1)
 set_tests_properties(libint2/eritest/run2
         PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
-# Test 15
-add_test(NAME libint2/eritest/run3
-        COMMAND $<TARGET_FILE:eritest-libint2> 3 1)
-set_tests_properties(libint2/eritest/run3
-        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
-# Test 16
-add_test(NAME libint2/eritest/run4
-        COMMAND $<TARGET_FILE:eritest-libint2> 4 1)
-set_tests_properties(libint2/eritest/run4
-        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
+# see also Test 15 & Test 16 placed at end of file to preserve numbering
 
 if (LIBINT_HAS_CXX_API)
     set(unit_tests-src
@@ -173,5 +164,15 @@ if (ENABLE_FORTRAN)
         set_tests_properties(libint2/fortran_test/run
                 PROPERTIES FIXTURES_REQUIRED LIBINT2_FORTRAN_TEST_EXEC)
     endif()
-
 endif()
+
+# Test 15
+add_test(NAME libint2/eritest/run3
+        COMMAND $<TARGET_FILE:eritest-libint2> 3 1)
+set_tests_properties(libint2/eritest/run3
+        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
+# Test 16
+add_test(NAME libint2/eritest/run4
+        COMMAND $<TARGET_FILE:eritest-libint2> 4 1)
+set_tests_properties(libint2/eritest/run4
+        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)

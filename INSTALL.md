@@ -90,6 +90,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 | build target `library`                                               | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | &ndash;   | &ndash; | &ndash;    | &ndash;   |
 | &emsp;&emsp;`-D REQUIRE_CXX_API=ON`                                  | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   |
 | &emsp;&emsp;`-D ENABLE_FORTRAN=ON`                                   | C++[^1], Fortran[^2], C | 🔵[^5]    | Ninja                | 🔵[^22] | &ndash;   | &ndash; | &ndash;    | &ndash;   |
+| &emsp;&emsp;`-D ENABLE_PYTHON=ON`                                    | C++[^1], C              | 🔵[^5]    | Ninja                | 🔵[^23] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   |
 | build&nbsp;project&nbsp;_consuming_&nbsp;Libint2&nbsp;library        |
 | &emsp;C&nbsp;interface&nbsp;(I/F),&nbsp;`Libint2::int2`              | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | &ndash;   | &ndash; | &ndash;    | &ndash;   |
 | &emsp;C++11&nbsp;header&nbsp;I/F,&nbsp;`Libint2::cxx`                | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | &ndash;    | &ndash;   |
@@ -115,7 +116,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 
 [^7]: [Boost](https://www.boost.org/) 1.57 or higher. Only header-only (no compiled libraries) components needed.
 
-[^8]: Building the Libint2 compiler needs several Boost components including MPL, Type Traits, and Preprocessor. A detectable system installation is required.
+[^8]: Building the Libint2 compiler needs several Boost components including MPL, Type Traits, and Preprocessor. A detectable system installation is required. (That is, "bundled Boost" is insufficient.)
 
 [^9]: Building the Libint2 library with C++11 API needs the Boost Preprocessor (PP) component. For the compiled C++11 interface, `Libint2::int2-cxx`, the PP is actually compiled against, but for the header-only target, `Libint2::cxx`, the PP only sets up the usage dependency. A system installation of Boost is sought, but if none suitable found, a bundled version of PP is installed within the Libint2 header namespace.
 
@@ -135,6 +136,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 
 [^22]: Python used to process files for Fortran binding.
 
+[^23]: Python headers and interpreter needed for Pybind11 module
 
 -----------------------------------------------------------------------------
 
@@ -202,7 +204,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
     -- Setting option WITH_ERI3_MAX_AM: 5;4;3
     ```
 
-  * high MAX_AM generating >20k files may require `ulimit -s 65535` for linking library target on Linux to avert "ld: Argument list too long". Unity build likely averts this.
+  * high MAX_AM generating >20k files may require `ulimit -s 65535` for linking library target on Linux to avert "ld: Argument list too long". Unity build (ON by default for library) averts this.
 
 * `WITH_MAX_AM` — G — Support Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. Specify values greater or equal to `WITH_<class>_MAX_AM`; often mirrors `WITH_ERI3_MAX_AM`. [Default=4]
 * `WITH_OPT_AM` — G — Optimize maximally for up to angular momentum N (N <= WITH_MAX_AM). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `(WITH_MAX_AM/2)+1`]
@@ -415,7 +417,7 @@ EIGEN3_INCLUDE_DIR?
 
 * `ENV(CXX)=/path/to/c++/compiler` --> `-D CMAKE_CXX_COMPILER=/path/to/c++/compiler`
 * `ENV(CXXFLAGS)` --> `-D CMAKE_CXX_FLAGS`
-* `ENV(CPPFLAGS)=-I/path/to/boost/includes` --> -D BOOST_ROOT=/path/to/boost/prefix`
+* `ENV(CPPFLAGS)=-I/path/to/boost/includes` --> `-D BOOST_ROOT=/path/to/boost/prefix`
 * `ENV(FC)=/path/to/fortran/compiler` --> `-D CMAKE_Fortran_COMPILER=/path/to/fortran/compiler`
 
 
@@ -575,7 +577,7 @@ EIGEN3_INCLUDE_DIR?
 
 #### Where do I get the source code?
 
-The only way to get the compiler source is from the [Libint source code repository](https://github.com/evaleev/libint)on [GitHub](github.com). You can use a client, like GitHub app or (our favorite) [SourceTree](http://www.sourcetreeapp.com) app from Atlassian. Or from the command line: `git clone https://github.com/evaleev/libint.git`
+The only way to get the compiler source is from the [Libint source code repository](https://github.com/evaleev/libint) on [GitHub](github.com). You can use a client, like GitHub app or (our favorite) [SourceTree](http://www.sourcetreeapp.com) app from Atlassian. Or from the command line: `git clone https://github.com/evaleev/libint.git`
 
 #### What happened to autoconf?
 

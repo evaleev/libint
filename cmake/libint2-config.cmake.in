@@ -38,7 +38,7 @@
 #   soo - search for                     + orca     = orca
 #   sbs - search for          + bagel    + standard = bagel
 #   sbo - search for                     + orca
-#   gss - search for gaussian + standard + standard = psi4 (v1.4, v1.5)
+#   gss - search for gaussian + standard + standard = psi4 (v1.4 - v1.7)
 #   gso - search for                     + orca
 #   gis - search for          + intv3    + standard
 #   gio - search for                     + orca
@@ -68,9 +68,9 @@
 # dependencies, and fullness of the installation, this module defines up to the
 # following :prop_tgt:`IMPORTED` targets. ::
 #
-#   Libint2::int2 - library with C API
-#   Libint2::cxx - Libint2::int2 plus interface to header-only C++11 API
-#   Libint2::int2-cxx - Libint2::int2 plus compiled C++11 API
+#   Libint2::int2 - library with C API (COMPONENT C)
+#   Libint2::cxx - Libint2::int2 plus interface to header-only C++11 API (COMPONENT CXX_ho)
+#   Libint2::int2-cxx - Libint2::int2 plus compiled C++11 API (COMPONENT CXX)
 #   Libint2::fortran (NYI)
 #
 #
