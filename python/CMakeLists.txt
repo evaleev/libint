@@ -74,6 +74,12 @@ if (TARGET int-obj)
           PROPERTIES
             WINDOWS_EXPORT_ALL_SYMBOLS ON
           )
+        target_link_libraries(
+          libint2-python
+          PRIVATE
+            pybind11::lto
+            pybind11::windows_extras
+          )
     endif()
 
     target_include_directories(

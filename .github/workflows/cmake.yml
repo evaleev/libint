@@ -205,18 +205,6 @@ jobs:
           ./build/hf++ ../src/lib/libint/tests/hartree-fock/h2o_rotated.xyz | python ../src/lib/libint/tests/hartree-fock/hartree-fock++-validate.py ../build/libint-2*/features
         fi
 
-    - name: Build Python bindings (TODO-CMAKE4)
-      if: false
-      #if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-      shell: bash
-      working-directory: ${{github.workspace}}/build/library
-      run: |
-        cd libint-2*
-        cd build
-        cmake . -D ENABLE_PYTHON=ON
-        cmake --build . --target libint2-python
-        cmake --build . --target libint2-python-test
-
 # Notes on Windows:
 # * Windows with BUILD_SHARED_LIBS=ON compiles just fine but can't link against. See https://github.com/evaleev/libint/issues/237
 #
@@ -284,7 +272,7 @@ jobs:
           - cmake
           - ninja
           - cxx-compiler
-          - python 3.9
+          - python
           - boost
           - eigen
           - numpy
@@ -301,6 +289,7 @@ jobs:
       with:
         miniforge-variant: Mambaforge
         use-mamba: true
+        python-version: "3.9"
         activate-environment: test
         channels: conda-forge
         environment-file: export.yaml
@@ -374,4 +363,14 @@ jobs:
         cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build build --target hf++
         ./build/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/features
+
+    - name: Build Python bindings (TODO-CMAKE4)
+      #if: false
+      shell: bash -l {0}
+      #working-directory: ${{github.workspace}}/build/library
+      run: |
+        cd libint/python
+        cmake . -D ENABLE_PYTHON=ON
+        cmake --build . --target libint2-python
+        cmake --build . --target libint2-python-test
 
