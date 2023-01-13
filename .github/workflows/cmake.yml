@@ -68,6 +68,7 @@ jobs:
         -DENABLE_ONEBODY=1
         -DDISABLE_ONEBODY_PROPERTY_DERIVS=ON
         -DMULTIPOLE_MAX_ORDER=2
+        -DENABLE_PYTHON=ON
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
@@ -94,13 +95,13 @@ jobs:
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'macOS' }}
       run: |
         brew install ninja gcc@10 boost eigen ccache
-        brew install ninja gcc@10 boost eigen ccache python3 numpy scipy
+        brew install ninja gcc@10 boost eigen ccache python3 #numpy scipy
 
     - name: Install Ubuntu prerequisites
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Linux' }}
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build ${{ matrix.cfg.cxx }} ${{ matrix.cfg.fc }} liblapack-dev libmpfr-dev libboost-dev libeigen3-dev ccache python3-numpy python3-scipy
+        sudo apt-get install ninja-build ${{ matrix.cfg.cxx }} ${{ matrix.cfg.fc }} liblapack-dev libmpfr-dev libboost-dev libeigen3-dev ccache #python3-numpy python3-scipy
 
     - name: Install Windows prerequisites, part 1, Create Conda Environment
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && runner.os == 'Windows' }}
@@ -200,7 +201,8 @@ jobs:
         fi
 
     - name: Build Python bindings (TODO-CMAKE4)
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      if: false
+      #if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash
       working-directory: ${{github.workspace}}/build/library
       run: |
@@ -280,6 +282,8 @@ jobs:
           - python 3.9
           - boost
           - eigen
+          - numpy
+          - scipy
         EOF
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           sed -i "s/- cxx/#- cxx/g" export.yaml
