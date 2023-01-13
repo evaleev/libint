@@ -35,7 +35,7 @@ endif()
 pybind11_add_module(
   libint2-python
   MODULE
-  NO_EXTRAS
+  $<$<CXX_COMPILER_ID:MSVC>:NO_EXTRAS>
   # EXCLUDE_FROM_ALL  # why?
     src/libint2/libint2.cc
     src/libint2/engine.cc
