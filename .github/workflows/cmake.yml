@@ -76,7 +76,7 @@ jobs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - id: skip_check
       name: Check if can skip
@@ -175,7 +175,7 @@ jobs:
 
     - name: Archive Library Tarball
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Release'}}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         if-no-files-found: error
         name: ${{ runner.os }}-${{ matrix.cfg.cxx }}
@@ -337,7 +337,7 @@ jobs:
       with:
         arch: x64
 
-    - uses: actions/download-artifact@master
+    - uses: actions/download-artifact@v3
       with:
         name: Linux-g++-9
 

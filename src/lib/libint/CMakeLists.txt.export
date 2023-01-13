@@ -200,7 +200,7 @@ target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
                                            ${PROJECT_SOURCE_DIR}/include/libint2/
                                            )
 
-if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS OR ENABLE_PYTHON)
+if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS OR (ENABLE_PYTHON AND NOT MSVC))
     set(BUILD_SHARED_LIBS 1)
     set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
 endif()
