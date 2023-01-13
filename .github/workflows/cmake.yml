@@ -284,7 +284,7 @@ jobs:
           - cmake 3.16
           - ninja
           - cxx-compiler
-          - python 3.10
+          - python 3.9
           - boost
           - eigen
           - numpy

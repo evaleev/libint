@@ -68,6 +68,11 @@ if (TARGET int-obj)
     if(MSVC)
         target_compile_definitions(libint2-python PUBLIC _USE_MATH_DEFINES)
         target_compile_options(libint2-python PUBLIC "/EHsc")
+        set_target_properties(
+          libint2-python
+          PROPERTIES
+            WINDOWS_EXPORT_ALL_SYMBOLS ON
+          )
     endif()
 
     target_include_directories(
