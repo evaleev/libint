@@ -66,10 +66,6 @@ if (TARGET int-obj)
 
     target_compile_definitions(libint2-python PRIVATE __COMPILING_LIBINT2)
 
-    message("COMPILER ${CMAKE_CXX_COMPILER_ID} ?=Clang")
-    message("COMPILER ${CMAKE_CXX_COMPILER_FRONTEND_VARIANT} ?=MSVC")
-    message("COMPILER ${CMAKE_BUILD_TYPE}")
-
     if(MSVC)
         target_compile_definitions(libint2-python PUBLIC _USE_MATH_DEFINES)
         target_compile_options(libint2-python PUBLIC "/EHsc")
@@ -78,15 +74,6 @@ if (TARGET int-obj)
           PROPERTIES
             WINDOWS_EXPORT_ALL_SYMBOLS ON
           )
-
-        #if(NOT MSVC AND NOT ${CMAKE_BUILD_TYPE} MATCHES Debug|RelWithDebInfo)
-        #    message("COMPILER stripping")
-        #    # Strip unnecessary sections of the binary on Linux/macOS
-        #    pybind11_strip(core)
-        #else()
-        #    message("COMPILER evaded stripping")
-        #endif()
-
     endif()
 
     target_include_directories(

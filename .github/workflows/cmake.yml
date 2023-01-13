@@ -139,9 +139,6 @@ jobs:
       run: |
         string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
         message("\"timestamp=${current_date}\" >> $GITHUB_OUTPUT")
-        #message("::set-output name=timestamp::${current_date}")
-        #run: echo "::set-output name={name}::{value}"
-        #run: echo "{name}={value}" >> $GITHUB_OUTPUT
 
     - name: Setup ccache cache files
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
@@ -248,10 +245,12 @@ jobs:
 
           - runs-on: windows-latest
             libargs: >
+              -GNinja
               -DBUILD_SHARED_LIBS=OFF
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
             testargs: >
+              -GNinja
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
 
@@ -339,14 +338,14 @@ jobs:
         cmake \
           -S. \
           -Bbuild \
-          -G"Ninja" \
-          -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
           -DCMAKE_CXX_COMPILER=${CXX} \
           -DENABLE_PYTHON=ON \
           -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
         cmake --build build --target install
+        #  -G"Ninja" \
+        #  -DCMAKE_BUILD_TYPE=Release \
 
     - name: Test Installed Libint library
       shell: bash -l {0}
@@ -360,7 +359,7 @@ jobs:
         add_executable(hf++ EXCLUDE_FROM_ALL "../libint/tests/hartree-fock/hartree-fock++.cc")
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
         EOF
-        cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
+        cmake -S . -B build -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build build --target hf++
         ./build/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/features
 
@@ -368,7 +367,7 @@ jobs:
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/libint/python
       run: |
-        cmake . -G Ninja -D CMAKE_BUILD_TYPE=Release -D ENABLE_PYTHON=ON -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
+        cmake . -D ENABLE_PYTHON=ON -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-test
 
