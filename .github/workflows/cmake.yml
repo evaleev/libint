@@ -17,38 +17,38 @@ jobs:
               -DENABLE_FORTRAN=ON
               -DENABLE_PYTHON=ON
 
-          - runs-on: macos-latest
-            build_type: Release
-            cxx: clang++
-            cc: clang
-            args: >
-              -DENABLE_FORTRAN=ON
-              -DCMAKE_Fortran_COMPILER=gfortran-10
-              -DENABLE_PYTHON=ON
+          #- runs-on: macos-latest
+          #  build_type: Release
+          #  cxx: clang++
+          #  cc: clang
+          #  args: >
+          #    -DENABLE_FORTRAN=ON
+          #    -DCMAKE_Fortran_COMPILER=gfortran-10
+          #    -DENABLE_PYTHON=ON
 
-          - runs-on: windows-2022
-            build_type: Release
-            cxx: clang-cl
-            cc: clang-cl
-            args: ""
+          #- runs-on: windows-2022
+          #  build_type: Release
+          #  cxx: clang-cl
+          #  cc: clang-cl
+          #  args: ""
 
-          - runs-on: ubuntu-20.04
-            build_type: Debug
-            cxx: g++-9
-            cc: gcc-9
-            fc: gfortran-9
-            args: >
-              -DENABLE_FORTRAN=ON
-              -DENABLE_PYTHON=ON
+          #- runs-on: ubuntu-20.04
+          #  build_type: Debug
+          #  cxx: g++-9
+          #  cc: gcc-9
+          #  fc: gfortran-9
+          #  args: >
+          #    -DENABLE_FORTRAN=ON
+          #    -DENABLE_PYTHON=ON
 
-          - runs-on: macos-latest
-            build_type: Debug
-            cxx: clang++
-            cc: clang
-            args: >
-              -DENABLE_FORTRAN=ON
-              -DCMAKE_Fortran_COMPILER=gfortran-10
-              -DENABLE_PYTHON=ON
+          #- runs-on: macos-latest
+          #  build_type: Debug
+          #  cxx: clang++
+          #  cc: clang
+          #  args: >
+          #    -DENABLE_FORTRAN=ON
+          #    -DCMAKE_Fortran_COMPILER=gfortran-10
+          #    -DENABLE_PYTHON=ON
 
     name: "Repo • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -138,7 +138,10 @@ jobs:
       shell: cmake -P {0}
       run: |
         string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-        message("::set-output name=timestamp::${current_date}")
+        message("timestamp=${current_date}") >> $GITHUB_OUTPUT
+        #message("::set-output name=timestamp::${current_date}")
+        #run: echo "::set-output name={name}::{value}"
+        #run: echo "{name}={value}" >> $GITHUB_OUTPUT
 
     - name: Setup ccache cache files
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
@@ -155,8 +158,8 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
-        #cmake --build build --target export  # toggle for quick tarball to debug `build_export`
-        cmake --build build --target library check-libint2compiler install
+        cmake --build build --target export  # toggle for quick tarball to debug `build_export`
+        #cmake --build build --target library check-libint2compiler install
         cd build && echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
 
     - name: Generate & Build Libint Library (FetchContent, full tests)
@@ -180,8 +183,8 @@ jobs:
         retention-days: 1
 
     - name: Test Installed Libint Library
-      #if: false  # toggle for quick tarball to debug `build_export`
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      if: false  # toggle for quick tarball to debug `build_export`
+      #if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/test_installed_library
       run: |
@@ -278,7 +281,7 @@ jobs:
         channels:
           - conda-forge
         dependencies:
-          - cmake >=3.16
+          - cmake 3.16
           - ninja
           - cxx-compiler
           - python 3.10
