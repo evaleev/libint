@@ -370,7 +370,7 @@ jobs:
       #working-directory: ${{github.workspace}}/build/library
       run: |
         cd libint/python
-        cmake . -D ENABLE_PYTHON=ON
+        cmake . -D ENABLE_PYTHON=ON -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed"
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-test
 
