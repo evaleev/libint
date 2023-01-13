@@ -35,7 +35,7 @@ endif()
 pybind11_add_module(
   libint2-python
   MODULE
-  $<$<CXX_COMPILER_ID:MSVC>:NO_EXTRAS>
+  #$<$<CXX_COMPILER_ID:MSVC>:NO_EXTRAS>
   # EXCLUDE_FROM_ALL  # why?
     src/libint2/libint2.cc
     src/libint2/engine.cc
@@ -63,12 +63,13 @@ set_target_properties(
   )
 
 if (TARGET int-obj)
+  #set(libint2_python_target int-obj)
 
     target_compile_definitions(libint2-python PRIVATE __COMPILING_LIBINT2)
 
     message("COMPILER ${CMAKE_CXX_COMPILER_ID} ?=Clang")
     message("COMPILER ${CMAKE_CXX_COMPILER_FRONTEND_VARIANT} ?=MSVC")
-    message("COMPILER ${${CMAKE_BUILD_TYPE}")
+    message("COMPILER ${CMAKE_BUILD_TYPE}")
 
     if(MSVC)
         target_compile_definitions(libint2-python PUBLIC _USE_MATH_DEFINES)
