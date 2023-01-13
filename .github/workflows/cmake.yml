@@ -15,6 +15,7 @@ jobs:
             fc: gfortran-9
             args: >
               -DENABLE_FORTRAN=ON
+              -DENABLE_PYTHON=ON
 
           - runs-on: macos-latest
             build_type: Release
@@ -23,6 +24,7 @@ jobs:
             args: >
               -DENABLE_FORTRAN=ON
               -DCMAKE_Fortran_COMPILER=gfortran-10
+              -DENABLE_PYTHON=ON
 
           - runs-on: windows-2022
             build_type: Release
@@ -37,6 +39,7 @@ jobs:
             fc: gfortran-9
             args: >
               -DENABLE_FORTRAN=ON
+              -DENABLE_PYTHON=ON
 
           - runs-on: macos-latest
             build_type: Debug
@@ -45,6 +48,7 @@ jobs:
             args: >
               -DENABLE_FORTRAN=ON
               -DCMAKE_Fortran_COMPILER=gfortran-10
+              -DENABLE_PYTHON=ON
 
     name: "Repo • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -68,7 +72,6 @@ jobs:
         -DENABLE_ONEBODY=1
         -DDISABLE_ONEBODY_PROPERTY_DERIVS=ON
         -DMULTIPOLE_MAX_ORDER=2
-        -DENABLE_PYTHON=ON
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
