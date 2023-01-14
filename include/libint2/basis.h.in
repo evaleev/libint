@@ -90,9 +90,9 @@ namespace libint2 {
   /// @tparam a range type
   /// @param[in] shells a sequence of shells
   /// @return the maximum size of a shell in @p shells
-  template <typename ShellRange> size_t max_size(ShellRange && shells) {
+  template <typename ShellRange> size_t max_size(const ShellRange& shells) {
     size_t n = 0;
-    for (auto&& shell: std::forward<ShellRange>(shells))
+    for (auto&& shell: shells)
       n = std::max(shell.size(), n);
     return n;
   }

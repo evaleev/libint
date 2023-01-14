@@ -36,13 +36,13 @@ if (LIBINT_HAS_CXX_API)
             unit/test.cc
             unit/test-1body.cc
             unit/test-2body.cc
-            unit/test-core-ints.cc
-            unit/test-core.cc
-            unit/test-permute.cc
-            unit/test-shell-order.cc
-            unit/test-util.cc
             unit/test-basis.cc
-            unit/test-precision.cc)
+            unit/test-core.cc
+            unit/test-core-ints.cc
+            unit/test-permute.cc
+            unit/test-precision.cc
+            unit/test-shell-order.cc
+            unit/test-util.cc)
 
     # if have C, also test C bindings
     include(CheckLanguage)

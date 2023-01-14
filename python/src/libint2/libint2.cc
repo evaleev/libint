@@ -6,6 +6,7 @@
 
 #if defined(_MSC_VER)
 #include <BaseTsd.h>
+// handles ssize_t in pybind11/numpy.h
 typedef SSIZE_T ssize_t;
 #endif
 
