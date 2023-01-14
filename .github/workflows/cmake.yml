@@ -55,20 +55,20 @@ jobs:
       CCACHE_COMPRESS : true
       CCACHE_COMPRESSLEVEL : 6
       BUILD_CONFIG : >
-        -G Ninja
-        -D CMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
-        -D BUILD_SHARED_LIBS=OFF
-        -D MPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
-        -D CMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
-        -D WITH_MAX_AM=3;2
-        -D WITH_ERI_MAX_AM=2;2
-        -D WITH_ERI3_MAX_AM=3;2
-        -D ENABLE_ERI=1
-        -D ENABLE_ERI3=1
-        -D ENABLE_ONEBODY=1
-        -D DISABLE_ONEBODY_PROPERTY_DERIVS=ON
-        -D MULTIPOLE_MAX_ORDER=2
-        -D ENABLE_PYTHON=ON
+        -GNinja
+        -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }}
+        -DBUILD_SHARED_LIBS=OFF
+        -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
+        -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/installed
+        -DWITH_MAX_AM=3;2
+        -DWITH_ERI_MAX_AM=2;2
+        -DWITH_ERI3_MAX_AM=3;2
+        -DENABLE_ERI=1
+        -DENABLE_ERI3=1
+        -DENABLE_ONEBODY=1
+        -DDISABLE_ONEBODY_PROPERTY_DERIVS=ON
+        -DMULTIPOLE_MAX_ORDER=2
+        -DENABLE_PYTHON=ON
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
