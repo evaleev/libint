@@ -109,8 +109,11 @@ jobs:
         activate-environment: ""
         add-pip-as-python-dependency: true
         auto-activate-base: true
-        conda-build-version: "*"
         show-channel-urls: true
+        miniforge-variant: Mambaforge
+        use-mamba: true
+        channels: conda-forge
+        #conda-build-version: "*"
 
     # Note: `shell: bash -l {0}` makes Miniconda created above for Windows available to
     #   subsequent steps. see https://github.com/conda-incubator/setup-miniconda#usage-examples
