@@ -15,40 +15,40 @@ jobs:
             fc: gfortran-9
             args: >
               -DENABLE_FORTRAN=ON
-              -DENABLE_PYTHON=ON
+              #-DENABLE_PYTHON=ON
 
-          #- runs-on: macos-latest
-          #  build_type: Release
-          #  cxx: clang++
-          #  cc: clang
-          #  args: >
-          #    -DENABLE_FORTRAN=ON
-          #    -DCMAKE_Fortran_COMPILER=gfortran-10
-          #    -DENABLE_PYTHON=ON
+          - runs-on: macos-latest
+            build_type: Release
+            cxx: clang++
+            cc: clang
+            args: >
+              -DENABLE_FORTRAN=ON
+              -DCMAKE_Fortran_COMPILER=gfortran-10
+              #-DENABLE_PYTHON=ON
 
-          #- runs-on: windows-2022
-          #  build_type: Release
-          #  cxx: clang-cl
-          #  cc: clang-cl
-          #  args: ""
+          - runs-on: windows-2022
+            build_type: Release
+            cxx: clang-cl
+            cc: clang-cl
+            args: ""
 
-          #- runs-on: ubuntu-20.04
-          #  build_type: Debug
-          #  cxx: g++-9
-          #  cc: gcc-9
-          #  fc: gfortran-9
-          #  args: >
-          #    -DENABLE_FORTRAN=ON
-          #    -DENABLE_PYTHON=ON
+          - runs-on: ubuntu-20.04
+            build_type: Debug
+            cxx: g++-9
+            cc: gcc-9
+            fc: gfortran-9
+            args: >
+              -DENABLE_FORTRAN=ON
+              #-DENABLE_PYTHON=ON
 
-          #- runs-on: macos-latest
-          #  build_type: Debug
-          #  cxx: clang++
-          #  cc: clang
-          #  args: >
-          #    -DENABLE_FORTRAN=ON
-          #    -DCMAKE_Fortran_COMPILER=gfortran-10
-          #    -DENABLE_PYTHON=ON
+          - runs-on: macos-latest
+            build_type: Debug
+            cxx: clang++
+            cc: clang
+            args: >
+              -DENABLE_FORTRAN=ON
+              -DCMAKE_Fortran_COMPILER=gfortran-10
+              #-DENABLE_PYTHON=ON
 
     name: "Repo • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -72,6 +72,7 @@ jobs:
         -D ENABLE_ONEBODY=1
         -D DISABLE_ONEBODY_PROPERTY_DERIVS=ON
         -D MULTIPOLE_MAX_ORDER=2
+        -D ENABLE_PYTHON=ON
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
@@ -299,10 +300,10 @@ jobs:
         show-channel-urls: true
 
     # Step is unnecessary; remove for debugging.
-    - name: Confound Environment - test bundled Boost
+    - name: Confound Environment - test bundled Boost & fetched pybind11
       if: ${{ runner.os == 'macOS' }}
       shell: bash -l {0}
-      run: conda remove boost
+      run: conda remove boost pybind11
 
     # Step is unnecessary; remove for debugging.
     - name: Confound Environment - test non-cmake-installed Eigen
@@ -348,8 +349,6 @@ jobs:
           -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
         cmake --build build --target install
-        #  -G"Ninja" \
-        #  -DCMAKE_BUILD_TYPE=Release \
 
     - name: Test Installed Libint library
       shell: bash -l {0}
