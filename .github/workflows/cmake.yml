@@ -245,13 +245,11 @@ jobs:
 
           - runs-on: windows-latest
             libargs: >
-              -GNinja
               -DCMAKE_BUILD_TYPE=Release
               -DBUILD_SHARED_LIBS=OFF
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
             testargs: >
-              -GNinja
               -DCMAKE_BUILD_TYPE=Release
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
@@ -296,25 +294,25 @@ jobs:
         environment-file: export.yaml
         show-channel-urls: true
 
-    ## Step is unnecessary; remove for debugging.
-    #- name: Confound Environment - test bundled Boost
-    #  if: ${{ runner.os == 'macOS' }}
-    #  shell: bash -l {0}
-    #  run: conda remove boost
+    # Step is unnecessary; remove for debugging.
+    - name: Confound Environment - test bundled Boost
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash -l {0}
+      run: conda remove boost
 
-    ## Step is unnecessary; remove for debugging.
-    #- name: Confound Environment - test non-cmake-installed Eigen
-    #  if: ${{ runner.os == 'Windows' }}
-    #  shell: bash -l {0}
-    #  run: rm -rf "${CONDA_PREFIX}/Library/share/eigen3/cmake/"
+    # Step is unnecessary; remove for debugging.
+    - name: Confound Environment - test non-cmake-installed Eigen
+      if: ${{ runner.os == 'Windows' }}
+      shell: bash -l {0}
+      run: rm -rf "${CONDA_PREFIX}/Library/share/eigen3/cmake/"
 
-    ## Step is unnecessary; remove step and 3 "*Eigen3*" options in matrix for debugging.
-    #- name: Confound Environment - test handed-off Eigen
-    #  if: ${{ runner.os == 'Linux' }}
-    #  shell: bash -l {0}
-    #  run: |
-    #    conda remove eigen
-    #    conda create -n onlyeigen eigen -c conda-forge
+    # Step is unnecessary; remove step and 3 "*Eigen3*" options in matrix for debugging.
+    - name: Confound Environment - test handed-off Eigen
+      if: ${{ runner.os == 'Linux' }}
+      shell: bash -l {0}
+      run: |
+        conda remove eigen
+        conda create -n onlyeigen eigen -c conda-forge
 
     - name: Environment Information
       shell: bash -l {0}
