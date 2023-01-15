@@ -351,7 +351,7 @@ EIGEN3_INCLUDE_DIR?
 # GNU Autotools Update Guide
 
 * Notes
-  * When three option names present, they are for libtool+cmake --> cmake+cmake (c. #148 for Psi4 c. 2020-2021) --> cmake+cmake
+  * Multiple option names can be from any long-lived branch but usually libtool+cmake --> final cmake+cmake.
 
 * `--enable-1body=N` --> `-D ENABLE_ONEBODY`
 * `--enable-eri=N` --> `-D ENABLE_ERI=N`
@@ -420,6 +420,8 @@ EIGEN3_INCLUDE_DIR?
 * `ENV(CPPFLAGS)=-I/path/to/boost/includes` --> `-D BOOST_ROOT=/path/to/boost/prefix`
 * `ENV(FC)=/path/to/fortran/compiler` --> `-D CMAKE_Fortran_COMPILER=/path/to/fortran/compiler`
 
+* `-D LIBINT2_PYTHON=ON` --> `-D ENABLE_PYTHON=ON`
+* `-D LIBINT_USE_BUNDLED_BOOST=ON` --> `-D CMAKE_DISABLE_FIND_PACKAGE_Boost=ON` (standard CMake variable)
 
 -----------------------------------------------------------------------------
 

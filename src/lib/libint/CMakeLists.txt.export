@@ -45,6 +45,7 @@ option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static"
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)
 option_with_print(LIBINT_LOCAL_Eigen3_INSTALL "Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. In consumer build, set `LIBINT_LOCAL_Eigen3_FIND=ON` before `find_package(Libint2) to load the exported Eigen3." OFF)
 option_with_default(LIBINT2_REALTYPE "Specifies the floating-point data type used by the library." double)
+option_with_print(CMAKE_DISABLE_FIND_PACKAGE_Boost "When Boost required for C++11 API, disable its detection, thereby forcing use of bundled Boost (Standard CMake variable: https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html)" OFF)
 include(xhost)  # defines: option(ENABLE_XHOST "Enable processor-specific optimization" ON)
 
 if ((REQUIRE_CXX_API_COMPILED OR ENABLE_PYTHON) AND NOT REQUIRE_CXX_API)
