@@ -132,10 +132,11 @@ else()
                 "-DBOOST_ROOT=${BOOST_ROOT}"
                 )
     endif()
-#    if (CMAKE_DISABLE_FIND_PACKAGE_Boost)
-#        list(APPEND library_CMAKE_ARGS
-#                "-DCMAKE_DISABLE_FIND_PACKAGE_Boost=${CMAKE_DISABLE_FIND_PACKAGE_Boost}"
-#    endif()
+    if (CMAKE_DISABLE_FIND_PACKAGE_Boost)
+        list(APPEND library_CMAKE_ARGS
+                "-DCMAKE_DISABLE_FIND_PACKAGE_Boost=${CMAKE_DISABLE_FIND_PACKAGE_Boost}"
+                )
+    endif()
     if (LIBINT_LOCAL_Eigen3_INSTALL)
         list(APPEND library_CMAKE_ARGS
                 "-DLIBINT_LOCAL_Eigen3_INSTALL=${LIBINT_LOCAL_Eigen3_INSTALL}"
