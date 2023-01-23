@@ -84,19 +84,19 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 
 # Prerequisites
 
-| Task                                                                 | Compilers               | CMake[^3] | CMake generator[^20] | Py      | Boost[^7] | Eigen   | GMPXX[^13] | MPFR[^14] |
-| :------------------------------------------------------------------- | :---------------------: | :-------: | -------------------- | :-----: | :-------: | :-----: | :--------: | :-------: |
-| build target `build_libint`                                          | C++[^1]                 | 🔵[^4]    | Ninja                | &ndash; | 🔵[^8]    | &ndash; | 🔵         | &ndash;   |
-| build target `library`                                               | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | &ndash;   | &ndash; | &ndash;    | &ndash;   |
-| &emsp;&emsp;`-D REQUIRE_CXX_API=ON`                                  | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   |
-| &emsp;&emsp;`-D ENABLE_FORTRAN=ON`                                   | C++[^1], Fortran[^2], C | 🔵[^5]    | Ninja                | 🔵[^22] | &ndash;   | &ndash; | &ndash;    | &ndash;   |
-| &emsp;&emsp;`-D ENABLE_PYTHON=ON`                                    | C++[^1], C              | 🔵[^5]    | Ninja                | 🔵[^23] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   |
-| build&nbsp;project&nbsp;_consuming_&nbsp;Libint2&nbsp;library        |
-| &emsp;C&nbsp;interface&nbsp;(I/F),&nbsp;`Libint2::int2`              | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | &ndash;   | &ndash; | &ndash;    | &ndash;   |
-| &emsp;C++11&nbsp;header&nbsp;I/F,&nbsp;`Libint2::cxx`                | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | &ndash;    | &ndash;   |
-| &emsp;&emsp;`-D ENABLE_MPFR=ON`                                      | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | 🔵         | 🔵        |
-| &emsp;C++11&nbsp;compiled&nbsp;I/F,&nbsp;`int2-cxx`                  | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵[^12] | &ndash;    | &ndash;   |
-| &emsp;Fortran I/F,&nbsp;`Libint2::fortran`                           | Fortran[^2]             | 🔸[^6]    | Ninja, Makefile      | &ndash; |           |         | &ndash;    | &ndash;   |
+| Task                                                                 | Compilers               | CMake[^3] | CMake generator[^20] | Py      | Boost[^7] | Eigen   | GMPXX[^13] | MPFR[^14] | Pybind11 |
+| :------------------------------------------------------------------- | :---------------------: | :-------: | -------------------- | :-----: | :-------: | :-----: | :--------: | :-------: | :------: |
+| build target `build_libint`                                          | C++[^1]                 | 🔵[^4]    | Ninja                | &ndash; | 🔵[^8]    | &ndash; | 🔵         | &ndash;   | &ndash;  |
+| build target `library`                                               | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;&emsp;`-D REQUIRE_CXX_API=ON`                                  | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;&emsp;`-D ENABLE_FORTRAN=ON`                                   | C++[^1], Fortran[^2], C | 🔵[^5]    | Ninja                | 🔵[^22] | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;&emsp;`-D ENABLE_PYTHON=ON`                                    | C++[^1], C              | 🔵[^5]    | Ninja                | 🔵[^23] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   | 🔵[^24]  |
+| build&nbsp;project&nbsp;_consuming_&nbsp;Libint2&nbsp;library        | &ndash; |
+| &emsp;C&nbsp;interface&nbsp;(I/F),&nbsp;`Libint2::int2`              | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;C++11&nbsp;header&nbsp;I/F,&nbsp;`Libint2::cxx`                | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;&emsp;`-D ENABLE_MPFR=ON`                                      | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | 🔵         | 🔵        | &ndash;  |
+| &emsp;C++11&nbsp;compiled&nbsp;I/F,&nbsp;`int2-cxx`                  | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵[^12] | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;Fortran I/F,&nbsp;`Libint2::fortran`                           | Fortran[^2]             | 🔸[^6]    | Ninja, Makefile      | &ndash; |           |         | &ndash;    | &ndash;   | &ndash;  |
 
 * `🔵` required
 * `🔸` required or recommended, but there's a path forward without
@@ -137,6 +137,8 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 [^22]: Python used to process files for Fortran binding.
 
 [^23]: Python headers and interpreter needed for Pybind11 module
+
+[^24]: [Pybind11](https://github.com/pybind/pybind11) used to export Libint2 C++11 API into a Python module. If a system installation is not detected, source from 2019 is fetched from GitHub.
 
 -----------------------------------------------------------------------------
 
@@ -267,6 +269,8 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `LIBINT_LOCAL_Eigen3_FIND` — C — Set to `ON` before `find_package(Libint2)` to load the Eigen3 target exported by `LIBINT_LOCAL_Eigen3_INSTALL=ON` if Libint library built locally. [Default=OFF]
 * `CMAKE_DISABLE_FIND_PACKAGE_Boost` — L — When Boost required for C++11 Libint API, disable its detection, thereby forcing use of bundled Boost. Note that this (and other Boost-hinting variables) can affect what is installed [see here](#packagers). [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html). [Default=OFF]
 
+Eigen3_DIR
+Boost_DIR
 EIGEN3_INCLUDE_DIR?
 
 * Hint dependency locations all at the same installation prefix:
@@ -459,7 +463,8 @@ EIGEN3_INCLUDE_DIR?
   copies of Boost headers) or if they should be a
   build-against-time dependency of the C++11 interface. Withhold (bundle) or supply (dependency)
   Boost detection paths from the library build accordingly. FWIW, Conda bundles.
-* Decide if you want the compiled cxx library. something like it is in use in mpqc4
+* Decide if you want the compiled cxx library. Something like it is in use in MPQC4, but it's not
+  well tested in GitHub CI
 
 
 -----------------------------------------------------------------------------

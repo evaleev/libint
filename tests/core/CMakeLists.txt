@@ -1,5 +1,6 @@
 add_executable(libint-libcompiler-test EXCLUDE_FROM_ALL test.cc)
 target_link_libraries(libint-libcompiler-test libint-libcompiler)
+target_compile_definitions(libint-libcompiler-test PRIVATE -DBOOST_BIND_GLOBAL_PLACEHOLDERS)  # https://stackoverflow.com/a/65813178
 
 add_executable(libint-kernel-profile EXCLUDE_FROM_ALL profile.cc)
 target_link_libraries(libint-kernel-profile libint-libcompiler)
