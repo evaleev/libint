@@ -253,6 +253,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `LIBINT2_INSTALL_CMAKEDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which CMake files are installed. [Default=lib/cmake/libint2]
 * `LIBINT2_INSTALL_BASISDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which data (basis) files are installed. basis/ directory created within this. [Default=share/libint/<LIBINT_VERSION>]
 * `LIBINT2_INSTALL_FMODDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which Fortran module files are installed if `ENABLE_FORTRAN=ON`. [Default=include/libint2/fortran2/modules]
+* `PREFIX_PYTHON_INSTALL` — L — For `ENABLE_PYTHON=ON`, whether to install the Python module in the Linux manner to `CMAKE_INSTALL_PREFIX` or to not install it. Note: not a path; the installation sub-path below `CMAKE_INSTALL_PREFIX` is determined by querying `Python_EXECUTABLE`. For alternate installation in the Python manner to `Python_EXECUTABLE`'s site-packages, see target libint2-python-wheel. [Default=OFF]
 
 
 ### Detecting Dependencies
@@ -264,6 +265,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `Eigen3_ROOT` — L C — Prefix to installation location (`Eigen3_ROOT/...` exists)
 * `Libint2_DIR` — C — CMake variable, set to directory containing this Config file
 * `LIBINT_LOCAL_Eigen3_FIND` — C — Set to `ON` before `find_package(Libint2)` to load the Eigen3 target exported by `LIBINT_LOCAL_Eigen3_INSTALL=ON` if Libint library built locally. [Default=OFF]
+* `CMAKE_DISABLE_FIND_PACKAGE_Boost` — L — When Boost required for C++11 Libint API, disable its detection, thereby forcing use of bundled Boost. Note that this (and other Boost-hinting variables) can affect what is installed [see here](#packagers). [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html). [Default=OFF]
 
 EIGEN3_INCLUDE_DIR?
 
@@ -303,11 +305,12 @@ EIGEN3_INCLUDE_DIR?
 
 ### Build Library What
 
-* `REQUIRE_CXX_API` — L — Build C++11 Libint API. Define header-only library target and check target (requires Eigen3; Boost recommended). [Default=ON]
+* `REQUIRE_CXX_API` — L — Build C++11 Libint API. Define header-only library target and check target (requires Eigen3; Boost recommended; [see prereq line](#prerequisites)). [Default=ON]
 * `REQUIRE_CXX_API_COMPILED` — L — Build C++11 Libint API. Define compiled (not just header-only) targets (requires Eigen3; Boost recommended). [Default=ON]
 * `ENABLE_FORTRAN` — L — Build Fortran03+ module/bindings (requires C and Fortran compilers and Python). [Default=OFF]
 * `ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
 * `LIBINT_LOCAL_Eigen3_INSTALL` — L — Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. See `LIBINT_LOCAL_Eigen3_FIND`. [Default=OFF]
+* `ENABLE_PYTHON` — L — Build Python bindings (requires Python and Eigen3; Boost and pybind11 recommended; [see prereq line](#prerequisites)). Can instead be enabled and built through separate CMake configuration after library build. [Default=OFF]
 
 
 ### Build Library How
@@ -452,7 +455,8 @@ EIGEN3_INCLUDE_DIR?
 
 ## Packagers
 
-* Decide if you want the Boost preprocessor headers bundled with Libint or if they should be a
+* Decide if you want the Boost preprocessor headers bundled with Libint (library install includes
+  copies of Boost headers) or if they should be a
   build-against-time dependency of the C++11 interface. Withhold (bundle) or supply (dependency)
   Boost detection paths from the library build accordingly. FWIW, Conda bundles.
 * Decide if you want the compiled cxx library. something like it is in use in mpqc4

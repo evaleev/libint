@@ -54,11 +54,15 @@ Qref = [-7.01719638074453, 0.024624345507934, -0.576201299024159,
         -8.04716669024124, 0.638204907990955, -6.35134519242917 ]
 Qtol = 1e-8
 
-smuref = [-muref[1]/2, muref[2], -muref[0]/2]
+smuref_standard = [-muref[1]/2, muref[2], -muref[0]/2]
+smuref_gaussian = [muref[2], -muref[0]/2, -muref[1]/2]
+smuref = smuref_standard if (LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD) else smuref_gaussian
 smutol = 1e-9
 
-sQref = [Qref[1]/4, -Qref[4]/2, (2*Qref[5] - Qref[0] - Qref[3])/4,
+sQref_standard = [Qref[1]/4, -Qref[4]/2, (2*Qref[5] - Qref[0] - Qref[3])/4,
          -Qref[2]/2, (Qref[0] - Qref[3])/8  ]
+sQref_gaussian = [(2*Qref[5] - Qref[0] - Qref[3])/4, -Qref[2]/2, -Qref[4]/2, (Qref[0] - Qref[3])/8, Qref[1]/4]
+sQref = sQref_standard if (LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD) else sQref_gaussian
 sQtol = 1e-8
 
 F1ref = [-5.43569555903312, -1.88298017654395, -2.17427822361352,

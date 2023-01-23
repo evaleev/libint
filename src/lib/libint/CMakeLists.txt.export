@@ -50,6 +50,7 @@ include(xhost)  # defines: option(ENABLE_XHOST "Enable processor-specific optimi
 
 if ((REQUIRE_CXX_API_COMPILED OR ENABLE_PYTHON) AND NOT REQUIRE_CXX_API)
     set(REQUIRE_CXX_API 1)
+    message(STATUS "Setting option REQUIRE_CXX_API=ON as needed by REQUIRE_CXX_API_COMPILED=${REQUIRE_CXX_API_COMPILED} and/or ENABLE_PYTHON=${ENABLE_PYTHON}.")
 endif()
 
 if(ENABLE_FORTRAN)
