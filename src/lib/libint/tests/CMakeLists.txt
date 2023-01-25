@@ -29,11 +29,19 @@ add_test(NAME libint2/eritest/run2
         COMMAND $<TARGET_FILE:eritest-libint2> 2 1)
 set_tests_properties(libint2/eritest/run2
         PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
-# see also Test 15 & Test 16 placed at end of file to preserve numbering
+# Test 5
+add_test(NAME libint2/eritest/run3
+        COMMAND $<TARGET_FILE:eritest-libint2> 3 1)
+set_tests_properties(libint2/eritest/run3
+        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
+# Test 6
+add_test(NAME libint2/eritest/run4
+        COMMAND $<TARGET_FILE:eritest-libint2> 4 1)
+set_tests_properties(libint2/eritest/run4
+        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
 
 if (LIBINT_HAS_CXX_API)
     set(unit_tests-src
-            unit/test.cc
             unit/test-1body.cc
             unit/test-2body.cc
             unit/test-basis.cc
@@ -55,8 +63,9 @@ if (LIBINT_HAS_CXX_API)
                 unit/test-c-api.cc
                 )
     endif()
+    set(unit_tests_s-src ${unit_tests-src} unit/test_s.cc)
     add_executable(unit_tests-libint2 EXCLUDE_FROM_ALL
-        ${unit_tests-src})
+        ${unit_tests_s-src})
     target_link_libraries(unit_tests-libint2 Libint2::cxx) # N.B. cxx header-only library
     target_include_directories(unit_tests-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
     target_compile_definitions(unit_tests-libint2 PRIVATE -D__COMPILING_LIBINT2=1 -DNO_LIBINT_COMPILER_CODE=1)
@@ -64,14 +73,33 @@ if (LIBINT_HAS_CXX_API)
         target_compile_definitions(unit_tests-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
         target_link_libraries(unit_tests-libint2 Multiprecision::mpfr)
     endif()
+    set(unit_tests_g-src ${unit_tests-src} unit/test_g.cc)
+    add_executable(unit_tests_g-libint2 EXCLUDE_FROM_ALL
+        ${unit_tests_g-src})
+    target_link_libraries(unit_tests_g-libint2 Libint2::cxx) # N.B. cxx header-only library
+    target_include_directories(unit_tests_g-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
+    target_compile_definitions(unit_tests_g-libint2 PRIVATE -D__COMPILING_LIBINT2=1 -DNO_LIBINT_COMPILER_CODE=1)
+    if (TARGET Multiprecision::mpfr)
+        target_compile_definitions(unit_tests_g-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
+        target_link_libraries(unit_tests_g-libint2 Multiprecision::mpfr)
+    endif()
 
-    # Test 5
+    # Test 7
     add_test(libint2/unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests-libint2)
     set_tests_properties(libint2/unit/build PROPERTIES FIXTURES_SETUP LIBINT2_UNIT_TESTS_EXEC)
-    # Test 6
+    # Test 8
     add_test(NAME libint2/unit/run
             COMMAND $<TARGET_FILE:unit_tests-libint2>)
     set_tests_properties(libint2/unit/run
+            PROPERTIES FIXTURES_REQUIRED LIBINT2_UNIT_TESTS_EXEC)
+
+    # Test 9
+    add_test(libint2/unit_g/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests_g-libint2)
+    set_tests_properties(libint2/unit_g/build PROPERTIES FIXTURES_SETUP LIBINT2_UNIT_TESTS_EXEC)
+    # Test 10
+    add_test(NAME libint2/unit_g/run
+            COMMAND $<TARGET_FILE:unit_tests_g-libint2>)
+    set_tests_properties(libint2/unit_g/run
             PROPERTIES FIXTURES_REQUIRED LIBINT2_UNIT_TESTS_EXEC)
 
     add_executable(hf-libint2 EXCLUDE_FROM_ALL hartree-fock/hartree-fock.cc)
@@ -79,11 +107,11 @@ if (LIBINT_HAS_CXX_API)
     target_include_directories(hf-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
     target_compile_definitions(hf-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
-    # Test 7
+    # Test 11
     add_test(libint2/hf/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf-libint2)
     set_tests_properties(libint2/hf/build PROPERTIES FIXTURES_SETUP LIBINT2_HFTEST_EXEC)
     if (Python_Interpreter_FOUND)
-        # Test 8
+        # Test 12
         add_test(NAME libint2/hf/run
                  COMMAND ${CMAKE_COMMAND}
                  -DexecName=hf-libint2
@@ -94,7 +122,7 @@ if (LIBINT_HAS_CXX_API)
                  -DpythonExec=${Python_EXECUTABLE}
                  -P ${PROJECT_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
     else()
-        # Test 8 alt.
+        # Test 12 alt.
         add_test(NAME libint2/hf/run
                 COMMAND $<TARGET_FILE:hf-libint2> hartree-fock/h2o.xyz)
     endif()
@@ -107,11 +135,11 @@ if (LIBINT_HAS_CXX_API)
     target_include_directories(hf++-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
     target_compile_definitions(hf++-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
-    # Test 9
+    # Test 13
     add_test(libint2/hf++/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf++-libint2)
     set_tests_properties(libint2/hf++/build PROPERTIES FIXTURES_SETUP LIBINT2_HFXXTEST_EXEC)
     if (Python_Interpreter_FOUND)
-        # Test 10
+        # Test 14
         add_test(NAME libint2/hf++/run
                 COMMAND ${CMAKE_COMMAND}
                 -DexecName=hf++-libint2
@@ -122,7 +150,7 @@ if (LIBINT_HAS_CXX_API)
                 -DpythonExec=${Python_EXECUTABLE}
                 -P ${PROJECT_SOURCE_DIR}/tests/hartree-fock/hftest.cmake)
     else()
-        # Test 10 alt.
+        # Test 14 alt.
         add_test(NAME libint2/hf++/run
                 COMMAND $<TARGET_FILE:hf++-libint2> hartree-fock/h2o_rotated.xyz)
     endif()
@@ -141,10 +169,10 @@ if (ENABLE_FORTRAN)
     target_link_libraries(fortran_example-libint2 Libint2::int2 libint_f)
     target_compile_definitions(fortran_example-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
-    # Test 11
+    # Test 15
     add_test(libint2/fortran_example/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_example-libint2)
     set_tests_properties(libint2/fortran_example/build PROPERTIES FIXTURES_SETUP LIBINT2_FORTRAN_EXAMPLE_EXEC)
-    # Test 12
+    # Test 16
     add_test(NAME libint2/fortran_example/run
             COMMAND $<TARGET_FILE:fortran_example-libint2>)
     set_tests_properties(libint2/fortran_example/run
@@ -155,24 +183,13 @@ if (ENABLE_FORTRAN)
         target_link_libraries(fortran_test-libint2 Libint2::cxx libint_f)
         target_compile_definitions(fortran_test-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
-        # Test 13
+        # Test 17
         add_test(libint2/fortran_test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_test-libint2)
         set_tests_properties(libint2/fortran_test/build PROPERTIES FIXTURES_SETUP LIBINT2_FORTRAN_TEST_EXEC)
-        # Test 14
+        # Test 18
         add_test(NAME libint2/fortran_test/run
                 COMMAND $<TARGET_FILE:fortran_test-libint2>)
         set_tests_properties(libint2/fortran_test/run
                 PROPERTIES FIXTURES_REQUIRED LIBINT2_FORTRAN_TEST_EXEC)
     endif()
 endif()
-
-# Test 15
-add_test(NAME libint2/eritest/run3
-        COMMAND $<TARGET_FILE:eritest-libint2> 3 1)
-set_tests_properties(libint2/eritest/run3
-        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
-# Test 16
-add_test(NAME libint2/eritest/run4
-        COMMAND $<TARGET_FILE:eritest-libint2> 4 1)
-set_tests_properties(libint2/eritest/run4
-        PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)

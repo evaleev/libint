@@ -31,7 +31,7 @@ int main( int argc, char* argv[] )
   Catch::Session session;
   // global setup...
   // initializes the Libint integrals library ... now ready to compute
-  libint2::initialize();
+  libint2::initialize(libint2::SHGShellOrdering_Standard);
 
 #ifdef LIBINT_HAS_MPFR
   // default to 256 bits of precision for mpf_class

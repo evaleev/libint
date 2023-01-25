@@ -288,7 +288,7 @@ int main(int argc, char* argv[]) {
     /*** =========================== ***/
 
     // initializes the Libint integrals library ... now ready to compute
-    libint2::initialize();
+    libint2::initialize(libint2::SHGShellOrdering_Gaussian);
 
     // compute OBS non-negligible shell-pair list
     {

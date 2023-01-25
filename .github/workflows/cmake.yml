@@ -167,7 +167,7 @@ jobs:
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON -DPYTHON_EXECUTABLE=`which python3` $BUILD_CONFIG ${{ matrix.cfg.args }}
         cmake --build build --target export
         cmake --build build --target check-libint2compiler
-        cmake --build build --target check-libint2
+        CTEST_PARALLEL_LEVEL=2 cmake --build build --target check-libint2
         cmake --build build --target install
 
     - name: Archive Library Tarball

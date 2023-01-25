@@ -151,7 +151,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
     * For a continuous generator->export->library build, options supplied at the top level will be properly handed off to generator and library build.
 
 
-###  Which Integrals Classes, Which Derivative Levels
+###  Which Integrals Classes, Which Derivative Levels (G)
 
 * `ENABLE_ONEBODY` — G — Compile with support for up to N-th derivatives of 1-body integrals. Use -1 for OFF. [Default=0]
 * `ENABLE_ERI` — G — Compile with support for up to N-th derivatives of 4-center electron repulsion integrals. Use -1 for OFF. [Default=0]
@@ -166,7 +166,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `ENABLE_T1G12_SUPPORT` — G — Enable [Ti,G12] integrals when G12 integrals are enabled. Irrelevant when `ENABLE_G12=OFF`. Use OFF to disable. [Default=ON]
 
 
-###  Which Ordering Conventions
+###  Which Ordering Conventions (G L)
 
 * `LIBINT2_SHGAUSS_ORDERING` — L — Ordering for shells of solid harmonic Gaussians. [Default=standard]
   * `standard` — standard ordering (-l, -l+1 ... l)
@@ -196,7 +196,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `ERI2_PURE_SH` — G — Assume the 2-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
 
 
-###  How High Angular Momentum
+###  How High Angular Momentum (G)
 
 * Notes
   * example for "semicolon-separated string": `-DENABLE_ERI3=2 -DWITH_ERI3_MAX_AM="5;4;3"`. cmake configuration prints:
@@ -232,7 +232,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `WITH_G12DKH_OPT_AM` — G — Optimize G12DKH integrals for up to angular momentum N (N <= max-am). No specification with per-derivative list. [Default=-1 `WITH_OPT_AM`]
 
 
-### Compilers and Flags
+### Compilers and Flags (G L)
 
 * `CMAKE_CXX_COMPILER` — G L — Specify C++ Compiler. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
 * `CMAKE_C_COMPILER` — G L — Specify C Compiler. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER.html)
@@ -242,7 +242,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `CMAKE_Fortran_FLAGS` — G L — Additional Fortran flags. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_FLAGS.html)
 
 
-### Install Paths
+### Install Paths (L)
 
 * Notes
   * Approximate defaults are shown. Actual defaults from [GNUInstallDirs](https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html)
@@ -258,7 +258,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `PREFIX_PYTHON_INSTALL` — L — For `ENABLE_PYTHON=ON`, whether to install the Python module in the Linux manner to `CMAKE_INSTALL_PREFIX` or to not install it. Note: not a path; the installation sub-path below `CMAKE_INSTALL_PREFIX` is determined by querying `Python_EXECUTABLE`. For alternate installation in the Python manner to `Python_EXECUTABLE`'s site-packages, see target libint2-python-wheel. [Default=OFF]
 
 
-### Detecting Dependencies
+### Detecting Dependencies (G L C)
 
 * `Python_EXECUTABLE` — L — Path to Python interpreter.
 * `CMAKE_PREFIX_PATH` — G L — Set to list of root directories to look for external dependencies. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html)
