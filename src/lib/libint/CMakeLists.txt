@@ -160,18 +160,31 @@ else()
             USES_TERMINAL_CONFIGURE TRUE
             USES_TERMINAL_BUILD TRUE
             USES_TERMINAL_INSTALL TRUE
-            STEP_TARGETS configure
+            STEP_TARGETS build
             BUILD_BYPRODUCTS ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR} ${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}
             )
     ExternalProject_Get_property(library BINARY_DIR)
 
     # instead of running tests by default, replicate check-libint2 target here and use it to invoke library's check-libint2 target
     if (BUILD_TESTING)
-      include(AddCustomTargetSubproject)
-      add_custom_target_subproject(libint2 check USES_TERMINAL
-              COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/"
-              WORKING_DIRECTORY ${BINARY_DIR}
-              DEPENDS library-configure)
+        include(AddCustomTargetSubproject)
+        add_custom_target_subproject(libint2 check
+          USES_TERMINAL
+          COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/"
+          WORKING_DIRECTORY ${BINARY_DIR}
+          DEPENDS library-build
+          # formerly "DEPENDS library-configure" but this built the lib multiple times when tests run in parallel with CTEST_PARALLEL_LEVEL
+          )
+
+        if (ENABLE_PYTHON)
+            find_package(Python COMPONENTS Interpreter REQUIRED)
+            add_custom_target_subproject(libint2 checkpy
+              COMMAND ${Python_EXECUTABLE} -m setup test
+              WORKING_DIRECTORY ${BINARY_DIR}/python
+              DEPENDS install
+              # not "DEPENDS library-install"
+              )
+        endif()
     endif()
 
     install(
