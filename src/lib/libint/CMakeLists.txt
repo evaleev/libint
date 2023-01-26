@@ -172,7 +172,7 @@ else()
           USES_TERMINAL
           COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/"
           WORKING_DIRECTORY ${BINARY_DIR}
-          DEPENDS library-build
+          DEPENDS "library-build"
           # formerly "DEPENDS library-configure" but this built the lib multiple times when tests run in parallel with CTEST_PARALLEL_LEVEL
           )
 

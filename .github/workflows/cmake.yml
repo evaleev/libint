@@ -168,7 +168,7 @@ jobs:
         cmake --build build --target export
         cmake --build build --target check-libint2compiler
         CTEST_PARALLEL_LEVEL=2 cmake --build build --target check-libint2
-        cmake --build build --target install checkpy
+        cmake --build build --target install checkpy-libint2
 
     - name: Archive Library Tarball
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Release'}}
