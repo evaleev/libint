@@ -65,6 +65,8 @@ set_target_properties(
     OUTPUT_NAME libint2
   )
 
+# future note: this whole block could likely be replaced by the below, but perhaps explicit better for now
+# * `if(TARGET Libint2::cxx)\n  target_link_libraries(libint2-python PRIVATE Libint2::cxx)\nelse()\n  find_package(Libint2 ...`
 if (TARGET int-obj)
   #set(libint2_python_target int-obj)
 

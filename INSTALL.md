@@ -1,3 +1,5 @@
+## Note: If you received this file from a `libint-2.*.tgz` source archive, `(TARBALL)` marks portions of this document relevant to you.
+
 # Libint Compiler vs Library
 
 Before you read on:
@@ -7,12 +9,12 @@ Before you read on:
   * Debian (TBD)
   * Fedora (TBD)
 * If you want to know how to _use_ a libint library in your code:
-  * if you use C++11 or later (strongly recommended): read [this](https://github.com/evaleev/libint/wiki/using-modern-CPlusPlus-API) instead
-  * if you use pre-2011 C++, C, Fortran, or any other language, refer to the [Libint Programmer's Manual](http://sourceforge.net/projects/libint/files/libint-for-beginners/progman.pdf/download)
+  * if you use C++11 or later (strongly recommended): read the [Libint Wiki](https://github.com/evaleev/libint/wiki/using-modern-CPlusPlus-API)
+  * if you use pre-2011 C++, C, Fortran, or any other language, refer to the [Libint Programmer's Manual](https://sourceforge.net/projects/libint/files/libint-for-beginners/progman-2.0.3-stable.pdf/download)
 * If you want to _build and use_ a libint _library_:
   * if all you want is a basic library that computes integrals necessary to compute energies, use the pre-generated library labeled "lmax=6 library (standard ints only)" from the [latest release](https://github.com/evaleev/libint/releases/latest) of Libint
   * many codes using libint, e.g. orca and mpqc, already include an appropriately configured libint library, and you do not need to generate it yourself
-  * if you need compilation directions, _read on_, skipping the compiler/generation parts.
+  * if you need compilation directions, _read on_, skipping the compiler/generation parts. (TARBALL)
 * If you want to know how to _generate_ a libint _library_ using the libint _compiler_, these are some compelling circumstances:
   * if you need a custom libint library with choice of integral types, AM, orderings, language interfaces, etc.
   * if you want to develop libint with new integral types, recurrence relations, and computation
@@ -38,18 +40,19 @@ The Libint build is structured into three parts:
     static source files in src/lib/libint/ and general static files (e.g.,
     include/ and docs/) into an independent tarball ready for distribution
     (with its own CMake configuration, tests, etc.).
-  - really slow for non-trivial angular momenta, runs in serial
+  - really slow for non-trivial angular momenta; runs in serial
   - consumes no options
   - build target `export` to stop after this step and collect source tarball
-* library
-  - can be built as a subproject (FetchContent) or completely insulated (bare ExternalProject; default).
+* library (TARBALL)
+  - can be built as a subproject (FetchContent) or completely insulated (bare ExternalProject; default; -or- a tarball start).
     For FetchContent, must build libint-library-export target before library build targets appear
   - (4) unpack the export tarball and build the library and install into \<build\>/library-install-stage/
-  - duration depends on number of integrals requested, runs in parallel
+  - duration depends on number of integrals requested; runs in parallel
   - consumes solid harmonic ordering and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR
   - the default build target includes this final library build
   - (5) optionally testable
   - (6) install into CMAKE_INSTALL_PREFIX
+  - (7) optional Python testing is separate and requires install
 
 
 Command-line synopsis. See [table](#Build-Targets) for `--target` choices (steps refer to numbered bullets above) and [section](#Configuring-Libint) for `-D options` choices.
@@ -67,22 +70,31 @@ cmake/  COPYING  src/  tests/  ...
 
 ### Build Targets
 
-| `--target ...`            | incl. | steps |     ( |  see  | above | )     |
-| --------------            | ----- | ----- | ----- | ----- | ----- | ----- |
-| `build_libint`            |   1   |   -   |   -   |   -   |   -   |   -   |
-| `check-libint2compiler`   |   1   |   2   |   -   |   -   |   -   |   -   |
-| `export`                  |   1   |   -   |   3   |   -   |   -   |   -   |
-| `library` (default)       |   1   |   -   |   3   |   4   |   -   |   -   |
-| `check`                   |   1   |   2   |   3   |   4   |   5   |   -   |
-| `install`                 |   1   |   -   |   3   |   4   |   -   |   6   |
-| `check install`           |   1   |   2   |   3   |   4   |   5   |   6   |
+| `--target ...`            | incl. | steps |     ( |  see  | above | )     |       | (TARBALL) `--target ...` [^25] |
+| --------------            | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ------------------------------ |
+| `build_libint`            |   1   |   -   |   -   |   -   |   -   |   -   |   -   | n/a                            |
+| `check-libint2compiler`   |   1   |   2   |   -   |   -   |   -   |   -   |   -   | n/a                            |
+| `export`                  |   1   |   -   |   3   |   -   |   -   |   -   |   -   | n/a                            |
+| `library` (default) [^26] |   1   |   -   |   3   |   4   |   -   |   -   |   -   | (default) [^26]                |
+| `check`                   |   1   |   2   |   3   |   4   |   5   |   -   |   -   | `check`                        |
+| `install`                 |   1   |   -   |   3   |   4   |   -   |   6   |   -   | `install`                      |
+| `check install`           |   1   |   2   |   3   |   4   |   5   |   6   |   -   | `check install`                |
+| `check-python`            |   1   |   -   |   3   |   4   |   -   |   6   |   7   | `check-python`                 |
+| `check check-python`      |   1   |   2   |   3   |   4   |   5   |   6   |   7   | `check check-python`           |
 
 Use combined targets like `cmake --target check install` to avoid some unnecessary rebuilding (esp. of build_libint) that occurs with successive targets. The CMake dependency structure is imperfect.
+
+[^25]: (TARBALL) targets can include steps 4 onwards; the starting tarball itself is the product of step 3.
+
+[^26]: See [see "Internal Targets" column in table](#consumption-targets) for individual library targets.
+
 
 
 -----------------------------------------------------------------------------
 
 # Prerequisites
+
+(TARBALL) all but first `build_libint` line.
 
 | Task                                                                 | Compilers               | CMake[^3] | CMake generator[^20] | Py      | Boost[^7] | Eigen   | GMPXX[^13] | MPFR[^14] | Pybind11 |
 | :------------------------------------------------------------------- | :---------------------: | :-------: | -------------------- | :-----: | :-------: | :-----: | :--------: | :-------: | :------: |
@@ -91,11 +103,11 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 | &emsp;&emsp;`-D REQUIRE_CXX_API=ON`                                  | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   | &ndash;  |
 | &emsp;&emsp;`-D ENABLE_FORTRAN=ON`                                   | C++[^1], Fortran[^2], C | 🔵[^5]    | Ninja                | 🔵[^22] | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
 | &emsp;&emsp;`-D ENABLE_PYTHON=ON`                                    | C++[^1], C              | 🔵[^5]    | Ninja                | 🔵[^23] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   | 🔵[^24]  |
-| build&nbsp;project&nbsp;_consuming_&nbsp;Libint2&nbsp;library        | &ndash; |
+| build&nbsp;project&nbsp;_consuming_&nbsp;Libint2&nbsp;library        |
 | &emsp;C&nbsp;interface&nbsp;(I/F),&nbsp;`Libint2::int2`              | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
 | &emsp;C++11&nbsp;header&nbsp;I/F,&nbsp;`Libint2::cxx`                | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | &ndash;    | &ndash;   | &ndash;  |
 | &emsp;&emsp;`-D ENABLE_MPFR=ON`                                      | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | 🔵         | 🔵        | &ndash;  |
-| &emsp;C++11&nbsp;compiled&nbsp;I/F,&nbsp;`int2-cxx`                  | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵[^12] | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;C++11&nbsp;compiled&nbsp;I/F,&nbsp;`Libint2::int2-cxx`         | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵[^12] | &ndash;    | &ndash;   | &ndash;  |
 | &emsp;Fortran I/F,&nbsp;`Libint2::fortran`                           | Fortran[^2]             | 🔸[^6]    | Ninja, Makefile      | &ndash; |           |         | &ndash;    | &ndash;   | &ndash;  |
 
 * `🔵` required
@@ -436,17 +448,17 @@ EIGEN3_INCLUDE_DIR?
 
 ### Programming to Access Integrals
 
-* if you use C++11 or later (strongly recommended): read [this](https://github.com/evaleev/libint/wiki/using-modern-CPlusPlus-API) instead
-* if you use pre-2011 C++, C, Fortran, or any other language, refer to the [Libint Programmer's Manual](http://sourceforge.net/projects/libint/files/libint-for-beginners/progman.pdf/download) for brief information on how to use the library in your code.
+* if you use C++11 or later (strongly recommended): read the [Libint Wiki](https://github.com/evaleev/libint/wiki/using-modern-CPlusPlus-API)
+* if you use pre-2011 C++, C, Fortran, or any other language, refer to the [Libint Programmer's Manual](https://sourceforge.net/projects/libint/files/libint-for-beginners/progman-2.0.3-stable.pdf/download) for brief information on how to use the library in your code.
 
 ### Consumption Targets
 
-| Namespaced Target[^15] | Component[^16] | Built by Default | Ensure Built                  | Ensure Excluded                           | Internal Target(s)[^17]              | Alias[^18]    |
-| ---------------------- | -------------- | ---------------- | ----------------------------- | ----------------------------------------- | -----------------------------------  | ------------  |
-| `Libint2::int2`        | `C`            | yes              | always                        | impossible                                | `int-{static,shared}`                | `libint2`     |
-| `Libint2::cxx`         | `CXX_ho`       | yes              | `REQUIRE_CXX_API=ON`          | `REQUIRE_CXX_API=OFF` and withhold Eigen3 | `int-cxx-headeronly-{static,shared}` | `libint2_cxx` |
-| `Libint2::int2-cxx`    | `CXX`          | yes              | `REQUIRE_CXX_API_COMPILED=ON` | `REQUIRE_CXX_API_COMPILED=OFF`            | `int-cxx-compiled-{static,shared}`   |
-| Fortran local[^19]     | (NYI)          | no               | `ENABLE_FORTRAN=ON`           | `ENABLE_FORTRAN=OFF`                      | `libint_f`                           |
+| Namespaced Target[^15] | CMake[^16] Component | Built by Default | Ensure Built                  | Ensure Excluded                                                                                | Internal Target(s)[^17]              | Alias[^18]    |
+| ---------------------- | -------------------- | ---------------- | ----------------------------- | ---------------------------------------------------------------------------------------------- | -----------------------------------  | ------------  |
+| `Libint2::int2`        | `C`                  | yes              | always                        | impossible                                                                                     | `int-{static,shared}`                | `libint2`     |
+| `Libint2::cxx`         | `CXX_ho`             | yes              | `REQUIRE_CXX_API=ON`          | `REQUIRE_CXX_API=OFF` & withhold Eigen3 & `REQUIRE_CXX_API_COMPILED=OFF` & `ENABLE_PYTHON=OFF` | `int-cxx-headeronly-{static,shared}` | `libint2_cxx` |
+| `Libint2::int2-cxx`    | `CXX`                | yes              | `REQUIRE_CXX_API_COMPILED=ON` | `REQUIRE_CXX_API_COMPILED=OFF`                                                                 | `int-cxx-compiled-{static,shared}`   |               |
+| Fortran local[^19]     | (NYI)                | no               | `ENABLE_FORTRAN=ON`           | `ENABLE_FORTRAN=OFF`                                                                           | `libint_f`                           |               |
 
 [^15]: Targets for library consumer use. These are available after `find_package(Libint2)` or `add_subdirectory()`.
 [^16]: Ensure target found in installation after `find_package(Libint2 COMPONENTS ...)`.
