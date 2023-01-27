@@ -79,8 +79,11 @@ file(INSTALL "${PROJECT_SOURCE_DIR}/include/libint2.h"
         DESTINATION "${EXPORT_STAGE_DIR}/include")
 
 file(INSTALL "${PROJECT_SOURCE_DIR}/include/libint2/"
-        DESTINATION "${EXPORT_STAGE_DIR}/include/libint2"
-        FILES_MATCHING PATTERN "*.h")
+  DESTINATION "${EXPORT_STAGE_DIR}/include/libint2"
+  FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.h.cmake.in"
+  )
 
 file(INSTALL "${PROJECT_SOURCE_DIR}/src/bin/libint/util_types.h"
         DESTINATION "${EXPORT_STAGE_DIR}/include/libint2")

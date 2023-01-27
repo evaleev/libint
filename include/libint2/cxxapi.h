@@ -41,6 +41,7 @@
 #include <libint2/atom.h>
 #include <libint2/basis.h>
 #include <libint2/solidharmonics.h>
+#include <libint2/util/configuration.h>
 
 #include <libint2/engine.h> // this is the end-user stuff, needs to check if library is initialized
 

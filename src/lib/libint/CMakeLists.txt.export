@@ -177,6 +177,7 @@ include(CMakePackageConfigHelpers)
 #  <<<  Build  >>>
 
 configure_file(include/libint2/config2.h.cmake.in include/libint2/config2.h @ONLY)
+configure_file(include/libint2/util/configuration.h.cmake.in include/libint2/util/configuration.h @ONLY)
 
 include(srclist.cmake)
 list(LENGTH LIBINT2_LIBRARY_CXX_SRC _source_count)

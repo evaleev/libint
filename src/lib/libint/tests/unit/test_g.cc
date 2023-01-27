@@ -32,6 +32,7 @@ int main( int argc, char* argv[] )
   // global setup...
   // initializes the Libint integrals library ... now ready to compute
   libint2::initialize(libint2::SHGShellOrdering_Gaussian);
+  printf("Configuration: %s\n", libint2::configuration_accessor().c_str());
 
 #ifdef LIBINT_HAS_MPFR
   // default to 256 bits of precision for mpf_class
