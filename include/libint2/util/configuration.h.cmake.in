@@ -29,7 +29,7 @@ namespace libint2 {
   /// integral derivatives, AM, orderings, etc.
   /// @return the semicolon-separated strings from CMake components
   inline std::string configuration_accessor() {
-    std::string components = "@Libint2_ERI_COMPONENTS@";
+    std::string components = "@Libint2_CONFIG_COMPONENTS@";
     return components;
   }
 

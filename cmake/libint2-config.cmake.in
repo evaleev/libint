@@ -28,7 +28,7 @@
 #
 #                    sph        cart       shell_set  used_by
 #                    --------   --------   ---------  -------
-#   sss - search for standard + standard + standard = mpqc4
+#   sss - search for standard + standard + standard = mpqc4, cp2k
 #   sso - search for                     + orca
 #   sis - search for          + intv3    + standard = mpqc3
 #   sio - search for                     + orca
@@ -38,7 +38,7 @@
 #   soo - search for                     + orca     = orca
 #   sbs - search for          + bagel    + standard = bagel
 #   sbo - search for                     + orca
-#   gss - search for gaussian + standard + standard = psi4 (v1.4 - v1.7)
+#   gss - search for gaussian + standard + standard = psi4 (since v1.4)
 #   gso - search for                     + orca
 #   gis - search for          + intv3    + standard
 #   gio - search for                     + orca
@@ -158,51 +158,11 @@ if((@ERI3_PURE_SH@ EQUAL 0) AND (@ERI2_PURE_SH@ EQUAL 0))  # ERI3/ERI2_PURE_SH
 endif()
 list(FIND ${L2}_FIND_COMPONENTS "impure_sh" _seek_impure_sh)
 
-# check orderings component: LIBINT_SHGSHELL_ORDERING, LIBINT_CGSHELL_ORDERING, LIBINT_SHELL_SET
-if    ((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 1))
-    set(_ordering "sss")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 2))
-    set(_ordering "sso")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 1))
-    set(_ordering "sis")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 2))
-    set(_ordering "sio")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 1))
-    set(_ordering "sgs")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 2))
-    set(_ordering "sgo")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 1))
-    set(_ordering "sos")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 2))
-    set(_ordering "soo")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 1))
-    set(_ordering "sbs")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 2))
-    set(_ordering "sbo")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 1))
-    set(_ordering "gss")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 2))
-    set(_ordering "gso")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 1))
-    set(_ordering "gis")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 2))
-    set(_ordering "gio")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 1))
-    set(_ordering "ggs")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 2))
-    set(_ordering "ggo")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 1))
-    set(_ordering "gos")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 2))
-    set(_ordering "goo")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 1))
-    set(_ordering "gbs")
-elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 2))
-    set(_ordering "gbo")
-else()
-    message(STATUS "${L2}Config: indeterminate orderings")
-endif()
-set(${L2}_${_ordering}_FOUND 1)
+# check orderings component:
+# LIBINT_SHGSHELL_ORDERING = @LIBINT_SHGSHELL_ORDERING@
+# LIBINT_CGSHELL_ORDERING = @LIBINT_CGSHELL_ORDERING@
+# LIBINT_SHELL_SET = @LIBINT_SHELL_SET@
+set(${L2}_@Libint2_ORDERINGS_CODE@_FOUND 1)
 
 
 # thanks, https://stackoverflow.com/a/9328525
