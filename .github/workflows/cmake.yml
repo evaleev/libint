@@ -167,8 +167,10 @@ jobs:
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} -DLIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON -DPYTHON_EXECUTABLE=`which python3` $BUILD_CONFIG ${{ matrix.cfg.args }}
         cmake --build build --target export
         cmake --build build --target check-libint2compiler
-        CTEST_PARALLEL_LEVEL=2 cmake --build build --target check-libint2
-        cmake --build build --target install checkpy-libint2
+        # CTEST_PARALLEL_LEVEL bad for FetchContent b/c each test builds lib
+        cmake --build build --target check-libint2
+        cmake --build build --target install
+        cmake --build build --target libint2-python-test
 
     - name: Archive Library Tarball
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.cfg.build_type == 'Release'}}

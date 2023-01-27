@@ -1,9 +1,5 @@
 include(AddCustomTargetSubproject)
-add_custom_target_subproject(libint2 check
-  USES_TERMINAL
-  COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/"
-  DEPENDS "library-build"
-  )
+add_custom_target_subproject(libint2 check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/")
 
 add_executable(eritest-libint2 EXCLUDE_FROM_ALL eri/test.cc)
 target_link_libraries(eritest-libint2 Libint2::int2)  # N.B. plain library
