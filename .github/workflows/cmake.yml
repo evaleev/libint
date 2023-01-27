@@ -156,7 +156,7 @@ jobs:
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
         #cmake --build build --target export  # toggle for quick tarball to debug `build_export`
-        cmake --build build --target library check-libint2compiler install
+        cmake --build build --target library check-libint2compiler install checkpy
         cd build && echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
 
     - name: Generate & Build Libint Library (FetchContent, full tests)
@@ -349,7 +349,7 @@ jobs:
           -DENABLE_PYTHON=ON \
           -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
-        cmake --build build --target install checkpy
+        cmake --build build --target install libint2-python-test
 
     - name: Test Installed Libint library
       shell: bash -l {0}
