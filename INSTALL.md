@@ -1,4 +1,4 @@
-## Note: If you received this file from a `libint-2.*.tgz` source archive, `(TARBALL)` marks portions of this document relevant to you.
+#### Note: If you received this file from a `libint-2.*.tgz` source archive, `(TARBALL)` marks portions of this document relevant to you.
 
 # Libint Compiler vs Library
 
@@ -94,7 +94,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 
 # Prerequisites
 
-(TARBALL) all but first `build_libint` line.
+(TARBALL): all but first `build_libint` line.
 
 | Task                                                                 | Compilers               | CMake[^3] | CMake generator[^20] | Py      | Boost[^7] | Eigen   | GMPXX[^13] | MPFR[^14] | Pybind11 |
 | :------------------------------------------------------------------- | :---------------------: | :-------: | -------------------- | :-----: | :-------: | :-----: | :--------: | :-------: | :------: |
@@ -161,6 +161,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
     * If your final target is the export tarball, use options that include the letter "G".
     * If you're building a library from an export tarball, use options that include the letter "L".
     * For a continuous generator->export->library build, options supplied at the top level will be properly handed off to generator and library build.
+  * See [Update Guide](gnu-autotools-update-guide) for new names for old options.
 
 
 ###  Which Integrals Classes, Which Derivative Levels (G)

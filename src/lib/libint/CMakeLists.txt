@@ -17,7 +17,7 @@ add_custom_target(libint-library-generate DEPENDS "${EXPORT_STAGE_DIR}/src/libin
 
 configure_file("${PROJECT_SOURCE_DIR}/doc/progman/macros.tex.in" "${EXPORT_STAGE_DIR}/doc/macros.tex" @ONLY)
 set(DATADIR_ABSOLUTE ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION})
-configure_file("${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in" "${EXPORT_STAGE_DIR}/include/libint2/basis.h" @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/include/libint2/basis.h.cmake.in" "include/libint2/basis.h" @ONLY)
 configure_file("features.in" "${EXPORT_STAGE_DIR}/features" @ONLY)
 
 add_custom_command(OUTPUT ${EXPORT_STAGE_DIR}/CMakeLists.txt

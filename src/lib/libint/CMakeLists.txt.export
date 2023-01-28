@@ -178,6 +178,8 @@ include(CMakePackageConfigHelpers)
 
 configure_file(include/libint2/config2.h.cmake.in include/libint2/config2.h @ONLY)
 configure_file(include/libint2/util/configuration.h.cmake.in include/libint2/util/configuration.h @ONLY)
+set(DATADIR_ABSOLUTE ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION})
+configure_file(include/libint2/basis.h.cmake.in include/libint2/basis.h @ONLY)
 
 include(srclist.cmake)
 list(LENGTH LIBINT2_LIBRARY_CXX_SRC _source_count)
