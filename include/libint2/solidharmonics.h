@@ -172,14 +172,14 @@ namespace libint2 {
           std::vector<Real> full_coeff(npure * ncart);
 
           std::vector<int> shg_indices;
-          if (libint2::solid_harmonics() == libint2::SHGShellOrdering_Standard) {
+          if (libint2::solid_harmonics_ordering() == libint2::SHGShellOrdering_Standard) {
             for(signed char pure_idx=0, m=-l_; pure_idx!=npure; ++pure_idx, ++m)
               shg_indices.push_back(m);
-          } else if (libint2::solid_harmonics() == libint2::SHGShellOrdering_Gaussian) {
+          } else if (libint2::solid_harmonics_ordering() == libint2::SHGShellOrdering_Gaussian) {
             for(signed char pure_idx=0, m=0; pure_idx!=npure; ++pure_idx, m=(m>0?-m:1-m))
               shg_indices.push_back(m);
           } else {
-            throw std::invalid_argument(std::string("libint2::solid_harmonics() value not recognized."));
+            throw std::invalid_argument(std::string("libint2::solid_harmonics_ordering() value not recognized."));
           }
 
           for(signed char pure_idx=0; pure_idx!=npure; ++pure_idx) {

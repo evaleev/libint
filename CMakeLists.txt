@@ -42,27 +42,30 @@ set(pnv libint2) # projectnameversion
 
 # The build is structured into three parts:
 #
-# * generator
-#   - build src/bin/libint/ into executable `build_libint`
+# * generator/compiler
+#   - build src/bin/libint/ into compiler executable `build_libint`
 #   - pretty quick, runs in parallel
-#   - consumes all the enable/max/opt integral options and all orderings options except solid harmonic
+#   - consumes all the enable/max/opt/orderings integral options
+#   - optionally testable
 # * export
 #   - run `build_libint` to generate library source (C++) files (that upon
 #     compilation can become a Libint2 library) and combine them with other
 #     static source files in src/lib/libint/ and general static files (e.g.,
-#     include/ and docs/) into an independent tarball ready for distribution.
-#   - really slow for non-trivial angular momenta, runs in serial
+#     include/ and docs/) into an independent tarball ready for distribution
+#     (with its own CMake configuration, tests, etc.).
+#   - really slow for non-trivial angular momenta; runs in serial
 #   - consumes no options
 #   - build target `export` to stop after this step and collect source tarball
 # * library
-#   - can be built as a subproject (FetchContent) or completely insulated (bare ExternalProject; default)
-#   - if building via bare ExternalProject:
-#     - unpack the export tarball and build the library and install into stage/
-#     - duration depends on number of integrals requested, runs in parallel
-#     - consumes solid harmonic ordering and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR
-#     - the default target build includes this final library build
-#   - if building via FetchContent:
-#     - must build libint-library-export target before library *build* targets appear
+#   - can be built as a subproject (FetchContent) or completely insulated (bare ExternalProject; default; -or- a tarball start).
+#     For FetchContent, must build libint-library-export target before library build targets appear
+#   - unpack the export tarball and build the library and install into \<build\>/library-install-stage/
+#   - duration depends on number of integrals requested; runs in parallel
+#   - consumes language-interface and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR paths options
+#   - the default build target includes this final library build
+#   - optionally testable
+#   - install into CMAKE_INSTALL_PREFIX
+#   - optional Python build alongside library or afterwards. optional testing requires library install
 
 ################################### Options ####################################
 include(options)
@@ -114,7 +117,10 @@ option_with_default(LIBINT2_SHGAUSS_ORDERING
   "Ordering for shells of solid harmonic Gaussians:
     standard -- standard ordering (-l, -l+1 ... l)
     gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
-    Consumed at library build-time." standard)
+    Previous to v1.8 TODO, this option was set at generator-build-time for `Operator::sphemultipole`
+    but was re-set-able at library-build-time for other classes. Since v1.8 TODO, this ordering is
+    still selected at generator-build-time for `Operator::sphemultipole`, but other classes can select
+    the ordering at library-run-time through the C++11 API; C API users are fixed at the generator setting." standard)
 option_with_default(LIBINT2_CARTGAUSS_ORDERING
   "Orderings for shells of cartesian Gaussians:
     standard -- standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...)

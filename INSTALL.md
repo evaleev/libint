@@ -32,7 +32,7 @@ The Libint build is structured into three parts:
 * generator/compiler
   - (1) build src/bin/libint/ into compiler executable `build_libint`
   - pretty quick, runs in parallel
-  - consumes all the enable/max/opt integral options and all orderings options except solid harmonic
+  - consumes all the enable/max/opt/orderings integral options
   - (2) optionally testable
 * export
   - (3) run `build_libint` to generate library source (C++) files (that upon
@@ -48,11 +48,11 @@ The Libint build is structured into three parts:
     For FetchContent, must build libint-library-export target before library build targets appear
   - (4) unpack the export tarball and build the library and install into \<build\>/library-install-stage/
   - duration depends on number of integrals requested; runs in parallel
-  - consumes solid harmonic ordering and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR
+  - consumes language-interface and the CMAKE_INSTALL_[DATA|INCLUDE|LIB]DIR paths options
   - the default build target includes this final library build
   - (5) optionally testable
   - (6) install into CMAKE_INSTALL_PREFIX
-  - (7) optional Python testing is separate and requires install
+  - (7) optional Python build alongside library or afterwards. optional testing requires library install
 
 
 Command-line synopsis. See [table](#Build-Targets) for `--target` choices (steps refer to numbered bullets above) and [section](#Configuring-Libint) for `-D options` choices.
@@ -179,11 +179,12 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `ENABLE_T1G12_SUPPORT` — G — Enable [Ti,G12] integrals when G12 integrals are enabled. Irrelevant when `ENABLE_G12=OFF`. Use OFF to disable. [Default=ON]
 
 
-###  Which Ordering Conventions (G L)
+###  Which Ordering Conventions (G)
 
-* `LIBINT2_SHGAUSS_ORDERING` — L — Ordering for shells of solid harmonic Gaussians. [Default=standard]
+* `LIBINT2_SHGAUSS_ORDERING` — G — Ordering for shells of solid harmonic Gaussians. [Default=standard]
   * `standard` — standard ordering (-l, -l+1 ... l)
   * `gaussian` — the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+  * Previous to v1.8 TODO, this option was set at generator-build-time for `Operator::sphemultipole` but was re-set-able at library-build-time for other classes. Since v1.8 TODO, this ordering is still selected at generator-build-time for `Operator::sphemultipole`, but other classes can select the ordering at library-run-time through the C++11 API; C API users are fixed at the generator setting.
 * `LIBINT2_CARTGAUSS_ORDERING` — G — Orderings for shells of cartesian Gaussians. [Default=standard]
   * `standard` — standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...) This is ordering of the Common Component Architecture (CCA) standard for molecular integral data exchange described in ["Components for Integral Evaluation in Quantum Chemistry", J. P. Kenny, C. L. Janssen, E. F. Valeev, and T. L. Windus, J. Comp. Chem. 29, 562 (2008)](http://dx.doi.org/10.1002/jcc.20815).
   * `intv3` — intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx) This is used by IntV3, the default integral engine of [MPQC](https://github.com/evaleev/libint/wiki/www.mpqc.org). Use this to make Libint and IntV3 engines in MPQC interoperable.
@@ -320,7 +321,7 @@ EIGEN3_INCLUDE_DIR?
   ```
 
 
-### Build Library What
+### Build Library What (L)
 
 * `REQUIRE_CXX_API` — L — Build C++11 Libint API. Define header-only library target and check target (requires Eigen3; Boost recommended; [see prereq line](#prerequisites)). [Default=ON]
 * `REQUIRE_CXX_API_COMPILED` — L — Build C++11 Libint API. Define compiled (not just header-only) targets (requires Eigen3; Boost recommended). [Default=ON]
@@ -330,7 +331,7 @@ EIGEN3_INCLUDE_DIR?
 * `ENABLE_PYTHON` — L — Build Python bindings (requires Python and Eigen3; Boost and pybind11 recommended; [see prereq line](#prerequisites)). Can instead be enabled and built through separate CMake configuration after library build. [Default=OFF]
 
 
-### Build Library How
+### Build Library How (G L)
 
 * `CMAKE_BUILD_TYPE` — G L — [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) [Default=Release]
 * `BUILD_SHARED_LIBS` — L — Build Libint library as shared, not static. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/BUILD_SHARED_LIBS.html) [Default=OFF]

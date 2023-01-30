@@ -38,9 +38,11 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
             -1.478824785355970e-02,  0.000000000000000e+00,  1.139389632827834e-01, -1.241040347301479e+01,  0.000000000000000e+00,
              0.000000000000000e+00, -5.775996163160049e-02,  0.000000000000000e+00,  0.000000000000000e+00, -1.238239259091998e+01};
         for (int i = 0; i != 25; ++i) {
-          if (libint2::solid_harmonics() == libint2::SHGShellOrdering_Standard) {
+          if (libint2::solid_harmonics_ordering() == libint2::SHGShellOrdering_Standard) {
+            if (i == 0) printf("Checking 1-body SHO=Standard\n");
             REQUIRE(engine.results()[0][i]/scale == Approx(shellset_ref_standard[i]));
           } else {
+            if (i == 0) printf("Checking 1-body SHO=Gaussian\n");
             REQUIRE(engine.results()[0][i]/scale == Approx(shellset_ref_gaussian[i]));
           }
         }
@@ -70,7 +72,7 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
             -2.105750177166632e-03,  1.380654897976564e+00, -1.385603731947886e+00,  2.115041199099945e+00, -1.120272634615116e-03,
             -1.559058302243514e+00, -9.290824121864600e-01, -9.303619356400431e-01, -5.835786921473129e-04, -4.769186621041819e-01};
         for (int i = 0; i != 25; ++i) {
-          if (libint2::solid_harmonics() == libint2::SHGShellOrdering_Standard) {
+          if (libint2::solid_harmonics_ordering() == libint2::SHGShellOrdering_Standard) {
             REQUIRE(engine.results()[0][i] == Approx(shellset_ref_standard[i]));
           } else {
             REQUIRE(engine.results()[0][i] == Approx(shellset_ref_gaussian[i]));

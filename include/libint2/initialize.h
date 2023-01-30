@@ -57,7 +57,7 @@ namespace libint2 {
       static std::ostream* value = &std::clog;
       return value;
     }
-    inline std::atomic<SHGShellOrdering>& solid_harmonics_accessor() {
+    inline std::atomic<SHGShellOrdering>& solid_harmonics_ordering_accessor() {
       static std::atomic<SHGShellOrdering> value{libint2::SHGShellOrdering_Standard};
       return value;
     }
@@ -72,22 +72,26 @@ namespace libint2 {
   /// initializes the libint library if not currently initialized, no-op otherwise
   /// @param[in] verbose boolean flag that controls the verbosity of messages produced by libint in std::clog . If false, no messages
   ///            will be produced. The default is false.
-  inline void initialize(SHGShellOrdering sho, bool verbose = false) {
+  inline void initialize(bool verbose = false) {
     if (!initialized()) {
       using namespace detail;
       __initializer *x = managed_singleton<__initializer>::instance();
       (void) x;  // to suppress unused variable warning (not guaranteed to work) TODO revise when upgrade to C++17
       assert(x != nullptr);
       verbose_accessor() = verbose;
-      solid_harmonics_accessor() = sho;
+
+      // initialize() functions that take `SHGShellOrdering sho` as an argument aren't provided because
+      // * (a) with casting, it's hard to disentangle from `bool verbose`
+      // * (b) a separate setter is needed anyways for cases like the Python module, where initialize(sho) lives in libint code
+      // * code in initializer would go here as `solid_harmonics_ordering_accessor() = sho;`
     }
   }
 
   /// initializes the libint library if not currently initialized, no-op otherwise
   /// @param[in] os the output stream to which verbose diagnostics will be written (if @c initialize(true) is used, will write to @c std::clog )
-  inline void initialize(SHGShellOrdering sho, std::ostream& os) {
+  inline void initialize(std::ostream& os) {
     if (!initialized()) {
-      initialize(sho, true);
+      initialize(true);
       using namespace detail;
       verbose_stream_accessor() = &os;
     }
@@ -99,13 +103,17 @@ namespace libint2 {
       managed_singleton<__initializer>::delete_instance();
       verbose_accessor() = true;
       verbose_stream_accessor() = &std::clog;
-      solid_harmonics_accessor() = libint2::SHGShellOrdering_Standard;
+      solid_harmonics_ordering_accessor() = libint2::SHGShellOrdering_Standard;
     }
+  }
+  /// Setter for the SHGShellOrdering
+  inline void set_solid_harmonics_ordering(SHGShellOrdering sho) {
+    detail::solid_harmonics_ordering_accessor() = sho;
   }
   /// Accessor for the SHGShellOrdering
   /// @return the val for Operator::nucleus
-  inline SHGShellOrdering solid_harmonics() {
-    return detail::solid_harmonics_accessor();
+  inline SHGShellOrdering solid_harmonics_ordering() {
+    return detail::solid_harmonics_ordering_accessor();
   }
   /// Accessor for the disgnostics stream
   /// @return the stream to which the diagnostics will be written if verbose() returns true

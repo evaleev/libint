@@ -91,7 +91,7 @@ inline int INT_SOLIDHARMINDEX_MOLDEN(int l, int m) {
 #define END_FOR_SOLIDHARM_MOLDEN }
 
 namespace libint2 {
-  LIBINT_DEPRECATED("please use libint2::INT_SOLIDHARMINDEX(LIBINT_SHGSHELL_ORDERING, l, m) instead. Current function returns the standard or gaussian index based on build configuration, not on libint2::initialize() argument.")
+  LIBINT_DEPRECATED("please use libint2::INT_SOLIDHARMINDEX(libint2::solid_harmonics_ordering(), l, m) instead. Current function returns the standard or gaussian index based on build configuration, not on libint2::set_solid_harmonics_ordering() argument.")
   inline int INT_SOLIDHARMINDEX(int l, int m) {
 #if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
     return libint2::INT_SOLIDHARMINDEX_STANDARD(l, m);
@@ -110,7 +110,7 @@ namespace libint2 {
   }
 }
 
-// continue providing a generic FOR_SOLIDHARM ?
+// continue providing a generic FOR_SOLIDHARM?
 //#if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
 //#define FOR_SOLIDHARM FOR_SOLIDHARM_STANDARD
 //#elif LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_GAUSSIAN

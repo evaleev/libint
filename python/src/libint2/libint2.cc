@@ -149,7 +149,7 @@ PYBIND11_MODULE(libint2, m) {
     .value("SHGShellOrdering_MOLDEN", libint2::SHGShellOrdering_Gaussian)
     ;
 
-  libint2::initialize(libint2::SHGShellOrdering_Standard);
+  libint2::initialize();
 
   m.attr("MAX_AM") = LIBINT2_MAX_AM_eri;
 

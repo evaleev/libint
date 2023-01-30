@@ -65,10 +65,9 @@ endif()
 
 #  <<<  Ordering Conventions  >>>
 
-option_with_default(LIBINT2_SHGAUSS_ORDERING
-  "Ordering for shells of solid harmonic Gaussians:
-    standard -- standard ordering (-l, -l+1 ... l)
-    gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)" standard)
+# option_with_default(LIBINT2_SHGAUSS_ORDERING "Ordering for shells of solid harmonic Gaussians: standard or gaussian" standard)  # retired Jan 2023
+set(LIBINT2_SHGAUSS_ORDERING ${LIBINT2_SHGAUSS_ORDERING})
+message(STATUS "Setting option LIBINT2_SHGAUSS_ORDERING: ${LIBINT2_SHGAUSS_ORDERING} (read-only from generation-time)")
 
 set(LIBINT2_CARTGAUSS_ORDERING ${LIBINT2_CARTGAUSS_ORDERING})
 message(STATUS "Setting option LIBINT2_CARTGAUSS_ORDERING: ${LIBINT2_CARTGAUSS_ORDERING} (read-only from generation-time)")

@@ -64,14 +64,14 @@ if (LIBINT_HAS_CXX_API)
                 )
     endif()
     set(unit_tests_s-src ${unit_tests-src} unit/test_s.cc)
-    add_executable(unit_tests-libint2 EXCLUDE_FROM_ALL
+    add_executable(unit_tests_s-libint2 EXCLUDE_FROM_ALL
         ${unit_tests_s-src})
-    target_link_libraries(unit_tests-libint2 Libint2::cxx) # N.B. cxx header-only library
-    target_include_directories(unit_tests-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
-    target_compile_definitions(unit_tests-libint2 PRIVATE -D__COMPILING_LIBINT2=1 -DNO_LIBINT_COMPILER_CODE=1)
+    target_link_libraries(unit_tests_s-libint2 Libint2::cxx) # N.B. cxx header-only library
+    target_include_directories(unit_tests_s-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
+    target_compile_definitions(unit_tests_s-libint2 PRIVATE -D__COMPILING_LIBINT2=1 -DNO_LIBINT_COMPILER_CODE=1)
     if (TARGET Multiprecision::mpfr)
-        target_compile_definitions(unit_tests-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
-        target_link_libraries(unit_tests-libint2 Multiprecision::mpfr)
+        target_compile_definitions(unit_tests_s-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
+        target_link_libraries(unit_tests_s-libint2 Multiprecision::mpfr)
     endif()
     set(unit_tests_g-src ${unit_tests-src} unit/test_g.cc)
     add_executable(unit_tests_g-libint2 EXCLUDE_FROM_ALL
@@ -85,12 +85,12 @@ if (LIBINT_HAS_CXX_API)
     endif()
 
     # Test 7
-    add_test(libint2/unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests-libint2)
-    set_tests_properties(libint2/unit/build PROPERTIES FIXTURES_SETUP LIBINT2_UNIT_TESTS_EXEC)
+    add_test(libint2/unit_s/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests_s-libint2)
+    set_tests_properties(libint2/unit_s/build PROPERTIES FIXTURES_SETUP LIBINT2_UNIT_TESTS_EXEC)
     # Test 8
-    add_test(NAME libint2/unit/run
-            COMMAND $<TARGET_FILE:unit_tests-libint2>)
-    set_tests_properties(libint2/unit/run
+    add_test(NAME libint2/unit_s/run
+            COMMAND $<TARGET_FILE:unit_tests_s-libint2>)
+    set_tests_properties(libint2/unit_s/run
             PROPERTIES FIXTURES_REQUIRED LIBINT2_UNIT_TESTS_EXEC)
 
     # Test 9
