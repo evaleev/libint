@@ -135,7 +135,7 @@ endif()
 #  <<<  Python Tooling  >>>
 
 add_custom_target(
-  libint2-python-test
+  libint2-python-check
   DEPENDS libint2-python
   COMMAND ${Python_EXECUTABLE} -m setup test
   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}

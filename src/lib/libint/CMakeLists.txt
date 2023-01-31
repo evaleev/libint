@@ -15,10 +15,13 @@ add_custom_target(libint-library-generate DEPENDS "${EXPORT_STAGE_DIR}/src/libin
 
 # <<<  Add Metadata To The Library Source  >>>
 
+configure_file("features.in" "${EXPORT_STAGE_DIR}/features" @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/doc/progman/macros.tex.in" "${EXPORT_STAGE_DIR}/doc/macros.tex" @ONLY)
 set(DATADIR_ABSOLUTE ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION})
+# position basis.h for local buildtree.
+# * gets re-configured (CMakeLists.txt.export) for library export with its own CMAKE_INSTALL_PREFIX
+# * gets re-re-positioned (end of this file) for case of continuous generator + library build (through EP) with outer CMAKE_INSTALL_PREFIX
 configure_file("${PROJECT_SOURCE_DIR}/include/libint2/basis.h.cmake.in" "include/libint2/basis.h" @ONLY)
-configure_file("features.in" "${EXPORT_STAGE_DIR}/features" @ONLY)
 
 add_custom_command(OUTPUT ${EXPORT_STAGE_DIR}/CMakeLists.txt
         DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/populate.cmake"
@@ -178,7 +181,7 @@ else()
 
         if (ENABLE_PYTHON)
             find_package(Python COMPONENTS Interpreter REQUIRED)
-            add_custom_target_subproject(libint2 checkpy
+            add_custom_target_subproject(libint2 check-python
               COMMAND ${Python_EXECUTABLE} -m setup test
               WORKING_DIRECTORY ${BINARY_DIR}/python
               DEPENDS install
@@ -187,6 +190,10 @@ else()
         endif()
     endif()
 
+    install(
+      FILES "${CMAKE_CURRENT_BINARY_DIR}/include/libint2/basis.h"
+      DESTINATION "${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/libint2"
+      )
     install(
       DIRECTORY ${STAGED_INSTALL_PREFIX}/
       DESTINATION ${CMAKE_INSTALL_PREFIX}
