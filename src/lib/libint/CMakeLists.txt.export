@@ -23,7 +23,7 @@ set(pnv libint2) # projectnameversion
 ################################### Overview ###################################
 
 # * high MAX_AM generating >20k files may require `ulimit -s 65535` for linking
-#   library target on Linux to avert "ld: Argument list too long"
+#   library target on Linux to avert "ld: Argument list too long" w/o UNITY_BUILD
 # * when building for packaging, absence or presence of Boost determines whether
 #   libint2/boost headers are installed or not
 
@@ -428,7 +428,7 @@ if (BUILD_SHARED_LIBS)
     if (REQUIRE_CXX_API)
         add_library(${L2}::cxx ALIAS int-cxx-headeronly-shared)
         if (REQUIRE_CXX_API_COMPILED)
-        add_library(${L2}::int2-cxx ALIAS int-cxx-compiled-shared)
+            add_library(${L2}::int2-cxx ALIAS int-cxx-compiled-shared)
         endif()
     endif()
 elseif (BUILD_STATIC_LIBS)
@@ -436,7 +436,7 @@ elseif (BUILD_STATIC_LIBS)
     if (REQUIRE_CXX_API)
         add_library(${L2}::cxx ALIAS int-cxx-headeronly-static)
         if (REQUIRE_CXX_API_COMPILED)
-        add_library(${L2}::int2-cxx ALIAS int-cxx-compiled-static)
+            add_library(${L2}::int2-cxx ALIAS int-cxx-compiled-static)
         endif()
     endif()
 endif()

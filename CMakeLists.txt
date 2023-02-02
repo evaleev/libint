@@ -9,7 +9,7 @@ endif()
 
 project(
   Libint2Compiler
-  VERSION 2.7.1
+  VERSION 2.7.2
   DESCRIPTION "High-performance library for computing Gaussian integrals in quantum mechanics"
   HOMEPAGE_URL "https://github.com/evaleev/libint"
   LANGUAGES CXX
@@ -19,7 +19,7 @@ set(${PROJECT_NAME}_AUTHORS "Edward F. Valeev")
 set(${PROJECT_NAME}_LICENSE "GPL-3.0 for generator; LGPL-3.0 for generated")
 
 # along with project(... VERSION) above, these are the authoritative version source (formerly in configure.ac)
-set(LIBINT_BUILDID "")
+set(LIBINT_BUILDID "post1")
 set(LIBINT_SOVERSION "2:3:0")
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
@@ -259,7 +259,6 @@ message(STATUS "Showing option LIBINT2_INSTALL_BASISDIR: ${LIBINT2_INSTALL_BASIS
 #CONFIGURE    --with-vector-length=N  Compute integrals in vectors of length N.
 #CONFIGURE    --with-vector-method    Specifies how to vectorize integrals. Allowed values
 #CONFIGURE                            are 'block' (default), and 'line'.
-#CONFIGURE    --with-build-id         Gives an identifier for the build.
 #CONFIGURE    --with-libint-exportdir Specifies export directory name. Default is
 #CONFIGURE                            libint-<version>.
 #CONFIGURE    --with-pkgconfigdir     Specifies the location to put pkg-config's data

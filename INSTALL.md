@@ -1,5 +1,6 @@
 #### Note: If you received this file from a `libint-2.*.tgz` source archive, `(TARBALL)` marks portions of this document relevant to you.
 
+
 # Libint Compiler vs Library
 
 Before you read on:
@@ -87,7 +88,6 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 [^25]: (TARBALL) targets can include steps 4 onwards; the starting tarball itself is the product of step 3.
 
 [^26]: See [see "Internal Targets" column in table](#consumption-targets) for individual library targets.
-
 
 
 -----------------------------------------------------------------------------
@@ -291,6 +291,9 @@ EIGEN3_INCLUDE_DIR?
 
   ```
   -D CMAKE_PREFIX_PATH="/path/to/installation/prefix"
+  ```
+
+  ```
   -D CMAKE_PREFIX_PATH="/home/miniconda/envs/l2dev"
   ```
 
