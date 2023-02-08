@@ -16,35 +16,35 @@ jobs:
             args: >
               -DLIBINT2_ENABLE_FORTRAN=ON
 
-          #- runs-on: macos-latest
-          #  build_type: Release
-          #  cxx: clang++
-          #  cc: clang
-          #  args: >
-          #    -DLIBINT2_ENABLE_FORTRAN=ON
-          #    -DCMAKE_Fortran_COMPILER=gfortran-10
+          - runs-on: macos-latest
+            build_type: Release
+            cxx: clang++
+            cc: clang
+            args: >
+              -DLIBINT2_ENABLE_FORTRAN=ON
+              -DCMAKE_Fortran_COMPILER=gfortran-10
 
-          #- runs-on: windows-2022
-          #  build_type: Release
-          #  cxx: clang-cl
-          #  cc: clang-cl
-          #  args: ""
+          - runs-on: windows-2022
+            build_type: Release
+            cxx: clang-cl
+            cc: clang-cl
+            args: ""
 
-          #- runs-on: ubuntu-20.04
-          #  build_type: Debug
-          #  cxx: g++-9
-          #  cc: gcc-9
-          #  fc: gfortran-9
-          #  args: >
-          #    -DLIBINT2_ENABLE_FORTRAN=ON
+          - runs-on: ubuntu-20.04
+            build_type: Debug
+            cxx: g++-9
+            cc: gcc-9
+            fc: gfortran-9
+            args: >
+              -DLIBINT2_ENABLE_FORTRAN=ON
 
-          #- runs-on: macos-latest
-          #  build_type: Debug
-          #  cxx: clang++
-          #  cc: clang
-          #  args: >
-          #    -DLIBINT2_ENABLE_FORTRAN=ON
-          #    -DCMAKE_Fortran_COMPILER=gfortran-10
+          - runs-on: macos-latest
+            build_type: Debug
+            cxx: clang++
+            cc: clang
+            args: >
+              -DLIBINT2_ENABLE_FORTRAN=ON
+              -DCMAKE_Fortran_COMPILER=gfortran-10
 
     name: "Repo • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -155,13 +155,13 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
-        cmake --build build --target export  # toggle for quick tarball to debug `build_export`
-        #if [[ "${{ runner.os }}" == "Windows" ]]; then
-        #  # xfail for Windows. SCF is wrong (see below), but we ensure that L2@Win builds, exports, packages ok.
-        #  cmake --build build --target library check-libint2compiler install
-        #else
-        #  cmake --build build --target library check-libint2compiler install check-python
-        #fi
+        #cmake --build build --target export  # toggle for quick tarball to debug `build_export`
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          # xfail for Windows. SCF is wrong (see below), but we ensure that L2@Win builds, exports, packages ok.
+          cmake --build build --target library check-libint2compiler install
+        else
+          cmake --build build --target library check-libint2compiler install check-python
+        fi
         cd build && echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
 
     - name: Generate & Build Libint Library (FetchContent, full tests)
@@ -187,8 +187,8 @@ jobs:
         retention-days: 1
 
     - name: Test Installed Libint Library
-      if: false  # toggle for quick tarball to debug `build_export`
-      #if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      #if: false  # toggle for quick tarball to debug `build_export`
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/test_installed_library
       run: |
@@ -248,36 +248,36 @@ jobs:
             # note full paths depend on setup-miniconda:
             # * Miniforge is miniconda3 vs. Miniconda is miniconda
 
-          #- runs-on: macos-latest
-          #  lane: macos-clang
-          #  libargs: >
-          #    -DBUILD_SHARED_LIBS=ON
-          #  testargs: ""
+          - runs-on: macos-latest
+            lane: macos-clang
+            libargs: >
+              -DBUILD_SHARED_LIBS=ON
+            testargs: ""
 
-          #- runs-on: windows-latest
-          #  lane: windows-clang-cl
-          #  libargs: >
-          #    -GNinja
-          #    -DCMAKE_BUILD_TYPE=Release
-          #    -DBUILD_SHARED_LIBS=OFF
-          #    -DCMAKE_CXX_COMPILER=clang-cl
-          #    -DCMAKE_C_COMPILER=clang-cl
-          #  testargs: >
-          #    -GNinja
-          #    -DCMAKE_BUILD_TYPE=Release
-          #    -DCMAKE_CXX_COMPILER=clang-cl
-          #    -DCMAKE_C_COMPILER=clang-cl
+          - runs-on: windows-latest
+            lane: windows-clang-cl
+            libargs: >
+              -GNinja
+              -DCMAKE_BUILD_TYPE=Release
+              -DBUILD_SHARED_LIBS=OFF
+              -DCMAKE_CXX_COMPILER=clang-cl
+              -DCMAKE_C_COMPILER=clang-cl
+            testargs: >
+              -GNinja
+              -DCMAKE_BUILD_TYPE=Release
+              -DCMAKE_CXX_COMPILER=clang-cl
+              -DCMAKE_C_COMPILER=clang-cl
 
           - runs-on: ubuntu-latest
             lane: ubuntu-intel
             libargs: >
               -DCMAKE_CXX_COMPILER=icpx
               -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --sysroot=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu"
-              # cxx flags are longform of below (not available at spinup)
-              # -DCMAKE_CXX_FLAGS="--gcc-toolchain=${CONDA_PREFIX} --sysroot=${CONDA_PREFIX}/${HOST}/sysroot -target ${HOST} -Wl,--as-needed -static-intel -Wno-unused-command-line-argument"
+              # flags are long-form of below (envvars not available at spinup)
+              # -DCMAKE_CXX_FLAGS="--gcc-toolchain=${CONDA_PREFIX} --sysroot=${CONDA_PREFIX}/${HOST}/sysroot -target ${HOST}"
             testargs: >
               -DCMAKE_CXX_COMPILER=icpx
-              -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --sysroot=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu -Wl,--as-needed -static-intel -Wno-unused-command-line-argument"
+              -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --sysroot=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu"
 
     name: "Export • ${{ matrix.cfg.lane }} • ${{ matrix.cfg.libargs }}"
     runs-on: ${{ matrix.cfg.runs-on }}
