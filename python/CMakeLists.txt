@@ -119,7 +119,7 @@ if (LIBINT2_PREFIX_PYTHON_INSTALL)
 
     execute_process(
       COMMAND ${Python_EXECUTABLE} -c
-        "import os, sys, sysconfig as s; spdir = s.get_path('platlib'); print(spdir.replace(os.path.commonpath([sys.prefix, spdir]), '').lstrip('/'));"
+        "import os, sys, sysconfig as s; spdir = s.get_path('platlib'); print(spdir.replace(os.path.commonpath([sys.prefix, spdir]), '').lstrip(os.path.sep));"
       OUTPUT_VARIABLE LIBINT2_INSTALL_PYMODDIR
       OUTPUT_STRIP_TRAILING_WHITESPACE
       )

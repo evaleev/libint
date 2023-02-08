@@ -137,7 +137,9 @@ if (LIBINT2_ENABLE_MPFR)
 endif()
 
 if (LIBINT2_REQUIRE_CXX_API)
-    find_package(Boost 1.57)
+    if (NOT TARGET Boost::headers)
+        find_package(Boost 1.57)
+    endif()
     if (TARGET Boost::headers)
         set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
     else()
@@ -184,6 +186,12 @@ include(srclist.cmake)
 list(LENGTH LIBINT2_LIBRARY_CXX_SRC _source_count)
 message(STATUS "Loading ${_source_count} library source files from LIBINT2_LIBRARY_CXX_SRC")
 message(DEBUG "LIBINT2_LIBRARY_CXX_SRC=${LIBINT2_LIBRARY_CXX_SRC}")
+
+set(export_properties
+  "Libint2_VERSION"
+  "Libint2_MAX_AM_ERI"
+  "Libint2_CONFIGURATION"
+  )
 
 add_library(int-obj OBJECT "${LIBINT2_LIBRARY_CXX_SRC}")
 
@@ -268,7 +276,11 @@ if (BUILD_SHARED_LIBS)
         MACOSX_RPATH ON
         OUTPUT_NAME "int2"
         EXPORT_NAME "int2"
+        Libint2_VERSION "${LIBINT_VERSION}"
+        Libint2_MAX_AM_ERI "${Libint2_MAX_AM_ERI}"
+        Libint2_CONFIGURATION "${Libint2_CONFIG_COMPONENTS}"
       )
+    set_property(TARGET int-shared APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
     if (APPLE)
         set_target_properties(
           int-shared
@@ -301,6 +313,7 @@ if (BUILD_SHARED_LIBS)
         target_compile_definitions(
           int-cxx-headeronly-shared
           INTERFACE
+            $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
             $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
             $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
           )
@@ -367,7 +380,11 @@ if (BUILD_STATIC_LIBS)
       PROPERTIES
         OUTPUT_NAME "int2"
         EXPORT_NAME "int2"
+        Libint2_VERSION "${LIBINT_VERSION}"
+        Libint2_MAX_AM_ERI "${Libint2_MAX_AM_ERI}"
+        Libint2_CONFIGURATION "${Libint2_CONFIG_COMPONENTS}"
       )
+    set_property(TARGET int-static APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
 
     target_include_directories(
       int-static
@@ -385,6 +402,7 @@ if (BUILD_STATIC_LIBS)
         target_compile_definitions(
           int-cxx-headeronly-static
           INTERFACE
+            $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
             $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
             $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
           )
