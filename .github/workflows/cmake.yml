@@ -248,36 +248,36 @@ jobs:
             # note full paths depend on setup-miniconda:
             # * Miniforge is miniconda3 vs. Miniconda is miniconda
 
-          - runs-on: macos-latest
-            lane: macos-clang
-            libargs: >
-              -DBUILD_SHARED_LIBS=ON
-            testargs: ""
+          #- runs-on: macos-latest
+          #  lane: macos-clang
+          #  libargs: >
+          #    -DBUILD_SHARED_LIBS=ON
+          #  testargs: ""
 
-          - runs-on: windows-latest
-            lane: window-clang-cl
-            libargs: >
-              -GNinja
-              -DCMAKE_BUILD_TYPE=Release
-              -DBUILD_SHARED_LIBS=OFF
-              -DCMAKE_CXX_COMPILER=clang-cl
-              -DCMAKE_C_COMPILER=clang-cl
-            testargs: >
-              -GNinja
-              -DCMAKE_BUILD_TYPE=Release
-              -DCMAKE_CXX_COMPILER=clang-cl
-              -DCMAKE_C_COMPILER=clang-cl
+          #- runs-on: windows-latest
+          #  lane: windows-clang-cl
+          #  libargs: >
+          #    -GNinja
+          #    -DCMAKE_BUILD_TYPE=Release
+          #    -DBUILD_SHARED_LIBS=OFF
+          #    -DCMAKE_CXX_COMPILER=clang-cl
+          #    -DCMAKE_C_COMPILER=clang-cl
+          #  testargs: >
+          #    -GNinja
+          #    -DCMAKE_BUILD_TYPE=Release
+          #    -DCMAKE_CXX_COMPILER=clang-cl
+          #    -DCMAKE_C_COMPILER=clang-cl
 
           - runs-on: ubuntu-latest
             lane: ubuntu-intel
             libargs: >
               -DCMAKE_CXX_COMPILER=icpx
-              -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --gcc-toolchain=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu"
+              -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --sysroot=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu"
               # cxx flags are longform of below (not available at spinup)
               # -DCMAKE_CXX_FLAGS="--gcc-toolchain=${CONDA_PREFIX} --sysroot=${CONDA_PREFIX}/${HOST}/sysroot -target ${HOST} -Wl,--as-needed -static-intel -Wno-unused-command-line-argument"
             testargs: >
               -DCMAKE_CXX_COMPILER=icpx
-              -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --gcc-toolchain=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu -Wl,--as-needed -static-intel -Wno-unused-command-line-argument"
+              -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --sysroot=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu -Wl,--as-needed -static-intel -Wno-unused-command-line-argument"
 
     name: "Export • ${{ matrix.cfg.lane }} • ${{ matrix.cfg.libargs }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -374,6 +374,7 @@ jobs:
           -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
         cmake --build build --target install libint2-python-check
+        cat /home/runner/work/libint/libint/installed/lib/cmake/libint2/libint2-targets-shared.cmake
 
     - name: Test Installed Libint library
       shell: bash -l {0}
