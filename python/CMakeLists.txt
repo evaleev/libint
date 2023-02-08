@@ -110,7 +110,7 @@ configure_file(setup.py.in ${PROJECT_BINARY_DIR}/setup.py)
 
 #  <<<  Install  >>>
 
-if (PREFIX_PYTHON_INSTALL)
+if (LIBINT2_PREFIX_PYTHON_INSTALL)
     # * Note that this block is *Linux-style* install to `CMAKE_INSTALL_PREFIX`.
     # * For *Python-style* install to `Python_EXECUTABLE`'s site-packages, use
     #   wheel target below from python/ directory.

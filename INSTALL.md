@@ -100,13 +100,13 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 | :------------------------------------------------------------------- | :---------------------: | :-------: | -------------------- | :-----: | :-------: | :-----: | :--------: | :-------: | :------: |
 | build target `build_libint`                                          | C++[^1]                 | 🔵[^4]    | Ninja                | &ndash; | 🔵[^8]    | &ndash; | 🔵         | &ndash;   | &ndash;  |
 | build target `library`                                               | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
-| &emsp;&emsp;`-D REQUIRE_CXX_API=ON`                                  | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   | &ndash;  |
-| &emsp;&emsp;`-D ENABLE_FORTRAN=ON`                                   | C++[^1], Fortran[^2], C | 🔵[^5]    | Ninja                | 🔵[^22] | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
-| &emsp;&emsp;`-D ENABLE_PYTHON=ON`                                    | C++[^1], C              | 🔵[^5]    | Ninja                | 🔵[^23] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   | 🔵[^24]  |
+| &emsp;&emsp;`-D LIBINT2_REQUIRE_CXX_API=ON`                          | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;&emsp;`-D LIBINT2_ENABLE_FORTRAN=ON`                           | C++[^1], Fortran[^2], C | 🔵[^5]    | Ninja                | 🔵[^22] | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;&emsp;`-D LIBINT2_ENABLE_PYTHON=ON`                            | C++[^1], C              | 🔵[^5]    | Ninja                | 🔵[^23] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   | 🔵[^24]  |
 | build&nbsp;project&nbsp;_consuming_&nbsp;Libint2&nbsp;library        |
 | &emsp;C&nbsp;interface&nbsp;(I/F),&nbsp;`Libint2::int2`              | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
 | &emsp;C++11&nbsp;header&nbsp;I/F,&nbsp;`Libint2::cxx`                | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | &ndash;    | &ndash;   | &ndash;  |
-| &emsp;&emsp;`-D ENABLE_MPFR=ON`                                      | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | 🔵         | 🔵        | &ndash;  |
+| &emsp;&emsp;`-D LIBINT2_ENABLE_MPFR=ON`                              | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | 🔵         | 🔵        | &ndash;  |
 | &emsp;C++11&nbsp;compiled&nbsp;I/F,&nbsp;`Libint2::int2-cxx`         | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵[^12] | &ndash;    | &ndash;   | &ndash;  |
 | &emsp;Fortran I/F,&nbsp;`Libint2::fortran`                           | Fortran[^2]             | 🔸[^6]    | Ninja, Makefile      | &ndash; |           |         | &ndash;    | &ndash;   | &ndash;  |
 
@@ -138,7 +138,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 
 [^12]: Consuming an installed Libint2 library through the compiled C++11 interface, `Libint2::int2-cxx` requires [Eigen](https://eigen.tuxfamily.org/). It is *strongly* recommended that the same installation of Eigen be used both to build and consume the `Libint2::int2-cxx` target, especially as regards configuring BLAS and other backends.
 
-[^13]: Building the Libint2 compiler or building the Libint2 library with `-D ENABLE_MPFR=ON` for high-precision testing requires the [GNU Multiple Precision (GMP)](https://gmplib.org/) library. A detectable system installation is required, and it must include C++ support. For Windows, the [MPIR](https://www.mpir.org) project satisfies the requirement.
+[^13]: Building the Libint2 compiler or building the Libint2 library with `-D LIBINT2_ENABLE_MPFR=ON` for high-precision testing requires the [GNU Multiple Precision (GMP)](https://gmplib.org/) library. A detectable system installation is required, and it must include C++ support. For Windows, the [MPIR](https://www.mpir.org) project satisfies the requirement.
 
 [^14]: Building against the Libint2 library for the purpose of high-precision testing with define `LIBINT_HAS_MPFR=1` requires the [MPFR](https://www.mpfr.org/) library. A detectable system installation is required.
 
@@ -268,8 +268,8 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `CMAKE_INSTALL_DATADIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which data files are installed. [Standard CMake variable](https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html) [Default=share]
 * `LIBINT2_INSTALL_CMAKEDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which CMake files are installed. [Default=lib/cmake/libint2]
 * `LIBINT2_INSTALL_BASISDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which data (basis) files are installed. basis/ directory created within this. [Default=share/libint/<LIBINT_VERSION>]
-* `LIBINT2_INSTALL_FMODDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which Fortran module files are installed if `ENABLE_FORTRAN=ON`. [Default=include/libint2/fortran2/modules]
-* `PREFIX_PYTHON_INSTALL` — L — For `ENABLE_PYTHON=ON`, whether to install the Python module in the Linux manner to `CMAKE_INSTALL_PREFIX` or to not install it. Note: not a path; the installation sub-path below `CMAKE_INSTALL_PREFIX` is determined by querying `Python_EXECUTABLE`. For alternate installation in the Python manner to `Python_EXECUTABLE`'s site-packages, see target libint2-python-wheel. [Default=OFF]
+* `LIBINT2_INSTALL_FMODDIR` — L — Directory within `CMAKE_INSTALL_PREFIX` to which Fortran module files are installed if `LIBINT2_ENABLE_FORTRAN=ON`. [Default=include/libint2/fortran2/modules]
+* `LIBINT2_PREFIX_PYTHON_INSTALL` — L — For `LIBINT2_ENABLE_PYTHON=ON`, whether to install the Python module in the Linux manner to `CMAKE_INSTALL_PREFIX` or to not install it. Note: not a path; the installation sub-path below `CMAKE_INSTALL_PREFIX` is determined by querying `Python_EXECUTABLE`. For alternate installation in the Python manner to `Python_EXECUTABLE`'s site-packages, see target libint2-python-wheel. [Default=OFF]
 
 
 ### Detecting Dependencies (G L C)
@@ -280,7 +280,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * `Multiprecision_ROOT` — G L —
 * `Eigen3_ROOT` — L C — Prefix to installation location (`Eigen3_ROOT/...` exists)
 * `Libint2_DIR` — C — CMake variable, set to directory containing this Config file
-* `LIBINT_LOCAL_Eigen3_FIND` — C — Set to `ON` before `find_package(Libint2)` to load the Eigen3 target exported by `LIBINT_LOCAL_Eigen3_INSTALL=ON` if Libint library built locally. [Default=OFF]
+* `LIBINT2_LOCAL_Eigen3_FIND` — C — Set to `ON` before `find_package(Libint2)` to load the Eigen3 target exported by `LIBINT2_LOCAL_Eigen3_INSTALL=ON` if Libint library built locally. [Default=OFF]
 * `CMAKE_DISABLE_FIND_PACKAGE_Boost` — L — When Boost required for C++11 Libint API, disable its detection, thereby forcing use of bundled Boost. Note that this (and other Boost-hinting variables) can affect what is installed [see here](#packagers). [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html). [Default=OFF]
 
 Eigen3_DIR
@@ -326,12 +326,12 @@ EIGEN3_INCLUDE_DIR?
 
 ### Build Library What (L)
 
-* `REQUIRE_CXX_API` — L — Build C++11 Libint API. Define header-only library target and check target (requires Eigen3; Boost recommended; [see prereq line](#prerequisites)). [Default=ON]
-* `REQUIRE_CXX_API_COMPILED` — L — Build C++11 Libint API. Define compiled (not just header-only) targets (requires Eigen3; Boost recommended). [Default=ON]
-* `ENABLE_FORTRAN` — L — Build Fortran03+ module/bindings (requires C and Fortran compilers and Python). [Default=OFF]
-* `ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
-* `LIBINT_LOCAL_Eigen3_INSTALL` — L — Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. See `LIBINT_LOCAL_Eigen3_FIND`. [Default=OFF]
-* `ENABLE_PYTHON` — L — Build Python bindings (requires Python and Eigen3; Boost and pybind11 recommended; [see prereq line](#prerequisites)). Can instead be enabled and built through separate CMake configuration after library build. [Default=OFF]
+* `LIBINT2_REQUIRE_CXX_API` — L — Build C++11 Libint API. Define header-only library target and check target (requires Eigen3; Boost recommended; [see prereq line](#prerequisites)). [Default=ON]
+* `LIBINT2_REQUIRE_CXX_API_COMPILED` — L — Build C++11 Libint API. Define compiled (not just header-only) targets (requires Eigen3; Boost recommended). [Default=ON]
+* `LIBINT2_ENABLE_FORTRAN` — L — Build Fortran03+ module/bindings (requires C and Fortran compilers and Python). [Default=OFF]
+* `LIBINT2_ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
+* `LIBINT2_LOCAL_Eigen3_INSTALL` — L — Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. See `LIBINT2_LOCAL_Eigen3_FIND`. [Default=OFF]
+* `LIBINT2_ENABLE_PYTHON` — L — Build Python bindings (requires Python and Eigen3; Boost and pybind11 recommended; [see prereq line](#prerequisites)). Can instead be enabled and built through separate CMake configuration after library build. [Default=OFF]
 
 
 ### Build Library How (G L)
@@ -430,8 +430,8 @@ EIGEN3_INCLUDE_DIR?
 * `--enable-static` --> `-D BUILD_STATIC=ON` --> `-D BUILD_SHARED_LIBS=OFF` (standard CMake variable)
 * `--enable-shared --enable-static` --> `-D BUILD_SHARED=ON -D BUILD_STATIC=ON` --> `-D LIBINT2_BUILD_SHARED_AND_STATIC_LIBS=ON`
 
-* `-D REQUIRE_CXX_API=ON` --> `-D ENABLE_CXX11API=ON` --> `-D REQUIRE_CXX_API=ON`
-* `--enable-mpfr` --> assumed present --> `-D ENABLE_MPFR=ON`
+* `-D REQUIRE_CXX_API=ON` --> `-D ENABLE_CXX11API=ON` --> `-D LIBINT2_REQUIRE_CXX_API=ON`
+* `--enable-mpfr` --> assumed present --> `-D ENABLE_MPFR=ON` --> `-D LIBINT2_ENABLE_MPFR=ON`
 * `--prefix=path` --> `-D CMAKE_INSTALL_PREFIX=path` (standard CMake variable)
 * `--with-cmakedir=partialpath` --> `-D LIBINT2_INSTALL_CMAKEDIR=partialpath`
 * `--with-real-type=type` --> `-D LIBINT2_REALTYPE=type`
@@ -444,8 +444,11 @@ EIGEN3_INCLUDE_DIR?
 * `ENV(CPPFLAGS)=-I/path/to/boost/includes` --> `-D BOOST_ROOT=/path/to/boost/prefix`
 * `ENV(FC)=/path/to/fortran/compiler` --> `-D CMAKE_Fortran_COMPILER=/path/to/fortran/compiler`
 
-* `-D LIBINT2_PYTHON=ON` --> `-D ENABLE_PYTHON=ON`
+* `-D LIBINT2_PYTHON=ON` --> `-D LIBINT2_ENABLE_PYTHON=ON`
 * `-D LIBINT_USE_BUNDLED_BOOST=ON` --> `-D CMAKE_DISABLE_FIND_PACKAGE_Boost=ON` (standard CMake variable)
+* `-D ENABLE_FORTRAN=ON` --> `-D LIBINT2_ENABLE_FORTRAN=ON`
+* `-D LIBINT_LOCAL_Eigen3_INSTALL` --> `-D LIBINT2_LOCAL_Eigen3_INSTALL`
+* `-D LIBINT_LOCAL_Eigen3_FIND` --> `-D LIBINT2_LOCAL_Eigen3_FIND`
 
 -----------------------------------------------------------------------------
 
@@ -458,12 +461,13 @@ EIGEN3_INCLUDE_DIR?
 
 ### Consumption Targets
 
-| Namespaced Target[^15] | CMake[^16] Component | Built by Default | Ensure Built                  | Ensure Excluded                                                                                | Internal Target(s)[^17]              | Alias[^18]    |
-| ---------------------- | -------------------- | ---------------- | ----------------------------- | ---------------------------------------------------------------------------------------------- | -----------------------------------  | ------------  |
-| `Libint2::int2`        | `C`                  | yes              | always                        | impossible                                                                                     | `int-{static,shared}`                | `libint2`     |
-| `Libint2::cxx`         | `CXX_ho`             | yes              | `REQUIRE_CXX_API=ON`          | `REQUIRE_CXX_API=OFF` & withhold Eigen3 & `REQUIRE_CXX_API_COMPILED=OFF` & `ENABLE_PYTHON=OFF` | `int-cxx-headeronly-{static,shared}` | `libint2_cxx` |
-| `Libint2::int2-cxx`    | `CXX`                | yes              | `REQUIRE_CXX_API_COMPILED=ON` | `REQUIRE_CXX_API_COMPILED=OFF`                                                                 | `int-cxx-compiled-{static,shared}`   |               |
-| Fortran local[^19]     | (NYI)                | no               | `ENABLE_FORTRAN=ON`           | `ENABLE_FORTRAN=OFF`                                                                           | `libint_f`                           |               |
+| Namespaced Target[^15] | CMake[^16] Component | Built by Default | Ensure Built                          | Ensure Excluded                                                                                                        | Internal Target(s)[^17]              | Alias[^18]    |
+| ---------------------- | -------------------- | ---------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -----------------------------------  | ------------  |
+|                        |                      | yes              | always                                | impossible                                                                                                             | `int-obj`                            |               |
+| `Libint2::int2`        | `C`                  | yes              | always                                | impossible                                                                                                             | `int-{static,shared}`                | `libint2`     |
+| `Libint2::cxx`         | `CXX_ho`             | yes              | `LIBINT2_REQUIRE_CXX_API=ON`          | `LIBINT2_REQUIRE_CXX_API=OFF` & withhold Eigen3 & `LIBINT2_REQUIRE_CXX_API_COMPILED=OFF` & `LIBINT2_ENABLE_PYTHON=OFF` | `int-cxx-headeronly-{static,shared}` | `libint2_cxx` |
+| `Libint2::int2-cxx`    | `CXX`                | yes              | `LIBINT2_REQUIRE_CXX_API_COMPILED=ON` | `LIBINT2_REQUIRE_CXX_API_COMPILED=OFF`                                                                                 | `int-cxx-compiled-{static,shared}`   |               |
+| Fortran local[^19]     | (NYI)                | no               | `LIBINT2_ENABLE_FORTRAN=ON`           | `LIBINT2_ENABLE_FORTRAN=OFF`                                                                                           | `libint_f`                           |               |
 
 [^15]: Targets for library consumer use. These are available after `find_package(Libint2)` or `add_subdirectory()`.
 [^16]: Ensure target found in installation after `find_package(Libint2 COMPONENTS ...)`.
@@ -555,7 +559,7 @@ EIGEN3_INCLUDE_DIR?
 * production CMake configuration:
 
   ```
-  -D REQUIRE_CXX_API=ON
+  -D LIBINT2_REQUIRE_CXX_API=ON
   -D LIBINT2_SHGAUSS_ORDERING=gaussian
   -D LIBINT2_CARTGAUSS_ORDERING=standard
   -D LIBINT2_SHELL_SET=standard

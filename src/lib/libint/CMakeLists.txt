@@ -94,13 +94,13 @@ else()
             -DLIBINT2_INSTALL_BASISDIR=${LIBINT2_INSTALL_BASISDIR}
             -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
             -DLIBINT2_BUILD_SHARED_AND_STATIC_LIBS=${LIBINT2_BUILD_SHARED_AND_STATIC_LIBS}
-            -DREQUIRE_CXX_API=${REQUIRE_CXX_API}
-            -DREQUIRE_CXX_API_COMPILED=${REQUIRE_CXX_API_COMPILED}
-            -DENABLE_FORTRAN=${ENABLE_FORTRAN}
-            -DENABLE_PYTHON=${ENABLE_PYTHON}
-            -DPREFIX_PYTHON_INSTALL=${PREFIX_PYTHON_INSTALL}
+            -DLIBINT2_REQUIRE_CXX_API=${LIBINT2_REQUIRE_CXX_API}
+            -DLIBINT2_REQUIRE_CXX_API_COMPILED=${LIBINT2_REQUIRE_CXX_API_COMPILED}
+            -DLIBINT2_ENABLE_FORTRAN=${LIBINT2_ENABLE_FORTRAN}
+            -DLIBINT2_ENABLE_PYTHON=${LIBINT2_ENABLE_PYTHON}
+            -DLIBINT2_PREFIX_PYTHON_INSTALL=${LIBINT2_PREFIX_PYTHON_INSTALL}
             -DBUILD_TESTING=${BUILD_TESTING}
-            -DENABLE_MPFR=${ENABLE_MPFR}
+            -DLIBINT2_ENABLE_MPFR=${LIBINT2_ENABLE_MPFR}
             -DLIBINT2_REALTYPE=${LIBINT2_REALTYPE}
             -DENABLE_XHOST=${ENABLE_XHOST}
             )
@@ -110,7 +110,7 @@ else()
                 "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
                 )
     endif()
-    if (ENABLE_FORTRAN AND CMAKE_Fortran_COMPILER)
+    if (LIBINT2_ENABLE_FORTRAN AND CMAKE_Fortran_COMPILER)
         list(APPEND library_CMAKE_ARGS
                 "-DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}"
                 )
@@ -140,9 +140,9 @@ else()
                 "-DCMAKE_DISABLE_FIND_PACKAGE_Boost=${CMAKE_DISABLE_FIND_PACKAGE_Boost}"
                 )
     endif()
-    if (LIBINT_LOCAL_Eigen3_INSTALL)
+    if (LIBINT2_LOCAL_Eigen3_INSTALL)
         list(APPEND library_CMAKE_ARGS
-                "-DLIBINT_LOCAL_Eigen3_INSTALL=${LIBINT_LOCAL_Eigen3_INSTALL}"
+                "-DLIBINT2_LOCAL_Eigen3_INSTALL=${LIBINT2_LOCAL_Eigen3_INSTALL}"
                 )
     endif()
     message(STATUS "invoking ExternalProject_add to build+test Libint library with library_CMAKE_ARGS=${library_CMAKE_ARGS}")
@@ -179,7 +179,7 @@ else()
           # formerly "DEPENDS library-configure" but this built the lib multiple times when tests run in parallel with CTEST_PARALLEL_LEVEL
           )
 
-        if (ENABLE_PYTHON)
+        if (LIBINT2_ENABLE_PYTHON)
             find_package(Python COMPONENTS Interpreter REQUIRED)
             add_custom_target_subproject(libint2 check-python
               COMMAND ${Python_EXECUTABLE} -m setup test

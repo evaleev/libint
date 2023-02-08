@@ -35,31 +35,31 @@ include(options)
 #  <<<  General  >>>
 
 option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
-option_with_print(REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3)" ON)
-option_with_print(REQUIRE_CXX_API_COMPILED "Build C++11 Compiled (not just header-only) targets (requires Eigen3)" ON)
-option_with_print(ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires C and Fortran and Python)" OFF)
-option_with_print(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
-option_with_print(ENABLE_PYTHON "Build Python bindings (requires Python and Pybind11 and Eigen3)" OFF)
-option_with_print(PREFIX_PYTHON_INSTALL "For ENABLE_PYTHON=ON, whether to install the Python module in the Linux manner to CMAKE_INSTALL_PREFIX or to not install it. See target libint2-python-wheel for alternate installation in the Python manner to Python_EXECUTABLE's site-packages." OFF)
+option_with_print(LIBINT2_REQUIRE_CXX_API "C++11 Libint API: define library targets + test (requires Eigen3)" ON)
+option_with_print(LIBINT2_REQUIRE_CXX_API_COMPILED "Build C++11 Compiled (not just header-only) targets (requires Eigen3)" ON)
+option_with_print(LIBINT2_ENABLE_FORTRAN "Build Fortran03+ Libint interface (requires C and Fortran and Python)" OFF)
+option_with_print(LIBINT2_ENABLE_MPFR "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
+option_with_print(LIBINT2_ENABLE_PYTHON "Build Python bindings (requires Python and Pybind11 and Eigen3)" OFF)
+option_with_print(LIBINT2_PREFIX_PYTHON_INSTALL "For LIBINT2_ENABLE_PYTHON=ON, whether to install the Python module in the Linux manner to CMAKE_INSTALL_PREFIX or to not install it. See target libint2-python-wheel for alternate installation in the Python manner to Python_EXECUTABLE's site-packages." OFF)
 option_with_print(BUILD_SHARED_LIBS "Build Libint library as shared, not static" OFF)
 option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)
-option_with_print(LIBINT_LOCAL_Eigen3_INSTALL "Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. In consumer build, set `LIBINT_LOCAL_Eigen3_FIND=ON` before `find_package(Libint2) to load the exported Eigen3." OFF)
+option_with_print(LIBINT2_LOCAL_Eigen3_INSTALL "Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. In consumer build, set `LIBINT2_LOCAL_Eigen3_FIND=ON` before `find_package(Libint2) to load the exported Eigen3." OFF)
 option_with_default(LIBINT2_REALTYPE "Specifies the floating-point data type used by the library." double)
 option_with_print(CMAKE_DISABLE_FIND_PACKAGE_Boost "When Boost required for C++11 API, disable its detection, thereby forcing use of bundled Boost (Standard CMake variable: https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html)" OFF)
 include(xhost)  # defines: option(ENABLE_XHOST "Enable processor-specific optimization" ON)
 
-if ((REQUIRE_CXX_API_COMPILED OR ENABLE_PYTHON) AND NOT REQUIRE_CXX_API)
-    set(REQUIRE_CXX_API 1)
-    message(STATUS "Setting option REQUIRE_CXX_API=ON as needed by REQUIRE_CXX_API_COMPILED=${REQUIRE_CXX_API_COMPILED} and/or ENABLE_PYTHON=${ENABLE_PYTHON}.")
+if ((LIBINT2_REQUIRE_CXX_API_COMPILED OR LIBINT2_ENABLE_PYTHON) AND NOT LIBINT2_REQUIRE_CXX_API)
+    set(LIBINT2_REQUIRE_CXX_API 1)
+    message(STATUS "Setting option LIBINT2_REQUIRE_CXX_API=ON as needed by LIBINT2_REQUIRE_CXX_API_COMPILED=${LIBINT2_REQUIRE_CXX_API_COMPILED} and/or LIBINT2_ENABLE_PYTHON=${LIBINT2_ENABLE_PYTHON}.")
 endif()
 
-if(ENABLE_FORTRAN)
+if(LIBINT2_ENABLE_FORTRAN)
   include(CheckLanguage)
   check_language(Fortran)
   if (CMAKE_Fortran_COMPILER)
     enable_language(Fortran)
   else()
-    message(FATAL_ERROR "Given ENABLE_FORTRAN=ON but could not find Fortran compiler. Provide via CMAKE_Fortran_COMPILER")
+    message(FATAL_ERROR "Given LIBINT2_ENABLE_FORTRAN=ON but could not find Fortran compiler. Provide via CMAKE_Fortran_COMPILER")
   endif()
 endif()
 
@@ -121,11 +121,11 @@ if (TARGET Eigen3::Eigen)
 else()
     set(LIBINT_HAS_CXX_API 0)
 endif()
-if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
-    message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DREQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
+if (LIBINT2_REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
+    message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DLIBINT2_REQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
 endif()
 
-if (ENABLE_MPFR)
+if (LIBINT2_ENABLE_MPFR)
     find_package(Multiprecision MODULE REQUIRED COMPONENTS gmpxx mpfr)
 
     get_property(_loc TARGET Multiprecision::gmp PROPERTY LOCATION)
@@ -136,7 +136,7 @@ if (ENABLE_MPFR)
     message(STATUS "${Cyan}Found MPFR${ColourReset}: ${_loc} (found version ${MPFR_VERSION})")
 endif()
 
-if (REQUIRE_CXX_API)
+if (LIBINT2_REQUIRE_CXX_API)
     find_package(Boost 1.57)
     if (TARGET Boost::headers)
         set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
@@ -161,9 +161,9 @@ endif()
 # Python is optionally used for testing.
 # * But for Fortran, it's additionally required for preprocessing.
 # * And for Python bindings, it's required along with its headers.
-if (ENABLE_PYTHON)
+if (LIBINT2_ENABLE_PYTHON)
     find_package(Python COMPONENTS Interpreter Development REQUIRED)
-elseif (ENABLE_FORTRAN)
+elseif (LIBINT2_ENABLE_FORTRAN)
     find_package(Python COMPONENTS Interpreter REQUIRED)
 else()
     find_package(Python COMPONENTS Interpreter)
@@ -204,7 +204,7 @@ target_include_directories(int-obj PRIVATE ${PROJECT_BINARY_DIR}/include/
                                            ${PROJECT_SOURCE_DIR}/include/libint2/
                                            )
 
-if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS OR (ENABLE_PYTHON AND NOT MSVC))
+if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS OR (LIBINT2_ENABLE_PYTHON AND NOT MSVC))
     set(BUILD_SHARED_LIBS 1)
     set_target_properties(int-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
 endif()
@@ -213,7 +213,7 @@ if (NOT BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
 endif()
 
 # if building CXX API, make an object lib needed for non-header-only version
-if (REQUIRE_CXX_API_COMPILED)
+if (LIBINT2_REQUIRE_CXX_API_COMPILED)
     add_library(int-cxx-compiled-obj OBJECT src/engine.cpp)
 
     target_compile_definitions(
@@ -295,7 +295,7 @@ if (BUILD_SHARED_LIBS)
       )
 
     # C++ library
-    if (REQUIRE_CXX_API)
+    if (LIBINT2_REQUIRE_CXX_API)
         add_library(int-cxx-headeronly-shared INTERFACE)
 
         target_compile_definitions(
@@ -315,7 +315,7 @@ if (BUILD_SHARED_LIBS)
         endif()
 
         # now make the compiled library
-        if (REQUIRE_CXX_API_COMPILED)
+        if (LIBINT2_REQUIRE_CXX_API_COMPILED)
         add_library(int-cxx-compiled-shared SHARED $<TARGET_OBJECTS:int-cxx-compiled-obj>)
 
         if(MSVC)
@@ -379,7 +379,7 @@ if (BUILD_STATIC_LIBS)
       )
 
     # C++ library
-    if (REQUIRE_CXX_API)
+    if (LIBINT2_REQUIRE_CXX_API)
         add_library(int-cxx-headeronly-static INTERFACE)
 
         target_compile_definitions(
@@ -399,7 +399,7 @@ if (BUILD_STATIC_LIBS)
         endif()
 
         # now make the compiled library
-        if (REQUIRE_CXX_API_COMPILED)
+        if (LIBINT2_REQUIRE_CXX_API_COMPILED)
         add_library(int-cxx-compiled-static STATIC $<TARGET_OBJECTS:int-cxx-compiled-obj>)
 
         if(MSVC)
@@ -425,17 +425,17 @@ endif()
 
 if (BUILD_SHARED_LIBS)
     add_library(${L2}::int2 ALIAS int-shared)
-    if (REQUIRE_CXX_API)
+    if (LIBINT2_REQUIRE_CXX_API)
         add_library(${L2}::cxx ALIAS int-cxx-headeronly-shared)
-        if (REQUIRE_CXX_API_COMPILED)
+        if (LIBINT2_REQUIRE_CXX_API_COMPILED)
             add_library(${L2}::int2-cxx ALIAS int-cxx-compiled-shared)
         endif()
     endif()
 elseif (BUILD_STATIC_LIBS)
     add_library(${L2}::int2 ALIAS int-static)
-    if (REQUIRE_CXX_API)
+    if (LIBINT2_REQUIRE_CXX_API)
         add_library(${L2}::cxx ALIAS int-cxx-headeronly-static)
-        if (REQUIRE_CXX_API_COMPILED)
+        if (LIBINT2_REQUIRE_CXX_API_COMPILED)
             add_library(${L2}::int2-cxx ALIAS int-cxx-compiled-static)
         endif()
     endif()
@@ -445,19 +445,19 @@ endif()
 
 if (BUILD_SHARED_LIBS)
     add_library(libint2 ALIAS int-shared)
-    if (REQUIRE_CXX_API)
+    if (LIBINT2_REQUIRE_CXX_API)
         add_library(libint2_cxx ALIAS int-cxx-headeronly-shared)
     endif()
 elseif (BUILD_STATIC_LIBS)
     add_library(libint2 ALIAS int-static)
-    if (REQUIRE_CXX_API)
+    if (LIBINT2_REQUIRE_CXX_API)
         add_library(libint2_cxx ALIAS int-cxx-headeronly-static)
     endif()
 endif()
 
 # Fortran bindings =====================================================================================================
 
-if (ENABLE_FORTRAN)
+if (LIBINT2_ENABLE_FORTRAN)
     # specify the location of modules
     set(BUILDTREE_FMODDIR "fortran/modules")
 
@@ -472,7 +472,7 @@ if (ENABLE_FORTRAN)
         if (CMAKE_C_COMPILER)
           enable_language(C)
         else()
-          message(FATAL_ERROR "Given ENABLE_FORTRAN=ON but could not find C compiler needed to generate Fortran bindings, provide via CMAKE_C_COMPILER")
+          message(FATAL_ERROR "Given LIBINT2_ENABLE_FORTRAN=ON but could not find C compiler needed to generate Fortran bindings, provide via CMAKE_C_COMPILER")
         endif()
 
         # preprocessed libint.h
@@ -553,7 +553,7 @@ endif()
 
 # Python bindings ======================================================================================================
 
-if (ENABLE_PYTHON)
+if (LIBINT2_ENABLE_PYTHON)
     add_subdirectory(python)
 endif()
 
@@ -632,7 +632,7 @@ if (BUILD_STATIC_LIBS)
       )
 endif()
 
-if (LIBINT_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
+if (LIBINT2_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
 
     add_library(Eigen INTERFACE)
     foreach(prop
@@ -724,7 +724,7 @@ if (BUILD_STATIC_LIBS)
       )
 endif()
 
-if (LIBINT_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
+if (LIBINT2_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
     install(
       EXPORT local_set
       FILE "${pnv}-targets-eigen3.cmake"
@@ -739,7 +739,7 @@ endif()
 #   note that FILE something like "fortran-shared" NOT "shared-fortran" or the glob
 #   confused with shared_set
 #
-#    if(ENABLE_FORTRAN)
+#    if(LIBINT2_ENABLE_FORTRAN)
 #        install(
 #          EXPORT fshared_set
 #          FILE "${pnv}-targets-fortran-shared.cmake"

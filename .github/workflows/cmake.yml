@@ -14,14 +14,14 @@ jobs:
             cc: gcc-9
             fc: gfortran-9
             args: >
-              -DENABLE_FORTRAN=ON
+              -DLIBINT2_ENABLE_FORTRAN=ON
 
           - runs-on: macos-latest
             build_type: Release
             cxx: clang++
             cc: clang
             args: >
-              -DENABLE_FORTRAN=ON
+              -DLIBINT2_ENABLE_FORTRAN=ON
               -DCMAKE_Fortran_COMPILER=gfortran-10
 
           - runs-on: windows-2022
@@ -36,14 +36,14 @@ jobs:
             cc: gcc-9
             fc: gfortran-9
             args: >
-              -DENABLE_FORTRAN=ON
+              -DLIBINT2_ENABLE_FORTRAN=ON
 
           - runs-on: macos-latest
             build_type: Debug
             cxx: clang++
             cc: clang
             args: >
-              -DENABLE_FORTRAN=ON
+              -DLIBINT2_ENABLE_FORTRAN=ON
               -DCMAKE_Fortran_COMPILER=gfortran-10
 
     name: "Repo • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
@@ -68,7 +68,7 @@ jobs:
         -DENABLE_ONEBODY=1
         -DDISABLE_ONEBODY_PROPERTY_DERIVS=ON
         -DMULTIPOLE_MAX_ORDER=2
-        -DENABLE_PYTHON=ON
+        -DLIBINT2_ENABLE_PYTHON=ON
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
@@ -240,10 +240,10 @@ jobs:
           - runs-on: ubuntu-latest
             libargs: >
               -DBUILD_SHARED_LIBS=ON
-              -DLIBINT_LOCAL_Eigen3_INSTALL=ON
+              -DLIBINT2_LOCAL_Eigen3_INSTALL=ON
               -DEigen3_ROOT="/usr/share/miniconda3/envs/onlyeigen/"
             testargs: >
-              -DLIBINT_LOCAL_Eigen3_FIND=ON
+              -DLIBINT2_LOCAL_Eigen3_FIND=ON
             # note full paths depend on setup-miniconda:
             # * Miniforge is miniconda3 vs. Miniconda is miniconda
 
@@ -351,7 +351,7 @@ jobs:
           -Bbuild \
           -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
           -DCMAKE_CXX_COMPILER=${CXX} \
-          -DENABLE_PYTHON=ON \
+          -DLIBINT2_ENABLE_PYTHON=ON \
           -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
         cmake --build build --target install libint2-python-check
@@ -376,7 +376,7 @@ jobs:
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/libint/python
       run: |
-        cmake . -D ENABLE_PYTHON=ON -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
+        cmake . -D LIBINT2_ENABLE_PYTHON=ON -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-check
 
