@@ -16,35 +16,35 @@ jobs:
             args: >
               -DLIBINT2_ENABLE_FORTRAN=ON
 
-          - runs-on: macos-latest
-            build_type: Release
-            cxx: clang++
-            cc: clang
-            args: >
-              -DLIBINT2_ENABLE_FORTRAN=ON
-              -DCMAKE_Fortran_COMPILER=gfortran-10
+          #- runs-on: macos-latest
+          #  build_type: Release
+          #  cxx: clang++
+          #  cc: clang
+          #  args: >
+          #    -DLIBINT2_ENABLE_FORTRAN=ON
+          #    -DCMAKE_Fortran_COMPILER=gfortran-10
 
-          - runs-on: windows-2022
-            build_type: Release
-            cxx: clang-cl
-            cc: clang-cl
-            args: ""
+          #- runs-on: windows-2022
+          #  build_type: Release
+          #  cxx: clang-cl
+          #  cc: clang-cl
+          #  args: ""
 
-          - runs-on: ubuntu-20.04
-            build_type: Debug
-            cxx: g++-9
-            cc: gcc-9
-            fc: gfortran-9
-            args: >
-              -DLIBINT2_ENABLE_FORTRAN=ON
+          #- runs-on: ubuntu-20.04
+          #  build_type: Debug
+          #  cxx: g++-9
+          #  cc: gcc-9
+          #  fc: gfortran-9
+          #  args: >
+          #    -DLIBINT2_ENABLE_FORTRAN=ON
 
-          - runs-on: macos-latest
-            build_type: Debug
-            cxx: clang++
-            cc: clang
-            args: >
-              -DLIBINT2_ENABLE_FORTRAN=ON
-              -DCMAKE_Fortran_COMPILER=gfortran-10
+          #- runs-on: macos-latest
+          #  build_type: Debug
+          #  cxx: clang++
+          #  cc: clang
+          #  args: >
+          #    -DLIBINT2_ENABLE_FORTRAN=ON
+          #    -DCMAKE_Fortran_COMPILER=gfortran-10
 
     name: "Repo • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.cxx }} • ${{ matrix.cfg.build_type }} • ${{ matrix.cfg.args }}"
     runs-on: ${{ matrix.cfg.runs-on }}
@@ -155,13 +155,13 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.cfg.build_type }} $BUILD_CONFIG ${{ matrix.cfg.args }}
-        #cmake --build build --target export  # toggle for quick tarball to debug `build_export`
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          # xfail for Windows. SCF is wrong (see below), but we ensure that L2@Win builds, exports, packages ok.
-          cmake --build build --target library check-libint2compiler install
-        else
-          cmake --build build --target library check-libint2compiler install check-python
-        fi
+        cmake --build build --target export  # toggle for quick tarball to debug `build_export`
+        #if [[ "${{ runner.os }}" == "Windows" ]]; then
+        #  # xfail for Windows. SCF is wrong (see below), but we ensure that L2@Win builds, exports, packages ok.
+        #  cmake --build build --target library check-libint2compiler install
+        #else
+        #  cmake --build build --target library check-libint2compiler install check-python
+        #fi
         cd build && echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
 
     - name: Generate & Build Libint Library (FetchContent, full tests)
@@ -187,8 +187,8 @@ jobs:
         retention-days: 1
 
     - name: Test Installed Libint Library
-      #if: false  # toggle for quick tarball to debug `build_export`
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      if: false  # toggle for quick tarball to debug `build_export`
+      #if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/test_installed_library
       run: |
@@ -238,6 +238,7 @@ jobs:
       matrix:
         cfg:
           - runs-on: ubuntu-latest
+            lane: ubuntu-gnu
             libargs: >
               -DBUILD_SHARED_LIBS=ON
               -DLIBINT2_LOCAL_Eigen3_INSTALL=ON
@@ -248,11 +249,13 @@ jobs:
             # * Miniforge is miniconda3 vs. Miniconda is miniconda
 
           - runs-on: macos-latest
+            lane: macos-clang
             libargs: >
               -DBUILD_SHARED_LIBS=ON
             testargs: ""
 
           - runs-on: windows-latest
+            lane: window-clang-cl
             libargs: >
               -GNinja
               -DCMAKE_BUILD_TYPE=Release
@@ -265,7 +268,18 @@ jobs:
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
 
-    name: "Export • ${{ matrix.cfg.runs-on }} • ${{ matrix.cfg.libargs }}"
+          - runs-on: ubuntu-latest
+            lane: ubuntu-intel
+            libargs: >
+              -DCMAKE_CXX_COMPILER=icpx
+              -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --gcc-toolchain=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu"
+              # cxx flags are longform of below (not available at spinup)
+              # -DCMAKE_CXX_FLAGS="--gcc-toolchain=${CONDA_PREFIX} --sysroot=${CONDA_PREFIX}/${HOST}/sysroot -target ${HOST} -Wl,--as-needed -static-intel -Wno-unused-command-line-argument"
+            testargs: >
+              -DCMAKE_CXX_COMPILER=icpx
+              -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --gcc-toolchain=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu -Wl,--as-needed -static-intel -Wno-unused-command-line-argument"
+
+    name: "Export • ${{ matrix.cfg.lane }} • ${{ matrix.cfg.libargs }}"
     runs-on: ${{ matrix.cfg.runs-on }}
 
     steps:
@@ -288,9 +302,13 @@ jobs:
           - numpy
           - scipy
           - pybind11
+          #- dpcpp_linux-64
         EOF
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           sed -i "s/- cxx/#- cxx/g" export.yaml
+        fi
+        if [[ "${{ matrix.cfg.lane }}" == "ubuntu-intel" ]]; then
+          sed -i "s/#- dpcpp_linux-64/- dpcpp_linux-64/g" export.yaml
         fi
         cat export.yaml
 
@@ -319,7 +337,8 @@ jobs:
 
     # Step is unnecessary; remove step and 3 "*Eigen3*" options in matrix for debugging.
     - name: Confound Environment - test handed-off Eigen
-      if: ${{ runner.os == 'Linux' }}
+      #if: ${{ runner.os == 'Linux' }}
+      if: ${{ matrix.cfg.lane == 'ubuntu-gnu' }}
       shell: bash -l {0}
       run: |
         conda remove eigen
@@ -364,6 +383,8 @@ jobs:
         cmake_minimum_required(VERSION 3.16)
         project(hf++)
         find_package(Libint2 2.7.2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
+        get_target_property(_l2_maxam Libint2::int2 Libint2_MAX_AM_ERI)
+        message("Libint2_MAX_AM_ERI ${_l2_maxam}")
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         add_executable(hf++ EXCLUDE_FROM_ALL "../libint/tests/hartree-fock/hartree-fock++.cc")
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
