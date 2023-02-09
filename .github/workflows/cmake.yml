@@ -374,7 +374,6 @@ jobs:
           -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
           ${{ matrix.cfg.libargs }}
         cmake --build build --target install libint2-python-check
-        cat /home/runner/work/libint/libint/installed/lib/cmake/libint2/libint2-targets-shared.cmake
 
     - name: Test Installed Libint library
       shell: bash -l {0}
@@ -385,7 +384,7 @@ jobs:
         project(hf++)
         find_package(Libint2 2.7.2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
         get_target_property(_l2_maxam Libint2::int2 Libint2_MAX_AM_ERI)
-        message("Libint2_MAX_AM_ERI ${_l2_maxam}")
+        message("Libint2_MAX_AM_ERI \${_l2_maxam}")
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         add_executable(hf++ EXCLUDE_FROM_ALL "../libint/tests/hartree-fock/hartree-fock++.cc")
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)

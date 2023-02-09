@@ -159,7 +159,7 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 * Notes
   * Codes "G", "L", or "C" for each option indicate whether it is consumed by the _g_enerator, the _l_ibrary, the library _c_onsumer, or a combination.
     * If your final target is the export tarball, use options that include the letter "G".
-    * If you're building a library from an export tarball, use options that include the letter "L".
+    * If you're building a library from an export TARBALL, use options that include the letter "L".
     * For a continuous generator->export->library build, options supplied at the top level will be properly handed off to generator and library build.
   * See [Update Guide](gnu-autotools-update-guide) for new names for old options.
 
@@ -276,16 +276,16 @@ Use combined targets like `cmake --target check install` to avoid some unnecessa
 
 * `Python_EXECUTABLE` — L — Path to Python interpreter.
 * `CMAKE_PREFIX_PATH` — G L — Set to list of root directories to look for external dependencies. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html)
-* `BOOST_ROOT` — G L C —
-* `Multiprecision_ROOT` — G L —
-* `Eigen3_ROOT` — L C — Prefix to installation location (`Eigen3_ROOT/...` exists)
-* `Libint2_DIR` — C — CMake variable, set to directory containing this Config file
-* `LIBINT2_LOCAL_Eigen3_FIND` — C — Set to `ON` before `find_package(Libint2)` to load the Eigen3 target exported by `LIBINT2_LOCAL_Eigen3_INSTALL=ON` if Libint library built locally. [Default=OFF]
+* `BOOST_ROOT` — G L C — Prefix to installation location (`BOOST_ROOT/include/boost/` exists)
+* `Boost_DIR` - G L C - Path to installation location of Boost's config file (`Boost_DIR/BoostConfig.cmake` exists)
 * `CMAKE_DISABLE_FIND_PACKAGE_Boost` — L — When Boost required for C++11 Libint API, disable its detection, thereby forcing use of bundled Boost. Note that this (and other Boost-hinting variables) can affect what is installed [see here](#packagers). [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html). [Default=OFF]
-
-Eigen3_DIR
-Boost_DIR
-EIGEN3_INCLUDE_DIR?
+* `Eigen3_ROOT` — L C — Prefix to installation location (`Eigen3_ROOT/include/eigen3/Eigen/Core` exists)
+* `EIGEN3_INCLUDE_DIR` — L C — Path to installation location of Eigen's header files (`EIGEN3_INCLUDE_DIR/include/eigen3` exists)
+* `Eigen3_DIR` – L C – Path to installation location of Eigen's config file (`Eigen3_DIR/Eigen3Config.cmake` exists)
+* `Multiprecision_ROOT` — G L — Prefix to installation location (`Multiprecision_ROOT/` contains headers like gmp.h, gmpxx.h, mpfr.h)
+* `Libint2_DIR` — C — CMake variable, set to directory containing this Config file
+* `Libint2_DIR` — C — Path to installation location of Libint2's config file (`Libint2_DIR/libint2-config.cmake` exists)
+* `LIBINT2_LOCAL_Eigen3_FIND` — C — Set to `ON` before `find_package(Libint2)` to load the Eigen3 target exported by `LIBINT2_LOCAL_Eigen3_INSTALL=ON` if Libint library built locally. [Default=OFF]
 
 * Hint dependency locations all at the same installation prefix:
 
@@ -318,11 +318,6 @@ EIGEN3_INCLUDE_DIR?
   -D Boost_DIR="/home/miniconda/envs/onlyboost/lib/cmake/Boost-1.73.0"
   ```
 
-* Hint dependency locations targeted by package variables (least CMake-like): UNTESTED
-
-  ```
-  ```
-
 
 ### Build Library What (L)
 
@@ -341,7 +336,7 @@ EIGEN3_INCLUDE_DIR?
 * `LIBINT2_BUILD_SHARED_AND_STATIC_LIBS` — L — Build both shared and static Libint libraries in one shot. Uses `-fPIC`. [Default=OFF]
 * `ENABLE_XHOST` — L — Enables processor-specific optimization (with MSVC, it enables AVX2 instructions) [Default=ON]
 * `BUILD_TESTING` — G L — Whether to build the testing infrastructure and define the `check` target. [Standard CMake variable](https://cmake.org/cmake/help/latest/command/enable_testing.html) [Default=ON]
-* `LIBINT_BUILD_LIBRARY_AS_SUBPROJECT` — G — If building compiler and library in continuous command, build generated library as a subproject; if OFF will configure and build separately (expert only). [Default=OFF]
+* `LIBINT_BUILD_LIBRARY_AS_SUBPROJECT` — G — If building compiler and library in continuous command, build generated library as a subproject (FetchContent); if OFF will configure and build separately (ExternalProject) (expert only). [Default=OFF]
 
 
 ### Miscellaneous
@@ -450,14 +445,17 @@ EIGEN3_INCLUDE_DIR?
 * `-D LIBINT_LOCAL_Eigen3_INSTALL` --> `-D LIBINT2_LOCAL_Eigen3_INSTALL`
 * `-D LIBINT_LOCAL_Eigen3_FIND` --> `-D LIBINT2_LOCAL_Eigen3_FIND`
 
+
 -----------------------------------------------------------------------------
 
 # Consuming Libint
+
 
 ### Programming to Access Integrals
 
 * if you use C++11 or later (strongly recommended): read the [Libint Wiki](https://github.com/evaleev/libint/wiki/using-modern-CPlusPlus-API)
 * if you use pre-2011 C++, C, Fortran, or any other language, refer to the [Libint Programmer's Manual](https://sourceforge.net/projects/libint/files/libint-for-beginners/progman-2.0.3-stable.pdf/download) for brief information on how to use the library in your code.
+
 
 ### Consumption Targets
 
@@ -492,13 +490,21 @@ EIGEN3_INCLUDE_DIR?
 
 # Platform-Specific Notes
 
+See the [continuous integration](https://github.com/evaleev/libint/blob/master/.github/workflows/cmake.yml) for working examples of compiling on different platforms.
+
+
 ### Linux
+
+* With Intel compilers, there have been problems using tarballs generated with it. Save Intel compilers for compiling the library.
+* With older Intel compilers, there have been problems compiling Libint2 headers with c++17. This is no longer seen by 2023.0 compiler version.
+
 
 ### macOS
 
 * Apple `clang++` and [MacPorts](http://www.macports.org/) `g++` (4.8) both work with `-std=c++11` flag
 * MacPorts gmp package works fine
 * On macOS the default `ar` program lacks support for response files (e.g., https://github.com/evaleev/libint/issues/135 and see https://gitlab.kitware.com/cmake/cmake/issues/16731). Thus you should install the GNU `ar` program (e.g., using HomeBrew: `brew install binutils`) and tell CMake to use it (e.g., add `-DCMAKE_AR=/usr/local/opt/binutils/bin/ar` to the CMake command line).
+
 
 ### Windows
 
@@ -510,6 +516,7 @@ EIGEN3_INCLUDE_DIR?
 -----------------------------------------------------------------------------
 
 # Program-Specific Notes
+
 
 ### mpqc4
 
@@ -525,6 +532,7 @@ EIGEN3_INCLUDE_DIR?
   --enable-eri=0 --with-max-am=7 --with-opt-am=4 --disable-unrolling --enable-generic-code --enable-contracted-ints
   ```
 
+
 ### gamess
 
 * standard libtool configuration:
@@ -532,6 +540,7 @@ EIGEN3_INCLUDE_DIR?
   ```
   --enable-eri=0 --with-max-am=7 --with-opt-am=4 --disable-unrolling --enable-generic-code --enable-contracted-ints --with-cartgauss-ordering=gamess
   ```
+
 
 ### orca
 
@@ -541,6 +550,7 @@ EIGEN3_INCLUDE_DIR?
   ```
   --enable-eri=2 --enable-eri3=2 --enable-eri2=2 --with-max-am=7 --with-opt-am=4 --with-eri-max-am=7,4,3 --with-eri-opt-am=4,3,2 --disable-unrolling --enable-generic-code --enable-contracted-ints --with-cartgauss-ordering=orca --with-shell-set=orca --enable-eri3-pure-sh --enable-eri2-pure-sh
   ```
+
 
 ### bagel
 
@@ -554,13 +564,14 @@ EIGEN3_INCLUDE_DIR?
 * if you want to use spherical Gaussians only add: `--enable-eri3-pure-sh --enable-eri2-pure-sh` (some tests may fail)
 * It appears that on a Mac Libint and BAGEL must be either both static or both shared (2/3/2014)
 
+
 ### psi4
 
 * production CMake configuration:
 
   ```
   -D LIBINT2_REQUIRE_CXX_API=ON
-  -D LIBINT2_SHGAUSS_ORDERING=gaussian
+  -D LIBINT2_SHGAUSS_ORDERING=standard
   -D LIBINT2_CARTGAUSS_ORDERING=standard
   -D LIBINT2_SHELL_SET=standard
   -D ERI3_PURE_SH=OFF
@@ -569,11 +580,14 @@ EIGEN3_INCLUDE_DIR?
   -D ENABLE_ERI3=2
   -D ENABLE_ERI2=2
   -D ENABLE_ONEBODY=2
+  -D ENABLE_G12=1
+  -D DISABLE_ONEBODY_PROPERTY_DERIVS=ON
   -D MULTIPOLE_MAX_ORDER=4
   -D WITH_MAX_AM="6;5;4"
   -D WITH_ERI_MAX_AM="5;4;3"
   -D WITH_ERI3_MAX_AM="6;5;4"
   -D WITH_ERI2_MAX_AM="6;5;4"
+  -D WITH_G12_MAX_AM=4
   ```
 
 * minimal detection:
@@ -583,7 +597,7 @@ EIGEN3_INCLUDE_DIR?
     Libint2
     COMPONENTS
       CXX_ho
-      gss
+      sss
       impure_sh
       eri_c4_d0_l3  eri_c3_d0_l4  eri_c2_d0_l4  onebody_d0_l4
       eri_c4_d1_l2  eri_c3_d1_l3  eri_c2_d1_l3  onebody_d1_l3
@@ -591,16 +605,8 @@ EIGEN3_INCLUDE_DIR?
     )
   ```
 
+
 * see [notes](https://github.com/psi4/psi4/blob/master/external/upstream/libint2/CMakeLists.txt) for details of Psi4/Libint2 configuration
-
-* Psi4 near-future configuration additions:
-
-  ```
-    -DDISABLE_ONEBODY_PROPERTY_DERIVS=OFF
-    -DENABLE_G12=1
-    -DWITH_G12_MAX_AM=4
-    -DWITH_G12_OPT_AM=3
-  ```
 
 
 -----------------------------------------------------------------------------

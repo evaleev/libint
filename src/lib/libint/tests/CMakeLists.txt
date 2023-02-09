@@ -2,11 +2,14 @@ include(AddCustomTargetSubproject)
 add_custom_target_subproject(libint2 check USES_TERMINAL COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/")
 add_dependencies(check-libint2 Libint2::int2)
 
+# Note: if forming compile line by hand rather than using targets, you'll need to include the header toggle
+#   if compiling within the build tree (as opposed to linking to installed targets)
+#   `target_compile_definitions(... PRIVATE -D__COMPILING_LIBINT2=1)`
+
 add_executable(eritest-libint2 EXCLUDE_FROM_ALL eri/test.cc)
 target_link_libraries(eritest-libint2 Libint2::int2)  # N.B. plain library
 target_include_directories(eritest-libint2 PRIVATE eri
         ${CMAKE_CURRENT_BINARY_DIR}/../include)
-target_compile_definitions(eritest-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 if (TARGET Multiprecision::mpfr)
     target_compile_definitions(eritest-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
     target_link_libraries(eritest-libint2 Multiprecision::mpfr)
@@ -69,7 +72,7 @@ if (LIBINT_HAS_CXX_API)
         ${unit_tests_s-src})
     target_link_libraries(unit_tests_s-libint2 Libint2::cxx) # N.B. cxx header-only library
     target_include_directories(unit_tests_s-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
-    target_compile_definitions(unit_tests_s-libint2 PRIVATE -D__COMPILING_LIBINT2=1 -DNO_LIBINT_COMPILER_CODE=1)
+    target_compile_definitions(unit_tests_s-libint2 PRIVATE -DNO_LIBINT_COMPILER_CODE=1)
     if (TARGET Multiprecision::mpfr)
         target_compile_definitions(unit_tests_s-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
         target_link_libraries(unit_tests_s-libint2 Multiprecision::mpfr)
@@ -79,7 +82,7 @@ if (LIBINT_HAS_CXX_API)
         ${unit_tests_g-src})
     target_link_libraries(unit_tests_g-libint2 Libint2::cxx) # N.B. cxx header-only library
     target_include_directories(unit_tests_g-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
-    target_compile_definitions(unit_tests_g-libint2 PRIVATE -D__COMPILING_LIBINT2=1 -DNO_LIBINT_COMPILER_CODE=1)
+    target_compile_definitions(unit_tests_g-libint2 PRIVATE -DNO_LIBINT_COMPILER_CODE=1)
     if (TARGET Multiprecision::mpfr)
         target_compile_definitions(unit_tests_g-libint2 PRIVATE -DLIBINT_HAS_MPFR=1)
         target_link_libraries(unit_tests_g-libint2 Multiprecision::mpfr)
@@ -106,7 +109,6 @@ if (LIBINT_HAS_CXX_API)
     add_executable(hf-libint2 EXCLUDE_FROM_ALL hartree-fock/hartree-fock.cc)
     target_link_libraries(hf-libint2 Libint2::cxx) # N.B. cxx library
     target_include_directories(hf-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
-    target_compile_definitions(hf-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
     # Test 11
     add_test(libint2/hf/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf-libint2)
@@ -132,9 +134,8 @@ if (LIBINT_HAS_CXX_API)
 
     find_package(Threads)  # for some reason clang does not link in threading support even though we are using C++ threads
     add_executable(hf++-libint2 EXCLUDE_FROM_ALL hartree-fock/hartree-fock++.cc)
-    target_link_libraries(hf++-libint2 Libint2::cxx ${CMAKE_THREAD_LIBS_INIT})  # N.B. cxx library
+    target_link_libraries(hf++-libint2 Libint2::cxx Threads::Threads ${CMAKE_THREAD_LIBS_INIT})  # N.B. cxx library
     target_include_directories(hf++-libint2 PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../include)
-    target_compile_definitions(hf++-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
     # Test 13
     add_test(libint2/hf++/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf++-libint2)
@@ -160,7 +161,7 @@ if (LIBINT_HAS_CXX_API)
 
 endif()
 
-if (ENABLE_FORTRAN)
+if (LIBINT2_ENABLE_FORTRAN)
 
     # Note: if forming compile line by hand rather than using targets, you'll need to include the Fortran module file directory:
     #   `target_include_directories(... PRIVATE $<TARGET_PROPERTY:libint_f,Fortran_MODULE_DIRECTORY>)`
@@ -168,7 +169,6 @@ if (ENABLE_FORTRAN)
     # tests
     add_executable(fortran_example-libint2 EXCLUDE_FROM_ALL fortran/fortran_example.F90)
     target_link_libraries(fortran_example-libint2 Libint2::int2 libint_f)
-    target_compile_definitions(fortran_example-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
     # Test 15
     add_test(libint2/fortran_example/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_example-libint2)
@@ -182,7 +182,6 @@ if (ENABLE_FORTRAN)
     if (LIBINT_HAS_CXX_API)
         add_executable(fortran_test-libint2 EXCLUDE_FROM_ALL fortran/test.cc fortran/test-eri.cc $<TARGET_OBJECTS:libint_f>)
         target_link_libraries(fortran_test-libint2 Libint2::cxx libint_f)
-        target_compile_definitions(fortran_test-libint2 PRIVATE -D__COMPILING_LIBINT2=1)
 
         # Test 17
         add_test(libint2/fortran_test/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target fortran_test-libint2)

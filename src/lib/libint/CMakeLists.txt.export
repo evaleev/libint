@@ -262,6 +262,12 @@ endif()
 if (BUILD_SHARED_LIBS)
     add_library(int-shared SHARED $<TARGET_OBJECTS:int-obj>)
 
+    target_compile_definitions(
+      int-shared
+      INTERFACE
+        $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
+    )
+
     if(MSVC)
         target_compile_definitions(int-shared PUBLIC _USE_MATH_DEFINES)
         target_compile_options(int-shared PUBLIC "/EHsc")
@@ -369,6 +375,12 @@ if (BUILD_STATIC_LIBS)
     add_library(int-static STATIC $<TARGET_OBJECTS:int-obj>)
 
     target_compile_features(int-static INTERFACE "cxx_std_11")
+
+    target_compile_definitions(
+      int-static
+      INTERFACE
+        $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
+    )
 
     if(MSVC)
         target_compile_definitions(int-static PUBLIC _USE_MATH_DEFINES)
