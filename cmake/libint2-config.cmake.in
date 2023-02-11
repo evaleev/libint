@@ -9,7 +9,22 @@
 #   Libint2_FOUND - true if Libint2 and all required components found on the system
 #   Libint2_VERSION - Libint2 version in format Major.Minor.Release
 #   Libint2_EXT_VERSION - Libint2 version including the (optional) buildid, such as beta.3
-#   Libint2_MAX_AM_ERI - maximum angular momentum level of Libint2 libraries
+#   Libint2_MAX_AM_ERI - maximum angular momentum level of Libint2 libraries for 4-center integrals
+#
+#
+# Target variables:
+#
+# It is preferred to use properties set on the base target rather than using the above variables.
+#
+# ::
+#
+#   Libint2_VERSION - Libint2 version in format Major.Minor.Release
+#   Libint2_MAX_AM_ERI - maximum angular momentum level of Libint2 libraries for 4-center integrals
+#   Libint2_CONFIGURATION - list of library configuration characteristics such as orderings, integrals
+#     classes, and derivative and angular momentum limits. These use the notation of CMake components
+#     (see next section), excepting the build characteristics like shared/static and C/CXX_ho/CXX/Fortran.
+#
+#   get_property(_ver TARGET Libint2::int2 PROPERTY Libint2_VERSION)
 #
 #
 # Available components:
