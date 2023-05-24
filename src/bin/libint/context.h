@@ -204,7 +204,7 @@ namespace libint2 {
   /**
      CppCodeContext is an implementation of CodeContext for C++
   */
-  class CppCodeContext : public CodeContext, public EnableSafePtrFromThis<CppCodeContext> {
+  class CppCodeContext : public CodeContext, public std::enable_shared_from_this<CppCodeContext> {
   public:
     CppCodeContext(const SafePtr<CompilationParameters>& cparams, bool vectorize = false);
     virtual ~CppCodeContext();

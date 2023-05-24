@@ -60,7 +60,7 @@ namespace libint2 {
       an object of type 'vertices'.
    */
 
-  class DirectedGraph : public EnableSafePtrFromThis<DirectedGraph> {
+  class DirectedGraph : public std::enable_shared_from_this<DirectedGraph> {
   public:
     typedef DGVertex vertex;
     typedef DGArc arc;

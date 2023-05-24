@@ -388,7 +388,7 @@ namespace libint2 {
         SafePtr<ThisType> this_ptr =
         const_pointer_cast<ThisType,const ThisType>(
             static_pointer_cast<const ThisType, const ParentType>(
-                EnableSafePtrFromThis<ParentType>::shared_from_this()
+                std::enable_shared_from_this<ParentType>::shared_from_this()
             )
         );
         rrstack->find(this_ptr);

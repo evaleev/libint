@@ -96,7 +96,7 @@ namespace libint2 {
   /**
      RecurrenceRelation describes all recurrence relations
   */
-  class RecurrenceRelation : public EnableSafePtrFromThis<RecurrenceRelation> {
+  class RecurrenceRelation : public std::enable_shared_from_this<RecurrenceRelation> {
   public:
     typedef RecurrenceRelation this_type;
 
@@ -197,7 +197,7 @@ namespace libint2 {
       SafePtr<RR> this_ptr =
         const_pointer_cast<RR,const RR>(
           static_pointer_cast<const RR, const RecurrenceRelation>(
-            EnableSafePtrFromThis<RecurrenceRelation>::shared_from_this()
+            std::enable_shared_from_this<RecurrenceRelation>::shared_from_this()
           )
         );
       rrstack->find(this_ptr);

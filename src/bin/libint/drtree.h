@@ -29,7 +29,7 @@ namespace libint2 {
   
   /// This is a directed rooted tree
   class DRTree :
-    public EnableSafePtrFromThis<DRTree>
+    public std::enable_shared_from_this<DRTree>
   {
     public:
     typedef DRTree this_type;

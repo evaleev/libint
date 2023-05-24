@@ -88,7 +88,7 @@ namespace libint2 {
   template <class Oper, class BFS, class BraSetType, class KetSetType, class AuxQuanta = EmptySet>
     class GenIntegralSet :
     public IntegralSet<BFS>, public DGVertex,
-    public EnableSafePtrFromThis< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >
+    public std::enable_shared_from_this< GenIntegralSet<Oper,BFS,BraSetType,KetSetType,AuxQuanta> >
     {
       public:
       typedef GenIntegralSet this_type;
@@ -389,7 +389,7 @@ namespace libint2 {
     void
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::unregister() const
     {
-      singl_manager_.remove(const_pointer_cast<this_type,const this_type>(EnableSafePtrFromThis<this_type>::shared_from_this()));
+      singl_manager_.remove(const_pointer_cast<this_type,const this_type>(std::enable_shared_from_this<this_type>::shared_from_this()));
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
@@ -405,7 +405,7 @@ namespace libint2 {
     size_ = bra_.size() * ket_.size() * O_->num_oper();
 #else
       // compute size
-      SafePtr<this_type> this_ptr = const_pointer_cast<this_type,const this_type>(EnableSafePtrFromThis<GenIntegralSet>::shared_from_this());
+      SafePtr<this_type> this_ptr = const_pointer_cast<this_type,const this_type>(std::enable_shared_from_this<GenIntegralSet>::shared_from_this());
       SafePtr< SubIteratorBase<this_type> > siter(new SubIteratorBase<this_type>(this_ptr));
       size_ = siter->num_iter();
       if (size_ == 0)
