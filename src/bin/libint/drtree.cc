@@ -68,7 +68,7 @@ DRTree::add_vertex(const SafePtr<DGVertex>& vertex)
   if ( (vertex->num_entry_arcs() <= 1 || vertex == root()) ) {
     if (vertex->subtree_)
       throw ProgrammingError("DRTree::add_vertex() -- vertex is on a subtree already");
-    vertex->subtree_ = EnableSafePtrFromThis<this_type>::SafePtr_from_this();
+    vertex->subtree_ = EnableSafePtrFromThis<this_type>::shared_from_this();
     ++nvertices_;
 #if LOCAL_DEBUG
     std::cout << "Vertex " << vertex->label() << " is on the following subtree:" << std::endl;

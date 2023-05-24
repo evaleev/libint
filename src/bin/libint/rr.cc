@@ -165,7 +165,7 @@ RecurrenceRelation::generate_code(const SafePtr<CodeContext>& context,
 #endif
 
   // get this RR InstanceID
-  RRStack::InstanceID myid = RRStack::Instance()->find(EnableSafePtrFromThis<this_type>::SafePtr_from_this()).first;
+  RRStack::InstanceID myid = RRStack::Instance()->find(EnableSafePtrFromThis<this_type>::shared_from_this()).first;
 
   // For each task which requires this RR:
   // 1) update max stack size

@@ -27,7 +27,6 @@
 namespace libint2 {
 template<typename T> using SafePtr = std::shared_ptr<T>;
 template<typename T> using EnableSafePtrFromThis = std::enable_shared_from_this<T>;
-#define SafePtr_from_this shared_from_this
 using std::const_pointer_cast;
 using std::dynamic_pointer_cast;
 using std::static_pointer_cast;

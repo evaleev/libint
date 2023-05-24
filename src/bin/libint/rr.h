@@ -197,7 +197,7 @@ namespace libint2 {
       SafePtr<RR> this_ptr =
         const_pointer_cast<RR,const RR>(
           static_pointer_cast<const RR, const RecurrenceRelation>(
-            EnableSafePtrFromThis<RecurrenceRelation>::SafePtr_from_this()
+            EnableSafePtrFromThis<RecurrenceRelation>::shared_from_this()
           )
         );
       rrstack->find(this_ptr);
