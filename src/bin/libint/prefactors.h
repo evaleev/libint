@@ -53,17 +53,17 @@ namespace libint2 {
        X-Y vectors, where X and Y are for the same particle:
        X_Y[0] = AB, X_Y[1] = CD, etc.
      */
-    SafePtr<rdouble> vX_Y[np];
+    std::shared_ptr<rdouble> vX_Y[np];
     /// Cartesian components of X-Y vectors
-    SafePtr<rdouble> X_Y[np][3];
+    std::shared_ptr<rdouble> X_Y[np][3];
 
     /**
        Y-X vectors, where X and Y are for the same particle:
        Y_X[0] = BA, Y_X[1] = DC, etc.
      */
-    SafePtr<rdouble> vY_X[np];
+    std::shared_ptr<rdouble> vY_X[np];
     /// Cartesian components of Y_X vectors
-    SafePtr<rdouble> Y_X[np][3];
+    std::shared_ptr<rdouble> Y_X[np][3];
 
     /**
        XY-X vectors:
@@ -72,50 +72,50 @@ namespace libint2 {
        Hence, vXY_X[0][0] = P-A, vXY_X[1][0] = Q-C,
        vXY_X[0][1] = P-B, and vXY_X[1][1] = Q-D.
     */
-    SafePtr<rdouble> vXY_X[np][2];
+    std::shared_ptr<rdouble> vXY_X[np][2];
     /// cartesian components of vXY_X vector
-    SafePtr<rdouble> XY_X[np][2][3];
+    std::shared_ptr<rdouble> XY_X[np][2][3];
     /**
        W-XY vectors:
        vW_XY[0] = W-P, vW_XY[1] = W-Q.
     */
-    SafePtr<rdouble> vW_XY[np];
+    std::shared_ptr<rdouble> vW_XY[np];
     /// cartesian components of W_XY vector
-    SafePtr<rdouble> W_XY[np][3];
+    std::shared_ptr<rdouble> W_XY[np][3];
 
     /**
        orbital exponents
     */
-    SafePtr<rdouble> zeta[np][2];
+    std::shared_ptr<rdouble> zeta[np][2];
     /**
        squared orbital exponents
     */
-    SafePtr<rdouble> zeta2[np][2];
+    std::shared_ptr<rdouble> zeta2[np][2];
 
     /**
        alpha12[p] is the sum of exponents for particle p:
        alpha12[0] = zeta,
        alpha12[1] = eta.
     */
-    SafePtr<rdouble> alpha12[np];
+    std::shared_ptr<rdouble> alpha12[np];
     /// rho = zeta*eta/(zeta+eta)
-    SafePtr<rdouble> rho;
+    std::shared_ptr<rdouble> rho;
     /// 1/(2*alpha12)
-    SafePtr<rdouble> one_o_2alpha12[np];
+    std::shared_ptr<rdouble> one_o_2alpha12[np];
     /// rho/alpha12
-    SafePtr<rdouble> rho_o_alpha12[np];
+    std::shared_ptr<rdouble> rho_o_alpha12[np];
     /// 1/(2*(zeta+eta))
-    SafePtr<rdouble> one_o_2alphasum;
+    std::shared_ptr<rdouble> one_o_2alphasum;
 
     /**
     Prefactors for the ITR relation for TwoPRep integrals (a+1 0|c0):
     */
     /// prefactor in front of (a0|c0) = -(zeta[0][1] AB + zeta[1][1] CD)/alpha12[0]
-    SafePtr<rdouble> TwoPRepITR_vpfac0[np];
+    std::shared_ptr<rdouble> TwoPRepITR_vpfac0[np];
     /// cartesian components of pfac0 vector
-    SafePtr<rdouble> TwoPRepITR_pfac0[np][3];
+    std::shared_ptr<rdouble> TwoPRepITR_pfac0[np][3];
     /// prefactor in front of (a0|c+1 0) = -alpha12[1]/alpha12[0]
-    SafePtr<rdouble> TwoPRepITR_pfac1[np];
+    std::shared_ptr<rdouble> TwoPRepITR_pfac1[np];
     /// prefactor in front of (a-1 0|c0) is one_o_2alpha12[0]
     /// prefactor in front of (a0|c-1 0) is one_o_2alpha12[0]
 
@@ -123,32 +123,32 @@ namespace libint2 {
        Prefactors for the VRR relation for R12_k_G12 integrals (k>=0):
     */
     /// prefactor in front of (a0|c0)
-    SafePtr<rdouble> R12kG12VRR_vpfac0[np];
+    std::shared_ptr<rdouble> R12kG12VRR_vpfac0[np];
     /// cartesian components of pfac0 vector
-    SafePtr<rdouble> R12kG12VRR_pfac0[np][3];
+    std::shared_ptr<rdouble> R12kG12VRR_pfac0[np][3];
     /// prefactor in front of (a-1 0|c0)
-    SafePtr<rdouble> R12kG12VRR_pfac1[np];
+    std::shared_ptr<rdouble> R12kG12VRR_pfac1[np];
     /// prefactor in front of (a0|c-1 0)
-    SafePtr<rdouble> R12kG12VRR_pfac2;
+    std::shared_ptr<rdouble> R12kG12VRR_pfac2;
     /// prefactor in front of (|k-2|)
-    SafePtr<rdouble> R12kG12VRR_pfac3[np];
+    std::shared_ptr<rdouble> R12kG12VRR_pfac3[np];
     /// prefactor in front of (a0|k-2|c0)
-    SafePtr<rdouble> R12kG12VRR_vpfac4[np];
+    std::shared_ptr<rdouble> R12kG12VRR_vpfac4[np];
     /// cartesian components of pfac4 vector
-    SafePtr<rdouble> R12kG12VRR_pfac4[np][3];
+    std::shared_ptr<rdouble> R12kG12VRR_pfac4[np][3];
 
     /**
      * Precomputed 1-d integrals
      */
     /// (0|0)_xyz 1-d overlap integrals
-    SafePtr<rdouble> Overlap00_1d[3];
+    std::shared_ptr<rdouble> Overlap00_1d[3];
 
 
 #if CTIMEENTITIES_SINGLETONS
     /// integers represented as doubles
-    SafePtr<cdouble> N_i[NMAX];
+    std::shared_ptr<cdouble> N_i[NMAX];
 
-    SafePtr<cdouble> Cdouble(double a);
+    std::shared_ptr<cdouble> Cdouble(double a);
 #endif
 
   private:
@@ -161,35 +161,35 @@ namespace libint2 {
 
     template <typename T> struct RTimeSingletons {
       typedef SingletonStack<RTimeEntity<T>,typename RTimeEntity<T>::key_type> ManagerType;
-      static SafePtr<ManagerType>& Manager() {
+      static std::shared_ptr<ManagerType>& Manager() {
         if (manager_ == 0) {
-          manager_ = SafePtr<ManagerType>(new ManagerType(&RTimeEntity<T>::key));
+          manager_ = std::shared_ptr<ManagerType>(new ManagerType(&RTimeEntity<T>::key));
         }
         return manager_;
       }
-      static SafePtr<ManagerType> manager_;
+      static std::shared_ptr<ManagerType> manager_;
     };
-    template <typename T> SafePtr<typename RTimeSingletons<T>::ManagerType> RTimeSingletons<T>::manager_;
+    template <typename T> std::shared_ptr<typename RTimeSingletons<T>::ManagerType> RTimeSingletons<T>::manager_;
 
 #if CTIMEENTITIES_SINGLETONS
     template <typename T> struct CTimeSingletons {
       typedef SingletonStack<CTimeEntity<T>,T> ManagerType;
-      static SafePtr<ManagerType>& Manager() {
+      static std::shared_ptr<ManagerType>& Manager() {
         if (manager_ == 0) {
-          manager_ = SafePtr<ManagerType>(new ManagerType(&CTimeEntity<T>::value));
+          manager_ = std::shared_ptr<ManagerType>(new ManagerType(&CTimeEntity<T>::value));
         }
         return manager_;
       }
-      static SafePtr<ManagerType> manager_;
+      static std::shared_ptr<ManagerType> manager_;
     };
-    template <typename T> SafePtr<typename CTimeSingletons<T>::ManagerType> CTimeSingletons<T>::manager_;
+    template <typename T> std::shared_ptr<typename CTimeSingletons<T>::ManagerType> CTimeSingletons<T>::manager_;
 #endif
 
     /// make a floating-point compile-time quantity from an integer
     template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
-    SafePtr< CTimeEntity<double> > Scalar(T a) {
+    std::shared_ptr< CTimeEntity<double> > Scalar(T a) {
       typedef CTimeEntity<double> return_type;
-      SafePtr<return_type> tmp(new return_type(a));
+      std::shared_ptr<return_type> tmp(new return_type(a));
 #if CTIMEENTITIES_SINGLETONS
       typedef CTimeSingletons<double> singletons_type;
       typedef typename singletons_type::ManagerType ManagerType;
@@ -200,9 +200,9 @@ namespace libint2 {
 #endif
     }
     /// make a compile-time quantity
-    inline SafePtr< CTimeEntity<double> > Scalar(double a) {
+    inline std::shared_ptr< CTimeEntity<double> > Scalar(double a) {
       typedef CTimeEntity<double> return_type;
-      SafePtr<return_type> tmp(new return_type(a));
+      std::shared_ptr<return_type> tmp(new return_type(a));
 #if CTIMEENTITIES_SINGLETONS
       typedef CTimeSingletons<double> singletons_type;
       typedef typename singletons_type::ManagerType ManagerType;
@@ -213,22 +213,22 @@ namespace libint2 {
 #endif
     }
     /// make a runtime quantity
-//    inline SafePtr< RTimeEntity<double> > Scalar(const char* id) {
+//    inline std::shared_ptr< RTimeEntity<double> > Scalar(const char* id) {
 //      typedef double T;
 //      typedef RTimeEntity<T> return_type;
 //      typedef RTimeSingletons<T> singletons_type;
 //      typedef singletons_type::ManagerType ManagerType;
-//      SafePtr<return_type> tmp(new return_type(id));
+//      std::shared_ptr<return_type> tmp(new return_type(id));
 //      const ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
 //      return result.second;
 //    }
     /// make a runtime quantity
-    inline SafePtr< RTimeEntity<double> > Scalar(const std::string& id) {
+    inline std::shared_ptr< RTimeEntity<double> > Scalar(const std::string& id) {
       typedef double T;
       typedef RTimeEntity<T> return_type;
       typedef RTimeSingletons<T> singletons_type;
       typedef singletons_type::ManagerType ManagerType;
-      SafePtr<return_type> tmp(new return_type(id));
+      std::shared_ptr<return_type> tmp(new return_type(id));
       const ManagerType::value_type& result = singletons_type::Manager()->find(tmp);
       return result.second;
     }
@@ -238,7 +238,7 @@ namespace libint2 {
     public:
       RTimeVector3(const char* id) : id_(id) { }
       RTimeVector3(const std::string& id) : id_(id) { }
-      SafePtr< RTimeEntity<T> > operator[](unsigned int xyz) {
+      std::shared_ptr< RTimeEntity<T> > operator[](unsigned int xyz) {
         return Scalar(id_ + "_" + dirchar[xyz]);
       }
       private:
@@ -253,7 +253,7 @@ namespace libint2 {
       CTimeVector3(const T* val) {
         for(int xyz=0; xyz<3; ++xyz) val_[xyz] = val[xyz];
       }
-      SafePtr< CTimeEntity<T> > operator[](unsigned int xyz) {
+      std::shared_ptr< CTimeEntity<T> > operator[](unsigned int xyz) {
         return Scalar(val_[xyz]);
       }
       private:

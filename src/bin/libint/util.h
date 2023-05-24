@@ -31,8 +31,8 @@
 namespace libint2 {
   std::string to_string(FunctionPosition pos);
   
-  template <class Target, class Source> SafePtr<Target> require_dynamic_cast(const SafePtr<Source>& s) {
-    const SafePtr<Target> t = dynamic_pointer_cast<Target,Source>(s);
+  template <class Target, class Source> std::shared_ptr<Target> require_dynamic_cast(const std::shared_ptr<Source>& s) {
+    const std::shared_ptr<Target> t = dynamic_pointer_cast<Target,Source>(s);
     if (t == 0)
       throw std::runtime_error("require_dynamic_cast: dynamic case failed");
     return t;

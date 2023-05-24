@@ -36,7 +36,7 @@ namespace libint2 {
   /// This class collects labels of all external non-compile-time constants
   class ExtractExternSymbols {
   public:
-    typedef SafePtr<DGVertex> VertexPtr;
+    typedef std::shared_ptr<DGVertex> VertexPtr;
     typedef std::list<std::string> Symbols;
 
     ExtractExternSymbols() {}
@@ -58,7 +58,7 @@ namespace libint2 {
   /// This class collects all unique RRs. It uses RRStack to get their InstanceID
   class ExtractRR {
   public:
-    typedef SafePtr<DGVertex> VertexPtr;
+    typedef std::shared_ptr<DGVertex> VertexPtr;
     typedef RRStack::InstanceID RRid;
     typedef std::list<RRid> RRList;
 

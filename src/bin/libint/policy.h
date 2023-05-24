@@ -130,12 +130,12 @@ namespace libint2 {
       typedef typename TDPol<T>::obj_type obj_type;
       typedef typename obj_type::iter_type subobj_type;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, const vector< SafePtr<subobj_type> >& subobj)
+      static void init_subobj(const std::shared_ptr<obj_type>& obj, const vector< std::shared_ptr<subobj_type> >& subobj)
       {
         TDPol<T>::init_subobj(obj,subobj);
       }
 
-      static void dealloc_subobj(const vector< SafePtr<subobj_type> >& subobj)
+      static void dealloc_subobj(const vector< std::shared_ptr<subobj_type> >& subobj)
       {
         TDPol<T>::dealloc_subobj(subobj);
       }
@@ -143,7 +143,7 @@ namespace libint2 {
 
      private:
      /// Returns whether to unroll an IntegralSet
-     bool can_unroll_intset(const SafePtr<T>& iset)
+     bool can_unroll_intset(const std::shared_ptr<T>& iset)
      {
        return iset->set_size() <= TIPol::max_set_size_to_unroll();
      }

@@ -50,7 +50,7 @@ namespace {
   {
     TesterCmdLine<4> cmdline(argc,argv);
     std::vector<unsigned int> l = cmdline.am();
-    const SafePtr<IntegralSet> integral = IntegralSet::Instance(CGShell(am[l[0]]),
+    const std::shared_ptr<IntegralSet> integral = IntegralSet::Instance(CGShell(am[l[0]]),
 								CGShell(am[l[1]]),
 								CGShell(am[l[2]]),
 								CGShell(am[l[3]]));

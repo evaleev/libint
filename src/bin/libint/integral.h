@@ -69,9 +69,9 @@ namespace libint2 {
     /// Return the number of particles
     virtual unsigned int np() const =0;
     /// Obtain pointers to ith BasisFunctionSet for particle p in bra
-    virtual const SafePtr<BasisFunctionSet> bra(unsigned int p, unsigned int i) const =0;
+    virtual const std::shared_ptr<BasisFunctionSet> bra(unsigned int p, unsigned int i) const =0;
     /// Obtain pointers to ith BasisFunctionSet for particle p in ket
-    virtual const SafePtr<BasisFunctionSet> ket(unsigned int p, unsigned int i) const =0;
+    virtual const std::shared_ptr<BasisFunctionSet> ket(unsigned int p, unsigned int i) const =0;
 #endif
   };
 
@@ -126,12 +126,12 @@ namespace libint2 {
       virtual ~GenIntegralSet();
 
       /// Returns a pointer to a unique instance, a la Singleton
-      static const SafePtr<GenIntegralSet> Instance(const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux, const Oper& oper=Oper());
+      static const std::shared_ptr<GenIntegralSet> Instance(const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux, const Oper& oper=Oper());
 
       /// Comparison operator
       virtual bool operator==(const GenIntegralSet&) const;
       /// Specialization of DGVertex::equiv()
-      bool equiv(const SafePtr<DGVertex>& v) const override
+      bool equiv(const std::shared_ptr<DGVertex>& v) const override
       {
         return PtrComp::equiv(this,v);
       }
@@ -165,13 +165,13 @@ namespace libint2 {
       typedef AuxQuanta AuxQuantaType;
 
       /// Obtain the operator
-      const SafePtr<Oper> oper() const;
+      const std::shared_ptr<Oper> oper() const;
       /// Obtain const ref to bra
       const BraType& bra() const;
       /// Obtain const ref to bra
       const KetType& ket() const;
       /// Obtain the auxiliary quanta
-      const SafePtr<AuxQuanta> aux() const;
+      const std::shared_ptr<AuxQuanta> aux() const;
 
       /// Implements Hashable::key()
       DGVertex::KeyReturnType key() const override {
@@ -233,9 +233,9 @@ namespace libint2 {
       static SingletonManagerType singl_manager_;
 
       // The operator needs to be a real object rather than real type to be able to construct a SubIterator, etc.
-      SafePtr<Oper> O_;
+      std::shared_ptr<Oper> O_;
       // Same for AuxQuanta
-      SafePtr<AuxQuanta> aux_;
+      std::shared_ptr<AuxQuanta> aux_;
 
       // size of the integral set
       mutable unsigned int size_;
@@ -268,7 +268,7 @@ namespace libint2 {
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::GenIntegralSet(const Op& oper, const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux) :
-    DGVertex(ClassInfo<GenIntegralSet>::Instance().id()), bra_(bra), ket_(ket), O_(SafePtr<Op>(new Op(oper))), aux_(SafePtr<AuxQuanta>(new AuxQuanta(aux))),
+    DGVertex(ClassInfo<GenIntegralSet>::Instance().id()), bra_(bra), ket_(ket), O_(std::shared_ptr<Op>(new Op(oper))), aux_(std::shared_ptr<AuxQuanta>(new AuxQuanta(aux))),
     size_(0), label_()
     {
       if (Op::Properties::np != bra.num_part())
@@ -292,14 +292,14 @@ namespace libint2 {
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const SafePtr< GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta> >
+    const std::shared_ptr< GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta> >
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::Instance(const BraSetType& bra, const KetSetType& ket, const AuxQuanta& aux, const Op& oper)
     {
       typedef typename SingletonManagerType::value_type map_value_type;
       key_type key = compute_key(oper,bra,ket,aux);
       const map_value_type& val = singl_manager_.find(key);
       if (!val.second) {
-	SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
+	std::shared_ptr<this_type> this_int(new this_type(oper,bra,ket,aux));
 	// Use singl_manager_ to make sure this is a new object of this type
 	const map_value_type& val = singl_manager_.find(this_int);
 	val.second->instid_ = val.first;
@@ -354,14 +354,14 @@ namespace libint2 {
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const SafePtr<Op>
+    const std::shared_ptr<Op>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::oper() const
     {
       return O_;
     }
 
   template <class Op, class BFS, class BraSetType, class KetSetType, class AuxQuanta>
-    const SafePtr<AuxQuanta>
+    const std::shared_ptr<AuxQuanta>
     GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::aux() const
     {
       return aux_;
@@ -405,8 +405,8 @@ namespace libint2 {
     size_ = bra_.size() * ket_.size() * O_->num_oper();
 #else
       // compute size
-      SafePtr<this_type> this_ptr = const_pointer_cast<this_type,const this_type>(std::enable_shared_from_this<GenIntegralSet>::shared_from_this());
-      SafePtr< SubIteratorBase<this_type> > siter(new SubIteratorBase<this_type>(this_ptr));
+      std::shared_ptr<this_type> this_ptr = const_pointer_cast<this_type,const this_type>(std::enable_shared_from_this<GenIntegralSet>::shared_from_this());
+      std::shared_ptr< SubIteratorBase<this_type> > siter(new SubIteratorBase<this_type>(this_ptr));
       size_ = siter->num_iter();
       if (size_ == 0)
         throw std::runtime_error("GenIntegralSet<Op,BFS,BraSetType,KetSetType,AuxQuanta>::size() -- size is 0");
@@ -424,7 +424,7 @@ namespace libint2 {
 
   template <class BraSetType, class KetSetType, class AuxQuanta, class Op>
     std::string
-    genintegralset_label(const BraSetType& bra, const KetSetType& ket, const SafePtr<AuxQuanta>& aux, const SafePtr<Op>& O)
+    genintegralset_label(const BraSetType& bra, const KetSetType& ket, const std::shared_ptr<AuxQuanta>& aux, const std::shared_ptr<Op>& O)
     {
       std::ostringstream os;
       os << "< ";

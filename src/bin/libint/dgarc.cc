@@ -23,9 +23,9 @@
 using namespace std;
 using namespace libint2;
 
-DGArc::DGArc(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) :
+DGArc::DGArc(const std::shared_ptr<DGVertex>& orig, const std::shared_ptr<DGVertex>& dest) :
   orig_(orig), dest_(dest) {}
 
-DGArcRR::DGArcRR(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) :
+DGArcRR::DGArcRR(const std::shared_ptr<DGVertex>& orig, const std::shared_ptr<DGVertex>& dest) :
   DGArc(orig,dest) {}
 

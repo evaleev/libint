@@ -55,13 +55,13 @@ namespace libint2 {
       using ParentType::is_simple;
 
       /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-      VRR_1_Overlap_1(const SafePtr<TargetType>&, unsigned int dir);
+      VRR_1_Overlap_1(const std::shared_ptr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "OSVRROverlap"; }
     };
 
   template <class F, FunctionPosition where>
-  VRR_1_Overlap_1<F,where>::VRR_1_Overlap_1(const SafePtr< TargetType >& Tint,
+  VRR_1_Overlap_1<F,where>::VRR_1_Overlap_1(const std::shared_ptr< TargetType >& Tint,
                                             unsigned int dir) :
     ParentType(Tint,dir)
     {
@@ -128,7 +128,7 @@ namespace libint2 {
 
           OriginDerivative<3u> _d1; _d1.inc(dxyz);
 
-          SafePtr<DGVertex> _nullptr;
+          std::shared_ptr<DGVertex> _nullptr;
 
           // dA - _1?
           {
@@ -197,13 +197,13 @@ namespace libint2 {
       using ParentType::is_simple;
 
       /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-      VRR_1_Overlap_1_1d(const SafePtr<TargetType>&, unsigned int dir);
+      VRR_1_Overlap_1_1d(const std::shared_ptr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return std::string("OSVRROverlap") + to_string(axis); }
     };
 
   template <CartesianAxis Axis, FunctionPosition where>
-  VRR_1_Overlap_1_1d<Axis,where>::VRR_1_Overlap_1_1d(const SafePtr< TargetType >& Tint,
+  VRR_1_Overlap_1_1d<Axis,where>::VRR_1_Overlap_1_1d(const std::shared_ptr< TargetType >& Tint,
                                                      unsigned int dir) :
     ParentType(Tint,dir)
     {
@@ -237,7 +237,7 @@ namespace libint2 {
       // by copying from inteval
       auto zero = Tint->bra(0,0).zero() and Tint->ket(0,0).zero() and not deriv;
       if (zero) {
-        SafePtr<DGVertex> int00 = Vector("_0_Overlap_0")[Axis];
+        std::shared_ptr<DGVertex> int00 = Vector("_0_Overlap_0")[Axis];
         expr_ = Scalar(0u) + int00;
         this->add_child(int00);
         return;
@@ -277,7 +277,7 @@ namespace libint2 {
         {
           OriginDerivative<1u> _d1; _d1.inc(0);
 
-          SafePtr<DGVertex> _nullptr;
+          std::shared_ptr<DGVertex> _nullptr;
 
           // dA - _1?
           {
@@ -346,13 +346,13 @@ namespace libint2 {
       using ParentType::is_simple;
 
       /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-      VRR_1_Kinetic_1(const SafePtr<TargetType>&, unsigned int dir);
+      VRR_1_Kinetic_1(const std::shared_ptr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "OSVRRKinetic"; }
     };
 
   template <class F, FunctionPosition where>
-  VRR_1_Kinetic_1<F,where>::VRR_1_Kinetic_1(const SafePtr< TargetType >& Tint,
+  VRR_1_Kinetic_1<F,where>::VRR_1_Kinetic_1(const std::shared_ptr< TargetType >& Tint,
                                             unsigned int dir) :
     ParentType(Tint,dir)
     {
@@ -394,7 +394,7 @@ namespace libint2 {
         auto am1 = a - _1;
         if (exists(am1)) {
           auto Am1B = factory.make_child(am1,b);
-          auto S_Am1B = (where == InBra) ? overlap_factory.make_child(am1,b) : SafePtr<DGVertex>();
+          auto S_Am1B = (where == InBra) ? overlap_factory.make_child(am1,b) : std::shared_ptr<DGVertex>();
           if (is_simple()) {
             if (where == InBra) {
               expr_ += Scalar(a[dir]) * ( Scalar("oo2z") * Am1B -
@@ -410,7 +410,7 @@ namespace libint2 {
         auto bm1 = b - _1;
         if (exists(bm1)) {
           auto ABm1 = factory.make_child(a,bm1);
-          auto S_ABm1 = (where == InKet) ? overlap_factory.make_child(a,bm1) : SafePtr<DGVertex>();
+          auto S_ABm1 = (where == InKet) ? overlap_factory.make_child(a,bm1) : std::shared_ptr<DGVertex>();
           if (is_simple()) {
             if (where == InKet) {
               expr_ += Scalar(b[dir]) * ( Scalar("oo2z") * ABm1 -
@@ -453,7 +453,7 @@ namespace libint2 {
 
           OriginDerivative<3u> _d1; _d1.inc(dxyz);
 
-          SafePtr<DGVertex> _nullptr;
+          std::shared_ptr<DGVertex> _nullptr;
 
           // dA - _1?
           {
@@ -521,7 +521,7 @@ namespace libint2 {
       using ParentType::is_simple;
 
       /// Constructor is private, used by ParentType::Instance that mainains registry of these objects
-      VRR_1_ElecPot_1(const SafePtr<TargetType>&, unsigned int dir);
+      VRR_1_ElecPot_1(const std::shared_ptr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "OSVRRElecPot"; }
       /** Re-Implementation of GenericRecurrenceRelation::generate_label():
@@ -530,7 +530,7 @@ namespace libint2 {
       std::string generate_label() const override
       {
         typedef typename TargetType::AuxIndexType mType;
-        static SafePtr<mType> aux0(new mType(0u));
+        static std::shared_ptr<mType> aux0(new mType(0u));
         std::ostringstream os;
         os << descr() <<  to_string(where)
            << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
@@ -539,7 +539,7 @@ namespace libint2 {
     };
 
   template <class F, FunctionPosition where>
-  VRR_1_ElecPot_1<F,where>::VRR_1_ElecPot_1(const SafePtr< TargetType >& Tint,
+  VRR_1_ElecPot_1<F,where>::VRR_1_ElecPot_1(const std::shared_ptr< TargetType >& Tint,
                                             unsigned int dir) :
     ParentType(Tint,dir)
     {
@@ -613,7 +613,7 @@ namespace libint2 {
 
           OriginDerivative<3u> _d1; _d1.inc(dxyz);
 
-          SafePtr<DGVertex> _nullptr;
+          std::shared_ptr<DGVertex> _nullptr;
 
           // dA - _1?
           {
@@ -687,7 +687,7 @@ namespace libint2 {
     static std::string descr() { return "OSVRRSMultipole"; }
 
     /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-    VRR_1_SMultipole_1(const SafePtr<TargetType>& Tint, unsigned int dir) :
+    VRR_1_SMultipole_1(const std::shared_ptr<TargetType>& Tint, unsigned int dir) :
         ParentType(Tint,dir)
         {
           using namespace libint2::algebra;
@@ -723,7 +723,7 @@ namespace libint2 {
           typedef TargetType ChildType;
           ChildFactory<ThisType,ChildType> factory(this);
 
-          auto make_child = [&](const F& bra, const F& ket, const OperType::Descriptor& descr) -> SafePtr<DGVertex> {
+          auto make_child = [&](const F& bra, const F& ket, const OperType::Descriptor& descr) -> std::shared_ptr<DGVertex> {
             return factory.make_child(bra, ket, EmptySet(), descr);
           };
 
@@ -746,7 +746,7 @@ namespace libint2 {
             auto am1 = a - _1; auto am1_exists = exists(am1);
             auto bm1 = b - _1; auto bm1_exists = exists(bm1);
 
-            SafePtr<ExprType> subexpr;  // to be multiplied by 1/(2 zeta)
+            std::shared_ptr<ExprType> subexpr;  // to be multiplied by 1/(2 zeta)
 
             if (am1_exists) {
               auto Am1B = make_child(am1, b, O_l_m);
@@ -832,7 +832,7 @@ namespace libint2 {
                   expr_ = Scalar(1) * S00;  // Eq. (25) and Eq. (61)
                 }
               } else {
-                SafePtr<ExprType> subexpr;  // to be multiplied by - 1/(2 m)
+                std::shared_ptr<ExprType> subexpr;  // to be multiplied by - 1/(2 m)
 
                 // Eqs. (25-26)
                 // (0|N^+_{m,m}|0) = -(1/(2m)) ( x (0|N^+_{m-1,m-1}|0) - y
@@ -861,7 +861,7 @@ namespace libint2 {
                 }
               }
             } else {                      // l != m, use Eq. 27
-              SafePtr<ExprType> subexpr;  // to be multiplied by 1/((l+m)(l-m))
+              std::shared_ptr<ExprType> subexpr;  // to be multiplied by 1/((l+m)(l-m))
 
               auto O_lm1_m = SphericalMultipole_Descr(l - 1, m, sign);
               if (exists(O_lm1_m)) {

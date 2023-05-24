@@ -53,12 +53,12 @@ namespace libint2 {
           Note that the ordering of arguments is a bit counterintuitive,
           but in fact corresponds to their practical (rather than logical) importance.
       */
-      static const SafePtr<this_type> Instance(const BFS& bra0, const BFS& ket0, const AuxIndexType& aux = AuxIndexType(), const OperType& oper = OperType());
+      static const std::shared_ptr<this_type> Instance(const BFS& bra0, const BFS& ket0, const AuxIndexType& aux = AuxIndexType(), const OperType& oper = OperType());
 
 #if 0
       /** This "constructor" uses a wedge of 2 physicists brakets.
       */
-      static const SafePtr<this_type>
+      static const std::shared_ptr<this_type>
       Instance(const algebra::Wedge< BraketPair<BFS,PBra>, BraketPair<BFS,PKet> >& braket_wedge,
                const AuxIndexType& aux = AuxIndexType(), const OperType& oper = OperType()) {
         return Instance(braket_wedge.left[0],
@@ -68,7 +68,7 @@ namespace libint2 {
       }
       /** This "constructor" uses a wedge of 2 chemists brakets.
       */
-      static const SafePtr<this_type>
+      static const std::shared_ptr<this_type>
       Instance(const algebra::Wedge< BraketPair<BFS,CBra>, BraketPair<BFS,CKet> >& braket_wedge,
                const AuxIndexType& aux = AuxIndexType(), const OperType& oper = OperType()) {
         return Instance(braket_wedge.left[0],
@@ -84,7 +84,7 @@ namespace libint2 {
           Note that the ordering of arguments is a bit counterintuitive,
           but in fact corresponds to their practical (rather than logical) importance.
       */
-      static const SafePtr<this_type> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux = AuxIndexType(), const OperType& oper = OperType());
+      static const std::shared_ptr<this_type> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux = AuxIndexType(), const OperType& oper = OperType());
       virtual ~GenIntegralSet_1_1();
 
       /// Comparison operator
@@ -138,7 +138,7 @@ namespace libint2 {
     }
 
   template <class BFS, class Oper, class AuxQuanta>
-    const SafePtr< GenIntegralSet_1_1<BFS,Oper,AuxQuanta> >
+    const std::shared_ptr< GenIntegralSet_1_1<BFS,Oper,AuxQuanta> >
     GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::Instance(const BraType& bra, const KetType& ket,
                                                        const AuxIndexType& aux, const OperType& oper)
     {
@@ -146,7 +146,7 @@ namespace libint2 {
       key_type key = parent_type::compute_key(oper,bra,ket,aux);
       const map_value_type& val = singl_manager_.find(key);
       if (!val.second) {
-        SafePtr<this_type> this_int(new this_type(oper,bra,ket,aux));
+        std::shared_ptr<this_type> this_int(new this_type(oper,bra,ket,aux));
         // Use singl_manager_ to make sure this is a new object of this type
         const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
         val.second->instid_ = val.first;
@@ -156,7 +156,7 @@ namespace libint2 {
     }
 
   template <class BFS, class Oper, class AuxQuanta>
-    const SafePtr< GenIntegralSet_1_1<BFS,Oper,AuxQuanta> >
+    const std::shared_ptr< GenIntegralSet_1_1<BFS,Oper,AuxQuanta> >
     GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::Instance(const BFS& bra0, const BFS& ket0,
                                                        const AuxIndexType& aux, const OperType& oper)
     {
@@ -165,7 +165,7 @@ namespace libint2 {
       BFSRef bra0_ref(bra0);
       BFSRef ket0_ref(ket0);
 #else
-      typedef SafePtr<BFS> BFSRef;
+      typedef std::shared_ptr<BFS> BFSRef;
       BFSRef bra0_ref(new BFS(bra0));
       BFSRef ket0_ref(new BFS(ket0));
 #endif
@@ -189,8 +189,8 @@ namespace libint2 {
     void
     GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::unregister() const
     {
-      SafePtr<parent_type> this_parent_ptr = const_pointer_cast<parent_type,const parent_type>(std::enable_shared_from_this<parent_type>::shared_from_this());
-      SafePtr<this_type> this_ptr = static_pointer_cast<this_type>(this_parent_ptr);
+      std::shared_ptr<parent_type> this_parent_ptr = const_pointer_cast<parent_type,const parent_type>(std::enable_shared_from_this<parent_type>::shared_from_this());
+      std::shared_ptr<this_type> this_ptr = static_pointer_cast<this_type>(this_parent_ptr);
       singl_manager_.remove(this_ptr);
     }
 

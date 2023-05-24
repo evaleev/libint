@@ -61,7 +61,7 @@ namespace libint2 {
     typedef KeyTypes::InstanceID KeyType;
     typedef Hashable<KeyType,ComputeKey>::KeyReturnType KeyReturnType;
     /// ArcSetType is a container used to maintain entry and exit arcs
-    typedef std::list< SafePtr<DGArc> > ArcSetType;
+    typedef std::list< std::shared_ptr<DGArc> > ArcSetType;
 
     /** typeid stores the ClassID of the concrete type. It is used to check quickly whether
         2 DGVertices are of the same type. Dynamic casts are too expensive. */
@@ -72,7 +72,7 @@ namespace libint2 {
     /// Sets typeid to tid
     DGVertex(ClassID tid);
     /// Sets typeid to tid
-    DGVertex(ClassID tid, const std::vector<SafePtr<DGArc> >& parents, const std::vector<SafePtr<DGArc> >& children);
+    DGVertex(ClassID tid, const std::vector<std::shared_ptr<DGArc> >& parents, const std::vector<std::shared_ptr<DGArc> >& children);
     /// This is a copy constructor
     DGVertex(const DGVertex& v);
     virtual ~DGVertex();
@@ -87,14 +87,14 @@ namespace libint2 {
         definition (such as AlgebraicOperator). Such DGVertices need to update their
         private members.
       */
-    virtual void add_exit_arc(const SafePtr<DGArc>&);
+    virtual void add_exit_arc(const std::shared_ptr<DGArc>&);
     /** del_exit_arcs() removes all exit arcs from this and corresponding children vertices.
         See documentation for del_exit_arc().
       */
     virtual void del_exit_arcs();
     /** replace_exit_arc() replaces A with B. See documentation for del_exit_arc().
      */
-    void replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B);
+    void replace_exit_arc(const std::shared_ptr<DGArc>& A, const std::shared_ptr<DGArc>& B);
     /** this function detaches the vertex from other vertices. It cannot safely remove
         entry arcs, so the user must previously delete or replace them (see documentation for del_exit_arc()).
 	can throw CannotPerformOperation.
@@ -116,14 +116,14 @@ namespace libint2 {
     /// returns children::end()
     ArcSetType::const_iterator plast_exit_arc() const { return children_.end(); }
     /// return arc connecting this to v, otherwise null pointer
-    const SafePtr<DGArc>& exit_arc(const SafePtr<DGVertex>& v) const;
+    const std::shared_ptr<DGArc>& exit_arc(const std::shared_ptr<DGVertex>& v) const;
 
     /// computes key
     virtual KeyReturnType key() const =0;
     /** equiv(const DGVertex* aVertex) returns true if this vertex is
         equivalent to *aVertex.
     */
-    virtual bool equiv(const SafePtr<DGVertex>&) const =0;
+    virtual bool equiv(const std::shared_ptr<DGVertex>&) const =0;
 
     /** precomputed() returns whether this DGVertex is precomputed. See
     this_precomputed() for description.
@@ -158,7 +158,7 @@ namespace libint2 {
     void set_graph_label(const std::string& graph_label);
 
     /// Returns the subtree to which this vertex belongs
-    const SafePtr<DRTree>& subtree() const { return subtree_; }
+    const std::shared_ptr<DRTree>& subtree() const { return subtree_; }
 
     //
     // NOTE : the following functions probably belong to a separate class, such as Entity!
@@ -168,7 +168,7 @@ namespace libint2 {
     refer_this_to(V) makes this vertex act like a reference to V so that
     calls to symbol() and address() report code symbol and stack address of V
     */
-    void refer_this_to(const SafePtr<DGVertex>&  V);
+    void refer_this_to(const std::shared_ptr<DGVertex>&  V);
     /// refers to another vertex?
     bool refers_to_another() const { return referred_vertex_ != 0; }
     /// returns the code symbol. can throw SymbolNotSet
@@ -208,9 +208,9 @@ namespace libint2 {
     /// scheduled() returns true if the vertex has been scheduled
     bool scheduled() const { return scheduled_; }
     /// Returns pointer to vertex to be computed after this vertex, 0 if this is the last vertex
-    SafePtr<DGVertex> postcalc() const { return postcalc_; };
+    std::shared_ptr<DGVertex> postcalc() const { return postcalc_; };
     /// Sets postcalc
-    void set_postcalc(const SafePtr<DGVertex>& postcalc) { postcalc_ = postcalc; };
+    void set_postcalc(const std::shared_ptr<DGVertex>& postcalc) { postcalc_ = postcalc; };
 
     /// Resets the vertex, releasing all arcs
     void reset();
@@ -268,11 +268,11 @@ namespace libint2 {
         to use del_exit_arc() to replace an arc. replace_exit_arc() should be used
         in such instances.
       */
-    void del_exit_arc(const SafePtr<DGArc>& c);
+    void del_exit_arc(const std::shared_ptr<DGArc>& c);
     /// add_entry_arc(arc) adds arc as an arc connecting parents to this vertex
-    void add_entry_arc(const SafePtr<DGArc>&);
+    void add_entry_arc(const std::shared_ptr<DGArc>&);
     /// del_entry_arc(arc) removes arc as an arc connecting parents to this vertex
-    void del_entry_arc(const SafePtr<DGArc>&);
+    void del_entry_arc(const std::shared_ptr<DGArc>&);
 
     ////////
     // These members used in traversal and scheduling algorithms
@@ -281,7 +281,7 @@ namespace libint2 {
     /// num_tagged_arcs keeps track of how many entry arcs have been tagged during traversal
     unsigned int num_tagged_arcs_;
     /// Which DGVertex to be computed after this vertex (0, if this is the last vertex)
-    SafePtr<DGVertex> postcalc_;
+    std::shared_ptr<DGVertex> postcalc_;
     /// has it been scheduled?
     bool scheduled_;
 
@@ -294,10 +294,10 @@ namespace libint2 {
     // does not change class invariant -- hence mutable
 
     /// the subtree which contains this vertex (may be null). subtree is a directed rooted tree.
-    mutable SafePtr<DRTree> subtree_;
+    mutable std::shared_ptr<DRTree> subtree_;
     /// Only DRTree::set_subtree and DRTree::detach_from can change subtree_
-    friend void DRTree::add_vertex(const SafePtr<DGVertex>& vertex);
-    friend void DRTree::detach_from(const SafePtr<DGVertex>& v);
+    friend void DRTree::add_vertex(const std::shared_ptr<DGVertex>& vertex);
+    friend void DRTree::detach_from(const std::shared_ptr<DGVertex>& v);
 
   };
 
@@ -306,15 +306,15 @@ namespace libint2 {
   //
   /// return true if V is an unrolled IntegralSet
   struct UnrolledIntegralSet {
-    bool operator()(const SafePtr<DGVertex>& V);
+    bool operator()(const std::shared_ptr<DGVertex>& V);
   };
   /// return false if V is an unrolled IntegralSet
   struct NotUnrolledIntegralSet {
-    bool operator()(const SafePtr<DGVertex>& V);
+    bool operator()(const std::shared_ptr<DGVertex>& V);
   };
   /// return true if V is an Integral in an unrolled target IntegralSet
   struct IntegralInTargetIntegralSet {
-    bool operator()(const SafePtr<DGVertex>& V);
+    bool operator()(const std::shared_ptr<DGVertex>& V);
   };
 
   inline DGVertexKey key(const DGVertex& v) {

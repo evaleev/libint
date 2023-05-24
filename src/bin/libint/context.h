@@ -36,7 +36,7 @@ namespace libint2 {
     virtual ~CodeContext() {}
 
     /// Returns the CompilationParameters used to create this context
-    const SafePtr<CompilationParameters>& cparams() const;
+    const std::shared_ptr<CompilationParameters>& cparams() const;
 
     /// turn comments on and off (the default is on)
     void turn_comments(bool on);
@@ -144,8 +144,8 @@ namespace libint2 {
 
     /** returns a ForLoop object.
       */
-    virtual SafePtr<ForLoop> for_loop(std::string& varname, const SafePtr<Entity>& less_than,
-                                      const SafePtr<Entity>& start_at = SafePtr<Entity>(new CTimeEntity<int>(0))) const =0;
+    virtual std::shared_ptr<ForLoop> for_loop(std::string& varname, const std::shared_ptr<Entity>& less_than,
+                                      const std::shared_ptr<Entity>& start_at = std::shared_ptr<Entity>(new CTimeEntity<int>(0))) const =0;
 
     /// unique_name<T> returns a unique name for a variable of type T
     template <typename T>
@@ -166,7 +166,7 @@ namespace libint2 {
 
   protected:
     /// Lone constructor takes CompilationParams
-    CodeContext(const SafePtr<CompilationParameters>& cparams);
+    CodeContext(const std::shared_ptr<CompilationParameters>& cparams);
     /// generates a unique name for a floating-point variable
     virtual std::string unique_fp_name() const =0;
     /// generates a unique name for an integer
@@ -193,7 +193,7 @@ namespace libint2 {
     virtual std::string ptr_fp_type() const =0;
 
   private:
-    SafePtr<CompilationParameters> cparams_;
+    std::shared_ptr<CompilationParameters> cparams_;
     mutable unsigned int next_index_[EntityTypes::ntypes];
     void zero_out_counters() const;
     bool comments_on_;
@@ -206,7 +206,7 @@ namespace libint2 {
   */
   class CppCodeContext : public CodeContext, public std::enable_shared_from_this<CppCodeContext> {
   public:
-    CppCodeContext(const SafePtr<CompilationParameters>& cparams, bool vectorize = false);
+    CppCodeContext(const std::shared_ptr<CompilationParameters>& cparams, bool vectorize = false);
     virtual ~CppCodeContext();
 
     /// Implementation of CodeContext::code_prefix()
@@ -287,8 +287,8 @@ namespace libint2 {
     /// Implementation of CodeContext::value_to_pointer()
     std::string value_to_pointer(const std::string& val) const override;
     /// Implementation of CodeContext::for_loop()
-    SafePtr<ForLoop> for_loop(std::string& varname, const SafePtr<Entity>& less_than,
-                              const SafePtr<Entity>& start_at) const override;
+    std::shared_ptr<ForLoop> for_loop(std::string& varname, const std::shared_ptr<Entity>& less_than,
+                              const std::shared_ptr<Entity>& start_at) const override;
 
     /// Implementation of CodeContext::inteval_type_name()
     std::string inteval_type_name(const std::string& task) const override;

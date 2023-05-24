@@ -55,7 +55,7 @@ namespace libint2 {
       using ParentType::is_simple;
 
       /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-      VRR_11_R12kG12_11(const SafePtr<TargetType>&, unsigned int dir);
+      VRR_11_R12kG12_11(const std::shared_ptr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "VRR"; }
       /** Re-Implementation of GenericRecurrenceRelation::generate_label():
@@ -64,7 +64,7 @@ namespace libint2 {
       std::string generate_label() const override
       {
         typedef typename TargetType::AuxIndexType mType;
-        static SafePtr<mType> aux0(new mType(0u));
+        static std::shared_ptr<mType> aux0(new mType(0u));
         std::ostringstream os;
         os << descr() << "P" << part << to_string(where)
            << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
@@ -73,16 +73,16 @@ namespace libint2 {
 
   #if LIBINT_ENABLE_GENERIC_CODE
       /// Implementation of RecurrenceRelation::has_generic()
-      bool has_generic(const SafePtr<CompilationParameters>& cparams) const override;
+      bool has_generic(const std::shared_ptr<CompilationParameters>& cparams) const override;
       /// Implementation of RecurrenceRelation::generic_header()
       std::string generic_header() const override;
       /// Implementation of RecurrenceRelation::generic_instance()
-      std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const override;
+      std::string generic_instance(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<CodeSymbols>& args) const override;
   #endif
     };
 
     template <class F, int part, FunctionPosition where>
-      VRR_11_R12kG12_11<F,part,where>::VRR_11_R12kG12_11(const SafePtr< TargetType >& Tint,
+      VRR_11_R12kG12_11<F,part,where>::VRR_11_R12kG12_11(const std::shared_ptr< TargetType >& Tint,
                                                                  unsigned int dir) :
       ParentType(Tint,dir)
       {
@@ -432,7 +432,7 @@ namespace libint2 {
   #if LIBINT_ENABLE_GENERIC_CODE
     template <class F, int part, FunctionPosition where>
       bool
-      VRR_11_R12kG12_11<F,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
+      VRR_11_R12kG12_11<F,part,where>::has_generic(const std::shared_ptr<CompilationParameters>& cparams) const
       {
         F sh_a(target_->bra(0,0));
         F sh_b(target_->ket(0,0));
@@ -485,7 +485,7 @@ namespace libint2 {
 
     template <class F, int part, FunctionPosition where>
       std::string
-      VRR_11_R12kG12_11<F,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
+      VRR_11_R12kG12_11<F,part,where>::generic_instance(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<CodeSymbols>& args) const
       {
         const int K = target_->oper()->descr().K();
         std::ostringstream oss;

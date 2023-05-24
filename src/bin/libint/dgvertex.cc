@@ -35,7 +35,7 @@ DGVertex::DGVertex(ClassID tid) :
   declared_(false),
 #endif
   parents_(), children_(), target_(false), can_add_arcs_(true), num_tagged_arcs_(0),
-  postcalc_(), scheduled_(false), subtree_(SafePtr<DRTree>())
+  postcalc_(), scheduled_(false), subtree_(std::shared_ptr<DRTree>())
 {
 }
 
@@ -62,10 +62,10 @@ DGVertex::make_a_target()
 }
 
 void
-DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
+DGVertex::add_exit_arc(const std::shared_ptr<DGArc>& arc)
 {
   if (can_add_arcs_) {
-    SafePtr<DGVertex> child = arc->dest();
+    std::shared_ptr<DGVertex> child = arc->dest();
 
     // check if such arc exists already
     if (!children_.empty()) {
@@ -89,7 +89,7 @@ DGVertex::add_exit_arc(const SafePtr<DGArc>& arc)
 }
 
 void
-DGVertex::del_exit_arc(const SafePtr<DGArc>& arc)
+DGVertex::del_exit_arc(const std::shared_ptr<DGArc>& arc)
 {
   if (can_add_arcs_) {
     if (!children_.empty()) {
@@ -137,7 +137,7 @@ DGVertex::del_exit_arcs()
 }
 
 void
-DGVertex::replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B)
+DGVertex::replace_exit_arc(const std::shared_ptr<DGArc>& A, const std::shared_ptr<DGArc>& B)
 {
   if (can_add_arcs_) {
     typedef ArcSetType::iterator aiter;
@@ -171,7 +171,7 @@ DGVertex::replace_exit_arc(const SafePtr<DGArc>& A, const SafePtr<DGArc>& B)
 }
 
 void
-DGVertex::add_entry_arc(const SafePtr<DGArc>& arc)
+DGVertex::add_entry_arc(const std::shared_ptr<DGArc>& arc)
 {
   if (arc->orig() == arc->dest()) {
     std::cout << "DGVertex::add_entry_arc() : arc->orig = " << arc->orig()->description() << std::endl;
@@ -190,7 +190,7 @@ DGVertex::add_entry_arc(const SafePtr<DGArc>& arc)
 }
 
 void
-DGVertex::del_entry_arc(const SafePtr<DGArc>& arc)
+DGVertex::del_entry_arc(const std::shared_ptr<DGArc>& arc)
 {
   if (!parents_.empty()) {
     ArcSetType::iterator location = find(parents_.begin(), parents_.end(), arc);
@@ -251,16 +251,16 @@ DGVertex::num_exit_arcs() const
 
 namespace {
   struct __ArcDestEqual {
-    __ArcDestEqual(const SafePtr<DGVertex>& v) : v_(v) {}
-    bool operator()(const SafePtr<DGArc>& a) { return a->dest() == v_; }
-    const SafePtr<DGVertex>& v_;
+    __ArcDestEqual(const std::shared_ptr<DGVertex>& v) : v_(v) {}
+    bool operator()(const std::shared_ptr<DGArc>& a) { return a->dest() == v_; }
+    const std::shared_ptr<DGVertex>& v_;
   };
 }
 
-const SafePtr<DGArc>&
-DGVertex::exit_arc(const SafePtr<DGVertex>& v) const
+const std::shared_ptr<DGArc>&
+DGVertex::exit_arc(const std::shared_ptr<DGVertex>& v) const
 {
-  static SafePtr<DGArc> nullptr_;
+  static std::shared_ptr<DGArc> nullptr_;
   __ArcDestEqual predicate(v);
   const ArcSetType::const_iterator end = children_.end();
   const ArcSetType::const_iterator pos = find_if(children_.begin(),children_.end(),predicate);
@@ -274,7 +274,7 @@ void
 DGVertex::reset()
 {
   dg_ = 0;
-  subtree_ = SafePtr<DRTree>();
+  subtree_ = std::shared_ptr<DRTree>();
 
   typedef ArcSetType::const_iterator citer;
   typedef ArcSetType::iterator iter;
@@ -313,7 +313,7 @@ DGVertex::set_graph_label(const std::string& label)
 }
 
 void
-DGVertex::refer_this_to(const SafePtr<DGVertex>& V)
+DGVertex::refer_this_to(const std::shared_ptr<DGVertex>& V)
 {
   if (referred_vertex_ != 0) {
     if (referred_vertex_->equiv(V))
@@ -491,27 +491,27 @@ DGVertex::unregister() const
 ////
 
 bool
-UnrolledIntegralSet::operator()(const SafePtr<DGVertex>& V)
+UnrolledIntegralSet::operator()(const std::shared_ptr<DGVertex>& V)
 {
   const unsigned int outdegree = V->num_exit_arcs();
   if (outdegree == 0) return false;
 
-  const SafePtr<DGArc> arc0 = *(V->first_exit_arc());
+  const std::shared_ptr<DGArc> arc0 = *(V->first_exit_arc());
   // Is this DGArcRR?
-  const SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
+  const std::shared_ptr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
   if (arcrr == 0) return false;
   // Is this DGArcRR<IntegralSet_to_Integral>? If invariant_type() is false, then yes
   return !arcrr->rr()->invariant_type();
 }
 
 bool
-NotUnrolledIntegralSet::operator()(const SafePtr<DGVertex>& V)
+NotUnrolledIntegralSet::operator()(const std::shared_ptr<DGVertex>& V)
 {
   return !UnrolledIntegralSet()(V);
 }
 
 bool
-IntegralInTargetIntegralSet::operator()(const SafePtr<DGVertex>& V)
+IntegralInTargetIntegralSet::operator()(const std::shared_ptr<DGVertex>& V)
 {
   const unsigned int indegree = V->num_entry_arcs();
   if (indegree != 1) return false;

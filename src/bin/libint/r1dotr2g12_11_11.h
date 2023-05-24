@@ -63,9 +63,9 @@ namespace libint2 {
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
       */
-      static const SafePtr<R1dotR2G12_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1);
+      static const std::shared_ptr<R1dotR2G12_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1);
       /// Returns a pointer to a unique instance, a la Singleton
-      static const SafePtr<R1dotR2G12_11_11> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
+      static const std::shared_ptr<R1dotR2G12_11_11> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
       ~R1dotR2G12_11_11();
 
       /// Comparison operator
@@ -124,14 +124,14 @@ namespace libint2 {
     }
 
   template <class BFS>
-    const SafePtr< R1dotR2G12_11_11<BFS> >
+    const std::shared_ptr< R1dotR2G12_11_11<BFS> >
     R1dotR2G12_11_11<BFS>::Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux)
     {
       typedef typename SingletonManagerType::value_type map_value_type;
       key_type key = compute_key(OperType(),bra,ket,aux);
       const map_value_type& val = singl_manager_.find(key);
       if (!val.second) {
-	SafePtr<R1dotR2G12_11_11> this_int(new R1dotR2G12_11_11<BFS>(bra,ket,aux));
+	std::shared_ptr<R1dotR2G12_11_11> this_int(new R1dotR2G12_11_11<BFS>(bra,ket,aux));
 	// Use singl_manager_ to make sure this is a new object of this type
 	const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
 	val.second->instid_ = val.first;
@@ -141,7 +141,7 @@ namespace libint2 {
     }
 
   template <class BFS>
-    const SafePtr< R1dotR2G12_11_11<BFS> >
+    const std::shared_ptr< R1dotR2G12_11_11<BFS> >
     R1dotR2G12_11_11<BFS>::Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1)
     {
 #if USE_BRAKET_H
@@ -151,7 +151,7 @@ namespace libint2 {
       BFSRef ket0_ref(ket0);
       BFSRef ket1_ref(ket1);
 #else
-      typedef SafePtr<BFS> BFSRef;
+      typedef std::shared_ptr<BFS> BFSRef;
       BFSRef bra0_ref(new BFS(bra0));
       BFSRef bra1_ref(new BFS(bra1));
       BFSRef ket0_ref(new BFS(ket0));

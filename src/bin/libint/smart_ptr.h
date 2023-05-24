@@ -25,32 +25,31 @@
 #include <memory>
 
 namespace libint2 {
-template<typename T> using SafePtr = std::shared_ptr<T>;
 using std::const_pointer_cast;
 using std::dynamic_pointer_cast;
 using std::static_pointer_cast;
 
 namespace detail {
-/** Can be used to determine whether a type is a SafePtr */
+/** Can be used to determine whether a type is a std::shared_ptr */
 template <typename T>
 struct IsSafePtr {
   enum { result = false };
 };
 
 template <typename T>
-struct IsSafePtr< SafePtr<T> > {
+struct IsSafePtr< std::shared_ptr<T> > {
   enum { result = true };
 };
 template <typename T>
-struct IsSafePtr< const SafePtr<T> > {
+struct IsSafePtr< const std::shared_ptr<T> > {
   enum { result = true };
 };
 template <typename T>
-struct IsSafePtr< SafePtr<T>& > {
+struct IsSafePtr< std::shared_ptr<T>& > {
   enum { result = true };
 };
 template <typename T>
-struct IsSafePtr< const SafePtr<T>& > {
+struct IsSafePtr< const std::shared_ptr<T>& > {
   enum { result = true };
 };
 }  // namespace detail

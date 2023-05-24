@@ -25,8 +25,8 @@
 namespace libint2 {
 
   /** ConstructablePolymorphically is a base for all objects
-      which can be constructed using a SafePtr to a base or a
-      SafePtr to ConstructablePolymorphically.
+      which can be constructed using a std::shared_ptr to a base or a
+      std::shared_ptr to ConstructablePolymorphically.
   */
   class ConstructablePolymorphically {
   protected:

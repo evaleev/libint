@@ -54,7 +54,7 @@ namespace libint2 {
       using ParentType::is_simple;
 
       /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-      CR_XYZ_1_1(const SafePtr<TargetType>&, unsigned int dir = 0);
+      CR_XYZ_1_1(const std::shared_ptr<TargetType>&, unsigned int dir = 0);
 
       static std::string descr() { return "CR"; }
 
@@ -63,7 +63,7 @@ namespace libint2 {
   };
 
   template <typename F, typename Oper, typename AuxQuanta>
-  CR_XYZ_1_1<F,Oper,AuxQuanta>::CR_XYZ_1_1(const SafePtr< TargetType >& Tint,
+  CR_XYZ_1_1<F,Oper,AuxQuanta>::CR_XYZ_1_1(const std::shared_ptr< TargetType >& Tint,
                                            unsigned int dir) :
     ParentType(Tint,dir)
     {

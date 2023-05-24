@@ -37,18 +37,18 @@
 namespace libint2 {
 
   // defined in buildtest.cc
-  void generate_rr_code(std::ostream& os, const SafePtr<CompilationParameters>& cparams,
+  void generate_rr_code(std::ostream& os, const std::shared_ptr<CompilationParameters>& cparams,
                         std::deque<std::string>& decl_filenames,
                         std::deque<std::string>& def_filenames);
 
   /// defined below generates code for dg; dg and memman are reset at the end
   void
-    GenerateCode(const SafePtr<DirectedGraph>& dg,
-                 const SafePtr<CodeContext>& context,
-                 const SafePtr<CompilationParameters>& cparams,
-                 const SafePtr<Strategy>& strat,
-                 const SafePtr<Tactic>& tactic,
-                 const SafePtr<MemoryManager>& memman,
+    GenerateCode(const std::shared_ptr<DirectedGraph>& dg,
+                 const std::shared_ptr<CodeContext>& context,
+                 const std::shared_ptr<CompilationParameters>& cparams,
+                 const std::shared_ptr<Strategy>& strat,
+                 const std::shared_ptr<Tactic>& tactic,
+                 const std::shared_ptr<MemoryManager>& memman,
                  std::deque<std::string>& decl_filenames,
                  std::deque<std::string>& def_filenames,
                  const std::string& prefix,
@@ -82,7 +82,7 @@ namespace libint2 {
       to be produced (i.e. include header files + set-level recurrence relations code)
    */
   template <class Integral, bool GenAllCode>
-    void BuildTest(const std::vector< SafePtr<Integral> >& targets, unsigned int size_to_unroll, unsigned int veclen,
+    void BuildTest(const std::vector< std::shared_ptr<Integral> >& targets, unsigned int size_to_unroll, unsigned int veclen,
 		   bool vec_by_line, bool do_cse, const std::string& complabel = "buildtest",
 		   std::ostream& os = std::cout);
 
@@ -91,23 +91,23 @@ namespace libint2 {
       to be produced (i.e. include header files + set-level recurrence relations code)
    */
   template <class Integral, bool GenAllCode>
-    void __BuildTest(const std::vector< SafePtr<Integral> >& targets, const SafePtr<CompilationParameters>& cparams,
+    void __BuildTest(const std::vector< std::shared_ptr<Integral> >& targets, const std::shared_ptr<CompilationParameters>& cparams,
 		     unsigned int size_to_unroll, std::ostream& os = std::cout,
-		     const SafePtr<Tactic>& tactic = SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
-		     const SafePtr<MemoryManager>& memman = SafePtr<MemoryManager>(new WorstFitMemoryManager),
+		     const std::shared_ptr<Tactic>& tactic = std::shared_ptr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
+		     const std::shared_ptr<MemoryManager>& memman = std::shared_ptr<MemoryManager>(new WorstFitMemoryManager),
 		     const std::string& complabel = "general_integral");
 
   template <class Integral, bool GenAllCode>
     void
-    __BuildTest(const std::vector< SafePtr<Integral> >& targets, const SafePtr<CompilationParameters>& cparams,
+    __BuildTest(const std::vector< std::shared_ptr<Integral> >& targets, const std::shared_ptr<CompilationParameters>& cparams,
 		unsigned int size_to_unroll, std::ostream& os,
-		const SafePtr<Tactic>& tactic, const SafePtr<MemoryManager>& memman,
+		const std::shared_ptr<Tactic>& tactic, const std::shared_ptr<MemoryManager>& memman,
 		const std::string& complabel)
     {
       const std::string prefix("");
       const std::string label = cparams->api_prefix() + complabel;
-      SafePtr<Strategy> strat(new Strategy);
-      SafePtr<CodeContext> context(new CppCodeContext(cparams));
+      std::shared_ptr<Strategy> strat(new Strategy);
+      std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
 
       LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
       taskmgr.add(complabel);
@@ -118,7 +118,7 @@ namespace libint2 {
       //
       unsigned int max_am = 0;
       for(unsigned int t=0; t<targets.size(); ++t) {
-        const SafePtr<Integral>& target = targets[t];
+        const std::shared_ptr<Integral>& target = targets[t];
         const unsigned int np = target->bra().num_part();
         // bra
         for(unsigned int p=0; p<np; p++) {
@@ -148,7 +148,7 @@ namespace libint2 {
 
       os << "Building " << complabel << std::endl;
 
-      SafePtr<DirectedGraph> dg_xxxx(new DirectedGraph);
+      std::shared_ptr<DirectedGraph> dg_xxxx(new DirectedGraph);
       dg_xxxx->set_label(complabel);
 
       // configure the graph
@@ -159,8 +159,8 @@ namespace libint2 {
       dg_xxxx->registry()->unroll_threshold(size_to_unroll);
 
       for(unsigned int t=0; t<targets.size(); ++t) {
-        const SafePtr<Integral>& target = targets[t];
-        SafePtr<DGVertex> target_ptr = dynamic_pointer_cast<DGVertex,Integral>(target);
+        const std::shared_ptr<Integral>& target = targets[t];
+        std::shared_ptr<DGVertex> target_ptr = dynamic_pointer_cast<DGVertex,Integral>(target);
         assert(target_ptr != 0);
         dg_xxxx->append_target(target_ptr);
       }
@@ -177,9 +177,9 @@ namespace libint2 {
 
       if (GenAllCode) {
         // initialize code context to produce library API
-        SafePtr<CodeContext> icontext(new CppCodeContext(cparams));
+        std::shared_ptr<CodeContext> icontext(new CppCodeContext(cparams));
         // initialize object to generate interface
-        SafePtr<Libint2Iface> iface(new Libint2Iface(cparams,icontext));
+        std::shared_ptr<Libint2Iface> iface(new Libint2Iface(cparams,icontext));
 
         // generate interface
         std::ostringstream oss;
@@ -215,12 +215,12 @@ namespace libint2 {
     }
 
   void
-  GenerateCode(const SafePtr<DirectedGraph>& dg,
-               const SafePtr<CodeContext>& context,
-               const SafePtr<CompilationParameters>& cparams,
-               const SafePtr<Strategy>& strat,
-               const SafePtr<Tactic>& tactic,
-               const SafePtr<MemoryManager>& memman,
+  GenerateCode(const std::shared_ptr<DirectedGraph>& dg,
+               const std::shared_ptr<CodeContext>& context,
+               const std::shared_ptr<CompilationParameters>& cparams,
+               const std::shared_ptr<Strategy>& strat,
+               const std::shared_ptr<Tactic>& tactic,
+               const std::shared_ptr<MemoryManager>& memman,
                std::deque<std::string>& decl_filenames,
                std::deque<std::string>& def_filenames,
                const std::string& prefix,
@@ -245,7 +245,7 @@ namespace libint2 {
       //std::cout << "missing some prerequisites!" << std::endl;
       dg->foreach(pe);
     }
-    std::deque< SafePtr<DGVertex> > prereq_list = pe.vertices;
+    std::deque< std::shared_ptr<DGVertex> > prereq_list = pe.vertices;
 
     dg->traverse();
     //dg->debug_print_traversal(cout);
@@ -262,7 +262,7 @@ namespace libint2 {
     std::basic_ofstream<char> declfile(decl_filename.c_str());
     std::basic_ofstream<char> deffile(def_filename.c_str());
     // if have parent graph, it will pass its stack where this graph will put its results
-    SafePtr<CodeSymbols> args(new CodeSymbols);
+    std::shared_ptr<CodeSymbols> args(new CodeSymbols);
     if (have_parent)
       args->append_symbol("parent_stack");
     dg->generate_code(context,memman,ImplicitDimensions::default_dims(),args,
@@ -286,9 +286,9 @@ namespace libint2 {
     // last: missing prerequisites? create new graph computing prereqs and move them onto it
     if (dg->missing_prerequisites()) {
 
-      SafePtr<DirectedGraph> dg_prereq(new DirectedGraph);
+      std::shared_ptr<DirectedGraph> dg_prereq(new DirectedGraph);
       // configure identically
-      dg_prereq->registry() = SafePtr<GraphRegistry>(dg->registry()->clone());
+      dg_prereq->registry() = std::shared_ptr<GraphRegistry>(dg->registry()->clone());
       // except:
       // - allow uncontraction
       // - no need to return targets via inteval->targets_ -- their locations are known by the parent graph (see allocate_mem)
@@ -324,7 +324,7 @@ namespace libint2 {
   }
 
   template <class Integral, bool GenAllCode>
-    void BuildTest(const std::vector< SafePtr<Integral> >& targets, unsigned int size_to_unroll, unsigned int veclen,
+    void BuildTest(const std::vector< std::shared_ptr<Integral> >& targets, unsigned int size_to_unroll, unsigned int veclen,
 		   bool vec_by_line, bool do_cse, const std::string& complabel,
 		   std::ostream& os)
   {
@@ -336,7 +336,7 @@ namespace libint2 {
     taskmgr.current(complabel);
 
     // initialize cparams
-    SafePtr<CompilationParameters> cparams(new CompilationParameters);
+    std::shared_ptr<CompilationParameters> cparams(new CompilationParameters);
     cparams->max_am(complabel,max_am);
     cparams->num_bf(complabel,4u);
     cparams->max_vector_length(veclen);
@@ -379,26 +379,26 @@ namespace libint2 {
     // set default dims
     ImplicitDimensions::set_default_dims(cparams);
 
-    SafePtr<StdRandomizePolicy> rpolicy(new StdRandomizePolicy(0.00));
+    std::shared_ptr<StdRandomizePolicy> rpolicy(new StdRandomizePolicy(0.00));
     // use 4-center OS if the target is a 4-center integral
-    SafePtr<Tactic> tactic;
+    std::shared_ptr<Tactic> tactic;
     {
       typedef GenIntegralSet_11_11<typename Integral::BasisFunctionType,
       typename Integral::OperatorType,
       typename Integral::AuxIndexType> genint_11_11_t;
-      SafePtr< genint_11_11_t > cast_ptr = dynamic_pointer_cast<genint_11_11_t>(targets.front());
+      std::shared_ptr< genint_11_11_t > cast_ptr = dynamic_pointer_cast<genint_11_11_t>(targets.front());
       if (cast_ptr) {
         const unsigned int la = cast_ptr->bra(0, 0).norm();
         const unsigned int lb = cast_ptr->ket(0, 0).norm();
         const unsigned int lc = cast_ptr->bra(1, 0).norm();
         const unsigned int ld = cast_ptr->ket(1, 0).norm();
-        tactic = SafePtr<Tactic>(new FourCenter_OS_Tactic(la, lb, lc, ld));
+        tactic = std::shared_ptr<Tactic>(new FourCenter_OS_Tactic(la, lb, lc, ld));
       }
       else {
-        tactic = SafePtr<Tactic>(new FirstChoiceTactic<StdRandomizePolicy>(rpolicy));
+        tactic = std::shared_ptr<Tactic>(new FirstChoiceTactic<StdRandomizePolicy>(rpolicy));
       }
     }
-    const SafePtr<MemoryManager> memman(new WorstFitMemoryManager);
+    const std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager);
     __BuildTest<Integral,true>(targets,cparams,size_to_unroll,os,tactic,memman,complabel);
   }
 

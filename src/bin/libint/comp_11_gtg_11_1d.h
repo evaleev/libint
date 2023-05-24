@@ -53,21 +53,21 @@ namespace libint2 {
       using ParentType::is_simple;
 
       /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-      CR_11_GTG_11_1d(const SafePtr<TargetType>&, unsigned int dir);
+      CR_11_GTG_11_1d(const std::shared_ptr<TargetType>&, unsigned int dir);
       static std::string descr() { return "CR"; }
 
 #if LIBINT_ENABLE_GENERIC_CODE
     /// Implementation of RecurrenceRelation::has_generic()
-    bool has_generic(const SafePtr<CompilationParameters>& cparams) const override { return true; }
+    bool has_generic(const std::shared_ptr<CompilationParameters>& cparams) const override { return true; }
     /// Implementation of RecurrenceRelation::generic_header()
     std::string generic_header() const override { return "VRR_GTG_1d_xx_xx.h"; }
     /// Implementation of RecurrenceRelation::generic_instance()
-    std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const override;
+    std::string generic_instance(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<CodeSymbols>& args) const override;
 #endif
     };
 
   template <CartesianAxis Axis>
-  CR_11_GTG_11_1d<Axis>::CR_11_GTG_11_1d(const SafePtr<TargetType>& Tint,
+  CR_11_GTG_11_1d<Axis>::CR_11_GTG_11_1d(const std::shared_ptr<TargetType>& Tint,
                                          unsigned int dir) :
     ParentType(Tint,dir)
     {
@@ -88,7 +88,7 @@ namespace libint2 {
 #if LIBINT_ENABLE_GENERIC_CODE
   template <CartesianAxis Axis>
   std::string
-  CR_11_GTG_11_1d<Axis>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const {
+  CR_11_GTG_11_1d<Axis>::generic_instance(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<CodeSymbols>& args) const {
 
       std::ostringstream oss;
       auto a = target_->bra(0,0);

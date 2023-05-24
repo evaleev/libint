@@ -37,7 +37,7 @@
 namespace libint2 {
 
   /** Set of basis functions. Sets must be constructable using
-      SafePtr<BFSet> or SafePtr<ConstructablePolymorphically>.
+      std::shared_ptr<BFSet> or std::shared_ptr<ConstructablePolymorphically>.
   */
   class BFSet : public ConstructablePolymorphically {
 
@@ -52,7 +52,7 @@ namespace libint2 {
   };
 
   /** Set of basis functions with incrementable/decrementable quantum numbers.
-      Sets must be constructable using SafePtr<BFSet> or SafePtr<ConstructablePolymorphically>.
+      Sets must be constructable using std::shared_ptr<BFSet> or std::shared_ptr<ConstructablePolymorphically>.
 
       Call to dec() may invalidate the object. No further
       modification of such object's state is possible.

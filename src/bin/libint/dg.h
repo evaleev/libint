@@ -64,8 +64,8 @@ namespace libint2 {
   public:
     typedef DGVertex vertex;
     typedef DGArc arc;
-    typedef SafePtr<DGVertex> ver_ptr;
-    typedef SafePtr<DGArc> arc_ptr;
+    typedef std::shared_ptr<DGVertex> ver_ptr;
+    typedef std::shared_ptr<DGArc> arc_ptr;
     typedef DGVertexKey key_type;
     typedef std::multimap<key_type,ver_ptr> VPtrAssociativeContainer;
     typedef std::list<ver_ptr> VPtrSequenceContainer;
@@ -119,16 +119,16 @@ namespace libint2 {
 #endif
     /// Find vertex v or it's equivalent on the graph. Return null pointer if not found.
     /// Computational cost for a graph based on a nonassociative container may be high
-    const SafePtr<DGVertex>& find(const SafePtr<DGVertex>& v) const { return vertex_is_on(v); }
+    const std::shared_ptr<DGVertex>& find(const std::shared_ptr<DGVertex>& v) const { return vertex_is_on(v); }
 
     /** appends v to the graph. If v's copy is already on the graph, return the pointer
 	to the copy. Else return pointer to *v.
      */
-    SafePtr<DGVertex> append_vertex(const SafePtr<DGVertex>& v);
+    std::shared_ptr<DGVertex> append_vertex(const std::shared_ptr<DGVertex>& v);
 
     /** non-template append_target appends the vertex to the graph as a target
      */
-    void append_target(const SafePtr<DGVertex>&);
+    void append_target(const std::shared_ptr<DGVertex>&);
 
     /** append_target appends I to the graph as a target vertex and applies
         RR to it. append_target can be called multiple times on the same
@@ -142,7 +142,7 @@ namespace libint2 {
         standard Bjarne Stroustrup's approach.
 
      */
-    template <class I, class RR> void append_target(const SafePtr<I>& target) {
+    template <class I, class RR> void append_target(const std::shared_ptr<I>& target) {
       target->make_a_target();
       recurse<I,RR>(target);
     }
@@ -165,17 +165,17 @@ namespace libint2 {
         ver_ptr& vptr = vertex_ptr(*v);
         if ((vptr)->num_exit_arcs() != 0)
           continue;
-        SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(v);
+        std::shared_ptr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(v);
         if (tptr == 0)
           continue;
 
-        SafePtr<RR> rr0(new RR(tptr));
+        std::shared_ptr<RR> rr0(new RR(tptr));
         const int num_children = rr0->num_children();
 
         for(int c=0; c<num_children; c++) {
 
-          SafePtr<DGVertex> child = rr0->child(c);
-          SafePtr<DGArc> arc(new DGArcRel<RR>(tptr,child,rr0));
+          std::shared_ptr<DGVertex> child = rr0->child(c);
+          std::shared_ptr<DGArc> arc(new DGArcRel<RR>(tptr,child,rr0));
           tptr->add_exit_arc(arc);
 
           recurse<RR>(child);
@@ -190,14 +190,14 @@ namespace libint2 {
       There usually are many ways to reduce a vertex.
       Tactic specifies which of these possibilities to choose.
      */
-    void apply(const SafePtr<Strategy>& strategy,
-        const SafePtr<Tactic>& tactic);
+    void apply(const std::shared_ptr<Strategy>& strategy,
+        const std::shared_ptr<Tactic>& tactic);
 
     typedef void (DGVertex::* DGVertexMethodPtr)();
     /** apply_at<method>(vertex) calls method() on vertex and all of its descendants
      */
     template <DGVertexMethodPtr method>
-    void apply_at(const SafePtr<DGVertex>& vertex) const {
+    void apply_at(const std::shared_ptr<DGVertex>& vertex) const {
       ((vertex.get())->*method)();
       typedef DGVertex::ArcSetType::const_iterator aciter;
       const aciter abegin = vertex->first_exit_arc();
@@ -253,7 +253,7 @@ namespace libint2 {
         optimized away. optimize_rr_out() will replace all simple recurrence relations
         with code representing them.
      */
-    void optimize_rr_out(const SafePtr<CodeContext>& context);
+    void optimize_rr_out(const std::shared_ptr<CodeContext>& context);
 
     /** after all apply's have been called, traverse()
         construct a heuristic order of traversal for the graph.
@@ -282,8 +282,8 @@ namespace libint2 {
        decl specifies the stream to receive declaration code,
        code specifies the stream to receive the definition code
      */
-    void generate_code(const SafePtr<CodeContext>& context, const SafePtr<MemoryManager>& memman,
-        const SafePtr<ImplicitDimensions>& dims, const SafePtr<CodeSymbols>& args,
+    void generate_code(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<MemoryManager>& memman,
+        const std::shared_ptr<ImplicitDimensions>& dims, const std::shared_ptr<CodeSymbols>& args,
         const std::string& label,
         std::ostream& decl, std::ostream& code);
 
@@ -297,7 +297,7 @@ namespace libint2 {
      */
     template <class RR>
     unsigned int
-    num_children_on(const SafePtr<RR>& rr) const {
+    num_children_on(const std::shared_ptr<RR>& rr) const {
       unsigned int nchildren = rr->num_children();
       unsigned int nchildren_on_stack = 0;
       for(unsigned int c=0; c<nchildren; c++) {
@@ -311,8 +311,8 @@ namespace libint2 {
     }
 
     /// Returns the registry
-    SafePtr<GraphRegistry>& registry() { return registry_; }
-    const SafePtr<GraphRegistry>& registry() const { return registry_; }
+    std::shared_ptr<GraphRegistry>& registry() { return registry_; }
+    const std::shared_ptr<GraphRegistry>& registry() const { return registry_; }
 
     /// return the graph label
     const std::string& label() const { return label_; }
@@ -345,43 +345,43 @@ namespace libint2 {
 #endif
 
     // maintains data about the graph which does not belong IN the graph
-    SafePtr<GraphRegistry> registry_;
+    std::shared_ptr<GraphRegistry> registry_;
     // maintains private data about the graph which does not belong IN the graph
-    SafePtr<InternalGraphRegistry> iregistry_;
+    std::shared_ptr<InternalGraphRegistry> iregistry_;
 
     /// Access the internal registry
-    SafePtr<InternalGraphRegistry>& iregistry() { return iregistry_; }
-    const SafePtr<InternalGraphRegistry>& iregistry() const { return iregistry_; }
+    std::shared_ptr<InternalGraphRegistry>& iregistry() { return iregistry_; }
+    const std::shared_ptr<InternalGraphRegistry>& iregistry() const { return iregistry_; }
 
     /** adds a vertex to the graph. If the vertex already found on the graph
         then the vertex is not added and the function returns false */
-    SafePtr<DGVertex> add_vertex(const SafePtr<DGVertex>&);
+    std::shared_ptr<DGVertex> add_vertex(const std::shared_ptr<DGVertex>&);
     /** same as add_vertex(), only assumes that there's no equivalent vertex on the graph (see vertex_is_on) */
-    void add_new_vertex(const SafePtr<DGVertex>&);
+    void add_new_vertex(const std::shared_ptr<DGVertex>&);
     /// returns true if vertex if already on graph
-    const SafePtr<DGVertex>& vertex_is_on(const SafePtr<DGVertex>& vertex) const;
+    const std::shared_ptr<DGVertex>& vertex_is_on(const std::shared_ptr<DGVertex>& vertex) const;
     /// removes vertex from the graph. may throw CannotPerformOperation
     void del_vertex(vertices::iterator&);
     /** This function is used to implement (recursive) append_target().
         vertex is appended to the graph and then RR is applied to is.
      */
-    template <class I, class RR> void recurse(const SafePtr<I>& vertex)  {
-      SafePtr<DGVertex> dgvertex = add_vertex(vertex);
+    template <class I, class RR> void recurse(const std::shared_ptr<I>& vertex)  {
+      std::shared_ptr<DGVertex> dgvertex = add_vertex(vertex);
       if (dgvertex != vertex)
         return;
 
-      SafePtr<RR> rr0(new RR(vertex));
+      std::shared_ptr<RR> rr0(new RR(vertex));
       const int num_children = rr0->num_children();
 
       for(int c=0; c<num_children; c++) {
 
-        SafePtr<DGVertex> child = rr0->child(c);
-        SafePtr<DGArc> arc(new DGArcRel<RR>(vertex,child,rr0));
+        std::shared_ptr<DGVertex> child = rr0->child(c);
+        std::shared_ptr<DGArc> arc(new DGArcRel<RR>(vertex,child,rr0));
         vertex->add_exit_arc(arc);
 
-        SafePtr<I> child_cast = dynamic_pointer_cast<I,DGVertex>(child);
+        std::shared_ptr<I> child_cast = dynamic_pointer_cast<I,DGVertex>(child);
         if (child_cast == 0)
-          throw std::runtime_error("DirectedGraph::recurse(const SafePtr<I>& vertex) -- dynamic cast failed, most probably this is a logic error!");
+          throw std::runtime_error("DirectedGraph::recurse(const std::shared_ptr<I>& vertex) -- dynamic cast failed, most probably this is a logic error!");
         recurse<I,RR>(child_cast);
 
       }
@@ -390,23 +390,23 @@ namespace libint2 {
     /** This function is used to implement (recursive) apply_to_all().
         RR is applied to vertex and all its children.
      */
-    template <class RR> void recurse(const SafePtr<DGVertex>& vertex)  {
-      SafePtr<DGVertex> dgvertex = add_vertex(vertex);
+    template <class RR> void recurse(const std::shared_ptr<DGVertex>& vertex)  {
+      std::shared_ptr<DGVertex> dgvertex = add_vertex(vertex);
       if (dgvertex != vertex)
         return;
 
       typedef typename RR::TargetType TT;
-      SafePtr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(vertex);
+      std::shared_ptr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(vertex);
       if (tptr == 0)
         return;
 
-      SafePtr<RR> rr0(new RR(tptr));
+      std::shared_ptr<RR> rr0(new RR(tptr));
       const int num_children = rr0->num_children();
 
       for(int c=0; c<num_children; c++) {
 
-        SafePtr<DGVertex> child = rr0->child(c);
-        SafePtr<DGArc> arc(new DGArcRel<RR>(vertex,child,rr0));
+        std::shared_ptr<DGVertex> child = rr0->child(c);
+        std::shared_ptr<DGArc> arc(new DGArcRel<RR>(vertex,child,rr0));
         vertex->add_exit_arc(arc);
 
         recurse<RR>(child);
@@ -416,11 +416,11 @@ namespace libint2 {
     /** This function is used to implement (recursive) apply().
       strategy and tactic are applied to vertex and all its children.
      */
-    void apply_to(const SafePtr<DGVertex>& vertex,
-        const SafePtr<Strategy>& strategy,
-        const SafePtr<Tactic>& tactic);
+    void apply_to(const std::shared_ptr<DGVertex>& vertex,
+        const std::shared_ptr<Strategy>& strategy,
+        const std::shared_ptr<Tactic>& tactic);
     /// This function insert expr of type AlgebraicOperator<DGVertex> into the graph
-    SafePtr<DGVertex> insert_expr_at(const SafePtr<DGVertex>& where, const SafePtr< AlgebraicOperator<DGVertex> >& expr);
+    std::shared_ptr<DGVertex> insert_expr_at(const std::shared_ptr<DGVertex>& where, const std::shared_ptr< AlgebraicOperator<DGVertex> >& expr);
     /// This function replaces RecurrenceRelations with concrete arithemtical expressions
     void replace_rr_with_expr();
     /// This function gets rid of trivial math such as multiplication/division by 1.0, etc.
@@ -428,7 +428,7 @@ namespace libint2 {
     /** This function gets rid of nodes which are connected
     to their equivalents (such as (ss|ss) shell quartet can only be connected to (ss|ss) integral)
      */
-    void handle_trivial_nodes(const SafePtr<CodeContext>& context);
+    void handle_trivial_nodes(const std::shared_ptr<CodeContext>& context);
     /// This functions removes vertices not connected to other vertices
     void remove_disconnected_vertices();
     /** Finds (binary) subtrees. The subtrees correspond to a single-line code (no intermediates
@@ -437,34 +437,34 @@ namespace libint2 {
     void find_subtrees();
     /** Finds (binary) subtrees starting (recursively) at v.
      */
-    void find_subtrees_from(const SafePtr<DGVertex>& v);
+    void find_subtrees_from(const std::shared_ptr<DGVertex>& v);
     /** If v1 and v2 are connected by DGArcDirect and all entry arcs to v1 are of the DGArcDirect type as well,
         this function will reattach all arcs extering v1 to v2 and remove v1 from the graph altogether.
 	May throw CannotPerformOperation.
      */
-    bool remove_vertex_at(const SafePtr<DGVertex>& v1, const SafePtr<DGVertex>& v2);
+    bool remove_vertex_at(const std::shared_ptr<DGVertex>& v1, const std::shared_ptr<DGVertex>& v2);
 
     // Which vertex is the first to compute
-    SafePtr<DGVertex> first_to_compute_;
+    std::shared_ptr<DGVertex> first_to_compute_;
     // prepare_to_traverse must be called before actual traversal
     void prepare_to_traverse();
     // traverse_from(arc) build recurively the traversal order
-    void traverse_from(const SafePtr<DGArc>&);
+    void traverse_from(const std::shared_ptr<DGArc>&);
     // schedule_computation(vertex) puts vertex first in the computation order
-    void schedule_computation(const SafePtr<DGVertex>&);
+    void schedule_computation(const std::shared_ptr<DGVertex>&);
 
     // Compute addresses on stack assuming that quantities larger than min_size_to_alloc to be allocated on stack
-    void allocate_mem(const SafePtr<MemoryManager>& memman,
-        const SafePtr<ImplicitDimensions>& dims,
+    void allocate_mem(const std::shared_ptr<MemoryManager>& memman,
+        const std::shared_ptr<ImplicitDimensions>& dims,
         unsigned int min_size_to_alloc = 1);
     // Assign symbols to the vertices
-    void assign_symbols(const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims);
+    void assign_symbols(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<ImplicitDimensions>& dims);
     // If v is an AlgebraicOperator, assign (recursively) symbol to the operator. All other must have been already assigned
-    void assign_oper_symbol(const SafePtr<CodeContext>& context, SafePtr<DGVertex>& v);
+    void assign_oper_symbol(const std::shared_ptr<CodeContext>& context, std::shared_ptr<DGVertex>& v);
     // Print the code using symbols generated with assign_symbols()
-    void print_def(const SafePtr<CodeContext>& context, std::ostream& os,
-        const SafePtr<ImplicitDimensions>& dims,
-        const SafePtr<CodeSymbols>& args);
+    void print_def(const std::shared_ptr<CodeContext>& context, std::ostream& os,
+        const std::shared_ptr<ImplicitDimensions>& dims,
+        const std::shared_ptr<CodeSymbols>& args);
 
     /** Returns true if cannot enclose the code in a vector loop
         Possible reason: the traversal path contains a RecurrenceRelation that generates a function call
@@ -505,17 +505,17 @@ namespace libint2 {
   bool nonunrolled_targets(const DirectedGraph::targets& targets);
 
   /// extracts external symbols and RRs from the graph
-  void extract_symbols(const SafePtr<DirectedGraph>& dg);
+  void extract_symbols(const std::shared_ptr<DirectedGraph>& dg);
 
   // use these functors with DirectedGraph::foreach
   struct PrerequisitesExtractor {
-    std::deque< SafePtr<DGVertex> > vertices;
-    void operator()(const SafePtr<DGVertex>& v);
+    std::deque< std::shared_ptr<DGVertex> > vertices;
+    void operator()(const std::shared_ptr<DGVertex>& v);
   };
   struct VertexPrinter {
     VertexPrinter(std::ostream& ostr) : os(ostr) {}
     std::ostream& os;
-    void operator()(const SafePtr<DGVertex>& v);
+    void operator()(const std::shared_ptr<DGVertex>& v);
   };
 
 };

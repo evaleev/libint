@@ -108,7 +108,7 @@ namespace {
   CGShell sh_n(10);
   CGShell sh_o(11);
   CGShell sh_q(12);
-  SafePtr<CompilationParameters> cparams;
+  std::shared_ptr<CompilationParameters> cparams;
 
   int try_main (int argc, char* argv[])
   {
@@ -116,7 +116,7 @@ namespace {
     taskmgr.add("test");
 
     // initialize cparams
-    SafePtr<CompilationParameters> tmpcparams(new CompilationParameters);
+    std::shared_ptr<CompilationParameters> tmpcparams(new CompilationParameters);
     cparams = tmpcparams;
     cparams->max_am("test",2);
 
@@ -169,8 +169,8 @@ namespace {
   void
   test0()
   {
-    SafePtr<TwoPRep_11_11_sq> pppp_quartet = TwoPRep_11_11_sq::Instance(sh_p,sh_p,sh_p,sh_p,0u);
-    SafePtr<DGVertex> pppp_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_11_11_sq>(pppp_quartet);
+    std::shared_ptr<TwoPRep_11_11_sq> pppp_quartet = TwoPRep_11_11_sq::Instance(sh_p,sh_p,sh_p,sh_p,0u);
+    std::shared_ptr<DGVertex> pppp_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_11_11_sq>(pppp_quartet);
 
     // test CGShell iterator
     test_cgshell_iter(sh_s);
@@ -184,7 +184,7 @@ namespace {
     test_cgshell_iter(sh_l);
 
     // test IntegralSet iterator
-    SafePtr<TwoPRep_11_11_sq> obj(pppp_quartet);
+    std::shared_ptr<TwoPRep_11_11_sq> obj(pppp_quartet);
     cout << obj->description() << endl;
     SubIteratorBase< TwoPRep_11_11_sq > siter2(obj);
     for(siter2.init(); siter2; ++siter2)
@@ -196,24 +196,24 @@ namespace {
   test1()
   {
 
-    SafePtr<Strategy> strat(new Strategy);
-    SafePtr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
-    SafePtr<TwoPRep_11_11_sq> xsxs_quartet = TwoPRep_11_11_sq::Instance(sh_f,sh_f,sh_f,sh_f,0u);
+    std::shared_ptr<Strategy> strat(new Strategy);
+    std::shared_ptr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
+    std::shared_ptr<TwoPRep_11_11_sq> xsxs_quartet = TwoPRep_11_11_sq::Instance(sh_f,sh_f,sh_f,sh_f,0u);
     cout << "Building " << xsxs_quartet->description() << endl;
-    SafePtr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_11_11_sq>(xsxs_quartet);
+    std::shared_ptr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_11_11_sq>(xsxs_quartet);
 
-    SafePtr<MemoryManagerFactory> mmfactory(new MemoryManagerFactory);
+    std::shared_ptr<MemoryManagerFactory> mmfactory(new MemoryManagerFactory);
 
     for(unsigned int m = 0; m < MemoryManagerFactory::ntypes; m++) {
-      SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
-      SafePtr<CodeContext> context(new CppCodeContext(cparams));
-      SafePtr<MemoryManager> memman = mmfactory->memman(m);
+      std::shared_ptr<DirectedGraph> dg_xxxx3(new DirectedGraph);
+      std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
+      std::shared_ptr<MemoryManager> memman = mmfactory->memman(m);
       dg_xxxx3->append_target(xsxs_ptr);
       dg_xxxx3->apply(strat,tactic);
       dg_xxxx3->optimize_rr_out(context);
       dg_xxxx3->traverse();
       std::basic_ofstream<char> devnull("/dev/null");
-      dg_xxxx3->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),xsxs_quartet->label(),devnull,devnull);
+      dg_xxxx3->generate_code(context,memman,ImplicitDimensions::default_dims(),std::shared_ptr<CodeSymbols>(new CodeSymbols),xsxs_quartet->label(),devnull,devnull);
       cout << "Using " << mmfactory->label(m) << ": max memory used = " << memman->max_memory_used() << endl;
       dg_xxxx3->reset();
     }
@@ -222,15 +222,15 @@ namespace {
     const unsigned int tf_max = 6;
     for(unsigned int tf = 1; tf <= tf_max; tf++) {
       for(int ex=1; ex>=0; ex--) {
-	SafePtr<DirectedGraph> dg_xxxx3(new DirectedGraph);
-    SafePtr<CodeContext> context(new CppCodeContext(cparams));
-    SafePtr<MemoryManager> memman(new BestFitMemoryManager(ex,tf));
+	std::shared_ptr<DirectedGraph> dg_xxxx3(new DirectedGraph);
+    std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
+    std::shared_ptr<MemoryManager> memman(new BestFitMemoryManager(ex,tf));
 	dg_xxxx3->append_target(xsxs_ptr);
 	dg_xxxx3->apply(strat,tactic);
 	dg_xxxx3->optimize_rr_out(context);
 	dg_xxxx3->traverse();
 	std::basic_ofstream<char> devnull("/dev/null");
-	dg_xxxx3->generate_code(context,memman,ImplicitDimensions::default_dims(),SafePtr<CodeSymbols>(new CodeSymbols),xsxs_quartet->label(),devnull,devnull);
+	dg_xxxx3->generate_code(context,memman,ImplicitDimensions::default_dims(),std::shared_ptr<CodeSymbols>(new CodeSymbols),xsxs_quartet->label(),devnull,devnull);
 	cout << "Using BestFitMemoryManager(" << (ex == 1 ? "true" : "false")
 	     << "," << tf << "): max memory used = " << memman->max_memory_used() << endl;
 	dg_xxxx3->reset();
@@ -246,12 +246,12 @@ namespace {
 		      unsigned int size_to_unroll)
     {
       std::string descr("build ");
-      SafePtr<Integral> i = Integral::Instance(f1,f2,f3,f4);
+      std::shared_ptr<Integral> i = Integral::Instance(f1,f2,f3,f4);
       descr += i->label();
-      std::vector<SafePtr<Integral> > targets(1,i);
+      std::vector<std::shared_ptr<Integral> > targets(1,i);
       RunTest(boost::bind(__BuildTest<Integral,false>, targets, cparams,
-			  size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
-			  SafePtr<MemoryManager>(new WorstFitMemoryManager), descr), descr);
+			  size_to_unroll, boost::ref(cout), std::shared_ptr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
+			  std::shared_ptr<MemoryManager>(new WorstFitMemoryManager), descr), descr);
     }
 
   template <class Integral>
@@ -262,12 +262,12 @@ namespace {
 		      unsigned int m, unsigned int size_to_unroll)
     {
       std::string descr("build ");
-      SafePtr<Integral> i = Integral::Instance(f1,f2,f3,f4,m);
+      std::shared_ptr<Integral> i = Integral::Instance(f1,f2,f3,f4,m);
       descr += i->label();
-      std::vector<SafePtr<Integral> > targets(1,i);
+      std::vector<std::shared_ptr<Integral> > targets(1,i);
       RunTest(boost::bind(__BuildTest<Integral,false>, targets, cparams,
-			  size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
-			  SafePtr<MemoryManager>(new WorstFitMemoryManager), descr), descr);
+			  size_to_unroll, boost::ref(cout), std::shared_ptr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
+			  std::shared_ptr<MemoryManager>(new WorstFitMemoryManager), descr), descr);
     }
   template <class Integral>
     void RunBuildTest(const typename Integral::BasisFunctionType& f1,
@@ -280,19 +280,19 @@ namespace {
       std::string descr_label("build ");
       typedef typename Integral::OperType::Descriptor Descriptor;
       GenOper<Descriptor> oper(descr);
-      SafePtr<Integral> i = Integral::Instance(f1,f2,f3,f4,m,oper);
+      std::shared_ptr<Integral> i = Integral::Instance(f1,f2,f3,f4,m,oper);
       descr_label += i->label();
-      std::vector<SafePtr<Integral> > targets(1,i);
+      std::vector<std::shared_ptr<Integral> > targets(1,i);
       RunTest(boost::bind(__BuildTest<Integral,false>, targets, cparams,
-              size_to_unroll, boost::ref(cout), SafePtr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
-              SafePtr<MemoryManager>(new WorstFitMemoryManager), descr_label), descr_label);
+              size_to_unroll, boost::ref(cout), std::shared_ptr<Tactic>(new FirstChoiceTactic<DummyRandomizePolicy>),
+              std::shared_ptr<MemoryManager>(new WorstFitMemoryManager), descr_label), descr_label);
     }
 
 
   void test_cgshell_iter(const CGShell& sh)
   {
     const unsigned int nbf = sh.num_bf();
-    SafePtr<CGShell> sh_ptr(new CGShell(sh));
+    std::shared_ptr<CGShell> sh_ptr(new CGShell(sh));
     sh_ptr->print(cout);
     SubIteratorBase<CGShell> siter1(*sh_ptr);
     unsigned int bf = 0;
@@ -317,32 +317,32 @@ namespace {
 
     {
       typedef TwoPRep_11_11_sq IType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
+      std::shared_ptr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
       std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
     }
     {
       typedef R12kG12_11_11_sq IType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u,IType::OperType(-1));
+      std::shared_ptr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u,IType::OperType(-1));
       std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
     }
     {
       typedef TwoPRep_11_11_sq IType;
-      SafePtr<IType> iset = IType::Instance(csh_s,csh_q,csh_s,csh_s,0u);
+      std::shared_ptr<IType> iset = IType::Instance(csh_s,csh_q,csh_s,csh_s,0u);
       std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
     }
     {
       typedef TwoPRep_11_11_sq IType;
-      SafePtr<IType> iset = IType::Instance(csh_s,csh_d_dx,csh_s,csh_s,0u);
+      std::shared_ptr<IType> iset = IType::Instance(csh_s,csh_d_dx,csh_s,csh_s,0u);
       std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
     }
     {
       typedef TwoPRep_11_11_sq IType;
-      SafePtr<IType> iset = IType::Instance(csh_s,csh_f_dx,csh_s,csh_s,0u);
+      std::shared_ptr<IType> iset = IType::Instance(csh_s,csh_f_dx,csh_s,csh_s,0u);
       std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
     }
     {
       typedef TwoPRep_11_11_sq IType;
-      SafePtr<IType> iset = IType::Instance(csh_q,csh_q,csh_q,csh_q,0u);
+      std::shared_ptr<IType> iset = IType::Instance(csh_q,csh_q,csh_q,csh_q,0u);
       std::cout << "Created integral set " << iset->label() << " key = " << iset->key() << std::endl;
     }
   }
@@ -353,22 +353,22 @@ namespace {
     {
       typedef TwoPRep_11_11_sq IType;
       typedef VRR_a_11_TwoPRep_11_sh RRType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
-      SafePtr<RRType> rr = RRType::Instance(iset,0);
+      std::shared_ptr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
+      std::shared_ptr<RRType> rr = RRType::Instance(iset,0);
       std::cout << "Created recurrence relation " << rr->label() << std::endl;
     }
     {
       typedef TwoPRep_11_11_sq IType;
       typedef VRR_c_11_TwoPRep_11_sh RRType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
-      SafePtr<RRType> rr = RRType::Instance(iset,0);
+      std::shared_ptr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u);
+      std::shared_ptr<RRType> rr = RRType::Instance(iset,0);
       std::cout << "Created recurrence relation " << rr->label() << std::endl;
     }
     {
       typedef DivG12prime_xTx_11_11_sq IType;
       typedef CR_11_DivG12prime_xTx_11_sh RRType;
-      SafePtr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u,DivG12prime_xTx_Descr(0));
-      SafePtr<RRType> rr = RRType::Instance(iset,0);
+      std::shared_ptr<IType> iset = IType::Instance(sh_p,sh_p,sh_p,sh_p,0u,DivG12prime_xTx_Descr(0));
+      std::shared_ptr<RRType> rr = RRType::Instance(iset,0);
       std::cout << "Created recurrence relation " << rr->label() << std::endl;
     }
   }
@@ -441,11 +441,11 @@ namespace {
     CGShell csh_s_d2x(0u); csh_s_d2x.deriv().inc(0,2);
     CGShell csh_p_d2x(1u); csh_p_d2x.deriv().inc(0,2);
 
-    SafePtr<TwoPRep_11_11_sq> target = TwoPRep_11_11_sq::Instance(csh_p,csh_d_dx,csh_s,csh_s,mType(0u));
+    std::shared_ptr<TwoPRep_11_11_sq> target = TwoPRep_11_11_sq::Instance(csh_p,csh_d_dx,csh_s,csh_s,mType(0u));
 
-    SafePtr<RecurrenceRelation> rr = HRR_ab_11_TwoPRep_11_sh::Instance(target,0);
+    std::shared_ptr<RecurrenceRelation> rr = HRR_ab_11_TwoPRep_11_sh::Instance(target,0);
     assert(rr != 0 && rr->num_children() != 0);
-    SafePtr<RRStack> rrstack = RRStack::Instance();
+    std::shared_ptr<RRStack> rrstack = RRStack::Instance();
     rrstack->find(rr);
 
     std::deque<std::string> decl_filenames, def_filenames;

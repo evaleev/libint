@@ -59,7 +59,7 @@ namespace libint2 {
 
   /** OperSet is the base class for all (sets of) operators.
      OperSet's must be constructable using
-     SafePtr<OperSet> or SafePtr<ConstructablePolymorphically>.
+     std::shared_ptr<OperSet> or std::shared_ptr<ConstructablePolymorphically>.
   */
   class OperSet : public ConstructablePolymorphically {
     public:
@@ -182,9 +182,9 @@ namespace libint2 {
       const Descr& descr() const { return descr_; }
 
       GenOper(Descr descr = Descr()) : descr_(descr) {}
-      GenOper(const SafePtr<GenOper>& o) : descr_(o->descr_) {}
-      GenOper(const SafePtr<OperSet>& o) : descr_(require_dynamic_cast<GenOper,OperSet>(o)->descr_) {}
-      GenOper(const SafePtr<ConstructablePolymorphically>& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(o)->descr_) {}
+      GenOper(const std::shared_ptr<GenOper>& o) : descr_(o->descr_) {}
+      GenOper(const std::shared_ptr<OperSet>& o) : descr_(require_dynamic_cast<GenOper,OperSet>(o)->descr_) {}
+      GenOper(const std::shared_ptr<ConstructablePolymorphically>& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(o)->descr_) {}
       explicit GenOper(const ConstructablePolymorphically& o) : descr_(require_dynamic_cast<GenOper,ConstructablePolymorphically>(&o)->descr_) {}
       virtual ~GenOper() {}
 

@@ -39,14 +39,14 @@ namespace libint2 {
   class Strategy {
 
   public:
-    typedef SafePtr<RecurrenceRelation> RR;
+    typedef std::shared_ptr<RecurrenceRelation> RR;
     Strategy() {}
     ~Strategy() {}
 
     /// Returns the optimal recurrence relation for integral
-    RR optimal_rr(const SafePtr<DirectedGraph>& graph,
-                  const SafePtr<DGVertex>& integral,
-                  const SafePtr<Tactic>& tactic);
+    RR optimal_rr(const std::shared_ptr<DirectedGraph>& graph,
+                  const std::shared_ptr<DGVertex>& integral,
+                  const std::shared_ptr<Tactic>& tactic);
   };
 
 };

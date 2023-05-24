@@ -52,14 +52,14 @@ namespace libint2 {
     /// The type of expressions in which RecurrenceRelations result.
     typedef RecurrenceRelation::ExprType ExprType;
 
-    IntegralSet_to_Integrals(const SafePtr<I>&);
+    IntegralSet_to_Integrals(const std::shared_ptr<I>&);
     virtual ~IntegralSet_to_Integrals() {}
 
     /// Return an instance if applicable, or a null pointer otherwise
-    static SafePtr<IntegralSet_to_Integrals<I>> Instance(const SafePtr<TargetType>& Tint, unsigned int dir) {
+    static std::shared_ptr<IntegralSet_to_Integrals<I>> Instance(const std::shared_ptr<TargetType>& Tint, unsigned int dir) {
       assert(dir == 0);
       // attempt to construct
-      SafePtr<IntegralSet_to_Integrals<I>> this_ptr(new IntegralSet_to_Integrals<I>(Tint));
+      std::shared_ptr<IntegralSet_to_Integrals<I>> this_ptr(new IntegralSet_to_Integrals<I>(Tint));
       // if succeeded (nchildren > 0) do post-construction
       assert(this_ptr->num_children() != 0);
       return this_ptr;
@@ -70,13 +70,13 @@ namespace libint2 {
     /// Implementation of RecurrenceRelation::num_children()
     unsigned int num_children() const override { return children_.size(); }
     /// target() returns pointer to target
-    SafePtr<TargetType> target() const { return target_; };
+    std::shared_ptr<TargetType> target() const { return target_; };
     /// child(i) returns pointer i-th child
-    SafePtr<ChildType> child(unsigned int i) const;
+    std::shared_ptr<ChildType> child(unsigned int i) const;
     /// Implementation of RecurrenceRelation's target()
-    SafePtr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    std::shared_ptr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation's child()
-    SafePtr<DGVertex> rr_child(unsigned int i) const override { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+    std::shared_ptr<DGVertex> rr_child(unsigned int i) const override { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const override {
       return true;
@@ -88,8 +88,8 @@ namespace libint2 {
     }
 
   private:
-    SafePtr<TargetType> target_;
-    std::vector< SafePtr<ChildType> > children_;
+    std::shared_ptr<TargetType> target_;
+    std::vector< std::shared_ptr<ChildType> > children_;
 
     /// Implementation of RecurrenceRelation::generate_label()
     std::string generate_label() const override {
@@ -97,8 +97,8 @@ namespace libint2 {
       //throw std::runtime_error("IntegralSet_to_Integrals::label() -- code for this RR is never generated, so this function should never be used");
     }
     /// Reimplementation of RecurrenceRelation::spfunction_call()
-    std::string spfunction_call(const SafePtr<CodeContext>& context,
-                                const SafePtr<ImplicitDimensions>& dims) const override
+    std::string spfunction_call(const std::shared_ptr<CodeContext>& context,
+                                const std::shared_ptr<ImplicitDimensions>& dims) const override
     {
       throw std::logic_error("IntegralSet_to_Integrals::spfunction_call -- should not call this function");
     }
@@ -107,7 +107,7 @@ namespace libint2 {
 
 
   template <class I>
-    IntegralSet_to_Integrals<I>::IntegralSet_to_Integrals(const SafePtr<I>& Tint) :
+    IntegralSet_to_Integrals<I>::IntegralSet_to_Integrals(const std::shared_ptr<I>& Tint) :
     target_(Tint)
     {
       target_ = Tint;
@@ -121,7 +121,7 @@ namespace libint2 {
     };
 
   template <class I>
-    SafePtr<typename I::iter_type>
+    std::shared_ptr<typename I::iter_type>
     IntegralSet_to_Integrals<I>::child(unsigned int i) const
     {
       return children_.at(i);

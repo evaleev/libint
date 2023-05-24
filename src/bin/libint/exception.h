@@ -51,15 +51,15 @@ namespace libint2 {
   class VertexAlreadyOnStack : public std::logic_error {
     
   public:
-    VertexAlreadyOnStack(const SafePtr<DGVertex>& vertex) :
+    VertexAlreadyOnStack(const std::shared_ptr<DGVertex>& vertex) :
       logic_error("DirectedGraph -- vertex already on stack"), vertex_(vertex) {}
     ~VertexAlreadyOnStack() noexcept {}
 
-    SafePtr<DGVertex> vertex() const { return vertex_; }
+    std::shared_ptr<DGVertex> vertex() const { return vertex_; }
 
   private:
     // Vertex on the stack
-    SafePtr<DGVertex> vertex_;
+    std::shared_ptr<DGVertex> vertex_;
     
   };
 #endif

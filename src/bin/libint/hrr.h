@@ -65,13 +65,13 @@ namespace libint2 {
       typedef RecurrenceRelation::ExprType ExprType;
 
       /** Use Instance() to obtain an instance of RR. This function is provided to avoid
-       issues with getting a SafePtr from constructor (as needed for registry to work).
+       issues with getting a std::shared_ptr from constructor (as needed for registry to work).
 
        dir specifies which quantum number of a and b is shifted.
        For example, dir can be 0 (x), 1(y), or 2(z) if F is
        a Cartesian Gaussian.
        */
-      static SafePtr<ThisType> Instance(const SafePtr<TargetType>&, unsigned int dir = 0);
+      static std::shared_ptr<ThisType> Instance(const std::shared_ptr<TargetType>&, unsigned int dir = 0);
       virtual ~HRR();
 
       /// overrides RecurrenceRelation::braket_direction()
@@ -96,20 +96,20 @@ namespace libint2 {
       /// Implementation of RecurrenceRelation::num_children()
       unsigned int num_children() const override {return nchildren_;}
       /// returns pointer to the target
-      SafePtr<TargetType> target() const {return target_;};
+      std::shared_ptr<TargetType> target() const {return target_;};
       /// child(i) returns pointer to i-th child
-      SafePtr<ChildType> child(unsigned int i) const;
+      std::shared_ptr<ChildType> child(unsigned int i) const;
       /// Implementation of RecurrenceRelation::target()
-      SafePtr<DGVertex> rr_target() const override {return static_pointer_cast<DGVertex,TargetType>(target());}
+      std::shared_ptr<DGVertex> rr_target() const override {return static_pointer_cast<DGVertex,TargetType>(target());}
       /// Implementation of RecurrenceRelation::child()
-      SafePtr<DGVertex> rr_child(unsigned int i) const override {return static_pointer_cast<DGVertex,ChildType>(child(i));}
+      std::shared_ptr<DGVertex> rr_child(unsigned int i) const override {return static_pointer_cast<DGVertex,ChildType>(child(i));}
       /// Implementation of RecurrenceRelation::is_simple()
       bool is_simple() const override {
         return TrivialBFSet<BFSet>::result;
       }
       /// Implementation of RecurrenceRelation::spfunction_call()
-      std::string spfunction_call(const SafePtr<CodeContext>& context,
-          const SafePtr<ImplicitDimensions>& dims) const override;
+      std::string spfunction_call(const std::shared_ptr<CodeContext>& context,
+          const std::shared_ptr<ImplicitDimensions>& dims) const override;
 
       private:
       /**
@@ -117,12 +117,12 @@ namespace libint2 {
        For example, dir can be 0 (x), 1(y), or 2(z) if F is
        a Cartesian Gaussian.
        */
-      HRR(const SafePtr<TargetType>&, unsigned int dir);
+      HRR(const std::shared_ptr<TargetType>&, unsigned int dir);
 
       unsigned int dir_;
-      SafePtr<TargetType> target_;
+      std::shared_ptr<TargetType> target_;
       static const unsigned int max_nchildren_ = 8;
-      SafePtr<ChildType> children_[max_nchildren_];
+      std::shared_ptr<ChildType> children_[max_nchildren_];
       unsigned int nchildren_;
 
       void oper_checks() const;
@@ -130,7 +130,7 @@ namespace libint2 {
       /// Implementation of RecurrenceRelation::label()
       std::string generate_label() const override;
       /// Reimplementation of RecurrenceRelation::adapt_dims_()
-      SafePtr<ImplicitDimensions> adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const override;
+      std::shared_ptr<ImplicitDimensions> adapt_dims_(const std::shared_ptr<ImplicitDimensions>& dims) const override;
       /// Use instead of RecurrenceRelation::register_with_rrstack()
       bool register_with_rrstack() const;
       /** return true if the high dimension must be shown explicitly. For example,
@@ -144,22 +144,22 @@ namespace libint2 {
     template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
-    SafePtr< HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b> >
-    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::Instance(const SafePtr<TargetType>& Tint, unsigned int dir)
+    std::shared_ptr< HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b> >
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::Instance(const std::shared_ptr<TargetType>& Tint, unsigned int dir)
     {
-      SafePtr<ThisType> this_ptr(new ThisType(Tint,dir));
+      std::shared_ptr<ThisType> this_ptr(new ThisType(Tint,dir));
       // Do post-construction duties
       if (this_ptr->num_children() != 0) {
         this_ptr->register_with_rrstack();
         return this_ptr;
       }
-      return SafePtr<ThisType>();
+      return std::shared_ptr<ThisType>();
     }
 
     template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
-    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(const SafePtr<TargetType>& Tint, unsigned int dir) :
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::HRR(const std::shared_ptr<TargetType>& Tint, unsigned int dir) :
     dir_(dir), target_(Tint), nchildren_(0)
     {
       using namespace libint2::algebra;
@@ -384,8 +384,8 @@ namespace libint2 {
       }
       // if all bfsets not involved in transfer have zero quanta then this instance needs to be added to the stack
       if (!nonzero_quanta) {
-        SafePtr<RRStack> rrstack = RRStack::Instance();
-        SafePtr<ThisType> this_ptr =
+        std::shared_ptr<RRStack> rrstack = RRStack::Instance();
+        std::shared_ptr<ThisType> this_ptr =
         const_pointer_cast<ThisType,const ThisType>(
             static_pointer_cast<const ThisType, const ParentType>(
                 std::enable_shared_from_this<ParentType>::shared_from_this()
@@ -434,12 +434,12 @@ namespace libint2 {
       typedef GenIntegralSet<DummyOper, IncableBFSet, IBraType, IKetType, DummyQuanta> DummyIntegral;
       DummyOper dummy_oper;
       DummyQuanta dummy_quanta(std::vector<int>(0,0));
-      SafePtr<DummyIntegral> dummy_integral = DummyIntegral::Instance(bra_zero,ket_zero,dummy_quanta,dummy_oper);
+      std::shared_ptr<DummyIntegral> dummy_integral = DummyIntegral::Instance(bra_zero,ket_zero,dummy_quanta,dummy_oper);
 
       // Construct generic HRR and add it to the stack instead of this HRR
       typedef HRR<DummyIntegral,F,part,loc_a,pos_a,loc_b,pos_b> DummyHRR;
-      SafePtr<DummyHRR> dummy_hrr = DummyHRR::Instance(dummy_integral,dir_);
-      SafePtr<RRStack> rrstack = RRStack::Instance();
+      std::shared_ptr<DummyHRR> dummy_hrr = DummyHRR::Instance(dummy_integral,dir_);
+      std::shared_ptr<RRStack> rrstack = RRStack::Instance();
       rrstack->find(dummy_hrr);
       return true;
     }
@@ -479,7 +479,7 @@ namespace libint2 {
     template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
-    SafePtr<typename HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::ChildType>
+    std::shared_ptr<typename HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::ChildType>
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::child(unsigned int i) const
     {
         assert(i>=0 && i<nchildren_);
@@ -550,7 +550,7 @@ namespace libint2 {
     FunctionPosition loc_b, unsigned int pos_b>
     std::string
     HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::spfunction_call(
-        const SafePtr<CodeContext>& context, const SafePtr<ImplicitDimensions>& dims) const
+        const std::shared_ptr<CodeContext>& context, const std::shared_ptr<ImplicitDimensions>& dims) const
         {
         std::ostringstream os;
         os << context->label_to_name(label_to_funcname(context->cparams()->api_prefix() + label()))
@@ -652,27 +652,27 @@ namespace libint2 {
     template <class IntType, class F, int part,
     FunctionPosition loc_a, unsigned int pos_a,
     FunctionPosition loc_b, unsigned int pos_b>
-    SafePtr<ImplicitDimensions>
-    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const
+    std::shared_ptr<ImplicitDimensions>
+    HRR<IntType,F,part,loc_a,pos_a,loc_b,pos_b>::adapt_dims_(const std::shared_ptr<ImplicitDimensions>& dims) const
     {
         bool high_rank = expl_high_dim();
         bool low_rank = expl_low_dim();
 
-        SafePtr<Entity> high_dim, low_dim;
+        std::shared_ptr<Entity> high_dim, low_dim;
         if (high_rank) {
-          high_dim = SafePtr<Entity>(new RTimeEntity<EntityTypes::Int>("highdim"));
+          high_dim = std::shared_ptr<Entity>(new RTimeEntity<EntityTypes::Int>("highdim"));
         }
         else {
           high_dim = dims->high();
         }
         if (low_rank) {
-          low_dim = SafePtr<Entity>(new RTimeEntity<EntityTypes::Int>("lowdim"));
+          low_dim = std::shared_ptr<Entity>(new RTimeEntity<EntityTypes::Int>("lowdim"));
         }
         else {
           low_dim = dims->low();
         }
 
-        SafePtr<ImplicitDimensions> localdims(new ImplicitDimensions(high_dim,low_dim,dims->vecdim()));
+        std::shared_ptr<ImplicitDimensions> localdims(new ImplicitDimensions(high_dim,low_dim,dims->vecdim()));
         return localdims;
     }
 

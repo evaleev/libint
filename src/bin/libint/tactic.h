@@ -39,7 +39,7 @@ namespace libint2 {
   */
   class Tactic {
     public:
-    typedef SafePtr<RecurrenceRelation> RR;
+    typedef std::shared_ptr<RecurrenceRelation> RR;
     typedef std::vector<RR> rr_stack;
 
     Tactic() {}
@@ -58,7 +58,7 @@ namespace libint2 {
   template <class RandomizePolicy = DummyRandomizePolicy>
     class FirstChoiceTactic : public Tactic {
     public:
-    FirstChoiceTactic(const SafePtr<RandomizePolicy>& rpolicy = SafePtr<RandomizePolicy>(new RandomizePolicy)) : Tactic(), rpolicy_(rpolicy) {}
+    FirstChoiceTactic(const std::shared_ptr<RandomizePolicy>& rpolicy = std::shared_ptr<RandomizePolicy>(new RandomizePolicy)) : Tactic(), rpolicy_(rpolicy) {}
     virtual ~FirstChoiceTactic() {}
 
     RR optimal_rr(const rr_stack& stack) const {
@@ -69,7 +69,7 @@ namespace libint2 {
     }
 
     private:
-    SafePtr<RandomizePolicy> rpolicy_;
+    std::shared_ptr<RandomizePolicy> rpolicy_;
   };
 
   /** FewestNewVerticesTactic chooses RR which adds fewest new vertices to
@@ -77,13 +77,13 @@ namespace libint2 {
     */
   class FewestNewVerticesTactic : public Tactic {
     public:
-    FewestNewVerticesTactic(const SafePtr<DirectedGraph>& dg) : Tactic(), dg_(dg) {}
+    FewestNewVerticesTactic(const std::shared_ptr<DirectedGraph>& dg) : Tactic(), dg_(dg) {}
     virtual ~FewestNewVerticesTactic() {}
 
     RR optimal_rr(const rr_stack& stack) const;
 
     private:
-    SafePtr<DirectedGraph> dg_;
+    std::shared_ptr<DirectedGraph> dg_;
   };
 
   /** ZeroNewVerticesTactic chooses first RR which adds no new vertices on
@@ -91,13 +91,13 @@ namespace libint2 {
     */
   class ZeroNewVerticesTactic : public Tactic {
     public:
-    ZeroNewVerticesTactic(const SafePtr<DirectedGraph>& dg) : Tactic(), dg_(dg) {}
+    ZeroNewVerticesTactic(const std::shared_ptr<DirectedGraph>& dg) : Tactic(), dg_(dg) {}
     virtual ~ZeroNewVerticesTactic() {}
 
     RR optimal_rr(const rr_stack& stack) const;
 
     private:
-    SafePtr<DirectedGraph> dg_;
+    std::shared_ptr<DirectedGraph> dg_;
   };
 
   /** RandomChoiceTactic chooses randomly among the applicable RRs

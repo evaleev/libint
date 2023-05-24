@@ -31,7 +31,7 @@ namespace libint2 {
 
   /** QuantumSet is the base class for all (sets of) quantum numbers.
       QuantumSet's must be constructable using
-      SafePtr<QuantumSet> or SafePtr<ConstructablePolymorphically>.
+      std::shared_ptr<QuantumSet> or std::shared_ptr<ConstructablePolymorphically>.
   */
   class QuantumSet : public ConstructablePolymorphically,
                      public Hashable<LIBINT2_UINT_LEAST64,ComputeKey> {
@@ -63,9 +63,9 @@ namespace libint2 {
     typedef QuantumNumbers iter_type;
 
     QuantumNumbers(const std::vector<T>& qn);
-    QuantumNumbers(const SafePtr<QuantumNumbers>&);
-    QuantumNumbers(const SafePtr<QuantumSet>&);
-    QuantumNumbers(const SafePtr<ConstructablePolymorphically>&);
+    QuantumNumbers(const std::shared_ptr<QuantumNumbers>&);
+    QuantumNumbers(const std::shared_ptr<QuantumSet>&);
+    QuantumNumbers(const std::shared_ptr<ConstructablePolymorphically>&);
     QuantumNumbers(const ConstructablePolymorphically&);
     ~QuantumNumbers();
 
@@ -125,30 +125,30 @@ namespace libint2 {
     }
 
   template<typename T, unsigned int N>
-    QuantumNumbers<T,N>::QuantumNumbers(const SafePtr<QuantumNumbers>& sptr) :
+    QuantumNumbers<T,N>::QuantumNumbers(const std::shared_ptr<QuantumNumbers>& sptr) :
     qn_(sptr->qn_)
     {
     }
 
   template<typename T, unsigned int N>
-    QuantumNumbers<T,N>::QuantumNumbers(const SafePtr<QuantumSet>& sptr)
+    QuantumNumbers<T,N>::QuantumNumbers(const std::shared_ptr<QuantumSet>& sptr)
     {
-      const SafePtr< QuantumNumbers<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbers,QuantumSet>(sptr);
+      const std::shared_ptr< QuantumNumbers<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbers,QuantumSet>(sptr);
 #if CHECK_SAFETY
       if (sptr_cast == 0)
-        throw std::runtime_error("QuantumNumbers<T,N>::QuantumNumbers(const SafePtr<QuantumSet>& sptr) -- type of sptr is incompatible with QuantumNumbers");
+        throw std::runtime_error("QuantumNumbers<T,N>::QuantumNumbers(const std::shared_ptr<QuantumSet>& sptr) -- type of sptr is incompatible with QuantumNumbers");
 #endif
 
       qn_ = sptr_cast->qn_;
     }
 
   template<typename T, unsigned int N>
-    QuantumNumbers<T,N>::QuantumNumbers(const SafePtr<ConstructablePolymorphically>& sptr)
+    QuantumNumbers<T,N>::QuantumNumbers(const std::shared_ptr<ConstructablePolymorphically>& sptr)
     {
-      const SafePtr< QuantumNumbers<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbers,ConstructablePolymorphically>(sptr);
+      const std::shared_ptr< QuantumNumbers<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbers,ConstructablePolymorphically>(sptr);
 #if CHECK_SAFETY
       if (sptr_cast == 0)
-        throw std::runtime_error("QuantumNumbers<T,N>::QuantumNumbers(const SafePtr<ConstructablePolymorphically>& sptr) -- type of sptr is incompatible with QuantumNumbers");
+        throw std::runtime_error("QuantumNumbers<T,N>::QuantumNumbers(const std::shared_ptr<ConstructablePolymorphically>& sptr) -- type of sptr is incompatible with QuantumNumbers");
 #endif
 
       qn_ = sptr_cast->qn_;
@@ -207,9 +207,9 @@ namespace libint2 {
     QuantumNumbersA(const T& val);
     QuantumNumbersA(const T* qn);
     QuantumNumbersA(const std::vector<T>& qn);
-    QuantumNumbersA(const SafePtr<QuantumNumbersA>&);
-    QuantumNumbersA(const SafePtr<QuantumSet>&);
-    QuantumNumbersA(const SafePtr<ConstructablePolymorphically>&);
+    QuantumNumbersA(const std::shared_ptr<QuantumNumbersA>&);
+    QuantumNumbersA(const std::shared_ptr<QuantumSet>&);
+    QuantumNumbersA(const std::shared_ptr<ConstructablePolymorphically>&);
     ~QuantumNumbersA();
 
     bool operator==(const QuantumNumbersA&) const;
@@ -288,7 +288,7 @@ namespace libint2 {
     }
 
   template<typename T, unsigned int N>
-    QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<QuantumNumbersA>& sptr)
+    QuantumNumbersA<T,N>::QuantumNumbersA(const std::shared_ptr<QuantumNumbersA>& sptr)
     {
       T* qn = sptr->qn_;
       for(unsigned int i=0; i<N; i++)
@@ -296,12 +296,12 @@ namespace libint2 {
     }
 
   template<typename T, unsigned int N>
-    QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<QuantumSet>& sptr)
+    QuantumNumbersA<T,N>::QuantumNumbersA(const std::shared_ptr<QuantumSet>& sptr)
     {
-      const SafePtr< QuantumNumbersA<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbersA,QuantumSet>(sptr);
+      const std::shared_ptr< QuantumNumbersA<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbersA,QuantumSet>(sptr);
 #if CHECK_SAFETY
       if (sptr_cast == 0)
-        throw std::runtime_error("QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<QuantumSet>& sptr) -- type of sptr is incompatible with QuantumNumbersA");
+        throw std::runtime_error("QuantumNumbersA<T,N>::QuantumNumbersA(const std::shared_ptr<QuantumSet>& sptr) -- type of sptr is incompatible with QuantumNumbersA");
 #endif
 
       T* qn = sptr_cast->qn_;
@@ -310,12 +310,12 @@ namespace libint2 {
     }
 
   template<typename T, unsigned int N>
-    QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<ConstructablePolymorphically>& sptr)
+    QuantumNumbersA<T,N>::QuantumNumbersA(const std::shared_ptr<ConstructablePolymorphically>& sptr)
     {
-      const SafePtr< QuantumNumbersA<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbersA,ConstructablePolymorphically>(sptr);
+      const std::shared_ptr< QuantumNumbersA<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbersA,ConstructablePolymorphically>(sptr);
 #if CHECK_SAFETY
       if (sptr_cast == 0)
-        throw std::runtime_error("QuantumNumbersA<T,N>::QuantumNumbersA(const SafePtr<ConstructablePolymorphically>& sptr) -- type of sptr is incompatible with QuantumNumbersA");
+        throw std::runtime_error("QuantumNumbersA<T,N>::QuantumNumbersA(const std::shared_ptr<ConstructablePolymorphically>& sptr) -- type of sptr is incompatible with QuantumNumbersA");
 #endif
       T* qn = sptr_cast->qn_;
       for(int i=0; i<N; i++)
@@ -365,9 +365,9 @@ namespace libint2 {
     QuantumNumbersA() {}
     QuantumNumbersA(const T* qn) {}
     QuantumNumbersA(const std::vector<T>& qn) {}
-    QuantumNumbersA(const SafePtr<QuantumNumbersA>&) {}
-    QuantumNumbersA(const SafePtr<QuantumSet>&) {}
-    QuantumNumbersA(const SafePtr<ConstructablePolymorphically>&) {}
+    QuantumNumbersA(const std::shared_ptr<QuantumNumbersA>&) {}
+    QuantumNumbersA(const std::shared_ptr<QuantumSet>&) {}
+    QuantumNumbersA(const std::shared_ptr<ConstructablePolymorphically>&) {}
     ~QuantumNumbersA() {}
 
     bool operator==(const QuantumNumbersA&) const { return true; }

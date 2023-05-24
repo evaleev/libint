@@ -115,7 +115,7 @@ namespace libint2 {
       /// how these subobjects are stored
       typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const std::shared_ptr<obj_type>& obj, std::vector< std::shared_ptr<subobj_type> >& subobj) {
 
         std::vector< SubIterator* > siters_inord; // subiterators used to iterate over each set (in the above order)
 	typedef std::vector< std::vector< SubIterator* > > bra_siters_type;
@@ -178,7 +178,7 @@ namespace libint2 {
           }
 
           // construct this subobj
-	  SafePtr<subobj_type> curr_subobj_sptr = subobj_type::Instance(bra,ket,aux,oper);
+	  std::shared_ptr<subobj_type> curr_subobj_sptr = subobj_type::Instance(bra,ket,aux,oper);
           subobj.push_back(curr_subobj_sptr);
 
           // update subiterators to refer to the next element
@@ -228,7 +228,7 @@ namespace libint2 {
       }
 
       // Nothing is done here because GenIntegralSet objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(std::vector< SafePtr<subobj_type> >& subobj) {
+      static void dealloc_subobj(std::vector< std::shared_ptr<subobj_type> >& subobj) {
       }
     };
 
@@ -244,20 +244,20 @@ namespace libint2 {
       /// how these subobjects are stored
       typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const std::shared_ptr<obj_type>& obj, std::vector< std::shared_ptr<subobj_type> >& subobj) {
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
         for(gis_siter.init(); gis_siter; ++gis_siter) {
-          const SafePtr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
-          const SafePtr<subobj_type> curr_subobj =
+          const std::shared_ptr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
+          const std::shared_ptr<subobj_type> curr_subobj =
             subobj_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), *curr_gis_ptr->aux().get(), *curr_gis_ptr->oper().get());
           subobj.push_back(curr_subobj);
         }
       }
 
       // Nothing is done here because GenIntegralSet_1_1 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(std::vector< SafePtr< subobj_type > >& subobj) {
+      static void dealloc_subobj(std::vector< std::shared_ptr< subobj_type > >& subobj) {
       }
     };
 #endif // LIBINT_SUPPORT_ONEBODYINTS
@@ -273,20 +273,20 @@ namespace libint2 {
       /// how these subobjects are stored
       typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const std::shared_ptr<obj_type>& obj, std::vector< std::shared_ptr<subobj_type> >& subobj) {
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
         for(gis_siter.init(); gis_siter; ++gis_siter) {
-          const SafePtr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
-          const SafePtr<subobj_type> curr_subobj =
+          const std::shared_ptr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
+          const std::shared_ptr<subobj_type> curr_subobj =
             subobj_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), *curr_gis_ptr->aux().get(), *curr_gis_ptr->oper().get());
           subobj.push_back(curr_subobj);
         }
       }
 
       // Nothing is done here because GenIntegralSet_11_11 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(std::vector< SafePtr< subobj_type > >& subobj) {
+      static void dealloc_subobj(std::vector< std::shared_ptr< subobj_type > >& subobj) {
       }
     };
 
@@ -305,20 +305,20 @@ namespace libint2 {
       /// how these subobjects are stored
       typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const std::shared_ptr<obj_type>& obj, std::vector< std::shared_ptr<subobj_type> >& subobj) {
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
         for(gis_siter.init(); gis_siter; ++gis_siter) {
-          const SafePtr<typename TwoPRep_11_11<BFS>::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
-          const SafePtr<subobj_type> curr_subobj =
+          const std::shared_ptr<typename TwoPRep_11_11<BFS>::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
+          const std::shared_ptr<subobj_type> curr_subobj =
             subobj_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), *curr_gis_ptr->aux().get());
           subobj.push_back(curr_subobj);
         }
       }
 
       // Nothing is done here because TwoPRep_11_11 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(std::vector< SafePtr< TwoPRep_11_11<typename BFS::iter_type> > >& subobj) {
+      static void dealloc_subobj(std::vector< std::shared_ptr< TwoPRep_11_11<typename BFS::iter_type> > >& subobj) {
       }
     };
 #endif
@@ -337,20 +337,20 @@ namespace libint2 {
       /// how these subobjects are stored
       typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const std::shared_ptr<obj_type>& obj, std::vector< std::shared_ptr<subobj_type> >& subobj) {
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
         for(gis_siter.init(); gis_siter; ++gis_siter) {
-          const SafePtr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
-          const SafePtr<subobj_type> curr_subobj =
+          const std::shared_ptr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
+          const std::shared_ptr<subobj_type> curr_subobj =
             subobj_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), *curr_gis_ptr->aux().get());
           subobj.push_back(curr_subobj);
         }
       }
 
       // Nothing is done here because R12kG12_11_11 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(std::vector< SafePtr< R12kG12_11_11<typename BFS::iter_type,K> > >& subobj) {
+      static void dealloc_subobj(std::vector< std::shared_ptr< R12kG12_11_11<typename BFS::iter_type,K> > >& subobj) {
       }
     };
 
@@ -369,20 +369,20 @@ namespace libint2 {
       /// how these subobjects are stored
       typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const std::shared_ptr<obj_type>& obj, std::vector< std::shared_ptr<subobj_type> >& subobj) {
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
         for(gis_siter.init(); gis_siter; ++gis_siter) {
-          const SafePtr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
-          const SafePtr<subobj_type> curr_subobj =
+          const std::shared_ptr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
+          const std::shared_ptr<subobj_type> curr_subobj =
             subobj_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), *curr_gis_ptr->aux().get());
           subobj.push_back(curr_subobj);
         }
       }
 
       // Nothing is done here because TiG12_11_11 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(std::vector< SafePtr< TiG12_11_11<typename BFS::iter_type,K> > >& subobj) {
+      static void dealloc_subobj(std::vector< std::shared_ptr< TiG12_11_11<typename BFS::iter_type,K> > >& subobj) {
       }
     };
 
@@ -401,20 +401,20 @@ namespace libint2 {
       /// how these subobjects are stored
       typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const std::shared_ptr<obj_type>& obj, std::vector< std::shared_ptr<subobj_type> >& subobj) {
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
         for(gis_siter.init(); gis_siter; ++gis_siter) {
-          const SafePtr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
-          const SafePtr<subobj_type> curr_subobj =
+          const std::shared_ptr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
+          const std::shared_ptr<subobj_type> curr_subobj =
             subobj_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), *curr_gis_ptr->aux().get());
           subobj.push_back(curr_subobj);
         }
       }
 
       // Nothing is done here because R1dotR1G12_11_11 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(std::vector< SafePtr< R1dotR1G12_11_11<typename BFS::iter_type> > >& subobj) {
+      static void dealloc_subobj(std::vector< std::shared_ptr< R1dotR1G12_11_11<typename BFS::iter_type> > >& subobj) {
       }
     };
 
@@ -432,20 +432,20 @@ namespace libint2 {
       /// how these subobjects are stored
       typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const std::shared_ptr<obj_type>& obj, std::vector< std::shared_ptr<subobj_type> >& subobj) {
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
         for(gis_siter.init(); gis_siter; ++gis_siter) {
-          const SafePtr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
-          const SafePtr<subobj_type> curr_subobj =
+          const std::shared_ptr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
+          const std::shared_ptr<subobj_type> curr_subobj =
             subobj_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), *curr_gis_ptr->aux().get());
           subobj.push_back(curr_subobj);
         }
       }
 
       // Nothing is done here because R2dotR2G12_11_11 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(std::vector< SafePtr< R2dotR2G12_11_11<typename BFS::iter_type> > >& subobj) {
+      static void dealloc_subobj(std::vector< std::shared_ptr< R2dotR2G12_11_11<typename BFS::iter_type> > >& subobj) {
       }
     };
 
@@ -463,20 +463,20 @@ namespace libint2 {
       /// how these subobjects are stored
       typedef typename TypeTraits<subobj_type>::StorageType subobj_stype;
 
-      static void init_subobj(const SafePtr<obj_type>& obj, std::vector< SafePtr<subobj_type> >& subobj) {
+      static void init_subobj(const std::shared_ptr<obj_type>& obj, std::vector< std::shared_ptr<subobj_type> >& subobj) {
 
         // Iterate over all SubIteratorBase<GenIntegralSet::iter_type>
         parent_siter gis_siter(obj);
         for(gis_siter.init(); gis_siter; ++gis_siter) {
-          const SafePtr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
-          const SafePtr<subobj_type> curr_subobj =
+          const std::shared_ptr<typename obj_type::parent_type::iter_type> curr_gis_ptr = gis_siter.elem();
+          const std::shared_ptr<subobj_type> curr_subobj =
             subobj_type::Instance(curr_gis_ptr->bra(), curr_gis_ptr->ket(), *curr_gis_ptr->aux().get());
           subobj.push_back(curr_subobj);
         }
       }
 
       // Nothing is done here because R1dotR2G12_11_11 objects are Singleton-like and don't need to be destroyed
-      static void dealloc_subobj(std::vector< SafePtr< R1dotR2G12_11_11<typename BFS::iter_type> > >& subobj) {
+      static void dealloc_subobj(std::vector< std::shared_ptr< R1dotR2G12_11_11<typename BFS::iter_type> > >& subobj) {
       }
     };
 

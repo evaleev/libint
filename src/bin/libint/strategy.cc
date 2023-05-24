@@ -394,10 +394,10 @@ namespace libint2 {
     public:
     typedef typename RRType::TargetType IntType;
     // return true if no more visitations necessary
-    static bool visit(const SafePtr<DirectedGraph>& dg,
-                      const SafePtr<IntType>& integral,
-                      const SafePtr<Tactic>& tactic,
-                      SafePtr<RecurrenceRelation>& rr,
+    static bool visit(const std::shared_ptr<DirectedGraph>& dg,
+                      const std::shared_ptr<IntType>& integral,
+                      const std::shared_ptr<Tactic>& tactic,
+                      std::shared_ptr<RecurrenceRelation>& rr,
                       Tactic::rr_stack& rrstack) {
 #if DEBUG
       std::cout << "Visiting integral " << integral->label() << " with RR " << class_name<RRType>() << std::endl;
@@ -408,32 +408,32 @@ namespace libint2 {
         return _visit_cgshell(dg,integral,tactic,rr,rrstack);
     }
     private:
-      static bool _visit_cgshell(const SafePtr<DirectedGraph>& dg,
-                          const SafePtr<IntType>& integral,
-                          const SafePtr<Tactic>& tactic,
-                          SafePtr<RecurrenceRelation>& rr,
+      static bool _visit_cgshell(const std::shared_ptr<DirectedGraph>& dg,
+                          const std::shared_ptr<IntType>& integral,
+                          const std::shared_ptr<Tactic>& tactic,
+                          std::shared_ptr<RecurrenceRelation>& rr,
                           Tactic::rr_stack& rrstack) {
         const bool rr_is_directional = RRType::directional();
         for (int xyz = (rr_is_directional ? 2 : 0); xyz >= 0; xyz--) {
-          SafePtr<RRType> rr_ptr = RRType::Instance(integral, xyz);
+          std::shared_ptr<RRType> rr_ptr = RRType::Instance(integral, xyz);
           if (rr_ptr != 0)
             rrstack.push_back(static_pointer_cast<RecurrenceRelation, RRType>(rr_ptr));
         }
         return false;
       }
-      static bool _visit_cgf(const SafePtr<DirectedGraph>& dg,
-                      const SafePtr<IntType>& integral,
-                      const SafePtr<Tactic>& tactic,
-                      SafePtr<RecurrenceRelation>& rr,
+      static bool _visit_cgf(const std::shared_ptr<DirectedGraph>& dg,
+                      const std::shared_ptr<IntType>& integral,
+                      const std::shared_ptr<Tactic>& tactic,
+                      std::shared_ptr<RecurrenceRelation>& rr,
                       Tactic::rr_stack& rrstack) {
         // If given NullTactic -- skip
-        SafePtr<NullTactic> ntactic = dynamic_pointer_cast<NullTactic,Tactic>(tactic);
+        std::shared_ptr<NullTactic> ntactic = dynamic_pointer_cast<NullTactic,Tactic>(tactic);
         if (ntactic)
           return false;
 
         // in CGF case collect all rrs on rrstack
         for (int xyz = 2; xyz >= 0; xyz--) {
-          SafePtr<RRType> rr_ptr = RRType::Instance(integral, xyz);
+          std::shared_ptr<RRType> rr_ptr = RRType::Instance(integral, xyz);
           // TODO: can I use the knowledge of Tactic behavior to skip some iteration?
           if (rr_ptr != 0)
             rrstack.push_back(static_pointer_cast<RecurrenceRelation, RRType>(rr_ptr));
@@ -454,13 +454,13 @@ namespace libint2 {
     public:
 
       struct Impl {
-        Impl(const SafePtr<DirectedGraph>& dg,
-             const SafePtr<IntType>& integral,
-             const SafePtr<Tactic>& tactic) :
+        Impl(const std::shared_ptr<DirectedGraph>& dg,
+             const std::shared_ptr<IntType>& integral,
+             const std::shared_ptr<Tactic>& tactic) :
                dg_(dg), integral_(integral), tactic_(tactic), done_(false) {
             }
 
-            const SafePtr<RecurrenceRelation>& rr() {
+            const std::shared_ptr<RecurrenceRelation>& rr() {
               // if rr() is called then we should no longer do any processing
               done_ = true;
               // determine optimal rr
@@ -468,23 +468,23 @@ namespace libint2 {
               return rr_;
             }
 
-            SafePtr<DirectedGraph> dg_;
-            SafePtr<IntType> integral_;
-            SafePtr<Tactic> tactic_;
-            SafePtr<RecurrenceRelation> rr_;
+            std::shared_ptr<DirectedGraph> dg_;
+            std::shared_ptr<IntType> integral_;
+            std::shared_ptr<Tactic> tactic_;
+            std::shared_ptr<RecurrenceRelation> rr_;
             bool done_;
             Tactic::rr_stack rrstack_;
 
             // determine the optimal RR to use given the rrstack and tactic
-            void postprocess_rr(const SafePtr<Tactic>& tactic,
-                                SafePtr<RecurrenceRelation>& rr,
+            void postprocess_rr(const std::shared_ptr<Tactic>& tactic,
+                                std::shared_ptr<RecurrenceRelation>& rr,
                                 const Tactic::rr_stack& rrstack) {
               rr = tactic->optimal_rr(rrstack);
             }
 
         };
 
-    apply_strategy(const SafePtr<Impl>& impl) : impl_(impl) {}
+    apply_strategy(const std::shared_ptr<Impl>& impl) : impl_(impl) {}
     apply_strategy(const apply_strategy& app) : impl_(app.impl_) {}
     const apply_strategy& operator=(const apply_strategy& app) {
       impl_ = app.impl_;
@@ -497,10 +497,10 @@ namespace libint2 {
         impl_->done_ = Visitor::visit(impl_->dg_, impl_->integral_, impl_->tactic_, impl_->rr_, impl_->rrstack_);
     }
 
-    const SafePtr<Impl>& impl() const { return impl_; }
+    const std::shared_ptr<Impl>& impl() const { return impl_; }
 
     private:
-      SafePtr<Impl> impl_;
+      std::shared_ptr<Impl> impl_;
   };
 
   /// transform<T> encapsulates T and the action associated with T
@@ -508,11 +508,11 @@ namespace libint2 {
   template <class T>
   struct match_first_inttype_transform {
 
-    static bool visit(const SafePtr<DirectedGraph>& dg,
-                      const SafePtr<DGVertex>& integral,
-                      const SafePtr<Tactic>& tactic,
-                      SafePtr<RecurrenceRelation>& rr) {
-      SafePtr<T> tptr = dynamic_pointer_cast<T,DGVertex>(integral);
+    static bool visit(const std::shared_ptr<DirectedGraph>& dg,
+                      const std::shared_ptr<DGVertex>& integral,
+                      const std::shared_ptr<Tactic>& tactic,
+                      std::shared_ptr<RecurrenceRelation>& rr) {
+      std::shared_ptr<T> tptr = dynamic_pointer_cast<T,DGVertex>(integral);
       if (tptr != 0) {
 #if 0
         std::cout << "Visiting integral " << integral->label() << ", its type is " << class_name<T>() << std::endl;
@@ -545,7 +545,7 @@ namespace libint2 {
 #endif
         if (can_unroll) {
           typedef IntegralSet_to_Integrals<T> ISet2I;
-          SafePtr<ISet2I> x(new ISet2I(tptr));
+          std::shared_ptr<ISet2I> x(new ISet2I(tptr));
           rr = static_pointer_cast<RecurrenceRelation,ISet2I>(x);
 #if DEBUG
           std::cout << "Unrolled " << tptr->label() << std::endl;
@@ -556,7 +556,7 @@ namespace libint2 {
           const bool can_uncontract = dg->registry()->uncontract();
           if (can_uncontract) {
             typedef Uncontract_Integral<T> UncI;
-            SafePtr<UncI> x(new UncI(tptr));
+            std::shared_ptr<UncI> x(new UncI(tptr));
             rr = static_pointer_cast<RecurrenceRelation,UncI>(x);
             if (rr != 0) {
               if (rr->num_children() != 0) {
@@ -571,7 +571,7 @@ namespace libint2 {
           // if uncontraction failed -- apply the known strategy
           typedef apply_strategy<T> apply_strategy_t;
           typedef typename apply_strategy_t::Impl apply_strategy_t_impl;
-          SafePtr<apply_strategy_t_impl> applier_impl(new apply_strategy_t_impl(dg,tptr,tactic));
+          std::shared_ptr<apply_strategy_t_impl> applier_impl(new apply_strategy_t_impl(dg,tptr,tactic));
           apply_strategy_t applier(applier_impl);
           mpl::for_each<typename MasterStrategy<T>::value, apply_strategy_transform<_1>, apply_strategy_t& >(applier);
           rr = applier_impl->rr();
@@ -596,9 +596,9 @@ namespace libint2 {
   class match_first_inttype {
   public:
     struct Impl {
-      Impl(const SafePtr<DirectedGraph>& dg,
-           const SafePtr<DGVertex>& integral,
-           const SafePtr<Tactic>& tactic) :
+      Impl(const std::shared_ptr<DirectedGraph>& dg,
+           const std::shared_ptr<DGVertex>& integral,
+           const std::shared_ptr<Tactic>& tactic) :
                    dg_(dg),
                    integral_(integral),
                    tactic_(tactic),
@@ -606,16 +606,16 @@ namespace libint2 {
                    {
                    }
 
-      const SafePtr<RecurrenceRelation>& rr() const { return rr_; }
+      const std::shared_ptr<RecurrenceRelation>& rr() const { return rr_; }
 
-      SafePtr<DirectedGraph> dg_;
-      SafePtr<DGVertex> integral_;
-      SafePtr<Tactic> tactic_;
-      SafePtr<RecurrenceRelation> rr_;
+      std::shared_ptr<DirectedGraph> dg_;
+      std::shared_ptr<DGVertex> integral_;
+      std::shared_ptr<Tactic> tactic_;
+      std::shared_ptr<RecurrenceRelation> rr_;
       bool found_this_type_;
     };
 
-    match_first_inttype(const SafePtr<Impl>& impl) : impl_(impl) {}
+    match_first_inttype(const std::shared_ptr<Impl>& impl) : impl_(impl) {}
     match_first_inttype(const match_first_inttype& x) : impl_(x.impl_) {}
     const match_first_inttype& operator=(const match_first_inttype& x) {
       impl_ = x.impl_;
@@ -628,19 +628,19 @@ namespace libint2 {
         impl_->found_this_type_ = Visitor::visit(impl_->dg_,impl_->integral_,impl_->tactic_,impl_->rr_);
     }
 
-    const SafePtr<Impl>& impl() const { return impl_; }
+    const std::shared_ptr<Impl>& impl() const { return impl_; }
 
     private:
-      SafePtr<Impl> impl_;
+      std::shared_ptr<Impl> impl_;
 };
 
 
 }
 
-SafePtr<RecurrenceRelation>
-Strategy::optimal_rr(const SafePtr<DirectedGraph>& graph,
-                     const SafePtr<DGVertex>& integral,
-                     const SafePtr<Tactic>& tactic)
+std::shared_ptr<RecurrenceRelation>
+Strategy::optimal_rr(const std::shared_ptr<DirectedGraph>& graph,
+                     const std::shared_ptr<DGVertex>& integral,
+                     const std::shared_ptr<Tactic>& tactic)
 {
 #if 0
   {
@@ -654,7 +654,7 @@ Strategy::optimal_rr(const SafePtr<DirectedGraph>& graph,
 
   // iterate over the master typelist to determine the type of this integral
   // matcher then uses the type to search through the type-specific strategy (see apply_strategy<T>)
-  SafePtr<match_first_inttype::Impl> matcher_impl(new match_first_inttype::Impl(graph,integral,tactic));
+  std::shared_ptr<match_first_inttype::Impl> matcher_impl(new match_first_inttype::Impl(graph,integral,tactic));
   match_first_inttype matcher(matcher_impl);
   mpl::for_each<MasterIntegralTypeList, match_first_inttype_transform<_1>, match_first_inttype& >(matcher);
   return matcher_impl->rr();

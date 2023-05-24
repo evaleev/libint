@@ -54,7 +54,7 @@ namespace libint2 {
       using ParentType::is_simple;
 
       /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-      VRR_11_TwoPRep_11(const SafePtr<TargetType>&, unsigned int dir);
+      VRR_11_TwoPRep_11(const std::shared_ptr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "OSVRR"; }
       /** Re-Implementation of GenericRecurrenceRelation::generate_label():
@@ -63,7 +63,7 @@ namespace libint2 {
       std::string generate_label() const override
       {
         typedef typename TargetType::AuxIndexType mType;
-        static SafePtr<mType> aux0(new mType(0u));
+        static std::shared_ptr<mType> aux0(new mType(0u));
         std::ostringstream os;
         os << descr() << "P" << part << to_string(where)
            << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
@@ -72,16 +72,16 @@ namespace libint2 {
 
   #if LIBINT_ENABLE_GENERIC_CODE
       /// Implementation of RecurrenceRelation::has_generic()
-      bool has_generic(const SafePtr<CompilationParameters>& cparams) const override;
+      bool has_generic(const std::shared_ptr<CompilationParameters>& cparams) const override;
       /// Implementation of RecurrenceRelation::generic_header()
       std::string generic_header() const override;
       /// Implementation of RecurrenceRelation::generic_instance()
-      std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const override;
+      std::string generic_instance(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<CodeSymbols>& args) const override;
   #endif
     };
 
   template <class F, int part, FunctionPosition where>
-    VRR_11_TwoPRep_11<F,part,where>::VRR_11_TwoPRep_11(const SafePtr< TargetType >& Tint,
+    VRR_11_TwoPRep_11<F,part,where>::VRR_11_TwoPRep_11(const std::shared_ptr< TargetType >& Tint,
                                                        unsigned int dir) :
     ParentType(Tint,dir)
     {
@@ -150,7 +150,7 @@ namespace libint2 {
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
-        SafePtr<DGVertex> ABCD_m; if (not unit_b) ABCD_m = factory.make_child(a,b,c,d,m);
+        std::shared_ptr<DGVertex> ABCD_m; if (not unit_b) ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
         if (is_simple()) {
           if (not unit_b) {
@@ -204,7 +204,7 @@ namespace libint2 {
         F c(Tint->bra(1,0));
         F d(Tint->ket(1,0));
 
-        SafePtr<DGVertex> ABCD_m; if (not unit_a) ABCD_m = factory.make_child(a,b,c,d,m);
+        std::shared_ptr<DGVertex> ABCD_m; if (not unit_a) ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
         if (is_simple()) {
           if (not unit_a) {
@@ -258,7 +258,7 @@ namespace libint2 {
         if (!exists(c)) return;
         F d(Tint->ket(1,0)); const bool unit_d = (d == F::unit()); part1_has_unit |= unit_d;
 
-        SafePtr<DGVertex> ABCD_m; if (not unit_d) ABCD_m = factory.make_child(a,b,c,d,m);
+        std::shared_ptr<DGVertex> ABCD_m; if (not unit_d) ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
         if (is_simple()) {
           if (not unit_d) {
@@ -312,7 +312,7 @@ namespace libint2 {
         F d(Tint->ket(1,0) - _1);
         if (!exists(d)) return;
 
-        SafePtr<DGVertex> ABCD_m; if (not unit_c) ABCD_m = factory.make_child(a,b,c,d,m);
+        std::shared_ptr<DGVertex> ABCD_m; if (not unit_c) ABCD_m = factory.make_child(a,b,c,d,m);
         auto ABCD_mp1 = factory.make_child(a,b,c,d,m+1);
         if (is_simple()) {
           if (not unit_c) {
@@ -378,7 +378,7 @@ namespace libint2 {
 
           OriginDerivative<3u> _d1; _d1.inc(dxyz);
 
-          SafePtr<DGVertex> _nullptr;
+          std::shared_ptr<DGVertex> _nullptr;
 
           // dA - _1?
           {
@@ -512,7 +512,7 @@ namespace libint2 {
 #if LIBINT_ENABLE_GENERIC_CODE
   template <class F, int part, FunctionPosition where>
     bool
-    VRR_11_TwoPRep_11<F,part,where>::has_generic(const SafePtr<CompilationParameters>& cparams) const
+    VRR_11_TwoPRep_11<F,part,where>::has_generic(const std::shared_ptr<CompilationParameters>& cparams) const
     {
       if (TrivialBFSet<F>::result)
         return false;
@@ -578,7 +578,7 @@ namespace libint2 {
 
   template <class F, int part, FunctionPosition where>
     std::string
-    VRR_11_TwoPRep_11<F,part,where>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const
+    VRR_11_TwoPRep_11<F,part,where>::generic_instance(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<CodeSymbols>& args) const
     {
       std::ostringstream oss;
       F sh_a(target_->bra(0,0));

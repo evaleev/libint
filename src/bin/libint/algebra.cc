@@ -25,7 +25,7 @@ namespace libint2 {
 
   template <>
   void
-  AlgebraicOperator<DGVertex>::add_exit_arc(const SafePtr<DGArc>& a)
+  AlgebraicOperator<DGVertex>::add_exit_arc(const std::shared_ptr<DGArc>& a)
   {
     DGVertex::add_exit_arc(a);
 #if CHECK_SAFETY

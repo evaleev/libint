@@ -38,8 +38,8 @@ namespace libint2 {
       typedef S Size;
 
       MemoryBlock(const Address& address, const Size& size, bool free,
-                  const SafePtr<MemoryBlock>& left,
-                  const SafePtr<MemoryBlock>& right) :
+                  const std::shared_ptr<MemoryBlock>& left,
+                  const std::shared_ptr<MemoryBlock>& right) :
         address_(address), size_(size), free_(free),
         left_(left), right_(right)
         {
@@ -69,13 +69,13 @@ namespace libint2 {
       /// Returns true if the block is free
       bool free() const { return free_; }
       /// Returns the left adjacent block
-      SafePtr<MemoryBlock> left() const { return left_; }
+      std::shared_ptr<MemoryBlock> left() const { return left_; }
       /// Returns the right adjacent block
-      SafePtr<MemoryBlock> right() const { return right_; }
+      std::shared_ptr<MemoryBlock> right() const { return right_; }
       /// Sets the left adjacent block
-      void left(const SafePtr<MemoryBlock>& l) { left_ = l; }
+      void left(const std::shared_ptr<MemoryBlock>& l) { left_ = l; }
       /// Sets the right adjacent block
-      void right(const SafePtr<MemoryBlock>& r) { right_ = r; }
+      void right(const std::shared_ptr<MemoryBlock>& r) { right_ = r; }
 
       /// Sets the address
       void set_address(const Address& address) { address_ = address; }
@@ -85,35 +85,35 @@ namespace libint2 {
       void set_free(bool free) { free_ = free; }
 
       /// Returns true if the size of *i is less than the size of *j
-      static bool size_less_than(const SafePtr<MemoryBlock>& i,
-                                 const SafePtr<MemoryBlock>& j) {
+      static bool size_less_than(const std::shared_ptr<MemoryBlock>& i,
+                                 const std::shared_ptr<MemoryBlock>& j) {
         return i->size() < j->size();
       }
       /** Returns true if the size of *i equals sz. Note that the arguments are
           not passed by reference since this function is designed to be converted
           to std::pointer_to_binary_function, which adds references to the arguments */
-      static bool size_eq(SafePtr<MemoryBlock> i, Size sz) {
+      static bool size_eq(std::shared_ptr<MemoryBlock> i, Size sz) {
         return i->size() == sz;
       }
       /** Returns true if the size of *i greater or equal than sz. Note that the arguments are
           not passed by reference since this function is designed to be converted
           to std::pointer_to_binary_function, which adds references to the arguments */
-      static bool size_geq(SafePtr<MemoryBlock> i, Size sz) {
+      static bool size_geq(std::shared_ptr<MemoryBlock> i, Size sz) {
         return i->size() >= sz;
       }
       /// Returns true if the address of *i is less than the address of *j
-      static bool address_less_than(const SafePtr<MemoryBlock>& i,
-                                    const SafePtr<MemoryBlock>& j) {
+      static bool address_less_than(const std::shared_ptr<MemoryBlock>& i,
+                                    const std::shared_ptr<MemoryBlock>& j) {
         return i->address() < j->address();
       }
       /** Returns true if the address of *i equals a. Note that the arguments are
           not passed by reference since this function is designed to be converted
           to std::pointer_to_binary_function, which adds references to the arguments */
-      static bool address_eq(SafePtr<MemoryBlock> i, Address a) {
+      static bool address_eq(std::shared_ptr<MemoryBlock> i, Address a) {
         return i->address() == a;
       }
       /// Returns true if *i is free
-      static bool is_free(const SafePtr<MemoryBlock>& i) {
+      static bool is_free(const std::shared_ptr<MemoryBlock>& i) {
         return i->free();
       }
 
@@ -131,8 +131,8 @@ namespace libint2 {
       Size size_;
       bool free_;
       typedef MemoryBlock<Address,Size> this_type;
-      SafePtr<this_type> left_;
-      SafePtr<MemoryBlock> right_;
+      std::shared_ptr<this_type> left_;
+      std::shared_ptr<MemoryBlock> right_;
 
       MemoryBlock();
     };
@@ -152,7 +152,7 @@ namespace libint2 {
     static const Address InvalidAddress = -1;
 
   protected:
-    typedef std::list< SafePtr<MemBlock> > memblkset;
+    typedef std::list< std::shared_ptr<MemBlock> > memblkset;
 
   private:
     /// Upper limit on the amount of memory this MemoryManager can handle
@@ -160,12 +160,12 @@ namespace libint2 {
     /// manages MemBlocks
     memblkset blks_;
     /// This block is guaranteed to be free until all memory is exhausted
-    SafePtr<MemBlock> superblock_;
+    std::shared_ptr<MemBlock> superblock_;
     /// Max amount of memory used
     Size max_memory_used_;
 
-    SafePtr<MemBlock> merge_blocks(const SafePtr<MemBlock>& left, const SafePtr<MemBlock>& right);
-    SafePtr<MemBlock> merge_to_superblock(const SafePtr<MemBlock>& blk);
+    std::shared_ptr<MemBlock> merge_blocks(const std::shared_ptr<MemBlock>& left, const std::shared_ptr<MemBlock>& right);
+    std::shared_ptr<MemBlock> merge_to_superblock(const std::shared_ptr<MemBlock>& blk);
     void update_max_memory();
 
 
@@ -190,11 +190,11 @@ namespace libint2 {
     /// Returns blocks
     memblkset& blocks() { return blks_;}
     /// Returns the superblock
-    SafePtr<MemBlock> superblock() const { return superblock_; }
+    std::shared_ptr<MemBlock> superblock() const { return superblock_; }
     /// steals size memory from block blk and returns the new block
-    SafePtr<MemBlock> steal_from_block(const SafePtr<MemBlock>& blk, const Size& size);
+    std::shared_ptr<MemBlock> steal_from_block(const std::shared_ptr<MemBlock>& blk, const Size& size);
     /// finds the block at Address a
-    SafePtr<MemBlock> find_block(const Address& a);
+    std::shared_ptr<MemBlock> find_block(const Address& a);
 
   };
 
@@ -277,7 +277,7 @@ namespace libint2 {
   class MemoryManagerFactory {
   public:
     static const unsigned int ntypes = 8;
-    SafePtr<MemoryManager> memman(unsigned int type) const;
+    std::shared_ptr<MemoryManager> memman(unsigned int type) const;
     std::string label(unsigned int type) const;
   };
 

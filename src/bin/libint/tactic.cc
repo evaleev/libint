@@ -75,10 +75,10 @@ ZeroNewVerticesTactic::optimal_rr(const rr_stack& stack) const {
       }
 //      else {
 //        std::cout << "ZeroNewVerticesTactic::optimal_rr: not optimal: " << stack[i]->label() << std::endl;
-//        SafePtr<DGVertex> target = stack[i]->rr_target();
+//        std::shared_ptr<DGVertex> target = stack[i]->rr_target();
 //        const unsigned int nchildren = stack[i]->num_children();
 //        for(unsigned int c=0; c<nchildren; ++c) {
-//          SafePtr<DGVertex> child = stack[i]->rr_child(c);
+//          std::shared_ptr<DGVertex> child = stack[i]->rr_child(c);
 //          std::cout << "  child " << c << ": " << child->label() << std::endl;
 //        }
 //
