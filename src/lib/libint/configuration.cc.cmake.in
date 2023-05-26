@@ -18,27 +18,11 @@
  *
  */
 
-#ifndef _libint2_include_libint2_util_configuration_h_
-#define _libint2_include_libint2_util_configuration_h_
 
 /* Runtime accessor for the library configuration:
    integral derivatives, AM, orderings, etc.
    @return the semicolon-separated strings from CMake components */
-const char * configuration_accessor();
-
-#ifdef _libint2_src_lib_libint_cxxapi_h_
-#include <string>
-
-namespace libint2 {
-
-  /// Runtime accessor for the library configuration:
-  /// integral derivatives, AM, orderings, etc.
-  /// @return the semicolon-separated strings from CMake components
-  inline std::string configuration_accessor() {
-    std::string components = ::configuration_accessor();
-    return components;
-  }
+const char * configuration_accessor() {
+    return "@Libint2_CONFIG_COMPONENTS@";
 }
-#endif /* cxxapi guard */
 
-#endif /* header guard */

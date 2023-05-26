@@ -178,7 +178,10 @@ include(CMakePackageConfigHelpers)
 #  <<<  Build  >>>
 
 configure_file(include/libint2/config2.h.cmake.in include/libint2/config2.h @ONLY)
+    # configuration.h/cc define a string summary of capabilities. @ONLY is maximally deferred in case config2 changes the
+    #   summary (as it used to when LIBINT_SHGSHELL_ORDERING was library-config-time selected).
 configure_file(include/libint2/util/configuration.h.cmake.in include/libint2/util/configuration.h @ONLY)
+configure_file(src/configuration.cc.cmake.in src/configuration.cc @ONLY)
 set(DATADIR_ABSOLUTE ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/libint/${LIBINT_VERSION})
 configure_file(include/libint2/basis.h.cmake.in include/libint2/basis.h @ONLY)
 
@@ -193,7 +196,7 @@ set(export_properties
   "Libint2_CONFIGURATION"
   )
 
-add_library(int-obj OBJECT "${LIBINT2_LIBRARY_CXX_SRC}")
+add_library(int-obj OBJECT "${LIBINT2_LIBRARY_CXX_SRC}" "src/configuration.cc")
 
 target_compile_definitions(int-obj PRIVATE -D__COMPILING_LIBINT2=1)
 
@@ -321,8 +324,18 @@ if (BUILD_SHARED_LIBS)
           INTERFACE
             $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
             $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-            $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
           )
+        if (NOT MSVC)
+            # TODO fix the DATADIR define escaping on Windows
+            # * below works fine in tests
+            # * but fails in Psi4 compile
+            # * prefix replacement in conda used instead on Windows
+            target_compile_definitions(
+              int-cxx-headeronly-shared
+              INTERFACE
+                $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
+              )
+        endif()
 
         target_compile_features(int-cxx-headeronly-shared INTERFACE "cxx_std_11")
 
@@ -416,8 +429,14 @@ if (BUILD_STATIC_LIBS)
           INTERFACE
             $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
             $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-            $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
           )
+        if (NOT MSVC)
+            target_compile_definitions(
+              int-cxx-headeronly-static
+              INTERFACE
+                $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_BASISDIR}">
+              )
+        endif()
 
         target_compile_features(int-cxx-headeronly-static INTERFACE "cxx_std_11")
 

@@ -6,7 +6,7 @@
 Before you read on:
 
 * If you want a pre-built libint library, packages may be available:
-  * conda-forge (TBD)
+  * conda-forge: `conda install conda-forge/label/libint_dev::libint` for Linux, Apple (Intel), Apple Silicon, and Windows. See https://github.com/conda-forge/libint-feedstock/tree/dev/recipe for configuration, tarball, and build conditions.
   * Debian (TBD)
   * Fedora (TBD)
 * If you want to know how to _use_ a libint library in your code:
@@ -539,6 +539,25 @@ SHGShell: 1
 SHGShell: 2
 Configuration: eri_c4_d0_l2;eri_c4_d0_l3;sss;...
 ```
+
+For the C library, a similar function is available:
+
+```
+printf("CMake Configuration (C)  : %s\n", configuration_accessor());
+```
+```
+CMake Configuration (C)  : eri_c4_d0_l2;eri_c4_d0_l3;sss;...
+```
+
+If you have a built libint2 library whose history you don't know, a command like this on Linux can provide the same information:
+
+```
+strings -n80 /a/random/L2/lying/around/libint2.so
+```
+```
+eri_c2_d0_l2;eri_c2_d0_l3;eri_c2_d1_l2;eri_c3_d0_l2;eri_c3_d0_l3;eri_c3_d1_l2;eri_c4_d0_l2;eri_c4_d1_l2;impure_sh;onebody_d0_l2;onebody_d0_l3;onebody_d1_l2;sss
+```
+
 
 -----------------------------------------------------------------------------
 
