@@ -13,24 +13,25 @@ if (NOT TARGET Python::Module)
     find_package(Python COMPONENTS Interpreter Development REQUIRED)
 endif()
 
-find_package(pybind11 2.4.3 CONFIG)
+find_package(pybind11 2.6.0 CONFIG)
 if (NOT TARGET pybind11::pybind11)
     message(STATUS "Suitable pybind11 could not be located, building pybind11 instead.")
 
+    # [LAB May 2023] For a long time this was fixed at v2.4.3 from a Valeev group clone.
+    #  * recently noticed that C++17 is not getting processed right for this version (at least with the Ubuntu GHA setup)
+    #  * so bumping the backup tag to v2.6.0 (c.2021). the v2.4.3 could probably be revived if needed.
     include(FetchContent)
     FetchContent_Declare(
       pybind11
       GIT_REPOSITORY https://github.com/pybind/pybind11.git
-      GIT_TAG        v2.6.0
-#      GIT_TAG        v2.4.3  # sync below!
+      GIT_TAG        v2.6.0  # sync below!
       # GIT_REPOSITORY      https://github.com/ValeevGroup/pybind11.git
       # GIT_TAG             80d452484c5409444b0ec19383faa84bb7a4d351  # v2.4.3
       # FIND_PACKAGE_ARGS 2.4.3 CONFIG  # CMake 3.24 integrates find_package() call above into FC_Declare
       )
 
     FetchContent_MakeAvailable(pybind11)
-#    set(pybind11_VERSION "2.4.3")  # getting the fetched version isn't reliable from ${CMAKE_PROJECT_VERSION}), so sync explicitly from tag above
-    set(pybind11_VERSION "2.6.0")
+    set(pybind11_VERSION "2.6.0")  # getting the fetched version isn't reliable from ${CMAKE_PROJECT_VERSION}), so sync explicitly from tag above
 endif()
 
 if (pybind11_VERSION VERSION_LESS_EQUAL 2.5.0)
