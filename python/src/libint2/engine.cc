@@ -5,6 +5,7 @@
 #include <vector>
 #include <atomic>
 #include <thread>
+#include <optional>
 
 #if defined(_MSC_VER)
 #include <BaseTsd.h>
