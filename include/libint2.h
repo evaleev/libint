@@ -33,7 +33,7 @@
 #include <libint2/util/intrinsic_types.h>
 #include <libint2/util/generated/libint2_params.h>
 #include <libint2/util/generated/libint2_types.h>
-#include <libint2/util/configuration.h>
+//#include <libint2/util/configuration.h>
 
 #if defined(__cplusplus)
 #include <libint2/numeric.h>
