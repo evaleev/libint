@@ -36,6 +36,13 @@
 #include <type_traits>
 #include <memory>
 
+#ifdef _MSC_VER
+#define posix_memalign(p, a, s) (((*(p)) = _aligned_malloc((s), (a))), *(p) ?0 :errno)
+#define posix_memfree(p) ((_aligned_free((p))))
+#else
+#define posix_memfree(p) ((free((p))))
+#endif
+
 // from now on at least C++11 is required by default
 #include <libint2/util/cxxstd.h>
 #if LIBINT2_CPLUSPLUS_STD < 2011
@@ -251,7 +258,7 @@ namespace libint2 {
       static constexpr int ORDER = interpolation_order;   //!, interpolation order
       static constexpr int ORDERp1 = ORDER+1;   //!< ORDER + 1
 
-      static constexpr Real T_crit = cheb_table_tmax;          //!< critical value of T above which safe to use upward recusion
+      static constexpr Real T_crit = cheb_table_tmax;          //!< critical value of T above which safe to use upward recursion
       static constexpr Real delta = cheb_table_delta;           //!< interval size
       static constexpr Real one_over_delta = 1/delta;  //! 1/delta
 
@@ -290,7 +297,7 @@ namespace libint2 {
       }
       ~FmEval_Chebyshev7() {
         if (mmax >= 0) {
-          free(c);
+          posix_memfree(c);
         }
       }
 
@@ -881,7 +888,7 @@ namespace libint2 {
 
       ~TennoGmEval() {
         if (c_ != nullptr)
-          free(c_);
+          posix_memfree(c_);
       }
 
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
@@ -1039,7 +1046,11 @@ namespace libint2 {
         Real Gmp1; // will contain G[m+1]
         Gmm1 = pfac * (erfc_k + erfc_l) * oo_sqrt_U;  // G_{-1}
         Gm = pfac * (erfc_k - erfc_l) * oo_sqrt_T;   // G_{0}
-        if constexpr (!Exp) {
+        if
+#if __cplusplus >= 201703L
+            constexpr
+#endif
+            (!Exp) {
           Gm_vec[0] = Gm;
         }
         else {
@@ -1055,7 +1066,11 @@ namespace libint2 {
 
           for(unsigned int m=0, two_m_minus_1=1; m<mmax; ++m, two_m_minus_1+=2) {
             Gmp1 = oo_two_T * (two_m_minus_1 * Gm + two_U * Gmm1 - exp_mT);
-            if constexpr (!Exp) {
+            if
+#if __cplusplus >= 201703L
+                constexpr
+#endif
+                (!Exp) {
               Gm_vec[m + 1] = Gmp1;
             } else {
               Gm_vec[m + 1] = (Gm - Gmp1) * zeta_over_two_rho;
@@ -1160,7 +1175,11 @@ namespace libint2 {
           // precision of interpolation for m=-1,0 can be insufficient, just evaluate explicitly
           Real G0;
           std::tie(Exp ? G0 : Gm_vec[0], Gmm1) = eval_G0_and_maybe_Gm1<Exp>(T, U);
-          if constexpr (Exp) {
+          if
+#if __cplusplus >= 201703L
+              constexpr
+#endif
+              (Exp) {
             Gm_vec[0] = (Gmm1 - G0) * zeta_over_two_rho;
             Gmm1 = G0;
           }
@@ -1273,7 +1292,11 @@ namespace libint2 {
             }
 #endif // AVX
 
-            if constexpr (!Exp) {
+            if
+#if __cplusplus >= 201703L
+                constexpr
+#endif
+                (!Exp) {
               Gm_vec[m] = Gm;
             }
             else {
@@ -1297,7 +1320,7 @@ namespace libint2 {
 
         // get memory
         void* result;
-        int status = posix_memalign(&result, std::max(sizeof(Real), 32ul), (mmax_ - mmin_ + 1) * cheb_table_nintervals * ORDERp1 * ORDERp1 * sizeof(Real));
+        int status = posix_memalign(&result, std::max(sizeof(Real), (size_t)32), (mmax_ - mmin_ + 1) * cheb_table_nintervals * ORDERp1 * ORDERp1 * sizeof(Real));
         if (status != 0) {
           if (status == EINVAL)
             throw std::logic_error(

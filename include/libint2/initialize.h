@@ -34,6 +34,7 @@
 #include <libint2/util/deprecated.h>
 #include <libint2/util/singleton.h>
 #include <libint2/deriv_map.h>
+#include <libint2/shgshell_ordering.h>
 
 namespace libint2 {
 
@@ -56,6 +57,10 @@ namespace libint2 {
       static std::ostream* value = &std::clog;
       return value;
     }
+    inline std::atomic<SHGShellOrdering>& solid_harmonics_ordering_accessor() {
+      static std::atomic<SHGShellOrdering> value{libint2::SHGShellOrdering_Standard};
+      return value;
+    }
   } // namespace libint2::detail
 
   /// checks if the libint has been initialized.
@@ -74,6 +79,11 @@ namespace libint2 {
       (void) x;  // to suppress unused variable warning (not guaranteed to work) TODO revise when upgrade to C++17
       assert(x != nullptr);
       verbose_accessor() = verbose;
+
+      // initialize() functions that take `SHGShellOrdering sho` as an argument aren't provided because
+      // * (a) with casting, it's hard to disentangle from `bool verbose`
+      // * (b) a separate setter is needed anyways for cases like the Python module, where initialize(sho) lives in libint code
+      // * code in initializer would go here as `solid_harmonics_ordering_accessor() = sho;`
     }
   }
 
@@ -93,7 +103,17 @@ namespace libint2 {
       managed_singleton<__initializer>::delete_instance();
       verbose_accessor() = true;
       verbose_stream_accessor() = &std::clog;
+      solid_harmonics_ordering_accessor() = libint2::SHGShellOrdering_Standard;
     }
+  }
+  /// Setter for the SHGShellOrdering
+  inline void set_solid_harmonics_ordering(SHGShellOrdering sho) {
+    detail::solid_harmonics_ordering_accessor() = sho;
+  }
+  /// Accessor for the SHGShellOrdering
+  /// @return the val for Operator::nucleus
+  inline SHGShellOrdering solid_harmonics_ordering() {
+    return detail::solid_harmonics_ordering_accessor();
   }
   /// Accessor for the disgnostics stream
   /// @return the stream to which the diagnostics will be written if verbose() returns true

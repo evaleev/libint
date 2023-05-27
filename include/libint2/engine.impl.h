@@ -26,10 +26,14 @@
 
 #include <iterator>
 
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC system_header
+#endif
 #include <Eigen/Core>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 #include <libint2/boys.h>
 #if LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS

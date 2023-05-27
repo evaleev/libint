@@ -27,6 +27,7 @@
 #include <vector>
 #include <climits>
 #include <smart_ptr.h>
+#include <algorithm>
 
 /**
   Defaults definitions for various parameters assumed by Libint

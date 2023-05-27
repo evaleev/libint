@@ -4,6 +4,12 @@
 #include <tuple>
 #include <vector>
 
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+// handles ssize_t in pybind11/numpy.h
+typedef SSIZE_T ssize_t;
+#endif
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
@@ -24,7 +30,7 @@ template<class ... Params>
 inline Engine make_engine(
   Operator op,
   const BraKet *braket = nullptr,
-  int L = LIBINT2_MAX_AM,
+  int L = LIBINT2_MAX_AM_eri,
   int K = 10)
 {
   Engine engine(op, K, L, 0, 1e-15);
@@ -137,9 +143,15 @@ std::vector<double> coeffs_normalized(const Shell &s) {
 
 PYBIND11_MODULE(libint2, m) {
 
+  py::enum_<SHGShellOrdering>(m, "SHGShellOrdering")
+    .value("SHGShellOrdering_Standard", libint2::SHGShellOrdering_Standard)
+    .value("SHGShellOrdering_Gaussian", libint2::SHGShellOrdering_Gaussian)
+    .value("SHGShellOrdering_MOLDEN", libint2::SHGShellOrdering_Gaussian)
+    ;
+
   libint2::initialize();
 
-  m.attr("MAX_AM") = LIBINT2_MAX_AM;
+  m.attr("MAX_AM") = LIBINT2_MAX_AM_eri;
 
   py::class_<Atom>(m,"Atom")
     .def(py::init(&make_atom<int,Double3>))
@@ -250,7 +262,7 @@ PYBIND11_MODULE(libint2, m) {
       py::init(&engine::make_engine<void>),
       py::arg("oper"),
       py::arg("braket") = nullptr,
-      py::arg("L") = LIBINT2_MAX_AM,
+      py::arg("L") = LIBINT2_MAX_AM_eri,
       py::arg("K") = 10
     )
     .def_property(

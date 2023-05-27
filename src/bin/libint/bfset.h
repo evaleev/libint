@@ -26,6 +26,7 @@
 #include <cassert>
 #include <numeric>
 #include <sstream>
+#include <cctype>
 #include <stdarray.h>
 #include <smart_ptr.h>
 #include <polyconstr.h>
@@ -221,7 +222,7 @@ namespace libint2 {
   template <unsigned NDIM>
   OriginDerivative<NDIM> operator-(const OriginDerivative<NDIM>& A, const OriginDerivative<NDIM>& B) {
     OriginDerivative<NDIM> Diff(A);
-    for(unsigned int xyz=0; xyz<3; ++xyz)
+    for(unsigned int xyz=0; xyz<NDIM; ++xyz)
       Diff.dec(xyz,B.d(xyz));
     return Diff;
   }

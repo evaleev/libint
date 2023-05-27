@@ -1,0 +1,103 @@
+# This file communicates top-level CMake configuration results to
+#   export stage (in a very minor way that could be worked around) and to
+#   library stage (in a major way). If the superbuild was run continuously
+#   (generator->export->library), these would be more properly passed
+#   through the ExternalProject_Add commands. However, since library is
+#   commonly built separately from tarball, this file is better storage.
+
+# <<<  Build Version  >>>
+
+set(LIBINT_MAJOR_VERSION "@LIBINT_MAJOR_VERSION@")
+set(LIBINT_MINOR_VERSION "@LIBINT_MINOR_VERSION@")
+set(LIBINT_MICRO_VERSION "@LIBINT_MICRO_VERSION@")
+set(LIBINT_VERSION ${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION})
+
+
+# <<<  Dev Version  >>>
+
+set(LIBINT_BUILDID "@LIBINT_BUILDID@")
+set(LIBINT_EXT_VERSION "@LIBINT_EXT_VERSION@")
+message(STATUS "Version: Full ${LIBINT_EXT_VERSION} Numeric ${LIBINT_VERSION}")
+
+
+# <<<  ABI Version  >>>
+
+set(LIBINT_CURRENT_SOVERSION "@LIBINT_CURRENT_SOVERSION@")
+set(LIBINT_REVISION_SOVERSION "@LIBINT_REVISION_SOVERSION@")
+set(LIBINT_AGE_SOVERSION "@LIBINT_AGE_SOVERSION@")
+
+set(LIBINT_SOVERSION ${LIBINT_CURRENT_SOVERSION}:${LIBINT_REVISION_SOVERSION}:${LIBINT_AGE_SOVERSION})
+math(EXPR LIBINT_MAJOR_SOVERSION "${LIBINT_CURRENT_SOVERSION} - ${LIBINT_AGE_SOVERSION}")
+message(STATUS "SO Version: Full ${LIBINT_SOVERSION} Major ${LIBINT_MAJOR_SOVERSION}")
+
+
+# <<<  Fixed Orderings  >>>
+
+set(LIBINT2_SHGAUSS_ORDERING "@LIBINT2_SHGAUSS_ORDERING@")  # added Jan 2023
+set(LIBINT2_CARTGAUSS_ORDERING "@LIBINT2_CARTGAUSS_ORDERING@")
+set(LIBINT2_SHELL_SET "@LIBINT2_SHELL_SET@")
+set(ERI3_PURE_SH "@ERI3_PURE_SH@")
+set(ERI2_PURE_SH "@ERI2_PURE_SH@")
+
+
+# <<<  AM Components  >>>
+
+set(Libint2_ERI_COMPONENTS "@Libint2_ERI_COMPONENTS@")  # for CMake config file
+set(Libint2_MAX_AM_ERI "@_candidate_ERI_d0@")  # for CMake config file
+set(Libint2_ERI_MAX_AM "@_candidate_ERI_d0@")  # for features file
+
+
+# <<<  Features List  >>>
+
+set(Libint2_CONFIG_COMPONENTS "@Libint2_ERI_COMPONENTS@")  # for configuration.h file
+if((@ERI3_PURE_SH@ EQUAL 0) AND (@ERI2_PURE_SH@ EQUAL 0))
+    list(APPEND Libint2_CONFIG_COMPONENTS "impure_sh")
+endif()
+
+if    ((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "sss")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "sso")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "sis")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "sio")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "sgs")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "sgo")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "sos")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "soo")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "sbs")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "sbo")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "gss")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "gso")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "gis")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "gio")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "ggs")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "ggo")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "gos")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "goo")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "gbs")
+elseif((@LIBINT_SHGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "gbo")
+else()
+    message(STATUS "int_computed.cmake: indeterminate orderings")
+endif()
+
+list(APPEND Libint2_CONFIG_COMPONENTS "${_ordering}")
+set(Libint2_ORDERINGS_CODE "${_ordering}")  # for CMake config file
+list(SORT Libint2_CONFIG_COMPONENTS)

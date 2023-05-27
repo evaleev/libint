@@ -26,7 +26,7 @@
 # error "Libint2 C++ API requires C++11 support"
 #endif
 
-#include <libint2.h>  // NB this loads libint2/config.h
+#include <libint2.h>  // NB this loads libint2/config.h and libint2/util/configuration.h
 
 #ifdef LIBINT_USER_DEFINED_REAL
 # error "C++11 API does not support with user-defined real types yet; omit --with-real-type when configuring"
