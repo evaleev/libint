@@ -651,7 +651,7 @@ Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
           // exchange contribution to the Fock matrix is from {s1,s3,s2,s4} integrals
           engine.compute(shells[s1], shells[s3], shells[s2], shells[s4]);
           const auto* buf_1324 = buf[0];
-          if (buf_1234 == nullptr)
+          if (buf_1324 == nullptr)
             continue; // if all integrals screened out, skip to next quartet
 
 
