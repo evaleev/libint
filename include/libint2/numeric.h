@@ -10,6 +10,7 @@
 #include <limits>
 #include <sstream>
 #include <type_traits>
+#include <cmath>
 
 #if LIBINT_HAS_MPFR
 # include <cstddef>
@@ -56,10 +57,12 @@
    mpf_clear(x_to_a);
    return result;
  }
+#ifndef _MSC_VER
  /// this is needed to avoid ambiguity in pow(2.0, 2) ... the above pow competes with standard double pow(double, double)
  inline double pow(double x, int a) {
    return std::pow(x, static_cast<double>(a));
  }
+#endif
  /// implement erf for mpf_class using MPFR ... I do not claim to know what issues the rounding presents here
  inline mpf_class erf(mpf_class x) {
    const auto prec = x.get_prec();
