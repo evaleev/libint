@@ -49,6 +49,7 @@ endif(ENABLE_FORTRAN)
 # these are known orderings, must match config.h
 set(LIBINT_SHGSHELL_ORDERING_STANDARD 1)
 set(LIBINT_SHGSHELL_ORDERING_GAUSSIAN 2)
+# August 2023: the following variable has an effect on `INT_SOLIDHARMINDEX(l, m)` but otherwise the choice can be deferred to runtime.
 set(LIBINT2_SHGAUSS_ORDERING "standard" CACHE STRING "Use one of the following known orderings for shells of solid harmonic Gaussians:
   standard -- standard ordering (-l, -l+1 ... l)
   gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
