@@ -162,6 +162,7 @@ jobs:
     # * turn off generator testing (comment out "make check" and "stdtests.pl" lines)
     # * suppress last two (test library and bindings) steps ("if: false")
     needs: build_repo
+    if: always() && (needs.build_repo.steps.skip_check.outputs.should_skip != 'true')
     strategy:
       fail-fast: false
       matrix:
