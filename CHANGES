@@ -4,6 +4,7 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - 2022-xx-yy: 2.8.0-beta.1
+  - UNMERGED PR #271: Small pkgconfig and cmake detection improvements. Enable unity build.
   - UNMERGED PR #270: For Windows, basis sets with a star have been renamed to "s" on the filesystem,
     so 6-31g**.g94 -> 6-31gss.g94. In code, the basis can be accessed through "6-31g**" (longstanding)
     or "6-31gss" (new) for all operating systems.
