@@ -175,6 +175,20 @@ jobs:
             # note full paths depend on setup-miniconda:
             # * Miniforge is miniconda3 vs. Miniconda is miniconda
 
+          - runs-on: windows-latest
+            lane: windows-clang-cl
+            libargs: >
+              -GNinja
+              -DCMAKE_BUILD_TYPE=Release
+              -DBUILD_SHARED_LIBS=OFF
+              -DCMAKE_CXX_COMPILER=clang-cl
+              -DCMAKE_C_COMPILER=clang-cl
+            testargs: >
+              -GNinja
+              -DCMAKE_BUILD_TYPE=Release
+              -DCMAKE_CXX_COMPILER=clang-cl
+              -DCMAKE_C_COMPILER=clang-cl
+
           - runs-on: macos-latest
             lane: macos-clang
             libargs: >
@@ -217,6 +231,9 @@ jobs:
           - pybind11
           #- dpcpp_linux-64
         EOF
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          sed -i "s/- cxx/#- cxx/g" export.yaml
+        fi
         if [[ "${{ matrix.cfg.lane }}" == "ubuntu-intel" ]]; then
           sed -i "s/#- dpcpp_linux-64/- dpcpp_linux-64/g" export.yaml
         fi
@@ -238,6 +255,12 @@ jobs:
       run: |
         conda info
         conda list
+
+    - name: Prepare compiler environment for Windows
+      if: ${{ runner.os == 'Windows' }}
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
 
     - uses: actions/download-artifact@v3
       with:

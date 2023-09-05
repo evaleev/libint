@@ -36,6 +36,13 @@
 #include <type_traits>
 #include <memory>
 
+#ifdef _MSC_VER
+#define posix_memalign(p, a, s) (((*(p)) = _aligned_malloc((s), (a))), *(p) ?0 :errno)
+#define posix_memfree(p) ((_aligned_free((p))))
+#else
+#define posix_memfree(p) ((free((p))))
+#endif
+
 // from now on at least C++11 is required by default
 #include <libint2/util/cxxstd.h>
 #if LIBINT2_CPLUSPLUS_STD < 2011
@@ -290,7 +297,7 @@ namespace libint2 {
       }
       ~FmEval_Chebyshev7() {
         if (mmax >= 0) {
-          free(c);
+          posix_memfree(c);
         }
       }
 
@@ -881,7 +888,7 @@ namespace libint2 {
 
       ~TennoGmEval() {
         if (c_ != nullptr)
-          free(c_);
+          posix_memfree(c_);
       }
 
       /// Singleton interface allows to manage the lone instance; adjusts max m values as needed in thread-safe fashion
@@ -1313,7 +1320,7 @@ namespace libint2 {
 
         // get memory
         void* result;
-        int status = posix_memalign(&result, std::max(sizeof(Real), 32ul), (mmax_ - mmin_ + 1) * cheb_table_nintervals * ORDERp1 * ORDERp1 * sizeof(Real));
+        int status = posix_memalign(&result, std::max(sizeof(Real), (size_t)32), (mmax_ - mmin_ + 1) * cheb_table_nintervals * ORDERp1 * ORDERp1 * sizeof(Real));
         if (status != 0) {
           if (status == EINVAL)
             throw std::logic_error(
