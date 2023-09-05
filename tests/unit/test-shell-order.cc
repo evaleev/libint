@@ -35,11 +35,11 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "solid harmonics", "[engine]") {
       FOR_CART(ix, iy, iz, 1)
       int lm;
       if (ix == 1) {
-        lm = libint2::INT_SOLIDHARMINDEX(1, 1);
+        lm = libint2::INT_SOLIDHARMINDEX(libint2::solid_harmonics_ordering(), 1, 1);
       } else if (iy == 1) {
-        lm = libint2::INT_SOLIDHARMINDEX(1, -1);
+        lm = libint2::INT_SOLIDHARMINDEX(libint2::solid_harmonics_ordering(), 1, -1);
       } else if (iz == 1) {
-        lm = libint2::INT_SOLIDHARMINDEX(1, 0);
+        lm = libint2::INT_SOLIDHARMINDEX(libint2::solid_harmonics_ordering(), 1, 0);
       }
 
       for (int f2 = 0; f2 != 5; ++f2) {

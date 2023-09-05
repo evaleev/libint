@@ -118,6 +118,7 @@ int main(int argc, char *argv[]) {
 
     // initializes the Libint integrals library ... now ready to compute
     libint2::initialize();
+    printf("Configuration S: sho=%d components=%s\n", libint2::solid_harmonics_ordering(), libint2::configuration_accessor().c_str());
 
     // compute overlap integrals
     auto S = compute_1body_ints(shells, Operator::overlap);
