@@ -28,6 +28,10 @@ include(RedefaultableOption)
 include(CMakePushCheckState)
 include(AddCustomTargetSubproject)
 
+include(GNUInstallDirs)
+set(L2 Libint2)  # Namespace
+set(pnv libint2) # projectnameversion
+
 # Options ==============================================================================================================
 
 redefaultable_option(REQUIRE_CXX_API "C++11 Libint interface" ON)
@@ -565,15 +569,18 @@ configure_file(
         @ONLY
 )
 
-configure_file(
-        libint2.pc.in
-        ${PROJECT_BINARY_DIR}/libint2.pc
-        @ONLY
-)
+include(JoinPaths)
+join_paths(libdir_for_pc_file "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
+join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
+configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
+
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/
+  COMPONENT ${L2}_Development
+  )
 
 # install cmake-processed files
-install(FILES ${PROJECT_BINARY_DIR}/libint2.pc
-        DESTINATION lib/pkgconfig)
 install(FILES ${PROJECT_BINARY_DIR}/include/libint2/config.h
         DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2")
 install(FILES ${PROJECT_BINARY_DIR}/include/libint2/basis.h
