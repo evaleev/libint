@@ -37,6 +37,8 @@ if os.path.exists(path_to_libfeatures):
     no = False
     yes = True
     exec(open(path_to_libfeatures).read())
+else:
+    sys.exit(2)
 
 # ignore test if ERI_MAX_AM  is too low
 if LIBINT_ERI_MAX_AM<2:

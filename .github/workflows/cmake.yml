@@ -1,8 +1,6 @@
-name: Linux/MacOS Build
+name: Build
 
 on: [push, pull_request]
-
-#env:
 
 jobs:
   build_repo:
@@ -17,7 +15,7 @@ jobs:
           - os: macos-latest
             cxx: clang++
 
-    name: "${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }}"
+    name: "Repo • ${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }}"
     runs-on: ${{ matrix.os }}
     env:
       CXX : ${{ matrix.cxx }}
@@ -37,11 +35,11 @@ jobs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - id: skip_check
       name: Check if can skip
-      uses: fkirc/skip-duplicate-actions@v3.4.0
+      uses: fkirc/skip-duplicate-actions@v5
       with:
         cancel_others: 'true'
 
@@ -75,11 +73,11 @@ jobs:
       shell: cmake -P {0}
       run: |
         string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-        message("::set-output name=timestamp::${current_date}")
+        message("\"timestamp=${current_date}\" >> $GITHUB_OUTPUT")
 
     - name: Setup ccache cache files
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-      uses: actions/cache@v1.1.0
+      uses: actions/cache@v3
       with:
         path: ${{github.workspace}}/build/.ccache
         key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
@@ -206,7 +204,7 @@ jobs:
               -DCMAKE_CXX_COMPILER=icpx
               -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --sysroot=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu"
 
-    name: "Export • ${{ matrix.cfg.lane }} • ${{ matrix.cfg.libargs }}"
+    name: "Export • ${{ matrix.cfg.lane }}"
     runs-on: ${{ matrix.cfg.runs-on }}
 
     steps:
@@ -274,6 +272,7 @@ jobs:
         cmake \
           -S. \
           -Bbuild \
+          -GNinja \
           -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
           -DCMAKE_CXX_COMPILER=${CXX} \
           -DLIBINT2_PYTHON=ON \
@@ -281,14 +280,20 @@ jobs:
           ${{ matrix.cfg.libargs }}
         cmake --build build --target install libint2-python-test
 
-    - name: Test Installed Libint library
+    - name: Test Libint library - unit tests
+      shell: bash -l {0}
+      working-directory: ${{github.workspace}}/libint/build
+      run: |
+        cmake --build . --target check
+
+    - name: Test Libint library - consume installation for SCF
       shell: bash -l {0}
       run: |
         mkdir test_installed_library && cd test_installed_library
         cat > CMakeLists.txt <<EOF
-        cmake_minimum_required(VERSION 3.16)
+        cmake_minimum_required(VERSION 3.8)
         project(hf++)
-        find_package(Libint2 2.7.2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
+        find_package(Libint2 2.8.0 REQUIRED)
         get_target_property(_l2_maxam Libint2::int2 Libint2_MAX_AM_ERI)
         message("Libint2_MAX_AM_ERI \${_l2_maxam}")
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
@@ -299,11 +304,11 @@ jobs:
         cmake --build build --target hf++
         ./build/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/MakeVars.features
 
-    - name: Build (again) & Test Python bindings
+    - name: Build & Test Python bindings (again, independently)
       shell: bash -l {0}
       working-directory: ${{github.workspace}}/libint/python
       run: |
-        cmake . -D LIBINT2_PYTHON=ON -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
+        cmake . -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-test
 
