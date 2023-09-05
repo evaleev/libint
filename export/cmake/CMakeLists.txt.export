@@ -188,7 +188,7 @@ foreach(FN IN LISTS LIBINT2_LIBRARY_CXX_SRC)
     list(APPEND LIB_CXX_SRC "src/${FN}")
 endforeach()
 # Create object files to use for static and shared libraries
-add_library(libint2_obj OBJECT ${LIB_CXX_SRC})
+add_library(libint2_obj OBJECT ${LIB_CXX_SRC} "src/configuration.cc")
 target_include_directories(libint2_obj PRIVATE include ${PROJECT_BINARY_DIR}/include)
 # Compile static library with position independent code
 
@@ -545,6 +545,8 @@ configure_file(
 
 # In the future CMake switchover, configuration.h/cc define a string summary of capabilities. @ONLY is maximally deferred in case config2 changes the
 #   summary (as it used to when LIBINT_SHGSHELL_ORDERING was library-config-time selected).
+#   Note that in the future CMake switchover, configuration.cc should be a .cmake.in in the repo. It is not, for the moment, so the libtool build
+#   of the library works and because there's nothing to substitute until CMake knows the build configuration.
 #configure_file(${PROJECT_SOURCE_DIR}/include/libint2/util/configuration.h.cmake.in ${PROJECT_BINARY_DIR}/include/libint2/util/configuration.h @ONLY)
 configure_file(src/configuration.cc.cmake.in ${PROJECT_BINARY_DIR}/src/configuration.cc @ONLY)
 
