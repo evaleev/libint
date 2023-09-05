@@ -480,6 +480,11 @@ configure_file(
         @ONLY
 )
 
+# In the future CMake switchover, configuration.h/cc define a string summary of capabilities. @ONLY is maximally deferred in case config2 changes the
+#   summary (as it used to when LIBINT_SHGSHELL_ORDERING was library-config-time selected).
+#configure_file(${PROJECT_SOURCE_DIR}/include/libint2/util/configuration.h.cmake.in ${PROJECT_BINARY_DIR}/include/libint2/util/configuration.h @ONLY)
+configure_file(src/configuration.cc.cmake.in ${PROJECT_BINARY_DIR}/src/configuration.cc @ONLY)
+
 configure_file(
         include/libint2/basis.h.in
         ${PROJECT_BINARY_DIR}/include/libint2/basis.h
