@@ -4,7 +4,7 @@ Functions are provided to check the library configuration and solid harmonics or
 
 Note: As of v2.8.0 (libtool-based), the configuration_accessor() function will return `(nyi)` by default.
   Packagers are encouraged to patch a generated configuration string into file `configuration.cc` to
-  imitate future cmake-based behavior.
+  imitate future cmake-based behavior. See sample patch below.
 
 ```
 libint2::initialize();
@@ -38,3 +38,33 @@ strings -n80 /a/random/L2/lying/around/libint2.so
 eri_c2_d0_l2;eri_c2_d0_l3;eri_c2_d1_l2;eri_c3_d0_l2;eri_c3_d0_l3;eri_c3_d1_l2;eri_c4_d0_l2;eri_c4_d1_l2;impure_sh;onebody_d0_l2;onebody_d0_l3;onebody_d1_l2;sss
 ```
 
+A patch like the following is suitable for an export tarball generated from the next following. See
+https://github.com/loriab/libint/blob/new-cmake-2023-take2-b/cmake/libint2-config.cmake.in#L37-L65
+for decoding the configuration components.
+
+```
+--- src/configuration.cc.cmake.in   2023-09-05 09:13:50.000000000 -0400
++++ src/configuration.cc.cmake.in_basic 2023-09-05 23:41:00.444396591 -0400
+@@ -24,6 +24,6 @@
+    @return the semicolon-separated strings from CMake components */
+ const char * configuration_accessor() {
+     //return "@Libint2_CONFIG_COMPONENTS@";
+-    return "(nyi)";
++    return "eri_c2_d0_l2;eri_c2_d0_l3;eri_c2_d0_l4;eri_c2_d0_l5;eri_c2_d0_l6;eri_c2_d1_l2;eri_c2_d1_l3;eri_c2_d1_l4;eri_c2_d1_l5;eri_c3_d0_l2;eri_c3_d0_l3;eri_c3_d0_l4;eri_c3_d0_l5;eri_c3_d0_l6;eri_c3_d1_l2;eri_c3_d1_l3;eri_c3_d1_l4;eri_c3_d1_l5;eri_c4_d0_l2;eri_c4_d0_l3;eri_c4_d0_l4;eri_c4_d0_l5;eri_c4_d1_l2;eri_c4_d1_l3;eri_c4_d1_l4;g12_d0_l2;g12_d0_l3;g12_d0_l4;g12_d1_l2;g12_d1_l3;g12_d1_l4;impure_sh;onebody_d0_l2;onebody_d0_l3;onebody_d0_l4;onebody_d0_l5;onebody_d0_l6;onebody_d1_l2;onebody_d1_l3;onebody_d1_l4;onebody_d1_l5;onebody_d2_l2;onebody_d2_l3;onebody_d2_l4;sss";
+ }
+```
+```
+./configure \
+    --enable-eri=1 \
+    --enable-eri3=1 \
+    --enable-eri2=1 \
+    --enable-1body=2 \
+    --enable-g12=1 \
+    --disable-1body-property-derivs \
+    --with-multipole-max-order=4 \
+    --with-g12-max-am=4 \
+    --with-eri-max-am=5,4 \
+    --with-eri3-max-am=6,5 \
+    --with-eri2-max-am=6,5 \
+    --with-max-am=6,5
+```
