@@ -1039,7 +1039,11 @@ namespace libint2 {
         Real Gmp1; // will contain G[m+1]
         Gmm1 = pfac * (erfc_k + erfc_l) * oo_sqrt_U;  // G_{-1}
         Gm = pfac * (erfc_k - erfc_l) * oo_sqrt_T;   // G_{0}
-        if constexpr (!Exp) {
+        if
+#if __cplusplus >= 201703L
+            constexpr
+#endif
+            (!Exp) {
           Gm_vec[0] = Gm;
         }
         else {
@@ -1055,7 +1059,11 @@ namespace libint2 {
 
           for(unsigned int m=0, two_m_minus_1=1; m<mmax; ++m, two_m_minus_1+=2) {
             Gmp1 = oo_two_T * (two_m_minus_1 * Gm + two_U * Gmm1 - exp_mT);
-            if constexpr (!Exp) {
+            if
+#if __cplusplus >= 201703L
+                constexpr
+#endif
+                (!Exp) {
               Gm_vec[m + 1] = Gmp1;
             } else {
               Gm_vec[m + 1] = (Gm - Gmp1) * zeta_over_two_rho;
@@ -1160,7 +1168,11 @@ namespace libint2 {
           // precision of interpolation for m=-1,0 can be insufficient, just evaluate explicitly
           Real G0;
           std::tie(Exp ? G0 : Gm_vec[0], Gmm1) = eval_G0_and_maybe_Gm1<Exp>(T, U);
-          if constexpr (Exp) {
+          if
+#if __cplusplus >= 201703L
+              constexpr
+#endif
+              (Exp) {
             Gm_vec[0] = (Gmm1 - G0) * zeta_over_two_rho;
             Gmm1 = G0;
           }
@@ -1273,7 +1285,11 @@ namespace libint2 {
             }
 #endif // AVX
 
-            if constexpr (!Exp) {
+            if
+#if __cplusplus >= 201703L
+                constexpr
+#endif
+                (!Exp) {
               Gm_vec[m] = Gm;
             }
             else {
