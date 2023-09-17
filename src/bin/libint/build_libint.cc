@@ -364,15 +364,9 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
             descrs.resize(0);
             // iterate over operators and construct their descriptors
             for(int l=0; l<=MULTIPOLE_MAX_ORDER; ++l) {
-              // we iterate over them same way as over solid harmonic Gaussian shells
+              // we iterate over them using the *standard* solid harmonic Gaussian ordering
               int m;
-#if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
               FOR_SOLIDHARM_STANDARD(l,m)
-#elif LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_GAUSSIAN
-              FOR_SOLIDHARM_GAUSSIAN(l,m)
-#else
-#  error "unknown value of macro LIBINT_SHGSHELL_ORDERING"
-#endif
                 descrs.push_back(make_descr<OperDescrType>(l,m));
               END_FOR_SOLIDHARM
             }
