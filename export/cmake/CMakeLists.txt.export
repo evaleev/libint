@@ -112,26 +112,28 @@ if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
 endif()
 
 if (NOT LIBINT_USE_BUNDLED_BOOST)
-  find_package(Boost 1.29)
-  if (Boost_FOUND)
+  if (NOT TARGET Boost::boost)
+    find_package(Boost 1.29)
+  endif()
+  if (TARGET Boost::boost)
     cmake_push_check_state()
 
     list(APPEND CMAKE_REQUIRED_FLAGS "-std=c++11")
-    list(APPEND CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIR})
+    list(APPEND CMAKE_REQUIRED_LIBRARIES Boost::boost)
 
     check_cxx_source_compiles("
-        #include <boost/preprocessor.hpp>
-        #if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
-        #  error \"your compiler does not provide variadic macros (but does support C++11), something is seriously broken, please create an issue at https://github.com/evaleev/libint/issues\"
-        #endif
-        int main() { return 0;}
-        "
-        LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+            #include <boost/preprocessor.hpp>
+            #if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
+            #  error \"your compiler does not provide variadic macros (but does support C++11), something is seriously broken, please create an issue at https://github.com/evaleev/libint/issues\"
+            #endif
+            int main() { return 0;}
+            "
+                LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
 
     cmake_pop_check_state()
-  else(Boost_FOUND)
+  else()
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 0)
-  endif(Boost_FOUND)
+  endif()
 endif()
 
 # if usable Boost.Preprocessor not found install the bundled version
@@ -150,11 +152,11 @@ if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS OR LIBINT_USE_BUNDLED_BOO
 endif()
 
 # Python is optional, unless ...
-if (ENABLE_FORTRAN)  # ... need fortran
+if (ENABLE_FORTRAN OR LIBINT2_PYTHON)  # ... need fortran
     find_package(PythonInterp REQUIRED)
-else(ENABLE_FORTRAN)
+else()
     find_package(PythonInterp)
-endif(ENABLE_FORTRAN)
+endif()
 
 # Set install paths ====================================================================================================
 
@@ -268,7 +270,7 @@ if (LIBINT_HAS_CXX_API)
   target_compile_features(libint2_cxx INTERFACE "cxx_std_11")
   target_link_libraries(libint2_cxx INTERFACE ${int2_library} libint2_Eigen)
   if (LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
-      target_include_directories(libint2_cxx INTERFACE ${Boost_INCLUDE_DIR})
+      target_link_libraries(libint2_cxx INTERFACE Boost::boost)
   endif(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
   get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_DATADIR}" ABSOLUTE)
   target_compile_definitions(libint2_cxx INTERFACE
