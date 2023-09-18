@@ -21,7 +21,7 @@ namespace unit {
 class DefaultFixture {
 public:
   DefaultFixture() : atoms{ {8, 0.,0.,0.}, {8, 0.,0.,2.}, {1, 0.,-1.,-1.}, {1, 0.,1.,3.}},
-    obs("6-31gs", atoms),
+    obs("6-31g*", atoms),
     dfbs("aug-cc-pvdz", atoms) {}
 protected:
   std::vector<Atom> atoms;

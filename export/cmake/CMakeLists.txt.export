@@ -282,10 +282,18 @@ else()
 endif()
 
 # install basis set library
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/lib/basis
+if(MSVC)
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/lib/basis
+        COMPONENT libint2
+        DESTINATION "${LIBINT2_INSTALL_DATADIR}"
+        FILES_MATCHING REGEX "[A-Za-z0-9_\\(\\)-]+\.g94"
+        )
+else()
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/lib/basis
         COMPONENT libint2
         DESTINATION "${LIBINT2_INSTALL_DATADIR}"
         )
+endif()
 
 # LibintCXX library ====================================================================================================
 

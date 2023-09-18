@@ -4,12 +4,15 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - 2022-xx-yy: 2.8.0-beta.1
-  - UNMERGED PR #270: For Windows, basis sets with a star have been renamed to "s", so 6-31g**.g94 -> 6-31gss.g94.
+  - UNMERGED PR #270: For Windows, basis sets with a star have been renamed to "s" on the filesystem,
+    so 6-31g**.g94 -> 6-31gss.g94. In code, the basis can be accessed through "6-31g**" (longstanding)
+    or "6-31gss" (new) for all operating systems.
   - UNMERGED PR #270: Adapt build system and header imports so that library and Python bindings can build on
     Windows (at least with clang-cl compiler atop MSVC). Note that a Linux- or Mac-generated export
-    builds on Windows; one cannot generate an export on Windows.
-  - UNMERGED PR #269: minimum CMake bumped to 3.16
-  - UNMERGED PR #269: Solid harmonics ordering is runtime switchable in the library. Issue
+    builds on Windows; one cannot generate an export on Windows. Note also that only a static library
+    build, not a shared one, works on Windows (see #237).
+  - PR #269: minimum CMake bumped to 3.16
+  - PR #269: Solid harmonics ordering is runtime switchable in the library. Issue
     `libint2::set_solid_harmonics_ordering(libint2::SHGShellOrdering_Gaussian)` or `_Standard` after
     initialization. Similarly, prefer new `INT_SOLIDHARMINDEX(sho, l, m)` to usual `(l, m)` version.
   - PR #268: Python detection (relevant to Python bindings, Fortran, and some tests) now uses modern

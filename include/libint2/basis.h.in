@@ -345,6 +345,9 @@ namespace libint2 {
             char cc = ::tolower(c);
             switch (cc) {
               case '/': cc = 'I'; break;
+#ifdef _MSC_VER
+              case '*': cc = 's'; break;
+#endif
             }
             return cc;
           }
