@@ -5,7 +5,7 @@ on: [push, pull_request]
 #env:
 
 jobs:
-  build:
+  build_repo:
     strategy:
       fail-fast: false
       matrix:
@@ -13,7 +13,7 @@ jobs:
         os : [ macos-latest, ubuntu-20.04 ]
         include:
           - os: ubuntu-20.04
-            cxx: /usr/bin/g++-9
+            cxx: g++-10
           - os: macos-latest
             cxx: clang++
 
@@ -65,8 +65,8 @@ jobs:
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
       run: |
         sudo apt-get update
-        sudo apt-get install ninja-build g++-9 gfortran-9 liblapack-dev libboost-dev libeigen3-dev ccache python3-numpy python3-scipy
-        echo "FC=/usr/bin/gfortran-9" >> $GITHUB_ENV
+        sudo apt-get install ninja-build g++-10 gfortran-10 liblapack-dev libboost-dev libeigen3-dev ccache python3-numpy python3-scipy
+        echo "FC=/usr/bin/gfortran-10" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
 
     - name: Prepare ccache timestamp
@@ -104,6 +104,16 @@ jobs:
         make check
         cd src/bin/test_eri && ./stdtests.pl && cd ../../..
         make export
+        echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
+
+    - name: Archive Library Tarball
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type == 'Release'}}
+      uses: actions/upload-artifact@v3
+      with:
+        if-no-files-found: error
+        name: ${{ runner.os }}-${{ matrix.cxx }}
+        path: ${{github.workspace}}/build/compiler/${{ env.ARTIFACT }}
+        retention-days: 1
 
     - name: Build+test+install Libint library
       if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
@@ -113,7 +123,7 @@ jobs:
         tar -xzf ../compiler/libint-2*.tgz
         cd libint-2*
         echo "LIBINT_EXPORTED_DIR=`pwd`" >> $GITHUB_ENV
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DPYTHON_EXECUTABLE=`which python3` $BUILD_CONFIG
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
         cmake --build build --target check
         cmake --build build --target install
 
@@ -145,4 +155,132 @@ jobs:
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-test
 
+  build_export:
+    # to debug the second stage, it is handy to short-circuit the first stage down to ~6 minutes:
+    # * run only the Linux/Release (remove items from matrix.build_type and matrix.os)
+    # * don't generate any derivative ints (edit CPPFLAGS)
+    # * turn off generator testing (comment out "make check" and "stdtests.pl" lines)
+    # * suppress last two (test library and bindings) steps ("if: false")
+    needs: build_repo
+    if: always() && (needs.build_repo.steps.skip_check.outputs.should_skip != 'true')
+    strategy:
+      fail-fast: false
+      matrix:
+        cfg:
+          - runs-on: ubuntu-latest
+            lane: ubuntu-gnu
+            libargs: >
+              -DBUILD_SHARED_LIBS=ON
+            testargs: ""
+            # note full paths depend on setup-miniconda:
+            # * Miniforge is miniconda3 vs. Miniconda is miniconda
+
+          - runs-on: macos-latest
+            lane: macos-clang
+            libargs: >
+              -DBUILD_SHARED_LIBS=ON
+            testargs: ""
+
+          - runs-on: ubuntu-latest
+            lane: ubuntu-intel
+            libargs: >
+              -DCMAKE_CXX_COMPILER=icpx
+              -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --sysroot=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu"
+              # flags are long-form of below (envvars not available at spinup)
+              # -DCMAKE_CXX_FLAGS="--gcc-toolchain=${CONDA_PREFIX} --sysroot=${CONDA_PREFIX}/${HOST}/sysroot -target ${HOST}"
+            testargs: >
+              -DCMAKE_CXX_COMPILER=icpx
+              -DCMAKE_CXX_FLAGS="--gcc-toolchain=/usr/share/miniconda3/envs/test --sysroot=/usr/share/miniconda3/envs/test/x86_64-conda-linux-gnu/sysroot -target x86_64-conda-linux-gnu"
+
+    name: "Export • ${{ matrix.cfg.lane }} • ${{ matrix.cfg.libargs }}"
+    runs-on: ${{ matrix.cfg.runs-on }}
+
+    steps:
+    # Note we're not checking out the repo. All src from Linux tarball generated above.
+
+    - name: Write a Conda Env File
+      shell: bash -l {0}
+      run: |
+        cat > export.yaml <<EOF
+        name: test
+        channels:
+          - conda-forge
+        dependencies:
+          - cmake
+          - ninja
+          - cxx-compiler
+          - python
+          - boost
+          - eigen
+          - numpy
+          - scipy
+          - pybind11
+          #- dpcpp_linux-64
+        EOF
+        if [[ "${{ matrix.cfg.lane }}" == "ubuntu-intel" ]]; then
+          sed -i "s/#- dpcpp_linux-64/- dpcpp_linux-64/g" export.yaml
+        fi
+        cat export.yaml
+
+    - name: Create Conda Environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        miniforge-variant: Mambaforge
+        use-mamba: true
+        python-version: "3.9"
+        activate-environment: test
+        channels: conda-forge
+        environment-file: export.yaml
+        show-channel-urls: true
+
+    - name: Environment Information
+      shell: bash -l {0}
+      run: |
+        conda info
+        conda list
+
+    - uses: actions/download-artifact@v3
+      with:
+        name: Linux-g++-10
+
+    - name: Extract, Build, Install Libint Library
+      shell: bash -l {0}
+      run: |
+        tar -zxf libint*tgz
+        mkdir libint && mv libint-2*/* libint/ && cd libint/
+        cmake \
+          -S. \
+          -Bbuild \
+          -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
+          -DCMAKE_CXX_COMPILER=${CXX} \
+          -DLIBINT2_PYTHON=ON \
+          -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
+          ${{ matrix.cfg.libargs }}
+        cmake --build build --target install libint2-python-test
+
+    - name: Test Installed Libint library
+      shell: bash -l {0}
+      run: |
+        mkdir test_installed_library && cd test_installed_library
+        cat > CMakeLists.txt <<EOF
+        cmake_minimum_required(VERSION 3.16)
+        project(hf++)
+        find_package(Libint2 2.7.2 REQUIRED COMPONENTS eri_c4_d0_l2 CXX_ho)
+        get_target_property(_l2_maxam Libint2::int2 Libint2_MAX_AM_ERI)
+        message("Libint2_MAX_AM_ERI \${_l2_maxam}")
+        find_package(Threads)  # clang does not autolink threads even though we are using std::thread
+        add_executable(hf++ EXCLUDE_FROM_ALL "../libint/tests/hartree-fock/hartree-fock++.cc")
+        target_link_libraries(hf++ Libint2::cxx Threads::Threads)
+        EOF
+        cmake -S . -B build -DCMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
+        cmake --build build --target hf++
+        ./build/hf++ ../libint/tests/hartree-fock/h2o_rotated.xyz | python ../libint/tests/hartree-fock/hartree-fock++-validate.py ../libint/MakeVars.features
+
+    - name: Build (again) & Test Python bindings
+      shell: bash -l {0}
+      working-directory: ${{github.workspace}}/libint/python
+      run: |
+        cmake . -D LIBINT2_PYTHON=ON -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
+        cmake --build . --target libint2-python
+        cmake --build . --target libint2-python-test
 
