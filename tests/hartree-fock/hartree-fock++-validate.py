@@ -54,20 +54,22 @@ Qref = [-7.01719638074453, 0.024624345507934, -0.576201299024159,
         -8.04716669024124, 0.638204907990955, -6.35134519242917 ]
 Qtol = 1e-8
 
-# Note that the sphemultipole order is fixed at generator build time (not influenced by libint2::solid_harmonics_ordering())
-if (LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD):
-    smuref = [-muref[1]/2,  muref[2],   -muref[0]/2]  # [ 0.046, -0.105,  0.132]
-    print("Checking sphemultipole LIBINT_SHGSHELL_ORDERING=Standard\n");
-else:
-    smuref = [ muref[2],   -muref[0]/2, -muref[1]/2]  # [-0.105,  0.132,  0.046]
-    print("Checking sphemultipole LIBINT_SHGSHELL_ORDERING=Gaussian\n");
+# * Note that the sphemultipole order is fixed at generator build time (not influenced by
+#   libint2::solid_harmonics_ordering())
+# * As of https://github.com/evaleev/libint/commit/cdbb9f3, sphemultipole is hard-coded at Standard
+#   (and not influenced by LIBINT_SHGSHELL_ORDERING)
+smuref = [-muref[1]/2, muref[2], -muref[0]/2]  # [ 0.046, -0.105,  0.132]
 smutol = 1e-9
 
-if (LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD):
-    sQref = [Qref[1]/4, -Qref[4]/2, (2*Qref[5] - Qref[0] - Qref[3])/4, -Qref[2]/2, (Qref[0] - Qref[3])/8  ]
-else:
-    sQref = [(2*Qref[5] - Qref[0] - Qref[3])/4, -Qref[2]/2, -Qref[4]/2, (Qref[0] - Qref[3])/8, Qref[1]/4]
+sQref = [Qref[1]/4, -Qref[4]/2, (2*Qref[5] - Qref[0] - Qref[3])/4,
+         -Qref[2]/2, (Qref[0] - Qref[3])/8  ]
 sQtol = 1e-8
+print("Checking sphemultipole Standard\n");
+
+# Reference values from LIBINT_SHGSHELL_ORDERING=Gaussian. These are no longer accessible after cdbb9f3.
+#   print("Checking sphemultipole Gaussian\n");
+#   smuref = [ muref[2],   -muref[0]/2, -muref[1]/2]  # [-0.105,  0.132,  0.046]
+#   sQref = [(2*Qref[5] - Qref[0] - Qref[3])/4, -Qref[2]/2, -Qref[4]/2, (Qref[0] - Qref[3])/8, Qref[1]/4]
 
 F1ref = [-5.43569555903312, -1.88298017654395, -2.17427822361352,
          3.47022732536532, -2.96798871167808, 2.59189820350226,
