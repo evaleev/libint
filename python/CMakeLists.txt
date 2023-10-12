@@ -37,6 +37,16 @@ if (pybind11_VERSION VERSION_LESS_EQUAL 2.5.0)
     set(CMAKE_CXX_STANDARD 17)
 endif()
 
+if (pybind11_VERSION VERSION_GREATER_EQUAL 2.11.0)
+    # ipo/lto triggering changed https://github.com/pybind/pybind11/pull/4643
+    if ((CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC"))
+        # clang-cl
+
+        # this variable needs to be defined, not the property
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+    endif()
+endif()
+
 pybind11_add_module(
   libint2-python MODULE
   #EXCLUDE_FROM_ALL
@@ -52,7 +62,12 @@ if (pybind11_VERSION VERSION_GREATER_EQUAL 2.7.0)
     target_compile_definitions(libint2-python PRIVATE NDEBUG=1)
 endif()
 
-add_compile_options(-Wall)
+target_compile_options(libint2-python
+  PRIVATE
+    # too many warnings on Windows
+    # $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
+  )
 
 #find_package(Eigen3 3.3 REQUIRED)
 
@@ -65,6 +80,12 @@ set_target_properties(
 
 if (TARGET libint2_obj)
   set(libint2_python_target libint2_obj)
+
+    if(MSVC)
+        target_compile_definitions(libint2-python PUBLIC _USE_MATH_DEFINES)
+        target_compile_options(libint2-python PUBLIC "/EHsc")
+    endif()
+
   target_link_libraries(libint2-python PRIVATE libint2_obj)
   target_link_libraries(libint2-python PRIVATE Boost::boost)
 else()
