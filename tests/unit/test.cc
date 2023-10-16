@@ -34,6 +34,7 @@ int main( int argc, char* argv[] )
   libint2::initialize();
   libint2::set_solid_harmonics_ordering(libint2::SHGShellOrdering_Standard);  // redundant
   printf("Configuration S: sho=%d components=%s\n", libint2::solid_harmonics_ordering(), libint2::configuration_accessor().c_str());
+  printf("Supports: dddd=%d mmmm=%d FF=%d\n", libint2::supports("eri_dddd_d0"), libint2::supports("eri_mmmm_d0"), libint2::supports("eri_FF_d0"));
 
 #ifdef LIBINT_HAS_MPFR
   // default to 256 bits of precision for mpf_class

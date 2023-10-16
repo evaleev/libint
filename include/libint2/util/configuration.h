@@ -28,6 +28,8 @@ const char * configuration_accessor();
 
 #ifdef _libint2_src_lib_libint_cxxapi_h_
 #include <string>
+#include <sstream>
+#include <vector>
 
 namespace libint2 {
 
@@ -37,6 +39,19 @@ namespace libint2 {
   inline std::string configuration_accessor() {
     std::string components = ::configuration_accessor();
     return components;
+  }
+
+  /// Runtime accessor for individual library configuration components:
+  /// integral derivatives, AM, orderings, etc.
+  /// @param[in] target CMake component with maximally uniform AM
+  /// @return whether target component available
+  inline bool supports(std::string component) {
+    std::string segment;
+    std::vector<std::string> seglist;
+    std::stringstream ca(configuration_accessor());
+    while(std::getline(ca, segment, ';')) { seglist.push_back(segment); }
+    bool tf = (std::find(seglist.begin(), seglist.end(), component) != seglist.end());
+    return tf;
   }
 }
 #endif /* cxxapi guard */

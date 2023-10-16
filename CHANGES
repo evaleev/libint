@@ -4,6 +4,8 @@
 Following is a brief summary of changes made in each release of Libint.
 
 - 2022-xx-yy: 2.8.0-beta.1
+  - UNMERGED PR #271: Add `libint2::configuration_accessor` and `libint2::supports` functions. If
+    library source is patched, these provides codes for what integrals a library instance can supply.
   - UNMERGED PR #271: Small pkgconfig and cmake detection improvements. Enable unity build.
     Testing of solid harmonics runtime switchable from #269.
   - PR #270: For Windows, basis sets with a star have been renamed to "s" on the filesystem,
@@ -17,6 +19,9 @@ Following is a brief summary of changes made in each release of Libint.
   - PR #269: Solid harmonics ordering is runtime switchable in the library. Issue
     `libint2::set_solid_harmonics_ordering(libint2::SHGShellOrdering_Gaussian)` or `_Standard` after
     initialization. Similarly, prefer new `INT_SOLIDHARMINDEX(sho, l, m)` to usual `(l, m)` version.
+  - PR #269: The ordering for spherical multipole integrals has been fixed at Standard, rather than
+    Gaussian or Standard as previously. Note that between this and the next item above, the
+    `--with-shgauss-ordering=standard|gaussian` has been rendered pointless for the C++ interface.
   - PR #268: Python detection (relevant to Python bindings, Fortran, and some tests) now uses modern
     `find_package(Python)`. Specify with `Python_EXECUTABLE` (note change in case) or
     https://cmake.org/cmake/help/latest/module/FindPython.html for details .
