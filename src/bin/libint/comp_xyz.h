@@ -26,7 +26,7 @@
 namespace libint2 {
 
   /**
-   * this computes integral over Oper over CGShell/CGF as a product of 1-d integrals
+   * this computes integral of @c Oper over CGShell/CGF as a product of 1-d integrals
    * @tparam F basis function type. valid choices are CGShell or CGF
   */
   template <typename F, typename Oper, typename AuxQuanta = EmptySet>

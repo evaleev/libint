@@ -506,7 +506,8 @@ void try_main (int argc, char* argv[])
                                      1emultipole,           \
                                      2emultipole,           \
                                      3emultipole,           \
-                                     sphemultipole    \
+                                     sphemultipole,         \
+                                     σpVσp                  \
                                     )
 #define BOOST_PP_ONEBODY_TASK_OPER_TUPLE (OverlapOper,                    \
                                           KineticOper,                    \
@@ -514,7 +515,8 @@ void try_main (int argc, char* argv[])
                                           CartesianMultipoleOper<3u>,     \
                                           CartesianMultipoleOper<3u>,     \
                                           CartesianMultipoleOper<3u>,     \
-                                          SphericalMultipoleOper          \
+                                          SphericalMultipoleOper,         \
+                                          σpVσpOper                       \
                                          )
 #define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_TUPLE )
 #define BOOST_PP_ONEBODY_TASK_OPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_OPER_TUPLE )
