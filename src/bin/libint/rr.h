@@ -195,8 +195,8 @@ namespace libint2 {
         return false;
       std::shared_ptr<RRStackBase<RecurrenceRelation> > rrstack = RRStackBase<RecurrenceRelation>::Instance();
       std::shared_ptr<RR> this_ptr =
-        const_pointer_cast<RR,const RR>(
-          static_pointer_cast<const RR, const RecurrenceRelation>(
+        std::const_pointer_cast<RR,const RR>(
+          std::static_pointer_cast<const RR, const RecurrenceRelation>(
             std::enable_shared_from_this<RecurrenceRelation>::shared_from_this()
           )
         );

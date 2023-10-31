@@ -160,7 +160,7 @@ namespace libint2 {
 
       for(unsigned int t=0; t<targets.size(); ++t) {
         const std::shared_ptr<Integral>& target = targets[t];
-        std::shared_ptr<DGVertex> target_ptr = dynamic_pointer_cast<DGVertex,Integral>(target);
+        std::shared_ptr<DGVertex> target_ptr = std::dynamic_pointer_cast<DGVertex,Integral>(target);
         assert(target_ptr != 0);
         dg_xxxx->append_target(target_ptr);
       }
@@ -386,7 +386,7 @@ namespace libint2 {
       typedef GenIntegralSet_11_11<typename Integral::BasisFunctionType,
       typename Integral::OperatorType,
       typename Integral::AuxIndexType> genint_11_11_t;
-      std::shared_ptr< genint_11_11_t > cast_ptr = dynamic_pointer_cast<genint_11_11_t>(targets.front());
+      std::shared_ptr< genint_11_11_t > cast_ptr = std::dynamic_pointer_cast<genint_11_11_t>(targets.front());
       if (cast_ptr) {
         const unsigned int la = cast_ptr->bra(0, 0).norm();
         const unsigned int lb = cast_ptr->ket(0, 0).norm();

@@ -86,7 +86,7 @@ RecurrenceRelation::generate_code(const std::shared_ptr<CodeContext>& context,
 
   // check if CSE to be performed
   typedef IntegralSet<IncableBFSet> ISet;
-  std::shared_ptr<ISet> target = dynamic_pointer_cast<ISet,DGVertex>(target_vptr);
+  std::shared_ptr<ISet> target = std::dynamic_pointer_cast<ISet,DGVertex>(target_vptr);
   if (target) {
     //
     // do CSE only if max_am <= cparams->max_am_opt()

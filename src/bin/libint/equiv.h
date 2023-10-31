@@ -63,7 +63,7 @@ namespace libint2 {
 #if !PTREQUIV_USE_TYPEID
     
     static bool equiv(const std::shared_ptr<T>& a, const std::shared_ptr<P>& b) {
-      std::shared_ptr<T> b_cast = dynamic_pointer_cast<T,P>(b);
+      std::shared_ptr<T> b_cast = std::dynamic_pointer_cast<T,P>(b);
       if (b_cast == 0)
         return false;
       else
@@ -71,7 +71,7 @@ namespace libint2 {
     }
 
     static bool equiv(const T* a, const std::shared_ptr<P>& b) {
-      std::shared_ptr<T> b_cast = dynamic_pointer_cast<T,P>(b);
+      std::shared_ptr<T> b_cast = std::dynamic_pointer_cast<T,P>(b);
       if (b_cast == 0)
         return false;
       else
@@ -79,7 +79,7 @@ namespace libint2 {
     }
 
     static bool equiv(const T* a, const std::shared_ptr<DGVertex>& b) {
-      std::shared_ptr<T> b_cast = dynamic_pointer_cast<T,DGVertex>(b);
+      std::shared_ptr<T> b_cast = std::dynamic_pointer_cast<T,DGVertex>(b);
       if (b_cast == 0)
         return false;
       else
@@ -92,7 +92,7 @@ namespace libint2 {
       if (a->typeid_ != b->typeid_)
         return false;
       else {
-        std::shared_ptr<T> b_cast = static_pointer_cast<T,P>(b);
+        std::shared_ptr<T> b_cast = std::static_pointer_cast<T,P>(b);
         return a->operator==(*b_cast.get());
       }
     }
@@ -108,7 +108,7 @@ namespace libint2 {
         return a->label() == b->label();
   #endif
 #else
-        std::shared_ptr<T> b_cast = static_pointer_cast<T,DGVertex>(b);
+        std::shared_ptr<T> b_cast = std::static_pointer_cast<T,DGVertex>(b);
         return a->operator==(*b_cast.get());
 #endif
       }
@@ -120,7 +120,7 @@ namespace libint2 {
     
     /*
      static bool equiv(const std::shared_ptr<parent_type>& b, const std::shared_ptr<T>& a) const {
-       std::shared_ptr<T> b_cast = dynamic_pointer_cast<T,parent_type>(b);
+       std::shared_ptr<T> b_cast = std::dynamic_pointer_cast<T,parent_type>(b);
        if (b_cast == 0)
          return false;
        else

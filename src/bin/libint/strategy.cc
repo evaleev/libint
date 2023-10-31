@@ -417,7 +417,7 @@ namespace libint2 {
         for (int xyz = (rr_is_directional ? 2 : 0); xyz >= 0; xyz--) {
           std::shared_ptr<RRType> rr_ptr = RRType::Instance(integral, xyz);
           if (rr_ptr != 0)
-            rrstack.push_back(static_pointer_cast<RecurrenceRelation, RRType>(rr_ptr));
+            rrstack.push_back(std::static_pointer_cast<RecurrenceRelation, RRType>(rr_ptr));
         }
         return false;
       }
@@ -427,7 +427,7 @@ namespace libint2 {
                       std::shared_ptr<RecurrenceRelation>& rr,
                       Tactic::rr_stack& rrstack) {
         // If given NullTactic -- skip
-        std::shared_ptr<NullTactic> ntactic = dynamic_pointer_cast<NullTactic,Tactic>(tactic);
+        std::shared_ptr<NullTactic> ntactic = std::dynamic_pointer_cast<NullTactic,Tactic>(tactic);
         if (ntactic)
           return false;
 
@@ -436,7 +436,7 @@ namespace libint2 {
           std::shared_ptr<RRType> rr_ptr = RRType::Instance(integral, xyz);
           // TODO: can I use the knowledge of Tactic behavior to skip some iteration?
           if (rr_ptr != 0)
-            rrstack.push_back(static_pointer_cast<RecurrenceRelation, RRType>(rr_ptr));
+            rrstack.push_back(std::static_pointer_cast<RecurrenceRelation, RRType>(rr_ptr));
         }
         return false;
       }
@@ -512,7 +512,7 @@ namespace libint2 {
                       const std::shared_ptr<DGVertex>& integral,
                       const std::shared_ptr<Tactic>& tactic,
                       std::shared_ptr<RecurrenceRelation>& rr) {
-      std::shared_ptr<T> tptr = dynamic_pointer_cast<T,DGVertex>(integral);
+      std::shared_ptr<T> tptr = std::dynamic_pointer_cast<T,DGVertex>(integral);
       if (tptr != 0) {
 #if 0
         std::cout << "Visiting integral " << integral->label() << ", its type is " << class_name<T>() << std::endl;
@@ -546,7 +546,7 @@ namespace libint2 {
         if (can_unroll) {
           typedef IntegralSet_to_Integrals<T> ISet2I;
           std::shared_ptr<ISet2I> x(new ISet2I(tptr));
-          rr = static_pointer_cast<RecurrenceRelation,ISet2I>(x);
+          rr = std::static_pointer_cast<RecurrenceRelation,ISet2I>(x);
 #if DEBUG
           std::cout << "Unrolled " << tptr->label() << std::endl;
 #endif
@@ -557,7 +557,7 @@ namespace libint2 {
           if (can_uncontract) {
             typedef Uncontract_Integral<T> UncI;
             std::shared_ptr<UncI> x(new UncI(tptr));
-            rr = static_pointer_cast<RecurrenceRelation,UncI>(x);
+            rr = std::static_pointer_cast<RecurrenceRelation,UncI>(x);
             if (rr != 0) {
               if (rr->num_children() != 0) {
 #if DEBUG

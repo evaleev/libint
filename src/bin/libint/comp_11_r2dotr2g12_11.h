@@ -70,9 +70,9 @@ namespace libint2 {
     /// child(i) returns pointer to the i-th child
     std::shared_ptr<ChildType> child(unsigned int i) const;
     /// Implementation of RecurrenceRelation::rr_target()
-    std::shared_ptr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    std::shared_ptr<DGVertex> rr_target() const override { return std::static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation::rr_child()
-    std::shared_ptr<DGVertex> rr_child(unsigned int i) const override { return dynamic_pointer_cast<DGVertex,ChildType>(child(i)); }
+    std::shared_ptr<DGVertex> rr_child(unsigned int i) const override { return std::dynamic_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const override {
       return TrivialBFSet<BFSet>::result;

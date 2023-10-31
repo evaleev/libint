@@ -133,7 +133,7 @@ namespace libint2 {
   template<typename T, unsigned int N>
     QuantumNumbers<T,N>::QuantumNumbers(const std::shared_ptr<QuantumSet>& sptr)
     {
-      const std::shared_ptr< QuantumNumbers<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbers,QuantumSet>(sptr);
+      const std::shared_ptr< QuantumNumbers<T,N> > sptr_cast = std::dynamic_pointer_cast<QuantumNumbers,QuantumSet>(sptr);
 #if CHECK_SAFETY
       if (sptr_cast == 0)
         throw std::runtime_error("QuantumNumbers<T,N>::QuantumNumbers(const std::shared_ptr<QuantumSet>& sptr) -- type of sptr is incompatible with QuantumNumbers");
@@ -145,7 +145,7 @@ namespace libint2 {
   template<typename T, unsigned int N>
     QuantumNumbers<T,N>::QuantumNumbers(const std::shared_ptr<ConstructablePolymorphically>& sptr)
     {
-      const std::shared_ptr< QuantumNumbers<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbers,ConstructablePolymorphically>(sptr);
+      const std::shared_ptr< QuantumNumbers<T,N> > sptr_cast = std::dynamic_pointer_cast<QuantumNumbers,ConstructablePolymorphically>(sptr);
 #if CHECK_SAFETY
       if (sptr_cast == 0)
         throw std::runtime_error("QuantumNumbers<T,N>::QuantumNumbers(const std::shared_ptr<ConstructablePolymorphically>& sptr) -- type of sptr is incompatible with QuantumNumbers");
@@ -298,7 +298,7 @@ namespace libint2 {
   template<typename T, unsigned int N>
     QuantumNumbersA<T,N>::QuantumNumbersA(const std::shared_ptr<QuantumSet>& sptr)
     {
-      const std::shared_ptr< QuantumNumbersA<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbersA,QuantumSet>(sptr);
+      const std::shared_ptr< QuantumNumbersA<T,N> > sptr_cast = std::dynamic_pointer_cast<QuantumNumbersA,QuantumSet>(sptr);
 #if CHECK_SAFETY
       if (sptr_cast == 0)
         throw std::runtime_error("QuantumNumbersA<T,N>::QuantumNumbersA(const std::shared_ptr<QuantumSet>& sptr) -- type of sptr is incompatible with QuantumNumbersA");
@@ -312,7 +312,7 @@ namespace libint2 {
   template<typename T, unsigned int N>
     QuantumNumbersA<T,N>::QuantumNumbersA(const std::shared_ptr<ConstructablePolymorphically>& sptr)
     {
-      const std::shared_ptr< QuantumNumbersA<T,N> > sptr_cast = dynamic_pointer_cast<QuantumNumbersA,ConstructablePolymorphically>(sptr);
+      const std::shared_ptr< QuantumNumbersA<T,N> > sptr_cast = std::dynamic_pointer_cast<QuantumNumbersA,ConstructablePolymorphically>(sptr);
 #if CHECK_SAFETY
       if (sptr_cast == 0)
         throw std::runtime_error("QuantumNumbersA<T,N>::QuantumNumbersA(const std::shared_ptr<ConstructablePolymorphically>& sptr) -- type of sptr is incompatible with QuantumNumbersA");

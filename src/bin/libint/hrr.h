@@ -100,9 +100,9 @@ namespace libint2 {
       /// child(i) returns pointer to i-th child
       std::shared_ptr<ChildType> child(unsigned int i) const;
       /// Implementation of RecurrenceRelation::target()
-      std::shared_ptr<DGVertex> rr_target() const override {return static_pointer_cast<DGVertex,TargetType>(target());}
+      std::shared_ptr<DGVertex> rr_target() const override {return std::static_pointer_cast<DGVertex,TargetType>(target());}
       /// Implementation of RecurrenceRelation::child()
-      std::shared_ptr<DGVertex> rr_child(unsigned int i) const override {return static_pointer_cast<DGVertex,ChildType>(child(i));}
+      std::shared_ptr<DGVertex> rr_child(unsigned int i) const override {return std::static_pointer_cast<DGVertex,ChildType>(child(i));}
       /// Implementation of RecurrenceRelation::is_simple()
       bool is_simple() const override {
         return TrivialBFSet<BFSet>::result;
@@ -386,8 +386,8 @@ namespace libint2 {
       if (!nonzero_quanta) {
         std::shared_ptr<RRStack> rrstack = RRStack::Instance();
         std::shared_ptr<ThisType> this_ptr =
-        const_pointer_cast<ThisType,const ThisType>(
-            static_pointer_cast<const ThisType, const ParentType>(
+        std::const_pointer_cast<ThisType,const ThisType>(
+            std::static_pointer_cast<const ThisType, const ParentType>(
                 std::enable_shared_from_this<ParentType>::shared_from_this()
             )
         );

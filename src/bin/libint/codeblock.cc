@@ -39,10 +39,10 @@ void
 ForLoop::init_()
 {
   std::shared_ptr<CodeContext> ctext = context();
-  std::shared_ptr< CTimeEntity<int> > lt_cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(less_than_);
-  std::shared_ptr< CTimeEntity<int> > sa_cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(start_at_);
-  std::shared_ptr< RTimeEntity<EntityTypes::Int> > lt_rptr = dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(less_than_);
-  std::shared_ptr< RTimeEntity<EntityTypes::Int> > sa_rptr = dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(start_at_);
+  std::shared_ptr< CTimeEntity<int> > lt_cptr = std::dynamic_pointer_cast<CTimeEntity<int>,Entity>(less_than_);
+  std::shared_ptr< CTimeEntity<int> > sa_cptr = std::dynamic_pointer_cast<CTimeEntity<int>,Entity>(start_at_);
+  std::shared_ptr< RTimeEntity<EntityTypes::Int> > lt_rptr = std::dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(less_than_);
+  std::shared_ptr< RTimeEntity<EntityTypes::Int> > sa_rptr = std::dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(start_at_);
   
   if (lt_cptr != 0) {
     ostringstream oss;

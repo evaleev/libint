@@ -66,9 +66,9 @@ namespace libint2 {
     /// child(i) returns pointer i-th child
     std::shared_ptr<ChildType> child(unsigned int i) const;
     /// Implementation of RecurrenceRelation's target()
-    std::shared_ptr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    std::shared_ptr<DGVertex> rr_target() const override { return std::static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation's child()
-    std::shared_ptr<DGVertex> rr_child(unsigned int i) const override { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+    std::shared_ptr<DGVertex> rr_child(unsigned int i) const override { return std::static_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// to inline this would require a unary operator (+=).
     /// instead will always implement as a function call.
     bool is_simple() const override {
@@ -162,11 +162,11 @@ namespace libint2 {
     bool vectorize = false;
     if (!dims->vecdim_is_static()) {
       vectorize = true;
-      std::shared_ptr< RTimeEntity<EntityTypes::Int> > vecdim = dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(dims->vecdim());
+      std::shared_ptr< RTimeEntity<EntityTypes::Int> > vecdim = std::dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(dims->vecdim());
       bvecdim = vecdim * bdim;
     }
     else {
-      std::shared_ptr< CTimeEntity<int> > vecdim = dynamic_pointer_cast<CTimeEntity<int>,Entity>(dims->vecdim());
+      std::shared_ptr< CTimeEntity<int> > vecdim = std::dynamic_pointer_cast<CTimeEntity<int>,Entity>(dims->vecdim());
       vectorize = vecdim->value() == 1 ? false : true;
       bvecdim = vecdim * bdim;
     }
@@ -199,9 +199,9 @@ namespace libint2 {
 
       const std::shared_ptr<DGArc> arc0 = *(V->first_exit_arc());
       // Is this DGArcRR?
-      const std::shared_ptr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
+      const std::shared_ptr<DGArcRR> arcrr = std::dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
       if (arcrr == 0) return false;
-      const std::shared_ptr<Uncontract_Integral_base> uib_ptr = dynamic_pointer_cast<Uncontract_Integral_base,RecurrenceRelation>(arcrr->rr());
+      const std::shared_ptr<Uncontract_Integral_base> uib_ptr = std::dynamic_pointer_cast<Uncontract_Integral_base,RecurrenceRelation>(arcrr->rr());
       return uib_ptr != 0;
     }
   };

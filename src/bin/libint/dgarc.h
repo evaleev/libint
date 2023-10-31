@@ -92,7 +92,7 @@ namespace libint2 {
     virtual ~DGArcRel();
 
     /// Implementation of DGArcRR::rr()
-    std::shared_ptr<RecurrenceRelation> rr() const override { return dynamic_pointer_cast<RecurrenceRelation,ArcRel>(rel_); }
+    std::shared_ptr<RecurrenceRelation> rr() const override { return std::dynamic_pointer_cast<RecurrenceRelation,ArcRel>(rel_); }
     /// Overload of DGArc::print()
     void print(std::ostream& os) const override
       {

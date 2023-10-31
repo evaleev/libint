@@ -165,7 +165,7 @@ namespace libint2 {
         ver_ptr& vptr = vertex_ptr(*v);
         if ((vptr)->num_exit_arcs() != 0)
           continue;
-        std::shared_ptr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(v);
+        std::shared_ptr<TT> tptr = std::dynamic_pointer_cast<TT,DGVertex>(v);
         if (tptr == 0)
           continue;
 
@@ -379,7 +379,7 @@ namespace libint2 {
         std::shared_ptr<DGArc> arc(new DGArcRel<RR>(vertex,child,rr0));
         vertex->add_exit_arc(arc);
 
-        std::shared_ptr<I> child_cast = dynamic_pointer_cast<I,DGVertex>(child);
+        std::shared_ptr<I> child_cast = std::dynamic_pointer_cast<I,DGVertex>(child);
         if (child_cast == 0)
           throw std::runtime_error("DirectedGraph::recurse(const std::shared_ptr<I>& vertex) -- dynamic cast failed, most probably this is a logic error!");
         recurse<I,RR>(child_cast);
@@ -396,7 +396,7 @@ namespace libint2 {
         return;
 
       typedef typename RR::TargetType TT;
-      std::shared_ptr<TT> tptr = dynamic_pointer_cast<TT,DGVertex>(vertex);
+      std::shared_ptr<TT> tptr = std::dynamic_pointer_cast<TT,DGVertex>(vertex);
       if (tptr == 0)
         return;
 

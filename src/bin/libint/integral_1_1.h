@@ -189,8 +189,8 @@ namespace libint2 {
     void
     GenIntegralSet_1_1<BFS,Oper,AuxQuanta>::unregister() const
     {
-      std::shared_ptr<parent_type> this_parent_ptr = const_pointer_cast<parent_type,const parent_type>(std::enable_shared_from_this<parent_type>::shared_from_this());
-      std::shared_ptr<this_type> this_ptr = static_pointer_cast<this_type>(this_parent_ptr);
+      std::shared_ptr<parent_type> this_parent_ptr = std::const_pointer_cast<parent_type,const parent_type>(std::enable_shared_from_this<parent_type>::shared_from_this());
+      std::shared_ptr<this_type> this_ptr = std::static_pointer_cast<this_type>(this_parent_ptr);
       singl_manager_.remove(this_ptr);
     }
 

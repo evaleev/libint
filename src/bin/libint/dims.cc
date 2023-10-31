@@ -70,7 +70,7 @@ ImplicitDimensions::ImplicitDimensions(int high, int low, int vec) :
 void
 ImplicitDimensions::init_()
 {
-  std::shared_ptr< CTimeEntity<int> > cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(high_);
+  std::shared_ptr< CTimeEntity<int> > cptr = std::dynamic_pointer_cast<CTimeEntity<int>,Entity>(high_);
   if (cptr != 0) {
     high_is_static_ = true;
     ostringstream oss;
@@ -79,10 +79,10 @@ ImplicitDimensions::init_()
   }
   else {
     high_is_static_ = false;
-    std::shared_ptr<DGVertex> dptr = dynamic_pointer_cast<DGVertex,Entity>(high_);
+    std::shared_ptr<DGVertex> dptr = std::dynamic_pointer_cast<DGVertex,Entity>(high_);
     high_label_ = dptr->label();
   }
-  cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(low_);
+  cptr = std::dynamic_pointer_cast<CTimeEntity<int>,Entity>(low_);
   if (cptr != 0) {
     low_is_static_ = true;
     ostringstream oss;
@@ -91,10 +91,10 @@ ImplicitDimensions::init_()
   }
   else {
     low_is_static_ = false;
-    std::shared_ptr<DGVertex> dptr = dynamic_pointer_cast<DGVertex,Entity>(low_);
+    std::shared_ptr<DGVertex> dptr = std::dynamic_pointer_cast<DGVertex,Entity>(low_);
     low_label_ = dptr->label();
   }
-  cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(vecdim_);
+  cptr = std::dynamic_pointer_cast<CTimeEntity<int>,Entity>(vecdim_);
   if (cptr != 0) {
     vecdim_is_static_ = true;
     ostringstream oss;
@@ -103,7 +103,7 @@ ImplicitDimensions::init_()
   }
   else {
     vecdim_is_static_ = false;
-    std::shared_ptr<DGVertex> dptr = dynamic_pointer_cast<DGVertex,Entity>(vecdim_);
+    std::shared_ptr<DGVertex> dptr = std::dynamic_pointer_cast<DGVertex,Entity>(vecdim_);
     vecdim_label_ = dptr->label();
   }
 }

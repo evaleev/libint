@@ -70,7 +70,7 @@ namespace libint2 {
       /// Implementation of RecurrenceRelation::num_children()
       unsigned int num_children() const override { return children_.size(); }
       /// Implementation of RecurrenceRelation::rr_target()
-      std::shared_ptr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target_); }
+      std::shared_ptr<DGVertex> rr_target() const override { return std::static_pointer_cast<DGVertex,TargetType>(target_); }
       /// Implementation of RecurrenceRelation::rr_child()
       std::shared_ptr<DGVertex> rr_child(unsigned int i) const override {
         return children_.at(i);
@@ -129,7 +129,7 @@ namespace libint2 {
                                           const typename RealChildType::BasisFunctionType& D,
                                           const typename RealChildType::AuxIndexType& aux = typename RealChildType::AuxIndexType(),
                                           const typename RealChildType::OperType& oper = typename RealChildType::OperType()) {
-        const std::shared_ptr<DGVertex>& i = static_pointer_cast<DGVertex,RealChildType>(ChildType::Instance(A,B,C,D,aux,oper));
+        const std::shared_ptr<DGVertex>& i = std::static_pointer_cast<DGVertex,RealChildType>(ChildType::Instance(A,B,C,D,aux,oper));
         return add_child(i);
       }
 #endif
@@ -159,7 +159,7 @@ namespace libint2 {
                                         const F& D,
                                         const AuxIndexType& aux = AuxIndexType(),
                                         const OperType& oper = OperType()) {
-      auto i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(A,B,C,D,aux,oper));
+      auto i = std::static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(A,B,C,D,aux,oper));
       return rr_->add_child(i);
     }
     /// make_child
@@ -167,7 +167,7 @@ namespace libint2 {
                                         const F& B,
                                         const AuxIndexType& aux = AuxIndexType(),
                                         const OperType& oper = OperType()) {
-      auto i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(A,B,aux,oper));
+      auto i = std::static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(A,B,aux,oper));
       return rr_->add_child(i);
     }
     /// make a child from a wedge of physicists' brackets
@@ -175,7 +175,7 @@ namespace libint2 {
     make_child(const algebra::Wedge< BraketPair<F,PBra>, BraketPair<F,PKet> >& braket_wedge,
                const AuxIndexType& aux = AuxIndexType(),
                const OperType& oper = OperType()) {
-      auto i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(braket_wedge,aux,oper));
+      auto i = std::static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(braket_wedge,aux,oper));
       return rr_->add_child(i);
     }
     /// make a child from a wedge of chemists' brackets
@@ -183,7 +183,7 @@ namespace libint2 {
     make_child(const algebra::Wedge< BraketPair<F,CBra>, BraketPair<F,CKet> >& braket_wedge,
                const AuxIndexType& aux = AuxIndexType(),
                const OperType& oper = OperType()) {
-      auto i = static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(braket_wedge,aux,oper));
+      auto i = std::static_pointer_cast<DGVertex,ChildType>(ChildType::Instance(braket_wedge,aux,oper));
       return rr_->add_child(i);
     }
     /// take a wedge product of various (linear combinations of) brakets

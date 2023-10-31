@@ -498,7 +498,7 @@ UnrolledIntegralSet::operator()(const std::shared_ptr<DGVertex>& V)
 
   const std::shared_ptr<DGArc> arc0 = *(V->first_exit_arc());
   // Is this DGArcRR?
-  const std::shared_ptr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
+  const std::shared_ptr<DGArcRR> arcrr = std::dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
   if (arcrr == 0) return false;
   // Is this DGArcRR<IntegralSet_to_Integral>? If invariant_type() is false, then yes
   return !arcrr->rr()->invariant_type();

@@ -86,9 +86,9 @@ namespace libint2 {
     /// Implementation of RecurrenceRelation::num_children()
     unsigned int num_children() const override { return children_.size(); }
     /// Implementation of RecurrenceRelation::rr_target()
-    std::shared_ptr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target_); }
+    std::shared_ptr<DGVertex> rr_target() const override { return std::static_pointer_cast<DGVertex,TargetType>(target_); }
     /// Implementation of RecurrenceRelation::rr_child()
-    std::shared_ptr<DGVertex> rr_child(unsigned int i) const override { return static_pointer_cast<DGVertex,ChildType>(children_.at(i)); }
+    std::shared_ptr<DGVertex> rr_child(unsigned int i) const override { return std::static_pointer_cast<DGVertex,ChildType>(children_.at(i)); }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const override {
       return TrivialBFSet<BFSet>::result;

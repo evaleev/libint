@@ -105,14 +105,14 @@ namespace libint2 {
 #if ALGEBRAICOPERATOR_USE_KEY_TO_COMPARE
 #if USE_INT_KEY_TO_COMPARE
           if (key() == a->key())
-            return *this == static_pointer_cast<AlgebraicOperator,DGVertex>(a);
+            return *this == std::static_pointer_cast<AlgebraicOperator,DGVertex>(a);
           else
             return false;
 #else
           return description() == a->description();
 #endif
 #else
-          return *this == static_pointer_cast<AlgebraicOperator,DGVertex>(a);
+          return *this == std::static_pointer_cast<AlgebraicOperator,DGVertex>(a);
 #endif
         }
 	else

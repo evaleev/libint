@@ -25,10 +25,6 @@
 #include <memory>
 
 namespace libint2 {
-using std::const_pointer_cast;
-using std::dynamic_pointer_cast;
-using std::static_pointer_cast;
-
 namespace detail {
 /** Can be used to determine whether a type is a std::shared_ptr */
 template <typename T>

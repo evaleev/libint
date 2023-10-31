@@ -170,7 +170,7 @@ namespace {
   test0()
   {
     std::shared_ptr<TwoPRep_11_11_sq> pppp_quartet = TwoPRep_11_11_sq::Instance(sh_p,sh_p,sh_p,sh_p,0u);
-    std::shared_ptr<DGVertex> pppp_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_11_11_sq>(pppp_quartet);
+    std::shared_ptr<DGVertex> pppp_ptr = std::dynamic_pointer_cast<DGVertex,TwoPRep_11_11_sq>(pppp_quartet);
 
     // test CGShell iterator
     test_cgshell_iter(sh_s);
@@ -200,7 +200,7 @@ namespace {
     std::shared_ptr<Tactic> tactic(new FirstChoiceTactic<DummyRandomizePolicy>);
     std::shared_ptr<TwoPRep_11_11_sq> xsxs_quartet = TwoPRep_11_11_sq::Instance(sh_f,sh_f,sh_f,sh_f,0u);
     cout << "Building " << xsxs_quartet->description() << endl;
-    std::shared_ptr<DGVertex> xsxs_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_11_11_sq>(xsxs_quartet);
+    std::shared_ptr<DGVertex> xsxs_ptr = std::dynamic_pointer_cast<DGVertex,TwoPRep_11_11_sq>(xsxs_quartet);
 
     std::shared_ptr<MemoryManagerFactory> mmfactory(new MemoryManagerFactory);
 

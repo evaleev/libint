@@ -133,7 +133,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
 #if USE_INT_KEY_TO_COMPARE
         return key() == a->key() && label() == a->label();
 #else
-        std::shared_ptr<RTimeEntity> a_cast = static_pointer_cast<RTimeEntity,DGVertex>(a);
+        std::shared_ptr<RTimeEntity> a_cast = std::static_pointer_cast<RTimeEntity,DGVertex>(a);
         return id() == a_cast->id();
 #endif
       }
@@ -213,7 +213,7 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
 #if USE_INT_KEY_TO_COMPARE
           return key() == a->key();
 #else
-          std::shared_ptr<CTimeEntity> a_cast = static_pointer_cast<CTimeEntity,DGVertex>(a);
+          std::shared_ptr<CTimeEntity> a_cast = std::static_pointer_cast<CTimeEntity,DGVertex>(a);
 	  return id() == a_cast->id();
 #endif
 	}

@@ -116,7 +116,7 @@ namespace libint2 {
     template <typename X>
     struct PElemImpl<X,true> {
       static cp_rettype pelem(const iref& elem) {
-        std::shared_ptr<ConstructablePolymorphically> elem_cast = dynamic_pointer_cast<ConstructablePolymorphically,X>(elem);
+        std::shared_ptr<ConstructablePolymorphically> elem_cast = std::dynamic_pointer_cast<ConstructablePolymorphically,X>(elem);
         return *(elem_cast.get());
       }
     };
@@ -176,7 +176,7 @@ namespace libint2 {
     const std::shared_ptr<ConstructablePolymorphically>
     SubIteratorBase<T,P>::pelem() const
     {
-      return dynamic_pointer_cast<ConstructablePolymorphically,iter_type>(elem());
+      return std::dynamic_pointer_cast<ConstructablePolymorphically,iter_type>(elem());
     }
 #endif
 

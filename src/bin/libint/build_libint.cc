@@ -422,7 +422,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const std::shared_ptr<C
 
           // shove all targets on the graph, IN ORDER
           for(auto t = targets.begin(); t!=targets.end(); ++t) {
-            std::shared_ptr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,Onebody_sh_1_1>(*t);
+            std::shared_ptr<DGVertex> t_ptr = std::dynamic_pointer_cast<DGVertex,Onebody_sh_1_1>(*t);
             dg->append_target(t_ptr);
           }
 
@@ -1029,7 +1029,7 @@ build_TwoPRep_2b_2k(std::ostream& os, const std::shared_ptr<CompilationParameter
           for(std::vector< std::shared_ptr<TwoPRep_sh_11_11> >::const_iterator t=targets.begin();
               t != targets.end();
               ++t) {
-            std::shared_ptr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(*t);
+            std::shared_ptr<DGVertex> t_ptr = std::dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(*t);
             dg_xxxx->append_target(t_ptr);
           }
 
@@ -1219,7 +1219,7 @@ build_TwoPRep_1b_2k(std::ostream& os, const std::shared_ptr<CompilationParameter
           for(std::vector< std::shared_ptr<TwoPRep_sh_11_11> >::const_iterator t=targets.begin();
               t != targets.end();
               ++t) {
-            std::shared_ptr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(*t);
+            std::shared_ptr<DGVertex> t_ptr = std::dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(*t);
             dg_xxx->append_target(t_ptr);
           }
 
@@ -1404,7 +1404,7 @@ build_TwoPRep_1b_1k(std::ostream& os, const std::shared_ptr<CompilationParameter
           for(std::vector< std::shared_ptr<TwoPRep_sh_11_11> >::const_iterator t=targets.begin();
               t != targets.end();
               ++t) {
-            std::shared_ptr<DGVertex> t_ptr = dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(*t);
+            std::shared_ptr<DGVertex> t_ptr = std::dynamic_pointer_cast<DGVertex,TwoPRep_sh_11_11>(*t);
             dg_xxx->append_target(t_ptr);
           }
 
@@ -1558,7 +1558,7 @@ build_R12kG12_2b_2k(std::ostream& os, const std::shared_ptr<CompilationParameter
 #endif
             std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
             os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
 
@@ -1571,7 +1571,7 @@ build_R12kG12_2b_2k(std::ostream& os, const std::shared_ptr<CompilationParameter
 #endif
             std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
             os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
 
@@ -1587,7 +1587,7 @@ build_R12kG12_2b_2k(std::ostream& os, const std::shared_ptr<CompilationParameter
 #endif
             std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
             os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
 
@@ -1602,7 +1602,7 @@ build_R12kG12_2b_2k(std::ostream& os, const std::shared_ptr<CompilationParameter
 #endif
             std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
             os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
 #endif
@@ -1618,7 +1618,7 @@ build_R12kG12_2b_2k(std::ostream& os, const std::shared_ptr<CompilationParameter
 #endif
             std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
             os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
 
@@ -1746,7 +1746,7 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const std::shared_ptr<Compilation
 #endif
               std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
               os << "building " << abcd->description() << endl;
-              std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+              std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
               dg_xxxx->append_target(abcd_ptr);
               _label = abcd_ptr->label();
             }
@@ -1762,7 +1762,7 @@ build_R12kG12_2b_2k_separate(std::ostream& os, const std::shared_ptr<Compilation
 #endif
               std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper);
               os << "building " << abcd->description() << endl;
-              std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+              std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
               dg_xxxx->append_target(abcd_ptr);
               _label = abcd_ptr->label();
             }
@@ -1876,7 +1876,7 @@ build_G12DKH_2b_2k(std::ostream& os, const std::shared_ptr<CompilationParameters
             typedef oper_type::Descriptor oper_descr;
             std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(oper_descr(0)));
             os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
           // k=2
@@ -1886,7 +1886,7 @@ build_G12DKH_2b_2k(std::ostream& os, const std::shared_ptr<CompilationParameters
             typedef oper_type::Descriptor oper_descr;
             std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(oper_descr(2)));
             os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
           // k=4
@@ -1896,7 +1896,7 @@ build_G12DKH_2b_2k(std::ostream& os, const std::shared_ptr<CompilationParameters
             typedef oper_type::Descriptor oper_descr;
             std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(oper_descr(4)));
             os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
           // (G12prime.Div1)^2
@@ -1906,7 +1906,7 @@ build_G12DKH_2b_2k(std::ostream& os, const std::shared_ptr<CompilationParameters
             typedef oper_type::Descriptor oper_descr;
             std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(oper_descr(0)));
             os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
           // (G12prime.Div2)^2
@@ -1916,7 +1916,7 @@ build_G12DKH_2b_2k(std::ostream& os, const std::shared_ptr<CompilationParameters
             typedef oper_type::Descriptor oper_descr;
             std::shared_ptr<int_type> abcd = int_type::Instance(*shells[la],*shells[lb],*shells[lc],*shells[ld],0u,oper_type(oper_descr(1)));
             os << "building " << abcd->description() << endl;
-            std::shared_ptr<DGVertex> abcd_ptr = dynamic_pointer_cast<DGVertex,int_type>(abcd);
+            std::shared_ptr<DGVertex> abcd_ptr = std::dynamic_pointer_cast<DGVertex,int_type>(abcd);
             dg_xxxx->append_target(abcd_ptr);
           }
 
