@@ -80,21 +80,21 @@ Evenually, these will be CMake Components, too.
 
 ```
    multipole_hh_dD - library includes spherical multipole integrals with max angular momentum up to
-                     "h" (h=(sp)dfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
+                     "h" (h=spdfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
                      For example, the presence of "multipole_ii_d0" means mpole ints are available for L=6.
    onebody_hh_dD   - library includes 1-body integrals with max angular momentum up to "h"
-                     (h=(sp)dfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
+                     (h=spdfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
                      For example, the presence of "onebody_ii_d1" means onebody gradient ints are
                      available for L=6.
    eri_hhhh_dD     - library includes 2-body integrals with 4 centers and max angular momentum up to
-                     "h" (h=(sp)dfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
+                     "h" (h=spdfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
                      For example, the presence of "eri_ffff_d1" means 4-center gradient ints are
                      available for L=3. That is, the library was configured with at least
                      "--enable-eri=1 --with-eri-max-am=?,>=3".
    eri_hhL_dD      - library includes 2-body integrals with 3 centers and max angular momentum up to
    eri_hhl_dD        Cartesian "h" for the two paired centers and Cartesian "l" or solid harmonics "L"
-                     for the unpaired/fitting center, (h/l=(sp)dfghikl..., L=(SP)DFGHIKL...; l>=h
-                     enumerated; s,p not enumerated) and derivative order "D" (D=0,1,2,...). The
+                     for the unpaired/fitting center, (h/l=spdfghikl..., L=SPDFGHIKL...; l>=h
+                     enumerated; s,p,S,P not enumerated) and derivative order "D" (D=0,1,2,...). The
                      "eri_hhL_dD" component is always available when 3-center ints are present. When pure
                      solid harmonics are assumed for 3-center ints, "eri_hhl_dD" will *not be available*.
                      For example, the presence of "eri_ffG_d0" means 3-center energy ints are
@@ -103,7 +103,7 @@ Evenually, these will be CMake Components, too.
                      The presence of "eri_ffg_d0" means the library configuration did not additionally
                      include "--enable-eri3-pure-sh[=yes]".
    eri_HH_dD       - library includes 2-body integrals with 2 centers and max angular momentum up to
-   eri_hh_dD         Cartesian "h" or solid harmonics "H", (h=(sp)dfghikl..., H=(SP)DFGHIKL...; s,p not
+   eri_hh_dD         Cartesian "h" or solid harmonics "H", (h=spdfghikl..., H=SPDFGHIKL...; s,p,S,P not
                      enumerated) and derivative order "D" (D=0,1,2,...). The "eri_HH_dD" component is
                      always available when 2-center ints are present. When pure solid harmonics are
                      assumed for 2-center ints, "eri_hh_dD" will *not be available*.
@@ -111,8 +111,8 @@ Evenually, these will be CMake Components, too.
                      available for L=3. That is, the library was configured with at least
                      "--enable-eri2=2 --with-eri2-max-am=?,?,>=3". The presence of "eri_ff_d2" means the
                      library configuration did not additionally include "--enable-eri2-pure-sh[=yes]".
-   g12_hhhh_dD     - library includes F12 integrals with Gaussian factors max angular momentum up to
-                     "h" (h=(sp)dfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
+   g12_hhhh_dD     - library includes F12 integrals with Gaussian factors and max angular momentum up to
+                     "h" (h=spdfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
                      For example, the presence of "g12_iiii_d2" means g12 Hessian ints are available for L=6.
 
                                         cart       shell_set   used_by

@@ -126,7 +126,7 @@ enum class Operator {
   //! in the order of increasing \c l , with the operators of same \c l but different \c m ordered according to the solid harmonics ordering
   //! CCA standard (see macro FOR_SOLIDHARM_STANDARD in shgshell_ordering.h.in). For example, the operators will appear in the following order
   //! \f$ \mathcal{N}^+_{0,0} , \mathcal{N}^-_{1,1}, \mathcal{N}^+_{1,0}, \mathcal{N}^+_{1,1}, \mathcal{N}^-_{2,2}, \mathcal{N}^-_{2,1}, \mathcal{N}^+_{2,0}, \mathcal{N}^+_{2,1}, \mathcal{N}^+_{2,2}. \dots \f$ .
-  //! Previous to cdbb9f3 released in v2.8.0, Standard -or- Gaussian ordering could be be specified at configure time.
+  //! Previous to cdbb9f3 released in v2.8.0, Standard -or- Gaussian ordering could be be specified at generator/compiler configure time.
   sphemultipole,
   /// \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   delta,
