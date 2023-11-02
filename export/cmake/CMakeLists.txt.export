@@ -16,6 +16,7 @@ if (LIBINT_BUILDID)
 else(LIBINT_BUILDID)
     set(LIBINT_EXT_VERSION ${LIBINT_VERSION})
 endif(LIBINT_BUILDID)
+set(MAX_AM_ERI "")  # patch here in export tarball w/highest 4-center, 0-deriv ERI AM in numbers
 
 # Add module directory and modules =====================================================================================
 

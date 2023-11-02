@@ -124,9 +124,9 @@ enum class Operator {
   //! multiply these harmonics by \f$ (-1)^m \sqrt{(2 - \delta_{m,0}) (l + |m|)! (l - |m|)!} \f$ .
   //! The operator set includes multipoles of order up to \f$ l_{\rm max} = \f$ MULTIPOLE_MAX_ORDER (for a total of \f$ (l_{\rm max}+1)^2 \f$ operators),
   //! in the order of increasing \c l , with the operators of same \c l but different \c m ordered according to the solid harmonics ordering
-  //! specified at configure time (see macro FOR_SOLIDHARM in shgshell_ordering.h.in). For example, for the CCA standard solid harmonics
-  //! ordering the operators will appear in the following order
+  //! CCA standard (see macro FOR_SOLIDHARM_STANDARD in shgshell_ordering.h.in). For example, the operators will appear in the following order
   //! \f$ \mathcal{N}^+_{0,0} , \mathcal{N}^-_{1,1}, \mathcal{N}^+_{1,0}, \mathcal{N}^+_{1,1}, \mathcal{N}^-_{2,2}, \mathcal{N}^-_{2,1}, \mathcal{N}^+_{2,0}, \mathcal{N}^+_{2,1}, \mathcal{N}^+_{2,2}. \dots \f$ .
+  //! Previous to cdbb9f3 released in v2.8.0, Standard -or- Gaussian ordering could be be specified at configure time.
   sphemultipole,
   /// \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   delta,
