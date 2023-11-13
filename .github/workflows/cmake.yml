@@ -60,7 +60,7 @@ jobs:
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-latest' }}
       run: |
         brew install ninja gcc@10 boost eigen bison ccache automake python@3.11 numpy scipy
-        brew switch python 3.11
+        brew reinstall python@3.11
         echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
 
