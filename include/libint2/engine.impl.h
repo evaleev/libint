@@ -1054,7 +1054,6 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
                      primdata.PC_y[0] * primdata.PC_y[0] +
                      primdata.PC_z[0] * primdata.PC_z[0];
     const scalar_type U = gammap * PC2;
-    const scalar_type rho = rhop;
     const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_;
     auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
     if (oper_ == Operator::nuclear) {
@@ -1069,7 +1068,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
       const auto& core_ints_params =
           std::get<0>(any_cast<const typename operator_traits<
             Operator::erf_nuclear>::oper_params_type&>(core_ints_params_));
-      core_eval_ptr->eval(fm_ptr, rho, U, mmax, core_ints_params);
+      core_eval_ptr->eval(fm_ptr, gammap, U, mmax, core_ints_params);
     } else if (oper_ == Operator::erfc_nuclear) {
       const auto& core_eval_ptr =
           any_cast<const detail::core_eval_pack_type<Operator::erfc_nuclear>&>(core_eval_pack_)
@@ -1077,7 +1076,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
       const auto& core_ints_params =
           std::get<0>(any_cast<const typename operator_traits<
             Operator::erfc_nuclear>::oper_params_type&>(core_ints_params_));
-      core_eval_ptr->eval(fm_ptr, rho, U, mmax, core_ints_params);
+      core_eval_ptr->eval(fm_ptr, gammap, U, mmax, core_ints_params);
     }
 
     decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
