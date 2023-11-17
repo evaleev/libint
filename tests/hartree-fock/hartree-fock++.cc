@@ -49,6 +49,8 @@
 #include <libint2/chemistry/sto3g_atomic_density.h>
 #include <libint2/lcao/molden.h>
 #include <libint2.hpp>
+#include <libint2/dfbs_generator.h>
+
 #if !LIBINT2_CONSTEXPR_STATICS
 #  include <libint2/statics_definition.h>
 #endif
@@ -56,6 +58,7 @@
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
+
 
 /// to use precomputed shell pair data must decide on max precision a priori
 const auto max_engine_precision = std::numeric_limits<double>::epsilon() / 1e10;
@@ -74,6 +77,8 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
 // to meet the layout of the integrals returned by the Libint integral library
 typedef Eigen::DiagonalMatrix<double, Eigen::Dynamic, Eigen::Dynamic>
     DiagonalMatrix;
+
+typedef btas::Tensor<double> tensor;
 
 using libint2::Shell;
 using libint2::Atom;
@@ -166,10 +171,8 @@ struct DFFockEngine {
   const BasisSet& dfbs;
   DFFockEngine(const BasisSet& _obs, const BasisSet& _dfbs)
       : obs(_obs), dfbs(_dfbs) {}
-
-  typedef btas::RangeNd<CblasRowMajor, std::array<long, 3>> Range3d;
-  typedef btas::Tensor<double, Range3d> Tensor3d;
-  Tensor3d xyK;
+  typedef btas::Tensor<double> Tensor;
+  Tensor xyK;
 
   // a DF-based builder, using coefficients of occupied MOs
   Matrix compute_2body_fock_dfC(const Matrix& Cocc);
@@ -216,21 +219,26 @@ int main(int argc, char* argv[]) {
     // filename (.xyz) from the command line
     const auto filename = (argc > 1) ? argv[1] : "h2o.xyz";
     const auto basisname = (argc > 2) ? argv[2] : "aug-cc-pVDZ";
-    bool do_density_fitting = false;
+      bool do_density_fitting = false;
+      double cholesky_threshold = 1e-4;
 #ifdef HAVE_DENSITY_FITTING
-    do_density_fitting = (argc > 3);
-    const auto dfbasisname = do_density_fitting ? argv[3] : "";
+      do_density_fitting = (argc > 3);
+      const auto dfbasisname = do_density_fitting ? argv[3] : "";
+      if ((strcmp(dfbasisname, "autodf") == 0) && argc > 4) {
+          cholesky_threshold = std::stod(argv[4]);
+          std::cout << "New Cholesky threshold for generating df basis set = " << cholesky_threshold << std::endl;
+      }
 #endif
-    std::vector<Atom> atoms = read_geometry(filename);
+      std::vector<Atom> atoms = read_geometry(filename);
 
-    // set up thread pool
-    {
-      using libint2::nthreads;
-      auto nthreads_cstr = getenv("LIBINT_NUM_THREADS");
-      nthreads = 1;
-      if (nthreads_cstr && strcmp(nthreads_cstr, "")) {
-        std::istringstream iss(nthreads_cstr);
-        iss >> nthreads;
+      // set up thread pool
+      {
+          using libint2::nthreads;
+          auto nthreads_cstr = getenv("LIBINT_NUM_THREADS");
+          nthreads = 1;
+          if (nthreads_cstr && strcmp(nthreads_cstr, "")) {
+              std::istringstream iss(nthreads_cstr);
+              iss >> nthreads;
         if (nthreads > 1 << 16 || nthreads <= 0) nthreads = 1;
       }
 #if defined(_OPENMP)
@@ -254,33 +262,38 @@ int main(int argc, char* argv[]) {
     // compute the nuclear repulsion energy
     auto enuc = 0.0;
     for (auto i = 0; i < atoms.size(); i++)
-      for (auto j = i + 1; j < atoms.size(); j++) {
-        auto xij = atoms[i].x - atoms[j].x;
-        auto yij = atoms[i].y - atoms[j].y;
-        auto zij = atoms[i].z - atoms[j].z;
-        auto r2 = xij * xij + yij * yij + zij * zij;
-        auto r = sqrt(r2);
-        enuc += atoms[i].atomic_number * atoms[j].atomic_number / r;
-      }
-    cout << "Nuclear repulsion energy = " << std::setprecision(15) << enuc
-         << endl;
+        for (auto j = i + 1; j < atoms.size(); j++) {
+            auto xij = atoms[i].x - atoms[j].x;
+            auto yij = atoms[i].y - atoms[j].y;
+            auto zij = atoms[i].z - atoms[j].z;
+            auto r2 = xij * xij + yij * yij + zij * zij;
+            auto r = sqrt(r2);
+            enuc += atoms[i].atomic_number * atoms[j].atomic_number / r;
+        }
+      cout << "Nuclear repulsion energy = " << std::setprecision(15) << enuc
+           << endl;
 
-    libint2::Shell::do_enforce_unit_normalization(false);
+      libint2::Shell::do_enforce_unit_normalization(false);
 
-    cout << "Atomic Cartesian coordinates (a.u.):" << endl;
-    for (const auto& a : atoms)
-      std::cout << a.atomic_number << " " << a.x << " " << a.y << " " << a.z
-                << std::endl;
+      cout << "Atomic Cartesian coordinates (a.u.):" << endl;
+      for (const auto &a: atoms)
+          std::cout << a.atomic_number << " " << a.x << " " << a.y << " " << a.z
+                    << std::endl;
 
-    BasisSet obs(basisname, atoms);
-    cout << "orbital basis set rank = " << obs.nbf() << endl;
+      BasisSet obs(basisname, atoms);
+      cout << "orbital basis set rank = " << obs.nbf() << endl;
 
 #ifdef HAVE_DENSITY_FITTING
-    BasisSet dfbs;
-    if (do_density_fitting) {
-      dfbs = BasisSet(dfbasisname, atoms);
-      cout << "density-fitting basis set rank = " << dfbs.nbf() << endl;
-    }
+      BasisSet dfbs;
+      if (do_density_fitting) {
+          if (strcmp(dfbasisname, "autodf") == 0) {
+              if (!libint2::initialized()) libint2::initialize();
+              libint2::DFBasisSetGenerator dfbs_generator(basisname, atoms, cholesky_threshold);
+              dfbs = dfbs_generator.reduced_basis();
+          } else
+              dfbs = BasisSet(dfbasisname, atoms);
+          cout << "density-fitting basis set rank = " << dfbs.nbf() << endl;
+      }
 #endif  // HAVE_DENSITY_FITTING
 
     /*** =========================== ***/
@@ -288,34 +301,36 @@ int main(int argc, char* argv[]) {
     /*** =========================== ***/
 
     // initializes the Libint integrals library ... now ready to compute
-    libint2::initialize();
+      if (!libint2::initialized())
+          libint2::initialize();
 
-    // compute OBS non-negligible shell-pair list
-    {
-      const auto tstart = std::chrono::high_resolution_clock::now();
-      std::tie(obs_shellpair_list, obs_shellpair_data) = compute_shellpairs(obs);
-      size_t nsp = 0;
-      for (auto& sp : obs_shellpair_list) {
-        nsp += sp.second.size();
+      // compute OBS non-negligible shell-pair list
+      {
+          const auto tstart = std::chrono::high_resolution_clock::now();
+          std::tie(obs_shellpair_list, obs_shellpair_data) = compute_shellpairs(obs);
+          size_t nsp = 0;
+          for (auto &sp: obs_shellpair_list) {
+              nsp += sp.second.size();
+          }
+          const auto tstop = std::chrono::high_resolution_clock::now();
+          const std::chrono::duration<double> time_elapsed = tstop - tstart;
+          std::cout << "computed shell-pair data in " << time_elapsed.count()
+                    << " seconds: # of {all,non-negligible} shell-pairs = {"
+                    << obs.size() * (obs.size() + 1) / 2 << "," << nsp << "}"
+                    << std::endl;
       }
-      const auto tstop = std::chrono::high_resolution_clock::now();
-      const std::chrono::duration<double> time_elapsed = tstop - tstart;
-      std::cout << "computed shell-pair data in " << time_elapsed.count() << " seconds: # of {all,non-negligible} shell-pairs = {"
-                << obs.size() * (obs.size() + 1) / 2 << "," << nsp << "}"
-                << std::endl;
-    }
 
-    // compute one-body integrals
-    auto S = compute_1body_ints<Operator::overlap>(obs)[0];
-    auto T = compute_1body_ints<Operator::kinetic>(obs)[0];
-    auto V = compute_1body_ints<Operator::nuclear>(obs, libint2::make_point_charges(atoms))[0];
-    Matrix H = T + V;
-    T.resize(0, 0);
-    V.resize(0, 0);
+      // compute one-body integrals
+      auto S = compute_1body_ints<Operator::overlap>(obs)[0];
+      auto T = compute_1body_ints<Operator::kinetic>(obs)[0];
+      auto V = compute_1body_ints<Operator::nuclear>(obs, libint2::make_point_charges(atoms))[0];
+      Matrix H = T + V;
+      T.resize(0, 0);
+      V.resize(0, 0);
 
-    // compute orthogonalizer X such that X.transpose() . S . X = I
-    Matrix X, Xinv;
-    double XtX_condition_number;  // condition number of "re-conditioned"
+      // compute orthogonalizer X such that X.transpose() . S . X = I
+      Matrix X, Xinv;
+      double XtX_condition_number;  // condition number of "re-conditioned"
                                   // overlap obtained as Xinv.transpose() . Xinv
     // one should think of columns of Xinv as the conditioned basis
     // Re: name ... cond # (Xinv.transpose() . Xinv) = cond # (X.transpose() .
@@ -2162,11 +2177,6 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
   std::vector<libint2::Timers<5>> timers(nthreads);
   for(auto& timer: timers) timer.set_now_overhead(25);
 
-  typedef btas::RangeNd<CblasRowMajor, std::array<long, 1>> Range1d;
-  typedef btas::RangeNd<CblasRowMajor, std::array<long, 2>> Range2d;
-  typedef btas::Tensor<double, Range1d> Tensor1d;
-  typedef btas::Tensor<double, Range2d> Tensor2d;
-
   // using first time? compute 3-center ints and transform to inv sqrt
   // representation
   if (xyK.size() == 0) {
@@ -2192,7 +2202,7 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     auto shell2bf = obs.shell2bf();
     auto shell2bf_df = dfbs.shell2bf();
 
-    Tensor3d Zxy{ndf, n, n};
+    Tensor Zxy{ndf, n, n};
 
     auto lambda = [&](int thread_id) {
 
@@ -2269,12 +2279,12 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     //  std::cout << "||V^-1 - L^-1^t L^-1|| = " << (V.inverse() - Linv_t *
     //  Linv_t.transpose()).norm() << std::endl;
 
-    Tensor2d K{ndf, ndf};
+    Tensor K{ndf, ndf};
     std::copy(Linv_t.data(), Linv_t.data() + ndf * ndf, K.begin());
 
-    xyK = Tensor3d{n, n, ndf};
+    xyK = Tensor{n, n, ndf};
     btas::contract(1.0, Zxy, {1, 2, 3}, K, {1, 4}, 0.0, xyK, {2, 3, 4});
-    Zxy = Tensor3d{0, 0, 0};  // release memory
+    Zxy = Tensor{0, 0, 0};  // release memory
 
     timers[0].stop(2);
     std::cout << "time for integrals metric tform = " << timers[0].read(2)
@@ -2285,12 +2295,12 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
   timers[0].start(3);
 
   const auto nocc = Cocc.cols();
-  Tensor2d Co{n, nocc};
+  Tensor Co{n, nocc};
   std::copy(Cocc.data(), Cocc.data() + n * nocc, Co.begin());
-  Tensor3d xiK{n, nocc, ndf};
+  Tensor xiK{n, nocc, ndf};
   btas::contract(1.0, xyK, {1, 2, 3}, Co, {2, 4}, 0.0, xiK, {1, 4, 3});
 
-  Tensor2d G{n, n};
+  Tensor G{n, n};
   btas::contract(1.0, xiK, {1, 2, 3}, xiK, {4, 2, 3}, 0.0, G, {1, 4});
 
   timers[0].stop(3);
@@ -2299,9 +2309,9 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
   // compute Coulomb
   timers[0].start(4);
 
-  Tensor1d Jtmp{ndf};
+  Tensor Jtmp{ndf};
   btas::contract(1.0, xiK, {1, 2, 3}, Co, {1, 2}, 0.0, Jtmp, {3});
-  xiK = Tensor3d{0, 0, 0};
+  xiK = Tensor{0, 0, 0};
   btas::contract(2.0, xyK, {1, 2, 3}, Jtmp, {3}, -1.0, G, {1, 2});
 
   timers[0].stop(4);

@@ -149,6 +149,10 @@ namespace libint2 {
             return sorted_shells;
         }
 
+        /// @brief computes the reduced set of product functions via pivoted Cholesky decomposition
+        /// @param shells set of shells
+        /// @param cholesky_threshold threshold for choosing a product function via pivoted Cholesky decomposition
+        /// @return reduced set of product functions
         std::vector<Shell> shell_pivoted_cholesky(const std::vector<Shell> shells, const double cholesky_threshold) {
 
             auto n = shells.size(); // number of shells
@@ -234,6 +238,16 @@ namespace libint2 {
             return candidate_shells_;
         }
 
+        /// @brief returns the candidate basis set (full set of product functions)
+        /// @warning generates huge and heavily linearly dependent basis sets
+        BasisSet product_basis(){
+            std::vector<Shell> product_shells;
+            for(auto shells: candidate_shells_){
+                product_shells.insert(product_shells.end(), shells.begin(), shells.end());
+            }
+            return BasisSet(std::move(product_shells));
+        }
+
         /// @brief returns the candidate shells sorted by angular momentum
         std::vector<std::vector<std::vector<Shell>>> candidates_splitted_in_L() {
             std::vector<std::vector<std::vector<Shell>>> sorted_shells;
@@ -243,6 +257,7 @@ namespace libint2 {
             return sorted_shells;
         }
 
+        /// @brief returns the reduced shells (reduced set of product functions) computed via pivoted Cholesky decomposition
         std::vector<std::vector<Shell>> reduced_shells() {
             if (reduced_shells_.size() != 0)
                 return reduced_shells_;
@@ -260,6 +275,17 @@ namespace libint2 {
             }
             return reduced_shells_;
         }
+
+        /// @brief returns the reduced basis set (reduced set of product functions) computed via pivoted Cholesky decomposition
+        BasisSet reduced_basis() {
+            auto reduced_cluster = reduced_shells();
+            std::vector<Shell> reduced_shells;
+            for (auto shells: reduced_cluster) {
+                reduced_shells.insert(reduced_shells.end(), shells.begin(), shells.end());
+            }
+            return BasisSet(std::move(reduced_shells));
+        }
+
 
     private:
         std::string obs_name_;  //name of AO basis set
