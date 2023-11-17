@@ -209,7 +209,7 @@ namespace libint2 {
             }
             // get primitive shells from AO functions
             for (auto obs_shells: obs_shell_vec) {
-                primitive_cluster.emplace_back(uncontract(obs_shells));
+                primitive_cluster.emplace_back(detail::uncontract(obs_shells));
             }
 
             //compute candidate shells
@@ -223,7 +223,7 @@ namespace libint2 {
         DFBasisSetGenerator(std::vector<std::vector<Shell>> cluster, const double cholesky_thershold = 1e-7) {
             std::vector<std::vector<Shell>> primitive_cluster;
             for (auto i = 0; i < cluster.size(); ++i) {
-                primitive_cluster.emplace_back(uncontract(cluster[i]));
+                primitive_cluster.emplace_back(detail::uncontract(cluster[i]));
             }
             candidate_shells_ = datail::candidate_functions(primitive_cluster);
             cholesky_threshold_ = cholesky_thershold;
