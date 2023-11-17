@@ -30,18 +30,14 @@
 #include <libint2/boys.h>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
-#include <boost/math/special_functions/gamma.hpp>
 
 namespace libint2 {
-    typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
-    typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix_int;
-    typedef std::vector<Shell> Shellvec;
 
     namespace datail {
 
         /// @brief returns \Gamma(x)  of x
-        double gamma(const double &x) {
-            return boost::math::tgamma(x);
+        double gamma_function(const double &x) {
+            return std::tgamma(x);
         }
 
         /// @brief return effective exponent of product of two primitive shells
@@ -54,15 +50,16 @@ namespace libint2 {
             auto alpha2 = shell2.alpha[0];
             auto l1 = shell1.contr[0].l;
             auto l2 = shell2.contr[0].l;
-            auto prefactor = std::pow((gamma(L + 2.) * gamma(l1 + l2 + 1.5)) / (gamma(l1 + l2 + 2.) * gamma(L + 1.5)),
+            auto prefactor = std::pow((gamma_function(L + 2.) * gamma_function(l1 + l2 + 1.5)) /
+                                      (gamma_function(l1 + l2 + 2.) * gamma_function(L + 1.5)),
                                       2.);
             return prefactor * (alpha1 + alpha2);
         }
 
         /// @brief creates a set of product functions from a set of primitive shells
         /// @param primitive_shells set of primitive shells
-        Shellvec product_functions(const Shellvec &primitive_shells) {
-            Shellvec product_functions;
+        std::vector<Shell> product_functions(const std::vector<Shell> &primitive_shells) {
+            std::vector<Shell> product_functions;
             for (auto i = 0; i < primitive_shells.size(); ++i) {
                 for (auto j = 0; j <= i; ++j) {
                     auto li = primitive_shells[i].contr[0].l;
@@ -89,8 +86,8 @@ namespace libint2 {
         /// @brief creates a set of candidate product shells from a set of primitive shells
         /// @param primitive_shells set of primitive shells
         /// @return set of candidate product shells
-        std::vector<Shellvec> candidate_functions(const std::vector<Shellvec> &primitive_shells) {
-            std::vector<Shellvec> candidate_functions;
+        std::vector<std::vector<Shell>> candidate_functions(const std::vector<std::vector<Shell>> &primitive_shells) {
+            std::vector<std::vector<Shell>> candidate_functions;
             for (auto i = 0; i < primitive_shells.size(); ++i) {
                 candidate_functions.push_back(product_functions(primitive_shells[i]));
             }
@@ -114,9 +111,9 @@ namespace libint2 {
         /// @brief computes the Coulomb matrix (\mu|rij^{-1}|\nu)  for a set of shells
         /// @param shells set of shells
         /// @return Coulomb matrix
-        Matrix compute_coulomb_matrix(const Shellvec &shells) {
+        Eigen::MatrixXd compute_coulomb_matrix(const std::vector<Shell> &shells) {
             const auto n = nbf(shells);
-            Matrix result = Matrix::Zero(n, n);
+            Eigen::MatrixXd result = Eigen::MatrixXd::Zero(n, n);
             using libint2::Engine;
             Engine engine(libint2::Operator::coulomb, max_nprim(shells), max_l(shells), 0);
             engine.set(BraKet::xs_xs);
@@ -130,7 +127,7 @@ namespace libint2 {
                     auto bf2 = shell2bf[s2];
                     auto n2 = shells[s2].size();
                     engine.compute(shells[s1], shells[s2]);
-                    Eigen::Map<const Matrix> buf_mat(buf[0], n1, n2);
+                    Eigen::Map<const Eigen::MatrixXd> buf_mat(buf[0], n1, n2);
                     result.block(bf1, bf2, n1, n2) = buf_mat;
                     if (s1 != s2)
                         result.block(bf2, bf1, n2, n1) = buf_mat.transpose();
@@ -140,11 +137,11 @@ namespace libint2 {
         }
 
         /// @brief Sorts a vector of shells by angular momentum
-        std::vector<Shellvec> sort_by_L(const Shellvec& shells){
+        std::vector<std::vector<Shell>> split_by_L(const std::vector<Shell> &shells) {
             int lmax = max_l(shells);
-            std::vector<Shellvec> sorted_shells;
-            sorted_shells.resize(lmax+1);
-            for(auto shell:shells){
+            std::vector<std::vector<Shell>> sorted_shells;
+            sorted_shells.resize(lmax + 1);
+            for (auto shell: shells) {
                 auto l = shell.contr[0].l;
                 sorted_shells[l].push_back(shell);
             }
@@ -153,15 +150,15 @@ namespace libint2 {
 
     }// namespace detail
 
-    class DFBS_generator {
+    class DFBasisSetGenerator {
     public:
         /// @brief constructor for DFBS generator class, generates density fitting basis set from products of AO basis functions
         /// @param obs_name name of basis set for AO functions
         /// @param atoms vector of atoms
-        DFBS_generator(std::string obs_name,
-                       const std::vector<Atom> &atoms) : obs_name_(std::move(obs_name)), atoms_(std::move(atoms)) {
-            std::vector<Shellvec> obs_shell_vec;
-            std::vector<Shellvec> primitive_cluster;
+        DFBasisSetGenerator(std::string obs_name,
+                            const std::vector<Atom> &atoms) : obs_name_(std::move(obs_name)), atoms_(std::move(atoms)) {
+            std::vector<std::vector<Shell>> obs_shell_vec;
+            std::vector<std::vector<Shell>> primitive_cluster;
             // get AO basis shells for each atom
             for (auto atom: atoms) {
                 auto atom_bs = BasisSet(obs_name_, {atom});
@@ -174,25 +171,31 @@ namespace libint2 {
 
             //compute candidate shells
             candidate_shells_ = datail::candidate_functions(primitive_cluster);
-
-            // initialize libint2
-            libint2::initialize();
         }
 
-        DFBS_generator() = default;
+        /// @brief constructor for DFBS generator class, generates density fitting basis set from products of AO shells provided by user
+        /// @param cluster vector of vector of shells for each atom
+        DFBasisSetGenerator(std::vector<std::vector<Shell>> cluster) {
+            std::vector<std::vector<Shell>> primitive_cluster;
+            for(auto i=0; i< cluster.size(); ++i){
+                primitive_cluster.emplace_back(uncontract(cluster[i]));
+            }
+            candidate_shells_ = datail::candidate_functions(primitive_cluster);
+        }
+        DFBasisSetGenerator() = default;
 
-        ~DFBS_generator() = default;
+        ~DFBasisSetGenerator() = default;
 
         /// @brief returns the candidate shells (full set of product functions)
-        std::vector<Shellvec> candidate_shells() {
+        std::vector<std::vector<Shell>> candidate_shells() {
             return candidate_shells_;
         }
 
         /// @brief returns the candidate shells sorted by angular momentum
-        std::vector<std::vector<Shellvec>> candidates_sorted_in_L(){
-            std::vector<std::vector<Shellvec>> sorted_shells;
-            for(auto shells:candidate_shells_){
-                sorted_shells.push_back(datail::sort_by_L(shells));
+        std::vector<std::vector<std::vector<Shell>>> candidates_sorted_in_L() {
+            std::vector<std::vector<std::vector<Shell>>> sorted_shells;
+            for (auto shells: candidate_shells_) {
+                sorted_shells.push_back(datail::split_by_L(shells));
             }
             return sorted_shells;
         }
@@ -200,8 +203,8 @@ namespace libint2 {
     private:
         std::string obs_name_;  //name of AO basis set
         std::vector<Atom> atoms_; //vector of atoms
-        std::vector<Shellvec> candidate_shells_;  //full set of product functions
-        std::vector<Shellvec> reduced_shells_;    //reduced set of product functions
+        std::vector<std::vector<Shell>> candidate_shells_;  //full set of product functions
+        std::vector<std::vector<Shell>> reduced_shells_;    //reduced set of product functions
 
     };
 
