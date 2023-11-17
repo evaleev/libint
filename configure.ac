@@ -524,7 +524,7 @@ AS_HELP_STRING([--with-eri3-max-am=N],[Support 3-center ERIs for Gaussians of an
      else
       ERI3_MAX_AM=$withval
      fi
-     if test $ERI3_MAX_AM -ge 8; then
+     if test $ERI3_MAX_AM -ge 13; then
       AC_MSG_ERROR([Value for --with-eri3-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ERI3_MAX_AM)
