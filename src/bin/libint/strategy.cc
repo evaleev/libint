@@ -315,8 +315,10 @@ namespace libint2 {
     };
     template <> struct MasterStrategy<σpVσp_1_1_int> {
       typedef boost::mpl::list<
-          CR_1_σpVσp_1_int
-          > value;
+        CR_1_σpVσp_1_int,
+        CR_DerivGauss<σpVσp_1_1_int,0,InBra>,
+        CR_DerivGauss<σpVσp_1_1_int,0,InKet>
+      > value;
     };
     template <> struct MasterStrategy<Kinetic_1_1_sh> {
       typedef boost::mpl::list<
