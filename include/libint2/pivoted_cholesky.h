@@ -1,25 +1,9 @@
-/*
- *  Copyright (C) 2004-2021 Edward F. Valeev
- *
- *  This file is part of Libint.
- *
- *  Libint is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Lesser General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Libint is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
+//
+// Created by Kshitij Surjuse on 11/15/23.
+//
 
-#ifndef _libint2_src_lib_libint_pivoted_cholesky_h_
-#define _libint2_src_lib_libint_pivoted_cholesky_h_
+#ifndef LIBINT_PIVOTED_CHOLESKY_H
+#define LIBINT_PIVOTED_CHOLESKY_H
 
 
 #include <iostream>
@@ -33,7 +17,8 @@ namespace libint2 {
     /// @param tolerance tolerance for the error
     /// @param pivot initial pivot indices
     /// @return pivoted Cholesky decomposition of A
-    std::vector<size_t> pivoted_cholesky(const Eigen::MatrixXd &A, const double &tolerance, std::vector<size_t> pivot) {
+    std::vector<size_t>
+    pivoted_cholesky(const Eigen::MatrixXd &A, const double &tolerance, const std::vector<size_t> &pivot) {
         // number of elements in A
         auto n = A.rows();
         // diagonal elements of A
@@ -114,9 +99,17 @@ namespace libint2 {
         L.transposeInPlace();
         // Drop unnecessary columns
         L.conservativeResize(n, m);
-        return piv;
+
+        // return reduced pivot indices
+        std::vector<size_t> reduced_piv;
+        reduced_piv.reserve(m);
+        for (auto i = 0; i < m; ++i) {
+            reduced_piv.push_back(piv[i]);
+        }
+
+        return reduced_piv;
     }
 
 }
 
-#endif /* _libint2_src_lib_libint_pivoted_cholesky_h_ */
+#endif //LIBINT_PIVOTED_CHOLESKY_H

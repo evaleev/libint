@@ -28,6 +28,7 @@
 #include <libint2/basis.h>
 #include <libint2/atom.h>
 #include <libint2/boys.h>
+#include <libint2/pivoted_cholesky.h>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 
@@ -148,15 +149,53 @@ namespace libint2 {
             return sorted_shells;
         }
 
+        std::vector<Shell> shell_pivoted_cholesky(const std::vector<Shell> shells, const double cholesky_threshold) {
+
+            auto n = shells.size(); // number of shells
+            std::vector<size_t> shell_indices; // hash map of basis function indices to shell indices
+            auto L = shells[0].contr[0].l; // all shells must have same L
+            auto nbf = libint2::nbf(shells);  // total number of basis functions in vector of shells
+            for (auto i = 0; i < n; ++i) {
+                for (auto j = 0; j < 2 * L + 1; ++j)  // 2L+1 since libint2 strictly uses solid harmonics for 2c2b integrals
+                    shell_indices.push_back(i);
+            }
+            assert(shell_indices.size() == nbf);
+            auto C = compute_coulomb_matrix(shells);
+            std::vector<size_t> pivot(nbf);
+            for(auto i=0;i<nbf;++i){
+                pivot[i] = i;
+            }
+            // set pivot indices in ascending order of off diagonal elements of Coulomb matrix
+            // see Phys. Rev. A 101, 032504 (Accurate reproduction of strongly repulsive interatomic potentials)
+            Eigen::MatrixXd C_off_diag = C;
+            auto col_sum = C_off_diag.colwise().sum();
+            // sort pivot indices in ascending order of column sums
+            std::sort(pivot.begin(), pivot.end(), [&col_sum](size_t i1, size_t i2) { return col_sum[i1] < col_sum[i2]; });
+            // compute Cholesky decomposition
+            auto reduced_pivots = pivoted_cholesky(C, cholesky_threshold, pivot);
+
+            std::vector<Shell> reduced_shells;
+            for (auto i = 0; i < reduced_pivots.size(); ++i) {
+                // check if the reduced shell is already in reduced shells
+                if (std::find(reduced_shells.begin(), reduced_shells.end(),
+                              shells[shell_indices[reduced_pivots[i]]]) == reduced_shells.end())
+                reduced_shells.push_back(shells[shell_indices[reduced_pivots[i]]]);
+            }
+            return reduced_shells;
+        }
+
     }// namespace detail
 
     class DFBasisSetGenerator {
     public:
         /// @brief constructor for DFBS generator class, generates density fitting basis set from products of AO basis functions
+        /// see: J. Chem. Theory Comput. 2021, 17, 6886−6900 (Straightforward and Accurate Automatic Auxiliary Basis Set Generation for Molecular Calculations with Atomic Orbital Basis Sets)
         /// @param obs_name name of basis set for AO functions
         /// @param atoms vector of atoms
+        /// @param cholesky_threshold threshold for choosing a product functions via pivoted Cholesky decomposition
         DFBasisSetGenerator(std::string obs_name,
-                            const std::vector<Atom> &atoms) : obs_name_(std::move(obs_name)), atoms_(std::move(atoms)) {
+                            const std::vector<Atom> &atoms, const double cholesky_thershold = 1e-7) : obs_name_(
+                std::move(obs_name)), atoms_(std::move(atoms)) {
             std::vector<std::vector<Shell>> obs_shell_vec;
             std::vector<std::vector<Shell>> primitive_cluster;
             // get AO basis shells for each atom
@@ -171,17 +210,21 @@ namespace libint2 {
 
             //compute candidate shells
             candidate_shells_ = datail::candidate_functions(primitive_cluster);
+            cholesky_threshold_ = cholesky_thershold;
         }
 
         /// @brief constructor for DFBS generator class, generates density fitting basis set from products of AO shells provided by user
         /// @param cluster vector of vector of shells for each atom
-        DFBasisSetGenerator(std::vector<std::vector<Shell>> cluster) {
+        /// @param cholesky_threshold threshold for choosing a product functions via pivoted Cholesky decomposition
+        DFBasisSetGenerator(std::vector<std::vector<Shell>> cluster, const double cholesky_thershold = 1e-7) {
             std::vector<std::vector<Shell>> primitive_cluster;
-            for(auto i=0; i< cluster.size(); ++i){
+            for (auto i = 0; i < cluster.size(); ++i) {
                 primitive_cluster.emplace_back(uncontract(cluster[i]));
             }
             candidate_shells_ = datail::candidate_functions(primitive_cluster);
+            cholesky_threshold_ = cholesky_thershold;
         }
+
         DFBasisSetGenerator() = default;
 
         ~DFBasisSetGenerator() = default;
@@ -192,7 +235,7 @@ namespace libint2 {
         }
 
         /// @brief returns the candidate shells sorted by angular momentum
-        std::vector<std::vector<std::vector<Shell>>> candidates_sorted_in_L() {
+        std::vector<std::vector<std::vector<Shell>>> candidates_splitted_in_L() {
             std::vector<std::vector<std::vector<Shell>>> sorted_shells;
             for (auto shells: candidate_shells_) {
                 sorted_shells.push_back(datail::split_by_L(shells));
@@ -200,9 +243,28 @@ namespace libint2 {
             return sorted_shells;
         }
 
+        std::vector<std::vector<Shell>> reduced_shells() {
+            if (reduced_shells_.size() != 0)
+                return reduced_shells_;
+            else {
+                auto candidate_splitted_in_L = candidates_splitted_in_L();
+                for (auto i = 0; i < candidate_splitted_in_L.size(); ++i) {
+                    std::vector<Shell> atom_shells;
+                    for (auto j = 0; j < candidate_splitted_in_L[i].size(); ++j) {
+                        auto reduced_shells = datail::shell_pivoted_cholesky(candidate_splitted_in_L[i][j],
+                                                                             cholesky_threshold_);
+                        atom_shells.insert(atom_shells.end(), reduced_shells.begin(), reduced_shells.end());
+                    }
+                    reduced_shells_.push_back(atom_shells);
+                }
+            }
+            return reduced_shells_;
+        }
+
     private:
         std::string obs_name_;  //name of AO basis set
         std::vector<Atom> atoms_; //vector of atoms
+        double cholesky_threshold_;
         std::vector<std::vector<Shell>> candidate_shells_;  //full set of product functions
         std::vector<std::vector<Shell>> reduced_shells_;    //reduced set of product functions
 
