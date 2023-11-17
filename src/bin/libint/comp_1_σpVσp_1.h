@@ -70,19 +70,34 @@ CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const SafePtr< TargetType >& Tint,
   constexpr auto z = 2;
 
   // (a|W0|b) = (d a/dAx | V | d b/dBx) + (d a/dAy | V | d b/dBy) + (d a/dAz | V | d b/dBz)
-  F Dx_a{a}; Dx_a.deriv().inc(x);
-  F Dx_b{b}; Dx_b.deriv().inc(x);
-  auto Dx_a_V_Dx_b = factory.make_child(Dx_a, Dx_b, zero_m);
-  F Dy_a{a}; Dy_a.deriv().inc(y);
-  F Dy_b{b}; Dy_b.deriv().inc(y);
-  auto Dy_a_V_Dy_b = factory.make_child(Dy_a, Dy_b, zero_m);
-  F Dz_a{a}; Dz_a.deriv().inc(z);
-  F Dz_b{b}; Dz_b.deriv().inc(z);
-  auto Dz_a_V_Dz_b = factory.make_child(Dz_a, Dz_b, zero_m);
-  if (is_simple()) {
-    expr_ = Scalar(-1)*(Dx_a_V_Dx_b + Dy_a_V_Dy_b + Dz_a_V_Dz_b);  // smth like this
-    nflops_ += 3;
+  switch (oper->descr().pauli_index()) {
+  case 0: {
+    F Dx_a{a};
+    Dx_a.deriv().inc(x);
+    F Dx_b{b};
+    Dx_b.deriv().inc(x);
+    auto Dx_a_V_Dx_b = factory.make_child(Dx_a, Dx_b, zero_m);
+    F Dy_a{a};
+    Dy_a.deriv().inc(y);
+    F Dy_b{b};
+    Dy_b.deriv().inc(y);
+    auto Dy_a_V_Dy_b = factory.make_child(Dy_a, Dy_b, zero_m);
+    F Dz_a{a};
+    Dz_a.deriv().inc(z);
+    F Dz_b{b};
+    Dz_b.deriv().inc(z);
+    auto Dz_a_V_Dz_b = factory.make_child(Dz_a, Dz_b, zero_m);
+    if (is_simple()) {
+      expr_ = Scalar(-1) *
+              (Dx_a_V_Dx_b + Dy_a_V_Dy_b + Dz_a_V_Dz_b); // smth like this
+      nflops_ += 3;
+    }
+  } break;
+
+  default:
+    throw std::runtime_error("CR_1_σpVσp_1: invalid Pauli index");
   }
+
 } // CR_1_σpVσp_1<F>::CR_1_σpVσp_1
 
 }; // namespace libint2

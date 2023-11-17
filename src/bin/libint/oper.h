@@ -240,7 +240,7 @@ namespace libint2 {
       unsigned int key() const { return 0; }                                                                \
       std::string description() const { return #opname; }                                                   \
       std::string label() const { return #opname; }                                                         \
-      int psymm(int i, int j) const { abort(); }                                                      \
+      int psymm(int i, int j) const { abort(); }                                                            \
       int hermitian(int i) const { return +1; }                                                             \
     };                                                                                                      \
     typedef GenOper<opname ## _Descr> opname ## Oper;                                                       \
@@ -254,9 +254,30 @@ BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, Multipli
 #define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (ElecPot, BOOST_PP_NIL)
 BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, MultiplicativeODep, BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST)
 #undef BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST
-#define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (σpVσp, BOOST_PP_NIL)
-BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, MultiplicativeODep, BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST)
-#undef BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST
+
+// N.B. σpVσp has 4 (Pauli) components, so need to customize its descriptor ... may need to generalize this if need similar operators elsewhere
+//#define BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST (σpVσp, BOOST_PP_NIL)
+//BOOST_PP_LIST_FOR_EACH ( BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR, MultiplicativeODep, BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST)
+//#undef BOOST_PP_HERMITIAN_ONEBODY_OPER_LIST
+
+struct σpVσp_Descr : public Contractable<σpVσp_Descr> {
+  typedef MultiplicativeODep1Body_Props Properties;
+
+  σpVσp_Descr() : pauli_index_(0) { }
+  σpVσp_Descr(int pauli_index) : pauli_index_(pauli_index) { assert(pauli_index <= 3); }
+
+  static const unsigned int max_key = 4;
+  unsigned int key() const { return 0; }
+  std::string description() const { return "σpVσp"; }
+  std::string label() const { return "σpVσp"; }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return +1; }
+
+  int pauli_index() const { return pauli_index_; }
+private:
+  const int pauli_index_ = -1;
+};
+typedef GenOper<σpVσp_Descr> σpVσpOper;
 
 /// cartesian multipole operator in \c NDIM dimensions
 /// \f$ \hat{O}(\vec{k}) \equiv \vec{r}^{\cdot \vec{k}} = r_1^{k_1} r_2^{k_2} \cdots \f$

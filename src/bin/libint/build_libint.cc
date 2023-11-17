@@ -244,7 +244,7 @@ namespace {
     typedef EmptySet type;
   };
 
-  template <typename OperDescrType> OperDescrType make_descr(int, int, int = 0) {
+  template <typename OperDescrType> OperDescrType make_descr(int, int = 0, int = 0) {
     return OperDescrType();
   }
   template <> CartesianMultipole_Descr<3u> make_descr<CartesianMultipole_Descr<3u>>(int x, int y, int z) {
@@ -258,6 +258,9 @@ namespace {
   template <> SphericalMultipole_Descr make_descr<SphericalMultipole_Descr>(int l, int m, int) {
     SphericalMultipole_Descr result(l,m);
     return result;
+  }
+  template <> σpVσp_Descr make_descr<σpVσp_Descr>(int p, int, int) {
+    return σpVσp_Descr(p);
   }
 }
 
@@ -369,6 +372,14 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
               FOR_SOLIDHARM_STANDARD(l,m)
                 descrs.push_back(make_descr<OperDescrType>(l,m));
               END_FOR_SOLIDHARM
+            }
+          }
+          if (std::is_same<_OperType,σpVσpOper>::value) {
+            // reset descriptors array
+            descrs.resize(0);
+            // iterate over pauli components
+            for (int p = 0; p != 4; ++p) {
+              descrs.emplace_back(make_descr<OperDescrType>(p));
             }
           }
 
