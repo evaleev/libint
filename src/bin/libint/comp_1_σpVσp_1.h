@@ -55,6 +55,10 @@ CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const SafePtr< TargetType >& Tint,
   const auto &b = Tint->ket(0, 0);
   const auto &oper = Tint->oper();
 
+  // can express integrals of σpVσp in terms of derivative integrals of V for primitive Gaussians only
+  if (a.contracted() || b.contracted())
+    return;
+
   using namespace libint2::algebra;
   using namespace libint2::prefactor;
   using libint2::algebra::operator*;
