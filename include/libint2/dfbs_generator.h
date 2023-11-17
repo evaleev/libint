@@ -190,6 +190,9 @@ namespace libint2 {
 
     }// namespace detail
 
+    /// @brief class produces density fitting basis sets from products of AO basis functions
+    /// eliminates linearly dependent functions via pivoted Cholesky decomposition
+    /// see: J. Chem. Theory Comput. 2021, 17, 6886−6900 (Straightforward and Accurate Automatic Auxiliary Basis Set Generation for Molecular Calculations with Atomic Orbital Basis Sets)
     class DFBasisSetGenerator {
     public:
         /// @brief constructor for DFBS generator class, generates density fitting basis set from products of AO basis functions
@@ -240,9 +243,9 @@ namespace libint2 {
 
         /// @brief returns the candidate basis set (full set of product functions)
         /// @warning generates huge and heavily linearly dependent basis sets
-        BasisSet product_basis(){
-            std::vector<Shell> product_shells;
-            for(auto shells: candidate_shells_){
+        const BasisSet product_basis() {
+            std::vector <Shell> product_shells;
+            for (auto &&shells: candidate_shells_) {
                 product_shells.insert(product_shells.end(), shells.begin(), shells.end());
             }
             return BasisSet(std::move(product_shells));
@@ -251,7 +254,7 @@ namespace libint2 {
         /// @brief returns the candidate shells sorted by angular momentum
         std::vector<std::vector<std::vector<Shell>>> candidates_splitted_in_L() {
             std::vector<std::vector<std::vector<Shell>>> sorted_shells;
-            for (auto shells: candidate_shells_) {
+            for (auto &&shells: candidate_shells_) {
                 sorted_shells.push_back(datail::split_by_L(shells));
             }
             return sorted_shells;
@@ -263,9 +266,9 @@ namespace libint2 {
                 return reduced_shells_;
             else {
                 auto candidate_splitted_in_L = candidates_splitted_in_L();
-                for (auto i = 0; i < candidate_splitted_in_L.size(); ++i) {
+                for (size_t i = 0; i < candidate_splitted_in_L.size(); ++i) {
                     std::vector<Shell> atom_shells;
-                    for (auto j = 0; j < candidate_splitted_in_L[i].size(); ++j) {
+                    for (size_t j = 0; j < candidate_splitted_in_L[i].size(); ++j) {
                         auto reduced_shells = datail::shell_pivoted_cholesky(candidate_splitted_in_L[i][j],
                                                                              cholesky_threshold_);
                         atom_shells.insert(atom_shells.end(), reduced_shells.begin(), reduced_shells.end());
@@ -277,10 +280,10 @@ namespace libint2 {
         }
 
         /// @brief returns the reduced basis set (reduced set of product functions) computed via pivoted Cholesky decomposition
-        BasisSet reduced_basis() {
+        const BasisSet reduced_basis() {
             auto reduced_cluster = reduced_shells();
-            std::vector<Shell> reduced_shells;
-            for (auto shells: reduced_cluster) {
+            std::vector <Shell> reduced_shells;
+            for (auto &&shells: reduced_cluster) {
                 reduced_shells.insert(reduced_shells.end(), shells.begin(), shells.end());
             }
             return BasisSet(std::move(reduced_shells));
