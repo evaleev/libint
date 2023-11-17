@@ -376,25 +376,6 @@ namespace libint2 {
   // clang-format on
 
   namespace detail {
-      /// Computes uncontracted shells from a vector of shells
-      /// @param[in] cluster a vector of shells
-      /// @return a vector of uncontracted shells
-      std::vector <Shell> uncontract(
-              const std::vector <Shell> &cluster) {
-          std::vector <Shell> primitive_cluster;
-          for (const auto &contracted_shell: cluster) {
-              for (auto p = 0; p < contracted_shell.nprim(); p++) {
-                  const auto prim_shell = contracted_shell.extract_primitive(p, true);
-                  // if dealing with generally contracted basis (e.g., cc-pvxz) represented
-                  // as a segmented basis need to remove duplicates
-                  if (std::find(primitive_cluster.begin(), primitive_cluster.end(),
-                                prim_shell) == primitive_cluster.end())
-                      primitive_cluster.emplace_back(std::move(prim_shell));
-              }
-          }
-          return primitive_cluster;
-      }
-
     inline ScreeningMethod& default_screening_method_accessor() {
       static ScreeningMethod default_screening_method = ScreeningMethod::Original;
       return default_screening_method;

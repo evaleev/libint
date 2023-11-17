@@ -24,7 +24,6 @@
 #include <algorithm>
 #include <libint2.h>
 #include <math.h>
-#include <libint2/shell.h>
 #include <libint2/basis.h>
 #include <libint2/atom.h>
 #include <libint2/boys.h>
@@ -34,7 +33,27 @@
 
 namespace libint2 {
 
-    namespace datail {
+    namespace detail {
+
+        /// Computes uncontracted shells from a vector of shells
+        /// @param[in] cluster a vector of shells
+        /// @return a vector of uncontracted shells
+        std::vector <Shell> uncontract(
+                const std::vector <Shell> &cluster) {
+            std::vector <Shell> primitive_cluster;
+            for (const auto &contracted_shell: cluster) {
+                for (auto p = 0; p < contracted_shell.nprim(); p++) {
+                    const auto prim_shell = contracted_shell.extract_primitive(p, true);
+                    // if dealing with generally contracted basis (e.g., cc-pvxz) represented
+                    // as a segmented basis need to remove duplicates
+                    if (std::find(primitive_cluster.begin(), primitive_cluster.end(),
+                                  prim_shell) == primitive_cluster.end())
+                        primitive_cluster.emplace_back(std::move(prim_shell));
+                }
+            }
+            return primitive_cluster;
+        }
+
 
         /// @brief returns \Gamma(x)  of x
         double gamma_function(const double &x) {
@@ -216,7 +235,7 @@ namespace libint2 {
             }
 
             //compute candidate shells
-            candidate_shells_ = datail::candidate_functions(primitive_cluster);
+            candidate_shells_ = detail::candidate_functions(primitive_cluster);
             cholesky_threshold_ = cholesky_thershold;
         }
 
@@ -228,7 +247,7 @@ namespace libint2 {
             for (auto i = 0; i < cluster.size(); ++i) {
                 primitive_cluster.emplace_back(detail::uncontract(cluster[i]));
             }
-            candidate_shells_ = datail::candidate_functions(primitive_cluster);
+            candidate_shells_ = detail::candidate_functions(primitive_cluster);
             cholesky_threshold_ = cholesky_thershold;
         }
 
@@ -255,7 +274,7 @@ namespace libint2 {
         std::vector<std::vector<std::vector<Shell>>> candidates_splitted_in_L() {
             std::vector<std::vector<std::vector<Shell>>> sorted_shells;
             for (auto &&shells: candidate_shells_) {
-                sorted_shells.push_back(datail::split_by_L(shells));
+                sorted_shells.push_back(detail::split_by_L(shells));
             }
             return sorted_shells;
         }
@@ -269,7 +288,7 @@ namespace libint2 {
                 for (size_t i = 0; i < candidate_splitted_in_L.size(); ++i) {
                     std::vector<Shell> atom_shells;
                     for (size_t j = 0; j < candidate_splitted_in_L[i].size(); ++j) {
-                        auto reduced_shells = datail::shell_pivoted_cholesky(candidate_splitted_in_L[i][j],
+                        auto reduced_shells = detail::shell_pivoted_cholesky(candidate_splitted_in_L[i][j],
                                                                              cholesky_threshold_);
                         atom_shells.insert(atom_shells.end(), reduced_shells.begin(), reduced_shells.end());
                     }
