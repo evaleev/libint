@@ -78,7 +78,9 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
 typedef Eigen::DiagonalMatrix<double, Eigen::Dynamic, Eigen::Dynamic>
     DiagonalMatrix;
 
+#ifdef LIBINT2_HAVE_BTAS
 typedef btas::Tensor<double> tensor;
+#endif
 
 using libint2::Shell;
 using libint2::Atom;
