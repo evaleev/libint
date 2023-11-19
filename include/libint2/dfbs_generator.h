@@ -120,7 +120,7 @@ namespace libint2 {
             result.reserve(shells.size());
 
             size_t n = 0;
-            for (auto shell: shells) {
+            for (auto &&shell: shells) {
                 result.push_back(n);
                 n += shell.size();
             }
@@ -135,7 +135,7 @@ namespace libint2 {
             const auto n = nbf(shells);
             Eigen::MatrixXd result = Eigen::MatrixXd::Zero(n, n);
             using libint2::Engine;
-            Engine engine(libint2::Operator::coulomb, max_nprim(shells), max_l(shells), 0);
+            Engine engine(libint2::Operator::coulomb, max_nprim(shells), max_l(shells));
             engine.set(BraKet::xs_xs);
             engine.set(ScreeningMethod::Conservative);
             auto shell2bf = map_shell_to_basis_function(shells);
