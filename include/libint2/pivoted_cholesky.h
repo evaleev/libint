@@ -17,7 +17,7 @@ namespace libint2 {
     /// @param tolerance tolerance for the error
     /// @param pivot initial pivot indices
     /// @return pivoted Cholesky decomposition of A
-    std::vector<size_t>
+    inline std::vector<size_t>
     pivoted_cholesky(const Eigen::MatrixXd &A, const double &tolerance, const std::vector<size_t> &pivot) {
         // number of elements in A
         auto n = A.rows();

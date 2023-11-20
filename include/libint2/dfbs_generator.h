@@ -38,7 +38,7 @@ namespace libint2 {
         /// Computes uncontracted shells from a vector of shells
         /// @param[in] cluster a vector of shells
         /// @return a vector of uncontracted shells
-        std::vector <Shell> uncontract(
+        inline std::vector <Shell> uncontract(
                 const std::vector <Shell> &cluster) {
             std::vector <Shell> primitive_cluster;
             for (const auto &contracted_shell: cluster) {
@@ -56,7 +56,7 @@ namespace libint2 {
 
 
         /// @brief returns \Gamma(x)  of x
-        double gamma_function(const double &x) {
+        inline double gamma_function(const double &x) {
             return std::tgamma(x);
         }
 
@@ -65,7 +65,7 @@ namespace libint2 {
         /// @param shell2 second shell
         /// @param L total angular momentum of product function
         /// @return effective exponent of product function
-        double alpha_eff(const Shell &shell1, const Shell &shell2, const int &L) {
+        inline double alpha_eff(const Shell &shell1, const Shell &shell2, const int &L) {
             auto alpha1 = shell1.alpha[0];
             auto alpha2 = shell2.alpha[0];
             auto l1 = shell1.contr[0].l;
@@ -78,7 +78,7 @@ namespace libint2 {
 
         /// @brief creates a set of product functions from a set of primitive shells
         /// @param primitive_shells set of primitive shells
-        std::vector<Shell> product_functions(const std::vector<Shell> &primitive_shells) {
+        inline std::vector<Shell> product_functions(const std::vector<Shell> &primitive_shells) {
             std::vector<Shell> product_functions;
             for (auto i = 0; i < primitive_shells.size(); ++i) {
                 for (auto j = 0; j <= i; ++j) {
@@ -106,7 +106,7 @@ namespace libint2 {
         /// @brief creates a set of candidate product shells from a set of primitive shells
         /// @param primitive_shells set of primitive shells
         /// @return set of candidate product shells
-        std::vector<std::vector<Shell>> candidate_functions(const std::vector<std::vector<Shell>> &primitive_shells) {
+        inline std::vector<std::vector<Shell>> candidate_functions(const std::vector<std::vector<Shell>> &primitive_shells) {
             std::vector<std::vector<Shell>> candidate_functions;
             for (auto i = 0; i < primitive_shells.size(); ++i) {
                 candidate_functions.push_back(product_functions(primitive_shells[i]));
@@ -115,7 +115,7 @@ namespace libint2 {
         }
 
         /// @brief returns a hash map of shell indices to basis function indices
-        std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell> &shells) {
+        inline std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell> &shells) {
             std::vector<size_t> result;
             result.reserve(shells.size());
 
@@ -131,7 +131,7 @@ namespace libint2 {
         /// @brief computes the Coulomb matrix (\mu|rij^{-1}|\nu)  for a set of shells
         /// @param shells set of shells
         /// @return Coulomb matrix
-        Eigen::MatrixXd compute_coulomb_matrix(const std::vector<Shell> &shells) {
+        inline Eigen::MatrixXd compute_coulomb_matrix(const std::vector<Shell> &shells) {
             const auto n = nbf(shells);
             Eigen::MatrixXd result = Eigen::MatrixXd::Zero(n, n);
             using libint2::Engine;
@@ -157,7 +157,7 @@ namespace libint2 {
         }
 
         /// @brief Sorts a vector of shells by angular momentum
-        std::vector<std::vector<Shell>> split_by_L(const std::vector<Shell> &shells) {
+        inline std::vector<std::vector<Shell>> split_by_L(const std::vector<Shell> &shells) {
             int lmax = max_l(shells);
             std::vector<std::vector<Shell>> sorted_shells;
             sorted_shells.resize(lmax + 1);
@@ -172,7 +172,7 @@ namespace libint2 {
         /// @param shells set of shells
         /// @param cholesky_threshold threshold for choosing a product function via pivoted Cholesky decomposition
         /// @return reduced set of product functions
-        std::vector<Shell> shell_pivoted_cholesky(const std::vector<Shell> shells, const double cholesky_threshold) {
+        inline std::vector<Shell> shell_pivoted_cholesky(const std::vector<Shell> shells, const double cholesky_threshold) {
 
             auto n = shells.size(); // number of shells
             std::vector<size_t> shell_indices; // hash map of basis function indices to shell indices
