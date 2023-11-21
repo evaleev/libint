@@ -290,8 +290,13 @@ int main(int argc, char* argv[]) {
       if (do_density_fitting) {
           if (strcmp(dfbasisname, "autodf") == 0) {
               if (!libint2::initialized()) libint2::initialize();
-              libint2::DFBasisSetGenerator dfbs_generator(basisname, atoms, cholesky_threshold);
-              dfbs = dfbs_generator.reduced_basis();
+              std::vector<Shell> dfbs_shells;
+              for(auto &&atom:atoms) {
+                  libint2::DFBasisSetGenerator dfbs_generator(basisname, atom, cholesky_threshold);
+                  auto reduced_shells = dfbs_generator.reduced_shells();
+                  dfbs_shells.insert(dfbs_shells.end(), reduced_shells.begin(), reduced_shells.end());
+              }
+              dfbs = BasisSet(std::move(dfbs_shells));
           } else
               dfbs = BasisSet(dfbasisname, atoms);
           cout << "density-fitting basis set rank = " << dfbs.nbf() << endl;

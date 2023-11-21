@@ -39,19 +39,19 @@ namespace libint2 {
         /// @param[in] cluster a vector of shells
         /// @return a vector of uncontracted shells
         inline std::vector <Shell> uncontract(
-                const std::vector <Shell> &cluster) {
-            std::vector <Shell> primitive_cluster;
-            for (const auto &contracted_shell: cluster) {
+                const std::vector <Shell> &shells) {
+            std::vector <Shell> primitive_shells;
+            for (const auto &contracted_shell: shells) {
                 for (auto p = 0; p < contracted_shell.nprim(); p++) {
                     const auto prim_shell = contracted_shell.extract_primitive(p, true);
                     // if dealing with generally contracted basis (e.g., cc-pvxz) represented
                     // as a segmented basis need to remove duplicates
-                    if (std::find(primitive_cluster.begin(), primitive_cluster.end(),
-                                  prim_shell) == primitive_cluster.end())
-                        primitive_cluster.emplace_back(std::move(prim_shell));
+                    if (std::find(primitive_shells.begin(), primitive_shells.end(),
+                                  prim_shell) == primitive_shells.end())
+                        primitive_shells.emplace_back(std::move(prim_shell));
                 }
             }
-            return primitive_cluster;
+            return primitive_shells;
         }
 
 
@@ -106,12 +106,8 @@ namespace libint2 {
         /// @brief creates a set of candidate product shells from a set of primitive shells
         /// @param primitive_shells set of primitive shells
         /// @return set of candidate product shells
-        inline std::vector<std::vector<Shell>> candidate_functions(const std::vector<std::vector<Shell>> &primitive_shells) {
-            std::vector<std::vector<Shell>> candidate_functions;
-            for (auto i = 0; i < primitive_shells.size(); ++i) {
-                candidate_functions.push_back(product_functions(primitive_shells[i]));
-            }
-            return candidate_functions;
+        inline std::vector<Shell> candidate_functions(const std::vector<Shell> &primitive_shells) {
+            return product_functions(primitive_shells);
         }
 
         /// @brief returns a hash map of shell indices to basis function indices
@@ -220,34 +216,23 @@ namespace libint2 {
         /// @param atoms vector of atoms
         /// @param cholesky_threshold threshold for choosing a product functions via pivoted Cholesky decomposition
         DFBasisSetGenerator(std::string obs_name,
-                            const std::vector<Atom> &atoms, const double cholesky_thershold = 1e-7) : obs_name_(
-                std::move(obs_name)), atoms_(std::move(atoms)) {
-            std::vector<std::vector<Shell>> obs_shell_vec;
-            std::vector<std::vector<Shell>> primitive_cluster;
+                            const Atom &atom, const double cholesky_thershold = 1e-7) {
             // get AO basis shells for each atom
-            for (auto atom: atoms) {
-                auto atom_bs = BasisSet(obs_name_, {atom});
-                obs_shell_vec.emplace_back(atom_bs.shells());
-            }
+            auto atom_bs = BasisSet(obs_name, {atom});
+            auto obs_shells = atom_bs.shells();
             // get primitive shells from AO functions
-            for (auto obs_shells: obs_shell_vec) {
-                primitive_cluster.emplace_back(detail::uncontract(obs_shells));
-            }
-
+            auto primitive_shells = detail::uncontract(obs_shells);
             //compute candidate shells
-            candidate_shells_ = detail::candidate_functions(primitive_cluster);
+            candidate_shells_ = detail::candidate_functions(primitive_shells);
             cholesky_threshold_ = cholesky_thershold;
         }
 
         /// @brief constructor for DFBS generator class, generates density fitting basis set from products of AO shells provided by user
         /// @param cluster vector of vector of shells for each atom
         /// @param cholesky_threshold threshold for choosing a product functions via pivoted Cholesky decomposition
-        DFBasisSetGenerator(std::vector<std::vector<Shell>> cluster, const double cholesky_thershold = 1e-7) {
-            std::vector<std::vector<Shell>> primitive_cluster;
-            for (auto i = 0; i < cluster.size(); ++i) {
-                primitive_cluster.emplace_back(detail::uncontract(cluster[i]));
-            }
-            candidate_shells_ = detail::candidate_functions(primitive_cluster);
+        DFBasisSetGenerator(std::vector<Shell> shells, const double cholesky_thershold = 1e-7) {
+            auto primitive_shells = detail::uncontract(shells);
+            candidate_shells_ = detail::candidate_functions(primitive_shells);
             cholesky_threshold_ = cholesky_thershold;
         }
 
@@ -256,65 +241,37 @@ namespace libint2 {
         ~DFBasisSetGenerator() = default;
 
         /// @brief returns the candidate shells (full set of product functions)
-        std::vector<std::vector<Shell>> candidate_shells() {
+        std::vector<Shell> candidate_shells() {
             return candidate_shells_;
         }
 
-        /// @brief returns the candidate basis set (full set of product functions)
-        /// @warning generates huge and heavily linearly dependent basis sets
-        const BasisSet product_basis() {
-            std::vector <Shell> product_shells;
-            for (auto &&shells: candidate_shells_) {
-                product_shells.insert(product_shells.end(), shells.begin(), shells.end());
-            }
-            return BasisSet(std::move(product_shells));
-        }
-
-        /// @brief returns the candidate shells sorted by angular momentum
-        std::vector<std::vector<std::vector<Shell>>> candidates_splitted_in_L() {
-            std::vector<std::vector<std::vector<Shell>>> sorted_shells;
-            for (auto &&shells: candidate_shells_) {
-                sorted_shells.push_back(detail::split_by_L(shells));
-            }
-            return sorted_shells;
-        }
-
         /// @brief returns the reduced shells (reduced set of product functions) computed via pivoted Cholesky decomposition
-        std::vector<std::vector<Shell>> reduced_shells() {
-            if (reduced_shells_.size() != 0)
+        std::vector<Shell> reduced_shells() {
+            if (reduced_shells_computed_)
                 return reduced_shells_;
             else {
-                auto candidate_splitted_in_L = candidates_splitted_in_L();
+                auto candidate_splitted_in_L = detail::split_by_L(candidate_shells_);
                 for (size_t i = 0; i < candidate_splitted_in_L.size(); ++i) {
-                    std::vector<Shell> atom_shells;
-                    for (size_t j = 0; j < candidate_splitted_in_L[i].size(); ++j) {
-                        auto reduced_shells = detail::shell_pivoted_cholesky(candidate_splitted_in_L[i][j],
-                                                                             cholesky_threshold_);
-                        atom_shells.insert(atom_shells.end(), reduced_shells.begin(), reduced_shells.end());
-                    }
-                    reduced_shells_.push_back(atom_shells);
+                    auto reduced_shells_L = detail::shell_pivoted_cholesky(candidate_splitted_in_L[i],
+                                                                           cholesky_threshold_);
+                    reduced_shells_.insert(reduced_shells_.end(), reduced_shells_L.begin(), reduced_shells_L.end());
                 }
+                reduced_shells_computed_ = true;
             }
             return reduced_shells_;
         }
 
         /// @brief returns the reduced basis set (reduced set of product functions) computed via pivoted Cholesky decomposition
         const BasisSet reduced_basis() {
-            auto reduced_cluster = reduced_shells();
-            std::vector <Shell> reduced_shells;
-            for (auto &&shells: reduced_cluster) {
-                reduced_shells.insert(reduced_shells.end(), shells.begin(), shells.end());
-            }
-            return BasisSet(std::move(reduced_shells));
+            return BasisSet(reduced_shells_);
         }
 
 
     private:
-        std::string obs_name_;  //name of AO basis set
-        std::vector<Atom> atoms_; //vector of atoms
         double cholesky_threshold_;
-        std::vector<std::vector<Shell>> candidate_shells_;  //full set of product functions
-        std::vector<std::vector<Shell>> reduced_shells_;    //reduced set of product functions
+        std::vector<Shell> candidate_shells_;  //full set of product functions
+        std::vector<Shell> reduced_shells_;    //reduced set of product functions
+        bool reduced_shells_computed_ = false;
 
     };
 
