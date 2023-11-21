@@ -80,14 +80,15 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
         (2emultipole,                \
          (3emultipole,               \
            (sphemultipole,           \
-          (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL)))))))))))))))))))
+            (σpVσp,                  \
+          (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE)
 #define BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX \
-  8  // sphemultipole, the 9th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
+  9  // σpVσp, the 10th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
      // 1-body operator
 
 // make list of braket indices for n-body ints
