@@ -1,6 +1,10 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 jobs:
   build_repo:
@@ -143,7 +147,7 @@ jobs:
         ./hf++ $LIBINT_EXPORTED_DIR/tests/hartree-fock/h2o_rotated.xyz | python $LIBINT_EXPORTED_DIR/tests/hartree-fock/hartree-fock++-validate.py $LIBINT_EXPORTED_DIR/MakeVars.features
 
     - name: Build Python bindings
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os != 'macos-latest' }}
       shell: bash
       working-directory: ${{github.workspace}}/build/library
       run: |
