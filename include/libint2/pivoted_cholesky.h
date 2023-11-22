@@ -25,7 +25,7 @@ namespace libint2 {
         std::vector<double> d(n);
         // initial error
         auto error = A.diagonal()[0];
-        for (auto i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             d[i] = A.diagonal()[i];
             error = std::max(d[i], error);
         }
@@ -39,7 +39,7 @@ namespace libint2 {
         // copy input pivot indices
         std::vector<size_t> piv;
         piv.reserve(n);
-        for (auto i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             piv.push_back(pivot[i]);
         }
 
@@ -48,24 +48,24 @@ namespace libint2 {
             // update pivot indices
             // Errors in pivoted order
             std::vector<double> err(d.size());
-            for (auto i = 0; i < d.size(); ++i) {
+            for (size_t i = 0; i < d.size(); ++i) {
                 err[i] = d[piv[i]];
             }
             // error vector after mth element
             std::vector<double> err2(err.begin() + m, err.end());
             std::vector<size_t> idx(err2.size());
-            for (auto i = 0; i < idx.size(); ++i) {
+            for (size_t i = 0; i < idx.size(); ++i) {
                 idx[i] = i;
             }
             // sort indices
             std::sort(idx.begin(), idx.end(), [&err2](size_t i1, size_t i2) { return err2[i1] > err2[i2]; });
             // subvector of piv
             std::vector<size_t> piv_subvec(piv.size() - m);
-            for (auto i = 0; i < piv_subvec.size(); ++i) {
+            for (size_t i = 0; i < piv_subvec.size(); ++i) {
                 piv_subvec[i] = piv[i + m];
             }
             // sort piv
-            for (auto i = 0; i < idx.size(); ++i) {
+            for (size_t i = 0; i < idx.size(); ++i) {
                 piv[i + m] = piv_subvec[idx[i]];
             }
 
@@ -77,7 +77,7 @@ namespace libint2 {
             L(m, pim) = std::sqrt(d[pim]);
 
             //off-diagonal elements
-            for (auto i = m + 1; i < n; ++i) {
+            for (size_t i = m + 1; i < n; ++i) {
                 auto pii = piv[i];
                 //compute element
                 L(m, pii) = (m > 0) ? (A(pim, pii) - L.col(pim).head(m).dot(L.col(pii).head(m))) / L(m, pim) :
@@ -88,7 +88,7 @@ namespace libint2 {
             //update error
             if (m + 1 < n) {
                 error = d[piv[m + 1]];
-                for (auto i = m + 1; i < n; ++i) {
+                for (size_t i = m + 1; i < n; ++i) {
                     error = std::max(d[piv[i]], error);
                 }
             }
@@ -103,7 +103,7 @@ namespace libint2 {
         // return reduced pivot indices
         std::vector<size_t> reduced_piv;
         reduced_piv.reserve(m);
-        for (auto i = 0; i < m; ++i) {
+        for (size_t i = 0; i < m; ++i) {
             reduced_piv.push_back(piv[i]);
         }
 

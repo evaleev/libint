@@ -80,8 +80,8 @@ namespace libint2 {
         /// @param primitive_shells set of primitive shells
         inline std::vector<Shell> product_functions(const std::vector<Shell> &primitive_shells) {
             std::vector<Shell> product_functions;
-            for (auto i = 0; i < primitive_shells.size(); ++i) {
-                for (auto j = 0; j <= i; ++j) {
+            for (size_t i = 0; i < primitive_shells.size(); ++i) {
+                for (size_t j = 0; j <= i; ++j) {
                     auto li = primitive_shells[i].contr[0].l;
                     auto lj = primitive_shells[j].contr[0].l;
                     for (auto L = std::abs(li - lj); L <= li + lj; L++) {
@@ -136,10 +136,10 @@ namespace libint2 {
             engine.set(ScreeningMethod::Conservative);
             auto shell2bf = map_shell_to_basis_function(shells);
             const auto &buf = engine.results();
-            for (auto s1 = 0; s1 != shells.size(); ++s1) {
+            for (size_t s1 = 0; s1 != shells.size(); ++s1) {
                 auto bf1 = shell2bf[s1];
                 auto n1 = shells[s1].size();
-                for (auto s2 = 0; s2 <= s1; ++s2) {
+                for (size_t s2 = 0; s2 <= s1; ++s2) {
                     auto bf2 = shell2bf[s2];
                     auto n2 = shells[s2].size();
                     engine.compute(shells[s1], shells[s2]);
@@ -174,8 +174,8 @@ namespace libint2 {
             std::vector<size_t> shell_indices; // hash map of basis function indices to shell indices
             auto L = shells[0].contr[0].l; // all shells must have same L
             auto nbf = libint2::nbf(shells);  // total number of basis functions in vector of shells
-            for (auto i = 0; i < n; ++i) {
-                for (auto j = 0; j < 2 * L + 1; ++j)  // 2L+1 since libint2 strictly uses solid harmonics for 2c2b integrals
+            for (size_t i = 0; i < n; ++i) {
+                for (size_t j = 0; j < 2 * L + 1; ++j)  // 2L+1 since libint2 strictly uses solid harmonics for 2c2b integrals
                     shell_indices.push_back(i);
             }
             assert(shell_indices.size() == nbf);
@@ -194,7 +194,7 @@ namespace libint2 {
             auto reduced_pivots = pivoted_cholesky(C, cholesky_threshold, pivot);
 
             std::vector<Shell> reduced_shells;
-            for (auto i = 0; i < reduced_pivots.size(); ++i) {
+            for (size_t i = 0; i < reduced_pivots.size(); ++i) {
                 // check if the reduced shell is already in reduced shells
                 if (std::find(reduced_shells.begin(), reduced_shells.end(),
                               shells[shell_indices[reduced_pivots[i]]]) == reduced_shells.end())
