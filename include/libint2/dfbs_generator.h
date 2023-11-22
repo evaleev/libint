@@ -157,7 +157,7 @@ namespace libint2 {
             int lmax = max_l(shells);
             std::vector<std::vector<Shell>> sorted_shells;
             sorted_shells.resize(lmax + 1);
-            for (auto shell: shells) {
+            for (auto &&shell: shells) {
                 auto l = shell.contr[0].l;
                 sorted_shells[l].push_back(shell);
             }
@@ -263,7 +263,7 @@ namespace libint2 {
 
         /// @brief returns the reduced basis set (reduced set of product functions) computed via pivoted Cholesky decomposition
         const BasisSet reduced_basis() {
-            return BasisSet(reduced_shells_);
+            return BasisSet(reduced_shells());
         }
 
 
