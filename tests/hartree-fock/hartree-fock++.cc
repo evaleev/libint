@@ -285,11 +285,13 @@ int main(int argc, char* argv[]) {
       BasisSet obs(basisname, atoms);
       cout << "orbital basis set rank = " << obs.nbf() << endl;
 
+      // initializes the Libint integrals library ... now ready to compute
+      libint2::initialize();
+
 #ifdef HAVE_DENSITY_FITTING
       BasisSet dfbs;
       if (do_density_fitting) {
           if (strcmp(dfbasisname, "autodf") == 0) {
-              if (!libint2::initialized()) libint2::initialize();
               std::vector<Shell> dfbs_shells;
               for(auto &&atom:atoms) {
                   libint2::DFBasisSetGenerator dfbs_generator(basisname, atom, cholesky_threshold);
@@ -306,10 +308,6 @@ int main(int argc, char* argv[]) {
     /*** =========================== ***/
     /*** compute 1-e integrals       ***/
     /*** =========================== ***/
-
-    // initializes the Libint integrals library ... now ready to compute
-      if (!libint2::initialized())
-          libint2::initialize();
 
       // compute OBS non-negligible shell-pair list
       {
