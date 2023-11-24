@@ -180,7 +180,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
   const auto oper_is_nuclear =
       (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
-       oper_ == Operator::erfc_nuclear);
+       oper_ == Operator::erfc_nuclear || oper_ == Operator::σpVσp);
 
   const auto l1 = s1.contr[0].l;
   const auto l2 = s2.contr[0].l;
@@ -191,7 +191,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   // user likely forgot to call set_params
   if (oper_is_nuclear && nparams() == 0)
     throw std::logic_error(
-        "Engine<*nuclear>, but no charges found; forgot to call "
+        "Engine requires charges, but no charges found; forgot to call "
         "set_params()?");
 
   const auto n1 = s1.size();
@@ -248,7 +248,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   // element of stack
   const auto compute_directly =
       lmax == 0 && deriv_order_ == 0 &&
-      (oper_ == Operator::overlap || oper_is_nuclear);
+      (oper_ == Operator::overlap || oper_is_nuclear) &&
+      oper_ != Operator::σpVσp;
   if (compute_directly) {
     primdata_[0].stack[0] = 0;
     targets_[0] = primdata_[0].stack;
@@ -749,6 +750,7 @@ Engine::compute2_ptrs() const {
 __libint2_engine_inline unsigned int Engine::nparams() const {
   switch (oper_) {
     case Operator::nuclear:
+    case Operator::σpVσp:
       return any_cast<const operator_traits<Operator::nuclear>::oper_params_type&>(params_)
           .size();
     case Operator::erf_nuclear:
@@ -908,7 +910,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 
   const auto oper_is_nuclear =
       (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
-       oper_ == Operator::erfc_nuclear);
+       oper_ == Operator::erfc_nuclear || oper_ == Operator::σpVσp);
 
   // need to use HRR? see strategy.cc
   const auto l1 = s1.contr[0].l;
@@ -1011,7 +1013,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
   primdata._0_Overlap_0_y[0] = ovlp_ss_y;
   primdata._0_Overlap_0_z[0] = ovlp_ss_z;
 
-  if (oper_ == Operator::kinetic || (deriv_order_ > 0)) {
+  if (oper_ == Operator::kinetic || (deriv_order_ > 0) || oper_ == Operator::σpVσp) {
 #if LIBINT2_DEFINED(eri, two_alpha0_bra)
     primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif
@@ -1022,7 +1024,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 
   if (oper_is_nuclear) {
 
-    const auto& params = (oper_ == Operator::nuclear) ?
+    const auto& params = (oper_ == Operator::nuclear || oper_ == Operator::σpVσp) ?
         any_cast<const operator_traits<Operator::nuclear>::oper_params_type&>(params_) :
         std::get<1>(any_cast<const operator_traits<Operator::erfc_nuclear>::oper_params_type&>(params_));
 

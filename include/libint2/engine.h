@@ -218,6 +218,11 @@ struct operator_traits<Operator::nuclear>
   typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
 #endif
 };
+template <>
+struct operator_traits<Operator::σpVσp>
+    : public operator_traits<Operator::nuclear> {
+  static constexpr auto nopers = 4;
+};
 
 template <>
 struct operator_traits<Operator::erf_nuclear>
