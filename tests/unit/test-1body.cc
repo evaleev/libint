@@ -3,8 +3,6 @@
 
 TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[engine][1-body]") {
 #if defined(LIBINT2_SUPPORT_ONEBODY)
-  if (LIBINT_SHGSHELL_ORDERING != LIBINT_SHGSHELL_ORDERING_STANDARD)
-    return;
 
   std::vector<Shell> obs{
       Shell{{1.0, 3.0}, {{2, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
@@ -19,7 +17,7 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
       engine.prescale_by(scale);
       engine.compute(obs[0], obs[0]);
       {
-        std::vector<double> shellset_ref = {
+        std::vector<double> shellset_ref_standard = {
             -1.238239259091998e+01, 0.000000000000000e+00,
             0.000000000000000e+00,  -5.775996163160049e-02,
             0.000000000000000e+00,  0.000000000000000e+00,
@@ -33,15 +31,27 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
             0.000000000000000e+00,  1.139389632827834e-01,
             -1.478824785355970e-02, 0.000000000000000e+00,
             -1.241040347301479e+01};
+        std::vector<double> shellset_ref_gaussian = {
+            -1.343732979153083e+01,  0.000000000000000e+00, -6.796143730068988e-02, -1.478824785355970e-02,  0.000000000000000e+00,
+             0.000000000000000e+00, -1.284475452992947e+01,  0.000000000000000e+00,  0.000000000000000e+00, -5.775996163160049e-02,
+            -6.796143730068988e-02,  0.000000000000000e+00, -1.301230978657952e+01,  1.139389632827834e-01,  0.000000000000000e+00,
+            -1.478824785355970e-02,  0.000000000000000e+00,  1.139389632827834e-01, -1.241040347301479e+01,  0.000000000000000e+00,
+             0.000000000000000e+00, -5.775996163160049e-02,  0.000000000000000e+00,  0.000000000000000e+00, -1.238239259091998e+01};
         for (int i = 0; i != 25; ++i) {
-          REQUIRE(engine.results()[0][i]/scale == Approx(shellset_ref[i]));
+          if (libint2::solid_harmonics_ordering() == libint2::SHGShellOrdering_Standard) {
+            if (i == 0) printf("Checking 1-body SHO=Standard\n");
+            REQUIRE(engine.results()[0][i]/scale == Approx(shellset_ref_standard[i]));
+          } else {
+            if (i == 0) printf("Checking 1-body SHO=Gaussian\n");
+            REQUIRE(engine.results()[0][i]/scale == Approx(shellset_ref_gaussian[i]));
+          }
         }
       }
 
       engine.prescale_by(1);
       engine.compute(obs[0], obs[1]);
       {
-        std::vector<double> shellset_ref = {
+        std::vector<double> shellset_ref_standard = {
             -4.769186621041819e-01, -9.303619356400431e-01,
             -1.559058302243514e+00, -9.290824121864600e-01,
             -5.835786921473129e-04, -1.159266418436018e+00,
@@ -55,8 +65,18 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
             -1.120272634615116e-03, -1.385603731947886e+00,
             -2.105750177166632e-03, 1.380654897976564e+00,
             2.115041199099945e+00};
+        std::vector<double> shellset_ref_gaussian = {
+             2.128355904665372e+00,  1.074590109905394e+00,  1.074249956874296e+00, -3.485163651594458e-03, -2.171951144148577e+00,
+             9.566621490332916e-01, -3.760919234260182e-01, -8.344173649626901e-01,  1.660514988916377e+00, -1.160865205880651e+00,
+             9.572841308198474e-01, -8.291498398421207e-01, -3.770080831197964e-01, -1.663667687168316e+00, -1.159266418436018e+00,
+            -2.105750177166632e-03,  1.380654897976564e+00, -1.385603731947886e+00,  2.115041199099945e+00, -1.120272634615116e-03,
+            -1.559058302243514e+00, -9.290824121864600e-01, -9.303619356400431e-01, -5.835786921473129e-04, -4.769186621041819e-01};
         for (int i = 0; i != 25; ++i) {
-          REQUIRE(engine.results()[0][i] == Approx(shellset_ref[i]));
+          if (libint2::solid_harmonics_ordering() == libint2::SHGShellOrdering_Standard) {
+            REQUIRE(engine.results()[0][i] == Approx(shellset_ref_standard[i]));
+          } else {
+            REQUIRE(engine.results()[0][i] == Approx(shellset_ref_gaussian[i]));
+          }
         }
       }
     }

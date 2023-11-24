@@ -14,7 +14,7 @@ export:: source
 	for i in $(LIBSRCDIR)/*.h; do \
 	 $(INSTALL) $(INSTALLLIBOPT) $${i} $(TOPDIR)/$(EXPORTDIR)/include; \
         done
-	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/lib/libint/configuration.cc.cmake.in $(TOPDIR)/$(EXPORTDIR)/src/configuration.cc.cmake.in
+	$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/src/lib/libint/configuration.cc $(TOPDIR)/$(EXPORTDIR)/src/configuration.cc.cmake.in
 
 $(TOPDIR)/lib/$(TARGET): source
 	cd $(LIBSRCLINK); $(MAKE) TO_TOPDIR=$(TO_TOPDIR) TOPDIR=$(TOPOBJDIR) SRCDIR=$(SRCDIR)

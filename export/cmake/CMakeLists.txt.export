@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.16)  # 3.15: new Python detection; 3.16 to make the final leap
+cmake_minimum_required(VERSION 3.16)  # 3.16: unity build
+                                      # 3.15: new Python detection
                                       # 3.8: introduced C++ standards as features
 cmake_policy(SET CMP0079 NEW)
 
@@ -15,6 +16,7 @@ if (LIBINT_BUILDID)
 else(LIBINT_BUILDID)
     set(LIBINT_EXT_VERSION ${LIBINT_VERSION})
 endif(LIBINT_BUILDID)
+set(MAX_AM_ERI "")  # patch here in export tarball w/highest 4-center, 0-deriv ERI AM in numbers
 
 # Add module directory and modules =====================================================================================
 
@@ -27,6 +29,10 @@ include(FeatureSummary)
 include(RedefaultableOption)
 include(CMakePushCheckState)
 include(AddCustomTargetSubproject)
+
+include(GNUInstallDirs)
+set(L2 Libint2)  # Namespace
+set(pnv libint2) # projectnameversion
 
 # Options ==============================================================================================================
 
@@ -188,12 +194,17 @@ foreach(FN IN LISTS LIBINT2_LIBRARY_CXX_SRC)
     list(APPEND LIB_CXX_SRC "src/${FN}")
 endforeach()
 # Create object files to use for static and shared libraries
-add_library(libint2_obj OBJECT ${LIB_CXX_SRC})
+add_library(libint2_obj OBJECT ${LIB_CXX_SRC} "src/configuration.cc")
 target_include_directories(libint2_obj PRIVATE include ${PROJECT_BINARY_DIR}/include)
 # Compile static library with position independent code
 
 target_compile_definitions(libint2_obj PRIVATE __COMPILING_LIBINT2)
 target_compile_features(libint2_obj PUBLIC "cxx_std_11")
+set_target_properties(
+  libint2_obj
+  PROPERTIES
+    UNITY_BUILD TRUE
+  )
 if (TARGET MPFR::GMPXX)
   target_link_libraries(libint2_obj PUBLIC MPFR::GMPXX)
 endif()
@@ -404,14 +415,23 @@ if (LIBINT_HAS_CXX_API)
             tests/unit/test-shell-order.cc
             tests/unit/test-util.cc
             )
-    add_executable(unit_tests-libint2 EXCLUDE_FROM_ALL tests/unit/test.cc ${utests_src})
-    target_compile_definitions(unit_tests-libint2 PRIVATE -DNO_LIBINT_COMPILER_CODE)
-    target_link_libraries(unit_tests-libint2 libint2_cxx)
-    add_test(libint2/unit/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests-libint2)
-    set_tests_properties(libint2/unit/build PROPERTIES FIXTURES_SETUP LIBINT2_UNIT_TESTS_EXEC)
-    add_test(NAME libint2/unit/run
-             COMMAND $<TARGET_FILE:unit_tests-libint2>)
-    set_tests_properties(libint2/unit/run
+    add_executable(unit_tests_s-libint2 EXCLUDE_FROM_ALL tests/unit/test.cc ${utests_src})
+    target_compile_definitions(unit_tests_s-libint2 PRIVATE -DNO_LIBINT_COMPILER_CODE)
+    target_link_libraries(unit_tests_s-libint2 libint2_cxx)
+    add_test(libint2/unit_s/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests_s-libint2)
+    set_tests_properties(libint2/unit_s/build PROPERTIES FIXTURES_SETUP LIBINT2_UNIT_TESTS_EXEC)
+    add_test(NAME libint2/unit_s/run
+             COMMAND $<TARGET_FILE:unit_tests_s-libint2>)
+    set_tests_properties(libint2/unit_s/run
+                         PROPERTIES FIXTURES_REQUIRED LIBINT2_UNIT_TESTS_EXEC)
+    add_executable(unit_tests_g-libint2 EXCLUDE_FROM_ALL tests/unit/test_g.cc ${utests_src})
+    target_compile_definitions(unit_tests_g-libint2 PRIVATE -DNO_LIBINT_COMPILER_CODE)
+    target_link_libraries(unit_tests_g-libint2 libint2_cxx)
+    add_test(libint2/unit_g/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target unit_tests_g-libint2)
+    set_tests_properties(libint2/unit_g/build PROPERTIES FIXTURES_SETUP LIBINT2_UNIT_TESTS_EXEC)
+    add_test(NAME libint2/unit_g/run
+             COMMAND $<TARGET_FILE:unit_tests_g-libint2>)
+    set_tests_properties(libint2/unit_g/run
                          PROPERTIES FIXTURES_REQUIRED LIBINT2_UNIT_TESTS_EXEC)
 
     add_executable(hf-libint2 EXCLUDE_FROM_ALL tests/hartree-fock/hartree-fock.cc)
@@ -545,6 +565,8 @@ configure_file(
 
 # In the future CMake switchover, configuration.h/cc define a string summary of capabilities. @ONLY is maximally deferred in case config2 changes the
 #   summary (as it used to when LIBINT_SHGSHELL_ORDERING was library-config-time selected).
+#   Note that in the future CMake switchover, configuration.cc should be a .cmake.in in the repo. It is not, for the moment, so the libtool build
+#   of the library works and because there's nothing to substitute until CMake knows the build configuration.
 #configure_file(${PROJECT_SOURCE_DIR}/include/libint2/util/configuration.h.cmake.in ${PROJECT_BINARY_DIR}/include/libint2/util/configuration.h @ONLY)
 configure_file(src/configuration.cc.cmake.in ${PROJECT_BINARY_DIR}/src/configuration.cc @ONLY)
 
@@ -554,15 +576,18 @@ configure_file(
         @ONLY
 )
 
-configure_file(
-        libint2.pc.in
-        ${PROJECT_BINARY_DIR}/libint2.pc
-        @ONLY
-)
+include(JoinPaths)
+join_paths(libdir_for_pc_file "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
+join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
+configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
+
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/
+  COMPONENT ${L2}_Development
+  )
 
 # install cmake-processed files
-install(FILES ${PROJECT_BINARY_DIR}/libint2.pc
-        DESTINATION lib/pkgconfig)
 install(FILES ${PROJECT_BINARY_DIR}/include/libint2/config.h
         DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2")
 install(FILES ${PROJECT_BINARY_DIR}/include/libint2/basis.h
