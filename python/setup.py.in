@@ -1,4 +1,14 @@
-import setuptools
+try:
+  import setuptools
+except ImportError as e:
+  print(
+    "Error: %s\n" % str(e) +
+    "Python setuptools are not installed\n" +
+    "'pip install setuptools' to build libint Python bindings"
+  )
+  import sys
+  sys.exit(1)
+
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import os
