@@ -274,8 +274,12 @@ class DFBasisSetGenerator {
     else {
       auto candidate_splitted_in_L = detail::split_by_L(candidate_shells_);
       for (size_t i = 0; i < candidate_splitted_in_L.size(); ++i) {
-        auto reduced_shells_L = detail::shell_pivoted_cholesky(
-            candidate_splitted_in_L[i], cholesky_threshold_);
+        std::vector<Shell> reduced_shells_L;
+        if (candidate_splitted_in_L[i].size() > 1)
+          reduced_shells_L = detail::shell_pivoted_cholesky(
+              candidate_splitted_in_L[i], cholesky_threshold_);
+        else
+          reduced_shells_L = candidate_splitted_in_L[i];
         reduced_shells_.insert(reduced_shells_.end(), reduced_shells_L.begin(),
                                reduced_shells_L.end());
       }
