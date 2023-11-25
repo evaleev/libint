@@ -56,6 +56,7 @@ $(TEST1): $(CXXTEST1OBJ) $(CTEST1OBJ) $(COMPUTE_LIB)
 
 check1:: $(TEST1)
 	./$^
+	./$^ --shgshell-order=gaussian
 
 # Source files for timer and tester are to be compiled using CXXGEN
 $(TEST1): CXX=$(CXXGEN)

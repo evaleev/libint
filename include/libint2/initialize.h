@@ -107,6 +107,8 @@ namespace libint2 {
     }
   }
   /// Setter for the SHGShellOrdering
+  /// @warning this must be called before the first Engine has been created,
+  ///          thus best to call BEFORE libint2::initialize()
   inline void set_solid_harmonics_ordering(SHGShellOrdering sho) {
     detail::solid_harmonics_ordering_accessor() = sho;
   }
