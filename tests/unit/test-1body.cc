@@ -1,12 +1,35 @@
 #include "catch.hpp"
 #include "fixture.h"
 
-TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[engine][1-body]") {
+#define LIBINT2_TEST_ONEBODY(scale)                                 \
+  int m0, m1;                                                       \
+  FOR_SOLIDHARM_STANDARD(l0, m0)                                    \
+  FOR_SOLIDHARM_STANDARD(l1, m1)                                    \
+  const auto i0_s = libint2::INT_SOLIDHARMINDEX_STANDARD(l0, m0);   \
+  const auto i1_s = libint2::INT_SOLIDHARMINDEX_STANDARD(l1, m1);   \
+  const auto i0i1_s = i0_s * n1 + i1_s;                             \
+  if (libint2::solid_harmonics_ordering() ==                        \
+      libint2::SHGShellOrdering_Standard) {                         \
+    REQUIRE(engine.results()[0][i0i1_s] / scale ==                  \
+            Approx(shellset_ref_standard[i0i1_s]));                 \
+  } else {                                                          \
+    const auto i0_g = libint2::INT_SOLIDHARMINDEX_GAUSSIAN(l0, m0); \
+    const auto i1_g = libint2::INT_SOLIDHARMINDEX_GAUSSIAN(l1, m1); \
+    const auto i0i1_g = i0_g * n1 + i1_g;                           \
+    REQUIRE(engine.results()[0][i0i1_g] / scale ==                  \
+            Approx(shellset_ref_standard[i0i1_s]));                 \
+  }                                                                 \
+  END_FOR_SOLIDHARM                                                 \
+  END_FOR_SOLIDHARM
+
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential",
+                 "[engine][1-body]") {
 #if defined(LIBINT2_SUPPORT_ONEBODY)
 
   std::vector<Shell> obs{
       Shell{{1.0, 3.0}, {{2, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
       Shell{{2.0, 5.0}, {{2, true, {1.0, 0.2}}}, {{1.0, 1.0, 1.0}}}};
+
   {
     const auto lmax = std::min(3, LIBINT2_MAX_AM_elecpot);
     if (lmax >= 2) {
@@ -17,6 +40,12 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
       engine.prescale_by(scale);
       engine.compute(obs[0], obs[0]);
       {
+        const auto l0 = obs[0].contr[0].l;
+        const auto l1 = obs[0].contr[0].l;
+        const auto n0 = 2 * l0 + 1;
+        const auto n1 = 2 * l1 + 1;
+
+        // this is laid out in standard solids order
         std::vector<double> shellset_ref_standard = {
             -1.238239259091998e+01, 0.000000000000000e+00,
             0.000000000000000e+00,  -5.775996163160049e-02,
@@ -31,26 +60,19 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
             0.000000000000000e+00,  1.139389632827834e-01,
             -1.478824785355970e-02, 0.000000000000000e+00,
             -1.241040347301479e+01};
-        std::vector<double> shellset_ref_gaussian = {
-            -1.343732979153083e+01,  0.000000000000000e+00, -6.796143730068988e-02, -1.478824785355970e-02,  0.000000000000000e+00,
-             0.000000000000000e+00, -1.284475452992947e+01,  0.000000000000000e+00,  0.000000000000000e+00, -5.775996163160049e-02,
-            -6.796143730068988e-02,  0.000000000000000e+00, -1.301230978657952e+01,  1.139389632827834e-01,  0.000000000000000e+00,
-            -1.478824785355970e-02,  0.000000000000000e+00,  1.139389632827834e-01, -1.241040347301479e+01,  0.000000000000000e+00,
-             0.000000000000000e+00, -5.775996163160049e-02,  0.000000000000000e+00,  0.000000000000000e+00, -1.238239259091998e+01};
-        for (int i = 0; i != 25; ++i) {
-          if (libint2::solid_harmonics_ordering() == libint2::SHGShellOrdering_Standard) {
-            if (i == 0) printf("Checking 1-body SHO=Standard\n");
-            REQUIRE(engine.results()[0][i]/scale == Approx(shellset_ref_standard[i]));
-          } else {
-            if (i == 0) printf("Checking 1-body SHO=Gaussian\n");
-            REQUIRE(engine.results()[0][i]/scale == Approx(shellset_ref_gaussian[i]));
-          }
-        }
+
+        LIBINT2_TEST_ONEBODY(scale);
       }
 
       engine.prescale_by(1);
       engine.compute(obs[0], obs[1]);
       {
+        const auto l0 = obs[0].contr[0].l;
+        const auto l1 = obs[1].contr[0].l;
+        const auto n0 = 2 * l0 + 1;
+        const auto n1 = 2 * l1 + 1;
+
+        // this is laid out in standard solids order
         std::vector<double> shellset_ref_standard = {
             -4.769186621041819e-01, -9.303619356400431e-01,
             -1.559058302243514e+00, -9.290824121864600e-01,
@@ -65,19 +87,8 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
             -1.120272634615116e-03, -1.385603731947886e+00,
             -2.105750177166632e-03, 1.380654897976564e+00,
             2.115041199099945e+00};
-        std::vector<double> shellset_ref_gaussian = {
-             2.128355904665372e+00,  1.074590109905394e+00,  1.074249956874296e+00, -3.485163651594458e-03, -2.171951144148577e+00,
-             9.566621490332916e-01, -3.760919234260182e-01, -8.344173649626901e-01,  1.660514988916377e+00, -1.160865205880651e+00,
-             9.572841308198474e-01, -8.291498398421207e-01, -3.770080831197964e-01, -1.663667687168316e+00, -1.159266418436018e+00,
-            -2.105750177166632e-03,  1.380654897976564e+00, -1.385603731947886e+00,  2.115041199099945e+00, -1.120272634615116e-03,
-            -1.559058302243514e+00, -9.290824121864600e-01, -9.303619356400431e-01, -5.835786921473129e-04, -4.769186621041819e-01};
-        for (int i = 0; i != 25; ++i) {
-          if (libint2::solid_harmonics_ordering() == libint2::SHGShellOrdering_Standard) {
-            REQUIRE(engine.results()[0][i] == Approx(shellset_ref_standard[i]));
-          } else {
-            REQUIRE(engine.results()[0][i] == Approx(shellset_ref_gaussian[i]));
-          }
-        }
+
+        LIBINT2_TEST_ONEBODY(1.0);
       }
     }
   }
@@ -90,55 +101,36 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential", "[eng
       auto engine = Engine(Operator::nuclear, 2, lmax, deriv_order);
       engine.set_params(make_point_charges(atoms));
       const auto& buf = engine.results();
-      REQUIRE(libint2::num_geometrical_derivatives(atoms.size() + 2, deriv_order) == buf.size());
+      REQUIRE(libint2::num_geometrical_derivatives(atoms.size() + 2,
+                                                   deriv_order) == buf.size());
     }
   }
 
-#endif // LIBINT2_SUPPORT_ONEBODY
+#endif  // LIBINT2_SUPPORT_ONEBODY
 }
 
-TEST_CASE_METHOD(libint2::unit::DefaultFixture, "erf correctness", "[engine][1-body]") {
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "erf correctness",
+                 "[engine][1-body]") {
 #if defined(LIBINT2_SUPPORT_ONEBODY)
-  if (LIBINT_SHGSHELL_ORDERING != LIBINT_SHGSHELL_ORDERING_STANDARD)
-    return;
+  if (LIBINT_SHGSHELL_ORDERING != LIBINT_SHGSHELL_ORDERING_STANDARD) return;
 
+  constexpr int l0 = 2;
+  constexpr int l1 = 2;
+  constexpr int n0 = 2 * l0 + 1;
+  constexpr int n1 = 2 * l1 + 1;
   std::vector<Shell> obs{
-      Shell{{1.0, 3.0}, {{2, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
-      Shell{{2.0, 5.0}, {{2, true, {1.0, 0.2}}}, {{1.0, 1.0, 1.0}}}};
+      Shell{{1.0, 3.0}, {{l0, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
+      Shell{{2.0, 5.0}, {{l1, true, {1.0, 0.2}}}, {{1.0, 1.0, 1.0}}}};
   {
     const auto lmax = std::min(3, LIBINT2_MAX_AM_elecpot);
     if (lmax >= 2) {
       auto engine = Engine(Operator::nuclear, 2, lmax);
       engine.set_params(make_point_charges(atoms));
 
-      const auto scale = 2.3;
-      engine.prescale_by(scale);
-      engine.compute(obs[0], obs[0]);
-      {
-        // All reference values are pulled from L2.
-        std::vector<double> shellset_ref = {
-            -1.238239259091998e+01, 0.000000000000000e+00,
-            0.000000000000000e+00,  -5.775996163160049e-02,
-            0.000000000000000e+00,  0.000000000000000e+00,
-            -1.301230978657952e+01, -6.796143730068988e-02,
-            0.000000000000000e+00,  1.139389632827834e-01,
-            0.000000000000000e+00,  -6.796143730068988e-02,
-            -1.343732979153083e+01, 0.000000000000000e+00,
-            -1.478824785355970e-02, -5.775996163160049e-02,
-            0.000000000000000e+00,  0.000000000000000e+00,
-            -1.284475452992947e+01, 0.000000000000000e+00,
-            0.000000000000000e+00,  1.139389632827834e-01,
-            -1.478824785355970e-02, 0.000000000000000e+00,
-            -1.241040347301479e+01};
-        for (int i = 0; i != 25; ++i) {
-          REQUIRE(engine.results()[0][i]/scale == Approx(shellset_ref[i]));
-        }
-      }
-
-      engine.prescale_by(1);
       engine.compute(obs[0], obs[1]);
       {
-        std::vector<double> shellset_ref = {
+        // this is laid out in standard solids order
+        std::vector<double> shellset_ref_standard = {
             -4.769186621041819e-01, -9.303619356400431e-01,
             -1.559058302243514e+00, -9.290824121864600e-01,
             -5.835786921473129e-04, -1.159266418436018e+00,
@@ -152,12 +144,9 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "erf correctness", "[engine][1-b
             -1.120272634615116e-03, -1.385603731947886e+00,
             -2.105750177166632e-03, 1.380654897976564e+00,
             2.115041199099945e+00};
-        for (int i = 0; i != 25; ++i) {
-          REQUIRE(engine.results()[0][i] == Approx(shellset_ref[i]));
-        }
+        LIBINT2_TEST_ONEBODY(1.0);
       }
     }
   }
-#endif // LIBINT2_SUPPORT_ONEBODY
+#endif  // LIBINT2_SUPPORT_ONEBODY
 }
-
