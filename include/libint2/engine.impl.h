@@ -775,11 +775,11 @@ __libint2_engine_inline unsigned int Engine::nopers() const {
   assert(false && "missing case in switch");  // unreachable
   abort();
 }
-__libint2_engine_inline unsigned int Engine::intrinsic_nderiv() const {
+__libint2_engine_inline unsigned int Engine::intrinsic_deriv_order() const {
   switch (static_cast<int>(oper_)) {
 #define BOOST_PP_NBODYENGINE_MCR9(r, data, i, elem) \
   case i:                                           \
-    return operator_traits<static_cast<Operator>(i)>::intrinsic_nderiv;
+    return operator_traits<static_cast<Operator>(i)>::intrinsic_deriv_order;
     BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR9, _,
                              BOOST_PP_NBODY_OPERATOR_LIST)
     default:
@@ -848,19 +848,19 @@ __libint2_engine_inline any Engine::enforce_params_type(
 __libint2_engine_inline any Engine::make_core_eval_pack(Operator oper) const {
   any result;
   switch (static_cast<int>(oper)) {
-#define BOOST_PP_NBODYENGINE_MCR6(r, data, i, elem)                          \
-  case i:                                                                    \
-    result = libint2::detail::make_compressed_pair(                          \
-        operator_traits<static_cast<Operator>(i)>::core_eval_type::instance( \
-            braket_rank() * lmax_ + deriv_order_ +                           \
-            operator_traits<static_cast<Operator>(i)>::intrinsic_nderiv,     \
-            std::numeric_limits<scalar_type>::epsilon()),                    \
-        libint2::detail::CoreEvalScratch<                                    \
-            operator_traits<static_cast<Operator>(i)>::core_eval_type>(      \
-            braket_rank() * lmax_ + deriv_order_ +                           \
-            operator_traits<static_cast<Operator>(i)>::intrinsic_nderiv));   \
-    assert(any_cast<detail::core_eval_pack_type<static_cast<Operator>(i)>>(  \
-               &result) != nullptr);                                         \
+#define BOOST_PP_NBODYENGINE_MCR6(r, data, i, elem)                             \
+  case i:                                                                       \
+    result = libint2::detail::make_compressed_pair(                             \
+        operator_traits<static_cast<Operator>(i)>::core_eval_type::instance(    \
+            braket_rank() * lmax_ + deriv_order_ +                              \
+            operator_traits<static_cast<Operator>(i)>::intrinsic_deriv_order,   \
+            std::numeric_limits<scalar_type>::epsilon()),                       \
+        libint2::detail::CoreEvalScratch<                                       \
+            operator_traits<static_cast<Operator>(i)>::core_eval_type>(         \
+            braket_rank() * lmax_ + deriv_order_ +                              \
+            operator_traits<static_cast<Operator>(i)>::intrinsic_deriv_order)); \
+    assert(any_cast<detail::core_eval_pack_type<static_cast<Operator>(i)>>(     \
+               &result) != nullptr);                                            \
     break;
 
     BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR6, _,
@@ -1076,7 +1076,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
                      primdata.PC_y[0] * primdata.PC_y[0] +
                      primdata.PC_z[0] * primdata.PC_z[0];
     const scalar_type U = gammap * PC2;
-    const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_ + intrinsic_nderiv();
+    const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_ + intrinsic_deriv_order();
     auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
     if (oper_ == Operator::nuclear || oper_ == Operator::σpVσp) {
       const auto& fm_engine_ptr =
