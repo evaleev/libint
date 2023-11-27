@@ -267,7 +267,7 @@ struct σpVσp_Descr : public Contractable<σpVσp_Descr> {
   σpVσp_Descr(int pauli_index) : pauli_index_(pauli_index) { assert(pauli_index <= 3); }
 
   static const unsigned int max_key = 4;
-  unsigned int key() const { return 0; }
+  unsigned int key() const { return pauli_index(); }
   std::string description() const { return "σpVσp"; }
   std::string label() const { return "σpVσp"; }
   int psymm(int i, int j) const { abort(); }
