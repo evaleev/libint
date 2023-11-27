@@ -12,6 +12,8 @@ Note: As of v2.8.0 (libtool-based), the configuration_accessor() function will r
 libint2::initialize();
 printf("SHGShell: %d\n", libint2::solid_harmonics_ordering());
 libint2::set_solid_harmonics_ordering(libint2::SHGShellOrdering_Gaussian);
+// note that toggling solid_harmonics_ordering works fine for printing here, but
+//    it's recc. to set *before* Engines are created, so before calling initialize()
 printf("SHGShell: %d\n", libint2::solid_harmonics_ordering());
 // if patched as described above
 printf("Configuration: %s\n", libint2::configuration_accessor().c_str());
@@ -76,7 +78,7 @@ A patch like the following is suitable for an export tarball generated from the 
 
 #### Configuration Codes
 
-Evenually, these will be CMake Components, too.
+Eventually, these will be CMake Components, too.
 
 ```
    multipole_hh_dD - library includes spherical multipole integrals with max angular momentum up to
