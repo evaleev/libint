@@ -187,6 +187,9 @@ struct default_operator_traits {
   } oper_params_type;
   static oper_params_type default_params() { return oper_params_type{}; }
   static constexpr auto nopers = 1u;
+  // N.B.: Below field means we *should* template specialize operator_traits for
+  // Operator::kinetic, but L2 doesn't use that anywhere.
+  static constexpr auto intrinsic_nderiv = 0u;
   struct _core_eval_type {
     template <typename... params>
     static std::shared_ptr<const _core_eval_type> instance(params...) {
@@ -222,6 +225,7 @@ template <>
 struct operator_traits<Operator::σpVσp>
     : public operator_traits<Operator::nuclear> {
   static constexpr auto nopers = 4;
+  static constexpr auto intrinsic_nderiv = 2;
 };
 
 template <>
@@ -1000,6 +1004,7 @@ private:
   //-------
   unsigned int nparams() const;
   unsigned int nopers() const;
+  unsigned int intrinsic_nderiv() const;
   /// if Params == operator_traits<oper>::oper_params_type, will return
   /// \c any(params)
   /// else will set return \c any initialized with default value for
