@@ -175,7 +175,7 @@ inline std::vector<std::vector<Shell>> split_by_L(
 /// pivoted Cholesky decomposition
 /// @return reduced set of product functions
 inline std::vector<Shell> shell_pivoted_cholesky(
-    const std::vector<Shell> shells, const double cholesky_threshold) {
+    const std::vector<Shell> &shells, const double cholesky_threshold) {
   auto n = shells.size();  // number of shells
   std::vector<size_t>
       shell_indices;  // hash map of basis function indices to shell indices
@@ -252,7 +252,7 @@ class DFBasisSetGenerator {
   /// @param cluster vector of vector of shells for each atom
   /// @param cholesky_threshold threshold for choosing a product functions via
   /// pivoted Cholesky decomposition
-  DFBasisSetGenerator(std::vector<Shell> shells,
+  DFBasisSetGenerator(std::vector<Shell> &shells,
                       const double cholesky_threshold = 1e-7) {
     auto primitive_shells = detail::uncontract(shells);
     candidate_shells_ = detail::candidate_functions(primitive_shells);
