@@ -268,8 +268,20 @@ struct σpVσp_Descr : public Contractable<σpVσp_Descr> {
 
   static const unsigned int max_key = 4;
   unsigned int key() const { return pauli_index(); }
-  std::string description() const { return "σpVσp"; }
-  std::string label() const { return "σpVσp"; }
+  std::string description() const {
+    std::string descr("σpVσp[");
+    if (pauli_index() == 0)
+      descr += "0";
+    else if (pauli_index() == 1)
+      descr += "Z";
+    else if (pauli_index() == 2)
+      descr += "X";
+    else if (pauli_index() == 3)
+      descr += "Y";
+    else abort();
+    return descr + "]";
+  }
+  std::string label() const { return description(); }
   int psymm(int i, int j) const { abort(); }
   int hermitian(int i) const { return +1; }
 
