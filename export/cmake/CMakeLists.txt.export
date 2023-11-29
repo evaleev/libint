@@ -188,9 +188,10 @@ set(LIBINT2_INSTALL_CMAKEDIR "lib/cmake/libint2"
 
 # Libint library =======================================================================================================
 
-include(srclist.cmake)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/srclist.cmake" LIBINT2_LIBRARY_CXX_SRC ENCODING UTF-8)
 set(LIB_CXX_SRC )
 foreach(FN IN LISTS LIBINT2_LIBRARY_CXX_SRC)
+    message(WARNING "found source file src/${FN}")
     list(APPEND LIB_CXX_SRC "src/${FN}")
 endforeach()
 # Create object files to use for static and shared libraries
@@ -203,7 +204,7 @@ target_compile_features(libint2_obj PUBLIC "cxx_std_11")
 set_target_properties(
   libint2_obj
   PROPERTIES
-    UNITY_BUILD TRUE
+    UNITY_BUILD FALSE
   )
 if (TARGET MPFR::GMPXX)
   target_link_libraries(libint2_obj PUBLIC MPFR::GMPXX)
