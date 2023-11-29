@@ -188,7 +188,7 @@ jobs:
               -DBUILD_SHARED_LIBS=OFF
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
-              -DCMAKE_CXX_FLAGS="/source-charset:utf-8"
+              -DCMAKE_CXX_FLAGS="/source-charset:utf-8 /DUNICODE /D_UNICODE"
             testargs: >
               -GNinja
               -DCMAKE_BUILD_TYPE=Release
@@ -275,6 +275,7 @@ jobs:
       run: |
         tar -zxf libint*tgz
         ls -l libint-2*/src/CR_*
+        cat libint-2*/srclist.cmake
         mkdir libint && mv libint-2*/* libint/ && cd libint/
         cmake \
           -S. \
