@@ -1061,7 +1061,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 
 #if LIBINT2_DEFINED(eri, rho12_over_alpha1) || \
     LIBINT2_DEFINED(eri, rho12_over_alpha2)
-    if (deriv_order_ > 0) {
+    if (deriv_order_ + intrinsic_deriv_order() > 0) {
 #if LIBINT2_DEFINED(eri, rho12_over_alpha1)
       primdata.rho12_over_alpha1[0] = rhop_over_alpha1;
 #endif
