@@ -282,7 +282,7 @@ jobs:
         cmake \
           -S. \
           -Bbuild \
-          -GNinja \
+          -G"NMake Makefiles" \
           -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
           -DCMAKE_CXX_COMPILER=${CXX} \
           -DLIBINT2_PYTHON=ON \
