@@ -274,8 +274,6 @@ jobs:
       shell: bash -l {0}
       run: |
         tar -zxf libint*tgz
-        ls -l libint-2*/src/CR_*
-        cat libint-2*/srclist.cmake
         mkdir libint && mv libint-2*/* libint/ && cd libint/
         cmake \
           -S. \
