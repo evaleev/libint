@@ -395,7 +395,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           do {
             BFType a(la);
             BFType b(lb);
-            
+
             for(unsigned int c=0; c!=2; ++c) {
               const unsigned int ndir = std::is_same<BFType,CGShell>::value ? 3 : 1;
               for(unsigned int xyz=0; xyz<ndir; ++xyz) {
@@ -411,7 +411,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
               SafePtr<Onebody_sh_1_1> target = Onebody_sh_1_1::Instance(a,b,nullaux,oper);
               targets.push_back(target);
             } // loop over operator components
-            
+
             last_deriv = diter.last();
             if (!last_deriv) diter.next();
           } while (!last_deriv); // loop over derivatives
@@ -518,7 +518,7 @@ void try_main (int argc, char* argv[])
                                      2emultipole,           \
                                      3emultipole,           \
                                      sphemultipole,         \
-                                     σpVσp                  \
+                                     opVop                  \
                                     )
 #define BOOST_PP_ONEBODY_TASK_OPER_TUPLE (OverlapOper,                    \
                                           KineticOper,                    \

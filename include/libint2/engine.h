@@ -129,7 +129,7 @@ enum class Operator {
   //! Previous to cdbb9f3 released in v2.8.0, Standard -or- Gaussian ordering could be be specified at generator/compiler configure time.
   sphemultipole,
   /// The four components of σp . V . σp, where V is the nuclear potential.
-  σpVσp,
+  opVop,
   /// \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   delta,
   /// (2-body) Coulomb operator = \f$ r_{12}^{-1} \f$
@@ -162,7 +162,7 @@ enum class Operator {
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this updated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   first_1body_oper = overlap,
-  last_1body_oper = σpVσp,
+  last_1body_oper = opVop,
   first_2body_oper = delta,
   last_2body_oper = stg_x_coulomb,
   first_oper = first_1body_oper,
@@ -222,7 +222,7 @@ struct operator_traits<Operator::nuclear>
 #endif
 };
 template <>
-struct operator_traits<Operator::σpVσp>
+struct operator_traits<Operator::opVop>
     : public operator_traits<Operator::nuclear> {
   static constexpr auto nopers = 4;
   static constexpr auto intrinsic_deriv_order = 2;
