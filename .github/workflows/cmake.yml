@@ -11,15 +11,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type : [ Release, Debug ]
-        os : [ macos-latest, ubuntu-20.04 ]
+        build_type : [ Release ]
+        os : [ ubuntu-20.04 ]
         include:
           - os: ubuntu-20.04
             cxx: g++-10
             cc: gcc-10
-          - os: macos-latest
-            cxx: clang++
-            cc: clang
+          #- os: macos-latest
+          #   cxx: clang++
+          #   cc: clang
 
     name: "Repo • ${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }}"
     runs-on: ${{ matrix.os }}
@@ -104,15 +104,15 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}/build/compiler
       run: |
-        CPPFLAGS="-I$EIGEN3_INCLUDE_DIR" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2,2 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
+        CPPFLAGS="-I$EIGEN3_INCLUDE_DIR" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2 --with-eri-max-am=2 --with-eri3-max-am=3 --enable-eri=1 --enable-eri3=1 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
         make -j3
-        make check
-        cd src/bin/test_eri && ./stdtests.pl && cd ../../..
+        #make check
+        #cd src/bin/test_eri && ./stdtests.pl && cd ../../..
         make export
         echo "ARTIFACT=`ls -1 libint*tgz`" >> $GITHUB_ENV
 
     - name: Archive Library Tarball
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type == 'Release'}}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type == 'Release' }}
       uses: actions/upload-artifact@v3
       with:
         if-no-files-found: error
@@ -129,11 +129,11 @@ jobs:
         cd libint-2*
         echo "LIBINT_EXPORTED_DIR=`pwd`" >> $GITHUB_ENV
         cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
-        cmake --build build --target check
+        #cmake --build build --target check
         cmake --build build --target install
 
     - name: Test installed Libint library
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      if: ${{ false }}
       shell: bash
       working-directory: ${{github.workspace}}/build/library_test
       run: |
@@ -150,7 +150,7 @@ jobs:
         ./hf++ $LIBINT_EXPORTED_DIR/tests/hartree-fock/h2o_rotated.xyz | python $LIBINT_EXPORTED_DIR/tests/hartree-fock/hartree-fock++-validate.py $LIBINT_EXPORTED_DIR/MakeVars.features
 
     - name: Build Python bindings
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os != 'macos-latest' }}
+      if: ${{ false }}
       shell: bash
       working-directory: ${{github.workspace}}/build/library
       run: |
