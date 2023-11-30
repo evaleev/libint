@@ -276,6 +276,7 @@ jobs:
         tar -zxf libint*tgz
         ls -l libint-2*/src/CR_*
         cat libint-2*/srclist.cmake
+        grep -r "p_D_D" libint-2*/
         mkdir libint && mv libint-2*/* libint/ && cd libint/
         cmake \
           -S. \
