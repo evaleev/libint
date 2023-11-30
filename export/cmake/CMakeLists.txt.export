@@ -192,7 +192,7 @@ file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/srclist.cmake" LIBINT2_LIBRARY_CXX_SRC
 set(LIB_CXX_SRC )
 foreach(FN IN LISTS LIBINT2_LIBRARY_CXX_SRC)
     message(WARNING "found source file src/${FN}")
-    list(APPEND LIB_CXX_SRC "src/${FN}")
+    list(APPEND LIB_CXX_SRC "\"src/${FN}\"")
 endforeach()
 # Create object files to use for static and shared libraries
 add_library(libint2_obj OBJECT ${LIB_CXX_SRC} "src/configuration.cc")

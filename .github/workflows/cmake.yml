@@ -121,7 +121,8 @@ jobs:
         retention-days: 1
 
     - name: Build+test+install Libint library
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      if: false
+      #if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash
       working-directory: ${{github.workspace}}/build/library
       run: |
@@ -133,7 +134,7 @@ jobs:
         cmake --build build --target install
 
     - name: Test installed Libint library
-      if: ${{ false }}
+      if: false
       shell: bash
       working-directory: ${{github.workspace}}/build/library_test
       run: |
@@ -150,7 +151,7 @@ jobs:
         ./hf++ $LIBINT_EXPORTED_DIR/tests/hartree-fock/h2o_rotated.xyz | python $LIBINT_EXPORTED_DIR/tests/hartree-fock/hartree-fock++-validate.py $LIBINT_EXPORTED_DIR/MakeVars.features
 
     - name: Build Python bindings
-      if: ${{ false }}
+      if: false
       shell: bash
       working-directory: ${{github.workspace}}/build/library
       run: |
@@ -165,7 +166,7 @@ jobs:
     # * run only the Linux/Release (remove items from matrix.build_type and matrix.os)
     # * don't generate any derivative ints (edit CPPFLAGS)
     # * turn off generator testing (comment out "make check" and "stdtests.pl" lines)
-    # * suppress last two (test library and bindings) steps ("if: false")
+    # * suppress last three (test library and bindings) steps ("if: false")
     needs: build_repo
     if: always() && (needs.build_repo.outputs.should_skip != 'true')
     strategy:
@@ -286,6 +287,7 @@ jobs:
           -DCMAKE_CXX_COMPILER=${CXX} \
           -DLIBINT2_PYTHON=ON \
           -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
+          -DCMAKE_VERBOSE_MAKEFILE=ON \
           ${{ matrix.cfg.libargs }}
         cmake --build build --target install libint2-python-test
 
