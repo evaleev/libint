@@ -96,8 +96,8 @@ CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const SafePtr<TargetType> &Tint, unsigned int)
       auto Dy_a_V_Dy_b = factory.make_child(Dy_a, Dy_b, zero_m);
       auto Dz_a_V_Dz_b = factory.make_child(Dz_a, Dz_b, zero_m);
       if (is_simple()) {
-        expr_ = Scalar(-1) * (Dx_a_V_Dx_b + Dy_a_V_Dy_b + Dz_a_V_Dz_b);
-        nflops_ += 3;
+        expr_ = Dx_a_V_Dx_b + Dy_a_V_Dy_b + Dz_a_V_Dz_b;
+        nflops_ += 2;
       }
     } break;
     // N.B.: Wz is needed after W0 because it's needed for 2-component methods.
@@ -107,8 +107,8 @@ CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const SafePtr<TargetType> &Tint, unsigned int)
       auto Dx_a_V_Dy_b = factory.make_child(Dx_a, Dy_b, zero_m);
       auto Dy_a_V_Dx_b = factory.make_child(Dy_a, Dx_b, zero_m);
       if (is_simple()) {
-        expr_ = Scalar(-1) * (Dx_a_V_Dy_b - Dy_a_V_Dx_b);
-        nflops_ += 2;
+        expr_ = Dx_a_V_Dy_b - Dy_a_V_Dx_b;
+        nflops_ += 1;
       }
     } break;
     // (a|Wx|b) = (d a/dAy | V | d b/dBz) - (d a/dAz | V | d b/dBy)
@@ -116,8 +116,8 @@ CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const SafePtr<TargetType> &Tint, unsigned int)
       auto Dy_a_V_Dz_b = factory.make_child(Dy_a, Dz_b, zero_m);
       auto Dz_a_V_Dy_b = factory.make_child(Dz_a, Dy_b, zero_m);
       if (is_simple()) {
-        expr_ = Scalar(-1) * (Dy_a_V_Dz_b - Dz_a_V_Dy_b);
-        nflops_ += 2;
+        expr_ = Dy_a_V_Dz_b - Dz_a_V_Dy_b;
+        nflops_ += 1;
       }
     } break;
     // (a|Wy|b) = (d a/dAz | V | d b/dBx) - (d a/dAx | V | d b/dBz)
@@ -125,8 +125,8 @@ CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const SafePtr<TargetType> &Tint, unsigned int)
       auto Dz_a_V_Dx_b = factory.make_child(Dz_a, Dx_b, zero_m);
       auto Dx_a_V_Dz_b = factory.make_child(Dx_a, Dz_b, zero_m);
       if (is_simple()) {
-        expr_ = Scalar(-1) * (Dz_a_V_Dx_b - Dx_a_V_Dz_b);
-        nflops_ += 2;
+        expr_ = Dz_a_V_Dx_b - Dx_a_V_Dz_b;
+        nflops_ += 1;
       }
     } break;
     default:
