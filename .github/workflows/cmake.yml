@@ -16,12 +16,15 @@ jobs:
         include:
           - os: ubuntu-20.04
             cxx: g++-10
+            cc: gcc-10
           - os: macos-latest
             cxx: clang++
+            cc: clang
 
     name: "Repo • ${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }}"
     runs-on: ${{ matrix.os }}
     env:
+      CC: ${{ matrix.cc }}
       CXX : ${{ matrix.cxx }}
       CCACHE_DIR : ${{github.workspace}}/build/.ccache
       CCACHE_COMPRESS : true
@@ -185,6 +188,7 @@ jobs:
               -DBUILD_SHARED_LIBS=OFF
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
+              -DCMAKE_CXX_FLAGS="/source-charset:utf-8 /execution-charset:utf-8 /DUNICODE /D_UNICODE"
             testargs: >
               -GNinja
               -DCMAKE_BUILD_TYPE=Release
@@ -313,4 +317,3 @@ jobs:
         cmake . -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-test
-

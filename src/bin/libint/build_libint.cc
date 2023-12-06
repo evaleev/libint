@@ -244,7 +244,7 @@ namespace {
     typedef EmptySet type;
   };
 
-  template <typename OperDescrType> OperDescrType make_descr(int, int, int = 0) {
+  template <typename OperDescrType> OperDescrType make_descr(int, int = 0, int = 0) {
     return OperDescrType();
   }
   template <> CartesianMultipole_Descr<3u> make_descr<CartesianMultipole_Descr<3u>>(int x, int y, int z) {
@@ -258,6 +258,9 @@ namespace {
   template <> SphericalMultipole_Descr make_descr<SphericalMultipole_Descr>(int l, int m, int) {
     SphericalMultipole_Descr result(l,m);
     return result;
+  }
+  template <> σpVσp_Descr make_descr<σpVσp_Descr>(int p, int, int) {
+    return σpVσp_Descr(p);
   }
 }
 
@@ -371,6 +374,14 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
               END_FOR_SOLIDHARM
             }
           }
+          if (std::is_same<_OperType,σpVσpOper>::value) {
+            // reset descriptors array
+            descrs.resize(0);
+            // iterate over pauli components
+            for (int p = 0; p != 4; ++p) {
+              descrs.emplace_back(make_descr<OperDescrType>(p));
+            }
+          }
 
           // derivative index is the outermost (slowest running)
           // operator component is second slowest
@@ -384,7 +395,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
           do {
             BFType a(la);
             BFType b(lb);
-            
+
             for(unsigned int c=0; c!=2; ++c) {
               const unsigned int ndir = std::is_same<BFType,CGShell>::value ? 3 : 1;
               for(unsigned int xyz=0; xyz<ndir; ++xyz) {
@@ -400,7 +411,7 @@ build_onebody_1b_1k(std::ostream& os, std::string label, const SafePtr<Compilati
               SafePtr<Onebody_sh_1_1> target = Onebody_sh_1_1::Instance(a,b,nullaux,oper);
               targets.push_back(target);
             } // loop over operator components
-            
+
             last_deriv = diter.last();
             if (!last_deriv) diter.next();
           } while (!last_deriv); // loop over derivatives
@@ -506,7 +517,8 @@ void try_main (int argc, char* argv[])
                                      1emultipole,           \
                                      2emultipole,           \
                                      3emultipole,           \
-                                     sphemultipole    \
+                                     sphemultipole,         \
+                                     opVop                  \
                                     )
 #define BOOST_PP_ONEBODY_TASK_OPER_TUPLE (OverlapOper,                    \
                                           KineticOper,                    \
@@ -514,7 +526,8 @@ void try_main (int argc, char* argv[])
                                           CartesianMultipoleOper<3u>,     \
                                           CartesianMultipoleOper<3u>,     \
                                           CartesianMultipoleOper<3u>,     \
-                                          SphericalMultipoleOper          \
+                                          SphericalMultipoleOper,         \
+                                          σpVσpOper                       \
                                          )
 #define BOOST_PP_ONEBODY_TASK_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_TUPLE )
 #define BOOST_PP_ONEBODY_TASK_OPER_LIST BOOST_PP_TUPLE_TO_LIST( BOOST_PP_ONEBODY_TASK_OPER_TUPLE )

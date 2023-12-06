@@ -307,7 +307,18 @@ namespace libint2 {
       VRR_b_1_ElecPot_1_int
       > value;
     };
-  template <> struct MasterStrategy<Kinetic_1_1_sh> {
+    // TODO create TwoCenterOSTactic to be able to optimally apply bidirectional strategies
+    template <> struct MasterStrategy<σpVσp_1_1_sh> {
+      typedef boost::mpl::list<
+          CR_1_σpVσp_1_sh
+          > value;
+    };
+    template <> struct MasterStrategy<σpVσp_1_1_int> {
+      typedef boost::mpl::list<
+          CR_1_σpVσp_1_int
+          > value;
+    };
+    template <> struct MasterStrategy<Kinetic_1_1_sh> {
       typedef boost::mpl::list<
         CR_XYZ_1_1<CGShell,KineticOper>
       > value;
