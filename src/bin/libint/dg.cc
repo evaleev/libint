@@ -126,7 +126,7 @@ DirectedGraph::add_new_vertex(const std::shared_ptr<DGVertex>& vertex)
 #endif
 #endif
 
-  char label[80];  sprintf(label,"vertex%d",num_vertices());
+  char label[80];  snprintf(label,80,"vertex%d",num_vertices());
   vertex->set_graph_label(label);
   vertex->dg(this);
 
@@ -147,7 +147,6 @@ DirectedGraph::vertex_is_on(const std::shared_ptr<DGVertex>& vertex) const
   static std::shared_ptr<DGVertex> null_ptr;
 #if USE_ASSOCCONTAINER_BASED_DIRECTEDGRAPH
   typedef vertices::const_iterator citer;
-  typedef vertices::value_type value_type;
   key_type vkey = key(*vertex);
   // find the first elemnt with this key and iterate until vertex is found or key changes
   citer vpos = stack_.find(vkey);
@@ -269,7 +268,6 @@ DirectedGraph::traverse()
   prepare_to_traverse();
 
   // Start at the targets which don't have parents
-  typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
@@ -452,7 +450,6 @@ DirectedGraph::apply(const std::shared_ptr<Strategy>& strategy,
                      const std::shared_ptr<Tactic>& tactic)
 {
   const std::shared_ptr<DirectedGraph> this_ptr = shared_from_this();
-  typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
@@ -533,7 +530,6 @@ DirectedGraph::optimize_rr_out(const std::shared_ptr<CodeContext>& context)
 void
 DirectedGraph::replace_rr_with_expr()
 {
-  typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
@@ -698,7 +694,6 @@ DirectedGraph::remove_trivial_arithmetics()
   using libint2::prefactor::Scalar;
   const std::shared_ptr< CTimeEntity<double> > const_one_point_zero = Scalar(1.0);
   const std::shared_ptr< CTimeEntity<double> > const_zero_point_zero = Scalar(0.0);
-  typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
@@ -712,7 +707,7 @@ DirectedGraph::remove_trivial_arithmetics()
       std::shared_ptr<DGVertex> right = oper_cast->num_exit_arcs()>1 ? (*a)->dest() : left; // num_exit_arcs==1 is a corner case, e.g. 1*1
 
       using libint2::algebra::OperatorTypes;
-      
+
       // 1.0 * x = x || 0.0 + x = x
       if (left->num_entry_arcs() == 1 &&
           ((oper_cast->type() == OperatorTypes::Times && left->equiv(const_one_point_zero)) ||
@@ -808,7 +803,6 @@ namespace {
 void
 DirectedGraph::handle_trivial_nodes(const std::shared_ptr<CodeContext>& context)
 {
-  typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
@@ -957,7 +951,6 @@ DirectedGraph::remove_vertex_at(const std::shared_ptr<DGVertex>& v1, const std::
 void
 DirectedGraph::remove_disconnected_vertices()
 {
-  typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end();) {
     const ver_ptr& vptr = vertex_ptr(*v);
@@ -1209,9 +1202,7 @@ unsigned int min_size_to_alloc)
 
   struct TargetAllocator {
     typedef DirectedGraph::targets::const_iterator target_citer;
-    typedef DirectedGraph::targets::iterator target_iter;
     typedef DirectedGraph::size sz;
-    typedef DirectedGraph::address address;
 
     const DirectedGraph::targets& targets_;
     const std::shared_ptr<MemoryManager>& memman_;
@@ -1419,7 +1410,6 @@ DirectedGraph::assign_symbols(const std::shared_ptr<CodeContext>& context, const
   std::string veclen = dims->vecdim_label();
 
   // First, set symbols for all vertices which have address assigned
-  typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
@@ -1537,7 +1527,6 @@ DirectedGraph::assign_symbols(const std::shared_ptr<CodeContext>& context, const
 
   // finally, process all operators (start with most recently added vertices since those are
   // much more likely to be on the bottom of the graph).
-  typedef vertices::const_reverse_iterator criter;
   typedef vertices::reverse_iterator riter;
   for(riter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
     ver_ptr& vptr = vertex_ptr(*v);
@@ -2180,7 +2169,6 @@ void
 DirectedGraph::update_func_names()
 {
   // Loop over all vertices
-  typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
@@ -2238,7 +2226,6 @@ DirectedGraph::find_subtrees()
     return;
 
   // Find subtrees by starting from the targets and moving down ...
-  typedef vertices::const_iterator citer;
   typedef vertices::iterator iter;
   for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);

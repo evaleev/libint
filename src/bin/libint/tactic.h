@@ -31,7 +31,7 @@ namespace libint2 {
   class DirectedGraph;
   class RecurrenceRelation;
 
-  class DummyRandomizePolicy;
+  struct DummyRandomizePolicy;
   class StdRandomizePolicy;
 
   /** Tactic is used to choose the optimal (in some sense) recurrence relation to reduce

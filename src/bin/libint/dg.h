@@ -159,7 +159,6 @@ namespace libint2 {
      */
     template <class RR> void apply_to_all() {
       typedef typename RR::TargetType TT;
-      typedef vertices::const_iterator citer;
       typedef vertices::iterator iter;
       for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
         ver_ptr& vptr = vertex_ptr(*v);
@@ -209,7 +208,6 @@ namespace libint2 {
     /** calls Method(v) for each v, iterating in forward direction */
     template <class Method>
     void foreach(Method& m) {
-      typedef vertices::const_iterator citer;
       typedef vertices::iterator iter;
       for(iter v=stack_.begin(); v!=stack_.end(); ++v) {
         ver_ptr& vptr = vertex_ptr(*v);
@@ -221,7 +219,6 @@ namespace libint2 {
     template <class Method>
     void foreach(Method& m) const  {
       typedef vertices::const_iterator citer;
-      typedef vertices::iterator iter;
       for(citer v=stack_.begin(); v!=stack_.end(); ++v) {
         const ver_ptr& vptr = vertex_ptr(*v);
         m(vptr);
@@ -230,7 +227,6 @@ namespace libint2 {
     /** calls Method(v) for each v, iterating in reverse direction */
     template <class Method>
     void rforeach(Method& m) {
-      typedef vertices::const_reverse_iterator criter;
       typedef vertices::reverse_iterator riter;
       for(riter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
         ver_ptr& vptr = vertex_ptr(*v);
@@ -242,7 +238,6 @@ namespace libint2 {
     template <class Method>
     void rforeach(Method& m) const {
       typedef vertices::const_reverse_iterator criter;
-      typedef vertices::reverse_iterator riter;
       for(criter v=stack_.rbegin(); v!=stack_.rend(); ++v) {
         const ver_ptr& vptr = vertex_ptr(*v);
         m(vptr);

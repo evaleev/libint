@@ -184,6 +184,7 @@ TwoCenter_OS_Tactic::RR TwoCenter_OS_Tactic::optimal_rr(
        // (to reduce the memory bandwidth demand)
       size_t max_result_size = std::numeric_limits<size_t>::max();
       size_t nties = 0;
+      (void)nties;
       for (auto& t : stack) {
         if (t->braket_direction() ==
             BraketDirection::None) {  // skip all HRR RRs
@@ -265,6 +266,7 @@ FourCenter_OS_Tactic::optimal_rr(const rr_stack& stack) const {
       // 2-body OS strategies will include transfers in single direction
       size_t max_result_size = std::numeric_limits<size_t>::max();
       size_t nties = 0;
+      (void)nties;
       for (auto& t : stack) {
         if (t->partindex_direction() == 0) {  // skip all ITR RRs
 
