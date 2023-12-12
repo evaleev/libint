@@ -23,8 +23,10 @@
 
 #include <libint2/util/cxxstd.h>
 #if LIBINT2_CPLUSPLUS_STD < 2011
-# error "libint2/atom.h requires C++11 support"
+#error "libint2/atom.h requires C++11 support"
 #endif
+
+#include <libint2/chemistry/elements.h>
 
 #include <array>
 #include <iostream>
@@ -33,38 +35,37 @@
 #include <utility>
 #include <vector>
 
-#include <libint2/chemistry/elements.h>
-
 namespace libint2 {
 
-  struct Atom {
-      int atomic_number;
-      double x, y, z;
-  };
-  inline bool operator==(const Atom& atom1, const Atom& atom2) {
-    return atom1.atomic_number == atom2.atomic_number && atom1.x == atom2.x &&
-           atom1.y == atom2.y && atom1.z == atom2.z;
-  }
+struct Atom {
+  int atomic_number;
+  double x, y, z;
+};
+inline bool operator==(const Atom &atom1, const Atom &atom2) {
+  return atom1.atomic_number == atom2.atomic_number && atom1.x == atom2.x &&
+         atom1.y == atom2.y && atom1.z == atom2.z;
+}
 
-  namespace constants {
-  /// the 2018 CODATA reference set, available at https://physics.nist.gov/cuu/pdf/wall_2018.pdf
-  struct codata_2018 {
-    static constexpr double bohr_to_angstrom = 0.529177210903;
-    static constexpr double angstrom_to_bohr = 1 / bohr_to_angstrom;
-  };
-  /// the 2014 CODATA reference set, available at DOI 10.1103/RevModPhys.88.035009
-  struct codata_2014 {
-    static constexpr double bohr_to_angstrom = 0.52917721067;
-    static constexpr double angstrom_to_bohr = 1 / bohr_to_angstrom;
-  };
-  /// the 2010 CODATA reference set, available at DOI 10.1103/RevModPhys.84.1527
-  struct codata_2010 {
-    static constexpr double bohr_to_angstrom = 0.52917721092;
-    static constexpr double angstrom_to_bohr = 1 / bohr_to_angstrom;
-  };
-  }  // namespace constants
+namespace constants {
+/// the 2018 CODATA reference set, available at
+/// https://physics.nist.gov/cuu/pdf/wall_2018.pdf
+struct codata_2018 {
+  static constexpr double bohr_to_angstrom = 0.529177210903;
+  static constexpr double angstrom_to_bohr = 1 / bohr_to_angstrom;
+};
+/// the 2014 CODATA reference set, available at DOI 10.1103/RevModPhys.88.035009
+struct codata_2014 {
+  static constexpr double bohr_to_angstrom = 0.52917721067;
+  static constexpr double angstrom_to_bohr = 1 / bohr_to_angstrom;
+};
+/// the 2010 CODATA reference set, available at DOI 10.1103/RevModPhys.84.1527
+struct codata_2010 {
+  static constexpr double bohr_to_angstrom = 0.52917721092;
+  static constexpr double angstrom_to_bohr = 1 / bohr_to_angstrom;
+};
+}  // namespace constants
 
-} // namespace libint2
+}  // namespace libint2
 
 namespace {
 
@@ -75,15 +76,15 @@ bool strcaseequal(const std::string &a, const std::string &b) {
          });
 }
 
-/// reads the list of atoms from a file in the standard or PBC-extended XYZ format
-/// \sa libint2::read_dotxyz
-/// \sa libint2::read_dotxyz_pbc
+/// reads the list of atoms from a file in the standard or PBC-extended XYZ
+/// format \sa libint2::read_dotxyz \sa libint2::read_dotxyz_pbc
 inline std::tuple<std::vector<libint2::Atom>,
                   std::array<std::array<double, 3>, 3>>
 __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
                       const bool pbc = false) {
   using libint2::Atom;
-  const std::string caller = std::string("libint2::read_dotxyz") + (pbc ? "_pbc" : "");
+  const std::string caller =
+      std::string("libint2::read_dotxyz") + (pbc ? "_pbc" : "");
 
   // first line = # of atoms
   size_t natom;
@@ -138,12 +139,9 @@ __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
     auto axis = -1;
     // if pbc = true, look for unit cell params
     if (pbc) {
-      if (strcaseequal("AA", element_symbol))
-        axis = 0;
-      if (strcaseequal("BB", element_symbol))
-        axis = 1;
-      if (strcaseequal("CC", element_symbol))
-        axis = 2;
+      if (strcaseequal("AA", element_symbol)) axis = 0;
+      if (strcaseequal("BB", element_symbol)) axis = 1;
+      if (strcaseequal("CC", element_symbol)) axis = 2;
       if (axis != -1) {
         if (found_abc[axis])
           throw std::logic_error(
@@ -170,7 +168,8 @@ __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
         throw std::logic_error(oss.str().c_str());
       }
 
-      if (pbc && atom_index == atoms.size()) { // if PBC, check for too many atoms
+      if (pbc &&
+          atom_index == atoms.size()) {  // if PBC, check for too many atoms
         throw std::logic_error(caller + ": too many atoms");
       }
       assign_atom(atoms[atom_index++], Z, x, y, z);
@@ -179,7 +178,7 @@ __libint2_read_dotxyz(std::istream &is, const double bohr_to_angstrom,
 
   // make sure all 3 axes were specified
   if (pbc) {
-    for(auto xyz=0; xyz!=3; ++xyz)
+    for (auto xyz = 0; xyz != 3; ++xyz)
       if (!found_abc[xyz]) {
         throw std::logic_error(caller +
                                ": unit cell parameter along Cartesian axis " +

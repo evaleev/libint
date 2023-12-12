@@ -24,28 +24,26 @@
 #include <memory>
 
 namespace libint2 {
-  namespace detail {
+namespace detail {
 
-    template <typename T> class managed_singleton {
-      public:
-        static T* instance() {
-          if (not instance_)
-            instance_ = std::unique_ptr<T>(new T);
-          return instance_.get();
-        }
-        static bool instance_exists() {
-          return instance_.get() != nullptr;
-        }
-        static void delete_instance() {
-          instance_.reset();
-        }
-      private:
-        managed_singleton() = delete;
-        static std::unique_ptr<T> instance_;
-    };
-    template <typename T> std::unique_ptr<T> managed_singleton<T>::instance_;
+template <typename T>
+class managed_singleton {
+ public:
+  static T* instance() {
+    if (not instance_) instance_ = std::unique_ptr<T>(new T);
+    return instance_.get();
+  }
+  static bool instance_exists() { return instance_.get() != nullptr; }
+  static void delete_instance() { instance_.reset(); }
 
-  }  // namespace libint2::detail
-} // namespace libint2
+ private:
+  managed_singleton() = delete;
+  static std::unique_ptr<T> instance_;
+};
+template <typename T>
+std::unique_ptr<T> managed_singleton<T>::instance_;
+
+}  // namespace detail
+}  // namespace libint2
 
 #endif /* header guard */

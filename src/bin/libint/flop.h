@@ -23,10 +23,10 @@
 
 namespace libint2 {
 
-  /// ConvertNumFlops processes the number of flops according to type F
-  template <class F>
-    unsigned int ConvertNumFlops(unsigned int nflops);
+/// ConvertNumFlops processes the number of flops according to type F
+template <class F>
+unsigned int ConvertNumFlops(unsigned int nflops);
 
-};
+};  // namespace libint2
 
 #endif

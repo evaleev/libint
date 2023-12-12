@@ -70,7 +70,8 @@ inline size_t sto3g_num_ao(size_t Z) {
   else if (Z <= 53)  // Y - I
     nao = 27;
   else
-    throw std::invalid_argument{"STO-3G basis is not defined for elements with Z > 53"};
+    throw std::invalid_argument{
+        "STO-3G basis is not defined for elements with Z > 53"};
   return nao;
 }
 
@@ -94,54 +95,52 @@ const std::vector<Real>& sto3g_ao_occupation_vector(size_t Z) {
 
   // neutral atom electronic configurations from NIST:
   // http://www.nist.gov/pml/data/images/illo_for_2014_PT_1.PNG
-  subshell_occvec(occs, 1, num_of_electrons);            // 1s
-  if (Z > 2)   {  // Li+
-    subshell_occvec(occs, 1, num_of_electrons);          // 2s
-    subshell_occvec(occs, 3, num_of_electrons);          // 2p
+  subshell_occvec(occs, 1, num_of_electrons);    // 1s
+  if (Z > 2) {                                   // Li+
+    subshell_occvec(occs, 1, num_of_electrons);  // 2s
+    subshell_occvec(occs, 3, num_of_electrons);  // 2p
   }
-  if (Z > 10)  {  // Na+
-    subshell_occvec(occs, 1, num_of_electrons);          // 3s
-    subshell_occvec(occs, 3, num_of_electrons);          // 3p
+  if (Z > 10) {                                  // Na+
+    subshell_occvec(occs, 1, num_of_electrons);  // 3s
+    subshell_occvec(occs, 3, num_of_electrons);  // 3p
   }
-  if (18 < Z && Z <= 36)  {  // K .. Kr
+  if (18 < Z && Z <= 36) {  // K .. Kr
     // NB 4s is singly occupied in K, Cr, and Cu
     size_t num_of_4s_electrons = (Z == 19 || Z == 24 || Z == 29) ? 1 : 2;
     num_of_electrons -= num_of_4s_electrons;
-    subshell_occvec(occs, 1, num_of_4s_electrons);       // 4s
+    subshell_occvec(occs, 1, num_of_4s_electrons);  // 4s
 
     size_t num_of_4p_electrons =
         std::min(static_cast<decltype(Z)>(6), (Z > 30) ? Z - 30 : 0);
     num_of_electrons -= num_of_4p_electrons;
-    subshell_occvec(occs, 3, num_of_4p_electrons);       // 4p
+    subshell_occvec(occs, 3, num_of_4p_electrons);  // 4p
 
-    subshell_occvec(occs, 5, num_of_electrons);          // 3d
+    subshell_occvec(occs, 5, num_of_electrons);  // 3d
   }
-  if (36 < Z && Z <= 53)  {  // Rb .. I
+  if (36 < Z && Z <= 53) {  // Rb .. I
     // 3d4s4p are fully occupied ...
-    subshell_occvec(occs, 1, num_of_electrons);          // 4s
-    subshell_occvec(occs, 3, num_of_electrons);          // 4p
+    subshell_occvec(occs, 1, num_of_electrons);  // 4s
+    subshell_occvec(occs, 3, num_of_electrons);  // 4p
 
     // NB 5s is singly occupied in Rb, Nb, Mo, Ru, Rh, and Ag
     size_t num_of_5s_electrons =
         (Z == 37 || Z == 41 || Z == 42 || Z == 44 || Z == 45 || Z == 47) ? 1
                                                                          : 2;
     num_of_electrons -= num_of_5s_electrons;
-    subshell_occvec(occs, 1, num_of_5s_electrons);       // 5s
+    subshell_occvec(occs, 1, num_of_5s_electrons);  // 5s
 
     size_t num_of_5p_electrons =
         std::min(static_cast<decltype(Z)>(6), (Z > 48) ? Z - 48 : 0);
     num_of_electrons -= num_of_5p_electrons;
-    subshell_occvec(occs, 3, num_of_5p_electrons);       // 5p
+    subshell_occvec(occs, 3, num_of_5p_electrons);  // 5p
 
-    subshell_occvec(occs, 5, num_of_electrons);          // 3d
-    subshell_occvec(occs, 5, num_of_electrons);          // 4d
+    subshell_occvec(occs, 5, num_of_electrons);  // 3d
+    subshell_occvec(occs, 5, num_of_electrons);  // 4d
   }
 
   return occvec;
 }
 
 }  // namespace libint2
-
-
 
 #endif  // INCLUDE_LIBINT2_CHEMISTRY_STO3GATOMICDENSITY_H_

@@ -26,11 +26,11 @@
 
 namespace libint2 {
 
-  /** Class CodeSymbols specifies a set of symbols used in a code
-    */
+/** Class CodeSymbols specifies a set of symbols used in a code
+ */
 
-  class CodeSymbols {
-  public:
+class CodeSymbols {
+ public:
   CodeSymbols();
   ~CodeSymbols();
 
@@ -38,11 +38,10 @@ namespace libint2 {
   unsigned int n() const;
   const std::string& symbol(unsigned int i) const;
 
-  private:
+ private:
   std::vector<std::string> symbols_;
-  };
-
 };
 
-#endif
+};  // namespace libint2
 
+#endif

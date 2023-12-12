@@ -23,14 +23,12 @@
 
 #include <string>
 
+typedef enum { InBra = 0, InKet = 1 } FunctionPosition;
+enum class BraketDirection { BraToKet = 0, KetToBra = 1, None = 2 };
 typedef enum {
-  InBra=0, InKet=1
-} FunctionPosition;
-enum class BraketDirection {
-  BraToKet=0, KetToBra=1, None=2
-};
-typedef enum {
-  CartesianAxis_X=0, CartesianAxis_Y=1, CartesianAxis_Z=2
+  CartesianAxis_X = 0,
+  CartesianAxis_Y = 1,
+  CartesianAxis_Z = 2
 } CartesianAxis;
 
 inline std::string to_string(CartesianAxis axis) {

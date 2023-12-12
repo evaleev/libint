@@ -27,6 +27,9 @@
 #endif
 #include <libint2/cxxapi.h>
 
+#include <libint2/initialize.h>
+#include <libint2/util/deprecated.h>
+
 #include <cerrno>
 #include <iostream>
 #include <fstream>

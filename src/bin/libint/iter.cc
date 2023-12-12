@@ -26,18 +26,14 @@ using namespace libint2;
 //
 // SubIterator
 //
-SubIterator::SubIterator()
-{
-}
+SubIterator::SubIterator() {}
 
-SubIterator::~SubIterator()
-{
-}
+SubIterator::~SubIterator() {}
 
-const ConstructablePolymorphically&
-SubIterator::pelem() const
-{
-  throw ProgrammingError("virtual ConstructablePolymorphically& SubIterator::pelem() -- used but not overloaded");
+const ConstructablePolymorphically& SubIterator::pelem() const {
+  throw ProgrammingError(
+      "virtual ConstructablePolymorphically& SubIterator::pelem() -- used but "
+      "not overloaded");
 }
 
 #ifdef ALLOW_PARTIALLY_SPECIALIZED_NESTED_TEMPLATES
@@ -47,39 +43,28 @@ SubIterator::pelem() const
 //
 template <class T, class P>
 template <>
-void
-SubIteratorBase<T,P>::init_subobj<CGF>()
-{
+void SubIteratorBase<T, P>::init_subobj<CGF>() {
   subobj_.push_back(obj_);
 }
 
 template <class T, class P>
 template <>
-void
-SubIteratorBase<T,P>::delete_subobj<CGF>()
-{
-}
+void SubIteratorBase<T, P>::delete_subobj<CGF>() {}
 
 //
 // SubIteratorBase::init_subobj<CGShell>
 //
 template <class T, class P>
 template <>
-void
-SubIteratorBase<T,P>::init_subobj<CGShell>()
-{
-  P::cgshell_to_cgfvector(obj_,subobj_);
+void SubIteratorBase<T, P>::init_subobj<CGShell>() {
+  P::cgshell_to_cgfvector(obj_, subobj_);
 }
 
 template <class T, class P>
 template <>
-void
-SubIteratorBase<T,P>::delete_subobj<CGShell>()
-{
+void SubIteratorBase<T, P>::delete_subobj<CGShell>() {
   int nelem = subobj_.size();
-  for(int i=0; i<nelem; i++)
-    subobj_[i]->~CGF();
+  for (int i = 0; i < nelem; i++) subobj_[i]->~CGF();
 }
 
 #endif
-

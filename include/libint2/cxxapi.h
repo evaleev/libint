@@ -23,26 +23,27 @@
 
 #include <libint2/util/cxxstd.h>
 #if LIBINT2_CPLUSPLUS_STD < 2011
-# error "Libint2 C++ API requires C++11 support"
+#error "Libint2 C++ API requires C++11 support"
 #endif
 
 #include <libint2.h>  // NB this loads libint2/config.h and libint2/util/configuration.h
 
 #ifdef LIBINT_USER_DEFINED_REAL
-# error "C++11 API does not support with user-defined real types yet; omit --with-real-type when configuring"
+#error \
+    "C++11 API does not support with user-defined real types yet; omit --with-real-type when configuring"
 #endif
 
-#if !defined(INCLUDE_ONEBODY) || !(defined(INCLUDE_ERI) || defined(INCLUDE_ERI3) || defined(INCLUDE_ERI2))
-# error "C++ API is only supported if both 1-body and some (eri, eri3, eri2) 2-body integrals are enabled"
+#if !defined(INCLUDE_ONEBODY) || \
+    !(defined(INCLUDE_ERI) || defined(INCLUDE_ERI3) || defined(INCLUDE_ERI2))
+#error \
+    "C++ API is only supported if both 1-body and some (eri, eri3, eri2) 2-body integrals are enabled"
 #endif
 
-#include <libint2/initialize.h>
-#include <libint2/chemistry/elements.h>
 #include <libint2/atom.h>
 #include <libint2/basis.h>
+#include <libint2/chemistry/elements.h>
+#include <libint2/engine.h>  // this is the end-user stuff, needs to check if library is initialized
+#include <libint2/initialize.h>
 #include <libint2/solidharmonics.h>
 
-#include <libint2/engine.h> // this is the end-user stuff, needs to check if library is initialized
-
 #endif /* _libint2_src_lib_libint_cxxapi_h_ */
-

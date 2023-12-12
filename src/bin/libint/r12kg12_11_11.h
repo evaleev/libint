@@ -26,28 +26,28 @@
 
 namespace libint2 {
 
-  template <>
-  inline bool
-    GenIntegralSet_11_11<CGF,R12kG12,mType>::this_precomputed() const
-    {
-      if (parent_type::bra_.member(0,0).zero() && parent_type::bra_.member(1,0).zero() &&
-          parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero())
-        return true;
-      else
-         return false;
-    }
-
 template <>
-inline bool
-GenIntegralSet_11_11<CGShell,R12kG12,mType>::auto_unroll() const
-{
-  if (parent_type::bra_.member(0,0).zero() && parent_type::bra_.member(1,0).zero() &&
-      parent_type::ket_.member(0,0).zero() && parent_type::ket_.member(1,0).zero())
+inline bool GenIntegralSet_11_11<CGF, R12kG12, mType>::this_precomputed()
+    const {
+  if (parent_type::bra_.member(0, 0).zero() &&
+      parent_type::bra_.member(1, 0).zero() &&
+      parent_type::ket_.member(0, 0).zero() &&
+      parent_type::ket_.member(1, 0).zero())
     return true;
   else
     return false;
 }
-};
+
+template <>
+inline bool GenIntegralSet_11_11<CGShell, R12kG12, mType>::auto_unroll() const {
+  if (parent_type::bra_.member(0, 0).zero() &&
+      parent_type::bra_.member(1, 0).zero() &&
+      parent_type::ket_.member(0, 0).zero() &&
+      parent_type::ket_.member(1, 0).zero())
+    return true;
+  else
+    return false;
+}
+};  // namespace libint2
 
 #endif
-

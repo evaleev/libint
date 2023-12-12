@@ -26,43 +26,39 @@
 
 namespace libint2 {
 
-  /// (s|V|s) (V=electrostatic potential operator) shell quartet is not precomputed, but the integral is
-  template <>
-  inline bool
-  GenIntegralSet_1_1<CGF,ElecPotOper,mType>::this_precomputed() const
-  {
-    /// uncontracted (s|s) are precomputed
-    if (parent_type::bra_.member(0,0).zero() &&
-        parent_type::ket_.member(0,0).zero() &&
-        !parent_type::bra_.member(0,0).contracted() &&
-        !parent_type::ket_.member(0,0).contracted() &&
-        parent_type::bra_.member(0,0).deriv().zero() &&
-        parent_type::ket_.member(0,0).deriv().zero()
-       )
-      return true;
-    else
-      return false;
-  }
-
-/// always unroll (s|V|s)^(m)
+/// (s|V|s) (V=electrostatic potential operator) shell quartet is not
+/// precomputed, but the integral is
 template <>
-inline bool
-GenIntegralSet_1_1<CGShell,ElecPotOper,mType>::auto_unroll() const
-{
+inline bool GenIntegralSet_1_1<CGF, ElecPotOper, mType>::this_precomputed()
+    const {
   /// uncontracted (s|s) are precomputed
-  if (parent_type::bra_.member(0,0).zero() &&
-      parent_type::ket_.member(0,0).zero() &&
-      !parent_type::bra_.member(0,0).contracted() &&
-      !parent_type::ket_.member(0,0).contracted() &&
-      parent_type::bra_.member(0,0).deriv().zero() &&
-      parent_type::ket_.member(0,0).deriv().zero()
-      )
+  if (parent_type::bra_.member(0, 0).zero() &&
+      parent_type::ket_.member(0, 0).zero() &&
+      !parent_type::bra_.member(0, 0).contracted() &&
+      !parent_type::ket_.member(0, 0).contracted() &&
+      parent_type::bra_.member(0, 0).deriv().zero() &&
+      parent_type::ket_.member(0, 0).deriv().zero())
     return true;
   else
     return false;
 }
 
-};
+/// always unroll (s|V|s)^(m)
+template <>
+inline bool GenIntegralSet_1_1<CGShell, ElecPotOper, mType>::auto_unroll()
+    const {
+  /// uncontracted (s|s) are precomputed
+  if (parent_type::bra_.member(0, 0).zero() &&
+      parent_type::ket_.member(0, 0).zero() &&
+      !parent_type::bra_.member(0, 0).contracted() &&
+      !parent_type::ket_.member(0, 0).contracted() &&
+      parent_type::bra_.member(0, 0).deriv().zero() &&
+      parent_type::ket_.member(0, 0).deriv().zero())
+    return true;
+  else
+    return false;
+}
+
+};  // namespace libint2
 
 #endif
-

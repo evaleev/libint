@@ -36,7 +36,7 @@ struct IsSharedPtrHelper<std::shared_ptr<T>> : std::true_type {};
 
 template <typename T>
 struct IsSharedPtr : IsSharedPtrHelper<typename std::remove_const<
-                       typename std::remove_reference<T>::type>::type> {};
+                         typename std::remove_reference<T>::type>::type> {};
 }  // namespace detail
 }  // namespace libint2
 

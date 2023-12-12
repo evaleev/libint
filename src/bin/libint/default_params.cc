@@ -18,9 +18,10 @@
  *
  */
 
-#include <libint2/config.h>
 #include <default_params.h>
+#include <libint2/config.h>
 #include <task.h>
+
 #include <cassert>
 
 using namespace libint2;
@@ -31,37 +32,34 @@ const std::string CompilationParameters::Defaults::api_prefix("");
 const std::string CompilationParameters::Defaults::realtype("double");
 const std::string CompilationParameters::Defaults::task_name("default");
 
-CompilationParameters::CompilationParameters() :
-  default_task_name_(Defaults::task_name),
-  max_vector_length_(Defaults::max_vector_length),
-  vectorize_by_line_(Defaults::vectorize_by_line),
-  align_size_(Defaults::align_size), unroll_threshold_(Defaults::unroll_threshold),
-  source_directory_(Defaults::source_directory), api_prefix_(Defaults::api_prefix),
-  single_evaltype_(Defaults::single_evaltype),
-  use_C_linking_(Defaults::use_C_linking),
-  count_flops_(Defaults::count_flops),
-  profile_(Defaults::profile),
-  accumulate_targets_(Defaults::accumulate_targets),
-  realtype_(Defaults::realtype),
-  contracted_targets_(Defaults::contracted_targets)
-{
+CompilationParameters::CompilationParameters()
+    : default_task_name_(Defaults::task_name),
+      max_vector_length_(Defaults::max_vector_length),
+      vectorize_by_line_(Defaults::vectorize_by_line),
+      align_size_(Defaults::align_size),
+      unroll_threshold_(Defaults::unroll_threshold),
+      source_directory_(Defaults::source_directory),
+      api_prefix_(Defaults::api_prefix),
+      single_evaltype_(Defaults::single_evaltype),
+      use_C_linking_(Defaults::use_C_linking),
+      count_flops_(Defaults::count_flops),
+      profile_(Defaults::profile),
+      accumulate_targets_(Defaults::accumulate_targets),
+      realtype_(Defaults::realtype),
+      contracted_targets_(Defaults::contracted_targets) {
   add_task(Defaults::task_name);
 }
 
-CompilationParameters::~CompilationParameters()
-{
-}
+CompilationParameters::~CompilationParameters() {}
 
-void
-CompilationParameters::print(std::ostream& os) const
-{
+void CompilationParameters::print(std::ostream& os) const {
   using namespace std;
   os << "MAX_AM           = " << max_am(default_task_name()) << endl;
   os << "OPT_AM           = " << max_am_opt(default_task_name()) << endl;
 
   typedef LibraryTaskManager::TasksCIter citer;
   const LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  for(citer t=taskmgr.first(); t!= taskmgr.plast(); ++t) {
+  for (citer t = taskmgr.first(); t != taskmgr.plast(); ++t) {
     const std::string& tlabel = t->label();
     os << "Task " << tlabel << ":" << endl;
     os << "  MAX_AM         = " << max_am(tlabel) << endl;
@@ -71,24 +69,25 @@ CompilationParameters::print(std::ostream& os) const
 
   os << "MAX_VECTOR_LENGTH    = " << max_vector_length() << endl;
   if (max_vector_length() > 1)
-    os << "VECTORIZE_BY_LINE    = " << (vectorize_by_line() ? "true" : "false") << endl;
-  if (align_size() > 0)
-    os << "ALIGN_SIZE           = " << align_size() << endl;
+    os << "VECTORIZE_BY_LINE    = " << (vectorize_by_line() ? "true" : "false")
+       << endl;
+  if (align_size() > 0) os << "ALIGN_SIZE           = " << align_size() << endl;
   os << "UNROLL_THRESH        = " << unroll_threshold() << endl;
   os << "SOURCE_DIRECTORY     = " << source_directory() << endl;
   os << "API_PREFIX           = " << api_prefix() << endl;
-  os << "USE_C_LINKING        = " << (use_C_linking() ? "true" : "false") << endl;
+  os << "USE_C_LINKING        = " << (use_C_linking() ? "true" : "false")
+     << endl;
   os << "COUNT_FLOPS          = " << (count_flops() ? "true" : "false") << endl;
   os << "PROFILE              = " << (profile() ? "true" : "false") << endl;
-  os << "ACCUMULATE_TARGETS   = " << (accumulate_targets() ? "true" : "false") << endl;
+  os << "ACCUMULATE_TARGETS   = " << (accumulate_targets() ? "true" : "false")
+     << endl;
   os << "REALTYPE             = " << (realtype()) << endl;
-  os << "CONTRACTED_TARGETS   = " << (contracted_targets() ? "true" : "false") << endl;
+  os << "CONTRACTED_TARGETS   = " << (contracted_targets() ? "true" : "false")
+     << endl;
   os << endl;
 }
 
-void
-CompilationParameters::task_exists(const std::string& t) const
-{
+void CompilationParameters::task_exists(const std::string& t) const {
   if (t != default_task_name()) {
     const LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
     // Will throw if task manager doesn't know anything about this task
@@ -96,27 +95,24 @@ CompilationParameters::task_exists(const std::string& t) const
   }
 }
 
-unsigned int
-CompilationParameters::max_am(std::string t, unsigned int c) const
-{
+unsigned int CompilationParameters::max_am(std::string t,
+                                           unsigned int c) const {
   if (t.empty()) t = default_task_name();
   task_exists(t);
 
-  typedef std::map<std::string,TaskParameters>::const_iterator citer;
+  typedef std::map<std::string, TaskParameters>::const_iterator citer;
   citer ti = task_params_.find(t);
-  auto max_am = (ti != task_params_.end()) ?
-      ti->second.max_am :
-      task_params_.find(default_task_name())->second.max_am;
+  auto max_am = (ti != task_params_.end())
+                    ? ti->second.max_am
+                    : task_params_.find(default_task_name())->second.max_am;
   return (c < max_am.size()) ? max_am[c] : max_am[0];
 }
 
-unsigned int
-CompilationParameters::max_am_opt(std::string t) const
-{
+unsigned int CompilationParameters::max_am_opt(std::string t) const {
   if (t.empty()) t = default_task_name();
   task_exists(t);
 
-  typedef std::map<std::string,TaskParameters>::const_iterator citer;
+  typedef std::map<std::string, TaskParameters>::const_iterator citer;
   citer ti = task_params_.find(t);
   if (ti != task_params_.end())
     return ti->second.max_am_opt;
@@ -124,13 +120,11 @@ CompilationParameters::max_am_opt(std::string t) const
     return task_params_.find(default_task_name())->second.max_am_opt;
 }
 
-unsigned int
-CompilationParameters::num_bf(std::string t) const
-{
+unsigned int CompilationParameters::num_bf(std::string t) const {
   if (t.empty()) t = default_task_name();
   task_exists(t);
 
-  typedef std::map<std::string,TaskParameters>::const_iterator citer;
+  typedef std::map<std::string, TaskParameters>::const_iterator citer;
   citer ti = task_params_.find(t);
   if (ti != task_params_.end())
     return ti->second.num_bf;
@@ -138,83 +132,77 @@ CompilationParameters::num_bf(std::string t) const
     return task_params_.find(default_task_name())->second.num_bf;
 }
 
-void
-CompilationParameters::add_task(const std::string& t)
-{
+void CompilationParameters::add_task(const std::string& t) {
   TaskParameters tp;
   // copy defaults from the default task
   if (t != default_task_name()) {
     assert(task_params_.find(default_task_name()) != task_params_.end());
-    tp = TaskParameters( task_params_.find(default_task_name())->second );
+    tp = TaskParameters(task_params_.find(default_task_name())->second);
   }
-  task_params_.insert(std::make_pair(t,tp));
+  task_params_.insert(std::make_pair(t, tp));
 }
 
-void
-CompilationParameters::max_am(const std::string& t, unsigned int ma, unsigned int c)
-{
+void CompilationParameters::max_am(const std::string& t, unsigned int ma,
+                                   unsigned int c) {
   task_exists(t);
 
-  typedef std::map<std::string,TaskParameters>::iterator iter;
+  typedef std::map<std::string, TaskParameters>::iterator iter;
   iter ti = task_params_.find(t);
   if (ti != task_params_.end()) {
-    if (ti->second.max_am.size() <= c)
-      ti->second.max_am.resize(c+1);
+    if (ti->second.max_am.size() <= c) ti->second.max_am.resize(c + 1);
     ti->second.max_am[c] = ma;
-  }
-  else {
+  } else {
     add_task(t);
-    max_am(t,ma,c);
+    max_am(t, ma, c);
   }
-  std::cout << "CompilationParameters::max_am: task=" << t << " max_am=" << ma << " center=" << c << std::endl;
+  std::cout << "CompilationParameters::max_am: task=" << t << " max_am=" << ma
+            << " center=" << c << std::endl;
 }
 
-void
-CompilationParameters::max_am_opt(const std::string& t, unsigned int v)
-{
+void CompilationParameters::max_am_opt(const std::string& t, unsigned int v) {
   task_exists(t);
 
-  typedef std::map<std::string,TaskParameters>::iterator iter;
+  typedef std::map<std::string, TaskParameters>::iterator iter;
   iter ti = task_params_.find(t);
   if (ti != task_params_.end())
     ti->second.max_am_opt = v;
   else {
     add_task(t);
-    max_am_opt(t,v);
+    max_am_opt(t, v);
   }
-  std::cout << "CompilationParameters::max_am_opt: task=" << t << " max_am_opt=" << v << std::endl;
+  std::cout << "CompilationParameters::max_am_opt: task=" << t
+            << " max_am_opt=" << v << std::endl;
 }
 
-void
-CompilationParameters::num_bf(const std::string& t, unsigned int nbf)
-{
+void CompilationParameters::num_bf(const std::string& t, unsigned int nbf) {
   task_exists(t);
 
-  typedef std::map<std::string,TaskParameters>::iterator iter;
+  typedef std::map<std::string, TaskParameters>::iterator iter;
   iter ti = task_params_.find(t);
   if (ti != task_params_.end())
     ti->second.num_bf = nbf;
   else {
     add_task(t);
-    num_bf(t,nbf);
+    num_bf(t, nbf);
   }
 }
 
 //////////
 
-TaskParameters::TaskParameters() :
-  max_ntarget_(1), max_stack_size_(1, 1), max_vector_stack_size_(1, 0),
-  max_hrr_hsrank_(1, 0), max_hrr_lsrank_(1, 0)
-{
-}
+TaskParameters::TaskParameters()
+    : max_ntarget_(1),
+      max_stack_size_(1, 1),
+      max_vector_stack_size_(1, 0),
+      max_hrr_hsrank_(1, 0),
+      max_hrr_lsrank_(1, 0) {}
 
 //////////
 
-const char libint2::StaticDefinitions::am_letters[StaticDefinitions::num_am_letters+1] = "spdfghiklm";
+const char
+    libint2::StaticDefinitions::am_letters[StaticDefinitions::num_am_letters +
+                                           1] = "spdfghiklm";
 
-std::string
-libint2::label_to_funcname(const std::string& label)
-{
+std::string libint2::label_to_funcname(const std::string& label) {
   // Do not prepend compute as it messes up the API prefix functionality.
 #if 0
   std::string result("compute");
@@ -225,9 +213,7 @@ libint2::label_to_funcname(const std::string& label)
   return result;
 }
 
-bool
-libint2::condense_expr(unsigned int unroll_threshold, bool vectorize)
-{
+bool libint2::condense_expr(unsigned int unroll_threshold, bool vectorize) {
   bool condense_expr = unroll_threshold > 0 && vectorize;
   return condense_expr;
 }

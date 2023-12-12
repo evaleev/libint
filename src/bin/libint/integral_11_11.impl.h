@@ -24,20 +24,15 @@
 namespace libint2 {
 
 template <class BFS, class Oper, class AuxQuanta>
-bool
-GenIntegralSet_11_11<BFS,Oper,AuxQuanta>::this_precomputed() const
-{
+bool GenIntegralSet_11_11<BFS, Oper, AuxQuanta>::this_precomputed() const {
   return false;
 }
 
 template <class BFS, class Oper, class AuxQuanta>
-bool
-GenIntegralSet_11_11<BFS,Oper,AuxQuanta>::auto_unroll() const
-{
+bool GenIntegralSet_11_11<BFS, Oper, AuxQuanta>::auto_unroll() const {
   return false;
 }
 
-};
+};  // namespace libint2
 
 #endif
-

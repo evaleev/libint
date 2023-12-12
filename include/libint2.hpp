@@ -24,4 +24,3 @@
 #include <libint2/cxxapi.h>
 
 #endif /* header guard */
-

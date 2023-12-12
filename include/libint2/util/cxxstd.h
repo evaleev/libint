@@ -22,25 +22,25 @@
 #define _libint2_include_libint2_util_cxxstd_h_
 
 #ifndef __cplusplus
-# error "Libint2 requires a C++ compiler"
+#error "Libint2 requires a C++ compiler"
 #endif
 
 #if __cplusplus >= 201402L
-# define LIBINT2_CPLUSPLUS_STD 2014
+#define LIBINT2_CPLUSPLUS_STD 2014
 #elif __cplusplus >= 201103L
-# define LIBINT2_CPLUSPLUS_STD 2011
+#define LIBINT2_CPLUSPLUS_STD 2011
 #elif __cplusplus >= 199711L
-# define LIBINT2_CPLUSPLUS_STD 1998
+#define LIBINT2_CPLUSPLUS_STD 1998
 #else
-# define LIBINT2_CPLUSPLUS_STD 0 // unknown standard
+#define LIBINT2_CPLUSPLUS_STD 0  // unknown standard
 #endif
 
 // workaround: standard Intel compiler (not INDE) is not standard conforming
-#if defined(__INTEL_COMPILER) && LIBINT2_CPLUSPLUS_STD==0
-# ifdef __INTEL_CXX11_MODE__
-#  undef LIBINT2_CPLUSPLUS_STD
-#  define LIBINT2_CPLUSPLUS_STD 2011
-# endif
+#if defined(__INTEL_COMPILER) && LIBINT2_CPLUSPLUS_STD == 0
+#ifdef __INTEL_CXX11_MODE__
+#undef LIBINT2_CPLUSPLUS_STD
+#define LIBINT2_CPLUSPLUS_STD 2011
+#endif
 #endif
 
 #endif /* header guard */
