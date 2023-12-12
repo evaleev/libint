@@ -543,7 +543,13 @@ namespace libint2 {
               iss >> amlabel >> nprim >> rest;
               if (amlabel != "SP" && amlabel != "sp") {
                 assert(amlabel.size() == 1);
-                auto l = Shell::am_symbol_to_l(amlabel[0]);
+                // Gaussian labels L=6,7,8,9... AOs as I,J,K,L... instead of I,K,L,M..., see https://github.com/MolSSI-BSE/basis_set_exchange/issues/292
+                // workaround
+                const auto amlabel0_is_J = amlabel[0] == 'j' || amlabel[0] == 'J';
+                auto l = (amlabel0_is_J) ? 7 : Shell::am_symbol_to_l(amlabel[0]);
+                if (l >= 7 && !amlabel0_is_J) {  // Gaussian's 'K' means 'L', 'L' means 'M', etc.
+                  l++;
+                }
                 svector<double> exps;
                 svector<double> coeffs;
                 for (decltype(nprim) p = 0; p != nprim; ++p) {

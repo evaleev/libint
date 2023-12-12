@@ -110,7 +110,6 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "bra-ket permutation", "[engine]
   });
 
   auto obs = BasisSet(std::move(shells));
-  const auto& shell2bf = obs.shell2bf();
 
   auto engine =
       Engine(libint2::Operator::coulomb, libint2::max_nprim(obs),
@@ -125,18 +124,12 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "bra-ket permutation", "[engine]
   const auto &buf_kb = engine_kb.results();
 
   for (auto s1 = 0; s1 != obs.size(); ++s1) {
-    const auto bf1_first = shell2bf[s1]; // first basis function in this shell
     auto n1 = obs[s1].size();            // number of basis functions in shell 1
     for (auto s2 = 0; s2 != obs.size(); ++s2) {
-      const auto bf2_first = shell2bf[s2]; // first basis function in this shell
       auto n2 = obs[s2].size(); // number of basis functions in shell 2
       for (auto s3 = 0; s3 != obs.size(); ++s3) {
-        const auto bf3_first =
-            shell2bf[s3];         // first basis function in this shell
         auto n3 = obs[s3].size(); // number of basis functions in shell 3
         for (auto s4 = 0; s4 != obs.size(); ++s4) {
-          const auto bf4_first =
-              shell2bf[s4];         // first basis function in this shell
           auto n4 = obs[s4].size(); // number of basis functions in shell 4
           engine.compute2<Operator::coulomb, libint2::BraKet::xx_xx, 0>(
               obs[s1], obs[s2], obs[s3], obs[s4]);
@@ -145,13 +138,9 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "bra-ket permutation", "[engine]
               obs[s3], obs[s4], obs[s1], obs[s2]);
           const auto *buf_3412 = buf_kb[0];
           for (auto f1 = 0ul, f1234 = 0ul; f1 != n1; ++f1) {
-            const auto bf1 = f1 + bf1_first;
             for (auto f2 = 0ul; f2 != n2; ++f2) {
-              const auto bf2 = f2 + bf2_first;
               for (auto f3 = 0ul; f3 != n3; ++f3) {
-                const auto bf3 = f3 + bf3_first;
                 for (auto f4 = 0ul; f4 != n4; ++f4, ++f1234) {
-                  const auto bf4 = f4 + bf4_first;
                   const auto integral = buf_1234[f1234];
                   const auto f3412 = ((f3 * n4 + f4)*n1 + f1)*n2 + f2;
                   const auto integral_kb = buf_3412[f3412];

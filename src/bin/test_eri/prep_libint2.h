@@ -188,29 +188,28 @@ void prep_libint2(LibintEval* erievals,
             const double PQz = Pz - Qz;
             const double PQ2 = PQx * PQx + PQy * PQy + PQz * PQz;
 
-            const double QCx = Qx - C[0];
-            const double QCy = Qy - C[1];
-            const double QCz = Qz - C[2];
-            const double QDx = Qx - D[0];
-            const double QDy = Qy - D[1];
-            const double QDz = Qz - D[2];
-
 #if LIBINT2_DEFINED(eri,QC_x)
+            const double QCx = Qx - C[0];
             erieval->QC_x[v] = QCx;
 #endif
 #if LIBINT2_DEFINED(eri,QC_y)
+            const double QCy = Qy - C[1];
             erieval->QC_y[v] = QCy;
 #endif
 #if LIBINT2_DEFINED(eri,QC_z)
+            const double QCz = Qz - C[2];
             erieval->QC_z[v] = QCz;
 #endif
 #if LIBINT2_DEFINED(eri,QD_x)
+            const double QDx = Qx - D[0];
             erieval->QD_x[v] = QDx;
 #endif
 #if LIBINT2_DEFINED(eri,QD_y)
+            const double QDy = Qy - D[1];
             erieval->QD_y[v] = QDy;
 #endif
 #if LIBINT2_DEFINED(eri,QD_z)
+            const double QDz = Qz - D[2];
             erieval->QD_z[v] = QDz;
 #endif
 
@@ -506,33 +505,33 @@ void prep_libint2(LibintEval* erievals,
             const double Qx = (alpha2 * C[0] + alpha3 * D[0]) * oogammaq;
             const double Qy = (alpha2 * C[1] + alpha3 * D[1]) * oogammaq;
             const double Qz = (alpha2 * C[2] + alpha3 * D[2]) * oogammaq;
-            const double QCx = Qx - C[0];
-            const double QCy = Qy - C[1];
-            const double QCz = Qz - C[2];
-            const double QDx = Qx - D[0];
-            const double QDy = Qy - D[1];
-            const double QDz = Qz - D[2];
             const double CD_x = C[0] - D[0];
             const double CD_y = C[1] - D[1];
             const double CD_z = C[2] - D[2];
             const double CD2 = CD_x * CD_x + CD_y * CD_y + CD_z * CD_z;
 
 #if LIBINT2_DEFINED(eri,QC_x)
+            const double QCx = Qx - C[0];
             erieval->QC_x[v] = QCx;
 #endif
 #if LIBINT2_DEFINED(eri,QC_y)
+            const double QCy = Qy - C[1];
             erieval->QC_y[v] = QCy;
 #endif
 #if LIBINT2_DEFINED(eri,QC_z)
+            const double QCz = Qz - C[2];
             erieval->QC_z[v] = QCz;
 #endif
 #if LIBINT2_DEFINED(eri,QD_x)
+            const double QDx = Qx - D[0];
             erieval->QD_x[v] = QDx;
 #endif
 #if LIBINT2_DEFINED(eri,QD_y)
+            const double QDy = Qy - D[1];
             erieval->QD_y[v] = QDy;
 #endif
 #if LIBINT2_DEFINED(eri,QD_z)
+            const double QDz = Qz - D[2];
             erieval->QD_z[v] = QDz;
 #endif
 
@@ -871,33 +870,33 @@ void prep_libint2(LibintEval* erievals,
             const double Qx = (alpha2 * C[0] + alpha3 * D[0]) * oogammaq;
             const double Qy = (alpha2 * C[1] + alpha3 * D[1]) * oogammaq;
             const double Qz = (alpha2 * C[2] + alpha3 * D[2]) * oogammaq;
-            const double QCx = Qx - C[0];
-            const double QCy = Qy - C[1];
-            const double QCz = Qz - C[2];
-            const double QDx = Qx - D[0];
-            const double QDy = Qy - D[1];
-            const double QDz = Qz - D[2];
             const double CD_x = C[0] - D[0];
             const double CD_y = C[1] - D[1];
             const double CD_z = C[2] - D[2];
             const double CD2 = CD_x * CD_x + CD_y * CD_y + CD_z * CD_z;
 
 #if LIBINT2_DEFINED(eri,QC_x)
+            const double QCx = Qx - C[0];
             erieval->QC_x[v] = QCx;
 #endif
 #if LIBINT2_DEFINED(eri,QC_y)
+            const double QCy = Qy - C[1];
             erieval->QC_y[v] = QCy;
 #endif
 #if LIBINT2_DEFINED(eri,QC_z)
+            const double QCz = Qz - C[2];
             erieval->QC_z[v] = QCz;
 #endif
 #if LIBINT2_DEFINED(eri,QD_x)
+            const double QDx = Qx - D[0];
             erieval->QD_x[v] = QDx;
 #endif
 #if LIBINT2_DEFINED(eri,QD_y)
+            const double QDy = Qy - D[1];
             erieval->QD_y[v] = QDy;
 #endif
 #if LIBINT2_DEFINED(eri,QD_z)
+            const double QDz = Qz - D[2];
             erieval->QD_z[v] = QDz;
 #endif
 

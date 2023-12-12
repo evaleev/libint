@@ -142,6 +142,7 @@ TEST_CASE("2-body integrals precision", "[2-body][precision]") {
 
           auto max_engine_screening_error = 0.;
           bool engine_precision_too_low = false;
+          (void)engine_precision_too_low;
           const auto max_allowed_exceening_error_factor = 2;
           for (auto f = 0; f != nf; ++f) {
             auto &ref_v = ref_ints[0][f];

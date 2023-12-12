@@ -153,7 +153,7 @@ void validate4(const BasisSet& obs, const std::vector<Atom>& atoms) {
 
               auto permute_deriv = [&](const int d) {
                 assert(ncenters == 4);
-                int dd;
+                int dd = -1;
                 const auto xyz = d % 3;
                 const auto atom = d / 3;
                 int a[4] = {0, 0, 0, 0};

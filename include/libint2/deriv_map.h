@@ -168,7 +168,7 @@ namespace libint2 {
           vector<size_t> swap_bra_perm;
           vector<size_t> swap_ket_perm;
           vector<vector<size_t>> swap_combos;
-          size_t ncenters;
+          size_t ncenters = 0;
           switch(braket_) {
             case BraKet::xx_xx: {
               swap_braket_perm = {6,7,8,9,10,11,0,1,2,3,4,5};

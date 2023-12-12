@@ -42,7 +42,6 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential",
       {
         const auto l0 = obs[0].contr[0].l;
         const auto l1 = obs[0].contr[0].l;
-        const auto n0 = 2 * l0 + 1;
         const auto n1 = 2 * l1 + 1;
 
         // this is laid out in standard solids order
@@ -69,7 +68,6 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "electrostatic potential",
       {
         const auto l0 = obs[0].contr[0].l;
         const auto l1 = obs[1].contr[0].l;
-        const auto n0 = 2 * l0 + 1;
         const auto n1 = 2 * l1 + 1;
 
         // this is laid out in standard solids order
@@ -116,7 +114,6 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "erf correctness",
 
   constexpr int l0 = 2;
   constexpr int l1 = 2;
-  constexpr int n0 = 2 * l0 + 1;
   constexpr int n1 = 2 * l1 + 1;
   std::vector<Shell> obs{
       Shell{{1.0, 3.0}, {{l0, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
@@ -158,7 +155,6 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "W correctness",
 
   constexpr int l0 = 2;
   constexpr int l1 = 2;
-  constexpr int n0 = 2 * l0 + 1;
   constexpr int n1 = 2 * l1 + 1;
   std::vector<Shell> obs{
       Shell{{1.0, 3.0}, {{l0, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
