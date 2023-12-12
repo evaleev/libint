@@ -318,7 +318,6 @@ void test_cgshell_iter(const CGShell& sh) {
 
 void test2() {
   CGShell::set_contracted_default_value(true);
-  const bool contracted_targets_old_value = cparams->contracted_targets();
   cparams->contracted_targets(true);
   CGShell csh_s(0u);
   CGShell csh_p(1u);

@@ -22,6 +22,7 @@
 #define INCLUDE_LIBINT2_CHEMISTRY_STO3GATOMICDENSITY_H_
 
 #include <algorithm>
+#include <stdexcept>
 #include <vector>
 
 namespace libint2 {
