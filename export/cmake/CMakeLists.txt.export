@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 3.8) # introduced C++ standards as features
+cmake_minimum_required(VERSION 3.16)  # 3.16: unity build
+                                      # 3.15: new Python detection
+                                      # 3.8: introduced C++ standards as features
+cmake_policy(SET CMP0079 NEW)
 
 project(Libint LANGUAGES CXX C)
 
@@ -13,6 +16,7 @@ if (LIBINT_BUILDID)
 else(LIBINT_BUILDID)
     set(LIBINT_EXT_VERSION ${LIBINT_VERSION})
 endif(LIBINT_BUILDID)
+set(MAX_AM_ERI "")  # patch here in export tarball w/highest 4-center, 0-deriv ERI AM in numbers
 
 # Add module directory and modules =====================================================================================
 
@@ -25,6 +29,10 @@ include(FeatureSummary)
 include(RedefaultableOption)
 include(CMakePushCheckState)
 include(AddCustomTargetSubproject)
+
+include(GNUInstallDirs)
+set(L2 Libint2)  # Namespace
+set(pnv libint2) # projectnameversion
 
 # Options ==============================================================================================================
 
@@ -47,6 +55,7 @@ endif(ENABLE_FORTRAN)
 # these are known orderings, must match config.h
 set(LIBINT_SHGSHELL_ORDERING_STANDARD 1)
 set(LIBINT_SHGSHELL_ORDERING_GAUSSIAN 2)
+# August 2023: the following variable has an effect on `INT_SOLIDHARMINDEX(l, m)` but otherwise the choice can be deferred to runtime.
 set(LIBINT2_SHGAUSS_ORDERING "standard" CACHE STRING "Use one of the following known orderings for shells of solid harmonic Gaussians:
   standard -- standard ordering (-l, -l+1 ... l)
   gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
@@ -112,28 +121,28 @@ if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
 endif()
 
 if (NOT LIBINT_USE_BUNDLED_BOOST)
-    if (NOT TARGET Boost::boost)
-        find_package(Boost 1.29)
-    endif()
-    if (TARGET Boost::boost)
-        cmake_push_check_state()
+  if (NOT TARGET Boost::boost)
+    find_package(Boost 1.29)
+  endif()
+  if (TARGET Boost::boost)
+    cmake_push_check_state()
 
-        list(APPEND CMAKE_REQUIRED_FLAGS "-std=c++11")
-        list(APPEND CMAKE_REQUIRED_LIBRARIES Boost::boost)
+    list(APPEND CMAKE_REQUIRED_FLAGS "-std=c++11")
+    list(APPEND CMAKE_REQUIRED_LIBRARIES Boost::boost)
 
-        check_cxx_source_compiles("
+    check_cxx_source_compiles("
             #include <boost/preprocessor.hpp>
             #if not BOOST_PP_VARIADICS  // no variadic macros? your compiler is out of date! (should not be possible since variadic macros are part of C++11)
             #  error \"your compiler does not provide variadic macros (but does support C++11), something is seriously broken, please create an issue at https://github.com/evaleev/libint/issues\"
             #endif
             int main() { return 0;}
             "
-            LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+                LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
 
-        cmake_pop_check_state()
-    else()
-        set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 0)
-    endif()
+    cmake_pop_check_state()
+  else()
+    set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 0)
+  endif()
 endif()
 
 # if usable Boost.Preprocessor not found install the bundled version
@@ -151,11 +160,15 @@ if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS OR LIBINT_USE_BUNDLED_BOO
     endif()
 endif()
 
-# Python is optional, unless ...
-if (ENABLE_FORTRAN OR LIBINT2_PYTHON)  # ... need fortran
-    find_package(PythonInterp REQUIRED)
+# Python is optionally used for testing.
+# * But for Fortran, it's additionally required for preprocessing.
+# * And for Python bindings, it's required along with its headers.
+if (LIBINT2_PYTHON)
+    find_package(Python COMPONENTS Interpreter Development REQUIRED)
+elseif (ENABLE_FORTRAN)
+    find_package(Python COMPONENTS Interpreter REQUIRED)
 else()
-    find_package(PythonInterp)
+    find_package(Python COMPONENTS Interpreter)
 endif()
 
 # Set install paths ====================================================================================================
@@ -175,18 +188,37 @@ set(LIBINT2_INSTALL_CMAKEDIR "lib/cmake/libint2"
 
 # Libint library =======================================================================================================
 
-include(srclist.cmake)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/srclist.cmake" LIBINT2_LIBRARY_CXX_SRC ENCODING UTF-8)
 set(LIB_CXX_SRC )
 foreach(FN IN LISTS LIBINT2_LIBRARY_CXX_SRC)
-    list(APPEND LIB_CXX_SRC "src/${FN}")
+    set(srcfile "${CMAKE_CURRENT_SOURCE_DIR}/src/${FN}")
+    if (MSVC)
+         string(REGEX REPLACE "[a-zA-Z0-9_.]" "" NONASCII_FN "${FN}")
+         if (NONASCII_FN)
+             message(WARNING "Non-ASCII characters in filename ${FN}")
+             string(MAKE_C_IDENTIFIER "${FN}" C_FN)
+             if (FN STREQUAL C_FN)
+                 message(FATAL_ERROR "Non-ASCII characters in filename ${FN} but C identifier is the same")
+             endif()
+             file(CREATE_LINK "${CMAKE_CURRENT_SOURCE_DIR}/src/${FN}" "${CMAKE_CURRENT_SOURCE_DIR}/src/${C_FN}" SYMBOLIC)
+             message(WARNING "Created symbolic link ${CMAKE_CURRENT_SOURCE_DIR}/src/${C_FN} -> ${CMAKE_CURRENT_SOURCE_DIR}/src/${FN}")
+             set(srcfile "${CMAKE_CURRENT_SOURCE_DIR}/src/${C_FN}")
+         endif()
+    endif(MSVC)
+    list(APPEND LIB_CXX_SRC "${srcfile}")
 endforeach()
 # Create object files to use for static and shared libraries
-add_library(libint2_obj OBJECT ${LIB_CXX_SRC})
+add_library(libint2_obj OBJECT ${LIB_CXX_SRC} "src/configuration.cc")
 target_include_directories(libint2_obj PRIVATE include ${PROJECT_BINARY_DIR}/include)
 # Compile static library with position independent code
 
 target_compile_definitions(libint2_obj PRIVATE __COMPILING_LIBINT2)
 target_compile_features(libint2_obj PUBLIC "cxx_std_11")
+set_target_properties(
+  libint2_obj
+  PROPERTIES
+    UNITY_BUILD FALSE
+  )
 if (TARGET MPFR::GMPXX)
   target_link_libraries(libint2_obj PUBLIC MPFR::GMPXX)
 endif()
@@ -198,12 +230,29 @@ if(BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS OR LIBINT2_PYTHON)
   set_target_properties(libint2_obj PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
+if (MSVC)
+    set_target_properties(
+      libint2_obj
+      PROPERTIES
+        # Increase stack size from 1 MB to 4 MB
+        LINK_FLAGS "/STACK:4194304"
+      )
+endif()
+
 # shared and static libraries built from the same object files
 if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
   add_library(libint2 SHARED $<TARGET_OBJECTS:libint2_obj>)
   set_target_properties(libint2 PROPERTIES LIBRARY_OUTPUT_NAME int2)
+  if(MSVC)
+    target_compile_definitions(libint2 PUBLIC _USE_MATH_DEFINES)
+    target_compile_options(libint2 PUBLIC "/EHsc")
+  endif()
   add_library(libint2-static STATIC $<TARGET_OBJECTS:libint2_obj>)
   set_target_properties(libint2-static PROPERTIES ARCHIVE_OUTPUT_NAME int2)
+  if(MSVC)
+    target_compile_definitions(libint2-static PUBLIC _USE_MATH_DEFINES)
+    target_compile_options(libint2-static PUBLIC "/EHsc")
+  endif()
   target_include_directories(libint2-static INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
@@ -258,10 +307,18 @@ else()
 endif()
 
 # install basis set library
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/lib/basis
+if(MSVC)
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/lib/basis
+        COMPONENT libint2
+        DESTINATION "${LIBINT2_INSTALL_DATADIR}"
+        FILES_MATCHING REGEX "[A-Za-z0-9_\\(\\)-]+\.g94"
+        )
+else()
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/lib/basis
         COMPONENT libint2
         DESTINATION "${LIBINT2_INSTALL_DATADIR}"
         )
+endif()
 
 # LibintCXX library ====================================================================================================
 
@@ -272,10 +329,40 @@ if (LIBINT_HAS_CXX_API)
   if (LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
       target_link_libraries(libint2_cxx INTERFACE Boost::boost)
   endif(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
+    if(MSVC)
+        # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
+        # _CRT_* to squash some getenv, strdup, strncpy, ctime, fopen warnings
+        target_compile_definitions(
+          libint2_cxx
+          INTERFACE
+            _USE_MATH_DEFINES
+            _CRT_NONSTDC_NO_DEPRECATE
+            _CRT_NONSTDC_NO_WARNINGS
+            _CRT_SECURE_NO_WARNINGS
+          )
+        # Set the exception handling model
+        target_compile_options(
+          libint2_cxx
+          INTERFACE
+            "/EHsc"
+          )
+    endif()
   get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_DATADIR}" ABSOLUTE)
   target_compile_definitions(libint2_cxx INTERFACE
           $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
-          $<INSTALL_INTERFACE:DATADIR="${DATADIR_ABSOLUTE}">)
+    )
+  if (NOT MSVC)
+      # TODO fix the DATADIR define escaping on Windows
+      # * below works fine in tests
+      # * but fails in Psi4 compile
+      # * prefix replacement in conda used instead on Windows
+      # * LIBINT2_INSTALL_DATADIR -> LIBINT2_INSTALL_BASISDIR
+      target_compile_definitions(
+        libint2_cxx
+        INTERFACE
+          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_DATADIR}">
+        )
+  endif()
   # Add library to the list of installed components
   install(TARGETS libint2_cxx EXPORT libint2
           COMPONENT cxx
@@ -296,6 +383,11 @@ add_custom_target_subproject(libint2 check USES_TERMINAL COMMAND ${CMAKE_CTEST_C
 add_executable(eritest-libint2 EXCLUDE_FROM_ALL tests/eri/test.cc)
 target_link_libraries(eritest-libint2 ${int2_library})
 target_include_directories(eritest-libint2 PRIVATE ${PROJECT_SOURCE_DIR}/tests/eri)
+if(MSVC)
+    # TODO on future target pass, def should be added to the L2 target, not added to test
+    target_compile_definitions(eritest-libint2 PUBLIC _USE_MATH_DEFINES)
+    target_compile_options(eritest-libint2 PUBLIC "/EHsc")
+endif()
 
 add_test(libint2/eritest/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target eritest-libint2)
 set_tests_properties(libint2/eritest/build PROPERTIES FIXTURES_SETUP LIBINT2_ERITEST_EXEC)
@@ -346,19 +438,23 @@ if (LIBINT_HAS_CXX_API)
              COMMAND $<TARGET_FILE:unit_tests-libint2>)
     set_tests_properties(libint2/unit/run
                          PROPERTIES FIXTURES_REQUIRED LIBINT2_UNIT_TESTS_EXEC)
+    add_test(NAME libint2/unit/sho=gaussian/run
+             COMMAND $<TARGET_FILE:unit_tests-libint2> --shgshell-order=gaussian)
+    set_tests_properties(libint2/unit/sho=gaussian/run
+                         PROPERTIES FIXTURES_REQUIRED LIBINT2_UNIT_TESTS_EXEC)
 
     add_executable(hf-libint2 EXCLUDE_FROM_ALL tests/hartree-fock/hartree-fock.cc)
     target_link_libraries(hf-libint2 libint2_cxx)
     add_test(libint2/hf/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf-libint2)
     set_tests_properties(libint2/hf/build PROPERTIES FIXTURES_SETUP LIBINT2_HFTEST_EXEC)
-    if (PYTHONINTERP_FOUND)
+    if (Python_Interpreter_FOUND)
         add_test(NAME libint2/hf/run
                  COMMAND ${CMAKE_COMMAND}
                  -DtestName=hf-libint2
                  -DfileName=hartree-fock
                  -DtestArgs=${PROJECT_SOURCE_DIR}/tests/hartree-fock/h2o.xyz
                  -DsrcDir=${PROJECT_SOURCE_DIR}
-                 -DpythonExec=${PYTHON_EXECUTABLE}
+                 -DpythonExec=${Python_EXECUTABLE}
                  -P ${PROJECT_SOURCE_DIR}/cmake/hftest.cmake)
     else()
         add_test(NAME libint2/hf/run
@@ -372,14 +468,14 @@ if (LIBINT_HAS_CXX_API)
     target_link_libraries(hf++-libint2 libint2_cxx Threads::Threads)
     add_test(libint2/hf++/build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target hf++-libint2)
     set_tests_properties(libint2/hf++/build PROPERTIES FIXTURES_SETUP LIBINT2_HFXXTEST_EXEC)
-    if (PYTHONINTERP_FOUND)
+    if (Python_Interpreter_FOUND)
         add_test(NAME libint2/hf++/run
                  COMMAND ${CMAKE_COMMAND}
                  -DtestName=hf++-libint2
                  -DfileName=hartree-fock++
                  -DtestArgs=${PROJECT_SOURCE_DIR}/tests/hartree-fock/h2o_rotated.xyz
                  -DsrcDir=${PROJECT_SOURCE_DIR}
-                 -DpythonExec=${PYTHON_EXECUTABLE}
+                 -DpythonExec=${Python_EXECUTABLE}
                  -P ${PROJECT_SOURCE_DIR}/cmake/hftest.cmake)
     else()
         add_test(NAME libint2/hf++/run
@@ -413,14 +509,14 @@ if (ENABLE_FORTRAN)
 
     # translated Libint_t
     add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/fortran/libint2_types_f.h
-            COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/fortran/c_to_f.py ${CMAKE_BINARY_DIR}/fortran/libint2.h.i ${CMAKE_BINARY_DIR}/fortran/libint2_types_f.h Libint_t
+            COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/fortran/c_to_f.py ${CMAKE_BINARY_DIR}/fortran/libint2.h.i ${CMAKE_BINARY_DIR}/fortran/libint2_types_f.h Libint_t
             DEPENDS ${CMAKE_BINARY_DIR}/fortran/libint2.h.i
             COMMENT "Generating libint2_types_f.h"
             )
 
     # extracted defines from libint2_types.h
     add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/fortran/fortran_incldefs.h
-            COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/fortran/make_defs.py ${PROJECT_SOURCE_DIR}/include/libint2_types.h ${PROJECT_BINARY_DIR}/fortran/fortran_incldefs.h
+            COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/fortran/make_defs.py ${PROJECT_SOURCE_DIR}/include/libint2_types.h ${PROJECT_BINARY_DIR}/fortran/fortran_incldefs.h
             DEPENDS ${PROJECT_SOURCE_DIR}/include/libint2_types.h
             COMMENT "Generating fortran_incldefs.h"
             )
@@ -476,21 +572,31 @@ configure_file(
         @ONLY
 )
 
+# In the future CMake switchover, configuration.h/cc define a string summary of capabilities. @ONLY is maximally deferred in case config2 changes the
+#   summary (as it used to when LIBINT_SHGSHELL_ORDERING was library-config-time selected).
+#   Note that in the future CMake switchover, configuration.cc should be a .cmake.in in the repo. It is not, for the moment, so the libtool build
+#   of the library works and because there's nothing to substitute until CMake knows the build configuration.
+#configure_file(${PROJECT_SOURCE_DIR}/include/libint2/util/configuration.h.cmake.in ${PROJECT_BINARY_DIR}/include/libint2/util/configuration.h @ONLY)
+configure_file(src/configuration.cc.cmake.in ${PROJECT_BINARY_DIR}/src/configuration.cc @ONLY)
+
 configure_file(
         include/libint2/basis.h.in
         ${PROJECT_BINARY_DIR}/include/libint2/basis.h
         @ONLY
 )
 
-configure_file(
-        libint2.pc.in
-        ${PROJECT_BINARY_DIR}/libint2.pc
-        @ONLY
-)
+include(JoinPaths)
+join_paths(libdir_for_pc_file "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
+join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
+configure_file(cmake/libint2.pc.cmake.in libint2.pc @ONLY)
+
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/libint2.pc
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/
+  COMPONENT ${L2}_Development
+  )
 
 # install cmake-processed files
-install(FILES ${PROJECT_BINARY_DIR}/libint2.pc
-        DESTINATION lib/pkgconfig)
 install(FILES ${PROJECT_BINARY_DIR}/include/libint2/config.h
         DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}/libint2")
 install(FILES ${PROJECT_BINARY_DIR}/include/libint2/basis.h

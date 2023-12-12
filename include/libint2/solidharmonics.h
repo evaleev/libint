@@ -171,13 +171,19 @@ namespace libint2 {
           const unsigned short ncart = (l_ + 1) * (l_ + 2) / 2;
           std::vector<Real> full_coeff(npure * ncart);
 
-#if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
-          for(signed char pure_idx=0, m=-l_; pure_idx!=npure; ++pure_idx, ++m) {
-#elif LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_GAUSSIAN
-          for(signed char pure_idx=0, m=0; pure_idx!=npure; ++pure_idx, m=(m>0?-m:1-m)) {
-#else
-#  error "unknown value of macro LIBINT_SHGSHELL_ORDERING"
-#endif
+          std::vector<int> shg_indices;
+          if (libint2::solid_harmonics_ordering() == libint2::SHGShellOrdering_Standard) {
+            for(signed char pure_idx=0, m=-l_; pure_idx!=npure; ++pure_idx, ++m)
+              shg_indices.push_back(m);
+          } else if (libint2::solid_harmonics_ordering() == libint2::SHGShellOrdering_Gaussian) {
+            for(signed char pure_idx=0, m=0; pure_idx!=npure; ++pure_idx, m=(m>0?-m:1-m))
+              shg_indices.push_back(m);
+          } else {
+            throw std::invalid_argument(std::string("libint2::solid_harmonics_ordering() value not recognized."));
+          }
+
+          for(signed char pure_idx=0; pure_idx!=npure; ++pure_idx) {
+            int m = shg_indices[pure_idx];
             signed char cart_idx = 0;
             signed char lx, ly, lz;
             FOR_CART(lx, ly, lz, l_)

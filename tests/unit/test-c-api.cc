@@ -51,6 +51,9 @@ TEST_CASE("C API", "[c-api]") {
   engine.compute(sh1, sh2, sh3, sh4);
   cpp_result = engine.results()[0];
 
+  printf("CMake Configuration (C)  : %s\n", configuration_accessor());
+  printf("CMake Configuration (C++): %s\n", libint2::configuration_accessor().c_str());
+
   unsigned int n1, n2, n3, n4;
   int a, b, c, d, abcd;
   n1 = (am1 + 1) * (am1 + 2)/2;

@@ -288,7 +288,9 @@ int main(int argc, char* argv[]) {
     /*** =========================== ***/
 
     // initializes the Libint integrals library ... now ready to compute
+    libint2::set_solid_harmonics_ordering(libint2::SHGShellOrdering_Gaussian);
     libint2::initialize();
+    printf("Configuration G: sho=%d components=%s\n", libint2::solid_harmonics_ordering(), libint2::configuration_accessor().c_str());
 
     // compute OBS non-negligible shell-pair list
     {

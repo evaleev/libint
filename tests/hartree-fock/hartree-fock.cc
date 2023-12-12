@@ -118,6 +118,7 @@ int main(int argc, char *argv[]) {
 
     // initializes the Libint integrals library ... now ready to compute
     libint2::initialize();
+    printf("Configuration S: sho=%d components=%s\n", libint2::solid_harmonics_ordering(), libint2::configuration_accessor().c_str());
 
     // compute overlap integrals
     auto S = compute_1body_ints(shells, Operator::overlap);
@@ -651,6 +652,9 @@ Matrix compute_2body_fock_simple(const std::vector<libint2::Shell>& shells,
           // exchange contribution to the Fock matrix is from {s1,s3,s2,s4} integrals
           engine.compute(shells[s1], shells[s3], shells[s2], shells[s4]);
           const auto* buf_1324 = buf[0];
+          if (buf_1324 == nullptr)
+            continue; // if all integrals screened out, skip to next quartet
+
 
           for(auto f1=0, f1324=0; f1!=n1; ++f1) {
             const auto bf1 = f1 + bf1_first;

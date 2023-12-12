@@ -8,13 +8,13 @@ TARBALL=boost_${VERSION_}.tar.bz2
 
 #### download
 if ! test -f ${TARBALL}; then
-  BOOST_URL=https://boostorg.jfrog.io/artifactory/main/release/${VERSION}/${TARBALL}
+  BOOST_URL=https://boostorg.jfrog.io/artifactory/main/release/${VERSION}/source/${TARBALL}
   curl -o ${TARBALL} -L ${BOOST_URL} 
 fi
 
 #### unpack
 if ! test -d boost_${VERSION_}; then
-  tar -xvjf ${TARBALL}
+  tar -xjf ${TARBALL}
 fi
 
 #### build bcp
@@ -23,7 +23,7 @@ cd boost_${VERSION_}
 
 #### extract boost/preprocessor.hpp and dependencies
 mkdir tmp
-bin.v2/tools/bcp/darwin-4.2.1/release/link-static/bcp --unix-lines boost/preprocessor.hpp tmp
+bin.v2/tools/bcp/*darwin*/release/link-static/bcp --unix-lines boost/preprocessor.hpp tmp
 
 #### specialize to libint2 by prepending all includes with libint2
 find tmp/boost -type f -print0 | xargs -0 sed -i "" 's/ <boost\// <libint2\/boost\//g'

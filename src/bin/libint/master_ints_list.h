@@ -45,6 +45,8 @@ namespace libint2 {
   typedef GenIntegralSet_1_1<CGF,KineticOper,EmptySet> Kinetic_1_1_int;
   typedef GenIntegralSet_1_1<CGShell,ElecPotOper,mType> ElecPot_1_1_sh;
   typedef GenIntegralSet_1_1<CGF,ElecPotOper,mType> ElecPot_1_1_int;
+  typedef GenIntegralSet_1_1<CGShell,σpVσpOper,EmptySet> σpVσp_1_1_sh;
+  typedef GenIntegralSet_1_1<CGF,σpVσpOper,EmptySet> σpVσp_1_1_int;
   typedef GenIntegralSet_1_1<CGShell,CartesianMultipoleOper<3u>,EmptySet> CMultipole_1_1_sh;
   typedef GenIntegralSet_1_1<CGF,CartesianMultipoleOper<3u>,EmptySet> CMultipole_1_1_int;
   typedef GenIntegralSet_1_1<CGShell,SphericalMultipoleOper,EmptySet> SMultipole_1_1_sh;
@@ -122,6 +124,8 @@ namespace libint2 {
   Kinetic_1_1_int_z,
   ElecPot_1_1_sh,
   ElecPot_1_1_int,
+  σpVσp_1_1_sh,
+  σpVσp_1_1_int,
   CMultipole_1_1_sh,
   CMultipole_1_1_int,
   CMultipole_1_1_sh_x,

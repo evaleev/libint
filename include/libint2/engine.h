@@ -124,10 +124,12 @@ enum class Operator {
   //! multiply these harmonics by \f$ (-1)^m \sqrt{(2 - \delta_{m,0}) (l + |m|)! (l - |m|)!} \f$ .
   //! The operator set includes multipoles of order up to \f$ l_{\rm max} = \f$ MULTIPOLE_MAX_ORDER (for a total of \f$ (l_{\rm max}+1)^2 \f$ operators),
   //! in the order of increasing \c l , with the operators of same \c l but different \c m ordered according to the solid harmonics ordering
-  //! specified at configure time (see macro FOR_SOLIDHARM in shgshell_ordering.h.in). For example, for the CCA standard solid harmonics
-  //! ordering the operators will appear in the following order
+  //! CCA standard (see macro FOR_SOLIDHARM_STANDARD in shgshell_ordering.h.in). For example, the operators will appear in the following order
   //! \f$ \mathcal{N}^+_{0,0} , \mathcal{N}^-_{1,1}, \mathcal{N}^+_{1,0}, \mathcal{N}^+_{1,1}, \mathcal{N}^-_{2,2}, \mathcal{N}^-_{2,1}, \mathcal{N}^+_{2,0}, \mathcal{N}^+_{2,1}, \mathcal{N}^+_{2,2}. \dots \f$ .
+  //! Previous to cdbb9f3 released in v2.8.0, Standard -or- Gaussian ordering could be be specified at generator/compiler configure time.
   sphemultipole,
+  /// The four components of σp . V . σp, where V is the nuclear potential.
+  opVop,
   /// \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   delta,
   /// (2-body) Coulomb operator = \f$ r_{12}^{-1} \f$
@@ -160,7 +162,7 @@ enum class Operator {
   invalid = -1,
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this updated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   first_1body_oper = overlap,
-  last_1body_oper = sphemultipole,
+  last_1body_oper = opVop,
   first_2body_oper = delta,
   last_2body_oper = stg_x_coulomb,
   first_oper = first_1body_oper,
@@ -185,6 +187,9 @@ struct default_operator_traits {
   } oper_params_type;
   static oper_params_type default_params() { return oper_params_type{}; }
   static constexpr auto nopers = 1u;
+  // N.B.: Below field means we *should* template specialize operator_traits for
+  // Operator::kinetic, but L2 doesn't use that anywhere.
+  static constexpr auto intrinsic_deriv_order = 0u;
   struct _core_eval_type {
     template <typename... params>
     static std::shared_ptr<const _core_eval_type> instance(params...) {
@@ -215,6 +220,12 @@ struct operator_traits<Operator::nuclear>
 #else
   typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
 #endif
+};
+template <>
+struct operator_traits<Operator::opVop>
+    : public operator_traits<Operator::nuclear> {
+  static constexpr auto nopers = 4;
+  static constexpr auto intrinsic_deriv_order = 2;
 };
 
 template <>
@@ -993,6 +1004,7 @@ private:
   //-------
   unsigned int nparams() const;
   unsigned int nopers() const;
+  unsigned int intrinsic_deriv_order() const;
   /// if Params == operator_traits<oper>::oper_params_type, will return
   /// \c any(params)
   /// else will set return \c any initialized with default value for

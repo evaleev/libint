@@ -34,10 +34,10 @@ strip_some_preproc_symb:: exportdir
 	-rm $(TOPDIR)/$(EXPORTDIR)/include/libint2/config.h.cmake.tmp
 
 exportdir::
-	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/libint2.pc.in $(TOPDIR)/$(EXPORTDIR)
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/INSTALL.export $(TOPDIR)/$(EXPORTDIR)/INSTALL
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/LICENSE.export $(TOPDIR)/$(EXPORTDIR)/LICENSE
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/README.md $(TOPDIR)/$(EXPORTDIR)/README.md
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/INSTALL.md $(TOPDIR)/$(EXPORTDIR)/INSTALL.md
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/COPYING $(TOPDIR)/$(EXPORTDIR)/COPYING
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/COPYING.LESSER $(TOPDIR)/$(EXPORTDIR)/COPYING.LESSER
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCTOPDIR)/CITATION $(TOPDIR)/$(EXPORTDIR)/CITATION
@@ -98,10 +98,9 @@ exportdir::
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/CMakeLists.txt.include.export $(TOPDIR)/$(EXPORTDIR)/include/CMakeLists.txt
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/cmake
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/libint2-config.cmake.in $(TOPDIR)/$(EXPORTDIR)/cmake/libint2-config.cmake.in
+	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/libint2.pc.cmake.in $(TOPDIR)/$(EXPORTDIR)/cmake/libint2.pc.cmake.in
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/hftest.cmake $(TOPDIR)/$(EXPORTDIR)/cmake/hftest.cmake
 	$(INSTALL) $(INSTALLDIROPT) $(TOPDIR)/$(EXPORTDIR)/cmake/modules
 	-$(INSTALL) $(INSTALLLIBOPT) $(SRCDIR)/cmake/modules/*.cmake $(TOPDIR)/$(EXPORTDIR)/cmake/modules
-	echo "set(LIBINT2_LIBRARY_CXX_SRC" > $(TOPDIR)/$(EXPORTDIR)/srclist.cmake
 	ls $(TOPDIR)/$(EXPORTDIR)/src >> $(TOPDIR)/$(EXPORTDIR)/srclist.cmake
-	echo ")" >> $(TOPDIR)/$(EXPORTDIR)/srclist.cmake
 	cp -Rap $(SRCTOPDIR)/python $(TOPDIR)/$(EXPORTDIR)/

@@ -557,7 +557,7 @@ namespace libint2 {
           return;
       }
 
-      // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89)
+      // if derivative integrals, there will be extra terms (Eq. (143) in Obara & Saika JCP 89 1540 (1988))
       const OriginDerivative<3u> dA = Tint->bra(0,0).deriv();
       const OriginDerivative<3u> dB = Tint->ket(0,0).deriv();
       const bool deriv = !dA.zero() ||

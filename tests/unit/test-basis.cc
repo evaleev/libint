@@ -14,6 +14,7 @@ TEST_CASE("Basis", "[basis]") {
   };
   for(auto&& bs_name : {"3-21g",
                          "6-311g**",
+                         "6-311gss",
                          "6-31g",
                          "6-31g*",
                          "6-31g**",

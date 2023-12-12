@@ -80,14 +80,15 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
         (2emultipole,                \
          (3emultipole,               \
            (sphemultipole,           \
-          (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL)))))))))))))))))))
+            (opVop,                  \
+          (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE)
 #define BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX \
-  8  // sphemultipole, the 9th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
+  9  // opVop, the 10th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
      // 1-body operator
 
 // make list of braket indices for n-body ints
@@ -179,7 +180,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
 
   const auto oper_is_nuclear =
       (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
-       oper_ == Operator::erfc_nuclear);
+       oper_ == Operator::erfc_nuclear || oper_ == Operator::opVop);
 
   const auto l1 = s1.contr[0].l;
   const auto l2 = s2.contr[0].l;
@@ -190,7 +191,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   // user likely forgot to call set_params
   if (oper_is_nuclear && nparams() == 0)
     throw std::logic_error(
-        "Engine<*nuclear>, but no charges found; forgot to call "
+        "Engine requires charges, but no charges found; forgot to call "
         "set_params()?");
 
   const auto n1 = s1.size();
@@ -247,7 +248,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   // element of stack
   const auto compute_directly =
       lmax == 0 && deriv_order_ == 0 &&
-      (oper_ == Operator::overlap || oper_is_nuclear);
+      (oper_ == Operator::overlap || oper_is_nuclear) &&
+      oper_ != Operator::opVop;
   if (compute_directly) {
     primdata_[0].stack[0] = 0;
     targets_[0] = primdata_[0].stack;
@@ -748,6 +750,7 @@ Engine::compute2_ptrs() const {
 __libint2_engine_inline unsigned int Engine::nparams() const {
   switch (oper_) {
     case Operator::nuclear:
+    case Operator::opVop:
       return any_cast<const operator_traits<Operator::nuclear>::oper_params_type&>(params_)
           .size();
     case Operator::erf_nuclear:
@@ -765,6 +768,19 @@ __libint2_engine_inline unsigned int Engine::nopers() const {
   case i:                                           \
     return operator_traits<static_cast<Operator>(i)>::nopers;
     BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR4, _,
+                             BOOST_PP_NBODY_OPERATOR_LIST)
+    default:
+      break;
+  }
+  assert(false && "missing case in switch");  // unreachable
+  abort();
+}
+__libint2_engine_inline unsigned int Engine::intrinsic_deriv_order() const {
+  switch (static_cast<int>(oper_)) {
+#define BOOST_PP_NBODYENGINE_MCR9(r, data, i, elem) \
+  case i:                                           \
+    return operator_traits<static_cast<Operator>(i)>::intrinsic_deriv_order;
+    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR9, _,
                              BOOST_PP_NBODY_OPERATOR_LIST)
     default:
       break;
@@ -825,20 +841,26 @@ __libint2_engine_inline any Engine::enforce_params_type(
   return result;
 }
 
+/// @param[in] oper the Operator for which to return core-evaluator objects
+/// @return a core-integral evaluator and its scratch for @c oper
+/// @throw @c oper not registered in BOOST_PP_NBODY_OPERATOR_LIST
+/// @throw @c oper has no core_eval_type specialization in operator_traits.
 __libint2_engine_inline any Engine::make_core_eval_pack(Operator oper) const {
   any result;
   switch (static_cast<int>(oper)) {
-#define BOOST_PP_NBODYENGINE_MCR6(r, data, i, elem)                          \
-  case i:                                                                    \
-    result = libint2::detail::make_compressed_pair(                          \
-        operator_traits<static_cast<Operator>(i)>::core_eval_type::instance( \
-            braket_rank() * lmax_ + deriv_order_,                            \
-            std::numeric_limits<scalar_type>::epsilon()),                    \
-        libint2::detail::CoreEvalScratch<                                    \
-            operator_traits<static_cast<Operator>(i)>::core_eval_type>(      \
-            braket_rank() * lmax_ + deriv_order_));                          \
-    assert(any_cast<detail::core_eval_pack_type<static_cast<Operator>(i)>>(  \
-               &result) != nullptr);                                         \
+#define BOOST_PP_NBODYENGINE_MCR6(r, data, i, elem)                             \
+  case i:                                                                       \
+    result = libint2::detail::make_compressed_pair(                             \
+        operator_traits<static_cast<Operator>(i)>::core_eval_type::instance(    \
+            braket_rank() * lmax_ + deriv_order_ +                              \
+            operator_traits<static_cast<Operator>(i)>::intrinsic_deriv_order,   \
+            std::numeric_limits<scalar_type>::epsilon()),                       \
+        libint2::detail::CoreEvalScratch<                                       \
+            operator_traits<static_cast<Operator>(i)>::core_eval_type>(         \
+            braket_rank() * lmax_ + deriv_order_ +                              \
+            operator_traits<static_cast<Operator>(i)>::intrinsic_deriv_order)); \
+    assert(any_cast<detail::core_eval_pack_type<static_cast<Operator>(i)>>(     \
+               &result) != nullptr);                                            \
     break;
 
     BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR6, _,
@@ -907,7 +929,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 
   const auto oper_is_nuclear =
       (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
-       oper_ == Operator::erfc_nuclear);
+       oper_ == Operator::erfc_nuclear || oper_ == Operator::opVop);
 
   // need to use HRR? see strategy.cc
   const auto l1 = s1.contr[0].l;
@@ -1010,7 +1032,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
   primdata._0_Overlap_0_y[0] = ovlp_ss_y;
   primdata._0_Overlap_0_z[0] = ovlp_ss_z;
 
-  if (oper_ == Operator::kinetic || (deriv_order_ > 0)) {
+  if (oper_ == Operator::kinetic || (deriv_order_ > 0) || oper_ == Operator::opVop) {
 #if LIBINT2_DEFINED(eri, two_alpha0_bra)
     primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif
@@ -1021,7 +1043,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 
   if (oper_is_nuclear) {
 
-    const auto& params = (oper_ == Operator::nuclear) ?
+    const auto& params = (oper_ == Operator::nuclear || oper_ == Operator::opVop) ?
         any_cast<const operator_traits<Operator::nuclear>::oper_params_type&>(params_) :
         std::get<1>(any_cast<const operator_traits<Operator::erfc_nuclear>::oper_params_type&>(params_));
 
@@ -1039,7 +1061,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 
 #if LIBINT2_DEFINED(eri, rho12_over_alpha1) || \
     LIBINT2_DEFINED(eri, rho12_over_alpha2)
-    if (deriv_order_ > 0) {
+    if (deriv_order_ + intrinsic_deriv_order() > 0) {
 #if LIBINT2_DEFINED(eri, rho12_over_alpha1)
       primdata.rho12_over_alpha1[0] = rhop_over_alpha1;
 #endif
@@ -1054,10 +1076,9 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
                      primdata.PC_y[0] * primdata.PC_y[0] +
                      primdata.PC_z[0] * primdata.PC_z[0];
     const scalar_type U = gammap * PC2;
-    const scalar_type rho = rhop;
-    const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_;
+    const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_ + intrinsic_deriv_order();
     auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
-    if (oper_ == Operator::nuclear) {
+    if (oper_ == Operator::nuclear || oper_ == Operator::opVop) {
       const auto& fm_engine_ptr =
           any_cast<const detail::core_eval_pack_type<Operator::nuclear>&>(core_eval_pack_)
           .first();
@@ -1069,7 +1090,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
       const auto& core_ints_params =
           std::get<0>(any_cast<const typename operator_traits<
             Operator::erf_nuclear>::oper_params_type&>(core_ints_params_));
-      core_eval_ptr->eval(fm_ptr, rho, U, mmax, core_ints_params);
+      core_eval_ptr->eval(fm_ptr, gammap, U, mmax, core_ints_params);
     } else if (oper_ == Operator::erfc_nuclear) {
       const auto& core_eval_ptr =
           any_cast<const detail::core_eval_pack_type<Operator::erfc_nuclear>&>(core_eval_pack_)
@@ -1077,7 +1098,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
       const auto& core_ints_params =
           std::get<0>(any_cast<const typename operator_traits<
             Operator::erfc_nuclear>::oper_params_type&>(core_ints_params_));
-      core_eval_ptr->eval(fm_ptr, rho, U, mmax, core_ints_params);
+      core_eval_ptr->eval(fm_ptr, gammap, U, mmax, core_ints_params);
     }
 
     decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);

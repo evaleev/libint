@@ -4,6 +4,12 @@
 #include <tuple>
 #include <vector>
 
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+// handles ssize_t in pybind11/numpy.h
+typedef SSIZE_T ssize_t;
+#endif
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
@@ -136,6 +142,12 @@ std::vector<double> coeffs_normalized(const Shell &s) {
 }
 
 PYBIND11_MODULE(libint2, m) {
+
+  py::enum_<SHGShellOrdering>(m, "SHGShellOrdering")
+    .value("SHGShellOrdering_Standard", libint2::SHGShellOrdering_Standard)
+    .value("SHGShellOrdering_Gaussian", libint2::SHGShellOrdering_Gaussian)
+    .value("SHGShellOrdering_MOLDEN", libint2::SHGShellOrdering_Gaussian)
+    ;
 
   libint2::initialize();
 

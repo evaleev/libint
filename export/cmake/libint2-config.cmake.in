@@ -17,11 +17,14 @@
 # Set package version
 set(LIBINT2_VERSION "@LIBINT_VERSION@")
 set(LIBINT2_EXT_VERSION "@LIBINT_EXT_VERSION@")
+set(Libint2_EXT_VERSION "@LIBINT_EXT_VERSION@")
+set(Libint2_MAX_AM_ERI "@MAX_AM_ERI@")
 
 @PACKAGE_INIT@
 
 set(LIBINT2_LIBRARIES Libint2::int2)
 set(LIBINT2_INCLUDE_DIRS "@PACKAGE_LIBINT2_INSTALL_INCLUDEDIR@")
+set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS @LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)
 
 # Import library targets
 if(NOT TARGET Libint2::libint2)
@@ -29,6 +32,12 @@ if(NOT TARGET Libint2::libint2)
   if(NOT TARGET Libint2::libint2)
     message(FATAL_ERROR "expected Libint2::libint2 among imported Libint2 targets")
   endif()
+endif()
+
+# if relied on system Boost for preprocessor variadics, make sure it's available
+if (LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS AND NOT TARGET Boost::boost)
+  include(CMakeFindDependencyMacro)
+  find_dependency(Boost 1.29)
 endif()
 
 # Need Threads::Threads
