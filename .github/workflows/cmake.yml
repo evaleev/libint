@@ -38,6 +38,7 @@ jobs:
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
         -DENABLE_FORTRAN=ON
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/library/install
+        -DPython_EXECUTABLE=${{ matrix.os == 'macos-latest' && '/usr/local/Frameworks/Python.framework/Versions/3.11/bin/python3.11' || '/usr/bin/python3.8' }}
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
