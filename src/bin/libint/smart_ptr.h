@@ -21,6 +21,7 @@
 #ifndef _libint2_src_bin_libint_smartptr_h_
 #define _libint2_src_bin_libint_smartptr_h_
 
+#include <type_traits>
 #include <libint2/config.h>
 
 #if HAVE_SHARED_PTR_IN_BOOST
@@ -50,27 +51,14 @@
 namespace libint2 {
 namespace detail {
 /** Can be used to determine whether a type is a SafePtr */
+template <typename>
+struct IsSafePtrHelper : std::false_type {};
 template <typename T>
-struct IsSafePtr {
-  enum { result = false };
-};
+struct IsSafePtrHelper<SafePtr<T>> : std::true_type {};
 
 template <typename T>
-struct IsSafePtr< SafePtr<T> > {
-  enum { result = true };
-};
-template <typename T>
-struct IsSafePtr< const SafePtr<T> > {
-  enum { result = true };
-};
-template <typename T>
-struct IsSafePtr< SafePtr<T>& > {
-  enum { result = true };
-};
-template <typename T>
-struct IsSafePtr< const SafePtr<T>& > {
-  enum { result = true };
-};
+struct IsSafePtr : IsSafePtrHelper<typename std::remove_const<
+                         typename std::remove_reference<T>::type>::type> {};
 }  // namespace detail
 }  // namespace libint2
 
