@@ -162,7 +162,7 @@ namespace libint2 {
              error_(0), errorset_(false),
              start(strt), ndiis(ndi),
              iter(0), ngroup(ngr),
-             ngroupdiis(ngr),
+             ngroupdiis(ngrdiis),
              damping_factor(dmp),
              mixing_fraction(mf)
            {
