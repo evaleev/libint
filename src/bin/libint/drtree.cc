@@ -25,12 +25,12 @@
 
 using namespace libint2;
 
-SafePtr<DRTree>
-DRTree::CreateRootedAt(const SafePtr<DGVertex>& v)
+std::shared_ptr<DRTree>
+DRTree::CreateRootedAt(const std::shared_ptr<DGVertex>& v)
 {
-  SafePtr<DRTree> stree = v->subtree();
+  std::shared_ptr<DRTree> stree = v->subtree();
   if (!stree) {
-    SafePtr<DRTree> result(new DRTree(v));
+    std::shared_ptr<DRTree> result(new DRTree(v));
     // Ugly that I have to add the vertex outside the constructor,
     // but enable_shared_from_this requires that a valid shared_ptr to this already exists
     result->grow();
@@ -40,7 +40,7 @@ DRTree::CreateRootedAt(const SafePtr<DGVertex>& v)
     return stree;
 }
 
-DRTree::DRTree(const SafePtr<DGVertex>& r) :
+DRTree::DRTree(const std::shared_ptr<DGVertex>& r) :
 nvertices_(0), root_(r)
 {
 }
@@ -55,20 +55,20 @@ DRTree::grow()
   add_vertex(root());
 }
 
-const SafePtr<DGVertex>&
+const std::shared_ptr<DGVertex>&
 DRTree::root() const
 {
   return root_;
 }
 
 void
-DRTree::add_vertex(const SafePtr<DGVertex>& vertex)
+DRTree::add_vertex(const std::shared_ptr<DGVertex>& vertex)
 {
   // If not root and has more than 1 parent -- it is not on the tree
   if ( (vertex->num_entry_arcs() <= 1 || vertex == root()) ) {
     if (vertex->subtree_)
       throw ProgrammingError("DRTree::add_vertex() -- vertex is on a subtree already");
-    vertex->subtree_ = EnableSafePtrFromThis<this_type>::SafePtr_from_this();
+    vertex->subtree_ = std::enable_shared_from_this<this_type>::shared_from_this();
     ++nvertices_;
 #if LOCAL_DEBUG
     std::cout << "Vertex " << vertex->label() << " is on the following subtree:" << std::endl;
@@ -92,12 +92,12 @@ DRTree::detach()
 }
 
 void
-DRTree::detach_from(const SafePtr<DGVertex>& v)
+DRTree::detach_from(const std::shared_ptr<DGVertex>& v)
 {
   if (v->subtree_.get() != this)
     return;
   else {
-    v->subtree_ = SafePtr<DRTree>();
+    v->subtree_ = std::shared_ptr<DRTree>();
     typedef DGVertex::ArcSetType::const_iterator aciter;
     const aciter abegin = v->first_exit_arc();
     const aciter aend = v->plast_exit_arc();

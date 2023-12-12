@@ -44,7 +44,7 @@ LibraryTaskManager::add(const std::string& task_label)
     if (t->label() == task_label)
       return;
   }
-  tasks_.push_back(LibraryTask(task_label,SafePtr<TaskParameters>(new TaskParameters),SafePtr<TaskExternSymbols>(new TaskExternSymbols)));
+  tasks_.push_back(LibraryTask(task_label,std::shared_ptr<TaskParameters>(new TaskParameters),std::shared_ptr<TaskExternSymbols>(new TaskExternSymbols)));
   // make the first added task current
   if (tasks_.size() == 1)
     current_ = 0;

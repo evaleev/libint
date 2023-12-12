@@ -53,21 +53,21 @@ namespace libint2 {
       using ParentType::is_simple;
 
       /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-      CR_11_G12TiG12_11(const SafePtr<TargetType>&, unsigned int dir);
+      CR_11_G12TiG12_11(const std::shared_ptr<TargetType>&, unsigned int dir);
       static std::string descr() { return "CR"; }
 
 #if LIBINT_ENABLE_GENERIC_CODE
     /// Implementation of RecurrenceRelation::has_generic()
-    bool has_generic(const SafePtr<CompilationParameters>& cparams) const override;
+    bool has_generic(const std::shared_ptr<CompilationParameters>& cparams) const override;
     /// Implementation of RecurrenceRelation::generic_header()
     std::string generic_header() const override { return "GenericScale.h"; }
     /// Implementation of RecurrenceRelation::generic_instance()
-    std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const override;
+    std::string generic_instance(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<CodeSymbols>& args) const override;
 #endif
     };
 
   template <class F>
-    CR_11_G12TiG12_11<F>::CR_11_G12TiG12_11(const SafePtr<TargetType>& Tint,
+    CR_11_G12TiG12_11<F>::CR_11_G12TiG12_11(const std::shared_ptr<TargetType>& Tint,
                                             unsigned int dir) :
     ParentType(Tint,dir)
     {
@@ -104,7 +104,7 @@ namespace libint2 {
 #if LIBINT_ENABLE_GENERIC_CODE
   template <class F>
   bool
-  CR_11_G12TiG12_11<F>::has_generic(const SafePtr<CompilationParameters>& cparams) const
+  CR_11_G12TiG12_11<F>::has_generic(const std::shared_ptr<CompilationParameters>& cparams) const
   {
     F sh_a(target_->bra(0,0));
     F sh_b(target_->ket(0,0));
@@ -125,7 +125,7 @@ namespace libint2 {
 
   template <class F>
   std::string
-  CR_11_G12TiG12_11<F>::generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const {
+  CR_11_G12TiG12_11<F>::generic_instance(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<CodeSymbols>& args) const {
       std::ostringstream oss;
 
       const bool vec = (context->cparams()->max_vector_length() != 1);

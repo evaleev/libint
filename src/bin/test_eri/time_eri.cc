@@ -87,10 +87,10 @@ int main(int argc, char** argv)
   const double* D = &(rsqset.R[3][0]);
 
   typedef SubIteratorBase<CGShell> iter;
-  SafePtr<iter> sh0_iter(new iter(sh0));
-  SafePtr<iter> sh1_iter(new iter(sh1));
-  SafePtr<iter> sh2_iter(new iter(sh2));
-  SafePtr<iter> sh3_iter(new iter(sh3));
+  std::shared_ptr<iter> sh0_iter(new iter(sh0));
+  std::shared_ptr<iter> sh1_iter(new iter(sh1));
+  std::shared_ptr<iter> sh2_iter(new iter(sh2));
+  std::shared_ptr<iter> sh3_iter(new iter(sh3));
   
   Libint_eri0_t* erieval = libint2::malloc<Libint_eri0_t>(contrdepth4);
   const int max_am = max(max(am[0],am[1]),max(am[2],am[3]));

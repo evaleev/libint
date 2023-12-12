@@ -31,7 +31,7 @@ namespace libint2 {
   /// Applies R12vec_dot_Nabla1 to a physicists' braket
   template <class F, BraketType BKType>
   LinearCombination<
-    SafePtr<DGVertex>,
+    std::shared_ptr<DGVertex>,
     BraketPair<F,BKType>
   > R12vec_dot_Nabla1(const BraketPair<F,BKType>& bkt) {
     if (BKType == CBra || BKType == CKet)
@@ -42,7 +42,7 @@ namespace libint2 {
     
     const auto& f = bkt[0];
     const auto& g = bkt[1];
-    typedef LinearCombination< SafePtr<DGVertex> ,BraketPair<F,BKType> > ResultType;
+    typedef LinearCombination< std::shared_ptr<DGVertex> ,BraketPair<F,BKType> > ResultType;
     ResultType result;
     
     using namespace libint2::prefactor;
@@ -79,7 +79,7 @@ namespace libint2 {
   /// Applies R12vec_dot_Nabla2 to a physicists' braket
   template <class F, BraketType BKType>
   LinearCombination<
-    SafePtr<DGVertex>,
+    std::shared_ptr<DGVertex>,
     BraketPair<F,BKType>
   > R12vec_dot_Nabla2(const BraketPair<F,BKType>& bkt) {
     if (BKType == CBra || BKType == CKet)
@@ -90,7 +90,7 @@ namespace libint2 {
     
     const F& f = bkt[0];
     const F& g = bkt[1];
-    typedef LinearCombination< SafePtr<DGVertex> ,BraketPair<F,BKType> > ResultType;
+    typedef LinearCombination< std::shared_ptr<DGVertex> ,BraketPair<F,BKType> > ResultType;
     ResultType result;
     
     using namespace libint2::prefactor;
@@ -127,7 +127,7 @@ namespace libint2 {
   /// Applies Nabla1 to a physicists' braket
   template <class F, BraketType BKType>
   LinearCombination<
-    SafePtr<DGVertex>,
+    std::shared_ptr<DGVertex>,
     BraketPair<F,BKType>
   > Nabla1(const BraketPair<F,BKType>& bkt, int xyz) {
     if (BKType == CBra || BKType == CKet)
@@ -137,7 +137,7 @@ namespace libint2 {
     
     const F& f = bkt[0];
     const F& g = bkt[1];
-    typedef LinearCombination< SafePtr<DGVertex> ,BraketPair<F,BKType> > ResultType;
+    typedef LinearCombination< std::shared_ptr<DGVertex> ,BraketPair<F,BKType> > ResultType;
     ResultType result;
     
     using namespace libint2::prefactor;
@@ -160,7 +160,7 @@ namespace libint2 {
   /// Applies Nabla2 to a physicists' braket
   template <class F, BraketType BKType>
   LinearCombination<
-    SafePtr<DGVertex>,
+    std::shared_ptr<DGVertex>,
     BraketPair<F,BKType>
   > Nabla2(const BraketPair<F,BKType>& bkt, int xyz) {
     if (BKType == CBra || BKType == CKet)
@@ -170,7 +170,7 @@ namespace libint2 {
     
     const F& f = bkt[0];
     const F& g = bkt[1];
-    typedef LinearCombination< SafePtr<DGVertex> ,BraketPair<F,BKType> > ResultType;
+    typedef LinearCombination< std::shared_ptr<DGVertex> ,BraketPair<F,BKType> > ResultType;
     ResultType result;
     
     using namespace libint2::prefactor;
@@ -193,7 +193,7 @@ namespace libint2 {
   /// Applies R12v to a physicists' braket
   template <class F, BraketType BKType>
   LinearCombination<
-    SafePtr<DGVertex>,
+    std::shared_ptr<DGVertex>,
     BraketPair<F,BKType>
   > R12v(const BraketPair<F,BKType>& bkt,
          unsigned int xyz) {
@@ -204,7 +204,7 @@ namespace libint2 {
     
     const F& f = bkt[0];
     const F& g = bkt[1];
-    typedef LinearCombination< SafePtr<DGVertex> ,BraketPair<F,BKType> > ResultType;
+    typedef LinearCombination< std::shared_ptr<DGVertex> ,BraketPair<F,BKType> > ResultType;
     ResultType result;
     
     using namespace libint2::prefactor;

@@ -28,8 +28,8 @@ Prefactors::Prefactors() :
   rho(new rdouble("rho")),
   one_o_2alphasum(new rdouble("oo2ze"))
 {
-  typedef SafePtr<rdouble> rdptr;
-  typedef SafePtr<rdouble> cdptr;
+  typedef std::shared_ptr<rdouble> rdptr;
+  typedef std::shared_ptr<rdouble> cdptr;
 
   char XY[np][2] = { "P", "Q" };
   char X[np][2][2] = { {"A", "B"},
@@ -210,7 +210,7 @@ Prefactors::~Prefactors()
 }
 
 #if CTIMEENTITIES_SINGLETONS
-SafePtr<Prefactors::cdouble>
+std::shared_ptr<Prefactors::cdouble>
 Prefactors::Cdouble(double a)
 {
   return prefactor::Scalar(a);

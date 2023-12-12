@@ -52,7 +52,7 @@ namespace libint2 {
   {
   private:
 
-    static SafePtr<RRStackBase<RR> > rrstack_;
+    static std::shared_ptr<RRStackBase<RR> > rrstack_;
 
     // private constructor because it's a Singleton
     RRStackBase() : parent_type(& RR::label) {}
@@ -66,9 +66,9 @@ namespace libint2 {
     typedef typename parent_type::InstanceID InstanceID;
 
     /// Obtain the unique Instance of RRStack
-    static SafePtr<RRStackBase<RR> >& Instance() {
+    static std::shared_ptr<RRStackBase<RR> >& Instance() {
       if (!rrstack_) {
-        SafePtr<RRStackBase<RR> > tmpstack(new RRStackBase<RR>);
+        std::shared_ptr<RRStackBase<RR> > tmpstack(new RRStackBase<RR>);
         rrstack_ = tmpstack;
       }
       return rrstack_;
@@ -77,7 +77,7 @@ namespace libint2 {
     virtual ~RRStackBase() {}
 
     /// adds content of rrs to this stack
-    void add(const SafePtr<RRStackBase<RR> >& rrs) {
+    void add(const std::shared_ptr<RRStackBase<RR> >& rrs) {
       for(citer_type it=rrs->begin(); it != rrs->end(); it++) {
         find((*it).second.second);
       }
@@ -90,13 +90,13 @@ namespace libint2 {
   };
 
   template <typename RR>
-  SafePtr<RRStackBase<RR> > RRStackBase<RR>::rrstack_;
+  std::shared_ptr<RRStackBase<RR> > RRStackBase<RR>::rrstack_;
 
 
   /**
      RecurrenceRelation describes all recurrence relations
   */
-  class RecurrenceRelation : public EnableSafePtrFromThis<RecurrenceRelation> {
+  class RecurrenceRelation : public std::enable_shared_from_this<RecurrenceRelation> {
   public:
     typedef RecurrenceRelation this_type;
 
@@ -110,15 +110,15 @@ namespace libint2 {
     */
     virtual unsigned int num_children() const =0;
     /// Returns i-th child
-    virtual SafePtr<DGVertex> rr_child(unsigned int i) const =0;
+    virtual std::shared_ptr<DGVertex> rr_child(unsigned int i) const =0;
     /// Returns the target
-    virtual SafePtr<DGVertex> rr_target() const =0;
+    virtual std::shared_ptr<DGVertex> rr_target() const =0;
 
     /** Numerical expression of a recurrence relation is always expressed as
         an AlgebraicOperator<DGVertex> */
     typedef AlgebraicOperator<DGVertex> ExprType;
     /// Returns the expression
-    const SafePtr<ExprType>& rr_expr() const { return expr_; }
+    const std::shared_ptr<ExprType>& rr_expr() const { return expr_; }
 
     /**
        Returns true is this recurrence relation is simple enough to optimize away.
@@ -158,21 +158,21 @@ namespace libint2 {
     virtual std::string description() const;
 
     /// Generate declaration and definition for the recurrence relation
-    virtual void generate_code(const SafePtr<CodeContext>& context,
-                               const SafePtr<ImplicitDimensions>& dims,
+    virtual void generate_code(const std::shared_ptr<CodeContext>& context,
+                               const std::shared_ptr<ImplicitDimensions>& dims,
                                const std::string& funcname,
                                std::ostream& decl, std::ostream& def);
 
     /// Generate declaration and definition for the recurrence relation
     /// using generic code (typically, a manually written code)
-    virtual void generate_generic_code(const SafePtr<CodeContext>& context,
-                                       const SafePtr<ImplicitDimensions>& dims,
+    virtual void generate_generic_code(const std::shared_ptr<CodeContext>& context,
+                                       const std::shared_ptr<ImplicitDimensions>& dims,
                                        const std::string& funcname,
                                        std::ostream& decl, std::ostream& def);
 
     /// Generate a callback for this recurrence relation
-    virtual std::string spfunction_call(const SafePtr<CodeContext>& context,
-                                        const SafePtr<ImplicitDimensions>& dims) const;
+    virtual std::string spfunction_call(const std::shared_ptr<CodeContext>& context,
+                                        const std::shared_ptr<ImplicitDimensions>& dims) const;
 
     /// Return the number of FLOPs per this recurrence relation
     unsigned int nflops() const { return nflops_; }
@@ -183,9 +183,9 @@ namespace libint2 {
     protected:
     unsigned int nflops_;
     mutable std::string label_;
-    SafePtr<ExprType> expr_;
+    std::shared_ptr<ExprType> expr_;
     /// Adds a (or -a, if minus = -1) to expr_.
-    void add_expr(const SafePtr<ExprType>& a, int minus=1);
+    void add_expr(const std::shared_ptr<ExprType>& a, int minus=1);
     /// Generates the label
     virtual std::string generate_label() const =0;
     /// Registers with the stack
@@ -193,11 +193,11 @@ namespace libint2 {
       // only register RRs with for shell sets
       if (TrivialBFSet<typename RR::BasisFunctionType>::result)
         return false;
-      SafePtr<RRStackBase<RecurrenceRelation> > rrstack = RRStackBase<RecurrenceRelation>::Instance();
-      SafePtr<RR> this_ptr =
-        const_pointer_cast<RR,const RR>(
-          static_pointer_cast<const RR, const RecurrenceRelation>(
-            EnableSafePtrFromThis<RecurrenceRelation>::SafePtr_from_this()
+      std::shared_ptr<RRStackBase<RecurrenceRelation> > rrstack = RRStackBase<RecurrenceRelation>::Instance();
+      std::shared_ptr<RR> this_ptr =
+        std::const_pointer_cast<RR,const RR>(
+          std::static_pointer_cast<const RR, const RecurrenceRelation>(
+            std::enable_shared_from_this<RecurrenceRelation>::shared_from_this()
           )
         );
       rrstack->find(this_ptr);
@@ -210,52 +210,52 @@ namespace libint2 {
 
     /** used by generate_code to initialize the computation graph that computes sets of integrals using the RR
     */
-    SafePtr<DirectedGraph> generate_graph_(const SafePtr<DirectedGraph>& dg);
+    std::shared_ptr<DirectedGraph> generate_graph_(const std::shared_ptr<DirectedGraph>& dg);
     /** assigns "target" symbol to the target vertex and "src<i>" to the i-th child vertex. Also
         appends these symbols to S. */
-    void assign_symbols_(SafePtr<CodeSymbols>& S);
+    void assign_symbols_(std::shared_ptr<CodeSymbols>& S);
     /** given an ImplicitDimension for the computation, adapt it for this recurrence
         relation. Default version does not do anything. */
-    virtual SafePtr<ImplicitDimensions> adapt_dims_(const SafePtr<ImplicitDimensions>& dims) const;
+    virtual std::shared_ptr<ImplicitDimensions> adapt_dims_(const std::shared_ptr<ImplicitDimensions>& dims) const;
 
     /// does this recurrent relation have a generic equivalent? Default is no.
-    virtual bool has_generic(const SafePtr<CompilationParameters>& cparams) const;
+    virtual bool has_generic(const std::shared_ptr<CompilationParameters>& cparams) const;
     /// return the name of a header file with the declaration of the generic code
     virtual std::string generic_header() const;
     /// return the implementation of this recurrence relation in terms of generic code
-    virtual std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const;
+    virtual std::string generic_instance(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<CodeSymbols>& args) const;
 
   };
 
   namespace algebra {
     /// these operators are extremely useful to write compact expressions
-    SafePtr<RecurrenceRelation::ExprType> operator+(const SafePtr<DGVertex>& A,
-                                                    const SafePtr<DGVertex>& B);
-    SafePtr<RecurrenceRelation::ExprType> operator-(const SafePtr<DGVertex>& A,
-                                                    const SafePtr<DGVertex>& B);
-    SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<DGVertex>& A,
-                                                    const SafePtr<DGVertex>& B);
-    SafePtr<RecurrenceRelation::ExprType> operator/(const SafePtr<DGVertex>& A,
-                                                    const SafePtr<DGVertex>& B);
-    const SafePtr<RecurrenceRelation::ExprType>& operator+=(SafePtr<RecurrenceRelation::ExprType>& A,
-                                                            const SafePtr<DGVertex>& B);
-    const SafePtr<RecurrenceRelation::ExprType>& operator-=(SafePtr<RecurrenceRelation::ExprType>& A,
-                                                            const SafePtr<DGVertex>& B);
-    const SafePtr<RecurrenceRelation::ExprType>& operator*=(SafePtr<RecurrenceRelation::ExprType>& A,
-                                                            const SafePtr<DGVertex>& B);
-    const SafePtr<RecurrenceRelation::ExprType>& operator/=(SafePtr<RecurrenceRelation::ExprType>& A,
-                                                            const SafePtr<DGVertex>& B);
+    std::shared_ptr<RecurrenceRelation::ExprType> operator+(const std::shared_ptr<DGVertex>& A,
+                                                    const std::shared_ptr<DGVertex>& B);
+    std::shared_ptr<RecurrenceRelation::ExprType> operator-(const std::shared_ptr<DGVertex>& A,
+                                                    const std::shared_ptr<DGVertex>& B);
+    std::shared_ptr<RecurrenceRelation::ExprType> operator*(const std::shared_ptr<DGVertex>& A,
+                                                    const std::shared_ptr<DGVertex>& B);
+    std::shared_ptr<RecurrenceRelation::ExprType> operator/(const std::shared_ptr<DGVertex>& A,
+                                                    const std::shared_ptr<DGVertex>& B);
+    const std::shared_ptr<RecurrenceRelation::ExprType>& operator+=(std::shared_ptr<RecurrenceRelation::ExprType>& A,
+                                                            const std::shared_ptr<DGVertex>& B);
+    const std::shared_ptr<RecurrenceRelation::ExprType>& operator-=(std::shared_ptr<RecurrenceRelation::ExprType>& A,
+                                                            const std::shared_ptr<DGVertex>& B);
+    const std::shared_ptr<RecurrenceRelation::ExprType>& operator*=(std::shared_ptr<RecurrenceRelation::ExprType>& A,
+                                                            const std::shared_ptr<DGVertex>& B);
+    const std::shared_ptr<RecurrenceRelation::ExprType>& operator/=(std::shared_ptr<RecurrenceRelation::ExprType>& A,
+                                                            const std::shared_ptr<DGVertex>& B);
 
     class Entity;
     template <class T> class RTimeEntity;
     template <class T> class CTimeEntity;
     // seems to confound Intel compiler on Linux?
-    //SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<Entity>& A,
-    //                                                const SafePtr<DGVertex>& B);
-    template<typename T> SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<RTimeEntity<T> >& A,
-                                                                         const SafePtr<DGVertex>& B);
-    template<typename T> SafePtr<RecurrenceRelation::ExprType> operator*(const SafePtr<CTimeEntity<T> >& A,
-                                                                         const SafePtr<DGVertex>& B);
+    //std::shared_ptr<RecurrenceRelation::ExprType> operator*(const std::shared_ptr<Entity>& A,
+    //                                                const std::shared_ptr<DGVertex>& B);
+    template<typename T> std::shared_ptr<RecurrenceRelation::ExprType> operator*(const std::shared_ptr<RTimeEntity<T> >& A,
+                                                                         const std::shared_ptr<DGVertex>& B);
+    template<typename T> std::shared_ptr<RecurrenceRelation::ExprType> operator*(const std::shared_ptr<CTimeEntity<T> >& A,
+                                                                         const std::shared_ptr<DGVertex>& B);
   };
 
   // Instantiate the RRStack

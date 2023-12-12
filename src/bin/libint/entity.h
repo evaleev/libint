@@ -127,13 +127,13 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
     unsigned int size() const override { return 1; }
 
     /// Implementation of DGVertex::equiv()
-    bool equiv(const SafePtr<DGVertex>& a) const override
+    bool equiv(const std::shared_ptr<DGVertex>& a) const override
     {
       if (a->typeid_ == typeid_) {
 #if USE_INT_KEY_TO_COMPARE
         return key() == a->key() && label() == a->label();
 #else
-        SafePtr<RTimeEntity> a_cast = static_pointer_cast<RTimeEntity,DGVertex>(a);
+        std::shared_ptr<RTimeEntity> a_cast = std::static_pointer_cast<RTimeEntity,DGVertex>(a);
         return id() == a_cast->id();
 #endif
       }
@@ -207,13 +207,13 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
       unsigned int size() const override { return 1; }
 
       /// Implementation of DGVertex::equiv()
-      bool equiv(const SafePtr<DGVertex>& a) const override
+      bool equiv(const std::shared_ptr<DGVertex>& a) const override
       {
 	if (a->typeid_ == typeid_) {
 #if USE_INT_KEY_TO_COMPARE
           return key() == a->key();
 #else
-          SafePtr<CTimeEntity> a_cast = static_pointer_cast<CTimeEntity,DGVertex>(a);
+          std::shared_ptr<CTimeEntity> a_cast = std::static_pointer_cast<CTimeEntity,DGVertex>(a);
 	  return id() == a_cast->id();
 #endif
 	}
@@ -270,39 +270,39 @@ std::cout << "Allocated RTimeEntity id = " << this->id() << std::endl;
       then the result is a runtime entity as well. Otherwise the result is a compile-time entity.
   */
 //  template <typename T>
-//    SafePtr<Entity>
-//    operator*(const SafePtr<Entity>& A, const SafePtr< CTimeEntity<T> >& B);
+//    std::shared_ptr<Entity>
+//    operator*(const std::shared_ptr<Entity>& A, const std::shared_ptr< CTimeEntity<T> >& B);
 
   /** Creates product A*B.
   */
   template <typename T, typename U>
-    SafePtr< CTimeEntity< typename ProductType<T,U>::result > >
-    operator*(const SafePtr< CTimeEntity<T> >& A, const SafePtr< CTimeEntity<U> >& B)
+    std::shared_ptr< CTimeEntity< typename ProductType<T,U>::result > >
+    operator*(const std::shared_ptr< CTimeEntity<T> >& A, const std::shared_ptr< CTimeEntity<U> >& B)
     {
       typedef CTimeEntity< typename ProductType<T,U>::result > prodtype;
-      return SafePtr<prodtype>(new prodtype(A->value()*B->value()));
+      return std::shared_ptr<prodtype>(new prodtype(A->value()*B->value()));
     }
 
   /** Creates product A*B.
   */
   template <typename T, typename U>
-    SafePtr< RTimeEntity< typename ProductType<T,U>::result > >
-    operator*(const SafePtr< RTimeEntity<T> >& A, const SafePtr< CTimeEntity<U> >& B)
+    std::shared_ptr< RTimeEntity< typename ProductType<T,U>::result > >
+    operator*(const std::shared_ptr< RTimeEntity<T> >& A, const std::shared_ptr< CTimeEntity<U> >& B)
     {
       typedef RTimeEntity< typename ProductType<T,U>::result > prodtype;
       std::ostringstream oss;
       oss << A->id() << "*" << B->id();
       // TODO this should be false, but the logic of DirectedGraph construction depends on this being true
       const bool not_precomputed = true;
-      return SafePtr<prodtype>(new prodtype(oss.str(), not_precomputed));
+      return std::shared_ptr<prodtype>(new prodtype(oss.str(), not_precomputed));
     }
   // TODO should be possible to enable this, but this creates RTimeEntities that should not be precomputed, see the comment above
 #if 0
   /** Creates product B*A.
   */
   template <typename T, typename U>
-    SafePtr< RTimeEntity< typename ProductType<T,U>::result > >
-    operator*(const SafePtr< CTimeEntity<U> >& B, const SafePtr< RTimeEntity<T> >& A)
+    std::shared_ptr< RTimeEntity< typename ProductType<T,U>::result > >
+    operator*(const std::shared_ptr< CTimeEntity<U> >& B, const std::shared_ptr< RTimeEntity<T> >& A)
     {
       return A * B;
     }

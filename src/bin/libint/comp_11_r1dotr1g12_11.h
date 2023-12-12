@@ -58,21 +58,21 @@ namespace libint2 {
     typedef RecurrenceRelation::ExprType ExprType;
 
     /** Use Instance() to obtain an instance of RR. This function is provided to avoid
-        issues with getting a SafePtr from constructor (as needed for registry to work).
+        issues with getting a std::shared_ptr from constructor (as needed for registry to work).
     */
-    static SafePtr<ThisType> Instance(const SafePtr<TargetType>&);
+    static std::shared_ptr<ThisType> Instance(const std::shared_ptr<TargetType>&);
     virtual ~CR_11_R1dotR1G12_11() {}
 
     /// Implementation of RecurrenceRelation::num_children()
     unsigned int num_children() const override { return nchildren_; }
     /// target() returns pointer to the i-th child
-    SafePtr<TargetType> target() const { return target_; };
+    std::shared_ptr<TargetType> target() const { return target_; };
     /// child(i) returns pointer to the i-th child
-    SafePtr<ChildType> child(unsigned int i) const;
+    std::shared_ptr<ChildType> child(unsigned int i) const;
     /// Implementation of RecurrenceRelation::rr_target()
-    SafePtr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    std::shared_ptr<DGVertex> rr_target() const override { return std::static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation::rr_child()
-    SafePtr<DGVertex> rr_child(unsigned int i) const override { return dynamic_pointer_cast<DGVertex,ChildType>(child(i)); }
+    std::shared_ptr<DGVertex> rr_child(unsigned int i) const override { return std::dynamic_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// Implementation of RecurrenceRelation::is_simple()
     bool is_simple() const override {
       return TrivialBFSet<BFSet>::result;
@@ -84,7 +84,7 @@ namespace libint2 {
       For example, dir can be 0 (x), 1(y), or 2(z) if BFSet is
       a Cartesian Gaussian.
      */
-    CR_11_R1dotR1G12_11(const SafePtr<TargetType>&);
+    CR_11_R1dotR1G12_11(const std::shared_ptr<TargetType>&);
 
 #if 0
     /// registers this RR with the stack, if needed
@@ -92,8 +92,8 @@ namespace libint2 {
 #endif
 
     static const unsigned int max_nchildren_ = 18;
-    SafePtr<TargetType> target_;
-    SafePtr<ChildType> children_[max_nchildren_];
+    std::shared_ptr<TargetType> target_;
+    std::shared_ptr<ChildType> children_[max_nchildren_];
     unsigned int nchildren_;
 
     std::string generate_label() const override
@@ -107,20 +107,20 @@ namespace libint2 {
   };
 
   template <template <class> class I, class F>
-    SafePtr< CR_11_R1dotR1G12_11<I,F> >
-    CR_11_R1dotR1G12_11<I,F>::Instance(const SafePtr<TargetType>& Tint)
+    std::shared_ptr< CR_11_R1dotR1G12_11<I,F> >
+    CR_11_R1dotR1G12_11<I,F>::Instance(const std::shared_ptr<TargetType>& Tint)
     {
-      SafePtr<ThisType> this_ptr(new ThisType(Tint));
+      std::shared_ptr<ThisType> this_ptr(new ThisType(Tint));
       // Do post-construction duties
       if (this_ptr->num_children() != 0) {
         this_ptr->register_with_rrstack<ThisType>();
         return this_ptr;
       }
-      return SafePtr<ThisType>();
+      return std::shared_ptr<ThisType>();
     }
 
   template <template <class> class I, class F>
-    CR_11_R1dotR1G12_11<I,F>::CR_11_R1dotR1G12_11(const SafePtr<I<F> >& Tint) :
+    CR_11_R1dotR1G12_11<I,F>::CR_11_R1dotR1G12_11(const std::shared_ptr<I<F> >& Tint) :
     ParentType(), target_(Tint), nchildren_(0)
     {
       F sh_a(Tint->bra(0,0));
@@ -149,7 +149,7 @@ namespace libint2 {
 	++nchildren_;
 
 	if (is_simple()) {
-	  SafePtr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,Scalar(1.0),rr_child(next_child)));
+	  std::shared_ptr<ExprType> expr0_ptr(new ExprType(ExprType::OperatorTypes::Times,Scalar(1.0),rr_child(next_child)));
 	  add_expr(expr0_ptr);
 	  nflops_ += 1;
 	}
@@ -159,7 +159,7 @@ namespace libint2 {
     }
 
   template <template <class> class I, class F>
-    SafePtr< typename CR_11_R1dotR1G12_11<I,F>::ChildType >
+    std::shared_ptr< typename CR_11_R1dotR1G12_11<I,F>::ChildType >
     CR_11_R1dotR1G12_11<I,F>::child(unsigned int i) const
     {
       assert(i>=0 && i<nchildren_);

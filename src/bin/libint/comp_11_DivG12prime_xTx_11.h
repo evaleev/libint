@@ -56,14 +56,14 @@ namespace libint2 {
       using ParentType::is_simple;
 
       /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-      CR_11_DivG12prime_xTx_11(const SafePtr<TargetType>&, unsigned int dir);
+      CR_11_DivG12prime_xTx_11(const std::shared_ptr<TargetType>&, unsigned int dir);
       static std::string descr() { return "CR"; }
 
       template<class RR, class C> friend class ChildFactory;
     };
 
   template <class F>
-    CR_11_DivG12prime_xTx_11<F>::CR_11_DivG12prime_xTx_11(const SafePtr<TargetType>& Tint,
+    CR_11_DivG12prime_xTx_11<F>::CR_11_DivG12prime_xTx_11(const std::shared_ptr<TargetType>& Tint,
                                       unsigned int dir) :
     ParentType(Tint,dir)
     {

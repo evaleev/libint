@@ -54,8 +54,8 @@ namespace libint2 {
       typedef algebra::OperatorTypes::OperatorType OperatorType;
 
       AlgebraicOperator(OperatorType OT,
-                        const SafePtr<T>& left,
-                        const SafePtr<T>& right) :
+                        const std::shared_ptr<T>& left,
+                        const std::shared_ptr<T>& right) :
         DGVertex(ClassInfo<AlgebraicOperator>::Instance().id()), OT_(OT), left_(left), right_(right),
         label_(algebra::OperatorSymbol[OT_])
         {
@@ -63,9 +63,9 @@ namespace libint2 {
       virtual ~AlgebraicOperator() {}
 
       /// Clone A but replace operands with left and right
-      AlgebraicOperator(const SafePtr<AlgebraicOperator>& A,
-                        const SafePtr<T>& left,
-                        const SafePtr<T>& right) :
+      AlgebraicOperator(const std::shared_ptr<AlgebraicOperator>& A,
+                        const std::shared_ptr<T>& left,
+                        const std::shared_ptr<T>& right) :
         DGVertex(static_cast<DGVertex&>(*A)), OT_(A->OT_),
         left_(left), right_(right), label_(A->label_)
         {
@@ -90,29 +90,29 @@ namespace libint2 {
       /// Returns the OperatorType
       OperatorType type() const { return OT_; }
       /// Returns the left argument
-      const SafePtr<T>& left() const { return left_; }
+      const std::shared_ptr<T>& left() const { return left_; }
       /// Returns the right argument
-      const SafePtr<T>& right() const { return right_; }
+      const std::shared_ptr<T>& right() const { return right_; }
 
       /// Overloads DGVertex::add_exit_arc(). The default definition is used unless T = DGVertex (see algebra.cc)
-      void add_exit_arc(const SafePtr<DGArc>& a) override;
+      void add_exit_arc(const std::shared_ptr<DGArc>& a) override;
       /// Implements DGVertex::size()
       unsigned int size() const override { return 1; }
       /// Implements DGVertex::equiv()
-      bool equiv(const SafePtr<DGVertex>& a) const override
+      bool equiv(const std::shared_ptr<DGVertex>& a) const override
       {
         if (typeid_ == a->typeid_) {
 #if ALGEBRAICOPERATOR_USE_KEY_TO_COMPARE
 #if USE_INT_KEY_TO_COMPARE
           if (key() == a->key())
-            return *this == static_pointer_cast<AlgebraicOperator,DGVertex>(a);
+            return *this == std::static_pointer_cast<AlgebraicOperator,DGVertex>(a);
           else
             return false;
 #else
           return description() == a->description();
 #endif
 #else
-          return *this == static_pointer_cast<AlgebraicOperator,DGVertex>(a);
+          return *this == std::static_pointer_cast<AlgebraicOperator,DGVertex>(a);
 #endif
         }
 	else
@@ -120,8 +120,8 @@ namespace libint2 {
       }
 
       /// laboriously compare 2 operators element by element
-      bool operator==(const SafePtr<AlgebraicOperator>& a) const {
-#if ALGEBRAICOPERATOR_USE_SAFEPTR
+      bool operator==(const std::shared_ptr<AlgebraicOperator>& a) const {
+#if ALGEBRAICOPERATOR_USE_SHAREDPTR
         // Find out why sometimes equivalent left_ and a->left_ have non-equivalent pointers
         if (left_->equiv(a->left()) && left_ != a->left_) {
           std::cout << "Left arguments are equivalent but pointers differ!" << std::endl;
@@ -136,7 +136,7 @@ namespace libint2 {
         }
 #endif
         if (OT_ == a->OT_) {
-#if ALGEBRAICOPERATOR_USE_SAFEPTR
+#if ALGEBRAICOPERATOR_USE_SHAREDPTR
           if (left_ == a->left_ && right_ == a->right_)
 #else
           if (left_->equiv(a->left()) && right_->equiv(a->right()))
@@ -189,8 +189,8 @@ namespace libint2 {
 
     private:
       OperatorType OT_;
-      SafePtr<T> left_;
-      SafePtr<T> right_;
+      std::shared_ptr<T> left_;
+      std::shared_ptr<T> right_;
 
       /// Implements DGVertex::this_precomputed()
       bool this_precomputed() const override
@@ -204,7 +204,7 @@ namespace libint2 {
   /*
   template <>
     void
-    AlgebraicOperator<DGVertex>::add_exit_arc(const SafePtr<DGArc>& a)
+    AlgebraicOperator<DGVertex>::add_exit_arc(const std::shared_ptr<DGArc>& a)
     {
       DGVertex::add_exit_arc(a);
       if (left_->equiv(a->dest()))

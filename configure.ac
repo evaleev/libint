@@ -1361,51 +1361,6 @@ AC_COMPILE_IFELSE(
   ]
 )
 
-dnl ------------------ Check for shared_ptr -----------------------
-
-HAVE_SHARED_PTR=no
-AC_MSG_CHECKING([for std::shared_ptr])
-AC_COMPILE_IFELSE(
-  [AC_LANG_PROGRAM(
-      [[#include <memory>
-      ]],
-      [[
-        std::shared_ptr<int> a(new int);
-        std::shared_ptr<int> b = a;
-      ]]
-     )
-    ],
-    [AC_MSG_RESULT([yes])
-     HAVE_SHARED_PTR=std
-    ],
-    [
-      AC_MSG_RESULT([no])
-    ]
-  )
-
-if test "X$HAVE_SHARED_PTR" = "Xno"; then
-  AC_MSG_CHECKING([for Boost::shared_ptr])
-  AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM(
-      [[#include <boost/shared_ptr.hpp>
-      ]],
-      [[
-       boost::shared_ptr<int> a(new int);
-       boost::shared_ptr<int> b = a;
-      ]]
-     )
-    ],
-    [AC_MSG_RESULT([yes])
-     HAVE_SHARED_PTR=boost
-     AC_DEFINE(HAVE_SHARED_PTR_IN_BOOST)
-    ],
-    [
-      AC_MSG_RESULT([no])
-      AC_MSG_ERROR([shared_ptr is required. Please download Boost from boost.org or use C++ compiler that supports std::shared_ptr.])
-    ]
-  )
-fi
-
 dnl ------------------ Check for Eigen library -----------------------
 
 ACX_CHECK_EIGEN

@@ -42,9 +42,9 @@ namespace libint2 {
   class ImplicitDimensions {
     public:
     /// Explicitly initialize both quantities. Their exact type is not known.
-    ImplicitDimensions(const SafePtr<Entity>& high,
-                       const SafePtr<Entity>& low,
-                       const SafePtr<Entity>& vecdim);
+    ImplicitDimensions(const std::shared_ptr<Entity>& high,
+                       const std::shared_ptr<Entity>& low,
+                       const std::shared_ptr<Entity>& vecdim);
     /// Default assumes runtime (dynamical) quantities
     ImplicitDimensions();
     /// Handy constructor to initialize dimensions as compile-time (static) quatities
@@ -52,11 +52,11 @@ namespace libint2 {
     ~ImplicitDimensions() {}
 
     /// Returns the high dimension
-    SafePtr<Entity> high() const { return high_; }
+    std::shared_ptr<Entity> high() const { return high_; }
     /// Returns the low dimension
-    SafePtr<Entity> low() const { return low_; }
+    std::shared_ptr<Entity> low() const { return low_; }
     /// Returns the vector dimension
-    SafePtr<Entity> vecdim() const { return vecdim_; }
+    std::shared_ptr<Entity> vecdim() const { return vecdim_; }
     /// Returns true if the rank of high dimension is known
     bool high_is_static() const { return high_is_static_; }
     /// Returns true if the rank of low dimension is known
@@ -71,15 +71,15 @@ namespace libint2 {
     const std::string& vecdim_label() const { return vecdim_label_; }
 
     /// Sets default ImplicitDimension object
-    static void set_default_dims(const SafePtr<CompilationParameters>& cparams);
+    static void set_default_dims(const std::shared_ptr<CompilationParameters>& cparams);
     /// Default ImplicitDimension object
-    static SafePtr<ImplicitDimensions> default_dims();
+    static std::shared_ptr<ImplicitDimensions> default_dims();
 
     private:
     // Dimensions can be runtime or compile-time quantities
-    const SafePtr<Entity> high_;
-    const SafePtr<Entity> low_;
-    const SafePtr<Entity> vecdim_;
+    const std::shared_ptr<Entity> high_;
+    const std::shared_ptr<Entity> low_;
+    const std::shared_ptr<Entity> vecdim_;
 
     // checks if the dimensions are CTImeEntities
     void init_();
@@ -92,7 +92,7 @@ namespace libint2 {
     std::string vecdim_label_;
 
     /// Default dimension
-    static SafePtr<ImplicitDimensions> default_dims_;
+    static std::shared_ptr<ImplicitDimensions> default_dims_;
 
   };
 

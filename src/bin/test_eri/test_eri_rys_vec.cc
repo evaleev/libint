@@ -235,10 +235,10 @@ std::cout<<"number of points"<<npts<<endl;
   LIBINT2_REF_REALTYPE Dref[4]; for(int i=0; i<4; ++i) Dref[i] = D[i];
 
   typedef SubIteratorBase<CGShell> iter;
-  SafePtr<iter> sh0_iter(new iter(sh0));
-  SafePtr<iter> sh1_iter(new iter(sh1));
-  SafePtr<iter> sh2_iter(new iter(sh2));
-  SafePtr<iter> sh3_iter(new iter(sh3));
+  std::shared_ptr<iter> sh0_iter(new iter(sh0));
+  std::shared_ptr<iter> sh1_iter(new iter(sh1));
+  std::shared_ptr<iter> sh2_iter(new iter(sh2));
+  std::shared_ptr<iter> sh3_iter(new iter(sh3));
 
   //------------------------------------------------------
   // compute recurrence prefactors, Rys roots and weights
@@ -433,10 +433,10 @@ std::cout<<"number of points"<<npts<<endl;
           uint m3 = bf3.qn(1);
           uint n3 = bf3.qn(2);
 #else
-          SafePtr<CGF> bf0 = sh0_iter->elem();
-          SafePtr<CGF> bf1 = sh1_iter->elem();
-          SafePtr<CGF> bf2 = sh2_iter->elem();
-          SafePtr<CGF> bf3 = sh3_iter->elem();
+          std::shared_ptr<CGF> bf0 = sh0_iter->elem();
+          std::shared_ptr<CGF> bf1 = sh1_iter->elem();
+          std::shared_ptr<CGF> bf2 = sh2_iter->elem();
+          std::shared_ptr<CGF> bf3 = sh3_iter->elem();
 
           uint l0 = bf0->qn(0);
           uint m0 = bf0->qn(1);

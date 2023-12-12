@@ -33,15 +33,15 @@ namespace libint2 {
       Each arc connects vertex orig_ to vertex dest_. */
   class DGArc {
 
-    SafePtr<DGVertex> orig_;  // Where this Arc leavs
-    SafePtr<DGVertex> dest_;  // Where this Arc leads to
+    std::shared_ptr<DGVertex> orig_;  // Where this Arc leavs
+    std::shared_ptr<DGVertex> dest_;  // Where this Arc leads to
 
   public:
-    DGArc(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest);
+    DGArc(const std::shared_ptr<DGVertex>& orig, const std::shared_ptr<DGVertex>& dest);
     virtual ~DGArc() {}
 
-    SafePtr<DGVertex> orig() const { return orig_; }
-    SafePtr<DGVertex> dest() const { return dest_; }
+    std::shared_ptr<DGVertex> orig() const { return orig_; }
+    std::shared_ptr<DGVertex> dest() const { return dest_; }
 
     /// Print out the arc
     virtual void print(std::ostream& os) const =0;
@@ -53,7 +53,7 @@ namespace libint2 {
   class DGArcDirect : public DGArc {
 
   public:
-    DGArcDirect(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) : DGArc(orig,dest) {}
+    DGArcDirect(const std::shared_ptr<DGVertex>& orig, const std::shared_ptr<DGVertex>& dest) : DGArc(orig,dest) {}
     virtual ~DGArcDirect() {}
 
     /// Overload of DGArc::print()
@@ -71,10 +71,10 @@ namespace libint2 {
     virtual ~DGArcRR() {}
 
     /// rr() returns pointer to the RecurrenceRelation describing the arc
-    virtual SafePtr<RecurrenceRelation> rr() const =0;
+    virtual std::shared_ptr<RecurrenceRelation> rr() const =0;
 
   protected:
-    DGArcRR(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest);
+    DGArcRR(const std::shared_ptr<DGVertex>& orig, const std::shared_ptr<DGVertex>& dest);
 
   };
 
@@ -84,15 +84,15 @@ namespace libint2 {
   // It obviously must implement some functions
   template <class ArcRel> class DGArcRel : public DGArcRR {
 
-    SafePtr<ArcRel> rel_;     // Relationship described by the arc
+    std::shared_ptr<ArcRel> rel_;     // Relationship described by the arc
 
   public:
-    DGArcRel(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest,
-	     const SafePtr<ArcRel>& rel);
+    DGArcRel(const std::shared_ptr<DGVertex>& orig, const std::shared_ptr<DGVertex>& dest,
+	     const std::shared_ptr<ArcRel>& rel);
     virtual ~DGArcRel();
 
     /// Implementation of DGArcRR::rr()
-    SafePtr<RecurrenceRelation> rr() const override { return dynamic_pointer_cast<RecurrenceRelation,ArcRel>(rel_); }
+    std::shared_ptr<RecurrenceRelation> rr() const override { return std::dynamic_pointer_cast<RecurrenceRelation,ArcRel>(rel_); }
     /// Overload of DGArc::print()
     void print(std::ostream& os) const override
       {
@@ -102,8 +102,8 @@ namespace libint2 {
   };
 
   template <class ArcRel>
-    DGArcRel<ArcRel>::DGArcRel(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest,
-			       const SafePtr<ArcRel>& rel) :
+    DGArcRel<ArcRel>::DGArcRel(const std::shared_ptr<DGVertex>& orig, const std::shared_ptr<DGVertex>& dest,
+			       const std::shared_ptr<ArcRel>& rel) :
     DGArcRR(orig,dest), rel_(rel)
     {
     };

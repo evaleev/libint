@@ -69,7 +69,7 @@ namespace {
     //
     // generate all targets
     //
-    std::vector< SafePtr<ERIQtet> > targets;
+    std::vector< std::shared_ptr<ERIQtet> > targets;
     // iterate over the distribution of all derivative quanta among 12 different directions
     bool last_deriv = false;
     do {
@@ -78,7 +78,7 @@ namespace {
       CGShell c(l[2]);  for(unsigned int xyz=0; xyz<3; ++xyz) c.deriv().inc(xyz, (*diter)[6+xyz]);
       CGShell d(l[3]);  for(unsigned int xyz=0; xyz<3; ++xyz) d.deriv().inc(xyz, (*diter)[9+xyz]);
 
-      const SafePtr<ERIQtet> abcd0 = ERIQtet::Instance(a,b,c,d, 0u);
+      const std::shared_ptr<ERIQtet> abcd0 = ERIQtet::Instance(a,b,c,d, 0u);
       targets.push_back(abcd0);
       last_deriv = diter.last();
       if (!last_deriv) diter.next();

@@ -21,46 +21,23 @@
 #ifndef _libint2_src_bin_libint_smartptr_h_
 #define _libint2_src_bin_libint_smartptr_h_
 
-#include <type_traits>
 #include <libint2/config.h>
 
-#if HAVE_SHARED_PTR_IN_BOOST
-  #include <boost/shared_ptr.hpp>
-  #include <boost/enable_shared_from_this.hpp>
-
-  // For now I'll do a cheat since templated typedefs are not standard
-  // Should probably at least derive SafePtr from shared_ptr
-  #define SafePtr boost::shared_ptr
-  #define EnableSafePtrFromThis boost::enable_shared_from_this
-  #define SafePtr_from_this shared_from_this
-  using boost::const_pointer_cast;
-  using boost::dynamic_pointer_cast;
-  using boost::static_pointer_cast;
-#else
-  #include <memory>
-  // For now I'll do a cheat since templated typedefs are not standard
-  // Should probably at least derive SafePtr from shared_ptr
-  #define SafePtr std::shared_ptr
-  #define EnableSafePtrFromThis std::enable_shared_from_this
-  #define SafePtr_from_this shared_from_this
-  using std::const_pointer_cast;
-  using std::dynamic_pointer_cast;
-  using std::static_pointer_cast;
-#endif
+#include <memory>
+#include <type_traits>
 
 namespace libint2 {
 namespace detail {
-/** Can be used to determine whether a type is a SafePtr */
+/** Can be used to determine whether a type is a std::shared_ptr */
 template <typename>
-struct IsSafePtrHelper : std::false_type {};
+struct IsSharedPtrHelper : std::false_type {};
 template <typename T>
-struct IsSafePtrHelper<SafePtr<T>> : std::true_type {};
+struct IsSharedPtrHelper<std::shared_ptr<T>> : std::true_type {};
 
 template <typename T>
-struct IsSafePtr : IsSafePtrHelper<typename std::remove_const<
-                         typename std::remove_reference<T>::type>::type> {};
+struct IsSharedPtr : IsSharedPtrHelper<typename std::remove_const<
+                       typename std::remove_reference<T>::type>::type> {};
 }  // namespace detail
 }  // namespace libint2
 
 #endif
-

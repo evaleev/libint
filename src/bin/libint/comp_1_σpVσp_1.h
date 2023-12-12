@@ -43,13 +43,14 @@ class CR_1_σpVσp_1
 
   /// Constructor is private, used by ParentType::Instance that maintains
   /// registry of these objects
-  CR_1_σpVσp_1(const SafePtr<TargetType> &, unsigned int = 0);
+  CR_1_σpVσp_1(const std::shared_ptr<TargetType> &, unsigned int = 0);
 
   static std::string descr() { return "CR"; }
 };
 
 template <typename F>
-CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const SafePtr<TargetType> &Tint, unsigned int)
+CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const std::shared_ptr<TargetType> &Tint,
+                              unsigned int)
     : ParentType(Tint, 0) {
   assert(Tint->num_func_bra(/* particle */ 0) == 1);
   assert(Tint->num_func_ket(/* particle */ 0) == 1);

@@ -44,19 +44,19 @@ namespace libint2 {
   */
   class LibraryTask {
   public:
-    LibraryTask(const std::string& l, const SafePtr<TaskParameters>& p, const SafePtr<TaskExternSymbols>& s) :
+    LibraryTask(const std::string& l, const std::shared_ptr<TaskParameters>& p, const std::shared_ptr<TaskExternSymbols>& s) :
       label_(l), params_(p), symbols_(s) {
     }
     ~LibraryTask() {
     }
     const std::string& label() const { return label_; }
-    const SafePtr<TaskParameters>& params() const { return params_; }
-    const SafePtr<TaskExternSymbols>& symbols() const { return symbols_; }
+    const std::shared_ptr<TaskParameters>& params() const { return params_; }
+    const std::shared_ptr<TaskExternSymbols>& symbols() const { return symbols_; }
 
   private:
     std::string label_;
-    SafePtr<TaskParameters> params_;
-    SafePtr<TaskExternSymbols> symbols_;
+    std::shared_ptr<TaskParameters> params_;
+    std::shared_ptr<TaskExternSymbols> symbols_;
   };
 
   /// Manages tasks. This is a Singleton.

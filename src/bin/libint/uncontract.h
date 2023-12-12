@@ -56,19 +56,19 @@ namespace libint2 {
     /// The type of expressions in which RecurrenceRelations result.
     typedef RecurrenceRelation::ExprType ExprType;
 
-    Uncontract_Integral(const SafePtr<I>&);
+    Uncontract_Integral(const std::shared_ptr<I>&);
     virtual ~Uncontract_Integral() {}
 
     /// Implementation of RecurrenceRelation::num_children()
     unsigned int num_children() const override { return children_.size(); }
     /// target() returns pointer to target
-    SafePtr<TargetType> target() const { return target_; };
+    std::shared_ptr<TargetType> target() const { return target_; };
     /// child(i) returns pointer i-th child
-    SafePtr<ChildType> child(unsigned int i) const;
+    std::shared_ptr<ChildType> child(unsigned int i) const;
     /// Implementation of RecurrenceRelation's target()
-    SafePtr<DGVertex> rr_target() const override { return static_pointer_cast<DGVertex,TargetType>(target()); }
+    std::shared_ptr<DGVertex> rr_target() const override { return std::static_pointer_cast<DGVertex,TargetType>(target()); }
     /// Implementation of RecurrenceRelation's child()
-    SafePtr<DGVertex> rr_child(unsigned int i) const override { return static_pointer_cast<DGVertex,ChildType>(child(i)); }
+    std::shared_ptr<DGVertex> rr_child(unsigned int i) const override { return std::static_pointer_cast<DGVertex,ChildType>(child(i)); }
     /// to inline this would require a unary operator (+=).
     /// instead will always implement as a function call.
     bool is_simple() const override {
@@ -76,8 +76,8 @@ namespace libint2 {
     }
 
   private:
-    SafePtr<TargetType> target_;
-    std::vector< SafePtr<ChildType> > children_;
+    std::shared_ptr<TargetType> target_;
+    std::vector< std::shared_ptr<ChildType> > children_;
 
     // contracting integrals only depends on the number of integrals in a set
     // can simplify this to only refer to that number
@@ -88,14 +88,14 @@ namespace libint2 {
     }
 
     //
-    std::string spfunction_call(const SafePtr<CodeContext>& context,
-                                const SafePtr<ImplicitDimensions>& dims) const override;
+    std::string spfunction_call(const std::shared_ptr<CodeContext>& context,
+                                const std::shared_ptr<ImplicitDimensions>& dims) const override;
 
   };
 
 
   template <class I>
-  Uncontract_Integral<I>::Uncontract_Integral(const SafePtr<I>& Tint) :
+  Uncontract_Integral<I>::Uncontract_Integral(const std::shared_ptr<I>& Tint) :
     target_(Tint)
     {
       target_ = Tint;
@@ -137,7 +137,7 @@ namespace libint2 {
 #if DEBUG
         std::cout << "Uncontract_Integral: " << target_->description() << " is contracted" << std::endl;
 #endif
-        SafePtr<ChildType> c = ChildType::Instance(bra_unc, ket_unc,
+        std::shared_ptr<ChildType> c = ChildType::Instance(bra_unc, ket_unc,
                                                    target_->aux(),
                                                    oper_unc);
         children_.push_back(c);
@@ -145,7 +145,7 @@ namespace libint2 {
     };
 
   template <class I>
-    SafePtr<typename Uncontract_Integral<I>::ChildType>
+    std::shared_ptr<typename Uncontract_Integral<I>::ChildType>
     Uncontract_Integral<I>::child(unsigned int i) const
     {
       return children_.at(i);
@@ -153,20 +153,20 @@ namespace libint2 {
 
   template <class I>
   std::string
-  Uncontract_Integral<I>::spfunction_call(const SafePtr<CodeContext>& context,
-                                          const SafePtr<ImplicitDimensions>& dims) const {
+  Uncontract_Integral<I>::spfunction_call(const std::shared_ptr<CodeContext>& context,
+                                          const std::shared_ptr<ImplicitDimensions>& dims) const {
 
     const unsigned int s = target_->size();
-    SafePtr<CTimeEntity<int> > bdim(new CTimeEntity<int>(s));
-    SafePtr<Entity> bvecdim;
+    std::shared_ptr<CTimeEntity<int> > bdim(new CTimeEntity<int>(s));
+    std::shared_ptr<Entity> bvecdim;
     bool vectorize = false;
     if (!dims->vecdim_is_static()) {
       vectorize = true;
-      SafePtr< RTimeEntity<EntityTypes::Int> > vecdim = dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(dims->vecdim());
+      std::shared_ptr< RTimeEntity<EntityTypes::Int> > vecdim = std::dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(dims->vecdim());
       bvecdim = vecdim * bdim;
     }
     else {
-      SafePtr< CTimeEntity<int> > vecdim = dynamic_pointer_cast<CTimeEntity<int>,Entity>(dims->vecdim());
+      std::shared_ptr< CTimeEntity<int> > vecdim = std::dynamic_pointer_cast<CTimeEntity<int>,Entity>(dims->vecdim());
       vectorize = vecdim->value() == 1 ? false : true;
       bvecdim = vecdim * bdim;
     }
@@ -193,15 +193,15 @@ namespace libint2 {
 
   /// return true if V is a decontracted IntegralSet
   struct DecontractedIntegralSet {
-    bool operator()(const SafePtr<DGVertex>& V) {
+    bool operator()(const std::shared_ptr<DGVertex>& V) {
       const unsigned int outdegree = V->num_exit_arcs();
       if (outdegree == 0) return false;
 
-      const SafePtr<DGArc> arc0 = *(V->first_exit_arc());
+      const std::shared_ptr<DGArc> arc0 = *(V->first_exit_arc());
       // Is this DGArcRR?
-      const SafePtr<DGArcRR> arcrr = dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
+      const std::shared_ptr<DGArcRR> arcrr = std::dynamic_pointer_cast<DGArcRR,DGArc>(arc0);
       if (arcrr == 0) return false;
-      const SafePtr<Uncontract_Integral_base> uib_ptr = dynamic_pointer_cast<Uncontract_Integral_base,RecurrenceRelation>(arcrr->rr());
+      const std::shared_ptr<Uncontract_Integral_base> uib_ptr = std::dynamic_pointer_cast<Uncontract_Integral_base,RecurrenceRelation>(arcrr->rr());
       return uib_ptr != 0;
     }
   };

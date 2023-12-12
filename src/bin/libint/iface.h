@@ -41,8 +41,8 @@ namespace libint2 {
     class Libint2Iface {
       public:
       typedef std::vector<std::string> Tasks;
-      Libint2Iface(const SafePtr<CompilationParameters>& cparams,
-                   const SafePtr<CodeContext>& ctext);
+      Libint2Iface(const std::shared_ptr<CompilationParameters>& cparams,
+                   const std::shared_ptr<CodeContext>& ctext);
       ~Libint2Iface();
 
       /// Writes string s to the types header
@@ -105,8 +105,8 @@ namespace libint2 {
       private:
       std::string null_str_;
       std::ostringstream oss_;
-      SafePtr<CompilationParameters> cparams_;
-      SafePtr<CodeContext> ctext_;
+      std::shared_ptr<CompilationParameters> cparams_;
+      std::shared_ptr<CodeContext> ctext_;
 
       // computation-specific functions are libint2_init_xxx, libint2_cleanup_xxx, etc. -- these are their declarations,
       // e.g. "libint2_init_xxx(Libint_t* libint, int max_am, LIBINT2_REALTYPE* buf)"

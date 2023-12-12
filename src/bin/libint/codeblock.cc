@@ -24,8 +24,8 @@
 using namespace std;
 using namespace libint2;
 
-ForLoop::ForLoop(const SafePtr<CodeContext>& context, std::string& varname,
-                 const SafePtr<Entity>& less_than, const SafePtr<Entity>& start_at) :
+ForLoop::ForLoop(const std::shared_ptr<CodeContext>& context, std::string& varname,
+                 const std::shared_ptr<Entity>& less_than, const std::shared_ptr<Entity>& start_at) :
   CodeBlock(context), varname_(varname), less_than_(less_than), start_at_(start_at)
 {
   init_();
@@ -38,11 +38,11 @@ ForLoop::~ForLoop()
 void
 ForLoop::init_()
 {
-  SafePtr<CodeContext> ctext = context();
-  SafePtr< CTimeEntity<int> > lt_cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(less_than_);
-  SafePtr< CTimeEntity<int> > sa_cptr = dynamic_pointer_cast<CTimeEntity<int>,Entity>(start_at_);
-  SafePtr< RTimeEntity<EntityTypes::Int> > lt_rptr = dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(less_than_);
-  SafePtr< RTimeEntity<EntityTypes::Int> > sa_rptr = dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(start_at_);
+  std::shared_ptr<CodeContext> ctext = context();
+  std::shared_ptr< CTimeEntity<int> > lt_cptr = std::dynamic_pointer_cast<CTimeEntity<int>,Entity>(less_than_);
+  std::shared_ptr< CTimeEntity<int> > sa_cptr = std::dynamic_pointer_cast<CTimeEntity<int>,Entity>(start_at_);
+  std::shared_ptr< RTimeEntity<EntityTypes::Int> > lt_rptr = std::dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(less_than_);
+  std::shared_ptr< RTimeEntity<EntityTypes::Int> > sa_rptr = std::dynamic_pointer_cast<RTimeEntity<EntityTypes::Int>,Entity>(start_at_);
   
   if (lt_cptr != 0) {
     ostringstream oss;
@@ -75,7 +75,7 @@ ForLoop::init_()
 std::string
 ForLoop::open()
 {
-  SafePtr<CodeContext> ctext = context();
+  std::shared_ptr<CodeContext> ctext = context();
   ostringstream oss;
 
   if (dummy_loop_) {

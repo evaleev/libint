@@ -82,14 +82,14 @@ namespace libint2 {
   }
 };
 
-CodeContext::CodeContext(const SafePtr<CompilationParameters>& cparams) :
+CodeContext::CodeContext(const std::shared_ptr<CompilationParameters>& cparams) :
   cparams_(cparams),
   comments_on_(false)
 {
   zero_out_counters();
 }
 
-const SafePtr<CompilationParameters>&
+const std::shared_ptr<CompilationParameters>&
 CodeContext::cparams() const
 {
   return cparams_;
@@ -185,7 +185,7 @@ namespace ForbiddenCppCharacters {
   };
 };
 
-CppCodeContext::CppCodeContext(const SafePtr<CompilationParameters>& cparams, bool vectorize) :
+CppCodeContext::CppCodeContext(const std::shared_ptr<CompilationParameters>& cparams, bool vectorize) :
   CodeContext(cparams), vectorize_(vectorize)
 {
 }
@@ -660,9 +660,9 @@ CppCodeContext::value_to_pointer(const std::string& val) const
   }
 }
 
-SafePtr<ForLoop>
-CppCodeContext::for_loop(std::string& varname, const SafePtr<Entity>& less_than,
-                         const SafePtr<Entity>& start_at) const
+std::shared_ptr<ForLoop>
+CppCodeContext::for_loop(std::string& varname, const std::shared_ptr<Entity>& less_than,
+                         const std::shared_ptr<Entity>& start_at) const
 {
   // not implemented
   abort();

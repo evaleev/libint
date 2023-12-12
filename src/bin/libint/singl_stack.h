@@ -44,10 +44,10 @@ namespace libint2 {
   {
   public:
     typedef KeyType key_type;
-    typedef SafePtr<T> data_type;
+    typedef std::shared_ptr<T> data_type;
     /// Specifies type for the instance index variables
     typedef KeyTypes::InstanceID InstanceID;
-    typedef std::pair<InstanceID,SafePtr<T> > value_type;
+    typedef std::pair<InstanceID,std::shared_ptr<T> > value_type;
     typedef std::map<key_type,value_type> map_type;
     /// use iter_type objects to iterate over the stack
     typedef typename map_type::iterator iter_type;
@@ -77,7 +77,7 @@ namespace libint2 {
           if found -- returns the pointer to the corresponding object on ostack_,
           otherwise pushes obj to the end of ostack_ and returns obj.
      */
-    const value_type& find(const SafePtr<T>& obj) {
+    const value_type& find(const std::shared_ptr<T>& obj) {
       key_type key = ((obj.get())->*callback_)();
 
       typedef typename map_type::iterator miter;
@@ -103,7 +103,7 @@ namespace libint2 {
           else returns a null value_type.
      */
     const value_type& find(const key_type& key) {
-      static value_type null_value(make_pair(InstanceID(0),SafePtr<T>()));
+      static value_type null_value(make_pair(InstanceID(0),std::shared_ptr<T>()));
       typedef typename map_type::iterator miter;
       miter pos = map_.find(key);
       if (pos != map_.end()) {
@@ -119,7 +119,7 @@ namespace libint2 {
           else returns a null value_type.
      */
     const value_type& find_hashed(const InstanceID& hashed_key) const {
-      static value_type null_value(make_pair(InstanceID(0),SafePtr<T>()));
+      static value_type null_value(make_pair(InstanceID(0),std::shared_ptr<T>()));
       for(auto& i: map_) {
         if (i.second.first == hashed_key)
           return i.second;
@@ -129,7 +129,7 @@ namespace libint2 {
 
     /** Searches for obj on the stack and, if found, removes the unique instance
      */
-    void remove(const SafePtr<T>& obj) {
+    void remove(const std::shared_ptr<T>& obj) {
       key_type key = ((obj.get())->*callback_)();
 
       typedef typename map_type::iterator miter;

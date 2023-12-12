@@ -95,7 +95,7 @@ namespace libint2 {
       using ParentType::is_simple;
 
       /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-      CR_DerivGauss(const SafePtr<TargetType>&, unsigned int dir);
+      CR_DerivGauss(const std::shared_ptr<TargetType>&, unsigned int dir);
 
       static std::string descr() { return "CR_DerivGauss"; }
       /** Re-Implementation of GenericRecurrenceRelation::generate_label():
@@ -104,7 +104,7 @@ namespace libint2 {
       std::string generate_label() const override
       {
         typedef typename TargetType::AuxIndexType mType;
-        static SafePtr<mType> aux0(new mType(0u));
+        static std::shared_ptr<mType> aux0(new mType(0u));
         std::ostringstream os;
         os << descr() << "P" << part << to_string(where)
            << genintegralset_label(target_->bra(),target_->ket(),aux0,target_->oper());
@@ -113,18 +113,18 @@ namespace libint2 {
 
 #if LIBINT_ENABLE_GENERIC_CODE
       /// Implementation of RecurrenceRelation::has_generic()
-      bool has_generic(const SafePtr<CompilationParameters>& cparams) const override;
+      bool has_generic(const std::shared_ptr<CompilationParameters>& cparams) const override;
       /// Implementation of RecurrenceRelation::generic_header()
       std::string generic_header() const override;
       /// Implementation of RecurrenceRelation::generic_instance()
-      std::string generic_instance(const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args) const override;
+      std::string generic_instance(const std::shared_ptr<CodeContext>& context, const std::shared_ptr<CodeSymbols>& args) const override;
 #endif
     };
 
   template <class IntType, int part, FunctionPosition where,
             int trans_inv_part, FunctionPosition trans_inv_where>
   CR_DerivGauss<IntType,part,where,trans_inv_part,trans_inv_where>::CR_DerivGauss(
-      const SafePtr< TargetType >& Tint,
+      const std::shared_ptr< TargetType >& Tint,
       unsigned int dir) :
     ParentType(Tint,dir)
     {
@@ -279,7 +279,7 @@ namespace libint2 {
             int trans_inv_part, FunctionPosition trans_inv_where>
   bool
   CR_DerivGauss<IntType,part,where,trans_inv_part,trans_inv_where>::has_generic(
-      const SafePtr<CompilationParameters>& cparams
+      const std::shared_ptr<CompilationParameters>& cparams
       ) const
     {
       // not implemented generic relation for translational invariance yet
@@ -324,7 +324,7 @@ namespace libint2 {
             int trans_inv_part, FunctionPosition trans_inv_where>
       std::string
       CR_DerivGauss<IntType,part,where,trans_inv_part,trans_inv_where>::generic_instance(
-          const SafePtr<CodeContext>& context, const SafePtr<CodeSymbols>& args
+          const std::shared_ptr<CodeContext>& context, const std::shared_ptr<CodeSymbols>& args
         ) const
     {
       std::ostringstream oss;
