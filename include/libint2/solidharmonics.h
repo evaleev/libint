@@ -222,9 +222,14 @@ namespace libint2 {
         }
 
 
-        struct CtorHelperIter : public std::iterator<std::input_iterator_tag, SolidHarmonicsCoefficients> {
+        struct CtorHelperIter {
+            using iterator_category = std::input_iterator_tag;
+            using value_type = SolidHarmonicsCoefficients;
+            using difference_type = std::ptrdiff_t;
+            using pointer = value_type*;
+            using reference = value_type&;
+
             unsigned int l_;
-            using typename std::iterator<std::input_iterator_tag, SolidHarmonicsCoefficients>::value_type;
 
             CtorHelperIter() = default;
             CtorHelperIter(unsigned int l) : l_(l) {}

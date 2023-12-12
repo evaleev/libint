@@ -21,12 +21,12 @@
 #ifndef _libint2_src_bin_libint_bfset_h_
 #define _libint2_src_bin_libint_bfset_h_
 
+#include <array>
 #include <iostream>
 #include <string>
 #include <cassert>
 #include <numeric>
 #include <sstream>
-#include <stdarray.h>
 #include <smart_ptr.h>
 #include <polyconstr.h>
 #include <hashable.h>

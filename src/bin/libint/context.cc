@@ -672,7 +672,7 @@ std::string
 CppCodeContext::unique_fp_name() const
 {
   char result[80];
-  sprintf(result,"fp%d", next_fp_index());
+  snprintf(result, 80, "fp%d", next_fp_index());
   return result;
 }
 
@@ -680,7 +680,7 @@ std::string
 CppCodeContext::unique_int_name() const
 {
   char result[80];
-  sprintf(result,"i%d", next_int_index());
+  snprintf(result, 80, "i%d", next_int_index());
   return result;
 }
 

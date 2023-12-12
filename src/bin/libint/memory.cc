@@ -440,7 +440,6 @@ LastFitMemoryManager::alloc(const Size& size)
   if (size == 0)
     throw std::runtime_error("LastFitMemoryManager::alloc(size) -- size is 0");
 
-  typedef memblkset::iterator iter;
   typedef memblkset::reverse_iterator riter;
 
   memblkset& blks = blocks();
