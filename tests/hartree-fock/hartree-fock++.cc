@@ -689,11 +689,8 @@ int main(int argc, char* argv[]) {
     }
 
     {  // compute hessian
-      const auto ncoords = 3 * atoms.size();
-      // # of elems in upper triangle
-      const auto nelem = ncoords * (ncoords + 1) / 2;
 #if LIBINT2_DERIV_ONEBODY_ORDER > 1
-      // compute 1-e hessian
+       // compute 1-e hessian
       Matrix H1 = Matrix::Zero(ncoords, ncoords);
       Matrix H_Pulay = Matrix::Zero(ncoords, ncoords);
       //////////
@@ -967,7 +964,7 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
     // loop over unique shell pairs, {s1,s2} such that s1 >= s2
     // this is due to the permutational symmetry of the real integrals over
     // Hermitian operators: (1|2) = (2|1)
-    for (auto s1 = 0l, s12 = 0l; s1 != nshells; ++s1) {
+    for (auto s1 = 0l; s1 != nshells; ++s1) {
       auto bf1 = shell2bf[s1];  // first basis function in this shell
       auto n1 = obs[s1].size();
 
@@ -978,8 +975,6 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
 
         auto bf2 = shell2bf[s2];
         auto n2 = obs[s2].size();
-
-        auto n12 = n1 * n2;
 
         // compute shell pair; return is the pointer to the buffer
         engines[thread_id].compute(obs[s1], obs[s2]);
@@ -1050,7 +1045,7 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
     // loop over unique shell pairs, {s1,s2} such that s1 >= s2
     // this is due to the permutational symmetry of the real integrals over
     // Hermitian operators: (1|2) = (2|1)
-    for (auto s1 = 0l, s12 = 0l; s1 != nshells; ++s1) {
+    for (auto s1 = 0l; s1 != nshells; ++s1) {
       auto bf1 = shell2bf[s1];  // first basis function in this shell
       auto n1 = obs[s1].size();
       auto atom1 = shell2atom[s1];
@@ -1064,8 +1059,6 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
         auto bf2 = shell2bf[s2];
         auto n2 = obs[s2].size();
         auto atom2 = shell2atom[s2];
-
-        auto n12 = n1 * n2;
 
         // compute shell pair; return is the pointer to the buffer
         engines[thread_id].compute(obs[s1], obs[s2]);
@@ -1192,6 +1185,7 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
                                                  nderivcenters_shset);
             while (shellset_diter) {
               const auto& deriv = *shellset_diter;
+              (void)deriv;
             }
           }
         }  // copy shell block switch
@@ -1565,7 +1559,6 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
   auto fock_precision = precision;
   // standard approach is to omit *contributions* to the Fock matrix smaller
   // than fock_precision ... this relies on massive amount of error cancellation
-  auto max_nprim = obs.max_nprim();
   auto needed_engine_precision = (fock_precision / D_shblk_norm.maxCoeff());
   assert(needed_engine_precision > max_engine_precision &&
          "using precomputed shell pair data limits the max engine precision"
@@ -1774,7 +1767,6 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
   auto fock_precision = precision;
   // standard approach is to omit *contributions* to the Fock matrix smaller
   // than fock_precision ... this relies on massive amount of error cancellation
-  auto max_nprim = obs.max_nprim();
   auto needed_engine_precision = (fock_precision / D_shblk_norm.maxCoeff());
   assert(needed_engine_precision > max_engine_precision &&
          "using precomputed shell pair data limits the max engine precision"
@@ -1947,8 +1939,6 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
                   const int xyz = d % 3;
 
                   auto coord = shell_atoms[a] * 3 + xyz;
-                  auto& g = G[thread_id * nderiv + coord];
-
                   int coord1 = 0, coord2 = 0;
 
                   add_shellset_to_dest(thread_id * nderiv + coord, d, coord1,
@@ -2040,6 +2030,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs, const Matrix& D,
   const auto n = obs.nbf();
   const auto nshells = obs.size();
   const auto n_D = D_bs.nbf();
+  (void)n_D;
   assert(D.cols() == D.rows() && D.cols() == n_D);
 
   using libint2::nthreads;
@@ -2409,13 +2400,13 @@ void api_basic_compile_test(const BasisSet& obs,
         eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], Shell::unit());
         eri2_engine.compute(obs[s1], obs[s2]);
 
-        auto bf1 = shell2bf[s1];   // first basis function in first shell
         auto n1 = obs[s1].size();  // number of basis functions in first shell
-        auto bf2 = shell2bf[s2];   // first basis function in second shell
         auto n2 = obs[s2].size();  // number of basis functions in second shell
 
         const auto* buf4 = results4[0];
+        (void)buf4;
         const auto* buf2 = results2[0];
+        (void)buf2;
 
         // this iterates over integrals in the order they are packed in array
         // ints_shellset
@@ -2439,16 +2430,15 @@ void api_basic_compile_test(const BasisSet& obs,
           eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], obs[s3]);
           eri3_engine.compute(obs[s1], obs[s2], obs[s3]);
 
-          auto bf1 = shell2bf[s1];   // first basis function in first shell
           auto n1 = obs[s1].size();  // number of basis functions in first shell
-          auto bf2 = shell2bf[s2];   // first basis function in second shell
           auto n2 =
-              obs[s2].size();       // number of basis functions in second shell
-          auto bf3 = shell2bf[s3];  // first basis function in third shell
+              obs[s2].size();  // number of basis functions in second shell
           auto n3 = obs[s3].size();  // number of basis functions in third shell
 
           const auto* buf4 = results4[0];
+          (void)buf4;
           const auto* buf3 = results3[0];
+          (void)buf3;
 
           // this iterates over integrals in the order they are packed in array
           // ints_shellset
@@ -2475,15 +2465,15 @@ void api_basic_compile_test(const BasisSet& obs,
         eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], Shell::unit());
         eri2_engine.compute(obs[s1], obs[s2]);
 
-        auto bf1 = shell2bf[s1];   // first basis function in first shell
         auto n1 = obs[s1].size();  // number of basis functions in first shell
-        auto bf2 = shell2bf[s2];   // first basis function in second shell
         auto n2 = obs[s2].size();  // number of basis functions in second shell
 
         // loop over derivative shell sets
         for (auto d = 0; d != 6; ++d) {
           const auto* buf4 = results4[d < 3 ? d : d + 3];
+          (void)buf4;
           const auto* buf2 = results2[d];
+          (void)buf2;
 
           // this iterates over integrals in the order they are packed in array
           // ints_shellset
