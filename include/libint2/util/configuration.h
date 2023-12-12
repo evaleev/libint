@@ -26,7 +26,8 @@
    @return the semicolon-separated strings from CMake components */
 const char* configuration_accessor();
 
-#ifdef _libint2_header_
+#ifdef __cplusplus
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -57,6 +58,6 @@ inline bool supports(std::string component) {
   return tf;
 }
 }  // namespace libint2
-#endif /* cxxapi guard */
+#endif /* C++ guard */
 
 #endif /* header guard */
