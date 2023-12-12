@@ -25,68 +25,69 @@
 
 namespace libint2 {
 
-  /**
-   * this computes integral over Oper over CGShell/CGF as a product of 1-d integrals
-   * @tparam F basis function type. valid choices are CGShell or CGF
-  */
-  template <typename F, typename Oper, typename AuxQuanta = EmptySet>
-  class CR_XYZ_1_1 : public GenericRecurrenceRelation< CR_XYZ_1_1<F,Oper,AuxQuanta>,
-                                                       F,
-                                                       GenIntegralSet_1_1<F,Oper,AuxQuanta> >
+/**
+ * this computes integral of @c Oper over CGShell/CGF as a product of 1-d
+ * integrals
+ * @tparam F basis function type. valid choices are CGShell or CGF
+ */
+template <typename F, typename Oper, typename AuxQuanta = EmptySet>
+class CR_XYZ_1_1 : public GenericRecurrenceRelation<
+                       CR_XYZ_1_1<F, Oper, AuxQuanta>, F,
+                       GenIntegralSet_1_1<F, Oper, AuxQuanta> > {
+ public:
+  typedef CR_XYZ_1_1<F, Oper, AuxQuanta> ThisType;
+  typedef F BasisFunctionType;
+  typedef Oper OperType;
+  typedef GenIntegralSet_1_1<F, Oper, AuxQuanta> TargetType;
+  typedef GenericRecurrenceRelation<ThisType, BasisFunctionType, TargetType>
+      ParentType;
+  friend class GenericRecurrenceRelation<ThisType, BasisFunctionType,
+                                         TargetType>;
+  static const unsigned int max_nchildren = 100;
+
+  using ParentType::Instance;
+
+  static bool directional() { return false; }
+
+ private:
+  using ParentType::is_simple;
+  using ParentType::target_;
+  using ParentType::RecurrenceRelation::expr_;
+  using ParentType::RecurrenceRelation::nflops_;
+
+  /// Constructor is private, used by ParentType::Instance that maintains
+  /// registry of these objects
+  CR_XYZ_1_1(const std::shared_ptr<TargetType>&, unsigned int dir = 0);
+
+  static std::string descr() { return "CR"; }
+
+  /// specialize this for the given operator type and CGF
+  void compute(const BasisFunctionType& bra, const BasisFunctionType& ket,
+               const Oper& oper);
+};
+
+template <typename F, typename Oper, typename AuxQuanta>
+CR_XYZ_1_1<F, Oper, AuxQuanta>::CR_XYZ_1_1(
+    const std::shared_ptr<TargetType>& Tint, unsigned int dir)
+    : ParentType(Tint, dir) {
+  // WARNING assuming one function per position
+  const auto& a = Tint->bra(0, 0);
+  const auto& b = Tint->ket(0, 0);
+  const auto& aux = Tint->aux();
+  const auto& oper = Tint->oper();
+
   {
-    public:
-      typedef CR_XYZ_1_1<F, Oper, AuxQuanta> ThisType;
-      typedef F BasisFunctionType;
-      typedef Oper OperType;
-      typedef GenIntegralSet_1_1<F,Oper,AuxQuanta> TargetType;
-      typedef GenericRecurrenceRelation<ThisType,BasisFunctionType,TargetType> ParentType;
-      friend class GenericRecurrenceRelation<ThisType,BasisFunctionType,TargetType>;
-      static const unsigned int max_nchildren = 100;
+    // can't apply to contracted basis functions
+    if (a.contracted() || b.contracted()) return;
+    // can't apply to differentiated CGF (derivatives will be expanded first)
+    if (TrivialBFSet<F>::result &&
+        (a.deriv().norm() != 0 || b.deriv().norm() != 0))
+      return;
+  }
 
-      using ParentType::Instance;
+  compute(a, b, oper);
+}  // CR_XYZ_1_1<F,Oper,AuxQuanta>::CR_XYZ_1_1
 
-      static bool directional() { return false; }
-
-    private:
-      using ParentType::RecurrenceRelation::expr_;
-      using ParentType::RecurrenceRelation::nflops_;
-      using ParentType::target_;
-      using ParentType::is_simple;
-
-      /// Constructor is private, used by ParentType::Instance that maintains registry of these objects
-      CR_XYZ_1_1(const std::shared_ptr<TargetType>&, unsigned int dir = 0);
-
-      static std::string descr() { return "CR"; }
-
-      /// specialize this for the given operator type and CGF
-      void compute(const BasisFunctionType& bra, const BasisFunctionType& ket, const Oper& oper);
-  };
-
-  template <typename F, typename Oper, typename AuxQuanta>
-  CR_XYZ_1_1<F,Oper,AuxQuanta>::CR_XYZ_1_1(const std::shared_ptr< TargetType >& Tint,
-                                           unsigned int dir) :
-    ParentType(Tint,dir)
-    {
-      // WARNING assuming one function per position
-      const auto& a = Tint->bra(0,0);
-      const auto& b = Tint->ket(0,0);
-      const auto& aux = Tint->aux();
-      const auto& oper = Tint->oper();
-
-      {
-        // can't apply to contracted basis functions
-        if (a.contracted() || b.contracted())
-          return;
-        // can't apply to differentiated CGF (derivatives will be expanded first)
-        if (TrivialBFSet<F>::result &&
-            (a.deriv().norm() != 0 ||
-             b.deriv().norm() != 0))
-          return;
-      }
-
-      compute(a,b,oper);
-    } // CR_XYZ_1_1<F,Oper,AuxQuanta>::CR_XYZ_1_1
-
-}; // namespace libint2
+};  // namespace libint2
 
 #endif

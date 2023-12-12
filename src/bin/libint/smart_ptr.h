@@ -22,34 +22,22 @@
 #define _libint2_src_bin_libint_smartptr_h_
 
 #include <libint2/config.h>
+
 #include <memory>
+#include <type_traits>
 
 namespace libint2 {
 namespace detail {
 /** Can be used to determine whether a type is a std::shared_ptr */
+template <typename>
+struct IsSharedPtrHelper : std::false_type {};
 template <typename T>
-struct IsSafePtr {
-  enum { result = false };
-};
+struct IsSharedPtrHelper<std::shared_ptr<T>> : std::true_type {};
 
 template <typename T>
-struct IsSafePtr< std::shared_ptr<T> > {
-  enum { result = true };
-};
-template <typename T>
-struct IsSafePtr< const std::shared_ptr<T> > {
-  enum { result = true };
-};
-template <typename T>
-struct IsSafePtr< std::shared_ptr<T>& > {
-  enum { result = true };
-};
-template <typename T>
-struct IsSafePtr< const std::shared_ptr<T>& > {
-  enum { result = true };
-};
+struct IsSharedPtr : IsSharedPtrHelper<typename std::remove_const<
+                       typename std::remove_reference<T>::type>::type> {};
 }  // namespace detail
 }  // namespace libint2
 
 #endif
-

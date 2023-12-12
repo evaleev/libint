@@ -166,11 +166,21 @@ namespace libint2 {
         return not this->operator==(other);
       }
 
+      /// @param l angular momentum quantum number
+      /// @return (lower-case) letter symbol corresponding to @p l ; e.g., `s` for `l=0`, `p` for `l=1`, etc.
+      /// @warning BasisSetExchange is broken for L>=7, see https://github.com/MolSSI-BSE/basis_set_exchange/issues/292
+      /// @throw std::invalid_argument if \c l is greater than 19
       static char am_symbol(size_t l) {
         static char lsymb[] = "spdfghikmnoqrtuvwxyz";
         assert(l<=19);
         return lsymb[l];
       }
+
+      /// inverse of am_symbol()
+      /// @param am_symbol letter symbol denoting orbital angular momentum @p l ; e.g., `s` for `l=0`, `p` for `l=1`, etc.
+      /// @note this function is case insensitive, i.e. `am_symbol_to_l('s') == am_symbol_to_l('S')`
+      /// @return angular momentum quantum number
+      /// @sa am_symbol()
       static unsigned short am_symbol_to_l(char am_symbol) {
         const char AM_SYMBOL = ::toupper(am_symbol);
         switch (AM_SYMBOL) {

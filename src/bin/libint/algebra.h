@@ -121,7 +121,7 @@ namespace libint2 {
 
       /// laboriously compare 2 operators element by element
       bool operator==(const std::shared_ptr<AlgebraicOperator>& a) const {
-#if ALGEBRAICOPERATOR_USE_SAFEPTR
+#if ALGEBRAICOPERATOR_USE_SHAREDPTR
         // Find out why sometimes equivalent left_ and a->left_ have non-equivalent pointers
         if (left_->equiv(a->left()) && left_ != a->left_) {
           std::cout << "Left arguments are equivalent but pointers differ!" << std::endl;
@@ -136,7 +136,7 @@ namespace libint2 {
         }
 #endif
         if (OT_ == a->OT_) {
-#if ALGEBRAICOPERATOR_USE_SAFEPTR
+#if ALGEBRAICOPERATOR_USE_SHAREDPTR
           if (left_ == a->left_ && right_ == a->right_)
 #else
           if (left_->equiv(a->left()) && right_->equiv(a->right()))

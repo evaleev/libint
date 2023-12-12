@@ -196,7 +196,7 @@ namespace {
       v->unregister();
     }
   };
-  struct __reset_safeptr {
+  struct __reset_shared_ptr {
     void operator()(std::shared_ptr<DGVertex>& v) {
       v.reset();
     }
@@ -435,7 +435,7 @@ DirectedGraph::reset()
   // Reset each vertex, releasing all arcs
   __reset_dgvertex rv;
   foreach(rv);
-  __reset_safeptr rptr;
+  __reset_shared_ptr rptr;
   foreach(rptr);
 
   // if everything went OK then empty out stack_ and targets_
