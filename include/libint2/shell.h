@@ -168,7 +168,6 @@ namespace libint2 {
 
       /// @param l angular momentum quantum number
       /// @return (lower-case) letter symbol corresponding to @p l ; e.g., `s` for `l=0`, `p` for `l=1`, etc.
-      /// @warning BasisSetExchange is broken for L>=7, see https://github.com/MolSSI-BSE/basis_set_exchange/issues/292
       /// @throw std::invalid_argument if \c l is greater than 19
       static char am_symbol(size_t l) {
         static char lsymb[] = "spdfghikmnoqrtuvwxyz";
