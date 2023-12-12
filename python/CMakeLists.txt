@@ -21,20 +21,12 @@ if (NOT TARGET pybind11::pybind11)
     include(FetchContent)
     FetchContent_Declare(
       pybind11
-      GIT_REPOSITORY https://github.com/pybind/pybind11.git
-      GIT_TAG        v2.6.0  # sync below!
-      # GIT_REPOSITORY      https://github.com/ValeevGroup/pybind11.git
-      # GIT_TAG             80d452484c5409444b0ec19383faa84bb7a4d351  # v2.4.3
-      # FIND_PACKAGE_ARGS 2.4.3 CONFIG  # CMake 3.24 integrates find_package() call above into FC_Declare
+      GIT_REPOSITORY      https://github.com/ValeevGroup/pybind11.git
+      GIT_TAG             ValeevGroup/v2.11
       )
 
     FetchContent_MakeAvailable(pybind11)
-    set(pybind11_VERSION "2.6.0")  # getting the fetched version isn't reliable from ${CMAKE_PROJECT_VERSION}), so sync explicitly from tag above
-endif()
-
-if (pybind11_VERSION VERSION_LESS_EQUAL 2.5.0)
-    # remove after minimum pb11 advances beyond v2.5.0 and let cxx_std_17 below do the work
-    set(CMAKE_CXX_STANDARD 17)
+    set(pybind11_VERSION "2.11")  # getting the fetched version isn't reliable from ${CMAKE_PROJECT_VERSION}), so sync explicitly from tag above
 endif()
 
 if (pybind11_VERSION VERSION_GREATER_EQUAL 2.11.0)
