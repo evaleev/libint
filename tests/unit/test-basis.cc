@@ -11,10 +11,20 @@ TEST_CASE("Basis", "[basis]") {
     REQUIRE_NOTHROW(bs = libint2::BasisSet(name, atoms));
     std::cout << "name=" << name << std::endl;
     REQUIRE(bs.nbf() > 0);
-    if (name.find("-pv6z-ri") !=
-        std::string::npos) {  // make sure gaussian's J shells (L=7) are read in
-                              // correctly
+
+    // make sure gaussian's J shells (L=7) are read in correctly
+    if (name.find("-pv6z-ri") != std::string::npos) {
       REQUIRE(bs.max_l() == 7);
+    }
+
+    // test Cartesian vs. solids defaults
+    if (name == "6-31g*") {  // cartesian d, 2*(1*3 + 3*2 + 6*1) = 30
+      REQUIRE(bs.nbf() == 30);
+    }
+    // test Cartesian vs. solids defaults
+    if (name ==
+        "6-311g**") {  // solid harmonics d and f, 2*(1*4 + 3*3 + 5*1) = 36
+      REQUIRE(bs.nbf() == 36);
     }
   };
 
