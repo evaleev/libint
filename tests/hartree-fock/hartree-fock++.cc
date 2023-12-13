@@ -689,9 +689,9 @@ int main(int argc, char* argv[]) {
     }
 
     {  // compute hessian
-      const auto ncoords = 3 * atoms.size();
+      LIBINT_MAYBE_UNUSED const auto ncoords = 3 * atoms.size();
 #if LIBINT2_DERIV_ONEBODY_ORDER > 1
-       // compute 1-e hessian
+      // compute 1-e hessian
       Matrix H1 = Matrix::Zero(ncoords, ncoords);
       Matrix H_Pulay = Matrix::Zero(ncoords, ncoords);
       //////////

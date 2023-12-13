@@ -76,9 +76,8 @@ inline bool initialized() {
 inline void initialize(bool verbose = false) {
   if (!initialized()) {
     using namespace detail;
-    __initializer* x = managed_singleton<__initializer>::instance();
-    (void)x;  // to suppress unused variable warning (not guaranteed to work)
-              // TODO revise when upgrade to C++17
+    LIBINT_MAYBE_UNUSED __initializer* x =
+        managed_singleton<__initializer>::instance();
     assert(x != nullptr);
     verbose_accessor() = verbose;
 

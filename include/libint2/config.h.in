@@ -302,4 +302,20 @@
 #define LIBINT_DEPRECATED(msg) LIBINT_XPRAGMA( LIBINT_CONCAT(message, msg) )
 #endif
 
+#ifdef __has_cpp_attribute
+#if __has_cpp_attribute(maybe_unused)
+#define LIBINT_MAYBE_UNUSED [[maybe_unused]]
+#endif
+#endif  // __has_cpp_attribute
+#ifndef LIBINT_MAYBE_UNUSED
+#if defined __has_attribute
+#  if __has_attribute (unused)
+#    define LIBINT_MAYBE_UNUSED __attribute__ ((unused))
+#  endif
+#endif  // __has_attribute
+#endif  // LIBINT_MAYBE_UNUSED
+#ifndef LIBINT_MAYBE_UNUSED  // fallback
+#define LIBINT_MAYBE_UNUSED
+#endif
+
 #endif /* header guard */
