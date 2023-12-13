@@ -3,29 +3,37 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
-- 2022-xx-yy: 2.8.0-beta.1
+- 2023-12-12: 2.8.0
+  - PR #297: clang-format
+  - PR #293: read Gaussian basis set files with L>=7 AOs correctly
+  - PR #276 and #291: removed checks for pre-c++11 features (TR1 array and shared_ptr, etc.) (HT @e-kwsm)
+  - PR #289: fixed DIIS ctor (HT @tjira)
+  - PR #283: bump pybind11 to ValeevGroup/pybind11@v2.11 (HT @asadchev)
+  - PR #282: removed obsolete basis files (HT @JonathonMisiewicz)
+  - PR #279: fixed error in 1-e erf/erfc integrals (HT @JonathonMisiewicz)
+  - PR @273: support for 1-e (σ·p)V(σ·p) integrals (HT @JonathonMisiewicz)
   - PR #271: Add `libint2::configuration_accessor` and `libint2::supports` functions. If
-    library source is patched, these provide codes for what integrals a library instance can supply.
+    library source is patched, these provide codes for what integrals a library instance can supply. (HT @loriab)
   - PR #271: Small pkgconfig and cmake detection improvements. Enable unity build.
-    Testing of solid harmonics runtime switchable from #269.
+    Testing of solid harmonics runtime switchable from #269. (HT @loriab)
   - PR #270: For Windows, basis sets with a star have been renamed to "s" on the filesystem,
     so 6-31g**.g94 -> 6-31gss.g94. In code, the basis can be accessed through "6-31g**" (longstanding)
-    or "6-31gss" (new) for all operating systems.
+    or "6-31gss" (new) for all operating systems. (HT @loriab)
   - PR #270: Adapt build system and header imports so that library and Python bindings can build on
     Windows (at least with clang-cl compiler atop MSVC). Note that a Linux- or Mac-generated export
     builds on Windows; one cannot generate an export on Windows. Note also that only a static library
-    build, not a shared one, works on Windows (see #237).
-  - PR #269: minimum CMake bumped to 3.16
+    build, not a shared one, works on Windows (see #237). (HT @loriab)
+  - PR #269: minimum CMake bumped to 3.16 (HT @loriab)
   - PR #269: Solid harmonics ordering is runtime switchable in the library. Issue
     `libint2::set_solid_harmonics_ordering(libint2::SHGShellOrdering_Gaussian)` or `_Standard` before
-    initialization. Similarly, prefer new `INT_SOLIDHARMINDEX(sho, l, m)` to usual `(l, m)` version.
+    initialization. Similarly, prefer new `INT_SOLIDHARMINDEX(sho, l, m)` to usual `(l, m)` version. (HT @loriab)
   - PR #269: The ordering for spherical multipole integrals has been fixed at Standard, rather than
     Gaussian or Standard as previously. Note that between this and the next item above, the
     `--with-shgauss-ordering=standard|gaussian` has been rendered pointless for the C++ interface.
   - PR #268: Python detection (relevant to Python bindings, Fortran, and some tests) now uses modern
     `find_package(Python)`. Specify with `Python_EXECUTABLE` (note change in case) or
-    https://cmake.org/cmake/help/latest/module/FindPython.html for details .
-  - PR #268: Python bindings can now use Pybind11 >=2.6 and can use detected installation.
+    https://cmake.org/cmake/help/latest/module/FindPython.html for details . (HT @loriab)
+  - PR #268: Python bindings can now use Pybind11 >=2.6 and can use detected installation. (HT @loriab)
   - PR #249: Python bindings (HT @asadchev)
   - PR #246: BasisSet is no longer derived from vector<Shell>
   - PR #232: introduced new primitive screening methods
@@ -228,5 +236,3 @@ Following is a brief summary of changes made in each release of Libint.
 
 - 2016-11-23: 2.3.0-beta.1
   - read_dotxyz accepts bohr-to-angstrom conversion factor, the default is (still) 2010 CODATA
-
-
