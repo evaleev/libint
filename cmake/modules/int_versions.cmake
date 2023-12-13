@@ -1,0 +1,66 @@
+# top-level CMakeLists.txt has defined:
+# * PROJECT_VERSION_{MAJOR|MINOR|PATCH} through `project(... VERSION)`
+# * LIBINT_BUILDID
+# * LIBINT_SOVERSION
+# * LibintRepository_{VERSION|DESCRIBE|COMMIT|DISTANCE} through `dynamic_version()`
+
+# note that 3rd version integer is PATCH in CMake and MICRO in Libint
+# see also int_computed.cmake.in for transmitting these values to the library's CMake
+# note that with the dynamic/git scheme, it's important for repo to be up-to-date with tags
+
+
+# <<<  Sortable Version  >>>
+
+message(DEBUG "LibintRepository_VERSION  ${LibintRepository_VERSION}")
+message(DEBUG "LibintRepository_COMMIT   ${LibintRepository_COMMIT}")
+message(DEBUG "LibintRepository_DISTANCE ${LibintRepository_DISTANCE}")
+message(DEBUG "LibintRepository_DESCRIBE ${LibintRepository_DESCRIBE}")
+
+if (LibintRepository_DISTANCE STREQUAL "0")
+    set(LIBINT_SORTABLE_VERSION "${LibintRepository_VERSION}")
+else()
+    set(LIBINT_SORTABLE_VERSION "${LibintRepository_VERSION}.post${LibintRepository_DISTANCE}")
+endif()
+
+string(SUBSTRING ${LibintRepository_COMMIT} 0 7 LIBINT_GIT_COMMIT)
+message(DEBUG "LIBINT_GIT_COMMIT         ${LIBINT_GIT_COMMIT}")
+
+string(TIMESTAMP LIBINT_VERSION_YEAR "%Y")
+message(DEBUG "LIBINT_VERSION_YEAR       ${LIBINT_VERSION_YEAR}")
+
+
+# <<<  Build Version  >>>
+
+set(LIBINT_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
+set(LIBINT_MINOR_VERSION ${PROJECT_VERSION_MINOR})
+set(LIBINT_MICRO_VERSION ${PROJECT_VERSION_PATCH})
+
+set(LIBINT_VERSION ${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION})
+
+
+# <<<  Dev Version  >>>
+
+if (LIBINT_BUILDID)
+  set(LIBINT_EXT_VERSION ${LIBINT_VERSION}-${LIBINT_BUILDID})
+else()
+  set(LIBINT_EXT_VERSION ${LIBINT_VERSION})
+endif()
+
+message(STATUS "Version: Full ${LIBINT_EXT_VERSION} Numeric ${LIBINT_VERSION} Sortable ${LIBINT_SORTABLE_VERSION}")
+
+if (NOT(LibintRepository_VERSION STREQUAL LIBINT_VERSION))
+    message(AUTHOR_WARNING
+        "Version processing has gone wrong: ${LibintRepository_VERSION STREQUAL} != ${LIBINT_VERSION}")
+endif()
+
+
+# <<<  ABI Version  >>>
+
+string(REPLACE ":" ";" LIBINT_SOVERSION_LIST ${LIBINT_SOVERSION})
+
+list(GET LIBINT_SOVERSION_LIST 0 LIBINT_CURRENT_SOVERSION)
+list(GET LIBINT_SOVERSION_LIST 1 LIBINT_REVISION_SOVERSION)
+list(GET LIBINT_SOVERSION_LIST 2 LIBINT_AGE_SOVERSION)
+
+math(EXPR LIBINT_MAJOR_SOVERSION "${LIBINT_CURRENT_SOVERSION} - ${LIBINT_AGE_SOVERSION}")
+message(STATUS "SO Version: Full ${LIBINT_SOVERSION} Major ${LIBINT_MAJOR_SOVERSION}")

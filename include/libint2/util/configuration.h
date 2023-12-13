@@ -24,12 +24,38 @@
 /* Runtime accessor for the library configuration:
    integral derivatives, AM, orderings, etc.
    @return the semicolon-separated strings from CMake components */
-const char* configuration_accessor();
+const char *configuration_accessor();
+
+/* Get the major, minor, and micro version of Libint */
+void libint_version(int *, int *, int *);
+
+/* Get the version of Libint as a string
+    @return the version string. At release, strictly "M.m.p" (no alpha/rc/etc.).
+    Beyond release (ext=True), returns "M.m.p.postD" where D is distance from
+   release. Beyond release (ext=False), returns most recent release, "M.m.p". */
+const char *libint_version_string(bool ext = true);
+
+/* Get the git commit at which library was generated
+    @return the commit as a 7-char abbreviated string */
+const char *libint_commit(void);
+
+/* Literature citation
+    @return the citation string including description and version */
+const char *libint_reference(void);
+
+/* Literature citation DOI
+   @return the string of DOI for latest tag */
+const char *libint_reference_doi(void);
+
+/* BibTeX for citing Libint
+   @return the string for literature citation */
+const char *libint_bibtex(void);
 
 #ifdef __cplusplus
 #include <algorithm>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace libint2 {
@@ -57,6 +83,54 @@ inline bool supports(std::string component) {
       (std::find(seglist.begin(), seglist.end(), component) != seglist.end());
   return tf;
 }
+
+/// Get the major, minor, and micro version of Libint */
+/// @return the components of the last release
+inline std::tuple<int, int, int> libint_version() {
+  int vmajor, vminor, vmicro;
+  ::libint_version(&vmajor, &vminor, &vmicro);
+  return std::make_tuple(vmajor, vminor, vmicro);
+}
+
+/// Get the version of Libint as a string
+/// @param[in] whether to return the simple-sortable last release or a
+/// per-commit version
+/// @return the version string. At release, strictly "M.m.p" (no alpha/rc/etc.).
+/// Beyond release (ext=True), returns "M.m.p.postD" where D is distance from
+/// release. Beyond release (ext=False), returns most recent release, "M.m.p".
+inline std::string libint_version_string(bool ext = true) {
+  std::string version = ::libint_version_string(ext);
+  return version;
+}
+
+/// Get the git commit at which library was generated
+/// @return the commit as a 7-char abbreviated string
+inline std::string libint_commit(void) {
+  std::string commit = ::libint_commit();
+  return commit;
+}
+
+/// Literature citation
+/// @return the citation string including description and version
+inline std::string libint_reference(void) {
+  std::string ref = ::libint_reference();
+  return ref;
+}
+
+/// Literature citation DOI
+/// @return the string of DOI for latest tag
+inline std::string libint_reference_doi(void) {
+  std::string ref = ::libint_reference_doi();
+  return ref;
+}
+
+/// BibTeX for citing Libint
+/// @return the string for literature citation
+inline std::string libint_bibtex(void) {
+  std::string ref = ::libint_bibtex();
+  return ref;
+}
+
 }  // namespace libint2
 #endif /* C++ guard */
 
