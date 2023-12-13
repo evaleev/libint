@@ -689,6 +689,7 @@ int main(int argc, char* argv[]) {
     }
 
     {  // compute hessian
+      const auto ncoords = 3 * atoms.size();
 #if LIBINT2_DERIV_ONEBODY_ORDER > 1
        // compute 1-e hessian
       Matrix H1 = Matrix::Zero(ncoords, ncoords);
@@ -720,7 +721,7 @@ int main(int argc, char* argv[]) {
       }
 
       std::cout << "** 1-body hessian = ";
-      for (auto row = 0, i = 0; row != ncoords; ++row) {
+      for (auto row = 0; row != ncoords; ++row) {
         for (auto col = row; col != ncoords; ++col) {
           std::cout << H1(row, col) << " ";
         }
@@ -728,7 +729,7 @@ int main(int argc, char* argv[]) {
       std::cout << std::endl;
 
       std::cout << "** Pulay hessian = ";
-      for (auto row = 0, i = 0; row != ncoords; ++row) {
+      for (auto row = 0; row != ncoords; ++row) {
         for (auto col = row; col != ncoords; ++col) {
           std::cout << H_Pulay(row, col) << " ";
         }
@@ -753,7 +754,7 @@ int main(int argc, char* argv[]) {
       }
 
       std::cout << "** 2-body hessian = ";
-      for (auto row = 0, i = 0; row != ncoords; ++row) {
+      for (auto row = 0; row != ncoords; ++row) {
         for (auto col = row; col != ncoords; ++col) {
           std::cout << H2(row, col) << " ";
         }
@@ -816,7 +817,7 @@ int main(int argc, char* argv[]) {
       }
 
       std::cout << "** nuclear repulsion hessian = ";
-      for (auto row = 0, i = 0; row != ncoords; ++row) {
+      for (auto row = 0; row != ncoords; ++row) {
         for (auto col = row; col != ncoords; ++col) {
           std::cout << HN(row, col) << " ";
         }
@@ -825,7 +826,7 @@ int main(int argc, char* argv[]) {
 
       auto H = H1 + H_Pulay + H2 + HN;
       std::cout << "** Hartree-Fock hessian = ";
-      for (auto row = 0, i = 0; row != ncoords; ++row) {
+      for (auto row = 0; row != ncoords; ++row) {
         for (auto col = row; col != ncoords; ++col) {
           std::cout << H(row, col) << " ";
         }
@@ -1184,8 +1185,7 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
             ShellSetDerivIterator shellset_diter(deriv_order,
                                                  nderivcenters_shset);
             while (shellset_diter) {
-              const auto& deriv = *shellset_diter;
-              (void)deriv;
+              LIBINT_MAYBE_UNUSED const auto& deriv = *shellset_diter;
             }
           }
         }  // copy shell block switch
@@ -2029,8 +2029,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs, const Matrix& D,
                                   double precision) {
   const auto n = obs.nbf();
   const auto nshells = obs.size();
-  const auto n_D = D_bs.nbf();
-  (void)n_D;
+  LIBINT_MAYBE_UNUSED const auto n_D = D_bs.nbf();
   assert(D.cols() == D.rows() && D.cols() == n_D);
 
   using libint2::nthreads;
@@ -2403,10 +2402,8 @@ void api_basic_compile_test(const BasisSet& obs,
         auto n1 = obs[s1].size();  // number of basis functions in first shell
         auto n2 = obs[s2].size();  // number of basis functions in second shell
 
-        const auto* buf4 = results4[0];
-        (void)buf4;
-        const auto* buf2 = results2[0];
-        (void)buf2;
+        LIBINT_MAYBE_UNUSED const auto* buf4 = results4[0];
+        LIBINT_MAYBE_UNUSED const auto* buf2 = results2[0];
 
         // this iterates over integrals in the order they are packed in array
         // ints_shellset
@@ -2435,10 +2432,8 @@ void api_basic_compile_test(const BasisSet& obs,
               obs[s2].size();  // number of basis functions in second shell
           auto n3 = obs[s3].size();  // number of basis functions in third shell
 
-          const auto* buf4 = results4[0];
-          (void)buf4;
-          const auto* buf3 = results3[0];
-          (void)buf3;
+          LIBINT_MAYBE_UNUSED const auto* buf4 = results4[0];
+          LIBINT_MAYBE_UNUSED const auto* buf3 = results3[0];
 
           // this iterates over integrals in the order they are packed in array
           // ints_shellset
@@ -2470,10 +2465,8 @@ void api_basic_compile_test(const BasisSet& obs,
 
         // loop over derivative shell sets
         for (auto d = 0; d != 6; ++d) {
-          const auto* buf4 = results4[d < 3 ? d : d + 3];
-          (void)buf4;
-          const auto* buf2 = results2[d];
-          (void)buf2;
+          LIBINT_MAYBE_UNUSED const auto* buf4 = results4[d < 3 ? d : d + 3];
+          LIBINT_MAYBE_UNUSED const auto* buf2 = results2[d];
 
           // this iterates over integrals in the order they are packed in array
           // ints_shellset
@@ -2500,9 +2493,7 @@ void api_basic_compile_test(const BasisSet& obs,
         eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], Shell::unit());
         eri2_engine.compute(obs[s1], obs[s2]);
 
-        auto bf1 = shell2bf[s1];   // first basis function in first shell
         auto n1 = obs[s1].size();  // number of basis functions in first shell
-        auto bf2 = shell2bf[s2];   // first basis function in second shell
         auto n2 = obs[s2].size();  // number of basis functions in second shell
 
         // loop over derivative shell sets
@@ -2511,8 +2502,8 @@ void api_basic_compile_test(const BasisSet& obs,
           for (auto d2 = d1; d2 != 6; ++d2, ++d12) {
             const auto dd2 = d2 < 3 ? d2 : d2 + 3;
             const auto dd12 = dd1 * (24 - dd1 - 1) / 2 + dd2;
-            const auto* buf4 = results4[dd12];
-            const auto* buf2 = results2[d12];
+            LIBINT_MAYBE_UNUSED const auto* buf4 = results4[dd12];
+            LIBINT_MAYBE_UNUSED const auto* buf2 = results2[d12];
 
             // this iterates over integrals in the order they are packed in
             // array
