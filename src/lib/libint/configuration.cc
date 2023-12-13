@@ -18,10 +18,45 @@
  *
  */
 
-/* Runtime accessor for the library configuration:
-   integral derivatives, AM, orderings, etc.
-   @return the semicolon-separated strings from CMake components */
-const char* configuration_accessor() {
+const char *configuration_accessor(void) {
   // return "@Libint2_CONFIG_COMPONENTS@";
   return "(nyi)";
+}
+
+void libint_version(int *major, int *minor, int *micro) {
+  *major = -1;
+  *minor = -1;
+  *micro = -1;
+  sscanf(libint_version_string(ext = false), "%d.%d.%d", major, minor, micro);
+}
+
+const char *libint_version_string(bool ext) {
+  if (ext)
+    return "@LIBINT_SORTABLE_VERSION@";
+  else
+    return "@LIBINT_VERSION@";
+}
+
+const char *libint_commit(void) { return "@LIBINT_GIT_COMMIT@"; }
+
+const char *libint_reference(void) {
+  std::string ref;
+  ref =
+      "Libint: A library for the evaluation of molecular integrals of "
+      "many-body operators over Gaussian functions, Version " +
+      std::string(libint_version_string()) +
+      " Edward F. Valeev, http://libint.valeyev.net/";
+  return ref.c_str();
+}
+
+const char *libint_reference_doi(void) {
+  return "10.5281/zenodo.10369117";  // 2.8.0
+}
+
+const char *libint_bibtex(void) {
+  return "@Misc{Libint2,\n  author = {E.~F.~Valeev},\n  title = "
+         "{\\textsc{Libint}: A library for the evaluation of molecular "
+         "integrals of many-body operators over Gaussian functions},\n  "
+         "howpublished = {http://libint.valeyev.net/},\n  note = {version "
+         "@Libint2_VERSION@},\n  year = {@LIBINT_VERSION_YEAR@}\n}\n";
 }
