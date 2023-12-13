@@ -340,6 +340,7 @@ esac
 ]
 )
 
+LIBINT_HARD_MAX_AM=12
 LIBINT_MAX_AM=4
 AC_ARG_WITH(max-am,
 AS_HELP_STRING([--with-max-am=N],[Support Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...]),
@@ -357,7 +358,7 @@ AS_HELP_STRING([--with-max-am=N],[Support Gaussians of angular momentum up to N.
       else
         LIBINT_MAX_AM=$withval
       fi
-      if test $LIBINT_MAX_AM -ge 8; then
+      if test $LIBINT_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
         AC_MSG_ERROR([Value for --with-max-am too high ($withval). Are you sure you know what you are doing?])
       fi
     ;;
@@ -403,7 +404,7 @@ AS_HELP_STRING([--with-eri-max-am=N],[Support ERIs for Gaussians of angular mome
      else
       ERI_MAX_AM=$withval
      fi
-     if test $ERI_MAX_AM -ge 8; then
+     if test $ERI_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
       AC_MSG_ERROR([Value for --with-eri-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ERI_MAX_AM)
@@ -458,7 +459,7 @@ AS_HELP_STRING([--with-1body-max-am=N],[Support 1-e ints for Gaussians of angula
      else
       ONEBODY_MAX_AM=$withval
      fi
-     if test $ONEBODY_MAX_AM -ge 8; then
+     if test $ONEBODY_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
       AC_MSG_ERROR([Value for --with-1body-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ONEBODY_MAX_AM)
@@ -527,7 +528,7 @@ AS_HELP_STRING([--with-eri3-max-am=N],[Support 3-center ERIs for Gaussians of an
      else
       ERI3_MAX_AM=$withval
      fi
-     if test $ERI3_MAX_AM -ge 8; then
+     if test $ERI3_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
       AC_MSG_ERROR([Value for --with-eri3-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ERI3_MAX_AM)
@@ -598,7 +599,7 @@ AS_HELP_STRING([--with-eri2-max-am=N],[Support 2-center ERIs for Gaussians of an
      else
       ERI2_MAX_AM=$withval
      fi
-     if test $ERI2_MAX_AM -ge 8; then
+     if test $ERI2_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
       AC_MSG_ERROR([Value for --with-eri2-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ERI2_MAX_AM)
@@ -1496,4 +1497,3 @@ AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/libi
 
 dnl --------- Done! ---------
 AC_OUTPUT
-
