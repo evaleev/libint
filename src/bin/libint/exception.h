@@ -18,32 +18,26 @@
  *
  */
 
-#include <stdexcept>
 #include <smart_ptr.h>
+
+#include <stdexcept>
 
 #ifndef _libint2_src_bin_libint_exception_h_
 #define _libint2_src_bin_libint_exception_h_
 
-
 namespace libint2 {
 
-  class DGVertex;
+class DGVertex;
 
-  class InvalidDecrement : public std::logic_error {
-    
-  public:
-    InvalidDecrement(const std::string& a) :
-      logic_error(a) {};
-    
-  };
+class InvalidDecrement : public std::logic_error {
+ public:
+  InvalidDecrement(const std::string& a) : logic_error(a){};
+};
 
-  class CannotAddArc : public std::logic_error {
-    
-    public:
-    CannotAddArc(const std::string& a) :
-      logic_error(a) {};
-    
-  };
+class CannotAddArc : public std::logic_error {
+ public:
+  CannotAddArc(const std::string& a) : logic_error(a){};
+};
 
 #if 0
   /** This exception class is used to pass the pointer to the vertex on the graph
@@ -64,51 +58,41 @@ namespace libint2 {
   };
 #endif
 
-  /** This exception class is used to notify that a graph operation cannot be performed
-   */
-  class CannotPerformOperation : public std::logic_error {
-  public:
-    CannotPerformOperation(const std::string& msg) :
-      logic_error(msg) {}
-    virtual ~CannotPerformOperation() noexcept {}
-  };
-
-  /// This exception used to indicate that some property is not set
-  template <class T>
-    class NotSet : public std::logic_error {
-
-    public:
-    NotSet(const std::string& a) :
-      logic_error(a) {};
-  };
-
-  /** This exception used to indicate that some code hasn't been
-      developed or generalized yet */
-  class CodeDoesNotExist : public std::logic_error {
-
-    public:
-    CodeDoesNotExist(const std::string& a) :
-      logic_error(a) {}
-  };
-
-  /** This exception used to indicate some programming error */
-  class ProgrammingError : public std::logic_error {
-
-    public:
-    ProgrammingError(const std::string& a) :
-      logic_error(a) {}
-  };
-  
-  /** This exception used to indicate some error in the user-provided input */
-  class InputError : public std::logic_error {
-
-    public:
-    InputError(const std::string& a) :
-      logic_error(a) {}
-  };
-  
-
+/** This exception class is used to notify that a graph operation cannot be
+ * performed
+ */
+class CannotPerformOperation : public std::logic_error {
+ public:
+  CannotPerformOperation(const std::string& msg) : logic_error(msg) {}
+  virtual ~CannotPerformOperation() noexcept {}
 };
 
-#endif
+/// This exception used to indicate that some property is not set
+template <class T>
+class NotSet : public std::logic_error {
+ public:
+  NotSet(const std::string& a) : logic_error(a){};
+};
 
+/** This exception used to indicate that some code hasn't been
+    developed or generalized yet */
+class CodeDoesNotExist : public std::logic_error {
+ public:
+  CodeDoesNotExist(const std::string& a) : logic_error(a) {}
+};
+
+/** This exception used to indicate some programming error */
+class ProgrammingError : public std::logic_error {
+ public:
+  ProgrammingError(const std::string& a) : logic_error(a) {}
+};
+
+/** This exception used to indicate some error in the user-provided input */
+class InputError : public std::logic_error {
+ public:
+  InputError(const std::string& a) : logic_error(a) {}
+};
+
+};  // namespace libint2
+
+#endif

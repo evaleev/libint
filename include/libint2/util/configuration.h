@@ -24,36 +24,40 @@
 /* Runtime accessor for the library configuration:
    integral derivatives, AM, orderings, etc.
    @return the semicolon-separated strings from CMake components */
-const char * configuration_accessor();
+const char* configuration_accessor();
 
-#ifdef _libint2_src_lib_libint_cxxapi_h_
-#include <string>
+#ifdef __cplusplus
+#include <algorithm>
 #include <sstream>
+#include <string>
 #include <vector>
 
 namespace libint2 {
 
-  /// Runtime accessor for the library configuration:
-  /// integral derivatives, AM, orderings, etc.
-  /// @return the semicolon-separated strings from CMake components
-  inline std::string configuration_accessor() {
-    std::string components = ::configuration_accessor();
-    return components;
-  }
-
-  /// Runtime accessor for individual library configuration components:
-  /// integral derivatives, AM, orderings, etc.
-  /// @param[in] target CMake component with maximally uniform AM
-  /// @return whether target component available
-  inline bool supports(std::string component) {
-    std::string segment;
-    std::vector<std::string> seglist;
-    std::stringstream ca(configuration_accessor());
-    while(std::getline(ca, segment, ';')) { seglist.push_back(segment); }
-    bool tf = (std::find(seglist.begin(), seglist.end(), component) != seglist.end());
-    return tf;
-  }
+/// Runtime accessor for the library configuration:
+/// integral derivatives, AM, orderings, etc.
+/// @return the semicolon-separated strings from CMake components
+inline std::string configuration_accessor() {
+  std::string components = ::configuration_accessor();
+  return components;
 }
-#endif /* cxxapi guard */
+
+/// Runtime accessor for individual library configuration components:
+/// integral derivatives, AM, orderings, etc.
+/// @param[in] target CMake component with maximally uniform AM
+/// @return whether target component available
+inline bool supports(std::string component) {
+  std::string segment;
+  std::vector<std::string> seglist;
+  std::stringstream ca(configuration_accessor());
+  while (std::getline(ca, segment, ';')) {
+    seglist.push_back(segment);
+  }
+  bool tf =
+      (std::find(seglist.begin(), seglist.end(), component) != seglist.end());
+  return tf;
+}
+}  // namespace libint2
+#endif /* C++ guard */
 
 #endif /* header guard */

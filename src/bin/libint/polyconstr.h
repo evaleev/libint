@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -21,19 +21,18 @@
 #ifndef _libint2_src_bin_libint_polyconstr_h_
 #define _libint2_src_bin_libint_polyconstr_h_
 
-
 namespace libint2 {
 
-  /** ConstructablePolymorphically is a base for all objects
-      which can be constructed using a std::shared_ptr to a base or a
-      std::shared_ptr to ConstructablePolymorphically.
-  */
-  class ConstructablePolymorphically {
-  protected:
-    ConstructablePolymorphically() {}
-    virtual ~ConstructablePolymorphically() {}
-  };
-
+/** ConstructablePolymorphically is a base for all objects
+    which can be constructed using a std::shared_ptr to a base or a
+    std::shared_ptr to ConstructablePolymorphically.
+*/
+class ConstructablePolymorphically {
+ protected:
+  ConstructablePolymorphically() {}
+  virtual ~ConstructablePolymorphically() {}
 };
+
+};  // namespace libint2
 
 #endif

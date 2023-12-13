@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -25,12 +25,14 @@ using namespace libint2;
 
 namespace libint2 {
 
-  template <>
-  unsigned int
-  ConvertNumFlops<CGF>(unsigned int nflops) { return nflops; }
-  
-  template <>
-  unsigned int
-  ConvertNumFlops<CGShell>(unsigned int nflops) { return 0; }
+template <>
+unsigned int ConvertNumFlops<CGF>(unsigned int nflops) {
+  return nflops;
+}
 
-};
+template <>
+unsigned int ConvertNumFlops<CGShell>(unsigned int nflops) {
+  return 0;
+}
+
+};  // namespace libint2

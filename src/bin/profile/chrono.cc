@@ -18,41 +18,44 @@
  *
  */
 
-#include <iostream>
-#include <iomanip>
-#include <chrono>
 #include <libint2/util/cxxstd.h>
 
+#include <chrono>
+#include <iomanip>
+#include <iostream>
+
 #if LIBINT2_CPLUSPLUS_STD < 2011
-# error "compiler does not support C++11, try -std=c++11 flag"
+#error "compiler does not support C++11, try -std=c++11 flag"
 #endif
 
-int main (int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   typedef std::chrono::high_resolution_clock clock_t;
   typedef std::chrono::time_point<clock_t> time_point_t;
 
-  std::cout << "WARNING: turn off turboboost for reliable profiling" << std::endl;
+  std::cout << "WARNING: turn off turboboost for reliable profiling"
+            << std::endl;
 
   const size_t nrepeats = 20000000;
   std::cout << "nrepeats = " << nrepeats << std::endl;
 
   auto tstart = clock_t::now();
-  for(size_t i=0; i!=nrepeats; ++i) {
+  for (size_t i = 0; i != nrepeats; ++i) {
     asm("nop");
   }
   auto tstop = clock_t::now();
   typedef std::chrono::duration<double> dur_t;
   const dur_t d0 = tstop - tstart;
-  std::cout << "nop took " << std::setprecision(15) << d0.count()*1e9/nrepeats << " nanoseconds" << std::endl;
+  std::cout << "nop took " << std::setprecision(15)
+            << d0.count() * 1e9 / nrepeats << " nanoseconds" << std::endl;
 
   tstart = clock_t::now();
-  for(size_t i=0; i!=nrepeats; ++i) {
+  for (size_t i = 0; i != nrepeats; ++i) {
     const auto t = clock_t::now();
   }
   tstop = clock_t::now();
   const dur_t d1 = tstop - tstart;
-  std::cout << "high_resolution_clock::now() took " << d1.count()*1e9/nrepeats << " nanoseconds" << std::endl;
+  std::cout << "high_resolution_clock::now() took "
+            << d1.count() * 1e9 / nrepeats << " nanoseconds" << std::endl;
 
   return 0;
 }

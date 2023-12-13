@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -23,10 +23,10 @@
 
 namespace libint2 {
 
-  /// ConvertNumFlops processes the number of flops according to type F
-  template <class F>
-    unsigned int ConvertNumFlops(unsigned int nflops);
+/// ConvertNumFlops processes the number of flops according to type F
+template <class F>
+unsigned int ConvertNumFlops(unsigned int nflops);
 
-};
+};  // namespace libint2
 
 #endif

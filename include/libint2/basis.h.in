@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -26,6 +26,10 @@
 # error "libint2/basis.h requires C++11 support"
 #endif
 #include <libint2/cxxapi.h>
+#include <libint2/cxxapi.h>
+
+#include <libint2/initialize.h>
+#include <libint2/util/deprecated.h>
 
 #include <cerrno>
 #include <iostream>
@@ -374,7 +378,7 @@ namespace libint2 {
             return false;
           if (g_pos+1 == canonical_name.size()) // 6-31??g uses cartesian d
             return true;
-          if (canonical_name[g_pos+1] == '*') // 6-31??g*? uses cartesian d
+          if (canonical_name[g_pos+1] == '*' || canonical_name[g_pos+1] == 's') // 6-31??g*? uses cartesian d; on Windows * is replaced by s
             return true;
         }
         return false;

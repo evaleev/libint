@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -21,10 +21,10 @@
 #ifndef _libint2_src_lib_libint_engineimpl_h_
 #define _libint2_src_lib_libint_engineimpl_h_
 
-#include "./engine.h"
-#include "./deriv_map.h"
-
 #include <iterator>
+
+#include "./deriv_map.h"
+#include "./engine.h"
 
 #pragma GCC diagnostic push
 #pragma GCC system_header
@@ -33,11 +33,11 @@
 
 #include <libint2/boys.h>
 #if LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS
-# include <boost/preprocessor.hpp>
-# include <boost/preprocessor/facilities/is_1.hpp>
+#include <boost/preprocessor.hpp>
+#include <boost/preprocessor/facilities/is_1.hpp>
 #else  // use bundled boost
-#  include <libint2/boost/preprocessor.hpp>
-#  include <libint2/boost/preprocessor/facilities/is_1.hpp>
+#include <libint2/boost/preprocessor.hpp>
+#include <libint2/boost/preprocessor/facilities/is_1.hpp>
 #endif
 
 // extra PP macros
@@ -57,7 +57,7 @@
 #endif
 // uncomment if want to profile the engine even if library was configured
 // without --enable-profile
-//#  define LIBINT2_ENGINE_TIMERS
+// #  define LIBINT2_ENGINE_TIMERS
 
 namespace libint2 {
 
@@ -79,9 +79,15 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
        (1emultipole,                 \
         (2emultipole,                \
          (3emultipole,               \
-           (sphemultipole,           \
-            (opVop,                  \
-          (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, (eri, BOOST_PP_NIL))))))))))))))))))))
+          (sphemultipole,            \
+           (opVop,                   \
+            (eri,                    \
+             (eri,                   \
+              (eri,                  \
+               (eri,                 \
+                (eri,                \
+                 (eri,               \
+                  (eri, (eri, (eri, (eri, BOOST_PP_NIL))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
@@ -106,10 +112,8 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 #define BOOST_PP_NBODY_DERIV_ORDER_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_NBODY_DERIV_ORDER_TUPLE)
 
-
 /// the runtime version of \c operator_traits<oper>::default_params()
-__libint2_engine_inline libint2::any
-default_params(const Operator& oper) {
+__libint2_engine_inline libint2::any default_params(const Operator& oper) {
   switch (static_cast<int>(oper)) {
 #define BOOST_PP_NBODYENGINE_MCR1(r, data, i, elem) \
   case i:                                           \
@@ -136,10 +140,11 @@ template <typename... ShellPack>
 __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
     const libint2::Shell& first_shell, const ShellPack&... rest_of_shells) {
   constexpr auto nargs = 1 + sizeof...(rest_of_shells);
-  assert(nargs == braket_rank() && "# of arguments to compute() does not match the braket type");
+  assert(nargs == braket_rank() &&
+         "# of arguments to compute() does not match the braket type");
 
-  std::array<std::reference_wrapper<const Shell>, nargs> shells{{
-      first_shell, rest_of_shells...}};
+  std::array<std::reference_wrapper<const Shell>, nargs> shells{
+      {first_shell, rest_of_shells...}};
 
   if (operator_rank() == 1) {
     if (nargs == 2) return compute1(shells[0], shells[1]);
@@ -161,7 +166,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute(
       return (this->*compute_ptr)(shells[0], Shell::unit(), shells[1],
                                   shells[2], nullptr, nullptr);
     if (nargs == 4)
-      return (this->*compute_ptr)(shells[0], shells[1], shells[2], shells[3], nullptr, nullptr);
+      return (this->*compute_ptr)(shells[0], shells[1], shells[2], shells[3],
+                                  nullptr, nullptr);
   }
 
   assert(false && "missing feature");  // only reached if missing a feature
@@ -205,7 +211,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   const auto nprim1 = s1.nprim();
   const auto nprim2 = s2.nprim();
   const auto nprimpairs = nprim1 * nprim2;
-  assert(nprimpairs <= primdata_.size() && "the max number of primitive pairs exceeded");
+  assert(nprimpairs <= primdata_.size() &&
+         "the max number of primitive pairs exceeded");
 
   auto nparam_sets = nparams();
 
@@ -351,11 +358,12 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
               // n2 = matrix size times 2
               // i,j = indices, i<j
               auto upper_triangle_index_ord = [](int n2, int i, int j) {
-                return i * (n2 - i -1) / 2 + j;
+                return i * (n2 - i - 1) / 2 + j;
               };
               // same as above, but orders i and j
               auto upper_triangle_index = [&](int n2, int i, int j) {
-                return upper_triangle_index_ord(n2, std::min(i, j), std::max(i, j));
+                return upper_triangle_index_ord(n2, std::min(i, j),
+                                                std::max(i, j));
               };
 
               // accumulate ints for this pset to scratch in locations
@@ -542,9 +550,10 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute1(
   }
 
   if (cartesian_shell_normalization() == CartesianShellNormalization::uniform) {
-    std::array<std::reference_wrapper<const Shell>, 2> shells{s1,s2};
+    std::array<std::reference_wrapper<const Shell>, 2> shells{s1, s2};
     for (auto s = 0ul; s != num_shellsets_computed; ++s) {
-      uniform_normalize_cartesian_shells(const_cast<value_type*>(targets_[s]), shells);
+      uniform_normalize_cartesian_shells(const_cast<value_type*>(targets_[s]),
+                                         shells);
     }
   }
 
@@ -596,25 +605,22 @@ __libint2_engine_inline void Engine::_initialize() {
     hard_lmax_ = BOOST_PP_CAT(LIBINT2_MAX_AM_,                                 \
                               BOOST_PP_NBODYENGINE_MCR3_TASK(product)) +       \
                  1;                                                            \
-    hard_default_lmax_ =                                                       \
-    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_,   \
-                              BOOST_PP_NBODYENGINE_MCR3_task(product))),       \
-                              BOOST_PP_CAT(LIBINT2_MAX_AM_,                    \
-                                           BOOST_PP_CAT(default,               \
-                                                        BOOST_PP_NBODYENGINE_MCR3_DERIV(product) \
-                                                       )                       \
-                                          ) + 1, std::numeric_limits<int>::max()); \
-    const auto lmax =                                                          \
-    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_,   \
-                              BOOST_PP_NBODYENGINE_MCR3_task(product))),       \
-      std::max(hard_lmax_,hard_default_lmax_), hard_lmax_);                    \
+    hard_default_lmax_ = BOOST_PP_IF(                                          \
+        BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_,           \
+                                   BOOST_PP_NBODYENGINE_MCR3_task(product))),  \
+        BOOST_PP_CAT(                                                          \
+            LIBINT2_MAX_AM_,                                                   \
+            BOOST_PP_CAT(default, BOOST_PP_NBODYENGINE_MCR3_DERIV(product))) + \
+            1,                                                                 \
+        std::numeric_limits<int>::max());                                      \
+    const auto lmax = BOOST_PP_IF(                                             \
+        BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_,           \
+                                   BOOST_PP_NBODYENGINE_MCR3_task(product))),  \
+        std::max(hard_lmax_, hard_default_lmax_), hard_lmax_);                 \
     if (lmax_ >= lmax) {                                                       \
-      throw Engine::lmax_exceeded(                                             \
-          BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)),         \
-          lmax, lmax_);                                                        \
+      throw Engine::lmax_exceeded(BOOST_PP_STRINGIZE(BOOST_PP_NBODYENGINE_MCR3_TASK(product)), lmax, lmax_);              \
     }                                                                          \
-    if (stack_size_ > 0)                                                       \
-      libint2_cleanup_default(&primdata_[0]);                                  \
+    if (stack_size_ > 0) libint2_cleanup_default(&primdata_[0]);               \
     stack_size_ = LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(                          \
         libint2_need_memory_, BOOST_PP_NBODYENGINE_MCR3_TASK(product)))(       \
         lmax_);                                                                \
@@ -622,8 +628,9 @@ __libint2_engine_inline void Engine::_initialize() {
         BOOST_PP_CAT(libint2_init_, BOOST_PP_NBODYENGINE_MCR3_TASK(product)))  \
     (&primdata_[0], lmax_, 0);                                                 \
     BOOST_PP_IF(BOOST_PP_IS_1(LIBINT2_FLOP_COUNT),                             \
-      LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)                          \
-    (&primdata_[0], primdata_.size()), BOOST_PP_EMPTY());                      \
+                LIBINT2_PREFIXED_NAME(libint2_init_flopcounter)(               \
+                    &primdata_[0], primdata_.size()),                          \
+                BOOST_PP_EMPTY());                                             \
     buildfnptrs_ = to_ptr1(LIBINT2_PREFIXED_NAME(BOOST_PP_CAT(                 \
         libint2_build_, BOOST_PP_NBODYENGINE_MCR3_TASK(product))));            \
     reset_scratch();                                                           \
@@ -635,9 +642,8 @@ __libint2_engine_inline void Engine::_initialize() {
       (BOOST_PP_NBODY_OPERATOR_INDEX_LIST, BOOST_PP_NBODY_BRAKET_RANK_LIST,
        BOOST_PP_NBODY_DERIV_ORDER_LIST))
 
-  assert(
-      false &&
-      "missing case in switch");  // either deriv_order_ or oper_ is wrong
+  assert(false &&
+         "missing case in switch");  // either deriv_order_ or oper_ is wrong
   abort();
 }  // _initialize<R>()
 
@@ -649,24 +655,27 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   // validate braket
 #ifndef INCLUDE_ONEBODY
   assert(braket_ != BraKet::x_x &&
-         "this braket type not supported by the library; give --enable-1body to configure");
+         "this braket type not supported by the library; give --enable-1body "
+         "to configure");
 #endif
 #ifndef INCLUDE_ERI
   assert(braket_ != BraKet::xx_xx &&
-         "this braket type not supported by the library; give --enable-eri to configure");
+         "this braket type not supported by the library; give --enable-eri to "
+         "configure");
 #endif
 #ifndef INCLUDE_ERI3
   assert((braket_ != BraKet::xs_xx && braket_ != BraKet::xx_xs) &&
-         "this braket type not supported by the library; give --enable-eri3 to configure");
+         "this braket type not supported by the library; give --enable-eri3 to "
+         "configure");
 #endif
 #ifndef INCLUDE_ERI2
   assert(braket_ != BraKet::xs_xs &&
-         "this braket type not supported by the library; give --enable-eri2 to configure");
+         "this braket type not supported by the library; give --enable-eri2 to "
+         "configure");
 #endif
 
   // make sure it's no default initialized
-  if (lmax_ < 0)
-    throw using_default_initialized();
+  if (lmax_ < 0) throw using_default_initialized();
 
   // initialize braket, if needed
   if (braket_ == BraKet::invalid) braket_ = default_braket(oper_);
@@ -751,11 +760,15 @@ __libint2_engine_inline unsigned int Engine::nparams() const {
   switch (oper_) {
     case Operator::nuclear:
     case Operator::opVop:
-      return any_cast<const operator_traits<Operator::nuclear>::oper_params_type&>(params_)
+      return any_cast<
+                 const operator_traits<Operator::nuclear>::oper_params_type&>(
+                 params_)
           .size();
     case Operator::erf_nuclear:
     case Operator::erfc_nuclear:
-      return std::get<1>(any_cast<const operator_traits<Operator::erfc_nuclear>::oper_params_type&>(params_))
+      return std::get<1>(
+                 any_cast<const operator_traits<
+                     Operator::erfc_nuclear>::oper_params_type&>(params_))
           .size();
     default:
       return 1;
@@ -848,19 +861,21 @@ __libint2_engine_inline any Engine::enforce_params_type(
 __libint2_engine_inline any Engine::make_core_eval_pack(Operator oper) const {
   any result;
   switch (static_cast<int>(oper)) {
-#define BOOST_PP_NBODYENGINE_MCR6(r, data, i, elem)                             \
-  case i:                                                                       \
-    result = libint2::detail::make_compressed_pair(                             \
-        operator_traits<static_cast<Operator>(i)>::core_eval_type::instance(    \
-            braket_rank() * lmax_ + deriv_order_ +                              \
-            operator_traits<static_cast<Operator>(i)>::intrinsic_deriv_order,   \
-            std::numeric_limits<scalar_type>::epsilon()),                       \
-        libint2::detail::CoreEvalScratch<                                       \
-            operator_traits<static_cast<Operator>(i)>::core_eval_type>(         \
-            braket_rank() * lmax_ + deriv_order_ +                              \
-            operator_traits<static_cast<Operator>(i)>::intrinsic_deriv_order)); \
-    assert(any_cast<detail::core_eval_pack_type<static_cast<Operator>(i)>>(     \
-               &result) != nullptr);                                            \
+#define BOOST_PP_NBODYENGINE_MCR6(r, data, i, elem)                          \
+  case i:                                                                    \
+    result = libint2::detail::make_compressed_pair(                          \
+        operator_traits<static_cast<Operator>(i)>::core_eval_type::instance( \
+            braket_rank() * lmax_ + deriv_order_ +                           \
+                operator_traits<static_cast<Operator>(                       \
+                    i)>::intrinsic_deriv_order,                              \
+            std::numeric_limits<scalar_type>::epsilon()),                    \
+        libint2::detail::CoreEvalScratch<                                    \
+            operator_traits<static_cast<Operator>(i)>::core_eval_type>(      \
+            braket_rank() * lmax_ + deriv_order_ +                           \
+            operator_traits<static_cast<Operator>(                           \
+                i)>::intrinsic_deriv_order));                                \
+    assert(any_cast<detail::core_eval_pack_type<static_cast<Operator>(i)>>(  \
+               &result) != nullptr);                                         \
     break;
 
     BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR6, _,
@@ -880,7 +895,8 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
     // (a+b) r_{12}^2) )
     // i.e. need to scale each coefficient by 4 a b
     const auto& oparams =
-        any_cast<const operator_traits<Operator::delcgtg2>::oper_params_type&>(params);
+        any_cast<const operator_traits<Operator::delcgtg2>::oper_params_type&>(
+            params);
     const auto ng = oparams.size();
     operator_traits<Operator::delcgtg2>::oper_params_type core_ints_params;
     core_ints_params.reserve(ng * (ng + 1) / 2);
@@ -899,9 +915,11 @@ __libint2_engine_inline void Engine::init_core_ints_params(const any& params) {
   }
 }
 
-__libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const Shell& s1,
-                                     const Shell& s2, size_t p1, size_t p2,
-                                     size_t oset) {
+__libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
+                                                      const Shell& s1,
+                                                      const Shell& s2,
+                                                      size_t p1, size_t p2,
+                                                      size_t oset) {
   const auto& A = s1.O;
   const auto& B = s2.O;
 
@@ -925,7 +943,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
   const auto AB2_y = AB_y * AB_y;
   const auto AB2_z = AB_z * AB_z;
 
-  assert(LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD && "non-standard shell ordering");
+  assert(LIBINT2_SHELLQUARTET_SET == LIBINT2_SHELLQUARTET_SET_STANDARD &&
+         "non-standard shell ordering");
 
   const auto oper_is_nuclear =
       (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
@@ -934,30 +953,31 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
   // need to use HRR? see strategy.cc
   const auto l1 = s1.contr[0].l;
   const auto l2 = s2.contr[0].l;
-  const bool use_hrr = (oper_is_nuclear || oper_ == Operator::sphemultipole) && l1 > 0 && l2 > 0;
-  // unlike the 2-body ints, can go both ways, determine which way to go (the logic must match TwoCenter_OS_Tactic)
+  const bool use_hrr =
+      (oper_is_nuclear || oper_ == Operator::sphemultipole) && l1 > 0 && l2 > 0;
+  // unlike the 2-body ints, can go both ways, determine which way to go (the
+  // logic must match TwoCenter_OS_Tactic)
   const bool hrr_ket_to_bra = l1 >= l2;
   if (use_hrr) {
     if (hrr_ket_to_bra) {
 #if LIBINT2_DEFINED(eri, AB_x)
-    primdata.AB_x[0] = AB_x;
+      primdata.AB_x[0] = AB_x;
 #endif
 #if LIBINT2_DEFINED(eri, AB_y)
-    primdata.AB_y[0] = AB_y;
+      primdata.AB_y[0] = AB_y;
 #endif
 #if LIBINT2_DEFINED(eri, AB_z)
-    primdata.AB_z[0] = AB_z;
+      primdata.AB_z[0] = AB_z;
 #endif
-    }
-    else {
+    } else {
 #if LIBINT2_DEFINED(eri, BA_x)
-    primdata.BA_x[0] = - AB_x;
+      primdata.BA_x[0] = -AB_x;
 #endif
 #if LIBINT2_DEFINED(eri, BA_y)
-    primdata.BA_y[0] = - AB_y;
+      primdata.BA_y[0] = -AB_y;
 #endif
 #if LIBINT2_DEFINED(eri, BA_z)
-    primdata.BA_z[0] = - AB_z;
+      primdata.BA_z[0] = -AB_z;
 #endif
     }
   }
@@ -977,20 +997,21 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 //
 //  if ((!use_hrr && l2 > 0) || !hrr_ket_to_bra) {
 #if LIBINT2_DEFINED(eri, PB_x)
-    primdata.PB_x[0] = Px - B[0];
+  primdata.PB_x[0] = Px - B[0];
 #endif
 #if LIBINT2_DEFINED(eri, PB_y)
-    primdata.PB_y[0] = Py - B[1];
+  primdata.PB_y[0] = Py - B[1];
 #endif
 #if LIBINT2_DEFINED(eri, PB_z)
-    primdata.PB_z[0] = Pz - B[2];
+  primdata.PB_z[0] = Pz - B[2];
 #endif
-//  }
+  //  }
 
   if (oper_ == Operator::emultipole1 || oper_ == Operator::emultipole2 ||
       oper_ == Operator::emultipole3) {
-    const auto& O = any_cast<const operator_traits<
-        Operator::emultipole1>::oper_params_type&>(params_);  // same as emultipoleX
+    const auto& O = any_cast<
+        const operator_traits<Operator::emultipole1>::oper_params_type&>(
+        params_);  // same as emultipoleX
 #if LIBINT2_DEFINED(eri, BO_x)
     primdata.BO_x[0] = B[0] - O[0];
 #endif
@@ -1002,8 +1023,9 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
 #endif
   }
   if (oper_ == Operator::sphemultipole) {
-    const auto& O = any_cast<const operator_traits<
-        Operator::emultipole1>::oper_params_type&>(params_);
+    const auto& O = any_cast<
+        const operator_traits<Operator::emultipole1>::oper_params_type&>(
+        params_);
 #if LIBINT2_DEFINED(eri, PO_x)
     primdata.PO_x[0] = Px - O[0];
 #endif
@@ -1014,7 +1036,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
     primdata.PO_z[0] = Pz - O[2];
 #endif
 #if LIBINT2_DEFINED(eri, PO2)
-    primdata.PO2[0] = (Px - O[0])*(Px - O[0]) + (Py - O[1])*(Py - O[1]) + (Pz - O[2])*(Pz - O[2]);
+    primdata.PO2[0] = (Px - O[0]) * (Px - O[0]) + (Py - O[1]) * (Py - O[1]) +
+                      (Pz - O[2]) * (Pz - O[2]);
 #endif
   }
 
@@ -1032,7 +1055,8 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
   primdata._0_Overlap_0_y[0] = ovlp_ss_y;
   primdata._0_Overlap_0_z[0] = ovlp_ss_z;
 
-  if (oper_ == Operator::kinetic || (deriv_order_ > 0) || oper_ == Operator::opVop) {
+  if (oper_ == Operator::kinetic || (deriv_order_ > 0) ||
+      oper_ == Operator::opVop) {
 #if LIBINT2_DEFINED(eri, two_alpha0_bra)
     primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif
@@ -1042,10 +1066,14 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
   }
 
   if (oper_is_nuclear) {
-
-    const auto& params = (oper_ == Operator::nuclear || oper_ == Operator::opVop) ?
-        any_cast<const operator_traits<Operator::nuclear>::oper_params_type&>(params_) :
-        std::get<1>(any_cast<const operator_traits<Operator::erfc_nuclear>::oper_params_type&>(params_));
+    const auto& params =
+        (oper_ == Operator::nuclear || oper_ == Operator::opVop)
+            ? any_cast<
+                  const operator_traits<Operator::nuclear>::oper_params_type&>(
+                  params_)
+            : std::get<1>(
+                  any_cast<const operator_traits<
+                      Operator::erfc_nuclear>::oper_params_type&>(params_));
 
     const auto& C = params[oset].second;
     const auto& q = params[oset].first;
@@ -1076,28 +1104,32 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata, const 
                      primdata.PC_y[0] * primdata.PC_y[0] +
                      primdata.PC_z[0] * primdata.PC_z[0];
     const scalar_type U = gammap * PC2;
-    const auto mmax = s1.contr[0].l + s2.contr[0].l + deriv_order_ + intrinsic_deriv_order();
+    const auto mmax =
+        s1.contr[0].l + s2.contr[0].l + deriv_order_ + intrinsic_deriv_order();
     auto* fm_ptr = &(primdata.LIBINT_T_S_ELECPOT_S(0)[0]);
     if (oper_ == Operator::nuclear || oper_ == Operator::opVop) {
       const auto& fm_engine_ptr =
-          any_cast<const detail::core_eval_pack_type<Operator::nuclear>&>(core_eval_pack_)
-          .first();
+          any_cast<const detail::core_eval_pack_type<Operator::nuclear>&>(
+              core_eval_pack_)
+              .first();
       fm_engine_ptr->eval(fm_ptr, U, mmax);
     } else if (oper_ == Operator::erf_nuclear) {
       const auto& core_eval_ptr =
-          any_cast<const detail::core_eval_pack_type<Operator::erf_nuclear>&>(core_eval_pack_)
-            .first();
-      const auto& core_ints_params =
-          std::get<0>(any_cast<const typename operator_traits<
-            Operator::erf_nuclear>::oper_params_type&>(core_ints_params_));
+          any_cast<const detail::core_eval_pack_type<Operator::erf_nuclear>&>(
+              core_eval_pack_)
+              .first();
+      const auto& core_ints_params = std::get<0>(
+          any_cast<const typename operator_traits<
+              Operator::erf_nuclear>::oper_params_type&>(core_ints_params_));
       core_eval_ptr->eval(fm_ptr, gammap, U, mmax, core_ints_params);
     } else if (oper_ == Operator::erfc_nuclear) {
       const auto& core_eval_ptr =
-          any_cast<const detail::core_eval_pack_type<Operator::erfc_nuclear>&>(core_eval_pack_)
-            .first();
-      const auto& core_ints_params =
-          std::get<0>(any_cast<const typename operator_traits<
-            Operator::erfc_nuclear>::oper_params_type&>(core_ints_params_));
+          any_cast<const detail::core_eval_pack_type<Operator::erfc_nuclear>&>(
+              core_eval_pack_)
+              .first();
+      const auto& core_ints_params = std::get<0>(
+          any_cast<const typename operator_traits<
+              Operator::erfc_nuclear>::oper_params_type&>(core_ints_params_));
       core_eval_ptr->eval(fm_ptr, gammap, U, mmax, core_ints_params);
     }
 
@@ -1123,9 +1155,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     const ShellPair* tspbra, const ShellPair* tspket) {
   assert(op == oper_ && "Engine::compute2 -- operator mismatch");
   assert(bk == braket_ && "Engine::compute2 -- braket mismatch");
-  assert(der == deriv_order_ &&
-         "Engine::compute2 -- deriv_order mismatch");
-  assert(((tspbra == nullptr && tspket == nullptr) || (tspbra != nullptr && tspket != nullptr)) &&
+  assert(der == deriv_order_ && "Engine::compute2 -- deriv_order mismatch");
+  assert(((tspbra == nullptr && tspket == nullptr) ||
+          (tspbra != nullptr && tspket != nullptr)) &&
          "Engine::compute2 -- expects zero or two ShellPair objects");
   assert(screening_method_ != ScreeningMethod::Invalid);
 
@@ -1135,7 +1167,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
   // can only handle 1 contraction at a time
   assert((tbra1.ncontr() == 1 && tbra2.ncontr() == 1 && tket1.ncontr() == 1 &&
-          tket2.ncontr() == 1) && "generally-contracted shells are not yet supported");
+          tket2.ncontr() == 1) &&
+         "generally-contracted shells are not yet supported");
 
   // angular momentum limit obeyed?
   assert(tbra1.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
@@ -1149,15 +1182,15 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   const auto swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
   const auto swap_braket =
       ((braket_ == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l >
-                                     tket1.contr[0].l + tket2.contr[0].l)) ||
-        braket_ == BraKet::xx_xs;
+                                      tket1.contr[0].l + tket2.contr[0].l)) ||
+      braket_ == BraKet::xx_xs;
 #else  // orca angular momentum ordering
   const auto swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
   const auto swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
   const auto swap_braket =
       ((braket_ == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l <
-                                     tket1.contr[0].l + tket2.contr[0].l)) ||
-        braket_ == BraKet::xx_xs;
+                                      tket1.contr[0].l + tket2.contr[0].l)) ||
+      braket_ == BraKet::xx_xs;
   assert(false && "feature not implemented");
   abort();
 #endif
@@ -1174,7 +1207,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   // "permute" also the user-provided shell pair data
   const auto* spbra_precomputed = swap_braket ? tspket : tspbra;
   const auto* spket_precomputed = swap_braket ? tspbra : tspket;
-  assert(((spbra_precomputed && spket_precomputed) || (screening_method_ == ScreeningMethod::Original || screening_method_ == ScreeningMethod::Conservative)) && "Engine::compute2: without precomputed shell pair data can only use original or conservative screening methods");
+  assert(((spbra_precomputed && spket_precomputed) ||
+          (screening_method_ == ScreeningMethod::Original ||
+           screening_method_ == ScreeningMethod::Conservative)) &&
+         "Engine::compute2: without precomputed shell pair data can only use "
+         "original or conservative screening methods");
 
   const auto tform = bra1.contr[0].pure || bra2.contr[0].pure ||
                      ket1.contr[0].pure || ket2.contr[0].pure;
@@ -1210,18 +1247,38 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   {
     auto p = 0;
     // initialize shell pairs, if not given ...
-    // since screening primitive pairs for bra is not possible without knowing the worst-case primitive data in ket (and vice versa)
-    // using ln_precision_ is not safe, but should work fine for moderate basis sets ... precompute shell pair data
-    // yourself to guarantee proper screening of primitive pairs (see Engine::set_precision() for details of how to screen
-    // primitives for a given target precision of the integrals)
+    // since screening primitive pairs for bra is not possible without knowing
+    // the worst-case primitive data in ket (and vice versa) using ln_precision_
+    // is not safe, but should work fine for moderate basis sets ... precompute
+    // shell pair data yourself to guarantee proper screening of primitive pairs
+    // (see Engine::set_precision() for details of how to screen primitives for
+    // a given target precision of the integrals)
     const auto target_shellpair_ln_precision = ln_precision_;
-    const auto recompute_spbra = !spbra_precomputed || spbra_precomputed->ln_prec > target_shellpair_ln_precision;
-    const auto recompute_spket = !spket_precomputed || spket_precomputed->ln_prec > target_shellpair_ln_precision;
-    const ShellPair& spbra = recompute_spbra ? (spbra_.init(bra1, bra2, target_shellpair_ln_precision, screening_method_), spbra_) : *spbra_precomputed;
-    const ShellPair& spket = recompute_spket ? (spket_.init(ket1, ket2, target_shellpair_ln_precision, screening_method_), spket_) : *spket_precomputed;
-    assert(spbra.screening_method_ == screening_method_ && spket.screening_method_ == screening_method_ && "Engine::compute2: received ShellPair initialized for an incompatible screening method");
-    // determine whether shell pair data refers to the actual ({bra1,bra2}) or swapped ({bra2,bra1}) pairs
-    // if computed the shell pair data here then it's always in actual order, otherwise check swap_bra/swap_ket
+    const auto recompute_spbra =
+        !spbra_precomputed ||
+        spbra_precomputed->ln_prec > target_shellpair_ln_precision;
+    const auto recompute_spket =
+        !spket_precomputed ||
+        spket_precomputed->ln_prec > target_shellpair_ln_precision;
+    const ShellPair& spbra =
+        recompute_spbra
+            ? (spbra_.init(bra1, bra2, target_shellpair_ln_precision,
+                           screening_method_),
+               spbra_)
+            : *spbra_precomputed;
+    const ShellPair& spket =
+        recompute_spket
+            ? (spket_.init(ket1, ket2, target_shellpair_ln_precision,
+                           screening_method_),
+               spket_)
+            : *spket_precomputed;
+    assert(spbra.screening_method_ == screening_method_ &&
+           spket.screening_method_ == screening_method_ &&
+           "Engine::compute2: received ShellPair initialized for an "
+           "incompatible screening method");
+    // determine whether shell pair data refers to the actual ({bra1,bra2}) or
+    // swapped ({bra2,bra1}) pairs if computed the shell pair data here then
+    // it's always in actual order, otherwise check swap_bra/swap_ket
     const auto spbra_is_swapped = recompute_spbra ? false : swap_bra;
     const auto spket_is_swapped = recompute_spket ? false : swap_ket;
 
@@ -1229,15 +1286,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     // swapping bra turns AB into BA = -AB
     real_t BA[3];
     if (spbra_is_swapped) {
-      for(auto xyz=0; xyz!=3; ++xyz)
-        BA[xyz] = - spbra_precomputed->AB[xyz];
+      for (auto xyz = 0; xyz != 3; ++xyz) BA[xyz] = -spbra_precomputed->AB[xyz];
     }
     const auto& AB = spbra_is_swapped ? BA : spbra.AB;
     // swapping ket turns CD into DC = -CD
     real_t DC[3];
     if (spket_is_swapped) {
-      for(auto xyz=0; xyz!=3; ++xyz)
-        DC[xyz] = - spket_precomputed->AB[xyz];
+      for (auto xyz = 0; xyz != 3; ++xyz) DC[xyz] = -spket_precomputed->AB[xyz];
     }
     const auto& CD = spket_is_swapped ? DC : spket.AB;
 
@@ -1249,7 +1304,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     // compute all primitive quartet data
     const auto npbra = spbra.primpairs.size();
     const auto npket = spket.primpairs.size();
-    const scalar_type npbraket = npbra*npket;
+    const scalar_type npbraket = npbra * npket;
     for (auto pb = 0; pb != npbra; ++pb) {
       for (auto pk = 0; pk != npket; ++pk) {
         // primitive quartet coarse screening:
@@ -1309,19 +1364,23 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           auto pfac = K12 * sqrt_gammapq * oogammapq;
           pfac *= c0 * c1 * c2 * c3 * scale_;
 
-          // original and conservative methods: screen primitive integral using actual pfac
-          if (static_cast<int>(screening_method_) & (static_cast<int>(ScreeningMethod::Original) | static_cast<int>(ScreeningMethod::Conservative))) {
+          // original and conservative methods: screen primitive integral using
+          // actual pfac
+          if (static_cast<int>(screening_method_) &
+              (static_cast<int>(ScreeningMethod::Original) |
+               static_cast<int>(ScreeningMethod::Conservative))) {
             scalar_type magnitude_estimate = std::abs(pfac);
             if (screening_method_ == ScreeningMethod::Conservative) {
-              // magnitude of primitive (ab|cd) integral for nonzero L differs from that of (00|00) geometric and exponent-dependent factor,
-              // some of which only depend on bra or ket, and some are bra-ket dependent ... here we account only for bra-only and ket-only
+              // magnitude of primitive (ab|cd) integral for nonzero L differs
+              // from that of (00|00) geometric and exponent-dependent factor,
+              // some of which only depend on bra or ket, and some are bra-ket
+              // dependent ... here we account only for bra-only and ket-only
               // nonspherical factors
               const auto nonspherical_pfac_magnitude = std::max(
                   1., spbrapp.nonsph_screen_fac * spketpp.nonsph_screen_fac);
               magnitude_estimate *= nonspherical_pfac_magnitude * npbraket;
             }
-            if (magnitude_estimate < precision_)
-              continue;
+            if (magnitude_estimate < precision_) continue;
           }
 
           {
@@ -1334,91 +1393,111 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
               switch (oper_) {
                 case Operator::coulomb: {
                   const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<Operator::coulomb>&>(core_eval_pack_)
+                      any_cast<const detail::core_eval_pack_type<
+                          Operator::coulomb>&>(core_eval_pack_)
                           .first();
                   core_eval_ptr->eval(gm_ptr, T, mmax);
                 } break;
                 case Operator::cgtg_x_coulomb: {
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<
-                              Operator::cgtg_x_coulomb>&>(core_eval_pack_)
+                          Operator::cgtg_x_coulomb>&>(core_eval_pack_)
                           .first();
-                  auto& core_eval_scratch = any_cast<detail::core_eval_pack_type<
-                                                    Operator::cgtg_x_coulomb>&>(core_eval_pack_)
-                                                .second();
+                  auto& core_eval_scratch =
+                      any_cast<detail::core_eval_pack_type<
+                          Operator::cgtg_x_coulomb>&>(core_eval_pack_)
+                          .second();
                   const auto& core_ints_params =
                       any_cast<const typename operator_traits<
-                      Operator::cgtg>::oper_params_type&>(core_ints_params_);
+                          Operator::cgtg>::oper_params_type&>(
+                          core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params,
                                       &core_eval_scratch);
                 } break;
                 case Operator::cgtg: {
                   const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<Operator::cgtg>&>(core_eval_pack_)
+                      any_cast<
+                          const detail::core_eval_pack_type<Operator::cgtg>&>(
+                          core_eval_pack_)
                           .first();
                   const auto& core_ints_params =
                       any_cast<const typename operator_traits<
-                          Operator::cgtg>::oper_params_type&>(core_ints_params_);
+                          Operator::cgtg>::oper_params_type&>(
+                          core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
                 } break;
                 case Operator::delcgtg2: {
                   const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<Operator::delcgtg2>&>(core_eval_pack_)
+                      any_cast<const detail::core_eval_pack_type<
+                          Operator::delcgtg2>&>(core_eval_pack_)
                           .first();
                   const auto& core_ints_params =
                       any_cast<const typename operator_traits<
-                          Operator::cgtg>::oper_params_type&>(core_ints_params_);
+                          Operator::cgtg>::oper_params_type&>(
+                          core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
                 } break;
                 case Operator::delta: {
                   const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<Operator::delta>&>(core_eval_pack_)
+                      any_cast<
+                          const detail::core_eval_pack_type<Operator::delta>&>(
+                          core_eval_pack_)
                           .first();
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax);
                 } break;
                 case Operator::r12: {
                   const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<Operator::r12>&>(core_eval_pack_)
+                      any_cast<
+                          const detail::core_eval_pack_type<Operator::r12>&>(
+                          core_eval_pack_)
                           .first();
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax);
                 } break;
                 case Operator::erf_coulomb: {
                   const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<Operator::erf_coulomb>&>(core_eval_pack_)
+                      any_cast<const detail::core_eval_pack_type<
+                          Operator::erf_coulomb>&>(core_eval_pack_)
                           .first();
                   const auto& core_ints_params =
                       any_cast<const typename operator_traits<
-                          Operator::erf_coulomb>::oper_params_type&>(core_ints_params_);
+                          Operator::erf_coulomb>::oper_params_type&>(
+                          core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
                 } break;
                 case Operator::erfc_coulomb: {
                   const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<Operator::erfc_coulomb>&>(core_eval_pack_)
+                      any_cast<const detail::core_eval_pack_type<
+                          Operator::erfc_coulomb>&>(core_eval_pack_)
                           .first();
                   const auto& core_ints_params =
                       any_cast<const typename operator_traits<
-                          Operator::erfc_coulomb>::oper_params_type&>(core_ints_params_);
+                          Operator::erfc_coulomb>::oper_params_type&>(
+                          core_ints_params_);
                   core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
                 } break;
                 case Operator::stg: {
                   const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<Operator::stg>&>(core_eval_pack_)
+                      any_cast<
+                          const detail::core_eval_pack_type<Operator::stg>&>(
+                          core_eval_pack_)
                           .first();
-                  auto zeta =
-                      any_cast<const typename operator_traits<
-                          Operator::stg>::oper_params_type&>(core_ints_params_);
+                  auto zeta = any_cast<const typename operator_traits<
+                      Operator::stg>::oper_params_type&>(core_ints_params_);
                   const auto one_over_rho = gammapq * oogammap * oogammaq;
-                  core_eval_ptr->eval_slater(gm_ptr, one_over_rho, T, mmax, zeta);
+                  core_eval_ptr->eval_slater(gm_ptr, one_over_rho, T, mmax,
+                                             zeta);
                 } break;
                 case Operator::stg_x_coulomb: {
                   const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<Operator::stg>&>(core_eval_pack_)
+                      any_cast<
+                          const detail::core_eval_pack_type<Operator::stg>&>(
+                          core_eval_pack_)
                           .first();
-                  auto zeta =
-                      any_cast<const typename operator_traits<
-                          Operator::stg>::oper_params_type&>(core_ints_params_);
+                  auto zeta = any_cast<const typename operator_traits<
+                      Operator::stg>::oper_params_type&>(core_ints_params_);
                   const auto one_over_rho = gammapq * oogammap * oogammaq;
-                  core_eval_ptr->eval_yukawa(gm_ptr, one_over_rho, T, mmax, zeta);
+                  core_eval_ptr->eval_yukawa(gm_ptr, one_over_rho, T, mmax,
+                                             zeta);
                 } break;
                 default:
                   assert(false && "missing case in a switch");  // unreachable
@@ -1740,30 +1819,32 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             ket2.contr[0].l;
         break;
 
-      case BraKet::xx_xs: assert(false && "this braket is not supported"); abort(); break;
+      case BraKet::xx_xs:
+        assert(false && "this braket is not supported");
+        abort();
+        break;
       case BraKet::xs_xx: {
         /// lmax might be center dependent
         int ket_lmax = hard_lmax_;
         switch (deriv_order_) {
-#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                         \
-  case i:                                                                   \
-    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri,   \
-                                           BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), \
-                                              i,     \
-                                              BOOST_PP_EMPTY())             \
-                                          )                                 \
-                             ),       \
-                              ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY()); \
+#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                      \
+  case i:                                                                \
+    BOOST_PP_IF(                                                         \
+        BOOST_PP_IS_1(BOOST_PP_CAT(                                      \
+            LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri,                        \
+            BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), i, BOOST_PP_EMPTY()))), \
+        ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY());                \
     break;
 
           BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR8, _,
                                    BOOST_PP_NBODY_DERIV_ORDER_LIST)
 
-          default: assert(false && "missing case in switch"); abort();
+          default:
+            assert(false && "missing case in switch");
+            abort();
         }
-        buildfnidx =
-            (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
-                ket2.contr[0].l;
+        buildfnidx = (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
+                     ket2.contr[0].l;
 #ifdef ERI3_PURE_SH
         if (bra1.contr[0].l > 1)
           assert(bra1.contr[0].pure &&
@@ -1814,7 +1895,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
     // if needed, permute and transform
     if (use_scratch) {
-      constexpr auto using_scalar_real = sizeof(value_type) == sizeof(scalar_type);
+      constexpr auto using_scalar_real =
+          sizeof(value_type) == sizeof(scalar_type);
       static_assert(using_scalar_real,
                     "Libint2 C++11 API only supports scalar real types");
       typedef Eigen::Matrix<scalar_type, Eigen::Dynamic, Eigen::Dynamic,
@@ -1849,7 +1931,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
       for (auto s = 0; s != ntargets; ++s) {
         // when permuting derivatives may need to permute shellsets also, not
         // just integrals
-        // within shellsets; this will point to where source shellset s should end up
+        // within shellsets; this will point to where source shellset s should
+        // end up
         auto s_target = s;
 
         auto source =
@@ -1885,30 +1968,33 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           auto tgt_ptr = target;
 
           // if permuting derivatives ints must update their derivative index
-          // Additional BraKet types would require adding support to DerivMapGenerator::generate_deriv_index_map
-          if (deriv_order_){
-            Tensor<size_t>& mapDerivIndex = libint2::DerivMapGenerator::instance(deriv_order_, braket_);
-            switch(braket_) {
+          // Additional BraKet types would require adding support to
+          // DerivMapGenerator::generate_deriv_index_map
+          if (deriv_order_) {
+            Tensor<size_t>& mapDerivIndex =
+                libint2::DerivMapGenerator::instance(deriv_order_, braket_);
+            switch (braket_) {
               case BraKet::xx_xx: {
-                s_target = mapDerivIndex((size_t)swap_braket,(size_t)swap_tbra,(size_t)swap_tket,(size_t)s);
-              }
-                break;
+                s_target = mapDerivIndex((size_t)swap_braket, (size_t)swap_tbra,
+                                         (size_t)swap_tket, (size_t)s);
+              } break;
               case BraKet::xs_xx: {
                 assert(!swap_bra);
                 assert(!swap_braket);
-                s_target = mapDerivIndex((size_t)0,(size_t)0,(size_t)swap_tket,(size_t)s);
-              }
-                break;
+                s_target = mapDerivIndex((size_t)0, (size_t)0,
+                                         (size_t)swap_tket, (size_t)s);
+              } break;
               case BraKet::xs_xs: {
                 assert(!swap_bra);
                 assert(!swap_ket);
                 assert(!swap_braket);
                 s_target = s;
-              }
-                break;
+              } break;
 
               default:
-                assert(false && "This braket type not yet supported for geometric derivatives");
+                assert(false &&
+                       "This braket type not yet supported for geometric "
+                       "derivatives");
                 abort();
             }
           }
@@ -1992,9 +2078,11 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   }  // not (ss|ss)
 
   if (cartesian_shell_normalization() == CartesianShellNormalization::uniform) {
-    std::array<std::reference_wrapper<const Shell>, 4> shells{tbra1, tbra2, tket1, tket2};
+    std::array<std::reference_wrapper<const Shell>, 4> shells{tbra1, tbra2,
+                                                              tket1, tket2};
     for (auto s = 0ul; s != targets_.size(); ++s) {
-      uniform_normalize_cartesian_shells(const_cast<value_type*>(targets_[s]), shells);
+      uniform_normalize_cartesian_shells(const_cast<value_type*>(targets_[s]),
+                                         shells);
     }
   }
 

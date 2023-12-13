@@ -25,10 +25,11 @@
 
 namespace libint2 {
 
-  /// Iterates over unique derivative indices
-  template <unsigned int NCenters> using CartesianDerivIterator =
-		  FixedOrderedIntegerPartitionIterator<std::array<unsigned int, NCenters*3>>;
+/// Iterates over unique derivative indices
+template <unsigned int NCenters>
+using CartesianDerivIterator = FixedOrderedIntegerPartitionIterator<
+    std::array<unsigned int, NCenters * 3>>;
 
-}
+}  // namespace libint2
 
 #endif /* header guard */

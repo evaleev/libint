@@ -22,31 +22,32 @@
 #define _libint2_src_bin_libint_cgshellordering_h_
 
 #include <libint2/config.h>
-/* if this is not defined, then using exported source -- redefine using macro from libint2_params.h */
+/* if this is not defined, then using exported source -- redefine using macro
+ * from libint2_params.h */
 #ifndef LIBINT_CARTGAUSS_MAX_AM
-# include <libint2/util/generated/libint2_params.h>
-# define LIBINT_CARTGAUSS_MAX_AM LIBINT2_CARTGAUSS_MAX_AM
+#include <libint2/util/generated/libint2_params.h>
+#define LIBINT_CARTGAUSS_MAX_AM LIBINT2_CARTGAUSS_MAX_AM
 #endif
 #ifndef LIBINT_CGSHELL_ORDERING
-# include <libint2/util/generated/libint2_params.h>
-# define LIBINT_CGSHELL_ORDERING LIBINT2_CGSHELL_ORDERING
-# define LIBINT_CGSHELL_ORDERING_STANDARD LIBINT2_CGSHELL_ORDERING_STANDARD
-# define LIBINT_CGSHELL_ORDERING_INTV3 LIBINT2_CGSHELL_ORDERING_INTV3
-# define LIBINT_CGSHELL_ORDERING_GAMESS LIBINT2_CGSHELL_ORDERING_GAMESS
-# define LIBINT_CGSHELL_ORDERING_ORCA LIBINT2_CGSHELL_ORDERING_ORCA
-# define LIBINT_CGSHELL_ORDERING_BAGEL LIBINT2_CGSHELL_ORDERING_BAGEL
+#include <libint2/util/generated/libint2_params.h>
+#define LIBINT_CGSHELL_ORDERING LIBINT2_CGSHELL_ORDERING
+#define LIBINT_CGSHELL_ORDERING_STANDARD LIBINT2_CGSHELL_ORDERING_STANDARD
+#define LIBINT_CGSHELL_ORDERING_INTV3 LIBINT2_CGSHELL_ORDERING_INTV3
+#define LIBINT_CGSHELL_ORDERING_GAMESS LIBINT2_CGSHELL_ORDERING_GAMESS
+#define LIBINT_CGSHELL_ORDERING_ORCA LIBINT2_CGSHELL_ORDERING_ORCA
+#define LIBINT_CGSHELL_ORDERING_BAGEL LIBINT2_CGSHELL_ORDERING_BAGEL
 #endif
 
 namespace libint2 {
 
-  enum CGShellOrdering {
-    CGShellOrdering_Standard     = LIBINT_CGSHELL_ORDERING_STANDARD,
-    CGShellOrdering_IntV3        = LIBINT_CGSHELL_ORDERING_INTV3,
-    CGShellOrdering_GAMESS       = LIBINT_CGSHELL_ORDERING_GAMESS,
-    CGShellOrdering_ORCA         = LIBINT_CGSHELL_ORDERING_ORCA,
-    CGShellOrdering_BAGEL        = LIBINT_CGSHELL_ORDERING_BAGEL,
-    CGShellOrdering_MOLDEN
-  };
+enum CGShellOrdering {
+  CGShellOrdering_Standard = LIBINT_CGSHELL_ORDERING_STANDARD,
+  CGShellOrdering_IntV3 = LIBINT_CGSHELL_ORDERING_INTV3,
+  CGShellOrdering_GAMESS = LIBINT_CGSHELL_ORDERING_GAMESS,
+  CGShellOrdering_ORCA = LIBINT_CGSHELL_ORDERING_ORCA,
+  CGShellOrdering_BAGEL = LIBINT_CGSHELL_ORDERING_BAGEL,
+  CGShellOrdering_MOLDEN
+};
 
 };
 
@@ -62,7 +63,7 @@ namespace libint2 {
  */
 namespace libint2 {
 inline int INT_NCART(int am) { return ((am + 2) * (am + 1)) >> 1; }
-}
+}  // namespace libint2
 LIBINT_DEPRECATED("please use libint2::INT_NCART instead")
 inline int INT_NCART(int am) { return libint2::INT_NCART(am); }
 
@@ -72,18 +73,23 @@ inline int INT_NCART(int am) { return libint2::INT_NCART(am); }
 namespace libint2 {
 inline int INT_NCART_DEC(int am, int n) { return n - am - 1; }
 inline int INT_NCART_INC(int am, int n) { return n + am + 2; }
-}
+}  // namespace libint2
 LIBINT_DEPRECATED("please use libint2::INT_NCART_DEC instead")
-inline int INT_NCART_DEC(int am, int n) { return libint2::INT_NCART_DEC(am, n); }
+inline int INT_NCART_DEC(int am, int n) {
+  return libint2::INT_NCART_DEC(am, n);
+}
 LIBINT_DEPRECATED("please use libint2::INT_NCART_INC instead")
-inline int INT_NCART_INC(int am, int n) { return libint2::INT_NCART_INC(am, n); }
+inline int INT_NCART_INC(int am, int n) {
+  return libint2::INT_NCART_INC(am, n);
+}
 
 //
 // Macros that define orderings
 //
 
 #if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_STANDARD
-// this piece of code is from https://github.com/ValeevGroup/mpqc/blob/master/src/lib/chemistry/qc/basis/macros_cca.h#L31
+// this piece of code is from
+// https://github.com/ValeevGroup/mpqc/blob/master/src/lib/chemistry/qc/basis/macros_cca.h#L31
 // Copyright Edward Valeev
 
 /* Computes an index to a Cartesian function within a shell given
@@ -104,9 +110,11 @@ namespace libint2 {
 inline int INT_CARTINDEX(unsigned int am, int i, int j) {
   return (((am - i + 1) * (am - i)) >> 1) + am - i - j;
 }
-}
+}  // namespace libint2
 LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
-inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX(am, i, j); }
+inline int INT_CARTINDEX(unsigned int am, int i, int j) {
+  return libint2::INT_CARTINDEX(am, i, j);
+}
 
 /* This sets up the above loop over cartesian exponents as follows
  * int i, j, k;
@@ -114,14 +122,18 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CA
  *   Stuff using i,j,k.
  *   END_FOR_CART
  */
-#define FOR_CART(i,j,k,am) for((i)=(am);(i)>=0;(i)--) {\
-                           for((j)=(am)-(i);(j)>=0;(j)--) \
-                           { (k) = (am) - (i) - (j);
-#define END_FOR_CART }}
+#define FOR_CART(i, j, k, am)                 \
+  for ((i) = (am); (i) >= 0; (i)--) {         \
+    for ((j) = (am) - (i); (j) >= 0; (j)--) { \
+      (k) = (am) - (i) - (j);
+#define END_FOR_CART \
+  }                  \
+  }
 
-// end of code from https://github.com/ValeevGroup/mpqc/blob/master/src/lib/chemistry/qc/basis/macros_cca.h#L31
+// end of code from
+// https://github.com/ValeevGroup/mpqc/blob/master/src/lib/chemistry/qc/basis/macros_cca.h#L31
 
-#endif // STANDARD ordering
+#endif  // STANDARD ordering
 
 #if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_INTV3
 // this piece of code is from MPQC:src/lib/chemistry/qc/intv3/macros.h
@@ -144,23 +156,28 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CA
  */
 namespace libint2 {
 inline int INT_CARTINDEX(unsigned int am, int i, int j) {
-  return ((((am + 1) << 1)- i) * (i + 1)) >> 1 - j - 1 ;
+  return ((((am + 1) << 1) - i) * (i + 1)) >> 1 - j - 1;
 }
-}
+}  // namespace libint2
 LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
-inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX(am, i, j); }
+inline int INT_CARTINDEX(unsigned int am, int i, int j) {
+  return libint2::INT_CARTINDEX(am, i, j);
+}
 
 /* This sets up the above loop over cartesian exponents as follows
  * FOR_CART(i,j,k,am)
  *   Stuff using i,j,k.
  *   END_FOR_CART
  */
-#define FOR_CART(i,j,k,am) for((i)=0;(i)<=(am);(i)++) {\
-                           for((k)=0;(k)<=(am)-(i);(k)++) \
-                           { (j) = (am) - (i) - (k);
-#define END_FOR_CART }}
+#define FOR_CART(i, j, k, am)                 \
+  for ((i) = 0; (i) <= (am); (i)++) {         \
+    for ((k) = 0; (k) <= (am) - (i); (k)++) { \
+      (j) = (am) - (i) - (k);
+#define END_FOR_CART \
+  }                  \
+  }
 
-#endif // INTV3 ordering
+#endif  // INTV3 ordering
 
 #if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_GAMESS
 // for definition of the ordering see CGShellInfo
@@ -173,22 +190,30 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CA
  */
 namespace libint2 {
 inline int INT_CARTINDEX(unsigned int am, int i, int j) {
-  return libint2::CGShellInfo<libint2::CGShellOrderingData<libint2::CGShellOrdering_GAMESS>>::cartindex(am, i, j);
+  return libint2::CGShellInfo<libint2::CGShellOrderingData<
+      libint2::CGShellOrdering_GAMESS>>::cartindex(am, i, j);
 }
-}
+}  // namespace libint2
 LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
-inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX(am, i, j); }
+inline int INT_CARTINDEX(unsigned int am, int i, int j) {
+  return libint2::INT_CARTINDEX(am, i, j);
+}
 
 /* This sets up the above loop over cartesian exponents as follows
  * FOR_CART(i,j,k,am)
  *   Stuff using i,j,k.
  *   END_FOR_CART
  */
-#define FOR_CART(i,j,k,am) for(int __xyz=0; __xyz<INT_NCART(am); ++__xyz) { \
-                             CGShellInfo< CGShellOrderingData<CGShellOrdering_GAMESS> >::cartindex_to_ijk(am,__xyz,i,j,k);
+#define FOR_CART(i, j, k, am)                                                 \
+  for (int __xyz = 0; __xyz < INT_NCART(am); ++__xyz) {                       \
+    CGShellInfo<                                                              \
+        CGShellOrderingData<CGShellOrdering_GAMESS>>::cartindex_to_ijk(am,    \
+                                                                       __xyz, \
+                                                                       i, j,  \
+                                                                       k);
 #define END_FOR_CART }
 
-#endif // GAMESS ordering
+#endif  // GAMESS ordering
 
 #if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_ORCA
 // for definition of the ordering see CGShellInfo
@@ -201,22 +226,27 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CA
  */
 namespace libint2 {
 inline int INT_CARTINDEX(unsigned int am, int i, int j) {
-  return libint2::CGShellInfo<libint2::CGShellOrderingData<libint2::CGShellOrdering_ORCA>>::cartindex(am, i, j);
+  return libint2::CGShellInfo<libint2::CGShellOrderingData<
+      libint2::CGShellOrdering_ORCA>>::cartindex(am, i, j);
 }
-}
+}  // namespace libint2
 LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
-inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX(am, i, j); }
+inline int INT_CARTINDEX(unsigned int am, int i, int j) {
+  return libint2::INT_CARTINDEX(am, i, j);
+}
 
 /* This sets up the above loop over cartesian exponents as follows
  * FOR_CART(i,j,k,am)
  *   Stuff using i,j,k.
  *   END_FOR_CART
  */
-#define FOR_CART(i,j,k,am) for(int __xyz=0; __xyz<INT_NCART(am); ++__xyz) { \
-                             CGShellInfo< CGShellOrderingData<CGShellOrdering_ORCA> >::cartindex_to_ijk(am,__xyz,i,j,k);
+#define FOR_CART(i, j, k, am)                                                 \
+  for (int __xyz = 0; __xyz < INT_NCART(am); ++__xyz) {                       \
+    CGShellInfo<CGShellOrderingData<CGShellOrdering_ORCA>>::cartindex_to_ijk( \
+        am, __xyz, i, j, k);
 #define END_FOR_CART }
 
-#endif // ORCA ordering
+#endif  // ORCA ordering
 
 #if LIBINT_CGSHELL_ORDERING == LIBINT_CGSHELL_ORDERING_BAGEL
 // permuted version of IntV3 (y in IntV3 = x in Bagel, etc.)
@@ -226,7 +256,7 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CA
  * am = total angular momentum
  * i = the exponent of x
  * j = the exponent of y
- * formula: am*(k+1) - (k*(k+1))/2 + k+1 - i - 1 = 
+ * formula: am*(k+1) - (k*(k+1))/2 + k+1 - i - 1 =
  * The following loop will generate indices in the proper order:
  *  cartindex = 0;
  *  for (k=0; k<=am; k++) {
@@ -239,39 +269,49 @@ inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CA
  */
 namespace libint2 {
 inline int INT_CARTINDEX(unsigned int am, int i, int j) {
-  return ((am + (i + j) + 2) * (am - (i + j) + 1) >> 1) - i -1;
+  return ((am + (i + j) + 2) * (am - (i + j) + 1) >> 1) - i - 1;
 }
-}
+}  // namespace libint2
 LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX instead")
-inline int INT_CARTINDEX(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX(am, i, j); }
+inline int INT_CARTINDEX(unsigned int am, int i, int j) {
+  return libint2::INT_CARTINDEX(am, i, j);
+}
 
 /* This sets up the above loop over cartesian exponents as follows
  * FOR_CART(i,j,k,am)
  *   Stuff using i,j,k.
  *   END_FOR_CART
  */
-#define FOR_CART(i,j,k,am) for((k)=0;(k)<=(am);(k)++) {\
-                           for((j)=0;(j)<=(am)-(k);(j)++) \
-                           { (i) = (am) - (j) - (k);
-#define END_FOR_CART }}
+#define FOR_CART(i, j, k, am)                 \
+  for ((k) = 0; (k) <= (am); (k)++) {         \
+    for ((j) = 0; (j) <= (am) - (k); (j)++) { \
+      (i) = (am) - (j) - (k);
+#define END_FOR_CART \
+  }                  \
+  }
 
-#endif // Bagel ordering
+#endif  // Bagel ordering
 
 /// these always-available macros encode orderings assumed by Molden
 
 namespace libint2 {
 inline int INT_CARTINDEX_MOLDEN(unsigned int am, int i, int j) {
-  return libint2::CGShellInfo<libint2::CGShellOrderingData<libint2::CGShellOrdering_MOLDEN, 4u>>::cartindex(am, i, j);
+  return libint2::CGShellInfo<libint2::CGShellOrderingData<
+      libint2::CGShellOrdering_MOLDEN, 4u>>::cartindex(am, i, j);
 }
-}
+}  // namespace libint2
 LIBINT_DEPRECATED("please use libint2::INT_CARTINDEX_MOLDEN instead")
-inline int INT_CARTINDEX_MOLDEN(unsigned int am, int i, int j) { return libint2::INT_CARTINDEX_MOLDEN(am, i, j); }
+inline int INT_CARTINDEX_MOLDEN(unsigned int am, int i, int j) {
+  return libint2::INT_CARTINDEX_MOLDEN(am, i, j);
+}
 
 /* FOR_CART_MOLDEN(i,j,k,am)
  *   END_FOR_CART_MOLDEN
  */
-#define FOR_CART_MOLDEN(i,j,k,am) for(int __xyz=0; __xyz<INT_NCART(am); ++__xyz) { \
-                             CGShellInfo< CGShellOrderingData<CGShellOrdering_MOLDEN,4u> >::cartindex_to_ijk(am,__xyz,i,j,k);
+#define FOR_CART_MOLDEN(i, j, k, am)                               \
+  for (int __xyz = 0; __xyz < INT_NCART(am); ++__xyz) {            \
+    CGShellInfo<CGShellOrderingData<CGShellOrdering_MOLDEN, 4u>>:: \
+        cartindex_to_ijk(am, __xyz, i, j, k);
 #define END_FOR_CART_MOLDEN }
 
-#endif // header guard
+#endif  // header guard
