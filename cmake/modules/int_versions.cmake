@@ -1,7 +1,9 @@
 # top-level CMakeLists.txt has defined:
 # * PROJECT_VERSION_{MAJOR|MINOR|PATCH} through `project(... VERSION)`
+# * Libint2Compiler_DESCRIPTION through `project(... DESCRIPTION)`
 # * LIBINT_BUILDID
 # * LIBINT_SOVERSION
+# * LIBINT_DOI
 # * LibintRepository_{VERSION|DESCRIBE|COMMIT|DISTANCE} through `dynamic_version()`
 
 # note that 3rd version integer is PATCH in CMake and MICRO in Libint
@@ -25,9 +27,13 @@ endif()
 string(SUBSTRING ${LibintRepository_COMMIT} 0 7 LIBINT_GIT_COMMIT)
 message(DEBUG "LIBINT_GIT_COMMIT         ${LIBINT_GIT_COMMIT}")
 
+# Below goes into BibTeX citation. Currently year of export. For year of tag, parse:
+# `git show -s --no-notes --date=short --pretty='%cd' v2.7.2` responds: 2022-06-20
 string(TIMESTAMP LIBINT_VERSION_YEAR "%Y")
 message(DEBUG "LIBINT_VERSION_YEAR       ${LIBINT_VERSION_YEAR}")
 
+set(LIBINT_DESCRIPTION "${Libint2Compiler_DESCRIPTION}")
+message(DEBUG "LIBINT_DESCRIPTION        ${LIBINT_DESCRIPTION}")
 
 # <<<  Build Version  >>>
 

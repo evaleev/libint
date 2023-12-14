@@ -21,6 +21,8 @@
 #ifndef _libint2_include_libint2_util_configuration_h_
 #define _libint2_include_libint2_util_configuration_h_
 
+#include <stdbool.h>
+
 /* Runtime accessor for the library configuration:
    integral derivatives, AM, orderings, etc.
    @return the semicolon-separated strings from CMake components */
@@ -31,9 +33,9 @@ void libint_version(int *, int *, int *);
 
 /* Get the version of Libint as a string
     @return the version string. At release, strictly "M.m.p" (no alpha/rc/etc.).
-    Beyond release (ext=True), returns "M.m.p.postD" where D is distance from
-   release. Beyond release (ext=False), returns most recent release, "M.m.p". */
-const char *libint_version_string(bool ext = true);
+    Beyond release (arg=true), returns "M.m.p.postD" where D is distance from
+   release. Beyond release (arg=false), returns most recent release, "M.m.p". */
+const char *libint_version_string(bool);
 
 /* Get the git commit at which library was generated
     @return the commit as a 7-char abbreviated string */
@@ -96,8 +98,8 @@ inline std::tuple<int, int, int> libint_version() {
 /// @param[in] whether to return the simple-sortable last release or a
 /// per-commit version
 /// @return the version string. At release, strictly "M.m.p" (no alpha/rc/etc.).
-/// Beyond release (ext=True), returns "M.m.p.postD" where D is distance from
-/// release. Beyond release (ext=False), returns most recent release, "M.m.p".
+/// Beyond release (ext=true), returns "M.m.p.postD" where D is distance from
+/// release. Beyond release (ext=false), returns most recent release, "M.m.p".
 inline std::string libint_version_string(bool ext = true) {
   std::string version = ::libint_version_string(ext);
   return version;
