@@ -36,6 +36,7 @@
 #define LIBINT2_REALTYPE double
 #endif
 #include <libint2/cgshell_ordering.h>
+#include <libint2/initialize.h>
 #include <libint2/shell.h>
 
 namespace {
