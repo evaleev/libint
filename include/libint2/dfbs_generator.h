@@ -63,11 +63,11 @@ inline double gamma_function(const double x) { return std::tgamma(x); }
 /// @param L total angular momentum of product function
 /// @return effective exponent of product function
 inline double alpha_eff(const Shell &shell1, const Shell &shell2, const int L) {
-  auto alpha1 = shell1.alpha[0];
-  auto alpha2 = shell2.alpha[0];
-  auto l1 = shell1.contr[0].l;
-  auto l2 = shell2.contr[0].l;
-  auto prefactor =
+  const auto alpha1 = shell1.alpha[0];
+  const auto alpha2 = shell2.alpha[0];
+  const auto l1 = shell1.contr[0].l;
+  const auto l2 = shell2.contr[0].l;
+  const auto prefactor =
       std::pow((gamma_function(L + 2.) * gamma_function(l1 + l2 + 1.5)) /
                    (gamma_function(l1 + l2 + 2.) * gamma_function(L + 1.5)),
                2.);
@@ -81,10 +81,10 @@ inline std::vector<Shell> product_functions(
   std::vector<Shell> product_functions;
   for (size_t i = 0; i < primitive_shells.size(); ++i) {
     for (size_t j = 0; j <= i; ++j) {
-      auto li = primitive_shells[i].contr[0].l;
-      auto lj = primitive_shells[j].contr[0].l;
+      const auto li = primitive_shells[i].contr[0].l;
+      const auto lj = primitive_shells[j].contr[0].l;
       for (auto L = std::abs(li - lj); L <= li + lj; L++) {
-        auto alpha = libint2::svector<double>(
+        const auto alpha = libint2::svector<double>(
             {alpha_eff(primitive_shells[i], primitive_shells[j], L)});
         libint2::svector<Shell::Contraction> contr_;
         Shell::Contraction contr1;
@@ -93,7 +93,7 @@ inline std::vector<Shell> product_functions(
         contr1.coeff = {1.0};
         contr_.push_back(contr1);
         assert(primitive_shells[i].O == primitive_shells[j].O);
-        auto shell = Shell(alpha, contr_, primitive_shells[i].O);
+        const auto shell = Shell(alpha, contr_, primitive_shells[i].O);
         if (std::find(product_functions.begin(), product_functions.end(),
                       shell) == product_functions.end())
           product_functions.emplace_back(shell);
@@ -138,7 +138,7 @@ inline Eigen::MatrixXd compute_coulomb_matrix(
   Engine engine(libint2::Operator::coulomb, max_nprim(shells), max_l(shells));
   engine.set(BraKet::xs_xs);
   engine.set(ScreeningMethod::Conservative);
-  auto shell2bf = map_shell_to_basis_function(shells);
+  const auto shell2bf = map_shell_to_basis_function(shells);
   const auto &buf = engine.results();
   for (size_t s1 = 0; s1 != shells.size(); ++s1) {
     auto bf1 = shell2bf[s1];
@@ -176,11 +176,11 @@ inline std::vector<std::vector<Shell>> split_by_L(
 /// @return reduced set of product functions
 inline std::vector<Shell> shell_pivoted_cholesky(
     const std::vector<Shell> &shells, const double cholesky_threshold) {
-  auto n = shells.size();  // number of shells
+  const auto n = shells.size();  // number of shells
   std::vector<size_t>
       shell_indices;  // hash map of basis function indices to shell indices
-  auto L = shells[0].contr[0].l;  // all shells must have same L
-  auto nbf = libint2::nbf(
+  const auto L = shells[0].contr[0].l;  // all shells must have same L
+  const auto nbf = libint2::nbf(
       shells);  // total number of basis functions in vector of shells
   for (size_t i = 0; i < n; ++i) {
     for (size_t j = 0; j < 2 * L + 1;
@@ -189,7 +189,7 @@ inline std::vector<Shell> shell_pivoted_cholesky(
       shell_indices.push_back(i);
   }
   assert(shell_indices.size() == nbf);
-  auto C = compute_coulomb_matrix(shells);
+  const auto C = compute_coulomb_matrix(shells);
   std::vector<size_t> pivot(nbf);
   for (auto i = 0; i < nbf; ++i) {
     pivot[i] = i;
@@ -204,7 +204,7 @@ inline std::vector<Shell> shell_pivoted_cholesky(
     return col_sum[i1] < col_sum[i2];
   });
   // compute Cholesky decomposition
-  auto reduced_pivots = pivoted_cholesky(C, cholesky_threshold, pivot);
+  const auto reduced_pivots = pivoted_cholesky(C, cholesky_threshold, pivot);
 
   std::vector<Shell> reduced_shells;
   for (size_t i = 0; i < reduced_pivots.size(); ++i) {
@@ -238,10 +238,10 @@ class DFBasisSetGenerator {
   DFBasisSetGenerator(std::string obs_name, const Atom &atom,
                       const double cholesky_threshold = 1e-7) {
     // get AO basis shells for each atom
-    auto atom_bs = BasisSet(obs_name, {atom});
-    auto obs_shells = atom_bs.shells();
+    const auto atom_bs = BasisSet(obs_name, {atom});
+    const auto obs_shells = atom_bs.shells();
     // get primitive shells from AO functions
-    auto primitive_shells = detail::uncontract(obs_shells);
+    const auto primitive_shells = detail::uncontract(obs_shells);
     // compute candidate shells
     candidate_shells_ = detail::candidate_functions(primitive_shells);
     cholesky_threshold_ = cholesky_threshold;
@@ -252,9 +252,9 @@ class DFBasisSetGenerator {
   /// @param cluster vector of vector of shells for each atom
   /// @param cholesky_threshold threshold for choosing a product functions via
   /// pivoted Cholesky decomposition
-  DFBasisSetGenerator(std::vector<Shell> &shells,
+  DFBasisSetGenerator(const std::vector<Shell> &shells,
                       const double cholesky_threshold = 1e-7) {
-    auto primitive_shells = detail::uncontract(shells);
+    const auto primitive_shells = detail::uncontract(shells);
     candidate_shells_ = detail::candidate_functions(primitive_shells);
     cholesky_threshold_ = cholesky_threshold;
   }
@@ -272,7 +272,8 @@ class DFBasisSetGenerator {
     if (reduced_shells_computed_)
       return reduced_shells_;
     else {
-      auto candidate_splitted_in_L = detail::split_by_L(candidate_shells_);
+      const auto candidate_splitted_in_L =
+          detail::split_by_L(candidate_shells_);
       for (size_t i = 0; i < candidate_splitted_in_L.size(); ++i) {
         std::vector<Shell> reduced_shells_L;
         if (candidate_splitted_in_L[i].size() > 1)

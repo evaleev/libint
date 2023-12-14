@@ -598,7 +598,7 @@ AS_HELP_STRING([--with-eri2-max-am=N],[Support 2-center ERIs for Gaussians of an
      else
       ERI2_MAX_AM=$withval
      fi
-     if test $ERI2_MAX_AM -ge 8; then
+     if test $ERI2_MAX_AM -ge 13; then
       AC_MSG_ERROR([Value for --with-eri2-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ERI2_MAX_AM)
@@ -1541,4 +1541,3 @@ AC_CONFIG_FILES(src/bin/MakeVars src/lib/MakeVars src/lib/MakeRules src/lib/libi
 
 dnl --------- Done! ---------
 AC_OUTPUT
-

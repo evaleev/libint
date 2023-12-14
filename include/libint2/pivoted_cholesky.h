@@ -37,7 +37,7 @@ inline std::vector<size_t> pivoted_cholesky(const Eigen::MatrixXd &A,
                                             const double tolerance,
                                             const std::vector<size_t> &pivot) {
   // number of elements in A
-  auto n = A.rows();
+  const auto n = A.rows();
   // diagonal elements of A
   std::vector<double> d(n);
   // initial error

@@ -1528,7 +1528,6 @@ Matrix compute_2body_2index_ints(const BasisSet& bs) {
   }
 
   auto shell2bf = bs.shell2bf();
-  auto unitshell = Shell::unit();
 
   auto compute = [&](int thread_id) {
     auto& engine = engines[thread_id];
