@@ -101,19 +101,8 @@ CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const std::shared_ptr<TargetType> &Tint,
         nflops_ += 2;
       }
     } break;
-    // N.B.: Wz is needed after W0 because it's needed for 2-component methods.
-    // Wx and Wy are not. (a|Wz|b) = (d a/dAx | V | d b/dBy) - (d a/dAy | V | d
-    // b/dBx)
-    case 1: {
-      auto Dx_a_V_Dy_b = factory.make_child(Dx_a, Dy_b, zero_m);
-      auto Dy_a_V_Dx_b = factory.make_child(Dy_a, Dx_b, zero_m);
-      if (is_simple()) {
-        expr_ = Dx_a_V_Dy_b - Dy_a_V_Dx_b;
-        nflops_ += 1;
-      }
-    } break;
     // (a|Wx|b) = (d a/dAy | V | d b/dBz) - (d a/dAz | V | d b/dBy)
-    case 2: {
+    case 1: {
       auto Dy_a_V_Dz_b = factory.make_child(Dy_a, Dz_b, zero_m);
       auto Dz_a_V_Dy_b = factory.make_child(Dz_a, Dy_b, zero_m);
       if (is_simple()) {
@@ -122,11 +111,21 @@ CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const std::shared_ptr<TargetType> &Tint,
       }
     } break;
     // (a|Wy|b) = (d a/dAz | V | d b/dBx) - (d a/dAx | V | d b/dBz)
-    case 3: {
+    case 2: {
       auto Dz_a_V_Dx_b = factory.make_child(Dz_a, Dx_b, zero_m);
       auto Dx_a_V_Dz_b = factory.make_child(Dx_a, Dz_b, zero_m);
       if (is_simple()) {
         expr_ = Dz_a_V_Dx_b - Dx_a_V_Dz_b;
+        nflops_ += 1;
+      }
+    } break;
+    // (a|Wz|b) = (d a/dAx | V | d b/dBy) - (d a/dAy | V | d
+    // b/dBx)
+    case 3: {
+      auto Dx_a_V_Dy_b = factory.make_child(Dx_a, Dy_b, zero_m);
+      auto Dy_a_V_Dx_b = factory.make_child(Dy_a, Dx_b, zero_m);
+      if (is_simple()) {
+        expr_ = Dx_a_V_Dy_b - Dy_a_V_Dx_b;
         nflops_ += 1;
       }
     } break;
