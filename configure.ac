@@ -1117,8 +1117,30 @@ AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(DVIPS,dvips,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(LATEX,latex,,$PATH:/usr/local/bin:/opt/local/bin)
-AC_PATH_PROG(LATEX2HTML,latex2html,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(BIBTEX,bibtex,,$PATH:/usr/local/bin:/opt/local/bin)
+
+CHECK_FOR_LATEX2HTML=no
+AC_ARG_ENABLE(latex2html,
+AS_HELP_STRING([--enable-latex2html],[Enable detection of latex2html (broken on many platforms, hence disabled by default)]),
+[
+case $enableval in
+  yes)
+    CHECK_FOR_LATEX2HTML=yes
+  ;;
+  no)
+    CHECK_FOR_LATEX2HTML=no
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --enable-latex2html ($enableval)])
+  ;;
+esac
+],[
+    CHECK_FOR_LATEX2HTML=no
+]
+)
+if test "X$CHECK_FOR_LATEX2HTML" = "Xyes" ; then
+  AC_PATH_PROG(LATEX2HTML,latex2html,,$PATH:/usr/local/bin:/opt/local/bin)
+fi
 
 dnl The lack of certain tools is a show stopper
 
