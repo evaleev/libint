@@ -1,3 +1,134 @@
+# Configuring Libint
+
+* Notes
+  * Codes "G", "L", or "C" for each option indicate whether it is consumed by the _g_enerator, the _l_ibrary, the library _c_onsumer, or a combination.
+    * If your final target is the export tarball, use options that include the letter "G".
+    * If you're building a library from an export TARBALL, use options that include the letter "L".
+    * For a continuous generator->export->library build, options supplied at the top level will be properly handed off to generator and library build.
+  * See [Update Guide](gnu-autotools-update-guide) for new names for old options.
+
+
+###  Which Integrals Classes, Which Derivative Levels (G)
+
+* `ENABLE_ONEBODY` — G — Compile with support for up to N-th derivatives of 1-body integrals. Use -1 for OFF. [Default=0]
+* `ENABLE_ERI` — G — Compile with support for up to N-th derivatives of 4-center electron repulsion integrals. Use -1 for OFF. [Default=0]
+* `ENABLE_ERI3` — G — Compile with support for up to N-th derivatives of 3-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
+* `ENABLE_ERI2` — G — Compile with support for up to N-th derivatives of 2-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
+* `ENABLE_G12` — G — Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
+* `ENABLE_G12DKH` — G — Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
+
+* `DISABLE_ONEBODY_PROPERTY_DERIVS` — G — Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
+   These derivatives are disabled by default to save compile time. Use OFF to enable.
+   Note that the libtool build won't enable this- if forcibly enabled, build_libint balks. [Default=ON]
+
+* `ENABLE_T1G12_SUPPORT` — G — Enable [Ti,G12] integrals when G12 integrals are enabled. Irrelevant when `ENABLE_G12=OFF`. Use OFF to disable. [Default=ON]
+
+
+###  Which Ordering Conventions (G)
+
+* `ERI3_PURE_SH` — G — Assume the 'unpaired' center of 3-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
+* `ERI2_PURE_SH` — G — Assume the 2-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
+
+
+###  How High Angular Momentum (G)
+
+* Notes
+  * example for "semicolon-separated string": `-DENABLE_ERI3=2 -DWITH_ERI3_MAX_AM="5;4;3"`. cmake configuration prints:
+
+    ```
+    -- Setting option ENABLE_ERI3: 2
+    -- Setting option WITH_ERI3_MAX_AM: 5;4;3
+    ```
+
+  * special considerations for high-AM library (L) builds:
+    * high MAX_AM generates a large number of source files. If unity builds are disabled, more than
+      ~20k files may require `ulimit -s 65535` for linking the library target on Linux to avert
+      "ld: Argument list too long".
+    * Ninja builds use beyond max threads and can run out of memory, resulting in errorless stops or
+      "CMake Error: Generator: execution of make failed". Throttle it to physical threads with
+      `export CMAKE_BUILD_PARALLEL_LEVEL=N`.
+
+* `WITH_MAX_AM` — G — Support Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. Specify values greater or equal to `WITH_<class>_MAX_AM`; often mirrors `WITH_ERI3_MAX_AM`. [Default=4]
+* `WITH_OPT_AM` — G — Optimize maximally for up to angular momentum N (N <= WITH_MAX_AM). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `(WITH_MAX_AM/2)+1`]
+
+* `MULTIPOLE_MAX_ORDER` — G — Maximum order of spherical multipole integrals. There is no maximum. [Default=4]
+
+* `WITH_ONEBODY_MAX_AM` — G — Support 1-body ints for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ONEBODY_OPT_AM` — G — Optimize 1-body ints maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+
+* `WITH_ERI_MAX_AM` — G — Support 4-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ERI_OPT_AM` — G — Optimize 4-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+
+* `WITH_ERI3_MAX_AM` — G — Support 3-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. This option controls only the single fitting center; the paired centers use WITH_MAX_AM. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ERI3_OPT_AM` — G — Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+
+* `WITH_ERI2_MAX_AM` — G — Support 2-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ERI2_OPT_AM` — G — Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+
+* `WITH_G12_MAX_AM` — G — Support integrals for G12 methods of angular momentum up to N. No specification with per-derivative list. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_G12_OPT_AM` — G — Optimize G12 integrals for up to angular momentum N (N <= max-am). No specification with per-derivative list. [Default=-1 `WITH_OPT_AM`]
+
+* `WITH_G12DKH_MAX_AM` — G — Support integrals for relativistic G12 methods of angular momentum up to N. No specification with per-derivative list. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_G12DKH_OPT_AM` — G — Optimize G12DKH integrals for up to angular momentum N (N <= max-am). No specification with per-derivative list. [Default=-1 `WITH_OPT_AM`]
+
+
+### Compilers and Flags (G L) (TARBALL)
+
+
+# GNU Autotools Update Guide
+
+* Notes
+  * Multiple option names can be from any long-lived branch but usually libtool+cmake --> final cmake+cmake.
+
+* `--enable-1body=N` --> `-D ENABLE_ONEBODY=N`
+* `--enable-eri=N` --> `-D ENABLE_ERI=N`
+* `--disable-eri` --> `-D ENABLE_ERI=-1`
+* `--enable-eri3=N` --> `-D ENABLE_ERI3=N`
+* `--enable-eri2=N` --> `-D ENABLE_ERI2=N`
+
+* `--enable-eri3-pure-sh` --> `-D ERI3_PURE_SH=ON`
+* `--enable-eri2-pure-sh` --> `-D ERI2_PURE_SH=ON`
+
+* `--with-max-am=N` --> `-D WITH_MAX_AM=N`
+* `--with-max-am=N0,N1,N2` --> `-D WITH_MAX_AM="N0;N1;N2"` (notice semicolons and quotes. This is standard CMake list syntax)
+* `--with-opt-am=N` --> `-D WITH_OPT_AM=N`
+* `--with-opt-am=N0,N1,N2` --> `-D WITH_OPT_AM="N0;N1;N2"`
+
+* `--with-multipole-max-order=N` --> `-D MULTIPOLE_MAX_ORDER=N`
+
+* `--with-1body-max-am=N` --> `-D WITH_ONEBODY_MAX_AM=N`
+* `--with-1body-max-am=N0,N1,N2` --> `-D WITH_ONEBODY_MAX_AM="N0;N1;N2"`
+* `--with-1body-opt-am=N` --> `-D WITH_ONEBODY_OPT_AM=N`
+* `--with-1body-opt-am=N0,N1,N2` --> `-D WITH_ONEBODY_OPT_AM="N0;N1;N2"`
+
+* `--with-eri-max-am=N` --> `-D WITH_ERI_MAX_AM=N`
+* `--with-eri-max-am=N0,N1,N2` --> `-D WITH_ERI_MAX_AM="N0;N1;N2"`
+* `--with-eri-opt-am=N` --> `-D WITH_ERI_OPT_AM=N`
+* `--with-eri-opt-am=N0,N1,N2` --> `-D WITH_ERI_OPT_AM="N0;N1;N2"`
+
+* `--with-eri3-max-am=N` --> `-D WITH_ERI3_MAX_AM=N`
+* `--with-eri3-max-am=N0,N1,N2` --> `-D WITH_ERI3_MAX_AM="N0;N1;N2"`
+* `--with-eri3-opt-am=N` --> `-D WITH_ERI3_OPT_AM=N`
+* `--with-eri3-opt-am=N0,N1,N2` --> `-D WITH_ERI3_OPT_AM="N0;N1;N2"`
+
+* `--with-eri2-max-am=N` --> `-D WITH_ERI2_MAX_AM=N`
+* `--with-eri2-max-am=N0,N1,N2` --> `-D WITH_ERI2_MAX_AM="N0;N1;N2"`
+* `--with-eri2-opt-am=N` --> `-D WITH_ERI2_OPT_AM=N`
+* `--with-eri2-opt-am=N0,N1,N2` --> `-D WITH_ERI2_OPT_AM="N0;N1;N2"`
+
+* `--enable-g12=N` --> `-D ENABLE_G12=N`
+* `--enable-g12dkh=N` --> `-D ENABLE_G12DKH`
+* `--disable-t1g12-support` --> `-D ENABLE_T1G12_SUPPORT=OFF`
+* `--with-g12-max-am=N` --> `-D WITH_G12_MAX_AM=N`
+* `--with-g12-opt-am=N` --> `-D WITH_G12_OPT_AM=N`
+* `--with-g12dkh-max-am=N` --> `-D WITH_G12DKH_MAX_AM=N`
+* `--with-g12dkh-opt-am=N` --> `-D WITH_G12DKH_OPT_AM=N`
+
+* `--disable-1body-property-derivs` --> `-D DISABLE_ONEBODY_PROPERTY_DERIVS=ON`
+
+
+
+
 ### Run-Time Compatibility
 
 Functions are provided to check the library configuration and solid harmonics orderings at runtime:
