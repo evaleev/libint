@@ -77,8 +77,8 @@ install-dvi:: dvi
 	TEXINPUTS=$(TEXINPUTS) $(LATEX) $<
 
 ifdef LATEX2HTML
-html:: dvi
-	$(LATEX2HTML) $(TARGETNAME)
+html::
+	$(LATEX2HTML) $(TARGETNAME).tex
 endif
 
 endif
