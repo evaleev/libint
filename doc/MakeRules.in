@@ -5,7 +5,7 @@ default:: $(TARGET)
 
 install:: install_target
 
-install_target:: default
+install_target:: $(TARGET)
 	$(INSTALL) $(INSTALLDIROPT) $(DESTDIR)$(docdir)
 	$(LTINST) $(INSTALL) $(INSTALLDOCOPT) $(TARGET) $(DESTDIR)$(docdir)
 
@@ -18,3 +18,5 @@ targetclean:: clean
 
 realclean:: clean
 	-rm -f $(TEXGARBAGE)
+
+.PHONY: dvi html pdf ps install_target default install clean distclean targetclean realclean
