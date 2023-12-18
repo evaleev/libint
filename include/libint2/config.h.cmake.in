@@ -1,0 +1,185 @@
+/*
+ *  Copyright (C) 2004-2023 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/* This file is automatically processed by CMake.
+   It MUST NOT be changed manually after configuration, otherwise
+   the library will likely fail to compile or produce erroneous results
+ */
+
+#ifndef _libint2_include_libint2config_h_
+#define _libint2_include_libint2config_h_
+
+/* Support 1-body derivatives up to this order */
+#define INCLUDE_ONEBODY @INCLUDE_ONEBODY@
+#if @INCLUDE_ONEBODY@ == -1
+#undef INCLUDE_ONEBODY
+#endif
+
+/* Disable support for 1-body property derivatives */
+#cmakedefine DISABLE_ONEBODY_PROPERTY_DERIVS @DISABLE_ONEBODY_PROPERTY_DERIVS@
+
+/* Support ERI derivatives up to this order */
+#define INCLUDE_ERI @INCLUDE_ERI@
+#if @INCLUDE_ERI@ == -1
+#undef INCLUDE_ERI
+#endif
+
+/* Support 3-center ERI derivatives up to this order */
+#define INCLUDE_ERI3 @INCLUDE_ERI3@
+#if @INCLUDE_ERI3@ == -1
+#undef INCLUDE_ERI3
+#endif
+
+/* Support 2-center ERI derivatives up to this order */
+#define INCLUDE_ERI2 @INCLUDE_ERI2@
+#if @INCLUDE_ERI2@ == -1
+#undef INCLUDE_ERI2
+#endif
+
+/* Support G12 derivatives up to this order */
+#define INCLUDE_G12 @INCLUDE_G12@
+#if @INCLUDE_G12@ == -1
+#undef INCLUDE_G12
+#endif
+
+/* Support G12DKH derivatives up to this order */
+#define INCLUDE_G12DKH @INCLUDE_G12DKH@
+#if @INCLUDE_G12DKH@ == -1
+#undef INCLUDE_G12DKH
+#endif
+
+/* Max AM for one-body ints */
+#cmakedefine ONEBODY_MAX_AM @ONEBODY_MAX_AM@
+
+/* Max optimized AM for one-body ints */
+#cmakedefine ONEBODY_OPT_AM @ONEBODY_OPT_AM@
+
+/* Max order of spherical multipole ints */
+#cmakedefine MULTIPOLE_MAX_ORDER @MULTIPOLE_MAX_ORDER@
+
+/* Max AM for ERI (same for all derivatives; if not defined see ERI_MAX_AM_LIST) */
+#cmakedefine ERI_MAX_AM @ERI_MAX_AM@
+
+/* Max AM for ERI and its derivatives */
+#cmakedefine ERI_MAX_AM_LIST "@ERI_MAX_AM_LIST@"
+
+/* Max optimized AM for ERI (same for all derivatives; if not defined see ERI_OPT_AM_LIST) */
+#cmakedefine ERI_OPT_AM @ERI_OPT_AM@
+
+/* Max optimized AM for ERI and its derivatives */
+#cmakedefine ERI_OPT_AM_LIST "@ERI_OPT_AM_LIST@"
+
+/* Max AM for 3-center ERI (same for all derivatives; if not defined see ERI3_MAX_AM_LIST) */
+#cmakedefine ERI3_MAX_AM @ERI3_MAX_AM@
+
+/* Max AM for 3-center ERI and its derivatives */
+#cmakedefine ERI3_MAX_AM_LIST "@ERI3_MAX_AM_LIST@"
+
+/* Max optimized AM for 3-center ERI (same for all derivatives; if not defined see ERI3_OPT_AM_LIST) */
+#cmakedefine ERI3_OPT_AM @ERI3_OPT_AM@
+
+/* Max optimized AM for 3-center ERI and its derivatives */
+#cmakedefine ERI3_OPT_AM_LIST "@ERI3_OPT_AM_LIST@"
+
+/* If 1, assume will transform the "unpaired" center (e.g. a in (a|cd)) to solid harmonics */
+#cmakedefine ERI3_PURE_SH @ERI3_PURE_SH@
+
+/* Max AM for 2-center ERI (same for all derivatives; if not defined see ERI2_MAX_AM_LIST) */
+#cmakedefine ERI2_MAX_AM @ERI2_MAX_AM@
+
+/* Max AM for 2-center ERI and its derivatives */
+#cmakedefine ERI2_MAX_AM_LIST "@ERI2_MAX_AM_LIST@"
+
+/* Max optimized AM for 2-center ERI (same for all derivatives; if not defined see ERI2_OPT_AM_LIST) */
+#cmakedefine ERI2_OPT_AM @ERI2_OPT_AM@
+
+/* Max optimized AM for 2-center ERI and its derivatives */
+#cmakedefine ERI2_OPT_AM_LIST "@ERI2_OPT_AM_LIST@"
+
+/* If 1, assume will transform to solid harmonics */
+#cmakedefine ERI2_PURE_SH @ERI2_PURE_SH@
+
+/* Max AM for G12 method integrals */
+#cmakedefine G12_MAX_AM @G12_MAX_AM@
+
+/* Max optimized AM for G12 method integrals */
+#cmakedefine G12_OPT_AM @G12_OPT_AM@
+
+/* Support [Ti,G12] ? */
+#cmakedefine01 SUPPORT_T1G12
+
+/* Max AM for G12DKH method integrals */
+#cmakedefine G12DKH_MAX_AM @G12DKH_MAX_AM@
+
+/* Max optimized AM for G12DKH method integrals */
+#cmakedefine G12DKH_OPT_AM @G12DKH_OPT_AM@
+
+/* compiler type detection */
+#define LIBINT_COMPILER_ID_GNU 0
+#define LIBINT_COMPILER_ID_Clang 1
+#define LIBINT_COMPILER_ID_AppleClang 2
+#define LIBINT_COMPILER_ID_XLClang 3
+#define LIBINT_COMPILER_ID_Intel 4
+#if defined(__INTEL_COMPILER_BUILD_DATE)  /* macros like __ICC and even __INTEL_COMPILER can be affected by command options like -no-icc */
+# define LIBINT_COMPILER_ID LIBINT_COMPILER_ID_Intel
+# define LIBINT_COMPILER_IS_ICC 1
+#endif
+#if defined(__clang__) && !defined(LIBINT_COMPILER_IS_ICC)
+# define LIBINT_COMPILER_IS_CLANG 1
+# if defined(__apple_build_version__)
+#  define LIBINT_COMPILER_ID LIBINT_COMPILER_ID_AppleClang
+# elif defined(__ibmxl__)
+#  define LIBINT_COMPILER_ID LIBINT_COMPILER_ID_XLClang
+# else
+#  define LIBINT_COMPILER_ID LIBINT_COMPILER_ID_Clang
+# endif
+#endif
+#if defined(__GNUG__) && !defined(LIBINT_COMPILER_IS_ICC) && !defined(LIBINT_COMPILER_IS_CLANG)
+# define LIBINT_COMPILER_ID LIBINT_COMPILER_ID_GNU
+# define LIBINT_COMPILER_IS_GCC 1
+#endif
+
+/* ----------- pragma helpers ---------------*/
+#define LIBINT_PRAGMA(x) _Pragma(#x)
+/* same as LIBINT_PRAGMA(x), but expands x */
+#define LIBINT_XPRAGMA(x) LIBINT_PRAGMA(x)
+/* "concats" a and b with a space in between */
+#define LIBINT_CONCAT(a,b) a b
+#if defined(LIBINT_COMPILER_IS_CLANG)
+#define LIBINT_PRAGMA_CLANG(x) LIBINT_XPRAGMA( LIBINT_CONCAT(clang,x) )
+#else
+#define LIBINT_PRAGMA_CLANG(x)
+#endif
+#if defined(LIBINT_COMPILER_IS_GCC)
+#define LIBINT_PRAGMA_GCC(x) LIBINT_XPRAGMA( LIBINT_CONCAT(GCC,x) )
+#else
+#define LIBINT_PRAGMA_GCC(x)
+#endif
+
+#ifdef __has_cpp_attribute
+#if __has_cpp_attribute(deprecated)
+#define LIBINT_DEPRECATED(msg) [[deprecated(msg)]]
+#endif
+#endif
+#ifndef LIBINT_DEPRECATED
+#define LIBINT_DEPRECATED(msg) LIBINT_XPRAGMA( LIBINT_CONCAT(message, msg) )
+#endif
+
+#endif /* header guard */
