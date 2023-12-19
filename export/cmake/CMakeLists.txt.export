@@ -242,7 +242,7 @@ endif()
 # shared and static libraries built from the same object files
 if (LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
   add_library(libint2 SHARED $<TARGET_OBJECTS:libint2_obj>)
-  set_target_properties(libint2 PROPERTIES LIBRARY_OUTPUT_NAME int2)
+  set_target_properties(libint2 PROPERTIES LIBRARY_OUTPUT_NAME int2 VERSION ${LIBINT_VERSION} SOVERSION 2)
   if(MSVC)
     target_compile_definitions(libint2 PUBLIC _USE_MATH_DEFINES)
     target_compile_options(libint2 PUBLIC "/EHsc")
