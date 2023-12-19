@@ -141,7 +141,7 @@ jobs:
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.8)
         project(hf++)
-        find_package(Libint2 2.8.0 REQUIRED)
+        find_package(Libint2 2.8.1 REQUIRED)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         add_executable(hf++ EXCLUDE_FROM_ALL $LIBINT_EXPORTED_DIR/tests/hartree-fock/hartree-fock++.cc)
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
@@ -300,7 +300,7 @@ jobs:
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.8)
         project(hf++)
-        find_package(Libint2 2.8.0 REQUIRED)
+        find_package(Libint2 2.8.1 REQUIRED)
         get_target_property(_l2_maxam Libint2::int2 Libint2_MAX_AM_ERI)
         message("Libint2_MAX_AM_ERI \${_l2_maxam}")
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread

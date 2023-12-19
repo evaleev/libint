@@ -3,6 +3,11 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2023-12-19: 2.8.1
+  - PR #307: fixup progman dvi and html building
+  - PR #305: disable latex2html detection/use by default
+  - PR #304: natural order for (σ·p)V(σ·p) integrals (HT @JonathonMisiewicz)
+  - PR #302: build fix (HT @JonathonMisiewicz)
 - 2023-12-12: 2.8.0
   - PR #297: clang-format
   - PR #293: read Gaussian basis set files with L>=7 AOs correctly

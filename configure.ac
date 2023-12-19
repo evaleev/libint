@@ -1,4 +1,4 @@
-define([libint_mmm_version],[2.8.0])
+define([libint_mmm_version],[2.8.1])
 define([libint_buildid],[])
 define([libint_so_version],[2:3:0])
 
