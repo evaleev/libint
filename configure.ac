@@ -1138,7 +1138,7 @@ esac
     CHECK_FOR_LATEX2HTML=no
 ]
 )
-if [ X$CHECK_FOR_LATEX2HTML = Xyes ]; then
+if test "X$CHECK_FOR_LATEX2HTML" = "Xyes" ; then
   AC_PATH_PROG(LATEX2HTML,latex2html,,$PATH:/usr/local/bin:/opt/local/bin)
 fi
 
