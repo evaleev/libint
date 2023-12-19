@@ -33,13 +33,12 @@ BIBTEX = @BIBTEX@
 # The document suffix (pdf or ps)
 # Preferentially make pdf manuals, only revert to ps if necessary
 ifdef BIBTEX
+ DOCSUF = dvi
  ifdef PSLATEX
   DOCSUF = ps
-  LATEX = $(PSLATEX)
  endif
  ifdef PDFLATEX
   DOCSUF = pdf
-  LATEX = $(PDFLATEX)
  endif
 endif
 TEXINPUTS = :$(SRCDIR):$(SRCDIR)/..:
@@ -54,4 +53,3 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 docdir=$(prefix)/doc
 includedir=@libintincludedir@
-
