@@ -80,11 +80,17 @@
 /* Support G12DKH derivatives up to this order */
 #undef INCLUDE_G12DKH
 
-/* Max AM for one-body ints */
+/* Max AM for one-body ints (same for all derivatives; if not defined see ONEBODY_MAX_AM_LIST) */
 #undef ONEBODY_MAX_AM
 
-/* Max optimized AM for one-body ints */
+/* Max AM for one-body and its derivatives */
+#undef ONEBODY_MAX_AM_LIST
+
+/* Max optimized AM for one-body ints (same for all derivatives; if not defined see ONEBODY_OPT_AM_LIST) */
 #undef ONEBODY_OPT_AM
+
+/* Max optimized AM for one-body and its derivatives */
+#undef ONEBODY_OPT_AM_LIST
 
 /* Max order of spherical multipole ints */
 #undef MULTIPOLE_MAX_ORDER

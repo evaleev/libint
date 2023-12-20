@@ -26,6 +26,18 @@
 #ifndef _libint2_include_libint2config_h_
 #define _libint2_include_libint2config_h_
 
+/* Max AM (same for all derivatives; if not defined see LIBINT_MAX_AM_LIST) */
+#cmakedefine LIBINT_MAX_AM @LIBINT_MAX_AM@
+
+/* Max AM for integrals and their derivatives */
+#cmakedefine LIBINT_MAX_AM_LIST "@LIBINT_MAX_AM_LIST@"
+
+/* Max optimized AM (same for all derivatives; if not defined see LIBINT_OPT_AM_LIST) */
+#cmakedefine LIBINT_OPT_AM @LIBINT_OPT_AM@
+
+/* Max optimized AM for integrals and their derivatives */
+#cmakedefine LIBINT_OPT_AM_LIST "@LIBINT_OPT_AM_LIST@"
+
 /* Support 1-body derivatives up to this order */
 #define INCLUDE_ONEBODY @INCLUDE_ONEBODY@
 #if @INCLUDE_ONEBODY@ == -1
@@ -65,11 +77,17 @@
 #undef INCLUDE_G12DKH
 #endif
 
-/* Max AM for one-body ints */
+/* Max AM for one-body ints (same for all derivatives; if not defined see ONEBODY_MAX_AM_LIST) */
 #cmakedefine ONEBODY_MAX_AM @ONEBODY_MAX_AM@
 
-/* Max optimized AM for one-body ints */
+/* Max AM for one-body and its derivatives */
+#cmakedefine ONEBODY_MAX_AM_LIST "@ONEBODY_MAX_AM_LIST@"
+
+/* Max optimized AM for one-body ints (same for all derivatives; if not defined see ONEBODY_OPT_AM_LIST) */
 #cmakedefine ONEBODY_OPT_AM @ONEBODY_OPT_AM@
+
+/* Max optimized AM for one-body and its derivatives */
+#cmakedefine ONEBODY_OPT_AM_LIST "@ONEBODY_OPT_AM_LIST@"
 
 /* Max order of spherical multipole ints */
 #cmakedefine MULTIPOLE_MAX_ORDER @MULTIPOLE_MAX_ORDER@
