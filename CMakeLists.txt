@@ -122,10 +122,6 @@ option_with_print(ENABLE_T1G12_SUPPORT
 
 #  <<<  Ordering Conventions  >>>
 
-option_with_print(ERI3_PURE_SH
-  "Assume the 'unpaired' center of 3-center ERIs will be transformed to pure solid harmonics" OFF)
-option_with_print(ERI2_PURE_SH
-  "Assume the 2-center ERIs will be transformed to pure solid harmonics" OFF)
 
 #  <<<  How High Angular Momentum  >>>
 
@@ -170,6 +166,8 @@ option_with_default(WITH_ERI3_MAX_AM
 option_with_default(WITH_ERI3_OPT_AM
   "Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative level as a semicolon-separated string. (default: (max_am/2)+1)" -1)
+option_with_print(ERI3_PURE_SH
+  "Assume the 'unpaired' center of 3-center ERIs will be transformed to pure solid harmonics" OFF)
 
 option_with_default(WITH_ERI2_MAX_AM
   "Support 2-center ERIs for Gaussians of angular momentum up to N.
@@ -177,6 +175,8 @@ option_with_default(WITH_ERI2_MAX_AM
 option_with_default(WITH_ERI2_OPT_AM
   "Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative level as a semicolon-separated string. (default: (max_am/2)+1)" -1)
+option_with_print(ERI2_PURE_SH
+  "Assume the 2-center ERIs will be transformed to pure solid harmonics" OFF)
 
 option_with_default(WITH_G12_MAX_AM
   "Support integrals for G12 methods of angular momentum up to N. (default: max_am)" -1)
@@ -187,6 +187,10 @@ option_with_default(WITH_G12DKH_MAX_AM
   "Support integrals for relativistic G12 methods of angular momentum up to N. (default: max_am)" -1)
 option_with_default(WITH_G12DKH_OPT_AM
   "Optimize G12DKH integrals for up to angular momentum N (N <= max-am). (default: (max_am/2)+1)" -1)
+
+######################## Process & Validate Options ###########################
+include(FeatureSummary)
+include(int_am)
 
 booleanize01(ERI3_PURE_SH)
 booleanize01(ERI2_PURE_SH)
@@ -199,3 +203,7 @@ configure_file(include/libint2/config.h.cmake.in include/libint2/config.h @ONLY)
 
 # STRICTLY TEMPORARY FOR DEMONSTRATION PURPOSES
 configure_file(src/lib/libint/configuration.cc configuration.cc @ONLY)
+
+message("")
+feature_summary(WHAT ENABLED_FEATURES DESCRIPTION "Libint Enabled features:")
+feature_summary(WHAT DISABLED_FEATURES DESCRIPTION "Libint Disabled features:")
