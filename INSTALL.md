@@ -26,6 +26,41 @@
 
 ###  Which Ordering Conventions (G)
 
+* `LIBINT2_SHGAUSS_ORDERING` — G — Ordering for shells of solid harmonic Gaussians. [Default=standard]
+  * `standard` — standard ordering (-l, -l+1 ... l)
+  * `gaussian` — the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+  See [Solid Harmonic Ordering Scope and History](solid-harmonic-ordering-scope-and-history)
+* `LIBINT2_CARTGAUSS_ORDERING` — G — Orderings for shells of cartesian Gaussians. [Default=standard]
+  * `standard` — standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...) This is ordering of the Common Component Architecture (CCA) standard for molecular integral data exchange described in ["Components for Integral Evaluation in Quantum Chemistry", J. P. Kenny, C. L. Janssen, E. F. Valeev, and T. L. Windus, J. Comp. Chem. 29, 562 (2008)](http://dx.doi.org/10.1002/jcc.20815).
+  * `intv3` — intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx) This is used by IntV3, the default integral engine of [MPQC](https://github.com/evaleev/libint/wiki/www.mpqc.org). Use this to make Libint and IntV3 engines in MPQC interoperable.
+  * `gamess` — [GAMESS](http://www.msg.ameslab.gov/gamess/) ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
+  * `orca` — [ORCA](http://cec.mpg.de/forum/) ordering (hydrid between GAMESS and standard)
+  * `bagel` — [BAGEL](https://github.com/evaleev/libint/wiki/nubakery.org) axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)
+* `LIBINT2_SHELL_SET` — G — Support computation of shell sets sets subject to these restrictions. [Default=standard]
+  * `standard` — standard ordering:
+      for (ab|cd):
+        l(a) >= l(b),
+        l(c) >= l(d),
+        l(a)+l(b) <= l(c)+l(d)
+      for (b|cd):
+        l(c) >= l(d)
+  * `orca` — ORCA ordering:
+      for (ab|cd):
+        l(a) <= l(b),
+        l(c) <= l(d),
+        l(a) < l(c) || (l(a) == l(c) && l(b) < l(d))
+      for (b|cd):
+        l(c) <= l(d)
+
+####  Solid Harmonic Ordering Scope and History
+
+The use of the `LIBINT2_SHGAUSS_ORDERING` option has changed recently (Dec 2023). See also discussion in the "2023-12-12: 2.8.0" section of [CHANGES](https://github.com/evaleev/libint/blob/master/CHANGES) and in the "cdbb9f3" comment of [engine.h](https://github.com/evaleev/libint/blob/master/include/libint2/engine.h).
+
+Previous to v2.8.0, `LIBINT2_SHGAUSS_ORDERING` was set at generator-build-time for `Operator::sphemultipole` but was re-set-able at library-build-time for other integral classes for both the C and C++ interfaces. Certain macros, `INT_SOLIDHARMINDEX` and `FOR_SOLIDHARM` depended on the library-build-time choice for both the C and C++ interfaces.
+
+Starting at v2.8.0, the generator-build-time construction of `Operator::sphemultipole` has been _fixed at Standard ordering_; thus, the `LIBINT2_SHGAUSS_ORDERING` setting does not influence it. For the C++ interface, solid harmonic ordering for other integrals classes can be toggled at library runtime through `libint2::set_solid_harmonics_ordering`, and the "SOLIDHARM" macros have different forms for accessing either ordering; thus the library build-time `LIBINT2_SHGAUSS_ORDERING` setting is non-constraining. For the C interface, solid harmonic ordering for other integrals classes and the output of "SOLIDHARM" macros _is constrained_ by the `LIBINT2_SHGAUSS_ORDERING` setting. Currently, this setting is fixed at generator-build-time. The build system could be adjusted so that it's re-set-able at library-build-time, but the C interface is discouraged anyways.
+
+Note that options, docs, and CMake components are focused on the C++ interface, and the only remaining constraining influence of the `LIBINT2_SHGAUSS_ORDERING` option -- for the C interface -- may never be acknowledged beyond the previous paragraph.
 
 
 ###  How High Angular Momentum (G)
@@ -86,6 +121,9 @@
 * `--enable-eri3=N` --> `-D ENABLE_ERI3=N`
 * `--enable-eri2=N` --> `-D ENABLE_ERI2=N`
 
+* `--with-shgauss-ordering=label` --> `-D LIBINT2_SHGAUSS_ORDERING=label`
+* `--with-cartgauss-ordering=label` --> `-D LIBINT2_CARTGAUSS_ORDERING=label`
+* `--with-shell-set=label` --> `-D LIBINT2_SHELL_SET=label`
 * `--enable-eri3-pure-sh` --> `-D ERI3_PURE_SH=ON`
 * `--enable-eri2-pure-sh` --> `-D ERI2_PURE_SH=ON`
 
