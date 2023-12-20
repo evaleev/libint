@@ -149,6 +149,36 @@
 /* Max optimized AM for G12DKH method integrals */
 #cmakedefine G12DKH_OPT_AM @G12DKH_OPT_AM@
 
+/* Specifies the ordering of cartesian Gaussians in a shell. Allowed values are defined at the bottom of this file -- also see CMakeLists.txt */
+#cmakedefine LIBINT_CGSHELL_ORDERING @LIBINT_CGSHELL_ORDERING@
+
+/* Specifies the ordering of solid harmonics Gaussians in a shell. Allowed values are defined at the bottom of this file -- also see CMakeLists.txt */
+#cmakedefine LIBINT_SHGSHELL_ORDERING @LIBINT_SHGSHELL_ORDERING@
+
+/* Specifies the class of shell sets generated. Allowed values are defined at the bottom of this file -- also see CMakeLists.txt */
+#cmakedefine LIBINT_SHELL_SET @LIBINT_SHELL_SET@
+
+/*
+  Known orderings of cartesian Gaussians
+*/
+#cmakedefine LIBINT_CGSHELL_ORDERING_STANDARD @LIBINT_CGSHELL_ORDERING_STANDARD@
+#cmakedefine LIBINT_CGSHELL_ORDERING_INTV3    @LIBINT_CGSHELL_ORDERING_INTV3@
+#cmakedefine LIBINT_CGSHELL_ORDERING_GAMESS   @LIBINT_CGSHELL_ORDERING_GAMESS@
+#cmakedefine LIBINT_CGSHELL_ORDERING_ORCA     @LIBINT_CGSHELL_ORDERING_ORCA@
+#cmakedefine LIBINT_CGSHELL_ORDERING_BAGEL    @LIBINT_CGSHELL_ORDERING_BAGEL@
+
+/*
+  Known orderings of solid harmonic Gaussians
+*/
+#cmakedefine LIBINT_SHGSHELL_ORDERING_STANDARD @LIBINT_SHGSHELL_ORDERING_STANDARD@
+#cmakedefine LIBINT_SHGSHELL_ORDERING_GAUSSIAN @LIBINT_SHGSHELL_ORDERING_GAUSSIAN@
+
+/*
+  Known sets of shell sets
+*/
+#cmakedefine LIBINT_SHELL_SET_STANDARD @LIBINT_SHELL_SET_STANDARD@
+#cmakedefine LIBINT_SHELL_SET_ORCA     @LIBINT_SHELL_SET_ORCA@
+
 /* compiler type detection */
 #define LIBINT_COMPILER_ID_GNU 0
 #define LIBINT_COMPILER_ID_Clang 1

@@ -118,6 +118,34 @@ option_with_print(ENABLE_T1G12_SUPPORT
 
 #  <<<  Ordering Conventions  >>>
 
+option_with_default(LIBINT2_SHGAUSS_ORDERING
+  "Ordering for shells of solid harmonic Gaussians:
+    standard -- standard ordering (-l, -l+1 ... l)
+    gaussian -- the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+   See https://github.com/evaleev/libint/blob/master/INSTALL.md#solid-harmonic-ordering-scope-and-history ." standard)
+option_with_default(LIBINT2_CARTGAUSS_ORDERING
+  "Orderings for shells of cartesian Gaussians:
+    standard -- standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...)
+    intv3  -- intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx)
+    gamess -- GAMESS ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
+    orca -- ORCA ordering (hydrid between GAMESS and standard)
+    bagel -- axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)" standard)
+option_with_default(LIBINT2_SHELL_SET
+  "Support computation of shell sets sets subject to these restrictions:
+    standard -- standard ordering:
+      for (ab|cd):
+        l(a) >= l(b),
+        l(c) >= l(d),
+        l(a)+l(b) <= l(c)+l(d)
+      for (b|cd):
+        l(c) >= l(d)
+    orca -- ORCA ordering:
+      for (ab|cd):
+        l(a) <= l(b),
+        l(c) <= l(d),
+        l(a) < l(c) || (l(a) == l(c) && l(b) < l(d))
+      for (b|cd):
+        l(c) <= l(d)" standard)
 
 #  <<<  How High Angular Momentum  >>>
 
@@ -186,6 +214,7 @@ option_with_default(WITH_G12DKH_OPT_AM
 
 ######################## Process & Validate Options ###########################
 include(FeatureSummary)
+include(int_orderings)
 include(int_am)
 
 booleanize01(ERI3_PURE_SH)
