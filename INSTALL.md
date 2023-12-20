@@ -26,8 +26,6 @@
 
 ###  Which Ordering Conventions (G)
 
-* `ERI3_PURE_SH` — G — Assume the 'unpaired' center of 3-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
-* `ERI2_PURE_SH` — G — Assume the 2-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
 
 
 ###  How High Angular Momentum (G)
@@ -61,9 +59,11 @@
 
 * `WITH_ERI3_MAX_AM` — G — Support 3-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. This option controls only the single fitting center; the paired centers use WITH_MAX_AM. [Default=-1 -> `WITH_MAX_AM`]
 * `WITH_ERI3_OPT_AM` — G — Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+* `ERI3_PURE_SH` — G — Assume the 'unpaired' center of 3-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
 
 * `WITH_ERI2_MAX_AM` — G — Support 2-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
 * `WITH_ERI2_OPT_AM` — G — Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+* `ERI2_PURE_SH` — G — Assume the 2-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
 
 * `WITH_G12_MAX_AM` — G — Support integrals for G12 methods of angular momentum up to N. No specification with per-derivative list. [Default=-1 -> `WITH_MAX_AM`]
 * `WITH_G12_OPT_AM` — G — Optimize G12 integrals for up to angular momentum N (N <= max-am). No specification with per-derivative list. [Default=-1 `WITH_OPT_AM`]
@@ -223,7 +223,7 @@ Eventually, these will be CMake Components, too.
                      "h" (h=spdfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
                      For example, the presence of "eri_ffff_d1" means 4-center gradient ints are
                      available for L=3. That is, the library was configured with at least
-                     "--enable-eri=1 --with-eri-max-am=?,>=3".
+                     '-D ENABLE_ERI=1 -D WITH_ERI_MAX_AM="?;>=3"'.
    eri_hhL_dD      - library includes 2-body integrals with 3 centers and max angular momentum up to
    eri_hhl_dD        Cartesian "h" for the two paired centers and Cartesian "l" or solid harmonics "L"
                      for the unpaired/fitting center, (h/l=spdfghikl..., L=SPDFGHIKL...; l>=h
@@ -232,9 +232,9 @@ Eventually, these will be CMake Components, too.
                      solid harmonics are assumed for 3-center ints, "eri_hhl_dD" will *not be available*.
                      For example, the presence of "eri_ffG_d0" means 3-center energy ints are
                      available for L=3 (paired centers) and L=4 (fitting center). That is, the library
-                     was configured with at least "--enable-eri3=0 --with-max-am=3 --with-eri3-max-am=4".
+                     was configured with at least "-D ENABLE_ERI3=0 -D WITH_MAX_AM=3 -D WITH_ERI3_MAX_AM=4".
                      The presence of "eri_ffg_d0" means the library configuration did not additionally
-                     include "--enable-eri3-pure-sh[=yes]".
+                     include "-D ERI3_PURE_SH=ON".
    eri_HH_dD       - library includes 2-body integrals with 2 centers and max angular momentum up to
    eri_hh_dD         Cartesian "h" or solid harmonics "H", (h=spdfghikl..., H=SPDFGHIKL...; s,p,S,P not
                      enumerated) and derivative order "D" (D=0,1,2,...). The "eri_HH_dD" component is
@@ -242,8 +242,8 @@ Eventually, these will be CMake Components, too.
                      assumed for 2-center ints, "eri_hh_dD" will *not be available*.
                      For example, the presence of "eri_FF_d2" means 2-center Hessian ints are
                      available for L=3. That is, the library was configured with at least
-                     "--enable-eri2=2 --with-eri2-max-am=?,?,>=3". The presence of "eri_ff_d2" means the
-                     library configuration did not additionally include "--enable-eri2-pure-sh[=yes]".
+                     '-D ENABLE_ERI2=2 -D WITH_ERI2_MAX_AM="?;?;>=3"'. The presence of "eri_ff_d2" means the
+                     library configuration did not additionally include "-D ERI2_PURE_SH=ON".
    g12_hhhh_dD     - library includes F12 integrals with Gaussian factors and max angular momentum up to
                      "h" (h=spdfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
                      For example, the presence of "g12_iiii_d2" means g12 Hessian ints are available for L=6.
