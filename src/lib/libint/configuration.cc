@@ -18,49 +18,10 @@
  *
  */
 
-#include <libint2/util/configuration.h>
-
-#include <cstdio>
-#include <cstring>
-
-const char *configuration_accessor(void) {
+/* Runtime accessor for the library configuration:
+   integral derivatives, AM, orderings, etc.
+   @return the semicolon-separated strings from CMake components */
+const char* configuration_accessor() {
   // return "@Libint2_CONFIG_COMPONENTS@";
   return "(nyi)";
-}
-
-void libint_version(int *major, int *minor, int *micro) {
-  *major = -1;
-  *minor = -1;
-  *micro = -1;
-  std::sscanf(libint_version_string(false), "%d.%d.%d", major, minor, micro);
-}
-
-const char *libint_version_string(bool ext) {
-  if (ext)
-    return "@LIBINT_SORTABLE_VERSION@";
-  else
-    return "@LIBINT_VERSION@";
-}
-
-const char *libint_commit(void) { return "@LIBINT_GIT_COMMIT@"; }
-
-const char *libint_reference(void) {
-  std::string ref = "Libint: @LIBINT_DESCRIPTION@, Version " +
-                    std::string(libint_version_string(true)) +
-                    " Edward F. Valeev, http://libint.valeyev.net/";
-
-  auto slen = ref.length();
-  char *cref = new char[slen + 1];
-  std::memcpy(cref, ref.c_str(), slen);
-  cref[slen] = '\0';
-  return cref;
-}
-
-const char *libint_reference_doi(void) { return "@LIBINT_DOI@"; }
-
-const char *libint_bibtex(void) {
-  return "@Misc{Libint2,\n  author = {E.~F.~Valeev},\n  title = "
-         "{\\textsc{Libint}: @LIBINT_DESCRIPTION@},\n  "
-         "howpublished = {http://libint.valeyev.net/},\n  note = {version "
-         "@Libint2_VERSION@},\n  year = {@LIBINT_VERSION_YEAR@}\n}\n";
 }

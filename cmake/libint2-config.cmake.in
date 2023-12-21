@@ -1,0 +1,44 @@
+# libint2-config.cmake
+# --------------------
+#
+# Libint2 cmake module.
+# This module sets the following variables in your project:
+#
+# ::
+#   Libint2_MAX_AM_ERI - maximum angular momentum level of Libint2 libraries for 4-center energy
+#                        integrals. Prefer target variable.
+#
+#
+# Available components:
+#
+# ::
+#
+#
+#                    cart       shell_set   used_by
+#                    --------   ---------   -------
+#                                                             ( psi4 requires runtime-setting of     )
+#   ss - search for  standard + standard  = mpqc4, cp2k, psi4 (  solid harmonic ordering to Gaussian )
+#   so - search for           + orca
+#   is - search for  intv3    + standard  = mpqc3
+#   io - search for           + orca
+#   gs - search for  gamess   + standard  = gamess
+#   go - search for           + orca
+#   os - search for  orca     + standard
+#   oo - search for           + orca      = orca
+#   bs - search for  bagel    + standard  = bagel
+#   bo - search for           + orca
+
+@PACKAGE_INIT@
+
+set(pnv libint2)  # projectnameversion
+set(L2 Libint2)  # NameSpace
+
+
+# check orderings, AM, & derivatives components
+set(${L2}_MAX_AM_ERI @Libint2_MAX_AM_ERI@)  # Libint2_MAX_AM_ERI
+foreach(_eri @Libint2_CONFIG_COMPONENTS@)  # Libint2_CONFIG_COMPONENTS
+    set(${L2}_${_eri}_FOUND 1)
+endforeach()
+
+
+

@@ -1,0 +1,45 @@
+cmake_minimum_required(VERSION 3.16)  # 3.16: unity build
+                                      # 3.15: new Python detection
+                                      # 3.8: introduced C++ standards as features
+cmake_policy(SET CMP0074 NEW)
+cmake_policy(SET CMP0079 NEW)
+
+############################# Version and Metadata #############################
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+include(int_computed)
+
+project(
+  Libint2
+  VERSION ${LIBINT_VERSION}
+  DESCRIPTION ${LIBINT_DESCRIPTION}
+  HOMEPAGE_URL "http://libint.valeyev.net"
+  LANGUAGES CXX
+  )
+
+set(${PROJECT_NAME}_AUTHORS "Edward F. Valeev")
+set(${PROJECT_NAME}_LICENSE "LGPL-3.0-only")
+
+set(L2 Libint2)  # Namespace
+set(pnv libint2) # projectnameversion
+
+################################# Main Project #################################
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+  cmake/${pnv}-config.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/${pnv}-config.cmake"
+  INSTALL_DESTINATION "lib/cmake/libint2" # TODO ${LIBINT2_INSTALL_CMAKEDIR}
+  NO_SET_AND_CHECK_MACRO
+  )
+
+install(
+  DIRECTORY
+    ${PROJECT_BINARY_DIR}/include/
+    ${PROJECT_SOURCE_DIR}/include/
+  TYPE INCLUDE
+  COMPONENT ${L2}_Development
+  FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.hpp"
+  )
