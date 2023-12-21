@@ -14,7 +14,7 @@ dynamic_version(
   PROJECT_PREFIX Libint2Compiler_
   GIT_ARCHIVAL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/.git_archival.txt
   OUTPUT_COMMIT LibintRepository_COMMIT
-  OUTPUT_VERSION LibintRepository_VERSION 
+  OUTPUT_VERSION LibintRepository_VERSION
   OUTPUT_DESCRIBE LibintRepository_DESCRIBE
   OUTPUT_DISTANCE LibintRepository_DISTANCE
   )
@@ -30,7 +30,7 @@ project(
   # * http://libint.valeyev.net/ redirects to https://github.com/evaleev/libint
 
 set(${PROJECT_NAME}_AUTHORS "Edward F. Valeev")
-set(${PROJECT_NAME}_LICENSE "GPL-3.0 for generator; LGPL-3.0 for generated")
+set(${PROJECT_NAME}_LICENSE "GPL-3.0-only for generator; LGPL-3.0-only for generated library")
 
 # along with project(... VERSION) above scanned by dynamic_version() from `git
 #   describe`, these are the authoritative version source (formerly in configure.ac)
@@ -222,12 +222,21 @@ booleanize01(ERI2_PURE_SH)
 booleanize01(DISABLE_ONEBODY_PROPERTY_DERIVS)
 booleanize01(SUPPORT_T1G12)
 
+
 ################################## Main Project #################################
 
-configure_file(include/libint2/config.h.cmake.in include/libint2/config.h @ONLY)
+set(EXPORT_STAGE_DIR ${PROJECT_BINARY_DIR}/libint-${LIBINT_EXT_VERSION})
 
-# STRICTLY TEMPORARY FOR DEMONSTRATION PURPOSES
-configure_file(src/lib/libint/configuration.cc configuration.cc @ONLY)
+configure_file(
+  cmake/modules/int_computed.cmake.in
+  cmake/modules/int_computed.cmake
+  @ONLY)
+configure_file(
+  include/libint2/config.h.cmake.in
+  include/libint2/config.h
+  @ONLY)
+
+add_subdirectory(src)
 
 message("")
 feature_summary(WHAT ENABLED_FEATURES DESCRIPTION "Libint Enabled features:")
