@@ -35,6 +35,9 @@ set(L2 Libint2)  # NameSpace
 
 
 # check orderings, AM, & derivatives components
+# * LIBINT2_SHGAUSS_ORDERING = @LIBINT2_SHGAUSS_ORDERING@
+# * LIBINT2_CARTGAUSS_ORDERING = @LIBINT2_CARTGAUSS_ORDERING@
+# * LIBINT2_SHELL_SET = @LIBINT2_SHELL_SET@
 set(${L2}_MAX_AM_ERI @Libint2_MAX_AM_ERI@)  # Libint2_MAX_AM_ERI
 foreach(_eri @Libint2_CONFIG_COMPONENTS@)  # Libint2_CONFIG_COMPONENTS
     set(${L2}_${_eri}_FOUND 1)

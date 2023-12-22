@@ -231,10 +231,25 @@ configure_file(
   cmake/modules/int_computed.cmake.in
   cmake/modules/int_computed.cmake
   @ONLY)
+
+# CMake data transmitted to C++ via config.h for generator/compiler (_EXPORT_MODE=0).
+#   Same info is positioned for the library export, but _EXPORT_MODE=1 turns on
+#   inclusion of config2.h to be filled in later by user re-set-able options at
+#   library build time.
+set(_EXPORT_MODE 0)
 configure_file(
   include/libint2/config.h.cmake.in
   include/libint2/config.h
   @ONLY)
+set(_EXPORT_MODE 1)
+configure_file(
+  include/libint2/config.h.cmake.in
+  ${EXPORT_STAGE_DIR}/include/libint2/config.h
+  @ONLY)
+configure_file(
+  include/libint2/config2.h.cmake.in
+  ${EXPORT_STAGE_DIR}/include/libint2/config2.h.cmake.in
+  COPYONLY)
 
 add_subdirectory(src)
 
