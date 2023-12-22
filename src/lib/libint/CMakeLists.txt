@@ -54,6 +54,8 @@ add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
       # * DOWNLOAD_DIR <SOURCE_DIR> is tidier but fails on Windows
       URL "${EXPORT_STAGE_DIR}.tgz"
       LOG_DOWNLOAD 1
+      CMAKE_ARGS #"${library_CMAKE_ARGS}"
+        -DLIBINT2_ALIGN_SIZE=${LIBINT_ALIGN_SIZE}
       CMAKE_CACHE_ARGS
         -DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}
         -DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}
