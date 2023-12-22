@@ -23,8 +23,36 @@ set(${PROJECT_NAME}_LICENSE "LGPL-3.0-only")
 set(L2 Libint2)  # Namespace
 set(pnv libint2) # projectnameversion
 
+################################### Options ####################################
+include(options)
+
+#  <<<  Ordering Conventions  >>>
+
+# retired Jan 2023  # option_with_default(LIBINT2_SHGAUSS_ORDERING "Ordering for shells of solid harmonic Gaussians: standard or gaussian" standard)
+set(LIBINT2_SHGAUSS_ORDERING ${LIBINT2_SHGAUSS_ORDERING})
+message(STATUS "Setting option LIBINT2_SHGAUSS_ORDERING: ${LIBINT2_SHGAUSS_ORDERING} (read-only from generation-time)")
+
+set(LIBINT2_CARTGAUSS_ORDERING ${LIBINT2_CARTGAUSS_ORDERING})
+message(STATUS "Setting option LIBINT2_CARTGAUSS_ORDERING: ${LIBINT2_CARTGAUSS_ORDERING} (read-only from generation-time)")
+
+set(LIBINT2_SHELL_SET ${LIBINT2_SHELL_SET})
+message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (read-only from generation-time)")
+
+
 ################################# Main Project #################################
 include(CMakePackageConfigHelpers)
+
+configure_file(
+  include/libint2/config2.h.cmake.in
+  include/libint2/config2.h
+  @ONLY)
+# configuration.cc defines a string summary of capabilities. @ONLY is maximally
+#   deferred in case config2 changes the summary (as it used to when
+#   LIBINT_SHGSHELL_ORDERING was library-config-time selected).
+configure_file(
+  src/configuration.cc.cmake.in
+  src/configuration.cc
+  @ONLY)
 
 configure_package_config_file(
   cmake/${pnv}-config.cmake.in
@@ -35,8 +63,7 @@ configure_package_config_file(
 
 install(
   DIRECTORY
-    ${PROJECT_BINARY_DIR}/include/
-    ${PROJECT_SOURCE_DIR}/include/
+    ${PROJECT_SOURCE_DIR}/include2/  # TODO temp for skeleton
   TYPE INCLUDE
   COMPONENT ${L2}_Development
   FILES_MATCHING
