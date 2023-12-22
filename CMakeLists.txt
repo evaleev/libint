@@ -186,7 +186,7 @@ option_with_default(WITH_ERI_OPT_AM
 option_with_default(WITH_ERI3_MAX_AM
   "Support 3-center ERIs for Gaussians of angular momentum up to N.
    Can specify values for each derivative level as a semicolon-separated string. (default: max_am)
-   This option controls only the single fitting center; the paired centers use WITH_MAX_AM." -1)
+   This option controls only the single fitting center. The paired centers use WITH_MAX_AM." -1)
 option_with_default(WITH_ERI3_OPT_AM
   "Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative level as a semicolon-separated string. (default: (max_am/2)+1)" -1)
@@ -212,15 +212,66 @@ option_with_default(WITH_G12DKH_MAX_AM
 option_with_default(WITH_G12DKH_OPT_AM
   "Optimize G12DKH integrals for up to angular momentum N (N <= max-am). (default: (max_am/2)+1)" -1)
 
+#  <<<  Miscellaneous  >>>
+
+option_with_print(LIBINT_CONTRACTED_INTS
+  "Turn on support for contracted integrals." ON)
+option_with_default(LIBINT_ERI_STRATEGY
+  "(EXPERT) Compute ERIs using the following strategy. (0 for OS, 1 for HGP, 2 for HL)" 1)
+option_with_print(LIBINT_USE_COMPOSITE_EVALUATORS
+  "Libint will use composite evaluators (i.e. every evaluator will compute one integral type only)" ON)
+option_with_print(LIBINT_SINGLE_EVALTYPE
+  "Generate single evaluator type (i.e. all tasks use the same evaluator). OFF is NYI" ON)
+option_with_default(LIBINT_ENABLE_UNROLLING
+  "Unroll shell sets into integrals (will unroll shell sets larger than N) (0 for never, N for N, 1000000000 for always)" 100)
+option_with_default(LIBINT_ALIGN_SIZE
+  "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of
+   sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics: system-determined for vectorization off (default) or veclen * sizeof(LIBINT2_REALTYPE) for vectorization on." 0)
+mark_as_advanced(LIBINT_ALIGN_SIZE)
+option_with_print(LIBINT_GENERATE_FMA
+  "Generate FMA (fused multiply-add) instructions (to benefit must have FMA-capable hardware and compiler)" OFF)
+option_with_print(LIBINT_ENABLE_GENERIC_CODE
+  "Use manually-written generic code" OFF)
+option_with_print(LIBINT_API_PREFIX
+  "Prepend this string to every name in the library API (except for the types)." OFF)
+option_with_print(LIBINT_VECTOR_LENGTH
+  "Compute integrals in vectors of length N." OFF)
+option_with_default(LIBINT_VECTOR_METHOD
+  "Specifies how to vectorize integrals. Irrelevant when `LIBINT_VECTOR_LENGTH=OFF. Allowed values are 'block' (default), and 'line'." block)
+option_with_print(LIBINT_ACCUM_INTS
+  "Accumulate integrals to the buffer, rather than copy (OFF for copy, ON for accum)." OFF)
+option_with_print(LIBINT_FLOP_COUNT
+  "Support (approximate) FLOP counting by the library. (Generated code will require C++11!)" OFF)
+option_with_print(LIBINT_PROFILE
+  "Turn on profiling instrumentation of the library. (Generated code will require C++11!)" OFF)
+
+
+
 ######################## Process & Validate Options ###########################
+include(CheckFunctionExists)
+include(CheckIncludeFileCXX)
 include(FeatureSummary)
 include(int_orderings)
 include(int_am)
 
+check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
+if (NOT HAVE_POSIX_MEMALIGN)
+    message(FATAL_ERROR "did not find posix_memalign ... this SHOULD NOT happen. Cannot proceed.")
+endif()
+
+check_include_file_cxx(stdint.h HAVE_STDINT_H)  # limits.h?
+
 booleanize01(ERI3_PURE_SH)
 booleanize01(ERI2_PURE_SH)
+booleanize01(LIBINT_SINGLE_EVALTYPE)
+booleanize01(LIBINT_CONTRACTED_INTS)
 booleanize01(DISABLE_ONEBODY_PROPERTY_DERIVS)
+booleanize01(LIBINT_GENERATE_FMA)
+booleanize01(LIBINT_ENABLE_GENERIC_CODE)
 booleanize01(SUPPORT_T1G12)
+booleanize01(LIBINT_ACCUM_INTS)
+booleanize01(LIBINT_FLOP_COUNT)
+booleanize01(LIBINT_PROFILE)
 
 
 ################################## Main Project #################################

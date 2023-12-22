@@ -165,6 +165,29 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 * `--disable-1body-property-derivs` --> `-D DISABLE_ONEBODY_PROPERTY_DERIVS=ON`
 
 
+* Defunct as non-CMake-like: `--build`, `--host`, `--target`,
+
+* `--with-api-prefix=pfx` --> `-D LIBINT_API_PREFIX=pfx`
+* `--enable-unrolling=yes` --> `-D LIBINT_ENABLE_UNROLLING=1000000000`
+* `--enable-unrolling=no` --> `-D LIBINT_ENABLE_UNROLLING=0`
+* `--enable-unrolling=S` --> `-D LIBINT_ENABLE_UNROLLING=S`
+* `--enable-generic-code` --> `-D LIBINT_ENABLE_GENERIC_CODE=ON`
+* `--with-vector-length=N` --> `-D LIBINT_VECTOR_LENGTH=N`
+* `--with-vector-method=choice` --> `-D LIBINT_VECTOR_METHOD=choice`
+* `--with-align-size=N` --> `-D LIBINT_ALIGN_SIZE=N` (G) (`-D LIBINT2_ALIGN_SIZE=N` for L)
+* `--enable-fma` --> `-D LIBINT_GENERATE_FMA=ON`
+* `--enable-accum-ints` --> `-D LIBINT_ACCUM_INTS=ON`
+* `--enable-flop-counter` -> `-D LIBINT_FLOP_COUNT=ON`
+* `--enable-profile` --> `-D LIBINT_PROFILE=ON`
+* `--disable-contracted-ints` --> `-D LIBINT_CONTRACTED_INTS=OFF`
+* `--disable-single-evaltype` --> `-D LIBINT_SINGLE_EVALTYPE=OFF` (NYI)
+* `--enable-composite-evaluators` --> `-D LIBINT_USE_COMPOSITE_EVALUATORS=ON`
+* `--disable-composite-evaluators` --> `-D LIBINT_USE_COMPOSITE_EVALUATORS=OFF`
+* `--with-eri-strategy=OS` --> `-D LIBINT_ERI_STRATEGY=0`
+* `--with-eri-strategy=HL` --> `-D LIBINT_ERI_STRATEGY=2`
+
+
+
 
 
 ### Run-Time Compatibility

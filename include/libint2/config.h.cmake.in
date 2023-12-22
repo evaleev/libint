@@ -38,6 +38,9 @@
 /* The micro version number. */
 #define LIBINT_MICRO_VERSION @LIBINT_MICRO_VERSION@
 
+/* Prefix for all names in API */
+#cmakedefine LIBINT_API_PREFIX "@LIBINT_API_PREFIX@"
+
 /* Max AM (same for all derivatives; if not defined see LIBINT_MAX_AM_LIST) */
 #cmakedefine LIBINT_MAX_AM @LIBINT_MAX_AM@
 
@@ -164,6 +167,24 @@
 /* Max optimized AM for G12DKH method integrals */
 #cmakedefine G12DKH_OPT_AM @G12DKH_OPT_AM@
 
+/* Whether integral sets can be unrolled */
+#cmakedefine LIBINT_ENABLE_UNROLLING @LIBINT_ENABLE_UNROLLING@
+
+/* Whether generic code can be used */
+#cmakedefine LIBINT_ENABLE_GENERIC_CODE @LIBINT_ENABLE_GENERIC_CODE@
+
+/* maximum length of vectors */
+#cmakedefine LIBINT_VECTOR_LENGTH @LIBINT_VECTOR_LENGTH@
+
+/* how to vectorize */
+#cmakedefine LIBINT_VECTOR_METHOD "@LIBINT_VECTOR_METHOD@"
+#ifndef LIBINT_VECTOR_LENGTH
+#undef LIBINT_VECTOR_METHOD
+#endif
+
+/* if can be controlled with posix_memalign, alignment size */
+#define LIBINT_ALIGN_SIZE @LIBINT_ALIGN_SIZE@
+
 /* Specifies the ordering of cartesian Gaussians in a shell. Allowed values are defined at the bottom of this file -- also see CMakeLists.txt */
 #cmakedefine LIBINT_CGSHELL_ORDERING @LIBINT_CGSHELL_ORDERING@
 
@@ -172,6 +193,30 @@
 
 /* Specifies the class of shell sets generated. Allowed values are defined at the bottom of this file -- also see CMakeLists.txt */
 #cmakedefine LIBINT_SHELL_SET @LIBINT_SHELL_SET@
+
+/* Generate FMA instructions? */
+#cmakedefine LIBINT_GENERATE_FMA @LIBINT_GENERATE_FMA@
+
+/* Accumulate integrals to the buffer? */
+#cmakedefine LIBINT_ACCUM_INTS @LIBINT_ACCUM_INTS@
+
+/* Whether FLOP counting is supported */
+#cmakedefine LIBINT_FLOP_COUNT @LIBINT_FLOP_COUNT@
+
+/* Whether profile instrumentation will be enabled */
+#cmakedefine LIBINT_PROFILE @LIBINT_PROFILE@
+
+/* Support contracted integrals? */
+#cmakedefine LIBINT_CONTRACTED_INTS @LIBINT_CONTRACTED_INTS@
+
+/* Generate single evaluator type? */
+#cmakedefine LIBINT_SINGLE_EVALTYPE @LIBINT_SINGLE_EVALTYPE@
+
+/* Generate composite evaluators? */
+#cmakedefine01 LIBINT_USE_COMPOSITE_EVALUATORS
+
+/* Strategy for ERI evaluation */
+#define LIBINT_ERI_STRATEGY @LIBINT_ERI_STRATEGY@
 
 /*
   Known orderings of cartesian Gaussians
@@ -193,6 +238,16 @@
 */
 #cmakedefine LIBINT_SHELL_SET_STANDARD @LIBINT_SHELL_SET_STANDARD@
 #cmakedefine LIBINT_SHELL_SET_ORCA     @LIBINT_SHELL_SET_ORCA@
+
+/*
+ Libint-independent features
+ */
+
+/* have stdint.h ? */
+#cmakedefine HAVE_STDINT_H @HAVE_STDINT_H@
+
+/* have posix_memalign ? */
+#cmakedefine HAVE_POSIX_MEMALIGN @HAVE_POSIX_MEMALIGN@
 
 /* compiler type detection */
 #define LIBINT_COMPILER_ID_GNU 0
