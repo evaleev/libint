@@ -23,6 +23,10 @@ set(${PROJECT_NAME}_LICENSE "LGPL-3.0-only")
 set(L2 Libint2)  # Namespace
 set(pnv libint2) # projectnameversion
 
+#################################### Guide #####################################
+
+# See "TARBALL" labels in INSTALL.md for elaboration of options, dependencies, & targets.
+
 ################################### Options ####################################
 include(options)
 

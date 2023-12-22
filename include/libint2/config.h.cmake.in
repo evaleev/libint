@@ -26,6 +26,18 @@
 #ifndef _libint2_include_libint2config_h_
 #define _libint2_include_libint2config_h_
 
+/* The version number. */
+#cmakedefine LIBINT_VERSION "@LIBINT_VERSION@"
+
+/* The major version number. */
+#define LIBINT_MAJOR_VERSION @LIBINT_MAJOR_VERSION@
+
+/* The minor version number. */
+#define LIBINT_MINOR_VERSION @LIBINT_MINOR_VERSION@
+
+/* The micro version number. */
+#define LIBINT_MICRO_VERSION @LIBINT_MICRO_VERSION@
+
 /* Max AM (same for all derivatives; if not defined see LIBINT_MAX_AM_LIST) */
 #cmakedefine LIBINT_MAX_AM @LIBINT_MAX_AM@
 
