@@ -4,7 +4,8 @@ cmake_policy(SET CMP0075 NEW)  # support CMAKE_REQUIRED_LIBRARIES
 include(CMakePushCheckState)
 
 cmake_push_check_state()
-list(APPEND CMAKE_REQUIRED_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include;${CMAKE_CURRENT_SOURCE_DIR}/src/lib/libint")
+# needed for #include <libint2/util/vector.h>. works for top-level but not for EP; check again after more installs
+list(APPEND CMAKE_REQUIRED_INCLUDES "${PROJECT_SOURCE_DIR}/include;${PROJECT_SOURCE_DIR}/src/lib/libint")
 
 if(NOT(LIBINT2_REALTYPE STREQUAL "double"))
     set(LIBINT_USER_DEFINED_REAL "${LIBINT2_REALTYPE}")
@@ -13,7 +14,7 @@ if(NOT(LIBINT2_REALTYPE STREQUAL "double"))
     endif()
 
     check_cxx_source_compiles("
-#include <libint2/util/vector.h>
+//#include <libint2/util/vector.h>
 ${LIBINT_USER_DEFINED_REAL_INCLUDES}
   
 int main(void) {

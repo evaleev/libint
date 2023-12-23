@@ -40,10 +40,15 @@ if (HAVE_POSIX_MEMALIGN)
     mark_as_advanced(LIBINT2_ALIGN_SIZE)
 endif()
 
+option_with_default(LIBINT2_REALTYPE
+  "Specifies the floating-point data type used by the library." double)
+include(int_userreal)
+
 
 #  <<<  Ordering Conventions  >>>
 
-# retired Jan 2023  # option_with_default(LIBINT2_SHGAUSS_ORDERING "Ordering for shells of solid harmonic Gaussians: standard or gaussian" standard)
+# Jan 2023, retired  # option_with_default(LIBINT2_SHGAUSS_ORDERING ...
+# August 2023: the following variable has an effect on `INT_SOLIDHARMINDEX(l, m)` but otherwise the choice can be deferred to runtime.
 set(LIBINT2_SHGAUSS_ORDERING ${LIBINT2_SHGAUSS_ORDERING})
 message(STATUS "Setting option LIBINT2_SHGAUSS_ORDERING: ${LIBINT2_SHGAUSS_ORDERING} (read-only from generation-time)")
 
