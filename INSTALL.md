@@ -109,6 +109,38 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 ### Compilers and Flags (G L) (TARBALL)
 
+### Miscellaneous (G L)
+
+* `LIBINT2_REALTYPE` — L — Specifies the floating-point data type used by the library. [Default=double]
+  By overriding the default it is possible to customize the library to use a lower-precision representation (which typically results in a performance boost) and/or to generate [SIMD](http://en.wikipedia.org/wiki/SIMD) vectorized code. *N.B. C++11 interface cannot be currently used with SIMD vectorized libraries!* The following values are valid:
+  * `double` -- double-precision floating-point representation of a real number;
+  * `float` -- single-precision floating-point number;
+  * `libint2::simd::VectorAVXDouble` -- vector of 4 packed doubles that can be used with [AVX](http://en.wikipedia.org/wiki/Advanced_Vector_Extensions) instructions available on reasonably-modern x86 hardware (starting with Intel Sandy Bridge and AMD Bulldozer microarchitectures, available in processors since 2011);
+  * `libint2::simd::VectorSSEDouble` -- vector of 2 packed doubles that can be used with [SSE2](http://en.wikipedia.org/wiki/SSE2) instructions available on all x86 platforms, including those released before 2011;
+  * `libint2::simd::VectorSSEFloat`  -- vector of 4 packed floats that can be used with [SSE](http://en.wikipedia.org/wiki/Streaming_SIMD_Extensions) instructions available on all x86 platforms, including those released before 2011;
+  * `libint2::simd::VectorQPXDouble` -- vector of 4 packed doubles that can be used with QPX instructions available on recent PowerPC hardware (IBM Blue Gene/Q);
+  * `libint2::simd::VectorFP2Double` -- vector of 2 packed doubles that can be used with FP2 (Double Hummer) instructions available on older PowerPC hardware (IBM Blue Gene/P).
+
+  With the exception of `float`, these are vector types implemented in Libint using compiler _intrinsics_, functions that translate directly into vector instructions. To use these vector types you may need to provide additional compiler flags that will enable support for vector instructions. For example, to enable support for AVX in Clang use the `-mavx` compiler flag. With Intel compiler use flag `-xHOST` to enable all vector instruction sets supported by the processor on which you are compiling.
+
+  **N.B.** It is also possible to use real vector types of [Agner Fog's vectorclass library](http://www.agner.org/optimize/#vectorclass), e.g. `Vec4d` and `Vec8f` for AVX. To use this library you need to add this to CPPFLAGS or CXXFLAGS: `-Ipath_to_vectorclass -DLIBINT2_HAVE_AGNER_VECTORCLASS` . On macOS, we only succeeded in using this library with a recent GNU C++ compiler, not with Clang. Not tested after CMake rework.
+
+* `LIBINT_USER_DEFINED_REAL_INCLUDES` — L — Additional #includes necessary to use the real type. [Defaults=none]
+* `LIBINT_CONTRACTED_INTS` — G — Turn on support for contracted integrals. [Default=ON]
+* `LIBINT_ERI_STRATEGY` — G — Compute ERIs using the following strategy (experts only). (0 for OS, 1 for HGP, 2 for HL). [Default=1]
+* `LIBINT_USE_COMPOSITE_EVALUATORS` — G — Libint will use composite evaluators (i.e. every evaluator will compute one integral type only). [Default=ON]
+* `LIBINT_SINGLE_EVALTYPE` — G — Generate single evaluator type (i.e. all tasks use the same evaluator). OFF is NYI [Default=ON]
+* `LIBINT_ENABLE_UNROLLING` — G — Unroll shell sets into integrals (will unroll shell sets larger than N) (0 for never, N for N, 1000000000 for always). [Default=100]
+* `LIBINT_ALIGN_SIZE` — G — If posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics: system-determined for vectorization off (default) or veclen * sizeof(LIBINT2_REALTYPE) for vectorization on. (experts only). [Default=0]
+* `LIBINT_GENERATE_FMA` — G — Generate FMA (fused multiply-add) instructions (to benefit must have FMA-capable hardware and compiler). [Default=OFF]
+* `LIBINT_ENABLE_GENERIC_CODE` — G — Use manually-written generic code. [Default=OFF]
+* `LIBINT_API_PREFIX` — G — Prepend this string to every name in the library API (except for the types). [Default=OFF]
+* `LIBINT_VECTOR_LENGTH` — G — Compute integrals in vectors of length N. [Default=OFF]
+* `LIBINT_VECTOR_METHOD` — G — Specifies how to vectorize integrals. Irrelevant when `LIBINT_VECTOR_LENGTH=OFF. Allowed values are 'block' and 'line'.  [Default=block]
+* `LIBINT_ACCUM_INTS` — G — Accumulate integrals to the buffer, rather than copy (OFF for copy, ON for accum). [Default=OFF]
+* `LIBINT_FLOP_COUNT` — G — Support (approximate) FLOP counting by the library. (Generated code will require C++11!). [Default=OFF]
+* `LIBINT_PROFILE` — G — Turn on profiling instrumentation of the library. (Generated code will require C++11!). [Default=OFF]
+
 
 # GNU Autotools Update Guide
 
@@ -185,6 +217,8 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 * `--disable-composite-evaluators` --> `-D LIBINT_USE_COMPOSITE_EVALUATORS=OFF`
 * `--with-eri-strategy=OS` --> `-D LIBINT_ERI_STRATEGY=0`
 * `--with-eri-strategy=HL` --> `-D LIBINT_ERI_STRATEGY=2`
+* `--with-real-type=type` --> `-D LIBINT2_REALTYPE=type`
+* `--with-real-type-inclues=inc` --> `-D LIBINT_USER_DEFINED_REAL_INCLUDES="#include <stdio.h>"`
 
 
 
