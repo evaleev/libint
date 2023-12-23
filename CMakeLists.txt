@@ -228,6 +228,11 @@ option_with_default(LIBINT_ALIGN_SIZE
   "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of
    sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics: system-determined for vectorization off (default) or veclen * sizeof(LIBINT2_REALTYPE) for vectorization on." 0)
 mark_as_advanced(LIBINT_ALIGN_SIZE)
+option_with_default(LIBINT2_REALTYPE
+  "Specifies the floating-point data type used by the library. Consumed at library build-time." double)
+option_with_print(LIBINT_USER_DEFINED_REAL_INCLUDES
+  "Additional #includes necessary to use the real type." OFF)
+include(int_userreal)
 option_with_print(LIBINT_GENERATE_FMA
   "Generate FMA (fused multiply-add) instructions (to benefit must have FMA-capable hardware and compiler)" OFF)
 option_with_print(LIBINT_ENABLE_GENERIC_CODE
@@ -260,6 +265,10 @@ if (NOT HAVE_POSIX_MEMALIGN)
 endif()
 
 check_include_file_cxx(stdint.h HAVE_STDINT_H)  # limits.h?
+
+if(cxx_std_11 IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+    set(LIBINT_HAS_CXX11 1)
+endif()
 
 booleanize01(ERI3_PURE_SH)
 booleanize01(ERI2_PURE_SH)

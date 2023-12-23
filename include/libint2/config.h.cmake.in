@@ -194,6 +194,12 @@
 /* Specifies the class of shell sets generated. Allowed values are defined at the bottom of this file -- also see CMakeLists.txt */
 #cmakedefine LIBINT_SHELL_SET @LIBINT_SHELL_SET@
 
+/* User-defined real type */
+#cmakedefine LIBINT_USER_DEFINED_REAL "@LIBINT_USER_DEFINED_REAL@"
+
+/* Include statements needed to use LIBINT_USER_DEFINED_REAL */
+#cmakedefine LIBINT_USER_DEFINED_REAL_INCLUDES "@LIBINT_USER_DEFINED_REAL_INCLUDES@"
+
 /* Generate FMA instructions? */
 #cmakedefine LIBINT_GENERATE_FMA @LIBINT_GENERATE_FMA@
 
@@ -217,6 +223,16 @@
 
 /* Strategy for ERI evaluation */
 #define LIBINT_ERI_STRATEGY @LIBINT_ERI_STRATEGY@
+
+/* --------------------------
+  have C++ features?
+   -------------------------- */
+
+/* define if CXX compiler can compile C++11 */
+#cmakedefine LIBINT_HAS_CXX11 @LIBINT_HAS_CXX11@
+
+/* C++ compiler allows template with default params as template template parameter (check is NYI) */
+#undef CXX_ALLOWS_DEFPARAMTEMPLATE_AS_TEMPTEMPPARAM
 
 /*
   Known orderings of cartesian Gaussians
