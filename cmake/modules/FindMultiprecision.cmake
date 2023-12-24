@@ -236,6 +236,7 @@ if(NOT CMAKE_REQUIRED_QUIET)
     dump_cmake_variables("^Multiprecision_([A-Za-z0-9_]+)_FOUND$" "FindMultiprecision components found: ")
 endif()
 
+include(FindPackageHandleStandardArgs)
 set(Multiprecision_FOUND 1)
 check_required_components(Multiprecision)
 find_package_handle_standard_args(

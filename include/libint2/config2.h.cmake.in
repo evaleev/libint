@@ -33,6 +33,8 @@
 #undef HAVE_POSIX_MEMALIGN
 #undef LIBINT_USER_DEFINED_REAL
 /* retired Jan 2023 #undef LIBINT_SHGSHELL_ORDERING */
+#undef LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS
+
 /* if can be controlled with posix_memalign, alignment size */
 #define LIBINT2_ALIGN_SIZE @LIBINT2_ALIGN_SIZE@
 
@@ -41,6 +43,9 @@
 
 /* Specifies the ordering of solid harmonics Gaussians in a shell. Retired Jan 2023 in favor of becoming a generator-time-only option */
 /* #cmakedefine LIBINT_SHGSHELL_ORDERING @LIBINT_SHGSHELL_ORDERING@ */
+
+/* define if system-wide Boost.Preprocessor is available */
+#cmakedefine LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS @LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@
 
 /* have MPFR library ? */
 #cmakedefine LIBINT_HAS_MPFR @LIBINT_HAS_MPFR@

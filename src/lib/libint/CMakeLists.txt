@@ -54,6 +54,16 @@ add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
     if(Multiprecision_ROOT)
         list(APPEND library_CMAKE_ARGS "-DMultiprecision_ROOT=${Multiprecision_ROOT}")
     endif()
+    if(Boost_DIR)
+        list(APPEND library_CMAKE_ARGS "-DBoost_DIR=${Boost_DIR}")
+    endif()
+    if(BOOST_ROOT)
+        list(APPEND library_CMAKE_ARGS "-DBOOST_ROOT=${BOOST_ROOT}")
+    endif()
+    if(CMAKE_DISABLE_FIND_PACKAGE_Boost)
+        list(APPEND library_CMAKE_ARGS "-DCMAKE_DISABLE_FIND_PACKAGE_Boost=${CMAKE_DISABLE_FIND_PACKAGE_Boost}")
+    endif()
+
 
 
     ExternalProject_Add(
