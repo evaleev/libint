@@ -100,6 +100,8 @@ message(STATUS "Building using CMake ${CMAKE_VERSION} Generator ${CMAKE_GENERATO
 ### library-only
 option_with_print(LIBINT2_ENABLE_MPFR
   "Use GNU MPFR library for high-precision testing (EXPERTS ONLY). Consumed at library build-time." OFF)
+option_with_print(LIBINT2_LOCAL_Eigen3_INSTALL
+  "Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. See `LIBINT2_LOCAL_Eigen3_FIND`. Consumed at library build-time." OFF)
 
 #  <<<  Which Integrals Classes, Which Derivative Levels  >>>
 
@@ -295,7 +297,7 @@ booleanize01(LIBINT_PROFILE)
 # See notes at https://github.com/evaleev/libint/blob/master/INSTALL.md#prerequisites
 
 if(LIBINT2_ENABLE_MPFR)
-    # mpfr detected at appropriate time in CMakeLists.txt.export, but prechecking here
+    # mpfr detected at appropriate time for library (CMakeLists.txt.export), but prechecking here
     find_package(Multiprecision MODULE REQUIRED COMPONENTS gmpxx mpfr)
     set(LIBINT_HAS_MPFR 1)
 else()
@@ -315,6 +317,8 @@ find_package(Boost 1.57 REQUIRED)
 if (TARGET Boost::headers)
     set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
 endif()
+
+# deferring find_package(Eigen3) to library (CMakeLists.txt.export)
 
 
 ################################## Main Project #################################

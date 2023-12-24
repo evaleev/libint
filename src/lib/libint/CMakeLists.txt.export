@@ -36,6 +36,8 @@ include(CheckFunctionExists)
 
 option_with_print(LIBINT2_ENABLE_MPFR
   "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
+option_with_print(LIBINT2_LOCAL_Eigen3_INSTALL
+  "Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. In consumer build, set `LIBINT2_LOCAL_Eigen3_FIND=ON` before `find_package(Libint2) to load the exported Eigen3." OFF)
 option_with_print(CMAKE_DISABLE_FIND_PACKAGE_Boost
   "When Boost required for C++11 API, disable its detection, thereby forcing use of bundled Boost (Standard CMake variable: https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html)" OFF)
 
@@ -107,6 +109,16 @@ endif()
     endif()
 #endif()
 
+find_package(Eigen3 MODULE)
+
+if (TARGET Eigen3::Eigen)
+    set(LIBINT_HAS_EIGEN 1)
+endif()
+#if (LIBINT2_REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
+if (NOT LIBINT_HAS_EIGEN)  # TODO tmp wrong logic
+    message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DLIBINT2_REQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
+endif()
+
 
 ################################# Main Project #################################
 include(CMakePackageConfigHelpers)
@@ -130,6 +142,8 @@ configure_package_config_file(
   NO_SET_AND_CHECK_MACRO
   )
 
+#  <<<  Install  >>>
+
 install(
   DIRECTORY
     ${PROJECT_SOURCE_DIR}/include2/  # TODO temp for skeleton
@@ -139,3 +153,43 @@ install(
     PATTERN "*.h"
     PATTERN "*.hpp"
   )
+
+if (LIBINT2_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
+
+    add_library(Eigen INTERFACE)
+    foreach(prop
+      INTERFACE_INCLUDE_DIRECTORIES
+      INTERFACE_COMPILE_DEFINITIONS
+      INTERFACE_COMPILE_OPTIONS
+      INTERFACE_LINK_LIBRARIES
+      INTERFACE_POSITION_INDEPENDENT_CODE
+      )
+        get_property(_propval TARGET Eigen3::Eigen PROPERTY ${prop})
+        set_property(TARGET Eigen PROPERTY ${prop} ${_propval})
+    endforeach()
+
+    install(
+      TARGETS
+        Eigen
+      EXPORT local_set
+      LIBRARY
+        COMPONENT ${L2}_Eigen3
+        NAMELINK_COMPONENT ${L2}_Eigen3
+      ARCHIVE
+        COMPONENT ${L2}_Eigen3
+      PUBLIC_HEADER
+        COMPONENT ${L2}_Eigen3
+      )
+endif()
+
+#  <<<  Export Config  >>>
+
+if (LIBINT2_LOCAL_Eigen3_INSTALL AND TARGET Eigen3::Eigen)
+    install(
+      EXPORT local_set
+      FILE "${pnv}-targets-eigen3.cmake"
+      NAMESPACE "${L2}::"
+      DESTINATION ${LIBINT2_INSTALL_CMAKEDIR}
+      COMPONENT ${L2}_Eigen3
+      )
+endif()
