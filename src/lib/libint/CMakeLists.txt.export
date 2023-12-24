@@ -36,6 +36,8 @@ include(CheckFunctionExists)
 
 option_with_print(LIBINT2_ENABLE_MPFR
   "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
+option_with_print(CMAKE_DISABLE_FIND_PACKAGE_Boost
+  "When Boost required for C++11 API, disable its detection, thereby forcing use of bundled Boost (Standard CMake variable: https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html)" OFF)
 
 
 check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
@@ -79,6 +81,31 @@ if (LIBINT2_ENABLE_MPFR)
     get_property(_loc TARGET Multiprecision::mpfr PROPERTY LOCATION)
     message(STATUS "${Cyan}Found MPFR${ColourReset}: ${_loc} (found version ${MPFR_VERSION})")
 endif()
+
+#if (LIBINT2_REQUIRE_CXX_API)
+    if (NOT TARGET Boost::headers)
+        find_package(Boost 1.57)
+    endif()
+    if (TARGET Boost::headers)
+        include(int_checkboost)
+        set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
+    else()
+        set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 0)
+
+        file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/libint2)
+        execute_process(
+          COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/external/boost.tar.gz
+          WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/include/libint2
+          RESULT_VARIABLE UNPACK_BOOST_RESULT
+          OUTPUT_VARIABLE UNPACK_BOOST_OUTPUT
+          ERROR_VARIABLE UNPACK_BOOST_OUTPUT
+          )
+        message(STATUS "Unpacking bundled Boost")
+        if (NOT UNPACK_BOOST_RESULT EQUAL 0)
+            message(FATAL_ERROR "Failed to unpack the bundled Boost! The tar command output:\n${UNPACK_BOOST_OUTPUT}")
+        endif()
+    endif()
+#endif()
 
 
 ################################# Main Project #################################

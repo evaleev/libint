@@ -58,6 +58,70 @@ The Libint build is structured into three parts:
   - (7) optional Python build alongside library or afterwards. optional testing requires library install
 
 
+-----------------------------------------------------------------------------
+
+# Prerequisites
+
+(TARBALL): all but first `build_libint` line.
+
+| Task                                                                 | Compilers               | CMake[^3] | CMake generator[^20] | Py      | Boost[^7] | Eigen   | GMPXX[^13] | MPFR[^14] | Pybind11 |
+| :------------------------------------------------------------------- | :---------------------: | :-------: | -------------------- | :-----: | :-------: | :-----: | :--------: | :-------: | :------: |
+| build target `build_libint`                                          | C++[^1]                 | 🔵[^4]    | Ninja                | &ndash; | 🔵[^8]    | &ndash; | 🔵         | &ndash;   | &ndash;  |
+| build target `library`                                               | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;&emsp;`-D LIBINT2_REQUIRE_CXX_API=ON`                          | C++[^1], C              | 🔵[^5]    | Ninja                | 🔸[^21] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;&emsp;`-D LIBINT2_ENABLE_FORTRAN=ON`                           | C++[^1], Fortran[^2], C | 🔵[^5]    | Ninja                | 🔵[^22] | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;&emsp;`-D LIBINT2_ENABLE_PYTHON=ON`                            | C++[^1], C              | 🔵[^5]    | Ninja                | 🔵[^23] | 🔸[^9]    | 🔵[^11] | &ndash;    | &ndash;   | 🔵[^24]  |
+| build&nbsp;project&nbsp;_consuming_&nbsp;Libint2&nbsp;library        |
+| &emsp;C&nbsp;interface&nbsp;(I/F),&nbsp;`Libint2::int2`              | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | &ndash;   | &ndash; | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;C++11&nbsp;header&nbsp;I/F,&nbsp;`Libint2::cxx`                | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;&emsp;`-D LIBINT2_ENABLE_MPFR=ON`                              | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵      | 🔵         | 🔵        | &ndash;  |
+| &emsp;C++11&nbsp;compiled&nbsp;I/F,&nbsp;`Libint2::int2-cxx`         | C++[^1]                 | 🔸[^6]    | Ninja, Makefile      | &ndash; | 🔸[^10]   | 🔵[^12] | &ndash;    | &ndash;   | &ndash;  |
+| &emsp;Fortran I/F,&nbsp;`Libint2::fortran`                           | Fortran[^2]             | 🔸[^6]    | Ninja, Makefile      | &ndash; |           |         | &ndash;    | &ndash;   | &ndash;  |
+
+* `🔵` required
+* `🔸` required or recommended, but there's a path forward without
+* `—` not involved
+
+[^1]: C++ compiler that supports C++11 standard. C++11 standard is the fourth most recent international standard for C++, hence most modern compilers support it fully. A common compiler flag is `-std=c++11`, which CMake will impose on the compilation.
+
+[^2]: Fortran 2003 compiler to enable Fortran bindings generation.
+
+[^3]: [CMake](https://cmake.org/) 3.16 or higher.
+
+[^4]: Since Libint2 v2.8 TODO, the GNU toolchain has been replaced by CMake as the sole buildsystem for the Libint2 compiler, `build_libint`. See [update guide](#GNU-Autotools-Update-Guide).
+
+[^5]: Since Libint2 v2.8 TODO, the CMake buildsystem for the exported library has been reworked. See [update guide](#GNU-Autotools-Update-Guide).
+
+[^6]: Consuming an installed Libint2 library is simplest with CMake by employing `find_package(Libint2)` and `target_link_libraries(... Libint2::...)` commands. To facilitate consumption outside CMake, pkgconfig files are available for the C interface, and more could be provided.
+
+[^7]: [Boost](https://www.boost.org/) 1.57 or higher. Only header-only (no compiled libraries) components needed.
+
+[^8]: Building the Libint2 compiler needs several Boost components including MPL, Type Traits, and Preprocessor. A detectable system installation is required. (That is, "bundled Boost" is insufficient.)
+
+[^9]: Building the Libint2 library with C++11 API needs the Boost Preprocessor (PP) component. For the compiled C++11 interface, `Libint2::int2-cxx`, the PP is actually compiled against, but for the header-only target, `Libint2::cxx`, the PP only sets up the usage dependency. A system installation of Boost is sought, but if none suitable found, a bundled version of PP is installed within the Libint2 header namespace.
+
+[^10]: Consuming an installed Libint2 library through a C++11 interface requires the Boost Preprocessor (PP) component. Depending on the library *build* environment, a copy may have been bundled/vendored with the install at `CMAKE_INSTALL_PREFIX/CMAKE_INSTALL_INCLUDEDIR/libint2/boost/`.
+
+[^11]: Building the Libint2 library with C++11 API needs the header-only [Eigen](https://eigen.tuxfamily.org/) library. For the compiled C++11 interface, `Libint2::cxx`, Eigen is actually compiled against, but for the header-only target `Libint2::cxx_ho`, Eigen only sets up the usage dependency. A detectable (either through Eigen3Config.cmake or through location-hinting) system installation is required.
+
+[^12]: Consuming an installed Libint2 library through the compiled C++11 interface, `Libint2::int2-cxx` requires [Eigen](https://eigen.tuxfamily.org/). It is *strongly* recommended that the same installation of Eigen be used both to build and consume the `Libint2::int2-cxx` target, especially as regards configuring BLAS and other backends.
+
+[^13]: Building the Libint2 compiler or building the Libint2 library with `-D LIBINT2_ENABLE_MPFR=ON` for high-precision testing requires the [GNU Multiple Precision (GMP)](https://gmplib.org/) library. A detectable system installation is required, and it must include C++ support. For Windows, the [MPIR](https://www.mpir.org) project satisfies the requirement.
+
+[^14]: Building against the Libint2 library for the purpose of high-precision testing with define `LIBINT_HAS_MPFR=1` requires the [MPFR](https://www.mpfr.org/) library. A detectable system installation is required.
+
+[^20]: Tested CMake generators are [Ninja](https://ninja-build.org/) or [GNU Make](https://www.gnu.org/software/make/). The use of Ninja is **strongly** recommended!
+
+[^21]: Python used for testing.
+
+[^22]: Python used to process files for Fortran binding.
+
+[^23]: Python headers and interpreter needed for Pybind11 module
+
+[^24]: [Pybind11](https://github.com/pybind/pybind11) used to export Libint2 C++11 API into a Python module. If a system installation is not detected, source from 2019 is fetched from GitHub.
+
+-----------------------------------------------------------------------------
+
 # Configuring Libint
 
 * Notes
@@ -176,6 +240,9 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 ### Detecting Dependencies (G L C) (TARBALL)
 
+* `BOOST_ROOT` — G L C — Prefix to installation location (`BOOST_ROOT/include/boost/` exists)
+* `Boost_DIR` - G L C - Path to installation location of Boost's config file (`Boost_DIR/BoostConfig.cmake` exists)
+* `CMAKE_DISABLE_FIND_PACKAGE_Boost` — L — When Boost required for C++11 Libint API, disable its detection, thereby forcing use of bundled Boost. Note that this (and other Boost-hinting variables) can affect what is installed [see here](#packagers). [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html). [Default=OFF]
 * `Multiprecision_ROOT` — G L — Prefix to installation location (`Multiprecision_ROOT/` contains headers like gmp.h, gmpxx.h, mpfr.h)
 
 
@@ -267,6 +334,11 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 * `--disable-1body-property-derivs` --> `-D DISABLE_ONEBODY_PROPERTY_DERIVS=ON`
 
 * `--enable-mpfr` --> assumed present --> `-D ENABLE_MPFR=ON` --> `-D LIBINT2_ENABLE_MPFR=ON`
+
+* `ENV(CPPFLAGS)=-I/path/to/boost/includes` --> `-D BOOST_ROOT=/path/to/boost/prefix`
+
+* `-D LIBINT_USE_BUNDLED_BOOST=ON` --> `-D CMAKE_DISABLE_FIND_PACKAGE_Boost=ON` (standard CMake variable)
+* `--with-boost` & `--with-boost-libdir` --> see `BOOST_ROOT` & `Boost_DIR`
 
 * Defunct as non-CMake-like: `--build`, `--host`, `--target`,
 

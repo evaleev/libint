@@ -294,7 +294,6 @@ booleanize01(LIBINT_PROFILE)
 
 # See notes at https://github.com/evaleev/libint/blob/master/INSTALL.md#prerequisites
 
-
 if(LIBINT2_ENABLE_MPFR)
     # mpfr detected at appropriate time in CMakeLists.txt.export, but prechecking here
     find_package(Multiprecision MODULE REQUIRED COMPONENTS gmpxx mpfr)
@@ -310,6 +309,11 @@ message(STATUS "${Cyan}Found GMPXX${ColourReset}: ${_loc}")
 if (TARGET Multiprecision::mpfr)
     get_property(_loc TARGET Multiprecision::mpfr PROPERTY LOCATION)
     message(STATUS "${Cyan}Found MPFR${ColourReset}: ${_loc} (found version ${MPFR_VERSION})")
+endif()
+
+find_package(Boost 1.57 REQUIRED)
+if (TARGET Boost::headers)
+    set(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS 1)
 endif()
 
 
