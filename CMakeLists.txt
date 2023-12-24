@@ -93,6 +93,13 @@ include(GNUInstallDirs)
 include(CTest)
 message(STATUS "Building using CMake ${CMAKE_VERSION} Generator ${CMAKE_GENERATOR}")
 
+#  <<<  General  >>>
+
+### compiler-only
+
+### library-only
+option_with_print(LIBINT2_ENABLE_MPFR
+  "Use GNU MPFR library for high-precision testing (EXPERTS ONLY). Consumed at library build-time." OFF)
 
 #  <<<  Which Integrals Classes, Which Derivative Levels  >>>
 
@@ -281,6 +288,29 @@ booleanize01(SUPPORT_T1G12)
 booleanize01(LIBINT_ACCUM_INTS)
 booleanize01(LIBINT_FLOP_COUNT)
 booleanize01(LIBINT_PROFILE)
+
+
+################################## Dependencies #################################
+
+# See notes at https://github.com/evaleev/libint/blob/master/INSTALL.md#prerequisites
+
+
+if(LIBINT2_ENABLE_MPFR)
+    # mpfr detected at appropriate time in CMakeLists.txt.export, but prechecking here
+    find_package(Multiprecision MODULE REQUIRED COMPONENTS gmpxx mpfr)
+    set(LIBINT_HAS_MPFR 1)
+else()
+    find_package(Multiprecision MODULE REQUIRED COMPONENTS gmpxx)
+endif()
+
+get_property(_loc TARGET Multiprecision::gmp PROPERTY LOCATION)
+message(STATUS "${Cyan}Found GMP${ColourReset}: ${_loc}")
+get_property(_loc TARGET Multiprecision::gmpxx PROPERTY LOCATION)
+message(STATUS "${Cyan}Found GMPXX${ColourReset}: ${_loc}")
+if (TARGET Multiprecision::mpfr)
+    get_property(_loc TARGET Multiprecision::mpfr PROPERTY LOCATION)
+    message(STATUS "${Cyan}Found MPFR${ColourReset}: ${_loc} (found version ${MPFR_VERSION})")
+endif()
 
 
 ################################## Main Project #################################

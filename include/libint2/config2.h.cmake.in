@@ -29,6 +29,7 @@
 #define _libint2_include_libint2_config_h_1
 
 #undef LIBINT_ALIGN_SIZE
+#undef LIBINT_HAS_MPFR
 #undef HAVE_POSIX_MEMALIGN
 #undef LIBINT_USER_DEFINED_REAL
 /* retired Jan 2023 #undef LIBINT_SHGSHELL_ORDERING */
@@ -40,6 +41,9 @@
 
 /* Specifies the ordering of solid harmonics Gaussians in a shell. Retired Jan 2023 in favor of becoming a generator-time-only option */
 /* #cmakedefine LIBINT_SHGSHELL_ORDERING @LIBINT_SHGSHELL_ORDERING@ */
+
+/* have MPFR library ? */
+#cmakedefine LIBINT_HAS_MPFR @LIBINT_HAS_MPFR@
 
 /* have posix_memalign ? */
 #cmakedefine HAVE_POSIX_MEMALIGN @HAVE_POSIX_MEMALIGN@

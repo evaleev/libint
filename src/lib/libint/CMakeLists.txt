@@ -49,7 +49,12 @@ add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
     list(APPEND library_CMAKE_ARGS
         -DLIBINT2_ALIGN_SIZE=${LIBINT_ALIGN_SIZE}
         -DLIBINT2_REALTYPE=${LIBINT2_REALTYPE}
+        -DLIBINT2_ENABLE_MPFR=${LIBINT2_ENABLE_MPFR}
       )
+    if(Multiprecision_ROOT)
+        list(APPEND library_CMAKE_ARGS "-DMultiprecision_ROOT=${Multiprecision_ROOT}")
+    endif()
+
 
     ExternalProject_Add(
       library

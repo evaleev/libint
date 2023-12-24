@@ -169,6 +169,16 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 ### Compilers and Flags (G L) (TARBALL)
 
+
+### Build Library What (L) (TARBALL)
+
+* `LIBINT2_ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
+
+### Detecting Dependencies (G L C) (TARBALL)
+
+* `Multiprecision_ROOT` — G L — Prefix to installation location (`Multiprecision_ROOT/` contains headers like gmp.h, gmpxx.h, mpfr.h)
+
+
 ### Miscellaneous (G L)
 
 * `LIBINT2_REALTYPE` — L — Specifies the floating-point data type used by the library. [Default=double]
@@ -256,6 +266,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 * `--disable-1body-property-derivs` --> `-D DISABLE_ONEBODY_PROPERTY_DERIVS=ON`
 
+* `--enable-mpfr` --> assumed present --> `-D ENABLE_MPFR=ON` --> `-D LIBINT2_ENABLE_MPFR=ON`
 
 * Defunct as non-CMake-like: `--build`, `--host`, `--target`,
 
