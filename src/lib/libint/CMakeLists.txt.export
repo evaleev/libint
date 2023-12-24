@@ -32,6 +32,11 @@ set(pnv libint2) # projectnameversion
 include(options)
 include(CheckFunctionExists)
 
+#  <<<  General  >>>
+
+option_with_print(LIBINT2_ENABLE_MPFR
+  "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
+
 
 check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
 if (HAVE_POSIX_MEMALIGN)
@@ -57,6 +62,23 @@ message(STATUS "Setting option LIBINT2_CARTGAUSS_ORDERING: ${LIBINT2_CARTGAUSS_O
 
 set(LIBINT2_SHELL_SET ${LIBINT2_SHELL_SET})
 message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (read-only from generation-time)")
+
+
+################################## Dependencies #################################
+
+# See notes at https://github.com/evaleev/libint/blob/master/INSTALL.md#prerequisites
+
+if (LIBINT2_ENABLE_MPFR)
+    find_package(Multiprecision MODULE REQUIRED COMPONENTS gmpxx mpfr)
+    set(LIBINT_HAS_MPFR 1)
+
+    get_property(_loc TARGET Multiprecision::gmp PROPERTY LOCATION)
+    message(STATUS "${Cyan}Found GMP${ColourReset}: ${_loc}")
+    get_property(_loc TARGET Multiprecision::gmpxx PROPERTY LOCATION)
+    message(STATUS "${Cyan}Found GMPXX${ColourReset}: ${_loc}")
+    get_property(_loc TARGET Multiprecision::mpfr PROPERTY LOCATION)
+    message(STATUS "${Cyan}Found MPFR${ColourReset}: ${_loc} (found version ${MPFR_VERSION})")
+endif()
 
 
 ################################# Main Project #################################

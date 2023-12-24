@@ -6,6 +6,7 @@ file(
     "${PROJECT_SOURCE_DIR}/cmake/modules/options.cmake"
     "${PROJECT_BINARY_DIR}/cmake/modules/int_computed.cmake"
     "${PROJECT_SOURCE_DIR}/cmake/modules/int_userreal.cmake"
+    "${PROJECT_SOURCE_DIR}/cmake/modules/FindMultiprecision.cmake"
   DESTINATION "${EXPORT_STAGE_DIR}/cmake/modules"
   )
 
