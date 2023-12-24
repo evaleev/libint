@@ -237,13 +237,57 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 ### Build Library What (L) (TARBALL)
 
 * `LIBINT2_ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
+* `LIBINT2_LOCAL_Eigen3_INSTALL` — L — Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. See `LIBINT2_LOCAL_Eigen3_FIND`. [Default=OFF]
+
+
+### Build Library How (G L) (TARBALL)
+
 
 ### Detecting Dependencies (G L C) (TARBALL)
 
 * `BOOST_ROOT` — G L C — Prefix to installation location (`BOOST_ROOT/include/boost/` exists)
 * `Boost_DIR` - G L C - Path to installation location of Boost's config file (`Boost_DIR/BoostConfig.cmake` exists)
 * `CMAKE_DISABLE_FIND_PACKAGE_Boost` — L — When Boost required for C++11 Libint API, disable its detection, thereby forcing use of bundled Boost. Note that this (and other Boost-hinting variables) can affect what is installed [see here](#packagers). [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html). [Default=OFF]
+* `Eigen3_ROOT` — L C — Prefix to installation location (`Eigen3_ROOT/include/eigen3/Eigen/Core` exists)
+* `EIGEN3_INCLUDE_DIR` — L C — Path to installation location of Eigen's header files (`EIGEN3_INCLUDE_DIR/include/eigen3` exists)
+* `Eigen3_DIR` – L C – Path to installation location of Eigen's config file (`Eigen3_DIR/Eigen3Config.cmake` exists)
 * `Multiprecision_ROOT` — G L — Prefix to installation location (`Multiprecision_ROOT/` contains headers like gmp.h, gmpxx.h, mpfr.h)
+* `LIBINT2_LOCAL_Eigen3_FIND` — C — Set to `ON` before `find_package(Libint2)` to load the Eigen3 target exported by `LIBINT2_LOCAL_Eigen3_INSTALL=ON` if Libint library built locally. [Default=OFF]
+
+* Hint dependency locations all at the same installation prefix:
+
+  ```
+  -D CMAKE_PREFIX_PATH="/path/to/installation/prefix"
+  ```
+
+  ```
+  -D CMAKE_PREFIX_PATH="/home/miniconda/envs/l2dev"
+  ```
+
+* Hint dependency locations all at different installation prefixes:
+
+  ```
+  -D CMAKE_PREFIX_PATH="/home/miniconda/envs/onlyboost;/home/miniconda/envs/onlygmp;/home/miniconda/envs/onlyeigen"
+  ```
+
+* Hint dependency locations targeted by package:
+
+  ```
+  -D BOOST_ROOT="/home/miniconda/envs/onlyboost"
+  -D Multiprecision_ROOT="/home/miniconda/envs/onlygmp"
+  -D Eigen3_ROOT="/home/miniconda/envs/onlyeigen"
+  ```
+
+* Hint dependency locations targeted by <package>Config.cmake (most CMake-like):
+
+  ```
+  -D Eigen3_DIR="/home/miniconda/envs/onlyeigen/share/eigen3/cmake"
+  -D Boost_DIR="/home/miniconda/envs/onlyboost/lib/cmake/Boost-1.73.0"
+  ```
+
+
+### Install Paths (L) (TARBALL)
+
 
 
 ### Miscellaneous (G L)
@@ -333,12 +377,15 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 * `--disable-1body-property-derivs` --> `-D DISABLE_ONEBODY_PROPERTY_DERIVS=ON`
 
+
 * `--enable-mpfr` --> assumed present --> `-D ENABLE_MPFR=ON` --> `-D LIBINT2_ENABLE_MPFR=ON`
 
 * `ENV(CPPFLAGS)=-I/path/to/boost/includes` --> `-D BOOST_ROOT=/path/to/boost/prefix`
 
 * `-D LIBINT_USE_BUNDLED_BOOST=ON` --> `-D CMAKE_DISABLE_FIND_PACKAGE_Boost=ON` (standard CMake variable)
 * `--with-boost` & `--with-boost-libdir` --> see `BOOST_ROOT` & `Boost_DIR`
+* `-D LIBINT_LOCAL_Eigen3_INSTALL` --> `-D LIBINT2_LOCAL_Eigen3_INSTALL`
+* `-D LIBINT_LOCAL_Eigen3_FIND` --> `-D LIBINT2_LOCAL_Eigen3_FIND`
 
 * Defunct as non-CMake-like: `--build`, `--host`, `--target`,
 

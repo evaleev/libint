@@ -48,8 +48,16 @@ set(L2 Libint2)  # NameSpace
 
 set(Libint2_EXT_VERSION "@LIBINT_EXT_VERSION@")
 
+# make detectable the various cmake modules exported alongside
+# * prepend to trump any pre-target FindEigen3.cmake modules lying around
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+
 # check library language component
 include(CMakeFindDependencyMacro)
+
+    if(NOT TARGET Eigen3::Eigen)
+        find_dependency(Eigen3 REQUIRED)
+    endif()
 
     if (@LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS@)  # LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS
         # Boost headers _not_ unpacked to within `include/libint2/`

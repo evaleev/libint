@@ -63,6 +63,17 @@ add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
     if(CMAKE_DISABLE_FIND_PACKAGE_Boost)
         list(APPEND library_CMAKE_ARGS "-DCMAKE_DISABLE_FIND_PACKAGE_Boost=${CMAKE_DISABLE_FIND_PACKAGE_Boost}")
     endif()
+    if(Eigen3_DIR)
+        list(APPEND library_CMAKE_ARGS "-DEigen3_DIR=${Eigen3_DIR}")
+    endif()
+    if(Eigen3_ROOT)
+        list(APPEND library_CMAKE_ARGS "-DEigen3_ROOT=${Eigen3_ROOT}")
+    endif()
+    if(LIBINT2_LOCAL_Eigen3_INSTALL)
+        list(APPEND library_CMAKE_ARGS "-DLIBINT2_LOCAL_Eigen3_INSTALL=${LIBINT2_LOCAL_Eigen3_INSTALL}")
+    endif()
+
+
 
 
 
