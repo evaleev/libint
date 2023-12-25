@@ -86,11 +86,11 @@ The Libint build is structured into three parts:
 
 [^2]: Fortran 2003 compiler to enable Fortran bindings generation.
 
-[^3]: [CMake](https://cmake.org/) 3.16 or higher.
+[^3]: [CMake](https://cmake.org/) 3.16 or higher for library; 3.19 or higher for generator/compiler. Certain speciality targets (e.g., pylibint for Windows) may require higher.
 
-[^4]: Since Libint2 v2.8 TODO, the GNU toolchain has been replaced by CMake as the sole buildsystem for the Libint2 compiler, `build_libint`. See [update guide](#GNU-Autotools-Update-Guide).
+[^4]: Since Libint2 v2.9 TODO, the GNU toolchain has been replaced by CMake as the sole buildsystem for the Libint2 compiler, `build_libint`. See [update guide](#GNU-Autotools-Update-Guide).
 
-[^5]: Since Libint2 v2.8 TODO, the CMake buildsystem for the exported library has been reworked. See [update guide](#GNU-Autotools-Update-Guide).
+[^5]: Since Libint2 v2.9 TODO, the CMake buildsystem for the exported library has been reworked. See [update guide](#GNU-Autotools-Update-Guide).
 
 [^6]: Consuming an installed Libint2 library is simplest with CMake by employing `find_package(Libint2)` and `target_link_libraries(... Libint2::...)` commands. To facilitate consumption outside CMake, pkgconfig files are available for the C interface, and more could be provided.
 
@@ -102,9 +102,9 @@ The Libint build is structured into three parts:
 
 [^10]: Consuming an installed Libint2 library through a C++11 interface requires the Boost Preprocessor (PP) component. Depending on the library *build* environment, a copy may have been bundled/vendored with the install at `CMAKE_INSTALL_PREFIX/CMAKE_INSTALL_INCLUDEDIR/libint2/boost/`.
 
-[^11]: Building the Libint2 library with C++11 API needs the header-only [Eigen](https://eigen.tuxfamily.org/) library. For the compiled C++11 interface, `Libint2::cxx`, Eigen is actually compiled against, but for the header-only target `Libint2::cxx_ho`, Eigen only sets up the usage dependency. A detectable (either through Eigen3Config.cmake or through location-hinting) system installation is required.
+[^11]: Building the Libint2 library with C++11 API needs the header-only [Eigen](https://eigen.tuxfamily.org/) library. For the compiled C++11 interface, `Libint2::int-cxx`, Eigen is actually compiled against, but for the header-only target `Libint2::cxx`, Eigen only sets up the usage dependency. A detectable (either through Eigen3Config.cmake or through location-hinting) system installation is required.
 
-[^12]: Consuming an installed Libint2 library through the compiled C++11 interface, `Libint2::int2-cxx` requires [Eigen](https://eigen.tuxfamily.org/). It is *strongly* recommended that the same installation of Eigen be used both to build and consume the `Libint2::int2-cxx` target, especially as regards configuring BLAS and other backends.
+[^12]: Consuming an installed Libint2 library through the compiled C++11 interface, `Libint2::int2-cxx` requires [Eigen](https://eigen.tuxfamily.org/). It is *strongly* recommended that the same installation of Eigen be used both to build and consume the `Libint2::int2-cxx` target, especially as regards configuring BLAS and other backends. See `LIBINT2_LOCAL_Eigen3_FIND`.
 
 [^13]: Building the Libint2 compiler or building the Libint2 library with `-D LIBINT2_ENABLE_MPFR=ON` for high-precision testing requires the [GNU Multiple Precision (GMP)](https://gmplib.org/) library. A detectable system installation is required, and it must include C++ support. For Windows, the [MPIR](https://www.mpir.org) project satisfies the requirement.
 
@@ -116,9 +116,9 @@ The Libint build is structured into three parts:
 
 [^22]: Python used to process files for Fortran binding.
 
-[^23]: Python headers and interpreter needed for Pybind11 module
+[^23]: Python headers and interpreter needed for Pybind11 module.
 
-[^24]: [Pybind11](https://github.com/pybind/pybind11) used to export Libint2 C++11 API into a Python module. If a system installation is not detected, source from 2019 is fetched from GitHub.
+[^24]: [Pybind11](https://github.com/pybind/pybind11) used to export Libint2 C++11 API into a Python module. If a system installation is not detected, Valeev-group-tweaked source is fetched from GitHub.
 
 -----------------------------------------------------------------------------
 
