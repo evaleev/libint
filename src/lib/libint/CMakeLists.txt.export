@@ -36,6 +36,10 @@ include(CheckFunctionExists)
 
 option_with_print(LIBINT2_ENABLE_MPFR
   "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
+option_with_print(LIBINT2_ENABLE_PYTHON
+  "Build Python bindings (requires Python and Pybind11 and Eigen3)" OFF)
+option_with_print(LIBINT2_PREFIX_PYTHON_INSTALL
+  "For LIBINT2_ENABLE_PYTHON=ON, whether to install the Python module in the Linux manner to CMAKE_INSTALL_PREFIX or to not install it. See target libint2-python-wheel for alternate installation in the Python manner to Python_EXECUTABLE's site-packages." OFF)
 option_with_print(LIBINT2_LOCAL_Eigen3_INSTALL
   "Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. In consumer build, set `LIBINT2_LOCAL_Eigen3_FIND=ON` before `find_package(Libint2) to load the exported Eigen3." OFF)
 option_with_print(CMAKE_DISABLE_FIND_PACKAGE_Boost
@@ -117,6 +121,17 @@ endif()
 #if (LIBINT2_REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
 if (NOT LIBINT_HAS_EIGEN)  # TODO tmp wrong logic
     message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DLIBINT2_REQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
+endif()
+
+# Python is optionally used for testing.
+# * But for Fortran, it's additionally required for preprocessing.
+# * And for Python bindings, it's required along with its headers.
+if (LIBINT2_ENABLE_PYTHON)
+    find_package(Python COMPONENTS Interpreter Development REQUIRED)
+elseif (LIBINT2_ENABLE_FORTRAN)
+    find_package(Python COMPONENTS Interpreter REQUIRED)
+else()
+    find_package(Python COMPONENTS Interpreter)
 endif()
 
 
