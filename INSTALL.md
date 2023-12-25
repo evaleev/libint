@@ -238,6 +238,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 * `LIBINT2_ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
 * `LIBINT2_LOCAL_Eigen3_INSTALL` — L — Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. See `LIBINT2_LOCAL_Eigen3_FIND`. [Default=OFF]
+* `LIBINT2_ENABLE_PYTHON` — L — Build Python bindings (requires Python and Eigen3; Boost and pybind11 recommended; [see prereq line](#prerequisites)). Can instead be enabled and built through separate CMake configuration after library build. [Default=OFF]
 
 
 ### Build Library How (G L) (TARBALL)
@@ -245,6 +246,8 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 ### Detecting Dependencies (G L C) (TARBALL)
 
+* `Python_EXECUTABLE` — L — Path to Python interpreter.
+* `CMAKE_PREFIX_PATH` — G L — Set to list of root directories to look for external dependencies. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html)
 * `BOOST_ROOT` — G L C — Prefix to installation location (`BOOST_ROOT/include/boost/` exists)
 * `Boost_DIR` - G L C - Path to installation location of Boost's config file (`Boost_DIR/BoostConfig.cmake` exists)
 * `CMAKE_DISABLE_FIND_PACKAGE_Boost` — L — When Boost required for C++11 Libint API, disable its detection, thereby forcing use of bundled Boost. Note that this (and other Boost-hinting variables) can affect what is installed [see here](#packagers). [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_DISABLE_FIND_PACKAGE_PackageName.html). [Default=OFF]
@@ -288,6 +291,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 ### Install Paths (L) (TARBALL)
 
+* `LIBINT2_PREFIX_PYTHON_INSTALL` — L — For `LIBINT2_ENABLE_PYTHON=ON`, whether to install the Python module in the Linux manner to `CMAKE_INSTALL_PREFIX` or to not install it. Note: not a path; the installation sub-path below `CMAKE_INSTALL_PREFIX` is determined by querying `Python_EXECUTABLE`. For alternate installation in the Python manner to `Python_EXECUTABLE`'s site-packages, see target libint2-python-wheel. [Default=OFF]
 
 
 ### Miscellaneous (G L)
@@ -382,6 +386,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 * `ENV(CPPFLAGS)=-I/path/to/boost/includes` --> `-D BOOST_ROOT=/path/to/boost/prefix`
 
+* `-D LIBINT2_PYTHON=ON` --> `-D LIBINT2_ENABLE_PYTHON=ON`
 * `-D LIBINT_USE_BUNDLED_BOOST=ON` --> `-D CMAKE_DISABLE_FIND_PACKAGE_Boost=ON` (standard CMake variable)
 * `--with-boost` & `--with-boost-libdir` --> see `BOOST_ROOT` & `Boost_DIR`
 * `-D LIBINT_LOCAL_Eigen3_INSTALL` --> `-D LIBINT2_LOCAL_Eigen3_INSTALL`
