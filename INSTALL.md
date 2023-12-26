@@ -140,13 +140,13 @@ auto Mmp = libint2::libint_version();
 printf("Version: Numeric=%s Sortable=%s Commit=%s\n", libint2::libint_version_string(false).c_str(), libint2::libint_version_string(true).c_str(), libint2::libint_commit().c_str());
 printf("Version: Major=%d minor=%d patch=%d\n", std::get<0>(Mmp), std::get<1>(Mmp), std::get<2>(Mmp));
 printf("Citation: DOI=%s Ref=%s\n", libint2::libint_reference_doi().c_str(), libint2::libint_reference().c_str());
-printf("Citation: BibTex=%s\n", libint2::libint_bibtex().c_str());
+printf("Citation: BibTeX=%s\n", libint2::libint_bibtex().c_str());
 ```
 ```
 Version: Numeric=2.8.0 Sortable= Commit=
 Version: Major=2 minor=8 patch=0
 Citation: DOI= Ref=Libint: , Version  Edward F. Valeev, http://libint.valeyev.net/
-Citation: BibTex=@Misc{Libint2,
+Citation: BibTeX=@Misc{Libint2,
   author = {E.~F.~Valeev},
   title = {\textsc{Libint}: },
   howpublished = {http://libint.valeyev.net/},
