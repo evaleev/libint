@@ -2,7 +2,19 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_BINARY_DIR}/cmake/modules)
 
 include(int_computed)  # for macros.tex and features
 
-add_custom_target(libint-library-generate DEPENDS "CMakeLists.txt.export") # TODO "${EXPORT_STAGE_DIR}/src/libint2_params.h")
+# <<<  Generate Library Source  >>>
+
+file(MAKE_DIRECTORY "${EXPORT_STAGE_DIR}/src")
+add_custom_command(
+  OUTPUT
+    "${EXPORT_STAGE_DIR}/src/libint2_params.h"
+  COMMAND build_libint
+  WORKING_DIRECTORY "${EXPORT_STAGE_DIR}/src"
+  DEPENDS
+    build_libint
+  COMMENT "Generating Libint2 library source"
+  )
+add_custom_target(libint-library-generate DEPENDS "${EXPORT_STAGE_DIR}/src/libint2_params.h")
 
 # <<<  Add Metadata To The Library Source  >>>
 

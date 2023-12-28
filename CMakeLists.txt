@@ -4,6 +4,10 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     # Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 3.24:
     cmake_policy(SET CMP0135 NEW)
 endif()
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.25.0")
+    # needed by DynamicVersion
+    cmake_policy(SET CMP0140 NEW)
+endif()
 
 ############################# Version and Metadata #############################
 
@@ -103,9 +107,6 @@ option_with_default(LIBINT2_ENABLE_PYTHON
 option_with_default(LIBINT2_PREFIX_PYTHON_INSTALL
   "For LIBINT2_ENABLE_PYTHON=ON, whether to install the Python module in the Linux manner to CMAKE_INSTALL_PREFIX or to not install it. See target libint2-python-wheel for alternate installation in the Python manner to Python_EXECUTABLE's site-packages." OFF)
 
-option_with_print(LIBINT2_ENABLE_MPFR
-  "Use GNU MPFR library for high-precision testing (EXPERTS ONLY). Consumed at library build-time." OFF)
-## next one defined by `include(CTest)`
 
 #  <<<  Which Integrals Classes, Which Derivative Levels  >>>
 
@@ -262,10 +263,15 @@ option_with_print(LIBINT_FLOP_COUNT
   "Support (approximate) FLOP counting by the library. (Generated code will require C++11!)" OFF)
 option_with_print(LIBINT_PROFILE
   "Turn on profiling instrumentation of the library. (Generated code will require C++11!)" OFF)
+option_with_print(LIBINT2_ENABLE_MPFR
+  "Use GNU MPFR library for high-precision testing (EXPERTS ONLY). Consumed at library build-time." OFF)
+# next one defined by `include(CTest)`
+message(STATUS "Showing option BUILD_TESTING: ${BUILD_TESTING}")
 
-
+#  <<<  Path  >>>
 
 ######################## Process & Validate Options ###########################
+include(autocmake_safeguards)
 include(CheckFunctionExists)
 include(CheckIncludeFileCXX)
 include(FeatureSummary)

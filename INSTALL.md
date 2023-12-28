@@ -58,6 +58,29 @@ The Libint build is structured into three parts:
   - (7) optional Python build alongside library or afterwards. optional testing requires library install
 
 
+Command-line synopsis. See [table](#Build-Targets) for `--target` choices (steps refer to numbered bullets above) and [section](#Configuring-Libint) for `-D options` choices.
+
+```bash
+>>> git clone https://github.com/evaleev/libint.git && cd libint
+>>> ls
+cmake/  COPYING  src/  tests/  ...
+>>> cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/path/to/future/install-libint -D options ...
+...
+-- Generating done
+-- Build files have been written to: /current/dir/build
+>>> cmake --build build --target install
+```
+
+### Build Targets
+
+| `--target ...`            | incl. | steps |     ( |  see  | above | )     |       | (TARBALL) `--target ...` [^25] |
+| --------------            | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ------------------------------ |
+| `build_libint`            |   1   |   -   |   -   |   -   |   -   |   -   |   -   | n/a                            |
+| `check-libint2compiler`   |   1   |   2   |   -   |   -   |   -   |   -   |   -   | n/a                            |
+
+[^25]: (TARBALL) targets can include steps 4 onwards; the starting tarball itself is the product of step 3.
+
+
 -----------------------------------------------------------------------------
 
 # Prerequisites
