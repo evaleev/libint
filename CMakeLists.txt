@@ -23,6 +23,8 @@ dynamic_version(
   OUTPUT_DISTANCE LibintRepository_DISTANCE
   )
 
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")  # foil Ninja Debug on Windows
+
 project(
   Libint2Compiler
   VERSION ${LibintRepository_VERSION}
@@ -98,6 +100,8 @@ include(CTest)
 message(STATUS "Building using CMake ${CMAKE_VERSION} Generator ${CMAKE_GENERATOR}")
 
 #  <<<  General  >>>
+
+option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
 
 ### compiler-only
 

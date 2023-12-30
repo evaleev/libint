@@ -266,6 +266,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 ### Build Library How (G L) (TARBALL)
 
+* `CMAKE_BUILD_TYPE` — G L — [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) [Default=Release]
 
 ### Detecting Dependencies (G L C) (TARBALL)
 

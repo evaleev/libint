@@ -8,7 +8,7 @@ file(MAKE_DIRECTORY "${EXPORT_STAGE_DIR}/src")
 add_custom_command(
   OUTPUT
     "${EXPORT_STAGE_DIR}/src/libint2_params.h"
-  COMMAND build_libint
+  COMMAND $<TARGET_FILE:build_libint>
   WORKING_DIRECTORY "${EXPORT_STAGE_DIR}/src"
   DEPENDS
     build_libint
@@ -59,6 +59,7 @@ add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
     include(ExternalProject)
 
     list(APPEND library_CMAKE_ARGS
+        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DLIBINT2_ALIGN_SIZE=${LIBINT_ALIGN_SIZE}
         -DLIBINT2_REALTYPE=${LIBINT2_REALTYPE}
         -DLIBINT2_ENABLE_MPFR=${LIBINT2_ENABLE_MPFR}

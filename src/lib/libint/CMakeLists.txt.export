@@ -34,6 +34,7 @@ include(CheckFunctionExists)
 
 #  <<<  General  >>>
 
+option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
 option_with_print(LIBINT2_ENABLE_MPFR
   "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
 option_with_print(LIBINT2_ENABLE_PYTHON
@@ -70,6 +71,10 @@ message(STATUS "Setting option LIBINT2_CARTGAUSS_ORDERING: ${LIBINT2_CARTGAUSS_O
 
 set(LIBINT2_SHELL_SET ${LIBINT2_SHELL_SET})
 message(STATUS "Setting option LIBINT2_SHELL_SET: ${LIBINT2_SHELL_SET} (read-only from generation-time)")
+
+
+######################## Process & Validate Options ###########################
+include(autocmake_safeguards)
 
 
 ################################## Dependencies #################################

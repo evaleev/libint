@@ -2,6 +2,7 @@ set(LIBRARY_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/lib/libint)
 
 file(
   INSTALL
+    "${PROJECT_SOURCE_DIR}/cmake/modules/autocmake_safeguards.cmake"
     "${PROJECT_SOURCE_DIR}/cmake/modules/int_orderings.cmake"
     "${PROJECT_SOURCE_DIR}/cmake/modules/options.cmake"
     "${PROJECT_BINARY_DIR}/cmake/modules/int_computed.cmake"

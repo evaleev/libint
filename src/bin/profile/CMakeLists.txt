@@ -35,7 +35,7 @@ set_target_properties(
 
 add_test(
   NAME libint2/compiler/coretest/build
-  COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target libint-libcompiler-test
+  COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR} --target libint-libcompiler-test
   )
 set_tests_properties(
   libint2/compiler/coretest/build
