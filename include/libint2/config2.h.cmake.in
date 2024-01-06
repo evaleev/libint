@@ -40,7 +40,7 @@
 #define LIBINT2_ALIGN_SIZE @LIBINT2_ALIGN_SIZE@
 
 /* User-defined real type */
-#cmakedefine LIBINT2_REALTYPE "@LIBINT2_REALTYPE@"
+#cmakedefine LIBINT2_REALTYPE @LIBINT2_REALTYPE@
 
 /* Specifies the ordering of solid harmonics Gaussians in a shell. Retired Jan 2023 in favor of becoming a generator-time-only option */
 /* #cmakedefine LIBINT_SHGSHELL_ORDERING @LIBINT_SHGSHELL_ORDERING@ */

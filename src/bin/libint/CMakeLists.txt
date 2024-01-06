@@ -39,15 +39,15 @@ target_compile_definitions(
   libint-libcompiler
   PUBLIC
     __COMPILING_LIBINT2=1
-    # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
     $<$<BOOL:${MSVC}>:_USE_MATH_DEFINES>
+    # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
   )
 
 target_compile_options(
   libint-libcompiler
   PUBLIC
+    $<$<BOOL:${MSVC}>:/EHsc>
     # Set the exception handling model (allows "throw")
-    $<$<BOOL:${MSVC}>:"/EHsc">
   )
 
 target_compile_features(

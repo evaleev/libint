@@ -29,12 +29,18 @@ set(pnv libint2) # projectnameversion
 # See "TARBALL" labels in INSTALL.md for elaboration of options, dependencies, & targets.
 
 ################################### Options ####################################
+include(CTest)
 include(options)
 include(CheckFunctionExists)
 
 #  <<<  General  >>>
 
-option_with_default(CMAKE_BUILD_TYPE "Build type" Release)
+option_with_default(CMAKE_BUILD_TYPE
+  "Build type" Release)
+option_with_print(BUILD_SHARED_LIBS
+  "Build Libint library as shared, not static" OFF)
+option_with_print(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS
+  "Build both shared and static Libint libraries in one shot. Uses -fPIC." OFF)
 option_with_print(LIBINT2_ENABLE_MPFR
   "Use GNU MPFR library for high-precision testing (requires MPFR. EXPERTS ONLY)" OFF)
 option_with_print(LIBINT2_ENABLE_PYTHON
@@ -52,12 +58,19 @@ if (HAVE_POSIX_MEMALIGN)
     option_with_default(LIBINT2_ALIGN_SIZE
       "(EXPERT) if posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics." 0)
     mark_as_advanced(LIBINT2_ALIGN_SIZE)
+elseif (MSVC)
+    set(HAVE_POSIX_MEMALIGN 1)  # aliased in memory.h
+    set(LIBINT2_ALIGN_SIZE "0" CACHE STRING "")
 endif()
 
 option_with_default(LIBINT2_REALTYPE
   "Specifies the floating-point data type used by the library." double)
 include(int_userreal)
 
+#  <<<  Miscellaneous  >>>
+
+# next one defined by `include(CTest)`
+message(STATUS "Showing option BUILD_TESTING: ${BUILD_TESTING}")
 
 #  <<<  Ordering Conventions  >>>
 
@@ -147,13 +160,167 @@ configure_file(
   include/libint2/config2.h.cmake.in
   include/libint2/config2.h
   @ONLY)
-# configuration.cc defines a string summary of capabilities. @ONLY is maximally
-#   deferred in case config2 changes the summary (as it used to when
-#   LIBINT_SHGSHELL_ORDERING was library-config-time selected).
 configure_file(
+  # configuration.cc defines a string summary of capabilities. @ONLY is maximally
+  #   deferred in case config2 changes the summary (as it used to when
+  #   LIBINT_SHGSHELL_ORDERING was library-config-time selected).
   src/configuration.cc.cmake.in
   src/configuration.cc
   @ONLY)
+
+include(srclist.cmake)
+list(LENGTH LIBINT2_LIBRARY_CXX_SRC _source_count)
+message(STATUS "Loading ${_source_count} library source files from LIBINT2_LIBRARY_CXX_SRC")
+message(DEBUG "LIBINT2_LIBRARY_CXX_SRC=${LIBINT2_LIBRARY_CXX_SRC}")
+
+# Notes
+# * __COMPILING_LIBINT2 is needed whenever using libint targets in the build tree
+# * MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined
+# * /EHsc sets the exception handling model (allows "throw")
+
+add_library(
+  int-obj
+  OBJECT
+    "${LIBINT2_LIBRARY_CXX_SRC}"
+    "src/configuration.cc"
+  )
+target_compile_definitions(
+  int-obj
+  PRIVATE
+    -D__COMPILING_LIBINT2=1
+  )
+target_compile_features(
+  int-obj
+  PUBLIC
+    "cxx_std_11"
+    # N.B. PUBLIC to make int-{static/shared} require C++11?
+  )
+set_target_properties(
+  int-obj
+  PROPERTIES
+    UNITY_BUILD TRUE  # always use unity build for int-obj
+  )
+target_include_directories(
+  int-obj
+  PRIVATE
+    ${PROJECT_BINARY_DIR}/include/
+    ${PROJECT_SOURCE_DIR}/src/
+    ${PROJECT_SOURCE_DIR}/include/
+    ${PROJECT_SOURCE_DIR}/include/libint2/
+  )
+
+if (MSVC)
+    set_target_properties(
+      int-obj
+      PROPERTIES
+        LINK_FLAGS "/STACK:4194304"
+        # Increase stack size from 1 MB to 4 MB
+      )
+endif()
+
+
+if (BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
+    set(BUILD_SHARED_LIBS 1)
+    set_target_properties(
+      int-obj
+      PROPERTIES
+        POSITION_INDEPENDENT_CODE 1
+      )
+endif()
+if (NOT BUILD_SHARED_LIBS OR LIBINT2_BUILD_SHARED_AND_STATIC_LIBS)
+    set(BUILD_STATIC_LIBS 1)
+endif()
+
+if (BUILD_SHARED_LIBS)
+
+    add_library(
+      int-shared
+      SHARED
+        $<TARGET_OBJECTS:int-obj>
+      )
+    target_compile_features(
+      int-shared
+      INTERFACE
+        "cxx_std_11"
+      )
+    target_compile_definitions(
+      int-shared
+      INTERFACE
+        $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
+      PUBLIC
+        $<$<BOOL:${MSVC}>:_USE_MATH_DEFINES>
+    )
+    target_compile_options(
+      int-shared
+      PUBLIC
+        $<$<BOOL:${MSVC}>:/EHsc>
+      )
+    target_include_directories(
+      int-shared
+      INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
+      )
+    set_target_properties(
+      int-shared
+      PROPERTIES
+        OUTPUT_NAME "int2"
+      )
+endif()
+
+if (BUILD_STATIC_LIBS)
+
+    add_library(
+      int-static
+      STATIC
+        $<TARGET_OBJECTS:int-obj>
+      )
+    target_compile_features(
+      int-static
+      INTERFACE
+        "cxx_std_11"
+      )
+    target_compile_definitions(
+      int-static
+      INTERFACE
+        $<BUILD_INTERFACE:__COMPILING_LIBINT2=1>
+      PUBLIC
+        $<$<BOOL:${MSVC}>:_USE_MATH_DEFINES>
+      )
+    target_compile_options(
+      int-static
+      PUBLIC
+        $<$<BOOL:${MSVC}>:/EHsc>
+      )
+    target_include_directories(
+      int-static
+      INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/libint2>
+      )
+    set_target_properties(
+      int-static
+      PROPERTIES
+        OUTPUT_NAME "int2"
+      )
+endif()
+
+# Permanent aliases =============================================================
+# * used for tests
+
+if (BUILD_SHARED_LIBS)
+    add_library(${L2}::int2 ALIAS int-shared)
+elseif (BUILD_STATIC_LIBS)
+    add_library(${L2}::int2 ALIAS int-static)
+endif()
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
 
 configure_package_config_file(
   cmake/${pnv}-config.cmake.in

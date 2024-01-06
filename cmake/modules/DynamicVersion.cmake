@@ -15,6 +15,11 @@ Helper module to get the project's version dynamically. Format is compatible wit
 
 include_guard()
 list(APPEND CMAKE_MESSAGE_CONTEXT DynamicVersion)
+if (POLICY CMP0140)
+  # Enable using return(PROPAGATE)
+  # TODO: Remove when cmake 3.25 is commonly distributed
+  cmake_policy(SET CMP0140 NEW)
+endif ()
 
 #[==============================================================================================[
 #                                         Preparations                                         #
@@ -117,9 +122,6 @@ function(dynamic_version)
 
     `${OUTPUT_FOLDER}/.git_commit`
       Current commit
-
-    `${OUTPUT_FOLDER}/.git_distance`
-      Current git distance from tag
 
     ## See also
     - [pypa/setuptools_scm](https://github.com/pypa/setuptools_scm)
@@ -227,10 +229,14 @@ function(dynamic_version)
             COMMAND_ERROR_IS_FATAL ANY)
 
     # Copy all configured files
-    foreach (file IN ITEMS .DynamicVersion.json .version .git_describe .git_commit .git_distance)
-        if (EXISTS ${file})
-            file(COPY_FILE ${ARGS_TMP_FOLDER}/${file} ${ARGS_OUTPUT_FOLDER}/${file})
-        endif ()
+    foreach (file IN ITEMS .DynamicVersion.json .version .git_describe .git_commit)
+        if (EXISTS ${ARGS_TMP_FOLDER}/${file})
+            if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.21)
+                file(COPY_FILE ${ARGS_TMP_FOLDER}/${file} ${ARGS_OUTPUT_FOLDER}/${file})
+            else ()
+                file(COPY ${ARGS_TMP_FOLDER}/${file} DESTINATION ${ARGS_OUTPUT_FOLDER}/)
+            endif ()
+         endif ()
     endforeach ()
 
     # Check configuration state
@@ -359,13 +365,13 @@ function(get_dynamic_version)
     # Set fallback values
     if (DEFINED ARGS_FALLBACK_VERSION)
         string(JSON data SET
-                ${data} version ${ARGS_FALLBACK_VERSION})
+                ${data} version \"${ARGS_FALLBACK_VERSION}\")
         file(WRITE ${ARGS_TMP_FOLDER}/.DynamicVersion.json ${data})
         file(WRITE ${ARGS_TMP_FOLDER}/.version ${ARGS_FALLBACK_VERSION})
     endif ()
     if (DEFINED ARGS_FALLBACK_HASH)
         string(JSON data SET
-                ${data} commit ${ARGS_FALLBACK_HASH})
+                ${data} commit \"${ARGS_FALLBACK_HASH}\")
         file(WRITE ${ARGS_TMP_FOLDER}/.DynamicVersion.json ${data})
         file(WRITE ${ARGS_TMP_FOLDER}/.git_commit ${ARGS_FALLBACK_HASH})
     endif ()
@@ -403,8 +409,11 @@ function(get_dynamic_version)
                 ${data} version \"${CMAKE_MATCH_2}\")
         file(WRITE ${ARGS_TMP_FOLDER}/.version ${CMAKE_MATCH_2})
         # Get commit hash
+        # Cannot use Regex match from here, need to run string(REGEX MATCH) again
+        # https://gitlab.kitware.com/cmake/cmake/-/issues/23770
         file(STRINGS ${ARGS_GIT_ARCHIVAL_FILE} node
                 REGEX "^node:[ ]?(.*)")
+        string(REGEX MATCH "^node:[ ]?(.*)" node "${node}")
         string(JSON data SET
                 ${data} commit \"${CMAKE_MATCH_1}\")
         file(WRITE ${ARGS_TMP_FOLDER}/.git_commit ${CMAKE_MATCH_1})
@@ -433,13 +442,13 @@ function(get_dynamic_version)
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                 COMMAND_ERROR_IS_FATAL ANY)
         # Get version and describe-name
-        execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --match=?[0-9.]*
+        execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --long --abbrev=8 --match=?[0-9.]*
                 WORKING_DIRECTORY ${ARGS_PROJECT_SOURCE}
                 OUTPUT_VARIABLE describe-name
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                 COMMAND_ERROR_IS_FATAL ANY)
         # Match any part containing digits and periods (strips out rc and so on)
-        if (NOT describe-name MATCHES "^([v]?([0-9\\.]+).*)")
+        if (NOT describe-name MATCHES "^([v]?([0-9\\.]+)-([0-9]+)-g(.*))")
             message(${error_message_type}
                     "Version tag is ill-formatted\n"
                     "  Describe-name: ${describe-name}"
@@ -453,25 +462,12 @@ function(get_dynamic_version)
                 ${data} version \"${CMAKE_MATCH_2}\")
         file(WRITE ${ARGS_TMP_FOLDER}/.version ${CMAKE_MATCH_2})
         string(JSON data SET
+                ${data} distance \"${CMAKE_MATCH_3}\")
+        string(JSON data SET
+                ${data} short_sha \"${CMAKE_MATCH_4}\")
+        string(JSON data SET
                 ${data} commit \"${git-hash}\")
         file(WRITE ${ARGS_TMP_FOLDER}/.git_commit ${git-hash})
-        # Get full describe with distance
-        execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --long --match=?[0-9.]*
-                WORKING_DIRECTORY ${ARGS_PROJECT_SOURCE}
-                OUTPUT_VARIABLE describe-name-long
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-                COMMAND_ERROR_IS_FATAL ANY)
-        # Match version (as above) and distance
-        if (NOT describe-name-long MATCHES "^([v]?([0-9\\.]+)-([0-9]+)-.*)")
-            message(${error_message_type}
-                    "Version tag is ill-formatted\n"
-                    "  Describe-name-long: ${describe-name-long}"
-            )
-            return()
-        endif ()
-        string(JSON data SET
-                ${data} distance \"${CMAKE_MATCH_3}\")
-        file(WRITE ${ARGS_TMP_FOLDER}/.git_distance ${CMAKE_MATCH_3})
         message(DEBUG
                 "Found appropriate tag from git"
         )
@@ -507,3 +503,5 @@ if (DynamicVersion_RUN)
     endif ()
     get_dynamic_version(${DynamicVersion_ARGS})
 endif ()
+
+list(POP_BACK CMAKE_MESSAGE_CONTEXT)

@@ -267,6 +267,8 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 ### Build Library How (G L) (TARBALL)
 
 * `CMAKE_BUILD_TYPE` — G L — [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) [Default=Release]
+* `BUILD_SHARED_LIBS` — L — Build Libint library as shared, not static. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/BUILD_SHARED_LIBS.html) [Default=OFF]
+* `LIBINT2_BUILD_SHARED_AND_STATIC_LIBS` — L — Build both shared and static Libint libraries in one shot. Uses `-fPIC`. [Default=OFF]
 
 ### Detecting Dependencies (G L C) (TARBALL)
 

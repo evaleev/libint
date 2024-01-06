@@ -23,6 +23,11 @@ configure_file(
   "${EXPORT_STAGE_DIR}/features"
   @ONLY)
 
+configure_file(
+  "${PROJECT_SOURCE_DIR}/include/libint2/basis.h.in"  # TODO could move to basis.h.cmake.in when libtool retires
+  "include/libint2/basis.h"
+  @ONLY)
+
 add_custom_command(
   OUTPUT
     ${EXPORT_STAGE_DIR}/CMakeLists.txt
@@ -43,23 +48,39 @@ add_custom_target(libint-library-populate DEPENDS ${EXPORT_STAGE_DIR}/CMakeLists
 
 add_custom_command(
   OUTPUT
-    "${EXPORT_STAGE_DIR}.tgz"
-  COMMAND ${CMAKE_COMMAND} -E tar "cfz" "${EXPORT_STAGE_DIR}.tgz" "${EXPORT_STAGE_DIR}"
+    "${EXPORT_STAGE_DIR}.${EXPORT_COMPRESSOR_EXT}"
+  COMMAND ${CMAKE_COMMAND} -E tar ${EXPORT_COMPRESSOR_CMD} "${EXPORT_STAGE_DIR}.${EXPORT_COMPRESSOR_EXT}" "${EXPORT_STAGE_DIR}"
   DEPENDS
     libint-library-generate
     libint-library-populate
   WORKING_DIRECTORY "${EXPORT_STAGE_DIR}/.."
   COMMENT "Exporting tarball of Libint2 library source"
   )
-add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
+    add_custom_target(
+      libint-library-export
+      DEPENDS
+        "${EXPORT_STAGE_DIR}.${EXPORT_COMPRESSOR_EXT}"
+      )
+add_custom_target(export DEPENDS libint-library-export)
 
 
-    # <<<  Build Library  >>>
+# <<<  Build Library  >>>
+
+include(CheckLanguage)
+check_language(C)
+if(CMAKE_C_COMPILER)
+    enable_language(C)
+else()
+    message(FATAL_ERROR "No C language support; invoke CMake with -D CMAKE_C_COMPILER=/path/to/C/compiler to resolve")
+endif()
 
     include(ExternalProject)
 
     list(APPEND library_CMAKE_ARGS
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        -DBUILD_TESTING=${BUILD_TESTING}
+        -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+        -DLIBINT2_BUILD_SHARED_AND_STATIC_LIBS=${LIBINT2_BUILD_SHARED_AND_STATIC_LIBS}
         -DLIBINT2_ALIGN_SIZE=${LIBINT_ALIGN_SIZE}
         -DLIBINT2_REALTYPE=${LIBINT2_REALTYPE}
         -DLIBINT2_ENABLE_MPFR=${LIBINT2_ENABLE_MPFR}
@@ -99,7 +120,7 @@ add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
       BUILD_ALWAYS 1
       # download generalized to generating source by unpacking source tarball
       # * DOWNLOAD_DIR <SOURCE_DIR> is tidier but fails on Windows
-      URL "${EXPORT_STAGE_DIR}.tgz"
+      URL "${EXPORT_STAGE_DIR}.${EXPORT_COMPRESSOR_EXT}"
       LOG_DOWNLOAD 1
       CMAKE_ARGS "${library_CMAKE_ARGS}"
       CMAKE_CACHE_ARGS
@@ -108,5 +129,25 @@ add_custom_target(libint-library-export DEPENDS "${EXPORT_STAGE_DIR}.tgz")
         -DCMAKE_CXX_COMPILER_ARG1:STRING=${CMAKE_CXX_COMPILER_ARG1}
         -DCMAKE_C_COMPILER_ARG1:STRING=${CMAKE_C_COMPILER_ARG1}
         -DCMAKE_PREFIX_PATH:STRING=${CMAKE_PREFIX_PATH}
+      TEST_COMMAND ""
+      STEP_TARGETS build
       )
+    ExternalProject_Get_property(library BINARY_DIR)
 
+    if (BUILD_TESTING)
+        include(AddCustomTargetSubproject)
+        add_custom_target_subproject(
+          libint2 check  # target check-libint2
+          USES_TERMINAL
+          COMMAND ${CMAKE_CTEST_COMMAND} -V -R "libint2/"
+          WORKING_DIRECTORY ${BINARY_DIR}
+          DEPENDS
+            "library-build"
+          )
+    endif()
+
+    install(
+      FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/include/libint2/basis.h"
+      DESTINATION "${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/libint2"
+      )
