@@ -73,13 +73,21 @@ cmake/  COPYING  src/  tests/  ...
 
 ### Build Targets
 
-| `--target ...`            | incl. | steps |     ( |  see  | above | )     |       | (TARBALL) `--target ...` [^25] |
-| --------------            | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ------------------------------ |
+| `--target ...` [^27]      | incl. | steps |     ( |  see  | above | )     |       | (TARBALL) `--target ...` [^25] |
+| --------------------      | ----- | ----- | ----- | ----- | ----- | ----- | ----- | ------------------------------ |
 | `build_libint`            |   1   |   -   |   -   |   -   |   -   |   -   |   -   | n/a                            |
 | `check-libint2compiler`   |   1   |   2   |   -   |   -   |   -   |   -   |   -   | n/a                            |
+| `export`                  |   1   |   -   |   3   |   -   |   -   |   -   |   -   | n/a                            |
+| `library` (default) [^26] |   1   |   -   |   3   |   4   |   -   |   -   |   -   | (default) [^26]                |
+| `check`                   |   1   |   2   |   3   |   4   |   5   |   -   |   -   | `check`                        |
+
+Use combined targets like `cmake --target check install` to avoid some unnecessary rebuilding (esp. of build_libint) that occurs with successive targets. The CMake dependency structure is imperfect.
 
 [^25]: (TARBALL) targets can include steps 4 onwards; the starting tarball itself is the product of step 3.
 
+[^26]: See [see "Internal Targets" column in table](#consumption-targets) for individual library targets.
+
+[^27]: For FetchContent/`LIBINT_BUILD_LIBRARY_AS_SUBPROJECT=ON`, build target `export` aka `libint-library-export`. Then, as a separate command, build further targets like `check` or `install`; target plain `library` is not available.
 
 -----------------------------------------------------------------------------
 
@@ -259,6 +267,9 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 ### Build Library What (L) (TARBALL)
 
+* `LIBINT2_REQUIRE_CXX_API` — L — Build C++11 Libint API. Define header-only library target and check target (requires Eigen3; Boost recommended; [see prereq line](#prerequisites)). [Default=ON]
+* `LIBINT2_REQUIRE_CXX_API_COMPILED` — L — Build C++11 Libint API. Define compiled (not just header-only) targets (requires Eigen3; Boost recommended). [Default=ON]
+* `LIBINT2_ENABLE_FORTRAN` — L — Build Fortran03+ module/bindings (requires C and Fortran compilers and Python). [Default=OFF]
 * `LIBINT2_ENABLE_MPFR` — L — Use MPFR library to test Libint integrals in high precision (requires MPFR; experts only). [Default=OFF]
 * `LIBINT2_LOCAL_Eigen3_INSTALL` — L — Install an exported target with hard-coded Eigen3 dependency paths. This is potentially useful and important when consuming the compiled C++11 interface library so that the Libint library build and Libint consumer build use the same Eigen3 installation & ABI. This is at most a convenience when consuming the header-only C++11 interface library. See `LIBINT2_LOCAL_Eigen3_FIND`. [Default=OFF]
 * `LIBINT2_ENABLE_PYTHON` — L — Build Python bindings (requires Python and Eigen3; Boost and pybind11 recommended; [see prereq line](#prerequisites)). Can instead be enabled and built through separate CMake configuration after library build. [Default=OFF]
@@ -269,6 +280,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 * `CMAKE_BUILD_TYPE` — G L — [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) [Default=Release]
 * `BUILD_SHARED_LIBS` — L — Build Libint library as shared, not static. [Standard CMake variable](https://cmake.org/cmake/help/latest/variable/BUILD_SHARED_LIBS.html) [Default=OFF]
 * `LIBINT2_BUILD_SHARED_AND_STATIC_LIBS` — L — Build both shared and static Libint libraries in one shot. Uses `-fPIC`. [Default=OFF]
+* `LIBINT_BUILD_LIBRARY_AS_SUBPROJECT` — G — If building compiler and library in continuous command, build generated library as a subproject (FetchContent); if OFF will configure and build separately (ExternalProject) (expert only). [Default=OFF]
 
 ### Detecting Dependencies (G L C) (TARBALL)
 
@@ -352,6 +364,35 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 * `LIBINT_FLOP_COUNT` — G — Support (approximate) FLOP counting by the library. (Generated code will require C++11!). [Default=OFF]
 * `LIBINT_PROFILE` — G — Turn on profiling instrumentation of the library. (Generated code will require C++11!). [Default=OFF]
 
+-----------------------------------------------------------------------------
+
+# Consuming Libint
+
+
+### Programming to Access Integrals
+
+* if you use C++11 or later (strongly recommended): read the [Libint Wiki](https://github.com/evaleev/libint/wiki/using-modern-CPlusPlus-API)
+* if you use pre-2011 C++, C, Fortran, or any other language, refer to the [Libint Programmer's Manual](https://sourceforge.net/projects/libint/files/libint-for-beginners/progman-2.0.3-stable.pdf/download) for brief information on how to use the library in your code.
+
+
+### Consumption Targets
+
+| Namespaced Target[^15] | CMake[^16] Component | Built by Default | Ensure Built                          | Ensure Excluded                                                                                                        | Internal Target(s)[^17]              | Alias[^18]    |
+| ---------------------- | -------------------- | ---------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -----------------------------------  | ------------  |
+|                        |                      | yes              | always                                | impossible                                                                                                             | `int-obj`                            |               |
+| `Libint2::int2`        | `C`                  | yes              | always                                | impossible                                                                                                             | `int-{static,shared}`                | `libint2`     |
+| `Libint2::cxx`         | `CXX_ho`             | yes              | `LIBINT2_REQUIRE_CXX_API=ON`          | `LIBINT2_REQUIRE_CXX_API=OFF` & withhold Eigen3 & `LIBINT2_REQUIRE_CXX_API_COMPILED=OFF` & `LIBINT2_ENABLE_PYTHON=OFF` | `int-cxx-headeronly-{static,shared}` | `libint2_cxx` |
+| `Libint2::int2-cxx`    | `CXX`                | yes              | `LIBINT2_REQUIRE_CXX_API_COMPILED=ON` | `LIBINT2_REQUIRE_CXX_API_COMPILED=OFF`                                                                                 | `int-cxx-{static,shared}`   |               |
+| Fortran local[^19]     | (NYI)                | no               | `LIBINT2_ENABLE_FORTRAN=ON`           | `LIBINT2_ENABLE_FORTRAN=OFF`                                                                                           | `libint_f`                           |               |
+
+[^15]: Targets for library consumer use. These are available after `find_package(Libint2)` or `add_subdirectory()`.
+[^16]: Ensure target found in installation after `find_package(Libint2 COMPONENTS ...)`.
+[^17]: Targets in src/lib/libint/CMakeLists.txt.export . Names subject to change. Use namespaced target names in any consuming code.
+[^18]: Deprecated legacy aliases. Update any uses to namespaced target.
+[^19]: The `libint_f` internal target defines the Fortran interface to Libint2. One must also link to `Libint2::int2` or `Libint2::cxx`. At present, it is not exported, and a namespaced target is not defined.
+
+
+-----------------------------------------------------------------------------
 
 # GNU Autotools Update Guide
 
@@ -407,14 +448,21 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 
 * `--disable-1body-property-derivs` --> `-D DISABLE_ONEBODY_PROPERTY_DERIVS=ON`
 
-
+* `--enable-shared` --> `-D BUILD_SHARED=ON` --> `-D BUILD_SHARED_LIBS=ON` (standard CMake variable)
+* `--enable-static` --> `-D BUILD_STATIC=ON` --> `-D BUILD_SHARED_LIBS=OFF` (standard CMake variable)
+* `--enable-shared --enable-static` --> `-D BUILD_SHARED=ON -D BUILD_STATIC=ON` --> `-D LIBINT2_BUILD_SHARED_AND_STATIC_LIBS=ON`
+* `-D REQUIRE_CXX_API=ON` --> `-D ENABLE_CXX11API=ON` --> `-D LIBINT2_REQUIRE_CXX_API=ON`
 * `--enable-mpfr` --> assumed present --> `-D ENABLE_MPFR=ON` --> `-D LIBINT2_ENABLE_MPFR=ON`
+
+* (target) `libint2` --> `Libint2::int2`
+* (target) `libint2_cxx` --> `Libint2::cxx`
 
 * `ENV(CPPFLAGS)=-I/path/to/boost/includes` --> `-D BOOST_ROOT=/path/to/boost/prefix`
 
 * `-D LIBINT2_PYTHON=ON` --> `-D LIBINT2_ENABLE_PYTHON=ON`
 * `-D LIBINT_USE_BUNDLED_BOOST=ON` --> `-D CMAKE_DISABLE_FIND_PACKAGE_Boost=ON` (standard CMake variable)
 * `--with-boost` & `--with-boost-libdir` --> see `BOOST_ROOT` & `Boost_DIR`
+* `-D ENABLE_FORTRAN=ON` --> `-D LIBINT2_ENABLE_FORTRAN=ON`
 * `-D LIBINT_LOCAL_Eigen3_INSTALL` --> `-D LIBINT2_LOCAL_Eigen3_INSTALL`
 * `-D LIBINT_LOCAL_Eigen3_FIND` --> `-D LIBINT2_LOCAL_Eigen3_FIND`
 

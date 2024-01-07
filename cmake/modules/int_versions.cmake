@@ -13,10 +13,12 @@
 
 # <<<  Sortable Version  >>>
 
-message(DEBUG "LibintRepository_VERSION  ${LibintRepository_VERSION}")
-message(DEBUG "LibintRepository_COMMIT   ${LibintRepository_COMMIT}")
-message(DEBUG "LibintRepository_DISTANCE ${LibintRepository_DISTANCE}")
-message(DEBUG "LibintRepository_DESCRIBE ${LibintRepository_DESCRIBE}")
+message(DEBUG "LibintRepository_VERSION      ${LibintRepository_VERSION}")
+message(DEBUG "LibintRepository_VERSION_FULL ${LibintRepository_VERSION_FULL}")
+message(DEBUG "LibintRepository_COMMIT       ${LibintRepository_COMMIT}")
+message(DEBUG "LibintRepository_SHORT_HASH   ${LibintRepository_SHORT_HASH}")
+message(DEBUG "LibintRepository_DISTANCE     ${LibintRepository_DISTANCE}")
+message(DEBUG "LibintRepository_DESCRIBE     ${LibintRepository_DESCRIBE}")
 
 if (LibintRepository_DISTANCE STREQUAL "0")
     set(LIBINT_SORTABLE_VERSION "${LibintRepository_VERSION}")
@@ -24,8 +26,10 @@ else()
     set(LIBINT_SORTABLE_VERSION "${LibintRepository_VERSION}.post${LibintRepository_DISTANCE}")
 endif()
 
-string(SUBSTRING ${LibintRepository_COMMIT} 0 7 LIBINT_GIT_COMMIT)
-message(DEBUG "LIBINT_GIT_COMMIT         ${LIBINT_GIT_COMMIT}")
+# short hash from DynVer is variable length from `git describe`.
+# * use below for fixed length
+# string(SUBSTRING ${LibintRepository_COMMIT} 0 7 LIBINT_GIT_COMMIT)
+message(DEBUG "LIBINT_GIT_COMMIT         ${LibintRepository_SHORT_HASH}")
 
 # Below goes into BibTeX citation. Currently year of export. For year of tag, parse:
 # `git show -s --no-notes --date=short --pretty='%cd' v2.7.2` responds: 2022-06-20
@@ -52,7 +56,7 @@ else()
   set(LIBINT_EXT_VERSION ${LIBINT_VERSION})
 endif()
 
-message(STATUS "Version: Full ${LIBINT_EXT_VERSION} Numeric ${LIBINT_VERSION} Sortable ${LIBINT_SORTABLE_VERSION}")
+message(STATUS "Version: Full ${LIBINT_EXT_VERSION} Numeric ${LIBINT_VERSION} Sortable ${LIBINT_SORTABLE_VERSION} SCM ${LibintRepository_VERSION_FULL}")
 
 if (NOT(LibintRepository_VERSION STREQUAL LIBINT_VERSION))
     message(AUTHOR_WARNING

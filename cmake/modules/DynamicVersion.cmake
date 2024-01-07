@@ -1,5 +1,4 @@
-# copied from https://github.com/LecrisUT/CMakeExtraUtils/blob/main/cmake/DynamicVersion.md ~20 Dec 2023
-# * modified to add distance field and return
+# copied from https://github.com/LecrisUT/CMakeExtraUtils/blob/main/cmake/DynamicVersion.md 15 Jan 2023
 
 #[===[.md:
 # DynamicVersion
@@ -16,9 +15,9 @@ Helper module to get the project's version dynamically. Format is compatible wit
 include_guard()
 list(APPEND CMAKE_MESSAGE_CONTEXT DynamicVersion)
 if (POLICY CMP0140)
-  # Enable using return(PROPAGATE)
-  # TODO: Remove when cmake 3.25 is commonly distributed
-  cmake_policy(SET CMP0140 NEW)
+    # Enable using return(PROPAGATE)
+    # TODO: Remove when cmake 3.25 is commonly distributed
+    cmake_policy(SET CMP0140 NEW)
 endif ()
 
 #[==============================================================================================[
@@ -42,8 +41,12 @@ function(dynamic_version)
     Main interface
       dynamic_version(PROJECT_PREFIX <prefix>)
       dynamic_version(PROJECT_PREFIX <prefix>
-        [OUTPUT_VERSION <var>] [OUTPUT_DESCRIBE <var>] [OUTPUT_COMMIT <var>]
-        [OUTPUT_DISTANCE <var>] [PROJECT_SOURCE <path>] [GIT_ARCHIVAL_FILE <file>])
+        [OUTPUT_VERSION <var>] [OUTPUT_VERSION_FULL <var>]
+        [OUTPUT_DESCRIBE <var>] [OUTPUT_COMMIT <var>]
+        [OUTPUT_DISTANCE <var>] [OUTPUT_SHORT_HASH <var>]
+        [VERSION_FULL_MODE <string>]
+        [PROJECT_SOURCE <path>] [GIT_ARCHIVAL_FILE <file>]
+      )
 
     Fallbacks
       dynamic_version(...
@@ -61,6 +64,12 @@ function(dynamic_version)
     `OUTPUT_VERSION` [Default: PROJECT_VERSION]
       Variable where to save the calculated version
 
+    `OUTPUT_VERSION_FULL` [Default: PROJECT_VERSION_FULL]
+      Variable where to save the full version in the format
+
+    `VERSION_FULL_MODE` [Default: DEV]
+      Format of the `OUTPUT_VERSION_FULL`. Must be one of [`DEV`, `POST`]
+
     `OUTPUT_DESCRIBE` [Default: GIT_DESCRIBE]
       Variable where to save the pure `git describe` output
 
@@ -69,6 +78,9 @@ function(dynamic_version)
 
     `OUTPUT_DISTANCE` [Default: GIT_DISTANCE]
       Variable where to save the distance from git tag
+
+    `OUTPUT_SHORT_HASH` [Default: GIT_SHORT_HASH]
+      Variable where to save the shortened git commit hash
 
     `PROJECT_SOURCE` [Default: `${CMAKE_CURRENT_SOURCE_DIR}`]
       Location of the project source. Has to be either an extracted git archive or a git clone
@@ -135,9 +147,12 @@ function(dynamic_version)
     set(ARGS_OneValue
             PROJECT_PREFIX
             OUTPUT_VERSION
+            OUTPUT_VERSION_FULL
+            VERSION_FULL_MODE
             OUTPUT_DESCRIBE
             OUTPUT_COMMIT
             OUTPUT_DISTANCE
+            OUTPUT_SHORT_HASH
             PROJECT_SOURCE
             GIT_ARCHIVAL_FILE
             FALLBACK_VERSION
@@ -156,6 +171,14 @@ function(dynamic_version)
     if (NOT DEFINED ARGS_OUTPUT_VERSION)
         set(ARGS_OUTPUT_VERSION PROJECT_VERSION)
     endif ()
+    if (NOT DEFINED ARGS_OUTPUT_VERSION_FULL)
+        set(ARGS_OUTPUT_VERSION_FULL PROJECT_VERSION_FULL)
+    endif ()
+    if (NOT DEFINED ARGS_VERSION_FULL_MODE)
+        set(ARGS_VERSION_FULL_MODE DEV)
+    elseif (NOT ARGS_VERSION_FULL_MODE MATCHES "(DEV|POST)")
+        message(FATAL_ERROR "Unsupported VERSION_FULL_MODE = ${ARGS_VERSION_FULL_MODE}")
+    endif ()
     if (NOT DEFINED ARGS_OUTPUT_DESCRIBE)
         set(ARGS_OUTPUT_DESCRIBE GIT_DESCRIBE)
     endif ()
@@ -164,6 +187,9 @@ function(dynamic_version)
     endif ()
     if (NOT DEFINED ARGS_OUTPUT_DISTANCE)
         set(ARGS_OUTPUT_DISTANCE GIT_DISTANCE)
+    endif ()
+    if (NOT DEFINED ARGS_OUTPUT_SHORT_HASH)
+        set(ARGS_OUTPUT_SHORT_HASH GIT_SHORT_HASH)
     endif ()
     if (NOT DEFINED ARGS_PROJECT_SOURCE)
         set(ARGS_PROJECT_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -205,6 +231,7 @@ function(dynamic_version)
             PROJECT_SOURCE ${ARGS_PROJECT_SOURCE}
             GIT_ARCHIVAL_FILE ${ARGS_GIT_ARCHIVAL_FILE}
             TMP_FOLDER ${ARGS_TMP_FOLDER}
+            VERSION_FULL_MODE ${ARGS_VERSION_FULL_MODE}
     )
     if (DEFINED ARGS_FALLBACK_VERSION)
         list(APPEND DynamicVersion_ARGS
@@ -236,16 +263,22 @@ function(dynamic_version)
             else ()
                 file(COPY ${ARGS_TMP_FOLDER}/${file} DESTINATION ${ARGS_OUTPUT_FOLDER}/)
             endif ()
-         endif ()
+        endif ()
     endforeach ()
 
     # Check configuration state
     file(READ ${ARGS_TMP_FOLDER}/.DynamicVersion.json data)
+    # failed, mode, and version are always set if get_dynamic_version did not exit with failure
     string(JSON failed GET ${data} failed)
-    string(JSON ${ARGS_OUTPUT_VERSION} ERROR_VARIABLE _ GET ${data} version)
-    string(JSON ${ARGS_OUTPUT_DESCRIBE} ERROR_VARIABLE _ GET ${data} describe)
-    string(JSON ${ARGS_OUTPUT_COMMIT} ERROR_VARIABLE _ GET ${data} commit)
+    string(JSON ${ARGS_OUTPUT_VERSION} GET ${data} version)
+    string(JSON ${ARGS_OUTPUT_VERSION_FULL} GET ${data} version-full)
+    # Other outputs are optional, populate the variables if found
+    # These are populated if failed = false
+    string(JSON ${ARGS_OUTPUT_SHORT_HASH} ERROR_VARIABLE _ GET ${data} short-hash)
     string(JSON ${ARGS_OUTPUT_DISTANCE} ERROR_VARIABLE _ GET ${data} distance)
+    # These may not be populated depending on mode
+    string(JSON ${ARGS_OUTPUT_COMMIT} ERROR_VARIABLE _ GET ${data} commit)
+    string(JSON ${ARGS_OUTPUT_DESCRIBE} ERROR_VARIABLE _ GET ${data} describe)
 
     # Configure targets
     if (failed)
@@ -265,15 +298,28 @@ function(dynamic_version)
                 -P ${CMAKE_CURRENT_FUNCTION_LIST_FILE}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ARGS_TMP_FOLDER}/.DynamicVersion.json ${ARGS_OUTPUT_FOLDER}/.DynamicVersion.json
         )
+        set(extra_version_args)
+        # .git_describe might not be generated, e.g. if it's an sdist. Make it optional
+        if (EXISTS ${ARGS_OUTPUT_FOLDER}/.git_describe)
+            list(APPEND extra_version_args
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ARGS_TMP_FOLDER}/.git_describe ${ARGS_OUTPUT_FOLDER}/.git_describe
+            )
+        endif ()
         add_custom_target(${ARGS_PROJECT_PREFIX}Version ALL
                 DEPENDS ${ARGS_PROJECT_PREFIX}DynamicVersion
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ARGS_TMP_FOLDER}/.git_describe ${ARGS_OUTPUT_FOLDER}/.git_describe
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ARGS_TMP_FOLDER}/.version ${ARGS_OUTPUT_FOLDER}/.version
+                ${extra_version_args}
         )
-        add_custom_target(${ARGS_PROJECT_PREFIX}GitHash
-                DEPENDS ${ARGS_PROJECT_PREFIX}DynamicVersion
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ARGS_TMP_FOLDER}/.git_commit ${ARGS_OUTPUT_FOLDER}/.git_commit
-        )
+        # .git_commit might not exist, make the target a no-op in that case
+        if (NOT EXISTS ${ARGS_OUTPUT_FOLDER}/.git_commit)
+            add_custom_target(${ARGS_PROJECT_PREFIX}GitHash
+                    COMMAND ${CMAKE_COMMAND} -E true)
+        else ()
+            add_custom_target(${ARGS_PROJECT_PREFIX}GitHash
+                    DEPENDS ${ARGS_PROJECT_PREFIX}DynamicVersion
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ARGS_TMP_FOLDER}/.git_commit ${ARGS_OUTPUT_FOLDER}/.git_commit
+            )
+        endif ()
     endif ()
 
     # This ensures that the project is reconfigured (at least at second run) whenever the version changes
@@ -288,14 +334,18 @@ function(dynamic_version)
         # TODO: Remove when cmake 3.25 is commonly distributed
         set(${ARGS_OUTPUT_DESCRIBE} ${${ARGS_OUTPUT_DESCRIBE}} PARENT_SCOPE)
         set(${ARGS_OUTPUT_VERSION} ${${ARGS_OUTPUT_VERSION}} PARENT_SCOPE)
+        set(${ARGS_OUTPUT_VERSION_FULL} ${${ARGS_OUTPUT_VERSION_FULL}} PARENT_SCOPE)
         set(${ARGS_OUTPUT_COMMIT} ${${ARGS_OUTPUT_COMMIT}} PARENT_SCOPE)
         set(${ARGS_OUTPUT_DISTANCE} ${${ARGS_OUTPUT_DISTANCE}} PARENT_SCOPE)
+        set(${ARGS_OUTPUT_SHORT_HASH} ${${ARGS_OUTPUT_SHORT_HASH}} PARENT_SCOPE)
     endif ()
     return(PROPAGATE
             ${ARGS_OUTPUT_DESCRIBE}
             ${ARGS_OUTPUT_VERSION}
+            ${ARGS_OUTPUT_VERSION_FULL}
             ${ARGS_OUTPUT_COMMIT}
             ${ARGS_OUTPUT_DISTANCE}
+            ${ARGS_OUTPUT_SHORT_HASH}
     )
 endfunction()
 
@@ -316,8 +366,8 @@ function(get_dynamic_version)
     ## Synopsis
     ```cmake
       get_dynamic_version(PROJECT_SOURCE <path> GIT_ARCHIVAL_FILE <file>
-          TMP_FOLDER <path>
-          [FALLBACK_VERSION <version>] [FALLBACK_HASH <string>]
+        TMP_FOLDER <path> VERSION_FULL_MODE <string>
+        [FALLBACK_VERSION <version>] [FALLBACK_HASH <string>]
       )
     ```
 
@@ -335,6 +385,7 @@ function(get_dynamic_version)
     )
     set(ARGS_OneValue
             PROJECT_SOURCE
+            VERSION_FULL_MODE
             GIT_ARCHIVAL_FILE
             FALLBACK_VERSION
             FALLBACK_HASH
@@ -366,17 +417,19 @@ function(get_dynamic_version)
     if (DEFINED ARGS_FALLBACK_VERSION)
         string(JSON data SET
                 ${data} version \"${ARGS_FALLBACK_VERSION}\")
-        file(WRITE ${ARGS_TMP_FOLDER}/.DynamicVersion.json ${data})
+        string(JSON data SET
+                ${data} version-full \"${ARGS_FALLBACK_VERSION}\")
         file(WRITE ${ARGS_TMP_FOLDER}/.version ${ARGS_FALLBACK_VERSION})
     endif ()
     if (DEFINED ARGS_FALLBACK_HASH)
         string(JSON data SET
                 ${data} commit \"${ARGS_FALLBACK_HASH}\")
-        file(WRITE ${ARGS_TMP_FOLDER}/.DynamicVersion.json ${data})
         file(WRITE ${ARGS_TMP_FOLDER}/.git_commit ${ARGS_FALLBACK_HASH})
     endif ()
 
+    file(WRITE ${ARGS_TMP_FOLDER}/.DynamicVersion.json ${data})
 
+    # Check git_archival.txt file is present and properly written
     if (NOT EXISTS ${ARGS_GIT_ARCHIVAL_FILE})
         # If git_archival.txt is missing, project is ill-formed
         message(${error_message_type}
@@ -385,8 +438,6 @@ function(get_dynamic_version)
         )
         return()
     endif ()
-
-    # Get version dynamically from git_archival.txt
     file(STRINGS ${ARGS_GIT_ARCHIVAL_FILE} describe-name
             REGEX "^describe-name:.*")
     if (NOT describe-name)
@@ -398,30 +449,65 @@ function(get_dynamic_version)
         return()
     endif ()
 
-    # Try to get the version tag of the form `vX.Y.Z` or `X.Y.Z` (with arbitrary suffix)
-    if (describe-name MATCHES "^describe-name:[ ]?([v]?([0-9\\.]+).*)")
-        # First matched group is the full `git describe` of the latest tag
-        # Second matched group is only the version, i.e. `X.Y.Z`
-        string(JSON data SET
-                ${data} describe \"${CMAKE_MATCH_1}\")
-        file(WRITE ${ARGS_TMP_FOLDER}/.git_describe ${CMAKE_MATCH_1})
-        string(JSON data SET
-                ${data} version \"${CMAKE_MATCH_2}\")
-        file(WRITE ${ARGS_TMP_FOLDER}/.version ${CMAKE_MATCH_2})
-        # Get commit hash
+    # Try to get the version statically, and if it fails, get it from VCS
+    if (EXISTS ${ARGS_PROJECT_SOURCE}/PKG-INFO)
+        # Case1: Python sdist archive. Get everything from PKG-INFO file
+        set(mode pkg-info)
+        file(STRINGS ${ARGS_PROJECT_SOURCE}/PKG-INFO version
+                REGEX "^Version:[ ]?(([0-9\\.]+)([a-zA-Z0-9]*)?(\\.(dev|post)([0-9]+)\\+g([a-f0-9]+))?)$")
         # Cannot use Regex match from here, need to run string(REGEX MATCH) again
         # https://gitlab.kitware.com/cmake/cmake/-/issues/23770
+        string(REGEX MATCH "^Version:[ ]?(([0-9\\.]+)([a-zA-Z0-9]*)?(\\.(dev|post)([0-9]+)\\+g([a-f0-9]+))?)$" version "${version}")
+        # Regex match groups: https://regex101.com/r/G4Ox4X/5
+        # 1: Full version string
+        # 2: Version string
+        # 3: Version suffix (e.g. rc, alpha, etc.)
+        # 4: Development suffix
+        # 5: dev/post
+        # 6: git distance
+        # 7: short_hash
+        set(version-full ${CMAKE_MATCH_1})
+        set(version ${CMAKE_MATCH_2})
+        set(version-suffix ${CMAKE_MATCH_3})
+        if (CMAKE_MATCH_4)
+            set(distance ${CMAKE_MATCH_6})
+            set(short-hash ${CMAKE_MATCH_7})
+            string(JSON data SET
+                    ${data} dev-type \"${CMAKE_MATCH_5}\")
+        else ()
+            set(distance 0)
+        endif ()
+        message(DEBUG "Found version in PKG-INFO")
+    elseif (describe-name MATCHES "^describe-name:[ ]?(v?([0-9\\.]+)(-?[a-zA-z0-9]*)?(-([0-9]+)-g([a-f0-9]+))?)$")
+        # Case2: Git archive. Get everything from git_archival.txt file
+        set(mode git-archive)
+        # Regex match groups: https://regex101.com/r/osVZpm/4
+        # 1: Git describe
+        # 2: Version string
+        # 3: Version suffix (e.g. rc, alpha, etc.)
+        # 4: Development suffix
+        # 5: git distance
+        # 6: short_hash
+        set(describe ${CMAKE_MATCH_1})
+        set(version ${CMAKE_MATCH_2})
+        set(version-suffix ${CMAKE_MATCH_3})
+        if (CMAKE_MATCH_4)
+            set(distance ${CMAKE_MATCH_5})
+            set(short-hash ${CMAKE_MATCH_6})
+        else ()
+            set(distance 0)
+        endif ()
+        # Get commit hash
         file(STRINGS ${ARGS_GIT_ARCHIVAL_FILE} node
                 REGEX "^node:[ ]?(.*)")
+        # Cannot use Regex match from here, need to run string(REGEX MATCH) again
+        # https://gitlab.kitware.com/cmake/cmake/-/issues/23770
         string(REGEX MATCH "^node:[ ]?(.*)" node "${node}")
-        string(JSON data SET
-                ${data} commit \"${CMAKE_MATCH_1}\")
-        file(WRITE ${ARGS_TMP_FOLDER}/.git_commit ${CMAKE_MATCH_1})
-        message(DEBUG
-                "Found appropriate tag in .git_archival.txt file"
-        )
+        set(commit ${CMAKE_MATCH_1})
+        message(DEBUG "Found version in git-archival.txt")
     else ()
-        # If not it has to be computed from the git archive
+        # Default: Git repository. Call git commands
+        set(mode git)
         find_package(Git REQUIRED)
         # Test if project is a git repository
         execute_process(COMMAND ${GIT_EXECUTABLE} status
@@ -435,41 +521,109 @@ function(get_dynamic_version)
             )
             return()
         endif ()
-        # Get most recent commit hash
-        execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
-                WORKING_DIRECTORY ${ARGS_PROJECT_SOURCE}
-                OUTPUT_VARIABLE git-hash
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-                COMMAND_ERROR_IS_FATAL ANY)
         # Get version and describe-name
-        execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --long --abbrev=8 --match=?[0-9.]*
+        execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --long --match=?[0-9.]*
                 WORKING_DIRECTORY ${ARGS_PROJECT_SOURCE}
                 OUTPUT_VARIABLE describe-name
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                 COMMAND_ERROR_IS_FATAL ANY)
         # Match any part containing digits and periods (strips out rc and so on)
-        if (NOT describe-name MATCHES "^([v]?([0-9\\.]+)-([0-9]+)-g(.*))")
+        if (NOT describe-name MATCHES "^(v?([0-9\\.]+)(-?[a-zA-z0-9]*)?(-([0-9]+)-g([a-f0-9]+))?)$")
             message(${error_message_type}
                     "Version tag is ill-formatted\n"
                     "  Describe-name: ${describe-name}"
             )
             return()
         endif ()
-        string(JSON data SET
-                ${data} describe \"${CMAKE_MATCH_1}\")
-        file(WRITE ${ARGS_TMP_FOLDER}/.git_describe ${CMAKE_MATCH_1})
-        string(JSON data SET
-                ${data} version \"${CMAKE_MATCH_2}\")
-        file(WRITE ${ARGS_TMP_FOLDER}/.version ${CMAKE_MATCH_2})
-        string(JSON data SET
-                ${data} distance \"${CMAKE_MATCH_3}\")
-        string(JSON data SET
-                ${data} short_sha \"${CMAKE_MATCH_4}\")
-        string(JSON data SET
-                ${data} commit \"${git-hash}\")
-        file(WRITE ${ARGS_TMP_FOLDER}/.git_commit ${git-hash})
-        message(DEBUG
-                "Found appropriate tag from git"
+        # Regex match groups: https://regex101.com/r/GIfYI1/2
+        # 1: Git describe
+        # 2: Version string
+        # 3: Version suffix (e.g. rc, alpha, etc.)
+        # 4: Development suffix
+        # 5: git distance
+        # 6: short_hash
+        set(describe ${CMAKE_MATCH_1})
+        set(version ${CMAKE_MATCH_2})
+        set(version-suffix ${CMAKE_MATCH_3})
+        if (CMAKE_MATCH_4)
+            set(distance ${CMAKE_MATCH_5})
+            set(short-hash ${CMAKE_MATCH_6})
+        else ()
+            set(distance 0)
+        endif ()
+        # Get commit hash
+        execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
+                WORKING_DIRECTORY ${ARGS_PROJECT_SOURCE}
+                OUTPUT_VARIABLE commit
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                COMMAND_ERROR_IS_FATAL ANY)
+        message(DEBUG "Found version git repo")
+    endif ()
+
+    # Construct the version_full if it was not already provided
+    if (NOT version-full)
+        string(REGEX REPLACE "[-_]" "" version-suffix-sanitized "${version-suffix}")
+        if (distance EQUAL 0)
+            # If the distance is 0, just use the original tag version with sanitized suffix
+            set(version-full "${version}${version-suffix-sanitized}")
+        else ()
+            # Otherwise construct it according to VERSION_FULL_MODE
+            if (ARGS_VERSION_FULL_MODE STREQUAL DEV)
+                # In DEV mode, we bump the last digit of the version. If this is in version-suffix, like `-rcX`, then
+                # this must be bumped instead
+                if (version-suffix-sanitized MATCHES "([a-zA-Z]*)([0-9]+)")
+                    math(EXPR bumped_number "${CMAKE_MATCH_2} + 1")
+                    set(version-suffix-sanitized "${CMAKE_MATCH_1}${bumped_number}")
+                elseif (version MATCHES "([0-9\\.]*\\.)([0-9]+)")
+                    math(EXPR bumped_number "${CMAKE_MATCH_2} + 1")
+                    set(version "${CMAKE_MATCH_1}${bumped_number}")
+                else ()
+                    message(FATAL_ERROR "Assert False: version = ${version}")
+                endif ()
+                set(version-full "${version}${version-suffix-sanitized}.dev${distance}+g${short-hash}")
+            elseif (ARGS_VERSION_FULL_MODE STREQUAL POST)
+                set(version-full "${version}${version-suffix-sanitized}.post${distance}+g${short-hash}")
+            else ()
+                message(FATAL_ERROR "Assert False: VERSION_FULL_MODE = ${ARGS_VERSION_FULL_MODE}")
+            endif ()
+        endif ()
+    endif ()
+
+    # Construct the JSON data
+    string(JSON data SET ${data}
+            mode \"${mode}\"
+    )
+    string(JSON data SET ${data}
+            version \"${version}\"
+    )
+    file(WRITE ${ARGS_TMP_FOLDER}/.version ${version})
+    string(JSON data SET ${data}
+            version-full \"${version-full}\"
+    )
+    if (describe)
+        string(JSON data SET ${data}
+                describe \"${describe}\"
+        )
+        file(WRITE ${ARGS_TMP_FOLDER}/.git_describe ${describe})
+    endif ()
+    if (commit)
+        string(JSON data SET ${data}
+                commit \"${commit}\"
+        )
+        file(WRITE ${ARGS_TMP_FOLDER}/.git_commit ${commit})
+    endif ()
+    set(JSON data SET ${data}
+            version-full \"${version-full}\"
+    )
+    string(JSON data SET ${data}
+            version-suffix \"${version-suffix}\"
+    )
+    string(JSON data SET ${data}
+            distance ${distance}
+    )
+    if (short-hash)
+        string(JSON data SET ${data}
+                short-hash \"${short-hash}\"
         )
     endif ()
 
