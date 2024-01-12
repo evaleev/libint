@@ -5,6 +5,11 @@ else()
 endif()
 cmake_policy(SET CMP0079 NEW)
 
+if(NOT DEFINED LIBINT_VERSION)
+    # for indep bld of project(libint2-python), version not available from project(Libint2)
+    set(LIBINT_VERISON "2.8.1")  # for version for setup.py from libtool+cmake
+endif()
+
 project(libint2-python)
 
 if (NOT TARGET Python::Module)
