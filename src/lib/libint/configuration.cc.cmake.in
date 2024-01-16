@@ -24,8 +24,7 @@
 #include <cstring>
 
 const char *configuration_accessor(void) {
-  // return "@Libint2_CONFIG_COMPONENTS@";
-  return "(nyi)";
+  return "@Libint2_CONFIG_COMPONENTS@";
 }
 
 void libint_version(int *major, int *minor, int *micro) {

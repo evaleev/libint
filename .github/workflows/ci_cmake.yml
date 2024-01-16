@@ -1,0 +1,304 @@
+name: BuildCM
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build_repo:
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type : [ Release, Debug ]
+        os : [ macos-latest, ubuntu-20.04 ]
+        subproject : [ ON, OFF ]
+        exclude:
+          - build_type: Release
+            subproject: ON
+        include:
+          - os: ubuntu-20.04
+            cxx: g++-10
+            cc: gcc-10
+            compressor: gzip
+          - os: macos-latest
+            cxx: clang++
+            cc: clang
+            compressor: bzip2
+          - build_type: Debug
+            build_shared_libs: OFF
+            do_fortran: ON
+          - build_type: Release
+            build_shared_libs: ON
+            os: ubuntu-20.04
+            do_fortran: ON
+          - build_type: Release
+            build_shared_libs: ON
+            os: macos-latest
+            do_fortran: OFF
+          # someday when mac+fortran+shared is fixed (plus universal do_fortran: ON)
+          #- build_type: Release
+          #  build_shared_libs: ON
+
+    name: "Repo • ${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }} shared=${{ matrix.build_shared_libs }} fetch=${{ matrix.subproject }}"
+    runs-on: ${{ matrix.os }}
+    env:
+      CC: ${{ matrix.cc }}
+      CXX : ${{ matrix.cxx }}
+      CCACHE_DIR : ${{github.workspace}}/build/.ccache
+      CCACHE_COMPRESS : true
+      CCACHE_COMPRESSLEVEL : 6
+      BUILD_CONFIG : >
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -D BUILD_SHARED_LIBS=${{ matrix.build_shared_libs }}
+        -D LIBINT_BUILD_LIBRARY_AS_SUBPROJECT=${{ matrix.subproject }}
+        -D CMAKE_INSTALL_PREFIX=${{github.workspace}}/build/library
+        -D WITH_MAX_AM=2;2
+        -D WITH_ERI_MAX_AM=2;2
+        -D WITH_ERI3_MAX_AM=3;2
+        -D ENABLE_ERI=1
+        -D ENABLE_ERI3=1
+        -D ENABLE_ONEBODY=1
+        -D DISABLE_ONEBODY_PROPERTY_DERIVS=ON
+        -D MULTIPOLE_MAX_ORDER=2
+        -D LIBINT2_REQUIRE_CXX_API_COMPILED=ON
+        -D LIBINT2_ENABLE_FORTRAN=${{ matrix.do_fortran }}
+        -D LIBINT2_ENABLE_PYTHON=ON
+        -D Python_EXECUTABLE=${{ matrix.os == 'macos-latest' && '/usr/local/Frameworks/Python.framework/Versions/3.11/bin/python3.11' || '/usr/bin/python3.8' }}
+        -D EXPORT_COMPRESSOR=${{ matrix.compressor }}
+
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+      # fetch-depth: 0 for git history to compute version
+
+    - id: skip_check
+      name: Check if can skip
+      uses: fkirc/skip-duplicate-actions@v5
+      with:
+        cancel_others: 'true'
+
+    - name: Create Build Environment
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      run: |
+        cmake -E make_directory ${{github.workspace}}/build/compiler
+        cmake -E make_directory ${{github.workspace}}/build/library
+        cmake -E make_directory ${{github.workspace}}/build/library_test
+
+    - name: Install prerequisite MacOS packages
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-latest' }}
+      run: |
+        brew install ninja gcc@10 boost eigen ccache python@3.11 numpy scipy
+        echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
+        echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
+
+    - name: Install prerequisite Ubuntu packages
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install ninja-build g++-10 gfortran-10 liblapack-dev libboost-dev libeigen3-dev ccache python3-numpy python3-scipy
+        echo "FC=/usr/bin/gfortran-10" >> $GITHUB_ENV
+        echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
+
+    - name: Prepare ccache timestamp
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      id: ccache_cache_timestamp
+      shell: cmake -P {0}
+      run: |
+        string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
+        message("\"timestamp=${current_date}\" >> $GITHUB_OUTPUT")
+
+    - name: Setup ccache cache files
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      uses: actions/cache@v3
+      with:
+        path: ${{github.workspace}}/build/.ccache
+        key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+        restore-keys: |
+          ${{ matrix.config.name }}-ccache-
+
+    - name: Build Libint generator
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      # Use a bash shell so we can use the same syntax for environment variable
+      # access regardless of the host operating system
+      shell: bash
+      working-directory: ${{github.workspace}}/build/compiler
+      run: |
+        git describe --tags
+        cmake -S ../.. -B build $BUILD_CONFIG --log-level=DEBUG
+        cmake --build build --target check-libint2compiler
+
+    - name: Generate Libint library tarball
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      shell: bash
+      working-directory: ${{github.workspace}}/build/compiler
+      run: |
+        cmake --build build --target export
+        cd build && echo "ARTIFACT=`ls -1 libint*z*`" >> $GITHUB_ENV
+
+    - name: Archive Libint library tarball
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type == 'Release' }}
+      uses: actions/upload-artifact@v3
+      with:
+        if-no-files-found: error
+        name: ${{ runner.os }}-${{ matrix.cxx }}
+        path: ${{github.workspace}}/build/compiler/build/${{ env.ARTIFACT }}
+        retention-days: 1
+
+    - name: Build Libint library (FetchContent=${{ matrix.subproject }})
+      if: ${{ steps.skip_check.outputs.should_skip }}
+      shell: bash
+      working-directory: ${{github.workspace}}/build/compiler
+      run: cmake --build build
+
+    - name: Test Libint library - unit tests
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      shell: bash
+      working-directory: ${{github.workspace}}/build/compiler
+      run: CTEST_PARALLEL_LEVEL=2 cmake --build build --target check-libint2
+
+    - name: Build & Test Python bindings
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      shell: bash
+      working-directory: ${{github.workspace}}/build/compiler
+      run: cmake --build build --target check-python
+
+  build_export:
+    # to debug the second stage, it is handy to short-circuit the first stage:
+    # * suppress steps beyond "Archive Library Tarball" with "if: false"
+    # * for further reduction, run mostly Linux lanes with "os : [ ubuntu-20.04 ]"
+    needs: build_repo
+    if: always() && (needs.build_repo.outputs.should_skip != 'true')
+    strategy:
+      fail-fast: false
+      matrix:
+        cfg:
+          - runs-on: ubuntu-latest
+            lane: ubuntu-gnu
+            libargs: >
+              -D BUILD_SHARED_LIBS=ON
+              -D LIBINT2_ENABLE_FORTRAN=ON
+            testargs: ""
+
+          - runs-on: windows-latest
+            lane: windows-clang-cl
+            libargs: >
+              -G Ninja
+              -D CMAKE_BUILD_TYPE=Release
+              -D BUILD_SHARED_LIBS=OFF
+              -D CMAKE_CXX_COMPILER=clang-cl
+              -D CMAKE_C_COMPILER=clang-cl
+            testargs: >
+              -G Ninja
+              -D CMAKE_BUILD_TYPE=Release
+              -D CMAKE_CXX_COMPILER=clang-cl
+              -D CMAKE_C_COMPILER=clang-cl
+
+          - runs-on: macos-latest
+            lane: macos-clang
+            libargs: >
+              -D BUILD_SHARED_LIBS=OFF
+              -D LIBINT2_ENABLE_FORTRAN=ON
+              # return to shared when mac+fortran+shared is fixed
+            testargs: ""
+
+          - runs-on: ubuntu-latest
+            lane: ubuntu-intel
+            libargs: >
+              -D CMAKE_CXX_COMPILER=icpx
+              -D CMAKE_CXX_FLAGS="--gcc-toolchain=${CONDA_PREFIX} --sysroot=${CONDA_PREFIX}/${HOST}/sysroot -target ${HOST}"
+            testargs: >
+              -D CMAKE_CXX_COMPILER=icpx
+              -D CMAKE_CXX_FLAGS="--gcc-toolchain=${CONDA_PREFIX} --sysroot=${CONDA_PREFIX}/${HOST}/sysroot -target ${HOST}"
+
+    name: "Export • ${{ matrix.cfg.lane }}"
+    runs-on: ${{ matrix.cfg.runs-on }}
+
+    steps:
+    # Note we're not checking out the repo. All src from Linux tarball generated above.
+
+    - uses: actions/download-artifact@v3
+      with:
+        name: Linux-g++-10
+
+    - name: Write a Conda Env File
+      shell: bash -l {0}
+      run: |
+        cat > export.yaml <<EOF
+        name: test
+        channels:
+          - conda-forge
+        dependencies:
+          - cmake
+          - ninja
+          - cxx-compiler
+          - fortran-compiler
+          - python
+          - boost
+          - eigen
+          - numpy
+          - scipy
+          - pybind11
+          #- dpcpp_linux-64
+        EOF
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          sed -i "s/- cxx/#- cxx/g" export.yaml
+          sed -i "s/- fortran/#- fortran/g" export.yaml
+        fi
+        if [[ "${{ matrix.cfg.lane }}" == "ubuntu-intel" ]]; then
+          sed -i "s/#- dpcpp_linux-64/- dpcpp_linux-64/g" export.yaml
+        fi
+        cat export.yaml
+
+    - name: Create Conda Environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        miniforge-variant: Mambaforge
+        use-mamba: true
+        python-version: "3.9"
+        activate-environment: test
+        channels: conda-forge
+        environment-file: export.yaml
+        show-channel-urls: true
+
+    - name: Environment Information
+      shell: bash -l {0}
+      run: |
+        conda info
+        conda list
+
+    - name: Prepare compiler environment for Windows
+      if: ${{ runner.os == 'Windows' }}
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Extract, Build, Install Libint Library
+      shell: bash -l {0}
+      run: |
+        tar -zxf libint*tgz
+        mkdir libint && mv libint-2*/* libint/ && cd libint/
+        cmake \
+          -S . \
+          -B build \
+          -G Ninja \
+          -D CMAKE_INSTALL_PREFIX="${{github.workspace}}/installed" \
+          -D CMAKE_CXX_COMPILER=${CXX} \
+          -D LIBINT2_REQUIRE_CXX_API_COMPILED=ON \
+          -D LIBINT2_ENABLE_PYTHON=ON \
+          -D CMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
+          ${{ matrix.cfg.libargs }}
+        cmake --build build --target install libint2-python-test
+
+    - name: Test Libint library - unit tests
+      shell: bash -l {0}
+      working-directory: ${{github.workspace}}/libint/build
+      run: |
+        cmake --build . --target check
+
