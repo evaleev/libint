@@ -26,6 +26,7 @@
 #include <libint2/basis.h>
 #include <libint2/boys.h>
 #include <libint2/pivoted_cholesky.h>
+#include <libint2/soad_fock.h>
 #include <math.h>
 
 #include <Eigen/Dense>
@@ -127,17 +128,27 @@ inline std::vector<size_t> map_shell_to_basis_function(
   return result;
 }
 
-/// @brief computes the Coulomb matrix (\mu|rij^{-1}|\nu)  for a set of shells
+/// @brief computes 2 indexed integrals for an operator from a set of shells
+/// @param op operator
 /// @param shells set of shells
+/// @param atoms vector of atoms
 /// @return Coulomb matrix
-inline Eigen::MatrixXd compute_coulomb_matrix(
-    const std::vector<Shell> &shells) {
+inline Eigen::MatrixXd compute_2indexed_ints(const Operator &op,
+                                             const std::vector<Shell> &shells,
+                                             const std::vector<Atom> atoms) {
   const auto n = nbf(shells);
   Eigen::MatrixXd result = Eigen::MatrixXd::Zero(n, n);
   using libint2::Engine;
-  Engine engine(libint2::Operator::coulomb, max_nprim(shells), max_l(shells));
-  engine.set(BraKet::xs_xs);
-  engine.set(ScreeningMethod::Conservative);
+  Engine engine(op, max_nprim(shells), max_l(shells));
+  if (op == libint2::Operator::coulomb) {
+    engine.set(BraKet::xs_xs);
+    engine.set(ScreeningMethod::Conservative);
+  }
+  if (op == libint2::Operator::nuclear) {
+    engine.
+
+        set_params(libint2::make_point_charges(atoms));
+  }
   const auto shell2bf = map_shell_to_basis_function(shells);
   const auto &buf = engine.results();
   for (size_t s1 = 0; s1 != shells.size(); ++s1) {
@@ -175,7 +186,8 @@ inline std::vector<std::vector<Shell>> split_by_L(
 /// pivoted Cholesky decomposition
 /// @return reduced set of product functions
 inline std::vector<Shell> shell_pivoted_cholesky(
-    const std::vector<Shell> &shells, const double cholesky_threshold) {
+    const std::vector<Shell> &shells, const double cholesky_threshold,
+    bool do_fd = false, std::vector<double> fd_occ_vec = {}) {
   const auto n = shells.size();  // number of shells
   std::vector<size_t>
       shell_indices;  // hash map of basis function indices to shell indices
@@ -189,7 +201,18 @@ inline std::vector<Shell> shell_pivoted_cholesky(
       shell_indices.push_back(i);
   }
   assert(shell_indices.size() == nbf);
-  const auto C = compute_coulomb_matrix(shells);
+  Atom dummy_atom;
+  auto C =
+      compute_2indexed_ints(libint2::Operator::coulomb, shells, {dummy_atom});
+
+  if (do_fd) {
+    for (size_t i = 0; i < C.rows(); ++i) {
+      for (size_t j = 0; j < C.cols(); ++j) {
+        C(i, j) *= std::sqrt(fd_occ_vec[i] * fd_occ_vec[j]);
+      }
+    }
+  }
+
   std::vector<size_t> pivot(nbf);
   for (auto i = 0; i < nbf; ++i) {
     pivot[i] = i;
@@ -236,17 +259,65 @@ class DFBasisSetGenerator {
   /// @param cholesky_threshold threshold for choosing a product functions via
   /// pivoted Cholesky decomposition
   DFBasisSetGenerator(std::string obs_name, const Atom &atom,
-                      const double cholesky_threshold = 1e-7) {
+                      const double cholesky_threshold = 1e-7,
+                      bool do_fd = false, std::string minbs_name = "MINI") {
     // get AO basis shells for each atom
     const auto atom_bs = BasisSet(obs_name, {atom});
     const auto obs_shells = atom_bs.shells();
     // get primitive shells from AO functions
     const auto primitive_shells = detail::uncontract(obs_shells);
     // compute candidate shells
-    candidate_shells_ = detail::candidate_functions(primitive_shells);
-    cholesky_threshold_ = cholesky_threshold;
-  }
+    auto candidate_shells_unsplitted =
+        detail::candidate_functions(primitive_shells);
+    // split candidate shells by angular momentum
+    auto candidate_shells_split =
+        detail::split_by_L(candidate_shells_unsplitted);
 
+    for (size_t i = 0; i < candidate_shells_split.size(); ++i) {
+      candidate_shells_.insert(candidate_shells_.end(),
+                               candidate_shells_split[i].begin(),
+                               candidate_shells_split[i].end());
+    }
+
+    std::vector<size_t> L_hash_map;
+    for (auto &&shellvec : candidate_shells_split) {
+      L_hash_map.push_back(nbf(shellvec));
+    }
+
+    cholesky_threshold_ = cholesky_threshold;
+    do_fd_ = do_fd;
+    if (do_fd_) {
+      const auto minbs = BasisSet(minbs_name, {atom});
+      const auto T = detail::compute_2indexed_ints(libint2::Operator::kinetic,
+                                                   candidate_shells_, {atom});
+      const auto V = detail::compute_2indexed_ints(libint2::Operator::nuclear,
+                                                   candidate_shells_, {atom});
+      BasisSet candidate_bs(candidate_shells_);
+      auto H = T + V;
+      auto F_soad = compute_soad_fock(candidate_bs, minbs, {atom});
+      auto F = H + F_soad;
+
+      size_t L = 0;
+      size_t n_L_nfs = 0;
+
+      auto base_val = F(0, 0);
+
+      fd_occ_vec_.resize(L_hash_map.size());
+      for (size_t i = 0; i < F.cols(); ++i) {
+        if (n_L_nfs != L_hash_map[L]) {
+          fd_occ_vec_[L].push_back(1. / (1. + std::exp(F(i, i) / 10000.))
+                                   // kbT = 1.0 this needs to be changed
+          );
+          ++n_L_nfs;
+        } else {
+          ++L;
+          n_L_nfs = 1;
+          fd_occ_vec_[L].push_back(1. / (1. + std::exp(F(i, i) / 10000.)));
+          // kbT = 1.0 this needs to be changed);
+        }
+      }
+    }
+  }
   /// @brief constructor for DFBS generator class, generates density fitting
   /// basis set from products of AO shells provided by user
   /// @param cluster vector of vector of shells for each atom
@@ -276,11 +347,19 @@ class DFBasisSetGenerator {
           detail::split_by_L(candidate_shells_);
       for (size_t i = 0; i < candidate_splitted_in_L.size(); ++i) {
         std::vector<Shell> reduced_shells_L;
-        if (candidate_splitted_in_L[i].size() > 1)
-          reduced_shells_L = detail::shell_pivoted_cholesky(
-              candidate_splitted_in_L[i], cholesky_threshold_);
-        else
+        if (candidate_splitted_in_L[i].size() > 1) {
+          if (do_fd_)
+            reduced_shells_L = detail::shell_pivoted_cholesky(
+                candidate_splitted_in_L[i], cholesky_threshold_, do_fd_,
+                fd_occ_vec_[i]);
+          else
+            reduced_shells_L = detail::shell_pivoted_cholesky(
+                candidate_splitted_in_L[i], cholesky_threshold_);
+        } else
           reduced_shells_L = candidate_splitted_in_L[i];
+
+        std::cout << "Number of shells for L = " << i << " is "
+                  << reduced_shells_L.size() << std::endl;
         reduced_shells_.insert(reduced_shells_.end(), reduced_shells_L.begin(),
                                reduced_shells_L.end());
       }
@@ -299,6 +378,9 @@ class DFBasisSetGenerator {
   std::vector<Shell> candidate_shells_;  // full set of product functions
   std::vector<Shell> reduced_shells_;    // reduced set of product functions
   bool reduced_shells_computed_ = false;
+  bool do_fd_;
+  std::vector<std::vector<double>>
+      fd_occ_vec_;  // occupation vector for FD scaling factors separated by L
 };
 
 }  // namespace libint2
