@@ -32,10 +32,99 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <algorithm>
+#include <tuple>
 
 namespace libint2 {
 
 namespace detail {
+
+inline double fd_occupation(double e) { return 1. / (1. + std::exp(e)); }
+
+/// computes a map for contraction vector in a shell
+/// @param[in] shell libint shell of which a map is to be computed
+/// @return vector of lower bound indices to shell contraction vector
+inline std::vector<size_t> shell_hashmap(const libint2::Shell &shell) {
+  std::vector<size_t> shell_map;
+  auto contr = shell.contr;
+  size_t n = 0;
+  for (const auto &a : contr) {
+    shell_map.push_back(n);
+    n += a.size();
+  }
+  return shell_map;
+}
+
+/// computes contraction matrix for an uncontracted shell to a contracted shell
+/// @param[in] unc_shell a uncontracted shell
+/// @param[in] contr_shell a contracted shell
+/// @return a contraction matrix from uncontracted shell to contracted shell
+inline Eigen::MatrixXd shell_contraction_matrix(
+    const libint2::Shell &unc_shell, const libint2::Shell &contr_shell) {
+  Eigen::MatrixXd result(unc_shell.size(), contr_shell.size());
+  result.fill(0.0);
+  // check to see if the shell belongs to same center
+  if (unc_shell.O == contr_shell.O) {
+    auto contr_exps = contr_shell.alpha;
+    auto unc_exp = unc_shell.alpha[0];
+    // check if the uncontracted primitive exponent present in the contracted
+    // shell
+    if (std::find(contr_exps.begin(), contr_exps.end(), unc_exp) !=
+        contr_exps.end()) {
+      // get index of the exponent in contracted shell
+      std::int64_t exponent_index = 0;
+      for (auto i = 0; i < contr_exps.size(); i++) {
+        if (unc_exp == contr_exps[i]) exponent_index = i;
+      }
+      // create hashmaps for all contractions in contracted shell
+      auto unc_hashmap = shell_hashmap(unc_shell);
+      auto contr_hashmap = shell_hashmap(contr_shell);
+      // iterate through contractions in contracted shell
+      for (auto p1 = 0; p1 < unc_shell.contr.size(); p1++) {
+        for (auto p2 = 0; p2 < contr_shell.contr.size(); p2++) {
+          auto unc_contr = unc_shell.contr[p1];
+          auto contr_contr = contr_shell.contr[p2];
+          auto n1 = unc_contr.size();
+          auto n2 = contr_contr.size();
+          // check to see if the contraction belongs to same am (l)
+          if (unc_contr.l == contr_contr.l) {
+            Eigen::MatrixXd block(unc_contr.size(), contr_contr.size());
+            block.fill(0.0);
+            // fill diagonal elements with transformation coefficient
+            for (auto diag = 0; diag < contr_contr.size(); diag++) {
+              block(diag, diag) =
+                  contr_contr.coeff[exponent_index] / unc_contr.coeff[0];
+            }
+            result.block(unc_hashmap[p1], contr_hashmap[p2], n1, n2) = block;
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  else
+    return result;
+}
+
+inline Eigen::MatrixXd contraction_matrix(const BasisSet &primitive_basis,
+                                          const BasisSet &contracted_basis) {
+  const auto &unc_shell2bf = primitive_basis.shell2bf();
+  const auto &contr_shell2bf = contracted_basis.shell2bf();
+  const auto &unc_shells = primitive_basis.shells();
+  const auto &contr_shells = contracted_basis.shells();
+  Eigen::MatrixXd result(primitive_basis.nbf(), contracted_basis.nbf());
+  result.fill(0.0);
+  for (auto s1 = 0; s1 < unc_shells.size(); s1++) {
+    for (auto s2 = 0; s2 < contr_shells.size(); s2++) {
+      auto n1 = unc_shells[s1].size();
+      auto n2 = contr_shells[s2].size();
+      result.block(unc_shell2bf[s1], contr_shell2bf[s2], n1, n2) =
+          shell_contraction_matrix(unc_shells[s1], contr_shells[s2]);
+    }
+  }
+
+  return result;
+}
 
 /// Computes uncontracted shells from a vector of shells
 /// @param[in] cluster a vector of shells
@@ -104,16 +193,37 @@ inline std::vector<Shell> product_functions(
   return product_functions;
 }
 
-/// @brief creates a set of candidate product shells from a set of primitive
-/// shells
-/// @param primitive_shells set of primitive shells
-/// @return set of candidate product shells
-inline std::vector<Shell> candidate_functions(
-    const std::vector<Shell> &primitive_shells) {
-  return product_functions(primitive_shells);
+inline std::vector<std::tuple<Shell, double>> product_functions(
+    const std::vector<std::tuple<Shell, double>> &shells_weights) {
+  std::vector<std::tuple<Shell, double>> product_functions;
+  for (size_t i = 0; i < shells_weights.size(); ++i) {
+    for (size_t j = 0; j <= i; ++j) {
+      const auto si = get<0>(shells_weights[i]);
+      const auto sj = get<0>(shells_weights[j]);
+      const auto li = si.contr[0].l;
+      const auto lj = sj.contr[0].l;
+      for (auto L = std::abs(li - lj); L <= li + lj; L++) {
+        const auto alpha = libint2::svector<double>({alpha_eff(si, sj, L)});
+        libint2::svector<Shell::Contraction> contr_;
+        Shell::Contraction contr1;
+        contr1.l = L;
+        contr1.pure = true;  // libint2 needs solid harmonics for 2c2b integrals
+        contr1.coeff = {1.0};
+        contr_.push_back(contr1);
+        assert(si.O == sj.O);
+        const auto shell = Shell(alpha, contr_, si.O);
+        const auto weight =
+            get<1>(shells_weights[i]) * get<1>(shells_weights[j]);
+        std::tuple<Shell, double> shell_weight{shell, weight};
+        if (std::find(product_functions.begin(), product_functions.end(),
+                      shell_weight) == product_functions.end())
+          product_functions.emplace_back(shell_weight);
+      }
+    }
+  }
+  return product_functions;
 }
 
-/// @brief returns a hash map of shell indices to basis function indices
 inline std::vector<size_t> map_shell_to_basis_function(
     const std::vector<libint2::Shell> &shells) {
   std::vector<size_t> result;
@@ -149,7 +259,7 @@ inline Eigen::MatrixXd compute_2indexed_ints(const Operator &op,
 
         set_params(libint2::make_point_charges(atoms));
   }
-  const auto shell2bf = map_shell_to_basis_function(shells);
+  const auto shell2bf = detail::map_shell_to_basis_function(shells);
   const auto &buf = engine.results();
   for (size_t s1 = 0; s1 != shells.size(); ++s1) {
     auto bf1 = shell2bf[s1];
@@ -179,15 +289,40 @@ inline std::vector<std::vector<Shell>> split_by_L(
   return sorted_shells;
 }
 
+inline std::vector<std::vector<std::tuple<Shell, double>>> split_by_L(
+    const std::vector<std::tuple<Shell, double>> &shells_weights_vec,
+    int lmax) {
+  std::vector<std::vector<std::tuple<Shell, double>>> result;
+  result.resize(lmax + 1);
+  for (auto &&candidate : shells_weights_vec) {
+    auto l = get<0>(candidate).contr[0].l;
+    result[l].push_back(candidate);
+  }
+  return result;
+}
+
 /// @brief computes the reduced set of product functions via pivoted Cholesky
 /// decomposition
-/// @param shells set of shells
+/// @param shells_weights set of tuples of shells and their weights
 /// @param cholesky_threshold threshold for choosing a product function via
 /// pivoted Cholesky decomposition
 /// @return reduced set of product functions
+
 inline std::vector<Shell> shell_pivoted_cholesky(
-    const std::vector<Shell> &shells, const double cholesky_threshold,
-    bool do_fd = false, std::vector<double> fd_occ_vec = {}) {
+    const std::vector<std::tuple<Shell, double>> &shells_weights,
+    const double cholesky_threshold) {
+  std::vector<Shell> shells;
+  std::vector<double> weights;
+
+  for (auto &&shell_weight : shells_weights) {
+    const auto shell = get<0>(shell_weight);
+    shells.push_back(shell);
+    const auto L = shell.contr[0].l;
+    for (size_t l = 0; l < 2 * L + 1; ++l) {
+      weights.push_back(get<1>(shell_weight));
+    }
+  }
+
   const auto n = shells.size();  // number of shells
   std::vector<size_t>
       shell_indices;  // hash map of basis function indices to shell indices
@@ -205,11 +340,9 @@ inline std::vector<Shell> shell_pivoted_cholesky(
   auto C =
       compute_2indexed_ints(libint2::Operator::coulomb, shells, {dummy_atom});
 
-  if (do_fd) {
-    for (size_t i = 0; i < C.rows(); ++i) {
-      for (size_t j = 0; j < C.cols(); ++j) {
-        C(i, j) *= std::sqrt(fd_occ_vec[i] * fd_occ_vec[j]);
-      }
+  for (size_t i = 0; i < C.rows(); ++i) {
+    for (size_t j = 0; j < C.cols(); ++j) {
+      C(i, j) *= std::sqrt(weights[i] * weights[j]);
     }
   }
 
@@ -260,82 +393,40 @@ class DFBasisSetGenerator {
   /// pivoted Cholesky decomposition
   DFBasisSetGenerator(std::string obs_name, const Atom &atom,
                       const double cholesky_threshold = 1e-7,
-                      bool do_fd = false, std::string minbs_name = "MINI") {
+                      bool use_weights = false,
+                      std::string minbs_name = "MINI") {
     // get AO basis shells for each atom
-    const auto atom_bs = BasisSet(obs_name, {atom});
-    const auto obs_shells = atom_bs.shells();
-    // get primitive shells from AO functions
-    const auto primitive_shells = detail::uncontract(obs_shells);
-    // compute candidate shells
-    auto candidate_shells_unsplitted =
-        detail::candidate_functions(primitive_shells);
-    // split candidate shells by angular momentum
-    auto candidate_shells_split =
-        detail::split_by_L(candidate_shells_unsplitted);
-
-    for (size_t i = 0; i < candidate_shells_split.size(); ++i) {
-      candidate_shells_.insert(candidate_shells_.end(),
-                               candidate_shells_split[i].begin(),
-                               candidate_shells_split[i].end());
-    }
-
-    std::vector<size_t> L_hash_map;
-    for (auto &&shellvec : candidate_shells_split) {
-      L_hash_map.push_back(nbf(shellvec));
-    }
-
+    atom_ = atom;
+    obs_ = BasisSet(obs_name, {atom_});
+    minbs_ = BasisSet(minbs_name, {atom_});
     cholesky_threshold_ = cholesky_threshold;
-    do_fd_ = do_fd;
-    if (do_fd_) {
-      const auto minbs = BasisSet(minbs_name, {atom});
-      const auto T = detail::compute_2indexed_ints(libint2::Operator::kinetic,
-                                                   candidate_shells_, {atom});
-      const auto V = detail::compute_2indexed_ints(libint2::Operator::nuclear,
-                                                   candidate_shells_, {atom});
-      BasisSet candidate_bs(candidate_shells_);
-      auto H = T + V;
-      auto F_soad = compute_soad_fock(candidate_bs, minbs, {atom});
-      auto F = H + F_soad;
-
-      size_t L = 0;
-      size_t n_L_nfs = 0;
-
-      auto base_val = F(0, 0);
-
-      fd_occ_vec_.resize(L_hash_map.size());
-      for (size_t i = 0; i < F.cols(); ++i) {
-        if (n_L_nfs != L_hash_map[L]) {
-          fd_occ_vec_[L].push_back(1. / (1. + std::exp(F(i, i) / 10000.))
-                                   // kbT = 1.0 this needs to be changed
-          );
-          ++n_L_nfs;
-        } else {
-          ++L;
-          n_L_nfs = 1;
-          fd_occ_vec_[L].push_back(1. / (1. + std::exp(F(i, i) / 10000.)));
-          // kbT = 1.0 this needs to be changed);
-        }
-      }
-    }
+    use_weights_ = use_weights;
+    if (use_weights_) compute_weights();
+    candidates_ = candidates();
   }
   /// @brief constructor for DFBS generator class, generates density fitting
   /// basis set from products of AO shells provided by user
   /// @param cluster vector of vector of shells for each atom
   /// @param cholesky_threshold threshold for choosing a product functions via
   /// pivoted Cholesky decomposition
-  DFBasisSetGenerator(const std::vector<Shell> &shells,
-                      const double cholesky_threshold = 1e-7) {
-    const auto primitive_shells = detail::uncontract(shells);
-    candidate_shells_ = detail::candidate_functions(primitive_shells);
+  DFBasisSetGenerator(const std::vector<Shell> &shells, const Atom &atom,
+                      const double cholesky_threshold = 1e-7,
+                      bool use_weights = false,
+                      const std::vector<Shell> &mini_shells = {}) {
+    atom_ = atom;
+    obs_ = BasisSet(shells);
+    minbs_ = BasisSet(mini_shells);
     cholesky_threshold_ = cholesky_threshold;
+    use_weights_ = use_weights;
+    if (use_weights_) {
+      compute_weights();
+    }
+    candidates_ = candidates();
   }
 
   DFBasisSetGenerator() = default;
 
   ~DFBasisSetGenerator() = default;
-
-  /// @brief returns the candidate shells (full set of product functions)
-  std::vector<Shell> candidate_shells() { return candidate_shells_; }
 
   /// @brief returns the reduced shells (reduced set of product functions)
   /// computed via pivoted Cholesky decomposition
@@ -343,29 +434,95 @@ class DFBasisSetGenerator {
     if (reduced_shells_computed_)
       return reduced_shells_;
     else {
-      const auto candidate_splitted_in_L =
-          detail::split_by_L(candidate_shells_);
-      for (size_t i = 0; i < candidate_splitted_in_L.size(); ++i) {
+      const auto candidates_in_L =
+          detail::split_by_L(candidates_, 2 * max_l(obs_.shells()));
+      for (size_t i = 0; i < candidates_in_L.size(); ++i) {
         std::vector<Shell> reduced_shells_L;
-        if (candidate_splitted_in_L[i].size() > 1) {
-          if (do_fd_)
-            reduced_shells_L = detail::shell_pivoted_cholesky(
-                candidate_splitted_in_L[i], cholesky_threshold_, do_fd_,
-                fd_occ_vec_[i]);
-          else
-            reduced_shells_L = detail::shell_pivoted_cholesky(
-                candidate_splitted_in_L[i], cholesky_threshold_);
+        if (candidates_in_L[i].size() > 1) {
+          reduced_shells_L = detail::shell_pivoted_cholesky(
+              candidates_in_L[i], cholesky_threshold_);
         } else
-          reduced_shells_L = candidate_splitted_in_L[i];
+          reduced_shells_L = {get<0>(candidates_in_L[i][0])};
 
-        std::cout << "Number of shells for L = " << i << " is "
+        std::cout << "Number of shells in L = " << i << " is "
                   << reduced_shells_L.size() << std::endl;
         reduced_shells_.insert(reduced_shells_.end(), reduced_shells_L.begin(),
                                reduced_shells_L.end());
       }
       reduced_shells_computed_ = true;
+      return reduced_shells_;
     }
-    return reduced_shells_;
+  }
+
+  /// @brief returns a set of weights of primitive obs shells
+  void compute_weights() {
+    const auto T = detail::compute_2indexed_ints(libint2::Operator::kinetic,
+                                                 obs_.shells(), {atom_});
+    const auto V = detail::compute_2indexed_ints(libint2::Operator::nuclear,
+                                                 obs_.shells(), {atom_});
+    auto H = T + V;
+    auto F_soad = compute_soad_fock(obs_, minbs_, {atom_});
+    auto F = H + F_soad;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(F);
+    auto C = es.eigenvectors();
+    auto E = es.eigenvalues();
+    auto primitive_bs = BasisSet(detail::uncontract(obs_.shells()));
+    const auto contraction_matrix =
+        detail::contraction_matrix(primitive_bs, obs_);
+    auto C_unc = contraction_matrix * C;
+
+    const auto nocc = atom_.atomic_number / 2;
+    auto C_occ = C_unc.leftCols(nocc);
+    auto D = C_occ * C_occ.transpose();
+
+    // compute square of coefficients
+    //      Eigen::MatrixXd C_unc_sqr(C_unc.rows(),C_unc.cols());
+    //      for(size_t i=0;i<C_unc.rows();++i){
+    //          for(size_t j=0;j<C_unc.cols();++j){
+    //              C_unc_sqr(i,j) = C_unc(i,j)*C_unc(i,j);
+    //          }
+    //      }
+    //
+    //      std::vector<double> prim_func_weights;
+    //
+    //      for(size_t i=0;i<C_unc.rows();++i){
+    //          double max_weight = 0.0;
+    //          for(size_t j=0;j<C_unc.cols();++j){
+    //              max_weight = std::max(max_weight,detail::fd_occupation(E(j))
+    //              * C_unc_sqr(i,j));
+    //          }
+    //          prim_func_weights.push_back(max_weight);
+    //      }
+
+    auto prim_shells = primitive_bs.shells();
+    size_t nfns = 0;
+    for (size_t i = 0; i < prim_shells.size(); ++i) {
+      double max_weight = 0.0;
+      for (size_t j = 0; j < prim_shells[i].size(); ++j) {
+        // max_weight = std::max(max_weight, prim_func_weights[nfns]);
+        max_weight = std::max(max_weight, D.diagonal()(nfns));
+        nfns++;
+      }
+      prim_obs_weights_.push_back(max_weight);
+    }
+  }
+
+  const std::vector<std::tuple<Shell, double>> candidates() {
+    const auto prim_shells = detail::uncontract(obs_.shells());
+
+    // create tuple of shells and their weights
+    std::vector<std::tuple<Shell, double>> prim_shell_weights;
+    for (size_t i = 0; i < prim_shells.size(); ++i) {
+      std::tuple<Shell, double> shell_weight;
+      get<0>(shell_weight) = prim_shells[i];
+      if (use_weights_)
+        get<1>(shell_weight) = prim_obs_weights_[i];
+      else
+        get<1>(shell_weight) = 1.;
+      prim_shell_weights.push_back(shell_weight);
+    }
+    const auto candidates = detail::product_functions(prim_shell_weights);
+    return candidates;  // return candidates once done
   }
 
   /// @brief returns the reduced basis set (reduced set of product
@@ -374,13 +531,16 @@ class DFBasisSetGenerator {
   const BasisSet reduced_basis() { return BasisSet(reduced_shells()); }
 
  private:
+  BasisSet obs_;
+  BasisSet minbs_;
+  Atom atom_;
   double cholesky_threshold_;
-  std::vector<Shell> candidate_shells_;  // full set of product functions
-  std::vector<Shell> reduced_shells_;    // reduced set of product functions
+  std::vector<std::tuple<Shell, double>>
+      candidates_;  // full set of product functions and their weights
+  std::vector<Shell> reduced_shells_;  // reduced set of product functions
   bool reduced_shells_computed_ = false;
-  bool do_fd_;
-  std::vector<std::vector<double>>
-      fd_occ_vec_;  // occupation vector for FD scaling factors separated by L
+  bool use_weights_;
+  std::vector<double> prim_obs_weights_;
 };
 
 }  // namespace libint2
