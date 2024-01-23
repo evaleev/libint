@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -24,4 +24,3 @@
 #include <libint2/cxxapi.h>
 
 #endif /* header guard */
-

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -54,7 +54,7 @@ template <typename T>
 struct has_static_size : std::false_type {};
 
 template <typename T, typename A>
-void resize(std::vector<T,A>& x, std::size_t n) {
+void resize(std::vector<T, A>& x, std::size_t n) {
   x.resize(n);
 }
 
@@ -82,7 +82,8 @@ struct FixedOrderedIntegerPartitionIterator {
   template <typename Seq = Sequence>
   explicit FixedOrderedIntegerPartitionIterator(
       unsigned_integer_type n,
-      typename std::enable_if<detail::has_static_size<Seq>::value>::type* = nullptr)
+      typename std::enable_if<detail::has_static_size<Seq>::value>::type* =
+          nullptr)
       : n_(n) {
     assert(n >= 0);
     // initialize partition_

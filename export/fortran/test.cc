@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2018-2020 Edward F. Valeev
+ *  Copyright (C) 2018-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -20,26 +20,29 @@
 
 #define CATCH_CONFIG_RUNNER
 
-#include "../tests/unit/catch.hpp"
 #include <libint2.hpp>
 
+#include "../tests/unit/catch.hpp"
+
 #ifdef FC_DUMMY_MAIN
-#  ifdef __cplusplus
+#ifdef __cplusplus
 extern "C"
-#  endif
-int FC_DUMMY_MAIN() { return 1; }
+#endif
+    int
+    FC_DUMMY_MAIN() {
+  return 1;
+}
 #endif
 
-int main( int argc, char* argv[] )
-{
+int main(int argc, char* argv[]) {
   Catch::Session session;
   // global setup...
   // initializes the Libint integrals library ... now ready to compute
   libint2::initialize();
 
-  int result = session.run( argc, argv );
+  int result = session.run(argc, argv);
 
-  libint2::finalize(); // done with libint
+  libint2::finalize();  // done with libint
 
   return result;
 }

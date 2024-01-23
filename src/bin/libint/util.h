@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -21,38 +21,45 @@
 #ifndef _libint2_src_bin_libint_util_h_
 #define _libint2_src_bin_libint_util_h_
 
-#include <numeric>
-#include <string>
-#include <stdexcept>
+#include <cxxabi.h>
 #include <smart_ptr.h>
 #include <util_types.h>
-#include <cxxabi.h>
+
+#include <numeric>
+#include <stdexcept>
+#include <string>
 
 namespace libint2 {
-  std::string to_string(FunctionPosition pos);
-  
-  template <class Target, class Source> SafePtr<Target> require_dynamic_cast(const SafePtr<Source>& s) {
-    const SafePtr<Target> t = dynamic_pointer_cast<Target,Source>(s);
-    if (t == 0)
-      throw std::runtime_error("require_dynamic_cast: dynamic case failed");
-    return t;
-  }
-  template <class Target, class Source> const Target* require_dynamic_cast(const Source* s) {
-    const Target* t = dynamic_cast<Target*>(s);
-    if (t == 0)
-      throw std::runtime_error("require_dynamic_cast: dynamic case failed");
-    return t;
-  }
+std::string to_string(FunctionPosition pos);
 
-  /// @return (demangled) class name
-  template <typename T> std::string class_name(T* ptr=nullptr) {
-    int status = 1;
-    std::unique_ptr<char, void (*)(void*)>
-     result { abi::__cxa_demangle(ptr==nullptr?typeid(T).name():typeid(ptr).name(),NULL,NULL,&status),
-      std::free };
-    return status == 0 ? result.get() : "unknown";
-  }
+template <class Target, class Source>
+std::shared_ptr<Target> require_dynamic_cast(const std::shared_ptr<Source>& s) {
+  const std::shared_ptr<Target> t =
+      std::dynamic_pointer_cast<Target, Source>(s);
+  if (t == 0)
+    throw std::runtime_error("require_dynamic_cast: dynamic case failed");
+  return t;
+}
+template <class Target, class Source>
+const Target* require_dynamic_cast(const Source* s) {
+  const Target* t = dynamic_cast<Target*>(s);
+  if (t == 0)
+    throw std::runtime_error("require_dynamic_cast: dynamic case failed");
+  return t;
+}
 
-} // namespace libint2
+/// @return (demangled) class name
+template <typename T>
+std::string class_name(T* ptr = nullptr) {
+  int status = 1;
+  std::unique_ptr<char, void (*)(void*)> result{
+      abi::__cxa_demangle(
+          ptr == nullptr ? typeid(T).name() : typeid(ptr).name(), NULL, NULL,
+          &status),
+      std::free};
+  return status == 0 ? result.get() : "unknown";
+}
+
+}  // namespace libint2
 
 #endif /* header guard */

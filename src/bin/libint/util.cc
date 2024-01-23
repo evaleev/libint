@@ -19,6 +19,7 @@
  */
 
 #include <util.h>
+
 #include <cassert>
 
 std::string libint2::to_string(FunctionPosition pos) {
@@ -31,5 +32,5 @@ std::string libint2::to_string(FunctionPosition pos) {
       assert(false);
       break;
   }
-  return ""; // pacify picky compilers
+  return "";  // pacify picky compilers
 }

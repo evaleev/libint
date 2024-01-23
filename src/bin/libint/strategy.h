@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -18,10 +18,10 @@
  *
  */
 
-#include <smart_ptr.h>
-#include <tactic.h>
 #include <global_macros.h>
 #include <graph_registry.h>
+#include <smart_ptr.h>
+#include <tactic.h>
 
 #ifndef _libint2_src_bin_libint_strategy_h_
 #define _libint2_src_bin_libint_strategy_h_
@@ -30,25 +30,24 @@
 
 namespace libint2 {
 
-  class DGVertex;
-  class DirectedGraph;
+class DGVertex;
+class DirectedGraph;
 
-  /**
-  Strategy specifies how to apply recurrence relations.
-  */
-  class Strategy {
+/**
+Strategy specifies how to apply recurrence relations.
+*/
+class Strategy {
+ public:
+  typedef std::shared_ptr<RecurrenceRelation> RR;
+  Strategy() {}
+  ~Strategy() {}
 
-  public:
-    typedef SafePtr<RecurrenceRelation> RR;
-    Strategy() {}
-    ~Strategy() {}
-
-    /// Returns the optimal recurrence relation for integral
-    RR optimal_rr(const SafePtr<DirectedGraph>& graph,
-                  const SafePtr<DGVertex>& integral,
-                  const SafePtr<Tactic>& tactic);
-  };
-
+  /// Returns the optimal recurrence relation for integral
+  RR optimal_rr(const std::shared_ptr<DirectedGraph>& graph,
+                const std::shared_ptr<DGVertex>& integral,
+                const std::shared_ptr<Tactic>& tactic);
 };
+
+};  // namespace libint2
 
 #endif

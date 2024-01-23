@@ -1,4 +1,4 @@
-define([libint_mmm_version],[2.8.0])
+define([libint_mmm_version],[2.8.1])
 define([libint_buildid],[])
 define([libint_so_version],[2:3:0])
 
@@ -340,6 +340,7 @@ esac
 ]
 )
 
+LIBINT_HARD_MAX_AM=12
 LIBINT_MAX_AM=4
 AC_ARG_WITH(max-am,
 AS_HELP_STRING([--with-max-am=N],[Support Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...]),
@@ -357,7 +358,7 @@ AS_HELP_STRING([--with-max-am=N],[Support Gaussians of angular momentum up to N.
       else
         LIBINT_MAX_AM=$withval
       fi
-      if test $LIBINT_MAX_AM -ge 8; then
+      if test $LIBINT_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
         AC_MSG_ERROR([Value for --with-max-am too high ($withval). Are you sure you know what you are doing?])
       fi
     ;;
@@ -403,7 +404,7 @@ AS_HELP_STRING([--with-eri-max-am=N],[Support ERIs for Gaussians of angular mome
      else
       ERI_MAX_AM=$withval
      fi
-     if test $ERI_MAX_AM -ge 8; then
+     if test $ERI_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
       AC_MSG_ERROR([Value for --with-eri-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ERI_MAX_AM)
@@ -458,7 +459,7 @@ AS_HELP_STRING([--with-1body-max-am=N],[Support 1-e ints for Gaussians of angula
      else
       ONEBODY_MAX_AM=$withval
      fi
-     if test $ONEBODY_MAX_AM -ge 8; then
+     if test $ONEBODY_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
       AC_MSG_ERROR([Value for --with-1body-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ONEBODY_MAX_AM)
@@ -527,7 +528,7 @@ AS_HELP_STRING([--with-eri3-max-am=N],[Support 3-center ERIs for Gaussians of an
      else
       ERI3_MAX_AM=$withval
      fi
-     if test $ERI3_MAX_AM -ge 13; then
+     if test $ERI3_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
       AC_MSG_ERROR([Value for --with-eri3-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ERI3_MAX_AM)
@@ -598,7 +599,7 @@ AS_HELP_STRING([--with-eri2-max-am=N],[Support 2-center ERIs for Gaussians of an
      else
       ERI2_MAX_AM=$withval
      fi
-     if test $ERI2_MAX_AM -ge 13; then
+     if test $ERI2_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
       AC_MSG_ERROR([Value for --with-eri2-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ERI2_MAX_AM)
@@ -1116,8 +1117,30 @@ AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(PSLATEX,pslatex,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(DVIPS,dvips,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(LATEX,latex,,$PATH:/usr/local/bin:/opt/local/bin)
-AC_PATH_PROG(LATEX2HTML,latex2html,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(BIBTEX,bibtex,,$PATH:/usr/local/bin:/opt/local/bin)
+
+CHECK_FOR_LATEX2HTML=no
+AC_ARG_ENABLE(latex2html,
+AS_HELP_STRING([--enable-latex2html],[Enable detection of latex2html (broken on many platforms, hence disabled by default)]),
+[
+case $enableval in
+  yes)
+    CHECK_FOR_LATEX2HTML=yes
+  ;;
+  no)
+    CHECK_FOR_LATEX2HTML=no
+  ;;
+  *)
+    AC_MSG_ERROR([Invalid value for --enable-latex2html ($enableval)])
+  ;;
+esac
+],[
+    CHECK_FOR_LATEX2HTML=no
+]
+)
+if test "X$CHECK_FOR_LATEX2HTML" = "Xyes" ; then
+  AC_PATH_PROG(LATEX2HTML,latex2html,,$PATH:/usr/local/bin:/opt/local/bin)
+fi
 
 dnl The lack of certain tools is a show stopper
 
@@ -1360,51 +1383,6 @@ AC_COMPILE_IFELSE(
     AC_MSG_ERROR([Boost::mpl is required. Download latest boost from https://www.boost.org/users/download/ , unpack (no need to install), and add -I/path/to/boost to CPPFLAGS])
   ]
 )
-
-dnl ------------------ Check for shared_ptr -----------------------
-
-HAVE_SHARED_PTR=no
-AC_MSG_CHECKING([for std::shared_ptr])
-AC_COMPILE_IFELSE(
-  [AC_LANG_PROGRAM(
-      [[#include <memory>
-      ]],
-      [[
-        std::shared_ptr<int> a(new int);
-        std::shared_ptr<int> b = a;
-      ]]
-     )
-    ],
-    [AC_MSG_RESULT([yes])
-     HAVE_SHARED_PTR=std
-    ],
-    [
-      AC_MSG_RESULT([no])
-    ]
-  )
-
-if test "X$HAVE_SHARED_PTR" = "Xno"; then
-  AC_MSG_CHECKING([for Boost::shared_ptr])
-  AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM(
-      [[#include <boost/shared_ptr.hpp>
-      ]],
-      [[
-       boost::shared_ptr<int> a(new int);
-       boost::shared_ptr<int> b = a;
-      ]]
-     )
-    ],
-    [AC_MSG_RESULT([yes])
-     HAVE_SHARED_PTR=boost
-     AC_DEFINE(HAVE_SHARED_PTR_IN_BOOST)
-    ],
-    [
-      AC_MSG_RESULT([no])
-      AC_MSG_ERROR([shared_ptr is required. Please download Boost from boost.org or use C++ compiler that supports std::shared_ptr.])
-    ]
-  )
-fi
 
 dnl ------------------ Check for Eigen library -----------------------
 

@@ -18,12 +18,10 @@
  *
  */
 
-
 /* Runtime accessor for the library configuration:
    integral derivatives, AM, orderings, etc.
    @return the semicolon-separated strings from CMake components */
-const char * configuration_accessor() {
-    //return "@Libint2_CONFIG_COMPONENTS@";
-    return "(nyi)";
+const char* configuration_accessor() {
+  // return "@Libint2_CONFIG_COMPONENTS@";
+  return "(nyi)";
 }
-

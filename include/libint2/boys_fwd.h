@@ -23,53 +23,55 @@
 
 namespace libint2 {
 
-  template<typename Real>
-  struct FmEval_Reference;
+template <typename Real>
+struct FmEval_Reference;
 
-  template<typename Real>
-  struct FmEval_Reference2;
+template <typename Real>
+struct FmEval_Reference2;
 
-  template <typename Real>
-  class FmEval_Chebyshev7;
+template <typename Real>
+class FmEval_Chebyshev7;
 
-  template<typename Real, int INTERPOLATION_ORDER>
-  class FmEval_Taylor;
+template <typename Real, int INTERPOLATION_ORDER>
+class FmEval_Taylor;
 
-  template<typename Real>
-  struct TennoGmEval;
+template <typename Real>
+struct TennoGmEval;
 
-  template<typename Real, int K>
-    struct GaussianGmEval;
+template <typename Real, int K>
+struct GaussianGmEval;
 
-  namespace detail {
-    /// some evaluators need thread-local scratch, but most don't
-    template <typename CoreEval> struct CoreEvalScratch;
-  }  // namespace detail
+namespace detail {
+/// some evaluators need thread-local scratch, but most don't
+template <typename CoreEval>
+struct CoreEvalScratch;
+}  // namespace detail
 
-  template <typename GmEvalFunction>
-  struct GenericGmEval;
+template <typename GmEvalFunction>
+struct GenericGmEval;
 
-  /// Obara-Saika core ints code
-  namespace os_core_ints {
-  template <typename Real> struct delta_gm_eval;
-  template <typename Real, int K> struct r12_xx_K_gm_eval;
-  template <typename Real> struct erf_coulomb_gm_eval;
-  template <typename Real> struct erfc_coulomb_gm_eval;
-  }  // namespace os_core_ints
+/// Obara-Saika core ints code
+namespace os_core_ints {
+template <typename Real>
+struct delta_gm_eval;
+template <typename Real, int K>
+struct r12_xx_K_gm_eval;
+template <typename Real>
+struct erf_coulomb_gm_eval;
+template <typename Real>
+struct erfc_coulomb_gm_eval;
+}  // namespace os_core_ints
 
-  /*
-   *  Slater geminal fitting is available only if have LAPACK
-   */
+/*
+ *  Slater geminal fitting is available only if have LAPACK
+ */
 #if HAVE_LAPACK
-  template <typename Real>
-  void stg_ng_fit(unsigned int n,
-                 Real zeta,
-                 std::vector< std::pair<Real, Real> >& geminal,
-                 Real xmin = 0.0,
-                 Real xmax = 10.0,
-                 unsigned int npts = 1001);
+template <typename Real>
+void stg_ng_fit(unsigned int n, Real zeta,
+                std::vector<std::pair<Real, Real> >& geminal, Real xmin = 0.0,
+                Real xmax = 10.0, unsigned int npts = 1001);
 #endif
 
 }  // namespace libint2
 
-#endif // header guard
+#endif  // header guard

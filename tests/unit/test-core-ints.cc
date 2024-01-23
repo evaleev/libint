@@ -1,9 +1,9 @@
-#include "catch.hpp"
+#include <libint2/boys.h>
+#include <libint2/config.h>
 
 #include <type_traits>
 
-#include <libint2/config.h>
-#include <libint2/boys.h>
+#include "catch.hpp"
 
 #ifdef LIBINT_HAS_MPFR
 TEST_CASE("Boys reference values", "[core-ints][precision]") {
@@ -14,24 +14,26 @@ TEST_CASE("Boys reference values", "[core-ints][precision]") {
   std::vector<double> T_values;
   T_ref_values.push_back(LIBINT2_REF_REALTYPE(0));
   T_values.push_back(0);
-  for(int i=0; i!=12; ++i) {
-    using std::sqrt;
+  for (int i = 0; i != 12; ++i) {
     using std::pow;
+    using std::sqrt;
     T_ref_values.push_back(pow(sqrt(LIBINT2_REF_REALTYPE(10)), i) / 1000);
-    T_values.push_back(pow(sqrt(10.),i) / 1000.);
+    T_values.push_back(pow(sqrt(10.), i) / 1000.);
   }
 
   std::cout << std::setprecision(30);
-  if (!std::is_same<LIBINT2_REF_REALTYPE,scalar_type>::value) {
-    auto Fm_ref_values = new LIBINT2_REF_REALTYPE[mmax+1];
-    auto Fm_values = new scalar_type[mmax+1];
-    auto fm_evals = std::make_tuple(libint2::FmEval_Chebyshev7<scalar_type>::instance(mmax),
-                                    libint2::FmEval_Taylor<scalar_type, 7>::instance(mmax));
-    for(int t=0; t!=T_ref_values.size(); ++t) {
+  if (!std::is_same<LIBINT2_REF_REALTYPE, scalar_type>::value) {
+    auto Fm_ref_values = new LIBINT2_REF_REALTYPE[mmax + 1];
+    auto Fm_values = new scalar_type[mmax + 1];
+    auto fm_evals =
+        std::make_tuple(libint2::FmEval_Chebyshev7<scalar_type>::instance(mmax),
+                        libint2::FmEval_Taylor<scalar_type, 7>::instance(mmax));
+    for (int t = 0; t != T_ref_values.size(); ++t) {
       auto Tref = T_ref_values[t];
       auto T = T_values[t];
-      libint2::FmEval_Reference<LIBINT2_REF_REALTYPE>::eval(Fm_ref_values, Tref, mmax);
-      for(auto engine_type: {0,1}) {
+      libint2::FmEval_Reference<LIBINT2_REF_REALTYPE>::eval(Fm_ref_values, Tref,
+                                                            mmax);
+      for (auto engine_type : {0, 1}) {
         if (engine_type == 0) {
           std::get<0>(fm_evals)->eval(Fm_values, T, mmax);
         }
@@ -51,13 +53,15 @@ TEST_CASE("Boys reference values", "[core-ints][precision]") {
               sstream_convert<double>(Fm_ref_values[m]), Fm_values[m],
               sstream_convert<double>(abs_error),
               sstream_convert<double>(relabs_error));
-          // can only get about 14 digits of precision for extreme cases, but can guarantee absolute precision to epsilon
+          // can only get about 14 digits of precision for extreme cases, but
+          // can guarantee absolute precision to epsilon
           REQUIRE(
               sstream_convert<scalar_type>(abs_error) ==
               Approx(0.0).margin(std::numeric_limits<scalar_type>::epsilon()));
-          REQUIRE(sstream_convert<scalar_type>(relabs_error) ==
-                  Approx(0.0).margin(
-                      (engine_type==0?125:1e5) * std::numeric_limits<scalar_type>::epsilon()));
+          REQUIRE(
+              sstream_convert<scalar_type>(relabs_error) ==
+              Approx(0.0).margin((engine_type == 0 ? 125 : 1e5) *
+                                 std::numeric_limits<scalar_type>::epsilon()));
         }
       }
     }
@@ -73,7 +77,7 @@ TEST_CASE("Slater/Yukawa core integral values", "[core-ints]") {
   int mmax = 10;
   const auto T = 0.3;
   const auto rho = 0.5;
-  const auto one_over_rho = 1.0/rho;
+  const auto one_over_rho = 1.0 / rho;
 
   auto yukawa = new scalar_type[mmax + 1];
   auto stg = new scalar_type[mmax + 1];
@@ -106,7 +110,8 @@ TEST_CASE("Slater/Yukawa core integral values", "[core-ints]") {
       REQUIRE(std::abs(yukawa[m] - ref_values[m]) <= 1.4e-14);
     }
   }
-  // eval at T=1025, U=10^-3 => outside the interpolation range, use upward recursion
+  // eval at T=1025, U=10^-3 => outside the interpolation range, use upward
+  // recursion
   {
     const std::vector<scalar_type> ref_values{
         0.0036579519797749897405471452,   5.397434252949152394251251e-6,

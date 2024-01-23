@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -25,59 +25,62 @@
 #ifndef _libint2_src_bin_libint_extract_h_
 #define _libint2_src_bin_libint_extract_h_
 
-#include <string>
-#include <list>
+#include <rr.h>
 #include <smart_ptr.h>
+
+#include <list>
+#include <map>
+#include <string>
 
 namespace libint2 {
 
-  class DGVertex;
+class DGVertex;
 
-  /// This class collects labels of all external non-compile-time constants
-  class ExtractExternSymbols {
-  public:
-    typedef SafePtr<DGVertex> VertexPtr;
-    typedef std::list<std::string> Symbols;
+/// This class collects labels of all external non-compile-time constants
+class ExtractExternSymbols {
+ public:
+  typedef std::shared_ptr<DGVertex> VertexPtr;
+  typedef std::list<std::string> Symbols;
 
-    ExtractExternSymbols() {}
-    ~ExtractExternSymbols() {}
+  ExtractExternSymbols() {}
+  ~ExtractExternSymbols() {}
 
-    /// try v
-    void operator()(const VertexPtr& v);
+  /// try v
+  void operator()(const VertexPtr& v);
 
-    /// return list of sorted symbols
-    const Symbols& symbols() const;
+  /// return list of sorted symbols
+  const Symbols& symbols() const;
 
-  private:
-    mutable Symbols symbols_;
-    // symbols are stored as a map
-    typedef std::map<std::string,bool> LabelMap;
-    LabelMap map_;
-  };
-
-  /// This class collects all unique RRs. It uses RRStack to get their InstanceID
-  class ExtractRR {
-  public:
-    typedef SafePtr<DGVertex> VertexPtr;
-    typedef RRStack::InstanceID RRid;
-    typedef std::list<RRid> RRList;
-
-    ExtractRR() {}
-    ~ExtractRR() {}
-
-    /// try v
-    void operator()(const VertexPtr& v);
-
-    /// return list of sorted RRs
-    const RRList& rrlist() const;
-
-  private:
-    mutable RRList rrlist_;
-    // RRid are stored in a map
-    typedef std::map<RRid,bool> RRMap;
-    RRMap map_;
-  };
-
+ private:
+  mutable Symbols symbols_;
+  // symbols are stored as a map
+  typedef std::map<std::string, bool> LabelMap;
+  LabelMap map_;
 };
 
-#endif // header guard
+/// This class collects all unique RRs. It uses RRStack to get their InstanceID
+class ExtractRR {
+ public:
+  typedef std::shared_ptr<DGVertex> VertexPtr;
+  typedef RRStack::InstanceID RRid;
+  typedef std::list<RRid> RRList;
+
+  ExtractRR() {}
+  ~ExtractRR() {}
+
+  /// try v
+  void operator()(const VertexPtr& v);
+
+  /// return list of sorted RRs
+  const RRList& rrlist() const;
+
+ private:
+  mutable RRList rrlist_;
+  // RRid are stored in a map
+  typedef std::map<RRid, bool> RRMap;
+  RRMap map_;
+};
+
+};  // namespace libint2
+
+#endif  // header guard

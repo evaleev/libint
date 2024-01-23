@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -21,18 +21,18 @@
 #ifndef INCLUDE_LIBINT2_LCAO_MOLDEN_H_
 #define INCLUDE_LIBINT2_LCAO_MOLDEN_H_
 
-#include <cmath>
-#include <iomanip>
-#include <ostream>
-#include <string>
-#include <vector>
-
 #include <libint2/atom.h>
 #include <libint2/basis.h>
 #include <libint2/cgshell_ordering.h>
 #include <libint2/chemistry/elements.h>
 #include <libint2/shell.h>
 #include <libint2/shgshell_ordering.h>
+
+#include <cmath>
+#include <iomanip>
+#include <ostream>
+#include <string>
+#include <vector>
 
 #pragma GCC diagnostic push
 #pragma GCC system_header
@@ -51,7 +51,8 @@ class Export {
   /// @tparam Energies the type of LCAO energy vector
   /// @tparam Occs the type of LCAO occupancy vector
   /// @param atoms the set of atoms (coordinates in atomic units)
-  /// @param basis a sequence of shells; must meet Molden requirements (see below)
+  /// @param basis a sequence of shells; must meet Molden requirements (see
+  /// below)
   /// @param coefficients the matrix of LCAO coefficients (columns are LCAOs,
   ///        rows are AOs; AOs are ordered according to the order of shells in
   ///        \c basis and by the ordering conventions of this Libint
@@ -64,9 +65,12 @@ class Export {
   /// @param spincases the vector of spin cases (size = # LCAOs; true = spin-up
   ///        or m_s=1/2, false = spin-down or m_s=-1/2); the default is
   ///        to assign spin-up to each LCAO
-  /// @param bohr_to_angstrom the conversion factor from bohr to angstrom; the default is CODATA 2018 value
-  /// @param coefficient_epsilon omit LCAO coefficients with absolute magnitude smaller than this value; set to 0 to write
-  ///        all coefficients (some Molden parsers, e.g. Avogadro2, require this)
+  /// @param bohr_to_angstrom the conversion factor from bohr to angstrom; the
+  /// default is CODATA 2018 value
+  /// @param coefficient_epsilon omit LCAO coefficients with absolute magnitude
+  /// smaller than this value; set to 0 to write
+  ///        all coefficients (some Molden parsers, e.g. Avogadro2, require
+  ///        this)
   /// @throw std::logic_error if the basis does not conforms Molden
   ///        requirements
   /// @note Molden can only handle basis sets that:
@@ -75,14 +79,15 @@ class Export {
   /// - there are no shells with l>5
   template <typename ShellSequence, typename Coeffs, typename Occs,
             typename Energies = Eigen::VectorXd>
-  Export(const std::vector<Atom>& atoms, const ShellSequence& basis,
-         const Coeffs& coefficients, const Occs& occupancies,
-         const Energies& energies = Energies(),
-         const std::vector<std::string>& symmetry_labels =
-             std::vector<std::string>(),
-         const std::vector<bool>& spincases = std::vector<bool>(),
-         const double bohr_to_angstrom = constants::codata_2018::bohr_to_angstrom,
-         double coefficient_epsilon = 5e-11)
+  Export(
+      const std::vector<Atom>& atoms, const ShellSequence& basis,
+      const Coeffs& coefficients, const Occs& occupancies,
+      const Energies& energies = Energies(),
+      const std::vector<std::string>& symmetry_labels =
+          std::vector<std::string>(),
+      const std::vector<bool>& spincases = std::vector<bool>(),
+      const double bohr_to_angstrom = constants::codata_2018::bohr_to_angstrom,
+      double coefficient_epsilon = 5e-11)
       : atoms_(atoms),
         basis_(validate(basis)),
         coefs_(coefficients),
@@ -109,11 +114,10 @@ class Export {
     auto iatom = 0;
     for (const auto& atom : atoms_) {
       auto Z = atom.atomic_number;
-      os << std::setw(4) << libint2::chemistry::get_element_info().at(Z - 1).symbol
-         << std::setw(6) << (iatom + 1) << std::setw(6) << Z
-         << std::setw(14) << atom.x
-         << std::setw(14) << atom.y
-         << std::setw(14) << atom.z
+      os << std::setw(4)
+         << libint2::chemistry::get_element_info().at(Z - 1).symbol
+         << std::setw(6) << (iatom + 1) << std::setw(6) << Z << std::setw(14)
+         << atom.x << std::setw(14) << atom.y << std::setw(14) << atom.z
          << std::endl;
       ++iatom;
     }
@@ -132,8 +136,7 @@ class Export {
           const auto& contr = sh.contr[0];
           const auto l = contr.l;
           assert(l <= 4);  // only up to g functions are supported
-          if (l == 3)
-            f_found = true;
+          if (l == 3) f_found = true;
           const auto nprim = contr.coeff.size();
           os << std::setw(4) << Shell::am_symbol(contr.l) << std::setw(6)
              << nprim << std::setw(6) << "1.00" << std::endl;
@@ -189,8 +192,8 @@ class Export {
       for (int iao = 0; iao < coefs_.rows(); ++iao) {
         const auto C_ao_mo = coefs_(ao_map_[iao], imo);
         if (std::abs(C_ao_mo) >= coefficient_epsilon_) {
-          os << std::setw(6) << (iao + 1) << " " << std::setw(16)
-             << C_ao_mo << std::endl;
+          os << std::setw(6) << (iao + 1) << " " << std::setw(16) << C_ao_mo
+             << std::endl;
         }
       }  // end loop over AOs
     }    // end loop over MOs
@@ -213,9 +216,7 @@ class Export {
     write_lcao(os);
   }
 
-  double bohr_to_angstrom() const {
-    return bohr_to_angstrom_;
-  }
+  double bohr_to_angstrom() const { return bohr_to_angstrom_; }
 
  private:
   const std::vector<Atom>& atoms_;
@@ -227,9 +228,8 @@ class Export {
   std::vector<bool> spins_;
   double bohr_to_angstrom_;
   double coefficient_epsilon_;
-  mutable bool
-      dfg_is_cart_[3];  // whether {d, f, g} shells are cartesian (true) or
-                        // solid harmonics (false)
+  mutable bool dfg_is_cart_[3];  // whether {d, f, g} shells are cartesian
+                                 // (true) or solid harmonics (false)
   std::vector<std::vector<long>>
       atom2shell_;  // maps atom -> shell indices in basis_
   std::vector<long>
@@ -241,7 +241,7 @@ class Export {
   ///        requirements
   const std::vector<Shell>& validate(const std::vector<Shell>& shells) const {
     bool dfg_found[] = {false, false, false};
-    for(int i=0; i!=sizeof(dfg_is_cart_)/sizeof(bool); ++i)
+    for (int i = 0; i != sizeof(dfg_is_cart_) / sizeof(bool); ++i)
       dfg_is_cart_[i] = true;
     for (const auto& shell : shells) {
       for (const auto& contr : shell.contr) {
@@ -268,7 +268,8 @@ class Export {
                   "all-solid-harmonics d/f/g shells");
           }
 
-          default: {}  // l = 0 is fine
+          default: {
+          }  // l = 0 is fine
         }
       }
     }
@@ -322,9 +323,10 @@ class Export {
 };  // Export
 
 /// Extension of the Molden exporter to support JMOL extensions for crystal
-/// orbitals (see <a>https://sourceforge.net/p/jmol/code/HEAD/tree/trunk/Jmol/src/org/jmol/adapter/readers/quantum/MoldenReader.java#l25</a>)
-class PBCExport: public Export{
-   public:
+/// orbitals (see
+/// <a>https://sourceforge.net/p/jmol/code/HEAD/tree/trunk/Jmol/src/org/jmol/adapter/readers/quantum/MoldenReader.java#l25</a>)
+class PBCExport : public Export {
+ public:
   /// @tparam Coeffs the type of LCAO coefficient matrix
   /// @tparam Energies the type of LCAO energy vector
   /// @tparam Occs the type of LCAO occupancy vector
@@ -336,7 +338,8 @@ class PBCExport: public Export{
   ///        \c basis and by the ordering conventions of this Libint
   ///        configuration)
   /// @param occupancies the vector of occupancies (size = # LCAOs)
-  /// @param space_group (base-0) index of the space group in the International Tables of Crystallography (https://it.iucr.org/Ac/)
+  /// @param space_group (base-0) index of the space group in the International
+  /// Tables of Crystallography (https://it.iucr.org/Ac/)
   /// @param energies the vector of energies (size = # of LCAOs); the default is
   ///        to assign zero to each LCAO
   /// @param symmetry_labels the vector of symmetry labels (size = # LCAOs); the
@@ -344,7 +347,8 @@ class PBCExport: public Export{
   /// @param spincases the vector of spin cases (size = # LCAOs; true = spin-up
   ///        or m_s=1/2, false = spin-down or m_s=-1/2); the default is
   ///        to assign spin-up to each LCAO
-  /// @param bohr_to_angstrom the conversion factor from bohr to angstrom; the default is CODATA 2018 value
+  /// @param bohr_to_angstrom the conversion factor from bohr to angstrom; the
+  /// default is CODATA 2018 value
   /// @throw std::logic_error if the basis does not conforms Molden
   ///        requirements
   /// @note Molden can only handle basis sets that:
@@ -352,22 +356,21 @@ class PBCExport: public Export{
   /// - d, f, and g (l=2..4) shells are all Cartesian or all solid harmonics
   /// - there are no shells with l>5
   template <typename Coeffs, typename Occs, typename Energies = Eigen::VectorXd>
-  PBCExport(const std::vector<Atom>& atoms,
-         const std::array<Eigen::Vector3d, 3>& cell_axes,
-         const std::vector<Shell>& basis,
-         const Coeffs& coefficients,
-         const Occs& occupancies,
-         int space_group,
-         const Energies& energies = Energies(),
-         const std::vector<std::string>& symmetry_labels =
-             std::vector<std::string>(),
-         const std::vector<bool>& spincases = std::vector<bool>(),
-         const double bohr_to_angstrom = constants::codata_2018::bohr_to_angstrom)
-      : Export(atoms, basis, coefficients, occupancies, energies, symmetry_labels, spincases, bohr_to_angstrom),
+  PBCExport(
+      const std::vector<Atom>& atoms,
+      const std::array<Eigen::Vector3d, 3>& cell_axes,
+      const std::vector<Shell>& basis, const Coeffs& coefficients,
+      const Occs& occupancies, int space_group,
+      const Energies& energies = Energies(),
+      const std::vector<std::string>& symmetry_labels =
+          std::vector<std::string>(),
+      const std::vector<bool>& spincases = std::vector<bool>(),
+      const double bohr_to_angstrom = constants::codata_2018::bohr_to_angstrom)
+      : Export(atoms, basis, coefficients, occupancies, energies,
+               symmetry_labels, spincases, bohr_to_angstrom),
         cell_axes_(cell_axes),
-        space_group_(space_group)
-  {
-    //initialize_bf_map();
+        space_group_(space_group) {
+    // initialize_bf_map();
   }
 
   /// writes the "[SpaceGroup]" section to ostream \c os
@@ -384,7 +387,6 @@ class PBCExport: public Export{
 
   /// writes the "[Cell]" section to ostream \c os
   void write_cell_axes(std::ostream& os) const {
-
     // https://sourceforge.net/p/jmol/code/HEAD/tree/trunk/Jmol/src/org/jmol/adapter/readers/quantum/MoldenReader.java#l107
     // suggests that [Cell] defaults to angstroms
     os << "[Cell]" << std::endl;
@@ -398,16 +400,23 @@ class PBCExport: public Export{
       const bool nonzero_b = b >= eps;
       const bool nonzero_c = c >= eps;
       static constexpr double right_angle = M_PI / 2;
-      const double alpha = nonzero_b && nonzero_c ? std::acos(cell_axes_[1].dot(cell_axes_[2]) / (b * c)) : right_angle;
-      const double beta = nonzero_a && nonzero_c ? std::acos(cell_axes_[0].dot(cell_axes_[2]) / (a * c)) : right_angle;
-      const double gamma = nonzero_a && nonzero_b ? std::acos(cell_axes_[0].dot(cell_axes_[1]) / (a * b)) : right_angle;
+      const double alpha =
+          nonzero_b && nonzero_c
+              ? std::acos(cell_axes_[1].dot(cell_axes_[2]) / (b * c))
+              : right_angle;
+      const double beta =
+          nonzero_a && nonzero_c
+              ? std::acos(cell_axes_[0].dot(cell_axes_[2]) / (a * c))
+              : right_angle;
+      const double gamma =
+          nonzero_a && nonzero_b
+              ? std::acos(cell_axes_[0].dot(cell_axes_[1]) / (a * b))
+              : right_angle;
       const double radian_to_degree = 180 / M_PI;
-      os << std::setw(12) << a * bohr_to_angstrom()
-         << std::setw(12) << b * bohr_to_angstrom()
-         << std::setw(12) << c * bohr_to_angstrom()
-         << std::setw(12) << alpha * radian_to_degree
-         << std::setw(12) << beta * radian_to_degree
-         << std::setw(12) << gamma * radian_to_degree
+      os << std::setw(12) << a * bohr_to_angstrom() << std::setw(12)
+         << b * bohr_to_angstrom() << std::setw(12) << c * bohr_to_angstrom()
+         << std::setw(12) << alpha * radian_to_degree << std::setw(12)
+         << beta * radian_to_degree << std::setw(12) << gamma * radian_to_degree
          << std::endl;
     }
   }
@@ -423,11 +432,11 @@ class PBCExport: public Export{
     write_lcao(os);
   }
 
-private:
+ private:
   std::array<Eigen::Vector3d, 3> cell_axes_;
   int space_group_;
 
-}; // PBCExport
+};  // PBCExport
 
 }  // namespace molden
 }  // namespace libint2

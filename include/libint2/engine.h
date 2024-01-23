@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -22,20 +22,33 @@
 #define _libint2_src_lib_libint_engine_h_
 
 #ifndef LIBINT2_DOES_NOT_INLINE_ENGINE
-# define __libint2_engine_inline inline
+#define __libint2_engine_inline inline
 #else
-# define __libint2_engine_inline
+#define __libint2_engine_inline
 #endif
 
 #include <libint2/util/cxxstd.h>
 #if LIBINT2_CPLUSPLUS_STD < 2011
-# error "libint2/engine.h requires C++11 support"
+#error "libint2/engine.h requires C++11 support"
 #endif
+
+#include <libint2/boys_fwd.h>
+#include <libint2/braket.h>
+#include <libint2/cartesian.h>
+#include <libint2/cgshellinfo.h>
+#include <libint2/cxxapi.h>
+#include <libint2/shell.h>
+#include <libint2/solidharmonics.h>
+#include <libint2/util/any.h>
+#include <libint2/util/array_adaptor.h>
+#include <libint2/util/compressed_pair.h>
+#include <libint2/util/intpart_iter.h>
+#include <libint2/util/timer.h>
 
 #include <algorithm>
 #include <array>
-#include <cstring>
 #include <cstdio>
+#include <cstring>
 #include <functional>
 #include <iostream>
 #include <limits>
@@ -44,19 +57,6 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-
-#include <libint2/cxxapi.h>
-#include <libint2/boys_fwd.h>
-#include <libint2/shell.h>
-#include <libint2/solidharmonics.h>
-#include <libint2/cartesian.h>
-#include <libint2/util/any.h>
-#include <libint2/util/array_adaptor.h>
-#include <libint2/util/intpart_iter.h>
-#include <libint2/util/compressed_pair.h>
-#include <libint2/util/timer.h>
-#include <libint2/cgshellinfo.h>
-#include <libint2/braket.h>
 
 // the engine will be profiled by default if library was configured with
 // --enable-profile
@@ -67,7 +67,7 @@
 #endif
 // uncomment if want to profile the engine even if library was configured
 // without --enable-profile
-//#  define LIBINT2_ENGINE_TIMERS
+// #  define LIBINT2_ENGINE_TIMERS
 
 namespace libint2 {
 
@@ -86,13 +86,15 @@ constexpr size_t num_geometrical_derivatives(size_t ncenter,
 }
 
 template <typename T, unsigned N>
-__libint2_engine_inline typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]);
+__libint2_engine_inline
+    typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]);
 
 /// \brief types of operators (operator sets) supported by Engine.
 
 /// \warning These must start with 0 and appear in same order as elements of
-/// BOOST_PP_NBODY_OPERATOR_LIST preprocessor macro (aliases do not need to be included).
-/// \warning for the sake of nbody() order operators by # of particles
+/// BOOST_PP_NBODY_OPERATOR_LIST preprocessor macro (aliases do not need to be
+/// included). \warning for the sake of nbody() order operators by # of
+/// particles
 enum class Operator {
   /// overlap
   overlap = 0,
@@ -118,16 +120,28 @@ enum class Operator {
   //! \f$ x^3, x^2y, x^2z, xy^2, xyz, xz^2, y^3, y^2z, yz^2, z^3 \f$
   emultipole3,
   //! (electric) spherical multipole moments,
-  //! \f$ O_{l,m} \equiv \mathcal{N}^{\text{sign}(m)}_{l,|m|} \f$ where \f$ \f$ \mathcal{N}^{\pm}_{l,m} \f$
-  //! is defined in J.M. Pérez-Jordá and W. Yang, J Chem Phys 104, 8003 (1996), DOI 10.1063/1.468354 .
-  //! To obtain the real solid harmonics \f$ C^m_l \f$ and \f$ S^m_l \f$ defined in https://en.wikipedia.org/wiki/Solid_harmonics
-  //! multiply these harmonics by \f$ (-1)^m \sqrt{(2 - \delta_{m,0}) (l + |m|)! (l - |m|)!} \f$ .
-  //! The operator set includes multipoles of order up to \f$ l_{\rm max} = \f$ MULTIPOLE_MAX_ORDER (for a total of \f$ (l_{\rm max}+1)^2 \f$ operators),
-  //! in the order of increasing \c l , with the operators of same \c l but different \c m ordered according to the solid harmonics ordering
-  //! CCA standard (see macro FOR_SOLIDHARM_STANDARD in shgshell_ordering.h.in). For example, the operators will appear in the following order
-  //! \f$ \mathcal{N}^+_{0,0} , \mathcal{N}^-_{1,1}, \mathcal{N}^+_{1,0}, \mathcal{N}^+_{1,1}, \mathcal{N}^-_{2,2}, \mathcal{N}^-_{2,1}, \mathcal{N}^+_{2,0}, \mathcal{N}^+_{2,1}, \mathcal{N}^+_{2,2}. \dots \f$ .
-  //! Previous to cdbb9f3 released in v2.8.0, Standard -or- Gaussian ordering could be be specified at generator/compiler configure time.
+  //! \f$ O_{l,m} \equiv \mathcal{N}^{\text{sign}(m)}_{l,|m|} \f$ where \f$ \f$
+  //! \mathcal{N}^{\pm}_{l,m} \f$
+  //! is defined in J.M. Pérez-Jordá and W. Yang, J Chem Phys 104, 8003 (1996),
+  //! DOI 10.1063/1.468354 .
+  //! To obtain the real solid harmonics \f$ C^m_l \f$ and \f$ S^m_l \f$ defined
+  //! in https://en.wikipedia.org/wiki/Solid_harmonics
+  //! multiply these harmonics by \f$ (-1)^m \sqrt{(2 - \delta_{m,0}) (l + |m|)!
+  //! (l - |m|)!} \f$ .
+  //! The operator set includes multipoles of order up to \f$ l_{\rm max} = \f$
+  //! MULTIPOLE_MAX_ORDER (for a total of \f$ (l_{\rm max}+1)^2 \f$ operators),
+  //! in the order of increasing \c l , with the operators of same \c l but
+  //! different \c m ordered according to the solid harmonics ordering
+  //! CCA standard (see macro FOR_SOLIDHARM_STANDARD in shgshell_ordering.h.in).
+  //! For example, the operators will appear in the following order
+  //! \f$ \mathcal{N}^+_{0,0} , \mathcal{N}^-_{1,1}, \mathcal{N}^+_{1,0},
+  //! \mathcal{N}^+_{1,1}, \mathcal{N}^-_{2,2}, \mathcal{N}^-_{2,1},
+  //! \mathcal{N}^+_{2,0}, \mathcal{N}^+_{2,1}, \mathcal{N}^+_{2,2}. \dots \f$ .
+  //! Previous to cdbb9f3 released in v2.8.0, Standard -or- Gaussian ordering
+  //! could be be specified at generator/compiler configure time.
   sphemultipole,
+  /// The four components of σp . V . σp, where V is the nuclear potential.
+  opVop,
   /// \f$ \delta(\vec{r}_1 - \vec{r}_2) \f$
   delta,
   /// (2-body) Coulomb operator = \f$ r_{12}^{-1} \f$
@@ -152,15 +166,17 @@ enum class Operator {
   erfc_coulomb,
   /// Slater-type geminal, \f$ \mathrm{exp}(-\zeta r_{12}) \f$
   stg,
-  /// Slater-type geminal times Coulomb, , \f$ \mathrm{exp}(-\zeta r_{12}) / r_{12} \f$
+  /// Slater-type geminal times Coulomb, , \f$ \mathrm{exp}(-\zeta r_{12}) /
+  /// r_{12} \f$
   stg_x_coulomb,
   /// alias for Operator::stg_x_coulomb
   yukawa = stg_x_coulomb,
   // do not modify this
   invalid = -1,
-  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this updated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!keep this
+  // updated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   first_1body_oper = overlap,
-  last_1body_oper = sphemultipole,
+  last_1body_oper = opVop,
   first_2body_oper = delta,
   last_2body_oper = stg_x_coulomb,
   first_oper = first_1body_oper,
@@ -173,10 +189,12 @@ enum class Operator {
 inline constexpr int rank(Operator oper) {
   return (oper >= Operator::first_1body_oper &&
           oper <= Operator::last_1body_oper)
-          ? 1 :
-         ((oper >= Operator::first_2body_oper &&
-           oper <= Operator::last_2body_oper)
-           ? 2 : throw std::logic_error("rank(Operator): invalid operator given"));
+             ? 1
+             : ((oper >= Operator::first_2body_oper &&
+                 oper <= Operator::last_2body_oper)
+                    ? 2
+                    : throw std::logic_error(
+                          "rank(Operator): invalid operator given"));
 }
 
 namespace detail {
@@ -185,6 +203,9 @@ struct default_operator_traits {
   } oper_params_type;
   static oper_params_type default_params() { return oper_params_type{}; }
   static constexpr auto nopers = 1u;
+  // N.B.: Below field means we *should* template specialize operator_traits for
+  // Operator::kinetic, but L2 doesn't use that anywhere.
+  static constexpr auto intrinsic_deriv_order = 0u;
   struct _core_eval_type {
     template <typename... params>
     static std::shared_ptr<const _core_eval_type> instance(params...) {
@@ -216,19 +237,27 @@ struct operator_traits<Operator::nuclear>
   typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
 #endif
 };
+template <>
+struct operator_traits<Operator::opVop>
+    : public operator_traits<Operator::nuclear> {
+  static constexpr auto nopers = 4;
+  static constexpr auto intrinsic_deriv_order = 2;
+};
 
 template <>
 struct operator_traits<Operator::erf_nuclear>
     : public detail::default_operator_traits {
   /// the attenuation parameter (0 = zero potential, +infinity = no attenuation)
   /// + point charges and positions
-  typedef std::tuple<
-      scalar_type, typename operator_traits<Operator::nuclear>::oper_params_type>
+  typedef std::tuple<scalar_type, typename operator_traits<
+                                      Operator::nuclear>::oper_params_type>
       oper_params_type;
   static oper_params_type default_params() {
-    return std::make_tuple(0,operator_traits<Operator::nuclear>::default_params());
+    return std::make_tuple(
+        0, operator_traits<Operator::nuclear>::default_params());
   }
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::erf_coulomb_gm_eval<scalar_type>>
+  typedef const libint2::GenericGmEval<
+      libint2::os_core_ints::erf_coulomb_gm_eval<scalar_type>>
       core_eval_type;
 };
 
@@ -237,11 +266,14 @@ struct operator_traits<Operator::erfc_nuclear>
     : public detail::default_operator_traits {
   /// the attenuation parameter (0 = no attenuation, +infinity = zero potential)
   /// + point charges and positions
-  typedef typename operator_traits<Operator::erf_nuclear>::oper_params_type oper_params_type;
+  typedef typename operator_traits<Operator::erf_nuclear>::oper_params_type
+      oper_params_type;
   static oper_params_type default_params() {
-    return std::make_tuple(0,operator_traits<Operator::nuclear>::default_params());
+    return std::make_tuple(
+        0, operator_traits<Operator::nuclear>::default_params());
   }
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::erfc_coulomb_gm_eval<scalar_type>>
+  typedef const libint2::GenericGmEval<
+      libint2::os_core_ints::erfc_coulomb_gm_eval<scalar_type>>
       core_eval_type;
 };
 
@@ -252,7 +284,7 @@ struct operator_traits<Operator::emultipole1>
   /// moment is defined
   typedef std::array<double, 3> oper_params_type;
   static oper_params_type default_params() {
-    return oper_params_type{{0,0,0}};
+    return oper_params_type{{0, 0, 0}};
   }
   static constexpr auto nopers = 4u;  //!< overlap + 3 dipole components
 };
@@ -305,14 +337,15 @@ struct operator_traits<Operator::delcgtg2>
 template <>
 struct operator_traits<Operator::delta>
     : public detail::default_operator_traits {
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::delta_gm_eval<scalar_type>>
+  typedef const libint2::GenericGmEval<
+      libint2::os_core_ints::delta_gm_eval<scalar_type>>
       core_eval_type;
 };
 
 template <>
-struct operator_traits<Operator::r12>
-    : public detail::default_operator_traits {
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::r12_xx_K_gm_eval<scalar_type, 1>>
+struct operator_traits<Operator::r12> : public detail::default_operator_traits {
+  typedef const libint2::GenericGmEval<
+      libint2::os_core_ints::r12_xx_K_gm_eval<scalar_type, 1>>
       core_eval_type;
 };
 
@@ -321,10 +354,9 @@ struct operator_traits<Operator::erf_coulomb>
     : public detail::default_operator_traits {
   /// the attenuation parameter (0 = zero potential, +infinity = no attenuation)
   typedef scalar_type oper_params_type;
-  static oper_params_type default_params() {
-    return oper_params_type{0};
-  }
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::erf_coulomb_gm_eval<scalar_type>>
+  static oper_params_type default_params() { return oper_params_type{0}; }
+  typedef const libint2::GenericGmEval<
+      libint2::os_core_ints::erf_coulomb_gm_eval<scalar_type>>
       core_eval_type;
 };
 template <>
@@ -332,23 +364,18 @@ struct operator_traits<Operator::erfc_coulomb>
     : public detail::default_operator_traits {
   /// the attenuation parameter (0 = no attenuation, +infinity = zero potential)
   typedef scalar_type oper_params_type;
-  static oper_params_type default_params() {
-    return oper_params_type{0};
-  }
-  typedef const libint2::GenericGmEval<libint2::os_core_ints::erfc_coulomb_gm_eval<scalar_type>>
+  static oper_params_type default_params() { return oper_params_type{0}; }
+  typedef const libint2::GenericGmEval<
+      libint2::os_core_ints::erfc_coulomb_gm_eval<scalar_type>>
       core_eval_type;
 };
 
 template <>
-struct operator_traits<Operator::stg>
-    : public detail::default_operator_traits {
+struct operator_traits<Operator::stg> : public detail::default_operator_traits {
   /// the attenuation parameter (0 = constant, infinity = delta-function)
   typedef scalar_type oper_params_type;
-  static oper_params_type default_params() {
-    return oper_params_type{0};
-  }
-  typedef const libint2::TennoGmEval<scalar_type>
-      core_eval_type;
+  static oper_params_type default_params() { return oper_params_type{0}; }
+  typedef const libint2::TennoGmEval<scalar_type> core_eval_type;
 };
 
 template <>
@@ -356,16 +383,12 @@ struct operator_traits<Operator::stg_x_coulomb>
     : public detail::default_operator_traits {
   /// the attenuation parameter (0 = coulomb, infinity = delta-function)
   typedef scalar_type oper_params_type;
-  static oper_params_type default_params() {
-    return oper_params_type{0};
-  }
-  typedef const libint2::TennoGmEval<scalar_type>
-      core_eval_type;
+  static oper_params_type default_params() { return oper_params_type{0}; }
+  typedef const libint2::TennoGmEval<scalar_type> core_eval_type;
 };
 
 /// the runtime version of \c operator_traits<oper>::default_params()
-libint2::any
-default_params(const Operator& oper);
+libint2::any default_params(const Operator& oper);
 
 namespace detail {
 template <typename core_eval_type>
@@ -375,7 +398,7 @@ using __core_eval_pack_type =
 template <Operator Op>
 using core_eval_pack_type =
     __core_eval_pack_type<typename operator_traits<Op>::core_eval_type>;
-}
+}  // namespace detail
 
 #define BOOST_PP_NBODY_BRAKET_MAX_INDEX 4
 
@@ -383,17 +406,26 @@ using core_eval_pack_type =
 /// @return rank of @c braket
 /// @throw std::logic_error if invalid @c braket given
 inline constexpr int rank(BraKet braket) {
-  return (braket==BraKet::x_x || braket==BraKet::xs_xs) ? 2 :
-         ((braket==BraKet::xs_xx || braket==BraKet::xx_xs) ? 3 :
-          ((braket==BraKet::xx_xx) ? 4 : throw std::logic_error("rank(BraKet): invalid braket given")));
+  return (braket == BraKet::x_x || braket == BraKet::xs_xs)
+             ? 2
+             : ((braket == BraKet::xs_xx || braket == BraKet::xx_xs)
+                    ? 3
+                    : ((braket == BraKet::xx_xx)
+                           ? 4
+                           : throw std::logic_error(
+                                 "rank(BraKet): invalid braket given")));
 }
 
 /// @param[in] oper an Operator object
 /// @return the default braket for @c oper
 /// @throw std::logic_error if invalid @c oper given
 inline constexpr BraKet default_braket(Operator oper) {
-  return (rank(oper)==1) ? BraKet::x_x :
-         ((rank(oper)==2) ? BraKet::xx_xx : throw std::logic_error("default_braket(Operator): invalid operator given"));
+  return (rank(oper) == 1)
+             ? BraKet::x_x
+             : ((rank(oper) == 2)
+                    ? BraKet::xx_xx
+                    : throw std::logic_error(
+                          "default_braket(Operator): invalid operator given"));
 }
 
 constexpr size_t nopers_2body = static_cast<int>(Operator::last_2body_oper) -
@@ -415,11 +447,11 @@ class Engine {
   } empty_pod;
 
  public:
-
   static constexpr auto max_ntargets =
       std::extent<decltype(std::declval<Libint_t>().targets), 0>::value;
   using target_ptr_vec =
-      std::vector<const value_type*, detail::ext_stack_allocator<const value_type*, max_ntargets>>;
+      std::vector<const value_type*,
+                  detail::ext_stack_allocator<const value_type*, max_ntargets>>;
 
   /// creates a default Engine that cannot be used for computing integrals;
   /// to be used as placeholder for copying a usable engine, OR for cleanup of
@@ -618,23 +650,26 @@ class Engine {
   int deriv_order() const { return deriv_order_; }
 
   /// (re)sets operator type to @c new_oper
-  /// @param[in] new_oper Operator whose integrals will be computed with the next call to Engine::compute()
-  /// @note this resets braket and params to their respective defaults for @c new_oper
+  /// @param[in] new_oper Operator whose integrals will be computed with the
+  /// next call to Engine::compute()
+  /// @note this resets braket and params to their respective defaults for @c
+  /// new_oper
   Engine& set(Operator new_oper) {
     if (oper_ != new_oper) {
       oper_ = new_oper;
       braket_ = default_braket(oper_);
       params_ = default_params(oper_);
       initialize();
-      core_eval_pack_ = make_core_eval_pack(oper_);  // must follow initialize() to
-                                                     // ensure default braket_ has
-                                                     // been set
+      core_eval_pack_ = make_core_eval_pack(oper_);  // must follow initialize()
+                                                     // to ensure default
+                                                     // braket_ has been set
     }
     return *this;
   }
 
   /// (re)sets braket type to @c new_braket
-  /// @param[in] new_braket integrals BraKet that will be computed with the next call to Engine::compute()
+  /// @param[in] new_braket integrals BraKet that will be computed with the next
+  /// call to Engine::compute()
   Engine& set(BraKet new_braket) {
     if (braket_ != new_braket) {
       braket_ = new_braket;
@@ -662,9 +697,10 @@ class Engine {
 
   /// reset the maximum number of primitives
   /// @param[in] n the maximum number of primitives
-  /// @note left unchanged if the value returned by Engine::max_nprim is greater than @c n
+  /// @note left unchanged if the value returned by Engine::max_nprim is greater
+  /// than @c n
   Engine& set_max_nprim(std::size_t n) {
-    if (n*n > spbra_.primpairs.size()) {
+    if (n * n > spbra_.primpairs.size()) {
       spbra_.resize(n);
       spket_.resize(n);
       initialize(n);
@@ -673,13 +709,12 @@ class Engine {
   }
 
   /// @return the maximum angular momentum that this engine can handle
-  std::size_t max_l() const {
-    return lmax_;
-  }
+  std::size_t max_l() const { return lmax_; }
 
   /// reset the maximum angular momentum
   /// @param[in] L the maximum angular momentum
-  /// @note left unchanged if the value returned by Engine::max_l is greater than @c L
+  /// @note left unchanged if the value returned by Engine::max_l is greater
+  /// than @c L
   Engine& set_max_l(std::size_t L) {
     if (L >= static_cast<std::size_t>(lmax_)) {
       lmax_ = L;
@@ -702,10 +737,13 @@ class Engine {
 
   /// Computes target shell sets of integrals.
 
-  /// @return vector of pointers to target shell sets, the number of sets = Engine::nshellsets();
-  ///         if the first pointer equals \c nullptr then all elements were screened out.
+  /// @return vector of pointers to target shell sets, the number of sets =
+  /// Engine::nshellsets();
+  ///         if the first pointer equals \c nullptr then all elements were
+  ///         screened out.
   /// \note resulting shell sets are stored in row-major order.
-  /// \note Call Engine::compute1() or Engine::compute2() directly to avoid extra copies.
+  /// \note Call Engine::compute1() or Engine::compute2() directly to avoid
+  /// extra copies.
   template <typename... ShellPack>
   __libint2_engine_inline const target_ptr_vec& compute(
       const libint2::Shell& first_shell, const ShellPack&... rest_of_shells);
@@ -713,46 +751,48 @@ class Engine {
   /// Computes target shell sets of 1-body integrals.
   /// @param[in] s1 bra shell
   /// @param[in] s2 ket shell
-  /// @return vector of pointers to target shell sets, the number of sets = Engine::nshellsets()
-  /// \note resulting shell sets are stored in row-major order
+  /// @return vector of pointers to target shell sets, the number of sets =
+  /// Engine::nshellsets() \note resulting shell sets are stored in row-major
+  /// order
   __libint2_engine_inline const target_ptr_vec& compute1(
       const libint2::Shell& s1, const libint2::Shell& s2);
 
   /// Computes target shell sets of 2-body integrals, @code  @endcode
-  /// @note result is stored in the "chemists"/Mulliken form, @code (bra1 bra2|ket1 ket2) @endcode;
-  /// the "physicists"/Dirac bra-ket form is @code <bra1 ket1|bra2 ket2> @endcode, where @c bra1 and @c bra2
-  /// refer to particle 1, and @c ket1 and @c ket2 refer to particle 2.
+  /// @note result is stored in the "chemists"/Mulliken form, @code (bra1
+  /// bra2|ket1 ket2) @endcode; the "physicists"/Dirac bra-ket form is @code
+  /// <bra1 ket1|bra2 ket2> @endcode, where @c bra1 and @c bra2 refer to
+  /// particle 1, and @c ket1 and @c ket2 refer to particle 2.
   /// @tparam oper operator
   /// @tparam braket the integral type
-  /// @tparam deriv_order the derivative order, values greater than 2 not yet supported
+  /// @tparam deriv_order the derivative order, values greater than 2 not yet
+  /// supported
   /// @param[in] bra1 the first shell in the Mulliken bra
   /// @param[in] bra2 the second shell in the Mulliken bra
   /// @param[in] ket1 the first shell in the Mulliken ket
   /// @param[in] ket2 the second shell in the Mulliken ket
   /// @param[in] spbra ShellPair data for shell pair @c {bra1,bra2}
   /// @param[in] spket ShellPair data for shell pair @c {ket1,ket2}
-  /// @return vector of pointers to target shell sets, the number of sets = Engine::nshellsets();
-  ///         if the first pointer equals \c nullptr then all elements were screened out.
+  /// @return vector of pointers to target shell sets, the number of sets =
+  /// Engine::nshellsets();
+  ///         if the first pointer equals \c nullptr then all elements were
+  ///         screened out.
   /// @note the result integrals are packed in shell sets in row-major order
-  /// (i.e. function index of shell ket2 has stride 1, function index of shell ket1 has
-  /// stride nket2, etc.).
-  /// @note internally the integrals are evaluated with shells permuted to according to the canonical
-  /// order predefined at the library generation time (see macro @c LIBINT_SHELL_SET ). To minimize the overhead it is recommended to
-  /// organize your shell loop nests in the order best suited for your particular instance of Libint library.
+  /// (i.e. function index of shell ket2 has stride 1, function index of shell
+  /// ket1 has stride nket2, etc.).
+  /// @note internally the integrals are evaluated with shells permuted to
+  /// according to the canonical order predefined at the library generation time
+  /// (see macro @c LIBINT_SHELL_SET ). To minimize the overhead it is
+  /// recommended to organize your shell loop nests in the order best suited for
+  /// your particular instance of Libint library.
   template <Operator oper, BraKet braket, size_t deriv_order>
-  __libint2_engine_inline const target_ptr_vec& compute2(const Shell& bra1,
-                                                         const Shell& bra2,
-                                                         const Shell& ket1,
-                                                         const Shell& ket2,
-                                                         const ShellPair* spbra = nullptr,
-                                                         const ShellPair* spket = nullptr);
+  __libint2_engine_inline const target_ptr_vec& compute2(
+      const Shell& bra1, const Shell& bra2, const Shell& ket1,
+      const Shell& ket2, const ShellPair* spbra = nullptr,
+      const ShellPair* spket = nullptr);
 
-  typedef const target_ptr_vec& (Engine::*compute2_ptr_type)(const Shell& bra1,
-                                                             const Shell& bra2,
-                                                             const Shell& ket1,
-                                                             const Shell& ket2,
-                                                             const ShellPair* spbra,
-                                                             const ShellPair* spket);
+  typedef const target_ptr_vec& (Engine::*compute2_ptr_type)(
+      const Shell& bra1, const Shell& bra2, const Shell& ket1,
+      const Shell& ket2, const ShellPair* spbra, const ShellPair* spket);
 
   // clang-format off
   /** this specifies target precision for computing the integrals, i.e.
@@ -772,7 +812,8 @@ class Engine {
       ln_precision_ = std::numeric_limits<scalar_type>::lowest();
       return *this;
     }
-    if (prec > 0.) {  // split single if/else to avoid speculative execution of else branch on Apple M1 with apple clang 13.0.0
+    if (prec > 0.) {  // split single if/else to avoid speculative execution of
+                      // else branch on Apple M1 with apple clang 13.0.0
       precision_ = prec;
       using std::log;
       ln_precision_ = log(precision_);
@@ -785,7 +826,10 @@ class Engine {
   scalar_type precision() const { return precision_; }
 
   /// @param screening_method method used to screen primitive contributions
-  Engine& set(ScreeningMethod screening_method) { screening_method_ = screening_method; return *this; }
+  Engine& set(ScreeningMethod screening_method) {
+    screening_method_ = screening_method;
+    return *this;
+  }
 
   /// @return the method used to screen primitive contributions
   ScreeningMethod screening_method() const { return screening_method_; }
@@ -804,11 +848,10 @@ class Engine {
   }
 
   /// @return the scaling factor by which the target integrals are multiplied
-  scalar_type prescaled_by() const {
-    return scale_;
-  }
+  scalar_type prescaled_by() const { return scale_; }
 
-  /// @param[in] sc the scaling factor by which the target integrals are multiplied
+  /// @param[in] sc the scaling factor by which the target integrals are
+  /// multiplied
   /// @note the default factor is 1
   /// @return reference to @c this for daisy-chaining
   Engine& prescale_by(scalar_type sc) {
@@ -835,10 +878,11 @@ class Engine {
 #ifdef LIBINT2_ENGINE_PROFILE_CLASS
     for (const auto& p : class_profiles) {
       char buf[1024];
-      std::snprintf(buf, sizeof(buf), "{\"%s\", %10.5lf, %10.5lf, %10.5lf, %10.5lf, %ld, %ld},",
-             p.first.to_string().c_str(), p.second.prereqs, p.second.build_vrr,
-             p.second.build_hrr, p.second.tform, p.second.nshellset,
-             p.second.nprimset);
+      std::snprintf(buf, sizeof(buf),
+                    "{\"%s\", %10.5lf, %10.5lf, %10.5lf, %10.5lf, %ld, %ld},",
+                    p.first.to_string().c_str(), p.second.prereqs,
+                    p.second.build_vrr, p.second.build_hrr, p.second.tform,
+                    p.second.nshellset, p.second.nprimset);
       os << buf << std::endl;
     }
 #endif
@@ -876,8 +920,8 @@ class Engine {
    public:
     using_default_initialized()
         : std::logic_error(
-        "Engine::using_default_initialized -- attempt to use a default-initialized Engine") {
-    }
+              "Engine::using_default_initialized -- attempt to use a "
+              "default-initialized Engine") {}
     ~using_default_initialized() noexcept {}
   };
 
@@ -889,10 +933,13 @@ class Engine {
   size_t stack_size_;  // amount allocated by libint2_init_xxx in
                        // primdata_[0].stack
   int lmax_;
-  int hard_lmax_;  // max L supported by library for this operator type (i.e. LIBINT2_MAX_AM_<task><deriv_order>) + 1
-  int hard_default_lmax_;  // max L supported by library for default operator type
-                           // (i.e. LIBINT2_MAX_AM_default<deriv_order>) + 1
-                           // this is only set and used if LIBINT2_CENTER_DEPENDENT_MAX_AM_<task><deriv_order> == 1
+  int hard_lmax_;  // max L supported by library for this operator type (i.e.
+                   // LIBINT2_MAX_AM_<task><deriv_order>) + 1
+  int hard_default_lmax_;  // max L supported by library for default operator
+                           // type (i.e. LIBINT2_MAX_AM_default<deriv_order>) +
+                           // 1 this is only set and used if
+                           // LIBINT2_CENTER_DEPENDENT_MAX_AM_<task><deriv_order>
+                           // == 1
   int deriv_order_;
   scalar_type precision_;
   scalar_type ln_precision_;
@@ -901,7 +948,8 @@ class Engine {
   // specifies the normalization convention for Cartesian Gaussians
   CartesianShellNormalization cartesian_shell_normalization_;
 
-  // the target integrals are scaled by this factor (of course it is actually the core integrals that are scaled)
+  // the target integrals are scaled by this factor (of course it is actually
+  // the core integrals that are scaled)
   scalar_type scale_;
 
   any core_eval_pack_;
@@ -924,9 +972,9 @@ class Engine {
   bool set_targets_;
 
   std::vector<value_type>
-      scratch_;       // for transposes and/or transforming to solid harmonics
-  value_type* scratch2_;  // &scratch_[0] points to the first block large enough to
-                      // hold all target ints
+      scratch_;  // for transposes and/or transforming to solid harmonics
+  value_type* scratch2_;  // &scratch_[0] points to the first block large enough
+                          // to hold all target ints
   // scratch2_ points to second such block. It could point into scratch_ or at
   // primdata_[0].stack
   typedef void (*buildfnptr_t)(const Libint_t*);
@@ -946,17 +994,18 @@ class Engine {
   void reset_scratch() {
     const auto nshsets = compute_nshellsets();
     targets_.resize(nshsets);
-    set_targets_ = (&targets_[0] != const_cast<const value_type**>(primdata_[0].targets));
+    set_targets_ =
+        (&targets_[0] != const_cast<const value_type**>(primdata_[0].targets));
     const auto ncart_max = (lmax_ + 1) * (lmax_ + 2) / 2;
     const auto target_shellset_size =
         nshsets * std::pow(ncart_max, braket_rank());
     // need to be able to hold 2 sets of target shellsets: the worst case occurs
     // when dealing with
-    // 1-body Coulomb ints derivatives ... have 2+natom 1st-order derivative sets
-    // (and many more of 2nd and higher) that are stored in scratch
-    // then need to transform to solids. To avoid copying back and forth make
-    // sure that there is enough
-    // room to transform all ints and save them in correct order in single pass
+    // 1-body Coulomb ints derivatives ... have 2+natom 1st-order derivative
+    // sets (and many more of 2nd and higher) that are stored in scratch then
+    // need to transform to solids. To avoid copying back and forth make sure
+    // that there is enough room to transform all ints and save them in correct
+    // order in single pass
     const auto need_extra_large_scratch = stack_size_ < target_shellset_size;
     scratch_.resize(need_extra_large_scratch ? 2 * target_shellset_size
                                              : target_shellset_size);
@@ -969,14 +1018,14 @@ class Engine {
                                                 const Shell& s2, size_t p1,
                                                 size_t p2, size_t oset);
 
-public:
+ public:
   /// 3-dim array of pointers to help dispatch efficiently based on oper_,
   /// braket_, and deriv_order_
   /// @note public since 2.7.0 to support efficient dispatch in user code
   __libint2_engine_inline const std::vector<Engine::compute2_ptr_type>&
   compute2_ptrs() const;
 
-private:
+ private:
   // max_nprim=0 avoids resizing primdata_
   __libint2_engine_inline void initialize(size_t max_nprim = 0);
   // generic _initializer
@@ -993,6 +1042,7 @@ private:
   //-------
   unsigned int nparams() const;
   unsigned int nopers() const;
+  unsigned int intrinsic_deriv_order() const;
   /// if Params == operator_traits<oper>::oper_params_type, will return
   /// \c any(params)
   /// else will set return \c any initialized with default value for
@@ -1013,7 +1063,6 @@ private:
   static const bool skip_core_ints = false;
 };  // struct Engine
 
-
 }  // namespace libint2
 
 #ifndef LIBINT2_DOES_NOT_INLINE_ENGINE
@@ -1021,4 +1070,3 @@ private:
 #endif
 
 #endif /* _libint2_src_lib_libint_engine_h_ */
-

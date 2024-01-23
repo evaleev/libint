@@ -25,17 +25,17 @@
 
 namespace libint2 {
 
-  template <typename T>
-  struct is_vector {
-      static const bool value = false;
-  };
+template <typename T>
+struct is_vector {
+  static const bool value = false;
+};
 
-  template <typename T>
-  struct vector_traits {
-      typedef T scalar_type;
-      static const std::size_t extent = 1;
-  };
+template <typename T>
+struct vector_traits {
+  typedef T scalar_type;
+  static const std::size_t extent = 1;
+};
 
-} // namespace libint2
+}  // namespace libint2
 
 #endif /* _libint2_include_libint2_typetraits_h_ */

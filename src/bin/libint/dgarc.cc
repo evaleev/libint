@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -23,9 +23,10 @@
 using namespace std;
 using namespace libint2;
 
-DGArc::DGArc(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) :
-  orig_(orig), dest_(dest) {}
+DGArc::DGArc(const std::shared_ptr<DGVertex>& orig,
+             const std::shared_ptr<DGVertex>& dest)
+    : orig_(orig), dest_(dest) {}
 
-DGArcRR::DGArcRR(const SafePtr<DGVertex>& orig, const SafePtr<DGVertex>& dest) :
-  DGArc(orig,dest) {}
-
+DGArcRR::DGArcRR(const std::shared_ptr<DGVertex>& orig,
+                 const std::shared_ptr<DGVertex>& dest)
+    : DGArc(orig, dest) {}

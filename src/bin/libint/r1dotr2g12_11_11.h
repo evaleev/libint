@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -26,16 +26,20 @@
 
 namespace libint2 {
 
-  /**
-     RidotRjG12_11_11 --
-     integral over RidotRj_G12 operator with one bfs for each particle in bra and ket.
-  */
-  typedef GenIntegralSet_11_11<CGShell,R1dotR1_G12,EmptySet> R1dotR1G12_11_11_sq;
-  typedef GenIntegralSet_11_11<CGF,R1dotR1_G12,EmptySet> R1dotR1G12_11_11_int;
-  typedef GenIntegralSet_11_11<CGShell,R2dotR2_G12,EmptySet> R2dotR2G12_11_11_sq;
-  typedef GenIntegralSet_11_11<CGF,R2dotR2_G12,EmptySet> R2dotR2G12_11_11_int;
-  typedef GenIntegralSet_11_11<CGShell,R1dotR2_G12,EmptySet> R1dotR2G12_11_11_sq;
-  typedef GenIntegralSet_11_11<CGF,R1dotR2_G12,EmptySet> R1dotR2G12_11_11_int;
+/**
+   RidotRjG12_11_11 --
+   integral over RidotRj_G12 operator with one bfs for each particle in bra and
+   ket.
+*/
+typedef GenIntegralSet_11_11<CGShell, R1dotR1_G12, EmptySet>
+    R1dotR1G12_11_11_sq;
+typedef GenIntegralSet_11_11<CGF, R1dotR1_G12, EmptySet> R1dotR1G12_11_11_int;
+typedef GenIntegralSet_11_11<CGShell, R2dotR2_G12, EmptySet>
+    R2dotR2G12_11_11_sq;
+typedef GenIntegralSet_11_11<CGF, R2dotR2_G12, EmptySet> R2dotR2G12_11_11_int;
+typedef GenIntegralSet_11_11<CGShell, R1dotR2_G12, EmptySet>
+    R1dotR2G12_11_11_sq;
+typedef GenIntegralSet_11_11<CGF, R1dotR2_G12, EmptySet> R1dotR2G12_11_11_int;
 
 #if 0
   template <class BFS> class R1dotR2G12_11_11 :
@@ -63,9 +67,9 @@ namespace libint2 {
       /* This "constructor" takes basis function sets, in Mulliken ordering.
          Returns a pointer to a unique instance, a la Singleton
       */
-      static const SafePtr<R1dotR2G12_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1);
+      static const std::shared_ptr<R1dotR2G12_11_11> Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1);
       /// Returns a pointer to a unique instance, a la Singleton
-      static const SafePtr<R1dotR2G12_11_11> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
+      static const std::shared_ptr<R1dotR2G12_11_11> Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux);
       ~R1dotR2G12_11_11();
 
       /// Comparison operator
@@ -95,7 +99,7 @@ namespace libint2 {
     typename R1dotR2G12_11_11<BFS>::SingletonManagerType
     R1dotR2G12_11_11<BFS>::singl_manager_(&R1dotR2G12_11_11<BFS>::key);
 #else
-#  error "USE_INT_KEY_TO_HASH must be set"
+#error "USE_INT_KEY_TO_HASH must be set"
 #endif
 
   template <class BFS>
@@ -124,24 +128,24 @@ namespace libint2 {
     }
 
   template <class BFS>
-    const SafePtr< R1dotR2G12_11_11<BFS> >
+    const std::shared_ptr< R1dotR2G12_11_11<BFS> >
     R1dotR2G12_11_11<BFS>::Instance(const BraType& bra, const KetType& ket, const AuxIndexType& aux)
     {
       typedef typename SingletonManagerType::value_type map_value_type;
       key_type key = compute_key(OperType(),bra,ket,aux);
       const map_value_type& val = singl_manager_.find(key);
       if (!val.second) {
-	SafePtr<R1dotR2G12_11_11> this_int(new R1dotR2G12_11_11<BFS>(bra,ket,aux));
-	// Use singl_manager_ to make sure this is a new object of this type
-	const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
-	val.second->instid_ = val.first;
-	return val.second;
+std::shared_ptr<R1dotR2G12_11_11> this_int(new R1dotR2G12_11_11<BFS>(bra,ket,aux));
+// Use singl_manager_ to make sure this is a new object of this type
+const typename SingletonManagerType::value_type& val = singl_manager_.find(this_int);
+val.second->instid_ = val.first;
+return val.second;
       }
       return val.second;
     }
 
   template <class BFS>
-    const SafePtr< R1dotR2G12_11_11<BFS> >
+    const std::shared_ptr< R1dotR2G12_11_11<BFS> >
     R1dotR2G12_11_11<BFS>::Instance(const BFS& bra0, const BFS& ket0, const BFS& bra1, const BFS& ket1)
     {
 #if USE_BRAKET_H
@@ -151,7 +155,7 @@ namespace libint2 {
       BFSRef ket0_ref(ket0);
       BFSRef ket1_ref(ket1);
 #else
-      typedef SafePtr<BFS> BFSRef;
+      typedef std::shared_ptr<BFS> BFSRef;
       BFSRef bra0_ref(new BFS(bra0));
       BFSRef bra1_ref(new BFS(bra1));
       BFSRef ket0_ref(new BFS(ket0));
@@ -182,13 +186,13 @@ namespace libint2 {
     R1dotR2G12_11_11<BFS>::label() const
     {
       if (label_.empty()) {
-	ostringstream os;
-	os << "(" << parent_type::bra_.member(0,0)->label() << " "
-	   << parent_type::ket_.member(0,0)->label()
-	   << " | r_1.r_2 * G12 | "
-	   << parent_type::bra_.member(1,0)->label() << " "
-	   << parent_type::ket_.member(1,0)->label() << ")";
-	label_ = os.str();
+ostringstream os;
+os << "(" << parent_type::bra_.member(0,0)->label() << " "
+   << parent_type::ket_.member(0,0)->label()
+   << " | r_1.r_2 * G12 | "
+   << parent_type::bra_.member(1,0)->label() << " "
+   << parent_type::ket_.member(1,0)->label() << ")";
+label_ = os.str();
       }
       return label_;
     };
@@ -206,7 +210,6 @@ namespace libint2 {
   typedef R1dotR2G12_11_11<CGF> R1dotR2G12_11_11_int;
 #endif
 
-};
+};  // namespace libint2
 
 #endif
-

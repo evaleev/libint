@@ -16,12 +16,15 @@ jobs:
         include:
           - os: ubuntu-20.04
             cxx: g++-10
+            cc: gcc-10
           - os: macos-latest
             cxx: clang++
+            cc: clang
 
     name: "Repo • ${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }}"
     runs-on: ${{ matrix.os }}
     env:
+      CC: ${{ matrix.cc }}
       CXX : ${{ matrix.cxx }}
       CCACHE_DIR : ${{github.workspace}}/build/.ccache
       CCACHE_COMPRESS : true
@@ -35,6 +38,7 @@ jobs:
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
         -DENABLE_FORTRAN=ON
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/library/install
+        -DPython_EXECUTABLE=${{ matrix.os == 'macos-latest' && '/usr/local/Frameworks/Python.framework/Versions/3.11/bin/python3.11' || '/usr/bin/python3.8' }}
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
@@ -137,7 +141,7 @@ jobs:
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.8)
         project(hf++)
-        find_package(Libint2 2.8.0 REQUIRED)
+        find_package(Libint2 2.8.1 REQUIRED)
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
         add_executable(hf++ EXCLUDE_FROM_ALL $LIBINT_EXPORTED_DIR/tests/hartree-fock/hartree-fock++.cc)
         target_link_libraries(hf++ Libint2::cxx Threads::Threads)
@@ -147,7 +151,7 @@ jobs:
         ./hf++ $LIBINT_EXPORTED_DIR/tests/hartree-fock/h2o_rotated.xyz | python $LIBINT_EXPORTED_DIR/tests/hartree-fock/hartree-fock++-validate.py $LIBINT_EXPORTED_DIR/MakeVars.features
 
     - name: Build Python bindings
-      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os != 'macos-latest' }}
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
       shell: bash
       working-directory: ${{github.workspace}}/build/library
       run: |
@@ -185,6 +189,7 @@ jobs:
               -DBUILD_SHARED_LIBS=OFF
               -DCMAKE_CXX_COMPILER=clang-cl
               -DCMAKE_C_COMPILER=clang-cl
+              -DCMAKE_CXX_FLAGS="/source-charset:utf-8 /execution-charset:utf-8 /DUNICODE /D_UNICODE"
             testargs: >
               -GNinja
               -DCMAKE_BUILD_TYPE=Release
@@ -295,7 +300,7 @@ jobs:
         cat > CMakeLists.txt <<EOF
         cmake_minimum_required(VERSION 3.8)
         project(hf++)
-        find_package(Libint2 2.8.0 REQUIRED)
+        find_package(Libint2 2.8.1 REQUIRED)
         get_target_property(_l2_maxam Libint2::int2 Libint2_MAX_AM_ERI)
         message("Libint2_MAX_AM_ERI \${_l2_maxam}")
         find_package(Threads)  # clang does not autolink threads even though we are using std::thread
@@ -313,4 +318,3 @@ jobs:
         cmake . -D CMAKE_PREFIX_PATH="${{github.workspace}}/installed" ${{ matrix.cfg.testargs }}
         cmake --build . --target libint2-python
         cmake --build . --target libint2-python-test
-

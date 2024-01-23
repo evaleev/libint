@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2023 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -21,9 +21,9 @@
 #ifndef _libint2_src_bin_libint_shgshellordering_h_
 #define _libint2_src_bin_libint_shgshellordering_h_
 
-#include <cmath>
-
 #include <libint2/config.h>
+
+#include <cmath>
 
 namespace libint2 {
 
@@ -74,8 +74,8 @@ inline int INT_SOLIDHARMINDEX_GAUSSIAN(int l, int m) {
  */
 #define FOR_SOLIDHARM_GAUSSIAN(l, m) \
   for ((m) = 0; (m) != (l) + 1; (m) = ((m) > 0 ? -(m) : 1 - (m))) {
-
-/// these always-available macros encode orderings assumed by Molden ... useful for writing Molden-specific code
+/// these always-available macros encode orderings assumed by Molden ... useful
+/// for writing Molden-specific code
 /// @note Molden and Gaussian ordering coincide
 
 namespace libint2 {
@@ -88,23 +88,28 @@ inline int INT_SOLIDHARMINDEX_MOLDEN(int l, int m) {
 #define END_FOR_SOLIDHARM_MOLDEN END_FOR_SOLIDHARM
 
 namespace libint2 {
-  LIBINT_DEPRECATED("please use libint2::INT_SOLIDHARMINDEX(libint2::solid_harmonics_ordering(), l, m) instead. Current function returns the standard or gaussian index based on build configuration, not on libint2::set_solid_harmonics_ordering() argument.")
-  inline int INT_SOLIDHARMINDEX(int l, int m) {
+LIBINT_DEPRECATED(
+    "please use "
+    "libint2::INT_SOLIDHARMINDEX(libint2::solid_harmonics_ordering(), l, m) "
+    "instead. Current function returns the standard or gaussian index based on "
+    "build configuration, not on libint2::set_solid_harmonics_ordering() "
+    "argument.")
+inline int INT_SOLIDHARMINDEX(int l, int m) {
 #if LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_STANDARD
-    return libint2::INT_SOLIDHARMINDEX_STANDARD(l, m);
+  return libint2::INT_SOLIDHARMINDEX_STANDARD(l, m);
 #elif LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_GAUSSIAN
-    return libint2::INT_SOLIDHARMINDEX_GAUSSIAN(l, m);
+  return libint2::INT_SOLIDHARMINDEX_GAUSSIAN(l, m);
 #else
-#  error "unknown value of macro LIBINT_SHGSHELL_ORDERING"
+#error "unknown value of macro LIBINT_SHGSHELL_ORDERING"
 #endif
-  }
+}
 
-  inline int INT_SOLIDHARMINDEX(int sho, int l, int m) {
-    if (sho == LIBINT_SHGSHELL_ORDERING_STANDARD)
-      return libint2::INT_SOLIDHARMINDEX_STANDARD(l, m);
-    else
-      return libint2::INT_SOLIDHARMINDEX_GAUSSIAN(l, m);
-  }
+inline int INT_SOLIDHARMINDEX(int sho, int l, int m) {
+  if (sho == LIBINT_SHGSHELL_ORDERING_STANDARD)
+    return libint2::INT_SOLIDHARMINDEX_STANDARD(l, m);
+  else
+    return libint2::INT_SOLIDHARMINDEX_GAUSSIAN(l, m);
+}
 }
 
 // FOR_SOLIDHARM dispatches to the appropriate FOR_SOLIDHARM_ macro
@@ -113,7 +118,7 @@ namespace libint2 {
 #elif LIBINT_SHGSHELL_ORDERING == LIBINT_SHGSHELL_ORDERING_GAUSSIAN
 #define FOR_SOLIDHARM FOR_SOLIDHARM_GAUSSIAN
 #else
-#  error "unknown value of macro LIBINT_SHGSHELL_ORDERING"
+#error "unknown value of macro LIBINT_SHGSHELL_ORDERING"
 #endif
 
 #endif  // _libint2_src_bin_libint_shgshellordering_h_

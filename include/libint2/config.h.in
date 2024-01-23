@@ -208,62 +208,8 @@
 /* define if CXX compiler can compile C++11 */
 #undef LIBINT_HAS_CXX11
 
-/* define if array has fill member function. */
-#undef LIBINT_ARRAY_HAS_FILL
-
-/* define if std::array is available. */
-#undef LIBINT_HAS_STD_ARRAY
-
-/* define if std::make_shared and std::allocate_shared are available. */
-#undef LIBINT_HAS_STD_MAKE_SHARED
-
-/* define if std::shared_ptr is available. */
-#undef LIBINT_HAS_STD_SHARED_PTR
-
-/* define if std::tr1::array is available. */
-#undef LIBINT_HAS_STD_TR1_ARRAY
-
-/* define if std::tr1::shared_ptr is available. */
-#undef LIBINT_HAS_STD_TR1_SHARED_PTR
-
-/* define if std::tr1 type traits are available. */
-#undef LIBINT_HAS_STD_TR1_TYPE_TRAITS
-
-/* define if std type traits are available. */
-#undef LIBINT_HAS_STD_TYPE_TRAITS
-
-/* define if Libint is using <array>. */
-#undef LIBINT_USE_ARRAY
-
-/* define if Libint is using <boost/tr1/array.hpp>. */
-#undef LIBINT_USE_BOOST_TR1_ARRAY_HPP
-
-/* define if Libint is using <boost/tr1/memory.hpp>. */
-#undef LIBINT_USE_BOOST_TR1_MEMORY_HPP
-
-/* define if Libint is using <boost/tr1/type_traits.hpp>. */
-#undef LIBINT_USE_BOOST_TR1_TYPE_TRAITS_HPP
-
-/* define if Libint is using <memory>. */
-#undef LIBINT_USE_MEMORY
-
-/* define if Libint is using <tr1/array>. */
-#undef LIBINT_USE_TR1_ARRAY
-
-/* define if Libint is using <tr1/memory>. */
-#undef LIBINT_USE_TR1_MEMORY
-
-/* define if Libint is using <tr1/type_traits>. */
-#undef LIBINT_USE_TR1_TYPE_TRAITS
-
-/* define if Libint is using <type_traits>. */
-#undef LIBINT_USE_TYPE_TRAITS
-
 /* C++ compiler allows template with default params as template template parameter */
 #undef CXX_ALLOWS_DEFPARAMTEMPLATE_AS_TEMPTEMPPARAM
-
-/* is shared_ptr in boost? */
-#undef HAVE_SHARED_PTR_IN_BOOST
 
 /* define if Eigen library is available. */
 #undef LIBINT_HAS_EIGEN
@@ -354,6 +300,22 @@
 #endif
 #ifndef LIBINT_DEPRECATED
 #define LIBINT_DEPRECATED(msg) LIBINT_XPRAGMA( LIBINT_CONCAT(message, msg) )
+#endif
+
+#ifdef __has_cpp_attribute
+#if __has_cpp_attribute(maybe_unused)
+#define LIBINT_MAYBE_UNUSED [[maybe_unused]]
+#endif
+#endif  // __has_cpp_attribute
+#ifndef LIBINT_MAYBE_UNUSED
+#if defined __has_attribute
+#  if __has_attribute (unused)
+#    define LIBINT_MAYBE_UNUSED __attribute__ ((unused))
+#  endif
+#endif  // __has_attribute
+#endif  // LIBINT_MAYBE_UNUSED
+#ifndef LIBINT_MAYBE_UNUSED  // fallback
+#define LIBINT_MAYBE_UNUSED
 #endif
 
 #endif /* header guard */
