@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2021 Edward F. Valeev
+ *  Copyright (C) 2004-2024 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -23,6 +23,7 @@
 
 #include <libint2/atom.h>
 #include <libint2/basis.h>
+#include <libint2/chemistry/sto3g_atomic_density.h>
 
 #include <Eigen/Dense>
 

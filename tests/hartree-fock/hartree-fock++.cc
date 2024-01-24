@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2023 Edward F. Valeev
+ *  Copyright (C) 2004-2024 Edward F. Valeev
  *
  *  This file is part of Libint.
  *
@@ -44,10 +44,10 @@
 #endif  // LIBINT2_HAVE_BTAS
 
 // Libint Gaussian integrals library
-#include <libint2/chemistry/sto3g_atomic_density.h>
 #include <libint2/dfbs_generator.h>
 #include <libint2/diis.h>
 #include <libint2/lcao/molden.h>
+#include <libint2/soad_fock.h>
 #include <libint2/util/intpart_iter.h>
 
 #include <libint2.hpp>
@@ -322,7 +322,8 @@ int main(int argc, char* argv[]) {
       }
       const auto tstop = std::chrono::high_resolution_clock::now();
       const std::chrono::duration<double> time_elapsed = tstop - tstart;
-      std::cout << "computed shell-pair data in " << time_elapsed.count() << " seconds: # of {all,non-negligible} shell-pairs = {"
+      std::cout << "computed shell-pair data in " << time_elapsed.count()
+                << " seconds: # of {all,non-negligible} shell-pairs = {"
                 << obs.size() * (obs.size() + 1) / 2 << "," << nsp << "}"
                 << std::endl;
     }
@@ -359,7 +360,8 @@ int main(int argc, char* argv[]) {
     {  // use SOAD as the guess density
       const auto tstart = std::chrono::high_resolution_clock::now();
 
-      auto D_minbs = compute_soad(atoms);  // compute guess in minimal basis
+      auto D_minbs =
+          libint2::compute_soad(atoms);  // compute guess in minimal basis
       BasisSet minbs("STO-3G", atoms);
       if (minbs == obs)
         D = D_minbs;
@@ -707,7 +709,7 @@ int main(int argc, char* argv[]) {
     {  // compute hessian
       const auto ncoords = 3 * atoms.size();
       // # of elems in upper triangle
-      const auto nelem =  ncoords * (ncoords+1) / 2;
+      const auto nelem = ncoords * (ncoords + 1) / 2;
 #if LIBINT2_DERIV_ONEBODY_ORDER > 1
       // compute 1-e hessian
       Matrix H1 = Matrix::Zero(ncoords, ncoords);
@@ -2491,8 +2493,8 @@ void api_basic_compile_test(const BasisSet& obs,
         auto n2 = obs[s2].size();  // number of basis functions in second shell
 
         // loop over derivative shell sets
-        for(auto d=0; d!=6; ++d) {
-          const auto* buf4 = results4[d<3 ? d : d+3];
+        for (auto d = 0; d != 6; ++d) {
+          const auto* buf4 = results4[d < 3 ? d : d + 3];
           const auto* buf2 = results2[d];
 
           // this iterates over integrals in the order they are packed in array
