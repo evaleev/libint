@@ -224,9 +224,12 @@ int main(int argc, char* argv[]) {
     double cholesky_threshold = 1e-4;
 #ifdef HAVE_DENSITY_FITTING
     do_density_fitting = (argc > 3);
-    const auto dfbasisname = do_density_fitting ? argv[3] : "";
-    if ((strcmp(dfbasisname, "autodf") == 0) && argc > 4) {
-      cholesky_threshold = std::stod(argv[4]);
+    const std::string dfbasisname = do_density_fitting ? argv[3] : "";
+
+    // if autoDF use e.g. -> autodf(1e-6) as command line argument
+    if (dfbasisname.rfind("autodf", 0) == 0) {
+      cholesky_threshold =
+          std::stod(dfbasisname.substr(7, dfbasisname.length() - 8));
       std::cout << "New Cholesky threshold for generating df basis set = "
                 << cholesky_threshold << std::endl;
     }
@@ -291,7 +294,7 @@ int main(int argc, char* argv[]) {
 #ifdef HAVE_DENSITY_FITTING
     BasisSet dfbs;
     if (do_density_fitting) {
-      if (strcmp(dfbasisname, "autodf") == 0) {
+      if (dfbasisname.rfind("autodf", 0) == 0) {
         std::vector<Shell> dfbs_shells;
         for (auto&& atom : atoms) {
           libint2::DFBasisSetGenerator dfbs_generator(basisname, atom,
