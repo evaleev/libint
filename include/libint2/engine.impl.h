@@ -1827,13 +1827,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         /// lmax might be center dependent
         int ket_lmax = hard_lmax_;
         switch (deriv_order_) {
-#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                      \
-  case i:                                                                \
-    BOOST_PP_IF(                                                         \
-        BOOST_PP_IS_1(BOOST_PP_CAT(                                      \
-            LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri,                        \
-            BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), i, BOOST_PP_EMPTY()))), \
-        ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY());                \
+          // N.B. notice extra PP_CAT to avoid using
+          // LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri as a subtoken which gets
+          // expanded too early ... i.e. PP_CAT is "not associative"
+#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                            \
+  case i:                                                                      \
+    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(                                    \
+                    LIBINT2_CENTER_DEPENDENT_MAX_AM_,                          \
+                    BOOST_PP_CAT(3eri, BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), i, \
+                                                    BOOST_PP_EMPTY())))),      \
+                ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY());              \
     break;
 
           BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR8, _,
