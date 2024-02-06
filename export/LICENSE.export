@@ -1,6 +1,6 @@
 Libint - a library for the evaluation of molecular integrals of many-body operators over Gaussian functions
 
-Copyright (C) 2004-2023 Edward F. Valeev
+Copyright (C) 2004-2024 Edward F. Valeev
 
 Libint is free software. The generated Libint library can be distributed under
 the GNU Lesser General Public License, version 3, (see files COPYING.LESSER and COPYING,

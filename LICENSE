@@ -1,12 +1,12 @@
 Libint - a library for the evaluation of molecular integrals of many-body operators over Gaussian functions
 
-Copyright (C) 2004-2023 Edward F. Valeev
+Copyright (C) 2004-2024 Edward F. Valeev
 
-Libint is free software. Most of the source code of the Libint compiler (code generator)
+Libint is free software. Most of the source code of Libint, the "Libint compiler" (code generator)
 can be redistributed and/or modified under the terms of the GNU General Public License, version 3,
 as published by the Free Software Foundation (see the accompanying file COPYING;
 if you did not receive this file refer to <http://www.gnu.org/licenses/>).
-The rest of Libint, including the generated source, can be distributed under
+The rest of Libint, including the generated source, ("Libint library") can be distributed under
 the GNU Lesser General Public License, version 3, (see the file COPYING.LESSER,
 or <http://www.gnu.org/licenses/>). The applicable license is specified in each
 source file. If not indicated, the applicable license is GNU LGPL, version 3 (not GPL).

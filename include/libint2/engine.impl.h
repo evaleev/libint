@@ -1,20 +1,20 @@
 /*
- *  Copyright (C) 2004-2023 Edward F. Valeev
+ *  Copyright (C) 2004-2024 Edward F. Valeev
  *
- *  This file is part of Libint.
+ *  This file is part of Libint library.
  *
- *  Libint is free software: you can redistribute it and/or modify
+ *  Libint library is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  Libint is distributed in the hope that it will be useful,
+ *  Libint library is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with Libint library.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -1170,7 +1170,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
           tket2.ncontr() == 1) &&
          "generally-contracted shells are not yet supported");
 
-  // angular momentum limit obeyed?
+  // angular momentum limit obeyed? can only be fully checked in
+  // braket-dependent code, here only do a basic test that does not guarantee
+  // that the shell-set can be computed
   assert(tbra1.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
   assert(tbra2.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
   assert(tket1.contr[0].l <= lmax_ && "the angular momentum limit is exceeded");
@@ -1812,6 +1814,14 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     size_t buildfnidx;
     switch (braket_) {
       case BraKet::xx_xx:
+        assert(bra1.contr[0].l <= hard_lmax_ &&
+               "the angular momentum limit is exceeded");
+        assert(bra2.contr[0].l <= hard_lmax_ &&
+               "the angular momentum limit is exceeded");
+        assert(ket1.contr[0].l <= hard_lmax_ &&
+               "the angular momentum limit is exceeded");
+        assert(ket2.contr[0].l <= hard_lmax_ &&
+               "the angular momentum limit is exceeded");
         buildfnidx =
             ((bra1.contr[0].l * hard_lmax_ + bra2.contr[0].l) * hard_lmax_ +
              ket1.contr[0].l) *
@@ -1827,13 +1837,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         /// lmax might be center dependent
         int ket_lmax = hard_lmax_;
         switch (deriv_order_) {
-#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                      \
-  case i:                                                                \
-    BOOST_PP_IF(                                                         \
-        BOOST_PP_IS_1(BOOST_PP_CAT(                                      \
-            LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri,                        \
-            BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), i, BOOST_PP_EMPTY()))), \
-        ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY());                \
+          // N.B. notice extra PP_CAT to avoid using
+          // LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri as a subtoken which gets
+          // expanded too early ... i.e. PP_CAT is "not associative"
+#define BOOST_PP_NBODYENGINE_MCR8(r, data, i, elem)                            \
+  case i:                                                                      \
+    BOOST_PP_IF(BOOST_PP_IS_1(BOOST_PP_CAT(                                    \
+                    LIBINT2_CENTER_DEPENDENT_MAX_AM_,                          \
+                    BOOST_PP_CAT(3eri, BOOST_PP_IIF(BOOST_PP_GREATER(i, 0), i, \
+                                                    BOOST_PP_EMPTY())))),      \
+                ket_lmax = hard_default_lmax_, BOOST_PP_EMPTY());              \
     break;
 
           BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_NBODYENGINE_MCR8, _,
@@ -1843,6 +1856,12 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             assert(false && "missing case in switch");
             abort();
         }
+        assert(bra1.contr[0].l <= hard_lmax_ &&
+               "the angular momentum limit is exceeded");
+        assert(ket1.contr[0].l <= ket_lmax &&
+               "the angular momentum limit is exceeded");
+        assert(ket2.contr[0].l <= ket_lmax &&
+               "the angular momentum limit is exceeded");
         buildfnidx = (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
                      ket2.contr[0].l;
 #ifdef ERI3_PURE_SH
@@ -1854,6 +1873,10 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
       } break;
 
       case BraKet::xs_xs:
+        assert(bra1.contr[0].l <= hard_lmax_ &&
+               "the angular momentum limit is exceeded");
+        assert(ket1.contr[0].l <= hard_lmax_ &&
+               "the angular momentum limit is exceeded");
         buildfnidx = bra1.contr[0].l * hard_lmax_ + ket1.contr[0].l;
 #ifdef ERI2_PURE_SH
         if (bra1.contr[0].l > 1)

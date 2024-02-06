@@ -1,20 +1,20 @@
 /*
- *  Copyright (C) 2004-2023 Edward F. Valeev
+ *  Copyright (C) 2004-2024 Edward F. Valeev
  *
- *  This file is part of Libint.
+ *  This file is part of Libint compiler.
  *
- *  Libint is free software: you can redistribute it and/or modify
+ *  Libint compiler is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  Libint is distributed in the hope that it will be useful,
+ *  Libint compiler is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with Libint compiler.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -159,11 +159,12 @@ std::string CppCodeContext::copyright() const {
   std::ostringstream oss;
   using std::endl;
   oss << "/*" << endl
-      << " *  Copyright (C) 2004-2023 Edward F. Valeev" << endl
+      << " *  Copyright (C) 2004-2024 Edward F. Valeev" << endl
       << " *" << endl
-      << " *  This file is part of Libint." << endl
+      << " *  This file is part of Libint library." << endl
       << " *" << endl
-      << " *  Libint is free software: you can redistribute it and/or modify"
+      << " *  Libint library is free software: you can redistribute it and/or "
+         "modify"
       << endl
       << " *  it under the terms of the GNU Lesser General Public License as "
          "published by"
@@ -172,7 +173,8 @@ std::string CppCodeContext::copyright() const {
       << endl
       << " *  (at your option) any later version." << endl
       << " *" << endl
-      << " *  Libint is distributed in the hope that it will be useful," << endl
+      << " *  Libint library is distributed in the hope that it will be useful,"
+      << endl
       << " *  but WITHOUT ANY WARRANTY; without even the implied warranty of"
       << endl
       << " *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"
@@ -182,7 +184,8 @@ std::string CppCodeContext::copyright() const {
       << " *  You should have received a copy of the GNU Lesser General Public "
          "License"
       << endl
-      << " *  along with Libint.  If not, see <http://www.gnu.org/licenses/>."
+      << " *  along with Libint library.  If not, see "
+         "<http://www.gnu.org/licenses/>."
       << endl
       << " *" << endl
       << " */" << endl

@@ -1,3 +1,23 @@
+/*
+ *  Copyright (C) 2004-2024 Edward F. Valeev
+ *
+ *  This file is part of Libint library.
+ *
+ *  Libint library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with Libint library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include "catch.hpp"
 #include "fixture.h"
 
@@ -231,23 +251,6 @@ void validate3(const BasisSet& obs, const BasisSet& dfbs,
   if (deriv_order > LIBINT2_DERIV_ERI_ORDER ||
       deriv_order > LIBINT2_DERIV_ERI3_ORDER)
     return;
-  switch (deriv_order) {
-    case 0:
-      if (max_l > LIBINT2_MAX_AM_eri || max_l > LIBINT2_MAX_AM_3eri) return;
-      break;
-    case 1:
-#if LIBINT2_DERIV_ERI_ORDER > 0 && LIBINT2_DERIV_ERI3_ORDER > 0
-      if (max_l > LIBINT2_MAX_AM_eri1 || max_l > LIBINT2_MAX_AM_3eri1) return;
-#endif
-      break;
-    case 2:
-#if LIBINT2_DERIV_ERI_ORDER > 1 && LIBINT2_DERIV_ERI3_ORDER > 1
-      if (max_l > LIBINT2_MAX_AM_eri2 || max_l > LIBINT2_MAX_AM_3eri2) return;
-#endif
-      break;
-    default:
-      abort();
-  }
   const auto xsxx = LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD;
   if (!xsxx) return;  // not yet implemented
   const auto abs_precision = deriv_order == 1 ? 1e-12 : 1e-13;
@@ -271,6 +274,43 @@ void validate3(const BasisSet& obs, const BasisSet& dfbs,
     for (auto s2 = 0; s2 != obs.size(); ++s2) {
       for (auto s3 = 0; s3 != obs.size(); ++s3) {
         assert(xsxx);
+
+        // skip if angular momenta are too high
+        const auto max_orb_l = std::max(obs[s2].contr[0].l, obs[s3].contr[0].l);
+        const auto max_l = std::max(dfbs[s1].contr[0].l, max_orb_l);
+        auto max_l_exceeded = false;
+        switch (deriv_order) {
+          case 0:
+            if (max_l > LIBINT2_MAX_AM_eri || max_l > LIBINT2_MAX_AM_3eri)
+              max_l_exceeded = true;
+#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri
+            if (max_orb_l > LIBINT2_MAX_AM_default) max_l_exceeded = true;
+#endif
+            break;
+
+          case 1:
+#if LIBINT2_DERIV_ERI_ORDER > 0 && LIBINT2_DERIV_ERI3_ORDER > 0
+            if (max_l > LIBINT2_MAX_AM_eri1 || max_l > LIBINT2_MAX_AM_3eri1)
+              max_l_exceeded = true;
+#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri1
+            if (max_orb_l > LIBINT2_MAX_AM_default1) max_l_exceeded = true;
+#endif
+#endif
+            break;
+          case 2:
+#if LIBINT2_DERIV_ERI_ORDER > 1 && LIBINT2_DERIV_ERI3_ORDER > 1
+            if (max_l > LIBINT2_MAX_AM_eri2 || max_l > LIBINT2_MAX_AM_3eri2)
+              max_l_exceeded = true;
+#ifdef LIBINT2_CENTER_DEPENDENT_MAX_AM_3eri1
+            if (max_orb_l > LIBINT2_MAX_AM_default2) max_l_exceeded = true;
+#endif
+#endif
+            break;
+          default:
+            abort();
+        }
+        if (max_l_exceeded) continue;
+
         engine_ref.compute(dfbs[s1], Shell::unit(), obs[s2], obs[s3]);
 
         const auto& shellset_ref =

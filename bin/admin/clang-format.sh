@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # these are the versions of clang-format that are supported required
 supported_clang_format_versions="16 17"

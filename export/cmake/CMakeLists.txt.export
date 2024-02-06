@@ -8,7 +8,7 @@ project(Libint LANGUAGES CXX C)
 # Set Libint version ===================================================================================================
 set(LIBINT_MAJOR_VERSION 2)
 set(LIBINT_MINOR_VERSION 8)
-set(LIBINT_MICRO_VERSION 1)
+set(LIBINT_MICRO_VERSION 2)  # Sync this with python/CMakeLists.txt
 set(LIBINT_BUILDID )
 set(LIBINT_VERSION "${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION}")
 if (LIBINT_BUILDID)
@@ -395,8 +395,13 @@ add_test(NAME libint2/eritest/run0
         COMMAND $<TARGET_FILE:eritest-libint2> 0 2)
 set_tests_properties(libint2/eritest/run0
         PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")  # OK to run l=2 gradients with optimization
+  set(LIBINT2_ERITEST_RUN1_LMAX 1)
+else()
+  set(LIBINT2_ERITEST_RUN1_LMAX 2)
+endif()
 add_test(NAME libint2/eritest/run1
-        COMMAND $<TARGET_FILE:eritest-libint2> 1 1)
+        COMMAND $<TARGET_FILE:eritest-libint2> 1 ${LIBINT2_ERITEST_RUN1_LMAX})
 set_tests_properties(libint2/eritest/run1
         PROPERTIES FIXTURES_REQUIRED LIBINT2_ERITEST_EXEC)
 add_test(NAME libint2/eritest/run2

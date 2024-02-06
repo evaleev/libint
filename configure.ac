@@ -1,4 +1,4 @@
-define([libint_mmm_version],[2.8.1])
+define([libint_mmm_version],[2.8.2])
 define([libint_buildid],[])
 define([libint_so_version],[2:3:0])
 
@@ -1110,7 +1110,7 @@ CXXFLAGS="$initial_CXXFLAGS"
 
 AC_CHECK_PROG(AR,ar,ar)
 AC_CHECK_PROG(PERL,perl,perl)
-AC_CHECK_PROGS(TAR,gnutar tar,tar)
+AC_CHECK_PROGS(TAR,gnutar gtar tar,tar)
 AC_CHECK_PROGS(PYTHON,python python3 python2 python2.7,python)
 AC_PATH_PROG(DOXYGEN,doxygen,,$PATH:/usr/local/bin:/opt/local/bin)
 AC_PATH_PROG(PDFLATEX,pdflatex,,$PATH:/usr/local/bin:/opt/local/bin)
