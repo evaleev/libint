@@ -135,7 +135,7 @@ std::string usage() {
 }
 
 std::string am2label(unsigned int l) {
-  static char labels[] = "spdfghiklmoqrtuvwxyz";
+  static char labels[] = "spdfghiklmnoqrtuvwxyz";
   std::ostringstream oss;
   oss << labels[l];
   return oss.str();
