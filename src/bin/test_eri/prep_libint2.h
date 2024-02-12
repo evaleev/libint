@@ -39,23 +39,25 @@ struct RandomShellSet {
 
     std::random_device rd;
     std::mt19937 rng(rd());  // produces randomness out of thin air
-    std::uniform_real_distribution<> rdist(
-        0.1, 3.0);  // distribution that maps to 0.1 .. 3.0
-    auto die = [&rng, &rdist]() -> double {
-      return rdist(rng);
-    };  // glues randomness with mapping
+    std::uniform_real_distribution<> rdist(0.7,
+                                           1.3);  // distribution of coordinates
+    std::uniform_real_distribution<> ecdist(
+        0.1, 3.0);  // distribution that exponents/coordinates
+    // glues source randomness with mapping
+    auto rdie = [&rng, &rdist]() -> double { return rdist(rng); };
+    auto ecdie = [&rng, &ecdist]() -> double { return ecdist(rng); };
 
     for (uint c = 0; c < N; ++c) {
       R[c].resize(3);
-      std::generate(R[c].begin(), R[c].end(), die);
+      std::generate(R[c].begin(), R[c].end(), rdie);
 
       exp[c].resize(veclen);
       coef[c].resize(veclen);
       for (uint v = 0; v < veclen; ++v) {
         exp[c][v].resize(contrdepth);
-        std::generate(exp[c][v].begin(), exp[c][v].end(), die);
+        std::generate(exp[c][v].begin(), exp[c][v].end(), ecdie);
         coef[c][v].resize(contrdepth);
-        std::generate(coef[c][v].begin(), coef[c][v].end(), die);
+        std::generate(coef[c][v].begin(), coef[c][v].end(), ecdie);
       }
     }
   }
