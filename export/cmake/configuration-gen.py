@@ -21,7 +21,7 @@ g12_max_am = [4, 4]
 
 # >>>  End user edit
 
-amstr = "SPDFGHIKLMNOPQRTUVWXYZ"
+amstr = "SPDFGHIKLMNOQRTUVWXYZ"
 components = [orderings]
 
 # multipole

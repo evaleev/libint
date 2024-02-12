@@ -217,7 +217,7 @@ struct Shell {
   /// `l=0`, `p` for `l=1`, etc.
   /// @throw std::invalid_argument if \c l is greater than 19
   static char am_symbol(size_t l) {
-    static char lsymb[] = "spdfghikmnoqrtuvwxyz";
+    static char lsymb[] = "spdfghiklmnoqrtuvwxyz";
     assert(l <= 19);
     return lsymb[l];
   }
