@@ -36,8 +36,8 @@ namespace libint2 {
 
 namespace detail {
 
-/// Computes uncontracted shells from a vector of shells
-/// @param[in] cluster a vector of shells
+/// @brief Uncontracts a set of shells
+/// @param[in] shells a vector of shells to be uncontracted
 /// @return a vector of uncontracted shells
 inline std::vector<Shell> uncontract(const std::vector<Shell> &shells) {
   std::vector<Shell> primitive_shells;
@@ -54,12 +54,16 @@ inline std::vector<Shell> uncontract(const std::vector<Shell> &shells) {
   return primitive_shells;
 }
 
-/// @brief returns \Gamma(x)  of x
+/// @brief returns \Gamma(x)
 inline double gamma_function(const double x) { return std::tgamma(x); }
 
-/// @brief return effective exponent of product of two primitive shells
-/// @param shell1 first shell
-/// @param shell2 second shell
+/// @brief Computes an effective exponent for a product of two primitive
+/// gaussians as as described in J. Chem. Theory Comput. 2021, 17, 6886−6900.
+/// \alpha_{eff} = \left[ \frac{\Gamma(L+2)\Gamma(l_\mu +l_\nu +
+/// \frac{3}{2})}{\Gamma(L+ \frac{3}{2})\Gamma(l_\mu +l_\nu + 2)} \right]^2
+/// (\alpha_\mu + \alpha_\nu)
+/// @param shell1 first primitive shell
+/// @param shell2 second primitive shell
 /// @param L total angular momentum of product function
 /// @return effective exponent of product function
 inline double alpha_eff(const Shell &shell1, const Shell &shell2, const int L) {
@@ -74,8 +78,13 @@ inline double alpha_eff(const Shell &shell1, const Shell &shell2, const int L) {
   return prefactor * (alpha1 + alpha2);
 }
 
-/// @brief creates a set of product functions from a set of primitive shells
+/// @brief Creates a set of product functions from a set of primitive shells.
+/// Each pair of primitive shells produces a set of product functions with an
+/// effective exponent (\alpha_{eff} as described above) and angular momentum
+/// ranging from |l1-l2| to l1+l2 as described in J. Chem. Theory Comput. 2021,
+/// 17, 6886−6900.
 /// @param primitive_shells set of primitive shells
+/// @return set of product functions
 inline std::vector<Shell> product_functions(
     const std::vector<Shell> &primitive_shells) {
   std::vector<Shell> product_functions;
@@ -103,15 +112,6 @@ inline std::vector<Shell> product_functions(
   return product_functions;
 }
 
-/// @brief creates a set of candidate product shells from a set of primitive
-/// shells
-/// @param primitive_shells set of primitive shells
-/// @return set of candidate product shells
-inline std::vector<Shell> candidate_functions(
-    const std::vector<Shell> &primitive_shells) {
-  return product_functions(primitive_shells);
-}
-
 /// @brief returns a hash map of shell indices to basis function indices
 inline std::vector<size_t> map_shell_to_basis_function(
     const std::vector<libint2::Shell> &shells) {
@@ -127,7 +127,7 @@ inline std::vector<size_t> map_shell_to_basis_function(
   return result;
 }
 
-/// @brief computes the Coulomb matrix (\mu|rij^{-1}|\nu)  for a set of shells
+/// @brief Computes the Coulomb matrix (\mu|rij^{-1}|\nu)  for a set of shells
 /// @param shells set of shells
 /// @return Coulomb matrix
 inline Eigen::MatrixXd compute_coulomb_matrix(
@@ -155,7 +155,10 @@ inline Eigen::MatrixXd compute_coulomb_matrix(
   return result;
 }
 
-/// @brief Sorts a vector of shells by angular momentum
+/// @brief Splits a set of shells by angular momentum
+/// @param shells set of shells
+/// @return vector of vectors of shells split by angular momentum L. The i-th
+///  vector contains all shells with angular momentum i
 inline std::vector<std::vector<Shell>> split_by_L(
     const std::vector<Shell> &shells) {
   int lmax = max_l(shells);
@@ -168,8 +171,13 @@ inline std::vector<std::vector<Shell>> split_by_L(
   return sorted_shells;
 }
 
-/// @brief computes the reduced set of product functions via pivoted Cholesky
-/// decomposition
+/// @brief Computes the reduced set of product functions via pivoted Cholesky
+/// decomposition as described in J. Chem. Theory Comput. 2021, 17, 6886−6900.
+/// Cholesky decomposition is performed on the Coulomb matrix of the product
+/// functions and the pivot indices are sorted in ascending order of column sums
+/// of the Coulomb matrix. The reduced set of product functions is then
+/// constructed by selecting the product functions corresponding to the pivot
+/// indices.
 /// @param shells set of shells
 /// @param cholesky_threshold threshold for choosing a product function via
 /// pivoted Cholesky decomposition
@@ -218,22 +226,23 @@ inline std::vector<Shell> shell_pivoted_cholesky(
 }
 }  // namespace detail
 
-/// @brief class produces density fitting basis sets from products of AO basis
-/// functions eliminates linearly dependent functions via pivoted Cholesky
-/// decomposition see: J. Chem. Theory Comput. 2021, 17, 6886−6900
-/// (Straightforward and Accurate Automatic Auxiliary Basis Set Generation for
-/// Molecular Calculations with Atomic Orbital Basis Sets)
+/// @brief This class produces density fitting basis sets for an atom from
+/// products of AO basis functions and eliminates linearly dependent functions
+/// via pivoted Cholesky decomposition see: J. Chem. Theory Comput. 2021, 17,
+/// 6886−6900 (Straightforward and Accurate Automatic Auxiliary Basis Set
+/// Generation for Molecular Calculations with Atomic Orbital Basis Sets)
 class DFBasisSetGenerator {
  public:
-  /// @brief constructor for DFBS generator class, generates density fitting
-  /// basis set from products of AO basis functions see: J. Chem. Theory Comput.
-  /// 2021, 17, 6886−6900 (Straightforward and Accurate Automatic Auxiliary
-  /// Basis Set Generation for Molecular Calculations with Atomic Orbital Basis
-  /// Sets)
+  /// @brief constructor for DFBasisSetGenerator class, generates density
+  /// fitting basis set from products of AO basis functions of and atom see: J.
+  /// Chem. Theory Comput. 2021, 17, 6886−6900 (Straightforward and Accurate
+  /// Automatic Auxiliary Basis Set Generation for Molecular Calculations with
+  /// Atomic Orbital Basis Sets)
   /// @param obs_name name of basis set for AO functions
   /// @param atoms vector of atoms
-  /// @param cholesky_threshold threshold for choosing a product functions via
-  /// pivoted Cholesky decomposition
+  /// @param cholesky_threshold threshold for threshold for  pivoted Cholesky
+  /// decomposition to be performed on the Coulomb matrix of the product
+  /// functions
   DFBasisSetGenerator(std::string obs_name, const Atom &atom,
                       const double cholesky_threshold = 1e-7) {
     // get AO basis shells for each atom
@@ -242,19 +251,19 @@ class DFBasisSetGenerator {
     // get primitive shells from AO functions
     const auto primitive_shells = detail::uncontract(obs_shells);
     // compute candidate shells
-    candidate_shells_ = detail::candidate_functions(primitive_shells);
+    candidate_shells_ = detail::product_functions(primitive_shells);
     cholesky_threshold_ = cholesky_threshold;
   }
 
-  /// @brief constructor for DFBS generator class, generates density fitting
-  /// basis set from products of AO shells provided by user
-  /// @param cluster vector of vector of shells for each atom
-  /// @param cholesky_threshold threshold for choosing a product functions via
-  /// pivoted Cholesky decomposition
+  /// @brief constructor for DFBasisSetGenerator class, generates density
+  /// fitting basis set from products of AO shells provided by user
+  /// @param shells vector of vector of shells for each atom
+  /// @param cholesky_threshold threshold for  pivoted Cholesky decomposition to
+  /// be performed on the Coulomb matrix of the product functions
   DFBasisSetGenerator(const std::vector<Shell> &shells,
                       const double cholesky_threshold = 1e-7) {
     const auto primitive_shells = detail::uncontract(shells);
-    candidate_shells_ = detail::candidate_functions(primitive_shells);
+    candidate_shells_ = detail::product_functions(primitive_shells);
     cholesky_threshold_ = cholesky_threshold;
   }
 
@@ -265,8 +274,10 @@ class DFBasisSetGenerator {
   /// @brief returns the candidate shells (full set of product functions)
   std::vector<Shell> candidate_shells() { return candidate_shells_; }
 
-  /// @brief returns the reduced shells (reduced set of product functions)
-  /// computed via pivoted Cholesky decomposition
+  /// @brief returns a set of shells reduced via pivoted Cholesky
+  /// decomposition of the Coulomb matrix of the product functions for each
+  /// angular momentum L as described in J. Chem. Theory Comput. 2021, 17,
+  /// 6886−6900.
   std::vector<Shell> reduced_shells() {
     if (reduced_shells_computed_)
       return reduced_shells_;
@@ -288,9 +299,10 @@ class DFBasisSetGenerator {
     return reduced_shells_;
   }
 
-  /// @brief returns the reduced basis set (reduced set of product
-  /// functions)
-  /// computed via pivoted Cholesky decomposition
+  /// @brief returns a BasisSet of shells reduced via pivoted Cholesky
+  /// decomposition of the Coulomb matrix of the product functions for each
+  /// angular momentum L as described in J. Chem. Theory Comput. 2021, 17,
+  /// 6886−6900.
   const BasisSet reduced_basis() { return BasisSet(reduced_shells()); }
 
  private:
