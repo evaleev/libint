@@ -182,7 +182,7 @@ inline std::vector<std::vector<Shell>> split_by_L(
 /// @param cholesky_threshold threshold for choosing a product function via
 /// pivoted Cholesky decomposition
 /// @return reduced set of product functions
-inline std::vector<Shell> shell_pivoted_cholesky(
+inline std::vector<Shell> pivoted_cholesky_in_L(
     const std::vector<Shell> &shells, const double cholesky_threshold) {
   const auto n = shells.size();  // number of shells
   std::vector<size_t>
@@ -287,7 +287,7 @@ class DFBasisSetGenerator {
       for (size_t i = 0; i < candidate_splitted_in_L.size(); ++i) {
         std::vector<Shell> reduced_shells_L;
         if (candidate_splitted_in_L[i].size() > 1)
-          reduced_shells_L = detail::shell_pivoted_cholesky(
+          reduced_shells_L = detail::pivoted_cholesky_in_L(
               candidate_splitted_in_L[i], cholesky_threshold_);
         else
           reduced_shells_L = candidate_splitted_in_L[i];
