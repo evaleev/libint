@@ -272,10 +272,11 @@ class FmEval_Chebyshev7 {
 
  public:
   /// \param m_max maximum value of the Boys function index; set to -1 to skip
-  /// initialization \param precision the desired relative precision \throw
-  /// std::invalid_argument if \c m_max is greater than \c cheb_table_mmax (see
-  /// boys_cheb7.h) \throw std::invalid_argument if \c precision is smaller than
-  /// std::numeric_limits<double>::epsilon()
+  /// initialization \param precision the desired relative precision
+  /// \throw std::invalid_argument if \c m_max is greater than
+  ///   \c cheb_table_mmax (see boys_cheb7.h)
+  /// \throw std::invalid_argument if \c precision is smaller than
+  ///   `std::numeric_limits<double>::epsilon()`
   FmEval_Chebyshev7(int m_max,
                     double precision = std::numeric_limits<double>::epsilon())
       : mmax(m_max), numbers_(14) {
@@ -912,6 +913,8 @@ struct TennoGmEval {
       cheb_table_umaxlog10);  //!< max value of U for which to interpolate
   static constexpr Real Umin = detail::pow10(
       cheb_table_uminlog10);  //!< min value of U for which to interpolate
+  static constexpr Real one_over_Umin =
+      1. / Umin;  //!< min value of U for which to interpolate
   static constexpr std::size_t ORDERp1 = interpolation_order + 1;
   static constexpr Real maxabsprecision =
       1.4e-14;  //!< guaranteed abs precision of the interpolation table for m>0
@@ -920,10 +923,14 @@ struct TennoGmEval {
   /// \param m_max maximum value of the Gm function index
   /// \param precision the desired *absolute* precision (relative precision for
   /// most intervals will be below epsilon, but for large T/U values and high m
-  /// relative precision is low \throw std::invalid_argument if \c m_max is
-  /// greater than \c cheb_table_mmax (see tenno_cheb.h) \throw
-  /// std::invalid_argument if \c precision is smaller than \c maxabsprecision
-  TennoGmEval(unsigned int mmax, Real precision = -1)
+  /// relative precision is low); since evaluation is done primarily
+  /// by interpolation, precision is not controlled dynamically, thus this
+  /// should not be used.
+  /// \throw std::invalid_argument if \c m_max is greater than
+  ///   \c cheb_table_mmax (see tenno_cheb.h)
+  /// \throw std::invalid_argument if \c precision is smaller
+  ///   than \c maxabsprecision
+  TennoGmEval(unsigned int mmax, Real precision = maxabsprecision)
       : mmax_(mmax), precision_(precision), numbers_() {
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || \
     defined(_M_IX86)
@@ -941,12 +948,10 @@ struct TennoGmEval {
 #endif
 #endif
 
-    //        if (precision_ < maxabsprecision)
-    //          throw std::invalid_argument(
-    //              std::string(
-    //                  "TennoGmEval does not support precision smaller than ")
-    //                  +
-    //              std::to_string(maxabsprecision));
+    if (precision_ < maxabsprecision)
+      throw std::invalid_argument(
+          std::string("TennoGmEval does not support precision smaller than ") +
+          std::to_string(maxabsprecision));
 
     if (mmax > cheb_table_mmax)
       throw std::invalid_argument(
@@ -992,6 +997,7 @@ struct TennoGmEval {
   /// @param[in] T \f$ T \f$
   /// @param[in] mmax \f$ m_\mathrm{max} \f$
   /// @param[in] zeta \f$ \zeta \f$
+  /// @throw std::invalid_argument if \f$ \zeta^2/(4 \rho) \f$ exceeds \c Umax
   void eval_yukawa(Real* Gm, Real one_over_rho, Real T, size_t mmax,
                    Real zeta) const {
     assert(mmax <= mmax_);
@@ -1015,6 +1021,7 @@ struct TennoGmEval {
   /// @param[in] T \f$ T \f$
   /// @param[in] mmax \f$ m_\mathrm{max} \f$
   /// @param[in] zeta \f$ \zeta \f$
+  /// @throw std::invalid_argument if \f$ \zeta^2/(4 \rho) \f$ exceeds \c Umax
   void eval_slater(Real* Gm, Real one_over_rho, Real T, size_t mmax,
                    Real zeta) const {
     assert(mmax <= mmax_);
@@ -1063,20 +1070,53 @@ struct TennoGmEval {
       const Real sqrtPi_over_4 = sqrtPi * 0.25;
       const Real pfac = sqrtPi_over_4;
       const Real erfc_k = exp(kappa * kappa - T) * erfc(kappa);
+      // TODO when lambda * lambda - T exceeds 709 exp overflows, so need to
+      // handle this more carefully
+      if (lambda * lambda - T > 709)
+        throw std::invalid_argument(
+            "TennoGmEval::eval_G0_and_maybe_Gm1(): for large T and/or U "
+            "current implementation overflows, need to implement asymptotic "
+            "expansion");
       const Real erfc_l = exp(lambda * lambda - T) * erfc(lambda);
 
       G_m1 = compute_Gm1 ? pfac * (erfc_k + erfc_l) * oo_sqrt_U : 0.0;
       G_0 = pfac * (erfc_k - erfc_l) * oo_sqrt_T;
-    } else {  // T = 0, U > 0
-      const Real exp_U = exp(U);
-      const Real sqrt_U = sqrt(U);
-      if (compute_Gm1) {
-        const Real sqrtPi_over_2 = sqrtPi * 0.5;
-        const Real oo_sqrt_U = compute_Gm1 ? (1 / sqrt_U) : 0;
+    } else {           // T = 0, U > 0
+      if (U <= 709) {  // exp(<=709) is finite
+        const Real exp_U = exp(U);
+        const Real sqrt_U = sqrt(U);
+        if (compute_Gm1) {
+          const Real sqrtPi_over_2 = sqrtPi * 0.5;
+          const Real oo_sqrt_U = compute_Gm1 ? (1 / sqrt_U) : 0;
 
-        G_m1 = exp_U * sqrtPi_over_2 * erfc(sqrt_U) * oo_sqrt_U;
+          G_m1 = exp_U * sqrtPi_over_2 * erfc(sqrt_U) * oo_sqrt_U;
+        }
+        G_0 = 1 - exp_U * sqrtPi * erfc(sqrt_U) * sqrt_U;
+      } else {  // exp(>=710) is "infinity", handle larger values as a series
+        const Real oo_U = Real{1} / U;
+        const Real x = oo_U;
+        const Real x2 = x * x;
+        const Real x3 = x2 * x;
+        const Real x4 = x2 * x2;
+        const Real x5 = x3 * x2;
+        const Real x6 = x3 * x3;
+        if (compute_Gm1) {
+          // 6th-order is sufficient
+          // in Wolfram: Series[Exp[U]*(Sqrt[Pi]/2)*Erfc[Sqrt[U]]/Sqrt[U], {U,
+          // Infinity, 6}]
+          const Real cm1[] = {1. / 2,    -1. / 4,   3. / 8,
+                              -15. / 16, 105. / 32, -945. / 64};
+          G_m1 = cm1[0] * x + cm1[1] * x2 + cm1[2] * x3 + cm1[3] * x4 +
+                 cm1[4] * x5 + cm1[5] * x6;
+        }
+        // 6th-order is sufficient
+        // in Wolfram: Series[1 - Exp[U]*Sqrt[Pi]*Erfc[Sqrt[U]]*Sqrt[U], {U,
+        // Infinity, 6}]
+        const Real c0[] = {1. / 2,     -3. / 4,   15. / 8,
+                           -105. / 16, 945. / 32, -10395. / 64};
+        G_0 = c0[0] * x + c0[1] * x2 + c0[2] * x3 + c0[3] * x4 + c0[4] * x5 +
+              c0[5] * x6;
       }
-      G_0 = 1 - exp_U * sqrtPi * erfc(sqrt_U) * sqrt_U;
     }
 
     return std::make_tuple(G_0, G_m1);
@@ -1167,10 +1207,17 @@ struct TennoGmEval {
   /// @param[in] zeta_over_two_rho the value of \f$ \frac{\zeta}{2 \rho} \f$,
   /// only used if @c Exp==true
   /// @param[in] mmax the maximum value of \f$ m \f$
+  /// @throw std::invalid_argument if \p U exceeds \c Umax
   template <bool Exp>
   void interpolate_Gm(Real* Gm_vec, Real T, Real U, Real zeta_over_two_rho,
                       long mmax) const {
     assert(T >= 0);
+    if (U > Umax) {
+      throw std::invalid_argument(
+          "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, "
+          "zeta*zeta*one_over_rho/4=" +
+          std::to_string(U) + " cannot exceed " + std::to_string(Umax));
+    }
     assert(U >= Umin && U <= Umax);
 
     // maps x in [0,2] to [-1/2,1/2] in a linear fashion
@@ -1188,15 +1235,21 @@ struct TennoGmEval {
     };
 
     // which interval does this T fall into?
-    const int Tint = T < 2 ? 0 : int(std::floor(std::log2(T)));
-    assert(Tint >= 0 && Tint < 10);
+    const int Tint =
+        T < 2 ? 0
+              : int(std::floor(std::log2(T) *
+                               (1. - std::numeric_limits<double>::epsilon())));
+    assert(Tint >= 0 && Tint < cheb_table_tmaxlog2 - cheb_table_tminlog2 + 1);
     // precomputed 1 / 2^K
     constexpr Real one_over_2K[] = {1,          0.5,       0.25,     0.125,
                                     0.0625,     0.03125,   0.015625, 0.0078125,
                                     0.00390625, .001953125};
     // which interval does this U fall into?
-    const int Uint = int(std::floor(std::log10(U / Umin)));
-    assert(Uint >= 0 && Uint < 10);
+    const auto log10_U_over_Umin =
+        std::log10(U * one_over_Umin) *
+        (1. - std::numeric_limits<double>::epsilon());
+    const int Uint = int(std::floor(log10_U_over_Umin));
+    assert(Uint >= 0 && Uint < cheb_table_umaxlog10 - cheb_table_uminlog10);
     // precomputed 1 / 10^(cheb_table_uminlog10 + K)
     constexpr Real one_over_10K[] = {
         1. / detail::pow10(cheb_table_uminlog10),
@@ -1216,7 +1269,8 @@ struct TennoGmEval {
     const Real u =
         log10_map(U, one_over_10K[Uint]);  // this ranges from -0.5 to 0.5
 
-    const int interval = Tint * 10 + Uint;
+    const int interval =
+        Tint * (cheb_table_umaxlog10 - cheb_table_uminlog10) + Uint;
 
 #if defined(__AVX__)
     assert(ORDERp1 == 16);
