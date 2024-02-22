@@ -528,7 +528,7 @@ AS_HELP_STRING([--with-eri3-max-am=N],[Support 3-center ERIs for Gaussians of an
      else
       ERI3_MAX_AM=$withval
      fi
-     if test $ERI3_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
+     if test $ERI3_MAX_AM -gt $LIBINT_HARD_MAX_AM; then
       AC_MSG_ERROR([Value for --with-eri3-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ERI3_MAX_AM)
@@ -599,7 +599,7 @@ AS_HELP_STRING([--with-eri2-max-am=N],[Support 2-center ERIs for Gaussians of an
      else
       ERI2_MAX_AM=$withval
      fi
-     if test $ERI2_MAX_AM -ge $LIBINT_HARD_MAX_AM; then
+     if test $ERI2_MAX_AM -gt $LIBINT_HARD_MAX_AM; then
       AC_MSG_ERROR([Value for --with-eri2-max-am too high ($withval). Are you sure you know what you are doing?])
      fi
      AC_SUBST(ERI2_MAX_AM)
