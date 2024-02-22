@@ -54,14 +54,14 @@ inline std::vector<Shell> uncontract(const std::vector<Shell> &shells) {
   return primitive_shells;
 }
 
-/// @brief returns \Gamma(x)
+/// @brief returns \f$ \Gamma(x) \f$
 inline double gamma_function(const double x) { return std::tgamma(x); }
 
 /// @brief Computes an effective exponent for a product of two primitive
 /// gaussians as as described in J. Chem. Theory Comput. 2021, 17, 6886−6900.
-/// \alpha_{eff} = \left[ \frac{\Gamma(L+2)\Gamma(l_\mu +l_\nu +
+/// \f$ \alpha_{eff} = \left[ \frac{\Gamma(L+2)\Gamma(l_\mu +l_\nu +
 /// \frac{3}{2})}{\Gamma(L+ \frac{3}{2})\Gamma(l_\mu +l_\nu + 2)} \right]^2
-/// (\alpha_\mu + \alpha_\nu)
+/// (\alpha_\mu + \alpha_\nu) \f$
 /// @param shell1 first primitive shell
 /// @param shell2 second primitive shell
 /// @param L total angular momentum of product function
@@ -80,9 +80,9 @@ inline double alpha_eff(const Shell &shell1, const Shell &shell2, const int L) {
 
 /// @brief Creates a set of product functions from a set of primitive shells.
 /// Each pair of primitive shells produces a set of product functions with an
-/// effective exponent (\alpha_{eff} as described above) and angular momentum
-/// ranging from |l1-l2| to l1+l2 as described in J. Chem. Theory Comput. 2021,
-/// 17, 6886−6900.
+/// effective exponent (\f$ \alpha_{eff} \f$ as described above) and angular
+/// momentum ranging from \f$ |l1-l2| \leq L \leq l1+l2 \f$ as described in J.
+/// Chem. Theory Comput. 2021, 17, 6886−6900.
 /// @param primitive_shells set of primitive shells
 /// @return set of product functions
 inline std::vector<Shell> product_functions(
@@ -127,7 +127,8 @@ inline std::vector<size_t> map_shell_to_basis_function(
   return result;
 }
 
-/// @brief Computes the Coulomb matrix (\mu|rij^{-1}|\nu)  for a set of shells
+/// @brief Computes the Coulomb matrix \f$ (\mu|rij^{-1}|\nu) \f$  for a set of
+/// shells
 /// @param shells set of shells
 /// @return Coulomb matrix
 inline Eigen::MatrixXd compute_coulomb_matrix(
@@ -135,8 +136,11 @@ inline Eigen::MatrixXd compute_coulomb_matrix(
   const auto n = nbf(shells);
   Eigen::MatrixXd result = Eigen::MatrixXd::Zero(n, n);
   using libint2::Engine;
-  Engine engine(libint2::Operator::coulomb, max_nprim(shells), max_l(shells));
-  engine.set(BraKet::xs_xs);
+  const auto oper = libint2::Operator::coulomb;
+  const auto braket = libint2::BraKet::xs_xs;
+  Engine engine(oper, max_nprim(shells), max_l(shells), 0,
+                std::numeric_limits<scalar_type>::epsilon(),
+                libint2::default_params(oper), braket);
   engine.set(ScreeningMethod::Conservative);
   const auto shell2bf = map_shell_to_basis_function(shells);
   const auto &buf = engine.results();
