@@ -83,8 +83,7 @@ class SolidHarmonicsCoefficients {
   static const SolidHarmonicsCoefficients& instance(unsigned int l) {
     static std::vector<SolidHarmonicsCoefficients> shg_coefs(
         SolidHarmonicsCoefficients::CtorHelperIter(0),
-        SolidHarmonicsCoefficients::CtorHelperIter(11));
-    assert(l <= 10);  // see coeff() for explanation of the upper limit on l
+        SolidHarmonicsCoefficients::CtorHelperIter(13));
     return shg_coefs[l];
   }
 
@@ -108,9 +107,9 @@ class SolidHarmonicsCoefficients {
    harmonic Ylm is requested.
    ---------------------------------------------------------------------------------------------*/
   static Real coeff(int l, int m, int lx, int ly, int lz) {
-    using libint2::math::bc;
-    using libint2::math::df_Kminus1;
-    using libint2::math::fac;
+    using libint2::math::bc_real;
+    using libint2::math::df_Kminus1_real;
+    using libint2::math::fac_real;
 
     auto abs_m = std::abs(m);
     if ((lx + ly - abs_m) % 2) return 0.0;
@@ -127,13 +126,17 @@ class SolidHarmonicsCoefficients {
     auto i = abs_m - lx;
     if (comp != parity(abs(i))) return 0.0;
 
-    assert(l <= 10);  // libint2::math::fac[] is only defined up to 20
-    Real pfac =
-        sqrt(((Real(fac[2 * lx]) * Real(fac[2 * ly]) * Real(fac[2 * lz])) /
-              fac[2 * l]) *
-             ((Real(fac[l - abs_m])) / (fac[l])) * (Real(1) / fac[l + abs_m]) *
-             (Real(1) / (fac[lx] * fac[ly] * fac[lz])));
-    /*  pfac = sqrt(fac[l-abs_m]/(fac[l]*fac[l]*fac[l+abs_m]));*/
+    Real pfac;
+    pfac = sqrt(((fac_real<Real>(2 * lx) * fac_real<Real>(2 * ly) *
+                  fac_real<Real>(2 * lz)) /
+                 fac_real<Real>(2 * l)) *
+                ((fac_real<Real>(l - abs_m)) / (fac_real<Real>(l))) *
+                (Real(1) / fac_real<Real>(l + abs_m)) *
+                (Real(1) / (fac_real<Real>(lx) * fac_real<Real>(ly) *
+                            fac_real<Real>(lz))));
+
+    /*  pfac =
+     * sqrt(fac_real<Real>(l-abs_m)/(fac_real<Real>(l)*fac_real<Real>(l)*fac[l+abs_m]));*/
     pfac /= (1L << l);
     if (m < 0)
       pfac *= parity((i - 1) / 2);
@@ -144,19 +147,22 @@ class SolidHarmonicsCoefficients {
     auto i_max = (l - abs_m) / 2;
     Real sum = 0;
     for (auto i = i_min; i <= i_max; i++) {
-      Real pfac1 = bc(l, i) * bc(i, j);
-      pfac1 *= (Real(parity(i) * fac[2 * (l - i)]) / fac[l - abs_m - 2 * i]);
+      Real pfac1 = bc_real<Real>(l, i) * bc_real<Real>(i, j);
+      pfac1 *= (Real(parity(i) * fac_real<Real>(2 * (l - i))) /
+                fac_real<Real>(l - abs_m - 2 * i));
       Real sum1 = 0.0;
       const int k_min = std::max((lx - abs_m) / 2, 0);
       const int k_max = std::min(j, lx / 2);
       for (int k = k_min; k <= k_max; k++) {
         if (lx - 2 * k <= abs_m)
-          sum1 += bc(j, k) * bc(abs_m, lx - 2 * k) * parity(k);
+          sum1 += bc_real<Real>(j, k) * bc_real<Real>(abs_m, lx - 2 * k) *
+                  parity(k);
       }
       sum += pfac1 * sum1;
     }
-    sum *= sqrt(Real(df_Kminus1[2 * l]) /
-                (df_Kminus1[2 * lx] * df_Kminus1[2 * ly] * df_Kminus1[2 * lz]));
+    sum *= sqrt(df_Kminus1_real<Real>(2 * l) /
+                (df_Kminus1_real<Real>(2 * lx) * df_Kminus1_real<Real>(2 * ly) *
+                 df_Kminus1_real<Real>(2 * lz)));
 
     Real result = (m == 0) ? pfac * sum : M_SQRT2 * pfac * sum;
     return result;
