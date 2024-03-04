@@ -35,7 +35,7 @@ if(NOT TARGET Libint2::libint2)
 endif()
 
 # if relied on system Boost for preprocessor variadics, make sure it's available
-if (LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS AND NOT TARGET Boost::boost)
+if (LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS AND NOT TARGET Boost::headers)
   include(CMakeFindDependencyMacro)
   find_dependency(Boost 1.29)
 endif()

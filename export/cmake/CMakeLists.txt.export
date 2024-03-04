@@ -121,14 +121,31 @@ if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
 endif()
 
 if (NOT LIBINT_USE_BUNDLED_BOOST)
-  if (NOT TARGET Boost::boost)
+  if (NOT TARGET Boost::headers)
     find_package(Boost 1.29)
   endif()
-  if (TARGET Boost::boost)
+  if (TARGET Boost::headers)
     cmake_push_check_state()
 
     list(APPEND CMAKE_REQUIRED_FLAGS "-std=c++11")
-    list(APPEND CMAKE_REQUIRED_LIBRARIES Boost::boost)
+
+    # since Boost::headers is an ALIAS pass the real target to check_cxx_source_compiles
+    get_target_property(Boost_target_for_linking Boost::headers ALIASED_TARGET)
+    if (NOT Boost_target_for_linking)
+        set(Boost_target_for_linking Boost::headers)
+    endif()
+    # corner case: if using modularized Boost then use boost_preprocessor target directly
+    if (TARGET boost_preprocessor)
+        set(Boost_target_for_linking boost_preprocessor)
+    endif()
+    get_target_property(Boost_target_for_linking_is_imported ${Boost_target_for_linking} IMPORTED)
+    if (Boost_target_for_linking_is_imported)
+        list(APPEND CMAKE_REQUIRED_LIBRARIES ${Boost_target_for_linking})
+    else()
+        get_target_property(Boost_target_for_linking_interface_include_directories ${Boost_target_for_linking} INTERFACE_INCLUDE_DIRECTORIES)
+        string(REGEX REPLACE ".*;?\\$<BUILD_INTERFACE:([^>]*)>;?.*" "\\1" Boost_target_for_linking_build_interface_include_directories "${Boost_target_for_linking_interface_include_directories}")
+        list(APPEND CMAKE_REQUIRED_INCLUDES ${Boost_target_for_linking_build_interface_include_directories})
+    endif()
 
     check_cxx_source_compiles("
             #include <boost/preprocessor.hpp>
@@ -327,7 +344,7 @@ if (LIBINT_HAS_CXX_API)
   target_compile_features(libint2_cxx INTERFACE "cxx_std_11")
   target_link_libraries(libint2_cxx INTERFACE ${int2_library} libint2_Eigen)
   if (LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
-      target_link_libraries(libint2_cxx INTERFACE Boost::boost)
+      target_link_libraries(libint2_cxx INTERFACE Boost::headers)
   endif(LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS)
     if(MSVC)
         # MSVC does not include <cmath> constants, unless _USE_MATH_DEFINES is defined.
