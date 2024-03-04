@@ -29,10 +29,15 @@
 
 namespace libint2 {
 
-// computes Superposition-Of-Atomic-Densities guess for the molecular density
-// matrix
-// in minimal basis; occupies subshells by smearing electrons evenly over the
-// orbitals
+/// @brief computes Superposition-Of-Atomic-Densities guess for the molecular
+/// 1-RDM
+
+/// The atomic densities are represented by the STO-3G AOs;
+/// occupies subshells by smearing electrons (of neutral ground-state atoms)
+/// evenly over the subshell components
+/// @param[in] atoms list of atoms
+/// @return the 1-RDM in the STO-3G AO basis
+/// @return the 1-RDM, normalized to the # of electrons/2
 Eigen::MatrixXd compute_soad(const std::vector<Atom> &atoms) {
   // compute number of atomic orbitals
   size_t nao = 0;
