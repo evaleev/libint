@@ -341,6 +341,7 @@ esac
 )
 
 LIBINT_HARD_MAX_AM=12
+AC_DEFINE_UNQUOTED(LIBINT_HARD_MAX_AM,$LIBINT_HARD_MAX_AM)
 LIBINT_MAX_AM=4
 AC_ARG_WITH(max-am,
 AS_HELP_STRING([--with-max-am=N],[Support Gaussians of angular momentum up to N. Can specify values for each derivative levels as a list N0,N1,N2...]),

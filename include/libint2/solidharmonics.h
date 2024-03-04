@@ -83,7 +83,8 @@ class SolidHarmonicsCoefficients {
   static const SolidHarmonicsCoefficients& instance(unsigned int l) {
     static std::vector<SolidHarmonicsCoefficients> shg_coefs(
         SolidHarmonicsCoefficients::CtorHelperIter(0),
-        SolidHarmonicsCoefficients::CtorHelperIter(13));
+        SolidHarmonicsCoefficients::CtorHelperIter(LIBINT_HARD_MAX_AM + 1));
+    assert(l < shg_coefs.size());
     return shg_coefs[l];
   }
 

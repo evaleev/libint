@@ -47,6 +47,9 @@
 /* Prefix for all names in API */
 #undef LIBINT_API_PREFIX
 
+/* Max AM supported by Libint *in principle* */
+#undef LIBINT_HARD_MAX_AM
+
 /* Max AM (same for all derivatives; if not defined see LIBINT_MAX_AM_LIST) */
 #undef LIBINT_MAX_AM
 
