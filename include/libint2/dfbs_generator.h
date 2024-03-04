@@ -26,11 +26,11 @@
 #include <libint2/basis.h>
 #include <libint2/boys.h>
 #include <libint2/pivoted_cholesky.h>
-#include <math.h>
 
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <algorithm>
+#include <cmath>
 
 namespace libint2 {
 

@@ -22,12 +22,20 @@
 #define _libint2_include_libint2intrinsictypes_h_
 
 #include <libint2/config.h>
+#ifdef __cplusplus
+#include <climits>
+#else
 #include <limits.h>
+#endif
 
 /* determine default LIBINT2 64-bit integer */
 #ifdef HAVE_STDINT_H
 
+#ifdef __cplusplus
+#include <cstdint>
+#else
 #include <stdint.h>
+#endif
 /* because mpz_class does not mesh with long long types, only use those when
  * absolutely necessary */
 #if UINT_LEAST64_MAX != ULONG_MAX
