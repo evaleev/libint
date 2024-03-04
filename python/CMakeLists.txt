@@ -84,7 +84,7 @@ if (TARGET libint2_obj)
     endif()
 
   target_link_libraries(libint2-python PRIVATE libint2_obj)
-  target_link_libraries(libint2-python PRIVATE Boost::boost)
+  target_link_libraries(libint2-python PRIVATE Boost::headers)
 else()
   find_package(Libint2 REQUIRED)
   target_link_libraries(libint2-python PRIVATE Libint2::cxx)
