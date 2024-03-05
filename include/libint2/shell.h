@@ -27,6 +27,7 @@
 #endif
 
 #include <libint2.h>
+#include <libint2/config.h>
 #include <libint2/util/small_vector.h>
 
 #include <array>
@@ -809,10 +810,10 @@ struct Shell {
   /// @param l angular momentum quantum number
   /// @return (lower-case) letter symbol corresponding to @p l ; e.g., `s` for
   /// `l=0`, `p` for `l=1`, etc.
-  /// @throw std::invalid_argument if \c l is greater than 19
+  /// @throw std::invalid_argument if \c l is greater than 20
   static char am_symbol(size_t l) {
-    static char lsymb[] = "spdfghiklmnoqrtuvwxyz";
-    assert(l <= 19);
+    assert(l <= sizeof(LIBINT_AM2SYMBOL) - 1);
+    static char lsymb[] = LIBINT_AM2SYMBOL;
     return lsymb[l];
   }
 
@@ -842,30 +843,32 @@ struct Shell {
         return 6;
       case 'K':
         return 7;
-      case 'M':
+      case 'L':
         return 8;
-      case 'N':
+      case 'M':
         return 9;
-      case 'O':
+      case 'N':
         return 10;
-      case 'Q':
+      case 'O':
         return 11;
-      case 'R':
+      case 'Q':
         return 12;
-      case 'T':
+      case 'R':
         return 13;
-      case 'U':
+      case 'T':
         return 14;
-      case 'V':
+      case 'U':
         return 15;
-      case 'W':
+      case 'V':
         return 16;
-      case 'X':
+      case 'W':
         return 17;
-      case 'Y':
+      case 'X':
         return 18;
-      case 'Z':
+      case 'Y':
         return 19;
+      case 'Z':
+        return 20;
       default:
         throw std::invalid_argument{"invalid angular momentum label"};
     }

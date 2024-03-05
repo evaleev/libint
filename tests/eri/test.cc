@@ -98,16 +98,16 @@ libint2::FmEval_Taylor<double, 6> fmeval_taylor(std::max(LIBINT_MAX_AM, 4) * 4 +
                                                 1e-15);
 
 namespace {
-const char am_letters[] = "spdfghiklm";
 
 std::string am_to_symbol(unsigned int l, bool contracted = false) {
   std::string result;
+  const size_t lmax_plus_1 = sizeof(LIBINT_AM2SYMBOL) - 1;
   do {
-    const unsigned int digit = l % 10u;
-    char letter = am_letters[digit];
+    const unsigned int digit = l % lmax_plus_1;
+    char letter = LIBINT_AM2SYMBOL[digit];
     if (contracted) letter = toupper(letter);
     result.insert(result.begin(), letter);
-    l /= 10;
+    l /= lmax_plus_1;
   } while (l != 0);
 
   return result;

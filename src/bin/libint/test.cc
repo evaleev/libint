@@ -167,6 +167,18 @@ void RunTest(Callback test, const std::string& descr, std::ostream& os) {
 }
 
 void test0() {
+  // test CGShell labels
+  if (CGShell(0).label() != "s")
+    throw ProgrammingError("CGShell::label() failed for l=0");
+  if (CGShell(20).label() != "z")
+    throw ProgrammingError("CGShell::label() failed for l=20");
+  if (CGShell(21).label() != "ps")
+    throw ProgrammingError("CGShell::label() failed for l=21");
+  if (CGShell(22).label() != "pp")
+    throw ProgrammingError("CGShell::label() failed for l=22");
+  if (CGShell(42).label() != "ds")
+    throw ProgrammingError("CGShell::label() failed for l=42");
+
   std::shared_ptr<TwoPRep_11_11_sq> pppp_quartet =
       TwoPRep_11_11_sq::Instance(sh_p, sh_p, sh_p, sh_p, 0u);
   std::shared_ptr<DGVertex> pppp_ptr =

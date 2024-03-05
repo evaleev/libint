@@ -135,7 +135,8 @@ std::string usage() {
 }
 
 std::string am2label(unsigned int l) {
-  static char labels[] = "spdfghiklmnoqrtuvwxyz";
+  assert(l <= sizeof(LIBINT_AM2SYMBOL) - 1);
+  static char labels[] = LIBINT_AM2SYMBOL;
   std::ostringstream oss;
   oss << labels[l];
   return oss.str();

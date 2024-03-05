@@ -321,4 +321,7 @@
 #define LIBINT_MAYBE_UNUSED
 #endif
 
+/* maps angular momentum to the corresponding symbol: 0 -> s, 1 -> p, etc. */
+#define LIBINT_AM2SYMBOL "spdfghiklmnoqrtuvwxyz"
+
 #endif /* header guard */
