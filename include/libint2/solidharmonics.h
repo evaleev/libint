@@ -88,6 +88,10 @@ class SolidHarmonicsCoefficients {
     return shg_coefs[l];
   }
 
+  static SolidHarmonicsCoefficients make_instance(unsigned int l) {
+    return SolidHarmonicsCoefficients(l);
+  }
+
   /// returns ptr to row values
   const Real* row_values(size_t r) const {
     return &values_[0] + row_offset_[r];
