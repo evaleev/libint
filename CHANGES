@@ -3,6 +3,14 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2024-03-04: 2.9.0
+  - PR #335: l->symbol map reuse + other misc improvements
+  - PR #334: bump Catch2 to 2.13.10 (HT @hrnagel)
+  - PR #333: can use modularized Boost, even if built as part of the project
+  - PR #331: add SOVERSION when building shared library only (HT @loriab)
+  - PR #329: increase Tenno function interpolation table to support L=9 4-c ERI
+  - PR #327: fix stochastic failures of tests/eri by reducing range of random shells parameters
+  - PR #281: auto-generator for DF basis (HT @kshitij-05)
 - 2024-02-05: 2.8.2
   - PR #324: addresses issues with 3eri derivatives + minor 3eri API safety improvements
   - PR #322: update libtool to 2.4.7 + update config.{guess,sub} to 2024-01-01
