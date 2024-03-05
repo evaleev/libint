@@ -93,11 +93,11 @@ class SolidHarmonicsCoefficients {
     return &values_[0] + row_offset_[r];
   }
   /// returns ptr to row indices
-  const unsigned char* row_idx(size_t r) const {
+  const unsigned int* row_idx(size_t r) const {
     return &colidx_[0] + row_offset_[r];
   }
   /// number of nonzero elements in row \c r
-  unsigned char nnz(size_t r) const {
+  unsigned int nnz(size_t r) const {
     return row_offset_[r + 1] - row_offset_[r];
   }
 
@@ -171,25 +171,24 @@ class SolidHarmonicsCoefficients {
 
  private:
   std::vector<Real> values_;  // elements
-  std::vector<unsigned short>
-      row_offset_;                     // "pointer" to the beginning of each row
-  std::vector<unsigned char> colidx_;  // column indices
-  signed char l_;                      // the angular momentum quantum number
+  std::vector<unsigned int>
+      row_offset_;                    // "pointer" to the beginning of each row
+  std::vector<unsigned int> colidx_;  // column indices
+  int l_;                             // the angular momentum quantum number
 
   void init() {
-    const unsigned short npure = 2 * l_ + 1;
-    const unsigned short ncart = (l_ + 1) * (l_ + 2) / 2;
+    const unsigned int npure = 2 * l_ + 1;
+    const unsigned int ncart = (l_ + 1) * (l_ + 2) / 2;
     std::vector<Real> full_coeff(npure * ncart);
 
     std::vector<int> shg_indices;
     if (libint2::solid_harmonics_ordering() ==
         libint2::SHGShellOrdering_Standard) {
-      for (signed char pure_idx = 0, m = -l_; pure_idx != npure;
-           ++pure_idx, ++m)
+      for (signed int pure_idx = 0, m = -l_; pure_idx != npure; ++pure_idx, ++m)
         shg_indices.push_back(m);
     } else if (libint2::solid_harmonics_ordering() ==
                libint2::SHGShellOrdering_Gaussian) {
-      for (signed char pure_idx = 0, m = 0; pure_idx != npure;
+      for (signed int pure_idx = 0, m = 0; pure_idx != npure;
            ++pure_idx, m = (m > 0 ? -m : 1 - m))
         shg_indices.push_back(m);
     } else {
@@ -197,10 +196,10 @@ class SolidHarmonicsCoefficients {
           "libint2::solid_harmonics_ordering() value not recognized."));
     }
 
-    for (signed char pure_idx = 0; pure_idx != npure; ++pure_idx) {
+    for (signed int pure_idx = 0; pure_idx != npure; ++pure_idx) {
       int m = shg_indices[pure_idx];
-      signed char cart_idx = 0;
-      signed char lx, ly, lz;
+      int cart_idx = 0;
+      int lx, ly, lz;
       FOR_CART(lx, ly, lz, l_)
       full_coeff[pure_idx * ncart + cart_idx] = coeff(l_, m, lx, ly, lz);
       // std::cout << "Solid(" << (int)l_ << "," << (int)m << ") += Cartesian("
@@ -221,11 +220,11 @@ class SolidHarmonicsCoefficients {
     row_offset_.resize(npure + 1);
     // 3) copy
     {
-      unsigned short pc = 0;
-      unsigned short cnt = 0;
-      for (unsigned short p = 0; p != npure; ++p) {
+      unsigned int pc = 0;
+      unsigned int cnt = 0;
+      for (unsigned int p = 0; p != npure; ++p) {
         row_offset_[p] = cnt;
-        for (unsigned short c = 0; c != ncart; ++c, ++pc) {
+        for (unsigned int c = 0; c != ncart; ++c, ++pc) {
           if (full_coeff[pc] != 0.0) {
             values_[cnt] = full_coeff[pc];
             colidx_[cnt] = c;
