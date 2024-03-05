@@ -44,12 +44,14 @@
 #endif  // LIBINT2_HAVE_BTAS
 
 // Libint Gaussian integrals library
-#include <libint2/chemistry/sto3g_atomic_density.h>
+#include <libint2/dfbs_generator.h>
 #include <libint2/diis.h>
 #include <libint2/lcao/molden.h>
+#include <libint2/soad_fock.h>
 #include <libint2/util/intpart_iter.h>
 
 #include <libint2.hpp>
+
 #if !LIBINT2_CONSTEXPR_STATICS
 #include <libint2/statics_definition.h>
 #endif
@@ -75,6 +77,10 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
 // to meet the layout of the integrals returned by the Libint integral library
 typedef Eigen::DiagonalMatrix<double, Eigen::Dynamic, Eigen::Dynamic>
     DiagonalMatrix;
+
+#ifdef LIBINT2_HAVE_BTAS
+typedef btas::Tensor<double> tensor;
+#endif
 
 using libint2::Atom;
 using libint2::BasisSet;
@@ -166,10 +172,8 @@ struct DFFockEngine {
   const BasisSet& dfbs;
   DFFockEngine(const BasisSet& _obs, const BasisSet& _dfbs)
       : obs(_obs), dfbs(_dfbs) {}
-
-  typedef btas::RangeNd<CblasRowMajor, std::array<long, 3>> Range3d;
-  typedef btas::Tensor<double, Range3d> Tensor3d;
-  Tensor3d xyK;
+  typedef btas::Tensor<double> Tensor;
+  Tensor xyK;
 
   // a DF-based builder, using coefficients of occupied MOs
   Matrix compute_2body_fock_dfC(const Matrix& Cocc);
@@ -217,9 +221,18 @@ int main(int argc, char* argv[]) {
     const auto filename = (argc > 1) ? argv[1] : "h2o.xyz";
     const auto basisname = (argc > 2) ? argv[2] : "aug-cc-pVDZ";
     bool do_density_fitting = false;
+    double cholesky_threshold = 1e-4;
 #ifdef HAVE_DENSITY_FITTING
     do_density_fitting = (argc > 3);
-    const auto dfbasisname = do_density_fitting ? argv[3] : "";
+    const std::string dfbasisname = do_density_fitting ? argv[3] : "";
+
+    // if autoDF use e.g. -> autodf(1e-6) as command line argument
+    if (dfbasisname.rfind("autodf", 0) == 0) {
+      cholesky_threshold =
+          std::stod(dfbasisname.substr(7, dfbasisname.length() - 8));
+      std::cout << "New Cholesky threshold for generating df basis set = "
+                << cholesky_threshold << std::endl;
+    }
 #endif
     std::vector<Atom> atoms = read_geometry(filename);
 
@@ -275,10 +288,24 @@ int main(int argc, char* argv[]) {
     BasisSet obs(basisname, atoms);
     cout << "orbital basis set rank = " << obs.nbf() << endl;
 
+    // initializes the Libint integrals library ... now ready to compute
+    libint2::initialize();
+
 #ifdef HAVE_DENSITY_FITTING
     BasisSet dfbs;
     if (do_density_fitting) {
-      dfbs = BasisSet(dfbasisname, atoms);
+      if (dfbasisname.rfind("autodf", 0) == 0) {
+        std::vector<Shell> dfbs_shells;
+        for (auto&& atom : atoms) {
+          libint2::DFBasisSetGenerator dfbs_generator(basisname, atom,
+                                                      cholesky_threshold);
+          auto reduced_shells = dfbs_generator.reduced_shells();
+          dfbs_shells.insert(dfbs_shells.end(), reduced_shells.begin(),
+                             reduced_shells.end());
+        }
+        dfbs = BasisSet(std::move(dfbs_shells));
+      } else
+        dfbs = BasisSet(dfbasisname, atoms);
       cout << "density-fitting basis set rank = " << dfbs.nbf() << endl;
     }
 #endif  // HAVE_DENSITY_FITTING
@@ -286,13 +313,6 @@ int main(int argc, char* argv[]) {
     /*** =========================== ***/
     /*** compute 1-e integrals       ***/
     /*** =========================== ***/
-
-    // initializes the Libint integrals library ... now ready to compute
-    libint2::set_solid_harmonics_ordering(libint2::SHGShellOrdering_Gaussian);
-    libint2::initialize();
-    printf("Configuration G: sho=%d components=%s\n",
-           libint2::solid_harmonics_ordering(),
-           libint2::configuration_accessor().c_str());
 
     // compute OBS non-negligible shell-pair list
     {
@@ -343,7 +363,8 @@ int main(int argc, char* argv[]) {
     {  // use SOAD as the guess density
       const auto tstart = std::chrono::high_resolution_clock::now();
 
-      auto D_minbs = compute_soad(atoms);  // compute guess in minimal basis
+      auto D_minbs =
+          libint2::compute_soad(atoms);  // compute guess in minimal basis
       BasisSet minbs("STO-3G", atoms);
       if (minbs == obs)
         D = D_minbs;
@@ -689,7 +710,9 @@ int main(int argc, char* argv[]) {
     }
 
     {  // compute hessian
-      LIBINT_MAYBE_UNUSED const auto ncoords = 3 * atoms.size();
+      const auto ncoords = 3 * atoms.size();
+      // # of elems in upper triangle
+      const auto nelem = ncoords * (ncoords + 1) / 2;
 #if LIBINT2_DERIV_ONEBODY_ORDER > 1
       // compute 1-e hessian
       Matrix H1 = Matrix::Zero(ncoords, ncoords);
@@ -721,7 +744,7 @@ int main(int argc, char* argv[]) {
       }
 
       std::cout << "** 1-body hessian = ";
-      for (auto row = 0; row != ncoords; ++row) {
+      for (auto row = 0, i = 0; row != ncoords; ++row) {
         for (auto col = row; col != ncoords; ++col) {
           std::cout << H1(row, col) << " ";
         }
@@ -729,7 +752,7 @@ int main(int argc, char* argv[]) {
       std::cout << std::endl;
 
       std::cout << "** Pulay hessian = ";
-      for (auto row = 0; row != ncoords; ++row) {
+      for (auto row = 0, i = 0; row != ncoords; ++row) {
         for (auto col = row; col != ncoords; ++col) {
           std::cout << H_Pulay(row, col) << " ";
         }
@@ -754,7 +777,7 @@ int main(int argc, char* argv[]) {
       }
 
       std::cout << "** 2-body hessian = ";
-      for (auto row = 0; row != ncoords; ++row) {
+      for (auto row = 0, i = 0; row != ncoords; ++row) {
         for (auto col = row; col != ncoords; ++col) {
           std::cout << H2(row, col) << " ";
         }
@@ -817,7 +840,7 @@ int main(int argc, char* argv[]) {
       }
 
       std::cout << "** nuclear repulsion hessian = ";
-      for (auto row = 0; row != ncoords; ++row) {
+      for (auto row = 0, i = 0; row != ncoords; ++row) {
         for (auto col = row; col != ncoords; ++col) {
           std::cout << HN(row, col) << " ";
         }
@@ -826,7 +849,7 @@ int main(int argc, char* argv[]) {
 
       auto H = H1 + H_Pulay + H2 + HN;
       std::cout << "** Hartree-Fock hessian = ";
-      for (auto row = 0; row != ncoords; ++row) {
+      for (auto row = 0, i = 0; row != ncoords; ++row) {
         for (auto col = row; col != ncoords; ++col) {
           std::cout << H(row, col) << " ";
         }
@@ -965,7 +988,7 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
     // loop over unique shell pairs, {s1,s2} such that s1 >= s2
     // this is due to the permutational symmetry of the real integrals over
     // Hermitian operators: (1|2) = (2|1)
-    for (auto s1 = 0l; s1 != nshells; ++s1) {
+    for (auto s1 = 0l, s12 = 0l; s1 != nshells; ++s1) {
       auto bf1 = shell2bf[s1];  // first basis function in this shell
       auto n1 = obs[s1].size();
 
@@ -976,6 +999,8 @@ std::array<Matrix, libint2::operator_traits<obtype>::nopers> compute_1body_ints(
 
         auto bf2 = shell2bf[s2];
         auto n2 = obs[s2].size();
+
+        auto n12 = n1 * n2;
 
         // compute shell pair; return is the pointer to the buffer
         engines[thread_id].compute(obs[s1], obs[s2]);
@@ -1046,7 +1071,7 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
     // loop over unique shell pairs, {s1,s2} such that s1 >= s2
     // this is due to the permutational symmetry of the real integrals over
     // Hermitian operators: (1|2) = (2|1)
-    for (auto s1 = 0l; s1 != nshells; ++s1) {
+    for (auto s1 = 0l, s12 = 0l; s1 != nshells; ++s1) {
       auto bf1 = shell2bf[s1];  // first basis function in this shell
       auto n1 = obs[s1].size();
       auto atom1 = shell2atom[s1];
@@ -1060,6 +1085,8 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
         auto bf2 = shell2bf[s2];
         auto n2 = obs[s2].size();
         auto atom2 = shell2atom[s2];
+
+        auto n12 = n1 * n2;
 
         // compute shell pair; return is the pointer to the buffer
         engines[thread_id].compute(obs[s1], obs[s2]);
@@ -1185,7 +1212,7 @@ std::vector<Matrix> compute_1body_ints_deriv(unsigned deriv_order,
             ShellSetDerivIterator shellset_diter(deriv_order,
                                                  nderivcenters_shset);
             while (shellset_diter) {
-              LIBINT_MAYBE_UNUSED const auto& deriv = *shellset_diter;
+              const auto& deriv = *shellset_diter;
             }
           }
         }  // copy shell block switch
@@ -1505,7 +1532,6 @@ Matrix compute_2body_2index_ints(const BasisSet& bs) {
   }
 
   auto shell2bf = bs.shell2bf();
-  auto unitshell = Shell::unit();
 
   auto compute = [&](int thread_id) {
     auto& engine = engines[thread_id];
@@ -1559,6 +1585,7 @@ Matrix compute_2body_fock(const BasisSet& obs, const Matrix& D,
   auto fock_precision = precision;
   // standard approach is to omit *contributions* to the Fock matrix smaller
   // than fock_precision ... this relies on massive amount of error cancellation
+  auto max_nprim = obs.max_nprim();
   auto needed_engine_precision = (fock_precision / D_shblk_norm.maxCoeff());
   assert(needed_engine_precision > max_engine_precision &&
          "using precomputed shell pair data limits the max engine precision"
@@ -1767,6 +1794,7 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
   auto fock_precision = precision;
   // standard approach is to omit *contributions* to the Fock matrix smaller
   // than fock_precision ... this relies on massive amount of error cancellation
+  auto max_nprim = obs.max_nprim();
   auto needed_engine_precision = (fock_precision / D_shblk_norm.maxCoeff());
   assert(needed_engine_precision > max_engine_precision &&
          "using precomputed shell pair data limits the max engine precision"
@@ -1939,6 +1967,8 @@ std::vector<Matrix> compute_2body_fock_deriv(const BasisSet& obs,
                   const int xyz = d % 3;
 
                   auto coord = shell_atoms[a] * 3 + xyz;
+                  auto& g = G[thread_id * nderiv + coord];
+
                   int coord1 = 0, coord2 = 0;
 
                   add_shellset_to_dest(thread_id * nderiv + coord, d, coord1,
@@ -2029,7 +2059,7 @@ Matrix compute_2body_fock_general(const BasisSet& obs, const Matrix& D,
                                   double precision) {
   const auto n = obs.nbf();
   const auto nshells = obs.size();
-  LIBINT_MAYBE_UNUSED const auto n_D = D_bs.nbf();
+  const auto n_D = D_bs.nbf();
   assert(D.cols() == D.rows() && D.cols() == n_D);
 
   using libint2::nthreads;
@@ -2158,11 +2188,6 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
   std::vector<libint2::Timers<5>> timers(nthreads);
   for (auto& timer : timers) timer.set_now_overhead(25);
 
-  typedef btas::RangeNd<CblasRowMajor, std::array<long, 1>> Range1d;
-  typedef btas::RangeNd<CblasRowMajor, std::array<long, 2>> Range2d;
-  typedef btas::Tensor<double, Range1d> Tensor1d;
-  typedef btas::Tensor<double, Range2d> Tensor2d;
-
   // using first time? compute 3-center ints and transform to inv sqrt
   // representation
   if (xyK.size() == 0) {
@@ -2187,7 +2212,7 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     auto shell2bf = obs.shell2bf();
     auto shell2bf_df = dfbs.shell2bf();
 
-    Tensor3d Zxy{ndf, n, n};
+    Tensor Zxy{ndf, n, n};
 
     auto lambda = [&](int thread_id) {
       auto& engine = engines[thread_id];
@@ -2264,12 +2289,12 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
     //  std::cout << "||V^-1 - L^-1^t L^-1|| = " << (V.inverse() - Linv_t *
     //  Linv_t.transpose()).norm() << std::endl;
 
-    Tensor2d K{ndf, ndf};
+    Tensor K{ndf, ndf};
     std::copy(Linv_t.data(), Linv_t.data() + ndf * ndf, K.begin());
 
-    xyK = Tensor3d{n, n, ndf};
+    xyK = Tensor{n, n, ndf};
     btas::contract(1.0, Zxy, {1, 2, 3}, K, {1, 4}, 0.0, xyK, {2, 3, 4});
-    Zxy = Tensor3d{0, 0, 0};  // release memory
+    Zxy = Tensor{0, 0, 0};  // release memory
 
     timers[0].stop(2);
     std::cout << "time for integrals metric tform = " << timers[0].read(2)
@@ -2280,12 +2305,12 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
   timers[0].start(3);
 
   const auto nocc = Cocc.cols();
-  Tensor2d Co{n, nocc};
+  Tensor Co{n, nocc};
   std::copy(Cocc.data(), Cocc.data() + n * nocc, Co.begin());
-  Tensor3d xiK{n, nocc, ndf};
+  Tensor xiK{n, nocc, ndf};
   btas::contract(1.0, xyK, {1, 2, 3}, Co, {2, 4}, 0.0, xiK, {1, 4, 3});
 
-  Tensor2d G{n, n};
+  Tensor G{n, n};
   btas::contract(1.0, xiK, {1, 2, 3}, xiK, {4, 2, 3}, 0.0, G, {1, 4});
 
   timers[0].stop(3);
@@ -2294,9 +2319,9 @@ Matrix DFFockEngine::compute_2body_fock_dfC(const Matrix& Cocc) {
   // compute Coulomb
   timers[0].start(4);
 
-  Tensor1d Jtmp{ndf};
+  Tensor Jtmp{ndf};
   btas::contract(1.0, xiK, {1, 2, 3}, Co, {1, 2}, 0.0, Jtmp, {3});
-  xiK = Tensor3d{0, 0, 0};
+  xiK = Tensor{0, 0, 0};
   btas::contract(2.0, xyK, {1, 2, 3}, Jtmp, {3}, -1.0, G, {1, 2});
 
   timers[0].stop(4);
@@ -2399,11 +2424,13 @@ void api_basic_compile_test(const BasisSet& obs,
         eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], Shell::unit());
         eri2_engine.compute(obs[s1], obs[s2]);
 
+        auto bf1 = shell2bf[s1];   // first basis function in first shell
         auto n1 = obs[s1].size();  // number of basis functions in first shell
+        auto bf2 = shell2bf[s2];   // first basis function in second shell
         auto n2 = obs[s2].size();  // number of basis functions in second shell
 
-        LIBINT_MAYBE_UNUSED const auto* buf4 = results4[0];
-        LIBINT_MAYBE_UNUSED const auto* buf2 = results2[0];
+        const auto* buf4 = results4[0];
+        const auto* buf2 = results2[0];
 
         // this iterates over integrals in the order they are packed in array
         // ints_shellset
@@ -2427,13 +2454,16 @@ void api_basic_compile_test(const BasisSet& obs,
           eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], obs[s3]);
           eri3_engine.compute(obs[s1], obs[s2], obs[s3]);
 
+          auto bf1 = shell2bf[s1];   // first basis function in first shell
           auto n1 = obs[s1].size();  // number of basis functions in first shell
+          auto bf2 = shell2bf[s2];   // first basis function in second shell
           auto n2 =
-              obs[s2].size();  // number of basis functions in second shell
+              obs[s2].size();       // number of basis functions in second shell
+          auto bf3 = shell2bf[s3];  // first basis function in third shell
           auto n3 = obs[s3].size();  // number of basis functions in third shell
 
-          LIBINT_MAYBE_UNUSED const auto* buf4 = results4[0];
-          LIBINT_MAYBE_UNUSED const auto* buf3 = results3[0];
+          const auto* buf4 = results4[0];
+          const auto* buf3 = results3[0];
 
           // this iterates over integrals in the order they are packed in array
           // ints_shellset
@@ -2460,13 +2490,15 @@ void api_basic_compile_test(const BasisSet& obs,
         eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], Shell::unit());
         eri2_engine.compute(obs[s1], obs[s2]);
 
+        auto bf1 = shell2bf[s1];   // first basis function in first shell
         auto n1 = obs[s1].size();  // number of basis functions in first shell
+        auto bf2 = shell2bf[s2];   // first basis function in second shell
         auto n2 = obs[s2].size();  // number of basis functions in second shell
 
         // loop over derivative shell sets
         for (auto d = 0; d != 6; ++d) {
-          LIBINT_MAYBE_UNUSED const auto* buf4 = results4[d < 3 ? d : d + 3];
-          LIBINT_MAYBE_UNUSED const auto* buf2 = results2[d];
+          const auto* buf4 = results4[d < 3 ? d : d + 3];
+          const auto* buf2 = results2[d];
 
           // this iterates over integrals in the order they are packed in array
           // ints_shellset
@@ -2493,7 +2525,9 @@ void api_basic_compile_test(const BasisSet& obs,
         eri4_engine.compute(obs[s1], Shell::unit(), obs[s2], Shell::unit());
         eri2_engine.compute(obs[s1], obs[s2]);
 
+        auto bf1 = shell2bf[s1];   // first basis function in first shell
         auto n1 = obs[s1].size();  // number of basis functions in first shell
+        auto bf2 = shell2bf[s2];   // first basis function in second shell
         auto n2 = obs[s2].size();  // number of basis functions in second shell
 
         // loop over derivative shell sets
@@ -2502,8 +2536,8 @@ void api_basic_compile_test(const BasisSet& obs,
           for (auto d2 = d1; d2 != 6; ++d2, ++d12) {
             const auto dd2 = d2 < 3 ? d2 : d2 + 3;
             const auto dd12 = dd1 * (24 - dd1 - 1) / 2 + dd2;
-            LIBINT_MAYBE_UNUSED const auto* buf4 = results4[dd12];
-            LIBINT_MAYBE_UNUSED const auto* buf2 = results2[d12];
+            const auto* buf4 = results4[dd12];
+            const auto* buf2 = results2[d12];
 
             // this iterates over integrals in the order they are packed in
             // array

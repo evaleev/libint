@@ -18,8 +18,23 @@
  *
  */
 
+#include <libint2/solidharmonics.h>
+
 #include "catch.hpp"
 #include "fixture.h"
+
+TEST_CASE("SolidHarmonicsCoefficients ctor", "[shell]") {
+  using libint2::solidharmonics::SolidHarmonicsCoefficients;
+  REQUIRE_NOTHROW(SolidHarmonicsCoefficients<long double>::instance(12));
+  auto sh12 = SolidHarmonicsCoefficients<long double>::instance(12);
+  CHECK_NOTHROW(sh12.coeff(12, 0, 0, 0, 12));
+  CHECK(sh12.coeff(12, 0, 0, 0, 12) == Approx(1));
+  CHECK_NOTHROW(
+      SolidHarmonicsCoefficients<long double>::make_instance(25).coeff(25, 0, 0,
+                                                                       0, 25));
+  CHECK(SolidHarmonicsCoefficients<long double>::make_instance(25).coeff(
+            25, 0, 0, 0, 25) == Approx(1));
+}
 
 TEST_CASE("Shell ctor", "[shell]") {
   REQUIRE_NOTHROW(Shell{});

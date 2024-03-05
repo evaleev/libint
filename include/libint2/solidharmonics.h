@@ -83,9 +83,13 @@ class SolidHarmonicsCoefficients {
   static const SolidHarmonicsCoefficients& instance(unsigned int l) {
     static std::vector<SolidHarmonicsCoefficients> shg_coefs(
         SolidHarmonicsCoefficients::CtorHelperIter(0),
-        SolidHarmonicsCoefficients::CtorHelperIter(11));
-    assert(l <= 10);  // see coeff() for explanation of the upper limit on l
+        SolidHarmonicsCoefficients::CtorHelperIter(LIBINT_HARD_MAX_AM + 1));
+    assert(l < shg_coefs.size());
     return shg_coefs[l];
+  }
+
+  static SolidHarmonicsCoefficients make_instance(unsigned int l) {
+    return SolidHarmonicsCoefficients(l);
   }
 
   /// returns ptr to row values
@@ -93,11 +97,11 @@ class SolidHarmonicsCoefficients {
     return &values_[0] + row_offset_[r];
   }
   /// returns ptr to row indices
-  const unsigned char* row_idx(size_t r) const {
+  const unsigned int* row_idx(size_t r) const {
     return &colidx_[0] + row_offset_[r];
   }
   /// number of nonzero elements in row \c r
-  unsigned char nnz(size_t r) const {
+  unsigned int nnz(size_t r) const {
     return row_offset_[r + 1] - row_offset_[r];
   }
 
@@ -108,9 +112,9 @@ class SolidHarmonicsCoefficients {
    harmonic Ylm is requested.
    ---------------------------------------------------------------------------------------------*/
   static Real coeff(int l, int m, int lx, int ly, int lz) {
-    using libint2::math::bc;
-    using libint2::math::df_Kminus1;
-    using libint2::math::fac;
+    using libint2::math::bc_real;
+    using libint2::math::df_Kminus1_real;
+    using libint2::math::fac_real;
 
     auto abs_m = std::abs(m);
     if ((lx + ly - abs_m) % 2) return 0.0;
@@ -127,13 +131,17 @@ class SolidHarmonicsCoefficients {
     auto i = abs_m - lx;
     if (comp != parity(abs(i))) return 0.0;
 
-    assert(l <= 10);  // libint2::math::fac[] is only defined up to 20
-    Real pfac =
-        sqrt(((Real(fac[2 * lx]) * Real(fac[2 * ly]) * Real(fac[2 * lz])) /
-              fac[2 * l]) *
-             ((Real(fac[l - abs_m])) / (fac[l])) * (Real(1) / fac[l + abs_m]) *
-             (Real(1) / (fac[lx] * fac[ly] * fac[lz])));
-    /*  pfac = sqrt(fac[l-abs_m]/(fac[l]*fac[l]*fac[l+abs_m]));*/
+    Real pfac;
+    pfac = sqrt(((fac_real<Real>(2 * lx) * fac_real<Real>(2 * ly) *
+                  fac_real<Real>(2 * lz)) /
+                 fac_real<Real>(2 * l)) *
+                ((fac_real<Real>(l - abs_m)) / (fac_real<Real>(l))) *
+                (Real(1) / fac_real<Real>(l + abs_m)) *
+                (Real(1) / (fac_real<Real>(lx) * fac_real<Real>(ly) *
+                            fac_real<Real>(lz))));
+
+    /*  pfac =
+     * sqrt(fac_real<Real>(l-abs_m)/(fac_real<Real>(l)*fac_real<Real>(l)*fac[l+abs_m]));*/
     pfac /= (1L << l);
     if (m < 0)
       pfac *= parity((i - 1) / 2);
@@ -144,19 +152,22 @@ class SolidHarmonicsCoefficients {
     auto i_max = (l - abs_m) / 2;
     Real sum = 0;
     for (auto i = i_min; i <= i_max; i++) {
-      Real pfac1 = bc(l, i) * bc(i, j);
-      pfac1 *= (Real(parity(i) * fac[2 * (l - i)]) / fac[l - abs_m - 2 * i]);
+      Real pfac1 = bc_real<Real>(l, i) * bc_real<Real>(i, j);
+      pfac1 *= (Real(parity(i) * fac_real<Real>(2 * (l - i))) /
+                fac_real<Real>(l - abs_m - 2 * i));
       Real sum1 = 0.0;
       const int k_min = std::max((lx - abs_m) / 2, 0);
       const int k_max = std::min(j, lx / 2);
       for (int k = k_min; k <= k_max; k++) {
         if (lx - 2 * k <= abs_m)
-          sum1 += bc(j, k) * bc(abs_m, lx - 2 * k) * parity(k);
+          sum1 += bc_real<Real>(j, k) * bc_real<Real>(abs_m, lx - 2 * k) *
+                  parity(k);
       }
       sum += pfac1 * sum1;
     }
-    sum *= sqrt(Real(df_Kminus1[2 * l]) /
-                (df_Kminus1[2 * lx] * df_Kminus1[2 * ly] * df_Kminus1[2 * lz]));
+    sum *= sqrt(df_Kminus1_real<Real>(2 * l) /
+                (df_Kminus1_real<Real>(2 * lx) * df_Kminus1_real<Real>(2 * ly) *
+                 df_Kminus1_real<Real>(2 * lz)));
 
     Real result = (m == 0) ? pfac * sum : M_SQRT2 * pfac * sum;
     return result;
@@ -164,25 +175,24 @@ class SolidHarmonicsCoefficients {
 
  private:
   std::vector<Real> values_;  // elements
-  std::vector<unsigned short>
-      row_offset_;                     // "pointer" to the beginning of each row
-  std::vector<unsigned char> colidx_;  // column indices
-  signed char l_;                      // the angular momentum quantum number
+  std::vector<unsigned int>
+      row_offset_;                    // "pointer" to the beginning of each row
+  std::vector<unsigned int> colidx_;  // column indices
+  int l_;                             // the angular momentum quantum number
 
   void init() {
-    const unsigned short npure = 2 * l_ + 1;
-    const unsigned short ncart = (l_ + 1) * (l_ + 2) / 2;
+    const unsigned int npure = 2 * l_ + 1;
+    const unsigned int ncart = (l_ + 1) * (l_ + 2) / 2;
     std::vector<Real> full_coeff(npure * ncart);
 
     std::vector<int> shg_indices;
     if (libint2::solid_harmonics_ordering() ==
         libint2::SHGShellOrdering_Standard) {
-      for (signed char pure_idx = 0, m = -l_; pure_idx != npure;
-           ++pure_idx, ++m)
+      for (signed int pure_idx = 0, m = -l_; pure_idx != npure; ++pure_idx, ++m)
         shg_indices.push_back(m);
     } else if (libint2::solid_harmonics_ordering() ==
                libint2::SHGShellOrdering_Gaussian) {
-      for (signed char pure_idx = 0, m = 0; pure_idx != npure;
+      for (signed int pure_idx = 0, m = 0; pure_idx != npure;
            ++pure_idx, m = (m > 0 ? -m : 1 - m))
         shg_indices.push_back(m);
     } else {
@@ -190,10 +200,10 @@ class SolidHarmonicsCoefficients {
           "libint2::solid_harmonics_ordering() value not recognized."));
     }
 
-    for (signed char pure_idx = 0; pure_idx != npure; ++pure_idx) {
+    for (signed int pure_idx = 0; pure_idx != npure; ++pure_idx) {
       int m = shg_indices[pure_idx];
-      signed char cart_idx = 0;
-      signed char lx, ly, lz;
+      int cart_idx = 0;
+      int lx, ly, lz;
       FOR_CART(lx, ly, lz, l_)
       full_coeff[pure_idx * ncart + cart_idx] = coeff(l_, m, lx, ly, lz);
       // std::cout << "Solid(" << (int)l_ << "," << (int)m << ") += Cartesian("
@@ -214,11 +224,11 @@ class SolidHarmonicsCoefficients {
     row_offset_.resize(npure + 1);
     // 3) copy
     {
-      unsigned short pc = 0;
-      unsigned short cnt = 0;
-      for (unsigned short p = 0; p != npure; ++p) {
+      unsigned int pc = 0;
+      unsigned int cnt = 0;
+      for (unsigned int p = 0; p != npure; ++p) {
         row_offset_[p] = cnt;
-        for (unsigned short c = 0; c != ncart; ++c, ++pc) {
+        for (unsigned int c = 0; c != ncart; ++c, ++pc) {
           if (full_coeff[pc] != 0.0) {
             values_[cnt] = full_coeff[pc];
             colidx_[cnt] = c;
