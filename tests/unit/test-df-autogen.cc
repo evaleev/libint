@@ -130,6 +130,8 @@ Eigen::Tensor<double, 4> compute_eri4(const BasisSet &obs) {
 }
 
 TEST_CASE("DFBS-Generator", "[dfbs-generator]") {
+#if defined(LIBINT2_SUPPORT_ERI) && defined(LIBINT2_SUPPORT_ERI3) && \
+    defined(LIBINT2_SUPPORT_ERI2)
   // Will use Neon as a test case
   libint2::Atom atom;
   atom.atomic_number = 2;
@@ -181,5 +183,6 @@ TEST_CASE("DFBS-Generator", "[dfbs-generator]") {
     }
   }
   REQUIRE_NOTHROW(norm < 1e-10);
+#endif  // LIBINT2_SUPPORT_ERI && LIBINT2_SUPPORT_ERI3 && LIBINT2_SUPPORT_ERI2
 }
 //
