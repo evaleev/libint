@@ -1,0 +1,36 @@
+/*
+ *  Copyright (C) 2004-2023 Edward F. Valeev
+ *
+ *  This file is part of Libint.
+ *
+ *  Libint is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Libint is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with Libint.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/* This file is automatically processed by configure script.
+   It MUST NOT be changed manually after configuration, otherwise
+   the library will likely fail to compile or produce erroneous results
+ */
+
+/* EXTRA DEFINES DETERMINED BY CONFIGURE OF THE EXPORTED LIBRARY */
+
+#ifndef _libint2_include_libint2_config_h_1
+#define _libint2_include_libint2_config_h_1
+
+/* retired Jan 2023 #undef LIBINT_SHGSHELL_ORDERING */
+
+/* Specifies the ordering of solid harmonics Gaussians in a shell. Retired Jan 2023 in favor of becoming a generator-time-only option */
+/* #cmakedefine LIBINT_SHGSHELL_ORDERING @LIBINT_SHGSHELL_ORDERING@ */
+
+#endif /* header guard */

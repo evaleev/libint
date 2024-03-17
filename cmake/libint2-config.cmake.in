@@ -1,0 +1,62 @@
+# libint2-config.cmake
+# --------------------
+#
+# Libint2 cmake module.
+# This module sets the following variables in your project:
+#
+# ::
+#
+#   Libint2_EXT_VERSION - Libint2 version including buildid, such as beta.3. Prefer target variable.
+#   Libint2_MAX_AM_ERI - maximum angular momentum level of Libint2 libraries for 4-center energy
+#                        integrals. Prefer target variable.
+#
+#
+# Available components:
+#
+# ::
+#
+# See https://github.com/evaleev/libint/blob/master/INSTALL.md#configuration-codes
+# for more details on these codes.
+#
+#   multipole_hh_dD - search for including spherical multipole integrals
+#   onebody_hh_dD   - search for library including 1-body integrals
+#   eri_hhhh_dD     - search for library including 2-body integrals with 4 centers
+#   eri_hhL_dD      - search for library including 2-body integrals with 3 centers
+#   eri_hhl_dD      - ditto
+#   eri_HH_dD       - search for library including 2-body integrals with 2 centers
+#   eri_hh_dD       - ditto
+#   g12_hhhh_dD     - search for library including F12 integrals with Gaussian factors
+#
+#                    cart       shell_set   used_by
+#                    --------   ---------   -------
+#                                                             ( psi4 requires runtime-setting of     )
+#   ss - search for  standard + standard  = mpqc4, cp2k, psi4 (  solid harmonic ordering to Gaussian )
+#   so - search for           + orca
+#   is - search for  intv3    + standard  = mpqc3
+#   io - search for           + orca
+#   gs - search for  gamess   + standard  = gamess
+#   go - search for           + orca
+#   os - search for  orca     + standard
+#   oo - search for           + orca      = orca
+#   bs - search for  bagel    + standard  = bagel
+#   bo - search for           + orca
+
+@PACKAGE_INIT@
+
+set(pnv libint2)  # projectnameversion
+set(L2 Libint2)  # NameSpace
+
+set(Libint2_EXT_VERSION "@LIBINT_EXT_VERSION@")
+
+
+# check orderings, AM, & derivatives components
+# * LIBINT2_SHGAUSS_ORDERING = @LIBINT2_SHGAUSS_ORDERING@
+# * LIBINT2_CARTGAUSS_ORDERING = @LIBINT2_CARTGAUSS_ORDERING@
+# * LIBINT2_SHELL_SET = @LIBINT2_SHELL_SET@
+set(${L2}_MAX_AM_ERI @Libint2_MAX_AM_ERI@)  # Libint2_MAX_AM_ERI
+foreach(_eri @Libint2_CONFIG_COMPONENTS@)  # Libint2_CONFIG_COMPONENTS
+    set(${L2}_${_eri}_FOUND 1)
+endforeach()
+
+
+

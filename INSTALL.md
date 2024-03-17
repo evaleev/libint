@@ -1,3 +1,172 @@
+# Configuring Libint
+
+* Notes
+  * Codes "G", "L", or "C" for each option indicate whether it is consumed by the _g_enerator, the _l_ibrary, the library _c_onsumer, or a combination.
+    * If your final target is the export tarball, use options that include the letter "G".
+    * If you're building a library from an export TARBALL, use options that include the letter "L".
+    * For a continuous generator->export->library build, options supplied at the top level will be properly handed off to generator and library build.
+  * See [Update Guide](gnu-autotools-update-guide) for new names for old options.
+
+
+###  Which Integrals Classes, Which Derivative Levels (G)
+
+* `ENABLE_ONEBODY` — G — Compile with support for up to N-th derivatives of 1-body integrals. Use -1 for OFF. [Default=0]
+* `ENABLE_ERI` — G — Compile with support for up to N-th derivatives of 4-center electron repulsion integrals. Use -1 for OFF. [Default=0]
+* `ENABLE_ERI3` — G — Compile with support for up to N-th derivatives of 3-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
+* `ENABLE_ERI2` — G — Compile with support for up to N-th derivatives of 2-center electron repulsion integrals. Use -1 for OFF. [Default=-1]
+* `ENABLE_G12` — G — Compile with support for N-th derivatives of MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
+* `ENABLE_G12DKH` — G — Compile with support for N-th derivatives of DKH-MP2-F12 energies with Gaussian factors. Use -1 for OFF. [Default=-1]
+
+* `DISABLE_ONEBODY_PROPERTY_DERIVS` — G — Disable geometric derivatives of 1-body property integrals (all but overlap, kinetic, elecpot).
+   These derivatives are disabled by default to save compile time. Use OFF to enable.
+   Note that the libtool build won't enable this- if forcibly enabled, build_libint balks. [Default=ON]
+
+* `ENABLE_T1G12_SUPPORT` — G — Enable [Ti,G12] integrals when G12 integrals are enabled. Irrelevant when `ENABLE_G12=OFF`. Use OFF to disable. [Default=ON]
+
+
+###  Which Ordering Conventions (G)
+
+* `LIBINT2_SHGAUSS_ORDERING` — G — Ordering for shells of solid harmonic Gaussians. [Default=standard]
+  * `standard` — standard ordering (-l, -l+1 ... l)
+  * `gaussian` — the Gaussian ordering (0, 1, -1, 2, -2, ... l, -l)
+  See [Solid Harmonic Ordering Scope and History](solid-harmonic-ordering-scope-and-history)
+* `LIBINT2_CARTGAUSS_ORDERING` — G — Orderings for shells of cartesian Gaussians. [Default=standard]
+  * `standard` — standard ordering (xxx, xxy, xxz, xyy, xyz, xzz, yyy, ...) This is ordering of the Common Component Architecture (CCA) standard for molecular integral data exchange described in ["Components for Integral Evaluation in Quantum Chemistry", J. P. Kenny, C. L. Janssen, E. F. Valeev, and T. L. Windus, J. Comp. Chem. 29, 562 (2008)](http://dx.doi.org/10.1002/jcc.20815).
+  * `intv3` — intv3 ordering (yyy, yyz, yzz, zzz, xyy, xyz, xzz, xxy, xxz, xxx) This is used by IntV3, the default integral engine of [MPQC](https://github.com/evaleev/libint/wiki/www.mpqc.org). Use this to make Libint and IntV3 engines in MPQC interoperable.
+  * `gamess` — [GAMESS](http://www.msg.ameslab.gov/gamess/) ordering (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
+  * `orca` — [ORCA](http://cec.mpg.de/forum/) ordering (hydrid between GAMESS and standard)
+  * `bagel` — [BAGEL](https://github.com/evaleev/libint/wiki/nubakery.org) axis-permuted version of intv3 (xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz)
+* `LIBINT2_SHELL_SET` — G — Support computation of shell sets sets subject to these restrictions. [Default=standard]
+  * `standard` — standard ordering:
+      for (ab|cd):
+        l(a) >= l(b),
+        l(c) >= l(d),
+        l(a)+l(b) <= l(c)+l(d)
+      for (b|cd):
+        l(c) >= l(d)
+  * `orca` — ORCA ordering:
+      for (ab|cd):
+        l(a) <= l(b),
+        l(c) <= l(d),
+        l(a) < l(c) || (l(a) == l(c) && l(b) < l(d))
+      for (b|cd):
+        l(c) <= l(d)
+
+####  Solid Harmonic Ordering Scope and History
+
+The use of the `LIBINT2_SHGAUSS_ORDERING` option has changed recently (Dec 2023). See also discussion in the "2023-12-12: 2.8.0" section of [CHANGES](https://github.com/evaleev/libint/blob/master/CHANGES) and in the "cdbb9f3" comment of [engine.h](https://github.com/evaleev/libint/blob/master/include/libint2/engine.h).
+
+Previous to v2.8.0, `LIBINT2_SHGAUSS_ORDERING` was set at generator-build-time for `Operator::sphemultipole` but was re-set-able at library-build-time for other integral classes for both the C and C++ interfaces. Certain macros, `INT_SOLIDHARMINDEX` and `FOR_SOLIDHARM` depended on the library-build-time choice for both the C and C++ interfaces.
+
+Starting at v2.8.0, the generator-build-time construction of `Operator::sphemultipole` has been _fixed at Standard ordering_; thus, the `LIBINT2_SHGAUSS_ORDERING` setting does not influence it. For the C++ interface, solid harmonic ordering for other integrals classes can be toggled at library runtime through `libint2::set_solid_harmonics_ordering`, and the "SOLIDHARM" macros have different forms for accessing either ordering; thus the library build-time `LIBINT2_SHGAUSS_ORDERING` setting is non-constraining. For the C interface, solid harmonic ordering for other integrals classes and the output of "SOLIDHARM" macros _is constrained_ by the `LIBINT2_SHGAUSS_ORDERING` setting. Currently, this setting is fixed at generator-build-time. The build system could be adjusted so that it's re-set-able at library-build-time, but the C interface is discouraged anyways.
+
+Note that options, docs, and CMake components are focused on the C++ interface, and the only remaining constraining influence of the `LIBINT2_SHGAUSS_ORDERING` option -- for the C interface -- may never be acknowledged beyond the previous paragraph.
+
+
+###  How High Angular Momentum (G)
+
+* Notes
+  * example for "semicolon-separated string": `-DENABLE_ERI3=2 -DWITH_ERI3_MAX_AM="5;4;3"`. cmake configuration prints:
+
+    ```
+    -- Setting option ENABLE_ERI3: 2
+    -- Setting option WITH_ERI3_MAX_AM: 5;4;3
+    ```
+
+  * special considerations for high-AM library (L) builds:
+    * high MAX_AM generates a large number of source files. If unity builds are disabled, more than
+      ~20k files may require `ulimit -s 65535` for linking the library target on Linux to avert
+      "ld: Argument list too long".
+    * Ninja builds use beyond max threads and can run out of memory, resulting in errorless stops or
+      "CMake Error: Generator: execution of make failed". Throttle it to physical threads with
+      `export CMAKE_BUILD_PARALLEL_LEVEL=N`.
+
+* `WITH_MAX_AM` — G — Support Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. Specify values greater or equal to `WITH_<class>_MAX_AM`; often mirrors `WITH_ERI3_MAX_AM`. [Default=4]
+* `WITH_OPT_AM` — G — Optimize maximally for up to angular momentum N (N <= WITH_MAX_AM). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `(WITH_MAX_AM/2)+1`]
+
+* `MULTIPOLE_MAX_ORDER` — G — Maximum order of spherical multipole integrals. There is no maximum. [Default=4]
+
+* `WITH_ONEBODY_MAX_AM` — G — Support 1-body ints for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ONEBODY_OPT_AM` — G — Optimize 1-body ints maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+
+* `WITH_ERI_MAX_AM` — G — Support 4-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ERI_OPT_AM` — G — Optimize 4-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+
+* `WITH_ERI3_MAX_AM` — G — Support 3-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. This option controls only the single fitting center; the paired centers use WITH_MAX_AM. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ERI3_OPT_AM` — G — Optimize 3-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+* `ERI3_PURE_SH` — G — Assume the 'unpaired' center of 3-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
+
+* `WITH_ERI2_MAX_AM` — G — Support 2-center ERIs for Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_ERI2_OPT_AM` — G — Optimize 2-center ERIs maximally for up to angular momentum N (N <= max-am). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `WITH_OPT_AM`]
+* `ERI2_PURE_SH` — G — Assume the 2-center ERIs will be transformed to pure solid harmonics. [Default=OFF]
+
+* `WITH_G12_MAX_AM` — G — Support integrals for G12 methods of angular momentum up to N. No specification with per-derivative list. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_G12_OPT_AM` — G — Optimize G12 integrals for up to angular momentum N (N <= max-am). No specification with per-derivative list. [Default=-1 `WITH_OPT_AM`]
+
+* `WITH_G12DKH_MAX_AM` — G — Support integrals for relativistic G12 methods of angular momentum up to N. No specification with per-derivative list. [Default=-1 -> `WITH_MAX_AM`]
+* `WITH_G12DKH_OPT_AM` — G — Optimize G12DKH integrals for up to angular momentum N (N <= max-am). No specification with per-derivative list. [Default=-1 `WITH_OPT_AM`]
+
+
+### Compilers and Flags (G L) (TARBALL)
+
+
+# GNU Autotools Update Guide
+
+* Notes
+  * Multiple option names can be from any long-lived branch but usually libtool+cmake --> final cmake+cmake.
+
+* `--enable-1body=N` --> `-D ENABLE_ONEBODY=N`
+* `--enable-eri=N` --> `-D ENABLE_ERI=N`
+* `--disable-eri` --> `-D ENABLE_ERI=-1`
+* `--enable-eri3=N` --> `-D ENABLE_ERI3=N`
+* `--enable-eri2=N` --> `-D ENABLE_ERI2=N`
+
+* `--with-shgauss-ordering=label` --> `-D LIBINT2_SHGAUSS_ORDERING=label`
+* `--with-cartgauss-ordering=label` --> `-D LIBINT2_CARTGAUSS_ORDERING=label`
+* `--with-shell-set=label` --> `-D LIBINT2_SHELL_SET=label`
+* `--enable-eri3-pure-sh` --> `-D ERI3_PURE_SH=ON`
+* `--enable-eri2-pure-sh` --> `-D ERI2_PURE_SH=ON`
+
+* `--with-max-am=N` --> `-D WITH_MAX_AM=N`
+* `--with-max-am=N0,N1,N2` --> `-D WITH_MAX_AM="N0;N1;N2"` (notice semicolons and quotes. This is standard CMake list syntax)
+* `--with-opt-am=N` --> `-D WITH_OPT_AM=N`
+* `--with-opt-am=N0,N1,N2` --> `-D WITH_OPT_AM="N0;N1;N2"`
+
+* `--with-multipole-max-order=N` --> `-D MULTIPOLE_MAX_ORDER=N`
+
+* `--with-1body-max-am=N` --> `-D WITH_ONEBODY_MAX_AM=N`
+* `--with-1body-max-am=N0,N1,N2` --> `-D WITH_ONEBODY_MAX_AM="N0;N1;N2"`
+* `--with-1body-opt-am=N` --> `-D WITH_ONEBODY_OPT_AM=N`
+* `--with-1body-opt-am=N0,N1,N2` --> `-D WITH_ONEBODY_OPT_AM="N0;N1;N2"`
+
+* `--with-eri-max-am=N` --> `-D WITH_ERI_MAX_AM=N`
+* `--with-eri-max-am=N0,N1,N2` --> `-D WITH_ERI_MAX_AM="N0;N1;N2"`
+* `--with-eri-opt-am=N` --> `-D WITH_ERI_OPT_AM=N`
+* `--with-eri-opt-am=N0,N1,N2` --> `-D WITH_ERI_OPT_AM="N0;N1;N2"`
+
+* `--with-eri3-max-am=N` --> `-D WITH_ERI3_MAX_AM=N`
+* `--with-eri3-max-am=N0,N1,N2` --> `-D WITH_ERI3_MAX_AM="N0;N1;N2"`
+* `--with-eri3-opt-am=N` --> `-D WITH_ERI3_OPT_AM=N`
+* `--with-eri3-opt-am=N0,N1,N2` --> `-D WITH_ERI3_OPT_AM="N0;N1;N2"`
+
+* `--with-eri2-max-am=N` --> `-D WITH_ERI2_MAX_AM=N`
+* `--with-eri2-max-am=N0,N1,N2` --> `-D WITH_ERI2_MAX_AM="N0;N1;N2"`
+* `--with-eri2-opt-am=N` --> `-D WITH_ERI2_OPT_AM=N`
+* `--with-eri2-opt-am=N0,N1,N2` --> `-D WITH_ERI2_OPT_AM="N0;N1;N2"`
+
+* `--enable-g12=N` --> `-D ENABLE_G12=N`
+* `--enable-g12dkh=N` --> `-D ENABLE_G12DKH`
+* `--disable-t1g12-support` --> `-D ENABLE_T1G12_SUPPORT=OFF`
+* `--with-g12-max-am=N` --> `-D WITH_G12_MAX_AM=N`
+* `--with-g12-opt-am=N` --> `-D WITH_G12_OPT_AM=N`
+* `--with-g12dkh-max-am=N` --> `-D WITH_G12DKH_MAX_AM=N`
+* `--with-g12dkh-opt-am=N` --> `-D WITH_G12DKH_OPT_AM=N`
+
+* `--disable-1body-property-derivs` --> `-D DISABLE_ONEBODY_PROPERTY_DERIVS=ON`
+
+
+
+
 ### Run-Time Compatibility
 
 Functions are provided to check the library configuration and solid harmonics orderings at runtime:
@@ -92,7 +261,7 @@ Eventually, these will be CMake Components, too.
                      "h" (h=spdfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
                      For example, the presence of "eri_ffff_d1" means 4-center gradient ints are
                      available for L=3. That is, the library was configured with at least
-                     "--enable-eri=1 --with-eri-max-am=?,>=3".
+                     '-D ENABLE_ERI=1 -D WITH_ERI_MAX_AM="?;>=3"'.
    eri_hhL_dD      - library includes 2-body integrals with 3 centers and max angular momentum up to
    eri_hhl_dD        Cartesian "h" for the two paired centers and Cartesian "l" or solid harmonics "L"
                      for the unpaired/fitting center, (h/l=spdfghikl..., L=SPDFGHIKL...; l>=h
@@ -101,9 +270,9 @@ Eventually, these will be CMake Components, too.
                      solid harmonics are assumed for 3-center ints, "eri_hhl_dD" will *not be available*.
                      For example, the presence of "eri_ffG_d0" means 3-center energy ints are
                      available for L=3 (paired centers) and L=4 (fitting center). That is, the library
-                     was configured with at least "--enable-eri3=0 --with-max-am=3 --with-eri3-max-am=4".
+                     was configured with at least "-D ENABLE_ERI3=0 -D WITH_MAX_AM=3 -D WITH_ERI3_MAX_AM=4".
                      The presence of "eri_ffg_d0" means the library configuration did not additionally
-                     include "--enable-eri3-pure-sh[=yes]".
+                     include "-D ERI3_PURE_SH=ON".
    eri_HH_dD       - library includes 2-body integrals with 2 centers and max angular momentum up to
    eri_hh_dD         Cartesian "h" or solid harmonics "H", (h=spdfghikl..., H=SPDFGHIKL...; s,p,S,P not
                      enumerated) and derivative order "D" (D=0,1,2,...). The "eri_HH_dD" component is
@@ -111,8 +280,8 @@ Eventually, these will be CMake Components, too.
                      assumed for 2-center ints, "eri_hh_dD" will *not be available*.
                      For example, the presence of "eri_FF_d2" means 2-center Hessian ints are
                      available for L=3. That is, the library was configured with at least
-                     "--enable-eri2=2 --with-eri2-max-am=?,?,>=3". The presence of "eri_ff_d2" means the
-                     library configuration did not additionally include "--enable-eri2-pure-sh[=yes]".
+                     '-D ENABLE_ERI2=2 -D WITH_ERI2_MAX_AM="?;?;>=3"'. The presence of "eri_ff_d2" means the
+                     library configuration did not additionally include "-D ERI2_PURE_SH=ON".
    g12_hhhh_dD     - library includes F12 integrals with Gaussian factors and max angular momentum up to
                      "h" (h=spdfghikl...; s,p not enumerated) and derivative order "D" (D=0,1,2,...).
                      For example, the presence of "g12_iiii_d2" means g12 Hessian ints are available for L=6.
@@ -129,4 +298,28 @@ Eventually, these will be CMake Components, too.
    oo - library integrals use ordering           + orca      = orca
    bs - library integrals use ordering  bagel    + standard  = bagel
    bo - library integrals use ordering           + orca
+```
+
+### Interfacing
+
+Eventually (approximately 2.9.0 CMake-based), additional functions will be available to retrive Libint version, commit, and literature citation. Below are outputs at the libtool stage.
+
+```
+auto Mmp = libint2::libint_version();
+printf("Version: Numeric=%s Sortable=%s Commit=%s\n", libint2::libint_version_string(false).c_str(), libint2::libint_version_string(true).c_str(), libint2::libint_commit().c_str());
+printf("Version: Major=%d minor=%d patch=%d\n", std::get<0>(Mmp), std::get<1>(Mmp), std::get<2>(Mmp));
+printf("Citation: DOI=%s Ref=%s\n", libint2::libint_reference_doi().c_str(), libint2::libint_reference().c_str());
+printf("Citation: BibTex=%s\n", libint2::libint_bibtex().c_str());
+```
+```
+Version: Numeric=2.8.0 Sortable= Commit=
+Version: Major=2 minor=8 patch=0
+Citation: DOI= Ref=Libint: , Version  Edward F. Valeev, http://libint.valeyev.net/
+Citation: BibTex=@Misc{Libint2,
+  author = {E.~F.~Valeev},
+  title = {\textsc{Libint}: },
+  howpublished = {http://libint.valeyev.net/},
+  note = {version },
+  year = {}
+}
 ```
