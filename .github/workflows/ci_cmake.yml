@@ -1,0 +1,121 @@
+name: BuildCM
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build_repo:
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type : [ Release, Debug ]
+        os : [ macos-latest, ubuntu-20.04 ]
+        include:
+          - os: ubuntu-20.04
+            cxx: g++-10
+            cc: gcc-10
+          - os: macos-latest
+            cxx: clang++
+            cc: clang
+
+    name: "Repo • ${{ matrix.os }}: ${{ matrix.cxx }} ${{ matrix.build_type }}"
+    runs-on: ${{ matrix.os }}
+    env:
+      CC: ${{ matrix.cc }}
+      CXX : ${{ matrix.cxx }}
+      CCACHE_DIR : ${{github.workspace}}/build/.ccache
+      CCACHE_COMPRESS : true
+      CCACHE_COMPRESSLEVEL : 6
+      BUILD_CONFIG : >
+        -G Ninja
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DBUILD_SHARED_LIBS=OFF
+        -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
+        -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/library
+        -DWITH_MAX_AM=2;2
+        -DWITH_ERI_MAX_AM=2;2
+        -DWITH_ERI3_MAX_AM=3;2
+        -DENABLE_ERI=1
+        -DENABLE_ERI3=1
+        -DENABLE_ONEBODY=1
+        -DDISABLE_ONEBODY_PROPERTY_DERIVS=ON
+        -DMULTIPOLE_MAX_ORDER=2
+        -DLIBINT2_ENABLE_PYTHON=ON
+
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+      # fetch-depth: 0 for git history to compute version
+
+    - id: skip_check
+      name: Check if can skip
+      uses: fkirc/skip-duplicate-actions@v5
+      with:
+        cancel_others: 'true'
+
+    - name: Create Build Environment
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      # Some projects don't allow in-source building, so create a separate build directory
+      # We'll use this as our working directory for all subsequent commands
+      run: |
+        cmake -E make_directory ${{github.workspace}}/build/compiler
+        cmake -E make_directory ${{github.workspace}}/build/library
+        cmake -E make_directory ${{github.workspace}}/build/library_test
+
+    - name: Install prerequisite MacOS packages
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-latest' }}
+      run: |
+        brew install ninja gcc@10 boost eigen ccache python@3.11 numpy scipy
+        echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
+        echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
+
+    - name: Install prerequisite Ubuntu packages
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install ninja-build g++-10 gfortran-10 liblapack-dev libboost-dev libeigen3-dev ccache python3-numpy python3-scipy
+        echo "FC=/usr/bin/gfortran-10" >> $GITHUB_ENV
+        echo "EIGEN3_INCLUDE_DIR=/usr/include/eigen3" >> $GITHUB_ENV
+
+    - name: Prepare ccache timestamp
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      id: ccache_cache_timestamp
+      shell: cmake -P {0}
+      run: |
+        string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
+        message("\"timestamp=${current_date}\" >> $GITHUB_OUTPUT")
+
+    - name: Setup ccache cache files
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      uses: actions/cache@v3
+      with:
+        path: ${{github.workspace}}/build/.ccache
+        key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+        restore-keys: |
+          ${{ matrix.config.name }}-ccache-
+
+    - name: Generate Libint generator
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      # Use a bash shell so we can use the same syntax for environment variable
+      # access regardless of the host operating system
+      shell: bash
+      working-directory: ${{github.workspace}}/build/compiler
+      run: |
+        git describe --tags
+        cmake -S ../.. -B build $BUILD_CONFIG --log-level=DEBUG
+        cmake --build build --target check-libint2compiler
+
+    - name: Generate Libint library
+      if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+      shell: bash
+      working-directory: ${{github.workspace}}/build/compiler
+      run: |
+        cmake --build build --target libint-library-generate
+
