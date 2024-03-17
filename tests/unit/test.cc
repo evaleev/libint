@@ -66,6 +66,16 @@ int main(int argc, char* argv[]) {
          libint2::configuration_accessor().c_str());
   printf("Supports: dddd=%d mmmm=%d FF=%d\n", libint2::supports("eri_dddd_d0"),
          libint2::supports("eri_mmmm_d0"), libint2::supports("eri_FF_d0"));
+  auto Mmp = libint2::libint_version();
+  printf("Version: Numeric=%s Sortable=%s Commit=%s\n",
+         libint2::libint_version_string(false).c_str(),
+         libint2::libint_version_string(true).c_str(),
+         libint2::libint_commit().c_str());
+  printf("Version: Major=%d minor=%d patch=%d\n", std::get<0>(Mmp),
+         std::get<1>(Mmp), std::get<2>(Mmp));
+  printf("Citation: DOI=%s Ref=%s\n", libint2::libint_reference_doi().c_str(),
+         libint2::libint_reference().c_str());
+  printf("Citation: BibTeX=%s\n", libint2::libint_bibtex().c_str());
 
 #ifdef LIBINT_HAS_MPFR
   // default to 256 bits of precision for mpf_class
