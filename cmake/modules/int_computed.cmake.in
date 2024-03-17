@@ -1,0 +1,109 @@
+# This file communicates top-level CMake configuration results to
+#   export stage (in a very minor way that could be worked around) and to
+#   library stage (in a major way). If the superbuild was run continuously
+#   (generator->export->library), these would be more properly passed
+#   through the ExternalProject_Add commands. However, since library is
+#   commonly built separately from tarball, this file is better storage.
+# To contrast, config.h transmits CMake data to C++, while this file transmits
+#   CMake data to (discontinuous) CMake.
+
+
+# <<<  Sortable Version  >>>
+
+# for configuration.cc and `project(Libint2 VERSION` in CMakeLists.txt.export files
+set(LIBINT_DESCRIPTION "@LIBINT_DESCRIPTION@")
+
+# for configuration.cc file
+set(LIBINT_DOI "@LIBINT_DOI@")
+set(LIBINT_GIT_COMMIT "@LIBINT_GIT_COMMIT@")
+set(LIBINT_VERSION_YEAR "@LIBINT_VERSION_YEAR@")
+set(LIBINT_SORTABLE_VERSION "@LIBINT_SORTABLE_VERSION@")
+
+
+# <<<  Build Version  >>>
+
+# for libint2-config.cmake and `project(Libint2 VERSION` in CMakeLists.txt.export files
+set(LIBINT_MAJOR_VERSION "@LIBINT_MAJOR_VERSION@")
+set(LIBINT_MINOR_VERSION "@LIBINT_MINOR_VERSION@")
+set(LIBINT_MICRO_VERSION "@LIBINT_MICRO_VERSION@")
+set(LIBINT_VERSION ${LIBINT_MAJOR_VERSION}.${LIBINT_MINOR_VERSION}.${LIBINT_MICRO_VERSION})
+
+
+# <<<  Dev Version  >>>
+
+# for libint2-config.cmake
+set(LIBINT_EXT_VERSION "@LIBINT_EXT_VERSION@")
+message(STATUS "Version: Full ${LIBINT_EXT_VERSION} Numeric ${LIBINT_VERSION} Sortable ${LIBINT_SORTABLE_VERSION}")
+
+
+# <<<  ABI Version  >>>
+
+# for SOVERSION in CMakeLists.txt.export
+set(LIBINT_SO_VERSION "@LIBINT_SO_VERSION@")
+set(LIBINT_MAJOR_SO_VERSION "@LIBINT_MAJOR_SO_VERSION@")
+message(STATUS "SO Version: Full ${LIBINT_SO_VERSION} Major ${LIBINT_MAJOR_SO_VERSION}")
+
+
+# <<<  Fixed Orderings  >>>
+
+# for CMakeLists.txt.export and libint2-config.cmake
+set(LIBINT2_SHGAUSS_ORDERING "@LIBINT2_SHGAUSS_ORDERING@")  # added Jan 2023
+set(LIBINT2_CARTGAUSS_ORDERING "@LIBINT2_CARTGAUSS_ORDERING@")
+set(LIBINT2_SHELL_SET "@LIBINT2_SHELL_SET@")
+
+
+# <<<  Features List  >>>
+
+if    ((@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "ss")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "so")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "is")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "io")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "gs")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "go")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "os")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "oo")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "bs")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "bo")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "ss")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 1) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "so")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "is")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 2) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "io")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "gs")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 3) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "go")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "os")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 4) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "oo")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 1))
+    set(_ordering "bs")
+elseif((@LIBINT_CGSHELL_ORDERING@ EQUAL 5) AND (@LIBINT_SHELL_SET@ EQUAL 2))
+    set(_ordering "bo")
+else()
+    message(STATUS "int_computed.cmake: indeterminate orderings")
+endif()
+
+# for configuration.cc and libint2-config.cmake files
+set(Libint2_CONFIG_COMPONENTS "@Libint2_ERI_COMPONENTS@")
+list(PREPEND Libint2_CONFIG_COMPONENTS "${_ordering}")
+
+
+# <<<  AM Components  >>>
+
+# for features and libint2-config.cmake files
+set(Libint2_MAX_AM_ERI "@_candidate_ERI_d0@")
