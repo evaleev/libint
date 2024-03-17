@@ -31,7 +31,7 @@ Following is a brief summary of changes made in each release of Libint.
   - PR #283: bump pybind11 to ValeevGroup/pybind11@v2.11 (HT @asadchev)
   - PR #282: removed obsolete basis files (HT @JonathonMisiewicz)
   - PR #279: fixed error in 1-e erf/erfc integrals (HT @JonathonMisiewicz)
-  - PR @273: support for 1-e (σ·p)V(σ·p) integrals (HT @JonathonMisiewicz)
+  - PR #273: support for 1-e (σ·p)V(σ·p) integrals (HT @JonathonMisiewicz)
   - PR #271: Add `libint2::configuration_accessor` and `libint2::supports` functions. If
     library source is patched, these provide codes for what integrals a library instance can supply. (HT @loriab)
   - PR #271: Small pkgconfig and cmake detection improvements. Enable unity build.
