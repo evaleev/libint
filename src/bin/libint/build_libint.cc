@@ -316,9 +316,9 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
   // derivatives of spherical multipole integrals are not implemented
   {
     if (std::is_same<_OperType, SphericalMultipoleOper>::value &&
-        deriv_level > 0)
-      throw std::invalid_argument(
-          "derivatives of spherical multipole ints are not yet implemented");
+        deriv_level > 0) return;
+      // throw std::invalid_argument(
+      //     "derivatives of spherical multipole ints are not yet implemented");
   }
 
   //
