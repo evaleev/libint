@@ -37,7 +37,7 @@
 #include <type_traits>
 #include <vector>
 
-#ifdef WIN32
+#if defined(_MSC_VER) || defined(WIN32)
 #define posix_memalign(p, a, s) \
   (((*(p)) = _aligned_malloc((s), (a))), *(p) ? 0 : errno)
 #define posix_memfree(p) ((_aligned_free((p))))
