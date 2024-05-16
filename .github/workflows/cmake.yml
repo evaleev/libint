@@ -75,6 +75,7 @@ jobs:
         ls -l /opt/homebrew/Cellar/python@3.11/*
         brew info gcc@11
         ls -l /opt/homebrew/Cellar/gcc@11/*/bin
+        pip3.11 install scipy
         
 
     - name: Install prerequisites Ubuntu packages
@@ -169,7 +170,7 @@ jobs:
         cd build
         cmake . -DLIBINT2_PYTHON=ON
         cmake --build . --target libint2-python
-        cmake --build . --target libint2-python-test
+        PATH=-DPython_EXECUTABLE=/opt/homebrew/bin:$PATH PYTHONPATH=/opt/homebrew/lib/python3.11/cmake --build . --target libint2-python-test
 
   build_export:
     # to debug the second stage, it is handy to short-circuit the first stage down to ~6 minutes:
