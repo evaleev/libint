@@ -66,6 +66,8 @@ jobs:
         brew install ninja gcc gmp mpfr mpfrcx boost eigen bison ccache automake python@3.11 numpy scipy
         echo "FC=/usr/local/bin/gfortran" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
+        brew info gmp
+        brew info mpfr
 
     - name: Install prerequisites Ubuntu packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
