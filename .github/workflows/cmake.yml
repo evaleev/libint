@@ -63,7 +63,7 @@ jobs:
     - name: Install prerequisite MacOS packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-latest' }}
       run: |
-        brew install ninja gcc gmp boost eigen bison ccache automake python@3.11 numpy scipy
+        brew install ninja gcc@11 gmp boost eigen bison ccache automake python@3.11 numpy scipy
         #echo "FC=/usr/local/bin/gfortran" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
         echo "GMP_INCLUDE_DIR=/opt/homebrew/Cellar/gmp/6.3.0/include" >> $GITHUB_ENV
@@ -72,6 +72,9 @@ jobs:
         ls -l /opt/homebrew/Cellar/boost/1.85.0/include
         brew info python@3.11
         ls -l /opt/homebrew/Cellar/python@3.11/*
+        brew info gcc@11
+        ls -l /opt/homebrew/Cellar/gcc@11/*/bin
+        
 
     - name: Install prerequisites Ubuntu packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
