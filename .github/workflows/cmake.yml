@@ -150,9 +150,9 @@ jobs:
         cd libint-2*
         echo "LIBINT_EXPORTED_DIR=`pwd`" >> $GITHUB_ENV
         if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
-        else
           cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG -DPython_EXECUTABLE=/opt/homebrew/bin/python3.11
+        else
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
         fi
         cmake --build build --target check
         cmake --build build --target install
