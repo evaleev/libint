@@ -11,18 +11,21 @@ Following is a brief summary of changes made in each release of Libint.
   - PR #329: increase Tenno function interpolation table to support L=9 4-c ERI
   - PR #327: fix stochastic failures of tests/eri by reducing range of random shells parameters
   - PR #281: auto-generator for DF basis (HT @kshitij-05)
+
 - 2024-02-05: 2.8.2
   - PR #324: addresses issues with 3eri derivatives + minor 3eri API safety improvements
   - PR #322: update libtool to 2.4.7 + update config.{guess,sub} to 2024-01-01
   - PR #319: pylibint builds with latest setuptools (HT @loriab)
   - PR #311: clang-format.sh uses bash to resolve #310 (HT @e-kwsm)
   - detect Brew-installed GNU tar on MacOS
+
 - 2023-12-19: 2.8.1
   - PR #307: fixup progman dvi and html building
   - PR #305: disable latex2html detection/use by default
   - PR #304: natural order for (σ·p)V(σ·p) integrals (HT @JonathonMisiewicz)
   - PR #302: build fix (HT @JonathonMisiewicz)
   - PR #231: Add SONAME/SOVERSION to generated library (HT @debichem)
+
 - 2023-12-12: 2.8.0
   - PR #297: clang-format
   - PR #293: read Gaussian basis set files with L>=7 AOs correctly

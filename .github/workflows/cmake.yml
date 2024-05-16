@@ -63,9 +63,20 @@ jobs:
     - name: Install prerequisite MacOS packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'macos-latest' }}
       run: |
-        brew install ninja gcc@10 boost eigen bison ccache automake python@3.11 numpy scipy
-        echo "FC=/usr/local/bin/gfortran-10" >> $GITHUB_ENV
+        brew install ninja gcc@11 gmp boost eigen bison ccache automake python@3.11 numpy scipy
+        #echo "FC=/usr/local/bin/gfortran" >> $GITHUB_ENV
+        echo "FC=/opt/homebrew/Cellar/gcc@11/11.4.0/bin/gfortran-11" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
+        echo "GMP_INCLUDE_DIR=/opt/homebrew/Cellar/gmp/6.3.0/include" >> $GITHUB_ENV
+        echo "GMP_LIBRARY_DIR=/opt/homebrew/Cellar/gmp/6.3.0/lib" >> $GITHUB_ENV
+        echo "BOOST_INCLUDE_DIR=/opt/homebrew/Cellar/boost/1.85.0/include" >> $GITHUB_ENV
+        ls -l /opt/homebrew/Cellar/boost/1.85.0/include
+        brew info python@3.11
+        ls -l /opt/homebrew/Cellar/python@3.11/*
+        brew info gcc@11
+        ls -l /opt/homebrew/Cellar/gcc@11/*/bin
+        pip3.11 install scipy
+        
 
     - name: Install prerequisites Ubuntu packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
@@ -105,7 +116,16 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}/build/compiler
       run: |
-        CPPFLAGS="-I$EIGEN3_INCLUDE_DIR" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2,1 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --with-eri2-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-eri2=0 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
+        if [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
+          :
+          CPPFLAGS="-I$EIGEN3_INCLUDE_DIR" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2,1 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --with-eri2-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-eri2=0 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
+
+        fi
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          :
+          LDFLAGS="-L$GMP_LIBRARY_DIR" CPPFLAGS="-I$EIGEN3_INCLUDE_DIR -I$BOOST_INCLUDE_DIR -I$GMP_INCLUDE_DIR" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2,1 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --with-eri2-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-eri2=0 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
+
+        fi
         make -j3
         make check
         cd src/bin/test_eri && ./stdtests.pl && cd ../../..
@@ -129,7 +149,11 @@ jobs:
         tar -xzf ../compiler/libint-2*.tgz
         cd libint-2*
         echo "LIBINT_EXPORTED_DIR=`pwd`" >> $GITHUB_ENV
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG -DPython_EXECUTABLE=/opt/homebrew/bin/python3.11
+        else
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
+        fi
         cmake --build build --target check
         cmake --build build --target install
 
@@ -159,8 +183,12 @@ jobs:
         cd build
         cmake . -DLIBINT2_PYTHON=ON
         cmake --build . --target libint2-python
-        cmake --build . --target libint2-python-test
-
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          PATH=-DPython_EXECUTABLE=/opt/homebrew/bin:$PATH PYTHONPATH=/opt/homebrew/lib/python3.11/ cmake --build . --target libint2-python-test
+        else
+          cmake --build . --target libint2-python-test
+        fi
+  
   build_export:
     # to debug the second stage, it is handy to short-circuit the first stage down to ~6 minutes:
     # * run only the Linux/Release (remove items from matrix.build_type and matrix.os)
