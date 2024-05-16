@@ -67,7 +67,7 @@ jobs:
         echo "FC=/usr/local/bin/gfortran" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
         echo "GMP_INCLUDE_DIR=/usr/local/include" >> $GITHUB_ENV
-        ls -l /opt/homebrew/Cellar/gmp/6.3.0
+        ls -l /opt/homebrew/Cellar/gmp/6.3.0/include
         brew info gmp
         brew info mpfr
 
