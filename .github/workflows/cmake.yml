@@ -66,6 +66,7 @@ jobs:
         brew install ninja gcc gmp mpfr mpfrcx boost eigen bison ccache automake python@3.11 numpy scipy
         echo "FC=/usr/local/bin/gfortran" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
+        echo "GMP_INCLUDE_DIR=/opt/homebrew/Cellar/gmp/6.3.0" >> $GITHUB_ENV
         brew info gmp
         brew info mpfr
 
@@ -107,7 +108,7 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}/build/compiler
       run: |
-        CPPFLAGS="-I$EIGEN3_INCLUDE_DIR" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2,1 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --with-eri2-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-eri2=0 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
+        CPPFLAGS="-I$EIGEN3_INCLUDE_DIR -I$GMP_INCLUDE_DIR" CXXFLAGS="-std=c++11 -Wno-enum-compare" ${{github.workspace}}/configure --with-max-am=2,1 --with-eri-max-am=2,2 --with-eri3-max-am=3,2 --with-eri2-max-am=3,2 --enable-eri=1 --enable-eri3=1 --enable-eri2=0 --enable-1body=1 --disable-1body-property-derivs --with-multipole-max-order=2
         make -j3
         make check
         cd src/bin/test_eri && ./stdtests.pl && cd ../../..
