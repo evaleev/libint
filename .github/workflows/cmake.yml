@@ -66,7 +66,8 @@ jobs:
         brew install ninja gcc gmp mpfr mpfrcx boost eigen bison ccache automake python@3.11 numpy scipy
         echo "FC=/usr/local/bin/gfortran" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
-        echo "GMP_INCLUDE_DIR=/opt/homebrew/Cellar/gmp/6.3.0" >> $GITHUB_ENV
+        echo "GMP_INCLUDE_DIR=/usr/local/include" >> $GITHUB_ENV
+        #/opt/homebrew/Cellar/gmp/6.3.0" >> $GITHUB_ENV
         brew info gmp
         brew info mpfr
 
