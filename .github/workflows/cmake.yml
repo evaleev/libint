@@ -68,7 +68,7 @@ jobs:
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
         echo "GMP_INCLUDE_DIR=/opt/homebrew/Cellar/gmp/6.3.0/include" >> $GITHUB_ENV
         echo "GMP_LIBRARY_DIR=/opt/homebrew/Cellar/gmp/6.3.0/lib" >> $GITHUB_ENV
-        ls -l opt/homebrew/Cellar/gmp/6.3.0/lib
+        ls -l /opt/homebrew/Cellar/gmp/6.3.0/lib
         brew info gmp
         brew info mpfr
 
