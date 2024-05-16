@@ -135,7 +135,7 @@ jobs:
         tar -xzf ../compiler/libint-2*.tgz
         cd libint-2*
         echo "LIBINT_EXPORTED_DIR=`pwd`" >> $GITHUB_ENV
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CONFIG -DPython_EXECUTABLE=/opt/homebrew/bin/python3.11
         cmake --build build --target check
         cmake --build build --target install
 
