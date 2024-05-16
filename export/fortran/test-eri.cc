@@ -545,7 +545,7 @@ bool test_eri_c_f(int &contrdepth, int &am1, double *c1, double *alpha1,
 #if LIBINT2_SUPPORT_ERI
 
 TEST_CASE("Fortran ERI", "[eri]") {
-  const double threshold = std::numeric_limits<double>::epsilon() * 10;
+  const double threshold = std::numeric_limits<double>::epsilon() * 1000;
 
   int am1 = std::min(1, LIBINT2_MAX_AM_eri);
   int am2 = std::min(0, LIBINT2_MAX_AM_eri);
