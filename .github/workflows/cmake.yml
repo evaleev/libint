@@ -70,6 +70,8 @@ jobs:
         echo "GMP_LIBRARY_DIR=/opt/homebrew/Cellar/gmp/6.3.0/lib" >> $GITHUB_ENV
         echo "BOOST_INCLUDE_DIR=/opt/homebrew/Cellar/boost/1.85.0/include" >> $GITHUB_ENV
         ls -l /opt/homebrew/Cellar/boost/1.85.0/include
+        brew info python
+        ls -l /opt/homebrew/Cellar/python/*/*
 
     - name: Install prerequisites Ubuntu packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
