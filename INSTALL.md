@@ -46,7 +46,7 @@
       "CMake Error: Generator: execution of make failed". Throttle it to physical threads with
       `export CMAKE_BUILD_PARALLEL_LEVEL=N`.
 
-* `WITH_MAX_AM` — G — Support Gaussians of angular momentum up to N. Can specify values for each derivative level as a semicolon-separated string. Specify values greater or equal to `WITH_<class>_MAX_AM`; often mirrors `WITH_ERI3_MAX_AM`. [Default=4]
+* `WITH_MAX_AM` — G — Support Gaussians of angular momentum up to N. If ERI3 ints are enabled, specifing values for each derivative level as a semicolon-separated string also controls the AM of the paired centers. [Default=4]
 * `WITH_OPT_AM` — G — Optimize maximally for up to angular momentum N (N <= WITH_MAX_AM). Can specify values for each derivative level as a semicolon-separated string. [Default=-1 -> `(WITH_MAX_AM/2)+1`]
 
 * `MULTIPOLE_MAX_ORDER` — G — Maximum order of spherical multipole integrals. There is no maximum. [Default=4]

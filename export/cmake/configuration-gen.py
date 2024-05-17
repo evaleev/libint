@@ -48,8 +48,8 @@ for deriv in range(len(eri_max_am)):
 # eri3
 no_pure_sh = []
 for deriv in range(len(eri3_max_am)):
-    for am_paired in range(max_am[deriv], 1, -1):
-        for am_fitting in range(eri3_max_am[deriv], 1, -1):
+    for am_fitting in range(eri3_max_am[deriv], 1, -1):
+        for am_paired in range(max_am[deriv], 1, -1):
             if am_fitting >= am_paired:
                 centers = amstr[am_paired].lower() * 2 + amstr[am_fitting].upper()
                 comp = f"eri_{centers}_d{deriv}"

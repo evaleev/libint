@@ -137,8 +137,8 @@ option_with_print(ENABLE_T1G12_SUPPORT
 
 option_with_default(WITH_MAX_AM
   "Support Gaussians of angular momentum up to N.
-   Can specify values for each derivative level as a semicolon-separated string.
-   If ERI3 ints are enabled, this option also controls the AM of the paired centers." 4)
+   If ERI3 ints are enabled, specifing values for each derivative level as a
+   semicolon-separated string also controls the AM of the paired centers." 4)
 option_with_default(WITH_OPT_AM
   "Optimize maximally for up to angular momentum N (N <= max-am).
    Can specify values for each derivative level as a semicolon-separated string. (default: (libint_max_am/2)+1)" -1)
