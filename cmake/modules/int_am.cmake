@@ -13,8 +13,13 @@
 #   library to include gradient integrals of at least AM=5.
 #   See INSTALL.md for details.
 
+# these bounds are for components. Above hard_max produces cmake warning. 0 produces
+#   error in keeping with configure.ac logic.
 set(LIBINT_HARD_MAX_AM 12)
-# amstr = "SPDFGHIKLMNOPQRTUVWXYZ"
+set(LIBINT_HARD_MIN_AM 0)  # formerly 2
+# amstr = "SPDFGHIKLMNOQRTUVWXYZ"
+set(_am0 "s")
+set(_am1 "p")
 set(_am2 "d")
 set(_am3 "f")
 set(_am4 "g")
@@ -25,7 +30,9 @@ set(_am8 "l")
 set(_am9 "m")
 set(_am10 "n")
 set(_am11 "o")
-set(_am12 "p")
+set(_am12 "q")
+set(_AM0 "S")
+set(_AM1 "P")
 set(_AM2 "D")
 set(_AM3 "F")
 set(_AM4 "G")
@@ -36,7 +43,7 @@ set(_AM8 "L")
 set(_AM9 "M")
 set(_AM10 "N")
 set(_AM11 "O")
-set(_AM12 "P")
+set(_AM12 "Q")
 
 macro(numerical_max_of_list ansvar liste)
     set(_max "-100")
@@ -375,7 +382,7 @@ add_feature_info(
   "MULTIPOLE_MAX_ORDER"
   "max_am ${MULTIPOLE_MAX_ORDER}"
   )
-foreach(_l RANGE 2 ${MULTIPOLE_MAX_ORDER})
+foreach(_l RANGE ${LIBINT_HARD_MIN_AM} ${MULTIPOLE_MAX_ORDER})
     # RANGE with count-down works but docs say behavior is undefined, so we count-up and reverse
     # RANGE starting at 2 avoids enumerating s, p
     set(_lbl "multipole_${_am${_l}}${_am${_l}}_d0")
@@ -412,7 +419,7 @@ foreach(_cls ONEBODY;ERI;ERI3;ERI2;G12;G12DKH)
               )
             set(_amlist "")
             set(_pureamlist "")
-            foreach(_l RANGE 2 ${_candidate_${_cls}_d${_d}})  # LIBINT_cls_MAX_AM[_LIST]
+            foreach(_l RANGE ${LIBINT_HARD_MIN_AM} ${_candidate_${_cls}_d${_d}})  # LIBINT_cls_MAX_AM[_LIST]
                 if (_cls STREQUAL "ERI")
                     list(APPEND _amlist             "eri_${_am${_l}}${_am${_l}}${_am${_l}}${_am${_l}}_d${_d}")
                 elseif (_cls STREQUAL "ERI2")
@@ -425,8 +432,8 @@ foreach(_cls ONEBODY;ERI;ERI3;ERI2;G12;G12DKH)
                 endif()
             endforeach()
             if (_cls STREQUAL "ERI3")
-                foreach(_lpr RANGE 2 ${_candidate0_d${_d}})  # LIBINT_MAX_AM[_LIST]
-                    foreach(_lfit RANGE 2 ${_candidate_${_cls}_d${_d}})  # LIBINT_ERI3_MAX_AM[_LIST]
+                foreach(_lpr RANGE ${LIBINT_HARD_MIN_AM} ${_candidate0_d${_d}})  # LIBINT_MAX_AM[_LIST]
+                    foreach(_lfit RANGE ${LIBINT_HARD_MIN_AM} ${_candidate_${_cls}_d${_d}})  # LIBINT_ERI3_MAX_AM[_LIST]
                         if (_lfit GREATER_EQUAL _lpr)
                             list(APPEND _amlist     "eri_${_am${_lpr}}${_am${_lpr}}${_AM${_lfit}}_d${_d}")
                             list(APPEND _pureamlist "eri_${_am${_lpr}}${_am${_lpr}}${_am${_lfit}}_d${_d}")
