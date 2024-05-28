@@ -226,7 +226,7 @@ case $enableval in
   ;;
 esac
 ])
-if test X$DISABLE_ONEBODY_PROPERTY_DERIVS != 0; then
+if test $DISABLE_ONEBODY_PROPERTY_DERIVS != 0; then
   AC_DEFINE(DISABLE_ONEBODY_PROPERTY_DERIVS)
 fi
 
