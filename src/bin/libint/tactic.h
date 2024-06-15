@@ -27,6 +27,11 @@
 #ifndef _libint2_src_bin_libint_tactic_h_
 #define _libint2_src_bin_libint_tactic_h_
 
+#ifdef _WIN32
+#define random rand
+#define srandom srand
+#endif
+
 namespace libint2 {
 
 class DirectedGraph;
@@ -208,10 +213,10 @@ class StdRandomizePolicy {
   }
 
   unsigned int noise(unsigned int nrrs) const {
-    unsigned long rand = random();
+    unsigned long rand_ = random();
     const unsigned long range = RAND_MAX;
     const unsigned int result =
-        static_cast<unsigned int>(std::floor(nrrs * scale_ * rand / range));
+        static_cast<unsigned int>(std::floor(nrrs * scale_ * rand_ / range));
     return result;
   }
 

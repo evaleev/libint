@@ -109,9 +109,9 @@ RandomChoiceTactic::RR RandomChoiceTactic::optimal_rr(
     const rr_stack& stack) const {
   if (!stack.empty()) {
     unsigned int size = stack.size();
-    unsigned long rand = random();
+    unsigned long rand_ = random();
     const unsigned long range = RAND_MAX;
-    long choice = (long)(rand * size - 1) / range;
+    long choice = (long)(rand_ * size - 1) / range;
     return stack[choice];
   } else
     return RR();
