@@ -300,19 +300,18 @@ class Export {
           const auto pure = shell.contr[c].pure;
           if (pure) {
             int m;
-            FOR_SOLIDHARM_MOLDEN(l, m)
-            const auto ao_in_shell = libint2::INT_SOLIDHARMINDEX(l, m);
-            ao_map_[ao_molden] = ao + ao_in_shell;
-            ++ao_molden;
-            END_FOR_SOLIDHARM_MOLDEN
-            ao += 2 * l + 1;
-          } else {
-            int i, j, k;
-            FOR_CART_MOLDEN(i, j, k, l)
-            const auto ao_in_shell = INT_CARTINDEX(l, i, j);
-            ao_map_[ao_molden] = ao + ao_in_shell;
-            ++ao_molden;
-            END_FOR_CART_MOLDEN
+            if (l == 1) {
+              ao_map_[ao_molden]     = ao + 2;
+              ao_map_[ao_molden + 1] = ao;
+              ao_map_[ao_molden + 2] = ao + 1;
+              ao_molden += 3;
+            } else {
+              FOR_SOLIDHARM_MOLDEN(l, m)
+              const auto ao_in_shell = libint2::INT_SOLIDHARMINDEX(l, m);
+              ao_map_[ao_molden] = ao + ao_in_shell;
+              ++ao_molden;
+              END_FOR_SOLIDHARM_MOLDEN
+            }
             ao += INT_NCART(l);
           }
         }  // contraction loop
