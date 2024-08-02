@@ -251,10 +251,6 @@ class Export {
 
         switch (contr.l) {
           case 1:
-            if (contr.pure)
-              throw std::logic_error(
-                  "molden::Export cannot handle solid harmonics p shells");
-            break;
           case 2:
           case 3:
           case 4: {
