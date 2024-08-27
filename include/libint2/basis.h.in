@@ -620,15 +620,15 @@ namespace libint2 {
         return ref_shells;
       }
 
-      DEPRECATED static size_t nbf(const std::vector<libint2::Shell>& shells) {
+      LIBINT2_DEPRECATED static size_t nbf(const std::vector<libint2::Shell>& shells) {
         return libint2::nbf(shells);
       }
 
-      DEPRECATED static size_t max_nprim(const std::vector<libint2::Shell>& shells) {
+      LIBINT2_DEPRECATED static size_t max_nprim(const std::vector<libint2::Shell>& shells) {
         return libint2::max_nprim(shells);
       }
 
-      DEPRECATED static int max_l(const std::vector<libint2::Shell>& shells) {
+      LIBINT2_DEPRECATED static int max_l(const std::vector<libint2::Shell>& shells) {
         return libint2::max_l(shells);
       }
 

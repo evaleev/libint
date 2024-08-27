@@ -21,15 +21,15 @@
 #ifndef _libint2_include_libint2_util_deprecated_h_
 #define _libint2_include_libint2_util_deprecated_h_
 
-#ifndef DEPRECATED  // avoid clashing with previous definitions
+#ifndef LIBINT2_DEPRECATED  // avoid clashing with previous definitions
 #if __cplusplus >= 201402L
-#define DEPRECATED [[deprecated]]
+#define LIBINT2_DEPRECATED [[deprecated]]
 #elif defined(__GNUC__)
-#define DEPRECATED __attribute__((deprecated))
+#define LIBINT2_DEPRECATED __attribute__((deprecated))
 #else
-#pragma message("WARNING: You need to implement DEPRECATED for this compiler")
-#define DEPRECATED
+#pragma message("WARNING: You need to implement LIBINT2_DEPRECATED for this compiler")
+#define LIBINT2_DEPRECATED
 #endif
-#endif  // not defined(DEPRECATED)
+#endif  // not defined(LIBINT2_DEPRECATED)
 
 #endif /* header guard */
