@@ -87,7 +87,7 @@ static const std::vector<element>& get_element_info() {
       {99, "einsteinum", "Es"},   {100, "fermium", "Fm"},
       {101, "mendelevium", "Md"}, {102, "nobelium", "No"},
       {103, "lawrencium", "Lr"},  {104, "rutherfordium", "Rf"},
-      {105, "hahnium", "Ha"},     {106, "seaborgium", "Sg"},
+      {105, "dubnium", "Db"},     {106, "seaborgium", "Sg"},
       {107, "bohrium", "Bh"},     {108, "hassium", "Hs"},
       {109, "meitnerium", "Mt"},  {110, "darmstadtium", "Ds"},
       {111, "roentgenium", "Rg"}, {112, "copernicium", "Cn"},
