@@ -36,6 +36,7 @@
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
+#include <map>
 
 #ifdef _MSC_VER
 #define posix_memalign(p, a, s) \
@@ -918,6 +919,8 @@ struct TennoGmEval {
   static constexpr std::size_t ORDERp1 = interpolation_order + 1;
   static constexpr Real maxabsprecision =
       1.4e-14;  //!< guaranteed abs precision of the interpolation table for m>0
+                // map of zeta to existing gaussian fit to slater to avoid recomputing
+  inline static std::map<double, std::vector< std::pair<double, double> > > cached_gaussian_fits_ = {};
 
  public:
   /// \param m_max maximum value of the Gm function index
@@ -1029,10 +1032,146 @@ struct TennoGmEval {
     const auto U = 0.25 * zeta * zeta * one_over_rho;
     assert(U > 0);  // integral factorizes into 2 overlaps for U = 0
     const auto zeta_over_two_rho = 0.5 * zeta * one_over_rho;
+    bool compSucc = false; // did interpolation or recursion work?
     if (T > Tmax) {
-      eval_urr<true>(Gm, T, U, zeta_over_two_rho, mmax);
+      compSucc = eval_urr<true>(Gm, T, U, zeta_over_two_rho, mmax);
+      //if (compSucc) { (srpDebug::get_libint_conv_slater_fit_calls())++; }
     } else {
-      interpolate_Gm<true>(Gm, T, U, zeta_over_two_rho, mmax);
+      compSucc = interpolate_Gm<true>(Gm, T, U, zeta_over_two_rho, mmax);
+      //if (compSucc) { (srpDebug::get_libint_conv_slater_fit_calls())++; }
+    }
+    if (!compSucc) {
+      //srpDebug::get_slater_int_failed() = true;
+      //(srpDebug::get_libint_gaussian_fit_of_slater_calls())++;
+      // constexpr double low_end_range = 1e-5;
+      // constexpr double high_end_range = 5;
+      // constexpr double eps = 1e-12;
+      if (cached_gaussian_fits_.count(zeta)) { // we've already fitted this slater
+        //(srpDebug::get_libint_gaussian_fit_recalled_call())++;
+        eval(Gm, 1.0 / one_over_rho, T, mmax, cached_gaussian_fits_.at(zeta));
+      } else {
+        //(srpDebug::get_libint_gaussian_fit_new_compute_call())++;
+        static std::mutex gfits_mutex;
+        std::lock_guard<std::mutex> guard(gfits_mutex);
+        std::vector<std::pair<double, double> > geminal = fit_slater(zeta/* , low_end_range, high_end_range, eps */);
+        cached_gaussian_fits_[zeta] = geminal;
+        eval(Gm, 1.0 / one_over_rho, T, mmax, geminal);
+      }
+    }
+  }
+
+  /// Fits a slater with an undetermined number of gaussians, borrowed from https://github.com/m-a-d-n-e-s-s/madness/blob/master/src/madness/mra/gfit.h#L140
+  /// @param[in] zeta exponent of Slater
+  /// @param[in] lo smallest lengthscale to be represented
+  /// @param[in] hi largest lengthscale to be represented
+  /// @param[in] eps precision threshold
+  /// @throw std::invalid_argument if \f$ \zeta^2/(4 \rho) \f$ exceeds \c Umax
+  std::vector<std::pair<double, double> > fit_slater(double zeta, double lo = 1e-5, double hi = 5, double eps = 1e-12) const {
+
+    double ulim;
+    if (eps >= 1e-2) ulim = 5;
+    else if (eps >= 1e-4) ulim = 10;
+    else if (eps >= 1e-6) ulim = 14;
+    else if (eps >= 1e-8) ulim = 18;
+    else if (eps >= 1e-10) ulim = 22;
+    else if (eps >= 1e-12) ulim = 26;
+    else ulim = 30;
+
+    // integration limits for quadrature
+    double slo = 0.5 * log(eps) - 1.0;
+    double shi = log(ulim / (lo * lo)) * 0.5;
+    // resolution for quadrature
+    double res = 1.0 / (0.2 - 0.5 * log10(eps));
+
+    // Truncate the number of binary digits in h's mantissa
+    // so that rounding does not occur when performing
+    // manipulations to determine the quadrature points and
+    // to limit the number of distinct values in case of
+    // multiple precisions being used at the same time.
+    res = floor(64. * res) / 64.;
+    // round slo/hi down/up to an integral multiple of quadrature points
+    slo = floor(slo / res) * res;
+    shi = ceil(shi / res) * res;
+
+    long n_pts = long((shi - slo) / res + 0.5);
+
+    std::vector<double> coeffs(n_pts), expnts(n_pts);
+
+    for (size_t i = 0; i != n_pts; ++i) { // fill coeff and exponents vectors
+      const double s = slo + res * (n_pts - i);
+      coeffs[i] = res * exp(-zeta * zeta * exp(2. * s) + s);
+       const long double twoOvrSqrtPi =  1.12837916709551257389615890312154517;
+      coeffs[i] *= zeta * twoOvrSqrtPi;
+      expnts[i] = 0.25 * exp(-2. * s);
+    }
+
+    assert(coeffs.size() == expnts.size());
+    std::vector<std::pair<double, double> > result;
+    for (size_t i = 0; i != coeffs.size(); ++i) {
+      if (abs(coeffs[i]) > std::numeric_limits<double>::epsilon())
+        result.push_back(std::pair<double, double> (expnts[i], coeffs[i]));
+    }
+    return result;
+  }
+
+  /** computes \f$ G_m(\rho, T) \f$ using downward recursion.
+   *
+   * @warning NOT reentrant if \c k == -1 and C++11 is not available
+   *
+   * @param[out] Gm array to be filled in with the \f$ Gm(\rho, T) \f$ values,
+   * must be at least mmax+1 elements long
+   * @param[in] rho
+   * @param[in] T
+   * @param[in] mmax mmax the maximum value of m for which Boys function will be
+   * computed; it must be <= the value returned by max_m() (this is not checked)
+   * @param[in] geminal the Gaussian geminal for which the core integral \f$
+   * Gm(\rho, T) \f$ is computed; a contracted Gaussian geminal is represented
+   * as a vector of pairs, each of which specifies the exponent (first) and
+   * contraction coefficient (second) of the primitive Gaussian geminal
+   * @param[in] scr if \c k ==-1 and need this to be reentrant, must provide ptr
+   * to the per-thread \c
+   * libint2::detail::CoreEvalScratch<GaussianGmEval<Real,-1>> object; no need
+   * to specify \c scr otherwise
+   */
+  template <typename AnyReal>
+  void eval(Real* Gm, Real rho, Real T, size_t mmax,
+            const std::vector<std::pair<AnyReal, AnyReal>>& geminal,
+            void* scr = 0) const {
+
+    std::fill(Gm, Gm + mmax + 1, Real(0));
+
+    const auto sqrt_rho = sqrt(rho);
+    const auto oo_sqrt_rho = 1 / sqrt_rho;
+
+    typedef
+        typename std::vector<std::pair<AnyReal, AnyReal>>::const_iterator citer;
+    const citer gend = geminal.end();
+    for (citer i = geminal.begin(); i != gend; ++i) {
+      const auto gamma = i->first;
+      const auto gcoef = i->second;
+      const auto rhog = rho + gamma;
+      const auto oorhog = 1 / rhog;
+
+      const auto gorg = gamma * oorhog;
+      const auto rorg = rho * oorhog;
+      const auto sqrt_rho_org = sqrt_rho * oorhog;
+      const auto sqrt_rhog = sqrt(rhog);
+      const auto sqrt_rorg = sqrt_rho_org * sqrt_rhog;
+
+      /// (ss|g12|ss)
+      constexpr Real const_SQRTPI_2(
+          0.88622692545275801364908374167057259139877472806119); /* sqrt(pi)/2
+                                                                  */
+      const auto SS_K0G12_SS = gcoef * oo_sqrt_rho * const_SQRTPI_2 * rorg *
+                               sqrt_rorg * exp(-gorg * T);
+
+
+      auto ss_oper_ss_m = SS_K0G12_SS;
+      Gm[0] += ss_oper_ss_m;
+      for (int m = 1; m <= mmax; ++m) {
+        ss_oper_ss_m *= gorg;
+        Gm[m] += ss_oper_ss_m;
+      }
     }
   }
 
@@ -1138,7 +1277,7 @@ struct TennoGmEval {
   /// only used if @c Exp==true
   /// @param[in] mmax the maximum value of \f$ m \f$
   template <bool Exp>
-  static void eval_urr(Real* Gm_vec, Real T, Real U, Real zeta_over_two_rho,
+  static bool eval_urr(Real* Gm_vec, Real T, Real U, Real zeta_over_two_rho,
                        size_t mmax) {
     assert(T > 0);
     assert(U > 0);
@@ -1193,7 +1332,7 @@ struct TennoGmEval {
       }
     }
 
-    return;
+    return true;
   }
 
   /// compute core integrals by Chebyshev interpolation
@@ -1209,16 +1348,23 @@ struct TennoGmEval {
   /// @param[in] mmax the maximum value of \f$ m \f$
   /// @throw std::invalid_argument if \p U exceeds \c Umax
   template <bool Exp>
-  void interpolate_Gm(Real* Gm_vec, Real T, Real U, Real zeta_over_two_rho,
+  bool interpolate_Gm(Real* Gm_vec, Real T, Real U, Real zeta_over_two_rho,
                       long mmax) const {
     assert(T >= 0);
     if (U > Umax) {
-      throw std::invalid_argument(
-          "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, "
-          "zeta*zeta*one_over_rho/4=" +
-          std::to_string(U) + " cannot exceed " + std::to_string(Umax));
+      //      throw std::invalid_argument(
+      //          "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, " "zeta*zeta*one_over_rho/4=" + std::to_string(U) + " cannot exceed " + std::to_string(Umax));
+      //          "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, " "zeta*zeta*one_over_rho/4=" + std::to_string(U) + " cannot exceed " + std::to_string(Umax));
+      std::cout
+          << "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, "
+          << "zeta*zeta*one_over_rho/4=" << std::to_string(U)
+          << " cannot exceed " << std::to_string(Umax) << std::endl;
+      return false;
     }
-    assert(U >= Umin && U <= Umax);
+    if (U < Umin || U > Umax) {
+      return false;
+    }
+    // assert(U >= Umin && U <= Umax);
 
     // maps x in [0,2] to [-1/2,1/2] in a linear fashion
     auto linear_map_02 = [](Real x) {
@@ -1316,7 +1462,11 @@ struct TennoGmEval {
       // precision of interpolation for m=-1,0 can be insufficient, just
       // evaluate explicitly
       Real G0;
-      std::tie(Exp ? G0 : Gm_vec[0], Gmm1) = eval_G0_and_maybe_Gm1<Exp>(T, U);
+      try {
+        std::tie(Exp ? G0 : Gm_vec[0], Gmm1) = eval_G0_and_maybe_Gm1<Exp>(T, U);
+      } catch (...) {
+        return false;
+      }
       if
 #if __cplusplus >= 201703L
           constexpr
@@ -1329,176 +1479,180 @@ struct TennoGmEval {
     } else
       mmin_interp = Exp ? -1 : 0;
 
-    // now compute the rest
-    for (long m = mmin_interp; m <= mmax; ++m) {
-      const Real* c_tuint =
-          c_ + (ORDERp1) * (ORDERp1) *
-                   (interval * (mmax_ - mmin_ + 1) +
-                    (m - mmin_));  // ptr to the interpolation data for m=mmin
+    try {
+      // now compute the rest
+      for (long m = mmin_interp; m <= mmax; ++m) {
+        const Real* c_tuint =
+            c_ + (ORDERp1) * (ORDERp1) *
+                     (interval * (mmax_ - mmin_ + 1) +
+                      (m - mmin_));  // ptr to the interpolation data for m=mmin
 #if defined(__AVX__)
-      libint2::simd::VectorAVXDouble c00v, c01v, c02v, c03v, c10v, c11v, c12v,
-          c13v, c20v, c21v, c22v, c23v, c30v, c31v, c32v, c33v, c40v, c41v,
-          c42v, c43v, c50v, c51v, c52v, c53v, c60v, c61v, c62v, c63v, c70v,
-          c71v, c72v, c73v;
-      libint2::simd::VectorAVXDouble c80v, c81v, c82v, c83v, c90v, c91v, c92v,
-          c93v, ca0v, ca1v, ca2v, ca3v, cb0v, cb1v, cb2v, cb3v, cc0v, cc1v,
-          cc2v, cc3v, cd0v, cd1v, cd2v, cd3v, ce0v, ce1v, ce2v, ce3v, cf0v,
-          cf1v, cf2v, cf3v;
-      c00v.load_aligned(c_tuint);
-      c01v.load_aligned((c_tuint + 4));
-      c02v.load_aligned(c_tuint + 8);
-      c03v.load_aligned((c_tuint + 12));
-      libint2::simd::VectorAVXDouble t0vec(1, 1, 1, 1);
-      libint2::simd::VectorAVXDouble t0 =
-          t0vec * (c00v * u0vec + c01v * u1vec + c02v * u2vec + c03v * u3vec);
-      c10v.load_aligned(c_tuint + ORDERp1);
-      c11v.load_aligned((c_tuint + 4) + ORDERp1);
-      c12v.load_aligned((c_tuint + 8) + ORDERp1);
-      c13v.load_aligned((c_tuint + 12) + ORDERp1);
-      libint2::simd::VectorAVXDouble t1vec(t, t, t, t);
-      libint2::simd::VectorAVXDouble t1 =
-          t1vec * (c10v * u0vec + c11v * u1vec + c12v * u2vec + c13v * u3vec);
-      c20v.load_aligned(c_tuint + 2 * ORDERp1);
-      c21v.load_aligned((c_tuint + 4) + 2 * ORDERp1);
-      c22v.load_aligned((c_tuint + 8) + 2 * ORDERp1);
-      c23v.load_aligned((c_tuint + 12) + 2 * ORDERp1);
-      libint2::simd::VectorAVXDouble t2vec(t2, t2, t2, t2);
-      libint2::simd::VectorAVXDouble t2 =
-          t2vec * (c20v * u0vec + c21v * u1vec + c22v * u2vec + c23v * u3vec);
-      c30v.load_aligned(c_tuint + 3 * ORDERp1);
-      c31v.load_aligned((c_tuint + 4) + 3 * ORDERp1);
-      c32v.load_aligned((c_tuint + 8) + 3 * ORDERp1);
-      c33v.load_aligned((c_tuint + 12) + 3 * ORDERp1);
-      libint2::simd::VectorAVXDouble t3vec(t3, t3, t3, t3);
-      libint2::simd::VectorAVXDouble t3 =
-          t3vec * (c30v * u0vec + c31v * u1vec + c32v * u2vec + c33v * u3vec);
-      libint2::simd::VectorAVXDouble t0123 = horizontal_add(t0, t1, t2, t3);
+        libint2::simd::VectorAVXDouble c00v, c01v, c02v, c03v, c10v, c11v, c12v,
+            c13v, c20v, c21v, c22v, c23v, c30v, c31v, c32v, c33v, c40v, c41v,
+            c42v, c43v, c50v, c51v, c52v, c53v, c60v, c61v, c62v, c63v, c70v,
+            c71v, c72v, c73v;
+        libint2::simd::VectorAVXDouble c80v, c81v, c82v, c83v, c90v, c91v, c92v,
+            c93v, ca0v, ca1v, ca2v, ca3v, cb0v, cb1v, cb2v, cb3v, cc0v, cc1v,
+            cc2v, cc3v, cd0v, cd1v, cd2v, cd3v, ce0v, ce1v, ce2v, ce3v, cf0v,
+            cf1v, cf2v, cf3v;
+        c00v.load_aligned(c_tuint);
+        c01v.load_aligned((c_tuint + 4));
+        c02v.load_aligned(c_tuint + 8);
+        c03v.load_aligned((c_tuint + 12));
+        libint2::simd::VectorAVXDouble t0vec(1, 1, 1, 1);
+        libint2::simd::VectorAVXDouble t0 =
+            t0vec * (c00v * u0vec + c01v * u1vec + c02v * u2vec + c03v * u3vec);
+        c10v.load_aligned(c_tuint + ORDERp1);
+        c11v.load_aligned((c_tuint + 4) + ORDERp1);
+        c12v.load_aligned((c_tuint + 8) + ORDERp1);
+        c13v.load_aligned((c_tuint + 12) + ORDERp1);
+        libint2::simd::VectorAVXDouble t1vec(t, t, t, t);
+        libint2::simd::VectorAVXDouble t1 =
+            t1vec * (c10v * u0vec + c11v * u1vec + c12v * u2vec + c13v * u3vec);
+        c20v.load_aligned(c_tuint + 2 * ORDERp1);
+        c21v.load_aligned((c_tuint + 4) + 2 * ORDERp1);
+        c22v.load_aligned((c_tuint + 8) + 2 * ORDERp1);
+        c23v.load_aligned((c_tuint + 12) + 2 * ORDERp1);
+        libint2::simd::VectorAVXDouble t2vec(t2, t2, t2, t2);
+        libint2::simd::VectorAVXDouble t2 =
+            t2vec * (c20v * u0vec + c21v * u1vec + c22v * u2vec + c23v * u3vec);
+        c30v.load_aligned(c_tuint + 3 * ORDERp1);
+        c31v.load_aligned((c_tuint + 4) + 3 * ORDERp1);
+        c32v.load_aligned((c_tuint + 8) + 3 * ORDERp1);
+        c33v.load_aligned((c_tuint + 12) + 3 * ORDERp1);
+        libint2::simd::VectorAVXDouble t3vec(t3, t3, t3, t3);
+        libint2::simd::VectorAVXDouble t3 =
+            t3vec * (c30v * u0vec + c31v * u1vec + c32v * u2vec + c33v * u3vec);
+        libint2::simd::VectorAVXDouble t0123 = horizontal_add(t0, t1, t2, t3);
 
-      c40v.load_aligned(c_tuint + 4 * ORDERp1);
-      c41v.load_aligned((c_tuint + 4) + 4 * ORDERp1);
-      c42v.load_aligned((c_tuint + 8) + 4 * ORDERp1);
-      c43v.load_aligned((c_tuint + 12) + 4 * ORDERp1);
-      libint2::simd::VectorAVXDouble t4vec(t4, t4, t4, t4);
-      libint2::simd::VectorAVXDouble t4 =
-          t4vec * (c40v * u0vec + c41v * u1vec + c42v * u2vec + c43v * u3vec);
-      c50v.load_aligned(c_tuint + 5 * ORDERp1);
-      c51v.load_aligned((c_tuint + 4) + 5 * ORDERp1);
-      c52v.load_aligned((c_tuint + 8) + 5 * ORDERp1);
-      c53v.load_aligned((c_tuint + 12) + 5 * ORDERp1);
-      libint2::simd::VectorAVXDouble t5vec(t5, t5, t5, t5);
-      libint2::simd::VectorAVXDouble t5 =
-          t5vec * (c50v * u0vec + c51v * u1vec + c52v * u2vec + c53v * u3vec);
-      c60v.load_aligned(c_tuint + 6 * ORDERp1);
-      c61v.load_aligned((c_tuint + 4) + 6 * ORDERp1);
-      c62v.load_aligned((c_tuint + 8) + 6 * ORDERp1);
-      c63v.load_aligned((c_tuint + 12) + 6 * ORDERp1);
-      libint2::simd::VectorAVXDouble t6vec(t6, t6, t6, t6);
-      libint2::simd::VectorAVXDouble t6 =
-          t6vec * (c60v * u0vec + c61v * u1vec + c62v * u2vec + c63v * u3vec);
-      c70v.load_aligned(c_tuint + 7 * ORDERp1);
-      c71v.load_aligned((c_tuint + 4) + 7 * ORDERp1);
-      c72v.load_aligned((c_tuint + 8) + 7 * ORDERp1);
-      c73v.load_aligned((c_tuint + 12) + 7 * ORDERp1);
-      libint2::simd::VectorAVXDouble t7vec(t7, t7, t7, t7);
-      libint2::simd::VectorAVXDouble t7 =
-          t7vec * (c70v * u0vec + c71v * u1vec + c72v * u2vec + c73v * u3vec);
-      libint2::simd::VectorAVXDouble t4567 = horizontal_add(t4, t5, t6, t7);
+        c40v.load_aligned(c_tuint + 4 * ORDERp1);
+        c41v.load_aligned((c_tuint + 4) + 4 * ORDERp1);
+        c42v.load_aligned((c_tuint + 8) + 4 * ORDERp1);
+        c43v.load_aligned((c_tuint + 12) + 4 * ORDERp1);
+        libint2::simd::VectorAVXDouble t4vec(t4, t4, t4, t4);
+        libint2::simd::VectorAVXDouble t4 =
+            t4vec * (c40v * u0vec + c41v * u1vec + c42v * u2vec + c43v * u3vec);
+        c50v.load_aligned(c_tuint + 5 * ORDERp1);
+        c51v.load_aligned((c_tuint + 4) + 5 * ORDERp1);
+        c52v.load_aligned((c_tuint + 8) + 5 * ORDERp1);
+        c53v.load_aligned((c_tuint + 12) + 5 * ORDERp1);
+        libint2::simd::VectorAVXDouble t5vec(t5, t5, t5, t5);
+        libint2::simd::VectorAVXDouble t5 =
+            t5vec * (c50v * u0vec + c51v * u1vec + c52v * u2vec + c53v * u3vec);
+        c60v.load_aligned(c_tuint + 6 * ORDERp1);
+        c61v.load_aligned((c_tuint + 4) + 6 * ORDERp1);
+        c62v.load_aligned((c_tuint + 8) + 6 * ORDERp1);
+        c63v.load_aligned((c_tuint + 12) + 6 * ORDERp1);
+        libint2::simd::VectorAVXDouble t6vec(t6, t6, t6, t6);
+        libint2::simd::VectorAVXDouble t6 =
+            t6vec * (c60v * u0vec + c61v * u1vec + c62v * u2vec + c63v * u3vec);
+        c70v.load_aligned(c_tuint + 7 * ORDERp1);
+        c71v.load_aligned((c_tuint + 4) + 7 * ORDERp1);
+        c72v.load_aligned((c_tuint + 8) + 7 * ORDERp1);
+        c73v.load_aligned((c_tuint + 12) + 7 * ORDERp1);
+        libint2::simd::VectorAVXDouble t7vec(t7, t7, t7, t7);
+        libint2::simd::VectorAVXDouble t7 =
+            t7vec * (c70v * u0vec + c71v * u1vec + c72v * u2vec + c73v * u3vec);
+        libint2::simd::VectorAVXDouble t4567 = horizontal_add(t4, t5, t6, t7);
 
-      c80v.load_aligned(c_tuint + 8 * ORDERp1);
-      c81v.load_aligned((c_tuint + 4) + 8 * ORDERp1);
-      c82v.load_aligned((c_tuint + 8) + 8 * ORDERp1);
-      c83v.load_aligned((c_tuint + 12) + 8 * ORDERp1);
-      libint2::simd::VectorAVXDouble t8vec(t8, t8, t8, t8);
-      libint2::simd::VectorAVXDouble t8 =
-          t8vec * (c80v * u0vec + c81v * u1vec + c82v * u2vec + c83v * u3vec);
-      c90v.load_aligned(c_tuint + 9 * ORDERp1);
-      c91v.load_aligned((c_tuint + 4) + 9 * ORDERp1);
-      c92v.load_aligned((c_tuint + 8) + 9 * ORDERp1);
-      c93v.load_aligned((c_tuint + 12) + 9 * ORDERp1);
-      libint2::simd::VectorAVXDouble t9vec(t9, t9, t9, t9);
-      libint2::simd::VectorAVXDouble t9 =
-          t9vec * (c90v * u0vec + c91v * u1vec + c92v * u2vec + c93v * u3vec);
-      ca0v.load_aligned(c_tuint + 10 * ORDERp1);
-      ca1v.load_aligned((c_tuint + 4) + 10 * ORDERp1);
-      ca2v.load_aligned((c_tuint + 8) + 10 * ORDERp1);
-      ca3v.load_aligned((c_tuint + 12) + 10 * ORDERp1);
-      libint2::simd::VectorAVXDouble tavec(t10, t10, t10, t10);
-      libint2::simd::VectorAVXDouble ta =
-          tavec * (ca0v * u0vec + ca1v * u1vec + ca2v * u2vec + ca3v * u3vec);
-      cb0v.load_aligned(c_tuint + 11 * ORDERp1);
-      cb1v.load_aligned((c_tuint + 4) + 11 * ORDERp1);
-      cb2v.load_aligned((c_tuint + 8) + 11 * ORDERp1);
-      cb3v.load_aligned((c_tuint + 12) + 11 * ORDERp1);
-      libint2::simd::VectorAVXDouble tbvec(t11, t11, t11, t11);
-      libint2::simd::VectorAVXDouble tb =
-          tbvec * (cb0v * u0vec + cb1v * u1vec + cb2v * u2vec + cb3v * u3vec);
-      libint2::simd::VectorAVXDouble t89ab = horizontal_add(t8, t9, ta, tb);
+        c80v.load_aligned(c_tuint + 8 * ORDERp1);
+        c81v.load_aligned((c_tuint + 4) + 8 * ORDERp1);
+        c82v.load_aligned((c_tuint + 8) + 8 * ORDERp1);
+        c83v.load_aligned((c_tuint + 12) + 8 * ORDERp1);
+        libint2::simd::VectorAVXDouble t8vec(t8, t8, t8, t8);
+        libint2::simd::VectorAVXDouble t8 =
+            t8vec * (c80v * u0vec + c81v * u1vec + c82v * u2vec + c83v * u3vec);
+        c90v.load_aligned(c_tuint + 9 * ORDERp1);
+        c91v.load_aligned((c_tuint + 4) + 9 * ORDERp1);
+        c92v.load_aligned((c_tuint + 8) + 9 * ORDERp1);
+        c93v.load_aligned((c_tuint + 12) + 9 * ORDERp1);
+        libint2::simd::VectorAVXDouble t9vec(t9, t9, t9, t9);
+        libint2::simd::VectorAVXDouble t9 =
+            t9vec * (c90v * u0vec + c91v * u1vec + c92v * u2vec + c93v * u3vec);
+        ca0v.load_aligned(c_tuint + 10 * ORDERp1);
+        ca1v.load_aligned((c_tuint + 4) + 10 * ORDERp1);
+        ca2v.load_aligned((c_tuint + 8) + 10 * ORDERp1);
+        ca3v.load_aligned((c_tuint + 12) + 10 * ORDERp1);
+        libint2::simd::VectorAVXDouble tavec(t10, t10, t10, t10);
+        libint2::simd::VectorAVXDouble ta =
+            tavec * (ca0v * u0vec + ca1v * u1vec + ca2v * u2vec + ca3v * u3vec);
+        cb0v.load_aligned(c_tuint + 11 * ORDERp1);
+        cb1v.load_aligned((c_tuint + 4) + 11 * ORDERp1);
+        cb2v.load_aligned((c_tuint + 8) + 11 * ORDERp1);
+        cb3v.load_aligned((c_tuint + 12) + 11 * ORDERp1);
+        libint2::simd::VectorAVXDouble tbvec(t11, t11, t11, t11);
+        libint2::simd::VectorAVXDouble tb =
+            tbvec * (cb0v * u0vec + cb1v * u1vec + cb2v * u2vec + cb3v * u3vec);
+        libint2::simd::VectorAVXDouble t89ab = horizontal_add(t8, t9, ta, tb);
 
-      cc0v.load_aligned(c_tuint + 12 * ORDERp1);
-      cc1v.load_aligned((c_tuint + 4) + 12 * ORDERp1);
-      cc2v.load_aligned((c_tuint + 8) + 12 * ORDERp1);
-      cc3v.load_aligned((c_tuint + 12) + 12 * ORDERp1);
-      libint2::simd::VectorAVXDouble tcvec(t12, t12, t12, t12);
-      libint2::simd::VectorAVXDouble tc =
-          tcvec * (cc0v * u0vec + cc1v * u1vec + cc2v * u2vec + cc3v * u3vec);
-      cd0v.load_aligned(c_tuint + 13 * ORDERp1);
-      cd1v.load_aligned((c_tuint + 4) + 13 * ORDERp1);
-      cd2v.load_aligned((c_tuint + 8) + 13 * ORDERp1);
-      cd3v.load_aligned((c_tuint + 12) + 13 * ORDERp1);
-      libint2::simd::VectorAVXDouble tdvec(t13, t13, t13, t13);
-      libint2::simd::VectorAVXDouble td =
-          tdvec * (cd0v * u0vec + cd1v * u1vec + cd2v * u2vec + cd3v * u3vec);
-      ce0v.load_aligned(c_tuint + 14 * ORDERp1);
-      ce1v.load_aligned((c_tuint + 4) + 14 * ORDERp1);
-      ce2v.load_aligned((c_tuint + 8) + 14 * ORDERp1);
-      ce3v.load_aligned((c_tuint + 12) + 14 * ORDERp1);
-      libint2::simd::VectorAVXDouble tevec(t14, t14, t14, t14);
-      libint2::simd::VectorAVXDouble te =
-          tevec * (ce0v * u0vec + ce1v * u1vec + ce2v * u2vec + ce3v * u3vec);
-      cf0v.load_aligned(c_tuint + 15 * ORDERp1);
-      cf1v.load_aligned((c_tuint + 4) + 15 * ORDERp1);
-      cf2v.load_aligned((c_tuint + 8) + 15 * ORDERp1);
-      cf3v.load_aligned((c_tuint + 4) + 15 * ORDERp1);
-      libint2::simd::VectorAVXDouble tfvec(t15, t15, t15, t15);
-      libint2::simd::VectorAVXDouble tf =
-          tfvec * (cf0v * u0vec + cf1v * u1vec + cf2v * u2vec + cf3v * u3vec);
-      libint2::simd::VectorAVXDouble tcdef = horizontal_add(tc, td, te, tf);
+        cc0v.load_aligned(c_tuint + 12 * ORDERp1);
+        cc1v.load_aligned((c_tuint + 4) + 12 * ORDERp1);
+        cc2v.load_aligned((c_tuint + 8) + 12 * ORDERp1);
+        cc3v.load_aligned((c_tuint + 12) + 12 * ORDERp1);
+        libint2::simd::VectorAVXDouble tcvec(t12, t12, t12, t12);
+        libint2::simd::VectorAVXDouble tc =
+            tcvec * (cc0v * u0vec + cc1v * u1vec + cc2v * u2vec + cc3v * u3vec);
+        cd0v.load_aligned(c_tuint + 13 * ORDERp1);
+        cd1v.load_aligned((c_tuint + 4) + 13 * ORDERp1);
+        cd2v.load_aligned((c_tuint + 8) + 13 * ORDERp1);
+        cd3v.load_aligned((c_tuint + 12) + 13 * ORDERp1);
+        libint2::simd::VectorAVXDouble tdvec(t13, t13, t13, t13);
+        libint2::simd::VectorAVXDouble td =
+            tdvec * (cd0v * u0vec + cd1v * u1vec + cd2v * u2vec + cd3v * u3vec);
+        ce0v.load_aligned(c_tuint + 14 * ORDERp1);
+        ce1v.load_aligned((c_tuint + 4) + 14 * ORDERp1);
+        ce2v.load_aligned((c_tuint + 8) + 14 * ORDERp1);
+        ce3v.load_aligned((c_tuint + 12) + 14 * ORDERp1);
+        libint2::simd::VectorAVXDouble tevec(t14, t14, t14, t14);
+        libint2::simd::VectorAVXDouble te =
+            tevec * (ce0v * u0vec + ce1v * u1vec + ce2v * u2vec + ce3v * u3vec);
+        cf0v.load_aligned(c_tuint + 15 * ORDERp1);
+        cf1v.load_aligned((c_tuint + 4) + 15 * ORDERp1);
+        cf2v.load_aligned((c_tuint + 8) + 15 * ORDERp1);
+        cf3v.load_aligned((c_tuint + 4) + 15 * ORDERp1);
+        libint2::simd::VectorAVXDouble tfvec(t15, t15, t15, t15);
+        libint2::simd::VectorAVXDouble tf =
+            tfvec * (cf0v * u0vec + cf1v * u1vec + cf2v * u2vec + cf3v * u3vec);
+        libint2::simd::VectorAVXDouble tcdef = horizontal_add(tc, td, te, tf);
 
-      auto tall = horizontal_add(t0123, t4567, t89ab, tcdef);
-      const auto Gm = horizontal_add(tall);
+        auto tall = horizontal_add(t0123, t4567, t89ab, tcdef);
+        const auto Gm = horizontal_add(tall);
 #else   // AVX
         // no AVX, use explicit loops (probably slow)
-      double uvec[16];
-      double tvec[16];
-      uvec[0] = 1;
-      tvec[0] = 1;
-      for (int i = 1; i != 16; ++i) {
-        uvec[i] = uvec[i - 1] * u;
-        tvec[i] = tvec[i - 1] * t;
-      }
-      double Gm = 0.0;
-      for (int i = 0, ij = 0; i != 16; ++i) {
-        for (int j = 0; j != 16; ++j, ++ij) {
-          Gm += c_tuint[ij] * tvec[i] * uvec[j];
+        double uvec[16];
+        double tvec[16];
+        uvec[0] = 1;
+        tvec[0] = 1;
+        for (int i = 1; i != 16; ++i) {
+          uvec[i] = uvec[i - 1] * u;
+          tvec[i] = tvec[i - 1] * t;
         }
-      }
+        double Gm = 0.0;
+        for (int i = 0, ij = 0; i != 16; ++i) {
+          for (int j = 0; j != 16; ++j, ++ij) {
+            Gm += c_tuint[ij] * tvec[i] * uvec[j];
+          }
+        }
 #endif  // AVX
 
-      if
+        if
 #if __cplusplus >= 201703L
-          constexpr
+            constexpr
 #endif
-          (!Exp) {
-        Gm_vec[m] = Gm;
-      } else {
-        if (m != -1) {
-          Gm_vec[m] = (Gmm1 - Gm) * zeta_over_two_rho;
+            (!Exp) {
+          Gm_vec[m] = Gm;
+        } else {
+          if (m != -1) {
+            Gm_vec[m] = (Gmm1 - Gm) * zeta_over_two_rho;
+          }
+          Gmm1 = Gm;
         }
-        Gmm1 = Gm;
       }
+    } catch (...) {
+      return false;
     }
 
-    return;
+    return true;
   }
 
  private:
