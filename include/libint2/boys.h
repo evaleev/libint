@@ -31,12 +31,12 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
-#include <map>
 
 #ifdef _MSC_VER
 #define posix_memalign(p, a, s) \
@@ -891,9 +891,9 @@ constexpr double pow10(long exp) {
 //////////////////////////////////////////////////////////
 
 /**
- * Evaluates core integral for Gaussian integrals over the Yukawa potential \f$
- * \exp(- \zeta r) / r \f$ and the exponential interaction \f$ \exp(- \zeta r)
- * \f$
+ * Evaluates core integral for Gaussian integrals over the Yukawa potential
+ * \f$ \exp(- \zeta r) / r \f$ and the exponential interaction
+ * \f$ \exp(- \zeta r) \f$
  * @tparam Real real type
  * @warning only @p Real = double is supported
  * @warning guarantees absolute precision of only about 1e-14
@@ -919,8 +919,58 @@ struct TennoGmEval {
   static constexpr std::size_t ORDERp1 = interpolation_order + 1;
   static constexpr Real maxabsprecision =
       1.4e-14;  //!< guaranteed abs precision of the interpolation table for m>0
-                // map of zeta to existing gaussian fit to slater to avoid recomputing
-  inline static std::map<double, std::vector< std::pair<double, double> > > cached_gaussian_fits_ = {};
+                // map of zeta to existing gaussian fit to slater to avoid
+                // recomputing
+
+  // to avoid recomputing Gaussian fits of the exponential cache
+  // them for every value of zeta
+  using gaussian_fit_t = std::vector<std::pair<double, double>>;
+  using gaussian_fits_t = std::map<double, gaussian_fit_t>;  // zeta -> fit
+  // TODO replace by atomic shared_ptr to avoid leaking memory at the end
+  using gaussian_fits_aptr_t = std::atomic<gaussian_fits_t*>;
+  static gaussian_fits_aptr_t& gaussian_fits_aptr_accessor() {
+    static gaussian_fits_aptr_t gaussian_fits_aptr_;
+    return gaussian_fits_aptr_;
+  }
+  static gaussian_fit_t& get_gaussian_fit(double zeta) {
+    while (gaussian_fits_aptr_accessor().load() == nullptr ||
+           gaussian_fits_aptr_accessor().load()->count(zeta) == 0) {
+      // remember ptr to the cache we will be adding new fit to
+      auto* gaussian_fits_ptr = gaussian_fits_aptr_accessor().load();
+
+      // use existing cache, or create a new one
+      auto new_gaussian_fits_ptr = new gaussian_fits_t(
+          gaussian_fits_ptr == nullptr ? gaussian_fits_t()
+                                       : *gaussian_fits_ptr);
+      // constexpr double low_end_range = 1e-5;
+      // constexpr double high_end_range = 5;
+      // constexpr double eps = 1e-12;
+      std::vector<std::pair<double, double>> geminal =
+          fit_slater(zeta /* , low_end_range, high_end_range, eps */);
+      gaussian_fits_t::iterator it;
+      bool inserted;
+      std::tie(it, inserted) = new_gaussian_fits_ptr->emplace(zeta, geminal);
+
+      // inserted may be false if someone inserted between count query and
+      // grabbing gaussian_fits_ptr ... if inserted new fit try to replace the
+      // value in gaussian_fits_aptr_
+      if (inserted) {
+        auto* expected_gaussian_fits_ptr = gaussian_fits_ptr;
+        if (gaussian_fits_aptr_accessor().compare_exchange_strong(
+                expected_gaussian_fits_ptr, new_gaussian_fits_ptr)) {
+          // can't delete since someone might be using it ... need atomic
+          // shared_ptr
+          // delete gaussian_fits_ptr;
+          break;
+        } else {
+          delete new_gaussian_fits_ptr;
+        }
+      }
+    }
+    return gaussian_fits_aptr_accessor().load()->at(zeta);
+  }
+  mutable std::unique_ptr<GaussianGmEval<Real, -1>> yukawa_gaussian_fit_eval_;
+  mutable std::unique_ptr<GaussianGmEval<Real, 0>> slater_gaussian_fit_eval_;
 
  public:
   /// \param m_max maximum value of the Gm function index
@@ -1007,10 +1057,20 @@ struct TennoGmEval {
     assert(T >= 0);
     const auto U = 0.25 * zeta * zeta * one_over_rho;
     assert(U >= 0);
+    bool success = false;  // did interpolation or recursion work?
     if (T > Tmax || U < Umin) {
-      eval_urr<false>(Gm, T, U, /* zeta_over_two_rho = */ 0, mmax);
+      success = eval_urr<false>(Gm, T, U, /* zeta_over_two_rho = */ 0, mmax);
     } else {
-      interpolate_Gm<false>(Gm, T, U, /* zeta_over_two_rho = */ 0, mmax);
+      success =
+          interpolate_Gm<false>(Gm, T, U, /* zeta_over_two_rho = */ 0, mmax);
+    }
+    if (!success) {  // fallback is to use the Gaussian fit
+      auto& gaussian_fit = get_gaussian_fit(zeta);
+      if (!yukawa_gaussian_fit_eval_)
+        yukawa_gaussian_fit_eval_ = std::unique_ptr<GaussianGmEval<Real, -1>>(
+            new GaussianGmEval<Real, -1>(mmax_, precision_));
+      yukawa_gaussian_fit_eval_->eval(Gm, 1.0 / one_over_rho, T, mmax,
+                                      gaussian_fit);
     }
   }
   /// @param[in] Gm pointer to array of @c mmax+1 @c Real elements, on
@@ -1032,50 +1092,48 @@ struct TennoGmEval {
     const auto U = 0.25 * zeta * zeta * one_over_rho;
     assert(U > 0);  // integral factorizes into 2 overlaps for U = 0
     const auto zeta_over_two_rho = 0.5 * zeta * one_over_rho;
-    bool compSucc = false; // did interpolation or recursion work?
+    bool success = false;  // did interpolation or recursion work?
     if (T > Tmax) {
-      compSucc = eval_urr<true>(Gm, T, U, zeta_over_two_rho, mmax);
-      //if (compSucc) { (srpDebug::get_libint_conv_slater_fit_calls())++; }
+      success = eval_urr<true>(Gm, T, U, zeta_over_two_rho, mmax);
     } else {
-      compSucc = interpolate_Gm<true>(Gm, T, U, zeta_over_two_rho, mmax);
-      //if (compSucc) { (srpDebug::get_libint_conv_slater_fit_calls())++; }
+      success = interpolate_Gm<true>(Gm, T, U, zeta_over_two_rho, mmax);
     }
-    if (!compSucc) {
-      //srpDebug::get_slater_int_failed() = true;
-      //(srpDebug::get_libint_gaussian_fit_of_slater_calls())++;
-      // constexpr double low_end_range = 1e-5;
-      // constexpr double high_end_range = 5;
-      // constexpr double eps = 1e-12;
-      if (cached_gaussian_fits_.count(zeta)) { // we've already fitted this slater
-        //(srpDebug::get_libint_gaussian_fit_recalled_call())++;
-        eval(Gm, 1.0 / one_over_rho, T, mmax, cached_gaussian_fits_.at(zeta));
-      } else {
-        //(srpDebug::get_libint_gaussian_fit_new_compute_call())++;
-        static std::mutex gfits_mutex;
-        std::lock_guard<std::mutex> guard(gfits_mutex);
-        std::vector<std::pair<double, double> > geminal = fit_slater(zeta/* , low_end_range, high_end_range, eps */);
-        cached_gaussian_fits_[zeta] = geminal;
-        eval(Gm, 1.0 / one_over_rho, T, mmax, geminal);
-      }
+    if (!success) {  // fallback is to use the Gaussian fit
+      auto& gaussian_fit = get_gaussian_fit(zeta);
+      if (!slater_gaussian_fit_eval_)
+        slater_gaussian_fit_eval_ = std::unique_ptr<GaussianGmEval<Real, 0>>(
+            new GaussianGmEval<Real, 0>(mmax_, precision_));
+      slater_gaussian_fit_eval_->eval(Gm, 1.0 / one_over_rho, T, mmax,
+                                      gaussian_fit);
     }
   }
 
-  /// Fits a slater with an undetermined number of gaussians, borrowed from https://github.com/m-a-d-n-e-s-s/madness/blob/master/src/madness/mra/gfit.h#L140
+  /// Fits a slater with an undetermined number of gaussians, borrowed from
+  /// https://github.com/m-a-d-n-e-s-s/madness/blob/master/src/madness/mra/gfit.h#L140
   /// @param[in] zeta exponent of Slater
   /// @param[in] lo smallest lengthscale to be represented
   /// @param[in] hi largest lengthscale to be represented
   /// @param[in] eps precision threshold
   /// @throw std::invalid_argument if \f$ \zeta^2/(4 \rho) \f$ exceeds \c Umax
-  std::vector<std::pair<double, double> > fit_slater(double zeta, double lo = 1e-5, double hi = 5, double eps = 1e-12) const {
-
+  static std::vector<std::pair<double, double>> fit_slater(double zeta,
+                                                           double lo = 1e-5,
+                                                           double hi = 5,
+                                                           double eps = 1e-12) {
     double ulim;
-    if (eps >= 1e-2) ulim = 5;
-    else if (eps >= 1e-4) ulim = 10;
-    else if (eps >= 1e-6) ulim = 14;
-    else if (eps >= 1e-8) ulim = 18;
-    else if (eps >= 1e-10) ulim = 22;
-    else if (eps >= 1e-12) ulim = 26;
-    else ulim = 30;
+    if (eps >= 1e-2)
+      ulim = 5;
+    else if (eps >= 1e-4)
+      ulim = 10;
+    else if (eps >= 1e-6)
+      ulim = 14;
+    else if (eps >= 1e-8)
+      ulim = 18;
+    else if (eps >= 1e-10)
+      ulim = 22;
+    else if (eps >= 1e-12)
+      ulim = 26;
+    else
+      ulim = 30;
 
     // integration limits for quadrature
     double slo = 0.5 * log(eps) - 1.0;
@@ -1097,82 +1155,21 @@ struct TennoGmEval {
 
     std::vector<double> coeffs(n_pts), expnts(n_pts);
 
-    for (size_t i = 0; i != n_pts; ++i) { // fill coeff and exponents vectors
+    for (size_t i = 0; i != n_pts; ++i) {  // fill coeff and exponents vectors
       const double s = slo + res * (n_pts - i);
       coeffs[i] = res * exp(-zeta * zeta * exp(2. * s) + s);
-       const long double twoOvrSqrtPi =  1.12837916709551257389615890312154517;
+      const long double twoOvrSqrtPi = 1.12837916709551257389615890312154517;
       coeffs[i] *= zeta * twoOvrSqrtPi;
       expnts[i] = 0.25 * exp(-2. * s);
     }
 
     assert(coeffs.size() == expnts.size());
-    std::vector<std::pair<double, double> > result;
+    std::vector<std::pair<double, double>> result;
     for (size_t i = 0; i != coeffs.size(); ++i) {
       if (abs(coeffs[i]) > std::numeric_limits<double>::epsilon())
-        result.push_back(std::pair<double, double> (expnts[i], coeffs[i]));
+        result.push_back(std::pair<double, double>(expnts[i], coeffs[i]));
     }
     return result;
-  }
-
-  /** computes \f$ G_m(\rho, T) \f$ using downward recursion.
-   *
-   * @warning NOT reentrant if \c k == -1 and C++11 is not available
-   *
-   * @param[out] Gm array to be filled in with the \f$ Gm(\rho, T) \f$ values,
-   * must be at least mmax+1 elements long
-   * @param[in] rho
-   * @param[in] T
-   * @param[in] mmax mmax the maximum value of m for which Boys function will be
-   * computed; it must be <= the value returned by max_m() (this is not checked)
-   * @param[in] geminal the Gaussian geminal for which the core integral \f$
-   * Gm(\rho, T) \f$ is computed; a contracted Gaussian geminal is represented
-   * as a vector of pairs, each of which specifies the exponent (first) and
-   * contraction coefficient (second) of the primitive Gaussian geminal
-   * @param[in] scr if \c k ==-1 and need this to be reentrant, must provide ptr
-   * to the per-thread \c
-   * libint2::detail::CoreEvalScratch<GaussianGmEval<Real,-1>> object; no need
-   * to specify \c scr otherwise
-   */
-  template <typename AnyReal>
-  void eval(Real* Gm, Real rho, Real T, size_t mmax,
-            const std::vector<std::pair<AnyReal, AnyReal>>& geminal,
-            void* scr = 0) const {
-
-    std::fill(Gm, Gm + mmax + 1, Real(0));
-
-    const auto sqrt_rho = sqrt(rho);
-    const auto oo_sqrt_rho = 1 / sqrt_rho;
-
-    typedef
-        typename std::vector<std::pair<AnyReal, AnyReal>>::const_iterator citer;
-    const citer gend = geminal.end();
-    for (citer i = geminal.begin(); i != gend; ++i) {
-      const auto gamma = i->first;
-      const auto gcoef = i->second;
-      const auto rhog = rho + gamma;
-      const auto oorhog = 1 / rhog;
-
-      const auto gorg = gamma * oorhog;
-      const auto rorg = rho * oorhog;
-      const auto sqrt_rho_org = sqrt_rho * oorhog;
-      const auto sqrt_rhog = sqrt(rhog);
-      const auto sqrt_rorg = sqrt_rho_org * sqrt_rhog;
-
-      /// (ss|g12|ss)
-      constexpr Real const_SQRTPI_2(
-          0.88622692545275801364908374167057259139877472806119); /* sqrt(pi)/2
-                                                                  */
-      const auto SS_K0G12_SS = gcoef * oo_sqrt_rho * const_SQRTPI_2 * rorg *
-                               sqrt_rorg * exp(-gorg * T);
-
-
-      auto ss_oper_ss_m = SS_K0G12_SS;
-      Gm[0] += ss_oper_ss_m;
-      for (int m = 1; m <= mmax; ++m) {
-        ss_oper_ss_m *= gorg;
-        Gm[m] += ss_oper_ss_m;
-      }
-    }
   }
 
  private:
@@ -1279,8 +1276,10 @@ struct TennoGmEval {
   template <bool Exp>
   static bool eval_urr(Real* Gm_vec, Real T, Real U, Real zeta_over_two_rho,
                        size_t mmax) {
-    assert(T > 0);
+    assert(T >= 0);
     assert(U > 0);
+
+    if (T == 0) return false;
 
     const Real sqrt_U = sqrt(U);
     const Real sqrt_T = sqrt(T);
@@ -1353,8 +1352,12 @@ struct TennoGmEval {
     assert(T >= 0);
     if (U > Umax) {
       //      throw std::invalid_argument(
-      //          "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, " "zeta*zeta*one_over_rho/4=" + std::to_string(U) + " cannot exceed " + std::to_string(Umax));
-      //          "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, " "zeta*zeta*one_over_rho/4=" + std::to_string(U) + " cannot exceed " + std::to_string(Umax));
+      //          "TennoGmEval::eval_{yukawa,slater}() : arguments out of range,
+      //          " "zeta*zeta*one_over_rho/4=" + std::to_string(U) + " cannot
+      //          exceed " + std::to_string(Umax));
+      //          "TennoGmEval::eval_{yukawa,slater}() : arguments out of range,
+      //          " "zeta*zeta*one_over_rho/4=" + std::to_string(U) + " cannot
+      //          exceed " + std::to_string(Umax));
       std::cout
           << "TennoGmEval::eval_{yukawa,slater}() : arguments out of range, "
           << "zeta*zeta*one_over_rho/4=" << std::to_string(U)
@@ -1697,7 +1700,7 @@ constexpr double
                                   (TennoGmEval<Real>::interpolation_order + 1) *
                                   (TennoGmEval<Real>::interpolation_order + 1)];
 #else
-// clang needs an explicit specifalization declaration to avoid warning
+// clang needs an explicit specialization declaration to avoid warning
 #ifdef __clang__
 template <typename Real>
 double
@@ -1724,9 +1727,8 @@ struct CoreEvalScratch {
 template <typename Real>
 struct CoreEvalScratch<GaussianGmEval<Real, -1>> {
   std::vector<Real> Fm_;
-  std::vector<Real> g_i;
-  std::vector<Real> r_i;
-  std::vector<Real> oorhog_i;
+  std::vector<Real> g_i;  // (gamma / (rho  + gamma))^i
+  std::vector<Real> r_i;  // (rho / (rho  + gamma))^i
   CoreEvalScratch(const CoreEvalScratch&) = default;
   CoreEvalScratch(CoreEvalScratch&&) = default;
   explicit CoreEvalScratch(int mmax) { init(mmax); }
@@ -1736,7 +1738,6 @@ struct CoreEvalScratch<GaussianGmEval<Real, -1>> {
     Fm_.resize(mmax + 1);
     g_i.resize(mmax + 1);
     r_i.resize(mmax + 1);
-    oorhog_i.resize(mmax + 1);
     g_i[0] = 1.0;
     r_i[0] = 1.0;
   }
@@ -1852,15 +1853,6 @@ struct GaussianGmEval
 
     const auto sqrt_rho = sqrt(rho);
     const auto oo_sqrt_rho = 1 / sqrt_rho;
-    if (k == -1) {
-      void* _scr = (scr == 0) ? this : scr;
-      auto& scratch = *(
-          reinterpret_cast<detail::CoreEvalScratch<GaussianGmEval<Real, -1>>*>(
-              _scr));
-      for (int i = 1; i <= mmax; i++) {
-        scratch.r_i[i] = scratch.r_i[i - 1] * rho;
-      }
-    }
 
     typedef
         typename std::vector<std::pair<AnyReal, AnyReal>>::const_iterator citer;
@@ -1897,10 +1889,9 @@ struct GaussianGmEval
         constexpr Real const_2_SQRTPI(
             1.12837916709551257389615890312154517); /* 2/sqrt(pi)     */
         const auto pfac = const_2_SQRTPI * sqrt_rhog * SS_K0G12_SS;
-        scratch.oorhog_i[0] = pfac;
         for (int i = 1; i <= mmax; i++) {
-          scratch.g_i[i] = scratch.g_i[i - 1] * gamma;
-          scratch.oorhog_i[i] = scratch.oorhog_i[i - 1] * oorhog;
+          scratch.r_i[i] = scratch.r_i[i - 1] * rorg;
+          scratch.g_i[i] = scratch.g_i[i - 1] * gorg;
         }
         for (int m = 0; m <= mmax; m++) {
           Real ssss = 0.0;
@@ -1909,7 +1900,7 @@ struct GaussianGmEval
             ssss +=
                 bcm[n] * scratch.r_i[n] * scratch.g_i[m - n] * scratch.Fm_[n];
           }
-          Gm[m] += ssss * scratch.oorhog_i[m];
+          Gm[m] += ssss * pfac;
         }
 #endif
       }
