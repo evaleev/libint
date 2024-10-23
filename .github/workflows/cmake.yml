@@ -76,7 +76,9 @@ jobs:
         brew info gcc@11
         ls -l /opt/homebrew/Cellar/gcc@11/*/bin
         pip3.11 install scipy
-        
+        # see https://github.com/pypa/setuptools/issues/4519#issuecomment-2254983472
+        echo "setuptools<72" > ${{github.workspace}}/build/python_constraints.txt
+        echo "PIP_CONSTRAINT=${{github.workspace}}/build/python_constraints.txt" >> $GITHUB_ENV
 
     - name: Install prerequisites Ubuntu packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
