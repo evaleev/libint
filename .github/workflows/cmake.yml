@@ -65,18 +65,20 @@ jobs:
       run: |
         brew install ninja gcc@11 gmp boost eigen bison ccache automake python@3.11 numpy scipy
         #echo "FC=/usr/local/bin/gfortran" >> $GITHUB_ENV
-        echo "FC=/opt/homebrew/Cellar/gcc@11/11.4.0/bin/gfortran-11" >> $GITHUB_ENV
+        echo "FC=/opt/homebrew/Cellar/gcc@11/11.5.0/bin/gfortran-11" >> $GITHUB_ENV
         echo "EIGEN3_INCLUDE_DIR=/usr/local/include/eigen3" >> $GITHUB_ENV
         echo "GMP_INCLUDE_DIR=/opt/homebrew/Cellar/gmp/6.3.0/include" >> $GITHUB_ENV
         echo "GMP_LIBRARY_DIR=/opt/homebrew/Cellar/gmp/6.3.0/lib" >> $GITHUB_ENV
-        echo "BOOST_INCLUDE_DIR=/opt/homebrew/Cellar/boost/1.85.0/include" >> $GITHUB_ENV
-        ls -l /opt/homebrew/Cellar/boost/1.85.0/include
+        echo "BOOST_INCLUDE_DIR=/opt/homebrew/Cellar/boost/1.86.0_1/include" >> $GITHUB_ENV
+        ls -l /opt/homebrew/Cellar/boost/1.86.0_1/include
         brew info python@3.11
         ls -l /opt/homebrew/Cellar/python@3.11/*
         brew info gcc@11
         ls -l /opt/homebrew/Cellar/gcc@11/*/bin
         pip3.11 install scipy
-        
+        # see https://github.com/pypa/setuptools/issues/4519#issuecomment-2254983472
+        echo "setuptools<72" > ${{github.workspace}}/build/python_constraints.txt
+        echo "PIP_CONSTRAINT=${{github.workspace}}/build/python_constraints.txt" >> $GITHUB_ENV
 
     - name: Install prerequisites Ubuntu packages
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
@@ -134,7 +136,7 @@ jobs:
 
     - name: Archive Library Tarball
       if: ${{ steps.skip_check.outputs.should_skip != 'true' && matrix.build_type == 'Release'}}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4.4.0
       with:
         if-no-files-found: error
         name: ${{ runner.os }}-${{ matrix.cxx }}
@@ -295,7 +297,7 @@ jobs:
       with:
         arch: x64
 
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4.1.7
       with:
         name: Linux-g++-10
 
