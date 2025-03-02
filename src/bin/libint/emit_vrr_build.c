@@ -30,8 +30,8 @@ extern FILE *outfile, *vrr_header;
 extern void punt(char *);
 extern LibintParams_t Params;
 
-static void declare_localv();
-static void define_localv();
+static void declare_localv(int a, int k1max, int k2max, int k3max, FILE *code);
+static void define_localv(int a, int foo, int k1max, int k2max, int k3max, FILE *code);
 
 static char **k1, **k2, **k3;
 

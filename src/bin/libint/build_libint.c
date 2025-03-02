@@ -59,7 +59,7 @@ char *real_type;   /*--- C type for real numbers ---*/
 int libint_stack_size[MAX_AM/2+1];
 LibintParams_t Params;
 
-void punt();
+void punt(char* str);
 extern void emit_vrr_build();
 extern void emit_vrr_build_macro();
 extern void emit_order();
