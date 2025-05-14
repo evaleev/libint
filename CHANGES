@@ -3,9 +3,14 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2025-05-14: 2.11.1
+  - PR #369: gcc-15 produced incorrect exponential core integrals
+  - PR #367: can build/run tests in compiler tree even if build only shared libraries
+  - PR #366: build fixup for gcc-15 and clang-21 (HT @parona-source)
+
 - 2025-04-24: 2.11.0
-  - PR #364: fix eritest segfaults with atypical L combinations
   - PR #365: use Gaussian fit of Slater geminal for exceptional parameter values
+  - PR #364: fix eritest segfaults with atypical L combinations
 
 - 2025-04-08: 2.10.2
   - PR #360: CMake targets can be consumed from the build tree (e.g., usable via FetchContent)
