@@ -36,7 +36,7 @@ jobs:
           - build_type: Release
             build_shared_libs: ON
             os: macos-latest
-            do_fortran: OFF
+            do_fortran: ON
           # someday when mac+fortran+shared is fixed (plus universal do_fortran: ON)
           #- build_type: Release
           #  build_shared_libs: ON
