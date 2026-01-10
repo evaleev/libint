@@ -164,6 +164,10 @@ enum class Operator {
   /// erfc-attenuated Coulomb operator,
   /// \f$ \mathrm{erfc}(\omega r)/r \f$
   erfc_coulomb,
+  /// mixture of erf_coulomb and erfc_coulomb
+  /// \f$ (\lambda \mathrm{erf}(\omega r) + \sigma \mathrm{erfc}(\omega r) )/r
+  /// \f$
+  erfx_coulomb,
   /// Slater-type geminal, \f$ \mathrm{exp}(-\zeta r_{12}) \f$
   stg,
   /// Slater-type geminal times Coulomb, , \f$ \mathrm{exp}(-\zeta r_{12}) /
@@ -273,7 +277,7 @@ struct operator_traits<Operator::erfc_nuclear>
         0, operator_traits<Operator::nuclear>::default_params());
   }
   typedef const libint2::GenericGmEval<
-      libint2::os_core_ints::erfc_coulomb_gm_eval<scalar_type>>
+      libint2::os_core_ints::erfx_coulomb_gm_eval<scalar_type>>
       core_eval_type;
 };
 
@@ -352,7 +356,8 @@ struct operator_traits<Operator::r12> : public detail::default_operator_traits {
 template <>
 struct operator_traits<Operator::erf_coulomb>
     : public detail::default_operator_traits {
-  /// the attenuation parameter (0 = zero potential, +infinity = no attenuation)
+  /// the attenuation parameter (inverse lengthscale, 0 = zero potential,
+  /// +infinity = no attenuation)
   typedef scalar_type oper_params_type;
   static oper_params_type default_params() { return oper_params_type{0}; }
   typedef const libint2::GenericGmEval<
@@ -362,11 +367,25 @@ struct operator_traits<Operator::erf_coulomb>
 template <>
 struct operator_traits<Operator::erfc_coulomb>
     : public detail::default_operator_traits {
-  /// the attenuation parameter (0 = no attenuation, +infinity = zero potential)
+  /// the attenuation parameter (inverse lengthscale, 0 = no attenuation,
+  /// +infinity = zero potential)
   typedef scalar_type oper_params_type;
   static oper_params_type default_params() { return oper_params_type{0}; }
   typedef const libint2::GenericGmEval<
-      libint2::os_core_ints::erfc_coulomb_gm_eval<scalar_type>>
+      libint2::os_core_ints::erfx_coulomb_gm_eval<scalar_type>>
+      core_eval_type;
+};
+template <>
+struct operator_traits<Operator::erfx_coulomb>
+    : public detail::default_operator_traits {
+  /// the attenuation parameter (inverse lengthscale) + coefficient of erf
+  /// (long-range) + coefficient of erfc (short-range)
+  typedef std::array<scalar_type, 3> oper_params_type;
+  static oper_params_type default_params() {
+    return oper_params_type{0., 0., 0.};
+  }
+  typedef const libint2::GenericGmEval<
+      libint2::os_core_ints::erfx_coulomb_gm_eval<scalar_type>>
       core_eval_type;
 };
 

@@ -1983,7 +1983,7 @@ namespace os_core_ints {
 template <typename Real, int K>
 struct r12_xx_K_gm_eval;
 template <typename Real>
-struct erfc_coulomb_gm_eval;
+struct erfx_coulomb_gm_eval;
 }  // namespace os_core_ints
 
 namespace detail {
@@ -1996,9 +1996,9 @@ struct CoreEvalScratch<os_core_ints::r12_xx_K_gm_eval<Real, 1>> {
   // need to store Fm(T) for m = 0 .. mmax+1
   explicit CoreEvalScratch(int mmax) { Fm_.resize(mmax + 2); }
 };
-/// erfc_coulomb_gm_eval needs extra scratch data
+/// erfx_coulomb_gm_eval needs extra scratch data
 template <typename Real>
-struct CoreEvalScratch<os_core_ints::erfc_coulomb_gm_eval<Real>> {
+struct CoreEvalScratch<os_core_ints::erfx_coulomb_gm_eval<Real>> {
   std::vector<Real> Fm_;
   CoreEvalScratch(const CoreEvalScratch&) = default;
   CoreEvalScratch(CoreEvalScratch&&) = default;
@@ -2098,13 +2098,14 @@ struct erf_coulomb_gm_eval {
   std::shared_ptr<const FmEvalType> fm_eval_;  // need for odd K
 };
 
-/// core integral evaluator for \f$ \mathrm{erfc}(\omega r) / r \f$ kernel
+/// core integral evaluator for \f$ ( \lambda \mathrm{erf}(\omega r) + \sigma
+/// \mathrm{erfc}(\omega r) ) / r \f$ kernel
 /// @note need extra scratch for Boys function values,
 ///       since need to call Boys engine twice
 template <typename Real>
-struct erfc_coulomb_gm_eval
-    : private detail::CoreEvalScratch<erfc_coulomb_gm_eval<Real>> {
-  typedef detail::CoreEvalScratch<erfc_coulomb_gm_eval<Real>> base_type;
+struct erfx_coulomb_gm_eval
+    : private detail::CoreEvalScratch<erfx_coulomb_gm_eval<Real>> {
+  typedef detail::CoreEvalScratch<erfx_coulomb_gm_eval<Real>> base_type;
   typedef Real value_type;
 
 #ifndef LIBINT_USER_DEFINED_REAL
@@ -2113,19 +2114,28 @@ struct erfc_coulomb_gm_eval
   using FmEvalType = libint2::FmEval_Reference<scalar_type>;
 #endif
 
-  erfc_coulomb_gm_eval(unsigned int mmax, Real precision) : base_type(mmax) {
+  erfx_coulomb_gm_eval(unsigned int mmax, Real precision) : base_type(mmax) {
     fm_eval_ = FmEvalType::instance(mmax, precision);
   }
-  void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega) {
-    fm_eval_->eval(&base_type::Fm_[0], T, mmax);
-    std::copy(base_type::Fm_.cbegin(), base_type::Fm_.cbegin() + mmax + 1, Gm);
-    if (omega > 0) {
+  void operator()(Real* Gm, Real rho, Real T, int mmax, Real omega, Real lambda,
+                  Real sigma) {
+    // \lambda \mathrm{erf}(\omega r) + \sigma \mathrm{erfc}(\omega r) = \sigma
+    // - (\sigma - \lambda) \mathrm{erf}(\omega r)
+    if (sigma != 0) {
+      fm_eval_->eval(&base_type::Fm_[0], T, mmax);
+      for (auto m = 0; m <= mmax; ++m) Gm[m] = sigma * base_type::Fm_[m];
+    } else {
+      std::fill(Gm, Gm + mmax + 1, Real{0});
+    }
+    const auto sigma_minus_lambda = sigma - lambda;
+    if (omega > 0 && sigma_minus_lambda != 0) {
       auto omega2 = omega * omega;
       auto omega2_over_omega2_plus_rho = omega2 / (omega2 + rho);
       fm_eval_->eval(&base_type::Fm_[0], T * omega2_over_omega2_plus_rho, mmax);
 
       using std::sqrt;
-      auto ooversqrto2prho_exp_2mplus1 = sqrt(omega2_over_omega2_plus_rho);
+      auto ooversqrto2prho_exp_2mplus1 =
+          sqrt(omega2_over_omega2_plus_rho) * sigma_minus_lambda;
       for (auto m = 0; m <= mmax;
            ++m, ooversqrto2prho_exp_2mplus1 *= omega2_over_omega2_plus_rho) {
         Gm[m] -= ooversqrto2prho_exp_2mplus1 * base_type::Fm_[m];

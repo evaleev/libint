@@ -2403,6 +2403,11 @@ void api_basic_compile_test(const BasisSet& obs,
     std::cout << "erf_coulomb Schwarz ints\n" << K << std::endl;
   }
   {
+    auto K = compute_schwarz_ints<Operator::erfx_coulomb>(
+        obs, obs, false, {attenuation_omega, 0.2, 0.4});
+    std::cout << "erfx_coulomb Schwarz ints\n" << K << std::endl;
+  }
+  {
     auto V = compute_1body_ints<Operator::nuclear>(
         obs, libint2::make_point_charges(atoms))[0];
     std::cout << "nuclear ints\n" << V << std::endl;

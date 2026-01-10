@@ -1130,7 +1130,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
       const auto& core_ints_params = std::get<0>(
           any_cast<const typename operator_traits<
               Operator::erfc_nuclear>::oper_params_type&>(core_ints_params_));
-      core_eval_ptr->eval(fm_ptr, gammap, U, mmax, core_ints_params);
+      core_eval_ptr->eval(fm_ptr, gammap, U, mmax, core_ints_params, 0, 0);
     }
 
     decltype(U) two_o_sqrt_PI(1.12837916709551257389615890312);
@@ -1475,7 +1475,20 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                       any_cast<const typename operator_traits<
                           Operator::erfc_coulomb>::oper_params_type&>(
                           core_ints_params_);
-                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params);
+                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params,
+                                      0., 0.);
+                } break;
+                case Operator::erfx_coulomb: {
+                  const auto& core_eval_ptr =
+                      any_cast<const detail::core_eval_pack_type<
+                          Operator::erfx_coulomb>&>(core_eval_pack_)
+                          .first();
+                  const auto& core_ints_params =
+                      any_cast<const typename operator_traits<
+                          Operator::erfx_coulomb>::oper_params_type&>(
+                          core_ints_params_);
+                  core_eval_ptr->eval(gm_ptr, rho, T, mmax, core_ints_params[0],
+                                      core_ints_params[1], core_ints_params[2]);
                 } break;
                 case Operator::stg: {
                   const auto& core_eval_ptr =
