@@ -70,24 +70,29 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you add
 /// one-body ints
-#define BOOST_PP_NBODY_OPERATOR_LIST \
-  (overlap,                          \
-   (kinetic,                         \
-    (elecpot,                        \
-     (elecpot,                       \
-      (elecpot,                      \
-       (1emultipole,                 \
-        (2emultipole,                \
-         (3emultipole,               \
-          (sphemultipole,            \
-           (opVop,                   \
-            (eri,                    \
-             (eri,                   \
-              (eri,                  \
-               (eri,                 \
-                (eri,                \
-                 (eri,               \
-                  (eri, (eri, (eri, (eri, BOOST_PP_NIL))))))))))))))))))))
+#define BOOST_PP_NBODY_OPERATOR_LIST             \
+  (overlap,                 /* overlap */        \
+   (kinetic,                /* kinetic */        \
+    (elecpot,               /* nuclear */        \
+     (elecpot,              /* erf_nuclear */    \
+      (elecpot,             /* erfc_nuclear */   \
+       (1emultipole,        /* emultipole1 */    \
+        (2emultipole,       /* emultipole2 */    \
+         (3emultipole,      /* emultipole3 */    \
+          (sphemultipole,   /* sphemultipole */  \
+           (opVop,          /* opVop */          \
+            (eri,           /* delta */          \
+             (eri,          /* coulomb */        \
+              (eri,         /* cgtg */           \
+               (eri,        /* cgtg_x_coulomb */ \
+                (eri,       /* delcgtg2 */       \
+                 (eri,      /* r12 */            \
+                  (eri,     /* erf_coulomb */    \
+                   (eri,    /* erfc_coulomb */   \
+                    (eri,   /* erfx_coulomb */   \
+                     (eri,  /* stg */            \
+                      (eri, /* yukawa */         \
+                       BOOST_PP_NIL)))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
