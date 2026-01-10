@@ -269,7 +269,7 @@ jobs:
           - scipy
           - pybind11
           - scikit-build-core
-          - build
+          - python-build
           - pytest
           #- dpcpp_linux-64
         EOF
