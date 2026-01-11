@@ -369,12 +369,12 @@ if (LIBINT_HAS_CXX_API)
       )
     endif()
   endif()
-  get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_DATADIR}" ABSOLUTE)
+  get_filename_component(LIBINT_DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_DATADIR}" ABSOLUTE)
   target_compile_definitions(libint2_cxx_prerequisites INTERFACE
-        $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
+        $<BUILD_INTERFACE:LIBINT_SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
   )
   if (NOT MSVC)
-      # TODO fix the DATADIR define escaping on Windows
+      # TODO fix the LIBINT_DATADIR define escaping on Windows
       # * below works fine in tests
       # * but fails in Psi4 compile
       # * prefix replacement in conda used instead on Windows
@@ -382,7 +382,7 @@ if (LIBINT_HAS_CXX_API)
       target_compile_definitions(
         libint2_cxx_prerequisites
         INTERFACE
-          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_DATADIR}">
+          $<INSTALL_INTERFACE:LIBINT_DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_DATADIR}">
         )
   endif()
 

@@ -1400,8 +1400,8 @@ LD="$LD" LDFLAGS="$LDFLAGS" LIBS="-lm $LIBS $FLIBS" \
 LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB"
 
 dnl --------- expand some variables -----------
-DATADIR_ABSOLUTE=`eval echo $datarootdir`/libint/$LIBINT_VERSION
-AC_SUBST(DATADIR_ABSOLUTE)
+LIBINT_DATADIR_ABSOLUTE=`eval echo $datarootdir`/libint/$LIBINT_VERSION
+AC_SUBST(LIBINT_DATADIR_ABSOLUTE)
 
 dnl Check if sources compiled with CXX and CXXGEN can be linked together
 CXX_COMPATIBLE_WITH_CXXGEN=yes

@@ -6,7 +6,7 @@ endif
 -include $(TOPDIR)/src/lib/libint/MakeVars.features
 
 # include headers the object include directory
-CPPFLAGS += -I$(TOPDIR)/include -I$(TOPDIR)/include/libint2 -I$(SRCDIR)/$(TOPDIR)/src/lib/libint -DSRCDATADIR=\"$(SRCDIR)/$(TOPDIR)/lib/basis\"
+CPPFLAGS += -I$(TOPDIR)/include -I$(TOPDIR)/include/libint2 -I$(SRCDIR)/$(TOPDIR)/src/lib/libint -DLIBINT_SRCDATADIR=\"$(SRCDIR)/$(TOPDIR)/lib/basis\"
 
 OBJSUF = o
 DEPSUF = d
