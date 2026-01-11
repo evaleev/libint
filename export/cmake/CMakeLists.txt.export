@@ -36,20 +36,20 @@ set(pnv libint2) # projectnameversion
 
 # Options ==============================================================================================================
 
-redefaultable_option(REQUIRE_CXX_API "C++11 Libint interface" ON)
-redefaultable_option(ENABLE_FORTRAN "Fortran03+ Libint interface" OFF)
-redefaultable_option(ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
+redefaultable_option(LIBINT2_REQUIRE_CXX_API "C++11 Libint interface" ON)
+redefaultable_option(LIBINT2_ENABLE_FORTRAN "Fortran03+ Libint interface" OFF)
+redefaultable_option(LIBINT2_ENABLE_MPFR "Use GNU MPFR library for high-precision testing (EXPERTS ONLY)" OFF)
 redefaultable_option(LIBINT2_BUILD_SHARED_AND_STATIC_LIBS "Build in one shot static and shared library variants. Uses -fPIC." OFF)
 redefaultable_option(LIBINT2_PYTHON "Python bindings" OFF)
-redefaultable_option(LIBINT_USE_BUNDLED_BOOST "Force use of bundled Boost" OFF)
+redefaultable_option(LIBINT2_USE_BUNDLED_BOOST "Force use of bundled Boost" OFF)
 
 if (NOT LIBINT2_REALTYPE)
     set(LIBINT2_REALTYPE double)
 endif()
 
-if (ENABLE_FORTRAN)
+if (LIBINT2_ENABLE_FORTRAN)
     enable_language(Fortran)
-endif(ENABLE_FORTRAN)
+endif(LIBINT2_ENABLE_FORTRAN)
 
 # SHG ordering
 # these are known orderings, must match config.h
@@ -75,7 +75,7 @@ endif(HAVE_POSIX_MEMALIGN)
 
 # Features =============================================================================================================
 
-if (ENABLE_MPFR)
+if (LIBINT2_ENABLE_MPFR)
     find_package(MPFR)
     if (TARGET MPFR::GMPXX)
         set(LIBINT_HAS_MPFR 1)
@@ -116,11 +116,11 @@ if (TARGET libint2_Eigen)
 else(TARGET libint2_Eigen)
   set(LIBINT_HAS_CXX_API 0)
 endif(TARGET libint2_Eigen)
-if (REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
-  message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DREQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
+if (LIBINT2_REQUIRE_CXX_API AND NOT ${LIBINT_HAS_CXX_API})
+  message(FATAL_ERROR "C++ API cannot be built without Eigen3; configure (via CMake) and install Eigen3 and add the install prefix to CMAKE_PREFIX_PATH, or add -DLIBINT2_REQUIRE_CXX_API=OFF to the CMake command line if the C++ API is not required")
 endif()
 
-if (NOT LIBINT_USE_BUNDLED_BOOST)
+if (NOT LIBINT2_USE_BUNDLED_BOOST)
   if (NOT TARGET Boost::headers)
     find_package(Boost 1.29)
   endif()
@@ -163,7 +163,7 @@ if (NOT LIBINT_USE_BUNDLED_BOOST)
 endif()
 
 # if usable Boost.Preprocessor not found install the bundled version
-if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS OR LIBINT_USE_BUNDLED_BOOST)
+if (NOT LIBINT_HAS_SYSTEM_BOOST_PREPROCESSOR_VARIADICS OR LIBINT2_USE_BUNDLED_BOOST)
     file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/libint2)
     execute_process(
             COMMAND ${CMAKE_COMMAND} -E tar xzf ${PROJECT_SOURCE_DIR}/external/boost.tar.gz
@@ -182,7 +182,7 @@ endif()
 # * And for Python bindings, it's required along with its headers.
 if (LIBINT2_PYTHON)
     find_package(Python COMPONENTS Interpreter Development REQUIRED)
-elseif (ENABLE_FORTRAN)
+elseif (LIBINT2_ENABLE_FORTRAN)
     find_package(Python COMPONENTS Interpreter REQUIRED)
 else()
     find_package(Python COMPONENTS Interpreter)
@@ -369,12 +369,12 @@ if (LIBINT_HAS_CXX_API)
       )
     endif()
   endif()
-  get_filename_component(DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_DATADIR}" ABSOLUTE)
+  get_filename_component(LIBINT_DATADIR_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${LIBINT2_INSTALL_DATADIR}" ABSOLUTE)
   target_compile_definitions(libint2_cxx_prerequisites INTERFACE
-        $<BUILD_INTERFACE:SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
+        $<BUILD_INTERFACE:LIBINT_SRCDATADIR="${PROJECT_SOURCE_DIR}/lib/basis">
   )
   if (NOT MSVC)
-      # TODO fix the DATADIR define escaping on Windows
+      # TODO fix the LIBINT_DATADIR define escaping on Windows
       # * below works fine in tests
       # * but fails in Psi4 compile
       # * prefix replacement in conda used instead on Windows
@@ -382,7 +382,7 @@ if (LIBINT_HAS_CXX_API)
       target_compile_definitions(
         libint2_cxx_prerequisites
         INTERFACE
-          $<INSTALL_INTERFACE:DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_DATADIR}">
+          $<INSTALL_INTERFACE:LIBINT_DATADIR="\$\{_IMPORT_PREFIX\}/${LIBINT2_INSTALL_DATADIR}">
         )
   endif()
 
@@ -532,7 +532,7 @@ endif (LIBINT_HAS_CXX_API)
 
 # Fortran bindings =====================================================================================================
 
-if (ENABLE_FORTRAN)
+if (LIBINT2_ENABLE_FORTRAN)
     # specify the location of modules
     set(CMAKE_Fortran_MODULE_DIRECTORY "${PROJECT_BINARY_DIR}/fortran/modules/")
 
@@ -609,7 +609,7 @@ if (ENABLE_FORTRAN)
         DESTINATION "${LIBINT2_INSTALL_INCLUDEDIR}"
         )
 
-endif(ENABLE_FORTRAN)
+endif(LIBINT2_ENABLE_FORTRAN)
 
 # Configure files ======================================================================================================
 

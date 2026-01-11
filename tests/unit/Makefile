@@ -10,7 +10,7 @@ CPPFLAGS += -I$(TOPDIR)/include
 # include headers from the library directory
 CPPFLAGS += -I$(SRCDIR)/$(TOPDIR)/src/lib/libint
 # include the data directory path as a definition
-CPPFLAGS += -DSRCDATADIR=\"$(SRCDIR)/$(TOPDIR)/lib/basis\"
+CPPFLAGS += -DLIBINT_SRCDATADIR=\"$(SRCDIR)/$(TOPDIR)/lib/basis\"
 # initialize statics explicitly in test.cc
 CPPFLAGS += -DLIBINT2_CONSTEXPR_STATICS=0
 

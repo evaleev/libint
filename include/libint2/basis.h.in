@@ -126,9 +126,9 @@ namespace libint2 {
        *       The expected location of the file is determined by BasisSet::data_path as follows:
        *       <ol>
        *         <li> specified by LIBINT_DATA_PATH environmental variable, if defined </li>
-       *         <li> specified by DATADIR macro variable, if defined </li>
-       *         <li> specified by SRCDATADIR macro variable, if defined </li>
-       *         <li> hardwired to directory \c @DATADIR_ABSOLUTE@/basis </li>
+       *         <li> specified by LIBINT_DATADIR macro variable, if defined </li>
+       *         <li> specified by LIBINT_SRCDATADIR macro variable, if defined </li>
+       *         <li> hardwired to directory \c @LIBINT_DATADIR_ABSOLUTE@/basis </li>
        *       </ol>
        */
       BasisSet(std::string name,
@@ -403,9 +403,9 @@ namespace libint2 {
       /** determines the path to the data directory, as follows:
        *       <ol>
        *         <li> specified by LIBINT_DATA_PATH environmental variable, if defined </li>
-       *         <li> specified by DATADIR macro variable, if defined </li>
-       *         <li> specified by SRCDATADIR macro variable, if defined </li>
-       *         <li> hardwired to directory \c @DATADIR_ABSOLUTE@/basis </li>
+       *         <li> specified by LIBINT_DATADIR macro variable, if defined </li>
+       *         <li> specified by LIBINT_SRCDATADIR macro variable, if defined </li>
+       *         <li> hardwired to directory \c @LIBINT_DATADIR_ABSOLUTE@/basis </li>
        *       </ol>
        *  @throw std::system_error if the path is not valid, or cannot be determined
        *  @return valid path to the data directory
@@ -417,12 +417,12 @@ namespace libint2 {
           path = data_path_env;
         }
         else {
-#if defined(DATADIR)
-          path = std::string{DATADIR};
-#elif defined(SRCDATADIR)
-          path = std::string{SRCDATADIR};
+#if defined(LIBINT_DATADIR)
+          path = std::string{LIBINT_DATADIR};
+#elif defined(LIBINT_SRCDATADIR)
+          path = std::string{LIBINT_SRCDATADIR};
 #else
-          path = std::string("@DATADIR_ABSOLUTE@");
+          path = std::string("@LIBINT_DATADIR_ABSOLUTE@");
 #endif
         }
         // validate basis_path = path + "/basis"
