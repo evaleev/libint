@@ -36,7 +36,7 @@ jobs:
         -DBUILD_SHARED_LIBS=OFF
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON
         -DMPIEXEC_PREFLAGS='--bind-to;none;--allow-run-as-root'
-        -DENABLE_FORTRAN=ON
+        -DLIBINT2_ENABLE_FORTRAN=ON
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/library/install
         -DPython_EXECUTABLE=${{ matrix.os == 'macos-15' && '/opt/homebrew/bin/python3.14' || '/usr/bin/python3' }}
     outputs:
