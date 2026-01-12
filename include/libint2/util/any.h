@@ -29,23 +29,9 @@
 
 // Include C++17 any header, if available AND functional
 #if __cplusplus >= 201703L
-// macos < 10.14 do not have any_cast in their libc++
-#include <ciso646>  // see https://stackoverflow.com/a/31658120
-#if defined(_LIBCPP_VERSION) && defined(__APPLE__)
-#include <Availability.h>
-#ifdef __MAC_OS_X_VERSION_MIN_ALLOWED
-#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 10140
 #define LIBINT_HAS_CXX17_ANY
-#endif  //  10.14 or later
-#endif  // have macos version
-#else   // libc++ on macos
-#define LIBINT_HAS_CXX17_ANY
-#endif  // libc++ on macos
-#endif  // c++17
-
-#ifdef LIBINT_HAS_CXX17_ANY
 #include <any>
-#endif
+#endif  // c++17
 
 namespace libint2 {
 
