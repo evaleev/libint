@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2024 Edward F. Valeev
+ *  Copyright (C) 2004-2026 Edward F. Valeev
  *
  *  This file is part of Libint compiler.
  *
@@ -159,7 +159,7 @@ std::string CppCodeContext::copyright() const {
   std::ostringstream oss;
   using std::endl;
   oss << "/*" << endl
-      << " *  Copyright (C) 2004-2024 Edward F. Valeev" << endl
+      << " *  Copyright (C) 2004-2026 Edward F. Valeev" << endl
       << " *" << endl
       << " *  This file is part of Libint library." << endl
       << " *" << endl

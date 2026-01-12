@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2024 Edward F. Valeev
+ *  Copyright (C) 2004-2026 Edward F. Valeev
  *
  *  This file is part of Libint compiler.
  *

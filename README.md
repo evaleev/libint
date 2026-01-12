@@ -6,4 +6,4 @@ Libint - a library for the evaluation of molecular integrals of many-body operat
 
 See [the wiki](https://github.com/evaleev/libint/wiki) for the installation and usage instructions.
 
-Copyright (C) 2004-2024 Edward F. Valeev
+Copyright (C) 2004-2026 Edward F. Valeev
