@@ -68,7 +68,7 @@ class any {
  public:
   // this is constexpr in the standard
   any() : impl_(nullptr) {}
-  any(const any& other) : impl_(other.impl_->clone()) {}
+  any(const any& other) : impl_(other.impl_ ? other.impl_->clone() : nullptr) {}
   any(any&& other) = default;
   template <typename ValueType,
             typename = detail::disable_if_same_or_derived<any, ValueType> >
@@ -78,7 +78,7 @@ class any {
   ~any() = default;
 
   any& operator=(const any& rhs) {
-    impl_ = decltype(impl_)(rhs.impl_->clone());
+    impl_ = decltype(impl_)(rhs.impl_ ? rhs.impl_->clone() : nullptr);
     return *this;
   }
   any& operator=(any&& rhs) {
