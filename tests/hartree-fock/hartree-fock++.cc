@@ -2391,21 +2391,28 @@ void api_basic_compile_test(const BasisSet& obs,
         compute_schwarz_ints<Operator::delcgtg2>(obs, obs, false, cgtg_params);
     std::cout << "||Del.cGTG||^2 Schwarz ints\n" << K << std::endl;
   }
-  double attenuation_omega = 1.0;
+  double attenuation_omega = 1.;
   {
-    auto K = compute_schwarz_ints<Operator::erfc_coulomb>(obs, obs, false,
-                                                          attenuation_omega);
-    std::cout << "erfc_coulomb Schwarz ints\n" << K << std::endl;
-  }
-  {
-    auto K = compute_schwarz_ints<Operator::erf_coulomb>(obs, obs, false,
-                                                         attenuation_omega);
-    std::cout << "erf_coulomb Schwarz ints\n" << K << std::endl;
-  }
-  {
-    auto K = compute_schwarz_ints<Operator::erfx_coulomb>(
-        obs, obs, false, {attenuation_omega, 0.2, 0.4});
-    std::cout << "erfx_coulomb Schwarz ints\n" << K << std::endl;
+    auto Q = compute_schwarz_ints<Operator::coulomb>(obs, obs, false);
+    std::cout << "coulomb Schwarz ints\n" << Q << std::endl;
+    auto Qerfc = compute_schwarz_ints<Operator::erfc_coulomb>(
+        obs, obs, false, attenuation_omega);
+    std::cout << "erfc_coulomb Schwarz ints\n" << Qerfc << std::endl;
+    auto Qerf = compute_schwarz_ints<Operator::erf_coulomb>(obs, obs, false,
+                                                            attenuation_omega);
+    std::cout << "erf_coulomb Schwarz ints\n" << Qerf << std::endl;
+    auto Qerfx11 = compute_schwarz_ints<Operator::erfx_coulomb>(
+        obs, obs, false, {attenuation_omega, 1., 1.});
+    std::cout << "||Q - Q_erfx11|| = " << Matrix(Q - Qerfx11).norm()
+              << std::endl;
+    auto Qerfx10 = compute_schwarz_ints<Operator::erfx_coulomb>(
+        obs, obs, false, {attenuation_omega, 1., 0.});
+    std::cout << "||Q_erf - Q_erfx10|| = " << Matrix(Qerf - Qerfx10).norm()
+              << std::endl;
+    auto Qerfx01 = compute_schwarz_ints<Operator::erfx_coulomb>(
+        obs, obs, false, {attenuation_omega, 0., 1.});
+    std::cout << "||Q_erfc - Q_erfx01|| = " << Matrix(Qerfc - Qerfx01).norm()
+              << std::endl;
   }
   {
     auto V = compute_1body_ints<Operator::nuclear>(
@@ -2419,7 +2426,28 @@ void api_basic_compile_test(const BasisSet& obs,
         obs, std::make_tuple(attenuation_omega,
                              libint2::make_point_charges(atoms)))[0];
     std::cout << "erf_nuclear ints\n" << V_erf << std::endl;
-    std::cout << "V - (V_erfc + V_erf)" << Matrix(V - V_erfc - V_erf)
+    std::cout << "||V - (V_erfc + V_erf)|| = " << (V - V_erfc - V_erf).norm()
+              << std::endl;
+    auto V_erfx11 = compute_1body_ints<Operator::erfx_nuclear>(
+        obs, std::make_tuple(std::array<double, 3>{attenuation_omega, 1., 1.},
+                             libint2::make_point_charges(atoms)))[0];
+    std::cout << "erfx_nuclear ints\n" << V_erfx11 << std::endl;
+    std::cout << "||V_erfx11 - V_erf - V_erfc|| = "
+              << (V_erfx11 - V_erf - V_erfc).norm() << std::endl;
+    auto V_erfx23 = compute_1body_ints<Operator::erfx_nuclear>(
+        obs, std::make_tuple(std::array<double, 3>{attenuation_omega, 2., 3.},
+                             libint2::make_point_charges(atoms)))[0];
+    std::cout << "||V_erfx23 - 2*V_erf - 3*V_erfc|| = "
+              << (V_erfx23 - 2 * V_erf - 3 * V_erfc).norm() << std::endl;
+    auto V_erfx20 = compute_1body_ints<Operator::erfx_nuclear>(
+        obs, std::make_tuple(std::array<double, 3>{attenuation_omega, 2., 0.},
+                             libint2::make_point_charges(atoms)))[0];
+    std::cout << "||V_erfx20 - 2*V_erf|| = " << (V_erfx20 - 2 * V_erf).norm()
+              << std::endl;
+    auto V_erfx03 = compute_1body_ints<Operator::erfx_nuclear>(
+        obs, std::make_tuple(std::array<double, 3>{attenuation_omega, 0., 3.},
+                             libint2::make_point_charges(atoms)))[0];
+    std::cout << "||V_erfx03 - 3*V_erfc|| = " << (V_erfx03 - 3 * V_erfc).norm()
               << std::endl;
   }
 

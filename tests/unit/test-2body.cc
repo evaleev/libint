@@ -343,3 +343,80 @@ TEST_CASE("eri geometric derivatives", "[engine][2-body]") {
     }
   }
 }
+
+TEST_CASE("Erfx_Coulomb integrals", "[engine][2-body]") {
+  // pseudorandom s shells
+  std::vector<Shell> obs{
+      Shell{{1.0}, {{0, true, {1.0}}}, {{0.0, 0.0, 0.0}}},
+      Shell{{2.0}, {{0, true, {1.0}}}, {{1.0, 1.0, 1.0}}},
+      Shell{{3.0}, {{0, true, {1.0}}}, {{2.0, 2.0, 2.0}}},
+      Shell{{4.0}, {{0, true, {1.0}}}, {{3.0, 3.0, 3.0}}},
+  };
+  const auto max_nprim = libint2::max_nprim(obs);
+  const auto max_l = libint2::max_l(obs);
+
+  if (LIBINT2_MAX_AM_eri >= max_l) {
+    const double omega = 1.1;
+    std::map<int, Operator> int_to_op = {{0, Operator::erf_coulomb},
+                                         {1, Operator::erfc_coulomb},
+                                         {2, Operator::erfx_coulomb}};
+    for (int k = 0; k <= 2; ++k) {
+      const auto op = int_to_op[k];
+      auto engine = Engine(op, max_nprim, max_l);
+      if (op == Operator::erf_coulomb || op == Operator::erfc_coulomb) {
+        engine.set_params(omega);
+      } else {  // Operator::erfx_coulomb
+        engine.set_params(std::array<double, 3>{omega, 2., 3.});
+      }
+      const auto &results = engine.results();
+
+      engine.compute(obs[0], obs[1], obs[2], obs[3]);
+      REQUIRE(results[0] != nullptr);
+      switch (k) {
+        /* VALIDATION WOLFRAM CODE:
+(* Integral of Coulomb kernel damped by (\[Lambda] Erf[\[Omega] r] + \
+\[Sigma] Erfc[\[Omega] r]), over unit-normalized s functions, \
+see Eq 52 in DOI 10.1039/b605188j *)
+F0[T_] := If[T == 0, 1, Sqrt[\[Pi]/T]*Erf[Sqrt[T]]/2];
+sN[a_] := ((2 a)/\[Pi])^(3/4);
+VVeeErfx[\[Alpha]1_, A1_List, \[Alpha]2_, A2_List, \[Beta]1_,
+   B1_List, \[Beta]2_, B2_List, \[Omega]_, \[Lambda]_, \[Sigma]_] :=
+  Module[{\[Gamma]1, \[Gamma]2, P1, P2, K1, K2, T, result, \[Rho]},
+   \[Gamma]1 = \[Alpha]1 + \[Beta]1;
+   \[Gamma]2 = \[Alpha]2 + \[Beta]2;
+   P1 = (\[Alpha]1*A1 + \[Beta]1*B1)/\[Gamma]1;
+   P2 = (\[Alpha]2*A2 + \[Beta]2*B2)/\[Gamma]2;
+   K1 = Exp[-\[Alpha]1*\[Beta]1*(Norm[A1 - B1]^2)/\[Gamma]1];
+   K2 = Exp[-\[Alpha]2*\[Beta]2*(Norm[A2 - B2]^2)/\[Gamma]2];
+   T = Norm[P1 - P2]^2*\[Gamma]1*\[Gamma]2/(\[Gamma]1 + \[Gamma]2);
+   \[Rho] = \[Gamma]1 \[Gamma]2/(\[Gamma]1 + \[Gamma]2);
+   result = (\[Pi]/(\[Gamma]1 + \[Gamma]2))^(3/
+        2) K1 K2  (2 \[Pi]/\[Rho]) (\[Sigma] F0[
+         T] - (\[Sigma] - \[Lambda]) \[Omega]/
+        Sqrt[\[Omega]^2 + \[Rho]] F0[\[Omega]^2/(\[Omega]^2 + \[Rho])
+           T]) sN[\[Alpha]1] sN[\[Alpha]2] sN[\[Beta]1] sN[\[Beta]2];
+   Return[result];
+   ];
+Print[CForm[
+  N[VVeeErfx[1, {0, 0, 0},  3, {2, 2, 2}, 2, {1, 1, 1}, 4, {3, 3, 3},
+    1.1, 1, 0], 20]]]
+Print[CForm[
+  N[VVeeErfx[1, {0, 0, 0},  3, {2, 2, 2}, 2, {1, 1, 1}, 4, {3, 3, 3},
+    1.1, 0, 1], 20]]]
+Print[CForm[
+  N[VVeeErfx[1, {0, 0, 0},  3, {2, 2, 2}, 2, {1, 1, 1}, 4, {3, 3, 3},
+    1.1, 2, 3], 20]]]
+         */
+        case 0:
+          CHECK(results[0][0] == Approx(0.00021597118358999701).margin(1e-13));
+          break;
+        case 1:
+          CHECK(results[0][0] == Approx(9.399863466997701e-9).margin(1e-13));
+          break;
+        case 2:
+          CHECK(results[0][0] == Approx(0.0004319705667703951).margin(1e-13));
+          break;
+      }
+    }
+  }
+}

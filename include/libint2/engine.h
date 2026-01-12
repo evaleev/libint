@@ -108,6 +108,10 @@ enum class Operator {
   /// erfc-attenuated point-charge Coulomb operator,
   /// \f$ \mathrm{erfc}(\omega r)/r \f$
   erfc_nuclear,
+  /// mixture of erf_nuclear and erfc_nuclear
+  /// \f$ (\lambda \mathrm{erf}(\omega r) + \sigma \mathrm{erfc}(\omega r) )/r
+  /// \f$
+  erfx_nuclear,
   //! overlap + (Cartesian) electric dipole moment,
   //! \f$ x_O, y_O, z_O \f$, where
   //! \f$ x_O \equiv x - O_x \f$ is relative to
@@ -275,6 +279,26 @@ struct operator_traits<Operator::erfc_nuclear>
   static oper_params_type default_params() {
     return std::make_tuple(
         0, operator_traits<Operator::nuclear>::default_params());
+  }
+  typedef const libint2::GenericGmEval<
+      libint2::os_core_ints::erfx_coulomb_gm_eval<scalar_type>>
+      core_eval_type;
+};
+
+template <>
+struct operator_traits<Operator::erfx_nuclear>
+    : public detail::default_operator_traits {
+  /// {{attenuation parameter (inverse lengthscale) + coefficient of erf
+  /// (long-range) + coefficient of erfc (short-range)}, nuclear
+  /// charges/positions}
+  typedef std::tuple<
+      std::array<scalar_type, 3>,
+      typename operator_traits<Operator::nuclear>::oper_params_type>
+      oper_params_type;
+  static oper_params_type default_params() {
+    return std::make_tuple(
+        std::array<scalar_type, 3>{0., 0., 0.},
+        operator_traits<Operator::nuclear>::default_params());
   }
   typedef const libint2::GenericGmEval<
       libint2::os_core_ints::erfx_coulomb_gm_eval<scalar_type>>
@@ -1003,7 +1027,7 @@ class Engine {
   unsigned int compute_nshellsets() const {
     const unsigned int num_operator_geometrical_derivatives =
         (oper_ == Operator::nuclear || oper_ == Operator::erf_nuclear ||
-         oper_ == Operator::erfc_nuclear)
+         oper_ == Operator::erfc_nuclear || oper_ == Operator::erfx_nuclear)
             ? this->nparams()
             : 0;
     const auto ncenters = braket_rank() + num_operator_geometrical_derivatives;
