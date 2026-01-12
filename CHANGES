@@ -3,6 +3,12 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2025-10-10: 2.12.0
+  - PR 387: always use std::any if C++17 is available, assume MacOS is recent enough
+  - PRs #383 and #386: support for superposition of erf- and erfc-modulated kernels,
+    for more efficient range-separated DFT
+  - PR 385: namespace cmake options and preprocessor variables
+
 - 2025-10-10: 2.11.2
   - PR #379: amends #378
   - PR #378: python bindings improvements: use scikit-build,

@@ -7,7 +7,7 @@ cmake_policy(SET CMP0079 NEW)
 
 if(NOT DEFINED LIBINT_VERSION)
     # for indep build of project(libint2-python), version not available from project(Libint2)
-    set(LIBINT_VERSION "2.11.2")  # keep synched to the configure.in and export/cmake/CMakeLists.txt.export
+    set(LIBINT_VERSION "2.12.0")  # keep synched to the configure.in and export/cmake/CMakeLists.txt.export
 endif()
 
 project(libint2-python)
