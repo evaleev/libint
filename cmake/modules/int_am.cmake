@@ -357,6 +357,7 @@ endmacro()
 
 process_integrals_class(ONEBODY)
 process_integrals_class(ERI)
+process_integrals_class(RKB_ERI)
 process_integrals_class(ERI3)
 process_integrals_class(ERI2)
 # unlike above, these classes (1) don't do AM_LIST and (2) require value in config.h if enabled
@@ -396,7 +397,7 @@ list(REVERSE _amlist)
 list(APPEND Libint2_ERI_COMPONENTS "${_amlist}")
 message(VERBOSE "setting components ${_amlist}")
 
-foreach(_cls ONEBODY;ERI;ERI3;ERI2;G12;G12DKH)
+foreach(_cls ONEBODY;ERI;RKB_ERI;ERI3;ERI2;G12;G12DKH)
     if((_cls STREQUAL G12) OR (_cls STREQUAL G12DKH))
         add_feature_info(
           "integral class ${_cls}"

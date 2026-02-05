@@ -567,6 +567,7 @@ void try_main(int argc, char* argv[]) {
     taskmgr.add(task_label("eri", d));
   }
 #endif
+
 #ifdef LIBINT_INCLUDE_ERI3
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI3; ++d) {
     taskmgr.add(task_label("3eri", d));
@@ -985,7 +986,11 @@ void print_config(std::ostream& os) {
 #ifdef LIBINT_INCLUDE_G12DKH
   os << "Will support G12DKH" << endl;
 #endif
+#ifdef LIBINT_INCLUDE_RKB_ERI
+  os << "RKB works " << std::endl;
+#endif
 }
+
 
 #ifdef LIBINT_INCLUDE_ERI
 void build_TwoPRep_2b_2k(std::ostream& os,
