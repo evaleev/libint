@@ -107,7 +107,7 @@ CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const std::shared_ptr<TargetType> &Tint,
 
   // (a|W0|b) = (d a/dAx | V | d b/dBx) + (d a/dAy | V | d b/dBy) + (d a/dAz | V
   // | d b/dBz)
-  switch (oper->descr().pauli_index()) {
+  switch (oper->descr().quaternion_index()) {
     case 0: {
       auto Dx_a_V_Dx_b = factory.make_child(Dx_a, Dx_b, zero_m);
       auto Dy_a_V_Dy_b = factory.make_child(Dy_a, Dy_b, zero_m);
@@ -146,7 +146,7 @@ CR_1_σpVσp_1<F>::CR_1_σpVσp_1(const std::shared_ptr<TargetType> &Tint,
       }
     } break;
     default:
-      throw std::runtime_error("CR_1_σpVσp_1: invalid Pauli index");
+      throw std::runtime_error("CR_1_σpVσp_1: invalid quaternionic index");
   }
 
 }  // CR_1_σpVσp_1<F>::CR_1_σpVσp_1

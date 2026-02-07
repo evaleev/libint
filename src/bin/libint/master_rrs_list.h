@@ -21,6 +21,7 @@
 #ifndef _libint2_src_bin_libint_masterrrslist_h_
 #define _libint2_src_bin_libint_masterrrslist_h_
 
+#include <comp_11_Coulombσpσp_11.h>
 #include <comp_11_DivG12prime_xTx_11.h>
 #include <comp_11_g12tig12_11.h>
 #include <comp_11_r12kr12lg12_11.h>
@@ -266,6 +267,8 @@ typedef CR_DerivGauss<TwoPRep_11_11_int, 1, InKet, trinvskip2_part,
                       trinvskip2_where>
     Deriv_d_11_TwoPRep_11_int;
 
+typedef CR_11_Coulombσpσp_11<CGShell> CR_11_Coulombσpσp_11_sh;
+typedef CR_11_Coulombσpσp_11<CGF> CR_11_Coulombσpσp_11_int;
 };  // namespace libint2
 
 #endif  // header guard

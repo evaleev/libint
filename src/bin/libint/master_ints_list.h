@@ -106,6 +106,9 @@ typedef GenIntegralSet_1_1<CGF1d<CartesianAxis_Z>, CartesianMultipoleOper<1u>,
 //////////////////////////
 typedef GenIntegralSet_11_11<CGShell, TwoPRep, mType> TwoPRep_11_11_sq;
 typedef GenIntegralSet_11_11<CGF, TwoPRep, mType> TwoPRep_11_11_int;
+typedef GenIntegralSet_11_11<CGShell, CoulombσpσpOper, mType>
+    Coulombσpσp_11_11_sq;
+typedef GenIntegralSet_11_11<CGF, CoulombσpσpOper, mType> Coulombσpσp_11_11_int;
 typedef GenIntegralSet_11_11<CGShell, R12kG12, mType> R12kG12_11_11_sq;
 typedef GenIntegralSet_11_11<CGF, R12kG12, mType> R12kG12_11_11_int;
 typedef GenIntegralSet_11_11<CGShell, R12kR12lG12, EmptySet>
@@ -144,7 +147,8 @@ typedef boost::mpl::list<
     CMultipole_1_1_int_y, CMultipole_1_1_int_z, SMultipole_1_1_sh,
     SMultipole_1_1_int,
 #endif
-    TwoPRep_11_11_sq, TwoPRep_11_11_int, R12kG12_11_11_sq, R12kG12_11_11_int,
+    TwoPRep_11_11_sq, TwoPRep_11_11_int, Coulombσpσp_11_11_sq,
+    Coulombσpσp_11_11_int, R12kG12_11_11_sq, R12kG12_11_11_int,
     R12kR12lG12_11_11_sq, R12kR12lG12_11_11_int, TiG12_11_11_sq,
     TiG12_11_11_int, G12TiG12_11_11_sq, G12TiG12_11_11_int,
     DivG12prime_xTx_11_11_sq, DivG12prime_xTx_11_11_int,

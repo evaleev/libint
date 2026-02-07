@@ -289,22 +289,22 @@ BOOST_PP_LIST_FOR_EACH(BOOST_PP_DECLARE_HERMITIAN_ONEBODY_DESCRIPTOR,
 struct σpVσp_Descr : public Contractable<σpVσp_Descr> {
   typedef MultiplicativeODep1Body_Props Properties;
 
-  σpVσp_Descr() : pauli_index_(0) {}
-  σpVσp_Descr(int pauli_index) : pauli_index_(pauli_index) {
-    assert(pauli_index <= 3);
+  σpVσp_Descr() : quaternion_index_(0) {}
+  σpVσp_Descr(int quaternion_index) : quaternion_index_(quaternion_index) {
+    assert(quaternion_index <= 3);
   }
 
   static const unsigned int max_key = 4;
-  unsigned int key() const { return pauli_index(); }
+  unsigned int key() const { return quaternion_index(); }
   std::string description() const {
     std::string descr("opVop[");
-    if (pauli_index() == 0)
+    if (quaternion_index() == 0)
       descr += "0";
-    else if (pauli_index() == 1)
+    else if (quaternion_index() == 1)
       descr += "Z";
-    else if (pauli_index() == 2)
+    else if (quaternion_index() == 2)
       descr += "X";
-    else if (pauli_index() == 3)
+    else if (quaternion_index() == 3)
       descr += "Y";
     else
       abort();
@@ -314,10 +314,10 @@ struct σpVσp_Descr : public Contractable<σpVσp_Descr> {
   int psymm(int i, int j) const { abort(); }
   int hermitian(int i) const { return +1; }
 
-  int pauli_index() const { return pauli_index_; }
+  int quaternion_index() const { return quaternion_index_; }
 
  private:
-  const int pauli_index_ = -1;
+  const int quaternion_index_ = -1;
 };
 typedef GenOper<σpVσp_Descr> σpVσpOper;
 
@@ -398,6 +398,44 @@ struct TwoPRep_Descr : public Contractable<TwoPRep_Descr> {
   int hermitian(int i) const { return +1; }
 };
 typedef GenOper<TwoPRep_Descr> TwoPRep;
+
+/** Coulombσpσp is the two-body repulsion operator.
+ */
+struct Coulombσpσp_Descr : public Contractable<Coulombσpσp_Descr> {
+  typedef MultiplicativeSymm2Body_Props Properties;
+
+  Coulombσpσp_Descr() : quaternion_index_(0) {}
+  Coulombσpσp_Descr(int quaternion_index)
+      : quaternion_index_(quaternion_index) {
+    assert(quaternion_index <= 3);
+  }
+
+  static const unsigned int max_key = 4;
+  unsigned int key() const { return quaternion_index(); }
+  std::string description() const {
+    std::string descr("coulomb_opop[");
+    if (quaternion_index() == 0)
+      descr += "0";
+    else if (quaternion_index() == 1)
+      descr += "Z";
+    else if (quaternion_index() == 2)
+      descr += "X";
+    else if (quaternion_index() == 3)
+      descr += "Y";
+    else
+      abort();
+    return descr + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return +1; }
+
+  int quaternion_index() const { return quaternion_index_; }
+
+ private:
+  const int quaternion_index_ = -1;
+};
+typedef GenOper<Coulombσpσp_Descr> CoulombσpσpOper;
 
 /** GTG_1d is the two-body 1-dimensional Gaussian geminal
  */

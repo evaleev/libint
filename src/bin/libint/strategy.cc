@@ -115,6 +115,15 @@ struct MasterStrategy<TwoPRep_11_11_int> {
 };
 #endif
 
+template <>
+struct MasterStrategy<Coulombσpσp_11_11_sq> {
+  typedef boost::mpl::list<CR_11_Coulombσpσp_11_sh> value;
+};
+template <>
+struct MasterStrategy<Coulombσpσp_11_11_int> {
+  typedef boost::mpl::list<CR_11_Coulombσpσp_11_int> value;
+};
+
 #if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
 template <>
 struct MasterStrategy<R12kG12_11_11_sq> {

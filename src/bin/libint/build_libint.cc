@@ -193,12 +193,16 @@ static void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 #ifdef LIBINT_INCLUDE_ERI
 #define USE_GENERIC_ERI_BUILD 1
 #if !USE_GENERIC_ERI_BUILD
+template <typename OperType>
 static void build_TwoPRep_2b_2k(
-    std::ostream& os, const std::shared_ptr<CompilationParameters>& cparams,
+    std::ostream& os, std::string label,
+    const std::shared_ptr<CompilationParameters>& cparams,
     std::shared_ptr<Libint2Iface>& iface);
 #else
+template <typename OperType>
 static void build_TwoPRep_2b_2k(
-    std::ostream& os, const std::shared_ptr<CompilationParameters>& cparams,
+    std::ostream& os, std::string label,
+    const std::shared_ptr<CompilationParameters>& cparams,
     std::shared_ptr<Libint2Iface>& iface, unsigned int deriv_level);
 #endif
 #endif
@@ -568,6 +572,23 @@ void try_main(int argc, char* argv[]) {
   }
 #endif
 
+#ifdef LIBINT_INCLUDE_RKB_ERI
+#define BOOST_PP_RKB_ERI_TASK_TUPLE (coulomb_opop)
+#define BOOST_PP_RKB_ERI_TASK_OPER_TUPLE (CoulombσpσpOper)
+#define BOOST_PP_RKB_ERI_TASK_LIST \
+  BOOST_PP_TUPLE_TO_LIST(BOOST_PP_RKB_ERI_TASK_TUPLE)
+#define BOOST_PP_RKB_ERI_TASK_OPER_LIST \
+  BOOST_PP_TUPLE_TO_LIST(BOOST_PP_RKB_ERI_TASK_OPER_TUPLE)
+
+  for (unsigned int d = 0; d <= LIBINT_INCLUDE_RKB_ERI; ++d) {
+#define BOOST_PP_RKB_ERI_MCR1(r, data, elem) \
+  taskmgr.add(task_label(BOOST_PP_STRINGIZE(elem), d));
+
+    BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI_MCR1, _, BOOST_PP_RKB_ERI_TASK_LIST)
+#undef BOOST_PP_RKB_ERI_MCR1
+  }
+#endif
+
 #ifdef LIBINT_INCLUDE_ERI3
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI3; ++d) {
     taskmgr.add(task_label("3eri", d));
@@ -669,6 +690,46 @@ void try_main(int argc, char* argv[]) {
     cparams->num_bf(task_label("eri", d), 4);
   }
 #endif
+
+#ifdef LIBINT_INCLUDE_RKB_ERI
+  for (unsigned int d = 0; d <= LIBINT_INCLUDE_RKB_ERI; ++d) {
+#if defined(LIBINT_RKB_ERI_MAX_AM_LIST)
+#define BOOST_PP_RKB_ERI_MCR2(r, data, elem)   \
+  cparams->max_am(                             \
+      task_label(BOOST_PP_STRINGIZE(elem), d), \
+                 token<unsigned int>(LIBINT_RKB_ERI_MAX_AM_LIST, ',', d));
+    BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI_MCR2, _, BOOST_PP_RKB_ERI_TASK_LIST)
+#undef BOOST_PP_RKB_ERI_MCR2
+#elif defined(LIBINT_RKB_ERI_MAX_AM)
+#define BOOST_PP_RKB_ERI_MCR3(r, data, elem)               \
+  cparams->max_am(task_label(BOOST_PP_STRINGIZE(elem), d), \
+                             LIBINT_RKB_ERI_MAX_AM);
+    BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI_MCR3, _, BOOST_PP_RKB_ERI_TASK_LIST)
+#undef BOOST_PP_RKB_ERI_MCR3
+#endif
+#if defined(LIBINT_RKB_ERI_OPT_AM_LIST)
+#define BOOST_PP_RKB_ERI_MCR4(r, data, elem)   \
+  cparams->max_am_opt(                         \
+      task_label(BOOST_PP_STRINGIZE(elem), d), \
+                 token<unsigned int>(LIBINT_RKB_ERI_OPT_AM_LIST, ',', d));
+    BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI_MCR4, _, BOOST_PP_RKB_ERI_TASK_LIST)
+#undef BOOST_PP_RKB_ERI_MCR4
+#elif defined(LIBINT_RKB_ERI_OPT_AM)
+#define BOOST_PP_RKB_ERI_MCR5(r, data, elem)                   \
+  cparams->max_am_opt(task_label(BOOST_PP_STRINGIZE(elem), d), \
+                                 LIBINT_RKB_ERI_OPT_AM);
+    BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI_MCR5, _, BOOST_PP_RKB_ERI_TASK_LIST)
+#undef BOOST_PP_RKB_ERI_MCR5
+#endif
+  }
+  for (unsigned int d = 0; d <= LIBINT_INCLUDE_RKB_ERI; ++d) {
+#define BOOST_PP_RKB_ERI_MCR6(r, data, elem) \
+  cparams->num_bf(task_label(BOOST_PP_STRINGIZE(elem), d), 4);
+    BOOST_PP_LIST_FOR_EACH(BOOST_PP_RKB_ERI_MCR6, _, BOOST_PP_RKB_ERI_TASK_LIST)
+#undef BOOST_PP_RKB_ERI_MCR6
+  }
+#endif  // LIBINT_INCLUDE_RKB_ERI
+
 #ifdef LIBINT_INCLUDE_ERI3
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI3; ++d) {
 #if defined(LIBINT_ERI3_MAX_AM_LIST)
@@ -853,6 +914,9 @@ void try_main(int argc, char* argv[]) {
 #ifdef LIBINT_INCLUDE_ERI
   max_deriv = std::max(LIBINT_INCLUDE_ERI, max_deriv);
 #endif
+#ifdef LIBINT_INCLUDE_RKB_ERI
+  max_deriv = std::max(LIBINT_INCLUDE_RKB_ERI, max_deriv);
+#endif
 #ifdef LIBINT_INCLUDE_ERI3
   max_deriv = std::max(LIBINT_INCLUDE_ERI3, max_deriv);
 #endif
@@ -880,13 +944,25 @@ void try_main(int argc, char* argv[]) {
 #endif
 #ifdef LIBINT_INCLUDE_ERI
 #if !USE_GENERIC_ERI_BUILD
-  build_TwoPRep_2b_2k(os, cparams, iface);
+  build_TwoPRep_2b_2k<TwoPRep>(os, "eri", cparams, iface);
 #else
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI; ++d) {
-    build_TwoPRep_2b_2k(os, cparams, iface, d);
+    build_TwoPRep_2b_2k<TwoPRep>(os, "eri", cparams, iface, d);
   }
 #endif
 #endif
+
+#ifdef LIBINT_INCLUDE_RKB_ERI
+  for (unsigned int d = 0; d <= LIBINT_INCLUDE_RKB_ERI; ++d) {
+#define BOOST_PP_RKB_ERI_MCR7(r, data, i, elem)                              \
+  build_TwoPRep_2b_2k<BOOST_PP_LIST_AT(BOOST_PP_RKB_ERI_TASK_OPER_LIST, i)>( \
+      os, BOOST_PP_STRINGIZE(elem), cparams, iface, d);
+    BOOST_PP_LIST_FOR_EACH_I(BOOST_PP_RKB_ERI_MCR7, _,
+                             BOOST_PP_RKB_ERI_TASK_LIST)
+#undef BOOST_PP_RKB_ERI_MCR7
+  }
+#endif
+
 #ifdef LIBINT_INCLUDE_ERI3
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ERI3; ++d) {
     build_TwoPRep_1b_2k(os, cparams, iface, d);
@@ -987,18 +1063,22 @@ void print_config(std::ostream& os) {
   os << "Will support G12DKH" << endl;
 #endif
 #ifdef LIBINT_INCLUDE_RKB_ERI
-  os << "RKB works " << std::endl;
+  os << "Will support restricted kinetically balance (RKB) 4-center ERIs "
+     << std::endl;
 #endif
 }
 
-
 #ifdef LIBINT_INCLUDE_ERI
-void build_TwoPRep_2b_2k(std::ostream& os,
+template <typename OperType>
+void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
                          const std::shared_ptr<CompilationParameters>& cparams,
                          std::shared_ptr<Libint2Iface>& iface,
                          unsigned int deriv_level) {
-  const std::string task = task_label("eri", deriv_level);
-  typedef TwoPRep_11_11_sq TwoPRep_sh_11_11;
+  typedef GenIntegralSet_11_11<CGShell, OperType, mType> TwoBody_sh_11_11;
+  typedef typename OperType::Descriptor OperDescrType;
+
+  const std::string task = task_label(label, deriv_level);
+
   vector<CGShell*> shells;
   unsigned int lmax = cparams->max_am(task);
   for (unsigned int l = 0; l <= lmax; l++) {
@@ -1010,6 +1090,7 @@ void build_TwoPRep_2b_2k(std::ostream& os,
   taskmgr.current(task);
   iface->to_params(iface->macro_define(std::string("MAX_AM_") + task, lmax));
 
+  const auto nullaux = typename TwoBody_sh_11_11::AuxIndexType(0u);
   //
   // Construct graphs for each desired target integral and
   // 1) generate source code for the found traversal path
@@ -1041,9 +1122,25 @@ void build_TwoPRep_2b_2k(std::ostream& os,
           const int lim = 1;
           if (!(la == lim && lb == lim && lc == lim && ld == lim)) continue;
 #endif
+          // this will hold all target shell sets
+          std::vector<std::shared_ptr<TwoBody_sh_11_11>> targets;
 
-          // unroll only if max_am <= cparams->max_am_opt(task)
-          using std::max;
+          /////////////////////////////////
+          // loop over operator components
+          /////////////////////////////////
+          // most important operators have 1 component ...
+          std::vector<OperDescrType> descrs(1);  // operator descriptors
+          // important EXCEPTION: multipole moments
+          if (std::is_same<OperType, CoulombσpσpOper>::value) {
+            // reset descriptors array
+            descrs.resize(0);
+            // iterate over quaternion components
+            for (int p = 0; p != 4; ++p) {
+              descrs.emplace_back(make_descr<OperDescrType>(p));
+            }
+          }
+
+          // unroll only if max_am <= cparams->max_am_opt(task) using std::max;
           const unsigned int max_am = max(max(la, lb), max(lc, ld));
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
           const bool need_to_unroll =
@@ -1072,7 +1169,7 @@ void build_TwoPRep_2b_2k(std::ostream& os,
           ////////////
           // NB translational invariance is now handled by CR_DerivGauss
           CartesianDerivIterator<4> diter(deriv_level);
-          std::vector<std::shared_ptr<TwoPRep_sh_11_11>> targets;
+
           bool last_deriv = false;
           do {
             CGShell a(la);
@@ -1089,18 +1186,22 @@ void build_TwoPRep_2b_2k(std::ostream& os,
               }
             }
 
-            std::shared_ptr<TwoPRep_sh_11_11> abcd =
-                TwoPRep_sh_11_11::Instance(a, b, c, d, mType(0u));
-            targets.push_back(abcd);
+            // operator component loop
+            for (unsigned int op = 0; op != descrs.size(); ++op) {
+              OperType oper(descrs[op]);
+
+              std::shared_ptr<TwoBody_sh_11_11> abcd =
+                  TwoBody_sh_11_11::Instance(a, b, c, d, nullaux, oper);
+              targets.push_back(abcd);
+            }
+
             last_deriv = diter.last();
             if (!last_deriv) diter.next();
           } while (!last_deriv);
           // append all derivatives as targets to the graph
-          for (std::vector<std::shared_ptr<TwoPRep_sh_11_11>>::const_iterator
-                   t = targets.begin();
-               t != targets.end(); ++t) {
+          for (auto it = targets.begin(); it != targets.end(); ++it) {
             std::shared_ptr<DGVertex> t_ptr =
-                std::dynamic_pointer_cast<DGVertex, TwoPRep_sh_11_11>(*t);
+                std::dynamic_pointer_cast<DGVertex, TwoBody_sh_11_11>(*it);
             dg_xxxx->append_target(t_ptr);
           }
 
@@ -1112,23 +1213,35 @@ void build_TwoPRep_2b_2k(std::ostream& os,
             CGShell b(lb);
             CGShell c(lc);
             CGShell d(ld);
-            std::shared_ptr<TwoPRep_sh_11_11> abcd =
-                TwoPRep_sh_11_11::Instance(a, b, c, d, mType(0u));
-            abcd_label = abcd->label();
+
+            if constexpr (!std::is_same<OperType, CoulombσpσpOper>::value) {
+              OperType oper;
+              oper = OperType(descrs[0]);
+              std::shared_ptr<TwoBody_sh_11_11> abcd =
+                  TwoBody_sh_11_11::Instance(a, b, c, d, nullaux, oper);
+              abcd_label = abcd->label();
+            } else {
+              std::ostringstream oss;
+              oss << cparams->api_prefix();
+              oss << "_" << a.label() << "_" << b.label();
+              oss << "_" << label;
+              oss << "_" << c.label() << "_" << d.label();
+              abcd_label = oss.str();
+            }
           }
           // + derivative level (if deriv_level > 0)
-          std::string label;
+          std::string eval_label;
           {
-            label = cparams->api_prefix();
+            eval_label = cparams->api_prefix();
             if (deriv_level != 0) {
               std::ostringstream oss;
               oss << "deriv" << deriv_level;
-              label += oss.str();
+              eval_label += oss.str();
             }
-            label += abcd_label;
+            eval_label += abcd_label;
           }
 
-          std::cout << "working on " << label << " ... ";
+          std::cout << "working on " << eval_label << " ... ";
           std::cout.flush();
 
           std::string prefix(cparams->source_directory());
@@ -1138,7 +1251,8 @@ void build_TwoPRep_2b_2k(std::ostream& os,
           // this will generate code for these targets, and potentially generate
           // code for its prerequisites
           GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
-                       decl_filenames, def_filenames, prefix, label, false);
+                       decl_filenames, def_filenames, prefix, eval_label,
+                       false);
 
           // update max stack size and # of targets
           const std::shared_ptr<TaskParameters>& tparams =
@@ -1153,7 +1267,7 @@ void build_TwoPRep_2b_2k(std::ostream& os,
           oss << context->label_to_name(cparams->api_prefix())
               << "libint2_build_" << task << "[" << la << "][" << lb << "]["
               << lc << "][" << ld
-              << "] = " << context->label_to_name(label_to_funcname(label))
+              << "] = " << context->label_to_name(label_to_funcname(eval_label))
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
 
@@ -1369,10 +1483,9 @@ void build_TwoPRep_1b_2k(std::ostream& os,
         iface->to_static_init(oss.str());
 
         // need to declare this function internally
-        for (std::deque<std::string>::const_iterator i = decl_filenames.begin();
-             i != decl_filenames.end(); ++i) {
+        for (auto& decl_filename : decl_filenames) {
           oss.str("");
-          oss << "#include <" << *i << ">" << endl;
+          oss << "#include <" << decl_filename << ">" << endl;
           iface->to_int_iface(oss.str());
         }
 
@@ -1381,7 +1494,7 @@ void build_TwoPRep_1b_2k(std::ostream& os,
 #endif
         dg_xxx->reset();
         memman->reset();
-
+        std::cout << "done" << std::endl;
       }  // end of d loop
     }    // end of c loop
   }      // end of bra loop
@@ -1566,10 +1679,9 @@ void build_TwoPRep_1b_1k(std::ostream& os,
       iface->to_static_init(oss.str());
 
       // need to declare this function internally
-      for (std::deque<std::string>::const_iterator i = decl_filenames.begin();
-           i != decl_filenames.end(); ++i) {
+      for (auto& decl_filename : decl_filenames) {
         oss.str("");
-        oss << "#include <" << *i << ">" << endl;
+        oss << "#include <" << decl_filename << ">" << endl;
         iface->to_int_iface(oss.str());
       }
 
@@ -1578,7 +1690,7 @@ void build_TwoPRep_1b_1k(std::ostream& os,
 #endif
       dg_xxx->reset();
       memman->reset();
-
+      std::cout << "done" << std::endl;
     }  // end of ket loop
   }    // end of bra loop
 }
