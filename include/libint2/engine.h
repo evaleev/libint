@@ -153,6 +153,9 @@ enum class Operator {
   coulomb,
   /// alias for Operator::coulomb
   r12_m1 = coulomb,
+  /// (2-body) \f$ r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$ where k1  & k2 are
+  /// centers of ket1 and ket2, respectively
+  coulomb_opop,
   /// contracted Gaussian geminal
   cgtg,
   /// contracted Gaussian geminal times Coulomb
@@ -246,6 +249,7 @@ struct operator_traits<Operator::nuclear>
   typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
 #endif
 };
+
 template <>
 struct operator_traits<Operator::opVop>
     : public operator_traits<Operator::nuclear> {
@@ -346,6 +350,14 @@ struct operator_traits<Operator::coulomb>
   typedef const libint2::FmEval_Reference<scalar_type> core_eval_type;
 #endif
 };
+
+template <>
+struct operator_traits<Operator::coulomb_opop>
+    : public operator_traits<Operator::coulomb> {
+  static constexpr auto nopers = 4;
+  static constexpr auto intrinsic_deriv_order = 2;
+};
+
 namespace detail {
 template <int K>
 struct cgtg_operator_traits : public detail::default_operator_traits {

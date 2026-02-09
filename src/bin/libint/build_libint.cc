@@ -278,6 +278,12 @@ template <>
 σpVσp_Descr make_descr<σpVσp_Descr>(int p, int, int) {
   return σpVσp_Descr(p);
 }
+
+template <>
+Coulombσpσp_Descr make_descr<Coulombσpσp_Descr>(int p, int, int) {
+  return Coulombσpσp_Descr(p);
+}
+
 }  // namespace
 
 template <typename _OperType>

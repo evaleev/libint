@@ -37,7 +37,7 @@
     !(defined(LIBINT_INCLUDE_ERI) || defined(LIBINT_INCLUDE_ERI3) || \
       defined(LIBINT_INCLUDE_ERI2) || defined(LIBINT_INCLUDE_RKB_ERI))
 #error \
-    "C++ API is only supported if both 1-body and some (eri, eri3, eri2) 2-body integrals are enabled"
+    "C++ API is only supported if both 1-body and some (eri, eri3, eri2, rkb_eri) 2-body integrals are enabled"
 #endif
 
 #include <libint2/atom.h>

@@ -70,30 +70,31 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you add
 /// one-body ints
-#define BOOST_PP_NBODY_OPERATOR_LIST              \
-  (overlap,                  /* overlap */        \
-   (kinetic,                 /* kinetic */        \
-    (elecpot,                /* nuclear */        \
-     (elecpot,               /* erf_nuclear */    \
-      (elecpot,              /* erfc_nuclear */   \
-       (elecpot,             /* erfx_nuclear */   \
-        (1emultipole,        /* emultipole1 */    \
-         (2emultipole,       /* emultipole2 */    \
-          (3emultipole,      /* emultipole3 */    \
-           (sphemultipole,   /* sphemultipole */  \
-            (opVop,          /* opVop */          \
-             (eri,           /* delta */          \
-              (eri,          /* coulomb */        \
-               (eri,         /* cgtg */           \
-                (eri,        /* cgtg_x_coulomb */ \
-                 (eri,       /* delcgtg2 */       \
-                  (eri,      /* r12 */            \
-                   (eri,     /* erf_coulomb */    \
-                    (eri,    /* erfc_coulomb */   \
-                     (eri,   /* erfx_coulomb */   \
-                      (eri,  /* stg */            \
-                       (eri, /* yukawa */         \
-                        BOOST_PP_NIL))))))))))))))))))))))
+#define BOOST_PP_NBODY_OPERATOR_LIST               \
+  (overlap,                   /* overlap */        \
+   (kinetic,                  /* kinetic */        \
+    (elecpot,                 /* nuclear */        \
+     (elecpot,                /* erf_nuclear */    \
+      (elecpot,               /* erfc_nuclear */   \
+       (elecpot,              /* erfx_nuclear */   \
+        (1emultipole,         /* emultipole1 */    \
+         (2emultipole,        /* emultipole2 */    \
+          (3emultipole,       /* emultipole3 */    \
+           (sphemultipole,    /* sphemultipole */  \
+            (opVop,           /* opVop */          \
+             (eri,            /* delta */          \
+              (eri,           /* coulomb */        \
+               (eri,          /* coulomb_opop */   \
+                (eri,         /* cgtg */           \
+                 (eri,        /* cgtg_x_coulomb */ \
+                  (eri,       /* delcgtg2 */       \
+                   (eri,      /* r12 */            \
+                    (eri,     /* erf_coulomb */    \
+                     (eri,    /* erfc_coulomb */   \
+                      (eri,   /* erfx_coulomb */   \
+                       (eri,  /* stg */            \
+                        (eri, /* yukawa */         \
+                         BOOST_PP_NIL)))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
@@ -663,23 +664,23 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
   // validate braket
 #ifndef LIBINT_INCLUDE_ONEBODY
   assert(braket_ != BraKet::x_x &&
-         "this braket type not supported by the library; give --enable-1body "
-         "to configure");
+         "this braket type not supported by the library; configure with "
+         "-DLIBINT_INCLUDE_ONEBODY >= 0");
 #endif
 #ifndef LIBINT_INCLUDE_ERI
   assert(braket_ != BraKet::xx_xx &&
-         "this braket type not supported by the library; give --enable-eri to "
-         "configure");
+         "this braket type not supported by the library; configure with "
+         "-DLIBINT_INCLUDE_ERI >= 0");
 #endif
 #ifndef LIBINT_INCLUDE_ERI3
   assert((braket_ != BraKet::xs_xx && braket_ != BraKet::xx_xs) &&
-         "this braket type not supported by the library; give --enable-eri3 to "
-         "configure");
+         "this braket type not supported by the library; configure with "
+         "-DLIBINT_INCLUDE_ERI3 >= 0");
 #endif
 #ifndef LIBINT_INCLUDE_ERI2
   assert(braket_ != BraKet::xs_xs &&
-         "this braket type not supported by the library; give --enable-eri2 to "
-         "configure");
+         "this braket type not supported by the library; configure with "
+         "-DLIBINT_INCLUDE_ERI2 >= 0");
 #endif
 
   // make sure it's no default initialized
@@ -1421,7 +1422,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             const scalar_type rho = gammap * gammaq * oogammapq;
             const scalar_type T = PQ2 * rho;
             auto* gm_ptr = &(primdata.LIBINT_T_SS_EREP_SS(0)[0]);
-            const auto mmax = l + deriv_order_;
+            const auto mmax = l + deriv_order_ + intrinsic_deriv_order();
 
             if (!skip_core_ints) {
               switch (oper_) {
@@ -1429,6 +1430,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<
                           Operator::coulomb>&>(core_eval_pack_)
+                          .first();
+                  core_eval_ptr->eval(gm_ptr, T, mmax);
+                } break;
+                case Operator::coulomb_opop: {
+                  const auto& core_eval_ptr =
+                      any_cast<const detail::core_eval_pack_type<
+                          Operator::coulomb_opop>&>(core_eval_pack_)
                           .first();
                   core_eval_ptr->eval(gm_ptr, T, mmax);
                 } break;
