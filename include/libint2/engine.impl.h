@@ -84,7 +84,7 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
             (opVop,           /* opVop */          \
              (eri,            /* delta */          \
               (eri,           /* coulomb */        \
-               (eri,          /* coulomb_opop */   \
+               (coulomb_opop, /* coulomb_opop */   \
                 (eri,         /* cgtg */           \
                  (eri,        /* cgtg_x_coulomb */ \
                   (eri,       /* delcgtg2 */       \
@@ -1462,7 +1462,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                           const detail::core_eval_pack_type<Operator::cgtg>&>(
                           core_eval_pack_)
                           .first();
-                  const auto& core_ints_params =
+                  ` const auto& core_ints_params =
                       any_cast<const typename operator_traits<
                           Operator::cgtg>::oper_params_type&>(
                           core_ints_params_);

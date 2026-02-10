@@ -1071,6 +1071,9 @@ void print_config(std::ostream& os) {
 #ifdef LIBINT_INCLUDE_RKB_ERI
   os << "Will support restricted kinetically balance (RKB) 4-center ERIs "
      << std::endl;
+  if (LIBINT_INCLUDE_RKB_ERI > 0)
+    os << "(deriv order = " << LIBINT_INCLUDE_RKB_ERI << ")";
+  os << endl;
 #endif
 }
 
@@ -2262,6 +2265,12 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
   iface->to_params(iface->macro_define("DERIV_ERI_ORDER", LIBINT_INCLUDE_ERI));
   max_deriv_order = std::max(max_deriv_order, LIBINT_INCLUDE_ERI);
 #endif
+#ifdef LIBINT_INCLUDE_RKB_ERI
+  iface->to_params(iface->macro_define("SUPPORT_RKB_ERI", 1));
+  iface->to_params(
+      iface->macro_define("DERIV_RKB_ERI_ORDER", LIBINT_INCLUDE_RKB_ERI));
+  max_deriv_order = std::max(max_deriv_order, LIBINT_INCLUDE_RKB_ERI);
+#endif
 #ifdef LIBINT_INCLUDE_ERI3
   iface->to_params(iface->macro_define("SUPPORT_ERI3", 1));
   iface->to_params(
@@ -2317,8 +2326,9 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 
       {  // 2-body ints
 
-#define BOOST_PP_TWOBODY_TASKOPER_TUPLE \
-  ("eri", "r12kg12", "r12_0_g12", "r12_2_g12", "g12_T1_g12", "g12dkh")
+#define BOOST_PP_TWOBODY_TASKOPER_TUPLE                                      \
+  ("eri", "coulomb_opop", "r12kg12", "r12_0_g12", "r12_2_g12", "g12_T1_g12", \
+   "g12dkh")
 #define BOOST_PP_TWOBODY_TASKOPER_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_TWOBODY_TASKOPER_TUPLE)
 
