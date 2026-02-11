@@ -665,22 +665,22 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
 #ifndef LIBINT_INCLUDE_ONEBODY
   assert(braket_ != BraKet::x_x &&
          "this braket type not supported by the library; configure with "
-         "-DLIBINT_INCLUDE_ONEBODY >= 0");
+         "-DLIBINT2_ENABLE_ONEBODY >= 0");
 #endif
 #ifndef LIBINT_INCLUDE_ERI
   assert(braket_ != BraKet::xx_xx &&
          "this braket type not supported by the library; configure with "
-         "-DLIBINT_INCLUDE_ERI >= 0");
+         "-DLIBINT2_ENABLE_ERI >= 0");
 #endif
 #ifndef LIBINT_INCLUDE_ERI3
   assert((braket_ != BraKet::xs_xx && braket_ != BraKet::xx_xs) &&
          "this braket type not supported by the library; configure with "
-         "-DLIBINT_INCLUDE_ERI3 >= 0");
+         "-DLIBINT2_ENABLE_ERI3 >= 0");
 #endif
 #ifndef LIBINT_INCLUDE_ERI2
   assert(braket_ != BraKet::xs_xs &&
          "this braket type not supported by the library; configure with "
-         "-DLIBINT_INCLUDE_ERI2 >= 0");
+         "-DLIBINT2_ENABLE_ERI2 >= 0");
 #endif
 
   // make sure it's no default initialized
