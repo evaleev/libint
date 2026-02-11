@@ -1462,7 +1462,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                           const detail::core_eval_pack_type<Operator::cgtg>&>(
                           core_eval_pack_)
                           .first();
-                  ` const auto& core_ints_params =
+                  const auto& core_ints_params =
                       any_cast<const typename operator_traits<
                           Operator::cgtg>::oper_params_type&>(
                           core_ints_params_);
@@ -1754,7 +1754,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 #endif
 
               // prefactors for derivative ERI relations
-              if (deriv_order_ > 0) {
+              if (deriv_order_ + intrinsic_deriv_order() > 0) {
 #if LIBINT2_DEFINED(eri, alpha1_rho_over_zeta2)
                 primdata.alpha1_rho_over_zeta2[0] =
                     alpha0 * (oogammap * gammaq_o_gammapgammaq);
@@ -1837,7 +1837,8 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   }
 
   // compute directly (ss|ss)
-  const auto compute_directly = lmax == 0 && deriv_order_ == 0;
+  const auto compute_directly =
+      lmax == 0 && deriv_order_ == 0 & intrinsic_deriv_order() == 0;
 
   if (compute_directly) {
 #ifdef LIBINT2_ENGINE_TIMERS
