@@ -1118,10 +1118,13 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
     for (unsigned int lb = 0; lb <= lmax; lb++) {
       for (unsigned int lc = 0; lc <= lmax; lc++) {
         for (unsigned int ld = 0; ld <= lmax; ld++) {
-          if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(
-                  LIBINT_SHELL_SET)>::value(la, lb, lc, ld))
-            continue;
-
+          if (std::is_same<OperType, CoulombσpσpOper>::value) {
+            if (!(la >= lb && lc >= ld)) continue;
+          } else {
+            if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(
+                    LIBINT_SHELL_SET)>::value(la, lb, lc, ld))
+              continue;
+          }
           // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(la+lb >
           // lc+ld ? false : true));
           std::shared_ptr<Tactic> tactic(
@@ -1223,7 +1226,7 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
             CGShell c(lc);
             CGShell d(ld);
 
-            if constexpr (!std::is_same<OperType, CoulombσpσpOper>::value) {
+            if constexpr (std::is_same<OperType, TwoPRep>::value) {
               OperType oper;
               oper = OperType(descrs[0]);
               std::shared_ptr<TwoBody_sh_11_11> abcd =
@@ -1236,6 +1239,8 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
               oss << "_" << label;
               oss << "_" << c.label() << "_" << d.label();
               abcd_label = oss.str();
+              std::cout << "(" << a.label() << " " << b.label() << " | "
+                        << c.label() << " " << d.label() << ") ";
             }
           }
           // + derivative level (if deriv_level > 0)

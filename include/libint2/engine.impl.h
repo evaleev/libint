@@ -1215,17 +1215,21 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
     LIBINT2_SHELLQUARTET_SET_STANDARD  // standard angular momentum ordering
   const auto swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
   const auto swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
-  const auto swap_braket =
-      ((braket_ == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l >
-                                      tket1.contr[0].l + tket2.contr[0].l)) ||
-      braket_ == BraKet::xx_xs;
+  const auto swap_braket = ((braket_ == BraKet::xx_xx) &&
+                            (tbra1.contr[0].l + tbra2.contr[0].l <
+                             tket1.contr[0].l + tket2.contr[0].l) &&
+                            (oper_ != Operator::coulomb_opop)) ||
+                           braket_ == BraKet::xx_xs;
+  // N.B. cannot swap bra and ket for coulomb_opop since the ket is mutated by
+  // this operator
 #else  // orca angular momentum ordering
   const auto swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
   const auto swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
-  const auto swap_braket =
-      ((braket_ == BraKet::xx_xx) && (tbra1.contr[0].l + tbra2.contr[0].l <
-                                      tket1.contr[0].l + tket2.contr[0].l)) ||
-      braket_ == BraKet::xx_xs;
+  const auto swap_braket = ((braket_ == BraKet::xx_xx) &&
+                            (tbra1.contr[0].l + tbra2.contr[0].l <
+                             tket1.contr[0].l + tket2.contr[0].l) &&
+                            (oper_ != Operator::coulomb_opop)) ||
+                           braket_ == BraKet::xx_xs;
   assert(false && "feature not implemented");
   abort();
 #endif
@@ -1659,7 +1663,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
               const auto Wz =
                   (gammap_o_gammapgammaq * P[2] + gammaq_o_gammapgammaq * Q[2]);
 
-              if (deriv_order_ > 0 || lmax_bra > 0) {
+              if (deriv_order_ + intrinsic_deriv_order() > 0 || lmax_bra > 0) {
 #if LIBINT2_DEFINED(eri, WP_x)
                 primdata.WP_x[0] = Wx - P[0];
 #endif
@@ -1670,7 +1674,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 primdata.WP_z[0] = Wz - P[2];
 #endif
               }
-              if (deriv_order_ > 0 || lmax_ket > 0) {
+              if (deriv_order_ + intrinsic_deriv_order() > 0 || lmax_ket > 0) {
 #if LIBINT2_DEFINED(eri, WQ_x)
                 primdata.WQ_x[0] = Wx - Q[0];
 #endif
@@ -1916,8 +1920,10 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                "the angular momentum limit is exceeded");
         assert(ket2.contr[0].l <= ket_lmax &&
                "the angular momentum limit is exceeded");
+
         buildfnidx = (bra1.contr[0].l * ket_lmax + ket1.contr[0].l) * ket_lmax +
                      ket2.contr[0].l;
+
 #ifdef LIBINT_ERI3_PURE_SH
         if (bra1.contr[0].l > 1)
           assert(bra1.contr[0].pure &&
@@ -2110,9 +2116,15 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 const auto tgt_row_idx =
                     !swap_tbra ? r1 * nr2 + r2 : r2 * nr1 + r1;
                 Map tgt_blk_mat(tgt_ptr + tgt_row_idx * ncol, nc1_tgt, nc2_tgt);
-                if (swap_tket)
-                  tgt_blk_mat = src_blk_mat.transpose();
-                else
+                if (swap_tket) {
+                  Shell::real_t oper_cart_component_phase = 1.0;
+                  if (oper_ == Operator::coulomb_opop && s > 0)
+                    oper_cart_component_phase =
+                        -1.0;  // x,y,z quaternion components flip sign on
+                               // swapping ket for coulomb_opop
+                  tgt_blk_mat =
+                      oper_cart_component_phase * src_blk_mat.transpose();
+                } else
                   tgt_blk_mat = src_blk_mat;
               }
             }  // end of loop

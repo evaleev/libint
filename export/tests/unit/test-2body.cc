@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2024 Edward F. Valeev
+ *  Copyright (C) 2004-2026 Edward F. Valeev
  *
  *  This file is part of Libint library.
  *
@@ -344,6 +344,153 @@ TEST_CASE("eri geometric derivatives", "[engine][2-body]") {
   }
 }
 
+TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
+  std::vector<Shell> obs{
+      // pseudorandom s
+      Shell{{1.0, 0.3}, {{0, false, {0.9, 0.3}}}, {{0.0, 0.0, 0.0}}},
+      // pseudorandom p
+      Shell{{2.0, 0.4}, {{1, false, {0.8, -0.2}}}, {{1.0, 1.0, 1.0}}}};
+
+  const auto max_nprim = libint2::max_nprim(obs);
+  const auto max_l = libint2::max_l(obs);
+  typedef std::array<unsigned int, 12> der_idx;
+
+  SECTION("Coulombσpσp") {
+    Engine engine;
+    try {
+      engine = Engine(Operator::coulomb_opop, max_nprim, max_l, 0);
+      // TODO: need another unit test for derivatives of RKB ERIs
+    } catch (
+        Engine::lmax_exceeded &) {  // skip the test if lmax exceeded or libint2
+                                    // not configured with RKB support
+      return;
+    }
+
+    const auto nshell = obs.size();
+    for (int s0 = 0; s0 != nshell; ++s0) {
+      for (int s1 = 0; s1 != nshell; ++s1) {
+        for (int s2 = 0; s2 != nshell; ++s2) {
+          for (int s3 = 0; s3 != nshell; ++s3) {
+            const auto &results =
+                engine.compute(obs[s0], obs[s1], obs[s2], obs[s3]);
+            assert(results.size() ==
+                   4);  // we get 4 buffers for each quaternion component
+
+            LIBINT2_REF_REALTYPE Aref[3];
+            for (int i = 0; i < 3; ++i) Aref[i] = obs[s0].O[i];
+            LIBINT2_REF_REALTYPE Bref[3];
+            for (int i = 0; i < 3; ++i) Bref[i] = obs[s1].O[i];
+            LIBINT2_REF_REALTYPE Cref[3];
+            for (int i = 0; i < 3; ++i) Cref[i] = obs[s2].O[i];
+            LIBINT2_REF_REALTYPE Dref[3];
+            for (int i = 0; i < 3; ++i) Dref[i] = obs[s3].O[i];
+
+            int ijkl = 0;
+
+            int l0, m0, n0;
+            FOR_CART(l0, m0, n0, obs[s0].contr[0].l)
+
+            int l1, m1, n1;
+            FOR_CART(l1, m1, n1, obs[s1].contr[0].l)
+
+            int l2, m2, n2;
+            FOR_CART(l2, m2, n2, obs[s2].contr[0].l)
+
+            int l3, m3, n3;
+            FOR_CART(l3, m3, n3, obs[s3].contr[0].l)
+
+            std::array<LIBINT2_REF_REALTYPE, 4> ref_coulomb_opop{0.0, 0.0, 0.0,
+                                                                 0.0};
+            uint p0123 = 0;
+            for (uint p0 = 0; p0 < obs[s0].nprim(); p0++) {
+              for (uint p1 = 0; p1 < obs[s1].nprim(); p1++) {
+                for (uint p2 = 0; p2 < obs[s2].nprim(); p2++) {
+                  for (uint p3 = 0; p3 < obs[s3].nprim(); p3++, p0123++) {
+                    const LIBINT2_REF_REALTYPE alpha0 = obs[s0].alpha[p0];
+                    const LIBINT2_REF_REALTYPE alpha1 = obs[s1].alpha[p1];
+                    const LIBINT2_REF_REALTYPE alpha2 = obs[s2].alpha[p2];
+                    const LIBINT2_REF_REALTYPE alpha3 = obs[s3].alpha[p3];
+
+                    const LIBINT2_REF_REALTYPE c0 = obs[s0].contr[0].coeff[p0];
+                    const LIBINT2_REF_REALTYPE c1 = obs[s1].contr[0].coeff[p1];
+                    const LIBINT2_REF_REALTYPE c2 = obs[s2].contr[0].coeff[p2];
+                    const LIBINT2_REF_REALTYPE c3 = obs[s3].contr[0].coeff[p3];
+                    const LIBINT2_REF_REALTYPE c0123 = c0 * c1 * c2 * c3;
+
+                    auto eri_drr = [&](der_idx d_rr) {
+                      return eri(d_rr.data(), l0, m0, n0, alpha0, Aref, l1, m1,
+                                 n1, alpha1, Bref, l2, m2, n2, alpha2, Cref, l3,
+                                 m3, n3, alpha3, Dref, 0);
+                    };
+
+                    // e.g. d_xx maps the derivative index of derivative w.r.t x
+                    // coord of ket1 and x coord of ket2 in Chemist notation.
+                    der_idx d_xx = {0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0};
+                    der_idx d_yy = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0};
+                    der_idx d_zz = {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1};
+                    ref_coulomb_opop[0] +=
+                        c0123 * (eri_drr(d_xx) + eri_drr(d_yy) + eri_drr(d_zz));
+
+                    der_idx d_yz = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1};
+                    der_idx d_zy = {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0};
+                    ref_coulomb_opop[1] +=
+                        c0123 * (eri_drr(d_yz) - eri_drr(d_zy));
+
+                    der_idx d_zx = {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0};
+                    der_idx d_xz = {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+                    ref_coulomb_opop[2] +=
+                        c0123 * (eri_drr(d_zx) - eri_drr(d_xz));
+
+                    der_idx d_xy = {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0};
+                    der_idx d_yx = {0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0};
+                    ref_coulomb_opop[3] +=
+                        c0123 * (eri_drr(d_xy) - eri_drr(d_yx));
+                  }
+                }
+              }
+            }
+
+            const double ABSOLUTE_DEVIATION_THRESHOLD = 5.0E-14;
+            const double RELATIVE_DEVIATION_THRESHOLD =
+                1.0E-9;  // For more detail on choice of these thresholds, see
+                         // the comments in the TEST_CASE "eri geometric
+                         // derivatives"
+
+            std::array<LIBINT2_REF_REALTYPE, 4> abs_errs;
+            std::array<LIBINT2_REF_REALTYPE, 4> rel_abs_errs;
+
+            for (auto comp = 0; comp < 4; ++comp) {
+              abs_errs[comp] =
+                  abs(ref_coulomb_opop[comp] - results[comp][ijkl]);
+              rel_abs_errs[comp] = abs(abs_errs[comp] / ref_coulomb_opop[comp]);
+              bool not_ok = rel_abs_errs[comp] > RELATIVE_DEVIATION_THRESHOLD &&
+                            abs_errs[comp] > ABSOLUTE_DEVIATION_THRESHOLD;
+              // no 3^n prefactor here since the intrinsic deriv order is 2
+              if (not_ok) {
+                std::cout << "(l0 l1| l2 l3) = "
+                          << "(" << s0 << " " << s1 << " | " << s2 << " " << s3
+                          << ") "
+                          << "Elem " << ijkl << " comp= " << comp
+                          << " : ref = " << ref_coulomb_opop[comp]
+                          << " libint = " << results[comp][ijkl]
+                          << " relabs_error = " << rel_abs_errs[comp]
+                          << " abs_error = " << abs_errs[comp] << std::endl;
+              }
+              REQUIRE(!not_ok);
+            }
+
+            ++ijkl;
+            END_FOR_CART
+            END_FOR_CART
+            END_FOR_CART
+            END_FOR_CART
+          }
+        }
+      }
+    }
+  }
+}
+
 TEST_CASE("Erfx_Coulomb integrals", "[engine][2-body]") {
   // pseudorandom s shells
   std::vector<Shell> obs{
@@ -374,12 +521,12 @@ TEST_CASE("Erfx_Coulomb integrals", "[engine][2-body]") {
       REQUIRE(results[0] != nullptr);
       switch (k) {
         /* VALIDATION WOLFRAM CODE:
-(* Integral of Coulomb kernel damped by (\[Lambda] Erf[\[Omega] r] + \
-\[Sigma] Erfc[\[Omega] r]), over unit-normalized s functions, \
-see Eq 52 in DOI 10.1039/b605188j *)
-F0[T_] := If[T == 0, 1, Sqrt[\[Pi]/T]*Erf[Sqrt[T]]/2];
-sN[a_] := ((2 a)/\[Pi])^(3/4);
-VVeeErfx[\[Alpha]1_, A1_List, \[Alpha]2_, A2_List, \[Beta]1_,
+ (* Integral of Coulomb kernel damped by (\[Lambda] Erf[\[Omega] r] + \
+ \[Sigma] Erfc[\[Omega] r]), over unit-normalized s functions, \
+ see Eq 52 in DOI 10.1039/b605188j *)
+ F0[T_] := If[T == 0, 1, Sqrt[\[Pi]/T]*Erf[Sqrt[T]]/2];
+ sN[a_] := ((2 a)/\[Pi])^(3/4);
+ VVeeErfx[\[Alpha]1_, A1_List, \[Alpha]2_, A2_List, \[Beta]1_,
    B1_List, \[Beta]2_, B2_List, \[Omega]_, \[Lambda]_, \[Sigma]_] :=
   Module[{\[Gamma]1, \[Gamma]2, P1, P2, K1, K2, T, result, \[Rho]},
    \[Gamma]1 = \[Alpha]1 + \[Beta]1;
@@ -397,13 +544,13 @@ VVeeErfx[\[Alpha]1_, A1_List, \[Alpha]2_, A2_List, \[Beta]1_,
            T]) sN[\[Alpha]1] sN[\[Alpha]2] sN[\[Beta]1] sN[\[Beta]2];
    Return[result];
    ];
-Print[CForm[
+ Print[CForm[
   N[VVeeErfx[1, {0, 0, 0},  3, {2, 2, 2}, 2, {1, 1, 1}, 4, {3, 3, 3},
     1.1, 1, 0], 20]]]
-Print[CForm[
+ Print[CForm[
   N[VVeeErfx[1, {0, 0, 0},  3, {2, 2, 2}, 2, {1, 1, 1}, 4, {3, 3, 3},
     1.1, 0, 1], 20]]]
-Print[CForm[
+ Print[CForm[
   N[VVeeErfx[1, {0, 0, 0},  3, {2, 2, 2}, 2, {1, 1, 1}, 4, {3, 3, 3},
     1.1, 2, 3], 20]]]
          */

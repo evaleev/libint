@@ -301,11 +301,11 @@ struct σpVσp_Descr : public Contractable<σpVσp_Descr> {
     if (quaternion_index() == 0)
       descr += "0";
     else if (quaternion_index() == 1)
-      descr += "Z";
-    else if (quaternion_index() == 2)
       descr += "X";
-    else if (quaternion_index() == 3)
+    else if (quaternion_index() == 2)
       descr += "Y";
+    else if (quaternion_index() == 3)
+      descr += "Z";
     else
       abort();
     return descr + "]";
@@ -417,11 +417,11 @@ struct Coulombσpσp_Descr : public Contractable<Coulombσpσp_Descr> {
     if (quaternion_index() == 0)
       descr += "0";
     else if (quaternion_index() == 1)
-      descr += "Z";
-    else if (quaternion_index() == 2)
       descr += "X";
-    else if (quaternion_index() == 3)
+    else if (quaternion_index() == 2)
       descr += "Y";
+    else if (quaternion_index() == 3)
+      descr += "Z";
     else
       abort();
     return descr + "]";
