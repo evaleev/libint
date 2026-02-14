@@ -77,8 +77,9 @@ struct ShellQuartetSetPredicate {
 };
 template <>
 struct ShellQuartetSetPredicate<ShellSetType_Standard> {
-  static bool value(int la, int lb, int lc, int ld) {
-    return la >= lb && lc >= ld && la + lb <= lc + ld;
+  static bool value(int la, int lb, int lc, int ld,
+                    bool p1p2_swappable = true) {
+    return la >= lb && lc >= ld && (!p1p2_swappable || la + lb <= lc + ld);
   }
 };
 template <>
@@ -1118,7 +1119,7 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
     for (unsigned int lb = 0; lb <= lmax; lb++) {
       for (unsigned int lc = 0; lc <= lmax; lc++) {
         for (unsigned int ld = 0; ld <= lmax; ld++) {
-          if (std::is_same<OperType, CoulombσpσpOper>::value) {
+          if constexpr (std::is_same<OperType, CoulombσpσpOper>::value) {
             if (!(la >= lb && lc >= ld)) continue;
           } else {
             if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(
@@ -1239,8 +1240,6 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
               oss << "_" << label;
               oss << "_" << c.label() << "_" << d.label();
               abcd_label = oss.str();
-              std::cout << "(" << a.label() << " " << b.label() << " | "
-                        << c.label() << " " << d.label() << ") ";
             }
           }
           // + derivative level (if deriv_level > 0)

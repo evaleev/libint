@@ -1216,7 +1216,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   const auto swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
   const auto swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
   const auto swap_braket = ((braket_ == BraKet::xx_xx) &&
-                            (tbra1.contr[0].l + tbra2.contr[0].l <
+                            (tbra1.contr[0].l + tbra2.contr[0].l >
                              tket1.contr[0].l + tket2.contr[0].l) &&
                             (oper_ != Operator::coulomb_opop)) ||
                            braket_ == BraKet::xx_xs;
