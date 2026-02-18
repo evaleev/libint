@@ -83,11 +83,9 @@ CR_11_Coulombσpσp_11<F>::CR_11_Coulombσpσp_11(
 
   const auto &oper = Tint->oper();
 
-  // can express integrals of Coulombσpσp in terms of
-  // derivative integrals of 1/r12 for primitive Gaussians
-  // only
-  if (a.contracted() || b.contracted() || c.contracted() || d.contracted())
-    return;
+  // TODO: need to do this only for uncontracted gaussians
+  //  if (a.contracted() || b.contracted() || c.contracted() || d.contracted())
+  //    return;
 
   using namespace libint2::algebra;
   using namespace libint2::prefactor;

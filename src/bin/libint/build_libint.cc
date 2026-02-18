@@ -73,7 +73,7 @@ enum ShellSetType {
 template <ShellSetType ShSet>
 struct ShellQuartetSetPredicate {
   // return true if this set of angular momenta is included
-  static bool value(int la, int lb, int lc, int ld);
+  static bool value(int la, int lb, int lc, int ld, bool p1p2_swappable = true);
 };
 template <>
 struct ShellQuartetSetPredicate<ShellSetType_Standard> {
@@ -84,8 +84,10 @@ struct ShellQuartetSetPredicate<ShellSetType_Standard> {
 };
 template <>
 struct ShellQuartetSetPredicate<ShellSetType_ORCA> {
-  static bool value(int la, int lb, int lc, int ld) {
-    return la <= lb && lc <= ld && (la < lc || (la == lc && lb <= ld));
+  static bool value(int la, int lb, int lc, int ld,
+                    bool p1p2_swappable = true) {
+    return la <= lb && lc <= ld &&
+           (!p1p2_swappable || (la < lc || (la == lc && lb <= ld)));
   }
 };
 template <ShellSetType ShSet>
@@ -1115,17 +1117,16 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
   std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
   std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
 
+  bool p1_p2_swappable = !std::is_same<OperType, CoulombσpσpOper>::value;
+
   for (unsigned int la = 0; la <= lmax; la++) {
     for (unsigned int lb = 0; lb <= lmax; lb++) {
       for (unsigned int lc = 0; lc <= lmax; lc++) {
         for (unsigned int ld = 0; ld <= lmax; ld++) {
-          if constexpr (std::is_same<OperType, CoulombσpσpOper>::value) {
-            if (!(la >= lb && lc >= ld)) continue;
-          } else {
-            if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(
-                    LIBINT_SHELL_SET)>::value(la, lb, lc, ld))
-              continue;
-          }
+          if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(
+                  LIBINT_SHELL_SET)>::value(la, lb, lc, ld, p1_p2_swappable))
+            continue;
+
           // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(la+lb >
           // lc+ld ? false : true));
           std::shared_ptr<Tactic> tactic(
@@ -1141,9 +1142,7 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
           /////////////////////////////////
           // loop over operator components
           /////////////////////////////////
-          // most important operators have 1 component ...
-          std::vector<OperDescrType> descrs(1);  // operator descriptors
-          // important EXCEPTION: multipole moments
+          std::vector<OperDescrType> descrs(1);
           if (std::is_same<OperType, CoulombσpσpOper>::value) {
             // reset descriptors array
             descrs.resize(0);
@@ -1156,8 +1155,9 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
           // unroll only if max_am <= cparams->max_am_opt(task) using std::max;
           const unsigned int max_am = max(max(la, lb), max(lc, ld));
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
+          const auto nopers = descrs.size();
           const bool need_to_unroll =
-              l_to_cgshellsize(la) * l_to_cgshellsize(lb) *
+              nopers * l_to_cgshellsize(la) * l_to_cgshellsize(lb) *
                   l_to_cgshellsize(lc) * l_to_cgshellsize(ld) <=
               cparams->unroll_threshold();
           const unsigned int unroll_threshold =
@@ -1285,11 +1285,9 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
           iface->to_static_init(oss.str());
 
           // need to declare this function internally
-          for (std::deque<std::string>::const_iterator i =
-                   decl_filenames.begin();
-               i != decl_filenames.end(); ++i) {
+          for (auto& decl_filename : decl_filenames) {
             oss.str("");
-            oss << "#include <" << *i << ">" << endl;
+            oss << "#include <" << decl_filename << ">" << endl;
             iface->to_int_iface(oss.str());
           }
 
