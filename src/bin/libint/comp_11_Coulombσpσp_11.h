@@ -83,9 +83,8 @@ CR_11_Coulombσpσp_11<F>::CR_11_Coulombσpσp_11(
 
   const auto &oper = Tint->oper();
 
-  // TODO: need to do this only for uncontracted gaussians
-  //  if (a.contracted() || b.contracted() || c.contracted() || d.contracted())
-  //    return;
+  if (a.contracted() || b.contracted() || c.contracted() || d.contracted())
+    return;
 
   using namespace libint2::algebra;
   using namespace libint2::prefactor;
