@@ -26,6 +26,7 @@
 #include <comp_11_g12tig12_11.h>
 #include <comp_11_r12kr12lg12_11.h>
 #include <comp_11_tig12_11.h>
+#include <comp_11_σpσpCoulombσpσp_11.h>
 #include <comp_1_σpVσp_1.h>
 #include <comp_deriv_gauss.h>
 #include <comp_xyz.h>
@@ -269,6 +270,9 @@ typedef CR_DerivGauss<TwoPRep_11_11_int, 1, InKet, trinvskip2_part,
 
 typedef CR_11_Coulombσpσp_11<CGShell> CR_11_Coulombσpσp_11_sh;
 typedef CR_11_Coulombσpσp_11<CGF> CR_11_Coulombσpσp_11_int;
+
+typedef CR_11_σpσpCoulombσpσp_11<CGShell> CR_11_σpσpCoulombσpσp_11_sh;
+typedef CR_11_σpσpCoulombσpσp_11<CGF> CR_11_σpσpCoulombσpσp_11_int;
 };  // namespace libint2
 
 #endif  // header guard

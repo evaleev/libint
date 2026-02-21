@@ -437,6 +437,42 @@ struct Coulombσpσp_Descr : public Contractable<Coulombσpσp_Descr> {
 };
 typedef GenOper<Coulombσpσp_Descr> CoulombσpσpOper;
 
+struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr> {
+  typedef MultiplicativeSymm2Body_Props Properties;
+
+  σpσpCoulombσpσp_Descr() : quaternion_index_(0) {}
+  σpσpCoulombσpσp_Descr(int quaternion_index)
+      : quaternion_index_(quaternion_index) {
+    assert(quaternion_index <= 3);
+  }
+
+  static const unsigned int max_key = 4;
+  unsigned int key() const { return quaternion_index(); }
+  std::string description() const {
+    std::string descr("opop_coulomb_opop[");
+    if (quaternion_index() == 0)
+      descr += "0";
+    else if (quaternion_index() == 1)
+      descr += "X";
+    else if (quaternion_index() == 2)
+      descr += "Y";
+    else if (quaternion_index() == 3)
+      descr += "Z";
+    else
+      abort();
+    return descr + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return +1; }
+
+  int quaternion_index() const { return quaternion_index_; }
+
+ private:
+  const int quaternion_index_ = -1;
+};
+typedef GenOper<σpσpCoulombσpσp_Descr> σpσpCoulombσpσpOper;
+
 /** GTG_1d is the two-body 1-dimensional Gaussian geminal
  */
 struct GTG_1d_Descr : public Contractable<GTG_1d_Descr> {

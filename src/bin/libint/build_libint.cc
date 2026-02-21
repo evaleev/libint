@@ -287,6 +287,11 @@ Coulombσpσp_Descr make_descr<Coulombσpσp_Descr>(int p, int, int) {
   return Coulombσpσp_Descr(p);
 }
 
+template <>
+σpσpCoulombσpσp_Descr make_descr<σpσpCoulombσpσp_Descr>(int p, int, int) {
+  return σpσpCoulombσpσp_Descr(p);
+}
+
 }  // namespace
 
 template <typename _OperType>
@@ -582,8 +587,8 @@ void try_main(int argc, char* argv[]) {
 #endif
 
 #ifdef LIBINT_INCLUDE_RKB_ERI
-#define BOOST_PP_RKB_ERI_TASK_TUPLE (coulomb_opop)
-#define BOOST_PP_RKB_ERI_TASK_OPER_TUPLE (CoulombσpσpOper)
+#define BOOST_PP_RKB_ERI_TASK_TUPLE (coulomb_opop, opop_coulomb_opop)
+#define BOOST_PP_RKB_ERI_TASK_OPER_TUPLE (CoulombσpσpOper, σpσpCoulombσpσpOper)
 #define BOOST_PP_RKB_ERI_TASK_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_RKB_ERI_TASK_TUPLE)
 #define BOOST_PP_RKB_ERI_TASK_OPER_LIST \
@@ -2328,9 +2333,9 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 
       {  // 2-body ints
 
-#define BOOST_PP_TWOBODY_TASKOPER_TUPLE                                      \
-  ("eri", "coulomb_opop", "r12kg12", "r12_0_g12", "r12_2_g12", "g12_T1_g12", \
-   "g12dkh")
+#define BOOST_PP_TWOBODY_TASKOPER_TUPLE                                \
+  ("eri", "coulomb_opop", "opop_coulomb_opop", "r12kg12", "r12_0_g12", \
+   "r12_2_g12", "g12_T1_g12", "g12dkh")
 #define BOOST_PP_TWOBODY_TASKOPER_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_TWOBODY_TASKOPER_TUPLE)
 

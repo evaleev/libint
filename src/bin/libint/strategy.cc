@@ -123,6 +123,14 @@ template <>
 struct MasterStrategy<Coulombσpσp_11_11_int> {
   typedef boost::mpl::list<CR_11_Coulombσpσp_11_int> value;
 };
+template <>
+struct MasterStrategy<σpσpCoulombσpσp_11_11_sq> {
+  typedef boost::mpl::list<CR_11_σpσpCoulombσpσp_11_sh> value;
+};
+template <>
+struct MasterStrategy<σpσpCoulombσpσp_11_11_int> {
+  typedef boost::mpl::list<CR_11_σpσpCoulombσpσp_11_int> value;
+};
 
 #if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
 template <>
