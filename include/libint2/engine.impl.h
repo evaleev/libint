@@ -70,31 +70,32 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you add
 /// one-body ints
-#define BOOST_PP_NBODY_OPERATOR_LIST               \
-  (overlap,                   /* overlap */        \
-   (kinetic,                  /* kinetic */        \
-    (elecpot,                 /* nuclear */        \
-     (elecpot,                /* erf_nuclear */    \
-      (elecpot,               /* erfc_nuclear */   \
-       (elecpot,              /* erfx_nuclear */   \
-        (1emultipole,         /* emultipole1 */    \
-         (2emultipole,        /* emultipole2 */    \
-          (3emultipole,       /* emultipole3 */    \
-           (sphemultipole,    /* sphemultipole */  \
-            (opVop,           /* opVop */          \
-             (eri,            /* delta */          \
-              (eri,           /* coulomb */        \
-               (coulomb_opop, /* coulomb_opop */   \
-                (eri,         /* cgtg */           \
-                 (eri,        /* cgtg_x_coulomb */ \
-                  (eri,       /* delcgtg2 */       \
-                   (eri,      /* r12 */            \
-                    (eri,     /* erf_coulomb */    \
-                     (eri,    /* erfc_coulomb */   \
-                      (eri,   /* erfx_coulomb */   \
-                       (eri,  /* stg */            \
-                        (eri, /* yukawa */         \
-                         BOOST_PP_NIL)))))))))))))))))))))))
+#define BOOST_PP_NBODY_OPERATOR_LIST                     \
+  (overlap,                         /* overlap */        \
+   (kinetic,                        /* kinetic */        \
+    (elecpot,                       /* nuclear */        \
+     (elecpot,                      /* erf_nuclear */    \
+      (elecpot,                     /* erfc_nuclear */   \
+       (elecpot,                    /* erfx_nuclear */   \
+        (1emultipole,               /* emultipole1 */    \
+         (2emultipole,              /* emultipole2 */    \
+          (3emultipole,             /* emultipole3 */    \
+           (sphemultipole,          /* sphemultipole */  \
+            (opVop,                 /* opVop */          \
+             (eri,                  /* delta */          \
+              (eri,                 /* coulomb */        \
+               (coulomb_opop,       /* coulomb_opop */   \
+                (opop_coulomb_opop, /* coulomb_opop */   \
+                 (eri,              /* cgtg */           \
+                  (eri,             /* cgtg_x_coulomb */ \
+                   (eri,            /* delcgtg2 */       \
+                    (eri,           /* r12 */            \
+                     (eri,          /* erf_coulomb */    \
+                      (eri,         /* erfc_coulomb */   \
+                       (eri,        /* erfx_coulomb */   \
+                        (eri,       /* stg */            \
+                         (eri,      /* yukawa */         \
+                          BOOST_PP_NIL))))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
@@ -702,6 +703,7 @@ __libint2_engine_inline void Engine::initialize(size_t max_nprim) {
     // target indices.
     const auto permutable_targets =
         deriv_order_ > 0 &&
+
         (braket_ == BraKet::xx_xx || braket_ == BraKet::xs_xx ||
          braket_ == BraKet::xx_xs);
     if (permutable_targets)
@@ -1213,13 +1215,21 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
 #if LIBINT2_SHELLQUARTET_SET == \
     LIBINT2_SHELLQUARTET_SET_STANDARD  // standard angular momentum ordering
-  const auto swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
-  const auto swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
   const auto swap_braket = ((braket_ == BraKet::xx_xx) &&
                             (tbra1.contr[0].l + tbra2.contr[0].l >
                              tket1.contr[0].l + tket2.contr[0].l) &&
                             (oper_ != Operator::coulomb_opop)) ||
                            braket_ == BraKet::xx_xs;
+  bool swap_tbra, swap_tket;
+  if (oper_ == Operator::opop_coulomb_opop) {
+    bool swap_p1p2 = swap_braket ? (tbra1.contr[0].l < tbra2.contr[0].l)
+                                 : (tket1.contr[0].l < tket2.contr[0].l);
+    swap_tbra = swap_tket = swap_p1p2;
+  } else {
+    swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
+    swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
+  }
+
   // N.B. cannot swap bra and ket for coulomb_opop since the ket is mutated by
   // this operator
 #else  // orca angular momentum ordering
@@ -1441,6 +1451,13 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<
                           Operator::coulomb_opop>&>(core_eval_pack_)
+                          .first();
+                  core_eval_ptr->eval(gm_ptr, T, mmax);
+                } break;
+                case Operator::opop_coulomb_opop: {
+                  const auto& core_eval_ptr =
+                      any_cast<const detail::core_eval_pack_type<
+                          Operator::opop_coulomb_opop>&>(core_eval_pack_)
                           .first();
                   core_eval_ptr->eval(gm_ptr, T, mmax);
                 } break;
@@ -2118,6 +2135,10 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 Map tgt_blk_mat(tgt_ptr + tgt_row_idx * ncol, nc1_tgt, nc2_tgt);
                 if (swap_tket) {
                   Shell::real_t oper_cart_component_phase = 1.0;
+                  if (oper_ == Operator::opop_coulomb_opop && s == 3)
+                    oper_cart_component_phase =
+                        -1.0;  // z quaternion components flip sign on
+                               //  swapping ket
                   if (oper_ == Operator::coulomb_opop && s > 0)
                     oper_cart_component_phase =
                         -1.0;  // x,y,z quaternion components flip sign on

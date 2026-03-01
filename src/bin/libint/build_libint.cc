@@ -75,19 +75,35 @@ struct ShellQuartetSetPredicate {
   // return true if this set of angular momenta is included
   static bool value(int la, int lb, int lc, int ld, bool p1p2_swappable = true);
 };
+
+/**
+ * standard ordering for angular momenta la, lb, lc, ld
+ * @param p1p2_swappable whether operator allows swaps of particle 1 and 2
+ * functions (e.g., not allowed for Coulombσpσp but allowed
+ * for Coulomb (TwoPRep)).
+ * @param bra_ket_coswappable whether need to swap within both bra and ket.
+ * Not individually swapping of either ket of bra allowed
+ * ( e.g., for σpσpCoulombσpσp)
+ */
 template <>
 struct ShellQuartetSetPredicate<ShellSetType_Standard> {
-  static bool value(int la, int lb, int lc, int ld,
-                    bool p1p2_swappable = true) {
-    return la >= lb && lc >= ld && (!p1p2_swappable || la + lb <= lc + ld);
+  static bool value(int la, int lb, int lc, int ld, bool p1p2_swappable = true,
+                    bool bra_ket_coswappable = false) {
+    if (bra_ket_coswappable)
+      return (la + lb <= lc + ld) && lc >= ld;
+    else
+      return la >= lb && lc >= ld && (!p1p2_swappable || la + lb <= lc + ld);
   }
 };
 template <>
 struct ShellQuartetSetPredicate<ShellSetType_ORCA> {
-  static bool value(int la, int lb, int lc, int ld,
-                    bool p1p2_swappable = true) {
-    return la <= lb && lc <= ld &&
-           (!p1p2_swappable || (la < lc || (la == lc && lb <= ld)));
+  static bool value(int la, int lb, int lc, int ld, bool p1p2_swappable = true,
+                    bool bra_ket_coswappable = false) {
+    if (bra_ket_coswappable)
+      return (la < lc || (la == lc && lb <= ld));
+    else
+      return la <= lb && lc <= ld &&
+             (!p1p2_swappable || (la < lc || (la == lc && lb <= ld)));
   }
 };
 template <ShellSetType ShSet>
@@ -1123,13 +1139,17 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
   std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
 
   bool p1_p2_swappable = !std::is_same<OperType, CoulombσpσpOper>::value;
+  bool bra_ket_coswappable = std::is_same<OperType, σpσpCoulombσpσpOper>::value;
 
+  // Note: la, lb, lc, ld generate code for chemist notation (ab|O|cd), where O
+  // is a two-body operator.
   for (unsigned int la = 0; la <= lmax; la++) {
     for (unsigned int lb = 0; lb <= lmax; lb++) {
       for (unsigned int lc = 0; lc <= lmax; lc++) {
         for (unsigned int ld = 0; ld <= lmax; ld++) {
           if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(
-                  LIBINT_SHELL_SET)>::value(la, lb, lc, ld, p1_p2_swappable))
+                  LIBINT_SHELL_SET)>::value(la, lb, lc, ld, p1_p2_swappable,
+                                            bra_ket_coswappable))
             continue;
 
           // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(la+lb >
@@ -1148,7 +1168,8 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
           // loop over operator components
           /////////////////////////////////
           std::vector<OperDescrType> descrs(1);
-          if (std::is_same<OperType, CoulombσpσpOper>::value) {
+          if (std::is_same<OperType, CoulombσpσpOper>::value ||
+              std::is_same<OperType, σpσpCoulombσpσpOper>::value) {
             // reset descriptors array
             descrs.resize(0);
             // iterate over quaternion components
@@ -1157,7 +1178,8 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
             }
           }
 
-          // unroll only if max_am <= cparams->max_am_opt(task) using std::max;
+          // unroll only if max_am <= cparams->max_am_opt(task) using
+          // std::max;
           const unsigned int max_am = max(max(la, lb), max(lc, ld));
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
           const auto nopers = descrs.size();
@@ -1266,8 +1288,8 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
           std::deque<std::string> decl_filenames;
           std::deque<std::string> def_filenames;
 
-          // this will generate code for these targets, and potentially generate
-          // code for its prerequisites
+          // this will generate code for these targets, and potentially
+          // generate code for its prerequisites
           GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
                        decl_filenames, def_filenames, prefix, eval_label,
                        false);
@@ -1359,9 +1381,9 @@ void build_TwoPRep_1b_2k(std::ostream& os,
                 LIBINT_SHELL_SET)>::value(lbra, lc, ld))
           continue;
 
-        // I will use 4-center recurrence relations and integrals, and have one
-        // center carry an s function unfortunately, depending on the direction
-        // in which the build goes it must be A(0) or B(1)
+        // I will use 4-center recurrence relations and integrals, and have
+        // one center carry an s function unfortunately, depending on the
+        // direction in which the build goes it must be A(0) or B(1)
         const unsigned int dummy_center =
             (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 0 : 1;
 
@@ -1560,8 +1582,8 @@ void build_TwoPRep_1b_1k(std::ostream& os,
       const unsigned int dummy_center2 =
           (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 2 : 3;
 
-      // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(lbra > lket
-      // ? false : true));
+      // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(lbra >
+      // lket ? false : true));
       std::shared_ptr<Tactic> tactic(new FourCenter_OS_Tactic(
           dummy_center1 == 0 ? 0 : lbra, dummy_center1 == 1 ? 0 : lbra,
           dummy_center2 == 2 ? 0 : lket, dummy_center2 == 3 ? 0 : lket));
@@ -1674,8 +1696,8 @@ void build_TwoPRep_1b_1k(std::ostream& os,
       std::deque<std::string> decl_filenames;
       std::deque<std::string> def_filenames;
 
-      // this will generate code for this targets, and potentially generate code
-      // for its prerequisites
+      // this will generate code for this targets, and potentially generate
+      // code for its prerequisites
       GenerateCode(dg_xxx, context, cparams, strat, tactic, memman,
                    decl_filenames, def_filenames, prefix, label, false);
 
@@ -1684,7 +1706,8 @@ void build_TwoPRep_1b_1k(std::ostream& os,
           taskmgr.current().params();
       tparams->max_stack_size(max_am, memman->max_memory_used());
       tparams->max_ntarget(targets.size());
-      // os << " Max memory used = " << memman->max_memory_used() << std::endl;
+      // os << " Max memory used = " << memman->max_memory_used() <<
+      // std::endl;
 
       // set pointer to the top-level evaluator function
       ostringstream oss;
@@ -1875,8 +1898,8 @@ void build_R12kG12_2b_2k(std::ostream& os,
           std::deque<std::string> decl_filenames;
           std::deque<std::string> def_filenames;
 
-          // this will generate code for this targets, and potentially generate
-          // code for its prerequisites
+          // this will generate code for this targets, and potentially
+          // generate code for its prerequisites
           GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman,
                        decl_filenames, def_filenames, prefix, label, false);
 
@@ -2230,11 +2253,11 @@ void build_G12DKH_2b_2k(std::ostream& os,
           oss << "#include <" << decl_filename << ">" << endl;
           iface->to_int_iface(oss.str());
 
-          // For the most expensive (i.e. presumably complete) graph extract all
-          // precomputed quantities -- these will be members of the evaluator
-          // structure also extract all RRs -- need to keep track of these to
-          // figure out which external symbols appearing in RR code belong to
-          // this task also
+          // For the most expensive (i.e. presumably complete) graph extract
+          // all precomputed quantities -- these will be members of the
+          // evaluator structure also extract all RRs -- need to keep track of
+          // these to figure out which external symbols appearing in RR code
+          // belong to this task also
           if (la == lmax && lb == lmax && lc == lmax && ld == lmax)
             extract_symbols(dg_xxxx);
 
@@ -2307,7 +2330,8 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
   // generated tasks declare all tasks in a range of valid tasks as defined or
   // not
   LibraryTaskManager& taskmgr = LibraryTaskManager::Instance();
-  // the range is defined by max # of centers, max deriv order, and operator set
+  // the range is defined by max # of centers, max deriv order, and operator
+  // set
   const size_t max_ncenter = 4;
   for (unsigned int ncenter = 0; ncenter <= max_ncenter; ++ncenter) {
     std::stringstream oss;

@@ -156,6 +156,10 @@ enum class Operator {
   /// (2-body) \f$ r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$ where k1  & k2 are
   /// centers of ket1 and ket2, respectively
   coulomb_opop,
+  /// (2-body) \f$ (σ.p_{b1})(σ.p_{b2}) r_{12}^{-1} (σ.p_{k1})(σ.p_{k2})\f$
+  /// where b1 & b2 are centers of bra1 and bra2 and k1  & k2 are centers of
+  /// ket1 and ket2, respectively
+  opop_coulomb_opop,
   /// contracted Gaussian geminal
   cgtg,
   /// contracted Gaussian geminal times Coulomb
@@ -356,6 +360,12 @@ struct operator_traits<Operator::coulomb_opop>
     : public operator_traits<Operator::coulomb> {
   static constexpr auto nopers = 4;
   static constexpr auto intrinsic_deriv_order = 2;
+};
+template <>
+struct operator_traits<Operator::opop_coulomb_opop>
+    : public operator_traits<Operator::coulomb> {
+  static constexpr auto nopers = 4;
+  static constexpr auto intrinsic_deriv_order = 4;
 };
 
 namespace detail {
@@ -851,16 +861,16 @@ class Engine {
       const Shell& ket2, const ShellPair* spbra, const ShellPair* spket);
 
   // clang-format off
-  /** this specifies target precision for computing the integrals, i.e.
-   *  the target absolute (i.e., not relative) error of the integrals.
-   *  It is used to screen out primitive integrals. For some screening
-   *  methods precision can be almost guaranteed (due to finite precision
-   *  of the precomputed interpolation tables used to evaluate the core integrals
-   *  it is not in general possible to guarantee precision rigorously).
-   *
-   *  @param[in] prec the target precision
-   *  @sa ScreeningMethod
-   */
+ /** this specifies target precision for computing the integrals, i.e.
+  *  the target absolute (i.e., not relative) error of the integrals.
+  *  It is used to screen out primitive integrals. For some screening
+  *  methods precision can be almost guaranteed (due to finite precision
+  *  of the precomputed interpolation tables used to evaluate the core integrals
+  *  it is not in general possible to guarantee precision rigorously).
+  *
+  *  @param[in] prec the target precision
+  *  @sa ScreeningMethod
+  */
   // clang-format on
   Engine& set_precision(scalar_type prec) {
     if (prec <= 0.) {

@@ -114,143 +114,75 @@ CR_11_σpσpCoulombσpσp_11<F>::CR_11_σpσpCoulombσpσp_11(
   };
 
   // Component wise generation for quaternion :
-  // ( (σ.p) a (σ.p)b | 1/r12 | (σ.p) c (σ.p) d )
+  // ( (σ.p) a (σ.p) b | 1/r12 | (σ.p) c (σ.p) d )
   switch (oper->descr().quaternion_index()) {
     case 0: {
-      // zeroth component =
-      // x1 x2 x3 x4 + y1 y2 x3 x4 - y1 x2 y3 x4 + x1 y2 y3 x4 + y1 x2 x3 y4 -
-      // x1 y2 x3 y4 + x1 x2 y3 y4 + y1 y2 y3 y4 + z1 z2 x3 x4 + z1 z2 y3 y4 -
-      // z1 x2 z3 x4 - z1 y2 z3 y4 + x1 z2 z3 x4 + y1 z2 z3 y4 + z1 x2 x3 z4 +
-      // z1 y2 y3 z4 - x1 z2 x3 z4 - y1 z2 y3 z4 + x1 x2 z3 z4 + y1 y2 z3 z4 +
-      // z1 z2 z3 z4
       auto xxxx = mc(x, x, x, x);
       auto yyxx = mc(y, y, x, x);
+      auto zzxx = mc(z, z, x, x);
       auto yxyx = mc(y, x, y, x);
       auto xyyx = mc(x, y, y, x);
       auto yxxy = mc(y, x, x, y);
       auto xyxy = mc(x, y, x, y);
       auto xxyy = mc(x, x, y, y);
       auto yyyy = mc(y, y, y, y);
-      auto zzxx = mc(z, z, x, x);
       auto zzyy = mc(z, z, y, y);
-      auto zxzx = mc(z, x, z, x);
-      auto zyzy = mc(z, y, z, y);
-      auto xzzx = mc(x, z, z, x);
-      auto yzzy = mc(y, z, z, y);
-      auto zxxz = mc(z, x, x, z);
-      auto zyyz = mc(z, y, y, z);
-      auto xzxz = mc(x, z, x, z);
-      auto yzyz = mc(y, z, y, z);
       auto xxzz = mc(x, x, z, z);
       auto yyzz = mc(y, y, z, z);
       auto zzzz = mc(z, z, z, z);
       if (is_simple()) {
-        expr_ = xxxx + yyxx - yxyx + xyyx + yxxy - xyxy + xxyy + yyyy + zzxx +
-                zzyy - zxzx - zyzy + xzzx + yzzy + zxxz + zyyz - xzxz - yzyz +
-                xxzz + yyzz + zzzz;
-        nflops_ += 20;
+        expr_ = xxxx + yyxx + zzxx - yxyx + xyyx + yxxy - xyxy + xxyy + yyyy +
+                zzyy + xxzz + yyzz + zzzz;
+        nflops_ += 12;
       }
     } break;
     case 1: {
-      // x component =
-      // - z1 y2 x3 x4 + z1 x2 y3 x4 - z1 x2 x3 y4 - z1 y2 y3 y4 + y1 z2 x3 x4 -
-      // x1 z2 y3 x4 + x1 z2 x3 y4 + y1 z2 y3 y4 - y1 x2 z3 x4 + x1 y2 z3 x4 -
-      // x1 x2 z3 y4 - y1 y2 z3 y4 - z1 z2 z3 y4 + y1 x2 x3 z4 - x1 y2 x3 z4 +
-      // x1 x2 y3 z4 + y1 y2 y3 z4 + z1 z2 y3 z4 - z1 y2 z3 z4 + y1 z2 z3 z4
-      auto zyxx = mc(z, y, x, x);
-      auto zxyx = mc(z, x, y, x);
-      auto zxxy = mc(z, x, x, y);
-      auto zyyy = mc(z, y, y, y);
-      auto yzxx = mc(y, z, x, x);
-      auto xzyx = mc(x, z, y, x);
-      auto xzxy = mc(x, z, x, y);
-      auto yzyy = mc(y, z, y, y);
-      auto yxzx = mc(y, x, z, x);
-      auto xyzx = mc(x, y, z, x);
-      auto xxzy = mc(x, x, z, y);
-      auto yyzy = mc(y, y, z, y);
-      auto zzzy = mc(z, z, z, y);
-      auto yxxz = mc(y, x, x, z);
-      auto xyxz = mc(x, y, x, z);
-      auto xxyz = mc(x, x, y, z);
-      auto yyyz = mc(y, y, y, z);
-      auto zzyz = mc(z, z, y, z);
-      auto zyzz = mc(z, y, z, z);
-      auto yzzz = mc(y, z, z, z);
+      auto zxzx = mc(z, x, z, x);
+      auto xzzx = mc(x, z, z, x);
+      auto zyzy = mc(z, y, z, y);
+      auto yzzy = mc(y, z, z, y);
+      auto zxxz = mc(z, x, x, z);
+      auto xzxz = mc(x, z, x, z);
+      auto zyyz = mc(z, y, y, z);
+      auto yzyz = mc(y, z, y, z);
       if (is_simple()) {
-        // swapped order of first two terms compiler does not like negative sign
-        // in front of first term
-        expr_ = zxyx - zyxx - zxxy - zyyy + yzxx - xzyx + xzxy + yzyy - yxzx +
-                xyzx - xxzy - yyzy - zzzy + yxxz - xyxz + xxyz + yyyz + zzyz -
-                zyzz + yzzz;
-        nflops_ += 19;
+        expr_ = zxzx - xzzx - zyzy + yzzy - zxxz + xzxz + zyyz - yzyz;
+        nflops_ += 7;
       }
     } break;
     case 2: {
-      // y component =
-      // z1 x2 x3 x4 + z1 y2 y3 x4 - z1 y2 x3 y4 + z1 x2 y3 y4 - x1 z2 x3 x4 -
-      // y1 z2 y3 x4 + y1 z2 x3 y4 - x1 z2 y3 y4 + x1 x2 z3 x4 + y1 y2 z3 x4 -
-      // y1 x2 z3 y4 + x1 y2 z3 y4 + z1 z2 z3 x4 - x1 x2 x3 z4 - y1 y2 x3 z4 +
-      // y1 x2 y3 z4 - x1 y2 y3 z4 - z1 z2 x3 z4 + z1 x2 z3 z4 - x1 z2 z3 z4
-      auto zxxx = mc(z, x, x, x);
-      auto zyyx = mc(z, y, y, x);
-      auto zyxy = mc(z, y, x, y);
-      auto zxyy = mc(z, x, y, y);
-      auto xzxx = mc(x, z, x, x);
-      auto yzyx = mc(y, z, y, x);
-      auto yzxy = mc(y, z, x, y);
-      auto xzyy = mc(x, z, y, y);
-      auto xxzx = mc(x, x, z, x);
-      auto yyzx = mc(y, y, z, x);
-      auto yxzy = mc(y, x, z, y);
-      auto xyzy = mc(x, y, z, y);
-      auto zzzx = mc(z, z, z, x);
-      auto xxxz = mc(x, x, x, z);
-      auto yyxz = mc(y, y, x, z);
-      auto yxyz = mc(y, x, y, z);
-      auto xyyz = mc(x, y, y, z);
-      auto zzxz = mc(z, z, x, z);
-      auto zxzz = mc(z, x, z, z);
-      auto xzzz = mc(x, z, z, z);
-
+      auto zyzx = mc(z, y, z, x);
+      auto yzzx = mc(y, z, z, x);
+      auto zxzy = mc(z, x, z, y);
+      auto xzzy = mc(x, z, z, y);
+      auto zyxz = mc(z, y, x, z);
+      auto yzxz = mc(y, z, x, z);
+      auto zxyz = mc(z, x, y, z);
+      auto xzyz = mc(x, z, y, z);
       if (is_simple()) {
-        expr_ = zxxx + zyyx - zyxy + zxyy - xzxx - yzyx + yzxy - xzyy + xxzx +
-                yyzx - yxzy + xyzy + zzzx - xxxz - yyxz + yxyz - xyyz - zzxz +
-                zxzz - xzzz;
-        nflops_ += 19;
+        // swapped order of first two terms compiler does not like negative sign
+        // in front of first term
+        expr_ = yzzx - zyzx - zxzy + xzzy + zyxz - yzxz + zxyz - xzyz;
+        nflops_ += 7;
       }
     } break;
     case 3: {
-      // z component =
-      // - y1 x2 x3 x4 + x1 y2 x3 x4 - x1 x2 y3 x4 - y1 y2 y3 x4 + x1 x2 x3 y4 +
-      // y1 y2 x3 y4 - y1 x2 y3 y4 + x1 y2 y3 y4 - z1 z2 y3 x4 + z1 z2 x3 y4 +
-      // z1 y2 z3 x4 - z1 x2 z3 y4 - y1 z2 z3 x4 + x1 z2 z3 y4 - z1 y2 x3 z4 +
-      // z1 x2 y3 z4 + y1 z2 x3 z4 - x1 z2 y3 z4 - y1 x2 z3 z4 + x1 y2 z3 z4
       auto yxxx = mc(y, x, x, x);
       auto xyxx = mc(x, y, x, x);
       auto xxyx = mc(x, x, y, x);
       auto yyyx = mc(y, y, y, x);
+      auto zzyx = mc(z, z, y, x);
       auto xxxy = mc(x, x, x, y);
       auto yyxy = mc(y, y, x, y);
+      auto zzxy = mc(z, z, x, y);
       auto yxyy = mc(y, x, y, y);
       auto xyyy = mc(x, y, y, y);
-      auto zzyx = mc(z, z, y, x);
-      auto zzxy = mc(z, z, x, y);
-      auto zyzx = mc(z, y, z, x);
-      auto zxzy = mc(z, x, z, y);
-      auto yzzx = mc(y, z, z, x);
-      auto xzzy = mc(x, z, z, y);
-      auto zyxz = mc(z, y, x, z);
-      auto zxyz = mc(z, x, y, z);
-      auto yzxz = mc(y, z, x, z);
-      auto xzyz = mc(x, z, y, z);
       auto yxzz = mc(y, x, z, z);
       auto xyzz = mc(x, y, z, z);
       if (is_simple()) {
-        expr_ = xyxx - yxxx - xxyx - yyyx + xxxy + yyxy - yxyy + xyyy - zzyx +
-                zzxy + zyzx - zxzy - yzzx + xzzy - zyxz + zxyz + yzxz - xzyz -
-                yxzz + xyzz;
-        nflops_ += 19;
+        expr_ = xyxx - yxxx - xxyx - yyyx - zzyx + xxxy + yyxy + zzxy - yxyy +
+                xyyy - yxzz + xyzz;
+        nflops_ += 11;
       }
     } break;
     default:
