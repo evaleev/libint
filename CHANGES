@@ -3,6 +3,11 @@
 
 Following is a brief summary of changes made in each release of Libint.
 
+- 2025-2-2: 2.13.1
+  - PR #397: cmake boost check supports in-tree (non-IMPORTED) targets, including modularized Boost
+  - PR #s 395, 398: support for Eigen 5.0.0 (HT @EricaCMitchell)
+  - PR #394: add .gitattributes to enable building from git archive tarballs (HT @cho-m)
+
 - 2025-2-1: 2.13.0
   - PRs 309, 312, 313, 314, 315, 316, 317, 388: full CMake harness for compiler, megadebt to @loriab
   - PRs 389, 390, 391: misc laundry: separate out compiler code from exported code (as much as possible),

@@ -98,6 +98,11 @@ void CodeContext::zero_out_counters() const {
 
 void CodeContext::reset() { zero_out_counters(); }
 
+std::string CodeContext::label_to_function_name(
+    const std::string& label) const {
+  return cparams()->api_prefix() + label_to_name(label_to_funcname(label));
+}
+
 std::string CodeContext::replace_chars(const std::string& S,
                                        const std::string& From,
                                        const std::string& To) {

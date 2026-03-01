@@ -5,6 +5,15 @@ MODULE libint_f
 #include <libint2/util/generated/libint2_params.h>
 #include "fortran_incldefs.h"
 
+/* Macro to form BIND(C, NAME=...) with API prefix for Fortran.
+   Uses LIBINT_API_PREFIX from config.h (a string literal, e.g. "gha")
+   and Fortran's // string concatenation operator. */
+#ifdef LIBINT_API_PREFIX
+#define LIBINT2_FORTRAN_BIND(namestr) BIND(C, NAME=LIBINT_API_PREFIX // namestr)
+#else
+#define LIBINT2_FORTRAN_BIND(namestr) BIND(C)
+#endif
+
    IMPLICIT NONE
 
 #ifdef LIBINT2_MAX_AM
@@ -59,83 +68,83 @@ MODULE libint_f
 
 #ifdef LIBINT_INCLUDE_ERI
    TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri, 0:libint2_max_am_eri, 0:libint2_max_am_eri, 0:libint2_max_am_eri), &
-      BIND(C) :: libint2_build_eri
+      LIBINT2_FORTRAN_BIND("libint2_build_eri") :: libint2_build_eri
 #if LIBINT_INCLUDE_ERI >= 1
    TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri1, 0:libint2_max_am_eri1, 0:libint2_max_am_eri1, 0:libint2_max_am_eri1), &
-      BIND(C) :: libint2_build_eri1
+      LIBINT2_FORTRAN_BIND("libint2_build_eri1") :: libint2_build_eri1
 #endif
 #if LIBINT_INCLUDE_ERI >= 2
    TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_eri2, 0:libint2_max_am_eri2, 0:libint2_max_am_eri2, 0:libint2_max_am_eri2), &
-      BIND(C) :: libint2_build_eri2
+      LIBINT2_FORTRAN_BIND("libint2_build_eri2") :: libint2_build_eri2
 #endif
 #endif
 
 #ifdef LIBINT_INCLUDE_ERI2
    TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_2eri, 0:libint2_max_am_2eri), &
-      BIND(C) :: libint2_build_2eri
+      LIBINT2_FORTRAN_BIND("libint2_build_2eri") :: libint2_build_2eri
 #if LIBINT_INCLUDE_ERI2 >= 1
    TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_2eri1, 0:libint2_max_am_2eri1), &
-      BIND(C) :: libint2_build_2eri1
+      LIBINT2_FORTRAN_BIND("libint2_build_2eri1") :: libint2_build_2eri1
 #endif
 #if LIBINT_INCLUDE_ERI2 >= 2
    TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_2eri2, 0:libint2_max_am_2eri2), &
-      BIND(C) :: libint2_build_2eri2
+      LIBINT2_FORTRAN_BIND("libint2_build_2eri2") :: libint2_build_2eri2
 #endif
 #endif
 
 #ifdef LIBINT_INCLUDE_ERI3
    TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_default, 0:libint2_max_am_default, 0:libint2_max_am_3eri), &
-      BIND(C) :: libint2_build_3eri
+      LIBINT2_FORTRAN_BIND("libint2_build_3eri") :: libint2_build_3eri
 #if LIBINT_INCLUDE_ERI3 >= 1
    TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_default1, 0:libint2_max_am_default1, 0:libint2_max_am_3eri1), &
-      BIND(C) :: libint2_build_3eri1
+      LIBINT2_FORTRAN_BIND("libint2_build_3eri1") :: libint2_build_3eri1
 #endif
 #if LIBINT_INCLUDE_ERI3 >= 2
    TYPE(C_FUNPTR), DIMENSION(0:libint2_max_am_default2, 0:libint2_max_am_default2, 0:libint2_max_am_3eri2), &
-      BIND(C) :: libint2_build_3eri2
+      LIBINT2_FORTRAN_BIND("libint2_build_3eri2") :: libint2_build_3eri2
 #endif
 #endif
 
    INTERFACE
-      SUBROUTINE libint2_static_init() BIND(C)
+      SUBROUTINE libint2_static_init() LIBINT2_FORTRAN_BIND("libint2_static_init")
       END SUBROUTINE
 
-      SUBROUTINE libint2_static_cleanup() BIND(C)
+      SUBROUTINE libint2_static_cleanup() LIBINT2_FORTRAN_BIND("libint2_static_cleanup")
       END SUBROUTINE
 
 #ifdef LIBINT_INCLUDE_ERI
-      SUBROUTINE libint2_init_eri(libint, max_am, buf) BIND(C)
+      SUBROUTINE libint2_init_eri(libint, max_am, buf) LIBINT2_FORTRAN_BIND("libint2_init_eri")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
          INTEGER(KIND=C_INT), VALUE :: max_am
          TYPE(C_PTR), VALUE :: buf
       END SUBROUTINE
 
-      SUBROUTINE libint2_cleanup_eri(libint) BIND(C)
+      SUBROUTINE libint2_cleanup_eri(libint) LIBINT2_FORTRAN_BIND("libint2_cleanup_eri")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
       END SUBROUTINE
 
-      FUNCTION libint2_need_memory_eri(max_am) BIND(C)
+      FUNCTION libint2_need_memory_eri(max_am) LIBINT2_FORTRAN_BIND("libint2_need_memory_eri")
          IMPORT
          INTEGER(KIND=C_INT), VALUE :: max_am
          INTEGER(KIND=C_SIZE_T) :: libint2_need_memory_eri
       END FUNCTION
 
 #if LIBINT_INCLUDE_ERI >= 1
-      SUBROUTINE libint2_init_eri1(libint, max_am, buf) BIND(C)
+      SUBROUTINE libint2_init_eri1(libint, max_am, buf) LIBINT2_FORTRAN_BIND("libint2_init_eri1")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
          INTEGER(KIND=C_INT), VALUE :: max_am
          TYPE(C_PTR), VALUE :: buf
       END SUBROUTINE
 
-      SUBROUTINE libint2_cleanup_eri1(libint) BIND(C)
+      SUBROUTINE libint2_cleanup_eri1(libint) LIBINT2_FORTRAN_BIND("libint2_cleanup_eri1")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
       END SUBROUTINE
 
-      FUNCTION libint2_need_memory_eri1(max_am) BIND(C)
+      FUNCTION libint2_need_memory_eri1(max_am) LIBINT2_FORTRAN_BIND("libint2_need_memory_eri1")
          IMPORT
          INTEGER(KIND=C_INT), VALUE :: max_am
          INTEGER(KIND=C_SIZE_T) :: libint2_need_memory_eri1
@@ -143,19 +152,19 @@ MODULE libint_f
 #endif
 
 #if LIBINT_INCLUDE_ERI >= 2
-      SUBROUTINE libint2_init_eri2(libint, max_am, buf) BIND(C)
+      SUBROUTINE libint2_init_eri2(libint, max_am, buf) LIBINT2_FORTRAN_BIND("libint2_init_eri2")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
          INTEGER(KIND=C_INT), VALUE :: max_am
          TYPE(C_PTR), VALUE :: buf
       END SUBROUTINE
 
-      SUBROUTINE libint2_cleanup_eri2(libint) BIND(C)
+      SUBROUTINE libint2_cleanup_eri2(libint) LIBINT2_FORTRAN_BIND("libint2_cleanup_eri2")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
       END SUBROUTINE
 
-      FUNCTION libint2_need_memory_eri2(max_am) BIND(C)
+      FUNCTION libint2_need_memory_eri2(max_am) LIBINT2_FORTRAN_BIND("libint2_need_memory_eri2")
          IMPORT
          INTEGER(KIND=C_INT), VALUE :: max_am
          INTEGER(KIND=C_SIZE_T) :: libint2_need_memory_eri2
@@ -164,38 +173,38 @@ MODULE libint_f
 #endif
 
 #ifdef LIBINT_INCLUDE_ERI2
-      SUBROUTINE libint2_init_2eri(libint, max_am, buf) BIND(C)
+      SUBROUTINE libint2_init_2eri(libint, max_am, buf) LIBINT2_FORTRAN_BIND("libint2_init_2eri")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
          INTEGER(KIND=C_INT), VALUE :: max_am
          TYPE(C_PTR), VALUE :: buf
       END SUBROUTINE
 
-      SUBROUTINE libint2_cleanup_2eri(libint) BIND(C)
+      SUBROUTINE libint2_cleanup_2eri(libint) LIBINT2_FORTRAN_BIND("libint2_cleanup_2eri")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
       END SUBROUTINE
 
-      FUNCTION libint2_need_memory_2eri(max_am) BIND(C)
+      FUNCTION libint2_need_memory_2eri(max_am) LIBINT2_FORTRAN_BIND("libint2_need_memory_2eri")
          IMPORT
          INTEGER(KIND=C_INT), VALUE :: max_am
          INTEGER(KIND=C_SIZE_T) :: libint2_need_memory_2eri
       END FUNCTION
 
 #if LIBINT_INCLUDE_ERI2 >= 1
-      SUBROUTINE libint2_init_2eri1(libint, max_am, buf) BIND(C)
+      SUBROUTINE libint2_init_2eri1(libint, max_am, buf) LIBINT2_FORTRAN_BIND("libint2_init_2eri1")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
          INTEGER(KIND=C_INT), VALUE :: max_am
          TYPE(C_PTR), VALUE :: buf
       END SUBROUTINE
 
-      SUBROUTINE libint2_cleanup_2eri1(libint) BIND(C)
+      SUBROUTINE libint2_cleanup_2eri1(libint) LIBINT2_FORTRAN_BIND("libint2_cleanup_2eri1")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
       END SUBROUTINE
 
-      FUNCTION libint2_need_memory_2eri1(max_am) BIND(C)
+      FUNCTION libint2_need_memory_2eri1(max_am) LIBINT2_FORTRAN_BIND("libint2_need_memory_2eri1")
          IMPORT
          INTEGER(KIND=C_INT), VALUE :: max_am
          INTEGER(KIND=C_SIZE_T) :: libint2_need_memory_2eri1
@@ -203,19 +212,19 @@ MODULE libint_f
 #endif
 
 #if LIBINT_INCLUDE_ERI2 >= 2
-      SUBROUTINE libint2_init_2eri2(libint, max_am, buf) BIND(C)
+      SUBROUTINE libint2_init_2eri2(libint, max_am, buf) LIBINT2_FORTRAN_BIND("libint2_init_2eri2")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
          INTEGER(KIND=C_INT), VALUE :: max_am
          TYPE(C_PTR), VALUE :: buf
       END SUBROUTINE
 
-      SUBROUTINE libint2_cleanup_2eri2(libint) BIND(C)
+      SUBROUTINE libint2_cleanup_2eri2(libint) LIBINT2_FORTRAN_BIND("libint2_cleanup_2eri2")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
       END SUBROUTINE
 
-      FUNCTION libint2_need_memory_2eri2(max_am) BIND(C)
+      FUNCTION libint2_need_memory_2eri2(max_am) LIBINT2_FORTRAN_BIND("libint2_need_memory_2eri2")
          IMPORT
          INTEGER(KIND=C_INT), VALUE :: max_am
          INTEGER(KIND=C_SIZE_T) :: libint2_need_memory_2eri2
@@ -224,38 +233,38 @@ MODULE libint_f
 #endif
 
 #ifdef LIBINT_INCLUDE_ERI3
-      SUBROUTINE libint2_init_3eri(libint, max_am, buf) BIND(C)
+      SUBROUTINE libint2_init_3eri(libint, max_am, buf) LIBINT2_FORTRAN_BIND("libint2_init_3eri")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
          INTEGER(KIND=C_INT), VALUE :: max_am
          TYPE(C_PTR), VALUE :: buf
       END SUBROUTINE
 
-      SUBROUTINE libint2_cleanup_3eri(libint) BIND(C)
+      SUBROUTINE libint2_cleanup_3eri(libint) LIBINT2_FORTRAN_BIND("libint2_cleanup_3eri")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
       END SUBROUTINE
 
-      FUNCTION libint2_need_memory_3eri(max_am) BIND(C)
+      FUNCTION libint2_need_memory_3eri(max_am) LIBINT2_FORTRAN_BIND("libint2_need_memory_3eri")
          IMPORT
          INTEGER(KIND=C_INT), VALUE :: max_am
          INTEGER(KIND=C_SIZE_T) :: libint2_need_memory_3eri
       END FUNCTION
 
 #if LIBINT_INCLUDE_ERI3 >= 1
-      SUBROUTINE libint2_init_3eri1(libint, max_am, buf) BIND(C)
+      SUBROUTINE libint2_init_3eri1(libint, max_am, buf) LIBINT2_FORTRAN_BIND("libint2_init_3eri1")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
          INTEGER(KIND=C_INT), VALUE :: max_am
          TYPE(C_PTR), VALUE :: buf
       END SUBROUTINE
 
-      SUBROUTINE libint2_cleanup_3eri1(libint) BIND(C)
+      SUBROUTINE libint2_cleanup_3eri1(libint) LIBINT2_FORTRAN_BIND("libint2_cleanup_3eri1")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
       END SUBROUTINE
 
-      FUNCTION libint2_need_memory_3eri1(max_am) BIND(C)
+      FUNCTION libint2_need_memory_3eri1(max_am) LIBINT2_FORTRAN_BIND("libint2_need_memory_3eri1")
          IMPORT
          INTEGER(KIND=C_INT), VALUE :: max_am
          INTEGER(KIND=C_SIZE_T) :: libint2_need_memory_3eri1
@@ -263,19 +272,19 @@ MODULE libint_f
 #endif
 
 #if LIBINT_INCLUDE_ERI3 >= 2
-      SUBROUTINE libint2_init_3eri2(libint, max_am, buf) BIND(C)
+      SUBROUTINE libint2_init_3eri2(libint, max_am, buf) LIBINT2_FORTRAN_BIND("libint2_init_3eri2")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
          INTEGER(KIND=C_INT), VALUE :: max_am
          TYPE(C_PTR), VALUE :: buf
       END SUBROUTINE
 
-      SUBROUTINE libint2_cleanup_3eri2(libint) BIND(C)
+      SUBROUTINE libint2_cleanup_3eri2(libint) LIBINT2_FORTRAN_BIND("libint2_cleanup_3eri2")
          IMPORT
          TYPE(libint_t), DIMENSION(*) :: libint
       END SUBROUTINE
 
-      FUNCTION libint2_need_memory_3eri2(max_am) BIND(C)
+      FUNCTION libint2_need_memory_3eri2(max_am) LIBINT2_FORTRAN_BIND("libint2_need_memory_3eri2")
          IMPORT
          INTEGER(KIND=C_INT), VALUE :: max_am
          INTEGER(KIND=C_SIZE_T) :: libint2_need_memory_3eri2

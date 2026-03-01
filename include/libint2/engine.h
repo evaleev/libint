@@ -1099,7 +1099,7 @@ class Engine {
 
   void finalize() {
     if (primdata_.size() != 0) {
-      libint2_cleanup_default(&primdata_[0]);
+      LIBINT2_PREFIXED_NAME(libint2_cleanup_default)(&primdata_[0]);
     }
   }  // finalize()
 

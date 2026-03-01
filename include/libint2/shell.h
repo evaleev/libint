@@ -761,9 +761,11 @@ struct Shell {
     max_ln_coeff = std::move(other.max_ln_coeff);
     return *this;
   }
-  /// @param embed_normalization_into_coefficients if true, will embed
-  /// normalization factors into coefficients, else will use the coefficients in
-  /// @p _contr as given
+  /// @param embed_normalization_into_coefficients is used to control whether
+  /// or not Shell should treat the coefficients as already normalized. If
+  /// embed_normalization_into_coefficients is true Shell will normalize the
+  /// primitives and update the coefficients to include the normalization, else 
+  /// Shell will use the coefficients in @p _contr as given
   Shell(svector<real_t> _alpha, svector<Contraction> _contr,
         std::array<real_t, 3> _O,
         bool embed_normalization_into_coefficients = true)

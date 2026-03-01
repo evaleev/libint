@@ -394,12 +394,15 @@ void compute_eri_c(int &contrdepth, int &deriv_order, int &am1, double *c1,
   erieval[0].contrdepth = p0123;
 #endif
 
-  if (deriv_order == 0) libint2_build_eri[am1][am2][am3][am4](erieval);
+  if (deriv_order == 0)
+    LIBINT2_PREFIXED_NAME(libint2_build_eri)[am1][am2][am3][am4](erieval);
 #if LIBINT_INCLUDE_ERI >= 1
-  if (deriv_order == 1) libint2_build_eri1[am1][am2][am3][am4](erieval);
+  if (deriv_order == 1)
+    LIBINT2_PREFIXED_NAME(libint2_build_eri1)[am1][am2][am3][am4](erieval);
 #endif
 #if LIBINT_INCLUDE_ERI >= 2
-  if (deriv_order == 2) libint2_build_eri2[am1][am2][am3][am4](erieval);
+  if (deriv_order == 2)
+    LIBINT2_PREFIXED_NAME(libint2_build_eri2)[am1][am2][am3][am4](erieval);
 #endif
 }
 
@@ -421,19 +424,19 @@ bool test_eri_c_f(int &contrdepth, int &am1, double *c1, double *alpha1,
   const unsigned int max_am = std::max(std::max(am1, am2), std::max(am3, am4));
 
   if (deriv_order == 0) {
-    libint2_init_eri(erieval_c, max_am, 0);
-    libint2_init_eri(erieval_f, max_am, 0);
+    LIBINT2_PREFIXED_NAME(libint2_init_eri)(erieval_c, max_am, 0);
+    LIBINT2_PREFIXED_NAME(libint2_init_eri)(erieval_f, max_am, 0);
   }
 #if LIBINT_INCLUDE_ERI >= 1
   if (deriv_order == 1) {
-    libint2_init_eri1(erieval_c, max_am, 0);
-    libint2_init_eri1(erieval_f, max_am, 0);
+    LIBINT2_PREFIXED_NAME(libint2_init_eri1)(erieval_c, max_am, 0);
+    LIBINT2_PREFIXED_NAME(libint2_init_eri1)(erieval_f, max_am, 0);
   }
 #endif
 #if LIBINT_INCLUDE_ERI >= 2
   if (deriv_order == 2) {
-    libint2_init_eri2(erieval_c, max_am, 0);
-    libint2_init_eri2(erieval_f, max_am, 0);
+    LIBINT2_PREFIXED_NAME(libint2_init_eri2)(erieval_c, max_am, 0);
+    LIBINT2_PREFIXED_NAME(libint2_init_eri2)(erieval_f, max_am, 0);
   }
 #endif
 
@@ -519,19 +522,19 @@ bool test_eri_c_f(int &contrdepth, int &am1, double *c1, double *alpha1,
   }
 
   if (deriv_order == 0) {
-    libint2_cleanup_eri(erieval_c);
-    libint2_cleanup_eri(erieval_f);
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(erieval_c);
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri)(erieval_f);
   }
 #if LIBINT_INCLUDE_ERI >= 1
   if (deriv_order == 1) {
-    libint2_cleanup_eri1(erieval_c);
-    libint2_cleanup_eri1(erieval_f);
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri1)(erieval_c);
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri1)(erieval_f);
   }
 #endif
 #if LIBINT_INCLUDE_ERI >= 2
   if (deriv_order == 2) {
-    libint2_cleanup_eri2(erieval_c);
-    libint2_cleanup_eri2(erieval_f);
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri2)(erieval_c);
+    LIBINT2_PREFIXED_NAME(libint2_cleanup_eri2)(erieval_f);
   }
 #endif
 

@@ -30,6 +30,7 @@ jobs:
           - build_type: Debug
             build_shared_libs: OFF
             do_fortran: ON
+            api_prefix: gha
           - build_type: Release
             build_shared_libs: ON
             os: ubuntu-24.04
@@ -69,6 +70,7 @@ jobs:
         -D LIBINT2_ENABLE_FORTRAN=${{ matrix.do_fortran }}
         -D LIBINT2_ENABLE_PYTHON=ON
         -D LIBINT2_EXPORT_COMPRESSOR=${{ matrix.compressor }}
+        -D LIBINT2_API_PREFIX=${{ matrix.api_prefix }}
 
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}

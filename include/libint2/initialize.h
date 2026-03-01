@@ -41,10 +41,10 @@ namespace libint2 {
 namespace detail {
 struct __initializer {
   __initializer() {
-    libint2_static_init();
+    LIBINT2_PREFIXED_NAME(libint2_static_init)();
     libint2::DerivMapGenerator::initialize();
   }
-  ~__initializer() { libint2_static_cleanup(); }
+  ~__initializer() { LIBINT2_PREFIXED_NAME(libint2_static_cleanup)(); }
 };
 
 inline std::atomic<bool>& verbose_accessor() {

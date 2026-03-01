@@ -11,28 +11,28 @@ endif ()
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(DynamicVersion)
 dynamic_version(
-        PROJECT_PREFIX Libint2Compiler_
-        GIT_ARCHIVAL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/.git_archival.txt
-        VERSION_FULL_MODE POST
-        OUTPUT_COMMIT LibintRepository_COMMIT
-        OUTPUT_VERSION LibintRepository_VERSION
-        OUTPUT_DESCRIBE LibintRepository_DESCRIBE
-        OUTPUT_DISTANCE LibintRepository_DISTANCE
-        OUTPUT_SHORT_HASH LibintRepository_SHORT_HASH
-        OUTPUT_VERSION_FULL LibintRepository_VERSION_FULL
-)
+  PROJECT_PREFIX Libint2Compiler_
+  GIT_ARCHIVAL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/.git_archival.txt
+  VERSION_FULL_MODE POST
+  OUTPUT_COMMIT LibintRepository_COMMIT
+  OUTPUT_VERSION LibintRepository_VERSION
+  OUTPUT_DESCRIBE LibintRepository_DESCRIBE
+  OUTPUT_DISTANCE LibintRepository_DISTANCE
+  OUTPUT_SHORT_HASH LibintRepository_SHORT_HASH
+  OUTPUT_VERSION_FULL LibintRepository_VERSION_FULL
+  )
 
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")  # foil Ninja Debug on Windows
 
 project(
-        Libint2Compiler
-        VERSION ${LibintRepository_VERSION}
-        DESCRIPTION
-        "A library for the evaluation of molecular integrals of many-body operators over Gaussian functions"
-        HOMEPAGE_URL "http://libint.valeyev.net"
-        LANGUAGES CXX
-)
-# * http://libint.valeyev.net/ redirects to https://github.com/evaleev/libint
+  Libint2Compiler
+  VERSION ${LibintRepository_VERSION}
+  DESCRIPTION
+    "A library for the evaluation of molecular integrals of many-body operators over Gaussian functions"
+  HOMEPAGE_URL "http://libint.valeyev.net"
+  LANGUAGES CXX
+  )
+  # * http://libint.valeyev.net/ redirects to https://github.com/evaleev/libint
 
 set(${PROJECT_NAME}_AUTHORS "Edward F. Valeev")
 set(${PROJECT_NAME}_LICENSE "GPL-3.0-only for generator; LGPL-3.0-only for generated library")
@@ -282,9 +282,9 @@ include(int_userreal)
 option_with_print(LIBINT2_GENERATE_FMA
         "Generate FMA (fused multiply-add) instructions (to benefit must have FMA-capable hardware and compiler)" OFF)
 option_with_print(LIBINT2_ENABLE_GENERIC_CODE
-        "Use manually-written generic code" OFF)
-option_with_print(LIBINT2_API_PREFIX
-        "Prepend this string to every name in the library API (except for the types)." OFF)
+  "Use manually-written generic code" OFF)
+option_with_default(LIBINT2_API_PREFIX
+  "Prepend this string to every name in the library API (except for the types)." "")
 option_with_print(LIBINT2_VECTOR_LENGTH
         "Compute integrals in vectors of length N." OFF)
 option_with_default(LIBINT2_VECTOR_METHOD

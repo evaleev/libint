@@ -1000,8 +1000,7 @@ std::string declare_function(const std::shared_ptr<CodeContext>& context,
                              const std::string& tlabel,
                              const std::string& function_descr,
                              std::ostream& decl) {
-  std::string function_name = label_to_funcname(function_descr);
-  function_name = context->label_to_name(function_name);
+  std::string function_name = context->label_to_function_name(function_descr);
 
   decl << context->code_prefix();
   std::string func_decl;
@@ -1080,8 +1079,7 @@ void DirectedGraph::generate_code(
   std::string func_prereq_decl;
   if (missing_prereqs) {
     std::ostringstream oss;
-    func_prereq_name =
-        context->label_to_name(label_to_funcname(label)) + "_prereq";
+    func_prereq_name = label_to_funcname(label) + "_prereq";
     func_prereq_decl =
         declare_function(context, dims, args, tlabel, func_prereq_name, oss);
   }
@@ -1103,10 +1101,8 @@ void DirectedGraph::generate_code(
   for (FuncNameContainer::const_iterator fn = func_names_.begin();
        fn != func_names_.end(); fn++) {
     string function_name = (*fn).first;
-    def << "#include <"
-        << context->label_to_name(context->cparams()->api_prefix() +
-                                  function_name)
-        << ".h>" << endl;
+    def << "#include <" << context->label_to_name(function_name) << ".h>"
+        << endl;
   }
   def << endl;
 
@@ -1184,8 +1180,8 @@ void DirectedGraph::generate_code(
 
     def << context->decldef("const int", "contrdepth", "inteval->contrdepth");
     def << contr_loop->open();
-    def << func_prereq_name << "(inteval+c, " << registry()->stack_name() << ")"
-        << context->end_of_stat() << endl;
+    def << context->label_to_function_name(func_prereq_name) << "(inteval+c, "
+        << registry()->stack_name() << ")" << context->end_of_stat() << endl;
     def << contr_loop->close() << endl;
 
     // if profiling is on, start the next timer, after stopping the current

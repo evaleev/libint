@@ -357,7 +357,7 @@ Note that options, docs, and CMake components are focused on the C++ interface, 
 * `LIBINT_ALIGN_SIZE` - G - If posix_memalign is available, this will specify alignment of Libint data, in units of sizeof(LIBINT2_REALTYPE). Default is to use built-in heuristics: system-determined for vectorization off (default) or veclen * sizeof(LIBINT2_REALTYPE) for vectorization on. (experts only). [Default=0]
 * `LIBINT2_GENERATE_FMA` - G - Generate FMA (fused multiply-add) instructions (to benefit must have FMA-capable hardware and compiler). [Default=OFF]
 * `LIBINT2_ENABLE_GENERIC_CODE` - G - Use manually-written generic code. [Default=OFF]
-* `LIBINT2_API_PREFIX` - G - Prepend this string to every name in the library API (except for the types). [Default=OFF]
+* `LIBINT2_API_PREFIX` - G - Prepend this string to every name in the library API (except for the types). [Default=""]
 * `LIBINT2_VECTOR_LENGTH` - G - Compute integrals in vectors of length N. [Default=OFF]
 * `LIBINT2_VECTOR_METHOD` - G - Specifies how to vectorize integrals. Irrelevant when `LIBINT2_VECTOR_LENGTH=OFF. Allowed values are 'block' and 'line'.  [Default=block]
 * `LIBINT2_ACCUM_INTS` - G - Accumulate integrals to the buffer, rather than copy (OFF for copy, ON for accum). [Default=OFF]

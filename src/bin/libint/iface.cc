@@ -116,8 +116,8 @@ Libint2Iface::Libint2Iface(
     const unsigned int nbf = cparams_->num_bf(tlabel);
 
     ostringstream oss;
-    oss << "void (*" << ctext->label_to_name(cparams->api_prefix())
-        << "libint2_build_" << tlabel;
+    oss << "void (*"
+        << ctext->label_to_function_name("libint2_build_" + tlabel);
     for (unsigned int c = 0; c < nbf; ++c) {
       const unsigned int lmax =
           const_cast<const CompilationParameters*>(cparams_.get())
@@ -135,15 +135,12 @@ Libint2Iface::Libint2Iface(
   // Declare library constructor/destructor
   oss_.str(null_str_);
   oss_ << ctext_->type_name<void>() << " "
-       << ctext_->label_to_name(cparams->api_prefix() + "libint2_static_init")
-       << "()";
+       << ctext_->label_to_function_name("libint2_static_init") << "()";
   std::string si_fdec(oss_.str());
 
   oss_.str(null_str_);
   oss_ << ctext_->type_name<void>() << " "
-       << ctext_->label_to_name(cparams->api_prefix() +
-                                "libint2_static_cleanup")
-       << "()";
+       << ctext_->label_to_function_name("libint2_static_cleanup") << "()";
   std::string sc_fdec(oss_.str());
 
   ih_ << si_fdec << ctext_->end_of_stat() << endl;
@@ -156,26 +153,23 @@ Libint2Iface::Libint2Iface(
 
     oss_.str(null_str_);
     oss_ << ctext_->type_name<void>() << " "
-         << ctext_->label_to_name(cparams->api_prefix() + "libint2_init_" +
-                                  tlabel)
-         << "(" << ctext_->inteval_type_name(tlabel)
+         << ctext_->label_to_function_name("libint2_init_" + tlabel) << "("
+         << ctext_->inteval_type_name(tlabel)
          << "* inteval, int max_am, void* buf)";
     std::string li_fdec(oss_.str());
     li_decls_.push_back(li_fdec);
 
     oss_.str(null_str_);
     oss_ << ctext_->type_name<size_t>() << " "
-         << ctext_->label_to_name(cparams->api_prefix() +
-                                  "libint2_need_memory_" + tlabel)
+         << ctext_->label_to_function_name("libint2_need_memory_" + tlabel)
          << "(int max_am)";
     std::string lm_fdec(oss_.str());
     lm_decls_.push_back(lm_fdec);
 
     oss_.str(null_str_);
     oss_ << ctext_->type_name<void>() << " "
-         << ctext_->label_to_name(cparams->api_prefix() + "libint2_cleanup_" +
-                                  tlabel)
-         << "(" << ctext_->inteval_type_name(tlabel) << "* inteval)";
+         << ctext_->label_to_function_name("libint2_cleanup_" + tlabel) << "("
+         << ctext_->inteval_type_name(tlabel) << "* inteval)";
     std::string lc_fdec(oss_.str());
     lc_decls_.push_back(lc_fdec);
 
@@ -189,8 +183,7 @@ Libint2Iface::Libint2Iface(
     oss_.str(null_str_);
     oss_ << "#ifdef __cplusplus\n#ifdef LIBINT2_FLOP_COUNT\nextern \"C++\" "
             "template <typename EvalType> void "
-         << ctext_->label_to_name(cparams->api_prefix() +
-                                  "libint2_init_flopcounter")
+         << ctext_->label_to_function_name("libint2_init_flopcounter")
          << "(EvalType* inteval_vector, int inteval_vector_size)"
          << ctext_->open_block();
     // TODO convert to ForLoop object
@@ -352,8 +345,7 @@ Libint2Iface::~Libint2Iface() {
           << "else " << std::endl;
       {
         std::string tmp =
-            ctext_->label_to_name(cparams_->api_prefix() +
-                                  "libint2_need_memory_" + tlabel) +
+            ctext_->label_to_function_name("libint2_need_memory_" + tlabel) +
             "(max_am)";
 
         // no posix_memalign? use new, with default alignment

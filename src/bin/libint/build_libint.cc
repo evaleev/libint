@@ -506,7 +506,7 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
       std::string eval_label;
       {
         std::ostringstream oss;
-        oss << cparams->api_prefix() << "_" << label;
+        oss << "_" << label;
         if (deriv_level > 0) oss << "deriv" << deriv_level;
         BFType a(la);
         BFType b(lb);
@@ -535,9 +535,9 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
 
       // set pointer to the top-level evaluator function
       ostringstream oss;
-      oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_"
-          << task << "[" << la << "][" << lb
-          << "] = " << context->label_to_name(label_to_funcname(eval_label))
+      oss << context->label_to_function_name("libint2_build_" + task) << "["
+          << la << "][" << lb
+          << "] = " << context->label_to_function_name(eval_label)
           << context->end_of_stat() << endl;
       iface->to_static_init(oss.str());
 
@@ -1304,10 +1304,9 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
 
           // set pointer to the top-level evaluator function
           ostringstream oss;
-          oss << context->label_to_name(cparams->api_prefix())
-              << "libint2_build_" << task << "[" << la << "][" << lb << "]["
-              << lc << "][" << ld
-              << "] = " << context->label_to_name(label_to_funcname(eval_label))
+          oss << context->label_to_function_name("libint2_build_" + task) << "["
+              << la << "][" << lb << "][" << lc << "][" << ld
+              << "] = " << context->label_to_function_name(eval_label)
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
 
@@ -1482,7 +1481,7 @@ void build_TwoPRep_1b_2k(std::ostream& os,
         // + derivative level (if deriv_level > 0)
         std::string label;
         {
-          label = cparams->api_prefix();
+          label = "";
           if (deriv_level != 0) {
             std::ostringstream oss;
             oss << "deriv" << deriv_level;
@@ -1514,9 +1513,9 @@ void build_TwoPRep_1b_2k(std::ostream& os,
 
         // set pointer to the top-level evaluator function
         ostringstream oss;
-        oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_"
-            << task << "[" << lbra << "][" << lc << "][" << ld
-            << "] = " << context->label_to_name(label_to_funcname(label))
+        oss << context->label_to_function_name("libint2_build_" + task) << "["
+            << lbra << "][" << lc << "][" << ld
+            << "] = " << context->label_to_function_name(label)
             << context->end_of_stat() << endl;
         iface->to_static_init(oss.str());
 
@@ -1679,7 +1678,7 @@ void build_TwoPRep_1b_1k(std::ostream& os,
       // + derivative level (if deriv_level > 0)
       std::string label;
       {
-        label = cparams->api_prefix();
+        label = "";
         if (deriv_level != 0) {
           std::ostringstream oss;
           oss << "deriv" << deriv_level;
@@ -1711,9 +1710,9 @@ void build_TwoPRep_1b_1k(std::ostream& os,
 
       // set pointer to the top-level evaluator function
       ostringstream oss;
-      oss << context->label_to_name(cparams->api_prefix()) << "libint2_build_"
-          << task << "[" << lbra << "][" << lket
-          << "] = " << context->label_to_name(label_to_funcname(label))
+      oss << context->label_to_function_name("libint2_build_" + task) << "["
+          << lbra << "][" << lket
+          << "] = " << context->label_to_function_name(label)
           << context->end_of_stat() << endl;
       iface->to_static_init(oss.str());
 
@@ -1894,7 +1893,7 @@ void build_R12kG12_2b_2k(std::ostream& os,
           }
 
           std::string prefix(cparams->source_directory());
-          std::string label(cparams->api_prefix() + _label);
+          std::string label(_label);
           std::deque<std::string> decl_filenames;
           std::deque<std::string> def_filenames;
 
@@ -1910,10 +1909,9 @@ void build_R12kG12_2b_2k(std::ostream& os,
           tparams->max_ntarget(5);
 
           ostringstream oss;
-          oss << context->label_to_name(cparams->api_prefix())
-              << "libint2_build_r12kg12[" << la << "][" << lb << "][" << lc
-              << "][" << ld
-              << "] = " << context->label_to_name(label_to_funcname(label))
+          oss << context->label_to_function_name("libint2_build_r12kg12") << "["
+              << la << "][" << lb << "][" << lc << "][" << ld
+              << "] = " << context->label_to_function_name(label)
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
 
@@ -2039,7 +2037,7 @@ void build_R12kG12_2b_2k_separate(
             }
 
             std::string prefix(cparams->source_directory());
-            std::string label(cparams->api_prefix() + _label);
+            std::string label(_label);
             std::deque<std::string> decl_filenames;
             std::deque<std::string> def_filenames;
 
@@ -2055,10 +2053,10 @@ void build_R12kG12_2b_2k_separate(
             tparams->max_ntarget(1);
 
             ostringstream oss;
-            oss << context->label_to_name(cparams->api_prefix())
-                << "libint2_build_" << task_names[task] << "[" << la << "]["
-                << lb << "][" << lc << "][" << ld
-                << "] = " << context->label_to_name(label_to_funcname(label))
+            oss << context->label_to_function_name(
+                       std::string("libint2_build_") + task_names[task])
+                << "[" << la << "][" << lb << "][" << lc << "][" << ld
+                << "] = " << context->label_to_function_name(label)
                 << context->end_of_stat() << endl;
             iface->to_static_init(oss.str());
 
@@ -2242,10 +2240,9 @@ void build_G12DKH_2b_2k(std::ostream& os,
           tparams->max_ntarget(3);
 
           ostringstream oss;
-          oss << context->label_to_name(cparams->api_prefix())
-              << "libint2_build_g12dkh[" << la << "][" << lb << "][" << lc
-              << "][" << ld
-              << "] = " << context->label_to_name(label_to_funcname(label))
+          oss << context->label_to_function_name("libint2_build_g12dkh") << "["
+              << la << "][" << lb << "][" << lc << "][" << ld
+              << "] = " << context->label_to_function_name(label)
               << context->end_of_stat() << endl;
           iface->to_static_init(oss.str());
 

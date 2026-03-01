@@ -60,6 +60,9 @@ class CodeContext {
   /// label_to_name(label) converts label to a name valid within the context of
   /// the language
   virtual std::string label_to_name(const std::string& label) const = 0;
+  /// label_to_function_name(label) converts label to a valid function name
+  /// with the API prefix prepended
+  std::string label_to_function_name(const std::string& label) const;
   /** declare returns a statement which declares variable named 'name' of
       type 'type'
   */

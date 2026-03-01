@@ -340,8 +340,7 @@ std::string RecurrenceRelation::spfunction_call(
     const std::shared_ptr<CodeContext>& context,
     const std::shared_ptr<ImplicitDimensions>& dims) const {
   ostringstream os;
-  os << context->label_to_name(
-            label_to_funcname(context->cparams()->api_prefix() + label()))
+  os << context->label_to_function_name(label())
      // First argument is the library object
      << "(inteval, "
      // Second is the target

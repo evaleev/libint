@@ -70,18 +70,17 @@ void generate_rr_code(std::ostream& os,
     auto rr = rrstack->find_hashed(rrid).second;
     assert(rr);
 #endif
-    std::string rrlabel = cparams->api_prefix() + rr->label();
-    os << "generating code for " << context->label_to_name(rrlabel)
+    os << "generating code for " << context->label_to_name(rr->label())
        << " target=" << rr->rr_target()->label() << endl;
 
-    std::string decl_filename(prefix + context->label_to_name(rrlabel));
+    std::string decl_filename(prefix + context->label_to_name(rr->label()));
     decl_filename += ".h";
-    std::string def_filename(prefix + context->label_to_name(rrlabel));
+    std::string def_filename(prefix + context->label_to_name(rr->label()));
     def_filename += ".cc";
     std::basic_ofstream<char> declfile(decl_filename.c_str());
     std::basic_ofstream<char> deffile(def_filename.c_str());
 
-    rr->generate_code(context, ImplicitDimensions::default_dims(), rrlabel,
+    rr->generate_code(context, ImplicitDimensions::default_dims(), rr->label(),
                       declfile, deffile);
 
     declfile.close();

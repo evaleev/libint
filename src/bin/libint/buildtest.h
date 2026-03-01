@@ -116,7 +116,6 @@ void __BuildTest(const std::vector<std::shared_ptr<Integral> >& targets,
                  const std::shared_ptr<MemoryManager>& memman,
                  const std::string& complabel) {
   const std::string prefix("");
-  const std::string label = cparams->api_prefix() + complabel;
   std::shared_ptr<Strategy> strat(new Strategy);
   std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
 
@@ -181,7 +180,7 @@ void __BuildTest(const std::vector<std::shared_ptr<Integral> >& targets,
   // this will generate code for this targets, and potentially generate code for
   // its prerequisites
   GenerateCode(dg_xxxx, context, cparams, strat, tactic, memman, decl_filenames,
-               def_filenames, prefix, label, false);
+               def_filenames, prefix, complabel, false);
 
   // update max stack size
   taskmgr.current().params()->max_stack_size(max_am, memman->max_memory_used());
@@ -235,7 +234,7 @@ void __BuildTest(const std::vector<std::shared_ptr<Integral> >& targets,
               std::ostream_iterator<std::string>(std::cout, " "));
     std::cout << std::endl
               << "Top compute function: "
-              << context->label_to_name(label_to_funcname(label)) << std::endl;
+              << context->label_to_function_name(complabel) << std::endl;
   }
 }
 
