@@ -126,6 +126,9 @@ else()
     list(APPEND library_CMAKE_ARGS
         -G${CMAKE_GENERATOR}
         -DCMAKE_INSTALL_PREFIX=${LIBRARY_INSTALL_STAGE_DIR}
+        -DCMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}
+        -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
+        -DCMAKE_INSTALL_DATADIR=${CMAKE_INSTALL_DATADIR}
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DBUILD_TESTING=${BUILD_TESTING}
         -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
@@ -219,7 +222,7 @@ else()
     endif()
 
     # install library from ExternalProject staging area into CMAKE_INSTALL_PREFIX
-    foreach(_dir include lib share)
+    foreach(_dir ${CMAKE_INSTALL_INCLUDEDIR} ${CMAKE_INSTALL_LIBDIR} ${CMAKE_INSTALL_DATADIR})
       install(
         DIRECTORY "${LIBRARY_INSTALL_STAGE_DIR}/${_dir}/"
         DESTINATION "${_dir}"
