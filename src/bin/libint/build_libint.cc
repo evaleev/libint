@@ -1178,8 +1178,8 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
             }
           }
 
-          // unroll only if max_am <= cparams->max_am_opt(task) using
-          // std::max;
+          // unroll only if max_am <= cparams->max_am_opt(task)
+          using std::max;
           const unsigned int max_am = max(max(la, lb), max(lc, ld));
           const bool need_to_optimize = (max_am <= cparams->max_am_opt(task));
           const auto nopers = descrs.size();
@@ -1262,7 +1262,6 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
               abcd_label = abcd->label();
             } else {
               std::ostringstream oss;
-              oss << cparams->api_prefix();
               oss << "_" << a.label() << "_" << b.label();
               oss << "_" << label;
               oss << "_" << c.label() << "_" << d.label();
@@ -1272,7 +1271,7 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
           // + derivative level (if deriv_level > 0)
           std::string eval_label;
           {
-            eval_label = cparams->api_prefix();
+            eval_label = "";
             if (deriv_level != 0) {
               std::ostringstream oss;
               oss << "deriv" << deriv_level;
@@ -1380,9 +1379,9 @@ void build_TwoPRep_1b_2k(std::ostream& os,
                 LIBINT_SHELL_SET)>::value(lbra, lc, ld))
           continue;
 
-        // I will use 4-center recurrence relations and integrals, and have
-        // one center carry an s function unfortunately, depending on the
-        // direction in which the build goes it must be A(0) or B(1)
+        // I will use 4-center recurrence relations and integrals, and have one
+        // center carry an s function unfortunately, depending on the direction
+        // in which the build goes it must be A(0) or B(1)
         const unsigned int dummy_center =
             (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 0 : 1;
 
@@ -1581,8 +1580,8 @@ void build_TwoPRep_1b_1k(std::ostream& os,
       const unsigned int dummy_center2 =
           (LIBINT_SHELL_SET == LIBINT_SHELL_SET_ORCA) ? 2 : 3;
 
-      // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(lbra >
-      // lket ? false : true));
+      // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(lbra > lket
+      // ? false : true));
       std::shared_ptr<Tactic> tactic(new FourCenter_OS_Tactic(
           dummy_center1 == 0 ? 0 : lbra, dummy_center1 == 1 ? 0 : lbra,
           dummy_center2 == 2 ? 0 : lket, dummy_center2 == 3 ? 0 : lket));
