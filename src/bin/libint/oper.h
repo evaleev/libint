@@ -443,24 +443,27 @@ struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr
   σpσpCoulombσpσp_Descr() : quaternion_index_(0) {}
   σpσpCoulombσpσp_Descr(int quaternion_index)
       : quaternion_index_(quaternion_index) {
-    assert(quaternion_index <= 3);
+    assert(quaternion_index >= 0 && quaternion_index <= 15);
   }
 
-  static const unsigned int max_key = 4;
+  /// 16 components from tensor product of two independent spin spaces:
+  /// index = 4 * bra_spin_index + ket_spin_index
+  /// where spin indices are: 0=S (scalar), 1=X, 2=Y, 3=Z (cross product)
+  static const unsigned int max_key = 16;
   unsigned int key() const { return quaternion_index(); }
   std::string description() const {
-    std::string descr("opop_coulomb_opop[");
-    if (quaternion_index() == 0)
-      descr += "0";
-    else if (quaternion_index() == 1)
-      descr += "X";
-    else if (quaternion_index() == 2)
-      descr += "Y";
-    else if (quaternion_index() == 3)
-      descr += "Z";
-    else
-      abort();
-    return descr + "]";
+    // clang-format off
+    // Option A (tensor product order): index = 4 * bra_spin + ket_spin
+    static const char* labels[] = {
+        "SS", "SX", "SY", "SZ",
+        "XS", "XX", "XY", "XZ",
+        "YS", "YX", "YY", "YZ",
+        "ZS", "ZX", "ZY", "ZZ"
+    };
+    // clang-format on
+    const auto qi = quaternion_index();
+    if (qi > 15) abort();
+    return std::string("opop_coulomb_opop[") + labels[qi] + "]";
   }
   std::string label() const { return description(); }
   int psymm(int i, int j) const { abort(); }

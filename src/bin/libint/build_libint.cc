@@ -31,7 +31,9 @@
   */
 
 #include <boost/preprocessor.hpp>
+#include <chrono>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -66,6 +68,8 @@
 using namespace std;
 using namespace libint2;
 
+CodeGenProgress g_progress;
+
 enum ShellSetType {
   ShellSetType_Standard = LIBINT_SHELL_SET_STANDARD,
   ShellSetType_ORCA = LIBINT_SHELL_SET_ORCA
@@ -90,7 +94,8 @@ struct ShellQuartetSetPredicate<ShellSetType_Standard> {
   static bool value(int la, int lb, int lc, int ld, bool p1p2_swappable = true,
                     bool bra_ket_coswappable = false) {
     if (bra_ket_coswappable)
-      return (la + lb <= lc + ld) && lc >= ld;
+      return lc >= ld && (la + lb < lc + ld ||
+                          (la + lb == lc + ld && std::max(la, lb) <= lc));
     else
       return la >= lb && lc >= ld && (!p1p2_swappable || la + lb <= lc + ld);
   }
@@ -100,7 +105,8 @@ struct ShellQuartetSetPredicate<ShellSetType_ORCA> {
   static bool value(int la, int lb, int lc, int ld, bool p1p2_swappable = true,
                     bool bra_ket_coswappable = false) {
     if (bra_ket_coswappable)
-      return (la < lc || (la == lc && lb <= ld));
+      return lc <= ld && (la + lb > lc + ld ||
+                          (la + lb == lc + ld && std::min(la, lb) >= lc));
     else
       return la <= lb && lc <= ld &&
              (!p1p2_swappable || (la < lc || (la == lc && lb <= ld)));
@@ -211,7 +217,9 @@ static void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 
 #ifdef LIBINT_INCLUDE_ERI
 #define USE_GENERIC_ERI_BUILD 1
-#if !USE_GENERIC_ERI_BUILD
+#endif
+#if defined(LIBINT_INCLUDE_ERI) || defined(LIBINT_INCLUDE_RKB_ERI)
+#if defined(USE_GENERIC_ERI_BUILD) && !USE_GENERIC_ERI_BUILD
 template <typename OperType>
 static void build_TwoPRep_2b_2k(
     std::ostream& os, std::string label,
@@ -222,7 +230,7 @@ template <typename OperType>
 static void build_TwoPRep_2b_2k(
     std::ostream& os, std::string label,
     const std::shared_ptr<CompilationParameters>& cparams,
-    std::shared_ptr<Libint2Iface>& iface, unsigned int deriv_level);
+    std::shared_ptr<Libint2Iface>& iface, unsigned int deriv_level = 0);
 #endif
 #endif
 
@@ -272,6 +280,8 @@ struct AuxQuantaType {
   typedef EmptySet type;
 };
 
+}  // namespace
+
 template <typename OperDescrType>
 OperDescrType make_descr(int, int = 0, int = 0) {
   return OperDescrType();
@@ -307,8 +317,6 @@ template <>
 σpσpCoulombσpσp_Descr make_descr<σpσpCoulombσpσp_Descr>(int p, int, int) {
   return σpσpCoulombσpσp_Descr(p);
 }
-
-}  // namespace
 
 template <typename _OperType>
 void build_onebody_1b_1k(std::ostream& os, std::string label,
@@ -514,8 +522,8 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
         eval_label = oss.str();
       }
 
-      std::cout << "working on " << eval_label << " ... ";
-      std::cout.flush();
+      g_progress.current_task = eval_label;
+      g_progress.print();
 
       std::string prefix(cparams->source_directory());
       std::deque<std::string> decl_filenames;
@@ -554,8 +562,6 @@ void build_onebody_1b_1k(std::ostream& os, std::string label,
 #endif
       dg->reset();
       memman->reset();
-
-      std::cout << "done" << std::endl;
 
     }  // end of b loop
   }    // end of a loop
@@ -962,6 +968,8 @@ void try_main(int argc, char* argv[]) {
 #endif
   cparams->print(os);
 
+  g_progress.start();
+
 #ifdef LIBINT_INCLUDE_ONEBODY
   for (unsigned int d = 0; d <= LIBINT_INCLUDE_ONEBODY; ++d) {
 #define BOOST_PP_ONEBODY_MCR7(r, data, i, elem)                              \
@@ -1019,6 +1027,8 @@ void try_main(int argc, char* argv[]) {
 #ifdef LIBINT_INCLUDE_G12DKH
   build_G12DKH_2b_2k(os, cparams, iface);
 #endif
+
+  g_progress.finish();
 
   // Generate code for the set-level RRs
   std::deque<std::string> decl_filenames, def_filenames;
@@ -1101,12 +1111,12 @@ void print_config(std::ostream& os) {
 #endif
 }
 
-#ifdef LIBINT_INCLUDE_ERI
+#if defined(LIBINT_INCLUDE_ERI) || defined(LIBINT_INCLUDE_RKB_ERI)
 template <typename OperType>
-void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
-                         const std::shared_ptr<CompilationParameters>& cparams,
-                         std::shared_ptr<Libint2Iface>& iface,
-                         unsigned int deriv_level) {
+static void build_TwoPRep_2b_2k(
+    std::ostream& os, std::string label,
+    const std::shared_ptr<CompilationParameters>& cparams,
+    std::shared_ptr<Libint2Iface>& iface, unsigned int deriv_level) {
   typedef GenIntegralSet_11_11<CGShell, OperType, mType> TwoBody_sh_11_11;
   typedef typename OperType::Descriptor OperDescrType;
 
@@ -1168,13 +1178,20 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
           // loop over operator components
           /////////////////////////////////
           std::vector<OperDescrType> descrs(1);
-          if (std::is_same<OperType, CoulombσpσpOper>::value ||
-              std::is_same<OperType, σpσpCoulombσpσpOper>::value) {
+          if constexpr (std::is_same<OperType, CoulombσpσpOper>::value) {
             // reset descriptors array
             descrs.resize(0);
-            // iterate over quaternion components
+            // iterate over 4 quaternion components (single spin space)
             for (int p = 0; p != 4; ++p) {
-              descrs.emplace_back(make_descr<OperDescrType>(p));
+              descrs.emplace_back(OperDescrType(p));
+            }
+          }
+          if constexpr (std::is_same<OperType, σpσpCoulombσpσpOper>::value) {
+            // reset descriptors array
+            descrs.resize(0);
+            // iterate over 16 components (tensor product of two spin spaces)
+            for (int p = 0; p != 16; ++p) {
+              descrs.emplace_back(OperDescrType(p));
             }
           }
 
@@ -1192,10 +1209,14 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
                   ? std::numeric_limits<unsigned int>::max()
                   : 0;
           dg_xxxx->registry()->unroll_threshold(unroll_threshold);
-          dg_xxxx->registry()->do_cse(need_to_optimize);
-          dg_xxxx->registry()->condense_expr(condense_expr(
-              cparams->unroll_threshold(), cparams->max_vector_length() > 1));
-          // dg_xxxx->registry()->condense_expr(true);
+          // For multi-component operators (RKB), components share no
+          // intermediates, so CSE/condense_expr is pure overhead — disable.
+          const bool do_optimize = (nopers > 1) ? false : need_to_optimize;
+          dg_xxxx->registry()->do_cse(do_optimize);
+          dg_xxxx->registry()->condense_expr(
+              do_optimize ? condense_expr(cparams->unroll_threshold(),
+                                          cparams->max_vector_length() > 1)
+                          : false);
           //  Need to accumulate integrals?
           dg_xxxx->registry()->accumulate_targets(
               cparams->accumulate_targets());
@@ -1238,13 +1259,6 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
             last_deriv = diter.last();
             if (!last_deriv) diter.next();
           } while (!last_deriv);
-          // append all derivatives as targets to the graph
-          for (auto it = targets.begin(); it != targets.end(); ++it) {
-            std::shared_ptr<DGVertex> t_ptr =
-                std::dynamic_pointer_cast<DGVertex, TwoBody_sh_11_11>(*it);
-            dg_xxxx->append_target(t_ptr);
-          }
-
           // make label that characterizes this set of targets
           // use the label of the nondifferentiated integral as a base
           std::string abcd_label;
@@ -1280,12 +1294,19 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
             eval_label += abcd_label;
           }
 
-          std::cout << "working on " << eval_label << " ... ";
-          std::cout.flush();
+          g_progress.current_task = eval_label;
+          g_progress.print();
 
           std::string prefix(cparams->source_directory());
           std::deque<std::string> decl_filenames;
           std::deque<std::string> def_filenames;
+
+          // append all targets to the graph
+          for (auto it = targets.begin(); it != targets.end(); ++it) {
+            std::shared_ptr<DGVertex> t_ptr =
+                std::dynamic_pointer_cast<DGVertex, TwoBody_sh_11_11>(*it);
+            dg_xxxx->append_target(t_ptr);
+          }
 
           // this will generate code for these targets, and potentially
           // generate code for its prerequisites
@@ -1322,7 +1343,8 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
           dg_xxxx->reset();
           memman->reset();
 
-          std::cout << "done" << std::endl;
+          ++g_progress.done;
+          g_progress.print();
 
         }  // end of d loop
       }    // end of c loop
@@ -1330,7 +1352,7 @@ void build_TwoPRep_2b_2k(std::ostream& os, std::string label,
   }        // end of a loop
 }
 
-#endif  // LIBINT_INCLUDE_ERI
+#endif  // LIBINT_INCLUDE_ERI || LIBINT_INCLUDE_RKB_ERI
 
 #ifdef LIBINT_INCLUDE_ERI3
 
@@ -1490,8 +1512,8 @@ void build_TwoPRep_1b_2k(std::ostream& os,
           label += abcd_label;
         }
 
-        std::cout << "working on " << label << " ... ";
-        std::cout.flush();
+        g_progress.current_task = label;
+        g_progress.print();
 
         std::string prefix(cparams->source_directory());
         std::deque<std::string> decl_filenames;
@@ -1530,7 +1552,8 @@ void build_TwoPRep_1b_2k(std::ostream& os,
 #endif
         dg_xxx->reset();
         memman->reset();
-        std::cout << "done" << std::endl;
+        ++g_progress.done;
+        g_progress.print();
       }  // end of d loop
     }    // end of c loop
   }      // end of bra loop
@@ -1687,7 +1710,8 @@ void build_TwoPRep_1b_1k(std::ostream& os,
         label += abcd_label;
       }
 
-      std::cout << "working on " << label << " ... ";
+      g_progress.current_task = label;
+      g_progress.print();
       std::cout.flush();
 
       std::string prefix(cparams->source_directory());
@@ -1727,7 +1751,6 @@ void build_TwoPRep_1b_1k(std::ostream& os,
 #endif
       dg_xxx->reset();
       memman->reset();
-      std::cout << "done" << std::endl;
     }  // end of ket loop
   }    // end of bra loop
 }

@@ -364,7 +364,9 @@ struct operator_traits<Operator::coulomb_opop>
 template <>
 struct operator_traits<Operator::opop_coulomb_opop>
     : public operator_traits<Operator::coulomb> {
-  static constexpr auto nopers = 4;
+  /// 16 components: tensor product of two independent spin-space quaternions
+  /// index = 4 * bra_spin + ket_spin, where spin in {S=0, X=1, Y=2, Z=3}
+  static constexpr auto nopers = 16;
   static constexpr auto intrinsic_deriv_order = 4;
 };
 

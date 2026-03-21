@@ -1216,17 +1216,39 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
 
 #if LIBINT2_SHELLQUARTET_SET == \
     LIBINT2_SHELLQUARTET_SET_STANDARD  // standard angular momentum ordering
-  const auto swap_braket = ((braket_ == BraKet::xx_xx) &&
-                            (tbra1.contr[0].l + tbra2.contr[0].l >
-                             tket1.contr[0].l + tket2.contr[0].l) &&
-                            (oper_ != Operator::coulomb_opop)) ||
-                           braket_ == BraKet::xx_xs;
+  bool swap_braket;
   bool swap_tbra, swap_tket;
   if (oper_ == Operator::opop_coulomb_opop) {
-    bool swap_p1p2 = swap_braket ? (tbra1.contr[0].l < tbra2.contr[0].l)
-                                 : (tket1.contr[0].l < tket2.contr[0].l);
-    swap_tbra = swap_tket = swap_p1p2;
+    // For σpσpCoulombσpσp: (ab|cd) = (cd|ab) = (ba|dc)* = (dc|ba)*
+    // Canonical form: lc >= ld (or la >= lb when lc == ld),
+    // la+lb <= lc+ld (or max(la,lb) <= lc when sums equal)
+    const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
+    const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
+    const auto bra_max = std::max(tbra1.contr[0].l, tbra2.contr[0].l);
+    const auto ket_max = std::max(tket1.contr[0].l, tket2.contr[0].l);
+    swap_braket = ((braket_ == BraKet::xx_xx) &&
+                   (bra_total > ket_total ||
+                    (bra_total == ket_total && bra_max > ket_max))) ||
+                  braket_ == BraKet::xx_xs;
+    // Coupled swap: after braket swap, sort the pair that ends up in ket
+    // position to ensure lc >= ld; when lc == ld, also sort bra (la >= lb)
+    if (swap_braket) {
+      // After braket swap: new ket = original bra, new bra = original ket.
+      // Coupled swap sorts new ket (ensure lc >= ld).
+      const bool swap_p1p2 = (tbra1.contr[0].l < tbra2.contr[0].l);
+      swap_tbra = swap_tket = swap_p1p2;
+    } else {
+      // No braket swap: ket stays as original ket.
+      // Coupled swap sorts ket (ensure lc >= ld).
+      const bool swap_p1p2 = (tket1.contr[0].l < tket2.contr[0].l);
+      swap_tbra = swap_tket = swap_p1p2;
+    }
   } else {
+    swap_braket = ((braket_ == BraKet::xx_xx) &&
+                   (tbra1.contr[0].l + tbra2.contr[0].l >
+                    tket1.contr[0].l + tket2.contr[0].l) &&
+                   (oper_ != Operator::coulomb_opop)) ||
+                  braket_ == BraKet::xx_xs;
     swap_tbra = (tbra1.contr[0].l < tbra2.contr[0].l);
     swap_tket = (tket1.contr[0].l < tket2.contr[0].l);
   }
@@ -1234,15 +1256,35 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
   // N.B. cannot swap bra and ket for coulomb_opop since the ket is mutated by
   // this operator
 #else  // orca angular momentum ordering
-  const auto swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
-  const auto swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
-  const auto swap_braket = ((braket_ == BraKet::xx_xx) &&
-                            (tbra1.contr[0].l + tbra2.contr[0].l <
-                             tket1.contr[0].l + tket2.contr[0].l) &&
-                            (oper_ != Operator::coulomb_opop)) ||
-                           braket_ == BraKet::xx_xs;
-  assert(false && "feature not implemented");
-  abort();
+  bool swap_braket;
+  bool swap_tbra, swap_tket;
+  if (oper_ == Operator::opop_coulomb_opop) {
+    // ORCA canonical for σpσpCoulombσpσp: lc <= ld (or la <= lb when lc == ld),
+    // la+lb >= lc+ld (or min(la,lb) >= lc when sums equal)
+    const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
+    const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
+    const auto bra_min = std::min(tbra1.contr[0].l, tbra2.contr[0].l);
+    const auto ket_min = std::min(tket1.contr[0].l, tket2.contr[0].l);
+    swap_braket = ((braket_ == BraKet::xx_xx) &&
+                   (bra_total < ket_total ||
+                    (bra_total == ket_total && bra_min < ket_min))) ||
+                  braket_ == BraKet::xx_xs;
+    if (swap_braket) {
+      const bool swap_p1p2 = (tbra1.contr[0].l > tbra2.contr[0].l);
+      swap_tbra = swap_tket = swap_p1p2;
+    } else {
+      const bool swap_p1p2 = (tket1.contr[0].l > tket2.contr[0].l);
+      swap_tbra = swap_tket = swap_p1p2;
+    }
+  } else {
+    swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
+    swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
+    swap_braket = ((braket_ == BraKet::xx_xx) &&
+                   (tbra1.contr[0].l + tbra2.contr[0].l <
+                    tket1.contr[0].l + tket2.contr[0].l) &&
+                   (oper_ != Operator::coulomb_opop)) ||
+                  braket_ == BraKet::xx_xs;
+  }
 #endif
   const auto& bra1 =
       swap_braket ? (swap_tket ? tket2 : tket1) : (swap_tbra ? tbra2 : tbra1);
@@ -2124,10 +2166,21 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                     tgt_ptr + tgt_col_idx, nr1_tgt, nr2_tgt,
                     Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
                         nr2_tgt * ncol_tgt, ncol_tgt));
+                // Coupled swap sign correction for multi-component operators
+                Shell::real_t oper_cart_component_phase = 1.0;
+                if (swap_tket && oper_ == Operator::opop_coulomb_opop) {
+                  const bool bra_is_spin = (s / 4) > 0;
+                  const bool ket_is_spin = (s % 4) > 0;
+                  if (bra_is_spin != ket_is_spin)
+                    oper_cart_component_phase = -1.0;
+                }
+                if (swap_tket && oper_ == Operator::coulomb_opop && s > 0)
+                  oper_cart_component_phase = -1.0;
                 if (swap_tbra)
-                  tgt_blk_mat = src_blk_mat.transpose();
+                  tgt_blk_mat =
+                      oper_cart_component_phase * src_blk_mat.transpose();
                 else
-                  tgt_blk_mat = src_blk_mat;
+                  tgt_blk_mat = oper_cart_component_phase * src_blk_mat;
               } else {
                 // source row {r1,r2} is mapped to target row {r1,r2} if
                 // !swap_tbra, else to {r2,r1}
@@ -2136,10 +2189,16 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 Map tgt_blk_mat(tgt_ptr + tgt_row_idx * ncol, nc1_tgt, nc2_tgt);
                 if (swap_tket) {
                   Shell::real_t oper_cart_component_phase = 1.0;
-                  if (oper_ == Operator::opop_coulomb_opop && s == 3)
-                    oper_cart_component_phase =
-                        -1.0;  // z quaternion components flip sign on
-                               //  swapping ket
+                  if (oper_ == Operator::opop_coulomb_opop) {
+                    // Option A ordering: index = 4*bra + ket
+                    // Coupled swap (a<->b AND c<->d) flips sign when exactly
+                    // one of bra/ket is a cross product (spin != S):
+                    //   bra_spin = s/4, ket_spin = s%4 (0=S, 1-3=X/Y/Z)
+                    const bool bra_is_spin = (s / 4) > 0;
+                    const bool ket_is_spin = (s % 4) > 0;
+                    if (bra_is_spin != ket_is_spin)
+                      oper_cart_component_phase = -1.0;
+                  }
                   if (oper_ == Operator::coulomb_opop && s > 0)
                     oper_cart_component_phase =
                         -1.0;  // x,y,z quaternion components flip sign on
@@ -2171,7 +2230,17 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                                                     // to primdata_[0].targets
           targets_[s_target] = source;
         }
-      }     // loop over shellsets
+      }  // loop over shellsets
+
+      // For opop_coulomb_opop with swap_braket: swapping particles remaps
+      // component (α,β) → (β,α). With Option A ordering (index=4*bra+ket),
+      // this is a matrix transpose: s_new = 4*(s%4) + (s/4).
+      if (permute && oper_ == Operator::opop_coulomb_opop && swap_braket) {
+        std::array<const value_type*, 16> temp;
+        for (auto s = 0; s != ntargets; ++s) temp[s] = targets_[s];
+        for (auto s = 0; s != ntargets; ++s)
+          targets_[4 * (s % 4) + (s / 4)] = temp[s];
+      }
     }       // if need_scratch => needed to transpose and/or tform
     else {  // did not use scratch? may still need to update targets_
       if (set_targets_) {

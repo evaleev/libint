@@ -439,7 +439,7 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
             const auto &results_ssss =
                 engine_ssss.compute(obs[s0], obs[s1], obs[s2], obs[s3]);
             assert(results_llss.size() ==
-                   4);  // we get 4 buffers for each quaternion component
+                   4);  // 4 buffers for single-spin quaternion components
 
             LIBINT2_REF_REALTYPE Aref[3];
             for (int i = 0; i < 3; ++i) Aref[i] = obs[s0].O[i];
@@ -466,8 +466,8 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
 
             std::array<LIBINT2_REF_REALTYPE, 4> ref_coulomb_opop{0.0, 0.0, 0.0,
                                                                  0.0};
-            std::array<LIBINT2_REF_REALTYPE, 4> ref_opop_coulomb_opop{0.0, 0.0,
-                                                                      0.0, 0.0};
+            std::array<LIBINT2_REF_REALTYPE, 16> ref_opop_coulomb_opop{};
+            ref_opop_coulomb_opop.fill(0.0);
             uint p0123 = 0;
             for (uint p0 = 0; p0 < obs[s0].nprim(); p0++) {
               for (uint p1 = 0; p1 < obs[s1].nprim(); p1++) {
@@ -490,6 +490,22 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
                                  l3, m3, n3, alpha3, Dref, 0);
                     };
 
+                    // helper: build der_idx from 4 derivative directions
+                    // (0=x, 1=y, 2=z) for centers A, B, C, D
+                    constexpr int X = 0, Y = 1, Z = 2;
+                    auto didx = [](int a, int b, int c, int d) -> der_idx {
+                      der_idx r = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                      r[a] = 1;
+                      r[3 + b] = 1;
+                      r[6 + c] = 1;
+                      r[9 + d] = 1;
+                      return r;
+                    };
+                    // shorthand: evaluate derivative ERI from 4 directions
+                    auto D = [&](int a, int b, int c, int d) {
+                      return eri_drrrr(didx(a, b, c, d));
+                    };
+
                     // (LL|SS)
                     ref_coulomb_opop[0] +=
                         c0123 *
@@ -501,30 +517,60 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
                     ref_coulomb_opop[3] +=
                         c0123 * (eri_drrrr(d_xy) - eri_drrrr(d_yx));
 
-                    // (SS|SS)
+                    // (SS|SS) — 16 components, Option A: index = 4*bra + ket
+                    // 0:SS  1:SX  2:SY  3:SZ
                     ref_opop_coulomb_opop[0] +=
-                        c0123 *
-                        (eri_drrrr(xxxx) + eri_drrrr(yyxx) + eri_drrrr(zzxx) -
-                         eri_drrrr(yxyx) + eri_drrrr(xyyx) + eri_drrrr(yxxy) -
-                         eri_drrrr(xyxy) + eri_drrrr(xxyy) + eri_drrrr(yyyy) +
-                         eri_drrrr(zzyy) + eri_drrrr(xxzz) + eri_drrrr(yyzz) +
-                         eri_drrrr(zzzz));
+                        c0123 * (D(X, X, X, X) + D(X, X, Y, Y) + D(X, X, Z, Z) +
+                                 D(Y, Y, X, X) + D(Y, Y, Y, Y) + D(Y, Y, Z, Z) +
+                                 D(Z, Z, X, X) + D(Z, Z, Y, Y) + D(Z, Z, Z, Z));
                     ref_opop_coulomb_opop[1] +=
-                        c0123 *
-                        (eri_drrrr(zxzx) - eri_drrrr(xzzx) - eri_drrrr(zyzy) +
-                         eri_drrrr(yzzy) - eri_drrrr(zxxz) + eri_drrrr(xzxz) +
-                         eri_drrrr(zyyz) - eri_drrrr(yzyz));
+                        c0123 * (D(X, X, Y, Z) - D(X, X, Z, Y) + D(Y, Y, Y, Z) -
+                                 D(Y, Y, Z, Y) + D(Z, Z, Y, Z) - D(Z, Z, Z, Y));
                     ref_opop_coulomb_opop[2] +=
-                        c0123 *
-                        (-eri_drrrr(zyzx) + eri_drrrr(yzzx) - eri_drrrr(zxzy) +
-                         eri_drrrr(xzzy) + eri_drrrr(zyxz) - eri_drrrr(yzxz) +
-                         eri_drrrr(zxyz) - eri_drrrr(xzyz));
+                        c0123 * (D(X, X, Z, X) - D(X, X, X, Z) + D(Y, Y, Z, X) -
+                                 D(Y, Y, X, Z) + D(Z, Z, Z, X) - D(Z, Z, X, Z));
                     ref_opop_coulomb_opop[3] +=
-                        c0123 *
-                        (-eri_drrrr(yxxx) + eri_drrrr(xyxx) - eri_drrrr(xxyx) -
-                         eri_drrrr(yyyx) - eri_drrrr(zzyx) + eri_drrrr(xxxy) +
-                         eri_drrrr(yyxy) + eri_drrrr(zzxy) - eri_drrrr(yxyy) +
-                         eri_drrrr(xyyy) - eri_drrrr(yxzz) + eri_drrrr(xyzz));
+                        c0123 * (D(X, X, X, Y) - D(X, X, Y, X) + D(Y, Y, X, Y) -
+                                 D(Y, Y, Y, X) + D(Z, Z, X, Y) - D(Z, Z, Y, X));
+                    // 4:XS  5:XX  6:XY  7:XZ
+                    ref_opop_coulomb_opop[4] +=
+                        c0123 * (D(Y, Z, X, X) - D(Z, Y, X, X) + D(Y, Z, Y, Y) -
+                                 D(Z, Y, Y, Y) + D(Y, Z, Z, Z) - D(Z, Y, Z, Z));
+                    ref_opop_coulomb_opop[5] +=
+                        c0123 * (-D(Y, Z, Y, Z) + D(Y, Z, Z, Y) +
+                                 D(Z, Y, Y, Z) - D(Z, Y, Z, Y));
+                    ref_opop_coulomb_opop[6] +=
+                        c0123 * (-D(Y, Z, Z, X) + D(Y, Z, X, Z) +
+                                 D(Z, Y, Z, X) - D(Z, Y, X, Z));
+                    ref_opop_coulomb_opop[7] +=
+                        c0123 * (-D(Y, Z, X, Y) + D(Y, Z, Y, X) +
+                                 D(Z, Y, X, Y) - D(Z, Y, Y, X));
+                    // 8:YS  9:YX  10:YY  11:YZ
+                    ref_opop_coulomb_opop[8] +=
+                        c0123 * (D(Z, X, X, X) - D(X, Z, X, X) + D(Z, X, Y, Y) -
+                                 D(X, Z, Y, Y) + D(Z, X, Z, Z) - D(X, Z, Z, Z));
+                    ref_opop_coulomb_opop[9] +=
+                        c0123 * (-D(Z, X, Y, Z) + D(Z, X, Z, Y) +
+                                 D(X, Z, Y, Z) - D(X, Z, Z, Y));
+                    ref_opop_coulomb_opop[10] +=
+                        c0123 * (-D(Z, X, Z, X) + D(Z, X, X, Z) +
+                                 D(X, Z, Z, X) - D(X, Z, X, Z));
+                    ref_opop_coulomb_opop[11] +=
+                        c0123 * (-D(Z, X, X, Y) + D(Z, X, Y, X) +
+                                 D(X, Z, X, Y) - D(X, Z, Y, X));
+                    // 12:ZS  13:ZX  14:ZY  15:ZZ
+                    ref_opop_coulomb_opop[12] +=
+                        c0123 * (D(X, Y, X, X) - D(Y, X, X, X) + D(X, Y, Y, Y) -
+                                 D(Y, X, Y, Y) + D(X, Y, Z, Z) - D(Y, X, Z, Z));
+                    ref_opop_coulomb_opop[13] +=
+                        c0123 * (-D(X, Y, Y, Z) + D(X, Y, Z, Y) +
+                                 D(Y, X, Y, Z) - D(Y, X, Z, Y));
+                    ref_opop_coulomb_opop[14] +=
+                        c0123 * (-D(X, Y, Z, X) + D(X, Y, X, Z) +
+                                 D(Y, X, Z, X) - D(Y, X, X, Z));
+                    ref_opop_coulomb_opop[15] +=
+                        c0123 * (-D(X, Y, X, Y) + D(X, Y, Y, X) +
+                                 D(Y, X, X, Y) - D(Y, X, Y, X));
                   }
                 }
               }
@@ -539,29 +585,17 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
             std::array<LIBINT2_REF_REALTYPE, 4> abs_errs_llss;
             std::array<LIBINT2_REF_REALTYPE, 4> rel_abs_errs_llss;
 
-            std::array<LIBINT2_REF_REALTYPE, 4> abs_errs_ssss;
-            std::array<LIBINT2_REF_REALTYPE, 4> rel_abs_errs_ssss;
-
+            // (LL|SS) has 4 components
             for (auto comp = 0; comp < 4; ++comp) {
               abs_errs_llss[comp] =
                   abs(ref_coulomb_opop[comp] - results_llss[comp][ijkl]);
               rel_abs_errs_llss[comp] =
                   abs(abs_errs_llss[comp] / ref_coulomb_opop[comp]);
 
-              abs_errs_ssss[comp] =
-                  abs(ref_opop_coulomb_opop[comp] - results_ssss[comp][ijkl]);
-              rel_abs_errs_ssss[comp] =
-                  abs(abs_errs_ssss[comp] / ref_opop_coulomb_opop[comp]);
-
               bool llss_not_ok =
                   rel_abs_errs_llss[comp] > RELATIVE_DEVIATION_THRESHOLD &&
                   abs_errs_llss[comp] > ABSOLUTE_DEVIATION_THRESHOLD;
 
-              bool ssss_not_ok =
-                  rel_abs_errs_ssss[comp] > RELATIVE_DEVIATION_THRESHOLD &&
-                  abs_errs_ssss[comp] > ABSOLUTE_DEVIATION_THRESHOLD;
-
-              // no 3^n prefactor here since the intrinsic deriv order is 2
               if (llss_not_ok) {
                 std::cout << "(l0 l1| l2 l3) = "
                           << "(" << s0 << " " << s1 << " | " << s2 << " " << s3
@@ -573,6 +607,20 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
                           << " abs_error = " << abs_errs_llss[comp]
                           << std::endl;
               }
+              REQUIRE(!llss_not_ok);
+            }
+
+            // (SS|SS) has 16 components (two independent spin spaces)
+            for (auto comp = 0; comp < 16; ++comp) {
+              auto abs_err_ssss =
+                  abs(ref_opop_coulomb_opop[comp] - results_ssss[comp][ijkl]);
+              auto rel_abs_err_ssss =
+                  abs(abs_err_ssss / ref_opop_coulomb_opop[comp]);
+
+              bool ssss_not_ok =
+                  rel_abs_err_ssss > RELATIVE_DEVIATION_THRESHOLD &&
+                  abs_err_ssss > ABSOLUTE_DEVIATION_THRESHOLD;
+
               if (ssss_not_ok) {
                 std::cout << "(l0 l1| l2 l3) = "
                           << "(" << s0 << " " << s1 << " | " << s2 << " " << s3
@@ -580,11 +628,9 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
                           << "Elem " << ijkl << " comp= " << comp
                           << " : ref = " << ref_opop_coulomb_opop[comp]
                           << " libint = " << results_ssss[comp][ijkl]
-                          << " relabs_error = " << rel_abs_errs_ssss[comp]
-                          << " abs_error = " << abs_errs_ssss[comp]
-                          << std::endl;
+                          << " relabs_error = " << rel_abs_err_ssss
+                          << " abs_error = " << abs_err_ssss << std::endl;
               }
-              REQUIRE(!llss_not_ok);
               REQUIRE(!ssss_not_ok);
             }
 
