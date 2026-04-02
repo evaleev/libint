@@ -70,47 +70,51 @@ struct MasterStrategy;
 #if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
 template <>
 struct MasterStrategy<TwoPRep_11_11_sq> {
-  typedef boost::mpl::list<HRR_ab_11_TwoPRep_11_sh, HRR_cd_11_TwoPRep_11_sh,
-                           Deriv_a_11_TwoPRep_11_sh, Deriv_b_11_TwoPRep_11_sh,
-                           Deriv_c_11_TwoPRep_11_sh, Deriv_d_11_TwoPRep_11_sh,
+  typedef boost::mpl::list<
+      HRR_ab_11_TwoPRep_11_sh, HRR_cd_11_TwoPRep_11_sh,
+      DerivV2_a_11_TwoPRep_11_sh, DerivV2_b_11_TwoPRep_11_sh,
+      DerivV2_c_11_TwoPRep_11_sh, DerivV2_d_11_TwoPRep_11_sh,
 #if LIBINT_ERI_STRATEGY == 2
-                           ITR_a_11_TwoPRep_11_sh, ITR_c_11_TwoPRep_11_sh,
+      ITR_a_11_TwoPRep_11_sh, ITR_c_11_TwoPRep_11_sh,
 #endif
-                           VRR_a_11_TwoPRep_11_sh, VRR_c_11_TwoPRep_11_sh>
+      VRR_a_11_TwoPRep_11_sh, VRR_c_11_TwoPRep_11_sh>
       value;
 };
 template <>
 struct MasterStrategy<TwoPRep_11_11_int> {
-  typedef boost::mpl::list<HRR_ab_11_TwoPRep_11_int, HRR_cd_11_TwoPRep_11_int,
-                           Deriv_a_11_TwoPRep_11_int, Deriv_b_11_TwoPRep_11_int,
-                           Deriv_c_11_TwoPRep_11_int, Deriv_d_11_TwoPRep_11_int,
+  typedef boost::mpl::list<
+      HRR_ab_11_TwoPRep_11_int, HRR_cd_11_TwoPRep_11_int,
+      DerivV2_a_11_TwoPRep_11_int, DerivV2_b_11_TwoPRep_11_int,
+      DerivV2_c_11_TwoPRep_11_int, DerivV2_d_11_TwoPRep_11_int,
 #if LIBINT_ERI_STRATEGY == 2
-                           ITR_a_11_TwoPRep_11_int, ITR_c_11_TwoPRep_11_int,
+      ITR_a_11_TwoPRep_11_int, ITR_c_11_TwoPRep_11_int,
 #endif
-                           VRR_a_11_TwoPRep_11_int, VRR_c_11_TwoPRep_11_int>
+      VRR_a_11_TwoPRep_11_int, VRR_c_11_TwoPRep_11_int>
       value;
 };
 #else  // 0B0D strategy
 template <>
 struct MasterStrategy<TwoPRep_11_11_sq> {
-  typedef boost::mpl::list<HRR_ba_11_TwoPRep_11_sh, HRR_dc_11_TwoPRep_11_sh,
-                           Deriv_a_11_TwoPRep_11_sh, Deriv_b_11_TwoPRep_11_sh,
-                           Deriv_c_11_TwoPRep_11_sh, Deriv_d_11_TwoPRep_11_sh,
+  typedef boost::mpl::list<
+      HRR_ba_11_TwoPRep_11_sh, HRR_dc_11_TwoPRep_11_sh,
+      DerivV2_a_11_TwoPRep_11_sh, DerivV2_b_11_TwoPRep_11_sh,
+      DerivV2_c_11_TwoPRep_11_sh, DerivV2_d_11_TwoPRep_11_sh,
 #if LIBINT_ERI_STRATEGY == 2
-                           ITR_b_11_TwoPRep_11_sh, ITR_d_11_TwoPRep_11_sh,
+      ITR_b_11_TwoPRep_11_sh, ITR_d_11_TwoPRep_11_sh,
 #endif
-                           VRR_b_11_TwoPRep_11_sh, VRR_d_11_TwoPRep_11_sh>
+      VRR_b_11_TwoPRep_11_sh, VRR_d_11_TwoPRep_11_sh>
       value;
 };
 template <>
 struct MasterStrategy<TwoPRep_11_11_int> {
-  typedef boost::mpl::list<HRR_ba_11_TwoPRep_11_int, HRR_dc_11_TwoPRep_11_int,
-                           Deriv_a_11_TwoPRep_11_int, Deriv_b_11_TwoPRep_11_int,
-                           Deriv_c_11_TwoPRep_11_int, Deriv_d_11_TwoPRep_11_int,
+  typedef boost::mpl::list<
+      HRR_ba_11_TwoPRep_11_int, HRR_dc_11_TwoPRep_11_int,
+      DerivV2_a_11_TwoPRep_11_int, DerivV2_b_11_TwoPRep_11_int,
+      DerivV2_c_11_TwoPRep_11_int, DerivV2_d_11_TwoPRep_11_int,
 #if LIBINT_ERI_STRATEGY == 2
-                           ITR_b_11_TwoPRep_11_int, ITR_d_11_TwoPRep_11_int,
+      ITR_b_11_TwoPRep_11_int, ITR_d_11_TwoPRep_11_int,
 #endif
-                           VRR_b_11_TwoPRep_11_int, VRR_d_11_TwoPRep_11_int>
+      VRR_b_11_TwoPRep_11_int, VRR_d_11_TwoPRep_11_int>
       value;
 };
 #endif
@@ -214,21 +218,31 @@ struct MasterStrategy<DivG12prime_xTx_11_11_int> {
 #if LIBINT_SHELLQUARTET_STRATEGY == LIBINT_SHELLQUARTET_STRATEGY_A0C0
 template <>
 struct MasterStrategy<DummySymmIntegral_11_11_sq> {
-  typedef boost::mpl::list<HRR_ab_11_Dummy_11_sh, HRR_cd_11_Dummy_11_sh> value;
+  typedef boost::mpl::list<HRR_ab_11_Dummy_11_sh, HRR_cd_11_Dummy_11_sh,
+                           DerivV2_a_11_Dummy_11_sh, DerivV2_b_11_Dummy_11_sh,
+                           DerivV2_c_11_Dummy_11_sh, DerivV2_d_11_Dummy_11_sh>
+      value;
 };
 template <>
 struct MasterStrategy<DummySymmIntegral_11_11_int> {
-  typedef boost::mpl::list<HRR_ab_11_Dummy_11_int, HRR_cd_11_Dummy_11_int>
+  typedef boost::mpl::list<HRR_ab_11_Dummy_11_int, HRR_cd_11_Dummy_11_int,
+                           DerivV2_a_11_Dummy_11_int, DerivV2_b_11_Dummy_11_int,
+                           DerivV2_c_11_Dummy_11_int, DerivV2_d_11_Dummy_11_int>
       value;
 };
 #else  // 0B0D strategy
 template <>
 struct MasterStrategy<DummySymmIntegral_11_11_sq> {
-  typedef boost::mpl::list<HRR_ba_11_Dummy_11_sh, HRR_dc_11_Dummy_11_sh> value;
+  typedef boost::mpl::list<HRR_ba_11_Dummy_11_sh, HRR_dc_11_Dummy_11_sh,
+                           DerivV2_a_11_Dummy_11_sh, DerivV2_b_11_Dummy_11_sh,
+                           DerivV2_c_11_Dummy_11_sh, DerivV2_d_11_Dummy_11_sh>
+      value;
 };
 template <>
 struct MasterStrategy<DummySymmIntegral_11_11_int> {
-  typedef boost::mpl::list<HRR_ba_11_Dummy_11_int, HRR_dc_11_Dummy_11_int>
+  typedef boost::mpl::list<HRR_ba_11_Dummy_11_int, HRR_dc_11_Dummy_11_int,
+                           DerivV2_a_11_Dummy_11_int, DerivV2_b_11_Dummy_11_int,
+                           DerivV2_c_11_Dummy_11_int, DerivV2_d_11_Dummy_11_int>
       value;
 };
 #endif
