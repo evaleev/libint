@@ -499,10 +499,11 @@ void DirectedGraph::apply_to(const std::shared_ptr<DGVertex>& vertex,
 
 // Optimize out simple recurrence relations
 void DirectedGraph::optimize_rr_out(
-    const std::shared_ptr<CodeContext>& context) {
+    const std::shared_ptr<CodeContext>& context,
+    const std::shared_ptr<ImplicitDimensions>& dims) {
   replace_rr_with_expr();
   remove_trivial_arithmetics();
-  handle_trivial_nodes(context);
+  handle_trivial_nodes(context, dims);
   remove_disconnected_vertices();
   find_subtrees();
 }
@@ -797,7 +798,8 @@ inline std::string to_vector_symbol(const std::shared_ptr<DGVertex>& v) {
 // refer to another node so that no code is generated for it.
 //
 void DirectedGraph::handle_trivial_nodes(
-    const std::shared_ptr<CodeContext>& context) {
+    const std::shared_ptr<CodeContext>& context,
+    const std::shared_ptr<ImplicitDimensions>& dims) {
   typedef vertices::iterator iter;
   for (iter v = stack_.begin(); v != stack_.end(); ++v) {
     const ver_ptr& vptr = vertex_ptr(*v);
@@ -821,8 +823,6 @@ void DirectedGraph::handle_trivial_nodes(
           // if (child->symbol_set() == false)
           {
             const std::string stack_name("stack");
-            const std::shared_ptr<ImplicitDimensions>& dims =
-                ImplicitDimensions::default_dims();
             std::string low_rank = dims->low_label();
             std::string veclen = dims->vecdim_label();
 
