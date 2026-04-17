@@ -609,8 +609,10 @@ void try_main(int argc, char* argv[]) {
 #endif
 
 #ifdef LIBINT_INCLUDE_RKB_ERI
-#define BOOST_PP_RKB_ERI_TASK_TUPLE (coulomb_opop, opop_coulomb_opop)
-#define BOOST_PP_RKB_ERI_TASK_OPER_TUPLE (CoulombσpσpOper, σpσpCoulombσpσpOper)
+#define BOOST_PP_RKB_ERI_TASK_TUPLE \
+  (coulomb_opop, opop_coulomb_opop, op_coulomb_op)
+#define BOOST_PP_RKB_ERI_TASK_OPER_TUPLE \
+  (CoulombσpσpOper, σpσpCoulombσpσpOper, opCoulombopOper)
 #define BOOST_PP_RKB_ERI_TASK_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_RKB_ERI_TASK_TUPLE)
 #define BOOST_PP_RKB_ERI_TASK_OPER_LIST \
@@ -1148,7 +1150,14 @@ static void build_TwoPRep_2b_2k(
   std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
   std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
 
-  bool p1_p2_swappable = !std::is_same<OperType, CoulombσpσpOper>::value;
+  // opCoulombop has only a 2-fold bra↔ket-swap symmetry (with (a,b)↔(b,a)
+  // component remap). Within-side particle swap is NOT a symmetry because σ·p
+  // attaches to one specific function per side (ν on bra, λ on ket); swapping
+  // moves the operator to a different physical center that IBP cannot recover
+  // when centers differ. Emit code for every (la,lb,lc,ld) combination to
+  // avoid triggering any within-side swap at runtime.
+  bool p1_p2_swappable = !std::is_same<OperType, CoulombσpσpOper>::value &&
+                         !std::is_same<OperType, opCoulombopOper>::value;
   bool bra_ket_coswappable = std::is_same<OperType, σpσpCoulombσpσpOper>::value;
 
   // Note: la, lb, lc, ld generate code for chemist notation (ab|O|cd), where O
@@ -1157,10 +1166,23 @@ static void build_TwoPRep_2b_2k(
     for (unsigned int lb = 0; lb <= lmax; lb++) {
       for (unsigned int lc = 0; lc <= lmax; lc++) {
         for (unsigned int ld = 0; ld <= lmax; ld++) {
-          if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(
-                  LIBINT_SHELL_SET)>::value(la, lb, lc, ld, p1_p2_swappable,
-                                            bra_ket_coswappable))
-            continue;
+          // opCoulombop has only a bra↔ket (particle 1↔2) swap symmetry;
+          // within-side swap is NOT a symmetry (σ·p would move to the wrong
+          // physical center). Canonical form: la+lb <= lc+ld only
+          // (ORCA: la+lb >= lc+ld). Use a dedicated predicate so within-side
+          // orderings are not reduced away.
+          if constexpr (std::is_same<OperType, opCoulombopOper>::value) {
+#if LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD
+            if (!(la + lb <= lc + ld)) continue;
+#else
+            if (!(la + lb >= lc + ld)) continue;
+#endif
+          } else {
+            if (!ShellQuartetSetPredicate<static_cast<ShellSetType>(
+                    LIBINT_SHELL_SET)>::value(la, lb, lc, ld, p1_p2_swappable,
+                                              bra_ket_coswappable))
+              continue;
+          }
 
           // std::shared_ptr<Tactic> tactic(new ParticleDirectionTactic(la+lb >
           // lc+ld ? false : true));
@@ -1191,6 +1213,15 @@ static void build_TwoPRep_2b_2k(
             descrs.resize(0);
             // iterate over 16 components (tensor product of two spin spaces)
             for (int p = 0; p != 16; ++p) {
+              descrs.emplace_back(OperDescrType(p));
+            }
+          }
+          if constexpr (std::is_same<OperType, opCoulombopOper>::value) {
+            // reset descriptors array
+            descrs.resize(0);
+            // iterate over 9 components (3x3 Cartesian dyadic: bra-dir ×
+            // ket-dir)
+            for (int p = 0; p != 9; ++p) {
               descrs.emplace_back(OperDescrType(p));
             }
           }
@@ -2376,9 +2407,9 @@ void config_to_api(const std::shared_ptr<CompilationParameters>& cparams,
 
       {  // 2-body ints
 
-#define BOOST_PP_TWOBODY_TASKOPER_TUPLE                                \
-  ("eri", "coulomb_opop", "opop_coulomb_opop", "r12kg12", "r12_0_g12", \
-   "r12_2_g12", "g12_T1_g12", "g12dkh")
+#define BOOST_PP_TWOBODY_TASKOPER_TUPLE                                    \
+  ("eri", "coulomb_opop", "opop_coulomb_opop", "op_coulomb_op", "r12kg12", \
+   "r12_0_g12", "r12_2_g12", "g12_T1_g12", "g12dkh")
 #define BOOST_PP_TWOBODY_TASKOPER_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_TWOBODY_TASKOPER_TUPLE)
 

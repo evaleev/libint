@@ -476,6 +476,55 @@ struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr
 };
 typedef GenOper<σpσpCoulombσpσp_Descr> σpσpCoulombσpσpOper;
 
+/** opCoulombop: (μ σ·p ν | 1/r_{12} | κ σ·p λ).
+ *  Gaunt LS "bilinear" operator with one σ·p on each side.
+ *  Exposes the full 3×3 gradient-gradient tensor as 9 independent components
+ *  (indexed `3*a + b`, with a,b ∈ {x=0,y=1,z=2}), unlike Coulombσpσp which
+ *  collapses 9 → 4 via σ·σ identity on one side only.
+ */
+struct opCoulombop_Descr : public Contractable<opCoulombop_Descr> {
+  typedef MultiplicativeSymm2Body_Props Properties;
+
+  opCoulombop_Descr() : cartesian_index_(0) {}
+  opCoulombop_Descr(int cartesian_index) : cartesian_index_(cartesian_index) {
+    assert(cartesian_index >= 0 && cartesian_index <= 8);
+  }
+
+  /// 9 components = σ_a(1) ⊗ σ_b(2) bilinear, indexed as 3*a + b,
+  /// where a = bra-side derivative direction, b = ket-side derivative
+  /// direction, and a, b ∈ {x=0, y=1, z=2}. Component layout is the outer
+  /// product of two Cartesian unit vectors — a dyadic — analogous in spirit to
+  /// libint's CartesianMultipole index, but over two independent direction
+  /// indices.
+  static const unsigned int max_key = 9;
+  unsigned int key() const { return cartesian_index(); }
+  std::string description() const {
+    // clang-format off
+    static const char* labels[] = {
+        "XX", "XY", "XZ",
+        "YX", "YY", "YZ",
+        "ZX", "ZY", "ZZ"
+    };
+    // clang-format on
+    const auto ci = cartesian_index();
+    if (ci > 8) abort();
+    return std::string("op_coulomb_op[") + labels[ci] + "]";
+  }
+  std::string label() const { return description(); }
+  int psymm(int i, int j) const { abort(); }
+  int hermitian(int i) const { return +1; }
+
+  int cartesian_index() const { return cartesian_index_; }
+  /// bra-side (first σ) derivative direction ∈ {0=x, 1=y, 2=z}
+  int cart_a() const { return cartesian_index_ / 3; }
+  /// ket-side (second σ) derivative direction ∈ {0=x, 1=y, 2=z}
+  int cart_b() const { return cartesian_index_ % 3; }
+
+ private:
+  const int cartesian_index_ = -1;
+};
+typedef GenOper<opCoulombop_Descr> opCoulombopOper;
+
 /** GTG_1d is the two-body 1-dimensional Gaussian geminal
  */
 struct GTG_1d_Descr : public Contractable<GTG_1d_Descr> {

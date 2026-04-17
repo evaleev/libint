@@ -70,32 +70,33 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you add
 /// one-body ints
-#define BOOST_PP_NBODY_OPERATOR_LIST                     \
-  (overlap,                         /* overlap */        \
-   (kinetic,                        /* kinetic */        \
-    (elecpot,                       /* nuclear */        \
-     (elecpot,                      /* erf_nuclear */    \
-      (elecpot,                     /* erfc_nuclear */   \
-       (elecpot,                    /* erfx_nuclear */   \
-        (1emultipole,               /* emultipole1 */    \
-         (2emultipole,              /* emultipole2 */    \
-          (3emultipole,             /* emultipole3 */    \
-           (sphemultipole,          /* sphemultipole */  \
-            (opVop,                 /* opVop */          \
-             (eri,                  /* delta */          \
-              (eri,                 /* coulomb */        \
-               (coulomb_opop,       /* coulomb_opop */   \
-                (opop_coulomb_opop, /* coulomb_opop */   \
-                 (eri,              /* cgtg */           \
-                  (eri,             /* cgtg_x_coulomb */ \
-                   (eri,            /* delcgtg2 */       \
-                    (eri,           /* r12 */            \
-                     (eri,          /* erf_coulomb */    \
-                      (eri,         /* erfc_coulomb */   \
-                       (eri,        /* erfx_coulomb */   \
-                        (eri,       /* stg */            \
-                         (eri,      /* yukawa */         \
-                          BOOST_PP_NIL))))))))))))))))))))))))
+#define BOOST_PP_NBODY_OPERATOR_LIST                        \
+  (overlap,                         /* overlap */           \
+   (kinetic,                        /* kinetic */           \
+    (elecpot,                       /* nuclear */           \
+     (elecpot,                      /* erf_nuclear */       \
+      (elecpot,                     /* erfc_nuclear */      \
+       (elecpot,                    /* erfx_nuclear */      \
+        (1emultipole,               /* emultipole1 */       \
+         (2emultipole,              /* emultipole2 */       \
+          (3emultipole,             /* emultipole3 */       \
+           (sphemultipole,          /* sphemultipole */     \
+            (opVop,                 /* opVop */             \
+             (eri,                  /* delta */             \
+              (eri,                 /* coulomb */           \
+               (coulomb_opop,       /* coulomb_opop */      \
+                (opop_coulomb_opop, /* opop_coulomb_opop */ \
+                 (op_coulomb_op,    /* op_coulomb_op */     \
+                  (eri,             /* cgtg */              \
+                   (eri,            /* cgtg_x_coulomb */    \
+                    (eri,           /* delcgtg2 */          \
+                     (eri,          /* r12 */               \
+                      (eri,         /* erf_coulomb */       \
+                       (eri,        /* erfc_coulomb */      \
+                        (eri,       /* erfx_coulomb */      \
+                         (eri,      /* stg */               \
+                          (eri,     /* yukawa */            \
+                           BOOST_PP_NIL)))))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
@@ -1243,6 +1244,18 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
       const bool swap_p1p2 = (tket1.contr[0].l < tket2.contr[0].l);
       swap_tbra = swap_tket = swap_p1p2;
     }
+  } else if (oper_ == Operator::op_coulomb_op) {
+    // opCoulombop: only bra↔ket (particle 1↔2) swap is a symmetry (with
+    // (a,b)↔(b,a) component remap). Within-side swap is NOT a symmetry
+    // because σ·p attaches to one specific function per side; moving it to
+    // the other function changes the integral in a way IBP cannot recover
+    // across electrons. Canonical form: la+lb <= lc+ld only.
+    const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
+    const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
+    swap_braket = ((braket_ == BraKet::xx_xx) && (bra_total > ket_total)) ||
+                  braket_ == BraKet::xx_xs;
+    swap_tbra = false;
+    swap_tket = false;
   } else {
     swap_braket = ((braket_ == BraKet::xx_xx) &&
                    (tbra1.contr[0].l + tbra2.contr[0].l >
@@ -1276,6 +1289,15 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
       const bool swap_p1p2 = (tket1.contr[0].l > tket2.contr[0].l);
       swap_tbra = swap_tket = swap_p1p2;
     }
+  } else if (oper_ == Operator::op_coulomb_op) {
+    // opCoulombop: only bra↔ket swap is a symmetry (with (a,b)↔(b,a) remap).
+    // ORCA canonical form: la+lb >= lc+ld only.
+    const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
+    const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;
+    swap_braket = ((braket_ == BraKet::xx_xx) && (bra_total < ket_total)) ||
+                  braket_ == BraKet::xx_xs;
+    swap_tbra = false;
+    swap_tket = false;
   } else {
     swap_tbra = (tbra1.contr[0].l > tbra2.contr[0].l);
     swap_tket = (tket1.contr[0].l > tket2.contr[0].l);
@@ -1482,28 +1504,21 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
             const auto mmax = l + deriv_order_ + intrinsic_deriv_order();
 
             if (!skip_core_ints) {
+// Simple core-eval dispatch: just `core_eval_ptr->eval(gm_ptr, T, mmax)`.
+// Applies to Coulomb-family operators whose core integral is the bare Fm.
+#define LIBINT2_SIMPLE_CORE_EVAL_CASE(OP)                           \
+  case Operator::OP: {                                              \
+    const auto& core_eval_ptr =                                     \
+        any_cast<const detail::core_eval_pack_type<Operator::OP>&>( \
+            core_eval_pack_)                                        \
+            .first();                                               \
+    core_eval_ptr->eval(gm_ptr, T, mmax);                           \
+  } break
               switch (oper_) {
-                case Operator::coulomb: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::coulomb>&>(core_eval_pack_)
-                          .first();
-                  core_eval_ptr->eval(gm_ptr, T, mmax);
-                } break;
-                case Operator::coulomb_opop: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::coulomb_opop>&>(core_eval_pack_)
-                          .first();
-                  core_eval_ptr->eval(gm_ptr, T, mmax);
-                } break;
-                case Operator::opop_coulomb_opop: {
-                  const auto& core_eval_ptr =
-                      any_cast<const detail::core_eval_pack_type<
-                          Operator::opop_coulomb_opop>&>(core_eval_pack_)
-                          .first();
-                  core_eval_ptr->eval(gm_ptr, T, mmax);
-                } break;
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(coulomb_opop);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(opop_coulomb_opop);
+                LIBINT2_SIMPLE_CORE_EVAL_CASE(op_coulomb_op);
                 case Operator::cgtg_x_coulomb: {
                   const auto& core_eval_ptr =
                       any_cast<const detail::core_eval_pack_type<
@@ -1622,6 +1637,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                   assert(false && "missing case in a switch");  // unreachable
                   abort();
               }
+#undef LIBINT2_SIMPLE_CORE_EVAL_CASE
             }
 
             for (auto m = 0; m != mmax + 1; ++m) {
@@ -2240,6 +2256,15 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         for (auto s = 0; s != ntargets; ++s) temp[s] = targets_[s];
         for (auto s = 0; s != ntargets; ++s)
           targets_[4 * (s % 4) + (s / 4)] = temp[s];
+      }
+      // For op_coulomb_op with swap_braket: (a,b) → (b,a) because bra↔ket swap
+      // exchanges which side each σ·p direction came from. Layout is
+      // index = 3*a + b, so the remap is s_new = 3*(s%3) + (s/3).
+      if (permute && oper_ == Operator::op_coulomb_op && swap_braket) {
+        std::array<const value_type*, 9> temp;
+        for (auto s = 0; s != ntargets; ++s) temp[s] = targets_[s];
+        for (auto s = 0; s != ntargets; ++s)
+          targets_[3 * (s % 3) + (s / 3)] = temp[s];
       }
     }       // if need_scratch => needed to transpose and/or tform
     else {  // did not use scratch? may still need to update targets_

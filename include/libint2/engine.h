@@ -160,6 +160,13 @@ enum class Operator {
   /// where b1 & b2 are centers of bra1 and bra2 and k1  & k2 are centers of
   /// ket1 and ket2, respectively
   opop_coulomb_opop,
+  /// (2-body) \f$ (σ.p_{b2}) r_{12}^{-1} (σ.p_{k2}) \f$ where b2 is the center
+  /// of bra2 and k2 is the center of ket2; Gaunt LS "bilinear" integral.
+  /// Produces 9 components (outer product of two Cartesian directions),
+  /// indexed as `3*a + b` with `a` = bra-side direction, `b` = ket-side
+  /// direction, and `a,b ∈ {x=0, y=1, z=2}`. Unlike coulomb_opop, the 9
+  /// components are NOT contracted via σ·σ — all are kept independent.
+  op_coulomb_op,
   /// contracted Gaussian geminal
   cgtg,
   /// contracted Gaussian geminal times Coulomb
@@ -368,6 +375,15 @@ struct operator_traits<Operator::opop_coulomb_opop>
   /// index = 4 * bra_spin + ket_spin, where spin in {S=0, X=1, Y=2, Z=3}
   static constexpr auto nopers = 16;
   static constexpr auto intrinsic_deriv_order = 4;
+};
+template <>
+struct operator_traits<Operator::op_coulomb_op>
+    : public operator_traits<Operator::coulomb> {
+  /// 9 components: Cartesian dyadic of the two (σ·p) directions.
+  /// index = 3 * a + b, with a = bra-side direction, b = ket-side direction,
+  /// a,b ∈ {x=0, y=1, z=2}.
+  static constexpr auto nopers = 9;
+  static constexpr auto intrinsic_deriv_order = 2;
 };
 
 namespace detail {
