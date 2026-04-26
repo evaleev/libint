@@ -478,35 +478,43 @@ typedef GenOper<σpσpCoulombσpσp_Descr> σpσpCoulombσpσpOper;
 
 /** opCoulombop: (μ σ·p ν | 1/r_{12} | κ σ·p λ).
  *  Gaunt LS "bilinear" operator with one σ·p on each side.
- *  Exposes the full 3×3 gradient-gradient tensor as 9 independent components
- *  (indexed `3*a + b`, with a,b ∈ {x=0,y=1,z=2}), unlike Coulombσpσp which
- *  collapses 9 → 4 via σ·σ identity on one side only.
+ *  Outputs the SO(3) irreducible decomposition of the 3×3 gradient-gradient
+ *  tensor T_{ab} = ∂_a ∂_b (μν|κλ): 1 scalar trace + 3 antisymmetric
+ *  (curl-curl) + 5 symmetric-traceless = 9 components. Same storage as the
+ *  raw dyadic, but indexed by physics-meaningful irreps so consumers do not
+ *  need to hand-build trace/antisym/sym-TL combinations at every contraction
+ *  site.
  */
 struct opCoulombop_Descr : public Contractable<opCoulombop_Descr> {
   typedef MultiplicativeSymm2Body_Props Properties;
 
-  opCoulombop_Descr() : cartesian_index_(0) {}
-  opCoulombop_Descr(int cartesian_index) : cartesian_index_(cartesian_index) {
-    assert(cartesian_index >= 0 && cartesian_index <= 8);
+  /// SO(3) irreducible components of the rank-2 Cartesian tensor T_{ab}.
+  enum Component : int {
+    Scalar = 0,      ///< T_xx + T_yy + T_zz (trace, ∇·∇)
+    AntisymX = 1,    ///< T_yz − T_zy = (∇×∇)_x
+    AntisymY = 2,    ///< T_zx − T_xz = (∇×∇)_y
+    AntisymZ = 3,    ///< T_xy − T_yx = (∇×∇)_z
+    SymTLDiagA = 4,  ///< T_xx − T_yy
+    SymTLDiagB = 5,  ///< 2·T_zz − T_xx − T_yy
+    SymTLOffXY = 6,  ///< T_xy + T_yx
+    SymTLOffXZ = 7,  ///< T_xz + T_zx
+    SymTLOffYZ = 8,  ///< T_yz + T_zy
+  };
+
+  opCoulombop_Descr() : component_index_(0) {}
+  opCoulombop_Descr(int component_index) : component_index_(component_index) {
+    assert(component_index >= 0 && component_index <= 8);
   }
 
-  /// 9 components = σ_a(1) ⊗ σ_b(2) bilinear, indexed as 3*a + b,
-  /// where a = bra-side derivative direction, b = ket-side derivative
-  /// direction, and a, b ∈ {x=0, y=1, z=2}. Component layout is the outer
-  /// product of two Cartesian unit vectors — a dyadic — analogous in spirit to
-  /// libint's CartesianMultipole index, but over two independent direction
-  /// indices.
   static const unsigned int max_key = 9;
-  unsigned int key() const { return cartesian_index(); }
+  unsigned int key() const { return component_index(); }
   std::string description() const {
-    // clang-format off
     static const char* labels[] = {
-        "XX", "XY", "XZ",
-        "YX", "YY", "YZ",
-        "ZX", "ZY", "ZZ"
+        "scalar",       "antisym_x",    "antisym_y",
+        "antisym_z",    "symtl_diag_a", "symtl_diag_b",
+        "symtl_off_xy", "symtl_off_xz", "symtl_off_yz",
     };
-    // clang-format on
-    const auto ci = cartesian_index();
+    const auto ci = component_index();
     if (ci > 8) abort();
     return std::string("op_coulomb_op[") + labels[ci] + "]";
   }
@@ -514,14 +522,20 @@ struct opCoulombop_Descr : public Contractable<opCoulombop_Descr> {
   int psymm(int i, int j) const { abort(); }
   int hermitian(int i) const { return +1; }
 
-  int cartesian_index() const { return cartesian_index_; }
-  /// bra-side (first σ) derivative direction ∈ {0=x, 1=y, 2=z}
-  int cart_a() const { return cartesian_index_ / 3; }
-  /// ket-side (second σ) derivative direction ∈ {0=x, 1=y, 2=z}
-  int cart_b() const { return cartesian_index_ % 3; }
+  int component_index() const { return component_index_; }
+
+  bool is_scalar() const { return component_index_ == Scalar; }
+  bool is_antisym() const {
+    return component_index_ >= AntisymX && component_index_ <= AntisymZ;
+  }
+  bool is_sym_tl() const {
+    return component_index_ >= SymTLDiagA && component_index_ <= SymTLOffYZ;
+  }
+  /// for antisym components: 0=x, 1=y, 2=z (only valid if is_antisym())
+  int antisym_cart() const { return component_index_ - AntisymX; }
 
  private:
-  const int cartesian_index_ = -1;
+  const int component_index_ = -1;
 };
 typedef GenOper<opCoulombop_Descr> opCoulombopOper;
 

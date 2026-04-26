@@ -2192,6 +2192,12 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
                 }
                 if (swap_tket && oper_ == Operator::coulomb_opop && s > 0)
                   oper_cart_component_phase = -1.0;
+                // op_coulomb_op irrep layout under bra↔ket swap: antisym
+                // components (s ∈ {1,2,3}) flip sign; scalar (0) and sym-TL
+                // (4..8) are invariant. swap_tket is always false for this
+                // operator; the sign correction applies on swap_braket alone.
+                if (oper_ == Operator::op_coulomb_op && s >= 1 && s <= 3)
+                  oper_cart_component_phase = -1.0;
                 if (swap_tbra)
                   tgt_blk_mat =
                       oper_cart_component_phase * src_blk_mat.transpose();
@@ -2257,15 +2263,9 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
         for (auto s = 0; s != ntargets; ++s)
           targets_[4 * (s % 4) + (s / 4)] = temp[s];
       }
-      // For op_coulomb_op with swap_braket: (a,b) → (b,a) because bra↔ket swap
-      // exchanges which side each σ·p direction came from. Layout is
-      // index = 3*a + b, so the remap is s_new = 3*(s%3) + (s/3).
-      if (permute && oper_ == Operator::op_coulomb_op && swap_braket) {
-        std::array<const value_type*, 9> temp;
-        for (auto s = 0; s != ntargets; ++s) temp[s] = targets_[s];
-        for (auto s = 0; s != ntargets; ++s)
-          targets_[3 * (s % 3) + (s / 3)] = temp[s];
-      }
+      // op_coulomb_op irrep layout: bra↔ket swap is handled in-place by
+      // oper_cart_component_phase above (sign flip on antisym components,
+      // identity on scalar / sym-TL); no pointer remap is needed.
     }       // if need_scratch => needed to transpose and/or tform
     else {  // did not use scratch? may still need to update targets_
       if (set_targets_) {

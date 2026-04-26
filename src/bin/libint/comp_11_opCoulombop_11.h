@@ -33,14 +33,12 @@ namespace libint2 {
 /**
  * Computes the "Gaunt LS bilinear" integral
  *   \f$ (\mu\, \sigma\cdot\hat{p}\,\nu | 1/r_{12} | \kappa\,
- * \sigma\cdot\hat{p}\,\lambda ) \f$ by rewriting each of the 9 (a,b) components
- * as a single derivative Coulomb integral \f$ ( \mu \cdot \partial_a \nu |
- * 1/r_{12} | \kappa \cdot \partial_b \lambda ) \f$ with a ∈ {x,y,z} on
- * bra-function-1 (ν) and b ∈ {x,y,z} on ket-function-1 (λ).
- *
- * Unlike Coulombσpσp (which folds 9 → 4 via σ·σ on the ket pair), all 9
- * components are exposed independently, since the two σ's here act on different
- * particles and their contraction cannot be absorbed locally.
+ * \sigma\cdot\hat{p}\,\lambda ) \f$ in the SO(3) irreducible decomposition of
+ * the rank-2 tensor \f$ T_{ab} = ( \mu \cdot \partial_a \nu | 1/r_{12} | \kappa
+ * \cdot \partial_b \lambda ) \f$: 1 scalar trace + 3 antisymmetric (curl-curl)
+ * + 5 symmetric-traceless = 9 components total. Each output is a small linear
+ * combination of raw deriv-TwoPRep children, mirroring
+ * comp_11_Coulombσpσp_11.h's pattern of trace/antisym emission.
  *
  * @tparam F basis function type. valid choices are CGShell or CGF
  */
@@ -58,7 +56,7 @@ class CR_11_opCoulombop_11
       ParentType;
   friend class GenericRecurrenceRelation<ThisType, BasisFunctionType,
                                          TargetType>;
-  static const unsigned int max_nchildren = 1;
+  static const unsigned int max_nchildren = 3;
 
   using ParentType::Instance;
 
@@ -81,7 +79,7 @@ class CR_11_opCoulombop_11
 
   std::string generate_label() const override {
     return "CR_opCoulombop_" +
-           std::to_string(target_->oper()->descr().cartesian_index());
+           std::to_string(target_->oper()->descr().component_index());
   }
 
   std::string spfunction_call(
@@ -118,8 +116,8 @@ class CR_11_opCoulombop_11
                                                 dims->vecdim());
   }
 
-  /// Each of the 9 components is a single deriv-ERI child ⇒ trivial passthrough
-  /// loop.
+  /// Hand-emit the per-component irrep linear combination over deriv-ERI
+  /// children. The combination depends on the target's component index.
   void generate_code(const std::shared_ptr<CodeContext>& context,
                      const std::shared_ptr<ImplicitDimensions>& dims,
                      const std::string& funcname, std::ostream& decl,
@@ -150,9 +148,38 @@ class CR_11_opCoulombop_11
     def << context->std_function_header();
     def << "#ifdef __INTEL_COMPILER\n#pragma ivdep\n#endif\n";
     def << "for(int hsi = 0; hsi<highdim; hsi++) {\n";
-    def << "target[hsi] = src0[hsi];\n";
-    def << "}\n";
-    def << "/** Number of flops = 0 */\n";
+
+    const int comp = this->target_->oper()->descr().component_index();
+    std::string rhs;
+    unsigned int nflops = 0;
+    switch (comp) {
+      case opCoulombop_Descr::Scalar:
+        rhs = "src0[hsi] + src1[hsi] + src2[hsi]";
+        nflops = 2;
+        break;
+      case opCoulombop_Descr::AntisymX:
+      case opCoulombop_Descr::AntisymY:
+      case opCoulombop_Descr::AntisymZ:
+      case opCoulombop_Descr::SymTLDiagA:
+        rhs = "src0[hsi] - src1[hsi]";
+        nflops = 1;
+        break;
+      case opCoulombop_Descr::SymTLDiagB:
+        rhs = "2.0*src0[hsi] - src1[hsi] - src2[hsi]";
+        nflops = 3;
+        break;
+      case opCoulombop_Descr::SymTLOffXY:
+      case opCoulombop_Descr::SymTLOffXZ:
+      case opCoulombop_Descr::SymTLOffYZ:
+        rhs = "src0[hsi] + src1[hsi]";
+        nflops = 1;
+        break;
+      default:
+        throw std::runtime_error(
+            "CR_11_opCoulombop_11::generate_code: invalid component index");
+    }
+    def << "target[hsi] = " << rhs << ";\n}\n";
+    def << "/** Number of flops = " << nflops << " */\n";
     def << context->close_block() << std::endl;
     def << context->code_postfix();
   }
@@ -187,26 +214,100 @@ CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
                GenIntegralSet_11_11<BasisFunctionType, TwoPRep, mType>>
       factory(this);
 
-  // Chemist notation: (a b | op c op d) — σ·p acts on one function per
-  // electron. Target component is indexed (a_dir, b_dir) where
-  //   a_dir = direction of σ·p on electron 1 (applied to ket(0,0) = b)
-  //   b_dir = direction of σ·p on electron 2 (applied to ket(1,0) = d)
-  // Mirrors Coulombσpσp which places BOTH derivatives on electron 2 (c and d);
-  // here we place ONE derivative on each electron (b on el-1, d on el-2).
-  const int a_dir = oper->descr().cart_a();
-  const int b_dir = oper->descr().cart_b();
+  // Chemist notation: (a b | op c op d). σ·p acts on one function per electron
+  // — direction `i` on ket(0,0) = b (electron 1), direction `j` on ket(1,0) = d
+  // (electron 2). Each output is an SO(3) irrep combination of the raw 3×3
+  // T_{ij} dyadic; case bodies build only the children each combination needs.
+  constexpr auto x = 0;
+  constexpr auto y = 1;
+  constexpr auto z = 2;
 
-  F b_deriv{b};
-  b_deriv.deriv().inc(a_dir);
-  F d_deriv{d};
-  d_deriv.deriv().inc(b_dir);
+  auto T = [&](int i, int j) {
+    F b_d{b};
+    b_d.deriv().inc(i);
+    F d_d{d};
+    d_d.deriv().inc(j);
+    return factory.make_child(a, b_d, c, d_d, zero_m);
+  };
 
-  auto child = factory.make_child(a, b_deriv, c, d_deriv, zero_m);
-  if (is_simple()) {
-    // Wrap single child in a trivial sum to satisfy expr_'s AlgebraicOperator
-    // type (same pattern as vrr_1_onep_1.h:261).
-    expr_ = Scalar(0u) + child;
-    nflops_ += 0;
+  switch (oper->descr().component_index()) {
+    case opCoulombop_Descr::Scalar: {
+      auto Txx = T(x, x);
+      auto Tyy = T(y, y);
+      auto Tzz = T(z, z);
+      if (is_simple()) {
+        expr_ = Txx + Tyy + Tzz;
+        nflops_ += 2;
+      }
+    } break;
+    case opCoulombop_Descr::AntisymX: {
+      auto Tyz = T(y, z);
+      auto Tzy = T(z, y);
+      if (is_simple()) {
+        expr_ = Tyz - Tzy;
+        nflops_ += 1;
+      }
+    } break;
+    case opCoulombop_Descr::AntisymY: {
+      auto Tzx = T(z, x);
+      auto Txz = T(x, z);
+      if (is_simple()) {
+        expr_ = Tzx - Txz;
+        nflops_ += 1;
+      }
+    } break;
+    case opCoulombop_Descr::AntisymZ: {
+      auto Txy = T(x, y);
+      auto Tyx = T(y, x);
+      if (is_simple()) {
+        expr_ = Txy - Tyx;
+        nflops_ += 1;
+      }
+    } break;
+    case opCoulombop_Descr::SymTLDiagA: {
+      auto Txx = T(x, x);
+      auto Tyy = T(y, y);
+      if (is_simple()) {
+        expr_ = Txx - Tyy;
+        nflops_ += 1;
+      }
+    } break;
+    case opCoulombop_Descr::SymTLDiagB: {
+      // 2·T_zz − T_xx − T_yy: child order (Tzz, Txx, Tyy) matches generate_code
+      auto Tzz = T(z, z);
+      auto Txx = T(x, x);
+      auto Tyy = T(y, y);
+      if (is_simple()) {
+        expr_ = Scalar(2) * Tzz - Txx - Tyy;
+        nflops_ += 3;
+      }
+    } break;
+    case opCoulombop_Descr::SymTLOffXY: {
+      auto Txy = T(x, y);
+      auto Tyx = T(y, x);
+      if (is_simple()) {
+        expr_ = Txy + Tyx;
+        nflops_ += 1;
+      }
+    } break;
+    case opCoulombop_Descr::SymTLOffXZ: {
+      auto Txz = T(x, z);
+      auto Tzx = T(z, x);
+      if (is_simple()) {
+        expr_ = Txz + Tzx;
+        nflops_ += 1;
+      }
+    } break;
+    case opCoulombop_Descr::SymTLOffYZ: {
+      auto Tyz = T(y, z);
+      auto Tzy = T(z, y);
+      if (is_simple()) {
+        expr_ = Tyz + Tzy;
+        nflops_ += 1;
+      }
+    } break;
+    default:
+      throw std::runtime_error("CR_11_opCoulombop_11: invalid component index");
   }
 
 }  // CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11

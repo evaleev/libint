@@ -1150,14 +1150,14 @@ static void build_TwoPRep_2b_2k(
   std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
   std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
 
-  // opCoulombop has only a 2-fold bra↔ket-swap symmetry (with (a,b)↔(b,a)
-  // component remap). Within-side particle swap is NOT a symmetry because σ·p
-  // attaches to one specific function per side (ν on bra, λ on ket); swapping
-  // moves the operator to a different physical center that IBP cannot recover
-  // when centers differ. Emit code for every (la,lb,lc,ld) combination to
-  // avoid triggering any within-side swap at runtime.
-  bool p1_p2_swappable = !std::is_same<OperType, CoulombσpσpOper>::value &&
-                         !std::is_same<OperType, opCoulombopOper>::value;
+  // opCoulombop has a 2-fold bra↔ket-swap symmetry, with per-component sign
+  // flips under the swap (Antisym* flip sign; Scalar/SymTL* invariant) — this
+  // is captured by p1_p2_swappable=true plus a dedicated predicate that
+  // canonicalizes only la+lb<=lc+ld and emits code for *all* within-side
+  // orderings (within-side swap is NOT a symmetry — σ·p attaches to one
+  // specific function per side, and IBP cannot recover the sign across the
+  // 1/r12 coupling).
+  bool p1_p2_swappable = !std::is_same<OperType, CoulombσpσpOper>::value;
   bool bra_ket_coswappable = std::is_same<OperType, σpσpCoulombσpσpOper>::value;
 
   // Note: la, lb, lc, ld generate code for chemist notation (ab|O|cd), where O
@@ -1166,11 +1166,11 @@ static void build_TwoPRep_2b_2k(
     for (unsigned int lb = 0; lb <= lmax; lb++) {
       for (unsigned int lc = 0; lc <= lmax; lc++) {
         for (unsigned int ld = 0; ld <= lmax; ld++) {
-          // opCoulombop has only a bra↔ket (particle 1↔2) swap symmetry;
-          // within-side swap is NOT a symmetry (σ·p would move to the wrong
-          // physical center). Canonical form: la+lb <= lc+ld only
-          // (ORCA: la+lb >= lc+ld). Use a dedicated predicate so within-side
-          // orderings are not reduced away.
+          // opCoulombop: only bra↔ket (particle 1↔2) swap is a symmetry.
+          // Within-side swap is NOT (σ·p would move to a different physical
+          // center; IBP cannot repair the sign across 1/r12). Dedicated
+          // predicate canonicalizes la+lb<=lc+ld only (ORCA: >=) and accepts
+          // all within-side orderings.
           if constexpr (std::is_same<OperType, opCoulombopOper>::value) {
 #if LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD
             if (!(la + lb <= lc + ld)) continue;
@@ -1219,8 +1219,8 @@ static void build_TwoPRep_2b_2k(
           if constexpr (std::is_same<OperType, opCoulombopOper>::value) {
             // reset descriptors array
             descrs.resize(0);
-            // iterate over 9 components (3x3 Cartesian dyadic: bra-dir ×
-            // ket-dir)
+            // iterate over 9 SO(3) irrep components: 1 scalar trace + 3
+            // antisym (curl-curl) + 5 sym-traceless
             for (int p = 0; p != 9; ++p) {
               descrs.emplace_back(OperDescrType(p));
             }

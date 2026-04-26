@@ -679,8 +679,12 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
             int l3, m3, n3;
             FOR_CART(l3, m3, n3, obs[s3].contr[0].l)
 
-            std::array<LIBINT2_REF_REALTYPE, 9> ref_op_coulomb_op{};
-            ref_op_coulomb_op.fill(0.0);
+            // Raw 3x3 dyadic T_{ab} = (a b∂_a | c d∂_b), accumulated in
+            // chemist-notation index 3*a+b. After the primitive loop we
+            // project into the 9 SO(3) irreducible components that the engine
+            // returns: Scalar, AntisymX/Y/Z, SymTLDiagA/B, SymTLOffXY/XZ/YZ.
+            std::array<LIBINT2_REF_REALTYPE, 9> ref_raw{};
+            ref_raw.fill(0.0);
 
             for (uint p0 = 0; p0 < obs[s0].nprim(); p0++) {
               for (uint p1 = 0; p1 < obs[s1].nprim(); p1++) {
@@ -712,11 +716,34 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
                     };
                     for (int a = 0; a < 3; ++a)
                       for (int b = 0; b < 3; ++b)
-                        ref_op_coulomb_op[3 * a + b] += c0123 * D(a, b);
+                        ref_raw[3 * a + b] += c0123 * D(a, b);
                   }
                 }
               }
             }
+
+            // Project raw dyadic into the 9 SO(3) irrep components used by
+            // op_coulomb_op (must match opCoulombop_Descr::Component order).
+            const auto Txx = ref_raw[0];
+            const auto Txy = ref_raw[1];
+            const auto Txz = ref_raw[2];
+            const auto Tyx = ref_raw[3];
+            const auto Tyy = ref_raw[4];
+            const auto Tyz = ref_raw[5];
+            const auto Tzx = ref_raw[6];
+            const auto Tzy = ref_raw[7];
+            const auto Tzz = ref_raw[8];
+            std::array<LIBINT2_REF_REALTYPE, 9> ref_op_coulomb_op{
+                Txx + Tyy + Tzz,        // Scalar
+                Tyz - Tzy,              // AntisymX
+                Tzx - Txz,              // AntisymY
+                Txy - Tyx,              // AntisymZ
+                Txx - Tyy,              // SymTLDiagA
+                2.0 * Tzz - Txx - Tyy,  // SymTLDiagB
+                Txy + Tyx,              // SymTLOffXY
+                Txz + Tzx,              // SymTLOffXZ
+                Tyz + Tzy,              // SymTLOffYZ
+            };
 
             const double ABSOLUTE_DEVIATION_THRESHOLD = 5.0E-14;
             const double RELATIVE_DEVIATION_THRESHOLD = 1.0E-9;
