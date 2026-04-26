@@ -70,40 +70,41 @@ typename std::remove_all_extents<T>::type* to_ptr1(T (&a)[N]) {
 /// These MUST appear in the same order as in Operator.
 /// You must also update BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX when you add
 /// one-body ints
-#define BOOST_PP_NBODY_OPERATOR_LIST                        \
-  (overlap,                         /* overlap */           \
-   (kinetic,                        /* kinetic */           \
-    (elecpot,                       /* nuclear */           \
-     (elecpot,                      /* erf_nuclear */       \
-      (elecpot,                     /* erfc_nuclear */      \
-       (elecpot,                    /* erfx_nuclear */      \
-        (1emultipole,               /* emultipole1 */       \
-         (2emultipole,              /* emultipole2 */       \
-          (3emultipole,             /* emultipole3 */       \
-           (sphemultipole,          /* sphemultipole */     \
-            (opVop,                 /* opVop */             \
-             (eri,                  /* delta */             \
-              (eri,                 /* coulomb */           \
-               (coulomb_opop,       /* coulomb_opop */      \
-                (opop_coulomb_opop, /* opop_coulomb_opop */ \
-                 (op_coulomb_op,    /* op_coulomb_op */     \
-                  (eri,             /* cgtg */              \
-                   (eri,            /* cgtg_x_coulomb */    \
-                    (eri,           /* delcgtg2 */          \
-                     (eri,          /* r12 */               \
-                      (eri,         /* erf_coulomb */       \
-                       (eri,        /* erfc_coulomb */      \
-                        (eri,       /* erfx_coulomb */      \
-                         (eri,      /* stg */               \
-                          (eri,     /* yukawa */            \
-                           BOOST_PP_NIL)))))))))))))))))))))))))
+#define BOOST_PP_NBODY_OPERATOR_LIST                         \
+  (overlap,                          /* overlap */           \
+   (kinetic,                         /* kinetic */           \
+    (elecpot,                        /* nuclear */           \
+     (elecpot,                       /* erf_nuclear */       \
+      (elecpot,                      /* erfc_nuclear */      \
+       (elecpot,                     /* erfx_nuclear */      \
+        (1emultipole,                /* emultipole1 */       \
+         (2emultipole,               /* emultipole2 */       \
+          (3emultipole,              /* emultipole3 */       \
+           (sphemultipole,           /* sphemultipole */     \
+            (opVop,                  /* opVop */             \
+             (oprop,                 /* oprop */             \
+              (eri,                  /* delta */             \
+               (eri,                 /* coulomb */           \
+                (coulomb_opop,       /* coulomb_opop */      \
+                 (opop_coulomb_opop, /* opop_coulomb_opop */ \
+                  (op_coulomb_op,    /* op_coulomb_op */     \
+                   (eri,             /* cgtg */              \
+                    (eri,            /* cgtg_x_coulomb */    \
+                     (eri,           /* delcgtg2 */          \
+                      (eri,          /* r12 */               \
+                       (eri,         /* erf_coulomb */       \
+                        (eri,        /* erfc_coulomb */      \
+                         (eri,       /* erfx_coulomb */      \
+                          (eri,      /* stg */               \
+                           (eri,     /* yukawa */            \
+                            BOOST_PP_NIL))))))))))))))))))))))))))
 
 #define BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE \
   BOOST_PP_MAKE_TUPLE(BOOST_PP_LIST_SIZE(BOOST_PP_NBODY_OPERATOR_LIST))
 #define BOOST_PP_NBODY_OPERATOR_INDEX_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_NBODY_OPERATOR_INDEX_TUPLE)
 #define BOOST_PP_NBODY_OPERATOR_LAST_ONEBODY_INDEX \
-  10  // opVop, the 11th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
+  11  // oprop, the 12th member of BOOST_PP_NBODY_OPERATOR_LIST, is the last
       // 1-body operator
 
 // make list of braket indices for n-body ints
@@ -1028,7 +1029,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   //  }
 
   if (oper_ == Operator::emultipole1 || oper_ == Operator::emultipole2 ||
-      oper_ == Operator::emultipole3) {
+      oper_ == Operator::emultipole3 || oper_ == Operator::oprop) {
     const auto& O = any_cast<
         const operator_traits<Operator::emultipole1>::oper_params_type&>(
         params_);  // same as emultipoleX
@@ -1076,7 +1077,7 @@ __libint2_engine_inline void Engine::compute_primdata(Libint_t& primdata,
   primdata._0_Overlap_0_z[0] = ovlp_ss_z;
 
   if (oper_ == Operator::kinetic || (deriv_order_ > 0) ||
-      oper_ == Operator::opVop) {
+      oper_ == Operator::opVop || oper_ == Operator::oprop) {
 #if LIBINT2_DEFINED(eri, two_alpha0_bra)
     primdata.two_alpha0_bra[0] = 2.0 * alpha1;
 #endif

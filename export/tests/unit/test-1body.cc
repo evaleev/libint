@@ -244,6 +244,72 @@ TEST_CASE_METHOD(libint2::unit::DefaultFixture, "W correctness",
 #endif  // LIBINT2_SUPPORT_ONEBODY
 }
 
+TEST_CASE_METHOD(libint2::unit::DefaultFixture, "σpRσp correctness",
+                 "[engine][1-body]") {
+#if defined(LIBINT2_SUPPORT_ONEBODY)
+  if (LIBINT_SHGSHELL_ORDERING != LIBINT_SHGSHELL_ORDERING_STANDARD) return;
+
+  // Two contracted Gaussian shells at distinct centers. We exercise
+  // `(σ·p) r (σ·p)` over the (s|d) and (d|s) shell pairs and validate
+  // Hermiticity: trace components (q=0) are symmetric under bra↔ket swap,
+  // antisym components (q=1,2,3) are antisymmetric.
+  std::vector<Shell> obs{
+      Shell{{1.0, 3.0}, {{0, true, {1.0, 0.3}}}, {{0.0, 0.0, 0.0}}},
+      Shell{{2.0, 5.0}, {{2, true, {1.0, 0.2}}}, {{1.0, 1.0, 1.0}}}};
+
+  const auto lmax = std::min(2, LIBINT2_MAX_AM_oprop);
+  if (lmax < 2) return;
+
+  auto engine = Engine(Operator::oprop, 2, lmax);
+  engine.set_params(std::array<double, 3>{{0.0, 0.0, 0.0}});
+
+  // (s|σpRσp|d) and (d|σpRσp|s)
+  engine.compute(obs[0], obs[1]);
+  std::array<std::vector<double>, 12> ab;
+  for (int c = 0; c < 12; ++c) {
+    const auto* buf = engine.results()[c];
+    REQUIRE(buf != nullptr);
+    ab[c].assign(buf, buf + (1 * 5));  // n_s × n_d_pure = 1 × 5
+  }
+
+  engine.compute(obs[1], obs[0]);
+  std::array<std::vector<double>, 12> ba;
+  for (int c = 0; c < 12; ++c) {
+    const auto* buf = engine.results()[c];
+    REQUIRE(buf != nullptr);
+    ba[c].assign(buf, buf + (5 * 1));  // n_d_pure × n_s
+  }
+
+  // Hermiticity check: σpRσp is Hermitian, but the Pauli identity routes the
+  // imaginary i factor on the antisym pieces into a real-stored sign flip.
+  //   q=0 trace: matrix is symmetric  ⇒  ab[0+k][i,j] ==  ba[0+k][j,i]
+  //   q=1..3   : matrix is antisym    ⇒  ab[q+k][i,j] == -ba[q+k][j,i]
+  // (Indices: ab is laid out (i=0..n_s-1, j=0..n_d-1); ba is (j, i).)
+  const double tol = 1.0e-12;
+  for (int k = 0; k < 3; ++k) {
+    for (int q = 0; q < 4; ++q) {
+      const int comp = 4 * k + q;
+      const double expected_sign = (q == 0) ? +1.0 : -1.0;
+      for (int i = 0; i < 1; ++i) {
+        for (int j = 0; j < 5; ++j) {
+          const double v_ab = ab[comp][i * 5 + j];
+          const double v_ba = ba[comp][j * 1 + i];
+          REQUIRE(std::isfinite(v_ab));
+          REQUIRE(std::abs(v_ab - expected_sign * v_ba) < tol);
+        }
+      }
+    }
+  }
+
+  // Sanity: not every component is identically zero (would mask codegen bugs).
+  bool any_nonzero = false;
+  for (int c = 0; c < 12; ++c)
+    for (double v : ab[c])
+      if (std::abs(v) > 1.0e-10) any_nonzero = true;
+  REQUIRE(any_nonzero);
+#endif  // LIBINT2_SUPPORT_ONEBODY
+}
+
 // verify that python/tests/test_libint2.py:test_integrals is correct
 TEST_CASE_METHOD(libint2::unit::DefaultFixture, "python correctness",
                  "[engine][1-body]") {
