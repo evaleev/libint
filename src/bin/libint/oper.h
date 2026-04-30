@@ -515,7 +515,7 @@ struct σpσpCoulombσpσp_Descr : public Contractable<σpσpCoulombσpσp_Descr
 };
 typedef GenOper<σpσpCoulombσpσp_Descr> σpσpCoulombσpσpOper;
 
-/** opCoulombop: (μ σ·p ν | 1/r_{12} | κ σ·p λ).
+/** σpCoulombσp: (μ σ·p ν | 1/r_{12} | κ σ·p λ).
  *  Gaunt LS "bilinear" operator with one σ·p on each side.
  *  Outputs the SO(3) irreducible decomposition of the 3×3 gradient-gradient
  *  tensor T_{ab} = ∂_a ∂_b (μν|κλ): 1 scalar trace + 3 antisymmetric
@@ -524,7 +524,7 @@ typedef GenOper<σpσpCoulombσpσp_Descr> σpσpCoulombσpσpOper;
  *  need to hand-build trace/antisym/sym-TL combinations at every contraction
  *  site.
  */
-struct opCoulombop_Descr : public Contractable<opCoulombop_Descr> {
+struct σpCoulombσp_Descr : public Contractable<σpCoulombσp_Descr> {
   typedef MultiplicativeSymm2Body_Props Properties;
 
   /// SO(3) irreducible components of the rank-2 Cartesian tensor T_{ab}.
@@ -540,8 +540,8 @@ struct opCoulombop_Descr : public Contractable<opCoulombop_Descr> {
     SymTLOffYZ = 8,  ///< T_yz + T_zy
   };
 
-  opCoulombop_Descr() : component_index_(0) {}
-  opCoulombop_Descr(int component_index) : component_index_(component_index) {
+  σpCoulombσp_Descr() : component_index_(0) {}
+  σpCoulombσp_Descr(int component_index) : component_index_(component_index) {
     assert(component_index >= 0 && component_index <= 8);
   }
 
@@ -576,7 +576,7 @@ struct opCoulombop_Descr : public Contractable<opCoulombop_Descr> {
  private:
   const int component_index_ = -1;
 };
-typedef GenOper<opCoulombop_Descr> opCoulombopOper;
+typedef GenOper<σpCoulombσp_Descr> σpCoulombσpOper;
 
 /** GTG_1d is the two-body 1-dimensional Gaussian geminal
  */

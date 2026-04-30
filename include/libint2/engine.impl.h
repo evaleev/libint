@@ -1296,7 +1296,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
       swap_tbra = swap_tket = swap_p1p2;
     }
   } else if (oper_ == Operator::op_coulomb_op) {
-    // opCoulombop: only bra↔ket (particle 1↔2) swap is a symmetry (with
+    // σpCoulombσp: only bra↔ket (particle 1↔2) swap is a symmetry (with
     // (a,b)↔(b,a) component remap). Within-side swap is NOT a symmetry
     // because σ·p attaches to one specific function per side; moving it to
     // the other function changes the integral in a way IBP cannot recover
@@ -1341,7 +1341,7 @@ __libint2_engine_inline const Engine::target_ptr_vec& Engine::compute2(
       swap_tbra = swap_tket = swap_p1p2;
     }
   } else if (oper_ == Operator::op_coulomb_op) {
-    // opCoulombop: only bra↔ket swap is a symmetry (with (a,b)↔(b,a) remap).
+    // σpCoulombσp: only bra↔ket swap is a symmetry (with (a,b)↔(b,a) remap).
     // ORCA canonical form: la+lb >= lc+ld only.
     const auto bra_total = tbra1.contr[0].l + tbra2.contr[0].l;
     const auto ket_total = tket1.contr[0].l + tket2.contr[0].l;

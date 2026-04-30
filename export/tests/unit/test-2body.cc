@@ -723,7 +723,7 @@ TEST_CASE("RKB Coulomb integrals", "[engine][2-body]") {
             }
 
             // Project raw dyadic into the 9 SO(3) irrep components used by
-            // op_coulomb_op (must match opCoulombop_Descr::Component order).
+            // op_coulomb_op (must match σpCoulombσp_Descr::Component order).
             const auto Txx = ref_raw[0];
             const auto Txy = ref_raw[1];
             const auto Txz = ref_raw[2];

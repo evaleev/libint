@@ -625,7 +625,7 @@ void try_main(int argc, char* argv[]) {
 #define BOOST_PP_RKB_ERI_TASK_TUPLE \
   (coulomb_opop, opop_coulomb_opop, op_coulomb_op)
 #define BOOST_PP_RKB_ERI_TASK_OPER_TUPLE \
-  (CoulombσpσpOper, σpσpCoulombσpσpOper, opCoulombopOper)
+  (CoulombσpσpOper, σpσpCoulombσpσpOper, σpCoulombσpOper)
 #define BOOST_PP_RKB_ERI_TASK_LIST \
   BOOST_PP_TUPLE_TO_LIST(BOOST_PP_RKB_ERI_TASK_TUPLE)
 #define BOOST_PP_RKB_ERI_TASK_OPER_LIST \
@@ -1163,7 +1163,7 @@ static void build_TwoPRep_2b_2k(
   std::shared_ptr<CodeContext> context(new CppCodeContext(cparams));
   std::shared_ptr<MemoryManager> memman(new WorstFitMemoryManager());
 
-  // opCoulombop has a 2-fold bra↔ket-swap symmetry, with per-component sign
+  // σpCoulombσp has a 2-fold bra↔ket-swap symmetry, with per-component sign
   // flips under the swap (Antisym* flip sign; Scalar/SymTL* invariant) — this
   // is captured by p1_p2_swappable=true plus a dedicated predicate that
   // canonicalizes only la+lb<=lc+ld and emits code for *all* within-side
@@ -1179,12 +1179,12 @@ static void build_TwoPRep_2b_2k(
     for (unsigned int lb = 0; lb <= lmax; lb++) {
       for (unsigned int lc = 0; lc <= lmax; lc++) {
         for (unsigned int ld = 0; ld <= lmax; ld++) {
-          // opCoulombop: only bra↔ket (particle 1↔2) swap is a symmetry.
+          // σpCoulombσp: only bra↔ket (particle 1↔2) swap is a symmetry.
           // Within-side swap is NOT (σ·p would move to a different physical
           // center; IBP cannot repair the sign across 1/r12). Dedicated
           // predicate canonicalizes la+lb<=lc+ld only (ORCA: >=) and accepts
           // all within-side orderings.
-          if constexpr (std::is_same<OperType, opCoulombopOper>::value) {
+          if constexpr (std::is_same<OperType, σpCoulombσpOper>::value) {
 #if LIBINT_SHELL_SET == LIBINT_SHELL_SET_STANDARD
             if (!(la + lb <= lc + ld)) continue;
 #else
@@ -1229,7 +1229,7 @@ static void build_TwoPRep_2b_2k(
               descrs.emplace_back(OperDescrType(p));
             }
           }
-          if constexpr (std::is_same<OperType, opCoulombopOper>::value) {
+          if constexpr (std::is_same<OperType, σpCoulombσpOper>::value) {
             // reset descriptors array
             descrs.resize(0);
             // iterate over 9 SO(3) irrep components: 1 scalar trace + 3

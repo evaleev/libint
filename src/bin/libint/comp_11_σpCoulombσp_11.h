@@ -18,8 +18,8 @@
  *
  */
 
-#ifndef LIBINT_COMP_11_OPCOULOMBOP_11_H
-#define LIBINT_COMP_11_OPCOULOMBOP_11_H
+#ifndef LIBINT_COMP_11_ΣPCOULOMBΣP_11_H
+#define LIBINT_COMP_11_ΣPCOULOMBΣP_11_H
 
 #include <dims.h>
 #include <entity.h>
@@ -43,15 +43,15 @@ namespace libint2 {
  * @tparam F basis function type. valid choices are CGShell or CGF
  */
 template <typename F>
-class CR_11_opCoulombop_11
+class CR_11_σpCoulombσp_11
     : public GenericRecurrenceRelation<
-          CR_11_opCoulombop_11<F>, F,
-          GenIntegralSet_11_11<F, opCoulombopOper, mType>> {
+          CR_11_σpCoulombσp_11<F>, F,
+          GenIntegralSet_11_11<F, σpCoulombσpOper, mType>> {
  public:
-  typedef CR_11_opCoulombop_11<F> ThisType;
+  typedef CR_11_σpCoulombσp_11<F> ThisType;
   typedef F BasisFunctionType;
-  typedef opCoulombopOper OperType;
-  typedef GenIntegralSet_11_11<F, opCoulombopOper, mType> TargetType;
+  typedef σpCoulombσpOper OperType;
+  typedef GenIntegralSet_11_11<F, σpCoulombσpOper, mType> TargetType;
   typedef GenericRecurrenceRelation<ThisType, BasisFunctionType, TargetType>
       ParentType;
   friend class GenericRecurrenceRelation<ThisType, BasisFunctionType,
@@ -70,7 +70,7 @@ class CR_11_opCoulombop_11
 
   /// Constructor is private, used by Instance that maintains
   /// registry of these objects
-  CR_11_opCoulombop_11(const std::shared_ptr<TargetType>&, unsigned int = 0);
+  CR_11_σpCoulombσp_11(const std::shared_ptr<TargetType>&, unsigned int = 0);
 
   static std::string descr() { return "CR"; }
 
@@ -78,7 +78,7 @@ class CR_11_opCoulombop_11
   // All shell quartets with the same quaternion component share one function.
 
   std::string generate_label() const override {
-    return "CR_opCoulombop_" +
+    return "CR_σpCoulombσp_" +
            std::to_string(target_->oper()->descr().component_index());
   }
 
@@ -153,30 +153,30 @@ class CR_11_opCoulombop_11
     std::string rhs;
     unsigned int nflops = 0;
     switch (comp) {
-      case opCoulombop_Descr::Scalar:
+      case σpCoulombσp_Descr::Scalar:
         rhs = "src0[hsi] + src1[hsi] + src2[hsi]";
         nflops = 2;
         break;
-      case opCoulombop_Descr::AntisymX:
-      case opCoulombop_Descr::AntisymY:
-      case opCoulombop_Descr::AntisymZ:
-      case opCoulombop_Descr::SymTLDiagA:
+      case σpCoulombσp_Descr::AntisymX:
+      case σpCoulombσp_Descr::AntisymY:
+      case σpCoulombσp_Descr::AntisymZ:
+      case σpCoulombσp_Descr::SymTLDiagA:
         rhs = "src0[hsi] - src1[hsi]";
         nflops = 1;
         break;
-      case opCoulombop_Descr::SymTLDiagB:
+      case σpCoulombσp_Descr::SymTLDiagB:
         rhs = "2.0*src0[hsi] - src1[hsi] - src2[hsi]";
         nflops = 3;
         break;
-      case opCoulombop_Descr::SymTLOffXY:
-      case opCoulombop_Descr::SymTLOffXZ:
-      case opCoulombop_Descr::SymTLOffYZ:
+      case σpCoulombσp_Descr::SymTLOffXY:
+      case σpCoulombσp_Descr::SymTLOffXZ:
+      case σpCoulombσp_Descr::SymTLOffYZ:
         rhs = "src0[hsi] + src1[hsi]";
         nflops = 1;
         break;
       default:
         throw std::runtime_error(
-            "CR_11_opCoulombop_11::generate_code: invalid component index");
+            "CR_11_σpCoulombσp_11::generate_code: invalid component index");
     }
     def << "target[hsi] = " << rhs << ";\n}\n";
     def << "/** Number of flops = " << nflops << " */\n";
@@ -186,7 +186,7 @@ class CR_11_opCoulombop_11
 };
 
 template <typename F>
-CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
+CR_11_σpCoulombσp_11<F>::CR_11_σpCoulombσp_11(
     const std::shared_ptr<TargetType>& Tint, unsigned int)
     : ParentType(Tint, 0) {
   assert(Tint->num_func_bra(/* particle */ 0) == 1);
@@ -231,7 +231,7 @@ CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
   };
 
   switch (oper->descr().component_index()) {
-    case opCoulombop_Descr::Scalar: {
+    case σpCoulombσp_Descr::Scalar: {
       auto Txx = T(x, x);
       auto Tyy = T(y, y);
       auto Tzz = T(z, z);
@@ -240,7 +240,7 @@ CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
         nflops_ += 2;
       }
     } break;
-    case opCoulombop_Descr::AntisymX: {
+    case σpCoulombσp_Descr::AntisymX: {
       auto Tyz = T(y, z);
       auto Tzy = T(z, y);
       if (is_simple()) {
@@ -248,7 +248,7 @@ CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
         nflops_ += 1;
       }
     } break;
-    case opCoulombop_Descr::AntisymY: {
+    case σpCoulombσp_Descr::AntisymY: {
       auto Tzx = T(z, x);
       auto Txz = T(x, z);
       if (is_simple()) {
@@ -256,7 +256,7 @@ CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
         nflops_ += 1;
       }
     } break;
-    case opCoulombop_Descr::AntisymZ: {
+    case σpCoulombσp_Descr::AntisymZ: {
       auto Txy = T(x, y);
       auto Tyx = T(y, x);
       if (is_simple()) {
@@ -264,7 +264,7 @@ CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
         nflops_ += 1;
       }
     } break;
-    case opCoulombop_Descr::SymTLDiagA: {
+    case σpCoulombσp_Descr::SymTLDiagA: {
       auto Txx = T(x, x);
       auto Tyy = T(y, y);
       if (is_simple()) {
@@ -272,7 +272,7 @@ CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
         nflops_ += 1;
       }
     } break;
-    case opCoulombop_Descr::SymTLDiagB: {
+    case σpCoulombσp_Descr::SymTLDiagB: {
       // 2·T_zz − T_xx − T_yy: child order (Tzz, Txx, Tyy) matches generate_code
       auto Tzz = T(z, z);
       auto Txx = T(x, x);
@@ -282,7 +282,7 @@ CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
         nflops_ += 3;
       }
     } break;
-    case opCoulombop_Descr::SymTLOffXY: {
+    case σpCoulombσp_Descr::SymTLOffXY: {
       auto Txy = T(x, y);
       auto Tyx = T(y, x);
       if (is_simple()) {
@@ -290,7 +290,7 @@ CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
         nflops_ += 1;
       }
     } break;
-    case opCoulombop_Descr::SymTLOffXZ: {
+    case σpCoulombσp_Descr::SymTLOffXZ: {
       auto Txz = T(x, z);
       auto Tzx = T(z, x);
       if (is_simple()) {
@@ -298,7 +298,7 @@ CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
         nflops_ += 1;
       }
     } break;
-    case opCoulombop_Descr::SymTLOffYZ: {
+    case σpCoulombσp_Descr::SymTLOffYZ: {
       auto Tyz = T(y, z);
       auto Tzy = T(z, y);
       if (is_simple()) {
@@ -307,11 +307,11 @@ CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11(
       }
     } break;
     default:
-      throw std::runtime_error("CR_11_opCoulombop_11: invalid component index");
+      throw std::runtime_error("CR_11_σpCoulombσp_11: invalid component index");
   }
 
-}  // CR_11_opCoulombop_11<F>::CR_11_opCoulombop_11
+}  // CR_11_σpCoulombσp_11<F>::CR_11_σpCoulombσp_11
 
 }  // namespace libint2
 
-#endif  // LIBINT_COMP_11_OPCOULOMBOP_11_H
+#endif  // LIBINT_COMP_11_ΣPCOULOMBΣP_11_H
